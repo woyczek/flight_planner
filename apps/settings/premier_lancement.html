@@ -502,9 +502,9 @@
         </div>
       </div>
       <div class="pl-card"><h3>Clé d’API IVAO (facultatif)</h3>
-        <p class="pl-hint">Pour toute l’installation : activations des zones et sessions ATC IVAO (trainings, examens, réservations) du Tableau et du Planning ODV. Gardée par le lanceur, jamais renvoyée à la page.</p>
-        <div class="pl-form"><label for="plIvaoKey">Clé</label><input type="password" id="plIvaoKey" autocomplete="off" spellcheck="false"></div>
+        <p class="pl-hint">Pour toute l’installation : dernier vol IVAO des CR, activations des zones et sessions ATC IVAO du Tableau et du Planning ODV. Gardée par le lanceur, jamais renvoyée à la page ; elle se saisit, se teste et se remplace à un seul endroit :</p>
         <p class="pl-hint" id="plIvaoKeyNow"></p>
+        <p class="pl-hint"><a id="plKeysLink" href="installation.html?m=keys" target="_blank" rel="noopener">Paramètres › Installation › Clés et services externes</a></p>
       </div>
     </div>
     <div class="pl-row"><button type="button" class="primary" id="plSaveCompany">Enregistrer la compagnie</button><span class="pl-msg" id="plCompanyMsg"></span></div>
@@ -512,7 +512,7 @@
   </section>
 
   <section id="plProfile" data-icon="headset"><h2><span class="pl-n">4</span>Profil et identifiants <span class="pl-badge" data-no-i18n></span></h2>
-    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote). La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences : <a href="profil.html" target="_blank" rel="noopener">Paramètres › Mon profil</a>.</p>
+    <p class="pl-hint">Repris par toutes les pages (☰ › Profil pilote, en lecture) ; modifiables ensuite dans Paramètres › Mon profil. La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences : <a href="profil.html" target="_blank" rel="noopener">Paramètres › Mon profil</a>.</p>
     <p class="pl-status" data-no-i18n></p>
     <div class="pl-grid">
       <div class="pl-card"><h3>Pilote</h3>
@@ -1319,7 +1319,7 @@
   });
 
   // 3. compagnie : nom, sigle, nom long (suiteVA:v1, autres champs gardés), site (source « defa ») ; clé d'API IVAO de
-  // l'installation (lanceur, POST /__setup/secrets scope app : la clé n'est jamais relue, seulement son indice)
+  // l'installation : état seulement (indice), saisie dans Paramètres › Installation › Clés et services externes
   function companyLoad() {
     const nav = window.RepositoryNav,
       va = nav?.va?.() || {};
@@ -1328,26 +1328,28 @@
     $('plVaFull').value = va.fullName || '';
     $('plVaSite').value = va.url || '';
     $('plSourcesLink').href = nav?.settingsUrl?.('sources') || 'installation.html?m=sources';
+    $('plKeysLink').href = nav?.settingsUrl?.('keys') || 'installation.html?m=keys';
     done('plCompany', va.name && va.url);
   }
-  /** État de la clé d'API IVAO (indice seulement, la clé n'est jamais relue) ; sans lanceur : saisie désactivée. */
+  /** État de la clé d'API IVAO (indice seulement, la clé n'est jamais relue) ; saisie : carte des clés (lien). */
   async function ivaoKeyState() {
     try {
       const k = (await api('secrets'))?.app?.ivao?.apiKey || {};
       S.ivaoKey = !!k.set;
-      $('plIvaoKeyNow').textContent = k.set ? `${L('Clé enregistrée', 'Key saved', 'Schlüssel gespeichert', 'Clave guardada')} (${k.hint || '…'})${k.env ? ` — ${L('variable d’environnement IVAO_API_KEY', 'IVAO_API_KEY environment variable', 'Umgebungsvariable IVAO_API_KEY', 'variable de entorno IVAO_API_KEY')}` : ''}.` : L('Aucune clé : les données IVAO sont saisies à la main.',
-        'No key: IVAO data are entered by hand.', 'Kein Schlüssel: IVAO-Daten werden von Hand eingegeben.',
-        'Sin clave: los datos IVAO se introducen a mano.');
+      $('plIvaoKeyNow').textContent = k.set ? `${L('Clé IVAO : enregistrée ✓', 'IVAO key: saved ✓', 'IVAO-Schlüssel: gespeichert ✓', 'Clave IVAO: guardada ✓')} (${k.hint || '…'})${k.env ? ` — ${L('variable d’environnement IVAO_API_KEY', 'IVAO_API_KEY environment variable', 'Umgebungsvariable IVAO_API_KEY', 'variable de entorno IVAO_API_KEY')}` : ''}.` : L(
+        'Clé IVAO : absente → la saisir dans Installation ↗ (sinon, les données IVAO se saisissent à la main).',
+        'IVAO key: missing → enter it in Installation ↗ (otherwise, IVAO data are entered by hand).',
+        'IVAO-Schlüssel: fehlt → unter Installation eingeben ↗ (sonst werden IVAO-Daten von Hand eingegeben).',
+        'Clave IVAO: ausente → introducirla en Instalación ↗ (si no, los datos IVAO se introducen a mano).');
     } catch {
       S.ivaoKey = null;
       $('plIvaoKeyNow').textContent = L('Clé gardée par le lanceur : ouvrir la suite avec le lanceur.',
         'Key kept by the launcher: open the suite with the launcher.', 'Schlüssel beim Starter: die Suite mit dem Starter öffnen.',
         'Clave guardada por el lanzador: abrir la suite con el lanzador.');
-      $('plIvaoKey').disabled = true;
     }
     checklist();
   }
-  // compagnie et site enregistrés aussitôt ; clé IVAO envoyée au lanceur seulement si saisie, puis champ vidé
+  // compagnie et site enregistrés aussitôt (la clé IVAO se règle dans la carte des clés d'Installation)
   on('click', 'plSaveCompany', async () => {
     const nav = window.RepositoryNav;
     if (!nav?.setVa) return;
@@ -1362,24 +1364,8 @@
       fullName: $('plVaFull').value.trim()
     });
     nav.setSource('defa', site);
-    const key = $('plIvaoKey').value.trim();
-    let extra = '';
-    if (key) {
-      const r = await post('secrets', {
-        scope: 'app',
-        service: 'ivao',
-        values: {
-          apiKey: key
-        }
-      }).catch(e => ({
-        ok: false,
-        message: e.message
-      }));
-      $('plIvaoKey').value = '';
-      extra = r.ok === false ? ` ${L('Clé IVAO non enregistrée', 'IVAO key not saved', 'IVAO-Schlüssel nicht gespeichert', 'Clave IVAO no guardada')} : ${r.message}` : ` ${L('Clé IVAO enregistrée.', 'IVAO key saved.', 'IVAO-Schlüssel gespeichert.', 'Clave IVAO guardada.')}`;
-      ivaoKeyState();
-    }
-    msg('plCompanyMsg', `${L('Compagnie enregistrée.', 'Airline saved.', 'Fluggesellschaft gespeichert.', 'Aerolínea guardada.')}${extra}`, /non enregistrée|not saved|nicht gespeichert|no guardada/.test(extra) ? 'warn' : 'ok');
+    msg('plCompanyMsg', L('Compagnie enregistrée.', 'Airline saved.', 'Fluggesellschaft gespeichert.', 'Aerolínea guardada.'),
+      'ok');
     companyLoad();
     checklist();
   });
@@ -1606,11 +1592,8 @@
     // code OACI d'un type écrit en clair (« A332 A330 MRTT Phénix » des missions, « A330 MRTT PHÉNIX » saisi dans un CR) :
     // alias de la base, puis catalogue (flotte, désignateurs, noms d'usage) — même regroupement que le bloc
     const al = db.__aliases || {};
-    const alias = c => {
-      let x = al[c] || window.AircraftCatalog?.codeOf?.(c) || c;
-      for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x]; // chaîne d'alias suivie jusqu'au bout (A400M → A400)
-      return x;
-    };
+    // résolveur commun : alias suivis jusqu'au bout (A400M → A400), sinon nom écrit en clair (catalogue commun)
+    const alias = c => al[c] ? window.AircraftCatalog?.canonical?.(c) ?? al[c] : window.AircraftCatalog?.codeOf?.(c) || c;
     // codes qui renvoient vers une clé (A400 ← A400M, A4M…) : fiche et performances portées par l'un d'eux
     const back = {};
     for (const [a, b] of Object.entries(al))(back[b] ||= []).push(a);

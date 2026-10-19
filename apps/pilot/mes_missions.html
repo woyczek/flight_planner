@@ -1637,7 +1637,7 @@
 </head><body>
 <!-- Missions affectées au pilote (trigramme du profil pilote) par le Centre : liste des missions à venir, mission en lecture
      seule (appareil, terrain, heure de décollage ou consigne d'astreinte, route, cartes fournies), transfert vers les Cartes
-     de vol et le planificateur carburant, création du CR ; disponibilités par plages de la semaine (shared/dispos_editor.js ; ancienne grille d'une heure en lecture).
+     de vol et le planificateur carburant, création du CR ; disponibilités de la semaine (shared/dispos_week.js, module shared/dispos_timeline.js ; ancienne grille d'une heure en lecture).
      Dossier de mission en livre (designs à matières) : signet posé à la fin du dossier, annexes derrière lui (plis de
      l'exercice scellés jusqu'à leur heure, MissionExercise), brief dans la langue de la page (bloc i18n, MissionI18n),
      convoyage : ordre de convoyage seul ; gestes du pilote portés au journal (LocalStore.logEvent, kind « mission »).
@@ -1652,13 +1652,13 @@
   <div class="pm-week" data-weekbar></div>
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
   <div id="pmTri"></div>
-  <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
+  <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label> · <a href="mes_vols.html">Mes vols ↗</a></p>
   <div class="pm-me"><a class="secondary" id="pmPilot" data-min-level="2" data-icon="headset" href="../settings/profil.html?base=identity" title="Trigramme, réseaux, langue : Paramètres › Mon profil">Pilote</a><a class="secondary" data-min-level="2" data-icon="plane" href="../settings/profil.html?base=equipment#eqTypes" title="Types de la flotte possédés et maîtrisés : Paramètres › Mon profil">Appareils maîtrisés</a><a class="secondary" data-min-level="2" data-icon="globe" href="../settings/profil.html?base=equipment#eqSims" title="Simulateurs installés : Paramètres › Mon profil">Simulateurs</a><span id="pmWhoNote" class="small"></span></div>
 </section>
 <section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
   <div id="pmDetail"></div>
 </section>
-<section data-block-id="availability" data-icon="clock" data-subtitle="Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions."><h2>Mes disponibilités</h2>
+<section data-block-id="availability" data-icon="clock"><h2>Mes disponibilités</h2><p class="repo-block-subtitle" id="pmDisposSub" data-no-i18n></p>
   <div class="pm-week" data-weekbar data-min-level="4"></div>
   <div id="pmDispos"></div>
   <details id="pmGridOld" class="pm-legacy" data-min-level="4" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
@@ -1669,9 +1669,9 @@
 <script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/repository_nav.js?v=0"></script>
 <script src="mes_missions_i18n.js?v=0" defer></script>
-<script src="../../shared/dispos_editor.js?v=0"></script>
+<script src="../../shared/dispos_week.js?v=0"></script>
 <script src="../../shared/content_i18n.js?v=0"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vocab.js?v=0"></script>
 <script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_i18n.js?v=0"></script><script src="../../shared/machine_translate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
 <script src="../../shared/assignments.js?v=0"></script><script src="../../shared/pilot_today.js?v=0"></script>
@@ -3307,12 +3307,12 @@
     /** Texte → paragraphes HTML (ligne vide : nouveau paragraphe). */
     const para = s => s ? String(s).trim().split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('') : '';
     const order = `<div class="pm-order">
-      <div><span>Appareil attribué</span><b>${esc([a.aircraft?.type, a.aircraft?.registration].filter(Boolean).join(' · ') || '—')}</b></div>
-      <div><span>Indicatif</span><b>${esc(a.callsign || y.aircraft?.[0]?.callsign || '—')}</b></div>
-      <div><span>Terrain de départ</span><b>${esc(a.departure || icaoOf(y.origin) || y.origin?.name || '—')}</b></div>
-      <div><span>${alert ? 'Prêt à' : 'Décollage demandé'}</span><b>${esc(alert ? hhmm(Date.parse(alert.ready_at_utc)) : fmt(A.when(a)))}</b></div>
+      <div><span>${tv(['Appareil attribué', 'Assigned aircraft', 'Zugewiesenes Luftfahrzeug', 'Aeronave asignada'])}</span><b>${esc([a.aircraft?.type, a.aircraft?.variant, a.aircraft?.registration].filter(Boolean).join(' · ') || '—')}</b>${a.aircraft?.declared_variant ? `<small>${tv(['variante différente : {d} déclaré, {f} en flotte', 'different variant: {d} declared, {f} in the fleet', 'andere Variante: {d} angegeben, {f} in der Flotte', 'variante distinta: {d} declarada, {f} en la flota'], { d: esc(a.aircraft.declared_variant), f: esc(a.aircraft.variant) })}</small>` : ''}</div>
+      <div><span>${tv(['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'])}</span><b>${esc(a.callsign || y.aircraft?.[0]?.callsign || '—')}</b></div>
+      <div><span>${tv(['Terrain de départ', 'Departure airfield', 'Startflugplatz', 'Aeródromo de salida'])}</span><b>${esc(a.departure || icaoOf(y.origin) || y.origin?.name || '—')}</b></div>
+      <div><span>${alert ? tv(['Prêt à', 'Ready at', 'Bereit um', 'Listo a las']) : tv(['Décollage demandé', 'Requested take-off', 'Angeforderter Start', 'Despegue solicitado'])}</span><b>${esc(alert ? hhmm(Date.parse(alert.ready_at_utc)) : fmt(A.when(a)))}</b></div>
       ${a.ferry ? `<div><span>${tv(['Convoyage depuis {x}', 'Ferry from {x}', 'Überführung ab {x}', 'Traslado desde {x}'], { x: esc(a.ferry.from) })}</span><b>${tv(['{m} min · décollage {t}', '{m} min · take-off {t}', '{m} min · Start {t}', '{m} min · despegue {t}'], { m: esc(a.ferry.minutes), t: esc(hhmm(Date.parse(a.ferry.takeoff))) })}</b></div>` : ''}
-      <div><span>Statut</span><b>${esc(a.status || 'affectée')}</b></div></div>`;
+      <div><span>${tv(['Statut', 'Status', 'Status', 'Estado'])}</span><b>${esc(!a.status || a.status === 'affectée' ? tv(['affectée', 'assigned', 'zugewiesen', 'asignada']) : a.status)}</b></div></div>`;
     const ferryText = a.role === 'convoyage' ? `<p class="pm-alert">${tv(['Convoyage : amener {reg} de {dep} à {arr} (décollage {t}, environ {min} min) pour {pil}, qui l’emploie en mission {m}.', 'Ferry: take {reg} from {dep} to {arr} (take-off {t}, about {min} min) for {pil}, who flies it on mission {m}.', 'Überführung: {reg} von {dep} nach {arr} bringen (Start {t}, etwa {min} min) für {pil}, der es in Mission {m} einsetzt.', 'Traslado: llevar {reg} de {dep} a {arr} (despegue {t}, unos {min} min) para {pil}, que lo emplea en la misión {m}.'], { reg: esc(a.aircraft?.registration || '—'), dep: esc(a.departure), arr: esc(a.destination), t: esc(fmt(A.when(a))), min: esc(a.block_min), pil: esc(a.for_pilot || ''), m: esc(a.mission) })}</p>` : '';
     const alertText = alert ? `<p class="pm-alert">${tv(['Soyez prêt à {t} sur {ad} et attendez les ordres ; décollage prévisible en {n} minutes.{end}', 'Be ready at {t} on {ad} and await orders; take-off expected within {n} minutes.{end}', 'Seien Sie um {t} in {ad} bereit und warten Sie auf Befehle; Start voraussichtlich in {n} Minuten.{end}', 'Esté listo a las {t} en {ad} y espere órdenes; despegue previsible en {n} minutos.{end}'], { t: esc(hhmm(Date.parse(alert.ready_at_utc))), ad: esc(alert.aerodrome || a.departure || ''), n: esc(alert.notice_min ?? '?'), end: alert.window_end_utc ? ' ' + tv(['Fin d’astreinte {t}.', 'End of standby {t}.', 'Ende der Bereitschaft {t}.', 'Fin de la guardia {t}.'], { t: esc(hhmm(Date.parse(alert.window_end_utc))) }) : '' })}</p>` : '';
     const team = a.role === 'convoyage' ? [] : (A._all || []).filter(x => x.mission === a.mission && x.pilot !== a.pilot);
@@ -3795,12 +3795,12 @@
     }
   }
 
-  // ---- disponibilités : saisie par plages (shared/dispos_editor.js, semaine de la page) ; l'ancienne grille horaire de la
+  // ---- disponibilités : module de saisie (shared/dispos_week.js, semaine de la page) ; l'ancienne grille horaire de la
   // semaine reste visible en lecture seule tant qu'elle existe (docs/technique/DISPOS_ET_REORGANISATION.md § 1.5)
   let doc = null; // déclaration lue (ce poste, sinon les fichiers) : anciennes semaines
   let dispoEd = null;
-  /** Disponibilités du pilote pour la semaine affichée : éditeur de plages (DisposEditor), qui reprend l'ancienne
-   *  grille horaire ; sans éditeur, ancienne grille en lecture seule. */
+  /** Disponibilités du pilote pour la semaine affichée : module de saisie (DisposWeek), qui reprend l'ancienne grille
+   *  horaire ; sans lui, ancienne grille en lecture seule. */
   async function gridLoad() {
     const tri = A.trigram();
     doc = tri ? await A.availability(tri) : null;
@@ -3813,10 +3813,11 @@
       }, (_, i) => dayFr(week, i))
     });
     for (let n = 0; !window.SuiteDispos && n < 60; n++) await new Promise(r => setTimeout(r, 50)); // chargé par repository_nav.js
-    if (!window.DisposEditor || !window.SuiteDispos) return;
-    // l'éditeur importe l'ancienne grille de la semaine (shared/dispos_editor.js) : plus de copie en lecture seule à côté
+    if (!window.DisposWeek || !window.SuiteDispos) return;
+    // la saisie importe l'ancienne grille de la semaine (shared/dispos_week.js) : plus de copie en lecture seule à côté
     $('pmGridOld').hidden = true;
-    dispoEd ||= window.DisposEditor.mount($('pmDispos'), {
+    window.DisposWeek.bindSubtitle($('pmDisposSub')); // sous-titre traduit à la source (une fois : l'élément le garde)
+    dispoEd ||= window.DisposWeek.mount($('pmDispos'), {
       nav: false // semaine de la page (barre commune à la liste)
     });
     await dispoEd.set({

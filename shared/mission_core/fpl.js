@@ -214,14 +214,21 @@
   }
 
   // ------------------------------------------------------------ application
-  // Remplit les champs vides de la mission ; renvoie la liste des chemins renseignés.
-  function apply(mission, fpl) {
+  // Remplit les champs vides de la mission (replace : les champs déjà saisis aussi ; kept : liste où noter les champs
+  // déjà saisis gardés qui différaient) ; renvoie la liste des chemins renseignés.
+  function apply(mission, fpl, {
+    replace = false,
+    kept = null
+  } = {}) {
     const done = [];
     /** Écrit une valeur du plan de vol dans un champ vide de la mission et le note comme renseigné. */
     const set = (path, value) => {
       if (value == null || value === '' || (Array.isArray(value) && !value.length)) return;
       const cur = M.get(mission, path);
-      if (cur != null && cur !== '' && !(Array.isArray(cur) && !cur.length)) return;
+      if (!replace && cur != null && cur !== '' && !(Array.isArray(cur) && !cur.length)) {
+        if (kept && JSON.stringify(cur) !== JSON.stringify(value)) kept.push(path);
+        return
+      }
       M.set(mission, path, value);
       done.push(path);
     };

@@ -662,7 +662,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const last = has2 ? weeks2[Object.keys(weeks2).sort().pop()] : null;
     const ac = last?.appareils && (last.appareils.possedes?.length || last.appareils.maitrises?.length) ? {
       owned: last.appareils.possedes || [],
-      mastered: last.appareils.maitrises || []
+      mastered: last.appareils.maitrises || [],
+      // variantes déclarées par désignateur ({ CL2T: ['CL-415'] }, DISPOS_ET_REORGANISATION.md § 1.3)
+      variants: last.appareils.variantes || null
     } : null;
     return {
       pilot: tri,
@@ -745,11 +747,16 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     store.changed('data/disponibilites/_index.json');
     return path;
   }
-  /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered } — gardés avec ses disponibilités (même
-   *  déclaration, même fichier) ; enregistrés dans le dossier des données avec la grille. */
+  /** Types d'appareils du pilote (désignateurs OACI) : { owned, mastered, variants } — gardés avec ses disponibilités
+   *  (même déclaration, même fichier) ; enregistrés dans le dossier des données avec la grille. variants : variantes
+   *  déclarées d'un désignateur partagé par plusieurs modèles ({ CL2T: [« Canadair CL-415 »] }) ; absent : celles déjà
+   *  gardées (réduites aux types possédés). */
   function saveAircraft(tri, aircraft) {
     tri = String(tri || '').toUpperCase();
-    const all = json(AVAIL, {});
+    const all = json(AVAIL, {}),
+      own = new Set([...(aircraft?.owned || []), ...(aircraft?.mastered || [])]),
+      vars = Object.fromEntries(Object.entries(aircraft?.variants || all[tri]?.aircraft?.variants || {}).filter(([k, v]) => own.has(k) &&
+        Array.isArray(v) && v.length));
     all[tri] = {
       pilot: tri,
       granularity_min: 60,
@@ -758,7 +765,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       ...(all[tri] || {}),
       aircraft: {
         owned: [...new Set(aircraft?.owned || [])].sort(),
-        mastered: [...new Set(aircraft?.mastered || [])].sort()
+        mastered: [...new Set(aircraft?.mastered || [])].sort(),
+        variants: vars
       },
       updated_at: new Date().toISOString()
     };
@@ -873,7 +881,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     code = 'O',
     onBrush = null, // code choisi dans la palette (pour le garder)
     days = null, // libellés des lignes (ex. « Lun 28/09 ») ; sinon jours de la semaine
-    readOnly = false // ancienne grille montrée en lecture seule (saisie par plages : shared/dispos_editor.js)
+    readOnly = false // ancienne grille montrée en lecture seule (saisie : shared/dispos_week.js)
   } = {}) {
     grid = normGrid(grid);
     /** Libellé d'une ligne : celui fourni (days), sinon le jour de la semaine. */
@@ -1204,17 +1212,13 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   // missions », rangés avec ses disponibilités (même fichier : data/disponibilites/<TRI>.json, champ aircraft)
   /** Catégorie d'un type d'après sa description OACI (Doc 8643 : L2J = avion terrestre biréacteur, H1T = hélicoptère
    *  monoturbine…) : clé et libellé. */
-  const CATEGORY = {
-    H: ['helico', ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros']],
-    J: ['jet', ['Avions à réaction', 'Jet aircraft', 'Strahlflugzeuge', 'Aviones a reacción']],
-    T: ['turboprop', ['Avions à turbopropulseurs', 'Turboprop aircraft', 'Turboprop-Flugzeuge', 'Aviones turbohélice']],
-    P: ['piston', ['Avions à pistons', 'Piston aircraft', 'Kolbenmotorflugzeuge', 'Aviones de pistón']],
-    '?': ['other', ['Autres', 'Other', 'Andere', 'Otros']]
-  };
-  /** Catégorie de la flotte d'après la description OACI (H / G : hélicoptère, sinon motorisation) : [id, libellés]. */
-  const categoryOf = desc => {
-    const d = String(desc || '').toUpperCase();
-    return CATEGORY[d.startsWith('H') || d.startsWith('G') ? 'H' : d.charAt(2)] || CATEGORY['?'];
+  // libellés : jeu unique du socle (AircraftCatalog.CATEGORY_LABELS), lu à l'usage (le catalogue peut se charger après)
+  const CATEGORY = () => window.AircraftCatalog?.CATEGORY_LABELS || {};
+  /** Catégorie d'un type (règle commune de la suite : AircraftCatalog.classify — hélicoptère et autogire, puis
+   *  motorisation ; ballon, dirigeable, inconnu : autres) : [id, libellés]. rec : fiche de la base, ou code. */
+  const categoryOf = rec => {
+    const id = window.AircraftCatalog?.classify?.(rec)?.category || 'other';
+    return [id, CATEGORY()[id] || CATEGORY().other || [id]];
   };
   /** Nom lisible d'un modèle de la base OACI : « DASSAULT Rafale » → « Dassault Rafale ». */
   // (mots entiers de lettres seulement : « AS-365 », « EC135 » gardés en capitales)
@@ -1244,8 +1248,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     }
     const db = window.AIRCRAFT_DB || {};
     return [...out.values()].map(e => {
-      const info = db[e.type] || db[db.__aliases?.[e.type]] || {},
-        [category, categoryLabel] = categoryOf(info.description);
+      const info = window.AircraftCatalog?.record?.(e.type) || db[e.type] || db[db.__aliases?.[e.type]] || {},
+        [category, categoryLabel] = categoryOf(info);
       return {
         type: e.type,
         model: modelName(info.model) || [...e.variants][0] || e.type,
@@ -1321,16 +1325,22 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Déclaration d'un pilote sur une plage : code dominant (les « dispo » d'abord), dispo, codes rencontrés. */
   function declaredOver(av, start, end) {
     if (!av || !start || !end) return null;
-    // pas d'un quart d'heure pour les déclarations par plages (nouveau format), d'une heure pour les anciennes grilles
-    const step = av.weeks2 && Object.keys(av.weeks2).length ? 9e5 : 36e5;
+    // déclarations par plages (schema 2 ou 3) : couverture à la minute, morceau par morceau entre les instants où la
+    // déclaration change (codes : minutes) ; anciennes grilles : pas d'une heure (codes : heures)
+    const ranged = av.weeks2 && Object.keys(av.weeks2).length && window.SuiteDispos?.cutsBetween,
+      cuts = ranged ? window.SuiteDispos.cutsBetween(av.weeks2, start, end) : null;
     const codes = {},
       seen = {};
-    for (let ms = start; ms < end; ms += step) {
+    const count = (ms, w) => {
       const a = availabilityAt(av, ms);
-      if (!a) continue;
-      codes[a.code] = (codes[a.code] || 0) + 1;
+      if (!a) return;
+      codes[a.code] = (codes[a.code] || 0) + w;
       seen[a.code] ||= a;
-    }
+    };
+    if (cuts)
+      for (let i = 0; i < cuts.length - 1; i++) count(cuts[i], (cuts[i + 1] - cuts[i]) / 6e4);
+    else
+      for (let ms = start; ms < end; ms += 36e5) count(ms, 1);
     /** Vrai si le code est de catégorie « dispo » (déclaration par plages, sinon légende de l'ODV). */
     const isDispo = c => (seen[c].category || LEGEND[c]?.[1]) === 'dispo';
     const list = Object.entries(codes).sort((x, y) => isDispo(y[0]) - isDispo(x[0]) || y[1] - x[1]);
@@ -1399,7 +1409,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   /** Catégorie d'un désignateur (base OACI) : helico, jet, turboprop, piston, other. */
   const catOfType = ty => {
     const db = window.AIRCRAFT_DB || {};
-    return categoryOf((db[ty] || db[db.__aliases?.[ty]] || {}).description)[0];
+    return categoryOf(window.AircraftCatalog?.record?.(ty) || db[ty] || db[db.__aliases?.[ty]] || {})[0];
   };
   /** Texte en majuscules sans accents. */
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
@@ -1407,21 +1417,15 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   const kindOf = s => /h[ée]lico|helicopter|rotor/i.test(s) ? 'helico' : /avion|airplane|plane|jet/i.test(s) ? 'avion' :
     /a[ée]ronef|aircraft/i.test(s) ? 'any' : '';
   // ---- type écrit en clair dans une mission (« H225M Caracal », « Rafale », « E-3F / A400M ») → désignateurs de la
-  // flotte, mot à mot : désignateur, alias de la base OACI (H135 → EC35), synonymes d'usage ci-dessous (noms militaires
-  // absents des alias), mots de la variante (« Rafale B ») ou du modèle (« LOCKHEED C-130H Hercules ») d'un type de la
+  // flotte, mot à mot : désignateur, alias de la base OACI (H135 → EC35), noms d'usage du catalogue commun et
+  // rapprochements propres à la flotte (ci-dessous), mots de la variante (« Rafale B ») ou du modèle (« LOCKHEED C-130H Hercules ») d'un type de la
   // flotte. Sans cela, un type inconnu rendait le poste générique : toute la flotte était proposée.
-  const SYNONYMS = {
-    H225: 'EC25',
-    H225M: 'EC25',
-    CARACAL: 'EC25',
-    E3F: 'E3CF',
-    AWACS: 'E3CF',
-    A400M: 'A400',
-    ATLAS: 'A400',
+  // Noms d'usage : table commune du catalogue (AircraftCatalog.USAGE : Caracal, AWACS, Atlas, Phénix…) ; ici seulement
+  // les rapprochements propres à la flotte — un C-130J demandé, la flotte a des C-130H (C130) : même famille, l'appareil
+  // proposé plutôt qu'un poste générique (le catalogue, lui, donne le désignateur OACI du C-130J : C30J)
+  const FLEET_APPROX = {
     C130J: 'C130',
-    C130J30: 'C130',
-    MRTT: 'A332',
-    PHENIX: 'A332'
+    C130J30: 'C130'
   };
   /** Texte réduit à ses lettres et chiffres en majuscules (clé de l'index de la flotte). */
   const norm = s => fold(s).replace(/[^A-Z0-9]/g, '');
@@ -1437,9 +1441,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         if (k.length >= 2 && !keys.has(k)) keys.set(k, ty);
       };
     types.forEach(ty => add(ty, ty));
-    for (const [k, v] of Object.entries(db.__aliases || {}))
-      if (types.includes(v)) add(k, v);
-    for (const [k, v] of Object.entries(SYNONYMS))
+    // alias de la base et noms d'usage du catalogue, suivis jusqu'au désignateur (catalogue commun)
+    const C = window.AircraftCatalog,
+      to = v => C?.canonical?.(v) || v;
+    for (const k of Object.keys(db.__aliases || {}))
+      if (types.includes(to(k))) add(k, to(k));
+    for (const [k, v] of Object.entries(C?.USAGE || {}))
+      if (types.includes(to(v))) add(k, to(v));
+    for (const [k, v] of Object.entries(FLEET_APPROX))
       if (types.includes(v)) add(k, v);
     for (const f of window.DEFA_FLEET || [])
       for (const w of String(f.variant || '').split(/\s+/))
@@ -1466,6 +1475,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       ...(found.length > 1 ? {
         types: found
       } : {}),
+      // poste d'équipage : pilote d'hélicoptère ou pilote d'avion, pas de troisième poste (décision de Simplification,
+      // 16/10/2026) — helico si le classement commun dit hélicoptère (H, autogire G), avion pour tout le reste, « autres »
+      // compris (dirigeable, électrique) ; type inconnu : d'après le texte
       kind: known ? (catOfType(ty) === 'helico' ? 'helico' : 'avion') : kindOf(rawType),
       service: String(service || ''),
       label: String(rawType || '')
@@ -1509,16 +1521,50 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const o = fold(f.operator);
     return !!svc && !!o && (o.startsWith(svc) || svc.startsWith(o));
   };
+  // ---- variantes déclarées (CL-415 / CL-215T sous le même désignateur CL2T) : la qualification reste par désignateur
+  // OACI (même type pour la simulation, jamais un blocage) ; la variante départage les candidats et signale un écart
+  /** Texte comparable d'une variante : majuscules, lettres et chiffres (« CL-415 Pélican » → CL415PELICAN). */
+  const vkey = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  /** Variantes déclarées par un pilote (déclaration decl) pour un désignateur ; [] : aucune. */
+  const variantsOf = (decl, type) => (decl?.aircraft?.variants?.[String(type || '').toUpperCase()] || []).filter(Boolean);
+  /** La variante d'un appareil de la flotte répond-elle à une variante déclarée par le pilote ? null : rien à comparer
+   *  (pas de variante déclarée pour ce type, ou appareil sans variante). */
+  /** Mots d'une variante qui portent un chiffre (numéro du modèle) : « Canadair CL-415 » → [CL415]. */
+  const vnums = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().split(/\s+/).map(w => w.replace(
+    /[^A-Z0-9]/g, '')).filter(w => /\d/.test(w));
+  /** Même variante : même numéro de modèle (« Canadair CL-415 » = « CL-415 Pélican », ≠ « CL-215T ») ; sans numéro,
+   *  l'un contient l'autre (« Rafale B » = « Dassault Rafale B »). */
+  const sameVariant = (a, b) => {
+    const na = vnums(a),
+      nb = vnums(b);
+    if (na.length && nb.length) return na.some(x => nb.includes(x));
+    const ka = vkey(a),
+      kb = vkey(b);
+    return !!ka && !!kb && (ka.includes(kb) || kb.includes(ka));
+  };
+
+  function variantMatch(decl, plane) {
+    const want = variantsOf(decl, plane?.type);
+    if (!want.length || !vkey(plane?.variant)) return null;
+    return want.some(w => sameVariant(w, plane.variant));
+  }
+  /** Écart de variante : { declared: « CL-415 », fleet: « CL-215T » } quand le pilote a déclaré une autre variante du
+   *  type que celle de l'appareil ; sinon null. */
+  const variantGap = (decl, plane) => variantMatch(decl, plane) === false ? {
+    declared: variantsOf(decl, plane.type).join(', '),
+    fleet: String(plane.variant)
+  } : null;
   /** Appareils compatibles avec un poste : du type (ou des types, ou de la catégorie d'un poste générique) et, quand
-   *  le service du poste est un opérateur de la flotte, de cet opérateur seulement ; terrain de départ d'abord. */
-  function planesFor(spec, departure = '') {
+   *  le service du poste est un opérateur de la flotte, de cet opérateur seulement ; terrain de départ d'abord, puis la
+   *  variante déclarée par le pilote (decl) quand il en a une pour le type. */
+  function planesFor(spec, departure = '', decl = null) {
     const svc = fold(spec?.service || '');
     let list = (window.DEFA_FLEET || []).filter(f => fits(spec, f.type) || (spec?.type && typeOf(f.variant) === spec.type));
     if (list.some(f => serves(svc, f))) list = list.filter(f => serves(svc, f));
     /** Terrain actuel de l'appareil (positions connues), sinon sa base. */
     const at = f => window.AircraftPositions?.adOf?.(f) || f.base; // terrain actuel (site, ordre de mission), sinon la base
-    return list.sort((a, b) => (at(b) === departure) - (at(a) === departure) || (b.operational !== false) - (a.operational !== false) ||
-      String(a.base).localeCompare(String(b.base)));
+    return list.sort((a, b) => (at(b) === departure) - (at(a) === departure) || (variantMatch(decl, b) === true) - (variantMatch(decl,
+      a) === true) || (b.operational !== false) - (a.operational !== false) || String(a.base).localeCompare(String(b.base)));
   }
   /** Le pilote a-t-il un appareil pour ce poste (type, ou catégorie d'un poste générique) ? null : appareils non déclarés. */
   const ownsType = (decl, spec) => decl?.aircraft ? [...(decl.aircraft.owned || []), ...(decl.aircraft.mastered || [])].some(ty => fits(
@@ -1530,7 +1576,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     type,
     at,
     family = '',
-    exclude = []
+    exclude = [],
+    plane = null // appareil choisi : à rang égal, variante déclarée qui correspond d'abord
   }) {
     /** Rang de tri d'un candidat : disponible et possesseur d'abord, puis maîtrise, puis disponibilité. */
     const rank = c => (c.ok ? 0 : 10) + (c.qual.level === 'mastered' ? 0 : c.qual.level === 'owned' ? 1 : c.qual.level === 'flown' ? 2 :
@@ -1547,7 +1594,9 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
         owns,
         ok: !!owns && !!avail?.ok
       };
-    }).sort((a, b) => rank(a) - rank(b) || a.tri.localeCompare(b.tri));
+    }).sort((a, b) => rank(a) - rank(b) || (variantMatch(decls[b.tri], plane) === true) - (variantMatch(decls[a.tri], plane) ===
+        true) ||
+      a.tri.localeCompare(b.tri));
   }
   /** Libellé court d'un pilote du vivier : « RBR — maîtrisé · C dispo ». */
   const poolLabel = c => `${c.tri} — ${c.qual.level === 'mastered' ? t(['maîtrisé', 'mastered']) : c.qual.level === 'owned' ? t(['possédé', 'owned']) : c.qual.level === 'flown' ? t(['vols connus', 'known flights']) : t(['type non déclaré', 'type not declared'])} · ${c.avail ? `${c.avail.code}${c.avail.ok ? '' : ' (' + c.avail.label + ')'}` : t(['dispo. non renseignée', 'availability unknown'])}`;
@@ -1706,6 +1755,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       }) : null;
       if (ferry && r.ferryPilot === '__open') ferry.open = true; // convoyage à affecter : une mission à part, sans pilote
       if (ferry && !ferry.minutes) unknown.push(`${r.pilot || '?'} ${ferry.from} → ${ferry.to}`);
+      const gap = plane && r.pilot ? variantGap(await availability(r.pilot), plane) : null;
       out.push({
         pilot: r.pilot,
         callsign: r.callsign || '',
@@ -1713,7 +1763,10 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
           registration: plane.registration,
           type: plane.type,
           variant: plane.variant || '',
-          base: plane.base || ''
+          base: plane.base || '',
+          ...(gap ? {
+            declared_variant: gap.declared // variante déclarée par le pilote, autre que celle de l'appareil
+          } : {})
         } : null,
         departure,
         takeoff: new Date(tk).toISOString(),
@@ -2040,6 +2093,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     ownsType,
     postsOf,
     planesFor,
+    variantGap,
+    variantMatch,
     fits,
     specLabel,
     pool,

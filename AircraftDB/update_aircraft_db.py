@@ -67,6 +67,12 @@ ICAO_PART3_URLS = [
     "https://cfapps.icao.int/doc8643/reports/Part3-By%20Model%20Number_Name.pdf",
 ]
 
+# Désignateur OACI commun à des modèles que les pilotes distinguent (Doc 8643 : CL2T = Canadair CL-215T et CL-415,
+# Bombardier CL-415, UD-13/14) : nom affiché qui les cite, au lieu du seul premier modèle (« CL-215T » pour un CL-415).
+# Liste courte et choisie : les autres désignateurs à plusieurs modèles (≈ 1 350) gardent leur nom représentatif (les
+# joindre tous donnerait « PA-28-161 Cadet / PA-28-181 Pilot / … »). Les corrections des données (overrides) priment.
+SHARED_DESIGNATOR_NAMES = {"CL2T": "CANADAIR CL-215T / CL-415"}
+
 DEFAULT_COMMON = [
     "C152","C172","C182","C206","C208","BN2P","BE58","B350","AT42","AT72","AT76",
     "DH8A","DH8B","DH8C","DH8D","DHC6","DHC7","F27","F50","L410","D228","C212",
@@ -1060,8 +1066,20 @@ def parse_aviationfanatic(html, requested_code, local=False):
         rec["icao"] = False
         rec["fpl"] = ("SHIP" if int(n) else "BALL") if cat == "B" else "ZZZZ"
     if cat == "B":
-        rec["wing_position"] = "none"  # ballon, dirigeable : pas d'aile (Wikipedia non consulté)
+        lighter_than_air(rec, int(n), eng)
     return rec
+
+
+def lighter_than_air(rec, engines, engine_type):
+    """Ballon ou dirigeable (catégorie B d'Aviation Fanatic, hors OACI) : aucune classe OACI n'existe pour eux — pas de
+    description « B2P » prise pour un code OACI (lue « 2 moteurs à pistons » : classé avec les avions à pistons dans les
+    fiches de performances) ; nature (kind), moteurs et motorisation gardés à part, pas d'aile. Modifie rec."""
+    rec["description"] = ""
+    rec["kind"] = "airship" if engines else "balloon"
+    rec["engines"] = engines
+    if engines:
+        rec["engine_type"] = engine_type
+    rec["wing_position"] = "none"  # Wikipedia non consulté
 
 
 def aviationfanatic_lookup(code):
@@ -1204,7 +1222,8 @@ def source_is_weak(source):
 
 
 def record_complete(rec):
-    return bool(rec and rec.get("tdesig") and rec.get("description") and rec.get("wtc") and rec.get("wing_position"))
+    # ballon, dirigeable (kind) : complet sans description, aucune classe OACI ne leur correspond
+    return bool(rec and rec.get("tdesig") and (rec.get("description") or rec.get("kind")) and rec.get("wtc") and rec.get("wing_position"))
 
 
 def add_safe_aliases(aliases, canonical, alternative_names):
@@ -1279,6 +1298,11 @@ def update_one(db, aliases, raw_designator, icao_index, use_network=True, force=
             if fan.get("icao") is False:  # type sans désignateur OACI : SHIP, BALL ou ZZZZ dans un plan de vol
                 rec["icao"] = False
                 rec["fpl"] = fan.get("fpl") or "ZZZZ"
+            for k in ("kind", "engines", "engine_type"):  # ballon, dirigeable (merge_nonempty ne les reprend pas)
+                if k in fan:
+                    rec[k] = fan[k]
+            if fan.get("kind"):
+                rec["description"] = ""
                 rec["source"] = "Aviation Fanatic (hors OACI)"
 
     sane_wing(rec)  # hélicoptère : rotor sans consulter Wikipedia
@@ -1308,6 +1332,14 @@ def apply_overrides(db, aliases, overrides):
     fixed = official_aliases(aliases, db, ICAO_INDEX, quiet=True)
     aliases.clear()
     aliases.update(fixed)
+    for code, name in SHARED_DESIGNATOR_NAMES.items():
+        if code in db and db[code].get("model") != name:
+            db[code]["model"] = name
+    # fiches d'avant (description « B2P » d'Aviation Fanatic) : ballon ou dirigeable remis sans faux code OACI
+    for rec in db.values():
+        d = str(rec.get("description") or "") if isinstance(rec, dict) else ""
+        if rec and isinstance(rec, dict) and rec.get("icao") is False and len(d) == 3 and d[0] == "B" and d[1].isdigit():
+            lighter_than_air(rec, int(d[1]), d[2])
     for key, patch in overrides.get("__records", {}).items():
         canonical = normalize_key(key)
         base = dict(db.get(canonical, {"tdesig": canonical}))

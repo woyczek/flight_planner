@@ -119,7 +119,7 @@
   function decorateInline(el) {
     // blocs (et futurs blocs : panneaux, éléments à data-block-id — app_framework.js peut passer après) : icône de bloc, pas en ligne
     if (el.dataset.iconDone || el.matches(
-        'section,.repo-block,.repo-card,.panel,[data-block-id],.format-note,.analysis-dock,.trend-card,input,select,textarea')) return;
+        'section,.repo-block,.repo-card,.panel,[data-block-id],.analysis-dock,.reading-card,input,select,textarea')) return;
     el.dataset.iconDone = '1';
     // bouton sans texte (icône seule, libellé en title / aria-label) : l'icône reste affichée même en jeu « aucune icône »
     if (el.matches('button') && !el.textContent.trim()) el.classList.add('repo-icon-only');

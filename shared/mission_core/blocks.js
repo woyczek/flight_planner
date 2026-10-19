@@ -256,6 +256,8 @@
     }
   };
 
+  // Tâche : dès le niveau 1 pour les familles sans bloc d'ordre propre ; famille avec `ownOrder` (FIRE, ISR, LE) :
+  // CR détaillé seulement (MissionBlocks.list)
   const tasking = {
     id: 'tasking',
     minLevel: 3, // CR détaillé (niveaux 3-4)
@@ -555,12 +557,15 @@
     }
   };
 
+  // Résultat et remarques : un seul bloc (les anciens blocs « Résultat » et « Remarques » ; chemins results.* et
+  // remarks.* inchangés)
   const results = {
     id: 'results',
-    title: L('Résultat', 'Results', 'Ergebnis', 'Resultado'),
+    title: L('Résultat et remarques', 'Results and remarks', 'Ergebnis und Bemerkungen', 'Resultado y observaciones'),
     icon: 'check',
-    subtitle: L('Résultat de la mission et suites à donner.', 'Mission outcome and follow-up.',
-      'Ergebnis der Mission und weiteres Vorgehen.', 'Resultado de la misión y seguimiento.'),
+    subtitle: L('Résultat de la mission, causes, observations et suites à donner.',
+      'Mission outcome, causes, remarks and follow-up.', 'Ergebnis der Mission, Ursachen, Bemerkungen und weiteres Vorgehen.',
+      'Resultado de la misión, causas, observaciones y seguimiento.'),
     fields: [
       f('results.outcome', L('Résultat', 'Outcome', 'Ergebnis', 'Resultado'), 'select', {
         options: V.outcomes,
@@ -581,6 +586,9 @@
         full: true,
         when: ctx => V.interruptedOutcomes.has(ctx.mission.results?.outcome)
       }),
+      f('remarks.observations', L('Observations', 'Observations', 'Beobachtungen', 'Observaciones'), 'textarea', {
+        full: true
+      }),
       f('results.detail', L('Résultat détaillé', 'Detailed result', 'Detailliertes Ergebnis', 'Resultado detallado'), 'textarea', {
         full: true
       }),
@@ -590,20 +598,7 @@
       f('results.anomalies', L('Anomalies techniques', 'Technical anomalies', 'Technische Störungen', 'Anomalías técnicas'),
         'textarea', {
           full: true
-        })
-    ]
-  };
-
-  const remarks = {
-    id: 'remarks',
-    title: L('Remarques', 'Remarks', 'Bemerkungen', 'Observaciones'),
-    icon: 'file-text',
-    subtitle: L('Observations libres, enseignements.', 'Free remarks, lessons learned.', 'Freie Bemerkungen, Erkenntnisse.',
-      'Observaciones libres, enseñanzas.'),
-    fields: [
-      f('remarks.observations', L('Observations', 'Observations', 'Beobachtungen', 'Observaciones'), 'textarea', {
-        full: true
-      }),
+        }),
       f('remarks.lessonsLearned', L('Enseignements (lessons learned)', 'Lessons learned', 'Erkenntnisse (Lessons Learned)',
         'Lecciones aprendidas'), 'textarea', {
         full: true
@@ -640,9 +635,15 @@
   // Ordre du formulaire ; les blocs de la famille s'insèrent avant « events » ; navigation et
   // météo (souvent remplies par le plan de vol et les sources météo) en bas de page.
   // Résultat de la mission en 2e position, sous l'identification (lecture du CR).
-  const ORDER = [identification, results, aircraft, crew, tasking, capabilities, timeline, fuel, '__family__', events, legs, remarks,
+  const ORDER = [identification, results, aircraft, crew, tasking, capabilities, timeline, fuel, '__family__', events, legs,
     network, navigation, environment
   ];
+  /** Blocs du formulaire d'une famille, dans l'ordre : blocs communs, ceux de la famille à la place de « __family__ » ;
+   *  Tâche dès le niveau 1 sauf pour une famille qui a son propre bloc d'ordre (`ownOrder`). */
+  const list = family => ORDER.flatMap(block => block === '__family__' ? family.blocks : [block === tasking && !family.ownOrder ? {
+    ...tasking,
+    minLevel: undefined
+  } : block]);
   // Champs de texte simple des blocs communs : en majuscules (saisie, registres, migration).
   window.MissionModel.registerUpperFields(ORDER.filter(block => typeof block === 'object'));
   // Messages des contrôles de cohérence (MissionModel.checkMission), dans la langue demandée
@@ -681,6 +682,7 @@
   };
   window.MissionBlocks = {
     ORDER,
+    list,
     CIVIL,
     ON_STATION,
     identification,
@@ -695,7 +697,6 @@
     events,
     legs,
     results,
-    remarks,
     network,
     describeIssue
   };

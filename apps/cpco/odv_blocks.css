@@ -138,7 +138,7 @@
     align-items: center;
     gap: 5px
   }
-  /* déclarations des pilotes : palette de Mes missions (DisposEditor.legend, shared/dispos_editor.js) */
+  /* déclarations des pilotes : catégories par groupe (DisposWeek.legend, shared/dispos_week.js) */
   .odv-legend-decl {
     flex-basis: 100%;
     display: grid;

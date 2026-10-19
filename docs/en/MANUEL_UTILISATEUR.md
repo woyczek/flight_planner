@@ -63,7 +63,7 @@ The header shows the page title and its subtitle. On the right are the tools, wh
 **The ☰ menu** contains, from top to bottom:
 - the “Appearance” and “Settings” buttons;
 - the list of the pages of the suite, then the settings pages (My profile, Centre, Installation, Maintenance, Appearance, First run);
-- the “Pilot profile” group (trigram, IVAO ID, VATSIM ID, SimBrief), used by all pages;
+- the “Pilot profile” group (trigram; IVAO ID, VATSIM ID and SimBrief shown read-only, with “Edit in My profile ↗”), used by all pages;
 - the “Local data” group: “Save to folder”, “Restore / resync”, “Backup folder…”, “Download backup”, “Restore from a file…”, and the date of the last backup;
 - the “Page” group, when the page offers its own actions.
 
@@ -246,10 +246,10 @@ The “⤢ Full width” button in the block title spreads the folder across the
 
 ### My availability
 
-Your availability for the week shown, in UTC. The Centre uses it to assign missions to you. It is the same editor as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
+Your availability for the week shown, in UTC, to the minute. The Centre uses it to assign missions to you. It is the same entry as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
 Depending on the usage level: the block’s own week bar, the old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level; at the other levels, the week is changed with the bar of the list.
 
-**Palette**: the categories are arranged by group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered.
+**Palette**: the categories are arranged by group, one line per group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered. Under the palette, a line recalls the mission themes opened by the chosen category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
 
 Default categories (the Centre can change this list):
 
@@ -260,34 +260,73 @@ Default categories (the Centre can change this list):
 | Busy | Flight outside SOG (IVAO / VATSIM) (G), DCS (DC), Control outside SOG (IVAO / VATSIM) (AT) |
 | Unavailable | Unavailable (IN), Holidays (V), Time off (Q), Real-life activity (IR) |
 
-**Hour-by-hour grid**: one line per day (today highlighted), one column per hour from 0 to 23 UTC.
-1. Choose a category in the palette.
-2. Click a cell, or draw a rectangle while holding the button down: the cells take the colour and the letter of the category.
-3. A new click (or rectangle) starting on a cell already in this category clears it.
+**The grid**: one row per day, a continuous time axis from 0 to 24 h UTC, a line per hour and a fainter line at the half hour. The “How to use” panel, folded under the grid, repeats the following rules.
 
-A cell shared between several categories is striped; an hour partly covered (entered by the quarter hour) is faded. Each change is saved at once.
+- **Two layers.** The background gives the nature of an unavailability (“Unavailable” group): colour only, full row height. The first layer holds the availabilities, exercises and busy times: rectangles with their letter in the middle, the start time on the left and the end time on the right (shortened, “8 O 12”, on a narrow rectangle). A minute has one state only: where a rectangle lies, the background under it does not count, but it stays in place and comes back when the rectangle moves away. Time with nothing is unavailable.
+- **The palette.** Click a badge to choose the brush: it only says what to draw.
+- **Draw.** Drag on the empty part of a row or in the gap between two rows: the shape snaps to the half hour and shows its times while you drag. Across several days, a selection rectangle lays the same hours on each day it crosses.
+- **Take a shape.** A gesture that starts on a shape, rectangle or background band, takes it whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it. Shift+drag draws over it instead, which is how to draw an availability on a day already covered by a band.
+- **Cut.** The last shape wins: a rectangle drawn over another cuts it, and a background drawn through a rectangle cuts it too. The cut shows while you drag.
+- **Drop and double-click.** Drag a badge from the palette onto a shape: the shape takes that nature. Dropped on the empty part of a row or on the day name, it covers the whole day; a background badge then changes only the background, rectangles stay. Double-click a band: its colour becomes the background of the whole day; double-click a background badge: of the whole week.
+- **Correct.** ✕ on a shape, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes a change, Ctrl+Y or Ctrl+Shift+Z redoes it (50 changes per week shown).
+- **What is saved.** Each change is saved at once (data folder, otherwise this browser): there is no “Save” button. On hover, a tooltip gives the range in words, for example “Wednesday 14 October, 00:00 to 05:30: Unavailable”.
 
-**“Precise range”** (by the quarter hour, collapsed: a click on its title opens it; open from the start at the Expert level): “Group”, “Category”, day boxes (Mon to Sun), “from” and “to” (UTC), then “Add”. Empty times = whole day. Under the form, a line recalls the mission themes opened by the category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
+**“Precise range”** (collapsed: a click on its title opens it): “Group”, “Category”, day boxes, “from” and “to” (UTC, to the minute), then “Add”. The range is laid on each ticked day, with the last-shape rule. Empty times = whole day; with no end, until midnight; an end before the start is refused. Ctrl+Z undoes the addition.
 
 **Other buttons**
-- “⧉ Previous week”: copies the ranges of the previous week (replaces the week shown, after confirmation).
-- “Clear all”: empties the week shown (after confirmation).
+- “⧉ Previous week”: copies the previous week into the week shown (after confirmation if it is not empty); Ctrl+Z undoes it.
+- “Clear all”: empties the week shown; Ctrl+Z undoes it.
 - “Write to the data folder (n)”: only appears if some weeks have stayed in the browser; writes them to the shared folder.
 
 The message under the block tells you where the entry went: “Saved to the data folder.”, or “Kept in this browser, the Centre cannot see it: …” if the data folder is not allowed (see [First run](#first-run), step 3).
 An existing old hourly grid is imported automatically into the week.
 The “Open the availability entry on its own” link leads to the My availability page. This link only appears at the Expert level.
 
+## My flights
+<!-- page: apps/pilot/mes_vols.html -->
+
+This page (“My flights” in the side bar, under “My missions”; from the Crew level) is the ledger of your past flights,
+from the most recent to the oldest, one flight per row. It brings together two sources, without duplicates (same date,
+same call sign, same registration: the report wins):
+
+- your reports, in the report ledger (those you wrote; those with no recorded author are kept);
+- the airline's flight log imported from the website (“Flight log” card of First run), filtered on your trigram.
+  Without a trigram (Settings › My profile), only the reports of this browser are listed.
+
+At the top: “Period” (“Last 7 days”, “Last 31 days”, “Last 12 months” — the default —, “All”), the search (call sign,
+type, registration, airfield, mission), “Export (CSV)” (the displayed list, same columns) and “Detailed analysis ↗”
+(Tools › Mission analysis). Below, the totals: number of flights, block hours, the three most flown types.
+Period and search are kept in this browser.
+
+| Column | Content |
+|---|---|
+| “Date” | day of the flight |
+| “Call sign” | call sign of the flight |
+| “Aircraft” | silhouette, registration, type |
+| “Route” | departure → arrival (ICAO) |
+| “Duration” | block hours (otherwise flight hours) |
+| “Mission” | family, type and operation of the report, or mission of the flight log |
+| “Report” | report number (link), or “no report” |
+
+A click on a row opens its report (“Open the report”); a flight with “no report” unfolds its detail (source, time,
+aircraft, mission) with “Write the report”, which opens the family report already filled in: date, call sign, aircraft,
+registration, departure and arrival, declared block time. Read it over, complete it, then “Add to ledger”: the flight
+then appears with its report. Columns are set by dragging the edge of the titles (double-click: default widths).
+Below 800 px wide, only the date, call sign, route and duration remain; a click unfolds the rest.
+
+You also get there through “My flights ↗” in My missions (next to “also show past missions”) and in the “Send” menu
+of a report.
+
 ## My availability
 <!-- page: apps/pilot/disponibilites.html -->
 
-This page shows the availability editor on its own, in a larger size. It is used to enter several weeks quickly.
+This page shows the availability entry on its own, in a larger size. It is used to enter several weeks quickly.
 You reach it from the “My availability” tab (under the “My missions” entry of the side bar) or from the “Open the availability entry on its own” link in My missions. This link only appears at the Expert level.
 The pilot is the one of the working trigram (pilot profile, sign-in or impersonation). In production mode, the page first asks you to sign in.
 
 ### My availability
 
-The only block of the page. It works exactly like the block of the same name in My missions (previous chapter): palette, hour-by-hour grid, “Precise range” (collapsed, open from the start at the Expert level), “⧉ Previous week”, “Clear all”.
+The only block of the page. It works exactly like the block of the same name in My missions (previous chapter): palette, grid, “How to use”, “Precise range”, “⧉ Previous week”, “Clear all”.
 
 **Week navigation** (specific to this page):
 - “‹” and “›”: previous or next week;
@@ -295,8 +334,8 @@ The only block of the page. It works exactly like the block of the same name in 
 - “Current week”: visible outside the current week, goes back to it.
 
 Tips and limits:
-- All times are in UTC. The grid works by the hour; “Precise range” by the quarter hour.
-- Each change is saved straight away: there is no “Save” button.
+- All times are in UTC. A drawing snaps to the half hour; moving and resizing go by 5 min; “Precise range” goes to the minute.
+- Each change is saved straight away: there is no “Save” button. Ctrl+Z undoes it.
 - Without a trigram, the block shows “Trigram not set: set it in Settings › My profile (or ☰ › Pilot profile).”
 - An address of the form `disponibilites.html?semaine=2026-W41` opens a given week directly.
 - If the week is still loading, a change is refused with “Week still loading: try again in a moment.”
@@ -310,7 +349,7 @@ This page groups the settings specific to each pilot: identity, sign-in, mission
 You reach it from the “Settings” entry of the side bar (first tab, “My profile”) or from ☰ › “Settings”.
 The left-hand column lists the sections by group; a click shows one on the right, with its title, its presentation, its buttons and a status message.
 If a section contains unsaved changes, changing section or leaving the page asks for confirmation.
-Depending on the usage level: “My aircraft (reporting)” appears from the Planning level (2); “Altitude without oxygen” only if the Fuel tool is ticked (always at the Expert level); in “Identity and networks”, the “IVAO — OAuth client” and “Language” cards are at the Expert level.
+Depending on the usage level: “Aircraft flown (reports)” appears from the Planning level (2); “Altitude without oxygen” only if the Fuel tool is ticked (always at the Expert level); in “Identity and networks”, the “IVAO — OAuth client” and “Language” cards are at the Expert level.
 
 ### Usage level
 
@@ -369,25 +408,35 @@ The preferences are kept in your user record, shared with the Centre by synchron
 
 ### Aircraft and simulators
 
-The fleet types you own and master, and your simulators. The Centre uses them to assign you an aircraft and to bring pilots together on a common simulator. (These settings used to be in My missions.)
+“My aircraft”: your aircraft, fleet included — those you own in your simulator and those you master —, and your simulators. The Centre uses them to assign you an aircraft and to bring pilots together on a common simulator. It is the same list as the table of the “Performance sheets” page, which shows their performance: same aircraft, same order, same name.
 
-**“Aircraft” card**: a summary (“… type(s) mastered, … owned out of … fleet types.”), then one sub-card per aircraft category, with a table:
+**“My aircraft” card**: a summary (“… type(s) mastered, … owned out of … fleet types.”), then one sub-card per category (helicopters, turboprops, jets, pistons), with a table:
 
 | Column | Content |
 |---|---|
-| “Type” | Model and ICAO designator |
+| “Aircraft” | Silhouette, name in bold, ICAO designator and class in small print |
 | “Fleet variants” | Variants present in the fleet |
 | “Aircraft” | Number of aircraft in service (out of the total) and their bases |
+| “Performance” | For an owned aircraft: a link — the source of its sheet, which opens the “Performance sheets” page on this aircraft, or “none” and the ways to create one, which open that same page |
 | “Owned” | You have this type in your simulator |
 | “Mastered” | You fly it with ease |
 
 - Ticking “Mastered” also ticks “Owned”; unticking “Owned” unticks “Mastered”.
+- “Search an aircraft”, above the cards, filters as you type on the name, variant, designator, class and performance source: cards with a match stay unfolded, the others fold, and “n aircraft” gives the count; empty field: everything.
+- Variants: a designator shared by several models (CL2T: CL-215T and CL-415) has one row per declared variant, under its name (“Canadair CL-415”, “Canadair CL-215T”); “×” removes a variant. Without a declared variant, the aircraft bears the name of the record and of its known variants (“Canadair CL-215T / CL-415”). The performance profile stays the designator's: “performance shared by the variants”. When adding, the list offers each variant (model of the record, fleet variants, common names from the base), or keep your own text; the variant is saved in your declaration.
 
-**“Other aircraft (outside the fleet)” card**: the types you own in your simulator that are not in the fleet. Type an ICAO designator, a model or a common name, even incomplete or with spaces and hyphens (“PC-12”, “A 400 M”, “SE 210”, “Sud Aviation Caravelle”): while you type, a list suggests the types of the fleet, of this computer's type base and of the ICAO list published with the suite, with their name (“S210 — Caravelle”) and origin (fleet, this computer's base, ICAO list, declared by another pilot); this is computed locally, with no network. Choose a line (click, or arrows then Enter) or click “Add”: the type joins the table, ticked “Owned”. To correct or delete a type you added, click its row: its code goes into the field and “Add” becomes “Replace” (“Mastered” is carried over to the new type), next to “Delete” and “Cancel” (or Esc). A fleet type entered here is simply ticked in the “Aircraft” card; a designator that nothing comes close to is accepted as is. An entry that is too vague (“cara”: Caravelle or Caravan?) is refused: the message says what was read, and the closest type is put in the field — “Add” to confirm. This computer's base is completed by the launcher only when you click “Add”, for the added type if it is missing: the row shows “completing the type base…” during a short pass (a few seconds), one pass at a time — if a pass is already running (Maintenance), the launcher queues the type and completes it when that pass ends. The pass runs in the launcher: leaving the page does not stop it, and when you come back the row shows “completing the type base…” again until the record arrives. A retired type that the official sources no longer know (S210 Caravelle) is looked up as a last resort on Aviation Fanatic; if it is not there either, it stays added under its code and common name, with the note “not found (ICAO, EUROCONTROL, Aviation Fanatic)”. These types go with your declared availability, like the fleet ones: the Centre sees them for assignments, and the other pilots find them in this card, with the “Also declared by” column — they only have to tick “Owned”.
+**“Other aircraft (outside the fleet)” card**: the aircraft you own that are not in the fleet. You always add them by a name, never by a mandatory code: type what you know (“CL-415”, “Canadair 415”, “PC-12”, “Caravelle”). While you type, a list suggests the types of the fleet, of this computer's type base with their common names and of the published ICAO list, with their origin; this is computed locally, with no network. The designator is found for you: “CL-415”, “Canadair 415” and “CL415” give CL2T, shown as “Canadair CL-415” (the variant name is kept). A fleet type is simply ticked in the “My aircraft” card. If several types are possible, the closest one is put in the field — “Add” to confirm it, or choose from the list. If nothing matches, the aircraft is kept under its name, marked “ICAO type to confirm”; “Find the type”, on its row, links it to a designator later. To correct or delete an added aircraft, click its row: its code or name goes into the field and “Add” becomes “Replace” (“Mastered” is carried over), next to “Delete” and “Cancel” (or Esc). This computer's base is completed by the launcher only when you click “Add”, for a designator it is missing: the row shows “completing the type base…” during a short pass, one pass at a time (a type requested during a pass is queued); leaving the page does not stop it. A retired type that the official sources no longer know is looked up as a last resort on Aviation Fanatic; if it is not there, the note “not found (ICAO, EUROCONTROL, Aviation Fanatic)” says so. These aircraft go with your declared availability: the Centre sees them for assignments, and the other pilots find them in this card, “Also declared by” column — they only have to tick “Owned”.
 
 **“Simulators” card**: tick the simulators and tools installed.
 
 There is no “Save” button: each tick is kept at once in this browser, then copied into your availability weeks already declared, from the current week onwards. The bottom message tells you how many weeks were updated.
+
+### Add an aircraft and its performance
+
+To fly an aircraft the suite does not know yet, for example a CL-415 without performance data:
+1. Add it by its name: Settings › My profile › Aircraft and simulators, “Other aircraft” card, or the “Add an aircraft” button of the “Performance sheets” page (the same add window). It joins “My aircraft”.
+2. Its row shows “Performance: none” and three buttons, in this order: “Create from SimBrief” (only if SimBrief knows the type), “Ask ChatGPT” (empty profile and ChatGPT panel opened on it), “Estimate from the class” (minimal profile taken from the type’s ICAO class: fuel flow, TAS and ceiling, marked “estimated”; an aircraft without a designator has no class: link it to its type first).
+3. The created sheet is linked to the aircraft and the “Performance sheets” page opens on it (from Settings, the button opens this page). Then complete it (climb, descent), merge it with another sheet or replace it with an import. Fuel then offers it in its “Aircraft” menu.
 
 ### Altitude without oxygen (unpressurised aircraft)
 
@@ -400,7 +449,7 @@ This section (“Fuel planner” group) sets the threshold above which the plann
 Reference values shown under the field: 10,000 ft (common practice, EASA NCO), 12,500 ft (FAA, crew beyond 30 minutes), 14,000 ft (FAA, crew at all times).
 This is information only: the calculation is not limited. The setting is kept in this browser.
 
-### My aircraft (reporting)
+### Aircraft flown (reports)
 
 The aircraft you flew or reported: those of the reports with your trigram in the crew, or that you wrote (reports saved since this version) (the aircraft of your seat when the report says so), with type, variant, callsigns, operator, number of flights and last flight. The greyed “Fleet” box shows whether the aircraft belongs to the fleet (ticked) or not (unticked, callsign included); it cannot be changed here. The full list, with the “personal” box, is in Settings › Centre › Fleet (restricted to the Centre). At the top, the log count: reports in total, your reports, reports with no crew entered (they count for nobody). Section shown from the Planning level (2).
 
@@ -523,7 +572,7 @@ Three options:
 The virtual airline whose name the suite bears, and its website address (links, fleet, flight log); setting of this browser.
 
 1. “Virtual airline” card: “Name”, “Short name”, “Full name”, “Airline website” (`https://…`).
-2. “IVAO API key (optional)” card: the installation's key (area activations and IVAO ATC sessions of the Board and the ODV planning). Kept by the launcher, it is never shown again: the card only says that a key is saved.
+2. “IVAO API key (optional)” card: state of the installation's key (“IVAO key: saved ✓” or “missing”). It is entered, tested and replaced in one single place, Settings › Installation › Keys and external services (link on the card).
 3. “Save the airline”.
 
 The other fields (centre, website pages, external sources) are in Settings › Installation › Sources and folders.
@@ -654,13 +703,33 @@ to the family. You write the report of a flight you have flown there, then save 
 You reach it from the “New report” page, from an assigned mission, or by clicking a mission
 in a reporting page or a sheet (the mission then opens for editing).
 
-**Depending on the usage level: short or detailed report.** At levels 1 (Crew) and 2 (Planning), the form only shows the essentials of the report:
-- identification (mission, report no., date, series) and result;
-- aircraft (registration, type, callsign, airfields; a known aircraft fills in the rest) and crew;
-- four times (engine start, take-off, landing, engine stop), fuel at departure and at landing;
-- the family’s own blocks and remarks.
+**Three steps.** The form reads in steps, marked by the “1 Flight · 2 Mission · 3 Result” bar at the top (a click
+opens the step and takes you there):
+1. **Flight**, the facts: Identification, Aircraft, Timeline, Crew, Fuel (and Network track from level 3).
+2. **Mission**, what you enter: the family's own blocks (FIRE: flight order, forest fire times, drops; HEMS: duty,
+   medical mission, times, destinations; SPECIAL: the series block), preceded by “Tasking” for the families that do
+   not have their own order block.
+3. **Result**: the “Results and remarks” block. The “Add to ledger” / “Send” bar ends the report.
 
-The “Detailed report” button of the bar shows the whole form without changing level (choice kept by the browser); “Short report” goes back to the reduced form. Values already entered in hidden fields (import, flight plan, network tracking) stay in the report. At levels 3 and 4, the form is always complete and this button does not exist.
+Each step folds by its title, which gives its state: “✓” when the essentials are there (Flight: aircraft, take-off and
+landing, crew, fuel at departure and at landing; Mission: at least one field filled in each block of the family;
+Result: the result chosen), otherwise “to complete”. A fourth step, **Flight details**, folded, gathers the other
+blocks: Navigation, Environment / weather, Timed events, Legs / rotations, Capabilities; opened, it shows them at every
+level (it replaces the former “Detailed report”), each summed up on one line with its badge, “Edit” for its fields.
+
+**Summaries.** A block whose essentials are filled in fits on one line: Identification (date · operation ·
+organisation), Aircraft (“MILAN74 · DH8D F-ZBMD”), Timeline (“block 13:07 → 15:13, flight 13:21 → 15:02”, with the
+“track ↗” link), Crew (the names), Fuel (“1200 → 650 kg”), Network track. Its source badge (“↧ IVAO — last flight”)
+says where its values come from. “Edit” unfolds the fields, “Summary” folds them. A block that is empty, incomplete
+or has a consistency anomaly stays unfolded, like the one you are working in; after a prefill, the completed blocks
+go back to their summary.
+
+**Depending on the usage level.** At levels 1 (Crew) and 2 (Planning), an unfolded block shows its essential fields
+(identification: mission, report no., date, series; aircraft: registration, type, callsign, airfields; four times;
+fuel at departure and at landing); “All fields”, under its title, shows the others, “Essential fields” goes back. At
+levels 3 and 4, all the fields are there. Values in hidden fields (import, flight plan, network tracking) stay in the
+report. A click on a consistency anomaly, under the calculations, opens the step, the block and, if needed, all its
+fields, then puts the cursor in the field.
 
 ### Header and toolbar
 
@@ -669,20 +738,21 @@ The header stays fixed at the top of the page. From left to right:
 | Entry | Role |
 |---|---|
 | “SAR · Land SAR ▾” (family · sub-type) | “Mission family” popup (opens the page of the other family) and “Mission sub-type” |
+| “CRF-A01-0 · 17/10/2026” | report no. and flight date, read-only; a click opens the date field |
 | “Add to ledger” / “Save changes” | files the mission in the ledger |
-| “Send report” | sends the report to the web service (dotted outline as long as it is not set up) |
-| “Analyse / import…” ▾ | paste a flight plan, a tracker page, a METAR; import a file |
+| “Send” ▾ | “Send report”: sends the report to the airline's web service (dotted outline as long as it is not set up); “Airline website” (if its address is set): “Record the flight on the website ↗”, the “→ Vol” bookmarklet, “Copy the fields” (see below) |
+| “Prefill” ▾ | everything that fills in the report: new report from a mission order, a past flight or a file; complete this report from my last IVAO / VATSIM flight, a filed flight plan or a paste (see “Prefill”) |
 | “Network tracking” ▾ | live IVAO / VATSIM tracking, VATSIM history |
 | “Mission” ▾ | “New mission”, “Export mission (YAML)”, “Delete this mission” (when editing) |
 | “Mission ledger” ▾ | “View reporting”, “Ledger folder…”, “Report sending settings (web service)…”, “Settings — databases…” |
-| “Detailed report” / “Short report” | levels 1 and 2 only: shows the whole form or goes back to the short report (see above) |
 
 On the right, a status message shows the last save (“Draft saved in the
-browser · time”). Each block has in its title **↕** (drag to move it) and **Hide /
-Show**; the layout is remembered. Blocks that contain a list have a **+** in their
+browser · time”). Each block has in its title **Hide / Show** (choice
+remembered); the order of the blocks is that of the steps (layouts changed with ↕ before the steps no longer
+apply). Blocks that contain a list have a **+** in their
 title to add an item.
 
-At levels 1 and 2, “Analyse / import…”, “Mission” and “Mission ledger” do not appear (they come at level 3): a new mission is opened with ☰ › Missions › “New report”.
+At levels 1 and 2, “Mission” and “Mission ledger” do not appear (they come at level 3); “Prefill” is there from level 1, except importing a file (level 3). A new mission is opened with ☰ › Missions › “New report”.
 
 ### Editing a ledger mission
 
@@ -713,14 +783,16 @@ Depending on the family, other fields are added or disappear: “Serial number�
 (non-civil families), “Tasking order reference”, “Detachment”. A date in the future is
 flagged: a report is about a flight that has been flown.
 
-### Results
+### Results and remarks
 
-Result of the mission and follow-up (block placed in 2nd position for reading the report).
+Result of the mission, remarks and follow-up, in a single block (placed in 2nd position for reading the report).
 
 1. Choose the “Outcome”: Success, Partial success, Aborted, Cancelled, Diverted, No contact,
    Target not found, Weather, Technical, Operational, Other.
 2. For any outcome other than Success or Other, the “Interruption reason” and “Causes” fields appear; tick every cause (weather, technical, simulator, pilot missing, no ATC, network, airspace not activated, tanker missing, lack of time…): they go up to the flight order tile (MNE).
-3. If needed, complete “Detailed result”, “Incidents” and “Technical anomalies”.
+3. Write your “Observations”, then, if needed, “Detailed result”, “Incidents”, “Technical anomalies” and “Lessons
+   learned”. Observations and lessons form the sections “13. Remarks” and “14. Lessons learned” of the report; an
+   assigned mission puts there a reminder of the original mission and of its load.
 
 This outcome feeds the success rate and the “Outcomes” chart of the reporting pages.
 
@@ -765,7 +837,8 @@ The name entered is the key of the [crew sheet](#crew-sheet): always write it th
 
 Objective and instructions of the mission: “Objective”, “Special instructions”, “Priority”.
 For an assigned mission, the objective and the instructions are already filled in from the mission. These
-texts appear in section “5. Tasking” of the report.
+texts appear in section “5. Tasking” of the report. At levels 1 and 2, this block is shown for families without
+their own order block (FIRE, ISR and LE have one: “Tasking” only comes there at level 3).
 
 ### Capabilities / techniques
 
@@ -833,12 +906,6 @@ Legs, sorties and rotations of the flight, one line each: “From”, “To”, 
 - Legs count in the sorties, passengers and cargo of the reporting pages.
 - The HEMS family does not have this block: it has its own “Destinations / stops” block.
 
-### Remarks
-
-Free observations and lessons: “Observations” and “Lessons learned”. They
-form the sections “13. Remarks” and “14. Lessons learned” of the report. An assigned mission
-puts there a reminder of the original mission and of its load.
-
 ### IVAO / VATSIM network track
 
 Track of the flight on IVAO or VATSIM.
@@ -846,23 +913,14 @@ Track of the flight on IVAO or VATSIM.
 | Field | Role |
 |---|---|
 | “Network” | “Offline / not provided”, IVAO or VATSIM |
-| “IVAO ID (VID)”, “VATSIM ID (CID)” | taken from your pilot profile (☰ menu › Pilot profile) |
+| “IVAO ID (VID)”, “VATSIM ID (CID)” | taken from your profile (Settings › My profile) |
 | “Track URL” | link to the track; it appears in the report (“Open track”) and in the reporting pages |
 
 The network entered feeds the “Network” chart and the “Online” indicator of the reporting.
 
 ### Navigation
 
-Airfields, route, points and work area. The block starts with the **Filed flight plan** bar:
-
-| Button | Source |
-|---|---|
-| “Latest SimBrief OFP” | your SimBrief identifier from the pilot profile |
-| “IVAO flight plan (current flight)” | your VID |
-| “VATSIM flight plan (current or prefiled)” | your CID |
-
-These buttons fill in **only the empty fields**: aircraft, ICAO equipment, route, waypoints,
-levels, airfields, METAR / TAF and planned masses and fuel (SimBrief).
+Airfields, route, points and work area. The filed flight plan (SimBrief, IVAO, VATSIM) is taken through “Prefill ▾ › Filed flight plan” (see “Prefill”).
 
 Fields: “Departure (ADEP)”, “Destination (ADES)”, “Alternate (ALTN)”, “Route” (only routes
 already used for the same trip are suggested), “Waypoints (one per line)”,
@@ -892,7 +950,7 @@ Right-hand column, updated while you type: “Block time”, “Flight time”, 
   timeline of more than 20 h, future date, inconsistent fuel). A click takes you to the field concerned.
 - “Display context” recalls the family, the series, the aircraft types and the capabilities, which
   decide which blocks are shown.
-- At levels 1 and 2 (short report), three calculations only: “Block time”, “Flight time”, “Fuel used”; “Display context” and the station and mission calculations come at level 3 or with “Detailed report”. A click on an anomaly about a hidden field shows the detailed report.
+- At levels 1 and 2 (short report), three calculations only: “Block time”, “Flight time”, “Fuel used”; “Display context” and the station and mission calculations come at level 3. A click on an anomaly opens the step and the block of the field concerned, and its other fields if it is hidden.
 
 ### Report
 
@@ -909,19 +967,65 @@ lessons learned).
 
 The public version also applies to the YAML export (file with the `_public` suffix) and to sending.
 
-### Analyse / import…
+### Prefill
 
-Header menu to fill in the report from a pasted text. **Only empty fields are filled in.**
+The “Prefill ▾” header menu (from level 1) gathers everything that fills in the report; the blocks only keep the
+entry. It is a short menu, one entry per line, in two groups; the chosen entry then opens its window (list of
+flights, paste box…), whose help is folded under “Help”. Esc or a click beside it closes the menu as well as the
+window.
 
-1. Open the menu, then paste (Ctrl+V) into the box: the analysis is immediate. Or click “Paste
-   from clipboard” (Chrome asks for permission once).
-2. Recognised texts: ICAO flight plan “(FPL-…)”, IVAO tracker page (details of a flight or list of
-   connections), StatSim flight page (VATSIM), VATSIM history (JSON), METAR.
-3. The result shows the source recognised and the fields filled in; the button becomes “✓ Confirm”.
+**New report from…** (the current draft is replaced, after confirmation if it is not empty):
+- “A mission order”: your 7 recent assignments (last 21 days) without a report, one line each (UTC date and time,
+  call sign, route, mission); a click opens the report prefilled from the order, like “Create the report” in My
+  missions. Last line: “Open My missions ↗”.
+- “One of my flights”: your 7 recent flights of the airline log without a report (date, call sign, route, type); a
+  click opens the prefilled report, like “Write the report” in My flights. Last line: “Open My flights ↗”.
+- “A file (YAML / JSON)”: a mission file (level 3).
 
-The “↗ IVAO tracker (my connections)” and “↗ My StatSim flights (VATSIM)” links open your pages. The
-“→ CR” link, to drag into the bookmarks bar, copies the tracker page in one click. At the bottom,
-“Import (YAML / legacy JSON)” loads a mission file. Details: [tutorial](../TUTORIAL.md), § 6.
+Both lists need your trigram (Settings › My profile).
+
+**Complete this report from…** (**only empty fields are filled in**):
+- **“My last IVAO flight”**, **“My last VATSIM flight”**. The suite must be opened through its launcher, with your
+  IVAO or VATSIM ID in My profile (without an ID, the entry is greyed out; its tooltip says what is missing, “IVAO
+  VID missing — My profile”); for IVAO, the suite's API key (Settings › Installation).
+  - Your flights of the last 7 days (UTC), whatever the family and the report date. One flight: the report is filled
+    in at once; several: the window lists them (call sign, route, date and UTC times, “in progress” if you are still
+    connected), choose it; each line has its ↗ link to the IVAO tracker.
+  - Flight cut by disconnections: consecutive sessions (same call sign, resumed less than 30 min later where the
+    previous one stopped, the previous one not ending on blocks) make a single flight, “3 sessions (reconnections)”;
+    flight plan of the last session, tracks put end to end.
+  - Filled in: call sign, aerodromes, filed flight plan (aircraft, equipment, route, level, speed, alternate,
+    remarks, `REG/` registration, endurance), track link, times taken from the track (engine start, take-off,
+    landing, shutdown) and distance. Not filled in: what the network does not know (mission, crew, fuel, results,
+    incidents). A flight “in progress” gives provisional times: fetch again after disconnecting.
+  - VATSIM: same principle, but VATSIM publishes no track: times are the connection and disconnection times (to be
+    corrected), the plan is the one filed for that connection.
+  - With no flight, the window says for which ID and which period. As soon as an IVAO flight is taken or pasted,
+    “View on the IVAO tracker ↗” appears next to the “Track URL” field (network track block).
+- **“Filed flight plan (SimBrief / IVAO / VATSIM)”**: the window offers “Latest SimBrief OFP” (your SimBrief
+  identifier from the pilot profile), “IVAO flight plan (current flight)” (your VID), “VATSIM flight plan (current
+  or prefiled)” (your CID): aircraft, ICAO equipment, route, waypoints, levels, airfields, METAR / TAF, planned
+  masses and fuel (SimBrief).
+- **“Paste a flight plan, a tracker page or a METAR”**: paste (Ctrl+V) into the box, the analysis is immediate; or
+  “Paste from clipboard” (Chrome asks for permission once). Recognised texts: ICAO flight plan “(FPL-…)”, IVAO
+  tracker page (details of a flight or list of connections), StatSim flight page (VATSIM), VATSIM history (JSON),
+  METAR. The “↗ IVAO tracker (my connections)” and “↗ My StatSim flights (VATSIM)” links open your pages.
+- **“Bookmark “→ CR””**: the “→ CR” link, to drag once into the bookmarks bar, copies the tracker page in one
+  click.
+
+**The same summary for every source**, as a notification (10 s), once the window is closed: the source and the date of the flight
+(“ICAO flight plan, flight of 19/10”), the number of fields filled in and the blocks touched (aircraft, timeline,
+route, weather…), the number of fields already entered that were kept, and what the source did not give (“not in the
+source: take-off, landing”), for example “ICAO flight plan, flight of 19/10 — 8 field(s) filled: aircraft, route… —
+4 already entered kept — not in the source: take-off, landing”. Two buttons come with it: “Undo” puts the report
+back as it was before the prefill; “Replace the fields already entered (n)”, when fields already entered were kept,
+applies the same source again, replacing them. The most explicit source wins: the “known aircraft” (fleet) assistant only fills what is empty; it never replaces a field set by the source or already entered, even if the registration changes in the same step, and the summary says so (“fleet call sign MILAN74 not applied (CFN12 comes from the source)”). Paste details: [tutorial](../TUTORIAL.md), § 6.
+
+**Provenance.** The title of each block filled by a source carries a “↧” badge naming it: “ICAO flight plan,
+flight of 19/10”, “IVAO — last flight”, “Mission order M-016”, “Airline log”, “Network tracking IVAO”…; its tooltip
+says how many fields of the block come from it. A field corrected by hand loses its provenance (the badge goes with
+the last one). “Undo” also puts the previous badges back. The provenance is kept with the draft, in this browser; it
+does not go into the ledger.
 
 ### Network tracking
 
@@ -959,11 +1063,34 @@ number of missions of the family and the folder.
 |---|---|
 | “Mission ▾ › New mission” | starts again from a blank report (confirmation if the draft is not saved) |
 | “Mission ▾ › Export mission (YAML)” | downloads a file of this mission only |
-| “Send report” | sends mission, report (HTML and text) and calculations to the web service; the button's tooltip recalls the last sending. A mission that is not saved asks for confirmation |
+| “Send ▾ › Send report” | sends mission, report (HTML and text) and calculations to the web service; the button's tooltip recalls the last sending. A mission that is not saved asks for confirmation |
+| “Send ▾ › Record the flight on the website ↗” | opens the “Enregistrer mon vol” page of the airline website with the fields of the flight (see below) |
 | “Mission ledger ▾ › View reporting” | opens the family reporting |
 
 As long as the web service is not set up, “Send report” offers to open its settings
 (“Report sending settings (web service)…”).
+
+**Record the flight on the airline website.** The website opens in another tab, where you are signed in. The suite does
+not sign in there and validates nothing for you: it prepares the “Ajouter un vol” form, you read it over and
+validate it.
+
+1. Once, drag the “→ Vol” bookmarklet (“Send” menu) to the browser's bookmarks bar.
+2. With the report saved, “Send ▾ › Record the flight on the website ↗” opens the website's “Enregistrer mon vol” page,
+   with the fields of the flight in the address (after “#”: never sent to the server). A report that is not saved asks for
+   confirmation.
+3. Sign in if the website asks, then click the “→ Vol” bookmarklet: it opens the page of your aircraft
+   (recognised by its registration), then “Ajouter un vol”; click it again on that form.
+4. The bookmarklet fills in the callsign (chosen in the website's list by its name, CARAFON, or its code, CFON), the
+   flight number, the end date of the flight (report date and block-on time, otherwise landing time, in local time like the report's timeline; the next day
+   if the flight passes midnight), the duration (block, otherwise flight), the mission (family, type, operation) and the
+   arrival. What is filled in gets a green outline, what is missing a red one. The registration and the departure, which
+   the website imposes (current position of the aircraft), are not changed: a difference with the report is reported.
+5. Read over, complete, then “Valider” on the website.
+
+If the fields get lost (sign-in requested on the way), run “Record the flight on the website ↗” again. Without the
+bookmarklet, “Copy the fields” copies one line (registration, type, callsign, date, duration, departure → arrival,
+mission) to copy by hand. The “Airline website” menu only appears if the website address is set (Settings ›
+Installation › Sources and folders).
 
 ### Blocks specific to each family
 
@@ -1319,7 +1446,7 @@ This block links three views: the flight plan (text), the map and the vertical s
 - Route field: item 15 of the ICAO flight plan, or a comma list (for example `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Empty: route of the mission.
 - “Level”: cruise level (“FL65” or “6500”).
 - “Airways” / “RTBA (low level)” menu, then “Search”: calculates a route between the points of the field. The result replaces the field.
-- “SimBrief”: takes the route of the latest OFP. The SimBrief identifier is entered in ☰ › Pilot profile.
+- “SimBrief”: takes the route of the latest OFP. The SimBrief identifier is entered in Settings › My profile.
 - “Draw”: draws the vertical section. “Fuel”: opens the fuel planner with this route (distance, level, true track, aircraft).
 - “Copy ICAO”: copies the strict ICAO flight plan (unpublished points as coordinates).
 - “Syntax and use”: reminder of the accepted forms (beacons, VFR reporting points “MM-CV”, “REN300010”, coordinates “4330N00125E”, levels “/A035”, “VFR”…).
@@ -1397,6 +1524,7 @@ Expert-level block; at levels 1 to 3, the generation report (maps generated, fai
 The “Index map” appears by itself under the previews; it uses the profile of the general map.
 Formats: ☰ menu › Map outputs (PNG, editable SVG, PNG width from 400 to 5000 px; 1600 px by default).
 If a map fails (base map unavailable, timeout), the ZIP contains `rapport_generation.txt` and the list offers “Retry this one”.
+Keep the tab visible during generation: the browser slows down background tabs, and a map may fail (“Timeout while loading the base map”); “Retry this one” relaunches it.
 The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP (it would be incomplete); the previews already shown stay. Run “Generate the maps and the ZIP” again for all the maps.
 
 ### SIA database
@@ -1414,22 +1542,19 @@ It is the same block as Settings › Maintenance › Aeronautical data. The same
 ## Fuel
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-The fuel planner (title “Fuel”) calculates the fuel for a flight from the performance profile of your aircraft. The cruise fuel flow comes, in order, from your entry for this flight, the saved profile, the Poll-Schumann model (jet airliners, according to mass, level and Mach), SimBrief, then an estimate by ICAO type or class; an approximate value is marked ≈. For a type without an EUROCONTROL or SimBrief record (military aircraft, helicopters), the estimate uses the cruise TAS and ceiling published by Airframe DB when it knows them. It also draws the optimum altitudes and climb laws.
+The fuel planner (title “Fuel”) calculates the fuel for a flight from the performance profile of your aircraft. The cruise fuel flow comes, in order, from your entry for this flight, the saved profile, the Poll-Schumann model (jet airliners, according to mass, level and Mach), SimBrief, then an estimate by ICAO type or class; an approximate value is marked ≈. For a type without an EUROCONTROL or SimBrief record (military aircraft, helicopters), the estimate uses the cruise TAS and ceiling published by Airframe DB when it knows them. It also helps choose the flight level and how to climb to it.
 To go there: “Tools” in the side bar, “Fuel” tab, the “Fuel (planner)” button of a mission in My missions, or the “Fuel” button of the Flight maps. The route, the distance, the level and the aircraft are then carried over.
-Header: “Aircraft” menu, “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Imports and exports are in the ☰ menu.
-Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments, profile blocks, status bar and the profile actions of the ☰ menu are added at the Expert level, where the page is complete.
+Header: “Aircraft” button, a drop-down list with search (the existing performance sheets: “My aircraft” first, then by category; type a name, a type or a designator to filter, ↑ ↓ Enter, Esc), “Fetch latest SimBrief FPL” button, “Units: kg / lbs”. Fuel makes the fuel plan and only the fuel plan: sheets are created and edited in “Performance sheets” (next chapter), aircraft are declared in “My aircraft” (Settings › My profile › Aircraft and simulators).
+Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments and the vertical profile are added at the Expert level, where the page is complete.
 On a wide screen, at the Expert level, the page has three columns (input and curves | Result and panels | instruments): drag the handles between columns to set their width; double-click: default widths.
 
-### Choose the aircraft and save the profile
+### Choose the aircraft
 
-1. Click the aircraft button in the header (“No aircraft” at first): a list opens, one line per aircraft (icon, name, type, profile source, state).
-2. Choose an aircraft with the mouse, or with the arrow keys then Enter; Escape closes the list.
-3. A fleet type without a profile creates an empty profile: its performance must be filled in (see also “Performance profiles”).
+1. Click the aircraft button in the header (“No aircraft” at first): the list only shows the aircraft that have a performance sheet, those of “My aircraft” first, then the others by category (icon, name, type, sheet source, state).
+2. Choose an aircraft with the mouse, or with the arrow keys then Enter; Escape closes the list. “Manage performance sheets ↗”, at the bottom of the list, opens the sheets page.
+3. Opened on an aircraft without a sheet (button of a mission, `?aircraft=` address), the fuel plan shows “No performance sheet for … — open Performance sheets ↗”: the link opens the sheets page on this aircraft, where you can create it.
 
-The bar at the bottom of the page shows “Profile saved — …” or “Unsaved changes — …”. It carries “Reload the local database”, “Save profile” and “Delete this aircraft”. This bar only appears at the Expert level.
-If you change aircraft with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
-☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences. These actions are at the Expert level, except exporting and importing the preferences.
-An import that lands on an existing profile (same identifier, usually the ICAO type) updates it: the imported values win, the fields it leaves empty keep the old value, the RPM tables are merged (units converted).
+The chosen sheet stays visible read-only in the Result (collapsible group “Flight regimes — profile ↔ engine map”), with “Edit this sheet in Performance sheets ↗”. A sheet saved in Performance sheets open in another tab is picked up at once, and the fuel plan redone.
 
 ### Fuel plan
 
@@ -1440,26 +1565,29 @@ An import that lands on an existing profile (same identifier, usually the ICAO t
 
 Wind left empty: the page says so (“Unknown wind: ±25 kt range…”) and gives the fuel as a range.
 With an ISA deviation, a “Weather” inset of the Result compares with the standard atmosphere: trip at the plan level (time, fuel), optimum level and ceiling. The QNH does not enter the calculation (flight levels are pressure altitudes).
+The profile stays calibrated in the standard atmosphere; the fuel plan flies in the atmosphere of the day: warmer, less dense air gives a higher TAS at equal IAS, but less thrust or power, a lower climb rate and ceiling, and a higher fuel flow for a jet.
 The “Flight maps” button (Expert level) opens the Flight maps with this flight plan; the maps and the profile are created there on arrival.
 “Flight plan syntax” recalls the accepted forms. Without the SIA database in the browser, only points given as coordinates are recognised.
 
-### Fuel plan curves (optimum altitude and climb)
+### Flight level decision
 
-In the detailed view (“Detailed view” / “Simple view” button of the Result; detailed by default at the Expert level, simple at levels 1 to 3), after “Calculate”, the “Fuel plan” block shows, in order:
+After “Calculate”, at the top of the fuel plan (simple and detailed view), a chart gives for each level the fuel (left scale, solid curve) and the time (right scale, thin curve) of the whole trip: climb with the goal chosen in “Climb instructions”, profile cruise, descent. Each scale has the colour and the title of its curve; the card gives both values in the same colours. The plan level is a solid line, the cursor a dashed line.
+- Above the chart, two pills: “Least fuel” and “Fastest”, with level, fuel and time; a click puts the cursor there. In the detailed view, with the “Eco” goal, a third one gives the economy cruise.
+- Grey: level that cannot be held — above the ceiling, trip too short (climbing then descending takes more than the distance) or not enough thrust; the reason and the field to change appear in the cursor card.
+- Hover over the chart, click it or move the slider under it: the card is a table, always the same, with three columns — “Plan”, the cursor level and “Difference” (trip fuel and time, climb, TOD). Its rows: trip fuel and time, cruise TAS, climb (time, fuel, distance), climb IAS and rate, top of descent (TOD), descent (time, fuel, distance), descent IAS and rate (the profile's IAS if entered in Descent › IAS). Cursor on the plan level: the cursor column is faded, without difference. The “Climb instructions” block follows the chosen level (click, slider, pill or table row), not a mere hover.
+- “Use this level” makes the cursor the new plan level (“Level (FL)”) and redoes the fuel plan; the comparison closes by itself.
+- The “Levels” table below lists the round levels (every 1,000 ft; 2,000 ft for a ceiling above 20,000 ft), sortable by level, fuel or time; clicking a row chooses that level; a level that cannot be held shows “—” and its cause.
 
-| Title | What it shows |
-|---|---|
-| “Optimum altitude — fuel and speed” | Whole trip flown at each level: the higher the curve, the less fuel per mile. |
-| “Optimum climb — rate and fuel” | Available climb rate and fuel per 1000 ft, “by altitude” or “by power setting”. |
-| “Climb speeds — IAS and TAS by altitude” | Vy, fast climb, economy climb, chosen climb, Vx. |
-| “TAS by level — cruise and climb” | True airspeed in cruise and in climb. |
-| “Climb comparison” | Time, distance and fuel of each climb, up to the plan level then over the whole trip; ★: best in the column. |
-| “Climb by altitude — RPM / N1 settings” | Table at Vy with totals from the ground. |
+### Climb (detailed view)
 
-Hover over a curve to read the values at that altitude; click to pin a level (white line on all curves). The fuel plan is then calculated at that level.
-The “Chosen climb” sliders of the fuel plan set your chosen climb, drawn in purple on the curves.
-The greyed “unreachable” area lies above the aircraft's ceiling.
-Without “Reference altitude (ft)” or “Max ceiling (ft)” in the profile, the model estimates them (cruise IAS and TAS, EUROCONTROL sheet, climb fuel flow, otherwise the typical value of the class) and shows the source under the curves. Fill in these two fields, or calibrate on a SimBrief OFP: it is more reliable.
+In the detailed view (“Detailed view” / “Simple view” button of the Result; detailed by default at the Expert level), under the climb instructions:
+- “Climb — rate, fuel and speeds by altitude”: three panels on the same axis and with the same cursor as the level decision — climb rate (dashed: maximum rate at Vy), fuel per 1,000 ft, IAS to fly (line) and TAS (dashed), for the goal chosen in the climb instructions. With an engine map, “by altitude” / “by engine setting” also shows the rate by setting at mid-climb.
+- “Climb goals”: one goal per row (“Eco”, “Vy”, “Fast”, “Profile”, “Set”) — time, fuel, IAS and rate, always up to the plan level; ★: best time and best fuel; clicking a row chooses the goal.
+- “Climb settings — engine map” (only if there is one): rate and fuel per 1,000 ft at mid-climb for each setting; ★: most economical.
+
+The “Chosen climb” sliders of the fuel plan set the “Set” goal.
+Above the level where the profile Mach can no longer be held, a jet flies at the highest speed allowed by 92 % of its thrust (“max. thrust” in the card); the level is refused only above the ceiling.
+Without “Reference altitude (ft)” or “Maximum ceiling (ft)” in the profile, the model estimates them (cruise IAS and TAS, EUROCONTROL record, climb fuel flow, otherwise a typical value for the class) and says so in the level decision panel. Fill in these two fields, or calibrate on a SimBrief OFP: it is more reliable.
 
 ### Climb instructions
 
@@ -1467,7 +1595,7 @@ This block, under “Calculate”, says how to climb, at every usage level.
 - Five goals, each with its time and fuel up to the level: “Eco”, “Vy”, “Fast”, “Profile” (climb speed of the profile), “Set” (chosen climb). The choice is kept in this browser.
   “Vy”: maximum climb rate (level reached soonest); “Fast”: minimum block time; “Eco”: minimum trip fuel. For the last two, the climb distance is taken off the cruise, the climb rate stays at least 50% of the maximum, and a jet is limited to 250 kt below FL100.
 - An instruction in three parts: “Set” (throttle, propeller, RPM or N1), “Hold” (the instrument that carries the instruction, usually the IAS), “Expect” (climb rate to see, level reached, time and fuel).
-- A table by altitude band (ground, 2,000 ft, FL050, FL100… up to the plan level): throttle, RPM or N1 if the profile has an engine map, IAS to fly, expected climb rate, cumulative time.
+- A table by altitude band (ground, 2,000 ft, FL050, FL100… up to the plan level, or to the level studied in “Flight level decision”, named in the title): throttle, RPM or N1 if the profile has an engine map, IAS to fly, expected climb rate, cumulative time.
 
 The instructions guide the flying; the fuel plan counts the chosen climb. They come from the performance model of the profile (atmosphere of the fuel plan, mass not modelled): to be checked against the flight manual.
 
@@ -1478,74 +1606,11 @@ This block, in the right-hand column, follows the page while you scroll through 
 - “Block fuel” (as a range if the wind is unknown), “Flight time”, “TOD”.
 - Status line “Calculated for <aircraft> at <time>: <distance> NM at FL…, flight time, TOD. Cruise fuel flow: …”, then basis of the calculation: level, climb used and origin of the cruise fuel flow (“saved profile”, “entered for this flight”, “Poll-Schumann, 70 t at mid-cruise, FL350, M0.78”, “SimBrief”, “estimate…”). With no known fuel flow, “Block fuel” shows “—”: enter the fuel flow in the fuel plan.
 - Detail: taxi, climb, cruise, descent, contingency, reserve; planned take-off mass and MTOW if you entered it (in red if it is exceeded).
-- Cursor card (⌖ on hover, 📌 pinned): fuel and time for the trip at that level, max climb rate, climb speeds; “unpin” removes the pin.
-- Collapsible group “Flight regimes — profile ↔ map” (Expert level): IAS, climb rate, engine setting and flow per phase, compared with the engine map. It also contains the “SimBrief Airframe Internal ID” field and the links to the sheets of the aircraft of this type.
-  “Import SimBrief airframe” reads this field (identifier or share link): SimBrief's public list, then the share link; an unreadable private airframe only gives a partial profile, with its identifier alone.
+- Collapsible group “Flight regimes — profile ↔ engine map” (Expert level): the aircraft's sheet, read-only — IAS, climb rate, engine setting and flow per phase, compared with the engine map, links to the sheets of the aircraft of this type — and “Edit this sheet in Performance sheets ↗”.
 
-“Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per curve gives the optimums, the limits (ceiling, requested level) and reading help. The instrument strip (Expert level) shows IAS, altimeter, climb rate, stopwatch (climb time), fuel and flight time.
-In the panels and messages, an underlined field name is a link: it unfolds the profile editor if needed and shows the field. An “unreachable” level gives its cause and the field to correct (“Limits” block).
+“Pin” keeps the whole block when it follows the page; otherwise, it collapses. “Simple view” hides the curves and instruments, “Detailed view” shows them (choice kept in this browser). At the Expert level, under the block, one panel per chart (level decision, climb) gives the essentials in three lines; “Learn more” unfolds the reading help and the model assumptions. The instrument strip (Expert level) shows IAS, altimeter, climb rate, stopwatch (climb time), fuel and flight time.
+In the panels and messages, an underlined field name refers to a field of the sheet (to be changed in Performance sheets). An “unreachable” level gives its cause and the field to correct (“Limits” block).
 A click on the fuel dial (or its button) changes the curve read, in its colour: chosen climb, profile, economic cruise, fast climb, Vy, economic climb; choice kept in this browser.
-
-### Performance profiles
-
-This block (from the Design level) reviews the profiles: one line per saved profile and per fleet type without a profile.
-- Columns: “Aircraft”, “Profile (source)” (`.lnmperf`, SimBrief, JSON, entry or estimate; “active” for the chosen aircraft, “Create” for a type without a profile), “Engine map”, “Cruise fuel flow” and its origin, “Ceiling”, “Missing data”.
-- “Import…” (`.lnmperf`, JSON, CSV), “Folder…” (performance folder), “Reread”. The folder is read again by itself when it changes elsewhere (Settings, another tab).
-- An action column, before the name, holds each line’s button, always in the same place: “Choose” (“Create” for a fleet type without a profile, with “Create from SimBrief” next to it when SimBrief knows the type). In the sheet of the active profile, “Update from SimBrief” takes the type’s SimBrief record (cruise fuel flow, weights, ceiling, speed) and keeps your entries; against a personal profile, it offers “Fill the empty fields”, “Merge” (the record counts as a profile dated from its retrieval: the most recent wins field by field, empty fields are filled), “Replace” (SimBrief values instead, the rest kept) or “New profile”. When fields change, a preview shows them before you confirm. “Delete this aircraft”, in the same sheet, removes the active profile.
-- The boxes before the names select profiles for the block’s bar: “Merge (n)” (at least two profiles of the same type, or a single one when SimBrief knows the type: the box “Include the type’s SimBrief record”, ticked beforehand, adds it to the sources; name chosen, the most complete one’s by default; the most recent wins field by field, the others fill its gaps, the engine map gathers their rows; the window first shows the changes — current value, kept value and its source, unchanged fields folded, engine map rows added or replaced; one box per changing value (unticked: the current value is kept), “Take everything” / “Take nothing”, and the button says what will be taken, “Merge (7 fields, 1 engine map row)”; the merge note only lists what was taken; the notification says what was taken from each source, “Undo” 10 s), “Export (n)” (one downloaded file per profile: `.lnmperf` if the profile is complete, JSON otherwise), “Save to the folder (n)” (one JSON file per profile in the performance folder, named after the profile) and “Delete (n)” (one confirmation, a single message for the batch with “Undo” for 10 s; a profile from the performance folder is removed from it too: exported database rewritten without it, single-profile file renamed .bak; “Undo” also restores the files; if the folder is not writable, the profile will come back at the next reread). “Folder…” and “Reread” take back everything the folder holds; as long as a deleted profile remains there (CSV with several profiles, writing denied), a line “n removed profile(s) still in the folder — Restore” says so.
-- “Ask ChatGPT” (block’s bar, and sheet of the active profile) opens a panel: choose the aircraft (profile, or fleet type without a profile), then “Copy the prompt and open ChatGPT” (a single ChatGPT tab, where you paste the prompt). The panel follows the chosen aircraft (“Choose”, header list) or the ticked one. The prompt, in the page’s language, asks to compile every source (manuals, manufacturer, authorities, Wikipedia, simulation forums), in kt, ft, ft/min and kg/h, estimated values marked, engine map included; it also gives what the suite already knows (EUROCONTROL, SimBrief, Airframe DB, current profile) so that ChatGPT completes rather than repeats. “Show the prompt” displays it. Paste the answer (the JSON, or a performance CSV) under the button, then “Import as a new profile” (“<name> — ChatGPT”) or “Merge with “…”” (the answer is dated today: it wins field by field, empty fields are filled; preview of the changes first, values to tick). Unknown keys and unreadable or out-of-range values are discarded and reported; estimated values appear under “Missing data” (“estimated: …”) and stop being estimated as soon as you change them by hand (sheet or engine map). The type and the name come from the answer (the chosen aircraft is only a fallback); if the answer describes another type, a question decides: import as one or the other, or, for a merge, a new profile or merge anyway. A CSV with commas or semicolons is accepted.
-
-### Engine performance — RPM / power / consumption
-
-This block (original title “Engine performance sheet”) gives the consumption for an engine setting. Expert level block.
-
-1. Enter “RPM / N1”. The “Altitude (ft)” and “Phase” fields complete the sheet.
-2. Click “Interpolate”.
-3. Read the “Total fuel flow” and its min.–max. range (interpolation in the table, by altitude when the “Altitude (ft)” column is filled in).
-
-Under the sheet, the “RPM / power → consumption curve” draws the min., nominal and max. flows by engine setting. Hover over it to read the values at a given setting. The interpolated point is marked on it.
-Without an RPM table in the profile, the page shows “RPM curve missing from the profile.” or “No quantified map”.
-
-### RPM / power → consumption table
-
-This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase”, “Comment”. Expert level block.
-Click a column title (↕) to sort.
-It is read-only: to change it, use the “Engine map — edit RPM / power → consumption” block.
-Without data, it shows “No RPM curve in this profile.”
-
-### Profile data — JSON ⇄ Little Navmap
-
-This block shows all the fields of the profile, exported as they are in the Little Navmap `.lnmperf` file. Expert level block.
-
-- Groups: “Identity and format”, “Fuel and operation”, “Runway and alternate”, “Climb”, “Cruise”, “Descent”, “Power setting and consumption”.
-- Fuel is shown in the chosen unit (kg or lbs).
-- When the type has a EUROCONTROL APD sheet, an “APD …” label appears next to the comparable fields: a click takes that value. Nothing is written without a click. Otherwise: “No EUROCONTROL APD data for this type”.
-- Label colour: green = identical (±3%), orange = different, blue = empty field; “fill the empty fields” takes all the APD values of the empty fields.
-
-An empty box stays empty and blocks the `.lnmperf` export: no value is made up.
-After a change, click “Save profile” in the bottom bar.
-
-### Engine map — edit RPM / power → consumption
-
-This block is used to enter or correct the setting → consumption table, point by point. Expert level block.
-
-1. “Add a point” creates a line.
-2. Fill in “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase” and “Comment”.
-3. Save the profile (bottom bar).
-
-Tip: a range written in the comment, for example “1,000–1,300 kg/h total”, fills in min., nominal and max. when saving.
-With no aircraft chosen, the block shows “Choose or import a profile.”
-
-### SimBrief calibration from OFP
-
-This block adjusts the active profile to a real SimBrief flight plan. Expert level block.
-
-1. Click “Fetch latest SimBrief FPL” (header). The identifier is entered in ☰ › Pilot profile. Failing that, download the JSON OFP on simbrief.com and use “Import OFP JSON”.
-2. The OFP fills in the fuel plan and the flight plan; the aircraft profile is created and calibrated. The message shows a full or partial calibration (measurable phases).
-3. “Calibrate the active profile” applies the calibration of the last OFP to the chosen profile.
-4. “Export audit JSON” downloads the audit.
-
-“Calibration traceability” (in this block) recalls the last calibration applied; otherwise “No OFP calibration”.
 
 ### Vertical profile
 
@@ -1559,19 +1624,127 @@ This block draws a section along the flight plan of the fuel plan: terrain, airs
 The climb follows the performance model of the active aircraft; the descent follows its climb rate. A plan without a level (VFR) has no trajectory.
 An imported SimBrief OFP fills in the route and draws the profile on its own.
 You need the SIA database of this browser, read in the Flight maps (“SIA database” block) or in Settings › Maintenance. Without it, only points given as coordinates are recognised, without airspaces.
+The terrain comes from a terrain model of about 150 m: the ASFC limits follow this model, not the actual ground.
 
-### OFP audit — raw and calculated values
+## Performance sheets
+<!-- page: apps/planner/performance_sheets.html -->
 
-This table compares, phase by phase, the values read in the OFP and the recalculated values: “Time”, “Distance”, “Fuel”, “Computed FF”, “TAS / GS”, “V/S”. Expert level block.
+This page (side bar “Tools”, from the Design level) manages the performance sheets of your aircraft: every action that creates or changes a sheet starts here. Fuel uses them for the fuel plan; “My aircraft” (Settings › My profile › Aircraft and simulators) says which aircraft you own. Both pages read the same database of this browser and the same performance folder: a sheet saved here is picked up at once by a Fuel page open in another tab.
+
+- Header: the “Aircraft” selector, a drop-down list with search (type a name, a type or a designator), divided like Fuel’s “Aircraft” button (“My aircraft” first, then by category; a type without a sheet is listed with “no sheet”), which chooses the sheet being edited and the aircraft of the ChatGPT panel.
+- Bottom bar: “Add an aircraft” and “Import…”; “Selection (n) ▾”, the menu of actions on ticked rows (“Merge”, “Export”, “Save to the folder”, “Fill in the missing fields”, “Delete”); the status of the sheet, “Save the sheet” and “Discard changes”, or, for an aircraft without a sheet, “Create the sheet: from SimBrief, Ask ChatGPT, Estimate from the class”. Below 800 px wide, “Import…” moves to the ☰ menu.
+- “Performance sheets”: under the introduction, the folder line (“My aircraft ↗”, the status of the performance folder, “Reread” and “Folder…”); then search, sorting and “Ask ChatGPT” above the table of your aircraft and sheets, by groups; an aircraft without a sheet only shows “none” there. A click on a row chooses that aircraft, with or without a sheet, like the header selector (row highlighted); several rows ticked: no aircraft chosen.
+- Under the table, four cards: “Sheet being edited” (flight regimes and fields of the sheet, from the Design level), “Engine” (engine map, RPM table, interpolation), “SimBrief” (airframe, OFP calibration, traceability, audit) and “File” (last imported JSON, folded), described below.
+- A sheet saved here is picked up at once by a Fuel page open in another tab (the sheet it shows, and its fuel plan).
+
+### Bottom bar and ☰ menu
+
+The bottom bar shows “Sheet saved — …”, “Unsaved changes — …”, “No sheet for …” (chosen aircraft without a sheet, with the creation buttons) or “No sheet open.”. “Save the sheet” writes it to the local database; “Discard changes” (only when there are some) rereads the local database and reopens the sheet as it was saved. To delete the sheet: “Delete” (its row ticked). Notifications appear above the bar.
+If you choose another aircraft (click on its row, header selector) with unsaved changes, the page offers “Stay”, “Discard and switch” or “Save and switch”.
+☰ menu: import profiles / CSV / JSON (including Little Navmap `.lnmperf`; the same window as “Import…”), import a SimBrief airframe, choose the performance folder, export the `.lnmperf` or JSON profile, save the local database, restore the previous backup, export or import the preferences. These actions are at the Expert level, except exporting and importing the preferences.
+“Save the local database” writes `flight_performance_database.fpdb.json` to the performance folder (otherwise, download); “Restore the previous backup” returns to the state before the last save.
+An import (file or pasted text) that lands on an existing sheet — same type, aliases included, or same name — creates nothing without asking: “A sheet “…” already exists for …” offers “Complete the existing sheet” (default: only its empty fields are filled, engine map taken if it has none, summary of the fields before confirming), “Merge” (the merge preview, field by field, the most recent wins, values to tick) or “Create a second sheet” (name followed by “(2)”). With more than two duplicates, “Same choice for the next duplicates”, ticked in advance, saves answering each time; two entries for the same sheet are added to it one after the other. Without a duplicate, the sheet is created. At the end, the last sheet opens and “Undo” (10 s) puts the database back as it was before the import.
+
+### Performance sheets (table)
+
+This block (from the Design level), the first of the page, is the performance side of “My aircraft” (Settings › My profile › Aircraft and simulators): same aircraft, same order, same name. Under the introduction of the table, “My aircraft ↗” opens that list in Settings; the same line gives the status of the performance folder (“n profile(s) read from the “…” folder at …”, or “No performance folder chosen.”).
+- One line per aircraft, grouped by category (helicopters, turboprops, jets, pistons) with a foldable group header; “Sort by”: category, name or source. Then come the saved profiles outside “My aircraft”, marked “not in “My aircraft””. Without “My aircraft” (trigram not set, nothing declared), the block shows the profiles and the fleet types.
+- Columns: “Aircraft” (silhouette, name in bold, designator and class in small print, as in Settings), “Performance” (profile source: `.lnmperf`, SimBrief, ChatGPT, JSON, entry, estimated from the class; or “none”), “Map” (engine map), “Cruise flow” and its origin, “Ceiling”, “Missing”. A click on a row ticks that aircraft alone and chooses it (sheet open in the editor, row highlighted; without a sheet: “Create the sheet” in the bottom bar); Ctrl or Shift + click, or the boxes, tick several, and then no aircraft is chosen.
+- “Add an aircraft” opens the same add window as Settings (see “Add an aircraft and its performance”); the added aircraft arrives with “none”. Click its row (or choose it in the header selector): the bottom bar offers “Create the sheet: from SimBrief” (if SimBrief knows the type), “Ask ChatGPT”, “Estimate from the class” (classified type).
+- A designator declared under several variants (CL2T: “Canadair CL-415”, “Canadair CL-215T”) has a single row, under the type's name: the performance is the type's, variants change nothing here. An aircraft with several profiles has one row per profile, each under the profile's name.
+- The box at the head of the column ticks or unticks every displayed row; the box of each group (before “Helicopters (n)”…) ticks or unticks all its sheets, folded group included; the whole cell of a box ticks or unticks it (a click next to the box does not replace the selection); drag the edges of the titles to set the column widths (double-click: default widths).
+- “Search an aircraft”, before “Sort by”, filters the same way (name, variant, designator, class, source): groups with a match unfolded, the others folded, “n aircraft”.
+- “Import…” (bottom bar) opens a window with two ways: “Choose one or more files…” (`.lnmperf`, JSON, CSV, several at once), or paste a text — a JSON sheet, a ChatGPT answer (with its text and code blocks), a `.lnmperf` or a performance CSV (separated by “;”, “,” or tab) — in “Or paste a JSON (sheet, ChatGPT answer) or a performance CSV here”, then “Import the pasted text”. The pasted text follows the path of a file; a ChatGPT answer becomes a sheet “… — ChatGPT”. A JSON with several entries (an array, or a “sheets”, “profiles”… list) gives as many sheets: each is matched with the existing sheets by its identifier, then its type (aliases included), then its name; an unreadable entry does not stop the others. At the end, a single summary: “n sheet(s) completed, m merged, k created”, with the unreadable entries. An empty or unreadable text is reported in the window, which stays open; Esc or “Close” closes it. A sheet that already exists is completed, merged or doubled (see “Bottom bar and ☰ menu”).
+- “Folder…” (choose the performance folder) and “Reread”, on the folder line. The folder is read again by itself when it changes elsewhere (Settings, another tab).
+- In the sheet of the active profile, “Update from SimBrief” takes the type’s SimBrief record (cruise fuel flow, weights, ceiling, speed) and keeps your entries; against a personal profile, it offers “Fill the empty fields”, “Merge” (the record counts as a profile dated from its retrieval: the most recent wins field by field, empty fields are filled), “Replace” (SimBrief values instead, the rest kept) or “New profile”. When fields change, a preview shows them before you confirm.
+- The boxes before the names select profiles for the “Selection (n) ▾” menu of the bottom bar (opens upwards; Esc or a click elsewhere closes it): “Merge (n)” (at least two profiles of the same type, or a single one when SimBrief knows the type: the box “Include the type’s SimBrief record”, ticked beforehand, adds it to the sources; name chosen, the most complete one’s by default; the most recent wins field by field, the others fill its gaps, the engine map gathers their rows; the window first shows the changes — current value, kept value and its source, unchanged fields folded, engine map rows added or replaced; one box per changing value (unticked: the current value is kept), “Take everything” / “Take nothing”, and the button says what will be taken, “Merge (7 fields, 1 engine map row)”; the merge note only lists what was taken; the notification says what was taken from each source, “Undo” 10 s), “Export (n)” (one downloaded file per profile: `.lnmperf` if the profile is complete, JSON otherwise), “Save to the folder (n)” (one JSON file per profile in the performance folder, named after the profile) and “Delete (n)” (one confirmation, a single message for the batch with “Undo” for 10 s; a profile from the performance folder is removed from it too: exported database rewritten without it, single-profile file renamed .bak; “Undo” also restores the files; if the folder is not writable, the profile will come back at the next reread). “Folder…” and “Reread” take back everything the folder holds; as long as a deleted profile remains there (CSV with several profiles, writing denied), a line “n removed profile(s) still in the folder — Restore” says so.
+- “Ask ChatGPT” (above the table, and sheet of the active profile) opens a panel for the chosen aircraft (header selector or click on its row): “Copy the prompt and open ChatGPT” (a single ChatGPT tab, where you paste the prompt). The panel follows the chosen aircraft. The prompt, in the page’s language, asks to compile every source (manuals, manufacturer, authorities, Wikipedia, simulation forums), in kt, ft, ft/min and kg/h, estimated values marked, engine map included; it also gives what the suite already knows (EUROCONTROL, SimBrief, Airframe DB, current profile) so that ChatGPT completes rather than repeats. “Show the prompt” displays it. Paste the answer (the JSON, or a performance CSV) under the button, then “Import as a new profile” (“<name> — ChatGPT”) or “Merge with “…”” (the answer is dated today: it wins field by field, empty fields are filled; preview of the changes first, values to tick). Unknown keys and unreadable or out-of-range values are discarded and reported; estimated values appear under “Missing data” (“estimated: …”) and stop being estimated as soon as you change them by hand (sheet or engine map). The type and the name come from the answer (the chosen aircraft is only a fallback); if the answer describes another type, a question decides: import as one or the other, or, for a merge, a new profile or merge anyway. A CSV with commas or semicolons is accepted.
+- “Fill in the missing fields (n)” (“Selection” menu, bottom bar) completes the ticked sheets with a single question to ChatGPT: the ChatGPT panel opens on those sheets (name and number of empty fields), “Copy the prompt and open ChatGPT” copies the question — for each sheet, what the suite already knows and its empty fields, engine map included if the sheet has none. Paste ChatGPT’s answer (one entry per sheet), then “Fill in the missing fields”: only the empty fields are filled, nothing already entered is replaced, estimated values stay marked; a summary per sheet comes before confirming, then “Undo” for 10 s.
+
+### Sheet being edited
+
+This card (from the Design level), under the table, shows the sheet of the chosen aircraft.
+
+#### Flight regimes — profile ↔ map
+
+IAS, climb rate, engine setting and fuel flow of each phase (climb, cruise, descent, taxi, diversion), compared with the engine map, and the links to the sheets of the aircraft of this type.
+
+#### Sheet fields
+
+All the fields of the sheet, exported as they are in the Little Navmap `.lnmperf` file.
+
+- Groups: “Identity and format”, “Fuel and operation”, “Runway and alternate”, “Climb”, “Cruise”, “Descent”, “Power setting and consumption”.
+- Fuel is shown in the chosen unit (kg or lbs).
+- When the type has a EUROCONTROL APD sheet, an “APD …” label appears next to the comparable fields: a click takes that value. Nothing is written without a click. Otherwise: “No EUROCONTROL APD data for this type”.
+- Label colour: green = identical (±3%), orange = different, blue = empty field; “fill the empty fields” takes all the APD values of the empty fields.
+
+An empty box stays empty and blocks the `.lnmperf` export: no value is made up.
+After a change, click “Save the sheet” in the bottom bar.
+
+### Engine
+
+Expert level card: the engine map to edit, the RPM table and its curve, the fuel flow interpolation.
+
+#### Engine map — edit RPM / power → consumption
+
+Enter or correct the setting → consumption table, point by point.
+
+1. “Add a point” creates a line.
+2. Fill in “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase” and “Comment”.
+3. Save the sheet (“Save the sheet”, bottom bar).
+
+Tip: a range written in the comment, for example “1,000–1,300 kg/h total”, fills in min., nominal and max. when saving.
+With no aircraft chosen, the card shows “Choose or import a profile.”
+
+#### RPM / power → consumption table
+
+This table lists the points of the engine map of the active profile: “RPM / N1”, “Min.”, “Nominal”, “Max.”, “Altitude (ft)” (optional: one line per published altitude), “Flight phase”, “Comment”.
+Click a column title (↕) to sort. Drag the right edge of a title to set the column width (double-click the edge: default widths); the setting is kept in the browser. A long comment stays on one line with an ellipsis: the whole text is in a tooltip, a double-click on the cell unfolds it.
+It is read-only: to change it, use “Engine map — edit”, above.
+Without data, it shows “No RPM curve in this profile.”
+
+#### Engine interpolation
+
+This part gives the consumption for an engine setting.
+
+1. Enter “RPM / N1”. The “Altitude (ft)” and “Phase” fields complete the sheet.
+2. Click “Interpolate”.
+3. Read the “Total fuel flow” and its min.–max. range (interpolation in the table, by altitude when the “Altitude (ft)” column is filled in).
+
+Above the RPM table, the curve draws the min., nominal and max. flows by engine setting. Hover over it to read the values at a given setting. The interpolated point is marked on it.
+Without an RPM table in the profile, the page shows “RPM curve missing from the profile.” or “No quantified map”.
+
+### SimBrief
+
+Expert level card: the SimBrief airframe, the calibration on a real OFP, its traceability and the audit.
+
+#### SimBrief airframe
+
+Paste the “Internal ID” of a SimBrief airframe (or its share address), then “Import SimBrief airframe”: the airframe is read (SimBrief's public list, otherwise its share link) and the sheet drawn from it opens. If SimBrief does not publish the airframe, the Internal ID is kept alone, usable as a type by SimBrief Dispatch. The message under the button says what was taken; with no performance data in the airframe, complete it with a `.lnmperf`.
+
+#### SimBrief calibration from OFP
+
+Adjust the sheet to a real SimBrief flight plan.
+
+1. Click “Fetch latest SimBrief FPL”, the first button of this part. The identifier is entered in Settings › My profile. Failing that, download the JSON OFP on simbrief.com and use “Import OFP JSON”.
+2. The OFP fills in the fuel plan and the flight plan; the aircraft profile is created and calibrated. The message shows a full or partial calibration (measurable phases).
+3. “Calibrate the active profile” applies the calibration of the last OFP to the chosen profile.
+4. “Export audit JSON” downloads the audit.
+
+“Calibration traceability”, below, recalls the last calibration applied; otherwise “No OFP calibration”.
+
+#### OFP audit — raw and calculated values
+
+This table compares, phase by phase, the values read in the OFP and the recalculated values: “Time”, “Distance”, “Fuel”, “Computed FF”, “TAS / GS”, “V/S”.
 It fills in after an OFP import (“Fetch latest SimBrief FPL” or “Import OFP JSON”).
 Without an OFP: “No OFP data.”
 Useful to understand a partial calibration or a gap with SimBrief.
 
-### Imported JSON / SimBrief
+### File
 
-This block shows the raw content of the last imported file (SimBrief OFP or JSON). Expert level block.
+The “File” card (Expert level) keeps, folded under “Imported JSON / SimBrief”, the raw content of the last imported file (SimBrief OFP or JSON); a click unfolds it.
 - “Copy JSON”: copies the content to the clipboard; greyed out when there is nothing to copy.
-- “Clear”: empties the display (the profile is not touched).
+- “Clear”: empties the display (the sheet is not touched).
 
 Without an import: “No JSON loaded.”
 
@@ -1605,14 +1778,15 @@ Analysis options (☰ menu): “exclude clearly implausible measurements”, “
 
 A bar pinned to the bottom of the window, after the trend icon, gives the key figures: “Landings”, “Average score”, “Score min / max”, “Average FPM”, “FPM min / max”, “Average G”, “G min / max”, “Butter / Very Good”.
 The “−” and “+” buttons change the size of these cards.
-Below, the trend conclusion: probable improvement or regression, slight, “No clear progress”, or “insufficient data” (at least four usable measurements are needed).
-The text explains the chosen method (for example estimated asymptote and remaining gain).
+Below, the reading block shows on the left the trend conclusion: probable improvement or regression, slight, “No clear progress”, or “insufficient data” (at least four usable measurements are needed), with the chosen method (for example estimated asymptote and remaining gain).
+On the right, in small print, the legend: format read, “◇ estimated” diamond, rating swatches, estimation on or off. On a narrow screen (under 800 px) the legend moves below the conclusion.
 
 ### Evolution
 
 This block draws the indicators over time, with their trend: score, touchdown rate (FPM), G force, nose rotation rate, and the “FPM × G — touchdown distribution” scatter plot. In reduced format: relative technical index, raw landing rate, float.
 
-- Hover over a point: date, aircraft, score, rating, flare.
+- Hover over a point: date, aircraft, score, rating, flare. The same landing lights up on all five charts (larger, ringed point, the others dimmed); the tooltip stays inside the window, to the left of or above the pointer near the edges.
+- Click a point to pin the tooltip: it adds the full record of the landing (date, aircraft, airport and runway when present, FPM, G, nose, score, source), keeps the landing lit on every chart and highlights its row in the “Landings” table. To close it: the cross, a second click on the same point, a click outside the points or Esc. One pinned point at a time; a plain click does not select a period.
 - Drag horizontally on a chart to select a period.
 - The “Full history — drag to select” strip, under each chart, lets you choose a period over the whole history.
 

@@ -191,8 +191,11 @@
     }
     return m;
   })();
-  /** Ligne de la base des types d'un code (entrée directe, sinon alias de la base). */
-  const dbRow = (db, k) => db?.[k] || db?.[db?.__aliases?.[k]] || null;
+  /** Ligne de la base des types d'un code : catalogue commun (alias suivis jusqu'au bout) pour la base de la page, sinon
+   *  entrée directe ou alias de la base passée. */
+  const dbRow = (db, k) => (!db || db === window.AIRCRAFT_DB ? window.AircraftCatalog?.record?.(k) : null) || db?.[k] || db?.[db
+    ?.__aliases?.[k]
+  ] || null;
   /** Catégorie de sillage : MTOW EUROCONTROL, sinon Airframe DB (< 7 t : L, < 136 t : M, sinon H), sinon base des
    *  types (« L/M » : L). */
   const wtcOf = (row, apd, adb = null) => {

@@ -172,7 +172,7 @@
     ]);
     return `<span class="odv-decl${isFree ? ' odv-free' : ''}" data-odv-slot="${j}${k}" data-tri="${esc(tri)}" title="${esc(title)}">${decl}${a.length ? `<b class="odv-asg">${esc(a[0].mission)}${a.length > 1 ? '+' : ''}</b>` : ''}</span>`;
   }
-  /** Déclaration par catégories, même rendu que la grille de Mes missions (shared/dispos_editor.js) : lettre de chaque
+  /** Déclaration par catégories, mêmes lettres et couleurs que la saisie de Mes missions (shared/dispos.js) : lettre de chaque
    *  catégorie du créneau (O, SC, D+, SC-…) sur sa couleur (plusieurs : bandes) ; groupe, catégories et thèmes ouverts
    *  dans l'infobulle. Ancienne grille sans catégorie : lettre du groupe (groupCell). */
   function catCell(d) {

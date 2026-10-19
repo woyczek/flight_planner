@@ -56,6 +56,7 @@
   window.MissionCore.registerFamily({
     id: 'FIRE',
     idPrefix: 'GAAR',
+    ownOrder: true, // bloc d'ordre propre : « Tâche / ordre de mission » commun réservé au CR détaillé
     defaultCategory: 'fixed',
     pages: {
       cr: 'fire_cr.html',

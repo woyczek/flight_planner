@@ -117,16 +117,6 @@
     color: var(--muted);
     font-size: 13px
   }
-  .format-note {
-    margin: 0 0 16px;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #13171d;
-    color: #bcc4d1;
-    font-size: 12px;
-    line-height: 1.45
-  }
   .grid-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -153,12 +143,35 @@
     color: var(--muted);
     margin-top: 4px
   }
-  .trend-card {
+  .reading-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
     margin: 16px 0;
-    padding: 16px 18px;
+    padding: 14px 18px;
     border-radius: 10px;
     border: 1px solid var(--line);
     background: var(--card-2)
+  }
+  .reading-verdict {
+    flex: 3 1 0;
+    min-width: 0
+  }
+  .reading-legend {
+    flex: 2 1 0;
+    min-width: 0;
+    padding-left: 16px;
+    border-left: 1px solid var(--line);
+    color: #bcc4d1;
+    font-size: 12px;
+    line-height: 1.45
+  }
+  .reading-verdict:empty,
+  .reading-legend:empty {
+    display: none
+  }
+  .reading-card:has(> .reading-verdict:empty):has(> .reading-legend:empty) {
+    display: none
   }
   .trend-title {
     font-size: 18px;
@@ -339,6 +352,60 @@
     font-size: 12px;
     max-width: 340px;
     box-shadow: 0 5px 25px rgba(0, 0, 0, .45)
+  }
+  .tooltip.pinned {
+    pointer-events: auto;
+    border-color: var(--accent);
+    padding-right: 26px
+  }
+  .tooltip .tip-close {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    background: none;
+    border: 0;
+    color: #cfd6e2;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px
+  }
+  .tooltip .tip-hint {
+    color: #8a94a6;
+    font-size: 11px;
+    margin-top: 4px
+  }
+  .tooltip .tip-detail {
+    margin-top: 6px;
+    border-collapse: collapse
+  }
+  .tooltip .tip-detail th {
+    text-align: left;
+    color: #8a94a6;
+    font-weight: normal;
+    padding: 1px 8px 1px 0
+  }
+  .tooltip .tip-detail td {
+    text-align: left;
+    padding: 1px 0
+  }
+  #chartGrid .dot[data-row] {
+    cursor: pointer
+  }
+  #chartGrid .dot.is-linked {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(1.6);
+    stroke: var(--ring, #ffffff);
+    stroke-width: 3;
+    stroke-opacity: .6;
+    paint-order: stroke
+  }
+  #chartGrid.links-active .dot:not(.is-linked) {
+    opacity: .35
+  }
+  #landingTable tr.row-linked td {
+    background: rgba(100, 181, 246, .18)
   }
   .table-wrap {
     overflow: auto
@@ -1153,6 +1220,20 @@
     .chart-box {
       min-width: 0
     }
+    .reading-card {
+      flex-direction: column;
+      gap: 10px
+    }
+    .reading-verdict,
+    .reading-legend {
+      flex: none;
+      width: 100%
+    }
+    .reading-legend {
+      padding: 8px 0 0;
+      border-left: 0;
+      border-top: 1px solid var(--line)
+    }
   }
   @media print {
     header {
@@ -1169,8 +1250,7 @@
     }
     .card,
     .section,
-    .trend-card,
-    .format-note {
+    .reading-card {
       background: white;
       color: black;
       border-color: #bbb
@@ -1322,7 +1402,6 @@
   <span id="statusText" data-no-i18n>Choose or drop one or more CSV or LOG files.</span>
 </div>
 <div id="dashboard" class="hidden">
-  <div id="formatNote" data-no-i18n class="format-note"></div>
   <div id="analysisDock" class="analysis-dock analysis-size-1">
     <div id="generalTrendDock" data-no-i18n class="general-trend-dock">
       <span id="generalTrendIcon" class="trend-state trend-state-large unknown" aria-label="Undetermined" title="Undetermined">×</span>
@@ -1333,7 +1412,11 @@
       <button id="analysisLargerBtn" type="button" aria-label="Larger analysis data" title="Larger analysis data">+</button>
     </div>
   </div>
-  <div id="trendCard" data-no-i18n class="trend-card"></div>
+  <!-- Bloc de lecture : verdict de tendance (#trendCard) à gauche, légende du format lu (#formatNote) à droite -->
+  <div id="readingCard" class="reading-card">
+    <div id="trendCard" data-no-i18n class="reading-verdict"></div>
+    <div id="formatNote" data-no-i18n class="reading-legend"></div>
+  </div>
 
   <section class="section" data-icon="chart" data-subtitle="Landing indicators over the period.">
     <h2 id="evolutionTitle">Evolution</h2>
@@ -2341,6 +2424,10 @@ Object.assign(TR.en, {
   shiftBack: "Move period backward",
   shiftForward: "Move period forward",
   dragSelect: "Drag horizontally on a time chart to select a period",
+  tipPinHint: "Click to pin",
+  tipClose: "Close",
+  tipAirport: "Airport",
+  tipRunway: "Runway",
   navigatorHint: "Full history — drag to select",
   unavailableMetric: "Metric unavailable in this source",
   scoreGraph: "Score",
@@ -2366,6 +2453,10 @@ Object.assign(TR.fr, {
   shiftBack: "Reculer la période",
   shiftForward: "Avancer la période",
   dragSelect: "Glisser horizontalement sur un graphe temporel pour sélectionner une période",
+  tipPinHint: "Cliquer pour figer",
+  tipClose: "Fermer",
+  tipAirport: "Aérodrome",
+  tipRunway: "Piste",
   navigatorHint: "Historique complet — glisser pour sélectionner",
   unavailableMetric: "Métrique indisponible dans cette source",
   scoreGraph: "Score",
@@ -2391,6 +2482,10 @@ Object.assign(TR.de, {
   shiftBack: "Zeitraum zurück",
   shiftForward: "Zeitraum vor",
   dragSelect: "Horizontal über ein Zeitdiagramm ziehen, um einen Zeitraum auszuwählen",
+  tipPinHint: "Zum Fixieren klicken",
+  tipClose: "Schließen",
+  tipAirport: "Flugplatz",
+  tipRunway: "Landebahn",
   navigatorHint: "Gesamtverlauf — ziehen zum Auswählen",
   unavailableMetric: "Metrik in dieser Quelle nicht verfügbar",
   scoreGraph: "Score",
@@ -2416,6 +2511,10 @@ Object.assign(TR.es, {
   shiftBack: "Retroceder el periodo",
   shiftForward: "Avanzar el periodo",
   dragSelect: "Arrastra horizontalmente sobre un gráfico temporal para seleccionar un periodo",
+  tipPinHint: "Clic para fijar",
+  tipClose: "Cerrar",
+  tipAirport: "Aeródromo",
+  tipRunway: "Pista",
   navigatorHint: "Historial completo — arrastra para seleccionar",
   unavailableMetric: "Métrica no disponible en esta fuente",
   scoreGraph: "Score",
@@ -2708,6 +2807,16 @@ let languageMode = (() => {
 let lang = languageMode === "auto" ? detectLanguage() : languageMode;
 
 /** Traduit la clé k dans la langue courante (repli en, puis fr, puis la clé) ; remplace les « {nom} » par vars. */
+/** Registre des points liés des graphiques : rang de chaque atterrissage dans la période (row → index), marqueurs
+ *  posés pour chacun sur les cinq graphiques, mesure allumée et mesure figée. */
+const pointLinks = {
+  index: new Map(),
+  els: new Map(),
+  active: null,
+  pinned: null
+};
+let lastTipHtml = "";
+
 function t(k, vars = {}) {
   let x = (TR[lang] && TR[lang][k]) || TR.en[k] || TR.fr[k] || k;
   for (const [a, b] of Object.entries(vars)) x = x.replaceAll("{" + a + "}", b);
@@ -2800,8 +2909,8 @@ function aircraftDbCache() {
 function resolveAircraftInfo(name) {
   const key = normalizeAircraftKey(name),
     db = aircraftDbCache();
-  let rec = db[key] || null;
-  if (!rec && db.__aliases && db.__aliases[key]) rec = db[db.__aliases[key]] || null;
+  // catalogue commun : alias suivis jusqu'au bout
+  let rec = window.AircraftCatalog?.record?.(key) || db[key] || null;
   if (!rec) return {
     tdesig: key || "?",
     name: String(name || ""),
@@ -2813,38 +2922,17 @@ function resolveAircraftInfo(name) {
   return rec;
 }
 
-/** Genre d'appareil d'après le descriptif OACI (ex. « L2J ») : 1re lettre (hélico, autogire, hydravion,
- *  convertible), sinon dernière lettre = motorisation (jet, turboprop, piston, électrique). */
-function aircraftKind(rec) {
-  const d = String(rec?.description || "").toUpperCase();
-  const c = d[0] || "?",
-    engine = d.slice(-1);
-  if (c === "H") return "heli";
-  if (c === "G") return "gyro";
-  if (c === "A" || c === "S") return "water";
-  if (c === "T") return "tilt";
-  if (engine === "J") return "jet";
-  if (engine === "T") return "turboprop";
-  if (engine === "P") return "piston";
-  if (engine === "E") return "electric";
-  return "unknown";
-}
-
-/** Décompose le descriptif OACI : famille (1re lettre), nombre de moteurs, motorisation, catégorie de turbulence
- *  (WTC) et clé normalisée type + modèle + nom. */
+/** Classement de la fiche (AircraftCatalog.classify, règle commune de la suite : famille, moteurs, motorisation,
+ *  catégorie), catégorie de turbulence (WTC) et clé normalisée type + modèle + nom. */
 function aircraftSpec(rec) {
-  const d = String(rec?.description || "").toUpperCase();
-  const family = d[0] || "?";
-  const engines = parseInt(d[1], 10) || 0;
-  const power = d[2] || d.slice(-1) || "?";
-  const key = normalizeAircraftKey([rec?.tdesig || "", rec?.model || "", rec?.name || ""].join(" "));
-  const wtc = String(rec?.wtc || "").toUpperCase();
+  const c = window.AircraftCatalog?.classify?.(rec?.source === "unknown" ? null : rec) || {};
   return {
-    family,
-    engines,
-    power,
-    key,
-    wtc
+    family: c.family || "?",
+    engines: c.engines || 0,
+    power: c.power || "?",
+    category: c.category || "other",
+    key: normalizeAircraftKey([rec?.tdesig || "", rec?.model || "", rec?.name || ""].join(" ")),
+    wtc: String(rec?.wtc || "").toUpperCase()
   };
 }
 
@@ -2858,20 +2946,10 @@ function aircraftTypeColumnTitle() {
   })[lang] || "Type";
 }
 
-/** Position de l'aile (high, low, rotor, water, biplane, unknown) : champ wing_position de la fiche, sinon déduite
- *  du type par listes de codes connus. */
+/** Position de l'aile : fonction commune des silhouettes (fpWing, AircraftDB/aircraft_icons.js) — wing_position de la
+ *  fiche, sinon listes de codes connus. */
 function aircraftWingPosition(rec) {
-  const explicit = String(rec?.wing_position || "").toLowerCase();
-  if (explicit) return explicit;
-  const key = normalizeAircraftKey([rec?.tdesig || "", rec?.model || "", rec?.name || ""].join(" "));
-  if (/EC35|H135|EC45|H145|AS50|H125|AS65|S76|CH47|SA342|ALOUETTE/.test(key)) return "rotor";
-  if (
-    /DHC2|DHC3|DHC5|DHC6|DHC7|DH8|Q400|AT42|AT45|AT46|AT72|AT75|AT76|ATR|L410|D228|DO228|C212|CN35|C295|C208|C206|C182|C172|C152|BN2|ISLANDER|TRISLANDER|F27|F50|SF34|SH33|SH36|A4M|A400|XC47C/
-    .test(key)) return "high";
-  if (/AMPHIB|FLOAT|HYDRA|SEAPLANE/.test(key)) return "water";
-  if (/STEARMAN|TIGERMOTH|BIPLANE/.test(key) || String(rec?.tdesig || "").toUpperCase() === "AN2") return "biplane";
-  if (/PC12|BE58|B350|BE9L|C750|S210|MD88|DC3|P51|EPIC/.test(key)) return "low";
-  return "unknown";
+  return typeof fpWing === "function" ? fpWing(rec) : String(rec?.wing_position || "").toLowerCase() || "unknown";
 }
 
 /** Libellé de type traduit (ex. « Biréacteur M ») : famille et motorisation du descriptif, nombre de moteurs, aile
@@ -2954,7 +3032,8 @@ function aircraftTypeLabel(name) {
   };
   const L = labels[lang] || labels.en;
   let type = L.other;
-  if (s.family === "H") type = L.heli;
+  if (s.category === "helico") type = L.heli;
+  else if (s.family === "B") type = L.other;
   else if (s.family === "A" || s.family === "S") type = L.sea;
   else if (s.power === "T") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.turboH : L.turbo);
   else if (s.power === "P" || s.power === "E") type = n >= 4 ? L.quadP : (n === 2 && wing === "high" ? L.biPH : n === 2 ? L.biP : n === 1 &&
@@ -2963,27 +3042,16 @@ function aircraftTypeLabel(name) {
   return `${type} ${size}`;
 }
 
-/** Rang de taille par catégorie de turbulence : L < M < H < J ; 9 si inconnue. */
+/** Rang de taille par catégorie de turbulence : L < L/M < M < H < J (« L/M », valeur OACI, entre L et M) ; 9 si inconnue. */
 function aircraftSizeRank(name) {
   const w = aircraftSpec(resolveAircraftInfo(name)).wtc;
   return ({
     L: 0,
+    'L/M': 0.5,
     M: 1,
     H: 2,
     J: 3
   })[w] ?? 9;
-}
-
-/** Rang de famille de motorisation : hélico, hydravion, hélice, turboprop, jet ; 9 sinon. */
-function aircraftTypeRank(name) {
-  const rec = resolveAircraftInfo(name),
-    s = aircraftSpec(rec);
-  if (s.family === "H") return 0;
-  if (s.family === "A" || s.family === "S") return 1;
-  if (s.power === "P" || s.power === "E") return 2;
-  if (s.power === "T") return 3;
-  if (s.power === "J") return 4;
-  return 9;
 }
 
 /** Rang de la silhouette (aircraftVisualKey) pour l'ordre du menu des appareils ; 99 si inconnue. */
@@ -3023,47 +3091,18 @@ function compareAircraftForMenu(a, b) {
   });
 }
 
-/** Silhouette d'icône d'un appareil (heli, fighter, seaplane, biplane, twinJet, bizJet…) d'après descriptif OACI,
- *  motorisation, nombre de moteurs, aile et codes de type connus. */
+/** Silhouette d'icône d'un appareil (heli, fighter, seaplane, biplane, twinJet, bizJet…) : fonction commune
+ *  (AircraftDBIcons.visual, AircraftDB/aircraft_icons.js), avec le nom saisi pour un appareil absent de la base. */
 function aircraftVisualKey(rec) {
-  const s = aircraftSpec(rec),
-    k = s.key,
-    wing = aircraftWingPosition(rec);
-  if (s.family === "H") return "heli";
-  if (/DIRIGEABLE|BLIMP|AIRSHIP|ZEPPELIN/.test(k)) return "other";
-  if (/FIGHTER|CHASSEUR|RAFALE|MIRAGE|F16|F18|F35|EUROFIGHTER|TORNADO|MIG|SU[0-9]/.test(k)) return "fighter";
-  if (s.family === "A" || s.family === "S" || /HYDRAVION|SEAPLANE|FLOATPLANE|AMPHIB|XC47C/.test(k)) return "seaplane";
-  if (/BIPLANE|BIPLAN|STEARMAN|TIGERMOTH/.test(k) || String(rec?.tdesig || "").toUpperCase() === "AN2") return "biplane";
-  if (s.power === "P" || s.power === "T" || s.power === "E") {
-    if (/P51|MUSTANG/.test(k)) return "fighter";
-    if (s.engines >= 4) return /A4M|A400/.test(k) ? "quadHigh" : "quadProp";
-    if (s.engines === 2) {
-      if (/DC3|C47|DHC5|BUFFALO/.test(k)) return "twinTail";
-      if (/BN2|ISLANDER|TRISLANDER/.test(k)) return "twinFixed";
-      if (wing === "high" && (({
-          M: 1,
-          H: 1,
-          J: 1
-        })[s.wtc] || /ATR|AT42|AT45|AT46|AT72|AT75|AT76|DH8|Q400|L410|D228|DO228|C212|CN35|C295|DHC6|DHC7|F27|F50|SF34|SH33|SH36/.test(k)))
-        return "twinHigh";
-      return "twinProp";
-    }
-    if (s.engines === 1) return wing === "high" ? "monoHigh" : "monoProp";
-  }
-  if (s.power === "J") {
-    if (s.engines >= 4) return "quadJet";
-    if (/CITATION|LEAR|GULFSTREAM|FALCON|CHALLENGER|PHENOM|HAWKER|GLOBAL|C750|LJ|GLF|FA[0-9]/.test(k) ||
-      /^(C25[ABC]|C50[01]|C510|C52[56]|C55[01]|C560|C56X|C650|C68[A]?|C700|C750|CL30|CL35|CL60|E50P|E55P|EA50|FA[0-9]X?|FA50|FA7X|FA8X|GALX|GLEX|GL[5-7]T|GLF[2-7]|H25[ABC]|HDJT|LJ[0-9]{2}|PRM1|SF50|BE40|PC24|ASTR|WW24)$/
-      .test(String(rec?.tdesig || "").toUpperCase())) return "bizJet";
-    return "twinJet";
-  }
-  return "other";
+  return window.AircraftDBIcons?.visual?.({
+    icao: rec?.tdesig,
+    type: rec?.tdesig,
+    name: rec?.name || rec?.model || ""
+  }) || "other";
 }
 
-/** SVG de la silhouette (AIRCRAFT_ICON_SVGS, aircraft_icons.js) ; silhouette « other », sinon « ✈ ». */
-function aircraftSvgForVisual(visual) {
-  return window.AIRCRAFT_ICON_SVGS?.[visual] || window.AIRCRAFT_ICON_SVGS?.other || "✈";
-}
+// SVG de la silhouette : aircraftSvgForVisual d'AircraftDB/aircraft_icons.js (chargé par la page) — plus de redéfinition
+// ici, qui écrasait la fonction commune utilisée par AircraftDBIcons.icon
 
 /** Icône HTML d'un appareil, colorée par catégorie de turbulence, avec type, modèle et WTC en infobulle. */
 function aircraftIconHTML(name) {
@@ -3129,38 +3168,6 @@ function setAircraftSelection(value, fire = true) {
     bubbles: true
   }));
 }
-const AIRCRAFT_GROUP_LABELS = {
-  "Hélicoptères": {
-    fr: "Hélicoptères",
-    en: "Helicopters",
-    de: "Hubschrauber",
-    es: "Helicópteros"
-  },
-  "Jets": {
-    fr: "Jets",
-    en: "Jets",
-    de: "Jets",
-    es: "Jets"
-  },
-  "Monomoteurs": {
-    fr: "Monomoteurs",
-    en: "Single-engine",
-    de: "Einmotorige",
-    es: "Monomotores"
-  },
-  "Turboprops / bimoteurs": {
-    fr: "Turboprops / bimoteurs",
-    en: "Turboprops / twins",
-    de: "Turboprops / Zweimotorige",
-    es: "Turbohélices / bimotores"
-  },
-  "Autres": {
-    fr: "Autres",
-    en: "Other",
-    de: "Andere",
-    es: "Otros"
-  }
-};
 const AIRCRAFT_PROFILE_WORD = {
   fr: "profil",
   en: "profile",
@@ -3195,7 +3202,7 @@ function profileOnlyAircraft(landingCodes) {
     /** Clés normalisées d'un nom d'appareil : la sienne et celle de son type OACI dans AircraftDB (alias compris). */
     resolveKey = n => {
       const k = normalizeAircraftKey(n),
-        r = db[k] || db[db.__aliases?.[k]];
+        r = window.AircraftCatalog?.record?.(k) || db[k]; // alias suivis (catalogue commun)
       return [k, r?.tdesig ? normalizeAircraftKey(r.tdesig) : k]
     };
   const known = new Set();
@@ -3238,7 +3245,7 @@ function rebuildAircraftSelect() {
   }
   const ordered = [...groups].sort((a, b) => ((a[0] === "Autres") - (b[0] === "Autres")) || a[0].localeCompare(b[0], "fr"));
   menu.innerHTML = `<button class="aircraft-item" type="button" role="menuitemradio" data-value="__ALL__">${aircraftAllIconHTML()}<span class="ac-label">${esc(t("all"))}</span></button>` +
-    ordered.map(([g, items]) => `<div class="aircraft-group">${esc(L(AIRCRAFT_GROUP_LABELS[g]||AIRCRAFT_GROUP_LABELS["Autres"]))}</div>` +
+    ordered.map(([g, items]) => `<div class="aircraft-group">${esc(window.AircraftDBIcons?.groupLabel?.(g) || g)}</div>` +
       items.sort((a, b) => String(a.value).localeCompare(String(b.value), undefined, {
         numeric: true,
         sensitivity: "base"
@@ -5081,6 +5088,7 @@ function render() {
   $("statusText").textContent = `${sourceName} — ${rows.length} ${t("used")}` + (selected === "__ALL__" ? ` — ${t("allAircraft")}` : ` — ${selected}`) + (filter ? ` — ${t("filterOn")}` : ` — ${t("filterOff")}`) + (crash ?
     ` — ${crashText("on")}` : "") + (p95 ? ` — ${p95Text("on")}` : "") + ` — ${t("selectedPeriod")}`;
   updateGeneralTrendIndicator(rows);
+  resetPointLinks(rows);
 
   if (!rows.length) {
     $("cards").innerHTML = "";
@@ -5286,7 +5294,7 @@ function renderLandingTableRich(rows) {
   heads.push(t("dataQuality"));
 
   let body = [...rows].reverse().map(r => {
-    let s = `<tr><td>${esc(r.Timestamp)}</td><td data-sort-value="${esc(r.Aircraft)}">${aircraftCellHTML(r.Aircraft)}</td>` +
+    let s = `<tr${rowAttr(r)}><td>${esc(r.Timestamp)}</td><td data-sort-value="${esc(r.Aircraft)}">${aircraftCellHTML(r.Aircraft)}</td>` +
       `<td>${fmt(r.Score,0)}</td><td>${esc(r.Rating)}</td>` +
       `<td>${fmt(r.TouchdownFPM,0)}</td><td>${fmt(r.PeakG,2)}</td>` +
       `<td>${fmt(r.GroundspeedKts,1)}</td><td>${fmt(r.FloatSeconds,2)}</td>` +
@@ -5465,7 +5473,7 @@ function renderLandingTableLegacy(rows) {
     t("nose"), t("float"), t("flare"), t("touchdownQ"), t("touchdownQrad"), t("dataQuality")
   ];
   let body = [...rows].reverse().map(r => {
-    let s = `<tr>` +
+    let s = `<tr${rowAttr(r)}>` +
       `<td>${esc(r.Timestamp)}</td><td data-sort-value="${esc(r.Aircraft)}">${aircraftCellHTML(r.Aircraft)}</td>` +
       `<td style="text-align:left">${esc(translateSourceRating(r._sourceRating))}</td>` +
       `<td>${fmt(r.LandingRateFPM,2)}</td><td>${fmt(r.LandingG,2)}</td>`;
@@ -6210,29 +6218,33 @@ function installRangeDrag(svg, cfg) {
     const p = toSvg(e),
       region = regionFor(p.y);
     if (!region || p.x < cfg.L || p.x > cfg.W - cfg.R) return;
+    // The selection only starts after a real move (see pointermove): a plain click stays a click on the point.
     drag = {
       startX: clamp(p.x, cfg.L, cfg.W - cfg.R),
-      region
+      region,
+      pointerId: e.pointerId
     };
-    const b = regionBounds(region);
-    preview = svgEl("rect", {
-      x: drag.startX,
-      y: b[0],
-      width: 1,
-      height: b[1] - b[0],
-      class: "drag-preview"
-    });
-    svg.appendChild(preview);
-    try {
-      svg.setPointerCapture(e.pointerId)
-    } catch (_) {}
-    e.preventDefault();
   });
 
   svg.addEventListener("pointermove", e => {
-    if (!drag || !preview) return;
+    if (!drag) return;
     const p = toSvg(e),
       x = clamp(p.x, cfg.L, cfg.W - cfg.R);
+    if (!preview) {
+      if (Math.abs(x - drag.startX) < 5) return;
+      const b = regionBounds(drag.region);
+      preview = svgEl("rect", {
+        x: drag.startX,
+        y: b[0],
+        width: 1,
+        height: b[1] - b[0],
+        class: "drag-preview"
+      });
+      svg.appendChild(preview);
+      try {
+        svg.setPointerCapture(drag.pointerId)
+      } catch (_) {}
+    }
     preview.setAttribute("x", Math.min(drag.startX, x));
     preview.setAttribute("width", Math.max(1, Math.abs(x - drag.startX)));
   });
@@ -6240,6 +6252,10 @@ function installRangeDrag(svg, cfg) {
   /** Fin du glisser : retire l'aperçu et applique la plage si le glissé est assez long. */
   const finish = e => {
     if (!drag) return;
+    if (!preview) {
+      drag = null;
+      return;
+    }
     const p = toSvg(e),
       x = clamp(p.x, cfg.L, cfg.W - cfg.R);
     const dx = Math.abs(x - drag.startX);
@@ -6728,33 +6744,199 @@ function estimateMetaLines(r) {
   }).join("<br>");
 }
 
-/** Infobulle d'un point de graphique qui suit la souris : titre, date, appareil, mesures selon le format et détail
- *  des estimations. */
+/** Registre des points liés : rang de chaque atterrissage dans la période (row → index), marqueurs posés pour chacun
+ *  sur les cinq graphiques, mesure allumée et mesure figée. */
+
+/** Remet le registre à zéro avant un nouveau rendu (les anciens marqueurs disparaissent) et défige l'infobulle. */
+function resetPointLinks(rows) {
+  unpinTooltip();
+  linkPoints(null);
+  pointLinks.index = new Map(rows.map((r, i) => [r, i]));
+  pointLinks.els = new Map();
+  pointLinks.active = null;
+}
+
+/** Attribut data-row d'une ligne du tableau des atterrissages (rang dans la période) ; vide si inconnu. */
+function rowAttr(r) {
+  const i = pointLinks.index.get(r);
+  return i == null ? "" : ` data-row="${i}"`;
+}
+
+/** Inscrit un marqueur de graphique pour son atterrissage ; renvoie le rang, ou null hors période. */
+function registerPoint(el, r) {
+  const i = pointLinks.index.get(r);
+  if (i == null) return null;
+  el.setAttribute("data-row", i);
+  if (!pointLinks.els.has(i)) pointLinks.els.set(i, []);
+  pointLinks.els.get(i).push(el);
+  return i;
+}
+
+/** Allume la mesure i sur tous les graphiques (null : tout éteint) : marqueurs agrandis cerclés de leur couleur, les
+ *  autres estompés. N'écrit que si la mesure allumée change. */
+function linkPoints(i) {
+  if (pointLinks.active === i) return;
+  (pointLinks.els.get(pointLinks.active) || []).forEach(el => el.classList.remove("is-linked"));
+  pointLinks.active = i;
+  const els = i == null ? [] : (pointLinks.els.get(i) || []);
+  els.forEach(el => {
+    el.style.setProperty("--ring", getComputedStyle(el).fill);
+    el.classList.add("is-linked");
+    // Bring the marker to the front of its chart so that the ring is not hidden by its neighbours.
+    if (el.parentNode && el.parentNode.lastChild !== el) el.parentNode.appendChild(el);
+  });
+  const grid = $("chartGrid");
+  if (grid && grid.classList.contains("links-active") !== els.length > 0) grid.classList.toggle("links-active", els.length > 0);
+}
+
+/** Met en évidence la ligne i du tableau des atterrissages (null : aucune) et la centre dans son cadre défilant, sans
+ *  faire défiler la page (le graphique cliqué reste sous les yeux). */
+function markTableRow(i) {
+  const table = $("landingTable");
+  if (!table) return;
+  table.querySelectorAll("tr.row-linked").forEach(tr => tr.classList.remove("row-linked"));
+  if (i == null) return;
+  const tr = table.querySelector(`tr[data-row="${i}"]`);
+  if (!tr || !tr.offsetParent) return;
+  tr.classList.add("row-linked");
+  const box = tr.closest(".table-wrap");
+  if (!box) return;
+  const rb = tr.getBoundingClientRect(),
+    bb = box.getBoundingClientRect();
+  box.scrollTop += rb.top - bb.top - (box.clientHeight - rb.height) / 2;
+}
+
+/** Remplace le contenu de l'infobulle seulement s'il change. */
+function setTipHtml(tip, html) {
+  if (html === lastTipHtml) return;
+  tip.innerHTML = html;
+  lastTipHtml = html;
+}
+
+/** Pose l'infobulle à côté du pointeur et la garde dans la fenêtre : à gauche du curseur si elle déborde à droite,
+ *  au-dessus s'il elle déborde en bas (marge de 8 px), position fixe. */
+function placeTip(tip, x, y) {
+  const M = 8,
+    OFF = 14;
+  const b = tip.getBoundingClientRect(),
+    vw = document.documentElement.clientWidth,
+    vh = document.documentElement.clientHeight;
+  let left = x + OFF,
+    top = y + OFF;
+  if (left + b.width > vw - M) left = x - OFF - b.width;
+  if (top + b.height > vh - M) top = y - OFF - b.height;
+  left = Math.max(M, Math.min(left, vw - M - b.width));
+  top = Math.max(M, Math.min(top, vh - M - b.height));
+  const l = Math.round(left) + "px",
+    tp = Math.round(top) + "px";
+  if (tip.style.left !== l) tip.style.left = l;
+  if (tip.style.top !== tp) tip.style.top = tp;
+}
+
+/** Ligne complète d'une mesure pour l'infobulle figée : date, appareil, aérodrome et piste s'ils existent, FPM, G,
+ *  taux de nez, score et source. */
+function tooltipDetailHTML(r) {
+  const airport = r.Airport || r.AirportICAO || r.ArrivalICAO || r.Arrival || "";
+  const runway = r.Runway || r.RunwayIdent || "";
+  const items = [
+    [t("date"), esc(r.Timestamp)],
+    [t("aircraft"), esc(r.Aircraft)],
+    airport ? [t("tipAirport"), esc(airport)] : null,
+    runway ? [t("tipRunway"), esc(runway)] : null,
+    ["FPM", fmt(metricValue(r, "fpm"), 0)],
+    ["G", fmt(metricValue(r, "g"), 2)],
+    [t("nose"), fmt(metricValue(r, "nose"), 2)],
+    ["Score", fmt(metricValue(r, "score"), 0)],
+    r.Source ? [t("source"), esc(r.Source)] : null
+  ].filter(Boolean);
+  return `<table class="tip-detail">${items.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join("")}</table>`;
+}
+
+/** Fige l'infobulle sur la mesure du point (contenu du survol + ligne complète), garde la mesure allumée sur tous les
+ *  graphiques et dans le tableau ; un second clic sur le même point la défige. */
+function pinTooltip(r, headline, e) {
+  const i = pointLinks.index.get(r);
+  const same = pointLinks.pinned && pointLinks.pinned.row === i;
+  unpinTooltip();
+  if (same) return;
+  pointLinks.pinned = {
+    row: i
+  };
+  const tip = $("tooltip");
+  tip.classList.add("pinned");
+  setTipHtml(tip,
+    `<button type="button" class="tip-close" aria-label="${esc(t("tipClose"))}" title="${esc(t("tipClose"))}">×</button>` +
+    tooltipHTML(r, headline) + tooltipDetailHTML(r));
+  tip.style.display = "block";
+  placeTip(tip, e.clientX, e.clientY);
+  linkPoints(i == null ? null : i);
+  markTableRow(i == null ? null : i);
+}
+
+/** Défige l'infobulle, éteint la mesure liée et la ligne du tableau. */
+function unpinTooltip() {
+  if (!pointLinks.pinned) return;
+  pointLinks.pinned = null;
+  const tip = $("tooltip");
+  tip.classList.remove("pinned");
+  tip.style.display = "none";
+  linkPoints(null);
+  markTableRow(null);
+}
+
+// Pinned tooltip: the cross, a click outside any point or Escape closes it.
+$("tooltip").addEventListener("click", e => {
+  if (e.target.closest(".tip-close")) unpinTooltip();
+});
+document.addEventListener("click", e => {
+  if (!pointLinks.pinned) return;
+  if (e.target.closest("#tooltip") || e.target.closest("#chartGrid .dot[data-row]")) return;
+  unpinTooltip();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && pointLinks.pinned) unpinTooltip();
+});
+
+/** Infobulle d'un point de graphique qui suit la souris (gardée dans la fenêtre) et allume la même mesure sur les
+ *  autres graphiques ; un clic la fige. */
 function attachTooltip(el, r, headline) {
   const tip = $("tooltip");
+  const i = registerPoint(el, r);
   el.addEventListener("mousemove", e => {
-    tip.style.display = "block";
-    tip.style.left = e.clientX + 14 + "px";
-    tip.style.top = e.clientY + 14 + "px";
-    let extra = "";
-    if (formatMode === "rich") {
-      extra = `Score ${fmt(r.Score,0)} · ${esc(r.Rating)} · ${esc(r.Flare||"")}`;
-      if (r.Source) extra += `<br>${esc(t("source"))}: ${esc(r.Source)}`;
-      if (r.EstimatedFields) extra += `<br>${esc(t("estimatedFields"))}: ${esc(r.EstimatedFields)}`;
-    } else {
-      extra = `${esc(translateSourceRating(r._sourceRating))} · ${fmt(r.LandingRateFPM,0)} FPM · ${fmt(r.LandingG,2)} G · ${esc(translateFlare(r.Flare))}`;
-      if (estimateEnabled() && Number.isFinite(r.Score)) {
-        extra += `<br>${esc(t("estimatedScore"))}: ${fmt(r.Score,0)} · ${esc(r.Rating||"")}`;
-      }
-      if (estimateEnabled() && Number.isFinite(r.PeakG)) {
-        extra += `<br>${esc(t("estimatedPeakG"))}: ${fmt(r.PeakG,2)} G`;
-      }
-    }
-    const meta = estimateMetaLines(r);
-    if (meta) extra += `<br>${meta}`;
-    tip.innerHTML = `<strong>${esc(headline)}</strong><br>${esc(r.Timestamp)} · ${esc(r.Aircraft)}<br>${extra}`;
+    if (pointLinks.pinned) return;
+    setTipHtml(tip, tooltipHTML(r, headline) + `<div class="tip-hint">${esc(t("tipPinHint"))}</div>`);
+    if (tip.style.display !== "block") tip.style.display = "block";
+    placeTip(tip, e.clientX, e.clientY);
+    linkPoints(i);
   });
-  el.addEventListener("mouseleave", () => tip.style.display = "none");
+  el.addEventListener("mouseleave", () => {
+    if (pointLinks.pinned) return;
+    tip.style.display = "none";
+    linkPoints(null);
+  });
+  el.addEventListener("click", e => pinTooltip(r, headline, e));
+}
+
+/** Contenu HTML d'infobulle d'un atterrissage : titre, date, appareil, mesures selon le format et détail des
+ *  estimations. */
+function tooltipHTML(r, headline) {
+  let extra = "";
+  if (formatMode === "rich") {
+    extra = `Score ${fmt(r.Score,0)} · ${esc(r.Rating)} · ${esc(r.Flare||"")}`;
+    if (r.Source) extra += `<br>${esc(t("source"))}: ${esc(r.Source)}`;
+    if (r.EstimatedFields) extra += `<br>${esc(t("estimatedFields"))}: ${esc(r.EstimatedFields)}`;
+  } else {
+    extra = `${esc(translateSourceRating(r._sourceRating))} · ${fmt(r.LandingRateFPM,0)} FPM · ${fmt(r.LandingG,2)} G · ${esc(translateFlare(r.Flare))}`;
+    if (estimateEnabled() && Number.isFinite(r.Score)) {
+      extra += `<br>${esc(t("estimatedScore"))}: ${fmt(r.Score,0)} · ${esc(r.Rating||"")}`;
+    }
+    if (estimateEnabled() && Number.isFinite(r.PeakG)) {
+      extra += `<br>${esc(t("estimatedPeakG"))}: ${fmt(r.PeakG,2)} G`;
+    }
+  }
+  const meta = estimateMetaLines(r);
+  if (meta) extra += `<br>${meta}`;
+  return `<strong>${esc(headline)}</strong><br>${esc(r.Timestamp)} · ${esc(r.Aircraft)}<br>${extra}`;
 }
 
 /* ---------- util ---------- */

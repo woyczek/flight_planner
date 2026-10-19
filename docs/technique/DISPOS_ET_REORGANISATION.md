@@ -57,7 +57,37 @@ The categories and themes are configurable (Settings › Centre); a category tha
 
 ### 1.3 Format of an availability entry
 
-Your structure, with a few clarifications:
+**Schema 3 (written since 17 October 2026).** A week is written in the native format of the availability timeline
+module (`shared/dispos_timeline.js`, [specification](DISPOS_TIMELINE_SPEC.md)), with the suite's fields around it:
+
+```json
+{
+  "schema": 3, "va": "SOG", "pilot": "RBR", "week": "2026-W41", "tz": "UTC", "updated_at": "…", "by": "RBR",
+  "ranges": [
+    { "start": "2026-10-06T00:00", "end": "2026-10-06T19:00", "cat": "indispo" },
+    { "start": "2026-10-06T19:00", "end": "2026-10-06T22:00", "cat": "secu_perso" },
+    { "start": "2026-10-06T22:00", "end": "2026-10-07T00:00", "cat": "indispo" }
+  ],
+  "background": [{ "start": "2026-10-06T00:00", "end": "2026-10-07T00:00", "cat": "indispo" }],
+  "appareils": { "possedes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
+}
+```
+
+- `ranges` is the declaration, the truth: to the minute, UTC, end excluded, **one state per minute** (no overlap).
+  `background` is the unavailability laid under the availabilities, an editing convenience that readers ignore.
+- `cat` is the category identifier of the configuration, as `categorie` was in schema 2. The `indispo` group goes to
+  the background layer; the other groups are in the foreground.
+- **Reading.** Every reader accepts schema 2 and schema 3. `SuiteDispos.readPilot` reads both through
+  `shared/dispos_formats.js` into the same model, and gives each week normalised. The normalised week holds `ranges`,
+  `background`, and the per-day view `dispos` (ranges cut by day, to the minute, `null` for a whole day). The ODV and
+  the assignments read that view. Coverage is computed to the minute, piece by piece between the instants where the
+  declaration changes (`SuiteDispos.cutsBetween`), no longer in quarter-hour steps.
+- **Writing.** `SuiteDispos.saveWeek` always writes schema 3. There is no bulk migration: a week moves to schema 3 the
+  first time it is written. Old schema 2 weeks stay readable.
+- In a schema 2 week, two availability categories over the same time ("rescue AND combat") were possible. Read as
+  schema 3, the later one wins. To be available for both, declare "Available for everything" or a custom category.
+
+**Schema 2 (read, no longer written).** Your structure, with a few clarifications:
 
 ```json
 {
@@ -69,14 +99,24 @@ Your structure, with a few clarifications:
       { "debut": null, "fin": null, "categorie": "conges" }
     ]
   },
-  "appareils": { "possedes": [], "maitrises": [] }, "simulateurs": []
+  "appareils": { "possedes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
 }
 ```
 
-- Times in **UTC** (as today), to the quarter hour; `null` = whole day.
+- Times in **UTC** (as today), to the quarter hour; `null` = whole day (schema 3: to the minute).
 - `categorie`: stable identifier of a category of the configuration; the themes actually opened are calculated on
   reading (category + the pilot's preferences at that moment).
-- **Several ranges can overlap** (available for rescue AND combat on the same evening).
+- **Several ranges can overlap** (available for rescue AND combat on the same evening); schema 3 keeps one state per
+  minute (see above).
+- `appareils.possedes` / `maitrises`: ICAO designators only. `appareils.variantes` (optional): the variants the pilot
+  flies, per designator (`{ "CL2T": ["CL-415"] }`) — several models share one ICAO designator (Doc 8643: CL-215T and
+  CL-415 are both CL2T). Proposed from the designator's ICAO models, the fleet's variants, or free text (*My profile ›
+  Aircraft*). Qualification stays per designator: a pilot who declared a CL-415 can be assigned a CL-215T of the fleet
+  (same type for the simulation, never a block). When several aircraft or pilots are candidates, the matching variant
+  comes first (fleet `variant` = declared variant); otherwise the assignment card shows "different variant: CL-415
+  declared, CL-215T in the fleet", and the mission order keeps it (`aircraft.declared_variant` in `affectations.yaml`,
+  shown in *My missions*). The name shown follows the declared variant when there is one, otherwise the record's common
+  name.
 - One file per pilot and per week: `data/disponibilites/RBR/2026-W41.json` (few git conflicts, natural archiving by
   year). The current files (`RBR.json`, grid of codes) are converted by a tool (consecutive hours
   of the same code → one range).
@@ -153,6 +193,6 @@ titled separators (“Centre”).
 | Users, develop / production mode, sign-in, impersonation | `shared/users.js`, `data/utilisateurs/`, `data/config/suite.json` |
 | Pool files written under lock (data folder, otherwise the browser's outbox `suiteDataOutbox:v1`) | `MissionAssignments.readData` / `writeData` / `flushData` (`shared/assignments.js`) |
 | Categories, themes opened, declarations per week | `shared/dispos.js`, `data/config/disponibilites.json`, `data/disponibilites/<TRI>/<AAAA>-W<nn>.json` |
-| Entry by ranges (My missions and standalone page); old grid read-only | `shared/dispos_editor.js`, `apps/pilot/disponibilites.html` |
+| Entry on a continuous time axis (My missions and standalone page), the availability timeline module; old grid read-only | `shared/dispos_week.js`, `shared/dispos_timeline.js`, `apps/pilot/disponibilites.html` |
 | ODV: grouped declarations, likely missions and flight checks by theme, preferences created on workbook import | `apps/cpco/odv_core.js`, `odv_assign.js`, `odv_planning.js` |
 | Grid conversion | `python tools/convert_dispos.py` (preview), `--write` |

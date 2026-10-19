@@ -198,9 +198,9 @@ Detalles: [Manual de explotación](../MANUEL_EXPLOITATION.md), § 10.
 
 Esta página reúne los ajustes que se hacen una sola vez: carpetas locales, fuentes externas, aerolínea virtual, datos aeronáuticos y tipos de aeronave.
 Para abrirla: barra lateral › «Ajustes» y después la pestaña «Instalación». Esta pestaña aparece a partir del nivel de uso Planificación (2); una dirección directa a uno de sus apartados la abre en cualquier nivel.
-El menú lateral tiene un solo grupo, «Carpetas y fuentes»: «Fuentes y carpetas» (abierto de entrada), «Datos aeronáuticos» y «Tipos de aeronave».
+El menú lateral tiene un solo grupo, «Carpetas y fuentes»: «Fuentes y carpetas» (abierto de entrada), «Claves y servicios externos», «Datos aeronáuticos» y «Tipos de aeronave».
 El primer arranque tiene su propia pestaña, «Primer arranque», descrita en el [manual de usuario](MANUEL_UTILISATEUR.md#primer-arranque); «Limpiar y empezar de nuevo…» está al pie de esa página. Véase también [Instalación](../INSTALL.md), § 1.
-Estos apartados se asignan a la página mediante `config/repository_tree` (clave `settings.sections`: `sources` → installation; `sia` y `types` → installation,maintenance, es decir, en las dos páginas: la puesta en marcha aquí, la actualización en Mantenimiento, mismos bloques). Todos los demás apartados de mantenimiento se abren en la página Mantenimiento.
+Estos apartados se asignan a la página mediante `config/repository_tree` (clave `settings.sections`: `sources` y `keys` → installation; `sia` y `types` → installation,maintenance, es decir, en las dos páginas: la puesta en marcha aquí, la actualización en Mantenimiento, mismos bloques). Todos los demás apartados de mantenimiento se abren en la página Mantenimiento.
 
 ### Fuentes y carpetas
 
@@ -218,9 +218,30 @@ Este apartado es el único lugar donde se ajustan las carpetas locales y las dir
 | X-Plane (segunda línea: «Registros de aterrizaje: otra carpeta…»), Carpeta de rendimiento, Carpeta de copia local | carpeta de instalación de X-Plane (datos de navegación `earth_*.dat`, Custom Data; registros CSV de aterrizaje, salvo otra carpeta elegida), perfiles `.lnmperf` / `.json` (releídos por Combustible, bloque «Perfiles de rendimiento», en cuanto cambia la carpeta), `defa_local_store.yaml`; opcionales, indicados «opcional, no elegida» (información) mientras no se elijan |
 
 - **Fuentes externas**: la dirección por defecto aparece en gris. Un valor introducido solo vale para este navegador; «↺» vuelve al valor por defecto y «Abrir ↗» abre la dirección.
-- **Claves de API (servicios externos)**: claves de la suite, comunes a todos sus usuarios (IVAO: clave de API para las activaciones de zonas y las sesiones ATC — entrenamientos, exámenes, reservas — de la planificación ODV y del Tablero). «Guardar» las confía al lanzador (`secrets/` en la raíz de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado y los 4 últimos caracteres; «Borrar» la retira.
+- **Claves de API (servicios externos)**: remite al apartado «Claves y servicios externos», único lugar de las claves de la suite.
 - **Aerolínea virtual**: «Nombre», «Nombre completo», «Sigla», «Centro (sigla)», «Centro (nombre completo)» y las páginas del sitio («Página de inicio», «Registro de vuelos», «Flota», «Ficha de un avión»). Un campo vacío mantiene el valor por defecto. «Volver a SO Group Virtual» borra todos estos ajustes.
 - **Primer arranque**: «Reabrir el primer inicio». Para empezar desde cero, «Limpiar y empezar de nuevo…» está al pie de la página del primer arranque (apartado «Empezar de nuevo»).
+
+### Claves y servicios externos
+
+Un solo lugar para las claves de la suite, comunes a todos sus usuarios: una tarjeta por servicio. En otros sitios
+(primer arranque, informes, Tablero, planificación ODV), la suite solo muestra el estado de la clave y remite aquí.
+- **IVAO**: clave de API de la suite (developers.ivao.aero). La guarda el lanzador (`secrets/ivao.json` en la raíz
+  de la aplicación, excluido de git, fuera de los datos y de las copias); la página solo ve su estado: «guardada el …
+  UTC (…abcd)», «ausente» o «variable de entorno IVAO_API_KEY» (prioritaria, no modificable aquí). «Guardar»
+  sustituye la clave y la prueba; «Probar» hace una llamada de control («OK: clave aceptada por IVAO, N sesiones del
+  tracker leídas en la última hora», o «clave rechazada»); «Retirar» la borra tras confirmación. «Sirve para»:
+  Informe › Rellenar desde mi último vuelo, Tablero (activaciones y sesiones ATC IVAO), planificación ODV (sesiones
+  ATC IVAO).
+- **VATSIM**, **SimBrief**: sin clave (API públicas); la tarjeta indica qué los usa y remite a Mi perfil para el CID
+  y el identificador SimBrief.
+- **Sitio de la aerolínea**: sin clave ni contraseña (el lanzador lee las páginas públicas); dirección en Fuentes y
+  carpetas, identificador en Mi perfil.
+- **Servicio web de envío de informes**: su clave queda en este navegador, ajustada en Ajustes › Centro › Envío de
+  informes (enlace); la tarjeta indica si está guardada.
+
+Una clave ausente o rechazada por IVAO (401 / 403) se señala donde se usa («Clave IVAO rechazada por IVAO:
+sustituirla en Ajustes › Instalación › Claves y servicios externos») con el enlace «Abrir las claves ↗».
 
 ## Ajustes › Mantenimiento
 <!-- page: apps/settings/maintenance.html -->
@@ -296,6 +317,8 @@ Estados de la tabla:
 - La rejilla calculada (`data/sia/mora.csv`) tiene prioridad. «Recálculo simple» toma los obstáculos del nuevo ciclo (sin red); «Cálculo completo» rehace relieve y cumbres (red, un minuto aproximadamente) para los teatros y las misiones; «Calcular la MORA de la zona» (panel) lo hace sobre la extensión de una zona, conservando las demás celdas.
 - Si cambian celdas: «Escribir mora.csv (antiguo archivado)», y luego hacer commit del repositorio de datos.
 - En otros lugares, la rejilla MORA de X-Plane completa, si la fuente X-Plane está marcada.
+
+Método de la rejilla calculada: para cada casilla de 1° × 1°, el punto más alto entre el relieve (teselas de altitud AWS Terrarium), las cimas de OpenStreetMap y los obstáculos del AIXM del SIA, más 1000 ft (2000 ft por encima de 5000 ft), redondeado a la centena superior; sin las cimas OSM, el relieve se aumenta en 100 m. Teatros cubiertos: metrópoli, Córcega y ultramar, más las extensiones de las misiones del registro situadas en otros lugares (solo relieve y cimas). En los mapas, el valor se escribe en el centro de la casilla en notación OACI (3⁵ = 3500 ft); al alejar el zoom, las casillas se agrupan de 2 × 2 y luego de 4 × 4 (valor más alto). El mapa ENR 6.1 del SIA no sirve de fuente (zonas irregulares).
 
 **Coherencia**: «Comprobar» verifica espacios, aeronaves, flota, rendimientos y aeródromos de las misiones.
 Los XML AIRAC (unos 80 MB por ciclo) quedan fuera del repositorio, como los archivos de las demás fuentes. Los valores MORA son calculados, no certificados.

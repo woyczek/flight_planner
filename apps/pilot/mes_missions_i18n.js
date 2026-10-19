@@ -27,6 +27,7 @@ RepositoryContentI18n([
   ],
   ['Chargement…', 'Loading…', 'Wird geladen…', 'Cargando…'],
   ['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen…', 'Cargando la misión…'],
+  ['Mes vols ↗', 'My flights ↗', 'Meine Flüge ↗', 'Mis vuelos ↗'],
   ['afficher aussi les missions passées', 'also show past missions', 'auch vergangene Missionen anzeigen',
     'mostrar también las misiones pasadas'
   ],
@@ -37,11 +38,6 @@ RepositoryContentI18n([
     'Misión asignada, solo lectura: lo que se le pide, la ruta, los mapas facilitados.'
   ],
   ['Mes disponibilités', 'My availability', 'Meine Verfügbarkeit', 'Mi disponibilidad'],
-  ['Semaine affichée, heures UTC, codes de l’ODV : choisir un code, puis cliquer ou tracer un rectangle sur les cases ; un second clic sur une case de ce code l’efface. Le Centre s’en sert pour affecter les missions.',
-    'Week shown, UTC hours, ODV codes: pick a code, then click or draw a rectangle over the cells; a second click on a cell with that code clears it. The Centre uses it to assign missions.',
-    'Angezeigte Woche, UTC-Stunden, ODV-Codes: Code wählen, dann Zellen anklicken oder ein Rechteck ziehen; ein zweiter Klick auf eine Zelle dieses Codes löscht sie. Das Zentrum nutzt dies für die Zuweisung.',
-    'Semana mostrada, horas UTC, códigos de la ODV: elija un código y haga clic o trace un rectángulo sobre las casillas; un segundo clic en una casilla de ese código la borra. El Centro lo usa para asignar misiones.'
-  ],
   ['Enregistrer dans le dossier des données', 'Save to the data folder', 'Im Datenordner speichern', 'Guardar en la carpeta de datos'],
   ['Recopier les disponibilités de la semaine précédente', 'Copy the previous week’s availability',
     'Verfügbarkeit der Vorwoche übernehmen', 'Copiar la disponibilidad de la semana anterior'
@@ -245,17 +241,7 @@ RepositoryContentI18n([
   ["Semaine en cours", "Current week", "Aktuelle Woche", "Semana actual"],
   ['oui', 'yes', 'ja', 'sí'],
   ['non', 'no', 'nein', 'no'],
-  // disponibilités par plages (shared/dispos_editor.js), page seule apps/pilot/disponibilites.html
-  ['Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.',
-    'Shown week, UTC hours: pick a category in the palette, then click a cell or draw a rectangle; a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.',
-    'Angezeigte Woche, UTC-Stunden: eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen; ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
-    'Semana mostrada, horas UTC: elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo; un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'
-  ],
-  ['Choisir une catégorie dans la palette, puis cliquer sur une case ou tracer un rectangle (heures UTC) ; un second clic efface ; « Plage précise » pour des minutes. Le Centre s’en sert pour affecter les missions.',
-    'Pick a category in the palette, then click a cell or draw a rectangle (UTC hours); a second click clears; “Precise range” for minutes. The Centre uses it to assign missions.',
-    'Eine Kategorie in der Palette wählen, dann eine Zelle anklicken oder ein Rechteck ziehen (UTC-Stunden); ein zweiter Klick löscht; „Genauer Zeitraum“ für Minuten. Das Zentrum nutzt sie zur Zuweisung der Missionen.',
-    'Elegir una categoría en la paleta y luego hacer clic en una celda o trazar un rectángulo (horas UTC); un segundo clic borra; «Intervalo preciso» para minutos. El Centro lo usa para asignar las misiones.'
-  ],
+  // disponibilités (shared/dispos_week.js : textes du bloc traduits à la source), page seule apps/pilot/disponibilites.html
   ['Ancienne grille horaire (lecture seule)', 'Former hourly grid (read only)', 'Frühere Stundenrasterung (nur lesen)',
     'Antigua cuadrícula horaria (solo lectura)'
   ],

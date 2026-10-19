@@ -89,7 +89,7 @@ html[data-design="field"] {
 <body>
 <!-- Planning ODV : lit le classeur hebdomadaire ODV de l'escadrille (.xlsx) dans le navigateur (rien n'est envoyé), puis
      montre la grille de disponibilité, les créneaux communs, les missions probables (règles expliquées) et les vols de la
-     frise horaire ; exports locaux. Lecture et règles : odv_core.js ; interface : odv_planning.js ; doc : docs/ODV_PLANNING.md. -->
+     frise horaire ; exports locaux. Lecture et règles : odv_core.js ; interface : odv_planning.js ; doc : docs/MANUEL_PLANIFICATEUR.md (Planning ODV), lecture du classeur : docs/technique/ODV_ORDRES.md § 8. -->
 <header><h1><span class="cpco-eyebrow">Centre de planification et de conduite des opérations</span>Planning ODV</h1></header>
 <main class="odv-page">
 <section data-block-id="import" data-default-hidden="1" data-icon="upload" data-subtitle="Classeur hebdomadaire de l'escadrille (.xlsx), lu dans ce navigateur."><h2>Classeur ODV</h2>
@@ -130,8 +130,8 @@ html[data-design="field"] {
 <script src="../../shared/data_files.js?v=0" data-file="references/defa_reference.js"></script>
 <script src="../../shared/mission_table.js?v=0"></script>
 <script src="../../shared/sia_base.js?v=0"></script><script src="odv_core.js?v=0"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=0"></script><script src="../../shared/assign_dialog.js?v=0"></script><script src="odv_assign.js?v=0"></script>
-<script src="../../shared/dispos_editor.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/vendor/js-yaml.min.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/assignments.js?v=0"></script><script src="../../shared/assign_dialog.js?v=0"></script><script src="odv_assign.js?v=0"></script>
+<script src="../../shared/dispos_week.js?v=0"></script>
 <script src="odv_settings.js?v=0"></script>
 <script src="../../shared/atc_sessions.js?v=0"></script>
 <script src="../../shared/odv_airspace.js?v=0"></script>

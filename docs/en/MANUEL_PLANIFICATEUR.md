@@ -66,7 +66,7 @@ The “Import another mission: files, pasted text, ChatGPT order” pane is open
 - “Order a mission from ChatGPT”: same form as the flight orders (type, subtype, theatre, series, teams, aircraft…). “Order: copy prompt and open ChatGPT” copies the prompt, opens ChatGPT in a new tab and records the order in the registry (“ordered”). At the Design level, this section only appears when the “Order from ChatGPT…” button opens it; at the Expert level, it is also shown, collapsed, in the pane. **“Create the skeleton here”** (generator only, next to the order button) does the same without ChatGPT: with the same settings, it creates the complete mission(s) without any narrative — one per flying team (aircraft and callsign chosen, or taken from the fleet: aircraft of the prompt categories suited to the family; refuelling: one tanker then receivers; nothing suitable: aircraft to complete), departure and arrival airfield at the aircraft’s base, target, turning points, one rendezvous per team if “Rendezvous” is “with”, working area, planned refuelling with an AAR track (ARIP, ARCP) if “yes”, timing from the duration, expected maps with their description, empty main objective, risks, introduction and timeline; with “Coordinated exercise: yes”, the …Z organisation mission (H hour, participants, events H, H+15 min…). The missions open as a batch; the line “Skeleton: n point(s) to place, m text(s) to write — then the studio for the maps” counts what remains, each empty field is outlined until it is filled, and “Open in the studio” goes to the map studio to place the points and generate the maps. The default theatre is that of the base of the first team’s aircraft (LFQP: métropole); the callsign comes from the fleet, otherwise from the callsign table for that type (RAFFUT01, RAFFUT02…), and each team’s name follows it.
 
 A received mission is recorded in the registry and filed in its folder if the missions folder is authorised; otherwise, click “File in the missions folder…”. Link “Open the registry ↗”.
-The received text is kept in `recu/`; received again, a mission replaces the previous one only if its data change: the old one goes to `versions/`, and the studio settings of maps with the same name are kept. Pasting accepts ChatGPT's whole answer (several missions: a batch); the side files of a series (VALIDATION.txt, manifest) are set aside and reported.
+The received text is kept in `recu/`; received again, a mission replaces the previous one only if its data change: the old one goes to `versions/`, and the studio settings of maps with the same name are kept. Pasting accepts ChatGPT's whole answer (several missions: a batch); the side files of a series (VALIDATION.txt, manifest) are set aside and reported. A mission whose operation announces other missions already shows ◀ ▶ (missing missions “to load”): pasted or opened afterwards, they join the operation. The batch is shared by the generator and the studio; each mission keeps its changes when you switch from one to another.
 
 ### Step by step
 
@@ -89,6 +89,8 @@ In the Mission block, “Order from ChatGPT…” unfolds this form (same form a
 1. Set “Type”, “Subtype”, “Theatre” (“Country” for abroad), “Flying teams”, “Ground teams” and “Duration” (XS to XL).
 2. If needed, unfold “More options”: “Second theatre” (“Country” for abroad), “Series” (empty = the next one), “Identifier” (computed, read-only), “Rendezvous”, “Translations”, “Air refuelling”, “Coordinated exercise” (yes: …Z organisation mission; no: never; free: as the scenario needs) and the aircraft of each flying team A, B… (empty = automatic). This section is open at the Expert level; at the other levels, it opens by itself when one of its settings differs from the default.
 3. Click “Order: copy prompt and open ChatGPT”, paste into ChatGPT (Ctrl+V) then send.
+
+“Translations” (“en” by default; “en, de, es”; empty = French only): ChatGPT adds the translated brief to the YAML (`i18n` block), which “My missions” shows in the pilot's language; an untranslated field stays in French.
 
 The mission appears in the registry with the status “ordered”. Then paste the ChatGPT reply into the “ChatGPT reply” panel of its card in the registry (or load it here), or save the files to the missions folder and click “Re-read folder”: the order is matched with the generated mission (same series). The settings are stored.
 
@@ -140,6 +142,12 @@ Flight estimate based on the probable route and the aircraft; recomputed on ever
 - A table compares the estimate with the reports already filed for the mission (actual flight, difference).
 - “Show the probable route” box: sketch and table of the legs.
 
+Calculation rules:
+- Probable route: departure, points in the mission order (otherwise the studio route; failing that, turning points in order and each work point — target, rendezvous, zone — where it lengthens the route the least), then the destination, otherwise the departure airfield.
+- Speed and climb rate: those of the mission, otherwise the fuel planner profile of the same type, otherwise the EUROCONTROL sheet, otherwise a typical value (helicopter, turboprop, jet); a leg too short to reach the level is flown lower.
+- Time on station: that of the points, otherwise a typical value by family and role (landing, winching, search, racetrack…). Block = flight + 15 min (5 min for a helicopter).
+- Automatic transit: aeroplane under IFR (cruise from 6500 ft) along the airways open at its level, direct entry and exit at 60 NM at most, direct if the detour exceeds 40 %; low-level aeroplane (combat, tactical transport: up to 1500 ft) through the connected RTBA zones (150 NM, 80 %); helicopter and VFR direct. Only transits longer than 40 NM are routed. These are the default values of the “Route calculation settings”. The block says why a transit stays direct (outside the data coverage, short leg, no path, excessive detour).
+
 Limit: without an SIA base in the browser, routes stay direct; a warning asks you to re-read the SIA folder.
 
 ### Airspaces to activate
@@ -154,6 +162,8 @@ Limit: indicative calculation, which replaces neither the AZBA charts nor the NO
 ### Exercise
 
 Block shown for an exercise mission.
+
+An operation becomes an exercise when not everything is known to everyone at take-off (tracks to discover, in-flight messages, envelopes, changing situation). The organisation sees everything; each crew only receives the events addressed to it (or to all) and only knows the tracks they reveal; a played exercise target receives its route, its departure time, its instructions and its map. Times relative to H (H, T or M: the same instant; “H+1h30mn”, “H-20mn”; without a unit, minutes); an event triggered by a point falls at the participant's take-off + estimated time to the point + delay. A played exercise target has its own mission in the operation (exercise target role): registry, assignment and My missions like a crew.
 
 On the organisation mission (…Z), full editor:
 - “H-hour and participants”: “H-hour (label or real time)”, then one row per participant (“Callsign”, “Mission”, “Take-off (H-20mn, H+1h)”, “Role”); “+ Participant”, “Take the operation’s missions”.
@@ -200,6 +210,7 @@ To load the images, use the studio ZIP in the Mission block. A mission opened fr
 | “Whole operation” (batch of several missions) | “All exercise documents (one PDF per recipient)”, “Export all PDFs”, “Operation file (one PDF)” |
 | “Data” | “Export YAML”, “Export Markdown” |
 
+“Operation file (one PDF)”: cover page (operation, missions and teams, common rendezvous, operation map if the studio ZIP is loaded), then the brief of each mission in turn.
 The crew brief contains its sealed envelopes and the maps; the status line lists the maps not attached. Load the maps before exporting.
 Each sealed envelope takes a page after the maps, followed by its exercise map; the map of a radio message has its own page “to hand over when the message is received”.
 
@@ -230,6 +241,8 @@ Flight plan, control map and vertical section are linked: hover a point in one, 
 
 Control map: “Map” and “Profile” lists, “ZIP” box, “Refresh”, “Keep this framing” (the generated map will use the displayed frame), “Recentre”, “Automatic framing”, “⧉ Window” (the same interactive map in a separate window, without the rest of the studio: pan, zoom with the wheel or a pinch, drag the points as here; bar “◀ list ▶”, “Recentre”, “Refresh”, “Open in the studio”, “Close”; keys ← → + − 0 Esc; it follows the studio settings), “⤢ Enlarge” (Esc to go back). On the map: drag a point, click the route to insert, right-click to delete.
 “Profile settings: section, aircraft, climb rate, outputs”: floor and ceiling of the section, aircraft, climb and descent, `profil_vertical.png` image in the outputs, default trace of the route.
+“Draw” draws the section under the map (click: enlarge): terrain along the route (± 1 km), obstacles within 1 NM and airspaces crossed according to the `profil_vertical.png` profile (ASFC floors following the terrain), points with cumulative distances, planned trajectory in purple with TOC and TOD. The climb follows the chosen aircraft (fuel planner profiles), otherwise the rates entered; without a level or altitude (VFR), no trajectory. Ceiling 0 = automatic (terrain, obstacles, planned altitudes and floors of the airspaces crossed, up to FL 195).
+Route, level, floor, ceiling and output are written into the mission (`vertical_profile`): the generator sees them. `profil_vertical.png` is a map of the list; it goes into the ZIP and at the end of the PDF brief.
 
 ### Points to place
 
@@ -253,6 +266,22 @@ The search also suggests towns (GeoNames names, after airfields, beacons and poi
 Adding: name, type (“general”, “target”, “detail”, “zone”) then “+ Map” (extent = displayed view); “+ Exercise maps” adds the maps of the organisation, of the played exercise targets or of the crew.
 “Settings of profile …” (collapsed): “Profile name”, “Base map”, “Save”, “New”, “Duplicate”, “Delete”, then four tabs: “Base map”, “Airspaces”, “ICAO symbols”, “Elements”. The profile edited is always that of the chosen map; profiles are common to all missions and kept in this browser. The suggestion lists of the input fields (zones, aerodromes, waypoints: up to 13,000 entries from the SIA database) are filled only when you click in the field concerned, not when the page opens.
 
+**Proposed profile** for a map that has none: “VFR detailed” for the target, detail and rendezvous maps, “VFR simplified” for the approach, “IFR simplified” for the main map and the overviews (general, zone…). `profil_vertical.png` takes “Vertical profile”, created automatically (all airspace families, no other element); its extent follows the route.
+
+**Extent** of a map: the kept framing (“Keep this framing”), otherwise the centre and the radius or the width × height given by the mission (polygon of the zone for a zone map), otherwise the automatic framing, in the output format (16/10): overview, all the points and zones with a 12 % margin; zone map, the zone with 20 %; detail, 8 × 5 km; target, 100 × 62 km; other map, 220 × 140 km.
+
+Tabs of the profile settings:
+- “Base map”: standard OSM, OpenTopoMap (terrain and contours), OSM Shortbread, OpenFreeMap Liberty / Bright / Positron, VersaTiles Colorful / Graybeard / Shadow / Eclipse; OSM layers (ground, hydrography, roads / rail, buildings, borders, hillshading, contour lines, peaks). “Cities and urban areas”: towns as ICAO symbols above a population threshold (≥ 100,000 inhabitants orange patch, ≥ 20,000 yellow circled in orange, locality yellow dot), labels above their own threshold (most populated first), built-up areas (none, outline, fill, both) around sufficiently populated towns; the SIA files give no urban area outline.
+- “Airspaces”: R / D / P families, controlled (CTR, TMA, CTA, SIV), others (TRA, RMZ, TMZ, PJE); “ICAO chart symbology” (classes A red, B / C / D blue, E light blue; R / D hatched, P cross-hatched, RTBA; red cross for a zone too small; name / ceiling / floor boxes); band shown (floor, ceiling in ft); opacity, labels, “Short names” (also on the section), altitudes. “Zone selection”: whitelist (only these zones; empty = all the zones of the ticked families) or blacklist (all but these); spaces, hyphens and accents ignored (“LF-R 45 A” = “R 45 A”); “R 166” offers the group of its sub-zones, a fragment keeps all the zones containing it; “Paste a list…”, “Remove all”; “Aliases” shared by all profiles (“@RTBA” proposed from the SIA database, editable). The list says which zones to draw, not their activation.
+- “ICAO symbols”: aerodromes (runway length and surface, heliport; open to public air traffic in blue, restricted in light blue, State in red; filters by category and “Control”), radio navigation (VOR, TACAN, DME, NDB, ILS; VOR compass rose in detailed view), low and high airways, NAT tracks of the day, VFR reporting points and RNAV points, prohibited overflight (red ⊗), parks and reserves (green), obstacles (≥ 300, 500 or 1000 ft AGL). Aerodromes and beacons have their own whitelist or blacklist (“LFOJ”, “LFR*”, name). Two overlapping beacons: the most important one stays (TACAN, then VOR, DME, NDB, ILS).
+- “Elements”: turning points (size, colours), meridians and parallels, MORA grid (values, opacity, minimum spacing), town labels, refuelling track, “Mission and search areas” (search in magenta, mission in purple, exclusion in red, name to the north).
+
+Refuelling track: “Automatic” keeps the ENR 5.7 track whose points (ARIP, ARCP, S1, S2) are less than 2 km from a mission point, or whose name appears in the mission (the reason is shown); other tracks are ticked in the list; nothing ticked, no track. Return leg offset by 14 NM on the published side; unpublished side: dotted.
+
+Labels do not overlap: mission points and towns first, then ICAO symbols, zone labels (at the centre of the zone, otherwise along the outline, otherwise not written), graticule and MORA values.
+
+“+ Exercise maps” names the maps `organisation_<Z>.png`, `chiffon_<piste>_<Z>.png` (included in the exercise target's sheet) and `exercice_<événement>_<mission>.png`.
+
 ### Previews and generation
 
 - “Show all maps”: previews of all the maps; they create no file.
@@ -261,6 +290,8 @@ Adding: name, type (“general”, “target”, “detail”, “zone”) then 
 - A failed map does not stop the others: the ZIP contains `rapport_generation.txt` and “Retry alone” relaunches the map. “partial base map” flags a slow base map.
 - Base map in error: the control map explains the cause, switches to standard OSM and offers “Copy the error report” (technical detail to pass on).
 - Batch of several missions: “Generate the n missions” produces a single ZIP, one folder per mission, with the operation map.
+- Batch: “Show all maps (n missions)” groups the previews by mission, headed by the operation map (`carte_operation.png`: points of all the missions, common rendezvous once, route of each team in its colour, legend); it is at the root of the ZIP.
+- Keep the tab visible during generation: the browser slows down background tabs, and a map may fail (“Timeout while loading the base map”); “Retry alone” relaunches it.
 - “Stop” (progress bar, previews as well as generation): the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP and files nothing in the mission folder; a stopped batch says how many missions are finished (their maps are already filed in their folder); the previews already shown stay.
 
 Output type (PNG, editable SVG) and PNG width: ☰ menu › “Map outputs”. The overview map is always included; it is shown at the bottom of the block.
@@ -447,7 +478,8 @@ For each slot that reaches the “At least N pilot(s)” threshold, this block s
 | Plan (registry missions) | “Plan” or “Edit”: opens the slot window, filtered on the family |
 
 - Click a row (outside the button) to expand its summary: slot, suggested crew, reinforcements, rule, score, context (ATC sessions, controllers, events), simulators, missions already assigned. The ▸ triangle does the same; only one row is expanded at a time.
-- “Family and score rules” expands under the table. Score = number of participants, + 2 per pilot with a restricted code used in their field, + 1 per online controller for TRAINING (2 at most). A family played often moves back a little (depending on the number of reports in the registry) to vary the missions.
+- A family is only proposed to pilots whose availability opens that theme: themes declared in My missions, otherwise those of the category of the workbook code (Settings › Centre › Availability categories), according to the pilot's preferences. The roles held come from the aircraft (FLOTTE sheet, or aircraft declared without a workbook).
+- “Family and score rules” expands under the table. Score = number of participants, + 2 per pilot employed in the restricted themes of their availability, + 1 per online controller for TRAINING (2 at most). A family played often moves back a little (depending on the number of reports in the registry) to vary the missions.
 - The number of missions shown per slot and the order of preference at equal score are set in Settings › Centre › ODV planning.
 - The table sorts by column. The roles taken from the FLOTTE sheet remain indicative: the planner validates.
 

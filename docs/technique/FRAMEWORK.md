@@ -11,6 +11,8 @@ on every page. This document describes each component, its role and its interfac
 | Header bar, ☰ menu, language | `shared/repository_nav.js`, `.css` | all pages |
 | Appearance (designs, icons, side bar, colours) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | all pages; settings on the “Appearance” page |
 | Resizable columns | `shared/column_resize.js` | Planner |
+| Resizable table columns, clipped cells | `shared/table_resize.js` | Planner (RPM / power table) |
+| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button) |
 | Blocks (move / hide) | `shared/app_framework.js` | all pages |
 | Text translation | `shared/content_i18n.js` | CR, Planner, reporting pages |
 | Pilot profile | `shared/pilot_profile.js` | all pages (☰ menu) |
@@ -28,6 +30,7 @@ on every page. This document describes each component, its role and its interfac
 | ZIP archives (writing, reading, SHA-256) | `shared/zip_store.js` | Maintenance (full backup, SIA export) |
 | Maintenance (versions, dependencies, step-by-step SIA, full backup, log) | `shared/maintenance_page.js` | `apps/settings/maintenance.html` |
 | Registry of generated missions | `shared/mission_registry.js` | `apps/cpco/mission_registry.html` |
+| Availability timeline (stand-alone module: no dependency on this framework, English texts, `labels` / `t`; formats schema 3 ↔ schema 2 and others) | `shared/dispos_timeline.js`, `shared/dispos_formats.js` | the suite's availability entry through `shared/dispos_week.js` (*My missions › My availability*, *My availability*, ODV legend; it replaces the former `DisposEditor`); `labs/dispos_timeline.html` (example) — [specification](DISPOS_TIMELINE_SPEC.md), [integration](DISPOS_TIMELINE_INTEGRATION.md) |
 | Maintenance tools | `tools/` | repository |
 
 ## 1. `config/repository_tree` — tree, themes, menu
@@ -210,6 +213,40 @@ query where the grid has its columns (handles hidden elsewhere); `until()`: elem
 height of the handles. Returns: `{ reset(), refresh() }`. Used by the planner (input and curves |
 Result | instruments).
 
+## 3 quater. `table_resize.js` — resizable table columns, clipped cells
+
+`TableResize.attach(table, { key, min, title })` puts a handle on the right edge of every header cell but the
+last: dragging sets that column's width (`table-layout: fixed`, widths in px kept on the `<th>`, so they survive
+a redraw of the body), double-clicking a handle returns to the natural widths. Remembered under `key`. A long cell
+gets `class="tbl-clip"` and a `title` with the whole text: one line with an ellipsis, the text in a tooltip, a
+double-click unfolds it over several lines. Returns `{ reset(), refresh() }`; a second `attach` on the same table
+only refreshes. Used by the planner (RPM / power → consumption table, "Comment" column).
+
+## 3 quinquies. `aircraft_picker.js` — choosing an aircraft or a type
+
+One component wherever an aircraft, a type or a performance sheet is chosen: a drop-down list with a search field at
+the top, titled groups, keyboard (↑ ↓ Enter Esc, Tab closes), always placed inside the window (below its host,
+flipped up or shifted left when it does not fit; the list scrolls), closed by a click elsewhere. Inside a modal
+`<dialog>` the list is placed in the dialog (otherwise inert).
+
+`AircraftPicker.attach(host, options)` → `{ open(), close(), refresh(), isOpen() }`
+- `host`: a button (`kind: 'button'`: it shows the current aircraft — silhouette, name — and opens the list with a
+  search field) or an input (`kind: 'field'`: the input stays the entry, the list opens below it and follows the
+  typing; `onEnter(text)` for Enter with no entry chosen, `onEscape()` when the list is closed).
+- `sources`: one function (or a list) of the page, called with the searched text; returns (or promises) a group
+  `{ group, items }` or a list of groups. Item: `{ key, label, sub, type, reg, keys, note, warn, disabled, current,
+  title, icon }` — `type` gives the silhouette and the catalogue aliases searched; `keys`: extra searched texts;
+  `note`: right-hand mention (the reason of a disabled entry: “already taken”); `current`: the aircraft in use. The
+  page keeps its own logic: `onPick(item, text)` receives the item as given.
+- `current()` (button), `placeholder`, `findPlaceholder`, `free` (a “free entry” row when nothing matches exactly:
+  `item.free`, `item.label` = the text), `empty()`, `footer()` (HTML under the list), `onOpen()`, `minWidth`.
+
+Search: `AircraftPicker.match(keys, text, code)` is the suite's single scoring engine (100 exact code, 95 exact key,
+85 exact word, 72 code prefix, 68 key prefix, 55 key contains, 48 every word in the keys), also used by
+`EquipmentEditor.makeSearch`; items are kept in their group, best score first. `AircraftPicker.byCategory(items,
+typeOf)` sorts items into the suite categories (`AircraftCatalog.classify`: helicopters, turboprops, jets, pistons,
+others). Colours follow the design tokens (`--repo-card`, `--sk-ink`, `--repo-accent`, `--repo-round`).
+
 ## 3 bis. `sticky_frame.js` — semi-mobile frames
 
 Side-column blocks that stay readable while scrolling (`window.StickyFrame`).
@@ -291,7 +328,7 @@ CR submission web service. Event `local-store-restored` after a restoration.
 **Saved IndexedDB databases** (section `indexed` of the file): `FlightPerfCache` (OFPs, calibrations,
 planner airframes) and `LandingPerformanceDashboardCache` (loaded landing log) — list
 `IDB_SAVED`. Not saved: SIA database (re-read from the official folder), folder authorisations.
-Full inventory of the data and of its origin: [DONNEES.md](../DONNEES.md).
+Full inventory of the data and of its origin: [operations manual § 2](../MANUEL_EXPLOITATION.md).
 
 ### Backup reminder
 
@@ -477,6 +514,50 @@ Loaded right after `AircraftDB/aircraft_db.js` in **all** the pages that use it
 
 “Loose” database: an input aid, never a constraint — a missing value can still be entered.
 
+### Local changes to a database — one rule
+
+“Apply in this browser” (Settings › databases) stores `dataOverride:<id>:v1` = `{ updatedAt, base, data }`. The only
+rule, `AircraftCatalog.effectiveData(fileData, key, fileStamp, keyOf)` (decision of 16/10/2026): a change newer than
+the file and made **on this file** (`base` = file date) replaces it; made on another state of the file (or old, without
+`base`): **merged** row by row / type by type (`mergeOverride`: file rows kept, local rows first) and written back with
+the file date, so that every page sees the same data. Used by `data_admin.js` (all the databases) and, for the type
+base, by the catalogue itself: `typesDb()` applies it in place in `window.AIRCRAFT_DB` (re-read when the change
+changes; types added in the CRs kept), `typesFile()` returns the file as served (Settings compares with it). No other
+`Object.assign` or whole replacement (`mission_core/aircraft.js` calls `typesDb`).
+
+### Type classification — one answer for the whole suite
+
+Every page that asks “what type or category is this ICAO designator or this aircraft?” calls
+`AircraftCatalog` (no local decoding of the ICAO description):
+
+- `canonical(code)`: designator of a code (alias chain followed to the end: A4M → A400M → A400), the normalised code
+  otherwise; `record(code)`: its record, `null` if unknown; `related(code)`: equivalent codes (the code, its chain, the
+  aliases pointing to the designator) to find data filed under one of them (performance, profiles); `codeOf(text)`:
+  designator of a free text (fleet variant, aliases, usage names `USAGE` — Caracal, AWACS, Phénix…, model name);
+- `classify(code | record, { description })`: `{ code, rec, icao, fpl, family, kind, engines, power, category, wing,
+  wtc }` — `family` L/S/A/H/G/T, or B for a balloon or airship (`kind` airship / balloon, non-ICAO); `engines` (“C”,
+  coupled: 2); `power` J/T/P/E/R; `category` (rules decided on 15/10/2026): **helico** for H and G, otherwise by
+  power — **jet**, **turboprop**, **piston** (tiltrotors, amphibians and seaplanes included) —, **other** for
+  balloons, airships, electric and unknown types; `wing`: rotary (H, G, T), amphibious (A, S), fixed (L), lta; `fpl`:
+  flight-plan designator (SHIP, BALL, ZZZZ for a non-ICAO type);
+- `CATEGORIES`: display order (helico, turboprop, jet, piston, other); `CATEGORY_LABELS` / `categoryLabel(cat)`: the
+  only set of category names (decision of 16/10/2026, short names: Helicopters, Turboprops, Jets, Pistons, Others —
+  “Réacteurs” in French), used by assignments and *My aircraft*; `groupLabel(key)`: names of the display groups and
+  aircraft labels of `AircraftDBIcons.group` (French keys; groups: Helicopters, Jets, Turboprops, “Pistons, 2 engines
+  or more”, “Pistons, 1 engine”, Others), 4 languages;
+- wake turbulence category “L/M” (B350, BE20, SW4): kept as given by ICAO (badge “L/M”); icon class `wtc-LM`, size of M
+  with a dashed outline (rule set once by `AircraftDB/aircraft_icons.js`); ordered between L and M.
+
+Built on it: silhouettes and groups (`AircraftDB/aircraft_icons.js`: `AircraftDBIcons.visual`, `.group` — by power,
+then number of engines for pistons — and `.groupLabel` in four languages), assignment categories
+(`MissionAssignments.fleetTypes`), *My aircraft* (`EquipmentEditor.categoryOf`), the CR wing category
+(`MissionAircraft.categoryOf`), duration estimates (`mission_estimate.js`), the performance model
+(`FlightPerfModel.kindOf`), Maintenance class labels, the Fuel planner (`gptEngines`, groups) and the Landing
+dashboard. Designator lookups (*My aircraft*, Maintenance, first run, fleet reporting, Fuel planner and performance
+sheets, Landing, CR, duration estimates, fuel reference, assignment fleet index) go through `canonical` / `record` /
+`related` / `codeOf` instead of their own single-hop alias lookups. The catalogue is loaded on every page that loads
+`aircraft_db.js`.
+
 ### Form collections (`form.js`)
 
 Every collection is shown as a **compact table** (one row per item; long fields —
@@ -555,6 +636,13 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
   1.0 and 2.0 both read; 2.0 = family-letter identifiers, `operation`, `exercise`, `zones.kind`, `route_order`, studio
   settings in `maps[]`, `meta`; `tools/migrate_missions_schema.py` only bumps the marker). Format reference:
   [PROMPT_GENERATEUR_MISSIONS.md](PROMPT_GENERATEUR_MISSIONS.md).
+- Markdown input (`SiaMission.fromTexts` / `fromTextsBatch`): the generated `summary<ID>.md` (intro lines `Type :`,
+  `Aéronef :`, `Départ :`…, turning-point and team tables, rendezvous list; no coordinates for target and zones), or the
+  legacy block format (`TYPE:`, `TARGET:`, `TURNING POINTS:` with `- PT1 | SIMIP | 46.444167 | 1.486000 | role`, `RDV:`,
+  `ZONE:`, `MAPS TO PRODUCE:`, `NOTES:`; example `examples/missions/Mission 02.md`). The YAML wins when both are loaded.
+  A pasted batch (ChatGPT answer, or YAML and Markdown one after the other) is split per `mission.id` /
+  `# Mission <ID>`; text outside missions (intro, VALIDATION, "Mission suivante") and series side files
+  (`maps_manifest.md`, `VALIDATION.txt`…) are dropped and reported.
 - `shared/mission_registry.js`: registry and mission folder `data/missions/<letter>_<FAMILY>/<ID>/` = `mission<ID>.yaml`
   (source of truth), `summary<ID>.md` (a rendering of the YAML), `suivi.yaml`, `cartes/`, `recu/`, `versions/`; no PDF
   stored.
@@ -564,3 +652,8 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
 - `apps/planner/map_planner.html` (Flight maps) is GENERATED from `apps/cpco/map_parser.html` by
   `python tools/build_map_planner.py`: never edit it by hand; its mission lives in a separate namespace
   (`SIA_MISSION_NS = 'planner'`).
+- Flight performance model: `shared/flight_performance_model.js` (`FlightPerfModel`), shared by the fuel quote, the
+  curves and the vertical profiles; its physics (ISA, parabolic polar, thrust / power lapse, calibration on the
+  profile, model ceiling) is documented in the file header.
+- Landing Dashboard test data: `python apps/landing/generate_test_landings.py` writes a synthetic CSV (thousands of
+  landings, 248 types).

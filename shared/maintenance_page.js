@@ -206,6 +206,18 @@
       'Carpetas locales y direcciones de fuentes externas (aerolínea, SIA, repositorios) en un solo lugar'
     ]
   }, {
+    id: 'keys',
+    icon: 'shield',
+    title: ['Clés et services externes', 'Keys and external services', 'Schlüssel und externe Dienste',
+      'Claves y servicios externos'
+    ],
+    sub: [
+      'Une carte par service : clé de la suite (enregistrer, tester, retirer), ce qui s’en sert, où se règlent les identifiants personnels',
+      'One card per service: suite key (save, test, remove), what uses it, where personal IDs are set',
+      'Eine Karte pro Dienst: Schlüssel der Suite (speichern, testen, entfernen), Verwendung, wo persönliche Kennungen eingestellt werden',
+      'Una tarjeta por servicio: clave de la suite (guardar, probar, retirar), qué la usa, dónde se ajustan los identificadores personales'
+    ]
+  }, {
     id: 'versions',
     icon: 'layers',
     title: ['Versions et synchronisations', 'Versions and synchronisation', 'Versionen und Synchronisation',
@@ -332,6 +344,7 @@
   const NAV = {
     updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'],
     sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'],
+    keys: ['Clés et services externes', 'Keys and external services', 'Schlüssel und Dienste', 'Claves y servicios'],
     versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'],
     deps: ['Références et dépendances', 'References and dependencies', 'Referenzen', 'Referencias'],
     types: ['Types d’aéronefs', 'Aircraft types', 'Luftfahrzeugtypen', 'Tipos de aeronave'],
@@ -739,10 +752,7 @@
       <p class="mt-small">${esc(t(['Adresses par défaut livrées avec l’application (repository_tree) ; une valeur saisie ici ne vaut que pour ce navigateur (sauvegardée avec les données locales). Les adresses du SIA, de la DIRCAM, de NATS, de l’AIP militaire britannique et de NAV CANADA servent aux liens des sources de Paramètres › Maintenance › Données aéronautiques ; les dossiers SIA et X-Plane ci-dessus sont les mêmes que là-bas.', 'Default addresses ship with the application (repository_tree); a value entered here applies to this browser only (saved with local data). The SIA, DIRCAM, NATS, UK military AIP and NAV CANADA addresses are the source links of Settings › Maintenance › Aeronautical data; the SIA and X-Plane folders above are the same as there.', 'Standardadressen werden mit der Anwendung geliefert (repository_tree); ein hier eingegebener Wert gilt nur für diesen Browser. Die Adressen von SIA, DIRCAM, NATS, britischem Militär-AIP und NAV CANADA sind die Quellen-Links unter Einstellungen › Wartung › Luftfahrtdaten; die SIA- und X-Plane-Ordner oben sind dieselben wie dort.', 'Direcciones por defecto entregadas con la aplicación (repository_tree); un valor introducido aquí solo vale para este navegador. Las direcciones del SIA, la DIRCAM, NATS, el AIP militar británico y NAV CANADA son los enlaces de las fuentes de Ajustes › Mantenimiento › Datos aeronáuticos; las carpetas SIA y X-Plane de arriba son las mismas que allí.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('sia') || '?m=sia')}">${esc(t(['Données aéronautiques →', 'Aeronautical data →', 'Luftfahrtdaten →', 'Datos aeronáuticos →']))}</a></p>
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
       <h3>${esc(t(['Clés d’API (services externes)', 'API keys (external services)', 'API-Schlüssel (externe Dienste)', 'Claves de API (servicios externos)']))}</h3>
-      <p class="mt-small">${esc(t(['Clés de la suite, communes à tous ses utilisateurs : gardées par le lanceur dans secrets/ à la racine de l’application (exclu de git, hors des données et des sauvegardes), jamais renvoyées à la page. Les identifiants personnels (client OAuth IVAO) se règlent dans Mon profil › Identité et réseaux, au niveau d’utilisation Expert.', 'Suite keys, shared by all its users: kept by the launcher in secrets/ at the application root (excluded from git, outside the data and the backups), never sent back to the page. Personal credentials (IVAO OAuth client) are set in My profile › Identity and networks, at the Expert usage level.', 'Schlüssel der Suite, für alle ihre Benutzer: vom Starter in secrets/ im Anwendungsordner gehalten (von Git ausgeschlossen, außerhalb der Daten und Sicherungen), nie an die Seite zurückgegeben. Persönliche Zugangsdaten (IVAO-OAuth-Client) unter Mein Profil › Identität und Netzwerke, auf der Nutzungsstufe Experte.', 'Claves de la suite, comunes a todos sus usuarios: guardadas por el lanzador en secrets/ en la raíz de la aplicación (excluido de git, fuera de los datos y de las copias), nunca devueltas a la página. Las credenciales personales (cliente OAuth de IVAO) se ajustan en Mi perfil › Identidad y redes, en el nivel de uso Experto.']))}</p>
-      <table class="mt-table mt-wide mt-keys"><tbody><tr data-secret="ivao.apiKey"><td><b>${esc(t(['IVAO — clé d’API', 'IVAO — API key', 'IVAO — API-Schlüssel', 'IVAO — clave de API']))}</b><br><span class="mt-small">${esc(t(['Activations des zones de France (horaires publiés, RTBA, NOTAM) et sessions ATC (trainings, examens) pour le Tableau et le Planning ODV. developers.ivao.aero', 'French area activations (published schedules, RTBA, NOTAM) and ATC sessions (trainings, exams) for the Board and the ODV planning. developers.ivao.aero', 'Aktivierungen französischer Gebiete (Zeiten, RTBA, NOTAM) und ATC-Sitzungen (Trainings, Prüfungen) für die Einsatztafel und die ODV-Planung. developers.ivao.aero', 'Activaciones de las zonas de Francia (horarios, RTBA, NOTAM) y sesiones ATC (entrenamientos, exámenes) para el Tablero y la planificación ODV. developers.ivao.aero']))}</span></td>
-        <td><input type="password" class="mt-url" autocomplete="off" spellcheck="false" aria-label="${esc(t(['Clé d’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de API de IVAO']))}"></td>
-        <td class="mt-nowrap"><span data-state></span> <button type="button" class="secondary" data-save data-icon="save">${esc(t(['Enregistrer', 'Save', 'Speichern', 'Guardar']))}</button> <button type="button" class="secondary" data-clear hidden>${esc(t(['Effacer', 'Clear', 'Löschen', 'Borrar']))}</button></td></tr></tbody></table>
+      <p class="mt-small">${esc(t(['Clés de la suite (IVAO…) : une seule place, avec leur état, leur test et ce qui s’en sert.', 'Suite keys (IVAO…): one place, with their state, their test and what uses them.', 'Schlüssel der Suite (IVAO…): ein Ort, mit Status, Test und Verwendung.', 'Claves de la suite (IVAO…): un solo lugar, con su estado, su prueba y qué las usa.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('keys') || '?m=keys')}">${esc(t(['Clés et services externes →', 'Keys and external services →', 'Schlüssel und externe Dienste →', 'Claves y servicios externos →']))}</a></p>
       <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
       <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (SO Group Virtual, SOG, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (SO Group Virtual, SOG, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig SO Group Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (SO Group Virtual, SOG, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
@@ -766,7 +776,6 @@
       nav.setVa({});
       renderSources();
     };
-    secretsRows(host);
     // « Nettoyer et recommencer… » : sur la page du premier lancement seulement (v2, une seule occurrence)
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
@@ -835,11 +844,17 @@
     window.AppFramework?.refresh?.();
   }
 
-  // ---- clés d'API de la suite (lanceur : GET / POST /__setup/secrets ; secrets/<service>.json) : la page n'en reçoit
-  // que l'état (enregistrée, 4 derniers caractères) ; saisie vide + « Enregistrer » ne change rien, « Effacer » la retire
-  async function secretsRows(host) {
-    /** Appel au lanceur : GET (état) sans body, POST sinon ; réponse JSON, ou null si refus ou lanceur absent. */
-    const api = (body = null) => fetch('/__setup/secrets', {
+  // ---- Clés et services externes (Installation) : une carte par service, la seule place des clés de la suite. Les clés
+  // sont gardées par le lanceur (GET / POST /__setup/secrets, secrets/<service>.json) : la page n'en reçoit que l'état
+  // (date d'enregistrement, 4 derniers caractères) ; « Tester » fait un appel de contrôle (GET /__setup/secrets/test).
+  // Les identifiants personnels (VID, CID, SimBrief, identifiant du site) se règlent dans Mon profil : renvois seulement.
+  async function renderKeys() {
+    const host = hosts.keys;
+    const nav = window.RepositoryNav,
+      page = p => nav?.root ? new URL(p, nav.root).href : `../../${p}`,
+      profile = nav?.settingsUrl?.('identity') || 'profil.html';
+    /** Appel au lanceur : GET sans body, POST sinon ; réponse JSON, ou null si refus ou lanceur absent. */
+    const api = (path, body = null) => fetch(path, {
       method: body ? 'POST' : 'GET',
       headers: {
         'X-SOG-Setup': '1',
@@ -848,57 +863,119 @@
       body: body ? JSON.stringify(body) : undefined,
       cache: 'no-store'
     }).then(r => r.ok ? r.json() : null).catch(() => null);
-    const rows = [...host.querySelectorAll('tr[data-secret]')];
-    /** Met à jour chaque ligne selon l'état st du lanceur (null : lanceur absent, champs désactivés). */
-    const draw = st => rows.forEach(tr => {
-      const [service, key] = tr.dataset.secret.split('.'),
-        v = st?.app?.[service]?.[key],
-        input = tr.querySelector('input');
+    /** Lien d'une carte (libellé traduit). */
+    const link = (href, label) => `<a class="mt-link" href="${esc(href)}">${esc(t(label))}</a>`;
+    /** Carte d'un service : titre, nature de la clé, ce qui s'en sert (liens), contenu propre. */
+    const card = (id, title, what, uses, body) => `<div class="mt-keycard" data-service="${id}"><h3>${esc(t(title))}</h3>
+      <p class="mt-small">${esc(t(what))}</p><p class="mt-small"><b>${esc(t(['Sert à', 'Used for', 'Dient für', 'Sirve para']))}</b> : ${uses.join(' · ')}</p>${body}</div>`;
+    const sendKey = (() => {
+      try {
+        return !!localStorage.getItem('missionSendKey:v1');
+      } catch {
+        return false;
+      }
+    })();
+    host.innerHTML = `<p class="mt-small">${esc(t(['Une seule place pour les clés de la suite, communes à tous ses utilisateurs : gardées par le lanceur dans secrets/ à la racine de l’application (exclu de git, hors des données et des sauvegardes), jamais renvoyées à la page. Ailleurs, la suite renvoie ici. Les identifiants personnels (VID IVAO, CID VATSIM, SimBrief, identifiant du site) se règlent dans Mon profil.', 'One place for the suite keys, shared by all its users: kept by the launcher in secrets/ at the application root (excluded from git, outside the data and the backups), never sent back to the page. Elsewhere, the suite points here. Personal IDs (IVAO VID, VATSIM CID, SimBrief, website login) are set in My profile.', 'Ein Ort für die Schlüssel der Suite, für alle ihre Benutzer: vom Starter in secrets/ im Anwendungsordner gehalten (von Git ausgeschlossen, außerhalb der Daten und Sicherungen), nie an die Seite zurückgegeben. Anderswo verweist die Suite hierher. Persönliche Kennungen (IVAO-VID, VATSIM-CID, SimBrief, Website-Kennung) unter Mein Profil.', 'Un solo lugar para las claves de la suite, comunes a todos sus usuarios: guardadas por el lanzador en secrets/ en la raíz de la aplicación (excluido de git, fuera de los datos y de las copias), nunca devueltas a la página. En otros sitios, la suite remite aquí. Los identificadores personales (VID IVAO, CID VATSIM, SimBrief, identificador del sitio) se ajustan en Mi perfil.']))}</p>
+      ${card('ivao', ['IVAO', 'IVAO', 'IVAO', 'IVAO'], ['Clé d’API de la suite (developers.ivao.aero), lue par le lanceur seulement.', 'Suite API key (developers.ivao.aero), read by the launcher only.', 'API-Schlüssel der Suite (developers.ivao.aero), nur vom Starter gelesen.', 'Clave de API de la suite (developers.ivao.aero), leída solo por el lanzador.'], [
+        esc(t(['CR › Préremplir depuis mon dernier vol (IVAO)', 'Report › Prefill from my last flight (IVAO)', 'Bericht › Aus meinem letzten Flug vorausfüllen (IVAO)', 'Informe › Rellenar desde mi último vuelo (IVAO)'])),
+        link(page('apps/cpco/odv_orders.html'), ['Tableau › activations et sessions ATC IVAO', 'Board › IVAO activations and ATC sessions', 'Einsatztafel › IVAO-Aktivierungen und ATC-Sitzungen', 'Tablero › activaciones y sesiones ATC IVAO']),
+        link(page('apps/cpco/odv_planning.html'), ['Planning ODV › sessions ATC IVAO', 'ODV planning › IVAO ATC sessions', 'ODV-Planung › IVAO-ATC-Sitzungen', 'Planificación ODV › sesiones ATC IVAO'])
+      ], `<table class="mt-table mt-wide mt-keys"><tbody><tr data-secret="ivao.apiKey"><td><b>${esc(t(['Clé d’API', 'API key', 'API-Schlüssel', 'Clave de API']))}</b><br><span data-state></span></td>
+        <td><input type="password" class="mt-url" autocomplete="off" spellcheck="false" aria-label="${esc(t(['Clé d’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de API de IVAO']))}"></td>
+        <td class="mt-nowrap"><button type="button" class="secondary" data-save data-icon="save">${esc(t(['Enregistrer', 'Save', 'Speichern', 'Guardar']))}</button> <button type="button" class="secondary" data-test>${esc(t(['Tester', 'Test', 'Testen', 'Probar']))}</button> <button type="button" class="secondary" data-clear hidden>${esc(t(['Retirer', 'Remove', 'Entfernen', 'Retirar']))}</button></td></tr></tbody></table>
+        <p class="mt-small" data-test-result></p><p class="mt-small">${link(profile, ['VID IVAO personnel : Mon profil ↗', 'Personal IVAO VID: My profile ↗', 'Persönliche IVAO-VID: Mein Profil ↗', 'VID IVAO personal: Mi perfil ↗'])}</p>`)}
+      ${card('vatsim', ['VATSIM', 'VATSIM', 'VATSIM', 'VATSIM'], ['Pas de clé : API publiques de VATSIM.', 'No key: public VATSIM APIs.', 'Kein Schlüssel: öffentliche VATSIM-APIs.', 'Sin clave: API públicas de VATSIM.'], [
+        esc(t(['CR › Préremplir depuis mon dernier vol (VATSIM)', 'Report › Prefill from my last flight (VATSIM)', 'Bericht › Aus meinem letzten Flug vorausfüllen (VATSIM)', 'Informe › Rellenar desde mi último vuelo (VATSIM)'])),
+        esc(t(['CR › Suivi réseau', 'Report › Network tracking', 'Bericht › Netzwerk-Tracking', 'Informe › Seguimiento de red'])),
+        link(page('apps/cpco/odv_planning.html'), ['Planning ODV › réservations ATC VATSIM', 'ODV planning › VATSIM ATC bookings', 'ODV-Planung › VATSIM-ATC-Buchungen', 'Planificación ODV › reservas ATC VATSIM'])
+      ], `<p class="mt-small">${link(profile, ['CID VATSIM personnel : Mon profil ↗', 'Personal VATSIM CID: My profile ↗', 'Persönliche VATSIM-CID: Mein Profil ↗', 'CID VATSIM personal: Mi perfil ↗'])}</p>`)}
+      ${card('simbrief', ['SimBrief', 'SimBrief', 'SimBrief', 'SimBrief'], ['Pas de clé : dernier plan de vol public de votre compte SimBrief.', 'No key: latest public flight plan of your SimBrief account.', 'Kein Schlüssel: letzter öffentlicher Flugplan Ihres SimBrief-Kontos.', 'Sin clave: último plan de vuelo público de su cuenta SimBrief.'], [
+        esc(t(['CR › plan de vol SimBrief', 'Report › SimBrief flight plan', 'Bericht › SimBrief-Flugplan', 'Informe › plan de vuelo SimBrief'])),
+        esc(t(['Planificateur et cartes › route SimBrief', 'Planner and maps › SimBrief route', 'Planer und Karten › SimBrief-Route', 'Planificador y mapas › ruta SimBrief']))
+      ], `<p class="mt-small">${link(profile, ['Identifiant SimBrief : Mon profil ↗', 'SimBrief login: My profile ↗', 'SimBrief-Kennung: Mein Profil ↗', 'Identificador SimBrief: Mi perfil ↗'])}</p>`)}
+      ${card('site', ['Site de la compagnie', 'Airline website', 'Website der Fluggesellschaft', 'Sitio de la aerolínea'], ['Pas de clé ni de mot de passe : le lanceur lit les pages publiques du site ; la suite ne s’y connecte jamais.', 'No key or password: the launcher reads the public pages of the site; the suite never logs in to it.', 'Kein Schlüssel und kein Passwort: Der Starter liest die öffentlichen Seiten; die Suite meldet sich dort nie an.', 'Sin clave ni contraseña: el lanzador lee las páginas públicas del sitio; la suite nunca inicia sesión.'], [
+        esc(t(['journal des vols et flotte', 'flight log and fleet', 'Flugbuch und Flotte', 'registro de vuelos y flota'])),
+        esc(t(['CR › enregistrer le vol sur le site', 'Report › record the flight on the website', 'Bericht › Flug auf der Website eintragen', 'Informe › registrar el vuelo en el sitio']))
+      ], `<p class="mt-small">${link(nav?.settingsUrl?.('sources') || '?m=sources', ['Adresse du site : Sources et dossiers →', 'Website address: Sources and folders →', 'Website-Adresse: Quellen und Ordner →', 'Dirección del sitio: Fuentes y carpetas →'])} · ${link(profile, ['Identifiant : Mon profil ↗', 'Login: My profile ↗', 'Kennung: Mein Profil ↗', 'Identificador: Mi perfil ↗'])}</p>`)}
+      ${card('send', ['Webservice d’envoi des CR', 'Report sending web service', 'Webservice für den Berichtsversand', 'Servicio web de envío de informes'], ['Clef du webservice de la compagnie : gardée dans ce navigateur (pas par le lanceur), réglée avec l’adresse du service.', 'Key of the airline web service: kept in this browser (not by the launcher), set with the service address.', 'Schlüssel des Webservice der Fluggesellschaft: in diesem Browser gespeichert (nicht beim Starter), mit der Dienstadresse eingestellt.', 'Clave del servicio web de la aerolínea: guardada en este navegador (no por el lanzador), ajustada con la dirección del servicio.'], [
+        esc(t(['CR › Envoyer', 'Report › Send', 'Bericht › Senden', 'Informe › Enviar']))
+      ], `<p class="mt-small">${sendKey ? pill('ok', t(['clef enregistrée dans ce navigateur', 'key saved in this browser', 'Schlüssel in diesem Browser gespeichert', 'clave guardada en este navegador'])) : pill('info', t(['pas de clef', 'no key', 'kein Schlüssel', 'sin clave']))} ${link(nav?.settingsUrl?.('send') || '#', ['Paramètres › Centre › Envoi des comptes rendus →', 'Settings › Centre › Report sending →', 'Einstellungen › Zentrum › Berichtsversand →', 'Ajustes › Centro › Envío de informes →'])}</p>`)}`;
+    const tr = host.querySelector('tr[data-secret]'),
+      input = tr.querySelector('input'),
+      result = host.querySelector('[data-test-result]');
+    /** État de la clé IVAO (st : réponse du lanceur ; null : lanceur absent, champs désactivés). */
+    const draw = st => {
+      const v = st?.app?.ivao?.apiKey;
       tr.querySelector('[data-state]').innerHTML = !st ? pill('info', t(['lanceur absent', 'no launcher', 'kein Starter',
         'sin lanzador'
-      ])) : v?.env ? pill('ok', t(['variable d’environnement', 'environment variable', 'Umgebungsvariable',
-        'variable de entorno'
-      ])) : v?.set ? pill('ok', t(['enregistrée {h}', 'saved {h}', 'gespeichert {h}', 'guardada {h}'], {
+      ])) : v?.env ? pill('ok', t(['variable d’environnement IVAO_API_KEY', 'IVAO_API_KEY environment variable',
+        'Umgebungsvariable IVAO_API_KEY', 'variable de entorno IVAO_API_KEY'
+      ])) : v?.set ? pill('ok', v.at ? t(['enregistrée le {d} UTC ({h})', 'saved on {d} UTC ({h})', 'gespeichert am {d} UTC ({h})',
+        'guardada el {d} UTC ({h})'
+      ], {
+        d: `${v.at.slice(0, 10)} ${v.at.slice(11, 16)}`,
+        h: v.hint
+      }) : t(['enregistrée {h}', 'saved {h}', 'gespeichert {h}', 'guardada {h}'], {
         h: v.hint
       })) : pill('warn', t(['absente', 'missing', 'fehlt', 'ausente']));
-      input.disabled = !st;
-      input.placeholder = v?.set ? t(['(inchangée)', '(unchanged)', '(unverändert)', '(sin cambios)']) : '';
-      tr.querySelector('[data-save]').disabled = !st;
+      input.disabled = !st || !!v?.env;
+      input.placeholder = v?.set ? t(['nouvelle clé (remplace l’actuelle)', 'new key (replaces the current one)',
+        'neuer Schlüssel (ersetzt den aktuellen)', 'nueva clave (sustituye la actual)'
+      ]) : '';
+      tr.querySelector('[data-save]').disabled = !st || !!v?.env;
+      tr.querySelector('[data-test]').disabled = !st || !v?.set;
       tr.querySelector('[data-clear]').hidden = !v?.set || !!v?.env;
-    });
-    draw(await api());
-    rows.forEach(tr => {
-      const [service, key] = tr.dataset.secret.split('.'),
-        input = tr.querySelector('input');
-      /** Envoie la valeur de la clé au lanceur (vide : effacement), vide le champ, signale un échec et redessine. */
-      const send = async value => {
-        const r = await api({
-          scope: 'app',
-          service,
-          values: {
-            [key]: value
-          }
-        });
-        input.value = '';
-        if (!r?.ok) window.AppFramework?.notify?.(t(['Clé non enregistrée : {e}', 'Key not saved: {e}',
-          'Schlüssel nicht gespeichert: {e}', 'Clave no guardada: {e}'
+    };
+    /** « Tester » : appel de contrôle du lanceur, résultat en clair (sessions lues, ou clé absente / refusée). */
+    const test = async () => {
+      result.textContent = '…';
+      const r = await api('/__setup/secrets/test?service=ivao');
+      result.innerHTML = !r ? pill('info', t(['lanceur absent', 'no launcher', 'kein Starter', 'sin lanzador'])) : r.ok ? pill('ok',
+        t([
+          'OK : clé acceptée par IVAO, {n} sessions du tracker lues sur la dernière heure',
+          'OK: key accepted by IVAO, {n} tracker sessions read over the last hour',
+          'OK: Schlüssel von IVAO akzeptiert, {n} Tracker-Sitzungen der letzten Stunde gelesen',
+          'OK: clave aceptada por IVAO, {n} sesiones del tracker leídas en la última hora'
         ], {
-          e: r?.message || t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar',
-            'lanzador inaccesible'
-          ])
-        }), 'err');
-        draw(r?.ok ? r : await api());
-      };
-      tr.querySelector('[data-save]').onclick = () => input.value.trim() && send(input.value.trim());
-      tr.querySelector('[data-clear]').onclick = async () => {
-        if (await window.AppFramework?.ask?.(t(['Effacer cette clé du lanceur ?', 'Remove this key from the launcher?',
-            'Diesen Schlüssel vom Starter entfernen?', '¿Borrar esta clave del lanzador?'
-          ]), {
-            danger: true
-          }) === false) return;
-        send('');
-      };
-    });
+          n: r.count
+        })) : pill('err', window.AppFramework?.keyIssue?.(r)?.text || r.error || '?');
+    };
+    /** Envoie la clé au lanceur (vide : retrait), vide le champ, signale un échec, redessine ; testée après un remplacement. */
+    const send = async value => {
+      const r = await api('/__setup/secrets', {
+        scope: 'app',
+        service: 'ivao',
+        values: {
+          apiKey: value
+        }
+      });
+      input.value = '';
+      result.textContent = '';
+      if (!r?.ok) window.AppFramework?.notify?.(t(['Clé non enregistrée : {e}', 'Key not saved: {e}',
+        'Schlüssel nicht gespeichert: {e}', 'Clave no guardada: {e}'
+      ], {
+        e: r?.message || t(['lanceur injoignable', 'launcher unreachable', 'Starter nicht erreichbar',
+          'lanzador inaccesible'
+        ])
+      }), 'err');
+      draw(r?.ok ? r : await api('/__setup/secrets'));
+      if (r?.ok && value) test();
+    };
+    draw(await api('/__setup/secrets'));
+    tr.querySelector('[data-save]').onclick = () => input.value.trim() && send(input.value.trim());
+    tr.querySelector('[data-test]').onclick = test;
+    tr.querySelector('[data-clear]').onclick = async () => {
+      if (await window.AppFramework?.ask?.(t([
+          'Retirer la clé IVAO du lanceur ? Le dernier vol IVAO, les activations et les sessions ATC IVAO ne seront plus récupérés.',
+          'Remove the IVAO key from the launcher? The last IVAO flight, activations and IVAO ATC sessions will no longer be fetched.',
+          'IVAO-Schlüssel vom Starter entfernen? Letzter IVAO-Flug, Aktivierungen und IVAO-ATC-Sitzungen werden nicht mehr abgerufen.',
+          '¿Retirar la clave IVAO del lanzador? El último vuelo IVAO, las activaciones y las sesiones ATC IVAO ya no se recuperarán.'
+        ]), {
+          danger: true
+        }) === false) return;
+      send('');
+    };
+    window.AppFramework?.refresh?.();
   }
 
   // ---- types d'aéronefs : base OACI fusionnée (aircraft_catalog.js) et alias (AIRCRAFT_DB.__aliases : H145 → EC45…)
@@ -912,9 +989,8 @@
       al = window.AIRCRAFT_DB?.__aliases || {};
     // résolveur commun des types écrits en clair (shared/aircraft_catalog.js : alias, noms d'usage, modèle), puis la
     // chaîne d'alias suivie jusqu'au bout (A400M → A400 : les données de la compagnie peuvent renvoyer un code vers un autre)
-    let x = al[k] || window.AircraftCatalog?.codeOf?.(k) || k;
-    for (let i = 0; i < 5 && al[x] && al[x] !== x; i++) x = al[x];
-    return x;
+    return al[k] ? window.AircraftCatalog?.canonical?.(k) ?? al[k] : window.AircraftCatalog?.codeOf?.(k) || window.AircraftCatalog
+      ?.canonical?.(k) || k;
   };
   /** Vrai si code (ou son alias) figure dans l'ensemble de types. */
   const knownType = (types, code) => types.has(alias(code)) || types.has(String(code || '').toUpperCase().trim());
@@ -1357,10 +1433,7 @@
     A: ['amphibie', 'amphibian', 'Amphibienflugzeug', 'anfibio'],
     H: ['hélicoptère', 'helicopter', 'Hubschrauber', 'helicóptero'],
     G: ['autogire', 'gyroplane', 'Tragschrauber', 'autogiro'],
-    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano'],
-    B: ['ballon ou dirigeable (hors OACI)', 'balloon or airship (non-ICAO)', 'Ballon oder Luftschiff (nicht ICAO)',
-      'globo o dirigible (no OACI)'
-    ]
+    T: ['convertible', 'tiltrotor', 'Kipprotor', 'convertiplano']
   };
   // motorisation [singulier, pluriel] par langue ; T : turbopropulseur (avion) ou turbomoteur (hélicoptère)
   const AC_POWER = {
@@ -1404,12 +1477,23 @@
   /** Classe OACI d'une fiche (« L2J ») et son libellé lisible (« avion, 2 réacteurs ») ; libellé de la famille seule
    *  pour une fiche incomplète (type saisi dans un CR : « H », « L »). */
   function acClass(rec) {
-    const d = String(rec?.description || '').toUpperCase(),
-      fam = AC_FAMILY[d[0]] ? t(AC_FAMILY[d[0]]) : '';
-    const n = d[1] === 'C' ? 2 : parseInt(d[1], 10) || 0,
-      pw = AC_POWER[d[2] === 'T' && d[0] === 'H' ? 'TH' : d[2]];
+    // classement commun de la suite (AircraftCatalog.classify) ; ici, ses libellés en clair
+    const c = window.AircraftCatalog?.classify?.(rec) || {},
+      n = c.engines || 0;
+    // ballon, dirigeable (hors OACI) : pas de classe OACI ; nature, moteurs et motorisation en clair, code de plan de vol
+    if (c.kind) {
+      const pw = AC_POWER[c.power];
+      return {
+        code: c.fpl || '',
+        label: `${t(c.kind === 'airship' ? ['dirigeable', 'airship', 'Luftschiff', 'dirigible'] : ['ballon', 'balloon', 'Ballon',
+          'globo'
+        ])}${n && pw ? `, ${n} ${pw[li()][n > 1 ? 1 : 0]}` : ''} (${t(['hors OACI', 'non-ICAO', 'nicht ICAO', 'no OACI'])})`
+      };
+    }
+    const fam = AC_FAMILY[c.family] ? t(AC_FAMILY[c.family]) : '',
+      pw = AC_POWER[c.power === 'T' && c.family === 'H' ? 'TH' : c.power];
     return {
-      code: d,
+      code: String(rec?.description || '').toUpperCase(),
       label: n && pw ? `${fam}, ${n} ${pw[li()][n > 1 ? 1 : 0]}` : fam
     };
   }
@@ -5254,6 +5338,10 @@
         ],
         [
           ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], renderSources, hosts.sources
+        ],
+        [
+          ['Clés et services externes', 'Keys and external services', 'Schlüssel und externe Dienste', 'Claves y servicios externos'],
+          renderKeys, hosts.keys
         ],
         [
           ['Données aéronautiques', 'Aeronautical data', 'Luftfahrtdaten', 'Datos aeronáuticos'], renderSia, hosts.sia

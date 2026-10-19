@@ -23,10 +23,77 @@
   // alias (aircraft_overrides.json). Objet vide gardé pour les modules qui le lisent encore.
   const SUPPLEMENT = {};
 
+  // ---- modifications locales d'une base (Paramètres › bases, « Appliquer dans ce navigateur » : dataOverride:<id>:v1) :
+  // une seule règle pour toute la suite (décision du 16/10/2026), appelée par data_admin.js et mission_core/aircraft.js
+  /** Écrit une valeur JSON dans le localStorage (stockage plein : sans effet). */
+  const write = (k, value) => {
+    try {
+      localStorage.setItem(k, JSON.stringify(value));
+    } catch {
+      /* stockage plein */
+    }
+  };
+  /** Fusion d'une modification locale faite sur un fichier plus ancien (ou d'une ancienne surcharge sans date de base)
+   *  avec le fichier actuel : lignes du fichier gardées, lignes locales prioritaires (même clé), objets fusionnés clé par
+   *  clé. keyOf : clé d'une ligne des tableaux. */
+  function mergeOverride(fileData, local, keyOf) {
+    const out = structuredClone(fileData);
+    for (const [k, v] of Object.entries(local || {})) {
+      if (Array.isArray(v) && Array.isArray(out[k]) && keyOf) {
+        const id = r => keyOf(r) || JSON.stringify(r),
+          seen = new Map(out[k].map((r, i) => [id(r), i]));
+        for (const r of v) {
+          const i = seen.get(id(r));
+          if (i == null) out[k].push(structuredClone(r));
+          else out[k][i] = structuredClone(r);
+        }
+      } else if (v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k])) {
+        for (const [kk, vv] of Object.entries(v)) {
+          out[k][kk] = vv && typeof vv === 'object' && !Array.isArray(vv) && out[k][kk] && typeof out[k][kk] === 'object' ? {
+            ...out[k][kk],
+            ...structuredClone(vv)
+          } : structuredClone(vv);
+        }
+      } else out[k] = structuredClone(v);
+    }
+    return out;
+  }
+  /** Données en vigueur d'une base : modification locale (overrideKey) si plus récente que le fichier ET faite sur ce
+   *  fichier (base === fileStamp) — elle le remplace ; faite sur un autre état du fichier (ou ancienne, sans date de
+   *  base) : fusionnée type par type (mergeOverride) puis réécrite avec la date de base, pour que les autres pages voient
+   *  la même chose ; sinon le fichier. Sortie : { data, local : date de la modification locale ou '', fileStamp, merged }. */
+  function effectiveData(fileData, overrideKey, fileStamp, keyOf = null) {
+    const o = read(overrideKey);
+    if (!o?.data || !(o.updatedAt > fileStamp)) return {
+      data: structuredClone(fileData),
+      local: '',
+      fileStamp
+    };
+    if (o.base === fileStamp) return {
+      data: structuredClone(o.data),
+      local: o.updatedAt,
+      fileStamp
+    };
+    const data = mergeOverride(fileData, o.data, keyOf);
+    write(overrideKey, {
+      updatedAt: new Date().toISOString(),
+      base: fileStamp,
+      data
+    });
+    return {
+      data: structuredClone(data),
+      local: o.updatedAt,
+      fileStamp,
+      merged: true
+    };
+  }
+
   // ---- types : base commune enrichie (en place : les pages gardent leur lecture de AIRCRAFT_DB)
   const file = window.AIRCRAFT_DB || (window.AIRCRAFT_DB = {});
-  const override = read('dataOverride:aircraftDb:v1');
-  if (override?.data && override.updatedAt > String(file.__meta?.admin_saved || '')) Object.assign(file, override.data);
+  const TYPES_OVERRIDE = 'dataOverride:aircraftDb:v1';
+  // fichier tel que servi, gardé intact : base de la règle (et de la comparaison de Paramètres, typesFile)
+  const pristine = structuredClone(file);
+  let appliedRaw; // texte de la modification locale appliquée (relue seulement si elle change)
   /** Ajoute un type à window.AIRCRAFT_DB s'il n'y est pas déjà (ni en alias) ; local : origine de l'ajout (supplément, type ajouté dans un CR). */
   const addType = (code, entry, local) => {
     const k = key(code);
@@ -40,7 +107,33 @@
       local
     };
   };
-  Object.entries(read('missionAircraftTypes:v1') || {}).forEach(([code, entry]) => addType(code, entry || {}, 'local'));
+  /** Base des types en vigueur, en place dans window.AIRCRAFT_DB : fichier, modification locale de Paramètres (règle
+   *  commune effectiveData), types ajoutés localement dans les CR. Relue si la modification locale a changé (autre
+   *  onglet, Paramètres). */
+  function typesDb() {
+    let raw = null;
+    try {
+      raw = localStorage.getItem(TYPES_OVERRIDE);
+    } catch {
+      /* stockage indisponible */
+    }
+    if (raw === appliedRaw) return file;
+    appliedRaw = raw;
+    const {
+      data
+    } = effectiveData(pristine, TYPES_OVERRIDE, String(pristine.__meta?.admin_saved || ''));
+    for (const k of Object.keys(file))
+      if (!(k in data)) delete file[k];
+    Object.assign(file, data);
+    Object.entries(read('missionAircraftTypes:v1') || {}).forEach(([code, entry]) => addType(code, entry || {}, 'local'));
+    try {
+      appliedRaw = localStorage.getItem(TYPES_OVERRIDE); // réécrite par effectiveData après une fusion
+    } catch {
+      /* stockage indisponible */
+    }
+    return file;
+  }
+  typesDb();
 
   // ---- appareils (par immatriculation ; la donnée la plus récente l'emporte)
   function defaAircraft() {
@@ -212,7 +305,134 @@
     }
     return '';
   }
+  // ---- classement d'un type : une seule réponse pour toute la suite (affectations, Mes appareils, Carburant et fiches de
+  // performances, icônes, CR, estimation de durée, Maintenance) — « quel est le type ou la catégorie de ce type OACI ou
+  // de cet appareil ? »
+  /** Désignateur d'un code (majuscules sans séparateurs, alias de la base suivis jusqu'au bout : A4M → A400M → A400) ;
+   *  le code normalisé s'il n'est pas un alias. Pour un texte libre (« Rafale B — Patrouille »), codeOf. */
+  function canonical(code) {
+    const al = (window.AIRCRAFT_DB || {}).__aliases || {};
+    let k = fold(code);
+    for (let i = 0; i < 6 && al[k] && al[k] !== k; i++) k = al[k];
+    return k;
+  }
+  /** Codes équivalents d'un code : lui-même, la chaîne d'alias jusqu'au désignateur, puis les alias qui renvoient à ce
+   *  désignateur (A4M ↔ A400M ↔ A400) — pour trouver une donnée rangée sous l'un d'eux (performances, profils). */
+  function related(code) {
+    const al = (window.AIRCRAFT_DB || {}).__aliases || {},
+      out = [];
+    let k = fold(code);
+    for (let i = 0; i < 7 && k && !out.includes(k); i++) {
+      out.push(k);
+      if (!al[k] || al[k] === k) break;
+      k = al[k];
+    }
+    const end = out[out.length - 1];
+    if (end)
+      for (const [a, b] of Object.entries(al))
+        if (b === end && !out.includes(a)) out.push(a);
+    return out;
+  }
+  /** Fiche de la base d'un code (désignateur ou alias, canonical) ; null si inconnu. */
+  function record(code) {
+    const db = window.AIRCRAFT_DB || {},
+      k = canonical(code);
+    return k && !k.startsWith('__') && db[k] && typeof db[k] === 'object' ? db[k] : null;
+  }
+  /** Catégories, dans l'ordre d'affichage : hélicoptères, turbopropulseurs, réacteurs, pistons, autres. */
+  const CATEGORIES = ['helico', 'turboprop', 'jet', 'piston', 'other'];
+  /** Libellés des catégories (un seul jeu pour la suite, décision du 16/10/2026 : noms courts), 4 langues. */
+  const CATEGORY_LABELS = {
+    helico: ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros'],
+    turboprop: ['Turbopropulseurs', 'Turboprops', 'Turboprops', 'Turbohélices'],
+    jet: ['Réacteurs', 'Jets', 'Strahlflugzeuge', 'Reactores'],
+    piston: ['Pistons', 'Pistons', 'Kolbenmotoren', 'Pistón'],
+    other: ['Autres', 'Others', 'Andere', 'Otros']
+  };
+  /** Texte dans la langue de la page (RepositoryKit.t), sinon le français. */
+  const tr = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0];
+  /** Libellé d'une catégorie (classify().category) dans la langue de la page ; « Autres » si elle est inconnue. */
+  const categoryLabel = cat => tr(CATEGORY_LABELS[cat] || CATEGORY_LABELS.other);
+  /** Groupes d'affichage des appareils (AircraftDBIcons.group : par motorisation, puis nombre de moteurs pour les
+   *  pistons) et libellés d'appareil, sous leur clé française ; 4 langues. */
+  const GROUP_LABELS = {
+    'Hélicoptères': CATEGORY_LABELS.helico,
+    'Jets': ['Jets', 'Jets', 'Jets', 'Jets'],
+    'Turbopropulseurs': CATEGORY_LABELS.turboprop,
+    'Pistons, 2 moteurs et plus': ['Pistons, 2 moteurs et plus', 'Pistons, 2 engines or more', 'Kolben, 2 Motoren und mehr',
+      'Pistón, 2 motores o más'
+    ],
+    'Pistons, 1 moteur': ['Pistons, 1 moteur', 'Pistons, 1 engine', 'Kolben, 1 Motor', 'Pistón, 1 motor'],
+    'Autres': CATEGORY_LABELS.other,
+    'Hélicoptère': ['Hélicoptère', 'Helicopter', 'Hubschrauber', 'Helicóptero'],
+    'Quadriréacteur': ['Quadriréacteur', 'Four-engine jet', 'Vierstrahliger Jet', 'Cuatrirreactor'],
+    'Triréacteur': ['Triréacteur', 'Three-engine jet', 'Dreistrahliger Jet', 'Trirreactor'],
+    'Biréacteur': ['Biréacteur', 'Twin jet', 'Zweistrahliger Jet', 'Birreactor'],
+    'Jet': ['Jet', 'Jet', 'Jet', 'Jet'],
+    'Quadriturbopropulseur': ['Quadriturbopropulseur', 'Four-engine turboprop', 'Viermotoriges Turboprop', 'Cuatrimotor turbohélice'],
+    'Biturbopropulseur': ['Biturbopropulseur', 'Twin turboprop', 'Zweimotoriges Turboprop', 'Bimotor turbohélice'],
+    'Turbopropulseur': ['Turbopropulseur', 'Turboprop', 'Turboprop', 'Turbohélice'],
+    'Quadrimoteur': ['Quadrimoteur', 'Four-engine piston', 'Viermotoriges Kolbenflugzeug', 'Cuatrimotor de pistón'],
+    'Trimoteur': ['Trimoteur', 'Three-engine piston', 'Dreimotoriges Kolbenflugzeug', 'Trimotor de pistón'],
+    'Bimoteur': ['Bimoteur', 'Twin piston', 'Zweimotoriges Kolbenflugzeug', 'Bimotor de pistón'],
+    'Monomoteur': ['Monomoteur', 'Single-engine', 'Einmotoriges', 'Monomotor'],
+    'Autre': ['Autre', 'Other', 'Andere', 'Otro']
+  };
+  /** Libellé d'un groupe ou d'un appareil (clé française d'AircraftDBIcons.group) dans la langue de la page ; tel quel
+   *  s'il est inconnu. */
+  const groupLabel = key => GROUP_LABELS[key] ? tr(GROUP_LABELS[key]) : key;
+  /** Classement d'un type. input : code (désignateur, alias) ou fiche de la base ; opts.description : description OACI
+   *  seule (« L2J ») quand il n'y a pas de fiche. Sortie : { code, rec, icao, fpl, family, kind, engines, power, category,
+   *  wing, wtc } —
+   *  · family : L avion, S hydravion, A amphibie, H hélicoptère, G autogire, T convertible, B ballon ou dirigeable
+   *    (hors OACI : kind « airship » | « balloon »), '' inconnue ; engines : nombre (« C », moteurs couplés : 2) ;
+   *  · power : J réacteur, T turbine, P pistons, E électrique, R fusée, '' inconnue ;
+   *  · category (règles de l'utilisateur, 15/10/2026) : helico (H, G), puis selon la motorisation jet (J), turboprop (T),
+   *    piston (P) — convertible, amphibie et hydravion compris — ; other : ballon, dirigeable, électrique, inconnu ;
+   *  · wing : rotary (H, G, T), amphibious (A, S), fixed (L), lta (ballon, dirigeable), '' ;
+   *  · icao : faux pour un type sans désignateur OACI ; fpl : désignateur du plan de vol (SHIP, BALL, ZZZZ sinon le code). */
+  function classify(input, {
+    description
+  } = {}) {
+    const rec = input && typeof input === 'object' ? input : input ? record(input) : null,
+      d = String(description ?? rec?.description ?? '').toUpperCase(),
+      kind = rec?.kind === 'airship' || rec?.kind === 'balloon' ? rec.kind : '',
+      family = kind ? 'B' : d[0] && 'LSAHGT'.includes(d[0]) ? d[0] : '',
+      engines = kind ? +rec.engines || 0 : d[1] === 'C' ? 2 : parseInt(d[1], 10) || 0,
+      power = kind ? String(rec.engine_type || '').toUpperCase() : d[2] && 'JTPER'.includes(d[2]) ? d[2] : '';
+    const category = kind || !family ? 'other' : family === 'H' || family === 'G' ? 'helico' : power === 'J' ? 'jet' : power === 'T' ?
+      'turboprop' : power === 'P' ? 'piston' : 'other';
+    const code = rec?.tdesig ? fold(rec.tdesig) : typeof input === 'string' ? fold(input) : '';
+    return {
+      code,
+      rec,
+      icao: rec ? rec.icao !== false : null,
+      fpl: rec?.icao === false ? rec.fpl || 'ZZZZ' : code,
+      family,
+      kind,
+      engines,
+      power,
+      category,
+      wing: kind ? 'lta' : 'HGT'.includes(family) && family ? 'rotary' : family === 'A' || family === 'S' ? 'amphibious' : family ===
+        'L' ? 'fixed' : '',
+      wtc: String(rec?.wtc || '').toUpperCase()
+    };
+  }
   window.AircraftCatalog = {
+    mergeOverride,
+    effectiveData,
+    typesDb,
+    /** Base des types telle que servie par le fichier (sans modification locale). */
+    typesFile: () => pristine,
+    USAGE,
+    canonical,
+    related,
+    record,
+    classify,
+    CATEGORIES,
+    CATEGORY_LABELS,
+    categoryLabel,
+    groupLabel,
     codeOf,
     displayName,
     SUPPLEMENT,

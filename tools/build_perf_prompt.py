@@ -2,7 +2,8 @@
 
 Le bouton « Demander à ChatGPT » du bloc « Profils de performances » (page Carburant) lit le prompt dans ce fichier
 JavaScript, chargé par <script> (fonctionne aussi hors serveur web). Le document reste la source unique : un bloc
-```text <langue> par langue (fr, en, de, es) et un bloc ```json (le schéma, mis à la place de {{SCHEMA}} et
+```text <langue> par langue (fr, en, de, es), un bloc ```text <langue>-missing (champs manquants des fiches cochées :
+window.PERF_PROMPT_MISSING) et un bloc ```json (le schéma, mis à la place de {{SCHEMA}} et
 donné aussi à la page : window.PERF_PROMPT_SCHEMA, clés admises dans la réponse). Relancer
 cet outil après avoir modifié le document (tools/bump_versions.py le fait aussi).
 
@@ -29,9 +30,20 @@ def build(verbose=True):
         if not m:
             sys.exit(f'Bloc ```text {lang} introuvable dans {SRC}')
         prompts[lang] = m.group(1).replace('{{SCHEMA}}', schema.group(1))
+    # « Renseigner les champs manquants » des fiches cochées : un bloc ```text <langue>-missing ; {{REGLES}} = règles 1 à 4
+    # (sources, valeurs, unités, cartographie) du prompt complet de la même langue
+    missing = {}
+    for lang in LANGS:
+        m = re.search(r'```text ' + lang + r'-missing\n(.*?)\n```', text, re.S)
+        if not m:
+            sys.exit(f'Bloc ```text {lang}-missing introuvable dans {SRC}')
+        rules = '\n'.join(re.findall(r'(?m)^[1-4]\. .*$', prompts[lang]))
+        missing[lang] = m.group(1).replace('{{REGLES}}', rules)
     js = ('// Prompt « Demander le profil à ChatGPT » (Carburant), GÉNÉRÉ par tools/build_perf_prompt.py depuis\n'
           '// docs/technique/PROMPT_PROFIL_PERFORMANCES.md : ne pas éditer à la main.\n'
           'window.PERF_PROMPT = ' + json.dumps(prompts, ensure_ascii=False, indent=0) + ';\n'
+          '// « Renseigner les champs manquants » des fiches cochées\n'
+          'window.PERF_PROMPT_MISSING = ' + json.dumps(missing, ensure_ascii=False, indent=0) + ';\n'
           '// schéma de la réponse (clés admises, relues par la page)\n'
           'window.PERF_PROMPT_SCHEMA = ' + json.dumps(json.loads(schema.group(1)), ensure_ascii=False) + ';\n')
     old = io.open(OUT, encoding='utf-8').read() if os.path.exists(OUT) else ''

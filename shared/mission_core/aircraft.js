@@ -33,45 +33,20 @@
   };
 
   // ---- types
-  // Base OACI ; modifications de la page Paramétrage plus récentes que le fichier
-  // (dataOverride:aircraftDb:v1, pas encore enregistrées dans le dépôt) : prioritaires.
-  let overrideCache = {
-    raw: undefined,
-    value: null
+  // Base OACI ; modifications de la page Paramétrage (dataOverride:aircraftDb:v1, pas encore enregistrées dans le
+  // dépôt) : règle commune du catalogue.
+  /** Base des types en vigueur : fichier OACI, modification locale de Paramètres et types ajoutés dans les CR — règle
+   *  commune du catalogue (AircraftCatalog.typesDb : fusion type par type, relue si la modification change). */
+  const db = () => window.AircraftCatalog?.typesDb?.() || window.AIRCRAFT_DB || {};
+  // Voilure d'après la classe OACI (Doc 8643), règle commune de la suite (AircraftCatalog.classify) : H, G, T →
+  // voilure tournante, L → avion, A / S → amphibie / hydravion ; ballon, dirigeable, inconnu → ''. Entrée : description
+  // (« H2T ») ou fiche de la base (ballon, dirigeable : sans description).
+  const categoryOf = description => {
+    const c = window.AircraftCatalog?.classify?.(description && typeof description === 'object' ? description : null, {
+      description: typeof description === 'string' ? description : undefined
+    });
+    return ['rotary', 'fixed', 'amphibious'].includes(c?.wing) ? c.wing : '';
   };
-  /** Base des types en vigueur : fichier OACI (AIRCRAFT_DB), modifications de Paramétrage plus récentes, types ajoutés localement. */
-  const db = () => {
-    const file = window.AIRCRAFT_DB || {};
-    let raw = null;
-    try {
-      raw = localStorage.getItem('dataOverride:aircraftDb:v1');
-    } catch {
-      /* stockage indisponible */
-    }
-    if (raw !== overrideCache.raw) {
-      let value = null;
-      try {
-        value = JSON.parse(raw || 'null');
-      } catch {
-        value = null;
-      }
-      overrideCache = {
-        raw,
-        value
-      };
-    }
-    const override = overrideCache.value;
-    return override?.data && override.updatedAt > String(file.__meta?.admin_saved || '') ? override.data : file;
-  };
-  // Classe OACI (Doc 8643) : H2T → hélicoptère, L2J → avion, A/S → amphibie / hydravion.
-  const categoryOf = description => ({
-    H: 'rotary',
-    G: 'rotary',
-    T: 'rotary',
-    L: 'fixed',
-    A: 'amphibious',
-    S: 'amphibious'
-  })[String(description || '').charAt(0).toUpperCase()] || '';
   // Types de la flotte absents de la base OACI importée : catalogue commun
   // (shared/aircraft_catalog.js, aussi utilisé par le Landing Dashboard et le Planner).
   const SUPPLEMENT = window.AircraftCatalog?.SUPPLEMENT || {};
@@ -91,7 +66,8 @@
     const code = String(value || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!code) return null;
     const base = db();
-    let resolved = base.__aliases?.[code] || code,
+    // alias suivis jusqu'au bout (catalogue commun : A400M → A400)
+    let resolved = window.AircraftCatalog?.canonical?.(code) || base.__aliases?.[code] || code,
       entry = base[resolved] || localTypes()[resolved] || localTypes()[code];
     // écrit en clair (« A330 MRTT Phénix », « A332 A330 MRTT Phénix ») : désignateur trouvé par le catalogue commun
     // (shared/aircraft_catalog.js : flotte, alias, noms d'usage) — rien n'est ajouté en type local pour ces libellés
@@ -230,8 +206,44 @@
   ];
   // Fusion par immatriculation, du plus ancien au plus récent : chaque champ non vide
   // écrase la valeur précédente → « la dernière en date ».
-  /** Registre des appareils connus : une entrée par immatriculation, la donnée la plus récente l'emporte. */
+  // ---- cache : la base connue et les abréviations ne sont recalculées que si une source a changé. Sans lui, chaque
+  // frappe du CR (immatriculation, type, indicatif) relisait et reparsait toutes les sources — journal des vols
+  // compris — plusieurs fois : gel de plusieurs secondes avec un gros journal.
+  const CACHE_KEYS = ['missionAircraftDirectory:v1', 'missionReportingData:v1:ledgerName', 'missionReportingData:v1:gaarLedgerName',
+    'defaFlightLog:v1', 'missionCallsignTable:v1', 'missionAircraftRegistry:v1', 'missionMergeMap:v1'
+  ];
+  let cache = {
+    stamp: '',
+    known: null,
+    abbr: null
+  };
+  /** Empreinte des sources (tailles des tables servies, longueur des textes du stockage) : change dès qu'une source change. */
+  const stamp = () => {
+    let s = `${(window.DEFA_FLEET || []).length}|${(window.DEFA_REFERENCE?.aircraft || []).length}|${(window.MissionVocab?.callsignTable || []).length}`;
+    for (const k of CACHE_KEYS) try {
+      s += '|' + (localStorage.getItem(k) || '').length;
+    } catch {
+      /* stockage indisponible */
+    }
+    return s;
+  };
+  /** Valeur en cache (known, abbr), reconstruite par build si l'empreinte des sources a changé. */
+  const cached = (slot, build) => {
+    const st = stamp();
+    if (cache.stamp !== st) cache = {
+      stamp: st,
+      known: null,
+      abbr: null
+    };
+    return cache[slot] ||= build();
+  };
+  /** Registre des appareils connus : une entrée par immatriculation, la donnée la plus récente l'emporte (copie de la
+   *  liste en cache : les entrées sont partagées, la liste peut être triée ou filtrée librement). */
   function known() {
+    return cached('known', buildKnown).slice();
+  }
+  /** Construit le registre des appareils connus (voir known). */
+  function buildKnown() {
     const byReg = new Map();
     sources().filter(r => regKey(r.registration)).sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).forEach(
       record => {
@@ -304,8 +316,12 @@
     return true;
   }
 
-  /** Correspondances forme plan de vol → indicatif complet (DRAGO → DRAGON), tirées de la table. */
+  /** Correspondances forme plan de vol → indicatif complet (DRAGO → DRAGON), tirées de la table (Map en cache, en lecture). */
   function abbreviations() {
+    return cached('abbr', buildAbbreviations);
+  }
+  /** Construit la table des abréviations (voir abbreviations). */
+  function buildAbbreviations() {
     const split = window.MissionModel.splitCallsign,
       prefixes = new Set(),
       map = new Map(); // abrégé → complet
@@ -320,10 +336,22 @@
       const p = split(c).prefix;
       if (p) prefixes.add(p);
     }));
-    prefixes.forEach(short => prefixes.forEach(full => {
-      if (map.has(short) || [...map.values()].includes(short)) return;
-      if (short.length >= 3 && full.length > short.length && full.startsWith(short)) map.set(short, map.get(full) || full);
-    }));
+    // Abréviations apprises de la base : un indicatif qui en commence un autre (DRAGO / DRAGON). Ensemble des
+    // valeurs tenu à jour au lieu d'être recopié à chaque paire : avec des centaines de séries, l'ancienne double
+    // boucle recopiait la table des millions de fois (gel de plusieurs secondes à la saisie d'un indicatif).
+    const values = new Set(map.values()),
+      list = [...prefixes].filter(x => x.length >= 3);
+    for (const short of list) {
+      if (map.has(short) || values.has(short)) continue;
+      for (const full of prefixes) {
+        if (full.length > short.length && full.startsWith(short)) {
+          const target = map.get(full) || full;
+          map.set(short, target);
+          values.add(target);
+          break;
+        }
+      }
+    }
     return map;
   }
   // Désignateur OACI de l'exploitant (OPR/ de la case 18) d'après l'organisme.

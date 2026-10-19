@@ -39,6 +39,25 @@
     ["Phase", "Phase", "Phase", "Fase"],
     ["Altitude (ft)", "Altitude (ft)", "Höhe (ft)", "Altitud (ft)"],
     ["Profil actif", "Active profile", "Aktives Profil", "Perfil activo"],
+    ["Fiche en cours", "Sheet being edited", "Blatt in Bearbeitung", "Ficha en edición"],
+    ["Champs de la fiche", "Sheet fields", "Felder des Blatts", "Campos de la ficha"],
+    ["Interpolation moteur", "Engine interpolation", "Triebwerksinterpolation", "Interpolación motor"],
+    ["Airframe SimBrief", "SimBrief airframe", "SimBrief-Airframe", "Airframe de SimBrief"],
+    ["Moteur", "Engine", "Triebwerk", "Motor"],
+    ["Fichier", "File", "Datei", "Archivo"],
+    ["Régimes de vol et champs de la fiche ouverte.", "Flight regimes and fields of the open sheet.",
+      "Flugphasen und Felder des geöffneten Blatts.", "Regímenes de vuelo y campos de la ficha abierta."
+    ],
+    ["Cartographie moteur, table RPM et interpolation du débit.", "Engine map, RPM table and fuel-flow interpolation.",
+      "Motorkennfeld, Drehzahltabelle und Verbrauchsinterpolation.", "Mapa motor, tabla RPM e interpolación del consumo."
+    ],
+    ["Airframe, calibration sur un OFP réel, traçabilité et audit.", "Airframe, calibration on a real OFP, traceability and audit.",
+      "Airframe, Kalibrierung an einem echten OFP, Nachweis und Prüfung.",
+      "Airframe, calibración con un OFP real, trazabilidad y auditoría."
+    ],
+    ["Dernier JSON importé : fiche, base ou OFP.", "Last imported JSON: sheet, database or OFP.",
+      "Zuletzt importiertes JSON: Blatt, Datenbank oder OFP.", "Último JSON importado: ficha, base u OFP."
+    ],
     ["Importer `.lnmperf` / JSON / CSV", "Import `.lnmperf` / JSON / CSV", "`.lnmperf` / JSON / CSV importieren",
       "Importar `.lnmperf` / JSON / CSV"
     ],
@@ -73,17 +92,13 @@
     ["Dossier performances", "Performance folder", "Leistungsordner", "Carpeta de rendimiento"],
     ["Récupérer dernier FPL SimBrief", "Fetch latest SimBrief FPL", "Letzten SimBrief-FPL abrufen", "Recuperar último FPL de SimBrief"],
     ["Unités :", "Units:", "Einheiten:", "Unidades:"],
-    ["Altitude optimale — carburant et vitesse", "Optimum altitude — fuel and speed",
-      "Optimale Flughöhe — Kraftstoff und Geschwindigkeit", "Altitud óptima — combustible y velocidad"
-    ],
-    ["Lance « Calculer » pour tracer les courbes d’altitude et de montée optimales.",
-      "Press “Calculate” to draw the optimum altitude and climb curves.",
-      "„Berechnen“ drücken, um die Kurven für optimale Flughöhe und Steigflug zu zeichnen.",
-      "Pulse «Calcular» para trazar las curvas de altitud y ascenso óptimos."
+    ["Lance « Calculer » pour tracer la courbe de montée.", "Press “Calculate” to draw the climb chart.",
+      "„Berechnen“ drücken, um das Steigflugdiagramm zu zeichnen.", "Pulse «Calcular» para trazar el gráfico de ascenso."
     ],
     ["Hypothèses du modèle", "Model assumptions", "Modellannahmen", "Hipótesis del modelo"],
-    ["Montée optimale — vario et carburant", "Optimum climb — rate and fuel", "Optimaler Steigflug — Steigrate und Kraftstoff",
-      "Ascenso óptimo — régimen y combustible"
+    ["Montée — vario, carburant et vitesses selon l’altitude", "Climb — rate, fuel and speeds by altitude",
+      "Steigflug — Steigrate, Kraftstoff und Geschwindigkeiten nach Höhe",
+      "Ascenso — régimen, combustible y velocidades según la altitud"
     ],
     ["Trajet, niveau, vent, météo et réserves du vol.", "Trip, level, wind, weather and reserves of the flight.",
       "Strecke, Flughöhe, Wind, Wetter und Reserven des Flugs.", "Trayecto, nivel, viento, meteorología y reservas del vuelo."
@@ -119,9 +134,6 @@
     ["Tous les champs du profil de l’appareil.", "Every field of the aircraft profile.", "Alle Felder des Luftfahrzeugprofils.",
       "Todos los campos del perfil de la aeronave."
     ],
-    ["TAS selon le niveau — croisière et montée", "TAS by level — cruise and climb", "TAS nach Flughöhe — Reise- und Steigflug",
-      "TAS según el nivel — crucero y ascenso"
-    ],
     ["Écart ISA (°C)", "ISA deviation (°C)", "ISA-Abweichung (°C)", "Desviación ISA (°C)"],
     ["Température sol (°C)", "Ground temperature (°C)", "Bodentemperatur (°C)", "Temperatura en tierra (°C)"],
     ["Altitude terrain (ft)", "Field elevation (ft)", "Platzhöhe (ft)", "Elevación del aeródromo (ft)"],
@@ -145,16 +157,10 @@
       "Vorhergesagte Temperatur auf Reiseflughöhe (Höhenwind- und Temperaturvorhersage, OFP): daraus wird die ISA-Abweichung abgeleitet.",
       "Temperatura prevista en el nivel de crucero (pronóstico de vientos y temperaturas en altura, OFP): de ella se deduce la desviación ISA."
     ],
-    ["Vitesses de montée — Badin et TAS selon l’altitude", "Climb speeds — IAS and TAS by altitude",
-      "Steiggeschwindigkeiten — IAS und TAS nach Höhe", "Velocidades de ascenso — IAS y TAS según la altitud"
+    ["Régimes de montée — cartographie moteur", "Climb settings — engine map", "Steigflugeinstellungen — Motorkennfeld",
+      "Regímenes de ascenso — mapa motor"
     ],
-    ["Vitesses de montée — Badin selon l’altitude", "Climb speeds — IAS by altitude", "Steiggeschwindigkeiten — IAS nach Höhe",
-      "Velocidades de ascenso — IAS según la altitud"
-    ],
-    ["Comparaison des montées", "Climb comparison", "Vergleich der Steigflüge", "Comparación de ascensos"],
-    ["Montée par altitude — régimes RPM / N1", "Climb by altitude — RPM / N1 settings", "Steigflug nach Höhe — RPM-/N1-Einstellungen",
-      "Ascenso por altitud — regímenes RPM / N1"
-    ],
+    ["Objectifs de montée", "Climb goals", "Steigflugziele", "Objetivos de ascenso"],
     ["Débit total", "Total fuel flow", "Gesamtverbrauch", "Flujo total"],
     ["Régime de vol ↕", "Flight phase ↕", "Flugphase ↕", "Fase de vuelo ↕"],
     ["État", "Status", "Status", "Estado"],
@@ -167,14 +173,22 @@
       "Campos exportados tal cual en el `.lnmperf`. Un campo vacío sigue vacío en el JSON y bloquea la exportación XML: no se añade ningún valor automáticamente."
     ],
     ["Enregistrer le profil", "Save profile", "Profil speichern", "Guardar perfil"],
+    ["Enregistrer la fiche", "Save the sheet", "Blatt speichern", "Guardar la ficha"],
+    ["Abandonner les modifications", "Discard changes", "Änderungen verwerfen", "Descartar los cambios"],
     ["Supprimer cet avion", "Delete this aircraft", "Dieses Flugzeug löschen", "Eliminar este avión"],
     ["Choisis ou importe un profil.", "Choose or import a profile.", "Profil wählen oder importieren.", "Elija o importe un perfil."],
-    ["« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de l’identifiant SimBrief du profil pilote (☰ › Profil pilote). L’import JSON reste un secours si le navigateur bloque SimBrief.",
+    ["« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de l’identifiant SimBrief du profil pilote (Paramètres › Mon profil). L’import JSON reste un secours si le navigateur bloque SimBrief.",
       "“Fetch latest SimBrief FPL” loads the latest OFP directly. JSON import remains a fallback if the browser blocks SimBrief.",
       "„Letzten SimBrief-FPL abrufen“ lädt den letzten OFP direkt. Der JSON-Import bleibt ein Ausweg, falls der Browser SimBrief blockiert.",
       "«Recuperar último FPL de SimBrief» carga directamente el último OFP. La importación JSON sigue siendo una alternativa si el navegador bloquea SimBrief."
     ],
     ["Calibrer le profil actif", "Calibrate the active profile", "Aktives Profil kalibrieren", "Calibrar el perfil activo"],
+    ["Importer airframe SimBrief", "Import SimBrief airframe", "SimBrief-Airframe importieren", "Importar airframe de SimBrief"],
+    ["Importer OFP JSON", "Import OFP JSON", "OFP-JSON importieren", "Importar OFP JSON"],
+    ["Exporter audit JSON", "Export audit JSON", "Prüfung als JSON exportieren", "Exportar auditoría JSON"],
+    ["Temps", "Time", "Zeit", "Tiempo"],
+    ["Carburant", "Fuel", "Kraftstoff", "Combustible"],
+    ["FF calculé", "Computed FF", "Berechneter FF", "FF calculado"],
     ["Aucun OFP analysé.", "No OFP analysed.", "Kein OFP ausgewertet.", "Ningún OFP analizado."],
     ["Traçabilité de calibration", "Calibration traceability", "Kalibrierungsnachweis", "Trazabilidad de la calibración"],
     ["Profil vertical", "Vertical profile", "Vertikalprofil", "Perfil vertical"],
@@ -201,6 +215,8 @@
     ["Aucun JSON chargé.", "No JSON loaded.", "Kein JSON geladen.", "Ningún JSON cargado."],
     ["Choisir l’avion", "Choose the aircraft", "Flugzeug wählen", "Elegir el avión"],
     ["Aucun profil actif.", "No active profile.", "Kein aktives Profil.", "Ningún perfil activo."],
+    ["Aucune fiche en cours.", "No sheet open.", "Kein Blatt geöffnet.", "Ninguna ficha abierta."],
+    ["Fiche enregistrée", "Sheet saved", "Blatt gespeichert", "Ficha guardada"],
     ["Recharger la base locale", "Reload the local database", "Lokale Datenbank neu laden", "Recargar la base local"],
     ["Modifications non enregistrées", "Unsaved changes", "Nicht gespeicherte Änderungen", "Cambios sin guardar"],
     ["Le profil courant a été modifié. Que veux-tu faire avant de changer d’avion ?",
@@ -219,8 +235,9 @@
     ["Motorisation (auto : base OACI)", "Engine type (auto: ICAO database)", "Antriebsart (auto: ICAO-Datenbank)",
       "Motorización (auto: base OACI)"
     ],
-    ["Montée optimale — vario et carburant", "Optimum climb — rate and fuel", "Optimaler Steigflug — Steigrate und Kraftstoff",
-      "Ascenso óptimo — régimen y combustible"
+    ["Montée — vario, carburant et vitesses selon l’altitude", "Climb — rate, fuel and speeds by altitude",
+      "Steigflug — Steigrate, Kraftstoff und Geschwindigkeiten nach Höhe",
+      "Ascenso — régimen, combustible y velocidades según la altitud"
     ],
     // Éditeur de profil (groupes, champs), courbe moteur, messages.
     ["Identité et format", "Identity and format", "Identität und Format", "Identidad y formato"],

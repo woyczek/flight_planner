@@ -10,6 +10,406 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+## [5.3.0] — 2026-10-19
+
+The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,
+one of my flights, my last IVAO or VATSIM flight read through the launcher, a filed flight plan, a pasted tracker page
+or METAR, a file), the form is read in three steps — Flight, Mission, Result — with prefilled blocks shown as one-line
+summaries, and each block says where its values come from. The availability editor is a new module: a continuous
+time axis, rectangles drawn, moved and resized to five minutes, unavailability as a background, undo, delivered
+separately with its specification and integration prompts. Performance sheets have their own page, Fuel keeps the
+plan only, and one aircraft picker with search serves the suite. "My flights" lists the pilot's past flights, "Keys
+and external services" holds every suite key in one place, and the aircraft type logic (classification, lookup,
+names) lives once in the shared framework.
+
+### Added
+
+- **Mission report: prefill from my last IVAO / VATSIM flight** (`shared/mission_core/core.js`, `tools/launch.py`) —
+  a "My last flight" part in the report's "Prefill ▾" menu ("Complete this report from…"), from level 1, with an IVAO
+  and a VATSIM entry (greyed out with "IVAO VID missing — My profile ↗" when the profile has no ID; the IDs come from My profile
+  only). The launcher reads the pilot's flights of the last 7 days (`/__setup/ivao/last-flight`: IVAO tracker API
+  with the suite's key, never sent to the page, all result pages; `/__setup/vatsim/last-flight`: public VATSIM history
+  and filed plans), rolling window in UTC, never dependent on the report family or date; one flight is applied at
+  once, several are offered as a list (call sign, route, UTC times, "in progress" for an open session, a ↗ tracker
+  link per line); an empty list says which ID and period were searched; open sessions and empty lists are never
+  cached. A flight cut by disconnections (same call sign, next session within 30 min resuming where the previous one
+  stopped, the previous one not ending on blocks — checked on the tracks) is one entry, "3 sessions (reconnections)":
+  flight plan of the last session, tracks put end to end, all session ids kept, breaks listed. The flight comes back
+  in the tracker-paste format (ICAO flight plan text, track samples) and goes through the same prefill as a paste
+  (`MissionTextImport.apply`, empty fields only), including `REG/` registration and track times; VATSIM gives
+  connection times only (no track). "View on the IVAO tracker ↗" next to the button and to the "Track URL" field as
+  soon as a flight is taken or pasted. Pasting a tracker page stays in "Analyse / import…" (level 3). Pilot manual
+  (4 languages) and operations manual (external services) updated.
+- **Tutorial "Write your first mission report"** (`docs/tutorial/first_report.fr.md` / `.en.md`, Help › Tutorials;
+  the help already listed it, the file was missing) — the report from start to finish: open it from an assigned
+  mission, from a flight without a report in My flights, or from scratch; family and series; the aircraft (what the
+  assistant fills in); "My last IVAO / VATSIM flight" or a pasted tracker page; times (local) and route; result, crew
+  and family blocks; save; send (web service, airline website with the "→ Vol" bookmark); find the flight again in My
+  flights. Block names quoted as on screen, no screenshots.
+- **"My flights" page** (`apps/pilot/mes_vols.html`, side bar under "My missions", level 1) — the pilot's past
+  flights, most recent first, one per line: date, call sign, aircraft (the shared name cell), route, block duration,
+  mission, report. Sources merged by date, call sign and registration without duplicates (the report wins): the pilot's
+  reports in the report ledger and the airline flight log imported from the website, filtered on the trigram; more
+  sources plug in through `window.MyFlights.addSource` (IVAO, VATSIM later). Period (7 / 31 days, 12 months by
+  default, all), search, totals (flights, block hours, three most flown types), CSV export of the list shown, link to
+  the detailed analysis. A row opens its report; a log flight without a report unfolds its details with "Write the
+  report", which opens the family's report pre-filled (date, call sign, aircraft, route, declared block time) through
+  the mission order's gateway (`?from=sia`, new `__flight` part). Under 800 px: date, call sign, route, duration. Links
+  from My missions and from the report's "Send" menu.
+- **Mission report: record the flight on the airline website** (`shared/mission_core/core.js`) — the report's "Send"
+  menu (the web service's "Send report", now grouped with it so the toolbar keeps seven entries) gets an "Airline
+  website" part when the site address is set (`RepositoryNav.vaUrl("recordFlight")`, `/selection_appareil.php` in
+  `config/repository_tree`): "Record the flight on the website ↗" opens the site's "Enregistrer mon vol" page with the
+  flight's fields in the fragment (`#defa=`, base64url JSON, never sent to the server); the "→ Vol" bookmark, dragged
+  once to the bookmarks bar, goes to the aircraft (by registration), then to "Ajouter un vol", and fills it by field
+  name — call sign chosen in the site's list by name or code, flight number, end-of-flight date (report date and
+  on-block or landing time, local time like the report's timeline, next day past midnight), block (else flight) duration, mission, arrival; the site's
+  read-only fields (registration, departure) are compared and differences reported; nothing is ever submitted. The
+  fields survive the site's login in its session storage. Fallback: "Copy the fields" (one line). The suite never
+  logs in to the site.
+- **Availability timeline module** (`shared/dispos_timeline.js`, formats in `shared/dispos_formats.js`; in the suite's
+  pages through `shared/dispos_week.js`, see Changed) — a stand-alone component, with no dependency on the framework, to enter one person's availability
+  for an ISO week on a continuous time axis, in UTC. Background bands give the nature of the unavailability;
+  availability rectangles sit on top, with square corners, the start time on the left, the type centred and the end
+  time on the right. One state per minute: under a rectangle the background does not count, but it stays in place, so
+  a moved or deleted rectangle gives it back.
+  - One rule for every gesture, whatever the brush: a gesture that starts on a shape (rectangle or band) takes it —
+    click selects, drag moves (5 min steps, to another row: same times, another day), the edges resize, Shift+drag
+    draws over it; a gesture that starts beside the shapes draws with the brush.
+  - Across several rows, a selection rectangle lays the same hours on each day it crosses, started anywhere (empty
+    space, gutter between rows). The last shape wins, and a background drawn through an availability cuts it, live.
+  - A palette entry dropped on a shape changes its nature; dropped on a day (empty part of the row, day name) it fills
+    the whole day, and a background entry then changes only the background. Double-clicks replace the background of
+    a day or of the week, never removing an availability.
+  - Keyboard, long press, undo history (Ctrl+Z / Ctrl+Y, 50 steps per week), repeating period box across weeks, hover
+    text giving the visible range. A "How to use" panel (option `help`: open, `"collapsed"` or off) explains it in
+    nine short paragraphs, in the order of use; `replace(data)` imports a week as one step that can be undone.
+  - Two densities, a mount option that changes sizes only. `compact`, the default, has the look of the former cell
+    grid: rows of 22 px, hour cells with the hours 0–23 above them, "Mon 12/10" day labels, and palette chips such as
+    "O For anything" on four lines (Available, Exercise, Busy, Unavailable); still one letter per rectangle, with
+    its times, shortened ("8 O 12") when the rectangle is narrow. `comfortable` has rows of 44 px. A gutter
+    above the first row and below the last lets a selection rectangle start there.
+  - English texts by default; the host page translates through `labels` or `t(key, default)`, categories and short
+    labels included; dates through `Intl`. Theme through CSS variables. Events `dispos-change`, `dispos-select`, `dispos-week`,
+    `dispos-history`; `destroy()`.
+  - Native format schema 3 (`ranges` is the declaration, the truth; `background` is an editing convenience a reader
+    can ignore). `DisposFormats` reads and writes schema 3 and the suite's schema 2, and takes new formats through
+    `register`.
+  - `labs/dispos_timeline.html` is its example page (French through `labels`, localStorage). It has a density
+    switch, and its data panel offers every registered format: schema 3, schema 2, and a demonstration format `flat`
+    registered by the page. For the chosen format it shows the JSON, live, with "Copy" and a paste-and-import box. Two prompts:
+    `docs/technique/DISPOS_TIMELINE_SPEC.md` (full description, to regenerate it) and
+    `docs/technique/DISPOS_TIMELINE_INTEGRATION.md` (to put it into another single-page HTML application).
+- **Delivery: module packages** — `tools/publish_dist.py` also builds `dist/dispos-module-<version>.zip` (both scripts,
+  `example.html` loading them from its own folder, the two prompts, a README, the code licence MPL 2.0 and the
+  document licence CC BY-SA 4.0), with its SHA-256 on a "Delivery" line of the CHANGELOG and of `docs/VERSION.md`;
+  `--sans-modules` skips it, `--modules-seulement --ref HEAD` builds a package to try it.
+- **Assignment: declared aircraft variants** — a pilot's declaration may list variants per ICAO designator
+  (`appareils.variantes`, e.g. `{ "CL2T": ["CL-415"] }`; editor by Features SOG). Qualification stays per designator
+  (never a block); among candidate aircraft and pilots, the matching variant comes first (fleet `variant` = declared
+  variant); a mismatch shows "different variant: CL-415 declared, CL-215T in the fleet" on the assignment card and in
+  the pilot's mission order (`aircraft.declared_variant`, *My missions*). Schema in
+  `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3 (`shared/assignments.js`, `shared/assign_dialog.js`, 4 languages).
+- **Performance sheets: one box per group, no gaps between boxes** — each group heading of the table (Helicopters,
+  Turboprops…) has a box that ticks or unticks all its sheets, folded group included (indeterminate when part of it is
+  ticked); the whole checkbox cell ticks or unticks its row, so a click that misses the box no longer replaces the
+  selection with that single row.
+- **Performance sheets: "Import…" by file or by pasting, duplicates proposed for completion** — "Import…" (bottom bar,
+  and the ☰ menu) opens a window with two ways: choose one or more files (`.lnmperf`, JSON, CSV), or paste a text (a
+  sheet JSON, a ChatGPT answer with its prose and code blocks, a `.lnmperf`, a CSV separated by `;`, `,` or tab); the
+  pasted text follows a file's path, a ChatGPT answer becomes a "… — ChatGPT" sheet, an empty or unreadable text is
+  reported in the window. An imported sheet that already exists (same type, aliases included, or same name) is never
+  created silently: "Complete the existing sheet" (default, empty fields only, summary first), "Merge" (field by field
+  preview) or "Create a second sheet"; "same choice for the next duplicates" beyond two (ticked in advance); "Undo" for
+  10 s restores the database as before the import. A JSON with several entries (an array, or a `sheets` / `profiles` /
+  `fiches` / `aircraft` / `items` list) gives as many sheets, each matched by identifier, then type (aliases included),
+  then name — the same matching as "Fill in the missing fields" (`gptMatchRank`); two entries for the same sheet add up;
+  an unreadable entry does not stop the others; one summary at the end ("n completed, m merged, k created").
+- **Tutorial "Create a performance sheet"** (`docs/tutorial/fuel_profile.fr.md` / `.en.md`, Help › Tutorials) — the
+  Performance sheets page step by step: choose the aircraft, create its sheet (SimBrief, ChatGPT, class estimate),
+  complete it with ChatGPT (one aircraft, or "Fill in the missing fields" for several), check the fields and the engine
+  map, save, then use it in Fuel. Block names quoted as on screen, no screenshots.
+- **Landing: one reading block** (`apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html`) — the format note
+  and the trend card are merged into a single card under the analysis dock: the trend verdict on the left (coloured
+  title and text, for the asymptote, first/last quarter and moving-average methods, and the empty or insufficient
+  cases), the legend on the right in small print (format read, "estimated" diamond, rating swatches, estimation on
+  or off); on two rows under 800 px. The shared block framework (`shared/app_framework.js`,
+  `shared/block_icons.js`) treats it as one block.
+- **Landing: linked points and pinned tooltip** (`apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html`) —
+  hovering a point lights up the same landing on the five charts (score, rate, G, nose, FPM × G scatter: larger,
+  ringed point, the others dimmed); a click pins the tooltip with the landing's full record (date, aircraft,
+  airport and runway when present, FPM, G, nose, score, source), keeps it lit and highlights its row in the
+  landings table, centred in the table's own scroll box. Closed by the cross, a second click on the point, a click
+  outside the points or Esc; one pinned point at a time. Tooltips stay inside the window (flipped left of / above
+  the pointer near the edges, 8 px margin), and the range selection now starts only after a real drag, so a plain
+  click on a point is no longer taken as a selection.
+- **"Fill in the missing fields (n)"** (Performance sheets, bottom bar, ticked rows) — one ChatGPT question for every
+  ticked sheet: for each, what the suite already knows and its empty fields (engine map included when the sheet has
+  none); the pasted answer (one entry per sheet) fills only the empty fields, never what is already entered, with a
+  summary per sheet before confirming and "Undo" for 10 s. Prompt in docs/technique/PROMPT_PROFIL_PERFORMANCES.md
+  (`<language>-missing` blocks, rules shared with the full prompt).
+- **"Performance sheets" page** (`apps/planner/performance_sheets.html`, Tools, level 3; docs/technique/V2_FABLE.md
+  § 13, step 1) — the management of the aircraft's performance sheets: the "Performance profiles" table and all its
+  actions, the field editor, engine performance and RPM table, engine map, flight regimes, OFP calibration and audit.
+  In the header, an "Aircraft" selector, divided like Fuel's menu, that picks the sheet being edited and the ChatGPT
+  panel's aircraft (a click on a table row too; several rows ticked: none); a bottom bar of five commands: "Add an
+  aircraft", "Import…", a "Selection (n) ▾" menu for the ticked rows (merge, export, save to the folder, fill in the
+  missing fields, delete), the sheet's state with "Save the sheet" and "Discard changes"; the performance folder has
+  its own line under the table's introduction (My aircraft, folder state, reread, choose), and "Fetch latest SimBrief
+  FPL" moved to the OFP calibration; search, sorting and ChatGPT stay above the table. An aircraft without a sheet shows only
+  "none" in the table; choosing it (its row, or the selector) offers "Create the sheet" (SimBrief, ChatGPT, class
+  estimate) once, in the bottom bar. Notifications sit above the bottom bar. Below the table, four cards instead of nine
+  blocks: "Sheet being edited" (flight regimes and fields, from the Design level), "Engine" (engine map, RPM table and
+  curve, interpolation), "SimBrief" (airframe, OFP calibration, traceability, audit) and "File" (last imported JSON,
+  folded); the duplicate export buttons are gone (the bottom bar exports the ticked sheets). It shares its script and styles with Fuel
+  (`apps/planner/flight_planner.js` / `.css`, moved out of the fuel page) and the same local database; a sheet saved
+  on one page is picked up at once by the other one open in another tab. Fuel keeps its blocks during this step.
+- **My aircraft, one list with its performance side** — Settings › My profile › Aircraft and simulators ("My aircraft",
+  fleet included) and the fuel page's "Performance profiles" block show the same aircraft, in the same order and with
+  the same name (silhouette, bold name, designator and class); each Settings row has a "Performance" column (profile
+  source, linked to Fuel, or "none" with "Create from SimBrief" when SimBrief knows the type, "Ask ChatGPT", "Estimate
+  from the class"). Aircraft are always added by a name ("CL-415", "Canadair 415" and "CL415" give CL2T, shown
+  "Canadair CL-415"); with no match the aircraft is kept under its name, "ICAO type to confirm". The fuel block is
+  grouped by category (collapsible), sortable by name, category or source, has an "Add an aircraft" window (the same
+  as Settings) and creates a profile in one click: SimBrief record, ChatGPT panel, or a minimal profile estimated from
+  the ICAO class (fuel flow, TAS, ceiling, marked estimated). The reporting section "My aircraft (reporting)" is renamed
+  "Aircraft flown (reports)". Variants of a shared designator (CL2T: CL-215T and CL-415): the declaration keeps
+  `appareils.variantes` next to the designator lists; the add list offers each variant (record model, fleet variants,
+  common names), one row per variant in My aircraft and in Fuel, named after the variant (otherwise "Canadair CL-215T /
+  CL-415"), the performance profile staying per designator ("performance shared by the variants"). Common name cell (48 px
+  silhouette box, left-aligned name on one line with the full name as a tooltip, one line of badges: designator, class,
+  mentions), constant row height; "Search an aircraft" field in both places (name, variant, designator, class, source;
+  groups with a match unfolded, the others folded, "n aircraft").
+- **Textured designs: sliders and scrollbars** — `input[type=range]` (climb instructions, level slider, zone radius) and scrollbars (page, tables, menus) now wear the design's materials (track = tab rail, thumb = the design's button, square corners, rounded in Aqua) in Cabinet, Flight log, Rugged, Aqua (both tones) and Tactical; flat designs unchanged.
+- **Fuel: "Flight level decision" chart, and simpler curves** (docs/technique/V2_FABLE.md § 12) — first block of the fuel
+  plan, in the simple and the detailed view: trip fuel (left scale) and trip time (right scale, thin curve) of the whole
+  flight at each level, each scale in the colour of its curve, climbing with the goal of the climb instructions; "Least
+  fuel" and "Fastest" pills (click: cursor there); plan level as a solid line, cursor dashed; one grey for levels that
+  cannot be held (ceiling, trip too short, not enough thrust), the reason being in the cursor card. The card is one table,
+  always the same: plan, cursor and difference (trip fuel and time, cruise TAS, climb, TOD, descent, IAS and rates);
+  "Use this level" makes the cursor the plan level. Fixed tables: "Levels" (round levels, sortable) and,
+  in the detailed view, "Climb goals" (always to the plan level). The climb chart and the instruments follow the
+  cursor, the climb instructions the chosen level (not the hover); nothing moves the page while hovering (stable heights, reserved warning line).
+  Detailed view: "Optimum altitude" and "TAS by level" removed; one "Climb" chart (rate, fuel per 1,000 ft, IAS and TAS
+  by altitude) for the chosen goal; engine settings only with an engine map; one side panel per chart, three lines and
+  "Learn more"; the Result's cursor card is gone.
+
+### Changed
+
+- **One aircraft picker for the suite, first in Fuel** (`shared/aircraft_picker.js`, `apps/planner/flight_planner.js`,
+  `shared/flight_ui.js`, `shared/equipment_editor.js`) — `AircraftPicker.attach(host, { kind, sources, onPick, … })`:
+  a drop-down list with a search field at the top (name, type, designator, registration, call sign, catalogue
+  aliases), titled groups, keyboard, kept inside the window, free entry where the page accepts it, disabled entries
+  with their reason (docs/technique/FRAMEWORK.md). Fuel's "Aircraft" button uses it (sheets: "My aircraft" first,
+  then by category from `AircraftCatalog.classify`); the former home-made menu and its CSS are removed. Performance
+  sheets: the "Aircraft" selector of the header (sheets and types without a sheet, the one in use shown first when it
+  is not in the list) replaces its native `<select>`; `aircraftGroups` and `profileVisual` are removed.
+  `EquipmentEditor.makeSearch` now scores with the shared `AircraftPicker.match`.
+- **Mission report: fourth step "Flight details"** (`shared/mission_core/core.js`, `core.css`) — folded by default, it
+  gathers Navigation, Environment / weather, Timed events, Legs / rotations and Capabilities; opened, it shows them at
+  every level (it replaces the former "Detailed report"), each block summed up on one line (first filled values) with
+  its provenance badge and "Edit".
+- **Mission report: the form in steps, with block summaries** (`shared/mission_core/core.js`, `core.css`) — the form
+  reads in three steps, "1 Flight · 2 Mission · 3 Result" (progress bar at the top, each step folds by its title, which
+  says "✓" or "to complete"): Flight = Identification, Aircraft, Timeline, Crew, Fuel (and Network track from level 3);
+  Mission = Tasking and the family blocks; Result = "Results and remarks". A block whose key fields are filled shows
+  one summary line with its provenance badge (aircraft "MILAN74 · DH8D F-ZBMD", timeline "block 13:07 → 15:13, flight
+  13:21 → 15:02" with the track link, fuel "1200 → 650 kg", crew names, identification); "Edit" unfolds its fields.
+  Never on a block with a consistency issue; a block being edited stays unfolded. At levels 1-2, "All fields" in a
+  block replaces the "Detailed report" button, which is removed. A click on a consistency issue opens its step, block
+  and, if needed, all its fields (`reveal`). A read-only "number · date" chip heads the toolbar. Steps are plain
+  containers outside the block framework: the ↕ handle is removed in the report and **block orders remembered
+  before the steps no longer apply**.
+- **Mission report: "Results and remarks" in one block; Tasking from level 1** (`shared/mission_core/blocks.js`,
+  `core.js`, families FIRE / ISR / LE) — the "Remarks" block (observations, lessons learned) joins "Results" (data paths
+  `results.*` and `remarks.*` unchanged; a remembered "hidden" state of the former Remarks block is lost). "Tasking"
+  is shown from level 1 for families without their own order block; FIRE, ISR and LE declare `ownOrder` and keep it in
+  the detailed report. `MissionBlocks.list(family)` builds the form's block list.
+- **Mission report: field provenance** (`shared/mission_core/core.js`, `core.css`) — the title of each block filled
+  by a source carries a "↧" badge naming it (prefill source with the flight date, mission order, airline log, network
+  tracking), with the number of fields in its tooltip. A field corrected by hand loses its provenance; "Undo" restores
+  the previous one. Kept with the draft in the browser (`<draft key>:origins`), never in the ledger.
+- **Mission report: new report from a recent order or flight** (`shared/my_flights.js`, `shared/mission_core/core.js`,
+  `apps/pilot/mes_vols.html`) — "Prefill ▾ › New report from…" lists the 7 recent mission orders without a report
+  (`PilotToday.pending`) and the 7 recent flights of the airline log without a report, one line each (date, call sign,
+  route), with "Open My missions / My flights ↗" as the last line; a click opens the prefilled report through the same
+  bridge as those pages. The modules are loaded on demand. The flight sources, merge and report bridge of My flights
+  move to `shared/my_flights.js` (`window.MyFlights`: `collect`, `withoutReport`, `writeReport`, `addSource`), shared
+  by both pages.
+- **Mission report: one "Prefill ▾" menu** (`shared/mission_core/core.js`, `core.css`, `text_import.js`, `fpl.js`) —
+  everything that fills the report is gathered in one short header menu, from level 1: one line per entry, in two
+  titled groups, "New report from…" (a mission order, one of my flights, a file at level 3) and "Complete this report
+  from…" (my last IVAO / VATSIM flight, moved out of the Timeline block with the same behaviour; the filed flight plan
+  from SimBrief / IVAO / VATSIM, moved out of the Navigation block; paste of a flight plan, tracker page or METAR; the
+  "→ CR" bookmark). The menu stays inside the window (opened upwards or shifted left when needed, scrolls only as a
+  last resort) and closes with Escape or a click elsewhere; an entry greyed out for a missing network ID gives the
+  reason as a tooltip. Each entry then opens its own suite dialog (flight list, flight plan sources, paste box), which
+  scrolls on its own, with its help folded under "Help". All sources go through the same path (`applyImport`): empty
+  fields only, the same summary naming the source and the flight date, the blocks touched, the fields already entered
+  that were kept and what the source did not give, shown in a notification with "Undo" (10 s, restores the report as
+  before) and "Replace the fields already entered (n)" (applies the source again with replacement: `replace` option of
+  `MissionTextImport.apply` and `MissionFpl.apply`, which also report the kept fields). The most explicit source wins:
+  the known-aircraft assistant only fills empty aircraft fields and never replaces a value set by the source or
+  already entered, even when the registration changes in the same step (`sourceWins`); the summary names what was not
+  applied ("fleet call sign MILAN74 not applied (CFN12 comes from the source)"). Replaces the "Analyse / import…"
+  menu.
+- **Keys and external services: one place** (`shared/maintenance_page.js`, `tools/launch.py`, `shared/app_framework.js`)
+  — Settings › Installation gets a "Keys and external services" section, one card per service (IVAO, VATSIM,
+  SimBrief, airline website, report web service): key state ("saved on … UTC (…abcd)", "missing", "IVAO_API_KEY
+  environment variable"), what uses it (links), and for the IVAO key "Save" (replaces then tests), "Test" (control
+  call through `/__setup/secrets/test`: "OK, N tracker sessions read over the last hour" or "key refused") and
+  "Remove". The key field leaves Sources and folders and the first run (state and link only). Launcher IVAO routes
+  answer `{ key: "missing" | "refused" }` (401 / 403); `AppFramework.keyIssue` turns it into a translated message and
+  every notification carrying it gets an "Open the keys ↗" link (report, Board, ODV planning). Personal IDs (IVAO VID,
+  VATSIM CID, SimBrief) are edited in My profile only: the ☰ › Pilot profile menu shows them read-only with "Edit in My
+  profile ↗", and "ID missing" messages point to My profile. Administrator manual (4 languages), pilot manual
+  (4 languages) and operations manual updated.
+- **Availability editor replaced by the availability timeline module** — *My missions › My availability*, *My
+  availability* and the ODV legend use `shared/dispos_timeline.js` through `shared/dispos_week.js`. It brings a
+  continuous time axis to the minute, background and availabilities, one state per minute, the single gesture rule,
+  selection rectangle, palette drops and undo (Ctrl+Z / Ctrl+Y). It is set up with the suite's categories, texts in
+  four languages, compact density, and its "How to use" panel folded.
+  - Around it, the page keeps its week bar (or the page's week in *My missions*) and the mission themes opened by the
+    chosen category under the palette.
+  - It also keeps "Precise range" to the minute, "⧉ Previous week" (asks before replacing a week that is not empty;
+    Ctrl+Z undoes it), "Clear all" (Ctrl+Z), the status line with "Write to the data folder (n)", and the import of a
+    former hourly grid.
+  - No repeating period in the suite's pages (decision pending).
+  - Weeks are written in schema 3 (`{ schema: 3, pilot, week, tz, ranges, background, appareils, simulateurs }`).
+    Schema 2 weeks are still read, and a week moves to schema 3 the next time it is written (no bulk migration).
+  - `SuiteDispos.readPilot` reads both formats through `shared/dispos_formats.js` and gives each week normalised: its
+    ranges and background, plus a per-day view to the minute for the ODV and the assignments. Coverage is now
+    computed to the minute (`cutsBetween`) instead of in quarter-hour steps; the ODV's day editing keeps the rest of
+    the week (`setDay`).
+  - In a schema 2 week, two availability categories laid over the same time are read with the later one winning.
+  - `shared/dispos_editor.js` is removed, with its texts. The user manual (four languages) is rewritten on the new
+    entry. `docs/technique/DISPOS_ET_REORGANISATION.md` § 1.3 is updated, and the module specification adds `nav`,
+    `period`, `add(ranges)`, `slot("palette")`, `buttonClass` and `dispos-brush`. The palette chips and the ✕ keep
+    their colours and square corners under every design (`repo-plain`, and a kept `!important` for the corners).
+- **Aircraft types: last duplicates** — the Poll-Schumann fuel model now resolves the type through the common
+  catalogue first (aliases followed: H145 → EC45); its `SYN` table is kept: it is not a name table but the nearby
+  reference aircraft its data give for an uncovered type (C-17 → B764). The Landing dashboard no longer redefines the
+  silhouette function of `AircraftDB/aircraft_icons.js`, which it overwrote.
+- **Aircraft categories: one set of names, wake category "L/M"** (Simplification decisions) — assignments said "Jet
+  aircraft", *My aircraft* "Jets": both now use `AircraftCatalog.categoryLabel` (Helicopters, Turboprops, Jets, Pistons,
+  Others; "Réacteurs" in French). Fuel planner and performance-sheet groups: "Pistons, 1 engine" and "Pistons, 2
+  engines or more" (names from `AircraftCatalog.groupLabel`, 4 languages). Wake category "L/M" (King Air 350, BE20, SW4)
+  is kept as given by ICAO: its icon has the size of M with a dashed outline, and the Landing dashboard orders it
+  between L and M instead of with the unknown ones.
+- **Aircraft type lookup factored into the shared framework** (second step) — about twenty places resolved a
+  designator from a code, alias or name on their own, most following only one alias (A4M → A400M, not to A400).
+  `AircraftCatalog.canonical` / `.record` / `.related` (with `codeOf` for free text) now do it for *My aircraft*,
+  Maintenance, first run, fleet reporting, the Fuel planner and performance sheets (APD, SimBrief, profile keys),
+  Landing, the CR, duration estimates and the fuel reference. The assignment fleet index uses the catalogue's usage
+  names (`USAGE`) instead of a drifted copy; only the fleet approximations stay local (C-130J requested → the fleet's
+  C-130H). `docs/technique/FRAMEWORK.md` § 11 bis.
+- **Aircraft type classification factored into the shared framework** — about a dozen pages each decoded the ICAO
+  description their own way (five category sets that disagreed on gyroplanes, tiltrotors, amphibians, airships).
+  `AircraftCatalog.record` / `.classify` / `.CATEGORIES` now give one answer (helicopters = H and gyroplanes; then by
+  power: jet, turboprop, piston; balloons, airships, electric and unknown: others; wing: rotary, amphibious, fixed),
+  used by the silhouettes and groups, assignments, *My aircraft*, the CR, duration estimates, the performance model,
+  Maintenance, the Fuel planner and the Landing dashboard; the catalogue is now loaded on the 7 pages that read the
+  type base without it (studio, Flight maps, generator, registry, ODV orders and planning, My missions). Fuel planner
+  groups: by power, then number of engines for pistons ("Multi-engine piston": the four-engine pistons — B-17, DC-6 —
+  leave "Others"), translated in four languages. "Estimate from the class" is offered only for a classified type.
+  Dead code removed (`shared/aircraft_icons.js`, unused Landing functions). `docs/technique/FRAMEWORK.md` § 11 bis.
+- **Fuel: the fuel plan only** (docs/technique/V2_FABLE.md § 13, step 2) — the sheet management moved to Performance
+  sheets: the fuel page loses the "Performance profiles" block, the field editor, engine performance and RPM table,
+  engine map, OFP calibration and audit, the ChatGPT panel, the "Performance folder" button, the sheet actions of the ☰
+  menu and the status bar. One aircraft choice, in the header, listing existing sheets only (My aircraft first, then
+  "Manage performance sheets ↗"); without a sheet for the wanted aircraft, a line links to the sheets page
+  (`?aircraft=`); `?create=` is redirected there. The sheet consulted stays read only in the Result (collapsible
+  "Flight regimes" group, "Edit this sheet in Performance sheets ↗"). My aircraft: the "Performance" column links to
+  the sheets page.
+- **Fuel tables: resizable columns, clipped comments, one row per type** — the "Comment" column of the RPM / power
+  table no longer stretches it: the comment sits on one line with an ellipsis, the whole text in a tooltip, and a
+  double-click unfolds it. The columns of this table and of the performance profiles table can be resized by
+  dragging the edge of a header (double-click: default widths); the setting is kept in the browser. Common framework
+  `shared/table_resize.js` (`TableResize.attach(table, { key })`), usable on any table of the suite. In the profiles
+  table, a designator declared under several variants has a single row (the performance is the type's; no variant
+  badge, no duplicated creation buttons), and a box at the head of the selection column ticks or unticks every
+  displayed row.
+- **Help: one source per subject** — the per-subject guides (`DONNEES.md`, `ODV_PLANNING.md`, `SIA_MISSIONS.md`,
+  `FLIGHT_PLANNER.md`, `LANDING_DASHBOARD.md`, `PRESENTATION*.md`) are merged into the manuals and removed; what had
+  become wrong was dropped. New in the manuals (four languages where they exist): map profiles and extents, the studio's
+  vertical section, operation map and operation file, estimated-duration and exercise rules, translated briefs, MORA
+  method, ISA effect and thrust-limited cruise in the fuel quote; in the operations manual, the contents of `data/`,
+  the browser keys of the missions and the Planning, and what leaves the computer.
+
+### Fixed
+
+- **Mission report: long freeze while typing an aircraft's registration, type or callsign** — every keystroke
+  rebuilt the known-aircraft registry from all its sources (fleet, directory, HEMS and FIRE ledgers, flight log,
+  reference, mission registry) several times over, and the callsign abbreviation table copied its values for every
+  pair of series (quadratic). Both are now cached until a source changes, and the abbreviation table keeps a set of
+  its values instead of copying them; a field now answers in about 60 ms whatever the size of the flight log.
+- **Local changes to the aircraft type base applied three different ways** — the catalogue merged them with
+  `Object.assign`, the CR replaced the whole base, Settings merged them type by type; Settings also compared the
+  changes with a base already modified in place, so they no longer showed. One rule now (Simplification decision):
+  `AircraftCatalog.effectiveData` — replace when made on this file, otherwise merge type by type and rewrite with the
+  file date; the catalogue applies it (`typesDb`) and keeps the file as served (`typesFile`) for Settings.
+  `docs/technique/FRAMEWORK.md` § 11 bis.
+- **My missions: mission order labels in French in every language** — "Assigned aircraft", "Callsign", "Departure
+  airfield", "Requested take-off" / "Ready at", "Status" and the "assigned" status are now translated at the source
+  (4 languages). Assignments: the generic crew post rule is documented (helicopter pilot if the common classification
+  says helicopter or gyroplane, aeroplane pilot otherwise, airships and electric aircraft included).
+- **Aircraft types: Goodyear GZ-20 airship shown as "B2P" and classed with piston aircraft** — "B2P" was Aviation
+  Fanatic's category (B = balloon) taken for an ICAO description. Balloons and airships (no ICAO class exists for them)
+  now have no description but their nature (`kind`: airship / balloon), engines and engine type; shown as "airship ·
+  non-ICAO: SHIP in a flight plan", class "airship, 2 piston engines (non-ICAO)" in Maintenance, "Others" in the
+  performance sheets, "other" silhouette. Existing records are converted at the next pass of the updater.
+- **Assignment: declared variant "Canadair CL-415" not matched with the fleet's "CL-415 Pélican"** — variants are now
+  compared by model number (CL415 ≠ CL215T), by inclusion only when they have none ("Rafale B" = "Dassault Rafale B")
+  (`shared/assignments.js`).
+- **Aircraft types: CL-415 shown as "Canadair CL-215T"** — ICAO Doc 8643 files the CL-215T and the CL-415 under one
+  designator, CL2T (one record, one set of performance figures, CL2T in a flight plan); the record took the first ICAO
+  model name. It is now named "Canadair CL-215T / CL-415" (`SHARED_DESIGNATOR_NAMES` in `update_aircraft_db.py`, a short
+  chosen list, applied at every pass of the updater; data overrides still win). Telling the two apart in the declared
+  aircraft (variants) is a separate change.
+- **Generator and studio: no city names, silently** — a browser SIA database built while `villes_geonames.csv` could
+  not be read was stored without cities: towns were not suggested for turning points and maps had no city labels, with
+  no message. When the database has no cities, they are now read from `shared/carto/villes_geonames.csv` and stored
+  with it (no rebuild); if that fails, a notification gives the address and the reason (`shared/sia_base.js`).
+- **Audit fixes (reported by Features SOG)** — ODV planning: the "timeline flights to check" notification pointed to a
+  removed block; it now names the flights (day, times, callsign, reason). Generator: exported files were named
+  "S4-MM-016_…" with current IDs; current IDs are kept as they are ("M-016_…"). `apps/landing/README.md` rewritten in
+  English for the current layout (shared type base in `AircraftDB/`, sources, command line); the outdated French section
+  of `README.md` ("four steps") removed — the French installation tutorial stays linked at the top.
+- **Availability, "Precise range": a time off the quarter hour was refused with a misleading message** — "12:19 to
+  17:03" gave "inconsistent times" although the end followed the start: the stored format is to the quarter hour and
+  the form silently required it, while the block's subtitle promised "minutes". The start is now rounded down and the
+  end up to the quarter hour, the message says so, and the subtitle and manuals say "to the quarter hour".
+- **"Fill in the missing fields": a pasted answer found its sheet** — the answer was matched to the ticked sheets by
+  the `id` only; a plain ChatGPT answer (no `id`, several code blocks) filled nothing and the message said "no value".
+  The answer is now read like any ChatGPT answer, in the forms `{ sheets }`, `{ profiles }`, an array or a single
+  sheet, and matched by id, then by type (aliases included), then by name; with no match, the message says which
+  aircraft the answer describes and which sheets are ticked.
+- **ChatGPT answers read whatever their shape** — a long answer (several code blocks, an example before the sheet,
+  comments, trailing commas, curly quotes, the sheet wrapped in `profile` or given as an array, keys in another case or
+  spelling such as `ICAO` or `cruise_tas`, values given as objects `{ value, unit, source }` or `{ min, max }`, numbers
+  with thousands separators) was refused or imported empty although the data was there. The import now tries every
+  code block and keeps the one that carries the sheet's keys, cleans the text, unwraps, renames keys to the schema,
+  reduces objects to their value and converts a per-field unit that contradicts the sheet's (lb/h in a kg sheet, with a
+  warning).
+- **Fuel: "by altitude / by engine setting" toggle without effect** — the climb chart toggle did nothing once the
+  sheet had changed under the page (reread from the Performance sheets page, new sheet chosen) until the next
+  calculation, because the cached optimum laws had been cleared. The toggle now rebuilds that cache when it is missing.
+- **Fuel: all the profiles of an aircraft on its row** — an aircraft of "My aircraft" took only the first profile of
+  its type; its other profiles were listed apart as "not in My aircraft", and a profile whose codes the base did not
+  know (an X-Plane or Little Navmap file named "Ecureuil AS350 B3" without a type) was never attached, leaving the
+  aircraft's row at "none" without a selection box. Now one row per profile under the aircraft (each under its own
+  name when there are several), the type being read from the profile's name when its codes are unknown; a row has a
+  selection box when it carries a profile, "none" rows have the creation buttons instead.
+- **Aircraft types: the record is completed for the Fuel profiles too** — a profile created in Fuel (ChatGPT, SimBrief,
+  file, estimate) for a type this computer's base did not know yet (EPIC, the Epic LT) stayed "missing from this
+  computer's type base": only "Add" in Settings asked the launcher. Fuel now asks the launcher for every profile type
+  without a record (short pass, a few seconds, table redrawn), on opening and after each change; with the launcher
+  stopped, a warning says to restart it and click "Look up the record" instead of staying silent.
+- **Fuel: merging profiles that differ by nothing** — "Merge" stayed disabled when the most recent profile already
+  held every value (label "Merge (nothing)"), although the other ticked profiles would be removed. The button now
+  counts the removed profiles ("Merge (1 profile removed)") and stays active: the most recent is kept as is, the
+  others disappear.
+
 ## [5.2.0] — 2026-10-12
 
 Missions can now be built entirely by hand in the generator — the single place where missions are created — with a
@@ -110,6 +510,10 @@ three manuals (pilot, planner, administrator), and no native browser dialog is l
 - **Registry and generator: "Estimated duration" left in French** in the other languages.
 - **Map studio and Flight maps: preview zoom buttons shown as two empty blue squares.**
 - **Launcher: Python traceback on an unreadable request** (TLS on the HTTP port, unknown HTTP version).
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.2.0.zip` — SHA-256 `14a36ca4f87d387850c1d9561753360ba14d884b5451a88d0e8bbc3c3d8b4a54` (code seul, hors dépôt : dossier `dist/`).
 
 ## [5.1.0] — 2026-10-09
 
@@ -2679,7 +3083,7 @@ de la suite.
 
 ### Missions SIA (nouvelle application, dossier `SIA XML/`)
 
-- **Documentation** : [docs/SIA_MISSIONS.md](SIA_MISSIONS.md) (générateur de mission et studio :
+- **Documentation** : `docs/SIA_MISSIONS.md` (générateur de mission et studio :
   données, format des missions, profils, zones, MORA, hippodromes, stockage, services) ; README
   EN / FR (quatre applications), INSTALL (données SIA), tutoriel (§ 13, mission SIMONE), manuel
   d'exploitation (§ 9.1 : cycle AIRAC, MORA, axes ENR 5.7), FRAMEWORK (`aar_tracks.js`,

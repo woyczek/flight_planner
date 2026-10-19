@@ -3705,3 +3705,112 @@ html[data-design="tactique"] {
     background: #fff !important
   }
 }
+/* ================================================================================================ CURSEURS ET DÉFILEMENT
+   Jauges mobiles (input[type=range]) et barres de défilement dans la matière du design : piste = rail des onglets,
+   poussoir = bouton du design ; coins carrés (règle des designs à matières), Aqua arrondi comme ses boutons.
+   Jetons posés une fois ici, redéfinis par design ; les designs plats (Standard, Aéro, Opérationnel, Console) gardent
+   les commandes du navigateur. scrollbar-color n'accepte que des couleurs : couleurs pleines à part des dégradés. */
+html[data-skeuo] {
+  --sk-range-track: var(--sk-tabs-rail, linear-gradient(rgba(0, 0, 0, .28), rgba(0, 0, 0, .4)));
+  --sk-range-thumb: var(--sk-mbtn-bg, #6b7280);
+  --sk-range-edge: 1px solid rgba(0, 0, 0, .45);
+  --sk-range-radius: 0;
+  --sk-scroll-thumb-color: #6b7280;
+  --sk-scroll-track-color: rgba(0, 0, 0, .18);
+  scrollbar-color: var(--sk-scroll-thumb-color) var(--sk-scroll-track-color);
+}
+html[data-design-base="cabinet"] {
+  --sk-scroll-thumb-color: #4a2712;
+  --sk-scroll-track-color: #b89c74;
+}
+html[data-design="flightlog"] {
+  --sk-scroll-thumb-color: #a8823a;
+  --sk-scroll-track-color: #cdbb95;
+}
+html[data-design="field"] {
+  --sk-scroll-thumb-color: #3a3f37;
+  --sk-scroll-track-color: #7c8270;
+}
+html[data-design="aqua"] {
+  --sk-range-track: var(--aq-rail);
+  --sk-range-thumb: var(--aq-glass);
+  --sk-range-edge: 1px solid var(--aq-glass-edge, #9aa6b2);
+  --sk-range-radius: 9px;
+  --sk-scroll-thumb-color: #9aa6b2;
+  --sk-scroll-track-color: #e3e8ee;
+}
+html[data-design="aqua"][data-tone="dark"] {
+  --sk-scroll-thumb-color: #5a6675;
+  --sk-scroll-track-color: #1a2028;
+}
+html[data-design="tactique"] {
+  --sk-scroll-thumb-color: #2b3f55;
+  --sk-scroll-track-color: #141c29;
+}
+/* barres de défilement (page et zones qui défilent : tableaux, menus, listes) */
+html[data-skeuo] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+html[data-skeuo] ::-webkit-scrollbar-track {
+  background: var(--sk-scroll-track-color);
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, .25);
+}
+html[data-skeuo] ::-webkit-scrollbar-thumb {
+  background: var(--sk-range-thumb);
+  border: var(--sk-range-edge);
+  border-radius: var(--sk-range-radius);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+html[data-skeuo] ::-webkit-scrollbar-corner {
+  background: var(--sk-scroll-track-color);
+}
+/* curseurs : piste creusée, poussoir en matière, focus visible */
+html[data-skeuo] input[type=range]:not(#imp) {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+html[data-skeuo] input[type=range]::-webkit-slider-runnable-track {
+  height: 8px;
+  background: var(--sk-range-track);
+  border: 1px solid rgba(0, 0, 0, .35);
+  border-radius: var(--sk-range-radius);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+html[data-skeuo] input[type=range]::-moz-range-track {
+  height: 8px;
+  background: var(--sk-range-track);
+  border: 1px solid rgba(0, 0, 0, .35);
+  border-radius: var(--sk-range-radius);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+html[data-skeuo] input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 22px;
+  margin-top: -8px;
+  background: var(--sk-range-thumb);
+  border: var(--sk-range-edge);
+  border-radius: var(--sk-range-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+html[data-skeuo] input[type=range]::-moz-range-thumb {
+  width: 18px;
+  height: 22px;
+  background: var(--sk-range-thumb);
+  border: var(--sk-range-edge);
+  border-radius: var(--sk-range-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+html[data-skeuo] input[type=range]:focus-visible {
+  outline: 2px solid var(--sk-link, var(--repo-accent, #2f6fd6));
+  outline-offset: 2px;
+}
+html[data-skeuo] input[type=range]:disabled {
+  opacity: .5;
+  cursor: default;
+}

@@ -65,7 +65,7 @@ L'en-tête porte le titre de la page et son sous-titre. À droite se trouvent le
 **Le menu ☰** contient, de haut en bas :
 - les boutons « Apparence » et « Paramètres » ;
 - la liste des pages de la suite, puis les pages de réglage (Mon profil, Centre, Installation, Maintenance, Apparence, Premier lancement) ;
-- le groupe « Profil pilote » (trigramme, ID IVAO, ID VATSIM, SimBrief), repris par toutes les pages ;
+- le groupe « Profil pilote » (trigramme ; ID IVAO, ID VATSIM et SimBrief affichés en lecture, avec « Modifier dans Mon profil ↗ »), repris par toutes les pages ;
 - le groupe « Données locales » : « Sauvegarder dans le dossier », « Restaurer / resynchroniser », « Dossier de sauvegarde… », « Télécharger la sauvegarde », « Restaurer depuis un fichier… », et la date de la dernière sauvegarde ;
 - le groupe « Page », quand la page propose ses propres actions.
 
@@ -258,10 +258,10 @@ Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute 
 
 ### Mes disponibilités
 
-Vos disponibilités de la semaine affichée, en heures UTC. Le Centre s'en sert pour vous affecter des missions. C'est le même éditeur que sur la page Mes disponibilités (chapitre suivant) ; ici, la semaine est celle de la barre de semaine de la liste.
+Vos disponibilités de la semaine affichée, en heures UTC, à la minute. Le Centre s'en sert pour vous affecter des missions. C'est la même saisie que sur la page Mes disponibilités (chapitre suivant) ; ici, la semaine est celle de la barre de semaine de la liste.
 Selon le niveau d'utilisation : la barre de semaine propre au bloc, l'ancienne grille horaire et le lien « Ouvrir la saisie des disponibilités seule » n'apparaissent qu'au niveau Expert ; aux autres niveaux, la semaine se change par la barre de la liste.
 
-**Palette** : les catégories sont rangées par groupe (« Disponible », « Exercice SOG », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée.
+**Palette** : les catégories sont rangées par groupe, une ligne par groupe (« Disponible », « Exercice SOG », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée. Sous la palette, une ligne rappelle les thèmes de mission ouverts par la catégorie choisie ; pour une catégorie personnalisée, le lien « Mes types de missions… » mène aux préférences de Mon profil.
 
 Catégories par défaut (le Centre peut modifier cette liste) :
 
@@ -272,34 +272,74 @@ Catégories par défaut (le Centre peut modifier cette liste) :
 | Occupé | Vol hors SOG (IVAO / VATSIM) (G), DCS (DC), Contrôle hors SOG (IVAO / VATSIM) (AT) |
 | Indisponible | Indisponible (IN), Congés (V), Récupération (Q), Activité réelle (IR) |
 
-**Grille heure par heure** : une ligne par jour (aujourd'hui mis en évidence), une colonne par heure de 0 à 23 UTC.
-1. Choisissez une catégorie dans la palette.
-2. Cliquez sur une case, ou tracez un rectangle en maintenant le bouton enfoncé : les cases prennent la couleur et la lettre de la catégorie.
-3. Un nouveau clic (ou rectangle) commençant sur une case déjà de cette catégorie l'efface.
+**La grille** : une rangée par jour, un axe de temps continu de 0 à 24 h UTC, un trait par heure et un trait fin à la demi-heure. Le cadre « Comment s'en servir », replié sous la grille, reprend les règles suivantes.
 
-Une case partagée entre plusieurs catégories est rayée ; une heure couverte en partie (saisie au quart d'heure) est pâlie. Chaque retouche est enregistrée aussitôt.
+- **Deux couches.** Le fond dit la nature d'une indisponibilité (groupe « Indisponible ») : la couleur seule, sur toute la hauteur de la rangée. La première couche porte les dispos, exercices et occupations : des rectangles avec leur lettre au centre, l'heure de début à gauche et l'heure de fin à droite (en abrégé, « 8 O 12 », sur un rectangle étroit). Une minute n'a qu'un état : là où un rectangle est posé, le fond dessous ne compte pas, mais il reste en place et revient quand le rectangle s'en va. Le temps sans rien est indisponible.
+- **La palette.** Cliquer sur une pastille choisit le pinceau : il dit seulement quoi tracer.
+- **Tracer.** Glissez dans le vide d'une rangée ou dans l'espace entre deux rangées : la forme s'aimante à la demi-heure et montre ses horaires pendant le geste. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.
+- **Saisir une forme.** Un geste qui part sur une forme, rectangle ou bande de fond, la saisit quel que soit le pinceau : un clic la sélectionne, un glisser la déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords la redimensionnent. Maj+glisser trace par-dessus : c'est ainsi qu'on pose une dispo sur un jour déjà couvert d'une bande.
+- **Découper.** La dernière forme gagne : un rectangle tracé sur un autre le découpe, un fond tracé à travers un rectangle aussi. La découpe se voit pendant le geste.
+- **Déposer, double-cliquer.** Glissez une pastille de la palette sur une forme : la forme prend cette nature. Déposée sur le vide d'une rangée ou sur le nom du jour, elle couvre toute la journée ; une pastille de fond ne change alors que le fond, les rectangles restent. Double-clic sur une bande : sa couleur devient le fond de toute la journée ; sur une pastille de fond : de toute la semaine.
+- **Corriger.** Le ✕ d'une forme, ou Suppr sur la sélection, l'efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule une retouche, Ctrl+Y ou Ctrl+Maj+Z la rétablit (50 retouches par semaine affichée).
+- **Ce qui est enregistré.** Chaque retouche est enregistrée aussitôt (dossier des données, sinon ce navigateur) : il n'y a pas de bouton « Enregistrer ». Au survol, une infobulle donne la plage en clair, par exemple « mercredi 14 octobre, de 00:00 à 05:30 : Indisponible ».
 
-**« Plage précise »** (au quart d'heure, repliée : un clic sur son titre l'ouvre ; ouverte d'office au niveau Expert) : « Groupe », « Catégorie », cases des jours (Lun à Dim), « de » et « à » (UTC), puis « Ajouter ». Horaires vides = journée entière. Sous le formulaire, une ligne rappelle les thèmes de mission ouverts par la catégorie ; pour une catégorie personnalisée, le lien « Mes types de missions… » mène aux préférences de Mon profil.
+**« Plage précise »** (repliée : un clic sur son titre l'ouvre) : « Groupe », « Catégorie », cases des jours, « de » et « à » (UTC, à la minute), puis « Ajouter ». La plage est posée sur chaque jour coché, avec la règle de la dernière forme. Horaires vides = journée entière ; sans fin, jusqu'à minuit ; une fin avant le début est refusée. Ctrl+Z annule l'ajout.
 
 **Autres boutons**
-- « ⧉ Semaine précédente » : recopie les plages de la semaine précédente (remplace la semaine affichée, après confirmation).
-- « Tout effacer » : vide la semaine affichée (après confirmation).
+- « ⧉ Semaine précédente » : recopie la semaine précédente dans la semaine affichée (après confirmation si elle n'est pas vide) ; Ctrl+Z l'annule.
+- « Tout effacer » : vide la semaine affichée ; Ctrl+Z l'annule.
 - « Écrire dans le dossier des données (n) » : n'apparaît que si des semaines sont restées dans le navigateur ; les écrit dans le dossier partagé.
 
 Le message sous le bloc indique où la saisie est partie : « Enregistré dans le dossier des données. », ou « Gardé dans ce navigateur, le Centre ne le voit pas : … » si le dossier des données n'est pas autorisé (voir [Premier lancement](#premier-lancement), étape 3).
 Une ancienne grille horaire existante est importée automatiquement dans la semaine.
 Le lien « Ouvrir la saisie des disponibilités seule » mène à la page Mes disponibilités. Ce lien n'apparaît qu'au niveau Expert.
 
+## Mes vols
+<!-- page: apps/pilot/mes_vols.html -->
+
+Cette page (barre latérale « Mes vols », sous « Mes missions » ; dès le niveau Équipage) est le registre de vos vols
+passés, du plus récent au plus ancien, un vol par ligne. Elle réunit deux sources, sans doublon (même date, même
+indicatif, même immatriculation : le compte rendu l'emporte) :
+
+- vos comptes rendus, dans le registre des CR (ceux que vous avez rédigés ; ceux qui n'ont pas d'auteur noté sont
+  gardés) ;
+- le journal des vols de la compagnie importé du site (carte « Journal des vols » du Premier lancement), filtré sur votre trigramme. Sans trigramme
+  (Paramètres › Mon profil), seuls les comptes rendus de ce navigateur sont listés.
+
+En tête : « Période » (7 ou 31 derniers jours, 12 derniers mois — par défaut —, tout), la recherche (indicatif, type,
+immatriculation, terrain, mission), « Exporter (CSV) » (la liste affichée, mêmes colonnes) et « Analyse détaillée ↗ »
+(Outils › Analyse des missions). Dessous, les totaux : nombre de vols, heures de bloc, les trois types les plus volés.
+Période et recherche sont gardées dans ce navigateur.
+
+| Colonne | Contenu |
+|---|---|
+| « Date » | jour du vol |
+| « Indicatif » | indicatif du vol |
+| « Appareil » | silhouette, immatriculation, type |
+| « Trajet » | départ → arrivée (OACI) |
+| « Durée » | heures de bloc (sinon de vol) |
+| « Mission » | famille, type et opération du CR, ou mission du journal |
+| « CR » | n° du compte rendu (lien), ou « sans CR » |
+
+Un clic sur une ligne ouvre son compte rendu ; un vol « sans CR » déplie son détail (source, heure, appareil,
+mission) avec « Rédiger le CR », qui ouvre le compte rendu de la famille déjà rempli : date, indicatif, appareil,
+immatriculation, départ et arrivée, durée de bloc déclarée. Relisez, complétez, puis « Ajouter au registre » : le vol
+apparaît alors avec son CR. Les colonnes se règlent en glissant le bord des titres (double-clic : largeurs par défaut).
+Sous 800 px de large, seules la date, l'indicatif, le trajet et la durée restent ; un clic déplie le reste.
+
+On y arrive aussi par « Mes vols ↗ » dans Mes missions (à côté de « afficher aussi les missions passées ») et dans le
+menu « Envoyer » d'un compte rendu.
+
 ## Mes disponibilités
 <!-- page: apps/pilot/disponibilites.html -->
 
-Cette page présente seule l'éditeur des disponibilités, en plus grand. Elle sert à saisir rapidement plusieurs semaines.
+Cette page présente seule la saisie des disponibilités, en plus grand. Elle sert à saisir rapidement plusieurs semaines.
 On y arrive par l'onglet « Mes disponibilités » (sous l'entrée « Mes missions » de la barre latérale) ou par le lien « Ouvrir la saisie des disponibilités seule » de Mes missions. Ce lien n'apparaît qu'au niveau Expert.
 Le pilote est celui du trigramme de travail (profil pilote, connexion ou usurpation). En mode production, la page demande d'abord de se connecter.
 
 ### Mes disponibilités
 
-Le bloc unique de la page. Il fonctionne exactement comme le bloc du même nom de Mes missions (chapitre précédent) : palette, grille heure par heure, « Plage précise » (repliée, ouverte d'office au niveau Expert), « ⧉ Semaine précédente », « Tout effacer ».
+Le bloc unique de la page. Il fonctionne exactement comme le bloc du même nom de Mes missions (chapitre précédent) : palette, grille, « Comment s'en servir », « Plage précise », « ⧉ Semaine précédente », « Tout effacer ».
 
 **Navigation de semaine** (propre à cette page) :
 - « ‹ » et « › » : semaine précédente ou suivante ;
@@ -307,8 +347,8 @@ Le bloc unique de la page. Il fonctionne exactement comme le bloc du même nom d
 - « Semaine en cours » : visible hors de la semaine en cours, y revient.
 
 Astuces et limites :
-- Toutes les heures sont en UTC. La grille travaille à l'heure ; « Plage précise » au quart d'heure.
-- Chaque retouche est enregistrée tout de suite : il n'y a pas de bouton « Enregistrer ».
+- Toutes les heures sont en UTC. Un tracé s'aimante à la demi-heure ; déplacer et ajuster vont au pas de 5 min ; « Plage précise » va à la minute.
+- Chaque retouche est enregistrée tout de suite : il n'y a pas de bouton « Enregistrer ». Ctrl+Z l'annule.
 - Sans trigramme, le bloc affiche « Trigramme non réglé : le régler dans Paramètres › Mon profil (ou ☰ › Profil pilote). »
 - Une adresse de la forme `disponibilites.html?semaine=2026-W41` ouvre directement une semaine donnée.
 - Si la semaine est encore en cours de lecture, une retouche est refusée avec « Semaine en cours de lecture : réessayer dans un instant. »
@@ -327,7 +367,7 @@ Cette page regroupe les réglages propres à chaque pilote : identité, connexio
 On y arrive par l'entrée « Paramètres » de la barre latérale (premier onglet, « Mon profil ») ou par ☰ › « Paramètres ».
 La colonne de gauche liste les rubriques par groupe ; un clic en affiche une à droite, avec son titre, sa présentation, ses boutons et un message d'état.
 Si une rubrique contient des modifications non enregistrées, changer de rubrique ou quitter la page demande une confirmation.
-Selon le niveau d'utilisation : « Mes appareils (reporting) » apparaît à partir du niveau Planification (2) ; « Altitude sans oxygène » seulement si l'outil Carburant est coché (toujours au niveau Expert) ; dans « Identité et réseaux », les cartes « IVAO — client OAuth » et « Langue » sont au niveau Expert.
+Selon le niveau d'utilisation : « Appareils pilotés (CR) » apparaît à partir du niveau Planification (2) ; « Altitude sans oxygène » seulement si l'outil Carburant est coché (toujours au niveau Expert) ; dans « Identité et réseaux », les cartes « IVAO — client OAuth » et « Langue » sont au niveau Expert.
 
 ### Niveau d'utilisation
 
@@ -391,25 +431,35 @@ Les préférences sont gardées dans votre fiche utilisateur, partagée avec le 
 
 ### Appareils et simulateurs
 
-Les types de la flotte que vous possédez et maîtrisez, et vos simulateurs. Le Centre s'en sert pour vous affecter un appareil et pour réunir des pilotes sur un simulateur commun. (Ces réglages étaient auparavant dans Mes missions.)
+« Mes appareils » : vos appareils, flotte comprise — ceux que vous possédez dans votre simulateur et ceux que vous maîtrisez —, et vos simulateurs. Le Centre s'en sert pour vous affecter un appareil et pour réunir des pilotes sur un simulateur commun. C'est la même liste que le tableau de la page « Fiches de performances », qui en montre les performances : mêmes appareils, même ordre, même nom.
 
-**Carte « Appareils »** : un résumé (« … type(s) maîtrisé(s), … possédé(s) sur … types de la flotte. »), puis une sous-carte par catégorie d'appareils, avec un tableau :
+**Carte « Mes appareils »** : un résumé (« … type(s) maîtrisé(s), … possédé(s) sur … types de la flotte. »), puis une sous-carte par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons), avec un tableau :
 
 | Colonne | Contenu |
 |---|---|
-| « Type » | Modèle et désignateur OACI |
+| « Appareil » | Silhouette, nom en gras, désignateur OACI et classe en petit |
 | « Variantes de la flotte » | Variantes présentes dans la flotte |
 | « Appareils » | Nombre d'appareils en service (sur le total) et leurs bases |
+| « Performances » | Pour un appareil possédé : un lien — la source de sa fiche, qui ouvre la page « Fiches de performances » sur cet appareil, ou « aucune » et les façons d'en créer une, qui ouvrent cette même page |
 | « Possédé » | Vous avez ce type dans votre simulateur |
 | « Maîtrisé » | Vous le pilotez avec aisance |
 
 - Cocher « Maîtrisé » coche aussi « Possédé » ; décocher « Possédé » décoche « Maîtrisé ».
+- « Chercher un appareil », au-dessus des cartes, filtre à la frappe sur le nom, la variante, le désignateur, la classe et la source des performances : les cartes qui ont une correspondance restent dépliées, les autres se replient, et « n appareil(s) » donne le compte ; champ vide : tout.
+- Variantes : un désignateur partagé par plusieurs modèles (CL2T : CL-215T et CL-415) a une ligne par variante déclarée, sous son nom (« Canadair CL-415 », « Canadair CL-215T ») ; « × » retire une variante. Sans variante déclarée, l'appareil porte le nom de la fiche et de ses variantes connues (« Canadair CL-215T / CL-415 »). Le profil de performances reste celui du désignateur : « performances communes aux variantes ». À l'ajout, la liste propose chaque variante (modèle de la fiche, variantes de la flotte, noms d'usage de la base), ou gardez votre propre texte ; la variante est enregistrée dans votre déclaration.
 
-**Carte « Autres appareils (hors flotte) »** : les types que vous possédez dans votre simulateur sans qu'ils soient dans la flotte. Tapez un désignateur OACI, un modèle ou un nom d'usage, même incomplet ou avec des espaces et des tirets (« PC-12 », « A 400 M », « SE 210 », « Sud Aviation Caravelle ») : pendant la frappe, une liste propose les types de la flotte, de la base des types de ce poste et de la liste OACI publiée avec la suite, avec leur nom (« S210 — Caravelle ») et leur origine (flotte, base du poste, liste OACI, déclaré par un autre pilote) ; ce calcul est local, sans réseau. Choisissez une ligne (clic, flèches puis Entrée) ou cliquez « Ajouter » : le type rejoint le tableau, coché « Possédé ». Pour corriger ou supprimer un type que vous avez ajouté, cliquez sur sa ligne : son code passe dans le champ et « Ajouter » devient « Remplacer » (« Maîtrisé » est reporté sur le nouveau type), à côté de « Supprimer » et « Annuler » (ou Échap). Un type de la flotte saisi ici est simplement coché dans la carte « Appareils » ; un désignateur que rien n'approche est accepté tel quel. Une saisie trop vague (« cara » : Caravelle ou Caravan ?) est refusée : le message dit ce qui a été lu, et le type le plus proche est repris dans le champ — « Ajouter » pour le confirmer. La base de ce poste n'est complétée par le lanceur qu'au clic sur « Ajouter », pour le type ajouté s'il lui manque : la ligne affiche « complétion de la base en cours… » le temps d'une passe courte (quelques secondes), une seule passe à la fois — si une passe tourne déjà (Maintenance), le lanceur met le type en file et le complète à la fin de cette passe. La passe se fait dans le lanceur : quitter la page ne l'interrompt pas, et en revenant la ligne reprend « complétion de la base en cours… » jusqu'à la fiche. Un type retiré que les sources officielles ne connaissent plus (Caravelle S210) est cherché en dernier recours sur Aviation Fanatic ; s'il n'y est pas non plus, il reste ajouté sous son code et son nom d'usage, avec la note « introuvable (OACI, EUROCONTROL, Aviation Fanatic) ». Ces types partent avec vos disponibilités déclarées, comme ceux de la flotte : le Centre les voit pour les affectations, et les autres pilotes les retrouvent dans cette carte, avec la colonne « Aussi déclaré par » — il leur suffit de cocher « Possédé ».
+**Carte « Autres appareils (hors flotte) »** : les appareils que vous possédez sans qu'ils soient dans la flotte. On les ajoute toujours par un nom, jamais par un code obligatoire : tapez ce que vous connaissez (« CL-415 », « Canadair 415 », « PC-12 », « Caravelle »). Pendant la frappe, une liste propose les types de la flotte, de la base des types de ce poste avec leurs noms d'usage et de la liste OACI publiée, avec leur provenance ; ce calcul est local, sans réseau. Le désignateur est trouvé pour vous : « CL-415 », « Canadair 415 » et « CL415 » donnent CL2T, affiché « Canadair CL-415 » (le nom de la variante est gardé). Un type de la flotte est simplement coché dans la carte « Mes appareils ». Si plusieurs types sont possibles, le plus proche est repris dans le champ — « Ajouter » pour le confirmer, ou choisissez dans la liste. Si rien ne correspond, l'appareil est gardé sous son nom, marqué « type OACI à confirmer » ; « Chercher le type », sur sa ligne, le rattache plus tard à un désignateur. Pour corriger ou supprimer un appareil ajouté, cliquez sur sa ligne : son code ou son nom passe dans le champ et « Ajouter » devient « Remplacer » (« Maîtrisé » est reporté), à côté de « Supprimer » et « Annuler » (ou Échap). La base de ce poste n'est complétée par le lanceur qu'au clic sur « Ajouter », pour un désignateur qui lui manque : la ligne affiche « complétion de la base en cours… » le temps d'une passe courte, une seule passe à la fois (un type demandé pendant une passe est mis en file) ; quitter la page ne l'interrompt pas. Un type retiré que les sources officielles ne connaissent plus est cherché en dernier recours sur Aviation Fanatic ; s'il n'y est pas, la note « introuvable (OACI, EUROCONTROL, Aviation Fanatic) » l'indique. Ces appareils partent avec vos disponibilités déclarées : le Centre les voit pour les affectations, et les autres pilotes les retrouvent dans cette carte, colonne « Aussi déclaré par » — il leur suffit de cocher « Possédé ».
 
 **Carte « Simulateurs »** : cochez les simulateurs et outils installés.
 
 Il n'y a pas de bouton « Enregistrer » : chaque coche est gardée aussitôt dans ce navigateur, puis recopiée dans vos semaines de disponibilités déjà déclarées, à partir de la semaine en cours. Le message du bas indique combien de semaines ont été mises à jour.
+
+### Ajouter un appareil et ses performances
+
+Pour voler sur un appareil que la suite ne connaît pas encore, par exemple un CL-415 sans performances :
+1. Ajoutez-le par son nom : Paramètres › Mon profil › Appareils et simulateurs, carte « Autres appareils », ou bouton « Ajouter un appareil » de la page « Fiches de performances » (la même fenêtre d'ajout). Il rejoint « Mes appareils ».
+2. Sa ligne affiche « Performances : aucune » et trois boutons, dans cet ordre : « Créer depuis SimBrief » (seulement si SimBrief connaît le type), « Demander à ChatGPT » (profil vide et panneau ChatGPT ouvert dessus), « Estimer par la classe » (profil minimal tiré de la classe OACI du type : consommation, TAS et plafond, marqués « estimé » ; un appareil sans désignateur n'a pas de classe : rattachez-le d'abord à son type).
+3. La fiche créée est rattachée à l'appareil et la page « Fiches de performances » s'ouvre dessus (depuis Paramètres, le bouton ouvre cette page). Complétez-la ensuite (montée, descente), fusionnez-la avec une autre fiche ou remplacez-la par un import. Le Carburant la propose ensuite dans son menu « Avion ».
 
 ### Altitude sans oxygène (avions non pressurisés)
 
@@ -422,7 +472,7 @@ Cette rubrique (groupe « Planificateur carburant ») règle le seuil au-dessus 
 Repères rappelés sous le champ : 10 000 ft (usage courant, EASA NCO), 12 500 ft (FAA, équipage au-delà de 30 minutes), 14 000 ft (FAA, équipage en permanence).
 C'est une information seulement : le calcul n'est pas limité. Le réglage est gardé dans ce navigateur.
 
-### Mes appareils (reporting)
+### Appareils pilotés (CR)
 
 Les appareils que vous avez pilotés ou reportés : ceux des comptes rendus où votre trigramme figure dans l'équipage, ou que vous avez rédigés (CR enregistrés depuis cette version) (l'appareil de votre poste quand le CR le précise), avec type, variante, indicatifs, exploitant, nombre de vols et dernier vol. La coche grisée « Flotte » indique si l'appareil appartient à la flotte (cochée) ou non (décochée, indicatif compris) ; elle ne se modifie pas ici. La liste complète, avec la case « personnel », est dans Paramètres › Centre › Flotte (réservée au Centre). En tête, le décompte du journal : CR au total, CR à vous, CR sans équipage saisi (ils ne comptent pour personne). Rubrique visible à partir du niveau Planification (2).
 
@@ -550,7 +600,7 @@ Trois possibilités :
 La compagnie virtuelle dont la suite porte le nom, et l'adresse de son site (liens, flotte, journal des vols) ; réglage de ce navigateur.
 
 1. Carte « Compagnie virtuelle » : « Nom », « Sigle », « Nom long », « Site de la compagnie » (`https://…`).
-2. Carte « Clé d’API IVAO (facultatif) » : la clé de l'installation (activations des zones et sessions ATC IVAO du Tableau et du Planning ODV). Gardée par le lanceur, elle n'est jamais réaffichée : la carte indique seulement qu'une clé est enregistrée.
+2. Carte « Clé d’API IVAO (facultatif) » : état de la clé de l'installation (« Clé IVAO : enregistrée ✓ » ou « absente »). Elle se saisit, se teste et se remplace à un seul endroit, Paramètres › Installation › Clés et services externes (lien de la carte).
 3. « Enregistrer la compagnie ».
 
 Les autres champs (centre, pages du site, sources externes) sont dans Paramètres › Installation › Sources et dossiers.
@@ -686,13 +736,35 @@ Toutes les familles partagent la même page de saisie : mêmes blocs communs, pl
 On y arrive par la page « Nouveau compte rendu », par une mission affectée, ou en cliquant une mission
 dans un reporting ou une fiche (la mission s'ouvre alors en modification).
 
-**Selon le niveau d'utilisation : CR court ou CR détaillé.** Aux niveaux 1 (Équipage) et 2 (Planification), le formulaire ne montre que l'essentiel du compte rendu :
-- identification (mission, n° de CR, date, série) et résultat ;
-- appareil (immatriculation, type, indicatif, terrains ; un appareil connu remplit le reste) et équipage ;
-- quatre heures (mise en route, décollage, atterrissage, arrêt moteurs), carburant au départ et à l'atterrissage ;
-- blocs propres à la famille et remarques.
+**Trois étapes.** Le formulaire se lit en étapes, repérées par la barre « 1 Vol · 2 Mission · 3 Résultat » en tête
+(un clic ouvre l'étape et y mène) :
+1. **Vol**, les faits : Identification, Appareil(s), Chronologie, Équipage, Carburant (et Trace réseau à partir du
+   niveau 3).
+2. **Mission**, ce que vous saisissez : les blocs propres à la famille (FIRE : ordre de vol, horaires feux de forêt,
+   largages ; HEMS : service, mission médicale, horaires, destinations ; SPECIAL : le bloc de la série), précédés de
+   « Tâche / ordre de mission » pour les familles qui n'ont pas leur propre bloc d'ordre.
+3. **Résultat** : le bloc « Résultat et remarques ». La barre « Ajouter au registre » / « Envoyer » termine le CR.
 
-Le bouton « CR détaillé » de la barre affiche tout le formulaire sans changer de niveau (choix gardé par le navigateur) ; « CR court » revient au formulaire réduit. Les valeurs déjà saisies dans des champs masqués (import, plan de vol, suivi réseau) restent dans le compte rendu. Aux niveaux 3 et 4, le formulaire est toujours complet et ce bouton n'existe pas.
+Chaque étape se replie par son titre, qui dit son état : « ✓ » quand l'essentiel est là (Vol : appareil, décollage et
+atterrissage, équipage, carburant au départ et à l'atterrissage ; Mission : au moins un champ rempli dans chaque bloc
+de la famille ; Résultat : le résultat choisi), sinon « à compléter ». Une quatrième étape, **Détails du vol**, repliée,
+rassemble les autres blocs : Navigation, Environnement / météo, Événements horodatés, Étapes / rotations, Capacités ;
+ouverte, elle les montre à tous les niveaux (c'est l'ancien « CR détaillé »), chacun résumé en une ligne avec sa
+pastille, « Modifier » pour ses champs.
+
+**Les résumés.** Un bloc dont l'essentiel est rempli tient en une ligne : Identification (date · opération ·
+organisme), Appareil(s) (« MILAN74 · DH8D F-ZBMD »), Chronologie (« bloc 13:07 → 15:13, vol 13:21 → 15:02 », avec le
+lien de la trace), Équipage (les noms), Carburant (« 1200 → 650 kg »), Trace réseau. Sa pastille de provenance
+(« ↧ IVAO — dernier vol ») dit d'où viennent ses valeurs. « Modifier » déplie les champs, « Résumé » les replie. Un
+bloc vide, incomplet ou en anomalie de cohérence reste déplié, comme celui où vous travaillez ; après un
+préremplissage, les blocs complétés repassent en résumé.
+
+**Selon le niveau d'utilisation.** Aux niveaux 1 (Équipage) et 2 (Planification), un bloc déplié montre ses champs
+essentiels (identification : mission, n° de CR, date, série ; appareil : immatriculation, type, indicatif, terrains ;
+quatre heures ; carburant au départ et à l'atterrissage) ; « Tous les champs », sous son titre, montre les autres,
+« Champs essentiels » revient. Aux niveaux 3 et 4, tous les champs sont là. Les valeurs de champs masqués (import, plan
+de vol, suivi réseau) restent dans le compte rendu. Un clic sur une anomalie de cohérence, sous les calculs, ouvre
+l'étape, le bloc et, s'il le faut, tous ses champs, puis place le curseur dans le champ.
 
 <!-- capture-manuels: utilisateur-formulaire-cr -->
 ![Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.](images/captures-manuels/utilisateur-formulaire-cr.png)
@@ -706,20 +778,21 @@ L'en-tête reste collé en haut de page. De gauche à droite :
 | Entrée | Rôle |
 |---|---|
 | « SAR · SAR terrestre ▾ » (famille · sous-type) | popup « Famille de mission » (ouvre la page de l'autre famille) et « Sous-type de mission » |
+| « CRF-A01-0 · 17/10/2026 » | n° du CR et date du vol, en lecture ; un clic ouvre le champ de la date |
 | « Ajouter au registre » / « Enregistrer les modifications » | range la mission dans le registre |
-| « Envoyer le CR » | transmet le CR au webservice de la compagnie (en pointillés tant qu'il n'est pas paramétré) |
-| « Analyser / importer… » ▾ | coller un plan de vol, une page de tracker, un METAR ; importer un fichier |
+| « Envoyer » ▾ | « Envoyer le CR » : transmet le CR au webservice de la compagnie (en pointillés tant qu'il n'est pas paramétré) ; « Site de la compagnie » (si son adresse est réglée) : « Enregistrer le vol sur le site ↗ », le favori « → Vol », « Copier les champs » (voir plus bas) |
+| « Préremplir » ▾ | tout ce qui remplit le CR : nouveau CR depuis un ordre de mission, un vol passé ou un fichier ; compléter ce CR depuis mon dernier vol IVAO / VATSIM, un plan de vol déposé ou un collage (voir « Préremplir ») |
 | « Suivi réseau » ▾ | suivi en direct IVAO / VATSIM, historique VATSIM |
 | « Mission » ▾ | « Nouvelle mission », « Exporter la mission (YAML) », « Supprimer cette mission » (en modification) |
 | « Registre des missions » ▾ | « Voir le reporting », « Dossier du registre… », « Paramétrer l'envoi des CR (webservice)… », « Paramétrage — bases de données… » |
-| « CR détaillé » / « CR court » | niveaux 1 et 2 seulement : affiche tout le formulaire ou revient au CR court (voir plus haut) |
 
 À droite, un message d'état indique le dernier enregistrement (« Brouillon enregistré dans le
-navigateur · heure »). Chaque bloc a dans son titre **↕** (glisser pour le déplacer) et **Masquer /
-Afficher** ; la disposition est mémorisée. Les blocs qui contiennent une liste ont un **+** dans leur
+navigateur · heure »). Chaque bloc a dans son titre **Masquer / Afficher** (choix
+mémorisé) ; l'ordre des blocs est celui des étapes (les dispositions changées avec ↕ avant les étapes ne s'appliquent
+plus). Les blocs qui contiennent une liste ont un **+** dans leur
 titre pour ajouter un élément.
 
-Aux niveaux 1 et 2, « Analyser / importer… », « Mission » et « Registre des missions » n'apparaissent pas (ils viennent au niveau 3) : une nouvelle mission s'ouvre par ☰ › Missions › « Nouveau compte rendu ».
+Aux niveaux 1 et 2, « Mission » et « Registre des missions » n'apparaissent pas (ils viennent au niveau 3) ; « Préremplir » est là dès le niveau 1, sauf l'import d'un fichier (niveau 3). Une nouvelle mission s'ouvre par ☰ › Missions › « Nouveau compte rendu ».
 
 ### Modification d'une mission du registre
 
@@ -750,14 +823,17 @@ Selon la famille, d'autres champs s'ajoutent ou disparaissent : « N° de série
 (familles non civiles), « Référence ordre de mission », « Détachement ». Une date dans le futur est
 signalée : un CR porte sur un vol réalisé.
 
-### Résultat
+### Résultat et remarques
 
-Résultat de la mission et suites à donner (bloc placé en 2e position pour la lecture du CR).
+Résultat de la mission, observations et suites à donner, en un seul bloc (placé en 2e position pour la lecture du CR).
 
 1. Choisissez le « Résultat » : Succès, Succès partiel, Interrompue, Annulée, Déroutée, Pas de contact,
    Objectif non trouvé, Météo, Technique, Opérationnel, Autre.
 2. Pour tout résultat autre que Succès ou Autre, les champs « Motif d'interruption » et « Causes » apparaissent ; cochez toutes les causes (météo, technique, simulateur, pilote absent, contrôle absent, réseau, zone non activée, ravitailleur absent, manque de temps…) : elles remontent sur la plaquette de l'ordre de vol (MNE).
-3. Complétez si besoin « Résultat détaillé », « Incidents » et « Anomalies techniques ».
+3. Notez vos « Observations », puis, si besoin, « Résultat détaillé », « Incidents », « Anomalies techniques » et
+   « Enseignements (lessons learned) ». Observations et enseignements forment les sections « 13. Remarques » et
+   « 14. Enseignements » du compte rendu ; une mission affectée y dépose un rappel de la mission d'origine et de sa
+   charge.
 
 Ce résultat alimente le taux de réussite et le graphique « Résultats » des reportings.
 
@@ -802,7 +878,8 @@ Le nom saisi sert de clé à la [fiche équipage](#fiche-équipage) : écrivez-l
 
 Objectif et consignes de la mission : « Objectif », « Instructions particulières », « Priorité ».
 Pour une mission affectée, l'objectif et les instructions sont déjà remplis depuis la mission. Ces
-textes figurent dans la section « 5. Tâche » du compte rendu.
+textes figurent dans la section « 5. Tâche » du compte rendu. Aux niveaux 1 et 2, ce bloc est affiché pour les familles
+qui n'ont pas leur propre bloc d'ordre (FIRE, ISR et LE l'ont : « Tâche / ordre de mission » n'y vient qu'au niveau 3).
 
 ### Capacités / techniques employées
 
@@ -870,12 +947,6 @@ n'est jamais retiré.
 - Les étapes comptent dans les sorties, passagers et fret des reportings.
 - La famille HEMS n'a pas ce bloc : elle a son propre bloc « Destinations / étapes ».
 
-### Remarques
-
-Observations libres et enseignements : « Observations » et « Enseignements (lessons learned) ». Ils
-forment les sections « 13. Remarques » et « 14. Enseignements » du compte rendu. Une mission affectée y
-dépose un rappel de la mission d'origine et de sa charge.
-
 ### Trace réseau IVAO / VATSIM
 
 Trace du vol sur IVAO ou VATSIM.
@@ -883,23 +954,14 @@ Trace du vol sur IVAO ou VATSIM.
 | Champ | Rôle |
 |---|---|
 | « Réseau » | « Hors réseau / non renseigné », IVAO ou VATSIM |
-| « ID IVAO (VID) », « ID VATSIM (CID) » | repris de votre profil pilote (menu ☰ › Profil pilote) |
+| « ID IVAO (VID) », « ID VATSIM (CID) » | repris de votre profil (Paramètres › Mon profil) |
 | « URL de la trace » | lien vers la trace ; il apparaît dans le CR (« Ouvrir la trace ») et dans les reportings |
 
 Le réseau renseigné alimente le graphique « Réseau » et l'indicateur « En réseau » du reporting.
 
 ### Navigation
 
-Terrains, route, points et zone de travail. Le bloc commence par la barre **Plan de vol déposé** :
-
-| Bouton | Source |
-|---|---|
-| « Dernier OFP SimBrief » | votre identifiant SimBrief du profil pilote |
-| « Plan de vol IVAO (vol en cours) » | votre VID |
-| « Plan de vol VATSIM (en cours ou déposé) » | votre CID |
-
-Ces boutons remplissent **seulement les champs vides** : appareil, équipements OACI, route, points
-tournants, niveaux, terrains, METAR / TAF et masses et carburant prévus (SimBrief).
+Terrains, route, points et zone de travail. Le plan de vol déposé (SimBrief, IVAO, VATSIM) se reprend par « Préremplir ▾ › Plan de vol déposé » (voir « Préremplir »).
 
 Champs : « Départ (ADEP) », « Destination (ADES) », « Dégagement (ALTN) », « Route » (seules les routes
 déjà utilisées pour le même trajet sont proposées), « Points tournants (un par ligne) »,
@@ -929,7 +991,7 @@ Colonne de droite, mise à jour pendant la saisie : « Temps bloc », « Temps d
   chronologie de plus de 20 h, date future, carburant incohérent). Un clic amène au champ concerné.
 - « Contexte d'affichage » rappelle la famille, la série, les types d'appareil et les capacités, qui
   décident des blocs affichés.
-- Aux niveaux 1 et 2 (CR court), trois calculs seulement : « Temps bloc », « Temps de vol », « Carburant consommé » ; « Contexte d'affichage » et les calculs de zone et de mission viennent au niveau 3 ou avec « CR détaillé ». Un clic sur une anomalie qui porte sur un champ masqué affiche le CR détaillé.
+- Aux niveaux 1 et 2 (CR court), trois calculs seulement : « Temps bloc », « Temps de vol », « Carburant consommé » ; « Contexte d'affichage » et les calculs de zone et de mission viennent au niveau 3. Un clic sur une anomalie ouvre l'étape et le bloc du champ concerné, et ses autres champs s'il est masqué.
 
 ### Compte rendu
 
@@ -946,19 +1008,68 @@ enseignements).
 
 La version publique s'applique aussi à l'export YAML (fichier suffixé `_public`) et à l'envoi.
 
-### Analyser / importer…
+### Préremplir
 
-Menu de l'en-tête pour remplir le CR à partir d'un texte collé. **Seuls les champs vides sont remplis.**
+Le menu « Préremplir ▾ » de l'en-tête (dès le niveau 1) rassemble tout ce qui remplit le CR ; les blocs ne gardent que
+la saisie. C'est un menu court, une entrée par ligne, en deux groupes ; l'entrée choisie ouvre ensuite sa fenêtre (liste
+des vols, zone de collage…), dont l'aide est repliée sous « Aide ». Échap ou un clic à côté referme le menu comme la
+fenêtre.
 
-1. Ouvrez le menu, puis collez (Ctrl+V) dans la zone : l'analyse est immédiate. Ou cliquez « Coller
-   depuis le presse-papiers » (Chrome demande l'autorisation une fois).
-2. Textes reconnus : plan de vol OACI « (FPL-…) », page du tracker IVAO (détails d'un vol ou liste des
-   connexions), page d'un vol StatSim (VATSIM), historique VATSIM (JSON), METAR.
-3. Le résultat indique la source reconnue et les champs remplis ; le bouton devient « ✓ Valider ».
+**Nouveau CR depuis…** (le brouillon en cours est remplacé, après confirmation s'il n'est pas vide) :
+- « Un ordre de mission » : vos 7 affectations récentes (21 derniers jours) sans CR, une ligne chacune (date et heure
+  UTC, indicatif, trajet, mission) ; un clic ouvre le CR prérempli depuis l'ordre, comme « Créer le CR » dans Mes
+  missions. Dernière ligne : « Ouvrir Mes missions ↗ ».
+- « Un de mes vols » : vos 7 vols récents du journal de la compagnie sans CR (date, indicatif, trajet, type) ; un clic
+  ouvre le CR prérempli, comme « Rédiger le CR » dans Mes vols. Dernière ligne : « Ouvrir Mes vols ↗ ».
+- « Un fichier (YAML / JSON) » : un fichier de mission (niveau 3).
 
-Les liens « ↗ Tracker IVAO (mes connexions) » et « ↗ Mes vols StatSim (VATSIM) » ouvrent vos pages. Le
-lien « → CR », à glisser dans la barre des favoris, copie la page du tracker en un clic. En bas,
-« Importer (YAML / ancien JSON) » charge un fichier de mission. Détails : [tutoriel](TUTORIAL.md), § 6.
+Les deux listes demandent votre trigramme (Paramètres › Mon profil).
+
+**Compléter ce CR depuis…** (**seuls les champs vides sont remplis**) :
+- **« Mon dernier vol IVAO »**, **« Mon dernier vol VATSIM »**. Il faut la suite ouverte par son lanceur et votre ID
+  IVAO ou VATSIM dans Mon profil (sans ID, l'entrée est grisée ; son infobulle dit ce qui manque, « VID IVAO absent —
+  Mon profil ») ; pour IVAO, la clé d'API de la suite (Paramètres › Installation).
+  - Vos vols des 7 derniers jours (UTC), quels que soient la famille et la date du CR. Un seul vol : le CR est rempli
+    aussitôt ; plusieurs : la fenêtre les liste (indicatif, trajet, date et heures UTC, « en cours » si vous êtes
+    encore connecté), choisissez-le ; chaque ligne a son lien ↗ vers le tracker IVAO.
+  - Vol coupé par des déconnexions : les sessions qui se suivent (même indicatif, reprise moins de 30 min plus tard là
+    où la précédente s'est arrêtée, la précédente n'ayant pas fini au parking) forment un seul vol, « 3 sessions
+    (reconnexions) » ; plan de vol de la dernière session, traces mises bout à bout.
+  - Rempli : indicatif, terrains, plan de vol déposé (appareil, équipements, route, niveau, vitesse, dégagement,
+    remarques, immatriculation `REG/`, autonomie), lien de la trace, heures tirées de la trace (mise en route,
+    décollage, atterrissage, arrêt) et distance. Non rempli : ce que le réseau ignore (mission, équipage, carburant,
+    résultats, incidents). Un vol « en cours » donne des heures provisoires : relancez après la déconnexion.
+  - VATSIM : même principe, mais VATSIM ne publie pas de trace : les heures sont celles de connexion et de
+    déconnexion (à corriger), le plan est celui déposé pour cette connexion.
+  - Sans vol, la fenêtre dit pour quel ID et quelle période. Dès qu'un vol IVAO est retenu ou collé, « Voir sur le
+    tracker IVAO ↗ » apparaît à côté du champ « URL de la trace » (bloc Trace réseau).
+- **« Plan de vol déposé (SimBrief / IVAO / VATSIM) »** : la fenêtre propose « Dernier OFP SimBrief » (votre
+  identifiant SimBrief du profil pilote), « Plan de vol IVAO (vol en cours) » (votre VID), « Plan de vol VATSIM (en
+  cours ou déposé) » (votre CID) : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF,
+  masses et carburant prévus (SimBrief).
+- **« Coller un plan de vol, une page du tracker ou un METAR »** : collez (Ctrl+V) dans la zone, l'analyse est
+  immédiate ; ou « Coller depuis le presse-papiers » (Chrome demande l'autorisation une fois). Textes reconnus : plan
+  de vol OACI « (FPL-…) », page du tracker IVAO (détails d'un vol ou liste des connexions), page d'un vol StatSim
+  (VATSIM), historique VATSIM (JSON), METAR. Les liens « ↗ Tracker IVAO (mes connexions) » et « ↗ Mes vols StatSim
+  (VATSIM) » ouvrent vos pages.
+- **« Favori « → CR » »** : le lien « → CR », à glisser une fois dans la barre des favoris, copie la page du tracker en
+  un clic.
+
+**Le même résumé pour toutes les sources**, en notification (10 s), la fenêtre refermée : la source et la date du vol
+(« Plan de vol OACI, vol du 19/10 »), le nombre de champs remplis et les blocs touchés (appareil, chronologie, route,
+météo…), le nombre de champs déjà saisis gardés, et ce que la source n'a pas donné (« absents de la source : décollage,
+atterrissage »). Deux boutons l'accompagnent : « Annuler » remet le CR tel qu'il était avant le préremplissage ;
+« Remplacer les champs déjà saisis (n) », quand des champs déjà saisis ont été gardés, réapplique la même source en les
+remplaçant. La source la plus explicite gagne : l'aide « appareil connu » (flotte) ne remplit que le vide, elle ne
+remplace ni un champ posé par la source ni un champ déjà saisi, même si l'immatriculation change dans le même geste ;
+le résumé le dit (« indicatif de la flotte MILAN74 non appliqué (CFN12 vient de la source) »). Détails du collage :
+[tutoriel](TUTORIAL.md), § 6.
+
+**Provenance.** Le titre de chaque bloc rempli par une source porte une pastille « ↧ » qui la nomme : « Plan de vol
+OACI, vol du 19/10 », « IVAO — dernier vol », « Ordre de mission M-016 », « Journal de la compagnie », « Suivi réseau
+IVAO »… ; son infobulle dit combien de champs du bloc en viennent. Un champ corrigé à la main perd sa provenance (la
+pastille disparaît avec le dernier). « Annuler » remet aussi les pastilles d'avant. La provenance est gardée avec le
+brouillon, dans ce navigateur ; elle n'entre pas dans le registre.
 
 ### Suivi réseau
 
@@ -996,11 +1107,33 @@ nombre de missions de la famille et le dossier.
 |---|---|
 | « Mission ▾ › Nouvelle mission » | repart d'un CR vierge (confirmation si le brouillon n'est pas enregistré) |
 | « Mission ▾ › Exporter la mission (YAML) » | télécharge un fichier de cette seule mission |
-| « Envoyer le CR » | envoie mission, CR (HTML et texte) et calculs au webservice ; la bulle du bouton rappelle le dernier envoi. Une mission non enregistrée demande confirmation |
+| « Envoyer ▾ › Envoyer le CR » | envoie mission, CR (HTML et texte) et calculs au webservice ; la bulle du bouton rappelle le dernier envoi. Une mission non enregistrée demande confirmation |
+| « Envoyer ▾ › Enregistrer le vol sur le site ↗ » | ouvre la page « Enregistrer mon vol » du site de la compagnie avec les champs du vol (voir ci-dessous) |
 | « Registre des missions ▾ › Voir le reporting » | ouvre le reporting de la famille |
 
 Tant que le webservice n'est pas réglé, « Envoyer le CR » propose d'ouvrir son paramétrage
 (« Paramétrer l'envoi des CR (webservice)… »).
+
+**Déclarer le vol sur le site de la compagnie.** Le site s'ouvre dans un autre onglet, où vous êtes connecté. La suite ne
+s'y connecte pas et ne valide rien à votre place : elle prépare le formulaire « Ajouter un vol », vous le relisez et le
+validez.
+
+1. Une fois, glissez le favori « → Vol » (menu « Envoyer ») dans la barre des favoris du navigateur.
+2. CR enregistré, « Envoyer ▾ › Enregistrer le vol sur le site ↗ » ouvre la page « Enregistrer mon vol » du site, avec
+   les champs du vol dans l'adresse (après « # » : jamais envoyés au serveur). Un CR non enregistré demande confirmation.
+3. Connectez-vous si le site le demande, puis cliquez le favori « → Vol » : il ouvre la page de votre appareil
+   (reconnu par son immatriculation), puis « Ajouter un vol » ; cliquez-le encore sur ce formulaire.
+4. Le favori remplit l'indicatif (choisi dans la liste du site par son nom, CARAFON, ou son code, CFON), le numéro de
+   vol, la date de fin du vol (date du CR et heure de fin bloc, sinon d'atterrissage, en heure locale comme la chronologie du CR ; le lendemain si le vol
+   passe minuit), la durée (bloc, sinon vol), la mission (famille, type, opération) et l'arrivée. Ce qui est rempli
+   s'entoure de vert, ce qui manque de rouge. L'immatriculation et le départ, que le site impose (position actuelle de
+   l'appareil), ne sont pas modifiés : un écart avec le CR est signalé.
+5. Relisez, complétez, puis « Valider » sur le site.
+
+Si les champs se perdent (connexion demandée en route), relancez « Enregistrer le vol sur le site ↗ ». Sans le favori,
+« Copier les champs » copie une ligne (immatriculation, type, indicatif, date, durée, départ → arrivée, mission) à
+reporter à la main. Le menu « Site de la compagnie » n'apparaît que si l'adresse du site est réglée (Paramètres ›
+Installation › Sources et dossiers).
 
 ### Blocs propres à chaque famille
 
@@ -1361,7 +1494,7 @@ Ce bloc relie trois vues : le plan de vol (texte), la carte et la coupe vertical
 - Champ de route : case 15 du plan de vol OACI, ou liste à virgules (par exemple `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Vide : route de la mission.
 - « Niveau » : niveau de croisière (« FL65 » ou « 6500 »).
 - Menu « Voies aériennes » / « RTBA (basse hauteur) », puis « Chercher » : calcule une route entre les points du champ. Le résultat remplace le champ.
-- « SimBrief » : reprend la route du dernier OFP. L'identifiant SimBrief se saisit dans ☰ › Profil pilote.
+- « SimBrief » : reprend la route du dernier OFP. L'identifiant SimBrief se saisit dans Paramètres › Mon profil.
 - « Tracer » : dessine la coupe verticale. « Carburant » : ouvre le planificateur carburant avec cette route (distance, niveau, route vraie, appareil).
 - « Copier OACI » : copie le plan de vol OACI strict (points non publiés en coordonnées).
 - « Syntaxe et utilisation » : rappel des formes acceptées (balises, points de report VFR « MM-CV », « REN300010 », coordonnées « 4330N00125E », niveaux « /A035 », « VFR »…).
@@ -1439,6 +1572,7 @@ Bloc du niveau Expert ; aux niveaux 1 à 3, le compte rendu de la génération (
 La « Carte d'assemblage » s'affiche d'elle-même sous les aperçus ; elle reprend le profil de la carte générale.
 Formats : menu ☰ › Sorties des cartes (PNG, SVG éditable, largeur PNG de 400 à 5000 px ; 1600 px par défaut).
 Si une carte échoue (fond indisponible, délai dépassé), le ZIP contient `rapport_generation.txt` et la liste propose « Réessayer seule ».
+Gardez l'onglet visible pendant la génération : le navigateur ralentit les onglets en arrière-plan, et une carte peut échouer (« Délai dépassé pendant le chargement du fond de carte ») ; « Réessayer seule » la relance.
 Les boutons restent grisés tant qu'aucune carte n'est à produire. Pendant les aperçus et la génération, la barre de progression porte un bouton « Arrêter » : la carte en cours s'achève, les suivantes ne sont pas faites. Une génération arrêtée ne télécharge aucun ZIP (il serait incomplet) ; les aperçus déjà affichés restent. Relancez « Générer les cartes et le ZIP » pour toutes les cartes.
 
 ### Base de données SIA
@@ -1456,10 +1590,10 @@ C'est le même bloc que Paramètres › Maintenance › Données aéronautiques.
 ## Carburant
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. La consommation de croisière vient, dans l'ordre, de votre saisie pour ce vol, du profil enregistré, du modèle de Poll et Schumann (avions de ligne à réaction, selon la masse, le niveau et le Mach), de SimBrief, puis d'une estimation par type ou classe OACI ; une valeur approchée est marquée ≈. Pour un type sans fiche EUROCONTROL ni SimBrief (militaires, hélicoptères), l'estimation reprend la TAS de croisière et le plafond publiés par Airframe DB quand il les connaît. Il trace aussi les altitudes et lois de montée optimales.
+Le planificateur carburant (titre « Carburant ») calcule le carburant d'un vol à partir du profil de performances de votre appareil. La consommation de croisière vient, dans l'ordre, de votre saisie pour ce vol, du profil enregistré, du modèle de Poll et Schumann (avions de ligne à réaction, selon la masse, le niveau et le Mach), de SimBrief, puis d'une estimation par type ou classe OACI ; une valeur approchée est marquée ≈. Pour un type sans fiche EUROCONTROL ni SimBrief (militaires, hélicoptères), l'estimation reprend la TAS de croisière et le plafond publiés par Airframe DB quand il les connaît. Il aide aussi à choisir le niveau de vol et la façon d'y monter.
 Pour y aller : barre latérale « Outils », onglet « Carburant », bouton « Carburant (planificateur) » d'une mission dans Mes missions, ou bouton « Carburant » des Cartes de vol. La route, la distance, le niveau et l'appareil sont alors repris.
-En-tête : menu « Avion », bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Les imports et exports sont dans le menu ☰.
-Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments, blocs du profil, barre d'état et actions de profils du menu ☰ s'ajoutent au niveau Expert, où la page est complète.
+En-tête : bouton « Avion », liste déroulante avec recherche (les fiches de performances existantes : « Mes appareils » en tête, puis par catégorie ; tapez un nom, un type ou un désignateur pour filtrer, ↑ ↓ Entrée, Échap), bouton « Récupérer dernier FPL SimBrief », « Unités : kg / lbs ». Le Carburant fait le devis et seulement le devis : les fiches se créent et se modifient dans « Fiches de performances » (chapitre suivant), les appareils se déclarent dans « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs).
+Selon le niveau d'utilisation : aux niveaux 1 à 3 (Équipage, Planification, Conception), la page montre l'avion, le plan de vol (et « Récupérer dernier FPL SimBrief »), le repli « Paramètres du vol », « Calculer » et le Résultat, sur deux colonnes ; le menu ☰ n'y garde qu'exporter et importer les préférences. Courbes, panneaux, instruments et profil vertical s'ajoutent au niveau Expert, où la page est complète.
 Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes | Résultat et panneaux | instruments) : glissez les poignées entre colonnes pour régler leur largeur ; double-clic : largeurs par défaut.
 
 <!-- capture-manuels: utilisateur-carburant -->
@@ -1467,16 +1601,13 @@ Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes 
 
 *Figure 9 — Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.*
 
-### Choisir l'avion et enregistrer le profil
+### Choisir l'avion
 
-1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ) : une liste s'ouvre, une ligne par appareil (icône, nom, type, source du profil, état).
-2. Choisissez un appareil à la souris, ou avec les flèches puis Entrée ; Échap ferme la liste.
-3. Un type de la flotte sans profil crée un profil vide : ses performances sont à renseigner (voir aussi « Profils de performances »).
+1. Cliquez sur le bouton d'avion de l'en-tête (« Aucun avion » au départ) : la liste ne montre que les appareils qui ont une fiche de performances, ceux de « Mes appareils » en tête, puis les autres par catégorie (icône, nom, type, source de la fiche, état).
+2. Choisissez un appareil à la souris, ou avec les flèches puis Entrée ; Échap ferme la liste. « Gérer les fiches de performances ↗ », en bas de la liste, ouvre la page des fiches.
+3. Ouvert sur un appareil sans fiche (bouton d'une mission, adresse `?aircraft=`), le devis affiche « Pas de fiche de performances pour … — ouvrir les Fiches de performances ↗ » : le lien ouvre la page des fiches sur cet appareil, où la créer.
 
-La barre en bas de page indique « Profil enregistré — … » ou « Modifications non enregistrées — … ». Elle porte « Recharger la base locale », « Enregistrer le profil » et « Supprimer cet avion ». Cette barre n'apparaît qu'au niveau Expert.
-Si vous changez d'avion avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
-Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap), importer un airframe SimBrief, choisir le dossier performances, exporter le profil `.lnmperf` ou JSON, enregistrer la base locale, restaurer la sauvegarde précédente, exporter ou importer les préférences. Ces actions sont du niveau Expert, sauf exporter et importer les préférences.
-Un import qui retombe sur un profil existant (même identifiant, le plus souvent le type OACI) le met à jour : les valeurs importées l'emportent, les champs qu'il laisse vides gardent l'ancienne valeur, les tables RPM sont réunies (unités converties).
+La fiche choisie reste visible en lecture seule dans le Résultat (groupe repliable « Régimes de vol — profil ↔ cartographie »), avec « Modifier cette fiche dans les Fiches de performances ↗ ». Une fiche enregistrée dans les Fiches de performances ouvertes dans un autre onglet est reprise aussitôt, et le devis refait.
 
 ### Devis carburant
 
@@ -1487,26 +1618,29 @@ Un import qui retombe sur un profil existant (même identifiant, le plus souvent
 
 Vent laissé vide : la page l'indique (« Vent inconnu : fourchette ±25 kt… ») et donne le carburant en fourchette.
 Avec un écart ISA, un encart « Météo » du Résultat compare à l'atmosphère standard : trajet au niveau du plan (temps, carburant), niveau optimal et plafond. Le QNH n'entre pas dans le calcul (les niveaux de vol sont des altitudes pression).
+Le profil reste calibré en atmosphère standard ; le devis vole dans l'atmosphère du jour : un air plus chaud, moins dense, donne une TAS plus grande à badin égal, mais moins de poussée ou de puissance, un vario et un plafond plus faibles, et une consommation plus forte pour un réacteur.
 Le bouton « Cartes de vol » (niveau Expert) ouvre les Cartes de vol avec ce plan de vol ; les cartes et le profil y sont créés à l'arrivée.
 « Syntaxe du plan de vol » rappelle les formes acceptées. Sans base SIA dans le navigateur, seuls les points en coordonnées sont reconnus.
 
-### Courbes du devis (altitude et montée optimales)
+### Décision du niveau de vol
 
-En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat ; détaillée par défaut au niveau Expert, simple aux niveaux 1 à 3), après « Calculer », le bloc « Devis carburant » affiche, dans l'ordre :
+Après « Calculer », en tête du devis (vue simple comme vue détaillée), un graphe donne pour chaque niveau le carburant (échelle de gauche, courbe pleine) et le temps (échelle de droite, courbe fine) du trajet entier : montée selon l'objectif choisi dans « Consignes de montée », croisière du profil, descente. Chaque échelle a la couleur et le titre de sa courbe ; la fiche donne les deux valeurs dans les mêmes couleurs. Le niveau du plan est un trait plein, le curseur un trait pointillé.
+- Au-dessus du graphe, deux pastilles : « Le plus économe » et « Le plus rapide », avec niveau, carburant et temps ; un clic y met le curseur. En vue détaillée, avec l'objectif « Éco », une troisième donne la croisière économique.
+- Grisé : niveau non tenable — au-delà du plafond, trajet trop court (monter puis redescendre prend plus que la distance) ou poussée insuffisante ; la raison et le champ à modifier s'affichent dans la fiche du curseur.
+- Survolez le graphe, cliquez-y ou réglez la réglette dessous : la fiche est un tableau, toujours le même, à trois colonnes — « Plan », le niveau du curseur et « Écart » (carburant et temps du trajet, montée, TOD). Ses lignes : carburant et temps du trajet, TAS de croisière, montée (temps, carburant, distance), badin et vario de montée, début de descente (TOD), descente (temps, carburant, distance), badin et vario de descente (badin du profil s'il est saisi dans Descente › Badin). Curseur sur le niveau du plan : la colonne du curseur est estompée, sans écart. Le bloc « Consignes de montée » suit le niveau choisi (clic, réglette, pastille ou ligne du tableau), pas le simple survol.
+- « Utiliser ce niveau » fait du curseur le nouveau niveau du plan (« Niveau (FL) ») et refait le devis ; la comparaison se referme d'elle-même.
+- Le tableau « Niveaux », dessous, reprend les niveaux ronds (tous les 1000 ft ; 2000 ft pour un plafond au-delà de 20 000 ft), triable par niveau, carburant ou temps ; un clic sur une ligne choisit ce niveau ; un niveau non tenable affiche « — » et sa cause.
 
-| Titre | Ce qu'il montre |
-|---|---|
-| « Altitude optimale — carburant et vitesse » | Trajet entier volé à chaque niveau : plus la courbe est haute, moins on consomme par mille. |
-| « Montée optimale — vario et carburant » | Vario disponible et carburant par 1000 ft, « par altitude » ou « par régime ». |
-| « Vitesses de montée — Badin et TAS selon l'altitude » | Vy, montée rapide, montée économique, montée choisie, Vx. |
-| « TAS selon le niveau — croisière et montée » | Vitesse vraie en croisière et en montée. |
-| « Comparaison des montées » | Durée, distance et carburant de chaque montée, jusqu'au niveau du plan puis sur le trajet entier ; ★ : meilleur de la colonne. |
-| « Montée par altitude — régimes RPM / N1 » | Table à Vy avec cumuls depuis le sol. |
+### Montée (vue détaillée)
 
-Survolez une courbe pour lire les valeurs à cette altitude ; cliquez pour épingler un niveau (trait blanc sur toutes les courbes). Le devis est alors calculé à ce niveau.
-Les curseurs « Montée choisie » du devis règlent votre montée choisie, tracée en violet sur les courbes.
-La zone grisée « inaccessible » se trouve au-dessus du plafond de l'appareil.
-Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil, le modèle les estime (badin et TAS de croisière, fiche EUROCONTROL, débit de montée, sinon valeur type de la classe) et indique la source sous les courbes. Renseignez ces deux champs, ou calibrez sur un OFP SimBrief : c'est plus fiable.
+En vue détaillée (bouton « Vue détaillée » / « Vue simple » du Résultat ; détaillée par défaut au niveau Expert), sous les consignes de montée :
+- « Montée — vario, carburant et vitesses selon l'altitude » : trois panneaux sur le même axe et avec le même curseur que la décision du niveau — vario (tirets : vario max à Vy), carburant par 1000 ft, badin à tenir (trait) et TAS (tirets), pour l'objectif choisi dans les consignes de montée. Avec une cartographie moteur, « par altitude » / « par régime » montre aussi le vario selon le régime à mi-montée.
+- « Objectifs de montée » : un objectif par ligne (« Éco », « Vy », « Rapide », « Profil », « Réglée ») — temps, carburant, badin et vario, toujours jusqu'au niveau du plan ; ★ : meilleur temps et meilleur carburant ; un clic sur une ligne choisit l'objectif.
+- « Régimes de montée — cartographie moteur » (seulement s'il y en a une) : vario et carburant par 1000 ft à mi-montée pour chaque régime ; ★ : le plus économe.
+
+Les curseurs « Montée choisie » du devis règlent l'objectif « Réglée ».
+Au-dessus du niveau où le Mach du profil n'est plus tenable, un réacteur vole à la plus grande vitesse permise par 92 % de sa poussée (« poussée max. » dans la fiche) ; le niveau n'est refusé qu'au-delà du plafond.
+Sans « Altitude de référence (ft) » ni « Plafond max (ft) » dans le profil, le modèle les estime (badin et TAS de croisière, fiche EUROCONTROL, débit de montée, sinon valeur type de la classe) et l'indique dans le panneau de la décision du niveau. Renseignez ces deux champs, ou calibrez sur un OFP SimBrief : c'est plus fiable.
 
 ### Consignes de montée
 
@@ -1514,7 +1648,7 @@ Ce bloc, sous « Calculer », dit comment monter, à tout niveau d'utilisation.
 - Cinq objectifs, chacun avec son temps et son carburant jusqu'au niveau : « Éco », « Vy », « Rapide », « Profil » (vitesse de montée du profil), « Réglée » (montée choisie). Le choix est gardé dans ce navigateur.
   « Vy » : vario maximal (niveau atteint au plus tôt) ; « Rapide » : temps de bloc minimal ; « Éco » : carburant du trajet minimal. Pour ces deux dernières, la distance de montée est retranchée de la croisière, le vario reste au moins à 50 % du maximum, et un réacteur est limité à 250 kt sous le FL100.
 - Une consigne en trois temps : « Régler » (gaz, hélice, RPM ou N1), « Tenir » (l'instrument qui porte la consigne, le plus souvent le badin), « Attendu » (vario à voir, niveau atteint, temps et carburant).
-- Un tableau par tranche d'altitude (sol, 2 000 ft, FL050, FL100… jusqu'au niveau du plan) : gaz, RPM ou N1 si le profil a une cartographie moteur, badin à tenir, vario attendu, temps cumulé.
+- Un tableau par tranche d'altitude (sol, 2 000 ft, FL050, FL100… jusqu'au niveau du plan, ou au niveau étudié dans « Décision du niveau de vol », nommé dans le titre) : gaz, RPM ou N1 si le profil a une cartographie moteur, badin à tenir, vario attendu, temps cumulé.
 
 Les consignes guident le pilotage ; le devis compte la montée choisie. Elles viennent du modèle de performances du profil (atmosphère du devis, masse non modélisée) : à confronter au manuel de vol.
 
@@ -1525,74 +1659,11 @@ Ce bloc, dans la colonne de droite, suit la page pendant que vous faites défile
 - « Block fuel » (en fourchette si le vent est inconnu), « Temps de vol », « TOD ».
 - Ligne d'état « Calculé pour <avion> à <heure> : <distance> NM au FL…, temps de vol, TOD. Consommation de croisière : … », puis base du calcul : niveau, montée retenue et origine de la consommation de croisière (« profil enregistré », « saisie pour ce vol », « Poll-Schumann, 70 t à mi-croisière, FL350, M0,78 », « SimBrief », « estimation… »). Sans consommation connue, « Carburant bloc » affiche « — » : saisissez la consommation dans le devis.
 - Détail : taxi, montée, croisière, descente, contingence, réserve ; masse au décollage prévue et MTOW si vous l'avez saisie (en rouge si elle est dépassée).
-- Fiche du curseur (⌖ au survol, 📌 épinglé) : carburant et temps du trajet à ce niveau, vario max, vitesses de montée ; « désépingler » retire l'épingle.
-- Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur. Il contient aussi le champ « SimBrief Airframe Internal ID » et les liens vers les fiches des appareils de ce type.
-  « Importer airframe SimBrief » lit ce champ (identifiant ou lien de partage) : liste publique de SimBrief, puis lien de partage ; un airframe privé illisible ne donne qu'un profil partiel, avec son seul identifiant.
+- Groupe repliable « Régimes de vol — profil ↔ cartographie » (niveau Expert) : la fiche de l'appareil en lecture seule — Badin, vario, régime moteur et débit par phase, comparés à la cartographie moteur, liens vers les fiches des appareils de ce type — et « Modifier cette fiche dans les Fiches de performances ↗ ».
 
-« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par courbe donne les optimums, les limites (plafond, niveau demandé) et une aide à la lecture. Le bandeau d'instruments (niveau Expert) reprend badin, altimètre, vario, chronomètre (temps de montée), carburant et temps de vol.
-Dans les panneaux et les messages, un nom de champ souligné est un lien : il déplie l'éditeur du profil au besoin et montre le champ. Un niveau « inatteignable » donne sa cause et le champ à corriger (bloc « Limites »).
+« Épingler » garde le bloc entier quand il suit la page ; sinon, il se replie. « Vue simple » masque les courbes et les instruments, « Vue détaillée » les montre (choix gardé dans ce navigateur). Au niveau Expert, sous le bloc, un panneau par graphe (décision du niveau, montée) donne l'essentiel en trois lignes ; « En savoir plus » déplie la lecture et les hypothèses du modèle. Le bandeau d'instruments (niveau Expert) reprend badin, altimètre, vario, chronomètre (temps de montée), carburant et temps de vol.
+Dans les panneaux et les messages, un nom de champ souligné désigne un champ de la fiche (à modifier dans les Fiches de performances). Un niveau « inatteignable » donne sa cause et le champ à corriger (bloc « Limites »).
 Un clic sur le cadran carburant (ou son bouton) change la courbe lue, dans sa couleur : montée choisie, profil, croisière économique, montée rapide, Vy, montée économique ; choix gardé dans ce navigateur.
-
-### Profils de performances
-
-Ce bloc (à partir du niveau Conception) fait l'état des profils : une ligne par profil enregistré et par type de la flotte sans profil.
-- Colonnes : « Appareil », « Profil (source) » (`.lnmperf`, SimBrief, JSON, saisie ou estimation ; « actif » pour l'appareil choisi, « Créer » pour un type sans profil), « Cartographie moteur », « Consommation de croisière » et son origine, « Plafond », « Données manquantes ».
-- « Importer… » (`.lnmperf`, JSON, CSV), « Dossier… » (dossier performances), « Relire ». Le dossier est relu de lui-même quand il change ailleurs (Paramètres, autre onglet).
-- Une colonne d'actions, devant le nom, porte le bouton de chaque ligne, toujours au même endroit : « Choisir » (« Créer » pour un type de la flotte sans profil, avec « Créer depuis SimBrief » à côté quand SimBrief connaît le type). Dans la fiche du profil actif, « Mettre à jour depuis SimBrief » reprend la fiche SimBrief du type (consommation de croisière, masses, plafond, vitesse) en gardant vos saisies ; face à un profil perso, il propose « Mettre à jour les champs vides », « Fusionner » (la fiche compte comme un profil daté de sa récupération : le plus récent gagne champ par champ, les vides sont comblés), « Remplacer » (valeurs SimBrief à la place, le reste gardé) ou « Nouveau profil ». Quand des champs changent, un aperçu les montre avant de valider. « Supprimer cet avion », dans la même fiche, retire le profil actif.
-- Les cases devant les noms sélectionnent des profils pour la barre du bloc : « Fusionner (n) » (deux profils au moins du même type, ou un seul quand SimBrief connaît le type : la case « Inclure la fiche SimBrief du type », cochée d'avance, l'ajoute aux sources ; nom choisi, celui du plus complet par défaut ; le plus récent gagne champ par champ, les autres comblent ses manques, la cartographie moteur réunit leurs lignes ; la fenêtre montre d'abord les changements — valeur actuelle, valeur retenue et sa source, champs inchangés repliés, lignes de cartographie ajoutées ou remplacées ; une case par donnée qui change (décochée : la valeur actuelle est gardée), « Tout reprendre » / « Ne rien reprendre », et le bouton dit ce qui sera repris, « Fusionner (7 champs, 1 ligne de cartographie) » ; la note de fusion ne liste que ce qui a été repris ; la notification dit ce qui a été repris de chaque source, « Annuler » 10 s), « Exporter (n) » (un fichier téléchargé par profil : `.lnmperf` si le profil est complet, sinon JSON), « Enregistrer dans le dossier (n) » (un fichier JSON par profil dans le dossier performances, nommé d'après le profil) et « Supprimer (n) » (une confirmation, un seul message pour le lot avec « Annuler » pendant 10 s ; un profil du dossier performances en est aussi retiré : base exportée réécrite sans lui, fichier d'un seul profil renommé .bak ; « Annuler » remet aussi les fichiers ; si le dossier n'est pas accessible en écriture, le profil reviendra à la prochaine relecture). « Dossier… » et « Relire » reprennent tout ce que le dossier contient ; tant qu'un profil supprimé y reste (CSV à plusieurs profils, écriture refusée), une ligne « n profil(s) retiré(s) encore dans le dossier — Restaurer » le signale.
-- « Demander à ChatGPT » (barre du bloc, et fiche du profil actif) ouvre un panneau : choisir l'appareil (profil, ou type de la flotte sans profil), puis « Copier le prompt et ouvrir ChatGPT » (un seul onglet ChatGPT, où coller le prompt). Le panneau suit l'appareil choisi (« Choisir », liste de l'en-tête) ou coché. Le prompt, dans la langue de la page, demande de compiler toutes les sources (manuels, constructeur, autorités, Wikipédia, forums de simulation), en kt, ft, ft/min et kg/h, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà (EUROCONTROL, SimBrief, Airframe DB, profil actuel) pour que ChatGPT complète plutôt que répète. « Voir le prompt » le montre. Coller la réponse (le JSON, ou un CSV de performances) sous le bouton, puis « Importer comme nouveau profil » (« <nom> — ChatGPT ») ou « Fusionner avec « … » » (la réponse est datée du jour : elle gagne champ par champ, les vides sont comblés ; aperçu des changements d'abord, données à cocher). Les clés inconnues et les valeurs illisibles ou hors plage sont écartées et signalées ; les valeurs estimées apparaissent sous « Données manquantes » (« estimé : … ») et ne le sont plus dès que vous les changez à la main (fiche ou cartographie). Le type et le nom viennent de la réponse (l'appareil choisi n'est qu'un repli) ; si la réponse décrit un autre type, une question tranche : importer comme l'un ou l'autre, ou, pour une fusion, nouveau profil ou fusionner quand même. Un CSV à virgules ou à points-virgules est accepté.
-
-### Performances moteur — RPM / puissance / consommation
-
-Ce bloc (titre d'origine « Fiche performance moteur ») donne la consommation pour un régime moteur. Bloc du niveau Expert.
-
-1. Saisissez « RPM / N1 ». Les champs « Altitude (ft) » et « Phase » complètent la fiche.
-2. Cliquez sur « Interpoler ».
-3. Lisez le « Débit total » et sa fourchette min.–max. (interpolation dans la table, par altitude quand la colonne « Altitude (ft) » est remplie).
-
-Sous la fiche, la « Courbe RPM / puissance → consommation » trace les débits min., nominal et max. selon le régime. Survolez-la pour lire les valeurs à un régime donné. Le point interpolé y est marqué.
-Sans table RPM dans le profil, la page affiche « Courbe RPM absente du profil. » ou « Aucune cartographie chiffrée ».
-
-### Table RPM / puissance → consommation
-
-Cette table liste les points de la cartographie moteur du profil actif : « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol », « Commentaire ». Bloc du niveau Expert.
-Cliquez sur un titre de colonne (↕) pour trier.
-Elle est en lecture seule : pour la modifier, utilisez le bloc « Cartographie moteur — édition RPM / puissance → consommation ».
-Sans données, elle affiche « Pas de courbe RPM dans ce profil. »
-
-### Données du profil — JSON ⇄ Little Navmap
-
-Ce bloc montre tous les champs du profil, exportés tels quels dans le fichier `.lnmperf` de Little Navmap. Bloc du niveau Expert.
-
-- Groupes : « Identité et format », « Carburant et opération », « Piste et alternat », « Montée », « Croisière », « Descente », « Régime et consommation ».
-- Le carburant s'affiche dans l'unité choisie (kg ou lbs).
-- Quand le type a une fiche EUROCONTROL APD, une étiquette « APD … » apparaît à côté des champs comparables : un clic reprend cette valeur. Rien n'est écrit sans clic. Sinon : « Aucune donnée EUROCONTROL APD pour ce type ».
-- Couleur de l'étiquette : verte = identique (±3 %), orange = différente, bleue = champ vide ; « remplir les champs vides » reprend toutes les valeurs APD des champs vides.
-
-Une case vide reste vide et bloque l'export `.lnmperf` : aucune valeur n'est inventée.
-Après modification, cliquez sur « Enregistrer le profil » dans la barre du bas.
-
-### Cartographie moteur — édition RPM / puissance → consommation
-
-Ce bloc sert à saisir ou corriger la table régime → consommation, point par point. Bloc du niveau Expert.
-
-1. « Ajouter un point » crée une ligne.
-2. Remplissez « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol » et « Commentaire ».
-3. Enregistrez le profil (barre du bas).
-
-Astuce : une plage écrite dans le commentaire, par exemple « 1 000–1 300 kg/h total », remplit min., nominal et max. à l'enregistrement.
-Sans avion choisi, le bloc affiche « Choisis ou importe un profil. »
-
-### Calibration SimBrief depuis OFP
-
-Ce bloc recale le profil actif sur un plan de vol SimBrief réel. Bloc du niveau Expert.
-
-1. Cliquez sur « Récupérer dernier FPL SimBrief » (en-tête). L'identifiant se saisit dans ☰ › Profil pilote. À défaut, téléchargez l'OFP JSON sur simbrief.com et utilisez « Importer OFP JSON ».
-2. L'OFP remplit le devis et le plan de vol ; le profil de l'appareil est créé et calibré. Le message indique une calibration complète ou partielle (phases mesurables).
-3. « Calibrer le profil actif » applique la calibration du dernier OFP au profil choisi.
-4. « Exporter audit JSON » télécharge l'audit.
-
-« Traçabilité de calibration » (dans ce bloc) rappelle la dernière calibration appliquée ; sinon « Pas de calibration OFP ».
 
 ### Profil vertical
 
@@ -1606,19 +1677,127 @@ Ce bloc dessine une coupe le long du plan de vol du devis : relief, espaces aér
 La montée suit le modèle de performances de l'avion actif ; la descente suit son vario. Un plan sans niveau (VFR) n'a pas de trajectoire.
 Un OFP SimBrief importé remplit la route et trace le profil tout seul.
 Il faut la base SIA de ce navigateur, lue dans les Cartes de vol (bloc « Base de données SIA ») ou dans Paramètres › Maintenance. Sans elle, seuls les points en coordonnées sont reconnus, sans espaces aériens.
+Le relief vient d'un modèle de terrain d'environ 150 m : les limites ASFC suivent ce modèle, pas le sol réel.
 
-### Audit OFP — valeurs brutes et calculées
+## Fiches de performances
+<!-- page: apps/planner/performance_sheets.html -->
 
-Ce tableau compare, phase par phase, les valeurs lues dans l'OFP et les valeurs recalculées : « Temps », « Distance », « Carburant », « FF calculé », « TAS / GS », « Vario ». Bloc du niveau Expert.
+Cette page (barre latérale « Outils », à partir du niveau Conception) gère les fiches de performances de vos appareils : c'est d'elle que partent toutes les actions qui créent ou modifient une fiche. Le Carburant s'en sert pour le devis ; « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) dit quels appareils vous possédez. Les deux pages lisent la même base de ce navigateur et le même dossier performances : une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet.
+
+- En-tête : le sélecteur « Appareil », liste déroulante avec recherche (tapez un nom, un type ou un désignateur), découpée comme le bouton « Avion » du Carburant (« Mes appareils » en tête, puis par catégorie ; un type sans fiche y figure avec « aucune fiche »), qui choisit la fiche qu'on modifie et l'appareil du panneau ChatGPT.
+- Barre du bas : « Ajouter un appareil » et « Importer… » ; « Sélection (n) ▾ », le menu des actions sur les lignes cochées (« Fusionner », « Exporter », « Enregistrer dans le dossier », « Renseigner les champs manquants », « Supprimer ») ; l'état de la fiche, « Enregistrer la fiche » et « Abandonner les modifications », ou, pour un appareil sans fiche, « Créer la fiche : depuis SimBrief, Demander à ChatGPT, Estimer par la classe ». Sous 800 px de large, « Importer… » passe dans le menu ☰.
+- « Fiches de performances » : sous la présentation, la ligne du dossier (« Mes appareils ↗ », l'état du dossier performances, « Relire » et « Dossier… ») ; puis la recherche, le tri et « Demander à ChatGPT » au-dessus du tableau de vos appareils et de vos fiches, par groupes ; un appareil sans fiche n'y montre que « aucune ». Un clic sur une ligne choisit cet appareil, avec ou sans fiche, comme le sélecteur de l'en-tête (ligne surlignée) ; plusieurs lignes cochées : aucun appareil choisi.
+- Sous le tableau, quatre cartes : « Fiche en cours » (régimes de vol et champs de la fiche, dès le niveau Conception), « Moteur » (cartographie, table RPM, interpolation), « SimBrief » (airframe, calibration OFP, traçabilité, audit) et « Fichier » (dernier JSON importé, replié), décrites ci-dessous.
+- Une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet (la fiche qu'il affiche, et son devis).
+
+### Barre du bas et menu ☰
+
+La barre du bas indique « Fiche enregistrée — … », « Modifications non enregistrées — … », « Pas de fiche pour … » (appareil choisi sans fiche, avec les boutons de création) ou « Aucune fiche en cours. ». « Enregistrer la fiche » l'écrit dans la base locale ; « Abandonner les modifications » (seulement s'il y en a) relit la base locale et rouvre la fiche telle qu'elle était enregistrée. Pour supprimer la fiche : « Supprimer » (sa ligne cochée). Les notifications s'affichent au-dessus de la barre.
+Si vous choisissez un autre appareil (clic sur sa ligne, sélecteur de l'en-tête) avec des modifications non enregistrées, la page propose « Rester », « Abandonner et changer » ou « Enregistrer et changer ».
+Menu ☰ : importer profils / CSV / JSON (dont `.lnmperf` de Little Navmap ; la même fenêtre que « Importer… »), importer un airframe SimBrief, choisir le dossier performances, exporter le profil `.lnmperf` ou JSON, enregistrer la base locale, restaurer la sauvegarde précédente, exporter ou importer les préférences. Ces actions sont du niveau Expert, sauf exporter et importer les préférences.
+« Enregistrer la base locale » écrit `flight_performance_database.fpdb.json` dans le dossier performances (sinon, téléchargement) ; « Restaurer la sauvegarde précédente » reprend l'état d'avant le dernier enregistrement.
+Un import (fichier ou texte collé) qui retombe sur une fiche existante — même type, alias compris, ou même nom — ne crée rien sans demander : « Une fiche « … » existe déjà pour … » propose « Compléter la fiche existante » (par défaut : seuls ses champs vides sont remplis, cartographie moteur reprise si elle n'en a pas, résumé des champs avant validation), « Fusionner » (l'aperçu de fusion, champ par champ, le plus récent gagne, données à cocher) ou « Créer une seconde fiche » (nom suivi de « (2) »). Avec plus de deux doublons, « Même choix pour les doublons suivants », cochée d'avance, évite de répondre à chaque fois ; deux entrées pour la même fiche s'y ajoutent l'une après l'autre. Sans doublon, la fiche est créée. À la fin, la dernière fiche s'ouvre et « Annuler » (10 s) remet la base comme avant l'import.
+
+### Fiches de performances (tableau)
+
+Ce bloc (à partir du niveau Conception), le premier de la page, est la face performances de « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) : mêmes appareils, même ordre, même nom. Sous la présentation du tableau, « Mes appareils ↗ » ouvre cette liste dans Paramètres ; la même ligne dit l'état du dossier performances (« n profil(s) lu(s) dans le dossier « … » à … », ou « Aucun dossier performances choisi. »).
+- Une ligne par appareil, groupées par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons) avec un en-tête de groupe repliable ; « Trier par » : catégorie, nom ou source. Viennent ensuite les profils enregistrés hors de « Mes appareils », marqués « pas dans « Mes appareils » ». Sans « Mes appareils » (trigramme non réglé, rien de déclaré), le bloc montre les profils et les types de la flotte.
+- Colonnes : « Appareil » (silhouette, nom en gras, désignateur et classe en petit, comme dans Paramètres), « Performances » (source du profil : `.lnmperf`, SimBrief, ChatGPT, JSON, saisie, estimé par la classe ; ou « aucune »), « Carto. » (cartographie moteur), « Conso. croisière » et son origine, « Plafond », « Manques ». Un clic sur une ligne coche cet appareil seul et le choisit (fiche ouverte dans l'éditeur, ligne surlignée ; sans fiche : « Créer la fiche » dans la barre du bas) ; Ctrl ou Maj + clic, ou les cases, en cochent plusieurs, et alors aucun appareil n'est choisi.
+- « Ajouter un appareil » ouvre la même fenêtre d'ajout que Paramètres (voir « Ajouter un appareil et ses performances ») ; l'appareil ajouté arrive avec « aucune ». Cliquez sa ligne (ou choisissez-le dans le sélecteur de l'en-tête) : la barre du bas propose « Créer la fiche : depuis SimBrief » (si SimBrief connaît le type), « Demander à ChatGPT », « Estimer par la classe » (type classé).
+- Un désignateur déclaré sous plusieurs variantes (CL2T : « Canadair CL-415 », « Canadair CL-215T ») n'a qu'une ligne, au nom du type : les performances sont celles du type, les variantes ne changent rien ici. Un appareil qui a plusieurs profils a une ligne par profil, chacune sous le nom du profil.
+- La case en tête de colonne coche ou décoche toutes les lignes affichées ; la case de chaque rubrique (devant « Hélicoptères (n) »…) coche ou décoche toutes ses fiches, rubrique repliée comprise ; toute la cellule d'une case la coche ou la décoche (un clic à côté de la case ne remplace pas la sélection) ; les bords des titres se glissent pour régler la largeur des colonnes (double-clic : largeurs par défaut).
+- « Chercher un appareil », avant « Trier par », filtre de même (nom, variante, désignateur, classe, source) : groupes avec correspondance dépliés, autres repliés, « n appareil(s) ».
+- « Importer… » (barre du bas) ouvre une fenêtre à deux voies : « Choisir un ou des fichiers… » (`.lnmperf`, JSON, CSV, plusieurs à la fois), ou coller un texte — une fiche JSON, une réponse ChatGPT (avec son texte et ses blocs de code), un `.lnmperf` ou un CSV de performances (séparé par « ; », « , » ou tabulation) — puis « Importer le texte collé ». Le texte collé suit le chemin d'un fichier ; une réponse ChatGPT devient une fiche « … — ChatGPT ». Un JSON à plusieurs entrées (un tableau, ou une liste « sheets », « profiles »…) donne autant de fiches : chacune est rapprochée des fiches existantes par son identifiant, puis son type (alias compris), puis son nom ; une entrée illisible n'arrête pas les autres. À la fin, un seul résumé : « n fiche(s) complétée(s), m fusionnée(s), k créée(s) », avec les entrées illisibles. Un texte vide ou illisible est signalé dans la fenêtre, qui reste ouverte ; Échap ou « Fermer » la ferme. Une fiche qui existe déjà se complète, se fusionne ou se double (voir « Barre du bas et menu ☰ »).
+- « Dossier… » (choisir le dossier performances) et « Relire », sur la ligne du dossier. Le dossier est relu de lui-même quand il change ailleurs (Paramètres, autre onglet).
+- Dans la fiche du profil actif, « Mettre à jour depuis SimBrief » reprend la fiche SimBrief du type (consommation de croisière, masses, plafond, vitesse) en gardant vos saisies ; face à un profil perso, il propose « Mettre à jour les champs vides », « Fusionner » (la fiche compte comme un profil daté de sa récupération : le plus récent gagne champ par champ, les vides sont comblés), « Remplacer » (valeurs SimBrief à la place, le reste gardé) ou « Nouveau profil ». Quand des champs changent, un aperçu les montre avant de valider.
+- Les cases devant les noms sélectionnent des profils pour le menu « Sélection (n) ▾ » de la barre du bas (ouvert vers le haut ; Échap ou un clic ailleurs le ferme) : « Fusionner (n) » (deux profils au moins du même type, ou un seul quand SimBrief connaît le type : la case « Inclure la fiche SimBrief du type », cochée d'avance, l'ajoute aux sources ; nom choisi, celui du plus complet par défaut ; le plus récent gagne champ par champ, les autres comblent ses manques, la cartographie moteur réunit leurs lignes ; la fenêtre montre d'abord les changements — valeur actuelle, valeur retenue et sa source, champs inchangés repliés, lignes de cartographie ajoutées ou remplacées ; une case par donnée qui change (décochée : la valeur actuelle est gardée), « Tout reprendre » / « Ne rien reprendre », et le bouton dit ce qui sera repris, « Fusionner (7 champs, 1 ligne de cartographie) » ; la note de fusion ne liste que ce qui a été repris ; la notification dit ce qui a été repris de chaque source, « Annuler » 10 s), « Exporter (n) » (un fichier téléchargé par profil : `.lnmperf` si le profil est complet, sinon JSON), « Enregistrer dans le dossier (n) » (un fichier JSON par profil dans le dossier performances, nommé d'après le profil) et « Supprimer (n) » (une confirmation, un seul message pour le lot avec « Annuler » pendant 10 s ; un profil du dossier performances en est aussi retiré : base exportée réécrite sans lui, fichier d'un seul profil renommé .bak ; « Annuler » remet aussi les fichiers ; si le dossier n'est pas accessible en écriture, le profil reviendra à la prochaine relecture). « Dossier… » et « Relire » reprennent tout ce que le dossier contient ; tant qu'un profil supprimé y reste (CSV à plusieurs profils, écriture refusée), une ligne « n profil(s) retiré(s) encore dans le dossier — Restaurer » le signale.
+- « Demander à ChatGPT » (au-dessus du tableau, et fiche du profil actif) ouvre un panneau pour l'appareil choisi (sélecteur de l'en-tête ou clic sur sa ligne) : « Copier le prompt et ouvrir ChatGPT » (un seul onglet ChatGPT, où coller le prompt). Le panneau suit l'appareil choisi. Le prompt, dans la langue de la page, demande de compiler toutes les sources (manuels, constructeur, autorités, Wikipédia, forums de simulation), en kt, ft, ft/min et kg/h, valeurs estimées marquées, cartographie moteur comprise ; il donne aussi ce que la suite sait déjà (EUROCONTROL, SimBrief, Airframe DB, profil actuel) pour que ChatGPT complète plutôt que répète. « Voir le prompt » le montre. Coller la réponse (le JSON, ou un CSV de performances) sous le bouton, puis « Importer comme nouveau profil » (« <nom> — ChatGPT ») ou « Fusionner avec « … » » (la réponse est datée du jour : elle gagne champ par champ, les vides sont comblés ; aperçu des changements d'abord, données à cocher). Les clés inconnues et les valeurs illisibles ou hors plage sont écartées et signalées ; les valeurs estimées apparaissent sous « Données manquantes » (« estimé : … ») et ne le sont plus dès que vous les changez à la main (fiche ou cartographie). Le type et le nom viennent de la réponse (l'appareil choisi n'est qu'un repli) ; si la réponse décrit un autre type, une question tranche : importer comme l'un ou l'autre, ou, pour une fusion, nouveau profil ou fusionner quand même. Un CSV à virgules ou à points-virgules est accepté.
+- « Renseigner les champs manquants (n) » (menu « Sélection », barre du bas) complète les fiches cochées par une seule question à ChatGPT : le panneau ChatGPT s'ouvre sur ces fiches (nom et nombre de champs vides), « Copier le prompt et ouvrir ChatGPT » copie la question — pour chaque fiche, ce que la suite sait déjà et ses champs vides, cartographie moteur comprise si la fiche n'en a pas. Collez la réponse de ChatGPT (une entrée par fiche), puis « Renseigner les champs manquants » : seuls les champs vides sont remplis, rien de déjà saisi n'est remplacé, les valeurs estimées restent marquées ; un résumé par fiche précède la validation, puis « Annuler » pendant 10 s.
+
+### Fiche en cours
+
+Cette carte (dès le niveau Conception), sous le tableau, montre la fiche de l'appareil choisi.
+
+#### Régimes de vol — profil ↔ cartographie
+
+Badin, vario, régime moteur et débit de chaque phase (montée, croisière, descente, roulage, dégagement), comparés à la cartographie moteur, et les liens vers les fiches des appareils de ce type.
+
+#### Champs de la fiche
+
+Tous les champs de la fiche, exportés tels quels dans le fichier `.lnmperf` de Little Navmap.
+
+- Groupes : « Identité et format », « Carburant et opération », « Piste et alternat », « Montée », « Croisière », « Descente », « Régime et consommation ».
+- Le carburant s'affiche dans l'unité choisie (kg ou lbs).
+- Quand le type a une fiche EUROCONTROL APD, une étiquette « APD … » apparaît à côté des champs comparables : un clic reprend cette valeur. Rien n'est écrit sans clic. Sinon : « Aucune donnée EUROCONTROL APD pour ce type ».
+- Couleur de l'étiquette : verte = identique (±3 %), orange = différente, bleue = champ vide ; « remplir les champs vides » reprend toutes les valeurs APD des champs vides.
+
+Une case vide reste vide et bloque l'export `.lnmperf` : aucune valeur n'est inventée.
+Après modification, cliquez sur « Enregistrer la fiche » dans la barre du bas.
+
+### Moteur
+
+Carte du niveau Expert : la cartographie moteur à éditer, la table RPM et sa courbe, l'interpolation du débit.
+
+#### Cartographie moteur — édition RPM / puissance → consommation
+
+Saisir ou corriger la table régime → consommation, point par point.
+
+1. « Ajouter un point » crée une ligne.
+2. Remplissez « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol » et « Commentaire ».
+3. Enregistrez la fiche (« Enregistrer la fiche », barre du bas).
+
+Astuce : une plage écrite dans le commentaire, par exemple « 1 000–1 300 kg/h total », remplit min., nominal et max. à l'enregistrement.
+Sans appareil choisi, la carte affiche « Choisis ou importe un profil. »
+
+#### Table RPM / puissance → consommation
+
+Cette table liste les points de la cartographie moteur du profil actif : « RPM / N1 », « Min. », « Nominal », « Max. », « Altitude (ft) » (facultative : une ligne par altitude publiée), « Régime de vol », « Commentaire ».
+Cliquez sur un titre de colonne (↕) pour trier. Glissez le bord droit d'un titre pour régler la largeur de la colonne (double-clic sur le bord : largeurs par défaut) ; le réglage est gardé dans le navigateur. Un commentaire long tient sur une ligne, points de suspension compris : le texte entier est en infobulle, un double-clic sur la cellule le déplie.
+Elle est en lecture seule : pour la modifier, utilisez « Cartographie moteur — édition », au-dessus.
+Sans données, elle affiche « Pas de courbe RPM dans ce profil. »
+
+#### Interpolation moteur
+
+Cette partie donne la consommation pour un régime moteur.
+
+1. Saisissez « RPM / N1 ». Les champs « Altitude (ft) » et « Phase » complètent la fiche.
+2. Cliquez sur « Interpoler ».
+3. Lisez le « Débit total » et sa fourchette min.–max. (interpolation dans la table, par altitude quand la colonne « Altitude (ft) » est remplie).
+
+Au-dessus de la table RPM, la courbe trace les débits min., nominal et max. selon le régime. Survolez-la pour lire les valeurs à un régime donné. Le point interpolé y est marqué.
+Sans table RPM dans le profil, la page affiche « Courbe RPM absente du profil. » ou « Aucune cartographie chiffrée ».
+
+### SimBrief
+
+Carte du niveau Expert : l'airframe SimBrief, la calibration sur un OFP réel, sa traçabilité et l'audit.
+
+#### Airframe SimBrief
+
+Collez l'« Internal ID » d'un airframe SimBrief (ou son adresse de partage), puis « Importer airframe SimBrief » : l'airframe est lu (liste publique de SimBrief, sinon son lien de partage) et la fiche qui en est tirée s'ouvre. Si SimBrief ne publie pas l'airframe, l'Internal ID est gardé seul, utilisable comme type par SimBrief Dispatch. Le message sous le bouton dit ce qui a été repris ; sans performances dans l'airframe, complétez avec un `.lnmperf`.
+
+#### Calibration SimBrief depuis OFP
+
+Recaler la fiche sur un plan de vol SimBrief réel.
+
+1. Cliquez sur « Récupérer dernier FPL SimBrief », le premier bouton de cette partie. L'identifiant se saisit dans Paramètres › Mon profil. À défaut, téléchargez l'OFP JSON sur simbrief.com et utilisez « Importer OFP JSON ».
+2. L'OFP remplit le devis et le plan de vol ; le profil de l'appareil est créé et calibré. Le message indique une calibration complète ou partielle (phases mesurables).
+3. « Calibrer le profil actif » applique la calibration du dernier OFP au profil choisi.
+4. « Exporter audit JSON » télécharge l'audit.
+
+« Traçabilité de calibration », dessous, rappelle la dernière calibration appliquée ; sinon « Pas de calibration OFP ».
+
+#### Audit OFP — valeurs brutes et calculées
+
+Ce tableau compare, phase par phase, les valeurs lues dans l'OFP et les valeurs recalculées : « Temps », « Distance », « Carburant », « FF calculé », « TAS / GS », « Vario ».
 Il se remplit après un import d'OFP (« Récupérer dernier FPL SimBrief » ou « Importer OFP JSON »).
 Sans OFP : « Aucune donnée OFP. »
 Utile pour comprendre une calibration partielle ou un écart avec SimBrief.
 
-### JSON importé / SimBrief
+### Fichier
 
-Ce bloc affiche le contenu brut du dernier fichier importé (OFP SimBrief ou JSON). Bloc du niveau Expert.
+La carte « Fichier » (niveau Expert) garde, repliée sous « JSON importé / SimBrief », le contenu brut du dernier fichier importé (OFP SimBrief ou JSON) ; un clic la déplie.
 - « Copier JSON » : copie le contenu dans le presse-papiers ; grisé quand il n'y a rien à copier.
-- « Effacer » : vide l'affichage (le profil n'est pas touché).
+- « Effacer » : vide l'affichage (la fiche n'est pas touchée).
 
 Sans import : « Aucun JSON chargé. »
 
@@ -1657,14 +1836,15 @@ Options de l'analyse (menu ☰) : « exclure les mesures manifestement aberrante
 
 Un bandeau fixé en bas de la fenêtre, après l'icône de tendance, donne les chiffres clés : « Atterrissages », « Score moyen », « Score min / max », « FPM moyen », « FPM min / max », « G moyen », « G min / max », « Butter / Very Good ».
 Les boutons « − » et « + » changent la taille de ces cartes.
-Dessous, la conclusion de tendance : progression ou régression probable, légère, « Aucune progression nette », ou « données insuffisantes » (il faut au moins quatre mesures exploitables).
-Le texte explique la méthode choisie (par exemple asymptote estimée et gain restant).
+Dessous, le bloc de lecture réunit à gauche la conclusion de tendance : progression ou régression probable, légère, « Aucune progression nette », ou « données insuffisantes » (il faut au moins quatre mesures exploitables), avec la méthode choisie (par exemple asymptote estimée et gain restant).
+À droite, en petit, la légende : format lu, losange « ◇ estimé », pastilles des notes, estimation activée ou désactivée. Sur un écran étroit (moins de 800 px), la légende passe sous la conclusion.
 
 ### Évolution
 
 Ce bloc trace les indicateurs dans le temps, avec leur tendance : score, taux au toucher (FPM), force G, vitesse de rotation du nez, et le nuage « FPM × G — distribution des touchers ». En format allégé : indice technique relatif, landing rate brut, float.
 
-- Survolez un point : date, appareil, score, évaluation, arrondi.
+- Survolez un point : date, appareil, score, évaluation, arrondi. La même mesure s'allume sur les cinq graphes (point agrandi et cerclé, les autres estompés) ; l'infobulle reste dans la fenêtre, à gauche ou au-dessus du pointeur près des bords.
+- Cliquez sur un point pour figer l'infobulle : elle ajoute la ligne complète de la mesure (date, appareil, aérodrome et piste s'ils existent, FPM, G, nez, score, source), garde la mesure allumée sur tous les graphes et met en évidence sa ligne dans le tableau « Atterrissages ». Pour la fermer : la croix, un second clic sur le même point, un clic hors des points ou Échap. Un seul point figé à la fois ; un simple clic ne sélectionne pas de période.
 - Glissez horizontalement sur un graphe pour sélectionner une période.
 - La bande « Historique complet — glisser pour sélectionner », sous chaque graphe, permet de choisir une période sur tout l'historique.
 

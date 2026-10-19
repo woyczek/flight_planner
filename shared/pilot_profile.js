@@ -10,7 +10,9 @@
   const nav = window.RepositoryNav;
   if (!nav?.menu || document.getElementById('repoPilotProfile')) return;
   const KEY = 'missionReportingConfig:v1',
-    FIELDS = ['trigram', 'ivaoId', 'vatsimId', 'simbriefUser'];
+    FIELDS = ['trigram', 'ivaoId', 'vatsimId', 'simbriefUser'],
+    // identifiants des réseaux et de SimBrief : réglés dans Mon profil seulement (une seule place), affichés ici
+    READ_ONLY = ['ivaoId', 'vatsimId', 'simbriefUser'];
   /** Profil pilote mémorisé (missionReportingConfig:v1 : nom, ID IVAO / VATSIM, identifiant SimBrief…). */
   const read = () => {
     try {
@@ -36,41 +38,48 @@
       trigram: 'Trigramme (missions affectées)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
-      simbriefUser: 'SimBrief (utilisateur ou ID)'
+      simbriefUser: 'SimBrief (utilisateur ou ID)',
+      edit: 'Modifier dans Mon profil ↗'
     },
     en: {
       title: 'Pilot profile',
       trigram: 'Trigram (assigned missions)',
       ivaoId: 'IVAO ID (VID)',
       vatsimId: 'VATSIM ID (CID)',
-      simbriefUser: 'SimBrief (username or ID)'
+      simbriefUser: 'SimBrief (username or ID)',
+      edit: 'Edit in My profile ↗'
     },
     de: {
       title: 'Pilotenprofil',
       trigram: 'Kürzel (zugewiesene Missionen)',
       ivaoId: 'IVAO-ID (VID)',
       vatsimId: 'VATSIM-ID (CID)',
-      simbriefUser: 'SimBrief (Benutzer oder ID)'
+      simbriefUser: 'SimBrief (Benutzer oder ID)',
+      edit: 'In Mein Profil ändern ↗'
     },
     es: {
       title: 'Perfil de piloto',
       trigram: 'Trigrama (misiones asignadas)',
       ivaoId: 'ID IVAO (VID)',
       vatsimId: 'ID VATSIM (CID)',
-      simbriefUser: 'SimBrief (usuario o ID)'
+      simbriefUser: 'SimBrief (usuario o ID)',
+      edit: 'Modificar en Mi perfil ↗'
     }
   };
 
   const style = document.createElement('style');
   style.textContent =
     '.repo-profile-field{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:8px;padding:5px 8px;font-size:12px}' +
+    '.repo-profile-edit{display:block;padding:2px 8px 6px;font-size:12px;color:inherit;text-align:right}' +
+    '.repo-profile-field input[readonly]{opacity:.75;cursor:default}' +
     '.repo-profile-field input{width:100%;box-sizing:border-box;padding:5px 7px;border-radius:6px;border:1px solid color-mix(in srgb,var(--repo-bar-text) 25%,transparent);background:color-mix(in srgb,var(--repo-bar-text) 8%,transparent);color:inherit;font:inherit}';
   document.head.append(style);
 
   const box = document.createElement('div');
   box.id = 'repoPilotProfile';
   box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-profile-text="title"></div>' +
-    FIELDS.map(name => `<label class="repo-profile-field"><span data-profile-text="${name}"></span><input data-profile="${name}"${name === 'simbriefUser' ? '' : name === 'trigram' ? ' maxlength="4" style="text-transform:uppercase"' : ' inputmode="numeric"'} autocomplete="off"></label>`).join('');
+    FIELDS.map(name => `<label class="repo-profile-field"><span data-profile-text="${name}"></span><input data-profile="${name}"${name === 'simbriefUser' ? '' : name === 'trigram' ? ' maxlength="4" style="text-transform:uppercase"' : ' inputmode="numeric"'}${READ_ONLY.includes(name) ? ' readonly' : ''} autocomplete="off"></label>`).join('') +
+    `<a class="repo-profile-edit" data-profile-text="edit" href="${nav.settingsUrl?.('identity') || '#'}"></a>`;
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
   const inputs = Object.fromEntries(FIELDS.map(name => [name, box.querySelector(`[data-profile="${name}"]`)]));

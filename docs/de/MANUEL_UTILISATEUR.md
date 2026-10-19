@@ -63,7 +63,7 @@ Die Kopfzeile trägt den Titel der Seite und ihren Untertitel. Rechts befinden s
 **Das Menü ☰** enthält von oben nach unten:
 - die Knöpfe „Darstellung“ und „Einstellungen“;
 - die Liste der Seiten der Suite, dann die Einstellungsseiten (Mein Profil, Zentrum, Installation, Wartung, Darstellung, Erststart);
-- die Gruppe „Pilotenprofil“ (Kürzel, IVAO-ID, VATSIM-ID, SimBrief), die alle Seiten übernehmen;
+- die Gruppe „Pilotenprofil“ (Kürzel; IVAO-ID, VATSIM-ID und SimBrief nur lesend, mit „In Mein Profil ändern ↗“), die alle Seiten übernehmen;
 - die Gruppe „Lokale Daten“: „Im Ordner sichern“, „Wiederherstellen / abgleichen“, „Sicherungsordner…“, „Sicherung herunterladen“, „Aus Datei wiederherstellen…“ und das Datum der letzten Sicherung;
 - die Gruppe „Seite“, wenn die Seite eigene Aktionen anbietet.
 
@@ -246,10 +246,10 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 
 ### Meine Verfügbarkeit
 
-Ihre Verfügbarkeit in der angezeigten Woche, in UTC-Stunden. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist derselbe Editor wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
+Ihre Verfügbarkeit in der angezeigten Woche, in UTC, auf die Minute. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist dieselbe Eingabe wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
 Je nach Nutzungsstufe: Die eigene Wochenleiste des Blocks, das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte; auf den anderen Stufen wechselt man die Woche über die Leiste der Liste.
 
-**Palette**: Die Kategorien sind nach Gruppen geordnet („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert.
+**Palette**: Die Kategorien sind nach Gruppen geordnet, eine Zeile pro Gruppe („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert. Unter der Palette zeigt eine Zeile die Missionsthemen, die die gewählte Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
 
 Standardkategorien (das Zentrum kann diese Liste ändern):
 
@@ -260,34 +260,75 @@ Standardkategorien (das Zentrum kann diese Liste ändern):
 | Beschäftigt | Flug außerhalb SOG (IVAO / VATSIM) (G), DCS (DC), Lotsendienst außerhalb SOG (IVAO / VATSIM) (AT) |
 | Nicht verfügbar | Nicht verfügbar (IN), Urlaub (V), Ausgleich (Q), Termin im echten Leben (IR) |
 
-**Stundenraster**: eine Zeile pro Tag (heute hervorgehoben), eine Spalte pro Stunde von 0 bis 23 UTC.
-1. Wählen Sie eine Kategorie in der Palette.
-2. Klicken Sie auf ein Feld oder ziehen Sie bei gedrückter Maustaste ein Rechteck: Die Felder nehmen Farbe und Buchstaben der Kategorie an.
-3. Ein erneuter Klick (oder ein Rechteck), der auf einem Feld dieser Kategorie beginnt, löscht sie.
+**Das Raster**: eine Zeile pro Tag, eine durchgehende Zeitachse von 0 bis 24 Uhr UTC, ein Strich pro Stunde und ein feinerer Strich zur halben Stunde. Der Rahmen „So geht’s“, zugeklappt unter dem Raster, wiederholt die folgenden Regeln.
 
-Ein Feld, das sich mehrere Kategorien teilen, ist schraffiert; eine teilweise belegte Stunde (Eingabe auf die Viertelstunde) ist blasser. Jede Änderung wird sofort gespeichert.
+- **Zwei Ebenen.** Der Hintergrund gibt die Art einer Nichtverfügbarkeit an (Gruppe „Nicht verfügbar“): nur die Farbe, über die ganze Zeilenhöhe. Die erste Ebene trägt Verfügbarkeiten, Übungen und Belegungen: Rechtecke mit ihrem Buchstaben in der Mitte, der Anfangszeit links und der Endzeit rechts (verkürzt, „8 O 12“, bei einem schmalen Rechteck). Eine Minute hat nur einen Zustand: Wo ein Rechteck liegt, zählt der Hintergrund darunter nicht, bleibt aber erhalten und kehrt zurück, wenn das Rechteck weggeht. Zeit ohne Eintrag gilt als nicht verfügbar.
+- **Die Palette.** Ein Klick auf einen Farbpunkt wählt den Pinsel: Er sagt nur, was gezeichnet wird.
+- **Zeichnen.** Im leeren Teil einer Zeile oder im Abstand zwischen zwei Zeilen ziehen: Die Form rastet auf der halben Stunde ein und zeigt ihre Zeiten während der Geste. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.
+- **Eine Form greifen.** Eine Geste, die auf einer Form (Rechteck oder Hintergrundband) beginnt, greift sie, egal welcher Pinsel: Ein Klick wählt sie aus, Ziehen verschiebt sie (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), ihre Ränder ändern die Größe. Umschalt+Ziehen zeichnet stattdessen darüber: So legt man eine Verfügbarkeit auf einen Tag, der schon von einem Band bedeckt ist.
+- **Schneiden.** Die letzte Form gewinnt: Ein über ein anderes gezeichnetes Rechteck schneidet es, ein Hintergrund durch ein Rechteck ebenfalls. Der Schnitt ist während der Geste zu sehen.
+- **Ablegen, Doppelklick.** Einen Farbpunkt der Palette auf eine Form ziehen: Die Form nimmt diese Art an. Auf den leeren Teil einer Zeile oder den Tagesnamen abgelegt, bedeckt er den ganzen Tag; ein Hintergrund-Farbpunkt ändert dann nur den Hintergrund, die Rechtecke bleiben. Doppelklick auf ein Band: Seine Farbe wird Hintergrund des ganzen Tages; auf einen Hintergrund-Farbpunkt: der ganzen Woche.
+- **Korrigieren.** Das ✕ einer Form oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht eine Änderung rückgängig, Strg+Y oder Strg+Umschalt+Z stellt sie wieder her (50 Änderungen pro angezeigter Woche).
+- **Was gespeichert wird.** Jede Änderung wird sofort gespeichert (Datenordner, sonst dieser Browser): Es gibt keinen Knopf „Speichern“. Beim Überfahren zeigt ein Tooltip den Zeitraum in Worten, zum Beispiel „Mittwoch, 14. Oktober, 00:00 bis 05:30: Nicht verfügbar“.
 
-**„Genauer Zeitraum“** (auf die Viertelstunde, zugeklappt: Ein Klick auf den Titel öffnet ihn; auf der Stufe Experte von Anfang an offen): „Gruppe“, „Kategorie“, Kästchen der Tage (Mo bis So), „von“ und „bis“ (UTC), dann „Hinzufügen“. Leere Uhrzeiten = ganzer Tag. Unter dem Formular zeigt eine Zeile die Missionsthemen, die die Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
+**„Genauer Zeitraum“** (zugeklappt: Ein Klick auf den Titel öffnet ihn): „Gruppe“, „Kategorie“, Kästchen der Tage, „von“ und „bis“ (UTC, auf die Minute), dann „Hinzufügen“. Der Zeitraum wird auf jeden angekreuzten Tag gelegt, nach der Regel der letzten Form. Leere Uhrzeiten = ganzer Tag; ohne Ende bis Mitternacht; ein Ende vor dem Beginn wird abgelehnt. Strg+Z macht das Hinzufügen rückgängig.
 
 **Weitere Knöpfe**
-- „⧉ Vorherige Woche“: übernimmt die Zeiträume der vorherigen Woche (ersetzt die angezeigte Woche, nach Bestätigung).
-- „Alles löschen“: leert die angezeigte Woche (nach Bestätigung).
+- „⧉ Vorherige Woche“: übernimmt die vorherige Woche in die angezeigte Woche (nach Bestätigung, wenn sie nicht leer ist); Strg+Z macht es rückgängig.
+- „Alles löschen“: leert die angezeigte Woche; Strg+Z macht es rückgängig.
 - „In den Datenordner schreiben (n)“: erscheint nur, wenn Wochen im Browser geblieben sind; schreibt sie in den gemeinsamen Ordner.
 
 Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenordner gespeichert.“ oder „In diesem Browser behalten, das Zentrum sieht es nicht: …“, wenn der Datenordner nicht freigegeben ist (siehe [Erststart](#erststart), Schritt 3).
 Ein vorhandenes altes Stundenraster wird automatisch in die Woche übernommen.
 Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit. Dieser Link erscheint nur auf der Stufe Experte.
 
+## Meine Flüge
+<!-- page: apps/pilot/mes_vols.html -->
+
+Diese Seite (Seitenleiste „Meine Flüge“, unter „Meine Missionen“; ab der Stufe Besatzung) ist das Register Ihrer
+vergangenen Flüge, vom neuesten zum ältesten, ein Flug pro Zeile. Sie vereint zwei Quellen, ohne Doppel (gleiches Datum,
+gleiches Rufzeichen, gleiches Kennzeichen: der Bericht hat Vorrang):
+
+- Ihre Berichte im Einsatzregister (die, die Sie verfasst haben; die ohne eingetragenen Verfasser werden
+  behalten);
+- das Flugbuch der Fluggesellschaft, von der Website importiert (Karte „Flugbuch“ des Erststarts), gefiltert nach Ihrem Kürzel.
+  Ohne Kürzel (Einstellungen › Mein Profil) werden nur die Berichte dieses Browsers aufgelistet.
+
+Oben: „Zeitraum“ („Letzte 7 Tage“, „Letzte 31 Tage“, „Letzte 12 Monate“ — Standard —, „Alle“), die Suche (Rufzeichen,
+Typ, Kennzeichen, Flugplatz, Mission), „Exportieren (CSV)“ (die angezeigte Liste, dieselben Spalten) und „Detaillierte
+Analyse ↗“ (Werkzeuge › Missionsanalyse). Darunter die Summen: Anzahl der Flüge, Blockstunden, die drei meistgeflogenen
+Typen. Zeitraum und Suche bleiben in diesem Browser gespeichert.
+
+| Spalte | Inhalt |
+|---|---|
+| „Datum“ | Tag des Flugs |
+| „Rufzeichen“ | Rufzeichen des Flugs |
+| „Luftfahrzeug“ | Silhouette, Kennzeichen, Typ |
+| „Strecke“ | Abflug → Ankunft (ICAO) |
+| „Dauer“ | Blockstunden (sonst Flugstunden) |
+| „Mission“ | Familie, Typ und Einsatz des Berichts, oder Mission des Flugbuchs |
+| „Bericht“ | Nr. des Berichts (Link), oder „ohne Bericht“ |
+
+Ein Klick auf eine Zeile öffnet ihren Bericht („Bericht öffnen“); ein Flug „ohne Bericht“ klappt seine Einzelheiten auf (Quelle,
+Uhrzeit, Luftfahrzeug, Mission) mit „Bericht schreiben“, das den bereits ausgefüllten Bericht der Familie öffnet: Datum,
+Rufzeichen, Luftfahrzeug, Kennzeichen, Abflug und Ankunft, angegebene Blockzeit. Prüfen und ergänzen Sie, dann „Ins Register
+aufnehmen“: Der Flug erscheint dann mit seinem Bericht. Die Spalten lassen sich durch Ziehen am Rand der Titel einstellen
+(Doppelklick: Standardbreiten). Unter 800 px Breite bleiben nur Datum, Rufzeichen, Strecke und Dauer; ein Klick klappt den
+Rest auf.
+
+Sie gelangen auch über „Meine Flüge ↗“ in Meine Missionen (neben „auch vergangene Missionen anzeigen“) und im Menü
+„Senden“ eines Berichts hierher.
+
 ## Meine Verfügbarkeit
 <!-- page: apps/pilot/disponibilites.html -->
 
-Diese Seite zeigt nur den Verfügbarkeitseditor, in größerem Format. Sie dient dazu, schnell mehrere Wochen einzugeben.
+Diese Seite zeigt nur die Verfügbarkeitseingabe, in größerem Format. Sie dient dazu, schnell mehrere Wochen einzugeben.
 Sie erreichen sie über die Registerkarte „Meine Verfügbarkeit“ (unter dem Eintrag „Meine Missionen“ der Seitenleiste) oder über den Link „Verfügbarkeitseingabe einzeln öffnen“ in Meine Missionen. Dieser Link erscheint nur auf der Stufe Experte.
 Der Pilot ist der des Arbeitskürzels (Pilotenprofil, Anmeldung oder Identitätsübernahme). Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
 
 ### Meine Verfügbarkeit
 
-Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in Meine Missionen (vorheriges Kapitel): Palette, Stundenraster, „Genauer Zeitraum“ (zugeklappt, auf der Stufe Experte von Anfang an offen), „⧉ Vorherige Woche“, „Alles löschen“.
+Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in Meine Missionen (vorheriges Kapitel): Palette, Raster, „So geht’s“, „Genauer Zeitraum“, „⧉ Vorherige Woche“, „Alles löschen“.
 
 **Wochennavigation** (nur auf dieser Seite):
 - „‹“ und „›“: vorherige oder nächste Woche;
@@ -295,8 +336,8 @@ Der einzige Block der Seite. Er funktioniert genau wie der gleichnamige Block in
 - „Aktuelle Woche“: sichtbar außerhalb der aktuellen Woche, führt dorthin zurück.
 
 Tipps und Grenzen:
-- Alle Uhrzeiten sind in UTC. Das Raster arbeitet stundenweise, „Genauer Zeitraum“ auf die Viertelstunde.
-- Jede Änderung wird sofort gespeichert: Es gibt keinen Knopf „Speichern“.
+- Alle Uhrzeiten sind in UTC. Eine Zeichnung rastet auf der halben Stunde ein; Verschieben und Größe ändern gehen in 5-min-Schritten; „Genauer Zeitraum“ geht auf die Minute.
+- Jede Änderung wird sofort gespeichert: Es gibt keinen Knopf „Speichern“. Strg+Z macht sie rückgängig.
 - Ohne Kürzel zeigt der Block „Kürzel nicht gesetzt: unter Einstellungen › Mein Profil (oder ☰ › Pilotenprofil) festlegen.“
 - Eine Adresse der Form `disponibilites.html?semaine=2026-W41` öffnet direkt eine bestimmte Woche.
 - Wird die Woche noch gelesen, wird eine Änderung mit „Woche wird noch gelesen: gleich noch einmal versuchen.“ abgelehnt.
@@ -310,7 +351,7 @@ Diese Seite vereint die Einstellungen jedes Piloten: Identität, Anmeldung, Miss
 Sie erreichen sie über den Eintrag „Einstellungen“ der Seitenleiste (erste Registerkarte, „Mein Profil“) oder über ☰ › „Einstellungen“.
 Die linke Spalte listet die Abschnitte nach Gruppen; ein Klick zeigt einen davon rechts an, mit Titel, Beschreibung, Knöpfen und einer Statusmeldung.
 Enthält ein Abschnitt nicht gespeicherte Änderungen, erfordert das Wechseln des Abschnitts oder das Verlassen der Seite eine Bestätigung.
-Je nach Nutzungsstufe: „Meine Luftfahrzeuge (Reporting)“ erscheint ab der Stufe Planung (2); „Höhe ohne Sauerstoff“ nur, wenn das Werkzeug Kraftstoff angekreuzt ist (auf der Stufe Experte immer); in „Identität und Netzwerke“ gehören die Karten „IVAO — OAuth-Client“ und „Sprache“ zur Stufe Experte.
+Je nach Nutzungsstufe: „Geflogene Luftfahrzeuge (Berichte)“ erscheint ab der Stufe Planung (2); „Höhe ohne Sauerstoff“ nur, wenn das Werkzeug Kraftstoff angekreuzt ist (auf der Stufe Experte immer); in „Identität und Netzwerke“ gehören die Karten „IVAO — OAuth-Client“ und „Sprache“ zur Stufe Experte.
 
 ### Nutzungsstufe
 
@@ -369,25 +410,35 @@ Die Einstellungen werden in Ihrem Benutzereintrag gespeichert und durch die Sync
 
 ### Luftfahrzeuge und Simulatoren
 
-Die Typen der Flotte, die Sie besitzen und beherrschen, und Ihre Simulatoren. Das Zentrum nutzt dies, um Ihnen ein Luftfahrzeug zuzuweisen und Piloten auf einem gemeinsamen Simulator zusammenzubringen. (Diese Einstellungen befanden sich früher in Meine Missionen.)
+„Meine Luftfahrzeuge“: Ihre Luftfahrzeuge, Flotte inbegriffen — die, die Sie in Ihrem Simulator besitzen, und die, die Sie beherrschen —, und Ihre Simulatoren. Das Zentrum nutzt dies, um Ihnen ein Luftfahrzeug zuzuweisen und Piloten auf einem gemeinsamen Simulator zusammenzubringen. Es ist dieselbe Liste wie die Tabelle der Seite „Leistungsblätter“, die ihre Leistungen zeigt: dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name.
 
-**Karte „Luftfahrzeuge“**: eine Zusammenfassung („… Typ(en) beherrscht, … besessen von … Flottentypen.“), dann eine Unterkarte pro Luftfahrzeugkategorie, mit einer Tabelle:
+**Karte „Meine Luftfahrzeuge“**: eine Zusammenfassung („… Typ(en) beherrscht, … besessen von … Flottentypen.“), dann eine Unterkarte pro Kategorie (Hubschrauber, Turboprops, Jets, Kolbenflugzeuge), mit einer Tabelle:
 
 | Spalte | Inhalt |
 |---|---|
-| „Typ“ | Modell und ICAO-Kennung |
+| „Luftfahrzeug“ | Silhouette, Name in Fettschrift, ICAO-Kennung und Klasse klein |
 | „Flottenvarianten“ | In der Flotte vorhandene Varianten |
 | „Luftfahrzeuge“ | Anzahl der Luftfahrzeuge im Dienst (von der Gesamtzahl) und ihre Basen |
+| „Leistungen“ | Für ein besessenes Luftfahrzeug: ein Link — die Quelle seines Blatts, der die Seite „Leistungsblätter“ auf diesem Luftfahrzeug öffnet, oder „keine“ und die Möglichkeiten, eines anzulegen, die dieselbe Seite öffnen |
 | „Besessen“ | Sie haben diesen Typ in Ihrem Simulator |
 | „Beherrscht“ | Sie fliegen ihn sicher |
 
 - Das Ankreuzen von „Beherrscht“ kreuzt auch „Besessen“ an; das Abwählen von „Besessen“ wählt „Beherrscht“ ab.
+- „Luftfahrzeug suchen“ über den Karten filtert beim Tippen nach Name, Variante, Kennung, Klasse und Quelle der Leistungen: Karten mit Treffer bleiben aufgeklappt, die anderen klappen zu, und „n Luftfahrzeug(e)“ nennt die Anzahl; leeres Feld: alles.
+- Varianten: Eine Kennung, die sich mehrere Modelle teilen (CL2T: CL-215T und CL-415), hat eine Zeile je angegebener Variante unter ihrem Namen („Canadair CL-415“, „Canadair CL-215T“); „ד entfernt eine Variante. Ohne angegebene Variante trägt das Luftfahrzeug den Namen des Eintrags und seiner bekannten Varianten („Canadair CL-215T / CL-415“). Das Leistungsprofil bleibt das der Kennung: „Leistungen gemeinsam für die Varianten“. Beim Hinzufügen schlägt die Liste jede Variante vor (Modell des Eintrags, Flottenvarianten, gebräuchliche Namen der Basis), oder Sie behalten Ihren eigenen Text; die Variante wird in Ihrer Angabe gespeichert.
 
-**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Typen, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören. Geben Sie eine ICAO-Kennung, ein Modell oder einen gebräuchlichen Namen ein, auch unvollständig oder mit Leerzeichen und Bindestrichen („PC-12“, „A 400 M“, „SE 210“, „Sud Aviation Caravelle“): Beim Tippen schlägt eine Liste die Typen der Flotte, der Typbasis dieses Rechners und der mit der Suite veröffentlichten ICAO-Liste vor, mit Namen („S210 — Caravelle“) und Herkunft (Flotte, Basis dieses Rechners, ICAO-Liste, von einem anderen Piloten angegeben); die Berechnung ist lokal, ohne Netz. Wählen Sie eine Zeile (Klick, oder Pfeiltasten und Eingabe) oder klicken Sie auf „Hinzufügen“: Der Typ kommt in die Tabelle, mit „Besessen“ angehakt. Um einen hinzugefügten Typ zu korrigieren oder zu löschen, klicken Sie auf seine Zeile: Seine Kennung kommt ins Feld, und „Hinzufügen“ wird zu „Ersetzen“ („Beherrscht“ wird auf den neuen Typ übertragen), neben „Löschen“ und „Abbrechen“ (oder Esc). Ein hier eingegebener Flottentyp wird einfach in der Karte „Luftfahrzeuge“ angehakt; eine Kennung, der nichts nahekommt, wird unverändert übernommen. Eine zu ungenaue Eingabe („cara“: Caravelle oder Caravan?) wird abgelehnt: Die Meldung nennt das Gelesene, und der nächstliegende Typ wird ins Feld übernommen — „Hinzufügen“ zum Bestätigen. Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für den hinzugefügten Typ, falls er fehlt: Die Zeile zeigt „Typbasis wird ergänzt…“ während eines kurzen Durchlaufs (einige Sekunden), immer nur ein Durchlauf — läuft bereits einer (Wartung), stellt der Starter den Typ in die Warteschlange und ergänzt ihn am Ende dieses Durchlaufs. Der Durchlauf läuft im Starter: Das Verlassen der Seite unterbricht ihn nicht, und bei der Rückkehr zeigt die Zeile wieder „Typbasis wird ergänzt…“, bis der Eintrag da ist. Ein ausgemusterter Typ, den die offiziellen Quellen nicht mehr kennen (Caravelle S210), wird als letzter Ausweg bei Aviation Fanatic gesucht; ist er auch dort nicht, bleibt er unter Kennung und gebräuchlichem Namen hinzugefügt, mit dem Hinweis „nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)“. Diese Typen gehen wie die der Flotte mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte mit der Spalte „Auch angegeben von“ — sie müssen nur „Besessen“ anhaken.
+**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Luftfahrzeuge, die Sie besitzen, ohne dass sie zur Flotte gehören. Man fügt sie immer über einen Namen hinzu, nie über einen Pflichtcode: Geben Sie ein, was Sie kennen („CL-415“, „Canadair 415“, „PC-12“, „Caravelle“). Beim Tippen schlägt eine Liste die Typen der Flotte, der Typbasis dieses Rechners mit ihren gebräuchlichen Namen und der veröffentlichten ICAO-Liste vor, mit ihrer Herkunft; die Berechnung ist lokal, ohne Netz. Die Kennung wird für Sie gefunden: „CL-415“, „Canadair 415“ und „CL415“ ergeben CL2T, angezeigt als „Canadair CL-415“ (der Name der Variante bleibt erhalten). Ein Flottentyp wird einfach in der Karte „Meine Luftfahrzeuge“ angehakt. Kommen mehrere Typen in Frage, wird der nächstliegende ins Feld übernommen — „Hinzufügen“ zum Bestätigen, oder wählen Sie aus der Liste. Passt nichts, wird das Luftfahrzeug unter seinem Namen behalten, markiert mit „ICAO-Typ zu bestätigen“; „Typ suchen“ in seiner Zeile ordnet es später einer Kennung zu. Um ein hinzugefügtes Luftfahrzeug zu korrigieren oder zu löschen, klicken Sie auf seine Zeile: Seine Kennung oder sein Name kommt ins Feld, und „Hinzufügen“ wird zu „Ersetzen“ („Beherrscht“ wird übertragen), neben „Löschen“ und „Abbrechen“ (oder Esc). Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für eine Kennung, die ihr fehlt: Die Zeile zeigt „Typbasis wird ergänzt…“ während eines kurzen Durchlaufs, immer nur ein Durchlauf (ein während eines Durchlaufs angefragter Typ wird in die Warteschlange gestellt); das Verlassen der Seite unterbricht ihn nicht. Ein ausgemusterter Typ, den die offiziellen Quellen nicht mehr kennen, wird als letzter Ausweg bei Aviation Fanatic gesucht; ist er auch dort nicht, zeigt der Hinweis „nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)“ dies an. Diese Luftfahrzeuge gehen mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte, Spalte „Auch angegeben von“ — sie müssen nur „Besessen“ anhaken.
 
 **Karte „Simulatoren“**: Kreuzen Sie die installierten Simulatoren und Werkzeuge an.
 
 Es gibt keinen Knopf „Speichern“: Jedes Häkchen wird sofort in diesem Browser gespeichert und dann in Ihre bereits angegebenen Verfügbarkeitswochen übernommen, ab der aktuellen Woche. Die Meldung unten zeigt, wie viele Wochen aktualisiert wurden.
+
+### Luftfahrzeug und seine Leistungen hinzufügen
+
+Um ein Luftfahrzeug zu fliegen, das die Suite noch nicht kennt, zum Beispiel eine CL-415 ohne Leistungen:
+1. Fügen Sie es über seinen Namen hinzu: Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren, Karte „Andere Luftfahrzeuge“, oder Schaltfläche „Luftfahrzeug hinzufügen“ der Seite „Leistungsblätter“ (dasselbe Fenster zum Hinzufügen). Es kommt zu „Meine Luftfahrzeuge“.
+2. Seine Zeile zeigt „Leistungen: keine“ und drei Schaltflächen, in dieser Reihenfolge: „Aus SimBrief anlegen“ (nur wenn SimBrief den Typ kennt), „ChatGPT fragen“ (leeres Profil, ChatGPT-Feld darauf geöffnet), „Aus der Klasse schätzen“ (Minimalprofil aus der ICAO-Klasse des Typs: Verbrauch, TAS und Gipfelhöhe, als „geschätzt“ markiert; ein Luftfahrzeug ohne Kennung hat keine Klasse: ordnen Sie es zuerst seinem Typ zu).
+3. Das angelegte Blatt wird dem Luftfahrzeug zugeordnet, und die Seite „Leistungsblätter“ öffnet sich darauf (aus den Einstellungen öffnet die Schaltfläche diese Seite). Ergänzen Sie es danach (Steigflug, Sinkflug), führen Sie es mit einem anderen Blatt zusammen oder ersetzen Sie es durch einen Import. Kraftstoff bietet es danach in seinem Menü „Flugzeug“ an.
 
 ### Höhe ohne Sauerstoff (Flugzeuge ohne Druckkabine)
 
@@ -400,7 +451,7 @@ Dieser Abschnitt (Gruppe „Kraftstoffplaner“) legt die Schwelle fest, oberhal
 Unter dem Feld angezeigte Richtwerte: 10.000 ft (übliche Praxis, EASA NCO), 12.500 ft (FAA, Besatzung über 30 Minuten), 14.000 ft (FAA, Besatzung ständig).
 Dies ist nur ein Hinweis: Die Berechnung wird nicht begrenzt. Die Einstellung wird in diesem Browser gespeichert.
 
-### Meine Luftfahrzeuge (Reporting)
+### Geflogene Luftfahrzeuge (Berichte)
 
 Die Luftfahrzeuge, die Sie geflogen oder berichtet haben: die der Berichte mit Ihrem Kürzel in der Besatzung oder die Sie verfasst haben (seit dieser Version gespeicherte Berichte) (das Luftfahrzeug Ihres Platzes, wenn der Bericht es angibt), mit Typ, Variante, Rufzeichen, Betreiber, Anzahl der Flüge und letztem Flug. Das graue Kästchen „Flotte“ zeigt, ob das Luftfahrzeug zur Flotte gehört (angehakt) oder nicht (nicht angehakt, Rufzeichen inbegriffen); es lässt sich hier nicht ändern. Die vollständige Liste mit dem Kästchen „Privat“ steht unter Einstellungen › Zentrum › Flotte (dem Zentrum vorbehalten). Oben die Zählung des Journals: Berichte insgesamt, Ihre Berichte, Berichte ohne erfasste Besatzung (sie zählen für niemanden). Abschnitt ab der Stufe Planung (2) sichtbar.
 
@@ -523,7 +574,7 @@ Drei Möglichkeiten:
 Die virtuelle Fluggesellschaft, deren Namen die Suite trägt, und die Adresse ihrer Website (Links, Flotte, Flugbuch); Einstellung dieses Browsers.
 
 1. Karte „Virtuelle Fluggesellschaft“: „Name“, „Kürzel“, „Vollständiger Name“, „Website der Fluggesellschaft“ (`https://…`).
-2. Karte „IVAO-API-Schlüssel (optional)“: der Schlüssel der Installation (Gebietsaktivierungen und IVAO-ATC-Sitzungen der Einsatztafel und der ODV-Planung). Er wird beim Starter gespeichert und nie wieder angezeigt: Die Karte sagt nur, dass ein Schlüssel gespeichert ist.
+2. Karte „IVAO-API-Schlüssel (optional)“: Status des Schlüssels der Installation („IVAO-Schlüssel: gespeichert ✓“ oder „fehlt“). Er wird an einem einzigen Ort eingegeben, getestet und ersetzt: Einstellungen › Installation › Schlüssel und externe Dienste (Link auf der Karte).
 3. „Fluggesellschaft speichern“.
 
 Die übrigen Felder (Zentrum, Seiten der Website, externe Quellen) stehen unter Einstellungen › Installation › Quellen und Ordner.
@@ -654,13 +705,35 @@ Familie eigen sind. Sie verfassen hier den Bericht eines durchgeführten Flugs u
 Sie erreichen sie über die Seite „Neuer Bericht“, über eine zugewiesene Mission oder durch Klick auf eine Mission
 in einer Auswertung oder einem Blatt (die Mission öffnet sich dann zur Bearbeitung).
 
-**Je nach Nutzungsstufe: kurzer oder ausführlicher Bericht.** Auf den Stufen 1 (Besatzung) und 2 (Planung) zeigt das Formular nur das Wesentliche des Berichts:
-- Identifikation (Mission, Berichtsnummer, Datum, Serie) und Ergebnis;
-- Luftfahrzeug (Kennzeichen, Typ, Rufzeichen, Flugplätze; ein bekanntes Luftfahrzeug füllt den Rest aus) und Besatzung;
-- vier Uhrzeiten (Anlassen, Start, Landung, Abstellen der Triebwerke), Kraftstoff beim Abflug und bei der Landung;
-- die familieneigenen Blöcke und Bemerkungen.
+**Drei Schritte.** Das Formular gliedert sich in Schritte, gekennzeichnet durch die Leiste „1 Flug · 2 Mission · 3 Ergebnis“
+oben (ein Klick öffnet den Schritt und führt dorthin):
+1. **Flug**, die Fakten: Identifikation, Luftfahrzeug(e), Zeitablauf, Besatzung, Kraftstoff (und Netzwerkspur ab
+   Stufe 3).
+2. **Mission**, was Sie eingeben: die familieneigenen Blöcke (FIRE: Flugauftrag, Waldbrand-Zeiten, Abwürfe; HEMS:
+   Dienst, medizinische Mission, Zeiten, Ziele; SPECIAL: der Block der Serie), davor „Auftrag“ für die Familien, die
+   keinen eigenen Auftragsblock haben.
+3. **Ergebnis**: der Block „Ergebnis und Bemerkungen“. Die Leiste „Ins Register aufnehmen“ / „Senden“ schließt den Bericht ab.
 
-Der Knopf „Ausführlicher Bericht“ der Leiste zeigt das ganze Formular, ohne die Stufe zu wechseln (Wahl im Browser gespeichert); „Kurzer Bericht“ kehrt zum verkürzten Formular zurück. Werte, die bereits in ausgeblendeten Feldern stehen (Import, Flugplan, Netzwerk-Tracking), bleiben im Bericht. Auf den Stufen 3 und 4 ist das Formular immer vollständig, und dieser Knopf fehlt.
+Jeder Schritt klappt über seinen Titel zu, der seinen Zustand nennt: „✓“, wenn das Wesentliche da ist (Flug:
+Luftfahrzeug, Start und Landung, Besatzung, Kraftstoff beim Abflug und bei der Landung; Mission: mindestens ein
+ausgefülltes Feld in jedem Block der Familie; Ergebnis: das gewählte Ergebnis), sonst „zu ergänzen“. Ein vierter Schritt,
+**Flugdetails**, eingeklappt, fasst die übrigen Blöcke zusammen: Navigation, Umgebung / Wetter, Ereignisse mit
+Zeitstempel, Etappen / Umläufe, Fähigkeiten; geöffnet zeigt er sie auf jeder Stufe (er ersetzt den früheren
+„Ausführlichen Bericht“), jeden in einer Zeile mit seinem Abzeichen zusammengefasst, „Bearbeiten“ für seine Felder.
+
+**Die Zusammenfassungen.** Ein Block, dessen Wesentliches ausgefüllt ist, passt in eine Zeile: Identifikation (Datum ·
+Einsatz · Organisation), Luftfahrzeug(e) („MILAN74 · DH8D F-ZBMD“), Zeitablauf („Block 13:07 → 15:13, Flug 13:21 → 15:02“,
+mit dem Link „Spur ↗“), Besatzung (die Namen), Kraftstoff („1200 → 650 kg“), Netzwerkspur. Sein Herkunftsabzeichen
+(„↧ IVAO — letzter Flug“) sagt, woher seine Werte stammen. „Bearbeiten“ klappt die Felder auf, „Zusammenfassung“ klappt
+sie zu. Ein leerer, unvollständiger oder unstimmiger Block bleibt aufgeklappt, wie der, an dem Sie arbeiten; nach einem
+Vorausfüllen kehren die ergänzten Blöcke zur Zusammenfassung zurück.
+
+**Je nach Nutzungsstufe.** Auf den Stufen 1 (Besatzung) und 2 (Planung) zeigt ein aufgeklappter Block seine wesentlichen
+Felder (Identifikation: Mission, Berichtsnummer, Datum, Serie; Luftfahrzeug: Kennzeichen, Typ, Rufzeichen, Flugplätze;
+vier Uhrzeiten; Kraftstoff beim Abflug und bei der Landung); „Alle Felder“ unter seinem Titel zeigt die übrigen,
+„Wesentliche Felder“ kehrt zurück. Auf den Stufen 3 und 4 sind alle Felder da. Werte in ausgeblendeten Feldern (Import,
+Flugplan, Netzwerk-Tracking) bleiben im Bericht. Ein Klick auf eine Unstimmigkeit unter den Berechnungen öffnet den
+Schritt, den Block und bei Bedarf alle seine Felder und setzt dann den Cursor in das Feld.
 
 ### Kopfzeile und Werkzeugleiste
 
@@ -669,20 +742,21 @@ Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
 | Eintrag | Funktion |
 |---|---|
 | „SAR · SAR an Land ▾“ (Familie · Untertyp) | Popup „Einsatzfamilie“ (öffnet die Seite der anderen Familie) und „Einsatz-Untertyp“ |
+| „CRF-A01-0 · 17/10/2026“ | Berichtsnummer und Flugdatum, schreibgeschützt; ein Klick öffnet das Datumsfeld |
 | „Ins Register aufnehmen“ / „Änderungen speichern“ | legt die Mission im Register ab |
-| „Bericht senden“ | übermittelt den Bericht an den Webservice der (gestrichelt, solange er nicht eingerichtet ist) |
-| „Auswerten / importieren…“ ▾ | einen Flugplan, eine Tracker-Seite, ein METAR einfügen; eine Datei importieren |
+| „Senden“ ▾ | „Bericht senden“: übermittelt den Bericht an den Webservice der Fluggesellschaft (gestrichelt, solange er nicht eingerichtet ist); „Website der Fluggesellschaft“ (wenn ihre Adresse eingestellt ist): „Flug auf der Website eintragen ↗“, das Lesezeichen „→ Vol“, „Felder kopieren“ (siehe unten) |
+| „Vorausfüllen“ ▾ | alles, was den Bericht füllt: neuer Bericht aus einem Einsatzbefehl, einem vergangenen Flug oder einer Datei; diesen Bericht ergänzen aus meinem letzten IVAO- / VATSIM-Flug, einem aufgegebenen Flugplan oder einem eingefügten Text (siehe „Vorausfüllen“) |
 | „Netzwerk-Tracking“ ▾ | Live-Verfolgung IVAO / VATSIM, VATSIM-Historie |
 | „Einsatz“ ▾ | „Neue Mission“, „Einsatz exportieren (YAML)“, „Diesen Einsatz löschen“ (bei Bearbeitung) |
 | „Einsatzregister“ ▾ | „Auswertung anzeigen“, „Registerordner…“, „Berichtversand einrichten (Webservice)…“, „Einstellungen — Datenbanken…“ |
-| „Ausführlicher Bericht“ / „Kurzer Bericht“ | nur Stufen 1 und 2: zeigt das ganze Formular oder kehrt zum kurzen Bericht zurück (siehe oben) |
 
 Rechts zeigt eine Statusmeldung die letzte Speicherung („Entwurf im Browser gespeichert
-· Uhrzeit“). Jeder Block hat in seinem Titel **↕** (ziehen zum Verschieben) und **Ausblenden /
-Anzeigen**; die Anordnung wird gespeichert. Blöcke, die eine Liste enthalten, haben ein **+** in ihrem
+· Uhrzeit“). Jeder Block hat in seinem Titel **Ausblenden / Anzeigen** (Wahl
+gespeichert); die Reihenfolge der Blöcke ist die der Schritte (mit ↕ vor den Schritten geänderte Anordnungen gelten
+nicht mehr). Blöcke, die eine Liste enthalten, haben ein **+** in ihrem
 Titel, um ein Element hinzuzufügen.
 
-Auf den Stufen 1 und 2 erscheinen „Auswerten / importieren…“, „Einsatz“ und „Einsatzregister“ nicht (sie kommen auf Stufe 3): Eine neue Mission öffnet man über ☰ › Missionen › „Neuer Bericht“.
+Auf den Stufen 1 und 2 erscheinen „Einsatz“ und „Einsatzregister“ nicht (sie kommen auf Stufe 3); „Vorausfüllen“ ist ab Stufe 1 da, außer dem Import einer Datei (Stufe 3). Eine neue Mission öffnet man über ☰ › Missionen › „Neuer Bericht“.
 
 ### Bearbeitung eines Registereinsatzes
 
@@ -713,14 +787,17 @@ Je nach Familie kommen weitere Felder hinzu oder fallen weg: „Seriennummer“,
 (nicht zivile Familien), „Auftragsreferenz“, „Abteilung“. Ein Datum in der Zukunft wird
 gemeldet: Ein Bericht betrifft einen durchgeführten Flug.
 
-### Ergebnis
+### Ergebnis und Bemerkungen
 
-Ergebnis der Mission und Folgemaßnahmen (Block an 2. Stelle für das Lesen des Berichts).
+Ergebnis der Mission, Bemerkungen und Folgemaßnahmen in einem Block (an 2. Stelle für das Lesen des Berichts).
 
 1. Wählen Sie das „Ergebnis“: Erfolgreich, Teilweise erfolgreich, Abgebrochen, Storniert, Umgeleitet, Kein Kontakt,
    Ziel nicht gefunden, Wetter, Technisch, Operativ, Andere.
 2. Bei jedem Ergebnis außer Erfolgreich oder Andere erscheinen die Felder „Abbruchgrund“ und „Ursachen“; alle Ursachen ankreuzen (Wetter, Technik, Simulator, Pilot fehlt, keine Flugsicherung, Netz, Luftraum nicht aktiviert, Tanker fehlt, Zeitmangel…): sie erscheinen auf der Kachel des Flugbefehls (MNE).
-3. Ergänzen Sie bei Bedarf „Detailliertes Ergebnis“, „Vorfälle“ und „Technische Störungen“.
+3. Notieren Sie Ihre „Beobachtungen“, dann bei Bedarf „Detailliertes Ergebnis“, „Vorfälle“, „Technische Störungen“
+   und „Erkenntnisse (Lessons Learned)“. Beobachtungen und Erkenntnisse bilden die Abschnitte „13. Bemerkungen“ und
+   „14. Erkenntnisse“ des Berichts; eine zugewiesene Mission legt hier einen Hinweis auf die ursprüngliche Mission und
+   ihre Zuladung ab.
 
 Dieses Ergebnis speist die Erfolgsquote und das Diagramm „Ergebnisse“ der Auswertungen.
 
@@ -765,7 +842,8 @@ Der eingegebene Name dient als Schlüssel für das [Besatzungsblatt](#besatzungs
 
 Ziel und Anweisungen der Mission: „Ziel“, „Besondere Anweisungen“, „Priorität“.
 Bei einer zugewiesenen Mission sind Ziel und Anweisungen bereits aus der Mission ausgefüllt. Diese
-Texte erscheinen im Abschnitt „5. Auftrag“ des Berichts.
+Texte erscheinen im Abschnitt „5. Auftrag“ des Berichts. Auf den Stufen 1 und 2 erscheint dieser Block bei Familien ohne
+eigenen Auftragsblock (FIRE, ISR und LE haben einen: „Auftrag“ kommt dort erst auf Stufe 3).
 
 ### Fähigkeiten / Verfahren
 
@@ -833,12 +911,6 @@ Etappen, Einsätze und Umläufe des Flugs, je eine Zeile: „Von“, „Nach“,
 - Die Etappen zählen bei den Einsätzen, Passagieren und der Fracht der Auswertungen.
 - Die Familie HEMS hat diesen Block nicht: Sie hat ihren eigenen Block „Ziele / Zwischenstopps“.
 
-### Bemerkungen
-
-Freie Beobachtungen und Erkenntnisse: „Beobachtungen“ und „Erkenntnisse (Lessons Learned)“. Sie
-bilden die Abschnitte „13. Bemerkungen“ und „14. Erkenntnisse“ des Berichts. Eine zugewiesene Mission
-legt hier einen Hinweis auf die ursprüngliche Mission und ihre Zuladung ab.
-
 ### IVAO-/VATSIM-Netzwerkspur
 
 Spur des Flugs auf IVAO oder VATSIM.
@@ -846,23 +918,14 @@ Spur des Flugs auf IVAO oder VATSIM.
 | Feld | Funktion |
 |---|---|
 | „Netzwerk“ | „Offline / nicht angegeben“, IVAO oder VATSIM |
-| „IVAO-ID (VID)“, „VATSIM-ID (CID)“ | übernommen aus Ihrem Pilotenprofil (Menü ☰ › Pilotenprofil) |
+| „IVAO-ID (VID)“, „VATSIM-ID (CID)“ | übernommen aus Ihrem Profil (Einstellungen › Mein Profil) |
 | „URL der Spur“ | Link zur Spur; er erscheint im Bericht („Spur öffnen“) und in den Auswertungen |
 
 Das angegebene Netzwerk speist das Diagramm „Netzwerk“ und die Kennzahl „Online“ der Auswertung.
 
 ### Navigation
 
-Flugplätze, Route, Punkte und Arbeitsgebiet. Der Block beginnt mit der Leiste **Aufgegebener Flugplan**:
-
-| Knopf | Quelle |
-|---|---|
-| „Letzter SimBrief-OFP“ | Ihre SimBrief-Kennung aus dem Pilotenprofil |
-| „IVAO-Flugplan (laufender Flug)“ | Ihre VID |
-| „VATSIM-Flugplan (laufend oder vorab)“ | Ihre CID |
-
-Diese Knöpfe füllen **nur die leeren Felder**: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte,
-Höhen, Flugplätze, METAR / TAF sowie geplante Massen und Kraftstoff (SimBrief).
+Flugplätze, Route, Punkte und Arbeitsgebiet. Der aufgegebene Flugplan (SimBrief, IVAO, VATSIM) wird über „Vorausfüllen ▾ › Aufgegebener Flugplan“ übernommen (siehe „Vorausfüllen“).
 
 Felder: „Abflug (ADEP)“, „Ziel (ADES)“, „Ausweichflugplatz (ALTN)“, „Route“ (nur die bereits für dieselbe Strecke
 verwendeten Routen werden vorgeschlagen), „Wegpunkte (einer pro Zeile)“,
@@ -892,7 +955,7 @@ Rechte Spalte, während der Eingabe aktualisiert: „Blockzeit“, „Flugzeit�
   Zeitablauf von mehr als 20 h, Datum in der Zukunft, unstimmiger Kraftstoff). Ein Klick führt zum betreffenden Feld.
 - „Anzeigekontext“ zeigt Familie, Serie, Luftfahrzeugtypen und Fähigkeiten, die
   über die angezeigten Blöcke entscheiden.
-- Auf den Stufen 1 und 2 (kurzer Bericht) nur drei Berechnungen: „Blockzeit“, „Flugzeit“, „Kraftstoffverbrauch“; „Anzeigekontext“ und die Berechnungen zu Einsatzraum und Mission kommen auf Stufe 3 oder mit „Ausführlicher Bericht“. Ein Klick auf eine Unstimmigkeit in einem ausgeblendeten Feld zeigt den ausführlichen Bericht.
+- Auf den Stufen 1 und 2 (kurzer Bericht) nur drei Berechnungen: „Blockzeit“, „Flugzeit“, „Kraftstoffverbrauch“; „Anzeigekontext“ und die Berechnungen zu Einsatzraum und Mission kommen auf Stufe 3. Ein Klick auf eine Unstimmigkeit öffnet den Schritt und den Block des betroffenen Felds und, wenn es ausgeblendet ist, seine übrigen Felder.
 
 ### Bericht
 
@@ -909,19 +972,67 @@ Erkenntnisse).
 
 Die öffentliche Fassung gilt auch für den YAML-Export (Datei mit dem Suffix `_public`) und für den Versand.
 
-### Auswerten / importieren…
+### Vorausfüllen
 
-Menü der Kopfzeile, um den Bericht aus einem eingefügten Text zu füllen. **Nur leere Felder werden gefüllt.**
+Das Menü „Vorausfüllen ▾“ der Kopfzeile (ab Stufe 1) vereint alles, was den Bericht füllt; die Blöcke behalten nur die
+Eingabe. Es ist ein kurzes Menü, ein Eintrag pro Zeile, in zwei Gruppen; der gewählte Eintrag öffnet dann sein Fenster
+(Liste der Flüge, Einfügefeld…), dessen Hilfe unter „Hilfe“ eingeklappt ist. Esc oder ein Klick daneben schließt das Menü
+wie das Fenster.
 
-1. Öffnen Sie das Menü und fügen Sie dann (Strg+V) in das Feld ein: Die Auswertung erfolgt sofort. Oder klicken Sie auf „Aus
-   Zwischenablage einfügen“ (Chrome fragt einmal nach der Erlaubnis).
-2. Erkannte Texte: ICAO-Flugplan „(FPL-…)“, Seite des IVAO-Trackers (Einzelheiten eines Flugs oder Liste der
-   Verbindungen), Seite eines StatSim-Flugs (VATSIM), VATSIM-Historie (JSON), METAR.
-3. Das Ergebnis zeigt die erkannte Quelle und die gefüllten Felder; der Knopf wird zu „✓ Übernehmen“.
+**Neuer Bericht aus…** (der laufende Entwurf wird ersetzt, nach Bestätigung, wenn er nicht leer ist):
+- „Ein Einsatzbefehl“: Ihre 7 letzten Zuweisungen (letzte 21 Tage) ohne Bericht, eine Zeile je Zuweisung (Datum und
+  Uhrzeit UTC, Rufzeichen, Strecke, Mission); ein Klick öffnet den aus dem Befehl vorausgefüllten Bericht, wie
+  „Bericht erstellen“ in Meine Missionen. Letzte Zeile: „Meine Missionen öffnen ↗“.
+- „Einer meiner Flüge“: Ihre 7 letzten Flüge aus dem Flugbuch der Fluggesellschaft ohne Bericht (Datum, Rufzeichen,
+  Strecke, Typ); ein Klick öffnet den vorausgefüllten Bericht, wie „Bericht schreiben“ in Meine Flüge. Letzte Zeile:
+  „Meine Flüge öffnen ↗“.
+- „Eine Datei (YAML / JSON)“: eine Missionsdatei (Stufe 3).
 
-Die Links „↗ IVAO-Tracker (meine Verbindungen)“ und „↗ Meine StatSim-Flüge (VATSIM)“ öffnen Ihre Seiten. Der
-Link „→ Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit einem Klick. Unten
-lädt „Importieren (YAML / altes JSON)“ eine Missionsdatei. Einzelheiten: [Tutorial](../TUTORIAL.md), § 6.
+Beide Listen brauchen Ihr Kürzel (Einstellungen › Mein Profil).
+
+**Diesen Bericht ergänzen aus…** (**nur leere Felder werden gefüllt**):
+- **„Mein letzter IVAO-Flug“**, **„Mein letzter VATSIM-Flug“**. Die Suite muss über ihren Starter geöffnet sein, mit
+  Ihrer IVAO- oder VATSIM-ID in Mein Profil (ohne ID ist der Eintrag ausgegraut; sein Tooltip sagt, was fehlt, „IVAO-VID
+  fehlt — Mein Profil“); für IVAO der API-Schlüssel der Suite (Einstellungen › Installation).
+  - Ihre Flüge der letzten 7 Tage (UTC), unabhängig von Familie und Datum des Berichts. Ein Flug: Der Bericht wird
+    sofort gefüllt; mehrere: Das Fenster listet sie auf (Rufzeichen, Strecke, Datum und UTC-Zeiten, „laufend“, wenn Sie
+    noch verbunden sind), wählen Sie ihn; jede Zeile hat ihren Link ↗ zum IVAO-Tracker.
+  - Durch Verbindungsabbrüche geteilter Flug: aufeinanderfolgende Sitzungen (gleiches Rufzeichen, weniger als 30 Min.
+    später dort fortgesetzt, wo die vorige endete, die vorige nicht an der Parkposition beendet) bilden einen Flug,
+    „3 Sitzungen (Neuverbindungen)“; Flugplan der letzten Sitzung, Spuren aneinandergereiht.
+  - Gefüllt: Rufzeichen, Flugplätze, aufgegebener Flugplan (Luftfahrzeug, Ausrüstung, Route, Flughöhe, Geschwindigkeit,
+    Ausweichflugplatz, Bemerkungen, Kennzeichen `REG/`, Flugdauer), Link der Spur, aus der Spur gewonnene Zeiten
+    (Anlassen, Start, Landung, Abstellen) und Distanz. Nicht gefüllt: was das Netz nicht kennt (Mission, Besatzung,
+    Kraftstoff, Ergebnisse, Vorfälle). Ein „laufender“ Flug liefert vorläufige Zeiten: nach dem Trennen erneut abrufen.
+  - VATSIM: gleiches Prinzip, aber VATSIM veröffentlicht keine Spur: Die Zeiten sind die der Verbindung und Trennung
+    (zu korrigieren), der Plan ist der für diese Verbindung aufgegebene.
+  - Ohne Flug nennt das Fenster ID und Zeitraum. Sobald ein IVAO-Flug übernommen oder eingefügt ist, erscheint „Im
+    IVAO-Tracker ansehen ↗“ neben dem Feld „URL der Spur“ (Block Netzwerkspur).
+- **„Aufgegebener Flugplan (SimBrief / IVAO / VATSIM)“**: Das Fenster bietet „Letzter SimBrief-OFP“ (Ihre
+  SimBrief-Kennung aus dem Pilotenprofil), „IVAO-Flugplan (laufender Flug)“ (Ihre VID), „VATSIM-Flugplan (laufend oder
+  vorab)“ (Ihre CID): Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Höhen, Flugplätze, METAR / TAF, geplante Massen
+  und Kraftstoff (SimBrief).
+- **„Flugplan, Tracker-Seite oder METAR einfügen“**: Fügen Sie (Strg+V) in das Feld ein, die Auswertung erfolgt sofort;
+  oder „Aus Zwischenablage einfügen“ (Chrome fragt einmal nach der Erlaubnis). Erkannte Texte: ICAO-Flugplan „(FPL-…)“,
+  Seite des IVAO-Trackers (Einzelheiten eines Flugs oder Liste der Verbindungen), Seite eines StatSim-Flugs (VATSIM),
+  VATSIM-Historie (JSON), METAR. Die Links „↗ IVAO-Tracker (meine Verbindungen)“ und „↗ Meine StatSim-Flüge (VATSIM)“
+  öffnen Ihre Seiten.
+- **„Lesezeichen „→ CR““**: Der Link „→ CR“, einmal in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit
+  einem Klick.
+
+**Dieselbe Zusammenfassung für alle Quellen**, als Benachrichtigung (10 s), nachdem sich das Fenster geschlossen hat: Quelle und Datum des Flugs
+(„ICAO-Flugplan, Flug vom 19.10.“), die Anzahl der gefüllten Felder und die betroffenen Blöcke (Luftfahrzeug, Zeitablauf,
+Route, Wetter…), die Anzahl der bereits eingetragenen und behaltenen Felder und was die Quelle nicht geliefert hat („fehlen
+in der Quelle: Start, Landung“). Zwei Schaltflächen begleiten sie: „Rückgängig“ stellt den Bericht so wieder her, wie er
+vor dem Vorausfüllen war; „Bereits eingetragene Felder ersetzen (n)“, wenn bereits eingetragene Felder behalten wurden,
+wendet dieselbe Quelle erneut an und ersetzt sie. Die genaueste Quelle gewinnt: der Assistent „bekanntes Luftfahrzeug“ (Flotte) füllt nur Leeres aus; er ersetzt weder ein von der Quelle gesetztes noch ein bereits eingetragenes Feld, auch wenn sich das Kennzeichen im selben Schritt ändert, und die Zusammenfassung sagt es („Rufzeichen der Flotte MILAN74 nicht übernommen (CFN12 stammt aus der Quelle)“). Einzelheiten zum Einfügen: [Tutorial](../TUTORIAL.md), § 6.
+
+**Herkunft.** Der Titel jedes von einer Quelle ausgefüllten Blocks trägt ein Abzeichen „↧“ mit ihrem Namen:
+„ICAO-Flugplan, Flug vom 19/10“, „IVAO — letzter Flug“, „Einsatzbefehl M-016“, „Flugbuch der Fluggesellschaft“,
+„Netzwerkverfolgung IVAO“…; sein Tooltip sagt, wie viele Felder des Blocks daraus stammen. Ein von Hand korrigiertes
+Feld verliert seine Herkunft (das Abzeichen verschwindet mit dem letzten). „Rückgängig“ stellt auch die vorherigen
+Abzeichen wieder her. Die Herkunft wird mit dem Entwurf in diesem Browser gespeichert; sie gelangt nicht ins
+Register.
 
 ### Netzwerk-Tracking
 
@@ -959,11 +1070,33 @@ Anzahl der Missionen der Familie und den Ordner.
 |---|---|
 | „Einsatz ▾ › Neue Mission“ | beginnt mit einem leeren Bericht neu (Bestätigung, wenn der Entwurf nicht gespeichert ist) |
 | „Einsatz ▾ › Einsatz exportieren (YAML)“ | lädt eine Datei nur dieser Mission herunter |
-| „Bericht senden“ | sendet Mission, Bericht (HTML und Text) und Berechnungen an den Webservice; die Blase des Knopfs zeigt den letzten Versand. Eine nicht gespeicherte Mission verlangt eine Bestätigung |
+| „Senden ▾ › Bericht senden“ | sendet Mission, Bericht (HTML und Text) und Berechnungen an den Webservice; die Blase des Knopfs zeigt den letzten Versand. Eine nicht gespeicherte Mission verlangt eine Bestätigung |
+| „Senden ▾ › Flug auf der Website eintragen ↗“ | öffnet die Seite „Enregistrer mon vol“ der Website der Fluggesellschaft mit den Feldern des Flugs (siehe unten) |
 | „Einsatzregister ▾ › Auswertung anzeigen“ | öffnet die Auswertung der Familie |
 
 Solange der Webservice nicht eingestellt ist, bietet „Bericht senden“ an, seine Einrichtung zu öffnen
 („Berichtversand einrichten (Webservice)…“).
+
+**Den Flug auf der Website der Fluggesellschaft melden.** Die Website öffnet sich in einem anderen Tab, in dem Sie angemeldet sind. Die Suite
+meldet sich dort nicht an und bestätigt nichts an Ihrer Stelle: Sie bereitet das Formular „Ajouter un vol“ vor, Sie prüfen es und
+bestätigen es.
+
+1. Ziehen Sie einmalig das Lesezeichen „→ Vol“ (Menü „Senden“) in die Lesezeichenleiste des Browsers.
+2. Bei gespeichertem Bericht öffnet „Senden ▾ › Flug auf der Website eintragen ↗“ die Seite „Enregistrer mon vol“ der Website, mit
+   den Feldern des Flugs in der Adresse (nach „#“: nie an den Server gesendet). Ein nicht gespeicherter Bericht verlangt eine Bestätigung.
+3. Melden Sie sich an, wenn die Website es verlangt, und klicken Sie dann auf das Lesezeichen „→ Vol“: Es öffnet die Seite Ihres Luftfahrzeugs
+   (an seinem Kennzeichen erkannt), dann „Ajouter un vol“; klicken Sie es auf diesem Formular noch einmal an.
+4. Das Lesezeichen füllt das Rufzeichen (in der Liste der Website über seinen Namen, CARAFON, oder seinen Code, CFON, gewählt), die
+   Flugnummer, das Datum des Flugendes (Datum des Berichts und Uhrzeit Block-Ende, sonst Landung, in Ortszeit wie die Chronologie des Berichts; der Folgetag, wenn der Flug
+   über Mitternacht geht), die Dauer (Block, sonst Flug), die Mission (Familie, Typ, Einsatz) und die Ankunft aus. Ausgefüllte Felder
+   werden grün umrandet, fehlende rot. Kennzeichen und Abflug, die die Website vorgibt (aktuelle Position des Luftfahrzeugs), werden
+   nicht geändert: Eine Abweichung vom Bericht wird gemeldet.
+5. Prüfen und ergänzen Sie, dann „Valider“ auf der Website.
+
+Gehen die Felder verloren (unterwegs verlangte Anmeldung), starten Sie „Flug auf der Website eintragen ↗“ erneut. Ohne das Lesezeichen
+kopiert „Felder kopieren“ eine Zeile (Kennzeichen, Typ, Rufzeichen, Datum, Dauer, Abflug → Ankunft, Mission), die von Hand
+zu übertragen ist. Der Teil „Website der Fluggesellschaft“ erscheint nur, wenn die Adresse der Website eingestellt ist (Einstellungen ›
+Installation › Quellen und Ordner).
 
 ### Spezifische Blöcke jeder Familie
 
@@ -1319,7 +1452,7 @@ Dieser Block verbindet drei Ansichten: den Flugplan (Text), die Karte und den Ve
 - Routenfeld: Feld 15 des ICAO-Flugplans oder Kommaliste (zum Beispiel `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Leer: Route der Mission.
 - „Höhe“: Reiseflughöhe („FL65“ oder „6500“).
 - Menü „Luftstraßen“ / „RTBA (Tiefflug)“, dann „Suchen“: berechnet eine Route zwischen den Punkten des Feldes. Das Ergebnis ersetzt das Feld.
-- „SimBrief“: übernimmt die Route des letzten OFP. Die SimBrief-Kennung wird in ☰ › Pilotenprofil eingegeben.
+- „SimBrief“: übernimmt die Route des letzten OFP. Die SimBrief-Kennung wird unter Einstellungen › Mein Profil eingegeben.
 - „Zeichnen“: zeichnet den Vertikalschnitt. „Kraftstoff“: öffnet den Kraftstoffplaner mit dieser Route (Distanz, Flughöhe, rechtweisender Kurs, Luftfahrzeug).
 - „ICAO kopieren“: kopiert den strikten ICAO-Flugplan (nicht veröffentlichte Punkte als Koordinaten).
 - „Syntax und Verwendung“: Überblick über die akzeptierten Formen (Funkfeuer, VFR-Meldepunkte „MM-CV“, „REN300010“, Koordinaten „4330N00125E“, Höhen „/A035“, „VFR“…).
@@ -1397,6 +1530,7 @@ Block der Stufe Experte; auf den Stufen 1 bis 3 erscheint der Bericht der Erzeug
 Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen; sie übernimmt das Profil der Übersichtskarte der Route.
 Formate: Menü ☰ › Kartenausgaben (PNG, bearbeitbares SVG, PNG-Breite von 400 bis 5000 px; standardmäßig 1600 px).
 Schlägt eine Karte fehl (Hintergrund nicht verfügbar, Zeitüberschreitung), enthält das ZIP `rapport_generation.txt` und die Liste bietet „Einzeln erneut versuchen“ an.
+Lassen Sie den Tab während der Erzeugung sichtbar: Der Browser bremst Tabs im Hintergrund, und eine Karte kann fehlschlagen („Zeitüberschreitung beim Laden der Hintergrundkarte“); „Einzeln erneut versuchen“ startet sie erneut.
 Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist. Während der Vorschauen und der Erzeugung trägt der Fortschrittsbalken einen Knopf „Abbrechen“: Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter (es wäre unvollständig); die bereits angezeigten Vorschauen bleiben. Starten Sie „Karten und ZIP erzeugen“ erneut für alle Karten.
 
 ### SIA-Datenbank
@@ -1414,22 +1548,19 @@ Es ist derselbe Block wie unter Einstellungen › Wartung › Luftfahrtdaten. Di
 ## Kraftstoff
 <!-- page: apps/planner/flight_performance_planner.html -->
 
-Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Der Reiseverbrauch stammt, in dieser Reihenfolge, aus Ihrer Eingabe für diesen Flug, dem gespeicherten Profil, dem Modell von Poll und Schumann (Strahlverkehrsflugzeuge, nach Masse, Flughöhe und Mach), SimBrief, dann aus einer Schätzung nach ICAO-Typ oder -Klasse; ein Näherungswert ist mit ≈ gekennzeichnet. Für einen Typ ohne EUROCONTROL- oder SimBrief-Eintrag (Militär, Hubschrauber) übernimmt die Schätzung die Reise-TAS und die Gipfelhöhe aus Airframe DB, wenn sie dort bekannt sind. Er zeichnet auch die optimalen Flughöhen und Steiggesetze.
+Der Kraftstoffplaner (Titel „Kraftstoff“) berechnet den Kraftstoff eines Flugs aus dem Leistungsprofil Ihres Luftfahrzeugs. Der Reiseverbrauch stammt, in dieser Reihenfolge, aus Ihrer Eingabe für diesen Flug, dem gespeicherten Profil, dem Modell von Poll und Schumann (Strahlverkehrsflugzeuge, nach Masse, Flughöhe und Mach), SimBrief, dann aus einer Schätzung nach ICAO-Typ oder -Klasse; ein Näherungswert ist mit ≈ gekennzeichnet. Für einen Typ ohne EUROCONTROL- oder SimBrief-Eintrag (Militär, Hubschrauber) übernimmt die Schätzung die Reise-TAS und die Gipfelhöhe aus Airframe DB, wenn sie dort bekannt sind. Er hilft auch, die Flughöhe und den Steigflug dorthin zu wählen.
 Zugang: Seitenleiste „Werkzeuge“, Reiter „Kraftstoff“, Knopf „Kraftstoff (Planer)“ einer Mission in Meine Missionen oder Knopf „Kraftstoff“ der Flugkarten. Route, Distanz, Flughöhe und Luftfahrzeug werden dann übernommen.
-Kopfzeile: Menü „Flugzeug“, Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Importe und Exporte befinden sich im Menü ☰.
-Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente, Profilblöcke, Statusleiste und die Profilaktionen des Menüs ☰ kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
+Kopfzeile: Knopf „Flugzeug“, eine Auswahlliste mit Suche (die vorhandenen Leistungsblätter: „Meine Luftfahrzeuge“ zuerst, dann nach Kategorie; einen Namen, einen Typ oder ein Kürzel tippen, um zu filtern, ↑ ↓ Eingabe, Esc), Knopf „Letzten SimBrief-FPL abrufen“, „Einheiten: kg / lbs“. Kraftstoff erstellt die Planung und nur die Planung: Die Blätter werden unter „Leistungsblätter“ (nächstes Kapitel) angelegt und geändert, die Luftfahrzeuge unter „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) angegeben.
+Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente und Vertikalprofil kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
 Auf breitem Bildschirm, auf der Stufe Experte, hat die Seite drei Spalten (Eingabe und Kurven | Ergebnis und Felder | Instrumente): Ziehen Sie die Griffe zwischen den Spalten, um ihre Breite einzustellen; Doppelklick: Standardbreiten.
 
-### Flugzeug wählen und Profil speichern
+### Flugzeug wählen
 
-1. Klicken Sie auf die Flugzeug-Schaltfläche der Kopfzeile (anfangs „Kein Flugzeug“): Eine Liste öffnet sich, eine Zeile pro Luftfahrzeug (Symbol, Name, Typ, Quelle des Profils, Zustand).
-2. Wählen Sie ein Luftfahrzeug mit der Maus oder mit den Pfeiltasten und dann Eingabe; Escape schließt die Liste.
-3. Ein Flottentyp ohne Profil legt ein leeres Profil an: Seine Leistungen sind einzutragen (siehe auch „Leistungsprofile“).
+1. Klicken Sie auf die Flugzeug-Schaltfläche der Kopfzeile (anfangs „Kein Flugzeug“): Die Liste zeigt nur die Luftfahrzeuge, die ein Leistungsblatt haben, die aus „Meine Luftfahrzeuge“ zuerst, dann die anderen nach Kategorie (Symbol, Name, Typ, Quelle des Blatts, Zustand).
+2. Wählen Sie ein Luftfahrzeug mit der Maus oder mit den Pfeiltasten und dann Eingabe; Escape schließt die Liste. „Leistungsblätter verwalten ↗“ unten in der Liste öffnet die Seite der Blätter.
+3. Auf einem Luftfahrzeug ohne Blatt geöffnet (Schaltfläche einer Mission, Adresse `?aircraft=`), zeigt die Planung „Kein Leistungsblatt für … — Leistungsblätter öffnen ↗“: Der Link öffnet die Seite der Blätter auf diesem Luftfahrzeug, wo Sie es anlegen.
 
-Die Leiste unten auf der Seite zeigt „Profil gespeichert — …“ oder „Nicht gespeicherte Änderungen — …“. Sie trägt „Lokale Datenbank neu laden“, „Profil speichern“ und „Dieses Flugzeug löschen“. Diese Leiste erscheint nur auf der Stufe Experte.
-Wechseln Sie das Flugzeug mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
-Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren. Diese Aktionen gehören zur Stufe Experte, außer Export und Import der Einstellungen.
-Ein Import, der auf ein vorhandenes Profil trifft (gleiche Kennung, meist der ICAO-Typ), aktualisiert es: Die importierten Werte haben Vorrang, leer gelassene Felder behalten den alten Wert, die RPM-Tabellen werden zusammengeführt (Einheiten umgerechnet).
+Das gewählte Blatt bleibt im Ergebnis schreibgeschützt sichtbar (aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“), mit „Dieses Blatt in den Leistungsblättern bearbeiten ↗“. Wird ein Blatt in den Leistungsblättern gespeichert, die in einem anderen Tab geöffnet sind, übernimmt Kraftstoff es sofort und berechnet die Planung neu.
 
 ### Kraftstoffplanung
 
@@ -1440,26 +1571,29 @@ Ein Import, der auf ein vorhandenes Profil trifft (gleiche Kennung, meist der IC
 
 Wind leer gelassen: Die Seite weist darauf hin („Wind unbekannt: Bereich ±25 kt…“) und gibt den Kraftstoff als Bereich an.
 Mit einer ISA-Abweichung vergleicht ein Kasten „Wetter“ im Ergebnis mit der Standardatmosphäre: Strecke auf der Flughöhe des Plans (Zeit, Kraftstoff), optimale Flughöhe und Gipfelhöhe. Der QNH geht nicht in die Rechnung ein (Flugflächen sind Druckhöhen).
+Das Profil bleibt auf die Standardatmosphäre kalibriert; die Planung fliegt in der Atmosphäre des Tages: Wärmere, weniger dichte Luft ergibt bei gleicher IAS eine höhere TAS, aber weniger Schub oder Leistung, geringere Steigrate und Gipfelhöhe und bei einem Strahlflugzeug einen höheren Verbrauch.
 Der Knopf „Flugkarten“ (Stufe Experte) öffnet die Flugkarten mit diesem Flugplan; Karten und Profil werden dort bei der Ankunft erstellt.
 „Flugplan-Syntax“ zeigt die akzeptierten Formen. Ohne SIA-Datenbank im Browser werden nur Punkte in Koordinaten erkannt.
 
-### Kurven der Kraftstoffplanung (optimale Flughöhe und optimaler Steigflug)
+### Wahl der Flughöhe
 
-In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“ des Ergebnisses; auf der Stufe Experte standardmäßig detailliert, auf den Stufen 1 bis 3 einfach) zeigt der Block „Kraftstoffplanung“ nach „Berechnen“ in dieser Reihenfolge:
+Nach „Berechnen“ zeigt oben in der Kraftstoffplanung (einfache wie Detailansicht) ein Diagramm für jede Flughöhe den Kraftstoff (linke Skala, volle Kurve) und die Zeit (rechte Skala, feine Kurve) der ganzen Strecke: Steigflug mit dem unter „Steigflug-Anweisungen“ gewählten Ziel, Profil-Reiseflug, Sinkflug. Jede Skala hat Farbe und Titel ihrer Kurve; die Karte nennt beide Werte in denselben Farben. Die Planflughöhe ist eine volle Linie, der Cursor eine gestrichelte.
+- Über dem Diagramm zwei Plaketten: „Am sparsamsten“ und „Am schnellsten“ mit Flughöhe, Kraftstoff und Zeit; ein Klick setzt den Cursor dorthin. In der Detailansicht mit dem Ziel „Spar“ nennt eine dritte den Spar-Reiseflug.
+- Grau: nicht haltbare Flughöhe — über der Gipfelhöhe, Strecke zu kurz (Steig- und Sinkflug brauchen mehr als die Entfernung) oder Schub reicht nicht; Grund und zu änderndes Feld erscheinen in der Karte des Cursors.
+- Fahren Sie über das Diagramm, klicken Sie hinein oder bewegen Sie den Schieberegler darunter: Die Karte ist eine Tabelle, immer dieselbe, mit drei Spalten — „Plan“, die Flughöhe des Cursors und „Differenz“ (Kraftstoff und Zeit der Strecke, Steigflug, TOD). Ihre Zeilen: Kraftstoff und Zeit der Strecke, Reiseflug-TAS, Steigflug (Zeit, Kraftstoff, Strecke), IAS und Steigrate, Sinkflugbeginn (TOD), Sinkflug (Zeit, Kraftstoff, Strecke), IAS und Sinkrate (IAS des Profils, wenn unter Sinkflug › IAS eingetragen). Cursor auf der Planflughöhe: Die Spalte des Cursors ist abgeblendet, ohne Differenz. Der Block „Steigflug-Anweisungen“ folgt der gewählten Flughöhe (Klick, Schieberegler, Plakette oder Tabellenzeile), nicht dem bloßen Überfahren.
+- „Diese Flughöhe verwenden“ macht den Cursor zur neuen Planflughöhe („Flugfläche (FL)“) und berechnet die Planung neu; der Vergleich schließt sich von selbst.
+- Die Tabelle „Flughöhen“ darunter listet die runden Flughöhen (alle 1 000 ft; 2 000 ft bei einer Gipfelhöhe über 20 000 ft), sortierbar nach Flughöhe, Kraftstoff oder Zeit; ein Klick auf eine Zeile wählt diese Flughöhe; eine nicht haltbare Flughöhe zeigt „—“ und ihre Ursache.
 
-| Titel | Was er zeigt |
-|---|---|
-| „Optimale Flughöhe — Kraftstoff und Geschwindigkeit“ | Gesamte Strecke auf jeder Höhe geflogen: Je höher die Kurve, desto weniger Verbrauch pro Meile. |
-| „Optimaler Steigflug — Steigrate und Kraftstoff“ | Verfügbare Steigrate und Kraftstoff pro 1000 ft, „nach Höhe“ oder „nach Leistungseinstellung“. |
-| „Steiggeschwindigkeiten — IAS und TAS nach Höhe“ | Vy, schneller Steigflug, wirtschaftlicher Steigflug, gewählter Steigflug, Vx. |
-| „TAS nach Flughöhe — Reise- und Steigflug“ | Wahre Geschwindigkeit im Reise- und im Steigflug. |
-| „Vergleich der Steigflüge“ | Dauer, Distanz und Kraftstoff jedes Steigflugs, bis zur Planflughöhe und dann über die ganze Strecke; ★: Bester der Spalte. |
-| „Steigflug nach Höhe — RPM-/N1-Einstellungen“ | Tabelle bei Vy mit Summen ab dem Boden. |
+### Steigflug (Detailansicht)
 
-Fahren Sie über eine Kurve, um die Werte in dieser Höhe abzulesen; klicken Sie, um eine Höhe anzuheften (weiße Linie auf allen Kurven). Die Planung wird dann auf dieser Höhe berechnet.
-Die Schieberegler „Gewählter Steigflug“ der Kraftstoffplanung stellen Ihren gewählten Steigflug ein, auf den Kurven violett gezeichnet.
-Der grau hinterlegte Bereich „unerreichbar“ liegt über der Gipfelhöhe des Luftfahrzeugs.
-Ohne „Bezugshöhe (ft)“ und „Max. Gipfelhöhe (ft)“ im Profil schätzt das Modell sie (Reise-IAS und -TAS, EUROCONTROL-Blatt, Steigverbrauch, sonst typischer Wert der Klasse) und nennt die Quelle unter den Kurven. Füllen Sie diese beiden Felder aus oder kalibrieren Sie mit einem SimBrief-OFP: Das ist zuverlässiger.
+In der Detailansicht (Schaltfläche „Detailansicht“ / „Einfache Ansicht“ im Ergebnis; auf der Stufe Experte standardmäßig) unter den Steigflug-Anweisungen:
+- „Steigflug — Steigrate, Kraftstoff und Geschwindigkeiten nach Höhe“: drei Felder auf derselben Achse und mit demselben Cursor wie die Wahl der Flughöhe — Steigrate (gestrichelt: maximale Steigrate bei Vy), Kraftstoff je 1 000 ft, zu haltende IAS (Linie) und TAS (gestrichelt), für das in den Steigflug-Anweisungen gewählte Ziel. Mit einem Motorkennfeld zeigt „nach Höhe“ / „nach Drehzahl“ auch die Steigrate je Einstellung im halben Steigflug.
+- „Steigflugziele“: ein Ziel pro Zeile („Spar“, „Vy“, „Schnell“, „Profil“, „Eingestellt“) — Zeit, Kraftstoff, IAS und Steigrate, immer bis zur Planflughöhe; ★: beste Zeit und bester Kraftstoff; ein Klick auf eine Zeile wählt das Ziel.
+- „Steigflugeinstellungen — Motorkennfeld“ (nur wenn vorhanden): Steigrate und Kraftstoff je 1 000 ft im halben Steigflug für jede Einstellung; ★: am sparsamsten.
+
+Die Regler „Gewählter Steigflug“ der Planung stellen das Ziel „Eingestellt“ ein.
+Über der Flughöhe, auf der die Profil-Machzahl nicht mehr haltbar ist, fliegt ein Strahlflugzeug mit der größten Geschwindigkeit, die 92 % seines Schubs erlauben („max. Schub“ in der Karte); die Flughöhe wird erst über der Gipfelhöhe abgelehnt.
+Ohne „Bezugshöhe (ft)“ und „Maximale Gipfelhöhe (ft)“ im Profil schätzt das Modell sie (Reiseflug-IAS und -TAS, EUROCONTROL-Datenblatt, Steigflugverbrauch, sonst Typwert der Klasse) und nennt dies im Feld der Wahl der Flughöhe. Füllen Sie diese beiden Felder aus oder kalibrieren Sie mit einem SimBrief-OFP: Das ist zuverlässiger.
 
 ### Steigflug-Anweisungen
 
@@ -1467,7 +1601,7 @@ Dieser Block unter „Berechnen“ sagt auf jeder Nutzungsstufe, wie zu steigen 
 - Fünf Ziele, jedes mit Zeit und Kraftstoff bis zur Flughöhe: „Spar“, „Vy“, „Schnell“, „Profil“ (Steiggeschwindigkeit des Profils), „Eingestellt“ (gewählter Steigflug). Die Wahl bleibt in diesem Browser gespeichert.
   „Vy“: maximale Steigrate (Flughöhe am frühesten erreicht); „Schnell“: minimale Blockzeit; „Spar“: minimaler Streckenkraftstoff. Bei den beiden letzten wird die Steigstrecke vom Reiseflug abgezogen, die Steigrate bleibt bei mindestens 50 % des Maximums, und ein Strahlflugzeug ist unter FL100 auf 250 kt begrenzt.
 - Eine Anweisung in drei Teilen: „Einstellen“ (Leistung, Propeller, RPM oder N1), „Halten“ (das Instrument, das die Anweisung trägt, meist die IAS), „Erwartet“ (zu sehende Steigrate, erreichte Flughöhe, Zeit und Kraftstoff).
-- Eine Tabelle nach Höhenstufen (Boden, 2 000 ft, FL050, FL100… bis zur Planflughöhe): Leistung, RPM oder N1, wenn das Profil ein Motorkennfeld hat, zu fliegende IAS, erwartete Steigrate, kumulierte Zeit.
+- Eine Tabelle nach Höhenstufen (Boden, 2 000 ft, FL050, FL100… bis zur Planflughöhe oder bis zu der in „Wahl der Flughöhe“ untersuchten Flughöhe, die der Titel nennt): Leistung, RPM oder N1, wenn das Profil ein Motorkennfeld hat, zu fliegende IAS, erwartete Steigrate, kumulierte Zeit.
 
 Die Anweisungen leiten das Fliegen; die Kraftstoffplanung zählt den gewählten Steigflug. Sie stammen aus dem Leistungsmodell des Profils (Atmosphäre der Planung, Masse nicht modelliert): mit dem Flughandbuch abzugleichen.
 
@@ -1478,74 +1612,11 @@ Dieser Block in der rechten Spalte folgt der Seite, während Sie durch die Kurve
 - „Block fuel“ (als Bereich, wenn der Wind unbekannt ist), „Flugzeit“, „TOD“.
 - Statuszeile „Berechnet für <Luftfahrzeug> um <Uhrzeit>: <Distanz> NM auf FL…, Flugzeit, TOD. Reiseverbrauch: …“, dann Berechnungsgrundlage: Flughöhe, verwendeter Steigflug und Herkunft des Reiseverbrauchs („gespeichertes Profil“, „für diesen Flug eingegeben“, „Poll-Schumann, 70 t in Reiseflugmitte, FL350, M0,78“, „SimBrief“, „Schätzung…“). Ohne bekannten Verbrauch zeigt „Blockkraftstoff“ „—“: den Verbrauch in der Kraftstoffplanung eingeben.
 - Einzelheiten: Rollen, Steigflug, Reiseflug, Sinkflug, Unvorhergesehenes, Reserve; geplante Startmasse und MTOW, wenn Sie sie eingegeben haben (rot, wenn sie überschritten ist).
-- Karte des Cursors (⌖ beim Überfahren, 📌 angeheftet): Kraftstoff und Zeit der Strecke auf dieser Höhe, maximale Steigrate, Steiggeschwindigkeiten; „lösen“ entfernt die Anheftung.
-- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld. Sie enthält auch das Feld „SimBrief Airframe Internal ID“ und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
-  „SimBrief-Airframe importieren“ liest dieses Feld (Kennung oder Freigabelink): öffentliche Liste von SimBrief, dann Freigabelink; ein unlesbares privates Airframe ergibt nur ein Teilprofil mit seiner Kennung allein.
+- Aufklappbare Gruppe „Flugphasen — Profil ↔ Kennfeld“ (Stufe Experte): das Blatt des Luftfahrzeugs schreibgeschützt — IAS, Steigrate, Triebwerksdrehzahl und Durchfluss pro Phase, verglichen mit dem Triebwerkskennfeld, Links zu den Blättern der Luftfahrzeuge dieses Typs — und „Dieses Blatt in den Leistungsblättern bearbeiten ↗“.
 
-„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Kurve die Optima, die Grenzen (Gipfelhöhe, angeforderte Flughöhe) und eine Lesehilfe an. Die Instrumentenleiste (Stufe Experte) zeigt IAS, Höhenmesser, Steigrate, Stoppuhr (Steigzeit), Kraftstoff und Flugzeit.
-In den Feldern und Meldungen ist ein unterstrichener Feldname ein Link: Er klappt bei Bedarf den Profileditor auf und zeigt das Feld. Eine „unerreichbare“ Flughöhe nennt ihre Ursache und das zu korrigierende Feld (Block „Grenzen“).
+„Anheften“ behält den ganzen Block, wenn er der Seite folgt; sonst klappt er zusammen. „Einfache Ansicht“ blendet Kurven und Instrumente aus, „Detailansicht“ zeigt sie (Wahl in diesem Browser gespeichert). Auf der Stufe Experte gibt unter dem Block ein Feld pro Diagramm (Wahl der Flughöhe, Steigflug) das Wesentliche in drei Zeilen an; „Mehr erfahren“ klappt die Lesehilfe und die Modellannahmen auf. Die Instrumentenleiste (Stufe Experte) zeigt IAS, Höhenmesser, Steigrate, Stoppuhr (Steigzeit), Kraftstoff und Flugzeit.
+In den Feldern und Meldungen bezeichnet ein unterstrichener Feldname ein Feld des Blatts (in den Leistungsblättern zu ändern). Eine „unerreichbare“ Flughöhe nennt ihre Ursache und das zu korrigierende Feld (Block „Grenzen“).
 Ein Klick auf die Kraftstoffanzeige (oder ihren Knopf) wechselt die gelesene Kurve, in ihrer Farbe: gewählter Steigflug, Profil, wirtschaftlicher Reiseflug, schneller Steigflug, Vy, wirtschaftlicher Steigflug; Wahl in diesem Browser gespeichert.
-
-### Leistungsprofile
-
-Dieser Block (ab der Stufe Gestaltung) zeigt den Stand der Profile: eine Zeile pro gespeichertem Profil und pro Flottentyp ohne Profil.
-- Spalten: „Luftfahrzeug“, „Profil (Quelle)“ (`.lnmperf`, SimBrief, JSON, Eingabe oder Schätzung; „aktiv“ für das gewählte Luftfahrzeug, „Anlegen“ für einen Typ ohne Profil), „Motorkennfeld“, „Reiseverbrauch“ und seine Herkunft, „Gipfelhöhe“, „Fehlende Daten“.
-- „Importieren…“ (`.lnmperf`, JSON, CSV), „Ordner…“ (Leistungsordner), „Neu lesen“. Der Ordner wird von selbst neu gelesen, wenn er sich anderswo ändert (Einstellungen, anderer Tab).
-- Eine Aktionsspalte vor dem Namen trägt die Schaltfläche jeder Zeile, immer an derselben Stelle: „Wählen“ („Anlegen“ für einen Flottentyp ohne Profil, daneben „Aus SimBrief anlegen“, wenn SimBrief den Typ kennt). Im Blatt des aktiven Profils übernimmt „Aus SimBrief aktualisieren“ den SimBrief-Eintrag des Typs (Reiseverbrauch, Massen, Gipfelhöhe, Geschwindigkeit) und behält Ihre Eingaben; gegenüber einem persönlichen Profil bietet es „Leere Felder ergänzen“, „Zusammenführen“ (der Eintrag zählt als Profil mit dem Datum seines Abrufs: das Neueste gewinnt Feld für Feld, leere Felder werden ergänzt), „Ersetzen“ (SimBrief-Werte statt der eigenen, der Rest bleibt) oder „Neues Profil“. Wenn sich Felder ändern, zeigt eine Vorschau sie vor der Bestätigung. „Dieses Flugzeug löschen“ im selben Blatt entfernt das aktive Profil.
-- Die Kästchen vor den Namen wählen Profile für die Leiste des Blocks: „Zusammenführen (n)“ (mindestens zwei Profile desselben Typs, oder nur eines, wenn SimBrief den Typ kennt: das vorab angekreuzte Kästchen „SimBrief-Eintrag des Typs einbeziehen“ fügt ihn den Quellen hinzu; Name wählbar, standardmäßig der des vollständigsten; das Neueste gewinnt Feld für Feld, die anderen füllen seine Lücken, das Motorkennfeld vereint ihre Zeilen; das Fenster zeigt zuerst die Änderungen — aktueller Wert, übernommener Wert und seine Quelle, unveränderte Felder eingeklappt, hinzugefügte oder ersetzte Kennfeldzeilen; ein Kästchen je geänderter Angabe (nicht angekreuzt: der aktuelle Wert bleibt), „Alles übernehmen“ / „Nichts übernehmen“, und die Schaltfläche nennt, was übernommen wird, „Zusammenführen (7 Felder, 1 Kennfeldzeile)“; die Zusammenführungsnotiz listet nur das Übernommene; die Benachrichtigung sagt, was aus jeder Quelle übernommen wurde, „Rückgängig“ 10 s), „Exportieren (n)“ (eine heruntergeladene Datei pro Profil: `.lnmperf`, wenn das Profil vollständig ist, sonst JSON), „Im Ordner speichern (n)“ (eine JSON-Datei pro Profil im Leistungsordner, nach dem Profil benannt) und „Löschen (n)“ (eine Bestätigung, eine einzige Meldung für alle mit 10 s lang „Rückgängig“; ein Profil aus dem Leistungsordner wird auch dort entfernt: exportierte Datenbank ohne es neu geschrieben, Datei mit einem einzigen Profil in .bak umbenannt; „Rückgängig“ stellt auch die Dateien wieder her; ist der Ordner nicht beschreibbar, kommt das Profil beim nächsten Neulesen zurück). „Ordner…“ und „Neu lesen“ übernehmen alles, was der Ordner enthält; solange ein gelöschtes Profil dort bleibt (CSV mit mehreren Profilen, Schreiben verweigert), meldet es eine Zeile „n entfernte(s) Profil(e) noch im Ordner — Wiederherstellen“.
-- „ChatGPT fragen“ (Leiste des Blocks und Blatt des aktiven Profils) öffnet ein Feld: das Luftfahrzeug wählen (Profil oder Flottentyp ohne Profil), dann „Prompt kopieren und ChatGPT öffnen“ (ein einziger ChatGPT-Tab, in den der Prompt eingefügt wird). Das Feld folgt dem gewählten („Wählen“, Liste in der Kopfzeile) oder angekreuzten Luftfahrzeug. Der Prompt in der Sprache der Seite bittet, alle Quellen zusammenzutragen (Handbücher, Hersteller, Behörden, Wikipedia, Simulationsforen), in kt, ft, ft/min und kg/h, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß (EUROCONTROL, SimBrief, Airframe DB, aktuelles Profil), damit ChatGPT ergänzt statt wiederholt. „Prompt anzeigen“ zeigt ihn. Die Antwort (das JSON oder ein Leistungs-CSV) unter der Schaltfläche einfügen, dann „Als neues Profil importieren“ („<Name> — ChatGPT“) oder „Mit „…“ zusammenführen“ (die Antwort trägt das heutige Datum: sie gewinnt Feld für Feld, leere Felder werden ergänzt; zuerst die Vorschau der Änderungen, Angaben zum Ankreuzen). Unbekannte Schlüssel und unlesbare oder außerhalb des Bereichs liegende Werte werden verworfen und gemeldet; geschätzte Werte erscheinen unter „Fehlende Daten“ („geschätzt: …“) und gelten nicht mehr als geschätzt, sobald Sie sie von Hand ändern (Blatt oder Motorkennfeld). Typ und Name kommen aus der Antwort (das gewählte Luftfahrzeug ist nur ein Ersatz); beschreibt die Antwort einen anderen Typ, entscheidet eine Frage: als der eine oder der andere importieren, oder beim Zusammenführen: neues Profil oder trotzdem zusammenführen. Ein CSV mit Kommas oder Semikolons wird angenommen.
-
-### Triebwerksleistung — Drehzahl / Leistung / Verbrauch
-
-Dieser Block (ursprünglicher Titel „Fiche performance moteur“) gibt den Verbrauch für eine Triebwerksdrehzahl an. Block der Stufe Experte.
-
-1. Geben Sie „RPM / N1“ ein. Die Felder „Höhe (ft)“ und „Phase“ ergänzen das Blatt.
-2. Klicken Sie auf „Interpolieren“.
-3. Lesen Sie den „Gesamtverbrauch“ und seinen Bereich Min.–Max. ab (Interpolation in der Tabelle, nach Höhe, wenn die Spalte „Höhe (ft)“ ausgefüllt ist).
-
-Unter dem Blatt zeichnet die „Drehzahl-/Leistungs-/Verbrauchskurve“ die minimalen, nominalen und maximalen Durchflüsse nach Drehzahl. Fahren Sie darüber, um die Werte bei einer bestimmten Drehzahl abzulesen. Der interpolierte Punkt ist darauf markiert.
-Ohne RPM-Tabelle im Profil zeigt die Seite „RPM-Kurve fehlt im Profil.“ oder „Keine bezifferte Kennlinie“.
-
-### Tabelle Drehzahl / Leistung → Verbrauch
-
-Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“, „Kommentar“. Block der Stufe Experte.
-Klicken Sie auf einen Spaltentitel (↕), um zu sortieren.
-Sie ist nur lesbar: Um sie zu ändern, verwenden Sie den Block „Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten“.
-Ohne Daten zeigt sie „Keine Drehzahlkurve in diesem Profil.“
-
-### Profildaten — JSON ⇄ Little Navmap
-
-Dieser Block zeigt alle Felder des Profils, die unverändert in die Datei `.lnmperf` von Little Navmap exportiert werden. Block der Stufe Experte.
-
-- Gruppen: „Identität und Format“, „Kraftstoff und Betrieb“, „Piste und Ausweichflugplatz“, „Steigflug“, „Reiseflug“, „Sinkflug“, „Leistungseinstellung und Verbrauch“.
-- Der Kraftstoff erscheint in der gewählten Einheit (kg oder lbs).
-- Hat der Typ ein EUROCONTROL-APD-Blatt, erscheint neben den vergleichbaren Feldern ein Etikett „APD …“: Ein Klick übernimmt diesen Wert. Ohne Klick wird nichts geschrieben. Sonst: „Keine EUROCONTROL-APD-Daten für diesen Typ“.
-- Farbe des Etiketts: grün = gleich (±3 %), orange = abweichend, blau = leeres Feld; „leere Felder ausfüllen“ übernimmt alle APD-Werte der leeren Felder.
-
-Ein leeres Feld bleibt leer und blockiert den Export als `.lnmperf`: Kein Wert wird erfunden.
-Klicken Sie nach einer Änderung in der unteren Leiste auf „Profil speichern“.
-
-### Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten
-
-Dieser Block dient dazu, die Tabelle Drehzahl → Verbrauch Punkt für Punkt einzugeben oder zu korrigieren. Block der Stufe Experte.
-
-1. „Punkt hinzufügen“ erzeugt eine Zeile.
-2. Füllen Sie „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“ und „Kommentar“ aus.
-3. Speichern Sie das Profil (untere Leiste).
-
-Tipp: Ein im Kommentar geschriebener Bereich, zum Beispiel „1 000–1 300 kg/h total“, füllt beim Speichern Min., Nennwert und Max.
-Ohne gewähltes Flugzeug zeigt der Block „Profil wählen oder importieren.“
-
-### SimBrief-Kalibrierung aus OFP
-
-Dieser Block gleicht das aktive Profil mit einem echten SimBrief-Flugplan ab. Block der Stufe Experte.
-
-1. Klicken Sie auf „Letzten SimBrief-FPL abrufen“ (Kopfzeile). Die Kennung wird in ☰ › Pilotenprofil eingegeben. Ersatzweise laden Sie das OFP-JSON auf simbrief.com herunter und verwenden „OFP-JSON importieren“.
-2. Das OFP füllt die Planung und den Flugplan; das Profil des Luftfahrzeugs wird erstellt und kalibriert. Die Meldung zeigt eine vollständige oder teilweise Kalibrierung (messbare Phasen) an.
-3. „Aktives Profil kalibrieren“ wendet die Kalibrierung des letzten OFP auf das gewählte Profil an.
-4. „Prüfbericht als JSON exportieren“ lädt den Prüfbericht herunter.
-
-„Kalibrierungsnachweis“ (in diesem Block) zeigt die zuletzt angewandte Kalibrierung; sonst „Keine OFP-Kalibrierung“.
 
 ### Vertikalprofil
 
@@ -1559,19 +1630,127 @@ Dieser Block zeichnet einen Schnitt entlang des Flugplans der Planung: Gelände,
 Der Steigflug folgt dem Leistungsmodell des aktiven Flugzeugs; der Sinkflug folgt seiner Sinkrate. Ein Plan ohne Flughöhe (VFR) hat keine Flugbahn.
 Ein importiertes SimBrief-OFP füllt die Route und zeichnet das Profil von selbst.
 Sie brauchen die SIA-Datenbank dieses Browsers, gelesen in den Flugkarten (Block „SIA-Datenbank“) oder unter Einstellungen › Wartung. Ohne sie werden nur Punkte in Koordinaten erkannt, ohne Lufträume.
+Das Gelände stammt aus einem Geländemodell von etwa 150 m: Die ASFC-Grenzen folgen diesem Modell, nicht dem wirklichen Boden.
 
-### OFP-Prüfung — Roh- und berechnete Werte
+## Leistungsblätter
+<!-- page: apps/planner/performance_sheets.html -->
 
-Diese Tabelle vergleicht Phase für Phase die im OFP gelesenen und die neu berechneten Werte: „Zeit“, „Distanz“, „Kraftstoff“, „Berechneter Verbrauch“, „TAS / GS“, „Variometer“. Block der Stufe Experte.
+Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Gestaltung) verwaltet die Leistungsblätter Ihrer Luftfahrzeuge: Jede Aktion, die ein Blatt anlegt oder ändert, geht von hier aus. Kraftstoff nutzt sie für die Planung; „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren) sagt, welche Luftfahrzeuge Sie besitzen. Beide Seiten lesen dieselbe Datenbank dieses Browsers und denselben Leistungsordner: Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort.
+
+- Kopfzeile: die Auswahl „Luftfahrzeug“, eine Auswahlliste mit Suche (einen Namen, einen Typ oder ein Kürzel tippen), gegliedert wie der Knopf „Flugzeug“ von Kraftstoff („Meine Luftfahrzeuge“ zuerst, dann nach Kategorie; ein Typ ohne Blatt steht mit „kein Blatt“ darin), die das bearbeitete Blatt und das Luftfahrzeug des ChatGPT-Felds wählt.
+- Untere Leiste: „Luftfahrzeug hinzufügen“ und „Importieren…“; „Auswahl (n) ▾“, das Menü der Aktionen für die angekreuzten Zeilen („Zusammenführen“, „Exportieren“, „Im Ordner speichern“, „Fehlende Felder ausfüllen“, „Löschen“); der Zustand des Blatts, „Blatt speichern“ und „Änderungen verwerfen“, oder, für ein Luftfahrzeug ohne Blatt, „Blatt anlegen: aus SimBrief / ChatGPT fragen / Aus der Klasse schätzen“. Unter 800 px Breite wandert „Importieren…“ ins Menü ☰.
+- „Leistungsblätter“: unter der Einleitung die Ordnerzeile („Meine Luftfahrzeuge ↗“, der Zustand des Leistungsordners, „Neu lesen“ und „Ordner…“); dann Suche, Sortierung und „ChatGPT fragen“ über der Tabelle Ihrer Luftfahrzeuge und Blätter, nach Gruppen; ein Luftfahrzeug ohne Blatt zeigt dort nur „keine“. Ein Klick auf eine Zeile wählt dieses Luftfahrzeug, mit oder ohne Blatt, wie die Auswahl der Kopfzeile (Zeile hervorgehoben); mehrere Zeilen angekreuzt: kein Luftfahrzeug gewählt.
+- Unter der Tabelle vier Karten: „Blatt in Bearbeitung“ (Flugphasen und Felder des Blatts, ab der Stufe Gestaltung), „Triebwerk“ (Kennfeld, RPM-Tabelle, Interpolation), „SimBrief“ (Airframe, OFP-Kalibrierung, Nachweis, Prüfung) und „Datei“ (zuletzt importiertes JSON, eingeklappt), unten beschrieben.
+- Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort (das angezeigte Blatt und ihre Planung).
+
+### Untere Leiste und Menü ☰
+
+Die untere Leiste zeigt „Blatt gespeichert — …“, „Nicht gespeicherte Änderungen — …“, „Kein Blatt für …“ (gewähltes Luftfahrzeug ohne Blatt, mit den Schaltflächen zum Anlegen) oder „Kein Blatt geöffnet.“. „Blatt speichern“ schreibt es in die lokale Datenbank; „Änderungen verwerfen“ (nur wenn es welche gibt) liest die lokale Datenbank neu und öffnet das Blatt wieder so, wie es gespeichert war. Um das Blatt zu löschen: „Löschen“ (seine Zeile angekreuzt). Die Benachrichtigungen erscheinen über der Leiste.
+Wählen Sie ein anderes Luftfahrzeug (Klick auf seine Zeile, Auswahl der Kopfzeile) mit nicht gespeicherten Änderungen, bietet die Seite „Bleiben“, „Verwerfen und wechseln“ oder „Speichern und wechseln“ an.
+Menü ☰: Profile / CSV / JSON importieren (darunter `.lnmperf` von Little Navmap; dasselbe Fenster wie „Importieren…“), ein SimBrief-Airframe importieren, den Leistungsordner wählen, das Profil als `.lnmperf` oder JSON exportieren, die lokale Datenbank speichern, die vorherige Sicherung wiederherstellen, die Einstellungen exportieren oder importieren. Diese Aktionen gehören zur Stufe Experte, außer Export und Import der Einstellungen.
+„Lokale Datenbank speichern“ schreibt `flight_performance_database.fpdb.json` in den Leistungsordner (sonst Download); „Vorherige Sicherung wiederherstellen“ stellt den Zustand vor dem letzten Speichern wieder her.
+Ein Import (Datei oder eingefügter Text), der auf ein vorhandenes Blatt trifft — gleicher Typ, Aliasse eingeschlossen, oder gleicher Name —, legt nichts an, ohne zu fragen: „Für … gibt es schon ein Blatt „…““ bietet „Vorhandenes Blatt ergänzen“ (Standard: nur seine leeren Felder werden gefüllt, das Motorkennfeld übernommen, wenn es keins hat, Zusammenfassung der Felder vor der Bestätigung), „Zusammenführen“ (die Vorschau der Zusammenführung, Feld für Feld, das Neueste gewinnt, Angaben zum Ankreuzen) oder „Ein zweites Blatt anlegen“ (Name gefolgt von „(2)“) an. Bei mehr als zwei Doppeln erspart „Gleiche Wahl für die folgenden Doppel“, vorab angekreuzt, die Antwort bei jedem; zwei Einträge für dasselbe Blatt kommen nacheinander hinzu. Ohne Doppel wird das Blatt angelegt. Am Ende öffnet sich das letzte Blatt, und „Rückgängig“ (10 s) stellt die Datenbank wie vor dem Import wieder her.
+
+### Leistungsblätter (Tabelle)
+
+Dieser Block (ab der Stufe Gestaltung), der erste der Seite, ist die Leistungsseite von „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren): dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name. Unter der Einleitung der Tabelle öffnet „Meine Luftfahrzeuge ↗“ diese Liste in den Einstellungen; dieselbe Zeile nennt den Zustand des Leistungsordners („n Profil(e) aus dem Ordner „…“ um … gelesen“ oder „Kein Leistungsordner gewählt.“).
+- Eine Zeile pro Luftfahrzeug, gruppiert nach Kategorie (Hubschrauber, Turboprops, Jets, Kolbenflugzeuge) mit einer einklappbaren Gruppenkopfzeile; „Sortieren nach“: Kategorie, Name oder Quelle. Danach folgen die gespeicherten Profile außerhalb von „Meine Luftfahrzeuge“, markiert mit „nicht in „Meine Luftfahrzeuge““. Ohne „Meine Luftfahrzeuge“ (Kürzel nicht eingestellt, nichts angegeben) zeigt der Block die Profile und die Flottentypen.
+- Spalten: „Luftfahrzeug“ (Silhouette, Name in Fettschrift, Kennung und Klasse klein, wie in den Einstellungen), „Leistungen“ (Quelle des Profils: `.lnmperf`, SimBrief, ChatGPT, JSON, Eingabe, aus der Klasse geschätzt; oder „keine“), „Kennfeld“ (Motorkennfeld), „Reiseverbrauch“ und seine Herkunft, „Gipfelhöhe“, „Fehlt“. Ein Klick auf eine Zeile kreuzt nur dieses Luftfahrzeug an und wählt es (Blatt im Editor geöffnet, Zeile hervorgehoben; ohne Blatt: „Blatt anlegen“ in der unteren Leiste); Strg oder Umschalt + Klick oder die Kästchen kreuzen mehrere an, dann ist kein Luftfahrzeug gewählt.
+- „Luftfahrzeug hinzufügen“ öffnet dasselbe Fenster zum Hinzufügen wie die Einstellungen (siehe „Luftfahrzeug und seine Leistungen hinzufügen“); das hinzugefügte Luftfahrzeug kommt mit „keine“. Klicken Sie auf seine Zeile (oder wählen Sie es in der Auswahl der Kopfzeile): Die untere Leiste bietet „Blatt anlegen: aus SimBrief“ (wenn SimBrief den Typ kennt), „ChatGPT fragen“, „Aus der Klasse schätzen“ (Typ mit Klasse) an.
+- Eine Kennung, die unter mehreren Varianten angegeben ist (CL2T: „Canadair CL-415“, „Canadair CL-215T“), hat nur eine Zeile, unter dem Namen des Typs: Die Leistungen sind die des Typs, Varianten ändern hier nichts. Ein Luftfahrzeug mit mehreren Profilen hat eine Zeile je Profil, jede unter dem Namen des Profils.
+- Das Kästchen im Spaltenkopf wählt alle angezeigten Zeilen an oder ab; das Kästchen jeder Gruppe (vor „Hubschrauber (n)“…) wählt alle ihre Blätter an oder ab, auch bei eingeklappter Gruppe; die ganze Zelle eines Kästchens kreuzt es an oder ab (ein Klick neben das Kästchen ersetzt die Auswahl nicht); die Ränder der Titel lassen sich ziehen, um die Spaltenbreiten einzustellen (Doppelklick: Standardbreiten).
+- „Luftfahrzeug suchen“ vor „Sortieren nach“ filtert ebenso (Name, Variante, Kennung, Klasse, Quelle): Gruppen mit Treffer aufgeklappt, die anderen zugeklappt, „n Luftfahrzeug(e)“.
+- „Importieren…“ (untere Leiste) öffnet ein Fenster mit zwei Wegen: „Eine oder mehrere Dateien wählen…“ (`.lnmperf`, JSON, CSV, mehrere auf einmal) oder einen Text einfügen — ein JSON-Blatt, eine ChatGPT-Antwort (mit ihrem Text und ihren Codeblöcken), ein `.lnmperf` oder ein Leistungs-CSV (getrennt durch „;“, „,“ oder Tabulator) — im Feld „Oder hier ein JSON (Blatt, ChatGPT-Antwort) oder ein Leistungs-CSV einfügen“, dann „Eingefügten Text importieren“. Der eingefügte Text nimmt denselben Weg wie eine Datei; eine ChatGPT-Antwort wird zu einem Blatt „… — ChatGPT“. Ein JSON mit mehreren Einträgen (ein Array oder eine Liste „sheets“, „profiles“ …) ergibt ebenso viele Blätter: jedes wird den vorhandenen Blättern über seine Kennung, dann seinen Typ (Aliasse eingeschlossen), dann seinen Namen zugeordnet; ein unlesbarer Eintrag hält die anderen nicht auf. Am Ende eine einzige Zusammenfassung: „n Blatt/Blätter ergänzt, m zusammengeführt, k angelegt“, mit den unlesbaren Einträgen. Ein leerer oder unlesbarer Text wird im Fenster gemeldet, das offen bleibt; Esc oder „Schließen“ schließt es. Ein bereits vorhandenes Blatt wird ergänzt, zusammengeführt oder verdoppelt (siehe „Untere Leiste und Menü ☰“).
+- „Ordner…“ (Leistungsordner wählen) und „Neu lesen“ in der Ordnerzeile. Der Ordner wird von selbst neu gelesen, wenn er sich anderswo ändert (Einstellungen, anderer Tab).
+- Im Blatt des aktiven Profils übernimmt „Aus SimBrief aktualisieren“ den SimBrief-Eintrag des Typs (Reiseverbrauch, Massen, Gipfelhöhe, Geschwindigkeit) und behält Ihre Eingaben; gegenüber einem persönlichen Profil bietet es „Leere Felder ergänzen“, „Zusammenführen“ (der Eintrag zählt als Profil mit dem Datum seines Abrufs: das Neueste gewinnt Feld für Feld, leere Felder werden ergänzt), „Ersetzen“ (SimBrief-Werte statt der eigenen, der Rest bleibt) oder „Neues Profil“. Wenn sich Felder ändern, zeigt eine Vorschau sie vor der Bestätigung.
+- Die Kästchen vor den Namen wählen Profile für das Menü „Auswahl (n) ▾“ der unteren Leiste (öffnet sich nach oben; Esc oder ein Klick daneben schließt es): „Zusammenführen (n)“ (mindestens zwei Profile desselben Typs, oder nur eines, wenn SimBrief den Typ kennt: das vorab angekreuzte Kästchen „SimBrief-Eintrag des Typs einbeziehen“ fügt ihn den Quellen hinzu; Name wählbar, standardmäßig der des vollständigsten; das Neueste gewinnt Feld für Feld, die anderen füllen seine Lücken, das Motorkennfeld vereint ihre Zeilen; das Fenster zeigt zuerst die Änderungen — aktueller Wert, übernommener Wert und seine Quelle, unveränderte Felder eingeklappt, hinzugefügte oder ersetzte Kennfeldzeilen; ein Kästchen je geänderter Angabe (nicht angekreuzt: der aktuelle Wert bleibt), „Alles übernehmen“ / „Nichts übernehmen“, und die Schaltfläche nennt, was übernommen wird, „Zusammenführen (7 Felder, 1 Kennfeldzeile)“; die Zusammenführungsnotiz listet nur das Übernommene; die Benachrichtigung sagt, was aus jeder Quelle übernommen wurde, „Rückgängig“ 10 s), „Exportieren (n)“ (eine heruntergeladene Datei pro Profil: `.lnmperf`, wenn das Profil vollständig ist, sonst JSON), „Im Ordner speichern (n)“ (eine JSON-Datei pro Profil im Leistungsordner, nach dem Profil benannt) und „Löschen (n)“ (eine Bestätigung, eine einzige Meldung für alle mit 10 s lang „Rückgängig“; ein Profil aus dem Leistungsordner wird auch dort entfernt: exportierte Datenbank ohne es neu geschrieben, Datei mit einem einzigen Profil in .bak umbenannt; „Rückgängig“ stellt auch die Dateien wieder her; ist der Ordner nicht beschreibbar, kommt das Profil beim nächsten Neulesen zurück). „Ordner…“ und „Neu lesen“ übernehmen alles, was der Ordner enthält; solange ein gelöschtes Profil dort bleibt (CSV mit mehreren Profilen, Schreiben verweigert), meldet es eine Zeile „n entfernte(s) Profil(e) noch im Ordner — Wiederherstellen“.
+- „ChatGPT fragen“ (über der Tabelle und Blatt des aktiven Profils) öffnet ein Feld für das gewählte Luftfahrzeug (Auswahl der Kopfzeile oder Klick auf seine Zeile): „Prompt kopieren und ChatGPT öffnen“ (ein einziger ChatGPT-Tab, in den der Prompt eingefügt wird). Das Feld folgt dem gewählten Luftfahrzeug. Der Prompt in der Sprache der Seite bittet, alle Quellen zusammenzutragen (Handbücher, Hersteller, Behörden, Wikipedia, Simulationsforen), in kt, ft, ft/min und kg/h, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß (EUROCONTROL, SimBrief, Airframe DB, aktuelles Profil), damit ChatGPT ergänzt statt wiederholt. „Prompt anzeigen“ zeigt ihn. Die Antwort (das JSON oder ein Leistungs-CSV) unter der Schaltfläche einfügen, dann „Als neues Profil importieren“ („<Name> — ChatGPT“) oder „Mit „…“ zusammenführen“ (die Antwort trägt das heutige Datum: sie gewinnt Feld für Feld, leere Felder werden ergänzt; zuerst die Vorschau der Änderungen, Angaben zum Ankreuzen). Unbekannte Schlüssel und unlesbare oder außerhalb des Bereichs liegende Werte werden verworfen und gemeldet; geschätzte Werte erscheinen unter „Fehlende Daten“ („geschätzt: …“) und gelten nicht mehr als geschätzt, sobald Sie sie von Hand ändern (Blatt oder Motorkennfeld). Typ und Name kommen aus der Antwort (das gewählte Luftfahrzeug ist nur ein Ersatz); beschreibt die Antwort einen anderen Typ, entscheidet eine Frage: als der eine oder der andere importieren, oder beim Zusammenführen: neues Profil oder trotzdem zusammenführen. Ein CSV mit Kommas oder Semikolons wird angenommen.
+- „Fehlende Felder ausfüllen (n)“ (Menü „Auswahl“, untere Leiste) ergänzt die angekreuzten Blätter mit einer einzigen Frage an ChatGPT: das ChatGPT-Feld öffnet sich für diese Blätter (Name und Anzahl leerer Felder), „Prompt kopieren und ChatGPT öffnen“ kopiert die Frage — für jedes Blatt, was die Suite schon weiß, und seine leeren Felder, das Motorkennfeld eingeschlossen, wenn das Blatt keins hat. Fügen Sie die Antwort von ChatGPT ein (ein Eintrag pro Blatt), dann „Fehlende Felder ausfüllen“: nur die leeren Felder werden gefüllt, nichts bereits Eingetragenes wird ersetzt, geschätzte Werte bleiben markiert; vor der Bestätigung erscheint eine Zusammenfassung pro Blatt, danach 10 s lang „Rückgängig“.
+
+### Blatt in Bearbeitung
+
+Diese Karte (ab der Stufe Gestaltung) unter der Tabelle zeigt das Blatt des gewählten Luftfahrzeugs.
+
+#### Flugphasen — Profil ↔ Kennfeld
+
+IAS, Steigrate, Triebwerksdrehzahl und Durchfluss jeder Phase (Steigflug, Reiseflug, Sinkflug, Rollen, Ausweichflug), verglichen mit dem Triebwerkskennfeld, und die Links zu den Blättern der Luftfahrzeuge dieses Typs.
+
+#### Felder des Blatts
+
+Alle Felder des Blatts, die unverändert in die Datei `.lnmperf` von Little Navmap exportiert werden.
+
+- Gruppen: „Identität und Format“, „Kraftstoff und Betrieb“, „Piste und Ausweichflugplatz“, „Steigflug“, „Reiseflug“, „Sinkflug“, „Leistungseinstellung und Verbrauch“.
+- Der Kraftstoff erscheint in der gewählten Einheit (kg oder lbs).
+- Hat der Typ ein EUROCONTROL-APD-Blatt, erscheint neben den vergleichbaren Feldern ein Etikett „APD …“: Ein Klick übernimmt diesen Wert. Ohne Klick wird nichts geschrieben. Sonst: „Keine EUROCONTROL-APD-Daten für diesen Typ“.
+- Farbe des Etiketts: grün = gleich (±3 %), orange = abweichend, blau = leeres Feld; „leere Felder ausfüllen“ übernimmt alle APD-Werte der leeren Felder.
+
+Ein leeres Feld bleibt leer und blockiert den Export als `.lnmperf`: Kein Wert wird erfunden.
+Klicken Sie nach einer Änderung in der unteren Leiste auf „Blatt speichern“.
+
+### Triebwerk
+
+Karte der Stufe Experte: das zu bearbeitende Motorkennfeld, die RPM-Tabelle und ihre Kurve, die Interpolation des Durchflusses.
+
+#### Motorkennfeld — Drehzahl / Leistung → Verbrauch bearbeiten
+
+Die Tabelle Drehzahl → Verbrauch Punkt für Punkt eingeben oder korrigieren.
+
+1. „Punkt hinzufügen“ erzeugt eine Zeile.
+2. Füllen Sie „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“ und „Kommentar“ aus.
+3. Speichern Sie das Blatt („Blatt speichern“, untere Leiste).
+
+Tipp: Ein im Kommentar geschriebener Bereich, zum Beispiel „1 000–1 300 kg/h total“, füllt beim Speichern Min., Nennwert und Max.
+Ohne gewähltes Luftfahrzeug zeigt die Karte „Profil wählen oder importieren.“
+
+#### Tabelle Drehzahl / Leistung → Verbrauch
+
+Diese Tabelle listet die Punkte des Triebwerkskennfelds des aktiven Profils auf: „RPM / N1“, „Min.“, „Nennwert“, „Max.“, „Höhe (ft)“ (optional: eine Zeile pro veröffentlichter Höhe), „Flugphase“, „Kommentar“.
+Klicken Sie auf einen Spaltentitel (↕), um zu sortieren. Ziehen Sie den rechten Rand eines Titels, um die Spaltenbreite einzustellen (Doppelklick auf den Rand: Standardbreiten); die Einstellung bleibt im Browser erhalten. Ein langer Kommentar bleibt auf einer Zeile, mit Auslassungspunkten: der ganze Text steht im Tooltip, ein Doppelklick auf die Zelle klappt ihn auf.
+Sie ist nur lesbar: Um sie zu ändern, verwenden Sie „Motorkennfeld — Bearbeitung“ darüber.
+Ohne Daten zeigt sie „Keine Drehzahlkurve in diesem Profil.“
+
+#### Triebwerksinterpolation
+
+Dieser Teil gibt den Verbrauch für eine Triebwerksdrehzahl an.
+
+1. Geben Sie „RPM / N1“ ein. Die Felder „Höhe (ft)“ und „Phase“ ergänzen das Blatt.
+2. Klicken Sie auf „Interpolieren“.
+3. Lesen Sie den „Gesamtverbrauch“ und seinen Bereich Min.–Max. ab (Interpolation in der Tabelle, nach Höhe, wenn die Spalte „Höhe (ft)“ ausgefüllt ist).
+
+Über der RPM-Tabelle zeichnet die Kurve die minimalen, nominalen und maximalen Durchflüsse nach Drehzahl. Fahren Sie darüber, um die Werte bei einer bestimmten Drehzahl abzulesen. Der interpolierte Punkt ist darauf markiert.
+Ohne RPM-Tabelle im Profil zeigt die Seite „RPM-Kurve fehlt im Profil.“ oder „Keine bezifferte Kennlinie“.
+
+### SimBrief
+
+Karte der Stufe Experte: das SimBrief-Airframe, die Kalibrierung an einem echten OFP, ihr Nachweis und die Prüfung.
+
+#### SimBrief-Airframe
+
+Fügen Sie die „Internal ID“ eines SimBrief-Airframes (oder seine Freigabeadresse) ein, dann „SimBrief-Airframe importieren“: Das Airframe wird gelesen (öffentliche Liste von SimBrief, sonst sein Freigabelink), und das daraus gewonnene Blatt öffnet sich. Veröffentlicht SimBrief das Airframe nicht, wird nur die Internal ID behalten, die SimBrief Dispatch als Typ verwenden kann. Die Meldung unter der Schaltfläche sagt, was übernommen wurde; enthält das Airframe keine Leistungen, ergänzen Sie mit einer `.lnmperf`-Datei.
+
+#### SimBrief-Kalibrierung aus OFP
+
+Das Blatt mit einem echten SimBrief-Flugplan abgleichen.
+
+1. Klicken Sie auf „Letzten SimBrief-FPL abrufen“, die erste Schaltfläche dieses Teils. Die Kennung wird unter Einstellungen › Mein Profil eingegeben. Ersatzweise laden Sie das OFP-JSON auf simbrief.com herunter und verwenden „OFP-JSON importieren“.
+2. Das OFP füllt die Planung und den Flugplan; das Profil des Luftfahrzeugs wird erstellt und kalibriert. Die Meldung zeigt eine vollständige oder teilweise Kalibrierung (messbare Phasen) an.
+3. „Aktives Profil kalibrieren“ wendet die Kalibrierung des letzten OFP auf das gewählte Profil an.
+4. „Prüfbericht als JSON exportieren“ lädt den Prüfbericht herunter.
+
+„Kalibrierungsnachweis“ darunter zeigt die zuletzt angewandte Kalibrierung; sonst „Keine OFP-Kalibrierung“.
+
+#### OFP-Prüfung — Roh- und berechnete Werte
+
+Diese Tabelle vergleicht Phase für Phase die im OFP gelesenen und die neu berechneten Werte: „Zeit“, „Distanz“, „Kraftstoff“, „Berechneter Verbrauch“, „TAS / GS“, „Variometer“.
 Sie füllt sich nach einem OFP-Import („Letzten SimBrief-FPL abrufen“ oder „OFP-JSON importieren“).
 Ohne OFP: „Keine OFP-Daten.“
 Nützlich, um eine teilweise Kalibrierung oder eine Abweichung zu SimBrief zu verstehen.
 
-### Importiertes JSON / SimBrief
+### Datei
 
-Dieser Block zeigt den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP oder JSON). Block der Stufe Experte.
+Die Karte „Datei“ (Stufe Experte) bewahrt, eingeklappt unter „Importiertes JSON / SimBrief“, den Rohinhalt der zuletzt importierten Datei (SimBrief-OFP oder JSON); ein Klick klappt sie auf.
 - „JSON kopieren“: kopiert den Inhalt in die Zwischenablage; ausgegraut, wenn nichts zu kopieren ist.
-- „Leeren“: leert die Anzeige (das Profil wird nicht berührt).
+- „Leeren“: leert die Anzeige (das Blatt wird nicht berührt).
 
 Ohne Import: „Kein JSON geladen.“
 
@@ -1605,14 +1784,15 @@ Optionen der Analyse (Menü ☰): „offensichtlich unplausible Messwerte aussch
 
 Eine am unteren Fensterrand fixierte Leiste, nach dem Trendsymbol, gibt die Schlüsselzahlen an: „Landungen“, „Durchschnittlicher Score“, „Score Min / Max“, „Durchschnitt FPM“, „FPM Min / Max“, „Durchschnitt G“, „G Min / Max“, „Butter / Very Good“.
 Die Knöpfe „−“ und „+“ ändern die Größe dieser Karten.
-Darunter das Trendfazit: wahrscheinlicher Fortschritt oder Rückschritt, leicht, „Kein klarer Fortschritt“ oder „zu wenig Daten“ (es braucht mindestens vier verwertbare Messungen).
-Der Text erklärt die gewählte Methode (zum Beispiel geschätzte Asymptote und verbleibender Gewinn).
+Darunter zeigt der Lesebereich links das Trendfazit: wahrscheinlicher Fortschritt oder Rückschritt, leicht, „Kein klarer Fortschritt“ oder „zu wenig Daten“ (es braucht mindestens vier verwertbare Messungen), mit der gewählten Methode (zum Beispiel geschätzte Asymptote und verbleibender Gewinn).
+Rechts, klein, die Legende: gelesenes Format, Raute „◇ geschätzt“, Farbfelder der Bewertungen, Schätzung ein oder aus. Auf einem schmalen Bildschirm (unter 800 px) rückt die Legende unter das Fazit.
 
 ### Entwicklung
 
 Dieser Block zeichnet die Kennzahlen im Zeitverlauf, mit ihrem Trend: Score, Sinkrate beim Aufsetzen (FPM), G-Kraft, Drehgeschwindigkeit der Nase und die Punktwolke „FPM × G — Verteilung der Landungen“. Im reduzierten Format: relativer technischer Index, roher Landing Rate, Float.
 
-- Fahren Sie über einen Punkt: Datum, Luftfahrzeug, Score, Bewertung, Abfangen.
+- Fahren Sie über einen Punkt: Datum, Luftfahrzeug, Score, Bewertung, Abfangen. Dieselbe Landung leuchtet in allen fünf Diagrammen auf (vergrößerter, umrandeter Punkt, die übrigen abgeblendet); der Tooltip bleibt im Fenster, an den Rändern links neben oder über dem Zeiger.
+- Klicken Sie auf einen Punkt, um den Tooltip zu fixieren: Er zeigt zusätzlich den vollständigen Datensatz der Landung (Datum, Luftfahrzeug, Flugplatz und Landebahn, falls vorhanden, FPM, G, Nase, Score, Quelle), hält die Landung in allen Diagrammen hervorgehoben und markiert ihre Zeile in der Tabelle „Landungen“. Schließen: das Kreuz, ein zweiter Klick auf denselben Punkt, ein Klick neben die Punkte oder Esc. Nur ein fixierter Punkt zugleich; ein einfacher Klick wählt keinen Zeitraum aus.
 - Ziehen Sie waagerecht über ein Diagramm, um einen Zeitraum auszuwählen.
 - Das Band „Gesamtverlauf — ziehen zum Auswählen“ unter jedem Diagramm erlaubt die Wahl eines Zeitraums über den gesamten Verlauf.
 

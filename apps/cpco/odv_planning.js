@@ -573,18 +573,16 @@
     ], {
       n: warns.length
     }), 'warn');
+    // vols à vérifier : nommés dans la notification (jour, heures, indicatif, motif) — le bloc « Vols de la frise
+    // horaire » où ils étaient listés a été retiré de la page
     const bad = flights.filter(f => f.alertes.length);
-    if (bad.length) notify(L(bad.length > 1 ? [
-      '{n} vols de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».',
-      '{n} timeline flights to check (crew member coded unavailable or outside their code): see “Timeline flights”.',
-      '{n} Flüge der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.',
-      '{n} vuelos de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'
-    ] : ['{n} vol de la frise à vérifier (équipier codé indisponible ou hors de son code) : voir « Vols de la frise horaire ».',
-      '{n} timeline flight to check (crew member coded unavailable or outside their code): see “Timeline flights”.',
-      '{n} Flug der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): siehe „Flüge der Zeitleiste“.',
-      '{n} vuelo de la cronología por verificar (tripulante codificado no disponible o fuera de su código): vea «Vuelos de la cronología».'
+    if (bad.length) notify(L(['{n} vol(s) de la frise à vérifier (équipier codé indisponible ou hors de son code) : {v}.',
+      '{n} timeline flight(s) to check (crew member coded unavailable or outside their code): {v}.',
+      '{n} Flug/Flüge der Zeitleiste zu prüfen (Besatzungsmitglied als nicht verfügbar oder außerhalb seines Codes eingetragen): {v}.',
+      '{n} vuelo(s) de la cronología por verificar (tripulante codificado no disponible o fuera de su código): {v}.'
     ], {
-      n: bad.length
+      n: bad.length,
+      v: bad.slice(0, 4).map(f => `${wordL(f.jour)} ${dateFr(f.date)} ${f.debut}–${f.fin}${f.indicatif ? ` ${f.indicatif}` : ''} (${f.alertes.map(x => C.say(x)).join(' ; ')})`).join(' · ') + (bad.length > 4 ? ` · ${L(['et {k} autre(s)', 'and {k} more', 'und {k} weitere', 'y {k} más'], { k: bad.length - 4 })}` : '')
     }), 'warn');
   }
 
@@ -1061,7 +1059,7 @@
       .join('') +
       (data.virtuel ? '' : `<span>${codeCell({ categorie: 'inconnu', source: '' })} ${esc(catL('inconnu'))}</span>`) +
       // déclarations des pilotes : regroupées (Disponible, Exercice SOG, Occupé, Indisponible), détail au survol
-      (window.DisposEditor?.legend ? `<div class="odv-legend-decl"><b>${L(['Déclarations des pilotes', 'Pilot declarations', 'Pilotenangaben', 'Declaraciones de los pilotos'])}</b>${window.DisposEditor.legend()}</div>` : ''); // même légende que Mes missions
+      (window.DisposWeek?.legend ? `<div class="odv-legend-decl"><b>${L(['Déclarations des pilotes', 'Pilot declarations', 'Pilotenangaben', 'Declaraciones de los pilotos'])}</b>${window.DisposWeek.legend()}</div>` : ''); // mêmes catégories que la saisie de Mes missions
     const byPilot = new Map(data.pilotes.map(p => [p.trigramme, []]));
     for (const r of data.records) byPilot.get(r.pilote)?.push(r);
     // grille non vide : cases du classeur, ou seconde ligne du pilote (déclaration faite dans la suite — copie de ce

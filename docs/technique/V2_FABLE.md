@@ -265,3 +265,84 @@ Every proposal is a value put in the field, marked "proposed" until the user con
 a line under the field with a one-click fix when one exists ("Set theatre to mainland", "Split into secondary
 objectives", "Place in the studio"). The step-by-step mode is the default for a new mission at levels 1 to 3, a
 choice at level 4. Same vocabulary in the planner manual and in the "prepare a mission end to end" tutorial.
+
+## 12. Fuel: the level decision chart (13 October)
+
+The user: "in the fuel tool's chart I struggle to decide the optimal flight level; I need a chart that shows the
+essentials — optimal level against speed and fuel — and lets me plan the airspeed and vario that follow." The page has
+the curves (trip fuel by level, climb rate and fuel per 1,000 ft, climb speeds) but no single view that answers
+"which level, and what does it cost in time and fuel, and how do I climb to it".
+
+**Decision.** One chart, "Flight level decision", first in the detailed view and the only chart of the simple view:
+
+- X axis: flight level, from the lowest usable to the ceiling, standard levels ticked; two curves on two scales —
+  **trip fuel** (kg or lb, left) and **trip time** (minutes, right) for the whole flight flown at that level, climb
+  and descent included; the plan level, the **best-fuel level** and the **best-time level** are marked and named; a
+  shaded "unreachable" band beyond the ceiling as today.
+- Hover or a slider under the chart moves a cursor: a card beside the chart shows for that level fuel, time, cruise
+  TAS, climb time and fuel, **climb IAS to hold** and **expected vario** (from the chosen climb goal: Eco, Vy, Fast,
+  Profile, Set), top of climb distance; the "Climb instructions" block follows the cursor.
+- "Use this level" sets the plan level, updates the fuel plan and the climb instructions; a second button
+  "Compare" pins the current level so that two levels are read side by side (fuel and time deltas).
+- Under the chart, the same figures as a table for the standard levels only (one row per level), sortable by fuel or
+  time, the chosen row highlighted.
+
+The three existing curves stay in the detailed view, below. Nothing new is computed: the model already gives trip fuel
+and time per level (`m.trip`), climb points (`climbTo`, `manualPoint`) and the climb law of the chosen goal.
+
+**Done (13 October)** — `shared/flight_perf_view.js` (`renderDecision`), block `#levelDecision` of the fuel page; see
+CHANGELOG "Flight level decision". The table lists round levels (every 1,000 ft, 2,000 ft above a 20,000 ft ceiling);
+the curves use the climb goal of the climb instructions, so changing the goal redraws them.
+Simplified the same day after the user found the charts unclear (review by the ergonomics session): two stacked
+panels instead of two scales, "Least fuel" / "Fastest" pills, one mark (the chosen level), one grey for levels that
+cannot be held, a three-line card; detailed view reduced to one "Climb" chart sharing the axis and the cursor, a table
+of goals and the engine settings (engine map only); "Optimum altitude", "TAS by level" and the Result's cursor card
+removed.
+
+## 13. Three roles: My aircraft / Performance sheets / Fuel (15 October)
+
+**What the user said.** "Three places to choose the aircraft, it is not clear; it is not this page's job to do that
+work." The fuel page had become a manager of performance sheets that also made fuel plans.
+
+**Decision** (validated by the user, ergonomics review):
+
+1. **My aircraft** (Settings › My profile › Aircraft and simulators): declare what I own and master, variants included.
+   The "Performance" column is only a link — to the sheet on the Performance sheets page, or "none → create", which
+   opens that page on the aircraft (`?aircraft=<code>`, `&create=…`). No creation flow in Settings.
+2. **Performance sheets** (`apps/planner/performance_sheets.html`, Tools, level 3): the management. One list, my
+   aircraft first, then the other sheets; every action that creates or changes a sheet starts here (add an aircraft,
+   import, folder, reread, SimBrief / ChatGPT / class estimate, merge, export, save to the folder, delete, field
+   editor, "Update from SimBrief", engine map, RPM table and curve, ChatGPT panel, OFP calibration). The page's
+   "active" sheet is the sheet being edited ("Edit" instead of "Choose").
+3. **Fuel**: the fuel plan only. One aircraft choice, in the header, listing existing sheets only (my aircraft first);
+   without a sheet: "no sheet for this aircraft — open Performance sheets ↗". The sheet consulted stays visible read
+   only. `?aircraft=` still picks the sheet; `?create=` is redirected to the sheets page.
+
+**Technique.** Both pages share one script and one style sheet (`apps/planner/flight_planner.js` / `.css`, moved out
+of the fuel page) and the same local database (`flightPerfState`, performance folder); the page's role is
+`<body data-perf-page>`; `$` returns a detached empty element for an id the page does not have. Each page writes only
+the fields it owns (quote settings from the fuel page, `lastAircraft` / `lastSheet`); a `storage` event makes the
+other page reread the sheets (the open sheet is replaced unless it has unsaved changes; nothing is written back, so no
+ping-pong).
+
+**Steps.** (1) Performance sheets page working with the management blocks; Fuel keeps its own meanwhile (no
+regression) — done. (2) Fuel reduced to the plan, My aircraft as links — done: the fuel page keeps the plan, the
+result (with the sheet read only, "Edit this sheet in Performance sheets ↗"), the level decision, the climb charts and
+the vertical profile; its "Aircraft" menu lists existing sheets, My aircraft first, then "Manage performance sheets ↗";
+without a sheet, a line links to the sheets page; the ☰ menu and the status bar keep their sheet actions on the sheets
+page only. The shared script stays one file (`flight_planner.js`), no split into modules.
+(3) Ergonomics review of the sheets page (Simplification, 16 October), applied in three commits — done:
+**A** an aircraft without a sheet shows only "none" in the table; choosing it (its row, or "— no sheet" in the
+selector) creates nothing and the bottom bar offers "Create the sheet" (SimBrief, ChatGPT, class estimate) once;
+notifications sit above the bottom bar; search and sorting before ChatGPT; one word for the object, "sheet".
+**B** nine blocks below the table become four cards: "Sheet being edited" (flight regimes and fields, from level 3,
+with "Save the sheet" / "Discard changes" visible from level 3 too), "Engine" (engine map, RPM table and curve,
+interpolation), "SimBrief" (airframe, OFP calibration, traceability, audit), "File" (imported JSON, folded); duplicate
+export buttons removed (kept hidden for the ☰ menu). **C** a bottom bar of five commands (add, import, "Selection (n)
+▾" for the ticked rows, save, discard); the folder gets its own line under the table's introduction; "Fetch latest
+SimBrief FPL" moved to the OFP calibration. A tutorial, "Create a performance sheet" (`docs/tutorial/fuel_profile.*`),
+follows the whole path.
+
+Not applied, by the user's choice: the "Aircraft" selector stays at the top of the page (the review wanted the table
+as the only way to choose), and the header's kg / lbs units stay where they are.
+

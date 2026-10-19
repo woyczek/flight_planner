@@ -1,0 +1,76 @@
+<!doctype html>
+<html data-tool="dark" lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fiches de performances</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
+<script src="../../config/repository_tree?v=0"></script>
+<link rel="stylesheet" href="flight_planner.css?v=0">
+</head>
+<!-- Fiches de performances : gestion des fiches des appareils (tableau, imports, dossier, SimBrief, ChatGPT, éditeur,
+     cartographie moteur, calibration OFP). Même script et même style que le Carburant (flight_planner.js / .css),
+     même base locale (flightPerfState) ; rôle de la page : data-perf-page="sheets". -->
+<body data-perf-page="sheets">
+<header><div class="header-row"><h1 id="pageTitle" data-no-i18n></h1><span id="source" class="mut"></span><span class="header-spacer"></span><span class="control">Langue <span class="lang-popup"><button id="languageCurrent" class="lang-current" type="button" aria-haspopup="menu" aria-expanded="false"><span id="languageCurrentIcon"></span><span class="caret">▼</span></button><span id="languageMenu" class="lang-menu" role="menu" hidden><button class="lang-item" data-lang="fr">🇫🇷 Français</button><button class="lang-item" data-lang="en">🇬🇧 English</button></span></span></span><span class="prefs-popup"><button id="prefsCurrent" class="prefs-current" type="button" aria-haspopup="menu" aria-expanded="false" title="Préférences">⚙ <span class="caret">▼</span></button><span id="prefsMenu" class="prefs-menu" role="menu" hidden><button id="fuelUnitBtn" class="prefs-item">Affichage : kg</button><button id="prefsEditorBtn" class="prefs-item">Masquer les champs du profil</button></span></span></div><div class="header-row"><span class="control sheet-pick"><span id="sheetPickLbl">Appareil</span> <button type="button" id="sheetPick" class="aircraft-current primary" aria-expanded="false"></button></span></div></header>
+<div class="wrap"><div class="grid">
+<section class="card span12" data-min-level="3" data-block-id="perf-profiles" data-icon="list" data-no-i18n><h2 id="ppTitle">Profils de performances</h2><p id="ppIntro" class="mut"></p><p class="mut pp-folder"><span id="ppMine" class="pp-mine"></span> · <span id="ppStatus"></span> <button id="ppReload" type="button" class="secondary" data-icon="refresh"><span id="ppReloadLbl">Relire</span></button><button id="ppFolder" type="button" class="secondary" data-icon="folder"><span id="ppFolderLbl">Dossier…</span></button><span id="ppRemoved" class="mut" hidden></span></p><div class="row perf-profiles-actions pp-tools"><span class="pp-find"><input id="ppSearch" type="search"><small id="ppFound" class="mut"></small></span><label class="pp-sortlbl"><span id="ppSortLbl">Trier par</span> <select id="ppSort"><option value="cat"></option><option value="name"></option><option value="source"></option></select></label><button id="ppGpt" type="button" class="secondary" data-icon="sparkles"><span id="ppGptLbl">Demander à ChatGPT</span></button></div><div id="ppGptPanel" class="pp-gpt" hidden></div><div id="perfProfiles" class="perf-profiles"></div></section>
+
+
+<!-- quatre cartes sous le tableau : la fiche (niveau Conception), puis moteur, SimBrief et fichier (niveau Expert) -->
+<section class="card span12" data-min-level="3" data-block-id="sheet" data-icon="plane" data-subtitle="Régimes de vol et champs de la fiche ouverte."><h2>Fiche en cours</h2>
+<h3>Régimes de vol — profil ↔ cartographie</h3><div id="profile" class="kv"><div>État</div><div>Aucun profil chargé</div></div><div id="defaSheets" class="small" style="margin-top:8px"></div>
+<div class="row sheet-fields-head"><h3>Champs de la fiche</h3><button id="toggleProfileEditor">Masquer les champs</button></div><div class="mut">Champs exportés exactement dans le `.lnmperf`. Une case vide reste vide dans le JSON et bloque l’export XML : aucune valeur n’est ajoutée automatiquement.</div><div id="apdBar" class="apd-bar"></div><div id="profileEditor" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"></div><div class="row" style="margin-top:10px"><button id="saveProfileBtn" data-icon="save" class="primary">Enregistrer le profil</button><button id="deleteProfileBtn" data-icon="x">Supprimer cet avion</button><button id="sbTypeBtn" type="button" class="secondary" data-icon="refresh" data-no-i18n hidden></button><button id="gptSheetBtn" type="button" class="secondary" data-icon="sparkles" data-no-i18n hidden></button><span id="sbTypeHelp" class="mut" data-no-i18n hidden></span><span id="profileEditStatus" class="mut"></span></div>
+<div hidden><button id="importBtn" data-icon="upload">Importer `.lnmperf` / JSON / CSV</button><button id="exportLnmBtn">Exporter `.lnmperf`</button><button id="exportBtn" data-icon="download">Exporter JSON</button><button id="exportDbBtn">Exporter BDD locale</button><input id="fileInput" type="file" accept=".json,.csv,.lnmperf,application/xml,text/xml" multiple hidden></div></section>
+
+<section class="card span12 engine-card" data-min-level="4" data-block-id="engine" data-icon="wrench" data-subtitle="Cartographie moteur, table RPM et interpolation du débit."><h2>Moteur</h2>
+<h3>Cartographie moteur — édition RPM / puissance → consommation</h3><div id="curveEditor"><div class="mut">Choisis ou importe un profil.</div></div>
+<h3>Table RPM / puissance → consommation</h3><svg id="engineCurveChart" class="opt-chart engine-chart" viewBox="0 0 760 255"></svg><table id="engineCurveTable"><thead><tr><th data-sort="rpm">RPM / N1 ↕</th><th data-sort="fuelFlowMin">Min. ↕</th><th data-sort="fuelFlowPerHour">Nominal ↕</th><th data-sort="fuelFlowMax">Max. ↕</th><th data-sort="altFt">Altitude (ft) ↕</th><th data-sort="phaseLabel">Régime de vol ↕</th><th>Commentaire</th></tr></thead><tbody id="curve"></tbody></table>
+<h3>Interpolation moteur</h3><div class="fields">
+<div class="field"><label>RPM / N1</label><input id="rpm" type="number"></div>
+<div class="field"><label>Altitude (ft)</label><input id="alt" type="number" value="28000"></div>
+<div class="field"><label>Phase</label><select id="phase"><option>cruise</option><option>climb</option><option>descent</option><option>taxi</option></select></div>
+<div class="field"><label>&nbsp;</label><button id="rpmCalc">Interpoler</button></div>
+</div><div style="height:12px"></div><div class="row"><div><div class="mut">Débit total</div><div id="ff" class="big">—</div></div><span id="ffnote" class="mut"></span></div></section>
+
+<section class="card span12" data-min-level="4" data-block-id="simbrief" data-icon="refresh" data-subtitle="Airframe, calibration sur un OFP réel, traçabilité et audit."><h2>SimBrief</h2>
+<h3>Airframe SimBrief</h3><div class="field"><label>SimBrief Airframe Internal ID</label><input id="sbAirframeId" value="" placeholder="Internal ID ou URL de partage SimBrief"></div><div class="row" style="margin-top:8px"><button id="sbAirframeBtn" class="primary">Importer airframe SimBrief</button></div><div id="sbStatus" class="mut" style="margin-top:8px"></div>
+<h3>Calibration SimBrief depuis OFP</h3><div class="mut">« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de l’identifiant SimBrief du profil pilote (Paramètres › Mon profil). L’import JSON reste un secours si le navigateur bloque SimBrief.</div><div style="height:10px"></div><div class="row"><button id="simBtn" class="primary">Récupérer dernier FPL SimBrief</button><button id="ofpFileBtn" class="secondary">Importer OFP JSON</button><button id="calibrateBtn" data-icon="refresh">Calibrer le profil actif</button><button id="exportAuditBtn">Exporter audit JSON</button><input id="ofpFile" type="file" accept=".json,application/json" hidden></div><div id="ofpStatus" class="mut" style="margin-top:8px">Aucun OFP analysé.</div>
+<h3>Traçabilité de calibration</h3><div id="calibrationMeta" class="kv"><div>État</div><div>Pas de calibration OFP</div></div>
+<h3>Audit OFP — valeurs brutes et calculées</h3><table><thead><tr><th>Phase</th><th>Source</th><th>Temps</th><th>Distance</th><th>Carburant</th><th>FF calculé</th><th>TAS / GS</th><th>Vario</th></tr></thead><tbody id="ofpAudit"><tr><td colspan="8">Aucune donnée OFP.</td></tr></tbody></table></section>
+
+<section class="card span12" data-min-level="4" data-block-id="json-file" data-icon="file-text" data-subtitle="Dernier JSON importé : fiche, base ou OFP."><h2>Fichier</h2>
+<details class="json-file"><summary>JSON importé / SimBrief</summary><div class="row"><span style="flex:1"></span><button id="copyJsonBtn">Copier JSON</button><button id="clearJsonBtn">Effacer</button></div>
+<div id="jsonMeta" class="mut">Aucun JSON chargé.</div>
+<pre id="jsonViewer" style="margin:10px 0 0;max-height:480px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#0c1014;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:12px;line-height:1.4">—</pre></details></section>
+</div></div>
+
+<!-- barre de la page (fixe, en bas) : appareil choisi et état de sa fiche, actions sur les lignes cochées, sources -->
+<div id="sheetBar" class="status-bar sheet-bar"><span class="bar-group bar-sources"><button id="ppAdd" type="button" class="primary" data-icon="plus"><span id="ppAddLbl">Ajouter un appareil</span></button><button id="ppImport" type="button" class="secondary" data-icon="upload"><span id="ppImportLbl">Importer…</span></button></span><span class="bar-group bar-selection"><span class="sel-popup"><button id="ppSelBtn" type="button" class="secondary" aria-haspopup="menu" aria-expanded="false" disabled><span id="ppSelLbl">Sélection</span> <span class="caret">▾</span></button><span id="ppSelMenu" class="sel-menu" role="menu" hidden><button id="ppMerge" type="button" class="secondary" data-icon="layers" disabled><span id="ppMergeLbl">Fusionner</span></button><button id="ppExport" type="button" class="secondary" data-icon="download" disabled><span id="ppExportLbl">Exporter</span></button><button id="ppSaveDir" type="button" class="secondary" data-icon="save" disabled><span id="ppSaveDirLbl">Enregistrer dans le dossier</span></button><button id="ppFillMissing" type="button" class="secondary" data-icon="sparkles" disabled><span id="ppFillMissingLbl">Renseigner les champs manquants</span></button><button id="ppDelete" type="button" class="secondary" data-icon="trash" disabled><span id="ppDeleteLbl">Supprimer</span></button></span></span></span><span class="bar-group bar-sheet"><span id="persistentStatus" class="status-text">Aucune fiche en cours.</span><span id="ppCreate" class="pp-create" hidden></span><button id="statusSave" class="primary">Enregistrer la fiche</button><button id="statusReload" disabled>Abandonner les modifications</button></span></div>
+<dialog id="dlg"><div class="row"><h2 style="flex:1">Choisir l’avion</h2><button onclick="dlg.close()">Fermer</button></div><input id="search" placeholder="Rechercher ICAO / nom…" style="width:100%;margin-bottom:8px"><div id="airlist" class="airlist"></div></dialog>
+
+<!-- navigation (en-tête, barre latérale) avant les scripts de calcul : la barre et la marge du contenu paraissent tout de suite -->
+<script src="../../shared/kit.js?v=0"></script>
+<script src="../../shared/repository_nav.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/defa_reference.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script><script src="../../shared/equipment_editor.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../../shared/fuel_poll_schumann.js?v=0"></script><script src="perf_prompt.js?v=0"></script>
+<script src="../../shared/sticky_frame.js?v=0"></script><script src="../../shared/flight_profile_help.js?v=0"></script><script src="../../shared/column_resize.js?v=0"></script><script src="../../shared/table_resize.js?v=0"></script><script src="../../shared/flight_perf_view.js?v=0"></script>
+<script src="../../shared/flight_performance_model.js?v=0"></script>
+<script src="flight_planner.js?v=0"></script>
+<script src="../../shared/app_framework.js?v=0"></script>
+<script src="../../shared/flight_ui.js?v=0"></script>
+<script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/flight_vertical_profile.js?v=0"></script>
+<script src="../../shared/content_i18n.js?v=0"></script><script src="../../shared/flight_i18n.js?v=0"></script>
+<footer class="repo-footer no-print">© RBR - {SOG_NOM} - 2026-09-21 - 2.0.7 - <a href="https://framagit.org/asr/flight_planner">framagit.org/asr/flight_planner</a></footer>
+<script>
+/* table RPM / puissance : colonnes réglables (framework shared/table_resize.js) ; le commentaire tient sur une ligne,
+   texte entier en infobulle, double-clic pour le déplier */
+window.TableResize?.attach(document.getElementById('engineCurveTable'), {
+  key: 'flightPerfCurveCols',
+  title: tl('Glisser : largeur de la colonne — double-clic : largeurs par défaut',
+    'Drag: column width — double-click: default widths', 'Ziehen: Spaltenbreite — Doppelklick: Standardbreiten',
+    'Arrastrar: ancho de la columna — doble clic: anchos por defecto')
+});
+</script>
+</body></html>

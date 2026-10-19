@@ -82,25 +82,27 @@
   };
   /** Désignateur OACI d'un texte « A332 A330 MRTT Phénix » ou « H160 » (alias de la base des types). */
   function designator(text) {
-    const db = window.AIRCRAFT_DB || {},
-      al = db.__aliases || {};
+    const C = window.AircraftCatalog;
     for (const raw of String(text || '').toUpperCase().split(/[\s,/()—-]+/).filter(Boolean)) {
       const k = raw.replace(/[^A-Z0-9]/g, '');
       if (!k) continue;
-      if (db[k]) return k;
-      if (al[k]) return al[k];
+      // désignateur ou alias (suivis jusqu'au bout, catalogue commun), sinon type des performances
+      const rec = C?.record?.(k);
+      if (rec) return C.canonical(k);
       if (window.AIRCRAFT_PERF?.[k]) return k;
     }
-    return '';
+    // nom d'usage ou écrit en clair (« Rafale », « A330 MRTT Phénix ») : résolveur commun
+    return C?.codeOf?.(text) || '';
   }
-  /** Classe d'un type : description OACI (H… hélicoptère, …J réacteur, …T turbopropulseur, …P pistons). */
+  /** Classe d'un type pour l'estimation : classement commun de la suite (AircraftCatalog.classify : hélicoptère et
+   *  autogire, puis motorisation — un dirigeable, à pistons, compte en pistons), sinon nom d'hélicoptère, sinon vitesse. */
   function classOf(code, text) {
-    const d = String(window.AIRCRAFT_DB?.[code]?.description || '');
-    if (d[0] === 'H' || d[0] === 'G' || /hélico|helico|caracal|puma|dauphin|panther|cougar|tigre|NH90|EC1|H1[2-7]\d|H225/i.test(text))
+    const c = window.AircraftCatalog?.classify?.(code) || {};
+    if (c.category === 'helico' || /hélico|helico|caracal|puma|dauphin|panther|cougar|tigre|NH90|EC1|H1[2-7]\d|H225/i.test(text))
       return 'heli';
-    if (d[2] === 'J') return 'jet';
-    if (d[2] === 'T') return 'turboprop';
-    if (d[2] === 'P') return 'piston';
+    if (c.power === 'J') return 'jet';
+    if (c.power === 'T') return 'turboprop';
+    if (c.power === 'P') return 'piston';
     const tas = +window.AIRCRAFT_PERF?.[code]?.cruise?.tasKt || 0;
     return tas > 330 ? 'jet' : tas > 180 ? 'turboprop' : tas ? 'piston' : 'turboprop';
   }

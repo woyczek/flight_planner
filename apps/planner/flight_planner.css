@@ -1,0 +1,1754 @@
+/* Planificateur de performances : styles communs au Carburant (flight_performance_planner.html) et aux Fiches de
+   performances (performance_sheets.html). Blocs dans l'ordre de l'ancienne page : couche « app » (@layer app),
+   puis les règles des designs (#skeuoPlanner), hors couche. */
+/* ---- couche « app » ---- */
+@layer app {
+  :root {
+    font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
+    color-scheme: dark
+  }
+  * {
+    box-sizing: border-box
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: #eef3f7
+  }
+  header {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    background: #101317ee;
+    backdrop-filter: blur(8px);
+    z-index: 20
+  }
+  .header-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap
+  }
+  .header-row+.header-row {
+    margin-top: 8px
+  }
+  .header-spacer {
+    flex: 1
+  }
+  .control {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--muted)
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0
+  }
+  button,
+  input,
+  select,
+  textarea {
+    background: #11161c;
+    color: #eef3f7;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 8px
+  }
+  button {
+    cursor: pointer
+  }
+  .primary {
+    background: #173a5c;
+    border-color: #2d6fa9
+  }
+  /* contenu (pas de main) : pleine largeur, marge latérale commune (repository_nav.css : --repo-main-pad) */
+  .wrap {
+    padding: 16px var(--repo-main-pad, 16px)
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px
+  }
+  .span6 {
+    grid-column: span 6
+  }
+  .span12 {
+    grid-column: span 12
+  }
+  .span4 {
+    grid-column: span 4
+  }
+  h2 {
+    font-size: 15px;
+    margin: 0 0 12px
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px
+  }
+  .field label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%
+  }
+  .field textarea {
+    min-height: 64px;
+    resize: vertical
+  }
+  .big {
+    font-size: 26px;
+    font-weight: 700
+  }
+  .mut {
+    color: var(--muted);
+    font-size: 12px
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap
+  }
+  .kv {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 5px 12px;
+    font-size: 13px
+  }
+  .kv div:nth-child(even) {
+    font-variant-numeric: tabular-nums;
+    text-align: right
+  }
+  .mapval {
+    display: block;
+    margin-top: 2px;
+    color: #75c8ff;
+    font-size: 11px
+  }
+  .mapval small {
+    color: #a9b9c9
+  }
+  .ok {
+    color: #7ed69b
+  }
+  .warn {
+    color: #f2c879
+  }
+  .err {
+    color: #ff8d8d
+  }
+  dialog {
+    background: var(--card);
+    color: #eef3f7;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    width: min(760px, 92vw)
+  }
+  dialog::backdrop {
+    background: #0009
+  }
+  .airlist {
+    max-height: 55vh;
+    overflow: auto
+  }
+  .air {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer
+  }
+  .air:hover {
+    background: #222a33
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px
+  }
+  th,
+  td {
+    padding: 7px;
+    border-bottom: 1px solid var(--line);
+    text-align: right
+  }
+  th:first-child,
+  td:first-child {
+    text-align: left
+  }
+  @media(max-width:800px) {
+    .span6,
+    .span4 {
+      grid-column: span 12
+    }
+    .fields {
+      grid-template-columns: repeat(2, 1fr)
+    }
+  }
+  .lang-popup,
+  .prefs-popup,
+  .aircraft-popup {
+    position: relative;
+    display: inline-block
+  }
+  .lang-current,
+  .prefs-current {
+    height: 34px;
+    min-width: 44px;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px
+  }
+  .lang-current svg {
+    width: 27px;
+    height: 18px;
+    display: block;
+    border-radius: 2px
+  }
+  .lang-menu,
+  .prefs-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    z-index: 50;
+    padding: 5px;
+    background: #101319;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px #0008
+  }
+  .lang-menu,
+  .prefs-menu {
+    right: 0;
+    min-width: 170px
+  }
+  .lang-menu[hidden],
+  .prefs-menu[hidden] {
+    display: none
+  }
+  .lang-item,
+  .prefs-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 8px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    border-radius: 5px;
+    color: #eef3f7
+  }
+  .lang-item:hover,
+  .prefs-item:hover {
+    background: #202735
+  }
+  .lang-item svg {
+    width: 27px;
+    height: 18px
+  }
+  .aircraft-current {
+    min-width: 250px;
+    max-width: 360px;
+    height: 36px;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-align: left
+  }
+  .aircraft-current-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  .caret {
+    font-size: 10px;
+    color: var(--muted)
+  }
+  .ac-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: #b9c5d8;
+    line-height: 0
+  }
+  .ac-icon svg {
+    display: block;
+    width: 23px;
+    height: 23px;
+    overflow: visible;
+    transform: scale(1.22);
+    transform-origin: center
+  }
+  .ac-icon.wtc-M svg {
+    width: 24px;
+    height: 24px
+  }
+  .ac-icon.wtc-H svg {
+    width: 26px;
+    height: 26px
+  }
+  .ac-icon.wtc-J svg {
+    width: 28px;
+    height: 28px
+  }
+  .ac-icon.unknown {
+    opacity: .58
+  }
+  @media(max-width:800px) {
+    header {
+      padding: 9px 12px
+    }
+    .aircraft-current {
+      min-width: 210px;
+      max-width: calc(100vw - 24px)
+    }
+    .header-row {
+      gap: 7px
+    }
+  }
+}
+
+/* ---- couche « app » ---- */
+@layer app {
+  .wrap {
+    max-width: none;
+    width: 100%
+  }
+  .editorGroup {
+    grid-column: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 0
+  }
+  .editorGroup h3 {
+    font-size: 13px;
+    margin: 0 0 8px
+  }
+  .editorGroup .fields {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr))
+  }
+  .editorGroup .wide {
+    grid-column: 1 / -1
+  }
+  .editorGroup .field,
+  .editorGroup input,
+  .editorGroup select,
+  .editorGroup textarea {
+    min-width: 0;
+    max-width: 100%
+  }
+  .editorGroupSingle .fields {
+    grid-template-columns: 1fr
+  }
+  .editorGroupSingle textarea {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere
+  }
+  #profileEditor {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start
+  }
+  .card {
+    min-width: 0
+  }
+  #curveEditor {
+    overflow: auto
+  }
+  #curveEditor table {
+    min-width: 980px;
+    table-layout: fixed
+  }
+  #curveEditor th:nth-last-child(2),
+  #curveEditor td:nth-last-child(2) {
+    width: 30%;
+    white-space: normal
+  }
+  #curveEditor textarea {
+    width: 100%;
+    min-width: 150px;
+    min-height: 48px;
+    resize: vertical;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere
+  }
+  #curveEditor input,
+  #curveEditor select {
+    width: 100%;
+    min-width: 0
+  }
+  .grid {
+    grid-template-areas: "fuel result" "engine rpmtable";
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr)
+  }
+  [data-block-id="fuel-plan"] {
+    grid-area: fuel;
+    grid-column: auto
+  }
+  .perf-side {
+    grid-area: result;
+    grid-column: auto;
+    position: relative;
+    min-width: 0
+  }
+  .perf-side>[data-block-id="result"] {
+    z-index: 6;
+    box-shadow: 0 6px 18px #0008
+  }
+  .perf-side .big {
+    font-size: 20px
+  }
+  .perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded)>:not(.row):not(.repo-block-heading):not(h2):not(#perfPinned) {
+    display: none
+  }
+  .perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded) {
+    padding: 8px 14px
+  }
+  .perf-side>[data-block-id="result"].is-stuck:not(.fp-expanded) .big {
+    font-size: 16px
+  }
+  .fp-result-pin[aria-pressed="true"] {
+    color: var(--accent, #69a7ff);
+    border-color: currentColor
+  }
+  .result-group {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line)
+  }
+  .result-group>h3 {
+    margin: 0 0 8px
+  }
+  [data-block-id="flight-regimes"] {
+    grid-area: regimes;
+    grid-column: auto
+  }
+  [data-block-id="engine-performance"] {
+    grid-area: engine
+  }
+  [data-block-id="rpm-table"] {
+    grid-area: rpmtable;
+    overflow: auto
+  }
+  .engine-card .fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+  }
+  @media(max-width:800px) {
+    #profileEditor {
+      grid-template-columns: 1fr !important
+    }
+    .grid {
+      grid-template-areas: none;
+      grid-template-columns: 1fr
+    }
+    .perf-side {
+      grid-area: auto !important
+    }
+    .perf-side>* {
+      margin-bottom: 10px
+    }
+    [data-block-id] {
+      grid-area: auto !important
+    }
+    .engine-card .fields {
+      grid-template-columns: 1fr
+    }
+  }
+}
+
+/* ---- couche « app » ---- */
+@layer app {
+  /* ===== Vue des courbes de performances (shared/flight_perf_view.js) ===== */
+  .opt-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #10151b;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    touch-action: none
+  }
+  .opt-chart text {
+    fill: #9ba8b5;
+    font: 11px system-ui
+  }
+  .opt-chart .grid-line {
+    stroke: #2b3440;
+    stroke-width: 1
+  }
+  .opt-chart .axis {
+    stroke: #43505e;
+    stroke-width: 1
+  }
+  .opt-chart .curve {
+    fill: none;
+    stroke: var(--fc-prof, #75c8ff);
+    stroke-width: 2.2
+  }
+  .opt-chart .curve-eco {
+    fill: none;
+    stroke: var(--fc-eco, #7ed69b);
+    stroke-width: 2.2
+  }
+  .opt-chart .curve-fuel {
+    fill: none;
+    stroke: var(--fc-fast, #f0b86e);
+    stroke-width: 1.6
+  }
+  .opt-chart .curve-man {
+    fill: none;
+    stroke: var(--fc-man, #c792ea);
+    stroke-width: 2
+  }
+  .opt-chart .band {
+    fill: none;
+    stroke: #9ba8b5;
+    stroke-width: 1;
+    stroke-dasharray: 4 3
+  }
+  .opt-chart .target {
+    stroke: var(--fc-man, #c792ea);
+    stroke-width: 1;
+    stroke-dasharray: 2 4
+  }
+  .opt-chart .cursor {
+    stroke: #eef3f7;
+    stroke-opacity: .35;
+    stroke-width: 1
+  }
+  .opt-chart .pin {
+    stroke: #eef3f7;
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3
+  }
+  #optBlock {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line)
+  }
+  .perf-row {
+    margin: 0 0 12px
+  }
+  .perf-row h3,
+  .perf-row h4 {
+    font-size: 13px;
+    margin: 0 0 6px
+  }
+  #optBlock table {
+    font-size: 12.5px
+  }
+  #optBlock td.best {
+    font-weight: 700
+  }
+  #optBlock td.unreach {
+    text-align: left;
+    color: var(--muted)
+  }
+  .chart-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px
+  }
+  .chart-wrap svg {
+    flex: 1;
+    min-width: 0
+  }
+  /* bascule « par altitude ↔ par régime » du graphe de montée (shared/flight_perf_view.js, mountClimbX) */
+  .climb-x-row {
+    margin: -2px 0 6px
+  }
+  .climb-x-row .repo-seg {
+    padding: 4px 10px;
+    font-size: 12px
+  }
+  .side-panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    z-index: 2;
+    overflow: auto;
+    max-height: calc(100vh - 140px)
+  }
+  .side-panel h4 {
+    font-size: 13px;
+    margin: 0 0 6px
+  }
+  .side-panel p {
+    margin: 6px 0
+  }
+  .side-panel details {
+    margin: 6px 0
+  }
+  .side-panel summary {
+    cursor: pointer;
+    color: var(--muted)
+  }
+  .kvp {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 10px;
+    margin: 4px 0
+  }
+  .kvp dt {
+    color: var(--muted)
+  }
+  .kvp dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums
+  }
+  .k {
+    font-weight: 600
+  }
+  .readout:not(:empty) {
+    margin: 6px 0;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: #ffffff08
+  }
+  .reading {
+    color: var(--muted)
+  }
+  .perf-warn {
+    color: #f0b86e
+  }
+  .legend {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0
+  }
+  .legend li {
+    margin: 2px 0
+  }
+  .sw {
+    display: inline-block;
+    width: 18px;
+    border-top: 2px solid;
+    vertical-align: middle;
+    margin-right: 6px
+  }
+  .sw.dash {
+    border-top-style: dashed
+  }
+  abbr[title] {
+    text-decoration: underline dotted;
+    cursor: help
+  }
+  .field.has-help>label {
+    cursor: help;
+    text-decoration: underline dotted #5d6b79;
+    text-underline-offset: 3px
+  }
+  .opt-chart .curve-vx {
+    fill: none;
+    stroke: var(--fc-prof, #75c8ff);
+    stroke-width: 1.3;
+    stroke-dasharray: 1 3
+  }
+  #perfPinned .pinned {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    border: 1px solid #eef3f744;
+    border-radius: 8px;
+    font-size: 13px
+  }
+  #perfPinned .pin-head {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between
+  }
+  .mini {
+    padding: 2px 8px;
+    font-size: 12px
+  }
+  .apd-bar {
+    margin-top: 8px;
+    line-height: 1.6
+  }
+  .apd-tag {
+    margin-top: 4px;
+    padding: 1px 7px;
+    font-size: 11px;
+    border-radius: 10px;
+    border: 1px solid currentColor;
+    background: transparent;
+    cursor: pointer
+  }
+  .apd-same {
+    color: #7ed69b
+  }
+  .apd-diff {
+    color: #f0b86e
+  }
+  .apd-empty {
+    color: #75c8ff
+  }
+  @media(max-width:800px) {
+    .side-panel {
+      max-height: none
+    }
+  }
+}
+
+/* ---- #fpColumns — couche « app » ---- */
+@layer app {
+  .opt-chart .beyond {
+    fill: #8a96a3;
+    fill-opacity: .2;
+    pointer-events: none
+  }
+  .opt-chart .beyond-edge {
+    stroke: #9ba8b5;
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    pointer-events: none
+  }
+  .opt-chart .beyond-label {
+    fill: #b5c0ca;
+    font-size: 10px;
+    pointer-events: none
+  }
+  .chart-zones {
+    margin: 6px 0 0 44px;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    color: var(--muted)
+  }
+  .chart-zones li {
+    margin: 2px 0
+  }
+  .chart-zones b {
+    color: inherit;
+    font-weight: 700
+  }
+  .opt-chart .short-zone {
+    fill: #8a96a3;
+    fill-opacity: .1;
+    stroke: none;
+    cursor: help
+  }
+  .opt-chart .oxygen-zone {
+    fill: #6fb7ff;
+    fill-opacity: .07;
+    cursor: help
+  }
+  .opt-chart .oxygen-edge {
+    stroke: #6fb7ff;
+    stroke-opacity: .6;
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+    pointer-events: none
+  }
+  .opt-chart .oxygen-label {
+    fill: #8cc6ff;
+    font-size: 10px
+  }
+  .opt-chart .zone-tip {
+    pointer-events: auto;
+    cursor: help
+  }
+  .opt-chart .tas-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-dasharray: 6 3;
+    opacity: .75
+  }
+  .quote-basis {
+    font-size: 12px;
+    margin: -4px 0 8px;
+    min-height: 2.9em
+  }
+  .wx-impact h4 {
+    margin: 10px 0 4px;
+    font-size: 13px
+  }
+  .wx-impact:empty {
+    display: none
+  }
+  /* Trois colonnes (écran large) : saisie + courbes | Résultat + panneaux | instruments ; largeurs réglables
+   (shared/column_resize.js). Les blocs pleine largeur (span12) couvrent les trois colonnes : plus de colonnes
+   implicites (l'ancienne grille à 12 colonnes laissait 10 écarts vides à droite du Résultat). */
+  @media(min-width:801px) {
+    .wrap>.grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, .62fr) minmax(0, .17fr);
+      grid-template-areas: "fuel result instr" "engine rpmtable instr" !important
+    }
+    .wrap>.grid>.span12 {
+      grid-column: 1/-1 !important
+    }
+    /* vue simple (bouton « Vue détaillée » du Résultat ; défaut aux niveaux 1 à 3) : instruments masqués, deux
+       colonnes, saisie | Résultat (les poignées de largeur, prévues pour trois colonnes, se masquent d'elles-mêmes) ;
+       niveaux 1 à 3 : blocs du profil masqués (data-min-level="4"), une seule rangée */
+    body:not(.fp-detail) .wrap>.grid {
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) !important;
+      grid-template-areas: "fuel result" "engine rpmtable" !important
+    }
+    html:is([data-level="1"], [data-level="2"], [data-level="3"]) body:not(.fp-detail) .wrap>.grid {
+      grid-template-areas: "fuel result" !important
+    }
+    html:is([data-level="1"], [data-level="2"], [data-level="3"]) body.fp-detail .wrap>.grid {
+      grid-template-areas: "fuel result instr" !important
+    }
+  }
+  /* vue simple : courbes de niveau et de consommation, panneaux et instruments masqués (data-fp-detail) */
+  body:not(.fp-detail) [data-fp-detail] {
+    display: none !important
+  }
+  /* consommation de croisière du vol (profil, saisie, estimation) et ligne d'état du calcul */
+  .ff-quick {
+    margin-top: 10px
+  }
+  .ff-quick>label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px
+  }
+  .ff-quick-row {
+    flex-wrap: wrap;
+    gap: 6px
+  }
+  .ff-quick-row input {
+    width: 9em
+  }
+  .ff-source {
+    font-size: 12px;
+    margin-top: 4px
+  }
+  .calc-status {
+    font-size: 12px;
+    margin: 8px 0;
+    line-height: 1.45
+  }
+  .calc-status:empty {
+    display: none
+  }
+  .calc-status .calc-warn {
+    color: var(--warn, #e0a030);
+    font-weight: 600
+  }
+  .calc-status .calc-est,
+  .ff-source .calc-est {
+    color: var(--warn, #e0a030)
+  }
+  .fp-view-row {
+    margin-top: 8px
+  }
+  /* montée choisie (shared/flight_perf_view.js, syncClimbCtl, vue détaillée) : trois champs du framework (.field) —
+     case « fixé » et libellé au-dessus, curseur standard, valeur et état dessous ; le champ calculé est grisé */
+  .climb-ctl {
+    margin-top: 12px
+  }
+  .climb-ctl .climb-title {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 4px
+  }
+  .climb-ctl .climb-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px
+  }
+  .climb-ctl .climb-field {
+    min-width: 0
+  }
+  .climb-ctl .climb-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 13px
+  }
+  .climb-ctl .climb-fix {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin: 0;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer
+  }
+  .climb-ctl .climb-fix input {
+    width: auto;
+    margin: 0
+  }
+  .climb-ctl .climb-lab {
+    display: inline;
+    margin: 0;
+    font-size: 13px;
+    color: inherit
+  }
+  .climb-ctl .climb-field input[type="range"] {
+    width: 100%;
+    margin: 4px 0 2px;
+    accent-color: var(--fc-man, var(--repo-accent, var(--accent)))
+  }
+  .climb-ctl .climb-field.is-calc input[type="range"] {
+    opacity: .45;
+    filter: grayscale(1)
+  }
+  .climb-ctl .climb-state {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: baseline;
+    min-height: 2.6em
+  }
+  .climb-ctl .climb-val {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums
+  }
+  .climb-ctl .climb-note {
+    font-size: 11.5px;
+    color: var(--muted)
+  }
+  .climb-ctl .climb-field.is-calc .climb-val {
+    color: var(--muted)
+  }
+  .climb-ctl .climb-read {
+    font-size: 12px;
+    margin: 4px 0 6px
+  }
+  @media(max-width:560px) {
+    .climb-ctl .climb-fields {
+      grid-template-columns: 1fr
+    }
+  }
+  /* décision du niveau de vol (shared/flight_perf_view.js, renderDecision) : graphe et fiche côte à côte, réglette et
+     boutons sous le graphe, tableau des niveaux ronds */
+  .fl-dec {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line)
+  }
+  .fl-dec-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: 8px
+  }
+  .fl-dec-head h3 {
+    margin: 0;
+    font-size: 14px
+  }
+  .fl-dec-head .mut {
+    font-size: 12px
+  }
+  .fl-dec-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: flex-start
+  }
+  .fl-dec-main {
+    flex: 3 1 440px;
+    min-width: 0
+  }
+  .fl-dec-card {
+    flex: 1 1 230px;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums
+  }
+  .fl-dec-title {
+    font-weight: 700;
+    margin-bottom: 4px
+  }
+  .fl-dec-ctl {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-top: 6px
+  }
+  .fl-dec-ctl input[type=range] {
+    flex: 1 1 160px;
+    margin: 0
+  }
+  .fl-dec-ctl output {
+    min-width: 4.5em;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums
+  }
+  .fl-dec-cmp {
+    width: 100%;
+    font-variant-numeric: tabular-nums
+  }
+  .fl-dec-cmp th,
+  .fl-dec-cmp td {
+    text-align: right;
+    padding: 1px 4px;
+    vertical-align: top
+  }
+  .fl-dec-cmp tbody th {
+    text-align: left;
+    font-weight: 400;
+    color: var(--muted)
+  }
+  .fl-dec-cmp.same td.cur {
+    opacity: .45
+  }
+  .fl-dec .dec-warn {
+    min-height: 4.2em;
+    margin: 4px 0;
+    font-size: 12px
+  }
+  .fl-dec-tabtitle {
+    margin: 12px 0 4px;
+    font-size: 13px
+  }
+  .climb-guide-table tr.pad {
+    visibility: hidden
+  }
+  .fl-dec-tablewrap {
+    overflow: auto;
+    max-height: 260px;
+    margin-top: 8px
+  }
+  .fl-dec-table th[data-sort] {
+    cursor: pointer;
+    user-select: none
+  }
+  .fl-dec-table tr[data-h] {
+    cursor: pointer
+  }
+  .fl-dec-table tr.off td {
+    opacity: .55
+  }
+  .fl-dec-table tr.on td {
+    background: color-mix(in srgb, var(--fc-eco, #7ed69b) 18%, transparent);
+    font-weight: 700
+  }
+  .fl-dec-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 8px
+  }
+  .fl-dec-pill {
+    padding: 4px 10px;
+    font-size: 12.5px;
+    border-radius: 999px;
+    border: 1px solid var(--pill, var(--line));
+    background: color-mix(in srgb, var(--pill, #888) 12%, transparent);
+    color: inherit;
+    cursor: pointer
+  }
+  .fl-dec-pill[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--pill, #888) 32%, transparent)
+  }
+  .fl-dec-side {
+    flex: 1 1 240px;
+    min-width: 0
+  }
+  .fl-dec-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px
+  }
+  .fl-dec-note {
+    font-size: 11.5px;
+    margin: 4px 0 0
+  }
+  .opt-chart .dec-ptitle {
+    font-size: 10.5px;
+    font-weight: 600
+  }
+  .opt-chart .dec-sel {
+    stroke: currentColor;
+    stroke-opacity: .8;
+    stroke-width: 1.5
+  }
+  .opt-chart .dec-cur {
+    stroke: currentColor;
+    stroke-opacity: .75;
+    stroke-width: 1.3;
+    stroke-dasharray: 4 3
+  }
+  .opt-chart text.ax-fuel {
+    fill: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart text.ax-time {
+    fill: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart line.ax-fuel {
+    stroke: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart line.ax-time {
+    stroke: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart .ax-title {
+    font-weight: 600
+  }
+  .fl-dec .v-fuel {
+    color: var(--fc-eco, #7ed69b)
+  }
+  .fl-dec .v-time {
+    color: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart .dec-sel-txt {
+    font-weight: 700;
+    fill: currentColor
+  }
+  .opt-chart .dec-dot {
+    fill: var(--fc-eco, #7ed69b)
+  }
+  .opt-chart .dec-dot-t {
+    fill: var(--fc-fast, #f0b86e)
+  }
+  .opt-chart .curve-goal {
+    fill: none;
+    stroke-width: 2.2
+  }
+  .opt-chart .curve-goal.thin {
+    stroke-width: 1.4
+  }
+  #climbCompare tr[data-goal] {
+    cursor: pointer
+  }
+  #climbCompare tr.on td {
+    background: color-mix(in srgb, var(--fc-eco, #7ed69b) 14%, transparent);
+    font-weight: 700
+  }
+  .side-panel details.more>summary {
+    cursor: pointer;
+    color: var(--muted)
+  }
+  .opt-chart .extrap {
+    stroke-dasharray: 4 3;
+    opacity: .6
+  }
+  .opt-chart .dec-time {
+    stroke-width: 1.4
+  }
+  /* consignes de montée (shared/flight_perf_view.js, renderGuide) : objectif par segments, phrase, tableau */
+  .climb-guide {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line)
+  }
+  .climb-guide-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin-bottom: 8px
+  }
+  .climb-guide-head h3 {
+    margin: 0;
+    font-size: 14px
+  }
+  .climb-guide .repo-seg {
+    padding: 4px 10px;
+    font-size: 12.5px;
+    line-height: 1.2;
+    text-align: center
+  }
+  .climb-guide .repo-seg small {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 400;
+    opacity: .8;
+    white-space: nowrap
+  }
+  .climb-guide .repo-seg small:empty {
+    display: none
+  }
+  .climb-guide .repo-seg:disabled {
+    opacity: .45;
+    cursor: not-allowed
+  }
+  .climb-say {
+    margin: 0 0 8px;
+    line-height: 1.5
+  }
+  .climb-guide-wrap {
+    overflow: auto
+  }
+  .climb-guide-table {
+    width: 100%;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums
+  }
+  .climb-guide-table th,
+  .climb-guide-table td {
+    text-align: right;
+    white-space: nowrap
+  }
+  .climb-guide-table th:first-child,
+  .climb-guide-table td:first-child {
+    text-align: left
+  }
+  .climb-guide-foot {
+    font-size: 11.5px;
+    margin: 6px 0 0
+  }
+  /* base de performances : groupes repliables par catégorie, cellule « Performances » (aucune : trois façons d'en créer) */
+  .perf-profiles tr.pp-group th {
+    text-align: left;
+    padding-top: 10px
+  }
+  .perf-profiles tr.pp-group button {
+    font-weight: 700;
+    background: none;
+    border: 0;
+    padding: 2px 0;
+    color: inherit;
+    cursor: pointer
+  }
+  .perf-profiles .pp-none {
+    font-size: 12px
+  }
+  .perf-profiles .pp-none .pp-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 3px
+  }
+  .perf-profiles .pp-none .pp-acts button {
+    font-size: 11.5px;
+    padding: 2px 8px
+  }
+  .perf-profiles .pp-outside {
+    font-size: 11px;
+    opacity: .7
+  }
+  .pp-mine {
+    margin: 2px 0 8px
+  }
+  /* Fiches de performances : barre du bas unique, en groupes (appareil et fiche · lignes cochées · sources · infos) */
+  .sheet-bar {
+    flex-wrap: wrap;
+    row-gap: 6px
+  }
+  .sheet-bar .bar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap
+  }
+  .sheet-bar .bar-group+.bar-group {
+    padding-left: 8px;
+    border-left: 1px solid var(--line)
+  }
+  .sheet-bar button {
+    padding: 3px 8px;
+    font-size: 12px
+  }
+  .sheet-bar .status-text {
+    flex: 0 1 auto
+  }
+  .sheet-bar .pp-mine {
+    margin: 0
+  }
+  .sheet-bar .pp-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap
+  }
+  .sheet-bar .pp-create[hidden] {
+    display: none
+  }
+  .sheet-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px
+  }
+  /* cartes des Fiches de performances : sous-titres des parties d'une carte */
+  body[data-perf-page="sheets"] .card>h3 {
+    margin: 18px 0 8px
+  }
+  body[data-perf-page="sheets"] .sheet-fields-head {
+    margin-top: 18px;
+    align-items: center
+  }
+  body[data-perf-page="sheets"] .sheet-fields-head h3 {
+    flex: 1;
+    margin: 0
+  }
+  .json-file>summary {
+    cursor: pointer;
+    margin: 4px 0 8px
+  }
+  /* barre du bas : menu « Sélection (n) ▾ », ouvert au-dessus du bouton */
+  .sel-popup {
+    position: relative;
+    display: inline-flex
+  }
+  .sel-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 950;
+    display: grid;
+    gap: 4px;
+    min-width: 240px;
+    padding: 6px;
+    background: var(--repo-card, #161b22);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45)
+  }
+  .sel-menu[hidden] {
+    display: none
+  }
+  .sel-menu button {
+    justify-content: flex-start;
+    text-align: left
+  }
+  /* ligne du dossier performances, sous la présentation du tableau */
+  .pp-folder {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 4px 0 8px
+  }
+  .pp-folder button {
+    padding: 2px 8px;
+    font-size: 12px
+  }
+  /* sous 800 px : Ajouter, Sélection, Enregistrer ; Importer reste dans le menu ☰ */
+  @media(max-width:800px) {
+    .sheet-bar #ppImport {
+      display: none
+    }
+  }
+  /* fenêtre « Importer… » : fichiers ou texte collé */
+  .pp-import-body {
+    padding: 0 18px;
+    display: grid;
+    gap: 10px
+  }
+  .pp-import-files {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap
+  }
+  .pp-import-paste {
+    display: grid;
+    gap: 6px;
+    font-size: 13px
+  }
+  .pp-import-paste textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: 12px/1.4 ui-monospace, Consolas, monospace
+  }
+  .pp-import-msg {
+    margin: 0;
+    min-height: 1.2em;
+    color: var(--warn, #f2c879)
+  }
+  .sheet-pick .aircraft-current {
+    max-width: 320px
+  }
+  .pp-sortlbl {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px
+  }
+  /* base de performances (bloc « Profils de performances », niveau 3 et plus) */
+  .perf-profiles-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px
+  }
+  /* panneau « Demander à ChatGPT » : appareil, prompt (replié), réponse collée, importer ou fusionner */
+  .pp-gpt {
+    margin: 0 0 8px;
+    padding: 8px;
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent)
+  }
+  .pp-gpt-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin: 4px 0
+  }
+  .pp-gpt textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: 12px/1.4 ui-monospace, Consolas, monospace
+  }
+  .pp-gpt-paste {
+    display: block;
+    margin-top: 6px
+  }
+  #ppGptReport,
+  #ppGptStatus {
+    white-space: pre-line;
+    font-size: 12px;
+    margin: 4px 0
+  }
+  /* case de sélection (fusion, export, enregistrement, suppression : barre du bloc) */
+  .perf-profiles .pp-sel {
+    margin: 0
+  }
+  /* colonne des actions : « Choisir » / « actif » / « Créer » au même endroit sur chaque ligne, « Créer depuis SimBrief »
+     à côté (largeur de la colonne : la ligne la plus large) */
+  .perf-profiles td.pp-act {
+    white-space: nowrap;
+    text-align: left
+  }
+  .perf-profiles td.pp-act button+button {
+    margin-left: 4px
+  }
+  /* fenêtre de choix (profil SimBrief face à un profil perso, nom d'une fusion) : habillée par le socle (.repo-ask de
+     shared/app_framework.js, et les designs) ; ici, seulement le champ de texte, le retour à la ligne des boutons et
+     l'explication du bouton SimBrief de la fiche */
+  .pp-choice input[type="text"] {
+    display: block;
+    width: calc(100% - 36px);
+    margin: 6px 18px
+  }
+  #sbTypeHelp {
+    flex-basis: 100%;
+    font-size: 12px
+  }
+  .pp-choice footer {
+    flex-wrap: wrap
+  }
+  /* aperçu des changements d'une fusion : champ, valeur actuelle, valeur retenue, source ; inchangés repliés */
+  .pp-choice.pp-wide {
+    max-width: min(780px, 94vw)
+  }
+  .pp-diff {
+    margin: 6px 18px;
+    max-height: 48vh;
+    overflow: auto;
+    font-size: 12px
+  }
+  .pp-diff table {
+    width: 100%;
+    border-collapse: collapse
+  }
+  .pp-diff th,
+  .pp-diff td {
+    padding: 2px 6px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent)
+  }
+  .pp-diff .pp-same {
+    opacity: .6
+  }
+  /* case décochée : la valeur actuelle est gardée (ligne grisée, valeur proposée barrée, mention « gardé ») */
+  .pp-diff tr.pp-off td {
+    opacity: .55
+  }
+  .pp-diff tr.pp-off .pp-new {
+    text-decoration: line-through
+  }
+  .pp-diff .pp-keep {
+    display: none;
+    margin-left: 4px;
+    font-style: italic
+  }
+  .pp-diff tr.pp-off .pp-keep {
+    display: inline
+  }
+  .pp-diff .pp-take-all button {
+    padding: 0 4px;
+    text-decoration: underline
+  }
+  .pp-diff h4 {
+    margin: 8px 0 2px;
+    font-size: 12px
+  }
+  .pp-choice .pp-diff p {
+    margin: 0;
+    padding: 4px 0;
+    font-size: 12px
+  }
+  .pp-choice label {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin: 6px 18px
+  }
+  .perf-profiles {
+    overflow: auto
+  }
+  .perf-profiles table {
+    width: 100%;
+    font-size: 12.5px
+  }
+  /* tableau compact : cellules serrées */
+  .perf-profiles td,
+  .perf-profiles th {
+    vertical-align: top;
+    padding: 3px 6px
+  }
+  /* ligne d'appareil : un clic la coche (une seule cochée = l'appareil choisi) */
+  /* case de rubrique (en-tête de groupe) ; cellule des cases : toute la cellule coche */
+  .perf-profiles tr.pp-group th .pp-sel-group {
+    margin: 0 8px 0 4px;
+    vertical-align: middle;
+    cursor: pointer
+  }
+  .perf-profiles tr.pp-row>td:first-child {
+    cursor: pointer
+  }
+  .perf-profiles tr.pp-row {
+    cursor: pointer
+  }
+  .perf-profiles tr.pp-row:hover td {
+    background: color-mix(in srgb, var(--repo-accent, #075ca8) 7%, transparent)
+  }
+  .perf-profiles tr.is-active td {
+    background: color-mix(in srgb, var(--repo-accent, #075ca8) 14%, transparent)
+  }
+  .perf-profiles .pp-name {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px
+  }
+  /* colonne de l'appareil (silhouette, nom, badges) alignée à gauche, en-tête compris ; lignes centrées verticalement */
+  .perf-profiles td:nth-child(2),
+  .perf-profiles th:nth-child(2) {
+    text-align: left
+  }
+  .perf-profiles tbody td {
+    vertical-align: middle;
+    white-space: nowrap;
+    height: 46px
+  }
+  .perf-profiles .pp-clip {
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis
+  }
+  .perf-profiles .pp-none .pp-acts {
+    flex-wrap: nowrap
+  }
+  .pp-find {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px
+  }
+  .pp-find input {
+    width: 16em
+  }
+  .perf-profiles .pp-pick,
+  .perf-profiles .pp-sb {
+    padding: 2px 8px;
+    font-size: 12px;
+    white-space: nowrap
+  }
+  .perf-profiles .pp-missing {
+    color: var(--warn, #e0a030)
+  }
+  .perf-profiles .pp-ok {
+    color: var(--muted)
+  }
+  /* détail du devis : délestage en gras, phases en retrait (vue détaillée), MTOW dépassée en couleur d'erreur du socle */
+  #breakdown .kv-trip {
+    font-weight: 600
+  }
+  #breakdown .kv-sub {
+    padding-left: 1em;
+    color: var(--muted)
+  }
+  #breakdown .kv-over {
+    color: var(--bad, #e5484d);
+    font-weight: 700
+  }
+  /* niveau du plan sur les courbes (shared/flight_perf_view.js, planMark) : trait discret, sans couleur de série */
+  .opt-chart .plan-line {
+    stroke: currentColor;
+    stroke-opacity: .45;
+    stroke-width: 1;
+    stroke-dasharray: 3 3
+  }
+  .opt-chart .plan-label {
+    font-size: 10px
+  }
+  /* repli « Paramètres du vol » du devis carburant (ouvert d'emblée au niveau Expert) */
+  .flight-params {
+    margin-top: 10px
+  }
+  .flight-params>summary {
+    cursor: pointer;
+    color: var(--muted);
+    margin-bottom: 8px
+  }
+  .instr-col {
+    grid-area: instr;
+    min-width: 0
+  }
+  .fp-instr-sticky {
+    position: sticky;
+    top: 70px
+  }
+  .instr-col .fp-instruments {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin: 0
+  }
+  /* cinq cadrans : taille bornée par la largeur de la colonne et par la hauteur de la fenêtre (tout reste visible) */
+  .instr-col .fp-gauge svg {
+    width: 100%;
+    height: auto;
+    max-width: min(210px, calc((100vh - 150px) / 5 - 34px));
+    aspect-ratio: 1;
+    margin: 0 auto
+  }
+  .instr-col .fp-gauge figcaption {
+    white-space: normal;
+    font-size: 11px
+  }
+  @media(max-width:800px) {
+    .instr-col {
+      grid-area: auto
+    }
+    .fp-instr-sticky {
+      position: static
+    }
+    .instr-col .fp-instruments {
+      flex-direction: row;
+      justify-content: center
+    }
+    .instr-col .fp-gauge svg {
+      width: 90px !important
+    }
+  }
+}
+
+/* ---- #skeuoPlanner — couche « designs » ---- */
+/* Designs à matières (html[data-skeuo], jetons --sk-chart-*, --sk-slider-*, --sk-thumb-* de shared/designs_skeuo.css) */
+/* ================================================================================================ CADRANS DU PLANIFICATEUR
+   Cadrans réalistes (shared/flight_instruments.js) : le boîtier est dessiné dans le SVG ; ombre portée du boîtier. */
+html[data-skeuo] .fp-gauge svg {
+  overflow: visible;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .7)) drop-shadow(0 6px 8px rgba(0, 0, 0, .45))
+}
+html[data-skeuo] .fp-gauge svg:not(#imp) {
+  background: none;
+  box-shadow: none;
+  border-radius: 0
+}
+/* ombre recréée sur la silhouette du boîtier (contact + portée) */
+html[data-skeuo] .fp-fuel-mode {
+  box-shadow: inset 0 1px 3px #000
+}
+html[data-skeuo] .fp-fuel-mode:not(#imp) {
+  background: #0d0e10;
+  border: 1px solid currentColor
+}
+/* ================================================================================================ PLANIFICATEUR : GRAPHIQUES ET CURSEURS
+   Graphiques du devis carburant (svg.opt-chart) en écran d'instrument, curseurs verticaux (input.vr) en commandes :
+   Cabinet / Carnet de vol : panneau bleu marine serti de laiton, quadrillage gravé or, bouton de laiton moleté ;
+   Durci : écran phosphore vert à balayage, quadrillage vert, levier d'acier ; Aqua : verre (clair ou sombre), bulle de
+   gel. Couleurs des courbes : palette des graphiques (--fc-*, flight_perf_view.js). */
+html[data-skeuo] svg.opt-chart {
+  background: var(--sk-chart-bg);
+  border: var(--sk-chart-border);
+  border-radius: var(--sk-chart-radius);
+  box-shadow: var(--sk-chart-shadow)
+}
+html[data-skeuo] svg.opt-chart .grid-line:not(#imp) {
+  stroke: var(--sk-chart-grid)
+}
+html[data-skeuo] svg.opt-chart .axis:not(#imp) {
+  stroke: var(--sk-chart-axis)
+}
+html[data-skeuo] svg.opt-chart text:not(#imp) {
+  fill: var(--sk-chart-text)
+}
+html[data-design-base="cabinet"] svg.opt-chart .grid-line {
+  stroke-dasharray: 2 4
+}
+html[data-design-base="cabinet"] svg.opt-chart .axis:not(#imp) {
+  stroke-width: 1.6
+}
+html[data-design-base="cabinet"] svg.opt-chart text:not(#imp) {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif
+}
+html[data-design="field"] svg.opt-chart text:not(#imp) {
+  font-family: Bahnschrift, "Arial Narrow", ui-monospace, monospace
+}
+html[data-design="field"] svg.opt-chart :is(path, polyline, circle) {
+  filter: drop-shadow(0 0 2px rgba(140, 255, 160, .45))
+}
+html:is([data-design="cabinet"], [data-design="flightlog"], [data-design="aqua"]) svg.opt-chart :is(.curve, .curve-eco, .curve-fuel, .curve-man, .tas-line) {
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .55))
+}
+/* planificateur : bouton « épingler déplié » du bloc Résultat, icône à la taille des autres outils */
+html[data-skeuo] .repo-block-tools .fp-result-pin svg:not(#imp) {
+  width: 18px;
+  height: 18px
+}
+html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"] {
+  opacity: 1
+}
+html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp) {
+  background-color: rgba(255, 255, 255, .18)
+}
+
+/* ---- Fiches de performances (performance_sheets.html, body[data-perf-page="sheets"]) : deux colonnes, sans les zones du
+   Carburant (devis | Résultat | instruments) ; blocs pleine largeur sur les deux ---- */
+@layer app {
+  @media(min-width:801px) {
+    html body[data-perf-page="sheets"]:not(#fpSheets) .wrap>.grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      grid-template-areas: none !important
+    }
+  }
+  body[data-perf-page="sheets"]:not(#fpSheets) .wrap>.grid>section {
+    grid-area: auto !important
+  }
+  body[data-perf-page="sheets"]:not(#fpSheets) .wrap>.grid>.span12 {
+    grid-column: 1/-1 !important
+  }
+  body[data-perf-page="sheets"] #aircraftCurrent:disabled {
+    opacity: 1;
+    cursor: default
+  }
+}
+
+/* ---- Carburant : ligne « pas de fiche pour cet appareil » ---- */
+@layer app {
+  .no-sheet:not([hidden]) {
+    margin: 4px 0 10px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--warn, #e0a030);
+    background: color-mix(in srgb, var(--warn, #e0a030) 10%, transparent)
+  }
+}

@@ -213,19 +213,50 @@
     }, 3000);
   }
   /** Villes de la base (GeoNames), lues à part et une seule fois par page ; [] sans base ni villes. */
+  let citiesLoading = null;
   async function cities() {
     if (citiesCache) return citiesCache;
-    const db = await openDb({
-      create: false
-    });
-    if (!db) return [];
-    const c = await tx(db, 'readonly', s => s.get(KEY_CITIES)).catch(() => null);
-    if (Array.isArray(c)) return citiesCache = c;
-    // base d'avant la séparation : ses villes
-    const b = await get({
-      any: true
-    });
-    return citiesCache = Array.isArray(b?.cities) ? b.cities : [];
+    return citiesLoading ||= (async () => {
+      const db = await openDb({
+        create: false
+      });
+      if (!db) return [];
+      const c = await tx(db, 'readonly', s => s.get(KEY_CITIES)).catch(() => null);
+      if (Array.isArray(c) && c.length) return citiesCache = c;
+      // base d'avant la séparation : ses villes
+      const b = await get({
+        any: true
+      });
+      if (Array.isArray(b?.cities) && b.cities.length) return citiesCache = b.cities;
+      if (!b) return citiesCache = [];
+      // base sans villes (villes_geonames.csv introuvable à sa construction : générateur sans villes pour les points
+      // tournants, studio sans libellés) : fichier relu et rangé avec la base, sans la reconstruire ; échec : adresse et
+      // raison en notification
+      let why = '';
+      const f = await appAsset('villes_geonames.csv');
+      if (f) try {
+        const v = parseCities(await f.text());
+        if (v.length) {
+          await tx(await openDb(), 'readwrite', s => s.put(v, KEY_CITIES)); // tx referme la base : rouverte
+          await patch({
+            citiesCount: v.length
+          }).catch(() => {});
+          return citiesCache = v;
+        }
+        why = L(['fichier vide', 'empty file', 'leere Datei', 'archivo vacío']);
+      } catch (e) {
+        why = e?.message || String(e);
+      }
+      window.AppFramework?.notify?.(L([
+        'Villes indisponibles (points tournants, libellés des cartes) : villes_geonames.csv non lu — {w}.',
+        'Cities unavailable (turning points, map labels): villes_geonames.csv not read — {w}.',
+        'Städte nicht verfügbar (Wendepunkte, Kartenbeschriftungen): villes_geonames.csv nicht gelesen — {w}.',
+        'Ciudades no disponibles (puntos de viraje, rótulos de los mapas): villes_geonames.csv no leído — {w}.'
+      ]).replace('{w}', why || appAssetWhy || '?'), 'warn', {
+        once: true
+      });
+      return citiesCache = [];
+    })();
   }
   // touched : fichiers du dossier SIA réécrits avec ce changement (« mora.csv »…) : leur empreinte suit, la base en tient
   // déjà compte (sans cela, la mise en place suivante relirait tout pour rien)

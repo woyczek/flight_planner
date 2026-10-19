@@ -2,15 +2,14 @@
 // et déplaçables, barre d'état « profil modifié » (enregistrer / recharger / supprimer), confirmation avant
 // de quitter un profil non enregistré, tri de la table RPM, rendu du profil moteur.
 (() => {
-  // Copie profonde (profils). rawSetActive / rawListAircraft : fonctions d'origine de la page, avant leur surcharge plus bas.
+  // Copie profonde (profils). rawSetActive : fonction d'origine de la page, avant sa surcharge plus bas.
   const clone = o => structuredClone(o);
-  const rawSetActive = setActive,
-    rawListAircraft = listAircraft;
+  const rawSetActive = setActive;
   const css = document.createElement("style");
   css.textContent = `
     body.has-status-bar{padding-bottom:52px}.status-bar{position:fixed;z-index:900;left:0;right:0;bottom:0;display:flex;align-items:center;gap:8px;padding:7px 14px;background:#0c1015ee;border-top:1px solid var(--b);backdrop-filter:blur(8px)}.status-bar .status-text{flex:1;color:var(--mut);font-size:12px}.status-bar.dirty .status-text{color:#f2c879}
     .block-heading{display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:grab}.block-heading h2{flex:1;margin:0}.block-tools{display:flex;gap:5px}.block-tools button{padding:4px 7px;font-size:11px}.collapsible.collapsed>:not(.block-heading){display:none!important}.dragging{opacity:.45}.drop-before{box-shadow:0 -3px 0 var(--a)}
-    .phase-table{table-layout:auto}.phase-table th:first-child,.phase-table td:first-child{text-align:left;width:100%}.phase-table th:not(:first-child),.phase-table td:not(:first-child){text-align:right;white-space:nowrap;width:1%}.carto-value{color:#75c8ff}.profile-value{color:#f0b86e}.phase-table td div+div{margin-top:3px}.carto-split{display:block;margin-top:4px;padding-top:4px;border-top:1px solid var(--b)}.source-note{display:block;color:var(--mut);font-size:10px}.engine-performance-group{margin-top:16px;padding:12px;border:1px solid var(--b);border-radius:8px;overflow:auto}.engine-performance-group h3{font-size:13px;margin:0 0 8px}#engineCurveTable{min-width:0;table-layout:fixed}#engineCurveTable th:last-child,#engineCurveTable td:last-child{width:30%;white-space:normal;overflow-wrap:anywhere;text-align:left}svg.engine-chart{min-width:0;height:255px;margin:10px 0}.opt-chart .band-fill{fill:var(--fc-prof,#75c8ff);fill-opacity:.13;stroke:none}
+    .phase-table{table-layout:auto}.phase-table th:first-child,.phase-table td:first-child{text-align:left;width:100%}.phase-table th:not(:first-child),.phase-table td:not(:first-child){text-align:right;white-space:nowrap;width:1%}.carto-value{color:#75c8ff}.profile-value{color:#f0b86e}.phase-table td div+div{margin-top:3px}.carto-split{display:block;margin-top:4px;padding-top:4px;border-top:1px solid var(--b)}.source-note{display:block;color:var(--mut);font-size:10px}.engine-performance-group{margin-top:16px;padding:12px;border:1px solid var(--b);border-radius:8px;overflow:auto}.engine-performance-group h3{font-size:13px;margin:0 0 8px}#engineCurveTable{min-width:0;table-layout:fixed}#engineCurveTable th:last-child,#engineCurveTable td:last-child{width:30%;text-align:left}svg.engine-chart{min-width:0;height:255px;margin:10px 0}.opt-chart .band-fill{fill:var(--fc-prof,#75c8ff);fill-opacity:.13;stroke:none}
     #unsavedDialog{max-width:520px}#unsavedDialog .dialog-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
     @media(max-width:800px){.status-bar{flex-wrap:wrap}.status-bar .status-text{flex-basis:100%;order:2}.phase-table{min-width:680px}}
   `;
@@ -53,7 +52,8 @@
   }
 
   // Bloc « Profil actif » renommé « Régimes de vol — profil ↔ cartographie ».
-  const profileCard = $("profile")?.closest(".card");
+  // (Fiches de performances : la carte « Fiche en cours » garde son titre, les régimes y sont un sous-titre)
+  const profileCard = typeof PERF_PAGE !== "undefined" && PERF_PAGE === "sheets" ? null : $("profile")?.closest(".card");
   if (profileCard) profileCard.querySelector("h2").textContent = "Régimes de vol — profil ↔ cartographie";
   // Régimes de vol : groupe repliable du bloc Résultat, sous la fiche du curseur (⌖ / 📌). Le bloc Résultat est un
   // cadre semi-mobile du framework (StickyFrame.follow, posé par shared/flight_perf_view.js). Niveau Expert seulement
@@ -159,27 +159,60 @@
   if (!window.AppFramework) prepareBlocks();
 
   // Les anciens boutons (enregistrer, importer, exporter, dossier…) sont masqués : leurs actions passent par la barre d'état et le menu ☰ (addMenuActions).
-  const oldControls = $("saveProfileBtn")?.parentElement;
-  if (oldControls) oldControls.style.display = "none";
+  // Seuls « Enregistrer le profil » et « Supprimer cet avion » de la fiche (doublons de la barre du bas) : le reste de leur
+  // ligne (« Mettre à jour depuis SimBrief », « Demander à ChatGPT », état de l'éditeur) reste affiché.
+  ["saveProfileBtn", "deleteProfileBtn"].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.style.display = "none"
+  });
   $("toggleProfileEditor").style.display = "none";
   document.querySelector(".prefs-popup").style.display = "none";
-  ["importBtn", "exportLnmBtn", "exportBtn", "exportDbBtn", "sbAirframeBtn"].forEach(id => {
+  // (Fiches de performances : « Importer airframe SimBrief » reste dans la carte SimBrief)
+  ["importBtn", "exportLnmBtn", "exportBtn", "exportDbBtn", ...(typeof PERF_PAGE !== "undefined" && PERF_PAGE === "sheets" ? [] : [
+    "sbAirframeBtn"
+  ])].forEach(id => {
     if ($(id)) $(id).style.display = "none"
   });
   if ($("dirBtn")) $("dirBtn").style.display = "none";
   // Barre d'état fixe en bas de page : état du profil (enregistré / modifié), recharger la base locale, enregistrer, supprimer.
   // Niveau Expert seulement (édition des profils) : aux niveaux 1 à 3, ni barre ni marge réservée en bas de page.
-  if ((window.RepositoryNav?.levels?.get?.() ?? 4) >= 4) document.body.classList.add("has-status-bar");
-  const status = document.createElement("div");
-  status.className = "status-bar";
-  status.dataset.minLevel = "4";
-  status.innerHTML =
-    '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
-  document.body.append(status);
+  // (Fiches de performances seulement : le Carburant ne modifie aucune fiche)
+  const sheetsPage = typeof PERF_PAGE === "undefined" || PERF_PAGE === "sheets";
+  // Fiches de performances : la page porte sa barre (#sheetBar : appareil, fiche, lignes cochées, sources), à son propre
+  // niveau ; la marge du bas suit sa hauteur (une ou deux lignes selon la largeur)
+  const pageBar = document.getElementById("sheetBar");
+  if (pageBar || (sheetsPage && (window.RepositoryNav?.levels?.get?.() ?? 4) >= 4)) document.body.classList.add("has-status-bar");
+  const status = pageBar || document.createElement("div");
+  if (!pageBar) {
+    status.className = "status-bar";
+    status.dataset.minLevel = "4";
+    status.innerHTML =
+      '<span id="persistentStatus" class="status-text">Base locale prête.</span><button id="statusReload">Recharger la base locale</button><button id="statusSave" class="primary">Enregistrer le profil</button><button id="statusDelete">Supprimer cet avion</button>';
+    if (sheetsPage) document.body.append(status)
+  } else if (window.ResizeObserver) {
+    // marge du bas et notifications (shared/app_framework.js) au-dessus de la barre, à sa hauteur ; règle dans une
+    // feuille à part (les designs réécrivent l'attribut style de <html>)
+    const rule = document.head.appendChild(document.createElement("style")),
+      fit = () => {
+        const h = status.offsetHeight;
+        if (h) rule.textContent = `body.has-status-bar{padding-bottom:${h + 8}px}body.has-status-bar .repo-notify{bottom:${h + 12}px}`
+      };
+    // tout de suite, au chargement, puis à chaque changement de taille de la barre (largeur, libellés, groupes affichés)
+    fit();
+    addEventListener("load", fit);
+    addEventListener("resize", fit);
+    new ResizeObserver(fit).observe(status)
+  }
   // Texte et couleur de la barre d'état selon le profil actif et profileDirty ; appelée par la page après chaque modification.
   window.updateProfileStatus = () => {
     status.classList.toggle("dirty", profileDirty);
-    $("persistentStatus").textContent = !active ? "Aucun profil actif." : profileDirty ? `Modifications non enregistrées — ${active.name||active.id}` : `Profil enregistré — ${active.name||active.id}`
+    // « Abandonner les modifications » : seulement s'il y en a ; « Enregistrer » : seulement avec une fiche ouverte
+    if (pageBar) {
+      $("statusReload").disabled = !profileDirty;
+      $("statusSave").disabled = !active
+    }
+    $("persistentStatus").textContent = !active ? (typeof noSheetStatus === "function" && noSheetStatus() || "Aucune fiche en cours.") :
+      profileDirty ? `Modifications non enregistrées — ${active.name||active.id}` : `Fiche enregistrée — ${active.name||active.id}`
   };
   // Profil d'appareil : enregistrement, rechargement, changement avec confirmation.
   // Enregistre le profil actif : saisies de l'éditeur reportées, copie rangée dans state.profiles, instantané « enregistré » mis à jour, stockage écrit.
@@ -198,13 +231,15 @@
   }
   $("statusSave").onclick = saveCurrent;
   $("saveProfileBtn").onclick = saveCurrent;
-  $("statusDelete").onclick = () => $("deleteProfileBtn").click();
-  // Recharge la base locale depuis le stockage (abandonne les modifications en mémoire) et réactive le dernier avion.
+  if (document.getElementById("statusDelete")) $("statusDelete").onclick = () => $("deleteProfileBtn").click();
+  // Recharge la base locale depuis le stockage (abandonne les modifications en mémoire) et rouvre la fiche ouverte (sinon
+  // le dernier appareil de la page).
   $("statusReload").onclick = () => {
     let restored = JSON.parse(localStorage.getItem("flightPerfState") || "null");
     if (!restored?.profiles) return window.AppFramework.notify("Aucune base locale enregistrée.", 'warn');
+    const keep = active?.id;
     state = restored;
-    let id = state.lastAircraft;
+    let id = keep || state[typeof PERF_PAGE !== "undefined" && PERF_PAGE === "sheets" ? "lastSheet" : "lastAircraft"];
     if (id && state.profiles[id]) rawSetActive(state.profiles[id], "base locale rechargée");
     else clearActive("Base locale rechargée");
     updateProfileStatus()
@@ -216,10 +251,12 @@
   dialog.innerHTML =
     '<h2>Modifications non enregistrées</h2><p>Le profil courant a été modifié. Que veux-tu faire avant de changer d’avion ?</p><div class="dialog-actions"><button data-choice="stay">Rester</button><button data-choice="discard">Abandonner et changer</button><button class="primary" data-choice="save">Enregistrer et changer</button></div>';
   document.body.append(dialog);
-  // Change d'avion (profil p) : direct si rien n'est modifié ; sinon demande rester / abandonner / enregistrer puis changer.
+  // Change d'avion (profil p ; null : aucun) : direct si rien n'est modifié ; sinon demande rester / abandonner /
+  // enregistrer puis changer.
   function requestSwitch(p) {
+    const go = msg => p ? rawSetActive(p, msg) : clearActive(msg);
     if (!profileDirty) {
-      rawSetActive(p, "base locale");
+      go("base locale");
       closeHeaderMenus();
       return
     }
@@ -227,20 +264,18 @@
     dialog.querySelectorAll("button").forEach(b => b.onclick = () => {
       let choice = b.dataset.choice;
       dialog.close();
-      if (choice === "stay") return;
+      if (choice === "stay") {
+        syncAircraftPicker();
+        if (typeof ppSelectionFollowActive === "function") ppSelectionFollowActive();
+        return
+      }
       if (choice === "save") saveCurrent();
-      rawSetActive(p, choice === "save" ? "profil enregistré puis changé" : "modifications abandonnées");
+      go(choice === "save" ? "profil enregistré puis changé" : "modifications abandonnées");
       closeHeaderMenus()
     })
   }
-  // Surcharge de la liste des appareils : le choix passe par requestSwitch (confirmation des modifications).
-  listAircraft = function() {
-    rawListAircraft();
-    document.querySelectorAll(".aircraft-item").forEach(x => x.onclick = () => {
-      const p = x.dataset.landing ? newProfileFromLanding(x.dataset.id) : state.profiles[x.dataset.id];
-      if (p) requestSwitch(p)
-    })
-  };
+  // choix d'un appareil (bouton « Avion » du Carburant, sélecteur « Appareil » des Fiches) : confirmation des modifications
+  window.requestAircraftSwitch = requestSwitch;
   // Avertissement du navigateur si l'on quitte la page avec un profil modifié.
   addEventListener("beforeunload", e => {
     if (profileDirty) {
@@ -372,7 +407,7 @@
         numeric: true
       })
     });
-    $("curve").innerHTML = sorted.map(x => `<tr><td>${x.rpm??"—"}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour,1)}</td><td>${Number.isFinite(x.altFt)?x.altFt:"—"}</td><td>${escXml(x.phaseLabel||"—")}</td><td>${escXml(x.comment||"")}</td></tr>`).join("") || '<tr><td colspan="6">Pas de courbe RPM dans ce profil.</td></tr>';
+    $("curve").innerHTML = sorted.map(x => `<tr><td>${x.rpm??"—"}</td><td>${showFuel(x.fuelFlowMin??x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowPerHour,1)}</td><td>${showFuel(x.fuelFlowMax??x.fuelFlowPerHour,1)}</td><td>${Number.isFinite(x.altFt)?x.altFt:"—"}</td><td>${escXml(x.phaseLabel||"—")}</td><td class="tbl-clip" title="${escXml(x.comment||"")}">${escXml(x.comment||"")}</td></tr>`).join("") || '<tr><td colspan="7">Pas de courbe RPM dans ce profil.</td></tr>';
     renderEngineChart();
     renderProfileEditor();
     updateProfileStatus();
@@ -471,25 +506,29 @@
     const expertAction = (label, handler) => {
       n.addAction(label, handler).dataset.minLevel = "4"
     };
-    expertAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren",
-      "Importar perfiles / CSV / JSON"
-    ], () => $("importBtn").click());
-    expertAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren",
-      "Importar un airframe de SimBrief"
-    ], () => $("sbAirframeBtn").click());
-    expertAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen",
-      "Elegir la carpeta de rendimiento"
-    ], () => $("dirBtn").click());
-    expertAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
-      () => $("exportLnmBtn").click());
-    expertAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
-      "exportBtn").click());
-    expertAction(["Enregistrer / exporter la BDD locale", "Save / export the local database", "Lokale Datenbank speichern / exportieren",
-      "Guardar / exportar la base local"
-    ], () => $("exportDbBtn").click());
-    expertAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup",
-      "Vorherige lokale Sicherung wiederherstellen", "Restaurar la copia local anterior"
-    ], restoreBackup);
+    // actions qui créent ou modifient des fiches : page des Fiches de performances seulement
+    if (typeof PERF_PAGE === "undefined" || PERF_PAGE === "sheets") {
+      expertAction(["Importer profils / CSV / JSON", "Import profiles / CSV / JSON", "Profile / CSV / JSON importieren",
+        "Importar perfiles / CSV / JSON"
+      ], () => $("importBtn").click());
+      expertAction(["Importer un airframe SimBrief", "Import a SimBrief airframe", "SimBrief-Airframe importieren",
+        "Importar un airframe de SimBrief"
+      ], () => $("sbAirframeBtn").click());
+      expertAction(["Choisir le dossier performances", "Choose the performance folder", "Leistungsordner wählen",
+        "Elegir la carpeta de rendimiento"
+      ], () => $("dirBtn").click());
+      expertAction(["Exporter le profil .lnmperf", "Export .lnmperf profile", ".lnmperf-Profil exportieren", "Exportar perfil .lnmperf"],
+        () => $("exportLnmBtn").click());
+      expertAction(["Exporter le profil JSON", "Export JSON profile", "JSON-Profil exportieren", "Exportar perfil JSON"], () => $(
+        "exportBtn").click());
+      expertAction(["Enregistrer / exporter la BDD locale", "Save / export the local database",
+        "Lokale Datenbank speichern / exportieren",
+        "Guardar / exportar la base local"
+      ], () => $("exportDbBtn").click());
+      expertAction(["Restaurer la sauvegarde locale précédente", "Restore the previous local backup",
+        "Vorherige lokale Sicherung wiederherstellen", "Restaurar la copia local anterior"
+      ], restoreBackup);
+    }
     let units = document.createElement("div");
     units.className = "repo-unit-control";
     units.innerHTML =

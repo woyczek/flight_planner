@@ -1,7 +1,7 @@
 # Integration of the “SIA XML” application — analysis and plan
 
 Design notes for the integration (2026-09-24 / 25). **Documentation of the application:
-[SIA_MISSIONS.md](../SIA_MISSIONS.md).** The whole plan of § 2 has been carried out: common header and menu,
+[planner manual](../MANUEL_PLANIFICATEUR.md) (generator and studio) and [FRAMEWORK.md](FRAMEWORK.md) (“Missions and maps”).** The whole plan of § 2 has been carried out: common header and menu,
 blocks, `sia` theme and `assets/favicon-sia.svg`, common js-yaml, remembered SIA folder
 (`FileAccess`, `__sia`), pasting of missions and of zone lists (`pastePanel`), racetrack
 layer, bridge to CR (`?from=sia`, `siaMissionToCr:v1`,

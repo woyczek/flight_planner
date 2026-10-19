@@ -144,3 +144,83 @@ Reglas.
 Esquema:
 {{SCHEMA}}
 ```
+
+## Missing fields of the ticked sheets
+
+"Fill in the missing fields (n)" (bottom bar of the Performance sheets page, ticked rows) asks one question for every
+ticked sheet: for each one, what the suite already knows and its empty fields (schema paths whose value is empty, and
+the engine map when the sheet has none). The reply gives one entry per sheet (`"sheets"`, each with its `"id"`); only
+the empty fields are filled, nothing already entered is overwritten (preview, then "Undo" for 10 s).
+
+One ` ```text <language>-missing ` block per language. Placeholders: `{{NOMBRE}}` (number of sheets), `{{FICHES}}`
+(one paragraph per sheet: id, model, ICAO code, known powerplant, what is known, fields to fill), `{{REGLES}}` (rules
+1 to 4 of the full prompt of the same language: sources, values, units, engine map), `{{MODELE_REPONSE}}` (the reply
+model: `{"sheets": [{"id": …, <the empty fields only>, "estimated": [], "sources": [], "notes": ""}]}`).
+
+```text fr-missing
+CHAMPS MANQUANTS — {{NOMBRE}} FICHE(S) DE PERFORMANCES
+
+Tu complètes des fiches de performances d'appareils pour un logiciel de préparation des vols en simulation. Pour chaque fiche, le logiciel donne ce qu'il sait déjà et les champs vides à renseigner. Ne renseigne que ces champs ; ne corrige rien d'autre.
+
+{{FICHES}}
+
+Règles.
+{{REGLES}}
+5. Une valeur introuvable reste null : n'invente rien. Une valeur estimée, déduite ou peu sûre garde sa place, et son chemin (par exemple "cruise.fuelFlowPerHour") va dans le tableau "estimated" de sa fiche.
+6. Chaque document utilisé va dans "sources" de la fiche concernée (titre, éditeur ou site, adresse si tu l'as).
+7. Réponse : le JSON seul, dans un bloc de code, sans texte avant ni après, de la forme du modèle ci-dessous : une entrée par fiche dans "sheets", avec son "id" inchangé et exactement les clés de son modèle (aucune clé ajoutée). Pour engineType, runwayType et phaseLabel, choisis une des valeurs proposées.
+
+Modèle de réponse :
+{{MODELE_REPONSE}}
+```
+
+```text en-missing
+MISSING FIELDS — {{NOMBRE}} PERFORMANCE SHEET(S)
+
+You complete aircraft performance sheets for a flight planning program used in simulation. For each sheet, the program gives what it already knows and the empty fields to fill. Fill only those fields; do not correct anything else.
+
+{{FICHES}}
+
+Rules.
+{{REGLES}}
+5. A value you cannot find stays null: invent nothing. An estimated, derived or uncertain value keeps its place, and its path (for example "cruise.fuelFlowPerHour") goes in the "estimated" array of its sheet.
+6. Every document used goes in "sources" of the sheet concerned (title, publisher or site, address if you have it).
+7. Reply: the JSON only, in a code block, with no text before or after, shaped like the model below: one entry per sheet in "sheets", with its "id" unchanged and exactly the keys of its model (no key added). For engineType, runwayType and phaseLabel, choose one of the proposed values.
+
+Reply model:
+{{MODELE_REPONSE}}
+```
+
+```text de-missing
+FEHLENDE FELDER — {{NOMBRE}} LEISTUNGSBLATT/-BLÄTTER
+
+Du ergänzt Leistungsblätter von Luftfahrzeugen für ein Flugvorbereitungsprogramm in der Simulation. Für jedes Blatt nennt das Programm, was es schon weiß, und die leeren Felder, die auszufüllen sind. Fülle nur diese Felder aus; korrigiere nichts anderes.
+
+{{FICHES}}
+
+Regeln.
+{{REGLES}}
+5. Ein nicht auffindbarer Wert bleibt null: erfinde nichts. Ein geschätzter, abgeleiteter oder unsicherer Wert bleibt an seinem Platz, und sein Pfad (zum Beispiel "cruise.fuelFlowPerHour") kommt in das Array "estimated" seines Blatts.
+6. Jedes verwendete Dokument kommt in "sources" des betreffenden Blatts (Titel, Herausgeber oder Website, Adresse, falls vorhanden).
+7. Antwort: nur das JSON, in einem Codeblock, ohne Text davor oder danach, in der Form des Modells unten: ein Eintrag pro Blatt in "sheets", mit seiner unveränderten "id" und genau den Schlüsseln seines Modells (kein Schlüssel hinzugefügt). Für engineType, runwayType und phaseLabel wähle einen der vorgeschlagenen Werte.
+
+Antwortmodell:
+{{MODELE_REPONSE}}
+```
+
+```text es-missing
+CAMPOS QUE FALTAN — {{NOMBRE}} FICHA(S) DE RENDIMIENTO
+
+Completas fichas de rendimiento de aeronaves para un programa de preparación de vuelos en simulación. Para cada ficha, el programa da lo que ya sabe y los campos vacíos que hay que rellenar. Rellena solo esos campos; no corrijas nada más.
+
+{{FICHES}}
+
+Reglas.
+{{REGLES}}
+5. Un valor que no encuentres queda null: no inventes nada. Un valor estimado, deducido o poco seguro conserva su lugar, y su ruta (por ejemplo "cruise.fuelFlowPerHour") va en el array "estimated" de su ficha.
+6. Cada documento utilizado va en "sources" de la ficha correspondiente (título, editor o sitio, dirección si la tienes).
+7. Respuesta: solo el JSON, en un bloque de código, sin texto antes ni después, con la forma del modelo de abajo: una entrada por ficha en "sheets", con su "id" sin cambios y exactamente las claves de su modelo (ninguna clave añadida). Para engineType, runwayType y phaseLabel, elige uno de los valores propuestos.
+
+Modelo de respuesta:
+{{MODELE_REPONSE}}
+```

@@ -110,7 +110,7 @@ Le volet « Importer une autre mission : fichiers, texte collé, commande ChatGP
 - « Commander une mission à ChatGPT » : même formulaire que les ordres de vols (type, sous-type, théâtre, série, équipes, aéronefs…). « Commander : copier le prompt et ouvrir ChatGPT » copie le prompt, ouvre ChatGPT dans un nouvel onglet et inscrit la commande au registre (« commandée »). Au niveau Conception, ce repli n'apparaît que lorsque le bouton « Commander à ChatGPT… » l'ouvre ; au niveau Expert, il figure aussi, replié, dans le volet. **« Créer le squelette ici »** (générateur seulement, à côté du bouton de commande) fait la même chose sans ChatGPT : avec les mêmes réglages, il crée la ou les missions complètes mais vides de récit — une par équipe en vol (aéronef et indicatif choisis, ou pris dans la flotte : appareils des catégories du prompt qui conviennent à la famille ; ravitaillement : un ravitailleur puis des receveurs ; rien d'adapté : aéronef à compléter), terrain de départ et d'arrivée à la base de l'aéronef, cible, points tournants, un rendez-vous par équipe si « Rendez-vous » vaut « avec », zone de travail, ravitaillement planifié avec un axe AAR (ARIP, ARCP) si « oui », timing d'après la durée, cartes attendues avec leur description, objectif principal, risques, introduction et chronologie vides ; avec « Exercice coordonné : oui », la mission d'organisation …Z (heure H, participants, événements H, H+15 min…). Les missions s'ouvrent en lot ; la ligne « Squelette : n point(s) à placer, m texte(s) à écrire — puis le studio pour les cartes » compte ce qui reste, chaque champ vide est encadré jusqu'à sa saisie, et « Ouvrir au studio » passe au studio cartographique pour placer les points et générer les cartes. Le théâtre par défaut est celui de la base de l'aéronef de la première équipe (LFQP : métropole) ; l'indicatif vient de la flotte, sinon de la table des indicatifs pour ce type (RAFFUT01, RAFFUT02…), et le nom de chaque équipe le suit.
 
 Une mission reçue est inscrite au registre et rangée dans son dossier si le dossier des missions est autorisé ; sinon, cliquez « Ranger dans le dossier des missions… ». Lien « Ouvrir le registre ↗ ».
-Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne remplace la précédente que si ses données changent : l'ancienne va dans `versions/`, les réglages du studio des cartes de même nom sont repris. Le collage accepte la réponse entière de ChatGPT (plusieurs missions : un lot) ; les fichiers annexes d'une série (VALIDATION.txt, manifeste) sont écartés et signalés.
+Le texte reçu est gardé dans `recu/` ; reçue à nouveau, une mission ne remplace la précédente que si ses données changent : l'ancienne va dans `versions/`, les réglages du studio des cartes de même nom sont repris. Le collage accepte la réponse entière de ChatGPT (plusieurs missions : un lot) ; les fichiers annexes d'une série (VALIDATION.txt, manifeste) sont écartés et signalés. Une mission dont l'opération annonce d'autres missions affiche déjà ◀ ▶ (missions absentes « à charger ») : collées ou ouvertes ensuite, elles rejoignent l'opération. Le lot est commun au générateur et au studio ; chaque mission garde ses modifications quand on passe de l'une à l'autre.
 
 <!-- capture-manuels: planif-mission-actions -->
 ![Importer, dupliquer ou enregistrer la mission : boutons du bloc Mission et volet d’import.](images/captures-manuels/planif-mission-actions.png)
@@ -138,6 +138,9 @@ Dans le bloc Mission, « Commander à ChatGPT… » déplie ce formulaire (même
 1. Réglez « Type », « Sous-type », « Théâtre » (« Pays » pour l'étranger), « Équipes en vol », « Équipes au sol » et « Durée » (XS à XL).
 2. Au besoin, dépliez « Plus d'options » : « Second théâtre » (« Pays » pour l'étranger), « Série » (vide = la suivante), « Identifiant » (calculé, en lecture seule), « Rendez-vous », « Traductions », « Ravitaillement en vol », « Exercice coordonné » (oui : mission d'organisation …Z ; non : jamais ; libre : selon le scénario) et l'aéronef de chaque équipe en vol A, B… (vide = automatique). Ce repli est ouvert au niveau Expert ; aux autres niveaux, il s'ouvre de lui-même quand l'un de ses réglages s'écarte du défaut.
 3. Cliquez « Commander : copier le prompt et ouvrir ChatGPT », collez dans ChatGPT (Ctrl+V) puis envoyez.
+
+« Traductions » (« en » par défaut ; « en, de, es » ; vide = français seul) : ChatGPT ajoute au YAML le brief traduit
+(bloc `i18n`), que « Mes missions » affiche dans la langue du pilote ; un champ non traduit reste en français.
 
 La mission apparaît au registre avec le statut « commandée ». Collez ensuite la réponse de ChatGPT dans le panneau « Réponse de ChatGPT » de sa fiche au registre (ou chargez-la ici), ou enregistrez les fichiers dans le dossier des missions puis « Relire le dossier » : la commande est rapprochée de la mission générée (même série). Les réglages sont mémorisés.
 
@@ -204,6 +207,12 @@ Estimation du vol d'après la route probable et l'appareil ; recalculée à chaq
 - Un tableau compare l'estimation aux CR déjà faits de la mission (vol réel, écart).
 - Case « Afficher la route probable » : croquis et tableau des tronçons.
 
+Règles du calcul :
+- Route probable : départ, points dans l'ordre de la mission (sinon le cheminement du studio ; à défaut, points tournants dans l'ordre et chaque point de travail — cible, rendez-vous, zone — là où il allonge le moins la route), puis la destination, sinon le terrain de départ.
+- Vitesse et vario : ceux de la mission, sinon le profil du planificateur carburant du même type, sinon la fiche EUROCONTROL, sinon une valeur type (hélicoptère, turbopropulseur, réacteur) ; un tronçon trop court pour atteindre le niveau est volé plus bas.
+- Temps sur place : celui des points, sinon une valeur type selon la famille et le rôle (poser, treuillage, recherche, hippodrome…). Bloc = vol + 15 min (5 min pour un hélicoptère).
+- Transit automatique : avion en IFR (croisière à partir de 6500 ft) par les voies aériennes ouvertes à son niveau, entrée et sortie directes à 60 NM au plus, direct si le détour dépasse 40 % ; avion à basse hauteur (combat, transport tactique : jusqu'à 1500 ft) par les zones du RTBA raccordées (150 NM, 80 %) ; hélicoptère et VFR en direct. Seuls les transits de plus de 40 NM sont routés. Ce sont les valeurs par défaut des « Paramètres du calcul des routes ». Le bloc dit pourquoi un transit reste direct (hors de la couverture des données, tronçon court, pas de chemin, détour excessif).
+
 Limite : sans base SIA dans le navigateur, les routes restent directes ; un avertissement invite à relire le dossier SIA.
 
 ### Zones à activer
@@ -218,6 +227,8 @@ Limite : calcul indicatif, qui ne remplace ni les cartes AZBA ni les NOTAM. Sans
 ### Exercice
 
 Bloc affiché pour une mission d'exercice.
+
+Une opération devient un exercice quand tout n'est pas connu de tous au décollage (pistes à découvrir, messages en vol, plis, situation qui change). L'organisation voit tout ; chaque équipage ne reçoit que les événements qui lui sont adressés (ou à tous) et ne connaît que les pistes qu'ils révèlent ; un chiffon joué reçoit sa route, son heure de départ, ses consignes et sa carte. Heures par rapport à H (H, T ou M : le même instant ; « H+1h30mn », « H-20mn » ; sans unité, des minutes) ; un événement déclenché par un point tombe au décollage du participant + temps estimé jusqu'au point + délai. Un chiffon joué a sa propre mission dans l'opération (rôle chiffon) : registre, affectation et Mes missions comme un équipage.
 
 Sur la mission d'organisation (…Z), éditeur complet :
 - « Heure H et participants » : « Heure H (libellé ou heure réelle) », puis une ligne par participant (« Indicatif », « Mission », « Décollage (H-20mn, H+1h) », « Rôle ») ; « + Participant », « Reprendre les missions de l'opération ».
@@ -264,6 +275,7 @@ Pour charger les images, utilisez le ZIP du studio dans le bloc Mission. Une mis
 | « Toute l'opération » (lot de plusieurs missions) | « Tous les documents de l'exercice (un PDF par destinataire) », « Exporter tous les PDF », « Dossier d'opération (un PDF) » |
 | « Données » | « Exporter YAML », « Exporter Markdown » |
 
+« Dossier d'opération (un PDF) » : page de garde (opération, missions et équipes, rendez-vous communs, carte de l'opération si le ZIP du studio est chargé), puis le brief de chaque mission à la suite.
 Le brief de l'équipage contient ses plis scellés et les cartes ; la ligne d'état liste les cartes non jointes. Chargez les cartes avant d'exporter.
 Chaque pli scellé occupe une page après les cartes, suivie de sa carte d'exercice ; la carte d'un message radio a sa propre page « à remettre à réception du message ».
 
@@ -294,6 +306,8 @@ Plan de vol, carte de contrôle et coupe verticale liés : survolez un point dan
 
 Carte de contrôle : listes « Carte » et « Profil », case « ZIP », « Actualiser », « Garder ce cadrage » (la carte générée reprendra le cadre affiché), « Recentrer », « Cadrage automatique », « ⧉ Fenêtre » (la même carte interactive dans une fenêtre à part, sans le reste du studio : déplacer, zoomer à la roulette ou au pincement, glisser les points comme ici ; barre « ◀ liste ▶ », « Recentrer », « Actualiser », « Ouvrir au studio », « Fermer » ; clavier ← → + − 0 Échap ; elle suit les réglages du studio), « ⤢ Agrandir » (Échap pour revenir). Sur la carte : glissez un point, cliquez la route pour insérer, clic droit pour supprimer.
 « Réglages du profil : coupe, appareil, vario, sorties » : plancher et plafond de la coupe, appareil, montée et descente, image `profil_vertical.png` dans les sorties, tracé par défaut du cheminement.
+« Tracer » dessine la coupe sous la carte (clic : agrandir) : relief le long de la route (± 1 km), obstacles à moins de 1 NM et espaces traversés selon le profil de `profil_vertical.png` (planchers ASFC suivant le relief), points avec distances cumulées, trajectoire prévue en violet avec TOC et TOD. La montée suit l'appareil choisi (profils du planificateur carburant), sinon les taux saisis ; sans niveau ni altitude (VFR), pas de trajectoire. Plafond 0 = automatique (relief, obstacles, altitudes prévues et planchers des espaces traversés, jusqu'au FL 195).
+Route, niveau, plancher, plafond et sortie sont écrits dans la mission (`vertical_profile`) : le générateur les voit. `profil_vertical.png` est une carte de la liste ; elle va dans le ZIP et à la fin du brief PDF.
 
 <!-- capture-manuels: planif-cheminement -->
 ![Préparer le cheminement : route, niveau, recherche, tracé et points de la mission.](images/captures-manuels/planif-cheminement.png)
@@ -327,6 +341,22 @@ La recherche propose aussi les villes (noms GeoNames, après les terrains, balis
 Ajout : nom, type (« générale », « cible », « détail », « zone ») puis « + Carte » (emprise = vue affichée) ; « + Cartes d'exercice » ajoute les cartes de l'organisation, des chiffons joués ou de l'équipage.
 « Réglages du profil … » (replié) : « Nom du profil », « Fond de carte », « Sauvegarder », « Nouveau », « Dupliquer », « Supprimer », puis quatre onglets : « Fond de carte », « Zones », « Symboles OACI », « Éléments ». Le profil modifié est toujours celui de la carte choisie ; les profils sont communs à toutes les missions et gardés dans ce navigateur. Les listes de suggestions de la saisie (zones, aérodromes, balises : jusqu'à 13 000 entrées d'après la base SIA) ne se remplissent que lorsque vous cliquez dans le champ concerné, pas à l'ouverture de la page.
 
+**Profil proposé** à une carte qui n'en a pas : « VFR détaillé » pour les cartes cible, détail et rendez-vous, « VFR simplifié » pour l'approche, « IFR simplifié » pour la carte principale et les vues d'ensemble (générale, zone…). `profil_vertical.png` prend « Profil vertical », créé d'office (toutes les familles d'espaces, aucun autre élément) ; son emprise suit le cheminement.
+
+**Emprise** d'une carte : le cadrage gardé (« Garder ce cadrage »), sinon le centre et le rayon ou la largeur × hauteur donnés par la mission (polygone de la zone pour une carte de zone), sinon le cadrage automatique, au format des sorties (16/10) : vue générale, tous les points et zones avec 12 % de marge ; carte de zone, la zone avec 20 % ; détail, 8 × 5 km ; cible, 100 × 62 km ; autre carte, 220 × 140 km.
+
+Onglets des réglages du profil :
+- « Fond de carte » : OSM standard, OpenTopoMap (relief et courbes), OSM Shortbread, OpenFreeMap Liberty / Bright / Positron, VersaTiles Colorful / Graybeard / Shadow / Eclipse ; couches OSM (sol, hydrographie, routes / rail, bâtiments, frontières, relief ombré, courbes de niveau, sommets). « Villes et agglomérations » : villes en symboles OACI au-dessus d'un seuil de population (≥ 100 000 hab. tache orange, ≥ 20 000 jaune cerclée d'orange, localité point jaune), libellés au-dessus du leur (les plus peuplées d'abord), surfaces bâties (aucune, contour, remplissage, les deux) autour des villes assez peuplées ; les fichiers du SIA ne donnent aucun contour d'agglomération.
+- « Zones » : familles R / D / P, contrôlés (CTR, TMA, CTA, SIV), autres (TRA, RMZ, TMZ, PJE) ; « Symbologie des cartes OACI » (classes A rouge, B / C / D bleu, E bleu clair ; R / D hachurées, P quadrillées, RTBA ; croix rouge pour une zone trop petite ; cartouches nom / plafond / plancher) ; tranche affichée (plancher, plafond en ft) ; opacité, libellés, « Noms abrégés » (aussi sur la coupe), altitudes. « Sélection des zones » : liste blanche (seules ces zones ; vide = toutes les zones des familles cochées) ou liste noire (toutes sauf celles-ci) ; espaces, tirets et accents ignorés (« LF-R 45 A » = « R 45 A ») ; « R 166 » propose le groupe de ses sous-zones, un fragment retient toutes les zones qui le contiennent ; « Coller une liste… », « Tout supprimer » ; « Alias » communs à tous les profils (« @RTBA » proposé d'après la base SIA, modifiable). La liste dit quelles zones tracer, pas leur activation.
+- « Symboles OACI » : aérodromes (longueur et revêtement de piste, hélistation ; ouverts à la CAP en bleu, restreints en clair, État en rouge ; filtres par catégorie et « Contrôle »), radionavigation (VOR, TACAN, DME, NDB, ILS ; rose des VOR en vue détaillée), voies aériennes basses et hautes, tracks NAT du jour, points de report VFR et points RNAV, survol interdit (⊗ rouge), parcs et réserves (vert), obstacles (≥ 300, 500 ou 1000 ft AGL). Aérodromes et balises ont leur liste blanche ou noire (« LFOJ », « LFR* », nom). Deux balises qui se recouvrent : la plus importante reste (TACAN, puis VOR, DME, NDB, ILS).
+- « Éléments » : points tournants (taille, couleurs), méridiens et parallèles, grille MORA (valeurs, opacité, espacement minimal), libellés des villes, hippodrome de ravitaillement, « Zones de mission et de recherche » (recherche en magenta, mission en violet, exclusion en rouge, nom au nord).
+
+Hippodrome de ravitaillement : « Automatique » retient l'axe ENR 5.7 dont des points (ARIP, ARCP, S1, S2) sont à moins de 2 km d'un point de la mission, ou dont le nom figure dans la mission (la raison est affichée) ; d'autres axes se cochent dans la liste ; rien de coché, aucun hippodrome. Branche retour décalée de 14 NM du côté publié ; côté non publié : pointillés.
+
+Les libellés ne se chevauchent pas : points de la mission et villes d'abord, puis symboles OACI, libellés des zones (au centre de la zone, sinon le long du contour, sinon pas écrits), quadrillage et valeurs MORA.
+
+« + Cartes d'exercice » nomme les cartes `organisation_<Z>.png`, `chiffon_<piste>_<Z>.png` (reprise dans la fiche du chiffon) et `exercice_<événement>_<mission>.png`.
+
 <!-- capture-manuels: planif-cartes-profils -->
 ![Pour chaque carte, choisir le profil, le tracé et le destinataire, puis décider de son inclusion dans le ZIP.](images/captures-manuels/planif-cartes-profils.png)
 
@@ -340,6 +370,8 @@ Ajout : nom, type (« générale », « cible », « détail », « zone ») pui
 - Une carte en échec n'arrête pas les autres : le ZIP contient `rapport_generation.txt` et « Réessayer seule » relance la carte. « fond partiel » signale un fond de carte lent.
 - Fond de carte en erreur : la carte de contrôle explique la cause, passe sur OSM standard et propose « Copier le rapport d'erreur » (détail technique à transmettre).
 - Lot de plusieurs missions : « Générer les n missions » produit un seul ZIP, un dossier par mission, avec la carte de l'opération.
+- Lot : « Afficher toutes les cartes (n missions) » groupe les aperçus par mission, avec en tête la carte de l'opération (`carte_operation.png` : points de toutes les missions, rendez-vous communs une fois, trajet de chaque équipe dans sa couleur, légende) ; elle est à la racine du ZIP.
+- Gardez l'onglet visible pendant la génération : le navigateur ralentit les onglets en arrière-plan, et une carte peut échouer (« Délai dépassé pendant le chargement du fond de carte ») ; « Réessayer seule » la relance.
 - « Arrêter » (barre de progression, aperçus comme génération) : la carte en cours s'achève, les suivantes ne sont pas faites. Une génération arrêtée ne télécharge aucun ZIP et ne range rien dans le dossier de la mission ; un lot arrêté dit combien de missions sont terminées (leurs cartes sont déjà rangées dans leur dossier) ; les aperçus déjà affichés restent.
 
 Type de sortie (PNG, SVG éditable) et largeur des PNG : menu ☰ › « Sorties des cartes ». La carte d'assemblage est toujours incluse ; elle s'affiche en bas du bloc.
@@ -546,7 +578,8 @@ Ce bloc propose, pour chaque créneau qui atteint le seuil « Au moins N pilote(
 | Planifier (missions du registre) | « Planifier » ou « Modifier » : ouvre la fenêtre du créneau, filtrée sur la famille |
 
 - Cliquez sur une ligne (en dehors du bouton) pour déplier son résumé : créneau, équipage proposé, renforts, règle, score, contexte (sessions ATC, contrôleurs, événements), simulateurs, missions déjà affectées. Le triangle ▸ fait de même ; une seule ligne est dépliée à la fois.
-- « Règles des familles et du score » se déplie sous le tableau. Score = nombre de participants, + 2 par pilote à code restreint employé dans son domaine, + 1 par contrôleur en ligne pour TRAINING (2 au plus). Une famille souvent jouée recule un peu (selon le nombre de CR du registre) pour varier les missions.
+- Une famille n'est proposée qu'aux pilotes dont la disponibilité ouvre ce thème : thèmes déclarés dans Mes missions, sinon ceux de la catégorie du code du classeur (Paramètres › Centre › Catégories de disponibilité), selon les préférences du pilote. Les rôles tenus viennent des appareils (feuille FLOTTE, ou appareils déclarés sans classeur).
+- « Règles des familles et du score » se déplie sous le tableau. Score = nombre de participants, + 2 par pilote employé dans les thèmes restreints de sa disponibilité, + 1 par contrôleur en ligne pour TRAINING (2 au plus). Une famille souvent jouée recule un peu (selon le nombre de CR du registre) pour varier les missions.
 - Le nombre de missions montrées par créneau et l'ordre de préférence à score égal se règlent dans Paramètres › Centre › Planning ODV.
 - Le tableau se trie par colonne. Les rôles tirés de la feuille FLOTTE restent indicatifs : le planificateur valide.
 

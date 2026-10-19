@@ -1,7 +1,7 @@
 // Arbre de la suite (script, servi en text/javascript) : pages, menus, designs, sources.
 window.REPOSITORY_TREE={
   version:3,
-  release:{date:"2026-10-12",version:"5.2.0",id:"XPS-5.2.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md",
+  release:{date:"2026-10-19",version:"5.3.0",id:"XPS-5.3.0",changelog:"https://framagit.org/asr/flight_planner/-/blob/master/docs/CHANGELOG.md",
     // dépôt de publication : contrôle des mises à jour (Paramètres › Maintenance, shared/suite_update.js) ; canaux = branches
     repository:{web:"https://framagit.org/asr/flight_planner",api:"https://framagit.org/api/v4/projects/asr%2Fflight_planner",channels:{master:"stable",develop:"early"}}},
   defaults:{
@@ -17,7 +17,7 @@ window.REPOSITORY_TREE={
   // {id} remplacé (RepositoryNav.vaUrl(page, { id })).
   // Textes : jetons {SOG}, {SOG_NOM}, {SOG_NOM_LONG}, {CENTRE} résolus par K.t / K.brand (docs/technique/FRAMEWORK.md § 4 bis).
   va:{name:"SO Group Virtual",fullName:"Virtual Special Operation Group",short:"SOG",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
-    pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
+    pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}",recordFlight:"/selection_appareil.php"}},
   sources:{
     defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle","Virtual airline website","Website der virtuellen Fluggesellschaft","Sitio de la aerolínea virtual"]},
     siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},
@@ -134,6 +134,7 @@ window.REPOSITORY_TREE={
   sidebar:[
     {icon:"today",path:"apps/pilot/aujourdhui.html",label:["Aujourd’hui","Today","Heute","Hoy"],title:["Ma prochaine mission, les comptes rendus à écrire, ma semaine","My next mission, reports to write, my week","Meine nächste Mission, zu schreibende Berichte, meine Woche","Mi próxima misión, informes por escribir, mi semana"]},
     {icon:"send",path:"apps/pilot/mes_missions.html",match:["mes_missions.html","disponibilites.html"],label:["Mes missions","My missions","Meine Missionen","Mis misiones"],title:["Missions qui vous sont affectées, disponibilités","Missions assigned to you, availability","Ihnen zugewiesene Missionen, Verfügbarkeit","Misiones que le han asignado, disponibilidad"]},
+    {icon:"list",path:"apps/pilot/mes_vols.html",label:["Mes vols","My flights","Meine Flüge","Mis vuelos"],title:["Mes vols passés : comptes rendus et journal de la compagnie","My past flights: reports and the airline log","Meine vergangenen Flüge: Berichte und Flugbuch der Fluggesellschaft","Mis vuelos pasados: informes y diario de la aerolínea"]},
     {icon:"clipboard",path:"apps/cr/mission_cr.html",match:"_cr.html",label:["Compte rendu","Report","Bericht","Informe"],title:["Écrire le compte rendu d’une mission","Write a mission report","Einen Missionsbericht schreiben","Escribir el informe de una misión"]},
     {icon:"calendar",tabs:"planning",label:["Planning","Schedule","Planung","Planificación"],title:["Planning des ordres de la semaine : ordre du jour, équipage, zones ; créneaux et missions probables au niveau Expert","Weekly order schedule: order of the day, crew, zones; slots and likely missions at Expert level","Befehlsplanung der Woche: Tagesbefehl, Besatzung, Zonen; Zeitfenster und wahrscheinliche Missionen auf Stufe Experte","Planificación de órdenes de la semana: orden del día, tripulación, zonas; franjas y misiones probables en el nivel Experto"]},
     {icon:"target",tabs:"missions",label:["Missions","Missions","Missionen","Misiones"],title:["Générer, modifier et registrer les missions (niveau 3) ; studio cartographique au niveau 4","Generate, edit and register missions (level 3); map studio at level 4","Missionen erzeugen, ändern und registrieren (Stufe 3); Kartenstudio auf Stufe 4","Generar, modificar y registrar misiones (nivel 3); estudio cartográfico en el nivel 4"]},
@@ -158,6 +159,7 @@ window.REPOSITORY_TREE={
     {id:"tools",pages:[
       {path:"apps/planner/map_planner.html",label:["Cartes de vol","Flight maps","Flugkarten","Mapas de vuelo"]},
       {path:"apps/planner/flight_performance_planner.html",label:["Carburant","Fuel","Kraftstoff","Combustible"]},
+      {path:"apps/planner/performance_sheets.html",label:["Fiches de performances","Performance sheets","Leistungsblätter","Fichas de rendimiento"]},
       {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",label:["Atterrissages","Landings","Landungen","Aterrizajes"]},
       {path:"apps/cr/mission_operations_reporting.html",label:["Analyse des missions","Mission analysis","Missionsanalyse","Análisis de misiones"]}]},
     {id:"settings",pages:[
@@ -177,7 +179,7 @@ window.REPOSITORY_TREE={
       level:"profile",identity:"profile",myAircraft:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
       cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",odvOrders:"centre",send:"centre",
       // « setup » (Premier lancement, rubrique faite de liens) n'est plus placée : l'onglet Premier lancement la remplace
-      sources:"installation",
+      sources:"installation",keys:"installation",
       fleet:"centre",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
       registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
       updates:"maintenance",versions:"maintenance",deps:"maintenance",types:"installation,maintenance",sia:"installation,maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"
@@ -240,9 +242,11 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/map_parser.html",level:4,menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",level:3,menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",module:"fuel",menu:"Carburant",label:"Carburant — performances et devis carburant"},
+    {path:"apps/planner/performance_sheets.html",module:"fuel",level:3,menu:"Fiches de performances",label:"Fiches de performances — profils des appareils : imports, SimBrief, ChatGPT, éditeur, cartographie moteur"},
     {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/aujourdhui.html",menu:"Aujourd’hui",label:"Aujourd’hui — ma prochaine mission, comptes rendus à écrire, ma semaine"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — missions affectées par le Centre, disponibilités"},
+    {path:"apps/pilot/mes_vols.html",menu:"Mes vols",label:"Mes vols — vols passés : comptes rendus et journal de la compagnie"},
     {path:"apps/planner/map_planner.html",module:"maps",menu:"Cartes de vol",label:"Cartes de vol — route, cartes topographiques, approche, rendez-vous, destination"},
     {path:"apps/cpco/odv_planning.html",level:2,menu:"Centre — Planning ODV",label:"Planning ODV — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/odv_orders.html",menu:"Centre — Tableau",label:"Tableau — Centre de planification et de conduite des opérations",view:true}
@@ -290,4 +294,4 @@ window.REPOSITORY_TREE.iconComposed={"brass":{"normal":"cabinet/vierge.webp","ce
 // scripts de fin de page — sans cela, la page paraissait à moitié construite puis se complétait (clignotement au
 // changement de page) ; le navigateur garde la page précédente à l'écran en attendant.
 // Versions : tools/bump_versions.py (empreinte de designs.css, table FILE_V des feuilles des designs à matières).
-(function(){try{var c=document.currentScript,T=window.REPOSITORY_TREE,L=T.designs&&T.designs.list||{},g=localStorage.getItem("repositoryDesign"),id=L[g]?g:(T.designs&&L[T.designs.default]?T.designs.default:"standard"),x=L[id]||{},d=document.documentElement,FILE_V = {"designs_skeuo.css": "0"};if(!c||c.hasAttribute("data-no-design"))return;d.dataset.design=id;d.dataset.designBase=x.base||id;if(x.skeuo)d.dataset.skeuo=x.frame?"frame":"";d.dataset.decor=localStorage.getItem("repositoryDecor")||"full";document.write('<script type="module" blocking="render" src="'+new URL("../shared/render_gate.js?v=0",c.src).href+'"><\/script><link rel="stylesheet" id="repoDesignsCss" href="'+new URL("../shared/designs.css?v=0",c.src).href+'">'+(x.css?'<link rel="stylesheet" data-design-css="'+x.css+'" href="'+new URL("../shared/"+x.css+"?v="+(FILE_V[x.css]||""),c.src).href+'">':""))}catch(e){}})();
+(function(){try{var c=document.currentScript,T=window.REPOSITORY_TREE,L=T.designs&&T.designs.list||{},g=localStorage.getItem("repositoryDesign"),id=L[g]?g:(T.designs&&L[T.designs.default]?T.designs.default:"standard"),x=L[id]||{},d=document.documentElement,FILE_V = {"designs_skeuo.css": "2bf95a6b"};if(!c||c.hasAttribute("data-no-design"))return;d.dataset.design=id;d.dataset.designBase=x.base||id;if(x.skeuo)d.dataset.skeuo=x.frame?"frame":"";d.dataset.decor=localStorage.getItem("repositoryDecor")||"full";document.write('<script type="module" blocking="render" src="'+new URL("../shared/render_gate.js?v=65174496",c.src).href+'"><\/script><link rel="stylesheet" id="repoDesignsCss" href="'+new URL("../shared/designs.css?v=0cf17686",c.src).href+'">'+(x.css?'<link rel="stylesheet" data-design-css="'+x.css+'" href="'+new URL("../shared/"+x.css+"?v="+(FILE_V[x.css]||""),c.src).href+'">':""))}catch(e){}})();

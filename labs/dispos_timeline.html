@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dispos — axe continu</title>
+<!-- Page d'exemple du module de saisie des disponibilités (shared/dispos_timeline.js, formats : shared/dispos_formats.js),
+     hors suite : textes en français par l'option labels (le module est en anglais par défaut), données dans ce navigateur
+     (localStorage, une entrée par semaine). Le paquet de livraison (tools/publish_dist.py) la reprend en example.html, ses
+     scripts à côté d'elle. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #f2f4f7;
+    color: #17202a;
+    font: 14px/1.45 system-ui, sans-serif
+  }
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    gap: 14px
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0
+  }
+  h2 {
+    font-size: 14px;
+    margin: 0 0 8px
+  }
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font: 12px ui-monospace, Consolas, monospace
+  }
+  pre {
+    max-height: 320px;
+    overflow: auto;
+    background: #f6f8fa;
+    padding: 8px;
+    font-size: 12px
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #0001;
+    border-radius: 8px;
+    padding: 12px 14px
+  }
+  details pre {
+    max-height: 320px;
+    overflow: auto;
+    background: #f6f8fa;
+    padding: 8px;
+    font-size: 12px
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap
+  }
+  button {
+    font: inherit
+  }
+  .small {
+    font-size: 12px;
+    opacity: .75
+  }
+</style></head>
+<body><main>
+<h1>Disponibilités — saisie sur un axe de temps continu</h1>
+<p class="small">Page d'exemple du module, en français par l'option <code>labels</code>. Les données restent dans ce navigateur (une entrée par semaine). Heures en UTC.</p>
+<div class="card"><div class="row"><label>Pilote <input id="tri" value="TST" size="5" maxlength="5"></label><button type="button" id="clear">Vider la semaine</button><button type="button" id="undo" disabled title="Ctrl+Z">Annuler</button><button type="button" id="redo" disabled title="Ctrl+Y ou Ctrl+Maj+Z">Rétablir</button><label>Densité <select id="density"><option value="compact">compacte</option><option value="comfortable">confortable</option></select></label><span class="small" id="status"></span><span class="small" id="selection"></span></div></div>
+<div class="card" id="host"></div>
+<div class="card"><h2>Données de la semaine, par format</h2>
+<div class="row"><label>Format <select id="fmt"></select></label><button type="button" id="copy">Copier</button><span class="small" id="fmtmsg"></span></div>
+<p class="small" id="fmthint"></p>
+<pre id="out"></pre>
+<details><summary>Coller / importer dans ce format</summary><p class="small">Le texte collé est relu par le format choisi et remplace la semaine (Ctrl+Z l'annule) ; une autre semaine s'affiche d'abord.</p><textarea id="imp" rows="8"></textarea><div class="row"><button type="button" id="import">Importer</button><span class="small" id="impmsg"></span></div></details></div>
+</main>
+<script src="../shared/dispos_timeline.js?v=0"></script>
+<script src="../shared/dispos_formats.js?v=0"></script>
+<script>
+  const T = window.DisposTimeline,
+    F = window.DisposFormats,
+    $ = id => document.getElementById(id),
+    key = (tri, w) => `labDisposTimeline:${tri}:${w}`,
+    read = (tri, w) => {
+      try {
+        return JSON.parse(localStorage.getItem(key(tri, w)) || 'null');
+      } catch {
+        return null;
+      }
+    };
+  // textes du module en français (clés de DisposTimeline.DEFAULT_LABELS, catégories « cat.<id> », groupes « group.<id> »)
+  const LABELS = {
+    'nav.today': 'cette semaine',
+    title: 'Semaine {n} — du {from} au {to} (UTC)',
+    erase: 'Effacer le fond',
+    'erase.title': 'Effacer le fond (les dispos restent)',
+    'brush.bg': '{label} — déposé sur une bande ou une dispo : en change la nature ; sur un jour : journée entière ; double-clic : fond de toute la semaine',
+    'brush.fg': '{label} — déposé sur une bande ou une dispo : en change la nature ; sur un jour : journée entière',
+    'period.title': 'Période répétitive (saisie manuelle)',
+    'period.cat': 'Catégorie',
+    'period.dateFrom': 'du',
+    'period.dateTo': 'au',
+    'period.timeFrom': 'de',
+    'period.timeTo': 'à',
+    'period.add': 'Ajouter',
+    'period.hint': 'Horaires vides : journée entière. Fin avant le début : jusqu\'au lendemain.',
+    'period.errDates': 'Dates : « du » puis « au », dans cet ordre.',
+    'period.errDays': 'Cocher au moins un jour.',
+    'period.errTimes': 'Horaires : les deux, ou aucun (journée entière).',
+    'period.done': '{n} jour(s) posé(s)',
+    'period.other': ', dont {n} autre(s) semaine(s)',
+    'period.lost': ' — {n} semaine(s) non enregistrée(s) (stockage absent)',
+    'hover.default': 'Indisponible (par défaut)',
+    'hover.day': '{day}, de {from} à {to} : {name}',
+    'hover.days': 'du {day} {from} au {day2} {to} : {name}',
+    box: '{label} {from}–{to}, {day} → {day2}',
+    delete: 'Effacer',
+    'help.title': 'Comment s\'en servir',
+    'help.layers': 'Deux couches. Le fond dit la nature d\'une indisponibilité (indisponible, congés, récupération, activité réelle) : la couleur seule, sur toute la hauteur de la rangée. La première couche porte les dispos, exercices et occupations : des rectangles avec une lettre et leurs horaires. Une minute n\'a qu\'un état : là où un rectangle est posé, le fond dessous ne compte pas, mais il reste en place et revient quand le rectangle s\'en va.',
+    'help.palette': 'La palette. Cliquer sur une puce choisit le pinceau : il dit seulement QUOI tracer. Les puces de fond sont sur la dernière ligne.',
+    'help.draw': 'Tracer. Glisser dans le vide ou dans l\'espace entre deux rangées : la forme s\'aimante à la demi-heure. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.',
+    'help.grab': 'Saisir une forme. Un geste qui part sur une forme, rectangle ou bande, la saisit quel que soit le pinceau : un clic la sélectionne, un glisser la déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords la redimensionnent. Maj+glisser trace par-dessus : c\'est ainsi qu\'on pose une dispo sur un jour déjà couvert d\'une bande.',
+    'help.cut': 'Découper. La dernière forme gagne : un rectangle tracé sur un autre le découpe, un fond tracé à travers un rectangle aussi. La découpe se voit pendant le geste.',
+    'help.drop': 'Déposer, double-cliquer. Glisser une puce sur une forme : la forme prend cette nature. La déposer sur le vide d\'une rangée ou sur le nom du jour : toute la journée, et une puce de fond ne change alors que le fond, les rectangles restent. Double-clic sur une bande : sa couleur devient le fond de toute la journée ; sur une puce de fond : de toute la semaine.',
+    'help.fix': 'Corriger. Le ✕ d\'une forme, ou Suppr sur la sélection, l\'efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit.',
+    'help.period': 'Période répétitive. Le cadre au-dessus de la grille pose une catégorie sur les jours de la semaine cochés, entre deux dates, aux mêmes horaires, sur plusieurs semaines. Horaires vides : journée entière ; une fin avant le début va jusqu\'au lendemain.',
+    'help.saved': 'Ce qui est enregistré. Les heures sont en UTC, les semaines sont des semaines ISO (du lundi au dimanche). Chaque semaine est un document JSON : ses plages sont la déclaration, un seul état par minute ; le temps sans rien est indisponible.',
+    'group.indispo': 'Indisponible',
+    'group.dispo': 'Disponible',
+    'group.exercice': 'Exercice',
+    'group.occupe': 'Occupé',
+    'cat.IN': 'Indisponible',
+    'cat.V': 'Congés',
+    'cat.Q': 'Récupération',
+    'cat.IR': 'Activité réelle',
+    'cat.O': 'Disponible pour tout',
+    'cat.SC': 'Disponible sécurité civile',
+    'cat.D+': 'Disponible défense',
+    'cat.S': 'Vol en exercice SOG',
+    'cat.AM': 'Contrôle SOG',
+    'cat.G': 'Vol hors SOG (IVAO / VATSIM)',
+    'cat.DC': 'DCS',
+    'cat.AT': 'Contrôle hors SOG (IVAO / VATSIM)'
+  };
+  // troisième format, de démonstration, enregistré ici comme le ferait une page hôte : « plages plates », une ligne par
+  // plage et par jour { day, start, end, category } (la déclaration seule, sans le fond posé dessous)
+  const M = T.model,
+    hm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  F.register('flat', {
+    read(json, opts) {
+      const week = json?.week || T.weekId(Date.now()),
+        next = day => new Date(Date.parse(`${day}T00:00:00Z`) + 864e5).toISOString().slice(0, 10);
+      return F.read('schema3', {
+        schema: 3,
+        pilot: json?.person || '',
+        week,
+        ranges: (json?.ranges || []).map(r => ({
+          start: `${r.day}T${r.start}`,
+          end: r.end === '24:00' ? `${next(r.day)}T00:00` : `${r.day}T${r.end}`,
+          cat: r.category
+        }))
+      }, opts);
+    },
+    write(data, opts) {
+      const st = M.fromData(data, data.week, opts?.config || T.DEFAULT_CONFIG),
+        mon = T.weekMonday(data.week),
+        out = [];
+      for (const r of [...st.fg, ...M.visibleBg(st)].sort((a, b) => a.s - b.s)) {
+        for (let d = Math.floor(r.s / M.DAY); d * M.DAY < r.e; d++) {
+          const s = Math.max(r.s, d * M.DAY) - d * M.DAY,
+            e = Math.min(r.e, (d + 1) * M.DAY) - d * M.DAY;
+          if (e > s) out.push({
+            day: M.isoDay(mon + d * 864e5),
+            start: hm(s),
+            end: hm(e),
+            category: r.cat
+          });
+        }
+      }
+      return {
+        format: 'flat',
+        person: data.pilot || '',
+        week: data.week,
+        ranges: out
+      };
+    }
+  });
+  const HINTS = {
+    schema3: 'Format natif du composant : ranges est la déclaration (la vérité), un état par minute ; background est le fond tel que posé, dessous compris, commodité d\'édition qu\'un lecteur peut ignorer.',
+    schema2: 'Déclaration de la suite : une semaine, plages par jour au quart d\'heure, catégories par leur code legacy ; un jour sans rien est indisponible toute la journée.',
+    flat: 'Format de démonstration, enregistré par cette page avec DisposFormats.register : une ligne par plage et par jour (day, start, end, category).'
+  };
+  $('fmt').innerHTML = F.names().map(n => `<option value="${n}">${n}</option>`).join('');
+  /** Données de la semaine dans le format choisi (écrites seulement si elles changent). */
+  const show = d => {
+    const f = $('fmt').value,
+      text = JSON.stringify(F.write(f, d), null, 2);
+    if ($('out').textContent !== text) $('out').textContent = text;
+    if ($('fmthint').textContent !== HINTS[f]) $('fmthint').textContent = HINTS[f] || '';
+  };
+  const write = d => {
+    try {
+      localStorage.setItem(key(tri(), d.week), JSON.stringify({
+        ...d,
+        pilot: tri()
+      }));
+      return true;
+    } catch (e) {
+      $('status').textContent = `non enregistré : ${e.message}`;
+      return false;
+    }
+  };
+  const tri = () => $('tri').value.trim().toUpperCase() || 'TST';
+  const week0 = T.weekId(Date.now());
+  let ui = null;
+  /** Monte (ou remonte, changement de densité) le composant sur la semaine voulue. */
+  const mountUi = (week, data) => {
+    ui?.destroy();
+    ui = T.mount($('host'), {
+      week,
+      lang: 'fr',
+      labels: LABELS,
+      density: $('density').value, // compacte : l'aspect de l'ancienne grille ; confortable : rangées hautes
+      help: true,
+      data,
+      onChange: d => {
+        if (write(d)) $('status').textContent = `enregistré ${new Date().toLocaleTimeString('fr-FR')}`;
+        show(d);
+      },
+      // période répétitive qui déborde de la semaine affichée : les autres semaines, lues et écrites ici
+      store: {
+        read: w => read(tri(), w),
+        write
+      }
+    });
+    show(ui.get());
+  };
+  const empty = w => ({
+    schema: 3,
+    pilot: tri(),
+    week: w,
+    ranges: []
+  });
+  mountUi(week0, read(tri(), week0) || empty(week0));
+  /** Charge la semaine affichée (changement de semaine ou de pilote). */
+  const load = () => {
+    const w = ui.week();
+    ui.set(read(tri(), w) || empty(w));
+    show(ui.get());
+  };
+  $('host').addEventListener('dispos-week', load);
+  $('tri').addEventListener('change', load);
+  $('density').addEventListener('change', () => mountUi(ui.week(), ui.get()));
+  $('fmt').addEventListener('change', () => show(ui.get()));
+  // vider : un geste comme un autre (il s'annule) ; boutons d'historique grisés quand il n'y a rien
+  $('clear').onclick = () => ui.clear();
+  $('undo').onclick = () => ui.undo();
+  $('redo').onclick = () => ui.redo();
+  $('host').addEventListener('dispos-history', e => {
+    $('undo').disabled = !e.detail.undo;
+    $('redo').disabled = !e.detail.redo;
+  });
+  $('host').addEventListener('dispos-select', e => {
+    const r = e.detail;
+    $('selection').textContent = r ? `sélection : ${LABELS[`cat.${r.cat}`] || r.cat}, ${r.start.slice(11)}–${r.end.slice(11)}` : '';
+  });
+  $('copy').onclick = async () => {
+    const text = $('out').textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      $('fmtmsg').textContent = 'copié dans le presse-papiers';
+    } catch {
+      // presse-papiers refusé (page ouverte depuis le disque…) : le texte est sélectionné, Ctrl+C le copie
+      getSelection().selectAllChildren($('out'));
+      $('fmtmsg').textContent = document.execCommand?.('copy') ? 'copié dans le presse-papiers' :
+        'texte sélectionné : Ctrl+C pour le copier';
+    }
+  };
+  $('import').onclick = () => {
+    const f = $('fmt').value;
+    let d;
+    try {
+      d = F.read(f, JSON.parse($('imp').value));
+    } catch (e) {
+      $('impmsg').textContent = `lecture impossible au format ${f} : ${e.message}`;
+      return;
+    }
+    if (d.week !== ui.week()) ui.week(d.week); // la semaine importée s'affiche d'abord (chargée par dispos-week)
+    ui.replace(d);
+    $('impmsg').textContent = `semaine ${d.week} importée (${d.ranges.length} plage(s)) — Ctrl+Z l'annule`;
+  };
+</script>
+</body></html>

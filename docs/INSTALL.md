@@ -1,6 +1,6 @@
 # Installation
 
-*[Sommaire de la documentation](README.md) · [Présentation](PRESENTATION.md) · [Tutoriel d'installation](tutorial/installation.fr.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
+*[Sommaire de la documentation](README.md) · [Tutoriel d'installation](tutorial/installation.fr.md) · [Manuel d'exploitation](MANUEL_EXPLOITATION.md)*
 
 > **Première installation : ce document est remplacé par le [tutoriel d'installation](tutorial/installation.fr.md)**
 > ([HTML](tutorial/installation.fr.html) · [English](tutorial/installation.en.md)). Ce qui suit reste la référence du
@@ -157,7 +157,7 @@ Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (�
 Maintenance › Données aéronautiques, source SIA de la zone France. Le ZIP s'obtient sur la boutique du SIA, page du cycle : compte SIA
 (gratuit), « Ajouter au panier » (0 €), « Passer commande » en acceptant la licence, téléchargement depuis la
 confirmation ou « Mes commandes ». Puis **Récupérer le ZIP téléchargé** : le serveur du lanceur prend le dernier
-`export_xml_bd_SIA_*.zip` du dossier Téléchargements et la page l'extrait dans `data/sia/`. Détail : [SIA_MISSIONS.md](SIA_MISSIONS.md).
+`export_xml_bd_SIA_*.zip` du dossier Téléchargements et la page l'extrait dans `data/sia/`. Détail : [manuel administrateur](MANUEL_ADMINISTRATEUR.md), « Données aéronautiques ».
 
 ### Clé d'API IVAO (ordres de vols)
 

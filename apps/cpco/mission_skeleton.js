@@ -71,11 +71,15 @@
     let codes = Object.entries(cats).filter(([k]) => want.some(w => k.startsWith(w))).flatMap(([, v]) => v);
     // chasseurs : réacteur, un ou deux moteurs (description OACI L1J / L2J) — seuls admis au combat, exclus de la
     // surveillance maritime
-    const fighter = c => /^L[12]J/.test(String((window.AIRCRAFT_DB || {})[c]?.description || ''));
+    // (classement commun de la suite : AircraftCatalog.classify)
+    const cls = c => window.AircraftCatalog?.classify?.(c) || {},
+      fighter = c => {
+        const k = cls(c);
+        return k.family === 'L' && k.power === 'J' && (k.engines === 1 || k.engines === 2);
+      };
     if (type === 'COMBAT') codes = codes.filter(fighter);
     // surveillance maritime : ni chasseur ni avion monomoteur (école, drone) — multimoteurs et hélicoptères
-    if (type === 'MARITIME') codes = codes.filter(c => !fighter(c) && !/^L1/.test(String((window.AIRCRAFT_DB || {})[c]?.description ||
-      '')));
+    if (type === 'MARITIME') codes = codes.filter(c => !fighter(c) && !(cls(c).family === 'L' && cls(c).engines === 1));
     return [...new Set(codes)]
   }
   /** Désignateurs OACI cités dans une section du prompt de génération (« 6. AÉRONEFS », « 7. RAVITAILLEMENT »…). */
