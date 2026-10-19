@@ -375,3 +375,24 @@ an item 15 route. A call sign such as
 `AFR1234` gives SimBrief `airline` and `fltnum`. In Fuel, the alternate, call sign and registration come from the last
 SimBrief OFP only when its origin and destination match the flight plan.
 
+## 15. Reading a SimBrief OFP (19 October)
+
+`shared/simbrief_ofp.js` (`window.SimbriefOfp`), loaded by Fuel and by the map studio (so Flight maps): one reading of
+the OFP JSON returned by `xml.fetcher.php`, whatever the format. With `json=1`, `navlog` is `{ fix: [ … ] }` and
+`alternate` an object; with `json=v2`, `navlog` is the list of points itself and `alternate` a list (and
+`alternate_navlog` comes before `navlog`: a depth-first search for a “navlog” key took it — the “Fuel keeps only the
+two airfields” bug of 19 October).
+
+| Function | Returns |
+|---|---|
+| `fixes(raw)` | every navlog entry (`ident`, `pos_lat`, `pos_long`, `type`, `stage`, `is_sid_star`, `via_airway`…) |
+| `routeFixes(raw)` | route points: TOC / TOD and airfields (`type: apt`) left out, positioned entries only |
+| `alternate(raw)` | the alternate's ICAO code or `''` |
+| `problem(raw)` | why the OFP gives no point-by-point route (no airfield, empty navlog, no positioned point), or `''` |
+| `summary(raw)` | “OFP of 19/10 · LFRS → LFML · 11 points · FL270 · alternate LFPG · S210 F-BHHH” (page language) |
+| `showJson(raw)` | read-only window with the JSON (`AppFramework.askText`) and a “Copy” button |
+| `render(host, raw, { error })` | the summary (or `error`, in red) and a “View the JSON” link in `host` |
+
+Fuel: `#ofpSummary` and `#fplPoints` under the flight plan (`shared/flight_vertical_profile.js`, `showOfp`,
+`showPoints`); the route list stays the “ID lat lon” form of `routeFromOfp` (§ 14). Flight maps: the route block's
+“SimBrief” button writes the same form (`ofpRouteList`) and the summary in `#routeInfo`.

@@ -1466,7 +1466,7 @@ Este bloque relaciona tres vistas: el plan de vuelo (texto), el mapa y el corte 
 - «Nivel»: nivel de crucero («FL65» o «6500»).
 - Menú «Aerovías» / «RTBA (baja altura)» y, después, «Buscar»: calcula una ruta entre los puntos del campo. El resultado sustituye el campo.
 - «SimBrief»: toma la ruta del último OFP punto por punto (cada punto del navlog con su posición, incluidos los puntos
-  de aerovías y procedimientos), su nivel y, en los mapas de vuelo, su alternativa. El identificador SimBrief se introduce en Ajustes › Mi perfil.
+  de aerovías y procedimientos), su nivel y, en los mapas de vuelo, su alternativa; la línea bajo el bloque indica lo leído (mismo resumen que en Combustible, «Ver el JSON»). El identificador SimBrief se introduce en Ajustes › Mi perfil.
 - «Trazar»: dibuja el corte vertical. «Combustible»: abre el planificador de combustible con esta ruta (distancia, nivel, ruta verdadera, aeronave).
 - «Copiar OACI»: copia el plan de vuelo OACI estricto (puntos no publicados en coordenadas).
 - «Sintaxis y uso»: recordatorio de las formas aceptadas (balizas, puntos de notificación VFR «MM-CV», «REN300010», coordenadas «4330N00125E», niveles «/A035», «VFR»…).
@@ -1598,7 +1598,7 @@ La ficha elegida sigue visible en solo lectura en el Resultado (grupo plegable �
 
 ### Plan de combustible
 
-1. «Plan de vuelo (casilla 15)»: introduzca la ruta. Es el mismo plan que el de los Mapas de vuelo (gana el más reciente). De él se deducen la distancia, la ruta verdadera y el nivel.
+1. «Plan de vuelo (casilla 15)»: introduzca la ruta. Es el mismo plan que el de los Mapas de vuelo (gana el más reciente). De él se deducen la distancia, la ruta verdadera y el nivel. Bajo el campo, los puntos de la ruta se muestran uno a uno (aeródromos en negrita, puntos de aerovías atenuados, nivel tras el punto donde cambia; al pasar: posición). Tras «Recuperar último FPL de SimBrief», una línea indica lo leído, por ejemplo «OFP del 19/10 · LFRS → LFML · 11 puntos · FL270 · alternativo LFPG · S210 F-BHHH» (también como notificación), con «Ver el JSON» (ventana con el JSON del OFP, «Copiar»). Un OFP sin ruta punto por punto lo indica («navlog vacío…»): la ruta se reduce entonces a los aeródromos.
 2. Complete o corrija los campos del plegable «Parámetros del vuelo» (desplegado de entrada en el nivel Experto, plegado en los demás; los valores por defecto bastan para un cálculo rápido): «Distancia (NM)», «Nivel (FL)», «Ruta verdadera (°)», «Rodaje (min)», «Viento desde (°)», «Viento (kt)», «Reserva (min)», «Contingencia (%)».
 3. Opcional, en el mismo plegable: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)». «Consumo de crucero (kg/h)»: rellenado desde el perfil; sin perfil, la página dice qué valor usará y de dónde viene (por ejemplo «≈ 4 000 kg/h, estimación tipo A400»); «Usar este valor» lo copia en el campo, «Guardar para este tipo» lo conserva para los próximos vuelos. «Ascenso elegido» (vista detallada): tres cursores, «IAS», variómetro y «Gases (%)» (RPM o N1 si el perfil tiene mapa motor), cada uno precedido de una casilla «fijo»; dos están fijos, el tercero se calcula y aparece en gris; «gases a fondo» aparece bajo el variómetro; la línea de abajo da consumo, TAS y gases a mitad del ascenso. Es el ascenso que cuenta el plan de combustible.
 4. Haga clic en «Calcular».

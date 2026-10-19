@@ -1459,7 +1459,7 @@ This block links three views: the flight plan (text), the map and the vertical s
 - “Level”: cruise level (“FL65” or “6500”).
 - “Airways” / “RTBA (low level)” menu, then “Search”: calculates a route between the points of the field. The result replaces the field.
 - “SimBrief”: takes the route of the latest OFP point by point (each navlog point with its position, airway and
-  procedure points included), its level and, in Flight maps, its alternate. The SimBrief identifier is entered in Settings › My profile.
+  procedure points included), its level and, in Flight maps, its alternate; the line below the block says what was read (same summary as in Fuel, “View the JSON”). The SimBrief identifier is entered in Settings › My profile.
 - “Draw”: draws the vertical section. “Fuel”: opens the fuel planner with this route (distance, level, true track, aircraft).
 - “Copy ICAO”: copies the strict ICAO flight plan (unpublished points as coordinates).
 - “Syntax and use”: reminder of the accepted forms (beacons, VFR reporting points “MM-CV”, “REN300010”, coordinates “4330N00125E”, levels “/A035”, “VFR”…).
@@ -1591,7 +1591,7 @@ The chosen sheet stays visible read-only in the Result (collapsible group “Fli
 
 ### Fuel plan
 
-1. “Flight plan (item 15)”: enter the route. It is the same plan as the Flight maps (the most recent one wins). The distance, the true track and the level are deduced from it.
+1. “Flight plan (item 15)”: enter the route. It is the same plan as the Flight maps (the most recent one wins). The distance, the true track and the level are deduced from it. Below the field, the route points are shown one by one (airfields in bold, airway points dimmed, level after the point where it changes; hover: position). After “Fetch latest SimBrief FPL”, a line says what was read, for example “OFP of 19/10 · LFRS → LFML · 11 points · FL270 · alternate LFPG · S210 F-BHHH” (also as a notification), with “View the JSON” (window with the OFP's JSON, “Copy”). An OFP without a point-by-point route says so (“empty navlog…”): the route is then reduced to the airfields.
 2. Complete or correct the fields of the collapsible “Flight parameters” section (unfolded from the start at the Expert level, collapsed otherwise; the default values are enough for a quick estimate): “Distance (NM)”, “Level (FL)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
 3. Optional, in the same section: “Planned take-off mass”, compared with the type's MTOW; “ISA deviation (°C)”, or “Ground temperature (°C)” with “Field elevation (ft)”, or “Temperature at level (°C)”. “Cruise fuel flow (kg/h)”: filled in from the profile; without a profile, the page says which value it will use and where it comes from (for example “≈ 4,000 kg/h, type estimate A400”); “Use this value” copies it into the field, “Remember for this type” keeps it for the next flights. “Chosen climb” (detailed view): three sliders, “IAS”, climb rate and “Throttle (%)” (RPM or N1 if the profile has an engine map), each preceded by a “fixed” box; two are fixed, the third is calculated and greyed out; “full throttle” shows under the climb rate; the line below gives fuel flow, TAS and throttle at mid-climb. This is the climb the fuel plan counts.
 4. Click “Calculate”.

@@ -3,6 +3,31 @@
    puis les règles des designs (#skeuoPlanner), hors couche. */
 /* ---- couche « app » ---- */
 @layer app {
+  /* plan de vol : résumé du dernier OFP SimBrief lu et points de la route (un repère par point) */
+  .ofp-summary {
+    margin: 6px 0 0
+  }
+  .ofp-summary .err {
+    color: var(--bad, #e5484d)
+  }
+  .fpl-points {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+    font: 12px/1.3 ui-monospace, Consolas, monospace
+  }
+  .fpl-points span {
+    padding: 1px 6px;
+    border: 1px solid var(--line);
+    border-radius: 4px
+  }
+  .fpl-points span.awy {
+    opacity: .7
+  }
+  .fpl-points span.ad {
+    font-weight: 700
+  }
   :root {
     font-family: Inter, system-ui, Segoe UI, Arial, sans-serif;
     color-scheme: dark

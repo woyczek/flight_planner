@@ -1508,7 +1508,7 @@ Ce bloc relie trois vues : le plan de vol (texte), la carte et la coupe vertical
 - « Niveau » : niveau de croisière (« FL65 » ou « 6500 »).
 - Menu « Voies aériennes » / « RTBA (basse hauteur) », puis « Chercher » : calcule une route entre les points du champ. Le résultat remplace le champ.
 - « SimBrief » : reprend la route du dernier OFP, point par point (chaque point du navlog avec sa position, points des
-  voies aériennes et des procédures compris), son niveau et, dans les Cartes de vol, son dégagement. L'identifiant SimBrief se saisit dans Paramètres › Mon profil.
+  voies aériennes et des procédures compris), son niveau et, dans les Cartes de vol, son dégagement ; la ligne sous le bloc dit ce qui a été lu (même résumé que dans le Carburant, « Voir le JSON »). L'identifiant SimBrief se saisit dans Paramètres › Mon profil.
 - « Tracer » : dessine la coupe verticale. « Carburant » : ouvre le planificateur carburant avec cette route (distance, niveau, route vraie, appareil).
 - « Copier OACI » : copie le plan de vol OACI strict (points non publiés en coordonnées).
 - « Syntaxe et utilisation » : rappel des formes acceptées (balises, points de report VFR « MM-CV », « REN300010 », coordonnées « 4330N00125E », niveaux « /A035 », « VFR »…).
@@ -1648,7 +1648,7 @@ La fiche choisie reste visible en lecture seule dans le Résultat (groupe replia
 
 ### Devis carburant
 
-1. « Plan de vol (case 15) » : saisissez la route. C'est le même plan que les Cartes de vol (le plus récent l'emporte). La distance, la route vraie et le niveau en sont déduits.
+1. « Plan de vol (case 15) » : saisissez la route. C'est le même plan que les Cartes de vol (le plus récent l'emporte). La distance, la route vraie et le niveau en sont déduits. Sous le champ, les points de la route s'affichent un par un (terrains en gras, points des voies aériennes atténués, niveau après le point où il change ; survol : position). Après « Récupérer dernier FPL SimBrief », une ligne dit ce qui a été lu, par exemple « OFP du 19/10 · LFRS → LFML · 11 points · FL270 · dégagement LFPG · S210 F-BHHH » (aussi en notification), avec « Voir le JSON » (fenêtre du JSON de l'OFP, « Copier »). Un OFP sans route point par point le dit (« navlog vide… ») : la route se réduit alors aux terrains.
 2. Complétez ou corrigez les champs du repli « Paramètres du vol » (déplié d'emblée au niveau Expert, replié sinon ; les valeurs par défaut suffisent pour un devis rapide) : « Distance (NM) », « Niveau (FL) », « Route vraie (°) », « Taxi (min) », « Vent de (°) », « Vent (kt) », « Réserve (min) », « Contingence (%) ».
 3. Facultatif, dans le même repli : « Masse au décollage prévue », comparée à la MTOW du type ; « Écart ISA (°C) », ou « Température sol (°C) » avec « Altitude terrain (ft) », ou « Température au niveau (°C) ». « Consommation de croisière (kg/h) » : préremplie par le profil ; sans profil, la page dit quelle valeur elle utilisera et d'où elle vient (par exemple « ≈ 4 000 kg/h, estimation type A400 ») ; « Utiliser cette valeur » la reprend dans le champ, « Mémoriser pour ce type » la garde pour les prochains vols. « Montée choisie » (vue détaillée) : trois curseurs, « Vitesse indiquée », « Vario » et « Gaz (%) » (RPM ou N1 si le profil a une cartographie moteur), chacun précédé d'une case « fixé » ; deux sont fixés, le troisième est calculé et grisé ; « plein gaz » s'affiche sous le vario ; la ligne du dessous donne débit, TAS et gaz à mi-montée. C'est cette montée que le devis compte.
 4. Cliquez sur « Calculer ».

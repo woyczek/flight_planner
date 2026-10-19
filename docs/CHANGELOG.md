@@ -23,6 +23,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **SimBrief: what was read, and the route points in Fuel** (`shared/simbrief_ofp.js`,
+  `shared/flight_vertical_profile.js`, `apps/planner/flight_performance_planner.html`, `apps/cpco/map_parser.html`) —
+  a shared module reads the OFP (navlog points in `json=1` and `v2`, alternate, summary, reason when there is no
+  point-by-point route, JSON window with "Copy"). After "Fetch latest SimBrief FPL" (Fuel) and the route block's
+  "SimBrief" button (Flight maps), a line says what was read ("OFP of 19/10 · LFRS → LFML · 11 points · FL270 ·
+  alternate LFPG · S210 F-BHHH", with "View the JSON"; Fuel also shows it as a notification); an OFP without
+  navlog points says why ("empty navlog", "navlog without positioned point") instead of silently giving a route of
+  two airfields. Fuel lists the route points under the flight plan (airfields in bold, airway points dimmed, level
+  changes, position on hover), so the route can be checked without opening Flight maps.
 - **Flight maps: lighter page** (`apps/cpco/map_parser.html`, `tools/build_map_planner.py`) — MapLibre (~800 KB) is
   loaded at the first map preview or generation (`ensureMapLibre`) instead of in the page head; the assembly map is
   no longer rendered off screen while its block is hidden (levels 1 to 3), it is rendered when the level shows it;

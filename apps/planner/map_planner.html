@@ -111,7 +111,7 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script>
 <script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
-<script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/aar_tracks.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/sticky_frame.js?v=0"></script>
+<script src="../../shared/simbrief_ofp.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/aar_tracks.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/sticky_frame.js?v=0"></script>
 <style data-layer="app">
 @layer app {
   :root {
@@ -5837,7 +5837,8 @@ $('vprofIcaoCopy').onclick = () => {
 function ofpRouteList(d, grp) {
   const pt = (id, lat, lon) => Number.isFinite(+lat) && Number.isFinite(+lon) && lat !== '' && lon !== '' ?
     `${String(id || 'WPT').replace(/[\s,;/]+/g, '') || 'WPT'} ${(+lat).toFixed(4)} ${(+lon).toFixed(4)}` : '',
-    fixes = [].concat(d.navlog?.fix || []).filter(f => f && !/^(TOC|TOD)$/i.test(f.ident || '') && f.type !== 'apt'),
+    fixes = window.SimbriefOfp ? SimbriefOfp.routeFixes(d) : [].concat(d.navlog?.fix || []).filter(f => f && !/^(TOC|TOD)$/i.test(f
+      .ident || '') && f.type !== 'apt'),
     mid = fixes.map(f => pt(f.ident || f.name, f.pos_lat, f.pos_long)).filter((x, i, a) => x && x.split(' ')[0] !== a[i - 1]?.split(' ')[
       0]),
     dep = pt(d.origin?.icao_code, d.origin?.pos_lat, d.origin?.pos_long),
@@ -5878,7 +5879,13 @@ $('routeSimbrief').onclick = async () => {
     $('vprofRoute').value = ofpRouteList(d, grp) || [d.origin.icao_code, grp, route || 'DCT', d.destination?.icao_code].filter(Boolean)
       .join(' ');
     if (ft) $('vprofCruise').value = ft >= 6000 ? `FL${Math.round(ft/100)}` : String(ft);
-    $('routeInfo').textContent = `Route SimBrief (${d.origin.icao_code} → ${d.destination?.icao_code||'?'}${g.flight_number?`, vol ${g.icao_airline||''}${g.flight_number}`:''}).`;
+    if (window.SimbriefOfp) {
+      const why = SimbriefOfp.problem(d);
+      SimbriefOfp.render($('routeInfo'), d, {
+        error: why ? `${why} ${tl(['Route ATC (case 15) reprise à la place.', 'ATC route (field 15) used instead.',
+          'Stattdessen ATC-Route (Feld 15) übernommen.', 'Se usa en su lugar la ruta ATC (casilla 15).'])}` : ''
+      })
+    } else $('routeInfo').textContent = `Route SimBrief (${d.origin.icao_code} → ${d.destination?.icao_code||'?'}).`;
     vprofEditor?.refreshText?.();
     routeEdited({
       altn: [].concat(d.alternate || [])[0]?.icao_code || ''

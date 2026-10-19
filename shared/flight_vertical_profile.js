@@ -136,7 +136,7 @@
   // points du navlog en coordonnées (TOC / TOD recalculés ici, donc écartés), paliers de croisière
   // (changement d'altitude en phase CRZ → nouveau groupe au point), arrivée.
   function routeFromOfp(raw) {
-    const fixes = findNavlog(raw) || [],
+    const fixes = (window.SimbriefOfp?.fixes(raw).length ? window.SimbriefOfp.fixes(raw) : findNavlog(raw)) || [],
       num = v => parseFloat(v),
       items = [],
       gen = raw.general || {};
@@ -275,6 +275,36 @@
           '; keine Flughöhe angegeben (VFR): keine Flugbahn gezeichnet.', '; sin nivel indicado (VFR): trayectoria no trazada.')));
   }
 
+  /** Ligne de résultat de l'OFP lu (#ofpSummary) : résumé (date, trajet, points, niveau, dégagement, appareil) et
+   *  « Voir le JSON » ; si l'OFP n'a pas de route point par point, la raison (navlog vide…) en erreur. tell : aussi en
+   *  notification (le bouton est dans l'en-tête, loin de la ligne). */
+  function showOfp(raw, tell, error = '') {
+    const O = window.SimbriefOfp;
+    if (!O || !raw) return;
+    const why = error || O.problem(raw);
+    O.render($('ofpSummary'), raw, {
+      error: why ? `${why} ${tl('Route réduite aux terrains.', 'Route reduced to the airfields.', 'Route auf die Flugplätze reduziert.', 'Ruta reducida a los aeródromos.')}` : ''
+    });
+    if (tell) window.AppFramework?.notify?.(why ? `SimBrief — ${why}` : `SimBrief — ${O.summary(raw)}`, why ? 'warn' : 'ok');
+  }
+  /** Points de la route sous le plan de vol (#fplPoints) : terrains en gras, points des voies aériennes atténués, niveau
+   *  après le point où il change ; vide sans route. */
+  function showPoints(points) {
+    const box = $('fplPoints');
+    if (!box) return;
+    box.textContent = '';
+    box.hidden = !points?.length;
+    for (const [i, p] of(points || []).entries()) {
+      const s = document.createElement('span'),
+        lvl = p.lvl?.ft ? (p.lvl.ft >= 6000 ? ` FL${Math.round(p.lvl.ft / 100)}` : ` ${p.lvl.ft} ft`) : '';
+      s.textContent = (p.id || p.name || '?') + lvl;
+      s.title = Number.isFinite(p.lat) ? `${p.name || p.id || ''} ${p.lat.toFixed(4)} ${p.lon.toFixed(4)}${p.awy ? ` — ${p.awy}` : ''}` : '';
+      if (p.awy) s.className = 'awy';
+      else if (i === 0 || i === points.length - 1) s.className = 'ad';
+      box.append(s);
+    }
+  }
+
   // L'OFP importé par le bouton d'en-tête (« Récupérer dernier FPL SimBrief ») ou le fichier OFP donne la
   // route : storeOFP (enregistrement de l'OFP par la page) est complété pour la reprendre et tracer.
   if (typeof storeOFP === 'function') {
@@ -284,9 +314,14 @@
       const out = await original.call(this, raw, ...rest);
       try {
         $('vpRoute').value = routeFromOfp(raw);
+        showOfp(raw, true);
+        showPoints(SiaProfile.parseRoute($('vpRoute').value, SiaProfile.resolver({
+          aero: studio?.base?.aero || {}
+        })).points);
         store();
         await draw();
       } catch (e) {
+        showOfp(raw, true, e.message);
         status(e.message, true);
       }
       return out;
@@ -305,6 +340,7 @@
       info = $('fplInfo');
     if (!text) {
       if (info) info.textContent = '';
+      showPoints([]);
       return;
     }
     if (!studio) {
@@ -320,6 +356,7 @@
     } = SiaProfile.parseRoute(text, SiaProfile.resolver({
       aero: studio?.base?.aero || {}
     }));
+    showPoints(points);
     if (points.length < 2) {
       if (info) info.textContent = unknown.length ? tl(`Point(s) inconnu(s) : ${unknown.join(', ')}`, `Unknown point(s): ${unknown.join(', ')}`) : '';
       return;
@@ -403,6 +440,7 @@
     const o = await loadOFP();
     if (o) {
       $('vpRoute').value = routeFromOfp(o.raw || o);
+      showOfp(o.raw || o, false);
       store();
     }
   }).catch(e => status(e.message, true));
