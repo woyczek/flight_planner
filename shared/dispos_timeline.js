@@ -294,7 +294,7 @@
     if (document.getElementById('disposTimelineCss')) return;
     const st = document.createElement('style');
     st.id = 'disposTimelineCss';
-    st.textContent = `.dt{display:grid;gap:10px;font:var(--dt-font,14px/1.4 system-ui,sans-serif);color:var(--dt-ink,#17202a);user-select:none;-webkit-user-select:none}
+    st.textContent = `.dt{display:grid;gap:10px;font:var(--dt-font,14px/1.4 system-ui,sans-serif);color:var(--dt-ink,inherit);user-select:none;-webkit-user-select:none}
 .dt-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.dt-nav b{min-width:15em}
 .dt-pal{display:grid;grid-template-columns:max-content 1fr;gap:6px 10px;align-items:center}
 .dt-pal-g{font-size:12px;opacity:.75;text-align:right}.dt-pal-r{display:flex;flex-wrap:wrap;gap:4px}

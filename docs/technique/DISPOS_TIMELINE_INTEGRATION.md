@@ -103,7 +103,7 @@ The component never stores anything itself. It hands the data to the page, one p
 **Theme**: set CSS variables on the container or an ancestor. Each has a default, so set only what differs.
 
 - `--dt-font`: the font shorthand.
-- `--dt-ink`: the text colour.
+- `--dt-ink`: the text colour (by default the component inherits the page's colour, so it reads on light and dark pages alike).
 - `--dt-accent` and `--dt-accent-soft`: selection, outlines, the selection rectangle.
 - `--dt-row-bg`: empty rows. `--dt-line` and `--dt-line-half`: the hour and half-hour lines.
 - `--dt-edge`: the gutters above the first row and below the last one.

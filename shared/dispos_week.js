@@ -34,7 +34,8 @@
       setTimeout(poll, 50);
     })();
   });
-  const lang = () => ['fr', 'en', 'de', 'es'][K.langIndex()] || 'fr';
+  // locale des dates et des jours du module (Intl) : anglais britannique (19/10), pas américain (10/19)
+  const lang = () => ['fr-FR', 'en-GB', 'de-DE', 'es-ES'][K.langIndex()] || 'fr-FR';
   const loc = () => ['fr-FR', 'en-GB', 'de-DE', 'es-ES'][K.langIndex()] || 'fr-FR';
   const isoDay = ms => new Date(ms).toISOString().slice(0, 10);
   /** Libellé court d'un jour (« lun 05/10 »), en UTC dans la langue de la page. */
