@@ -5,6 +5,55 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 5.3.0 — 19 October 2026
+
+### Summary
+
+- **Mission report, one "Prefill ▾" menu and three steps.** "New report from…" (a mission order, one of my flights, a
+  file) and "Complete this report from…" (my last IVAO or VATSIM flight, a filed SimBrief / IVAO / VATSIM flight
+  plan, a pasted flight plan, tracker page or METAR, the "→ Report" bookmarklet). Every source ends with the same
+  summary — what was filled, what was kept, what the source lacked — with "Undo" and "Replace the fields already
+  entered". The form reads as Flight, Mission, Result, plus a folded "Flight details" step; prefilled blocks show a
+  one-line summary ("Edit" opens the fields), and a badge on each block says where its values come from.
+- **My last IVAO flight.** The launcher reads the pilot's sessions with the airline's IVAO key: flight plan with the
+  registration, full track, start-up to on-blocks, sessions cut by a disconnection grouped into one flight, link to
+  the tracker. VATSIM gives connection times only.
+- **Record the flight on the airline website** from the report: the fields travel in the page address, the "→ Flight"
+  bookmarklet fills the site's form and never validates it.
+- **"My flights"**: the pilot's past flights (reports and the airline log), filters, totals, CSV export, "Write the
+  report" for a flight without one.
+- **Availability editor**: continuous time axis per day, rectangles drawn to the half hour and adjusted to five
+  minutes, unavailability as a background, cuts, drag across days, undo, "Previous week" kept. Weeks are written in
+  the new format at their first save; older weeks are still read. The module ships on its own
+  (`dispos-module-<version>.zip`) with a regeneration prompt and an integration guide.
+- **Performance sheets** have their own page (Tools): sheet management, import by file or paste with duplicate
+  detection, ChatGPT answers read whatever their shape, "Fill in the missing fields" for several sheets at once.
+  **Fuel** keeps the plan only, with the "Flight level decision" chart.
+- **One aircraft picker** (dropdown with search) in Fuel and Performance sheets, the other pages to follow.
+- **Keys and external services**: one card per service in Settings › Installation (save, test, remove); personal IDs
+  (IVAO VID, VATSIM CID, SimBrief) in My profile only.
+- **Landing**: linked points across the five charts, pinned tooltip, one reading block.
+
+### Actions to take
+
+1. **Restart the launcher**, then reload each page (Ctrl+F5): new routes (last IVAO / VATSIM flight, keys) and the
+   availability format.
+2. **Airline IVAO key**: check it in Settings › Installation › Keys and external services ("Test" says whether IVAO
+   accepts it). Pilots: set the IVAO VID / VATSIM CID in My profile › Identity and networks (needed by "My last
+   flight").
+3. **Mission report**: block layouts memorised in the browser are reset by the new steps; "Detailed report" is now
+   the "Flight details" step.
+4. **Availability**: nothing to do; a week is rewritten in the new format when it is saved. Two overlapping
+   availability categories in an old week read as "the last one wins" (one minute, one state).
+
+### Notes
+
+- Navigraph Charts and ChartFox deep links are not in this version (the "Open in" menu follows).
+- The screenshots of the manuals still show the former availability grid and report layout: a screenshot campaign
+  is logged in the technical debt.
+- The English, German and Spanish manuals follow the French ones; `tools/doc_traductions.py` lists what remains to
+  re-translate.
+
 ## 5.2.0 — 12 October 2026
 
 ### Summary

@@ -10,6 +10,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+## [5.3.0] — 2026-10-19
+
+The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,
+one of my flights, my last IVAO or VATSIM flight read through the launcher, a filed flight plan, a pasted tracker page
+or METAR, a file), the form is read in three steps — Flight, Mission, Result — with prefilled blocks shown as one-line
+summaries, and each block says where its values come from. The availability editor is a new module: a continuous
+time axis, rectangles drawn, moved and resized to five minutes, unavailability as a background, undo, delivered
+separately with its specification and integration prompts. Performance sheets have their own page, Fuel keeps the
+plan only, and one aircraft picker with search serves the suite. "My flights" lists the pilot's past flights, "Keys
+and external services" holds every suite key in one place, and the aircraft type logic (classification, lookup,
+names) lives once in the shared framework.
+
 ### Added
 
 - **Mission report: prefill from my last IVAO / VATSIM flight** (`shared/mission_core/core.js`, `tools/launch.py`) —
