@@ -1371,8 +1371,8 @@
     min-height: 1.2em;
     color: var(--warn, #f2c879)
   }
-  .sheet-pick select {
-    max-width: 300px
+  .sheet-pick .aircraft-current {
+    max-width: 320px
   }
   .pp-sortlbl {
     display: inline-flex;

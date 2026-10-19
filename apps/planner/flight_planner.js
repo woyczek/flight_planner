@@ -57,12 +57,6 @@ const FLAG = {
   en: '<svg viewBox="0 0 60 36"><rect width="60" height="36" fill="#012169"/><path d="M0 0L60 36M60 0L0 36" stroke="#fff" stroke-width="8"/><path d="M30 0V36M0 18H60" stroke="#C8102E" stroke-width="7"/></svg>'
 };
 // ===== En-tête : appareil courant (icône, liste), langue, préférences =====
-/** Groupe d'affichage d'un profil (liste des avions). Entrée : profil. Sortie : [groupe (clé française de fpGroup : tri,
- *  « Autres » en dernier), visuel d'icône, libellé de catégorie traduit] (AircraftDBIcons ; « Autres » à défaut). */
-function profileVisual(p) {
-  let [group, label] = window.AircraftDBIcons?.group(p) || ["Autres", "Autre"];
-  return [group, window.AircraftDBIcons?.visual(p) || "other", window.AircraftDBIcons?.groupLabel?.(label) || label]
-}
 /** Icône SVG (HTML) d'un profil pour la liste et l'en-tête ; ✈ à défaut. */
 function aircraftIcon(p) {
   return window.AircraftDBIcons?.icon(p) || '<span class="ac-icon">✈</span>'
@@ -73,47 +67,89 @@ function syncAircraftPicker() {
   if (PERF_PAGE === "sheets") renderSheetPick();
   aircraftPicker?.refresh()
 }
-/** Fiches de performances : sélecteur « Appareil » de l'en-tête, la fiche modifiée et l'appareil du panneau ChatGPT.
- *  Fiches enregistrées et types de la flotte sans fiche, découpés comme le menu « Avion » du Carburant (« Mes appareils »
- *  en tête, puis par catégorie). Choix : changement de fiche (confirmation si elle est modifiée, shared/flight_ui.js) ;
- *  type sans fiche : fiche vide à compléter. Refait seulement si la liste ou le choix ont changé. */
-function renderSheetPick() {
-  const sel = document.getElementById("sheetPick");
-  if (!sel) return;
-  const esc = KIT.esc,
-    entries = gptEntries(),
+/** Fiches de performances : sélecteur « Appareil » de l'en-tête (sélecteur commun, shared/aircraft_picker.js), la fiche
+ *  modifiée et l'appareil du panneau ChatGPT. Fiches enregistrées et types de la flotte sans fiche, rangés comme le
+ *  bouton « Avion » du Carburant (« Mes appareils » en tête, puis par catégorie) ; recherche à la frappe. Choix :
+ *  changement de fiche (confirmation si elle est modifiée, shared/flight_ui.js) ; type sans fiche : fiche vide à
+ *  compléter. */
+var sheetPicker;
+/** Clé du choix en cours du sélecteur « Appareil » : « P:id » (fiche), « L:id » (type sans fiche de la liste), « N:code »
+ *  (appareil sans fiche hors de la liste), « » (rien). */
+function sheetPickKey(entries = gptEntries()) {
+  if (active) return (state.profiles?.[active.id] ? "P:" : "L:") + active.id;
+  if (!ppNoSheet) return "";
+  const twin = entries.find(x => x.landing && aircraftTypeKey(x.p.icao || x.p.type || x.id) === aircraftTypeKey(ppNoSheet.code));
+  return ppNoSheet.key || (twin ? `L:${twin.id}` : `N:${ppNoSheet.code}`)
+}
+/** Groupes du sélecteur « Appareil » : la fiche ou l'appareil en cours absent de la liste en tête (« En cours »), puis
+ *  les fiches et les types sans fiche rangés par pickerGroups. */
+function sheetChoices() {
+  const entries = gptEntries(),
     byP = new Map(entries.map(x => [x.p, x])),
-    cur = active ? (state.profiles?.[active.id] ? "P:" : "L:") + active.id : ppNoSheet ? ppNoSheet.key || entries.find(x => x.landing &&
-      aircraftTypeKey(x.p.icao || x.p.type || x.id) === aircraftTypeKey(ppNoSheet.code)) && `L:${entries.find(x => x.landing && aircraftTypeKey(x.p.icao || x.p.type || x.id) === aircraftTypeKey(ppNoSheet.code)).id}` || `N:${ppNoSheet.code}` : "",
-    option = x => `<option value="${esc((x.landing ? "L:" : "P:") + x.id)}">${esc(x.landing ? ktf(["{p} — aucune fiche", "{p} — no sheet", "{p} — kein Blatt", "{p} — sin ficha"], { p: x.p.name || x.id }) : `${x.p.name || x.id} (${x.p.type || x.p.icao || x.id})`)}</option>`,
-    html = (cur ? "" : `<option value="">${esc(kt(["— choisir un appareil —", "— choose an aircraft —", "— Luftfahrzeug wählen —", "— elegir una aeronave —"]))}</option>`) + [...aircraftGroups(entries.map(x => x.p), true)].map(([label, items]) =>
-      `<optgroup label="${esc(label)}">${items.map(([p]) => option(byP.get(p))).join("")}</optgroup>`).join("");
+    cur = sheetPickKey(entries),
+    noSheet = kt(["aucune fiche", "no sheet", "kein Blatt", "sin ficha"]),
+    item = x => ({
+      key: (x.landing ? "L:" : "P:") + x.id,
+      label: x.p.name || x.id,
+      sub: x.p.type || x.p.icao || x.id,
+      type: x.p.icao || x.p.type || x.id,
+      keys: [x.id, x.p.icao, x.p.type],
+      note: x.landing ? noSheet : "",
+      current: cur === (x.landing ? "L:" : "P:") + x.id
+    }),
+    groups = pickerGroups(entries.map(x => x.p), true).map(g => ({
+      group: g.group,
+      items: g.list.map(p => item(byP.get(p)))
+    }));
+  // fiche active pas encore enregistrée, appareil sans fiche hors de la flotte : montrés en tête
+  if (cur && !groups.some(g => g.items.some(it => it.key === cur))) groups.unshift({
+    group: kt(["En cours", "Current", "Aktuell", "Actual"]),
+    items: [{
+      key: cur,
+      label: active ? active.name || active.id : ppNoSheet.name,
+      sub: active ? active.type || active.icao || active.id : ppNoSheet.code,
+      type: active ? active.icao || active.type || active.id : ppNoSheet.code,
+      note: active ? "" : noSheet,
+      current: true
+    }]
+  });
+  return groups
+}
+/** Refait le sélecteur « Appareil » (monté au premier appel) et la barre « Créer la fiche ». */
+function renderSheetPick() {
+  const host = document.getElementById("sheetPick");
+  if (!host) return;
   $("sheetPickLbl").textContent = kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]);
-  if (sel.dataset.html !== html) {
-    sel.innerHTML = html;
-    sel.dataset.html = html
-  }
-  // fiche active pas encore enregistrée (créée hors de la liste), appareil sans fiche hors de la flotte : ajouté en tête
-  // pour que le sélecteur le montre
-  if (cur && ![...sel.options].some(o => o.value === cur)) {
-    sel.insertAdjacentHTML("afterbegin", `<option value="${esc(cur)}">${esc(active ? active.name || active.id : ktf(["{p} — aucune fiche", "{p} — no sheet", "{p} — kein Blatt", "{p} — sin ficha"], { p: ppNoSheet.name }))}</option>`);
-    sel.dataset.html = ""
-  }
-  sel.value = cur;
-  renderCreateGroup();
-  sel.onchange = () => {
-    const v = sel.value,
-      id = v.slice(2);
-    // type sans fiche : choisi tel quel, la barre du bas propose de créer sa fiche
-    if (v.startsWith("L:")) {
-      const x = entries.find(e => e.landing && e.id === id);
-      return x ? chooseNoSheet(x.p.icao || x.p.type || x.id, x.p.name || x.id, v) : renderSheetPick()
+  sheetPicker ||= window.AircraftPicker?.attach(host, {
+    kind: "button",
+    sources: () => sheetChoices(),
+    current: () => active ? {
+      label: active.name || active.id,
+      type: active.icao || active.type || active.id
+    } : ppNoSheet ? {
+      label: ktf(["{p} — aucune fiche", "{p} — no sheet", "{p} — kein Blatt", "{p} — sin ficha"], {
+        p: ppNoSheet.name
+      }),
+      type: ppNoSheet.code
+    } : null,
+    placeholder: kt(["— choisir un appareil —", "— choose an aircraft —", "— Luftfahrzeug wählen —", "— elegir una aeronave —"]),
+    onPick: it => {
+      const v = it.key,
+        id = v.slice(2);
+      if (v.startsWith("N:")) return;
+      // type sans fiche : choisi tel quel, la barre du bas propose de créer sa fiche
+      if (v.startsWith("L:")) {
+        const x = gptEntries().find(e => e.landing && e.id === id);
+        return x ? chooseNoSheet(x.p.icao || x.p.type || x.id, x.p.name || x.id, v) : renderSheetPick()
+      }
+      const p = state.profiles?.[id];
+      if (!p) return renderSheetPick();
+      if (window.requestAircraftSwitch) window.requestAircraftSwitch(p);
+      else setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
     }
-    const p = state.profiles?.[id];
-    if (!p) return renderSheetPick();
-    if (window.requestAircraftSwitch) window.requestAircraftSwitch(p);
-    else setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
-  }
+  });
+  sheetPicker?.refresh();
+  renderCreateGroup()
 }
 /** Ferme les menus déroulants de l'en-tête (langue, préférences) ; la liste des appareils (sélecteur commun) se ferme
  *  seule (clic ailleurs, Échap, choix). */
@@ -3137,33 +3173,6 @@ function newProfileFromLanding(id) {
       "Type utilisé par la compagnie : perfs à renseigner."
   }) : null
 }
-/** Appareils rangés par section : « Mes appareils » en tête (si mineFirst), puis par catégorie (« Autres » en dernier),
- *  par nom dans chaque section. Rend Map(libellé → [[profil, profileVisual(profil)], …]) ; liste déjà triée en sortie. */
-function aircraftGroups(list, mineFirst) {
-  const all = [...list].sort((a, b) => {
-      let x = profileVisual(a),
-        y = profileVisual(b),
-        group = ((x[0] === "Autres") - (y[0] === "Autres")) || String(x[0] || "").localeCompare(String(y[0] || ""), "fr");
-      return group || String(a.name || a.id || "").localeCompare(String(b.name || b.id || ""), "fr", {
-        numeric: true
-      })
-    }),
-    groups = new Map(),
-    mineKeys = new Set((myList || []).map(a => aircraftTypeKey(a.code))),
-    mineNames = new Set((myList || []).map(a => aKey(a.name))),
-    MINE = kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]);
-  if (mineFirst && mineKeys.size) groups.set(MINE, []);
-  for (const p of all) {
-    let g = profileVisual(p);
-    const mine = mineFirst && ([p.id, p.icao, p.type].some(v => v && mineKeys.has(aircraftTypeKey(v))) || mineNames.has(aKey(p.name)));
-    const key = mine ? MINE : window.AircraftDBIcons?.groupLabel?.(g[0]) || g[0]; // libellé dans la langue de la page
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push([p, g])
-  }
-  if (groups.get(MINE)?.length === 0) groups.delete(MINE);
-  return groups
-}
-
 /** Profils rangés pour le sélecteur commun : « Mes appareils » en tête (si mineFirst), puis par catégorie de la suite
  *  (AircraftCatalog.classify : hélicoptères, turbopropulseurs, jets, pistons, autres), par nom. Rend [{ group, list }]. */
 function pickerGroups(list, mineFirst) {
@@ -6558,7 +6567,7 @@ function openGptPanel(pick, missing = false) {
       "Zuerst das Luftfahrzeug wählen (oben oder Klick auf seine Zeile).",
       "Elige primero la aeronave (arriba, o clic en su fila)."
     ]));
-    return document.getElementById("sheetPick")?.focus()
+    return sheetPicker?.open()
   }
   gptFor = pick ? {
     id: pick.id,

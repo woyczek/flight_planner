@@ -189,7 +189,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   a drop-down list with a search field at the top (name, type, designator, registration, call sign, catalogue
   aliases), titled groups, keyboard, kept inside the window, free entry where the page accepts it, disabled entries
   with their reason (docs/technique/FRAMEWORK.md). Fuel's "Aircraft" button uses it (sheets: "My aircraft" first,
-  then by category from `AircraftCatalog.classify`); the former home-made menu and its CSS are removed.
+  then by category from `AircraftCatalog.classify`); the former home-made menu and its CSS are removed. Performance
+  sheets: the "Aircraft" selector of the header (sheets and types without a sheet, the one in use shown first when it
+  is not in the list) replaces its native `<select>`; `aircraftGroups` and `profileVisual` are removed.
   `EquipmentEditor.makeSearch` now scores with the shared `AircraftPicker.match`.
 - **Mission report: fourth step "Flight details"** (`shared/mission_core/core.js`, `core.css`) — folded by default, it
   gathers Navigation, Environment / weather, Timed events, Legs / rotations and Capabilities; opened, it shows them at
