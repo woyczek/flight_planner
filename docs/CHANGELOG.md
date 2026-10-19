@@ -215,6 +215,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Mission report: long freeze while typing an aircraft's registration, type or callsign** — every keystroke
+  rebuilt the known-aircraft registry from all its sources (fleet, directory, HEMS and FIRE ledgers, flight log,
+  reference, mission registry) several times over, and the callsign abbreviation table copied its values for every
+  pair of series (quadratic). Both are now cached until a source changes, and the abbreviation table keeps a set of
+  its values instead of copying them; a field now answers in about 60 ms whatever the size of the flight log.
 - **Local changes to the aircraft type base applied three different ways** — the catalogue merged them with
   `Object.assign`, the CR replaced the whole base, Settings merged them type by type; Settings also compared the
   changes with a base already modified in place, so they no longer showed. One rule now (Simplification decision):
