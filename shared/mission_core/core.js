@@ -72,6 +72,14 @@
       '{n} Bericht(e) dieses Einsatzes', '{n} informe(s) de esta misión'),
     fromSia: L('Mission générée (SIA XML) reprise', 'Generated mission (SIA XML) imported', 'Generierte Mission (SIA XML) übernommen',
       'Misión generada (SIA XML) importada'),
+    fromFlightReplace: L('Un brouillon de CR est en cours. Le remplacer par ce vol ({f}) ?',
+      'A report draft is in progress. Replace it with this flight ({f})?',
+      'Ein Berichtsentwurf ist in Arbeit. Durch diesen Flug ersetzen ({f})?',
+      'Hay un borrador de informe en curso. ¿Reemplazarlo por este vuelo ({f})?'),
+    fromOrderReplace: L('Un brouillon de CR est en cours. Le remplacer par cette mission ({f}) ?',
+      'A report draft is in progress. Replace it with this mission ({f})?',
+      'Ein Berichtsentwurf ist in Arbeit. Durch diese Mission ersetzen ({f})?',
+      'Hay un borrador de informe en curso. ¿Reemplazarlo por esta misión ({f})?'),
     fromSiaReplace: L('Remplacer le brouillon en cours par la mission générée (SIA XML) ?',
       'Replace the current draft with the generated mission (SIA XML)?',
       'Aktuellen Entwurf durch die generierte Mission (SIA XML) ersetzen?',
@@ -1917,7 +1925,16 @@
         // question dans la page : le socle (AppFramework) peut se charger après ce script, il est attendu
         if (sia && dirty) {
           for (let i = 0; i < 100 && !window.AppFramework?.ask; i++) await new Promise(r => setTimeout(r, 50));
-          if (!await window.AppFramework.ask(t('fromSiaReplace'))) sia = null;
+          // question selon l'origine : vol passé (Mes vols), ordre de mission (Mes missions), mission générée (SIA XML)
+          const icaoIn = pt => (/\(([A-Z0-9]{4})\)/.exec(pt?.name || '') || [])[1] || '',
+            route = [icaoIn(sia.origin), icaoIn(sia.destination)].filter(Boolean).join(' → '),
+            day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(sia.__flight?.date || ''),
+            what = sia.__flight ? [sia.aircraft?.[0]?.callsign, day ? `${day[3]}/${day[2]}` : '', route].filter(Boolean).join(', ') :
+            sia.__order ? [sia.__order.ref, sia.title, route].filter(Boolean).join(', ') : '',
+            question = sia.__flight ? inLanguage(UI.fromFlightReplace).replace('{f}', what) : sia.__order ? inLanguage(UI
+              .fromOrderReplace)
+            .replace('{f}', what) : inLanguage(UI.fromSiaReplace);
+          if (!await window.AppFramework.ask(question)) sia = null;
         }
         if (sia) {
           mission = fresh();
