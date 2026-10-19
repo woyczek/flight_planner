@@ -116,6 +116,7 @@
 <script src="../../shared/mission_core/model.js?v=0"></script>
 <script src="../../shared/mission_core/ledger.js?v=0"></script>
 <script src="../../shared/mission_core/defa_log.js?v=0"></script>
+<script src="../../shared/my_flights.js?v=0"></script>
 <script src="../../shared/table_resize.js?v=0"></script>
 <script>
 (() => {
@@ -125,8 +126,7 @@
     tf = K.tf,
     esc = K.esc,
     $ = id => document.getElementById(id);
-  const PROFILE = 'missionReportingConfig:v1', // profil pilote : trigramme
-    VIEW = 'myFlightsView:v1'; // période et recherche gardées dans ce navigateur
+  const VIEW = 'myFlightsView:v1'; // période et recherche gardées dans ce navigateur
   const TXT = {
     title: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
     header: ['Vos vols passés : comptes rendus et journal de la compagnie', 'Your past flights: reports and the airline’s log',
@@ -178,99 +178,14 @@
     ],
     loading: ['Chargement…', 'Loading…', 'Wird geladen…', 'Cargando…']
   };
-  /** Racine de la suite (bandeau commun, sinon deux dossiers au-dessus de la page). */
-  const root = () => window.RepositoryNav?.root || new URL('../../', location.href).href;
-  /** Trigramme du pilote (socle des affectations, sinon profil pilote) ; vide s'il n'est pas réglé. */
-  const trigram = () => String(window.MissionAssignments?.trigram?.() || K.store.json(PROFILE, {})?.trigram || '').trim().toUpperCase();
-  const up = v => String(v ?? '').trim().toUpperCase();
-  /** Clé de rapprochement d'un vol : date, indicatif et immatriculation sans séparateurs. */
-  const keyOf = f => [f.date, up(f.callsign).replace(/[^A-Z0-9]/g, ''), up(f.reg).replace(/[^A-Z0-9]/g, '')].join('|');
+  // sources, fusion et passerelle vers le CR : shared/my_flights.js (partagé avec « Préremplir » du compte rendu)
+  const MF = window.MyFlights,
+    trigram = MF.trigram,
+    keyOf = MF.keyOf,
+    up = v => String(v ?? '').trim().toUpperCase();
   /** Minutes → « 1:35 ». */
   const hm = n => n == null ? '—' : `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
-
-  // ---- sources : chacune rend des vols { source, date, time, callsign, type, reg, dep, arr, block, mission, family,
-  // crUrl, crId, notes, log } ; window.MyFlights.addSource(nom, fonction asynchrone) en ajoute (IVAO, VATSIM…)
-  const SOURCES = [];
-  /** Comptes rendus du registre (toutes familles) rédigés par le pilote (sans auteur noté : gardés) ; lien ?edit= vers
-   *  la page de CR de la famille (rang parmi les CR de la même famille). */
-  SOURCES.push(['cr', async () => {
-    const L = window.MissionLedger,
-      M = window.MissionModel;
-    if (!L) return [];
-    await L.load().catch(() => null);
-    const all = L.store?.missions || [],
-      tri = trigram(),
-      fams = window.MissionVocab?.families || [];
-    return all.map((m, i) => ({
-      m,
-      index: all.slice(0, i).filter(x => x.family === m.family).length
-    })).filter(({
-      m
-    }) => !tri || !m.metadata?.reportedBy || up(m.metadata.reportedBy) === tri).map(({
-      m,
-      index
-    }) => {
-      const a = (m.aircraft || [])[0] || {},
-        tl = m.timeline || {},
-        nav = m.navigation || {},
-        st = M?.computeStatistics?.(m) || {},
-        fam = fams.find(f => f.id === m.family);
-      return {
-        source: 'cr',
-        date: String(m.metadata?.date || ''),
-        time: tl.offBlock || tl.takeoff || m.metadata?.timeUtc || '',
-        callsign: up(a.callsign || [a.callsignPrefix, a.callsignNumber].filter(Boolean).join(' ')),
-        type: up(a.type),
-        reg: up(a.registration),
-        dep: up(nav.dep || a.baseDeparture),
-        arr: up(a.landingAd || nav.arr || a.baseReturn),
-        block: st.blockMinutes ?? st.flightMinutes ?? null,
-        mission: [m.family, m.subtype, m.metadata?.operationName].filter(Boolean).join(' · '),
-        family: m.family,
-        crId: m.metadata?.missionId || '',
-        crUrl: fam ? `${new URL(`apps/cr/${fam.cr}`, root()).href}?edit=${index}&id=${encodeURIComponent(m.metadata?.missionId || '')}` : '',
-        notes: [m.results?.detail, m.results?.incidents].filter(Boolean).join(' · ')
-      }
-    })
-  }]);
-  /** Journal des vols de la compagnie importé du site (ce navigateur), filtré sur le trigramme du pilote. */
-  SOURCES.push(['log', async () => {
-    const D = window.DefaFlightLog,
-      tri = trigram();
-    if (!D || !tri) return [];
-    return D.records().filter(r => up(r.trigram) === tri).map(r => ({
-      source: 'log',
-      date: r.date,
-      time: r.time,
-      callsign: up(r.callsign),
-      type: up(r.type),
-      reg: up(r.registration),
-      dep: up(r.dep),
-      arr: up(r.arr),
-      block: Number.isFinite(r.durationMin) ? r.durationMin : null,
-      mission: up(r.mission),
-      family: D.familyOf(r),
-      crId: '',
-      crUrl: '',
-      notes: '',
-      log: r
-    }))
-  }]);
-
-  let flights = []; // vols fusionnés, du plus récent au plus ancien
-  /** Lit toutes les sources et fusionne : un vol déjà couvert par un CR (même clé) n'est gardé qu'une fois, le CR. */
-  async function collect() {
-    const lists = await Promise.all(SOURCES.map(([, fn]) => fn().catch(() => [])));
-    const out = new Map();
-    for (const list of lists)
-      for (const f of list) {
-        if (!f.date) continue;
-        const k = keyOf(f),
-          had = out.get(k);
-        if (!had || (had.source !== 'cr' && f.source === 'cr')) out.set(k, f)
-      }
-    flights = [...out.values()].sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
-  }
+  let flights = []; // vols fusionnés, du plus récent au plus ancien (MyFlights.collect)
 
   // ---- vue : période, recherche, totaux, tableau
   const view = () => ({
@@ -329,33 +244,6 @@
       ])
     })
   }
-  /** Ouvre le CR prérempli par un vol du journal : même passerelle que l'ordre de mission (siaMissionToCr:v1,
-   *  ?from=sia) — titre, appareil, indicatif, immatriculation, départ et arrivée, date et durée du vol (__flight). */
-  function writeReport(f) {
-    const fam = (window.MissionVocab?.families || []).find(x => x.id === f.family) || (window.MissionVocab?.families || []).find(x => x
-      .id === 'SPECIAL');
-    if (!fam) return;
-    localStorage.setItem('siaMissionToCr:v1', JSON.stringify({
-      title: f.mission || '',
-      origin: f.dep ? {
-        name: `(${f.dep})`
-      } : null,
-      destination: f.arr ? {
-        name: `(${f.arr})`
-      } : null,
-      aircraft: [{
-        type: f.type,
-        callsign: f.callsign,
-        registration: f.reg
-      }],
-      __flight: {
-        date: f.date,
-        time: f.time,
-        blockMinutes: f.block
-      }
-    }));
-    location.href = `${new URL(`apps/cr/${fam.cr}`, root()).href}?from=sia`
-  }
   /** Export CSV de la liste affichée (mêmes colonnes, « ; », UTF-8 avec BOM pour les tableurs). */
   function exportCsv() {
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`,
@@ -411,7 +299,7 @@
     if (w) {
       const k = w.closest('tr').previousElementSibling?.dataset.k;
       const f = flights.find(x => keyOf(x) === k);
-      return f && writeReport(f)
+      return f && MF.writeReport(f)
     }
     const tr = e.target.closest('tr.mv-row');
     if (!tr) return;
@@ -431,22 +319,12 @@
   window.EquipmentEditor?.css?.();
   /** Relit les sources et redessine (ouverture, retour d'un autre onglet, trigramme changé). */
   const reload = async () => {
-    await collect();
+    flights = await MF.collect();
     render()
   };
-  window.MyFlights = {
-    /** Ajoute une source de vols (nom, fonction asynchrone rendant des vols au format de la page), puis relit. */
-    addSource(name, fn) {
-      SOURCES.push([name, fn]);
-      return reload()
-    },
-    reload,
-    get flights() {
-      return flights
-    }
-  };
+  window.addEventListener('my-flights-sources', reload); // source ajoutée (MyFlights.addSource)
   window.addEventListener('pilot-profile-change', reload);
-  window.addEventListener('storage', e => ['defaFlightLog:v1', PROFILE].includes(e.key) && reload());
+  window.addEventListener('storage', e => ['defaFlightLog:v1', MF.PROFILE].includes(e.key) && reload());
   reload();
 })();
 </script>

@@ -22,7 +22,8 @@ There are three ways in, depending on what you flew:
   mission in the search (“helicopter medevac”, “para drop”). “Continue with …” offers the last family used.
 
 If a draft is already in progress, the page asks before replacing it. From the report itself, “Prefill ▾ › New report
-from…” leads to the same places (My missions, My flights, or a file at the Design level).
+from…” lists your 7 recent mission orders and flights without a report (a click opens the prefilled report), or a
+file at the Design level.
 
 ## 2. Check the family and the series
 

@@ -184,6 +184,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Mission report: new report from a recent order or flight** (`shared/my_flights.js`, `shared/mission_core/core.js`,
+  `apps/pilot/mes_vols.html`) — "Prefill ▾ › New report from…" lists the 7 recent mission orders without a report
+  (`PilotToday.pending`) and the 7 recent flights of the airline log without a report, one line each (date, call sign,
+  route), with "Open My missions / My flights ↗" as the last line; a click opens the prefilled report through the same
+  bridge as those pages. The modules are loaded on demand. The flight sources, merge and report bridge of My flights
+  move to `shared/my_flights.js` (`window.MyFlights`: `collect`, `withoutReport`, `writeReport`, `addSource`), shared
+  by both pages.
 - **Mission report: one "Prefill ▾" menu** (`shared/mission_core/core.js`, `core.css`, `text_import.js`, `fpl.js`) —
   everything that fills the report is gathered in one short header menu, from level 1: one line per entry, in two
   titled groups, "New report from…" (a mission order, one of my flights, a file at level 3) and "Complete this report

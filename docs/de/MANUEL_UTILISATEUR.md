@@ -959,9 +959,15 @@ Eingabe. Es ist ein kurzes Menü, ein Eintrag pro Zeile, in zwei Gruppen; der ge
 wie das Fenster.
 
 **Neuer Bericht aus…** (der laufende Entwurf wird ersetzt, nach Bestätigung, wenn er nicht leer ist):
-- „Ein Einsatzbefehl“: Meine Missionen; öffnen Sie die Missionsmappe, dann „Bericht erstellen“;
-- „Einer meiner Flüge“: Meine Flüge; ein Flug „ohne Bericht“, dann „Bericht schreiben“;
+- „Ein Einsatzbefehl“: Ihre 7 letzten Zuweisungen (letzte 21 Tage) ohne Bericht, eine Zeile je Zuweisung (Datum und
+  Uhrzeit UTC, Rufzeichen, Strecke, Mission); ein Klick öffnet den aus dem Befehl vorausgefüllten Bericht, wie
+  „Bericht erstellen“ in Meine Missionen. Letzte Zeile: „Meine Missionen öffnen ↗“.
+- „Einer meiner Flüge“: Ihre 7 letzten Flüge aus dem Flugbuch der Fluggesellschaft ohne Bericht (Datum, Rufzeichen,
+  Strecke, Typ); ein Klick öffnet den vorausgefüllten Bericht, wie „Bericht schreiben“ in Meine Flüge. Letzte Zeile:
+  „Meine Flüge öffnen ↗“.
 - „Eine Datei (YAML / JSON)“: eine Missionsdatei (Stufe 3).
+
+Beide Listen brauchen Ihr Kürzel (Einstellungen › Mein Profil).
 
 **Diesen Bericht ergänzen aus…** (**nur leere Felder werden gefüllt**):
 - **„Mein letzter IVAO-Flug“**, **„Mein letzter VATSIM-Flug“**. Die Suite muss über ihren Starter geöffnet sein, mit

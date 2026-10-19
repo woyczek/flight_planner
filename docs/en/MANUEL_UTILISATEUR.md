@@ -957,9 +957,14 @@ flights, paste box…), whose help is folded under “Help”. Esc or a click be
 window.
 
 **New report from…** (the current draft is replaced, after confirmation if it is not empty):
-- “A mission order”: My missions; open the mission folder, then “Create the report”;
-- “One of my flights”: My flights; a flight with “no report”, then “Write the report”;
+- “A mission order”: your 7 recent assignments (last 21 days) without a report, one line each (UTC date and time,
+  call sign, route, mission); a click opens the report prefilled from the order, like “Create the report” in My
+  missions. Last line: “Open My missions ↗”.
+- “One of my flights”: your 7 recent flights of the airline log without a report (date, call sign, route, type); a
+  click opens the prefilled report, like “Write the report” in My flights. Last line: “Open My flights ↗”.
 - “A file (YAML / JSON)”: a mission file (level 3).
+
+Both lists need your trigram (Settings › My profile).
 
 **Complete this report from…** (**only empty fields are filled in**):
 - **“My last IVAO flight”**, **“My last VATSIM flight”**. The suite must be opened through its launcher, with your

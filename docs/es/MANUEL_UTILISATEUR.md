@@ -958,9 +958,15 @@ después su ventana (lista de vuelos, cuadro para pegar…), cuya ayuda está pl
 cierra el menú, igual que la ventana.
 
 **Nuevo informe desde…** (el borrador en curso se sustituye, tras confirmación si no está vacío):
-- «Una orden de misión»: Mis misiones; abra la carpeta de la misión y después «Crear el informe»;
-- «Uno de mis vuelos»: Mis vuelos; un vuelo «sin informe» y después «Redactar el informe»;
+- «Una orden de misión»: sus 7 asignaciones recientes (últimos 21 días) sin informe, una línea cada una (fecha y hora
+  UTC, indicativo, trayecto, misión); un clic abre el informe prerrellenado desde la orden, como «Crear el informe» en
+  Mis misiones. Última línea: «Abrir Mis misiones ↗».
+- «Uno de mis vuelos»: sus 7 vuelos recientes del diario de la aerolínea sin informe (fecha, indicativo, trayecto,
+  tipo); un clic abre el informe prerrellenado, como «Redactar el informe» en Mis vuelos. Última línea: «Abrir Mis
+  vuelos ↗».
 - «Un archivo (YAML / JSON)»: un archivo de misión (nivel 3).
+
+Ambas listas necesitan su trigrama (Ajustes › Mi perfil).
 
 **Completar este informe desde…** (**solo se rellenan los campos vacíos**):
 - **«Mi último vuelo IVAO»**, **«Mi último vuelo VATSIM»**. La suite debe abrirse con su lanzador, con su ID IVAO o

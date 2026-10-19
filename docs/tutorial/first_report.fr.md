@@ -23,7 +23,8 @@ Trois portes, selon ce que vous avez volé :
   dernière famille utilisée.
 
 Si un brouillon est déjà en cours, la page demande avant de le remplacer. Depuis le CR lui-même, « Préremplir ▾ ›
-Nouveau CR depuis… » mène aux mêmes endroits (Mes missions, Mes vols, ou un fichier au niveau Conception).
+Nouveau CR depuis… » liste vos 7 ordres de mission et vols récents sans CR (un clic ouvre le CR prérempli), ou un
+fichier au niveau Conception.
 
 ## 2. Vérifier la famille et la série
 

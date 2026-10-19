@@ -995,9 +995,14 @@ des vols, zone de collage…), dont l'aide est repliée sous « Aide ». Échap 
 fenêtre.
 
 **Nouveau CR depuis…** (le brouillon en cours est remplacé, après confirmation s'il n'est pas vide) :
-- « Un ordre de mission » : Mes missions ; ouvrez le dossier de la mission, puis « Créer le CR » ;
-- « Un de mes vols » : Mes vols ; un vol « sans CR », puis « Rédiger le CR » ;
+- « Un ordre de mission » : vos 7 affectations récentes (21 derniers jours) sans CR, une ligne chacune (date et heure
+  UTC, indicatif, trajet, mission) ; un clic ouvre le CR prérempli depuis l'ordre, comme « Créer le CR » dans Mes
+  missions. Dernière ligne : « Ouvrir Mes missions ↗ ».
+- « Un de mes vols » : vos 7 vols récents du journal de la compagnie sans CR (date, indicatif, trajet, type) ; un clic
+  ouvre le CR prérempli, comme « Rédiger le CR » dans Mes vols. Dernière ligne : « Ouvrir Mes vols ↗ ».
 - « Un fichier (YAML / JSON) » : un fichier de mission (niveau 3).
+
+Les deux listes demandent votre trigramme (Paramètres › Mon profil).
 
 **Compléter ce CR depuis…** (**seuls les champs vides sont remplis**) :
 - **« Mon dernier vol IVAO »**, **« Mon dernier vol VATSIM »**. Il faut la suite ouverte par son lanceur et votre ID

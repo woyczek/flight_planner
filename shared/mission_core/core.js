@@ -11,6 +11,8 @@
     M = window.MissionModel,
     L = V.L;
   const families = new Map();
+  // Racine de la suite, depuis l'adresse de ce script (shared/mission_core/core.js) : modules chargés à la demande.
+  const SUITE = new URL('../../', document.currentScript?.src || location.href).href;
   /** Échappe un texte pour HTML. */
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   /** Minutes → « 1h05 » (« — » si absent). */
@@ -152,6 +154,17 @@
       'Completar este informe desde…'),
     prefillMissions: L('Un ordre de mission', 'A mission order', 'Ein Einsatzbefehl', 'Una orden de misión'),
     prefillFlights: L('Un de mes vols', 'One of my flights', 'Einer meiner Flüge', 'Uno de mis vuelos'),
+    prefillOrdersTitle: L('Ordres de mission sans CR', 'Mission orders without a report', 'Einsatzbefehle ohne Bericht',
+      'Órdenes de misión sin informe'),
+    prefillFlightsTitle: L('Mes vols sans CR', 'My flights without a report', 'Meine Flüge ohne Bericht', 'Mis vuelos sin informe'),
+    prefillOpenMissions: L('Ouvrir Mes missions ↗', 'Open My missions ↗', 'Meine Missionen öffnen ↗', 'Abrir Mis misiones ↗'),
+    prefillOpenFlights: L('Ouvrir Mes vols ↗', 'Open My flights ↗', 'Meine Flüge öffnen ↗', 'Abrir Mis vuelos ↗'),
+    prefillNoOrders: L('Aucun ordre récent sans CR (21 derniers jours).', 'No recent order without a report (last 21 days).',
+      'Kein aktueller Befehl ohne Bericht (letzte 21 Tage).', 'Ninguna orden reciente sin informe (últimos 21 días).'),
+    prefillNoFlights: L('Aucun vol sans CR dans le journal de la compagnie.', 'No flight without a report in the airline log.',
+      'Kein Flug ohne Bericht im Flugbuch der Fluggesellschaft.', 'Ningún vuelo sin informe en el diario de la aerolínea.'),
+    prefillNoTrigram: L('Trigramme non réglé : Paramètres › Mon profil.', 'Trigram not set: Settings › My profile.',
+      'Trigramm nicht gesetzt: Einstellungen › Mein Profil.', 'Trigrama no configurado: Ajustes › Mi perfil.'),
     prefillFile: L('Un fichier (YAML / JSON)', 'A file (YAML / JSON)', 'Eine Datei (YAML / JSON)', 'Un archivo (YAML / JSON)'),
     prefillFpl: L('Plan de vol déposé (SimBrief / IVAO / VATSIM)', 'Filed flight plan (SimBrief / IVAO / VATSIM)',
       'Aufgegebener Flugplan (SimBrief / IVAO / VATSIM)', 'Plan de vuelo presentado (SimBrief / IVAO / VATSIM)'),
@@ -592,8 +605,8 @@
           <p class="small" data-defa-help></p></div><hr><a class="mc-button" data-action="myFlights"></a></div></details>
         <details class="mc-import mc-menu mc-prefill"><summary></summary><div class="mc-pop mc-list mc-prefill-menu">
           <p class="mc-prefill-head" data-prefill-t="prefillNew"></p>
-          <a class="mc-button" data-prefill-link="missions"></a>
-          <a class="mc-button" data-prefill-link="flights"></a>
+          <button type="button" data-prefill="orders"></button>
+          <button type="button" data-prefill="flights"></button>
           <button type="button" data-action="import" data-min-level="3"></button>
           <hr><p class="mc-prefill-head" data-prefill-t="prefillComplete"></p>
           <button type="button" data-prefill="ivao"></button>
@@ -622,6 +635,7 @@
     const prefillDlg = document.createElement('dialog');
     prefillDlg.className = 'repo-ask mc-prefill-dlg';
     prefillDlg.innerHTML = `<h2></h2><div class="mc-dlg-body">
+        <section data-pane="pick"><div class="mc-dlg-list"></div><p class="small mc-tools-status"></p><a class="mc-button" data-pane-link></a></section>
         <section data-pane="last"><div class="mc-prefill-last"></div></section>
         <section data-pane="fpl"><div class="mc-prefill-fpl"></div></section>
         <section data-pane="paste">
@@ -1553,36 +1567,31 @@
       importResult = prefillDlg.querySelector('.mc-import-result');
     importBox.querySelector('summary').textContent = t('prefillTitle');
     [importBox, prefillDlg].forEach(r => r.querySelectorAll('[data-prefill-t]').forEach(el => el.textContent = t(el.dataset.prefillT)));
-    // « Nouveau CR depuis… » : un ordre (Mes missions) ou un vol passé (Mes vols) ; le fichier, à partir du niveau 3
-    [
-      ['missions', 'prefillMissions', 'apps/pilot/mes_missions.html'],
-      ['flights', 'prefillFlights', 'apps/pilot/mes_vols.html']
-    ].forEach(([k, key, page]) => {
-      const a = importBox.querySelector(`[data-prefill-link="${k}"]`);
-      a.textContent = t(key);
-      a.href = new URL(page, window.RepositoryNav?.root || new URL('../../', location.href)).href
-    });
     importBox.querySelector('[data-action="import"]').textContent = t('prefillFile');
     /** Entrées « Compléter ce CR depuis… » du menu ; dernier vol sans identifiant dans Mon profil : entrée grisée, motif
      *  en infobulle. Relu à chaque ouverture du menu (profil changé entre-temps). */
     const prefillEntries = () => {
-      const p = prefs();
+      const p = prefs(),
+        // libellé écrit dans la langue de la page, seulement s'il change (pas de retour au français à chaque ouverture)
+        label = (el, key) => el.textContent !== inLanguage(UI[key]) && (el.textContent = inLanguage(UI[key]));
       [
         ['ivao', 'importLastIvao', 'ivaoId', 'lastNoIvao'],
         ['vatsim', 'importLastVatsim', 'vatsimId', 'lastNoVatsim']
       ].forEach(([net, key, pref, missing]) => {
         const b = importBox.querySelector(`[data-prefill="${net}"]`),
           off = !String(p[pref] || '').trim();
-        b.textContent = t(key);
+        label(b, key);
         b.classList.toggle('mc-off', off);
         b.setAttribute('aria-disabled', String(off));
         b.title = off ? inLanguage(UI[missing]).replace(/\s*↗$/, '') : '';
       });
       [
+        ['orders', 'prefillMissions'],
+        ['flights', 'prefillFlights'],
         ['fpl', 'prefillFpl'],
         ['paste', 'prefillPaste'],
         ['marks', 'prefillMarks']
-      ].forEach(([k, key]) => importBox.querySelector(`[data-prefill="${k}"]`).textContent = t(key));
+      ].forEach(([k, key]) => label(importBox.querySelector(`[data-prefill="${k}"]`), key));
     };
     prefillEntries();
     importBox.addEventListener('toggle', () => importBox.open && prefillEntries());
@@ -1601,6 +1610,65 @@
         importResult.textContent = '';
       }
     };
+    const scripts = new Map(); // modules chargés à la demande (chemin → promesse)
+    /** Charge une fois un module de la suite (chemin depuis la racine) ; promesse résolue même s'il manque. */
+    const loadScript = path => {
+      if (!scripts.has(path)) scripts.set(path, new Promise(resolve => document.head.append(Object.assign(document.createElement(
+        'script'), {
+        src: new URL(`${path}?v=0`, SUITE).href,
+        onload: resolve,
+        onerror: resolve
+      }))));
+      return scripts.get(path);
+    };
+    /** « Nouveau CR depuis… » : les 7 ordres de mission (Mes missions, shared/pilot_today.js) ou vols du journal de la
+     *  compagnie (Mes vols, shared/my_flights.js) récents sans CR, une ligne chacun (date, indicatif, trajet) ; un clic
+     *  ouvre le CR prérempli (même passerelle que Mes missions / Mes vols) ; dernière ligne : la page complète ↗. */
+    async function pickList(kind) {
+      const orders = kind === 'orders',
+        sec = prefillDlg.querySelector('[data-pane="pick"]'),
+        list = sec.querySelector('.mc-dlg-list'),
+        note = sec.querySelector('.mc-tools-status'),
+        link = sec.querySelector('[data-pane-link]');
+      openPane('pick', orders ? 'prefillOrdersTitle' : 'prefillFlightsTitle');
+      link.textContent = inLanguage(orders ? UI.prefillOpenMissions : UI.prefillOpenFlights);
+      link.href = new URL(orders ? 'apps/pilot/mes_missions.html' : 'apps/pilot/mes_vols.html', SUITE).href;
+      list.replaceChildren();
+      note.textContent = '…';
+      /** Ligne de la liste : bouton qui ouvre le CR. */
+      const row = (parts, go) => Object.assign(document.createElement('button'), {
+        type: 'button',
+        textContent: parts.filter(Boolean).join(' · '),
+        onclick: go
+      });
+      const route = (a, b) => [a, b].filter(Boolean).join(' → ') || '—';
+      let rows = [];
+      try {
+        if (orders) {
+          await loadScript('shared/pilot_today.js');
+          const P = window.PilotToday,
+            AS = window.MissionAssignments;
+          if (!AS?.trigram?.()) return note.textContent = inLanguage(UI.prefillNoTrigram);
+          rows = (await P.pending()).map(a => {
+            const at = AS.when(a) ? new Date(AS.when(a)).toISOString() : '';
+            return row([at ? `${at.slice(0, 10)} ${at.slice(11, 16)}Z` : '—', a.callsign || '—', route(a.departure, a.destination), a
+              .mission
+            ], () => location.href = P.reportUrl(a));
+          });
+        } else {
+          await loadScript('shared/mission_core/defa_log.js');
+          await loadScript('shared/my_flights.js');
+          const F = window.MyFlights;
+          if (!F.trigram()) return note.textContent = inLanguage(UI.prefillNoTrigram);
+          rows = (await F.withoutReport(7)).map(f => row([f.date, f.callsign || '—', route(f.dep, f.arr), f.type], () => F
+            .writeReport(f)));
+        }
+      } catch (error) {
+        return note.textContent = explain(error);
+      }
+      list.replaceChildren(...rows);
+      note.textContent = rows.length ? '' : inLanguage(orders ? UI.prefillNoOrders : UI.prefillNoFlights);
+    }
     /** Vrai si la zone de collage est affichée. */
     const pasteOpen = () => prefillDlg.open && pane === 'paste';
     prefillDlg.querySelector('[data-dlg-close]').onclick = () => prefillDlg.close();
@@ -1609,7 +1677,8 @@
       const b = event.target.closest('[data-prefill]');
       if (!b || b.getAttribute('aria-disabled') === 'true') return;
       const k = b.dataset.prefill;
-      if (k === 'ivao' || k === 'vatsim') {
+      if (k === 'orders' || k === 'flights') pickList(k);
+      else if (k === 'ivao' || k === 'vatsim') {
         lastFlightTools();
         openPane('last', k === 'ivao' ? 'importLastIvao' : 'importLastVatsim');
         lastFlight(k);
