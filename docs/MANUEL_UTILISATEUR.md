@@ -1507,7 +1507,8 @@ Ce bloc relie trois vues : le plan de vol (texte), la carte et la coupe vertical
 - Champ de route : case 15 du plan de vol OACI, ou liste à virgules (par exemple `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Vide : route de la mission.
 - « Niveau » : niveau de croisière (« FL65 » ou « 6500 »).
 - Menu « Voies aériennes » / « RTBA (basse hauteur) », puis « Chercher » : calcule une route entre les points du champ. Le résultat remplace le champ.
-- « SimBrief » : reprend la route du dernier OFP. L'identifiant SimBrief se saisit dans Paramètres › Mon profil.
+- « SimBrief » : reprend la route du dernier OFP, point par point (chaque point du navlog avec sa position, points des
+  voies aériennes et des procédures compris), son niveau et, dans les Cartes de vol, son dégagement. L'identifiant SimBrief se saisit dans Paramètres › Mon profil.
 - « Tracer » : dessine la coupe verticale. « Carburant » : ouvre le planificateur carburant avec cette route (distance, niveau, route vraie, appareil).
 - « Copier OACI » : copie le plan de vol OACI strict (points non publiés en coordonnées).
 - « Syntaxe et utilisation » : rappel des formes acceptées (balises, points de report VFR « MM-CV », « REN300010 », coordonnées « 4330N00125E », niveaux « /A035 », « VFR »…).

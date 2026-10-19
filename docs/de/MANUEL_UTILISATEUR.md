@@ -1464,7 +1464,8 @@ Dieser Block verbindet drei Ansichten: den Flugplan (Text), die Karte und den Ve
 - Routenfeld: Feld 15 des ICAO-Flugplans oder Kommaliste (zum Beispiel `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Leer: Route der Mission.
 - „Höhe“: Reiseflughöhe („FL65“ oder „6500“).
 - Menü „Luftstraßen“ / „RTBA (Tiefflug)“, dann „Suchen“: berechnet eine Route zwischen den Punkten des Feldes. Das Ergebnis ersetzt das Feld.
-- „SimBrief“: übernimmt die Route des letzten OFP. Die SimBrief-Kennung wird unter Einstellungen › Mein Profil eingegeben.
+- „SimBrief“: übernimmt die Route des letzten OFP Punkt für Punkt (jeder Navlog-Punkt mit seiner Position, Punkte der
+  Luftstraßen und Verfahren eingeschlossen), seine Flughöhe und in den Flugkarten seinen Ausweichflugplatz. Die SimBrief-Kennung wird unter Einstellungen › Mein Profil eingegeben.
 - „Zeichnen“: zeichnet den Vertikalschnitt. „Kraftstoff“: öffnet den Kraftstoffplaner mit dieser Route (Distanz, Flughöhe, rechtweisender Kurs, Luftfahrzeug).
 - „ICAO kopieren“: kopiert den strikten ICAO-Flugplan (nicht veröffentlichte Punkte als Koordinaten).
 - „Syntax und Verwendung“: Überblick über die akzeptierten Formen (Funkfeuer, VFR-Meldepunkte „MM-CV“, „REN300010“, Koordinaten „4330N00125E“, Höhen „/A035“, „VFR“…).

@@ -1458,7 +1458,8 @@ This block links three views: the flight plan (text), the map and the vertical s
 - Route field: item 15 of the ICAO flight plan, or a comma list (for example `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Empty: route of the mission.
 - “Level”: cruise level (“FL65” or “6500”).
 - “Airways” / “RTBA (low level)” menu, then “Search”: calculates a route between the points of the field. The result replaces the field.
-- “SimBrief”: takes the route of the latest OFP. The SimBrief identifier is entered in Settings › My profile.
+- “SimBrief”: takes the route of the latest OFP point by point (each navlog point with its position, airway and
+  procedure points included), its level and, in Flight maps, its alternate. The SimBrief identifier is entered in Settings › My profile.
 - “Draw”: draws the vertical section. “Fuel”: opens the fuel planner with this route (distance, level, true track, aircraft).
 - “Copy ICAO”: copies the strict ICAO flight plan (unpublished points as coordinates).
 - “Syntax and use”: reminder of the accepted forms (beacons, VFR reporting points “MM-CV”, “REN300010”, coordinates “4330N00125E”, levels “/A035”, “VFR”…).

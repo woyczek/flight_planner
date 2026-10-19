@@ -324,7 +324,7 @@ for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e
 // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
 const follow=()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)};
 $v('vprofRoute').addEventListener('change',follow);
-window.addEventListener('vprof-route-edited',follow);
+window.addEventListener('vprof-route-edited',e=>{if(e.detail?.altn!==undefined)$v('volAltn').value=e.detail.altn;follow()});
 ['volRdv','vprofCruise'].forEach(id=>$v(id).addEventListener('change',()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)}));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
 // ouverture : vol en cours (plan de vol partagé avec le Carburant, le plus récent, sinon le formulaire de la page). Dès la

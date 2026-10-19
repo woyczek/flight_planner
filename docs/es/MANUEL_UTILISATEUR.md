@@ -1465,7 +1465,8 @@ Este bloque relaciona tres vistas: el plan de vuelo (texto), el mapa y el corte 
 - Campo de ruta: casilla 15 del plan de vuelo OACI, o lista separada por comas (por ejemplo `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Vacío: ruta de la misión.
 - «Nivel»: nivel de crucero («FL65» o «6500»).
 - Menú «Aerovías» / «RTBA (baja altura)» y, después, «Buscar»: calcula una ruta entre los puntos del campo. El resultado sustituye el campo.
-- «SimBrief»: toma la ruta del último OFP. El identificador SimBrief se introduce en Ajustes › Mi perfil.
+- «SimBrief»: toma la ruta del último OFP punto por punto (cada punto del navlog con su posición, incluidos los puntos
+  de aerovías y procedimientos), su nivel y, en los mapas de vuelo, su alternativa. El identificador SimBrief se introduce en Ajustes › Mi perfil.
 - «Trazar»: dibuja el corte vertical. «Combustible»: abre el planificador de combustible con esta ruta (distancia, nivel, ruta verdadera, aeronave).
 - «Copiar OACI»: copia el plan de vuelo OACI estricto (puntos no publicados en coordenadas).
 - «Sintaxis y uso»: recordatorio de las formas aceptadas (balizas, puntos de notificación VFR «MM-CV», «REN300010», coordenadas «4330N00125E», niveles «/A035», «VFR»…).

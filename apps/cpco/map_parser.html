@@ -5738,7 +5738,21 @@ $('vprofIcaoCopy').onclick = () => {
       readonly: true
     }))
 };
-/* Route du dernier OFP SimBrief (identifiant du profil pilote commun) : départ, groupe vitesse / niveau, route ATC (case 15), destination. */
+/** Route d'un OFP SimBrief en liste « ID lat lon » (même forme que le Carburant) : départ, groupe vitesse / niveau, chaque
+ *  point du navlog (points des voies aériennes et des procédures compris ; TOC / TOD et terrains écartés), destination ;
+ *  '' si le navlog n'a pas de positions. */
+function ofpRouteList(d, grp) {
+  const pt = (id, lat, lon) => Number.isFinite(+lat) && Number.isFinite(+lon) && lat !== '' && lon !== '' ?
+    `${String(id || 'WPT').replace(/[\s,;/]+/g, '') || 'WPT'} ${(+lat).toFixed(4)} ${(+lon).toFixed(4)}` : '',
+    fixes = [].concat(d.navlog?.fix || []).filter(f => f && !/^(TOC|TOD)$/i.test(f.ident || '') && f.type !== 'apt'),
+    mid = fixes.map(f => pt(f.ident || f.name, f.pos_lat, f.pos_long)).filter((x, i, a) => x && x.split(' ')[0] !== a[i - 1]?.split(' ')[
+      0]),
+    dep = pt(d.origin?.icao_code, d.origin?.pos_lat, d.origin?.pos_long),
+    arr = pt(d.destination?.icao_code, d.destination?.pos_lat, d.destination?.pos_long);
+  return dep && arr && mid.length ? [dep, grp, ...mid, arr].filter(Boolean).join(',\n') : ''
+}
+/* Route du dernier OFP SimBrief (identifiant du profil pilote commun) : départ, groupe vitesse / niveau, points du navlog
+   en coordonnées, destination ; sans navlog exploitable, la route ATC (case 15). Le dégagement suit l'événement. */
 $('routeSimbrief').onclick = async () => {
   let id = '';
   try {
@@ -5768,7 +5782,8 @@ $('routeSimbrief').onclick = async () => {
       ft = +g.initial_altitude || 0,
       grp = tas > 0 && ft > 0 ? `N${String(tas).padStart(4,'0')}${ft>=6000?'F':'A'}${String(Math.round(ft/100)).padStart(3,'0')}` : '',
       route = String(g.route || '').trim();
-    $('vprofRoute').value = [d.origin.icao_code, grp, route || 'DCT', d.destination?.icao_code].filter(Boolean).join(' ');
+    $('vprofRoute').value = ofpRouteList(d, grp) || [d.origin.icao_code, grp, route || 'DCT', d.destination?.icao_code].filter(Boolean)
+      .join(' ');
     if (ft) $('vprofCruise').value = ft >= 6000 ? `FL${Math.round(ft/100)}` : String(ft);
     $('routeInfo').textContent = `Route SimBrief (${d.origin.icao_code} → ${d.destination?.icao_code||'?'}${g.flight_number?`, vol ${g.icao_airline||''}${g.flight_number}`:''}).`;
     if (mission) saveVprof();
@@ -5776,7 +5791,8 @@ $('routeSimbrief').onclick = async () => {
     vprofEditor?.refreshText?.();
     window.dispatchEvent(new CustomEvent('vprof-route-edited', {
       detail: {
-        text: $('vprofRoute').value
+        text: $('vprofRoute').value,
+        altn: [].concat(d.alternate || [])[0]?.icao_code || ''
       }
     }))
   } catch (e) {
