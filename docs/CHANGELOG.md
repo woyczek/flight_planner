@@ -73,6 +73,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   and airways or procedures were ignored. SkyVector now gets names of 2 to 5 letters and ICAO coordinates
   (`4341N00122E`) built from the OFP route positions for unnamed points; airways, procedures and `DCT` are left out.
   SimBrief gets the same coordinates for unnamed OFP points.
+- **Last SimBrief flight plan: waypoints and alternate** (`shared/flight_vertical_profile.js`,
+  `shared/mission_core/fpl.js`, `tools/build_map_planner.py`) — Fuel: the OFP's alternate was never passed to Flight
+  maps (departure and arrival were read from the last word of the "ID lat lon" route, a longitude; the `json=v2`
+  alternate is a list). Flight maps: a new flight from Fuel brings its own alternate instead of keeping the previous
+  flight's one, which could block the rebuild ("unknown alternate") and leave the old waypoints on screen. Mission
+  report ("Filed flight plan — Last SimBrief OFP"): the waypoints follow the imported route (navlog fixes) instead of
+  keeping those of an earlier flight.
 
 ## [5.3.0] — 2026-10-19
 

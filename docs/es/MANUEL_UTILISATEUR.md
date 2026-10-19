@@ -1011,7 +1011,8 @@ Ambas listas necesitan su trigrama (Ajustes › Mi perfil).
 - **«Plan de vuelo presentado (SimBrief / IVAO / VATSIM)»**: la ventana propone «Último OFP de SimBrief» (su
   identificador SimBrief del perfil de piloto), «Plan de vuelo IVAO (vuelo en curso)» (su VID), «Plan de vuelo VATSIM
   (en curso o presentado)» (su CID): aeronave, equipos OACI, ruta, puntos de ruta, niveles, aeródromos, METAR / TAF,
-  masas y combustible previstos (SimBrief).
+  masas y combustible previstos (SimBrief). Los puntos de viraje siguen a la ruta: cuando la importación rellena la
+  ruta, se sustituyen por los del plan de vuelo (navlog del OFP de SimBrief), aunque el campo ya tuviera algunos.
 - **«Pegar un plan de vuelo, una página del tracker o un METAR»**: pegue (Ctrl+V) en el cuadro, el análisis es
   inmediato; o «Pegar desde el portapapeles» (Chrome pide permiso una vez). Textos reconocidos: plan de vuelo OACI
   «(FPL-…)», página del tracker IVAO (detalles de un vuelo o lista de conexiones), página de un vuelo StatSim

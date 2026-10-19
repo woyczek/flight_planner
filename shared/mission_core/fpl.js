@@ -267,7 +267,15 @@
     set('navigation.arr', fpl.arr);
     set('navigation.altn', fpl.altn);
     set('navigation.route', fpl.route);
-    set('navigation.waypoints', (fpl.waypoints?.length ? fpl.waypoints : window.MissionAssist?.routePoints(fpl.route) || []).join('\n'));
+    // points tournants : ceux du plan de vol (navlog SimBrief), sinon tirés de la route ; ils suivent la route reprise
+    // (remplacés avec elle), sinon ceux d'un vol précédent restaient
+    {
+      const wp = (fpl.waypoints?.length ? fpl.waypoints : window.MissionAssist?.routePoints(fpl.route) || []).join('\n');
+      if (wp && done.includes('navigation.route') && M.get(mission, 'navigation.waypoints') !== wp) {
+        M.set(mission, 'navigation.waypoints', wp);
+        done.push('navigation.waypoints');
+      } else set('navigation.waypoints', wp);
+    }
     set('navigation.altitude', fpl.altitude);
     set('navigation.speed', fpl.speed);
     set('navigation.distanceNm', fpl.distanceNm);

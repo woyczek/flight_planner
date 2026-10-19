@@ -1006,7 +1006,8 @@ Both lists need your trigram (Settings › My profile).
 - **“Filed flight plan (SimBrief / IVAO / VATSIM)”**: the window offers “Latest SimBrief OFP” (your SimBrief
   identifier from the pilot profile), “IVAO flight plan (current flight)” (your VID), “VATSIM flight plan (current
   or prefiled)” (your CID): aircraft, ICAO equipment, route, waypoints, levels, airfields, METAR / TAF, planned
-  masses and fuel (SimBrief).
+  masses and fuel (SimBrief). The waypoints follow the route: when the import fills the route, they are replaced by
+  those of the flight plan (the SimBrief OFP's navlog), even if the field already held some.
 - **“Paste a flight plan, a tracker page or a METAR”**: paste (Ctrl+V) into the box, the analysis is immediate; or
   “Paste from clipboard” (Chrome asks for permission once). Recognised texts: ICAO flight plan “(FPL-…)”, IVAO
   tracker page (details of a flight or list of connections), StatSim flight page (VATSIM), VATSIM history (JSON),

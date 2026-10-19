@@ -1048,7 +1048,8 @@ Les deux listes demandent votre trigramme (Paramètres › Mon profil).
 - **« Plan de vol déposé (SimBrief / IVAO / VATSIM) »** : la fenêtre propose « Dernier OFP SimBrief » (votre
   identifiant SimBrief du profil pilote), « Plan de vol IVAO (vol en cours) » (votre VID), « Plan de vol VATSIM (en
   cours ou déposé) » (votre CID) : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF,
-  masses et carburant prévus (SimBrief).
+  masses et carburant prévus (SimBrief). Les points tournants suivent la route : quand l'import remplit la route, ils
+  sont remplacés par ceux du plan de vol (navlog de l'OFP SimBrief), même si le champ en contenait déjà.
 - **« Coller un plan de vol, une page du tracker ou un METAR »** : collez (Ctrl+V) dans la zone, l'analyse est
   immédiate ; ou « Coller depuis le presse-papiers » (Chrome demande l'autorisation une fois). Textes reconnus : plan
   de vol OACI « (FPL-…) », page du tracker IVAO (détails d'un vol ou liste des connexions), page d'un vol StatSim

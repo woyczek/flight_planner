@@ -1012,7 +1012,8 @@ Beide Listen brauchen Ihr Kürzel (Einstellungen › Mein Profil).
 - **„Aufgegebener Flugplan (SimBrief / IVAO / VATSIM)“**: Das Fenster bietet „Letzter SimBrief-OFP“ (Ihre
   SimBrief-Kennung aus dem Pilotenprofil), „IVAO-Flugplan (laufender Flug)“ (Ihre VID), „VATSIM-Flugplan (laufend oder
   vorab)“ (Ihre CID): Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Höhen, Flugplätze, METAR / TAF, geplante Massen
-  und Kraftstoff (SimBrief).
+  und Kraftstoff (SimBrief). Die Wegpunkte folgen der Route: Füllt der Import die Route, werden sie durch die des
+  Flugplans ersetzt (Navlog des SimBrief-OFP), auch wenn das Feld schon welche enthielt.
 - **„Flugplan, Tracker-Seite oder METAR einfügen“**: Fügen Sie (Strg+V) in das Feld ein, die Auswertung erfolgt sofort;
   oder „Aus Zwischenablage einfügen“ (Chrome fragt einmal nach der Erlaubnis). Erkannte Texte: ICAO-Flugplan „(FPL-…)“,
   Seite des IVAO-Trackers (Einzelheiten eines Flugs oder Liste der Verbindungen), Seite eines StatSim-Flugs (VATSIM),

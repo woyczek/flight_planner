@@ -51,12 +51,13 @@
     const put = next => {
       try {
         const cur = readFpl() || {};
-        if (Object.keys(next).some(k => String(cur[k] || '') !== String(next[k] || ''))) localStorage.setItem(FPL_KEY, JSON.stringify({
-          ...cur,
-          ...next,
-          at: Date.now(),
-          by: 'planner'
-        }));
+        if (Object.keys(next).some(k => String(cur[k] || '') !== String(next[k] || ''))) localStorage.setItem(FPL_KEY, JSON
+          .stringify({
+            ...cur,
+            ...next,
+            at: Date.now(),
+            by: 'planner'
+          }));
       } catch {
         /* stockage indisponible */
       }
@@ -69,13 +70,18 @@
         altn: cur.route === route ? cur.altn || '' : ''
       };
     put(next);
-    const words = route.toUpperCase().split(/\s+/),
-      [dep, arr] = [words[0], words[words.length - 1]];
+    // départ et arrivée : premier mot du premier et du dernier point (« LFBO 43.6290 1.3640, …, LFRN 48.0690 -1.7340 »
+    // ou case 15 « LFBO DCT TOU … LFRN ») ; groupes vitesse / niveau écartés
+    const pts = route.toUpperCase().split(/[,\n]+/).map(t => t.trim()).filter(t => t && !/^[NKM]\d{3,4}[FASM]\d{3,4}$/.test(t)),
+      words = route.toUpperCase().split(/[\s,]+/).filter(Boolean),
+      dep = (pts.length > 1 ? pts[0] : words[0] || '').split(/\s+/)[0],
+      arr = (pts.length > 1 ? pts[pts.length - 1] : words[words.length - 1] || '').split(/\s+/)[0];
     if (typeof loadOFP === 'function') loadOFP().then(o => {
-      const raw = o?.raw;
-      if (raw?.origin?.icao_code === dep && raw?.destination?.icao_code === arr && raw.alternate?.icao_code) put({
+      const raw = o?.raw,
+        altn = [].concat(raw?.alternate || [])[0]?.icao_code;
+      if (raw?.origin?.icao_code === dep && raw?.destination?.icao_code === arr && altn) put({
         ...next,
-        altn: raw.alternate.icao_code
+        altn
       });
     }, () => {});
   };
