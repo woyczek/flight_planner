@@ -63,7 +63,7 @@ Die Kopfzeile trägt den Titel der Seite und ihren Untertitel. Rechts befinden s
 **Das Menü ☰** enthält von oben nach unten:
 - die Knöpfe „Darstellung“ und „Einstellungen“;
 - die Liste der Seiten der Suite, dann die Einstellungsseiten (Mein Profil, Zentrum, Installation, Wartung, Darstellung, Erststart);
-- die Gruppe „Pilotenprofil“ (Kürzel, IVAO-ID, VATSIM-ID, SimBrief), die alle Seiten übernehmen;
+- die Gruppe „Pilotenprofil“ (Kürzel; IVAO-ID, VATSIM-ID und SimBrief nur lesend, mit „In Mein Profil ändern ↗“), die alle Seiten übernehmen;
 - die Gruppe „Lokale Daten“: „Im Ordner sichern“, „Wiederherstellen / abgleichen“, „Sicherungsordner…“, „Sicherung herunterladen“, „Aus Datei wiederherstellen…“ und das Datum der letzten Sicherung;
 - die Gruppe „Seite“, wenn die Seite eigene Aktionen anbietet.
 
@@ -574,7 +574,7 @@ Drei Möglichkeiten:
 Die virtuelle Fluggesellschaft, deren Namen die Suite trägt, und die Adresse ihrer Website (Links, Flotte, Flugbuch); Einstellung dieses Browsers.
 
 1. Karte „Virtuelle Fluggesellschaft“: „Name“, „Kürzel“, „Vollständiger Name“, „Website der Fluggesellschaft“ (`https://…`).
-2. Karte „IVAO-API-Schlüssel (optional)“: der Schlüssel der Installation (Gebietsaktivierungen und IVAO-ATC-Sitzungen der Einsatztafel und der ODV-Planung). Er wird beim Starter gespeichert und nie wieder angezeigt: Die Karte sagt nur, dass ein Schlüssel gespeichert ist.
+2. Karte „IVAO-API-Schlüssel (optional)“: Status des Schlüssels der Installation („IVAO-Schlüssel: gespeichert ✓“ oder „fehlt“). Er wird an einem einzigen Ort eingegeben, getestet und ersetzt: Einstellungen › Installation › Schlüssel und externe Dienste (Link auf der Karte).
 3. „Fluggesellschaft speichern“.
 
 Die übrigen Felder (Zentrum, Seiten der Website, externe Quellen) stehen unter Einstellungen › Installation › Quellen und Ordner.
@@ -897,7 +897,7 @@ Spur des Flugs auf IVAO oder VATSIM.
 | Feld | Funktion |
 |---|---|
 | „Netzwerk“ | „Offline / nicht angegeben“, IVAO oder VATSIM |
-| „IVAO-ID (VID)“, „VATSIM-ID (CID)“ | übernommen aus Ihrem Pilotenprofil (Menü ☰ › Pilotenprofil) |
+| „IVAO-ID (VID)“, „VATSIM-ID (CID)“ | übernommen aus Ihrem Profil (Einstellungen › Mein Profil) |
 | „URL der Spur“ | Link zur Spur; er erscheint im Bericht („Spur öffnen“) und in den Auswertungen |
 
 Das angegebene Netzwerk speist das Diagramm „Netzwerk“ und die Kennzahl „Online“ der Auswertung.
@@ -1418,7 +1418,7 @@ Dieser Block verbindet drei Ansichten: den Flugplan (Text), die Karte und den Ve
 - Routenfeld: Feld 15 des ICAO-Flugplans oder Kommaliste (zum Beispiel `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Leer: Route der Mission.
 - „Höhe“: Reiseflughöhe („FL65“ oder „6500“).
 - Menü „Luftstraßen“ / „RTBA (Tiefflug)“, dann „Suchen“: berechnet eine Route zwischen den Punkten des Feldes. Das Ergebnis ersetzt das Feld.
-- „SimBrief“: übernimmt die Route des letzten OFP. Die SimBrief-Kennung wird in ☰ › Pilotenprofil eingegeben.
+- „SimBrief“: übernimmt die Route des letzten OFP. Die SimBrief-Kennung wird unter Einstellungen › Mein Profil eingegeben.
 - „Zeichnen“: zeichnet den Vertikalschnitt. „Kraftstoff“: öffnet den Kraftstoffplaner mit dieser Route (Distanz, Flughöhe, rechtweisender Kurs, Luftfahrzeug).
 - „ICAO kopieren“: kopiert den strikten ICAO-Flugplan (nicht veröffentlichte Punkte als Koordinaten).
 - „Syntax und Verwendung“: Überblick über die akzeptierten Formen (Funkfeuer, VFR-Meldepunkte „MM-CV“, „REN300010“, Koordinaten „4330N00125E“, Höhen „/A035“, „VFR“…).
@@ -1698,7 +1698,7 @@ Fügen Sie die „Internal ID“ eines SimBrief-Airframes (oder seine Freigabead
 
 Das Blatt mit einem echten SimBrief-Flugplan abgleichen.
 
-1. Klicken Sie auf „Letzten SimBrief-FPL abrufen“, die erste Schaltfläche dieses Teils. Die Kennung wird in ☰ › Pilotenprofil eingegeben. Ersatzweise laden Sie das OFP-JSON auf simbrief.com herunter und verwenden „OFP-JSON importieren“.
+1. Klicken Sie auf „Letzten SimBrief-FPL abrufen“, die erste Schaltfläche dieses Teils. Die Kennung wird unter Einstellungen › Mein Profil eingegeben. Ersatzweise laden Sie das OFP-JSON auf simbrief.com herunter und verwenden „OFP-JSON importieren“.
 2. Das OFP füllt die Planung und den Flugplan; das Profil des Luftfahrzeugs wird erstellt und kalibriert. Die Meldung zeigt eine vollständige oder teilweise Kalibrierung (messbare Phasen) an.
 3. „Aktives Profil kalibrieren“ wendet die Kalibrierung des letzten OFP auf das gewählte Profil an.
 4. „Prüfbericht als JSON exportieren“ lädt den Prüfbericht herunter.

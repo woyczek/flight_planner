@@ -2953,8 +2953,8 @@ $("simBtn").onclick = async () => {
       } catch {
         return ""
       }
-    })(); /* profil pilote commun (☰ › Profil pilote) */
-    if (!u) throw Object.assign(Error("identifiant SimBrief à saisir dans ☰ › Profil pilote"), {
+    })(); /* profil pilote commun (Paramètres › Mon profil) */
+    if (!u) throw Object.assign(Error("identifiant SimBrief à saisir dans Paramètres › Mon profil"), {
       simbrief: "SimBrief : identifiant manquant"
     });
     // SimBrief répond 400 avec un JSON ({ fetch: { status: "Error: …" } }) quand il n'a pas de plan de vol pour ce compte :

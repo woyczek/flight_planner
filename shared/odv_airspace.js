@@ -203,7 +203,8 @@
       };
     }
     if (!Array.isArray(r?.activations)) return {
-      error: r?.error || 'réponse IVAO illisible'
+      // clé absente ou refusée : message traduit, lien vers la carte des clés ajouté par AppFramework.notify
+      error: window.AppFramework?.keyIssue?.(r)?.text || r?.error || 'réponse IVAO illisible'
     };
     const b = await base(),
       list = b ? activables(b) : [];

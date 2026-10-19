@@ -179,7 +179,7 @@ window.REPOSITORY_TREE={
       level:"profile",identity:"profile",myAircraft:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
       cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",odvOrders:"centre",send:"centre",
       // « setup » (Premier lancement, rubrique faite de liens) n'est plus placée : l'onglet Premier lancement la remplace
-      sources:"installation",
+      sources:"installation",keys:"installation",
       fleet:"centre",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
       registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
       updates:"maintenance",versions:"maintenance",deps:"maintenance",types:"installation,maintenance",sia:"installation,maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"

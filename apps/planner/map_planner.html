@@ -5820,7 +5820,7 @@ $('routeSimbrief').onclick = async () => {
     id = JSON.parse(localStorage.getItem('missionReportingConfig:v1') || '{}').simbriefUser || ''
   } catch {}
   if (!id) {
-    window.AppFramework?.notify?.('SimBrief : identifiant à saisir dans ☰ › Profil pilote.', 'warn');
+    window.AppFramework?.notify?.('SimBrief : identifiant à saisir dans Paramètres › Mon profil.', 'warn');
     return
   }
   const b = $('routeSimbrief');

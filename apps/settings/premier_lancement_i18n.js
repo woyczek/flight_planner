@@ -187,18 +187,21 @@ RepositoryContentI18n([
   ['Nom long', 'Full name', 'Vollständiger Name', 'Nombre completo'],
   ['Site de la compagnie', 'Airline website', 'Website der Fluggesellschaft', 'Sitio de la aerolínea'],
   ['Clé d’API IVAO (facultatif)', 'IVAO API key (optional)', 'IVAO-API-Schlüssel (optional)', 'Clave de API IVAO (opcional)'],
-  ['Pour toute l’installation : activations des zones et sessions ATC IVAO (trainings, examens, réservations) du Tableau et du Planning ODV. Gardée par le lanceur, jamais renvoyée à la page.',
-    'For the whole installation: area activations and IVAO ATC sessions (trainings, exams, bookings) of the Board and the ODV planning. Kept by the launcher, never sent back to the page.',
-    'Für die ganze Installation: Gebietsaktivierungen und IVAO-ATC-Sitzungen (Trainings, Prüfungen, Buchungen) der Einsatztafel und der ODV-Planung. Beim Starter gespeichert, nie an die Seite zurückgegeben.',
-    'Para toda la instalación: activaciones de zonas y sesiones ATC IVAO (entrenamientos, exámenes, reservas) del Tablero y de la planificación ODV. Guardada por el lanzador, nunca devuelta a la página.'
+  ['Pour toute l’installation : dernier vol IVAO des CR, activations des zones et sessions ATC IVAO du Tableau et du Planning ODV. Gardée par le lanceur, jamais renvoyée à la page ; elle se saisit, se teste et se remplace à un seul endroit :',
+    'For the whole installation: last IVAO flight of the reports, area activations and IVAO ATC sessions of the Board and the ODV planning. Kept by the launcher, never sent back to the page; it is entered, tested and replaced in one single place:',
+    'Für die ganze Installation: letzter IVAO-Flug der Berichte, Gebietsaktivierungen und IVAO-ATC-Sitzungen der Einsatztafel und der ODV-Planung. Beim Starter gespeichert, nie an die Seite zurückgegeben; er wird an einem einzigen Ort eingegeben, getestet und ersetzt:',
+    'Para toda la instalación: último vuelo IVAO de los informes, activaciones de zonas y sesiones ATC IVAO del Tablero y de la planificación ODV. Guardada por el lanzador, nunca devuelta a la página; se introduce, se prueba y se sustituye en un solo lugar:'
+  ],
+  ['Paramètres › Installation › Clés et services externes', 'Settings › Installation › Keys and external services',
+    'Einstellungen › Installation › Schlüssel und externe Dienste', 'Ajustes › Instalación › Claves y servicios externos'
   ],
   ['Clé', 'Key', 'Schlüssel', 'Clave'],
   ['Enregistrer la compagnie', 'Save the airline', 'Fluggesellschaft speichern', 'Guardar la aerolínea'],
   ['Profil et identifiants', 'Profile and credentials', 'Profil und Zugangsdaten', 'Perfil y credenciales'],
-  ['Repris par toutes les pages (☰ › Profil pilote). La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences :',
-    'Used by every page (☰ › Pilot profile). The suite never asks for your IVAO or VATSIM passwords: your IDs (VID, CID) are enough. Suite account (password, production mode), personal IVAO client and preferences:',
-    'Von allen Seiten verwendet (☰ › Pilotenprofil). Die Suite fragt nie nach Ihren IVAO- oder VATSIM-Passwörtern: Ihre Kennungen (VID, CID) genügen. Konto der Suite (Passwort, Produktionsmodus), persönlicher IVAO-Client und Einstellungen:',
-    'Usado por todas las páginas (☰ › Perfil de piloto). La suite nunca pide sus contraseñas IVAO ni VATSIM: sus identificadores (VID, CID) bastan. Cuenta de la suite (contraseña, modo producción), cliente IVAO personal y preferencias:'
+  ['Repris par toutes les pages (☰ › Profil pilote, en lecture) ; modifiables ensuite dans Paramètres › Mon profil. La suite ne demande jamais vos mots de passe IVAO ni VATSIM : vos identifiants (VID, CID) suffisent. Compte de la suite (mot de passe, mode production), client IVAO personnel et préférences :',
+    'Used by every page (☰ › Pilot profile, read-only); changed later in Settings › My profile. The suite never asks for your IVAO or VATSIM passwords: your IDs (VID, CID) are enough. Suite account (password, production mode), personal IVAO client and preferences:',
+    'Von allen Seiten verwendet (☰ › Pilotenprofil, nur lesend); später unter Einstellungen › Mein Profil zu ändern. Die Suite fragt nie nach Ihren IVAO- oder VATSIM-Passwörtern: Ihre Kennungen (VID, CID) genügen. Konto der Suite (Passwort, Produktionsmodus), persönlicher IVAO-Client und Einstellungen:',
+    'Usado por todas las páginas (☰ › Perfil de piloto, solo lectura); se modifica luego en Ajustes › Mi perfil. La suite nunca pide sus contraseñas IVAO ni VATSIM: sus identificadores (VID, CID) bastan. Cuenta de la suite (contraseña, modo producción), cliente IVAO personal y preferencias:'
   ],
   ['Identifiants de votre compte sur le site de la compagnie, gardés dans ce navigateur seulement (jamais dans un fichier ni une sauvegarde).',
     'Credentials of your account on the airline website, kept in this browser only (never in a file or a backup).',

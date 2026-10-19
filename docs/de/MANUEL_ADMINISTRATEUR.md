@@ -198,9 +198,9 @@ Details: [Betriebshandbuch](../MANUEL_EXPLOITATION.md), § 10.
 
 Diese Seite vereint die einmalig vorzunehmenden Einstellungen: lokale Ordner, externe Quellen, virtuelle Fluggesellschaft, Luftfahrtdaten und Luftfahrzeugtypen.
 Zum Öffnen: Seitenleiste › „Einstellungen“, dann der Reiter „Installation“. Dieser Reiter erscheint ab der Nutzungsstufe Planung (2); eine direkte Adresse zu einem seiner Abschnitte öffnet ihn auf jeder Stufe.
-Das Seitenmenü hat eine einzige Gruppe, „Ordner und Quellen“: „Quellen und Ordner“ (von Anfang an geöffnet), „Luftfahrtdaten“ und „Luftfahrzeugtypen“.
+Das Seitenmenü hat eine einzige Gruppe, „Ordner und Quellen“: „Quellen und Ordner“ (von Anfang an geöffnet), „Schlüssel und externe Dienste“, „Luftfahrtdaten“ und „Luftfahrzeugtypen“.
 Der Erststart hat einen eigenen Reiter, „Erststart“, beschrieben im [Benutzerhandbuch](MANUEL_UTILISATEUR.md#erststart); „Bereinigen und neu beginnen…“ steht unten auf jener Seite. Siehe auch [Installation](../INSTALL.md), § 1.
-Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `sources` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
+Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `sources` und `keys` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
 
 ### Quellen und Ordner
 
@@ -218,9 +218,31 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 | X-Plane (zweite Zeile: „Landeprotokolle: anderer Ordner…“), Ordner Leistungsdaten, Ordner der lokalen Sicherung | Installationsordner von X-Plane (Navigationsdaten `earth_*.dat`, Custom Data; CSV-Landeprotokolle, sofern kein anderer Ordner gewählt ist), Profile `.lnmperf` / `.json` (von Kraftstoff, Block „Leistungsprofile“, neu gelesen, sobald sich der Ordner ändert), `defa_local_store.yaml`; optional, als „optional, nicht gewählt“ (Information) angezeigt, solange nicht gewählt |
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
-- **API-Schlüssel (externe Dienste)**: Schlüssel der Suite, für alle ihre Benutzer (IVAO: API-Schlüssel für die Gebietsaktivierungen und die ATC-Sitzungen — Trainings, Prüfungen, Buchungen — der ODV-Planung und der Einsatztafel). „Speichern“ übergibt sie dem Starter (`secrets/` im Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur ihren Status und die letzten 4 Zeichen; „Löschen“ entfernt den Schlüssel.
+- **API-Schlüssel (externe Dienste)**: Verweis auf die Rubrik „Schlüssel und externe Dienste“, den einzigen Ort der Schlüssel der Suite.
 - **Virtuelle Fluggesellschaft**: „Name“, „Vollständiger Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
 - **Erststart**: „Ersten Start erneut öffnen“. Um bei null anzufangen, steht „Bereinigen und neu beginnen…“ unten auf der Seite des Erststarts (Abschnitt „Neu beginnen“).
+
+### Schlüssel und externe Dienste
+
+Ein Ort für die Schlüssel der Suite, für alle ihre Benutzer: eine Karte pro Dienst. Anderswo (Erststart, Berichte,
+Einsatztafel, ODV-Planung) zeigt die Suite nur den Status des Schlüssels und verweist hierher.
+- **IVAO**: API-Schlüssel der Suite (developers.ivao.aero). Er wird vom Starter gehalten (`secrets/ivao.json` im
+  Anwendungsordner, von Git ausgeschlossen, außerhalb der Daten und Sicherungen); die Seite sieht nur seinen Status:
+  „gespeichert am … UTC (…abcd)“, „fehlt“ oder „Umgebungsvariable IVAO_API_KEY“ (vorrangig, hier nicht änderbar).
+  „Speichern“ ersetzt den Schlüssel und testet ihn; „Testen“ macht einen Kontrollaufruf („OK: Schlüssel von IVAO
+  akzeptiert, N Tracker-Sitzungen der letzten Stunde gelesen“ oder „Schlüssel abgelehnt“); „Entfernen“ löscht ihn
+  nach Bestätigung. „Dient für“: Bericht › Aus meinem letzten Flug vorausfüllen, Einsatztafel (IVAO-Aktivierungen und
+  ATC-Sitzungen), ODV-Planung (IVAO-ATC-Sitzungen).
+- **VATSIM**, **SimBrief**: kein Schlüssel (öffentliche APIs); die Karte nennt die Verwendung und verweist für CID
+  und SimBrief-Kennung auf Mein Profil.
+- **Website der Fluggesellschaft**: kein Schlüssel und kein Passwort (der Starter liest die öffentlichen Seiten);
+  Adresse unter Quellen und Ordner, Kennung unter Mein Profil.
+- **Webservice für den Berichtsversand**: sein Schlüssel bleibt in diesem Browser, eingestellt unter Einstellungen ›
+  Zentrum › Berichtsversand (Link); die Karte zeigt, ob er gespeichert ist.
+
+Ein fehlender oder von IVAO abgelehnter Schlüssel (401 / 403) wird dort gemeldet, wo er gebraucht wird
+(„IVAO-Schlüssel von IVAO abgelehnt: unter Einstellungen › Installation › Schlüssel und externe Dienste ersetzen“),
+mit dem Link „Schlüssel öffnen ↗“.
 
 ## Einstellungen › Wartung
 <!-- page: apps/settings/maintenance.html -->

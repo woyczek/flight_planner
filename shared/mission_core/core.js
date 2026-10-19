@@ -127,10 +127,10 @@
     allSeries: L('Tous les sous-types', 'All sub-types', 'Alle Untertypen', 'Todos los subtipos'),
     fplTitle: L('Plan de vol déposé', 'Filed flight plan', 'Aufgegebener Flugplan', 'Plan de vuelo presentado'),
     fplIntro: L(
-      'Remplit les champs vides : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF (SimBrief), masses et carburant prévus (SimBrief). Identifiants : menu ☰ › Profil pilote.',
-      'Fills empty fields: aircraft, ICAO equipment, route, waypoints, levels, aerodromes, METAR / TAF (SimBrief), planned masses and fuel (SimBrief). IDs: menu ☰ › Pilot profile.',
-      'Füllt leere Felder: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Flughöhen, Flugplätze, METAR / TAF (SimBrief), geplante Massen und Kraftstoff (SimBrief). Kennungen: Menü ☰ › Pilotenprofil.',
-      'Rellena los campos vacíos: aeronave, equipos OACI, ruta, puntos, niveles, aeródromos, METAR / TAF (SimBrief), masas y combustible previstos (SimBrief). Identificadores: menú ☰ › Perfil de piloto.'
+      'Remplit les champs vides : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF (SimBrief), masses et carburant prévus (SimBrief). Identifiants : Paramètres › Mon profil.',
+      'Fills empty fields: aircraft, ICAO equipment, route, waypoints, levels, aerodromes, METAR / TAF (SimBrief), planned masses and fuel (SimBrief). IDs: Settings › My profile.',
+      'Füllt leere Felder: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Flughöhen, Flugplätze, METAR / TAF (SimBrief), geplante Massen und Kraftstoff (SimBrief). Kennungen: Einstellungen › Mein Profil.',
+      'Rellena los campos vacíos: aeronave, equipos OACI, ruta, puntos, niveles, aeródromos, METAR / TAF (SimBrief), masas y combustible previstos (SimBrief). Identificadores: Ajustes › Mi perfil.'
     ),
     fplSimbrief: L('Dernier OFP SimBrief', 'Latest SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'),
     fplIvao: L('Plan de vol IVAO (vol en cours)', 'IVAO flight plan (current flight)', 'IVAO-Flugplan (laufender Flug)',
@@ -141,10 +141,8 @@
       'No flight plan found for this ID (flight ended or not filed).',
       'Kein Flugplan für diese Kennung gefunden (Flug beendet oder nicht aufgegeben).',
       'No se encontró ningún plan de vuelo para este identificador (vuelo terminado o no presentado).'),
-    fplNeedId: L('Renseignez votre identifiant dans le menu ☰ › Profil pilote (ou dans le bloc « Trace réseau »).',
-      'Enter your ID in menu ☰ › Pilot profile (or in the “Network track” block).',
-      'Kennung im Menü ☰ › Pilotenprofil (oder im Block „Netzwerkspur“) eingeben.',
-      'Indique su identificador en el menú ☰ › Perfil de piloto (o en el bloque «Traza de red»).'),
+    fplNeedId: L('Renseignez votre identifiant dans Paramètres › Mon profil.', 'Enter your ID in Settings › My profile.',
+      'Kennung unter Einstellungen › Mein Profil eingeben.', 'Indique su identificador en Ajustes › Mi perfil.'),
     fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign',
       'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
     importTitle: L('Analyser / importer…', 'Analyse / import…', 'Auswerten / importieren…', 'Analizar / importar…'),
@@ -495,7 +493,8 @@
       open: false,
       net: '',
       text: '',
-      flights: null
+      flights: null,
+      fix: null
     };
     const prefs = () => {
       try {
@@ -1346,8 +1345,10 @@
         const source = button.dataset.fpl,
           p = prefs(),
           F = window.MissionFpl;
-        const id = source === 'simbrief' ? p.simbriefUser : source === 'ivao' ? (mission.network.ivaoId || p.ivaoId) : (mission
-          .network.vatsimId || p.vatsimId);
+        // identifiants de Mon profil d'abord (celui du CR à défaut)
+        const id = source === 'simbrief' ? p.simbriefUser : source === 'ivao' ? (p.ivaoId || mission.network.ivaoId) : (p
+          .vatsimId ||
+          mission.network.vatsimId);
         if (!id) {
           note.textContent = inLanguage(UI.fplNeedId);
           return;
@@ -1390,7 +1391,7 @@
       if (!section || section.querySelector('.mc-last')) return;
       const bar = document.createElement('div');
       bar.className = 'mc-tools mc-last';
-      bar.innerHTML = `<details class="mc-last-menu"><summary></summary><div class="row"><button type="button" class="secondary" data-last="ivao"></button><button type="button" class="secondary" data-last="vatsim"></button></div><p class="small mc-last-why"></p></details><div class="mc-import-row mc-import-choices" hidden></div><p class="small mc-tools-status"></p><p class="small"><a class="mc-last-tracker" target="_blank" rel="noopener" hidden></a></p>`;
+      bar.innerHTML = `<details class="mc-last-menu"><summary></summary><div class="row"><button type="button" class="secondary" data-last="ivao"></button><button type="button" class="secondary" data-last="vatsim"></button></div><p class="small mc-last-why"></p></details><div class="mc-import-row mc-import-choices" hidden></div><p class="small mc-tools-status"></p><p class="small"><a class="mc-last-fix" hidden></a> <a class="mc-last-tracker" target="_blank" rel="noopener" hidden></a></p>`;
       const menu = bar.querySelector('details'),
         why = bar.querySelector('.mc-last-why'),
         p = prefs();
@@ -1453,6 +1454,12 @@
       const bar = form.querySelector('.mc-last');
       if (!bar) return;
       bar.querySelector('.mc-tools-status').textContent = lastState.text;
+      const fix = bar.querySelector('.mc-last-fix'); // clé absente ou refusée : carte des clés
+      fix.hidden = !lastState.fix?.href;
+      if (lastState.fix?.href) Object.assign(fix, {
+        href: lastState.fix.href,
+        textContent: lastState.fix.label
+      });
       const choices = bar.querySelector('.mc-import-choices'),
         hhmm = v => String(v || '').slice(11, 16);
       choices.replaceChildren(...(lastState.flights || []).map(f => {
@@ -1510,8 +1517,8 @@
       a.textContent = t(key);
       a.onclick = () => {
         const p = prefs(),
-          vid = mission.network.ivaoId || p.ivaoId,
-          cid = mission.network.vatsimId || p.vatsimId;
+          vid = p.ivaoId || mission.network.ivaoId,
+          cid = p.vatsimId || mission.network.vatsimId;
         a.href = kind === 'ivao' ? (vid ? `https://tracker.ivao.aero/?userId=${encodeURIComponent(vid)}` : 'https://tracker.ivao.aero/') : (cid ? `https://statsim.net/flights/vatsimid/${encodeURIComponent(cid)}` : 'https://statsim.net/');
       };
     };
@@ -1584,9 +1591,10 @@
     /** Date d'une chaîne ISO du lanceur (null si absente). */
     const isoDate = v => v ? new Date(v) : null;
     /** Message du dernier vol (gardé d'un rendu du formulaire à l'autre), liste de choix vidée sauf mention contraire. */
-    const sayLast = (text, flights = null) => {
+    const sayLast = (text, flights = null, fix = null) => {
       lastState.text = text;
       lastState.flights = flights;
+      lastState.fix = fix;
       drawLast();
     };
     /** Vols récents du pilote sur un réseau (sans session) ou préremplissage du vol choisi (session). */
@@ -1615,6 +1623,8 @@
       } catch {
         return sayLast(inLanguage(UI.importLastLauncher));
       }
+      const key = window.AppFramework?.keyIssue?.(got); // clé IVAO absente ou refusée : message et lien vers sa carte
+      if (key) return sayLast(key.text, null, key);
       if (got.error) return sayLast(got.error);
       if (got.flights) {
         if (!got.flights.length) {

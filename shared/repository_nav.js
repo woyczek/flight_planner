@@ -176,7 +176,7 @@
   doc.dataset.cpco = cpcoOn() ? "on" : "off";
   /** Adresse d'une rubrique de Paramètres (REPOSITORY_TREE.settings : rubrique → page ; ?base= pour les rubriques de
    *  data_admin.js et settings_panels.js, ?m= pour les blocs de maintenance_page.js) ; sans rubrique : Mon profil. */
-  const MT_BLOCKS = ["updates", "sources", "versions", "deps", "sia", "types", "caches", "storage", "backup", "journal"];
+  const MT_BLOCKS = ["updates", "sources", "keys", "versions", "deps", "sia", "types", "caches", "storage", "backup", "journal"];
   /** Adresse complète (href) de la rubrique section de Paramètres, ancre hash en plus (« mt-aero-base »…). */
   const settingsUrl = (section, hash = "") => {
     const s = cfg.settings || {},

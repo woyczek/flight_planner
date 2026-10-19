@@ -65,7 +65,7 @@ L'en-tête porte le titre de la page et son sous-titre. À droite se trouvent le
 **Le menu ☰** contient, de haut en bas :
 - les boutons « Apparence » et « Paramètres » ;
 - la liste des pages de la suite, puis les pages de réglage (Mon profil, Centre, Installation, Maintenance, Apparence, Premier lancement) ;
-- le groupe « Profil pilote » (trigramme, ID IVAO, ID VATSIM, SimBrief), repris par toutes les pages ;
+- le groupe « Profil pilote » (trigramme ; ID IVAO, ID VATSIM et SimBrief affichés en lecture, avec « Modifier dans Mon profil ↗ »), repris par toutes les pages ;
 - le groupe « Données locales » : « Sauvegarder dans le dossier », « Restaurer / resynchroniser », « Dossier de sauvegarde… », « Télécharger la sauvegarde », « Restaurer depuis un fichier… », et la date de la dernière sauvegarde ;
 - le groupe « Page », quand la page propose ses propres actions.
 
@@ -600,7 +600,7 @@ Trois possibilités :
 La compagnie virtuelle dont la suite porte le nom, et l'adresse de son site (liens, flotte, journal des vols) ; réglage de ce navigateur.
 
 1. Carte « Compagnie virtuelle » : « Nom », « Sigle », « Nom long », « Site de la compagnie » (`https://…`).
-2. Carte « Clé d’API IVAO (facultatif) » : la clé de l'installation (activations des zones et sessions ATC IVAO du Tableau et du Planning ODV). Gardée par le lanceur, elle n'est jamais réaffichée : la carte indique seulement qu'une clé est enregistrée.
+2. Carte « Clé d’API IVAO (facultatif) » : état de la clé de l'installation (« Clé IVAO : enregistrée ✓ » ou « absente »). Elle se saisit, se teste et se remplace à un seul endroit, Paramètres › Installation › Clés et services externes (lien de la carte).
 3. « Enregistrer la compagnie ».
 
 Les autres champs (centre, pages du site, sources externes) sont dans Paramètres › Installation › Sources et dossiers.
@@ -933,7 +933,7 @@ Trace du vol sur IVAO ou VATSIM.
 | Champ | Rôle |
 |---|---|
 | « Réseau » | « Hors réseau / non renseigné », IVAO ou VATSIM |
-| « ID IVAO (VID) », « ID VATSIM (CID) » | repris de votre profil pilote (menu ☰ › Profil pilote) |
+| « ID IVAO (VID) », « ID VATSIM (CID) » | repris de votre profil (Paramètres › Mon profil) |
 | « URL de la trace » | lien vers la trace ; il apparaît dans le CR (« Ouvrir la trace ») et dans les reportings |
 
 Le réseau renseigné alimente le graphique « Réseau » et l'indicateur « En réseau » du reporting.
@@ -1459,7 +1459,7 @@ Ce bloc relie trois vues : le plan de vol (texte), la carte et la coupe vertical
 - Champ de route : case 15 du plan de vol OACI, ou liste à virgules (par exemple `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Vide : route de la mission.
 - « Niveau » : niveau de croisière (« FL65 » ou « 6500 »).
 - Menu « Voies aériennes » / « RTBA (basse hauteur) », puis « Chercher » : calcule une route entre les points du champ. Le résultat remplace le champ.
-- « SimBrief » : reprend la route du dernier OFP. L'identifiant SimBrief se saisit dans ☰ › Profil pilote.
+- « SimBrief » : reprend la route du dernier OFP. L'identifiant SimBrief se saisit dans Paramètres › Mon profil.
 - « Tracer » : dessine la coupe verticale. « Carburant » : ouvre le planificateur carburant avec cette route (distance, niveau, route vraie, appareil).
 - « Copier OACI » : copie le plan de vol OACI strict (points non publiés en coordonnées).
 - « Syntaxe et utilisation » : rappel des formes acceptées (balises, points de report VFR « MM-CV », « REN300010 », coordonnées « 4330N00125E », niveaux « /A035 », « VFR »…).
@@ -1744,7 +1744,7 @@ Collez l'« Internal ID » d'un airframe SimBrief (ou son adresse de partage), p
 
 Recaler la fiche sur un plan de vol SimBrief réel.
 
-1. Cliquez sur « Récupérer dernier FPL SimBrief », le premier bouton de cette partie. L'identifiant se saisit dans ☰ › Profil pilote. À défaut, téléchargez l'OFP JSON sur simbrief.com et utilisez « Importer OFP JSON ».
+1. Cliquez sur « Récupérer dernier FPL SimBrief », le premier bouton de cette partie. L'identifiant se saisit dans Paramètres › Mon profil. À défaut, téléchargez l'OFP JSON sur simbrief.com et utilisez « Importer OFP JSON ».
 2. L'OFP remplit le devis et le plan de vol ; le profil de l'appareil est créé et calibré. Le message indique une calibration complète ou partielle (phases mesurables).
 3. « Calibrer le profil actif » applique la calibration du dernier OFP au profil choisi.
 4. « Exporter audit JSON » télécharge l'audit.

@@ -198,9 +198,9 @@ Details: [Operations manual](../MANUEL_EXPLOITATION.md), § 10.
 
 This page groups the one-time settings: local folders, external sources, virtual airline, aeronautical data and aircraft types.
 To open it: sidebar › “Settings”, then the “Installation” tab. This tab appears from the Planning usage level (2); a direct address to one of its sections opens it at any level.
-The side menu has a single group, “Folders and sources”: “Sources and folders” (open from the start), “Aeronautical data” and “Aircraft types”.
+The side menu has a single group, “Folders and sources”: “Sources and folders” (open from the start), “Keys and external services”, “Aeronautical data” and “Aircraft types”.
 The first run has its own tab, “First run”, described in the [user manual](MANUEL_UTILISATEUR.md#first-run); “Clean and start again…” is at the bottom of that page. See also [Installation](../INSTALL.md), § 1.
-These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `sources` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
+These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `sources` and `keys` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
 
 ### Sources and folders
 
@@ -218,9 +218,29 @@ This section is the only place to set the local folders and the addresses of the
 | X-Plane (second line: “Landing logs: other folder…”), Performance folder, Local backup folder | X-Plane installation folder (navigation data `earth_*.dat`, Custom Data; CSV landing logs, unless another folder is chosen), `.lnmperf` / `.json` profiles (read again by Fuel, “Performance profiles” block, as soon as the folder changes), `defa_local_store.yaml`; optional, shown “optional, not chosen” (information) until chosen |
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
-- **API keys (external services)**: suite keys, shared by all its users (IVAO: API key for the area activations and the ATC sessions — trainings, exams, bookings — of the ODV planning and the Board). “Save” hands them to the launcher (`secrets/` at the application root, excluded from git, outside the data and the backups); the page only sees their state and last 4 characters; “Clear” removes the key.
+- **API keys (external services)**: link to the “Keys and external services” section, the one place for the suite keys.
 - **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”. To start from scratch, “Clean and start again…” is at the bottom of the first run page (“Start again” section).
+
+### Keys and external services
+
+One place for the suite keys, shared by all its users: one card per service. Elsewhere (first run, reports, Board, ODV
+planning), the suite only shows the key state and points here.
+- **IVAO**: suite API key (developers.ivao.aero). It is kept by the launcher (`secrets/ivao.json` at the application
+  root, excluded from git, outside the data and the backups); the page only sees its state: “saved on … UTC (…abcd)”,
+  “missing”, or “IVAO_API_KEY environment variable” (takes priority, not editable here). “Save” replaces the key then
+  tests it; “Test” makes a control call (“OK: key accepted by IVAO, N tracker sessions read over the last hour”, or
+  “key refused”); “Remove” deletes it after confirmation. “Used for”: Report › Prefill from my last flight, Board
+  (IVAO activations and ATC sessions), ODV planning (IVAO ATC sessions).
+- **VATSIM**, **SimBrief**: no key (public APIs); the card says what uses them and points to My profile for the CID
+  and the SimBrief login.
+- **Airline website**: no key or password (the launcher reads the public pages); address in Sources and folders,
+  login in My profile.
+- **Report sending web service**: its key stays in this browser, set in Settings › Centre › Report sending (link);
+  the card shows whether it is saved.
+
+A key missing or refused by IVAO (401 / 403) is reported where it is used (“IVAO key refused by IVAO: replace it in
+Settings › Installation › Keys and external services”) with the link “Open the keys ↗”.
 
 ## Settings › Maintenance
 <!-- page: apps/settings/maintenance.html -->

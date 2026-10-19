@@ -215,9 +215,9 @@ Détails : [Manuel d'exploitation](MANUEL_EXPLOITATION.md), § 10.
 
 Cette page regroupe les réglages faits une seule fois : dossiers locaux, sources externes, compagnie virtuelle, données aéronautiques et types d'aéronefs.
 Pour l'ouvrir : barre latérale › « Paramètres », puis l'onglet « Installation ». Cet onglet apparaît à partir du niveau d'utilisation Planification (2) ; une adresse directe vers l'une de ses rubriques l'ouvre à tout niveau.
-Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources et dossiers » (ouverte d'emblée), « Données aéronautiques » et « Types d’aéronefs ».
+Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources et dossiers » (ouverte d'emblée), « Clés et services externes », « Données aéronautiques » et « Types d’aéronefs ».
 Le premier lancement a son propre onglet, « Premier lancement », décrit dans le [manuel utilisateur](MANUEL_UTILISATEUR.md#premier-lancement) ; « Nettoyer et recommencer… » se trouve en bas de cette page-là. Voir aussi [Installation](INSTALL.md), § 1.
-Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
+Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` et `keys` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
 
 ### Sources et dossiers
 
@@ -235,7 +235,7 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 | X-Plane (en second plan : « Journaux d'atterrissage : autre dossier… »), Dossier performances, Dossier de sauvegarde locale | dossier d'installation d'X-Plane (données de navigation `earth_*.dat`, Custom Data ; journaux d'atterrissage CSV, sauf autre dossier choisi), profils `.lnmperf` / `.json` (relus par Carburant, bloc « Profils de performances », dès que le dossier change), `defa_local_store.yaml` ; facultatifs, signalés « facultatif, non choisi » (information) tant qu'ils ne sont pas choisis |
 
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
-- **Clés d'API (services externes)** : clés de la suite, communes à tous ses utilisateurs (IVAO : clé d'API pour les activations de zones et les sessions ATC — trainings, examens, réservations — du Planning ODV et des ordres de vols). « Enregistrer » les confie au lanceur (`secrets/` à la racine de l'application, exclu de git, hors des données et des sauvegardes) ; la page n'en voit que l'état et les 4 derniers caractères ; « Effacer » la retire.
+- **Clés d'API (services externes)** : renvoi vers la rubrique « Clés et services externes », seule place des clés de la suite.
 - **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
 - **Premier lancement** : « Rouvrir le premier lancement ». Pour repartir de zéro, « Nettoyer et recommencer… » se trouve en bas de la page du premier lancement (rubrique « Recommencer »).
 
@@ -243,6 +243,27 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 ![Sources et dossiers : dépôt, données, classeur ODV, X-Plane, performances et sauvegarde locale.](images/captures-manuels/admin-installation.png)
 
 *Figure 4 — Sources et dossiers : dépôt, données, classeur ODV, X-Plane, performances et sauvegarde locale.*
+
+### Clés et services externes
+
+Une seule place pour les clés de la suite, communes à tous ses utilisateurs : une carte par service. Ailleurs (premier
+lancement, CR, Tableau, Planning ODV), la suite affiche seulement l'état de la clé et renvoie ici.
+- **IVAO** : clé d'API de la suite (developers.ivao.aero). Elle est gardée par le lanceur (`secrets/ivao.json` à la
+  racine de l'application, exclu de git, hors des données et des sauvegardes) ; la page n'en voit que l'état :
+  « enregistrée le … UTC (…abcd) », « absente », ou « variable d'environnement IVAO_API_KEY » (prioritaire, non
+  modifiable ici). « Enregistrer » remplace la clé puis la teste ; « Tester » fait un appel de contrôle (« OK : clé
+  acceptée par IVAO, N sessions du tracker lues sur la dernière heure », ou « clé refusée ») ; « Retirer » l'efface
+  après confirmation. « Sert à » : CR › Préremplir depuis mon dernier vol, Tableau (activations et sessions ATC IVAO),
+  Planning ODV (sessions ATC IVAO).
+- **VATSIM**, **SimBrief** : pas de clé (API publiques) ; la carte dit ce qui s'en sert et renvoie à Mon profil pour
+  le CID et l'identifiant SimBrief.
+- **Site de la compagnie** : pas de clé ni de mot de passe (le lanceur lit les pages publiques) ; adresse dans
+  Sources et dossiers, identifiant dans Mon profil.
+- **Webservice d'envoi des CR** : sa clef reste dans ce navigateur, réglée dans Paramètres › Centre › Envoi des
+  comptes rendus (lien) ; la carte indique si elle est enregistrée.
+
+Une clé absente ou refusée par IVAO (401 / 403) est signalée là où elle sert (« Clé IVAO refusée par IVAO : la
+remplacer dans Paramètres › Installation › Clés et services externes ») avec le lien « Ouvrir les clés ↗ ».
 
 ## Paramètres › Maintenance
 <!-- page: apps/settings/maintenance.html -->

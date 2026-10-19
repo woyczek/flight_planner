@@ -63,7 +63,7 @@ The header shows the page title and its subtitle. On the right are the tools, wh
 **The ☰ menu** contains, from top to bottom:
 - the “Appearance” and “Settings” buttons;
 - the list of the pages of the suite, then the settings pages (My profile, Centre, Installation, Maintenance, Appearance, First run);
-- the “Pilot profile” group (trigram, IVAO ID, VATSIM ID, SimBrief), used by all pages;
+- the “Pilot profile” group (trigram; IVAO ID, VATSIM ID and SimBrief shown read-only, with “Edit in My profile ↗”), used by all pages;
 - the “Local data” group: “Save to folder”, “Restore / resync”, “Backup folder…”, “Download backup”, “Restore from a file…”, and the date of the last backup;
 - the “Page” group, when the page offers its own actions.
 
@@ -572,7 +572,7 @@ Three options:
 The virtual airline whose name the suite bears, and its website address (links, fleet, flight log); setting of this browser.
 
 1. “Virtual airline” card: “Name”, “Short name”, “Full name”, “Airline website” (`https://…`).
-2. “IVAO API key (optional)” card: the installation's key (area activations and IVAO ATC sessions of the Board and the ODV planning). Kept by the launcher, it is never shown again: the card only says that a key is saved.
+2. “IVAO API key (optional)” card: state of the installation's key (“IVAO key: saved ✓” or “missing”). It is entered, tested and replaced in one single place, Settings › Installation › Keys and external services (link on the card).
 3. “Save the airline”.
 
 The other fields (centre, website pages, external sources) are in Settings › Installation › Sources and folders.
@@ -895,7 +895,7 @@ Track of the flight on IVAO or VATSIM.
 | Field | Role |
 |---|---|
 | “Network” | “Offline / not provided”, IVAO or VATSIM |
-| “IVAO ID (VID)”, “VATSIM ID (CID)” | taken from your pilot profile (☰ menu › Pilot profile) |
+| “IVAO ID (VID)”, “VATSIM ID (CID)” | taken from your profile (Settings › My profile) |
 | “Track URL” | link to the track; it appears in the report (“Open track”) and in the reporting pages |
 
 The network entered feeds the “Network” chart and the “Online” indicator of the reporting.
@@ -1416,7 +1416,7 @@ This block links three views: the flight plan (text), the map and the vertical s
 - Route field: item 15 of the ICAO flight plan, or a comma list (for example `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Empty: route of the mission.
 - “Level”: cruise level (“FL65” or “6500”).
 - “Airways” / “RTBA (low level)” menu, then “Search”: calculates a route between the points of the field. The result replaces the field.
-- “SimBrief”: takes the route of the latest OFP. The SimBrief identifier is entered in ☰ › Pilot profile.
+- “SimBrief”: takes the route of the latest OFP. The SimBrief identifier is entered in Settings › My profile.
 - “Draw”: draws the vertical section. “Fuel”: opens the fuel planner with this route (distance, level, true track, aircraft).
 - “Copy ICAO”: copies the strict ICAO flight plan (unpublished points as coordinates).
 - “Syntax and use”: reminder of the accepted forms (beacons, VFR reporting points “MM-CV”, “REN300010”, coordinates “4330N00125E”, levels “/A035”, “VFR”…).
@@ -1696,7 +1696,7 @@ Paste the “Internal ID” of a SimBrief airframe (or its share address), then 
 
 Adjust the sheet to a real SimBrief flight plan.
 
-1. Click “Fetch latest SimBrief FPL”, the first button of this part. The identifier is entered in ☰ › Pilot profile. Failing that, download the JSON OFP on simbrief.com and use “Import OFP JSON”.
+1. Click “Fetch latest SimBrief FPL”, the first button of this part. The identifier is entered in Settings › My profile. Failing that, download the JSON OFP on simbrief.com and use “Import OFP JSON”.
 2. The OFP fills in the fuel plan and the flight plan; the aircraft profile is created and calibrated. The message shows a full or partial calibration (measurable phases).
 3. “Calibrate the active profile” applies the calibration of the last OFP to the chosen profile.
 4. “Export audit JSON” downloads the audit.

@@ -63,7 +63,7 @@ La cabecera muestra el título de la página y su subtítulo. A la derecha está
 **El menú ☰** contiene, de arriba abajo:
 - los botones «Apariencia» y «Ajustes»;
 - la lista de las páginas de la suite y, después, las páginas de ajustes (Mi perfil, Centro, Instalación, Mantenimiento, Apariencia, Primer arranque);
-- el grupo «Perfil de piloto» (trigrama, ID IVAO, ID VATSIM, SimBrief), que usan todas las páginas;
+- el grupo «Perfil de piloto» (trigrama; ID IVAO, ID VATSIM y SimBrief en solo lectura, con «Modificar en Mi perfil ↗»), que usan todas las páginas;
 - el grupo «Datos locales»: «Guardar en la carpeta», «Restaurar / resincronizar», «Carpeta de copia…», «Descargar la copia», «Restaurar desde un archivo…», y la fecha de la última copia;
 - el grupo «Página», cuando la página ofrece sus propias acciones.
 
@@ -573,7 +573,7 @@ Tres posibilidades:
 La aerolínea virtual cuyo nombre lleva la suite, y la dirección de su sitio (enlaces, flota, registro de vuelos); ajuste de este navegador.
 
 1. Tarjeta «Aerolínea virtual»: «Nombre», «Sigla», «Nombre completo», «Sitio de la aerolínea» (`https://…`).
-2. Tarjeta «Clave de API IVAO (opcional)»: la clave de la instalación (activaciones de zonas y sesiones ATC IVAO del Tablero y de la planificación ODV). Guardada por el lanzador, nunca se vuelve a mostrar: la tarjeta solo indica que hay una clave guardada.
+2. Tarjeta «Clave de API IVAO (opcional)»: estado de la clave de la instalación («Clave IVAO: guardada ✓» o «ausente»). Se introduce, se prueba y se sustituye en un solo lugar: Ajustes › Instalación › Claves y servicios externos (enlace de la tarjeta).
 3. «Guardar la aerolínea».
 
 Los demás campos (centro, páginas del sitio, fuentes externas) están en Ajustes › Instalación › Fuentes y carpetas.
@@ -896,7 +896,7 @@ Traza del vuelo en IVAO o VATSIM.
 | Campo | Función |
 |---|---|
 | «Red» | «Fuera de red / no indicado», IVAO o VATSIM |
-| «ID IVAO (VID)», «ID VATSIM (CID)» | tomados de su perfil de piloto (menú ☰ › Perfil de piloto) |
+| «ID IVAO (VID)», «ID VATSIM (CID)» | tomados de su perfil (Ajustes › Mi perfil) |
 | «URL de la traza» | enlace a la traza; aparece en el informe («Abrir traza») y en los informes estadísticos |
 
 La red indicada alimenta el gráfico «Red» y el indicador «En red» de los informes estadísticos.
@@ -1416,7 +1416,7 @@ Este bloque relaciona tres vistas: el plan de vuelo (texto), el mapa y el corte 
 - Campo de ruta: casilla 15 del plan de vuelo OACI, o lista separada por comas (por ejemplo `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Vacío: ruta de la misión.
 - «Nivel»: nivel de crucero («FL65» o «6500»).
 - Menú «Aerovías» / «RTBA (baja altura)» y, después, «Buscar»: calcula una ruta entre los puntos del campo. El resultado sustituye el campo.
-- «SimBrief»: toma la ruta del último OFP. El identificador SimBrief se introduce en ☰ › Perfil de piloto.
+- «SimBrief»: toma la ruta del último OFP. El identificador SimBrief se introduce en Ajustes › Mi perfil.
 - «Trazar»: dibuja el corte vertical. «Combustible»: abre el planificador de combustible con esta ruta (distancia, nivel, ruta verdadera, aeronave).
 - «Copiar OACI»: copia el plan de vuelo OACI estricto (puntos no publicados en coordenadas).
 - «Sintaxis y uso»: recordatorio de las formas aceptadas (balizas, puntos de notificación VFR «MM-CV», «REN300010», coordenadas «4330N00125E», niveles «/A035», «VFR»…).
@@ -1696,7 +1696,7 @@ Pegue el «Internal ID» de un airframe de SimBrief (o su dirección para compar
 
 Ajustar la ficha a un plan de vuelo real de SimBrief.
 
-1. Haga clic en «Recuperar último FPL de SimBrief», el primer botón de esta parte. El identificador se introduce en ☰ › Perfil de piloto. En su defecto, descargue el OFP JSON en simbrief.com y utilice «Importar OFP JSON».
+1. Haga clic en «Recuperar último FPL de SimBrief», el primer botón de esta parte. El identificador se introduce en Ajustes › Mi perfil. En su defecto, descargue el OFP JSON en simbrief.com y utilice «Importar OFP JSON».
 2. El OFP rellena el plan de combustible y el plan de vuelo; el perfil de la aeronave se crea y se calibra. El mensaje indica una calibración completa o parcial (fases medibles).
 3. «Calibrar el perfil activo» aplica la calibración del último OFP al perfil elegido.
 4. «Exportar auditoría JSON» descarga la auditoría.

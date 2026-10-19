@@ -490,6 +490,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
             return self._json(secrets_view(q.get('tri', [''])[0]))
+        if self.path.split('?')[0] == '/__setup/secrets/test':
+            # « Tester » d'une carte de Paramètres › Installation › Clés et services externes : un appel de contrôle au
+            # service avec la clé enregistrée ; { ok, count } ou { ok: false, key: missing | refused, error }
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(secrets_test(q.get('service', [''])[0]))
         if self.path.split('?')[0] == '/__setup/ivao-activations':
             # zones spéciales IVAO activées (Ordres de vols, shared/odv_airspace.js) : NOTAM de la division liés à une
             # zone et horaires publiés des zones de France ; clé d'API locale (ivao_key), jamais transmise à la page
@@ -912,7 +919,7 @@ _ivao = {'at': 0.0, 'areas': None}
 
 
 # ---- secrets locaux (dossier secrets/ à la racine de la suite, exclu de git, hors des données et des sauvegardes) :
-#   secrets/<service>.json            clés de la suite (IVAO : apiKey) — Paramètres › Installation › Sources et dossiers
+#   secrets/<service>.json            clés de la suite (IVAO : apiKey, savedAt) — Paramètres › Installation › Clés et services externes
 #   secrets/users/<TRI>.json          identifiants d'un utilisateur ({ ivao: { clientId, clientSecret } }) — Mon profil
 # Champs admis par service et portée ; écrits par POST /__setup/secrets, jamais relus par la page (indicateurs seuls).
 SECRET_FIELDS = {'app': {'ivao': {'apiKey': True}}, 'user': {'ivao': {'clientId': False, 'clientSecret': True}}}
@@ -958,7 +965,8 @@ def secrets_view(tri=''):
     out = {'app': {}, 'user': {}}
     for service, fields in SECRET_FIELDS['app'].items():
         cur = _read_json(_secret_file('app', service=service))
-        out['app'][service] = {k: _hint(cur.get(k)) for k in fields}
+        saved = cur.get('savedAt') if isinstance(cur.get('savedAt'), dict) else {}
+        out['app'][service] = {k: {**_hint(cur.get(k)), 'at': str(saved.get(k) or '') if cur.get(k) else ''} for k in fields}
     if os.environ.get('IVAO_API_KEY'):
         out['app']['ivao']['apiKey'] = {**_hint(os.environ['IVAO_API_KEY']), 'env': True}
     tri = str(tri or '').upper()
@@ -984,12 +992,17 @@ def secrets_save(a):
     path = _secret_file(scope, tri, service)
     cur = _read_json(path)
     target = cur if scope == 'app' else cur.setdefault(service, {})
+    saved = target.setdefault('savedAt', {}) if scope == 'app' else {}
     for k, v in values.items():
         v = str(v or '').strip()[:500]
         if v:
             target[k] = v
+            saved[k] = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')  # « enregistrée le … »
         else:
             target.pop(k, None)
+            saved.pop(k, None)
+    if scope == 'app' and not saved:
+        target.pop('savedAt', None)
     if scope == 'user' and not target:
         cur.pop(service, None)
     try:
@@ -1004,9 +1017,41 @@ def secrets_save(a):
     return {'ok': True, **secrets_view(tri)}
 
 
+# Erreurs des routes IVAO : code « key » (missing : clé absente, refused : clé refusée par IVAO, 401 / 403) que les
+# pages traduisent avec un lien vers Paramètres › Installation › Clés et services externes (SuiteKeys.explain).
+IVAO_NO_KEY = {'error': 'clé IVAO absente', 'key': 'missing'}
+
+
+def ivao_fail(e):
+    """{ error, key? } d'un échec d'appel à l'API IVAO : clé refusée (401 / 403), trop de demandes (429), réseau."""
+    code = getattr(e, 'code', None)
+    if code in (401, 403):
+        return {'error': f'clé IVAO refusée (HTTP {code})', 'key': 'refused'}
+    if code == 429:
+        return {'error': 'IVAO : HTTP 429 (trop de demandes : réessayer plus tard)'}
+    return {'error': f'IVAO : HTTP {code}' if code else f'IVAO : {e}'}
+
+
+def secrets_test(service):
+    """Appel de contrôle d'une clé de la suite (« Tester ») : IVAO, sessions du tracker de la dernière heure."""
+    if service != 'ivao':
+        return {'ok': False, 'error': 'service sans clé à tester'}
+    key = ivao_key()
+    if not key:
+        return {'ok': False, **IVAO_NO_KEY}
+    now = datetime.datetime.now(datetime.timezone.utc)
+    try:
+        got = _ivao_get('/tracker/sessions?' + urllib.parse.urlencode({
+            'perPage': 1, 'from': (now - datetime.timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'to': now.strftime('%Y-%m-%dT%H:%M:%SZ')}), key)
+    except (OSError, ValueError) as e:
+        return {'ok': False, **ivao_fail(e)}
+    return {'ok': True, 'count': int((got if isinstance(got, dict) else {}).get('totalItems') or 0)}
+
+
 def ivao_key():
     """Clé d'API IVAO (en-tête apiKey) : variable d'environnement IVAO_API_KEY, sinon secrets/ivao.json { "apiKey" }
-    (Paramètres › Installation › Sources et dossiers) ; '' si absente."""
+    (Paramètres › Installation › Clés et services externes) ; '' si absente."""
     k = os.environ.get('IVAO_API_KEY', '').strip()
     return k or str(_read_json(_secret_file('app', service='ivao')).get('apiKey', '')).strip()
 
@@ -1025,7 +1070,7 @@ def ivao_activations(day_from='', day_to=''):
     Zones gardées une heure, NOTAM relus à chaque appel."""
     key = ivao_key()
     if not key:
-        return {'error': 'clé IVAO absente : Paramètres › Installation › Sources et dossiers (ou variable IVAO_API_KEY)'}
+        return IVAO_NO_KEY
     try:
         d0 = datetime.date.fromisoformat(day_from) if day_from else datetime.date.today()
         d1 = datetime.date.fromisoformat(day_to) if day_to else d0 + datetime.timedelta(days=6)
@@ -1037,7 +1082,7 @@ def ivao_activations(day_from='', day_to=''):
             _ivao.update(at=time.time(), areas=[a for a in areas if str(a.get('name', '')).startswith('LF') and any(str(c.get('id', '')).startswith('LF') for c in a.get('centers') or [])])
         notams = _ivao_get('/divisions/FR/notams/all?now=false', key)
     except (OSError, ValueError) as e:
-        return {'error': f'IVAO : {e}'}
+        return ivao_fail(e)
     by_id = {a['id']: a for a in _ivao['areas']}
     out = []
     days = [d0 + datetime.timedelta(days=i) for i in range((d1 - d0).days + 1)][:62]
@@ -1300,7 +1345,7 @@ def ivao_last_flight(vid='', session=''):
     trackerUrls, gaps, open }) ; { error } sinon."""
     key = ivao_key()
     if not key:
-        return {'error': 'clé IVAO absente : Paramètres › Installation › Sources et dossiers (ou variable IVAO_API_KEY)'}
+        return IVAO_NO_KEY
     try:
         if session:
             if not re.fullmatch(r'\d{1,12}(,\d{1,12}){0,9}', session):
@@ -1377,10 +1422,8 @@ def ivao_last_flight(vid='', session=''):
         if flights:  # liste vide jamais gardée (nouvel essai aussitôt après une connexion)
             _flights['list'][f'ivao:{vid}'] = (time.time(), out)
         return out
-    except urllib.error.HTTPError as e:
-        return {'error': f'IVAO : HTTP {e.code}' + (' (trop de demandes : réessayer plus tard)' if e.code == 429 else '')}
     except (OSError, ValueError) as e:
-        return {'error': f'IVAO : {e}'}
+        return ivao_fail(e)
 
 
 def _vatsim_get(path):
@@ -1465,7 +1508,7 @@ def ivao_bookings(day_from='', day_to='', pre='LF'):
     prefixes = tuple(p for p in str(pre or '').upper().split(',') if re.fullmatch('[A-Z]{1,3}', p)) or ('LF',)
     key = ivao_key()
     if not key:
-        return {'error': 'clé IVAO absente : Paramètres › Installation › Sources et dossiers (ou variable IVAO_API_KEY)'}
+        return IVAO_NO_KEY
     try:
         d0 = datetime.date.fromisoformat(day_from) if day_from else datetime.date.today()
         d1 = datetime.date.fromisoformat(day_to) if day_to else d0 + datetime.timedelta(days=6)
@@ -1481,7 +1524,7 @@ def ivao_bookings(day_from='', day_to='', pre='LF'):
             try:
                 got = _ivao_get(f'/atc/bookings/daily?date={d}', key)
             except (OSError, ValueError) as e:
-                return {'error': f'IVAO : {e}'}
+                return ivao_fail(e)
             day = [{'id': b.get('id'), 'startDate': b.get('startDate'), 'endDate': b.get('endDate'),
                     'training': b.get('training'), 'atcPosition': str(b.get('atcPosition', ''))}
                    for b in (got if isinstance(got, list) else [])]

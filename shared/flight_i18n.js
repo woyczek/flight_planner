@@ -177,7 +177,7 @@
     ["Abandonner les modifications", "Discard changes", "Änderungen verwerfen", "Descartar los cambios"],
     ["Supprimer cet avion", "Delete this aircraft", "Dieses Flugzeug löschen", "Eliminar este avión"],
     ["Choisis ou importe un profil.", "Choose or import a profile.", "Profil wählen oder importieren.", "Elija o importe un perfil."],
-    ["« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de l’identifiant SimBrief du profil pilote (☰ › Profil pilote). L’import JSON reste un secours si le navigateur bloque SimBrief.",
+    ["« Récupérer dernier FPL SimBrief » charge directement le dernier OFP de l’identifiant SimBrief du profil pilote (Paramètres › Mon profil). L’import JSON reste un secours si le navigateur bloque SimBrief.",
       "“Fetch latest SimBrief FPL” loads the latest OFP directly. JSON import remains a fallback if the browser blocks SimBrief.",
       "„Letzten SimBrief-FPL abrufen“ lädt den letzten OFP direkt. Der JSON-Import bleibt ein Ausweg, falls der Browser SimBrief blockiert.",
       "«Recuperar último FPL de SimBrief» carga directamente el último OFP. La importación JSON sigue siendo una alternativa si el navegador bloquea SimBrief."

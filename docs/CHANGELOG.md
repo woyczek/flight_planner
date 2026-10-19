@@ -184,6 +184,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Keys and external services: one place** (`shared/maintenance_page.js`, `tools/launch.py`, `shared/app_framework.js`)
+  — Settings › Installation gets a "Keys and external services" section, one card per service (IVAO, VATSIM,
+  SimBrief, airline website, report web service): key state ("saved on … UTC (…abcd)", "missing", "IVAO_API_KEY
+  environment variable"), what uses it (links), and for the IVAO key "Save" (replaces then tests), "Test" (control
+  call through `/__setup/secrets/test`: "OK, N tracker sessions read over the last hour" or "key refused") and
+  "Remove". The key field leaves Sources and folders and the first run (state and link only). Launcher IVAO routes
+  answer `{ key: "missing" | "refused" }` (401 / 403); `AppFramework.keyIssue` turns it into a translated message and
+  every notification carrying it gets an "Open the keys ↗" link (report, Board, ODV planning). Personal IDs (IVAO VID,
+  VATSIM CID, SimBrief) are edited in My profile only: the ☰ › Pilot profile menu shows them read-only with "Edit in My
+  profile ↗", and "ID missing" messages point to My profile. Administrator manual (4 languages), pilot manual
+  (4 languages) and operations manual updated.
 - **Availability editor replaced by the availability timeline module** — *My missions › My availability*, *My
   availability* and the ODV legend use `shared/dispos_timeline.js` through `shared/dispos_week.js`. It brings a
   continuous time axis to the minute, background and availabilities, one state per minute, the single gesture rule,

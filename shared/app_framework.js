@@ -589,6 +589,45 @@
     }
     return false;
   }
+  // ---- Clés des services externes : une réponse du lanceur { key: missing | refused } (routes IVAO) devient un message
+  // traduit ; toute notification qui le contient reçoit le lien vers Paramètres › Installation › Clés et services externes
+  // (une seule place pour les clés de la suite).
+  const KEY_TEXT = {
+    missing: ['Clé IVAO absente : la saisir dans Paramètres › Installation › Clés et services externes.',
+      'IVAO key missing: enter it in Settings › Installation › Keys and external services.',
+      'IVAO-Schlüssel fehlt: unter Einstellungen › Installation › Schlüssel und externe Dienste eingeben.',
+      'Falta la clave IVAO: introducirla en Ajustes › Instalación › Claves y servicios externos.'
+    ],
+    refused: ['Clé IVAO refusée par IVAO : la remplacer dans Paramètres › Installation › Clés et services externes.',
+      'IVAO key refused by IVAO: replace it in Settings › Installation › Keys and external services.',
+      'IVAO-Schlüssel von IVAO abgelehnt: unter Einstellungen › Installation › Schlüssel und externe Dienste ersetzen.',
+      'Clave IVAO rechazada por IVAO: sustituirla en Ajustes › Instalación › Claves y servicios externos.'
+    ]
+  };
+  /** Ligne fr / en / de / es dans la langue de la page. */
+  const inLang = row => row[['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr')] || row[0];
+  /** { text, href, label } d'une réponse du lanceur qui signale une clé absente ou refusée ({ key }), sinon null. */
+  function keyIssue(r) {
+    if (!r || !KEY_TEXT[r.key]) return null;
+    return {
+      text: inLang(KEY_TEXT[r.key]),
+      href: window.RepositoryNav?.settingsUrl?.('keys') || '',
+      label: inLang(['Ouvrir les clés ↗', 'Open the keys ↗', 'Schlüssel öffnen ↗', 'Abrir las claves ↗'])
+    };
+  }
+  /** Lien vers la carte des clés si le texte contient un message de clé (keyIssue), sinon null. */
+  function keyLink(text) {
+    const kind = Object.keys(KEY_TEXT).find(k => KEY_TEXT[k].some(s => text.includes(s))),
+      k = kind && keyIssue({
+        key: kind
+      });
+    if (!k?.href) return null;
+    return Object.assign(document.createElement('a'), {
+      href: k.href,
+      textContent: k.label,
+      className: 'repo-key-link'
+    });
+  }
   /** Notification flottante (kind : info | ok | warn | err), effacée seule (err 12 s, warn 8 s, autres 5 s ; timeout
    *  pour changer, 0 : reste) ; même texte remplacé, 4 au plus ; err et warn vont au journal. Options : once (le même
    *  texte une seule fois par session du navigateur), minLevel (1 à 4 : sous ce niveau d'utilisation, rien n'est
@@ -623,6 +662,8 @@
     item.className = kind;
     item.dataset.text = text;
     span.textContent = text;
+    const fix = keyLink(text); // clé absente ou refusée : lien vers sa carte
+    if (fix) span.append(' ', fix);
     close.type = "button";
     close.textContent = "×";
     close.title = label("hide");
@@ -1122,6 +1163,8 @@
     /** Message d'erreur lisible (ce qui a échoué et quoi faire, 4 langues) : explain(erreur, contexte, { remote }) ;
      *  remote : service en ligne plutôt que lanceur. */
     explain,
+    /** Clé d'un service absente ou refusée ({ key } d'une réponse du lanceur) : { text, href, label } ou null. */
+    keyIssue,
     /** Tâches en cours (titres). */
     busyTasks: () => [...tasks].map(j => j.title)
   };

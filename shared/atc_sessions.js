@@ -335,6 +335,8 @@
     const per = perimeter();
     const day = ms => new Date(ms).toISOString().slice(0, 10);
     const r = await launcher(`__setup/ivao-bookings?from=${day(m0)}&to=${day(m0 + 6 * 864e5)}&pre=${per.p.join(',')}`);
+    const key = window.AppFramework?.keyIssue?.(r); // clé absente ou refusée : renvoi à la carte des clés
+    if (key) throw new Error(key.text);
     if (!Array.isArray(r?.bookings)) throw new Error(tf(['IVAO injoignable : {e}', 'IVAO unreachable: {e}',
       'IVAO nicht erreichbar: {e}', 'IVAO inaccesible: {e}'
     ], {
