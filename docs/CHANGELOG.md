@@ -184,6 +184,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Mission report: "Results and remarks" in one block; Tasking from level 1** (`shared/mission_core/blocks.js`,
+  `core.js`, families FIRE / ISR / LE) — the "Remarks" block (observations, lessons learned) joins "Results" (data paths
+  `results.*` and `remarks.*` unchanged; a remembered "hidden" state of the former Remarks block is lost). "Tasking"
+  is shown from level 1 for families without their own order block; FIRE, ISR and LE declare `ownOrder` and keep it in
+  the detailed report. `MissionBlocks.list(family)` builds the form's block list.
 - **Mission report: field provenance** (`shared/mission_core/core.js`, `core.css`) — the title of each block filled
   by a source carries a "↧" badge naming it (prefill source with the flight date, mission order, airline log, network
   tracking), with the number of fields in its tooltip. A field corrected by hand loses its provenance; "Undo" restores

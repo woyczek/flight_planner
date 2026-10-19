@@ -762,14 +762,16 @@ Depending on the family, other fields are added or disappear: “Serial number�
 (non-civil families), “Tasking order reference”, “Detachment”. A date in the future is
 flagged: a report is about a flight that has been flown.
 
-### Results
+### Results and remarks
 
-Result of the mission and follow-up (block placed in 2nd position for reading the report).
+Result of the mission, remarks and follow-up, in a single block (placed in 2nd position for reading the report).
 
 1. Choose the “Outcome”: Success, Partial success, Aborted, Cancelled, Diverted, No contact,
    Target not found, Weather, Technical, Operational, Other.
 2. For any outcome other than Success or Other, the “Interruption reason” and “Causes” fields appear; tick every cause (weather, technical, simulator, pilot missing, no ATC, network, airspace not activated, tanker missing, lack of time…): they go up to the flight order tile (MNE).
-3. If needed, complete “Detailed result”, “Incidents” and “Technical anomalies”.
+3. Write your “Observations”, then, if needed, “Detailed result”, “Incidents”, “Technical anomalies” and “Lessons
+   learned”. Observations and lessons form the sections “13. Remarks” and “14. Lessons learned” of the report; an
+   assigned mission puts there a reminder of the original mission and of its load.
 
 This outcome feeds the success rate and the “Outcomes” chart of the reporting pages.
 
@@ -814,7 +816,8 @@ The name entered is the key of the [crew sheet](#crew-sheet): always write it th
 
 Objective and instructions of the mission: “Objective”, “Special instructions”, “Priority”.
 For an assigned mission, the objective and the instructions are already filled in from the mission. These
-texts appear in section “5. Tasking” of the report.
+texts appear in section “5. Tasking” of the report. At levels 1 and 2, this block is shown for families without
+their own order block (FIRE, ISR and LE have one: “Tasking” stays in the detailed report there).
 
 ### Capabilities / techniques
 
@@ -881,12 +884,6 @@ Legs, sorties and rotations of the flight, one line each: “From”, “To”, 
 - Airfields are suggested from the aerodrome database.
 - Legs count in the sorties, passengers and cargo of the reporting pages.
 - The HEMS family does not have this block: it has its own “Destinations / stops” block.
-
-### Remarks
-
-Free observations and lessons: “Observations” and “Lessons learned”. They
-form the sections “13. Remarks” and “14. Lessons learned” of the report. An assigned mission
-puts there a reminder of the original mission and of its load.
 
 ### IVAO / VATSIM network track
 

@@ -29,6 +29,7 @@
   window.MissionCore.registerFamily({
     id: 'ISR',
     idPrefix: 'ISR',
+    ownOrder: true, // bloc d'ordre propre : « Tâche / ordre de mission » commun réservé au CR détaillé
     pages: {
       cr: 'isr_cr.html',
       reporting: 'isr_reporting.html'

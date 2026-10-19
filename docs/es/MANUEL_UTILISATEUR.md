@@ -763,14 +763,16 @@ Según la familia, se añaden o desaparecen otros campos: «Número de serie», 
 (familias no civiles), «Referencia de la orden», «Destacamento». Una fecha en el futuro se
 señala: un informe se refiere a un vuelo realizado.
 
-### Resultado
+### Resultado y observaciones
 
-Resultado de la misión y acciones que derivan de él (bloque situado en 2.ª posición para la lectura del informe).
+Resultado de la misión, observaciones y acciones que derivan de él, en un solo bloque (situado en 2.ª posición para la lectura del informe).
 
 1. Elija el «Resultado»: Éxito, Éxito parcial, Abortada, Cancelada, Desviada, Sin contacto,
    Objetivo no encontrado, Meteorología, Técnico, Operacional, Otro.
 2. Para cualquier resultado distinto de Éxito u Otro, aparecen los campos «Motivo de interrupción» y «Causas»; marque todas las causas (meteorología, técnica, simulador, piloto ausente, sin control, red, zona no activada, cisterna ausente, falta de tiempo…): suben a la plaqueta de la orden de vuelo (MNE).
-3. Complete si es necesario «Resultado detallado», «Incidentes» y «Anomalías técnicas».
+3. Anote sus «Observaciones» y, si es necesario, «Resultado detallado», «Incidentes», «Anomalías técnicas» y
+   «Lecciones aprendidas». Observaciones y lecciones forman las secciones «13. Observaciones» y «14. Lecciones
+   aprendidas» del informe; una misión asignada deposita aquí un recordatorio de la misión de origen y de su carga.
 
 Este resultado alimenta la tasa de éxito y el gráfico «Resultados» de los informes estadísticos.
 
@@ -815,7 +817,8 @@ El nombre introducido sirve de clave para la [ficha de tripulante](#ficha-de-tri
 
 Objetivo y consignas de la misión: «Objetivo», «Instrucciones particulares», «Prioridad».
 Para una misión asignada, el objetivo y las instrucciones ya vienen rellenados desde la misión. Estos
-textos figuran en la sección «5. Tarea» del informe.
+textos figuran en la sección «5. Tarea» del informe. En los niveles 1 y 2, este bloque aparece para las familias sin
+bloque de orden propio (FIRE, ISR y LE lo tienen: «Tarea / orden de misión» queda allí en el informe detallado).
 
 ### Capacidades / técnicas
 
@@ -882,12 +885,6 @@ Tramos, salidas y rotaciones del vuelo, una línea cada uno: «Desde», «Hasta�
 - Los aeródromos se proponen a partir de la base de aeródromos.
 - Los tramos cuentan en las salidas, los pasajeros y la carga de los informes estadísticos.
 - La familia HEMS no tiene este bloque: tiene su propio bloque «Destinos / escalas».
-
-### Observaciones
-
-Observaciones libres y enseñanzas: «Observaciones» y «Lecciones aprendidas». Forman
-las secciones «13. Observaciones» y «14. Lecciones aprendidas» del informe. Una misión asignada deposita
-aquí un recordatorio de la misión de origen y de su carga.
 
 ### Traza de red IVAO / VATSIM
 

@@ -72,11 +72,10 @@ Durations (block, flight, on station) and the fuel used are computed by themselv
 
 ## 6. What happened
 
-- **“Result”**: Success, Partial success, Interrupted…; for a result other than Success, tick the causes (weather,
-  technical, no ATC…).
+- **“Results and remarks”**: Success, Partial success, Interrupted…; for a result other than Success, tick the
+  causes (weather, technical, no ATC…); then your “Observations”, what deserves to be read.
 - **“Crew”**: you and the other members (trigram or name), with their role.
 - **Family blocks**: those specific to the mission type (FIRE: sector, drops, refilling base…).
-- **“Remarks”**: what deserves to be read.
 
 “Detailed report” shows the whole form (timed events, legs, weather, navigation); “Short report” goes back to the
 essentials. The report preview, on the right, updates continuously.

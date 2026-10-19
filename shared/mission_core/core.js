@@ -864,7 +864,7 @@
       suggest: (...args) => assist.suggest(...args),
       now: (path, kind) => nowFor(path, kind)
     });
-    const blockList = window.MissionBlocks.ORDER.flatMap(block => block === '__family__' ? family.blocks : [block]);
+    const blockList = window.MissionBlocks.list(family);
     // Aides à la saisie : valeurs connues, filtrage croisé des appareils, terrains, météo, soleil.
     const assist = window.MissionAssist.create({
       family,

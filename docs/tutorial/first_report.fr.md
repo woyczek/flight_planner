@@ -72,11 +72,10 @@ Les durées (bloc, vol, sur zone) et le carburant consommé se calculent seuls d
 
 ## 6. Ce qui s'est passé
 
-- **« Résultat »** : Succès, Succès partiel, Interrompue… ; pour un résultat autre que Succès, cochez les causes
-  (météo, technique, contrôle absent…).
+- **« Résultat et remarques »** : Succès, Succès partiel, Interrompue… ; pour un résultat autre que Succès, cochez
+  les causes (météo, technique, contrôle absent…) ; puis vos « Observations », ce qui mérite d'être lu.
 - **« Équipage »** : vous et les autres membres (trigramme ou nom), avec leur fonction.
 - **Blocs de la famille** : ceux propres au type de mission (FIRE : secteur, largages, base de remplissage…).
-- **« Remarques »** : ce qui mérite d'être lu.
 
 « CR détaillé » montre tout le formulaire (événements horodatés, étapes, météo, navigation) ; « CR court » revient à
 l'essentiel. L'aperçu du compte rendu, à droite, se met à jour en continu.

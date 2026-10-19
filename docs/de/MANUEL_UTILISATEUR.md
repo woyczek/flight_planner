@@ -764,14 +764,17 @@ Je nach Familie kommen weitere Felder hinzu oder fallen weg: „Seriennummer“,
 (nicht zivile Familien), „Auftragsreferenz“, „Abteilung“. Ein Datum in der Zukunft wird
 gemeldet: Ein Bericht betrifft einen durchgeführten Flug.
 
-### Ergebnis
+### Ergebnis und Bemerkungen
 
-Ergebnis der Mission und Folgemaßnahmen (Block an 2. Stelle für das Lesen des Berichts).
+Ergebnis der Mission, Bemerkungen und Folgemaßnahmen in einem Block (an 2. Stelle für das Lesen des Berichts).
 
 1. Wählen Sie das „Ergebnis“: Erfolgreich, Teilweise erfolgreich, Abgebrochen, Storniert, Umgeleitet, Kein Kontakt,
    Ziel nicht gefunden, Wetter, Technisch, Operativ, Andere.
 2. Bei jedem Ergebnis außer Erfolgreich oder Andere erscheinen die Felder „Abbruchgrund“ und „Ursachen“; alle Ursachen ankreuzen (Wetter, Technik, Simulator, Pilot fehlt, keine Flugsicherung, Netz, Luftraum nicht aktiviert, Tanker fehlt, Zeitmangel…): sie erscheinen auf der Kachel des Flugbefehls (MNE).
-3. Ergänzen Sie bei Bedarf „Detailliertes Ergebnis“, „Vorfälle“ und „Technische Störungen“.
+3. Notieren Sie Ihre „Beobachtungen“, dann bei Bedarf „Detailliertes Ergebnis“, „Vorfälle“, „Technische Störungen“
+   und „Erkenntnisse (Lessons Learned)“. Beobachtungen und Erkenntnisse bilden die Abschnitte „13. Bemerkungen“ und
+   „14. Erkenntnisse“ des Berichts; eine zugewiesene Mission legt hier einen Hinweis auf die ursprüngliche Mission und
+   ihre Zuladung ab.
 
 Dieses Ergebnis speist die Erfolgsquote und das Diagramm „Ergebnisse“ der Auswertungen.
 
@@ -816,7 +819,8 @@ Der eingegebene Name dient als Schlüssel für das [Besatzungsblatt](#besatzungs
 
 Ziel und Anweisungen der Mission: „Ziel“, „Besondere Anweisungen“, „Priorität“.
 Bei einer zugewiesenen Mission sind Ziel und Anweisungen bereits aus der Mission ausgefüllt. Diese
-Texte erscheinen im Abschnitt „5. Auftrag“ des Berichts.
+Texte erscheinen im Abschnitt „5. Auftrag“ des Berichts. Auf den Stufen 1 und 2 erscheint dieser Block bei Familien ohne
+eigenen Auftragsblock (FIRE, ISR und LE haben einen: „Auftrag“ bleibt dort im ausführlichen Bericht).
 
 ### Fähigkeiten / Verfahren
 
@@ -883,12 +887,6 @@ Etappen, Einsätze und Umläufe des Flugs, je eine Zeile: „Von“, „Nach“,
 - Die Flugplätze werden aus der Flugplatzdatenbank vorgeschlagen.
 - Die Etappen zählen bei den Einsätzen, Passagieren und der Fracht der Auswertungen.
 - Die Familie HEMS hat diesen Block nicht: Sie hat ihren eigenen Block „Ziele / Zwischenstopps“.
-
-### Bemerkungen
-
-Freie Beobachtungen und Erkenntnisse: „Beobachtungen“ und „Erkenntnisse (Lessons Learned)“. Sie
-bilden die Abschnitte „13. Bemerkungen“ und „14. Erkenntnisse“ des Berichts. Eine zugewiesene Mission
-legt hier einen Hinweis auf die ursprüngliche Mission und ihre Zuladung ab.
 
 ### IVAO-/VATSIM-Netzwerkspur
 

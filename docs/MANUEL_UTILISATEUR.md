@@ -800,14 +800,17 @@ Selon la famille, d'autres champs s'ajoutent ou disparaissent : « N° de série
 (familles non civiles), « Référence ordre de mission », « Détachement ». Une date dans le futur est
 signalée : un CR porte sur un vol réalisé.
 
-### Résultat
+### Résultat et remarques
 
-Résultat de la mission et suites à donner (bloc placé en 2e position pour la lecture du CR).
+Résultat de la mission, observations et suites à donner, en un seul bloc (placé en 2e position pour la lecture du CR).
 
 1. Choisissez le « Résultat » : Succès, Succès partiel, Interrompue, Annulée, Déroutée, Pas de contact,
    Objectif non trouvé, Météo, Technique, Opérationnel, Autre.
 2. Pour tout résultat autre que Succès ou Autre, les champs « Motif d'interruption » et « Causes » apparaissent ; cochez toutes les causes (météo, technique, simulateur, pilote absent, contrôle absent, réseau, zone non activée, ravitailleur absent, manque de temps…) : elles remontent sur la plaquette de l'ordre de vol (MNE).
-3. Complétez si besoin « Résultat détaillé », « Incidents » et « Anomalies techniques ».
+3. Notez vos « Observations », puis, si besoin, « Résultat détaillé », « Incidents », « Anomalies techniques » et
+   « Enseignements (lessons learned) ». Observations et enseignements forment les sections « 13. Remarques » et
+   « 14. Enseignements » du compte rendu ; une mission affectée y dépose un rappel de la mission d'origine et de sa
+   charge.
 
 Ce résultat alimente le taux de réussite et le graphique « Résultats » des reportings.
 
@@ -852,7 +855,8 @@ Le nom saisi sert de clé à la [fiche équipage](#fiche-équipage) : écrivez-l
 
 Objectif et consignes de la mission : « Objectif », « Instructions particulières », « Priorité ».
 Pour une mission affectée, l'objectif et les instructions sont déjà remplis depuis la mission. Ces
-textes figurent dans la section « 5. Tâche » du compte rendu.
+textes figurent dans la section « 5. Tâche » du compte rendu. Aux niveaux 1 et 2, ce bloc est affiché pour les familles
+qui n'ont pas leur propre bloc d'ordre (FIRE, ISR et LE l'ont : « Tâche / ordre de mission » y reste au CR détaillé).
 
 ### Capacités / techniques employées
 
@@ -919,12 +923,6 @@ n'est jamais retiré.
 - Les terrains sont proposés d'après la base des aérodromes.
 - Les étapes comptent dans les sorties, passagers et fret des reportings.
 - La famille HEMS n'a pas ce bloc : elle a son propre bloc « Destinations / étapes ».
-
-### Remarques
-
-Observations libres et enseignements : « Observations » et « Enseignements (lessons learned) ». Ils
-forment les sections « 13. Remarques » et « 14. Enseignements » du compte rendu. Une mission affectée y
-dépose un rappel de la mission d'origine et de sa charge.
 
 ### Trace réseau IVAO / VATSIM
 
