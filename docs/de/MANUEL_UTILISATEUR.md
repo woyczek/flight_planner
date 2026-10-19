@@ -722,7 +722,7 @@ Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
 | „SAR · SAR an Land ▾“ (Familie · Untertyp) | Popup „Einsatzfamilie“ (öffnet die Seite der anderen Familie) und „Einsatz-Untertyp“ |
 | „Ins Register aufnehmen“ / „Änderungen speichern“ | legt die Mission im Register ab |
 | „Senden“ ▾ | „Bericht senden“: übermittelt den Bericht an den Webservice der Fluggesellschaft (gestrichelt, solange er nicht eingerichtet ist); „Website der Fluggesellschaft“ (wenn ihre Adresse eingestellt ist): „Flug auf der Website eintragen ↗“, das Lesezeichen „→ Vol“, „Felder kopieren“ (siehe unten) |
-| „Auswerten / importieren…“ ▾ | einen Flugplan, eine Tracker-Seite, ein METAR einfügen; eine Datei importieren |
+| „Vorausfüllen“ ▾ | alles, was den Bericht füllt: neuer Bericht aus einem Einsatzbefehl, einem vergangenen Flug oder einer Datei; diesen Bericht ergänzen aus meinem letzten IVAO- / VATSIM-Flug, einem aufgegebenen Flugplan oder einem eingefügten Text (siehe „Vorausfüllen“) |
 | „Netzwerk-Tracking“ ▾ | Live-Verfolgung IVAO / VATSIM, VATSIM-Historie |
 | „Einsatz“ ▾ | „Neue Mission“, „Einsatz exportieren (YAML)“, „Diesen Einsatz löschen“ (bei Bearbeitung) |
 | „Einsatzregister“ ▾ | „Auswertung anzeigen“, „Registerordner…“, „Berichtversand einrichten (Webservice)…“, „Einstellungen — Datenbanken…“ |
@@ -733,7 +733,7 @@ Rechts zeigt eine Statusmeldung die letzte Speicherung („Entwurf im Browser ge
 Anzeigen**; die Anordnung wird gespeichert. Blöcke, die eine Liste enthalten, haben ein **+** in ihrem
 Titel, um ein Element hinzuzufügen.
 
-Auf den Stufen 1 und 2 erscheinen „Auswerten / importieren…“, „Einsatz“ und „Einsatzregister“ nicht (sie kommen auf Stufe 3): Eine neue Mission öffnet man über ☰ › Missionen › „Neuer Bericht“.
+Auf den Stufen 1 und 2 erscheinen „Einsatz“ und „Einsatzregister“ nicht (sie kommen auf Stufe 3); „Vorausfüllen“ ist ab Stufe 1 da, außer dem Import einer Datei (Stufe 3). Eine neue Mission öffnet man über ☰ › Missionen › „Neuer Bericht“.
 
 ### Bearbeitung eines Registereinsatzes
 
@@ -904,16 +904,7 @@ Das angegebene Netzwerk speist das Diagramm „Netzwerk“ und die Kennzahl „O
 
 ### Navigation
 
-Flugplätze, Route, Punkte und Arbeitsgebiet. Der Block beginnt mit der Leiste **Aufgegebener Flugplan**:
-
-| Knopf | Quelle |
-|---|---|
-| „Letzter SimBrief-OFP“ | Ihre SimBrief-Kennung aus dem Pilotenprofil |
-| „IVAO-Flugplan (laufender Flug)“ | Ihre VID |
-| „VATSIM-Flugplan (laufend oder vorab)“ | Ihre CID |
-
-Diese Knöpfe füllen **nur die leeren Felder**: Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte,
-Höhen, Flugplätze, METAR / TAF sowie geplante Massen und Kraftstoff (SimBrief).
+Flugplätze, Route, Punkte und Arbeitsgebiet. Der aufgegebene Flugplan (SimBrief, IVAO, VATSIM) wird über „Vorausfüllen ▾ › Diesen Bericht ergänzen aus…“ übernommen (siehe „Vorausfüllen“).
 
 Felder: „Abflug (ADEP)“, „Ziel (ADES)“, „Ausweichflugplatz (ALTN)“, „Route“ (nur die bereits für dieselbe Strecke
 verwendeten Routen werden vorgeschlagen), „Wegpunkte (einer pro Zeile)“,
@@ -960,45 +951,51 @@ Erkenntnisse).
 
 Die öffentliche Fassung gilt auch für den YAML-Export (Datei mit dem Suffix `_public`) und für den Versand.
 
-### Auswerten / importieren…
+### Vorausfüllen
 
-Menü der Kopfzeile, um den Bericht aus einem eingefügten Text zu füllen. **Nur leere Felder werden gefüllt.**
+Das Menü „Vorausfüllen ▾“ der Kopfzeile (ab Stufe 1) vereint alles, was den Bericht füllt; die Blöcke behalten nur die
+Eingabe. Es hat zwei Teile.
 
-1. Öffnen Sie das Menü und fügen Sie dann (Strg+V) in das Feld ein: Die Auswertung erfolgt sofort. Oder klicken Sie auf „Aus
-   Zwischenablage einfügen“ (Chrome fragt einmal nach der Erlaubnis).
-2. Erkannte Texte: ICAO-Flugplan „(FPL-…)“, Seite des IVAO-Trackers (Einzelheiten eines Flugs oder Liste der
-   Verbindungen), Seite eines StatSim-Flugs (VATSIM), VATSIM-Historie (JSON), METAR.
-3. Das Ergebnis zeigt die erkannte Quelle und die gefüllten Felder; der Knopf wird zu „✓ Übernehmen“.
+**Neuer Bericht aus…** (der laufende Entwurf wird ersetzt, nach Bestätigung, wenn er nicht leer ist):
+- „Ein Einsatzbefehl: Meine Missionen ↗“: Öffnen Sie die Missionsmappe, dann „Bericht erstellen“;
+- „Ein vergangener Flug: Meine Flüge ↗“: ein Flug „ohne Bericht“, dann „Bericht schreiben“;
+- „Importieren (YAML / altes JSON)“: eine Missionsdatei (Stufe 3).
 
-Die Links „↗ IVAO-Tracker (meine Verbindungen)“ und „↗ Meine StatSim-Flüge (VATSIM)“ öffnen Ihre Seiten. Der
-Link „→ Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit einem Klick. Unten
-lädt „Importieren (YAML / altes JSON)“ eine Missionsdatei. Einzelheiten: [Tutorial](../TUTORIAL.md), § 6.
+**Diesen Bericht ergänzen aus…** (**nur leere Felder werden gefüllt**):
+- **„Mein letzter Flug“**: „Mein letzter IVAO-Flug“ und „Mein letzter VATSIM-Flug“. Die Suite muss über ihren Starter
+  geöffnet sein, mit Ihrer IVAO- oder VATSIM-ID in Mein Profil (ein Eintrag ohne ID ist ausgegraut, mit dem Link
+  „IVAO-VID fehlt — Mein Profil ↗“); für IVAO der API-Schlüssel der Suite (Einstellungen › Installation).
+  - Liste: Ihre Flüge der letzten 7 Tage (UTC), unabhängig von Familie und Datum des Berichts. Ein Flug: Der Bericht
+    wird sofort gefüllt; mehrere: wählen Sie ihn (Rufzeichen, Strecke, Datum und UTC-Zeiten, „laufend“, wenn Sie noch
+    verbunden sind); jede Zeile hat ihren Link ↗ zum IVAO-Tracker.
+  - Durch Verbindungsabbrüche geteilter Flug: aufeinanderfolgende Sitzungen (gleiches Rufzeichen, weniger als 30 Min.
+    später dort fortgesetzt, wo die vorige endete, die vorige nicht an der Parkposition beendet) bilden einen Flug,
+    „3 Sitzungen (Neuverbindungen)“; Flugplan der letzten Sitzung, Spuren aneinandergereiht.
+  - Gefüllt: Rufzeichen, Flugplätze, aufgegebener Flugplan (Luftfahrzeug, Ausrüstung, Route, Flughöhe, Geschwindigkeit,
+    Ausweichflugplatz, Bemerkungen, Kennzeichen `REG/`, Flugdauer), Link der Spur, aus der Spur gewonnene Zeiten
+    (Anlassen, Start, Landung, Abstellen) und Distanz. Nicht gefüllt: was das Netz nicht kennt (Mission, Besatzung,
+    Kraftstoff, Ergebnisse, Vorfälle). Ein „laufender“ Flug liefert vorläufige Zeiten: nach dem Trennen erneut abrufen.
+  - VATSIM: gleiches Prinzip, aber VATSIM veröffentlicht keine Spur: Die Zeiten sind die der Verbindung und Trennung
+    (zu korrigieren), der Plan ist der für diese Verbindung aufgegebene.
+  - Ohne Flug nennt die Meldung ID und Zeitraum. Sobald ein IVAO-Flug übernommen oder eingefügt ist, erscheint „Im
+    IVAO-Tracker ansehen ↗“ unter den Knöpfen und neben dem Feld „URL der Spur“ (Block Netzwerkspur).
+- **„Aufgegebener Flugplan“**: „Letzter SimBrief-OFP“ (Ihre SimBrief-Kennung aus dem Pilotenprofil), „IVAO-Flugplan
+  (laufender Flug)“ (Ihre VID), „VATSIM-Flugplan (laufend oder vorab)“ (Ihre CID): Luftfahrzeug, ICAO-Ausrüstung, Route,
+  Wegpunkte, Höhen, Flugplätze, METAR / TAF, geplante Massen und Kraftstoff (SimBrief).
+- **„Flugplan, Tracker-Seite oder METAR einfügen“**: Fügen Sie (Strg+V) in das Feld ein, die Auswertung erfolgt sofort;
+  oder „Aus Zwischenablage einfügen“ (Chrome fragt einmal nach der Erlaubnis). Erkannte Texte: ICAO-Flugplan „(FPL-…)“,
+  Seite des IVAO-Trackers (Einzelheiten eines Flugs oder Liste der Verbindungen), Seite eines StatSim-Flugs (VATSIM),
+  VATSIM-Historie (JSON), METAR. Die Links „↗ IVAO-Tracker (meine Verbindungen)“ und „↗ Meine StatSim-Flüge (VATSIM)“
+  öffnen Ihre Seiten.
+- **„Lesezeichen → Bericht“**: Der Link „→ Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit
+  einem Klick.
 
-### Aus meinem letzten IVAO- / VATSIM-Flug vorausfüllen
-
-Oben im Block Zeitablauf, ab Stufe 1: „Aus meinem letzten Flug vorausfüllen ▾“, mit zwei Einträgen, „Mein letzter
-IVAO-Flug“ und „Mein letzter VATSIM-Flug“. Die Suite muss über ihren Starter geöffnet sein, mit Ihrer IVAO- oder
-VATSIM-ID in Mein Profil (ein Eintrag ohne ID ist ausgegraut, mit dem Link „IVAO-VID fehlt — Mein Profil ↗“); für
-IVAO der API-Schlüssel der Suite (Einstellungen › Installation). Das Einfügen einer Tracker-Seite bleibt unter
-„Auswerten / importieren…“ (Stufe 3).
-
-- **Liste**: Ihre Flüge der letzten 7 Tage (UTC), unabhängig von Familie und Datum des Berichts. Ein Flug: Der
-  Bericht wird sofort gefüllt; mehrere: wählen Sie ihn (Rufzeichen, Strecke, Datum und UTC-Zeiten, „laufend“, wenn
-  Sie noch verbunden sind); jede Zeile hat ihren Link ↗ zum IVAO-Tracker.
-- **Durch Verbindungsabbrüche geteilter Flug**: aufeinanderfolgende Sitzungen (gleiches Rufzeichen, weniger als
-  30 Min. später dort fortgesetzt, wo die vorige endete, die vorige nicht an der Parkposition beendet) bilden einen
-  Flug, „3 Sitzungen (Neuverbindungen)“. Flugplan der letzten Sitzung, Spuren aneinandergereiht: Anlassen aus der
-  ersten, Abstellen aus der letzten; das Ergebnis nennt die Unterbrechungen und die Sitzungen.
-- **Gefüllt** (nur leere Felder, wie beim Einfügen): Rufzeichen, Flugplätze, aufgegebener Flugplan (Luftfahrzeug,
-  Ausrüstung, Route, Flughöhe, Geschwindigkeit, Ausweichflugplatz, Bemerkungen, Kennzeichen `REG/`, Flugdauer),
-  Link der Spur, aus der Spur gewonnene Zeiten (Anlassen, Start, Landung, Abstellen) und Distanz.
-- **Nicht gefüllt**: was das Netz nicht kennt (Mission, Besatzung, Kraftstoff, Ergebnisse, Vorfälle). Ein
-  „laufender“ Flug liefert vorläufige Zeiten: nach dem Trennen erneut abrufen.
-- **VATSIM**: gleiches Prinzip, aber VATSIM veröffentlicht keine Spur: Die Zeiten sind die der Verbindung und
-  Trennung (zu korrigieren), der Plan ist der für diese Verbindung aufgegebene; kein Link zu einer Flugseite.
-
-Ohne Flug nennt die Meldung ID und Zeitraum. Sobald ein IVAO-Flug übernommen oder eingefügt ist, erscheint „Im
-IVAO-Tracker ansehen ↗“ unter dem Knopf und neben dem Feld „URL der Spur“ (Block Netzwerkspur).
+**Dieselbe Zusammenfassung für alle Quellen**, unter dem Menü und als Benachrichtigung: Quelle und Datum des Flugs
+(„ICAO-Flugplan, Flug vom 19.10.“), die Anzahl der gefüllten Felder und die betroffenen Blöcke (Luftfahrzeug, Zeitablauf,
+Route, Wetter…), die Anzahl der bereits eingetragenen und behaltenen Felder und was die Quelle nicht geliefert hat („fehlen
+in der Quelle: Start, Landung“). Wurden bereits eingetragene Felder behalten, wendet das Kästchen „Bereits eingetragene
+Felder ersetzen (n)“ dieselbe Quelle erneut an und ersetzt sie. „Rückgängig“ in der Benachrichtigung (10 s) stellt den
+Bericht so wieder her, wie er vor dem Vorausfüllen war. Einzelheiten zum Einfügen: [Tutorial](../TUTORIAL.md), § 6.
 
 ### Netzwerk-Tracking
 

@@ -22,7 +22,8 @@ Trois portes, selon ce que vous avez volé :
   ou en décrivant la mission dans la recherche (« évasan hélico », « largage para ») ; « Continuer avec … » propose la
   dernière famille utilisée.
 
-Si un brouillon est déjà en cours, la page demande avant de le remplacer.
+Si un brouillon est déjà en cours, la page demande avant de le remplacer. Depuis le CR lui-même, « Préremplir ▾ ›
+Nouveau CR depuis… » mène aux mêmes endroits (Mes missions, Mes vols, ou un fichier au niveau Conception).
 
 ## 2. Vérifier la famille et la série
 
@@ -40,18 +41,23 @@ Si vous ne vous êtes pas posé à la base prévue, renseignez le « Terrain d'a
 
 ## 4. Remplir depuis le réseau
 
-Le menu « Analyser / importer… » (à partir du niveau Conception ; sinon « CR détaillé » ou le niveau dans Paramètres
-› Mon profil) remplit le CR sans retaper ; **seuls les champs vides sont remplis**.
+Tout ce qui remplit le CR est dans un seul menu de l'en-tête, « Préremplir ▾ » (dès le niveau Équipage), partie
+« Compléter ce CR depuis… ». **Seuls les champs vides sont remplis.**
 
-- **« Mon dernier vol IVAO »** et **« Mon dernier vol VATSIM »**, en haut du menu (selon votre version de la suite) :
-  la suite, ouverte par son lanceur, lit vos vols des sept derniers jours ; un seul vol remplit le CR aussitôt,
-  plusieurs se choisissent dans une liste (indicatif, trajet, date et heures UTC, « en cours »). Indicatif, terrains,
-  plan de vol déposé (appareil, route, niveau, immatriculation…), heures de la trace et distance sont repris. Pour
-  IVAO, il faut la clé d'API de la suite (Paramètres › Installation › Sources et dossiers). VATSIM ne publie pas de
+- **« Mon dernier vol »** : « Mon dernier vol IVAO » ou « Mon dernier vol VATSIM ». La suite, ouverte par son
+  lanceur, lit vos vols des sept derniers jours ; un seul vol remplit le CR aussitôt, plusieurs se choisissent dans une
+  liste (indicatif, trajet, date et heures UTC, « en cours »). Indicatif, terrains, plan de vol déposé (appareil, route,
+  niveau, immatriculation…), heures de la trace et distance sont repris. Votre ID IVAO ou VATSIM doit être dans Mon
+  profil ; pour IVAO, il faut aussi la clé d'API de la suite (Paramètres › Installation). VATSIM ne publie pas de
   trace : ses heures sont celles de connexion et de déconnexion, à corriger.
-- **Coller une page** : sur la page de votre vol (tracker IVAO, ou StatSim pour VATSIM), Ctrl+A puis Ctrl+C, revenez
-  et collez dans la zone du menu ; un plan de vol « (FPL-…) » ou un METAR se collent de même. Le lien « → CR », glissé
-  une fois dans la barre des favoris, copie la page du tracker en un clic.
+- **« Plan de vol déposé »** : votre dernier OFP SimBrief, ou le plan de vol IVAO / VATSIM du vol en cours.
+- **« Coller un plan de vol, une page du tracker ou un METAR »** : sur la page de votre vol (tracker IVAO, ou StatSim
+  pour VATSIM), Ctrl+A puis Ctrl+C, revenez et collez dans la zone. Le favori « → CR » (« Favoris → CR »), glissé une
+  fois dans la barre des favoris, copie la page du tracker en un clic.
+
+Chaque source finit par le même résumé : la source et la date du vol, les champs remplis et les blocs touchés, les
+champs déjà saisis gardés, et ce que la source n'a pas donné. « Remplacer les champs déjà saisis » réapplique la source
+en les remplaçant ; « Annuler », dans la notification, remet le CR comme avant pendant 10 secondes.
 
 ## 5. Les heures et la route
 

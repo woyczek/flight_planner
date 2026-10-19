@@ -1091,6 +1091,21 @@
     color: var(--accent)
   }
   /* « Préremplir depuis mon dernier vol ▾ » (bloc Chronologie) : menu, puis vols des 7 derniers jours, un par ligne */
+  /* menu « Préremplir ▾ » : deux parties (nouveau CR depuis… / compléter ce CR depuis…), sous-titres des sources */
+  .mc-prefill .mc-prefill-head {
+    margin: 2px 0 6px;
+    font-weight: 600
+  }
+  .mc-prefill .mc-prefill-sub {
+    margin: 8px 0 2px;
+    font-weight: 600
+  }
+  .mc-prefill .mc-prefill-summary {
+    margin-top: 6px
+  }
+  .repo-notify .mc-prefill-undo {
+    margin-left: 8px
+  }
   .mc-last-menu>summary {
     display: inline-block;
     cursor: pointer;

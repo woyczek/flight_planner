@@ -21,7 +21,8 @@ There are three ways in, depending on what you flew:
 - **From scratch**: side bar “Report”. Choose the mission family (FIRE, HEMS, AIRLIFT…) with a click, or describe the
   mission in the search (“helicopter medevac”, “para drop”). “Continue with …” offers the last family used.
 
-If a draft is already in progress, the page asks before replacing it.
+If a draft is already in progress, the page asks before replacing it. From the report itself, “Prefill ▾ › New report
+from…” leads to the same places (My missions, My flights, or a file at the Design level).
 
 ## 2. Check the family and the series
 
@@ -39,18 +40,23 @@ If you did not land at the planned base, fill in the “Actual landing aerodrome
 
 ## 4. Fill in from the network
 
-The “Analyse / import…” menu (from the Design level; otherwise “Detailed report”, or the level in Settings › My
-profile) fills the report without retyping; **only empty fields are filled**.
+Everything that fills the report is in a single header menu, “Prefill ▾” (from the Crew level), in its “Complete this
+report from…” part. **Only empty fields are filled.**
 
-- **“My last IVAO flight”** and **“My last VATSIM flight”**, at the top of the menu (depending on your version of the
-  suite): the suite, opened by its launcher, reads your flights of the last seven days. A single flight fills the
-  report at once; several are chosen from a list (call sign, route, date and UTC times, “in progress”). The call sign,
-  airfields, filed flight plan (aircraft, route, level, registration…), times from the track and distance are taken.
-  IVAO needs the suite's API key (Settings › Installation › Sources and folders). VATSIM publishes no track: its times
-  are the connection and disconnection times, to be corrected.
-- **Paste a page**: on your flight's page (IVAO tracker, or StatSim for VATSIM), press Ctrl+A then Ctrl+C, come back
-  and paste into the menu's box. A flight plan “(FPL-…)” or a METAR is pasted the same way. The “→ CR” link, dragged
+- **“My last flight”**: “My last IVAO flight” or “My last VATSIM flight”. The suite, opened by its launcher, reads your
+  flights of the last seven days. A single flight fills the report at once; several are chosen from a list (call
+  sign, route, date and UTC times, “in progress”). The call sign, airfields, filed flight plan (aircraft, route, level,
+  registration…), times from the track and distance are taken. Your IVAO or VATSIM ID must be in My profile; IVAO
+  also needs the suite's API key (Settings › Installation). VATSIM publishes no track: its times are the connection
+  and disconnection times, to be corrected.
+- **“Filed flight plan”**: your latest SimBrief OFP, or the IVAO / VATSIM flight plan of the current flight.
+- **“Paste a flight plan, a tracker page or a METAR”**: on your flight's page (IVAO tracker, or StatSim for VATSIM),
+  press Ctrl+A then Ctrl+C, come back and paste into the box. The “→ CR” bookmark (“Bookmarks → report”), dragged
   once to the bookmarks bar, copies the tracker page in one click.
+
+Every source ends with the same summary: the source and the flight date, the fields filled and the blocks touched,
+the fields already entered that were kept, and what the source did not give. “Replace the fields already entered”
+applies the source again, replacing them; “Undo”, in the notification, puts the report back as it was for 10 seconds.
 
 ## 5. Times and route
 

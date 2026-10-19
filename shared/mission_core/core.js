@@ -146,6 +146,36 @@
     fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign',
       'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
     importTitle: L('Analyser / importer…', 'Analyse / import…', 'Auswerten / importieren…', 'Analizar / importar…'),
+    prefillTitle: L('Préremplir ▾', 'Prefill ▾', 'Vorausfüllen ▾', 'Prerrellenar ▾'),
+    prefillNew: L('Nouveau CR depuis…', 'New report from…', 'Neuer Bericht aus…', 'Nuevo informe desde…'),
+    prefillComplete: L('Compléter ce CR depuis…', 'Complete this report from…', 'Diesen Bericht ergänzen aus…',
+      'Completar este informe desde…'),
+    prefillMissions: L('Un ordre de mission : Mes missions ↗', 'A mission order: My missions ↗', 'Ein Einsatzbefehl: Meine Missionen ↗',
+      'Una orden de misión: Mis misiones ↗'),
+    prefillFlights: L('Un vol passé : Mes vols ↗', 'A past flight: My flights ↗', 'Ein vergangener Flug: Meine Flüge ↗',
+      'Un vuelo pasado: Mis vuelos ↗'),
+    prefillLast: L('Mon dernier vol', 'My last flight', 'Mein letzter Flug', 'Mi último vuelo'),
+    prefillPaste: L('Coller un plan de vol, une page du tracker ou un METAR', 'Paste a flight plan, a tracker page or a METAR',
+      'Flugplan, Tracker-Seite oder METAR einfügen', 'Pegar un plan de vuelo, una página del tracker o un METAR'),
+    prefillMarks: L('Favoris → CR', 'Bookmarks → report', 'Lesezeichen → Bericht', 'Marcadores → informe'),
+    prefillForce: L('Remplacer les champs déjà saisis ({n})', 'Replace the fields already entered ({n})',
+      'Bereits eingetragene Felder ersetzen ({n})', 'Reemplazar los campos ya introducidos ({n})'),
+    prefillKept: L('{n} déjà saisi(s) gardé(s)', '{n} already entered kept', '{n} bereits eingetragen(e) behalten',
+      '{n} ya introducido(s) conservado(s)'),
+    prefillAbsent: L('absents de la source : {list}', 'not in the source: {list}', 'nicht in der Quelle: {list}',
+      'ausentes de la fuente: {list}'),
+    prefillFlightOf: L('vol du', 'flight of', 'Flug vom', 'vuelo del'),
+    prefillFilled: L('{n} champ(s) rempli(s)', '{n} field(s) filled', '{n} Feld(er) ausgefüllt', '{n} campo(s) rellenado(s)'),
+    prefillUndo: L('Annuler', 'Undo', 'Rückgängig', 'Deshacer'),
+    prefillUndone: L('Préremplissage annulé', 'Prefill undone', 'Vorausfüllen rückgängig gemacht', 'Prerrelleno deshecho'),
+    prefillBlocks: L(
+      'appareil|chronologie|route|météo|trace réseau|identification|carburant|capacités|organisation|équipage|événements|étapes',
+      'aircraft|timeline|route|weather|network track|identification|fuel|capabilities|organisation|crew|events|legs',
+      'Luftfahrzeug|Chronologie|Route|Wetter|Netzwerkspur|Kennung|Kraftstoff|Fähigkeiten|Organisation|Besatzung|Ereignisse|Etappen',
+      'aeronave|cronología|ruta|meteorología|traza de red|identificación|combustible|capacidades|organización|tripulación|eventos|etapas'
+    ),
+    prefillFields: L('indicatif|départ|arrivée|route|décollage|atterrissage', 'call sign|departure|arrival|route|take-off|landing',
+      'Rufzeichen|Abflug|Ankunft|Route|Start|Landung', 'indicativo|salida|llegada|ruta|despegue|aterrizaje'),
     importIntro: L(
       'Collez un plan de vol OACI « (FPL-…) », une page du tracker IVAO (détails d’un vol ou liste des connexions : Ctrl+A, Ctrl+C sur la page), la page d’un vol StatSim (VATSIM), l’historique VATSIM (JSON) ou un METAR : les champs vides sont remplis. Heures du tracker converties en heure locale du terrain de départ.',
       'Paste an ICAO flight plan “(FPL-…)”, an IVAO tracker page (flight details or connection list: Ctrl+A, Ctrl+C on the page), a StatSim flight page (VATSIM), the VATSIM history (JSON) or a METAR: empty fields are filled. Tracker times converted to local time at the departure aerodrome.',
@@ -550,14 +580,20 @@
           <div class="mc-import-row"><a class="mc-bookmarklet" data-defa-mark draggable="true">→ Vol</a><span class="small" data-defa-hint></span></div>
           <button type="button" data-action="defaCopy"></button>
           <p class="small" data-defa-help></p></div><hr><a class="mc-button" data-action="myFlights"></a></div></details>
-        <details class="mc-import mc-menu" data-min-level="3"><summary></summary><div class="mc-import-pop mc-pop">
+        <details class="mc-import mc-menu mc-prefill"><summary></summary><div class="mc-import-pop mc-pop">
+          <p class="mc-prefill-head" data-prefill-t="prefillNew"></p>
+          <div class="mc-import-row"><a class="mc-button" data-prefill-link="missions"></a><a class="mc-button" data-prefill-link="flights"></a></div>
+          <div class="mc-import-row mc-import-file" data-min-level="3"><button type="button" data-action="import"></button></div>
+          <hr><p class="mc-prefill-head" data-prefill-t="prefillComplete"></p>
+          <div class="mc-prefill-last"></div>
+          <div class="mc-prefill-fpl"></div>
+          <p class="small mc-prefill-sub" data-prefill-t="prefillPaste"></p>
           <div class="mc-import-row mc-import-links"><a data-open="ivao" target="_blank" rel="noopener"></a><a data-open="statsim" target="_blank" rel="noopener"></a></div>
           <p class="small mc-import-intro"></p>
-          <textarea spellcheck="false" rows="8"></textarea>
-          <div class="mc-import-row"><button type="button" class="primary" data-import="run"></button><button type="button" data-import="clip"></button>
-          <a class="mc-bookmarklet" draggable="true"></a><span class="small mc-import-hint"></span></div>
-          <p class="small mc-import-result"></p>
-          <div class="mc-import-row mc-import-file"><button type="button" data-action="import"></button></div></div></details>
+          <textarea spellcheck="false" rows="6"></textarea>
+          <div class="mc-import-row"><button type="button" class="primary" data-import="run"></button><button type="button" data-import="clip"></button></div>
+          <div class="mc-import-row"><span class="small mc-prefill-sub" data-prefill-t="prefillMarks"></span><a class="mc-bookmarklet" draggable="true"></a><span class="small mc-import-hint"></span></div>
+          <div class="mc-prefill-summary"><p class="small mc-import-result"></p><label class="small mc-prefill-force" hidden><input type="checkbox"> <span></span></label></div></div></details>
         <details class="mc-menu mc-net"><summary data-menu="network"></summary><div class="mc-pop mc-net-pop"><div id="mc-header-tracker"></div></div></details>
         <details class="mc-menu" data-min-level="3"><summary data-menu="mission"></summary><div class="mc-pop mc-list">
           <button type="button" data-action="new"></button>
@@ -1326,7 +1362,8 @@
     // ---- plan de vol déposé (SimBrief, IVAO, VATSIM) : barre d'outils du bloc Navigation
     function fplTools() {
       lastFlightTools();
-      const section = form.querySelector('#mc-navigation');
+      traceLink();
+      const section = tools.querySelector('.mc-prefill-fpl');
       if (!section || section.querySelector('.mc-fpl')) return;
       const bar = document.createElement('div');
       bar.className = 'mc-tools mc-fpl';
@@ -1361,43 +1398,32 @@
             note.textContent = inLanguage(UI.fplNone);
             return;
           }
-          const done = F.apply(mission, fpl);
-          view.render(blockList);
-          assist.decorate();
-          fplTools();
-          kpi();
-          registerI18n();
-          blockFramework();
-          for (const path of ['navigation.dep', 'aircraft.0.baseDeparture'])
-            if (M.get(mission, path)) {
-              await assist.onCommit(path, M.get(mission, path));
-              break;
-            }
-          changed();
-          const status = form.querySelector('.mc-fpl .mc-tools-status');
-          if (status) status.textContent = `${done.length} ${inLanguage(UI.fplFilled)} ${fpl.source}${fpl.callsign ? ` (${fpl.callsign} ${fpl.dep || ''}→${fpl.arr || ''})` : ''} : ${done.map(p => p.replace(/^\w+\.(\d+\.)?/, '')).join(', ') || '—'}`;
+          note.textContent = '';
+          await applyImport({
+            kind: 'fpl',
+            fpl
+          }, 'fplTitle', [], null, {
+            source: `${inLanguage(UI.fplTitle)} ${fpl.source || ''}`.trim()
+          });
         } catch (error) {
           note.textContent = `${fplError(error)}`;
         } finally {
           button.disabled = false;
         }
       });
-      section.querySelector('h2').after(bar);
+      section.append(bar);
     }
-    /** Barre « Préremplir depuis mon dernier vol ▾ » en tête du bloc Chronologie : IVAO et VATSIM, entrée grisée avec son
+    /** Partie « Mon dernier vol » du menu « Préremplir » (« Compléter ce CR depuis… ») : IVAO et VATSIM, entrée grisée avec son
      *  motif (lien vers Mon profil) si l'identifiant du profil manque ; message et choix gardés dans lastState. */
     function lastFlightTools() {
-      const section = form.querySelector('#mc-timeline');
+      const section = tools.querySelector('.mc-prefill-last');
       if (!section || section.querySelector('.mc-last')) return;
       const bar = document.createElement('div');
       bar.className = 'mc-tools mc-last';
-      bar.innerHTML = `<details class="mc-last-menu"><summary></summary><div class="row"><button type="button" class="secondary" data-last="ivao"></button><button type="button" class="secondary" data-last="vatsim"></button></div><p class="small mc-last-why"></p></details><div class="mc-import-row mc-import-choices" hidden></div><p class="small mc-tools-status"></p><p class="small"><a class="mc-last-fix" hidden></a> <a class="mc-last-tracker" target="_blank" rel="noopener" hidden></a></p>`;
-      const menu = bar.querySelector('details'),
-        why = bar.querySelector('.mc-last-why'),
+      bar.innerHTML = `<p class="small mc-prefill-sub"></p><div class="row"><button type="button" class="secondary" data-last="ivao"></button><button type="button" class="secondary" data-last="vatsim"></button></div><p class="small mc-last-why"></p><div class="mc-import-row mc-import-choices" hidden></div><p class="small mc-tools-status"></p><p class="small"><a class="mc-last-fix" hidden></a> <a class="mc-last-tracker" target="_blank" rel="noopener" hidden></a></p>`;
+      const why = bar.querySelector('.mc-last-why'),
         p = prefs();
-      menu.open = lastState.open;
-      menu.ontoggle = () => lastState.open = menu.open;
-      bar.querySelector('summary').textContent = t('lastTitle');
+      bar.querySelector('.mc-prefill-sub').textContent = t('prefillLast');
       [
         ['ivao', 'importLastIvao', 'ivaoId', 'lastNoIvao'],
         ['vatsim', 'importLastVatsim', 'vatsimId', 'lastNoVatsim']
@@ -1423,9 +1449,8 @@
         };
       });
       why.hidden = !why.childElementCount;
-      section.querySelector('h2').after(bar);
+      section.append(bar);
       drawLast();
-      traceLink();
     }
     /** Lien « Voir sur le tracker IVAO ↗ » (« Voir la trace ↗ » pour une autre adresse) de la trace du vol : sous le bouton
      *  du dernier vol et à côté du champ « URL de la trace » (bloc Trace réseau), dès qu'un vol est retenu ou collé. */
@@ -1451,7 +1476,7 @@
     }
     /** Message et vols proposés du dernier vol (lastState) dans la barre du bloc Chronologie. */
     function drawLast() {
-      const bar = form.querySelector('.mc-last');
+      const bar = tools.querySelector('.mc-last');
       if (!bar) return;
       bar.querySelector('.mc-tools-status').textContent = lastState.text;
       const fix = bar.querySelector('.mc-last-fix'); // clé absente ou refusée : carte des clés
@@ -1491,7 +1516,17 @@
     const importBox = tools.querySelector('.mc-import'),
       importArea = importBox.querySelector('textarea'),
       importResult = importBox.querySelector('.mc-import-result');
-    importBox.querySelector('summary').textContent = t('importTitle');
+    importBox.querySelector('summary').textContent = t('prefillTitle');
+    importBox.querySelectorAll('[data-prefill-t]').forEach(el => el.textContent = t(el.dataset.prefillT));
+    // « Nouveau CR depuis… » : un ordre (Mes missions) ou un vol passé (Mes vols) ; le fichier, à partir du niveau 3
+    [
+      ['missions', 'prefillMissions', 'apps/pilot/mes_missions.html'],
+      ['flights', 'prefillFlights', 'apps/pilot/mes_vols.html']
+    ].forEach(([k, key, page]) => {
+      const a = importBox.querySelector(`[data-prefill-link="${k}"]`);
+      a.textContent = t(key);
+      a.href = new URL(page, window.RepositoryNav?.root || new URL('../../', location.href)).href
+    });
     importBox.querySelector('.mc-import-intro').textContent = t('importIntro');
     importBox.querySelector('[data-import="run"]').textContent = t('importRun');
     importBox.querySelector('[data-import="clip"]').textContent = t('importClip');
@@ -1544,18 +1579,21 @@
     /** Préremplissage commun (texte collé, dernier vol récupéré) : champs vides de la mission, mêmes aides que la saisie,
      * résultat affiché (label : clé UI du titre, extra : remarques ajoutées, show : affichage du résultat ; par défaut
      * dans la fenêtre de collage, refermée). */
-    async function applyImport(result, label = KINDS[result.kind], extra = [], show = null) {
-      const TI = window.MissionTextImport;
+    async function applyImport(result, label = KINDS[result.kind], extra = [], show = null, opts = {}) {
+      const TI = window.MissionTextImport,
+        snapshot = opts.snapshot || structuredClone(mission); // état d'avant le préremplissage (« Annuler », « Remplacer »)
       const dep = result.fpl?.dep || result.dep || result.sessions?.[0]?.dep || mission.navigation.dep || mission.aircraft[0]
         ?.baseDeparture;
       const ad = dep && !/^ZZZZ$/.test(dep) ? await assist.airport(dep) : null;
       const rotary = mission.aircraft[0]?.category === 'rotary' || A.lookupType(result.fpl?.type)?.category === 'rotary';
       const {
         done,
-        notes
+        notes,
+        kept
       } = TI.apply(mission, result, {
         tz: ad?.tz || '',
-        rotary
+        rotary,
+        replace: !!opts.replace
       });
       // Mêmes aides que la saisie : appareil connu, indicatif de série, terrains, METAR, soleil.
       const lead = mission.aircraft[0] || {};
@@ -1576,12 +1614,73 @@
       changed();
       switcher.sync();
       notes.push(...extra);
-      const text = `${inLanguage(UI[label])} — ${done.length} ${inLanguage(UI.fplFilled)} : ${done.map(p => p.replace(/^\w+\.(\d+\.)?/, '')).join(', ') || '—'}${ad?.tz ? ` · ${inLanguage(UI.importLocal)} ${ad.icao} (${ad.tz})` : ''}${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
+      const text = prefillSummary(result, label, done, kept, opts, ad, notes);
+      prefillAfter(result, label, extra, show, opts, snapshot, kept, text);
       if (show) return show(text), true;
       importResult.textContent = text;
       importArea.value = '';
       importPanel?.done(); // bouton « Valider » (ferme la fenêtre)
       return true;
+    }
+    /** Résumé commun d'un préremplissage : source et date du vol (« IVAO, vol du 19/10 »), nombre de champs remplis et
+     *  blocs touchés, champs déjà saisis gardés, champs attendus absents de la source, fuseau, remarques. */
+    function prefillSummary(result, label, done, kept, opts, ad, notes) {
+      const pick = (row, i) => inLanguage(row).split('|')[i],
+        BLOCKS = ['aircraft', 'timeline', 'navigation', 'environment', 'network', 'metadata', 'fuel', 'capabilities', 'organisation',
+          'crew', 'events', 'legs'
+        ],
+        blocks = [...new Set(done.map(p => BLOCKS.indexOf(p.split('.')[0])).filter(i => i >= 0))].map(i => pick(UI.prefillBlocks, i)),
+        when = result.fpl?.date || result.date || result.sessions?.[0]?.start || result.connected || '',
+        day = /^(\d{4})-(\d{2})-(\d{2})/.exec(when instanceof Date ? when.toISOString() : String(when)),
+        source = `${opts.source || inLanguage(UI[label] || UI.importTitle)}${day ? `, ${inLanguage(UI.prefillFlightOf)} ${day[3]}/${day[2]}` : ''}`,
+        EXPECT = ['aircraft.0.callsign', 'navigation.dep', 'navigation.arr', 'navigation.route', 'timeline.takeoff', 'timeline.landing'],
+        empty = v => v == null || v === '' || (Array.isArray(v) && !v.length),
+        absent = result.kind === 'metar' ? [] : EXPECT.map((p, i) => [p, i]).filter(([p]) => !done.includes(p) && empty(M.get(mission,
+          p))).map(([, i]) => pick(UI.prefillFields, i));
+      return [`${source} — ${inLanguage(UI.prefillFilled).replace('{n}', done.length)}${blocks.length ? ` : ${blocks.join(', ')}` : ''}`,
+        kept.length && !opts.replace ? inLanguage(UI.prefillKept).replace('{n}', kept.length) : '',
+        absent.length ? inLanguage(UI.prefillAbsent).replace('{list}', absent.join(', ')) : '',
+        ad?.tz ? `${inLanguage(UI.importLocal)} ${ad.icao} (${ad.tz})` : '', ...notes
+      ].filter(Boolean).join(' — ')
+    }
+    /** Après un préremplissage : case « Remplacer les champs déjà saisis (n) » (réapplique depuis l'état d'avant, en
+     *  remplaçant), notification avec « Annuler » pendant 10 s (remet l'état d'avant). */
+    function prefillAfter(result, label, extra, show, opts, snapshot, kept, text) {
+      const box = tools.querySelector('.mc-prefill-force'),
+        check = box?.querySelector('input');
+      if (box) {
+        box.hidden = !kept.length || !!opts.replace;
+        box.querySelector('span').textContent = inLanguage(UI.prefillForce).replace('{n}', kept.length);
+        check.checked = false;
+        check.onchange = async () => {
+          if (!check.checked) return;
+          mission = structuredClone(snapshot);
+          await applyImport(result, label, extra, show, {
+            ...opts,
+            replace: true,
+            snapshot
+          });
+        };
+      }
+      const item = window.AppFramework?.notify?.(text, 'ok', {
+        timeout: 10000
+      });
+      if (!item) return;
+      const undo = Object.assign(document.createElement('button'), {
+        type: 'button',
+        textContent: inLanguage(UI.prefillUndo),
+        className: 'mc-prefill-undo'
+      });
+      undo.onclick = () => {
+        mission = structuredClone(snapshot);
+        redraw();
+        changed();
+        switcher.sync();
+        if (box) box.hidden = true;
+        importResult.textContent = inLanguage(UI.prefillUndone);
+        item.remove();
+      };
+      item.querySelector('span')?.after(undo);
     }
     importBox.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
     // ---- « Préremplir depuis mon dernier vol ▾ » (bloc Chronologie, dès le niveau 1) : le lanceur interroge le réseau

@@ -13,8 +13,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ### Added
 
 - **Mission report: prefill from my last IVAO / VATSIM flight** (`shared/mission_core/core.js`, `tools/launch.py`) —
-  a "Prefill from my last flight ▾" menu at the top of the Timeline block, from level 1, with an IVAO and a VATSIM
-  entry (greyed out with "IVAO VID missing — My profile ↗" when the profile has no ID; the IDs come from My profile
+  a "My last flight" part in the report's "Prefill ▾" menu ("Complete this report from…"), from level 1, with an IVAO
+  and a VATSIM entry (greyed out with "IVAO VID missing — My profile ↗" when the profile has no ID; the IDs come from My profile
   only). The launcher reads the pilot's flights of the last 7 days (`/__setup/ivao/last-flight`: IVAO tracker API
   with the suite's key, never sent to the page, all result pages; `/__setup/vatsim/last-flight`: public VATSIM history
   and filed plans), rolling window in UTC, never dependent on the report family or date; one flight is applied at
@@ -184,6 +184,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Mission report: one "Prefill ▾" menu** (`shared/mission_core/core.js`, `text_import.js`, `fpl.js`) — everything that
+  fills the report is gathered in one header menu, from level 1, in two parts: "New report from…" (a mission order in
+  My missions, a past flight in My flights, a file at level 3) and "Complete this report from…" (my last IVAO / VATSIM
+  flight, moved out of the Timeline block with the same behaviour; the filed flight plan from SimBrief / IVAO / VATSIM,
+  moved out of the Navigation block; paste of a flight plan, tracker page or METAR; the "→ CR" bookmark). All sources
+  go through the same path (`applyImport`): empty fields only, the same summary naming the source and the flight date,
+  the blocks touched, the fields already entered that were kept and what the source did not give; "Replace the fields
+  already entered (n)" applies the source again with replacement (`replace` option of `MissionTextImport.apply` and
+  `MissionFpl.apply`, which also report the kept fields); "Undo" for 10 s restores the report as before. Replaces the
+  "Analyse / import…" menu.
 - **Keys and external services: one place** (`shared/maintenance_page.js`, `tools/launch.py`, `shared/app_framework.js`)
   — Settings › Installation gets a "Keys and external services" section, one card per service (IVAO, VATSIM,
   SimBrief, airline website, report web service): key state ("saved on … UTC (…abcd)", "missing", "IVAO_API_KEY

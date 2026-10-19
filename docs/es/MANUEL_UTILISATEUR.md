@@ -721,7 +721,7 @@ La cabecera permanece fija en la parte superior de la página. De izquierda a de
 | «SAR · SAR terrestre ▾» (familia · subtipo) | ventana «Familia de misión» (abre la página de la otra familia) y «Subtipo de misión» |
 | «Añadir al registro» / «Guardar cambios» | guarda la misión en el registro |
 | «Enviar» ▾ | «Enviar informe»: transmite el informe al servicio web de la aerolínea (con línea de puntos mientras no esté configurado); «Sitio de la aerolínea» (si su dirección está configurada): «Registrar el vuelo en el sitio ↗», el favorito «→ Vol», «Copiar los campos» (véase más abajo) |
-| «Analizar / importar…» ▾ | pegar un plan de vuelo, una página de tracker, un METAR; importar un archivo |
+| «Prerrellenar» ▾ | todo lo que rellena el informe: nuevo informe desde una orden de misión, un vuelo pasado o un archivo; completar este informe desde mi último vuelo IVAO / VATSIM, un plan de vuelo presentado o un texto pegado (véase «Prerrellenar») |
 | «Seguimiento de red» ▾ | seguimiento en directo IVAO / VATSIM, historial VATSIM |
 | «Misión» ▾ | «Nueva misión», «Exportar misión (YAML)», «Eliminar esta misión» (en modificación) |
 | «Registro de misiones» ▾ | «Ver informe», «Carpeta del registro…», «Configurar el envío de informes (servicio web)…», «Configuración — bases de datos…» |
@@ -732,7 +732,7 @@ navegador · hora»). Cada bloque tiene en su título **↕** (arrastrar para mo
 Mostrar**; la disposición se memoriza. Los bloques que contienen una lista tienen un **+** en su
 título para añadir un elemento.
 
-En los niveles 1 y 2, «Analizar / importar…», «Misión» y «Registro de misiones» no aparecen (llegan en el nivel 3): una nueva misión se abre con ☰ › Misiones › «Nuevo informe».
+En los niveles 1 y 2, «Misión» y «Registro de misiones» no aparecen (llegan en el nivel 3); «Prerrellenar» está desde el nivel 1, salvo la importación de un archivo (nivel 3). Una nueva misión se abre con ☰ › Misiones › «Nuevo informe».
 
 ### Modificación de una misión del registro
 
@@ -903,16 +903,7 @@ La red indicada alimenta el gráfico «Red» y el indicador «En red» de los in
 
 ### Navegación
 
-Aeródromos, ruta, puntos y zona de trabajo. El bloque empieza con la barra **Plan de vuelo presentado**:
-
-| Botón | Fuente |
-|---|---|
-| «Último OFP de SimBrief» | su identificador SimBrief del perfil de piloto |
-| «Plan de vuelo IVAO (vuelo en curso)» | su VID |
-| «Plan de vuelo VATSIM (en curso o presentado)» | su CID |
-
-Estos botones rellenan **solo los campos vacíos**: aeronave, equipos OACI, ruta, puntos
-de ruta, niveles, aeródromos, METAR / TAF y masas y combustible previstos (SimBrief).
+Aeródromos, ruta, puntos y zona de trabajo. El plan de vuelo presentado (SimBrief, IVAO, VATSIM) se recupera con «Prerrellenar ▾ › Completar este informe desde…» (véase «Prerrellenar»).
 
 Campos: «Salida (ADEP)», «Destino (ADES)», «Alternativo (ALTN)», «Ruta» (solo se proponen las rutas
 ya utilizadas para el mismo trayecto), «Puntos de ruta (uno por línea)»,
@@ -959,44 +950,53 @@ lecciones aprendidas).
 
 La versión pública se aplica también a la exportación YAML (archivo con el sufijo `_public`) y al envío.
 
-### Analizar / importar…
+### Prerrellenar
 
-Menú de la cabecera para rellenar el informe a partir de un texto pegado. **Solo se rellenan los campos vacíos.**
+El menú «Prerrellenar ▾» de la cabecera (desde el nivel 1) reúne todo lo que rellena el informe; los bloques solo
+conservan la introducción manual. Tiene dos partes.
 
-1. Abra el menú y pegue (Ctrl+V) en el cuadro: el análisis es inmediato. O haga clic en «Pegar
-   desde el portapapeles» (Chrome pide permiso una vez).
-2. Textos reconocidos: plan de vuelo OACI «(FPL-…)», página del tracker IVAO (detalles de un vuelo o lista de
-   conexiones), página de un vuelo StatSim (VATSIM), historial VATSIM (JSON), METAR.
-3. El resultado indica la fuente reconocida y los campos rellenados; el botón pasa a ser «✓ Validar».
+**Nuevo informe desde…** (el borrador en curso se sustituye, tras confirmación si no está vacío):
+- «Una orden de misión: Mis misiones ↗»: abra la carpeta de la misión y después «Crear el informe»;
+- «Un vuelo pasado: Mis vuelos ↗»: un vuelo «sin informe» y después «Redactar el informe»;
+- «Importar (YAML / JSON antiguo)»: un archivo de misión (nivel 3).
 
-Los enlaces «↗ Tracker IVAO (mis conexiones)» y «↗ Mis vuelos StatSim (VATSIM)» abren sus páginas. El
-enlace «→ CR», que se arrastra a la barra de marcadores, copia la página del tracker con un clic. Abajo,
-«Importar (YAML / JSON antiguo)» carga un archivo de misión. Detalles: [tutorial](../TUTORIAL.md), § 6.
+**Completar este informe desde…** (**solo se rellenan los campos vacíos**):
+- **«Mi último vuelo»**: «Mi último vuelo IVAO» y «Mi último vuelo VATSIM». La suite debe abrirse con su lanzador,
+  con su ID IVAO o VATSIM en Mi perfil (una entrada sin ID aparece en gris, con el enlace «Falta el VID IVAO —
+  Mi perfil ↗»); para IVAO, la clave de API de la suite (Ajustes › Instalación).
+  - Lista: sus vuelos de los últimos 7 días (UTC), sean cuales sean la familia y la fecha del informe. Un solo
+    vuelo: el informe se rellena enseguida; varios: elíjalo (indicativo, trayecto, fecha y horas UTC, «en curso» si
+    sigue conectado); cada línea tiene su enlace ↗ al tracker IVAO.
+  - Vuelo cortado por desconexiones: las sesiones seguidas (mismo indicativo, reanudada menos de 30 min después
+    donde se detuvo la anterior, sin que la anterior terminara en el aparcamiento) forman un solo vuelo, «3 sesiones
+    (reconexiones)»; plan de vuelo de la última sesión, trazas unidas.
+  - Rellenado: indicativo, aeródromos, plan de vuelo presentado (aeronave, equipos, ruta, nivel, velocidad,
+    alternativo, observaciones, matrícula `REG/`, autonomía), enlace de la traza, horas sacadas de la traza (puesta
+    en marcha, despegue, aterrizaje, parada) y distancia. No rellenado: lo que la red no conoce (misión, tripulación,
+    combustible, resultados, incidentes). Un vuelo «en curso» da horas provisionales: vuelva a recuperarlo tras la
+    desconexión.
+  - VATSIM: mismo principio, pero VATSIM no publica traza: las horas son las de conexión y desconexión (a
+    corregir), el plan es el presentado para esa conexión.
+  - Sin vuelos, el mensaje indica para qué ID y qué periodo. En cuanto se retiene o se pega un vuelo IVAO, aparece
+    «Ver en el tracker IVAO ↗» bajo los botones y junto al campo «URL de la traza» (bloque Traza de red).
+- **«Plan de vuelo presentado»**: «Último OFP de SimBrief» (su identificador SimBrief del perfil de piloto), «Plan de
+  vuelo IVAO (vuelo en curso)» (su VID), «Plan de vuelo VATSIM (en curso o presentado)» (su CID): aeronave, equipos
+  OACI, ruta, puntos de ruta, niveles, aeródromos, METAR / TAF, masas y combustible previstos (SimBrief).
+- **«Pegar un plan de vuelo, una página del tracker o un METAR»**: pegue (Ctrl+V) en el cuadro, el análisis es
+  inmediato; o «Pegar desde el portapapeles» (Chrome pide permiso una vez). Textos reconocidos: plan de vuelo OACI
+  «(FPL-…)», página del tracker IVAO (detalles de un vuelo o lista de conexiones), página de un vuelo StatSim
+  (VATSIM), historial VATSIM (JSON), METAR. Los enlaces «↗ Tracker IVAO (mis conexiones)» y «↗ Mis vuelos StatSim
+  (VATSIM)» abren sus páginas.
+- **«Marcadores → informe»**: el enlace «→ CR», que se arrastra a la barra de marcadores, copia la página del tracker
+  con un clic.
 
-### Rellenar desde mi último vuelo IVAO / VATSIM
-
-En la parte superior del bloque Cronología, desde el nivel 1: «Rellenar desde mi último vuelo ▾», con dos entradas,
-«Mi último vuelo IVAO» y «Mi último vuelo VATSIM». La suite debe abrirse con su lanzador, con su ID IVAO o VATSIM en
-Mi perfil (una entrada sin ID aparece en gris, con el enlace «Falta el VID IVAO — Mi perfil ↗»); para IVAO, la clave
-de API de la suite (Ajustes › Instalación). Pegar una página del tracker sigue en «Analizar / importar…» (nivel 3).
-
-- **Lista**: sus vuelos de los últimos 7 días (UTC), sean cuales sean la familia y la fecha del informe. Un solo
-  vuelo: el informe se rellena enseguida; varios: elíjalo (indicativo, trayecto, fecha y horas UTC, «en curso» si
-  sigue conectado); cada línea tiene su enlace ↗ al tracker IVAO.
-- **Vuelo cortado por desconexiones**: las sesiones seguidas (mismo indicativo, reanudada menos de 30 min después
-  donde se detuvo la anterior, sin que la anterior terminara en el aparcamiento) forman un solo vuelo, «3 sesiones
-  (reconexiones)». Plan de vuelo de la última sesión, trazas unidas: puesta en marcha desde la primera, parada desde
-  la última; el resultado indica los cortes y las sesiones.
-- **Rellenado** (solo campos vacíos, como al pegar): indicativo, aeródromos, plan de vuelo presentado (aeronave,
-  equipos, ruta, nivel, velocidad, alternativo, observaciones, matrícula `REG/`, autonomía), enlace de la traza,
-  horas sacadas de la traza (puesta en marcha, despegue, aterrizaje, parada) y distancia.
-- **No rellenado**: lo que la red no conoce (misión, tripulación, combustible, resultados, incidentes). Un vuelo
-  «en curso» da horas provisionales: vuelva a recuperarlo tras la desconexión.
-- **VATSIM**: mismo principio, pero VATSIM no publica traza: las horas son las de conexión y desconexión (a
-  corregir), el plan es el presentado para esa conexión; sin enlace a una página del vuelo.
-
-Sin vuelos, el mensaje indica para qué ID y qué periodo. En cuanto se retiene o se pega un vuelo IVAO, aparece «Ver
-en el tracker IVAO ↗» bajo el botón y junto al campo «URL de la traza» (bloque Traza de red).
+**El mismo resumen para todas las fuentes**, bajo el menú y en una notificación: la fuente y la fecha del vuelo
+(«Plan de vuelo OACI, vuelo del 19/10»), el número de campos rellenados y los bloques afectados (aeronave,
+cronología, ruta, meteorología…), el número de campos ya introducidos que se conservan y lo que la fuente no ha dado
+(«ausentes de la fuente: despegue, aterrizaje»). Cuando se han conservado campos ya introducidos, la casilla
+«Reemplazar los campos ya introducidos (n)» vuelve a aplicar la misma fuente sustituyéndolos. «Deshacer», en la
+notificación (10 s), deja el informe como estaba antes del prerrellenado. Detalles del pegado:
+[tutorial](../TUTORIAL.md), § 6.
 
 ### Seguimiento de red
 

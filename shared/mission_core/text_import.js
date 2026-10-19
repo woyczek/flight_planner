@@ -326,16 +326,21 @@
   function apply(mission, result, {
     tz = '',
     rotary = false,
-    today = new Date().toISOString().slice(0, 10)
+    today = new Date().toISOString().slice(0, 10),
+    replace = false // vrai : les champs déjà saisis sont remplacés aussi (« Remplacer les champs déjà saisis »)
   } = {}) {
     const done = [],
-      notes = [];
+      notes = [],
+      kept = []; // champs déjà saisis, gardés, dont la source donnait une autre valeur
     const set = (path, value, {
       force = false
     } = {}) => {
       if (value == null || value === '' || (Array.isArray(value) && !value.length)) return;
       const cur = M.get(mission, path);
-      if (!force && cur != null && cur !== '' && !(Array.isArray(cur) && !cur.length)) return;
+      if (!force && !replace && cur != null && cur !== '' && !(Array.isArray(cur) && !cur.length)) {
+        if (JSON.stringify(cur) !== JSON.stringify(value)) kept.push(path);
+        return
+      }
       M.set(mission, path, value);
       done.push(path);
     };
@@ -349,7 +354,10 @@
     /** Recopie un plan de vol OACI analysé dans les champs vides de la mission (terrains, route, niveau, appareil, équipements, heures). */
     const applyFpl = fpl => {
       if (!fpl) return;
-      done.push(...(window.MissionFpl?.apply(mission, fpl) || []));
+      done.push(...(window.MissionFpl?.apply(mission, fpl, {
+        replace,
+        kept
+      }) || []));
       setDate(fpl.date);
       set('metadata.timeUtc', fpl.eobt);
       set('aircraft.0.enduranceMinutes', fpl.endurance);
@@ -441,7 +449,8 @@
     }
     return {
       done: [...new Set(done)],
-      notes
+      notes,
+      kept: [...new Set(kept)].filter(p => !done.includes(p))
     };
   }
 

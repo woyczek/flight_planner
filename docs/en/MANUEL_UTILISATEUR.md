@@ -720,7 +720,7 @@ The header stays fixed at the top of the page. From left to right:
 | “SAR · Land SAR ▾” (family · sub-type) | “Mission family” popup (opens the page of the other family) and “Mission sub-type” |
 | “Add to ledger” / “Save changes” | files the mission in the ledger |
 | “Send” ▾ | “Send report”: sends the report to the airline's web service (dotted outline as long as it is not set up); “Airline website” (if its address is set): “Record the flight on the website ↗”, the “→ Vol” bookmarklet, “Copy the fields” (see below) |
-| “Analyse / import…” ▾ | paste a flight plan, a tracker page, a METAR; import a file |
+| “Prefill” ▾ | everything that fills in the report: new report from a mission order, a past flight or a file; complete this report from my last IVAO / VATSIM flight, a filed flight plan or a paste (see “Prefill”) |
 | “Network tracking” ▾ | live IVAO / VATSIM tracking, VATSIM history |
 | “Mission” ▾ | “New mission”, “Export mission (YAML)”, “Delete this mission” (when editing) |
 | “Mission ledger” ▾ | “View reporting”, “Ledger folder…”, “Report sending settings (web service)…”, “Settings — databases…” |
@@ -731,7 +731,7 @@ browser · time”). Each block has in its title **↕** (drag to move it) and *
 Show**; the layout is remembered. Blocks that contain a list have a **+** in their
 title to add an item.
 
-At levels 1 and 2, “Analyse / import…”, “Mission” and “Mission ledger” do not appear (they come at level 3): a new mission is opened with ☰ › Missions › “New report”.
+At levels 1 and 2, “Mission” and “Mission ledger” do not appear (they come at level 3); “Prefill” is there from level 1, except importing a file (level 3). A new mission is opened with ☰ › Missions › “New report”.
 
 ### Editing a ledger mission
 
@@ -902,16 +902,7 @@ The network entered feeds the “Network” chart and the “Online” indicator
 
 ### Navigation
 
-Airfields, route, points and work area. The block starts with the **Filed flight plan** bar:
-
-| Button | Source |
-|---|---|
-| “Latest SimBrief OFP” | your SimBrief identifier from the pilot profile |
-| “IVAO flight plan (current flight)” | your VID |
-| “VATSIM flight plan (current or prefiled)” | your CID |
-
-These buttons fill in **only the empty fields**: aircraft, ICAO equipment, route, waypoints,
-levels, airfields, METAR / TAF and planned masses and fuel (SimBrief).
+Airfields, route, points and work area. The filed flight plan (SimBrief, IVAO, VATSIM) is taken through “Prefill ▾ › Complete this report from…” (see “Prefill”).
 
 Fields: “Departure (ADEP)”, “Destination (ADES)”, “Alternate (ALTN)”, “Route” (only routes
 already used for the same trip are suggested), “Waypoints (one per line)”,
@@ -958,44 +949,50 @@ lessons learned).
 
 The public version also applies to the YAML export (file with the `_public` suffix) and to sending.
 
-### Analyse / import…
+### Prefill
 
-Header menu to fill in the report from a pasted text. **Only empty fields are filled in.**
+The “Prefill ▾” header menu (from level 1) gathers everything that fills in the report; the blocks only keep the
+entry. It has two parts.
 
-1. Open the menu, then paste (Ctrl+V) into the box: the analysis is immediate. Or click “Paste
-   from clipboard” (Chrome asks for permission once).
-2. Recognised texts: ICAO flight plan “(FPL-…)”, IVAO tracker page (details of a flight or list of
-   connections), StatSim flight page (VATSIM), VATSIM history (JSON), METAR.
-3. The result shows the source recognised and the fields filled in; the button becomes “✓ Confirm”.
+**New report from…** (the current draft is replaced, after confirmation if it is not empty):
+- “A mission order: My missions ↗”: open the mission folder, then “Create the report”;
+- “A past flight: My flights ↗”: a flight with “no report”, then “Write the report”;
+- “Import (YAML / legacy JSON)”: a mission file (level 3).
 
-The “↗ IVAO tracker (my connections)” and “↗ My StatSim flights (VATSIM)” links open your pages. The
-“→ CR” link, to drag into the bookmarks bar, copies the tracker page in one click. At the bottom,
-“Import (YAML / legacy JSON)” loads a mission file. Details: [tutorial](../TUTORIAL.md), § 6.
+**Complete this report from…** (**only empty fields are filled in**):
+- **“My last flight”**: “My last IVAO flight” and “My last VATSIM flight”. The suite must be opened through its
+  launcher, with your IVAO or VATSIM ID in My profile (an entry without ID is greyed out, with the link “IVAO VID
+  missing — My profile ↗”); for IVAO, the suite's API key (Settings › Installation).
+  - List: your flights of the last 7 days (UTC), whatever the family and the report date. One flight: the report is
+    filled in at once; several: choose it (call sign, route, date and UTC times, “in progress” if you are still
+    connected); each line has its ↗ link to the IVAO tracker.
+  - Flight cut by disconnections: consecutive sessions (same call sign, resumed less than 30 min later where the
+    previous one stopped, the previous one not ending on blocks) make a single flight, “3 sessions (reconnections)”;
+    flight plan of the last session, tracks put end to end.
+  - Filled in: call sign, aerodromes, filed flight plan (aircraft, equipment, route, level, speed, alternate,
+    remarks, `REG/` registration, endurance), track link, times taken from the track (engine start, take-off,
+    landing, shutdown) and distance. Not filled in: what the network does not know (mission, crew, fuel, results,
+    incidents). A flight “in progress” gives provisional times: fetch again after disconnecting.
+  - VATSIM: same principle, but VATSIM publishes no track: times are the connection and disconnection times (to be
+    corrected), the plan is the one filed for that connection.
+  - With no flight, the message says for which ID and which period. As soon as an IVAO flight is taken or pasted,
+    “View on the IVAO tracker ↗” appears under the buttons and next to the “Track URL” field (network track block).
+- **“Filed flight plan”**: “Latest SimBrief OFP” (your SimBrief identifier from the pilot profile), “IVAO flight plan
+  (current flight)” (your VID), “VATSIM flight plan (current or prefiled)” (your CID): aircraft, ICAO equipment,
+  route, waypoints, levels, airfields, METAR / TAF, planned masses and fuel (SimBrief).
+- **“Paste a flight plan, a tracker page or a METAR”**: paste (Ctrl+V) into the box, the analysis is immediate; or
+  “Paste from clipboard” (Chrome asks for permission once). Recognised texts: ICAO flight plan “(FPL-…)”, IVAO
+  tracker page (details of a flight or list of connections), StatSim flight page (VATSIM), VATSIM history (JSON),
+  METAR. The “↗ IVAO tracker (my connections)” and “↗ My StatSim flights (VATSIM)” links open your pages.
+- **“Bookmarks → report”**: the “→ CR” link, to drag into the bookmarks bar, copies the tracker page in one click.
 
-### Prefill from my last IVAO / VATSIM flight
-
-At the top of the Timeline block, from level 1: “Prefill from my last flight ▾”, with two entries, “My last IVAO
-flight” and “My last VATSIM flight”. The suite must be opened through its launcher, with your IVAO or VATSIM ID in My
-profile (an entry without ID is greyed out, with the link “IVAO VID missing — My profile ↗”); for IVAO, the suite's
-API key (Settings › Installation). Pasting a tracker page stays in “Analyse / import…” (level 3).
-
-- **List**: your flights of the last 7 days (UTC), whatever the family and the report date. One flight: the report is
-  filled in at once; several: choose it (call sign, route, date and UTC times, “in progress” if you are still
-  connected); each line has its ↗ link to the IVAO tracker.
-- **Flight cut by disconnections**: consecutive sessions (same call sign, resumed less than 30 min later where the
-  previous one stopped, the previous one not ending on blocks) make a single flight, “3 sessions (reconnections)”.
-  Flight plan of the last session, tracks put end to end: engine start from the first, shutdown from the last; the
-  result lists the breaks and the sessions.
-- **Filled in** (empty fields only, as with a paste): call sign, aerodromes, filed flight plan (aircraft,
-  equipment, route, level, speed, alternate, remarks, `REG/` registration, endurance), track link, times taken
-  from the track (engine start, take-off, landing, shutdown) and distance.
-- **Not filled in**: what the network does not know (mission, crew, fuel, results, incidents). A flight “in
-  progress” gives provisional times: fetch again after disconnecting.
-- **VATSIM**: same principle, but VATSIM publishes no track: times are the connection and disconnection times (to be
-  corrected), the plan is the one filed for that connection; no link to a flight page.
-
-With no flight, the message says for which ID and which period. As soon as an IVAO flight is taken or pasted, “View
-on the IVAO tracker ↗” appears under the button and next to the “Track URL” field (network track block).
+**The same summary for every source**, under the menu and as a notification: the source and the date of the flight
+(“ICAO flight plan, flight of 19/10”), the number of fields filled in and the blocks touched (aircraft, timeline,
+route, weather…), the number of fields already entered that were kept, and what the source did not give (“not in the
+source: take-off, landing”), for example “ICAO flight plan, flight of 19/10 — 8 field(s) filled: aircraft, route… —
+4 already entered kept — not in the source: take-off, landing”. When fields already entered were kept, the box
+“Replace the fields already entered (n)” applies the same source again, replacing them. “Undo”, in the notification
+(10 s), puts the report back as it was before the prefill. Paste details: [tutorial](../TUTORIAL.md), § 6.
 
 ### Network tracking
 
