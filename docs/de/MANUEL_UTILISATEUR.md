@@ -684,7 +684,7 @@ Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
 |---|---|
 | „SAR · SAR an Land ▾“ (Familie · Untertyp) | Popup „Einsatzfamilie“ (öffnet die Seite der anderen Familie) und „Einsatz-Untertyp“ |
 | „Ins Register aufnehmen“ / „Änderungen speichern“ | legt die Mission im Register ab |
-| „Bericht senden“ | übermittelt den Bericht an den Webservice der (gestrichelt, solange er nicht eingerichtet ist) |
+| „Senden“ ▾ | „Bericht senden“: übermittelt den Bericht an den Webservice der Fluggesellschaft (gestrichelt, solange er nicht eingerichtet ist); „Website der Fluggesellschaft“ (wenn ihre Adresse eingestellt ist): „Flug auf der Website eintragen ↗“, das Lesezeichen „→ Vol“, „Felder kopieren“ (siehe unten) |
 | „Auswerten / importieren…“ ▾ | einen Flugplan, eine Tracker-Seite, ein METAR einfügen; eine Datei importieren |
 | „Netzwerk-Tracking“ ▾ | Live-Verfolgung IVAO / VATSIM, VATSIM-Historie |
 | „Einsatz“ ▾ | „Neue Mission“, „Einsatz exportieren (YAML)“, „Diesen Einsatz löschen“ (bei Bearbeitung) |
@@ -973,11 +973,33 @@ Anzahl der Missionen der Familie und den Ordner.
 |---|---|
 | „Einsatz ▾ › Neue Mission“ | beginnt mit einem leeren Bericht neu (Bestätigung, wenn der Entwurf nicht gespeichert ist) |
 | „Einsatz ▾ › Einsatz exportieren (YAML)“ | lädt eine Datei nur dieser Mission herunter |
-| „Bericht senden“ | sendet Mission, Bericht (HTML und Text) und Berechnungen an den Webservice; die Blase des Knopfs zeigt den letzten Versand. Eine nicht gespeicherte Mission verlangt eine Bestätigung |
+| „Senden ▾ › Bericht senden“ | sendet Mission, Bericht (HTML und Text) und Berechnungen an den Webservice; die Blase des Knopfs zeigt den letzten Versand. Eine nicht gespeicherte Mission verlangt eine Bestätigung |
+| „Senden ▾ › Flug auf der Website eintragen ↗“ | öffnet die Seite „Enregistrer mon vol“ der Website der Fluggesellschaft mit den Feldern des Flugs (siehe unten) |
 | „Einsatzregister ▾ › Auswertung anzeigen“ | öffnet die Auswertung der Familie |
 
 Solange der Webservice nicht eingestellt ist, bietet „Bericht senden“ an, seine Einrichtung zu öffnen
 („Berichtversand einrichten (Webservice)…“).
+
+**Den Flug auf der Website der Fluggesellschaft melden.** Die Website öffnet sich in einem anderen Tab, in dem Sie angemeldet sind. Die Suite
+meldet sich dort nicht an und bestätigt nichts an Ihrer Stelle: Sie bereitet das Formular „Ajouter un vol“ vor, Sie prüfen es und
+bestätigen es.
+
+1. Ziehen Sie einmalig das Lesezeichen „→ Vol“ (Menü „Senden“) in die Lesezeichenleiste des Browsers.
+2. Bei gespeichertem Bericht öffnet „Senden ▾ › Flug auf der Website eintragen ↗“ die Seite „Enregistrer mon vol“ der Website, mit
+   den Feldern des Flugs in der Adresse (nach „#“: nie an den Server gesendet). Ein nicht gespeicherter Bericht verlangt eine Bestätigung.
+3. Melden Sie sich an, wenn die Website es verlangt, und klicken Sie dann auf das Lesezeichen „→ Vol“: Es öffnet die Seite Ihres Luftfahrzeugs
+   (an seinem Kennzeichen erkannt), dann „Ajouter un vol“; klicken Sie es auf diesem Formular noch einmal an.
+4. Das Lesezeichen füllt das Rufzeichen (in der Liste der Website über seinen Namen, CARAFON, oder seinen Code, CFON, gewählt), die
+   Flugnummer, das Datum des Flugendes (Datum des Berichts und Uhrzeit Block-Ende, sonst Landung, in UTC; der Folgetag, wenn der Flug
+   über Mitternacht geht), die Dauer (Block, sonst Flug), die Mission (Familie, Typ, Einsatz) und die Ankunft aus. Ausgefüllte Felder
+   werden grün umrandet, fehlende rot. Kennzeichen und Abflug, die die Website vorgibt (aktuelle Position des Luftfahrzeugs), werden
+   nicht geändert: Eine Abweichung vom Bericht wird gemeldet.
+5. Prüfen und ergänzen Sie, dann „Valider“ auf der Website.
+
+Gehen die Felder verloren (unterwegs verlangte Anmeldung), starten Sie „Flug auf der Website eintragen ↗“ erneut. Ohne das Lesezeichen
+kopiert „Felder kopieren“ eine Zeile (Kennzeichen, Typ, Rufzeichen, UTC-Datum, Dauer, Abflug → Ankunft, Mission), die von Hand
+zu übertragen ist. Der Teil „Website der Fluggesellschaft“ erscheint nur, wenn die Adresse der Website eingestellt ist (Einstellungen ›
+Installation › Quellen und Ordner).
 
 ### Spezifische Blöcke jeder Familie
 

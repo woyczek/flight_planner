@@ -189,6 +189,28 @@
       'Dienst nicht erreichbar oder vom Browser blockiert (CORS: der Dienst muss diese Herkunft erlauben)',
       'servicio inaccesible o llamada bloqueada por el navegador (CORS: el servicio debe permitir este origen)'),
     sentBefore: L('Déjà envoyé le', 'Already sent on', 'Bereits gesendet am', 'Ya enviado el'),
+    menuSend: L('Envoyer', 'Send', 'Senden', 'Enviar'),
+    defaMenu: L('Site de la compagnie', 'Airline website', 'Website der Fluggesellschaft', 'Sitio de la aerolínea'),
+    defaOpen: L('Enregistrer le vol sur le site ↗', 'Record the flight on the website ↗', 'Flug auf der Website eintragen ↗',
+      'Registrar el vuelo en el sitio ↗'),
+    defaCopy: L('Copier les champs', 'Copy the fields', 'Felder kopieren', 'Copiar los campos'),
+    defaCopied: L('Champs du vol copiés', 'Flight fields copied', 'Flugfelder kopiert', 'Campos del vuelo copiados'),
+    defaMarkHint: L('← à glisser une fois dans la barre des favoris', '← drag once to the bookmarks bar',
+      '← einmal in die Lesezeichenleiste ziehen', '← arrastrar una vez a la barra de marcadores'),
+    defaHelp: L(
+      'Le bouton ouvre la liste des appareils du site avec les champs de ce CR. Connectez-vous si le site le demande, puis cliquez le favori « → Vol » : il ouvre votre appareil, puis, d’un second clic, remplit « Ajouter un vol ». Rien n’est validé : relisez, puis « Valider ». Sans le favori : « Copier les champs ».',
+      'The button opens the website’s aircraft list with this report’s fields. Log in if the website asks, then click the “→ Vol” bookmark: it opens your aircraft, then, with a second click, fills “Ajouter un vol”. Nothing is submitted: check, then “Valider”. Without the bookmark: “Copy the fields”.',
+      'Die Schaltfläche öffnet die Luftfahrzeugliste der Website mit den Feldern dieses Berichts. Melden Sie sich an, falls die Website es verlangt, dann das Lesezeichen „→ Vol“ anklicken: es öffnet Ihr Luftfahrzeug und füllt mit einem zweiten Klick „Ajouter un vol“. Nichts wird abgeschickt: prüfen, dann „Valider“. Ohne Lesezeichen: „Felder kopieren“.',
+      'El botón abre la lista de aeronaves del sitio con los campos de este informe. Inicie sesión si el sitio lo pide y luego pulse el marcador «→ Vol»: abre su aeronave y, con un segundo clic, rellena «Ajouter un vol». No se valida nada: revise y luego «Valider». Sin el marcador: «Copiar los campos».'
+    ),
+    defaMarkClick: L('Ce lien s’utilise depuis la barre des favoris, sur les pages du site (glisser-déposer le lien dans la barre).',
+      'Use this link from the bookmarks bar, on the website’s pages (drag and drop the link into the bar).',
+      'Diesen Link aus der Lesezeichenleiste auf den Seiten der Website verwenden (Link in die Leiste ziehen).',
+      'Use este enlace desde la barra de marcadores, en las páginas del sitio (arrastre el enlace a la barra).'),
+    defaUnsaved: L('Ce CR n’est pas enregistré dans le registre (ou a des modifications non enregistrées). Ouvrir le site quand même ?',
+      'This report is not saved in the ledger (or has unsaved changes). Open the website anyway?',
+      'Dieser Bericht ist nicht im Register gespeichert (oder hat ungespeicherte Änderungen). Website trotzdem öffnen?',
+      'Este informe no está guardado en el registro (o tiene cambios sin guardar). ¿Abrir el sitio de todos modos?'),
     importBookmarkletHelp: L(
       'Ce lien s’utilise depuis la barre des favoris, sur la page du tracker (glisser-déposer le lien dans la barre).',
       'Use this link from the bookmarks bar, on the tracker page (drag and drop the link into the bar).',
@@ -263,6 +285,122 @@
   })();
   const DETAIL_KEY = 'missionCoreDetailed:v1'; // « CR détaillé » choisi aux niveaux 1-2 (navigateur, toutes familles)
 
+  // Favori « → Vol », à glisser dans la barre des favoris : sur les pages du site de la compagnie ouvertes par
+  // « Enregistrer le vol sur le site », lit les champs du vol (fragment #defa=, gardé ensuite dans le stockage de session
+  // du site pour survivre à la connexion) ; liste des appareils → page de l'appareil de l'immatriculation ; page de
+  // l'appareil → « Ajouter un vol » ; formulaire → champs remplis par leur nom (champs en lecture seule du site :
+  // comparés, écarts signalés), indicatif choisi dans la liste par son nom ou son code. Ne valide JAMAIS le formulaire.
+  // Pas de commentaire de ligne, ni de « % », ni de « # » dans cette fonction : elle devient une adresse javascript:.
+  // alert() : favori exécuté sur un autre site, sans le socle de la suite — seule boîte native admise.
+  function defaFlightFill() {
+    var KEY = 'sogDefaFlight',
+      NL = String.fromCharCode(10),
+      raw = (location.hash.match(/defa=([A-Za-z0-9_-]+)/) || [])[1] || '',
+      data = null;
+    try {
+      if (raw) {
+        var b = atob(raw.replace(/-/g, '+').replace(/_/g, '/'));
+        data = JSON.parse(new TextDecoder().decode(Uint8Array.from(b, function(c) {
+          return c.charCodeAt(0);
+        })));
+        sessionStorage.setItem(KEY, JSON.stringify(data));
+      } else data = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+    } catch (e) {
+      data = null;
+    }
+    if (!data) {
+      alert(
+        'Aucun vol à remplir : ouvrez le site depuis le compte rendu (« Enregistrer le vol sur le site »). / No flight to fill: open the website from the report.'
+      );
+      return;
+    }
+    var up = function(v) {
+      return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    };
+    var number = document.querySelector('form [name="callsign2"]'),
+      form = number && number.form;
+    if (!form) {
+      var links = [].slice.call(document.querySelectorAll('a[href]'));
+      var add = links.filter(function(a) {
+        return /add_flight/.test(a.href);
+      })[0];
+      if (add) {
+        location.href = add.href;
+        return;
+      }
+      var own = links.filter(function(a) {
+        return /[?&]id=/.test(a.href) && a.textContent.split('/').map(up).indexOf(up(data.reg)) >= 0;
+      })[0];
+      if (own) {
+        location.href = own.href;
+        return;
+      }
+      alert('Appareil ' + data.reg + ' introuvable sur cette page. / Aircraft ' + data.reg + ' not found on this page.');
+      return;
+    }
+    var missing = [],
+      diff = [];
+    var field = function(n) {
+      return form.querySelector('[name="' + n + '"]');
+    };
+    var mark = function(el, ok) {
+      if (el) el.style.outline = ok ? '3px solid rgb(46,157,79)' : '3px solid rgb(221,51,51)';
+    };
+    var put = function(n, v, label) {
+      var el = field(n);
+      if (!el) return;
+      if (el.readOnly) {
+        if (v && up(el.value) !== up(v)) {
+          diff.push(label + ' : ' + el.value + ' (site) / ' + v + ' (CR)');
+          mark(el, false);
+        }
+        return;
+      }
+      if (!v) {
+        missing.push(label);
+        mark(el, false);
+        return;
+      }
+      el.value = v;
+      el.dispatchEvent(new Event('input', {
+        bubbles: true
+      }));
+      el.dispatchEvent(new Event('change', {
+        bubbles: true
+      }));
+      mark(el, true);
+    };
+    put('reg', data.reg, 'Immat.');
+    put('nom_appareil', data.type, 'Appareil');
+    var sel = field('callsign1');
+    if (sel) {
+      var want = [up(data.callsign), up(data.fpl).replace(/[0-9].*$/, '')].filter(Boolean);
+      var opt = [].slice.call(sel.options).filter(function(o) {
+        return o.value && (want.indexOf(up(o.textContent)) >= 0 || want.indexOf(up(o.value)) >= 0);
+      })[0];
+      if (opt) {
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', {
+          bubbles: true
+        }));
+        mark(sel, true);
+      } else {
+        missing.push('Callsign ' + (data.callsign || ''));
+        mark(sel, false);
+      }
+    }
+    put('callsign2', data.number, 'Numéro de vol');
+    put('date', data.date, 'Date');
+    put('hdv', data.hdv, 'Durée');
+    put('mission', data.mission, 'Mission');
+    put('depart', data.depart, 'Départ');
+    put('arrive', data.arrive, 'Arrivée');
+    sessionStorage.removeItem(KEY);
+    alert('Vol rempli : relisez, puis « Valider ». / Flight filled: check, then “Valider”.' + (missing.length ? NL +
+      'À compléter / to complete : ' + missing.join(', ') : '') + (diff.length ? NL + 'Écarts / differences : ' + diff.join(' ; ') :
+      ''));
+  }
+  const DEFA_FLIGHT_BOOKMARKLET = 'javascript:(' + defaFlightFill.toString().replace(/\s*\n\s*/g, ' ') + ')()';
   /** Enregistre une famille de mission (id, blocs, séries, pages, résumé…) ; ses champs de texte simple passent en majuscules. Lève une erreur sans identifiant. Retourne la définition complétée. */
   function registerFamily(def) {
     if (!def?.id) throw new Error('Famille sans identifiant');
@@ -338,13 +476,19 @@
     const tools = document.createElement('div');
     tools.className = 'mc-header-tools';
     // Sept entrées au plus, par ordre d'importance : contexte (famille · série, ajoutée plus
-    // bas), actions principales (enregistrer, envoyer), puis menus (importer, suivi réseau,
-    // mission, registre). Les actions gardent leur data-action, quel que soit leur menu.
+    // bas), actions principales (enregistrer, menu « Envoyer » : webservice et site de la compagnie), puis menus
+    // (importer, suivi réseau, mission, registre). Les actions gardent leur data-action, quel que soit leur menu.
     // Niveaux 1-2 (CR court) : famille · série, enregistrer, envoyer, suivi réseau et « CR détaillé » ; importer,
     // mission et registre à partir du niveau 3.
     tools.innerHTML = `<div class="mc-toolbar">
         <button type="button" class="primary" data-action="store"></button>
-        <button type="button" class="mc-send" data-action="send"></button>
+        <details class="mc-menu mc-send-menu"><summary data-menu="send"></summary><div class="mc-pop mc-list">
+          <button type="button" class="mc-send" data-action="send"></button>
+          <div class="mc-defa mc-list" hidden><hr><p class="small mc-defa-title"></p>
+          <button type="button" class="primary" data-action="defaOpen"></button>
+          <div class="mc-import-row"><a class="mc-bookmarklet" data-defa-mark draggable="true">→ Vol</a><span class="small" data-defa-hint></span></div>
+          <button type="button" data-action="defaCopy"></button>
+          <p class="small" data-defa-help></p></div></div></details>
         <details class="mc-import mc-menu" data-min-level="3"><summary></summary><div class="mc-import-pop mc-pop">
           <div class="mc-import-row mc-import-links"><a data-open="ivao" target="_blank" rel="noopener"></a><a data-open="statsim" target="_blank" rel="noopener"></a></div>
           <p class="small mc-import-intro"></p>
@@ -412,6 +556,7 @@
     // Menus de la barre d'outils : libellés, liens vers le paramétrage, un seul menu ouvert.
     [
       ['network', 'menuNetwork'],
+      ['send', 'menuSend'],
       ['mission', 'menuMission'],
       ['ledger', 'ledgerTitle']
     ].forEach(([k, key]) => {
@@ -1067,6 +1212,7 @@
       assist.autoEnvironment('reset');
       timelineEvents(true);
       sendUi();
+      defaUi();
       fplTools();
       kpi();
       modeUi();
@@ -1433,6 +1579,83 @@
     /** Clé du journal d'envoi de la mission (famille, n°, date). */
     const sendLogKey = () => `${family.id}:${normId(mission.metadata?.missionId)}:${mission.metadata?.date || ''}`;
 
+    /** Champs du formulaire « Ajouter un vol » du site de la compagnie, tirés du CR (premier appareil) : immatriculation
+     *  sans tiret, type, indicatif (série en mots, forme plan de vol, numéro), date de fin du vol (date du CR + heure de
+     *  fin bloc, sinon atterrissage, en UTC ; lendemain si elle précède le départ), durée bloc (sinon vol) HH:MM,
+     *  mission (famille, type, opération), départ et arrivée OACI. */
+    function defaFields() {
+      const a = (mission.aircraft || [])[0] || {},
+        tl = mission.timeline || {},
+        nav = mission.navigation || {},
+        st = M.computeStatistics(mission),
+        mins = st.blockMinutes ?? st.flightMinutes,
+        hhmm = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`,
+        end = M.minutes(tl.onBlock || tl.landing || tl.shutdown),
+        start = M.minutes(tl.offBlock || tl.takeoff || tl.engineStart),
+        date = String(mission.metadata?.date || '');
+      let when = '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date) && end != null) {
+        const d = new Date(`${date}T00:00:00Z`);
+        if (start != null && end < start) d.setUTCDate(d.getUTCDate() + 1); // fin après minuit
+        when = `${d.toISOString().slice(0, 10)}T${hhmm(end)}`;
+      }
+      const up = v => String(v || '').trim().toUpperCase();
+      return {
+        reg: up(a.registration).replace(/[^A-Z0-9]/g, ''),
+        type: up(a.type),
+        callsign: up(a.callsignPrefix),
+        fpl: up(a.callsignFpl),
+        number: up(a.callsignNumber),
+        date: when,
+        hdv: mins != null ? hhmm(mins) : '',
+        mission: [family.id, mission.subtype, mission.metadata?.operationName].filter(Boolean).map(up).join(' '),
+        depart: up(nav.dep || a.baseDeparture),
+        arrive: up(a.landingAd || nav.arr || a.baseReturn)
+      };
+    }
+    /** Adresse de la page « Enregistrer mon vol » du site, champs du vol dans le fragment (#defa=, base64url du JSON :
+     *  jamais envoyé au serveur) ; vide sans site réglé. */
+    const defaUrl = () => {
+      const base = window.RepositoryNav?.vaUrl?.('recordFlight') || '';
+      if (!base) return '';
+      const bytes = new TextEncoder().encode(JSON.stringify(defaFields()));
+      return `${base}#defa=${btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+    };
+    /** Partie « Site de la compagnie » du menu « Envoyer » : montrée seulement si l'adresse du site est réglée ; libellés,
+     *  favori « → Vol ». */
+    function defaUi() {
+      const menu = tools.querySelector('.mc-defa');
+      if (!menu) return;
+      menu.hidden = !window.RepositoryNav?.vaUrl?.('recordFlight');
+      menu.querySelector('.mc-defa-title').textContent = t('defaMenu');
+      $a('defaOpen').textContent = t('defaOpen');
+      $a('defaCopy').textContent = t('defaCopy');
+      menu.querySelector('[data-defa-hint]').textContent = t('defaMarkHint');
+      menu.querySelector('[data-defa-help]').textContent = t('defaHelp');
+      const mark = menu.querySelector('[data-defa-mark]');
+      mark.href = DEFA_FLIGHT_BOOKMARKLET;
+      mark.onclick = e => {
+        e.preventDefault(); // depuis la barre des favoris seulement
+        status.textContent = inLanguage(UI.defaMarkClick)
+      }
+    }
+    $a('defaOpen').onclick = async () => {
+      if ((!edit || dirty) && !await window.AppFramework.ask(inLanguage(UI.defaUnsaved))) return;
+      const url = defaUrl();
+      if (url) window.open(url, '_blank', 'noopener')
+    };
+    $a('defaCopy').onclick = async () => {
+      const f = defaFields(),
+        line = [`reg ${f.reg}`, f.type, [f.callsign, f.number].filter(Boolean).join(' '), f.date ? `${f.date.replace('T', ' ')} UTC` : '', f.hdv,
+          [f.depart, f.arrive].filter(Boolean).join(' → '), f.mission
+        ].filter(Boolean).join(' · ');
+      try {
+        await navigator.clipboard.writeText(line);
+        status.textContent = `${inLanguage(UI.defaCopied)} : ${line}`
+      } catch {
+        status.textContent = line
+      }
+    };
     /** Bouton d'envoi du CR : état (configuré ou non), dernier envoi de cette mission ; envoi au webservice. */
     function sendUi() {
       const button = $a('send'),

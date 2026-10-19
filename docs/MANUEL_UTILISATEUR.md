@@ -721,7 +721,7 @@ L'en-tête reste collé en haut de page. De gauche à droite :
 |---|---|
 | « SAR · SAR terrestre ▾ » (famille · sous-type) | popup « Famille de mission » (ouvre la page de l'autre famille) et « Sous-type de mission » |
 | « Ajouter au registre » / « Enregistrer les modifications » | range la mission dans le registre |
-| « Envoyer le CR » | transmet le CR au webservice de la compagnie (en pointillés tant qu'il n'est pas paramétré) |
+| « Envoyer » ▾ | « Envoyer le CR » : transmet le CR au webservice de la compagnie (en pointillés tant qu'il n'est pas paramétré) ; « Site de la compagnie » (si son adresse est réglée) : « Enregistrer le vol sur le site ↗ », le favori « → Vol », « Copier les champs » (voir plus bas) |
 | « Analyser / importer… » ▾ | coller un plan de vol, une page de tracker, un METAR ; importer un fichier |
 | « Suivi réseau » ▾ | suivi en direct IVAO / VATSIM, historique VATSIM |
 | « Mission » ▾ | « Nouvelle mission », « Exporter la mission (YAML) », « Supprimer cette mission » (en modification) |
@@ -1010,11 +1010,33 @@ nombre de missions de la famille et le dossier.
 |---|---|
 | « Mission ▾ › Nouvelle mission » | repart d'un CR vierge (confirmation si le brouillon n'est pas enregistré) |
 | « Mission ▾ › Exporter la mission (YAML) » | télécharge un fichier de cette seule mission |
-| « Envoyer le CR » | envoie mission, CR (HTML et texte) et calculs au webservice ; la bulle du bouton rappelle le dernier envoi. Une mission non enregistrée demande confirmation |
+| « Envoyer ▾ › Envoyer le CR » | envoie mission, CR (HTML et texte) et calculs au webservice ; la bulle du bouton rappelle le dernier envoi. Une mission non enregistrée demande confirmation |
+| « Envoyer ▾ › Enregistrer le vol sur le site ↗ » | ouvre la page « Enregistrer mon vol » du site de la compagnie avec les champs du vol (voir ci-dessous) |
 | « Registre des missions ▾ › Voir le reporting » | ouvre le reporting de la famille |
 
 Tant que le webservice n'est pas réglé, « Envoyer le CR » propose d'ouvrir son paramétrage
 (« Paramétrer l'envoi des CR (webservice)… »).
+
+**Déclarer le vol sur le site de la compagnie.** Le site s'ouvre dans un autre onglet, où vous êtes connecté. La suite ne
+s'y connecte pas et ne valide rien à votre place : elle prépare le formulaire « Ajouter un vol », vous le relisez et le
+validez.
+
+1. Une fois, glissez le favori « → Vol » (menu « Envoyer ») dans la barre des favoris du navigateur.
+2. CR enregistré, « Envoyer ▾ › Enregistrer le vol sur le site ↗ » ouvre la page « Enregistrer mon vol » du site, avec
+   les champs du vol dans l'adresse (après « # » : jamais envoyés au serveur). Un CR non enregistré demande confirmation.
+3. Connectez-vous si le site le demande, puis cliquez le favori « → Vol » : il ouvre la page de votre appareil
+   (reconnu par son immatriculation), puis « Ajouter un vol » ; cliquez-le encore sur ce formulaire.
+4. Le favori remplit l'indicatif (choisi dans la liste du site par son nom, CARAFON, ou son code, CFON), le numéro de
+   vol, la date de fin du vol (date du CR et heure de fin bloc, sinon d'atterrissage, en UTC ; le lendemain si le vol
+   passe minuit), la durée (bloc, sinon vol), la mission (famille, type, opération) et l'arrivée. Ce qui est rempli
+   s'entoure de vert, ce qui manque de rouge. L'immatriculation et le départ, que le site impose (position actuelle de
+   l'appareil), ne sont pas modifiés : un écart avec le CR est signalé.
+5. Relisez, complétez, puis « Valider » sur le site.
+
+Si les champs se perdent (connexion demandée en route), relancez « Enregistrer le vol sur le site ↗ ». Sans le favori,
+« Copier les champs » copie une ligne (immatriculation, type, indicatif, date UTC, durée, départ → arrivée, mission) à
+reporter à la main. Le menu « Site de la compagnie » n'apparaît que si l'adresse du site est réglée (Paramètres ›
+Installation › Sources et dossiers).
 
 ### Blocs propres à chaque famille
 

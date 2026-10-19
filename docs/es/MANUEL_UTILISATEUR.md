@@ -684,7 +684,7 @@ La cabecera permanece fija en la parte superior de la página. De izquierda a de
 |---|---|
 | «SAR · SAR terrestre ▾» (familia · subtipo) | ventana «Familia de misión» (abre la página de la otra familia) y «Subtipo de misión» |
 | «Añadir al registro» / «Guardar cambios» | guarda la misión en el registro |
-| «Enviar informe» | transmite el informe al servicio web de la compagnie (con línea de puntos mientras no esté configurado) |
+| «Enviar» ▾ | «Enviar informe»: transmite el informe al servicio web de la aerolínea (con línea de puntos mientras no esté configurado); «Sitio de la aerolínea» (si su dirección está configurada): «Registrar el vuelo en el sitio ↗», el favorito «→ Vol», «Copiar los campos» (véase más abajo) |
 | «Analizar / importar…» ▾ | pegar un plan de vuelo, una página de tracker, un METAR; importar un archivo |
 | «Seguimiento de red» ▾ | seguimiento en directo IVAO / VATSIM, historial VATSIM |
 | «Misión» ▾ | «Nueva misión», «Exportar misión (YAML)», «Eliminar esta misión» (en modificación) |
@@ -973,11 +973,33 @@ número de misiones de la familia y la carpeta.
 |---|---|
 | «Misión ▾ › Nueva misión» | vuelve a empezar desde un informe en blanco (confirmación si el borrador no está guardado) |
 | «Misión ▾ › Exportar misión (YAML)» | descarga un archivo con esta sola misión |
-| «Enviar informe» | envía misión, informe (HTML y texto) y cálculos al servicio web; la burbuja del botón recuerda el último envío. Una misión no guardada pide confirmación |
+| «Enviar ▾ › Enviar informe» | envía misión, informe (HTML y texto) y cálculos al servicio web; la burbuja del botón recuerda el último envío. Una misión no guardada pide confirmación |
+| «Enviar ▾ › Registrar el vuelo en el sitio ↗» | abre la página «Enregistrer mon vol» del sitio de la aerolínea con los campos del vuelo (véase más abajo) |
 | «Registro de misiones ▾ › Ver informe» | abre el informe estadístico de la familia |
 
 Mientras el servicio web no esté configurado, «Enviar informe» propone abrir su configuración
 («Configurar el envío de informes (servicio web)…»).
+
+**Declarar el vuelo en el sitio de la aerolínea.** El sitio se abre en otra pestaña, donde usted tiene la sesión iniciada. La suite no
+se conecta a él ni valida nada en su lugar: prepara el formulario «Ajouter un vol», usted lo revisa y lo
+valida.
+
+1. Una sola vez, arrastre el favorito «→ Vol» (menú «Enviar») a la barra de favoritos del navegador.
+2. Con el informe guardado, «Enviar ▾ › Registrar el vuelo en el sitio ↗» abre la página «Enregistrer mon vol» del sitio, con
+   los campos del vuelo en la dirección (después de «#»: nunca se envían al servidor). Un informe no guardado pide confirmación.
+3. Inicie sesión si el sitio lo pide y después haga clic en el favorito «→ Vol»: abre la página de su aeronave
+   (reconocida por su matrícula) y después «Ajouter un vol»; vuelva a hacer clic en él en ese formulario.
+4. El favorito rellena el indicativo (elegido en la lista del sitio por su nombre, CARAFON, o su código, CFON), el número de
+   vuelo, la fecha de fin del vuelo (fecha del informe y hora de fin de calzos, si no de aterrizaje, en UTC; el día siguiente si el vuelo
+   pasa la medianoche), la duración (calzos, si no vuelo), la misión (familia, tipo, operación) y la llegada. Lo rellenado
+   se rodea de verde, lo que falta de rojo. La matrícula y la salida, que impone el sitio (posición actual de la
+   aeronave), no se modifican: una diferencia con el informe se señala.
+5. Revise, complete y después «Valider» en el sitio.
+
+Si los campos se pierden (inicio de sesión pedido por el camino), vuelva a lanzar «Registrar el vuelo en el sitio ↗». Sin el favorito,
+«Copiar los campos» copia una línea (matrícula, tipo, indicativo, fecha UTC, duración, salida → llegada, misión) para
+introducir a mano. El menú «Sitio de la aerolínea» solo aparece si la dirección del sitio está configurada (Ajustes ›
+Instalación › Fuentes y carpetas).
 
 ### Bloques propios de cada familia
 

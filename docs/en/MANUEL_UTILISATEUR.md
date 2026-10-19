@@ -684,7 +684,7 @@ The header stays fixed at the top of the page. From left to right:
 |---|---|
 | “SAR · Land SAR ▾” (family · sub-type) | “Mission family” popup (opens the page of the other family) and “Mission sub-type” |
 | “Add to ledger” / “Save changes” | files the mission in the ledger |
-| “Send report” | sends the report to the web service (dotted outline as long as it is not set up) |
+| “Send” ▾ | “Send report”: sends the report to the airline's web service (dotted outline as long as it is not set up); “Airline website” (if its address is set): “Record the flight on the website ↗”, the “→ Vol” bookmarklet, “Copy the fields” (see below) |
 | “Analyse / import…” ▾ | paste a flight plan, a tracker page, a METAR; import a file |
 | “Network tracking” ▾ | live IVAO / VATSIM tracking, VATSIM history |
 | “Mission” ▾ | “New mission”, “Export mission (YAML)”, “Delete this mission” (when editing) |
@@ -973,11 +973,34 @@ number of missions of the family and the folder.
 |---|---|
 | “Mission ▾ › New mission” | starts again from a blank report (confirmation if the draft is not saved) |
 | “Mission ▾ › Export mission (YAML)” | downloads a file of this mission only |
-| “Send report” | sends mission, report (HTML and text) and calculations to the web service; the button's tooltip recalls the last sending. A mission that is not saved asks for confirmation |
+| “Send ▾ › Send report” | sends mission, report (HTML and text) and calculations to the web service; the button's tooltip recalls the last sending. A mission that is not saved asks for confirmation |
+| “Send ▾ › Record the flight on the website ↗” | opens the “Enregistrer mon vol” page of the airline website with the fields of the flight (see below) |
 | “Mission ledger ▾ › View reporting” | opens the family reporting |
 
 As long as the web service is not set up, “Send report” offers to open its settings
 (“Report sending settings (web service)…”).
+
+**Record the flight on the airline website.** The website opens in another tab, where you are signed in. The suite does
+not sign in there and validates nothing for you: it prepares the “Ajouter un vol” form, you read it over and
+validate it.
+
+1. Once, drag the “→ Vol” bookmarklet (“Send” menu) to the browser's bookmarks bar.
+2. With the report saved, “Send ▾ › Record the flight on the website ↗” opens the website's “Enregistrer mon vol” page,
+   with the fields of the flight in the address (after “#”: never sent to the server). A report that is not saved asks for
+   confirmation.
+3. Sign in if the website asks, then click the “→ Vol” bookmarklet: it opens the page of your aircraft
+   (recognised by its registration), then “Ajouter un vol”; click it again on that form.
+4. The bookmarklet fills in the callsign (chosen in the website's list by its name, CARAFON, or its code, CFON), the
+   flight number, the end date of the flight (report date and block-on time, otherwise landing time, in UTC; the next day
+   if the flight passes midnight), the duration (block, otherwise flight), the mission (family, type, operation) and the
+   arrival. What is filled in gets a green outline, what is missing a red one. The registration and the departure, which
+   the website imposes (current position of the aircraft), are not changed: a difference with the report is reported.
+5. Read over, complete, then “Valider” on the website.
+
+If the fields get lost (sign-in requested on the way), run “Record the flight on the website ↗” again. Without the
+bookmarklet, “Copy the fields” copies one line (registration, type, callsign, UTC date, duration, departure → arrival,
+mission) to copy by hand. The “Airline website” menu only appears if the website address is set (Settings ›
+Installation › Sources and folders).
 
 ### Blocks specific to each family
 

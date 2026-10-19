@@ -17,7 +17,7 @@ window.REPOSITORY_TREE={
   // {id} remplacé (RepositoryNav.vaUrl(page, { id })).
   // Textes : jetons {SOG}, {SOG_NOM}, {SOG_NOM_LONG}, {CENTRE} résolus par K.t / K.brand (docs/technique/FRAMEWORK.md § 4 bis).
   va:{name:"SO Group Virtual",fullName:"Virtual Special Operation Group",short:"SOG",centre:"CPCO",centreName:"Centre de planification et de conduite des opérations",
-    pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}"}},
+    pages:{home:"/index.php",log:"/log_vols.php",fleet:"/flotte.php",aircraft:"/appareil.php?id={id}",recordFlight:"/selection_appareil.php"}},
   sources:{
     defa:{url:"https://flotte.defa-virtual.fr",label:["Site de la compagnie virtuelle","Virtual airline website","Website der virtuellen Fluggesellschaft","Sitio de la aerolínea virtual"]},
     siaData:{url:"https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html",label:["SIA — bases de données (export XML)","SIA — databases (XML export)","SIA — Datenbanken (XML-Export)","SIA — bases de datos (XML)"]},

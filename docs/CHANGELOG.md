@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Mission report: record the flight on the airline website** (`shared/mission_core/core.js`) — the report's "Send"
+  menu (the web service's "Send report", now grouped with it so the toolbar keeps seven entries) gets an "Airline
+  website" part when the site address is set (`RepositoryNav.vaUrl("recordFlight")`, `/selection_appareil.php` in
+  `config/repository_tree`): "Record the flight on the website ↗" opens the site's "Enregistrer mon vol" page with the
+  flight's fields in the fragment (`#defa=`, base64url JSON, never sent to the server); the "→ Vol" bookmark, dragged
+  once to the bookmarks bar, goes to the aircraft (by registration), then to "Ajouter un vol", and fills it by field
+  name — call sign chosen in the site's list by name or code, flight number, end-of-flight date (report date and
+  on-block or landing time, UTC, next day past midnight), block (else flight) duration, mission, arrival; the site's
+  read-only fields (registration, departure) are compared and differences reported; nothing is ever submitted. The
+  fields survive the site's login in its session storage. Fallback: "Copy the fields" (one line). The suite never
+  logs in to the site.
 - **Availability timeline module** (`shared/dispos_timeline.js`, formats in `shared/dispos_formats.js`; in the suite's
   pages through `shared/dispos_week.js`, see Changed) — a stand-alone component, with no dependency on the framework, to enter one person's availability
   for an ISO week on a continuous time axis, in UTC. Background bands give the nature of the unavailability;
