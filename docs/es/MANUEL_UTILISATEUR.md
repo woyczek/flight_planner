@@ -417,6 +417,7 @@ Su ficha de usuario compartida: rol y contraseña (conservada en forma de huella
 - El botón «Desconectarse» aparece una vez conectado.
 - Una contraseña provisional se señala («contraseña provisional, a cambiar»): cámbiela en la primera conexión.
 - Contraseña olvidada: pida un restablecimiento a un administrador del Centro.
+- **Modo grupo** (registro firmado): su contraseña está en el registro; un administrador del Centro la cambia por usted. En la primera apertura tras el paso a modo grupo, una notificación muestra la huella del fundador con «Confirmar» y «Rechazar»: compárela con la que le envió el administrador (Discord, SMS, correo) antes de confirmar.
 
 ### Tipos de misión
 

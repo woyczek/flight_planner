@@ -30,6 +30,14 @@
   const ROLES = ['admin_centre', 'utilisateur'];
   /** Socle des fichiers du pool (shared/assignments.js, chargé avec ce script). */
   const A = () => window.MissionAssignments;
+  /** Registre signé des utilisateurs (shared/sog_registry.js, mode groupe du Centre). */
+  const R = () => window.SogRegistry;
+  /** Attend le registre (chargé avec ce script par repository_nav.js) et sa première lecture : jamais de fiche lue avant
+   *  lui, sinon une fiche du pool pourrait se donner un rôle le temps du chargement. */
+  async function regReady() {
+    for (const t0 = Date.now(); !R() && Date.now() - t0 < 8000;) await new Promise(r => setTimeout(r, 50));
+    await R()?.ready?.();
+  }
   /** Horodatage ISO des écritures (updated_at, at). */
   const now = () => new Date().toISOString();
   /** Trigramme normalisé (sans espaces, en majuscules). */
@@ -123,8 +131,31 @@
   }
 
   // ---- fiches
-  /** Fiche d'un utilisateur ; null si absente. */
-  const get = async (tri, opts) => tri ? A()?.readData?.(`${DIR}/${norm(tri)}.json`, opts) || null : null;
+  /** Mode groupe : rôle, état, nom et mot de passe pris dans le registre signé accepté (une fiche du pool ne peut pas se
+   *  donner un rôle) ; un trigramme absent du registre n'est qu'« utilisateur ». Hors mode groupe : la fiche telle quelle. */
+  async function overlay(u, tri) {
+    await regReady();
+    if (!R()?.active?.()) return u;
+    const r = R().userOf(tri);
+    if (!r) return u && {
+      ...u,
+      role: 'utilisateur'
+    };
+    return {
+      ...(u || {
+        schema: 1,
+        va: VA(),
+        trigramme: norm(tri),
+        preferences: {}
+      }),
+      nom: r.nom || u?.nom || '',
+      role: r.role,
+      actif: r.actif !== false,
+      mot_de_passe: r.mot_de_passe || null
+    };
+  }
+  /** Fiche d'un utilisateur (registre signé appliqué en mode groupe) ; null si absente. */
+  const get = async (tri, opts) => tri ? overlay((await A()?.readData?.(`${DIR}/${norm(tri)}.json`, opts)) || null, norm(tri)) : null;
   /** Index des utilisateurs (trigramme → { role, actif, nom }) : fichier, complété par les fiches de la boîte d'envoi. */
   async function index(fresh = false) {
     const idx = (await A()?.readData?.(INDEX, {
@@ -143,6 +174,22 @@
           nom: u.nom || ''
         };
       }
+    }
+    // mode groupe : rôles et états du registre signé
+    await regReady();
+    const reg = R()?.active?.()?.utilisateurs;
+    if (reg) {
+      for (const tri of Object.keys(out))
+        if (!reg[tri]) out[tri] = {
+          ...out[tri],
+          role: 'utilisateur'
+        };
+      for (const [tri, r] of Object.entries(reg)) out[tri] = {
+        ...(out[tri] || {}),
+        role: r.role,
+        actif: r.actif !== false,
+        nom: r.nom || out[tri]?.nom || ''
+      };
     }
     return out;
   }
@@ -171,6 +218,7 @@
       updated_at: now(),
       by: by() || tri
     };
+    await signedChange(tri, doc);
     const r = await A().writeData(`${DIR}/${tri}.json`, doc);
     await A().dataStore.lock('data:utilisateurs/_index', async () => {
       const idx = (await A().readData(INDEX, {
@@ -196,6 +244,25 @@
       }
     }));
     return r;
+  }
+  /** Mode groupe : un changement de rôle, d'état ou de mot de passe passe d'abord par une nouvelle version du registre,
+   *  signée par la clé de ce poste (admin du registre) ; sinon l'erreur le dit et la fiche n'est pas écrite. Une fiche
+   *  absente du registre reste « utilisateur » sans nouvelle version (préférences, nom). */
+  async function signedChange(tri, doc) {
+    await regReady();
+    if (!R()?.active?.()) return;
+    const cur = R().userOf(tri),
+      C = window.SogKeys.canonical,
+      pick = u => ({
+        role: u.role,
+        actif: u.actif !== false,
+        mot_de_passe: u.mot_de_passe || null
+      });
+    if (cur ? C(pick(cur)) === C(pick(doc)) : doc.role !== 'admin_centre') return;
+    await R().setUser(tri, {
+      nom: doc.nom || cur?.nom || '',
+      ...pick(doc)
+    });
   }
   /** Nouvelle fiche (sans mot de passe : à définir à la première connexion en mode develop, par un admin sinon). */
   async function create(tri, {
@@ -297,6 +364,12 @@
     if (!u) throw new Error(t(['Fiche introuvable.', 'User file not found.', 'Benutzerdatei nicht gefunden.', 'Ficha no encontrada.']));
     if (u.mot_de_passe && !await verify(oldPassword, u.mot_de_passe)) throw new Error(t(['Ancien mot de passe incorrect.',
       'Wrong old password.', 'Altes Passwort falsch.', 'Contraseña anterior incorrecta.'
+    ]));
+    if (R()?.active?.() && !await R().isAdminDevice()) throw new Error(t([
+      'Mode groupe : le mot de passe est dans le registre signé ; le faire changer par un admin du Centre (Paramètres › Centre › Utilisateurs et droits).',
+      'Group mode: the password is in the signed registry; have a Centre admin change it (Settings › Centre › Users and rights).',
+      'Gruppenmodus: Das Passwort steht im signierten Register; von einem Admin des Zentrums ändern lassen (Einstellungen › Zentrum › Benutzer und Rechte).',
+      'Modo grupo: la contraseña está en el registro firmado; pedir a un admin del Centro que la cambie (Ajustes › Centro › Usuarios y derechos).'
     ]));
     return save({
       ...u,

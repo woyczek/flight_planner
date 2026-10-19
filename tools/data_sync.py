@@ -418,6 +418,17 @@ def resolve(data, path):
         write(json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
         git(data, 'add', '--', path)
         return {'path': path, 'how': 'journal'}
+    # registre signé des utilisateurs (comptes signés, docs/technique/COMPTES_SIGNES.md § 5) : la version la plus haute
+    # est gardée, l'autre va dans _conflits/ ; Python ne vérifie rien (les navigateurs vérifient signatures et chaîne)
+    if path.endswith('utilisateurs/_registre.json') and isinstance(ours, dict) and isinstance(theirs, dict):
+        version = lambda d: (d.get('contenu') or {}).get('version') if isinstance(d.get('contenu'), dict) else None
+        vo, vt = version(ours), version(theirs)
+        vo, vt = (v if isinstance(v, int) else -1 for v in (vo, vt))
+        win, lose, side = (raw[2], raw[3], 'distante') if vo >= vt else (raw[3], raw[2], 'locale')
+        open(full, 'wb').write(win)
+        copy = keep_copy(data, path, lose, side)
+        git(data, 'add', '--', path)
+        return {'path': path, 'how': 'registre (version la plus haute)', 'copy': copy}
     # une fiche par fichier : supprimée d'un côté, modifiée de l'autre → gardée ; sinon la plus récente
     if raw[2] is None or raw[3] is None:
         win = raw[2] if raw[2] is not None else raw[3]
@@ -553,12 +564,14 @@ def _essai():  # pragma: no cover
     week = 'disponibilites/AAA/2026-W41.json'
     aff = 'missions/affectations.json'
     log = 'missions/affectations_log.json'
+    reg = 'utilisateurs/_registre.json'
+    put(a, reg, {'sog': 'signe/1', 'contenu': {'type': 'registre', 'version': 1}, 'signatures': []})
     put(a, week, {'updated_at': '2026-10-05T10:00:00Z', 'dispos': {'lun': 1}})
     put(a, aff, {'updatedAt': 'x', 'assignments': [{'mission': 'M1', 'pilot': 'AAA', 'role': 'mission', 'updated_at': '1'}]})
     put(a, log, {'updatedAt': 'x', 'entries': [{'at': '1', 'mission': 'M1'}]})
     put(a, 'disponibilites/_index.json', {'pilots': {}})
     r = run(a, 'AAA')
-    assert r['ok'] and r['committed'] == 3, r  # _index.json exclu
+    assert r['ok'] and r['committed'] == 4, r  # _index.json exclu
     sh('clone', remote, b)
     # modifications croisées : même semaine des deux côtés (B plus récent), affectations différentes, journal
     put(a, week, {'updated_at': '2026-10-05T11:00:00Z', 'dispos': {'lun': 'A'}})
@@ -573,6 +586,9 @@ def _essai():  # pragma: no cover
     lb['entries'].append({'at': '3', 'mission': 'M3'})
     put(a, log, la)
     put(b, log, lb)
+    # registre : version 3 en A (plus haute, mais plus ancienne en date que B), version 2 en B
+    put(a, reg, {'sog': 'signe/1', 'contenu': {'type': 'registre', 'version': 3, 'updated_at': '1'}, 'signatures': []})
+    put(b, reg, {'sog': 'signe/1', 'contenu': {'type': 'registre', 'version': 2, 'updated_at': '9'}, 'signatures': []})
     rb = run(b, 'BBB')
     assert rb['ok'], rb
     r = run(a, 'AAA')
@@ -581,7 +597,10 @@ def _essai():  # pragma: no cover
     assert any(c.get('copy') for c in r['conflicts']), 'copie gardée'
     assert sorted(x['mission'] for x in get(a, aff)['assignments']) == ['M1', 'M2', 'M3'], 'affectations réunies'
     assert [e['mission'] for e in get(a, log)['entries']] == ['M1', 'M2', 'M3'], 'journal réuni'
+    assert get(a, reg)['contenu']['version'] == 3, 'registre : la version la plus haute gagne'
+    assert any(str(c.get('copy') or '').startswith('utilisateurs/_conflits/') for c in r['conflicts']), 'registre perdant gardé'
     assert run(b, 'BBB')['ok'] and get(b, aff) == get(a, aff), 'B reçoit la fusion'
+    assert get(b, reg)['contenu']['version'] == 3, 'B reçoit le registre le plus haut'
     _, author = git(a, 'log', '-1', '--format=%an', '--', week)
     # index suivi dans le dépôt (version précédente de l'appli) : ne bloque pas la fusion d'un poste qui a sa copie
     # régénérée, puis est retiré du suivi partout

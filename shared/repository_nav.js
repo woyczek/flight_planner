@@ -99,7 +99,7 @@
   // page du Centre ouverte directement recouverte d'un avis ; réglages du Centre verrouillés dans Paramètres.
   // Mode autonome (standalone, docs/technique/COMPTES_SIGNES.md § 2) : mot de passe en clair dans le pool partagé,
   // data/config/centre.json { motDePasse, mode } (DEFA par défaut), affiché à côté du bouton « Activer le Centre » ;
-  // mode groupe (registre signé, accès par le rôle admin) : à venir.
+  // mode groupe (registre signé, shared/sog_registry.js) : en constitution, mot de passe ; actif, clé d'un admin du registre.
   const CPCO_KEY = "cpcoAccess:v1",
     CENTRE_FILE = "config/centre.json",
     CENTRE_DEFAULT = {
@@ -284,7 +284,10 @@
     config: centreConfig,
     /** Active le Centre si le mot de passe est celui de data/config/centre.json ; true si activé. */
     async unlock(password) {
-      if (!samePassword(password, (await centreConfig(true)).motDePasse)) return false;
+      const reg = window.SogRegistry,
+        signed = (await centreConfig(true)).mode === "groupe" && (await reg?.ready?.())?.accepted?.etat === "actif";
+      // mode groupe actif : la clé de ce poste doit être celle d'un admin du registre signé ; sinon le mot de passe
+      if (signed ? !(await reg.isAdminDevice()) : !samePassword(password, (await centreConfig(true)).motDePasse)) return false;
       if (!K.store.set(CPCO_KEY, "on")) return false;
       doc.dataset.cpco = "on";
       window.dispatchEvent(new CustomEvent("cpco-access-change", {
@@ -1540,6 +1543,13 @@
     const users = document.createElement("script");
     users.src = new URL("users.js?v=0", script.src).href;
     document.head.append(users);
+    /* Comptes signés : clés de ce poste et registre signé des utilisateurs (mode groupe du Centre, lot L3) */
+    for (const f of ["sog_keys.js", "sog_registry.js"]) {
+      const el = document.createElement("script");
+      el.src = new URL(`${f}?v=0`, script.src).href;
+      el.async = false; // le registre utilise les clés
+      document.head.append(el);
+    }
     /* Synchronisation git du pool de données : bouton « Synchroniser » de l'en-tête (lanceur, data/ dépôt git) */
     const sync = document.createElement("script");
     sync.src = new URL("sync.js?v=0", script.src).href;

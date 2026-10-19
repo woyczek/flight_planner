@@ -125,6 +125,33 @@ This section manages the user records. There is one record per user (`data/utili
   signed-in `admin_centre`; adding a user and editing a row (role, active) are only protected
   by the Centre lock (see the [technical debt](../technique/DETTE_TECHNIQUE.md)).
 
+### Group mode (signed registry)
+
+For an airline that shares `data/` through git: roles, accounts and passwords come from the **signed user registry**
+(`data/utilisateurs/_registre.json`). Every browser refuses what is not signed by an admin: a user file changed in the
+repository (“I give myself the admin role”) no longer has any effect. Design: [signed accounts](../technique/COMPTES_SIGNES.md).
+- **State**: mode (standalone, group being set up, group active), accepted registry version, confirmed founder, admins
+  and their device fingerprints, recovery key, this device's fingerprint.
+- **“Switch to group mode”** (Centre enabled, launcher up to date: its security policy is required): you become the
+  first admin with this device's key; the existing user files go into version 1 of the registry. Type the **recovery
+  key** password twice: the file `sog-cle-secours-<fingerprint>.json` is downloaded, encrypted with that password. Keep
+  it offline (USB stick) and the password separately. Send your fingerprint to the pilots through another channel
+  (Discord, SMS, email).
+- **Group being set up**: as long as there are not two admins with a device key, the Centre stays accessible with its
+  password. Once the group is active, Centre access goes through the device key of a registry admin.
+- **Changing a role, a state or a password** (Users and rights) publishes a new version, signed with this device's
+  key: reserved for a registry admin; otherwise the message says so and nothing is written.
+- **“New recovery key”** (admin) replaces the recovery key; **“Back to standalone mode”** (admin): the registry stays in
+  the data but is no longer read.
+- **“Use the recovery key”** (section open even with the Centre locked): file, password and trigram; that trigram
+  becomes admin with this device's key. For admins who have lost their device.
+- **“Re-found the group”** (last resort, all keys lost): new registry, new recovery key; every other device will have
+  to confirm your fingerprint.
+- **Refused versions**: a version badly signed, out of the chain or older is refused; the device keeps its own, a
+  notification and this section say so.
+- On the first reading of the registry, a device shows the founder's fingerprint with “Confirm” and “Reject”: compare
+  it with the one received before confirming.
+
 ### Availability categories
 
 This section defines what the pilots can declare as availability (`data/config/disponibilites.json`, synchronised).

@@ -439,6 +439,7 @@ Votre fiche utilisateur partagée : rôle et mot de passe (conservé sous forme 
 - Le bouton « Se déconnecter » apparaît une fois connecté.
 - Un mot de passe provisoire est signalé (« mot de passe provisoire, à changer ») : changez-le dès la première connexion.
 - Mot de passe oublié : demandez une réinitialisation à un administrateur du Centre.
+- **Mode groupe** (registre signé) : votre mot de passe est dans le registre ; un administrateur du Centre le change pour vous. À la première ouverture après le passage en mode groupe, une notification montre l'empreinte du fondateur avec « Confirmer » et « Refuser » : comparez-la avec celle que l'administrateur vous a envoyée (Discord, SMS, courriel) avant de confirmer.
 
 ### Types de missions
 

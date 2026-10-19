@@ -316,6 +316,19 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Security
 
+- **Signed user registry, group mode** (signed accounts, batch L3; `shared/sog_registry.js`, Settings › Centre ›
+  "Group mode (signed registry)") — in group mode, roles, state and password hashes come from
+  `data/utilisateurs/_registre.json`, a signed envelope verified by every browser: next version signed by an admin (or
+  the recovery key) of the accepted one, unbroken `precedente` chain, no rollback (last accepted version kept in
+  IndexedDB), missing versions read from the data git history (`/__setup/registre-historique`); version 1 accepted on
+  first use after the founder's fingerprint is confirmed on the device ("Confirm" / "Reject" notification). A user file
+  that gives itself a role no longer has any effect; a role, state or password change is a new version signed with the
+  device key of a registry admin. "Switch to group mode" (Centre enabled, launcher CSP required) writes version 1 from the
+  existing user files with the current user as first admin, and downloads an encrypted recovery key; "New recovery key",
+  "Use the recovery key" (makes a trigram admin with this device's key), "Re-found the group", "Back to standalone
+  mode". While the group is being set up (fewer than two admins with a device key) the Centre stays accessible with its
+  password; once active, through a registry admin's device key. `data_sync.py` keeps the highest registry version on a
+  git conflict. 14 registry tests in `tools/crypto_banc.html`.
 - **Switch-off for navigations from another site** — to work with an extension (Claude in Chrome sends its
   navigations as coming from another site): HTML pages only, confirmed in the launcher window, valid until the launcher
   closes, with a red button in the header to turn it back on.

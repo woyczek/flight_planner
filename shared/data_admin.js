@@ -1195,8 +1195,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       order = Object.keys(sections);
     const SETS = [...DATASETS, ...(window.SettingsPanels?.list || [])].filter(d => !page || sections[d.id] === page)
       .sort((a, b) => page ? order.indexOf(a.id) - order.indexOf(b.id) : 0);
-    // page Centre : rubriques réservées tant que le Centre est verrouillé (seul l'accès reste)
-    const locked = d => sections[d.id] === 'centre' && d.id !== 'cpco' && !window.RepositoryNav?.cpco?.enabled?.();
+    // page Centre : rubriques réservées tant que le Centre est verrouillé (restent l'accès, et le mode groupe : confirmer
+    // la fondation du registre, utiliser la clé de secours quand plus aucun admin n'a son poste)
+    const locked = d => sections[d.id] === 'centre' && !['cpco', 'groupe'].includes(d.id) && !window.RepositoryNav?.cpco?.enabled?.();
     const wanted = new URLSearchParams(location.search).get('base');
     // rubrique d'une autre page (ancien lien, lien interne) : ouverte sur sa page
     if (page && wanted && sections[wanted] && sections[wanted] !== page && window.RepositoryNav?.settingsUrl) {
@@ -1797,22 +1798,24 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           'Centre access unavailable (common menu not loaded).');
         return;
       }
-      /** Ligne du mode (autonome : mot de passe ; groupe : à venir) et mot de passe affiché, posés dans les éléments
+      /** Ligne du mode (autonome : mot de passe ; groupe : registre signé) et mot de passe affiché, posés dans les éléments
        *  [data-cpco-mode] et [data-cpco-shown] du panneau (textContent : la valeur vient du dépôt partagé). */
       const centreInfo = async () => {
         const c = await access.config?.(true) || {};
         const m = body.querySelector('[data-cpco-mode]'),
           s = body.querySelector('[data-cpco-shown]');
         setText(m, c.mode === 'groupe' ?
-          tt('Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.',
-            'Group mode: Centre access through the administrator role of the signed registry.',
-            'Gruppenmodus: Zugang zum Zentrum über die Administratorrolle des signierten Registers.',
-            'Modo grupo: acceso al Centro por el rol de administrador del registro firmado.') :
           tt(
-            'Mode autonome : accès au Centre par le mot de passe du {SOG} (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.',
-            'Standalone mode: Centre access through the {SOG} password (a usage lock, not a protection). Group mode (signed registry, access by role): coming.',
-            'Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der {SOG} (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): folgt.',
-            'Modo autónomo: acceso al Centro con la contraseña del {SOG} (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): próximamente.'
+            'Mode groupe : en constitution, accès au Centre par le mot de passe ; une fois le groupe actif, par la clé de poste d’un admin du registre signé (le mot de passe ne sert plus).',
+            'Group mode: while being set up, Centre access through the password; once the group is active, through the device key of an admin of the signed registry (the password no longer counts).',
+            'Gruppenmodus: im Aufbau Zugang zum Zentrum per Passwort; sobald die Gruppe aktiv ist, über den Geräteschlüssel eines Admins des signierten Registers (das Passwort zählt nicht mehr).',
+            'Modo grupo: en constitución, acceso al Centro con la contraseña; una vez activo el grupo, con la clave de equipo de un admin del registro firmado (la contraseña ya no cuenta).'
+          ) :
+          tt(
+            'Mode autonome : accès au Centre par le mot de passe du {SOG} (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : rubrique « Mode groupe (registre signé) ».',
+            'Standalone mode: Centre access through the {SOG} password (a usage lock, not a protection). Group mode (signed registry, access by role): “Group mode (signed registry)” section.',
+            'Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der {SOG} (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): Rubrik „Gruppenmodus (signiertes Register)“.',
+            'Modo autónomo: acceso al Centro con la contraseña del {SOG} (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): apartado «Modo grupo (registro firmado)».'
           ));
         setText(s, c.motDePasse || '');
         const i = body.querySelector('[data-cpco-new]');

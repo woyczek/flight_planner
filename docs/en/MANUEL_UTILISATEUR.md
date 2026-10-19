@@ -416,6 +416,7 @@ Your shared user record: role and password (kept as a hash, never in clear text)
 - The “Sign out” button appears once you are signed in.
 - A temporary password is flagged (“temporary password, to be changed”): change it at the first sign-in.
 - Forgotten password: ask a Centre administrator for a reset.
+- **Group mode** (signed registry): your password is in the registry; a Centre administrator changes it for you. On the first opening after the switch to group mode, a notification shows the founder's fingerprint with “Confirm” and “Reject”: compare it with the one the administrator sent you (Discord, SMS, email) before confirming.
 
 ### Mission types
 

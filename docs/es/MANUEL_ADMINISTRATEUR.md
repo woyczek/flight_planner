@@ -125,6 +125,34 @@ Este apartado gestiona las fichas de los usuarios. Hay una ficha por usuario (`d
   `admin_centre` conectado; añadir un usuario y modificar una línea (rol, activo) solo están protegidos
   por el bloqueo del Centro (véase la [deuda técnica](../technique/DETTE_TECHNIQUE.md)).
 
+### Modo grupo (registro firmado)
+
+Para una aerolínea que comparte `data/` por git: roles, cuentas y contraseñas vienen del **registro firmado de
+usuarios** (`data/utilisateurs/_registre.json`). Cada navegador rechaza lo que no está firmado por un admin: una ficha
+modificada en el repositorio («me doy el rol de admin») ya no tiene efecto. Diseño:
+[cuentas firmadas](../technique/COMPTES_SIGNES.md).
+- **Estado**: modo (autónomo, grupo en constitución, grupo activo), versión aceptada del registro, fundador
+  confirmado, admins y huellas de sus equipos, clave de emergencia, huella de este equipo.
+- **«Pasar a modo grupo»** (Centro activado, lanzador actualizado: se exige su política de seguridad): usted pasa a
+  ser el primer admin con la clave de este equipo; las fichas existentes entran en la versión 1 del registro.
+  Introduzca dos veces la contraseña de la **clave de emergencia**: se descarga el archivo
+  `sog-cle-secours-<huella>.json`, cifrado con esa contraseña. Guárdelo fuera de línea (memoria USB) y la contraseña
+  aparte. Envíe su huella a los pilotos por otro canal (Discord, SMS, correo).
+- **Grupo en constitución**: mientras no haya dos admins con clave de equipo, el Centro sigue accesible con su
+  contraseña. Una vez activo el grupo, el acceso al Centro pasa por la clave de equipo de un admin del registro.
+- **Cambiar un rol, un estado o una contraseña** (Usuarios y derechos) publica una nueva versión, firmada con la clave
+  de este equipo: reservado a un admin del registro; si no, el mensaje lo dice y no se escribe nada.
+- **«Nueva clave de emergencia»** (admin) sustituye la clave de emergencia; **«Volver al modo autónomo»** (admin): el
+  registro queda en los datos pero ya no se lee.
+- **«Usar la clave de emergencia»** (apartado abierto incluso con el Centro bloqueado): archivo, contraseña y
+  trigrama; ese trigrama pasa a ser admin con la clave de este equipo. Para admins que han perdido su equipo.
+- **«Refundar el grupo»** (último recurso, todas las claves perdidas): nuevo registro, nueva clave de emergencia; cada
+  otro equipo tendrá que confirmar su huella.
+- **Versiones rechazadas**: una versión mal firmada, fuera de la cadena o más antigua se rechaza; el equipo conserva
+  la suya, una notificación y este apartado lo dicen.
+- En la primera lectura del registro, un equipo muestra la huella del fundador con «Confirmar» y «Rechazar»:
+  compárela con la recibida antes de confirmar.
+
 ### Categorías de disponibilidad
 
 Este apartado define lo que los pilotos pueden declarar como disponibilidades (`data/config/disponibilites.json`, sincronizado).

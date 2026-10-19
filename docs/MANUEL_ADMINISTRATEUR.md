@@ -132,6 +132,34 @@ Cette rubrique gère les fiches des utilisateurs. Il y a une fiche par utilisate
   `admin_centre` connecté ; l'ajout d'un utilisateur et la modification d'une ligne (rôle, actif) ne sont protégés que
   par le verrou du Centre (voir la [dette technique](technique/DETTE_TECHNIQUE.md)).
 
+### Mode groupe (registre signé)
+
+Pour une compagnie qui partage `data/` par git : rôles, comptes et mots de passe viennent du **registre signé des
+utilisateurs** (`data/utilisateurs/_registre.json`). Chaque navigateur refuse ce qui n'est pas signé par un admin : une
+fiche modifiée dans le dépôt (« je me donne le rôle admin ») n'a plus d'effet. Conception :
+[comptes signés](technique/COMPTES_SIGNES.md).
+- **État** : mode (autonome, groupe en constitution, groupe actif), version acceptée du registre, fondateur confirmé,
+  admins et empreintes de leurs postes, clé de secours, empreinte de ce poste.
+- **« Passer en mode groupe »** (Centre activé, lanceur à jour : sa politique de sécurité est exigée) : vous devenez le
+  premier admin avec la clé de ce poste ; les fiches existantes entrent dans la version 1 du registre. Saisissez deux
+  fois le mot de passe de la **clé de secours** : le fichier `sog-cle-secours-<empreinte>.json` est téléchargé, chiffré
+  par ce mot de passe. Gardez-le hors ligne (clé USB) et le mot de passe à part. Envoyez votre empreinte aux pilotes par
+  un autre canal (Discord, SMS, courriel).
+- **Groupe en constitution** : tant qu'il n'y a pas deux admins avec une clé de poste, le Centre reste accessible par
+  son mot de passe. Une fois le groupe actif, l'accès au Centre passe par la clé de poste d'un admin du registre.
+- **Changer un rôle, un état ou un mot de passe** (Utilisateurs et droits) publie une nouvelle version, signée par la
+  clé de ce poste : réservé à un admin du registre ; sinon le message le dit et rien n'est écrit.
+- **« Nouvelle clé de secours »** (admin) remplace la clé de secours ; **« Revenir au mode autonome »** (admin) : le
+  registre reste dans les données mais n'est plus lu.
+- **« Utiliser la clé de secours »** (rubrique ouverte même Centre verrouillé) : fichier, mot de passe et trigramme ;
+  ce trigramme devient admin avec la clé de ce poste. Pour les admins qui ont perdu leur poste.
+- **« Refonder le groupe »** (dernier recours, toutes les clés perdues) : nouveau registre, nouvelle clé de secours ;
+  chaque autre poste devra confirmer votre empreinte.
+- **Versions refusées** : une version mal signée, hors chaîne ou plus ancienne est refusée ; le poste garde la sienne,
+  une notification et cette rubrique le disent.
+- À la première lecture du registre, un poste montre l'empreinte du fondateur avec « Confirmer » et « Refuser » :
+  comparez-la avec celle reçue avant de confirmer.
+
 ### Catégories de disponibilité
 
 Cette rubrique définit ce que les pilotes peuvent déclarer comme disponibilités (`data/config/disponibilites.json`, synchronisé).

@@ -186,7 +186,7 @@ window.REPOSITORY_TREE={
     pages:{profile:"apps/settings/profil.html",centre:"apps/settings/centre.html",installation:"apps/settings/installation.html",maintenance:"apps/settings/maintenance.html"},
     sections:{
       level:"profile",identity:"profile",dataAccess:"profile",myAircraft:"profile",account:"profile",themes:"profile",equipment:"profile",planner:"profile",
-      cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",odvOrders:"centre",send:"centre",
+      cpco:"centre",users:"centre",groupe:"centre",dispoCategories:"centre",odv:"centre",odvOrders:"centre",send:"centre",
       // « setup » (Premier lancement, rubrique faite de liens) n'est plus placée : l'onglet Premier lancement la remplace
       sources:"installation",keys:"installation",
       // carte unique d'Installation en mode GitHub (appli sans lanceur) : shared/maintenance_page.js n'y montre qu'elle, et ni elle hors de ce mode ni les autres dedans

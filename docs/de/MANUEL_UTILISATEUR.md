@@ -418,6 +418,7 @@ Ihr gemeinsamer Benutzereintrag: Rolle und Passwort (als Hashwert gespeichert, n
 - Der Knopf „Abmelden“ erscheint nach der Anmeldung.
 - Ein vorläufiges Passwort wird angezeigt („vorläufiges Passwort, zu ändern“): Ändern Sie es gleich bei der ersten Anmeldung.
 - Passwort vergessen: Bitten Sie einen Administrator des Zentrums um ein Zurücksetzen.
+- **Gruppenmodus** (signiertes Register): Ihr Passwort steht im Register; ein Administrator des Zentrums ändert es für Sie. Beim ersten Öffnen nach dem Wechsel in den Gruppenmodus zeigt eine Meldung den Fingerabdruck des Gründers mit „Bestätigen“ und „Ablehnen“: vor dem Bestätigen mit dem vom Administrator gesendeten vergleichen (Discord, SMS, E-Mail).
 
 ### Missionsarten
 

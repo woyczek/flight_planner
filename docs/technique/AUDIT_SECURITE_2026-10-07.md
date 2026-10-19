@@ -67,7 +67,8 @@ Verified with the same hostile page, forged requests and loading the 60 pages of
 | M2 | **fixed** (batch 4a, 9 October): launcher CSP — `connect-src` as a list (fixed, configuration, websites confirmed in the launcher window), restricted `script-src` (suite, inline, pinned pdf.js and acorn), `worker-src`, `object-src 'none'`, `base-uri`, `form-action`, `frame-ancestors`; images and navigation stay open (a leak through `<img src>` or a link is still possible) |
 | M6 | **partial**: no more password or token in the repository address, `secrets/` no longer served; secrets still in clear on disk and in browser storage (batch 8) |
 | E4 | **fixed** (batch 4b, 9 October): application, X-Plane, ODV workbook and backup sources read-only (`FileAccess.modeOf`); write access to `data/` asked separately (`grantData`), one-off write on click (`FileAccess.writable`); checked by permission simulation (OPFS), test in Chrome with the native picker still to do |
-| E6, E7, M3, M4 | to do (batches 5, 7, 9) |
+| E7 | **partial** (signed accounts L3, 19 October): in group mode, roles, state and password hashes come from the signed registry, verified by every browser (a user file edited in the repository no longer grants a role); enrolment of a second admin (L4) and signed assignments (L5) still to do; standalone mode unchanged |
+| E6, M3, M4 | to do (batches 5, 7, 9) |
 
 Choices made while fixing:
 

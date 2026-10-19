@@ -470,6 +470,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except OSError:
                 pass
             return self._json({'folders': out})
+        if self.path.split('?')[0] == '/__setup/registre-historique':
+            # versions du registre signé des utilisateurs dans l'historique git des données (comptes signés : poste
+            # resté hors ligne, refondation) ; contenus seulement, rien n'est vérifié ici (les pages vérifient)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(registry_history())
         if self.path.split('?')[0] == '/__setup/sites':
             # sites que les pages peuvent contacter (connect-src) : liste fixe, configuration, sites autorisés ici
             if not self._allowed():
@@ -1060,6 +1066,29 @@ def ivao_fail(e):
     if code == 429:
         return {'error': 'IVAO : HTTP 429 (trop de demandes : réessayer plus tard)'}
     return {'error': f'IVAO : HTTP {code}' if code else f'IVAO : {e}'}
+
+
+def registry_history(limit=500):
+    """{ versions: [enveloppe…] } : versions successives de data/utilisateurs/_registre.json dans l'historique git des
+    données, de la plus ancienne à la plus récente (sans doublon) ; [] sans git ou sans historique."""
+    rel = 'utilisateurs/_registre.json'
+    if not data_sync.git_exe() or not os.path.isdir(os.path.join(DATA, '.git')):
+        return {'versions': []}
+    code, out = data_sync.git(DATA, 'log', '--format=%H', '--reverse', f'-n{limit}', '--', rel)
+    seen, versions = set(), []
+    for h in (out.split() if code == 0 else []):
+        if not re.fullmatch(r'[0-9a-f]{40}', h):
+            continue
+        c, text = data_sync.git(DATA, 'show', f'{h}:{rel}')
+        try:
+            env = json.loads(text) if c == 0 else None
+        except ValueError:
+            env = None
+        key = json.dumps(env, sort_keys=True) if isinstance(env, dict) else ''
+        if key and key not in seen:
+            seen.add(key)
+            versions.append(env)
+    return {'versions': versions}
 
 
 def secrets_test(service):

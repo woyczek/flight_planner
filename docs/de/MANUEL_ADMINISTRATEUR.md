@@ -125,6 +125,35 @@ Diese Rubrik verwaltet die Datenblätter der Benutzer. Es gibt ein Datenblatt pr
   `admin_centre` vorbehalten; das Hinzufügen eines Benutzers und die Änderung einer Zeile (Rolle, aktiv) sind nur durch
   die Sperre des Zentrums geschützt (siehe [technische Schuld](../technique/DETTE_TECHNIQUE.md)).
 
+### Gruppenmodus (signiertes Register)
+
+Für eine Fluggesellschaft, die `data/` über Git teilt: Rollen, Konten und Passwörter kommen aus dem **signierten
+Benutzerregister** (`data/utilisateurs/_registre.json`). Jeder Browser lehnt ab, was nicht von einem Admin signiert ist:
+Eine im Repository geänderte Benutzerdatei („ich gebe mir die Admin-Rolle“) hat keine Wirkung mehr. Entwurf:
+[signierte Konten](../technique/COMPTES_SIGNES.md).
+- **Status**: Modus (autonom, Gruppe im Aufbau, Gruppe aktiv), akzeptierte Registerversion, bestätigter Gründer,
+  Admins und Fingerabdrücke ihrer Geräte, Notfallschlüssel, Fingerabdruck dieses Geräts.
+- **„In den Gruppenmodus wechseln“** (Zentrum aktiviert, aktueller Starter: seine Sicherheitsrichtlinie ist
+  erforderlich): Sie werden der erste Admin mit dem Schlüssel dieses Geräts; die vorhandenen Benutzerdateien gehen in
+  Version 1 des Registers ein. Geben Sie das Passwort des **Notfallschlüssels** zweimal ein: Die Datei
+  `sog-cle-secours-<Fingerabdruck>.json` wird heruntergeladen, mit diesem Passwort verschlüsselt. Offline aufbewahren
+  (USB-Stick), Passwort getrennt. Senden Sie Ihren Fingerabdruck über einen anderen Kanal an die Piloten (Discord, SMS,
+  E-Mail).
+- **Gruppe im Aufbau**: Solange es keine zwei Admins mit Geräteschlüssel gibt, bleibt das Zentrum per Passwort
+  zugänglich. Sobald die Gruppe aktiv ist, geht der Zugang zum Zentrum über den Geräteschlüssel eines Admins.
+- **Rolle, Status oder Passwort ändern** (Benutzer und Rechte) veröffentlicht eine neue Version, mit dem Schlüssel
+  dieses Geräts signiert: einem Admin des Registers vorbehalten; sonst sagt es die Meldung und nichts wird geschrieben.
+- **„Neuer Notfallschlüssel“** (Admin) ersetzt den Notfallschlüssel; **„Zurück zum autonomen Modus“** (Admin): Das
+  Register bleibt in den Daten, wird aber nicht mehr gelesen.
+- **„Notfallschlüssel verwenden“** (Rubrik auch bei gesperrtem Zentrum offen): Datei, Passwort und Kürzel; dieses
+  Kürzel wird Admin mit dem Schlüssel dieses Geräts. Für Admins, die ihr Gerät verloren haben.
+- **„Gruppe neu gründen“** (letzter Ausweg, alle Schlüssel verloren): neues Register, neuer Notfallschlüssel; jedes
+  andere Gerät muss Ihren Fingerabdruck bestätigen.
+- **Abgelehnte Versionen**: Eine schlecht signierte, nicht verkettete oder ältere Version wird abgelehnt; das Gerät
+  behält seine, eine Meldung und diese Rubrik sagen es.
+- Beim ersten Lesen des Registers zeigt ein Gerät den Fingerabdruck des Gründers mit „Bestätigen“ und „Ablehnen“:
+  vor dem Bestätigen mit dem erhaltenen vergleichen.
+
 ### Verfügbarkeitskategorien
 
 Diese Rubrik legt fest, was die Piloten als Verfügbarkeiten angeben können (`data/config/disponibilites.json`, synchronisiert).

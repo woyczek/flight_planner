@@ -1,6 +1,6 @@
 # Signed accounts and data (group mode) — design
 
-Status: **design, to be reviewed** (8 October 2026). Work item “accounts and data decentralised through git, signed”.
+Status: **L0–L3 done** (19 October 2026: signed registry, group mode, recovery key, re-founding — `shared/sog_registry.js`); L4–L6 to come. Design of 8 October 2026. Work item “accounts and data decentralised through git, signed”.
 The user's decisions are reproduced as they stand; proposed technical choices are marked *proposed*.
 
 ## 1. Goal and limits
@@ -164,8 +164,8 @@ They are applied by each browser, on each read.
    - `precedente` equal to the hash of the accepted content, except for a version jump (point 3).
 3. **Version jump** (device offline for a long time): a version n + k is accepted if it is signed by an admin
    of the accepted version **and** the `precedente` chain goes back to it. The intermediate versions are read
-   from the git history by the launcher (`git log -p` on the file); *proposed*: route `/__setup/registre-historique`,
-   which returns the contents without verifying anything. If the chain cannot be found, the version is refused and the device keeps
+   from the git history by the launcher (`git log` on the file): route `/__setup/registre-historique`, which returns
+   the contents without verifying anything. If the chain cannot be found, the version is refused and the device keeps
    the old one, with a message.
 4. **Never any rollback.** The last accepted version is kept in IndexedDB (`sogKeys`, store
    `registre`). An older or equal version coming from git is ignored.
@@ -258,7 +258,7 @@ If all the admin keys and the recovery key are lost:
 | L1 | standalone Centre: `data/config/centre.json` (`DEFA` by default, shown), end of `CPCO_HASH`, mode shown | `shared/repository_nav.js` (Centre block), `shared/data_admin.js` (“Enable the Centre” card), `apps/settings/premier_lancement.html` + `_i18n.js`, `tools/jeu_essai`, `tools/data_template`, `tools/launch.py` (`csp` in `/__setup/status`, later) |
 | L2 | device keys, fingerprint, envelope, canonical JSON, test bench | `shared/sog_keys.js` (new), `tools/crypto_banc.html` (new), `shared/browser_store.js` (exclusion) |
 | *audit batch 4* | launcher CSP, read-only handles: **prerequisite for group mode** | `tools/launch.py`, `shared/file_access.js`, pages |
-| L3 | signed registry, group mode, recovery key, re-founding | `shared/sog_registry.js` (new), `shared/users.js`, `tools/data_sync.py` (registry conflict), `tools/launch.py` (`index_users`) |
+| L3 (done) | signed registry, group mode, recovery key, re-founding | `shared/sog_registry.js` (new), `shared/users.js` (roles, state and password hash from the registry in group mode; changes published as signed versions), `shared/repository_nav.js` (loading, Centre access in the active group), `shared/settings_panels.js` (“Group mode” section, Settings › Centre, open even with the Centre locked), `tools/data_sync.py` (registry conflict: highest `version`), `tools/launch.py` (`/__setup/registre-historique`), `tools/crypto_banc.html` (registry tests) |
 | L4 | enrolment, approval, revocation | `shared/settings_panels.js` (Users), My profile |
 | L5 | signed assignments | `shared/assignments.js`, `shared/assign_dialog.js` |
 | L6 | display filter for My missions | `apps/pilot/mes_missions.html` |

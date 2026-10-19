@@ -1097,8 +1097,172 @@
     }
   };
 
+  // ---- Mode groupe (comptes signés, lot L3 ; shared/sog_registry.js, docs/technique/COMPTES_SIGNES.md) : registre
+  // signé des utilisateurs, passage en mode groupe, clé de secours, refondation ; rubrique ouverte même Centre verrouillé
+  // (confirmation de la fondation par un pilote, clé de secours quand plus aucun admin n'a son poste)
+  const groupe = {
+    id: 'groupe',
+    group: GROUP_CENTRE,
+    title: L('Mode groupe (registre signé)', 'Group mode (signed registry)', 'Gruppenmodus (signiertes Register)',
+      'Modo grupo (registro firmado)'),
+    intro: L(
+      'En mode groupe, rôles, comptes et mots de passe viennent du registre signé des utilisateurs (data/utilisateurs/_registre.json) : chaque navigateur refuse ce qui n’est pas signé par un admin. Clés de poste créées dans ce navigateur, non exportables ; une clé de secours, exportée une fois dans un fichier chiffré, à garder hors ligne.',
+      'In group mode, roles, accounts and passwords come from the signed user registry (data/utilisateurs/_registre.json): every browser refuses what is not signed by an admin. Device keys created in this browser, not exportable; a recovery key, exported once to an encrypted file, to be kept offline.',
+      'Im Gruppenmodus kommen Rollen, Konten und Passwörter aus dem signierten Benutzerregister (data/utilisateurs/_registre.json): Jeder Browser lehnt ab, was nicht von einem Admin signiert ist. Geräteschlüssel in diesem Browser erzeugt, nicht exportierbar; ein Notfallschlüssel, einmal in eine verschlüsselte Datei exportiert, offline aufzubewahren.',
+      'En modo grupo, roles, cuentas y contraseñas vienen del registro firmado de usuarios (data/utilisateurs/_registre.json): cada navegador rechaza lo que no está firmado por un admin. Claves de equipo creadas en este navegador, no exportables; una clave de emergencia, exportada una vez en un archivo cifrado, para guardar fuera de línea.'
+    ),
+    /** État du registre sur ce poste, demande de confirmation, refus, et actions selon le mode et les droits. */
+    async render(body, api) {
+      const R = await need('SogRegistry'),
+        Sk = await need('SogKeys');
+      if (!R || !Sk) {
+        body.textContent = K.t(['Module des comptes signés non chargé.', 'Signed accounts module not loaded.',
+          'Modul der signierten Konten nicht geladen.', 'Módulo de cuentas firmadas no cargado.'
+        ]);
+        return;
+      }
+      const again = () => groupe.render(body, api);
+      const st = await R.refresh(),
+        c = st.accepted,
+        id = await Sk.identity({
+          create: false
+        }),
+        admin = await R.isAdminDevice(),
+        centreOn = !!nav()?.cpco?.enabled?.(),
+        me = window.SuiteUsers?.effective?.() || '';
+      const modeText = !st.group ? K.t(['Autonome (registre non lu)', 'Standalone (registry not read)',
+        'Autonom (Register nicht gelesen)',
+        'Autónomo (registro no leído)'
+      ]) : c?.etat === 'actif' ? K.t(['Groupe — actif', 'Group — active', 'Gruppe — aktiv', 'Grupo — activo']) : K.t([
+        'Groupe — en constitution', 'Group — being set up', 'Gruppe — im Aufbau', 'Grupo — en constitución'
+      ]);
+      const admins = c ? Object.entries(c.utilisateurs || {}).filter(([, u]) => u.role === 'admin_centre' && u.actif !== false) : [];
+      const keyLine = k => `${Sk.shortOf(k.kid)}${k.poste ? ` (${k.poste})` : ''}`;
+      const pw2 = name => `<label>${esc(L('Mot de passe de la clé de secours', 'Recovery key password', 'Passwort des Notfallschlüssels', 'Contraseña de la clave de emergencia'))}</label><input type="password" autocomplete="new-password" data-${name}="1">
+        <label>${esc(L('Le même, encore', 'Same again', 'Noch einmal', 'La misma, otra vez'))}</label><input type="password" autocomplete="new-password" data-${name}="2">`;
+      body.innerHTML = `<div class="sp-card"><h3>${esc(L('État', 'State', 'Status', 'Estado'))}</h3>
+          <div class="sp-form" data-no-i18n>
+            <label>${esc(K.t(['Mode', 'Mode', 'Modus', 'Modo']))}</label><span>${esc(modeText)}</span>
+            <label>${esc(K.t(['Registre', 'Registry', 'Register', 'Registro']))}</label><span>${esc(c ? K.tf(['version {v}, du {d}, par {by}', 'version {v}, of {d}, by {by}', 'Version {v} vom {d}, von {by}', 'versión {v}, del {d}, por {by}'], { v: c.version, d: String(c.updated_at || '').slice(0, 16).replace('T', ' '), by: c.by || '?' }) : K.t(['aucun registre accepté sur ce poste', 'no registry accepted on this device', 'kein Register auf diesem Gerät akzeptiert', 'ningún registro aceptado en este equipo']))}</span>
+            ${st.fondateur ? `<label>${esc(K.t(['Fondateur confirmé', 'Confirmed founder', 'Bestätigter Gründer', 'Fundador confirmado']))}</label><span>${esc(`${st.fondateur.tri || ''} ${st.fondateur.court || ''}`)}</span>` : ''}
+            ${c ? `<label>${esc(K.t(['Admins', 'Admins', 'Admins', 'Admins']))}</label><span>${admins.map(([tri, u]) => esc(`${tri} — ${(u.cles || []).map(keyLine).join(', ') || K.t(['sans clé de poste', 'no device key', 'ohne Geräteschlüssel', 'sin clave de equipo'])}`)).join('<br>')}</span>
+            <label>${esc(K.t(['Clé de secours', 'Recovery key', 'Notfallschlüssel', 'Clave de emergencia']))}</label><span>${esc((c.secours || []).map(k => Sk.shortOf(k.kid)).join(', ') || '—')}</span>` : ''}
+            <label>${esc(K.t(['Ce poste', 'This device', 'Dieses Gerät', 'Este equipo']))}</label><span>${esc(id ? `${id.court}${admin ? ` — ${K.t(['admin du registre', 'registry admin', 'Admin des Registers', 'admin del registro'])}` : ''}` : K.t(['pas encore de clé (créée au passage en mode groupe, ou à l’enrôlement)', 'no key yet (created when switching to group mode, or at enrolment)', 'noch kein Schlüssel (beim Wechsel in den Gruppenmodus oder bei der Einschreibung erzeugt)', 'aún sin clave (se crea al pasar a modo grupo, o en la inscripción)']))}</span>
+          </div>
+          ${st.group && c?.etat !== 'actif' ? `<p class="sp-hint">${esc(L('Groupe en constitution : il faut deux admins avec une clé de poste, en plus de la clé de secours (enrôlement des postes : lot suivant). D’ici là, le Centre reste accessible par son mot de passe ; le registre est signé et vérifié.', 'Group being set up: it needs two admins with a device key, in addition to the recovery key (device enrolment: next batch). Until then, the Centre stays accessible with its password; the registry is signed and verified.', 'Gruppe im Aufbau: Es braucht zwei Admins mit Geräteschlüssel, zusätzlich zum Notfallschlüssel (Geräteeinschreibung: nächstes Paket). Bis dahin bleibt das Zentrum per Passwort zugänglich; das Register ist signiert und geprüft.', 'Grupo en constitución: hacen falta dos admins con clave de equipo, además de la clave de emergencia (inscripción de equipos: lote siguiente). Mientras tanto, el Centro sigue accesible con su contraseña; el registro está firmado y verificado.'))}</p>` : ''}</div>
+        ${st.pending ? `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Fondation à confirmer', 'Foundation to confirm', 'Gründung zu bestätigen', 'Fundación por confirmar']))}</h3>
+          <p>${esc(K.tf(st.pending.kind === 'refonte' ? ['Le registre a été refondé par {tri} (empreinte {court}).', 'The registry has been re-founded by {tri} (fingerprint {court}).', 'Das Register wurde von {tri} neu gegründet (Fingerabdruck {court}).', 'El registro ha sido refundado por {tri} (huella {court}).'] : ['Registre fondé par {tri} (empreinte {court}).', 'Registry founded by {tri} (fingerprint {court}).', 'Register gegründet von {tri} (Fingerabdruck {court}).', 'Registro fundado por {tri} (huella {court}).'], { tri: st.pending.tri, court: st.pending.court }))}</p>
+          <p class="sp-hint">${esc(K.t(['Comparez cette empreinte avec celle que l’admin vous a envoyée par un autre canal (Discord, SMS, courriel). Identique : « Confirmer ». Différente : « Refuser », et prévenez l’admin.', 'Compare this fingerprint with the one the admin sent you through another channel (Discord, SMS, email). Identical: “Confirm”. Different: “Reject”, and warn the admin.', 'Vergleichen Sie diesen Fingerabdruck mit dem, den der Admin über einen anderen Kanal geschickt hat (Discord, SMS, E-Mail). Gleich: „Bestätigen“. Anders: „Ablehnen“ und den Admin warnen.', 'Compare esta huella con la que el admin le envió por otro canal (Discord, SMS, correo). Idéntica: «Confirmar». Distinta: «Rechazar», y avise al admin.']))}</p>
+          <p class="row"><button type="button" class="primary" data-g-confirm>${esc(K.t(['Confirmer', 'Confirm', 'Bestätigen', 'Confirmar']))}</button> <button type="button" class="secondary" data-g-reject>${esc(K.t(['Refuser', 'Reject', 'Ablehnen', 'Rechazar']))}</button></p></div>` : ''}
+        ${st.status === 'rejete' ? `<div class="sp-card" data-no-i18n><p>${esc(K.t(['Fondation du registre refusée sur ce poste : le registre n’est pas lu.', 'Registry foundation rejected on this device: the registry is not read.', 'Gründung des Registers auf diesem Gerät abgelehnt: Das Register wird nicht gelesen.', 'Fundación del registro rechazada en este equipo: el registro no se lee.']))}</p><p class="row"><button type="button" class="secondary" data-g-review>${esc(K.t(['Revoir la demande', 'Review the request', 'Anfrage erneut prüfen', 'Revisar la solicitud']))}</button></p></div>` : ''}
+        ${st.refus.length ? `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Versions refusées', 'Refused versions', 'Abgelehnte Versionen', 'Versiones rechazadas']))}</h3><p>${st.refus.map(esc).join('<br>')}</p></div>` : ''}
+        ${!st.group ? `<div class="sp-card"><h3>${esc(L('Passer en mode groupe', 'Switch to group mode', 'In den Gruppenmodus wechseln', 'Pasar a modo grupo'))}</h3>
+          <p class="sp-hint">${esc(L('Vous devenez le premier admin, avec la clé de ce poste ; les fiches existantes sont reprises dans la version 1 du registre, signée. Une clé de secours est créée et téléchargée (sog-cle-secours-….json), chiffrée par le mot de passe ci-dessous : gardez le fichier hors ligne (clé USB) et le mot de passe à part. Exige le Centre activé et la politique de sécurité du lanceur (CSP).', 'You become the first admin, with this device’s key; the existing user files are taken into version 1 of the registry, signed. A recovery key is created and downloaded (sog-cle-secours-….json), encrypted with the password below: keep the file offline (USB stick) and the password separately. Requires the Centre enabled and the launcher security policy (CSP).', 'Sie werden der erste Admin, mit dem Schlüssel dieses Geräts; die vorhandenen Benutzerdateien gehen in Version 1 des Registers ein, signiert. Ein Notfallschlüssel wird erzeugt und heruntergeladen (sog-cle-secours-….json), mit dem Passwort unten verschlüsselt: Datei offline aufbewahren (USB-Stick), Passwort getrennt. Erfordert das aktivierte Zentrum und die Sicherheitsrichtlinie des Starters (CSP).', 'Usted pasa a ser el primer admin, con la clave de este equipo; las fichas existentes se incorporan a la versión 1 del registro, firmada. Se crea y descarga una clave de emergencia (sog-cle-secours-….json), cifrada con la contraseña de abajo: guarde el archivo fuera de línea (memoria USB) y la contraseña aparte. Exige el Centro activado y la política de seguridad del lanzador (CSP).'))}</p>
+          <div class="sp-form">${pw2('g-new')}</div>
+          <p class="row"><button type="button" class="primary" data-g-go ${centreOn ? '' : 'disabled'}>${esc(L('Passer en mode groupe', 'Switch to group mode', 'In den Gruppenmodus wechseln', 'Pasar a modo grupo'))}</button></p>
+          ${centreOn ? '' : `<p class="sp-hint">${esc(L('Activer d’abord le Centre (rubrique « Accès au Centre et réglages »).', 'Enable the Centre first (“Centre access and settings” section).', 'Zuerst das Zentrum aktivieren (Rubrik „Zugang zum Zentrum und Einstellungen“).', 'Activar primero el Centro (apartado «Acceso al Centro y ajustes»).'))}</p>`}</div>` : ''}
+        ${st.group && admin ? `<div class="sp-card"><h3>${esc(L('Nouvelle clé de secours', 'New recovery key', 'Neuer Notfallschlüssel', 'Nueva clave de emergencia'))}</h3>
+          <p class="sp-hint">${esc(L('Remplace la clé de secours du registre (l’ancienne ne vaut plus) ; le nouveau fichier est téléchargé.', 'Replaces the registry recovery key (the old one no longer counts); the new file is downloaded.', 'Ersetzt den Notfallschlüssel des Registers (der alte gilt nicht mehr); die neue Datei wird heruntergeladen.', 'Sustituye la clave de emergencia del registro (la anterior deja de valer); se descarga el nuevo archivo.'))}</p>
+          <div class="sp-form">${pw2('g-rec')}</div><p class="row"><button type="button" class="secondary" data-g-rec-go>${esc(L('Créer la nouvelle clé de secours', 'Create the new recovery key', 'Neuen Notfallschlüssel erzeugen', 'Crear la nueva clave de emergencia'))}</button>
+          <button type="button" class="secondary" data-g-leave>${esc(L('Revenir au mode autonome', 'Back to standalone mode', 'Zurück zum autonomen Modus', 'Volver al modo autónomo'))}</button></p></div>` : ''}
+        ${st.group ? `<div class="sp-card"><h3>${esc(L('Utiliser la clé de secours', 'Use the recovery key', 'Notfallschlüssel verwenden', 'Usar la clave de emergencia'))}</h3>
+          <p class="sp-hint">${esc(L('Quand les admins ont perdu leur poste : le trigramme choisi devient admin, avec la clé de ce poste ; la nouvelle version est signée par la clé de secours (trace « secours » dans le registre).', 'When the admins have lost their devices: the chosen trigram becomes admin, with this device’s key; the new version is signed by the recovery key (“secours” trace in the registry).', 'Wenn die Admins ihre Geräte verloren haben: Das gewählte Kürzel wird Admin, mit dem Schlüssel dieses Geräts; die neue Version wird vom Notfallschlüssel signiert (Spur „secours“ im Register).', 'Cuando los admins han perdido su equipo: el trigrama elegido pasa a ser admin, con la clave de este equipo; la nueva versión la firma la clave de emergencia (rastro «secours» en el registro).'))}</p>
+          <div class="sp-form"><label>${esc(L('Fichier de la clé de secours', 'Recovery key file', 'Datei des Notfallschlüssels', 'Archivo de la clave de emergencia'))}</label><input type="file" accept=".json,application/json" data-g-file>
+          <label>${esc(L('Mot de passe de la clé de secours', 'Recovery key password', 'Passwort des Notfallschlüssels', 'Contraseña de la clave de emergencia'))}</label><input type="password" autocomplete="off" data-g-filepw>
+          <label>${esc(L('Trigramme qui devient admin', 'Trigram that becomes admin', 'Kürzel, das Admin wird', 'Trigrama que pasa a ser admin'))}</label><input type="text" maxlength="5" data-g-tri value="${esc(me)}"></div>
+          <p class="row"><button type="button" class="secondary" data-g-use>${esc(L('Signer avec la clé de secours', 'Sign with the recovery key', 'Mit dem Notfallschlüssel signieren', 'Firmar con la clave de emergencia'))}</button></p></div>
+          <details class="sp-card"><summary>${esc(L('Refonder le groupe (dernier recours)', 'Re-found the group (last resort)', 'Gruppe neu gründen (letzter Ausweg)', 'Refundar el grupo (último recurso)'))}</summary>
+          <p class="sp-hint">${esc(L('Si toutes les clés d’admin et la clé de secours sont perdues : nouveau registre en version 1 (nouveau groupe), signé par ce poste, avec une nouvelle clé de secours. Chaque autre poste devra confirmer votre empreinte, reçue par un autre canal ; sans confirmation, il garde l’ancien registre.', 'If all admin keys and the recovery key are lost: new registry in version 1 (new group), signed by this device, with a new recovery key. Every other device will have to confirm your fingerprint, received through another channel; without confirmation, it keeps the old registry.', 'Wenn alle Admin-Schlüssel und der Notfallschlüssel verloren sind: neues Register in Version 1 (neue Gruppe), von diesem Gerät signiert, mit neuem Notfallschlüssel. Jedes andere Gerät muss Ihren Fingerabdruck bestätigen, über einen anderen Kanal erhalten; ohne Bestätigung behält es das alte Register.', 'Si se han perdido todas las claves de admin y la clave de emergencia: nuevo registro en versión 1 (nuevo grupo), firmado por este equipo, con una nueva clave de emergencia. Cada otro equipo tendrá que confirmar su huella, recibida por otro canal; sin confirmación, conserva el registro anterior.'))}</p>
+          <div class="sp-form">${pw2('g-ref')}</div><p class="row"><button type="button" class="secondary" data-g-refound>${esc(L('Refonder le groupe', 'Re-found the group', 'Gruppe neu gründen', 'Refundar el grupo'))}</button></p></details>` : ''}`;
+      const $ = s => body.querySelector(s);
+      /** Mot de passe saisi deux fois (champs data-<name>="1" et "2") : la valeur, ou une erreur affichée et null. */
+      const twice = name => {
+        const a = body.querySelector(`[data-${name}="1"]`).value,
+          b = body.querySelector(`[data-${name}="2"]`).value;
+        if (a.length < 8) return notify(R.why('mot-de-passe-court'), 'warn'), null;
+        if (a !== b) return notify(K.t(['Les deux mots de passe diffèrent.', 'The two passwords differ.',
+          'Die beiden Passwörter unterscheiden sich.', 'Las dos contraseñas no coinciden.'
+        ]), 'warn'), null;
+        return a;
+      };
+      /** Lance une action du registre ; erreur → notification ; puis panneau redessiné. */
+      const run = async (fn, okText) => {
+        try {
+          await fn();
+          if (okText) notify(K.t(okText), 'ok');
+        } catch (e) {
+          notify(e?.message || String(e), 'err');
+        }
+        again();
+      };
+      $('[data-g-confirm]')?.addEventListener('click', () => run(() => R.confirm(), ['Registre accepté sur ce poste.',
+        'Registry accepted on this device.', 'Register auf diesem Gerät akzeptiert.', 'Registro aceptado en este equipo.'
+      ]));
+      $('[data-g-reject]')?.addEventListener('click', () => run(() => R.reject()));
+      $('[data-g-review]')?.addEventListener('click', () => run(async () => {
+        await Sk.del('registre', 'rejete');
+        await R.refresh();
+      }));
+      $('[data-g-go]')?.addEventListener('click', () => {
+        const pw = twice('g-new');
+        if (pw) run(() => R.goGroup(pw), ['Mode groupe en place : version 1 du registre signée, clé de secours téléchargée.',
+          'Group mode in place: registry version 1 signed, recovery key downloaded.',
+          'Gruppenmodus eingerichtet: Version 1 des Registers signiert, Notfallschlüssel heruntergeladen.',
+          'Modo grupo activo: versión 1 del registro firmada, clave de emergencia descargada.'
+        ]);
+      });
+      $('[data-g-rec-go]')?.addEventListener('click', () => {
+        const pw = twice('g-rec');
+        if (pw) run(() => R.newRecovery(pw), ['Nouvelle clé de secours en place et téléchargée.',
+          'New recovery key in place and downloaded.', 'Neuer Notfallschlüssel eingerichtet und heruntergeladen.',
+          'Nueva clave de emergencia activa y descargada.'
+        ]);
+      });
+      $('[data-g-leave]')?.addEventListener('click', async () => {
+        if (await window.AppFramework?.ask?.(K.t([
+            'Revenir au mode autonome ? Le registre reste dans les données mais n’est plus lu ; rôles et mots de passe redeviennent ceux des fiches.',
+            'Back to standalone mode? The registry stays in the data but is no longer read; roles and passwords are those of the user files again.',
+            'Zurück zum autonomen Modus? Das Register bleibt in den Daten, wird aber nicht mehr gelesen; Rollen und Passwörter sind wieder die der Benutzerdateien.',
+            '¿Volver al modo autónomo? El registro queda en los datos pero ya no se lee; roles y contraseñas vuelven a ser los de las fichas.'
+          ]), {
+            danger: true
+          }) === false) return;
+        run(() => R.leaveGroup());
+      });
+      $('[data-g-use]')?.addEventListener('click', async () => {
+        const f = $('[data-g-file]').files?.[0];
+        if (!f) return notify(K.t(['Choisir le fichier de la clé de secours.', 'Choose the recovery key file.',
+          'Datei des Notfallschlüssels wählen.', 'Elegir el archivo de la clave de emergencia.'
+        ]), 'warn');
+        const text = await f.text();
+        run(() => R.useRecovery(text, $('[data-g-filepw]').value, $('[data-g-tri]').value), [
+          'Nouvelle version signée par la clé de secours.', 'New version signed by the recovery key.',
+          'Neue Version vom Notfallschlüssel signiert.', 'Nueva versión firmada por la clave de emergencia.'
+        ]);
+      });
+      $('[data-g-refound]')?.addEventListener('click', async () => {
+        const pw = twice('g-ref');
+        if (!pw) return;
+        if (await window.AppFramework?.ask?.(K.t([
+            'Refonder le groupe ? Tous les autres postes devront confirmer votre empreinte ; l’ancien registre ne vaudra plus que pour ceux qui refusent.',
+            'Re-found the group? Every other device will have to confirm your fingerprint; the old registry will only count for those who refuse.',
+            'Die Gruppe neu gründen? Alle anderen Geräte müssen Ihren Fingerabdruck bestätigen; das alte Register gilt nur noch für die, die ablehnen.',
+            '¿Refundar el grupo? Todos los demás equipos tendrán que confirmar su huella; el registro anterior solo valdrá para quienes lo rechacen.'
+          ]), {
+            danger: true
+          }) === false) return;
+        run(() => R.refound(pw), ['Groupe refondé : envoyez votre empreinte aux pilotes par un autre canal.',
+          'Group re-founded: send your fingerprint to the pilots through another channel.',
+          'Gruppe neu gegründet: Fingerabdruck über einen anderen Kanal an die Piloten senden.',
+          'Grupo refundado: envíe su huella a los pilotos por otro canal.'
+        ]);
+      });
+      api.status?.(modeText);
+    }
+  };
+
   window.SettingsPanels = {
-    list: [levelPanel, identity, dataAccess, account, themesPanel, equipment, setup, users, categoriesPanel],
+    list: [levelPanel, identity, dataAccess, account, themesPanel, equipment, setup, users, groupe, categoriesPanel],
     /** Ajoute une rubrique (autre module : utilisateurs, catégories de disponibilité). */
     add(panel) {
       this.list.push(panel);
