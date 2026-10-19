@@ -1520,7 +1520,7 @@ Carte et coupe vont ensemble. Survoler la coupe pose un repère bleu au même en
 
 ### Carte de contrôle et cadrage (bloc Cheminement)
 
-Sous le champ de route, une carte de contrôle montre la carte choisie avec son profil d'affichage. Elle se redessine à chaque réglage. Aux niveaux 1 à 3, seule « ⤢ Agrandir » est proposée ; les autres commandes du tableau et les « Réglages du profil : coupe, appareil, vario, sorties » sont au niveau Expert.
+Sous le champ de route, une carte de contrôle montre la carte choisie avec son profil d'affichage. Elle se redessine à chaque réglage. Le cheminement y est le trait rouge de l'éditeur de route (points déplaçables) ; le tireté violet ne figure que sur les cartes générées. Aux niveaux 1 à 3, seule « ⤢ Agrandir » est proposée ; les autres commandes du tableau et les « Réglages du profil : coupe, appareil, vario, sorties » sont au niveau Expert.
 
 | Commande | Effet |
 |---|---|
@@ -1552,7 +1552,8 @@ Ce bloc crée les cartes d'un vol à partir du cheminement, sans mission du Cent
 
 1. Saisissez le cheminement et le niveau dans le bloc « Cheminement » (au moins un départ et une destination connus de la base SIA).
 2. Facultatif : « Rendez-vous (facultatif) », un point ou des coordonnées « 44.2, 0.6 » ; « Dégagement (OACI,
-   facultatif) », repris du Carburant s'il y est connu.
+   facultatif) », repris du Carburant s'il y est connu ; un dégagement absent de la base SIA est signalé et les
+   cartes sont faites sans lui.
 3. Cochez les cartes voulues : « route (vue d'ensemble, IFR) » (profil IFR bas ou haut selon le niveau, voir plus haut),
    « approche », « rendez-vous », « destination ».
 4. Cliquez sur « Générer les cartes » (niveaux 1 à 3) : les cartes sont créées puis générées, la progression (avec

@@ -1477,7 +1477,7 @@ Karte und Schnitt gehören zusammen. Fahren Sie über den Schnitt, erscheint auf
 
 ### Kontrollkarte und Ausschnitt (Block Route)
 
-Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anzeigeprofil. Sie wird bei jeder Einstellung neu gezeichnet. Auf den Stufen 1 bis 3 wird nur „⤢ Vergrößern“ angeboten; die übrigen Bedienelemente der Tabelle und die „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ gehören zur Stufe Experte.
+Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anzeigeprofil. Sie wird bei jeder Einstellung neu gezeichnet. Die Route ist dort die rote Linie des Routeneditors (verschiebbare Punkte); die violett gestrichelte Linie erscheint nur auf den erzeugten Karten. Auf den Stufen 1 bis 3 wird nur „⤢ Vergrößern“ angeboten; die übrigen Bedienelemente der Tabelle und die „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ gehören zur Stufe Experte.
 
 | Bedienelement | Wirkung |
 |---|---|
@@ -1509,7 +1509,8 @@ Dieser Block erstellt die Karten eines Flugs aus der Route, ohne Mission des Zen
 
 1. Geben Sie Route und Flughöhe im Block „Route“ ein (mindestens ein Abflug und ein Ziel, die der SIA-Datenbank bekannt sind).
 2. Optional: „Treffpunkt (optional)“, ein Punkt oder Koordinaten „44.2, 0.6“; „Ausweichflugplatz (ICAO, optional)“,
-   aus dem Kraftstoff übernommen, wenn er dort bekannt ist.
+   aus dem Kraftstoff übernommen, wenn er dort bekannt ist; ein Ausweichflugplatz, der in der SIA-Datenbank fehlt,
+   wird gemeldet und die Karten werden ohne ihn erstellt.
 3. Kreuzen Sie die gewünschten Karten an: „Route (Übersicht, IFR)“ (Profil IFR niedrig oder hoch je nach Flughöhe, siehe
    oben), „Anflug“, „Treffpunkt“, „Ziel“.
 4. Klicken Sie auf „Karten erzeugen“ (Stufen 1 bis 3): Die Karten werden erstellt und dann erzeugt, Fortschritt (mit

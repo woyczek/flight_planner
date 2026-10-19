@@ -23,6 +23,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Flight maps: lighter page** (`apps/cpco/map_parser.html`, `tools/build_map_planner.py`) — MapLibre (~800 KB) is
+  loaded at the first map preview or generation (`ensureMapLibre`) instead of in the page head; the assembly map is
+  no longer rendered off screen while its block is hidden (levels 1 to 3), it is rendered when the level shows it;
+  a route edit (editor, field, SimBrief, route search) is saved and drawn once: `vprof-route-edited` is cancelable
+  (`routeEdited`) and Flight maps cancels it when it rebuilds the flight itself (one mission save and one profile
+  drawing instead of two); the live preview shows the route once (the editor's red line; the purple dashes stay on
+  generated maps); the AAR tracks file is parsed once; an alternate missing from the SIA database no longer blocks
+  the flight (warning, maps made without it). Dead code removed: `territory` / `inTerritory` / `zoneCentre`,
+  `airspaceGeoJson` / `addInteractiveAirspaces`, `zoneFamily`, `zoneFloorFt` / `zoneCeilFt`, `outputLabel`, the
+  settings / preview splitter (`setSplit`, `.splitter`).
 - **Flight maps: map and vertical profile linked** (`shared/carto/vprof_editor.js`, `apps/cpco/map_parser.html`) — a
   shared cursor follows the route in both views (hovering over the profile marks the map, hovering over the route on
   the map draws a line in the profile); the profile's tooltip adds the distance (NM) and the airspace under the cursor,

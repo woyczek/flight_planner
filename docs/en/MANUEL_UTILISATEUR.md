@@ -1471,7 +1471,7 @@ The map and the section work together. Hovering over the section puts a blue mar
 
 ### Control map and framing (Route block)
 
-Under the route field, a control map shows the chosen map with its display profile. It is redrawn at each setting. At levels 1 to 3, only “⤢ Enlarge” is offered; the other controls of the table and the “Profile settings: section, aircraft, climb rate, outputs” are at the Expert level.
+Under the route field, a control map shows the chosen map with its display profile. It is redrawn at each setting. The route is the route editor's red line (draggable points); the purple dashes appear only on the generated maps. At levels 1 to 3, only “⤢ Enlarge” is offered; the other controls of the table and the “Profile settings: section, aircraft, climb rate, outputs” are at the Expert level.
 
 | Control | Effect |
 |---|---|
@@ -1503,7 +1503,7 @@ This block creates the maps of a flight from the route, without a Centre mission
 
 1. Enter the route and the level in the “Route” block (at least a departure and a destination known to the SIA database).
 2. Optional: “Rendezvous (optional)”, a point or coordinates “44.2, 0.6”; “Alternate (ICAO, optional)”, taken from
-   Fuel if it is known there.
+   Fuel if it is known there; an alternate missing from the SIA database is reported and the maps are made without it.
 3. Tick the maps you want: “route (overview, IFR)” (IFR low or high profile according to the level, see above),
    “approach”, “rendezvous”, “destination”.
 4. Click “Generate the maps” (levels 1 to 3): the maps are created then generated, the progress (with “Stop”) and

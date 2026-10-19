@@ -198,13 +198,6 @@ TONE_CSS = '''<style id="plannerTone" data-layer="app">
     border-color: var(--bad);
     background: color-mix(in srgb, var(--bad) 18%, var(--card))
   }
-  .splitter {
-    background: linear-gradient(90deg, transparent 4px, var(--line) 4px, var(--line) 8px, transparent 8px)
-  }
-  .splitter:hover,
-  .splitter.drag {
-    background: linear-gradient(90deg, transparent 3px, var(--repo-accent) 3px, var(--repo-accent) 9px, transparent 9px)
-  }
   .profilePreview.popped {
     background: var(--card)
   }
@@ -274,7 +267,7 @@ document.addEventListener('change',e=>{const i=e.target?.dataset?.mapProfile;if(
 function build(quiet,gen){
  const pts=routePoints();if(!pts)return false;const want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
  const idOf=(p,i)=>{const n=String(p.name||'').toUpperCase();return/^[A-Z0-9]{2,5}$/.test(n)?n:`P${i}`};
- let altn=null;const at=$v('volAltn').value.trim().toUpperCase();if(at){const q=SiaProfile.resolver({aero:aero||{}})(at);if(!q){say(`Dégagement inconnu : ${esc(at)}.`,'err');return false}altn={id:'ALTN',name:q.name||at,lat:q.lat,lon:q.lon}}
+ let altn=null;const at=$v('volAltn').value.trim().toUpperCase();if(at){const q=SiaProfile.resolver({aero:aero||{}})(at);if(q)altn={id:'ALTN',name:q.name||at,lat:q.lat,lon:q.lon};else window.AppFramework?.notify?.(K.tf(['Dégagement {a} inconnu de la base SIA : cartes faites sans lui.','Alternate {a} not in the SIA database: maps made without it.','Ausweichflugplatz {a} nicht in der SIA-Datenbank: Karten ohne ihn erstellt.','Alternativa {a} desconocida en la base SIA: mapas hechos sin ella.'],{a:at}),'warn')}
  let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
  const P=(p,i)=>({id:idOf(p,i),name:p.name||idOf(p,i),lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}),dep=P(pts[0],0),dest=P(pts[pts.length-1],pts.length-1),mid=pts.slice(1,-1).map((p,i)=>P(p,i+1)),ft=levelFt($v('vprofCruise').value);
  const maps=[];
@@ -322,9 +315,9 @@ $v('volGallery').addEventListener('click',e=>{const t=e.target;if(t.matches('img
 // cette page ou mission reçue) : ils travaillent dessus sans la remplacer
 for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(mission||sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
 // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
-const follow=()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)};
-$v('vprofRoute').addEventListener('change',follow);
-window.addEventListener('vprof-route-edited',e=>{if(e.detail?.altn!==undefined)$v('volAltn').value=e.detail.altn;follow()});
+// route modifiée (éditeur, champ, SimBrief, recherche : routeEdited du studio) : le vol est refait ici (build : mission
+// enregistrée et coupe redessinée), l'événement est annulé pour que le studio ne refasse pas le même travail
+window.addEventListener('vprof-route-edited',e=>{if(e.detail?.altn!==undefined)$v('volAltn').value=e.detail.altn;saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL'&&build(true))e.preventDefault()});
 ['volRdv','vprofCruise'].forEach(id=>$v(id).addEventListener('change',()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)}));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
 // ouverture : vol en cours (plan de vol partagé avec le Carburant, le plus récent, sinon le formulaire de la page). Dès la

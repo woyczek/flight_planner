@@ -108,7 +108,6 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <style data-layer="lib">
 @import url("../../shared/carto/maplibre-gl.css") layer(lib);
 </style>
-<script src="../../shared/carto/maplibre-gl.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
 <script>window.SIA_MISSION_NS='planner'</script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script>
 <script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/carto/vertical_profile.js?v=0"></script><script src="../../shared/carto/vprof_editor.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script><script src="../../shared/flight_performance_model.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script>
@@ -506,19 +505,9 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
   }
   .profileLayout {
     display: grid;
-    grid-template-columns: minmax(0, var(--split-left, 60fr)) 12px minmax(280px, var(--split-right, 40fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0 6px;
     align-items: start
-  }
-  .splitter {
-    align-self: stretch;
-    cursor: col-resize;
-    border-radius: 6px;
-    background: linear-gradient(90deg, transparent 4px, #c8d6dd 4px, #c8d6dd 8px, transparent 8px)
-  }
-  .splitter:hover,
-  .splitter.drag {
-    background: linear-gradient(90deg, transparent 3px, #075ca8 3px, #075ca8 9px, transparent 9px)
   }
   .profileTabs {
     display: flex;
@@ -675,9 +664,6 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
   @media(max-width:980px) {
     .profileLayout {
       grid-template-columns: 1fr
-    }
-    .splitter {
-      display: none
     }
     .profilePreview {
       position: static
@@ -1338,13 +1324,6 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
   .zoneChips li.none {
     border-color: var(--bad);
     background: color-mix(in srgb, var(--bad) 18%, var(--card))
-  }
-  .splitter {
-    background: linear-gradient(90deg, transparent 4px, var(--line) 4px, var(--line) 8px, transparent 8px)
-  }
-  .splitter:hover,
-  .splitter.drag {
-    background: linear-gradient(90deg, transparent 3px, var(--repo-accent) 3px, var(--repo-accent) 9px, transparent 9px)
   }
   .profilePreview.popped {
     background: var(--card)
@@ -2786,38 +2765,8 @@ const zoneHit = (a, q, depth = 0) => SiaProfile.zones.hit(a, q, zoneAliases, dep
 const zoneChipLabel = q => /\*\s*$/.test(q) ? q.replace(/\s*\*\s*$/, ' (toutes)') : q;
 /** Plancher – plafond publiés d'un espace (« ? » pour une limite inconnue), vide si aucune n'est connue. */
 const zoneLimits = a => a.lower || a.upper ? `${a.lower||'?'} – ${a.upper||'?'}` : '';
-// Territoire : emprise des points de la mission élargie (8° × 10°), sinon métropole et Corse —
-// les espaces, aérodromes et balises d'outre-mer ne sortent pas sur une mission en métropole.
-function territory() {
-  if (mission?._terr) return mission._terr;
-  const pts = mission?.points?.filter(p => Number.isFinite(p.lat)) || [];
-  if (!pts.length) return {
-    s: 40,
-    n: 52.5,
-    w: -7,
-    e: 12
-  };
-  const la = pts.map(p => p.lat),
-    lo = pts.map(p => p.lon);
-  return mission._terr = {
-    s: Math.min(...la) - 8,
-    n: Math.max(...la) + 8,
-    w: Math.min(...lo) - 10,
-    e: Math.max(...lo) + 10
-  }
-}
 /** Vrai si le point (lat, lon) est dans l'emprise b { s, n, w, e } (degrés). */
 const inBox = (b, lat, lon) => lat >= b.s && lat <= b.n && lon >= b.w && lon <= b.e;
-/** Centre approché d'un espace : moyenne des sommets de son plus long contour ; mémorisé dans a._c. */
-const zoneCentre = a => a._c ??= (() => {
-  const r = a.rings.reduce((best, x) => x.length > best.length ? x : best, []);
-  return r.length ? r.reduce((m, q) => [m[0] + q[0] / r.length, m[1] + q[1] / r.length], [0, 0]) : [NaN, NaN]
-})();
-/** Vrai si le centre de l'espace est dans le territoire de la mission (voir territory). */
-const inTerritory = a => {
-  const c = zoneCentre(a);
-  return inBox(territory(), c[0], c[1])
-};
 // Zone dans l'emprise affichée (± marge) : seules celles-ci sont dessinées — rien de l'autre côté du globe.
 const zoneBox = a => a._bb ??= (() => {
   let s = 90,
@@ -2844,11 +2793,6 @@ const zoneInView = (a, b) => {
   const z = zoneBox(a);
   return z.n >= b.s - 2 && z.s <= b.n + 2 && z.e >= b.w - 3 && z.w <= b.e + 3
 };
-/** Vrai si le type t est parmi les familles cochées ; « RMZ-TMZ » retenu si RMZ ou TMZ l'est. */
-const zoneFamily = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
-/** Plancher et plafond d'un espace en pieds (SiaAero.limitFt), mémorisés sur l'objet (a._lo, a._hi). */
-const zoneFloorFt = a => a._lo ??= SiaAero.limitFt(a.lower, false),
-  zoneCeilFt = a => a._hi ??= SiaAero.limitFt(a.upper, true);
 // Zones retenues pour une carte : types cochés, plancher / plafond, liste blanche ou noire, alias (@RTBA…) ; profil avec
 // corridorNm (profils IFR de route) : seulement les zones à moins de corridorNm NM du cheminement.
 function selectedAirspaces(mapDef) {
@@ -3249,10 +3193,22 @@ function mapGeoBbox(map) {
   return geoBoxAround(center, 220, 140);
 }
 // ===== Fonds de carte MapLibre =====
-// Chargement paresseux de la bibliothèque (fichier local).
+/** Bibliothèque MapLibre (fichier local, ~800 Ko) chargée au premier besoin — aperçu interactif ou génération — et non
+ *  à l'ouverture de la page ; un échec de chargement est oublié (nouvel essai à l'appel suivant). */
 function ensureMapLibre() {
-  return window.maplibregl ? Promise.resolve(window.maplibregl) : Promise.reject(Error(
-    'Moteur MapLibre local absent : vérifie que maplibre-gl.js et maplibre-gl.css se trouvent à côté de map_parser.html.'))
+  if (window.maplibregl) return Promise.resolve(window.maplibregl);
+  return mapLibrePromise ??= new Promise((ok, ko) => {
+    const sc = document.createElement('script'),
+      fail = () => {
+        mapLibrePromise = null;
+        sc.remove();
+        ko(Error('Moteur MapLibre local absent : vérifie que maplibre-gl.js et maplibre-gl.css se trouvent dans shared/carto.'))
+      };
+    sc.src = '../../shared/carto/maplibre-gl.js';
+    sc.onload = () => window.maplibregl ? ok(window.maplibregl) : fail();
+    sc.onerror = fail;
+    document.head.append(sc)
+  })
 }
 
 /** Fond de carte d'une carte : choix propre (_base), sinon celui de son profil ; l'ancien « raster » → vectoriel. */
@@ -3768,7 +3724,8 @@ let aarData = [],
     points: []
   };
 // Axes : fichier du dossier SIA XML, sinon copie mémorisée avec la base, sinon fichier à côté de la page (http).
-let aarXml = '';
+let aarXml = '',
+  aarParsed = null; // XML déjà décodé dans aarData (loadAarTracks)
 // Hippodromes de ravitaillement en vol (MIAM ENR 5.7) et choix de ceux de la mission.
 async function loadAarTracks() {
   if (!window.AarTracks) return;
@@ -3776,6 +3733,8 @@ async function loadAarTracks() {
     if (!aarXml) aarXml = await fetch('../../data/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '') ||
       await fetch('../../examples/sia/miam-enr-5-7-tracks.xml').then(r => r.ok ? r.text() : '').catch(() => '')
   } catch {}
+  if (aarXml === aarParsed && aarData.length) return; // même fichier déjà décodé
+  aarParsed = aarXml;
   aarData = aarXml ? AarTracks.parseTrackXml(aarXml).filter(t => t.kind === 'track' && t.ip && t.cp) : [];
   fillAarChoice();
   assemblyRenderKey = ''
@@ -3910,7 +3869,7 @@ function addLiveGridMora(map, mapDef) {
       drawUrbanCanvas(ctx, map, mapDef, toC, 1);
       drawZonesCanvas(ctx, mapDef, toC, W, H, 1, pl, 'shapes', bb);
       drawMissionZonesCanvas(ctx, mapDef, toC, 1, pl);
-      drawRouteCanvas(ctx, toC, 1, pl, mapDef);
+      drawRouteCanvas(ctx, toC, 1, pl, mapDef, true);
       drawOperationCanvas(ctx, toC, 1, pl);
       drawSitesCanvas(ctx, mapDef, toC, W, H, 1, bb, pl);
       const cityList = reserveMarkerLabels(pl, mapDef, toC, 1, bb, true);
@@ -3993,61 +3952,6 @@ function addInteractiveAar(map, def) {
 /** Libellé d'un hippodrome AAR : nom, cap, longueur × largeur en NM, mention si le côté n'est pas publié. */
 const aarLabel = r => `${r.name} ${String(Math.round(r.heading)).padStart(3,'0')}° ${r.lengthNm} NM × ${r.widthNm} NM${r.sideKnown?'':' (côté non publié)'}`;
 
-/** Espaces retenus pour la carte en GeoJSON (un polygone fermé par contour, coordonnées [lon, lat]). */
-function airspaceGeoJson(mapDef) {
-  const features = [];
-  for (const a of selectedAirspaces(mapDef))
-    for (const ring of a.rings)
-      if (ring.length > 2) features.push({
-        type: 'Feature',
-        properties: {
-          type: a.type,
-          name: a.name
-        },
-        geometry: {
-          type: 'Polygon',
-          coordinates: [
-            [...ring.map(p => [p[1], p[0]]), [ring[0][1], ring[0][0]]]
-          ]
-        }
-      });
-  return {
-    type: 'FeatureCollection',
-    features
-  }
-}
-
-/** Espaces aériens en couches MapLibre (remplissage léger et contour) colorés selon leur type. */
-function addInteractiveAirspaces(map, mapDef) {
-  const data = airspaceGeoJson(mapDef);
-  if (!data.features.length) return;
-  map.addSource('sia-airspaces', {
-    type: 'geojson',
-    data
-  });
-  map.addLayer({
-    id: 'sia-airspaces-fill',
-    type: 'fill',
-    source: 'sia-airspaces',
-    paint: {
-      'fill-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5',
-        'SIV', '#188b75', '#555'
-      ],
-      'fill-opacity': .10
-    }
-  });
-  map.addLayer({
-    id: 'sia-airspaces-line',
-    type: 'line',
-    source: 'sia-airspaces',
-    paint: {
-      'line-color': ['match', ['get', 'type'], 'R', '#e45b16', 'D', '#d39b00', 'P', '#c71f37', 'CTR', '#136bb4', 'TMA', '#7354b5',
-        'SIV', '#188b75', '#555'
-      ],
-      'line-width': 2
-    }
-  })
-}
 // Erreurs de fond : explication, secours (OSM standard), rapport à copier.
 let liveToken = 0,
   lastMapError = null;
@@ -5432,8 +5336,9 @@ function drawTracksCanvas(ctx, toC, scale, pl, mapDef) {
 }
 
 /** Tracés d'une carte : pistes d'exercice, route probable si demandée, puis cheminement en tireté violet
- *  (points, nom des points hors brief, altitude prévue en ft ou FL). */
-function drawRouteCanvas(ctx, toC, scale, pl, mapDef) {
+ *  (points, nom des points hors brief, altitude prévue en ft ou FL). live : aperçu interactif, où l'éditeur de route
+ *  trace déjà le cheminement (trait rouge, points déplaçables) — seuls les libellés sont ajoutés. */
+function drawRouteCanvas(ctx, toC, scale, pl, mapDef, live = false) {
   drawTracksCanvas(ctx, toC, scale, pl, mapDef);
   const tr = traceOf(mapDef);
   if (tr === 'probable' || tr === 'both') drawProbableCanvas(ctx, toC, scale, pl);
@@ -5443,26 +5348,31 @@ function drawRouteCanvas(ctx, toC, scale, pl, mapDef) {
   const col = '#8e24aa',
     f = 10 * scale,
     known = new Set((mission?.points || []).map(p => String(p.name || p.id)));
+  const own = !(live && vprofEditor); // trait et points dessinés ici, sauf sous l'éditeur de route
   ctx.save();
   ctx.strokeStyle = col;
   ctx.lineWidth = Math.max(1.5, 2.5 * scale);
   ctx.lineJoin = 'round';
-  ctx.setLineDash([10 * scale, 5 * scale]);
-  ctx.beginPath();
-  pts.forEach((p, i) => {
-    const q = toC(p.lat, p.lon);
-    i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)
-  });
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (own) {
+    ctx.setLineDash([10 * scale, 5 * scale]);
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const q = toC(p.lat, p.lon);
+      i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)
+    });
+    ctx.stroke();
+    ctx.setLineDash([])
+  }
   ctx.lineWidth = Math.max(1, 1.5 * scale);
   for (const p of pts) {
     const q = toC(p.lat, p.lon);
-    ctx.beginPath();
-    ctx.arc(q.x, q.y, 3.2 * scale, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    ctx.stroke();
+    if (own) {
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, 3.2 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.stroke()
+    }
     const alt = Number.isFinite(p.alt) ? (p.alt >= 10000 ? 'FL' + Math.round(p.alt / 100) : p.alt + ' ft') : '',
       text = [known.has(p.name) ? '' : p.name, alt].filter(Boolean).join(' · ');
     if (!text) continue;
@@ -5582,16 +5492,23 @@ function ensureVprofEditor() {
     img: $('vprofImg'),
     textarea: $('vprofRoute'),
     aero: () => aero || {},
-    onChange: text => {
-      saveVprof();
-      drawVprofPreview();
-      window.dispatchEvent(new CustomEvent('vprof-route-edited', {
-        detail: {
-          text
-        }
-      }))
-    }
+    onChange: () => routeEdited()
   })
+}
+/** Route modifiée (éditeur, champ, SimBrief, recherche) : l'événement « vprof-route-edited » (detail : text et extra) est
+ *  annulable — une page qui refait elle-même la mission (Cartes de vol : build) l'annule, et rien n'est fait deux fois ;
+ *  sinon la route est enregistrée dans la mission et, si draw, la coupe redessinée. */
+function routeEdited(extra = {}, draw = true) {
+  const go = window.dispatchEvent(new CustomEvent('vprof-route-edited', {
+    cancelable: true,
+    detail: {
+      text: $('vprofRoute').value,
+      ...extra
+    }
+  }));
+  if (!go) return;
+  if (mission) saveVprof();
+  if (draw) drawVprofPreview()
 }
 /** Recalcule et affiche la coupe verticale (1200 × 420) avec son bilan : distance, espaces traversés, obstacles. */
 async function drawVprofPreview() {
@@ -5962,15 +5879,10 @@ $('routeSimbrief').onclick = async () => {
       .join(' ');
     if (ft) $('vprofCruise').value = ft >= 6000 ? `FL${Math.round(ft/100)}` : String(ft);
     $('routeInfo').textContent = `Route SimBrief (${d.origin.icao_code} → ${d.destination?.icao_code||'?'}${g.flight_number?`, vol ${g.icao_airline||''}${g.flight_number}`:''}).`;
-    if (mission) saveVprof();
-    drawVprofPreview();
     vprofEditor?.refreshText?.();
-    window.dispatchEvent(new CustomEvent('vprof-route-edited', {
-      detail: {
-        text: $('vprofRoute').value,
-        altn: [].concat(d.alternate || [])[0]?.icao_code || ''
-      }
-    }))
+    routeEdited({
+      altn: [].concat(d.alternate || [])[0]?.icao_code || ''
+    })
   } catch (e) {
     window.AppFramework?.notify?.(explainErr(e, tl(['Route SimBrief non lue', 'SimBrief route not read', 'SimBrief-Route nicht gelesen',
       'Ruta de SimBrief no leída'
@@ -6019,14 +5931,8 @@ $('routeSearch').onclick = async () => {
   }
   $('vprofRoute').value = routeTextOf(ex.chain);
   $('routeInfo').textContent = `Route calculée : ${ex.how}.`;
-  if (mission) saveVprof();
-  drawVprofPreview();
   vprofEditor?.refreshText?.();
-  window.dispatchEvent(new CustomEvent('vprof-route-edited', {
-    detail: {
-      text: $('vprofRoute').value
-    }
-  }))
+  routeEdited()
 };
 
 $('vprofFromProbable').onclick = () => {
@@ -6053,7 +5959,7 @@ $('vprofPts').addEventListener('click', e => {
   drawVprofPreview();
   vprofEditor?.refreshText?.()
 });
-$('vprofRoute').addEventListener('change', saveVprof);
+$('vprofRoute').addEventListener('change', () => routeEdited({}, false));
 $('vprofCeil').addEventListener('change', saveVprof);
 $('vprofFloor').addEventListener('change', saveVprof);
 $('vprofCruise').addEventListener('change', () => {
@@ -6461,6 +6367,8 @@ function download(blob, name) {
 // ===== Aperçus =====
 async function refreshOsmAssemblyPreview() {
   if (!(mission && outputMaps().length)) return;
+  // bloc masqué (niveau d'usage) : rien à montrer, donc rien à rendre ; refait au changement de niveau
+  if (!$('assemblyPreview').closest('section')?.getClientRects().length) return;
   const def = assemblyMapDef(),
     key = mapSourceFor(def) + '|' + mission.title + '|' + outputMaps().map(m => m.file + ':' + m._profileId).join('|') + '|' + JSON
     .stringify(profileForMap(def));
@@ -8012,38 +7920,6 @@ document.querySelector('.profileTabs').addEventListener('click', e => {
 });
 showTab(store.get('siaProfileTab') || 'fond');
 
-/** Partage réglages / aperçu en pourcentage (25 à 80, 60 par défaut), mémorisé ; la carte suit la nouvelle taille. */
-function setSplit(pct) {
-  pct = Math.min(80, Math.max(25, +pct || 60));
-  const l = $('profileEditor');
-  l.style.setProperty('--split-left', pct + 'fr');
-  l.style.setProperty('--split-right', (100 - pct) + 'fr');
-  store.set('siaProfileSplit', pct);
-  osmMap?.resize()
-}
-setSplit(store.get('siaProfileSplit') || 60);
-{
-  const sp = document.querySelector('.splitter');
-  if (sp) {
-    sp.addEventListener('dblclick', () => setSplit(60));
-    sp.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      sp.setPointerCapture(e.pointerId);
-      sp.classList.add('drag');
-      const box = $('profileEditor').getBoundingClientRect(),
-        /** Glissement de la séparation : position du pointeur → pourcentage ; up la relâche. */
-        move = ev => setSplit((ev.clientX - box.left) / box.width * 100),
-        up = () => {
-          sp.classList.remove('drag');
-          sp.removeEventListener('pointermove', move);
-          sp.removeEventListener('pointerup', up)
-        };
-      sp.addEventListener('pointermove', move);
-      sp.addEventListener('pointerup', up)
-    })
-  }
-}
-
 /** Agrandit l'aperçu par-dessus la page (on = true) ou le remet en place ; la carte est redimensionnée ensuite. */
 function popPreview(on) {
   const a = document.querySelector('.profilePreview');
@@ -8440,6 +8316,10 @@ $('previewGallery').addEventListener('click', e => {
 });
 $('generalPreview').addEventListener('click', e => enlargePreview(e.target.src, e.target.alt));
 $('assemblyPreview').addEventListener('click', e => enlargePreview(e.target.src, e.target.alt));
+// niveau d'usage changé : la carte d'assemblage, sautée tant que son bloc était masqué, est rendue s'il apparaît
+window.addEventListener('suite-level-change', () => setTimeout(() => {
+  if (mission) refreshOsmAssemblyPreview()
+}, 0));
 $('closePreview').onclick = () => $('previewDialog').close();
 $('previewDialog').addEventListener('click', () => $('previewDialog')
   .close()); /* un clic sur la carte agrandie (ou autour) la ferme */ ; // Sorties (PNG / SVG, largeur) : menu ☰ › Page ; choix mémorisés.
@@ -8461,8 +8341,6 @@ const outputPrefs = (() => {
     }
   })(),
   outputButtons = {};
-/** Libellé d'une préférence de sortie avec sa valeur (png, svg, ou largeur). */
-const outputLabel = k => k === 'png' ? `Sortie PNG : ${outputPrefs.png?'oui':'non'}` : k === 'svg' ? `Sortie SVG éditable : ${outputPrefs.svg?'oui':'non'}` : `Largeur PNG : ${outputPrefs.width} px…`;
 // Menu ☰ › Sorties des cartes : PNG / SVG, largeur des PNG (localStorage siaOutput).
 function applyOutputPrefs() {
   $('png').checked = !!outputPrefs.png;
@@ -8660,7 +8538,7 @@ document.addEventListener('change',e=>{const i=e.target?.dataset?.mapProfile;if(
 function build(quiet,gen){
  const pts=routePoints();if(!pts)return false;const want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
  const idOf=(p,i)=>{const n=String(p.name||'').toUpperCase();return/^[A-Z0-9]{2,5}$/.test(n)?n:`P${i}`};
- let altn=null;const at=$v('volAltn').value.trim().toUpperCase();if(at){const q=SiaProfile.resolver({aero:aero||{}})(at);if(!q){say(`Dégagement inconnu : ${esc(at)}.`,'err');return false}altn={id:'ALTN',name:q.name||at,lat:q.lat,lon:q.lon}}
+ let altn=null;const at=$v('volAltn').value.trim().toUpperCase();if(at){const q=SiaProfile.resolver({aero:aero||{}})(at);if(q)altn={id:'ALTN',name:q.name||at,lat:q.lat,lon:q.lon};else window.AppFramework?.notify?.(K.tf(['Dégagement {a} inconnu de la base SIA : cartes faites sans lui.','Alternate {a} not in the SIA database: maps made without it.','Ausweichflugplatz {a} nicht in der SIA-Datenbank: Karten ohne ihn erstellt.','Alternativa {a} desconocida en la base SIA: mapas hechos sin ella.'],{a:at}),'warn')}
  let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
  const P=(p,i)=>({id:idOf(p,i),name:p.name||idOf(p,i),lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}),dep=P(pts[0],0),dest=P(pts[pts.length-1],pts.length-1),mid=pts.slice(1,-1).map((p,i)=>P(p,i+1)),ft=levelFt($v('vprofCruise').value);
  const maps=[];
@@ -8708,9 +8586,9 @@ $v('volGallery').addEventListener('click',e=>{const t=e.target;if(t.matches('img
 // cette page ou mission reçue) : ils travaillent dessus sans la remplacer
 for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(mission||sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
 // route modifiée (saisie, recherche, carte ou coupe) : mission, cartes et profil mis à jour
-const follow=()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)};
-$v('vprofRoute').addEventListener('change',follow);
-window.addEventListener('vprof-route-edited',e=>{if(e.detail?.altn!==undefined)$v('volAltn').value=e.detail.altn;follow()});
+// route modifiée (éditeur, champ, SimBrief, recherche : routeEdited du studio) : le vol est refait ici (build : mission
+// enregistrée et coupe redessinée), l'événement est annulé pour que le studio ne refasse pas le même travail
+window.addEventListener('vprof-route-edited',e=>{if(e.detail?.altn!==undefined)$v('volAltn').value=e.detail.altn;saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL'&&build(true))e.preventDefault()});
 ['volRdv','vprofCruise'].forEach(id=>$v(id).addEventListener('change',()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)}));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
 // ouverture : vol en cours (plan de vol partagé avec le Carburant, le plus récent, sinon le formulaire de la page). Dès la

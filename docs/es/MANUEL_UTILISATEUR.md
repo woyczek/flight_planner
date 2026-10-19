@@ -1478,7 +1478,7 @@ El mapa y el corte van juntos. Al pasar sobre el corte aparece una marca azul en
 
 ### Mapa de control y encuadre (bloque Ruta)
 
-Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil de visualización. Se vuelve a dibujar con cada ajuste. En los niveles 1 a 3, solo se ofrece «⤢ Ampliar»; los demás mandos de la tabla y los «Ajustes del perfil: corte, aeronave, variómetro, salidas» están en el nivel Experto.
+Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil de visualización. Se vuelve a dibujar con cada ajuste. La ruta es allí la línea roja del editor de ruta (puntos desplazables); el trazo violeta discontinuo solo aparece en los mapas generados. En los niveles 1 a 3, solo se ofrece «⤢ Ampliar»; los demás mandos de la tabla y los «Ajustes del perfil: corte, aeronave, variómetro, salidas» están en el nivel Experto.
 
 | Control | Efecto |
 |---|---|
@@ -1510,7 +1510,7 @@ Este bloque crea los mapas de un vuelo a partir de la ruta, sin misión del Cent
 
 1. Introduzca la ruta y el nivel en el bloque «Ruta» (al menos una salida y un destino conocidos en la base SIA).
 2. Opcional: «Encuentro (opcional)», un punto o unas coordenadas «44.2, 0.6»; «Alternativo (OACI, opcional)»,
-   tomado de Combustible si allí se conoce.
+   tomado de Combustible si allí se conoce; un alternativo ausente de la base SIA se señala y los mapas se hacen sin él.
 3. Marque los mapas deseados: «ruta (vista general, IFR)» (perfil IFR bajo o alto según el nivel, véase más arriba),
    «aproximación», «encuentro», «destino».
 4. Haga clic en «Generar los mapas» (niveles 1 a 3): los mapas se crean y después se generan, el progreso (con
