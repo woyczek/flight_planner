@@ -1472,6 +1472,8 @@ Este bloque relaciona tres vistas: el plan de vuelo (texto), el mapa y el corte 
 
 En el mapa: arrastre un punto para moverlo (se ajusta a balizas, puntos de notificación y aeródromos), haga clic en la ruta para insertar un punto y clic derecho para eliminar uno. En el corte: clic para añadir un punto a esa altitud, arrastrar para cambiar la altitud, clic derecho para eliminar.
 
+El mapa y el corte van juntos. Al pasar sobre el corte aparece una marca azul en el mismo lugar de la ruta en el mapa; al pasar sobre la ruta en el mapa, el corte muestra una línea azul a la misma distancia. La información emergente del corte da la altitud, la altura sobre el suelo, el relieve, la distancia desde la salida (NM) y el espacio sobrevolado a esa altitud, que se resalta en el mapa. Un clic en un punto del corte, sin moverlo, centra el mapa en él. El mapa muestra también las marcas TOC (fin del ascenso), TOD (inicio del descenso) y graduaciones en NM a lo largo de la ruta.
+
 ### Mapa de control y encuadre (bloque Ruta)
 
 Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil de visualización. Se vuelve a dibujar con cada ajuste. En los niveles 1 a 3, solo se ofrece «⤢ Ampliar»; los demás mandos de la tabla y los «Ajustes del perfil: corte, aeronave, variómetro, salidas» están en el nivel Experto.

@@ -1471,6 +1471,8 @@ Dieser Block verbindet drei Ansichten: den Flugplan (Text), die Karte und den Ve
 
 Auf der Karte: Ziehen Sie einen Punkt, um ihn zu verschieben (er rastet an Funkfeuern, Meldepunkten und Flugplätzen ein), klicken Sie auf die Route, um einen Punkt einzufügen, Rechtsklick, um einen zu löschen. Im Schnitt: Klick, um einen Punkt in dieser Höhe hinzuzufügen, Ziehen, um die Höhe zu ändern, Rechtsklick zum Löschen.
 
+Karte und Schnitt gehören zusammen. Fahren Sie über den Schnitt, erscheint auf der Karte eine blaue Markierung an derselben Stelle der Route; fahren Sie auf der Karte über die Route, zeigt der Schnitt eine blaue Linie bei derselben Entfernung. Der Tooltip des Schnitts nennt Höhe, Höhe über Grund, Gelände, Entfernung vom Start (NM) und den in dieser Höhe durchflogenen Luftraum, der auf der Karte hervorgehoben wird. Ein Klick auf einen Punkt des Schnitts, ohne ihn zu verschieben, zentriert die Karte auf ihn. Die Karte zeigt außerdem TOC (Ende des Steigflugs), TOD (Beginn des Sinkflugs) und NM-Marken entlang der Route.
+
 ### Kontrollkarte und Ausschnitt (Block Route)
 
 Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anzeigeprofil. Sie wird bei jeder Einstellung neu gezeichnet. Auf den Stufen 1 bis 3 wird nur „⤢ Vergrößern“ angeboten; die übrigen Bedienelemente der Tabelle und die „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ gehören zur Stufe Experte.

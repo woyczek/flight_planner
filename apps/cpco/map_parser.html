@@ -1174,6 +1174,20 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
     background: #ffc400;
     border-color: #d69600
   }
+  /* repères le long de la route (vprof_editor.js) : graduations en NM, TOC / TOD */
+  .route-edit-tag {
+    pointer-events: none;
+    padding: 0 4px;
+    border-radius: 3px;
+    font: 700 10px Arial, sans-serif;
+    white-space: nowrap;
+    color: #5b2a86;
+    background: rgba(255, 255, 255, .8)
+  }
+  .route-edit-tag.toc {
+    color: #fff;
+    background: #7b1fa2
+  }
   .vprofSettings {
     margin-top: 8px
   }

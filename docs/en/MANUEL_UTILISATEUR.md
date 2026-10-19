@@ -1465,6 +1465,8 @@ This block links three views: the flight plan (text), the map and the vertical s
 
 On the map: drag a point to move it (it snaps to beacons, reporting points and airfields), click the route to insert a point, right-click to delete one. On the section: click to add a point at that altitude, drag to change the altitude, right-click to delete.
 
+The map and the section work together. Hovering over the section puts a blue marker at the same place of the route on the map; hovering over the route on the map draws a blue line at the same distance in the section. The section's tooltip gives the altitude, the height above ground, the terrain, the distance from departure (NM) and the airspace flown through at that altitude, which is highlighted on the map. Clicking a point of the section without moving it centres the map on it. The map also shows the TOC (top of climb) and TOD (top of descent) marks and NM graduations along the route.
+
 ### Control map and framing (Route block)
 
 Under the route field, a control map shows the chosen map with its display profile. It is redrawn at each setting. At levels 1 to 3, only “⤢ Enlarge” is offered; the other controls of the table and the “Profile settings: section, aircraft, climb rate, outputs” are at the Expert level.

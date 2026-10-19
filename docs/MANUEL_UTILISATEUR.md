@@ -1514,6 +1514,8 @@ Ce bloc relie trois vues : le plan de vol (texte), la carte et la coupe vertical
 
 Sur la carte : glissez un point pour le déplacer (il s'aimante sur balises, points de report et terrains), cliquez sur la route pour insérer un point, clic droit pour en supprimer un. Sur la coupe : clic pour ajouter un point à cette altitude, glisser pour changer l'altitude, clic droit pour supprimer.
 
+Carte et coupe vont ensemble. Survoler la coupe pose un repère bleu au même endroit de la route sur la carte ; survoler la route sur la carte trace un trait bleu à la même distance dans la coupe. L'infobulle de la coupe donne l'altitude, la hauteur sol, le relief, la distance depuis le départ (NM) et l'espace survolé à cette altitude, qui est surligné sur la carte. Un clic sur un point de la coupe, sans le déplacer, recentre la carte sur lui. La carte porte aussi les repères TOC (fin de montée), TOD (début de descente) et des graduations en NM le long de la route.
+
 ### Carte de contrôle et cadrage (bloc Cheminement)
 
 Sous le champ de route, une carte de contrôle montre la carte choisie avec son profil d'affichage. Elle se redessine à chaque réglage. Aux niveaux 1 à 3, seule « ⤢ Agrandir » est proposée ; les autres commandes du tableau et les « Réglages du profil : coupe, appareil, vario, sorties » sont au niveau Expert.

@@ -23,6 +23,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Flight maps: map and vertical profile linked** (`shared/carto/vprof_editor.js`, `apps/cpco/map_parser.html`) — a
+  shared cursor follows the route in both views (hovering over the profile marks the map, hovering over the route on
+  the map draws a line in the profile); the profile's tooltip adds the distance (NM) and the airspace under the cursor,
+  highlighted on the map; clicking a profile point without moving it centres the map on it; TOC / TOD and NM
+  graduations are set along the route on the map.
 - **Flight maps: open on the current flight, IFR route map, no ZIP** (`tools/build_map_planner.py`,
   `apps/cpco/map_parser.html`, `shared/flight_vertical_profile.js`) — the flight shared with Fuel
   (`flightPlanShared:v1`) now carries the route, the cruise level, the aircraft's sheet and the alternate (from the
