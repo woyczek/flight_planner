@@ -101,7 +101,7 @@ Les messages de la suite (succès, avertissements, erreurs) s'affichent en bas d
 - Un rappel répétitif (par exemple « Base SIA absente de ce navigateur… » du Studio cartographique et des Cartes de vol) ne s'affiche qu'**une fois par session** du navigateur. Certains messages sont réservés aux niveaux d'utilisation supérieurs : en dessous, ils ne s'affichent pas, mais les avertissements et erreurs restent au journal du témoin « ⚠ n ».
 - Les avertissements et erreurs effacés restent consultables par le témoin « ⚠ n » de l'en-tête : « ACK » acquitte une alerte, « Tout acquitter » les acquitte toutes, « Vider » efface la liste. Ce journal est perdu au changement de page.
 - Une tâche longue (lecture, génération…) affiche une barre de progression dans la même pile. Quitter la page pendant la tâche demande une confirmation. Quand la tâche peut être interrompue, la barre porte un bouton **« Arrêter »** : l'étape en cours se termine, les suivantes ne sont pas lancées, puis la bulle dit « Annulé. ». Le bouton existe pour la génération et les aperçus des cartes (Studio cartographique et Cartes de vol : arrêt entre deux cartes), le calcul de la MORA (d'une zone, de la grille complète ou par blocs), l'import de la MILAIP ENR 5.7 et la mise en place des zones (Maintenance), et la lecture du dossier des missions (Registre).
-- Une tâche arrêtée dit ce qui reste partiel. Cartes : une génération arrêtée ne télécharge aucun ZIP et ne range rien dans le dossier de la mission (un lot de missions dit combien sont terminées) ; les aperçus déjà affichés restent. MORA par blocs (bouton « Arrêter (reprise plus tard) ») : les blocs déjà calculés sont écrits dans `mora.csv` (grille partielle), « Reprendre le calcul complet… » poursuit plus tard. MORA d'une zone, grille MORA et import de la MILAIP : rien n'est écrit. Lecture du dossier des missions : le registre reste inchangé.
+- Une tâche arrêtée dit ce qui reste partiel. Cartes : une génération arrêtée ne télécharge aucun ZIP (studio du Centre) ou n'affiche aucune image (Cartes de vol) et ne range rien dans le dossier de la mission (un lot de missions dit combien sont terminées) ; les aperçus déjà affichés restent. MORA par blocs (bouton « Arrêter (reprise plus tard) ») : les blocs déjà calculés sont écrits dans `mora.csv` (grille partielle), « Reprendre le calcul complet… » poursuit plus tard. MORA d'une zone, grille MORA et import de la MILAIP : rien n'est écrit. Lecture du dossier des missions : le registre reste inchangé.
 - Les messages d'erreur disent ce qui a échoué et quoi faire, au lieu d'un code seul. Exemples : « le serveur ne répond pas — vérifier que la suite est ouverte par le lanceur (lancer.cmd / lancer.sh), le relancer au besoin, puis réessayer » ; « fichier absent — vérifier qu'il est bien dans le dossier attendu (ou le recréer), puis réessayer » ; « espace du navigateur saturé — libérer de la place (Paramètres › Maintenance › Espace disque), puis réessayer ». Autres cas : service en ligne muet, erreur du serveur, accès refusé par le navigateur, délai dépassé ; une erreur inattendue s'affiche « échec » suivi du détail technique entre parenthèses.
 - Les questions (« Effacer… ? ») s'ouvrent dans une petite fenêtre avec « Confirmer » et « Annuler ».
 
@@ -1470,7 +1470,7 @@ Cette page sert à préparer vos propres cartes de vol : cheminement, carte de l
 Elle est ouverte à tous les pilotes. Pour y aller : barre latérale « Outils », onglet « Cartes de vol », bouton « Ouvrir dans les Cartes de vol » d'une mission dans Mes missions, ou bouton « Cartes de vol » du planificateur carburant.
 Elle reprend le moteur du studio cartographique du Centre, mais travaille dans un espace propre à votre navigateur : vos réglages ne modifient jamais la mission du Centre.
 Chaque bloc se replie (« Masquer » / « Afficher ») et se déplace (poignée ↕). La base SIA doit être lue une fois dans ce navigateur (voir le dernier bloc).
-Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limite à deux blocs : « Cheminement » (champ de route, « Niveau », « SimBrief », carte de contrôle avec « ⤢ Agrandir ») et « Cartes », avec son unique bouton « Générer les cartes et le ZIP ». Les autres commandes décrites ci-dessous n'apparaissent qu'au niveau 4 (Expert).
+Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limite à deux blocs : « Cheminement » (champ de route, « Niveau », « SimBrief », carte de contrôle avec « ⤢ Agrandir ») et « Cartes », avec son unique bouton « Générer les cartes ». Les autres commandes décrites ci-dessous n'apparaissent qu'au niveau 4 (Expert).
 
 <!-- capture-manuels: utilisateur-cartes-vol -->
 ![Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.](images/captures-manuels/utilisateur-cartes-vol.png)
@@ -1479,6 +1479,14 @@ Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limit
 
 En tête de page, « Ouvrir dans ▾ » ouvre la route du bloc « Cheminement », son niveau et l'avion choisi dans SimBrief, SkyVector, Navigraph Charts ou ChartFox (cartes des terrains de départ et d'arrivée), dans un nouvel onglet ; même menu que dans le Carburant (voir « Ouvrir dans ▾ » au chapitre Carburant).
 
+**À l'ouverture : le vol en cours.** La page reprend le vol préparé dans le Carburant (bloc « Profil vertical » et devis) :
+route, niveau de croisière, fiche de l'appareil et dégagement (celui du dernier OFP SimBrief quand il porte le même trajet).
+Le plus récent l'emporte entre ce vol et ce qui a été saisi ici. Dès la base SIA chargée, la carte de la route et la
+coupe verticale s'affichent d'emblée, sans autre clic. La carte de la route prend le profil « IFR bas » (vol jusqu'au
+FL195 : voies aériennes basses) ou « IFR haut » (au-dessus : voies hautes, tracks NAT), avec la symbologie OACI et les
+zones R, D, P, TRA, CTR, TMA et CTA de la tranche qui passent à moins de 10 NM du cheminement ; départ, destination et
+dégagement y sont nommés. Une mission reçue de Mes missions est gardée telle quelle.
+
 ### Réception d'une mission (« Ouvrir dans les Cartes de vol »)
 
 La page n'affiche pas de bloc « Mission » : la mission arrive toute seule depuis Mes missions.
@@ -1486,10 +1494,10 @@ La page n'affiche pas de bloc « Mission » : la mission arrive toute seule depu
 1. Dans Mes missions, ouvrez le dossier de la mission.
 2. Cliquez sur « Ouvrir dans les Cartes de vol ». L'appareil qui vous est attribué est repris en tête de la mission.
 3. La page s'ouvre avec le cheminement et le niveau de la mission dans le bloc « Cheminement », et toutes les cartes prévues par la mission dans « Cartes à produire » (plus `profil_vertical.png`). La liste « Cartes à produire » n'est visible qu'au niveau Expert.
-4. Réglez au besoin chaque carte (niveau Expert), puis cliquez sur « Générer les cartes et le ZIP » : dans le bloc « Cartes » aux niveaux 1 à 3, au pied de page au niveau Expert.
+4. Réglez au besoin chaque carte (niveau Expert), puis cliquez sur « Générer les cartes » : dans le bloc « Cartes » aux niveaux 1 à 3, au pied de page au niveau Expert.
 
-Le pied de page indique le nombre de cartes du ZIP (« … carte(s) dans le ZIP + carte d'assemblage »), ou « Aucune mission chargée ».
-Mission reçue : « Tracer » et « Carburant » travaillent sur la mission chargée sans la remplacer. Aux niveaux 1 à 3, « Générer les cartes et le ZIP » génère ses cartes telles quelles. Au niveau Expert, « Préparer les cartes » demande confirmation avant de la remplacer par un vol libre « Vol départ → destination » construit à partir du cheminement ; sans mission chargée, les cartes sont créées directement.
+Le pied de page indique le nombre de cartes à générer (« … carte(s) à générer »), ou « Aucune mission chargée ».
+Mission reçue : « Tracer » et « Carburant » travaillent sur la mission chargée sans la remplacer. Aux niveaux 1 à 3, « Générer les cartes » génère ses cartes telles quelles. Au niveau Expert, « Préparer les cartes » demande confirmation avant de la remplacer par un vol libre « Vol départ → destination » construit à partir du cheminement ; sans mission chargée, les cartes sont créées directement.
 
 ### Cheminement
 
@@ -1514,7 +1522,7 @@ Sous le champ de route, une carte de contrôle montre la carte choisie avec son 
 |---|---|
 | « Carte » | Carte affichée (par défaut : la carte générale de la route). |
 | « Profil » | Profil d'affichage de cette carte (même réglage que dans « Cartes à produire »). |
-| « ZIP » | Mettre ou non cette carte dans le ZIP. |
+| « Générer » | Générer ou non cette carte. |
 | « Actualiser » | Redessiner l'aperçu. |
 | « Garder ce cadrage » | La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris). |
 | « Recentrer » / « Cadrage automatique » | Revenir au cadrage enregistré / l'oublier pour un cadre calculé d'après la mission. |
@@ -1539,14 +1547,20 @@ Pensez à cliquer sur « Sauvegarder » pour garder un profil modifié. Les list
 Ce bloc crée les cartes d'un vol à partir du cheminement, sans mission du Centre ; aux niveaux 1 à 3, il les génère aussi.
 
 1. Saisissez le cheminement et le niveau dans le bloc « Cheminement » (au moins un départ et une destination connus de la base SIA).
-2. Facultatif : « Rendez-vous (facultatif) », un point ou des coordonnées « 44.2, 0.6 ».
-3. Cochez les cartes voulues : « route (vue d'ensemble, IFR) », « approche », « rendez-vous », « destination ».
-4. Cliquez sur « Générer les cartes et le ZIP » (niveaux 1 à 3) : les cartes sont créées puis générées, la progression (avec « Arrêter ») et le compte rendu s'affichent juste dessous et le ZIP se télécharge. Au niveau Expert, « Préparer les cartes » les crée seulement : réglages dans « Cartes à produire », génération au pied de page.
+2. Facultatif : « Rendez-vous (facultatif) », un point ou des coordonnées « 44.2, 0.6 » ; « Dégagement (OACI,
+   facultatif) », repris du Carburant s'il y est connu.
+3. Cochez les cartes voulues : « route (vue d'ensemble, IFR) » (profil IFR bas ou haut selon le niveau, voir plus haut),
+   « approche », « rendez-vous », « destination ».
+4. Cliquez sur « Générer les cartes » (niveaux 1 à 3) : les cartes sont créées puis générées, la progression (avec
+   « Arrêter ») et le compte rendu s'affichent juste dessous. Les images (chaque carte et `profil_vertical.png`)
+   s'affichent ensuite dans le bloc : un clic agrandit, « Télécharger » enregistre l'image, « Imprimer » l'imprime,
+   « Tout imprimer » imprime toutes les images, une par page. Il n'y a plus de ZIP. Au niveau Expert, « Préparer les
+   cartes » les crée seulement : réglages dans « Cartes à produire », génération au pied de page.
 
 La page fabrique une mission « Vol départ → destination » avec les cartes cochées et le profil vertical. La carte de rendez-vous n'est créée que si un rendez-vous est saisi.
 Aux niveaux 1 à 3, la page n'a ni pied de page ni bloc « Aperçus et génération » : tout part du bouton de ce bloc.
 Ensuite, toute modification du cheminement, du niveau ou du rendez-vous met les cartes à jour automatiquement.
-Arrivée depuis le planificateur carburant (bouton « Cartes de vol ») : les cartes sont créées seules dès que la base SIA est chargée.
+Arrivée depuis le planificateur carburant (bouton « Cartes de vol ») : même ouverture sur le vol en cours, cartes créées seules dès que la base SIA est chargée.
 Messages d'erreur possibles : « Base SIA absente de ce navigateur », « Route : inconnu(s) dans la base SIA », « Aucune carte choisie ».
 
 ### Cartes à produire
@@ -1559,7 +1573,7 @@ Bloc du niveau Expert. La liste « Cartes de la mission » donne une ligne par c
 | Profil | Profil d'affichage de la carte, ou « Désactivé ». |
 | Tracé | « Sans tracé », « Brief : cheminement », « Organisation : route probable », « Cheminement + route probable ». |
 | Destinataire | Seulement pour les missions d'exercice : brief, organisation, chiffon ou équipage. |
-| « ZIP » | Décocher pour ne pas générer la carte. |
+| « Générer » | Décocher pour ne pas générer la carte. |
 | « × » | Supprimer la carte de la mission. |
 
 Pour ajouter une carte : saisissez un nom (« nouvelle_carte.png »), choisissez le type (générale, cible, détail, zone), puis « + Carte ». Son emprise est la vue affichée.
@@ -1570,14 +1584,15 @@ Sans mission ni cartes créées, la liste indique « Aucune carte : ajoute-en un
 Bloc du niveau Expert ; aux niveaux 1 à 3, le compte rendu de la génération (cartes générées, échecs et « Réessayer seule ») s'affiche sous le bouton du bloc « Cartes ».
 
 1. « Afficher toutes les cartes » : dessine un aperçu de chaque carte avec son profil. Les aperçus ne créent aucun fichier. Clic sur un aperçu : agrandissement.
-2. Chaque aperçu garde sa case « ZIP ».
-3. « Générer les cartes et le ZIP » (bouton du pied de page) : télécharge un ZIP avec chaque carte, la carte d'assemblage et `profil_vertical.png` si cette sortie est cochée.
+2. Chaque aperçu garde sa case « Générer ».
+3. « Générer les cartes » (bouton du pied de page) : les images de chaque carte et `profil_vertical.png` s'affichent
+   dans le bloc « Cartes », à télécharger ou imprimer une à une (pas de ZIP).
 
-La « Carte d'assemblage » s'affiche d'elle-même sous les aperçus ; elle reprend le profil de la carte générale.
+La « Carte d'assemblage » s'affiche d'elle-même sous les aperçus (aperçu seulement) ; elle reprend le profil de la carte générale.
 Formats : menu ☰ › Sorties des cartes (PNG, SVG éditable, largeur PNG de 400 à 5000 px ; 1600 px par défaut).
-Si une carte échoue (fond indisponible, délai dépassé), le ZIP contient `rapport_generation.txt` et la liste propose « Réessayer seule ».
+Si une carte échoue (fond indisponible, délai dépassé), le compte rendu le dit et propose « Réessayer seule », qui remplace son image.
 Gardez l'onglet visible pendant la génération : le navigateur ralentit les onglets en arrière-plan, et une carte peut échouer (« Délai dépassé pendant le chargement du fond de carte ») ; « Réessayer seule » la relance.
-Les boutons restent grisés tant qu'aucune carte n'est à produire. Pendant les aperçus et la génération, la barre de progression porte un bouton « Arrêter » : la carte en cours s'achève, les suivantes ne sont pas faites. Une génération arrêtée ne télécharge aucun ZIP (il serait incomplet) ; les aperçus déjà affichés restent. Relancez « Générer les cartes et le ZIP » pour toutes les cartes.
+Les boutons restent grisés tant qu'aucune carte n'est à produire. Pendant les aperçus et la génération, la barre de progression porte un bouton « Arrêter » : la carte en cours s'achève, les suivantes ne sont pas faites. Une génération arrêtée n'affiche aucune image (elles seraient incomplètes) ; les aperçus déjà affichés restent. Relancez « Générer les cartes » pour toutes les cartes.
 
 ### Base de données SIA
 

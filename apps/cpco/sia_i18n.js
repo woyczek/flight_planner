@@ -446,6 +446,14 @@
     ],
     ["Afficher toutes les cartes", "Show all maps", "Alle Karten anzeigen", "Mostrar todos los mapas"],
     ["Générer les cartes et le ZIP", "Generate the maps and the ZIP", "Karten und ZIP erzeugen", "Generar los mapas y el ZIP"],
+    // Cartes de vol : images montrées dans la page (plus de ZIP), dégagement
+    ["Générer les cartes", "Generate the maps", "Karten erzeugen", "Generar los mapas"],
+    ["Générer", "Generate", "Erzeugen", "Generar"],
+    ["Générer cette carte (décocher pour ne pas la générer)", "Generate this map (uncheck to skip it)",
+      "Diese Karte erzeugen (abwählen, um sie zu überspringen)", "Generar este mapa (desmarcar para omitirlo)"
+    ],
+    ["Dégagement (OACI, facultatif)", "Alternate (ICAO, optional)", "Ausweichflugplatz (ICAO, optional)", "Alternativo (OACI, opcional)"],
+    ["Rendez-vous (facultatif)", "Rendezvous (optional)", "Treffpunkt (optional)", "Encuentro (opcional)"],
     ["Sorties : PNG 1600 px — carte d’assemblage toujours incluse (réglage : menu ☰).",
       "Outputs: PNG 1600 px — index map always included (setting: ☰ menu).",
       "Ausgaben: PNG 1600 px — Übersichtskarte immer enthalten (Einstellung: Menü ☰).",

@@ -99,7 +99,7 @@ Die Meldungen der Suite (Erfolg, Warnungen, Fehler) erscheinen unten in der Mitt
 - Eine sich wiederholende Erinnerung (zum Beispiel „SIA-Datenbank fehlt in diesem Browser…“ im Kartenstudio und bei den Flugkarten) erscheint nur **einmal pro Sitzung** des Browsers. Manche Meldungen sind höheren Nutzungsstufen vorbehalten: Darunter werden sie nicht angezeigt, Warnungen und Fehler bleiben aber im Protokoll der Anzeige „⚠ n“.
 - Ausgeblendete Warnungen und Fehler bleiben über die Anzeige „⚠ n“ der Kopfzeile abrufbar: „OK“ bestätigt eine Warnung, „Alle bestätigen“ bestätigt alle, „Leeren“ löscht die Liste. Dieses Protokoll geht beim Seitenwechsel verloren.
 - Eine lange Aufgabe (Lesen, Erzeugen…) zeigt einen Fortschrittsbalken im selben Stapel. Das Verlassen der Seite während der Aufgabe erfordert eine Bestätigung. Lässt sich die Aufgabe unterbrechen, trägt der Balken einen Knopf **„Abbrechen“**: Der laufende Schritt wird beendet, die folgenden werden nicht gestartet, dann meldet die Blase „Abgebrochen.“. Den Knopf gibt es für die Erzeugung und die Vorschauen der Karten (Kartenstudio und Flugkarten: Halt zwischen zwei Karten), die MORA-Berechnung (einer Zone, des vollständigen Rasters oder blockweise), den Import der MILAIP ENR 5.7 und das Einrichten der Zonen (Wartung) sowie das Lesen des Missionsordners (Register).
-- Eine angehaltene Aufgabe sagt, was nur teilweise vorliegt. Karten: Eine abgebrochene Erzeugung lädt kein ZIP herunter und legt nichts im Missionsordner ab (ein Stapel aus mehreren Missionen nennt, wie viele fertig sind); die bereits angezeigten Vorschauen bleiben. Blockweise MORA (Knopf „Anhalten (später fortsetzen)“): Die bereits berechneten Blöcke werden in `mora.csv` geschrieben (Teilraster), „Vollständige Berechnung fortsetzen…“ führt sie später fort. MORA einer Zone, MORA-Raster und MILAIP-Import: Es wird nichts geschrieben. Lesen des Missionsordners: Das Register bleibt unverändert.
+- Eine angehaltene Aufgabe sagt, was nur teilweise vorliegt. Karten: Eine abgebrochene Erzeugung lädt kein ZIP herunter (Kartenstudio des Zentrums) bzw. zeigt kein Bild (Flugkarten) und legt nichts im Missionsordner ab (ein Stapel aus mehreren Missionen nennt, wie viele fertig sind); die bereits angezeigten Vorschauen bleiben. Blockweise MORA (Knopf „Anhalten (später fortsetzen)“): Die bereits berechneten Blöcke werden in `mora.csv` geschrieben (Teilraster), „Vollständige Berechnung fortsetzen…“ führt sie später fort. MORA einer Zone, MORA-Raster und MILAIP-Import: Es wird nichts geschrieben. Lesen des Missionsordners: Das Register bleibt unverändert.
 - Fehlermeldungen sagen, was fehlgeschlagen ist und was zu tun ist, statt nur eines Codes. Beispiele: „der Server antwortet nicht — prüfen, dass die Suite über den Starter geöffnet ist (lancer.cmd / lancer.sh), ihn bei Bedarf neu starten und es erneut versuchen“; „Datei fehlt — prüfen, ob sie im erwarteten Ordner liegt (oder neu erstellen), und es erneut versuchen“; „Browserspeicher voll — Platz schaffen (Einstellungen › Wartung › Speicherplatz) und es erneut versuchen“. Weitere Fälle: Online-Dienst antwortet nicht, Serverfehler, vom Browser verweigerter Zugriff, Zeitüberschreitung; ein unerwarteter Fehler erscheint als „fehlgeschlagen“ mit dem technischen Detail in Klammern.
 - Fragen („Löschen… ?“) öffnen sich in einem kleinen Fenster mit „Bestätigen“ und „Abbrechen“.
 
@@ -1432,9 +1432,17 @@ Diese Seite dient zur Vorbereitung Ihrer eigenen Flugkarten: Route, Streckenkart
 Sie steht allen Piloten offen. Zugang: Seitenleiste „Werkzeuge“, Reiter „Flugkarten“, Knopf „In den Flugkarten öffnen“ einer Mission in Meine Missionen oder Knopf „Flugkarten“ des Kraftstoffplaners.
 Sie nutzt die Engine des Kartenstudios des Zentrums, arbeitet aber in einem eigenen Bereich Ihres Browsers: Ihre Einstellungen ändern nie die Mission des Zentrums.
 Jeder Block lässt sich zuklappen („Ausblenden“ / „Anzeigen“) und verschieben (Griff ↕). Die SIA-Datenbank muss einmal in diesem Browser gelesen werden (siehe letzter Block).
-Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf zwei Blöcke: „Route“ (Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte mit „⤢ Vergrößern“) und „Karten“ mit seinem einzigen Knopf „Karten und ZIP erzeugen“. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
+Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf zwei Blöcke: „Route“ (Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte mit „⤢ Vergrößern“) und „Karten“ mit seinem einzigen Knopf „Karten erzeugen“. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
 
 Oben auf der Seite öffnet „Öffnen in ▾“ die Route des Blocks „Route“, ihre Flughöhe und das gewählte Flugzeug in SimBrief, SkyVector, Navigraph Charts oder ChartFox (Karten von Start- und Zielflugplatz), in einem neuen Tab; dasselbe Menü wie im Kraftstoff (siehe „Öffnen in ▾“ im Kapitel Kraftstoff).
+
+**Beim Öffnen: der laufende Flug.** Die Seite übernimmt den im Kraftstoff vorbereiteten Flug (Block „Vertikalprofil“ und Planung):
+Route, Reiseflughöhe, Blatt des Luftfahrzeugs und Ausweichflugplatz (der des letzten SimBrief-OFP, wenn er dieselbe Strecke betrifft).
+Zwischen diesem Flug und dem hier Eingegebenen gewinnt das Neueste. Sobald die SIA-Datenbank geladen ist, erscheinen die Routenkarte
+und der Vertikalschnitt sofort, ohne weiteren Klick. Die Routenkarte nimmt das Profil „IFR niedrig“ (Flug bis FL195: untere
+Luftstraßen) oder „IFR hoch“ (darüber: obere Luftstraßen, NAT-Tracks), mit ICAO-Symbolik und den Gebieten R, D, P, TRA, CTR, TMA
+und CTA der Schicht, die weniger als 10 NM an der Route vorbeiführen; Abflug, Ziel und Ausweichflugplatz sind darauf benannt. Eine
+aus Meine Missionen empfangene Mission bleibt unverändert.
 
 ### Empfang einer Mission („In den Flugkarten öffnen“)
 
@@ -1443,10 +1451,10 @@ Die Seite zeigt keinen Block „Mission“: Die Mission kommt von selbst aus Mei
 1. Öffnen Sie in Meine Missionen die Mappe der Mission.
 2. Klicken Sie auf „In den Flugkarten öffnen“. Das Ihnen zugewiesene Luftfahrzeug wird an die Spitze der Mission gesetzt.
 3. Die Seite öffnet sich mit der Route und der Flughöhe der Mission im Block „Route“ und mit allen von der Mission vorgesehenen Karten in „Zu erstellende Karten“ (dazu `profil_vertical.png`). Die Liste „Zu erstellende Karten“ ist nur auf der Stufe Experte sichtbar.
-4. Stellen Sie bei Bedarf jede Karte ein (Stufe Experte) und klicken Sie dann auf „Karten und ZIP erzeugen“: im Block „Karten“ auf den Stufen 1 bis 3, in der Fußzeile auf der Stufe Experte.
+4. Stellen Sie bei Bedarf jede Karte ein (Stufe Experte) und klicken Sie dann auf „Karten erzeugen“: im Block „Karten“ auf den Stufen 1 bis 3, in der Fußzeile auf der Stufe Experte.
 
-Die Fußzeile zeigt die Anzahl der Karten im ZIP („… Karte(n) im ZIP + Übersichtskarte“) oder „Keine Mission geladen“.
-Empfangene Mission: „Zeichnen“ und „Kraftstoff“ arbeiten mit der geladenen Mission, ohne sie zu ersetzen. Auf den Stufen 1 bis 3 erzeugt „Karten und ZIP erzeugen“ ihre Karten unverändert. Auf der Stufe Experte fragt „Karten vorbereiten“ nach einer Bestätigung, bevor sie durch einen freien Flug „Flug Abflug → Ziel“ aus der Route ersetzt wird; ohne geladene Mission werden die Karten direkt erstellt.
+Die Fußzeile zeigt die Anzahl der zu erzeugenden Karten („… Karte(n) zu erzeugen“) oder „Keine Mission geladen“.
+Empfangene Mission: „Zeichnen“ und „Kraftstoff“ arbeiten mit der geladenen Mission, ohne sie zu ersetzen. Auf den Stufen 1 bis 3 erzeugt „Karten erzeugen“ ihre Karten unverändert. Auf der Stufe Experte fragt „Karten vorbereiten“ nach einer Bestätigung, bevor sie durch einen freien Flug „Flug Abflug → Ziel“ aus der Route ersetzt wird; ohne geladene Mission werden die Karten direkt erstellt.
 
 ### Route
 
@@ -1471,7 +1479,7 @@ Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anze
 |---|---|
 | „Karte“ | Angezeigte Karte (standardmäßig: die Übersichtskarte der Route). |
 | „Profil“ | Anzeigeprofil dieser Karte (dieselbe Einstellung wie in „Zu erstellende Karten“). |
-| „ZIP“ | Diese Karte ins ZIP aufnehmen oder nicht. |
+| „Erzeugen“ | Diese Karte erzeugen oder nicht. |
 | „Aktualisieren“ | Die Vorschau neu zeichnen. |
 | „Diesen Ausschnitt behalten“ | Die erzeugte Karte übernimmt genau den angezeigten Rahmen (Zoom und Verschieben mit der Maus). |
 | „Zentrieren“ / „Automatischer Ausschnitt“ | Zum gespeicherten Ausschnitt zurückkehren / ihn vergessen zugunsten eines aus der Mission berechneten Rahmens. |
@@ -1496,14 +1504,20 @@ Denken Sie daran, auf „Speichern“ zu klicken, um ein geändertes Profil zu b
 Dieser Block erstellt die Karten eines Flugs aus der Route, ohne Mission des Zentrums; auf den Stufen 1 bis 3 erzeugt er sie auch.
 
 1. Geben Sie Route und Flughöhe im Block „Route“ ein (mindestens ein Abflug und ein Ziel, die der SIA-Datenbank bekannt sind).
-2. Optional: „Treffpunkt (optional)“, ein Punkt oder Koordinaten „44.2, 0.6“.
-3. Kreuzen Sie die gewünschten Karten an: „Route (Übersicht, IFR)“, „Anflug“, „Treffpunkt“, „Ziel“.
-4. Klicken Sie auf „Karten und ZIP erzeugen“ (Stufen 1 bis 3): Die Karten werden erstellt und dann erzeugt, Fortschritt (mit „Abbrechen“) und Bericht erscheinen direkt darunter, und das ZIP wird heruntergeladen. Auf der Stufe Experte erstellt „Karten vorbereiten“ sie nur: Einstellungen unter „Zu erstellende Karten“, Erzeugung in der Fußzeile.
+2. Optional: „Treffpunkt (optional)“, ein Punkt oder Koordinaten „44.2, 0.6“; „Ausweichflugplatz (ICAO, optional)“,
+   aus dem Kraftstoff übernommen, wenn er dort bekannt ist.
+3. Kreuzen Sie die gewünschten Karten an: „Route (Übersicht, IFR)“ (Profil IFR niedrig oder hoch je nach Flughöhe, siehe
+   oben), „Anflug“, „Treffpunkt“, „Ziel“.
+4. Klicken Sie auf „Karten erzeugen“ (Stufen 1 bis 3): Die Karten werden erstellt und dann erzeugt, Fortschritt (mit
+   „Abbrechen“) und Bericht erscheinen direkt darunter. Die Bilder (jede Karte und `profil_vertical.png`) erscheinen
+   danach im Block: Ein Klick vergrößert, „Herunterladen“ speichert das Bild, „Drucken“ druckt es, „Alle drucken“ druckt
+   alle Bilder, eines pro Seite. Es gibt kein ZIP mehr. Auf der Stufe Experte erstellt „Karten vorbereiten“ sie nur:
+   Einstellungen unter „Zu erstellende Karten“, Erzeugung in der Fußzeile.
 
 Die Seite erzeugt eine Mission „Flug Abflug → Ziel“ mit den angekreuzten Karten und dem Vertikalprofil. Die Treffpunktkarte wird nur erstellt, wenn ein Treffpunkt eingegeben ist.
 Auf den Stufen 1 bis 3 hat die Seite weder Fußzeile noch Block „Vorschauen und Erzeugung“: Alles geht vom Knopf dieses Blocks aus.
 Danach aktualisiert jede Änderung der Route, der Flughöhe oder des Treffpunkts die Karten automatisch.
-Ankunft aus dem Kraftstoffplaner (Knopf „Flugkarten“): Die Karten werden von selbst erstellt, sobald die SIA-Datenbank geladen ist.
+Ankunft aus dem Kraftstoffplaner (Knopf „Flugkarten“): dasselbe Öffnen auf dem laufenden Flug, Karten von selbst erstellt, sobald die SIA-Datenbank geladen ist.
 Mögliche Fehlermeldungen: „SIA-Basis fehlt in diesem Browser“, „Route: unbekannt in der SIA-Datenbank“, „Keine Karte gewählt“.
 
 ### Zu erstellende Karten
@@ -1516,7 +1530,7 @@ Block der Stufe Experte. Die Liste „Karten der Mission“ hat eine Zeile pro K
 | Profil | Anzeigeprofil der Karte oder „Deaktiviert“. |
 | Linie | „Ohne Linie“, „Briefing: Route“, „Organisation: wahrscheinliche Route“, „Route + wahrscheinliche Route“. |
 | Empfänger | Nur bei Übungsmissionen: Briefing, Organisation, Übungsziel oder Besatzung. |
-| „ZIP“ | Abwählen, um die Karte nicht zu erzeugen. |
+| „Erzeugen“ | Abwählen, um die Karte nicht zu erzeugen. |
 | „ד | Die Karte aus der Mission löschen. |
 
 Um eine Karte hinzuzufügen: Geben Sie einen Namen ein („nouvelle_carte.png“), wählen Sie den Typ (Übersicht, Ziel, Detail, Gebiet), dann „+ Karte“. Ihr Ausschnitt ist die angezeigte Ansicht.
@@ -1527,14 +1541,15 @@ Ohne Mission und ohne erstellte Karten zeigt die Liste „Keine Karte: unten ein
 Block der Stufe Experte; auf den Stufen 1 bis 3 erscheint der Bericht der Erzeugung (erzeugte Karten, Fehlschläge und „Einzeln erneut versuchen“) unter dem Knopf des Blocks „Karten“.
 
 1. „Alle Karten anzeigen“: zeichnet eine Vorschau jeder Karte mit ihrem Profil. Die Vorschauen erzeugen keine Datei. Klick auf eine Vorschau: Vergrößerung.
-2. Jede Vorschau behält ihr Kästchen „ZIP“.
-3. „Karten und ZIP erzeugen“ (Knopf der Fußzeile): lädt ein ZIP herunter mit jeder Karte, der Übersichtskarte und `profil_vertical.png`, wenn diese Ausgabe angekreuzt ist.
+2. Jede Vorschau behält ihr Kästchen „Erzeugen“.
+3. „Karten erzeugen“ (Knopf der Fußzeile): Die Bilder jeder Karte und `profil_vertical.png` erscheinen
+   im Block „Karten“, einzeln herunterzuladen oder zu drucken (kein ZIP).
 
-Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen; sie übernimmt das Profil der Übersichtskarte der Route.
+Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen (nur Vorschau); sie übernimmt das Profil der Übersichtskarte der Route.
 Formate: Menü ☰ › Kartenausgaben (PNG, bearbeitbares SVG, PNG-Breite von 400 bis 5000 px; standardmäßig 1600 px).
-Schlägt eine Karte fehl (Hintergrund nicht verfügbar, Zeitüberschreitung), enthält das ZIP `rapport_generation.txt` und die Liste bietet „Einzeln erneut versuchen“ an.
+Schlägt eine Karte fehl (Hintergrund nicht verfügbar, Zeitüberschreitung), meldet es der Bericht und bietet „Einzeln erneut versuchen“ an, das ihr Bild ersetzt.
 Lassen Sie den Tab während der Erzeugung sichtbar: Der Browser bremst Tabs im Hintergrund, und eine Karte kann fehlschlagen („Zeitüberschreitung beim Laden der Hintergrundkarte“); „Einzeln erneut versuchen“ startet sie erneut.
-Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist. Während der Vorschauen und der Erzeugung trägt der Fortschrittsbalken einen Knopf „Abbrechen“: Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter (es wäre unvollständig); die bereits angezeigten Vorschauen bleiben. Starten Sie „Karten und ZIP erzeugen“ erneut für alle Karten.
+Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist. Während der Vorschauen und der Erzeugung trägt der Fortschrittsbalken einen Knopf „Abbrechen“: Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung zeigt kein Bild an (die Bilder wären unvollständig); die bereits angezeigten Vorschauen bleiben. Starten Sie „Karten erzeugen“ erneut für alle Karten.
 
 ### SIA-Datenbank
 

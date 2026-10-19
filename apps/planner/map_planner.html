@@ -93,6 +93,12 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 [data-block-id="vol"] #result:not(:empty){margin-top:6px}
 .volMaps{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:8px 0 2px}
 #vprofPtsBox{display:none!important}
+.volGallery{margin-top:10px}.volGalleryBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}.volGalleryBar b{flex:1}
+.volGalleryGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.volGalleryGrid figure{margin:0;display:grid;gap:6px;padding:6px;border:1px solid var(--line,#8884);border-radius:calc(8px*var(--repo-round,1))}
+.volGalleryGrid img{width:100%;height:150px;object-fit:contain;background:var(--field,#fff);cursor:zoom-in}
+.volGalleryGrid figcaption{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px}.volGalleryGrid figcaption span{flex:1 1 100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.volGalleryFiles{margin:8px 0 0;font-size:12px}
 @media(max-width:800px){.volForm{grid-template-columns:1fr 1fr}}
 </style>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1356,7 +1362,7 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <p id="routeInfo" class="small"></p>
 <details class="small route-help"><summary>Syntaxe et utilisation</summary><p>Case 15 du plan de vol OACI (séparée par des espaces) ou liste à virgules. Points : terrains (OACI), balises, points RNAV, points de report VFR (« MM-CV »), points de la mission (ORIGIN, TARGET…), « REN300010 » (radiale / distance), coordonnées « 4330N00125E » ou « lat lon » ; voies aériennes entre deux points (« TOU UN460 NTS ») suivies point par point ; « DCT » : direct. Niveaux : « N0450F350 » groupe vitesse / niveau (au départ ou après un point : « NTS/N0440F370 »), « FL105 » ou « 5500 ft » seul : montée ou descente après le point précédent, « /A035 », « /F065 » ou « /3000 » après un point : altitude à atteindre au point, « VFR » : pas de niveau. Le même plan de vol est repris par le planificateur carburant (Cartes de vol).</p><p>Survol d’un point du texte, de la carte ou de la coupe : les deux autres s’illuminent. Carte : glisser un point (aimanté sur balises, points de report, terrains), clic sur la route pour insérer un point, clic droit pour supprimer un point (double-clic : un point ajouté). Coupe : clic pour un point à cette altitude, glisser pour l’altitude, clic droit pour supprimer.</p></details>
 <div id="placeBox" class="placeBox" hidden><p><b id="placeTitle">Points à placer</b> <span class="small">Cliquer la carte, ou chercher un terrain, une balise, un point de la base SIA ou une ville (code ou nom) ; un point posé se déplace en le glissant sur la carte.</span></p><table id="placeTable"></table><p id="placeDone" class="ok" hidden>Tout est placé. <button type="button" id="placeGenerate" class="primary" data-icon="download">Générer les cartes et le ZIP</button></p><datalist id="placeOptions"></datalist></div><div id="vprofPtsBox" class="small" hidden><span>Points de la mission (clic : ajouter au cheminement) :</span> <span id="vprofPts"></span></div>
-<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> ZIP</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre à part : la même carte interactive (déplacer, zoomer, points), sans le reste du studio ; elle suit les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
+<aside class="profilePreview routeMap box"><div class="routeMapBar"><label class="routeInline">Carte <select id="routeMapSel" title="Carte affichée (par défaut : la carte générale de la route)"></select></label><label class="routeInline" data-min-level="4">Profil <select id="routeMapProfile" title="Profil d’affichage de cette carte (même réglage que dans « Cartes à produire »)"></select></label></div><div class="profileLeft routeProfileEdit" data-min-level="4"></div><select id="previewMap" hidden><option value="">Aucune mission chargée</option></select><img id="generalPreview" alt="Carte de contrôle" hidden><div id="osmLivePreview" hidden></div><div class="viewBar"><label class="mapZip previewZip" data-min-level="4" title="Générer cette carte (décocher pour ne pas la générer)"><input type="checkbox" id="previewZip" checked disabled> Générer</label><button id="refreshPreview" data-min-level="4" data-icon="refresh" type="button" disabled title="Redessiner l’aperçu avec les réglages en cours">Actualiser</button><button type="button" data-view="keep" data-min-level="4" data-icon="check" title="La carte générée reprendra exactement le cadre affiché (zoom et déplacement à la souris) ; écrit dans la mission">Garder ce cadrage</button><button type="button" data-view="home" data-min-level="4" class="secondary" title="Revenir au cadrage enregistré de cette carte">Recentrer</button><button type="button" data-view="auto" data-min-level="4" class="secondary" title="Oublier le cadrage enregistré : cadre calculé d’après la mission (points, zones, pistes) et le type de carte">Cadrage automatique</button><span class="viewSpacer"></span><button id="previewWindow" data-min-level="4" type="button" class="buttonLink" title="Ouvrir la carte dans une fenêtre à part : la même carte interactive (déplacer, zoomer, points), sans le reste du studio ; elle suit les réglages">⧉ Fenêtre</button><button id="previewPop" type="button" class="buttonLink" title="Agrandir la carte (Échap pour revenir)">⤢ Agrandir</button></div>
 <p id="previewStatus" data-status class="small">Carte choisie, dessinée avec le profil en cours de modification ; actualisée à chaque réglage.</p></aside>
 <img id="vprofImg" alt="Profil vertical" hidden style="width:100%;border:1px solid #c8d6dd;border-radius:8px;margin-top:6px">
 <p id="vprofStatus" data-status class="small">Relief (tuiles d’altitude, ± 1 km) ; espaces et obstacles (à moins de 1 NM) selon le profil d’affichage de <code>profil_vertical.png</code> (liste des cartes).</p>
@@ -1367,6 +1373,7 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <h2 id="volTitle"></h2>
 <div class="volForm">
 <label>Rendez-vous (facultatif)<input id="volRdv" spellcheck="false" placeholder="point ou « 44.2, 0.6 »"></label>
+<label>Dégagement (OACI, facultatif)<input id="volAltn" spellcheck="false" placeholder="LFBD" maxlength="4"></label>
 </div>
 <div class="volMaps"><span class="small">Cartes :</span>
 <label class="check"><input type="checkbox" data-volmap="topo" checked> route (vue d’ensemble, IFR)</label>
@@ -1374,8 +1381,9 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <label class="check"><input type="checkbox" data-volmap="rdv" checked> rendez-vous</label>
 <label class="check"><input type="checkbox" data-volmap="destination" checked> destination</label>
 </div>
-<div class="actions"><button id="volGenerate" type="button" data-icon="download" data-max-level="3"></button><button id="volBuild" type="button" data-icon="map" data-min-level="4"></button></div>
+<div class="actions"><button id="volGenerate" type="button" data-icon="map" data-max-level="3"></button><button id="volBuild" type="button" data-icon="map" data-min-level="4"></button></div>
 <p id="volStatus" data-status class="small"></p>
+<div id="volGallery" class="volGallery" hidden></div>
 </section>
 
 <section data-block-id="sia-profiles" data-min-level="4" data-icon="map" data-subtitle="Cartes de la mission, cadrage de chacune et profil d’affichage (fond, espaces, symboles, éléments)."><h2>Cartes à produire</h2>
@@ -1436,7 +1444,7 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 </div>
 </section>
 
-<section data-block-id="sia-outputs" data-min-level="4" data-deco-bg="maps" data-icon="layers" data-subtitle="Aperçus de toutes les cartes, génération des cartes et du ZIP."><h2>Aperçus et génération</h2><div class="box"><div class="actions"><button id="previewAll" data-icon="eye" type="button" disabled>Afficher toutes les cartes</button><button id="generate" data-icon="download" disabled hidden>Générer les cartes et le ZIP</button><button id="generateAll" data-icon="layers" type="button" hidden>Générer toutes les missions</button></div><p id="outputSummary" class="small"></p><div id="result" data-status></div></div>
+<section data-block-id="sia-outputs" data-min-level="4" data-deco-bg="maps" data-icon="layers" data-subtitle="Aperçus de toutes les cartes, génération des cartes et du ZIP."><h2>Aperçus et génération</h2><div class="box"><div class="actions"><button id="previewAll" data-icon="eye" type="button" disabled>Afficher toutes les cartes</button><button id="generate" data-icon="download" disabled hidden>Générer les cartes</button><button id="generateAll" data-icon="layers" type="button" hidden>Générer toutes les missions</button></div><p id="outputSummary" class="small"></p><div id="result" data-status></div></div>
 <div hidden><input id="svg" type="checkbox"><input id="png" type="checkbox" checked><input id="pngWidth" type="number" value="1600"></div><p id="galleryStatus" data-status class="small">Les aperçus ne créent aucun fichier.</p>
 <div id="previewGallery" class="repo-notebooks"></div>
 <h3>Carte d’assemblage</h3><img id="assemblyPreview" alt="Carte d’assemblage" hidden><p id="assemblyStatus" data-status class="small">Elle s’affichera automatiquement dès que le fond et la mission seront disponibles.</p>
@@ -1446,7 +1454,7 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <p class="small">Dossier <code>data/sia</code> (mémorisé comme les autres dossiers de la suite) : « Relire le dossier » après une mise à jour AIRAC. Le fond de carte et les villes sont livrés avec l’application. Même bloc que Paramètres › Maintenance › Mise à jour SIA (étape 4).</p>
 <div id="siaBasePanel"></div></section>
 </main>
-<div class="studio-footer repo-actionbar" id="studioToolbar" data-min-level="4"><span id="studioFooterInfo" class="small"></span><span id="studioStoreSlot"></span><button id="generateAllSticky" data-icon="layers" type="button" hidden>Générer toutes les missions</button><button id="generateSticky" data-icon="download" type="button" disabled>Générer les cartes et le ZIP</button></div>
+<div class="studio-footer repo-actionbar" id="studioToolbar" data-min-level="4"><span id="studioFooterInfo" class="small"></span><span id="studioStoreSlot"></span><button id="generateAllSticky" data-icon="layers" type="button" hidden>Générer toutes les missions</button><button id="generateSticky" data-icon="map" type="button" disabled>Générer les cartes</button></div>
 <dialog id="previewDialog"><button id="closePreview" type="button">Fermer</button><img id="largePreview" alt="Aperçu agrandi"></dialog>
 
 <script>
@@ -1926,8 +1934,30 @@ const defaultProfiles = () => [{
   "adMode": "white",
   "navList": [],
   "navMode": "white"
-}];
-const BASE_PROFILES_VERSION = 3; // 3 : tracks NAT du jour cochés dans AIRWAYS
+}].flatMap(p => p.id === 'airways' ? [p, ifrRouteProfile(p, 'ifr-low', 'IFR bas', true), ifrRouteProfile(p, 'ifr-high', 'IFR haut',
+  false)] : [p]);
+/** Profil IFR de route (Cartes de vol : carte de la route choisie d'après le niveau de croisière, seuil FL195), dérivé
+ *  d'AIRWAYS : voies aériennes de la tranche (basses ou hautes), zones R / D / P, TRA, CTR / TMA / CTA de la tranche
+ *  (plafond FL195 en bas, plancher FL195 en haut), symbologie OACI, limitées au couloir de la route (corridorNm,
+ *  selectedAirspaces). */
+function ifrRouteProfile(base, id, name, low) {
+  const p = JSON.parse(JSON.stringify(base));
+  return Object.assign(p, {
+    id,
+    name,
+    zones: ['R', 'D', 'P', 'TRA', 'CTR', 'TMA', 'CTA'],
+    corridorNm: 10,
+    elements: Object.assign(p.elements, {
+      airwaysLow: low,
+      airwaysHigh: !low,
+      natTracks: !low,
+      icaoStyle: true,
+      zoneFloor: low ? '' : '19500',
+      zoneCeil: low ? '19500' : ''
+    })
+  });
+}
+const BASE_PROFILES_VERSION = 4; // 3 : tracks NAT du jour cochés dans AIRWAYS ; 4 : profils IFR bas et haut
 // ===== Profils d'affichage =====
 // Profils communs à toutes les missions (localStorage siaDisplayProfiles) ; chaque carte de la mission
 // désigne le sien (_profileId). Réglages de couches OSM dans p.layers, des éléments dans p.elements.
@@ -2138,7 +2168,7 @@ function renderMapProfiles() {
   host.innerHTML = mission.maps.map((m, i) => {
     m._profileId = m._profileId || defaultProfileForMap(m, i);
     if (m._profileId !== 'off' && !displayProfiles.some(p => p.id === m._profileId)) m._profileId = displayProfiles[0].id;
-    return`<div class="mapRow${i===cur?' on':''}${m._profileId==='off'?' off':''}${m._zip===false?' nozip':''}"><button type="button" class="mapShow" data-map-show="${i}" title="${esc(m.description||m.file)} — afficher dans la carte de contrôle">${m._view?'✎ ':''}${esc(m.file)}</button><select data-map-profile="${i}" title="Profil de cette carte">${displayProfiles.map(p=>`<option value="${esc(p.id)}"${p.id===m._profileId?' selected':''}>${esc(p.name)}</option>`).join('')}<option value="off"${m._profileId==='off'?' selected':''}>Désactivé</option></select><select data-map-trace="${i}" title="Tracé de cette carte : carte brief (cheminement saisi) ou carte organisation (route probable et retours possibles)">${TRACES.map(([v,l])=>`<option value="${v}"${traceOf(m)===v?' selected':''}>${l}</option>`).join('')}</select>${exerciseChoices().length>1?`<select data-map-exercise="${i}" title="Destinataire de la carte : sans pistes (brief), organisation (toutes les pistes et les routes), un chiffon (sa route), ou un équipage (pistes connues après un message ou un pli)">${exerciseChoices().map(([v,l])=>`<option value="${esc(v)}"${exerciseOf(m)===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`:''}<label class="mapZip" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" data-map-zip="${i}"${m._zip===false?'':' checked'}> ZIP</label><button type="button" class="mapDel" data-map-del="${i}" title="Supprimer cette carte de la mission">×</button></div>`
+    return`<div class="mapRow${i===cur?' on':''}${m._profileId==='off'?' off':''}${m._zip===false?' nozip':''}"><button type="button" class="mapShow" data-map-show="${i}" title="${esc(m.description||m.file)} — afficher dans la carte de contrôle">${m._view?'✎ ':''}${esc(m.file)}</button><select data-map-profile="${i}" title="Profil de cette carte">${displayProfiles.map(p=>`<option value="${esc(p.id)}"${p.id===m._profileId?' selected':''}>${esc(p.name)}</option>`).join('')}<option value="off"${m._profileId==='off'?' selected':''}>Désactivé</option></select><select data-map-trace="${i}" title="Tracé de cette carte : carte brief (cheminement saisi) ou carte organisation (route probable et retours possibles)">${TRACES.map(([v,l])=>`<option value="${v}"${traceOf(m)===v?' selected':''}>${l}</option>`).join('')}</select>${exerciseChoices().length>1?`<select data-map-exercise="${i}" title="Destinataire de la carte : sans pistes (brief), organisation (toutes les pistes et les routes), un chiffon (sa route), ou un équipage (pistes connues après un message ou un pli)">${exerciseChoices().map(([v,l])=>`<option value="${esc(v)}"${exerciseOf(m)===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`:''}<label class="mapZip" title="${zipTitle()}"><input type="checkbox" data-map-zip="${i}"${m._zip===false?'':' checked'}> ${zipWord()}</label><button type="button" class="mapDel" data-map-del="${i}" title="Supprimer cette carte de la mission">×</button></div>`
   }).join('')
 }
 // ===== Base SIA : shared/sia_base.js (lecture du dossier, cache, résumé, MORA — communs avec Paramètres › Maintenance) =====
@@ -2588,7 +2618,9 @@ function parseMissionYaml(text) {
       ['arrival', 'DESTINATION'],
       ['arrivee', 'DESTINATION'],
       ['target', 'TARGET'],
-      ['cible', 'TARGET']
+      ['cible', 'TARGET'],
+      ['alternate', 'ALTERNATE'],
+      ['degagement', 'ALTERNATE']
     ];
   for (const [key, id] of roles) {
     const p = addPoint(points, root[key] ?? meta[key], id);
@@ -2803,12 +2835,75 @@ const zoneFamily = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has(
 /** Plancher et plafond d'un espace en pieds (SiaAero.limitFt), mémorisés sur l'objet (a._lo, a._hi). */
 const zoneFloorFt = a => a._lo ??= SiaAero.limitFt(a.lower, false),
   zoneCeilFt = a => a._hi ??= SiaAero.limitFt(a.upper, true);
-// Zones retenues pour une carte : types cochés, plancher / plafond, liste blanche ou noire, alias (@RTBA…).
+// Zones retenues pour une carte : types cochés, plancher / plafond, liste blanche ou noire, alias (@RTBA…) ; profil avec
+// corridorNm (profils IFR de route) : seulement les zones à moins de corridorNm NM du cheminement.
 function selectedAirspaces(mapDef) {
-  return SiaProfile.selectAirspaces(profileForMap(mapDef), airspaces, {
-    aliases: zoneAliases,
-    limitFt: SiaAero.limitFt
-  })
+  const profile = profileForMap(mapDef),
+    list = SiaProfile.selectAirspaces(profile, airspaces, {
+      aliases: zoneAliases,
+      limitFt: SiaAero.limitFt
+    }),
+    nm = +profile?.corridorNm || 0;
+  return nm > 0 ? list.filter(a => nearRoute(a, nm)) : list
+}
+/** Échantillons du cheminement (un point tous les 2 NM environ), refaits quand la route change. */
+let corridorCache = {
+  key: '',
+  pts: []
+};
+const routeSamples = () => {
+  const pts = routePoints().filter(hasPos),
+    key = pts.map(p => `${p.lat},${p.lon}`).join(';');
+  if (corridorCache.key === key) return corridorCache.pts;
+  const out = [];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1],
+      b = pts[i],
+      d = Math.hypot((b.lat - a.lat) * 60, (b.lon - a.lon) * 60 * Math.cos(a.lat * Math.PI / 180)),
+      n = Math.max(1, Math.ceil(d / 2));
+    for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, a.lon + (b.lon - a.lon) * k / n]);
+  }
+  if (pts.length) out.push([pts[pts.length - 1].lat, pts[pts.length - 1].lon]);
+  return (corridorCache = {
+    key,
+    pts: out
+  }).pts
+};
+/** Vrai si l'espace est à moins de nm NM du cheminement (un échantillon dans l'espace, ou un bord proche) ; sans
+ *  cheminement : vrai. */
+function nearRoute(a, nm) {
+  const smp = routeSamples();
+  if (smp.length < 2) return true;
+  const ck = `${corridorCache.key}|${nm}`; // résultat gardé sur l'espace tant que la route et le couloir sont les mêmes
+  if (a._nearKey === ck) return a._near;
+  a._nearKey = ck;
+  const b = zoneBox(a),
+    mlat = nm / 60;
+  if (!smp.some(([la, lo]) => la >= b.s - mlat && la <= b.n + mlat && lo >= b.w - mlat * 2 && lo <= b.e + mlat * 2)) return (a
+    ._near = false);
+  // distance (NM) d'un point à un segment, en projection locale
+  const segDist = (la, lo, p, q) => {
+    const k = Math.cos(la * Math.PI / 180),
+      ax = (p[1] - lo) * 60 * k,
+      ay = (p[0] - la) * 60,
+      bx = (q[1] - lo) * 60 * k,
+      by = (q[0] - la) * 60,
+      dx = bx - ax,
+      dy = by - ay,
+      t = dx || dy ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy))) : 0;
+    return Math.hypot(ax + t * dx, ay + t * dy);
+  };
+  const inside = (la, lo, ring) => {
+    let c = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [yi, xi] = ring[i],
+        [yj, xj] = ring[j];
+      if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  return (a._near = smp.some(([la, lo]) => a.rings.some(r => inside(la, lo, r) || r.some((p, i) => i && segDist(la, lo, r[i - 1], p) <=
+    nm))));
 }
 let zoneItems = [],
   zoneModeValue = 'white';
@@ -6317,6 +6412,15 @@ function zipStore(files) {
 }
 
 /** Fait télécharger un Blob sous le nom donné (lien temporaire, URL libérée après 2 s). */
+/** Case « ZIP » d'une carte (la générer ou non) : « Générer » quand la page montre les images sans archive. */
+const zipWord = () => window.SiaDeliver ? 'Générer' : 'ZIP',
+  zipTitle = () => window.SiaDeliver ? 'Générer cette carte (décocher pour ne pas la générer)' :
+  'Mettre cette carte dans le ZIP (décocher pour ne pas la générer)';
+/** Remise des fichiers générés : ZIP téléchargé (studio du Centre) ; une page peut fournir window.SiaDeliver(files,
+ *  info) à la place (Cartes de vol : cartes montrées dans la page, sans archive). */
+const deliverFiles = (files, name, info = {}) => window.SiaDeliver ? window.SiaDeliver(files, info) : download(zipStore(files),
+  name);
+
 function download(blob, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -7006,7 +7110,8 @@ $('previewMap').addEventListener('change', syncPreviewZip);
       g2.disabled = g.disabled;
       g2.textContent = g.textContent;
       const n = (mission?.maps || []).filter(m => m._profileId !== 'off' && m._zip !== false).length;
-      $('studioFooterInfo').textContent = mission ? `${n} carte(s) dans le ZIP + carte d’assemblage` : 'Aucune mission chargée'
+      $('studioFooterInfo').textContent = mission ? window.SiaDeliver ? `${n} carte(s) à générer` :
+        `${n} carte(s) dans le ZIP + carte d’assemblage` : 'Aucune mission chargée'
     };
   $('mapProfiles').addEventListener('change', () => setTimeout(sync));
   $('previewZip').addEventListener('change', () => setTimeout(sync));
@@ -8070,7 +8175,7 @@ $('previewAll').onclick = async () => {
         }
         const card = document.createElement('div');
         card.className = 'previewCard repo-notebook' + (m._zip === false ? ' nozip' : '');
-        card.innerHTML = `<label class="mapZip" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" data-gal-zip="${esc(m.file)}"${m._zip===false?'':' checked'}> ZIP</label><strong>${esc(m.file)}</strong><span class="small">${esc(profileForMap(m).name)}</span>${problem?`<span class="small err">${esc(problem)}</span>`:''}${url?`<img alt="Aperçu ${esc(m.file)}">`:''}`;
+        card.innerHTML = `<label class="mapZip" title="${zipTitle()}"><input type="checkbox" data-gal-zip="${esc(m.file)}"${m._zip===false?'':' checked'}> ${zipWord()}</label><strong>${esc(m.file)}</strong><span class="small">${esc(profileForMap(m).name)}</span>${problem?`<span class="small err">${esc(problem)}</span>`:''}${url?`<img alt="Aperçu ${esc(m.file)}">`:''}`;
         if (url) {
           previewUrls.push(url);
           card.querySelector('img').src = url
@@ -8125,11 +8230,11 @@ $('generate').onclick = async () => {
       jobs = [...outputMaps().filter(m => m._zip !== false).map(m => ({
         def: m,
         stem: m.file.replace(/\.[^.]+$/, '')
-      })), {
+      })), ...(window.SiaDeliver ? [] : [{ // carte d'assemblage : avec le ZIP du studio seulement
         def: assemblyMapDef(),
         stem: 'carte_assemblage',
         assembly: true
-      }];
+      }])];
     $('generate').disabled = true;
     p.max = jobs.length;
     p.value = 0;
@@ -8181,7 +8286,8 @@ $('generate').onclick = async () => {
       $('result').innerHTML = `<span class="small">${esc(stopped)}</span>`;
       return
     }
-    if (vprofOf().output) {
+    // profil vertical : demandé par la mission, ou toujours quand la page montre les cartes (Cartes de vol)
+    if (vprofOf().output || (window.SiaDeliver && routePoints().length > 1)) {
       $('result').textContent = 'Profil vertical…';
       try {
         const {
@@ -8216,7 +8322,9 @@ $('generate').onclick = async () => {
         id: String(sharedDoc?.yaml?.mission?.id || mission.title),
         files,
         report
-      }) : download(zipStore(files), mission.title.replace(/[^a-z0-9_-]+/gi, '_') + '_cartes.zip');
+      }) : deliverFiles(files, mission.title.replace(/[^a-z0-9_-]+/gi, '_') + '_cartes.zip', {
+        report
+      });
       // cartes rangées dans le dossier de la mission (cartes/), réglages du studio et date de génération dans le YAML
       if (window.MissionRegistryCore && sharedDoc?.yaml) {
         try {
@@ -8235,7 +8343,7 @@ $('generate').onclick = async () => {
         }
       }
     }
-    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${failed.length||partial.length?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial
+    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${(failed.length||partial.length)&&!window.SiaDeliver?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial
       .length ? '<ul>' + report.filter(r => !r.ok || r.warning).map(r => `<li class="${r.ok?'':'err'}">${esc(r.file)} : ${esc(r.ok?'fond partiel — '+r.warning:r.error)}${r.ok||r.file==='dossier de la mission'?'':' — <button type="button" data-retry="'+esc(r.file)+'">Réessayer seule</button>'}</li>`).join('') + '</ul>' : '');
     if (storeResult) {
       $('result').insertAdjacentHTML('beforeend', `<p class="${storeResult.ok?'ok':'err'}">Dossier de la mission : ${esc(storeResult.text)}</p>`);
@@ -8276,8 +8384,10 @@ $('result').addEventListener('click', async e => {
       name: stem + '.svg',
       data: new TextEncoder().encode(embeddedPngSvg(r.dataUrl, width))
     });
-    download(zipStore(files), stem + '.zip');
-    button.closest('li').innerHTML = `<span class="ok">${esc(stem)} : générée (${esc(stem)}.zip).</span>`
+    deliverFiles(files, stem + '.zip', {
+      retry: stem
+    });
+    button.closest('li').innerHTML = `<span class="ok">${esc(stem)} : générée${window.SiaDeliver ? '' : ` (${esc(stem)}.zip)`}.</span>`
   } catch (err) {
     button.disabled = false;
     button.textContent = 'Réessayer seule';
@@ -8471,7 +8581,7 @@ applyOutputPrefs();;
 ExternalLinks.menu(host,()=>{let st={};try{st=JSON.parse(localStorage.getItem('flightPerfState')||'{}')||{}}catch{}
 const id=document.getElementById('vprofAircraft')?.value,p=(id&&st.profiles?.[id])||st.profiles?.[st.lastAircraft]||{};
 const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(document.getElementById('vprofCruise')?.value||'').toUpperCase().replace(/\s+/g,'')),ft=m?(m[1]?+m[2]*100:+m[2]):0;
-return{route:document.getElementById('vprofRoute')?.value||'',fl:ft?Math.round(ft/100):'',type:p.icao||p.type||'',reg:p.registration||'',callsign:p.callsign||''}})})();
+return{route:document.getElementById('vprofRoute')?.value||'',fl:ft?Math.round(ft/100):'',type:p.icao||p.type||'',reg:p.registration||'',callsign:p.callsign||'',altn:document.getElementById('volAltn')?.value||''}})})();
 </script>
 <script>
 // ===== Cartes de vol (page publique) : bloc « Cartes » =====
@@ -8485,7 +8595,7 @@ const full=(+document.documentElement.dataset.level||4)>=4;
 // textes du bloc, traduits à la source : ce script passe avant le cadre de page (titre, sous-titre, icônes)
 document.querySelector('section[data-block-id="vol"]').dataset.subtitle=K.t(['Rendez-vous facultatif et cartes à choisir d’après la route du bloc « Route ».','Optional rendezvous and maps to choose from the route of the “Route” block.','Optionaler Treffpunkt und auszuwählende Karten nach der Route des Blocks „Route“.','Encuentro opcional y mapas que elegir según la ruta del bloque «Ruta».']);
 $v('volTitle').textContent=K.t(['Cartes','Maps','Karten','Mapas']);
-$v('volGenerate').textContent=K.t(['Générer les cartes et le ZIP','Generate the maps and the ZIP','Karten und ZIP erzeugen','Generar los mapas y el ZIP']);
+$v('volGenerate').textContent=K.t(['Générer les cartes','Generate the maps','Karten erzeugen','Generar los mapas']);
 $v('volBuild').textContent=K.t(['Préparer les cartes','Prepare the maps','Karten vorbereiten','Preparar los mapas']);
 // niveaux 1 à 3 : « Aperçus et génération » est rangé au niveau 4 ; le compte rendu de la génération (#result du
 // studio, avec « Réessayer seule ») passe sous l'action du bloc, une fois au chargement (le niveau change en rechargeant)
@@ -8496,8 +8606,12 @@ const coord=t=>{const m=/^\s*(-?\d+(?:\.\d+)?)\s*[,;| ]\s*(-?\d+(?:\.\d+)?)\s*$/
 const baseReady=()=>(aero?.aerodromes?.length||0)>0;
 // plan de vol partagé avec le planificateur carburant (flightPlanShared:v1) : un seul FPL, le plus récent l'emporte
 const FPL_KEY='flightPlanShared:v1',readFpl=()=>{try{return JSON.parse(localStorage.getItem(FPL_KEY)||'null')}catch{return null}};
-function saveForm(){const route=$v('vprofRoute').value.trim();try{localStorage.setItem(FORM_KEY,JSON.stringify({route,rdv:$v('volRdv').value,level:$v('vprofCruise').value,maps:[...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap),at:Date.now()}));if(route&&readFpl()?.route!==route)localStorage.setItem(FPL_KEY,JSON.stringify({route,at:Date.now(),by:'maps'}))}catch{}}
-function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null')||{},sh=readFpl(),route=sh?.route&&(sh.at||0)>(f.at||0)?sh.route:f.route;if(route&&(!$v('vprofRoute').value.trim()||sh?.route===route))$v('vprofRoute').value=route;$v('volRdv').value=f.rdv||'';if(f.level&&!$v('vprofCruise').value)$v('vprofCruise').value=f.level;if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)})}catch{}}
+// vol en cours partagé : route, niveau (FL), fiche de l'appareil, dégagement ; écrit seulement s'il change
+function saveForm(){const route=$v('vprofRoute').value.trim(),ft=levelFt($v('vprofCruise').value);try{localStorage.setItem(FORM_KEY,JSON.stringify({route,rdv:$v('volRdv').value,altn:$v('volAltn').value,level:$v('vprofCruise').value,maps:[...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap),at:Date.now()}));const cur=readFpl()||{},next={route,fl:ft?String(Math.round(ft/100)):'',aircraft:$v('vprofAircraft').value||'',altn:$v('volAltn').value.trim().toUpperCase()};if(route&&Object.keys(next).some(k=>String(cur[k]||'')!==next[k]))localStorage.setItem(FPL_KEY,JSON.stringify({...next,at:Date.now(),by:'maps'}))}catch{}}
+// vol voulu à l'ouverture (le plus récent du plan partagé et du formulaire) : repris par le démarrage, qui l'emporte sur la
+// mission enregistrée (relue par le studio après ce script)
+let wanted={route:'',aircraft:''};
+function loadForm(){try{const f=JSON.parse(localStorage.getItem(FORM_KEY)||'null')||{},sh=readFpl(),fresh=sh?.route&&(sh.at||0)>(f.at||0),route=fresh?sh.route:f.route;if(route&&(!$v('vprofRoute').value.trim()||sh?.route===route))$v('vprofRoute').value=route;$v('volRdv').value=f.rdv||'';$v('volAltn').value=(fresh?sh.altn:f.altn)||f.altn||'';const fl=fresh&&+sh.fl?`FL${+sh.fl}`:f.level;if(fl&&(fresh||!$v('vprofCruise').value))$v('vprofCruise').value=fl;if(Array.isArray(f.maps))document.querySelectorAll('[data-volmap]').forEach(i=>{i.checked=f.maps.includes(i.dataset.volmap)});wanted={route:route||'',aircraft:fresh?sh.aircraft||'':''}}catch{}}
 /** Points de la route du champ (sans les points intermédiaires des voies aériennes) ; null et message si impossible. */
 function routePoints(){
  if(!baseReady()){say(esc(K.t(['Base SIA absente de ce navigateur : bloc « Base de données SIA », « Reconstruire la base aéronautique », ou Paramètres › Maintenance.','SIA database missing from this browser: “SIA database” block, “Rebuild the aeronautical database”, or Settings › Maintenance.','SIA-Datenbank fehlt in diesem Browser: Block „SIA-Datenbank“, „Luftfahrtdatenbank neu aufbauen“, oder Einstellungen › Wartung.','Base SIA ausente de este navegador: bloque «Base de datos SIA», «Reconstruir la base aeronáutica», o Ajustes › Mantenimiento.'])),'err');return null}
@@ -8516,16 +8630,19 @@ document.addEventListener('change',e=>{const i=e.target?.dataset?.mapProfile;if(
 function build(quiet,gen){
  const pts=routePoints();if(!pts)return false;const want=new Set([...document.querySelectorAll('[data-volmap]')].filter(i=>i.checked).map(i=>i.dataset.volmap));
  const idOf=(p,i)=>{const n=String(p.name||'').toUpperCase();return/^[A-Z0-9]{2,5}$/.test(n)?n:`P${i}`};
+ let altn=null;const at=$v('volAltn').value.trim().toUpperCase();if(at){const q=SiaProfile.resolver({aero:aero||{}})(at);if(!q){say(`Dégagement inconnu : ${esc(at)}.`,'err');return false}altn={id:'ALTN',name:q.name||at,lat:q.lat,lon:q.lon}}
  let rdv=null;const rt=$v('volRdv').value.trim();if(rt){const c=coord(rt);if(c)rdv={id:'RDV',name:'RDV',...c};else{const q=SiaProfile.resolver({aero:aero||{}})(rt);if(!q){say(`Rendez-vous inconnu : ${esc(rt)}.`,'err');return false}rdv={id:'RDV',name:`RDV ${q.name||rt}`,lat:q.lat,lon:q.lon}}}
  const P=(p,i)=>({id:idOf(p,i),name:p.name||idOf(p,i),lat:+p.lat.toFixed(6),lon:+p.lon.toFixed(6)}),dep=P(pts[0],0),dest=P(pts[pts.length-1],pts.length-1),mid=pts.slice(1,-1).map((p,i)=>P(p,i+1)),ft=levelFt($v('vprofCruise').value);
  const maps=[];
- if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:'airways'});
+ // carte de la route : profil IFR bas ou haut selon le niveau de croisière (seuil FL195)
+ if(want.has('topo'))maps.push({filename:`route_${dep.id}_${dest.id}.png`,type:'general',description:'Carte de la route',profile:ft>=19500?'ifr-high':'ifr-low'});
  if(want.has('approche'))maps.push({filename:`approche_${dest.id}.png`,type:'approche',description:`Approche de ${dest.id}`,centre_ref:'DESTINATION',range_km:30});
  if(want.has('rdv')&&rdv)maps.push({filename:'rendez_vous.png',type:'rdv',description:'Rendez-vous',centre_ref:'RDV',range_km:15});
  if(want.has('destination'))maps.push({filename:`destination_${dest.id}.png`,type:'detail',description:`Terrain de destination ${dest.id}`,centre_ref:'DESTINATION'});
  if(!maps.length){say('Aucune carte choisie.','err');return false}
- const vp={...(sharedDoc?.yaml?.mission?.id==='VOL'?sharedDoc.yaml.vertical_profile:{}),route:$v('vprofRoute').value.trim(),cruise:ft?(ft>=6000?`FL${Math.round(ft/100)}`:String(ft)):undefined};
- const yaml={schema_version:'2.0',mission:{id:'VOL',title:`Vol ${dep.id} → ${dest.id}`,type:'Vol'},origin:dep,destination:dest,turning_points:mid,...(rdv?{rendezvous:[P(rdv,0)]}:{}),vertical_profile:vp,maps};
+ const vp={...(sharedDoc?.yaml?.mission?.id==='VOL'?sharedDoc.yaml.vertical_profile:{}),route:$v('vprofRoute').value.trim(),cruise:ft?(ft>=6000?`FL${Math.round(ft/100)}`:String(ft)):undefined,aircraft:$v('vprofAircraft').value||undefined};
+ vp.output=vp.output!==false; // profil vertical montré avec les cartes, sauf refus explicite
+ const yaml={schema_version:'2.0',mission:{id:'VOL',title:`Vol ${dep.id} → ${dest.id}`,type:'Vol'},origin:dep,destination:dest,...(altn?{alternate:P(altn,0)}:{}),turning_points:mid,...(rdv?{rendezvous:[P(rdv,0)]}:{}),vertical_profile:vp,maps};
  const views=new Map((mission?.maps||[]).filter(m=>m._view).map(m=>[m.file,m._view]));
  for(const m of maps){const u=userProfile.get(m.filename);if(u)m.profile=u;const v=views.get(m.filename);if(v)m.view=v}
  try{const doc=SiaMission.save({yaml,narrative:{summary:'',detailed:'',sections:[]},sourceNames:[]},'planner');routeCache={};useDoc(doc,true,true);saveForm()}catch(e){say(esc(e.message),'err');return false}
@@ -8533,15 +8650,30 @@ function build(quiet,gen){
  // suite indiquée selon le niveau : « Cartes à produire » et les aperçus n'existent qu'au niveau 4 ; aux niveaux 1 à 3,
  // le bouton « Générer les cartes et le ZIP » du bloc (lancée par lui : progression et compte rendu dans #result,
  // dessous ; sinon à lancer, après une arrivée ?fpl=1)
- if(!quiet){const list={n:maps.length,list:esc(maps.map(m=>m.description).join(', '))};say(gen?K.tf(['{n} carte(s) : {list}, et le profil vertical de la route.','{n} map(s): {list}, and the vertical profile of the route.','{n} Karte(n): {list}, und das Höhenprofil der Route.','{n} mapa(s): {list}, y el perfil vertical de la ruta.'],list):K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Fichiers : « Générer les cartes et le ZIP ».','{n} map(s) ready: {list}, and the vertical profile of the route. Files: “Generate the maps and the ZIP”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Dateien: „Karten und ZIP erzeugen“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Archivos: «Generar los mapas y el ZIP».'],list),'ok')}
+ if(!quiet){const list={n:maps.length,list:esc(maps.map(m=>m.description).join(', '))};say(gen?K.tf(['{n} carte(s) : {list}, et le profil vertical de la route.','{n} map(s): {list}, and the vertical profile of the route.','{n} Karte(n): {list}, und das Höhenprofil der Route.','{n} mapa(s): {list}, y el perfil vertical de la ruta.'],list):K.tf(full?['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Réglages et aperçus dans « Cartes à produire », fichiers dans « Aperçus et génération ».','{n} map(s) ready: {list}, and the vertical profile of the route. Settings and previews in “Maps to produce”, files in “Previews and generation”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Einstellungen und Vorschauen unter „Zu erstellende Karten“, Dateien unter „Vorschauen und Erzeugung“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Ajustes y vistas previas en «Mapas que producir», archivos en «Vistas previas y generación».']:['{n} carte(s) prête(s) : {list}, et le profil vertical de la route. Images : « Générer les cartes ».','{n} map(s) ready: {list}, and the vertical profile of the route. Images: “Generate the maps”.','{n} Karte(n) bereit: {list}, und das Höhenprofil der Route. Bilder: „Karten erzeugen“.','{n} mapa(s) listo(s): {list}, y el perfil vertical de la ruta. Imágenes: «Generar los mapas».'],list),'ok')}
  return true;
 }
 // mission reçue de Mes missions (autre qu'un vol « VOL » de cette page) : remplacée par le vol libre seulement après confirmation
 $v('volBuild').onclick=async()=>{if(mission&&sharedDoc?.yaml?.mission?.id!=='VOL'&&!await window.AppFramework.ask(K.t(['Remplacer la mission chargée par un vol libre construit à partir du cheminement ?','Replace the loaded mission with a free flight built from the route?','Die geladene Mission durch einen freien Flug aus der Route ersetzen?','¿Sustituir la misión cargada por un vuelo libre construido a partir de la ruta?'])))return;build(false)};
-// niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des fichiers et du ZIP par le moteur du studio
+// niveaux 1 à 3 : un seul bouton, cartes créées puis aperçu et génération des images par le moteur du studio, montrées
+// dans la page (window.SiaDeliver, plus bas)
 // (« Générer » du studio, masqué ici : compte rendu dans #result, sous ce bouton) ; mission reçue de Mes missions
 // (autre qu'un vol « VOL » de cette page) : ses cartes sont générées telles quelles, sans les remplacer par celles du bloc
 $v('volGenerate').onclick=async()=>{const b=$v('volGenerate'),own=!mission||sharedDoc?.yaml?.mission?.id==='VOL';if(b.disabled||(own&&!build(false,true)))return;b.disabled=true;try{await new Promise(r=>setTimeout(r,450));await $v('refreshPreview').onclick?.();if(mission&&outputMaps().length)await $v('generate').onclick()}finally{b.disabled=false}};
+// ---- plus d'archive : les images générées (cartes, profil vertical) sont montrées dans la page, chacune téléchargeable
+// ou imprimable, « Tout imprimer » ; « Réessayer seule » remplace son image (moteur du studio : deliverFiles)
+let shown=[];
+const GTX={count:['{n} image(s) générée(s)','{n} image(s) generated','{n} Bild(er) erzeugt','{n} imagen(es) generada(s)'],dl:['Télécharger','Download','Herunterladen','Descargar'],print:['Imprimer','Print','Drucken','Imprimir'],all:['Tout imprimer','Print all','Alle drucken','Imprimir todo'],files:['Autres fichiers :','Other files:','Weitere Dateien:','Otros archivos:']};
+/** Imprime des images, une par page, dans une fenêtre à part. */
+function printImages(list){const w=window.open('','_blank');if(!w)return;w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(K.t(['Cartes de vol','Flight maps','Flugkarten','Mapas de vuelo']))}</title><style>@page{margin:8mm}body{margin:0}img{display:block;max-width:100%;max-height:96vh;margin:0 auto;page-break-after:always}img:last-child{page-break-after:auto}</style>${list.map(f=>`<img src="${f.url}" alt="${esc(f.name)}">`).join('')}<script>addEventListener('load',()=>{print()})<\/script>`);w.document.close()}
+/** Montre les fichiers générés : images PNG en vignettes (agrandir, télécharger, imprimer), autres fichiers en liens. */
+function showFiles(files,info={}){const box=$v('volGallery'),add=files.map(f=>({name:f.name,png:/\.png$/i.test(f.name),url:URL.createObjectURL(new Blob([f.data],{type:/\.png$/i.test(f.name)?'image/png':/\.svg$/i.test(f.name)?'image/svg+xml':'text/plain'}))}));
+ if(info.retry){shown=shown.filter(x=>{const out=add.some(a=>a.name===x.name);if(out)URL.revokeObjectURL(x.url);return!out}).concat(add)}else{shown.forEach(x=>URL.revokeObjectURL(x.url));shown=add}
+ const imgs=shown.filter(f=>f.png),other=shown.filter(f=>!f.png);box.hidden=!shown.length;
+ box.innerHTML=`<div class="volGalleryBar"><b>${esc(K.tf(GTX.count,{n:imgs.length}))}</b>${imgs.length?`<button type="button" data-print-all>${esc(K.t(GTX.all))}</button>`:''}</div><div class="volGalleryGrid">${imgs.map(f=>`<figure><img src="${f.url}" alt="${esc(f.name)}" title="${esc(f.name)}"><figcaption><span>${esc(f.name)}</span><a class="buttonLink" href="${f.url}" download="${esc(f.name)}">${esc(K.t(GTX.dl))}</a><button type="button" data-print="${esc(f.name)}">${esc(K.t(GTX.print))}</button></figcaption></figure>`).join('')}</div>${other.length?`<p class="volGalleryFiles">${esc(K.t(GTX.files))} ${other.map(f=>`<a href="${f.url}" download="${esc(f.name)}">${esc(f.name)}</a>`).join(' · ')}</p>`:''}`;
+ if(!info.retry)box.scrollIntoView({block:'nearest',behavior:'smooth'})}
+window.SiaDeliver=(files,info)=>showFiles(files,info);
+$v('volGallery').addEventListener('click',e=>{const t=e.target;if(t.matches('img'))return enlargePreview(t.src,t.alt);if(t.dataset.printAll!==undefined)return printImages(shown.filter(f=>f.png));const n=t.dataset.print;if(n)printImages(shown.filter(f=>f.name===n))});
 // « Tracer » ou « Planificateur carburant » avant la création : la mission du vol est d'abord créée ; mission chargée (vol de
 // cette page ou mission reçue) : ils travaillent dessus sans la remplacer
 for(const id of ['vprofDraw','vprofToPlanner'])$v(id).addEventListener('click',e=>{if(mission||sharedDoc?.yaml?.mission?.id==='VOL')return;e.stopImmediatePropagation();if(build(true))setTimeout(()=>$v(id).click(),600)},true);
@@ -8551,10 +8683,19 @@ $v('vprofRoute').addEventListener('change',follow);
 window.addEventListener('vprof-route-edited',follow);
 ['volRdv','vprofCruise'].forEach(id=>$v(id).addEventListener('change',()=>{saveForm();if(sharedDoc?.yaml?.mission?.id==='VOL')build(true)}));document.querySelectorAll('[data-volmap]').forEach(i=>i.addEventListener('change',saveForm));
 loadForm();
-// mission enregistrée avant le passage de la carte de route en IFR (profil « VFR détaillé ») : recréée une fois
-if(!new URLSearchParams(location.search).has('fpl')&&sharedDoc?.yaml?.mission?.id==='VOL'&&(sharedDoc.yaml.maps||[]).some(m=>/^route_/.test(m.filename||'')&&m.profile==='vfr-detail'))(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(true)})();
-// arrivée depuis le planificateur carburant (?fpl=1) : cartes et profil du plan de vol partagé, dès la base SIA chargée
-if(new URLSearchParams(location.search).has('fpl')){history.replaceState(null,'',location.pathname+location.hash);(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(baseReady()&&$v('vprofRoute').value.trim())build(false)})()}
+// ouverture : vol en cours (plan de vol partagé avec le Carburant, le plus récent, sinon le formulaire de la page). Dès la
+// base SIA chargée : le vol voulu l'emporte sur la mission enregistrée (relue entre-temps par le studio) ; la mission du
+// vol est refaite si sa route, son appareil ou le profil de sa carte de route ont changé ; une mission reçue de Mes
+// missions est gardée. Puis carte (aperçu interactif) et profil vertical montrés d'emblée. ?fpl=1 (arrivée depuis le
+// Carburant) : même chemin.
+if(new URLSearchParams(location.search).has('fpl'))history.replaceState(null,'',location.pathname+location.hash);
+(async()=>{for(let i=0;i<100&&!baseReady();i++)await new Promise(r=>setTimeout(r,200));if(!baseReady())return;
+ const own=sharedDoc?.yaml?.mission?.id==='VOL',vp=sharedDoc?.yaml?.vertical_profile||{},route=(wanted.route||(own?vp.route:'')||'').trim();
+ if(route&&(!mission||own)){$v('vprofRoute').value=route;
+  if(wanted.aircraft&&[...$v('vprofAircraft').options].some(o=>o.value===wanted.aircraft)){$v('vprofAircraft').value=wanted.aircraft;$v('vprofAircraft')._choiceButton?._aircraftPicker?.refresh()}
+  const stale=!own||vp.route!==route||(wanted.aircraft&&vp.aircraft!==$v('vprofAircraft').value)||(sharedDoc.yaml.maps||[]).some(m=>/^route_/.test(m.filename||'')&&!/^ifr-/.test(m.profile||''));
+  if(stale&&!build(true))return}
+ if(!mission)return;await new Promise(r=>setTimeout(r,500));if(!$v('refreshPreview').disabled)$v('refreshPreview').click();drawVprofPreview()})();
 })();
 </script>
 <script src="../../shared/repository_nav.js?v=0"></script>

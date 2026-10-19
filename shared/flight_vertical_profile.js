@@ -44,17 +44,40 @@
       return null;
     }
   };
+  /** Vol en cours partagé avec les Cartes de vol : route, niveau (FL du devis), fiche de l'appareil actif, dégagement ;
+   *  écrit seulement s'il change (date « at » : le plus récent l'emporte). Le dégagement vient du dernier OFP SimBrief
+   *  quand il porte le même trajet (lu ensuite, sans retarder l'écriture). */
   const writeFpl = route => {
-    try {
-      const cur = readFpl();
-      if (cur?.route !== route) localStorage.setItem(FPL_KEY, JSON.stringify({
+    const put = next => {
+      try {
+        const cur = readFpl() || {};
+        if (Object.keys(next).some(k => String(cur[k] || '') !== String(next[k] || ''))) localStorage.setItem(FPL_KEY, JSON.stringify({
+          ...cur,
+          ...next,
+          at: Date.now(),
+          by: 'planner'
+        }));
+      } catch {
+        /* stockage indisponible */
+      }
+    };
+    const cur = readFpl() || {},
+      next = {
         route,
-        at: Date.now(),
-        by: 'planner'
-      }));
-    } catch {
-      /* stockage indisponible */
-    }
+        fl: String(document.getElementById('fl')?.value || '').trim(),
+        aircraft: (typeof active !== 'undefined' && active?.id) || '',
+        altn: cur.route === route ? cur.altn || '' : ''
+      };
+    put(next);
+    const words = route.toUpperCase().split(/\s+/),
+      [dep, arr] = [words[0], words[words.length - 1]];
+    if (typeof loadOFP === 'function') loadOFP().then(o => {
+      const raw = o?.raw;
+      if (raw?.origin?.icao_code === dep && raw?.destination?.icao_code === arr && raw.alternate?.icao_code) put({
+        ...next,
+        altn: raw.alternate.icao_code
+      });
+    }, () => {});
   };
   const store = () => {
     try {
@@ -319,6 +342,11 @@
     }
   }
   $('vpRoute').addEventListener('change', () => applyRoute());
+  // niveau du devis changé : vol en cours partagé mis à jour (Cartes de vol)
+  document.getElementById('fl')?.addEventListener('change', () => {
+    const route = $('vpRoute').value.trim();
+    if (route) writeFpl(route);
+  });
   // vers les Cartes de vol : même plan de vol (partagé), carte, profil vertical et cartes
   $('fplToMaps')?.addEventListener('click', () => {
     store();

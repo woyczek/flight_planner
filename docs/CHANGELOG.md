@@ -23,6 +23,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Flight maps: open on the current flight, IFR route map, no ZIP** (`tools/build_map_planner.py`,
+  `apps/cpco/map_parser.html`, `shared/flight_vertical_profile.js`) — the flight shared with Fuel
+  (`flightPlanShared:v1`) now carries the route, the cruise level, the aircraft's sheet and the alternate (from the
+  last SimBrief OFP when it has the same trip); at opening, the most recent one wins over the stored mission (it was
+  replaced by the stored route before) and the route map and the vertical profile are shown at once. The route map uses
+  two new display profiles of the studio, "IFR low" and "IFR high", chosen from the cruise level (FL195): airways of
+  the band, ICAO symbology, R / D / P / TRA / CTR / TMA / CTA zones of the band within 10 NM of the route (`corridorNm`,
+  `selectedAirspaces`). New "Alternate (ICAO)" field (mission point `alternate`, passed to "Open in ▾"). No ZIP any
+  more in Flight maps: the images (maps and `profil_vertical.png`, now on by default) are shown in the "Maps" block
+  with "Download", "Print" and "Print all" (`window.SiaDeliver`, studio `deliverFiles`); the Centre's map studio keeps
+  its ZIP.
 - **Aircraft picker in the mission report, My aircraft, Landing and the vertical profile** (`shared/aircraft_picker.js`,
   `shared/mission_core/form.js`, `assist.js`, `shared/equipment_editor.js`, Landing Performance,
   `shared/carto/vertical_profile.js`) — the shared drop-down list with search (5.3.0, Fuel and Performance sheets)

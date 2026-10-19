@@ -99,7 +99,7 @@ Messages from the suite (success, warnings, errors) appear at the bottom centre 
 - A repetitive reminder (for example “SIA database missing from this browser…” of the Map studio and the Flight maps) is shown only **once per session** of the browser. Some messages are reserved for higher usage levels: below them they are not shown, but warnings and errors stay in the log of the “⚠ n” indicator.
 - Cleared warnings and errors can still be read through the “⚠ n” indicator in the header: “ACK” acknowledges an alert, “Acknowledge all” acknowledges them all, “Clear” empties the list. This log is lost when you change page.
 - A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation. When the task can be interrupted, the bar carries a **“Stop”** button: the step in progress finishes, the next ones are not started, then the bubble says “Cancelled.”. The button exists for the generation and previews of the maps (Map studio and Flight maps: stop between two maps), the MORA calculation (of a zone, of the full grid or by blocks), the MILAIP ENR 5.7 import and the setting up of the zones (Maintenance), and the reading of the missions folder (Registry).
-- A stopped task says what remains partial. Maps: a stopped generation downloads no ZIP and files nothing in the mission folder (a batch of missions says how many are finished); the previews already shown stay. MORA by blocks (button “Stop (resume later)”): the blocks already computed are written to `mora.csv` (partial grid), “Resume the full calculation…” continues later. MORA of a zone, MORA grid and MILAIP import: nothing is written. Reading of the missions folder: the registry stays unchanged.
+- A stopped task says what remains partial. Maps: a stopped generation downloads no ZIP (Centre's map studio) or shows no image (Flight maps) and files nothing in the mission folder (a batch of missions says how many are finished); the previews already shown stay. MORA by blocks (button “Stop (resume later)”): the blocks already computed are written to `mora.csv` (partial grid), “Resume the full calculation…” continues later. MORA of a zone, MORA grid and MILAIP import: nothing is written. Reading of the missions folder: the registry stays unchanged.
 - Error messages say what failed and what to do, instead of a bare code. Examples: “the server does not answer — check that the suite is opened by the launcher (lancer.cmd / lancer.sh), restart it if needed, then try again”; “file missing — check that it is in the expected folder (or create it again), then try again”; “browser storage full — free some space (Settings › Maintenance › Disk space), then try again”. Other cases: online service not answering, server error, access denied by the browser, timeout; an unexpected error is shown as “failed” followed by the technical detail in brackets.
 - Questions (“Clear…?”) open in a small window with “Confirm” and “Cancel”.
 
@@ -1426,9 +1426,17 @@ This page is used to prepare your own flight maps: route, route map, approach, r
 It is open to all pilots. To go there: “Tools” in the side bar, “Flight maps” tab, the “Open in the flight maps” button of a mission in My missions, or the “Flight maps” button of the fuel planner.
 It uses the engine of the Centre's map studio, but works in a space of its own in your browser: your settings never change the Centre's mission.
 Each block collapses (“Hide” / “Show”) and moves (↕ handle). The SIA database must be read once in this browser (see the last block).
-At levels 1 to 3 (My profile › “Usage level”), the page is limited to two blocks: “Route” (route field, “Level”, “SimBrief”, control map with “⤢ Enlarge”) and “Maps”, with its single “Generate the maps and the ZIP” button. The other controls described below only appear at level 4 (Expert).
+At levels 1 to 3 (My profile › “Usage level”), the page is limited to two blocks: “Route” (route field, “Level”, “SimBrief”, control map with “⤢ Enlarge”) and “Maps”, with its single “Generate the maps” button. The other controls described below only appear at level 4 (Expert).
 
 At the top of the page, “Open in ▾” opens the route of the “Route” block, its level and the chosen aircraft in SimBrief, SkyVector, Navigraph Charts or ChartFox (departure and arrival aerodrome charts), in a new tab; same menu as in Fuel (see “Open in ▾” in the Fuel chapter).
+
+**On opening: the current flight.** The page takes the flight prepared in Fuel (“Vertical profile” block and fuel plan):
+route, cruise level, aircraft sheet and alternate (the one of the last SimBrief OFP when it has the same trip).
+The most recent wins between this flight and what was entered here. As soon as the SIA database is loaded, the route
+map and the vertical section are shown at once, without another click. The route map uses the “IFR low” profile
+(flight up to FL195: low airways) or “IFR high” (above: high airways, NAT tracks), with the ICAO symbology and the
+R, D, P, TRA, CTR, TMA and CTA areas of the layer that pass within 10 NM of the route; departure, destination and
+alternate are named on it. A mission received from My missions is kept as it is.
 
 ### Receiving a mission (“Open in the flight maps”)
 
@@ -1437,10 +1445,10 @@ The page has no “Mission” block: the mission arrives on its own from My miss
 1. In My missions, open the mission folder.
 2. Click “Open in the flight maps”. The aircraft assigned to you is placed first in the mission.
 3. The page opens with the route and the level of the mission in the “Route” block, and all the maps planned by the mission in “Maps to produce” (plus `profil_vertical.png`). The “Maps to produce” list is only visible at the Expert level.
-4. Adjust each map if needed (Expert level), then click “Generate the maps and the ZIP”: in the “Maps” block at levels 1 to 3, in the footer at the Expert level.
+4. Adjust each map if needed (Expert level), then click “Generate the maps”: in the “Maps” block at levels 1 to 3, in the footer at the Expert level.
 
-The footer shows the number of maps in the ZIP (“… map(s) in the ZIP + index map”), or “No mission loaded”.
-Mission received: “Draw” and “Fuel” work on the loaded mission without replacing it. At levels 1 to 3, “Generate the maps and the ZIP” generates its maps as they are. At the Expert level, “Prepare the maps” asks for confirmation before replacing it with a free flight “Flight departure → destination” built from the route; with no mission loaded, the maps are created directly.
+The footer shows the number of maps to generate (“… map(s) to generate”), or “No mission loaded”.
+Mission received: “Draw” and “Fuel” work on the loaded mission without replacing it. At levels 1 to 3, “Generate the maps” generates its maps as they are. At the Expert level, “Prepare the maps” asks for confirmation before replacing it with a free flight “Flight departure → destination” built from the route; with no mission loaded, the maps are created directly.
 
 ### Route
 
@@ -1465,7 +1473,7 @@ Under the route field, a control map shows the chosen map with its display profi
 |---|---|
 | “Map” | Map shown (by default: the general route map). |
 | “Profile” | Display profile of this map (same setting as in “Maps to produce”). |
-| “ZIP” | Put this map in the ZIP or not. |
+| “Generate” | Generate this map or not. |
 | “Refresh” | Redraw the preview. |
 | “Keep this framing” | The generated map will use exactly the frame shown (zoom and move with the mouse). |
 | “Recentre” / “Automatic framing” | Go back to the saved framing / forget it for a frame calculated from the mission. |
@@ -1490,14 +1498,19 @@ Remember to click “Save” to keep a changed profile. The suggestion lists of 
 This block creates the maps of a flight from the route, without a Centre mission; at levels 1 to 3, it also generates them.
 
 1. Enter the route and the level in the “Route” block (at least a departure and a destination known to the SIA database).
-2. Optional: “Rendezvous (optional)”, a point or coordinates “44.2, 0.6”.
-3. Tick the maps you want: “route (overview, IFR)”, “approach”, “rendezvous”, “destination”.
-4. Click “Generate the maps and the ZIP” (levels 1 to 3): the maps are created then generated, the progress (with “Stop”) and the report are shown just below and the ZIP is downloaded. At the Expert level, “Prepare the maps” only creates them: settings in “Maps to produce”, generation in the footer.
+2. Optional: “Rendezvous (optional)”, a point or coordinates “44.2, 0.6”; “Alternate (ICAO, optional)”, taken from
+   Fuel if it is known there.
+3. Tick the maps you want: “route (overview, IFR)” (IFR low or high profile according to the level, see above),
+   “approach”, “rendezvous”, “destination”.
+4. Click “Generate the maps” (levels 1 to 3): the maps are created then generated, the progress (with “Stop”) and
+   the report are shown just below. The images (each map and `profil_vertical.png`) are then shown in the block: a
+   click enlarges, “Download” saves the image, “Print” prints it, “Print all” prints all the images, one per page.
+   There is no ZIP any more. At the Expert level, “Prepare the maps” only creates them: settings in “Maps to produce”, generation in the footer.
 
 The page builds a “Flight departure → destination” mission with the ticked maps and the vertical profile. The rendezvous map is only created if a rendezvous is entered.
 At levels 1 to 3, the page has neither footer nor “Previews and generation” block: everything starts from this block's button.
 After that, any change to the route, the level or the rendezvous updates the maps automatically.
-Arriving from the fuel planner (“Flight maps” button): the maps are created on their own as soon as the SIA database is loaded.
+Arriving from the fuel planner (“Flight maps” button): same opening on the current flight, maps created on their own as soon as the SIA database is loaded.
 Possible error messages: “SIA database missing from this browser”, “Route: unknown in the SIA database”, “No map chosen”.
 
 ### Maps to produce
@@ -1510,7 +1523,7 @@ Expert level block. The “Mission maps” list gives one line per map:
 | Profile | Display profile of the map, or “Disabled”. |
 | Line | “No line”, “Brief: route”, “Organisation: probable route”, “Route + probable route”. |
 | Recipient | Only for exercise missions: brief, organisation, exercise target or crew. |
-| “ZIP” | Untick to not generate the map. |
+| “Generate” | Untick to not generate the map. |
 | “×” | Remove the map from the mission. |
 
 To add a map: enter a name (“nouvelle_carte.png”), choose the type (general, target, detail, area), then “+ Map”. Its extent is the view shown.
@@ -1521,14 +1534,15 @@ With no mission and no maps created, the list shows “No map: add one below.”
 Expert-level block; at levels 1 to 3, the generation report (maps generated, failures and “Retry this one”) is shown under the button of the “Maps” block.
 
 1. “Show all maps”: draws a preview of each map with its profile. The previews create no file. Click on a preview: enlargement.
-2. Each preview keeps its “ZIP” box.
-3. “Generate the maps and the ZIP” (button of the footer): downloads a ZIP with each map, the index map and `profil_vertical.png` if this output is ticked.
+2. Each preview keeps its “Generate” box.
+3. “Generate the maps” (button of the footer): the images of each map and `profil_vertical.png` are shown in the
+   “Maps” block, to download or print one by one (no ZIP).
 
-The “Index map” appears by itself under the previews; it uses the profile of the general map.
+The “Index map” appears by itself under the previews (preview only); it uses the profile of the general map.
 Formats: ☰ menu › Map outputs (PNG, editable SVG, PNG width from 400 to 5000 px; 1600 px by default).
-If a map fails (base map unavailable, timeout), the ZIP contains `rapport_generation.txt` and the list offers “Retry this one”.
+If a map fails (base map unavailable, timeout), the report says so and offers “Retry this one”, which replaces its image.
 Keep the tab visible during generation: the browser slows down background tabs, and a map may fail (“Timeout while loading the base map”); “Retry this one” relaunches it.
-The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP (it would be incomplete); the previews already shown stay. Run “Generate the maps and the ZIP” again for all the maps.
+The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation shows no image (they would be incomplete); the previews already shown stay. Run “Generate the maps” again for all the maps.
 
 ### SIA database
 

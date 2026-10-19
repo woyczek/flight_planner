@@ -1758,8 +1758,30 @@ const defaultProfiles = () => [{
   "adMode": "white",
   "navList": [],
   "navMode": "white"
-}];
-const BASE_PROFILES_VERSION = 3; // 3 : tracks NAT du jour cochés dans AIRWAYS
+}].flatMap(p => p.id === 'airways' ? [p, ifrRouteProfile(p, 'ifr-low', 'IFR bas', true), ifrRouteProfile(p, 'ifr-high', 'IFR haut',
+  false)] : [p]);
+/** Profil IFR de route (Cartes de vol : carte de la route choisie d'après le niveau de croisière, seuil FL195), dérivé
+ *  d'AIRWAYS : voies aériennes de la tranche (basses ou hautes), zones R / D / P, TRA, CTR / TMA / CTA de la tranche
+ *  (plafond FL195 en bas, plancher FL195 en haut), symbologie OACI, limitées au couloir de la route (corridorNm,
+ *  selectedAirspaces). */
+function ifrRouteProfile(base, id, name, low) {
+  const p = JSON.parse(JSON.stringify(base));
+  return Object.assign(p, {
+    id,
+    name,
+    zones: ['R', 'D', 'P', 'TRA', 'CTR', 'TMA', 'CTA'],
+    corridorNm: 10,
+    elements: Object.assign(p.elements, {
+      airwaysLow: low,
+      airwaysHigh: !low,
+      natTracks: !low,
+      icaoStyle: true,
+      zoneFloor: low ? '' : '19500',
+      zoneCeil: low ? '19500' : ''
+    })
+  });
+}
+const BASE_PROFILES_VERSION = 4; // 3 : tracks NAT du jour cochés dans AIRWAYS ; 4 : profils IFR bas et haut
 // ===== Profils d'affichage =====
 // Profils communs à toutes les missions (localStorage siaDisplayProfiles) ; chaque carte de la mission
 // désigne le sien (_profileId). Réglages de couches OSM dans p.layers, des éléments dans p.elements.
@@ -1970,7 +1992,7 @@ function renderMapProfiles() {
   host.innerHTML = mission.maps.map((m, i) => {
     m._profileId = m._profileId || defaultProfileForMap(m, i);
     if (m._profileId !== 'off' && !displayProfiles.some(p => p.id === m._profileId)) m._profileId = displayProfiles[0].id;
-    return`<div class="mapRow${i===cur?' on':''}${m._profileId==='off'?' off':''}${m._zip===false?' nozip':''}"><button type="button" class="mapShow" data-map-show="${i}" title="${esc(m.description||m.file)} — afficher dans la carte de contrôle">${m._view?'✎ ':''}${esc(m.file)}</button><select data-map-profile="${i}" title="Profil de cette carte">${displayProfiles.map(p=>`<option value="${esc(p.id)}"${p.id===m._profileId?' selected':''}>${esc(p.name)}</option>`).join('')}<option value="off"${m._profileId==='off'?' selected':''}>Désactivé</option></select><select data-map-trace="${i}" title="Tracé de cette carte : carte brief (cheminement saisi) ou carte organisation (route probable et retours possibles)">${TRACES.map(([v,l])=>`<option value="${v}"${traceOf(m)===v?' selected':''}>${l}</option>`).join('')}</select>${exerciseChoices().length>1?`<select data-map-exercise="${i}" title="Destinataire de la carte : sans pistes (brief), organisation (toutes les pistes et les routes), un chiffon (sa route), ou un équipage (pistes connues après un message ou un pli)">${exerciseChoices().map(([v,l])=>`<option value="${esc(v)}"${exerciseOf(m)===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`:''}<label class="mapZip" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" data-map-zip="${i}"${m._zip===false?'':' checked'}> ZIP</label><button type="button" class="mapDel" data-map-del="${i}" title="Supprimer cette carte de la mission">×</button></div>`
+    return`<div class="mapRow${i===cur?' on':''}${m._profileId==='off'?' off':''}${m._zip===false?' nozip':''}"><button type="button" class="mapShow" data-map-show="${i}" title="${esc(m.description||m.file)} — afficher dans la carte de contrôle">${m._view?'✎ ':''}${esc(m.file)}</button><select data-map-profile="${i}" title="Profil de cette carte">${displayProfiles.map(p=>`<option value="${esc(p.id)}"${p.id===m._profileId?' selected':''}>${esc(p.name)}</option>`).join('')}<option value="off"${m._profileId==='off'?' selected':''}>Désactivé</option></select><select data-map-trace="${i}" title="Tracé de cette carte : carte brief (cheminement saisi) ou carte organisation (route probable et retours possibles)">${TRACES.map(([v,l])=>`<option value="${v}"${traceOf(m)===v?' selected':''}>${l}</option>`).join('')}</select>${exerciseChoices().length>1?`<select data-map-exercise="${i}" title="Destinataire de la carte : sans pistes (brief), organisation (toutes les pistes et les routes), un chiffon (sa route), ou un équipage (pistes connues après un message ou un pli)">${exerciseChoices().map(([v,l])=>`<option value="${esc(v)}"${exerciseOf(m)===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`:''}<label class="mapZip" title="${zipTitle()}"><input type="checkbox" data-map-zip="${i}"${m._zip===false?'':' checked'}> ${zipWord()}</label><button type="button" class="mapDel" data-map-del="${i}" title="Supprimer cette carte de la mission">×</button></div>`
   }).join('')
 }
 // ===== Base SIA : shared/sia_base.js (lecture du dossier, cache, résumé, MORA — communs avec Paramètres › Maintenance) =====
@@ -2420,7 +2442,9 @@ function parseMissionYaml(text) {
       ['arrival', 'DESTINATION'],
       ['arrivee', 'DESTINATION'],
       ['target', 'TARGET'],
-      ['cible', 'TARGET']
+      ['cible', 'TARGET'],
+      ['alternate', 'ALTERNATE'],
+      ['degagement', 'ALTERNATE']
     ];
   for (const [key, id] of roles) {
     const p = addPoint(points, root[key] ?? meta[key], id);
@@ -2635,12 +2659,75 @@ const zoneFamily = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has(
 /** Plancher et plafond d'un espace en pieds (SiaAero.limitFt), mémorisés sur l'objet (a._lo, a._hi). */
 const zoneFloorFt = a => a._lo ??= SiaAero.limitFt(a.lower, false),
   zoneCeilFt = a => a._hi ??= SiaAero.limitFt(a.upper, true);
-// Zones retenues pour une carte : types cochés, plancher / plafond, liste blanche ou noire, alias (@RTBA…).
+// Zones retenues pour une carte : types cochés, plancher / plafond, liste blanche ou noire, alias (@RTBA…) ; profil avec
+// corridorNm (profils IFR de route) : seulement les zones à moins de corridorNm NM du cheminement.
 function selectedAirspaces(mapDef) {
-  return SiaProfile.selectAirspaces(profileForMap(mapDef), airspaces, {
-    aliases: zoneAliases,
-    limitFt: SiaAero.limitFt
-  })
+  const profile = profileForMap(mapDef),
+    list = SiaProfile.selectAirspaces(profile, airspaces, {
+      aliases: zoneAliases,
+      limitFt: SiaAero.limitFt
+    }),
+    nm = +profile?.corridorNm || 0;
+  return nm > 0 ? list.filter(a => nearRoute(a, nm)) : list
+}
+/** Échantillons du cheminement (un point tous les 2 NM environ), refaits quand la route change. */
+let corridorCache = {
+  key: '',
+  pts: []
+};
+const routeSamples = () => {
+  const pts = routePoints().filter(hasPos),
+    key = pts.map(p => `${p.lat},${p.lon}`).join(';');
+  if (corridorCache.key === key) return corridorCache.pts;
+  const out = [];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1],
+      b = pts[i],
+      d = Math.hypot((b.lat - a.lat) * 60, (b.lon - a.lon) * 60 * Math.cos(a.lat * Math.PI / 180)),
+      n = Math.max(1, Math.ceil(d / 2));
+    for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, a.lon + (b.lon - a.lon) * k / n]);
+  }
+  if (pts.length) out.push([pts[pts.length - 1].lat, pts[pts.length - 1].lon]);
+  return (corridorCache = {
+    key,
+    pts: out
+  }).pts
+};
+/** Vrai si l'espace est à moins de nm NM du cheminement (un échantillon dans l'espace, ou un bord proche) ; sans
+ *  cheminement : vrai. */
+function nearRoute(a, nm) {
+  const smp = routeSamples();
+  if (smp.length < 2) return true;
+  const ck = `${corridorCache.key}|${nm}`; // résultat gardé sur l'espace tant que la route et le couloir sont les mêmes
+  if (a._nearKey === ck) return a._near;
+  a._nearKey = ck;
+  const b = zoneBox(a),
+    mlat = nm / 60;
+  if (!smp.some(([la, lo]) => la >= b.s - mlat && la <= b.n + mlat && lo >= b.w - mlat * 2 && lo <= b.e + mlat * 2)) return (a
+    ._near = false);
+  // distance (NM) d'un point à un segment, en projection locale
+  const segDist = (la, lo, p, q) => {
+    const k = Math.cos(la * Math.PI / 180),
+      ax = (p[1] - lo) * 60 * k,
+      ay = (p[0] - la) * 60,
+      bx = (q[1] - lo) * 60 * k,
+      by = (q[0] - la) * 60,
+      dx = bx - ax,
+      dy = by - ay,
+      t = dx || dy ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy))) : 0;
+    return Math.hypot(ax + t * dx, ay + t * dy);
+  };
+  const inside = (la, lo, ring) => {
+    let c = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [yi, xi] = ring[i],
+        [yj, xj] = ring[j];
+      if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  return (a._near = smp.some(([la, lo]) => a.rings.some(r => inside(la, lo, r) || r.some((p, i) => i && segDist(la, lo, r[i - 1], p) <=
+    nm))));
 }
 let zoneItems = [],
   zoneModeValue = 'white';
@@ -6149,6 +6236,15 @@ function zipStore(files) {
 }
 
 /** Fait télécharger un Blob sous le nom donné (lien temporaire, URL libérée après 2 s). */
+/** Case « ZIP » d'une carte (la générer ou non) : « Générer » quand la page montre les images sans archive. */
+const zipWord = () => window.SiaDeliver ? 'Générer' : 'ZIP',
+  zipTitle = () => window.SiaDeliver ? 'Générer cette carte (décocher pour ne pas la générer)' :
+  'Mettre cette carte dans le ZIP (décocher pour ne pas la générer)';
+/** Remise des fichiers générés : ZIP téléchargé (studio du Centre) ; une page peut fournir window.SiaDeliver(files,
+ *  info) à la place (Cartes de vol : cartes montrées dans la page, sans archive). */
+const deliverFiles = (files, name, info = {}) => window.SiaDeliver ? window.SiaDeliver(files, info) : download(zipStore(files),
+  name);
+
 function download(blob, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -6838,7 +6934,8 @@ $('previewMap').addEventListener('change', syncPreviewZip);
       g2.disabled = g.disabled;
       g2.textContent = g.textContent;
       const n = (mission?.maps || []).filter(m => m._profileId !== 'off' && m._zip !== false).length;
-      $('studioFooterInfo').textContent = mission ? `${n} carte(s) dans le ZIP + carte d’assemblage` : 'Aucune mission chargée'
+      $('studioFooterInfo').textContent = mission ? window.SiaDeliver ? `${n} carte(s) à générer` :
+        `${n} carte(s) dans le ZIP + carte d’assemblage` : 'Aucune mission chargée'
     };
   $('mapProfiles').addEventListener('change', () => setTimeout(sync));
   $('previewZip').addEventListener('change', () => setTimeout(sync));
@@ -7902,7 +7999,7 @@ $('previewAll').onclick = async () => {
         }
         const card = document.createElement('div');
         card.className = 'previewCard repo-notebook' + (m._zip === false ? ' nozip' : '');
-        card.innerHTML = `<label class="mapZip" title="Mettre cette carte dans le ZIP (décocher pour ne pas la générer)"><input type="checkbox" data-gal-zip="${esc(m.file)}"${m._zip===false?'':' checked'}> ZIP</label><strong>${esc(m.file)}</strong><span class="small">${esc(profileForMap(m).name)}</span>${problem?`<span class="small err">${esc(problem)}</span>`:''}${url?`<img alt="Aperçu ${esc(m.file)}">`:''}`;
+        card.innerHTML = `<label class="mapZip" title="${zipTitle()}"><input type="checkbox" data-gal-zip="${esc(m.file)}"${m._zip===false?'':' checked'}> ${zipWord()}</label><strong>${esc(m.file)}</strong><span class="small">${esc(profileForMap(m).name)}</span>${problem?`<span class="small err">${esc(problem)}</span>`:''}${url?`<img alt="Aperçu ${esc(m.file)}">`:''}`;
         if (url) {
           previewUrls.push(url);
           card.querySelector('img').src = url
@@ -7957,11 +8054,11 @@ $('generate').onclick = async () => {
       jobs = [...outputMaps().filter(m => m._zip !== false).map(m => ({
         def: m,
         stem: m.file.replace(/\.[^.]+$/, '')
-      })), {
+      })), ...(window.SiaDeliver ? [] : [{ // carte d'assemblage : avec le ZIP du studio seulement
         def: assemblyMapDef(),
         stem: 'carte_assemblage',
         assembly: true
-      }];
+      }])];
     $('generate').disabled = true;
     p.max = jobs.length;
     p.value = 0;
@@ -8013,7 +8110,8 @@ $('generate').onclick = async () => {
       $('result').innerHTML = `<span class="small">${esc(stopped)}</span>`;
       return
     }
-    if (vprofOf().output) {
+    // profil vertical : demandé par la mission, ou toujours quand la page montre les cartes (Cartes de vol)
+    if (vprofOf().output || (window.SiaDeliver && routePoints().length > 1)) {
       $('result').textContent = 'Profil vertical…';
       try {
         const {
@@ -8048,7 +8146,9 @@ $('generate').onclick = async () => {
         id: String(sharedDoc?.yaml?.mission?.id || mission.title),
         files,
         report
-      }) : download(zipStore(files), mission.title.replace(/[^a-z0-9_-]+/gi, '_') + '_cartes.zip');
+      }) : deliverFiles(files, mission.title.replace(/[^a-z0-9_-]+/gi, '_') + '_cartes.zip', {
+        report
+      });
       // cartes rangées dans le dossier de la mission (cartes/), réglages du studio et date de génération dans le YAML
       if (window.MissionRegistryCore && sharedDoc?.yaml) {
         try {
@@ -8067,7 +8167,7 @@ $('generate').onclick = async () => {
         }
       }
     }
-    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${failed.length||partial.length?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial
+    $('result').innerHTML = (files.length ? `<span class="ok">${report.length-failed.length}/${report.length} carte(s) générée(s)${(failed.length||partial.length)&&!window.SiaDeliver?' — rapport_generation.txt joint au ZIP':''}.</span>` : '<span class="err">Aucune carte générée.</span>') + (failed.length || partial
       .length ? '<ul>' + report.filter(r => !r.ok || r.warning).map(r => `<li class="${r.ok?'':'err'}">${esc(r.file)} : ${esc(r.ok?'fond partiel — '+r.warning:r.error)}${r.ok||r.file==='dossier de la mission'?'':' — <button type="button" data-retry="'+esc(r.file)+'">Réessayer seule</button>'}</li>`).join('') + '</ul>' : '');
     if (storeResult) {
       $('result').insertAdjacentHTML('beforeend', `<p class="${storeResult.ok?'ok':'err'}">Dossier de la mission : ${esc(storeResult.text)}</p>`);
@@ -8108,8 +8208,10 @@ $('result').addEventListener('click', async e => {
       name: stem + '.svg',
       data: new TextEncoder().encode(embeddedPngSvg(r.dataUrl, width))
     });
-    download(zipStore(files), stem + '.zip');
-    button.closest('li').innerHTML = `<span class="ok">${esc(stem)} : générée (${esc(stem)}.zip).</span>`
+    deliverFiles(files, stem + '.zip', {
+      retry: stem
+    });
+    button.closest('li').innerHTML = `<span class="ok">${esc(stem)} : générée${window.SiaDeliver ? '' : ` (${esc(stem)}.zip)`}.</span>`
   } catch (err) {
     button.disabled = false;
     button.textContent = 'Réessayer seule';

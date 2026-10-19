@@ -99,7 +99,7 @@ Los mensajes de la suite (éxitos, advertencias, errores) aparecen en la parte i
 - Un recordatorio repetitivo (por ejemplo «Base SIA ausente de este navegador…» del estudio cartográfico y de los mapas de vuelo) solo se muestra **una vez por sesión** del navegador. Algunos mensajes están reservados a los niveles de uso superiores: por debajo no se muestran, pero las advertencias y los errores quedan en el registro del indicador «⚠ n».
 - Las advertencias y los errores borrados siguen disponibles en el indicador «⚠ n» de la cabecera: «ACK» confirma una alerta, «Confirmar todas» las confirma todas, «Vaciar» borra la lista. Este registro se pierde al cambiar de página.
 - Una tarea larga (lectura, generación…) muestra una barra de progreso en la misma pila. Salir de la página durante la tarea pide una confirmación. Cuando la tarea puede interrumpirse, la barra lleva un botón **«Detener»**: el paso en curso termina, los siguientes no se inician y la burbuja dice «Cancelado.». El botón existe para la generación y las vistas previas de los mapas (estudio cartográfico y mapas de vuelo: parada entre dos mapas), el cálculo de la MORA (de una zona, de la cuadrícula completa o por bloques), la importación de la MILAIP ENR 5.7 y la puesta a punto de las zonas (Mantenimiento), y la lectura de la carpeta de misiones (Registro).
-- Una tarea detenida dice qué queda parcial. Mapas: una generación detenida no descarga ningún ZIP y no guarda nada en la carpeta de la misión (un lote de misiones indica cuántas están terminadas); las vistas previas ya mostradas se quedan. MORA por bloques (botón «Detener (reanudar más tarde)»): los bloques ya calculados se escriben en `mora.csv` (cuadrícula parcial), «Reanudar el cálculo completo…» continúa más tarde. MORA de una zona, cuadrícula MORA e importación de la MILAIP: no se escribe nada. Lectura de la carpeta de misiones: el registro queda sin cambios.
+- Una tarea detenida dice qué queda parcial. Mapas: una generación detenida no descarga ningún ZIP (estudio cartográfico del Centro) o no muestra ninguna imagen (Mapas de vuelo) y no guarda nada en la carpeta de la misión (un lote de misiones indica cuántas están terminadas); las vistas previas ya mostradas se quedan. MORA por bloques (botón «Detener (reanudar más tarde)»): los bloques ya calculados se escriben en `mora.csv` (cuadrícula parcial), «Reanudar el cálculo completo…» continúa más tarde. MORA de una zona, cuadrícula MORA e importación de la MILAIP: no se escribe nada. Lectura de la carpeta de misiones: el registro queda sin cambios.
 - Los mensajes de error dicen qué ha fallado y qué hacer, en lugar de un código solo. Ejemplos: «el servidor no responde — comprobar que la suite se abre con el lanzador (lancer.cmd / lancer.sh), reiniciarlo si hace falta y volver a intentarlo»; «archivo ausente — comprobar que está en la carpeta esperada (o volver a crearlo) y volver a intentarlo»; «almacenamiento del navegador lleno — liberar espacio (Ajustes › Mantenimiento › Espacio en disco) y volver a intentarlo». Otros casos: servicio en línea que no responde, error del servidor, acceso denegado por el navegador, tiempo agotado; un error inesperado se muestra como «error» seguido del detalle técnico entre paréntesis.
 - Las preguntas («¿Borrar…?») se abren en una pequeña ventana con «Confirmar» y «Cancelar».
 
@@ -1433,9 +1433,17 @@ Esta página sirve para preparar sus propios mapas de vuelo: ruta, mapa de la ru
 Está abierta a todos los pilotos. Para ir a ella: barra lateral «Herramientas», pestaña «Mapas de vuelo», botón «Abrir en los mapas de vuelo» de una misión en Mis misiones, o botón «Mapas de vuelo» del planificador de combustible.
 Retoma el motor del estudio cartográfico del Centro, pero trabaja en un espacio propio de su navegador: sus ajustes nunca modifican la misión del Centro.
 Cada bloque se pliega («Ocultar» / «Mostrar») y se mueve (asa ↕). La base SIA debe leerse una vez en este navegador (consulte el último bloque).
-En los niveles 1 a 3 (Mi perfil › «Nivel de uso»), la página se limita a dos bloques: «Ruta» (campo de ruta, «Nivel», «SimBrief», mapa de control con «⤢ Ampliar») y «Mapas», con su único botón «Generar los mapas y el ZIP». Los demás mandos descritos a continuación solo aparecen en el nivel 4 (Experto).
+En los niveles 1 a 3 (Mi perfil › «Nivel de uso»), la página se limita a dos bloques: «Ruta» (campo de ruta, «Nivel», «SimBrief», mapa de control con «⤢ Ampliar») y «Mapas», con su único botón «Generar los mapas». Los demás mandos descritos a continuación solo aparecen en el nivel 4 (Experto).
 
 En la parte superior de la página, «Abrir en ▾» abre la ruta del bloque «Ruta», su nivel y el avión elegido en SimBrief, SkyVector, Navigraph Charts o ChartFox (cartas de los aeródromos de salida y llegada), en una pestaña nueva; el mismo menú que en Combustible (ver «Abrir en ▾» en el capítulo Combustible).
+
+**Al abrir: el vuelo en curso.** La página retoma el vuelo preparado en Combustible (bloque «Perfil vertical» y plan de
+combustible): ruta, nivel de crucero, ficha de la aeronave y alternativo (el del último OFP de SimBrief cuando tiene el
+mismo trayecto). Entre ese vuelo y lo introducido aquí, prevalece el más reciente. En cuanto se carga la base SIA, el
+mapa de la ruta y el corte vertical se muestran de entrada, sin otro clic. El mapa de la ruta toma el perfil «IFR bajo»
+(vuelo hasta el FL195: aerovías bajas) o «IFR alto» (por encima: aerovías altas, tracks NAT), con la simbología OACI y
+las zonas R, D, P, TRA, CTR, TMA y CTA del tramo de altitud que pasan a menos de 10 NM de la ruta; la salida, el destino
+y el alternativo aparecen nombrados. Una misión recibida de Mis misiones se conserva tal cual.
 
 ### Recepción de una misión («Abrir en los mapas de vuelo»)
 
@@ -1444,10 +1452,10 @@ La página no muestra un bloque «Misión»: la misión llega sola desde Mis mis
 1. En Mis misiones, abra la carpeta de la misión.
 2. Haga clic en «Abrir en los mapas de vuelo». La aeronave que tiene asignada se coloca al principio de la misión.
 3. La página se abre con la ruta y el nivel de la misión en el bloque «Ruta», y todos los mapas previstos por la misión en «Mapas que producir» (más `profil_vertical.png`). La lista «Mapas que producir» solo es visible en el nivel Experto.
-4. Ajuste cada mapa si es necesario (nivel Experto) y, después, haga clic en «Generar los mapas y el ZIP»: en el bloque «Mapas» en los niveles 1 a 3, en el pie de página en el nivel Experto.
+4. Ajuste cada mapa si es necesario (nivel Experto) y, después, haga clic en «Generar los mapas»: en el bloque «Mapas» en los niveles 1 a 3, en el pie de página en el nivel Experto.
 
-El pie de página indica el número de mapas del ZIP («… mapa(s) en el ZIP + mapa de conjunto»), o «Ninguna misión cargada».
-Misión recibida: «Trazar» y «Combustible» trabajan sobre la misión cargada sin sustituirla. En los niveles 1 a 3, «Generar los mapas y el ZIP» genera sus mapas tal cual. En el nivel Experto, «Preparar los mapas» pide confirmación antes de sustituirla por un vuelo libre «Vuelo salida → destino» construido a partir de la ruta; sin misión cargada, los mapas se crean directamente.
+El pie de página indica el número de mapas que generar («… mapa(s) que generar»), o «Ninguna misión cargada».
+Misión recibida: «Trazar» y «Combustible» trabajan sobre la misión cargada sin sustituirla. En los niveles 1 a 3, «Generar los mapas» genera sus mapas tal cual. En el nivel Experto, «Preparar los mapas» pide confirmación antes de sustituirla por un vuelo libre «Vuelo salida → destino» construido a partir de la ruta; sin misión cargada, los mapas se crean directamente.
 
 ### Ruta
 
@@ -1472,7 +1480,7 @@ Bajo el campo de ruta, un mapa de control muestra el mapa elegido con su perfil 
 |---|---|
 | «Mapa» | Mapa mostrado (por defecto: el mapa general de la ruta). |
 | «Perfil» | Perfil de visualización de este mapa (el mismo ajuste que en «Mapas que producir»). |
-| «ZIP» | Incluir o no este mapa en el ZIP. |
+| «Generar» | Generar o no este mapa. |
 | «Actualizar» | Volver a dibujar la vista previa. |
 | «Mantener este encuadre» | El mapa generado tomará exactamente el encuadre mostrado (zoom y desplazamiento con el ratón). |
 | «Recentrar» / «Encuadre automático» | Volver al encuadre guardado / olvidarlo para usar un encuadre calculado a partir de la misión. |
@@ -1497,14 +1505,19 @@ Recuerde hacer clic en «Guardar» para conservar un perfil modificado. Las list
 Este bloque crea los mapas de un vuelo a partir de la ruta, sin misión del Centro; en los niveles 1 a 3, también los genera.
 
 1. Introduzca la ruta y el nivel en el bloque «Ruta» (al menos una salida y un destino conocidos en la base SIA).
-2. Opcional: «Encuentro (opcional)», un punto o unas coordenadas «44.2, 0.6».
-3. Marque los mapas deseados: «ruta (vista general, IFR)», «aproximación», «encuentro», «destino».
-4. Haga clic en «Generar los mapas y el ZIP» (niveles 1 a 3): los mapas se crean y después se generan, el progreso (con «Detener») y el informe se muestran justo debajo y el ZIP se descarga. En el nivel Experto, «Preparar los mapas» solo los crea: ajustes en «Mapas que producir», generación en el pie de página.
+2. Opcional: «Encuentro (opcional)», un punto o unas coordenadas «44.2, 0.6»; «Alternativo (OACI, opcional)»,
+   tomado de Combustible si allí se conoce.
+3. Marque los mapas deseados: «ruta (vista general, IFR)» (perfil IFR bajo o alto según el nivel, véase más arriba),
+   «aproximación», «encuentro», «destino».
+4. Haga clic en «Generar los mapas» (niveles 1 a 3): los mapas se crean y después se generan, el progreso (con
+   «Detener») y el informe se muestran justo debajo. Las imágenes (cada mapa y `profil_vertical.png`) se muestran
+   después en el bloque: un clic amplía, «Descargar» guarda la imagen, «Imprimir» la imprime, «Imprimir todo»
+   imprime todas las imágenes, una por página. Ya no hay ZIP. En el nivel Experto, «Preparar los mapas» solo los crea: ajustes en «Mapas que producir», generación en el pie de página.
 
 La página fabrica una misión «Vuelo salida → destino» con los mapas marcados y el perfil vertical. El mapa de encuentro solo se crea si se introduce un encuentro.
 En los niveles 1 a 3, la página no tiene pie de página ni bloque «Vistas previas y generación»: todo parte del botón de este bloque.
 Después, cualquier cambio de la ruta, del nivel o del encuentro actualiza los mapas automáticamente.
-Llegada desde el planificador de combustible (botón «Mapas de vuelo»): los mapas se crean solos en cuanto se carga la base SIA.
+Llegada desde el planificador de combustible (botón «Mapas de vuelo»): la misma apertura en el vuelo en curso, mapas creados solos en cuanto se carga la base SIA.
 Mensajes de error posibles: «Base SIA ausente en este navegador», «Ruta: desconocido(s) en la base SIA», «Ningún mapa elegido».
 
 ### Mapas que producir
@@ -1517,7 +1530,7 @@ Bloque del nivel Experto. La lista «Mapas de la misión» da una línea por map
 | Perfil | Perfil de visualización del mapa, o «Desactivado». |
 | Trazado | «Sin trazado», «Brief: ruta», «Organización: ruta probable», «Ruta + ruta probable». |
 | Destinatario | Solo para las misiones de ejercicio: brief, organización, chiffon o tripulación. |
-| «ZIP» | Desmarcar para no generar el mapa. |
+| «Generar» | Desmarcar para no generar el mapa. |
 | «×» | Eliminar el mapa de la misión. |
 
 Para añadir un mapa: introduzca un nombre («nouvelle_carte.png»), elija el tipo (general, objetivo, detalle, zona) y, después, «+ Mapa». Su extensión es la vista mostrada.
@@ -1528,14 +1541,15 @@ Sin misión ni mapas creados, la lista indica «Ningún mapa: añada uno abajo.�
 Bloque del nivel Experto; en los niveles 1 a 3, el informe de la generación (mapas generados, fallos y «Reintentar solo este») se muestra bajo el botón del bloque «Mapas».
 
 1. «Mostrar todos los mapas»: dibuja una vista previa de cada mapa con su perfil. Las vistas previas no crean ningún archivo. Clic en una vista previa: ampliación.
-2. Cada vista previa conserva su casilla «ZIP».
-3. «Generar los mapas y el ZIP» (botón del pie de página): descarga un ZIP con cada mapa, el mapa de conjunto y `profil_vertical.png` si esa salida está marcada.
+2. Cada vista previa conserva su casilla «Generar».
+3. «Generar los mapas» (botón del pie de página): las imágenes de cada mapa y `profil_vertical.png` se muestran
+   en el bloque «Mapas», para descargar o imprimir una a una (sin ZIP).
 
-El «Mapa de conjunto» aparece por sí solo bajo las vistas previas; toma el perfil del mapa general.
+El «Mapa de conjunto» aparece por sí solo bajo las vistas previas (solo vista previa); toma el perfil del mapa general.
 Formatos: menú ☰ › Salidas de mapas (PNG, SVG editable, ancho PNG de 400 a 5000 px; 1600 px por defecto).
-Si un mapa falla (fondo no disponible, tiempo agotado), el ZIP contiene `rapport_generation.txt` y la lista ofrece «Reintentar solo este».
+Si un mapa falla (fondo no disponible, tiempo agotado), el informe lo indica y ofrece «Reintentar solo este», que sustituye su imagen.
 Mantenga la pestaña visible durante la generación: el navegador ralentiza las pestañas en segundo plano y un mapa puede fallar («Tiempo agotado durante la carga del mapa de fondo»); «Reintentar solo este» lo vuelve a lanzar.
-Los botones permanecen en gris mientras no haya ningún mapa que producir. Durante las vistas previas y la generación, la barra de progreso lleva un botón «Detener»: el mapa en curso se termina y los siguientes no se hacen. Una generación detenida no descarga ningún ZIP (estaría incompleto); las vistas previas ya mostradas se quedan. Vuelva a lanzar «Generar los mapas y el ZIP» para todos los mapas.
+Los botones permanecen en gris mientras no haya ningún mapa que producir. Durante las vistas previas y la generación, la barra de progreso lleva un botón «Detener»: el mapa en curso se termina y los siguientes no se hacen. Una generación detenida no muestra ninguna imagen (estarían incompletas); las vistas previas ya mostradas se quedan. Vuelva a lanzar «Generar los mapas» para todos los mapas.
 
 ### Base de datos SIA
 
