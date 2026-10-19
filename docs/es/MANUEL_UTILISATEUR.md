@@ -973,6 +973,31 @@ Los enlaces «↗ Tracker IVAO (mis conexiones)» y «↗ Mis vuelos StatSim (VA
 enlace «→ CR», que se arrastra a la barra de marcadores, copia la página del tracker con un clic. Abajo,
 «Importar (YAML / JSON antiguo)» carga un archivo de misión. Detalles: [tutorial](../TUTORIAL.md), § 6.
 
+### Rellenar desde mi último vuelo IVAO / VATSIM
+
+En la parte superior del bloque Cronología, desde el nivel 1: «Rellenar desde mi último vuelo ▾», con dos entradas,
+«Mi último vuelo IVAO» y «Mi último vuelo VATSIM». La suite debe abrirse con su lanzador, con su ID IVAO o VATSIM en
+Mi perfil (una entrada sin ID aparece en gris, con el enlace «Falta el VID IVAO — Mi perfil ↗»); para IVAO, la clave
+de API de la suite (Ajustes › Instalación). Pegar una página del tracker sigue en «Analizar / importar…» (nivel 3).
+
+- **Lista**: sus vuelos de los últimos 7 días (UTC), sean cuales sean la familia y la fecha del informe. Un solo
+  vuelo: el informe se rellena enseguida; varios: elíjalo (indicativo, trayecto, fecha y horas UTC, «en curso» si
+  sigue conectado); cada línea tiene su enlace ↗ al tracker IVAO.
+- **Vuelo cortado por desconexiones**: las sesiones seguidas (mismo indicativo, reanudada menos de 30 min después
+  donde se detuvo la anterior, sin que la anterior terminara en el aparcamiento) forman un solo vuelo, «3 sesiones
+  (reconexiones)». Plan de vuelo de la última sesión, trazas unidas: puesta en marcha desde la primera, parada desde
+  la última; el resultado indica los cortes y las sesiones.
+- **Rellenado** (solo campos vacíos, como al pegar): indicativo, aeródromos, plan de vuelo presentado (aeronave,
+  equipos, ruta, nivel, velocidad, alternativo, observaciones, matrícula `REG/`, autonomía), enlace de la traza,
+  horas sacadas de la traza (puesta en marcha, despegue, aterrizaje, parada) y distancia.
+- **No rellenado**: lo que la red no conoce (misión, tripulación, combustible, resultados, incidentes). Un vuelo
+  «en curso» da horas provisionales: vuelva a recuperarlo tras la desconexión.
+- **VATSIM**: mismo principio, pero VATSIM no publica traza: las horas son las de conexión y desconexión (a
+  corregir), el plan es el presentado para esa conexión; sin enlace a una página del vuelo.
+
+Sin vuelos, el mensaje indica para qué ID y qué periodo. En cuanto se retiene o se pega un vuelo IVAO, aparece «Ver
+en el tracker IVAO ↗» bajo el botón y junto al campo «URL de la traza» (bloque Traza de red).
+
 ### Seguimiento de red
 
 Menú de la cabecera para anotar las horas durante el vuelo.

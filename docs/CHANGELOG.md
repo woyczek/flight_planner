@@ -12,6 +12,22 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Mission report: prefill from my last IVAO / VATSIM flight** (`shared/mission_core/core.js`, `tools/launch.py`) —
+  a "Prefill from my last flight ▾" menu at the top of the Timeline block, from level 1, with an IVAO and a VATSIM
+  entry (greyed out with "IVAO VID missing — My profile ↗" when the profile has no ID; the IDs come from My profile
+  only). The launcher reads the pilot's flights of the last 7 days (`/__setup/ivao/last-flight`: IVAO tracker API
+  with the suite's key, never sent to the page, all result pages; `/__setup/vatsim/last-flight`: public VATSIM history
+  and filed plans), rolling window in UTC, never dependent on the report family or date; one flight is applied at
+  once, several are offered as a list (call sign, route, UTC times, "in progress" for an open session, a ↗ tracker
+  link per line); an empty list says which ID and period were searched; open sessions and empty lists are never
+  cached. A flight cut by disconnections (same call sign, next session within 30 min resuming where the previous one
+  stopped, the previous one not ending on blocks — checked on the tracks) is one entry, "3 sessions (reconnections)":
+  flight plan of the last session, tracks put end to end, all session ids kept, breaks listed. The flight comes back
+  in the tracker-paste format (ICAO flight plan text, track samples) and goes through the same prefill as a paste
+  (`MissionTextImport.apply`, empty fields only), including `REG/` registration and track times; VATSIM gives
+  connection times only (no track). "View on the IVAO tracker ↗" next to the button and to the "Track URL" field as
+  soon as a flight is taken or pasted. Pasting a tracker page stays in "Analyse / import…" (level 3). Pilot manual
+  (4 languages) and operations manual (external services) updated.
 - **Tutorial "Write your first mission report"** (`docs/tutorial/first_report.fr.md` / `.en.md`, Help › Tutorials;
   the help already listed it, the file was missing) — the report from start to finish: open it from an assigned
   mission, from a flight without a report in My flights, or from scratch; family and series; the aircraft (what the

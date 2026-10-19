@@ -412,7 +412,7 @@
         notes.push(`trace : ${result.samples.length} points, ${clock(track.first, tz)}–${clock(track.last, tz)}, ${track.distanceNm} NM, altitude max ${track.maxAlt} ft`);
       } else if (result.connected) {
         set('timeline.engineStart', clock(result.connected, tz));
-        set('timeline.shutdown', clock(result.disconnected, tz));
+        if (result.disconnected) set('timeline.shutdown', clock(result.disconnected, tz)); // vol en cours : pas encore d'arrêt
         notes.push('connexion / déconnexion ≈ mise en route / fin de mission (heures du réseau)');
       }
       if (result.connected) set('metadata.timeUtc', `${pad(result.connected.getUTCHours())}:${pad(result.connected.getUTCMinutes())}`);

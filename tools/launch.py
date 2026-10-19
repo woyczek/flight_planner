@@ -15,7 +15,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, datetime, fnmatch, glob, http.server, io, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, datetime, fnmatch, glob, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import posixpath, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
@@ -502,6 +502,16 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             return self._json(defa_state())
+        if self.path.split('?')[0] in ('/__setup/ivao/last-flight', '/__setup/vatsim/last-flight'):
+            # dernier vol du pilote pour le CR (« Mon dernier vol IVAO / VATSIM ») : liste des vols des 7 derniers jours,
+            # ou détail d'un vol (session / connection) au format du collage du tracker ; clé IVAO jamais transmise
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            arg = lambda k: (q.get(k) or [''])[0].strip()
+            if 'ivao' in self.path.split('?')[0]:
+                return self._json(ivao_last_flight(arg('vid'), arg('session')))
+            return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
         if self.path.split('?')[0] == '/__setup/ivao-bookings':
             # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
             # (ivao_key), jamais transmise à la page
@@ -1183,6 +1193,265 @@ def defa_types_pass():
     passe ne tourne ; { codes, started }."""
     codes = unknown_types()[:200]
     return {'codes': codes, 'started': bool(codes) and aircraft_start(codes)}
+
+
+# ---- dernier vol du pilote (CR : « Mon dernier vol IVAO / VATSIM »). Le lanceur interroge le réseau (IVAO : clé de la
+# suite, jamais transmise à la page ; VATSIM : API publique, sans clé, sans CORS) et rend le format du collage du
+# tracker (shared/mission_core/text_import.js › parseIvaoDetails) : la page passe le plan de vol (texte FPL OACI) à
+# parseFpl et le tout au même préremplissage (MissionTextImport.apply). Cache : liste d'un pilote 2 minutes ; détail
+# d'un vol terminé gardé (il ne change plus) ; vol en cours jamais gardé.
+VATSIM_API = 'https://api.vatsim.net/v2'
+_flights = {'list': {}, 'detail': {}}
+FLIGHT_DAYS = 7
+
+
+def _hhmm(seconds):
+    """Durée ou heure en secondes → « HHMM » ; '' sans valeur."""
+    try:
+        m = int(seconds) // 60
+    except (TypeError, ValueError):
+        return ''
+    return f'{m // 60 % 100:02d}{m % 60:02d}' if m >= 0 else ''
+
+
+def _fpl_clean(v):
+    """Champ de plan de vol sans tiret (séparateur des cases OACI) ni retour à la ligne."""
+    return re.sub(r'\s+', ' ', str(v or '').replace('-', ' ').replace('(', ' ').replace(')', ' ')).strip()
+
+
+def _fpl_text(callsign, rules, ftype, acft, count=1, wake='', equip='', dep='', eobt='', speed='', level='', route='', arr='',
+              eet='', altn='', altn2='', item18='', endurance='', pob=None):
+    """Plan de vol au format OACI « (FPL-…) », lu par text_import.js › parseFpl (même analyse qu'un plan collé)."""
+    c = _fpl_clean
+    item9 = f"{f'{count}/' if (count or 1) > 1 else ''}{c(acft) or 'ZZZZ'}{f'/{c(wake)}' if wake else ''}"
+    item19 = ' '.join(x for x in (f'E/{endurance}' if endurance else '', f'P/{pob}' if pob else '') if x)
+    parts = [f'FPL-{c(callsign)}', f'{c(rules)[:1] or "I"}{c(ftype)[:1]}', item9, c(equip) or 'Z/Z', f'{c(dep) or "ZZZZ"}{eobt}',
+             f'{c(speed)}{c(level)} {c(route)}'.strip(), ' '.join(x for x in (f'{c(arr) or "ZZZZ"}{eet}', c(altn), c(altn2)) if x),
+             c(item18) or '0']
+    if item19:
+        parts.append(item19)
+    return '(' + ' -'.join(parts) + ')'
+
+
+def _cached(kind, key, maxage):
+    hit = _flights[kind].get(key)
+    return hit[1] if hit and (maxage is None or time.time() - hit[0] < maxage) else None
+
+
+def _since(days=FLIGHT_DAYS):
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return now - datetime.timedelta(days=days), now
+
+
+def _iso(dt):
+    return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+_ivao_tracks = {}  # session terminée → ses points (une trace terminée ne change plus)
+
+
+def _ivao_points(sid, key, done=True):
+    """Points d'une session IVAO dans l'ordre (timestamp, latitude, longitude, altitude, groundSpeed, onGround, state) ;
+    gardés si la session est terminée."""
+    hit = _ivao_tracks.get(sid)
+    if hit is not None:
+        return hit
+    got = _ivao_get(f'/tracker/sessions/{sid}/tracks', key)
+    pts = sorted((t for t in (got if isinstance(got, list) else []) if t.get('timestamp') and t.get('latitude') is not None),
+                 key=lambda t: t['timestamp'])
+    if done:
+        _ivao_tracks[sid] = pts
+    return pts
+
+
+def _utc(v):
+    """Instant ISO de l'API (« 2026-10-19T07:40:11.000Z ») → datetime UTC."""
+    return datetime.datetime.fromisoformat(str(v).replace('Z', '+00:00'))
+
+
+def _nm(a, b):
+    """Distance en milles nautiques entre deux points de trace IVAO."""
+    la1, lo1, la2, lo2 = (math.radians(float(x)) for x in (a['latitude'], a['longitude'], b['latitude'], b['longitude']))
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 3440.065 * 2 * math.asin(min(1.0, math.sqrt(h)))
+
+
+def _ivao_same_flight(a, b, key):
+    """Sessions consécutives a puis b d'un pilote : même vol coupé par une déconnexion ? Même indicatif, b ouverte au plus
+    30 min après la fin de a, a qui ne finit pas au parking (« On Blocks » : vol terminé), et b qui reprend là où a s'est
+    arrêtée (distance franchissable pendant la coupure, 600 kt au plus). Le plan de vol ne compte pas : une reconnexion
+    peut garder un instant le plan de l'étape précédente."""
+    if not a.get('completedAt') or a.get('callsign') != b.get('callsign'):
+        return False
+    gap = (_utc(b['createdAt']) - _utc(a['completedAt'])).total_seconds()
+    if not -60 <= gap <= 1800:
+        return False
+    pa, pb = _ivao_points(a['id'], key), _ivao_points(b['id'], key, bool(b.get('completedAt')))
+    if not pa or not pb or str(pa[-1].get('state') or '') == 'On Blocks':
+        return False
+    return _nm(pa[-1], pb[0]) <= 5 + max(gap, 0) / 3600 * 600
+
+
+def ivao_last_flight(vid='', session=''):
+    """Sans session : { flights: [{ id, sessions, callsign, dep, arr, start, end, open, trackerUrl }], id, from, to } (vols
+    des 7 derniers jours, plus récent d'abord ; un vol coupé par des déconnexions = une entrée, id = ses sessions
+    « a,b,c ») ; avec session (une ou plusieurs, dans l'ordre) : détail au format parseIvaoDetails ({ kind, source,
+    network, callsign, dep, arr, connected, disconnected, samples, fplText, equipKnown, trackerUrl, sessionIds,
+    trackerUrls, gaps, open }) ; { error } sinon."""
+    key = ivao_key()
+    if not key:
+        return {'error': 'clé IVAO absente : Paramètres › Installation › Sources et dossiers (ou variable IVAO_API_KEY)'}
+    try:
+        if session:
+            if not re.fullmatch(r'\d{1,12}(,\d{1,12}){0,9}', session):
+                return {'error': 'session invalide'}
+            hit = _cached('detail', f'ivao:{session}', None)
+            if hit:
+                return hit
+            sids = session.split(',')
+            metas = [_ivao_get(f'/tracker/sessions/{sid}', key) for sid in sids]
+            s, first = metas[-1], metas[0]
+            # plan complet par /flightPlans (la session n'en donne qu'un résumé, /flightPlans/latest tronque les
+            # équipements) : dernière révision de la dernière session
+            fps = _ivao_get(f'/tracker/sessions/{sids[-1]}/flightPlans', key)
+            fps = sorted(fps if isinstance(fps, list) else [], key=lambda f: f.get('revision') or 0)
+            fp = fps[-1] if fps else {}
+            # traces des sessions mises bout à bout (mise en route depuis la première, arrêt depuis la dernière)
+            samples = [{'time': t.get('timestamp'), 'lat': t.get('latitude'), 'lon': t.get('longitude'), 'alt': t.get('altitude'),
+                        'gs': t.get('groundSpeed'), 'onGround': t.get('onGround'), 'state': t.get('state')}
+                       for m in metas for t in _ivao_points(str(m.get('id')), key, bool(m.get('completedAt')))]
+            ids = lambda xs: ''.join(str(x.get('id') or '') if isinstance(x, dict) else str(x) for x in (xs or []))
+            equip = '/'.join(x for x in (ids(fp.get('aircraftEquipments')), ids(fp.get('aircraftTransponderTypes'))) if x)
+            wake = ((fp.get('aircraft') or {}).get('wakeTurbulence') or '')[:1]
+            url = lambda m: f"https://tracker.ivao.aero/sessions/{m.get('id')}"
+            out = {
+                'kind': 'ivao-details', 'source': 'IVAO', 'network': 'IVAO', 'sessionId': s.get('id'),
+                'sessionIds': [m.get('id') for m in metas], 'trackerUrls': [url(m) for m in metas],
+                'gaps': [[x.get('completedAt'), y.get('createdAt')] for x, y in zip(metas, metas[1:])],
+                'callsign': s.get('callsign') or '', 'dep': fp.get('departureId') or '', 'arr': fp.get('arrivalId') or '',
+                'connected': first.get('createdAt'), 'disconnected': s.get('completedAt'), 'open': not s.get('completedAt'),
+                'samples': samples, 'equipKnown': bool(equip), 'trackerUrl': url(s),
+                'fplText': _fpl_text(s.get('callsign'), fp.get('flightRules'), fp.get('flightType'), fp.get('aircraftId'),
+                                     fp.get('aircraftNumber') or 1, wake, equip, fp.get('departureId'), _hhmm(fp.get('departureTime')),
+                                     fp.get('speed'), fp.get('level'), fp.get('route'), fp.get('arrivalId'), _hhmm(fp.get('eet')),
+                                     fp.get('alternativeId'), fp.get('alternative2Id'), fp.get('remarks'),
+                                     _hhmm(fp.get('endurance')), fp.get('peopleOnBoard')) if fp else ''
+            }
+            if not out['open']:
+                _flights['detail'][f'ivao:{session}'] = (time.time(), out)
+            return out
+        if not re.fullmatch(r'\d{3,8}', vid or ''):
+            return {'error': 'VID IVAO manquant ou invalide (Mon profil)'}
+        hit = _cached('list', f'ivao:{vid}', 120)
+        if hit:
+            return hit
+        # fenêtre glissante des 7 derniers jours (UTC), indépendante de la page, de la famille et de la date du CR
+        d0, d1 = _since()
+        items, page = [], 1
+        while page <= 5:  # toutes les pages (au plus 250 sessions)
+            got = _ivao_get('/tracker/sessions?' + urllib.parse.urlencode({
+                'userId': vid, 'connectionType': 'PILOT', 'perPage': 50, 'page': page, 'from': _iso(d0), 'to': _iso(d1)}), key)
+            got = got if isinstance(got, dict) else {}
+            items += got.get('items') or []
+            if page >= int(got.get('pages') or 1):
+                break
+            page += 1
+        # vols : sessions consécutives d'un même vol (déconnexions) regroupées, dans l'ordre
+        groups = []
+        for s in sorted(items, key=lambda x: str(x.get('createdAt') or '')):
+            if groups and _ivao_same_flight(groups[-1][-1], s, key):
+                groups[-1].append(s)
+            else:
+                groups.append([s])
+        flights = []
+        for g in groups:
+            last = g[-1]
+            fp = sorted(last.get('flightPlans') or [], key=lambda f: f.get('revision') or 0)
+            fp = fp[-1] if fp else {}
+            flights.append({'id': ','.join(str(x.get('id')) for x in g), 'sessions': len(g), 'callsign': last.get('callsign') or '',
+                            'dep': fp.get('departureId') or '', 'arr': fp.get('arrivalId') or '', 'start': g[0].get('createdAt'),
+                            'end': last.get('completedAt'), 'open': not last.get('completedAt'),
+                            'trackerUrl': f"https://tracker.ivao.aero/sessions/{last.get('id')}"})
+        # requête rappelée dans la réponse : une liste vide dit pour quel VID et quelle période
+        out = {'flights': sorted(flights, key=lambda f: f['start'] or '', reverse=True), 'id': vid, 'from': _iso(d0), 'to': _iso(d1)}
+        if flights:  # liste vide jamais gardée (nouvel essai aussitôt après une connexion)
+            _flights['list'][f'ivao:{vid}'] = (time.time(), out)
+        return out
+    except urllib.error.HTTPError as e:
+        return {'error': f'IVAO : HTTP {e.code}' + (' (trop de demandes : réessayer plus tard)' if e.code == 429 else '')}
+    except (OSError, ValueError) as e:
+        return {'error': f'IVAO : {e}'}
+
+
+def _vatsim_get(path):
+    req = urllib.request.Request(VATSIM_API + path, headers={'User-Agent': 'SOG-suite', 'Accept': 'application/json'})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.load(r)
+
+
+def _vatsim_level(v):
+    """Altitude d'un plan VATSIM (« 24000 », « FL240 », « A045 », « VFR ») → niveau OACI (F240, A045, VFR)."""
+    v = str(v or '').strip().upper()
+    if re.fullmatch(r'(FL|F)\d{2,3}', v):
+        return 'F' + v.lstrip('FL').zfill(3)
+    if re.fullmatch(r'\d{3,5}', v):
+        n = int(v)
+        return f'F{n // 100:03d}' if n >= 1000 else f'F{n:03d}'
+    return v
+
+
+def vatsim_last_flight(cid='', connection=''):
+    """Comme ivao_last_flight, pour VATSIM (connexions de pilote : historique public, plans déposés) ; pas de trace : les
+    heures sont celles de connexion et de déconnexion."""
+    if not re.fullmatch(r'\d{6,8}', cid or ''):
+        return {'error': 'CID VATSIM manquant ou invalide (Mon profil)'}
+    try:
+        hist = _cached('list', f'vatsim:{cid}', 120)
+        if not hist:
+            got = _vatsim_get(f'/members/{cid}/history?limit=50')
+            d0, d1 = _since()
+            items = [h for h in (got.get('items') or []) if h.get('type') == 1 and str(h.get('start') or '') >= _iso(d0)]
+            fps = _vatsim_get(f'/members/{cid}/flightplans') if items else []
+            hist = {'items': items, 'fps': fps if isinstance(fps, list) else [], 'from': _iso(d0), 'to': _iso(d1)}
+            if items:  # liste vide jamais gardée
+                _flights['list'][f'vatsim:{cid}'] = (time.time(), hist)
+
+        def plan_of(h):
+            # plan lié à la connexion, sinon déposé pour cet indicatif au plus tard à la fin de la connexion, au plus tôt 12 h avant son début
+            end, start = str(h.get('end') or '9999'), str(h.get('start') or '')
+            lo = _iso(datetime.datetime.fromisoformat(start.replace('Z', '+00:00')) - datetime.timedelta(hours=12)) if start else ''
+            cands = [f for f in hist['fps'] if f.get('connection_id') == h.get('id')]  # plan lié à la connexion
+            cands = cands or [f for f in hist['fps'] if f.get('callsign') == h.get('callsign') and lo <= str(f.get('filed') or '') <= end]
+            return max(cands, key=lambda f: str(f.get('filed') or '')) if cands else {}
+
+        if not connection:
+            return {'flights': [{'id': h.get('id'), 'callsign': h.get('callsign') or '', 'dep': plan_of(h).get('dep') or '',
+                                 'arr': plan_of(h).get('arr') or '', 'start': h.get('start'), 'end': h.get('end'),
+                                 'open': not h.get('end')} for h in sorted(hist['items'], key=lambda h: str(h.get('start') or ''), reverse=True)],
+                    'id': cid, 'from': hist['from'], 'to': hist['to']}
+        h = next((x for x in hist['items'] if str(x.get('id')) == connection), None)
+        if not h:
+            return {'error': 'connexion VATSIM introuvable (liste à relire)'}
+        fp = plan_of(h)
+        acft = str(fp.get('aircraft') or '')  # « DH8D/M-SDE2E3FGRY/H » : type/sillage-équipements/transpondeur
+        a9, _, equip = acft.partition('-')
+        typ, _, wake = a9.partition('/')
+        hm = lambda hrs, mins: f'{int(hrs or 0):02d}{int(mins or 0):02d}' if (hrs or mins) else ''
+        return {
+            'kind': 'ivao-details', 'source': 'VATSIM', 'network': 'VATSIM', 'callsign': h.get('callsign') or '',
+            'dep': fp.get('dep') or '', 'arr': fp.get('arr') or '', 'connected': h.get('start'), 'disconnected': h.get('end'),
+            'open': not h.get('end'), 'samples': [], 'equipKnown': bool(equip),
+            'fplText': _fpl_text(h.get('callsign'), (fp.get('flight_type') or 'I')[:1], '', typ, 1, wake[:1], equip,
+                                 fp.get('dep'), str(fp.get('deptime') or '').zfill(4)[:4] if fp.get('deptime') else '',
+                                 f"N{int(fp['cruisespeed']):04d}" if str(fp.get('cruisespeed') or '').isdigit() else '',
+                                 _vatsim_level(fp.get('altitude')), fp.get('route'), fp.get('arr'),
+                                 hm(fp.get('hrsenroute'), fp.get('minenroute')), fp.get('alt'), '', fp.get('rmks'),
+                                 hm(fp.get('hrsfuel'), fp.get('minsfuel'))) if fp else ''
+        }
+    except urllib.error.HTTPError as e:
+        return {'error': f'VATSIM : HTTP {e.code}' + (' (trop de demandes : réessayer plus tard)' if e.code == 429 else '')}
+    except (OSError, ValueError) as e:
+        return {'error': f'VATSIM : {e}'}
 
 
 _ivao_book = {}  # date → (instant, réservations du jour)

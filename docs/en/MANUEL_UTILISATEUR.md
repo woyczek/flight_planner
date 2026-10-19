@@ -972,6 +972,31 @@ The “↗ IVAO tracker (my connections)” and “↗ My StatSim flights (VATSI
 “→ CR” link, to drag into the bookmarks bar, copies the tracker page in one click. At the bottom,
 “Import (YAML / legacy JSON)” loads a mission file. Details: [tutorial](../TUTORIAL.md), § 6.
 
+### Prefill from my last IVAO / VATSIM flight
+
+At the top of the Timeline block, from level 1: “Prefill from my last flight ▾”, with two entries, “My last IVAO
+flight” and “My last VATSIM flight”. The suite must be opened through its launcher, with your IVAO or VATSIM ID in My
+profile (an entry without ID is greyed out, with the link “IVAO VID missing — My profile ↗”); for IVAO, the suite's
+API key (Settings › Installation). Pasting a tracker page stays in “Analyse / import…” (level 3).
+
+- **List**: your flights of the last 7 days (UTC), whatever the family and the report date. One flight: the report is
+  filled in at once; several: choose it (call sign, route, date and UTC times, “in progress” if you are still
+  connected); each line has its ↗ link to the IVAO tracker.
+- **Flight cut by disconnections**: consecutive sessions (same call sign, resumed less than 30 min later where the
+  previous one stopped, the previous one not ending on blocks) make a single flight, “3 sessions (reconnections)”.
+  Flight plan of the last session, tracks put end to end: engine start from the first, shutdown from the last; the
+  result lists the breaks and the sessions.
+- **Filled in** (empty fields only, as with a paste): call sign, aerodromes, filed flight plan (aircraft,
+  equipment, route, level, speed, alternate, remarks, `REG/` registration, endurance), track link, times taken
+  from the track (engine start, take-off, landing, shutdown) and distance.
+- **Not filled in**: what the network does not know (mission, crew, fuel, results, incidents). A flight “in
+  progress” gives provisional times: fetch again after disconnecting.
+- **VATSIM**: same principle, but VATSIM publishes no track: times are the connection and disconnection times (to be
+  corrected), the plan is the one filed for that connection; no link to a flight page.
+
+With no flight, the message says for which ID and which period. As soon as an IVAO flight is taken or pasted, “View
+on the IVAO tracker ↗” appears under the button and next to the “Track URL” field (network track block).
+
 ### Network tracking
 
 Header menu to record the times during the flight.

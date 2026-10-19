@@ -974,6 +974,32 @@ Die Links „↗ IVAO-Tracker (meine Verbindungen)“ und „↗ Meine StatSim-F
 Link „→ Bericht“, in die Lesezeichenleiste gezogen, kopiert die Tracker-Seite mit einem Klick. Unten
 lädt „Importieren (YAML / altes JSON)“ eine Missionsdatei. Einzelheiten: [Tutorial](../TUTORIAL.md), § 6.
 
+### Aus meinem letzten IVAO- / VATSIM-Flug vorausfüllen
+
+Oben im Block Zeitablauf, ab Stufe 1: „Aus meinem letzten Flug vorausfüllen ▾“, mit zwei Einträgen, „Mein letzter
+IVAO-Flug“ und „Mein letzter VATSIM-Flug“. Die Suite muss über ihren Starter geöffnet sein, mit Ihrer IVAO- oder
+VATSIM-ID in Mein Profil (ein Eintrag ohne ID ist ausgegraut, mit dem Link „IVAO-VID fehlt — Mein Profil ↗“); für
+IVAO der API-Schlüssel der Suite (Einstellungen › Installation). Das Einfügen einer Tracker-Seite bleibt unter
+„Auswerten / importieren…“ (Stufe 3).
+
+- **Liste**: Ihre Flüge der letzten 7 Tage (UTC), unabhängig von Familie und Datum des Berichts. Ein Flug: Der
+  Bericht wird sofort gefüllt; mehrere: wählen Sie ihn (Rufzeichen, Strecke, Datum und UTC-Zeiten, „laufend“, wenn
+  Sie noch verbunden sind); jede Zeile hat ihren Link ↗ zum IVAO-Tracker.
+- **Durch Verbindungsabbrüche geteilter Flug**: aufeinanderfolgende Sitzungen (gleiches Rufzeichen, weniger als
+  30 Min. später dort fortgesetzt, wo die vorige endete, die vorige nicht an der Parkposition beendet) bilden einen
+  Flug, „3 Sitzungen (Neuverbindungen)“. Flugplan der letzten Sitzung, Spuren aneinandergereiht: Anlassen aus der
+  ersten, Abstellen aus der letzten; das Ergebnis nennt die Unterbrechungen und die Sitzungen.
+- **Gefüllt** (nur leere Felder, wie beim Einfügen): Rufzeichen, Flugplätze, aufgegebener Flugplan (Luftfahrzeug,
+  Ausrüstung, Route, Flughöhe, Geschwindigkeit, Ausweichflugplatz, Bemerkungen, Kennzeichen `REG/`, Flugdauer),
+  Link der Spur, aus der Spur gewonnene Zeiten (Anlassen, Start, Landung, Abstellen) und Distanz.
+- **Nicht gefüllt**: was das Netz nicht kennt (Mission, Besatzung, Kraftstoff, Ergebnisse, Vorfälle). Ein
+  „laufender“ Flug liefert vorläufige Zeiten: nach dem Trennen erneut abrufen.
+- **VATSIM**: gleiches Prinzip, aber VATSIM veröffentlicht keine Spur: Die Zeiten sind die der Verbindung und
+  Trennung (zu korrigieren), der Plan ist der für diese Verbindung aufgegebene; kein Link zu einer Flugseite.
+
+Ohne Flug nennt die Meldung ID und Zeitraum. Sobald ein IVAO-Flug übernommen oder eingefügt ist, erscheint „Im
+IVAO-Tracker ansehen ↗“ unter dem Knopf und neben dem Feld „URL der Spur“ (Block Netzwerkspur).
+
 ### Netzwerk-Tracking
 
 Menü der Kopfzeile, um die Uhrzeiten während des Flugs zu erfassen.

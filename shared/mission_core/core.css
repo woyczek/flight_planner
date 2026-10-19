@@ -1090,6 +1090,54 @@
   .mc-import-result {
     color: var(--accent)
   }
+  /* « Préremplir depuis mon dernier vol ▾ » (bloc Chronologie) : menu, puis vols des 7 derniers jours, un par ligne */
+  .mc-last-menu>summary {
+    display: inline-block;
+    cursor: pointer;
+    list-style: none;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600
+  }
+  .mc-last-menu>summary::-webkit-details-marker {
+    display: none
+  }
+  .mc-last-menu .row {
+    margin-top: 8px
+  }
+  .mc-last .mc-import-choices {
+    margin-top: 8px
+  }
+  .mc-last-row {
+    display: flex;
+    gap: 6px;
+    align-items: center
+  }
+  .mc-last-row button {
+    flex: 1
+  }
+  .mc-trace-link {
+    display: inline-block;
+    margin-top: 4px
+  }
+  .mc-import-choices {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    max-height: 220px;
+    overflow-y: auto
+  }
+  .mc-import-choices[hidden] {
+    display: none
+  }
+  .mc-last .mc-import-choices button {
+    text-align: left;
+    justify-content: flex-start;
+    font-variant-numeric: tabular-nums
+  }
   /* en-tête des reportings : nouveau compte rendu */
   header.mc-header a.mc-header-new {
     display: inline-flex;

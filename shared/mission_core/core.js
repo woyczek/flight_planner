@@ -256,6 +256,52 @@
       '↗ Tracker IVAO (mis conexiones)'),
     importOpenStatsim: L('↗ Mes vols StatSim (VATSIM)', '↗ My StatSim flights (VATSIM)', '↗ Meine StatSim-Flüge (VATSIM)',
       '↗ Mis vuelos StatSim (VATSIM)'),
+    lastTitle: L('Préremplir depuis mon dernier vol ▾', 'Prefill from my last flight ▾', 'Aus meinem letzten Flug vorausfüllen ▾',
+      'Rellenar desde mi último vuelo ▾'),
+    lastSessions: L('{n} sessions (reconnexions)', '{n} sessions (reconnections)', '{n} Sitzungen (Neuverbindungen)',
+      '{n} sesiones (reconexiones)'),
+    lastGaps: L('vol en {n} sessions (reconnexions ; coupures {gaps} UTC) : sessions {ids}',
+      'flight in {n} sessions (reconnections; breaks {gaps} UTC): sessions {ids}',
+      'Flug in {n} Sitzungen (Neuverbindungen; Unterbrechungen {gaps} UTC): Sitzungen {ids}',
+      'vuelo en {n} sesiones (reconexiones; cortes {gaps} UTC): sesiones {ids}'),
+    lastTracker: L('Voir sur le tracker IVAO ↗', 'View on the IVAO tracker ↗', 'Im IVAO-Tracker ansehen ↗', 'Ver en el tracker IVAO ↗'),
+    lastTrace: L('Voir la trace ↗', 'View the track ↗', 'Spur ansehen ↗', 'Ver la traza ↗'),
+    lastNoIvao: L('VID IVAO absent — Mon profil ↗', 'IVAO VID missing — My profile ↗', 'IVAO-VID fehlt — Mein Profil ↗',
+      'Falta el VID IVAO — Mi perfil ↗'),
+    lastNoVatsim: L('CID VATSIM absent — Mon profil ↗', 'VATSIM CID missing — My profile ↗', 'VATSIM-CID fehlt — Mein Profil ↗',
+      'Falta el CID VATSIM — Mi perfil ↗'),
+    importLastIvao: L('Mon dernier vol IVAO', 'My last IVAO flight', 'Mein letzter IVAO-Flug', 'Mi último vuelo IVAO'),
+    importLastVatsim: L('Mon dernier vol VATSIM', 'My last VATSIM flight', 'Mein letzter VATSIM-Flug', 'Mi último vuelo VATSIM'),
+    importLastIvaoDone: L('IVAO — dernier vol', 'IVAO — last flight', 'IVAO — letzter Flug', 'IVAO — último vuelo'),
+    importLastVatsimDone: L('VATSIM — dernier vol', 'VATSIM — last flight', 'VATSIM — letzter Flug', 'VATSIM — último vuelo'),
+    importLastNoneIvao: L('Aucune session pilote IVAO pour le VID {id} entre le {from} et le {to} (UTC).',
+      'No IVAO pilot session for VID {id} between {from} and {to} (UTC).',
+      'Keine IVAO-Pilotensitzung für VID {id} zwischen {from} und {to} (UTC).',
+      'Ninguna sesión de piloto IVAO para el VID {id} entre el {from} y el {to} (UTC).'),
+    importLastNoneVatsim: L('Aucune connexion pilote VATSIM pour le CID {id} entre le {from} et le {to} (UTC).',
+      'No VATSIM pilot connection for CID {id} between {from} and {to} (UTC).',
+      'Keine VATSIM-Pilotenverbindung für CID {id} zwischen {from} und {to} (UTC).',
+      'Ninguna conexión de piloto VATSIM para el CID {id} entre el {from} y el {to} (UTC).'),
+    importLastOtherId: L('ID du CR ({mission}) différent de Mon profil ({profile}) : celui du profil est utilisé.',
+      'Report ID ({mission}) differs from My profile ({profile}): the profile one is used.',
+      'ID des Berichts ({mission}) weicht von Mein Profil ({profile}) ab: die des Profils wird verwendet.',
+      'El ID del informe ({mission}) difiere de Mi perfil ({profile}): se usa el del perfil.'),
+    importLastChoose: L('Plusieurs vols ces 7 derniers jours : choisissez celui du CR.',
+      'Several flights in the last 7 days: choose the one for this report.',
+      'Mehrere Flüge in den letzten 7 Tagen: den Flug dieses Berichts wählen.',
+      'Varios vuelos en los últimos 7 días: elija el de este informe.'),
+    importLastOpen: L('en cours', 'in progress', 'laufend', 'en curso'),
+    importLastOpenNote: L('vol en cours : heures provisoires, à relire après la déconnexion',
+      'flight in progress: provisional times, check again after disconnecting',
+      'Flug läuft: vorläufige Zeiten, nach dem Trennen erneut prüfen',
+      'vuelo en curso: horas provisionales, revisar tras la desconexión'),
+    importLastVatsimNote: L('VATSIM : heures de connexion seulement (pas de trace)', 'VATSIM: connection times only (no track)',
+      'VATSIM: nur Verbindungszeiten (keine Spur)', 'VATSIM: solo horas de conexión (sin traza)'),
+    importLastLauncher: L(
+      'Récupération impossible : la suite doit être ouverte par son lanceur (tools/launch.py). Le collage depuis le tracker reste possible.',
+      'Cannot fetch: the suite must be opened through its launcher (tools/launch.py). Pasting from the tracker still works.',
+      'Abruf nicht möglich: Die Suite muss über ihren Starter geöffnet werden (tools/launch.py). Einfügen aus dem Tracker funktioniert weiterhin.',
+      'No se puede recuperar: la suite debe abrirse con su lanzador (tools/launch.py). Pegar desde el tracker sigue siendo posible.'),
     importTrackerUrl: L('Adresse de la trace IVAO', 'IVAO track address', 'Adresse der IVAO-Spur', 'Dirección de la traza IVAO'),
     importLocal: L('heures locales', 'local times', 'Ortszeiten', 'horas locales'),
     fplFilled: L('champs renseignés depuis', 'fields filled from', 'Felder ausgefüllt aus', 'campos rellenados desde'),
@@ -444,6 +490,13 @@
     let edit = null; // { index, missionId } en mode modification
     const draftKey = `missionCoreDraft:v1:${family.id}`;
     /** Profil pilote (missionReportingConfig:v1) : IDs réseau, identifiants… repris dans une nouvelle mission. */
+    // « Préremplir depuis mon dernier vol » : menu ouvert, réseau, message et vols proposés, redessinés après chaque rendu
+    const lastState = {
+      open: false,
+      net: '',
+      text: '',
+      flights: null
+    };
     const prefs = () => {
       try {
         return JSON.parse(localStorage.getItem('missionReportingConfig:v1') || '{}');
@@ -1273,6 +1326,7 @@
 
     // ---- plan de vol déposé (SimBrief, IVAO, VATSIM) : barre d'outils du bloc Navigation
     function fplTools() {
+      lastFlightTools();
       const section = form.querySelector('#mc-navigation');
       if (!section || section.querySelector('.mc-fpl')) return;
       const bar = document.createElement('div');
@@ -1328,6 +1382,99 @@
         }
       });
       section.querySelector('h2').after(bar);
+    }
+    /** Barre « Préremplir depuis mon dernier vol ▾ » en tête du bloc Chronologie : IVAO et VATSIM, entrée grisée avec son
+     *  motif (lien vers Mon profil) si l'identifiant du profil manque ; message et choix gardés dans lastState. */
+    function lastFlightTools() {
+      const section = form.querySelector('#mc-timeline');
+      if (!section || section.querySelector('.mc-last')) return;
+      const bar = document.createElement('div');
+      bar.className = 'mc-tools mc-last';
+      bar.innerHTML = `<details class="mc-last-menu"><summary></summary><div class="row"><button type="button" class="secondary" data-last="ivao"></button><button type="button" class="secondary" data-last="vatsim"></button></div><p class="small mc-last-why"></p></details><div class="mc-import-row mc-import-choices" hidden></div><p class="small mc-tools-status"></p><p class="small"><a class="mc-last-tracker" target="_blank" rel="noopener" hidden></a></p>`;
+      const menu = bar.querySelector('details'),
+        why = bar.querySelector('.mc-last-why'),
+        p = prefs();
+      menu.open = lastState.open;
+      menu.ontoggle = () => lastState.open = menu.open;
+      bar.querySelector('summary').textContent = t('lastTitle');
+      [
+        ['ivao', 'importLastIvao', 'ivaoId', 'lastNoIvao'],
+        ['vatsim', 'importLastVatsim', 'vatsimId', 'lastNoVatsim']
+      ].forEach(([net, key, pref, missing]) => {
+        const b = bar.querySelector(`[data-last="${net}"]`);
+        b.textContent = t(key);
+        if (!String(p[pref] || '').trim()) {
+          b.disabled = true;
+          b.title = inLanguage(UI[missing]);
+          why.append(Object.assign(document.createElement('a'), {
+            href: settingsUrl(''),
+            textContent: inLanguage(UI[missing])
+          }), ' ');
+          return;
+        }
+        b.onclick = async () => {
+          b.disabled = true;
+          try {
+            await lastFlight(net);
+          } finally {
+            b.disabled = false;
+          }
+        };
+      });
+      why.hidden = !why.childElementCount;
+      section.querySelector('h2').after(bar);
+      drawLast();
+      traceLink();
+    }
+    /** Lien « Voir sur le tracker IVAO ↗ » (« Voir la trace ↗ » pour une autre adresse) de la trace du vol : sous le bouton
+     *  du dernier vol et à côté du champ « URL de la trace » (bloc Trace réseau), dès qu'un vol est retenu ou collé. */
+    function traceLink() {
+      const input = form.querySelector('[data-path="network.trackerUrl"]');
+      if (input && !input.parentElement.querySelector('.mc-trace-link')) {
+        const a = Object.assign(document.createElement('a'), {
+          className: 'mc-trace-link small',
+          target: '_blank',
+          rel: 'noopener'
+        });
+        input.after(a);
+        input.addEventListener('input', traceLink);
+      }
+      const url = String(input?.value ?? mission.network?.trackerUrl ?? '').trim(),
+        ok = /^https?:\/\/\S+$/i.test(url);
+      form.querySelectorAll('.mc-trace-link, .mc-last-tracker').forEach(a => {
+        a.hidden = !ok;
+        if (!ok) return;
+        a.href = url;
+        a.textContent = inLanguage(/tracker\.ivao\.aero/i.test(url) ? UI.lastTracker : UI.lastTrace);
+      });
+    }
+    /** Message et vols proposés du dernier vol (lastState) dans la barre du bloc Chronologie. */
+    function drawLast() {
+      const bar = form.querySelector('.mc-last');
+      if (!bar) return;
+      bar.querySelector('.mc-tools-status').textContent = lastState.text;
+      const choices = bar.querySelector('.mc-import-choices'),
+        hhmm = v => String(v || '').slice(11, 16);
+      choices.replaceChildren(...(lastState.flights || []).map(f => {
+        const row = document.createElement('div'),
+          b = document.createElement('button');
+        row.className = 'mc-last-row';
+        b.type = 'button';
+        b.className = 'secondary';
+        // indicatif, trajet et heures UTC (« en cours » si pas encore déconnecté) ; vol coupé : nombre de sessions
+        b.textContent = `${f.callsign || '—'} ${f.dep || '?'}→${f.arr || '?'} · ${String(f.start || '').slice(0, 10)} ${hhmm(f.start)}–${f.open ? inLanguage(UI.importLastOpen) : `${hhmm(f.end)}Z`}${f.sessions > 1 ? ` · ${inLanguage(UI.lastSessions).replace('{n}', f.sessions)}` : ''}`;
+        b.onclick = () => lastFlight(lastState.net, String(f.id));
+        row.append(b);
+        if (/^https:\/\//.test(f.trackerUrl || '')) row.append(Object.assign(document.createElement('a'), {
+          href: f.trackerUrl,
+          target: '_blank',
+          rel: 'noopener',
+          textContent: '↗',
+          title: inLanguage(UI.lastTracker)
+        }));
+        return row;
+      }));
+      choices.hidden = !choices.childElementCount;
     }
     /** Message d'erreur d'import de plan de vol (identifiant manquant traduit). */
     const fplError = error => /-id$/.test(error?.message) ? inLanguage(UI.fplNeedId) : explain(error);
@@ -1385,6 +1532,13 @@
         if (!silent) importResult.textContent = inLanguage(UI.importUnknown);
         return false;
       }
+      return applyImport(result);
+    }
+    /** Préremplissage commun (texte collé, dernier vol récupéré) : champs vides de la mission, mêmes aides que la saisie,
+     * résultat affiché (label : clé UI du titre, extra : remarques ajoutées, show : affichage du résultat ; par défaut
+     * dans la fenêtre de collage, refermée). */
+    async function applyImport(result, label = KINDS[result.kind], extra = [], show = null) {
+      const TI = window.MissionTextImport;
       const dep = result.fpl?.dep || result.dep || result.sessions?.[0]?.dep || mission.navigation.dep || mission.aircraft[0]
         ?.baseDeparture;
       const ad = dep && !/^ZZZZ$/.test(dep) ? await assist.airport(dep) : null;
@@ -1414,12 +1568,84 @@
         }
       changed();
       switcher.sync();
-      importResult.textContent = `${inLanguage(UI[KINDS[result.kind]])} — ${done.length} ${inLanguage(UI.fplFilled)} : ${done.map(p => p.replace(/^\w+\.(\d+\.)?/, '')).join(', ') || '—'}${ad?.tz ? ` · ${inLanguage(UI.importLocal)} ${ad.icao} (${ad.tz})` : ''}${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
+      notes.push(...extra);
+      const text = `${inLanguage(UI[label])} — ${done.length} ${inLanguage(UI.fplFilled)} : ${done.map(p => p.replace(/^\w+\.(\d+\.)?/, '')).join(', ') || '—'}${ad?.tz ? ` · ${inLanguage(UI.importLocal)} ${ad.icao} (${ad.tz})` : ''}${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
+      if (show) return show(text), true;
+      importResult.textContent = text;
       importArea.value = '';
       importPanel?.done(); // bouton « Valider » (ferme la fenêtre)
       return true;
     }
     importBox.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
+    // ---- « Préremplir depuis mon dernier vol ▾ » (bloc Chronologie, dès le niveau 1) : le lanceur interroge le réseau
+    // (clé IVAO de la suite, jamais vue par la page) et rend les vols des 7 derniers jours ; un seul → prérempli,
+    // plusieurs → choix ; détail au format du collage du tracker (parseIvaoDetails), donc même préremplissage
+    // (applyImport). ID du pilote : Mon profil seulement (entrée grisée avec le motif s'il manque).
+    /** Date d'une chaîne ISO du lanceur (null si absente). */
+    const isoDate = v => v ? new Date(v) : null;
+    /** Message du dernier vol (gardé d'un rendu du formulaire à l'autre), liste de choix vidée sauf mention contraire. */
+    const sayLast = (text, flights = null) => {
+      lastState.text = text;
+      lastState.flights = flights;
+      drawLast();
+    };
+    /** Vols récents du pilote sur un réseau (sans session) ou préremplissage du vol choisi (session). */
+    const lastFlight = async (net, session = '') => {
+      const p = prefs(),
+        id = String((net === 'ivao' ? p.ivaoId : p.vatsimId) || '').trim(),
+        inReport = String((net === 'ivao' ? mission.network.ivaoId : mission.network.vatsimId) || '').trim();
+      if (!id) return sayLast(inLanguage(net === 'ivao' ? UI.lastNoIvao : UI.lastNoVatsim));
+      lastState.net = net;
+      sayLast('…');
+      let got;
+      try {
+        const query = new URLSearchParams(net === 'ivao' ? {
+          vid: id,
+          session
+        } : {
+          cid: id,
+          connection: session
+        });
+        got = await (await fetch(`/__setup/${net}/last-flight?${query}`, {
+          headers: {
+            'X-SOG-Setup': '1'
+          },
+          cache: 'no-store'
+        })).json();
+      } catch {
+        return sayLast(inLanguage(UI.importLastLauncher));
+      }
+      if (got.error) return sayLast(got.error);
+      if (got.flights) {
+        if (!got.flights.length) {
+          const when = v => String(v || '').slice(0, 16).replace('T', ' ');
+          sayLast([inLanguage(net === 'ivao' ? UI.importLastNoneIvao : UI.importLastNoneVatsim).replace('{id}', got.id || id).replace(
+              '{from}', when(got.from)).replace('{to}', when(got.to)),
+            inReport && inReport !== id ? inLanguage(UI.importLastOtherId).replace('{mission}', inReport).replace('{profile}',
+              id) :
+            ''
+          ].filter(Boolean).join(' '));
+        } else if (got.flights.length === 1) await lastFlight(net, String(got.flights[0].id));
+        else sayLast(inLanguage(UI.importLastChoose), got.flights);
+        return;
+      }
+      const fpl = got.fplText ? window.MissionTextImport.parseFpl(got.fplText) : null;
+      if (fpl && !got.equipKnown) fpl.equipment = []; // équipements non déposés : rien plutôt que « Z/Z »
+      await applyImport({
+        ...got,
+        fpl,
+        connected: isoDate(got.connected),
+        disconnected: isoDate(got.disconnected),
+        samples: (got.samples || []).map(s => ({
+          ...s,
+          time: new Date(s.time)
+        }))
+      }, net === 'ivao' ? 'importLastIvaoDone' : 'importLastVatsimDone', [got.open && inLanguage(UI.importLastOpenNote), net ===
+        'vatsim' && inLanguage(UI.importLastVatsimNote), got.sessionIds?.length > 1 && inLanguage(UI.lastGaps).replace('{n}', got
+          .sessionIds.length).replace('{gaps}', (got.gaps || []).map(([e, s]) => `${String(e).slice(11, 19)}–${String(s).slice(11, 19)}`)
+          .join(', ')).replace('{ids}', got.sessionIds.join(', '))
+      ].filter(Boolean), text => sayLast(text));
+    };
     // Fenêtre de copier-coller : « × », « Fermer », bouton désactivé si vide, puis « Valider ».
     let importPanel = null;
     /** Branche le panneau de copier-coller de l'import (FileAccess.pastePanel). */
