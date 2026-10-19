@@ -365,7 +365,13 @@ Formats checked in the browser on 19 October 2026, without signing in:
 | ChartFox | `https://chartfox.org/<ICAO>` | redirects to the VATSIM sign-in without keeping the address: **to be confirmed with a signed-in account** |
 
 Route points for SimBrief and SkyVector: speed/level groups (`N0450F350`), level changes after a point (`NTS/…`),
-departure and arrival aerodromes and leading/trailing `DCT` removed; SkyVector also without `DCT`. A call sign such as
+departure and arrival aerodromes and leading/trailing `DCT` removed. SkyVector resolves each name on its own: no
+airway, no procedure, and an unknown name goes to a far-away namesake (`TOC` became Toccoa, USA, 3,800 NM away —
+the “SkyVector does not take the route” bug of 19 October). So SkyVector only gets names of 2 to 5 letters and ICAO
+coordinates (`4341N00122E`, accepted as a “GPS” point); airways, procedures (`FISTO5A`) and `DCT` are dropped. In a
+route list from a SimBrief OFP (“ID lat lon” entries), any other ID (`WPT`, SimBrief `4600N` idents) becomes the
+entry's ICAO coordinates and `TOC` / `TOD` are dropped, for SimBrief as well; SimBrief keeps airways and procedures of
+an item 15 route. A call sign such as
 `AFR1234` gives SimBrief `airline` and `fltnum`. In Fuel, the alternate, call sign and registration come from the last
 SimBrief OFP only when its origin and destination match the flight plan.
 

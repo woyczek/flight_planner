@@ -10,7 +10,10 @@
   //   SimBrief      https://dispatch.simbrief.com/options/custom?orig=&dest=&type=&route=&reg=&airline=&fltnum=&callsign=&altn=&fl=
   //                 (www.simbrief.com/system/dispatch.php?… y redirige en gardant les paramètres ; noms des paramètres de
   //                 la doc de l'API SimBrief ; orig, dest et type exigés ; préremplit « Custom options » une fois connecté)
-  //   SkyVector     https://skyvector.com/?fpl=<ADEP> <points> <ADES> (panneau Flight Plan rempli, route tracée)
+  //   SkyVector     https://skyvector.com/?fpl=<ADEP> <points> <ADES> (panneau Flight Plan rempli, route tracée) ; chaque
+  //                 nom est résolu seul (pas de voie aérienne, pas de procédure ; un nom inconnu près de la route part vers
+  //                 un homonyme lointain : « TOC » → Toccoa, États-Unis) : noms de 2 à 5 lettres seulement, sinon les
+  //                 coordonnées au format OACI (4341N00122E, accepté : point « GPS ») quand la route les donne
   //   Navigraph     https://charts.navigraph.com/airport/<OACI> (adresse gardée, page « Sign in » : à confirmer connecté)
   //   ChartFox      https://chartfox.org/<OACI> (renvoie vers la connexion VATSIM : à confirmer connecté)
   if (window.ExternalLinks) return;
@@ -20,16 +23,58 @@
   const ICAO = /^[A-Z]{4}$/;
   const up = v => String(v || '').trim().toUpperCase();
 
-  /** Mots de la route : case 15 (séparée par des espaces) ou liste à virgules / lignes (premier mot de chaque entrée). */
-  const words = route => {
-    const s = up(route);
-    return (/[,;\n]/.test(s) ? s.split(/[,;\n]+/).map(e => e.trim().split(/\s+/)[0]) : s.split(/\s+/)).filter(Boolean);
+  /** Coordonnées au format OACI (degrés et minutes : 4341N00122E), comprises par SkyVector et SimBrief. */
+  const dm = (v, w, pos, neg) => {
+    const a = Math.abs(v);
+    let d = Math.floor(a),
+      m = Math.round((a - d) * 60);
+    if (m === 60) d += 1, m = 0;
+    return `${String(d).padStart(w, '0')}${String(m).padStart(2, '0')}${v < 0 ? neg : pos}`;
   };
-  /** Points de la route : sans groupes vitesse / niveau (N0450F350), sans changements de niveau après un point
-   *  (« NTS/N0440F370 » → NTS), sans terrains de départ et d'arrivée en tête et en fin. */
-  function points(route, dep, arr) {
-    const t = words(route).map(x => x.split('/')[0]).filter(x => x && !/^[NKM]\d{3,4}([FASM]\d{3,4}|VFR)$/.test(x) &&
-      !/^(FL\d{2,3}|VFR|IFR)$/.test(x));
+  const coord = (lat, lon) => `${dm(lat, 2, 'N', 'S')}${dm(lon, 3, 'E', 'W')}`;
+  /** Entrées de la route : case 15 (mots séparés par des espaces : { id }) ou liste à virgules / lignes d'une route
+   *  d'OFP (« ID lat lon[/N0450F350] » : { id, lat, lon }) ; changement de niveau après un point retiré (NTS/… → NTS). */
+  function entries(route) {
+    const s = up(route);
+    if (!/[,;\n]/.test(s)) return s.split(/\s+/).filter(Boolean).map(w => ({
+      id: w.split('/')[0]
+    }));
+    return s.split(/[,;\n]+/).map(e => {
+      const [id, lat, lon] = e.trim().split(/\s+/),
+        la = parseFloat(lat),
+        lo = parseFloat(String(lon || '').split('/')[0]);
+      return {
+        id: String(id || '').split('/')[0],
+        ...(Number.isFinite(la) && Number.isFinite(lo) ? {
+          lat: la,
+          lon: lo
+        } : {})
+      };
+    }).filter(e => e.id);
+  }
+  /** Mot qui n'est pas un point : groupe vitesse / niveau (N0450F350), niveau seul, règles de vol. */
+  const notPoint = id => /^[NKM]\d{3,4}([FASM]\d{3,4}|VFR)$/.test(id) || /^(FL\d{2,3}|VFR|IFR)$/.test(id);
+  /** Points pour SimBrief (sky : pour SkyVector) : nom tel quel (voies aériennes et procédures comprises), sans les pseudo-points
+   *  (TOC, TOD, WPT : coordonnées s'il y en a), sans terrains de départ et d'arrivée, sans DCT en tête ou en fin. */
+  function points(route, dep, arr, {
+    sky = false
+  } = {}) {
+    const t = [];
+    for (const e of entries(route)) {
+      if (notPoint(e.id)) continue;
+      const pseudo = /^(TOC|TOD|T\/C|T\/D|WPT)$/.test(e.id),
+        named = /^[A-Z]{2,5}$/.test(e.id) && !pseudo,
+        latlon = /^\d{2,4}[NS]\d{3,5}[EW]$/.test(e.id);
+      if (sky) {
+        // SkyVector : nom de 2 à 5 lettres ou coordonnées ; ni voie aérienne, ni procédure, ni point inconnu
+        if (e.id === 'DCT' || /^[A-Z]{1,2}\d{1,4}$/.test(e.id) || /^[A-Z]{2,5}\d[A-Z]$/.test(e.id)) continue;
+        if (named || latlon) t.push(e.id);
+        else if (e.lat != null && !/^(TOC|TOD|T\/C|T\/D)$/.test(e.id)) t.push(coord(e.lat, e.lon));
+      } else if (e.lat == null) {
+        if (!pseudo) t.push(e.id); // case 15 : voies aériennes et procédures gardées
+      } else if (named || latlon) t.push(e.id);
+      else if (!/^(TOC|TOD)$/.test(e.id)) t.push(coord(e.lat, e.lon)); // point d'OFP sans nom utilisable
+    }
     if (t[0] === dep) t.shift();
     if (t[t.length - 1] === arr) t.pop();
     while (t[0] === 'DCT') t.shift(); // direct en tête ou en fin : sans objet
@@ -38,7 +83,7 @@
   }
   /** Vol normalisé : terrains en OACI (sinon pris en tête et en fin de route), points, type, immatriculation… */
   function norm(f = {}) {
-    const raw = words(f.route).map(x => x.split('/')[0]);
+    const raw = entries(f.route).map(e => e.id).filter(id => !notPoint(id));
     const dep = ICAO.test(up(f.dep)) ? up(f.dep) : ICAO.test(raw[0] || '') ? raw[0] : '',
       arr = ICAO.test(up(f.arr)) ? up(f.arr) : ICAO.test(raw[raw.length - 1] || '') && raw.length > 1 ? raw[raw.length - 1] : '';
     const fl = Number(String(f.fl ?? '').replace(/^FL/i, ''));
@@ -46,6 +91,9 @@
       dep,
       arr,
       pts: points(f.route, dep, arr),
+      sky: points(f.route, dep, arr, {
+        sky: true
+      }),
       type: up(f.type).replace(/[^A-Z0-9]/g, '').slice(0, 4),
       reg: up(f.reg).replace(/[^A-Z0-9]/g, ''),
       callsign: up(f.callsign).replace(/\s+/g, ''),
@@ -103,7 +151,7 @@
     // SkyVector : départ, points, arrivée
     out.push({
       label: tr(['SkyVector — la route', 'SkyVector — the route', 'SkyVector — die Route', 'SkyVector — la ruta']),
-      href: f.dep && f.arr ? `https://skyvector.com/?fpl=${encodeURIComponent([f.dep, ...f.pts.filter(p => p !== 'DCT'), f.arr].join(' '))}` : '',
+      href: f.dep && f.arr ? `https://skyvector.com/?fpl=${encodeURIComponent([f.dep, ...f.sky, f.arr].join(' '))}` : '',
       why: f.dep && f.arr ? '' : tr(MISS[f.dep ? 'arr' : 'dep'])
     });
     // cartes des terrains : Navigraph Charts et ChartFox, départ puis arrivée

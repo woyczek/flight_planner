@@ -66,6 +66,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
     the AAR receivers' type, through `AircraftPicker.typeField` (the catalogue's type base by category, values
     already entered first, free entry kept).
 
+### Fixed
+
+- **“Open in ▾”: SkyVector now takes the route** (`shared/external_links.js`) — SkyVector resolves each name on its
+  own, so pseudo-points of a SimBrief OFP route (`TOC`, `TOD`, `WPT`) were sent to far-away namesakes (Toccoa, USA)
+  and airways or procedures were ignored. SkyVector now gets names of 2 to 5 letters and ICAO coordinates
+  (`4341N00122E`) built from the OFP route positions for unnamed points; airways, procedures and `DCT` are left out.
+  SimBrief gets the same coordinates for unnamed OFP points.
+
 ## [5.3.0] — 2026-10-19
 
 The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,
