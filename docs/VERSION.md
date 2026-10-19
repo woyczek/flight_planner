@@ -54,6 +54,11 @@ Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234
 - The English, German and Spanish manuals follow the French ones; `tools/doc_traductions.py` lists what remains to
   re-translate.
 
+### Delivery
+
+- Delivery archive: `xplane-web-suite-5.3.0.zip` — SHA-256 `3f95d59310f962153496b8bcc0d6ea3282981cb43be1698a02cfb61d5934af8d` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-5.3.0.zip` — SHA-256 `6e84695139fc0cab8940e542f8c27c3b5ca0e7a1141fd188f0dd3515fc7c80c7` (outside the repository: `dist/` folder).
+
 ## 5.2.0 — 12 October 2026
 
 ### Summary

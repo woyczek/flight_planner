@@ -410,6 +410,11 @@ names) lives once in the shared framework.
   counts the removed profiles ("Merge (1 profile removed)") and stays active: the most recent is kept as is, the
   others disappear.
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.3.0.zip` — SHA-256 `3f95d59310f962153496b8bcc0d6ea3282981cb43be1698a02cfb61d5934af8d` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-5.3.0.zip` — SHA-256 `6e84695139fc0cab8940e542f8c27c3b5ca0e7a1141fd188f0dd3515fc7c80c7` (outside the repository: `dist/` folder).
+
 ## [5.2.0] — 2026-10-12
 
 Missions can now be built entirely by hand in the generator — the single place where missions are created — with a
