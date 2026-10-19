@@ -1003,6 +1003,12 @@ source: take-off, landing”), for example “ICAO flight plan, flight of 19/10 
 back as it was before the prefill; “Replace the fields already entered (n)”, when fields already entered were kept,
 applies the same source again, replacing them. The most explicit source wins: the “known aircraft” (fleet) assistant only fills what is empty; it never replaces a field set by the source or already entered, even if the registration changes in the same step, and the summary says so (“fleet call sign MILAN74 not applied (CFN12 comes from the source)”). Paste details: [tutorial](../TUTORIAL.md), § 6.
 
+**Provenance.** The title of each block filled by a source carries a “↧” badge naming it: “ICAO flight plan,
+flight of 19/10”, “IVAO — last flight”, “Mission order M-016”, “Airline log”, “Network tracking IVAO”…; its tooltip
+says how many fields of the block come from it. A field corrected by hand loses its provenance (the badge goes with
+the last one). “Undo” also puts the previous badges back. The provenance is kept with the draft, in this browser; it
+does not go into the ledger.
+
 ### Network tracking
 
 Header menu to record the times during the flight.

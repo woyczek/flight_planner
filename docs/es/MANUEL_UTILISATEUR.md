@@ -1009,6 +1009,12 @@ introducidos, vuelve a aplicar la misma fuente sustituyéndolos. Gana la fuente 
 cambie en el mismo paso, y el resumen lo dice («indicativo de la flota MILAN74 no aplicado (CFN12 viene de la
 fuente)»). Detalles del pegado: [tutorial](../TUTORIAL.md), § 6.
 
+**Procedencia.** El título de cada bloque rellenado por una fuente lleva una insignia «↧» que la nombra: «Plan de
+vuelo OACI, vuelo del 19/10», «IVAO — último vuelo», «Orden de misión M-016», «Diario de la aerolínea», «Seguimiento
+de red IVAO»…; su información emergente dice cuántos campos del bloque provienen de ella. Un campo corregido a mano
+pierde su procedencia (la insignia desaparece con el último). «Deshacer» también restablece las insignias anteriores.
+La procedencia se guarda con el borrador, en este navegador; no entra en el registro.
+
 ### Seguimiento de red
 
 Menú de la cabecera para anotar las horas durante el vuelo.

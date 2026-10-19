@@ -154,6 +154,14 @@
       'Completar este informe desde…'),
     prefillMissions: L('Un ordre de mission', 'A mission order', 'Ein Einsatzbefehl', 'Una orden de misión'),
     prefillFlights: L('Un de mes vols', 'One of my flights', 'Einer meiner Flüge', 'Uno de mis vuelos'),
+    originTitle: L('{n} champ(s) de ce bloc rempli(s) par cette source ; un champ corrigé à la main la perd.',
+      '{n} field(s) of this block filled by this source; a field corrected by hand loses it.',
+      '{n} Feld(er) dieses Blocks aus dieser Quelle; ein von Hand korrigiertes Feld verliert sie.',
+      '{n} campo(s) de este bloque rellenado(s) por esta fuente; un campo corregido a mano la pierde.'),
+    originTracker: L('Suivi réseau', 'Network tracking', 'Netzwerkverfolgung', 'Seguimiento de red'),
+    originLog: L('Journal de la compagnie', 'Airline log', 'Flugbuch der Fluggesellschaft', 'Diario de la aerolínea'),
+    originOrder: L('Ordre de mission', 'Mission order', 'Einsatzbefehl', 'Orden de misión'),
+    originSia: L('Mission générée', 'Generated mission', 'Erzeugte Mission', 'Misión generada'),
     prefillOrdersTitle: L('Ordres de mission sans CR', 'Mission orders without a report', 'Einsatzbefehle ohne Bericht',
       'Órdenes de misión sin informe'),
     prefillFlightsTitle: L('Mes vols sans CR', 'My flights without a report', 'Meine Flüge ohne Bericht', 'Mis vuelos sin informe'),
@@ -789,6 +797,9 @@
     root.querySelector('.mc-edit-banner h2').textContent = t('editBanner');
 
     let saveTimer = null;
+    // Provenance des champs (chemin → libellé de la source : préremplissage, ordre, vol du journal, suivi réseau) : état
+    // de la page et du brouillon (clé à part), jamais dans le registre ; pastille dans le titre des blocs touchés.
+    let origins = {};
     // Valeurs remplies automatiquement (appareil connu, plan de vol, météo…) : texte simple en
     // majuscules comme la saisie, avant le brouillon et l'aperçu.
     const changed = (path, auto = false) => {
@@ -803,6 +814,20 @@
         renderReport();
       }, 400);
     };
+    // Provenance au fil de la saisie : heure écrite par le suivi réseau (événement non humain, data-network-filled) ;
+    // champ changé par le pilote (événement humain) : il perd sa provenance.
+    form.addEventListener('change', event => {
+      const el = event.target,
+        path = el?.dataset?.path;
+      if (!path) return;
+      if (!event.isTrusted && el.dataset.networkFilled && el.dataset.networkFilled === el.value) {
+        const net = String(mission.network?.onlineNetwork || '').toUpperCase();
+        origins[path] = `${inLanguage(UI.originTracker)}${net ? ` ${net}` : ''}`;
+      } else if (event.isTrusted && origins[path]) delete origins[path];
+      else return;
+      saveOrigins();
+      drawOrigins();
+    }, true);
     const view = window.MissionForm.create(form, {
       family,
       getMission: () => mission,
@@ -1299,6 +1324,65 @@
     /** Clé du brouillon (distincte en mode modification d'une mission). */
     const draftSlot = () => edit ? `${draftKey}:edit:${edit.index}:${normId(edit.missionId)}` : draftKey;
 
+    /** Clé de la provenance des champs, à côté du brouillon. */
+    const originsKey = () => `${draftSlot()}:origins`;
+    /** Mémorise la provenance des champs (avec le brouillon) ; vide : clé retirée. */
+    function saveOrigins() {
+      try {
+        if (Object.keys(origins).length) localStorage.setItem(originsKey(), JSON.stringify(origins));
+        else localStorage.removeItem(originsKey());
+      } catch {
+        /* quota */
+      }
+    }
+    /** Relit la provenance des champs du brouillon (rien sans brouillon). */
+    function loadOrigins(withDraft) {
+      try {
+        origins = withDraft ? JSON.parse(localStorage.getItem(originsKey()) || '{}') || {} : {};
+      } catch {
+        origins = {};
+      }
+    }
+    /** Chemins des valeurs qui diffèrent entre deux états de la mission (feuilles des objets et des listes). */
+    function diffPaths(before, after, base = '') {
+      if (after === before) return [];
+      if (after && typeof after === 'object') return Object.keys(after).flatMap(k => diffPaths(before?.[k], after[k], base ? `${base}.${k}` :
+        k));
+      return after == null || after === '' ? [] : [base];
+    }
+    /** Pastille de provenance dans le titre de chaque bloc touché : sources de ses champs, nombre de champs en infobulle.
+     *  Un chemin sans champ affiché (élément d'une liste) remonte au champ parent. */
+    function drawOrigins() {
+      form.querySelectorAll('.mc-origin').forEach(el => el.remove());
+      const blocks = new Map();
+      for (const [path, label] of Object.entries(origins)) {
+        let at = path,
+          input = null;
+        while (at && !(input = form.querySelector(`[data-path="${CSS.escape(at)}"]`))) at = at.includes('.') ? at.slice(0, at.lastIndexOf(
+          '.')) : '';
+        const section = input?.closest('section.mc-block');
+        if (!section) continue;
+        if (!blocks.has(section)) blocks.set(section, new Map());
+        const labels = blocks.get(section);
+        labels.set(label, (labels.get(label) || 0) + 1);
+      }
+      blocks.forEach((labels, section) => {
+        const h2 = section.querySelector('h2');
+        if (!h2) return;
+        labels.forEach((n, label) => h2.append(Object.assign(document.createElement('span'), {
+          className: 'mc-origin',
+          textContent: `↧ ${label}`,
+          title: inLanguage(UI.originTitle).replace('{n}', n)
+        })));
+      });
+    }
+    /** Note la provenance des champs remplis par une source, puis la garde et la dessine. */
+    function setOrigins(paths, label) {
+      paths.forEach(path => origins[path] = label);
+      saveOrigins();
+      drawOrigins();
+    }
+
     /** Mémorise le brouillon de la mission en cours. */
     function saveDraft(silent = false) {
       try {
@@ -1434,6 +1518,7 @@
     }
     // Blocs recréés : afficher / masquer / déplacer du framework réappliqués (état mémorisé).
     const blockFramework = () => {
+      drawOrigins();
       if (document.readyState === "complete") window.AppFramework?.refresh?.();
     };
 
@@ -1745,6 +1830,15 @@
     async function applyImport(result, label = KINDS[result.kind], extra = [], show = null, opts = {}) {
       const TI = window.MissionTextImport,
         snapshot = opts.snapshot || structuredClone(mission); // état d'avant le préremplissage (« Annuler », « Remplacer »)
+      opts = {
+        ...opts,
+        origins: opts.origins || {
+          ...origins
+        } // provenance d'avant (« Annuler », « Remplacer »)
+      };
+      origins = {
+        ...opts.origins
+      };
       const dep = result.fpl?.dep || result.dep || result.sessions?.[0]?.dep || mission.navigation.dep || mission.aircraft[0]
         ?.baseDeparture;
       const ad = dep && !/^ZZZZ$/.test(dep) ? await assist.airport(dep) : null;
@@ -1764,6 +1858,11 @@
       if (done.includes('aircraft.0.registration') && lead.registration) aircraftAssist('aircraft.0.registration', lead.registration);
       else if (done.includes('aircraft.0.callsign') && lead.callsign) aircraftAssist('aircraft.0.callsign', lead.callsign);
       notes.push(...sourceWins(mission.aircraft[0], explicit, done));
+      origins = {
+        ...origins,
+        ...Object.fromEntries(done.map(path => [path, sourceLabel(result, label, opts)]))
+      };
+      saveOrigins();
       if (done.includes('environment.metar')) assist.applyMetar(mission.environment.metar);
       view.render(blockList);
       assist.decorate();
@@ -1818,6 +1917,12 @@
       }
       return notes;
     }
+    /** Libellé d'une source de préremplissage avec la date du vol (« Plan de vol OACI, vol du 19/10 »). */
+    function sourceLabel(result, label, opts) {
+      const when = result.fpl?.date || result.date || result.sessions?.[0]?.start || result.connected || '',
+        day = /^(\d{4})-(\d{2})-(\d{2})/.exec(when instanceof Date ? when.toISOString() : String(when));
+      return `${opts.source || inLanguage(UI[label] || UI.importTitle)}${day ? `, ${inLanguage(UI.prefillFlightOf)} ${day[3]}/${day[2]}` : ''}`;
+    }
     /** Résumé commun d'un préremplissage : source et date du vol (« IVAO, vol du 19/10 »), nombre de champs remplis et
      *  blocs touchés, champs déjà saisis gardés, champs attendus absents de la source, fuseau, remarques. */
     function prefillSummary(result, label, done, kept, opts, ad, notes) {
@@ -1826,9 +1931,7 @@
           'crew', 'events', 'legs'
         ],
         blocks = [...new Set(done.map(p => BLOCKS.indexOf(p.split('.')[0])).filter(i => i >= 0))].map(i => pick(UI.prefillBlocks, i)),
-        when = result.fpl?.date || result.date || result.sessions?.[0]?.start || result.connected || '',
-        day = /^(\d{4})-(\d{2})-(\d{2})/.exec(when instanceof Date ? when.toISOString() : String(when)),
-        source = `${opts.source || inLanguage(UI[label] || UI.importTitle)}${day ? `, ${inLanguage(UI.prefillFlightOf)} ${day[3]}/${day[2]}` : ''}`,
+        source = sourceLabel(result, label, opts),
         EXPECT = ['aircraft.0.callsign', 'navigation.dep', 'navigation.arr', 'navigation.route', 'timeline.takeoff', 'timeline.landing'],
         empty = v => v == null || v === '' || (Array.isArray(v) && !v.length),
         absent = result.kind === 'metar' ? [] : EXPECT.map((p, i) => [p, i]).filter(([p]) => !done.includes(p) && empty(M.get(mission,
@@ -1855,6 +1958,10 @@
       });
       const buttons = [button('prefillUndo', () => {
         mission = structuredClone(snapshot);
+        origins = {
+          ...opts.origins
+        };
+        saveOrigins();
         redraw();
         changed();
         switcher.sync();
@@ -2055,8 +2162,10 @@
           return;
         }
         const index = ledger.add(mission);
-        // La mission enregistrée devient la mission ouverte (modifiable) ; le brouillon « nouvelle mission » est libéré.
+        // La mission enregistrée devient la mission ouverte (modifiable) ; le brouillon « nouvelle mission » est libéré
+        // (la provenance suit la mission : elle passe sous la clé du brouillon de modification).
         localStorage.removeItem(draftKey);
+        localStorage.removeItem(`${draftKey}:origins`);
         edit = {
           index,
           missionId: mission.metadata.missionId
@@ -2286,6 +2395,7 @@
       }
       ledger.remove(edit.index);
       localStorage.removeItem(draftSlot());
+      localStorage.removeItem(originsKey());
       await persist('deleted');
       dirty = false;
       location.href = family.pages.reporting || location.pathname;
@@ -2293,6 +2403,8 @@
     $a('new').onclick = async () => {
       if (dirty && !await window.AppFramework.ask(t('confirmNew'))) return;
       localStorage.removeItem(draftKey);
+      localStorage.removeItem(`${draftKey}:origins`);
+      origins = {};
       edit = null;
       history.replaceState(null, '', location.pathname);
       mission = fresh();
@@ -2416,6 +2528,7 @@
           }
           mission = M.migrate(draft || target, family.id);
           dirty = !!draft;
+          loadOrigins(!!draft);
         } else {
           say('editGone');
           history.replaceState(null, '', location.pathname);
@@ -2430,6 +2543,7 @@
         }
         mission = draft ? M.migrate(draft, family.id) : fresh();
         dirty = !!draft;
+        loadOrigins(!!draft);
       }
       // Mission générée par le générateur SIA XML (« Créer le CR ») : nouveau CR pré-rempli.
       let sia = null;
@@ -2455,7 +2569,13 @@
         }
         if (sia) {
           mission = fresh();
+          const blank = structuredClone(mission);
           fromSia(mission, sia);
+          // provenance : ordre de mission (Mes missions), vol du journal (Mes vols) ou mission générée (SIA XML)
+          origins = {};
+          setOrigins(diffPaths(blank, mission).filter(path => !/^metadata\.(missionId|missionNumber)$/.test(path)), sia.__flight ?
+            inLanguage(UI.originLog) : sia.__order ? `${inLanguage(UI.originOrder)}${sia.__order.ref ? ` ${sia.__order.ref}` : ''}` :
+            inLanguage(UI.originSia));
           mission.metadata.missionId = ledger.nextId(prefix, mission.metadata
             .missionNumber); // CR<mission>-<essai> : CRM-016-1, CRM-016-2 si rejouée
           dirty = true;

@@ -1044,6 +1044,12 @@ remplace ni un champ posé par la source ni un champ déjà saisi, même si l'im
 le résumé le dit (« indicatif de la flotte MILAN74 non appliqué (CFN12 vient de la source) »). Détails du collage :
 [tutoriel](TUTORIAL.md), § 6.
 
+**Provenance.** Le titre de chaque bloc rempli par une source porte une pastille « ↧ » qui la nomme : « Plan de vol
+OACI, vol du 19/10 », « IVAO — dernier vol », « Ordre de mission M-016 », « Journal de la compagnie », « Suivi réseau
+IVAO »… ; son infobulle dit combien de champs du bloc en viennent. Un champ corrigé à la main perd sa provenance (la
+pastille disparaît avec le dernier). « Annuler » remet aussi les pastilles d'avant. La provenance est gardée avec le
+brouillon, dans ce navigateur ; elle n'entre pas dans le registre.
+
 ### Suivi réseau
 
 Menu de l'en-tête pour relever les heures pendant le vol.

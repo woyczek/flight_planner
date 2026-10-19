@@ -184,6 +184,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Mission report: field provenance** (`shared/mission_core/core.js`, `core.css`) — the title of each block filled
+  by a source carries a "↧" badge naming it (prefill source with the flight date, mission order, airline log, network
+  tracking), with the number of fields in its tooltip. A field corrected by hand loses its provenance; "Undo" restores
+  the previous one. Kept with the draft in the browser (`<draft key>:origins`), never in the ledger.
 - **Mission report: new report from a recent order or flight** (`shared/my_flights.js`, `shared/mission_core/core.js`,
   `apps/pilot/mes_vols.html`) — "Prefill ▾ › New report from…" lists the 7 recent mission orders without a report
   (`PilotToday.pending`) and the 7 recent flights of the airline log without a report, one line each (date, call sign,

@@ -1006,6 +1006,13 @@ in der Quelle: Start, Landung“). Zwei Schaltflächen begleiten sie: „Rückg�
 vor dem Vorausfüllen war; „Bereits eingetragene Felder ersetzen (n)“, wenn bereits eingetragene Felder behalten wurden,
 wendet dieselbe Quelle erneut an und ersetzt sie. Die genaueste Quelle gewinnt: der Assistent „bekanntes Luftfahrzeug“ (Flotte) füllt nur Leeres aus; er ersetzt weder ein von der Quelle gesetztes noch ein bereits eingetragenes Feld, auch wenn sich das Kennzeichen im selben Schritt ändert, und die Zusammenfassung sagt es („Rufzeichen der Flotte MILAN74 nicht übernommen (CFN12 stammt aus der Quelle)“). Einzelheiten zum Einfügen: [Tutorial](../TUTORIAL.md), § 6.
 
+**Herkunft.** Der Titel jedes von einer Quelle ausgefüllten Blocks trägt ein Abzeichen „↧“ mit ihrem Namen:
+„ICAO-Flugplan, Flug vom 19/10“, „IVAO — letzter Flug“, „Einsatzbefehl M-016“, „Flugbuch der Fluggesellschaft“,
+„Netzwerkverfolgung IVAO“…; sein Tooltip sagt, wie viele Felder des Blocks daraus stammen. Ein von Hand korrigiertes
+Feld verliert seine Herkunft (das Abzeichen verschwindet mit dem letzten). „Rückgängig“ stellt auch die vorherigen
+Abzeichen wieder her. Die Herkunft wird mit dem Entwurf in diesem Browser gespeichert; sie gelangt nicht ins
+Register.
+
 ### Netzwerk-Tracking
 
 Menü der Kopfzeile, um die Uhrzeiten während des Flugs zu erfassen.
