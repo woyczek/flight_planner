@@ -17,7 +17,9 @@
  *     placeholder (bouton sans appareil), findPlaceholder (champ de recherche), free (saisie libre acceptée), empty() (texte d'une liste vide), footer() (HTML sous la liste),
  *     onOpen(), onEnter(texte) (kind field : Entrée sans entrée choisie), onEscape() (kind field : Échap liste fermée,
  *     vrai si l'Échap a servi), openOnFocus / openOnClick (kind field), limit (entrées montrées, 200 par défaut),
- *     minWidth (px, 320 par défaut).
+ *     minWidth (px, 320 par défaut), filter (false : sources déjà cherchées et notées, gardées telles quelles),
+ *     activeFirst (false : aucune entrée active d'office, Entrée laisse la main à onEnter), hideEmpty (liste vide :
+ *     fermée plutôt qu'un message).
  *   La liste n'est dans la page que tant qu'elle est ouverte (un champ recréé par un rendu ne laisse rien derrière lui) ;
  *   écouteurs du document communs à tous les sélecteurs.
  * AircraftPicker.match(clés, texte, code) : note d'un texte contre des clés (moteur de recherche commun, repris par
@@ -210,7 +212,7 @@
       const mine = ++run,
         q = field && !typed ? '' : find.value.trim(),
         value = norm(find.value),
-        groups = cut(filter(await read(q), q));
+        groups = cut(opts.filter === false ? await read(q) : filter(await read(q), q));
       // champ ouvert sans frappe : sa valeur est l'entrée en cours
       if (field && !typed && value) groups.forEach(g => g.items.forEach(it => it.current ||= norm(it.key) === value));
       if (mine !== run || !openState) return;
@@ -235,10 +237,11 @@
         html += row(free, items.length);
         items.push(free);
       }
+      if (!html && opts.hideEmpty) return close();
       list.innerHTML = html || `<li role="presentation" class="ap-empty">${esc(q ? t(TXT.none) : opts.empty?.() || t(TXT.empty))}</li>`;
       foot.innerHTML = opts.footer?.() || '';
       const cur = items.findIndex(it => it.current && !it.disabled);
-      mark(q ? items.findIndex(it => !it.disabled) : cur >= 0 ? cur : -1, false);
+      mark(q && opts.activeFirst !== false ? items.findIndex(it => !it.disabled) : cur >= 0 ? cur : -1, false);
       place();
     };
     /** Entrée active (index), visible dans la liste. */

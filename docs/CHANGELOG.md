@@ -219,7 +219,10 @@ names) lives once in the shared framework.
   browser's datalist — same values (`suggest`, cross-filtering), same effects (a choice is an entry: `input` then
   `change`, hence known aircraft, auto-filled values and assistants), silhouettes and categories (`AircraftDBIcons`
   now loaded by the report pages). The component keeps one set of document listeners for all pickers and puts its
-  list in the page only while open; a field opened by a click shows the whole list with its value highlighted.
+  list in the page only while open; a field opened by a click shows the whole list with its value highlighted. My
+  aircraft (Settings › My profile) and the "Add an aircraft" window: `attachSuggest` is now the picker in field mode
+  (results of `makeSearch` kept as scored, grouped by origin — fleet, this computer's base, ICAO list —, no entry
+  active by default so Enter still adds the typed text, list closed when empty); its own list and CSS are removed.
   `EquipmentEditor.makeSearch` now scores with the shared `AircraftPicker.match`.
 - **Mission report: fourth step "Flight details"** (`shared/mission_core/core.js`, `core.css`) — folded by default, it
   gathers Navigation, Environment / weather, Timed events, Legs / rotations and Capabilities; opened, it shows them at

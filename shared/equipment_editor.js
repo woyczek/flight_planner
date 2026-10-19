@@ -49,8 +49,6 @@
 .eq-perf .eq-perf-acts a:hover{background:color-mix(in srgb,currentColor 10%,transparent)}.eq-tbc{color:#c98a1b;font-weight:600}
 .eq-unvar{padding:0 6px;margin-left:6px;line-height:1.4;font-size:11px}.eq-table tr.eq-var td{padding-top:2px}
 .eq-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0}.eq-add .eq-field{position:relative;flex:1 1 16em;min-width:0;display:flex}.eq-add input{flex:1 1 auto;min-width:0}
-.eq-sugg{position:absolute;z-index:30;left:0;right:0;top:100%;margin:2px 0 0;padding:2px 0;list-style:none;max-height:16em;overflow:auto;background:var(--repo-card-bg,Canvas);color:inherit;border:1px solid color-mix(in srgb,currentColor 25%,transparent);box-shadow:0 4px 14px rgba(0,0,0,.18)}
-.eq-sugg li{padding:4px 8px;cursor:pointer;font-size:12.5px}.eq-sugg li small{opacity:.7;margin-left:6px}.eq-sugg li[aria-selected=true],.eq-sugg li:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
 .eq-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}.eq-sims label{display:inline-flex;align-items:center;gap:6px;margin:0}.eq-sims input{margin:0}
 dialog.eq-dialog{max-width:min(680px,94vw);width:100%;border:1px solid color-mix(in srgb,currentColor 25%,transparent);background:var(--repo-card-bg,Canvas);color:inherit;padding:14px 16px}
 dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-content:flex-end;gap:6px;margin-top:10px}dialog.eq-dialog .eq-added{margin:8px 0 0}`;
@@ -501,84 +499,56 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     }));
   }
 
-  /** Suggestions d'un champ de saisie (communes à Paramètres et à la fenêtre d'ajout) : liste sous le champ, flèches,
-   *  Entrée, Échap ; une ligne par variante d'un désignateur partagé (CL2T — Canadair CL-215T, CL2T — Canadair CL-415).
-   *  search : makeSearch() ; origin(code) : texte de provenance ; onPick(code, variante) ; onEnter() : Entrée sans
-   *  suggestion choisie ; onEscape() → vrai si l'Échap a servi. Sortie : { show, close }. */
-  function attachSuggest(input, sugg, search, origin, {
+  /** Suggestions d'un champ de saisie (communes à Paramètres et à la fenêtre d'ajout) : sélecteur commun en mode champ
+   *  (shared/aircraft_picker.js : liste sous le champ, silhouettes, flèches, Entrée, Échap), groupée par provenance
+   *  dans l'ordre d'usage (flotte, base du poste, liste OACI) ; une ligne par variante d'un désignateur partagé
+   *  (CL2T — Canadair CL-215T, CL2T — Canadair CL-415). search : makeSearch() (déjà noté : gardé tel quel) ;
+   *  origin(code) : texte de provenance ; onPick(code, variante) ; onEnter() : Entrée sans suggestion choisie (aucune
+   *  active d'office : la saisie libre reste la règle) ; onEscape() → vrai si l'Échap a servi. Sortie : { show, close }. */
+  function attachSuggest(input, search, origin, {
     onPick,
     onEnter,
     onEscape
   }) {
-    let act = -1;
-    const close = () => {
-      sugg.hidden = true;
-      input.setAttribute('aria-expanded', 'false');
-      act = -1;
+    const P = window.AircraftPicker;
+    if (!P) return {
+      show() {},
+      close() {}
     };
-    const show = () => {
-      const items = search.candidates(input.value).filter(c => c.base >= 48).slice(0, 8).flatMap(c => {
-        const ch = designator(c.code) ? variantChoices(c.code) : [];
-        return ch.length > 1 ? ch.map(v => ({
-          code: c.code,
-          variant: v,
-          label: v
-        })) : [{
-          code: c.code,
-          variant: '',
-          label: fullName(c.code)
-        }];
-      }).slice(0, 10);
-      act = -1;
-      if (!items.length) return close();
-      sugg.innerHTML = items.map((c, i) => `<li role="option" id="${sugg.id}${i}" data-code="${esc(c.code)}" data-variant="${esc(c.variant)}" aria-selected="false"><b>${esc(c.code)}</b>${c.label ? ` — ${esc(c.label)}` : ''}<small>${esc(origin(c.code))}</small></li>`).join('');
-      sugg.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-    };
-    const mark = n => {
-      const items = [...sugg.children];
-      if (!items.length) return;
-      act = (n + items.length) % items.length;
-      items.forEach((li, i) => li.setAttribute('aria-selected', String(i === act)));
-      input.setAttribute('aria-activedescendant', items[act].id);
-      items[act].scrollIntoView({
-        block: 'nearest'
-      });
-    };
-    input.oninput = show;
-    input.onblur = () => setTimeout(close, 150);
-    sugg.onmousedown = e => {
-      const li = e.target.closest('li[data-code]');
-      if (!li) return;
-      e.preventDefault();
-      close();
-      onPick(li.dataset.code, li.dataset.variant || '');
-    };
-    input.onkeydown = e => {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        if (sugg.hidden) show();
-        mark(act + (e.key === 'ArrowDown' ? 1 : -1));
-        e.preventDefault();
-      } else if (e.key === 'Escape') {
-        if (!sugg.hidden) close();
-        else if (!onEscape?.()) return;
-        e.preventDefault();
-        e.stopPropagation();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!sugg.hidden && act >= 0) {
-          const li = sugg.children[act];
-          close();
-          onPick(li.dataset.code, li.dataset.variant || '');
-        } else {
-          close();
-          onEnter();
-        }
-      }
-    };
+    const picker = P.attach(input, {
+      kind: 'field',
+      filter: false,
+      activeFirst: false,
+      hideEmpty: true,
+      limit: 10,
+      sources: q => {
+        const groups = new Map();
+        search.candidates(q).filter(c => c.base >= 48).slice(0, 8).forEach(c => {
+          const ch = designator(c.code) ? variantChoices(c.code) : [],
+            from = origin(c.code);
+          if (!groups.has(from)) groups.set(from, []);
+          (ch.length > 1 ? ch : ['']).forEach(v => groups.get(from).push({
+            key: `${c.code}|${v}`,
+            label: v || fullName(c.code) || c.code,
+            sub: c.code,
+            type: c.code
+          }));
+        });
+        return [...groups].map(([group, items]) => ({
+          group,
+          items
+        }));
+      },
+      onPick: it => {
+        const [code, variant = ''] = it.key.split('|');
+        onPick(code, variant);
+      },
+      onEnter: () => onEnter(),
+      onEscape
+    });
     return {
-      show,
-      close
+      show: () => picker.open(),
+      close: () => picker.close()
     };
   }
   /** Lecture d'une saisie : { code } (désignateur sûr), { name } (rien ne correspond : appareil gardé sous son nom) ou
@@ -640,13 +610,12 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     d.className = 'eq-dialog';
     d.innerHTML = `<h3>${esc(t(['Ajouter un appareil', 'Add an aircraft', 'Luftfahrzeug hinzufügen', 'Añadir una aeronave']))}</h3>
       <p class="small">${esc(t(['L’appareil part dans « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) ; ses performances sont dans ce bloc.', 'The aircraft goes into “My aircraft” (Settings › My profile › Aircraft and simulators); its performance is in this block.', 'Das Luftfahrzeug kommt in „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren); seine Leistungen stehen in diesem Block.', 'La aeronave pasa a «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores); su rendimiento está en este bloque.']))}</p>
-      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="eqDlgSugg" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"><ul class="eq-sugg" id="eqDlgSugg" role="listbox" hidden></ul></div>
+      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"></div>
       <button type="button" class="primary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button></div>
       <p class="sp-hint small">${esc(addHint())}</p>
       <footer><button type="button" class="secondary" data-eq-close>${esc(t(['Fermer', 'Close', 'Schließen', 'Cerrar']))}</button></footer>`;
     document.body.append(d);
     const input = d.querySelector('input'),
-      sugg = d.querySelector('.eq-sugg'),
       origin = code => fleet.has(code) ? t(['flotte', 'fleet', 'Flotte', 'flota']) : dbInfo(code).model ? t(['base du poste',
         'this computer’s base', 'Basis dieses Rechners', 'base de este equipo'
       ]) : t(['liste OACI', 'ICAO list', 'ICAO-Liste', 'lista OACI']);
@@ -685,7 +654,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
         name
       });
     };
-    const sg = attachSuggest(input, sugg, search, origin, {
+    const sg = attachSuggest(input, search, origin, {
       onPick: (code, variant) => add(code, variant),
       onEnter: () => add(),
       onEscape: () => false
@@ -793,7 +762,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     ].filter(Boolean).join(' · ');
     const otherHtml = `<div class="sp-card" id="eqOther" data-no-i18n><h3>${esc(t(['Autres appareils (hors flotte)', 'Other aircraft (outside the fleet)', 'Andere Luftfahrzeuge (außerhalb der Flotte)', 'Otras aeronaves (fuera de la flota)']))}</h3><p class="sp-hint">${esc(t(['Appareils que vous possédez dans votre simulateur sans qu’ils soient dans la flotte : ajoutés ici, ils font partie de vos appareils et partent avec vos disponibilités déclarées — le Centre les voit pour les affectations et les autres pilotes les retrouvent dans cette carte.', 'Aircraft you own in your simulator that are not in the fleet: added here, they are part of your aircraft and go with your declared availability — the Centre sees them for assignments and other pilots find them in this card.', 'Luftfahrzeuge, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören: Hier hinzugefügt, gehören sie zu Ihren Luftfahrzeugen und gehen mit Ihren angegebenen Verfügbarkeiten mit — das Zentrum sieht sie für Zuweisungen, andere Piloten finden sie in dieser Karte.', 'Aeronaves que posee en su simulador sin que estén en la flota: añadidas aquí, forman parte de sus aeronaves y van con sus disponibilidades declaradas — el Centro las ve para las asignaciones y los demás pilotos las encuentran en esta tarjeta.']))}</p>
       <div data-eq-other>${otherRows()}</div>
-      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="eqSugg" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"><ul class="eq-sugg" id="eqSugg" role="listbox" hidden data-eq-sugg></ul></div>
+      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"></div>
         <button type="button" class="secondary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button><button type="button" class="secondary" data-eq-delete hidden>${esc(t(['Supprimer', 'Delete', 'Löschen', 'Eliminar']))}</button><button type="button" class="secondary" data-eq-cancel hidden>${esc(t(['Annuler', 'Cancel', 'Abbrechen', 'Cancelar']))}</button></div>
       <p class="small" data-eq-fixing hidden></p>
       <p class="sp-hint">${esc(addHint())}</p>
@@ -1072,9 +1041,8 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       e.preventDefault();
       startFix(fix.dataset.eqFix);
     };
-    const input = host.querySelector('[data-eq-add-input]'),
-      sugg = host.querySelector('[data-eq-sugg]');
-    const sg = attachSuggest(input, sugg, search, originOf, {
+    const input = host.querySelector('[data-eq-add-input]');
+    const sg = attachSuggest(input, search, originOf, {
       onPick: (code, variant) => addTyped(code, variant),
       onEnter: () => addTyped(),
       onEscape: () => {
