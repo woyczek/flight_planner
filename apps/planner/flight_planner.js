@@ -2785,6 +2785,12 @@ const firstText = (o, keys) => {
 /** Tableau des points du navlog trouvé dans un OFP (clés navlog / waypoints / fix…) ; null sinon. */
 function findNavlog(o) {
   if (!o || typeof o !== "object") return null;
+  // OFP SimBrief (json=1 ou v2) : navlog.fix du plan lui-même, avant toute recherche en profondeur (un bloc antérieur
+  // — dégagement, terrains… — pouvait être pris pour le navlog, et la route perdait ses points tournants)
+  if (!Array.isArray(o) && o.navlog) {
+    const fixes = [].concat(o.navlog).flatMap(n => Array.isArray(n) ? n : [].concat(n?.fix || n?.waypoint || []));
+    if (fixes.some(f => f && typeof f === "object" && (f.pos_lat != null || f.ident))) return fixes
+  }
   if (Array.isArray(o) && o.length > 1 && o.some(x => typeof x === "object" && firstNum(x, ["altitude_feet", "altitude", "time_total",
       "fuel_total"
     ]) !== null)) return o;

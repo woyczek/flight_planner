@@ -80,6 +80,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   flight's one, which could block the rebuild ("unknown alternate") and leave the old waypoints on screen. Mission
   report ("Filed flight plan — Last SimBrief OFP"): the waypoints follow the imported route (navlog fixes) instead of
   keeping those of an earlier flight.
+- **Fuel: "Get latest SimBrief FPL" kept only the two airfields** (`apps/planner/flight_planner.js`) — the navlog
+  was searched depth-first through the whole OFP and an earlier block could be taken for it, so the route came back
+  as departure, speed / level group and destination only. `findNavlog` now reads the OFP's own `navlog.fix` first
+  (`json=1` and `v2`); every fix except TOC / TOD is kept, SID / STAR points included.
 - **Flight maps: "SimBrief" button takes the waypoints** (`apps/cpco/map_parser.html`, `tools/build_map_planner.py`) —
   the route block's "SimBrief" button took only the ATC route (field 15), so the points along airways were not route
   points of the flight; it now writes each navlog point with its position ("ID lat lon", same form as Fuel; field 15
