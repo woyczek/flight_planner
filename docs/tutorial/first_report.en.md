@@ -41,9 +41,9 @@ If you did not land at the planned base, fill in the “Actual landing aerodrome
 ## 4. Fill in from the network
 
 Everything that fills the report is in a single header menu, “Prefill ▾” (from the Crew level), in its “Complete this
-report from…” part. **Only empty fields are filled.**
+report from…” part; each entry opens its own window. **Only empty fields are filled.**
 
-- **“My last flight”**: “My last IVAO flight” or “My last VATSIM flight”. The suite, opened by its launcher, reads your
+- **“My last IVAO flight”** or **“My last VATSIM flight”**. The suite, opened by its launcher, reads your
   flights of the last seven days. A single flight fills the report at once; several are chosen from a list (call
   sign, route, date and UTC times, “in progress”). The call sign, airfields, filed flight plan (aircraft, route, level,
   registration…), times from the track and distance are taken. Your IVAO or VATSIM ID must be in My profile; IVAO
@@ -51,12 +51,13 @@ report from…” part. **Only empty fields are filled.**
   and disconnection times, to be corrected.
 - **“Filed flight plan”**: your latest SimBrief OFP, or the IVAO / VATSIM flight plan of the current flight.
 - **“Paste a flight plan, a tracker page or a METAR”**: on your flight's page (IVAO tracker, or StatSim for VATSIM),
-  press Ctrl+A then Ctrl+C, come back and paste into the box. The “→ CR” bookmark (“Bookmarks → report”), dragged
+  press Ctrl+A then Ctrl+C, come back and paste into the box. The “→ CR” bookmark (“Bookmark “→ CR”” entry), dragged
   once to the bookmarks bar, copies the tracker page in one click.
 
-Every source ends with the same summary: the source and the flight date, the fields filled and the blocks touched,
-the fields already entered that were kept, and what the source did not give. “Replace the fields already entered”
-applies the source again, replacing them; “Undo”, in the notification, puts the report back as it was for 10 seconds.
+Every source ends with the same summary, in a notification: the source and the flight date, the fields filled and
+the blocks touched, the fields already entered that were kept, and what the source did not give. For 10 seconds,
+“Undo” puts the report back as it was, and “Replace the fields already entered” applies the source again, replacing
+them.
 
 ## 5. Times and route
 

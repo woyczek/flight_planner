@@ -940,7 +940,7 @@ Le réseau renseigné alimente le graphique « Réseau » et l'indicateur « En 
 
 ### Navigation
 
-Terrains, route, points et zone de travail. Le plan de vol déposé (SimBrief, IVAO, VATSIM) se reprend par « Préremplir ▾ › Compléter ce CR depuis… » (voir « Préremplir »).
+Terrains, route, points et zone de travail. Le plan de vol déposé (SimBrief, IVAO, VATSIM) se reprend par « Préremplir ▾ › Plan de vol déposé » (voir « Préremplir »).
 
 Champs : « Départ (ADEP) », « Destination (ADES) », « Dégagement (ALTN) », « Route » (seules les routes
 déjà utilisées pour le même trajet sont proposées), « Points tournants (un par ligne) »,
@@ -990,20 +990,22 @@ La version publique s'applique aussi à l'export YAML (fichier suffixé `_public
 ### Préremplir
 
 Le menu « Préremplir ▾ » de l'en-tête (dès le niveau 1) rassemble tout ce qui remplit le CR ; les blocs ne gardent que
-la saisie. Il a deux parties.
+la saisie. C'est un menu court, une entrée par ligne, en deux groupes ; l'entrée choisie ouvre ensuite sa fenêtre (liste
+des vols, zone de collage…), dont l'aide est repliée sous « Aide ». Échap ou un clic à côté referme le menu comme la
+fenêtre.
 
 **Nouveau CR depuis…** (le brouillon en cours est remplacé, après confirmation s'il n'est pas vide) :
-- « Un ordre de mission : Mes missions ↗ » : ouvrez le dossier de la mission, puis « Créer le CR » ;
-- « Un vol passé : Mes vols ↗ » : un vol « sans CR », puis « Rédiger le CR » ;
-- « Importer (YAML / ancien JSON) » : un fichier de mission (niveau 3).
+- « Un ordre de mission » : Mes missions ; ouvrez le dossier de la mission, puis « Créer le CR » ;
+- « Un de mes vols » : Mes vols ; un vol « sans CR », puis « Rédiger le CR » ;
+- « Un fichier (YAML / JSON) » : un fichier de mission (niveau 3).
 
 **Compléter ce CR depuis…** (**seuls les champs vides sont remplis**) :
-- **« Mon dernier vol »** : « Mon dernier vol IVAO » et « Mon dernier vol VATSIM ». Il faut la suite ouverte par son
-  lanceur et votre ID IVAO ou VATSIM dans Mon profil (une entrée sans ID est grisée, avec le lien « VID IVAO absent —
-  Mon profil ↗ ») ; pour IVAO, la clé d'API de la suite (Paramètres › Installation).
-  - Liste : vos vols des 7 derniers jours (UTC), quels que soient la famille et la date du CR. Un seul vol : le CR est
-    rempli aussitôt ; plusieurs : choisissez-le (indicatif, trajet, date et heures UTC, « en cours » si vous êtes
-    encore connecté) ; chaque ligne a son lien ↗ vers le tracker IVAO.
+- **« Mon dernier vol IVAO »**, **« Mon dernier vol VATSIM »**. Il faut la suite ouverte par son lanceur et votre ID
+  IVAO ou VATSIM dans Mon profil (sans ID, l'entrée est grisée ; son infobulle dit ce qui manque, « VID IVAO absent —
+  Mon profil ») ; pour IVAO, la clé d'API de la suite (Paramètres › Installation).
+  - Vos vols des 7 derniers jours (UTC), quels que soient la famille et la date du CR. Un seul vol : le CR est rempli
+    aussitôt ; plusieurs : la fenêtre les liste (indicatif, trajet, date et heures UTC, « en cours » si vous êtes
+    encore connecté), choisissez-le ; chaque ligne a son lien ↗ vers le tracker IVAO.
   - Vol coupé par des déconnexions : les sessions qui se suivent (même indicatif, reprise moins de 30 min plus tard là
     où la précédente s'est arrêtée, la précédente n'ayant pas fini au parking) forment un seul vol, « 3 sessions
     (reconnexions) » ; plan de vol de la dernière session, traces mises bout à bout.
@@ -1013,24 +1015,26 @@ la saisie. Il a deux parties.
     résultats, incidents). Un vol « en cours » donne des heures provisoires : relancez après la déconnexion.
   - VATSIM : même principe, mais VATSIM ne publie pas de trace : les heures sont celles de connexion et de
     déconnexion (à corriger), le plan est celui déposé pour cette connexion.
-  - Sans vol, le message dit pour quel ID et quelle période. Dès qu'un vol IVAO est retenu ou collé, « Voir sur le
-    tracker IVAO ↗ » apparaît sous les boutons et à côté du champ « URL de la trace » (bloc Trace réseau).
-- **« Plan de vol déposé »** : « Dernier OFP SimBrief » (votre identifiant SimBrief du profil pilote), « Plan de vol
-  IVAO (vol en cours) » (votre VID), « Plan de vol VATSIM (en cours ou déposé) » (votre CID) : appareil, équipements
-  OACI, route, points tournants, niveaux, terrains, METAR / TAF, masses et carburant prévus (SimBrief).
+  - Sans vol, la fenêtre dit pour quel ID et quelle période. Dès qu'un vol IVAO est retenu ou collé, « Voir sur le
+    tracker IVAO ↗ » apparaît à côté du champ « URL de la trace » (bloc Trace réseau).
+- **« Plan de vol déposé (SimBrief / IVAO / VATSIM) »** : la fenêtre propose « Dernier OFP SimBrief » (votre
+  identifiant SimBrief du profil pilote), « Plan de vol IVAO (vol en cours) » (votre VID), « Plan de vol VATSIM (en
+  cours ou déposé) » (votre CID) : appareil, équipements OACI, route, points tournants, niveaux, terrains, METAR / TAF,
+  masses et carburant prévus (SimBrief).
 - **« Coller un plan de vol, une page du tracker ou un METAR »** : collez (Ctrl+V) dans la zone, l'analyse est
   immédiate ; ou « Coller depuis le presse-papiers » (Chrome demande l'autorisation une fois). Textes reconnus : plan
   de vol OACI « (FPL-…) », page du tracker IVAO (détails d'un vol ou liste des connexions), page d'un vol StatSim
   (VATSIM), historique VATSIM (JSON), METAR. Les liens « ↗ Tracker IVAO (mes connexions) » et « ↗ Mes vols StatSim
   (VATSIM) » ouvrent vos pages.
-- **« Favoris → CR »** : le lien « → CR », à glisser dans la barre des favoris, copie la page du tracker en un clic.
+- **« Favori « → CR » »** : le lien « → CR », à glisser une fois dans la barre des favoris, copie la page du tracker en
+  un clic.
 
-**Le même résumé pour toutes les sources**, sous le menu et en notification : la source et la date du vol
+**Le même résumé pour toutes les sources**, en notification (10 s), la fenêtre refermée : la source et la date du vol
 (« Plan de vol OACI, vol du 19/10 »), le nombre de champs remplis et les blocs touchés (appareil, chronologie, route,
 météo…), le nombre de champs déjà saisis gardés, et ce que la source n'a pas donné (« absents de la source : décollage,
-atterrissage »). Quand des champs déjà saisis ont été gardés, la case « Remplacer les champs déjà saisis (n) »
-réapplique la même source en les remplaçant. « Annuler », dans la notification (10 s), remet le CR tel qu'il était
-avant le préremplissage. Détails du collage : [tutoriel](TUTORIAL.md), § 6.
+atterrissage »). Deux boutons l'accompagnent : « Annuler » remet le CR tel qu'il était avant le préremplissage ;
+« Remplacer les champs déjà saisis (n) », quand des champs déjà saisis ont été gardés, réapplique la même source en les
+remplaçant. Détails du collage : [tutoriel](TUTORIAL.md), § 6.
 
 ### Suivi réseau
 

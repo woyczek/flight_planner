@@ -146,18 +146,21 @@
     fplLearned: L('Forme plan de vol mémorisée pour cet indicatif', 'Flight plan form remembered for this callsign',
       'Flugplanform für dieses Rufzeichen gespeichert', 'Forma de plan de vuelo memorizada para este indicativo'),
     importTitle: L('Analyser / importer…', 'Analyse / import…', 'Auswerten / importieren…', 'Analizar / importar…'),
-    prefillTitle: L('Préremplir ▾', 'Prefill ▾', 'Vorausfüllen ▾', 'Prerrellenar ▾'),
+    prefillTitle: L('Préremplir', 'Prefill', 'Vorausfüllen', 'Prerrellenar'),
     prefillNew: L('Nouveau CR depuis…', 'New report from…', 'Neuer Bericht aus…', 'Nuevo informe desde…'),
     prefillComplete: L('Compléter ce CR depuis…', 'Complete this report from…', 'Diesen Bericht ergänzen aus…',
       'Completar este informe desde…'),
-    prefillMissions: L('Un ordre de mission : Mes missions ↗', 'A mission order: My missions ↗', 'Ein Einsatzbefehl: Meine Missionen ↗',
-      'Una orden de misión: Mis misiones ↗'),
-    prefillFlights: L('Un vol passé : Mes vols ↗', 'A past flight: My flights ↗', 'Ein vergangener Flug: Meine Flüge ↗',
-      'Un vuelo pasado: Mis vuelos ↗'),
+    prefillMissions: L('Un ordre de mission', 'A mission order', 'Ein Einsatzbefehl', 'Una orden de misión'),
+    prefillFlights: L('Un de mes vols', 'One of my flights', 'Einer meiner Flüge', 'Uno de mis vuelos'),
+    prefillFile: L('Un fichier (YAML / JSON)', 'A file (YAML / JSON)', 'Eine Datei (YAML / JSON)', 'Un archivo (YAML / JSON)'),
+    prefillFpl: L('Plan de vol déposé (SimBrief / IVAO / VATSIM)', 'Filed flight plan (SimBrief / IVAO / VATSIM)',
+      'Aufgegebener Flugplan (SimBrief / IVAO / VATSIM)', 'Plan de vuelo presentado (SimBrief / IVAO / VATSIM)'),
+    prefillHelp: L('Aide', 'Help', 'Hilfe', 'Ayuda'),
+    prefillClose: L('Fermer', 'Close', 'Schließen', 'Cerrar'),
     prefillLast: L('Mon dernier vol', 'My last flight', 'Mein letzter Flug', 'Mi último vuelo'),
     prefillPaste: L('Coller un plan de vol, une page du tracker ou un METAR', 'Paste a flight plan, a tracker page or a METAR',
       'Flugplan, Tracker-Seite oder METAR einfügen', 'Pegar un plan de vuelo, una página del tracker o un METAR'),
-    prefillMarks: L('Favoris → CR', 'Bookmarks → report', 'Lesezeichen → Bericht', 'Marcadores → informe'),
+    prefillMarks: L('Favori « → CR »', 'Bookmark “→ CR”', 'Lesezeichen „→ CR“', 'Marcador «→ CR»'),
     prefillForce: L('Remplacer les champs déjà saisis ({n})', 'Replace the fields already entered ({n})',
       'Bereits eingetragene Felder ersetzen ({n})', 'Reemplazar los campos ya introducidos ({n})'),
     prefillKept: L('{n} déjà saisi(s) gardé(s)', '{n} already entered kept', '{n} bereits eingetragen(e) behalten',
@@ -580,20 +583,17 @@
           <div class="mc-import-row"><a class="mc-bookmarklet" data-defa-mark draggable="true">→ Vol</a><span class="small" data-defa-hint></span></div>
           <button type="button" data-action="defaCopy"></button>
           <p class="small" data-defa-help></p></div><hr><a class="mc-button" data-action="myFlights"></a></div></details>
-        <details class="mc-import mc-menu mc-prefill"><summary></summary><div class="mc-import-pop mc-pop">
+        <details class="mc-import mc-menu mc-prefill"><summary></summary><div class="mc-pop mc-list mc-prefill-menu">
           <p class="mc-prefill-head" data-prefill-t="prefillNew"></p>
-          <div class="mc-import-row"><a class="mc-button" data-prefill-link="missions"></a><a class="mc-button" data-prefill-link="flights"></a></div>
-          <div class="mc-import-row mc-import-file" data-min-level="3"><button type="button" data-action="import"></button></div>
+          <a class="mc-button" data-prefill-link="missions"></a>
+          <a class="mc-button" data-prefill-link="flights"></a>
+          <button type="button" data-action="import" data-min-level="3"></button>
           <hr><p class="mc-prefill-head" data-prefill-t="prefillComplete"></p>
-          <div class="mc-prefill-last"></div>
-          <div class="mc-prefill-fpl"></div>
-          <p class="small mc-prefill-sub" data-prefill-t="prefillPaste"></p>
-          <div class="mc-import-row mc-import-links"><a data-open="ivao" target="_blank" rel="noopener"></a><a data-open="statsim" target="_blank" rel="noopener"></a></div>
-          <p class="small mc-import-intro"></p>
-          <textarea spellcheck="false" rows="6"></textarea>
-          <div class="mc-import-row"><button type="button" class="primary" data-import="run"></button><button type="button" data-import="clip"></button></div>
-          <div class="mc-import-row"><span class="small mc-prefill-sub" data-prefill-t="prefillMarks"></span><a class="mc-bookmarklet" draggable="true"></a><span class="small mc-import-hint"></span></div>
-          <div class="mc-prefill-summary"><p class="small mc-import-result"></p><label class="small mc-prefill-force" hidden><input type="checkbox"> <span></span></label></div></div></details>
+          <button type="button" data-prefill="ivao"></button>
+          <button type="button" data-prefill="vatsim"></button>
+          <button type="button" data-prefill="fpl"></button>
+          <button type="button" data-prefill="paste"></button>
+          <button type="button" data-prefill="marks"></button></div></details>
         <details class="mc-menu mc-net"><summary data-menu="network"></summary><div class="mc-pop mc-net-pop"><div id="mc-header-tracker"></div></div></details>
         <details class="mc-menu" data-min-level="3"><summary data-menu="mission"></summary><div class="mc-pop mc-list">
           <button type="button" data-action="new"></button>
@@ -610,6 +610,24 @@
         <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden>
         <span class="mc-status"></span></div>`;
     if (header) header.append(tools);
+    // Fenêtre de « Préremplir » (fenêtre du socle, .repo-ask) : ce que l'entrée choisie demande — vols du réseau, plan de
+    // vol déposé, zone de collage, favori « → CR » ; l'aide est repliée sous « Aide ». Elle défile seule (jamais la page).
+    const prefillDlg = document.createElement('dialog');
+    prefillDlg.className = 'repo-ask mc-prefill-dlg';
+    prefillDlg.innerHTML = `<h2></h2><div class="mc-dlg-body">
+        <section data-pane="last"><div class="mc-prefill-last"></div></section>
+        <section data-pane="fpl"><div class="mc-prefill-fpl"></div></section>
+        <section data-pane="paste">
+          <div class="mc-import-row mc-import-links"><a data-open="ivao" target="_blank" rel="noopener"></a><a data-open="statsim" target="_blank" rel="noopener"></a></div>
+          <textarea spellcheck="false" rows="6"></textarea>
+          <div class="mc-import-row"><button type="button" class="primary" data-import="run"></button><button type="button" data-import="clip"></button></div>
+          <p class="small mc-import-result"></p>
+          <details class="mc-dlg-help"><summary data-prefill-t="prefillHelp"></summary><p class="small mc-import-intro"></p><p class="small mc-paste-hint"></p>
+            <div class="mc-import-row"><a class="mc-bookmarklet" data-cr-mark draggable="true"></a><span class="small mc-import-hint"></span></div></details></section>
+        <section data-pane="marks"><div class="mc-import-row"><a class="mc-bookmarklet" data-cr-mark draggable="true"></a><span class="small mc-import-hint"></span></div>
+          <p class="small mc-marks-help"></p></section></div>
+      <div class="mc-dlg-foot"><button type="button" class="ghost" data-dlg-close></button></div>`;
+    document.body.append(prefillDlg);
     root.innerHTML = `<form id="missionCoreForm" class="mc-form" autocomplete="off">
       <section class="mc-edit-banner" data-icon="edit" hidden><h2></h2><p class="note mc-edit-info"></p></section></form>
       <aside class="mc-aside"><div class="panel mc-kpi-panel" data-icon="chart"><h2></h2><div class="mc-kpi"></div><ul class="mc-issues" hidden></ul><h3 data-min-level="3"></h3><div class="small mc-context" data-min-level="3"></div></div>
@@ -673,6 +691,45 @@
     }));
     document.addEventListener('click', event => menus.forEach(menu => {
       if (menu.open && !menu.contains(event.target)) menu.open = false;
+    }));
+    // Échap : le menu ouvert se referme (le focus revient sur son bouton).
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      menus.filter(menu => menu.open).forEach(menu => {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      });
+    });
+    /** Place le menu « Préremplir » dans la fenêtre : sous son bouton, retourné vers le haut s'il n'y tient pas, décalé
+     *  à gauche s'il déborde à droite ; hauteur naturelle, limitée à la place disponible (défilement par sécurité). */
+    const placeMenu = menu => {
+      const pop = menu.querySelector('.mc-pop'),
+        at = menu.querySelector('summary').getBoundingClientRect(),
+        m = 8,
+        w = Math.min(320, innerWidth - 2 * m);
+      Object.assign(pop.style, {
+        position: 'fixed',
+        width: `${w}px`,
+        minWidth: '0',
+        right: 'auto',
+        bottom: 'auto',
+        maxHeight: 'none',
+        overflowY: 'auto'
+      });
+      const h = pop.scrollHeight,
+        below = innerHeight - at.bottom - 6 - m,
+        above = at.top - 6 - m,
+        up = h > below && above > below,
+        room = Math.max(120, up ? above : below);
+      pop.style.maxHeight = `${room}px`;
+      pop.style.left = `${Math.max(m, Math.min(at.left, innerWidth - m - w))}px`;
+      pop.style.top = `${up ? Math.max(m, at.top - 6 - Math.min(h, room)) : at.bottom + 6}px`;
+    };
+    const prefillMenu = tools.querySelector('.mc-prefill');
+    prefillMenu.addEventListener('toggle', () => prefillMenu.open && placeMenu(prefillMenu));
+    ['resize', 'scroll'].forEach(type => window.addEventListener(type, () => prefillMenu.open && placeMenu(prefillMenu), {
+      passive: true,
+      capture: true
     }));
     // Choix dans un menu (hors import et suivi réseau, qui restent ouverts) : menu refermé.
     tools.querySelectorAll('.mc-list').forEach(list => list.addEventListener('click', event => {
@@ -1363,13 +1420,13 @@
     function fplTools() {
       lastFlightTools();
       traceLink();
-      const section = tools.querySelector('.mc-prefill-fpl');
+      const section = prefillDlg.querySelector('.mc-prefill-fpl');
       if (!section || section.querySelector('.mc-fpl')) return;
       const bar = document.createElement('div');
-      bar.className = 'mc-tools mc-fpl';
-      bar.innerHTML = `<p class="small"><b></b> — <span></span></p><div class="row"><button type="button" class="secondary" data-fpl="simbrief"></button><button type="button" class="secondary" data-fpl="ivao"></button><button type="button" class="secondary" data-fpl="vatsim"></button></div><p class="small mc-tools-status"></p>`;
-      bar.querySelector('b').textContent = t('fplTitle');
-      bar.querySelector('span').textContent = t('fplIntro');
+      bar.className = 'mc-fpl';
+      bar.innerHTML = `<div class="mc-dlg-list"><button type="button" data-fpl="simbrief"></button><button type="button" data-fpl="ivao"></button><button type="button" data-fpl="vatsim"></button></div><p class="small mc-tools-status"></p><details class="mc-dlg-help"><summary></summary><p class="small"></p></details>`;
+      bar.querySelector('.mc-dlg-help summary').textContent = t('prefillHelp');
+      bar.querySelector('.mc-dlg-help p').textContent = t('fplIntro');
       [
         ['simbrief', 'fplSimbrief'],
         ['ivao', 'fplIvao'],
@@ -1402,7 +1459,7 @@
           await applyImport({
             kind: 'fpl',
             fpl
-          }, 'fplTitle', [], null, {
+          }, 'fplTitle', [], text => note.textContent = text, {
             source: `${inLanguage(UI.fplTitle)} ${fpl.source || ''}`.trim()
           });
         } catch (error) {
@@ -1413,42 +1470,14 @@
       });
       section.append(bar);
     }
-    /** Partie « Mon dernier vol » du menu « Préremplir » (« Compléter ce CR depuis… ») : IVAO et VATSIM, entrée grisée avec son
-     *  motif (lien vers Mon profil) si l'identifiant du profil manque ; message et choix gardés dans lastState. */
+    /** Partie « Mon dernier vol » de la fenêtre de « Préremplir » : état, vols à choisir, liens (clé, tracker) ; les
+     *  entrées IVAO / VATSIM sont dans le menu (prefillEntries). Message et choix gardés dans lastState. */
     function lastFlightTools() {
-      const section = tools.querySelector('.mc-prefill-last');
+      const section = prefillDlg.querySelector('.mc-prefill-last');
       if (!section || section.querySelector('.mc-last')) return;
       const bar = document.createElement('div');
-      bar.className = 'mc-tools mc-last';
-      bar.innerHTML = `<p class="small mc-prefill-sub"></p><div class="row"><button type="button" class="secondary" data-last="ivao"></button><button type="button" class="secondary" data-last="vatsim"></button></div><p class="small mc-last-why"></p><div class="mc-import-row mc-import-choices" hidden></div><p class="small mc-tools-status"></p><p class="small"><a class="mc-last-fix" hidden></a> <a class="mc-last-tracker" target="_blank" rel="noopener" hidden></a></p>`;
-      const why = bar.querySelector('.mc-last-why'),
-        p = prefs();
-      bar.querySelector('.mc-prefill-sub').textContent = t('prefillLast');
-      [
-        ['ivao', 'importLastIvao', 'ivaoId', 'lastNoIvao'],
-        ['vatsim', 'importLastVatsim', 'vatsimId', 'lastNoVatsim']
-      ].forEach(([net, key, pref, missing]) => {
-        const b = bar.querySelector(`[data-last="${net}"]`);
-        b.textContent = t(key);
-        if (!String(p[pref] || '').trim()) {
-          b.disabled = true;
-          b.title = inLanguage(UI[missing]);
-          why.append(Object.assign(document.createElement('a'), {
-            href: settingsUrl(''),
-            textContent: inLanguage(UI[missing])
-          }), ' ');
-          return;
-        }
-        b.onclick = async () => {
-          b.disabled = true;
-          try {
-            await lastFlight(net);
-          } finally {
-            b.disabled = false;
-          }
-        };
-      });
-      why.hidden = !why.childElementCount;
+      bar.className = 'mc-last';
+      bar.innerHTML = `<p class="small mc-tools-status"></p><div class="mc-import-row mc-import-choices" hidden></div><p class="small"><a class="mc-last-fix" hidden></a> <a class="mc-last-tracker" target="_blank" rel="noopener" hidden></a></p>`;
       section.append(bar);
       drawLast();
     }
@@ -1467,7 +1496,7 @@
       }
       const url = String(input?.value ?? mission.network?.trackerUrl ?? '').trim(),
         ok = /^https?:\/\/\S+$/i.test(url);
-      form.querySelectorAll('.mc-trace-link, .mc-last-tracker').forEach(a => {
+      [...form.querySelectorAll('.mc-trace-link'), ...prefillDlg.querySelectorAll('.mc-last-tracker')].forEach(a => {
         a.hidden = !ok;
         if (!ok) return;
         a.href = url;
@@ -1476,7 +1505,7 @@
     }
     /** Message et vols proposés du dernier vol (lastState) dans la barre du bloc Chronologie. */
     function drawLast() {
-      const bar = tools.querySelector('.mc-last');
+      const bar = prefillDlg.querySelector('.mc-last');
       if (!bar) return;
       bar.querySelector('.mc-tools-status').textContent = lastState.text;
       const fix = bar.querySelector('.mc-last-fix'); // clé absente ou refusée : carte des clés
@@ -1492,7 +1521,6 @@
           b = document.createElement('button');
         row.className = 'mc-last-row';
         b.type = 'button';
-        b.className = 'secondary';
         // indicatif, trajet et heures UTC (« en cours » si pas encore déconnecté) ; vol coupé : nombre de sessions
         b.textContent = `${f.callsign || '—'} ${f.dep || '?'}→${f.arr || '?'} · ${String(f.start || '').slice(0, 10)} ${hhmm(f.start)}–${f.open ? inLanguage(UI.importLastOpen) : `${hhmm(f.end)}Z`}${f.sessions > 1 ? ` · ${inLanguage(UI.lastSessions).replace('{n}', f.sessions)}` : ''}`;
         b.onclick = () => lastFlight(lastState.net, String(f.id));
@@ -1513,11 +1541,11 @@
 
     // ---- analyse d'un texte collé : plan de vol OACI, tracker IVAO (détails / liste),
     // historique VATSIM (JSON), METAR (shared/mission_core/text_import.js)
-    const importBox = tools.querySelector('.mc-import'),
-      importArea = importBox.querySelector('textarea'),
-      importResult = importBox.querySelector('.mc-import-result');
+    const importBox = prefillMenu,
+      importArea = prefillDlg.querySelector('textarea'),
+      importResult = prefillDlg.querySelector('.mc-import-result');
     importBox.querySelector('summary').textContent = t('prefillTitle');
-    importBox.querySelectorAll('[data-prefill-t]').forEach(el => el.textContent = t(el.dataset.prefillT));
+    [importBox, prefillDlg].forEach(r => r.querySelectorAll('[data-prefill-t]').forEach(el => el.textContent = t(el.dataset.prefillT)));
     // « Nouveau CR depuis… » : un ordre (Mes missions) ou un vol passé (Mes vols) ; le fichier, à partir du niveau 3
     [
       ['missions', 'prefillMissions', 'apps/pilot/mes_missions.html'],
@@ -1527,17 +1555,76 @@
       a.textContent = t(key);
       a.href = new URL(page, window.RepositoryNav?.root || new URL('../../', location.href)).href
     });
-    importBox.querySelector('.mc-import-intro').textContent = t('importIntro');
-    importBox.querySelector('[data-import="run"]').textContent = t('importRun');
-    importBox.querySelector('[data-import="clip"]').textContent = t('importClip');
-    importBox.querySelector('.mc-import-hint').textContent = t('importBookmarklet');
-    const bookmarklet = importBox.querySelector('.mc-bookmarklet');
-    bookmarklet.textContent = '→ CR';
-    bookmarklet.href = window.MissionTextImport?.BOOKMARKLET || '#';
-    bookmarklet.onclick = event => {
-      event.preventDefault();
-      importResult.textContent = inLanguage(UI.importBookmarkletHelp);
+    importBox.querySelector('[data-action="import"]').textContent = t('prefillFile');
+    /** Entrées « Compléter ce CR depuis… » du menu ; dernier vol sans identifiant dans Mon profil : entrée grisée, motif
+     *  en infobulle. Relu à chaque ouverture du menu (profil changé entre-temps). */
+    const prefillEntries = () => {
+      const p = prefs();
+      [
+        ['ivao', 'importLastIvao', 'ivaoId', 'lastNoIvao'],
+        ['vatsim', 'importLastVatsim', 'vatsimId', 'lastNoVatsim']
+      ].forEach(([net, key, pref, missing]) => {
+        const b = importBox.querySelector(`[data-prefill="${net}"]`),
+          off = !String(p[pref] || '').trim();
+        b.textContent = t(key);
+        b.classList.toggle('mc-off', off);
+        b.setAttribute('aria-disabled', String(off));
+        b.title = off ? inLanguage(UI[missing]).replace(/\s*↗$/, '') : '';
+      });
+      [
+        ['fpl', 'prefillFpl'],
+        ['paste', 'prefillPaste'],
+        ['marks', 'prefillMarks']
+      ].forEach(([k, key]) => importBox.querySelector(`[data-prefill="${k}"]`).textContent = t(key));
     };
+    prefillEntries();
+    importBox.addEventListener('toggle', () => importBox.open && prefillEntries());
+    let pane = ''; // partie affichée de la fenêtre de « Préremplir »
+    /** Ouvre la fenêtre de « Préremplir » sur une partie (last, fpl, paste, marks), avec son titre. */
+    const openPane = (name, title) => {
+      pane = name;
+      window.AppFramework?.dialogCss?.();
+      prefillDlg.querySelectorAll('[data-pane]').forEach(sec => sec.hidden = sec.dataset.pane !== name);
+      prefillDlg.querySelector('h2').textContent = inLanguage(UI[title]);
+      prefillDlg.querySelector('.mc-dlg-foot').hidden = name === 'paste'; // la zone de collage a ses boutons (« × », « Fermer »)
+      prefillDlg.querySelector('[data-dlg-close]').textContent = inLanguage(UI.prefillClose);
+      if (!prefillDlg.open) prefillDlg.showModal();
+      if (name === 'paste') {
+        importArea.focus();
+        importResult.textContent = '';
+      }
+    };
+    /** Vrai si la zone de collage est affichée. */
+    const pasteOpen = () => prefillDlg.open && pane === 'paste';
+    prefillDlg.querySelector('[data-dlg-close]').onclick = () => prefillDlg.close();
+    prefillDlg.addEventListener('click', event => event.target === prefillDlg && prefillDlg.close());
+    importBox.addEventListener('click', event => {
+      const b = event.target.closest('[data-prefill]');
+      if (!b || b.getAttribute('aria-disabled') === 'true') return;
+      const k = b.dataset.prefill;
+      if (k === 'ivao' || k === 'vatsim') {
+        lastFlightTools();
+        openPane('last', k === 'ivao' ? 'importLastIvao' : 'importLastVatsim');
+        lastFlight(k);
+      } else if (k === 'fpl') {
+        fplTools();
+        openPane('fpl', 'fplTitle');
+      } else openPane(k, k === 'paste' ? 'prefillPaste' : 'prefillMarks');
+    });
+    prefillDlg.querySelector('.mc-import-intro').textContent = t('importIntro');
+    prefillDlg.querySelector('.mc-paste-hint').textContent = t('importPasteHint');
+    prefillDlg.querySelector('.mc-marks-help').textContent = t('importBookmarkletHelp');
+    prefillDlg.querySelector('[data-import="run"]').textContent = t('importRun');
+    prefillDlg.querySelector('[data-import="clip"]').textContent = t('importClip');
+    prefillDlg.querySelectorAll('.mc-import-hint').forEach(el => el.textContent = t('importBookmarklet'));
+    prefillDlg.querySelectorAll('[data-cr-mark]').forEach(bookmarklet => {
+      bookmarklet.textContent = '→ CR';
+      bookmarklet.href = window.MissionTextImport?.BOOKMARKLET || '#';
+      bookmarklet.onclick = event => {
+        event.preventDefault();
+        window.AppFramework?.notify?.(inLanguage(UI.importBookmarkletHelp), 'info');
+      };
+    });
     const KINDS = {
       fpl: 'importFpl',
       'ivao-details': 'importIvaoDetails',
@@ -1548,7 +1635,7 @@
     };
     // Liens vers les trackers (en haut de la fenêtre), avec les identifiants de la mission ou du profil pilote.
     const openLink = (kind, key) => {
-      const a = importBox.querySelector(`[data-open="${kind}"]`);
+      const a = prefillDlg.querySelector(`[data-open="${kind}"]`);
       a.textContent = t(key);
       a.onclick = () => {
         const p = prefs(),
@@ -1616,10 +1703,15 @@
       notes.push(...extra);
       const text = prefillSummary(result, label, done, kept, opts, ad, notes);
       prefillAfter(result, label, extra, show, opts, snapshot, kept, text);
-      if (show) return show(text), true;
-      importResult.textContent = text;
-      importArea.value = '';
-      importPanel?.done(); // bouton « Valider » (ferme la fenêtre)
+      if (show) show(text);
+      else {
+        importResult.textContent = text;
+        importArea.value = '';
+        importPanel?.reset();
+      }
+      // fenêtre refermée : le résumé et ses boutons (« Annuler », « Remplacer… ») sont dans la notification, que la
+      // fenêtre modale rendrait inerte
+      if (prefillDlg.open) prefillDlg.close();
       return true;
     }
     /** Résumé commun d'un préremplissage : source et date du vol (« IVAO, vol du 19/10 »), nombre de champs remplis et
@@ -1643,46 +1735,40 @@
         ad?.tz ? `${inLanguage(UI.importLocal)} ${ad.icao} (${ad.tz})` : '', ...notes
       ].filter(Boolean).join(' — ')
     }
-    /** Après un préremplissage : case « Remplacer les champs déjà saisis (n) » (réapplique depuis l'état d'avant, en
-     *  remplaçant), notification avec « Annuler » pendant 10 s (remet l'état d'avant). */
+    /** Après un préremplissage : notification (10 s) avec « Annuler » (remet l'état d'avant) et, si des champs déjà
+     *  saisis ont été gardés, « Remplacer les champs déjà saisis (n) » (réapplique depuis l'état d'avant, en remplaçant). */
     function prefillAfter(result, label, extra, show, opts, snapshot, kept, text) {
-      const box = tools.querySelector('.mc-prefill-force'),
-        check = box?.querySelector('input');
-      if (box) {
-        box.hidden = !kept.length || !!opts.replace;
-        box.querySelector('span').textContent = inLanguage(UI.prefillForce).replace('{n}', kept.length);
-        check.checked = false;
-        check.onchange = async () => {
-          if (!check.checked) return;
-          mission = structuredClone(snapshot);
-          await applyImport(result, label, extra, show, {
-            ...opts,
-            replace: true,
-            snapshot
-          });
-        };
-      }
       const item = window.AppFramework?.notify?.(text, 'ok', {
         timeout: 10000
       });
       if (!item) return;
-      const undo = Object.assign(document.createElement('button'), {
+      /** Bouton de la notification. */
+      const button = (key, onclick) => Object.assign(document.createElement('button'), {
         type: 'button',
-        textContent: inLanguage(UI.prefillUndo),
-        className: 'mc-prefill-undo'
+        textContent: inLanguage(UI[key]).replace('{n}', kept.length),
+        className: 'mc-prefill-undo',
+        onclick
       });
-      undo.onclick = () => {
+      const buttons = [button('prefillUndo', () => {
         mission = structuredClone(snapshot);
         redraw();
         changed();
         switcher.sync();
-        if (box) box.hidden = true;
         importResult.textContent = inLanguage(UI.prefillUndone);
         item.remove();
-      };
-      item.querySelector('span')?.after(undo);
+      })];
+      if (kept.length && !opts.replace) buttons.push(button('prefillForce', async () => {
+        item.remove();
+        mission = structuredClone(snapshot);
+        await applyImport(result, label, extra, show, {
+          ...opts,
+          replace: true,
+          snapshot
+        });
+      }));
+      item.querySelector('span')?.after(...buttons);
     }
-    importBox.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
+    prefillDlg.querySelector('[data-import="run"]').onclick = () => importText(importArea.value);
     // ---- « Préremplir depuis mon dernier vol ▾ » (bloc Chronologie, dès le niveau 1) : le lanceur interroge le réseau
     // (clé IVAO de la suite, jamais vue par la page) et rend les vols des 7 derniers jours ; un seul → prérempli,
     // plusieurs → choix ; détail au format du collage du tracker (parseIvaoDetails), donc même préremplissage
@@ -1760,12 +1846,10 @@
     /** Branche le panneau de copier-coller de l'import (FileAccess.pastePanel). */
     const attachImportPanel = () => {
       importPanel = window.FileAccess?.pastePanel({
-        root: importBox.querySelector('.mc-import-pop'),
+        root: prefillDlg.querySelector('[data-pane="paste"]'),
         area: importArea,
-        run: importBox.querySelector('[data-import="run"]'),
-        close: () => {
-          importBox.open = false;
-        },
+        run: prefillDlg.querySelector('[data-import="run"]'),
+        close: () => prefillDlg.close(),
         runLabel: () => inLanguage(UI.importRun)
       }) || importPanel;
     };
@@ -1807,20 +1891,14 @@
         return false;
       }
     };
-    importBox.querySelector('[data-import="clip"]').onclick = () => readClipboard(false);
-    importBox.addEventListener('toggle', () => {
-      if (importBox.open) {
-        importArea.focus();
-        importResult.textContent = inLanguage(UI.importPasteHint);
-      }
-    });
+    prefillDlg.querySelector('[data-import="clip"]').onclick = () => readClipboard(false);
     // Départ vers le tracker, retour sur la page (favori « → CR ») : une seule lecture, et
     // seulement si l'autorisation est déjà accordée (jamais de demande automatique).
     window.addEventListener('blur', () => {
-      if (importBox.open && !clipBusy) clipArmed = true;
+      if (pasteOpen() && !clipBusy) clipArmed = true;
     });
     window.addEventListener('focus', async () => {
-      if (!clipArmed || clipBusy || !importBox.open || importArea.value) return;
+      if (!clipArmed || clipBusy || !pasteOpen() || importArea.value) return;
       clipArmed = false;
       if (await clipGranted()) readClipboard(true);
     });

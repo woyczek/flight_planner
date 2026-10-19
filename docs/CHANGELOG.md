@@ -184,16 +184,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
-- **Mission report: one "Prefill ▾" menu** (`shared/mission_core/core.js`, `text_import.js`, `fpl.js`) — everything that
-  fills the report is gathered in one header menu, from level 1, in two parts: "New report from…" (a mission order in
-  My missions, a past flight in My flights, a file at level 3) and "Complete this report from…" (my last IVAO / VATSIM
-  flight, moved out of the Timeline block with the same behaviour; the filed flight plan from SimBrief / IVAO / VATSIM,
-  moved out of the Navigation block; paste of a flight plan, tracker page or METAR; the "→ CR" bookmark). All sources
-  go through the same path (`applyImport`): empty fields only, the same summary naming the source and the flight date,
-  the blocks touched, the fields already entered that were kept and what the source did not give; "Replace the fields
-  already entered (n)" applies the source again with replacement (`replace` option of `MissionTextImport.apply` and
-  `MissionFpl.apply`, which also report the kept fields); "Undo" for 10 s restores the report as before. Replaces the
-  "Analyse / import…" menu.
+- **Mission report: one "Prefill ▾" menu** (`shared/mission_core/core.js`, `core.css`, `text_import.js`, `fpl.js`) —
+  everything that fills the report is gathered in one short header menu, from level 1: one line per entry, in two
+  titled groups, "New report from…" (a mission order, one of my flights, a file at level 3) and "Complete this report
+  from…" (my last IVAO / VATSIM flight, moved out of the Timeline block with the same behaviour; the filed flight plan
+  from SimBrief / IVAO / VATSIM, moved out of the Navigation block; paste of a flight plan, tracker page or METAR; the
+  "→ CR" bookmark). The menu stays inside the window (opened upwards or shifted left when needed, scrolls only as a
+  last resort) and closes with Escape or a click elsewhere; an entry greyed out for a missing network ID gives the
+  reason as a tooltip. Each entry then opens its own suite dialog (flight list, flight plan sources, paste box), which
+  scrolls on its own, with its help folded under "Help". All sources go through the same path (`applyImport`): empty
+  fields only, the same summary naming the source and the flight date, the blocks touched, the fields already entered
+  that were kept and what the source did not give, shown in a notification with "Undo" (10 s, restores the report as
+  before) and "Replace the fields already entered (n)" (applies the source again with replacement: `replace` option of
+  `MissionTextImport.apply` and `MissionFpl.apply`, which also report the kept fields). Replaces the "Analyse /
+  import…" menu.
 - **Keys and external services: one place** (`shared/maintenance_page.js`, `tools/launch.py`, `shared/app_framework.js`)
   — Settings › Installation gets a "Keys and external services" section, one card per service (IVAO, VATSIM,
   SimBrief, airline website, report web service): key state ("saved on … UTC (…abcd)", "missing", "IVAO_API_KEY

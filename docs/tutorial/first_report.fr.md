@@ -42,9 +42,9 @@ Si vous ne vous êtes pas posé à la base prévue, renseignez le « Terrain d'a
 ## 4. Remplir depuis le réseau
 
 Tout ce qui remplit le CR est dans un seul menu de l'en-tête, « Préremplir ▾ » (dès le niveau Équipage), partie
-« Compléter ce CR depuis… ». **Seuls les champs vides sont remplis.**
+« Compléter ce CR depuis… » ; chaque entrée ouvre sa fenêtre. **Seuls les champs vides sont remplis.**
 
-- **« Mon dernier vol »** : « Mon dernier vol IVAO » ou « Mon dernier vol VATSIM ». La suite, ouverte par son
+- **« Mon dernier vol IVAO »** ou **« Mon dernier vol VATSIM »**. La suite, ouverte par son
   lanceur, lit vos vols des sept derniers jours ; un seul vol remplit le CR aussitôt, plusieurs se choisissent dans une
   liste (indicatif, trajet, date et heures UTC, « en cours »). Indicatif, terrains, plan de vol déposé (appareil, route,
   niveau, immatriculation…), heures de la trace et distance sont repris. Votre ID IVAO ou VATSIM doit être dans Mon
@@ -52,12 +52,12 @@ Tout ce qui remplit le CR est dans un seul menu de l'en-tête, « Préremplir �
   trace : ses heures sont celles de connexion et de déconnexion, à corriger.
 - **« Plan de vol déposé »** : votre dernier OFP SimBrief, ou le plan de vol IVAO / VATSIM du vol en cours.
 - **« Coller un plan de vol, une page du tracker ou un METAR »** : sur la page de votre vol (tracker IVAO, ou StatSim
-  pour VATSIM), Ctrl+A puis Ctrl+C, revenez et collez dans la zone. Le favori « → CR » (« Favoris → CR »), glissé une
-  fois dans la barre des favoris, copie la page du tracker en un clic.
+  pour VATSIM), Ctrl+A puis Ctrl+C, revenez et collez dans la zone. Le favori « → CR » (entrée « Favori « → CR » »),
+  glissé une fois dans la barre des favoris, copie la page du tracker en un clic.
 
-Chaque source finit par le même résumé : la source et la date du vol, les champs remplis et les blocs touchés, les
-champs déjà saisis gardés, et ce que la source n'a pas donné. « Remplacer les champs déjà saisis » réapplique la source
-en les remplaçant ; « Annuler », dans la notification, remet le CR comme avant pendant 10 secondes.
+Chaque source finit par le même résumé, en notification : la source et la date du vol, les champs remplis et les blocs
+touchés, les champs déjà saisis gardés, et ce que la source n'a pas donné. Pendant 10 secondes, « Annuler » remet le CR
+comme avant, « Remplacer les champs déjà saisis » réapplique la source en les remplaçant.
 
 ## 5. Les heures et la route
 
