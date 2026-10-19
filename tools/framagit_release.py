@@ -6,11 +6,14 @@ Usage (at the repository root, after the tag v<version> is pushed and tools/publ
     python tools/framagit_release.py                 # version of config/repository_tree › release.version
     python tools/framagit_release.py 5.3.0           # a given version
     python tools/framagit_release.py 5.3.0 --dry-run # prints what would be sent, sends nothing
+    python tools/framagit_release.py 5.3.0 --with-suite  # also attach the suite archive (not by default: the release
+                                                         # page carries the tag's source archive itself)
 
 The token is read from the environment only: never written, never printed, never stored. An existing release of the
 same tag is updated (description and links). Project: the "origin" or "framagit" remote of the repository.
 
-Archives go to the project's generic package registry (packages/generic/<name>/<version>/<file>: no size limit of the
+Only the module packages are attached (the suite archive of dist/ is not sent unless --with-suite: the release page
+already carries the tag's own source archive). Archives go to the project's generic package registry (packages/generic/<name>/<version>/<file>: no size limit of the
 upload form, which refuses the 96 MB suite archive with HTTP 413); a file the registry refuses is tried as a project
 upload (small files only), and a file that cannot be sent is reported, the release being created without it.
 """
@@ -84,13 +87,14 @@ def main():
     ap.add_argument('version', nargs='?', default=None)
     ap.add_argument('--dist', default=os.path.join(ROOT, 'dist'), help='archives folder (default dist/)')
     ap.add_argument('--dry-run', action='store_true', help='print what would be sent, send nothing')
+    ap.add_argument('--with-suite', action='store_true', help='also attach the suite archive of dist/ (off by default)')
     a = ap.parse_args()
     version = a.version or tree_version()
     tag = 'v' + version
     host, project = remote_project()
     pid = urllib.parse.quote(project, safe='')
     description = changelog_section(version)
-    archives = [p for p in (os.path.join(a.dist, '%s-%s.zip' % (PREFIX, version)),) if os.path.isfile(p)]
+    archives = [p for p in (os.path.join(a.dist, '%s-%s.zip' % (PREFIX, version)),) if a.with_suite and os.path.isfile(p)]
     archives += sorted(os.path.join(a.dist, f) for f in os.listdir(a.dist) if re.match(r'.+-module-%s\.zip$' % re.escape(version), f)) if os.path.isdir(a.dist) else []
     print('project %s on %s · tag %s · %d archive(s) · description %d characters' % (project, host, tag, len(archives), len(description)))
     for p in archives:
