@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Tutorial "Write your first mission report"** (`docs/tutorial/first_report.fr.md` / `.en.md`, Help › Tutorials;
+  the help already listed it, the file was missing) — the report from start to finish: open it from an assigned
+  mission, from a flight without a report in My flights, or from scratch; family and series; the aircraft (what the
+  assistant fills in); "My last IVAO / VATSIM flight" or a pasted tracker page; times (local) and route; result, crew
+  and family blocks; save; send (web service, airline website with the "→ Vol" bookmark); find the flight again in My
+  flights. Block names quoted as on screen, no screenshots.
 - **"My flights" page** (`apps/pilot/mes_vols.html`, side bar under "My missions", level 1) — the pilot's past
   flights, most recent first, one per line: date, call sign, aircraft (the shared name cell), route, block duration,
   mission, report. Sources merged by date, call sign and registration without duplicates (the report wins): the pilot's
