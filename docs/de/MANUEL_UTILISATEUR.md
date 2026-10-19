@@ -282,6 +282,43 @@ Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenor
 Ein vorhandenes altes Stundenraster wird automatisch in die Woche übernommen.
 Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit. Dieser Link erscheint nur auf der Stufe Experte.
 
+## Meine Flüge
+<!-- page: apps/pilot/mes_vols.html -->
+
+Diese Seite (Seitenleiste „Meine Flüge“, unter „Meine Missionen“; ab der Stufe Besatzung) ist das Register Ihrer
+vergangenen Flüge, vom neuesten zum ältesten, ein Flug pro Zeile. Sie vereint zwei Quellen, ohne Doppel (gleiches Datum,
+gleiches Rufzeichen, gleiches Kennzeichen: der Bericht hat Vorrang):
+
+- Ihre Berichte im Einsatzregister (die, die Sie verfasst haben; die ohne eingetragenen Verfasser werden
+  behalten);
+- das Flugbuch der Fluggesellschaft, von der Website importiert (Karte „Flugbuch“ des Erststarts), gefiltert nach Ihrem Kürzel.
+  Ohne Kürzel (Einstellungen › Mein Profil) werden nur die Berichte dieses Browsers aufgelistet.
+
+Oben: „Zeitraum“ („Letzte 7 Tage“, „Letzte 31 Tage“, „Letzte 12 Monate“ — Standard —, „Alle“), die Suche (Rufzeichen,
+Typ, Kennzeichen, Flugplatz, Mission), „Exportieren (CSV)“ (die angezeigte Liste, dieselben Spalten) und „Detaillierte
+Analyse ↗“ (Werkzeuge › Missionsanalyse). Darunter die Summen: Anzahl der Flüge, Blockstunden, die drei meistgeflogenen
+Typen. Zeitraum und Suche bleiben in diesem Browser gespeichert.
+
+| Spalte | Inhalt |
+|---|---|
+| „Datum“ | Tag des Flugs |
+| „Rufzeichen“ | Rufzeichen des Flugs |
+| „Luftfahrzeug“ | Silhouette, Kennzeichen, Typ |
+| „Strecke“ | Abflug → Ankunft (ICAO) |
+| „Dauer“ | Blockstunden (sonst Flugstunden) |
+| „Mission“ | Familie, Typ und Einsatz des Berichts, oder Mission des Flugbuchs |
+| „Bericht“ | Nr. des Berichts (Link), oder „ohne Bericht“ |
+
+Ein Klick auf eine Zeile öffnet ihren Bericht („Bericht öffnen“); ein Flug „ohne Bericht“ klappt seine Einzelheiten auf (Quelle,
+UTC-Uhrzeit, Luftfahrzeug, Mission) mit „Bericht schreiben“, das den bereits ausgefüllten Bericht der Familie öffnet: Datum,
+Rufzeichen, Luftfahrzeug, Kennzeichen, Abflug und Ankunft, angegebene Blockzeit. Prüfen und ergänzen Sie, dann „Ins Register
+aufnehmen“: Der Flug erscheint dann mit seinem Bericht. Die Spalten lassen sich durch Ziehen am Rand der Titel einstellen
+(Doppelklick: Standardbreiten). Unter 800 px Breite bleiben nur Datum, Rufzeichen, Strecke und Dauer; ein Klick klappt den
+Rest auf.
+
+Sie gelangen auch über „Meine Flüge ↗“ in Meine Missionen (neben „auch vergangene Missionen anzeigen“) und im Menü
+„Senden“ eines Berichts hierher.
+
 ## Meine Verfügbarkeit
 <!-- page: apps/pilot/disponibilites.html -->
 

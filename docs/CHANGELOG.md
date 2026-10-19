@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **"My flights" page** (`apps/pilot/mes_vols.html`, side bar under "My missions", level 1) — the pilot's past
+  flights, most recent first, one per line: date, call sign, aircraft (the shared name cell), route, block duration,
+  mission, report. Sources merged by date, call sign and registration without duplicates (the report wins): the pilot's
+  reports in the report ledger and the airline flight log imported from the website, filtered on the trigram; more
+  sources plug in through `window.MyFlights.addSource` (IVAO, VATSIM later). Period (7 / 31 days, 12 months by
+  default, all), search, totals (flights, block hours, three most flown types), CSV export of the list shown, link to
+  the detailed analysis. A row opens its report; a log flight without a report unfolds its details with "Write the
+  report", which opens the family's report pre-filled (date, call sign, aircraft, route, declared block time) through
+  the mission order's gateway (`?from=sia`, new `__flight` part). Under 800 px: date, call sign, route, duration. Links
+  from My missions and from the report's "Send" menu.
 - **Mission report: record the flight on the airline website** (`shared/mission_core/core.js`) — the report's "Send"
   menu (the web service's "Send report", now grouped with it so the toolbar keeps seven entries) gets an "Airline
   website" part when the site address is set (`RepositoryNav.vaUrl("recordFlight")`, `/selection_appareil.php` in

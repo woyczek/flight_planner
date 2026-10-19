@@ -27,6 +27,7 @@ RepositoryContentI18n([
   ],
   ['Chargement…', 'Loading…', 'Wird geladen…', 'Cargando…'],
   ['Chargement de la mission…', 'Loading the mission…', 'Mission wird geladen…', 'Cargando la misión…'],
+  ['Mes vols ↗', 'My flights ↗', 'Meine Flüge ↗', 'Mis vuelos ↗'],
   ['afficher aussi les missions passées', 'also show past missions', 'auch vergangene Missionen anzeigen',
     'mostrar también las misiones pasadas'
   ],

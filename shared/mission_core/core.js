@@ -190,6 +190,7 @@
       'servicio inaccesible o llamada bloqueada por el navegador (CORS: el servicio debe permitir este origen)'),
     sentBefore: L('Déjà envoyé le', 'Already sent on', 'Bereits gesendet am', 'Ya enviado el'),
     menuSend: L('Envoyer', 'Send', 'Senden', 'Enviar'),
+    myFlights: L('Mes vols ↗', 'My flights ↗', 'Meine Flüge ↗', 'Mis vuelos ↗'),
     defaMenu: L('Site de la compagnie', 'Airline website', 'Website der Fluggesellschaft', 'Sitio de la aerolínea'),
     defaOpen: L('Enregistrer le vol sur le site ↗', 'Record the flight on the website ↗', 'Flug auf der Website eintragen ↗',
       'Registrar el vuelo en el sitio ↗'),
@@ -488,7 +489,7 @@
           <button type="button" class="primary" data-action="defaOpen"></button>
           <div class="mc-import-row"><a class="mc-bookmarklet" data-defa-mark draggable="true">→ Vol</a><span class="small" data-defa-hint></span></div>
           <button type="button" data-action="defaCopy"></button>
-          <p class="small" data-defa-help></p></div></div></details>
+          <p class="small" data-defa-help></p></div><hr><a class="mc-button" data-action="myFlights"></a></div></details>
         <details class="mc-import mc-menu" data-min-level="3"><summary></summary><div class="mc-import-pop mc-pop">
           <div class="mc-import-row mc-import-links"><a data-open="ivao" target="_blank" rel="noopener"></a><a data-open="statsim" target="_blank" rel="noopener"></a></div>
           <p class="small mc-import-intro"></p>
@@ -1639,6 +1640,9 @@
         status.textContent = inLanguage(UI.defaMarkClick)
       }
     }
+    // « Mes vols ↗ » : le registre des vols passés du pilote (apps/pilot/mes_vols.html)
+    $a('myFlights').textContent = t('myFlights');
+    $a('myFlights').href = new URL('apps/pilot/mes_vols.html', window.RepositoryNav?.root || new URL('../../', location.href)).href;
     $a('defaOpen').onclick = async () => {
       if ((!edit || dirty) && !await window.AppFramework.ask(inLanguage(UI.defaUnsaved))) return;
       const url = defaUrl();
@@ -1997,6 +2001,14 @@
         if (y.__order.dep) m.navigation.dep = String(y.__order.dep).toUpperCase();
         if (y.__order.arr) m.navigation.arr = String(y.__order.arr).toUpperCase();
       }
+    }
+    // vol passé (Mes vols : journal de la compagnie sans CR) : date du vol et durée déclarée
+    if (y.__flight) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(y.__flight.date || '')) m.metadata.date = y.__flight.date;
+      if (Number.isFinite(+y.__flight.blockMinutes) && y.__flight.blockMinutes !== null) m.timeline.declared = {
+        ...(m.timeline.declared || {}),
+        blockMinutes: +y.__flight.blockMinutes
+      };
     }
     const points = y.turning_points || [];
     m.navigation.waypoints = points.map(p => p.name || p.id).join(' ');

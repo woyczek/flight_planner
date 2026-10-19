@@ -282,6 +282,42 @@ El mensaje bajo el bloque indica adónde se ha enviado lo introducido: «Guardad
 Una cuadrícula horaria antigua existente se importa automáticamente en la semana.
 El enlace «Abrir solo la introducción de disponibilidad» lleva a la página Mi disponibilidad. Este enlace solo aparece en el nivel Experto.
 
+## Mis vuelos
+<!-- page: apps/pilot/mes_vols.html -->
+
+Esta página (barra lateral «Mis vuelos», bajo «Mis misiones»; desde el nivel Tripulación) es el registro de sus vuelos
+pasados, del más reciente al más antiguo, un vuelo por fila. Reúne dos fuentes, sin duplicados (misma fecha, mismo
+indicativo, misma matrícula: prevalece el informe):
+
+- sus informes, en el registro de informes (los que usted ha redactado; se conservan los que no tienen autor
+  anotado);
+- el diario de vuelos de la aerolínea importado del sitio (tarjeta «Registro de vuelos» del Primer arranque), filtrado por su trigrama. Sin trigrama
+  (Ajustes › Mi perfil), solo se listan los informes de este navegador.
+
+En la cabecera: «Período» («Últimos 7 días», «Últimos 31 días», «Últimos 12 meses» —por defecto—, «Todo»), la búsqueda
+(indicativo, tipo, matrícula, aeródromo, misión), «Exportar (CSV)» (la lista mostrada, mismas columnas) y «Análisis
+detallado ↗» (Herramientas › Análisis de misiones). Debajo, los totales: número de vuelos, horas de calzos y los tres
+tipos más volados. El período y la búsqueda se guardan en este navegador.
+
+| Columna | Contenido |
+|---|---|
+| «Fecha» | día del vuelo |
+| «Indicativo» | indicativo del vuelo |
+| «Aeronave» | silueta, matrícula, tipo |
+| «Trayecto» | salida → llegada (OACI) |
+| «Duración» | horas de calzos (si no, de vuelo) |
+| «Misión» | familia, tipo y operación del informe, o misión del diario |
+| «Informe» | n.º del informe (enlace), o «sin informe» |
+
+Un clic en una fila abre su informe; un vuelo «sin informe» despliega su detalle (fuente, hora UTC, aeronave, misión)
+con «Redactar el informe», que abre el informe de la familia ya rellenado: fecha, indicativo, aeronave, matrícula,
+salida y llegada, duración de calzos declarada. Revise, complete y después «Añadir al registro»: el vuelo aparece
+entonces con su informe. Las columnas se ajustan arrastrando el borde de los títulos (doble clic: anchos por defecto).
+Con menos de 800 px de ancho, solo quedan la fecha, el indicativo, el trayecto y la duración; un clic despliega el resto.
+
+También se llega a ella con «Mis vuelos ↗» en Mis misiones (junto a «mostrar también las misiones pasadas») y en el
+menú «Enviar» de un informe.
+
 ## Mi disponibilidad
 <!-- page: apps/pilot/disponibilites.html -->
 

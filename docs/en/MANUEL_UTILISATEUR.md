@@ -282,6 +282,41 @@ The message under the block tells you where the entry went: “Saved to the data
 An existing old hourly grid is imported automatically into the week.
 The “Open the availability entry on its own” link leads to the My availability page. This link only appears at the Expert level.
 
+## My flights
+<!-- page: apps/pilot/mes_vols.html -->
+
+This page (“My flights” in the side bar, under “My missions”; from the Crew level) is the ledger of your past flights,
+from the most recent to the oldest, one flight per row. It brings together two sources, without duplicates (same date,
+same call sign, same registration: the report wins):
+
+- your reports, in the report ledger (those you wrote; those with no recorded author are kept);
+- the airline's flight log imported from the website (“Flight log” card of First run), filtered on your trigram.
+  Without a trigram (Settings › My profile), only the reports of this browser are listed.
+
+At the top: “Period” (“Last 7 days”, “Last 31 days”, “Last 12 months” — the default —, “All”), the search (call sign,
+type, registration, airfield, mission), “Export (CSV)” (the displayed list, same columns) and “Detailed analysis ↗”
+(Tools › Mission analysis). Below, the totals: number of flights, block hours, the three most flown types.
+Period and search are kept in this browser.
+
+| Column | Content |
+|---|---|
+| “Date” | day of the flight |
+| “Call sign” | call sign of the flight |
+| “Aircraft” | silhouette, registration, type |
+| “Route” | departure → arrival (ICAO) |
+| “Duration” | block hours (otherwise flight hours) |
+| “Mission” | family, type and operation of the report, or mission of the flight log |
+| “Report” | report number (link), or “no report” |
+
+A click on a row opens its report (“Open the report”); a flight with “no report” unfolds its detail (source, UTC time,
+aircraft, mission) with “Write the report”, which opens the family report already filled in: date, call sign, aircraft,
+registration, departure and arrival, declared block time. Read it over, complete it, then “Add to ledger”: the flight
+then appears with its report. Columns are set by dragging the edge of the titles (double-click: default widths).
+Below 800 px wide, only the date, call sign, route and duration remain; a click unfolds the rest.
+
+You also get there through “My flights ↗” in My missions (next to “also show past missions”) and in the “Send” menu
+of a report.
+
 ## My availability
 <!-- page: apps/pilot/disponibilites.html -->
 

@@ -294,6 +294,42 @@ Le message sous le bloc indique où la saisie est partie : « Enregistré dans l
 Une ancienne grille horaire existante est importée automatiquement dans la semaine.
 Le lien « Ouvrir la saisie des disponibilités seule » mène à la page Mes disponibilités. Ce lien n'apparaît qu'au niveau Expert.
 
+## Mes vols
+<!-- page: apps/pilot/mes_vols.html -->
+
+Cette page (barre latérale « Mes vols », sous « Mes missions » ; dès le niveau Équipage) est le registre de vos vols
+passés, du plus récent au plus ancien, un vol par ligne. Elle réunit deux sources, sans doublon (même date, même
+indicatif, même immatriculation : le compte rendu l'emporte) :
+
+- vos comptes rendus, dans le registre des CR (ceux que vous avez rédigés ; ceux qui n'ont pas d'auteur noté sont
+  gardés) ;
+- le journal des vols de la compagnie importé du site (carte « Journal des vols » du Premier lancement), filtré sur votre trigramme. Sans trigramme
+  (Paramètres › Mon profil), seuls les comptes rendus de ce navigateur sont listés.
+
+En tête : « Période » (7 ou 31 derniers jours, 12 derniers mois — par défaut —, tout), la recherche (indicatif, type,
+immatriculation, terrain, mission), « Exporter (CSV) » (la liste affichée, mêmes colonnes) et « Analyse détaillée ↗ »
+(Outils › Analyse des missions). Dessous, les totaux : nombre de vols, heures de bloc, les trois types les plus volés.
+Période et recherche sont gardées dans ce navigateur.
+
+| Colonne | Contenu |
+|---|---|
+| « Date » | jour du vol |
+| « Indicatif » | indicatif du vol |
+| « Appareil » | silhouette, immatriculation, type |
+| « Trajet » | départ → arrivée (OACI) |
+| « Durée » | heures de bloc (sinon de vol) |
+| « Mission » | famille, type et opération du CR, ou mission du journal |
+| « CR » | n° du compte rendu (lien), ou « sans CR » |
+
+Un clic sur une ligne ouvre son compte rendu ; un vol « sans CR » déplie son détail (source, heure UTC, appareil,
+mission) avec « Rédiger le CR », qui ouvre le compte rendu de la famille déjà rempli : date, indicatif, appareil,
+immatriculation, départ et arrivée, durée de bloc déclarée. Relisez, complétez, puis « Ajouter au registre » : le vol
+apparaît alors avec son CR. Les colonnes se règlent en glissant le bord des titres (double-clic : largeurs par défaut).
+Sous 800 px de large, seules la date, l'indicatif, le trajet et la durée restent ; un clic déplie le reste.
+
+On y arrive aussi par « Mes vols ↗ » dans Mes missions (à côté de « afficher aussi les missions passées ») et dans le
+menu « Envoyer » d'un compte rendu.
+
 ## Mes disponibilités
 <!-- page: apps/pilot/disponibilites.html -->
 

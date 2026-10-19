@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mes vols</title>
+<link rel="stylesheet" href="../../shared/repository_nav.css?v=0"><link rel="stylesheet" href="../../shared/mission_core/core.css?v=0">
+<script src="../../config/repository_tree?v=0"></script>
+<style>
+  /* largeur : pleine page, marges latérales communes (repository_nav.css, body>main) ; ici le vertical seulement */
+  main.mv-page {
+    margin-top: 18px;
+    margin-bottom: 18px;
+    padding-top: 0;
+    padding-bottom: 48px
+  }
+  .mv-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin: 4px 0 8px
+  }
+  .mv-tools input[type=search] {
+    width: 18em
+  }
+  .mv-tools .mv-spacer {
+    flex: 1
+  }
+  .mv-totals {
+    margin: 0 0 8px
+  }
+  .mv-table {
+    width: 100%;
+    border-collapse: collapse
+  }
+  .mv-table th,
+  .mv-table td {
+    padding: 3px 8px;
+    text-align: left;
+    vertical-align: middle
+  }
+  .mv-table tbody tr.mv-row {
+    cursor: pointer
+  }
+  .mv-table tbody tr.mv-row:hover td {
+    background: color-mix(in srgb, var(--repo-accent, #075ca8) 8%, transparent)
+  }
+  .mv-table td.mv-num {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums
+  }
+  .mv-table .mv-nocr {
+    color: var(--warn, #c78a00);
+    white-space: nowrap
+  }
+  .mv-table tr.mv-detail td {
+    padding: 6px 12px 10px;
+    background: color-mix(in srgb, currentColor 4%, transparent)
+  }
+  .mv-table tr.mv-detail dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 2px 12px;
+    margin: 0 0 6px
+  }
+  .mv-table tr.mv-detail dt {
+    opacity: .7
+  }
+  .mv-table tr.mv-detail dd {
+    margin: 0
+  }
+  .mv-table .eq-name {
+    min-height: 0
+  }
+  /* sous 800 px : date, indicatif, trajet, durée ; le reste dans le détail replié */
+  @media(max-width:800px) {
+    .mv-table th:nth-child(3),
+    .mv-table td:nth-child(3),
+    .mv-table th:nth-child(6),
+    .mv-table td:nth-child(6),
+    .mv-table th:nth-child(7),
+    .mv-table td:nth-child(7) {
+      display: none
+    }
+    .mv-tools input[type=search] {
+      width: 100%
+    }
+  }
+</style>
+</head><body>
+<!-- Mes vols : le registre des vols passés du pilote, du plus récent au plus ancien, un vol par ligne. Sources fusionnées
+     par (date, indicatif, immatriculation) sans doublon : ses comptes rendus (registre des CR, shared/mission_core/
+     ledger.js) et le journal des vols de la compagnie importé du site (shared/mission_core/defa_log.js), filtré sur son
+     trigramme ; d'autres sources (IVAO, VATSIM) s'ajoutent par window.MyFlights.addSource. Un vol du journal sans CR :
+     « Rédiger le CR » ouvre le CR prérempli (même passerelle que l'ordre de mission, ?from=sia). L'analyse globale reste
+     dans Outils › Analyse des missions. -->
+<header class="mc-header"><h1>Mes vols</h1><p>Vos vols passés : comptes rendus et journal de la compagnie</p></header>
+<main class="mv-page mc-reporting">
+<section data-block-id="flights" data-icon="list"><h2>Mes vols</h2>
+  <p class="repo-block-subtitle"></p>
+  <div class="mv-tools">
+    <label><span data-t="period"></span> <select id="mvPeriod"><option value="7"></option><option value="31"></option><option value="365" selected></option><option value="0"></option></select></label>
+    <input id="mvFind" type="search">
+    <span class="mv-spacer"></span>
+    <button type="button" class="secondary" id="mvCsv" data-icon="download"></button>
+    <a id="mvAnalysis" href="../cr/mission_operations_reporting.html"></a>
+  </div>
+  <p class="small mv-totals" id="mvTotals"></p>
+  <div id="mvList"></div>
+</section>
+</main>
+<script src="../../shared/kit.js?v=0"></script>
+<script src="../../shared/repository_nav.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
+<script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/equipment_editor.js?v=0"></script>
+<script src="../../shared/mission_core/vendor/js-yaml.min.js?v=0"></script>
+<script src="../../shared/mission_core/vocab.js?v=0"></script>
+<script src="../../shared/mission_core/model.js?v=0"></script>
+<script src="../../shared/mission_core/ledger.js?v=0"></script>
+<script src="../../shared/mission_core/defa_log.js?v=0"></script>
+<script src="../../shared/table_resize.js?v=0"></script>
+<script>
+(() => {
+  'use strict';
+  const K = window.RepositoryKit,
+    t = K.t,
+    tf = K.tf,
+    esc = K.esc,
+    $ = id => document.getElementById(id);
+  const PROFILE = 'missionReportingConfig:v1', // profil pilote : trigramme
+    VIEW = 'myFlightsView:v1'; // période et recherche gardées dans ce navigateur
+  const TXT = {
+    title: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
+    header: ['Vos vols passés : comptes rendus et journal de la compagnie', 'Your past flights: reports and the airline’s log',
+      'Ihre vergangenen Flüge: Berichte und Flugbuch der Fluggesellschaft', 'Sus vuelos pasados: informes y diario de la aerolínea'
+    ],
+    subtitle: ['Du plus récent au plus ancien ; un clic ouvre le compte rendu, ou le détail d’un vol sans compte rendu.',
+      'Most recent first; a click opens the report, or the details of a flight without a report.',
+      'Neueste zuerst; ein Klick öffnet den Bericht oder die Details eines Flugs ohne Bericht.',
+      'Del más reciente al más antiguo; un clic abre el informe, o el detalle de un vuelo sin informe.'
+    ],
+    period: ['Période', 'Period', 'Zeitraum', 'Período'],
+    p7: ['7 derniers jours', 'Last 7 days', 'Letzte 7 Tage', 'Últimos 7 días'],
+    p31: ['31 derniers jours', 'Last 31 days', 'Letzte 31 Tage', 'Últimos 31 días'],
+    p365: ['12 derniers mois', 'Last 12 months', 'Letzte 12 Monate', 'Últimos 12 meses'],
+    p0: ['Tout', 'All', 'Alle', 'Todo'],
+    find: ['Indicatif, type, immatriculation, terrain, mission…', 'Call sign, type, registration, airfield, mission…',
+      'Rufzeichen, Typ, Kennzeichen, Flugplatz, Mission…', 'Indicativo, tipo, matrícula, aeródromo, misión…'
+    ],
+    csv: ['Exporter (CSV)', 'Export (CSV)', 'Exportieren (CSV)', 'Exportar (CSV)'],
+    analysis: ['Analyse détaillée ↗', 'Detailed analysis ↗', 'Detaillierte Analyse ↗', 'Análisis detallado ↗'],
+    cDate: ['Date', 'Date', 'Datum', 'Fecha'],
+    cCallsign: ['Indicatif', 'Call sign', 'Rufzeichen', 'Indicativo'],
+    cAircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+    cRoute: ['Trajet', 'Route', 'Strecke', 'Trayecto'],
+    cBlock: ['Durée', 'Duration', 'Dauer', 'Duración'],
+    cMission: ['Mission', 'Mission', 'Mission', 'Misión'],
+    cReport: ['CR', 'Report', 'Bericht', 'Informe'],
+    noCr: ['sans CR', 'no report', 'ohne Bericht', 'sin informe'],
+    write: ['Rédiger le CR', 'Write the report', 'Bericht schreiben', 'Redactar el informe'],
+    open: ['Ouvrir le CR', 'Open the report', 'Bericht öffnen', 'Abrir el informe'],
+    srcCr: ['compte rendu (registre des CR)', 'report (report ledger)', 'Bericht (Berichtsregister)', 'informe (registro de informes)'],
+    srcLog: ['journal des vols de la compagnie', 'airline flight log', 'Flugbuch der Fluggesellschaft',
+      'diario de vuelos de la aerolínea'
+    ],
+    dSource: ['Source', 'Source', 'Quelle', 'Fuente'],
+    dTime: ['Heure (UTC)', 'Time (UTC)', 'Zeit (UTC)', 'Hora (UTC)'],
+    dNotes: ['Remarques', 'Remarks', 'Bemerkungen', 'Observaciones'],
+    totals: ['{n} vol(s) · {h} de bloc{types}', '{n} flight(s) · {h} block{types}', '{n} Flug/Flüge · {h} Blockzeit{types}',
+      '{n} vuelo(s) · {h} de calzos{types}'
+    ],
+    empty: ['Aucun vol sur cette période.', 'No flight in this period.', 'Kein Flug in diesem Zeitraum.',
+      'Ningún vuelo en este período.'
+    ],
+    noTri: [
+      'Trigramme non réglé (Paramètres › Mon profil) : seuls les comptes rendus de ce navigateur sont listés, sans le journal de la compagnie.',
+      'Trigram not set (Settings › My profile): only this browser’s reports are listed, without the airline log.',
+      'Trigramm nicht gesetzt (Einstellungen › Mein Profil): nur die Berichte dieses Browsers, ohne Flugbuch der Fluggesellschaft.',
+      'Trigrama no configurado (Ajustes › Mi perfil): solo los informes de este navegador, sin el diario de la aerolínea.'
+    ],
+    loading: ['Chargement…', 'Loading…', 'Wird geladen…', 'Cargando…']
+  };
+  /** Racine de la suite (bandeau commun, sinon deux dossiers au-dessus de la page). */
+  const root = () => window.RepositoryNav?.root || new URL('../../', location.href).href;
+  /** Trigramme du pilote (socle des affectations, sinon profil pilote) ; vide s'il n'est pas réglé. */
+  const trigram = () => String(window.MissionAssignments?.trigram?.() || K.store.json(PROFILE, {})?.trigram || '').trim().toUpperCase();
+  const up = v => String(v ?? '').trim().toUpperCase();
+  /** Clé de rapprochement d'un vol : date, indicatif et immatriculation sans séparateurs. */
+  const keyOf = f => [f.date, up(f.callsign).replace(/[^A-Z0-9]/g, ''), up(f.reg).replace(/[^A-Z0-9]/g, '')].join('|');
+  /** Minutes → « 1:35 ». */
+  const hm = n => n == null ? '—' : `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+
+  // ---- sources : chacune rend des vols { source, date, time, callsign, type, reg, dep, arr, block, mission, family,
+  // crUrl, crId, notes, log } ; window.MyFlights.addSource(nom, fonction asynchrone) en ajoute (IVAO, VATSIM…)
+  const SOURCES = [];
+  /** Comptes rendus du registre (toutes familles) rédigés par le pilote (sans auteur noté : gardés) ; lien ?edit= vers
+   *  la page de CR de la famille (rang parmi les CR de la même famille). */
+  SOURCES.push(['cr', async () => {
+    const L = window.MissionLedger,
+      M = window.MissionModel;
+    if (!L) return [];
+    await L.load().catch(() => null);
+    const all = L.store?.missions || [],
+      tri = trigram(),
+      fams = window.MissionVocab?.families || [];
+    return all.map((m, i) => ({
+      m,
+      index: all.slice(0, i).filter(x => x.family === m.family).length
+    })).filter(({
+      m
+    }) => !tri || !m.metadata?.reportedBy || up(m.metadata.reportedBy) === tri).map(({
+      m,
+      index
+    }) => {
+      const a = (m.aircraft || [])[0] || {},
+        tl = m.timeline || {},
+        nav = m.navigation || {},
+        st = M?.computeStatistics?.(m) || {},
+        fam = fams.find(f => f.id === m.family);
+      return {
+        source: 'cr',
+        date: String(m.metadata?.date || ''),
+        time: tl.offBlock || tl.takeoff || m.metadata?.timeUtc || '',
+        callsign: up(a.callsign || [a.callsignPrefix, a.callsignNumber].filter(Boolean).join(' ')),
+        type: up(a.type),
+        reg: up(a.registration),
+        dep: up(nav.dep || a.baseDeparture),
+        arr: up(a.landingAd || nav.arr || a.baseReturn),
+        block: st.blockMinutes ?? st.flightMinutes ?? null,
+        mission: [m.family, m.subtype, m.metadata?.operationName].filter(Boolean).join(' · '),
+        family: m.family,
+        crId: m.metadata?.missionId || '',
+        crUrl: fam ? `${new URL(`apps/cr/${fam.cr}`, root()).href}?edit=${index}&id=${encodeURIComponent(m.metadata?.missionId || '')}` : '',
+        notes: [m.results?.detail, m.results?.incidents].filter(Boolean).join(' · ')
+      }
+    })
+  }]);
+  /** Journal des vols de la compagnie importé du site (ce navigateur), filtré sur le trigramme du pilote. */
+  SOURCES.push(['log', async () => {
+    const D = window.DefaFlightLog,
+      tri = trigram();
+    if (!D || !tri) return [];
+    return D.records().filter(r => up(r.trigram) === tri).map(r => ({
+      source: 'log',
+      date: r.date,
+      time: r.time,
+      callsign: up(r.callsign),
+      type: up(r.type),
+      reg: up(r.registration),
+      dep: up(r.dep),
+      arr: up(r.arr),
+      block: Number.isFinite(r.durationMin) ? r.durationMin : null,
+      mission: up(r.mission),
+      family: D.familyOf(r),
+      crId: '',
+      crUrl: '',
+      notes: '',
+      log: r
+    }))
+  }]);
+
+  let flights = []; // vols fusionnés, du plus récent au plus ancien
+  /** Lit toutes les sources et fusionne : un vol déjà couvert par un CR (même clé) n'est gardé qu'une fois, le CR. */
+  async function collect() {
+    const lists = await Promise.all(SOURCES.map(([, fn]) => fn().catch(() => [])));
+    const out = new Map();
+    for (const list of lists)
+      for (const f of list) {
+        if (!f.date) continue;
+        const k = keyOf(f),
+          had = out.get(k);
+        if (!had || (had.source !== 'cr' && f.source === 'cr')) out.set(k, f)
+      }
+    flights = [...out.values()].sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+  }
+
+  // ---- vue : période, recherche, totaux, tableau
+  const view = () => ({
+    period: '365',
+    find: '',
+    ...(K.store.json(VIEW, {}) || {})
+  });
+  /** Vols retenus par la période et la recherche. */
+  function shown() {
+    const v = view(),
+      days = +v.period,
+      from = days ? new Date(Date.now() - days * 864e5).toISOString().slice(0, 10) : '',
+      q = up(v.find).split(/\s+/).filter(Boolean);
+    return flights.filter(f => (!from || f.date >= from) && q.every(w => up([f.callsign, f.type, f.reg, f.dep, f.arr, f.mission, f.crId]
+        .join(' '))
+      .includes(w)))
+  }
+  /** Ligne de totaux : vols, heures de bloc, trois types les plus volés. */
+  function totals(list) {
+    const mins = list.reduce((s, f) => s + (f.block || 0), 0),
+      byType = {};
+    list.forEach(f => f.type && (byType[f.type] = (byType[f.type] || 0) + 1));
+    const top = Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} ×${n}`).join(', ');
+    return tf(TXT.totals, {
+      n: list.length,
+      h: hm(mins),
+      types: top ? ` · ${top}` : ''
+    })
+  }
+  /** Cellule « appareil » : cellule commune du socle (silhouette, type, immatriculation), sinon texte. */
+  const aircraftCell = f => window.EquipmentEditor?.nameCell && f.type ? window.EquipmentEditor.nameCell({
+    code: f.type,
+    name: f.reg || f.type
+  }) : esc([f.type, f.reg].filter(Boolean).join(' ') || '—');
+  /** Détail replié d'un vol : source, heure, durée, appareil, mission, remarques ; « Rédiger le CR » / « Ouvrir le CR ». */
+  const detail = f => `<tr class="mv-detail"><td colspan="7"><dl><dt>${esc(t(TXT.dSource))}</dt><dd>${esc(t(f.source === 'cr' ? TXT.srcCr : f.source === 'log' ? TXT.srcLog : [f.source, f.source, f.source, f.source]))}</dd><dt>${esc(t(TXT.dTime))}</dt><dd>${esc(f.time || '—')}</dd><dt>${esc(t(TXT.cAircraft))}</dt><dd>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</dd><dt>${esc(t(TXT.cMission))}</dt><dd>${esc(f.mission || '—')}</dd>${f.notes ? `<dt>${esc(t(TXT.dNotes))}</dt><dd>${esc(f.notes)}</dd>` : ''}</dl>${f.crUrl ? `<a class="mc-button primary" href="${esc(f.crUrl)}">${esc(t(TXT.open))}</a>` : f.log ? `<button type="button" class="primary" data-write>${esc(t(TXT.write))}</button>` : ''}</td></tr>`;
+  let open = null; // clé du vol dont le détail est ouvert
+  function render() {
+    const list = shown(),
+      head = [TXT.cDate, TXT.cCallsign, TXT.cAircraft, TXT.cRoute, TXT.cBlock, TXT.cMission, TXT.cReport];
+    $('mvTotals').textContent = totals(list);
+    if (!trigram()) $('mvTotals').textContent += ` — ${t(TXT.noTri)}`;
+    if (!list.length) {
+      $('mvList').innerHTML = `<p class="mut">${esc(t(TXT.empty))}</p>`;
+      return
+    }
+    $('mvList').innerHTML = `<table class="mv-table"><thead><tr>${head.map(h => `<th>${esc(t(h))}</th>`).join('')}</tr></thead><tbody>${list.map(f => {
+      const k = keyOf(f);
+      return `<tr class="mv-row" data-k="${esc(k)}"><td class="mv-num">${esc(f.date)}</td><td>${esc(f.callsign || '—')}</td><td>${aircraftCell(f)}</td><td class="mv-num">${esc([f.dep, f.arr].filter(Boolean).join(' → ') || '—')}</td><td class="mv-num">${esc(hm(f.block))}</td><td>${esc(f.mission || '—')}</td><td>${f.crUrl ? `<a href="${esc(f.crUrl)}">${esc(f.crId || t(TXT.open))}</a>` : `<span class="mv-nocr">${esc(t(TXT.noCr))}</span>`}</td></tr>${open === k ? detail(f) : ''}`
+    }).join('')}</tbody></table>`;
+    window.TableResize?.attach($('mvList').querySelector('table'), {
+      key: 'myFlightsCols',
+      title: t(['Glisser : largeur de la colonne — double-clic : largeurs par défaut',
+        'Drag: column width — double-click: default widths',
+        'Ziehen: Spaltenbreite — Doppelklick: Standardbreiten', 'Arrastrar: ancho de la columna — doble clic: anchos por defecto'
+      ])
+    })
+  }
+  /** Ouvre le CR prérempli par un vol du journal : même passerelle que l'ordre de mission (siaMissionToCr:v1,
+   *  ?from=sia) — titre, appareil, indicatif, immatriculation, départ et arrivée, date et durée du vol (__flight). */
+  function writeReport(f) {
+    const fam = (window.MissionVocab?.families || []).find(x => x.id === f.family) || (window.MissionVocab?.families || []).find(x => x
+      .id === 'SPECIAL');
+    if (!fam) return;
+    localStorage.setItem('siaMissionToCr:v1', JSON.stringify({
+      title: f.mission || '',
+      origin: f.dep ? {
+        name: `(${f.dep})`
+      } : null,
+      destination: f.arr ? {
+        name: `(${f.arr})`
+      } : null,
+      aircraft: [{
+        type: f.type,
+        callsign: f.callsign,
+        registration: f.reg
+      }],
+      __flight: {
+        date: f.date,
+        time: f.time,
+        blockMinutes: f.block
+      }
+    }));
+    location.href = `${new URL(`apps/cr/${fam.cr}`, root()).href}?from=sia`
+  }
+  /** Export CSV de la liste affichée (mêmes colonnes, « ; », UTF-8 avec BOM pour les tableurs). */
+  function exportCsv() {
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`,
+      rows = [
+        [TXT.cDate, TXT.cCallsign, TXT.cAircraft, TXT.cRoute, TXT.cBlock, TXT.cMission, TXT.cReport].map(r => t(r)),
+        ...shown().map(f => [f.date, f.callsign, [f.type, f.reg].filter(Boolean).join(' '), [f.dep, f.arr].filter(Boolean).join(' → '), f
+          .block == null ? '' : hm(f.block), f.mission, f.crId || t(TXT.noCr)
+        ])
+      ],
+      blob = new Blob(['﻿' + rows.map(r => r.map(q).join(';')).join('\r\n')], {
+        type: 'text/csv;charset=utf-8'
+      }),
+      a = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(blob),
+        download: `mes_vols_${new Date().toISOString().slice(0, 10)}.csv`
+      });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  }
+
+  /** Textes de la page dans la langue courante (écriture seulement si le texte change). */
+  function texts() {
+    const set = (el, v) => el && el.textContent !== v && (el.textContent = v);
+    if (document.title !== t(TXT.title)) document.title = t(TXT.title);
+    set(document.querySelector('header h1'), t(TXT.title));
+    set(document.querySelector('header p'), t(TXT.header));
+    set(document.querySelector('[data-block-id="flights"] h2'), t(TXT.title));
+    set(document.querySelector('[data-block-id="flights"] .repo-block-subtitle'), t(TXT.subtitle));
+    set(document.querySelector('[data-t="period"]'), t(TXT.period));
+    [...$('mvPeriod').options].forEach(o => set(o, t(TXT[`p${o.value}`])));
+    $('mvFind').placeholder = t(TXT.find);
+    set($('mvCsv'), t(TXT.csv));
+    set($('mvAnalysis'), t(TXT.analysis))
+  }
+
+  const v0 = view();
+  $('mvPeriod').value = v0.period;
+  $('mvFind').value = v0.find;
+  /** Garde la période et la recherche, puis redessine. */
+  const keep = () => {
+    K.store.set(VIEW, JSON.stringify({
+      period: $('mvPeriod').value,
+      find: $('mvFind').value
+    }));
+    render()
+  };
+  $('mvPeriod').onchange = keep;
+  $('mvFind').oninput = keep;
+  $('mvCsv').onclick = exportCsv;
+  $('mvList').addEventListener('click', e => {
+    if (e.target.closest('a')) return;
+    const w = e.target.closest('[data-write]');
+    if (w) {
+      const k = w.closest('tr').previousElementSibling?.dataset.k;
+      const f = flights.find(x => keyOf(x) === k);
+      return f && writeReport(f)
+    }
+    const tr = e.target.closest('tr.mv-row');
+    if (!tr) return;
+    const f = flights.find(x => keyOf(x) === tr.dataset.k);
+    if (!f) return;
+    // écran large et CR existant : le CR s'ouvre ; sinon le détail se déplie (écran étroit : colonnes repliées)
+    if (f.crUrl && !matchMedia('(max-width:800px)').matches) return location.href = f.crUrl;
+    open = open === tr.dataset.k ? null : tr.dataset.k;
+    render()
+  });
+  texts();
+  $('mvList').innerHTML = `<p class="mut">${esc(t(TXT.loading))}</p>`;
+  window.addEventListener('repository-language-change', () => {
+    texts();
+    render()
+  });
+  window.EquipmentEditor?.css?.();
+  /** Relit les sources et redessine (ouverture, retour d'un autre onglet, trigramme changé). */
+  const reload = async () => {
+    await collect();
+    render()
+  };
+  window.MyFlights = {
+    /** Ajoute une source de vols (nom, fonction asynchrone rendant des vols au format de la page), puis relit. */
+    addSource(name, fn) {
+      SOURCES.push([name, fn]);
+      return reload()
+    },
+    reload,
+    get flights() {
+      return flights
+    }
+  };
+  window.addEventListener('pilot-profile-change', reload);
+  window.addEventListener('storage', e => ['defaFlightLog:v1', PROFILE].includes(e.key) && reload());
+  reload();
+})();
+</script>
+<script src="../../shared/app_framework.js?v=0"></script>
+</body></html>
