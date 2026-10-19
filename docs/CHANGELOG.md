@@ -68,6 +68,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **SimBrief OFP, json v2: the navlog read as a list** — the "Fetch latest SimBrief FPL" route kept only the airfields and the speed/level group with a json=v2 OFP, whose `navlog` is directly the list of fixes (the reader looked for a `fix` container inside each fix). Checked on a real LFRS → LFML OFP: twelve waypoints, SID and STAR included.
 - **“Open in ▾”: SkyVector now takes the route** (`shared/external_links.js`) — SkyVector resolves each name on its
   own, so pseudo-points of a SimBrief OFP route (`TOC`, `TOD`, `WPT`) were sent to far-away namesakes (Toccoa, USA)
   and airways or procedures were ignored. SkyVector now gets names of 2 to 5 letters and ICAO coordinates

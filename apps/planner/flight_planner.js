@@ -2788,8 +2788,13 @@ function findNavlog(o) {
   // OFP SimBrief (json=1 ou v2) : navlog.fix du plan lui-même, avant toute recherche en profondeur (un bloc antérieur
   // — dégagement, terrains… — pouvait être pris pour le navlog, et la route perdait ses points tournants)
   if (!Array.isArray(o) && o.navlog) {
-    const fixes = [].concat(o.navlog).flatMap(n => Array.isArray(n) ? n : [].concat(n?.fix || n?.waypoint || []));
-    if (fixes.some(f => f && typeof f === "object" && (f.pos_lat != null || f.ident))) return fixes
+    // json=v2 : navlog est DIRECTEMENT la liste des points ({ ident, pos_lat… }) ; json=1 : { fix: [...] } ; un point
+    // n'est jamais un conteneur (l'ancienne lecture cherchait .fix dans chaque point et ne trouvait rien)
+    const isFix = f => f && typeof f === "object" && !Array.isArray(f) && (f.pos_lat != null || f.ident != null),
+      nav = o.navlog,
+      list = Array.isArray(nav) ? nav : [].concat(nav?.fix || nav?.waypoint || []),
+      fixes = list.flatMap(n => Array.isArray(n) ? n : isFix(n) ? [n] : [].concat(n?.fix || n?.waypoint || []));
+    if (fixes.some(isFix)) return fixes
   }
   if (Array.isArray(o) && o.length > 1 && o.some(x => typeof x === "object" && firstNum(x, ["altitude_feet", "altitude", "time_total",
       "fuel_total"
