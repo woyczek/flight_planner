@@ -244,7 +244,7 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
      *  Options du choix d'appareil d'un poste : immatriculation, variante, terrain (« convoyage » s'il diffère
      *  du départ), exploitant si le poste vise un service, indisponibilité ; « autre (saisie)… » : saisie libre.
      */
-    const planeOpts = (sel, post, tri = '') => `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${planesOf(post, tri).map(p => `<option value="${esc(p.registration)}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(adOf(p) || '?')}${post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${adOf(p) && adOf(p) !== departure ? L([' (convoyage)', ' (ferry)', ' (Überführung)', ' (traslado)']) : ''}${p.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}</option>`).join('')}<option value="__other">${L(['autre (saisie)…', 'other (type in)…', 'andere (Eingabe)…', 'otra (introducir)…'])}</option>`;
+    const planeOpts = (sel, post, tri = '') => `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${planesOf(post, tri).map(p => `<option value="${esc(p.registration)}" data-type="${esc(p.type || '')}" ${p.registration === sel ? 'selected' : ''}>${esc(p.registration)} · ${esc(p.variant || p.type)} · ${esc(adOf(p) || '?')}${post?.service && p.operator ? ` · ${esc(p.operator)}` : ''}${adOf(p) && adOf(p) !== departure ? L([' (convoyage)', ' (ferry)', ' (Überführung)', ' (traslado)']) : ''}${p.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}</option>`).join('')}<option value="__other">${L(['autre (saisie)…', 'other (type in)…', 'andere (Eingabe)…', 'otra (introducir)…'])}</option>`;
     /** Redessine les cartes des participants (le vivier dépend de l'heure et des autres pilotes), puis lance check. */
     const draw = () => {
       box.innerHTML = rows.map((r, i) => `<section class="ad-card" data-i="${i}"><h4 class="ad-post">${esc(r.callsign || L(['Équipage {n}', 'Crew {n}', 'Besatzung {n}', 'Tripulación {n}'], { n: i + 1 }))} — ${esc(r.post?.type || r.post?.label || L(['type libre', 'any type', 'beliebiger Typ', 'tipo libre']))}${r.post?.service ? ` · ${esc(r.post.service)}` : ''}</h4>
@@ -253,6 +253,8 @@ dialog.ad-dialog{overflow:hidden;max-height:92vh}dialog.ad-dialog[open]{display:
         <label>${L(['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'])}<input data-r="callsign" value="${esc(r.callsign)}"></label>
         ${i ? `<button type="button" class="repo-plain ad-del" data-del="${i}" title="${L(['Retirer cet équipier', 'Remove this wingman', 'Diesen Flügelmann entfernen', 'Quitar este punto'])}">✕</button>` : ''}</div>
         <div class="ad-ferry" hidden></div><div class="ad-checks"></div></section>`).join('');
+      // choix de l'appareil : sélecteur commun (liste avec recherche ; « autre (saisie)… » garde sa fenêtre de saisie)
+      window.AircraftPicker?.selects(box, 'select[data-r="registration"]');
       check();
     };
     let last = [];

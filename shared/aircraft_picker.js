@@ -26,6 +26,10 @@
  *   equipment_editor.js : 100 code exact … 48 tous les mots dans les noms ; 0 : rien).
  * AircraftPicker.byCategory(items, typeOf) : éléments rangés par catégorie de la suite (AircraftCatalog.classify :
  *   hélicoptères, turbopropulseurs, jets, pistons, autres), libellés traduits.
+ * AircraftPicker.fromSelect(select, options) : un <select> natif montré par le sélecteur (bouton à sa suite, select
+ *   caché qui garde la valeur et émet « change ») ; options, groupes (<optgroup>), entrées désactivées reprises ; une
+ *   option peut porter data-type, data-reg, data-sub, data-note. Select désactivé : bouton désactivé.
+ * AircraftPicker.selects(racine, sélecteur, options) : fromSelect sur chaque select de la racine (après un rendu).
  */
 (() => {
   'use strict';
@@ -335,12 +339,14 @@
         html = `<span class="ap-btn"><span class="ap-ic">${icon}</span><span class="ap-btn-tx">${esc(c?.label || opts.placeholder || t(TXT.choose))}</span><span class="ap-btn-caret">▾</span></span>`;
       if (host.innerHTML !== html) host.innerHTML = html;
       host.title = c?.title || [c?.type, c?.label].filter(Boolean).join(' · ') || t(TXT.choose);
+      if (opts.disabled) host.disabled = !!opts.disabled();
     };
 
     // ---- événements
     if (!field) host.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
+      if (opts.disabled?.()) return;
       openState ? close() : open();
     });
     find.addEventListener('input', () => {
@@ -406,6 +412,7 @@
       if (openState) draw();
     });
     paint();
+    if (opts.disabled) host.disabled = !!opts.disabled();
     const api = {
       /** Clic hors de la liste et de l'hôte : fermée (hôte retiré de la page : fermée aussi). */
       _outside: e => {
@@ -430,8 +437,81 @@
     return api;
   }
 
+  /** Élément du sélecteur pour une option d'un select natif (texte, data-*). */
+  const optionItem = (select, o) => ({
+    key: o.value,
+    label: o.dataset.label || o.textContent.trim(),
+    sub: o.dataset.sub || '',
+    type: o.dataset.type || '',
+    reg: o.dataset.reg || '',
+    note: o.dataset.note || '',
+    disabled: o.disabled,
+    current: select.value === o.value && o.selected,
+    icon: !o.value ? '<span></span>' : o.value.startsWith('__') ? '<span>✎</span>' : undefined
+  });
+  /** Montre un select natif par le sélecteur commun (voir l'en-tête du fichier) ; refait seulement s'il est déjà monté. */
+  function fromSelect(select, opts = {}) {
+    if (!select) return null;
+    if (select._pickerButton?.isConnected) {
+      select._pickerButton._aircraftPicker?.refresh();
+      return select._pickerButton._aircraftPicker;
+    }
+    const btn = Object.assign(document.createElement('button'), {
+      type: 'button',
+      className: `ap-select${opts.className ? ` ${opts.className}` : ''}`
+    });
+    select.after(btn);
+    select.hidden = true;
+    select._pickerButton = btn;
+    const api = attach(btn, {
+      kind: 'button',
+      minWidth: opts.minWidth || 300,
+      disabled: () => select.disabled,
+      sources: () => {
+        const top = {
+            group: '',
+            items: []
+          },
+          groups = [top];
+        [...select.children].forEach(ch => ch.tagName === 'OPTGROUP' ? groups.push({
+          group: ch.label,
+          items: [...ch.children].map(o => optionItem(select, o))
+        }) : top.items.push(optionItem(select, ch)));
+        return groups;
+      },
+      current: () => {
+        const o = select.selectedOptions[0];
+        return o ? {
+          label: o.dataset.label || o.textContent.trim(),
+          type: o.dataset.type || '',
+          icon: !o.value ? '<span></span>' : o.value.startsWith('__') ? '<span>✎</span>' : undefined
+        } : null;
+      },
+      onPick: it => {
+        if (select.value !== it.key) {
+          select.value = it.key;
+          select.dispatchEvent(new Event('change', {
+            bubbles: true
+          }));
+        }
+        btn._aircraftPicker?.refresh();
+      },
+      ...opts.picker
+    });
+    // select désactivé ou réactivé par la page : bouton suivi
+    new MutationObserver(() => api.refresh()).observe(select, {
+      attributes: true,
+      attributeFilter: ['disabled']
+    });
+    return api;
+  }
+  /** fromSelect sur chaque select de la racine répondant au sélecteur CSS. */
+  const selects = (root, selector, opts) => [...(root?.querySelectorAll(selector) || [])].map(s => fromSelect(s, opts));
+
   window.AircraftPicker = {
     attach,
+    fromSelect,
+    selects,
     match,
     byCategory,
     norm,

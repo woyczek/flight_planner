@@ -41,6 +41,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   The component keeps one set of document listeners for all pickers and puts its list in the page only while open; a
   field opened by a click shows the whole list with its value highlighted; new options `limit`, `openOnClick`,
   `filter: false`, `activeFirst: false`, `hideEmpty` (docs/technique/FRAMEWORK.md).
+  - Centre: the aircraft of a post in the assignment window (`AssignDialog`), the ODV planning matrix and the
+    aircraft table of a flight in the flight orders, through `AircraftPicker.fromSelect` (a native `<select>` shown by
+    the picker: options, groups, disabled entries with their reason — "already taken", "unavailable" —, the hidden
+    select keeps its value and `change` events; "other (type in)…" keeps its entry window). `planeOptions`
+    (odv_orders.js), never called, is removed.
 
 ## [5.3.0] — 2026-10-19
 

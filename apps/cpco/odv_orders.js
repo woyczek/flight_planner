@@ -2129,6 +2129,8 @@
       d.close('cancel');
     });
     if (!S.editable) d.querySelectorAll('input,select,textarea').forEach(x => (x.disabled = true));
+    // appareils du vol : sélecteur commun (« type seul », immatriculations triées par convoyage, « déjà pris » grisés)
+    window.AircraftPicker?.selects(d.querySelector('.odvo-av-wrap'), 'select[name^="a"]');
     d.showModal();
     return d;
   }
@@ -2302,6 +2304,7 @@
       // choix de l'ODV (fenêtre d'affectation, sans écriture) dont le résultat remplit celle-ci
       avionsTable(e, v).then(html => {
         d.querySelector('.odvo-av-wrap').innerHTML = html;
+        window.AircraftPicker?.selects(d.querySelector('.odvo-av-wrap'), 'select[name^="a"]');
         if (m) chooseInOdv(d, e, m);
       });
     });
@@ -2388,7 +2391,7 @@
       const v = `${typeCode(x.type)}|${x.registration}`;
       const where = !dep ? adOf(x) : fm === 0 ? t(L4('sur place', 'on site', 'vor Ort', 'en el sitio')) : fm == null ? `${adOf(x)} — ${t(L4('distance inconnue', 'distance unknown', 'Entfernung unbekannt', 'distancia desconocida'))}` : `${adOf(x)} — ${t(L4('convoyage', 'ferry', 'Überführung', 'traslado'))} ${fmtMin(fm)}`;
       const busy = taken.has(x.registration) && v !== curV;
-      return `<option value="${esc(v)}"${v === curV ? ' selected' : ''}${busy ? ' disabled' : ''}>${esc(`${x.registration} · ${x.variant || x.type} · ${where}${x.operational === false ? ' · ' + t(L4('non opérationnel', 'not operational', 'nicht einsatzbereit', 'no operativo')) : ''}${busy ? ' · ' + t(L4('déjà pris', 'already taken', 'schon belegt', 'ya ocupado')) : ''}`)}</option>`;
+      return `<option value="${esc(v)}" data-type="${esc(typeCode(x.type))}"${v === curV ? ' selected' : ''}${busy ? ' disabled' : ''}>${esc(`${x.registration} · ${x.variant || x.type} · ${where}${x.operational === false ? ' · ' + t(L4('non opérationnel', 'not operational', 'nicht einsatzbereit', 'no operativo')) : ''}${busy ? ' · ' + t(L4('déjà pris', 'already taken', 'schon belegt', 'ya ocupado')) : ''}`)}</option>`;
     }).join('')}`;
   }
   /** Tableau des avions d'un vol : une ligne par poste de la mission (équipier : indicatif suivant), deux places au moins,
@@ -2542,16 +2545,6 @@
     recompute();
     render();
     queueSave();
-  }
-  /** Appareils proposés pour une place : appareils de la flotte du type de la mission d'abord, puis les autres. */
-  function planeOptions(e, a) {
-    const want = typeCode(ownTeam(reg(e.mission)).type);
-    const curV = a?.appareil ? `${a.appareil.type}|${a.appareil.immat || ''}` : want ? `${want}|` : '';
-    const fleet = [...(window.DEFA_FLEET || [])].filter(f => f.operational !== false).sort((x, y) => (typeCode(y.type) === want) - (
-      typeCode(x.type) === want) || String(x.type).localeCompare(String(y.type)) || String(x.registration).localeCompare(String(y
-      .registration)));
-    const types = [...new Set([want, a?.appareil?.type, ...fleet.map(f => typeCode(f.type))].filter(Boolean))];
-    return `<option value="">—</option>${types.map(ty => opt(`${ty}|`, curV, `${ty}${ty === want ? ' ★' : ''}`)).join('')}${fleet.map(f => opt(`${typeCode(f.type)}|${f.registration}`, curV, `${f.registration} · ${f.variant || f.type}${adOf(f) ? ' · ' + adOf(f) : ''}${typeCode(f.type) === want ? ' ★' : ''}`)).join('')}`;
   }
   // ---- DLO permanentes par membre et butées (data/odv/dlo.json)
   const openDlo = tri => (S.dlo?.membres?.[tri] || []).filter(x => x.etat === 'a_faire');
@@ -2959,6 +2952,7 @@
           if (r.pilot && ![...ps.options].some(o => o.value === r.pilot)) ps.add(new Option(r.pilot, r.pilot));
           ps.value = r.pilot || '';
         });
+        window.AircraftPicker?.selects(d.querySelector('.odvo-av-wrap'), 'select[name^="a"]'); // boutons des appareils suivis
         const ind = d.querySelector('[name=indicatif]');
         if (rows[0]?.callsign) ind.value = rows[0].callsign;
         if (Number.isFinite(extra.takeoff)) d.querySelector('[name=debut]').value = new Date(extra.takeoff).toISOString().slice(
