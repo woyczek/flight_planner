@@ -251,7 +251,7 @@ Risques : un par ligne, colonnes séparées par une tabulation (copie d'un table
 ### Toutes les données YAML
 
 Bloc du niveau Expert, masqué par défaut : cliquez « Afficher » dans son en-tête.
-- Éditeur sans schéma imposé : chaque clé du YAML est modifiable, les champs inconnus sont conservés.
+- Éditeur sans schéma imposé : chaque clé du YAML est modifiable, les champs inconnus sont conservés. Le type d'un appareil propose la base des types (liste déroulante avec recherche).
 - Listes : « Ajouter un élément », × pour retirer un élément.
 - « Nom d'un nouveau champ racine » puis « Ajouter » crée une clé de premier niveau.
 

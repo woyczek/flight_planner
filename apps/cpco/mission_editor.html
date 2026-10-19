@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="../../shared/repository_nav.css?v=0">
 <script src="../../config/repository_tree?v=0"></script><script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/callsigns.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script><script src="../../shared/point_table.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
+<script src="mission_prompt.js?v=0"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/callsigns.js"></script><script src="../../shared/mission_order.js?v=0"></script><script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script><script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/mission_core/model.js?v=0"></script><script src="../../shared/mission_estimate.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script><script src="../../shared/place_search.js?v=0"></script><script src="../../shared/point_table.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_airspaces.js?v=0"></script><script src="../../shared/mission_exercise.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
 <script src="mission_store.js?v=0"></script><script src="mission_skeleton.js?v=0"></script><script src="mission_guide.js?v=0"></script>
 <script src="../../shared/aar_tracks.js?v=0"></script>
 <script src="../../shared/mission_core/vocab.js?v=0"></script>
@@ -3424,12 +3424,14 @@ function yamlFieldExtra(path, key) {
     ]);
     return ` data-place-name list="yamlPlaceList" autocomplete="off" title="${esc(base)}"`
   }
+  if (top === 'aircraft' && key === 'type' && path.length === 3) return ' data-aircraft-type autocomplete="off"'; // liste des types
   if (top === 'aircraft' && key === 'callsign' && path.length === 3) return ` data-callsign-for="${path[1]}" list="yamlCallsignList" autocomplete="off" title="${esc(trl(['Indicatifs proposés depuis la flotte pour ce type ; le nom de l’équipe suit l’indicatif.', 'Callsigns suggested from the fleet for this type; the team name follows the callsign.', 'Rufzeichen aus der Flotte für diesen Typ vorgeschlagen; der Teamname folgt dem Rufzeichen.', 'Indicativos propuestos desde la flota para este tipo; el nombre del equipo sigue al indicativo.']))}"`;
   return ''
 }
 // éditeur YAML : suggestions de lieux (PlaceSearch) et d'indicatifs à l'entrée dans le champ
 $('yamlEditor').addEventListener('focusin', e => {
   const t = e.target;
+  if (t.matches('[data-aircraft-type]')) window.AircraftPicker?.typeField(t); // type OACI : sélecteur commun
   if (t.matches('[data-place-name]') && window.PlaceSearch) PlaceSearch.attach(t, $('yamlPlaceList'), p => {
     const path = JSON.parse(t.dataset.path).slice(0, -1),
       o = getPath(state.yaml, path);

@@ -377,7 +377,7 @@ As long as none of these operations has taken place, the journal is empty.
 
 ### fleet (known aircraft)
 
-This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Home base”, “Operational”.
+This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Home base”, “Operational”. “ICAO type” offers the type base (a drop-down list with search, by code or model name); free entry is still possible.
 - **“Paste the website Fleet page…”**:
   1. open the “Virtual fleet” page of the airline's website (link in the window);
   2. press Ctrl+A then Ctrl+C, and paste into the area (Ctrl+V); you can also use “Read the clipboard” or “or saved page…”;

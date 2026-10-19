@@ -12,7 +12,7 @@ on every page. This document describes each component, its role and its interfac
 | Appearance (designs, icons, side bar, colours) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | all pages; settings on the “Appearance” page |
 | Resizable columns | `shared/column_resize.js` | Planner |
 | Resizable table columns, clipped cells | `shared/table_resize.js` | Planner (RPM / power table) |
-| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button), Performance sheets (“Aircraft” selector), mission report (registration, ICAO type), My aircraft and “Add an aircraft”, Landing Performance, vertical profile of the maps (`SiaProfile.aircraftChoice`), Centre (assignment window, ODV planning, flight orders: `fromSelect`) |
+| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button), Performance sheets (“Aircraft” selector), mission report (registration, ICAO type), My aircraft and “Add an aircraft”, Landing Performance, vertical profile of the maps (`SiaProfile.aircraftChoice`), Centre (assignment window, ODV planning, flight orders: `fromSelect`), free ICAO type fields (Fleet base, YAML tree, AAR receivers: `typeField`) |
 | Blocks (move / hide) | `shared/app_framework.js` | all pages |
 | Text translation | `shared/content_i18n.js` | CR, Planner, reporting pages |
 | Pilot profile | `shared/pilot_profile.js` | all pages (☰ menu) |
@@ -252,6 +252,10 @@ select hidden: it keeps the value and fires `change`): options, `<optgroup>` gro
 over; an option may carry `data-type`, `data-reg`, `data-sub`, `data-note`; a disabled select disables the button.
 `AircraftPicker.selects(root, selector)` applies it to every matching select after a render (a second call only
 refreshes).
+
+`AircraftPicker.typeField(input, { extra })` helps a free ICAO type field (field mode): the catalogue's type base
+(`AircraftCatalog.typesDb`) by category, searched by code and model name, `extra()` values (already entered) first; a
+choice is an entry (`input` then `change`), free entry stays possible.
 
 Search: `AircraftPicker.match(keys, text, code)` is the suite's single scoring engine (100 exact code, 95 exact key,
 85 exact word, 72 code prefix, 68 key prefix, 55 key contains, 48 every word in the keys), also used by

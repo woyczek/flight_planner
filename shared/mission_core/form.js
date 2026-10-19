@@ -478,6 +478,10 @@
       const path = el.dataset.path || el.dataset.append,
         field = fieldsByPath.get(path) || {};
       if (el.dataset.path && PICKED.test(path) && window.AircraftPicker) return pickerFor(el, path, field);
+      // type OACI en texte libre (champ marqué aircraftType : ravitaillés AAR…) : base des types et valeurs déjà saisies
+      if (field.aircraftType && window.AircraftPicker) return window.AircraftPicker.typeField(el, {
+        extra: () => suggest(path, field, '', false)
+      });
       const list = form.querySelector('#mc-suggest');
       if (!list) return;
       const token = offering = {};

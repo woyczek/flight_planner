@@ -187,7 +187,7 @@ Risiken: eines pro Zeile, Spalten getrennt durch Tabulator (eingefügte Tabelle)
 ### Alle YAML-Daten
 
 Block der Stufe Experte, standardmäßig ausgeblendet: Klicken Sie in seinem Kopf auf „Anzeigen“.
-- Editor ohne vorgegebenes Schema: Jeder Schlüssel des YAML ist änderbar, unbekannte Felder bleiben erhalten.
+- Editor ohne vorgegebenes Schema: Jeder Schlüssel des YAML ist änderbar, unbekannte Felder bleiben erhalten. Der Typ eines Luftfahrzeugs schlägt die Typbasis vor (Auswahlliste mit Suche).
 - Listen: „Element hinzufügen“, × zum Entfernen eines Elements.
 - „Name eines neuen Stammfelds“ und dann „Hinzufügen“ legt einen Schlüssel der ersten Ebene an.
 

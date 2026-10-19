@@ -188,7 +188,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (col.type === 'bool') return `<input type="checkbox" ${attrs}${v ? ' checked' : ''}>`;
       if (col.type === 'select') return `<select ${attrs}>${['', ...optionsOf(col)].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !optionsOf(col).includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
       const value = col.type === 'list' ? (v || []).join(', ') : v ?? '';
-      return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
+      return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs}${col.aircraftType ? ' data-aircraft-type autocomplete="off"' : ''} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
     };
 
     /** Redessine le tableau : lignes filtrées (texte de toutes les colonnes) et triées sur la colonne choisie. */
@@ -258,6 +258,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         paint();
       });
     }
+    // type OACI d'un appareil : liste des types (sélecteur commun), montée à la première prise de focus
+    host.addEventListener('focusin', event => {
+      if (event.target.matches?.('[data-aircraft-type]')) window.AircraftPicker?.typeField(event.target);
+    });
     host.addEventListener('change', event => {
       const el = event.target,
         index = el.dataset?.row;
@@ -631,7 +635,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }, {
           key: 'type',
           label: T('Type OACI', 'ICAO type'),
-          upper: true
+          upper: true,
+          aircraftType: true // liste des types (sélecteur commun)
         }, {
           key: 'variant',
           label: T('Variante', 'Variant')

@@ -30,6 +30,9 @@
  *   caché qui garde la valeur et émet « change ») ; options, groupes (<optgroup>), entrées désactivées reprises ; une
  *   option peut porter data-type, data-reg, data-sub, data-note. Select désactivé : bouton désactivé.
  * AircraftPicker.selects(racine, sélecteur, options) : fromSelect sur chaque select de la racine (après un rendu).
+ * AircraftPicker.typeField(champ, { extra }) : champ de type OACI en texte libre aidé (mode champ) : base des types du
+ *   catalogue (AircraftCatalog.typesDb) par catégorie, recherche sur le code et le nom du modèle ; extra() : valeurs
+ *   déjà saisies, groupe en tête ; un choix est une saisie (input puis change), la saisie libre reste possible.
  */
 (() => {
   'use strict';
@@ -505,6 +508,47 @@
     });
     return api;
   }
+  /** Types de la base du catalogue (code, nom du modèle), triés par code. */
+  const typeItems = () => {
+    const db = window.AircraftCatalog?.typesDb?.() || window.AIRCRAFT_DB || {};
+    return Object.keys(db).filter(k => !k.startsWith('__') && /^[A-Z][A-Z0-9]{1,3}$/.test(k)).sort().map(code => ({
+      key: code,
+      label: code,
+      sub: db[code]?.model || '',
+      type: code
+    }));
+  };
+  /** Champ de type OACI aidé (voir l'en-tête du fichier) ; une fois par champ. */
+  function typeField(input, opts = {}) {
+    if (!input || input._aircraftPicker) return input?._aircraftPicker || null;
+    input.removeAttribute('list');
+    return attach(input, {
+      kind: 'field',
+      openOnClick: true,
+      limit: 150,
+      sources: () => Promise.resolve(opts.extra?.() || []).then(extra => {
+        const seen = [...new Set((extra || []).map(v => String(v?.value ?? v ?? '').trim().toUpperCase()).filter(Boolean))];
+        return [...(seen.length ? [{
+          group: t(['Déjà saisis', 'Already entered', 'Bereits eingetragen', 'Ya introducidos']),
+          items: seen.map(code => ({
+            key: code,
+            label: code,
+            sub: window.AircraftCatalog?.record?.(code)?.model || '',
+            type: code
+          }))
+        }] : []), ...byCategory(typeItems())];
+      }),
+      onPick: it => {
+        input.value = it.key;
+        input.dispatchEvent(new Event('input', {
+          bubbles: true
+        }));
+        input.dispatchEvent(new Event('change', {
+          bubbles: true
+        }));
+      }
+    });
+  }
   /** fromSelect sur chaque select de la racine répondant au sélecteur CSS. */
   const selects = (root, selector, opts) => [...(root?.querySelectorAll(selector) || [])].map(s => fromSelect(s, opts));
 
@@ -512,6 +556,7 @@
     attach,
     fromSelect,
     selects,
+    typeField,
     match,
     byCategory,
     norm,

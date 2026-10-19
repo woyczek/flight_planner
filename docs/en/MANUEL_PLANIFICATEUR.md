@@ -186,7 +186,7 @@ Risks: one per line, columns separated by a tab (pasted table), “—”, “|�
 ### All YAML data
 
 Expert level block, hidden by default: click “Show” in its header.
-- Editor without an enforced schema: every YAML key can be edited, unknown fields are kept.
+- Editor without an enforced schema: every YAML key can be edited, unknown fields are kept. An aircraft's type offers the type base (a drop-down list with search).
 - Lists: “Add an item”, × to remove an item.
 - “Name of a new root field” then “Add” creates a top-level key.
 

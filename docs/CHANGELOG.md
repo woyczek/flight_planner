@@ -46,6 +46,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
     the picker: options, groups, disabled entries with their reason — "already taken", "unavailable" —, the hidden
     select keeps its value and `change` events; "other (type in)…" keeps its entry window). `planeOptions`
     (odv_orders.js), never called, is removed.
+  - free ICAO type fields: the Fleet base (Settings › Centre), an aircraft's type in the mission editor's YAML tree and
+    the AAR receivers' type, through `AircraftPicker.typeField` (the catalogue's type base by category, values
+    already entered first, free entry kept).
 
 ## [5.3.0] — 2026-10-19
 

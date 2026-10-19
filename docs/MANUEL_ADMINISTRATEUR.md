@@ -410,7 +410,7 @@ Tant qu'aucune de ces opérations n'a eu lieu, le journal est vide.
 
 ### Flotte (appareils connus)
 
-Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Terrain de base », « Opérationnel ».
+Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Terrain de base », « Opérationnel ». Le « Type OACI » propose la base des types (liste déroulante avec recherche, par le code ou le nom du modèle) ; une saisie libre reste possible.
 - **« Coller la page Flotte du site… »** :
   1. ouvrez la page « Flotte virtuelle » du site de la compagnie (lien dans la fenêtre) ;
   2. faites Ctrl+A puis Ctrl+C, et collez dans la zone (Ctrl+V) ; vous pouvez aussi utiliser « Lire le presse-papiers » ou « ou page enregistrée… » ;

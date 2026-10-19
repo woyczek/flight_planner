@@ -187,7 +187,7 @@ Riesgos: uno por línea, columnas separadas por un tabulador (tabla pegada), «�
 ### Todos los datos YAML
 
 Bloque del nivel Experto, oculto por defecto: haga clic en «Mostrar» en su cabecera.
-- Editor sin esquema impuesto: cada clave del YAML se puede modificar y los campos desconocidos se conservan.
+- Editor sin esquema impuesto: cada clave del YAML se puede modificar y los campos desconocidos se conservan. El tipo de una aeronave propone la base de tipos (lista desplegable con búsqueda).
 - Listas: «Añadir un elemento», × para quitar un elemento.
 - «Nombre de un nuevo campo raíz» y después «Añadir» crea una clave de primer nivel.
 

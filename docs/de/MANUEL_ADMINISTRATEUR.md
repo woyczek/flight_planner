@@ -379,7 +379,7 @@ Solange keiner dieser Vorgänge stattgefunden hat, ist das Protokoll leer.
 
 ### Flotte (bekannte Flugzeuge)
 
-Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichten angebotenen Flugzeuge: „Betreiber“, „ICAO-Muster“, „Variante“, „Kennzeichen“, „Code“, „Nummer“, „Rufzeichen“ (durch Kommas getrennt), „Heimatflugplatz“, „Einsatzbereit“.
+Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichten angebotenen Flugzeuge: „Betreiber“, „ICAO-Muster“, „Variante“, „Kennzeichen“, „Code“, „Nummer“, „Rufzeichen“ (durch Kommas getrennt), „Heimatflugplatz“, „Einsatzbereit“. „ICAO-Muster“ schlägt die Typbasis vor (Auswahlliste mit Suche, nach Code oder Modellname); freie Eingabe bleibt möglich.
 - **„Flottenseite der Website einfügen…“**:
   1. Öffnen Sie die Seite „Virtuelle Flotte“ der Website der Gesellschaft (Link im Fenster);
   2. drücken Sie Strg+A und dann Strg+C, und fügen Sie in das Feld ein (Strg+V); Sie können auch „Zwischenablage lesen“ oder „oder gespeicherte Seite…“ verwenden;
