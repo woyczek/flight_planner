@@ -713,8 +713,9 @@ opens the step and takes you there):
 
 Each step folds by its title, which gives its state: “✓” when the essentials are there (Flight: aircraft, take-off and
 landing, crew, fuel at departure and at landing; Mission: at least one field filled in each block of the family;
-Result: the result chosen), otherwise “to complete”. The other blocks (navigation, weather, events, legs,
-capabilities) follow the steps at level 3.
+Result: the result chosen), otherwise “to complete”. A fourth step, **Flight details**, folded, gathers the other
+blocks: Navigation, Environment / weather, Timed events, Legs / rotations, Capabilities; opened, it shows them at every
+level (it replaces the former “Detailed report”), each summed up on one line with its badge, “Edit” for its fields.
 
 **Summaries.** A block whose essentials are filled in fits on one line: Identification (date · operation ·
 organisation), Aircraft (“MILAN74 · DH8D F-ZBMD”), Timeline (“block 13:07 → 15:13, flight 13:21 → 15:02”, with the

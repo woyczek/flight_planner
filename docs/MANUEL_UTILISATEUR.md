@@ -747,8 +747,10 @@ dans un reporting ou une fiche (la mission s'ouvre alors en modification).
 
 Chaque étape se replie par son titre, qui dit son état : « ✓ » quand l'essentiel est là (Vol : appareil, décollage et
 atterrissage, équipage, carburant au départ et à l'atterrissage ; Mission : au moins un champ rempli dans chaque bloc
-de la famille ; Résultat : le résultat choisi), sinon « à compléter ». Les autres blocs (navigation, météo, événements,
-étapes, capacités) suivent les étapes au niveau 3.
+de la famille ; Résultat : le résultat choisi), sinon « à compléter ». Une quatrième étape, **Détails du vol**, repliée,
+rassemble les autres blocs : Navigation, Environnement / météo, Événements horodatés, Étapes / rotations, Capacités ;
+ouverte, elle les montre à tous les niveaux (c'est l'ancien « CR détaillé »), chacun résumé en une ligne avec sa
+pastille, « Modifier » pour ses champs.
 
 **Les résumés.** Un bloc dont l'essentiel est rempli tient en une ligne : Identification (date · opération ·
 organisme), Appareil(s) (« MILAN74 · DH8D F-ZBMD »), Chronologie (« bloc 13:07 → 15:13, vol 13:21 → 15:02 », avec le

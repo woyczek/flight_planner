@@ -184,6 +184,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Mission report: fourth step "Flight details"** (`shared/mission_core/core.js`, `core.css`) — folded by default, it
+  gathers Navigation, Environment / weather, Timed events, Legs / rotations and Capabilities; opened, it shows them at
+  every level (it replaces the former "Detailed report"), each block summed up on one line (first filled values) with
+  its provenance badge and "Edit".
 - **Mission report: the form in steps, with block summaries** (`shared/mission_core/core.js`, `core.css`) — the form
   reads in three steps, "1 Flight · 2 Mission · 3 Result" (progress bar at the top, each step folds by its title, which
   says "✓" or "to complete"): Flight = Identification, Aircraft, Timeline, Crew, Fuel (and Network track from level 3);

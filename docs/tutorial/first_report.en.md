@@ -66,7 +66,7 @@ them.
   report. The “now” button next to a field sets the current time. An inconsistent time is highlighted and listed
   under the calculations.
 - **Fuel**: at departure and at landing.
-- **“Navigation”** (detailed report): departure, arrival, route; a pasted flight plan fills them.
+- **“Navigation”** (“Flight details” step, folded): departure, arrival, route; a pasted flight plan fills them.
 
 Durations (block, flight, on station) and the fuel used are computed by themselves in “Automatic calculations”.
 

@@ -66,7 +66,7 @@ comme avant, « Remplacer les champs déjà saisis » réapplique la source en l
   moteurs en CR court ; le bouton « maintenant » à côté d'un champ met l'heure courante. Une heure incohérente est
   surlignée et listée sous les calculs.
 - **Carburant** : au départ et à l'atterrissage.
-- **« Navigation »** (CR détaillé) : départ, arrivée, route ; un plan de vol collé les remplit.
+- **« Navigation »** (étape « Détails du vol », repliée) : départ, arrivée, route ; un plan de vol collé les remplit.
 
 Les durées (bloc, vol, sur zone) et le carburant consommé se calculent seuls dans « Calculs automatiques ».
 

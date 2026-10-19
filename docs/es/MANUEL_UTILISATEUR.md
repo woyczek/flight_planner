@@ -715,8 +715,10 @@ superior (un clic abre la etapa y lleva a ella):
 
 Cada etapa se pliega por su título, que indica su estado: «✓» cuando lo esencial está ahí (Vuelo: aeronave, despegue y
 aterrizaje, tripulación, combustible a la salida y al aterrizaje; Misión: al menos un campo rellenado en cada bloque
-de la familia; Resultado: el resultado elegido); si no, «por completar». Los demás bloques (navegación, meteorología,
-eventos, tramos, capacidades) siguen a las etapas en el nivel 3.
+de la familia; Resultado: el resultado elegido); si no, «por completar». Una cuarta etapa, **Detalles del vuelo**,
+plegada, reúne los demás bloques: Navegación, Entorno / meteorología, Eventos con hora, Tramos / rotaciones,
+Capacidades; abierta, los muestra en todos los niveles (sustituye al antiguo «Informe detallado»), cada uno resumido en
+una línea con su insignia, «Modificar» para sus campos.
 
 **Los resúmenes.** Un bloque cuyo contenido esencial está rellenado cabe en una línea: Identificación (fecha · operación ·
 organismo), Aeronave(s) («MILAN74 · DH8D F-ZBMD»), Cronología («calzos 13:07 → 15:13, vuelo 13:21 → 15:02», con el

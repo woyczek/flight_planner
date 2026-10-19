@@ -157,6 +157,7 @@
     stepFlight: L('Vol', 'Flight', 'Flug', 'Vuelo'),
     stepMission: L('Mission', 'Mission', 'Mission', 'Misión'),
     stepResult: L('Résultat', 'Result', 'Ergebnis', 'Resultado'),
+    stepDetails: L('Détails du vol', 'Flight details', 'Flugdetails', 'Detalles del vuelo'),
     stepTodo: L('à compléter', 'to complete', 'zu ergänzen', 'por completar'),
     sumEdit: L('Modifier', 'Edit', 'Bearbeiten', 'Modificar'),
     sumFold: L('Résumé', 'Summary', 'Zusammenfassung', 'Resumen'),
@@ -381,16 +382,6 @@
     render: L('Générer / actualiser le CR', 'Generate / refresh report', 'Bericht erzeugen / aktualisieren',
       'Generar / actualizar el informe'),
     print: L('PDF / Imprimer', 'PDF / Print', 'PDF / Drucken', 'PDF / Imprimir'),
-    // CR court (niveaux 1-2) / CR détaillé : bouton de la barre d'outils (data-max-level="2")
-    detailShow: L('CR détaillé', 'Detailed report', 'Ausführlicher Bericht', 'Informe detallado'),
-    detailShowTitle: L('Afficher tout le formulaire (blocs et champs des niveaux 3-4), sans changer de niveau d’utilisation',
-      'Show the whole form (blocks and fields of levels 3-4), without changing the usage level',
-      'Das ganze Formular anzeigen (Blöcke und Felder der Stufen 3-4), ohne die Nutzungsstufe zu ändern',
-      'Mostrar todo el formulario (bloques y campos de los niveles 3-4), sin cambiar el nivel de uso'),
-    detailHide: L('CR court', 'Short report', 'Kurzer Bericht', 'Informe breve'),
-    detailHideTitle: L('Revenir au formulaire court : champs essentiels du compte rendu',
-      'Back to the short form: essential report fields', 'Zurück zum kurzen Formular: wesentliche Berichtsfelder',
-      'Volver al formulario breve: campos esenciales del informe'),
     leave: L('La mission n’a pas été enregistrée dans le registre. Quitter quand même ?',
       'The mission has not been saved to the ledger. Leave anyway?',
       'Der Einsatz wurde nicht im Register gespeichert. Trotzdem verlassen?',
@@ -798,15 +789,16 @@
     // de la page et du brouillon (clé à part), jamais dans le registre ; pastille dans le titre des blocs touchés.
     let origins = {};
     // Étapes du formulaire (présentation seulement : modèle et registre inchangés) : 1 Vol (les faits, surtout
-    // préremplis : résumés), 2 Mission (tâche et blocs de la famille), 3 Résultat ; les autres blocs à la suite.
+    // préremplis : résumés), 2 Mission (tâche et blocs de la famille), 3 Résultat, 4 Détails du vol (repliée ; ouverte,
+    // elle montre ses blocs à tous les niveaux : c'est l'ancien « CR détaillé » ; chaque bloc y est résumé).
     // Étapes en <div> (hors du framework des blocs), reposées après chaque rendu (arrangeSteps) ; états gardés ici.
     const STEPS = [
       ['flight', 'stepFlight', ['identification', 'aircraft', 'timeline', 'crew', 'fuel', 'network']],
       ['mission', 'stepMission', ['tasking', '__family__']],
       ['result', 'stepResult', ['results']],
-      ['more', '', null]
+      ['details', 'stepDetails', ['navigation', 'environment', 'events', 'legs', 'capabilities']]
     ];
-    const stepOpen = {}, // étape → false si repliée (ouverte par défaut)
+    const stepOpen = {}, // étape → ouverte ou non (par défaut : ouverte, sauf « Détails du vol »)
       blockOpen = {}, // bloc → true : champs affichés (« Modifier »), false : résumé demandé ; absent : selon ses champs clés
       blockAll = new Set(); // blocs dont « Tous les champs » est affiché (niveaux 1-2)
     // Valeurs remplies automatiquement (appareil connu, plan de vol, météo…) : texte simple en
@@ -1383,8 +1375,15 @@
     /** Niveau d'utilisation de la page (1 à 4). */
     const pageLevel = () => +document.documentElement.dataset.level || 4;
     /** Étape d'un bloc (identifiant sans « mc- ») ; blocs de la famille : étape « mission ». */
-    const stepOf = id => STEPS.find(([, , ids]) => ids && (ids.includes(id) || (ids.includes('__family__') && family.blocks.some(b =>
-      b.id === id))))?.[0] || 'more';
+    const stepOf = id => STEPS.find(([, , ids]) => ids.includes(id) || (ids.includes('__family__') && family.blocks.some(b => b.id ===
+      id)))?.[0] || 'details';
+    /** Étape ouverte (choix du pilote, sinon : toutes sauf « Détails du vol »). */
+    const isOpen = id => stepOpen[id] ?? id !== 'details';
+    /** Résumé générique d'un bloc sans format propre (Détails du vol) : premières valeurs remplies, sinon « — ». */
+    const genericSum = section => esc([...section.querySelectorAll('[data-path]')].filter(el => el.type === 'checkbox' ? el.checked :
+      String(el.value ?? '').trim()).map(el => el.type === 'checkbox' ? el.closest('label')?.textContent.trim() : el.tagName ===
+      'SELECT' ? el.selectedOptions[0]?.textContent.trim() : String(el.value).trim()).filter(Boolean).slice(0, 4).map(v => v.length >
+      40 ? `${v.slice(0, 39)}…` : v).join(' · ')) || '—';
     /** Vrai si un champ du bloc est rempli (case cochée, valeur, ligne d'une liste). */
     const blockFilled = section => [...section.querySelectorAll('[data-path]')].some(el => el.type === 'checkbox' ? el.checked : String(
       el.value ?? '').trim());
@@ -1417,9 +1416,9 @@
           step.className = 'mc-step';
           step.id = `mc-step-${id}`;
           step.dataset.step = id;
-          step.innerHTML = `${key ? `<button type="button" class="mc-step-head"><span class="mc-step-n">${n + 1}</span><span class="mc-step-title"></span><span class="mc-step-state"></span></button>` : ''}<div class="mc-step-body"></div>`;
-          step.querySelector('.mc-step-head')?.addEventListener('click', () => {
-            stepOpen[id] = stepOpen[id] === false;
+          step.innerHTML = `<button type="button" class="mc-step-head"><span class="mc-step-n">${n + 1}</span><span class="mc-step-title"></span><span class="mc-step-state"></span></button><div class="mc-step-body"></div>`;
+          step.querySelector('.mc-step-head').addEventListener('click', () => {
+            stepOpen[id] = !isOpen(id);
             arrangeSteps();
           });
         }
@@ -1428,7 +1427,7 @@
       });
       const rank = section => {
         const id = section.id.slice(3),
-          ids = STEPS.find(([s]) => s === stepOf(id))[2] || [],
+          ids = STEPS.find(([s]) => s === stepOf(id))[2],
           i = ids.indexOf(id);
         return i >= 0 ? i : ids.indexOf('__family__');
       };
@@ -1438,11 +1437,12 @@
         `[data-path="${CSS.escape(path)}"]`)?.closest('section.mc-block')?.id));
       sections.forEach(section => {
         const id = section.id.slice(3),
-          canSum = !!KEYS[id] && KEYS[id]() && !flagged.has(section.id),
+          details = stepOf(id) === 'details',
+          canSum = (details || (!!KEYS[id] && KEYS[id]())) && !flagged.has(section.id),
           summary = canSum && blockOpen[id] !== true,
           detail = pageLevel() <= 2 && !!section.querySelector('.mc-grid [data-min-level="3"], .mc-collection [data-min-level="3"]');
         let bar = section.querySelector(':scope > .mc-sum');
-        if (!KEYS[id] && !detail) {
+        if (!KEYS[id] && !details && !detail) {
           bar?.remove();
           section.classList.remove('mc-summary', 'mc-all');
           return;
@@ -1478,11 +1478,12 @@
      *  « n° · date ». */
     function stepTexts() {
       form.querySelectorAll('section.mc-block > .mc-sum > .mc-sum-text').forEach(el => {
-        const html = SUMS[el.closest('section').id.slice(3)]?.() || '';
+        const section = el.closest('section'),
+          html = SUMS[section.id.slice(3)]?.() || genericSum(section);
         if (el.innerHTML !== html) el.innerHTML = html;
       });
       const nav = form.querySelector(':scope > .mc-steps-nav');
-      if (nav) nav.replaceChildren(...STEPS.filter(([, key]) => key).map(([id, key], n) => {
+      if (nav) nav.replaceChildren(...STEPS.filter(([id]) => id !== 'details').map(([id, key], n) => {
         const b = document.createElement('button'),
           done = stepDone(id);
         b.type = 'button';
@@ -1500,15 +1501,16 @@
       }));
       STEPS.forEach(([id, key]) => {
         const step = form.querySelector(`#mc-step-${id}`);
-        if (!step || !key) return;
-        const open = stepOpen[id] !== false,
+        if (!step) return;
+        const open = isOpen(id),
           done = stepDone(id),
           state = step.querySelector('.mc-step-state');
         step.classList.toggle('open', open);
+        step.classList.toggle('mc-step-reveal', open && id === 'details'); // blocs des niveaux 3-4 montrés (niveaux 1-2)
         step.querySelector('.mc-step-head').setAttribute('aria-expanded', String(open));
         step.querySelector('.mc-step-title').textContent = inLanguage(UI[key]);
-        state.textContent = done ? '✓' : inLanguage(UI.stepTodo);
-        state.classList.toggle('ok', done);
+        state.textContent = id === 'details' ? '' : done ? '✓' : inLanguage(UI.stepTodo);
+        state.classList.toggle('ok', done && id !== 'details');
       });
       idChip.textContent = [val('metadata.missionId') || '—', dayText(val('metadata.date'))].filter(Boolean).join(' · ');
       idChip.title = inLanguage(UI.idChipTitle);

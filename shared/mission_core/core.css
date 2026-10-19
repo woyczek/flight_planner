@@ -1245,7 +1245,7 @@
   .mc-step-state.ok {
     color: var(--ok)
   }
-  .mc-step[data-step]:not(.open):not([data-step="more"])>.mc-step-body {
+  .mc-step:not(.open)>.mc-step-body {
     display: none
   }
   /* poignée ↕ du framework coupée dans les étapes : l'ordre des blocs est celui des étapes */
@@ -1280,7 +1280,7 @@
     font-weight: 600;
     text-decoration: underline
   }
-  .mc-block.mc-summary> :is(.mc-grid, .mc-collection, .repo-block-subtitle),
+  .mc-block.mc-summary> :not(.repo-block-heading, h2, .mc-sum, .repo-deco-bgimg),
   .mc-block.mc-summary>.repo-block-heading .repo-block-subtitle {
     display: none
   }

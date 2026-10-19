@@ -716,8 +716,10 @@ oben (ein Klick öffnet den Schritt und führt dorthin):
 
 Jeder Schritt klappt über seinen Titel zu, der seinen Zustand nennt: „✓“, wenn das Wesentliche da ist (Flug:
 Luftfahrzeug, Start und Landung, Besatzung, Kraftstoff beim Abflug und bei der Landung; Mission: mindestens ein
-ausgefülltes Feld in jedem Block der Familie; Ergebnis: das gewählte Ergebnis), sonst „zu ergänzen“. Die übrigen Blöcke
-(Navigation, Wetter, Ereignisse, Etappen, Fähigkeiten) folgen auf Stufe 3 nach den Schritten.
+ausgefülltes Feld in jedem Block der Familie; Ergebnis: das gewählte Ergebnis), sonst „zu ergänzen“. Ein vierter Schritt,
+**Flugdetails**, eingeklappt, fasst die übrigen Blöcke zusammen: Navigation, Umgebung / Wetter, Ereignisse mit
+Zeitstempel, Etappen / Umläufe, Fähigkeiten; geöffnet zeigt er sie auf jeder Stufe (er ersetzt den früheren
+„Ausführlichen Bericht“), jeden in einer Zeile mit seinem Abzeichen zusammengefasst, „Bearbeiten“ für seine Felder.
 
 **Die Zusammenfassungen.** Ein Block, dessen Wesentliches ausgefüllt ist, passt in eine Zeile: Identifikation (Datum ·
 Einsatz · Organisation), Luftfahrzeug(e) („MILAN74 · DH8D F-ZBMD“), Zeitablauf („Block 13:07 → 15:13, Flug 13:21 → 15:02“,
