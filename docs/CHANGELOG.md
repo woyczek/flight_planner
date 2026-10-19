@@ -184,6 +184,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Mission report: the form in steps, with block summaries** (`shared/mission_core/core.js`, `core.css`) — the form
+  reads in three steps, "1 Flight · 2 Mission · 3 Result" (progress bar at the top, each step folds by its title, which
+  says "✓" or "to complete"): Flight = Identification, Aircraft, Timeline, Crew, Fuel (and Network track from level 3);
+  Mission = Tasking and the family blocks; Result = "Results and remarks". A block whose key fields are filled shows
+  one summary line with its provenance badge (aircraft "MILAN74 · DH8D F-ZBMD", timeline "block 13:07 → 15:13, flight
+  13:21 → 15:02" with the track link, fuel "1200 → 650 kg", crew names, identification); "Edit" unfolds its fields.
+  Never on a block with a consistency issue; a block being edited stays unfolded. At levels 1-2, "All fields" in a
+  block replaces the "Detailed report" button, which is removed. A click on a consistency issue opens its step, block
+  and, if needed, all its fields (`reveal`). A read-only "number · date" chip heads the toolbar. Steps are plain
+  containers outside the block framework: the ↕ handle is removed in the report and **block orders remembered
+  before the steps no longer apply**.
 - **Mission report: "Results and remarks" in one block; Tasking from level 1** (`shared/mission_core/blocks.js`,
   `core.js`, families FIRE / ISR / LE) — the "Remarks" block (observations, lessons learned) joins "Results" (data paths
   `results.*` and `remarks.*` unchanged; a remembered "hidden" state of the former Remarks block is lost). "Tasking"

@@ -703,13 +703,32 @@ to the family. You write the report of a flight you have flown there, then save 
 You reach it from the “New report” page, from an assigned mission, or by clicking a mission
 in a reporting page or a sheet (the mission then opens for editing).
 
-**Depending on the usage level: short or detailed report.** At levels 1 (Crew) and 2 (Planning), the form only shows the essentials of the report:
-- identification (mission, report no., date, series) and result;
-- aircraft (registration, type, callsign, airfields; a known aircraft fills in the rest) and crew;
-- four times (engine start, take-off, landing, engine stop), fuel at departure and at landing;
-- the family’s own blocks and remarks.
+**Three steps.** The form reads in steps, marked by the “1 Flight · 2 Mission · 3 Result” bar at the top (a click
+opens the step and takes you there):
+1. **Flight**, the facts: Identification, Aircraft, Timeline, Crew, Fuel (and Network track from level 3).
+2. **Mission**, what you enter: the family's own blocks (FIRE: flight order, forest fire times, drops; HEMS: duty,
+   medical mission, times, destinations; SPECIAL: the series block), preceded by “Tasking” for the families that do
+   not have their own order block.
+3. **Result**: the “Results and remarks” block. The “Add to ledger” / “Send” bar ends the report.
 
-The “Detailed report” button of the bar shows the whole form without changing level (choice kept by the browser); “Short report” goes back to the reduced form. Values already entered in hidden fields (import, flight plan, network tracking) stay in the report. At levels 3 and 4, the form is always complete and this button does not exist.
+Each step folds by its title, which gives its state: “✓” when the essentials are there (Flight: aircraft, take-off and
+landing, crew, fuel at departure and at landing; Mission: at least one field filled in each block of the family;
+Result: the result chosen), otherwise “to complete”. The other blocks (navigation, weather, events, legs,
+capabilities) follow the steps at level 3.
+
+**Summaries.** A block whose essentials are filled in fits on one line: Identification (date · operation ·
+organisation), Aircraft (“MILAN74 · DH8D F-ZBMD”), Timeline (“block 13:07 → 15:13, flight 13:21 → 15:02”, with the
+“track ↗” link), Crew (the names), Fuel (“1200 → 650 kg”), Network track. Its source badge (“↧ IVAO — last flight”)
+says where its values come from. “Edit” unfolds the fields, “Summary” folds them. A block that is empty, incomplete
+or has a consistency anomaly stays unfolded, like the one you are working in; after a prefill, the completed blocks
+go back to their summary.
+
+**Depending on the usage level.** At levels 1 (Crew) and 2 (Planning), an unfolded block shows its essential fields
+(identification: mission, report no., date, series; aircraft: registration, type, callsign, airfields; four times;
+fuel at departure and at landing); “All fields”, under its title, shows the others, “Essential fields” goes back. At
+levels 3 and 4, all the fields are there. Values in hidden fields (import, flight plan, network tracking) stay in the
+report. A click on a consistency anomaly, under the calculations, opens the step, the block and, if needed, all its
+fields, then puts the cursor in the field.
 
 ### Header and toolbar
 
@@ -718,17 +737,18 @@ The header stays fixed at the top of the page. From left to right:
 | Entry | Role |
 |---|---|
 | “SAR · Land SAR ▾” (family · sub-type) | “Mission family” popup (opens the page of the other family) and “Mission sub-type” |
+| “CRF-A01-0 · 17/10/2026” | report no. and flight date, read-only; a click opens the date field |
 | “Add to ledger” / “Save changes” | files the mission in the ledger |
 | “Send” ▾ | “Send report”: sends the report to the airline's web service (dotted outline as long as it is not set up); “Airline website” (if its address is set): “Record the flight on the website ↗”, the “→ Vol” bookmarklet, “Copy the fields” (see below) |
 | “Prefill” ▾ | everything that fills in the report: new report from a mission order, a past flight or a file; complete this report from my last IVAO / VATSIM flight, a filed flight plan or a paste (see “Prefill”) |
 | “Network tracking” ▾ | live IVAO / VATSIM tracking, VATSIM history |
 | “Mission” ▾ | “New mission”, “Export mission (YAML)”, “Delete this mission” (when editing) |
 | “Mission ledger” ▾ | “View reporting”, “Ledger folder…”, “Report sending settings (web service)…”, “Settings — databases…” |
-| “Detailed report” / “Short report” | levels 1 and 2 only: shows the whole form or goes back to the short report (see above) |
 
 On the right, a status message shows the last save (“Draft saved in the
-browser · time”). Each block has in its title **↕** (drag to move it) and **Hide /
-Show**; the layout is remembered. Blocks that contain a list have a **+** in their
+browser · time”). Each block has in its title **Hide / Show** (choice
+remembered); the order of the blocks is that of the steps (layouts changed with ↕ before the steps no longer
+apply). Blocks that contain a list have a **+** in their
 title to add an item.
 
 At levels 1 and 2, “Mission” and “Mission ledger” do not appear (they come at level 3); “Prefill” is there from level 1, except importing a file (level 3). A new mission is opened with ☰ › Missions › “New report”.
@@ -817,7 +837,7 @@ The name entered is the key of the [crew sheet](#crew-sheet): always write it th
 Objective and instructions of the mission: “Objective”, “Special instructions”, “Priority”.
 For an assigned mission, the objective and the instructions are already filled in from the mission. These
 texts appear in section “5. Tasking” of the report. At levels 1 and 2, this block is shown for families without
-their own order block (FIRE, ISR and LE have one: “Tasking” stays in the detailed report there).
+their own order block (FIRE, ISR and LE have one: “Tasking” only comes there at level 3).
 
 ### Capabilities / techniques
 
@@ -929,7 +949,7 @@ Right-hand column, updated while you type: “Block time”, “Flight time”, 
   timeline of more than 20 h, future date, inconsistent fuel). A click takes you to the field concerned.
 - “Display context” recalls the family, the series, the aircraft types and the capabilities, which
   decide which blocks are shown.
-- At levels 1 and 2 (short report), three calculations only: “Block time”, “Flight time”, “Fuel used”; “Display context” and the station and mission calculations come at level 3 or with “Detailed report”. A click on an anomaly about a hidden field shows the detailed report.
+- At levels 1 and 2 (short report), three calculations only: “Block time”, “Flight time”, “Fuel used”; “Display context” and the station and mission calculations come at level 3. A click on an anomaly opens the step and the block of the field concerned, and its other fields if it is hidden.
 
 ### Report
 

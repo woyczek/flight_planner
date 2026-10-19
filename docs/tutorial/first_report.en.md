@@ -77,8 +77,9 @@ Durations (block, flight, on station) and the fuel used are computed by themselv
 - **“Crew”**: you and the other members (trigram or name), with their role.
 - **Family blocks**: those specific to the mission type (FIRE: sector, drops, refilling base…).
 
-“Detailed report” shows the whole form (timed events, legs, weather, navigation); “Short report” goes back to the
-essentials. The report preview, on the right, updates continuously.
+The form reads in three steps, “1 Flight · 2 Mission · 3 Result”: a block whose essentials are filled fits on one
+line (“Edit” unfolds it), and “All fields” shows what goes beyond the short report. The report preview, on the right,
+updates continuously.
 
 ## 7. Save
 

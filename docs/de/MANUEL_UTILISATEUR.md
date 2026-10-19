@@ -705,13 +705,33 @@ Familie eigen sind. Sie verfassen hier den Bericht eines durchgeführten Flugs u
 Sie erreichen sie über die Seite „Neuer Bericht“, über eine zugewiesene Mission oder durch Klick auf eine Mission
 in einer Auswertung oder einem Blatt (die Mission öffnet sich dann zur Bearbeitung).
 
-**Je nach Nutzungsstufe: kurzer oder ausführlicher Bericht.** Auf den Stufen 1 (Besatzung) und 2 (Planung) zeigt das Formular nur das Wesentliche des Berichts:
-- Identifikation (Mission, Berichtsnummer, Datum, Serie) und Ergebnis;
-- Luftfahrzeug (Kennzeichen, Typ, Rufzeichen, Flugplätze; ein bekanntes Luftfahrzeug füllt den Rest aus) und Besatzung;
-- vier Uhrzeiten (Anlassen, Start, Landung, Abstellen der Triebwerke), Kraftstoff beim Abflug und bei der Landung;
-- die familieneigenen Blöcke und Bemerkungen.
+**Drei Schritte.** Das Formular gliedert sich in Schritte, gekennzeichnet durch die Leiste „1 Flug · 2 Mission · 3 Ergebnis“
+oben (ein Klick öffnet den Schritt und führt dorthin):
+1. **Flug**, die Fakten: Identifikation, Luftfahrzeug(e), Zeitablauf, Besatzung, Kraftstoff (und Netzwerkspur ab
+   Stufe 3).
+2. **Mission**, was Sie eingeben: die familieneigenen Blöcke (FIRE: Flugauftrag, Waldbrand-Zeiten, Abwürfe; HEMS:
+   Dienst, medizinische Mission, Zeiten, Ziele; SPECIAL: der Block der Serie), davor „Auftrag“ für die Familien, die
+   keinen eigenen Auftragsblock haben.
+3. **Ergebnis**: der Block „Ergebnis und Bemerkungen“. Die Leiste „Ins Register aufnehmen“ / „Senden“ schließt den Bericht ab.
 
-Der Knopf „Ausführlicher Bericht“ der Leiste zeigt das ganze Formular, ohne die Stufe zu wechseln (Wahl im Browser gespeichert); „Kurzer Bericht“ kehrt zum verkürzten Formular zurück. Werte, die bereits in ausgeblendeten Feldern stehen (Import, Flugplan, Netzwerk-Tracking), bleiben im Bericht. Auf den Stufen 3 und 4 ist das Formular immer vollständig, und dieser Knopf fehlt.
+Jeder Schritt klappt über seinen Titel zu, der seinen Zustand nennt: „✓“, wenn das Wesentliche da ist (Flug:
+Luftfahrzeug, Start und Landung, Besatzung, Kraftstoff beim Abflug und bei der Landung; Mission: mindestens ein
+ausgefülltes Feld in jedem Block der Familie; Ergebnis: das gewählte Ergebnis), sonst „zu ergänzen“. Die übrigen Blöcke
+(Navigation, Wetter, Ereignisse, Etappen, Fähigkeiten) folgen auf Stufe 3 nach den Schritten.
+
+**Die Zusammenfassungen.** Ein Block, dessen Wesentliches ausgefüllt ist, passt in eine Zeile: Identifikation (Datum ·
+Einsatz · Organisation), Luftfahrzeug(e) („MILAN74 · DH8D F-ZBMD“), Zeitablauf („Block 13:07 → 15:13, Flug 13:21 → 15:02“,
+mit dem Link „Spur ↗“), Besatzung (die Namen), Kraftstoff („1200 → 650 kg“), Netzwerkspur. Sein Herkunftsabzeichen
+(„↧ IVAO — letzter Flug“) sagt, woher seine Werte stammen. „Bearbeiten“ klappt die Felder auf, „Zusammenfassung“ klappt
+sie zu. Ein leerer, unvollständiger oder unstimmiger Block bleibt aufgeklappt, wie der, an dem Sie arbeiten; nach einem
+Vorausfüllen kehren die ergänzten Blöcke zur Zusammenfassung zurück.
+
+**Je nach Nutzungsstufe.** Auf den Stufen 1 (Besatzung) und 2 (Planung) zeigt ein aufgeklappter Block seine wesentlichen
+Felder (Identifikation: Mission, Berichtsnummer, Datum, Serie; Luftfahrzeug: Kennzeichen, Typ, Rufzeichen, Flugplätze;
+vier Uhrzeiten; Kraftstoff beim Abflug und bei der Landung); „Alle Felder“ unter seinem Titel zeigt die übrigen,
+„Wesentliche Felder“ kehrt zurück. Auf den Stufen 3 und 4 sind alle Felder da. Werte in ausgeblendeten Feldern (Import,
+Flugplan, Netzwerk-Tracking) bleiben im Bericht. Ein Klick auf eine Unstimmigkeit unter den Berechnungen öffnet den
+Schritt, den Block und bei Bedarf alle seine Felder und setzt dann den Cursor in das Feld.
 
 ### Kopfzeile und Werkzeugleiste
 
@@ -720,17 +740,18 @@ Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
 | Eintrag | Funktion |
 |---|---|
 | „SAR · SAR an Land ▾“ (Familie · Untertyp) | Popup „Einsatzfamilie“ (öffnet die Seite der anderen Familie) und „Einsatz-Untertyp“ |
+| „CRF-A01-0 · 17/10/2026“ | Berichtsnummer und Flugdatum, schreibgeschützt; ein Klick öffnet das Datumsfeld |
 | „Ins Register aufnehmen“ / „Änderungen speichern“ | legt die Mission im Register ab |
 | „Senden“ ▾ | „Bericht senden“: übermittelt den Bericht an den Webservice der Fluggesellschaft (gestrichelt, solange er nicht eingerichtet ist); „Website der Fluggesellschaft“ (wenn ihre Adresse eingestellt ist): „Flug auf der Website eintragen ↗“, das Lesezeichen „→ Vol“, „Felder kopieren“ (siehe unten) |
 | „Vorausfüllen“ ▾ | alles, was den Bericht füllt: neuer Bericht aus einem Einsatzbefehl, einem vergangenen Flug oder einer Datei; diesen Bericht ergänzen aus meinem letzten IVAO- / VATSIM-Flug, einem aufgegebenen Flugplan oder einem eingefügten Text (siehe „Vorausfüllen“) |
 | „Netzwerk-Tracking“ ▾ | Live-Verfolgung IVAO / VATSIM, VATSIM-Historie |
 | „Einsatz“ ▾ | „Neue Mission“, „Einsatz exportieren (YAML)“, „Diesen Einsatz löschen“ (bei Bearbeitung) |
 | „Einsatzregister“ ▾ | „Auswertung anzeigen“, „Registerordner…“, „Berichtversand einrichten (Webservice)…“, „Einstellungen — Datenbanken…“ |
-| „Ausführlicher Bericht“ / „Kurzer Bericht“ | nur Stufen 1 und 2: zeigt das ganze Formular oder kehrt zum kurzen Bericht zurück (siehe oben) |
 
 Rechts zeigt eine Statusmeldung die letzte Speicherung („Entwurf im Browser gespeichert
-· Uhrzeit“). Jeder Block hat in seinem Titel **↕** (ziehen zum Verschieben) und **Ausblenden /
-Anzeigen**; die Anordnung wird gespeichert. Blöcke, die eine Liste enthalten, haben ein **+** in ihrem
+· Uhrzeit“). Jeder Block hat in seinem Titel **Ausblenden / Anzeigen** (Wahl
+gespeichert); die Reihenfolge der Blöcke ist die der Schritte (mit ↕ vor den Schritten geänderte Anordnungen gelten
+nicht mehr). Blöcke, die eine Liste enthalten, haben ein **+** in ihrem
 Titel, um ein Element hinzuzufügen.
 
 Auf den Stufen 1 und 2 erscheinen „Einsatz“ und „Einsatzregister“ nicht (sie kommen auf Stufe 3); „Vorausfüllen“ ist ab Stufe 1 da, außer dem Import einer Datei (Stufe 3). Eine neue Mission öffnet man über ☰ › Missionen › „Neuer Bericht“.
@@ -820,7 +841,7 @@ Der eingegebene Name dient als Schlüssel für das [Besatzungsblatt](#besatzungs
 Ziel und Anweisungen der Mission: „Ziel“, „Besondere Anweisungen“, „Priorität“.
 Bei einer zugewiesenen Mission sind Ziel und Anweisungen bereits aus der Mission ausgefüllt. Diese
 Texte erscheinen im Abschnitt „5. Auftrag“ des Berichts. Auf den Stufen 1 und 2 erscheint dieser Block bei Familien ohne
-eigenen Auftragsblock (FIRE, ISR und LE haben einen: „Auftrag“ bleibt dort im ausführlichen Bericht).
+eigenen Auftragsblock (FIRE, ISR und LE haben einen: „Auftrag“ kommt dort erst auf Stufe 3).
 
 ### Fähigkeiten / Verfahren
 
@@ -932,7 +953,7 @@ Rechte Spalte, während der Eingabe aktualisiert: „Blockzeit“, „Flugzeit�
   Zeitablauf von mehr als 20 h, Datum in der Zukunft, unstimmiger Kraftstoff). Ein Klick führt zum betreffenden Feld.
 - „Anzeigekontext“ zeigt Familie, Serie, Luftfahrzeugtypen und Fähigkeiten, die
   über die angezeigten Blöcke entscheiden.
-- Auf den Stufen 1 und 2 (kurzer Bericht) nur drei Berechnungen: „Blockzeit“, „Flugzeit“, „Kraftstoffverbrauch“; „Anzeigekontext“ und die Berechnungen zu Einsatzraum und Mission kommen auf Stufe 3 oder mit „Ausführlicher Bericht“. Ein Klick auf eine Unstimmigkeit in einem ausgeblendeten Feld zeigt den ausführlichen Bericht.
+- Auf den Stufen 1 und 2 (kurzer Bericht) nur drei Berechnungen: „Blockzeit“, „Flugzeit“, „Kraftstoffverbrauch“; „Anzeigekontext“ und die Berechnungen zu Einsatzraum und Mission kommen auf Stufe 3. Ein Klick auf eine Unstimmigkeit öffnet den Schritt und den Block des betroffenen Felds und, wenn es ausgeblendet ist, seine übrigen Felder.
 
 ### Bericht
 

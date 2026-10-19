@@ -736,13 +736,33 @@ Toutes les familles partagent la même page de saisie : mêmes blocs communs, pl
 On y arrive par la page « Nouveau compte rendu », par une mission affectée, ou en cliquant une mission
 dans un reporting ou une fiche (la mission s'ouvre alors en modification).
 
-**Selon le niveau d'utilisation : CR court ou CR détaillé.** Aux niveaux 1 (Équipage) et 2 (Planification), le formulaire ne montre que l'essentiel du compte rendu :
-- identification (mission, n° de CR, date, série) et résultat ;
-- appareil (immatriculation, type, indicatif, terrains ; un appareil connu remplit le reste) et équipage ;
-- quatre heures (mise en route, décollage, atterrissage, arrêt moteurs), carburant au départ et à l'atterrissage ;
-- blocs propres à la famille et remarques.
+**Trois étapes.** Le formulaire se lit en étapes, repérées par la barre « 1 Vol · 2 Mission · 3 Résultat » en tête
+(un clic ouvre l'étape et y mène) :
+1. **Vol**, les faits : Identification, Appareil(s), Chronologie, Équipage, Carburant (et Trace réseau à partir du
+   niveau 3).
+2. **Mission**, ce que vous saisissez : les blocs propres à la famille (FIRE : ordre de vol, horaires feux de forêt,
+   largages ; HEMS : service, mission médicale, horaires, destinations ; SPECIAL : le bloc de la série), précédés de
+   « Tâche / ordre de mission » pour les familles qui n'ont pas leur propre bloc d'ordre.
+3. **Résultat** : le bloc « Résultat et remarques ». La barre « Ajouter au registre » / « Envoyer » termine le CR.
 
-Le bouton « CR détaillé » de la barre affiche tout le formulaire sans changer de niveau (choix gardé par le navigateur) ; « CR court » revient au formulaire réduit. Les valeurs déjà saisies dans des champs masqués (import, plan de vol, suivi réseau) restent dans le compte rendu. Aux niveaux 3 et 4, le formulaire est toujours complet et ce bouton n'existe pas.
+Chaque étape se replie par son titre, qui dit son état : « ✓ » quand l'essentiel est là (Vol : appareil, décollage et
+atterrissage, équipage, carburant au départ et à l'atterrissage ; Mission : au moins un champ rempli dans chaque bloc
+de la famille ; Résultat : le résultat choisi), sinon « à compléter ». Les autres blocs (navigation, météo, événements,
+étapes, capacités) suivent les étapes au niveau 3.
+
+**Les résumés.** Un bloc dont l'essentiel est rempli tient en une ligne : Identification (date · opération ·
+organisme), Appareil(s) (« MILAN74 · DH8D F-ZBMD »), Chronologie (« bloc 13:07 → 15:13, vol 13:21 → 15:02 », avec le
+lien de la trace), Équipage (les noms), Carburant (« 1200 → 650 kg »), Trace réseau. Sa pastille de provenance
+(« ↧ IVAO — dernier vol ») dit d'où viennent ses valeurs. « Modifier » déplie les champs, « Résumé » les replie. Un
+bloc vide, incomplet ou en anomalie de cohérence reste déplié, comme celui où vous travaillez ; après un
+préremplissage, les blocs complétés repassent en résumé.
+
+**Selon le niveau d'utilisation.** Aux niveaux 1 (Équipage) et 2 (Planification), un bloc déplié montre ses champs
+essentiels (identification : mission, n° de CR, date, série ; appareil : immatriculation, type, indicatif, terrains ;
+quatre heures ; carburant au départ et à l'atterrissage) ; « Tous les champs », sous son titre, montre les autres,
+« Champs essentiels » revient. Aux niveaux 3 et 4, tous les champs sont là. Les valeurs de champs masqués (import, plan
+de vol, suivi réseau) restent dans le compte rendu. Un clic sur une anomalie de cohérence, sous les calculs, ouvre
+l'étape, le bloc et, s'il le faut, tous ses champs, puis place le curseur dans le champ.
 
 <!-- capture-manuels: utilisateur-formulaire-cr -->
 ![Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.](images/captures-manuels/utilisateur-formulaire-cr.png)
@@ -756,17 +776,18 @@ L'en-tête reste collé en haut de page. De gauche à droite :
 | Entrée | Rôle |
 |---|---|
 | « SAR · SAR terrestre ▾ » (famille · sous-type) | popup « Famille de mission » (ouvre la page de l'autre famille) et « Sous-type de mission » |
+| « CRF-A01-0 · 17/10/2026 » | n° du CR et date du vol, en lecture ; un clic ouvre le champ de la date |
 | « Ajouter au registre » / « Enregistrer les modifications » | range la mission dans le registre |
 | « Envoyer » ▾ | « Envoyer le CR » : transmet le CR au webservice de la compagnie (en pointillés tant qu'il n'est pas paramétré) ; « Site de la compagnie » (si son adresse est réglée) : « Enregistrer le vol sur le site ↗ », le favori « → Vol », « Copier les champs » (voir plus bas) |
 | « Préremplir » ▾ | tout ce qui remplit le CR : nouveau CR depuis un ordre de mission, un vol passé ou un fichier ; compléter ce CR depuis mon dernier vol IVAO / VATSIM, un plan de vol déposé ou un collage (voir « Préremplir ») |
 | « Suivi réseau » ▾ | suivi en direct IVAO / VATSIM, historique VATSIM |
 | « Mission » ▾ | « Nouvelle mission », « Exporter la mission (YAML) », « Supprimer cette mission » (en modification) |
 | « Registre des missions » ▾ | « Voir le reporting », « Dossier du registre… », « Paramétrer l'envoi des CR (webservice)… », « Paramétrage — bases de données… » |
-| « CR détaillé » / « CR court » | niveaux 1 et 2 seulement : affiche tout le formulaire ou revient au CR court (voir plus haut) |
 
 À droite, un message d'état indique le dernier enregistrement (« Brouillon enregistré dans le
-navigateur · heure »). Chaque bloc a dans son titre **↕** (glisser pour le déplacer) et **Masquer /
-Afficher** ; la disposition est mémorisée. Les blocs qui contiennent une liste ont un **+** dans leur
+navigateur · heure »). Chaque bloc a dans son titre **Masquer / Afficher** (choix
+mémorisé) ; l'ordre des blocs est celui des étapes (les dispositions changées avec ↕ avant les étapes ne s'appliquent
+plus). Les blocs qui contiennent une liste ont un **+** dans leur
 titre pour ajouter un élément.
 
 Aux niveaux 1 et 2, « Mission » et « Registre des missions » n'apparaissent pas (ils viennent au niveau 3) ; « Préremplir » est là dès le niveau 1, sauf l'import d'un fichier (niveau 3). Une nouvelle mission s'ouvre par ☰ › Missions › « Nouveau compte rendu ».
@@ -856,7 +877,7 @@ Le nom saisi sert de clé à la [fiche équipage](#fiche-équipage) : écrivez-l
 Objectif et consignes de la mission : « Objectif », « Instructions particulières », « Priorité ».
 Pour une mission affectée, l'objectif et les instructions sont déjà remplis depuis la mission. Ces
 textes figurent dans la section « 5. Tâche » du compte rendu. Aux niveaux 1 et 2, ce bloc est affiché pour les familles
-qui n'ont pas leur propre bloc d'ordre (FIRE, ISR et LE l'ont : « Tâche / ordre de mission » y reste au CR détaillé).
+qui n'ont pas leur propre bloc d'ordre (FIRE, ISR et LE l'ont : « Tâche / ordre de mission » n'y vient qu'au niveau 3).
 
 ### Capacités / techniques employées
 
@@ -968,7 +989,7 @@ Colonne de droite, mise à jour pendant la saisie : « Temps bloc », « Temps d
   chronologie de plus de 20 h, date future, carburant incohérent). Un clic amène au champ concerné.
 - « Contexte d'affichage » rappelle la famille, la série, les types d'appareil et les capacités, qui
   décident des blocs affichés.
-- Aux niveaux 1 et 2 (CR court), trois calculs seulement : « Temps bloc », « Temps de vol », « Carburant consommé » ; « Contexte d'affichage » et les calculs de zone et de mission viennent au niveau 3 ou avec « CR détaillé ». Un clic sur une anomalie qui porte sur un champ masqué affiche le CR détaillé.
+- Aux niveaux 1 et 2 (CR court), trois calculs seulement : « Temps bloc », « Temps de vol », « Carburant consommé » ; « Contexte d'affichage » et les calculs de zone et de mission viennent au niveau 3. Un clic sur une anomalie ouvre l'étape et le bloc du champ concerné, et ses autres champs s'il est masqué.
 
 ### Compte rendu
 

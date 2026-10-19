@@ -1183,6 +1183,123 @@
     max-height: none;
     overflow: visible
   }
+  /* étapes du formulaire (core.js, arrangeSteps) : barre de progression, en-tête repliable, blocs rangés dedans */
+  .mc-steps-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 12px
+  }
+  .mc-form .mc-steps-nav button {
+    padding: 5px 12px;
+    border-radius: calc(999px * var(--repo-round, 1));
+    background: var(--soft);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600
+  }
+  .mc-form .mc-steps-nav button.ok {
+    color: var(--ok)
+  }
+  .mc-step {
+    margin: 0 0 6px
+  }
+  .mc-form .mc-step-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 6px 2px;
+    border-radius: 0;
+    border-bottom: 2px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left
+  }
+  .mc-step-head::after {
+    content: '▾';
+    color: var(--muted)
+  }
+  .mc-step:not(.open) .mc-step-head::after {
+    content: '▸'
+  }
+  .mc-step-n {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px
+  }
+  .mc-step-state {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600
+  }
+  .mc-step-state.ok {
+    color: var(--ok)
+  }
+  .mc-step[data-step]:not(.open):not([data-step="more"])>.mc-step-body {
+    display: none
+  }
+  /* poignée ↕ du framework coupée dans les étapes : l'ordre des blocs est celui des étapes */
+  .mc-step .repo-drag {
+    display: none !important
+  }
+  /* bloc résumé : une ligne (valeurs clés, provenance), « Modifier » déplie ses champs */
+  .mc-sum {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: -4px 0 8px
+  }
+  .mc-sum-text {
+    flex: 1 1 200px;
+    min-width: 0;
+    font-variant-numeric: tabular-nums
+  }
+  .mc-block:not(.mc-summary)>.mc-sum>.mc-sum-text {
+    display: none
+  }
+  .mc-block:not(.mc-summary)>.mc-sum {
+    justify-content: flex-end
+  }
+  .mc-form .mc-sum button {
+    padding: 3px 10px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: underline
+  }
+  .mc-block.mc-summary> :is(.mc-grid, .mc-collection, .repo-block-subtitle),
+  .mc-block.mc-summary>.repo-block-heading .repo-block-subtitle {
+    display: none
+  }
+  .mc-block.mc-summary>.repo-block-heading h2,
+  .mc-block.mc-summary>h2 {
+    margin-bottom: 8px
+  }
+  /* puce « n° · date » de la barre d'outils */
+  .mc-header-tools .mc-id-chip {
+    padding: 4px 10px;
+    border-radius: calc(999px * var(--repo-round, 1));
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer
+  }
   /* provenance des champs d'un bloc (préremplissage, ordre, journal, suivi réseau) : pastille dans le titre */
   .mc-block h2 .mc-origin {
     display: inline-block;

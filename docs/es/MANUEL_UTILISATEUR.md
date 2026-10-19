@@ -704,13 +704,33 @@ de la familia. En ella redacta el informe de un vuelo realizado y, después, lo 
 Se llega a ella por la página «Nuevo informe», por una misión asignada, o haciendo clic en una misión
 en un informe estadístico o en una ficha (la misión se abre entonces en modo de modificación).
 
-**Según el nivel de uso: informe breve o detallado.** En los niveles 1 (Tripulación) y 2 (Planificación), el formulario solo muestra lo esencial del informe:
-- identificación (misión, n.º de informe, fecha, serie) y resultado;
-- aeronave (matrícula, tipo, indicativo, aeródromos; una aeronave conocida rellena el resto) y tripulación;
-- cuatro horas (puesta en marcha, despegue, aterrizaje, parada de motores), combustible a la salida y al aterrizaje;
-- los bloques propios de la familia y las observaciones.
+**Tres etapas.** El formulario se lee por etapas, señaladas por la barra «1 Vuelo · 2 Misión · 3 Resultado» en la parte
+superior (un clic abre la etapa y lleva a ella):
+1. **Vuelo**, los hechos: Identificación, Aeronave(s), Cronología, Tripulación, Combustible (y Traza de red a partir del
+   nivel 3).
+2. **Misión**, lo que usted introduce: los bloques propios de la familia (FIRE: orden de vuelo, horarios de incendio,
+   lanzamientos; HEMS: servicio, misión médica, horarios, destinos; SPECIAL: el bloque de la serie), precedidos de
+   «Tarea / orden de misión» para las familias que no tienen su propio bloque de orden.
+3. **Resultado**: el bloque «Resultado y observaciones». La barra «Añadir al registro» / «Enviar» termina el informe.
 
-El botón «Informe detallado» de la barra muestra todo el formulario sin cambiar de nivel (elección guardada por el navegador); «Informe breve» vuelve al formulario reducido. Los valores ya introducidos en campos ocultos (importación, plan de vuelo, seguimiento de red) permanecen en el informe. En los niveles 3 y 4, el formulario está siempre completo y este botón no existe.
+Cada etapa se pliega por su título, que indica su estado: «✓» cuando lo esencial está ahí (Vuelo: aeronave, despegue y
+aterrizaje, tripulación, combustible a la salida y al aterrizaje; Misión: al menos un campo rellenado en cada bloque
+de la familia; Resultado: el resultado elegido); si no, «por completar». Los demás bloques (navegación, meteorología,
+eventos, tramos, capacidades) siguen a las etapas en el nivel 3.
+
+**Los resúmenes.** Un bloque cuyo contenido esencial está rellenado cabe en una línea: Identificación (fecha · operación ·
+organismo), Aeronave(s) («MILAN74 · DH8D F-ZBMD»), Cronología («calzos 13:07 → 15:13, vuelo 13:21 → 15:02», con el
+enlace «traza ↗»), Tripulación (los nombres), Combustible («1200 → 650 kg»), Traza de red. Su insignia de procedencia
+(«↧ IVAO — último vuelo») dice de dónde vienen sus valores. «Modificar» despliega los campos, «Resumen» los pliega. Un
+bloque vacío, incompleto o con una anomalía de coherencia queda desplegado, como aquel en el que usted trabaja; tras un
+prerrellenado, los bloques completados vuelven a mostrarse resumidos.
+
+**Según el nivel de uso.** En los niveles 1 (Tripulación) y 2 (Planificación), un bloque desplegado muestra sus campos
+esenciales (identificación: misión, n.º de informe, fecha, serie; aeronave: matrícula, tipo, indicativo, aeródromos;
+cuatro horas; combustible a la salida y al aterrizaje); «Todos los campos», bajo su título, muestra los demás y
+«Campos esenciales» vuelve atrás. En los niveles 3 y 4 están todos los campos. Los valores de campos ocultos
+(importación, plan de vuelo, seguimiento de red) permanecen en el informe. Un clic en una anomalía de coherencia, bajo
+los cálculos, abre la etapa, el bloque y, si hace falta, todos sus campos, y después coloca el cursor en el campo.
 
 ### Cabecera y barra de herramientas
 
@@ -719,17 +739,18 @@ La cabecera permanece fija en la parte superior de la página. De izquierda a de
 | Entrada | Función |
 |---|---|
 | «SAR · SAR terrestre ▾» (familia · subtipo) | ventana «Familia de misión» (abre la página de la otra familia) y «Subtipo de misión» |
+| «CRF-A01-0 · 17/10/2026» | n.º del informe y fecha del vuelo, de solo lectura; un clic abre el campo de la fecha |
 | «Añadir al registro» / «Guardar cambios» | guarda la misión en el registro |
 | «Enviar» ▾ | «Enviar informe»: transmite el informe al servicio web de la aerolínea (con línea de puntos mientras no esté configurado); «Sitio de la aerolínea» (si su dirección está configurada): «Registrar el vuelo en el sitio ↗», el favorito «→ Vol», «Copiar los campos» (véase más abajo) |
 | «Prerrellenar» ▾ | todo lo que rellena el informe: nuevo informe desde una orden de misión, un vuelo pasado o un archivo; completar este informe desde mi último vuelo IVAO / VATSIM, un plan de vuelo presentado o un texto pegado (véase «Prerrellenar») |
 | «Seguimiento de red» ▾ | seguimiento en directo IVAO / VATSIM, historial VATSIM |
 | «Misión» ▾ | «Nueva misión», «Exportar misión (YAML)», «Eliminar esta misión» (en modificación) |
 | «Registro de misiones» ▾ | «Ver informe», «Carpeta del registro…», «Configurar el envío de informes (servicio web)…», «Configuración — bases de datos…» |
-| «Informe detallado» / «Informe breve» | solo niveles 1 y 2: muestra todo el formulario o vuelve al informe breve (véase más arriba) |
 
 A la derecha, un mensaje de estado indica el último guardado («Borrador guardado en el
-navegador · hora»). Cada bloque tiene en su título **↕** (arrastrar para moverlo) y **Ocultar /
-Mostrar**; la disposición se memoriza. Los bloques que contienen una lista tienen un **+** en su
+navegador · hora»). Cada bloque tiene en su título **Ocultar / Mostrar** (elección
+memorizada); el orden de los bloques es el de las etapas (las disposiciones cambiadas con ↕ antes de las etapas ya no
+se aplican). Los bloques que contienen una lista tienen un **+** en su
 título para añadir un elemento.
 
 En los niveles 1 y 2, «Misión» y «Registro de misiones» no aparecen (llegan en el nivel 3); «Prerrellenar» está desde el nivel 1, salvo la importación de un archivo (nivel 3). Una nueva misión se abre con ☰ › Misiones › «Nuevo informe».
@@ -818,7 +839,7 @@ El nombre introducido sirve de clave para la [ficha de tripulante](#ficha-de-tri
 Objetivo y consignas de la misión: «Objetivo», «Instrucciones particulares», «Prioridad».
 Para una misión asignada, el objetivo y las instrucciones ya vienen rellenados desde la misión. Estos
 textos figuran en la sección «5. Tarea» del informe. En los niveles 1 y 2, este bloque aparece para las familias sin
-bloque de orden propio (FIRE, ISR y LE lo tienen: «Tarea / orden de misión» queda allí en el informe detallado).
+bloque de orden propio (FIRE, ISR y LE lo tienen: «Tarea / orden de misión» solo llega allí en el nivel 3).
 
 ### Capacidades / técnicas
 
@@ -930,7 +951,7 @@ Columna de la derecha, actualizada durante la introducción: «Tiempo calzo», �
   cronología de más de 20 h, fecha futura, combustible incoherente). Un clic lleva al campo correspondiente.
 - «Contexto de visualización» recuerda la familia, la serie, los tipos de aeronave y las capacidades, que
   deciden qué bloques se muestran.
-- En los niveles 1 y 2 (informe breve), solo tres cálculos: «Tiempo calzo», «Tiempo de vuelo», «Combustible consumido»; «Contexto de visualización» y los cálculos de zona y de misión llegan en el nivel 3 o con «Informe detallado». Un clic en una anomalía que afecta a un campo oculto muestra el informe detallado.
+- En los niveles 1 y 2 (informe breve), solo tres cálculos: «Tiempo calzo», «Tiempo de vuelo», «Combustible consumido»; «Contexto de visualización» y los cálculos de zona y de misión llegan en el nivel 3. Un clic en una anomalía abre la etapa y el bloque del campo afectado, y sus demás campos si está oculto.
 
 ### Informe
 

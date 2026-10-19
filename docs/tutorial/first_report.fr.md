@@ -77,8 +77,9 @@ Les durées (bloc, vol, sur zone) et le carburant consommé se calculent seuls d
 - **« Équipage »** : vous et les autres membres (trigramme ou nom), avec leur fonction.
 - **Blocs de la famille** : ceux propres au type de mission (FIRE : secteur, largages, base de remplissage…).
 
-« CR détaillé » montre tout le formulaire (événements horodatés, étapes, météo, navigation) ; « CR court » revient à
-l'essentiel. L'aperçu du compte rendu, à droite, se met à jour en continu.
+Le formulaire se lit en trois étapes, « 1 Vol · 2 Mission · 3 Résultat » : un bloc dont l'essentiel est rempli tient en
+une ligne (« Modifier » le déplie), « Tous les champs » montre ce qui dépasse le CR court. L'aperçu du compte rendu, à
+droite, se met à jour en continu.
 
 ## 7. Enregistrer
 

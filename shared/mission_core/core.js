@@ -154,6 +154,20 @@
       'Completar este informe desde…'),
     prefillMissions: L('Un ordre de mission', 'A mission order', 'Ein Einsatzbefehl', 'Una orden de misión'),
     prefillFlights: L('Un de mes vols', 'One of my flights', 'Einer meiner Flüge', 'Uno de mis vuelos'),
+    stepFlight: L('Vol', 'Flight', 'Flug', 'Vuelo'),
+    stepMission: L('Mission', 'Mission', 'Mission', 'Misión'),
+    stepResult: L('Résultat', 'Result', 'Ergebnis', 'Resultado'),
+    stepTodo: L('à compléter', 'to complete', 'zu ergänzen', 'por completar'),
+    sumEdit: L('Modifier', 'Edit', 'Bearbeiten', 'Modificar'),
+    sumFold: L('Résumé', 'Summary', 'Zusammenfassung', 'Resumen'),
+    sumAll: L('Tous les champs', 'All fields', 'Alle Felder', 'Todos los campos'),
+    sumFew: L('Champs essentiels', 'Essential fields', 'Wesentliche Felder', 'Campos esenciales'),
+    sumBlock: L('bloc', 'block', 'Block', 'calzos'),
+    sumFlight: L('vol', 'flight', 'Flug', 'vuelo'),
+    sumTrace: L('trace ↗', 'track ↗', 'Spur ↗', 'traza ↗'),
+    idChipTitle: L('N° du compte rendu et date du vol — un clic ouvre la date',
+      'Report number and flight date — click to open the date',
+      'Berichtsnummer und Flugdatum — ein Klick öffnet das Datum', 'N.º del informe y fecha del vuelo — un clic abre la fecha'),
     originTitle: L('{n} champ(s) de ce bloc rempli(s) par cette source ; un champ corrigé à la main la perd.',
       '{n} field(s) of this block filled by this source; a field corrected by hand loses it.',
       '{n} Feld(er) dieses Blocks aus dieser Quelle; ein von Hand korrigiertes Feld verliert sie.',
@@ -384,8 +398,8 @@
   };
 
   // CR court / CR détaillé (v2) : aux niveaux 1-2, les blocs et champs marqués data-min-level="3" (blocks.js, form.js)
-  // sont masqués par la règle commune (shared/repository_nav.css) ; « CR détaillé » pose .mc-detailed sur la page et
-  // cette règle les rend à leur affichage par défaut, sans changer le niveau. Déjà rangée en couche « app » : !important
+  // sont masqués par la règle commune (shared/repository_nav.css) ; « Tous les champs » d'un bloc (.mc-all) et l'étape
+  // « Détails du vol » ouverte (.mc-step-reveal) les rendent à leur affichage par défaut, sans changer le niveau. Déjà rangée en couche « app » : !important
   // gardé tel quel par kit.js, spécificité supérieure à la règle commune ; masquages propres (hidden, bloc replié par
   // le framework) respectés. Éléments marqués : affichage par défaut du navigateur (section, div, th / td).
   (() => {
@@ -394,10 +408,9 @@
     style.id = 'mc-level-style';
     style.dataset.layer = 'app';
     style.textContent =
-      '@layer app{html:is([data-level="1"],[data-level="2"]) .mc-page.mc-detailed [data-min-level="3"]:not([hidden],.repo-block-hidden>*){display:revert !important}}';
+      '@layer app{html:is([data-level="1"],[data-level="2"]) .mc-page :is(.mc-all,.mc-step-reveal) [data-min-level="3"]:not([hidden],.repo-block-hidden>*){display:revert !important}}';
     document.head.append(style);
   })();
-  const DETAIL_KEY = 'missionCoreDetailed:v1'; // « CR détaillé » choisi aux niveaux 1-2 (navigateur, toutes familles)
 
   // Favori « → Vol », à glisser dans la barre des favoris : sur les pages du site de la compagnie ouvertes par
   // « Enregistrer le vol sur le site », lit les champs du vol (fragment #defa=, gardé ensuite dans le stockage de session
@@ -634,7 +647,7 @@
           <button type="button" data-action="download" hidden></button>
           <hr><a class="mc-button" data-action="sendSettings"></a>
           <a class="mc-button" data-action="settings"></a></div></details>
-        <button type="button" class="secondary" data-action="detail" data-max-level="2" aria-pressed="false"></button>
+
         <input type="file" accept=".yaml,.yml,.json,application/json,text/yaml" hidden>
         <span class="mc-status"></span></div>`;
     if (header) header.append(tools);
@@ -764,28 +777,12 @@
     tools.querySelectorAll('.mc-list').forEach(list => list.addEventListener('click', event => {
       if (event.target.closest('button,a')) list.closest('details').open = false;
     }));
-    // CR court / CR détaillé (niveaux 1-2) : état gardé dans le navigateur, libellé dans la langue de la page.
-    let detailed = window.RepositoryKit.store.get(DETAIL_KEY) === '1';
-    /** Classe .mc-detailed de la page et libellé du bouton selon l'état. */
-    const detailUi = () => {
-      const button = $a('detail'),
-        K = window.RepositoryKit;
-      root.classList.toggle('mc-detailed', detailed);
-      const label = K.t(detailed ? UI.detailHide : UI.detailShow),
-        title = K.t(detailed ? UI.detailHideTitle : UI.detailShowTitle);
-      if (button.textContent !== label) button.textContent = label;
-      if (button.title !== title) button.title = title;
-      if (button.getAttribute('aria-pressed') !== String(detailed)) button.setAttribute('aria-pressed', String(detailed));
-    };
-    /** Passe au CR détaillé (on) ou court, état mémorisé. */
-    const setDetailed = on => {
-      detailed = !!on;
-      window.RepositoryKit.store.set(DETAIL_KEY, detailed ? '1' : '0');
-      detailUi();
-    };
-    $a('detail').onclick = () => setDetailed(!detailed);
-    detailUi();
-    window.addEventListener('repository-language-change', detailUi);
+    // Puce « n° · date » en tête de la barre (lecture seule) : un clic ouvre le champ de la date (reveal).
+    const idChip = document.createElement('button');
+    idChip.type = 'button';
+    idChip.className = 'mc-id-chip';
+    idChip.onclick = () => reveal('metadata.date');
+    tools.querySelector('.mc-toolbar').prepend(idChip);
     root.querySelector('.mc-kpi-panel h2').textContent = t('kpiTitle');
     root.querySelector('.mc-report-panel h2').textContent = t('reportTitle');
     // Familles avec champs sensibles (ex. LAW ENFORCEMENT) : version publique du CR.
@@ -800,6 +797,18 @@
     // Provenance des champs (chemin → libellé de la source : préremplissage, ordre, vol du journal, suivi réseau) : état
     // de la page et du brouillon (clé à part), jamais dans le registre ; pastille dans le titre des blocs touchés.
     let origins = {};
+    // Étapes du formulaire (présentation seulement : modèle et registre inchangés) : 1 Vol (les faits, surtout
+    // préremplis : résumés), 2 Mission (tâche et blocs de la famille), 3 Résultat ; les autres blocs à la suite.
+    // Étapes en <div> (hors du framework des blocs), reposées après chaque rendu (arrangeSteps) ; états gardés ici.
+    const STEPS = [
+      ['flight', 'stepFlight', ['identification', 'aircraft', 'timeline', 'crew', 'fuel', 'network']],
+      ['mission', 'stepMission', ['tasking', '__family__']],
+      ['result', 'stepResult', ['results']],
+      ['more', '', null]
+    ];
+    const stepOpen = {}, // étape → false si repliée (ouverte par défaut)
+      blockOpen = {}, // bloc → true : champs affichés (« Modifier »), false : résumé demandé ; absent : selon ses champs clés
+      blockAll = new Set(); // blocs dont « Tous les champs » est affiché (niveaux 1-2)
     // Valeurs remplies automatiquement (appareil connu, plan de vol, météo…) : texte simple en
     // majuscules comme la saisie, avant le brouillon et l'aperçu.
     const changed = (path, auto = false) => {
@@ -814,6 +823,21 @@
         renderReport();
       }, 400);
     };
+    // Bloc où le pilote travaille (focus dans ses champs) : il reste déplié, même s'il devient résumable ; « + » d'une
+    // liste dans un bloc résumé : le bloc se déplie.
+    form.addEventListener('focusin', event => {
+      const section = event.target.closest?.('section.mc-block');
+      if (section && !section.classList.contains('mc-summary')) blockOpen[section.id.slice(3)] = true;
+    });
+    form.addEventListener('click', event => {
+      const section = event.target.closest?.('.mc-head-add')?.closest('section.mc-block');
+      if (section?.classList.contains('mc-summary')) {
+        blockOpen[section.id.slice(3)] = true;
+        arrangeSteps();
+      }
+    }, true);
+    window.addEventListener('repository-language-change', () => arrangeSteps());
+    window.addEventListener('suite-level-change', () => arrangeSteps());
     // Provenance au fil de la saisie : heure écrite par le suivi réseau (événement non humain, data-network-filled) ;
     // champ changé par le pilote (événement humain) : il perd sa provenance.
     form.addEventListener('change', event => {
@@ -1324,6 +1348,192 @@
     /** Clé du brouillon (distincte en mode modification d'une mission). */
     const draftSlot = () => edit ? `${draftKey}:edit:${edit.index}:${normId(edit.missionId)}` : draftKey;
 
+    /** Valeur d'un champ de la mission, en texte (vide si absente). */
+    const val = path => String(M.get(mission, path) ?? '').trim();
+    /** Champs clés d'un bloc résumable : le résumé remplace les champs quand ils sont tous là. */
+    const KEYS = {
+      identification: () => true,
+      aircraft: () => (mission.aircraft || []).length > 0 && mission.aircraft.every(a => a.registration || (a.type && a.callsign)),
+      timeline: () => !!(val('timeline.takeoff') && val('timeline.landing')),
+      crew: () => (mission.crew || []).some(c => String(c.name || '').trim()),
+      fuel: () => !!(val('fuel.start') && val('fuel.landing')),
+      network: () => !!val('network.trackerUrl')
+    };
+    /** « 2026-10-19 » → « 19/10/2026 ». */
+    const dayText = v => (/^(\d{4})-(\d{2})-(\d{2})/.exec(v) || []).slice(1).reverse().join('/') || v;
+    /** Lien de la trace du vol (tracker IVAO, StatSim…), vide sans adresse. */
+    const traceSum = () => /^https?:\/\/\S+$/i.test(val('network.trackerUrl')) ? ` · <a href="${esc(val('network.trackerUrl'))}" target="_blank" rel="noopener">${esc(inLanguage(UI.sumTrace))}</a>` : '';
+    /** Résumé d'un bloc en une ligne (HTML échappé). */
+    const SUMS = {
+      identification: () => esc([dayText(val('metadata.date')), val('metadata.operationName'), val('organisation.organisation')].filter(
+        Boolean).join(' · ')),
+      aircraft: () => esc((mission.aircraft || []).map(a => [a.callsign, [a.type, a.registration].filter(Boolean).join(' ')].filter(
+        Boolean).join(' · ')).filter(Boolean).join(' ; ')),
+      timeline: () => {
+        const span = (key, a, b) => a || b ? `${inLanguage(UI[key])} ${a || '?'} → ${b || '?'}` : '';
+        return esc([span('sumBlock', val('timeline.offBlock') || val('timeline.engineStart'), val('timeline.onBlock') || val(
+            'timeline.shutdown')), span('sumFlight', val('timeline.takeoff'), val('timeline.landing'))].filter(Boolean).join(', ')) +
+          traceSum();
+      },
+      crew: () => esc((mission.crew || []).map(c => String(c.name || '').trim()).filter(Boolean).join(', ')),
+      fuel: () => esc(`${val('fuel.start') || '?'} → ${val('fuel.landing') || '?'} ${val('fuel.unit')}`.trim()),
+      network: () => esc([val('network.onlineNetwork'), val('network.ivaoId') || val('network.vatsimId')].filter(Boolean).join(' ')) +
+        traceSum()
+    };
+    /** Niveau d'utilisation de la page (1 à 4). */
+    const pageLevel = () => +document.documentElement.dataset.level || 4;
+    /** Étape d'un bloc (identifiant sans « mc- ») ; blocs de la famille : étape « mission ». */
+    const stepOf = id => STEPS.find(([, , ids]) => ids && (ids.includes(id) || (ids.includes('__family__') && family.blocks.some(b =>
+      b.id === id))))?.[0] || 'more';
+    /** Vrai si un champ du bloc est rempli (case cochée, valeur, ligne d'une liste). */
+    const blockFilled = section => [...section.querySelectorAll('[data-path]')].some(el => el.type === 'checkbox' ? el.checked : String(
+      el.value ?? '').trim());
+    /** Vrai si le bloc est affiché à ce niveau (condition de série, niveau). */
+    const blockShown = section => !section.hidden && !(pageLevel() <= 2 && section.dataset.minLevel === '3' && !section.closest(
+      '.mc-step-reveal'));
+    /** État d'une étape : complète (✓) ou à compléter. Vol : champs clés de ses blocs ; Mission : chaque bloc de la
+     *  famille affiché a au moins un champ rempli ; Résultat : le résultat choisi. */
+    const stepDone = id => id === 'flight' ? ['aircraft', 'timeline', 'crew', 'fuel'].every(k => KEYS[k]()) : id === 'mission' ? [
+      ...form.querySelectorAll('#mc-step-mission section.mc-block')
+    ].filter(sec => blockShown(sec) && sec.id !== 'mc-tasking').every(blockFilled) : id === 'result' ? !!val('results.outcome') : true;
+    /** Pose les étapes après un rendu : barre de progression, en-têtes, blocs rangés dans leur étape (ordre des étapes,
+     *  puis ordre du formulaire), résumés des blocs dont les champs clés sont remplis (jamais sur une anomalie). */
+    function arrangeSteps() {
+      const sections = [...form.querySelectorAll('section.mc-block')];
+      if (!sections.length) return;
+      let nav = form.querySelector(':scope > .mc-steps-nav');
+      if (!nav) {
+        nav = document.createElement('nav');
+        nav.className = 'mc-steps-nav';
+        const banner = form.querySelector(':scope > .mc-edit-banner');
+        if (banner) banner.after(nav);
+        else form.prepend(nav);
+      }
+      let last = nav;
+      STEPS.forEach(([id, key], n) => {
+        let step = form.querySelector(`#mc-step-${id}`);
+        if (!step) {
+          step = document.createElement('div');
+          step.className = 'mc-step';
+          step.id = `mc-step-${id}`;
+          step.dataset.step = id;
+          step.innerHTML = `${key ? `<button type="button" class="mc-step-head"><span class="mc-step-n">${n + 1}</span><span class="mc-step-title"></span><span class="mc-step-state"></span></button>` : ''}<div class="mc-step-body"></div>`;
+          step.querySelector('.mc-step-head')?.addEventListener('click', () => {
+            stepOpen[id] = stepOpen[id] === false;
+            arrangeSteps();
+          });
+        }
+        last.after(step);
+        last = step;
+      });
+      const rank = section => {
+        const id = section.id.slice(3),
+          ids = STEPS.find(([s]) => s === stepOf(id))[2] || [],
+          i = ids.indexOf(id);
+        return i >= 0 ? i : ids.indexOf('__family__');
+      };
+      sections.map((section, i) => [section, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).forEach(([section]) => form
+        .querySelector(`#mc-step-${stepOf(section.id.slice(3))} > .mc-step-body`).append(section));
+      const flagged = new Set(M.checkMission(mission).flatMap(x => [x.path, x.before]).filter(Boolean).map(path => form.querySelector(
+        `[data-path="${CSS.escape(path)}"]`)?.closest('section.mc-block')?.id));
+      sections.forEach(section => {
+        const id = section.id.slice(3),
+          canSum = !!KEYS[id] && KEYS[id]() && !flagged.has(section.id),
+          summary = canSum && blockOpen[id] !== true,
+          detail = pageLevel() <= 2 && !!section.querySelector('.mc-grid [data-min-level="3"], .mc-collection [data-min-level="3"]');
+        let bar = section.querySelector(':scope > .mc-sum');
+        if (!KEYS[id] && !detail) {
+          bar?.remove();
+          section.classList.remove('mc-summary', 'mc-all');
+          return;
+        }
+        if (!bar) {
+          bar = document.createElement('div');
+          bar.className = 'mc-sum';
+          bar.innerHTML =
+            '<span class="mc-sum-text"></span><button type="button" data-sum="edit"></button><button type="button" data-sum="all"></button>';
+          bar.querySelector('[data-sum="edit"]').onclick = () => {
+            blockOpen[id] = !section.classList.contains('mc-summary') ? false : true;
+            arrangeSteps();
+          };
+          bar.querySelector('[data-sum="all"]').onclick = () => {
+            if (blockAll.has(id)) blockAll.delete(id);
+            else blockAll.add(id);
+            arrangeSteps();
+          };
+          (section.querySelector(':scope > .repo-block-heading') || section.querySelector(':scope > h2'))?.after(bar);
+        }
+        section.classList.toggle('mc-summary', summary);
+        section.classList.toggle('mc-all', blockAll.has(id) && !summary);
+        const edit = bar.querySelector('[data-sum="edit"]'),
+          all = bar.querySelector('[data-sum="all"]');
+        edit.hidden = !canSum;
+        edit.textContent = inLanguage(summary ? UI.sumEdit : UI.sumFold);
+        all.hidden = !detail || summary;
+        all.textContent = inLanguage(blockAll.has(id) ? UI.sumFew : UI.sumAll);
+      });
+      stepTexts();
+    }
+    /** Textes qui suivent la saisie sans changer l'affichage : lignes des résumés, en-têtes et barre des étapes, puce
+     *  « n° · date ». */
+    function stepTexts() {
+      form.querySelectorAll('section.mc-block > .mc-sum > .mc-sum-text').forEach(el => {
+        const html = SUMS[el.closest('section').id.slice(3)]?.() || '';
+        if (el.innerHTML !== html) el.innerHTML = html;
+      });
+      const nav = form.querySelector(':scope > .mc-steps-nav');
+      if (nav) nav.replaceChildren(...STEPS.filter(([, key]) => key).map(([id, key], n) => {
+        const b = document.createElement('button'),
+          done = stepDone(id);
+        b.type = 'button';
+        b.className = done ? 'ok' : '';
+        b.textContent = `${n + 1} ${inLanguage(UI[key])}${done ? ' ✓' : ''}`;
+        b.onclick = () => {
+          stepOpen[id] = true;
+          arrangeSteps();
+          form.querySelector(`#mc-step-${id}`).scrollIntoView({
+            block: 'start',
+            behavior: 'smooth'
+          });
+        };
+        return b;
+      }));
+      STEPS.forEach(([id, key]) => {
+        const step = form.querySelector(`#mc-step-${id}`);
+        if (!step || !key) return;
+        const open = stepOpen[id] !== false,
+          done = stepDone(id),
+          state = step.querySelector('.mc-step-state');
+        step.classList.toggle('open', open);
+        step.querySelector('.mc-step-head').setAttribute('aria-expanded', String(open));
+        step.querySelector('.mc-step-title').textContent = inLanguage(UI[key]);
+        state.textContent = done ? '✓' : inLanguage(UI.stepTodo);
+        state.classList.toggle('ok', done);
+      });
+      idChip.textContent = [val('metadata.missionId') || '—', dayText(val('metadata.date'))].filter(Boolean).join(' · ');
+      idChip.title = inLanguage(UI.idChipTitle);
+    }
+    /** Montre un champ où qu'il soit : étape ouverte, bloc déplié, « Tous les champs » s'il est réservé au CR détaillé ;
+     *  puis le champ au centre de l'écran, avec le focus. */
+    function reveal(path) {
+      const el = form.querySelector(`[data-path="${CSS.escape(path)}"]`);
+      if (!el) return;
+      const section = el.closest('section.mc-block'),
+        step = el.closest('.mc-step');
+      if (step) stepOpen[step.dataset.step] = true;
+      if (section) {
+        const id = section.id.slice(3);
+        blockOpen[id] = true;
+        const hidden = el.closest('[data-min-level="3"]');
+        if (hidden && hidden !== section) blockAll.add(id);
+      }
+      arrangeSteps();
+      el.scrollIntoView({
+        block: 'center'
+      });
+      el.focus();
+    }
+
     /** Clé de la provenance des champs, à côté du brouillon. */
     const originsKey = () => `${draftSlot()}:origins`;
     /** Mémorise la provenance des champs (avec le brouillon) ; vide : clé retirée. */
@@ -1407,6 +1617,7 @@
         cell('transitIn', duration(s.transitInMinutes), true) + cell('mission', duration(s.missionMinutes), true) +
         cell('fuelUsed', s.fuelUsed == null ? '—' : `${s.fuelUsed} ${unit}`) + cell('fuelOnStation', s.fuelOnStation == null ? '—' : `${s.fuelOnStation} ${unit}`, true);
       checks();
+      stepTexts();
       const ctx = view.context() || {};
       // un morceau traduisible par élément (la couche de traduction remplace des nœuds de texte entiers)
       const listOrNone = set => [...(set || [])].length ? esc([...set].join(', ')) : `<span>${esc(t('none'))}</span>`;
@@ -1421,15 +1632,7 @@
         list = root.querySelector('.mc-issues');
       list.hidden = !issues.length;
       list.innerHTML = issues.map(issue => `<li><button type="button" data-goto="${esc(issue.path)}">⚠ ${esc(window.MissionBlocks.describeIssue(issue, i))}</button></li>`).join('');
-      list.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => {
-        const el = form.querySelector(`[data-path="${b.dataset.goto}"]`);
-        // champ du CR détaillé masqué au niveau 1-2 (heure de zone, cales…) : CR détaillé affiché
-        if (el?.closest('[data-min-level="3"]') && !el.getClientRects().length) setDetailed(true);
-        el?.scrollIntoView({
-          block: 'center'
-        });
-        el?.focus();
-      });
+      list.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => reveal(b.dataset.goto));
       const flagged = new Set(issues.map(x => x.path));
       form.querySelectorAll('[data-path^="timeline."],[data-path^="fuel."],[data-path="metadata.date"]').forEach(el => el.classList
         .toggle('mc-invalid', flagged.has(el.dataset.path)));
@@ -1518,6 +1721,7 @@
     }
     // Blocs recréés : afficher / masquer / déplacer du framework réappliqués (état mémorisé).
     const blockFramework = () => {
+      arrangeSteps();
       drawOrigins();
       if (document.readyState === "complete") window.AppFramework?.refresh?.();
     };
@@ -1830,6 +2034,7 @@
     async function applyImport(result, label = KINDS[result.kind], extra = [], show = null, opts = {}) {
       const TI = window.MissionTextImport,
         snapshot = opts.snapshot || structuredClone(mission); // état d'avant le préremplissage (« Annuler », « Remplacer »)
+      Object.keys(blockOpen).forEach(k => delete blockOpen[k]);
       opts = {
         ...opts,
         origins: opts.origins || {
