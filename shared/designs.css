@@ -44,6 +44,7 @@ html[data-design="aero"] .mc-switch-pop:not(#imp),
 html[data-design="aero"] .mc-import-pop:not(#imp),
 html[data-design="aero"] .lang-menu:not(#imp),
 html[data-design="aero"] .aircraft-menu:not(#imp),
+html[data-design="aero"] .ap-pop:not(#imp),
 html[data-design="aero"] .dropdown-menu:not(#imp),
 html[data-design="aero"] .popover:not(#imp),
 html[data-design="aero"] [role="menu"]:not(#imp) {
@@ -203,6 +204,7 @@ html[data-design="ops"] .mc-switch-pop:not(#imp),
 html[data-design="ops"] .mc-import-pop:not(#imp),
 html[data-design="ops"] .lang-menu:not(#imp),
 html[data-design="ops"] .aircraft-menu:not(#imp),
+html[data-design="ops"] .ap-pop:not(#imp),
 html[data-design="ops"] .dropdown-menu:not(#imp),
 html[data-design="ops"] .popover:not(#imp),
 html[data-design="ops"] [role="menu"]:not(#imp) {
@@ -284,7 +286,7 @@ html[data-design="console"] :is(.repo-menu-button, .repo-language-button, .mc-he
   border-radius: 6px
 }
 /* menus déroulants (☰ 9 px, fenêtres du CR 12 px) : rayon des blocs ; entrées à 6 px */
-html[data-design="console"] :is(.repo-menu, .repo-language-menu, .mc-pop, .mc-switch-pop, .mc-import-pop, .lang-menu, .aircraft-menu, .dropdown-menu, .popover, [role="menu"]):not(#imp) {
+html[data-design="console"] :is(.repo-menu, .repo-language-menu, .mc-pop, .mc-switch-pop, .mc-import-pop, .lang-menu, .aircraft-menu, .ap-pop, .dropdown-menu, .popover, [role="menu"]):not(#imp) {
   border-radius: 10px
 }
 html[data-design="console"] :is(.repo-menu, .repo-language-menu) :is(a, button, summary):not(#imp) {

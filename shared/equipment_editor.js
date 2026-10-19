@@ -96,8 +96,6 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   /** Code au format d'un désignateur OACI (lettre puis 1 à 3 lettres ou chiffres : BN2T, B17, S210). */
   const designator = c => /^[A-Z][A-Z0-9]{1,3}$/.test(String(c || ''));
-  /** Mots d'un texte (majuscules sans accents) : « Sud Aviation SE 210 » → [SUD, AVIATION, SE, 210]. */
-  const wordsOf = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
   // ---- liste OACI publiée (AircraftDB/aircraft_types.txt) et complétion de la base de ce poste par le lanceur
   let official = null;
   /** Désignateurs de la liste OACI publiée avec la suite (la base elle-même se complète sur chaque poste) : Set. */
@@ -358,17 +356,12 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
      *  de code, 68 début de nom, 55 nom qui contient le texte, 48 tous les mots dans les noms (« Canadair 415 ») ;
      *  score : base + flotte (4) ou fiche dans la base du poste (2). */
     const candidates = text => {
-      const Kx = norm(text),
-        W = wordsOf(text),
-        tries = new Set([...W, ...W.slice(1).map((w, i) => W[i] + w)]),
-        fleet = fleetSet();
-      if (!Kx) return [];
+      const fleet = fleetSet(),
+        match = window.AircraftPicker?.match; // moteur commun (shared/aircraft_picker.js)
+      if (!norm(text) || !match) return [];
       const out = [];
       for (const e of typeIndex().values()) {
-        const keys = [...e.keys];
-        const base = e.keys.has(Kx) ? (e.code === Kx ? 100 : 95) : [...tries].some(w => e.keys.has(w)) ? 85 : Kx.length >= 2 && e.code
-          .startsWith(Kx) ? 72 : Kx.length >= 3 && keys.some(k => k.startsWith(Kx)) ? 68 : Kx.length >= 3 && keys.some(k => k.includes(
-            Kx)) ? 55 : W.some(w => w.length >= 3) && W.every(w => w.length < 2 || keys.some(k => k.includes(w))) ? 48 : 0;
+        const base = match(e.keys, text, e.code);
         if (base) out.push({
           code: e.code,
           base,

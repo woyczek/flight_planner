@@ -225,8 +225,7 @@
     border-radius: 2px
   }
   .lang-menu,
-  .prefs-menu,
-  .aircraft-menu {
+  .prefs-menu {
     position: absolute;
     top: calc(100% + 5px);
     z-index: 50;
@@ -241,64 +240,8 @@
     right: 0;
     min-width: 170px
   }
-  .aircraft-menu {
-    left: 0;
-    width: min(680px, 94vw);
-    max-height: 65vh;
-    overflow: auto
-  }
-  .aircraft-row {
-    display: grid;
-    grid-template-columns: 30px minmax(8em, 1.6fr) minmax(3.5em, .5fr) minmax(7em, 1fr) minmax(6em, .9fr);
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 5px;
-    color: #eef3f7;
-    cursor: pointer;
-    font-size: 13px
-  }
-  .aircraft-row>span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap
-  }
-  .aircraft-row:hover,
-  .aircraft-row:focus-visible,
-  .aircraft-row.active {
-    background: #202735;
-    outline: none
-  }
-  .aircraft-row-head {
-    cursor: default;
-    color: var(--muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    padding-top: 2px;
-    padding-bottom: 2px
-  }
-  .aircraft-row-head:hover {
-    background: transparent
-  }
-  .aircraft-row .ac-type,
-  .aircraft-row .ac-src {
-    color: var(--muted);
-    font-size: 12px
-  }
-  .aircraft-row .ac-state {
-    font-size: 12px
-  }
-  .aircraft-row .ac-state.warn {
-    color: var(--warn, #e0a030)
-  }
-  .aircraft-row .ac-state.none {
-    color: var(--muted)
-  }
   .lang-menu[hidden],
-  .prefs-menu[hidden],
-  .aircraft-menu[hidden] {
+  .prefs-menu[hidden] {
     display: none
   }
   .lang-item,
@@ -373,16 +316,6 @@
   }
   .ac-icon.unknown {
     opacity: .58
-  }
-  .aircraft-group {
-    margin: 7px 7px 3px;
-    padding: 5px 2px 3px;
-    border-bottom: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 650;
-    text-transform: uppercase;
-    letter-spacing: .04em
   }
   @media(max-width:800px) {
     header {
@@ -1810,18 +1743,12 @@ html[data-skeuo] .repo-block-tools .fp-result-pin[aria-pressed="true"]:not(#imp)
   }
 }
 
-/* ---- Carburant : ligne « pas de fiche pour cet appareil », lien « Gérer les fiches » du menu des appareils ---- */
+/* ---- Carburant : ligne « pas de fiche pour cet appareil » ---- */
 @layer app {
   .no-sheet:not([hidden]) {
     margin: 4px 0 10px;
     padding: 6px 10px;
     border-left: 3px solid var(--warn, #e0a030);
     background: color-mix(in srgb, var(--warn, #e0a030) 10%, transparent)
-  }
-  .aircraft-menu .aircraft-manage {
-    display: block;
-    padding: 8px 10px;
-    border-top: 1px solid var(--line, #3335);
-    font-weight: 600
   }
 }

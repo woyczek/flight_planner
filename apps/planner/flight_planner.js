@@ -67,13 +67,11 @@ function profileVisual(p) {
 function aircraftIcon(p) {
   return window.AircraftDBIcons?.icon(p) || '<span class="ac-icon">✈</span>'
 }
-/** Met à jour le bouton d'appareil de l'en-tête (icône, nom, info-bulle) d'après le profil actif. */
+/** Met à jour le choix d'appareil de l'en-tête d'après le profil actif : bouton « Avion » du Carburant (sélecteur commun,
+ *  shared/aircraft_picker.js), sélecteur « Appareil » des Fiches de performances. */
 function syncAircraftPicker() {
   if (PERF_PAGE === "sheets") renderSheetPick();
-  let p = active;
-  $('aircraftCurrentIcon').innerHTML = p ? aircraftIcon(p) : '<span class="ac-icon">✈</span>';
-  $('aircraftCurrentText').textContent = p ? (p.name || p.id) : 'Aucun avion';
-  $('aircraftCurrent').title = p ? `${p.type||p.icao||p.id} · ${p.name||p.id}` : 'Choisir l’avion'
+  aircraftPicker?.refresh()
 }
 /** Fiches de performances : sélecteur « Appareil » de l'en-tête, la fiche modifiée et l'appareil du panneau ChatGPT.
  *  Fiches enregistrées et types de la flotte sans fiche, découpés comme le menu « Avion » du Carburant (« Mes appareils »
@@ -117,10 +115,11 @@ function renderSheetPick() {
     else setActive(p, kt(["base de performances", "performance database", "Leistungsdatenbank", "base de rendimiento"]))
   }
 }
-/** Ferme les menus déroulants de l'en-tête (langue, préférences, appareils). */
+/** Ferme les menus déroulants de l'en-tête (langue, préférences) ; la liste des appareils (sélecteur commun) se ferme
+ *  seule (clic ailleurs, Échap, choix). */
 function closeHeaderMenus() {
-  ['languageMenu', 'prefsMenu', 'aircraftMenu'].forEach(id => $(id).hidden = true);
-  ['languageCurrent', 'prefsCurrent', 'aircraftCurrent'].forEach(id => $(id).setAttribute('aria-expanded', 'false'))
+  ['languageMenu', 'prefsMenu'].forEach(id => $(id).hidden = true);
+  ['languageCurrent', 'prefsCurrent'].forEach(id => $(id).setAttribute('aria-expanded', 'false'))
 }
 /** Reflète les préférences dans l'en-tête : drapeau de langue, bouton « champs du profil », unité de carburant. */
 function applyHeaderPreferences() {
@@ -3138,9 +3137,6 @@ function newProfileFromLanding(id) {
       "Type utilisé par la compagnie : perfs à renseigner."
   }) : null
 }
-/** Liste des appareils de l'en-tête : une rangée par appareil (icône, nom, type, source du profil, état), groupées par
- *  catégorie ; profils enregistrés et appareils sans profil (Landing Performance, flotte). Choix au clic ou au clavier
- *  (flèches, Entrée ou Espace, Échap) : le profil devient actif (ou est créé vide). */
 /** Appareils rangés par section : « Mes appareils » en tête (si mineFirst), puis par catégorie (« Autres » en dernier),
  *  par nom dans chaque section. Rend Map(libellé → [[profil, profileVisual(profil)], …]) ; liste déjà triée en sortie. */
 function aircraftGroups(list, mineFirst) {
@@ -3168,87 +3164,84 @@ function aircraftGroups(list, mineFirst) {
   return groups
 }
 
-function listAircraft() {
-  const esc = KIT.esc,
-    menu = $("aircraftMenu"),
-    profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
-      .name || "").trim()).map(p => normalize(p));
-  // Carburant : les fiches existantes seulement (pas de type sans fiche), « Mes appareils » en tête ; Fiches de
-  // performances : fiches et types de la flotte sans fiche
-  const all = [...profiles, ...(PERF_PAGE === "sheets" ? landingOnlyAircraft(profiles) : [])],
-    groups = aircraftGroups(all, PERF_PAGE === "fuel");
-  /** Rangée d'un appareil : état « actif », « sans profil », « à compléter (n) » (manques en infobulle) ou « complet ». */
-  const row = (p, g) => {
+/** Profils rangés pour le sélecteur commun : « Mes appareils » en tête (si mineFirst), puis par catégorie de la suite
+ *  (AircraftCatalog.classify : hélicoptères, turbopropulseurs, jets, pistons, autres), par nom. Rend [{ group, list }]. */
+function pickerGroups(list, mineFirst) {
+  const sorted = [...list].sort((a, b) => String(a.name || a.id || "").localeCompare(String(b.name || b.id || ""), "fr", {
+      numeric: true
+    })),
+    mineKeys = new Set((myList || []).map(a => aircraftTypeKey(a.code))),
+    mineNames = new Set((myList || []).map(a => aKey(a.name))),
+    isMine = p => mineFirst && ([p.id, p.icao, p.type].some(v => v && mineKeys.has(aircraftTypeKey(v))) || mineNames.has(aKey(p.name))),
+    mine = sorted.filter(isMine),
+    rest = window.AircraftPicker.byCategory(sorted.filter(p => !isMine(p)), p => p.icao || p.type || p.id);
+  return [...(mine.length ? [{
+    group: kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]),
+    list: mine
+  }] : []), ...rest.map(g => ({
+    group: g.group,
+    list: g.items
+  }))]
+}
+/** Appareils proposés par le bouton « Avion » (sélecteur commun) : fiches existantes (Fiches de performances : et types
+ *  sans fiche du Landing et de la flotte) ; une rangée = nom, type et source de la fiche, état (actif, à compléter (n),
+ *  complet, sans profil). */
+function aircraftChoices() {
+  const profiles = Object.values(state.profiles || {}).filter(p => p && typeof p === "object" && String(p.id || p.icao || p.type || p
+      .name || "").trim()).map(p => normalize(p)),
+    all = [...profiles, ...(PERF_PAGE === "sheets" ? landingOnlyAircraft(profiles) : [])];
+  /** Élément du sélecteur pour un profil. */
+  const item = p => {
     const i = profileInfo(p),
       on = active?.id === p.id,
       todo = i.missing.length ? ktf(["à compléter ({n})", "to complete ({n})", "zu ergänzen ({n})", "por completar ({n})"], {
         n: i.missing.length
-      }) : "",
-      [st, cls, tip] = p._landingOnly ? [kt(["sans profil", "no profile", "kein Profil", "sin perfil"]), "none", kt(p._landing ? [
-        "Connu du Landing Performance, pas encore de profil : un profil vide sera créé.",
-        "Known from Landing Performance, no profile yet: an empty profile will be created.",
-        "Aus Landing Performance bekannt, noch kein Profil: ein leeres Profil wird angelegt.",
-        "Conocido por Landing Performance, aún sin perfil: se creará un perfil vacío."
-      ] : ["Utilisé par la compagnie, pas encore de profil : un profil vide sera créé.",
-        "Used by the company, no profile yet: an empty profile will be created.",
-        "Von der Gesellschaft genutzt, noch kein Profil: ein leeres Profil wird angelegt.",
-        "Usado por la compañía, aún sin perfil: se creará un perfil vacío."
-      ])] : [on ? [kt(["actif", "active", "aktiv", "activo"]), todo].filter(Boolean).join(" · ") : todo || kt(["complet", "complete",
-        "vollständig", "completo"
-      ]), todo ? "warn" : "", i.missing.join(", ")];
-    return `<div class="aircraft-row aircraft-item${on ? " active" : ""}" role="option" tabindex="-1" aria-selected="${on}" data-id="${esc(p.id)}"${p._landingOnly ? ' data-landing="1"' : ""} title="${esc([p.name || p.id, g[2], tip].filter(Boolean).join(" · "))}"><span>${aircraftIcon(p)}</span><span class="ac-name">${esc(p.name || p.id)}</span><span class="ac-type">${esc(p.type || p.icao || p.id)}</span><span class="ac-src">${esc(profileSourceText(p, i))}</span><span class="ac-state ${cls}">${esc(st)}</span></div>`
-  };
-  const head = `<div class="aircraft-row aircraft-row-head" role="presentation"><span></span><span>${esc(kt(["Appareil", "Aircraft", "Luftfahrzeug", "Aeronave"]))}</span><span>${esc(kt(["Type", "Type", "Muster", "Tipo"]))}</span><span>${esc(kt(["Profil", "Profile", "Profil", "Perfil"]))}</span><span>${esc(kt(["État", "Status", "Status", "Estado"]))}</span></div>`;
-  // lien vers la page qui gère les fiches (Carburant : la liste ne crée ni ne modifie rien)
-  const manage = PERF_PAGE === "fuel" ? `<a class="aircraft-manage" href="performance_sheets.html">${esc(kt(["Gérer les fiches de performances ↗", "Manage performance sheets ↗", "Leistungsblätter verwalten ↗", "Gestionar las fichas de rendimiento ↗"]))}</a>` : "";
-  menu.innerHTML = all.length ? head + [...groups].map(([label, items]) => `<div class="aircraft-group" role="presentation">${esc(label)}</div>` + items.map(([p, g]) => row(p, g)).join("")).join(
-      "") + manage : PERF_PAGE === "fuel" ? `<div class="mut" style="padding:8px">${esc(kt(["Aucune fiche de performances.", "No performance sheet.", "Kein Leistungsblatt.", "Ninguna ficha de rendimiento."]))}</div>${manage}` :
-    `<div class="mut" style="padding:8px">${esc(kt(["Aucun avion. Importe un profil, choisis le dossier performances ou charge des atterrissages dans le Landing Performance.",
-      "No aircraft. Import a profile, choose the performance folder or load landings in Landing Performance.",
-      "Kein Flugzeug. Profil importieren, Leistungsordner wählen oder Landungen in Landing Performance laden.",
-      "Ningún avión. Importa un perfil, elige la carpeta de rendimiento o carga aterrizajes en Landing Performance."
-    ]))}</div>`;
-  menu.setAttribute("aria-label", kt(["Choisir l’avion", "Choose the aircraft", "Flugzeug wählen", "Elegir el avión"]));
-  /** Rend actif l'appareil d'une rangée (profil vide créé pour un appareil sans profil) et ferme la liste. Clic remplacé
-   *  par shared/flight_ui.js (classe aircraft-item : confirmation si le profil courant est modifié). */
-  const choose = x => {
-    const p = x.dataset.landing ? newProfileFromLanding(x.dataset.id) : state.profiles?.[x.dataset.id];
-    if (p) setActive(p, x.dataset.landing ? "avion du Landing Performance" : "cache local");
-    closeHeaderMenus();
-    $("aircraftCurrent").focus()
-  };
-  menu.querySelectorAll('[role="option"]').forEach(x => x.onclick = () => choose(x));
-  menu.onkeydown = e => {
-    const opts = [...menu.querySelectorAll('[role="option"]')],
-      i = opts.indexOf(document.activeElement);
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      opts[Math.min(opts.length - 1, Math.max(0, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus()
-    } else if ((e.key === "Enter" || e.key === " ") && i >= 0) {
-      e.preventDefault();
-      opts[i].click() // même chemin que le clic (confirmation des modifications non enregistrées)
-    } else if (e.key === "Escape") {
-      closeHeaderMenus();
-      $("aircraftCurrent").focus()
+      }) : "";
+    return {
+      key: (p._landingOnly ? "L:" : "P:") + p.id,
+      label: p.name || p.id,
+      sub: [p.type || p.icao || p.id, profileSourceText(p, i)].filter(Boolean).join(" · "),
+      type: p.icao || p.type || p.id,
+      keys: [p.id, p.icao, p.type],
+      note: p._landingOnly ? kt(["sans profil", "no profile", "kein Profil", "sin perfil"]) : on ? [kt(["actif", "active", "aktiv",
+        "activo"
+      ]), todo].filter(Boolean).join(" · ") : todo || kt(["complet", "complete", "vollständig", "completo"]),
+      warn: !!todo,
+      current: on,
+      title: [p.name || p.id, p.type || p.icao, i.missing.join(", ")].filter(Boolean).join(" · ")
     }
-  }
+  };
+  return pickerGroups(all, PERF_PAGE === "fuel").map(g => ({
+    group: g.group,
+    items: g.list.map(item)
+  }))
 }
-// Ouvre le menu des appareils (liste rafraîchie avec le Landing Performance).
-$("aircraftCurrent").onclick = e => {
-  e.stopPropagation();
-  let open = $("aircraftMenu").hidden;
-  closeHeaderMenus();
-  if (open) {
-    listAircraft();
-    $("aircraftMenu").hidden = false;
-    $("aircraftCurrent").setAttribute("aria-expanded", "true");
-    ($("aircraftMenu").querySelector('.aircraft-row.active[role="option"]') || $("aircraftMenu").querySelector('[role="option"]'))
-    ?.focus();
-    refreshLandingAircraft().then(changed => {
-      if (changed && !$("aircraftMenu").hidden) listAircraft()
-    })
+// Bouton « Avion » de l'en-tête (Carburant) : sélecteur commun (shared/aircraft_picker.js), liste rafraîchie avec le
+// Landing Performance à l'ouverture ; le choix passe par la confirmation des modifications non enregistrées
+// (window.requestAircraftSwitch, shared/flight_ui.js).
+var aircraftPicker = document.getElementById("aircraftCurrent") && window.AircraftPicker?.attach($("aircraftCurrent"), {
+  kind: "button",
+  sources: () => aircraftChoices(),
+  current: () => active ? {
+    label: active.name || active.id,
+    type: active.icao || active.type || active.id,
+    title: `${active.type || active.icao || active.id} · ${active.name || active.id}`
+  } : null,
+  placeholder: kt(["Aucun avion", "No aircraft", "Kein Flugzeug", "Ningún avión"]),
+  empty: () => kt(["Aucune fiche de performances.", "No performance sheet.", "Kein Leistungsblatt.", "Ninguna ficha de rendimiento."]),
+  footer: () => PERF_PAGE === "fuel" ? `<a href="performance_sheets.html">${KIT.esc(kt(["Gérer les fiches de performances ↗", "Manage performance sheets ↗", "Leistungsblätter verwalten ↗", "Gestionar las fichas de rendimiento ↗"]))}</a>` : "",
+  onOpen: () => {
+    closeHeaderMenus();
+    refreshLandingAircraft().then(changed => changed && aircraftPicker?.refresh())
+  },
+  onPick: it => {
+    const id = it.key.slice(2),
+      p = it.key.startsWith("L:") ? newProfileFromLanding(id) : state.profiles?.[id];
+    if (!p) return;
+    if (window.requestAircraftSwitch) window.requestAircraftSwitch(p);
+    else setActive(p, it.key.startsWith("L:") ? "avion du Landing Performance" : "cache local")
   }
-};
+});
 // Ouvre le menu de langue de l'ancien en-tête.
 $("languageCurrent").onclick = e => {
   e.stopPropagation();
@@ -3282,7 +3275,7 @@ $("prefsEditorBtn").onclick = () => {
   closeHeaderMenus()
 };
 document.addEventListener("click", e => {
-  if (!e.target.closest(".lang-popup,.prefs-popup,.aircraft-popup")) closeHeaderMenus()
+  if (!e.target.closest(".lang-popup,.prefs-popup")) closeHeaderMenus()
 });
 // ===== Base de performances : un état par type (bloc « Profils de performances », liste d'appareils de l'en-tête) =====
 /** Origine d'un profil en clair : OFP SimBrief calibré, SimBrief, Little Navmap, CSV, JSON, saisie ; « aucun profil »

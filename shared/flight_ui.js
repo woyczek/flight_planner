@@ -2,10 +2,9 @@
 // et déplaçables, barre d'état « profil modifié » (enregistrer / recharger / supprimer), confirmation avant
 // de quitter un profil non enregistré, tri de la table RPM, rendu du profil moteur.
 (() => {
-  // Copie profonde (profils). rawSetActive / rawListAircraft : fonctions d'origine de la page, avant leur surcharge plus bas.
+  // Copie profonde (profils). rawSetActive : fonction d'origine de la page, avant sa surcharge plus bas.
   const clone = o => structuredClone(o);
-  const rawSetActive = setActive,
-    rawListAircraft = listAircraft;
+  const rawSetActive = setActive;
   const css = document.createElement("style");
   css.textContent = `
     body.has-status-bar{padding-bottom:52px}.status-bar{position:fixed;z-index:900;left:0;right:0;bottom:0;display:flex;align-items:center;gap:8px;padding:7px 14px;background:#0c1015ee;border-top:1px solid var(--b);backdrop-filter:blur(8px)}.status-bar .status-text{flex:1;color:var(--mut);font-size:12px}.status-bar.dirty .status-text{color:#f2c879}
@@ -275,15 +274,8 @@
       closeHeaderMenus()
     })
   }
-  window.requestAircraftSwitch = requestSwitch; // sélecteur de l'en-tête des Fiches de performances
-  // Surcharge de la liste des appareils : le choix passe par requestSwitch (confirmation des modifications).
-  listAircraft = function() {
-    rawListAircraft();
-    document.querySelectorAll(".aircraft-item").forEach(x => x.onclick = () => {
-      const p = x.dataset.landing ? newProfileFromLanding(x.dataset.id) : state.profiles[x.dataset.id];
-      if (p) requestSwitch(p)
-    })
-  };
+  // choix d'un appareil (bouton « Avion » du Carburant, sélecteur « Appareil » des Fiches) : confirmation des modifications
+  window.requestAircraftSwitch = requestSwitch;
   // Avertissement du navigateur si l'on quitte la page avec un profil modifié.
   addEventListener("beforeunload", e => {
     if (profileDirty) {

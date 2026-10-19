@@ -12,6 +12,7 @@ on every page. This document describes each component, its role and its interfac
 | Appearance (designs, icons, side bar, colours) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | all pages; settings on the “Appearance” page |
 | Resizable columns | `shared/column_resize.js` | Planner |
 | Resizable table columns, clipped cells | `shared/table_resize.js` | Planner (RPM / power table) |
+| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button) |
 | Blocks (move / hide) | `shared/app_framework.js` | all pages |
 | Text translation | `shared/content_i18n.js` | CR, Planner, reporting pages |
 | Pilot profile | `shared/pilot_profile.js` | all pages (☰ menu) |
@@ -220,6 +221,31 @@ a redraw of the body), double-clicking a handle returns to the natural widths. R
 gets `class="tbl-clip"` and a `title` with the whole text: one line with an ellipsis, the text in a tooltip, a
 double-click unfolds it over several lines. Returns `{ reset(), refresh() }`; a second `attach` on the same table
 only refreshes. Used by the planner (RPM / power → consumption table, "Comment" column).
+
+## 3 quinquies. `aircraft_picker.js` — choosing an aircraft or a type
+
+One component wherever an aircraft, a type or a performance sheet is chosen: a drop-down list with a search field at
+the top, titled groups, keyboard (↑ ↓ Enter Esc, Tab closes), always placed inside the window (below its host,
+flipped up or shifted left when it does not fit; the list scrolls), closed by a click elsewhere. Inside a modal
+`<dialog>` the list is placed in the dialog (otherwise inert).
+
+`AircraftPicker.attach(host, options)` → `{ open(), close(), refresh(), isOpen() }`
+- `host`: a button (`kind: 'button'`: it shows the current aircraft — silhouette, name — and opens the list with a
+  search field) or an input (`kind: 'field'`: the input stays the entry, the list opens below it and follows the
+  typing; `onEnter(text)` for Enter with no entry chosen, `onEscape()` when the list is closed).
+- `sources`: one function (or a list) of the page, called with the searched text; returns (or promises) a group
+  `{ group, items }` or a list of groups. Item: `{ key, label, sub, type, reg, keys, note, warn, disabled, current,
+  title, icon }` — `type` gives the silhouette and the catalogue aliases searched; `keys`: extra searched texts;
+  `note`: right-hand mention (the reason of a disabled entry: “already taken”); `current`: the aircraft in use. The
+  page keeps its own logic: `onPick(item, text)` receives the item as given.
+- `current()` (button), `placeholder`, `findPlaceholder`, `free` (a “free entry” row when nothing matches exactly:
+  `item.free`, `item.label` = the text), `empty()`, `footer()` (HTML under the list), `onOpen()`, `minWidth`.
+
+Search: `AircraftPicker.match(keys, text, code)` is the suite's single scoring engine (100 exact code, 95 exact key,
+85 exact word, 72 code prefix, 68 key prefix, 55 key contains, 48 every word in the keys), also used by
+`EquipmentEditor.makeSearch`; items are kept in their group, best score first. `AircraftPicker.byCategory(items,
+typeOf)` sorts items into the suite categories (`AircraftCatalog.classify`: helicopters, turboprops, jets, pistons,
+others). Colours follow the design tokens (`--repo-card`, `--sk-ink`, `--repo-accent`, `--repo-round`).
 
 ## 3 bis. `sticky_frame.js` — semi-mobile frames
 
