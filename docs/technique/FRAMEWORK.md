@@ -22,6 +22,7 @@ on every page. This document describes each component, its role and its interfac
 | SVG charts | `shared/mission_core/charts.js` | reporting pages |
 | Sortable table | `shared/mission_table.js` | reporting pages |
 | Editable databases | `shared/data_admin.js` (“Settings” page, `parametrage.html`) | CR |
+| Fleet map (aircraft at their current aerodrome, hover, selection ⇄ table) | `shared/fleet_map.js` (`FleetMap.mount`) | Settings › Centre › Fleet |
 | Aircraft type database | `AircraftDB/` | the three applications |
 | Common catalogue (types, aircraft) | `shared/aircraft_catalog.js` | the three applications |
 | Anonymised reference | `data/references/defa_reference.js` | the three applications |

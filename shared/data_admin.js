@@ -167,7 +167,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     data,
     onChange,
     filter: initialFilter = '',
-    focus = ''
+    focus = '',
+    rowClass = null, // ligne → classe supplémentaire de sa rangée (ex. sélection de la carte de la flotte)
+    onRowHover = null // ligne survolée (null en sortie du tableau), ex. surlignage sur la carte de la flotte
   }) {
     let filter = initialFilter,
       scrolled = false, // ligne à montrer : défilée une fois, mise en évidence à chaque dessin
@@ -189,6 +191,12 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (col.type === 'select') return `<select ${attrs}>${['', ...optionsOf(col)].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !optionsOf(col).includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
       const value = col.type === 'list' ? (v || []).join(', ') : v ?? '';
       return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs}${col.aircraftType ? ' data-aircraft-type autocomplete="off"' : ''} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
+    };
+
+    /** Attribut class d'une rangée : ligne à montrer (da-focus), classe donnée par rowClass. */
+    const rowAttr = (row, focused) => {
+      const c = [focused ? 'da-focus' : '', rowClass?.(row) || ''].filter(Boolean).join(' ');
+      return c ? ` class="${esc(c)}"` : '';
     };
 
     /** Redessine le tableau : lignes filtrées (texte de toutes les colonnes) et triées sur la colonne choisie. */
@@ -217,7 +225,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       }
       host.innerHTML = `<div class="da-grid-tools"><input type="search" class="da-filter" placeholder="${esc(T('Filtrer…', 'Filter…'))}" value="${esc(filter)}"><span class="small">${order.length} / ${data.length}</span><button type="button" class="secondary da-add">${esc(T('+ Ajouter une ligne', '+ Add row'))}</button></div>
         <div class="da-scroll"><table class="da-table"><thead><tr>${columns.map(c => `<th data-sort="${esc(c.key)}">${esc(c.label)} ${sort.key === c.key ? (sort.dir > 0 ? '▲' : '▼') : '↕'}</th>`).join('')}<th></th></tr></thead>
-        <tbody>${order.slice(0, limit).map(({ row, index }) => `<tr${index === focusIdx ? ' class="da-focus"' : ''}>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>
+        <tbody>${order.slice(0, limit).map(({ row, index }) => `<tr data-index="${index}"${rowAttr(row, index === focusIdx)}>${columns.map(c => `<td>${cell(c, row, index)}</td>`).join('')}<td><button type="button" class="da-del" data-del="${index}" title="${esc(T('Supprimer la ligne', 'Delete row'))}">×</button></td></tr>`).join('')}</tbody></table></div>
         ${order.length > limit ? `<p class="row da-more-row"><span class="small">${esc(tr(['{n} lignes sur {t} affichées', '{n} of {t} rows shown', '{n} von {t} Zeilen angezeigt', '{n} de {t} filas mostradas'], { n: limit, t: order.length }))}</span><button type="button" class="secondary" data-more="${PAGE}">${esc(tr(['Afficher les {n} suivantes', 'Show the next {n}', 'Die nächsten {n} anzeigen', 'Mostrar las {n} siguientes'], { n: Math.min(PAGE, order.length - limit) }))}</button><button type="button" class="secondary" data-more="all">${esc(tr(['Tout afficher', 'Show all', 'Alle anzeigen', 'Mostrar todo'], {}))}</button></p>` : ''}`;
       host.querySelectorAll('[data-more]').forEach(b => b.onclick = () => {
         limit = b.dataset.more === 'all' ? Infinity : limit + PAGE;
@@ -257,6 +265,18 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         onChange();
         paint();
       });
+    }
+    // survol des rangées (onRowHover) : ligne de données sous le pointeur, null à la sortie du tableau
+    if (onRowHover) {
+      let over = null;
+      const hover = row => {
+        if (row !== over) onRowHover(over = row);
+      };
+      host.addEventListener('mouseover', event => {
+        const tr = event.target.closest?.('tbody tr[data-index]');
+        hover(tr ? data[Number(tr.dataset.index)] || null : null);
+      });
+      host.addEventListener('mouseleave', () => hover(null));
     }
     // type OACI d'un appareil : liste des types (sélecteur commun), montée à la première prise de focus
     host.addEventListener('focusin', event => {
@@ -1294,6 +1314,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         'Reference completed from the log: check, then save to repository.'));
     }
     let focusRow = ''; // texte du filtre du premier tableau à la prochaine ouverture d'une base (ligne à montrer)
+    let fleetMap = null, // carte de la flotte affichée (shared/fleet_map.js), libérée au prochain affichage
+      mapTimer = 0;
     /** Ouvre la correspondance des indicatifs, filtrée sur l'indicatif prefix (ligne ajoutée ou complétée). */
     function openCallsigns(prefix = '') {
       focusRow = prefix;
@@ -1332,6 +1354,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     /** Affiche la base choisie (rubrique du Centre si elle est verrouillée) : titre, présentation, mode d'emploi,
      *  puis éditeur (tableaux) ou panneau dédié. */
     function show() {
+      fleetMap?.destroy();
+      fleetMap = null;
+      clearTimeout(mapTimer);
       let set = SETS.find(d => d.id === current.id) || SETS[0];
       if (locked(set)) set = SETS.find(d => d.id === 'cpco') || set;
       current.id = set.id;
@@ -1378,16 +1403,44 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('État : fichier du dépôt, sans modification dans ce navigateur',
           'State: repository file, no change in this browser'));
+        // flotte : carte des appareils à leur terrain actuel (shared/fleet_map.js), au-dessus du tableau ; sélection sur la
+        // carte ⇄ rangées surlignées, survol d'une rangée ⇄ position surlignée sur la carte
+        let map = null,
+          fleetGrid = null;
+        if (set.id === 'fleet' && window.FleetMap) {
+          const mapHost = document.createElement('div');
+          body.append(mapHost);
+          map = fleetMap = window.FleetMap.mount(mapHost, {
+            rows: w.data.rows,
+            onSelect: keys => {
+              fleetGrid?.paint();
+              if (keys.size) requestAnimationFrame(() => body.querySelector('tr.da-map-sel')?.scrollIntoView({
+                block: 'nearest',
+                behavior: 'smooth'
+              }));
+            }
+          });
+        }
         set.tables().forEach((table, i) => {
           if (table.title) body.insertAdjacentHTML('beforeend', `<h3>${esc(table.title)}</h3>`);
           const host = document.createElement('div');
           body.append(host);
-          grid(host, {
+          const g = grid(host, {
             columns: table.columns,
             data: table.data,
-            onChange: changed,
-            focus: i ? '' : focusRow
+            // carte de la flotte : positions relues après une modification (base, emplacement, ligne ajoutée…)
+            onChange: map && !i ? () => {
+              changed();
+              clearTimeout(mapTimer);
+              mapTimer = setTimeout(() => map.refresh(), 600);
+            } : changed,
+            focus: i ? '' : focusRow,
+            ...(map && !i ? {
+              rowClass: row => map.isSelected(row) ? 'da-map-sel' : '',
+              onRowHover: row => map.highlight(row)
+            } : {})
           });
+          if (!i) fleetGrid = g;
         });
         focusRow = '';
         // flotte : appareils du reporting (case « personnel »), types et mise à jour depuis le site (fleet_reporting.js)

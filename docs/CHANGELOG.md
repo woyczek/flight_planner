@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Settings › Centre › Fleet: fleet map** (`shared/fleet_map.js`) — above the fleet table, every aircraft at its
+  current aerodrome (`AircraftPositions.whereIs`: website location or mission-order report, else home base; coordinates
+  from `MissionAssignments.coordsOf`), on an OpenStreetMap background (MapLibre). Overview: one badge per aerodrome with
+  the aircraft count; zoomed in, the aircraft are lined up on an apron, one tag each. Hovering a badge gives the count
+  per callsign series and type; hovering an aircraft (or a single-aircraft badge) gives its short sheet with the date
+  and time of its last flight (DEFA flight log and mission log, latest wins). Selection by click (Ctrl / Shift: add or
+  remove), Shift + drag rectangle, Esc; selected rows highlighted in the table, list linked to the aircraft sheets.
+  Hovering a table row highlights its position on the map. Framework block (move / hide), 4 languages. The editable
+  table (`data_admin.js` `grid`) gains two generic options: `rowClass` and `onRowHover`. Administrator manual
+  (4 languages).
 - **Fuel and Flight maps: “Open in ▾”** (`shared/external_links.js`) — a short menu that opens the page's flight in
   another service, in a new tab: “SimBrief — plan this flight” (dispatch options prefilled: departure, arrival, type,
   route, registration, airline and flight number from the call sign, alternate, level), “SkyVector — the route”
