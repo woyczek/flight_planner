@@ -378,7 +378,19 @@ SkyVector fields (checked 20 October): only an ICAO speed/level group **at the s
 speed and altitude (`fpl=N0236F270 LFRS … LFML` → 236, FL270); the group after the departure, the FAA form
 (`<TAIL> <TYPE>/<EQUIP> <TAS> <ADEP> <route> <ADES> <ALT>`) and a tail number or type in front fill nothing (and the
 latter breaks the group). No address parameter fills the aircraft or the ETD: `etd`, `tas`, `mach` exist in SkyVector's
-code only as arguments of its embedded chart, not of `?fpl=`. The group is sent when the route gives a speed (OFP or
+code only as arguments of its embedded chart, not of `?fpl=`. Re-checked on 20 October against SkyVector's own code
+(`/images/javascript/skyvector.js`) and API: the page sends `fpl` as is to `/api/init`, and the plan then returned by
+`/api/dLayer` carries `speed: 457`, `alt: FL280` for `fpl=N0457F280 LFBO TOU NTS LFRN`; its own “Link” button
+(`genlink`) builds exactly this form (speed and level glued, then departure, route, destination) and never an ETD. The
+ETD is set by the Flight Plan panel through `/api/fpl?cmd=etdz&etdz=HHMM&eddz=MM/DD`, bound to the browser's SkyVector
+session (not reachable from another site); `LFBO1430` loses the departure, `ETD1430` is ignored and a group after the
+departure is no longer read. Hence: the group is always sent when a speed is known (route group, otherwise the cruise
+TAS of the OFP or of the aircraft sheet), and the OFP departure time is copied on click for the ETD field. Aircraft and fuel
+cannot be passed either (checked against the API, 20 October): a type in front of the group breaks it (`A332
+N0457F280 …` gives FL332, speed lost), a type at the end becomes a route point, `FUEL9000` is ignored; the panel sets
+them with `/api/fpl?cmd=aircraft&acft=<id>` (an aircraft profile of the user's SkyVector account, picked by tail
+number) and `cmd=fuel`, bound to the session. Only a bookmarklet run on the SkyVector page (same origin: it can call
+`SkyVector.fpl({cmd: …})`) could fill ETD, fuel and the aircraft from values carried in the address fragment. The group is sent when the route gives a speed (OFP or
 item 15), with the flight level if known, otherwise the group's. A call sign such as
 `AFR1234` gives SimBrief `airline` and `fltnum`. In Fuel, the alternate, call sign and registration come from the last
 SimBrief OFP only when its origin and destination match the flight plan.

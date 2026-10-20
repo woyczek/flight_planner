@@ -1379,6 +1379,15 @@
       id)))?.[0] || 'details';
     /** Étape ouverte (choix du pilote, sinon : toutes sauf « Détails du vol »). */
     const isOpen = id => stepOpen[id] ?? id !== 'details';
+    /** Mode mobile (html[data-mobile], config/repository_tree) : une étape ouverte à la fois. */
+    const oneStep = () => document.documentElement.dataset.mobile === 'on';
+    /** Ouvre (ou ferme) une étape ; en mode mobile, les autres se ferment (accordéon). */
+    const openStep = (id, open = true) => {
+      if (oneStep()) STEPS.forEach(([s]) => {
+        stepOpen[s] = false;
+      });
+      stepOpen[id] = open;
+    };
     /** Résumé générique d'un bloc sans format propre (Détails du vol) : premières valeurs remplies, sinon « — ». */
     const genericSum = section => esc([...section.querySelectorAll('[data-path]')].filter(el => el.type === 'checkbox' ? el.checked :
       String(el.value ?? '').trim()).map(el => el.type === 'checkbox' ? el.closest('label')?.textContent.trim() : el.tagName ===
@@ -1400,6 +1409,9 @@
     function arrangeSteps() {
       const sections = [...form.querySelectorAll('section.mc-block')];
       if (!sections.length) return;
+      // mode mobile, premier rendu : la première étape à compléter seule ouverte (choix figé, la saisie ne la referme pas)
+      if (oneStep() && !Object.keys(stepOpen).length) openStep(STEPS.find(([id]) => id !== 'details' && !stepDone(id))?.[0] ||
+        'flight');
       let nav = form.querySelector(':scope > .mc-steps-nav');
       if (!nav) {
         nav = document.createElement('nav');
@@ -1418,8 +1430,12 @@
           step.dataset.step = id;
           step.innerHTML = `<button type="button" class="mc-step-head"><span class="mc-step-n">${n + 1}</span><span class="mc-step-title"></span><span class="mc-step-state"></span></button><div class="mc-step-body"></div>`;
           step.querySelector('.mc-step-head').addEventListener('click', () => {
-            stepOpen[id] = !isOpen(id);
+            openStep(id, !isOpen(id));
             arrangeSteps();
+            // mode mobile : l'étape précédente vient de se replier, l'étape ouverte est ramenée en haut de l'écran
+            if (oneStep() && isOpen(id)) step.scrollIntoView({
+              block: 'start'
+            });
           });
         }
         last.after(step);
@@ -1488,9 +1504,10 @@
           done = stepDone(id);
         b.type = 'button';
         b.className = done ? 'ok' : '';
+        b.classList.toggle('on', isOpen(id)); // étape ouverte (repérée en mode mobile, shared/mobile.css)
         b.textContent = `${n + 1} ${inLanguage(UI[key])}${done ? ' ✓' : ''}`;
         b.onclick = () => {
-          stepOpen[id] = true;
+          openStep(id);
           arrangeSteps();
           form.querySelector(`#mc-step-${id}`).scrollIntoView({
             block: 'start',
@@ -1522,7 +1539,7 @@
       if (!el) return;
       const section = el.closest('section.mc-block'),
         step = el.closest('.mc-step');
-      if (step) stepOpen[step.dataset.step] = true;
+      if (step) openStep(step.dataset.step);
       if (section) {
         const id = section.id.slice(3);
         blockOpen[id] = true;

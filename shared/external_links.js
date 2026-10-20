@@ -3,7 +3,8 @@
   // Liens vers les services externes de préparation du vol (menu « Ouvrir dans ▾ » : Carburant, Cartes de vol ; le CR
   // pourra le reprendre) : ExternalLinks.menu(host, flight) pose le bouton et son menu dans host ; flight est un objet
   // ou une fonction (éventuellement asynchrone) qui le rend au moment de l'ouverture : { dep, arr, route, type, reg,
-  // callsign, altn, fl } ; route : case 15 (« LFBO N0450F350 DCT TOU UN460 NTS LFRN ») ou liste « ID lat lon » séparée
+  // callsign, altn, fl, tas, etd } (tas : vitesse vraie de croisière en kt, quand la route n'a pas de groupe vitesse /
+  // niveau ; etd : heure de départ « HHMM » UTC) ; route : case 15 (« LFBO N0450F350 DCT TOU UN460 NTS LFRN ») ou liste « ID lat lon » séparée
   // par des virgules (route d'un OFP SimBrief dans le Carburant).
   // Rien n'est envoyé qui ne soit déjà dans le vol (pas d'identifiant personnel, pas de clé) ; nouvel onglet, sans
   // référent (rel noreferrer). Formats vérifiés le 19 octobre 2026 (docs/technique/V2_FABLE.md § External links) :
@@ -89,9 +90,11 @@
     return {
       dep,
       arr,
-      // groupe vitesse / niveau de la route (N0236F270) : vitesse vraie reprise pour SkyVector, niveau du vol sinon
+      // groupe vitesse / niveau de la route (N0236F270) : vitesse vraie reprise pour SkyVector ; route sans groupe :
+      // vitesse vraie de croisière du vol (OFP, fiche de l'appareil), sinon rien
       spd: (/^[NKM](\d{3,4})[FASM]\d{3,4}$/.exec(entries(f.route).map(e => e.id).find(id => /^[NKM]\d{3,4}[FASM]\d{3,4}$/.test(id)) ||
-        '') || [])[1] || '',
+        '') || [])[1] || (+f.tas > 0 && +f.tas < 2000 ? String(Math.round(+f.tas)) : ''),
+      etd: /^([01]\d|2[0-3])[0-5]\d$/.test(String(f.etd || '')) ? String(f.etd) : '',
       grpFl: (/^[NKM]\d{3,4}[FASM](\d{3,4})$/.exec(entries(f.route).map(e => e.id).find(id => /^[NKM]\d{3,4}[FASM]\d{3,4}$/.test(id)) ||
         '') || [])[1] || '',
       pts: points(f.route, dep, arr),
@@ -152,12 +155,28 @@
       href: sbMiss ? '' : `https://dispatch.simbrief.com/options/custom?${sb}`,
       why: tr(MISS[sbMiss || 'simbrief'])
     });
-    // SkyVector : départ, points, arrivée
+    // SkyVector : groupe vitesse / niveau OACI en tête de fpl (seule forme lue : vitesse et altitude du panneau), départ,
+    // points, arrivée ; l'heure de départ n'a pas de paramètre d'adresse : copiée au clic (copy), à coller dans « ETD »
+    const svGroup = f.spd && (f.fl || f.grpFl) ? `N${f.spd.padStart(4, '0')}F${(f.fl ? f.fl.slice(2) : f.grpFl).padStart(3, '0')}` : '';
     out.push({
       label: tr(['SkyVector — la route', 'SkyVector — the route', 'SkyVector — die Route', 'SkyVector — la ruta']),
-      // SkyVector : groupe vitesse / niveau OACI en tête de fpl (seule forme lue : vitesse et altitude du panneau)
-      href: f.dep && f.arr ? `https://skyvector.com/?fpl=${encodeURIComponent([f.spd && (f.fl || f.grpFl) ? `N${f.spd.padStart(4, '0')}F${(f.fl ? f.fl.slice(2) : f.grpFl).padStart(3, '0')}` : '', f.dep, ...f.sky, f.arr].filter(Boolean).join(' '))}` : '',
-      why: f.dep && f.arr ? '' : tr(MISS[f.dep ? 'arr' : 'dep'])
+      href: f.dep && f.arr ? `https://skyvector.com/?fpl=${encodeURIComponent([svGroup, f.dep, ...f.sky, f.arr].filter(Boolean).join(' '))}` : '',
+      why: !(f.dep && f.arr) ? tr(MISS[f.dep ? 'arr' : 'dep']) : [svGroup ? tr(['vitesse et niveau : {g}', 'speed and level: {g}',
+        'Geschwindigkeit und Höhe: {g}', 'velocidad y nivel: {g}'
+      ], {
+        g: svGroup
+      }) : tr(['sans vitesse ni niveau (ni groupe dans la route, ni vitesse de croisière connue)',
+        'no speed or level (no group in the route, no known cruise speed)',
+        'ohne Geschwindigkeit und Höhe (weder Gruppe in der Route noch bekannte Reisegeschwindigkeit)',
+        'sin velocidad ni nivel (ni grupo en la ruta ni velocidad de crucero conocida)'
+      ]), f.etd ? tr(['ETD {t}Z copiée au clic : la coller dans le champ ETD de SkyVector',
+        'ETD {t}Z copied on click: paste it into SkyVector’s ETD field',
+        'ETD {t}Z beim Klick kopiert: in das ETD-Feld von SkyVector einfügen',
+        'ETD {t}Z copiada al hacer clic: pegarla en el campo ETD de SkyVector'
+      ], {
+        t: f.etd
+      }) : ''].filter(Boolean).join(' ; '),
+      copy: f.dep && f.arr && f.etd ? f.etd : ''
     });
     // cartes des terrains : Navigraph Charts et ChartFox, départ puis arrivée
     for (const [name, base] of [
@@ -259,6 +278,16 @@
         el.textContent = l.label;
         el.title = l.why || '';
         el.setAttribute('role', 'menuitem');
+        // valeur à coller dans le site (heure de départ de SkyVector) : copiée au clic, qui ouvre aussi le site
+        if (l.href && l.copy) el.addEventListener('click', () => navigator.clipboard?.writeText(l.copy).then(() => window
+          .AppFramework
+          ?.notify?.(tr(['Heure de départ {t}Z copiée : la coller dans le champ ETD de SkyVector.',
+            'Departure time {t}Z copied: paste it into SkyVector’s ETD field.',
+            'Abflugzeit {t}Z kopiert: in das ETD-Feld von SkyVector einfügen.',
+            'Hora de salida {t}Z copiada: pegarla en el campo ETD de SkyVector.'
+          ], {
+            t: l.copy
+          }), 'info'), () => {}));
         if (l.href) Object.assign(el, {
           href: l.href,
           target: '_blank',

@@ -169,6 +169,15 @@
    *  rien n'est relu ni analysé sinon) ; null si rien n'a changé. */
   async function current(dir) {
     const found = [];
+    // mode GitHub (appli sans lanceur) : version du dépôt, avec son sha (écriture conditionnelle : saveNow)
+    const GH = window.GitHubData?.on?.() ? window.GitHubData : null;
+    if (GH) try {
+      const g = await GH.getText(GH_REL);
+      ghSha = g?.sha || '';
+      if (g && g.sha !== lastSig.gh) found.push(parse(g.text));
+    } catch {
+      /* hors ligne ou jeton refusé : ignoré (écriture refusée plus bas, copie du navigateur gardée) */
+    }
     if (dir) try {
       const file = await (await dir.getFileHandle(FILE)).getFile();
       if (`${file.lastModified}:${file.size}` !== lastSig.folder) found.push(parse(await file.text()));
@@ -216,6 +225,8 @@
     queue = p.catch(() => {});
     return p;
   };
+  const GH_REL = 'cr/missions.yaml'; // registre dans le dépôt des données (mode GitHub)
+  let ghSha = ''; // version du registre lue sur GitHub sous le verrou (current)
   const withLock = fn => navigator.locks?.request ? navigator.locks.request('defa:' + PATH, fn) : fn();
   /** Texte d'un fichier du dossier ; null s'il n'existe pas. */
   const readFile = async (dir, name) => {
@@ -529,7 +540,7 @@
         store.legacyImported = mineImported;
       }
       store.updatedAt = new Date().toISOString();
-      const text = yaml();
+      let text = yaml();
       // copie indexée d'abord ; copie texte de compatibilité tant qu'elle est petite (toujours sans index)
       let indexed = false;
       try {
@@ -554,6 +565,31 @@
         }
       }
       let written = false;
+      // mode GitHub : écrit avec le sha lu ; changé entre-temps (autre pilote) → relu, fusionné, réécrit (3 essais)
+      const GH = window.GitHubData?.on?.() ? window.GitHubData : null;
+      if (GH && !dir) {
+        for (let i = 0; i < 3 && !written; i++) try {
+          ghSha = await GH.put(GH_REL, text, {
+            sha: ghSha || null
+          });
+          lastSig = {
+            ...lastSig,
+            gh: ghSha
+          };
+          written = true;
+        } catch (e) {
+          if (!e.conflict) break;
+          const g = await GH.getText(GH_REL).catch(() => null);
+          if (!g) break;
+          ghSha = g.sha;
+          const merged = merge(store.missions, parse(g.text).missions);
+          store.missions.splice(0, store.missions.length, ...merged.missions);
+          conflicts.push(...merged.conflicts);
+          store.updatedAt = new Date().toISOString();
+          text = yaml();
+        }
+        if (written) await writeIndex().catch(() => {});
+      }
       try {
         if (dir) {
           const handle = await dir.getFileHandle(FILE, {

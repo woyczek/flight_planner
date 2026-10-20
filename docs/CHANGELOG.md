@@ -12,16 +12,107 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
-- **Settings › Centre › Fleet: fleet map** (`shared/fleet_map.js`) — above the fleet table, every aircraft at its
-  current aerodrome (`AircraftPositions.whereIs`: website location or mission-order report, else home base; coordinates
-  from `MissionAssignments.coordsOf`), on an OpenStreetMap background (MapLibre). Overview: one badge per aerodrome with
-  the aircraft count; zoomed in, the aircraft are lined up on an apron, one tag each. Hovering a badge gives the count
-  per callsign series and type; hovering an aircraft (or a single-aircraft badge) gives its short sheet with the date
-  and time of its last flight (DEFA flight log and mission log, latest wins). Selection by click (Ctrl / Shift: add or
-  remove), Shift + drag rectangle, Esc; selected rows highlighted in the table, list linked to the aircraft sheets.
-  Hovering a table row highlights its position on the map. Framework block (move / hide), 4 languages. The editable
-  table (`data_admin.js` `grid`) gains two generic options: `rowClass` and `onRowHover`. Administrator manual
-  (4 languages).
+- Technical documentation: `docs/technique/DONNEES_ET_ACCES.md`, map of data storage and access (git data repository,
+  browser, website, launcher workstation, apps), shared versus local; linked from `APPLI_AUTONOME.md`.
+- **Stand-alone app, step 3: iOS shell** (`mobile/`: Capacitor project, Node only there and only in CI; workflow
+  `.github/workflows/ios.yml`) — the built site bundled in a native iOS app, project generated on a macOS runner,
+  unsigned simulator build published as an artifact; signed archive and TestFlight upload when the four Apple secrets
+  are set (App Store Connect API key, team). Never built yet: the first run of the workflow will tell. Reads of the
+  data no longer rely on a service worker (see step 1), so the app's WebView needs nothing more. Settings ›
+  Installation › Sources: the “Data repository” field is no longer disabled — in GitHub mode it shows the GitHub
+  repository with a link to My profile › Data access; without a git `data/` it points to the first-run card.
+- **Stand-alone app, step 2: publication on GitHub Pages, installable app** (`tools/build_pages.py`,
+  `.github/workflows/pages.yml`, `manifest.webmanifest`) — static site built from the tracked files (no `data/`), real
+  `?v=` stamps, `config/repository_tree.js` copy for the pages (Pages serves the extensionless file as binary),
+  commit footer, LFS images; home-screen icons drawn at publication; manifest (start page: Today) and home-screen tags
+  on every page; the two `AircraftDB` scripts (aircraft database and performance, never published) are now loaded through
+  `shared/data_files.js` on every page (same in launcher mode: suite root), which reads them from the private data
+  repository in GitHub mode;
+  `index.html` opened without the launcher shows a “Data access” card (My profile) instead of the first run. Checked on
+  the built site served statically: every phase-1 page reads the real data, no JavaScript error.
+- **Stand-alone app, step 1: data on GitHub** (`shared/github_data.js`, `shared/data_files.js`, `sw.js`; plan:
+  `docs/technique/APPLI_AUTONOME.md`) — My profile › Data access (repository, branch, fine-grained personal token, kept
+  in this browser only, in localStorage `githubData:v1` and excluded from backups): data is read in the page itself.
+  `window.fetch` is overridden for `data/…` addresses (GitHub contents API, conditional requests, offline copy in
+  IndexedDB `sogGithubData`); data files loaded as `<script>` are read synchronously by `shared/data_files.js` (copy in
+  localStorage, reused at once then refreshed); the folder indexes (`disponibilites/_index.json`,
+  `utilisateurs/_index.json`) are rebuilt from the repository tree when absent. It also works in a WebView without
+  service worker (iOS app); `sw.js` only keeps the site's own code for offline use.
+  Writes go through the API, one commit per file under the trigram: pool files (`MissionAssignments` write sink) and
+  the report ledger (`MissionLedger`: written with the sha it read; changed meanwhile → re-read, three-way merge,
+  written again). Without that setting nothing changes. Checked against a fake GitHub serving the
+  real data: fleet (205 aircraft), availability read and written, report ledger written, two simultaneous reports
+  merged.
+
+- **Mobile mode (prototype)** (`shared/mobile.css`, `html[data-mobile="on"]`, set in the header by
+  `config/repository_tree`; setting `repositoryMobile`: auto ≤ 760 px or a phone in landscape, on, off; `RepositoryNav.mobile`) — narrow-screen
+  layout for every page, with no maximum content width: compact one-line header, the side bar becomes a bottom
+  navigation bar (up to 6 entries; beyond, the first 5 and “More”, a panel with the other entries, Settings and Help;
+  short labels `mobileLabel`), tabs on one scrolling line, full-width blocks with a compact heading (chevron-only hide
+  button, no drag), 40 px touch targets, 16 px fields (no iOS zoom), tables scroll inside their block or turn into
+  cards (`table.m-cards`, `td[data-label]` set by the page). Mobile skins (`designs.list[id].mobile`), one chosen by
+  default on touch screens (`repositoryMobileSkin`: “mobile” by default, “mobile-swiss”, or “design” to keep the
+  user's design): “Mobile” (flat and light) and “Swiss” (Swiss design / brutalist: system grotesque, black and white,
+  square corners, a single red accent); both in day and night, following the phone (`html[data-mobile-theme]`: auto,
+  day, night; setting `repositoryMobileTheme`). Pages declared `mobile:false` (flight maps, performance sheets, Centre
+  generator / studio / registry / ODV planning, Centre / Installation / Maintenance settings) are left out of the
+  bottom bar and tabs on touch screens only (`html[data-touch]`), with a “designed for a large screen” notice; a
+  narrow computer window keeps every tab. Fleet page: filters folded behind a “Filters (n)” button, taller map, a tap
+  opens the aircraft or aerodrome sheet in a bottom panel and selects, one card per aircraft. **Mobile preview**
+  (`tools/mobile_preview.html`): a page of the suite in phone and tablet frames on a computer, with the mobile skin and
+  day / night chosen (frame named `sogMobilePreview:<skin>:<theme>`: mobile mode forced in that frame only).
+  **Appearance › On phones**: mobile mode (automatic, always, never), phone skin (Mobile, Swiss, my design), day / night
+  (follows the phone, day, night), link to the mobile preview (Expert level); mobile skins no longer listed among the
+  designs. Styles listed as technical debt. User manual (4 languages).
+  **Phase 1 pages on phones**: My flights — totals as tiles (flights, block hours, flights without a report, most flown
+  types), one card per flight (date and call sign at the top), a tap unfolds the details. Fuel — single column, the Result is brought on
+  screen after “Calculate”; blocks scrolled into view stop below the sticky header (`scroll-margin-top`). My missions —
+  a tap on a mission brings its folder on screen, the folder actions (create the report, close…) stay pinned above
+  the bottom bar while reading. Mission report — one step open at a time (the first one to complete on arrival; opening
+  a step folds the others, `shared/mission_core/core.js`), the step bar pinned at the top and marking the open step, the
+  mission header no longer pinned (too tall for a phone), “Add to ledger” floating above the bottom bar. My
+  availability — “one day” view instead of the week grid (`shared/dispos_week.js`; “Day” / “Week” toggle, kept in
+  `disposView:v1`): day bar and the seven days, swipe to the next / previous day (the neighbouring week is read past
+  the ends), hours top to bottom in a scrolling frame opened before the day's first availability, a range laid by two
+  taps (start, end) with the palette category, “Whole day”, the day's ranges listed with “✕”, “↶ Undo”. Swiss skin:
+  palette chips (`repo-plain` buttons) keep their category colours.
+  My profile › My aircraft — the Owned / Mastered checkboxes become one state dot (everywhere) cycled by a tap: not
+  owned → owned (red) → owned, novice (orange) → mastered (green); “novice” is a new optional list (`aircraft.novice`,
+  week files `appareils.neophytes`), always also in `owned`, so the Centre's readers are unchanged; every row action
+  (create the performance sheet, remove a variant, find the type / record, correct or delete) moves into a “⋯” menu;
+  on phones the table keeps only aircraft, state and “⋯” (`table.m-fit`: a table that fits, layout left to the page),
+  the hidden columns are shown in the menu. Appearance on phones — “On phones” first; under a phone skin, the computer
+  settings (design, icons, side bar, theme colours) are replaced by a note. Fuel — “Level (FL)” is the only parameter
+  outside the “Flight parameters” fold (all screens; the fold stays closed on phones); level labels of the decision
+  and climb charts thinned out to stay readable on a narrow chart. Automatic mobile mode also covers a phone in
+  landscape (touch screen under 500 px high). Mobile preview: “Orientation” (portrait, landscape, both).
+  Phone in landscape (under 500 px high) — navigation as a left rail instead of the bottom bar, header not pinned,
+  Fuel curves capped to the usable height so that each one fits with its level slider, cursor card beside the
+  decision curve. Mobile header — slides away when scrolling down, back when scrolling up (`repo-header-away`, pinned
+  headers only, never while one of its menus is open).
+  My aircraft state dot — ODV workbook colours and meaning: red NQ (owned, not qualified), orange to qualify (novice),
+  green mastered; ODV setting “All but red” relabelled “NQ: owned, not qualified”.
+  Aircraft sheet — no longer a dead end: it sits under the “Fleet” tab (tab `match`, Report › Fleet active), a fleet
+  selector (by type) with previous / next of the same type at the top; aircraft and crew sheets save each field as it
+  changes (no more “Save sheet” button far below the editable fields, which now come first). Mobile header — when it
+  slides away, its first line (title, tools) stays visible; only the CR form's header is unpinned (the rule also hit
+  the sheets, Fleet and reporting pages, whose title then scrolled away).
+  Mobile header title — up to two lines before it is cut (an aircraft sheet read “D-HA…” at 360 px); the header
+  “Synchronise” and “Save” buttons show their icon and count only (label in the tooltip).
+- **Report › Fleet: fleet map page** (`apps/cr/flotte.html`, `apps/cr/flotte.js`, `shared/fleet_map.js`) — read-only
+  page for everyone, new “Fleet” tab of the side bar “Report” button (now a tab group like “Tools”: “Report”, “Fleet”;
+  family report pages keep the button active). Every fleet aircraft at its current aerodrome
+  (`AircraftPositions.whereIs`: website location or mission-order report, else home base; coordinates from
+  `MissionAssignments.coordsOf`), on an OpenStreetMap background (MapLibre). Overview: one badge per aerodrome with the
+  aircraft count; aerodromes whose badges (or aprons) overlap on screen are merged into one badge with the total count,
+  recomputed at each zoom; zoomed in, the aircraft are lined up on an apron. Hover: count per callsign series and type
+  (and per aerodrome for a merged badge), or the aircraft short sheet with the date and time of its last flight (DEFA
+  flight log and mission log, latest wins). Selection by click (Ctrl / Shift: add or remove), Shift + drag rectangle,
+  Esc. Combined filters at the top of the map (operator, type, callsign series, aerodrome, status, position origin,
+  last-flight age, free search; kept in the browser). Table of the aircraft kept by the filters: sortable, row hover
+  highlights the position on the map, row click selects and centres. With the Centre enabled, “Edit the fleet” leads to
+  Settings › Centre › Fleet, which links back with a “Fleet map” button. Framework blocks, 4 languages. User and
+  administrator manuals (4 languages).
 - **Fuel and Flight maps: “Open in ▾”** (`shared/external_links.js`) — a short menu that opens the page's flight in
   another service, in a new tab: “SimBrief — plan this flight” (dispatch options prefilled: departure, arrival, type,
   route, registration, airline and flight number from the call sign, alternate, level), “SkyVector — the route”
@@ -96,6 +187,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
     already entered first, free entry kept).
 
 ### Fixed
+
+- **Settings › Installation › Sources: data repository shown empty** (`shared/maintenance_page.js`) — the “Data
+  repository (private)” field only read a browser setting, while the first run saves the address as the remote of
+  `data/` (git, through the launcher). The field now shows that remote (`/__setup/sync-remote`), accepts SSH
+  addresses (`git@…`) and saves a change through the launcher, as the first run does.
+- **My profile: the personal IVAO OAuth client card was hidden below the Expert level** — it is now shown at every
+  level (the IVAO prefill it serves is available from level 1).
+
+- **“Open in ▾”: SkyVector speed and level always sent, departure time copied** (`shared/external_links.js`) — the
+  speed/level group only left with a route that carried one (`N0450F350`), so a plain route sent neither speed nor
+  level, even with the flight level set. A route without a group now takes the cruise TAS (SimBrief OFP when it
+  matches the trip, otherwise the aircraft sheet; Fuel and Flight maps) with the flight level. SkyVector has no
+  address parameter for the ETD: the OFP departure time is copied on click, to paste into its ETD field; the menu
+  entry's tooltip says what is sent.
 
 - **SimBrief OFP, json v2: the navlog read as a list** — the "Fetch latest SimBrief FPL" route kept only the airfields and the speed/level group with a json=v2 OFP, whose `navlog` is directly the list of fixes (the reader looked for a `fix` container inside each fix). Checked on a real LFRS → LFML OFP: twelve waypoints, SID and STAR included.
 - **“Open in ▾”: SkyVector speed and altitude, SimBrief route** (`shared/external_links.js`) — SkyVector gets the

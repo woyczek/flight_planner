@@ -1094,6 +1094,20 @@
     flex: 1 1 240px;
     min-width: 0
   }
+  /* téléphone en paysage : courbes bornées à la hauteur utile (barre du bas, note et curseur de niveau déduits : la
+     courbe et son curseur tiennent ensemble à l'écran ; elles se centrent dans leur largeur), fiche du curseur à côté
+     de la courbe de décision */
+  @media (max-height: 500px) {
+    html[data-mobile="on"] .chart-wrap>svg.opt-chart {
+      max-height: calc(100dvh - var(--m-nav-h, 42px) - 120px)
+    }
+    html[data-mobile="on"] .fl-dec-main {
+      flex-basis: 320px
+    }
+    html[data-mobile="on"] .fl-dec-side {
+      flex-basis: 240px
+    }
+  }
   .fl-dec-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1622,6 +1636,10 @@
   }
   .opt-chart .plan-label {
     font-size: 10px
+  }
+  /* niveau de vol : seul paramètre du devis hors du repli */
+  .fl-main {
+    margin-top: 10px
   }
   /* repli « Paramètres du vol » du devis carburant (ouvert d'emblée au niveau Expert) */
   .flight-params {

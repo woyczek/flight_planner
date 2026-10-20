@@ -1646,8 +1646,9 @@ function pageLabels() {
 }
 pageLabels();
 window.addEventListener("repository-language-change", pageLabels);
-// Niveau Expert : les treize paramètres du vol dépliés d'emblée, comme avant ; niveaux 1 à 3 : repliés (valeurs par défaut).
-$("flightParams").open = (window.RepositoryNav?.levels?.get?.() ?? 4) >= 4;
+// Niveau de vol hors du repli (seul paramètre toujours visible) ; niveau Expert : les douze autres paramètres du vol
+// dépliés d'emblée, comme avant ; niveaux 1 à 3 et mode mobile : repliés (valeurs par défaut).
+$("flightParams").open = !window.RepositoryNav?.mobile?.on?.() && (window.RepositoryNav?.levels?.get?.() ?? 4) >= 4;
 /** Mise en forme : niveau « FL085 », durée « 1 h 05 », nombre à 3 décimales (« — » s'il n'est pas fini). */
 const flTxt = h => "FL" + String(Math.round(h / 100)).padStart(3, "0"),
   hmTxt = x => `${Math.floor(x/60)} h ${String(Math.round(x%60)).padStart(2,"0")}`,

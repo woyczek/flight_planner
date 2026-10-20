@@ -106,6 +106,44 @@
       icon: ['Icône seule', 'Icon only', 'Nur Symbol', 'Solo icono'],
       label: ['Libellé seul', 'Label only', 'Nur Beschriftung', 'Solo etiqueta']
     },
+    // téléphone (mode mobile, shared/mobile.css ; RepositoryNav.mobile)
+    mobile: ['Sur téléphone', 'On phones', 'Auf dem Telefon', 'En el teléfono'],
+    mobileSub: [
+      'Mise en page pour écran étroit (barre en bas, blocs pleine largeur, cartes) et skin du téléphone. Réglages de ce navigateur.',
+      'Layout for narrow screens (bottom bar, full-width blocks, cards) and phone skin. Settings of this browser.',
+      'Layout für schmale Bildschirme (Leiste unten, Blöcke in voller Breite, Karten) und Telefon-Skin. Einstellungen dieses Browsers.',
+      'Diseño para pantallas estrechas (barra abajo, bloques a todo el ancho, tarjetas) y skin del teléfono. Ajustes de este navegador.'
+    ],
+    mobileMode: ['Mode mobile', 'Mobile mode', 'Mobiler Modus', 'Modo móvil'],
+    mobileModeSet: {
+      auto: ['Automatique (écran étroit)', 'Automatic (narrow screen)', 'Automatisch (schmaler Bildschirm)',
+        'Automático (pantalla estrecha)'
+      ],
+      on: ['Toujours', 'Always', 'Immer', 'Siempre'],
+      off: ['Jamais', 'Never', 'Nie', 'Nunca']
+    },
+    mobileSkin: ['Skin du téléphone', 'Phone skin', 'Telefon-Skin', 'Skin del teléfono'],
+    mobileSkinDesign: ['Mon design', 'My design', 'Mein Design', 'Mi diseño'],
+    mobileSkinHelp: ['Appliqué au prochain chargement d’une page sur un écran tactile.',
+      'Applied the next time a page is loaded on a touch screen.',
+      'Wird beim nächsten Laden einer Seite auf einem Touchscreen angewendet.',
+      'Se aplica la próxima vez que se cargue una página en una pantalla táctil.'
+    ],
+    mobileTheme: ['Jour / nuit', 'Day / night', 'Tag / Nacht', 'Día / noche'],
+    mobileThemeSet: {
+      auto: ['Suit le téléphone', 'Follows the phone', 'Wie das Telefon', 'Como el teléfono'],
+      day: ['Jour', 'Day', 'Tag', 'Día'],
+      night: ['Nuit', 'Night', 'Nacht', 'Noche']
+    },
+    phoneNote: [
+      'Design, icônes, barre latérale et couleurs des thèmes sont des réglages de l’ordinateur, sans effet sous un skin de téléphone. Pour les retrouver ici : skin du téléphone « Mon design ».',
+      'Design, icons, side bar and theme colours are computer settings, with no effect under a phone skin. To get them here: phone skin “My design”.',
+      'Design, Symbole, Seitenleiste und Themenfarben sind Einstellungen des Computers, ohne Wirkung unter einem Telefon-Skin. Um sie hier zu nutzen: Telefon-Skin „Mein Design“.',
+      'Diseño, iconos, barra lateral y colores de los temas son ajustes del ordenador, sin efecto con un skin de teléfono. Para usarlos aquí: skin del teléfono «Mi diseño».'
+    ],
+    mobilePreview: ['Aperçu mobile sur ordinateur', 'Mobile preview on a computer', 'Mobile Vorschau am Computer',
+      'Vista previa móvil en el ordenador'
+    ],
     colors: ['Couleurs des thèmes', 'Theme colours', 'Themenfarben', 'Colores de los temas'],
     colorsSub: [
       'Pour chaque thème : une famille de couleurs et un ton. Bandeau, texte et accent en sont calculés ; les contrastes WCAG sont vérifiés en direct.',
@@ -179,7 +217,8 @@
       <span class="ap-mini" data-d="${esc(id)}" aria-hidden="true"><span class="ap-mini-side"></span><span class="ap-mini-body"><span class="ap-mini-bar"></span><span class="ap-mini-block"><span class="ap-mini-ic"></span><span class="ap-mini-title">${esc(t(T.thumbBlock))}</span><span class="ap-mini-line"></span><span class="ap-mini-line s"></span><span class="ap-mini-btn"></span></span></span></span>
       <b>${esc(d.label?.[i] || d.label?.[0] || id)}</b><small>${esc(typo(d.title?.[i] || d.title?.[0] || ''))}</small></button>`;
     const shown = ([id]) => MAIN_DESIGNS.includes(id) || id === cur.design,
-      designList = Object.entries(a.designs),
+      designList = Object.entries(a.designs).filter(([id, d]) => !d.mobile || id === cur
+        .design), // skins mobiles : bloc « Sur téléphone »
       more = designList.filter(x => !shown(x)),
       thumbs = designList.filter(shown).map(thumb).join('');
     const moreThumbs = more.length ? `<details class="ap-more"><summary>${esc(t(T.moreDesigns))}</summary><div class="ap-thumbs">${more.map(thumb).join('')}</div></details>` : '';
@@ -215,6 +254,16 @@
       sideBtns = Object.entries(T.sideSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side="${id}" aria-pressed="${id === side}">${esc(t(row))}</button>`).join(''),
       sizeBtns = Object.entries(T.sideSizeSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side-size="${id}" aria-pressed="${id === (cur.sidenavSize || 'm')}">${esc(t(row))}</button>`).join(''),
       showBtns = Object.entries(T.sideShowSet).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-side-show="${id}" aria-pressed="${id === (cur.sidenavShow || 'both')}">${esc(t(row))}</button>`).join('');
+    // --- téléphone : mode mobile, skin du téléphone (skins mobiles de repository_tree, ou mon design), jour / nuit
+    const M = nav().mobile,
+      seg = (attr, cur, set) => Object.entries(set).map(([id, row]) => `<button type="button" class="ap-seg repo-seg repo-plain" data-${attr}="${id}" aria-pressed="${id === cur}">${esc(Array.isArray(row) ? t(row) : row)}</button>`).join('');
+    const skins = Object.fromEntries([...Object.entries(a.designs).filter(([, d]) => d.mobile).map(([id, d]) => [id, d.label?.[i] || d
+      .label?.[0] || id
+    ]), ['design', t(T.mobileSkinDesign)]]);
+    const mobileHtml = M ? `<div class="ap-sidebar"><b>${esc(t(T.mobileMode))}</b><span class="ap-segs repo-segs" role="group">${seg('mobile-mode', M.mode(), T.mobileModeSet)}</span></div>
+      <div class="ap-sidebar"><b>${esc(t(T.mobileSkin))}</b><span class="ap-segs repo-segs" role="group">${seg('mobile-skin', M.skinChoice(), skins)}</span><small class="ap-help">${esc(t(T.mobileSkinHelp))}</small></div>
+      <div class="ap-sidebar"><b>${esc(t(T.mobileTheme))}</b><span class="ap-segs repo-segs" role="group">${seg('mobile-theme', M.theme(), T.mobileThemeSet)}</span></div>
+      <p class="ap-sidebar" data-min-level="4"><a href="${esc(new URL('tools/mobile_preview.html', nav().root).href)}" data-icon="eye">${esc(t(T.mobilePreview))}</a></p>` : '';
     // --- couleurs : une carte par thème, groupées (applications, familles de CR)
     const card = name => {
       const o = cur.colors[name] || null,
@@ -231,10 +280,24 @@
     };
     const names = Object.keys(a.themes),
       crs = names.filter(n => !APPS.includes(n));
-    host.innerHTML =
+    // mode mobile : « Sur téléphone » en tête ; skin de téléphone appliqué : design, icônes et couleurs (réglages de
+    // l'ordinateur, sans effet sous ce skin) remplacés par une note ; barre latérale (barre du bas en mode mobile) retirée
+    const mob = !!M?.on(),
+      phone = mob && !!M.skin(),
+      mobileBlock = mobileHtml ? block('ap-mobile', 'layers', t(T.mobile), t(T.mobileSub), mobileHtml) : '',
+      sideRows = mob ? '' : `<div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs repo-segs" role="group">${sideBtns}</span></div><div class="ap-sidebar"><b>${esc(t(T.sideSize))}</b><span class="ap-segs repo-segs" role="group">${sizeBtns}</span></div><div class="ap-sidebar" data-min-level="4"><b>${esc(t(T.sideShow))}</b><span class="ap-segs repo-segs" role="group">${showBtns}</span></div>`;
+    if (phone) {
+      host.innerHTML = mobileBlock + `<p class="ap-help ap-phone-note">${esc(t(T.phoneNote))}</p>` +
+        (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs repo-segs" role="group">${chStyle}</span></div>`, 4) : '') +
+        `<p class="ap-foot"><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
+      window.AppFramework?.refresh?.(host);
+      return;
+    }
+    host.innerHTML = (mob ? mobileBlock : '') +
       block('ap-design', 'layers', t(T.design), t(T.designSub), `<div class="ap-thumbs">${thumbs}</div>${moreThumbs}<div class="ap-sidebar" data-min-level="4"><b>${esc(t(T.decor))}</b><span class="ap-segs repo-segs" role="group">${decorBtns}</span><small class="ap-help">${esc(t(T.decorHelp))}</small></div>${a.aquaColors ? `<div class="ap-sidebar" data-min-level="4"><b>${esc(t(T.aqua))}</b><span class="repo-plain ap-dots" role="group" aria-label="${esc(t(T.aqua))}">${aquaDots}</span><small class="ap-help">${esc(t(T.aquaHelp))}</small></div>` : ''}`) +
       (ch ? block('ap-charts', 'chart', t(T.charts), t(T.chartsSub), `<div class="ap-iconrows">${chRows}</div><div class="ap-sidebar"><b>${esc(t(T.chartStyle))}</b><span class="ap-segs repo-segs" role="group">${chStyle}</span></div>`, 4) : '') +
-      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div><div class="ap-sidebar"><b>${esc(t(T.side))}</b><span class="ap-segs repo-segs" role="group">${sideBtns}</span></div><div class="ap-sidebar"><b>${esc(t(T.sideSize))}</b><span class="ap-segs repo-segs" role="group">${sizeBtns}</span></div><div class="ap-sidebar" data-min-level="4"><b>${esc(t(T.sideShow))}</b><span class="ap-segs repo-segs" role="group">${showBtns}</span></div>`) +
+      block('ap-icons', 'box', t(T.icons), t(T.iconsSub), `<div class="ap-iconrows">${iconRows}</div>${sideRows}`) +
+      (mob ? '' : mobileBlock) +
       block('ap-colors', 'eye', t(T.colors), t(T.colorsSub), `<h3>${esc(t(T.groupPages))}</h3><div class="ap-cards">${APPS.filter(n => a.themes[n]).map(card).join('')}</div><h3>${esc(t(T.groupCr))}</h3><div class="ap-cards">${crs.map(card).join('')}</div>`, 4) +
       `<p class="ap-foot"><button type="button" id="apDemo" class="repo-plain" data-icon="eye" data-min-level="4" title="${esc(t(T.demo))}">${esc(t(T.demoBtn))}</button><button type="button" id="apReset" class="repo-plain" data-icon="refresh">${esc(t(T.reset))}</button></p>`;
     host.querySelectorAll('.ap-card').forEach(paint);
@@ -372,6 +435,7 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important/*garder*/;color:#14532d!im
     render();
     listen();
     window.addEventListener('repository-language-change', () => host?.isConnected && render());
+    window.addEventListener('repository-mobile-change', () => host?.isConnected && render()); // ordre des blocs du mode mobile
   }
   /** Écoute des réglages sur l'hôte courant. */
   function listen() {
@@ -404,6 +468,15 @@ main.ap-page .ap-pill.ok{background:#e3f4e8!important/*garder*/;color:#14532d!im
         render();
       } else if (b.dataset.sideSize) {
         a.setSidenavSize?.(b.dataset.sideSize);
+        render();
+      } else if (b.dataset.mobileMode) {
+        nav().mobile.set(b.dataset.mobileMode);
+        render();
+      } else if (b.dataset.mobileSkin) {
+        nav().mobile.skinChoice(b.dataset.mobileSkin);
+        render();
+      } else if (b.dataset.mobileTheme) {
+        nav().mobile.theme(b.dataset.mobileTheme);
         render();
       } else if (b.dataset.sideShow) {
         a.setSidenavShow?.(b.dataset.sideShow);

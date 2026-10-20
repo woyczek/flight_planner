@@ -70,14 +70,69 @@
   .mv-table .eq-name {
     min-height: 0
   }
-  /* sous 800 px : date, indicatif, trajet, durée ; le reste dans le détail replié */
+  /* tuiles des totaux : mode mobile seulement (la ligne de totaux sert sur grand écran) */
+  .mv-tiles {
+    display: none
+  }
+  html[data-mobile="on"] .mv-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 4px 0 12px
+  }
+  html[data-mobile="on"] .mv-tiles>div {
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+    border-radius: calc(10px * var(--repo-round, 1));
+    display: grid;
+    gap: 2px;
+    min-width: 0
+  }
+  html[data-mobile="on"] .mv-tiles b {
+    font-size: 24px;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  html[data-mobile="on"] .mv-tiles span {
+    font-size: 12px;
+    opacity: .7
+  }
+  html[data-mobile="on"] .mv-tiles .mv-types b {
+    font-size: 15px;
+    white-space: normal
+  }
+  html[data-mobile="on"] #mvTotals {
+    display: none
+  }
+  html[data-mobile="on"] .mv-tools input[type=search] {
+    flex: 1 1 100%;
+    width: 100%
+  }
+  /* mode mobile : une carte par vol (shared/mobile.css), date et indicatif en tête ; appui : détail déplié */
+  .mv-table td.m-card-head small {
+    display: none
+  }
+  html[data-mobile="on"] .mv-table td:nth-child(2) {
+    display: none !important
+      /* indicatif : déjà en tête de la carte */
+  }
+  html[data-mobile="on"] .mv-table td.m-card-head small {
+    display: inline;
+    font-weight: 400;
+    opacity: .75;
+    margin-left: 8px
+  }
+  /* sous 800 px, hors mode mobile : date, indicatif, trajet, durée ; le reste dans le détail replié */
   @media(max-width:800px) {
-    .mv-table th:nth-child(3),
-    .mv-table td:nth-child(3),
-    .mv-table th:nth-child(6),
-    .mv-table td:nth-child(6),
-    .mv-table th:nth-child(7),
-    .mv-table td:nth-child(7) {
+    html:not([data-mobile="on"]) .mv-table th:nth-child(3),
+    html:not([data-mobile="on"]) .mv-table td:nth-child(3),
+    html:not([data-mobile="on"]) .mv-table th:nth-child(6),
+    html:not([data-mobile="on"]) .mv-table td:nth-child(6),
+    html:not([data-mobile="on"]) .mv-table th:nth-child(7),
+    html:not([data-mobile="on"]) .mv-table td:nth-child(7) {
       display: none
     }
     .mv-tools input[type=search] {
@@ -104,12 +159,13 @@
     <a id="mvAnalysis" href="../cr/mission_operations_reporting.html"></a>
   </div>
   <p class="small mv-totals" id="mvTotals"></p>
+  <div class="mv-tiles" id="mvTiles"></div>
   <div id="mvList"></div>
 </section>
 </main>
 <script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/repository_nav.js?v=0"></script>
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
+<script src="../../shared/data_files.js?v=0" data-file="AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script>
 <script src="../../AircraftDB/aircraft_icons.js"></script><script src="../../shared/aircraft_picker.js?v=0"></script><script src="../../shared/equipment_editor.js?v=0"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js?v=0"></script>
 <script src="../../shared/mission_core/vocab.js?v=0"></script>
@@ -176,7 +232,12 @@
       'Trigramm nicht gesetzt (Einstellungen › Mein Profil): nur die Berichte dieses Browsers, ohne Flugbuch der Fluggesellschaft.',
       'Trigrama no configurado (Ajustes › Mi perfil): solo los informes de este navegador, sin el diario de la aerolínea.'
     ],
-    loading: ['Chargement…', 'Loading…', 'Wird geladen…', 'Cargando…']
+    loading: ['Chargement…', 'Loading…', 'Wird geladen…', 'Cargando…'],
+    // tuiles des totaux (mode mobile)
+    tFlights: ['Vols', 'Flights', 'Flüge', 'Vuelos'],
+    tBlock: ['Heures de bloc', 'Block hours', 'Blockstunden', 'Horas de calzos'],
+    tTypes: ['Types les plus volés', 'Most flown types', 'Meistgeflogene Typen', 'Tipos más volados'],
+    tNoCr: ['Vols sans CR', 'Flights without a report', 'Flüge ohne Bericht', 'Vuelos sin informe']
   };
   // sources, fusion et passerelle vers le CR : shared/my_flights.js (partagé avec « Préremplir » du compte rendu)
   const MF = window.MyFlights,
@@ -215,6 +276,16 @@
       types: top ? ` · ${top}` : ''
     })
   }
+  /** Tuiles des totaux (mode mobile) : vols, heures de bloc, vols sans CR, trois types les plus volés. */
+  function tiles(list) {
+    const mins = list.reduce((s, f) => s + (f.block || 0), 0),
+      byType = {};
+    list.forEach(f => f.type && (byType[f.type] = (byType[f.type] || 0) + 1));
+    const top = Object.entries(byType).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} ×${n}`).join(' · ') || '—',
+      tile = (v, l, cls = '') => `<div class="${cls}"><b>${esc(v)}</b><span>${esc(t(l))}</span></div>`;
+    return tile(String(list.length), TXT.tFlights) + tile(hm(mins), TXT.tBlock) + tile(String(list.filter(f => !f.crUrl).length), TXT
+      .tNoCr) + tile(top, TXT.tTypes, 'mv-types')
+  }
   /** Cellule « appareil » : cellule commune du socle (silhouette, type, immatriculation), sinon texte. */
   const aircraftCell = f => window.EquipmentEditor?.nameCell && f.type ? window.EquipmentEditor.nameCell({
     code: f.type,
@@ -227,14 +298,18 @@
     const list = shown(),
       head = [TXT.cDate, TXT.cCallsign, TXT.cAircraft, TXT.cRoute, TXT.cBlock, TXT.cMission, TXT.cReport];
     $('mvTotals').textContent = totals(list);
+    const tl = tiles(list);
+    if ($('mvTiles').innerHTML !== tl) $('mvTiles').innerHTML = tl;
     if (!trigram()) $('mvTotals').textContent += ` — ${t(TXT.noTri)}`;
     if (!list.length) {
       $('mvList').innerHTML = `<p class="mut">${esc(t(TXT.empty))}</p>`;
       return
     }
-    $('mvList').innerHTML = `<table class="mv-table"><thead><tr>${head.map(h => `<th>${esc(t(h))}</th>`).join('')}</tr></thead><tbody>${list.map(f => {
+    // data-label : libellé de colonne montré devant la valeur quand le tableau passe en cartes (mode mobile)
+    const L = Object.fromEntries(head.map((h, i) => [i, esc(t(h))]));
+    $('mvList').innerHTML = `<table class="mv-table m-cards"><thead><tr>${head.map(h => `<th>${esc(t(h))}</th>`).join('')}</tr></thead><tbody>${list.map(f => {
       const k = keyOf(f);
-      return `<tr class="mv-row" data-k="${esc(k)}"><td class="mv-num">${esc(f.date)}</td><td>${esc(f.callsign || '—')}</td><td>${aircraftCell(f)}</td><td class="mv-num">${esc([f.dep, f.arr].filter(Boolean).join(' → ') || '—')}</td><td class="mv-num">${esc(hm(f.block))}</td><td>${esc(f.mission || '—')}</td><td>${f.crUrl ? `<a href="${esc(f.crUrl)}">${esc(f.crId || t(TXT.open))}</a>` : `<span class="mv-nocr">${esc(t(TXT.noCr))}</span>`}</td></tr>${open === k ? detail(f) : ''}`
+      return `<tr class="mv-row" data-k="${esc(k)}"><td class="mv-num m-card-head">${esc(f.date)}<small>${esc(f.callsign || '')}</small></td><td data-label="${L[1]}">${esc(f.callsign || '—')}</td><td data-label="${L[2]}">${aircraftCell(f)}</td><td class="mv-num" data-label="${L[3]}">${esc([f.dep, f.arr].filter(Boolean).join(' → ') || '—')}</td><td class="mv-num" data-label="${L[4]}">${esc(hm(f.block))}</td><td data-label="${L[5]}">${esc(f.mission || '—')}</td><td data-label="${L[6]}">${f.crUrl ? `<a href="${esc(f.crUrl)}">${esc(f.crId || t(TXT.open))}</a>` : `<span class="mv-nocr">${esc(t(TXT.noCr))}</span>`}</td></tr>${open === k ? detail(f) : ''}`
     }).join('')}</tbody></table>`;
     window.TableResize?.attach($('mvList').querySelector('table'), {
       key: 'myFlightsCols',

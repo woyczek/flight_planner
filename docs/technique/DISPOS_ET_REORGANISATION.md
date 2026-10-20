@@ -69,7 +69,7 @@ module (`shared/dispos_timeline.js`, [specification](DISPOS_TIMELINE_SPEC.md)), 
     { "start": "2026-10-06T22:00", "end": "2026-10-07T00:00", "cat": "indispo" }
   ],
   "background": [{ "start": "2026-10-06T00:00", "end": "2026-10-07T00:00", "cat": "indispo" }],
-  "appareils": { "possedes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
+  "appareils": { "possedes": [], "neophytes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
 }
 ```
 
@@ -99,7 +99,7 @@ module (`shared/dispos_timeline.js`, [specification](DISPOS_TIMELINE_SPEC.md)), 
       { "debut": null, "fin": null, "categorie": "conges" }
     ]
   },
-  "appareils": { "possedes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
+  "appareils": { "possedes": [], "neophytes": [], "maitrises": [], "variantes": { "CL2T": ["CL-415"] } }, "simulateurs": []
 }
 ```
 
@@ -108,7 +108,9 @@ module (`shared/dispos_timeline.js`, [specification](DISPOS_TIMELINE_SPEC.md)), 
   reading (category + the pilot's preferences at that moment).
 - **Several ranges can overlap** (available for rescue AND combat on the same evening); schema 3 keeps one state per
   minute (see above).
-- `appareils.possedes` / `maitrises`: ICAO designators only. `appareils.variantes` (optional): the variants the pilot
+- `appareils.possedes` / `maitrises`: ICAO designators only. `appareils.neophytes` (optional): owned types the pilot is
+  still a novice on (orange state in *My profile › My aircraft*); always listed in `possedes` as well, never in
+  `maitrises`, so a reader that ignores it sees them as owned. `appareils.variantes` (optional): the variants the pilot
   flies, per designator (`{ "CL2T": ["CL-415"] }`) — several models share one ICAO designator (Doc 8643: CL-215T and
   CL-415 are both CL2T). Proposed from the designator's ICAO models, the fleet's variants, or free text (*My profile ›
   Aircraft*). Qualification stays per designator: a pilot who declared a CL-415 can be assigned a CL-215T of the fleet

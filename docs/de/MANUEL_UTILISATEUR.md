@@ -25,7 +25,7 @@ Was sie zeigt, hängt von Ihrer **Nutzungsstufe** ab (Mein Profil › „Nutzung
 |---|---|---|
 | „Heute“ | Nächste Mission, zu schreibende Berichte, Woche; erster Eintrag auf jeder Stufe | 1 |
 | „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (roter Punkt: ungelesene Missionen) | 1 |
-| „Bericht“ | Eingabe eines Missionsberichts | 1 |
+| „Bericht“ | Eingabe eines Missionsberichts; Registerkarte „Flotte“: wo die Luftfahrzeuge stehen (Karte, Filter, letzter Flug) | 1 |
 | „Planung“ | Befehlsplanung der Woche (Einsatztafel, auf Stufe 1 oder ohne Zentrum schreibgeschützt); auf Stufe 4 gemeinsame Zeitfenster und wahrscheinliche Missionen der ODV-Seite | 1 |
 | „Missionen“ | Missionsgenerator und Register, als Registerkarten; Kartenstudio auf Stufe 4 | 3 |
 | „Werkzeuge“ | Flugkarten, Kraftstoff, Landungen, Missionsanalyse (in Mein Profil angehakte Werkzeuge, auf Stufe 4 alle) | 1 bis 4 |
@@ -282,6 +282,8 @@ Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenor
 Ein vorhandenes altes Stundenraster wird automatisch in die Woche übernommen.
 Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit. Dieser Link erscheint nur auf der Stufe Experte.
 
+**Auf dem Telefon**: Liste, Mappe und Verfügbarkeit folgen in einer Spalte aufeinander; ein Tippen auf eine Mission bringt ihre Mappe auf den Bildschirm, und ihre Aktionen („Bericht erstellen“, „Mappe schließen“…) bleiben beim Lesen über der unteren Leiste fixiert. Die Tabellen der Mappe (Routenpunkte) scrollen in ihrem Rahmen.
+
 ## Meine Flüge
 <!-- page: apps/pilot/mes_vols.html -->
 
@@ -319,6 +321,8 @@ Rest auf.
 Sie gelangen auch über „Meine Flüge ↗“ in Meine Missionen (neben „auch vergangene Missionen anzeigen“) und im Menü
 „Senden“ eines Berichts hierher.
 
+**Auf dem Telefon**: die Summen werden zu Kacheln (Flüge, Blockstunden, Flüge ohne Bericht, meistgeflogene Typen) und jeder Flug zu einer Karte (Datum und Rufzeichen oben); ein Tippen klappt die Details auf, mit „Bericht öffnen“ oder „Bericht schreiben“.
+
 ## Meine Verfügbarkeit
 <!-- page: apps/pilot/disponibilites.html -->
 
@@ -343,6 +347,8 @@ Tipps und Grenzen:
 - Wird die Woche noch gelesen, wird eine Änderung mit „Woche wird noch gelesen: gleich noch einmal versuchen.“ abgelehnt.
 
 Wie das Zentrum diese Angaben nutzt, siehe [Verfügbarkeit und Neuorganisation](../technique/DISPOS_ET_REORGANISATION.md).
+
+**Auf dem Telefon**: die Eingabe wechselt in eine Ansicht „ein Tag“ (Umschalter „Tag“ / „Woche“ unter der Wochenleiste; die gewählte Ansicht bleibt erhalten). Oben der angezeigte Tag mit „‹“ und „›“ (oder einem Wischen; über Sonntag oder Montag hinaus wird die Nachbarwoche gelesen), dann die sieben Tage der Woche (ein Punkt unter denen mit einer Verfügbarkeit). Eine Kategorie in der Palette wählen, in der Stundenspalte auf die Anfangszeit tippen, dann auf die Endzeit: der Zeitraum wird auf die halbe Stunde gesetzt, Ende eingeschlossen; „Ganzer Tag“ setzt ihn über den ganzen Tag, „Abbrechen“ verwirft einen Beginn. Die Zeiträume des Tages stehen über der Spalte: „✕“ entfernt eine ganze Verfügbarkeit oder den Hintergrund nur an diesem Tag; „↶ Rückgängig“ macht die letzte Änderung rückgängig. Die Spalte öffnet sich eine Stunde vor der ersten Verfügbarkeit des Tages (sonst um 07:00) und scrollt in ihrem Rahmen. „Genauer Zeitraum“ bleibt für die Minute da.
 
 ## Mein Profil
 <!-- page: apps/settings/profil.html -->
@@ -374,7 +380,7 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 |---|---|
 | „Pilot“ | „Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
 | „Website der Fluggesellschaft“ | „Kennung“, „Passwort“ |
-| „IVAO — OAuth-Client (persönlich)“ (Stufe Experte) | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
+| „IVAO — OAuth-Client (persönlich)“ | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
 | „Sprache“ (Stufe Experte) | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
 
 1. Füllen Sie die Felder aus.
@@ -384,6 +390,21 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 - Die Zugangsdaten der Website der Fluggesellschaft bleiben nur in diesem Browser: Sie werden nie in eine Datei oder eine Sicherung geschrieben.
 - Die Sprache wird gewöhnlich über die Flagge „Sprache“ der Kopfzeile gewählt; die Karte „Sprache“ (Stufe Experte) gilt, sobald sie gewählt ist, ohne „Speichern“.
 - Im Produktionsmodus ist das Kürzel das des angemeldeten Benutzers und lässt sich hier nicht ändern.
+
+### Datenzugang
+
+Für die App ohne Starter (Telefon, auf GitHub Pages veröffentlichte Suite): Die Daten der Fluggesellschaft werden mit Ihrem persönlichen Token in einem GitHub-Repository (Kopie des Daten-Repositorys) gelesen und geschrieben. Auf einem Rechner mit Starter ist diese Rubrik unnötig.
+
+| Feld | Inhalt |
+|---|---|
+| „Repository (Konto/Repository)“ | das GitHub-Daten-Repository, zum Beispiel `Woyczek/flight_planner_data` |
+| „Zweig“ | standardmäßig `main` |
+| „Persönliches Token“ | feingranulares Token auf github.com › Settings › Developer settings › Fine-grained tokens: nur Zugriff auf das Daten-Repository, Berechtigung „Contents“ Lesen und Schreiben; nur in diesem Browser gespeichert, nie wieder angezeigt |
+
+- „Testen“ prüft, ob das Repository lesbar ist, der Zweig existiert und das Token schreiben darf.
+- „Speichern“ prüft, schaltet dann den Zugang ein und öffnet Heute; von da an lesen alle Seiten der Suite ihre Daten aus dem Repository (auch offline aufbewahrt).
+- Jede Speicherung (Bericht, Verfügbarkeiten, Blatt) wird ein Commit unter Ihrem Kürzel. Hat jemand anderes dieselbe Datei inzwischen geändert, wird sie neu gelesen und vor dem Schreiben zusammengeführt.
+- „Zugang trennen“ löscht das Token aus diesem Browser; die Seiten kehren zu den Daten des Starters zurück.
 
 ### Anmeldung und Passwort
 
@@ -420,14 +441,15 @@ Die Einstellungen werden in Ihrem Benutzereintrag gespeichert und durch die Sync
 | „Flottenvarianten“ | In der Flotte vorhandene Varianten |
 | „Luftfahrzeuge“ | Anzahl der Luftfahrzeuge im Dienst (von der Gesamtzahl) und ihre Basen |
 | „Leistungen“ | Für ein besessenes Luftfahrzeug: ein Link — die Quelle seines Blatts, der die Seite „Leistungsblätter“ auf diesem Luftfahrzeug öffnet, oder „keine“ und die Möglichkeiten, eines anzulegen, die dieselbe Seite öffnen |
-| „Besessen“ | Sie haben diesen Typ in Ihrem Simulator |
-| „Beherrscht“ | Sie fliegen ihn sicher |
+| „Status“ | Punkt: leer, nicht besessen; rot, NQ — besessen, nicht qualifiziert (Sie haben diesen Typ in Ihrem Simulator); orange, zu qualifizieren — Neuling; grün, beherrscht (Sie fliegen ihn sicher). Dieselben Farben und dieselbe Bedeutung wie im Blatt FLOTTE der ODV-Arbeitsmappe. Ein Tippen schaltet in dieser Reihenfolge weiter, dann zurück zu leer |
+| „⋯“ | Zeilenmenü: ihre Aktionen (Leistungsblatt anlegen, Variante entfernen, Typ oder Eintrag suchen, korrigieren oder löschen); auf dem Telefon auch die ausgeblendeten Spalten |
 
-- Das Ankreuzen von „Beherrscht“ kreuzt auch „Besessen“ an; das Abwählen von „Besessen“ wählt „Beherrscht“ ab.
+- Neuling und beherrscht gelten für das Zentrum als besessen; „Neuling“ wird gesondert in Ihren angegebenen Verfügbarkeiten gespeichert.
+- Auf dem Telefon behält die Tabelle nur das Luftfahrzeug, den Punkt und „⋯“: Varianten, Flottenluftfahrzeuge und Leistungen wandern ins Menü.
 - „Luftfahrzeug suchen“ über den Karten filtert beim Tippen nach Name, Variante, Kennung, Klasse und Quelle der Leistungen: Karten mit Treffer bleiben aufgeklappt, die anderen klappen zu, und „n Luftfahrzeug(e)“ nennt die Anzahl; leeres Feld: alles.
-- Varianten: Eine Kennung, die sich mehrere Modelle teilen (CL2T: CL-215T und CL-415), hat eine Zeile je angegebener Variante unter ihrem Namen („Canadair CL-415“, „Canadair CL-215T“); „ד entfernt eine Variante. Ohne angegebene Variante trägt das Luftfahrzeug den Namen des Eintrags und seiner bekannten Varianten („Canadair CL-215T / CL-415“). Das Leistungsprofil bleibt das der Kennung: „Leistungen gemeinsam für die Varianten“. Beim Hinzufügen schlägt die Liste jede Variante vor (Modell des Eintrags, Flottenvarianten, gebräuchliche Namen der Basis), oder Sie behalten Ihren eigenen Text; die Variante wird in Ihrer Angabe gespeichert.
+- Varianten: Eine Kennung, die sich mehrere Modelle teilen (CL2T: CL-215T und CL-415), hat eine Zeile je angegebener Variante unter ihrem Namen („Canadair CL-415“, „Canadair CL-215T“); „Variante entfernen“ im Menü „⋯“ entfernt eine Variante. Ohne angegebene Variante trägt das Luftfahrzeug den Namen des Eintrags und seiner bekannten Varianten („Canadair CL-215T / CL-415“). Das Leistungsprofil bleibt das der Kennung: „Leistungen gemeinsam für die Varianten“. Beim Hinzufügen schlägt die Liste jede Variante vor (Modell des Eintrags, Flottenvarianten, gebräuchliche Namen der Basis), oder Sie behalten Ihren eigenen Text; die Variante wird in Ihrer Angabe gespeichert.
 
-**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Luftfahrzeuge, die Sie besitzen, ohne dass sie zur Flotte gehören. Man fügt sie immer über einen Namen hinzu, nie über einen Pflichtcode: Geben Sie ein, was Sie kennen („CL-415“, „Canadair 415“, „PC-12“, „Caravelle“). Beim Tippen schlägt eine Auswahlliste mit Suche (Silhouetten, ↑ ↓ Eingabe, Esc), nach Herkunft gruppiert, die Typen der Flotte, der Typbasis dieses Rechners mit ihren gebräuchlichen Namen und der veröffentlichten ICAO-Liste vor; die Berechnung ist lokal, ohne Netz. Die Kennung wird für Sie gefunden: „CL-415“, „Canadair 415“ und „CL415“ ergeben CL2T, angezeigt als „Canadair CL-415“ (der Name der Variante bleibt erhalten). Ein Flottentyp wird einfach in der Karte „Meine Luftfahrzeuge“ angehakt. Kommen mehrere Typen in Frage, wird der nächstliegende ins Feld übernommen — „Hinzufügen“ zum Bestätigen, oder wählen Sie aus der Liste. Passt nichts, wird das Luftfahrzeug unter seinem Namen behalten, markiert mit „ICAO-Typ zu bestätigen“; „Typ suchen“ in seiner Zeile ordnet es später einer Kennung zu. Um ein hinzugefügtes Luftfahrzeug zu korrigieren oder zu löschen, klicken Sie auf seine Zeile: Seine Kennung oder sein Name kommt ins Feld, und „Hinzufügen“ wird zu „Ersetzen“ („Beherrscht“ wird übertragen), neben „Löschen“ und „Abbrechen“ (oder Esc). Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für eine Kennung, die ihr fehlt: Die Zeile zeigt „Typbasis wird ergänzt…“ während eines kurzen Durchlaufs, immer nur ein Durchlauf (ein während eines Durchlaufs angefragter Typ wird in die Warteschlange gestellt); das Verlassen der Seite unterbricht ihn nicht. Ein ausgemusterter Typ, den die offiziellen Quellen nicht mehr kennen, wird als letzter Ausweg bei Aviation Fanatic gesucht; ist er auch dort nicht, zeigt der Hinweis „nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)“ dies an. Diese Luftfahrzeuge gehen mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte, Spalte „Auch angegeben von“ — sie müssen nur „Besessen“ anhaken.
+**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Luftfahrzeuge, die Sie besitzen, ohne dass sie zur Flotte gehören. Man fügt sie immer über einen Namen hinzu, nie über einen Pflichtcode: Geben Sie ein, was Sie kennen („CL-415“, „Canadair 415“, „PC-12“, „Caravelle“). Beim Tippen schlägt eine Auswahlliste mit Suche (Silhouetten, ↑ ↓ Eingabe, Esc), nach Herkunft gruppiert, die Typen der Flotte, der Typbasis dieses Rechners mit ihren gebräuchlichen Namen und der veröffentlichten ICAO-Liste vor; die Berechnung ist lokal, ohne Netz. Die Kennung wird für Sie gefunden: „CL-415“, „Canadair 415“ und „CL415“ ergeben CL2T, angezeigt als „Canadair CL-415“ (der Name der Variante bleibt erhalten). Ein Flottentyp wird einfach in der Karte „Meine Luftfahrzeuge“ angehakt. Kommen mehrere Typen in Frage, wird der nächstliegende ins Feld übernommen — „Hinzufügen“ zum Bestätigen, oder wählen Sie aus der Liste. Passt nichts, wird das Luftfahrzeug unter seinem Namen behalten, markiert mit „ICAO-Typ zu bestätigen“; „Typ suchen“ in seiner Zeile ordnet es später einer Kennung zu. Um ein hinzugefügtes Luftfahrzeug zu korrigieren oder zu löschen, klicken Sie auf seine Zeile: Seine Kennung oder sein Name kommt ins Feld, und „Hinzufügen“ wird zu „Ersetzen“ (sein Status wird übertragen), neben „Löschen“ und „Abbrechen“ (oder Esc). Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für eine Kennung, die ihr fehlt: Die Zeile zeigt „Typbasis wird ergänzt…“ während eines kurzen Durchlaufs, immer nur ein Durchlauf (ein während eines Durchlaufs angefragter Typ wird in die Warteschlange gestellt); das Verlassen der Seite unterbricht ihn nicht. Ein ausgemusterter Typ, den die offiziellen Quellen nicht mehr kennen, wird als letzter Ausweg bei Aviation Fanatic gesucht; ist er auch dort nicht, zeigt der Hinweis „nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)“ dies an. Diese Luftfahrzeuge gehen mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte, Spalte „Auch angegeben von“ — ein Tippen auf den Punkt genügt.
 
 **Karte „Simulatoren“**: Kreuzen Sie die installierten Simulatoren und Werkzeuge an.
 
@@ -500,6 +522,28 @@ Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vors
 | „Keine Symbole“ | Keine Symbole |
 
 **„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken). „Symbolgröße“: „Klein“, „Mittel“ (Standard) oder „Groß“. „Anzeige“ (Stufe Experte): „Symbol und Beschriftung“ (Standard), „Nur Symbol“ (schmalere Leiste, Name des Eintrags als Tooltip) oder „Nur Beschriftung“.
+
+### Auf dem Telefon
+
+Auf einem schmalen Bildschirm (Telefon, verkleinertes Fenster) wechselt die Suite in den **mobilen Modus**: Kopfzeile
+in einer Zeile, Navigationsleiste unten auf dem Bildschirm statt der Seitenleiste, Registerkarten in einer scrollbaren
+Zeile, Blöcke in voller Breite, größere Schaltflächen und Felder, Tabellen, die im Block scrollen oder als Karten
+erscheinen.
+
+- **Leiste unten**: bis zu sechs Einträge, alle mit kurzer Beschriftung (Heute, Missionen, Flüge, Bericht…); darüber
+  hinaus die ersten fünf und „Mehr“, das die übrigen Einträge, Einstellungen und Hilfe öffnet.
+- **Telefon im Querformat**: die Leiste wird zu einer Schiene links am Bildschirm (Symbol, Beschriftung darunter) und die Kopfzeile ist nicht mehr fixiert, damit die Höhe dem Inhalt bleibt; die Kurven der Kraftstoffseite passen mit ihrem Höhenregler auf den Bildschirm.
+- **Kopfzeile**: sie verschwindet beim Abwärtsscrollen und kommt beim Aufwärtsscrollen sofort zurück.
+- **Mobiler Modus**: „Automatisch (schmaler Bildschirm)“, „Immer“ oder „Nie“. Im automatischen Modus bleibt ein ins Querformat gedrehtes Telefon im mobilen Modus.
+- **Diese Seite auf dem Telefon**: „Auf dem Telefon“ steht oben. Unter einem Telefon-Skin werden Design, Symbole, Seitenleiste und Themenfarben (Einstellungen des Computers, ohne Wirkung unter diesem Skin) nicht angezeigt; Telefon-Skin „Mein Design“ holt sie zurück.
+- **Telefon-Skin**: „Mobil“ (Standard, flach und leicht), „Swiss“ (Schwarz-Weiß, eckig, roter Akzent) oder „Mein
+  Design“ (das oben gewählte Design). Wird beim nächsten Laden einer Seite auf einem Touchscreen angewendet.
+- **Tag / Nacht**: „Wie das Telefon“ (helle oder dunkle Einstellung des Telefons), „Tag“ oder „Nacht“.
+- Auf einem Touchscreen werden die für große Bildschirme gestalteten Seiten (Flugkarten, Leistungsblätter,
+  Vorbereitungsseiten des Zentrums, Installationseinstellungen) aus Leiste und Registerkarten entfernt; trotzdem
+  geöffnet, zeigen sie einen Hinweis. Ein verkleinertes Computerfenster behält alle Seiten.
+- **Mobile Vorschau am Computer** (Stufe Experte): eine Seite der Suite in Telefon- und Tablet-Rahmen, mit gewähltem
+  Skin und Tag / Nacht, um die Darstellung ohne Telefon zu prüfen.
 
 ### Themenfarben
 
@@ -734,6 +778,8 @@ vier Uhrzeiten; Kraftstoff beim Abflug und bei der Landung); „Alle Felder“ u
 „Wesentliche Felder“ kehrt zurück. Auf den Stufen 3 und 4 sind alle Felder da. Werte in ausgeblendeten Feldern (Import,
 Flugplan, Netzwerk-Tracking) bleiben im Bericht. Ein Klick auf eine Unstimmigkeit unter den Berechnungen öffnet den
 Schritt, den Block und bei Bedarf alle seine Felder und setzt dann den Cursor in das Feld.
+
+**Auf dem Telefon**: es ist immer nur ein Schritt geöffnet — beim Aufruf der erste noch zu vervollständigende; das Öffnen eines Schritts klappt die anderen ein und bringt ihn an den oberen Bildschirmrand. Die Leiste „1 Flug · 2 Mission · 3 Ergebnis“ bleibt während der Eingabe oben fixiert und kennzeichnet den geöffneten Schritt; die Kopfzeile der Mission scrollt mit der Seite. „Ins Register aufnehmen“ schwebt über der unteren Leiste; „Senden“ und „Vorausfüllen“ bleiben in der Kopfzeile, oben auf der Seite.
 
 ### Kopfzeile und Werkzeugleiste
 
@@ -1127,6 +1173,36 @@ nennt die Kennzahlen der Familie, die in die Auswertungen übernommen werden.
 Die Familien HEMS und FIRE können ihr altes CSV-Register übernehmen: siehe
 [Auswertung einer Familie](#auswertung-einer-familie).
 
+## Flotte
+<!-- page: apps/cr/flotte.html -->
+
+Wo die Luftfahrzeuge der Flotte stehen: Registerkarte „Flotte“ der Schaltfläche „Bericht“ der Seitenleiste, neben der
+Registerkarte „Bericht“. Die Seite ist schreibgeschützt und für alle offen; ist das Zentrum in diesem Browser
+aktiviert, führt die Schaltfläche „Flotte bearbeiten“ zur bearbeitbaren Tabelle (Einstellungen › Zentrum › Flotte).
+
+- **Karte**: jedes Luftfahrzeug steht auf seinem aktuellen Flugplatz (Standort laut Website der Fluggesellschaft, oder
+  Landeflugplatz eines Berichts aus einem Einsatzbefehl, sonst seine Heimatbasis), auf einem OpenStreetMap-Hintergrund.
+  Übersicht: ein Abzeichen pro Flugplatz mit der Zahl der Luftfahrzeuge; Flugplätze, die bei diesem Zoom zu nah
+  beieinander liegen, werden zu einem einzigen Abzeichen („LFMI +2“) mit der Gesamtzahl zusammengefasst. Beim
+  Vergrößern (Schaltflächen „+“ / „−“, Strg + Mausrad, Doppelklick) stellen sich die Luftfahrzeuge eines Flugplatzes
+  einzeln auf einem Vorfeld auf; „Ganze Flotte“ richtet die Karte neu aus.
+- **Überfahren**: eines Abzeichens mit mehreren Luftfahrzeugen: ihre Zahl je Rufzeichen (Serie) und Typ; eines
+  Abzeichens mit mehreren Flugplätzen: zusätzlich die Zahl je Flugplatz; eines Luftfahrzeugs (oder eines Abzeichens mit
+  nur einem): sein Kurzblatt — Rufzeichen, Betreiber, aktueller Flugplatz und seit wann, Heimatbasis, Datum und Uhrzeit
+  des letzten Flugs (Flugbuch der Fluggesellschaft und Berichte: der neueste).
+- **Auswahl**: Klick auf ein Luftfahrzeug; Klick auf ein Abzeichen: seine Luftfahrzeuge, und Zoom darauf; Strg oder
+  Umschalt + Klick: hinzufügen oder entfernen; Umschalt + Ziehen: Rechteck; Esc oder „Auswahl aufheben“. Die Liste unter
+  der Karte führt zum Blatt jedes Luftfahrzeugs, und die ausgewählten Zeilen werden in der Tabelle hervorgehoben.
+- **Filter** (oben auf der Karte, kombiniert): Betreiber, Typ, Rufzeichen (Serie), Flugplatz, Status, Herkunft der
+  Position (Website, Einsatzbefehl, Basis), letzter Flug (weniger als 7, 30, 90 Tage, mehr als 90 Tage, kein Flug
+  bekannt) und freie Suche (Kennzeichen, Rufzeichen, Typ…). Jede Liste nennt die Zahl der Luftfahrzeuge je Wert;
+  „Filter zurücksetzen“ löscht sie. Die Auswahl bleibt in diesem Browser gespeichert.
+- **Tabelle** „Luftfahrzeuge der Flotte“: die von den Filtern behaltenen Luftfahrzeuge (Kennzeichen, Typ, Variante,
+  Rufzeichen, Betreiber, aktueller Flugplatz und Herkunft, Heimatbasis, letzter Flug, Status), nach Spalten sortierbar.
+  Überfahren einer Zeile: ihre Position wird auf der Karte hervorgehoben; Klick: das Luftfahrzeug wird ausgewählt und
+  die Karte auf seinen Flugplatz zentriert; das Kennzeichen öffnet das Luftfahrzeugblatt.
+- „n ohne bekannten Flugplatz“ (Tooltip) listet die Luftfahrzeuge ohne Flugplatz oder mit nicht auffindbarem Flugplatz.
+
 ## Luftfahrzeugblatt
 <!-- page: apps/cr/appareil.html -->
 
@@ -1145,6 +1221,8 @@ Der Titel zeigt Kennzeichen, Typ und Modell. Darunter drei Hinweise:
   Journals);
 - „🏠 Heimatflugplatz“.
 
+**Navigation**: Das Blatt liegt unter der Registerkarte „Flotte“ (Bericht › Flotte), die zur Liste und zur Karte zurückführt. Oben im Blatt öffnet die Flottenliste (nach Typ) ein anderes Luftfahrzeug; „‹“ und „›“ wechseln zum vorherigen oder nächsten Luftfahrzeug desselben Typs.
+
 Die **Zeitraum**-Leiste der Auswertungen (Voreinstellungen, Daten, ◀ − ▶) steht in der Kopfzeile: Aktivität,
 Diagramm und Tabelle folgen ihr. Ein in den Datenbanken unbekanntes Luftfahrzeug zeigt „In den Datenbanken unbekannt: das
 Blatt füllt sich mit den Berichten“.
@@ -1161,8 +1239,8 @@ Blatt füllt sich mit den Berichten“.
 | „Verwendete Rufzeichen“, „Ausrüstung“ | nein | aus den Missionen erfasst, mit ihrer Anzahl |
 | „Notizen“ | ja | freier Text |
 
-Klicken Sie auf „Blatt speichern“: Das Blatt wird **in diesem Browser** gespeichert (in der lokalen Sicherung
-enthalten). Die Identität wird über den gesamten Verlauf berechnet, unabhängig vom Zeitraum.
+Die änderbaren Felder stehen oben im Block; jedes wird gespeichert, sobald es sich ändert, **in diesem Browser** (in der lokalen Sicherung
+enthalten): Die Uhrzeit der letzten Speicherung steht unter den Notizen. Die Identität wird über den gesamten Verlauf berechnet, unabhängig vom Zeitraum.
 
 „Zusammenführen mit… / umbenennen“: Wählen Sie ein anderes Kennzeichen und dann „Zusammenführen“. Die Missionen des
 Registers mit dem alten Wert erhalten den neuen (nach Bestätigung, mit einem Vermerk in
@@ -1228,7 +1306,7 @@ in der Kopfzeile, wie beim Luftfahrzeugblatt.
 | „Qualifikationen (eine pro Zeile)“ | ja | freier Text |
 | „Notizen“ | ja | freier Text |
 
-„Blatt speichern“ speichert es in diesem Browser. „Zusammenführen mit… / umbenennen“ vereint zwei
+Jedes Feld wird in diesem Browser gespeichert, sobald es sich ändert. „Zusammenführen mit… / umbenennen“ vereint zwei
 Schreibweisen desselben Piloten (z. B. GRR → RBR): Die Missionen des Registers erhalten den neuen Wert, mit
 einem Vermerk, nach Bestätigung.
 
@@ -1601,7 +1679,7 @@ Das gewählte Blatt bleibt im Ergebnis schreibgeschützt sichtbar (aufklappbare 
 ### Kraftstoffplanung
 
 1. „Flugplan (Feld 15)“: Geben Sie die Route ein. Es ist derselbe Plan wie in den Flugkarten (der neueste gewinnt). Distanz, rechtweisender Kurs und Flughöhe werden daraus abgeleitet. Unter dem Feld werden die Punkte der Route einzeln angezeigt (Flugplätze fett, Punkte der Luftstraßen abgeschwächt, Flughöhe nach dem Punkt, an dem sie wechselt; Überfahren: Position). Nach „Letzten SimBrief-FPL abrufen“ sagt eine Zeile, was gelesen wurde, zum Beispiel „OFP vom 19/10 · LFRS → LFML · 11 Punkte · FL270 · Ausweichflugplatz LFPG · S210 F-BHHH“ (auch als Benachrichtigung), mit „JSON anzeigen“ (Fenster mit dem JSON des OFP, „Kopieren“). Ein OFP ohne Route Punkt für Punkt sagt es („leeres Navlog…“): die Route wird dann auf die Flugplätze reduziert.
-2. Ergänzen oder korrigieren Sie die Felder im aufklappbaren Bereich „Flugparameter“ (auf der Stufe Experte von Anfang an aufgeklappt, sonst zugeklappt; für eine schnelle Planung genügen die Standardwerte): „Distanz (NM)“, „Flugfläche (FL)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
+2. Stellen Sie „Flugfläche (FL)“ ein, den einzigen stets angezeigten Parameter, und ergänzen oder korrigieren Sie dann die Felder im aufklappbaren Bereich „Flugparameter“ (auf der Stufe Experte am Computer von Anfang an aufgeklappt, sonst und auf dem Telefon zugeklappt; für eine schnelle Planung genügen die Standardwerte): „Distanz (NM)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
 3. Optional, im selben Bereich: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“. „Reiseverbrauch (kg/h)“: aus dem Profil vorbelegt; ohne Profil sagt die Seite, welchen Wert sie verwendet und woher er kommt (zum Beispiel „≈ 4 000 kg/h, Typschätzung A400“); „Diesen Wert verwenden“ übernimmt ihn ins Feld, „Für diesen Typ speichern“ behält ihn für die nächsten Flüge. „Gewählter Steigflug“ (Detailansicht): drei Schieberegler, „IAS“, Steigrate und „Leistung (%)“ (RPM oder N1, wenn das Profil ein Motorkennfeld hat), jeweils mit einem Kästchen „fest“ davor; zwei sind fest, der dritte wird berechnet und ausgegraut; „Vollgas“ erscheint unter der Steigrate; die Zeile darunter nennt Verbrauch, TAS und Leistung in der Mitte des Steigflugs. Diesen Steigflug zählt die Kraftstoffplanung.
 4. Klicken Sie auf „Berechnen“.
 
@@ -1667,6 +1745,8 @@ Der Steigflug folgt dem Leistungsmodell des aktiven Flugzeugs; der Sinkflug folg
 Ein importiertes SimBrief-OFP füllt die Route und zeichnet das Profil von selbst.
 Sie brauchen die SIA-Datenbank dieses Browsers, gelesen in den Flugkarten (Block „SIA-Datenbank“) oder unter Einstellungen › Wartung. Ohne sie werden nur Punkte in Koordinaten erkannt, ohne Lufträume.
 Das Gelände stammt aus einem Geländemodell von etwa 150 m: Die ASFC-Grenzen folgen diesem Modell, nicht dem wirklichen Boden.
+
+**Auf dem Telefon**: die Seite wird einspaltig (Kostenvoranschlag, dann Ergebnis, dann die übrigen Blöcke); nach „Berechnen“ wird das Ergebnis auf den Bildschirm gebracht. Die Kurventabelle scrollt in ihrem Rahmen.
 
 ## Leistungsblätter
 <!-- page: apps/planner/performance_sheets.html -->

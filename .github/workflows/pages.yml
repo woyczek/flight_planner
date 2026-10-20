@@ -1,0 +1,45 @@
+# Publication de la suite sur GitHub Pages (appli sans lanceur, docs/technique/APPLI_AUTONOME.md) : à chaque push de la
+# branche de l'appli, site construit par tools/build_pages.py (fichiers suivis, images Git LFS, empreintes ?v=, sans
+# data/), icônes de l'écran d'accueil produites depuis assets/favicon-flight.svg, puis déployé.
+# Réglage à faire une fois : Settings › Pages › Source : « GitHub Actions » ; Settings › Environments › github-pages :
+# branche autorisée (feature/mobile, puis develop).
+name: Pages (appli)
+on:
+  push:
+    branches: [feature/mobile]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Construire le site
+        run: python tools/build_pages.py _site
+      - name: Icônes de l'écran d'accueil
+        run: |
+          sudo apt-get install -y --no-install-recommends librsvg2-bin >/dev/null
+          for s in 180 192 512; do rsvg-convert -w $s -h $s assets/favicon-flight.svg -o _site/assets/app-$s.png; done
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

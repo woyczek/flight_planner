@@ -25,7 +25,7 @@ What it shows depends on your **usage level** (My profile › “Usage level”)
 |---|---|---|
 | “Today” | Next mission, reports to write, week; first entry at every level | 1 |
 | “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
-| “Report” | Entry of a mission report | 1 |
+| “Report” | Entry of a mission report; “Fleet” tab: where the aircraft are (map, filters, last flight) | 1 |
 | “Schedule” | Weekly order schedule (Board, read-only at level 1 or without the Centre); at level 4, common slots and likely missions of the ODV page | 1 |
 | “Missions” | Mission generator and registry, as tabs; map studio at level 4 | 3 |
 | “Tools” | Flight maps, fuel, landings, mission analysis (tools ticked in My profile, all at level 4) | 1 to 4 |
@@ -282,6 +282,8 @@ The message under the block tells you where the entry went: “Saved to the data
 An existing old hourly grid is imported automatically into the week.
 The “Open the availability entry on its own” link leads to the My availability page. This link only appears at the Expert level.
 
+**On phones**: the list, the folder and the availability follow one another in a single column; a tap on a mission brings its folder on screen, and its actions (“Create the report”, “Close the folder”…) stay pinned above the bottom bar while reading. The folder's tables (route points) scroll inside their frame.
+
 ## My flights
 <!-- page: apps/pilot/mes_vols.html -->
 
@@ -317,6 +319,8 @@ Below 800 px wide, only the date, call sign, route and duration remain; a click 
 You also get there through “My flights ↗” in My missions (next to “also show past missions”) and in the “Send” menu
 of a report.
 
+**On phones**: the totals become tiles (flights, block hours, flights without a report, most flown types) and each flight a card (date and call sign at the top); a tap unfolds its details, with “Open the report” or “Write the report”.
+
 ## My availability
 <!-- page: apps/pilot/disponibilites.html -->
 
@@ -341,6 +345,8 @@ Tips and limits:
 - If the week is still loading, a change is refused with “Week still loading: try again in a moment.”
 
 For the way the Centre uses these declarations, see [availability and reorganisation](../technique/DISPOS_ET_REORGANISATION.md).
+
+**On a phone**: input switches to a “one day” view (“Day” / “Week” toggle under the week bar; the chosen view is kept). At the top, the day shown with “‹” and “›” (or a finger swipe; past Sunday or Monday, the neighbouring week is read), then the seven days of the week (a dot under those with an availability). Choose a category in the palette, tap the start time in the hours column, then the end time: the range is laid to the half hour, end included; “Whole day” lays it over the whole day, “Cancel” drops a start. The day’s ranges are listed above the column: “✕” removes a whole availability, or the background on that day only; “↶ Undo” undoes the last change. The column opens one hour before the day’s first availability (otherwise at 07:00) and scrolls within its frame. “Precise range” is still there for the minute.
 
 ## My profile
 <!-- page: apps/settings/profil.html -->
@@ -372,7 +378,7 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 |---|---|
 | “Pilot” | “Trigram”, “VATSIM ID (CID)”, “IVAO ID (VID)”, “SimBrief (username or ID)” |
 | “Airline website” | “Login”, “Password” |
-| “IVAO — OAuth client (personal)” (Expert level) | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
+| “IVAO — OAuth client (personal)” | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
 | “Language” (Expert level) | “Suite language”: Automatic (browser language), Français, English, Deutsch, Español |
 
 1. Fill in the fields.
@@ -382,6 +388,21 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 - The airline website credentials stay in this browser only: they are never written to a file or to a backup.
 - The language is usually chosen with the “Language” flag of the header; the “Language” card (Expert level) applies as soon as you choose it, without “Save”.
 - In production mode, the trigram is the one of the signed-in user and cannot be changed here.
+
+### Data access
+
+For the app without the launcher (phone, suite published on GitHub Pages): the airline data is read from and written to a GitHub repository (a copy of the data repository), with your personal token. On a computer that uses the launcher, this section is not needed.
+
+| Field | Content |
+|---|---|
+| “Repository (account/repository)” | the GitHub data repository, for example `Woyczek/flight_planner_data` |
+| “Branch” | `main` by default |
+| “Personal token” | fine-grained token created on github.com › Settings › Developer settings › Fine-grained tokens: access to the data repository only, “Contents” permission read and write; kept in this browser only, never shown again |
+
+- “Test” checks that the repository is readable, the branch exists and the token can write.
+- “Save” checks, then turns access on and opens Today; from then on every page of the suite reads its data from the repository (also kept for offline use).
+- Each save (report, availability, sheet) becomes a commit under your trigram. If someone else changed the same file in the meantime, it is read again and merged before being written.
+- “Cut access” erases the token from this browser; the pages go back to the launcher's data.
 
 ### Sign-in and password
 
@@ -418,14 +439,15 @@ The preferences are kept in your user record, shared with the Centre by synchron
 | “Fleet variants” | Variants present in the fleet |
 | “Aircraft” | Number of aircraft in service (out of the total) and their bases |
 | “Performance” | For an owned aircraft: a link — the source of its sheet, which opens the “Performance sheets” page on this aircraft, or “none” and the ways to create one, which open that same page |
-| “Owned” | You have this type in your simulator |
-| “Mastered” | You fly it with ease |
+| “State” | Dot: empty, not owned; red, NQ — owned, not qualified (you have this type in your simulator); orange, to qualify — novice; green, mastered (you fly it with ease). Same colours and meaning as the FLOTTE sheet of the ODV workbook. A tap cycles it in this order, then back to empty |
+| “⋯” | Row menu: its actions (create the performance sheet, remove a variant, find the type or the record, correct or delete); on a phone, the hidden columns too |
 
-- Ticking “Mastered” also ticks “Owned”; unticking “Owned” unticks “Mastered”.
+- Novice and mastered count as owned for the Centre; “novice” is saved separately in your declared availability.
+- On a phone, the table only keeps the aircraft, the dot and “⋯”: variants, fleet aircraft and performance move into the menu.
 - “Search an aircraft”, above the cards, filters as you type on the name, variant, designator, class and performance source: cards with a match stay unfolded, the others fold, and “n aircraft” gives the count; empty field: everything.
-- Variants: a designator shared by several models (CL2T: CL-215T and CL-415) has one row per declared variant, under its name (“Canadair CL-415”, “Canadair CL-215T”); “×” removes a variant. Without a declared variant, the aircraft bears the name of the record and of its known variants (“Canadair CL-215T / CL-415”). The performance profile stays the designator's: “performance shared by the variants”. When adding, the list offers each variant (model of the record, fleet variants, common names from the base), or keep your own text; the variant is saved in your declaration.
+- Variants: a designator shared by several models (CL2T: CL-215T and CL-415) has one row per declared variant, under its name (“Canadair CL-415”, “Canadair CL-215T”); “Remove the variant”, in the “⋯” menu, removes a variant. Without a declared variant, the aircraft bears the name of the record and of its known variants (“Canadair CL-215T / CL-415”). The performance profile stays the designator's: “performance shared by the variants”. When adding, the list offers each variant (model of the record, fleet variants, common names from the base), or keep your own text; the variant is saved in your declaration.
 
-**“Other aircraft (outside the fleet)” card**: the aircraft you own that are not in the fleet. You always add them by a name, never by a mandatory code: type what you know (“CL-415”, “Canadair 415”, “PC-12”, “Caravelle”). While you type, a drop-down list with search (silhouettes, ↑ ↓ Enter, Esc) suggests, grouped by origin, the types of the fleet, of this computer's type base with their common names and of the published ICAO list; this is computed locally, with no network. The designator is found for you: “CL-415”, “Canadair 415” and “CL415” give CL2T, shown as “Canadair CL-415” (the variant name is kept). A fleet type is simply ticked in the “My aircraft” card. If several types are possible, the closest one is put in the field — “Add” to confirm it, or choose from the list. If nothing matches, the aircraft is kept under its name, marked “ICAO type to confirm”; “Find the type”, on its row, links it to a designator later. To correct or delete an added aircraft, click its row: its code or name goes into the field and “Add” becomes “Replace” (“Mastered” is carried over), next to “Delete” and “Cancel” (or Esc). This computer's base is completed by the launcher only when you click “Add”, for a designator it is missing: the row shows “completing the type base…” during a short pass, one pass at a time (a type requested during a pass is queued); leaving the page does not stop it. A retired type that the official sources no longer know is looked up as a last resort on Aviation Fanatic; if it is not there, the note “not found (ICAO, EUROCONTROL, Aviation Fanatic)” says so. These aircraft go with your declared availability: the Centre sees them for assignments, and the other pilots find them in this card, “Also declared by” column — they only have to tick “Owned”.
+**“Other aircraft (outside the fleet)” card**: the aircraft you own that are not in the fleet. You always add them by a name, never by a mandatory code: type what you know (“CL-415”, “Canadair 415”, “PC-12”, “Caravelle”). While you type, a drop-down list with search (silhouettes, ↑ ↓ Enter, Esc) suggests, grouped by origin, the types of the fleet, of this computer's type base with their common names and of the published ICAO list; this is computed locally, with no network. The designator is found for you: “CL-415”, “Canadair 415” and “CL415” give CL2T, shown as “Canadair CL-415” (the variant name is kept). A fleet type is simply ticked in the “My aircraft” card. If several types are possible, the closest one is put in the field — “Add” to confirm it, or choose from the list. If nothing matches, the aircraft is kept under its name, marked “ICAO type to confirm”; “Find the type”, on its row, links it to a designator later. To correct or delete an added aircraft, click its row: its code or name goes into the field and “Add” becomes “Replace” (its state is carried over), next to “Delete” and “Cancel” (or Esc). This computer's base is completed by the launcher only when you click “Add”, for a designator it is missing: the row shows “completing the type base…” during a short pass, one pass at a time (a type requested during a pass is queued); leaving the page does not stop it. A retired type that the official sources no longer know is looked up as a last resort on Aviation Fanatic; if it is not there, the note “not found (ICAO, EUROCONTROL, Aviation Fanatic)” says so. These aircraft go with your declared availability: the Centre sees them for assignments, and the other pilots find them in this card, “Also declared by” column — a tap on the dot is all they need.
 
 **“Simulators” card**: tick the simulators and tools installed.
 
@@ -498,6 +520,27 @@ The stroke width of the icons, or no icons at all. Each row shows a preview of t
 | “No icons” | No icons |
 
 **“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing). “Icon size”: “Small”, “Medium” (default) or “Large”. “Display” (Expert level): “Icon and label” (default), “Icon only” (narrower bar, entry name as a tooltip) or “Label only”.
+
+### On phones
+
+On a narrow screen (phone, reduced window), the suite switches to **mobile mode**: one-line header, navigation bar at
+the bottom of the screen instead of the side bar, tabs on one scrolling line, full-width blocks, larger buttons and
+fields, tables that scroll inside their block or are shown as cards.
+
+- **Bottom bar**: up to six entries, all shown with a short label (Today, Missions, Flights, Report…); beyond that, the
+  first five and “More”, which opens the other entries, Settings and Help.
+- **Phone in landscape**: the bar becomes a rail on the left of the screen (icon, label below) and the header is no longer pinned, to keep the height for the content; the Fuel curves fit with their level slider.
+- **Header**: it slides away when you scroll down the page and comes back as soon as you scroll up.
+- **Mobile mode**: “Automatic (narrow screen)”, “Always” or “Never”. In automatic mode, a phone turned to landscape stays in mobile mode.
+- **This page on a phone**: “On phones” comes first. Under a phone skin, design, icons, side bar and theme colours (computer settings, with no effect under this skin) are not shown; phone skin “My design” brings them back.
+- **Phone skin**: “Mobile” (default, flat and light), “Swiss” (black and white, square corners, red accent) or “My
+  design” (the design chosen above). Applied the next time a page is loaded on a touch screen.
+- **Day / night**: “Follows the phone” (the phone's light or dark setting), “Day” or “Night”.
+- On a touch screen, the pages designed for a large screen (flight maps, performance sheets, Centre preparation pages,
+  installation settings) are left out of the bar and the tabs; opened anyway, they show a notice. A reduced computer
+  window keeps all its pages.
+- **Mobile preview on a computer** (Expert level): a page of the suite in phone and tablet frames, with the chosen skin
+  and day / night, to check the rendering without a phone.
 
 ### Theme colours
 
@@ -730,6 +773,8 @@ fuel at departure and at landing); “All fields”, under its title, shows the 
 levels 3 and 4, all the fields are there. Values in hidden fields (import, flight plan, network tracking) stay in the
 report. A click on a consistency anomaly, under the calculations, opens the step, the block and, if needed, all its
 fields, then puts the cursor in the field.
+
+**On a phone**: only one step is open at a time — on arrival, the first one to complete; opening a step folds the others and brings it to the top of the screen. The “1 Flight · 2 Mission · 3 Result” bar stays pinned at the top while you type and marks the open step; the mission header scrolls with the page. “Add to ledger” floats above the bottom bar; “Send” and “Prefill” stay in the header, at the top of the page.
 
 ### Header and toolbar
 
@@ -1121,6 +1166,35 @@ gives the family's own indicators, used in the reporting pages.
 The HEMS and FIRE families can take over their old CSV ledger: see
 [Family reporting](#family-reporting).
 
+## Fleet
+<!-- page: apps/cr/flotte.html -->
+
+Where the fleet aircraft are: “Fleet” tab of the “Report” button of the side bar, next to the “Report” tab. The page
+is read-only and open to everyone; with the Centre enabled in this browser, the “Edit the fleet” button leads to the
+editable table (Settings › Centre › Fleet).
+
+- **Map**: each aircraft is at its current aerodrome (location given by the airline website, or landing aerodrome of a
+  report from a mission order, otherwise its home base), on an OpenStreetMap background. Overview: one badge per
+  aerodrome with the number of aircraft; aerodromes too close to be told apart at this zoom are merged into a single
+  badge (“LFMI +2”) with the total number of aircraft. When zooming in (“+” / “−” buttons, Ctrl + wheel,
+  double-click), the aircraft of an aerodrome are lined up one by one on an apron; “Whole fleet” fits the map again.
+- **Hover**: on a badge with several aircraft, their number per callsign (series) and type; on a badge with several
+  aerodromes, also the number per aerodrome; on an aircraft (or a badge with a single one), its short sheet:
+  callsigns, operator, current aerodrome and since when, home base, date and time of the last flight (airline flight
+  log and reports: the latest).
+- **Selection**: click an aircraft; click a badge: its aircraft, and zoom to it; Ctrl or Shift + click: add or remove;
+  Shift + drag: rectangle; Esc or “Clear the selection”. The list under the map leads to each aircraft sheet, and the
+  selected rows are highlighted in the table.
+- **Filters** (at the top of the map, combined): operator, type, callsign (series), aerodrome, status, origin of the
+  position (website, mission order, base), last flight (less than 7, 30, 90 days, more than 90 days, no known flight)
+  and free search (registration, callsign, type…). Each list gives the number of aircraft per value; “Reset the
+  filters” clears them. The choices are kept in this browser.
+- **Table** “Fleet aircraft”: the aircraft kept by the filters (registration, type, variant, callsigns, operator,
+  current aerodrome and origin, home base, last flight, status), sortable by column. Hovering a row: its position is
+  highlighted on the map; click: the aircraft is selected and the map centred on its aerodrome; the registration opens
+  the aircraft sheet.
+- “n without a known aerodrome” (tooltip) lists the aircraft with no aerodrome, or whose aerodrome cannot be found.
+
 ## Aircraft sheet
 <!-- page: apps/cr/appareil.html -->
 
@@ -1139,6 +1213,8 @@ The title shows the registration, the type and the model. Below it, three badges
   Log);
 - “🏠 Home aerodrome”.
 
+**Getting around**: the sheet is under the “Fleet” tab (Report › Fleet), which leads back to the list and the map. At the top of the sheet, the fleet list (by type) opens another aircraft; “‹” and “›” go to the previous or next aircraft of the same type.
+
 The reporting **period** bar (presets, dates, ◀ − ▶) is in the header: activity,
 chart and table follow it. An aircraft unknown to the databases shows “Unknown in the bases: the
 sheet will fill as reports come in”.
@@ -1155,8 +1231,8 @@ sheet will fill as reports come in”.
 | “Callsigns used”, “Equipment” | no | collected from the missions, with their count |
 | “Notes” | yes | free text |
 
-Click “Save sheet”: the sheet is kept **in this browser** (included in the local
-backup). The identity is calculated over the whole history, whatever the period.
+The editable fields come first in the block; each one is saved as soon as it changes, **in this browser** (included in the local
+backup): the time of the last save is shown under the notes. The identity is calculated over the whole history, whatever the period.
 
 “Merge with… / rename”: choose another registration, then “Merge”. The ledger missions
 that carry the old value take the new one (after confirmation, with a trace in
@@ -1222,7 +1298,7 @@ in the header, as for the aircraft sheet.
 | “Qualifications (one per line)” | yes | free text |
 | “Notes” | yes | free text |
 
-“Save sheet” keeps it in this browser. “Merge with… / rename” brings together two
+Each field is saved in this browser as soon as it changes. “Merge with… / rename” brings together two
 spellings of the same pilot (e.g. GRR → RBR): the ledger missions take the new value, with
 a trace, after confirmation.
 
@@ -1592,7 +1668,7 @@ The chosen sheet stays visible read-only in the Result (collapsible group “Fli
 ### Fuel plan
 
 1. “Flight plan (item 15)”: enter the route. It is the same plan as the Flight maps (the most recent one wins). The distance, the true track and the level are deduced from it. Below the field, the route points are shown one by one (airfields in bold, airway points dimmed, level after the point where it changes; hover: position). After “Fetch latest SimBrief FPL”, a line says what was read, for example “OFP of 19/10 · LFRS → LFML · 11 points · FL270 · alternate LFPG · S210 F-BHHH” (also as a notification), with “View the JSON” (window with the OFP's JSON, “Copy”). An OFP without a point-by-point route says so (“empty navlog…”): the route is then reduced to the airfields.
-2. Complete or correct the fields of the collapsible “Flight parameters” section (unfolded from the start at the Expert level, collapsed otherwise; the default values are enough for a quick estimate): “Distance (NM)”, “Level (FL)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
+2. Set “Level (FL)”, the only parameter always shown, then complete or correct the fields of the collapsible “Flight parameters” section (unfolded from the start at the Expert level on a computer, collapsed otherwise and on a phone; the default values are enough for a quick estimate): “Distance (NM)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
 3. Optional, in the same section: “Planned take-off mass”, compared with the type's MTOW; “ISA deviation (°C)”, or “Ground temperature (°C)” with “Field elevation (ft)”, or “Temperature at level (°C)”. “Cruise fuel flow (kg/h)”: filled in from the profile; without a profile, the page says which value it will use and where it comes from (for example “≈ 4,000 kg/h, type estimate A400”); “Use this value” copies it into the field, “Remember for this type” keeps it for the next flights. “Chosen climb” (detailed view): three sliders, “IAS”, climb rate and “Throttle (%)” (RPM or N1 if the profile has an engine map), each preceded by a “fixed” box; two are fixed, the third is calculated and greyed out; “full throttle” shows under the climb rate; the line below gives fuel flow, TAS and throttle at mid-climb. This is the climb the fuel plan counts.
 4. Click “Calculate”.
 
@@ -1658,6 +1734,8 @@ The climb follows the performance model of the active aircraft; the descent foll
 An imported SimBrief OFP fills in the route and draws the profile on its own.
 You need the SIA database of this browser, read in the Flight maps (“SIA database” block) or in Settings › Maintenance. Without it, only points given as coordinates are recognised, without airspaces.
 The terrain comes from a terrain model of about 150 m: the ASFC limits follow this model, not the actual ground.
+
+**On phones**: the page goes to a single column (quote, then Result, then the other blocks); after “Calculate”, the Result is brought on screen. The curve table scrolls inside its frame.
 
 ## Performance sheets
 <!-- page: apps/planner/performance_sheets.html -->

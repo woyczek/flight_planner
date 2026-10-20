@@ -7,6 +7,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 
 | Document | Pour |
 |---|---|
+| [Data and access map](DONNEES_ET_ACCES.md) | who stores what: git data repository, browser, website, launcher workstation, apps; shared versus local data |
 | [Synchronisation des données](SYNCHRONISATION.md) | architecture de la synchronisation (bouton « Synchroniser », conflits fiche par fiche, plusieurs utilisateurs) |
 | [Index des données](INDEX_DONNEES.md) | index du navigateur, réplication, expiration, conflits, étapes |
 | [Framework commun](FRAMEWORK.md) | en-tête, menu, blocs, dossiers, données locales |

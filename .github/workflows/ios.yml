@@ -1,0 +1,192 @@
+# Appli iOS embarquée de la suite (Capacitor, dossier mobile/ ; docs/technique/APPLI_AUTONOME.md, section 6).
+# À chaque push de feature/mobile touchant l'appli ou le code web (ou à la demande) :
+#  - job « build » : site construit par tools/build_pages.py, projet iOS généré (cap add ios), icônes et écran de
+#    démarrage tirés de assets/favicon-flight.svg, puis compilation SANS signature pour le simulateur (validation du
+#    projet) ; l'appli compilée est publiée en artefact « FlightPlanner-simulator » ;
+#  - job « testflight » : seulement si le secret ASC_KEY_ID existe ; archive signée (signature automatique par clé
+#    d'API App Store Connect), export, envoi vers TestFlight.
+# Secrets du dépôt (Settings › Secrets and variables › Actions) pour le job « testflight » :
+#  - ASC_KEY_ID      : identifiant de la clé d'API App Store Connect (10 caractères) ;
+#  - ASC_ISSUER_ID   : identifiant de l'émetteur (Issuer ID), affiché en haut de la page des clés ;
+#  - ASC_API_KEY_P8  : contenu du fichier AuthKey_XXXX.p8 encodé en base64 (base64 -i AuthKey_XXXX.p8) ;
+#  - APPLE_TEAM_ID   : identifiant d'équipe Apple Developer (10 caractères).
+# Prérequis Apple, à faire une fois :
+#  1. adhésion à l'Apple Developer Program (payante, annuelle) ;
+#  2. une clé d'API App Store Connect avec le rôle « App Manager » (Utilisateurs et accès › Intégrations) ;
+#  3. la fiche de l'appli créée dans App Store Connect (Apps › Nouvelle app), avec l'identifiant de bundle
+#     org.sogvirtual.flightplanner.
+# Le numéro de build envoyé est le numéro d'exécution du workflow (TestFlight refuse deux fois le même).
+name: iOS (appli)
+on:
+  push:
+    branches: [feature/mobile]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/ios.yml'
+      - 'shared/**'
+      - 'apps/**'
+      - 'config/**'
+      - 'index.html'
+      - 'manifest.webmanifest'
+      - 'tools/build_pages.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Construire le site
+        run: python tools/build_pages.py _site
+      - name: Installer Capacitor
+        working-directory: mobile
+        run: npm install
+      - name: Icône source (1024 x 1024)
+        working-directory: mobile
+        run: |
+          brew install librsvg
+          mkdir -p assets
+          rsvg-convert -w 1024 -h 1024 ../assets/favicon-flight.svg -o assets/logo.png
+          cp assets/logo.png assets/icon-only.png
+      - name: Générer le projet iOS
+        working-directory: mobile
+        run: npx cap add ios
+      - name: Icônes et écran de démarrage
+        working-directory: mobile
+        run: >-
+          npx @capacitor/assets generate --ios
+          --iconBackgroundColor '#101317' --iconBackgroundColorDark '#101317'
+          --splashBackgroundColor '#f5f6f8' --splashBackgroundColorDark '#101317'
+      - name: Synchroniser le site dans l'appli
+        working-directory: mobile
+        run: |
+          npx cap sync ios
+          plutil -replace CFBundleDisplayName -string "Flight Planner" ios/App/App/Info.plist
+      - name: Compiler pour le simulateur (sans signature)
+        working-directory: mobile
+        run: >-
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug
+          -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Archiver l'appli du simulateur
+        working-directory: mobile
+        run: >-
+          ditto -c -k --sequesterRsrc --keepParent
+          build/Build/Products/Debug-iphonesimulator/App.app FlightPlanner-simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlightPlanner-simulator
+          path: mobile/FlightPlanner-simulator.zip
+          if-no-files-found: error
+
+  # Un « if » au niveau du job ne peut pas lire les secrets : ce petit job les teste et publie un booléen.
+  secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has: ${{ secrets.ASC_KEY_ID != '' }}
+    steps:
+      - run: echo "Envoi TestFlight activé si ASC_KEY_ID est défini"
+
+  testflight:
+    needs: [build, secrets]
+    if: needs.secrets.outputs.has == 'true'
+    runs-on: macos-14
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Construire le site
+        run: python tools/build_pages.py _site
+      - name: Installer Capacitor
+        working-directory: mobile
+        run: npm install
+      - name: Icône source (1024 x 1024)
+        working-directory: mobile
+        run: |
+          brew install librsvg
+          mkdir -p assets
+          rsvg-convert -w 1024 -h 1024 ../assets/favicon-flight.svg -o assets/logo.png
+          cp assets/logo.png assets/icon-only.png
+      - name: Générer le projet iOS
+        working-directory: mobile
+        run: npx cap add ios
+      - name: Icônes et écran de démarrage
+        working-directory: mobile
+        run: >-
+          npx @capacitor/assets generate --ios
+          --iconBackgroundColor '#101317' --iconBackgroundColorDark '#101317'
+          --splashBackgroundColor '#f5f6f8' --splashBackgroundColorDark '#101317'
+      - name: Synchroniser le site dans l'appli
+        working-directory: mobile
+        run: |
+          npx cap sync ios
+          plutil -replace CFBundleDisplayName -string "Flight Planner" ios/App/App/Info.plist
+          # chiffrement : HTTPS seulement, exempté (évite la question de conformité à chaque build TestFlight)
+          plutil -replace ITSAppUsesNonExemptEncryption -bool NO ios/App/App/Info.plist
+      - name: Clé d'API App Store Connect
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          mkdir -p "$HOME/private_keys"
+          printf '%s' "$ASC_API_KEY_P8" | base64 --decode > "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+      - name: Archive signée (Release)
+        working-directory: mobile
+        run: >-
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release
+          -sdk iphoneos -archivePath build/App.xcarchive archive
+          -allowProvisioningUpdates
+          -authenticationKeyPath "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic
+          CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+      - name: Exporter l'IPA
+        working-directory: mobile
+        run: |
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/App.xcarchive \
+            -exportOptionsPlist build/ExportOptions.plist -exportPath build/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Envoyer vers TestFlight
+        working-directory: mobile
+        run: >-
+          xcrun altool --upload-app -f build/export/App.ipa -t ios
+          --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"

@@ -1665,7 +1665,23 @@
     font-weight: 600
   }
 
-  /* Fiches appareil / équipage */
+  /* Fiches appareil / équipage ; sélecteur d'appareil en tête (‹ liste de la flotte ›) */
+  .sh-switch {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin: 0 0 10px
+  }
+  .sh-switch select {
+    flex: 0 1 22em;
+    min-width: 0;
+    font-weight: 600
+  }
+  .sh-switch .mc-button {
+    padding: 4px 12px;
+    font-weight: 700;
+    text-decoration: none
+  }
   .sh-badges {
     display: flex;
     flex-wrap: wrap;

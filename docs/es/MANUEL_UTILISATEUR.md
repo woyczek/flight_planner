@@ -25,7 +25,7 @@ Lo que muestra depende de su **nivel de uso** (Mi perfil › «Nivel de uso»): 
 |---|---|---|
 | «Hoy» | Próxima misión, informes por escribir, semana; primera entrada en todos los niveles | 1 |
 | «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (pastilla roja: misiones no leídas) | 1 |
-| «Informe» | Introducción de un informe de misión | 1 |
+| «Informe» | Introducción de un informe de misión; pestaña «Flota»: dónde están las aeronaves (mapa, filtros, último vuelo) | 1 |
 | «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura en el nivel 1 o sin el Centro); en el nivel 4, franjas comunes y misiones probables de la página ODV | 1 |
 | «Misiones» | Generador de misiones y registro, en pestañas; estudio cartográfico en el nivel 4 | 3 |
 | «Herramientas» | Mapas de vuelo, combustible, aterrizajes, análisis de misiones (herramientas marcadas en Mi perfil, todas en el nivel 4) | 1 a 4 |
@@ -282,6 +282,8 @@ El mensaje bajo el bloque indica adónde se ha enviado lo introducido: «Guardad
 Una cuadrícula horaria antigua existente se importa automáticamente en la semana.
 El enlace «Abrir solo la introducción de disponibilidad» lleva a la página Mi disponibilidad. Este enlace solo aparece en el nivel Experto.
 
+**En el teléfono**: la lista, la carpeta y la disponibilidad se suceden en una sola columna; un toque en una misión lleva su carpeta a la pantalla, y sus acciones («Crear el informe», «Cerrar la carpeta»…) quedan fijadas encima de la barra inferior durante la lectura. Las tablas de la carpeta (puntos de la ruta) se desplazan dentro de su marco.
+
 ## Mis vuelos
 <!-- page: apps/pilot/mes_vols.html -->
 
@@ -318,6 +320,8 @@ Con menos de 800 px de ancho, solo quedan la fecha, el indicativo, el trayecto y
 También se llega a ella con «Mis vuelos ↗» en Mis misiones (junto a «mostrar también las misiones pasadas») y en el
 menú «Enviar» de un informe.
 
+**En el teléfono**: los totales pasan a mosaicos (vuelos, horas de calzos, vuelos sin informe, tipos más volados) y cada vuelo a una tarjeta (fecha e indicativo arriba); un toque despliega su detalle, con «Abrir el informe» o «Redactar el informe».
+
 ## Mi disponibilidad
 <!-- page: apps/pilot/disponibilites.html -->
 
@@ -342,6 +346,8 @@ Consejos y límites:
 - Si la semana todavía se está leyendo, un retoque se rechaza con «Semana aún cargando: reintentar en un momento.»
 
 Para saber cómo utiliza el Centro estas declaraciones, consulte [disponibilidad y reorganización](../technique/DISPOS_ET_REORGANISATION.md).
+
+**En el teléfono**: la introducción pasa a una vista «un día» (conmutador «Día» / «Semana» bajo la barra de semana; la vista elegida se conserva). Arriba, el día mostrado con «‹» y «›» (o un deslizamiento del dedo; más allá del domingo o del lunes, se lee la semana vecina), luego los siete días de la semana (un punto bajo los que tienen una disponibilidad). Elija una categoría en la paleta, toque la hora de inicio en la columna de horas y luego la hora de fin: el intervalo se pone a la media hora, fin incluido; «Día entero» lo pone en todo el día, «Cancelar» abandona un inicio. Los intervalos del día se listan encima de la columna: «✕» quita una disponibilidad entera, o el fondo solo en ese día; «↶ Deshacer» anula el último retoque. La columna se abre una hora antes de la primera disponibilidad del día (si no, a las 07:00) y se desplaza dentro de su marco. «Intervalo preciso» sigue ahí para el minuto.
 
 ## Mi perfil
 <!-- page: apps/settings/profil.html -->
@@ -373,7 +379,7 @@ Su identidad en la suite, que usan todas las páginas (☰ › Perfil de piloto,
 |---|---|
 | «Piloto» | «Trigrama», «ID VATSIM (CID)», «ID IVAO (VID)», «SimBrief (usuario o ID)» |
 | «Sitio de la aerolínea» | «Identificador», «Contraseña» |
-| «IVAO — cliente OAuth (personal)» (nivel Experto) | «Identificador del cliente (client ID)», «Secreto del cliente», «Dirección de redirección a declarar en IVAO» (a copiar en developers.ivao.aero); botón «Guardar el cliente IVAO»: guardado por el lanzador de este equipo, el secreto nunca se vuelve a mostrar |
+| «IVAO — cliente OAuth (personal)» | «Identificador del cliente (client ID)», «Secreto del cliente», «Dirección de redirección a declarar en IVAO» (a copiar en developers.ivao.aero); botón «Guardar el cliente IVAO»: guardado por el lanzador de este equipo, el secreto nunca se vuelve a mostrar |
 | «Idioma» (nivel Experto) | «Idioma de la suite»: Automático (idioma del navegador), Français, English, Deutsch, Español |
 
 1. Rellene los campos.
@@ -383,6 +389,21 @@ Su identidad en la suite, que usan todas las páginas (☰ › Perfil de piloto,
 - Los identificadores del sitio de la aerolínea se quedan solo en este navegador: nunca se escriben en un archivo ni en una copia de seguridad.
 - El idioma se elige normalmente con la bandera «Idioma» de la cabecera; la tarjeta «Idioma» (nivel Experto) se aplica en cuanto se elige, sin «Guardar».
 - En modo producción, el trigrama es el del usuario conectado y no se modifica aquí.
+
+### Acceso a los datos
+
+Para la app sin lanzador (teléfono, suite publicada en GitHub Pages): los datos de la aerolínea se leen y escriben en un repositorio de GitHub (copia del repositorio de datos), con su token personal. En un equipo que usa el lanzador, esta sección es innecesaria.
+
+| Campo | Contenido |
+|---|---|
+| «Repositorio (cuenta/repositorio)» | el repositorio de datos en GitHub, por ejemplo `Woyczek/flight_planner_data` |
+| «Rama» | `main` por defecto |
+| «Token personal» | token de grano fino creado en github.com › Settings › Developer settings › Fine-grained tokens: acceso solo al repositorio de datos, permiso «Contents» en lectura y escritura; guardado solo en este navegador, nunca vuelto a mostrar |
+
+- «Probar» comprueba que el repositorio es legible, que la rama existe y que el token puede escribir.
+- «Guardar» comprueba, luego activa el acceso y abre Hoy; a partir de ahí todas las páginas de la suite leen sus datos en el repositorio (guardados también para el uso sin conexión).
+- Cada guardado (informe, disponibilidades, ficha) se convierte en un commit con su trigrama. Si otra persona cambió el mismo archivo entretanto, se vuelve a leer y se fusiona antes de escribirlo.
+- «Cortar el acceso» borra el token de este navegador; las páginas vuelven a los datos del lanzador.
 
 ### Conexión y contraseña
 
@@ -419,14 +440,15 @@ Las preferencias se guardan en su ficha de usuario, compartida con el Centro med
 | «Variantes de la flota» | Variantes presentes en la flota |
 | «Aeronaves» | Número de aeronaves en servicio (sobre el total) y sus bases |
 | «Rendimiento» | Para una aeronave poseída: un enlace — el origen de su ficha, que abre la página «Fichas de rendimiento» en esa aeronave, o «ninguno» y las formas de crear una, que abren esa misma página |
-| «Poseído» | Tiene este tipo en su simulador |
-| «Dominado» | Lo pilota con soltura |
+| «Estado» | Pastilla: vacía, no poseído; roja, NQ — poseído, no calificado (tiene este tipo en su simulador); naranja, por calificar — novato; verde, dominado (lo pilota con soltura). Mismos colores y mismo sentido que la hoja FLOTTE del libro ODV. Un toque la hace girar en este orden y luego vuelve a vacía |
+| «⋯» | Menú de la fila: sus acciones (crear la ficha de rendimiento, quitar una variante, buscar el tipo o la ficha, corregir o eliminar); en el teléfono, también las columnas ocultas |
 
-- Marcar «Dominado» marca también «Poseído»; desmarcar «Poseído» desmarca «Dominado».
+- Novato y dominado cuentan como poseído para el Centro; «novato» se guarda aparte en sus disponibilidades declaradas.
+- En el teléfono, la tabla solo conserva la aeronave, la pastilla y «⋯»: variantes, aeronaves de la flota y rendimiento pasan al menú.
 - «Buscar una aeronave», encima de las tarjetas, filtra al escribir por nombre, variante, designador, clase y origen del rendimiento: las tarjetas con coincidencia quedan desplegadas, las demás se pliegan, y «n aeronave(s)» da el recuento; campo vacío: todo.
-- Variantes: un designador compartido por varios modelos (CL2T: CL-215T y CL-415) tiene una fila por variante declarada, con su nombre («Canadair CL-415», «Canadair CL-215T»); «×» quita una variante. Sin variante declarada, la aeronave lleva el nombre de la ficha y de sus variantes conocidas («Canadair CL-215T / CL-415»). El perfil de rendimiento sigue siendo el del designador: «rendimiento común a las variantes». Al añadir, la lista propone cada variante (modelo de la ficha, variantes de la flota, nombres de uso de la base), o conserve su propio texto; la variante se guarda en su declaración.
+- Variantes: un designador compartido por varios modelos (CL2T: CL-215T y CL-415) tiene una fila por variante declarada, con su nombre («Canadair CL-415», «Canadair CL-215T»); «Quitar la variante», en el menú «⋯», quita una variante. Sin variante declarada, la aeronave lleva el nombre de la ficha y de sus variantes conocidas («Canadair CL-215T / CL-415»). El perfil de rendimiento sigue siendo el del designador: «rendimiento común a las variantes». Al añadir, la lista propone cada variante (modelo de la ficha, variantes de la flota, nombres de uso de la base), o conserve su propio texto; la variante se guarda en su declaración.
 
-**Tarjeta «Otras aeronaves (fuera de la flota)»**: las aeronaves que posee sin que estén en la flota. Siempre se añaden por un nombre, nunca por un código obligatorio: escriba lo que conozca («CL-415», «Canadair 415», «PC-12», «Caravelle»). Al escribir, una lista desplegable con búsqueda (siluetas, ↑ ↓ Intro, Esc) propone, agrupados por procedencia, los tipos de la flota, de la base de tipos de este equipo con sus nombres de uso y de la lista OACI publicada; el cálculo es local, sin red. El designador se encuentra por usted: «CL-415», «Canadair 415» y «CL415» dan CL2T, mostrado «Canadair CL-415» (se conserva el nombre de la variante). Un tipo de la flota simplemente se marca en la tarjeta «Mis aeronaves». Si hay varios tipos posibles, el más cercano se pone en el campo; «Añadir» para confirmarlo, o elija en la lista. Si nada corresponde, la aeronave se guarda con su nombre, marcada «tipo OACI por confirmar»; «Buscar el tipo», en su fila, la asocia más tarde a un designador. Para corregir o eliminar una aeronave añadida, haga clic en su fila: su código o su nombre pasa al campo y «Añadir» se convierte en «Sustituir» («Dominado» se traslada), junto a «Eliminar» y «Cancelar» (o Esc). La base de este equipo solo la completa el lanzador al hacer clic en «Añadir», para un designador que le falte: la fila muestra «completando la base de tipos…» durante una pasada corta, una sola pasada a la vez (un tipo pedido durante una pasada se pone en cola); salir de la página no la interrumpe. Un tipo retirado que las fuentes oficiales ya no conocen se busca como último recurso en Aviation Fanatic; si no está allí, la nota «no encontrado (OACI, EUROCONTROL, Aviation Fanatic)» lo indica. Estas aeronaves van con sus disponibilidades declaradas: el Centro las ve para las asignaciones, y los demás pilotos las encuentran en esta tarjeta, columna «También declarado por»; solo tienen que marcar «Poseído».
+**Tarjeta «Otras aeronaves (fuera de la flota)»**: las aeronaves que posee sin que estén en la flota. Siempre se añaden por un nombre, nunca por un código obligatorio: escriba lo que conozca («CL-415», «Canadair 415», «PC-12», «Caravelle»). Al escribir, una lista desplegable con búsqueda (siluetas, ↑ ↓ Intro, Esc) propone, agrupados por procedencia, los tipos de la flota, de la base de tipos de este equipo con sus nombres de uso y de la lista OACI publicada; el cálculo es local, sin red. El designador se encuentra por usted: «CL-415», «Canadair 415» y «CL415» dan CL2T, mostrado «Canadair CL-415» (se conserva el nombre de la variante). Un tipo de la flota simplemente se marca en la tarjeta «Mis aeronaves». Si hay varios tipos posibles, el más cercano se pone en el campo; «Añadir» para confirmarlo, o elija en la lista. Si nada corresponde, la aeronave se guarda con su nombre, marcada «tipo OACI por confirmar»; «Buscar el tipo», en su fila, la asocia más tarde a un designador. Para corregir o eliminar una aeronave añadida, haga clic en su fila: su código o su nombre pasa al campo y «Añadir» se convierte en «Sustituir» (su estado se traslada), junto a «Eliminar» y «Cancelar» (o Esc). La base de este equipo solo la completa el lanzador al hacer clic en «Añadir», para un designador que le falte: la fila muestra «completando la base de tipos…» durante una pasada corta, una sola pasada a la vez (un tipo pedido durante una pasada se pone en cola); salir de la página no la interrumpe. Un tipo retirado que las fuentes oficiales ya no conocen se busca como último recurso en Aviation Fanatic; si no está allí, la nota «no encontrado (OACI, EUROCONTROL, Aviation Fanatic)» lo indica. Estas aeronaves van con sus disponibilidades declaradas: el Centro las ve para las asignaciones, y los demás pilotos las encuentran en esta tarjeta, columna «También declarado por»; les basta con un toque en la pastilla.
 
 **Tarjeta «Simuladores»**: marque los simuladores y herramientas instalados.
 
@@ -499,6 +521,28 @@ El grosor del trazo de los iconos, o ningún icono. Cada fila muestra una vista 
 | «Sin iconos» | Sin iconos |
 
 **«Barra lateral»**: «Según el diseño», «Siempre» o «Nunca». Por defecto, se muestra siempre (salvo en pantalla estrecha y al imprimir). «Tamaño de los iconos»: «Pequeño», «Mediano» (por defecto) o «Grande». «Visualización» (nivel Experto): «Icono y etiqueta» (por defecto), «Solo icono» (barra más estrecha, nombre de la entrada como información emergente) o «Solo etiqueta».
+
+### En el teléfono
+
+En una pantalla estrecha (teléfono, ventana reducida), la suite pasa al **modo móvil**: cabecera en una línea, barra de
+navegación en la parte inferior de la pantalla en lugar de la barra lateral, pestañas en una línea desplazable,
+bloques a todo el ancho, botones y campos más grandes, tablas que se desplazan dentro de su bloque o se muestran en
+tarjetas.
+
+- **Barra inferior**: hasta seis entradas, todas con una etiqueta corta (Hoy, Misiones, Vuelos, Informe…); a partir de
+  ahí, las cinco primeras y «Más», que abre las demás entradas, Ajustes y Ayuda.
+- **Teléfono en horizontal**: la barra pasa a un riel a la izquierda de la pantalla (icono, etiqueta debajo) y la cabecera deja de estar fijada, para dejar la altura al contenido; las curvas de Combustible caben con su cursor de nivel.
+- **Cabecera**: se oculta al bajar por la página y vuelve en cuanto se sube.
+- **Modo móvil**: «Automático (pantalla estrecha)», «Siempre» o «Nunca». En automático, un teléfono girado en horizontal sigue en modo móvil.
+- **Esta página en el teléfono**: «En el teléfono» va primero. Con un skin de teléfono, diseño, iconos, barra lateral y colores de los temas (ajustes del ordenador, sin efecto con este skin) no se muestran; el skin «Mi diseño» los recupera.
+- **Skin del teléfono**: «Móvil» (por defecto, plano y ligero), «Swiss» (blanco y negro, esquinas rectas, acento rojo)
+  o «Mi diseño» (el diseño elegido arriba). Se aplica la próxima vez que se cargue una página en una pantalla táctil.
+- **Día / noche**: «Como el teléfono» (ajuste claro u oscuro del teléfono), «Día» o «Noche».
+- En una pantalla táctil, las páginas pensadas para pantalla grande (mapas de vuelo, fichas de rendimiento, páginas de
+  preparación del Centro, ajustes de instalación) se retiran de la barra y de las pestañas; abiertas de todos modos,
+  muestran un aviso. Una ventana de ordenador reducida conserva todas sus páginas.
+- **Vista previa móvil en el ordenador** (nivel Experto): una página de la suite en marcos de teléfono y de tableta, con
+  el skin y el día / noche elegidos, para comprobar la presentación sin teléfono.
 
 ### Colores de los temas
 
@@ -733,6 +777,8 @@ cuatro horas; combustible a la salida y al aterrizaje); «Todos los campos», ba
 «Campos esenciales» vuelve atrás. En los niveles 3 y 4 están todos los campos. Los valores de campos ocultos
 (importación, plan de vuelo, seguimiento de red) permanecen en el informe. Un clic en una anomalía de coherencia, bajo
 los cálculos, abre la etapa, el bloque y, si hace falta, todos sus campos, y después coloca el cursor en el campo.
+
+**En el teléfono**: solo hay una etapa abierta a la vez — al llegar, la primera por completar; abrir una etapa pliega las demás y la lleva a la parte superior de la pantalla. La barra «1 Vuelo · 2 Misión · 3 Resultado» queda fijada arriba durante la introducción y marca la etapa abierta; la cabecera de la misión se desplaza con la página. «Añadir al registro» flota encima de la barra inferior; «Enviar» y «Prerrellenar» quedan en la cabecera, arriba de la página.
 
 ### Cabecera y barra de herramientas
 
@@ -1128,6 +1174,36 @@ da los indicadores propios de la familia, que se recogen en los informes estadí
 Las familias HEMS y FIRE pueden recuperar su antiguo registro CSV: consulte
 [Informes de una familia](#informes-de-una-familia).
 
+## Flota
+<!-- page: apps/cr/flotte.html -->
+
+Dónde están las aeronaves de la flota: pestaña «Flota» del botón «Informe» de la barra lateral, junto a la pestaña
+«Informe». La página es de solo lectura y abierta a todos; con el Centro activado en este navegador, el botón
+«Modificar la flota» lleva a la tabla editable (Ajustes › Centro › Flota).
+
+- **Mapa**: cada aeronave está en su aeródromo actual (ubicación dada por el sitio de la aerolínea, o aeródromo de
+  aterrizaje de un informe de una orden de misión, si no su base), sobre un fondo OpenStreetMap. Vista general: una
+  insignia por aeródromo con el número de aeronaves; los aeródromos demasiado cercanos para distinguirse con este zoom se
+  reúnen en una sola insignia («LFMI +2») con el número total de aeronaves. Al acercar (botones «+» / «−», Ctrl + rueda,
+  doble clic), las aeronaves de un aeródromo se alinean una a una en una plataforma; «Toda la flota» vuelve a encuadrar
+  el mapa.
+- **Pasar el ratón**: por una insignia de varias aeronaves, su número por indicativo (serie) y tipo; por una insignia de
+  varios aeródromos, además el número por aeródromo; por una aeronave (o una insignia de una sola), su ficha corta:
+  indicativos, operador, aeródromo actual y desde cuándo, base, fecha y hora del último vuelo (diario de vuelos de la
+  aerolínea e informes: el más reciente).
+- **Selección**: clic en una aeronave; clic en una insignia: sus aeronaves, y zoom sobre ella; Ctrl o Mayús + clic:
+  añadir o quitar; Mayús + arrastrar: rectángulo; Esc o «Borrar la selección». La lista bajo el mapa lleva a la ficha de
+  cada aeronave, y las filas seleccionadas se resaltan en la tabla.
+- **Filtros** (en la cabecera del mapa, combinados): operador, tipo, indicativo (serie), aeródromo, estado, origen de la
+  posición (sitio, orden de misión, base), último vuelo (menos de 7, 30, 90 días, más de 90 días, ningún vuelo
+  conocido) y búsqueda libre (matrícula, indicativo, tipo…). Cada lista da el número de aeronaves por valor;
+  «Restablecer los filtros» los borra. Las elecciones se guardan en este navegador.
+- **Tabla** «Aeronaves de la flota»: las aeronaves retenidas por los filtros (matrícula, tipo, variante, indicativos,
+  operador, aeródromo actual y origen, base, último vuelo, estado), ordenables por columna. Al pasar el ratón por una
+  fila: su posición se resalta en el mapa; clic: la aeronave se selecciona y el mapa se centra en su aeródromo; la
+  matrícula abre la ficha de la aeronave.
+- «n sin aeródromo conocido» (información emergente) lista las aeronaves sin aeródromo, o cuyo aeródromo no se encuentra.
+
 ## Ficha de aeronave
 <!-- page: apps/cr/appareil.html -->
 
@@ -1146,6 +1222,8 @@ El título muestra la matrícula, el tipo y el modelo. Debajo, tres pastillas:
   diario);
 - «🏠 Aeródromo de base».
 
+**Desplazarse**: la ficha está bajo la pestaña «Flota» (Informe › Flota), que lleva de vuelta a la lista y al mapa. En la parte superior de la ficha, la lista de la flota (por tipo) abre otra aeronave; «‹» y «›» pasan a la aeronave anterior o siguiente del mismo tipo.
+
 La barra de **periodo** de los informes estadísticos (preajustes, fechas, ◀ − ▶) está en la cabecera: la actividad, el
 gráfico y la tabla la siguen. Una aeronave desconocida en las bases muestra «Desconocido en las bases: la
 ficha se completará con los informes».
@@ -1162,8 +1240,8 @@ ficha se completará con los informes».
 | «Indicativos usados», «Equipamiento» | no | tomados de las misiones, con su número |
 | «Notas» | sí | texto libre |
 
-Haga clic en «Guardar ficha»: la ficha se guarda **en este navegador** (incluida en la copia de seguridad
-local). La identidad se calcula sobre todo el historial, sea cual sea el periodo.
+Los campos modificables van primero en el bloque; cada uno se guarda en cuanto cambia, **en este navegador** (incluido en la copia de seguridad
+local): la hora del último guardado aparece bajo las notas. La identidad se calcula sobre todo el historial, sea cual sea el periodo.
 
 «Fusionar con… / renombrar»: elija otra matrícula y, después, «Fusionar». Las misiones del
 registro que llevan el valor antiguo toman el nuevo (tras confirmación, con una traza en
@@ -1229,7 +1307,7 @@ en la cabecera, como en la ficha de aeronave.
 | «Calificaciones (una por línea)» | sí | texto libre |
 | «Notas» | sí | texto libre |
 
-«Guardar ficha» la guarda en este navegador. «Fusionar con… / renombrar» reúne dos
+Cada campo se guarda en este navegador en cuanto cambia. «Fusionar con… / renombrar» reúne dos
 grafías de un mismo piloto (p. ej. GRR → RBR): las misiones del registro toman el nuevo valor, con
 una traza, tras confirmación.
 
@@ -1599,7 +1677,7 @@ La ficha elegida sigue visible en solo lectura en el Resultado (grupo plegable �
 ### Plan de combustible
 
 1. «Plan de vuelo (casilla 15)»: introduzca la ruta. Es el mismo plan que el de los Mapas de vuelo (gana el más reciente). De él se deducen la distancia, la ruta verdadera y el nivel. Bajo el campo, los puntos de la ruta se muestran uno a uno (aeródromos en negrita, puntos de aerovías atenuados, nivel tras el punto donde cambia; al pasar: posición). Tras «Recuperar último FPL de SimBrief», una línea indica lo leído, por ejemplo «OFP del 19/10 · LFRS → LFML · 11 puntos · FL270 · alternativo LFPG · S210 F-BHHH» (también como notificación), con «Ver el JSON» (ventana con el JSON del OFP, «Copiar»). Un OFP sin ruta punto por punto lo indica («navlog vacío…»): la ruta se reduce entonces a los aeródromos.
-2. Complete o corrija los campos del plegable «Parámetros del vuelo» (desplegado de entrada en el nivel Experto, plegado en los demás; los valores por defecto bastan para un cálculo rápido): «Distancia (NM)», «Nivel (FL)», «Ruta verdadera (°)», «Rodaje (min)», «Viento desde (°)», «Viento (kt)», «Reserva (min)», «Contingencia (%)».
+2. Ajuste «Nivel (FL)», único parámetro siempre visible, y luego complete o corrija los campos del plegable «Parámetros del vuelo» (desplegado de entrada en el nivel Experto en el ordenador, plegado en los demás y en el teléfono; los valores por defecto bastan para un cálculo rápido): «Distancia (NM)», «Ruta verdadera (°)», «Rodaje (min)», «Viento desde (°)», «Viento (kt)», «Reserva (min)», «Contingencia (%)».
 3. Opcional, en el mismo plegable: «Masa de despegue prevista», comparada con la MTOW del tipo; «Desviación ISA (°C)», o «Temperatura en tierra (°C)» con «Elevación del aeródromo (ft)», o «Temperatura en el nivel (°C)». «Consumo de crucero (kg/h)»: rellenado desde el perfil; sin perfil, la página dice qué valor usará y de dónde viene (por ejemplo «≈ 4 000 kg/h, estimación tipo A400»); «Usar este valor» lo copia en el campo, «Guardar para este tipo» lo conserva para los próximos vuelos. «Ascenso elegido» (vista detallada): tres cursores, «IAS», variómetro y «Gases (%)» (RPM o N1 si el perfil tiene mapa motor), cada uno precedido de una casilla «fijo»; dos están fijos, el tercero se calcula y aparece en gris; «gases a fondo» aparece bajo el variómetro; la línea de abajo da consumo, TAS y gases a mitad del ascenso. Es el ascenso que cuenta el plan de combustible.
 4. Haga clic en «Calcular».
 
@@ -1665,6 +1743,8 @@ El ascenso sigue el modelo de rendimiento del avión activo; el descenso sigue s
 Un OFP de SimBrief importado rellena la ruta y traza el perfil por sí solo.
 Se necesita la base SIA de este navegador, leída en los Mapas de vuelo (bloque «Base de datos SIA») o en Ajustes › Mantenimiento. Sin ella, solo se reconocen los puntos en coordenadas, sin espacios aéreos.
 El relieve procede de un modelo de terreno de unos 150 m: los límites ASFC siguen ese modelo, no el suelo real.
+
+**En el teléfono**: la página pasa a una sola columna (presupuesto, luego Resultado, luego los demás bloques); tras «Calcular», el Resultado se lleva a la pantalla. La tabla de curvas se desplaza dentro de su marco.
 
 ## Fichas de rendimiento
 <!-- page: apps/planner/performance_sheets.html -->

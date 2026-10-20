@@ -102,7 +102,7 @@
           ${field(L('Identifiant', 'Login', 'Kennung', 'Identificador'), 'data-defa="login"')}
           <label>${esc(L('Mot de passe', 'Password', 'Passwort', 'Contraseña'))}</label><span class="repo-inop-field"><input type="password" data-defa="password" disabled autocomplete="off"><span class="repo-inop" title="${esc(K.t(['Hors service : le {SOG} n’a pas encore de webservice. Ce mot de passe n’est ni demandé ni gardé ; un accès futur passera probablement par une clé d’API.', 'Inoperative: the {SOG} has no web service yet. This password is neither asked for nor kept; future access will probably use an API key.', 'Außer Betrieb: Die {SOG} hat noch keinen Webdienst. Dieses Passwort wird weder abgefragt noch gespeichert; ein künftiger Zugang läuft wahrscheinlich über einen API-Schlüssel.', 'Fuera de servicio: el {SOG} aún no tiene servicio web. Esta contraseña no se pide ni se guarda; un acceso futuro usará probablemente una clave de API.']))}" data-no-i18n>INOP</span></span>
         </div><p class="sp-hint">${esc(L('Gardés dans ce navigateur seulement : jamais écrits dans un fichier ni dans une sauvegarde.', 'Kept in this browser only: never written to a file or a backup.', 'Nur in diesem Browser gespeichert: nie in eine Datei oder Sicherung geschrieben.', 'Guardadas solo en este navegador: nunca escritas en un archivo ni en una copia.'))}</p></div>
-        <div class="sp-card" data-ivc-card data-min-level="4"><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
+        <div class="sp-card" data-ivc-card><h3>${esc(L('IVAO — client OAuth (personnel)', 'IVAO — OAuth client (personal)', 'IVAO — OAuth-Client (persönlich)', 'IVAO — cliente OAuth (personal)'))}</h3><div class="sp-form">
           ${field(L('Identifiant du client (client ID)', 'Client ID', 'Client-ID', 'Identificador del cliente (client ID)'), 'data-ivc="clientId" autocomplete="off" spellcheck="false"')}
           <label>${esc(L('Secret du client', 'Client secret', 'Client-Geheimnis', 'Secreto del cliente'))}</label><input type="password" data-ivc="clientSecret" autocomplete="off" spellcheck="false">
           <label>${esc(L('Adresse de redirection à déclarer chez IVAO', 'Redirect URL to declare at IVAO', 'Bei IVAO anzugebende Weiterleitungsadresse', 'Dirección de redirección a declarar en IVAO'))}</label><input type="text" data-ivc-redirect readonly>
@@ -360,6 +360,90 @@
         N.setModules([...body.querySelectorAll('input[name="mod"]:checked')].map(x => x.value));
         reload();
       });
+    }
+  };
+
+  // ---------------------------------------------------------------- Mon profil › Accès aux données (appli sans lanceur)
+  // dépôt GitHub des données, branche et jeton personnel (shared/github_data.js, docs/technique/APPLI_AUTONOME.md) :
+  // gardés dans ce navigateur (githubData:v1, exclu des sauvegardes) ; « Enregistrer » ouvre ensuite Aujourd'hui
+  const dataAccess = {
+    id: 'dataAccess',
+    group: GROUP_PROFILE,
+    title: L('Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'),
+    intro: L(
+      'Appli sans lanceur (téléphone, GitHub Pages) : les données de la compagnie sont lues et écrites dans un dépôt GitHub, avec votre jeton personnel. Sur un poste avec le lanceur : inutile.',
+      'App without the launcher (phone, GitHub Pages): the airline data is read from and written to a GitHub repository, with your personal token. On a computer with the launcher: not needed.',
+      'App ohne Starter (Telefon, GitHub Pages): Die Daten der Fluggesellschaft werden mit Ihrem persönlichen Token in einem GitHub-Repository gelesen und geschrieben. Auf einem Rechner mit Starter: unnötig.',
+      'App sin lanzador (teléfono, GitHub Pages): los datos de la aerolínea se leen y escriben en un repositorio de GitHub, con su token personal. En un equipo con el lanzador: innecesario.'
+    ),
+    /** Réglage de l'accès GitHub : dépôt, branche, jeton (jamais réaffiché) ; Tester, Enregistrer, Couper l'accès. */
+    async render(body, api) {
+      const G = window.GitHubData;
+      if (!G) {
+        body.innerHTML = `<p>${esc(L('Module shared/github_data.js absent.', 'shared/github_data.js module missing.', 'Modul shared/github_data.js fehlt.', 'Falta el módulo shared/github_data.js.'))}</p>`;
+        return;
+      }
+      const c = G.config() || {},
+        def = String(window.REPOSITORY_TREE?.sources?.dataRepo?.url || '').match(/github\.com\/([^/]+\/[^/.]+)/)?.[1] || '';
+      body.innerHTML = `<div class="sp-card"><h3>${esc(L('Dépôt GitHub des données', 'GitHub data repository', 'GitHub-Daten-Repository', 'Repositorio de datos en GitHub'))}</h3><div class="sp-form">
+          ${field(L('Dépôt (compte/dépôt)', 'Repository (account/repository)', 'Repository (Konto/Repository)', 'Repositorio (cuenta/repositorio)'), `data-gh="repo" placeholder="${esc(def || 'compte/flight_planner_data')}"`)}
+          ${field(L('Branche', 'Branch', 'Zweig', 'Rama'), 'data-gh="branch" placeholder="main"')}
+          <label>${esc(L('Jeton personnel', 'Personal token', 'Persönliches Token', 'Token personal'))}</label><input type="password" data-gh="token" autocomplete="off" spellcheck="false">
+        </div><p class="sp-hint">${esc(L('Jeton à grain fin créé sur github.com › Settings › Developer settings › Fine-grained tokens : accès au seul dépôt des données, permission « Contents » en lecture et écriture. Gardé dans ce navigateur seulement : jamais écrit dans un fichier ni une sauvegarde, jamais réaffiché.', 'Fine-grained token created on github.com › Settings › Developer settings › Fine-grained tokens: access to the data repository only, “Contents” permission read and write. Kept in this browser only: never written to a file or a backup, never shown again.', 'Feingranulares Token auf github.com › Settings › Developer settings › Fine-grained tokens: nur Zugriff auf das Daten-Repository, Berechtigung „Contents“ Lesen und Schreiben. Nur in diesem Browser gespeichert: nie in eine Datei oder Sicherung geschrieben, nie wieder angezeigt.', 'Token de grano fino creado en github.com › Settings › Developer settings › Fine-grained tokens: acceso solo al repositorio de datos, permiso «Contents» en lectura y escritura. Guardado solo en este navegador: nunca escrito en un archivo ni en una copia, nunca vuelto a mostrar.'))}</p>
+        <p class="small" data-gh-state></p></div>`;
+      const $ = s => body.querySelector(s),
+        state = $('[data-gh-state]');
+      $('[data-gh="repo"]').value = c.repo || def;
+      $('[data-gh="branch"]').value = c.branch || 'main';
+      $('[data-gh="token"]').placeholder = c.token ? L('(inchangé)', '(unchanged)', '(unverändert)', '(sin cambios)') : '';
+      const say = text => {
+        if (state.textContent !== text) state.textContent = text;
+      };
+      say(G.on() ? tf(['Actif : {r} (branche {b}).', 'Active: {r} (branch {b}).', 'Aktiv: {r} (Zweig {b}).',
+        'Activo: {r} (rama {b}).'
+      ], {
+        r: c.repo,
+        b: c.branch
+      }) : L('Inactif : les données sont celles du lanceur (ou de ce navigateur).',
+        'Inactive: the data is the launcher’s (or this browser’s).',
+        'Inaktiv: Die Daten sind die des Starters (oder dieses Browsers).',
+        'Inactivo: los datos son los del lanzador (o de este navegador).'));
+      /** Réglage saisi (jeton vide : celui qui est gardé). */
+      const typed = () => ({
+        repo: $('[data-gh="repo"]').value.trim(),
+        branch: $('[data-gh="branch"]').value.trim() || 'main',
+        token: $('[data-gh="token"]').value.trim() || c.token || ''
+      });
+      api.actions([
+        [L('Tester', 'Test', 'Testen', 'Probar'), async () => {
+          const cfg = typed();
+          if (!cfg.repo || !cfg.token) return say(L('Dépôt et jeton à saisir.', 'Repository and token to enter.',
+            'Repository und Token eingeben.', 'Introducir repositorio y token.'));
+          say(L('Vérification…', 'Checking…', 'Prüfung…', 'Comprobando…'));
+          say((await G.test(cfg)).message);
+        }],
+        [L('Enregistrer', 'Save', 'Speichern', 'Guardar'), async () => {
+          const cfg = typed();
+          if (!cfg.repo || !cfg.token) return say(L('Dépôt et jeton à saisir.', 'Repository and token to enter.',
+            'Repository und Token eingeben.', 'Introducir repositorio y token.'));
+          say(L('Vérification…', 'Checking…', 'Prüfung…', 'Comprobando…'));
+          const r = await G.test(cfg);
+          if (!r.ok) return say(r.message);
+          G.enable(cfg);
+          api.saved();
+          notify(r.message, r.write ? 'ok' : 'warn');
+          // les données viennent désormais du dépôt : l'appli s'ouvre sur Aujourd'hui
+          setTimeout(() => location.assign(new URL('../pilot/aujourdhui.html', location.href).href), 600);
+        }, 'primary'],
+        [L('Couper l’accès', 'Cut access', 'Zugang trennen', 'Cortar el acceso'), async () => {
+          await G.disable();
+          notify(L('Accès GitHub coupé : jeton effacé de ce navigateur.',
+            'GitHub access cut: token erased from this browser.',
+            'GitHub-Zugang getrennt: Token aus diesem Browser gelöscht.',
+            'Acceso a GitHub cortado: token borrado de este navegador.'), 'ok');
+          setTimeout(() => location.reload(), 600);
+        }]
+      ]);
     }
   };
 
@@ -1008,7 +1092,7 @@
   };
 
   window.SettingsPanels = {
-    list: [levelPanel, identity, account, themesPanel, equipment, setup, users, categoriesPanel],
+    list: [levelPanel, identity, dataAccess, account, themesPanel, equipment, setup, users, categoriesPanel],
     /** Ajoute une rubrique (autre module : utilisateurs, catégories de disponibilité). */
     add(panel) {
       this.list.push(panel);

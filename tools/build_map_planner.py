@@ -218,7 +218,7 @@ VOL_SCRIPT = r'''<script src="../../shared/external_links.js?v=0"></script>
 ExternalLinks.menu(host,()=>{let st={};try{st=JSON.parse(localStorage.getItem('flightPerfState')||'{}')||{}}catch{}
 const id=document.getElementById('vprofAircraft')?.value,p=(id&&st.profiles?.[id])||st.profiles?.[st.lastAircraft]||{};
 const m=/^(FL)?(\d{1,5})(FT)?$/.exec(String(document.getElementById('vprofCruise')?.value||'').toUpperCase().replace(/\s+/g,'')),ft=m?(m[1]?+m[2]*100:+m[2]):0;
-return{route:document.getElementById('vprofRoute')?.value||'',fl:ft?Math.round(ft/100):'',type:p.icao||p.type||'',reg:p.registration||'',callsign:p.callsign||'',altn:document.getElementById('volAltn')?.value||''}})})();
+return{route:document.getElementById('vprofRoute')?.value||'',fl:ft?Math.round(ft/100):'',type:p.icao||p.type||'',reg:p.registration||'',callsign:p.callsign||'',altn:document.getElementById('volAltn')?.value||'',tas:p.cruise?.tasKt||''}})})();
 </script>
 <script>
 // ===== Cartes de vol (page publique) : bloc « Cartes » =====

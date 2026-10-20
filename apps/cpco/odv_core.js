@@ -418,7 +418,8 @@
     const [h, s, l] = hexToHsl(hex);
     return hslToHex(h, s, tint < 0 ? l * (1 + tint) : l * (1 - tint) + tint);
   };
-  /** Niveau de maîtrise d'un type d'après la couleur du texte : vert (maîtrisé), orange (à qualifier), rouge (non). */
+  /** Niveau de maîtrise d'un type d'après la couleur du texte : vert (maîtrisé), orange (à qualifier), rouge (NQ :
+   *  possédé, non qualifié) — mêmes couleurs que la pastille de Mon profil › Mes appareils. */
   function levelOfColor(hex) {
     if (!hex) return null;
     const [h, s, l] = hexToHsl(hex);

@@ -27,7 +27,7 @@ Ce qu'elle montre dépend de votre **niveau d'utilisation** (Mon profil › « N
 |---|---|---|
 | « Aujourd'hui » | Prochaine mission, comptes rendus à écrire, semaine ; première entrée à tout niveau | 1 |
 | « Mes missions » | Missions affectées par le Centre et disponibilités (pastille rouge : missions non lues) | 1 |
-| « Compte rendu » | Saisie d'un compte rendu de mission | 1 |
+| « Compte rendu » | Saisie d'un compte rendu de mission ; onglet « Flotte » : où sont les appareils (carte, filtres, dernier vol) | 1 |
 | « Planning » | Planning des ordres de la semaine (Tableau, en lecture seule au niveau 1 ou sans le Centre) ; au niveau 4, créneaux communs et missions probables de la page ODV | 1 |
 | « Missions » | Générateur de mission et registre, en onglets ; studio cartographique au niveau 4 | 3 |
 | « Outils » | Cartes de vol, carburant, atterrissages, analyse des missions (outils cochés dans Mon profil, tous au niveau 4) | 1 à 4 |
@@ -294,6 +294,8 @@ Le message sous le bloc indique où la saisie est partie : « Enregistré dans l
 Une ancienne grille horaire existante est importée automatiquement dans la semaine.
 Le lien « Ouvrir la saisie des disponibilités seule » mène à la page Mes disponibilités. Ce lien n'apparaît qu'au niveau Expert.
 
+**Sur téléphone** : la liste, le dossier et les disponibilités se suivent sur une colonne ; un appui sur une mission amène son dossier à l’écran, et ses actions (« Créer le CR », « Refermer le dossier »…) restent collées au-dessus de la barre du bas pendant la lecture. Les tableaux du dossier (points de la route) défilent dans leur cadre.
+
 ## Mes vols
 <!-- page: apps/pilot/mes_vols.html -->
 
@@ -330,6 +332,8 @@ Sous 800 px de large, seules la date, l'indicatif, le trajet et la durée resten
 On y arrive aussi par « Mes vols ↗ » dans Mes missions (à côté de « afficher aussi les missions passées ») et dans le
 menu « Envoyer » d'un compte rendu.
 
+**Sur téléphone** : les totaux passent en tuiles (vols, heures de bloc, vols sans CR, types les plus volés) et chaque vol en carte (date et indicatif en tête) ; un appui déplie son détail, avec « Ouvrir le CR » ou « Rédiger le CR ».
+
 ## Mes disponibilités
 <!-- page: apps/pilot/disponibilites.html -->
 
@@ -359,6 +363,8 @@ Pour la façon dont le Centre exploite ces déclarations, voir [disponibilités 
 ![Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.](images/captures-manuels/utilisateur-disponibilites.png)
 
 *Figure 3 — Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.*
+
+**Sur téléphone** : la saisie passe en vue « un jour » (bascule « Jour » / « Semaine » sous la barre de semaine ; la vue choisie est gardée). En tête, le jour affiché avec « ‹ » et « › » (ou un balayage du doigt ; au-delà du dimanche ou du lundi, la semaine voisine est relue), puis les sept jours de la semaine (un point sous ceux qui ont une disponibilité). Choisissez une catégorie dans la palette, appuyez sur l’heure de début dans la colonne des heures, puis sur l’heure de fin : la plage est posée à la demi-heure, fin comprise ; « Journée entière » la pose sur tout le jour, « Annuler » abandonne un début. Les plages du jour sont listées au-dessus de la colonne : « ✕ » retire une disponibilité entière, ou le fond sur ce jour seulement ; « ↶ Défaire » annule la dernière retouche. La colonne s’ouvre une heure avant la première disponibilité du jour (sinon à 07:00) et défile dans son cadre. « Plage précise » reste là pour la minute.
 
 ## Mon profil
 <!-- page: apps/settings/profil.html -->
@@ -395,7 +401,7 @@ Votre identité dans la suite, reprise par toutes les pages (☰ › Profil pilo
 |---|---|
 | « Pilote » | « Trigramme », « ID VATSIM (CID) », « ID IVAO (VID) », « SimBrief (utilisateur ou ID) » |
 | « Site de la compagnie » | « Identifiant », « Mot de passe » |
-| « IVAO — client OAuth (personnel) » (niveau Expert) | « Identifiant du client (client ID) », « Secret du client », « Adresse de redirection à déclarer chez IVAO » (à recopier sur developers.ivao.aero) ; bouton « Enregistrer le client IVAO » : gardé par le lanceur de ce poste, le secret n'est jamais réaffiché |
+| « IVAO — client OAuth (personnel) » | « Identifiant du client (client ID) », « Secret du client », « Adresse de redirection à déclarer chez IVAO » (à recopier sur developers.ivao.aero) ; bouton « Enregistrer le client IVAO » : gardé par le lanceur de ce poste, le secret n'est jamais réaffiché |
 | « Langue » (niveau Expert) | « Langue de la suite » : Automatique (langue du navigateur), Français, English, Deutsch, Español |
 
 1. Remplissez les champs.
@@ -405,6 +411,21 @@ Votre identité dans la suite, reprise par toutes les pages (☰ › Profil pilo
 - Les identifiants du site de la compagnie restent dans ce navigateur seulement : ils ne sont jamais écrits dans un fichier ni dans une sauvegarde.
 - La langue se choisit d'ordinaire par le drapeau « Langue » de l'en-tête ; la carte « Langue » (niveau Expert) s'applique dès qu'on la choisit, sans « Enregistrer ».
 - En mode production, le trigramme est celui de l'utilisateur connecté et ne se modifie pas ici.
+
+### Accès aux données
+
+Pour l'appli sans lanceur (téléphone, suite publiée sur GitHub Pages) : les données de la compagnie sont lues et écrites dans un dépôt GitHub (copie du dépôt des données), avec votre jeton personnel. Sur un poste qui utilise le lanceur, cette rubrique est inutile.
+
+| Champ | Contenu |
+|---|---|
+| « Dépôt (compte/dépôt) » | le dépôt GitHub des données, par exemple `Woyczek/flight_planner_data` |
+| « Branche » | `main` par défaut |
+| « Jeton personnel » | jeton à grain fin créé sur github.com › Settings › Developer settings › Fine-grained tokens : accès au seul dépôt des données, permission « Contents » en lecture et écriture ; gardé dans ce navigateur seulement, jamais réaffiché |
+
+- « Tester » vérifie que le dépôt est lisible, que la branche existe et que le jeton peut écrire.
+- « Enregistrer » vérifie, puis active l'accès et ouvre « Aujourd'hui » ; dès lors, toutes les pages de la suite lisent leurs données dans le dépôt (gardées aussi pour le hors ligne).
+- Chaque enregistrement (compte rendu, disponibilités, fiche) devient un commit à votre trigramme. Si quelqu'un d'autre a changé le même fichier entre-temps, il est relu et fusionné avant d'être écrit.
+- « Couper l'accès » efface le jeton de ce navigateur ; les pages reviennent aux données du lanceur.
 
 ### Connexion et mot de passe
 
@@ -441,14 +462,15 @@ Les préférences sont gardées dans votre fiche utilisateur, partagée avec le 
 | « Variantes de la flotte » | Variantes présentes dans la flotte |
 | « Appareils » | Nombre d'appareils en service (sur le total) et leurs bases |
 | « Performances » | Pour un appareil possédé : un lien — la source de sa fiche, qui ouvre la page « Fiches de performances » sur cet appareil, ou « aucune » et les façons d'en créer une, qui ouvrent cette même page |
-| « Possédé » | Vous avez ce type dans votre simulateur |
-| « Maîtrisé » | Vous le pilotez avec aisance |
+| « État » | Pastille : vide, non possédé ; rouge, NQ — possédé, non qualifié (vous avez ce type dans votre simulateur) ; orange, à qualifier — néophyte ; vert, maîtrisé (vous le pilotez avec aisance). Mêmes couleurs et même sens que la feuille FLOTTE du classeur ODV. Un appui la fait tourner dans cet ordre, puis revient à vide |
+| « ⋯ » | Menu de la ligne : ses actions (créer la fiche de performances, retirer une variante, chercher le type ou la fiche, corriger ou supprimer) ; sur téléphone, aussi les colonnes masquées |
 
-- Cocher « Maîtrisé » coche aussi « Possédé » ; décocher « Possédé » décoche « Maîtrisé ».
+- Néophyte et maîtrisé valent possédé pour le Centre ; « néophyte » est enregistré à part dans vos disponibilités déclarées.
+- Sur téléphone, le tableau ne garde que l'appareil, la pastille et « ⋯ » : variantes, appareils de la flotte et performances passent dans le menu.
 - « Chercher un appareil », au-dessus des cartes, filtre à la frappe sur le nom, la variante, le désignateur, la classe et la source des performances : les cartes qui ont une correspondance restent dépliées, les autres se replient, et « n appareil(s) » donne le compte ; champ vide : tout.
-- Variantes : un désignateur partagé par plusieurs modèles (CL2T : CL-215T et CL-415) a une ligne par variante déclarée, sous son nom (« Canadair CL-415 », « Canadair CL-215T ») ; « × » retire une variante. Sans variante déclarée, l'appareil porte le nom de la fiche et de ses variantes connues (« Canadair CL-215T / CL-415 »). Le profil de performances reste celui du désignateur : « performances communes aux variantes ». À l'ajout, la liste propose chaque variante (modèle de la fiche, variantes de la flotte, noms d'usage de la base), ou gardez votre propre texte ; la variante est enregistrée dans votre déclaration.
+- Variantes : un désignateur partagé par plusieurs modèles (CL2T : CL-215T et CL-415) a une ligne par variante déclarée, sous son nom (« Canadair CL-415 », « Canadair CL-215T ») ; « Retirer la variante », dans le menu « ⋯ », retire une variante. Sans variante déclarée, l'appareil porte le nom de la fiche et de ses variantes connues (« Canadair CL-215T / CL-415 »). Le profil de performances reste celui du désignateur : « performances communes aux variantes ». À l'ajout, la liste propose chaque variante (modèle de la fiche, variantes de la flotte, noms d'usage de la base), ou gardez votre propre texte ; la variante est enregistrée dans votre déclaration.
 
-**Carte « Autres appareils (hors flotte) »** : les appareils que vous possédez sans qu'ils soient dans la flotte. On les ajoute toujours par un nom, jamais par un code obligatoire : tapez ce que vous connaissez (« CL-415 », « Canadair 415 », « PC-12 », « Caravelle »). Pendant la frappe, une liste déroulante avec recherche (silhouettes, ↑ ↓ Entrée, Échap) propose, groupés par provenance, les types de la flotte, de la base des types de ce poste avec leurs noms d'usage et de la liste OACI publiée ; ce calcul est local, sans réseau. Le désignateur est trouvé pour vous : « CL-415 », « Canadair 415 » et « CL415 » donnent CL2T, affiché « Canadair CL-415 » (le nom de la variante est gardé). Un type de la flotte est simplement coché dans la carte « Mes appareils ». Si plusieurs types sont possibles, le plus proche est repris dans le champ — « Ajouter » pour le confirmer, ou choisissez dans la liste. Si rien ne correspond, l'appareil est gardé sous son nom, marqué « type OACI à confirmer » ; « Chercher le type », sur sa ligne, le rattache plus tard à un désignateur. Pour corriger ou supprimer un appareil ajouté, cliquez sur sa ligne : son code ou son nom passe dans le champ et « Ajouter » devient « Remplacer » (« Maîtrisé » est reporté), à côté de « Supprimer » et « Annuler » (ou Échap). La base de ce poste n'est complétée par le lanceur qu'au clic sur « Ajouter », pour un désignateur qui lui manque : la ligne affiche « complétion de la base en cours… » le temps d'une passe courte, une seule passe à la fois (un type demandé pendant une passe est mis en file) ; quitter la page ne l'interrompt pas. Un type retiré que les sources officielles ne connaissent plus est cherché en dernier recours sur Aviation Fanatic ; s'il n'y est pas, la note « introuvable (OACI, EUROCONTROL, Aviation Fanatic) » l'indique. Ces appareils partent avec vos disponibilités déclarées : le Centre les voit pour les affectations, et les autres pilotes les retrouvent dans cette carte, colonne « Aussi déclaré par » — il leur suffit de cocher « Possédé ».
+**Carte « Autres appareils (hors flotte) »** : les appareils que vous possédez sans qu'ils soient dans la flotte. On les ajoute toujours par un nom, jamais par un code obligatoire : tapez ce que vous connaissez (« CL-415 », « Canadair 415 », « PC-12 », « Caravelle »). Pendant la frappe, une liste déroulante avec recherche (silhouettes, ↑ ↓ Entrée, Échap) propose, groupés par provenance, les types de la flotte, de la base des types de ce poste avec leurs noms d'usage et de la liste OACI publiée ; ce calcul est local, sans réseau. Le désignateur est trouvé pour vous : « CL-415 », « Canadair 415 » et « CL415 » donnent CL2T, affiché « Canadair CL-415 » (le nom de la variante est gardé). Un type de la flotte est simplement coché dans la carte « Mes appareils ». Si plusieurs types sont possibles, le plus proche est repris dans le champ — « Ajouter » pour le confirmer, ou choisissez dans la liste. Si rien ne correspond, l'appareil est gardé sous son nom, marqué « type OACI à confirmer » ; « Chercher le type », sur sa ligne, le rattache plus tard à un désignateur. Pour corriger ou supprimer un appareil ajouté, cliquez sur sa ligne : son code ou son nom passe dans le champ et « Ajouter » devient « Remplacer » (son état est reporté), à côté de « Supprimer » et « Annuler » (ou Échap). La base de ce poste n'est complétée par le lanceur qu'au clic sur « Ajouter », pour un désignateur qui lui manque : la ligne affiche « complétion de la base en cours… » le temps d'une passe courte, une seule passe à la fois (un type demandé pendant une passe est mis en file) ; quitter la page ne l'interrompt pas. Un type retiré que les sources officielles ne connaissent plus est cherché en dernier recours sur Aviation Fanatic ; s'il n'y est pas, la note « introuvable (OACI, EUROCONTROL, Aviation Fanatic) » l'indique. Ces appareils partent avec vos disponibilités déclarées : le Centre les voit pour les affectations, et les autres pilotes les retrouvent dans cette carte, colonne « Aussi déclaré par » — il leur suffit d'un appui sur la pastille.
 
 **Carte « Simulateurs »** : cochez les simulateurs et outils installés.
 
@@ -526,6 +548,27 @@ L'épaisseur du trait des icônes, ou pas d'icônes du tout. Chaque rangée mont
 | « Aucune icône » | Pas d'icônes |
 
 **« Barre latérale »** : « Selon le design », « Toujours » ou « Jamais ». Par défaut, elle est toujours affichée (sauf écran étroit et impression). « Taille des icônes » : « Petite », « Moyenne » (par défaut) ou « Grande ». « Affichage » (niveau Expert) : « Icône et libellé » (par défaut), « Icône seule » (barre plus étroite, nom de l'entrée en infobulle) ou « Libellé seul ».
+
+### Sur téléphone
+
+Sur un écran étroit (téléphone, fenêtre réduite), la suite passe en **mode mobile** : en-tête sur une ligne, barre de
+navigation en bas de l'écran à la place de la barre latérale, onglets sur une ligne qui défile, blocs en pleine largeur,
+boutons et champs plus grands, tableaux qui défilent dans leur bloc ou présentés en cartes.
+
+- **Barre du bas** : jusqu'à six entrées, toutes affichées avec un libellé court (Jour, Missions, Vols, CR…) ; au-delà,
+  les cinq premières et « Plus », qui ouvre les autres entrées, Paramètres et Aide.
+- **Téléphone en paysage** : la barre passe en rail à gauche de l'écran (icône, libellé dessous) et l'en-tête n'est plus collé, pour garder la hauteur au contenu ; les courbes du Carburant tiennent avec leur curseur de niveau.
+- **En-tête** : il se range quand vous descendez dans la page et revient dès que vous remontez.
+- **Mode mobile** : « Automatique (écran étroit) », « Toujours » ou « Jamais ». En automatique, un téléphone tourné en paysage reste en mode mobile.
+- **Cette page sur téléphone** : « Sur téléphone » vient en tête. Sous un skin de téléphone, design, icônes, barre latérale et couleurs des thèmes (réglages de l'ordinateur, sans effet sous ce skin) ne sont pas affichés ; skin « Mon design » pour les retrouver.
+- **Skin du téléphone** : « Mobile » (par défaut, plat et léger), « Swiss » (noir et blanc, angles droits, accent rouge)
+  ou « Mon design » (le design choisi ci-dessus). Appliqué au prochain chargement d'une page sur un écran tactile.
+- **Jour / nuit** : « Suit le téléphone » (réglage clair ou sombre du téléphone), « Jour » ou « Nuit ».
+- Sur un écran tactile, les pages conçues pour un grand écran (cartes de vol, fiches de performances, pages de
+  préparation du Centre, réglages d'installation) sont retirées de la barre et des onglets ; ouvertes quand même, elles
+  portent un bandeau. Une fenêtre d'ordinateur réduite garde toutes ses pages.
+- **Aperçu mobile sur ordinateur** (niveau Expert) : une page de la suite dans des cadres de téléphone et de tablette,
+  avec le skin et le jour / nuit choisis, pour vérifier le rendu sans téléphone.
 
 ### Couleurs des thèmes
 
@@ -765,6 +808,8 @@ quatre heures ; carburant au départ et à l'atterrissage) ; « Tous les champs 
 « Champs essentiels » revient. Aux niveaux 3 et 4, tous les champs sont là. Les valeurs de champs masqués (import, plan
 de vol, suivi réseau) restent dans le compte rendu. Un clic sur une anomalie de cohérence, sous les calculs, ouvre
 l'étape, le bloc et, s'il le faut, tous ses champs, puis place le curseur dans le champ.
+
+**Sur téléphone** : une seule étape est ouverte à la fois — à l’arrivée, la première à compléter ; ouvrir une étape replie les autres et la ramène en haut de l’écran. La barre « 1 Vol · 2 Mission · 3 Résultat » reste collée en haut pendant la saisie et marque l’étape ouverte ; l’en-tête de la mission défile avec la page. « Ajouter au registre » flotte au-dessus de la barre du bas ; « Envoyer » et « Préremplir » restent dans l’en-tête, en haut de page.
 
 <!-- capture-manuels: utilisateur-formulaire-cr -->
 ![Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.](images/captures-manuels/utilisateur-formulaire-cr.png)
@@ -1165,6 +1210,36 @@ donne les indicateurs propres à la famille, repris dans les reportings.
 Les familles HEMS et FIRE peuvent reprendre leur ancien registre CSV : voir
 [Reporting d'une famille](#reporting-dune-famille).
 
+## Flotte
+<!-- page: apps/cr/flotte.html -->
+
+Où sont les appareils de la flotte : onglet « Flotte » du bouton « Compte rendu » de la barre latérale, à côté de
+l'onglet « Compte rendu ». La page est en lecture seule et ouverte à tous ; Centre activé dans ce navigateur, le bouton
+« Modifier la flotte » mène au tableau éditable (Paramètres › Centre › Flotte).
+
+- **Carte** : chaque appareil est à son terrain actuel (emplacement donné par le site de la compagnie, ou terrain
+  d'atterrissage d'un CR issu d'un ordre de mission, sinon sa base), sur un fond OpenStreetMap. Vue d'ensemble : une
+  pastille par terrain avec le nombre d'appareils ; des terrains trop proches pour être distingués à ce zoom sont
+  réunis en une seule pastille (« LFMI +2 ») avec le nombre total d'appareils. En zoomant (boutons « + » / « − »,
+  Ctrl + molette, double-clic), les appareils d'un terrain se rangent un par un sur une aire de stationnement ;
+  « Toute la flotte » recadre la carte.
+- **Survol** : d'une pastille de plusieurs appareils, leur nombre par indicatif (série) et type ; d'une pastille de
+  plusieurs terrains, en plus le nombre par terrain ; d'un appareil (ou d'une pastille d'un seul), sa fiche courte :
+  indicatifs, opérateur, terrain actuel et depuis quand, base, date et heure du dernier vol (journal des vols de la
+  compagnie et comptes rendus : le plus récent).
+- **Sélection** : clic sur un appareil ; clic sur une pastille : ses appareils, et zoom dessus ; Ctrl ou Maj + clic :
+  ajouter ou retirer ; Maj + glisser : rectangle ; Échap ou « Effacer la sélection ». La liste sous la carte mène à la
+  fiche de chaque appareil, et les lignes sélectionnées sont surlignées dans le tableau.
+- **Filtres** (en tête de la carte, cumulés) : opérateur, type, indicatif (série), terrain, statut, origine de la
+  position (site, ordre de mission, base), dernier vol (moins de 7, 30, 90 jours, plus de 90 jours, aucun vol connu) et
+  recherche libre (immatriculation, indicatif, type…). Chaque liste donne le nombre d'appareils par valeur ;
+  « Réinitialiser les filtres » les efface. Les choix sont gardés dans ce navigateur.
+- **Tableau** « Appareils de la flotte » : les appareils retenus par les filtres (immatriculation, type, variante,
+  indicatifs, opérateur, terrain actuel et origine, base, dernier vol, statut), triables par colonne. Survol d'une
+  ligne : sa position est surlignée sur la carte ; clic : l'appareil est sélectionné et la carte centrée sur son
+  terrain ; l'immatriculation ouvre la fiche appareil.
+- « n sans terrain connu » (infobulle) liste les appareils sans terrain, ou dont le terrain est introuvable.
+
 ## Fiche appareil
 <!-- page: apps/cr/appareil.html -->
 
@@ -1183,6 +1258,8 @@ Le titre affiche l'immatriculation, le type et le modèle. Dessous, trois pastil
   journal) ;
 - « 🏠 Terrain de rattachement ».
 
+**Se déplacer** : la fiche est sous l'onglet « Flotte » (Compte rendu › Flotte), qui ramène à la liste et à la carte. En tête de fiche, la liste de la flotte (par type) ouvre un autre appareil ; « ‹ » et « › » passent à l'appareil précédent ou suivant du même type.
+
 La barre de **période** des reportings (préréglages, dates, ◀ − ▶) est dans l'en-tête : activité,
 graphique et tableau la suivent. Un appareil inconnu des bases affiche « Inconnu dans les bases : la
 fiche se remplira au fil des CR ».
@@ -1199,8 +1276,8 @@ fiche se remplira au fil des CR ».
 | « Indicatifs utilisés », « Équipements » | non | relevés dans les missions, avec leur nombre |
 | « Notes » | oui | texte libre |
 
-Cliquez « Enregistrer la fiche » : la fiche est gardée **dans ce navigateur** (incluse dans la sauvegarde
-locale). L'identité est calculée sur tout l'historique, quelle que soit la période.
+Les champs modifiables sont en tête du bloc ; chacun est enregistré dès qu'il change, **dans ce navigateur** (inclus dans la sauvegarde
+locale) : l'heure du dernier enregistrement s'affiche sous les notes. L'identité est calculée sur tout l'historique, quelle que soit la période.
 
 « Fusionner avec… / renommer » : choisissez une autre immatriculation puis « Fusionner ». Les missions du
 registre qui portent l'ancienne valeur prennent la nouvelle (après confirmation, avec une trace dans
@@ -1266,7 +1343,7 @@ dans l'en-tête, comme pour la fiche appareil.
 | « Qualifications (une par ligne) » | oui | texte libre |
 | « Notes » | oui | texte libre |
 
-« Enregistrer la fiche » la garde dans ce navigateur. « Fusionner avec… / renommer » réunit deux
+Chaque champ est enregistré dans ce navigateur dès qu'il change. « Fusionner avec… / renommer » réunit deux
 écritures d'un même pilote (ex. GRR → RBR) : les missions du registre prennent la nouvelle valeur, avec
 une trace, après confirmation.
 
@@ -1649,7 +1726,7 @@ La fiche choisie reste visible en lecture seule dans le Résultat (groupe replia
 ### Devis carburant
 
 1. « Plan de vol (case 15) » : saisissez la route. C'est le même plan que les Cartes de vol (le plus récent l'emporte). La distance, la route vraie et le niveau en sont déduits. Sous le champ, les points de la route s'affichent un par un (terrains en gras, points des voies aériennes atténués, niveau après le point où il change ; survol : position). Après « Récupérer dernier FPL SimBrief », une ligne dit ce qui a été lu, par exemple « OFP du 19/10 · LFRS → LFML · 11 points · FL270 · dégagement LFPG · S210 F-BHHH » (aussi en notification), avec « Voir le JSON » (fenêtre du JSON de l'OFP, « Copier »). Un OFP sans route point par point le dit (« navlog vide… ») : la route se réduit alors aux terrains.
-2. Complétez ou corrigez les champs du repli « Paramètres du vol » (déplié d'emblée au niveau Expert, replié sinon ; les valeurs par défaut suffisent pour un devis rapide) : « Distance (NM) », « Niveau (FL) », « Route vraie (°) », « Taxi (min) », « Vent de (°) », « Vent (kt) », « Réserve (min) », « Contingence (%) ».
+2. Réglez « Niveau (FL) », seul paramètre toujours affiché, puis complétez ou corrigez les champs du repli « Paramètres du vol » (déplié d'emblée au niveau Expert sur ordinateur, replié sinon et sur téléphone ; les valeurs par défaut suffisent pour un devis rapide) : « Distance (NM) », « Route vraie (°) », « Taxi (min) », « Vent de (°) », « Vent (kt) », « Réserve (min) », « Contingence (%) ».
 3. Facultatif, dans le même repli : « Masse au décollage prévue », comparée à la MTOW du type ; « Écart ISA (°C) », ou « Température sol (°C) » avec « Altitude terrain (ft) », ou « Température au niveau (°C) ». « Consommation de croisière (kg/h) » : préremplie par le profil ; sans profil, la page dit quelle valeur elle utilisera et d'où elle vient (par exemple « ≈ 4 000 kg/h, estimation type A400 ») ; « Utiliser cette valeur » la reprend dans le champ, « Mémoriser pour ce type » la garde pour les prochains vols. « Montée choisie » (vue détaillée) : trois curseurs, « Vitesse indiquée », « Vario » et « Gaz (%) » (RPM ou N1 si le profil a une cartographie moteur), chacun précédé d'une case « fixé » ; deux sont fixés, le troisième est calculé et grisé ; « plein gaz » s'affiche sous le vario ; la ligne du dessous donne débit, TAS et gaz à mi-montée. C'est cette montée que le devis compte.
 4. Cliquez sur « Calculer ».
 
@@ -1715,6 +1792,8 @@ La montée suit le modèle de performances de l'avion actif ; la descente suit s
 Un OFP SimBrief importé remplit la route et trace le profil tout seul.
 Il faut la base SIA de ce navigateur, lue dans les Cartes de vol (bloc « Base de données SIA ») ou dans Paramètres › Maintenance. Sans elle, seuls les points en coordonnées sont reconnus, sans espaces aériens.
 Le relief vient d'un modèle de terrain d'environ 150 m : les limites ASFC suivent ce modèle, pas le sol réel.
+
+**Sur téléphone** : la page passe sur une colonne (devis, puis Résultat, puis les autres blocs) ; après « Calculer », le Résultat est amené à l’écran. La table des courbes défile dans son cadre.
 
 ## Fiches de performances
 <!-- page: apps/planner/performance_sheets.html -->

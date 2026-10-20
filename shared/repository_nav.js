@@ -218,6 +218,62 @@
       }));
     }
   };
+  // ---- mode mobile (html[data-mobile], règles de shared/mobile.css) : posé dès l'en-tête par config/repository_tree ;
+  // réglage repositoryMobile : auto (largeur ≤ 760 px, ou téléphone en paysage), on, off ; en mode mobile, le contenu n'a pas de largeur maximale.
+  // En auto, suivi de la largeur ; événement « repository-mobile-change » (detail : { on }). Skins mobiles : jour / nuit par
+  // html[data-mobile-theme] (réglage repositoryMobileTheme : auto suit le téléphone, day, night).
+  // écran étroit, ou téléphone tourné en paysage (tactile, moins de 500 px de haut) ; même requête dans config/repository_tree
+  const MOBILE_Q = matchMedia("(max-width:760px),(pointer:coarse) and (max-height:500px)");
+  const mobileMode = () => {
+    if (/^sogMobilePreview:/.test(window.name)) return "on"; // aperçu mobile (tools/mobile_preview.html)
+    const v = readPref("repositoryMobile", "auto");
+    return v === "on" || v === "off" ? v : "auto";
+  };
+  const applyMobile = () => {
+    const m = mobileMode(),
+      on = m === "on" || m === "auto" && MOBILE_Q.matches ? "on" : "off";
+    if (doc.dataset.mobile === on) return;
+    doc.dataset.mobile = on;
+    window.dispatchEvent(new CustomEvent("repository-mobile-change", {
+      detail: {
+        on: on === "on"
+      }
+    }));
+  };
+  MOBILE_Q.addEventListener?.("change", applyMobile);
+  applyMobile();
+  /** Page utilisable sur téléphone (pages.mobile !== false) ; page non déclarée : oui. */
+  const mobileOk = p => cfg.pages.find(x => x.path === p)?.mobile !== false;
+  const mobile = {
+    /** Mode mobile en vigueur. */
+    on: () => doc.dataset.mobile === "on",
+    /** Réglage : auto, on, off. */
+    mode: mobileMode,
+    /** Règle le mode (auto, on, off), gardé dans ce navigateur, appliqué aussitôt. */
+    set(v) {
+      if (!["auto", "on", "off"].includes(v)) return;
+      K.store.set("repositoryMobile", v);
+      applyMobile();
+    },
+    ok: mobileOk,
+    /** Skin du téléphone : id d'un design mobile:true, ou « design » (garder son design) ; sans argument : le choix en
+     *  vigueur. Gardé dans ce navigateur, appliqué au prochain chargement d'une page sur écran tactile. */
+    skinChoice(v) {
+      const cur = readPref("repositoryMobileSkin", "mobile");
+      if (v === undefined) return cur === "design" || designs[cur]?.mobile ? cur : "mobile";
+      if (v !== "design" && !designs[v]?.mobile) return;
+      K.store.set("repositoryMobileSkin", v);
+    },
+    /** Jour / nuit des skins mobiles : auto (système), day, night ; gardé dans ce navigateur, appliqué aussitôt. */
+    theme(v) {
+      if (v === undefined) return doc.dataset.mobileTheme || "auto";
+      if (!["auto", "day", "night"].includes(v)) return;
+      K.store.set("repositoryMobileTheme", v);
+      doc.dataset.mobileTheme = v;
+    },
+    /** Skin mobile en vigueur sur cette page (id du design, choisi au chargement sur téléphone ; '' sinon). */
+    skin: () => mobileSkin
+  };
   const cpco = {
     enabled: cpcoOn,
     /** Page du Centre consultable en lecture seule sans le Centre (view:true dans repository_tree) ; page courante par défaut. */
@@ -461,7 +517,17 @@
       }
     },
     savedDesign = readPref("repositoryDesign", null);
-  let design = designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default : "standard");
+  // téléphone (mode mobile au chargement et écran tactile) : skin mobile choisi (repositoryMobileSkin : id d'un design
+  // mobile:true, « mobile » par défaut), sauf « design » (garder son design) ; même règle que l'en-tête (config/repository_tree)
+  // aperçu sur ordinateur (tools/mobile_preview.html) : cadre nommé « sogMobilePreview:<skin>:<auto|day|night> », mode
+  // mobile et skin forcés dans ce cadre seulement (le nom de fenêtre suit la navigation du cadre)
+  const preview = /^sogMobilePreview:/.test(window.name) ? window.name.split(":") : null;
+  const mobileSkinPref = preview?.[1] || readPref("repositoryMobileSkin", "mobile"),
+    mobileSkin = doc.dataset.mobile === "on" && mobileSkinPref !== "design" && (preview || matchMedia("(pointer:coarse)").matches) ? (
+      designs[
+        mobileSkinPref]?.mobile ? mobileSkinPref : designs.mobile ? "mobile" : "") : "";
+  let design = mobileSkin ? mobileSkin : designs[savedDesign] ? savedDesign : (designs[cfg.designs?.default] ? cfg.designs.default :
+    "standard");
   /** Pose le design sur <html> : data-design ; data-design-base (design dont c'est une déclinaison, sinon lui-même) ;
    *  data-skeuo pour les designs à matières (« frame » : cadre cousu autour de la page) — règles de designs_skeuo.css. */
   const markDesign = id => {
@@ -545,6 +611,24 @@
   const header = document.querySelector("body>header");
   if (!header) return;
   header.classList.add("repo-header");
+  // mode mobile : l'en-tête collé se range quand on descend dans la page et revient dès qu'on remonte (la hauteur d'un
+  // téléphone est comptée : 140 px pour l'en-tête du Carburant), sauf sa première ligne (titre, outils) ; jamais pendant qu'un de ses menus est ouvert, ni pour
+  // un en-tête non collé (compte rendu, paysage) ; classe écrite seulement si elle change (shared/mobile.css)
+  let headY = scrollY;
+  addEventListener("scroll", () => {
+    const y = scrollY;
+    if (Math.abs(y - headY) < 12 && y > 80) return; // petit mouvement : rien
+    const away = doc.dataset.mobile === "on" && y > 80 && y > headY && getComputedStyle(header).position === "sticky" && !header
+      .querySelector('[aria-expanded="true"], details[open]');
+    headY = y;
+    if (away) { // seules les lignes sous la première se rangent : titre (nom de l'appareil…) et outils restent
+      const off = `${Math.round(header.getBoundingClientRect().height - (line.getBoundingClientRect().height || 0))}px`;
+      if (header.style.getPropertyValue("--repo-head-away") !== off) header.style.setProperty("--repo-head-away", off)
+    }
+    if (header.classList.contains("repo-header-away") !== away) header.classList.toggle("repo-header-away", away)
+  }, {
+    passive: true
+  });
   let line = header.querySelector(":scope>.header-row");
   if (!line) {
     line = document.createElement("div");
@@ -887,6 +971,7 @@
   // API publique.
   window.RepositoryNav = {
     cpco,
+    mobile,
     levels,
     settingsUrl,
     /** Langue de la suite : "auto" (navigateur) ou fr / en / de / es ; mémorisée, appliquée à la page. */
@@ -1186,12 +1271,16 @@
     const known = new Set(cfg.pages.map(p => p.path)),
       current = page?.path || "";
     // entrée à onglets (tabs : id d'un groupe de repository_tree.tabs) : la page courante si elle en est, sinon la
-    // première page visible du groupe ; sans page visible, l'entrée disparaît. Entrées simples : page visible seulement.
+    // première page visible du groupe ; sans page visible, l'entrée disparaît ; active sur les pages du groupe et sur
+    // celles de son « match » (Compte rendu : les pages de CR des familles). Entrées simples : page visible seulement.
     items.forEach(x => {
       if (!x.tabs) return;
       const ps = tabPages(x.tabs).filter(p => known.has(p.path));
-      x.match = ps.map(p => p.path);
-      x.path = ps.some(p => p.path === current) ? current : ps[0]?.path || "";
+      x.match = [...new Set([...ps.flatMap(p => [p.path, ...[].concat(p.match || [])]), ...[].concat(x.match || [])])];
+      x.path = ps.some(p => p.path === current) ? current : (doc.dataset.mobile === "on" && doc.dataset.touch === "on" && ps.find(p =>
+          mobileOk(p.path)) || ps[0])
+        ?.path || "";
+      x.desk = ps.length && ps.every(p => !mobileOk(p.path)); // groupe sans page pour téléphone
     });
     // entrée active : la page elle-même, sinon la première entrée dont « match » est contenu dans le chemin courant
     let active = items.findIndex(x => x.path === current);
@@ -1237,6 +1326,8 @@
       }
       if (it.tabs && !it.path) return; // groupe sans page visible à ce niveau
       if (it.path && (!known.has(it.path) || !visible(it.path))) return;
+      // page (ou groupe d'onglets) réservée au grand écran : entrée masquée en mode mobile (shared/mobile.css)
+      if (it.tabs ? it.desk : it.path && !mobileOk(it.path)) li.classList.add("repo-sidenav-desk");
       const a = document.createElement(it.menu ? "button" : "a");
       a.className = "repo-sidenav-item" + (centreUser() && isCpco(it.path) ? " repo-sidenav-cpco" : "");
       if (it.menu) {
@@ -1261,9 +1352,15 @@
     /** Libellés et infobulles des entrées et titres de séparateurs de la barre latérale dans la langue courante. */
     const label = () => {
       const i = Math.max(0, supported.indexOf(language));
+      const short = doc.dataset.mobile === "on"; // barre du bas : libellé court (mobileLabel) s'il existe
       side.querySelectorAll(".repo-sidenav-item").forEach(a => {
-        a.querySelector(".repo-sidenav-label").textContent = a._it.label[i] || a._it.label[0];
-        a.title = a._it.title?.[i] || a._it.title?.[0] || a._it.label[i] || a._it.label[0];
+        if (!a._it) return; // bouton « Plus » de la barre du bas : libellé posé par la barre
+        const l = short && a._it.mobileLabel || a._it.label,
+          v = l[i] || l[0],
+          sp = a.querySelector(".repo-sidenav-label");
+        if (sp.textContent !== v) sp.textContent = v;
+        const tt = a._it.title?.[i] || a._it.title?.[0] || a._it.label[i] || a._it.label[0];
+        if (a.title !== tt) a.title = tt;
       });
       side.querySelectorAll(".repo-sidenav-titled").forEach(li => {
         li.querySelector(".repo-sidenav-sep-title").textContent = li._it.title[i] || li._it.title[0];
@@ -1271,6 +1368,7 @@
     };
     label();
     window.addEventListener("repository-language-change", label);
+    window.addEventListener("repository-mobile-change", label);
     // changement de jeu d'icônes ou de design : images de la barre refaites
     window.addEventListener("repository-design-change", () => {
       side.querySelectorAll("[data-sidenav-icon]").forEach(sp => {
@@ -1280,6 +1378,69 @@
       const logo = side.querySelector(".repo-sidenav-logo");
       if (logo && logo.src !== logoSrc()) logo.src = logoSrc();
     });
+    // barre du bas (mode mobile) : jusqu'à 6 entrées visibles, toutes ; au-delà, les 5 premières et « Plus », volet des autres
+    // entrées avec Paramètres et Aide (entrées du bas de la barre latérale, sinon dans ☰ seulement)
+    {
+      const top = side.querySelector("ul"),
+        more = document.createElement("li"),
+        panel = document.createElement("nav");
+      more.className = "repo-sidenav-more";
+      more.hidden = true;
+      more.innerHTML =
+        '<button type="button" class="repo-sidenav-item" aria-expanded="false"><span class="repo-sidenav-ic"><svg class="repo-svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="repo-sidenav-label"></span></button>';
+      top.append(more);
+      panel.className = "repo-more-panel no-print";
+      panel.hidden = true;
+      panel.setAttribute("data-no-i18n", "");
+      document.body.append(panel);
+      const btn = more.querySelector("button"),
+        moreText = () => {
+          const v = K.t(["Plus", "More", "Mehr", "Más"]);
+          if (btn.lastChild.textContent !== v) btn.lastChild.textContent = v;
+        };
+      const close = () => {
+        panel.hidden = true;
+        btn.setAttribute("aria-expanded", "false");
+      };
+      /** Entrées en trop masquées (plus de 6 entrées visibles en mode mobile) ; « Plus » montré seulement s'il en faut. */
+      const layout = () => {
+        top.querySelectorAll(".repo-sidenav-over").forEach(li => li.classList.remove("repo-sidenav-over"));
+        const items = doc.dataset.mobile === "on" ? [...top.children].filter(li => li !== more && li.querySelector(
+          ".repo-sidenav-item") && getComputedStyle(li).display !== "none") : [];
+        const over = items.length > 6 ? items.slice(5) : [];
+        over.forEach(li => li.classList.add("repo-sidenav-over"));
+        more._over = over;
+        if (more.hidden !== !over.length) more.hidden = !over.length;
+        if (!over.length) close();
+        moreText();
+      };
+      btn.onclick = e => {
+        e.stopPropagation();
+        if (!panel.hidden) return close();
+        const links = [...(more._over || []), ...side.querySelectorAll(".repo-sidenav-foot>li")].map(li => li.querySelector(
+          ".repo-sidenav-item")).filter(Boolean);
+        panel.innerHTML = "";
+        for (const it of links) {
+          const a = it.cloneNode(true);
+          a.className = "repo-more-item";
+          a.removeAttribute("title");
+          if (it.tagName === "BUTTON") a.onclick = () => it.click(); // entrée qui ouvre ☰
+          panel.append(a);
+        }
+        panel.hidden = false;
+        btn.setAttribute("aria-expanded", "true");
+      };
+      document.addEventListener("click", e => {
+        if (!panel.hidden && !panel.contains(e.target)) close();
+      });
+      document.addEventListener("keydown", e => {
+        if (e.key === "Escape") close();
+      });
+      requestAnimationFrame(layout);
+      window.addEventListener("repository-mobile-change", layout);
+      window.addEventListener("cpco-access-change", () => requestAnimationFrame(layout));
+      window.addEventListener("repository-language-change", moreText);
+    }
     window.RepositorySideNav = {
       element: side,
       set: on => window.RepositoryNav.appearance.setSidenav(on)
@@ -1289,21 +1450,23 @@
   // et studio sous « Missions », les quatre pages de Paramètres). Avant de partir, événement « repository-tab-leave »
   // (detail : { from, to }) : la page transmet son travail (mission partagée) ; un écouteur peut annuler (preventDefault).
   {
+    // onglet d'une page « fille » (match : fiche appareil sous « Flotte ») : barre de son groupe, onglet actif
     const current = page?.path || rel,
-      group = (cfg.tabs || []).find(g => g.pages.some(p => p.path === current));
+      owns = p => p.path === current || [].concat(p.match || []).includes(current),
+      group = (cfg.tabs || []).find(g => g.pages.some(owns));
     // un seul onglet visible à ce niveau : pas de barre d'onglets
-    if (group && group.pages.filter(p => p.path === current || visible(p.path)).length > 1) {
+    if (group && group.pages.filter(p => owns(p) || visible(p.path)).length > 1) {
       const bar = document.createElement("nav");
       bar.className = "repo-tabs no-print";
       bar.dataset.tabs = group.id;
       bar.setAttribute("data-no-i18n", "");
       bar.setAttribute("aria-label", group.id);
-      for (const p of group.pages.filter(p => p.path === current || visible(p.path))) {
+      for (const p of group.pages.filter(p => owns(p) || visible(p.path))) {
         const a = document.createElement("a");
-        a.className = "repo-tab";
+        a.className = "repo-tab" + (mobileOk(p.path) ? "" : " repo-tab-desk"); // grand écran : masqué en mode mobile
         a.href = new URL(p.path, root).href;
         a._label = p.label;
-        if (p.path === current) a.setAttribute("aria-current", "page");
+        if (owns(p)) a.setAttribute("aria-current", "page");
         else a.addEventListener("click", e => {
           if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; // nouvel onglet du navigateur : rien à transmettre
           const ev = new CustomEvent("repository-tab-leave", {
@@ -1324,6 +1487,27 @@
       });
       tabLabels();
       window.addEventListener("repository-language-change", tabLabels);
+    }
+  }
+  // page réservée au grand écran (pages.mobile:false) ouverte en mode mobile sur écran tactile : bandeau sous l'en-tête (et ses
+  // onglets ; affiché par shared/mobile.css)
+  {
+    const current = page?.path || rel;
+    if (!mobileOk(current)) {
+      const note = document.createElement("p");
+      note.className = "repo-mobile-desk no-print";
+      note.setAttribute("data-no-i18n", "");
+      const text = () => {
+        const v = K.t(["Page conçue pour un grand écran : utilisable ici, mais plus confortable sur ordinateur ou tablette en paysage.",
+          "Page designed for a large screen: usable here, but more comfortable on a computer or a landscape tablet.",
+          "Für große Bildschirme gestaltete Seite: hier nutzbar, aber am Computer oder Tablet im Querformat bequemer.",
+          "Página pensada para pantalla grande: utilizable aquí, pero más cómoda en un ordenador o una tableta en horizontal."
+        ]);
+        if (note.textContent !== v) note.textContent = v;
+      };
+      text();
+      (header.nextElementSibling?.classList.contains("repo-tabs") ? header.nextElementSibling : header).after(note);
+      window.addEventListener("repository-language-change", text);
     }
   } {
     /* Profil pilote (ID IVAO / VATSIM) commun à toutes les pages */

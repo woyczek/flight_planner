@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aperçu mobile</title>
+<!-- Aperçu mobile sur ordinateur (outil de vérification) : une page de la suite dans des cadres à la taille d'un téléphone
+     ou d'une tablette, côte à côte, avec le skin mobile et le jour / nuit choisis. Chaque cadre est nommé
+     « sogMobilePreview:<skin>:<auto|day|night> » : config/repository_tree et shared/repository_nav.js y forcent le mode
+     mobile et le skin, dans ce cadre seulement (le nom suit la navigation dans le cadre ; l'onglet de l'aperçu, lui, reste
+     en mode ordinateur). Servie par le lanceur : http://127.0.0.1:<port>/tools/mobile_preview.html. Choix gardés dans ce
+     navigateur (mobilePreview:v1). Gestes tactiles non simulés : le survol de la souris reste actif dans les cadres. -->
+<style>
+  :root {
+    --bg: #eceff3;
+    --ink: #111;
+    --line: #c9ced6;
+    --accent: #e30613
+  }
+  * {
+    box-sizing: border-box
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.4 "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif
+  }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: end;
+    padding: 10px 16px;
+    background: #111;
+    color: #fff;
+    border-bottom: 4px solid var(--accent)
+  }
+  header h1 {
+    margin: 0 12px 0 0;
+    font-size: 20px;
+    letter-spacing: -.02em
+  }
+  label {
+    display: grid;
+    gap: 3px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em
+  }
+  select,
+  input,
+  button {
+    font: inherit;
+    font-size: 14px;
+    padding: 6px 8px;
+    border: 1px solid #555;
+    border-radius: 0;
+    background: #fff;
+    color: #111;
+    text-transform: none;
+    letter-spacing: 0
+  }
+  button {
+    cursor: pointer;
+    font-weight: 700
+  }
+  fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 10px;
+    align-items: center
+  }
+  fieldset legend {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 3px
+  }
+  fieldset label {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px
+  }
+  #path {
+    min-width: 280px
+  }
+  main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    align-items: flex-start;
+    padding: 18px 16px 40px
+  }
+  .dev {
+    display: grid;
+    gap: 6px
+  }
+  .dev b {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .06em
+  }
+  .screen {
+    position: relative;
+    overflow: hidden;
+    border: 10px solid #111;
+    border-radius: 28px;
+    background: #fff;
+    box-shadow: 0 10px 30px #0003
+  }
+  .screen iframe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    border: 0;
+    transform-origin: 0 0;
+    background: #fff
+  }
+  .hint {
+    padding: 0 16px;
+    color: #555;
+    font-size: 12px
+  }
+</style>
+</head><body>
+<header>
+  <h1>Aperçu mobile</h1>
+  <label>Page<select id="page"></select></label>
+  <label>Autre adresse (depuis la racine)<input id="path" placeholder="apps/cr/flotte.html"></label>
+  <label>Skin<select id="skin"><option value="mobile">Mobile (par défaut)</option><option value="mobile-swiss">Swiss</option><option value="design">Mon design</option></select></label>
+  <label>Jour / nuit<select id="theme"><option value="auto">Suit le système</option><option value="day">Jour</option><option value="night">Nuit</option></select></label>
+  <label>Orientation<select id="orient"><option value="portrait">Portrait</option><option value="landscape">Paysage</option><option value="both">Les deux</option></select></label>
+  <fieldset id="devs"><legend>Écrans</legend></fieldset>
+  <label>Échelle<select id="scale"><option value="1">100 %</option><option value="0.8">80 %</option><option value="0.65">65 %</option><option value="0.5">50 %</option></select></label>
+  <button type="button" id="reload">Recharger</button>
+</header>
+<p class="hint">Mode mobile et skin forcés dans les cadres seulement. Le survol de la souris reste actif dans les cadres : les gestes tactiles (appui, deux doigts) se vérifient sur un vrai téléphone.</p>
+<main id="frames"></main>
+<script>
+  (() => {
+    'use strict';
+    // pages de la phase 1 du mobile, puis consultation et pages « grand écran » (bandeau attendu)
+    const PAGES = [
+      ['apps/cr/flotte.html', 'Flotte et sa carte'],
+      ['apps/pilot/aujourdhui.html', 'Aujourd’hui'],
+      ['apps/pilot/mes_missions.html', 'Mes missions'],
+      ['apps/pilot/disponibilites.html', 'Mes disponibilités'],
+      ['apps/pilot/mes_vols.html', 'Mes vols'],
+      ['apps/cr/mission_cr.html', 'Compte rendu'],
+      ['apps/planner/flight_performance_planner.html', 'Carburant'],
+      ['apps/cr/appareil.html', 'Fiche appareil'],
+      ['apps/cr/mission_operations_reporting.html', 'Analyse des missions'],
+      ['apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html', 'Atterrissages'],
+      ['apps/settings/profil.html', 'Mon profil'],
+      ['apps/planner/map_planner.html', 'Cartes de vol (grand écran)']
+    ];
+    const DEVICES = [
+      ['phone', 'Téléphone', 390, 844, true],
+      ['small', 'Petit téléphone', 360, 740, false],
+      ['tablet', 'Tablette portrait', 820, 1180, false]
+    ];
+    const KEY = 'mobilePreview:v1';
+    const root = new URL('../', location.href);
+    const $ = id => document.getElementById(id);
+    let st = {};
+    try {
+      st = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+    } catch {
+      st = {};
+    }
+    const save = () => {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(st));
+      } catch {
+        /* stockage indisponible : choix le temps de la page */
+      }
+    };
+    $('page').innerHTML = PAGES.map(([p, l]) => `<option value="${p}">${l}</option>`).join('');
+    $('devs').insertAdjacentHTML('beforeend', DEVICES.map(([id, l, w, h, on]) => `<label><input type="checkbox" data-dev="${id}"${(st.devs ? st.devs.includes(id) : on) ? ' checked' : ''}> ${l} ${w}×${h}</label>`).join(''));
+    $('page').value = st.page && PAGES.some(p => p[0] === st.page) ? st.page : PAGES[0][0];
+    $('path').value = st.path || '';
+    $('skin').value = st.skin || 'mobile';
+    $('theme').value = st.theme || 'auto';
+    $('scale').value = st.scale || '0.8';
+    $('orient').value = st.orient || 'portrait';
+
+    /** Cadres refaits : nommés avant leur adresse, pour que la page s'ouvre déjà en mode mobile. */
+    function draw() {
+      st = {
+        page: $('page').value,
+        path: $('path').value.trim(),
+        skin: $('skin').value,
+        theme: $('theme').value,
+        scale: $('scale').value,
+        orient: $('orient').value,
+        devs: [...document.querySelectorAll('[data-dev]:checked')].map(c => c.dataset.dev)
+      };
+      save();
+      const k = +st.scale,
+        url = new URL(st.path || st.page, root).href,
+        host = $('frames');
+      host.innerHTML = '';
+      // orientation : portrait (largeur × hauteur de l'appareil), paysage (inversées), ou les deux côte à côte
+      const turns = st.orient === 'both' ? [false, true] : [st.orient === 'landscape'];
+      for (const [id, name, w0, h0] of DEVICES.filter(d => st.devs.includes(d[0]))) for (const turn of turns) {
+        const w = turn ? h0 : w0,
+          h = turn ? w0 : h0,
+          label = `${name} ${turn ? '(paysage)' : '(portrait)'}`;
+        const dev = document.createElement('div'),
+          screen = document.createElement('div'),
+          frame = document.createElement('iframe');
+        dev.className = 'dev';
+        dev.innerHTML = `<b>${label} · ${w}×${h}</b>`;
+        screen.className = 'screen';
+        screen.style.width = `${Math.round(w * k) + 20}px`;
+        screen.style.height = `${Math.round(h * k) + 20}px`;
+        frame.name = `sogMobilePreview:${st.skin}:${st.theme}`;
+        frame.title = `${label} — ${url}`;
+        Object.assign(frame.style, {
+          width: `${w}px`,
+          height: `${h}px`,
+          transform: `scale(${k})`
+        });
+        frame.src = url;
+        screen.append(frame);
+        dev.append(screen);
+        host.append(dev);
+      }
+    }
+    ['page', 'skin', 'theme', 'scale', 'orient'].forEach(id => $(id).addEventListener('change', draw));
+    $('path').addEventListener('change', draw);
+    $('devs').addEventListener('change', draw);
+    $('reload').addEventListener('click', draw);
+    draw();
+  })();
+</script>
+</body></html>

@@ -17,7 +17,9 @@
   // Suivi réseau en cours (propre à l'onglet) ; clef du webservice d'envoi des CR (secret, jamais dans un fichier).
   // Base (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde ; identifiants du site de la compagnie
   // (page de premier lancement) : secrets, jamais dans un fichier.
-  const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/, /^defaCredentials:/];
+  const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/, /^defaCredentials:/,
+    /^githubData:/
+  ]; // githubData : jeton GitHub et copies de données
   const META = 'defaLocalStore:v1'; // { savedAt, hash } — non sauvegardé lui-même
   const PENDING = 'defaLocalStore:pending'; // modifications depuis la dernière sauvegarde
   // Journal des sauvegardes et restaurations (trace de chaque rechargement : origine, date de la sauvegarde relue,
@@ -788,10 +790,10 @@
     // libellé court (« Sauvegarder (184) ») : le libellé complet et la date de la dernière sauvegarde (jusqu'à 330 px en
     // Aqua) écrasaient les contrôles des pages à en-tête chargé (Atterrissages, Studio, Cartes de vol) ; ils sont dans
     // l'infobulle
-    const label = `${row[3]} (${n})`,
-      icon = window.RepositoryIcons?.svg('save'); // taille : celle des icônes de bouton du jeu (pas de taille en ligne)
-    button.textContent = icon ? label : '💾 ' + label;
-    if (icon) button.insertAdjacentHTML('afterbegin', icon);
+    // mot dans son span (repo-backup-label) : masqué en mode mobile (shared/mobile.css), icône et compte gardés
+    const icon = window.RepositoryIcons?.svg('save'), // taille : celle des icônes de bouton du jeu (pas de taille en ligne)
+      html = `${icon || '💾 '}<span class="repo-backup-label">${String(row[3]).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])}</span> (${n})`;
+    if (button.innerHTML !== html) button.innerHTML = html;
     button.title = `${row[0]} — ${row[1].replace('{n}', n).replace('{last}', last)}`;
   }
   button.onclick = run(async () => {

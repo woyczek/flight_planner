@@ -17,7 +17,7 @@
   // API (window.MissionAssignments) : identité et index — trigram(), index({ fresh }), mine(liste?, { all }), key(a),
   //   when(a), isRead(a), markRead(a), markUnread(a), pliState(a, id), setPliState(a, id, { state, at, logged }) (plis
   //   d'exercice : ouvert, rescellé, ouverture à l'heure notée au journal), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
-  //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, mastered }), saveSims(TRI, [sim…]), simulators(),
+  //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, novice, mastered }), saveSims(TRI, [sim…]), simulators(),
   //   gridEditor(hôte, grille, onChange) ; outils — geo { nm, brg, icaoOf, coord }, typeOf, cruiseKt, coordsOf(OACI),
   //   ferryOf({ base, departure, type, takeoff, pilot }), fleetTypes(), qualification(décl, TRI, type), slotRange(date, h0, h1),
   //   declaredOver(décl, début, fin), busyRange(a), assignedOver(liste, TRI, début, fin), conflicts(liste, {…}) ;
@@ -150,8 +150,16 @@
   const OUTBOX = 'suiteDataOutbox:v1';
   /** Boîte d'envoi : fichiers en attente d'écriture dans le dossier des données (suiteDataOutbox:v1), par chemin. */
   const outbox = () => json(OUTBOX, {}) || {};
-  /** Dossier des données autorisé en écriture (handle) ; erreur expliquée sinon. */
+  // mode GitHub (appli sans lanceur, shared/github_data.js) : le dépôt des données tient lieu de dossier autorisé —
+  // lu par le service worker (adresses data/… servies), écrit par l'API (un commit par fichier)
+  const GH_DIR = {
+    github: true,
+    name: 'GitHub'
+  };
+  const gh = () => window.GitHubData?.on?.() ? window.GitHubData : null;
+  /** Dossier des données autorisé en écriture (handle, ou GH_DIR en mode GitHub) ; erreur expliquée sinon. */
   async function dataDir() {
+    if (gh()) return GH_DIR;
     const FA = window.FileAccess;
     const st = FA ? await FA.status('__data') : null;
     let dir = st?.handle;
@@ -174,6 +182,7 @@
   }
   /** Écrit value (JSON) dans data/<rel> du dossier autorisé ; null : supprime le fichier. */
   async function writeFile(dir, rel, value) {
+    if (dir === GH_DIR) return value === null ? gh().remove(rel) : gh().put(rel, JSON.stringify(value, null, 1));
     const parts = rel.split('/'),
       name = parts.pop();
     let d = dir;
@@ -196,6 +205,10 @@
     if (srcMemo && Date.now() - srcMemo.at < 5e3) return srcMemo.p;
     /** Lecture du dossier accordé et contrôle « même copie que la suite servie » (FileAccess.sameAsServed). */
     const p = (async () => {
+      if (gh()) return {
+        dir: GH_DIR,
+        same: true // le dépôt est ce que le service worker sert : lecture servie
+      };
       const FA = window.FileAccess,
         st = FA ? await FA.status('__data') : null;
       if (!st?.handle || st.permission !== 'granted') return {
@@ -241,6 +254,9 @@
     '__data', dir, 'accepted') : uncheckedText(dir.name);
   /** JSON de data/<rel> lu dans le dossier autorisé ; null s'il est absent ou illisible. */
   async function readFile(dir, rel) {
+    if (dir === GH_DIR) return store.read(`data/${rel}`, {
+      fresh: true
+    });
     const parts = rel.split('/'),
       name = parts.pop();
     try {
@@ -663,6 +679,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const ac = last?.appareils && (last.appareils.possedes?.length || last.appareils.maitrises?.length) ? {
       owned: last.appareils.possedes || [],
       mastered: last.appareils.maitrises || [],
+      novice: last.appareils.neophytes || [],
       // variantes déclarées par désignateur ({ CL2T: ['CL-415'] }, DISPOS_ET_REORGANISATION.md § 1.3)
       variants: last.appareils.variantes || null
     } : null;
@@ -766,6 +783,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       aircraft: {
         owned: [...new Set(aircraft?.owned || [])].sort(),
         mastered: [...new Set(aircraft?.mastered || [])].sort(),
+        // néophyte : possédé, pas encore maîtrisé (Mon profil › Mes appareils, pastille orange)
+        novice: [...new Set(aircraft?.novice || [])].filter(c => own.has(c) && !(aircraft?.mastered || []).includes(c)).sort(),
         variants: vars
       },
       updated_at: new Date().toISOString()

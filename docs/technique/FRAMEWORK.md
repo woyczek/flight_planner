@@ -22,7 +22,8 @@ on every page. This document describes each component, its role and its interfac
 | SVG charts | `shared/mission_core/charts.js` | reporting pages |
 | Sortable table | `shared/mission_table.js` | reporting pages |
 | Editable databases | `shared/data_admin.js` (“Settings” page, `parametrage.html`) | CR |
-| Fleet map (aircraft at their current aerodrome, hover, selection ⇄ table) | `shared/fleet_map.js` (`FleetMap.mount`) | Settings › Centre › Fleet |
+| Fleet map (aircraft at their current aerodrome, overlap grouping, hover, filters, selection ⇄ table) | `shared/fleet_map.js` (`FleetMap.mount`) | Report › Fleet (`apps/cr/flotte.html`) |
+| Data on GitHub (app without the launcher: settings, reads of `data/…` in the page, writes as commits) | `shared/github_data.js` (`GitHubData`), `shared/data_files.js` | every page (loaded by `shared/kit.js`); settings: My profile › Data access |
 | Aircraft type database | `AircraftDB/` | the three applications |
 | Common catalogue (types, aircraft) | `shared/aircraft_catalog.js` | the three applications |
 | Anonymised reference | `data/references/defa_reference.js` | the three applications |

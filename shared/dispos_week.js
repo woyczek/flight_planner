@@ -14,7 +14,9 @@
   //     dans l'ordre, avec appareils et simulateurs du pilote relus ; semaine relue quand un autre onglet l'écrit
   //     (defa-data-change), composant remonté au changement de langue ou de catégories ;
   //   · semaine sans déclaration mais ancienne grille horaire (fichier <TRI>.json d'avant les catégories) : importée,
-  //     puis enregistrée.
+  //     puis enregistrée ;
+  //   · mode mobile (html[data-mobile]) : vue « un jour » (dayRender) au lieu de la grille de la semaine, qui ne se trace
+  //     pas au doigt ; bascule Jour / Semaine (choix gardé : disposView:v1).
   // API (window.DisposWeek) : mount(hôte, { nav = true }) → { set({ tri, week }), refresh(), touch(), week } ;
   //   legend() : HTML des catégories par groupe (pastilles inertes, Planning ODV) ; subtitle(), bindSubtitle(élément) :
   //   sous-titre du bloc de saisie, dans la langue courante.
@@ -141,6 +143,22 @@
 .dw-precise>summary{cursor:pointer;font-size:12px;opacity:.85}.dw-precise[open]>summary{margin-bottom:6px}.dw-msg{margin:0}
 .dw-legend{display:grid;grid-template-columns:max-content 1fr;gap:3px 6px;align-items:center}.dw-legend-r{display:flex;flex-wrap:wrap;gap:2px}
 .dw-legend-n{font:400 10.5px/1.2 system-ui,sans-serif;opacity:.85;white-space:nowrap}
+.dw-view{display:flex;gap:4px}.dw-view button{flex:1}
+.dw-wrap :is(.dw-view button[aria-pressed=true],.dw-dpills button[aria-current=true]):not(#imp){background:var(--accent,#1d6fd8) !important /* garder */;color:#fff !important /* garder */}
+.dw-day-on [data-tl] :is(.dt-grid,.dt-helpbox){display:none}.dw-dayview{display:grid;gap:8px}
+.dw-dhead{display:flex;align-items:center;gap:8px}.dw-dhead b{flex:1;text-align:center;font-size:15px}
+.dw-dpills{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.dw-dpills button{padding:5px 0;font-size:12px;line-height:1.15}
+.dw-dpills button.has::after{content:'';display:block;width:6px;height:6px;margin:2px auto 0;border-radius:50%;background:currentColor}
+.dw-dhint{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;font-size:13px}
+.dw-dlist{list-style:none;margin:0;padding:0;display:grid;gap:4px}.dw-dlist li{display:flex;align-items:center;gap:8px;font-size:13px}
+.dw-dlist li>span{flex:1}.dw-dlist i{flex:none;width:14px;height:14px;border:1px solid #0003}
+.dw-colbox{max-height:62vh;overflow-y:auto;overscroll-behavior:contain}.dw-col{position:relative;cursor:pointer;touch-action:manipulation;border:1px solid color-mix(in srgb,currentColor 25%,transparent);
+background-image:repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 22%,transparent) 0 1px,transparent 1px 48px),
+repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparent) 0 1px,transparent 1px 24px)}
+.dw-col .dw-h{position:absolute;left:4px;font-size:11px;opacity:.75;padding-top:1px;pointer-events:none}
+.dw-col :is(.dw-dbg,.dw-dfg,.dw-dpick){position:absolute;pointer-events:none;box-sizing:border-box}.dw-dbg{left:46px;right:0;opacity:.55}
+.dw-dfg{left:58px;right:6px;padding:2px 6px;font-size:12px;line-height:1.3;overflow:hidden;border-radius:4px;box-shadow:0 1px 2px #0004}
+.dw-dpick{left:46px;right:0;outline:2px dashed var(--accent,#1d6fd8);outline-offset:-2px;background:color-mix(in srgb,var(--accent,#1d6fd8) 18%,transparent)}
 .dw-wrap :is(.dt-brush,.dt-x){border-radius:0 !important /* garder */;min-height:0 !important /* garder */;height:auto !important /* garder */;letter-spacing:0 !important /* garder */;text-transform:none !important /* garder */;text-shadow:none !important /* garder */;margin:0 !important /* garder */}.dw-chip{padding:0 3px;border:1px solid rgba(0,0,0,.3);font:400 9.5px/1.45 system-ui,sans-serif;white-space:nowrap}`;
     document.head.append(s);
   }
@@ -199,7 +217,7 @@
         brush = ui?.brush() || storedBrush();
       ui?.destroy();
       ui = null;
-      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p><div data-tl></div>
+      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p><div class="dw-view" data-view hidden><button type="button" class="secondary" data-view-set="day">${esc(t(['Jour', 'Day', 'Tag', 'Día']))}</button><button type="button" class="secondary" data-view-set="week">${esc(t(['Semaine', 'Week', 'Woche', 'Semana']))}</button></div><div data-tl></div><div class="dw-dayview" data-dayview hidden></div>
         <details class="dw-precise"><summary>${esc(t(['Plage précise', 'Precise range', 'Genauer Zeitraum', 'Intervalo preciso']))}</summary><div class="dw-add" data-add-form></div></details>
         <div class="dw-actions" data-actions></div><p class="dw-msg small ${last[1]}">${esc(last[0])}</p>`;
       if (!tri) return render();
@@ -228,6 +246,9 @@
         }
         themesHint(e.detail.id);
       });
+      // vue « un jour » redessinée à chaque retouche, annulation, semaine relue ou pinceau choisi
+      for (const ev of ['dispos-change', 'dispos-history', 'dispos-week', 'dispos-brush']) host.querySelector('[data-tl]')
+        .addEventListener(ev, dayRender);
       render();
       themesHint(ui.brush());
     }
@@ -264,7 +285,212 @@
         ${pending ? `<button type="button" class="secondary" data-flush data-icon="save">${esc(tf(['Écrire dans le dossier des données ({n})', 'Write to the data folder ({n})', 'In den Datenordner schreiben ({n})', 'Escribir en la carpeta de datos ({n})'], { n: pending }))}</button>` : ''}`;
       const box = host.querySelector('[data-actions]');
       if (box.innerHTML !== actions) box.innerHTML = actions;
+      dayRender();
     }
+
+    // ---- vue « un jour » (mode mobile) : un jour à la fois, heures de haut en bas (une demi-heure : CELL px) ; un appui
+    // pose le début, un second la fin (demi-heure comprise), avec la catégorie choisie dans la palette du module ; liste
+    // des plages du jour, ✕ pour en retirer une ; « Annuler » (pas de Ctrl+Z sur téléphone). Même composant, mêmes
+    // données : la grille de la semaine est seulement masquée (classe dw-day-on).
+    const VIEW = 'disposView:v1',
+      CELL = 24;
+    let dayIdx = null, // jour affiché (0 : lundi) ; null : aujourd'hui s'il est dans la semaine, sinon lundi
+      pick = null, // minute du jour du début choisi, en attente de la fin
+      shownDay = ''; // semaine et jour dessinés (colonne replacée au changement de jour)
+    const mobile = () => document.documentElement.dataset.mobile === 'on';
+    const dayOn = () => {
+      if (!mobile()) return false;
+      try {
+        return localStorage.getItem(VIEW) !== 'week';
+      } catch {
+        return true;
+      }
+    };
+    const hm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    const isoAt = ms => new Date(ms).toISOString().slice(0, 16);
+    /** Début (ms UTC) du jour affiché. */
+    const dayStart = () => SD().weekMonday(week) + dayIdx * 864e5;
+    /** Plages de la semaine (fond visible et dispos) coupées au jour d0 : { start, end, cat, a, b } (a, b : minutes). */
+    const dayParts = (data, d0) => data.ranges.map(r => ({
+      ...r,
+      a: Math.max(Date.parse(`${r.start}:00Z`), d0),
+      b: Math.min(Date.parse(`${r.end}:00Z`), d0 + 864e5)
+    })).filter(r => r.b > r.a).map(r => ({
+      ...r,
+      a: (r.a - d0) / 6e4,
+      b: (r.b - d0) / 6e4
+    }));
+    /** Dessine la vue « un jour » (écrit seulement ce qui change) ; ailleurs qu'en mode mobile, la cache. */
+    function dayRender() {
+      const box = host.querySelector('[data-dayview]'),
+        sw = host.querySelector('[data-view]');
+      if (!box || !sw) return;
+      const on = !!ui && loaded() && dayOn();
+      host.classList.toggle('dw-day-on', on);
+      sw.hidden = !ui || !mobile();
+      for (const b of sw.querySelectorAll('[data-view-set]')) b.setAttribute('aria-pressed', String((b.dataset.viewSet === 'day') ===
+        dayOn()));
+      box.hidden = !on;
+      if (!on) return;
+      const D = SD(),
+        cats = new Map(D.timelineConfig().categories.map(c => [c.id, c])),
+        mon = D.weekMonday(week);
+      if (dayIdx === null) {
+        const today = Math.floor((Date.now() - mon) / 864e5);
+        dayIdx = today >= 0 && today < 7 ? today : 0;
+      }
+      const d0 = dayStart(),
+        data = ui.get(),
+        parts = dayParts(data, d0),
+        brush = ui.brush(),
+        bc = cats.get(brush),
+        bg = r => cats.get(r.cat)?.layer === 'background',
+        name = r => cats.get(r.cat)?.label || r.cat,
+        title = new Date(d0).toLocaleDateString(loc(), {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          timeZone: 'UTC'
+        });
+      const pills = Array.from({
+        length: 7
+      }, (_, j) => {
+        const has = dayParts(data, mon + j * 864e5).some(r => !bg(r)),
+          lab = new Date(mon + j * 864e5).toLocaleDateString(loc(), {
+            weekday: 'short',
+            timeZone: 'UTC'
+          }).replace('.', '');
+        return `<button type="button" class="secondary${has ? ' has' : ''}" data-dpill="${j}" aria-current="${j === dayIdx}">${esc(lab)}<br>${new Date(mon + j * 864e5).getUTCDate()}</button>`;
+      }).join('');
+      const brushName = brush === '__erase' ? t(['effacer le fond', 'clear the background', 'Hintergrund löschen',
+        'borrar el fondo'
+      ]) : bc ? [bc.letter, bc.label].filter(Boolean).join(' ') : '—';
+      const hint = pick === null ? `<span>${esc(tf(['Appuyer sur l’heure de début, puis sur l’heure de fin : {c}.',
+          'Tap the start time, then the end time: {c}.', 'Auf die Anfangszeit tippen, dann auf die Endzeit: {c}.',
+          'Tocar la hora de inicio y luego la hora de fin: {c}.'
+        ], { c: brushName }))}</span><button type="button" class="secondary" data-dall>${esc(t(['Journée entière', 'Whole day', 'Ganzer Tag', 'Día entero']))}</button>` :
+        `<span>${esc(tf(['Début {h} : appuyer sur l’heure de fin.', 'Start {h}: tap the end time.',
+          'Beginn {h}: auf die Endzeit tippen.', 'Inicio {h}: tocar la hora de fin.'
+        ], { h: hm(pick) }))}</span><button type="button" class="ghost" data-dcancel>${esc(t(['Annuler', 'Cancel', 'Abbrechen', 'Cancelar']))}</button>`;
+      const undo = ui.history().undo ? `<button type="button" class="secondary" data-dundo>↶ ${esc(t(['Défaire', 'Undo', 'Rückgängig', 'Deshacer']))}</button>` : '';
+      const list = parts.map((r, i) => `<li><i style="background:${esc(cats.get(r.cat)?.color || '#ccc')}"></i><span>${hm(r.a)}–${hm(r.b)} · ${esc(name(r))}</span><button type="button" class="ghost" data-dx="${i}" title="${esc(t(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">✕</button></li>`).join('');
+      const col = Array.from({
+        length: 24
+      }, (_, h) => `<span class="dw-h" style="top:${h * 2 * CELL}px">${hm(h * 60)}</span>`).join('') + parts.map(r => {
+        const c = cats.get(r.cat),
+          pos = `top:${r.a / 30 * CELL}px;height:${(r.b - r.a) / 30 * CELL}px;background:${esc(c?.color || '#ccc')}`;
+        return bg(r) ? `<div class="dw-dbg" style="${pos}"></div>` : `<div class="dw-dfg" style="${pos};color:${ink(c?.color || '#ccc')}">${hm(r.a)}–${hm(r.b)} ${esc([c?.letter, c?.short || name(r)].filter(Boolean).join(' '))}</div>`;
+      }).join('') + (pick === null ? '' : `<div class="dw-dpick" style="top:${pick / 30 * CELL}px;height:${CELL}px"></div>`);
+      const html = `<div class="dw-dhead"><button type="button" class="secondary" data-dstep="-1" title="${esc(t(['Jour précédent', 'Previous day', 'Vorheriger Tag', 'Día anterior']))}">‹</button><b>${esc(title)} (UTC)</b><button type="button" class="secondary" data-dstep="1" title="${esc(t(['Jour suivant', 'Next day', 'Nächster Tag', 'Día siguiente']))}">›</button></div>
+        <div class="dw-dpills">${pills}</div><p class="dw-dhint">${hint}${undo}</p>${list ? `<ul class="dw-dlist">${list}</ul>` : ''}
+        <div class="dw-colbox" data-colbox><div class="dw-col" data-col style="height:${48 * CELL}px">${col}</div></div>`;
+      if (box.innerHTML !== html) {
+        const top = box.querySelector('[data-colbox]')?.scrollTop || 0; // même jour : la colonne reste où elle était
+        box.innerHTML = html;
+        box.querySelector('[data-colbox]').scrollTop = top;
+      }
+      // autre jour : la colonne s'ouvre une heure avant la première dispo du jour, sinon à 07:00
+      const key = `${week}|${dayIdx}`;
+      if (key !== shownDay) {
+        shownDay = key;
+        const first = parts.find(r => !bg(r));
+        box.querySelector('[data-colbox]').scrollTop = Math.max(0, ((first ? first.a : 480) - 60) / 30 * CELL);
+      }
+    }
+    /** Jour affiché décalé de n : au-delà de la semaine, semaine voisine relue (dimanche → lundi suivant, et l'inverse). */
+    function dayStep(n) {
+      pick = null;
+      const j = dayIdx + n;
+      if (j >= 0 && j < 7) {
+        dayIdx = j;
+        return dayRender();
+      }
+      dayIdx = j < 0 ? 6 : 0;
+      setWeek(SD().addWeek(week, j < 0 ? -1 : 1));
+    }
+    /** Appui dans la vue « un jour » ; rend true s'il la concernait. */
+    function dayClick(e) {
+      const view = e.target.closest('[data-view-set]');
+      if (view) {
+        try {
+          localStorage.setItem(VIEW, view.dataset.viewSet);
+        } catch {
+          /* stockage indisponible : choix le temps de la page */
+        }
+        pick = null;
+        dayRender();
+        return true;
+      }
+      if (!e.target.closest('[data-dayview]') || !loaded()) return false;
+      const el = sel => e.target.closest(sel),
+        d0 = dayStart();
+      if (el('[data-dstep]')) dayStep(+el('[data-dstep]').dataset.dstep);
+      else if (el('[data-dpill]')) {
+        dayIdx = +el('[data-dpill]').dataset.dpill;
+        pick = null;
+        dayRender();
+      } else if (el('[data-dcancel]')) {
+        pick = null;
+        dayRender();
+      } else if (el('[data-dundo]')) ui.undo();
+      else if (el('[data-dall]')) ui.add([{
+        start: isoAt(d0),
+        end: isoAt(d0 + 864e5),
+        cat: ui.brush()
+      }]);
+      else if (el('[data-dx]')) {
+        // dispo : retirée entière (même si elle passe minuit) ; fond : effacé sur ce jour seulement
+        const r = dayParts(ui.get(), d0)[+el('[data-dx]').dataset.dx],
+          D = SD();
+        if (!r) return true;
+        if (D.timelineConfig().categories.find(c => c.id === r.cat)?.layer === 'background') ui.add([{
+          start: isoAt(d0 + r.a * 6e4),
+          end: isoAt(d0 + r.b * 6e4),
+          cat: '__erase'
+        }]);
+        else {
+          const d = ui.get();
+          ui.replace({
+            ...d,
+            ranges: d.ranges.filter(x => !(x.start === r.start && x.end === r.end && x.cat === r.cat))
+          });
+        }
+      } else if (el('[data-col]')) {
+        const y = e.clientY - el('[data-col]').getBoundingClientRect().top,
+          m = Math.max(0, Math.min(47, Math.floor(y / CELL))) * 30;
+        if (pick === null) {
+          pick = m;
+          dayRender();
+        } else {
+          const a = Math.min(pick, m),
+            b = Math.max(pick, m) + 30;
+          pick = null;
+          if (!ui.add([{
+              start: isoAt(d0 + a * 6e4),
+              end: isoAt(d0 + b * 6e4),
+              cat: ui.brush()
+            }])) dayRender();
+        }
+      }
+      return true;
+    }
+    // balayage horizontal sur la vue « un jour » : jour suivant ou précédent
+    let swipe = null;
+    host.addEventListener('touchstart', e => {
+      swipe = e.target.closest('[data-dayview]') && e.touches.length === 1 ? [e.touches[0].clientX, e.touches[0].clientY] : null;
+    }, {
+      passive: true
+    });
+    host.addEventListener('touchend', e => {
+      if (!swipe || !loaded()) return;
+      const dx = e.changedTouches[0].clientX - swipe[0],
+        dy = e.changedTouches[0].clientY - swipe[1];
+      swipe = null;
+      if (Math.abs(dx) > 60 && Math.abs(dy) < 40) dayStep(dx < 0 ? 1 : -1);
+    }, {
+      passive: true
+    });
+    window.addEventListener('repository-mobile-change', dayRender);
     /** Catégories du groupe choisi dans « Plage précise ». */
     function fillCats() {
       const D = SD(),
@@ -305,6 +531,7 @@
       if (av) extra = {
         appareils: {
           possedes: av.aircraft?.owned || [],
+          neophytes: av.aircraft?.novice || [],
           maitrises: av.aircraft?.mastered || [],
           ...(av.aircraft?.variants ? {
             variantes: av.aircraft.variants
@@ -348,9 +575,12 @@
         ], {
           e: r.error?.message || ''
         }), 'warn');
-        else msg(text || t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.',
+        else msg(text || (window.GitHubData?.on?.() ? t(['Enregistré dans le dépôt des données (GitHub).',
+          'Saved to the data repository (GitHub).', 'Im Daten-Repository gespeichert (GitHub).',
+          'Guardado en el repositorio de datos (GitHub).'
+        ]) : t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.',
           'Guardado en la carpeta de datos.'
-        ]), 'ok');
+        ])), 'ok');
       } catch (e) {
         if (`${t0}|${w0}` !== `${tri}|${week}`) return window.AppFramework?.notify?.(e.message, 'err');
         msg(e.message, 'err');
@@ -440,6 +670,7 @@
       if (e.target.matches('[data-wk-date]') && e.target.value) setWeek(SD().weekId(Date.parse(`${e.target.value}T12:00:00Z`)));
     });
     host.addEventListener('click', async e => {
+      if (dayClick(e)) return;
       const D = SD();
       const wk = e.target.closest('[data-wk]');
       if (wk) return setWeek(+wk.dataset.wk ? D.addWeek(week, +wk.dataset.wk) : D.weekId(Date.now()));

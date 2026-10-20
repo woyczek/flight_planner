@@ -1289,6 +1289,10 @@
   /** Graphe : carburant du trajet (échelle de gauche, courbe pleine) et temps du trajet (échelle de droite, courbe fine),
    *  chaque échelle dans la couleur de sa courbe ; un seul gris (niveaux non tenables) ; niveau du plan en trait plein,
    *  curseur en pointillés (placé par decUpdate). */
+  /** Pas des libellés de niveau de l'axe horizontal : une graduation sur k (1, 2, 5, 10…), pour garder au moins 40
+   *  unités entre deux « FL240 » (écran étroit : les libellés ne se chevauchent plus) ; span : largeur du tracé. */
+  const flEvery = (tk, xmax, span) => [1, 2, 5, 10, 20, 50].find(k => k * tk / (xmax || 1) * span >= 40) || 100;
+
   function drawDecision() {
     const D = S.dec,
       m = D.m,
@@ -1306,8 +1310,9 @@
       Yf = v => T + (1 - (v - af.lo) / (af.hi - af.lo || 1)) * (H - B - T),
       Yt = v => T + (1 - (v - at.lo) / (at.hi - at.lo || 1)) * (H - B - T);
     let g = "";
-    const tk = D.xmax > 30000 ? 5000 : D.xmax > 12000 ? 2000 : 1000;
-    for (let h = 0; h <= D.xmax; h += tk) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${T}" y2="${H - B}"/><text x="${X(h).toFixed(1)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    const tk = D.xmax > 30000 ? 5000 : D.xmax > 12000 ? 2000 : 1000,
+      every = flEvery(tk, D.xmax, W - Lm - R);
+    for (let h = 0, i = 0; h <= D.xmax; h += tk, i++) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${T}" y2="${H - B}"/>${i % every ? "" : `<text x="${X(h).toFixed(1)}" y="${H - B + 14}" text-anchor="middle">${flTxt(h)}</text>`}`;
     // graduations : carburant à gauche (quadrillage), temps à droite, chacune dans la couleur de sa courbe
     for (const v of af.ticks) g += `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yf(v).toFixed(1)}" y2="${Yf(v).toFixed(1)}"/><text class="ax-fuel" x="${Lm - 5}" y="${(Yf(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v, af.dec)}</text>`;
     for (const v of at.ticks) g += `<text class="ax-time" x="${W - R + 5}" y="${(Yt(v) + 4).toFixed(1)}">${hmTxt(v)}</text>`;
@@ -2118,8 +2123,9 @@
       Yf = Y(PF, fAx),
       Ys = Y(PS, sAx);
     let g = "";
-    const tk = xmax > 30000 ? 5000 : xmax > 12000 ? 2000 : 1000;
-    for (let h = 0; h <= xmax; h += tk) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${PV.t}" y2="${PS.b}"/><text x="${X(h).toFixed(1)}" y="${PS.b + 14}" text-anchor="middle">${flTxt(h)}</text>`;
+    const tk = xmax > 30000 ? 5000 : xmax > 12000 ? 2000 : 1000,
+      every = flEvery(tk, xmax, W - Lm - R);
+    for (let h = 0, i = 0; h <= xmax; h += tk, i++) g += `<line class="grid-line" x1="${X(h).toFixed(1)}" x2="${X(h).toFixed(1)}" y1="${PV.t}" y2="${PS.b}"/>${i % every ? "" : `<text x="${X(h).toFixed(1)}" y="${PS.b + 14}" text-anchor="middle">${flTxt(h)}</text>`}`;
     /** Graduations horizontales d'un panneau (valeurs à gauche). */
     const ticks = (ax, Yp) => ax.ticks.map(v => `<line class="grid-line" x1="${Lm}" x2="${W - R}" y1="${Yp(v).toFixed(1)}" y2="${Yp(v).toFixed(1)}"/><text x="${Lm - 5}" y="${(Yp(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v, ax.dec)}</text>`).join("");
     g += ticks(rAx, Yv) + ticks(fAx, Yf) + ticks(sAx, Ys);

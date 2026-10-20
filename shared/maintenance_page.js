@@ -822,7 +822,68 @@
       }));
       xpl.append(b);
     }
-    host.querySelectorAll('tr[data-src]').forEach(tr => {
+    // dépôt des données : c'est le dépôt distant de data/ (réglé au premier lancement, gardé par git, lu et changé auprès
+    // du lanceur : /__setup/sync-remote), pas un réglage du navigateur ; adresse https ou SSH (git@…)
+    const dataTr = host.querySelector('tr[data-src="dataRepo"]');
+    if (dataTr) {
+      const input = dataTr.querySelector('input'),
+        setup = (path, body) => fetch(`/__setup/${path}`, {
+          method: body ? 'POST' : 'GET',
+          headers: {
+            'X-SOG-Setup': '1',
+            'Content-Type': 'application/json'
+          },
+          body: body ? JSON.stringify(body) : undefined,
+          cache: 'no-store'
+        }).then(r => r.ok ? r.json() : null).catch(() => null);
+      input.type = 'text';
+      dataTr.querySelector('[data-reset]')?.remove(); // pas de défaut à rétablir : l'adresse est celle de git
+      const repo = await setup('sync-remote'),
+        gh = window.GitHubData?.on?.() ? window.GitHubData.config() : null,
+        link = (href, label) => `<a class="mt-link" href="${esc(href)}">${esc(t(label))}</a>`,
+        note = dataTr.querySelector('.mt-small') || dataTr.querySelector('td').appendChild(Object.assign(document.createElement(
+          'div'), {
+          className: 'mt-small'
+        }));
+      // appli sans lanceur (données par GitHub) : le dépôt est celui de Mon profil › Accès aux données
+      if (gh) {
+        input.value = `https://github.com/${gh.repo}`;
+        input.readOnly = true;
+        note.innerHTML = `${esc(t(['Données lues et écrites sur GitHub (branche {b}) : réglé dans', 'Data read and written on GitHub (branch {b}): set in', 'Daten auf GitHub gelesen und geschrieben (Zweig {b}): eingestellt unter', 'Datos leídos y escritos en GitHub (rama {b}): configurado en'], { b: gh.branch }))} ${link(nav.settingsUrl?.('dataAccess') || '../settings/profil.html?base=dataAccess', ['Mon profil › Accès aux données →', 'My profile › Data access →', 'Mein Profil › Datenzugang →', 'Mi perfil › Acceso a los datos →'])}`;
+      } else {
+        if (repo?.url && input.value !== repo.url) input.value = repo.url;
+        input.readOnly = !repo; // sans lanceur, personne pour enregistrer
+        note.innerHTML = !repo ? `${esc(t(['Sans lanceur : rien à régler ici — pour l’appli, l’accès aux données se règle dans', 'Without the launcher: nothing to set here — for the app, data access is set in', 'Ohne Starter: hier nichts einzustellen — für die App wird der Datenzugang eingestellt unter', 'Sin lanzador: nada que ajustar aquí; para la app, el acceso a los datos se configura en']))} ${link(nav.settingsUrl?.('dataAccess') || '../settings/profil.html?base=dataAccess', ['Mon profil › Accès aux données →', 'My profile › Data access →', 'Mein Profil › Datenzugang →', 'Mi perfil › Acceso a los datos →'])}` :
+          !repo.repo ? `${esc(t(['data/ n’est pas encore un dépôt git : donner l’adresse à la carte « Dépôt de données » du', 'data/ is not a git repository yet: give the address in the “Data repository” card of the', 'data/ ist noch kein Git-Repository: Adresse in der Karte „Daten-Repository“ angeben, im', 'data/ aún no es un repositorio git: indicar la dirección en la tarjeta «Repositorio de datos» del']))} ${link('premier_lancement.html?force', ['Premier lancement →', 'First run →', 'Ersten Start →', 'Primer inicio →'])}` :
+          esc(repo.url ? t([
+            'Dépôt distant « {r} » de data/, branche {b} ; une autre adresse est enregistrée par le lanceur (vérifiée par git ls-remote).',
+            'Remote “{r}” of data/, branch {b}; another address is saved by the launcher (checked with git ls-remote).',
+            'Remote „{r}“ von data/, Zweig {b}; eine andere Adresse speichert der Starter (geprüft mit git ls-remote).',
+            'Remoto «{r}» de data/, rama {b}; otra dirección la guarda el lanzador (comprobada con git ls-remote).'
+          ], {
+            r: repo.remote,
+            b: repo.branch
+          }) : t(['data/ sans dépôt distant : rien n’est partagé tant qu’aucune adresse n’est enregistrée.',
+            'data/ has no remote: nothing is shared until an address is saved.',
+            'data/ ohne Remote: nichts wird geteilt, solange keine Adresse gespeichert ist.',
+            'data/ sin remoto: nada se comparte mientras no se guarde una dirección.'
+          ]));
+      }
+      input.onchange = async () => {
+        const url = input.value.trim();
+        if (gh || !repo || !url || url === repo.url) return;
+        const r = await setup('sync-remote', {
+          url,
+          save: true
+        });
+        window.AppFramework?.notify?.([r?.saved?.message, r?.check?.message].filter(Boolean).join(' ') || t([
+          'Adresse non enregistrée (lanceur injoignable).', 'Address not saved (launcher unreachable).',
+          'Adresse nicht gespeichert (Starter nicht erreichbar).', 'Dirección no guardada (lanzador inaccesible).'
+        ]), r?.saved?.ok ? 'ok' : 'warn');
+        renderSources();
+      };
+    }
+    host.querySelectorAll('tr[data-src]:not([data-src="dataRepo"])').forEach(tr => {
       const k = tr.dataset.src,
         input = tr.querySelector('input');
       input.onchange = () => {
