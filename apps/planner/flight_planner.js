@@ -4168,9 +4168,10 @@ async function removeProfiles(ids, message, extraUndo) {
   let folder = null;
   try {
     folder = await removeFromPerfFolder(kept.map(([id]) => id))
-  } catch {
+  } catch (e) {
     folder = {
-      unwritable: true
+      unwritable: true,
+      error: e
     }
   }
   // marque gardée seulement pour un profil resté dans un fichier du dossier
@@ -4179,7 +4180,10 @@ async function removeProfiles(ids, message, extraUndo) {
   save();
   syncRemovedLine();
   const files = folder?.done ? [...new Set(folder.done.values())] : [],
-    extra = [files.length ? ktf(["Retiré aussi du dossier « {d} » : {list}.", "Also removed from the “{d}” folder: {list}.",
+    extra = [files.length ? ktf(folder.repo ? ["Retiré aussi du dépôt des données : {list}.",
+      "Also removed from the data repository: {list}.", "Auch aus dem Daten-Repository entfernt: {list}.",
+      "Retirado también del repositorio de datos: {list}."
+    ] : ["Retiré aussi du dossier « {d} » : {list}.", "Also removed from the “{d}” folder: {list}.",
       "Auch aus dem Ordner „{d}“ entfernt: {list}.", "Retirado también de la carpeta «{d}»: {list}."
     ], {
       d: folder.dir,
@@ -4191,7 +4195,14 @@ async function removeProfiles(ids, message, extraUndo) {
       "Aún en un archivo de la carpeta (CSV con varios perfiles): {list} — volverán en la próxima relectura."
     ], {
       list: folder.kept.join(", ")
-    }) : "", folder?.unwritable ? kt([
+    }) : "", folder?.unwritable && perfRepoOn() ? ktf([
+      "Dépôt des données non modifié ({e}) : le(s) profil(s) qui y sont reviendront à la prochaine relecture.",
+      "Data repository not changed ({e}): the profile(s) in it will come back at the next reread.",
+      "Daten-Repository nicht geändert ({e}): die Profile darin kommen beim nächsten Neulesen zurück.",
+      "Repositorio de datos no modificado ({e}): los perfiles que contiene volverán en la próxima relectura."
+    ], {
+      e: folder.error?.message || "?"
+    }) : folder?.unwritable ? kt([
       "Dossier performances non accessible en écriture : le(s) profil(s) qui y sont reviendront à la prochaine relecture.",
       "Performance folder not writable: the profile(s) in it will come back at the next reread.",
       "Leistungsordner nicht beschreibbar: die Profile darin kommen beim nächsten Neulesen zurück.",
@@ -4293,6 +4304,7 @@ async function freePerfName(h, name) {
  *  { unwritable } si le dossier n'est pas accessible en écriture, null sans dossier. */
 async function removeFromPerfFolder(ids) {
   if (!ids.length) return null;
+  if (perfRepoOn()) return removeFromPerfRepo(ids); // mode GitHub : la base des fiches du dépôt, pas de dossier
   const d = await perfDirWritable(true);
   if (!d?.h) return d;
   const h = d.h,
@@ -4343,10 +4355,69 @@ async function removeFromPerfFolder(ids) {
     h
   }
 }
-/** « Annuler » d'un retrait : fichiers du dossier remis comme avant (base réécrite, .bak renommé). */
+/** Mode GitHub : base des fiches du dépôt lue avec son sha, change(db) la modifie (faux : rien à écrire), puis écrite ;
+ *  changée entre-temps (autre pilote) : relue et refaite, 3 essais. Retour : vrai si elle a été écrite. */
+async function editPerfRepo(change) {
+  const G = window.GitHubData;
+  for (let i = 0; i < 3; i++) {
+    const cur = await G.getText(perfRepoFile());
+    if (!cur) return false;
+    const db = JSON.parse(cur.text);
+    if (db?.schema !== "flight-performance-db/v1" || !Array.isArray(db.profiles)) throw Error(perfRepoFile() +
+      " : flight-performance-db/v1 ?");
+    if (!change(db)) return false;
+    db.exportedAt = new Date().toISOString();
+    try {
+      await G.put(perfRepoFile(), JSON.stringify(db, null, 2), {
+        sha: cur.sha
+      })
+    } catch (e) {
+      if (e.conflict && i < 2) continue;
+      throw e
+    }
+    lastPerfRead = Date.now(); // ce changement du dépôt est le nôtre
+    return true
+  }
+  return false
+}
+/** Identifiant d'une fiche de la base du dépôt (calculé comme à sa lecture). */
+const perfRepoId = p => normalize(structuredClone(p), perfRepoFile()).id;
+/** Mode GitHub : retire les profils ids de la base des fiches du dépôt des données (un commit) — sans cela, une fiche
+ *  supprimée revenait à la relecture suivante. Retour au format de removeFromPerfFolder ({ ops, done, kept, dir, repo }) ;
+ *  erreur (jeton, réseau) : levée, comme un dossier non accessible en écriture. */
+async function removeFromPerfRepo(ids) {
+  const want = new Set(ids);
+  let gone = [];
+  await editPerfRepo(db => {
+    gone = db.profiles.filter(p => want.has(perfRepoId(p)));
+    db.profiles = db.profiles.filter(p => !want.has(perfRepoId(p)));
+    return gone.length > 0
+  });
+  return {
+    ops: gone.length ? [{
+      kind: "repo",
+      profiles: gone
+    }] : [],
+    done: new Map(gone.map(p => [perfRepoId(p), perfRepoFile()])),
+    kept: [],
+    dir: perfRepoFile(),
+    repo: true
+  }
+}
+/** « Annuler » d'un retrait : fichiers du dossier remis comme avant (base réécrite, .bak renommé) ; mode GitHub : fiches
+ *  retirées remises dans la base du dépôt (celles qu'un autre pilote aurait changées entre-temps ne sont pas écrasées). */
 async function restorePerfFolder(folder) {
   try {
     for (const op of [...folder.ops].reverse()) {
+      if (op.kind === "repo") {
+        await editPerfRepo(db => {
+          const have = new Set(db.profiles.map(perfRepoId)),
+            back = op.profiles.filter(p => !have.has(perfRepoId(p)));
+          db.profiles.push(...back);
+          return back.length > 0
+        });
+        continue
+      }
       await writePerfFile(folder.h, op.name, op.text);
       if (op.kind === "bak") await folder.h.removeEntry(op.bak)
     }

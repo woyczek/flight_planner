@@ -73,7 +73,7 @@ Storage and access map: `DONNEES_ET_ACCES.md`.
   GitHub mode at one decision point (`FileAccess.get()` returns none when `GitHubData.on()`; header of
   `shared/file_access.js`), so no page warns about “another copy” any more; the performance sheets are read from, and
   written back to, `planner/flight_performance_database_merged.fpdb.json` of the data repository (newer sheet wins,
-  `sha`-checked write); every page was loaded without `AircraftDB/` in the data repository (no JavaScript error; one
+  `sha`-checked write; a deleted sheet is removed from it too, “Undo” puts it back); every page was loaded without `AircraftDB/` in the data repository (no JavaScript error; one
   notification per page, empty type base) and with it; Settings › Maintenance keeps versions, the SIA sentence, browser
   caches and space, browser backup (downloaded) and journal.
 - **Still needing a workstation with the launcher**: assignments written by the Centre (`missionsDir()`), reading or
