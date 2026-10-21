@@ -115,6 +115,15 @@ The transports:
 
 - **`local`** (only "single user" ticked): no exchange. A pass applies the queue to the cache, and the cache is the
   truth.
+  - **Reference source.** `reference` files (the SIA and aircraft bases) still need a source, which
+    `configure({ references })` gives: a read-only transport (`head`, `tree`, `read`). The frame passes the launcher
+    that serves the page, otherwise the configured GitHub repository, otherwise nothing (the public website never
+    carries these bases).
+  - Reference files are read from it at the first read, and `list` adds its tree's reference paths to the cache.
+  - A local pass revalidates the cached references against it. A failure (offline) leaves the pass successful, with a
+    `warning`.
+  - Nothing is ever written to the source.
+  - The background pass runs when such a source exists.
 - **`github`** (`frame/store/transport_github.js`): the data repository through the GitHub git data API, with a
   fine-grained device token (contents read and write on that repository only). The token is kept in `localStorage`
   `githubData:frame`, excluded from browser backups.

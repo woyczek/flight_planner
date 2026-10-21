@@ -56,8 +56,9 @@ const aerodb = AeroDB.create({
 
 `frame/app.js` mounts it this way (`ctx.aerodb`). Checked on 21 October with the launcher transport over the 13
 reference zones: the listing comes from the frame's tree, only the files asked for are read, the whole world is
-identical, and a republished file gives one `change` event and a fresh read of its zone. With the **local** transport
-(single user, no exchange), the data layer reads no reference file, so aerodb answers empty: see DECISIONS.md.
+identical, and a republished file gives one `change` event and a fresh read of its zone. With the **local**
+transport (single user, no exchange), the reference files come from the launcher serving the page, otherwise from the
+configured GitHub repository. On the public website with neither, aerodb answers empty.
 
 Scripts, in this order: `frame/aerodb/zones.js`, `frame/aerodb/aircraft.js`, `frame/aerodb/aerodb.js`.
 

@@ -143,8 +143,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   - Administrator manuals (4 languages) and `docs/technique/DONNEES_ET_ACCES.md` updated.
 - **aerodb mounted by the frame: no longer forgets a zone when a file first arrives.** The frame's data layer reports a
   reference file entering its cache as a change. aerodb now forgets a zone only when a file it already read gets a new
-  revision. Checked through `frame/index.html` with the launcher transport. Open gap: the local transport reads no
-  reference file (see `frame/aerodb/DECISIONS.md`).
+  revision. Checked through `frame/index.html` with the launcher transport.
+- **Frame: reference files with the local transport.** In single-user mode (no exchange, the default), the data layer
+  read no `reference` file, so aerodb, and the fuel module through it, had no SIA base and no aircraft base.
+  - `FrameData.configure({ references })` now takes a read-only source for those files: the launcher that serves the
+    page, otherwise the configured GitHub repository.
+  - Files are read on demand and revalidated at sync. Nothing is ever sent, and offline the pass still succeeds.
+  - New scenario in `frame/store/test/`; `frame/SPEC.md` and `DECISIONS.md` updated.
 
 ### Added
 
