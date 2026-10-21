@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Route field: coordinates typed in any common way** (map studio, Flight maps, Fuel planner) — decimal degrees,
+  degrees and minutes or degrees, minutes, seconds, hemisphere letters before or after (O = west), decimal point or
+  comma, packed ICAO-like digits of any precision (“441819584N00032421849733W”), or signed decimals (“+44.18,-0.038”)
+  are rewritten in the flight plan format when leaving the field: to the minute (“4411N00002W”) when the position falls
+  exactly on it, otherwise to the second (“441048N0000217W”); a notification lists what changed. Coordinates already in
+  ICAO form and unsigned decimal “lat lon” are left as they are; “Copy ICAO” still rounds to the minute
+  (`SiaProfile.normalizeCoords`, `SiaProfile.coordHelper`, `shared/carto/vertical_profile.js`; help text and user manual,
+  4 languages).
 - **Settings › Installation in GitHub mode** (app without the launcher, same on a desktop browser): the page is reduced
   to a single “Data access” card — repository (link) and branch, access status (token check), last successful read
   (new `GitHubData.lastRead()`), writes pending in the browser outbox with a “Synchronise” button, the aircraft type

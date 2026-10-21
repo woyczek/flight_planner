@@ -1589,6 +1589,10 @@ Ce bloc relie trois vues : le plan de vol (texte), la carte et la coupe vertical
 - « Tracer » : dessine la coupe verticale. « Carburant » : ouvre le planificateur carburant avec cette route (distance, niveau, route vraie, appareil).
 - « Copier OACI » : copie le plan de vol OACI strict (points non publiés en coordonnées).
 - « Syntaxe et utilisation » : rappel des formes acceptées (balises, points de report VFR « MM-CV », « REN300010 », coordonnées « 4330N00125E », niveaux « /A035 », « VFR »…).
+- Coordonnées écrites autrement : tapez-les comme vous les avez (« 44.18N 00.038W », « N44,18-W00,034 »,
+  « 44°19'52"N 00°59'59"W », « +44.18,-0.038 », « 4418N0003W »…) ; à la sortie du champ, elles sont mises au format du plan
+  de vol, à la minute (« 4411N00002W ») si la position y tombe juste, sinon à la seconde (« 441048N0000217W ») ; une
+  notification dit ce qui a été réécrit. « Copier OACI » arrondit toujours à la minute.
 - Aux niveaux 1 à 3 restent le champ de route, « Niveau », « SimBrief » et « Syntaxe et utilisation » ; le menu « Voies aériennes » / « RTBA », « Chercher », « Tracer », « Carburant » et « Copier OACI » sont au niveau Expert.
 
 Sur la carte : glissez un point pour le déplacer (il s'aimante sur balises, points de report et terrains), cliquez sur la route pour insérer un point, clic droit pour en supprimer un. Sur la coupe : clic pour ajouter un point à cette altitude, glisser pour changer l'altitude, clic droit pour supprimer.
