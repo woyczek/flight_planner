@@ -15,28 +15,33 @@ How the frame mounts the fuel module and what the module reads and writes. The r
 | `modules/fuel/test/quote.html` | bench: known cases taken from the V2 page, every displayed value found again |
 | `modules/fuel/test/levels.html` | bench: level decision, curves and climb instructions against the V2 view's state |
 | `modules/fuel/test/sheets.html` | bench: sheets functions against the V2 functions on the same inputs (`sheets_v2.json`) |
-| `modules/fuel/index.js` | the module mounted by the frame (lot 2b: `mount(el, ctx)` / `unmount()`) |
+| `modules/fuel/module.js` | the module mounted by the frame: `meta`, `mount(el, ctx)`, `unmount()`; screens Plan and Sheets (SPEC § 9) |
 
 Load `performance_model.js`, then `model.js`, `levels.js`, `perf_prompt.js`, `sheets.js`. None touches the page, the
 network or the storage. `FuelSheets.configure({ aircraft: await ctx.aerodb.aircraft(), profiles: () => sheetsById,
 active: () => sheet, lang: () => ctx.lang(), t: ctx.t, tf, fleet })` before use.
 
-## 2. Mounting (lot 2b, on the frame's loader)
+## 2. Mounting (frame loader, `frame/SPEC.md` § 3.2)
 
-`mount(el, ctx)` with `ctx = { data, aerodb, t, notify, ask, askText }`, `unmount()`. Declared to the frame:
+The Pilot application lists the module in `frame/app.js` (`{ id: 'fuel', label: Fuel, icon: '⛽' }`, first verb).
+`mount(el, ctx)` uses `ctx.data`, `aerodb`, `t`, `lang`, `notify`, `ask`, `askText`, `net` and `identity`; `unmount()`
+stops its watchers and observers (a pending write of the current flight or of the settings still leaves). `meta`:
 
 ```js
-reads: ['planner/', 'pilot/'],
+reads: ['planner/', 'pilot/', 'cache/fuel/'],
 writes: [
   { prefix: 'planner/flight_performance_database_merged.fpdb.json', merge: 'keyed:profiles:id' },
-  { prefix: 'pilot/<trigram>/fuel.json', merge: 'record' },
-  { prefix: 'pilot/<trigram>/current_flight.json', merge: 'record' }   // shared with maps
+  { prefix: 'pilot/', merge: 'record' },          // fuel.json and current_flight.json (shared with maps and hello)
+  { prefix: 'cache/fuel/', policy: 'cache' }      // last SimBrief OFP, screen and folded blocks: this device only
 ]
 ```
 
-Asked of the frame (agreed 22 Oct 2026, to be delivered by the frame): a **cache** policy for the last SimBrief OFP (a
-document of the device, never synchronised); an **outgoing call** to simbrief.com through the frame (`ctx.net`), the
-SimBrief identifier read from the identity (settings module), never typed in fuel.
+- The pilot's documents are `pilot/<trigram>/…` (the identity's trigram; `ANON` without identity, as the example
+  module does).
+- SimBrief: `ctx.net.fetch('https://www.simbrief.com/api/xml.fetcher.php?userid|username=…&json=v2')`, the identifier
+  read from `ctx.identity.simbrief`; offline, the frame's 503 `x-sog-offline` gives a warning and nothing else.
+- The OFP is kept in `cache/fuel/last_ofp.json` (`put(…, { policy: 'cache' })`): never sent; only its summary goes into
+  the current flight.
 
 ## 3. The current flight — `pilot/<trigram>/current_flight.json`
 

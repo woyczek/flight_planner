@@ -5,7 +5,7 @@ seeing its code. The reference implementation is `modules/fuel/model.js` (the pu
 `modules/fuel/levels.js` (the level decision and the climb instructions, pure), `modules/fuel/sheets.js` (the
 performance sheets: reading, writing, completing, merging, ChatGPT; pure) with
 `modules/fuel/performance_model.js` (the calibrated flight mechanics, copied from V2 unchanged); the module's screens
-(`modules/fuel/index.js`) come with lot 2b, on the frame's module loader. How the frame mounts it and what it reads and
+are `modules/fuel/module.js`, mounted by the frame's loader (§ 9). How the frame mounts it and what it reads and
 writes: [INTEGRATION.md](INTEGRATION.md). Choices, measurements and their dates: [DECISIONS.md](DECISIONS.md).
 
 **How to use this document as a prompt.** Ask for plain JavaScript files (no ES module syntax, no dependency) that
@@ -116,3 +116,47 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   several sheets, in the page language; the reply's keys checked against the schema of `perf_prompt.js`.
 - Environment (`FuelSheets.configure`): aerodb's aircraft base, the existing sheets, the active sheet, the texts and
   the language; nothing else is read.
+
+## 9. Screens (`modules/fuel/module.js`)
+
+An ES module for the frame (`meta`, `mount(el, ctx)`, `unmount()`); it loads the pure files above once, with `import()`.
+Styles are scoped to `[data-module="fuel"]` and built on the frame's tokens and classes; no global sheet. Two screens
+inside the module, switched by two buttons at the top, the last one kept on the device (`cache/fuel/ui.json`).
+
+- **Plan**, one column on a phone, the first three blocks side by side on a wide screen:
+  1. **Aircraft**: the sheets of the shared database, or "other type" (an ICAO code: aerodb's estimate); the origin
+     of the cruise fuel flow (this flight's entry, the sheet's RPM table or cruise flow, Poll-Schumann, SimBrief, the
+     type estimate) and whether it is approximate.
+  2. **Route**: departure, arrival, alternate; distance and true track derived from the points (aerodb `coords` of
+     each identifier, or "ID lat lon" entries as the OFP gives them), typed by hand when nothing resolves; the
+     detailed route folded; the unknown points listed. "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
+     of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
+     deviation and aircraft taken into the current flight.
+  3. **Level and wind**: level (FL), climb goal (§ 7), wind direction and speed (speed only or nothing: range), ISA
+     deviation; IAS and rate for the manual goal.
+  4. **Level decision**: a drawing of the whole trip's fuel (solid) and time (dashed) by level, extrapolated beyond
+     the ceiling (dotted), the levels that cannot be flown shaded, the ceiling, the least fuel (dot) and the fastest
+     (square), the plan's level (vertical line). A tap on the drawing sets the level (rounded to the series' step,
+     within the flyable levels); two buttons take the least-fuel and the fastest levels.
+  5. **Result**, sticky at the bottom: block fuel (a range when the wind is unknown), trip, time, top of descent,
+     approximate source and MTOW warnings.
+  - Folded: the quote's details (taxi, climb, cruise, descent with time and distance, contingency, reserve, block),
+    the climb instructions (drawing of altitude against time with the IAS at each reading, then the table: throttle,
+    RPM, IAS, rate, fuel flow, Mach, time, fuel), the quote settings (taxi and reserve minutes, contingency, displayed
+    unit, this flight's cruise fuel flow for the sheet).
+- **Sheets**: the list (name, type, unit, origin, empty fields, date; "Use" sets it for the flight, "Edit");
+  import of files (CSV, JSON, `.lnmperf`, SimBrief OFP) or of a pasted text (the same, or a ChatGPT answer); a new
+  sheet from an ICAO code (SimBrief type data when aerodb has them); a sheet from the last OFP (calibrated on its
+  navlog). The editor: the fields by group (labels in the four languages), the RPM table read only, completion from
+  EUROCONTROL or from another sheet, the ChatGPT request (whole sheet or empty fields, copied) and its answer pasted,
+  export `.lnmperf` and JSON, deletion after a question.
+- **Every change of a sheet goes through a preview**: one line per changed field and per RPM row, before and after,
+  ticked by default (a EUROCONTROL value replacing a filled field is not ticked); "Apply the selection" writes only the
+  ticked lines (`pickChanges`), dated `updatedAt`. A new sheet is shown whole, without boxes. Several sheets read at
+  once are previewed one after the other.
+- **Writes**: the sheets database whole (sheets without their working keys `_…`, the other fields of the file kept);
+  the current flight after a quiet time (read again, own fields changed, the rest kept, `updated_at`); the settings
+  likewise. A change of the current flight written elsewhere (maps, another device) redraws the screen when no field
+  has the focus.
+- **Phone**: no horizontal scroll at 375 px (wide tables scroll inside their block), touch targets of the frame
+  (44 px), drawings redrawn at the width of their block.
