@@ -1,0 +1,541 @@
+(() => {
+  'use strict';
+  // V3 frame — squelette d'une application (frame/SPEC.md § 3, frame/INTEGRATION.md) : l'appli Pilote.
+  //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran, tiroir sur téléphone ;
+  //     l'adresse (#module) suffit à revenir sur un écran ; écrans du cadre : #conflicts, #device ;
+  //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
+  //     unmount() ; ctx = { data (adaptateur de la couche de données, préfixes déclarés dans meta), aerodb (service
+  //     unique), t, lang, notify, ask, askText, net, identity (lecture seule) } ; un module ne charge aucune feuille de
+  //     style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…) ;
+  //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet
+  //     appareil seul) ; clic : synchroniser, ou l'écran des conflits s'il y en a ;
+  //   · transport choisi d'après les usages de l'appareil (document local device/usages.json, écrit par le module
+  //     settings — en attendant, par l'écran #device du cadre) : aucun usage d'échange coché → local seul ; sinon le
+  //     lanceur si la page en est servie, sinon GitHub s'il est réglé, sinon local ;
+  //   · identité (device/identity.json : trigramme, VID IVAO, CID VATSIM, identifiant SimBrief) passée aux modules en
+  //     lecture seule, objet vide en son absence.
+  const FD = window.FrameData;
+  const ROOT = new URL('../', document.currentScript.src).href;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+
+  // ---------------------------------------------------------------- l'application
+  const APP = {
+    id: 'pilot',
+    name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
+    // un module = un verbe ; sept au plus
+    modules: [{
+      id: 'hello',
+      label: ['Essayer', 'Try', 'Ausprobieren', 'Probar'],
+      icon: '◎'
+    }]
+  };
+
+  // ---------------------------------------------------------------- langue et textes (fr d'abord)
+  const LANGS = ['fr', 'en', 'de', 'es'];
+  const lang = () => {
+    let l = '';
+    try {
+      l = localStorage.getItem('sogFrame:lang') || localStorage.getItem('repositoryLanguageMode') || '';
+    } catch {
+      /* stockage indisponible */
+    }
+    return LANGS.includes(l) ? l : LANGS.find(x => (navigator.language || '').toLowerCase().startsWith(x)) || 'fr';
+  };
+  /** Texte d'une ligne [fr, en, de, es] dans la langue de l'appli, {nom} remplacés ; espace fine avant : ; ! ? en
+   *  français. */
+  const t = (row, v = {}) => {
+    const l = lang(),
+      s = String((Array.isArray(row) ? row[LANGS.indexOf(l)] || row[0] : row) ?? '').replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m);
+    return l === 'fr' ? s.replace(/ ([:;!?»])/g, ' $1').replace(/« /g, '« ') : s;
+  };
+  const T = {
+    sync: {
+      ok: ['À jour', 'Up to date', 'Aktuell', 'Al día'],
+      ago: ['à jour, il y a {d}', 'up to date, {d} ago', 'aktuell, vor {d}', 'al día, hace {d}'],
+      pending: ['{n} en attente', '{n} pending', '{n} ausstehend', '{n} pendiente(s)'],
+      syncing: ['Synchronisation…', 'Syncing…', 'Synchronisiere…', 'Sincronizando…'],
+      offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión'],
+      conflicts: ['{n} conflit(s)', '{n} conflict(s)', '{n} Konflikt(e)', '{n} conflicto(s)'],
+      error: ['Erreur de synchronisation', 'Sync error', 'Sync-Fehler', 'Error de sincronización'],
+      local: ['Sur cet appareil', 'On this device', 'Auf diesem Gerät', 'En este dispositivo'],
+      title: ['Synchronisation : {tr} — dernière réussie : {last} — {n} écriture(s) en attente{e}',
+        'Synchronisation: {tr} — last success: {last} — {n} pending write(s){e}',
+        'Synchronisation: {tr} — zuletzt erfolgreich: {last} — {n} ausstehende Schreibvorgänge{e}',
+        'Sincronización: {tr} — última correcta: {last} — {n} escritura(s) pendiente(s){e}'
+      ],
+      never: ['jamais', 'never', 'nie', 'nunca'],
+      done: ['Synchronisé : {p} reçu(s), {s} envoyé(s).', 'Synchronised: {p} received, {s} sent.',
+        'Synchronisiert: {p} empfangen, {s} gesendet.', 'Sincronizado: {p} recibido(s), {s} enviado(s).'
+      ],
+      failed: ['Synchronisation impossible : {e}', 'Synchronisation failed: {e}', 'Synchronisation fehlgeschlagen: {e}',
+        'Sincronización imposible: {e}'
+      ],
+      offlineNote: ['Hors ligne : vos écritures attendent et partiront à la prochaine synchronisation.',
+        'Offline: your writes are waiting and will leave at the next synchronisation.',
+        'Offline: Ihre Änderungen warten und gehen bei der nächsten Synchronisation hinaus.',
+        'Sin conexión: sus escrituras esperan y saldrán en la próxima sincronización.'
+      ],
+      conflictNote: [
+        '{n} fichier(s) modifié(s) ailleurs en même temps : la version la plus récente est gardée, l’autre reste consultable (conflits).',
+        '{n} file(s) changed elsewhere at the same time: the newest version is kept, the other one stays available (conflicts).',
+        '{n} Datei(en) gleichzeitig anderswo geändert: die neueste Version bleibt, die andere ist einsehbar (Konflikte).',
+        '{n} archivo(s) modificado(s) en otro lugar a la vez: se conserva la versión más reciente, la otra sigue disponible (conflictos).'
+      ]
+    },
+    ok: ['OK', 'OK', 'OK', 'Aceptar'],
+    cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+    close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    menu: ['Menu', 'Menu', 'Menü', 'Menú'],
+    device: ['Cet appareil', 'This device', 'Dieses Gerät', 'Este dispositivo'],
+    loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
+      'Modul „{m}“ konnte nicht geladen werden: {e}', 'No se pudo cargar el módulo «{m}»: {e}'
+    ]
+  };
+  /** Durée lisible depuis une date ISO (« 4 min », « 2 h », « 3 j »). */
+  const ago = iso => {
+    const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1e3);
+    return s < 60 ? `${Math.round(s)} s` : s < 3600 ? `${Math.round(s / 60)} min` : s < 86400 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} j`;
+  };
+
+  // ---------------------------------------------------------------- notifications et questions (jamais de dialogue natif)
+  /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. */
+  function notify(text, kind = 'info') {
+    const n = document.createElement('div');
+    n.className = 'f-note';
+    n.dataset.kind = kind;
+    n.innerHTML = `<span>${esc(text)}</span><button type="button" aria-label="${esc(t(T.close))}">✕</button>`;
+    n.querySelector('button').onclick = () => n.remove();
+    $('fNotes').append(n);
+    setTimeout(() => n.remove(), kind === 'err' ? 12e3 : 6e3);
+  }
+  /** Fenêtre de question du cadre : html du contenu, boutons ; promesse résolue par onDone(valeur) ; Échap : annuler. */
+  function modal(html, onReady) {
+    return new Promise(res => {
+      const m = document.createElement('div');
+      m.className = 'f-modal';
+      m.innerHTML = `<div role="dialog" aria-modal="true">${html}</div>`;
+      const close = v => {
+        m.remove();
+        document.removeEventListener('keydown', key);
+        res(v);
+      };
+      const key = e => {
+        if (e.key === 'Escape') close(null);
+      };
+      document.addEventListener('keydown', key);
+      document.body.append(m);
+      onReady(m, close);
+    });
+  }
+  /** Question oui / non : promesse de vrai (OK) ou faux. */
+  const ask = (text, o = {}) => modal(`<p>${esc(text)}</p><div class="f-row"><button type="button" class="primary" data-ok>${esc(o.ok || t(T.ok))}</button><button type="button" data-no>${esc(o.cancel || t(T.cancel))}</button></div>`,
+    (m, close) => {
+      m.querySelector('[data-ok]').onclick = () => close(true);
+      m.querySelector('[data-no]').onclick = () => close(false);
+      m.querySelector('[data-ok]').focus();
+    }).then(v => !!v);
+  /** Saisie d'un texte : promesse du texte, null si annulé. */
+  const askText = (text, o = {}) => modal(`<label class="f-field">${esc(text)}<input data-in value="${esc(o.value || '')}" placeholder="${esc(o.placeholder || '')}"></label><div class="f-row"><button type="button" class="primary" data-ok>${esc(o.ok || t(T.ok))}</button><button type="button" data-no>${esc(o.cancel || t(T.cancel))}</button></div>`,
+    (m, close) => {
+      const i = m.querySelector('[data-in]');
+      m.querySelector('[data-ok]').onclick = () => close(i.value);
+      m.querySelector('[data-no]').onclick = () => close(null);
+      i.addEventListener('keydown', e => {
+        if (e.key === 'Enter') close(i.value);
+      });
+      i.focus();
+    });
+
+  // ---------------------------------------------------------------- appels sortants des modules
+  /** Réponse « hors ligne » immédiate (statut 503, en-tête x-sog-offline), jamais d'exception. */
+  const offline = () => new Response(null, {
+    status: 503,
+    statusText: 'offline',
+    headers: {
+      'x-sog-offline': '1'
+    }
+  });
+  const net = {
+    online: () => navigator.onLine !== false,
+    /** fetch par le cadre : hors ligne, réponse 503 tout de suite ; échec réseau : la même, sans exception. */
+    async fetch(url, init) {
+      if (navigator.onLine === false) return offline();
+      try {
+        return await fetch(url, init);
+      } catch {
+        return offline();
+      }
+    }
+  };
+
+  // ---------------------------------------------------------------- appareil : usages, identité, transport
+  const own = FD.adapter({
+    id: 'frame',
+    reads: ['device/'],
+    writes: [{
+      prefix: 'device/',
+      policy: 'cache'
+    }]
+  });
+  let identity = Object.freeze({}),
+    usages = {};
+  /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
+  async function loadDevice() {
+    identity = Object.freeze({
+      ...((await own.get('device/identity.json')) || {})
+    });
+    usages = (await own.get('device/usages.json')) || {};
+    configured = await chooseTransport();
+    FD.configure({
+      identity: {
+        trigram: identity.trigram || ''
+      },
+      transport: configured
+    });
+  }
+  /** Transport des usages cochés : aucun échange → local ; lanceur si la page en est servie ; GitHub s'il est réglé. */
+  async function chooseTransport() {
+    const exchange = usages.devices || usages.users;
+    if (!exchange && !usages.backend) return FD.transports.local();
+    const L = await FD.launcher.detect();
+    if (L?.data) return FD.launcher({
+      exchange: !!exchange && L.dataGit,
+      author: () => identity.trigram || ''
+    });
+    if (FD.github.config()) return FD.github();
+    return {
+      ...FD.transports.local(),
+      missing: true
+    };
+  }
+
+  // ---------------------------------------------------------------- bouton de synchronisation
+  let lastSyncState = '';
+  /** Écrit l'état du bouton (seulement s'il change). */
+  function paintSync(s) {
+    let state, label;
+    if (s.syncing)[state, label] = ['syncing', t(T.sync.syncing)];
+    else if (s.conflicts)[state, label] = ['conflicts', t(T.sync.conflicts, {
+      n: s.conflicts
+    })];
+    else if (s.transport === 'local' && !s.pending)[state, label] = ['local', t(T.sync.local)];
+    else if (!s.online || s.lastError === 'offline')[state, label] = ['offline', s.pending ? `${t(T.sync.offline)} · ${t(T.sync.pending, { n: s.pending })}` : t(T.sync.offline)];
+    else if (s.lastError)[state, label] = ['error', t(T.sync.error)];
+    else if (s.pending)[state, label] = ['pending', t(T.sync.pending, {
+      n: s.pending
+    })];
+    else [state, label] = ['ok', s.lastSync ? t(T.sync.ago, {
+      d: ago(s.lastSync)
+    }) : t(T.sync.ok)];
+    const title = t(T.sync.title, {
+      tr: s.transport,
+      last: s.lastSync ? new Date(s.lastSync).toLocaleString() : t(T.sync.never),
+      n: s.pending,
+      e: s.lastError ? ` — ${s.lastError}` : ''
+    });
+    const key = JSON.stringify([state, label, title]);
+    if (key === lastSyncState) return;
+    lastSyncState = key;
+    const b = $('fSync');
+    b.dataset.state = state;
+    b.title = title;
+    b.querySelector('.f-lbl').textContent = label;
+  }
+  /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
+  async function syncNow(quiet = false) {
+    const r = await FD.sync();
+    if (r.conflicts) notify(t(T.sync.conflictNote, {
+      n: r.conflicts
+    }), 'warn');
+    if (quiet) return r;
+    if (r.error === 'offline') notify(t(T.sync.offlineNote), 'warn');
+    else if (r.error) notify(t(T.sync.failed, {
+      e: r.error
+    }), 'err');
+    else notify(t(T.sync.done, {
+      p: r.pulled.length,
+      s: r.pushed
+    }), 'ok');
+    return r;
+  }
+
+  // ---------------------------------------------------------------- navigation
+  const ROUTES = {
+    conflicts: renderConflicts,
+    device: renderDevice
+  };
+  /** Menu des verbes (une fois, puis l'entrée courante marquée). */
+  function renderMenu(active) {
+    const ul = $('fMenu');
+    if (!ul.children.length) ul.innerHTML = APP.modules.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}"><span aria-hidden="true">${esc(m.icon || '•')}</span>${esc(t(m.label))}</a></li>`).join('');
+    for (const a of ul.querySelectorAll('a')) {
+      const on = a.dataset.id === active;
+      if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
+        'aria-current');
+    }
+  }
+  let current = null; // { id, mod }
+  /** Affiche l'écran de l'adresse (#module, #conflicts, #device) ; démonte le module précédent. */
+  async function route() {
+    const id = decodeURIComponent(location.hash.slice(1)) || APP.modules[0]?.id || 'device';
+    document.body.classList.remove('f-nav-open');
+    $('fBurger').setAttribute('aria-expanded', 'false');
+    if (current?.mod?.unmount) try {
+      current.mod.unmount();
+    } catch (e) {
+      console.error(e);
+    }
+    current = null;
+    const view = $('fView');
+    view.replaceChildren();
+    renderMenu(id);
+    if (ROUTES[id]) return ROUTES[id](view);
+    const entry = APP.modules.find(m => m.id === id) || APP.modules[0];
+    if (!entry) return renderDevice(view);
+    try {
+      const mod = await import(new URL(`modules/${entry.id}/module.js`, ROOT).href);
+      const meta = mod.meta || {};
+      if (meta.id && meta.id !== entry.id) throw new Error(`meta.id ${meta.id} ≠ ${entry.id}`);
+      const el = document.createElement('section');
+      el.className = 'f-module';
+      el.dataset.module = entry.id;
+      view.append(el);
+      current = {
+        id: entry.id,
+        mod
+      };
+      await mod.mount(el, ctxFor(entry, meta));
+    } catch (e) {
+      view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
+      notify(t(T.loadErr, {
+        m: entry.id,
+        e: e.message || e
+      }), 'err');
+    }
+  }
+  /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
+   *  appels sortants, identité en lecture seule. */
+  function ctxFor(entry, meta) {
+    return {
+      app: APP.id,
+      data: FD.adapter({
+        id: entry.id,
+        reads: meta.reads || [],
+        writes: meta.writes || []
+      }),
+      aerodb,
+      t,
+      lang,
+      notify,
+      ask,
+      askText,
+      net,
+      get identity() {
+        return identity;
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------- écran des conflits
+  const C = {
+    title: ['Conflits', 'Conflicts', 'Konflikte', 'Conflictos'],
+    intro: [
+      'Fichiers modifiés ici et ailleurs en même temps : la version la plus récente a été gardée ; l’autre est ici, vous pouvez la reprendre.',
+      'Files changed here and elsewhere at the same time: the newest version was kept; the other one is here, you can take it back.',
+      'Hier und anderswo gleichzeitig geänderte Dateien: die neueste Version wurde behalten; die andere ist hier, Sie können sie zurücknehmen.',
+      'Archivos modificados aquí y en otro lugar a la vez: se conservó la versión más reciente; la otra está aquí, puede recuperarla.'
+    ],
+    none: ['Aucun conflit.', 'No conflict.', 'Kein Konflikt.', 'Ningún conflicto.'],
+    all: ['Montrer aussi les conflits déjà vus', 'Also show conflicts already seen', 'Auch gesehene Konflikte zeigen',
+      'Mostrar también los conflictos ya vistos'
+    ],
+    lostLocal: ['Version écartée : celle de cet appareil', 'Set aside: this device’s version', 'Verworfen: die Version dieses Geräts',
+      'Descartada: la versión de este dispositivo'
+    ],
+    lostRemote: ['Version écartée : celle d’un autre appareil', 'Set aside: another device’s version',
+      'Verworfen: die Version eines anderen Geräts', 'Descartada: la versión de otro dispositivo'
+    ],
+    kept: ['Version gardée', 'Kept version', 'Behaltene Version', 'Versión conservada'],
+    restore: ['Reprendre cette version', 'Take this version back', 'Diese Version zurücknehmen', 'Recuperar esta versión'],
+    seen: ['Vu', 'Seen', 'Gesehen', 'Visto'],
+    restored: ['Version reprise : elle partira à la prochaine synchronisation.',
+      'Version taken back: it will leave at the next synchronisation.',
+      'Version zurückgenommen: sie geht bei der nächsten Synchronisation hinaus.',
+      'Versión recuperada: saldrá en la próxima sincronización.'
+    ]
+  };
+  async function renderConflicts(view, all = false) {
+    const list = (await FD.conflicts()).filter(c => all || !c.seen).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    view.innerHTML = `<h1>${esc(t(C.title))}</h1><p class="f-muted">${esc(t(C.intro))}</p><label class="f-check"><input type="checkbox" data-all ${all ? 'checked' : ''}>${esc(t(C.all))}</label>${list.length ? list.map(c => `<div class="f-card" data-id="${c.id}"><b>${esc(c.path)}</b> <span class="f-muted">${esc(new Date(c.at).toLocaleString())}</span><details><summary>${esc(t(c.side === 'local' ? C.lostLocal : C.lostRemote))}</summary><pre>${esc(c.lost)}</pre></details><details><summary>${esc(t(C.kept))}</summary><pre>${esc(c.kept)}</pre></details><div class="f-row">${c.restored ? '' : `<button type="button" class="primary" data-restore>${esc(t(C.restore))}</button>`}${c.seen ? '' : `<button type="button" data-seen>${esc(t(C.seen))}</button>`}</div></div>`).join('') : `<p class="f-card">${esc(t(C.none))}</p>`}`;
+    view.querySelector('[data-all]').onchange = e => renderConflicts(view, e.target.checked);
+    view.onclick = async e => {
+      const card = e.target.closest('[data-id]');
+      if (!card) return;
+      const id = +card.dataset.id;
+      if (e.target.closest('[data-restore]')) {
+        await FD.restore(id);
+        notify(t(C.restored), 'ok');
+      } else if (e.target.closest('[data-seen]')) await FD.conflictSeen(id);
+      else return;
+      renderConflicts(view, all);
+    };
+  }
+
+  // ---------------------------------------------------------------- écran de l'appareil (en attendant le module settings)
+  const D = {
+    intro: ['Réglages de cet appareil, gardés ici seulement (jamais synchronisés). Le module « Réglages » les reprendra.',
+      'Settings of this device, kept here only (never synchronised). The Settings module will take them over.',
+      'Einstellungen dieses Geräts, nur hier gespeichert (nie synchronisiert). Das Modul „Einstellungen“ übernimmt sie.',
+      'Ajustes de este dispositivo, guardados solo aquí (nunca sincronizados). El módulo «Ajustes» los retomará.'
+    ],
+    identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
+    trigram: ['Trigramme', 'Trigram', 'Trigramm', 'Trigrama'],
+    ivao: ['VID IVAO', 'IVAO VID', 'IVAO-VID', 'VID IVAO'],
+    vatsim: ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'],
+    simbrief: ['Identifiant SimBrief', 'SimBrief ID', 'SimBrief-ID', 'Identificador SimBrief'],
+    usages: ['Usages (plusieurs possibles)', 'Usages (several possible)', 'Nutzungen (mehrere möglich)', 'Usos (varios posibles)'],
+    single: ['Seul, sur cet appareil', 'Alone, on this device', 'Allein, auf diesem Gerät', 'Solo, en este dispositivo'],
+    devices: ['Seul, sur plusieurs appareils', 'Alone, on several devices', 'Allein, auf mehreren Geräten',
+      'Solo, en varios dispositivos'
+    ],
+    users: ['À plusieurs (dépôt git des données)', 'Several users (git data repository)', 'Mehrere Nutzer (Git-Datenrepository)',
+      'Varios usuarios (repositorio git de datos)'
+    ],
+    backend: ['Serveur (web service, site) — à venir', 'Server (web service, website) — to come', 'Server (Webdienst, Website) — folgt',
+      'Servidor (servicio web, sitio) — próximamente'
+    ],
+    github: ['Dépôt GitHub des données (site, téléphone)', 'GitHub data repository (website, phone)',
+      'GitHub-Datenrepository (Website, Telefon)',
+      'Repositorio GitHub de datos (sitio, teléfono)'
+    ],
+    repo: ['Dépôt (compte/dépôt)', 'Repository (account/repository)', 'Repository (Konto/Repository)',
+      'Repositorio (cuenta/repositorio)'
+    ],
+    branch: ['Branche', 'Branch', 'Zweig', 'Rama'],
+    token: ['Jeton personnel (gardé sur cet appareil seulement)', 'Personal token (kept on this device only)',
+      'Persönliches Token (nur auf diesem Gerät gespeichert)', 'Token personal (guardado solo en este dispositivo)'
+    ],
+    tokenSet: ['jeton enregistré — vide : inchangé', 'token saved — empty: unchanged', 'Token gespeichert — leer: unverändert',
+      'token guardado — vacío: sin cambios'
+    ],
+    save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
+    saved: ['Réglages de l’appareil enregistrés ; transport : {tr}.', 'Device settings saved; transport: {tr}.',
+      'Geräteeinstellungen gespeichert; Transport: {tr}.', 'Ajustes del dispositivo guardados; transporte: {tr}.'
+    ],
+    missing: [
+      'Aucun moyen d’échange disponible pour ces usages (ni lanceur ni dépôt GitHub réglé) : les données restent sur cet appareil.',
+      'No exchange available for these usages (no launcher, no GitHub repository set): data stay on this device.',
+      'Kein Austausch für diese Nutzungen verfügbar (kein Starter, kein GitHub-Repository eingestellt): die Daten bleiben auf diesem Gerät.',
+      'Ningún intercambio disponible para estos usos (ni lanzador ni repositorio GitHub configurado): los datos quedan en este dispositivo.'
+    ]
+  };
+  async function renderDevice(view) {
+    const gh = FD.github.config() || {},
+      chk = (k, row) => `<label class="f-check"><input type="checkbox" data-u="${k}" ${usages[k] ? 'checked' : ''}>${esc(t(row))}</label>`,
+      fld = (k, row, v, type = 'text') => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${type}" value="${esc(v || '')}" autocomplete="off"></label>`;
+    view.innerHTML = `<h1>${esc(t(T.device))}</h1><p class="f-muted">${esc(t(D.intro))}</p>
+      <div class="f-card"><h2>${esc(t(D.identity))}</h2>${fld('trigram', D.trigram, identity.trigram)}${fld('ivao', D.ivao, identity.ivao)}${fld('vatsim', D.vatsim, identity.vatsim)}${fld('simbrief', D.simbrief, identity.simbrief)}</div>
+      <div class="f-card"><h2>${esc(t(D.usages))}</h2>${chk('single', D.single)}${chk('devices', D.devices)}${chk('users', D.users)}${chk('backend', D.backend)}</div>
+      <div class="f-card"><h2>${esc(t(D.github))}</h2>${fld('repo', D.repo, gh.repo)}${fld('branch', D.branch, gh.branch || 'main')}<label class="f-field">${esc(t(D.token))}<input data-f="token" type="password" autocomplete="off" placeholder="${esc(gh.token ? t(D.tokenSet) : '')}"></label></div>
+      <p><button type="button" class="primary" data-save>${esc(t(D.save))}</button></p>`;
+    view.querySelector('[data-save]').onclick = async () => {
+      const f = k => view.querySelector(`[data-f="${k}"]`).value.trim();
+      await own.put('device/identity.json', {
+        trigram: f('trigram').toUpperCase(),
+        ivao: f('ivao'),
+        vatsim: f('vatsim'),
+        simbrief: f('simbrief'),
+        updated_at: new Date().toISOString()
+      });
+      const u = {
+        updated_at: new Date().toISOString()
+      };
+      for (const i of view.querySelectorAll('[data-u]')) u[i.dataset.u] = i.checked;
+      await own.put('device/usages.json', u);
+      if (f('repo') && (f('token') || gh.token)) FD.github.save({
+        repo: f('repo'),
+        branch: f('branch') || 'main',
+        token: f('token') || gh.token,
+        ...(gh.api ? {
+          api: gh.api
+        } : {})
+      });
+      await loadDevice();
+      const tr = (await FD.status()).transport;
+      notify(t(D.saved, {
+        tr
+      }), 'ok');
+      if (missingTransport()) notify(t(D.missing), 'warn');
+      renderDevice(view);
+    };
+  }
+  /** Vrai si les usages demandent un échange que rien ne permet ici. */
+  const missingTransport = () => !!configured?.missing;
+
+  // ---------------------------------------------------------------- démarrage
+  let aerodb = null,
+    configured = null; // transport branché (missing : usages d'échange sans moyen d'échange ici)
+  async function boot() {
+    document.title = `${t(APP.name)} — SOG`;
+    $('fName').textContent = t(APP.name);
+    $('fBurger').setAttribute('aria-label', t(T.menu));
+    $('fDevice').setAttribute('aria-label', t(T.device));
+    $('fDevice').title = t(T.device);
+    $('fBurger').onclick = () => {
+      const open = document.body.classList.toggle('f-nav-open');
+      $('fBurger').setAttribute('aria-expanded', String(open));
+    };
+    $('fDevice').onclick = () => {
+      location.hash = '#device';
+    };
+    $('fSync').onclick = async () => {
+      const s = await FD.status();
+      if (s.conflicts) location.hash = '#conflicts';
+      else syncNow();
+    };
+    await loadDevice();
+    // aerodb : un service, une instance, lecteur = la couche de données (frame/aerodb/INTEGRATION.md § 3)
+    try {
+      aerodb = window.AeroDB ? AeroDB.create({
+        reader: FD.adapter({
+          id: 'aerodb',
+          reads: [{
+            prefix: 'sia/base/',
+            policy: 'reference'
+          }, {
+            prefix: 'AircraftDB/',
+            policy: 'reference'
+          }],
+          writes: []
+        })
+      }) : null;
+    } catch (e) {
+      console.error(e);
+    }
+    FD.onStatus(s => {
+      paintSync(s);
+      // un seul utilisateur : la file devient le cache aussitôt (rien à envoyer)
+      if (s.transport === 'local' && s.pending && !s.syncing) FD.sync({
+        reason: 'local'
+      });
+    });
+    own.watch('device/', () => loadDevice());
+    setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
+    window.addEventListener('hashchange', route);
+    window.addEventListener('online', () => FD.status().then(paintSync));
+    window.addEventListener('offline', () => FD.status().then(paintSync));
+    FD.start();
+    route();
+  }
+  window.SogFrame = {
+    APP,
+    t,
+    notify,
+    ask,
+    askText,
+    net,
+    syncNow
+  };
+  boot();
+})();

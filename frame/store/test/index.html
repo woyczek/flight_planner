@@ -340,6 +340,87 @@
         await d.status());
       check('list from the cache', (await d.list('disponibilites/'))?.length === 1, await d.list(''));
     },
+    async 'cache policy: a device-local file, never queued, kept through pulls'() {
+      const d = await fresh();
+      const c = FD.adapter({
+        id: 'essai-cache',
+        reads: ['cache/'],
+        writes: [{
+          prefix: 'cache/',
+          policy: 'cache'
+        }]
+      });
+      await c.put('cache/ofp.json', {
+        last: 'OFP-1'
+      });
+      check('never queued', (await d.status()).pending === 0, await d.status());
+      await T('write', {
+        files: {
+          'disponibilites/Z/x.json': '{}'
+        }
+      });
+      await d.sync();
+      const st = await stats();
+      check('not sent to the repository', !('cache/ofp.json' in st.files), Object.keys(st.files));
+      check('still readable after a pull', (await c.get('cache/ofp.json'))?.last === 'OFP-1', null);
+      check('listed with its prefix', (await c.list('cache/'))?.includes('cache/ofp.json'), await c.list('cache/'));
+      await c.remove('cache/ofp.json');
+      check('removed locally, nothing queued', !(await c.get('cache/ofp.json')) && (await d.status()).pending === 0, null);
+    },
+    async 'shared prefix: two modules write the same file'() {
+      const d = await fresh();
+      const a = FD.adapter({
+          id: 'fuel',
+          reads: ['pilot/'],
+          writes: [{
+            prefix: 'pilot/',
+            merge: 'record'
+          }]
+        }),
+        b = FD.adapter({
+          id: 'maps',
+          reads: ['pilot/'],
+          writes: [{
+            prefix: 'pilot/',
+            merge: 'record'
+          }]
+        });
+      await a.put('pilot/TST/current_flight.json', rec('TST', '2026-10-23T08:00:00Z', {
+        by: 'fuel'
+      }));
+      await b.put('pilot/TST/current_flight.json', rec('TST', '2026-10-23T08:01:00Z', {
+        by: 'maps'
+      }));
+      check('both may write, the last write is the pending one', (await a.get('pilot/TST/current_flight.json'))?.by === 'maps', null);
+    },
+    async 'restore: a set-aside version becomes the pending write'() {
+      const p = 'disponibilites/TST/2026-W48.json',
+        d = await fresh({
+          [p]: JSON.stringify(rec('TST', '2026-10-20T00:00:00Z', {
+            v: 'base'
+          }))
+        });
+      await d.sync();
+      await d.put(p, rec('TST', '2026-10-22T09:00:00Z', {
+        v: 'mine'
+      }));
+      await T('write', {
+        files: {
+          [p]: JSON.stringify(rec('TST', '2026-10-22T11:00:00Z', {
+            v: 'theirs'
+          }))
+        }
+      });
+      await d.sync();
+      const [c] = await FD.conflicts();
+      const path = await FD.restore(c.id);
+      check('restore returns the path and queues the version', path === p && (await d.get(p))?.v === 'mine' && (await d.status())
+        .pending === 1,
+        await d.status());
+      check('conflict marked seen and restored', (await FD.conflicts())[0].seen && !!(await FD.conflicts())[0].restored, null);
+      await d.sync();
+      check('the taken-back version reaches the repository', JSON.parse((await stats()).files[p]).v === 'mine', null);
+    },
     async 'git blob sha matches the repository'() {
       const d = await fresh({
         'disponibilites/A/x.json': 'héllo\n'

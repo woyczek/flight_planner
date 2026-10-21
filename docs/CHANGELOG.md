@@ -40,6 +40,24 @@ waypoints, and the rest listed below.
   (`modules/fuel/test/quote.html`): three known cases from the V2 page on a fictitious sheet, every displayed value
   found again (30/30). The current flight shared with maps is specified (`pilot/<trigram>/current_flight.json`).
   The module screen follows on the frame's loader.
+- **Frame: the Pilot application skeleton** (`frame/index.html`, `frame/app.js`, `frame/frame.css`,
+  `modules/hello/`).
+  - Navigation by short verbs: a column on a screen, a drawer on a phone; `#module` addresses.
+  - Modules loaded on demand (`modules/<id>/module.js`: `meta`, `mount`, `unmount`) with one context: data, aerodb,
+    texts in four languages, notifications, the frame's question windows, outgoing calls that never throw offline,
+    read-only identity.
+  - A synchronisation button with its state (up to date, pending, in progress, offline, conflicts, error, this device
+    only).
+  - A conflicts screen where a set-aside version can be taken back.
+  - A device screen (usages, identity, GitHub access) that chooses the transport: local when nothing is to be
+    exchanged, else the launcher, else GitHub.
+- **Data layer additions**:
+  - the `cache` write policy (device-only files);
+  - shared write prefixes;
+  - `restore`;
+  - merges dated by `updated_at`, falling back to `updatedAt`;
+  - the launcher transport (`frame/store/transport_launcher.js`; `tools/launch.py`: `GET /__setup/changes`,
+    `POST /__setup/batch`, one local commit per batch, git exchange through `/__setup/sync`).
 - **Frame: data layer** (`frame/store/frame_data.js`, `frame/store/transport_github.js`; `frame/SPEC.md`,
   `frame/INTEGRATION.md`, `frame/DECISIONS.md`) — disconnected mode at the core: one local cache (IndexedDB
   `sogFrame`) serves every read with no network; writes are queued and sent in batches, one commit per

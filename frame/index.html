@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pilote — SOG</title>
+<!-- V3 : appli Pilote, squelette du cadre (frame/app.js) : navigation par verbes, modules chargés à la demande
+     (modules/<nom>/module.js), bouton de synchronisation et son état, écran des conflits, réglages de l'appareil. -->
+<link rel="stylesheet" href="frame.css?v=0">
+</head>
+<body>
+<header class="f-head">
+  <button type="button" class="f-burger" id="fBurger" aria-controls="fNav" aria-expanded="false">☰</button>
+  <span class="f-name" id="fName"></span>
+  <button type="button" class="f-sync" id="fSync" data-state="local"><span class="f-dot"></span><span class="f-lbl"></span></button>
+  <button type="button" id="fDevice" aria-label="device">⚙</button>
+</header>
+<nav class="f-nav" id="fNav"><ul id="fMenu"></ul></nav>
+<main class="f-view" id="fView"></main>
+<div class="f-notes" id="fNotes" aria-live="polite"></div>
+<script src="store/frame_data.js?v=0"></script>
+<script src="store/transport_github.js?v=0"></script>
+<script src="store/transport_launcher.js?v=0"></script>
+<script src="aerodb/zones.js?v=0"></script>
+<script src="aerodb/aircraft.js?v=0"></script>
+<script src="aerodb/aerodb.js?v=0"></script>
+<script src="app.js?v=0"></script>
+</body></html>

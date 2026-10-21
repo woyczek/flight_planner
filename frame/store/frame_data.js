@@ -11,11 +11,13 @@
   //     d'où viennent les données ;
   //   · politique d'un préfixe lu : « document » (fiches du pool, tirées d'avance) ou « reference » (lecture seule,
   //     gros fichier, lu à la première demande puis gardé tant que sa révision ne change pas, revalidé à la synchro) ;
+  //     politique d'un préfixe écrit : « cache » (document local de l'appareil, jamais synchronisé : dernier OFP,
+  //     réglages de l'appareil device/…) ; un préfixe peut être déclaré par plusieurs modules (partagé) ;
   //   · conflit sur une fiche : la plus récente (updated_at) gagne, la perdante est gardée (magasin conflicts) et
   //     signalée, jamais de question bloquante ; règles par préfixe déclarées par le module (record, keyed, journal).
   // API (window.FrameData) : configure({ transport, identity, every }), start(), adapter(déclaration) → data (get,
-  //   read, list, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(), gitSha(texte), merge,
-  //   transports.local().
+  //   read, list, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(), conflictSeen(id),
+  //   restore(id), gitSha(texte), merge, transports.local().
   if (window.FrameData) return;
   const DB = 'sogFrame',
     DB_VERSION = 1,
@@ -213,6 +215,7 @@
   // ---------------------------------------------------------------- déclarations des modules
   const reads = []; // { prefix, policy }
   const rules = []; // { prefix, rule }
+  const caches = []; // préfixes écrits en politique « cache » (documents locaux, jamais synchronisés)
   /** Politique d'un chemin : 'document' ou 'reference' (préfixe déclaré le plus long), null s'il n'est lu par aucun
    *  module monté (pas tiré). */
   const policyOf = path => reads.filter(r => under(path, r.prefix)).sort((a, b) => b.prefix.length - a.prefix.length)[0]?.policy ||
@@ -235,12 +238,16 @@
         policy
       });
     }
-    for (const w of [].concat(decl.writes || []))
-      if (typeof w === 'object' && w.merge) rules.push({
+    for (const w of [].concat(decl.writes || [])) {
+      if (typeof w === 'object' && w.merge && !rules.some(r => r.prefix === w.prefix)) rules.push({
         prefix: w.prefix,
         rule: ruleFrom(w.merge)
-      });
+      }); // préfixe partagé : la règle du premier module qui le déclare
+      if (typeof w === 'object' && w.policy === 'cache' && !caches.includes(w.prefix)) caches.push(w.prefix);
+    }
   }
+  /** Vrai si un chemin s'écrit en politique « cache » (préfixe déclaré ainsi). */
+  const isCache = path => caches.some(c => under(path, c));
 
   // ---------------------------------------------------------------- réglage
   let cfg = {
@@ -390,11 +397,26 @@
     else return null;
     const set = new Set(paths);
     for (const p of pend) p.text === null ? set.delete(p.path) : set.add(p.path);
+    for (const d of await idb('docs', 'getAll'))
+      if (d.policy === 'cache') set.add(d.path);
     return [...set].filter(p => under(p, prefix)).sort();
   }
-  /** Écrit un fichier : cache et file d'attente seulement (envoyé à la prochaine synchronisation). */
-  async function put(path, value) {
+  /** Écrit un fichier : cache et file d'attente seulement (envoyé à la prochaine synchronisation) ; politique « cache »
+   *  (préfixe déclaré ainsi, ou opts.policy) : document local de l'appareil, jamais en file ni envoyé. */
+  async function put(path, value, opts = {}) {
     const text = textOf(path, value);
+    if (opts.policy === 'cache' || isCache(path)) {
+      await idb('docs', 'put', {
+        path,
+        text,
+        base: text,
+        rev: '',
+        at: Date.now(),
+        policy: 'cache'
+      });
+      changed([path]);
+      return;
+    }
     await idb('pending', 'put', {
       path,
       text,
@@ -404,8 +426,13 @@
     changed([path]);
     emitStatus();
   }
-  /** Supprime un fichier (suppression envoyée à la prochaine synchronisation). */
+  /** Supprime un fichier (suppression envoyée à la prochaine synchronisation ; document en cache : effacé ici). */
   async function remove(path) {
+    if (isCache(path) || (await idb('docs', 'get', path))?.policy === 'cache') {
+      await idb('docs', 'delete', path);
+      changed([path]);
+      return;
+    }
     await idb('pending', 'put', {
       path,
       text: null,
@@ -495,6 +522,8 @@
         result.ok = true;
         return done(result);
       }
+      // transport qui échange lui-même avec un dépôt distant (lanceur : passage git du poste) : avant, pour recevoir
+      await exchange(T, result);
       for (let i = 0; i < TRIES; i++) {
         const head = await T.head();
         const pulled = await pull(T, head);
@@ -514,6 +543,8 @@
           await applyPushed(pend, next, remote);
           result.pushed = pend.length;
           result.ok = true;
+          // puis après, pour envoyer le lot (ce qu'il a reçu en plus est tiré au passage suivant)
+          await exchange(T, result);
           return done(result);
         } catch (e) {
           if (!e?.conflict) throw e; // le dépôt a bougé pendant l'envoi : tirer et repousser
@@ -523,6 +554,15 @@
     } catch (e) {
       result.error = e?.offline ? 'offline' : e?.message || String(e);
       return done(result);
+    }
+  }
+  /** Échange propre au transport (T.exchange) ; un échec ne bloque pas le passage local, il est rapporté (warning). */
+  async function exchange(T, result) {
+    if (!T.exchange) return;
+    try {
+      await T.exchange();
+    } catch (e) {
+      result.warning = e?.offline ? 'exchange offline' : e?.message || String(e);
     }
   }
   /** Fin d'un passage : état gardé (dernière synchro réussie, erreur), observateurs prévenus. */
@@ -659,6 +699,27 @@
     emitStatus();
   }
 
+  /** Reprend une version écartée : elle redevient l'écriture en attente de son fichier (envoyée à la prochaine
+   *  synchronisation), le conflit est marqué vu. Retour : le chemin, ou '' si le conflit n'existe plus. */
+  async function restore(id) {
+    const c = await idb('conflicts', 'get', id);
+    if (!c?.lost) return '';
+    await idb('pending', 'put', {
+      path: c.path,
+      text: c.lost,
+      at: new Date().toISOString(),
+      author: cfg.identity.trigram || ''
+    });
+    await idb('conflicts', 'put', {
+      ...c,
+      seen: true,
+      restored: new Date().toISOString()
+    });
+    changed([c.path]);
+    emitStatus();
+    return c.path;
+  }
+
   // ---------------------------------------------------------------- transport local
   const transports = {
     /** Un seul utilisateur sur cet appareil : pas d'échange, le cache fait foi. */
@@ -670,8 +731,8 @@
 
   // ---------------------------------------------------------------- adaptateur d'un module
   /** Partie « data » de l'adaptateur d'un module : ses préfixes lus et écrits sont enregistrés ; une écriture hors de
-   *  ses préfixes déclarés est refusée. decl : { reads: [préfixe | { prefix, policy }], writes: [préfixe | { prefix,
-   *  merge }] }. */
+   *  ses préfixes déclarés est refusée (un préfixe déclaré par plusieurs modules est partagé : chacun y écrit).
+   *  decl : { reads: [préfixe | { prefix, policy }], writes: [préfixe | { prefix, merge | policy: 'cache' }] }. */
   function adapter(decl = {}) {
     declare(decl);
     const writes = [].concat(decl.writes || []).map(w => typeof w === 'string' ? w : w.prefix);
@@ -683,7 +744,7 @@
       get,
       read,
       list,
-      put: (path, value) => (guard(path), put(path, value)),
+      put: (path, value, opts) => (guard(path), put(path, value, opts)),
       remove: path => (guard(path), remove(path)),
       watch,
       status,
@@ -704,6 +765,7 @@
     onStatus,
     conflicts,
     conflictSeen,
+    restore,
     gitSha,
     merge,
     mergeText,
@@ -717,7 +779,7 @@
         const r = indexedDB.deleteDatabase(DB);
         r.onsuccess = r.onerror = r.onblocked = () => res();
       });
-      reads.length = rules.length = 0;
+      reads.length = rules.length = caches.length = 0;
       lastError = '';
     }
   };

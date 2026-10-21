@@ -43,3 +43,39 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
 - **22 Oct 2026 — Folder `frame/store/`, not `frame/data/`**: the repository's `.gitignore` ignores `data/` at any
   depth (the data clone of a workstation), so `frame/data/` was silently left out of the first commit. Renamed rather
   than excepted, so that no later folder falls into the same trap; no V3 folder may be named `data`.
+- **23 Oct 2026 — Lot 3, application skeleton**:
+  - modules are ES modules loaded with `import()`; classic scripts remain only for the frame itself (data layer,
+    transports, aerodb, app.js), loaded once;
+  - the context is the only door to the frame.
+- **23 Oct 2026 — Navigation**:
+  - verbs in a left column on a screen, a drawer on a phone (≤ 760 px), opened by a menu button;
+  - not a bottom bar: seven verbs do not fit one on a phone, and the drawer keeps one layout for one to seven
+    entries;
+  - `#module` addresses.
+- **23 Oct 2026 — Device settings are cache files** (`device/usages.json`, `device/identity.json`, policy `cache`): the
+  usages choose the transport, so they cannot live in the repository the transport reaches. The settings module will
+  write them; until then the frame's `#device` screen does. With no usage of exchange: local only.
+- **23 Oct 2026 — Shared prefixes** (fuel needs, via the ergonomics session): several modules may declare the same
+  write prefix; the merge rule of the first declaration applies.
+- **23 Oct 2026 — `cache` write policy**: device-local files, never queued nor sent, kept through pulls. It replaces
+  any private IndexedDB in modules.
+- **23 Oct 2026 — `ctx.net`**: outgoing calls go through the frame and never throw; offline is an immediate 503 marked
+  `x-sog-offline`, so modules have one code path. A launcher relay is left for later.
+- **23 Oct 2026 — `ctx.identity`**: read only, from `device/identity.json`, an empty object when absent.
+- **23 Oct 2026 — Dates for merges**: `updated_at`, falling back to `updatedAt` (V2 performance sheets), record by
+  record in `keyed` lists (`keyed:profiles:id`).
+- **23 Oct 2026 — Launcher transport**:
+  - the head is a hash of the `data/` tree (git blob shas, rehashed only when a file's size or date changes), so files
+    written outside the frame (V2 pages, git pulls) are seen too;
+  - a batch is refused (409) when `data/` moved since its parent, then the layer pulls and pushes again;
+  - one local commit per batch in the author's name;
+  - the git exchange with the remote is the existing `POST /__setup/sync`, called before and after a pass when the
+    usages ask for it.
+- **23 Oct 2026 — Taking a version back**: `FrameData.restore(id)` queues the kept loser again; nothing is overwritten
+  without being kept.
+- **23 Oct 2026 — Tests of lot 3**:
+  - `frame/store/test/`: 46 checks, adding the cache policy, the shared prefix and restore;
+  - the application through the fake GitHub: local by default, then GitHub (one commit per batch), conflict and
+    restore, offline, 375 px and screen;
+  - the launcher transport on a git copy of the data: headers required, tree without the SIA sources and the indexes,
+    batch written and committed, refusal and retry when `data/` changed, path outside `data/` refused.
