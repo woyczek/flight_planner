@@ -54,6 +54,11 @@ const aerodb = AeroDB.create({
 // then, for every module: adapter.aerodb = aerodb
 ```
 
+`frame/app.js` mounts it this way (`ctx.aerodb`). Checked on 21 October with the launcher transport over the 13
+reference zones: the listing comes from the frame's tree, only the files asked for are read, the whole world is
+identical, and a republished file gives one `change` event and a fresh read of its zone. With the **local** transport
+(single user, no exchange), the data layer reads no reference file, so aerodb answers empty: see DECISIONS.md.
+
 Scripts, in this order: `frame/aerodb/zones.js`, `frame/aerodb/aircraft.js`, `frame/aerodb/aerodb.js`.
 
 Until the data layer exists, `AeroDB.create()` without a reader uses `AeroDB.fetchReader()`:

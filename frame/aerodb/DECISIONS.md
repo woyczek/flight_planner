@@ -113,6 +113,21 @@ Whole-world questions still return exactly the workstation's base (6,753 airspac
 24,382 obstacles, 3,611 airways, 478 MORA cells), in launcher mode and in GitHub mode. In GitHub mode, with the
 listing known, no whole-zone file and no world-towns file is read. The aircraft base is read from the JSON files.
 
+## 21 October 2026 — mounted by the frame (`FrameData.adapter`)
+
+- `frame/app.js` already mounts aerodb with the frame's adapter. `fetchReader` stays for the bench and for pages
+  without the frame.
+- **Fix: `watch` reports first arrivals.** The data layer calls `watch` when a reference file first enters its cache.
+  aerodb used to forget the zone on every call, so each file it read closed its own zone: `find('TOUL')` lost the
+  aerodromes and zones were read again and again. aerodb now keeps the `rev` of every file it read. It forgets a zone
+  only when one of those revisions changes, and reads the listing again only for an unknown cycle or zone. Checked by
+  republishing `be/…/aerodromes.json`: one `change` event, Belgium read again, the other zones kept.
+- **Gap left to the frame**: with the local transport (single user, the default when no exchange is ticked) the data
+  layer reads no reference file (`fetchOne` returns `null`), and `list` returns only the cache. aerodb, and the fuel
+  module through it, then has no SIA data and no aircraft base, even on a page served by the launcher or the website.
+  Reference files should come from the launcher or the site whatever the exchange transport. Reported to the ergonomics
+  session for the frame.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

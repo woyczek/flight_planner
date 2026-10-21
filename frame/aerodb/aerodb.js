@@ -186,10 +186,14 @@
         /* écouteur en échec : les autres sont appelés */
       }
     });
+    const revs = new Map(); // chemin lu → révision lue (un fichier changé se reconnaît à sa révision)
     const read = path => reader.read(path, {
       policy: 'reference',
       wait: true
-    }).catch(() => null);
+    }).then(r => {
+      if (r) revs.set(path, r.rev || '');
+      return r;
+    }, () => null);
 
     // ---- zones publiées : liste du lecteur (arbre du dépôt), sinon manifeste sia/base/index.json, sinon inconnues
     function published() {
@@ -679,19 +683,47 @@
         indexes: Object.keys(z.idx)
       }))
     };
-    // fichier publié changé à la synchronisation : zone oubliée (relue à la prochaine demande), liste relue
-    reader.watch?.(PUB, paths => {
+    // Changements signalés par le lecteur. La couche de données du frame signale aussi la première arrivée d'un fichier
+    // dans son cache (lecture « reference » demandée par aerodb lui-même) : seul compte un fichier déjà lu dont la
+    // révision a changé, ou un cycle publié que la liste ne connaissait pas.
+    const changedRev = async p => {
+      if (!revs.has(p)) return false;
+      const r = await reader.read(p, {
+        policy: 'reference'
+      }).catch(() => null);
+      return !!r && (r.rev || '') !== revs.get(p);
+    };
+    reader.watch?.(PUB, async paths => {
+      const pub = listedP ? (await listedP).zones : null,
+        out = [];
       for (const p of paths || []) {
         const m = PUB_SPLIT.exec(p) || PUB_WHOLE.exec(p);
-        if (m) loaded.delete(m[1]);
+        if (await changedRev(p)) {
+          out.push(p);
+          revs.delete(p);
+          if (m) loaded.delete(m[1]);
+          if (p === `${PUB}cities_major.json`) majorP = null;
+          if (p === `${PUB}cities.json`) worldP = null;
+          if (p === `${PUB}index.json`) listedP = null;
+        } else if (m && pub && !pub[m[1]]?.cycles.includes(m[2])) {
+          out.push(p); // cycle ou zone publiés depuis la liste lue
+          listedP = null;
+          loaded.delete(m[1]);
+          missing.clear();
+        }
       }
-      listedP = majorP = worldP = null;
-      missing.clear();
-      emit({
-        changed: paths
+      if (out.length) emit({
+        changed: out
       });
     });
-    reader.watch?.('AircraftDB/', () => {
+    reader.watch?.('AircraftDB/', async paths => {
+      let hit = false;
+      for (const p of paths || [])
+        if (await changedRev(p)) {
+          revs.delete(p);
+          hit = true;
+        }
+      if (!hit) return;
       aircraftP = null;
       emit({
         aircraft: true
