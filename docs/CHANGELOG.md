@@ -160,6 +160,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **User manual: new screenshot of My availability** (`docs/images/captures-manuels/utilisateur-disponibilites.png`) —
+  the timeline (one rectangle per availability with its times, background bands, palette with "Clear background",
+  folded "How to use"), instead of the former hourly grid.
 - **Performance sheets on phones (portrait)** (`apps/planner/flight_planner.js`, `apps/planner/flight_planner.css`,
   `config/repository_tree`) — the page is offered on phones (no more `mobile:false` and "large screen" banner): short
   title "Sheets"; the sheets table becomes a list of cards (aircraft, origin, what is missing), the map, cruise flow
