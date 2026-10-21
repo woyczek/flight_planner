@@ -59,7 +59,7 @@ Storage and access map: `DONNEES_ET_ACCES.md`.
 - **Done and checked** (fake GitHub serving the real data, `flight_planner_data` @ main; the built site served
   statically under `/flight_planner/`, as on Pages): data access setting, service worker, reads of every phase-1 page
   (fleet 205 aircraft and map, Today, My flights 14 flights, availability, report ledger 19 reports, Fuel, aircraft
-  sheet), availability written (two commits: week and index), report ledger written, two simultaneous reports merged.
+  sheet), availability written (two commits: week and index; one commit since 21 October, the folder indexes are no longer written), report ledger written, two simultaneous reports merged.
 - **Build**: `tools/build_pages.py <out>` (tracked files without `data/`, real `?v=` stamps, `config/repository_tree.js`
   copy, `config/build.js`, `.nojekyll`); workflow `.github/workflows/pages.yml` (LFS checkout, home-screen icons drawn
   from `assets/favicon-flight.svg` with `rsvg-convert`, deploy).

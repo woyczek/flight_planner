@@ -4,6 +4,9 @@ sia/XML_SIA_*.xml
 sia/sia-airspaces-*.xml
 sia/*.zip
 sia/_archives/
+# Index des dossiers (disponibilites/_index.json, utilisateurs/_index.json) : régénérés par le lanceur, refaits depuis
+# l'arbre en mode GitHub — jamais suivis
+**/_index.json
 # Local, propre à chaque poste : sauvegardes du navigateur et sauvegardes totales, copies avant restauration
 local/
 _avant_restauration/

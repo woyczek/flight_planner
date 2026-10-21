@@ -310,9 +310,20 @@
       at: Date.now()
     }).catch(() => {});
   }
+  // index des dossiers (disponibilites/_index.json, utilisateurs/_index.json) : régénérés (lanceur sur un poste, arbre
+  // du dépôt en mode GitHub : shared/github_data.js), jamais écrits dans le dépôt — une fiche écrite = un seul commit
+  const FOLDER_INDEX = /^(disponibilites|utilisateurs)\/_index\.json$/;
   /** Écrit un fichier du pool (data/<rel>) : dossier autorisé (sous le verrou du fichier), sinon boîte d'envoi de ce
-   *  navigateur. Retour : { where: 'folder' | 'local', error } ; événement « defa-data-change » dans tous les onglets. */
+   *  navigateur. Retour : { where: 'folder' | 'local', error } ; événement « defa-data-change » dans tous les onglets.
+   *  Mode GitHub : un index de dossier n'est pas écrit (relu, il est refait depuis l'arbre du dépôt). */
   async function writeData(rel, value) {
+    if (gh() && FOLDER_INDEX.test(rel)) {
+      store.changed(`data/${rel}`);
+      return {
+        where: 'folder',
+        error: null
+      };
+    }
     const box = outbox();
     box[rel] = {
       at: new Date().toISOString(),
@@ -351,7 +362,8 @@
     const dir = await dataDir(),
       done = [];
     for (const [rel, e] of Object.entries(outbox())) {
-      await store.lock(`data:${rel}`, () => writeFile(dir, rel, e.value));
+      // index de dossier laissé par une version précédente : jamais envoyé au dépôt en mode GitHub
+      if (dir !== GH_DIR || !FOLDER_INDEX.test(rel)) await store.lock(`data:${rel}`, () => writeFile(dir, rel, e.value));
       const b = outbox();
       delete b[rel];
       setJson(OUTBOX, b);

@@ -217,6 +217,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **GitHub mode: two commits for each availability week or profile written** — the folder index
+  (`disponibilites/_index.json`, `utilisateurs/_index.json`) was written to the data repository with every file. It is no
+  longer written (nor sent from an old outbox entry), and it is always rebuilt from the repository tree, never read from
+  the repository, where a copy left by an earlier version would be stale. On a workstation, "Synchronise" untracks an
+  index still tracked in the repository instead of failing the merge on the launcher's rebuilt copy; the data repository
+  template ignores `**/_index.json` (`shared/assignments.js`, `shared/github_data.js`, `tools/data_sync.py`).
+
 - **GitHub mode: remembered folders are ignored** (`shared/file_access.js` and its users) — a browser that had once
   authorised a folder (launcher workstation) kept reading it in GitHub mode and repeatedly warned “Assignments: the
   authorised missions folder and the files served by the page differ (another copy?)”. One decision point:

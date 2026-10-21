@@ -119,9 +119,12 @@ MORA, refuelling and NAT tracks).
 
 ### Folder indexes
 
-`disponibilites/_index.json` and `utilisateurs/_index.json` are **not in git** (excluded by `tools/data_sync.py`). On a
-workstation the launcher rebuilds them; on the phone `github_data.js` rebuilds them from the git tree
-(`git/trees?recursive=1`, one request) when the API answers 404.
+`disponibilites/_index.json` and `utilisateurs/_index.json` are **never in git**. On a workstation the launcher rebuilds
+them from the folders, whatever file the clone holds, and `tools/data_sync.py` never commits them: an index still
+tracked in the repository (written by an earlier version of the app) is untracked at the next "Synchronise" and never
+blocks the merge. On the phone `github_data.js` always rebuilds them from the git tree (`git/trees?recursive=1`, one
+request), never reads a copy from the repository, and `writeData` never writes them: writing an availability week or a
+profile is one commit.
 
 ## 3. What the browser keeps (phone, iOS app, PC)
 

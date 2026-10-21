@@ -26,6 +26,9 @@ import data_guard  # .js du pool : format des fichiers de données seulement (ja
 # les fichiers du SIA eux-mêmes (sia/*.xml) restent hors du dépôt
 POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv', 'sia/base']
 EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':(exclude).defa_instance']
+# index des dossiers : régénérés par le lanceur (et par l'appli en mode GitHub, depuis l'arbre), jamais suivis par git ;
+# une copie suivie dans le dépôt (écrite par une version précédente de l'appli) est retirée du suivi, jamais fusionnée
+INDEXES = [':(glob)**/_index.json']
 TIMEOUT = 120
 
 try:
@@ -385,9 +388,14 @@ def merge_records(base, ours, theirs, key):
 
 def resolve(data, path):
     """Fichier en conflit résolu et ajouté ; rend {'path', 'how', 'copy'?}."""
+    full = os.path.join(data, *path.split('/'))
+    if is_index(path):  # index régénéré : retiré du suivi, jamais fusionné (le lanceur le refait)
+        git(data, 'rm', '--cached', '-q', '--ignore-unmatch', '--', path)
+        if os.path.isfile(full):
+            os.remove(full)
+        return {'path': path, 'how': 'index retiré (régénéré)'}
     raw = {s: blob(data, s, path) for s in (1, 2, 3)}
     base, ours, theirs = (parse(raw[s], path) for s in (1, 2, 3))
-    full = os.path.join(data, *path.split('/'))
     write = lambda text: open(full, 'w', encoding='utf-8', newline='\n').write(text)
     if path.endswith('missions/affectations.json') and isinstance(ours, dict) and isinstance(theirs, dict):
         key = lambda a: f"{a.get('mission')}|{a.get('pilot')}|{a.get('role') or ''}"
@@ -422,6 +430,21 @@ def resolve(data, path):
     copy = keep_copy(data, path, lose, side)
     git(data, 'add', '--', path)
     return {'path': path, 'how': 'la plus récente', 'copy': copy}
+
+
+def is_index(path):
+    """Vrai pour un index de dossier régénéré (…/_index.json)."""
+    return path == '_index.json' or path.endswith('/_index.json')
+
+
+def untrack_indexes(data, who, env):
+    """Index de dossier suivis par git : retirés du suivi (le fichier reste, le lanceur le refait) et commit. Rend la liste."""
+    _, out = git(data, 'ls-files', '--', *INDEXES)
+    tracked = [x for x in out.splitlines() if x.strip()]
+    if tracked:
+        git(data, 'rm', '--cached', '-q', '--', *tracked, check=True)
+        git(data, *who, 'commit', '-m', 'Index des dossiers retirés du dépôt (régénérés)', env=env, check=True)
+    return tracked
 
 
 def refused_note(res):
@@ -461,6 +484,9 @@ def run(data, author, name=''):
             if code:
                 git(data, *who, 'commit', '-m', f'Synchronisation {author} : {len(changes)} fichier(s)', env=env, check=True)
                 res['committed'] = len(changes)
+        # index suivis sur ce poste (reçus d'une version précédente, puis refaits par le lanceur) : retirés du suivi
+        # d'abord, sinon la fusion refuserait d'écraser la copie refaite
+        res['untracked'] = untrack_indexes(data, who, env)
         br, up, remote = branch_info(data)
         if not remote:
             res.update(ok=True, message='Commit local seulement : pas de dépôt distant.' + refused_note(res))
@@ -471,6 +497,14 @@ def run(data, author, name=''):
         code, _ = git(data, 'rev-parse', '--verify', '--quiet', target)
         if code == 0:
             _, before = git(data, 'rev-parse', 'HEAD')
+            # index suivis dans le dépôt distant : la copie locale non suivie (régénérée) bloquerait la fusion — retirée,
+            # le lanceur la refait
+            _, theirs = git(data, 'ls-tree', '-r', '--name-only', target)  # (ls-tree ne lit pas « :(glob) »)
+            _, ours_idx = git(data, 'ls-files', '--', *INDEXES)
+            for p in {x for x in theirs.splitlines() if is_index(x)} - set(ours_idx.split()):
+                f = os.path.join(data, *p.split('/'))
+                if os.path.isfile(f):
+                    os.remove(f)
             code, out = git(data, *who, 'merge', '--no-edit', target, env=env)
             if code:
                 _, unmerged = git(data, 'diff', '--name-only', '--diff-filter=U')
@@ -484,6 +518,8 @@ def run(data, author, name=''):
                 git(data, *who, 'commit', '--no-edit', env=env, check=True)
             _, n = git(data, 'diff', '--name-only', f'{before}..HEAD')
             res['received'] = len([x for x in n.splitlines() if x.strip()])
+        # index des dossiers reçus suivis : retirés du suivi avant l'envoi
+        res['untracked'] += untrack_indexes(data, who, env)
         # 4. envoi
         git(data, 'push', *([] if up else ['-u']), remote, f'HEAD:{br}', env=env, check=True)
         res['pushed'] = True
@@ -547,6 +583,24 @@ def _essai():  # pragma: no cover
     assert [e['mission'] for e in get(a, log)['entries']] == ['M1', 'M2', 'M3'], 'journal réuni'
     assert run(b, 'BBB')['ok'] and get(b, aff) == get(a, aff), 'B reçoit la fusion'
     _, author = git(a, 'log', '-1', '--format=%an', '--', week)
+    # index suivi dans le dépôt (version précédente de l'appli) : ne bloque pas la fusion d'un poste qui a sa copie
+    # régénérée, puis est retiré du suivi partout
+    idx = 'disponibilites/_index.json'
+    put(b, idx, {'pilots': {'BBB': {}}})
+    sh('add', '-f', idx, cwd=b)
+    sh('commit', '-m', 'index suivi', cwd=b)
+    sh('push', 'origin', 'HEAD', cwd=b)
+    put(a, idx, {'pilots': {'AAA': {}}})  # copie régénérée, non suivie
+    ra = run(a, 'AAA')
+    assert ra['ok'] and ra['untracked'] == [idx], ra
+    assert not git(a, 'ls-files', '--', idx)[1].strip(), 'index plus suivi chez A'
+    # C suivait l'index et l'a refait (lanceur) pendant qu'A le retirait : la fusion passe, plus suivi
+    c = os.path.join(tmp, 'C')
+    put(b, idx, {'pilots': {'BBB': {}, 'CCC': {}}})  # B suit encore l'index et l'a refait localement
+    rb = run(b, 'BBB')
+    assert rb['ok'] and rb['untracked'] == [idx] and not git(b, 'ls-files', '--', idx)[1].strip(), rb
+    sh('clone', remote, c)
+    assert not os.path.exists(os.path.join(c, *idx.split('/'))), 'index absent du dépôt'
     print('essai réussi :', tmp, '— conflits :', r['conflicts'])
     shutil.rmtree(tmp, ignore_errors=True)
 

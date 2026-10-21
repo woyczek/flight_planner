@@ -8,7 +8,7 @@
   //     hors ligne dans IndexedDB sogGithubData) : MissionAssignments, MissionLedger, YAML des missions… inchangés ;
   //     fichiers de données chargés en <script> (shared/data_files.js : références, data_tree, base des types) : lus
   //     en synchrone (XMLHttpRequest, copie dans localStorage reprise tout de suite puis rafraîchie) ; index des
-  //     dossiers (_index.json) refaits depuis l'arbre du dépôt s'il n'y en a pas ; tout cela dans la page, sans
+  //     dossiers (_index.json) toujours refaits depuis l'arbre du dépôt (jamais lus ni écrits dans le dépôt) ; tout cela dans la page, sans
   //     service worker (absent d'une appli iOS) ;
   //   · écritures : put / remove (API contents, avec le sha du fichier : un fichier changé entre-temps est signalé,
   //     jamais écrasé sans relecture), appelées par MissionAssignments (fichiers du pool) et MissionLedger (registre
@@ -184,6 +184,14 @@
     const c = need(),
       old = await idb('get', rel),
       body = r => method === 'HEAD' ? null : r;
+    // index des dossiers : toujours refaits depuis l'arbre — une copie du dépôt (écrite par une version précédente de
+    // l'appli) serait périmée dès la fiche suivante
+    if (INDEXES.has(rel)) {
+      const built = await builtIndex(rel).catch(() => null);
+      return built ? respond(rel, body(built), '') : new Response(null, {
+        status: 404
+      });
+    }
     try {
       const r = await nativeFetch(fileUrl(c, rel), {
         headers: headers(c, 'application/vnd.github.raw', old?.etag),
@@ -226,7 +234,9 @@
     return r.ok ? r.json().catch(() => null) : null;
   };
   // ---- index des dossiers refaits depuis l'arbre du dépôt (mêmes champs que tools/launch.py : index_availability,
-  // index_users) quand le dépôt ne les a pas (exclus des commits de synchronisation)
+  // index_users) : jamais lus dans le dépôt ni écrits (shared/assignments.js, writeData ; exclus des commits de
+  // synchronisation d'un poste)
+  const INDEXES = new Set(['disponibilites/_index.json', 'utilisateurs/_index.json']);
   let tree = null; // { at, paths }
   /** Chemins de tous les fichiers du dépôt (une requête, gardée 60 s) ; arbre illisible (hors ligne, jeton) : dernière
    *  liste connue, sinon [] (strict : null). */
