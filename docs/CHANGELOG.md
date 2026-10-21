@@ -260,6 +260,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Availability: Undo forgot every gesture when the language changed** (`shared/dispos_timeline.js`,
+  `shared/dispos_week.js`, `labs/dispos_timeline.html`) — the page mounts the component again to change its texts, and
+  each mount started a new history. The component takes a new `undoStore` option, a `Map` kept by the page; My
+  missions and My availability pass the same one to each mount, so Ctrl+Z and Ctrl+Y still reach the gestures made
+  before the switch. The history starts afresh when the categories or the pilot change; the example page keeps it
+  across a density change. Module spec and integration guide updated.
 - **My missions on phones: the "Day" view could not be seen** (`shared/dispos_week.js`) — in the compact availability
   block (since the entry page), the Day / Week switch was inside the folded "Edit my week", so with a week already
   filled in (GitHub mode, real data) the phone showed no "Day"; an empty week (preview, sample data) unfolded it. The

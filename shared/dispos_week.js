@@ -198,7 +198,11 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
       loadSeq = 0,
       shownKey = '', // pilote et semaine des données tenues par le composant
       lastSaved = '', // updated_at de notre dernière écriture (relecture d'un autre onglet seulement)
-      editOpen = null; // mode compact : saisie dépliée ou repliée par le pilote (null : selon la semaine)
+      editOpen = null, // mode compact : saisie dépliée ou repliée par le pilote (null : selon la semaine)
+      undo = {
+        tri: '',
+        map: new Map()
+      }; // historique du composant, gardé quand il est remonté (langue changée)
     host.classList.add('dw-wrap');
     host.setAttribute('data-no-i18n', ''); // textes composés dans la langue courante (refaits au changement de langue)
     let last = ['', ''];
@@ -236,6 +240,10 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         editOpen = !e.target.closest('details').open;
       });
       if (!tri) return render();
+      if (undo.tri !== tri) undo = {
+        tri,
+        map: new Map()
+      };
       ui = window.DisposTimeline.mount(host.querySelector('[data-tl]'), {
         config: D.timelineConfig(),
         week,
@@ -248,6 +256,7 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         period: false,
         buttonClass: 'repo-plain', // pastilles et ✕ du module : hors du style des boutons des designs (angles : règle
         // « garder » de css(), un design arrondit aussi les boutons repo-plain)
+        undoStore: undo.map,
         onChange: d => {
           queueSave(tri, d);
           summary();
@@ -854,9 +863,10 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         }
       }));
     }
-    // langue ou catégories changées : composant remonté (textes, palette), semaine gardée
+    // langue ou catégories changées : composant remonté (textes, palette), semaine gardée ; langue : historique gardé
     window.addEventListener('repository-language-change', () => tri && (frame(), ready = load()));
-    window.addEventListener('suite-dispos-config', () => tri && ui && (frame(), ready = load()));
+    // catégories changées : l'historique peut nommer une catégorie retirée, il repart de zéro
+    window.addEventListener('suite-dispos-config', () => tri && ui && (undo.map.clear(), frame(), ready = load()));
     // semaine écrite par un autre onglet (ou relue du dossier) : relue, sauf notre propre écriture
     window.addEventListener('defa-data-change', e => {
       const path = e.detail?.path || '';

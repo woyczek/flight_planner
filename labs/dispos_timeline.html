@@ -219,6 +219,7 @@
   const tri = () => $('tri').value.trim().toUpperCase() || 'TST';
   const week0 = T.weekId(Date.now());
   let ui = null;
+  const undo = new Map(); // historique gardé d'un montage à l'autre (densité changée) ; vidé au changement de pilote
   /** Monte (ou remonte, changement de densité) le composant sur la semaine voulue. */
   const mountUi = (week, data) => {
     ui?.destroy();
@@ -229,6 +230,7 @@
       density: $('density').value, // compacte : l'aspect de l'ancienne grille ; confortable : rangées hautes
       help: true,
       data,
+      undoStore: undo,
       onChange: d => {
         if (write(d)) $('status').textContent = `enregistré ${new Date().toLocaleTimeString('fr-FR')}`;
         show(d);
@@ -255,7 +257,7 @@
     show(ui.get());
   };
   $('host').addEventListener('dispos-week', load);
-  $('tri').addEventListener('change', load);
+  $('tri').addEventListener('change', () => (undo.clear(), load()));
   $('density').addEventListener('change', () => mountUi(ui.week(), ui.get()));
   $('fmt').addEventListener('change', () => show(ui.get()));
   // vider : un geste comme un autre (il s'annule) ; boutons d'historique grisés quand il n'y a rien

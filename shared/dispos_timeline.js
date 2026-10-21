@@ -17,8 +17,9 @@
   // Textes : anglais par défaut (DEFAULT_LABELS) ; la page traduit par labels { clé: texte } ou t(clé, défaut), y compris
   // les catégories (« cat.<id> ») et les groupes (« group.<id> ») ; dates et jours par Intl dans la langue lang.
   // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, density, help, nav, period,
-  //   buttonClass, onChange(data), store }) → { get(), set(data), replace(data), add(plages), week(id), brush(id), slot(nom), clear(),
-  //   undo(), redo(), history(), destroy() } (événement dispos-brush en plus) ; événements sur l'hôte :
+  //   buttonClass, onChange(data), store, undoStore }) → { get(), set(data), replace(data), add(plages), week(id),
+  //   brush(id), slot(nom), clear(), undo(), redo(), history(), destroy() } (événement dispos-brush en plus) ;
+  //   événements sur l'hôte :
   //   dispos-change (detail : données), dispos-select (detail : plage { start, end, cat } ou null), dispos-week,
   //   dispos-history ; DEFAULT_CONFIG, DEFAULT_LABELS, weekId(date), weekMonday(id), addWeek(id, n), model (fonctions
   //   du modèle, pour les formats).
@@ -394,7 +395,8 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
 
   /** Monte le composant dans host. opts : { config, week, data (schema 3), lang (dates et jours, Intl ; défaut « en »),
    *  labels ({ clé: texte }), t(clé, défaut) → texte, onChange(données), store : { read(semaine) → données schema 3 |
-   *  null, write(données) } (périodes qui débordent de la semaine affichée) }. */
+   *  null, write(données) } (périodes qui débordent de la semaine affichée), undoStore (Map gardée par la page : historique
+   *  conservé d'un montage à l'autre, au changement de langue par exemple) }. */
   function mount(host, {
     config = DEFAULT_CONFIG,
     week = weekId(Date.now()),
@@ -408,7 +410,8 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     period = true,
     buttonClass = '', // classe ajoutée aux boutons internes (pastilles, ✕) : style de boutons de la page hôte écarté
     onChange = null,
-    store = null
+    store = null,
+    undoStore = null
   } = {}) {
     css();
     const cats = new Map(config.categories.map(c => [c.id, c]));
@@ -624,7 +627,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       });
     }
     // historique par semaine : couches avant chaque geste (undo), après une annulation (redo)
-    const hist = new Map(),
+    const hist = undoStore instanceof Map ? undoStore : new Map(),
       H = () => hist.get(state.week) || hist.set(state.week, {
         undo: [],
         redo: []

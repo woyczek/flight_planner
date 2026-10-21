@@ -246,6 +246,7 @@ rule as a move.
   keyboard move, clear, or the repeating period.
 - A gesture that changes nothing adds no step.
 - The history keeps up to 50 steps per week shown. Undo and redo clear the selection.
+- The history survives a new mount when the host page passes the same `undoStore` (section 6.1).
 - The host page can offer Undo and Redo buttons, greyed when there is nothing to undo or redo.
 
 ### 5.9 Repeating period
@@ -264,7 +265,7 @@ The repeating period box lays one category over a date span:
 
 ```text
 DisposTimeline.mount(host, {
-  config, week, data, lang, labels, t, density, help, nav, period, buttonClass, onChange, store
+  config, week, data, lang, labels, t, density, help, nav, period, buttonClass, onChange, store, undoStore
 }) → api
 api: get(), set(data), replace(data), add(ranges), week(id?), brush(id?), slot(name), clear(), undo(), redo(),
      history(), destroy()
@@ -291,6 +292,9 @@ api: get(), set(data), replace(data), add(ranges), week(id?), brush(id?), slot(n
 - `onChange(data)`: called with schema 3 data after every change.
 - `store: { read(week) → data | null, write(data) }`: used by the repeating period for weeks other than the one
   shown.
+- `undoStore`: a `Map` the host page keeps. The component holds its history in it, so a page that mounts the
+  component again (to change the language, for instance) passes the same `Map` and keeps Undo and Redo. Without it,
+  each mount starts with an empty history. A page that changes the categories or the person clears it.
 
 ### 6.2 Methods
 
