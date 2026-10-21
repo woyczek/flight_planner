@@ -63,5 +63,5 @@ const data = FrameData.adapter({
 
 Configure the local transport: `FrameData.configure({ transport: FrameData.transports.local(), identity: { trigram:
 'TST' } })`. Everything works on the device, nothing is sent. To try synchronisation, run
-`python frame/data/test/fake_github.py` (standard library) and point the github transport at
-`http://127.0.0.1:8790/api`, as `frame/data/test/index.html` does.
+`python frame/store/test/fake_github.py` (standard library) and point the github transport at
+`http://127.0.0.1:8790/api`, as `frame/store/test/index.html` does.
