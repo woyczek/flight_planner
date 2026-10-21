@@ -13,7 +13,9 @@
   //     settings — en attendant, par l'écran #device du cadre) : aucun usage d'échange coché → local seul ; sinon le
   //     lanceur si la page en est servie, sinon GitHub s'il est réglé, sinon local ;
   //   · identité (device/identity.json : trigramme, VID IVAO, CID VATSIM, identifiant SimBrief) passée aux modules en
-  //     lecture seule, objet vide en son absence.
+  //     lecture seule, objet vide en son absence ;
+  //   · hors ligne : service worker du cadre (frame/sw.js : le cadre et les modules gardés, nouvelle version proposée au
+  //     rechargement), appels sortants des modules relayés par le lanceur s'il y en a un (ctx.net).
   const FD = window.FrameData;
   const ROOT = new URL('../', document.currentScript.src).href;
   const $ = id => document.getElementById(id);
@@ -103,15 +105,20 @@
   };
 
   // ---------------------------------------------------------------- notifications et questions (jamais de dialogue natif)
-  /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. */
-  function notify(text, kind = 'info') {
+  /** Notification flottante : effacée seule (6 s, erreur 12 s) ou par sa croix. kind : info, ok, warn, err. o.action
+   *  { label, run } : un bouton d'action, et la notification reste jusqu'au clic. */
+  function notify(text, kind = 'info', o = {}) {
     const n = document.createElement('div');
     n.className = 'f-note';
     n.dataset.kind = kind;
-    n.innerHTML = `<span>${esc(text)}</span><button type="button" aria-label="${esc(t(T.close))}">✕</button>`;
-    n.querySelector('button').onclick = () => n.remove();
+    n.innerHTML = `<span>${esc(text)}</span>${o.action ? `<button type="button" data-act>${esc(o.action.label)}</button>` : ''}<button type="button" data-x aria-label="${esc(t(T.close))}">✕</button>`;
+    n.querySelector('[data-x]').onclick = () => n.remove();
+    if (o.action) n.querySelector('[data-act]').onclick = () => {
+      n.remove();
+      o.action.run();
+    };
     $('fNotes').append(n);
-    setTimeout(() => n.remove(), kind === 'err' ? 12e3 : 6e3);
+    if (!o.action) setTimeout(() => n.remove(), kind === 'err' ? 12e3 : 6e3);
   }
   /** Fenêtre de question du cadre : html du contenu, boutons ; promesse résolue par onDone(valeur) ; Échap : annuler. */
   function modal(html, onReady) {
@@ -160,13 +167,52 @@
       'x-sog-offline': '1'
     }
   });
+  // sites relayés par le lanceur (clés et CORS de son côté : tools/launch.py, POST /__setup/net) ; sans lanceur, appel
+  // direct seulement vers ceux qui l'autorisent (CORS) ; tout autre site extérieur : 503 marqué x-sog-unreachable
+  const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net'],
+    DIRECT = ['www.simbrief.com', 'api.ivao.aero'];
+  let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
+  const unreachable = () => new Response(null, {
+    status: 503,
+    statusText: 'unreachable',
+    headers: {
+      'x-sog-unreachable': '1'
+    }
+  });
   const net = {
     online: () => navigator.onLine !== false,
-    /** fetch par le cadre : hors ligne, réponse 503 tout de suite ; échec réseau : la même, sans exception. */
-    async fetch(url, init) {
+    /** fetch par le cadre : hors ligne, réponse 503 tout de suite ; relais du lanceur pour les sites de RELAY ; appel
+     *  direct pour la même origine et les sites de DIRECT ; sinon 503 ; jamais d'exception. */
+    async fetch(url, init = {}) {
       if (navigator.onLine === false) return offline();
+      let u;
       try {
-        return await fetch(url, init);
+        u = new URL(url, location.href);
+      } catch {
+        return unreachable();
+      }
+      try {
+        if (u.origin === location.origin) return await fetch(u, init);
+        if (launcherHere && RELAY.includes(u.hostname)) {
+          const r = await fetch(new URL('__setup/net', ROOT), {
+            method: 'POST',
+            cache: 'no-store',
+            headers: {
+              'X-SOG-Setup': '1',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              url: u.href,
+              method: init.method || 'GET',
+              accept: new Headers(init.headers || {}).get('Accept') || '',
+              contentType: new Headers(init.headers || {}).get('Content-Type') || '',
+              body: typeof init.body === 'string' ? init.body : undefined
+            })
+          });
+          return r.headers.get('x-sog-offline') ? offline() : r;
+        }
+        if (DIRECT.includes(u.hostname)) return await fetch(u, init);
+        return unreachable();
       } catch {
         return offline();
       }
@@ -202,7 +248,7 @@
   async function chooseTransport() {
     const exchange = usages.devices || usages.users;
     if (!exchange && !usages.backend) return FD.transports.local();
-    const L = await FD.launcher.detect();
+    const L = launcherHere;
     if (L?.data) return FD.launcher({
       exchange: !!exchange && L.dataGit,
       author: () => identity.trigram || ''
@@ -498,6 +544,7 @@
       if (s.conflicts) location.hash = '#conflicts';
       else syncNow();
     };
+    launcherHere = await FD.launcher.detect();
     await loadDevice();
     // aerodb : un service, une instance, lecteur = la couche de données (frame/aerodb/INTEGRATION.md § 3)
     try {
@@ -527,11 +574,46 @@
     own.watch('device/', () => loadDevice());
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     window.addEventListener('hashchange', route);
-    window.addEventListener('online', () => FD.status().then(paintSync));
+    window.addEventListener('online', async () => {
+      FD.status().then(paintSync);
+      // démarrée sans réseau : le lanceur est recherché de nouveau, le transport suit
+      if (!launcherHere && (launcherHere = await FD.launcher.detect())) loadDevice();
+    });
     window.addEventListener('offline', () => FD.status().then(paintSync));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') FD.status().then(paintSync); // téléphone rallumé : état du moment
+    });
+    offlineApp();
     FD.start();
     route();
   }
+  // ---------------------------------------------------------------- appli installable et hors ligne
+  const U = {
+    update: ['Nouvelle version de l’appli prête.', 'A new version of the app is ready.', 'Eine neue Version der App ist bereit.',
+      'Nueva versión de la aplicación lista.'
+    ],
+    reload: ['Recharger', 'Reload', 'Neu laden', 'Recargar']
+  };
+  /** Service worker du cadre (page servie en http(s), pas dans une coque native qui embarque déjà le code) : nouvelle
+   *  version proposée au rechargement ; points d'entrée des modules de l'appli gardés dès la première visite. */
+  function offlineApp() {
+    if (!navigator.serviceWorker || !/^https?:$/.test(location.protocol)) return;
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'sog-frame-update') notify(t(U.update), 'info', {
+        action: {
+          label: t(U.reload),
+          run: () => location.reload()
+        }
+      });
+    });
+    navigator.serviceWorker.register(new URL('frame/sw.js', ROOT), {
+      scope: new URL('frame/', ROOT).pathname
+    }).then(() => navigator.serviceWorker.ready).then(reg => reg.active?.postMessage({
+      type: 'precache',
+      urls: APP.modules.map(m => new URL(`modules/${m.id}/module.js`, ROOT).href)
+    })).catch(e => console.warn('service worker', e));
+  }
+
   window.SogFrame = {
     APP,
     t,

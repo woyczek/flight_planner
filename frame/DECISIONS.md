@@ -79,3 +79,29 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     restore, offline, 375 px and screen;
   - the launcher transport on a git copy of the data: headers required, tree without the SIA sources and the indexes,
     batch written and committed, refusal and retry when `data/` changed, path outside `data/` refused.
+- **23 Oct 2026 — Lot 4, offline for real: the frame's own service worker** (`frame/sw.js`, scope `frame/`):
+  - it keeps the application files (frame, modules, icon), never the data, which have their own cache in the data
+    layer;
+  - copies are served at once and checked in the background, keyed by path without the stamp;
+  - a changed file refreshes all copies before the pages are told, so a version never arrives half;
+  - it installs even without CacheStorage (the test Chrome with a long profile path had none): the application works,
+    without offline.
+- **23 Oct 2026 — Version without a build step**: the service worker detects a new version by comparing what it serves
+  with what the server sends, so no version number has to be maintained. A launcher restart already clears its site's
+  browser cache, so the new version is served directly then.
+- **23 Oct 2026 — `ctx.net` relay**:
+  - `POST /__setup/net` on the launcher, for an allow-list of sites (SimBrief, IVAO with the launcher's API key,
+    VATSIM); https, GET or POST, 8 MB at most; the response is passed through, and an unreachable site gives a 502
+    marked offline;
+  - without a launcher: a direct call to the sites that allow CORS (SimBrief, IVAO), a 503 otherwise;
+  - never an exception, so modules have one code path.
+- **23 Oct 2026 — Background synchronisation without the user**: a retry after an offline pass (1 minute, doubled,
+  capped at 10), and a pass on wake (visibility, back-forward cache) when one is due; one tab at a time.
+- **23 Oct 2026 — Tests of lot 4**:
+  - `frame/store/test/`: 49 checks (automatic retry added);
+  - the application on a real launcher in a dedicated headless Chrome (short profile path):
+    - after a first visit, reloaded with the launcher stopped, then with the browser network cut: frame, module and
+      synchronisation control drawn, no JavaScript error;
+    - `net.fetch` gives 503 offline;
+    - the SimBrief relay answers through the launcher; a site not relayed gets a 503; the route needs its header;
+    - a changed frame file gives the "new version" notification with "Reload".

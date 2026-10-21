@@ -683,6 +683,22 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                         saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
                 r['saved'] = saved
             return self._json(r)
+        if path == '/__setup/net':
+            # V3 frame : appel sortant d'un module relayé (SimBrief, IVAO, VATSIM)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'error': 'JSON invalide'}, 400)
+            code, hdrs, out = frame_net(a if isinstance(a, dict) else {})
+            self.send_response(code)
+            for k, v in hdrs.items():
+                self.send_header(k, v)
+            self.send_header('Content-Length', str(len(out)))
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-SOG-Relay', '1')
+            self.end_headers()
+            self.wfile.write(out)
+            return None
         if path == '/__setup/batch':
             # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
             try:
@@ -1361,6 +1377,41 @@ def frame_batch(a):
         with INDEX_LOCK:
             index_users()
     return {'ok': True, 'head': head}, 200
+
+
+# ---- V3 frame : relais des appels sortants des modules (ctx.net, frame/app.js) : CORS et clés restent ici. Sites relayés
+# seulement (https) ; clé d'API IVAO ajoutée pour api.ivao.aero ; réponse rendue telle quelle (statut, type, corps,
+# 8 Mo au plus) ; réseau injoignable : 502 marqué X-SOG-Offline.
+NET_HOSTS = {'www.simbrief.com': '', 'api.ivao.aero': 'ivao', 'api.vatsim.net': '', 'data.vatsim.net': '', 'my.vatsim.net': ''}
+NET_MAX = 8 * 1048576
+
+
+def frame_net(a):
+    """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps)."""
+    url = str(a.get('url') or '')
+    u = urllib.parse.urlparse(url)
+    if u.scheme != 'https' or u.hostname not in NET_HOSTS:
+        return 403, {'Content-Type': 'application/json'}, json.dumps({'error': 'site non relayé'}).encode()
+    method = str(a.get('method') or 'GET').upper()
+    if method not in ('GET', 'POST'):
+        return 405, {'Content-Type': 'application/json'}, json.dumps({'error': 'méthode refusée'}).encode()
+    headers = {'User-Agent': 'SOG-suite', 'Accept': str(a.get('accept') or '*/*')}
+    if NET_HOSTS[u.hostname] == 'ivao':
+        key = ivao_key()
+        if key:
+            headers['apiKey'] = key
+    data = None
+    if method == 'POST' and isinstance(a.get('body'), str):
+        data = a['body'].encode('utf-8')
+        headers['Content-Type'] = str(a.get('contentType') or 'application/json')
+    req = urllib.request.Request(url, data=data, method=method, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return r.status, {'Content-Type': r.headers.get('Content-Type') or 'application/octet-stream'}, r.read(NET_MAX)
+    except urllib.error.HTTPError as e:
+        return e.code, {'Content-Type': e.headers.get('Content-Type') or 'text/plain'}, e.read(NET_MAX)
+    except (OSError, ValueError):
+        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1'}, b'unreachable'
 
 
 def csp_policy():

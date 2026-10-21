@@ -255,7 +255,8 @@
     identity: {
       trigram: ''
     },
-    every: EVERY
+    every: EVERY,
+    retry: 60e3 // premier nouvel essai après un passage « hors ligne » (doublé ensuite, plafonné à every)
   };
   /** Règle la couche : transport, identité ({ trigram }), période de la synchronisation de fond (ms). */
   function configure(o = {}) {
@@ -568,6 +569,7 @@
   /** Fin d'un passage : état gardé (dernière synchro réussie, erreur), observateurs prévenus. */
   async function done(r) {
     lastError = r.error;
+    backoff(r);
     const prev = await getMeta('status');
     await setMeta('status', {
       lastSync: r.ok ? new Date().toISOString() : prev?.lastSync || '',
@@ -671,19 +673,52 @@
   }
 
   // ---------------------------------------------------------------- synchronisation de fond
-  let timer = null;
-  /** Démarre la couche : synchronisation tout de suite, puis toutes les « every » ms si l'appareil est en ligne, et au
-   *  retour du réseau. */
+  // sans action de l'utilisateur : au démarrage, toutes les « every » ms en ligne, au retour du réseau, au réveil de la
+  // page (téléphone rallumé, onglet revenu au premier plan, page reprise du cache de navigation) si une écriture attend
+  // ou si la dernière synchronisation date de plus de « every » ; après un passage « hors ligne », nouvel essai après
+  // retry, doublé à chaque échec, plafonné à every ; un seul onglet synchronise à la fois (Web Locks)
+  let timer = null,
+    retryTimer = null,
+    retryDelay = 0;
+  const remote = () => cfg.transport && cfg.transport.kind !== 'local';
+  /** Passage de fond si l'appareil se dit en ligne et que le transport échange. */
+  const tick = () => {
+    if (navigator.onLine !== false && remote()) sync({
+      reason: 'background'
+    });
+  };
+  /** Vrai si un passage est dû : écriture en attente, ou dernière synchronisation plus vieille que every. */
+  async function due() {
+    const s = await status();
+    return s.pending > 0 || !s.lastSync || Date.now() - Date.parse(s.lastSync) > (cfg.every || EVERY);
+  }
+  /** Réveil (page de nouveau visible, reprise du cache de navigation) : état rediffusé, passage s'il est dû. */
+  async function wake() {
+    emitStatus(false);
+    if (remote() && await due()) tick();
+  }
+  /** Après un passage : « hors ligne » → nouvel essai programmé (délai doublé, plafonné) ; sinon délai remis à zéro. */
+  function backoff(r) {
+    clearTimeout(retryTimer);
+    if (r.error !== 'offline' || !timer) {
+      retryDelay = 0;
+      return;
+    }
+    retryDelay = Math.min(cfg.every || EVERY, retryDelay ? retryDelay * 2 : cfg.retry || 60e3);
+    retryTimer = setTimeout(tick, retryDelay);
+  }
+  /** Démarre la couche : synchronisation tout de suite, puis de fond (voir ci-dessus). */
   function start() {
     if (timer) return;
-    const tick = () => {
-      if (navigator.onLine !== false && cfg.transport && cfg.transport.kind !== 'local') sync({
-        reason: 'background'
-      });
-    };
-    tick();
     timer = setInterval(tick, cfg.every || EVERY);
+    tick();
     window.addEventListener('online', tick);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') wake();
+    });
+    window.addEventListener('pageshow', e => {
+      if (e.persisted) wake();
+    });
   }
 
   // ---------------------------------------------------------------- conflits gardés

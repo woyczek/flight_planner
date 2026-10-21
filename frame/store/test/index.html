@@ -421,6 +421,31 @@
       await d.sync();
       check('the taken-back version reaches the repository', JSON.parse((await stats()).files[p]).v === 'mine', null);
     },
+    async 'background: retried automatically after an offline pass, no user action'() {
+      const d = await fresh();
+      await d.sync();
+      FD.configure({
+        retry: 400,
+        every: 60e3
+      });
+      FD.start(); // dernier scénario qui démarre la synchronisation de fond (minuterie gardée jusqu'à la fin de la page)
+      await T('offline', {
+        on: true
+      });
+      await d.put('disponibilites/TST/2026-W49.json', rec('TST', '2026-10-23T10:00:00Z'));
+      const r = await d.sync();
+      check('offline pass', r.error === 'offline', r);
+      await T('offline', {
+        on: false
+      });
+      await new Promise(res => setTimeout(res, 1500));
+      const s = await d.status(),
+        st = await stats();
+      check('retried by itself: queue empty, file in the repository', s.pending === 0 && 'disponibilites/TST/2026-W49.json' in st.files,
+        s);
+      document.dispatchEvent(new Event('visibilitychange'));
+      check('wake does not throw', true, null);
+    },
     async 'git blob sha matches the repository'() {
       const d = await fresh({
         'disponibilites/A/x.json': 'héllo\n'
