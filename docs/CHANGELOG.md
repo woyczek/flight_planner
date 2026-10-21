@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: reading of the V2 Settings** (`frame/settings/READING.md`, `frame/settings/DECISIONS.md`) — each V2
+  Settings card and where it goes in the Pilot application (identity, access, keys on a launcher, offline data, about,
+  diagnostics; the rest to modules, CPCO, the design block, or dropped), the usages checklist and the cards each usage
+  shows, settings as a frame screen replacing `#device`, a one-tap take-over of V2's identity and access, three
+  questions for the user. No code.
 - **report: prefill** (`modules/report/fpl.js`, `text_import.js`, `last_flight.js`, `module.js`; `SPEC.md` § 6,
   `INTEGRATION.md`, `DECISIONS.md`) — my last IVAO flight proposed at mount and taken in one tap (sessions cut by
   disconnections grouped, times from the track), my last VATSIM flight, the SimBrief flight plan, a pasted flight plan,
