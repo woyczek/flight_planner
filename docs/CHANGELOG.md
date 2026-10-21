@@ -196,6 +196,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- Phone (Safari iOS): floating notifications no longer fill the whole screen (the popover container was stretched to the viewport height and the grid stretched every message with it); rows sized to their content, aligned at the bottom, each message capped at 40 % of the screen height.
 - **Passwords: "not saved" after setting one** — the Centre password (*Settings › Centre › Mode and access*) was
   written to the data folder but announced "kept in this browser: authorise the data folder", because the page
   checked for a result that writing never returns (`'data'` instead of `'folder'`, `shared/data_admin.js`). Changing

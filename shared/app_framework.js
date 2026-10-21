@@ -415,11 +415,14 @@
   // 1 à 4 à partir duquel le message s'affiche ; en dessous, seuls err et warn vont au journal). Les zones d'état
   // marquées data-status (ex. <p id="status" data-status>) y sont relayées quand elles affichent une erreur
   // (.err, .error) ou un avertissement (.warn) : un message d'échec ne reste plus caché en bas d'un bloc.
+  /* Safari iOS étire le conteneur popover des notifications sur toute la hauteur de l'écran (feuille UA du popover) :
+     lignes de grille à leur contenu, alignées en bas, hauteur du conteneur et de chaque message bornées. */
   const notifyCss = () => {
     if (document.getElementById("repoNotifyCss")) return;
     const s = document.createElement("style");
     s.id = "repoNotifyCss";
-    s.textContent = `.repo-notify{inset:auto;margin:0;border:0;padding:0;background:none;overflow:visible;color:inherit;position:fixed;z-index:3000;left:50%;bottom:72px;transform:translateX(-50%);display:grid;gap:6px;width:min(640px,calc(100vw - 32px));pointer-events:none}
+    s.textContent = `.repo-notify{inset:auto;top:auto;margin:0;border:0;padding:0;background:none;overflow:visible;color:inherit;position:fixed;z-index:3000;left:50%;bottom:72px;transform:translateX(-50%);display:grid;grid-auto-rows:max-content;align-content:end;height:auto;max-height:calc(100vh - 120px);gap:6px;width:min(640px,calc(100vw - 32px));pointer-events:none}
+.repo-notify>div{max-height:40vh;overflow:auto}
 .repo-notify>div{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:10px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px #0004;background:#1d2733;color:#f2f5f8;border-left:5px solid #6fa8ff}
 .repo-notify>div.ok{border-left-color:#2e9d5b}.repo-notify>div.warn{border-left-color:#e0a400}.repo-notify>div.err{border-left-color:#e5484d;background:#2a1618}
 .repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}`;
