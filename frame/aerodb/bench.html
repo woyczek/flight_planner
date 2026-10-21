@@ -48,8 +48,20 @@
         };
         return v;
       };
+    // ?format=whole : lecteur qui ne voit que l'ancien format (zone entière, villes du monde) — contrôle de la transition
     const want = new URLSearchParams(location.search).get('zones') || 'fr',
-      db = AeroDB.create();
+      whole = new URLSearchParams(location.search).get('format') === 'whole',
+      base = AeroDB.fetchReader(),
+      NEW = /^sia\/base\/(index\.json|cities_major\.json|[^/]+\/[^/]+\/)/,
+      reader = whole ? {
+        read: (p, o) => NEW.test(p) ? Promise.resolve(null) : base.read(p, o),
+        list: async p => (await base.list(p))?.filter(x => !NEW.test(x)) ?? null,
+        watch: base.watch
+      } : base,
+      make = () => AeroDB.create({
+        reader
+      }),
+      db = make();
     res.heapBeforeMb = mem();
     res.status0 = await db.status();
     // France : première demande (zone lue et analysée), puis la même déjà chargée
@@ -59,6 +71,23 @@
     await time('aerodromesParisAgain', () => db.aerodromes({
       bbox: [1.5, 48.3, 3.2, 49.3]
     }));
+    // octets téléchargés jusque-là (fichiers de données lus par le réseau : manifeste, méta, aérodromes)
+    const netKb = () => Math.round(performance.getEntriesByType('resource').filter(e => /\/(data|repos)\/|sia%2F|sia\/base/.test(e
+      .name)).reduce((s, e) => s + (e.encodedBodySize || e.transferSize || 0), 0) / 1024);
+    res.downloadParisAerodromesKb = netKb();
+    res.filesParisAerodromes = db.stats();
+    // recherche de lieux sur une instance neuve qui n'a ouvert que la France (villes de la zone et grandes villes du monde)
+    const db2 = make();
+    await db2.aerodromes({
+      bbox: [1.5, 48.3, 3.2, 49.3]
+    });
+    await time('findTOUL_franceOnlyFirst', async () => ({
+      first: (await db2.find('TOUL', 10)).map(x => x.label)
+    }));
+    await time('findTOUL_franceOnlyAgain', async () => ({
+      n: (await db2.find('TOUL', 10)).length
+    }));
+    res.filesFindTOUL = db2.stats();
     if (want === 'all') await time('readyEurope', async () => ({
       zones: (await db.ready({
         bbox: [-12, 27, 20, 61]

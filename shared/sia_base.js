@@ -1969,7 +1969,149 @@
         out.mb += text.length / 1048576;
       }
     }
+    // format découpé (V3, frame/aerodb : une sorte par fichier, villes par zone), écrit à côté de l'ancien pendant la
+    // transition
+    out.split = await publishSplit(d, parts, {
+      cycle,
+      at,
+      villes,
+      zones: Object.keys(parts),
+      Z
+    });
+    out.mb += out.split.mb;
     return out;
+  }
+  // ---- format découpé (V3) : sia/base/<zone>/<cycle>/<sorte>.json — airspaces, aerodromes, navaids, points, vrp,
+  // airways, obstacles, mora (cases MORA), obstaclemax (maximum par case), cities (villes de la zone), meta (cycle,
+  // axes AAR, tracks NAT, fichiers analysés…) — ; sia/base/cities_major.json (grandes villes du monde, recherche hors
+  // emprise) ; sia/base/index.json (manifeste : cycle, préfixes OACI des aérodromes et tailles par zone, zones des
+  // autres postes gardées). Un fichier n'est réécrit que si son contenu change (hors date) ; les cycles plus anciens
+  // d'une zone publiée sont retirés.
+  const SPLIT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'airways', 'obstacles'],
+    MAJOR_POP = 100000; // habitants : seuil de l'index des grandes villes
+  /** Écrit name dans le dossier d (handle) si son contenu (hors updated_at) change ; rend la taille écrite (0 : inchangé). */
+  async function writeIfChanged(d, name, body, at) {
+    const old = await fileText(d, name);
+    if (old) try {
+      const o = JSON.parse(old);
+      delete o.updated_at;
+      if (JSON.stringify(o) === JSON.stringify(body)) return 0;
+    } catch {
+      /* illisible : réécrit */
+    }
+    const text = JSON.stringify({
+      ...body,
+      updated_at: at
+    });
+    await writeText(d, name, text);
+    return text.length;
+  }
+  /** Zone d'une position parmi zones (contour, puis contour élargi d'un demi-degré) ; '' si aucune. */
+  function zoneLocator(zones, Z) {
+    const tests = m => Z ? zones.map(z => [z, Z.inZones([z], m)]) : [],
+      near = tests(0),
+      wide = tests(.5);
+    return (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon) ? (near.find(([, f]) => f(lat, lon)) || wide.find(([, f]) => f(lat,
+      lon)))?.[0] || '' : '';
+  }
+  async function publishSplit(d, parts, {
+    cycle,
+    at,
+    villes,
+    zones,
+    Z
+  }) {
+    const res = {
+        files: 0,
+        unchanged: 0,
+        mb: 0
+      },
+      locate = zoneLocator(zones, Z),
+      byZone = Object.fromEntries(zones.map(z => [z, []])),
+      count = n => {
+        if (n) {
+          res.files++;
+          res.mb += n / 1048576;
+        } else res.unchanged++;
+        return n;
+      };
+    for (const c of villes || []) {
+      const z = locate(+c.lat, +c.lon);
+      if (byZone[z]) byZone[z].push(c);
+    }
+    const manifest = {};
+    for (const [z, p] of Object.entries(parts)) {
+      const zd = await d.getDirectoryHandle(z, {
+          create: true
+        }),
+        cd = await zd.getDirectoryHandle(cycle, {
+          create: true
+        }),
+        {
+          airspaces,
+          aero = {},
+          moraCells,
+          obstacleMax,
+          ...rest
+        } = p,
+        other = Object.fromEntries(Object.entries(aero).filter(([k]) => !SPLIT_KINDS.includes(k))),
+        files = {
+          airspaces: airspaces || [],
+          ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
+          mora: moraCells || [],
+          obstaclemax: obstacleMax || {},
+          cities: byZone[z] || [],
+          meta: {
+            ...rest,
+            ...(Object.keys(other).length ? {
+              aero: other
+            } : {})
+          }
+        },
+        sizes = {};
+      for (const [kind, data] of Object.entries(files)) sizes[kind] = count(await writeIfChanged(cd, `${kind}.json`, {
+        schema: 2,
+        zone: z,
+        cycle,
+        kind,
+        parserVersion: VERSION,
+        data
+      }, at)) || (await fileText(cd, `${kind}.json`) || '').length;
+      for await (const h of zd.values())
+      if (h.kind === 'directory' && /^\d{4}-\d{2}-\d{2}$/.test(h.name) && h.name !== cycle) await zd.removeEntry(h.name, {
+        recursive: true
+      }).catch(() => {});
+      manifest[z] = {
+        cycle,
+        prefixes: [...new Set((aero.aerodromes || []).map(a => String(a.icao || '').slice(0, 2).toUpperCase()).filter(x =>
+          /^[A-Z]{2}$/
+          .test(x)))].sort(),
+        kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)]))
+      };
+    }
+    const major = (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP);
+    count(await writeIfChanged(d, 'cities_major.json', {
+      schema: 2,
+      kind: 'cities_major',
+      minPopulation: MAJOR_POP,
+      data: major
+    }, at));
+    // manifeste : zones de ce poste remplacées, celles des autres postes gardées
+    let prev = {};
+    try {
+      prev = JSON.parse(await fileText(d, 'index.json') || '{}').zones || {};
+    } catch {
+      prev = {};
+    }
+    count(await writeIfChanged(d, 'index.json', {
+      schema: 2,
+      kind: 'index',
+      zones: {
+        ...prev,
+        ...manifest
+      }
+    }, at));
+    return res;
   }
   /** État de la base publiée lue en mode GitHub (siaBaseGh:v1) : { published, zones, cycle, files, cities, checkedAt }. */
   const ghMark = () => {

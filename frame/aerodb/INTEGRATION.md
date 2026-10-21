@@ -1,7 +1,7 @@
 # aerodb — integration (frame and modules)
 
 How the frame mounts aerodb and how a module uses it. The rules of the component itself are in [SPEC.md](SPEC.md).
-The frontier below was agreed on 23 October 2026 between the aerodb and frame agents and validated by the ergonomics
+The frontier below was agreed on 21 October 2026 between the aerodb and frame agents and validated by the ergonomics
 session.
 
 ## 1. The frontier
@@ -40,7 +40,7 @@ writes: []
 ## 3. Mounting
 
 Services are mounted first, as one instance each, then modules. With the frame's data layer
-(`frame/store/frame_data.js`, delivered on 23 October), the data adapter of aerodb already has `read`, `list` and
+(`frame/store/frame_data.js`, delivered on 21 October), the data adapter of aerodb already has `read`, `list` and
 `watch`, so it is the reader itself:
 
 ```js
@@ -82,9 +82,11 @@ Rules for modules:
 
 ## 5. Costs to know (measured, see DECISIONS.md)
 
-- **Loading France**: the first question touching France reads about 5 MB, in about 120 ms on a phone-like CPU
-  (×4 throttling); later questions take a few milliseconds.
-- **Loading all 13 zones** of the reference set: about 280 ms.
-- **Memory**: the JavaScript heap stays around 60 to 80 MB with every index built and the towns loaded.
-- **Place search**: it reads the towns (4.7 MB today) on its first call, which costs about 200 ms on a phone-like
-  CPU. This drops with towns by zone (lot 3).
+- **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes
+  (and Belgium's, whose frame touches the area): 426 KB, about 30 ms on a phone-like CPU (×4 throttling). The whole
+  France file was 5.6 MB and 120 ms. Later questions take a few milliseconds.
+- **Loading all 13 zones** of the reference set (`ready` over Europe): about 290–360 ms.
+- **Memory**: the JavaScript heap stays around 55 to 75 MB with every index built and the towns loaded.
+- **Place search**: `find('TOUL')` with France loaded reads France's navaids, points, VRP and towns (1.1 MB) and the
+  world's major towns (430 KB), never the world's towns (4.9 MB): about 100 ms on a phone-like CPU the first time,
+  40 ms afterwards.

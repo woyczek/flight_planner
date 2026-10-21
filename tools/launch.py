@@ -2043,7 +2043,24 @@ def aircraft_files():
     return {'db': os.path.exists(os.path.join(d, 'aircraft_db.js')), 'perf': os.path.exists(os.path.join(d, 'aircraft_perf.js'))}
 
 
-AIRCRAFT_KEEP = ('aircraft_db.js', 'aircraft_perf.js')
+AIRCRAFT_KEEP = ('aircraft_db.js', 'aircraft_perf.js', 'aircraft_db.json', 'aircraft_perf.json')
+AIRCRAFT_JSON = {'aircraft_db.json': ('aircraft_db.js', 'AIRCRAFT_DB'), 'aircraft_perf.json': ('aircraft_perf.js', 'AIRCRAFT_PERF')}
+
+
+def aircraft_json(src, js, name):
+    """Texte JSON tiré du littéral « window.NOM = {…}; » d'un .js de la base des types (déjà contrôlé par data_guard) ;
+    None s'il n'en est pas un."""
+    try:
+        text = open(os.path.join(src, js), encoding='utf-8').read()
+    except OSError:
+        return None
+    m = re.search(r'window\.' + name + r'\s*=\s*', text)
+    if not m:
+        return None
+    try:
+        return json.dumps(json.loads(text[m.end():].strip().rstrip(';').strip()), ensure_ascii=False, separators=(',', ':'))
+    except ValueError:
+        return None
 
 
 def aircraft_publish(author='', apply=False):
@@ -2051,17 +2068,21 @@ def aircraft_publish(author='', apply=False):
     tools/build_pages.py ne prend que les fichiers suivis du dépôt de la suite) : data/AircraftDB/ ne garde que
     aircraft_db.js et aircraft_perf.js, copiés depuis AircraftDB/ de la suite (littéraux purs : tools/data_guard.py) ; tout
     le reste du dossier (caches, scripts, __pycache__…) est retiré. apply faux : liste seulement ce qui serait fait (le
-    bouton la montre et demande l'accord). apply vrai : fait, commit au nom de author, puis passe de synchronisation."""
+    bouton la montre et demande l'accord). apply vrai : fait, commit au nom de author, puis passe de synchronisation.
+    Les mêmes bases sont aussi écrites en JSON (aircraft_db.json, aircraft_perf.json : format de la V3, frame/aerodb, qui
+    n'exécute aucun script venu du dépôt), à côté des .js tant que la V2 les lit."""
     src, dst = os.path.join(ROOT, 'AircraftDB'), os.path.join(DATA, 'AircraftDB')
     res = {'ok': False, 'remove': [], 'copy': [], 'message': ''}
     if not data_sync.is_repo(DATA):
         res['message'] = 'data/ n’est pas un dépôt git : rien à publier.'
         return res
-    missing = [n for n in AIRCRAFT_KEEP if not os.path.isfile(os.path.join(src, n))]
+    missing = [n for n in AIRCRAFT_KEEP if n not in AIRCRAFT_JSON and not os.path.isfile(os.path.join(src, n))]
     if missing:
         res['message'] = 'Base des types absente sur ce poste (' + ', '.join(missing) + ') : la compléter d’abord.'
         return res
     for n in AIRCRAFT_KEEP:
+        if n in AIRCRAFT_JSON:
+            continue
         ok, why = data_guard.check_file(os.path.join(src, n))
         if not ok:
             res['message'] = f'AircraftDB/{n} refusé ({why}) : rien publié.'
@@ -2072,10 +2093,19 @@ def aircraft_publish(author='', apply=False):
                 rel = os.path.relpath(os.path.join(d, f), dst).replace(os.sep, '/')
                 if rel not in AIRCRAFT_KEEP:
                     res['remove'].append({'path': 'AircraftDB/' + rel, 'size': os.path.getsize(os.path.join(d, f))})
+    texts = {}
     for n in AIRCRAFT_KEEP:
-        a, b = os.path.join(src, n), os.path.join(dst, n)
-        if not os.path.isfile(b) or open(a, 'rb').read() != open(b, 'rb').read():
-            res['copy'].append({'path': 'AircraftDB/' + n, 'size': os.path.getsize(a)})
+        b = os.path.join(dst, n)
+        if n in AIRCRAFT_JSON:
+            t = aircraft_json(src, *AIRCRAFT_JSON[n])
+            if t is None:
+                res['message'] = f'AircraftDB/{AIRCRAFT_JSON[n][0]} : littéral illisible en JSON, rien publié.'
+                return res
+            data = texts[n] = t.encode('utf-8')
+        else:
+            data = open(os.path.join(src, n), 'rb').read()
+        if not os.path.isfile(b) or open(b, 'rb').read() != data:
+            res['copy'].append({'path': 'AircraftDB/' + n, 'size': len(data)})
     res['ok'] = True
     if not apply:
         return res
@@ -2088,7 +2118,12 @@ def aircraft_publish(author='', apply=False):
             os.rmdir(d)
     os.makedirs(dst, exist_ok=True)
     for c in res['copy']:
-        shutil.copyfile(os.path.join(src, os.path.basename(c['path'])), os.path.join(DATA, *c['path'].split('/')))
+        n = os.path.basename(c['path'])
+        if n in texts:
+            with open(os.path.join(DATA, *c['path'].split('/')), 'wb') as f:
+                f.write(texts[n])
+        else:
+            shutil.copyfile(os.path.join(src, n), os.path.join(DATA, *c['path'].split('/')))
     env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
     who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
     data_sync.git(DATA, 'add', '-A', '--', 'AircraftDB', check=True)
