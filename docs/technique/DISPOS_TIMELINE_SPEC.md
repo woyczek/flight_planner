@@ -130,8 +130,8 @@ whole day, categories by their `legacy` code. Its rules:
     80 px in compact), short times are shown ("8 O 12", "8:30 O 12"). Below about 44 px, only the letter is shown, and
     the times are in the hover text. While dragging, the full times are always shown.
   - A rectangle that crosses midnight is drawn in each row, with its times shown only on its first and last pieces.
-- **Edges and delete button**: on hover or selection, a shape shows a grip on each of its real edges and a small ✕
-  delete button.
+- **Edges and delete button**: on hover or selection, a rectangle shows a grip on each of its real edges and a small ✕
+  delete button. Bands have neither: they are not objects (section 5.1).
 - **Hover**: outside a gesture, a tooltip follows the pointer and gives the range in words.
   - It names the day, the times and the category, for example "Wednesday 14 October, 00:00 to 05:30: Unavailable".
   - A multi-day range reads "from … to …". Empty time reads "Unavailable (default)", bounded to the day hovered.
@@ -163,14 +163,16 @@ whole day, categories by their `legacy` code. Its rules:
 
 ### 5.1 Where a gesture starts decides what it does
 
-This rule does not depend on the brush or on the layer:
+This rule does not depend on the brush:
 
-- A gesture that starts **on a shape**, a rectangle or a band, takes that shape.
+- A gesture that starts **on a rectangle** takes it.
   - A click selects it. A drag moves it (section 5.3). A grip resizes it (section 5.4).
-  - Shift+drag draws over it instead (section 5.2). It is the way to draw an availability on a day already covered by
-    a band.
-- A gesture that starts **beside the shapes**, on empty row space or in a gutter, draws with the brush. The brush only
-  says what to draw.
+  - Shift+drag draws over it instead (section 5.2).
+- Bands are **not objects**. Around an availability, the background only fills the rest of the day (from 00:00 to the
+  availability, and from it to 24:00), so it has nothing to move. A band is never selected, moved or resized. It
+  changes by drawing over it, by dropping a palette entry on it, or by a double-click (sections 5.6 and 5.7).
+- A gesture that starts **anywhere else**, on a band, on empty row space or in a gutter, draws with the brush. The
+  brush only says what to draw.
 - A gesture never starts on a day name, the axis or a delete button.
 - A pointer that moves less than 3 px between press and release is a click.
 
@@ -192,22 +194,23 @@ This rule does not depend on the brush or on the layer:
 
 ### 5.3 Moving
 
-- The shape keeps its length.
+- The rectangle keeps its length.
 - Horizontal moves go by steps of 5 min.
 - Vertical moves go to another row: the same times, on another day. The preview follows the row under the pointer.
 - The move is bounded to the week.
-- A moved rectangle keeps its category and cuts what it lands on in its layer, like a drawing.
-- A moved band changes only the background: the rectangles stay on top.
-- After the move, the shape stays selected.
+- A moved rectangle keeps its category and cuts the rectangles it lands on, like a drawing. The background stays where
+  it is: the background under the old place shows again.
+- After the move, the rectangle stays selected.
 
 ### 5.4 Resizing
 
-A grip moves one edge by steps of 5 min. A shape keeps at least 5 min. A resize follows the same layer rule as a move.
+A grip moves one edge of a rectangle by steps of 5 min. A rectangle keeps at least 5 min. A resize follows the same
+rule as a move.
 
 ### 5.5 Selection and keyboard
 
-- One shape at most is selected. It shows an outline and its grips.
-- Clicking beside the shapes clears the selection. A long press of about 500 ms with a finger selects.
+- One rectangle at most is selected. It shows an outline and its grips.
+- Clicking anywhere but on a rectangle clears the selection. A long press of about 500 ms with a finger selects.
 - With a selection:
   - Delete or Backspace deletes it. Escape clears it.
   - ← and → move it by 5 min; ↑ and ↓ move it by one day.
@@ -276,7 +279,7 @@ api: get(), set(data), replace(data), add(ranges), week(id?), brush(id?), slot(n
 - `density`: `compact` (default) or `comfortable` (section 4).
 - `help`: `true` (default), `"collapsed"` or `false`. It controls the "How to use" panel under the grid, open,
   folded or absent. The panel holds one short paragraph per idea, in the order of use: the two layers and the one
-  state per minute; the palette, which says what to draw; drawing; taking a shape; cutting; drops and double-clicks;
+  state per minute; the palette, which says what to draw; drawing; taking an availability; cutting; drops and double-clicks;
   correcting; the repeating period; what is saved. Its texts are labels like any other: `help.title`, then
   `help.layers`, `help.palette`, `help.draw`, `help.grab`, `help.cut`, `help.drop`, `help.fix`, `help.period` and
   `help.saved`.
@@ -308,7 +311,8 @@ api: get(), set(data), replace(data), add(ranges), week(id?), brush(id?), slot(n
 ### 6.3 Events, fired on `host`
 
 - `dispos-change`: detail is the schema 3 data, after every change, together with `onChange`.
-- `dispos-select`: detail is `{ start, end, cat, layer }`, or `null`, whenever the selection changes.
+- `dispos-select`: detail is `{ start, end, cat, layer }` (`layer` is always `foreground`: only rectangles are
+  selected), or `null`, whenever the selection changes.
 - `dispos-week`: detail is `{ week }`.
 - `dispos-history`: detail is `{ undo, redo }`.
 - `dispos-brush`: detail is `{ id }`, when the brush changes.
@@ -340,9 +344,9 @@ These hold after every gesture, every read and every undo:
 
 ## 8. Accessibility
 
-- Palette buttons are real buttons with `aria-pressed`. Shapes are `role="button"`, with `aria-pressed` for the
-  selection and the hover text as `aria-label`. Rows carry the full date as `aria-label`.
-- The keyboard edits a selected shape (section 5.5). Creating a shape needs a pointer or the repeating period box.
+- Palette buttons are real buttons with `aria-pressed`. Rectangles are `role="button"`, with `aria-pressed` for the
+  selection and the hover text as `aria-label`; bands are `role="img"` with the hover text as `aria-label`. Rows carry the full date as `aria-label`.
+- The keyboard edits a selected rectangle (section 5.5). Creating a shape needs a pointer or the repeating period box.
 - Touch works like the mouse, through pointer events, with a long press to select and `touch-action: none` on the rows.
 - Colours are never the only information: rectangles carry a letter, and every shape has its text in the tooltip.
 

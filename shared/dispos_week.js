@@ -93,16 +93,16 @@
       'La paleta. Un clic en una ficha elige el pincel: solo indica QUÉ trazar. Las fichas de fondo están en la última línea.'
     ],
     'help.draw': [
-      'Tracer. Glisser dans le vide ou dans l’espace entre deux rangées : la forme s’aimante à la demi-heure. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.',
-      'Draw. Drag on empty space or in the gap between two rows: the shape snaps to the half hour. Across several days, a selection rectangle lays the same hours on each day it crosses.',
-      'Zeichnen. Im leeren Bereich oder im Abstand zwischen zwei Zeilen ziehen: die Form rastet auf der halben Stunde ein. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.',
-      'Trazar. Arrastrar en el vacío o en el espacio entre dos filas: la forma se ajusta a la media hora. En varios días, un rectángulo de selección pone el mismo horario en cada día que cruza.'
+      'Tracer. Glisser dans le vide, sur une bande de fond ou dans l’espace entre deux rangées : la forme s’aimante à la demi-heure. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.',
+      'Draw. Drag on empty space, on a background band or in the gap between two rows: the shape snaps to the half hour. Across several days, a selection rectangle lays the same hours on each day it crosses.',
+      'Zeichnen. Im leeren Bereich, auf einem Hintergrundband oder im Abstand zwischen zwei Zeilen ziehen: die Form rastet auf der halben Stunde ein. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.',
+      'Trazar. Arrastrar en el vacío, sobre una banda de fondo o en el espacio entre dos filas: la forma se ajusta a la media hora. En varios días, un rectángulo de selección pone el mismo horario en cada día que cruza.'
     ],
     'help.grab': [
-      'Saisir une forme. Un geste qui part sur une forme, rectangle ou bande, la saisit quel que soit le pinceau : un clic la sélectionne, un glisser la déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords la redimensionnent. Maj+glisser trace par-dessus : c’est ainsi qu’on pose une dispo sur un jour déjà couvert d’une bande.',
-      'Take a shape. A gesture that starts on a shape, rectangle or band, takes it whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it. Shift+drag draws over it instead, which is how to draw an availability on a day already covered by a band.',
-      'Eine Form greifen. Eine Geste, die auf einer Form (Rechteck oder Band) beginnt, greift sie, egal welcher Pinsel: ein Klick wählt sie aus, Ziehen verschiebt sie (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), ihre Ränder ändern die Größe. Umschalt+Ziehen zeichnet darüber: so legt man eine Verfügbarkeit auf einen Tag, der schon von einem Band bedeckt ist.',
-      'Tomar una forma. Un gesto que empieza sobre una forma, rectángulo o banda, la toma sea cual sea el pincel: un clic la selecciona, arrastrar la mueve (pasos de 5 min; hacia arriba o abajo: mismo horario, otro día), sus bordes la redimensionan. Mayús+arrastrar traza encima: así se pone una disponibilidad en un día ya cubierto por una banda.'
+      'Saisir une dispo. Un geste qui part sur un rectangle le saisit, quel que soit le pinceau : un clic le sélectionne, un glisser le déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords le redimensionnent ; Maj+glisser trace par-dessus. Les bandes de fond ne sont pas des objets : autour d’une dispo, elles remplissent le reste du jour et ne se déplacent pas ; un geste qui part sur une bande trace.',
+      'Take an availability. A gesture that starts on a rectangle takes it, whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it; Shift+drag draws over it instead. Background bands are not objects: around an availability they fill the rest of the day and do not move; a gesture that starts on a band draws.',
+      'Eine Verfügbarkeit greifen. Eine Geste, die auf einem Rechteck beginnt, greift es, egal welcher Pinsel: Ein Klick wählt es aus, Ziehen verschiebt es (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), seine Ränder ändern die Größe; Umschalt+Ziehen zeichnet stattdessen darüber. Hintergrundbänder sind keine Objekte: Um eine Verfügbarkeit herum füllen sie den Rest des Tages und bewegen sich nicht; eine Geste, die auf einem Band beginnt, zeichnet.',
+      'Tomar una disponibilidad. Un gesto que empieza sobre un rectángulo lo toma, sea cual sea el pincel: un clic lo selecciona, arrastrar lo mueve (pasos de 5 min; hacia arriba o abajo: mismo horario, otro día), sus bordes lo redimensionan; Mayús+arrastrar traza encima. Las bandas de fondo no son objetos: alrededor de una disponibilidad llenan el resto del día y no se mueven; un gesto que empieza sobre una banda traza.'
     ],
     'help.cut': [
       'Découper. La dernière forme gagne : un rectangle tracé sur un autre le découpe, un fond tracé à travers un rectangle aussi. La découpe se voit pendant le geste.',
@@ -117,10 +117,10 @@
       'Soltar, doble clic. Arrastrar una ficha sobre una forma: la forma toma esa naturaleza. Soltarla en el vacío de una fila o en el nombre del día: el día entero, y una ficha de fondo solo cambia entonces el fondo, los rectángulos se quedan. Doble clic en una banda: su color pasa a ser el fondo de todo el día; en una ficha de fondo: de toda la semana.'
     ],
     'help.fix': [
-      'Corriger. Le ✕ d’une forme, ou Suppr sur la sélection, l’efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit.',
-      'Correct. ✕ on a shape, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes.',
-      'Korrigieren. Das ✕ einer Form oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht rückgängig, Strg+Y oder Strg+Umschalt+Z stellt wieder her.',
-      'Corregir. La ✕ de una forma, o Supr sobre la selección, la borra; las flechas la mueven (← → 5 min, ↑ ↓ un día); Esc quita la selección. Ctrl+Z deshace, Ctrl+Y o Ctrl+Mayús+Z rehace.'
+      'Corriger. Le ✕ d’une dispo, ou Suppr sur la sélection, l’efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit.',
+      'Correct. ✕ on an availability, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes.',
+      'Korrigieren. Das ✕ einer Verfügbarkeit oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht rückgängig, Strg+Y oder Strg+Umschalt+Z stellt wieder her.',
+      'Corregir. La ✕ de una disponibilidad, o Supr sobre la selección, la borra; las flechas la mueven (← → 5 min, ↑ ↓ un día); Esc quita la selección. Ctrl+Z deshace, Ctrl+Y o Ctrl+Mayús+Z rehace.'
     ],
     'help.saved': [
       'Ce qui est enregistré. Les heures sont en UTC, les semaines sont des semaines ISO (du lundi au dimanche). Chaque retouche est enregistrée (dossier des données, sinon ce navigateur) ; le Centre s’en sert pour affecter les missions. Le temps sans rien est indisponible.',

@@ -95,7 +95,7 @@ The component never stores anything itself. It hands the data to the page, one p
 **Events**: listen on the container.
 
 - `dispos-change`: the data changed.
-- `dispos-select`: a shape was selected; detail `{ start, end, cat, layer }`, or `null`.
+- `dispos-select`: an availability (rectangle) was selected; detail `{ start, end, cat, layer }`, or `null`.
 - `dispos-week`: the person browsed to another week.
 - `dispos-history`: detail `{ undo, redo }`, the counts, to enable or grey Undo and Redo buttons. The page calls
   `api.undo()` and `api.redo()`. Ctrl+Z, Ctrl+Y and Ctrl+Shift+Z already work inside the page.

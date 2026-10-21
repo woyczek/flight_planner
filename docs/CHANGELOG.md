@@ -302,11 +302,14 @@ names) lives once in the shared framework.
   availability rectangles sit on top, with square corners, the start time on the left, the type centred and the end
   time on the right. One state per minute: under a rectangle the background does not count, but it stays in place, so
   a moved or deleted rectangle gives it back.
-  - One rule for every gesture, whatever the brush: a gesture that starts on a shape (rectangle or band) takes it —
+  - One rule for every gesture, whatever the brush: a gesture that starts on an availability rectangle takes it —
     click selects, drag moves (5 min steps, to another row: same times, another day), the edges resize, Shift+drag
-    draws over it; a gesture that starts beside the shapes draws with the brush.
+    draws over it; a gesture that starts anywhere else (empty space, background band, gutter) draws with the brush.
+    Background bands are not objects: around an availability they only fill the rest of the day (00:00 to it, it to
+    24:00), so they are never selected or moved, and an availability in the middle of a day covered by a band moves
+    on its own.
   - Across several rows, a selection rectangle lays the same hours on each day it crosses, started anywhere (empty
-    space, gutter between rows). The last shape wins, and a background drawn through an availability cuts it, live.
+    space, background band, gutter between rows). The last shape wins, and a background drawn through an availability cuts it, live.
   - A palette entry dropped on a shape changes its nature; dropped on a day (empty part of the row, day name) it fills
     the whole day, and a background entry then changes only the background. Double-clicks replace the background of
     a day or of the week, never removing an availability.
