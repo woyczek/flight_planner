@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame, lot 5: publication and iOS shell** (`.github/workflows/pages.yml`, `tools/build_pages.py`, `mobile/`,
+  `frame/app.js`).
+  - One GitHub Pages site for both branches: V2 (develop) at the root, V3 (v3) under `/v3/` (Pilot application:
+    `/v3/frame/`), rebuilt on a push to either.
+  - `build_pages.py --start PATH`: the root page redirects to the given page; the Capacitor shell, now named "SOG
+    Pilote", opens on the Pilot application.
+  - Modules declare the files they import (`meta.files`); the frame keeps them offline from the first visit.
 - **fuel: numbers of ChatGPT answers, RPM table editor, offline** (`modules/fuel/sheets.js`, `modules/fuel/module.js`,
   `modules/fuel/test/sheets.html`) — "2,400" is read as 2400 (thousands commas, European form, otherwise decimal
   comma; V2 read 2.4), with its bench cases (18/18); the RPM / fuel flow table is edited row by row on a computer

@@ -1,6 +1,6 @@
 {
   "appId": "org.sogvirtual.flightplanner",
-  "appName": "Flight Planner",
+  "appName": "SOG Pilote",
   "webDir": "../_site",
   "server": {
     "hostname": "localhost"

@@ -9,6 +9,7 @@ export const meta = {
   id: 'hello',
   apps: ['pilot'],
   level: 1,
+  files: [], // fichiers que ce module importe, relatifs à module.js (gardés hors ligne dès l'installation) : aucun ici
   reads: ['pilot/', 'cache/hello/'],
   writes: [{
     prefix: 'pilot/',
