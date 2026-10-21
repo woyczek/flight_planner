@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **report: reading of the V2 mission report** (`modules/report/READING.md`, `modules/report/DECISIONS.md`) — what
+  the V2 report does on each path, what the Pilot application keeps and what moves to CPCO, the SOG client or other
+  modules, today's shortest path (5 clicks to a report saved in the browser, 8 with the website) and the target (3
+  taps, 4 with the website), what the module asks of the frame and aerodb, the three phone steps Flight · Mission ·
+  Result, and the website hand-off. No code.
 - **Frame, lot 5: publication and iOS shell** (`.github/workflows/pages.yml`, `tools/build_pages.py`, `mobile/`,
   `frame/app.js`).
   - One GitHub Pages site for both branches: V2 (develop) at the root, V3 (v3) under `/v3/` (Pilot application:
