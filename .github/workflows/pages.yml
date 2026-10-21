@@ -2,11 +2,11 @@
 # branche de l'appli, site construit par tools/build_pages.py (fichiers suivis, images Git LFS, empreintes ?v=, sans
 # data/), icônes de l'écran d'accueil produites depuis assets/favicon-flight.svg, puis déployé.
 # Réglage à faire une fois : Settings › Pages › Source : « GitHub Actions » ; Settings › Environments › github-pages :
-# branche autorisée (feature/mobile, puis develop).
+# branche autorisée : develop.
 name: Pages (appli)
 on:
   push:
-    branches: [feature/mobile]
+    branches: [develop]
   workflow_dispatch:
 permissions:
   contents: read

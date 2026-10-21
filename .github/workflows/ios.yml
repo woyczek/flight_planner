@@ -1,5 +1,5 @@
 # Appli iOS embarquée de la suite (Capacitor, dossier mobile/ ; docs/technique/APPLI_AUTONOME.md, section 6).
-# À chaque push de feature/mobile touchant l'appli ou le code web (ou à la demande) :
+# À chaque push de develop touchant l'appli ou le code web (ou à la demande) :
 #  - job « build » : site construit par tools/build_pages.py, projet iOS généré (cap add ios), icônes et écran de
 #    démarrage tirés de assets/favicon-flight.svg, puis compilation SANS signature pour le simulateur (validation du
 #    projet) ; l'appli compilée est publiée en artefact « FlightPlanner-simulator » ;
@@ -19,7 +19,7 @@
 name: iOS (appli)
 on:
   push:
-    branches: [feature/mobile]
+    branches: [develop]
     paths:
       - 'mobile/**'
       - '.github/workflows/ios.yml'
