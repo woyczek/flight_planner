@@ -237,7 +237,7 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 Ihre Verfügbarkeit in der angezeigten Woche, in UTC, auf die Minute. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen.
 
 - **Wochenleiste** des Blocks, auf jeder Stufe: „‹“, Datum, „›“, „⟲“ (oft trägt man die nächste Woche ein). Auf Stufe 3 ist sie mit der Leiste der Liste gekoppelt.
-- **Zusammenfassung**: ein Feld pro Tag (Montag bis Sonntag, UTC), jeder Zeitraum mit dem Abzeichen seiner Kategorie und seinen Zeiten, zum Beispiel „D+ 17:00–22:00“; „—“ für einen Tag ohne Eintrag. Leere Woche: eine Zeile, „Keine Verfügbarkeit für diese Woche eingetragen.“
+- **Zusammenfassung**: ein Feld pro Tag (Montag bis Sonntag, UTC), jeder Zeitraum mit dem Abzeichen seiner Kategorie und seinen Zeiten, zum Beispiel „D+ 17:00–22:00“; „—“ für einen Tag ohne Eintrag. Leere Woche: eine Zeile, „Keine Verfügbarkeit für diese Woche eingetragen.“ Ein Tippen (oder Klick) auf einen Tag öffnet die Eingabe an diesem Tag; auf dem Telefon in der Ansicht „Tag“. Auf dem Telefon steht der Umschalter „Tag / Woche“ über der Zusammenfassung, auch bei eingeklappter Eingabe sichtbar.
 - **„Meine Woche bearbeiten“** klappt an Ort und Stelle die unten beschriebene Eingabe auf (Palette, Raster, genauer Zeitraum, Knöpfe); ein weiterer Klick klappt sie zu. Bei leerer Woche ist sie sofort aufgeklappt, danach bleibt sie, wie Sie sie gelassen haben. Die Zusammenfassung folgt jeder Änderung.
 
 Es ist dieselbe Eingabe wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel). Das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte.

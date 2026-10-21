@@ -260,6 +260,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **My missions on phones: the "Day" view could not be seen** (`shared/dispos_week.js`) — in the compact availability
+  block (since the entry page), the Day / Week switch was inside the folded "Edit my week", so with a week already
+  filled in (GitHub mode, real data) the phone showed no "Day"; an empty week (preview, sample data) unfolded it. The
+  switch now sits above the summary, choosing a view unfolds the entry, and a tap on a day of the summary opens the
+  entry on that day (Day view on phones). User manual (4 languages).
 - **Fleet map and Maintenance zones map: "Access blocked" instead of the background** — both used raster tiles from
   `tile.openstreetmap.org`, which refuses this use. They now use the vector background OpenFreeMap Positron, like the
   map studio's defaults (`shared/fleet_map.js`, `shared/maintenance_page.js`).

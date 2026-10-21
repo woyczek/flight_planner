@@ -244,7 +244,7 @@ Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute 
 Vos disponibilités de la semaine affichée, en heures UTC, à la minute. Le Centre s'en sert pour vous affecter des missions.
 
 - **Barre de semaine** du bloc, à tout niveau : « ‹ », date, « › », « ⟲ » (on saisit souvent la semaine suivante). Au niveau 3, elle va avec celle de la liste.
-- **Résumé** : une case par jour (lundi à dimanche, UTC), chaque plage avec la pastille de sa catégorie et ses heures, par exemple « D+ 17:00–22:00 » ; « — » pour un jour sans rien. Semaine vide : une ligne, « Aucune disponibilité saisie cette semaine. »
+- **Résumé** : une case par jour (lundi à dimanche, UTC), chaque plage avec la pastille de sa catégorie et ses heures, par exemple « D+ 17:00–22:00 » ; « — » pour un jour sans rien. Semaine vide : une ligne, « Aucune disponibilité saisie cette semaine. » Un toucher (ou un clic) sur un jour ouvre la saisie sur ce jour ; sur téléphone, en vue « Jour ». Sur téléphone, la bascule « Jour / Semaine » est au-dessus du résumé, visible même saisie repliée.
 - **« Modifier ma semaine »** déplie sur place la saisie décrite ci-dessous (palette, grille, plage précise, boutons) ; un nouveau clic la replie. Elle est dépliée d'office quand la semaine est vide, puis reste comme vous l'avez laissée. Le résumé suit chaque retouche.
 
 C'est la même saisie que sur la page Mes disponibilités (chapitre suivant). L'ancienne grille horaire et le lien « Ouvrir la saisie des disponibilités seule » n'apparaissent qu'au niveau Expert.

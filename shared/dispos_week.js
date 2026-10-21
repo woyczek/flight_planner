@@ -144,7 +144,7 @@
 .dw-add label{display:inline-flex;gap:5px;align-items:center;font-size:12.5px}.dw-add select,.dw-add input[type=time]{padding:3px 5px;font:inherit}
 .dw-days{display:inline-flex;flex-wrap:wrap;gap:2px 8px}.dw-days label{font-size:12px}.dw-themes{margin:2px 0 0;font-size:12px;opacity:.85}
 .dw-precise>summary{cursor:pointer;font-size:12px;opacity:.85}.dw-precise[open]>summary{margin-bottom:6px}.dw-msg{margin:0}
-.dw-sum{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.dw-sum-d{display:grid;align-content:start;gap:2px;padding:4px 6px;border:1px solid var(--sk-card-bd,var(--line,#8884));font-size:12px;min-width:0}
+.dw-sum{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.dw-sum-d{cursor:pointer;display:grid;align-content:start;gap:2px;padding:4px 6px;border:1px solid var(--sk-card-bd,var(--line,#8884));font-size:12px;min-width:0}
 .dw-sum-d>b{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.02em;opacity:.8}.dw-sum-d>span{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-variant-numeric:tabular-nums}
 .dw-sum-d>i{opacity:.55;font-style:normal}.dw-sum-none{margin:0;opacity:.85}.dw-edit>summary{cursor:pointer;font-weight:600}.dw-edit-in{display:grid;gap:8px;margin-top:8px}
 @media (max-width:800px){.dw-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -226,10 +226,11 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         brush = ui?.brush() || storedBrush();
       ui?.destroy();
       ui = null;
-      const edit = `<div class="dw-view" data-view hidden><button type="button" class="secondary" data-view-set="day">${esc(t(['Jour', 'Day', 'Tag', 'Día']))}</button><button type="button" class="secondary" data-view-set="week">${esc(t(['Semaine', 'Week', 'Woche', 'Semana']))}</button></div><div data-tl></div><div class="dw-dayview" data-dayview hidden></div>
+      const view = `<div class="dw-view" data-view hidden><button type="button" class="secondary" data-view-set="day">${esc(t(['Jour', 'Day', 'Tag', 'Día']))}</button><button type="button" class="secondary" data-view-set="week">${esc(t(['Semaine', 'Week', 'Woche', 'Semana']))}</button></div>`,
+        edit = `${compact ? '' : view}<div data-tl></div><div class="dw-dayview" data-dayview hidden></div>
         <details class="dw-precise"><summary>${esc(t(['Plage précise', 'Precise range', 'Genauer Zeitraum', 'Intervalo preciso']))}</summary><div class="dw-add" data-add-form></div></details>
         <div class="dw-actions" data-actions></div>`;
-      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p>${compact ? `<div data-sum></div><details class="dw-edit" data-edit${editOpen ? ' open' : ''}><summary>${esc(t(['Modifier ma semaine', 'Edit my week', 'Meine Woche bearbeiten', 'Editar mi semana']))}</summary><div class="dw-edit-in">${edit}</div></details>` : edit}<p class="dw-msg small ${last[1]}">${esc(last[0])}</p>`;
+      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p>${compact ? `${view}<div data-sum></div><details class="dw-edit" data-edit${editOpen ? ' open' : ''}><summary>${esc(t(['Modifier ma semaine', 'Edit my week', 'Meine Woche bearbeiten', 'Editar mi semana']))}</summary><div class="dw-edit-in">${edit}</div></details>` : edit}<p class="dw-msg small ${last[1]}">${esc(last[0])}</p>`;
       // mode compact : le pilote déplie ou replie la saisie lui-même (sa décision l'emporte sur la semaine vide)
       host.querySelector('[data-edit]>summary')?.addEventListener('click', e => {
         editOpen = !e.target.closest('details').open;
@@ -296,7 +297,7 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         const d0 = mon + i * 864e5,
           d1 = d0 + 864e5,
           day = ranges.filter(r => r.s < d1 && r.e > d0);
-        return `<div class="dw-sum-d"><b>${esc(dayLabel(d0))}</b>${day.length ? day.map(r => {
+        return `<div class="dw-sum-d" data-sum-day="${i}" role="button" tabindex="0" title="${esc(t(['Modifier ce jour', 'Edit this day', 'Diesen Tag bearbeiten', 'Editar este día']))}"><b>${esc(dayLabel(d0))}</b>${day.length ? day.map(r => {
           const c = r.c,
             col = c ? D.color(c) : '#999';
           return `<span><span class="dw-chip" style="background:${col};color:${ink(col)}" title="${esc(c ? D.label(c.label) : '')}">${esc(c ? D.code(c) || D.shortLabel(c) : '?')}</span>${esc(`${hm(Math.max(r.s, d0), d0)}–${hm(Math.min(r.e, d1), d0)}`)}</span>`;
@@ -459,6 +460,13 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
       dayIdx = j < 0 ? 6 : 0;
       setWeek(SD().addWeek(week, j < 0 ? -1 : 1));
     }
+    /** Mode compact : déplie la saisie (« Modifier ma semaine ») et retient ce choix. */
+    const openEdit = () => {
+      const det = host.querySelector('[data-edit]');
+      if (!det) return;
+      editOpen = true;
+      det.open = true;
+    };
     /** Appui dans la vue « un jour » ; rend true s'il la concernait. */
     function dayClick(e) {
       const view = e.target.closest('[data-view-set]');
@@ -469,6 +477,21 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
           /* stockage indisponible : choix le temps de la page */
         }
         pick = null;
+        openEdit();
+        dayRender();
+        return true;
+      }
+      // mode compact : un jour du résumé ouvre la saisie sur ce jour (vue « un jour » en mode mobile)
+      const sumDay = e.target.closest('[data-sum-day]');
+      if (sumDay) {
+        dayIdx = +sumDay.dataset.sumDay;
+        if (mobile()) try {
+          localStorage.setItem(VIEW, 'day');
+        } catch {
+          /* stockage indisponible : vue du moment */
+        }
+        pick = null;
+        openEdit();
         dayRender();
         return true;
       }

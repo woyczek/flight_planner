@@ -237,7 +237,7 @@ El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a to
 Su disponibilidad de la semana mostrada, en horas UTC, al minuto. El Centro la utiliza para asignarle misiones.
 
 - **Barra de semana** del bloque, en todos los niveles: «‹», fecha, «›», «⟲» (a menudo se introduce la semana siguiente). En el nivel 3, va unida a la barra de la lista.
-- **Resumen**: una casilla por día (de lunes a domingo, UTC), cada intervalo con la pastilla de su categoría y sus horas, por ejemplo «D+ 17:00–22:00»; «—» para un día sin nada. Semana vacía: una línea, «Ninguna disponibilidad introducida esta semana.»
+- **Resumen**: una casilla por día (de lunes a domingo, UTC), cada intervalo con la pastilla de su categoría y sus horas, por ejemplo «D+ 17:00–22:00»; «—» para un día sin nada. Semana vacía: una línea, «Ninguna disponibilidad introducida esta semana.» Un toque (o clic) en un día abre la introducción en ese día; en el teléfono, en vista «Día». En el teléfono, el conmutador «Día / Semana» está encima del resumen, visible aunque la introducción esté plegada.
 - **«Editar mi semana»** despliega en el sitio la introducción descrita más abajo (paleta, cuadrícula, intervalo preciso, botones); un nuevo clic la pliega. Se despliega sola cuando la semana está vacía y luego se queda como la dejó. El resumen sigue cada retoque.
 
 Es la misma introducción que en la página Mi disponibilidad (capítulo siguiente). La antigua cuadrícula horaria y el enlace «Abrir solo la introducción de disponibilidad» solo aparecen en el nivel Experto.

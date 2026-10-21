@@ -237,7 +237,7 @@ The “⤢ Full width” button in the block title spreads the folder across the
 Your availability for the week shown, in UTC, to the minute. The Centre uses it to assign missions to you.
 
 - **Week bar** of the block, at every level: “‹”, date, “›”, “⟲” (the next week is often the one to enter). At level 3, it goes with the list's bar.
-- **Summary**: one box per day (Monday to Sunday, UTC), each range with the badge of its category and its times, for example “D+ 17:00–22:00”; “—” for a day with nothing. Empty week: one line, “No availability entered this week.”
+- **Summary**: one box per day (Monday to Sunday, UTC), each range with the badge of its category and its times, for example “D+ 17:00–22:00”; “—” for a day with nothing. Empty week: one line, “No availability entered this week.” A tap (or click) on a day opens the entry on that day; on phones, in “Day” view. On phones, the “Day / Week” switch sits above the summary, visible even with the entry folded.
 - **“Edit my week”** unfolds on the spot the entry described below (palette, grid, precise range, buttons); another click folds it. It is unfolded at once when the week is empty, then stays as you left it. The summary follows each change.
 
 It is the same entry as on the My availability page (next chapter). The old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level.
