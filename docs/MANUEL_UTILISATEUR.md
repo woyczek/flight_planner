@@ -570,7 +570,7 @@ boutons et champs plus grands, tableaux qui défilent dans leur bloc ou présent
 - **Skin du téléphone** : « Mobile » (par défaut, plat et léger), « Swiss » (noir et blanc, angles droits, accent rouge)
   ou « Mon design » (le design choisi ci-dessus). Appliqué au prochain chargement d'une page sur un écran tactile.
 - **Jour / nuit** : « Suit le téléphone » (réglage clair ou sombre du téléphone), « Jour » ou « Nuit ».
-- Sur un écran tactile, les pages conçues pour un grand écran (cartes de vol, fiches de performances, pages de
+- Sur un écran tactile, les pages conçues pour un grand écran (cartes de vol, pages de
   préparation du Centre, réglages d'installation) sont retirées de la barre et des onglets ; ouvertes quand même, elles
   portent un bandeau. Une fenêtre d'ordinateur réduite garde toutes ses pages.
 - **Aperçu mobile sur ordinateur** (niveau Expert) : une page de la suite dans des cadres de téléphone et de tablette,
@@ -1817,6 +1817,8 @@ Cette page (barre latérale « Outils », à partir du niveau Conception) gère 
 - Sous le tableau, quatre cartes : « Fiche en cours » (régimes de vol et champs de la fiche, dès le niveau Conception), « Moteur » (cartographie, table RPM, interpolation), « SimBrief » (airframe, calibration OFP, traçabilité, audit) et « Fichier » (dernier JSON importé, replié), décrites ci-dessous.
 - Une fiche enregistrée ici est reprise aussitôt par un Carburant ouvert dans un autre onglet (la fiche qu'il affiche, et son devis).
 
+
+**Sur téléphone** (portrait) : la page reste dans la barre ; le titre se réduit à « Fiches ». Le tableau devient une liste : appareil, origine de la fiche et ce qui lui manque ; un toucher sur une ligne choisit l'appareil et montre aussi la cartographie, la consommation de croisière et le plafond. Les rubriques de la fiche (Identité et format, Carburant et opération, Piste et alternat, Montée, Croisière, Descente, Régime et consommation) sont repliées une par une, en une colonne ; boutons et champs font au moins 40 px.
 ### Barre du bas et menu ☰
 
 La barre du bas indique « Fiche enregistrée — … », « Modifications non enregistrées — … », « Pas de fiche pour … » (appareil choisi sans fiche, avec les boutons de création) ou « Aucune fiche en cours. ». « Enregistrer la fiche » l'écrit dans la base locale ; « Abandonner les modifications » (seulement s'il y en a) relit la base locale et rouvre la fiche telle qu'elle était enregistrée. Pour supprimer la fiche : « Supprimer » (sa ligne cochée). Les notifications s'affichent au-dessus de la barre.

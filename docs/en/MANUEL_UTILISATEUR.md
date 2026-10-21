@@ -546,7 +546,7 @@ fields, tables that scroll inside their block or are shown as cards.
 - **Phone skin**: “Mobile” (default, flat and light), “Swiss” (black and white, square corners, red accent) or “My
   design” (the design chosen above). Applied the next time a page is loaded on a touch screen.
 - **Day / night**: “Follows the phone” (the phone's light or dark setting), “Day” or “Night”.
-- On a touch screen, the pages designed for a large screen (flight maps, performance sheets, Centre preparation pages,
+- On a touch screen, the pages designed for a large screen (flight maps, Centre preparation pages,
   installation settings) are left out of the bar and the tabs; opened anyway, they show a notice. A reduced computer
   window keeps all its pages.
 - **Mobile preview on a computer** (Expert level): a page of the suite in phone and tablet frames, with the chosen skin
@@ -1763,6 +1763,8 @@ This page (side bar “Tools”, from the Design level) manages the performance 
 - Under the table, four cards: “Sheet being edited” (flight regimes and fields of the sheet, from the Design level), “Engine” (engine map, RPM table, interpolation), “SimBrief” (airframe, OFP calibration, traceability, audit) and “File” (last imported JSON, folded), described below.
 - A sheet saved here is picked up at once by a Fuel page open in another tab (the sheet it shows, and its fuel plan).
 
+
+**On phones** (portrait): the page stays in the bar; the title shortens to “Sheets”. The table becomes a list: aircraft, origin of the sheet and what it lacks; a tap on a line chooses the aircraft and also shows the map, the cruise fuel flow and the ceiling. The sheet's sections (identity and format, fuel and operation, runway and alternate, climb, cruise, descent, power setting and consumption) are folded one by one, in a single column; buttons and fields are at least 40 px.
 ### Bottom bar and ☰ menu
 
 The bottom bar shows “Sheet saved — …”, “Unsaved changes — …”, “No sheet for …” (chosen aircraft without a sheet, with the creation buttons) or “No sheet open.”. “Save the sheet” writes it to the local database; “Discard changes” (only when there are some) rereads the local database and reopens the sheet as it was saved. To delete the sheet: “Delete” (its row ticked). Notifications appear above the bar.

@@ -548,7 +548,7 @@ tarjetas.
 - **Skin del teléfono**: «Móvil» (por defecto, plano y ligero), «Swiss» (blanco y negro, esquinas rectas, acento rojo)
   o «Mi diseño» (el diseño elegido arriba). Se aplica la próxima vez que se cargue una página en una pantalla táctil.
 - **Día / noche**: «Como el teléfono» (ajuste claro u oscuro del teléfono), «Día» o «Noche».
-- En una pantalla táctil, las páginas pensadas para pantalla grande (mapas de vuelo, fichas de rendimiento, páginas de
+- En una pantalla táctil, las páginas pensadas para pantalla grande (mapas de vuelo, páginas de
   preparación del Centro, ajustes de instalación) se retiran de la barra y de las pestañas; abiertas de todos modos,
   muestran un aviso. Una ventana de ordenador reducida conserva todas sus páginas.
 - **Vista previa móvil en el ordenador** (nivel Experto): una página de la suite en marcos de teléfono y de tableta, con
@@ -1772,6 +1772,8 @@ Esta página (barra lateral «Herramientas», a partir del nivel Diseño) gestio
 - Bajo la tabla, cuatro tarjetas: «Ficha en edición» (regímenes de vuelo y campos de la ficha, desde el nivel Diseño), «Motor» (mapa motor, tabla RPM, interpolación), «SimBrief» (airframe, calibración OFP, trazabilidad, auditoría) y «Archivo» (último JSON importado, plegado), descritas más abajo.
 - Una ficha guardada aquí la retoma de inmediato una página Combustible abierta en otra pestaña (la ficha que muestra y su plan).
 
+
+**En el teléfono** (vertical): la página sigue en la barra; el título se reduce a «Fichas». La tabla pasa a ser una lista: aeronave, origen de la ficha y lo que le falta; un toque en una línea elige la aeronave y muestra además el mapa motor, el consumo de crucero y el techo. Las secciones de la ficha (identidad y formato, combustible y operación, pista y alternativo, ascenso, crucero, descenso, régimen y consumo) se pliegan una a una, en una sola columna; botones y campos miden al menos 40 px.
 ### Barra inferior y menú ☰
 
 La barra inferior indica «Ficha guardada — …», «Cambios sin guardar — …», «Ninguna ficha para …» (aeronave elegida sin ficha, con los botones de creación) o «Ninguna ficha abierta.». «Guardar la ficha» la escribe en la base local; «Descartar los cambios» (solo si los hay) vuelve a leer la base local y reabre la ficha tal como estaba guardada. Para eliminar la ficha: «Eliminar» (con su fila marcada). Las notificaciones aparecen encima de la barra.

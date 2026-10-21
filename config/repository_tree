@@ -253,7 +253,7 @@ window.REPOSITORY_TREE={
     {path:"apps/cpco/map_parser.html",mobile:false,level:4,menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/mission_registry.html",mobile:false,level:3,menu:"Centre — Registre des missions",label:"Registre des missions — Centre de planification et de conduite des opérations"},
     {path:"apps/planner/flight_performance_planner.html",module:"fuel",menu:"Carburant",label:"Carburant — performances et devis carburant"},
-    {path:"apps/planner/performance_sheets.html",mobile:false,module:"fuel",level:3,menu:"Fiches de performances",label:"Fiches de performances — profils des appareils : imports, SimBrief, ChatGPT, éditeur, cartographie moteur"},
+    {path:"apps/planner/performance_sheets.html",module:"fuel",level:3,menu:"Fiches de performances",label:"Fiches de performances — profils des appareils : imports, SimBrief, ChatGPT, éditeur, cartographie moteur"},
     {path:"apps/pilot/disponibilites.html",menu:false,label:"Mes disponibilités — saisie par plages, par catégorie"},
     {path:"apps/pilot/aujourdhui.html",menu:false,label:"Aujourd’hui — redirigée vers Mes missions (page d’entrée du pilote)"},
     {path:"apps/pilot/mes_missions.html",menu:"Mes missions",label:"Mes missions — ma prochaine mission, comptes rendus à écrire, disponibilités"},

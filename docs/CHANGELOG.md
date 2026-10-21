@@ -160,6 +160,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Performance sheets on phones (portrait)** (`apps/planner/flight_planner.js`, `apps/planner/flight_planner.css`,
+  `config/repository_tree`) — the page is offered on phones (no more `mobile:false` and "large screen" banner): short
+  title "Sheets"; the sheets table becomes a list of cards (aircraft, origin, what is missing), the map, cruise flow
+  and ceiling shown with their labels on the chosen line; the sheet's sections are folded one by one (`<details>`,
+  kept open across redraws) in a single column; touch targets of at least 40 px. Large screens unchanged.
+  `tools/mobile_preview.html` lists the phase-2 pages (Board, Help, Performance sheets). User manual (4 languages).
 - **Help on phones: the text first** (`apps/aide/aide.html`, `apps/aide/aide.js`) — in mobile mode the contents
   (search, index, outline) are folded behind "Contents ▾" at the top (a link followed closes them) and "↑ Contents"
   at the end of each chapter reopens them; the text of a manual now starts right below the header instead of after

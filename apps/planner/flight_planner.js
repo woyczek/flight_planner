@@ -473,7 +473,10 @@ function renderProfileEditor() {
       return `<div class="field${wide}"><label>${label}<span>${unit}</span></label><${tag} ${attrs} data-profile-path="${path}" data-profile-type="${type}" data-profile-fuel="${isFuel?1:0}" value="${tag==="input"?escXml(v??""):""}">${tag==="textarea"?escXml(v??""):""}</${tag}></div>`
     };
   const curveRows = (active.rpmFuelCurve || []).map(p => `<tr><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="rpm" value="${p.rpm??""}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="altFt" value="${p.altFt??""}" placeholder="—"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMin" value="${fuelInput(p.fuelFlowMin??p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowPerHour" value="${fuelInput(p.fuelFlowPerHour)}"></td><td><input type="number" step="any" data-curve-id="${p._rowId}" data-curve-key="fuelFlowMax" value="${fuelInput(p.fuelFlowMax??p.fuelFlowPerHour)}"></td><td><select data-curve-id="${p._rowId}" data-curve-key="phaseLabel"><option value=""></option>${FLIGHT_PHASES.map(x=>`<option value="${x}" ${p.phaseLabel===x?"selected":""}>${x}</option>`).join("")}</select></td><td><textarea rows="2" data-curve-id="${p._rowId}" data-curve-key="comment">${escXml(p.comment??"")}</textarea></td><td><button type="button" class="removeCurve" data-curve-id="${p._rowId}">×</button></td></tr>`).join("");
-  box.innerHTML = groups.map(g => `<section class="editorGroup${g==="Régime et consommation"?" editorGroupSingle":""}" style="display:block"><h3>${g}</h3><div class="fields">${PROFILE_FIELDS.filter(x=>x[0]===g).map(field).join("")}</div></section>`).join("");
+  // téléphone (mode mobile) : chaque rubrique repliée (<details>), dépliée d'un toucher, ouverte gardée au redessin
+  const phone = !!window.RepositoryNav?.mobile?.on?.(),
+    opened = new Set([...box.querySelectorAll("details.editorGroup[open]")].map(d => d.dataset.group));
+  box.innerHTML = groups.map(g => phone ? `<details class="editorGroup${g==="Régime et consommation"?" editorGroupSingle":""}" data-group="${escXml(g)}"${opened.has(g)?" open":""}><summary><h3>${g}</h3></summary><div class="fields">${PROFILE_FIELDS.filter(x=>x[0]===g).map(field).join("")}</div></details>` : `<section class="editorGroup${g==="Régime et consommation"?" editorGroupSingle":""}" style="display:block"><h3>${g}</h3><div class="fields">${PROFILE_FIELDS.filter(x=>x[0]===g).map(field).join("")}</div></section>`).join("");
   curveBox.innerHTML = `<div class="mut">Une plage écrite dans le commentaire, par ex. « 1 000–1 300 kg/h total », remplit automatiquement min., nominal et max. à l’enregistrement.</div><table><thead><tr><th>RPM / N1</th><th data-no-i18n title="${escXml(kt(["Facultative : altitude (ft) à laquelle la consommation est publiée. Avec deux altitudes ou plus, le calcul interpole entre les lignes d’une même altitude ; une ligne sans altitude vaut pour toutes.", "Optional: altitude (ft) at which the fuel flow is published. With two altitudes or more, the calculation interpolates between rows of the same altitude; a row without altitude applies to all.", "Optional: Höhe (ft), für die der Verbrauch angegeben ist. Ab zwei Höhen interpoliert die Berechnung zwischen den Zeilen derselben Höhe; eine Zeile ohne Höhe gilt für alle.", "Opcional: altitud (ft) a la que se publica el consumo. Con dos altitudes o más, el cálculo interpola entre las filas de una misma altitud; una fila sin altitud vale para todas."]))}">${escXml(kt(["Altitude (ft)", "Altitude (ft)", "Höhe (ft)", "Altitud (ft)"]))}</th><th>Min.</th><th>Nominal</th><th>Max.</th><th>Régime de vol</th><th>Commentaire</th><th></th></tr></thead><tbody id="curveEditRows">${curveRows}</tbody></table><button type="button" id="addCurvePoint" style="margin-top:8px">Ajouter un point</button>`;
   curveBox.querySelectorAll(".removeCurve").forEach(b => b.onclick = () => {
     try {
@@ -1640,7 +1643,9 @@ function pageLabels() {
   const title = PERF_PAGE === "sheets" ? tl("Fiches de performances", "Performance sheets", "Leistungsblätter",
       "Fichas de rendimiento") : tl("Carburant", "Fuel", "Kraftstoff", "Combustible"),
     params = tl("Paramètres du vol", "Flight parameters", "Flugparameter", "Parámetros del vuelo");
-  if ($("pageTitle").textContent !== title) $("pageTitle").textContent = title;
+  // téléphone : titre court dans l'en-tête (« Fiches »), l'onglet garde le titre complet
+  const h1 = PERF_PAGE === "sheets" && window.RepositoryNav?.mobile?.on?.() ? tl("Fiches", "Sheets", "Blätter", "Fichas") : title;
+  if ($("pageTitle").textContent !== h1) $("pageTitle").textContent = h1;
   if (document.title !== title) document.title = title;
   if ($("flightParamsTitle").textContent !== params) $("flightParamsTitle").textContent = params
 }
@@ -3805,7 +3810,7 @@ function renderPerfProfiles() {
         "Auswahl: mehrere Profile zusammenführen, exportieren, speichern oder löschen",
         "Selección: fusionar, exportar, guardar o eliminar varios perfiles"
       ]))}"${ppSelected.has(p.id) ? " checked" : ""}>`;
-    return `<tr class="pp-row${on ? " is-active" : ""}" data-id="${esc(p.id)}"><td>${sel}</td><td>${nm}</td><td>${esc(profileSourceText(p, i))}</td><td>${map}</td><td>${ff}</td><td>${ceil}</td><td>${miss}</td></tr>`
+    return `<tr class="pp-row${on ? " is-active" : ""}" data-id="${esc(p.id)}"><td>${sel}</td><td>${nm}</td><td>${esc(profileSourceText(p, i))}</td><td data-l="${esc(head[3])}">${map}</td><td data-l="${esc(head[4])}">${ff}</td><td data-l="${esc(head[5])}">${ceil}</td><td>${miss}</td></tr>`
   };
   let body = "";
   ppGroupIds = {};

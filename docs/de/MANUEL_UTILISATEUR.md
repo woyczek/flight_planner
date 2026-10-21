@@ -551,7 +551,7 @@ erscheinen.
 - **Telefon-Skin**: „Mobil“ (Standard, flach und leicht), „Swiss“ (Schwarz-Weiß, eckig, roter Akzent) oder „Mein
   Design“ (das oben gewählte Design). Wird beim nächsten Laden einer Seite auf einem Touchscreen angewendet.
 - **Tag / Nacht**: „Wie das Telefon“ (helle oder dunkle Einstellung des Telefons), „Tag“ oder „Nacht“.
-- Auf einem Touchscreen werden die für große Bildschirme gestalteten Seiten (Flugkarten, Leistungsblätter,
+- Auf einem Touchscreen werden die für große Bildschirme gestalteten Seiten (Flugkarten,
   Vorbereitungsseiten des Zentrums, Installationseinstellungen) aus Leiste und Registerkarten entfernt; trotzdem
   geöffnet, zeigen sie einen Hinweis. Ein verkleinertes Computerfenster behält alle Seiten.
 - **Mobile Vorschau am Computer** (Stufe Experte): eine Seite der Suite in Telefon- und Tablet-Rahmen, mit gewähltem
@@ -1776,6 +1776,8 @@ Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Gestaltung) verwaltet di
 - Unter der Tabelle vier Karten: „Blatt in Bearbeitung“ (Flugphasen und Felder des Blatts, ab der Stufe Gestaltung), „Triebwerk“ (Kennfeld, RPM-Tabelle, Interpolation), „SimBrief“ (Airframe, OFP-Kalibrierung, Nachweis, Prüfung) und „Datei“ (zuletzt importiertes JSON, eingeklappt), unten beschrieben.
 - Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort (das angezeigte Blatt und ihre Planung).
 
+
+**Auf dem Telefon** (Hochformat): Die Seite bleibt in der Leiste; der Titel verkürzt sich zu „Blätter“. Die Tabelle wird zur Liste: Luftfahrzeug, Herkunft des Blatts und was ihm fehlt; ein Tippen auf eine Zeile wählt das Luftfahrzeug und zeigt zusätzlich das Kennfeld, den Reiseverbrauch und die Gipfelhöhe. Die Abschnitte des Blatts (Identität und Format, Kraftstoff und Betrieb, Piste und Ausweichflugplatz, Steigflug, Reiseflug, Sinkflug, Leistungseinstellung und Verbrauch) sind einzeln eingeklappt, in einer Spalte; Knöpfe und Felder sind mindestens 40 px hoch.
 ### Untere Leiste und Menü ☰
 
 Die untere Leiste zeigt „Blatt gespeichert — …“, „Nicht gespeicherte Änderungen — …“, „Kein Blatt für …“ (gewähltes Luftfahrzeug ohne Blatt, mit den Schaltflächen zum Anlegen) oder „Kein Blatt geöffnet.“. „Blatt speichern“ schreibt es in die lokale Datenbank; „Änderungen verwerfen“ (nur wenn es welche gibt) liest die lokale Datenbank neu und öffnet das Blatt wieder so, wie es gespeichert war. Um das Blatt zu löschen: „Löschen“ (seine Zeile angekreuzt). Die Benachrichtigungen erscheinen über der Leiste.
