@@ -2360,7 +2360,7 @@
       }
     }))
   });
-  /** Carte du monde (MapLibre, fond OpenStreetMap) : créée une fois, reposée à chaque rendu du bloc. */
+  /** Carte du monde (MapLibre, fond vectoriel OpenFreeMap Positron) : créée une fois, reposée à chaque rendu du bloc. */
   async function aeroMapInit(Z) {
     if (aeroMapEl) return aeroMapEl;
     aeroMapEl = document.createElement('div');
@@ -2386,27 +2386,8 @@
     }
     aeroMap = new window.maplibregl.Map({
       container: aeroMapEl,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            maxzoom: 7,
-            attribution: '© OpenStreetMap contributors · Natural Earth'
-          }
-        },
-        layers: [{
-          id: 'osm',
-          type: 'raster',
-          source: 'osm',
-          paint: {
-            'raster-saturation': -0.75,
-            'raster-opacity': 0.7
-          }
-        }]
-      },
+      // fond vectoriel clair (plus de tuiles raster d'OpenStreetMap, refusées par leur serveur : « Access blocked »)
+      style: 'https://tiles.openfreemap.org/styles/positron',
       center: [-20, 40],
       zoom: 1.2,
       maxZoom: 7,
@@ -2427,7 +2408,8 @@
       aeroMap.addSource('zones', {
         type: 'geojson',
         data: aeroGeo(Z),
-        promoteId: 'zone'
+        promoteId: 'zone',
+        attribution: 'Natural Earth' // contours des zones (shared/carto/aero_zones_geo.js)
       });
       const color = ['match', ['get', 'state'], 'partial', AERO_COLOR.partial, 'complete', AERO_COLOR.complete, AERO_COLOR.data];
       aeroMap.addLayer({

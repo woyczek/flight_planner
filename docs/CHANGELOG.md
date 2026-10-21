@@ -254,6 +254,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Fleet map and Maintenance zones map: "Access blocked" instead of the background** — both used raster tiles from
+  `tile.openstreetmap.org`, which refuses this use. They now use the vector background OpenFreeMap Positron, like the
+  map studio's defaults (`shared/fleet_map.js`, `shared/maintenance_page.js`).
 - **Performance sheets in GitHub mode: a deleted sheet came back at the next reread** — it was removed from the browser
   only. “Delete (n)” now also removes it from `planner/flight_performance_database_merged.fpdb.json` of the data
   repository (`sha`-checked write, retried when another pilot changed the file meanwhile); “Undo” puts back the removed

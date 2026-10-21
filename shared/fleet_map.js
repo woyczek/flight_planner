@@ -1,7 +1,8 @@
 (() => {
   'use strict';
   // Carte de la flotte (Compte rendu › Flotte, apps/cr/flotte.html) : tous les appareils de la flotte connue à leur
-  // terrain actuel, sur un fond OpenStreetMap (MapLibre, shared/carto/).
+  // terrain actuel, sur un fond vectoriel OpenFreeMap Positron (MapLibre, shared/carto/ ; pas de tuiles raster d'OpenStreetMap,
+  // dont le serveur refuse ces usages : « Access blocked »).
   //   · terrain actuel : règle commune de la suite (shared/aircraft_positions.js : emplacement du site ou CR issu d'un
   //     ordre de mission, sinon la base) ; coordonnées du terrain : MissionAssignments.coordsOf (base SIA du navigateur,
   //     terrains des missions, cache des terrains, base mondiale des aérodromes chargée à la demande) ;
@@ -961,7 +962,8 @@ html[data-mobile="on"] .fm-tools .fm-sum{flex:1 1 100%}
     }
 
     // ---- carte
-    /** Crée la carte MapLibre (fond OpenStreetMap), ses commandes et la sélection par rectangle (Maj + glisser). */
+    /** Crée la carte MapLibre (fond vectoriel OpenFreeMap Positron), ses commandes et la sélection par rectangle (Maj +
+     *  glisser). */
     async function createMap() {
       const lib = await loadLib();
       if (dead) return;
@@ -971,27 +973,8 @@ html[data-mobile="on"] .fm-tools .fm-sum{flex:1 1 100%}
       }
       map = new lib.Map({
         container: mapEl,
-        style: {
-          version: 8,
-          sources: {
-            osm: {
-              type: 'raster',
-              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              maxzoom: 19,
-              attribution: '© OpenStreetMap contributors'
-            }
-          },
-          layers: [{
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-            paint: {
-              'raster-saturation': -0.6,
-              'raster-opacity': 0.85
-            }
-          }]
-        },
+        // fond vectoriel clair et gris (comme le studio des cartes : plus de raster OSM), attribution donnée par le style
+        style: 'https://tiles.openfreemap.org/styles/positron',
         center: [2.5, 46.6],
         zoom: 4.6,
         maxZoom: 16,
