@@ -331,12 +331,18 @@
     const sheets = read(AIRCRAFT_SHEETS) || {},
       sheet = {
         status: '',
-        homeAd: known.homeAd || '',
+        homeAd: '', // saisi seulement : sinon celui du catalogue (base de la flotte), en indication
         commissioned: '',
         notes: '',
         events: [],
         ...(sheets[reg] || {})
       };
+    // ancienne fiche : le terrain proposé était enregistré avec le reste dès qu'un champ changeait, figeant l'estimation de
+    // la référence (terrain de départ le plus fréquent) à la place de la base de la flotte : écartée quand elle est
+    // exactement cette estimation et que la flotte déclare une autre base
+    const fleetBase = (window.DEFA_FLEET || []).find(f => key(f.registration) === reg)?.base || '',
+      refHome = (window.DEFA_REFERENCE?.aircraft || []).find(r => key(r.registration) === reg)?.homeAd || '';
+    if (fleetBase && sheet.homeAd && sheet.homeAd !== key(fleetBase) && sheet.homeAd === key(refHome)) sheet.homeAd = '';
     const typeInfo = window.MissionAircraft?.lookupType?.(known.type) || (window.AIRCRAFT_DB || {})[key(known.type)] || null;
     const all = (await missions()).filter(x => (x.m.aircraft || []).some(a => key(a.registration) === reg)).sort((a, b) => String(b.m
       .metadata?.date).localeCompare(String(a.m.metadata?.date)));

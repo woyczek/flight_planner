@@ -196,6 +196,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Aircraft sheet: "Home aerodrome" taken from the flight log instead of the Fleet page** — F-ZBMC, based at LFTW
+  on the Fleet page, showed "Home aerodrome HCMK", the reference's estimate (most frequent departure, during a
+  deployment), which also overrode the base in the common catalogue. The Fleet page's base and home aerodrome now win
+  (`shared/aircraft_catalog.js`). The sheet stores a home aerodrome only when it is typed; an old sheet that had frozen
+  the estimate gives way to the Fleet page's base (`shared/mission_core/sheets.js`).
 - **Settings › Installation and Maintenance on a narrow screen** (`shared/maintenance.css`) — below 900 px the page is a
   single column, but each block stayed pinned to the second grid column, squeezing it beside the menu; it now sits
   under the menu.

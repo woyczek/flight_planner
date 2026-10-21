@@ -146,7 +146,11 @@
       for (let i = 0; i < 5 && map[k]; i++) k = map[k];
       return k;
     };
-    /** Fusionne un appareil (flotte, référence, missions) dans le catalogue : la donnée la plus récente l'emporte, champs vides complétés. */
+    // base et terrain de rattachement déclarés par la page Flotte du site : ils font foi (la référence et le journal n'en
+    // donnent qu'une estimation, le terrain de départ le plus fréquent — HCMK pour un appareil basé à LFTW et déployé)
+    const fleetSet = new Map();
+    /** Fusionne un appareil (flotte, référence, missions) dans le catalogue : la donnée la plus récente l'emporte, champs vides
+     *  complétés ; base et terrain de rattachement de la flotte gardés. */
     const merge = (r, date = '') => {
       const k = mapped(r.registration);
       if (!k) return;
@@ -156,9 +160,11 @@
         sources: []
       };
       const newer = String(date) >= String(cur.date || '');
+      const fixed = fleetSet.get(k) || new Set();
       ['type', 'variant', 'operator', 'base', 'homeAd', 'fleetId', 'category'].forEach(f => {
-        if (r[f] && (newer || !cur[f])) cur[f] = r[f];
+        if (r[f] && (newer || !cur[f]) && !fixed.has(f)) cur[f] = r[f];
       });
+      if (r.source === 'fleet') fleetSet.set(k, new Set(['base', 'homeAd'].filter(f => r[f])));
       if (r.lastAd && newer) cur.lastAd = r.lastAd;
       [r.callsign, ...(r.callsigns || [])].filter(Boolean).forEach(c => {
         const u = String(c).toUpperCase();
