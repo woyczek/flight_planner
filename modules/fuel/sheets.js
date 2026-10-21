@@ -1284,6 +1284,19 @@
    *  une valeur donnée en objet ({ value, unit, source }, { min, max }, { nominal }) ramenée à son nombre ; un nombre en
    *  texte avec séparateurs de milliers (« 1 200 », « 1'200 ») nettoyé. Une unité par champ contraire à celle de la fiche
    *  (lb/h dans une fiche kg) est convertie et signalée en warnings. */
+  /** Premier nombre d'un texte de ChatGPT écrit sans ambiguïté (point décimal, sans séparateur de milliers), le reste
+   *  du texte (unités) gardé : virgules de milliers (« 2,400 », « 1,234.5 » ; groupes de trois chiffres, premier groupe
+   *  non nul) retirées ; points de milliers et virgule décimale à l'européenne (« 2.400,5 ») ; sinon une virgule seule est
+   *  décimale (« 2,5 », « 0,850 »). Correctif V3 du défaut V2 qui lisait « 2,400 » comme 2,4 (DECISIONS.md). */
+  function gptNumberText(s) {
+    return String(s).replace(/-?\d[\d.,]*/, m => {
+      if (/^-?[1-9]\d{0,2}(,\d{3})+(\.\d+)?$/.test(m)) return m.replace(/,/g, "");
+      if (/^-?\d{1,3}(\.\d{3})+,\d+$/.test(m)) return m.replace(/\./g, "").replace(",", ".");
+      if (/^-?\d+,\d+$/.test(m)) return m.replace(",", ".");
+      return m
+    })
+  }
+
   function gptJsonNormalize(obj, S, warnings) {
     const unit = String(obj.unit ?? Object.entries(obj).find(([k]) => gptKeyEq(k, "unit"))?.[1] ?? "kg").trim().toLowerCase(),
       badUnit = [],
@@ -1307,7 +1320,7 @@
         }
         if (typeof v === "string") {
           const n = v.trim().replace(/(\d)[\s\u00a0\u202f'](?=\d{3}\b)/g, "$1");
-          return n
+          return gptNumberText(n)
         }
         return v
       },
@@ -1760,6 +1773,7 @@
     parseGptReply,
     gptJsonParse,
     gptJsonNormalize,
+    gptNumberText,
     sheetMissingPaths,
     sheetMissingModel,
     gptSchemaPaths

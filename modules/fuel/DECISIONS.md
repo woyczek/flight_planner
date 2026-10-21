@@ -44,6 +44,18 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   the quote bench's sheet (300 NM, FL200, 30 kt tailwind, goal "sheet's climb IAS"): model ceiling and minimum-drag
   speed, manual settings, decision series (step, bounds, least fuel FL250, fastest FL140, five levels), curves
   (highest level, optimums, plan, cruises), climb to FL200 row by row; every value found again to 0.001: 24/24.
+- **Small lot after the first screen** (23 Oct 2026, the user trying the module on a phone; no new work before
+  feedback):
+  - **"2,400" fixed** (`gptNumberText` in `sheets.js`): V2 read a ChatGPT value "2,400" as 2.4. The number is now read
+    by its form (thousands commas, European form, otherwise decimal comma). The sheets bench keeps the V2 capture and
+    states the one value that differs (2,400), plus nine number cases: 18/18. V2 keeps its behaviour.
+  - **RPM table edited on a computer screen only** (the editor is wide; the phone keeps it read only). An empty cell
+    of a row that never had the field adds no key, so an untouched row is not shown as replaced; a removed row is
+    previewed and can be kept.
+  - **Offline from the first visit**: the five calculation files are imported at every first mount, before the first
+    drawing; fuel is the Pilot application's first verb, so the first visit mounts it. Requests made before the frame's
+    service worker controls the page escape it, so the module fetches the five files once more at `controllerchange`.
+    (The service worker does not register in the desktop app's built-in browser, so this was not tried offline here.)
 - **Lots 2b, 3b and 4b, the screens on the frame's loader** (`modules/fuel/module.js`, 23 Oct 2026, after
   `6ce25009b`): one ES module with two screens inside (Plan, Sheets) rather than two modules, so the Pilot application
   keeps one verb for fuel; the pure files are loaded with `import()` (they are plain scripts that set `window.*`, which

@@ -212,6 +212,8 @@ const TX = {
   removeAsk: ['Supprimer la fiche « {n} » de la base partagée ?', 'Delete the sheet “{n}” from the shared database?',
     'Datenblatt „{n}“ aus der gemeinsamen Datenbank löschen?', '¿Eliminar la ficha «{n}» de la base compartida?'
   ],
+  rpmAdd: ['+ Ligne', '+ Row', '+ Zeile', '+ Fila'],
+  rpmGone: ['retirée', 'removed', 'entfernt', 'retirada'],
   rpmTable: ['Table régime / débit', 'RPM / fuel flow table', 'Drehzahl-/Verbrauchstabelle', 'Tabla régimen / consumo'],
   review: ['Changements proposés', 'Proposed changes', 'Vorgeschlagene Änderungen', 'Cambios propuestos'],
   reviewNew: ['Nouvelle fiche « {n} »', 'New sheet “{n}”', 'Neues Datenblatt „{n}“', 'Nueva ficha «{n}»'],
@@ -320,10 +322,19 @@ const hmm = m => {
 /** Copie d'une fiche sans ses clés de travail (« _… » : identifiants de ligne, marques d'origine). */
 const plain = p => JSON.parse(JSON.stringify(p, (k, v) => k.startsWith('_') ? undefined : v));
 
-/** Charge le calcul pur (scripts du dossier du module, une fois par page). */
+/** Charge le calcul pur (scripts du dossier du module, une fois par page), tous au montage : le service worker du
+ *  cadre garde le point d'entrée du module dès la première visite et les fichiers qu'il importe au premier passage. */
 async function loadLibs() {
   for (const [glob, file] of LIBS)
     if (!window[glob]) await import(new URL(`${file}?v=0`, import.meta.url).href);
+  // première visite : la page tourne avant que le service worker la contrôle, ces fichiers lui ont échappé ; relus une
+  // fois quand il prend la main, pour que Carburant soit complet hors ligne
+  const sw = navigator.serviceWorker;
+  if (sw && !sw.controller) sw.addEventListener('controllerchange', () => {
+    for (const [, file] of LIBS) fetch(new URL(`${file}?v=0`, import.meta.url)).catch(() => {});
+  }, {
+    once: true
+  });
 }
 
 /** Texte d'une ligne de TX dans la langue de l'appli. */
@@ -1166,6 +1177,20 @@ async function onSheetsClick(e) {
       return renderEditor(id);
     case 'back':
       return renderSheets();
+    case 'rpmadd': {
+      const d = readEditor(p, true);
+      d.rpmFuelCurve.push({
+        rpm: null,
+        altFt: null,
+        fuelFlowPerHour: null
+      });
+      return renderEditor(p.id, F.normalize(d));
+    }
+    case 'rpmdel': {
+      const d = readEditor(p, true);
+      d.rpmFuelCurve.splice(+b.dataset.i, 1);
+      return renderEditor(p.id, d);
+    }
     case 'save': {
       const out = readEditor(p);
       return review(S.sheets.find(x => x.id === p.id), out, {});
@@ -1248,6 +1273,8 @@ async function onSheetsClick(e) {
       return S.edit ? renderEditor(S.edit.id) : renderSheets();
   }
 }
+/** Clé d'une ligne RPM (régime et altitude), comme celle de l'aperçu de la V2. */
+const rpmKey = r => `${Math.round(Number(r.rpm) * 1000)}@${r.altFt ?? ''}`;
 /** Identifiant libre dans la base (suffixe -2, -3… si pris). */
 function uniqueId(id) {
   let out = id,
@@ -1339,12 +1366,16 @@ function readText(txt, name) {
   }
   return list;
 }
-/** Éditeur d'une fiche : champs par groupe (libellés traduits), table RPM en lecture, compléments, ChatGPT, exports. */
-function renderEditor(id) {
+/** Table régime / débit modifiable : écran d'ordinateur seulement (sur téléphone, en lecture). */
+const rpmEditable = () => matchMedia('(min-width: 761px)').matches;
+/** Éditeur d'une fiche : champs par groupe (libellés traduits), table RPM (modifiable sur écran d'ordinateur),
+ *  compléments, ChatGPT, exports. draft : fiche en cours de saisie (ligne RPM ajoutée ou retirée), sinon celle de la base. */
+function renderEditor(id, draft = null) {
   const F = window.FuelSheets,
     raw = S.sheets.find(x => x.id === id);
   if (!raw) return renderSheets();
-  const p = S.edit = F.normalize(structuredClone(raw)),
+  const p = S.edit = draft || F.normalize(structuredClone(raw)),
+    rpmCell = (i, k, v) => `<td class="n"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
     groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
     fuelUnit = path => F.FUEL_PATHS.has(path) ? ` (${p.unit}${path.endsWith('fuelFlowPerHour') ? '/h' : ''})` : '',
     input = ([, , path, type]) => {
@@ -1368,13 +1399,27 @@ function renderEditor(id) {
       <button type="button" data-do="gptread">${esc(tt(TX.read))}</button>
     </details>
     ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="fu-grid3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
-    ${p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">RPM</th><th class="n">ft</th><th class="n">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="n">${esc(r.rpm)}</td><td class="n">${esc(r.altFt ?? '')}</td><td class="n">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">RPM</th><th class="n">ft</th><th class="n">${esc(p.unit)}/h min</th><th class="n">${esc(p.unit)}/h</th><th class="n">${esc(p.unit)}/h max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">RPM</th><th class="n">ft</th><th class="n">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="n">${esc(r.rpm)}</td><td class="n">${esc(r.altFt ?? '')}</td><td class="n">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
 }
 /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */
-function readEditor(p) {
+function readEditor(p, keepEmpty = false) {
   const F = window.FuelSheets,
     out = structuredClone(p);
+  // table RPM saisie (écran d'ordinateur) : chaque ligne reprend ses autres champs ; sans régime, retirée à
+  // l'enregistrement
+  if (S.body.querySelector('[data-rpm]')) {
+    out.rpmFuelCurve = out.rpmFuelCurve.map(r => ({
+      ...r
+    }));
+    for (const i of S.body.querySelectorAll('[data-rpm]')) {
+      const row = out.rpmFuelCurve[+i.dataset.rpm],
+        k = i.dataset.rk,
+        v = num(i.value);
+      if (v !== null || (row[k] !== undefined && row[k] !== null && row[k] !== '')) row[k] = v;
+    }
+    if (!keepEmpty) out.rpmFuelCurve = out.rpmFuelCurve.filter(r => r.rpm !== null);
+  }
   for (const i of S.body.querySelectorAll('[data-path]')) {
     const t = i.dataset.type,
       v = t === 'bool' ? i.checked : t === 'number' ? num(i.value) : i.value.trim() || null;
@@ -1400,16 +1445,21 @@ function review(before, after, o = {}) {
       }
       return esc(String(v));
     },
-    box = (attr, on) => before ? `<td><input type="checkbox" ${attr}${on ? ' checked' : ''}></td>` : '<td></td>';
+    box = (attr, on) => before ? `<td><input type="checkbox" ${attr}${on ? ' checked' : ''}></td>` : '<td></td>',
+    ff = r => [r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x !== null && x !== undefined && x !== '').join(' / '),
+    gone = (before?.rpmFuelCurve || []).filter(r => r.rpm !== null && r.rpm !== '' && !(after.rpmFuelCurve || []).some(a => rpmKey(a) ===
+      rpmKey(r)));
   S.pending = {
     before,
     after,
-    diff
+    diff,
+    gone
   };
   S.body.innerHTML = `<div class="f-card fu-review"><h2>${esc(before ? tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}</h2>
-    ${rows.length || diff.curve.length ? `<div class="fu-scroll"><table class="fu-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="n">${esc(tt(TX.before))}</th><th class="n">${esc(tt(TX.after))}</th></tr></thead><tbody>
+    ${rows.length || diff.curve.length || gone.length ? `<div class="fu-scroll"><table class="fu-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="n">${esc(tt(TX.before))}</th><th class="n">${esc(tt(TX.after))}</th></tr></thead><tbody>
       ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td><td class="n">${show(r.old)}</td><td class="n">${show(r.now)}</td></tr>`).join('')}
       ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="n">${esc(c.old)}</td><td class="n">${esc(c.now)}</td></tr>`).join('')}
+      ${gone.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="n">${esc(ff(r))}</td><td class="n">—</td></tr>`).join('')}
     </tbody></table></div>` : `<p class="f-muted">${esc(tt(TX.reviewNone))}</p>`}
     <div class="f-row"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button><button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>`;
 }
@@ -1427,6 +1477,9 @@ async function applyReview() {
       skip,
       skipCurve
     }) : after;
+  // lignes RPM retirées mais décochées : remises
+  for (const i of S.body.querySelectorAll('[data-gone]'))
+    if (!i.checked) out.rpmFuelCurve = [...(out.rpmFuelCurve || []), structuredClone(S.pending.gone[+i.dataset.gone])];
   if (!before) out.id = uniqueId(out.id);
   await storeSheet(out);
   S.pending = null;

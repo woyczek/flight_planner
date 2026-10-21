@@ -106,7 +106,10 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   and RPM tables written in a cell), JSON sheets or a sheets database (`flight-performance-db/v1`), Little Navmap
   `.lnmperf` (XML), a SimBrief OFP (sheet of the type from the OFP, and a calibration measured on its navlog: climb,
   cruise and descent durations, fuel, distances, rates), a ChatGPT reply whatever its shape (code fence or not,
-  comments, trailing commas, units in values, keys in another case, nested objects).
+  comments, trailing commas, units in values, keys in another case, nested objects). A number in a ChatGPT value is
+  read by its form: commas between groups of three digits are thousands separators ("2,400", "1,234.5"); dots between
+  groups of three followed by a decimal comma are the European form ("2.400,5"); otherwise a single comma is decimal
+  ("2,5", "0,850").
 - **Written**: `.lnmperf`, refused with the list of empty fields when one is missing (Little Navmap needs them all).
 - **Completed**: from the type's EUROCONTROL record (proposed values per field, never written without a gesture),
   SimBrief's type data, or another sheet of the same type (only the empty fields; fuel converted to the sheet's unit).
@@ -147,12 +150,14 @@ inside the module, switched by two buttons at the top, the last one kept on the 
 - **Sheets**: the list (name, type, unit, origin, empty fields, date; "Use" sets it for the flight, "Edit");
   import of files (CSV, JSON, `.lnmperf`, SimBrief OFP) or of a pasted text (the same, or a ChatGPT answer); a new
   sheet from an ICAO code (SimBrief type data when aerodb has them); a sheet from the last OFP (calibrated on its
-  navlog). The editor: the fields by group (labels in the four languages), the RPM table read only, completion from
+  navlog). The editor: the fields by group (labels in the four languages), the RPM table (edited row by row on a
+  computer screen, wider than 760 px: RPM, altitude, minimum, nominal and maximum flow, rows added or removed; read only
+  on a phone), completion from
   EUROCONTROL or from another sheet, the ChatGPT request (whole sheet or empty fields, copied) and its answer pasted,
   export `.lnmperf` and JSON, deletion after a question.
 - **Every change of a sheet goes through a preview**: one line per changed field and per RPM row, before and after,
   ticked by default (a EUROCONTROL value replacing a filled field is not ticked); "Apply the selection" writes only the
-  ticked lines (`pickChanges`), dated `updatedAt`. A new sheet is shown whole, without boxes. Several sheets read at
+  ticked lines (`pickChanges`), dated `updatedAt`. A removed RPM row is a line too: unticked, it stays. A new sheet is shown whole, without boxes. Several sheets read at
   once are previewed one after the other.
 - **Writes**: the sheets database whole (sheets without their working keys `_…`, the other fields of the file kept);
   the current flight after a quiet time (read again, own fields changed, the rest kept, `updated_at`); the settings
