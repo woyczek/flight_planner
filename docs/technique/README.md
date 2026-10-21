@@ -61,3 +61,5 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Audit de sécurité du 7 octobre 2026](AUDIT_SECURITE_2026-10-07.md) | évasion de données, surface locale, code étranger (« zombie »), préparation du mode client/serveur ; plan de correction par lots |
 | [Performances : synthèse](perf/SYNTHESE.md) · [rapport](perf/RAPPORT_PERF.md) · [plan](perf/PLAN_PERF_2026-10-04.md) | audit de performance avant / après, extrapolation |
 | [Performances : mesures du 8 octobre](perf/RAPPORT_2026-10-08.md) | Planning et Cartes de vol dans Chrome (onglet visible) : requêtes, DOM, tâches longues, base SIA ; trois lots de correction |
+
+- [V3_SPECIFICATION.md](V3_SPECIFICATION.md) — V3: three applications (Pilot, CPCO, SOG client), one frame, modules; specification in progress, decisions log.
