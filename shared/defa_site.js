@@ -9,9 +9,11 @@
   // individuels) sont complétés en tâche de fond. Une demande par onglet et par session au plus ; résultat en notification
   // flottante quand une mise à jour a eu lieu (à relire : rechargement ; à envoyer : « Synchroniser »).
   // Réglage et mise à jour à la demande : Paramètres › Maintenance › Références et dépendances.
+  // Mode GitHub (appli sans lanceur, shared/github_data.js) : rien ici — pas de lanceur pour télécharger les pages du site ;
+  // la flotte et le journal se mettent à jour sur un poste avec lanceur et arrivent par le dépôt des données.
   // Chargé par repository_nav.js sur toutes les pages. API : window.DefaSite = { status(), refresh({ force }),
   //   setAuto(on), PAGES }.
-  if (window.DefaSite || !/^https?:$/.test(location.protocol)) return;
+  if (window.DefaSite || !/^https?:$/.test(location.protocol) || window.GitHubData?.on?.()) return;
   const K = window.RepositoryKit,
     t = row => K?.t ? K.t(row) : row[0],
     tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');

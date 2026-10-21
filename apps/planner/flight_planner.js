@@ -2282,12 +2282,13 @@ function perfFolderDone(count) {
     "{n} Profil(e) aus dem Ordner „{dir}“ um {t} gelesen.", "{n} perfil(es) leído(s) en la carpeta «{dir}» a las {t}."
   ], {
     n: count,
-    dir: dirHandle?.name || "",
+    dir: dirHandle?.name || (perfRepoOn() ? "GitHub › planner/" : ""),
     t: new Date().toLocaleTimeString(window.RepositoryNav?.getLanguage?.() || "fr", {
       hour: "2-digit",
       minute: "2-digit"
     })
   }));
+  delete $("ppStatus").dataset.none; // le message de relecture remplace la ligne « aucun dossier » / « fiches lues dans le dépôt »
   renderPerfProfilesSoon()
 }
 // Choix du dossier performances : lit les profils (.json, .lnmperf, .csv) qu'il contient.
@@ -2312,6 +2313,7 @@ $("dirBtn").onclick = async () => {
 /** « Relire » (ask vrai) ou dossier changé ailleurs (ask faux) : relit le dossier performances déjà choisi. ask : demande
  *  la permission au besoin et dit pourquoi rien n'est relu ; sans ask, rien ne s'affiche si le dossier n'est pas accessible. */
 async function reloadPerfFolder(ask) {
+  if (perfRepoOn()) return reloadPerfRepo(ask); // mode GitHub : base du dépôt des données
   let h = dirHandle;
   if (!h && window.FileAccess) try {
     h = await window.FileAccess.get("__perf")
@@ -2368,6 +2370,119 @@ window.addEventListener("file-access-change", e => {
     if (!perfBusy && Date.now() - lastPerfRead > 3000) reloadPerfFolder(false)
   }, 300)
 });
+
+// ===== Mode GitHub (appli sans lanceur) : les fiches sont lues et écrites dans le dépôt des données, jamais dans un dossier =====
+// La base des fiches du dépôt est planner/flight_performance_database_merged.fpdb.json (schéma flight-performance-db/v1) ;
+// lue à l'ouverture de la page (copie du navigateur, rafraîchie ensuite) et à « Relire » (GitHub, sans cache) ; une fiche du
+// dépôt ne remplace la fiche du navigateur que si elle est plus récente (profileWhen) : une saisie pas encore enregistrée
+// dans le dépôt n'est jamais écrasée. « Enregistrer dans le dépôt (n) » reporte les fiches cochées dans ce fichier (un commit).
+/** Chemin, dans le dépôt des données, de la base des fiches de performances. */
+function perfRepoFile() {
+  return "planner/flight_performance_database_merged.fpdb.json"
+}
+/** Vrai en mode GitHub : pas de dossier performances, les fiches viennent du dépôt des données. */
+function perfRepoOn() {
+  return !!window.GitHubData?.on?.()
+}
+/** Range les fiches du texte JSON de la base du dépôt dans la base locale (fiches retirées ici ignorées ; fiche locale plus
+ *  récente gardée) ; all : toutes, même plus anciennes que la fiche locale ; persist faux : état pas enregistré ici (à l'ouverture,
+ *  avant que restore() n'ait repris les réglages du devis dans les champs). Sortie : nombre de fiches lues dans le texte. */
+function perfRepoMerge(text, all = false, persist = true) {
+  let list;
+  try {
+    list = profilesFromJson(JSON.parse(text), perfRepoFile())
+  } catch {
+    return 0
+  }
+  let count = 0,
+    read = 0;
+  for (const p of list) {
+    if (state.removedProfiles?.[p.id]) continue;
+    read++;
+    const mine = state.profiles[p.id];
+    if (!all && mine && profileWhen(p) <= profileWhen(mine)) continue;
+    storeProfile(p);
+    count++
+  }
+  if (count && persist) save();
+  lastPerfRead = Date.now();
+  return read
+}
+/** « Relire » en mode GitHub : base du dépôt relue sans cache, fiches retirées reprises (ask), état « n profils lus ». */
+async function reloadPerfRepo(ask) {
+  perfBusy = true;
+  try {
+    const g = await window.GitHubData.getText(perfRepoFile());
+    if (!g) {
+      if (ask) window.AppFramework.notify(ktf(["Base des fiches absente du dépôt des données : {f}.",
+        "Performance sheets database missing from the data repository: {f}.",
+        "Datenbank der Leistungsblätter fehlt im Daten-Repository: {f}.",
+        "Base de fichas de rendimiento ausente del repositorio de datos: {f}."
+      ], {
+        f: perfRepoFile()
+      }), "warn");
+      return
+    }
+    if (ask) state.removedProfiles = {};
+    perfFolderDone(perfRepoMerge(g.text))
+  } catch (e) {
+    if (ask) window.AppFramework.notify(window.AppFramework?.explain?.(e, kt(["Lecture des fiches dans le dépôt",
+      "Reading the sheets from the repository",
+      "Lesen der Blätter aus dem Repository", "Lectura de las fichas del repositorio"
+    ])) || e.message, "err")
+  } finally {
+    perfBusy = false
+  }
+}
+/** « Enregistrer dans le dépôt (n) » : les fiches cochées sont reportées (par identifiant) dans la base du dépôt des données,
+ *  relue juste avant avec son sha ; changée entre-temps (autre pilote), elle est relue et la fusion refaite (3 essais). */
+async function saveSelectedToRepo() {
+  const list = selectedProfiles(),
+    G = window.GitHubData;
+  if (!list.length) return;
+  try {
+    for (let i = 0; i < 3; i++) {
+      const cur = await G.getText(perfRepoFile());
+      let db = null;
+      if (cur) {
+        db = JSON.parse(cur.text);
+        if (db?.schema !== "flight-performance-db/v1" || !Array.isArray(db.profiles)) throw Error(perfRepoFile() +
+          " : flight-performance-db/v1 ?")
+      }
+      db ||= {
+        schema: "flight-performance-db/v1",
+        profiles: []
+      };
+      const ids = new Set(list.map(p => p.id)),
+        kept = db.profiles.map(p => ids.has(p.id) ? list.find(q => q.id === p.id) : p);
+      for (const p of list)
+        if (!db.profiles.some(q => q.id === p.id)) kept.push(p);
+      db.profiles = kept;
+      db.exportedAt = new Date().toISOString();
+      try {
+        await G.put(perfRepoFile(), JSON.stringify(db, null, 2), {
+          sha: cur?.sha ?? null
+        });
+      } catch (e) {
+        if (e.conflict && i < 2) continue;
+        throw e
+      }
+      lastPerfRead = Date.now(); // ce changement du dépôt est le nôtre
+      return window.AppFramework?.notify?.(ktf(["{n} fiche(s) enregistrée(s) dans le dépôt des données ({f}).",
+        "{n} sheet(s) saved in the data repository ({f}).",
+        "{n} Blatt/Blätter im Daten-Repository gespeichert ({f}).", "{n} ficha(s) guardada(s) en el repositorio de datos ({f})."
+      ], {
+        n: list.length,
+        f: perfRepoFile()
+      }), "ok")
+    }
+  } catch (e) {
+    window.AppFramework?.notify?.(window.AppFramework?.explain?.(e, kt(["Enregistrement des fiches dans le dépôt",
+      "Saving the sheets to the repository",
+      "Speichern der Blätter im Repository", "Guardado de las fichas en el repositorio"
+    ])) || e.message, "err")
+  }
+}
 
 // ===== Little Navmap : lecture et export des profils .lnmperf =====
 /** Nombre du premier élément tag sous root (def si absent ou non numérique). */
@@ -3360,11 +3475,27 @@ function profileInfo(p) {
 /** Libellés du bloc « Profils de performances » (titre, présentation, boutons et infobulles) ; écrits s'ils changent. */
 function perfProfilesLabels() {
   setText("ppTitle", kt(["Fiches de performances", "Performance sheets", "Leistungsblätter", "Fichas de rendimiento"]));
+  // phrase finale : le dossier performances (relu quand il change ailleurs) ; en mode GitHub, la base du dépôt des données
+  const introTail = perfRepoOn() ? [
+    " Les fiches sont lues dans la base du dépôt des données GitHub (« Relire » la relit) ; « Enregistrer dans le dépôt » y reporte les fiches cochées.",
+    " The sheets are read from the GitHub data repository database (“Reread” reads it again); “Save to the repository” writes the ticked sheets back to it.",
+    " Die Blätter werden aus der Datenbank des GitHub-Daten-Repositorys gelesen („Neu lesen“ liest sie erneut); „Im Repository speichern“ schreibt die angekreuzten Blätter dorthin zurück.",
+    " Las fichas se leen de la base del repositorio de datos de GitHub («Releer» la vuelve a leer); «Guardar en el repositorio» escribe en ella las fichas marcadas."
+  ] : [
+    " Le dossier performances est relu quand il change ailleurs (autre page, autre onglet).",
+    " The performance folder is reread when it changes elsewhere (another page or tab).",
+    " Der Leistungsordner wird neu gelesen, wenn er anderswo geändert wird (andere Seite, anderer Tab).",
+    " La carpeta de rendimiento se relee cuando cambia en otro lugar (otra página u otra pestaña)."
+  ];
   setText("ppIntro", kt([
-    "La face performances de « Mes appareils » : mêmes appareils, même ordre, même nom ; pour chacun, d’où vient le profil, s’il a une cartographie moteur, ce qui lui manque. Le dossier performances est relu quand il change ailleurs (autre page, autre onglet).",
-    "The performance side of “My aircraft”: same aircraft, same order, same name; for each, where the profile comes from, whether it has an engine map, what it lacks. The performance folder is reread when it changes elsewhere (another page or tab).",
-    "Die Leistungsseite von „Meine Luftfahrzeuge“: dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name; für jedes die Herkunft des Profils, ob es ein Motorkennfeld hat, was fehlt. Der Leistungsordner wird neu gelesen, wenn er anderswo geändert wird (andere Seite, anderer Tab).",
-    "La cara de rendimiento de «Mis aeronaves»: mismas aeronaves, mismo orden, mismo nombre; para cada una, de dónde viene el perfil, si tiene mapa motor, qué le falta. La carpeta de rendimiento se relee cuando cambia en otro lugar (otra página u otra pestaña)."
+    "La face performances de « Mes appareils » : mêmes appareils, même ordre, même nom ; pour chacun, d’où vient le profil, s’il a une cartographie moteur, ce qui lui manque." +
+    introTail[0],
+    "The performance side of “My aircraft”: same aircraft, same order, same name; for each, where the profile comes from, whether it has an engine map, what it lacks." +
+    introTail[1],
+    "Die Leistungsseite von „Meine Luftfahrzeuge“: dieselben Luftfahrzeuge, dieselbe Reihenfolge, derselbe Name; für jedes die Herkunft des Profils, ob es ein Motorkennfeld hat, was fehlt." +
+    introTail[2],
+    "La cara de rendimiento de «Mis aeronaves»: mismas aeronaves, mismo orden, mismo nombre; para cada una, de dónde viene el perfil, si tiene mapa motor, qué le falta." +
+    introTail[3]
   ]));
   const mineHtml = `${KIT.esc(kt(["Appareils", "Aircraft", "Luftfahrzeuge", "Aeronaves"]))} : <a href="../settings/profil.html?base=equipment">${KIT.esc(kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]))} ↗</a> — ${KIT.esc(kt(["Paramètres › Mon profil › Appareils et simulateurs (ajouter, retirer, possédé, maîtrisé)", "Settings › My profile › Aircraft and simulators (add, remove, owned, mastered)", "Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren (hinzufügen, entfernen, besessen, beherrscht)", "Ajustes › Mi perfil › Aeronaves y simuladores (añadir, quitar, poseída, dominada)"]))}`;
   const mineShort = `<a href="../settings/profil.html?base=equipment" title="${KIT.esc(kt(["Paramètres › Mon profil › Appareils et simulateurs (ajouter, retirer, possédé, maîtrisé)", "Settings › My profile › Aircraft and simulators (add, remove, owned, mastered)", "Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren (hinzufügen, entfernen, besessen, beherrscht)", "Ajustes › Mi perfil › Aeronaves y simuladores (añadir, quitar, poseída, dominada)"]))}">${KIT.esc(kt(["Mes appareils", "My aircraft", "Meine Luftfahrzeuge", "Mis aeronaves"]))} ↗</a>`,
@@ -3373,12 +3504,21 @@ function perfProfilesLabels() {
   setText("ppAddLbl", kt(["Ajouter un appareil", "Add an aircraft", "Luftfahrzeug hinzufügen", "Añadir una aeronave"]));
   // ligne du dossier : sans dossier choisi ni relu, le dire (le message de relecture la remplace ensuite)
   const ppSt = document.getElementById("ppStatus");
-  if (ppSt && (!ppSt.textContent || ppSt.dataset.none) && !dirHandle) {
-    ppSt.textContent = kt(["Aucun dossier performances choisi.", "No performance folder chosen.", "Kein Leistungsordner gewählt.",
+  if (ppSt && (!ppSt.textContent || ppSt.dataset.none) && (perfRepoOn() || !dirHandle)) {
+    const line = perfRepoOn() ? ktf(["Fiches lues dans le dépôt des données GitHub ({f}) ; aucun dossier.",
+      "Sheets read from the GitHub data repository ({f}); no folder.",
+      "Blätter aus dem GitHub-Daten-Repository gelesen ({f}); kein Ordner.",
+      "Fichas leídas del repositorio de datos de GitHub ({f}); sin carpeta."
+    ], {
+      f: perfRepoFile()
+    }) : kt(["Aucun dossier performances choisi.", "No performance folder chosen.", "Kein Leistungsordner gewählt.",
       "Ninguna carpeta de rendimiento elegida."
     ]);
+    if (ppSt.textContent !== line) ppSt.textContent = line;
     ppSt.dataset.none = "1"
   } else if (ppSt && dirHandle) delete ppSt.dataset.none;
+  // mode GitHub : pas de choix de dossier
+  if ($("ppFolder").style.display !== (perfRepoOn() ? "none" : "")) $("ppFolder").style.display = perfRepoOn() ? "none" : "";
   setText("ppSortLbl", kt(["Trier par", "Sort by", "Sortieren nach", "Ordenar por"]));
   const ph = kt(["Chercher un appareil (nom, variante, désignateur, classe, source)",
     "Search an aircraft (name, variant, designator, class, source)",
@@ -3922,11 +4062,23 @@ function syncMergeButton() {
           "Exportar ({n})"
         ]
       ],
-      ["ppSaveDir", "ppSaveDirLbl", ["Enregistrer dans le dossier", "Save to the folder", "Im Ordner speichern", "Guardar en la carpeta"],
-        [
-          "Enregistrer dans le dossier ({n})", "Save to the folder ({n})", "Im Ordner speichern ({n})", "Guardar en la carpeta ({n})"
+      ...(perfRepoOn() ? [
+        ["ppSaveDir", "ppSaveDirLbl", ["Enregistrer dans le dépôt", "Save to the repository", "Im Repository speichern",
+            "Guardar en el repositorio"
+          ],
+          ["Enregistrer dans le dépôt ({n})", "Save to the repository ({n})", "Im Repository speichern ({n})",
+            "Guardar en el repositorio ({n})"
+          ]
         ]
-      ],
+      ] : [
+        ["ppSaveDir", "ppSaveDirLbl", ["Enregistrer dans le dossier", "Save to the folder", "Im Ordner speichern",
+            "Guardar en la carpeta"
+          ],
+          [
+            "Enregistrer dans le dossier ({n})", "Save to the folder ({n})", "Im Ordner speichern ({n})", "Guardar en la carpeta ({n})"
+          ]
+        ]
+      ]),
       ["ppFillMissing", "ppFillMissingLbl", ["Renseigner les champs manquants", "Fill in the missing fields", "Fehlende Felder ausfüllen",
           "Rellenar los campos que faltan"
         ],
@@ -4895,6 +5047,7 @@ async function exportSelected() {
 /** « Enregistrer dans le dossier (n) » : un fichier JSON par profil coché dans le dossier performances (autorisation
  *  demandée au besoin), nommé d'après le profil ; relu ensuite comme les autres profils du dossier. */
 async function saveSelectedToFolder() {
+  if (perfRepoOn()) return saveSelectedToRepo(); // mode GitHub : base du dépôt des données
   const list = selectedProfiles();
   let h = dirHandle;
   if (!h && window.FileAccess) try {
@@ -6658,6 +6811,12 @@ function renderDefaSheets() {
 /* ?aircraft=<type ou profil> : ouverture depuis une fiche appareil (profil existant, sinon créé depuis le type) ;
    transfert d'une mission (?handoff=1, plannerHandoff:v1 : Mes missions, studio, Cartes de vol) : son appareil, si
    l'adresse n'en donne pas. */
+// mode GitHub : fiches du dépôt des données (lecture synchrone : copie du navigateur, rafraîchie pour la prochaine page), avant le
+// choix de la fiche ouverte
+if (perfRepoOn()) {
+  const text = window.GitHubData.readSync(perfRepoFile());
+  if (text) perfRepoMerge(text, false, false)
+}
 refreshLandingAircraft();
 restore();
 applyHeaderPreferences();

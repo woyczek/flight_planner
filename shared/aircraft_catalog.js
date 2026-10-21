@@ -89,6 +89,20 @@
   }
 
   // ---- types : base commune enrichie (en place : les pages gardent leur lecture de AIRCRAFT_DB)
+  // Mode GitHub (appli sans lanceur) : la base des types (AircraftDB/aircraft_db.js) se lit à la racine du dépôt des données ;
+  // absente de ce dépôt, les pages tournent sur une base vide (noms et performances des types indisponibles) et le disent une
+  // fois par page, à la fin du chargement (le cadre de page, qui affiche les notifications, n'existe pas encore ici).
+  if (!window.AIRCRAFT_DB && window.GitHubData?.on?.()) window.addEventListener('load', () => {
+    const row = [
+      'Base des types d’appareils absente du dépôt des données (AircraftDB/) : noms et performances des types indisponibles.',
+      'Aircraft type database missing from the data repository (AircraftDB/): type names and performance unavailable.',
+      'Datenbank der Luftfahrzeugtypen fehlt im Daten-Repository (AircraftDB/): Typnamen und Leistungen nicht verfügbar.',
+      'Base de tipos de aeronave ausente del repositorio de datos (AircraftDB/): nombres y rendimientos de los tipos no disponibles.'
+    ];
+    window.AppFramework?.notify?.(window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0], 'warn');
+  }, {
+    once: true
+  });
   const file = window.AIRCRAFT_DB || (window.AIRCRAFT_DB = {});
   const TYPES_OVERRIDE = 'dataOverride:aircraftDb:v1';
   // fichier tel que servi, gardé intact : base de la règle (et de la comparaison de Paramètres, typesFile)

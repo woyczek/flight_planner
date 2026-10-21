@@ -196,6 +196,42 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **GitHub mode: remembered folders are ignored** (`shared/file_access.js` and its users) — a browser that had once
+  authorised a folder (launcher workstation) kept reading it in GitHub mode and repeatedly warned “Assignments: the
+  authorised missions folder and the files served by the page differ (another copy?)”. One decision point:
+  `FileAccess.get()` returns no folder when `GitHubData.on()` (so `status()` says “not chosen”, `sameAsServed()` has
+  nothing to compare, `set()` keeps nothing, `pickFolder()` refuses with an explanation, `decorate()` hides the folder
+  button); `missionsSource()` and the other direct users are explicit too: the report ledger (`directory()`), the
+  missions registry (no folder, no “Re-read folder”), the browser backup (no backup-folder button: the archive is
+  downloaded), the SIA base block (a sentence says the base is not available in this mode), Settings › Maintenance
+  reference files (“Save to repository” commits through GitHub instead of asking for the application folder), the ODV
+  workbook (chosen by hand each time). Launcher mode is unchanged.
+- **GitHub mode: the performance sheets were empty** (`apps/planner/flight_planner.js`) — the profiles were read only
+  from the remembered performance folder. They are now read from `planner/flight_performance_database_merged.fpdb.json`
+  of the data repository when the page opens (browser copy refreshed in the background) and by “Reread”; a sheet of
+  the repository replaces the browser's one only if it is more recent, so an edit not yet saved is never overwritten.
+  “Save to the repository (n)” writes the ticked sheets back into that file (one commit, conflict-checked with the
+  file `sha`, merge redone if another pilot saved meanwhile); no folder button, status line and intro say so in four
+  languages. Deleting a sheet stays local to the browser (the repository file keeps it).
+- **GitHub mode: pages survive without `AircraftDB/` in the data repository** — the aircraft type base and
+  performance files are read from the repository root; when absent, every page that uses the base now runs on an empty
+  one and says it once per page (“Aircraft type database missing from the data repository (AircraftDB/): type names and
+  performance unavailable”, four languages, `shared/aircraft_catalog.js`); the type completion no longer calls a
+  launcher that does not exist (a “Launcher stopped” notification per type), and the on-demand loading of the types
+  performance (`shared/equipment_editor.js`) reads it from the repository instead of the code site.
+- **GitHub mode: Settings › Maintenance reduced to what works without launcher or folders** (`shared/maintenance_page.js`)
+  — kept: versions (without git, SIA folder or synchronisation rows), aeronautical data (one sentence: the base is
+  produced on a workstation with the launcher), browser caches (without the SIA base and update-check caches), disk
+  space (browser only), browser backup (downloaded archive, no folders, no “Changes since”), journal; not built: updates
+  (git), references and dependencies, aircraft types (rebuild), and the git synchronisation (`shared/sync.js`) and
+  site-download (`shared/defa_site.js`) launcher calls. Block lists are decided when built, never hidden afterwards.
+- **GitHub mode: mission files** — page code no longer asks for files that cannot exist: legacy per-family report
+  ledgers (18 API requests per fresh browser), launcher endpoints (`mission-folders`, `defa-site`, `sync`); mission map
+  images, when the repository has them, are read through the API and shown as object URLs (a `data/…` address cannot
+  load in an image tag); absent maps (excluded from git) still show “map not available” without error.
+- **ODV orders: “Cannot read properties of undefined (reading 'weekId')” on reopening** (`apps/cpco/odv_orders.js`) —
+  with the browser copies of GitHub mode the page started before the shared availability module was inserted; it now
+  waits for the `load` event.
 - Phone (Safari iOS): floating notifications no longer fill the whole screen (the popover container was stretched to the viewport height and the grid stretched every message with it); rows sized to their content, aligned at the bottom, each message capped at 40 % of the screen height.
 - **Passwords: "not saved" after setting one** — the Centre password (*Settings › Centre › Mode and access*) was
   written to the data folder but announced "kept in this browser: authorise the data folder", because the page

@@ -83,8 +83,10 @@
       missions: missions.map(m => M.migrate(m, m?.family || data.family || family))
     };
   };
-  /** Dossier du registre (CR) autorisé ; request : demande l'autorisation. null sinon. */
+  /** Dossier du registre (CR) autorisé ; request : demande l'autorisation. null sinon (toujours null en mode GitHub : le
+   *  registre est lu et écrit dans le dépôt des données, jamais dans un dossier mémorisé). */
   async function directory(request = false, id = HANDLE) {
+    if (window.GitHubData?.on?.()) return null;
     const h = id === HANDLE ? (handle = handle || await idbGet(HANDLE)) : await idbGet(id);
     if (!h) return null;
     let permission = await h.queryPermission?.({
@@ -302,7 +304,8 @@
       } catch {
         absent = {};
       }
-      if (!(Date.now() - (absent[id] || 0) < 86400000)) {
+      // (mode GitHub : le dépôt des données n'a que le registre unique — pas de requête d'API perdue par famille)
+      if (!window.GitHubData?.on?.() && !(Date.now() - (absent[id] || 0) < 86400000)) {
         const served = await fetchText(new URL(`${folder}/${name}`, APP));
         if (served) {
           candidates.push(served);

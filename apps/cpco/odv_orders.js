@@ -3278,6 +3278,11 @@
   /** Démarrage : vue mémorisée, semaine de l'URL (?semaine=AAAA-Www) sinon la courante sur le jour d'aujourd'hui,
    *  écouteurs, chargement, activations, garde des modifications non enregistrées. */
   async function init() {
+    // modules partagés insérés par repository_nav.js (SuiteDispos…) : prêts à l'événement load, qui attend leurs scripts (avec les
+    // copies du navigateur du mode GitHub, DOMContentLoaded les devançait : SuiteDispos absent au premier appel)
+    if (document.readyState !== 'complete') await new Promise(r => window.addEventListener('load', r, {
+      once: true
+    }));
     const v = readView();
     S.view = ['jour', 'semaine', 'stats'].includes(v.view) ? v.view : 'jour';
     S.zoom = Number.isInteger(v.zoom) ? Math.max(0, Math.min(ZOOMS.length - 1, v.zoom)) : 2;

@@ -103,6 +103,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   };
   /** Dossier racine du dépôt (handle), autorisé en écriture ; request : le demande ou le fait choisir (contrôle : présence de repository_tree). null sans autorisation. */
   async function repo(request = true) {
+    if (window.GitHubData?.on?.()) return null; // mode GitHub : aucun dossier, les fichiers sont écrits dans le dépôt des données
     let handle = await idbGet('folder:__repo');
     if (handle) {
       let permission = await handle.queryPermission?.({
@@ -135,6 +136,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   }
   /** Écrit un fichier du dépôt (chemin relatif, dossiers créés au besoin). */
   async function writeRepoFile(path, text) {
+    // mode GitHub (appli sans lanceur) : « data/<rel> » est écrit dans le dépôt des données (un commit), jamais dans un dossier
+    if (window.GitHubData?.on?.()) return window.GitHubData.put(path.replace(/^data\//, ''), text);
     let dir = await repo(true);
     const parts = path.split('/'),
       name = parts.pop();
@@ -1432,7 +1435,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             w.fileStamp = stamp;
             w.local = '';
             dirty = false;
-            status(`${T('Enregistré dans le dépôt', 'Saved to repository')} : ${files.map(f => f[0]).join(', ')} — ${T('à committer', 'to be committed')}`);
+            status(`${T('Enregistré dans le dépôt', 'Saved to repository')} : ${files.map(f => f[0]).join(', ')} — ${window.GitHubData?.on?.() ? window.RepositoryKit.tf(['commité sur GitHub', 'committed on GitHub', 'auf GitHub committet', 'confirmado en GitHub'], {}) : T('à committer', 'to be committed')}`);
           }, own ? 'secondary' : 'primary'],
           [T('Appliquer dans ce navigateur', 'Apply in this browser'), async () => {
             const stamp = now();
@@ -2002,7 +2005,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       };
       editor.querySelector('[data-yaml="close"]').textContent = T('Fermer', 'Close');
       /** Texte du résultat d'un enregistrement de registre (fichier écrit ou navigateur seulement). */
-      const result = r => `${r.written ? `${T('fichier', 'file')} ${store.folder}/${L.FILE}` : T('navigateur (dossier « CR » non autorisé : « Dossier du registre… »)', 'browser (“CR” folder not authorised: “Ledger folder…”)')}`;
+      const GHM = !!window.GitHubData?.on?.(); // mode GitHub : le registre est écrit dans le dépôt des données, sans dossier
+      const result = r => `${r.written ? GHM ? `GitHub : cr/${L.FILE}` : `${T('fichier', 'file')} ${store.folder}/${L.FILE}` : T('navigateur (dossier « CR » non autorisé : « Dossier du registre… »)', 'browser (“CR” folder not authorised: “Ledger folder…”)')}`;
       // Éditeur YAML : registre complet (family absent) ou missions d'une famille.
       function edit(familyId) {
         const view = familyId ? L.open({
@@ -2069,14 +2073,16 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       paint();
       actions([
         [T('Éditer le registre complet (YAML)', 'Edit the full ledger (YAML)'), () => edit(null), 'primary'],
-        [T('Dossier du registre…', 'Ledger folder…'), async () => {
-          await L.chooseFolder();
-          await L.load(true);
-          const r = await L.save();
-          status(result(r));
-          info();
-          paint();
-        }],
+        ...(GHM ? [] : [
+          [T('Dossier du registre…', 'Ledger folder…'), async () => {
+            await L.chooseFolder();
+            await L.load(true);
+            const r = await L.save();
+            status(result(r));
+            info();
+            paint();
+          }]
+        ]),
         [T('Télécharger le registre (YAML)', 'Download the ledger (YAML)'), () => L.downloadAll()],
         [T('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)'), () => L.downloadAllCsv()]
       ]);

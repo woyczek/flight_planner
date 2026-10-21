@@ -366,6 +366,11 @@
   // dossier des missions autorisé, par rapport à la suite servie : true (le même : la copie servie suffit), false
   // (autre copie : ignoré), null (contrôle impossible : sans lanceur, le dossier est lu directement)
   async function missionsSource() {
+    // mode GitHub : le dépôt des données est la seule source ; aucun dossier, donc ni comparaison ni avertissement
+    if (gh()) return {
+      handle: null,
+      same: null
+    };
     const st = await window.FileAccess?.status?.('__missions');
     if (!st?.handle || st.permission !== 'granted') return {
       handle: null,
@@ -1692,6 +1697,13 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   // missions autorisé (FileAccess, « __missions »), dossier de la mission d'après son entrée de registre (folder) ou
   // la règle <lettre>_<FAMILLE>/<ID>
   async function missionsDir() {
+    // mode GitHub : l'écriture des affectations par le Centre passe par un dossier des missions (poste avec lanceur)
+    if (gh()) throw new Error(t([
+      'Mode GitHub : l’écriture des affectations dans le dossier des missions demande un poste de travail avec lanceur.',
+      'GitHub mode: writing assignments to the missions folder needs a workstation with the launcher.',
+      'GitHub-Modus: Das Schreiben der Zuweisungen in den Missionsordner erfordert einen Arbeitsplatz mit Starter.',
+      'Modo GitHub: escribir las asignaciones en la carpeta de misiones requiere un puesto de trabajo con lanzador.'
+    ]));
     const FA = window.FileAccess;
     if (!FA) throw new Error(t(['Module d’accès aux dossiers absent', 'Folder access module missing']));
     /** Demande le dossier des missions à l'utilisateur ; erreur expliquée s'il refuse. */
@@ -1862,6 +1874,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   /** Dossier des missions autorisé, en lecture : permission déjà accordée, sinon demandée (clic récent) ; null sinon. */
   async function missionsRead() {
+    if (gh()) return null; // mode GitHub : pas de dossier des missions
     try {
       const st = await window.FileAccess?.status?.('__missions');
       if (!st?.handle) return null;
@@ -1896,11 +1909,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     }
     const url = new URL(`data/missions/${folder}/${name}`, root()).href;
     try {
+      // mode GitHub : une adresse data/… ne se charge pas dans une balise <img> (le dépôt n'est lisible que par l'API) — le
+      // fichier est lu, puis donné en URL d'objet ; absent (cartes exclues de git) : null, « carte non disponible »
       const r = await fetch(url, {
         cache: 'no-cache', // revalidé (304 si inchangé)
-        method: as === 'url' ? 'HEAD' : 'GET'
+        method: as === 'url' && !gh() ? 'HEAD' : 'GET'
       });
-      return r.ok ? (as === 'url' ? url : await r.text()) : null;
+      if (!r.ok) return null;
+      return as === 'url' ? (gh() ? URL.createObjectURL(await r.blob()) : url) : await r.text();
     } catch {
       return null;
     }

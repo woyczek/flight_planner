@@ -227,6 +227,18 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
    *  silhouettes chargées à la demande (page qui ne les charge pas). */
   const loadScript = file => new Promise(res => {
     const s = document.createElement('script');
+    // mode GitHub : base des types et performances lues dans le dépôt des données (AircraftDB/ à sa racine, comme le font les
+    // balises data_files.js), jamais sur le site du code, qui ne les publie pas ; absente du dépôt : rien n'est chargé
+    if (window.GitHubData?.on?.() && /^aircraft_(db|perf)\.js$/.test(file)) {
+      const text = window.GitHubData.readSync(`AircraftDB/${file}`);
+      if (text != null) {
+        s.textContent = text;
+        document.head.append(s);
+        s.remove();
+      }
+      res();
+      return;
+    }
     s.src = new URL(`../AircraftDB/${file}?t=${Date.now()}`, HERE).href;
     s.onload = s.onerror = () => {
       s.remove();
@@ -273,6 +285,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   }
   /** Demande au lanceur de compléter un code (passe courte, ou file d'attente si une passe tourne), puis le suit. */
   async function completeType(code, redraw) {
+    if (window.GitHubData?.on?.()) return; // mode GitHub : pas de lanceur, la base des types est lue dans le dépôt des données
     if (redraw) redraws.add(redraw);
     running.add(code);
     redraw?.();
@@ -304,6 +317,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   /** À l'ouverture : passe en cours ou file d'attente qui concernent ces codes → suivies ; dernière passe terminée
    *  sans fiche pour un code → « introuvable ». */
   async function resumeTypes(codes, redraw) {
+    if (window.GitHubData?.on?.()) return; // mode GitHub : pas de lanceur
     redraws.add(redraw);
     const s = await acApi();
     if (!s) return;

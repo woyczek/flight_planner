@@ -133,8 +133,12 @@
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
   });
-  /** Valeur d'une clé du magasin handles ; null si absente ou si IndexedDB est indisponible. */
+  /** Mode GitHub (appli sans lanceur, shared/github_data.js) : aucun dossier mémorisé n'est lu ni proposé — la sauvegarde du
+   *  navigateur se télécharge à la main. */
+  const noFolders = () => !!window.GitHubData?.on?.();
+  /** Valeur d'une clé du magasin handles ; null si absente, si IndexedDB est indisponible ou en mode GitHub. */
   const idbGet = async key => {
+    if (noFolders()) return null;
     try {
       const db = await idb();
       return await new Promise(r => {
@@ -630,7 +634,7 @@
   box.id = 'repoLocalStore';
   box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-store-text="title"></div>' + ['save', 'restore', 'folder',
       'download', 'file'
-    ].map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
+    ].filter(k => k !== 'folder' || !noFolders()).map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
     '<div class="repo-store-status" style="padding:4px 8px;font-size:11px;opacity:.8"></div><input type="file" accept=".yaml,.yml,text/yaml" hidden>';
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
@@ -671,6 +675,8 @@
     }
   };
   box.querySelector('[data-store="save"]').onclick = run(async () => {
+    // mode GitHub : pas de dossier de sauvegarde, la sauvegarde se télécharge
+    if (noFolders()) return download();
     if (!(await save({
         request: true
       })) && !(await idbGet('folder:__store'))) {
@@ -681,7 +687,7 @@
     }
   });
   box.querySelector('[data-store="restore"]').onclick = run(restore);
-  box.querySelector('[data-store="folder"]').onclick = run(async () => {
+  if (box.querySelector('[data-store="folder"]')) box.querySelector('[data-store="folder"]').onclick = run(async () => {
     await chooseFolder();
     await save({
       request: true
@@ -804,7 +810,7 @@
       return;
     }
     const kept = await idbGet('folder:__store');
-    if (window.showDirectoryPicker && !kept) {
+    if (window.showDirectoryPicker && !kept && !noFolders()) {
       await chooseFolder();
       if (await save({
           request: true

@@ -1690,6 +1690,13 @@
   const esc = window.RepositoryKit.esc; // échappement HTML commun (shared/kit.js)
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
+    // mode GitHub (appli sans lanceur) : ni dossier SIA ni relecture
+    ghOff: [
+      'Base aéronautique (SIA) non disponible dans ce mode : aucun dossier à choisir ; elle se produit sur un poste de travail avec lanceur.',
+      'Aeronautical (SIA) database not available in this mode: there is no folder to choose; it is produced on a workstation with the launcher.',
+      'Luftfahrtdatenbank (SIA) in diesem Modus nicht verfügbar: Es ist kein Ordner zu wählen; sie wird an einem Arbeitsplatz mit Starter erzeugt.',
+      'Base aeronáutica (SIA) no disponible en este modo: no hay carpeta que elegir; se produce en un puesto de trabajo con lanzador.'
+    ],
     reread: ['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen',
       'Reconstruir la base aeronáutica'
     ],
@@ -1744,6 +1751,16 @@
    *  sélecteur de dossier natif. */
   function panel(host, opts = {}) {
     host.classList.add('sia-base-panel');
+    // mode GitHub : la base se produit sur un poste avec lanceur ; ni dossier SIA, ni relecture, ni purge ici
+    if (window.GitHubData?.on?.()) {
+      host.innerHTML = `<p class="sia-base-state small">${esc(L(T.ghOff))}</p>`;
+      return {
+        el: host,
+        reread: async () => null,
+        refresh: async () => null,
+        setMessage: () => {}
+      };
+    }
     host.innerHTML = `<div class="sia-base-actions"><span class="sia-base-folder"></span><button type="button" class="primary sia-base-reread" data-icon="refresh">${esc(L(opts.rereadLabel || T.reread))}</button><button type="button" class="secondary sia-base-purge" data-icon="trash">${esc(L(T.purge))}</button><label class="secondary sia-base-native" hidden>${esc(L(T.pick))}<input type="file" webkitdirectory directory multiple hidden></label></div>
       <p class="sia-base-state small"></p><div class="sia-base-progress" hidden><progress max="1" value="0"></progress><span class="sia-base-pct"></span><button type="button" class="secondary sia-base-cancel">${esc(L(T.cancel))}</button><div class="sia-base-step small"></div><div class="sia-base-stall small err" hidden></div></div><div class="sia-base-msg" aria-live="polite" data-status></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
     // libellés des boutons repris une fois la langue de la page réglée (le bloc peut être créé avant : ils restaient en

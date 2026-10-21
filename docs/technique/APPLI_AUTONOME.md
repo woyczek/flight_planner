@@ -68,6 +68,18 @@ Storage and access map: `DONNEES_ET_ACCES.md`.
   root of the data repository (© ICAO, EUROCONTROL: never published with the public site); to be copied there from a
   launcher workstation.
 
+- **Desktop browser test, fixes of 21 October** (same fake GitHub): the remembered folders (`FileAccess`) are ignored in
+  GitHub mode at one decision point (`FileAccess.get()` returns none when `GitHubData.on()`; header of
+  `shared/file_access.js`), so no page warns about “another copy” any more; the performance sheets are read from, and
+  written back to, `planner/flight_performance_database_merged.fpdb.json` of the data repository (newer sheet wins,
+  `sha`-checked write); every page was loaded without `AircraftDB/` in the data repository (no JavaScript error; one
+  notification per page, empty type base) and with it; Settings › Maintenance keeps versions, the SIA sentence, browser
+  caches and space, browser backup (downloaded) and journal.
+- **Still needing a workstation with the launcher**: assignments written by the Centre (`missionsDir()`), reading or
+  filing mission folders (missions registry), the SIA base (map studio and Flight maps show their “SIA base missing”
+  hint), type base completion, git updates. Mission maps (`missions/**/*.png`) are not in the repository: “map not
+  available”.
+
 ### One-time settings (repository owner)
 
 1. `Woyczek/flight_planner` › Settings › Pages › Source: **GitHub Actions**.

@@ -2160,6 +2160,7 @@ async function relireOnOpen() {
     return
   }
   const b = basePanel.el.querySelector('.sia-base-reread');
+  if (!b) return; // mode GitHub : pas de bloc de relecture
   b.style.outline = '3px solid #f59e0b';
   b.style.outlineOffset = '2px';
   b.addEventListener('click', () => {

@@ -7,8 +7,14 @@
   //   · tout <input type="file"> de la suite ouvre le sélecteur du système directement dans le
   //     dossier paramétré (data-picker-folder, ou dossier par défaut de la page), sinon dans le
   //     dernier dossier utilisé pour ce bouton ; les pages gardent leur code (événement change).
+  //   · MODE GITHUB (appli sans lanceur : GitHubData.on(), shared/github_data.js) : les données viennent du dépôt GitHub,
+  //     jamais d'un dossier. Point de décision unique ici : get() ne rend aucun dossier (status() : « non choisi »,
+  //     sameAsServed() : null), set() ne mémorise rien, pickFolder() refuse avec une explication, decorate() masque le
+  //     bouton de dossier. Les pages n'ont donc rien à tester : sans dossier, elles lisent et écrivent par GitHub.
   // Chargé par repository_nav.js sur toutes les pages. Sans API (Firefox…) : comportement natif.
   const L = (fr, en, de = en, es = en) => [fr, en, de, es];
+  /** Mode GitHub : aucun dossier mémorisé n'est lu, mémorisé ni proposé. */
+  const gh = () => !!window.GitHubData?.on?.();
   /** Rang (0–3) de la langue de la page dans [fr, en, de, es]. */
   /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
   const tr = row => window.RepositoryKit.t(row, {
@@ -164,6 +170,7 @@
   window.addEventListener('file-access-change', () => handleMemo.clear());
   /** Dossier mémorisé (handle) de la clé key (__repo, __ledger, __perf, __store…) ; null sinon. */
   async function get(key) {
+    if (gh()) return null; // mode GitHub : les données viennent du dépôt, aucun dossier
     const hit = handleMemo.get(key);
     if (hit && Date.now() - hit.at < 10e3) return hit.value;
     const value = await (async () => {
@@ -214,6 +221,7 @@
   async function set(key, handle, {
     accepted = false
   } = {}) {
+    if (gh()) return; // mode GitHub : aucun dossier mémorisé
     const db = await idb();
     await new Promise(res => {
       const tx = db.transaction('handles', 'readwrite');
@@ -472,10 +480,15 @@
     }
     return done;
   }
+  const GH_NO_FOLDER = L('Mode GitHub : les données viennent du dépôt GitHub, aucun dossier n’est à choisir.',
+    'GitHub mode: the data come from the GitHub repository, there is no folder to choose.',
+    'GitHub-Modus: Die Daten kommen aus dem GitHub-Repository, es ist kein Ordner zu wählen.',
+    'Modo GitHub: los datos vienen del repositorio de GitHub, no hay carpeta que elegir.');
   // Choix d'un dossier : le sélecteur s'ouvre sur le dossier actuel ; contrôle du contenu attendu.
   async function pickFolder(key, {
     mode = 'readwrite'
   } = {}) {
+    if (gh()) throw new Error(tr(GH_NO_FOLDER));
     if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() ||
       'File System Access API (Chrome / Edge)');
     const info = FOLDERS[key] || {},
@@ -535,6 +548,12 @@
     withLabel = true
   } = {}) {
     if (!button) return;
+    // mode GitHub : pas de dossier à choisir, le bouton n'a pas lieu d'être
+    if (gh()) {
+      if (!button.hidden) button.hidden = true;
+      if (button.style.display !== 'none') button.style.display = 'none';
+      return;
+    }
     const refresh = async () => {
       const d = await describe(key);
       // libellé seul remplacé : l'icône éventuelle du bouton (data-icon, block_icons.js) est conservée
