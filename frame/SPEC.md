@@ -1,7 +1,7 @@
 # V3 frame — specification (regeneration prompt)
 
 This document describes the frame of the V3 suite well enough to rebuild it without its code. It grows lot by lot;
-today it covers the **data layer** (`frame/data/`). The decisions behind it are in [DECISIONS.md](DECISIONS.md), the
+today it covers the **data layer** (`frame/store/`). The decisions behind it are in [DECISIONS.md](DECISIONS.md), the
 way a module plugs in is in [INTEGRATION.md](INTEGRATION.md), the project brief is
 `docs/technique/V3_SPECIFICATION.md`.
 
@@ -15,7 +15,7 @@ The frame is what every module of every V3 application stands on: data, navigati
 loading. Its heart is the data layer: **disconnected mode is the normal state**. Every device works on its own copy;
 exchange happens in batches, explicitly or periodically, through a transport the device's usages select.
 
-## 2. Data layer (`frame/data/frame_data.js`)
+## 2. Data layer (`frame/store/frame_data.js`)
 
 ### 2.1 Vocabulary
 
@@ -96,7 +96,7 @@ The transports:
 
 - **`local`** (only "single user" ticked): no exchange. A pass applies the queue to the cache, and the cache is the
   truth.
-- **`github`** (`frame/data/transport_github.js`): the data repository through the GitHub git data API, with a
+- **`github`** (`frame/store/transport_github.js`): the data repository through the GitHub git data API, with a
   fine-grained device token (contents read and write on that repository only). The token is kept in `localStorage`
   `githubData:frame`, excluded from browser backups.
   - `head` is a conditional request on the branch ref: a 304 costs no rate limit.

@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>frame/store — tests</title>
+<!-- Essais de la couche de données du cadre V3 (frame/store/frame_data.js, transport_github.js) contre le faux GitHub de
+     frame/store/test/fake_github.py, qui sert aussi cette page : python frame/store/test/fake_github.py, puis
+     http://127.0.0.1:8790/frame/store/test/ et « Run ». Chaque scénario repart d'un cache et d'un dépôt vides. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px;
+    background: #f5f6f8;
+    color: #17202a
+  }
+  li.ok::marker {
+    content: '✓ ';
+    color: #1e7d32
+  }
+  li.ko::marker {
+    content: '✗ ';
+    color: #b3261e
+  }
+  li.ko {
+    color: #b3261e
+  }
+  pre {
+    font-size: 12px;
+    white-space: pre-wrap
+  }
+</style></head>
+<body>
+<h1>frame/store — tests</h1>
+<p><button type="button" id="run">Run</button> <span id="state"></span></p>
+<ol id="out"></ol>
+<script src="../frame_data.js"></script>
+<script src="../transport_github.js"></script>
+<script>
+  const FD = window.FrameData,
+    $ = id => document.getElementById(id);
+  const T = (cmd, body) => fetch(`/__test/${cmd}`, {
+    method: 'POST',
+    body: JSON.stringify(body || {})
+  }).then(r => r.json());
+  const stats = () => fetch('/__test/stats').then(r => r.json());
+  const results = [];
+  /** Vérification : nom, condition, détail montré en cas d'échec. */
+  const check = (name, ok, detail) => results.push({
+    name,
+    ok: !!ok,
+    detail: ok ? '' : JSON.stringify(detail)
+  });
+  const rec = (who, at, extra = {}) => ({
+    pilote: who,
+    updated_at: at,
+    ...extra
+  });
+  /** Couche neuve : cache effacé, dépôt d'essai, transport github sur le faux GitHub, module « essai » déclaré. */
+  async function fresh(files = {}) {
+    await FD.reset();
+    await T('offline', {
+      on: false
+    });
+    await T('reset', {
+      files
+    });
+    FD.configure({
+      transport: FD.github({
+        repo: 'test/data',
+        branch: 'main',
+        token: 'test-token',
+        api: `${location.origin}/api`
+      }),
+      identity: {
+        trigram: 'TST'
+      }
+    });
+    return FD.adapter({
+      id: 'essai',
+      reads: ['disponibilites/', 'cr/', {
+        prefix: 'sia/base/',
+        policy: 'reference'
+      }],
+      writes: [{
+        prefix: 'disponibilites/',
+        merge: 'record'
+      }, {
+        prefix: 'cr/log.json',
+        merge: 'journal'
+      }, {
+        prefix: 'cr/affectations.json',
+        merge: 'keyed:assignments:mission+pilot'
+      }]
+    });
+  }
+  const scenarios = {
+    async 'offline: writes wait in the queue, reads answer from the cache'() {
+      const d = await fresh();
+      await T('offline', {
+        on: true
+      });
+      await d.put('disponibilites/TST/2026-W43.json', rec('TST', '2026-10-22T10:00:00Z'));
+      await d.put('disponibilites/TST/2026-W44.json', rec('TST', '2026-10-22T10:01:00Z'));
+      const s = await d.status(),
+        v = await d.get('disponibilites/TST/2026-W43.json');
+      check('2 writes pending', s.pending === 2, s);
+      check('read returns the local write', v?.pilote === 'TST', v);
+      const r = await d.sync();
+      check('sync offline: error "offline", nothing lost', r.error === 'offline' && (await d.status()).pending === 2, r);
+      const st = await stats();
+      check('no commit while offline', st.commits.length === 1, st.commits);
+    },
+    async 'batch: several writes and a removal leave in ONE commit'() {
+      const d = await fresh({
+        'disponibilites/OLD/2026-W40.json': JSON.stringify(rec('OLD', '2026-10-01T00:00:00Z'))
+      });
+      await d.sync();
+      for (let i = 0; i < 5; i++) await d.put(`disponibilites/TST/2026-W4${i}.json`, rec('TST', `2026-10-22T10:0${i}:00Z`));
+      await d.remove('disponibilites/OLD/2026-W40.json');
+      const r = await d.sync(),
+        st = await stats(),
+        last = st.commits[st.commits.length - 1];
+      check('sync ok, 6 pushed', r.ok && r.pushed === 6, r);
+      check('one commit for the batch', st.commits.length === 2 && last[2].length === 6, st.commits);
+      check('commit message names the trigram', /^TST : 6 fichier/.test(last[1]), last[1]);
+      check('removed file gone from the repository', !('disponibilites/OLD/2026-W40.json' in st.files), Object.keys(st.files));
+      check('queue empty after push', (await d.status()).pending === 0, await d.status());
+      check('list sees the pushed files', (await d.list('disponibilites/TST/'))?.length === 5, await d.list('disponibilites/'));
+    },
+    async 'pull: a change made on another device arrives, watch is called'() {
+      const d = await fresh({
+        'disponibilites/ABC/2026-W43.json': JSON.stringify(rec('ABC', '2026-10-20T00:00:00Z'))
+      });
+      await d.sync();
+      const seen = [];
+      const stop = d.watch('disponibilites/', p => seen.push(...p));
+      await T('write', {
+        files: {
+          'disponibilites/ABC/2026-W43.json': JSON.stringify(rec('ABC', '2026-10-22T08:00:00Z', {
+            note: 'remote'
+          }))
+        }
+      });
+      const before = await d.get('disponibilites/ABC/2026-W43.json');
+      check('before sync: the cached version (no network in a read)', before?.note === undefined, before);
+      await d.sync();
+      const after = await d.get('disponibilites/ABC/2026-W43.json');
+      check('after sync: the remote version', after?.note === 'remote', after);
+      check('watch called with the path', seen.includes('disponibilites/ABC/2026-W43.json'), seen);
+      stop();
+    },
+    async 'conflict on a record: the newest wins, the loser is kept'() {
+      const p = 'disponibilites/TST/2026-W45.json',
+        d = await fresh({
+          [p]: JSON.stringify(rec('TST', '2026-10-20T00:00:00Z', {
+            v: 'base'
+          }))
+        });
+      await d.sync();
+      await d.put(p, rec('TST', '2026-10-22T09:00:00Z', {
+        v: 'local-older'
+      }));
+      await T('write', {
+        files: {
+          [p]: JSON.stringify(rec('TST', '2026-10-22T11:00:00Z', {
+            v: 'remote-newer'
+          }))
+        }
+      });
+      let alerted = 0;
+      const on = () => alerted++;
+      window.addEventListener('frame-data-conflict', on);
+      const r = await d.sync();
+      window.removeEventListener('frame-data-conflict', on);
+      const st = await stats(),
+        cs = await FD.conflicts();
+      check('sync ok, 1 conflict counted', r.ok && r.conflicts === 1, r);
+      check('repository keeps the newest (remote)', JSON.parse(st.files[p]).v === 'remote-newer', st.files[p]);
+      check('loser kept and consultable', cs.length === 1 && JSON.parse(cs[0].lost).v === 'local-older', cs);
+      check('conflict signalled (event), no question asked', alerted === 1, alerted);
+      check('status counts the unseen conflict', (await d.status()).conflicts === 1, await d.status());
+    },
+    async 'journal and keyed lists merge without loss'() {
+      const log = 'cr/log.json',
+        aff = 'cr/affectations.json',
+        d = await fresh({
+          [log]: JSON.stringify({
+            entries: [{
+              at: '1',
+              e: 'a'
+            }]
+          }),
+          [aff]: JSON.stringify({
+            assignments: [{
+              mission: 'M1',
+              pilot: 'AAA'
+            }]
+          })
+        });
+      d.watch('cr/', () => {});
+      await d.sync();
+      // module « cr » : ses écritures déclarées (la déclaration de fresh couvre cr/log.json et cr/affectations.json)
+      await d.put(log, {
+        entries: [{
+          at: '1',
+          e: 'a'
+        }, {
+          at: '3',
+          e: 'local'
+        }]
+      });
+      await d.put(aff, {
+        assignments: [{
+          mission: 'M1',
+          pilot: 'AAA'
+        }, {
+          mission: 'M2',
+          pilot: 'TST'
+        }]
+      });
+      await T('write', {
+        files: {
+          [log]: JSON.stringify({
+            entries: [{
+              at: '1',
+              e: 'a'
+            }, {
+              at: '2',
+              e: 'remote'
+            }]
+          }),
+          [aff]: JSON.stringify({
+            assignments: [{
+              mission: 'M1',
+              pilot: 'AAA'
+            }, {
+              mission: 'M3',
+              pilot: 'BBB'
+            }]
+          })
+        }
+      });
+      const r = await d.sync(),
+        st = await stats();
+      check('journal: union of both sides, sorted', JSON.parse(st.files[log]).entries.map(e => e.e).join() === 'a,remote,local', st
+        .files[log]);
+      check('keyed: both new assignments kept', JSON.parse(st.files[aff]).assignments.map(a => a.mission).sort().join() === 'M1,M2,M3',
+        st.files[aff]);
+      check('no conflict counted', r.ok && r.conflicts === 0, r);
+    },
+    async 'race: the branch moves during the push, the layer pulls and pushes again'() {
+      const d = await fresh();
+      await d.sync();
+      await d.put('disponibilites/TST/2026-W46.json', rec('TST', '2026-10-22T12:00:00Z'));
+      await T('race', {
+        files: {
+          'disponibilites/XYZ/2026-W46.json': JSON.stringify(rec('XYZ', '2026-10-22T12:00:01Z'))
+        }
+      });
+      const r = await d.sync(),
+        st = await stats();
+      check('sync ok after the refused push', r.ok && r.pushed === 1, r);
+      check('both files in the repository', 'disponibilites/TST/2026-W46.json' in st.files && 'disponibilites/XYZ/2026-W46.json' in st
+        .files,
+        Object.keys(st.files));
+      check('the other device’s file pulled into the cache', (await d.get('disponibilites/XYZ/2026-W46.json'))?.pilote === 'XYZ', null);
+    },
+    async 'reference policy: read on demand, never queued, revalidated at sync'() {
+      const ref = 'sia/base/fr/2026-10-01.json',
+        d = await fresh({
+          [ref]: JSON.stringify({
+            zone: 'fr',
+            n: 1
+          }),
+          'sia/base/gb/2026-10-01.json': JSON.stringify({
+            zone: 'gb',
+            n: 1
+          })
+        });
+      await d.sync();
+      const st0 = await stats();
+      check('not prefetched: no blob read at sync', !st0.calls.some(c => c === 'GET blobs'), st0.calls);
+      check('list before any read: tree known', (await d.list('sia/base/'))?.length === 2, await d.list('sia/base/'));
+      const a = await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      check('first read waits and fetches', a?.value?.n === 1 && a.cached === false, a);
+      const b = await d.read(ref, {
+        policy: 'reference'
+      });
+      check('second read from the cache', b?.cached === true, b);
+      check('never in the queue', (await d.status()).pending === 0, await d.status());
+      const seen = [];
+      d.watch('sia/base/', p => seen.push(...p));
+      await T('write', {
+        files: {
+          [ref]: JSON.stringify({
+            zone: 'fr',
+            n: 2
+          })
+        }
+      });
+      await d.sync();
+      check('revalidated at sync, watch called', (await d.get(ref))?.n === 2 && seen.includes(ref), seen);
+      check('the other zone, never asked, still not fetched', !(await d.read('sia/base/gb/2026-10-01.json', {
+        policy: 'reference'
+      })), null);
+    },
+    async 'list is null before the first tree (offline first launch)'() {
+      const d = await fresh();
+      await T('offline', {
+        on: true
+      });
+      check('list null offline before any sync', (await d.list('disponibilites/')) === null, await d.list(''));
+    },
+    async 'module writes outside its declared prefixes are refused'() {
+      const d = await fresh();
+      let err = '';
+      try {
+        await d.put('utilisateurs/TST.json', {});
+      } catch (e) {
+        err = e.message;
+      }
+      check('refused with a clear message', /may not write utilisateurs\/TST\.json/.test(err), err);
+    },
+    async 'local transport (single user): the queue becomes the cache, nothing sent'() {
+      await FD.reset();
+      FD.configure({
+        transport: FD.transports.local()
+      });
+      const d = FD.adapter({
+        id: 'essai',
+        reads: ['disponibilites/'],
+        writes: ['disponibilites/']
+      });
+      await d.put('disponibilites/TST/2026-W47.json', rec('TST', '2026-10-22T13:00:00Z'));
+      const r = await d.sync();
+      check('sync ok, no network', r.ok && r.pushed === 1, r);
+      check('cache holds the file, queue empty', (await d.get('disponibilites/TST/2026-W47.json'))?.pilote === 'TST' && (await d
+          .status()).pending === 0,
+        await d.status());
+      check('list from the cache', (await d.list('disponibilites/'))?.length === 1, await d.list(''));
+    },
+    async 'git blob sha matches the repository'() {
+      const d = await fresh({
+        'disponibilites/A/x.json': 'héllo\n'
+      });
+      await d.sync();
+      const tree = (await stats()).files;
+      check('same text, same sha', await FD.gitSha('héllo\n') === (await d.read('disponibilites/A/x.json')).rev, null);
+    }
+  };
+  async function runAll() {
+    results.length = 0;
+    $('out').innerHTML = '';
+    $('state').textContent = 'running…';
+    for (const [name, fn] of Object.entries(scenarios)) {
+      const start = results.length;
+      try {
+        await fn();
+      } catch (e) {
+        check(`${name}: threw`, false, e.stack || String(e));
+      }
+      const mine = results.slice(start),
+        li = document.createElement('li');
+      li.className = mine.every(x => x.ok) ? 'ok' : 'ko';
+      li.innerHTML = `<b>${name}</b><ul>${mine.map(x => `<li class="${x.ok ? 'ok' : 'ko'}">${x.name}${x.detail ? `<pre>${x.detail.replace(/</g, '&lt;')}</pre>` : ''}</li>`).join('')}</ul>`;
+      $('out').append(li);
+    }
+    await T('offline', {
+      on: false
+    });
+    const ko = results.filter(x => !x.ok).length;
+    $('state').textContent = `${results.length - ko} / ${results.length} checks passed`;
+    window.__results = {
+      total: results.length,
+      failed: results.filter(x => !x.ok)
+    };
+    return window.__results;
+  }
+  $('run').onclick = runAll;
+</script>
+</body></html>

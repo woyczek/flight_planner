@@ -14,7 +14,7 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
 - **22 Oct 2026 — Conflicts** (user, Q3): on a record, the newest `updated_at` wins. The loser is kept (store
   `conflicts`, consultable) and signalled (event `frame-data-conflict`, counted in the status), never a blocking
   question. Journals are united; keyed lists are merged record by record.
-- **22 Oct 2026 — Transition** (user, Q4): V2 pages keep their data path; only V3 modules use `frame/data`.
+- **22 Oct 2026 — Transition** (user, Q4): V2 pages keep their data path; only V3 modules use `frame/store`.
 - **22 Oct 2026 — Boundary with aerodb** (agreed with the aerodb agent):
   - the frame reads and caches files by path, with `read(path, { policy, wait })` →
     `{ value, text, rev, cached, pending, at }` | null and `list(prefix)` → paths | null (no tree ever read);
@@ -36,7 +36,10 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   declaration is its contract and the synchronisation pulls only what mounted modules read.
 - **22 Oct 2026 — `list` returns null, not [], when no tree was ever read**: a first launch offline must not look like
   an empty repository.
-- **22 Oct 2026 — Tests**: `frame/data/test/index.html` against `frame/data/test/fake_github.py` (standard library; git
+- **22 Oct 2026 — Tests**: `frame/store/test/index.html` against `frame/store/test/fake_github.py` (standard library; git
   data API in memory, real blob shas, commands to simulate another device, a push race, offline). 37 checks: offline,
   batch, pull and watch, record conflict, journal and keyed merges, race, reference policy, list before the first tree,
   write refused outside declared prefixes, local transport, git sha.
+- **22 Oct 2026 — Folder `frame/store/`, not `frame/data/`**: the repository's `.gitignore` ignores `data/` at any
+  depth (the data clone of a workstation), so `frame/data/` was silently left out of the first commit. Renamed rather
+  than excepted, so that no later folder falls into the same trap; no V3 folder may be named `data`.
