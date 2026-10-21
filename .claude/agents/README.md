@@ -19,6 +19,9 @@ une session de passage, qui suit `CLAUDE.md` et demande à la session **ergonomi
 1. **Une seule ligne de temps.** `develop` n'avance qu'en avance rapide : `git fetch`, rebase de son travail sur
    `origin/develop`, puis push. Jamais de commit de fusion, jamais de `git pull` sans rebase. Si `origin/develop` a été
    réécrit (c'est arrivé), rebase sur la nouvelle tête (`git rebase --onto origin/develop <ancienne base>`).
+   Jamais `git reset` sur `origin/develop` : cette référence est partagée entre les worktrees et bouge sous tes
+   pieds ; on écrase toujours sur le SHA de sa propre base (incident du 21 octobre : dix fichiers d'un autre lot
+   ramenés en arrière, réparés cinq minutes plus tard).
 2. **Qui pousse quoi.** Chaque session pousse ses commits sur `origin/develop` (framagit). `v2-fable` et `github/develop`
    sont avancés par la session ergonomie seulement ; `master` et les tags ne bougent qu'à une release, sur demande de
    l'utilisateur, par la session ergonomie (procédure : manuel d'exploitation § 6, puis `develop` ramené sur `master`).
