@@ -90,7 +90,8 @@ Storage and access map: `DONNEES_ET_ACCES.md`.
 ## 5. Open points
 
 - **Tokens**: each tester creates a fine-grained token limited to `flight_planner_data` (contents: read and write);
-  never written to a file or a backup. A real multi-user deployment needs a server (roadmap).
+  never written to a file or a backup. A real multi-user deployment needs a server (roadmap). Study of the options
+  (signed accounts, write relay, token risks, GitHub organization): `APPLI_AUTONOME_SECURITE.md`.
 - **Maps of the missions** (`missions/**/*.png`) are not in the data repository: shown as "map not available" in
   the app until they are published somewhere.
 - **IVAO last-flight import** needs the launcher (IVAO key): pasting from the tracker remains.

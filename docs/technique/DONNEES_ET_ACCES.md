@@ -248,7 +248,8 @@ or a browser), **code** (code of the suite, no data).
 ## 7. Known limits
 
 - **One token per browser.** The GitHub token gives write access to the whole data repository: a real multi-pilot
-  deployment will need a server or signed accounts (workstream `feature/audit-securite`).
+  deployment will need a server or signed accounts (workstream `feature/audit-securite`); study:
+  `APPLI_AUTONOME_SECURITE.md`.
 - **No sharing between Safari and the iOS app**: two origins, two sets of settings and copies.
 - **Workstations to repoint**: a workstation whose `data/` still follows the former Framagit repository must change its
   remote (Installation › Sources › Data repository).
