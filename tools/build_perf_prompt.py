@@ -14,6 +14,8 @@ import io, json, os, re, sys
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 SRC = os.path.join(ROOT, 'docs', 'technique', 'PROMPT_PROFIL_PERFORMANCES.md')
 OUT = os.path.join(ROOT, 'apps', 'planner', 'perf_prompt.js')
+# V3 : le module carburant en a sa copie (modules/fuel/perf_prompt.js), écrite à l'identique
+OUTS = [OUT, os.path.join(ROOT, 'modules', 'fuel', 'perf_prompt.js')]
 LANGS = ('fr', 'en', 'de', 'es')
 
 
@@ -46,13 +48,17 @@ def build(verbose=True):
           'window.PERF_PROMPT_MISSING = ' + json.dumps(missing, ensure_ascii=False, indent=0) + ';\n'
           '// schéma de la réponse (clés admises, relues par la page)\n'
           'window.PERF_PROMPT_SCHEMA = ' + json.dumps(json.loads(schema.group(1)), ensure_ascii=False) + ';\n')
-    old = io.open(OUT, encoding='utf-8').read() if os.path.exists(OUT) else ''
-    if js != old:
-        io.open(OUT, 'w', encoding='utf-8', newline='\n').write(js)
-        if verbose:
-            print(f'perf_prompt.js régénéré ({", ".join(f"{k} {len(v)}" for k, v in prompts.items())} caractères).')
-    elif verbose:
-        print('perf_prompt.js à jour.')
+    for out in OUTS:
+        if not os.path.isdir(os.path.dirname(out)):
+            continue
+        old = io.open(out, encoding='utf-8').read() if os.path.exists(out) else ''
+        rel = os.path.relpath(out, ROOT)
+        if js != old:
+            io.open(out, 'w', encoding='utf-8', newline='\n').write(js)
+            if verbose:
+                print(f'{rel} régénéré ({", ".join(f"{k} {len(v)}" for k, v in prompts.items())} caractères).')
+        elif verbose:
+            print(f'{rel} à jour.')
 
 
 if __name__ == '__main__':

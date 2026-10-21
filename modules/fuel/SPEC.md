@@ -2,7 +2,8 @@
 
 This document describes the V3 fuel module completely enough for a developer or a language model to rebuild it without
 seeing its code. The reference implementation is `modules/fuel/model.js` (the pure quote model),
-`modules/fuel/levels.js` (the level decision and the climb instructions, pure) with
+`modules/fuel/levels.js` (the level decision and the climb instructions, pure), `modules/fuel/sheets.js` (the
+performance sheets: reading, writing, completing, merging, ChatGPT; pure) with
 `modules/fuel/performance_model.js` (the calibrated flight mechanics, copied from V2 unchanged); the module's screens
 (`modules/fuel/index.js`) come with lot 2b, on the frame's module loader. How the frame mounts it and what it reads and
 writes: [INTEGRATION.md](INTEGRATION.md). Choices, measurements and their dates: [DECISIONS.md](DECISIONS.md).
@@ -98,3 +99,20 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   throttle, RPM read in the engine map at that altitude (two rows at least), IAS, rate, fuel flow, Mach, cumulative
   time and fuel. A climb whose rate falls under 20 ft/min is reported as not reaching the level.
 - **Minimum distance** for a level: the climb distance plus the descent distance; none when the cruise cannot be held.
+
+## 8. Performance sheets in pure code (`window.FuelSheets`)
+
+- **Formats read**: the suite's performance CSV (simple and enriched: one row per aircraft, ranges such as "800-900 lb/h"
+  and RPM tables written in a cell), JSON sheets or a sheets database (`flight-performance-db/v1`), Little Navmap
+  `.lnmperf` (XML), a SimBrief OFP (sheet of the type from the OFP, and a calibration measured on its navlog: climb,
+  cruise and descent durations, fuel, distances, rates), a ChatGPT reply whatever its shape (code fence or not,
+  comments, trailing commas, units in values, keys in another case, nested objects).
+- **Written**: `.lnmperf`, refused with the list of empty fields when one is missing (Little Navmap needs them all).
+- **Completed**: from the type's EUROCONTROL record (proposed values per field, never written without a gesture),
+  SimBrief's type data, or another sheet of the same type (only the empty fields; fuel converted to the sheet's unit).
+- **Merged sheet by sheet**: a sheet's date is the latest of its dates (update, import, SimBrief snapshot, calibration);
+  differences between two sheets are listed field by field and RPM row by RPM row; the pilot picks what to take.
+- **ChatGPT**: the prompt for a type (model, variant, fleet, what is already known) and for the missing fields of
+  several sheets, in the page language; the reply's keys checked against the schema of `perf_prompt.js`.
+- Environment (`FuelSheets.configure`): aerodb's aircraft base, the existing sheets, the active sheet, the texts and
+  the language; nothing else is read.

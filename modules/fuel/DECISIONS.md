@@ -44,6 +44,23 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   the quote bench's sheet (300 NM, FL200, 30 kt tailwind, goal "sheet's climb IAS"): model ceiling and minimum-drag
   speed, manual settings, decision series (step, bounds, least fuel FL250, fastest FL140, five levels), curves
   (highest level, optimums, plan, cruises), climb to FL200 row by row; every value found again to 0.001: 24/24.
+- **Lot 4a, the sheets in pure code** (`modules/fuel/sheets.js`, 1,758 lines): 66 declarations of V2
+  `flight_planner.js` copied verbatim by an extraction script (a small JavaScript lexer: strings, templates and their
+  nested expressions, comments, regex literals) — CSV (simple and enriched), RPM tables, JSON, `.lnmperf` read and
+  written, SimBrief OFP sheet and calibration, EUROCONTROL proposals, SimBrief type sheet, gaps filled, merge (dates,
+  differences, choices, sources), ChatGPT prompts and replies. Only the V2 globals were replaced by the module's
+  environment: `AIRCRAFT_PERF`, `AIRCRAFT_DB` and `AircraftCatalog` read through `aerodb.aircraft()` (perf, record,
+  related, classify), `state.profiles` and `active` given by the module, texts and language by `ctx`, the prompts by
+  `modules/fuel/perf_prompt.js` (now also written by `tools/build_perf_prompt.py`, so both copies stay identical).
+- **Out of the module**: sheets of aircraft known only from the Landing dashboard (`_landingOnly`) belong to the
+  landing module; their origin text has no estimate here.
+- **Bench of the sheets** (`modules/fuel/test/sheets.html`): the same inputs passed to the V2 functions on the V2 page
+  (`.lnmperf` written and read back, enriched CSV, a messy ChatGPT reply, two sheets compared, gaps filled, a sheet's
+  date, its values flattened, missing fields), results kept in `sheets_v2.json` (random ids, dates and the `.lnmperf`
+  creation date left out): 9/9.
+- **V2 defect kept, to fix with its own test**: a ChatGPT value "2,400" (thousands separator) is read as 2.4; the copy
+  keeps the V2 behaviour so the bench proves the extraction; the fix (a comma followed by exactly three digits is a
+  thousands separator) comes as a separate lot.
 - **Lot 2 split**: 2a (this commit) = the pure model, its bench and the module documents, independent of the frame;
   2b = the module skeleton on the frame's loader (`mount(el, ctx)` / `unmount`) with the quote screen, once the frame
   pushes its lot 3.
