@@ -90,7 +90,11 @@ Storage and access map: `DONNEES_ET_ACCES.md`.
 
 ## 5. Open points
 
-- **Tokens**: each tester creates a fine-grained token limited to `flight_planner_data` (contents: read and write);
+- **Organization: migration to come.** Until the data repository moves into a GitHub organization, only its owner can
+  create a fine-grained token for it (`APPLI_AUTONOME_SECURITE.md` § 0): **one tester**. Publish no other GitHub Pages
+  site on the account: they would share the origin `woyczek.github.io`, hence the token.
+- **Tokens**: each tester creates a fine-grained token limited to `flight_planner_data` (contents: read and write, 90
+  days at most);
   never written to a file or a backup. A real multi-user deployment needs a server (roadmap). Study of the options
   (signed accounts, write relay, token risks, GitHub organization): `APPLI_AUTONOME_SECURITE.md`.
 - **Maps of the missions** (`missions/**/*.png`) are not in the data repository: shown as "map not available" in

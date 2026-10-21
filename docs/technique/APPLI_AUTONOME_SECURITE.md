@@ -100,3 +100,24 @@ Today the launcher reads the IVAO tracker with the suite's key (`secrets/ivao.js
 3. **Signed accounts** (L4, L5, pilot records) remain the integrity layer for the workstations and against a
    compromised server, but **alone** they do not solve the phone case: they make forged data inert, not the write
    access harmless.
+
+## 6. Decision of 21 October and batches
+
+The user's decision: no organization for now (migration to come, one tester until then), no relay server; the
+**signed accounts** integrity layer becomes the work item, on `feature/audit-securite`.
+
+- **S1 — immediate measures (done)**:
+  - CSP as a `<meta http-equiv>` tag in every built page (`tools/build_pages.py`, before any script), same list and
+    form as the launcher header through the shared module `tools/csp_policy.py`, plus the addresses of
+    `config/repository_tree`; without `frame-ancestors` (not available in a meta tag). The launcher's “Allow this
+    website…” button only shows on a launcher page (nothing to allow from the static site).
+  - Settings › My profile › Data access: token of **90 days at most**, never pasted in a message; “Cut access” erases
+    the token and the data copies of the browser; lost phone: delete the token on github.com; on a `….github.io` site,
+    a hint that every other Pages site of the account shares the origin.
+  - `APPLI_AUTONOME.md` § 5: organization migration to come, one tester, no other Pages site on the account.
+  - **iOS Keychain: not done.** Capacitor core has no Keychain storage; keeping the token in the Keychain with
+    “this device only” accessibility needs a native plugin (a secure-storage plugin) and native code in `mobile/`. Until
+    then, the iOS app keeps the token in the WKWebView `localStorage` (app container, part of device backups).
+- **S2 — enrolment without launcher** (L4), **S3 — signed assignments** (L5), **S4 — records signed by the pilots**,
+  registry history through the commits API, conflicts by `sha`: see the reading page sent before S2.
+

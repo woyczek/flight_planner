@@ -422,12 +422,14 @@ Pour l'appli sans lanceur (téléphone, suite publiée sur GitHub Pages) : les d
 |---|---|
 | « Dépôt (compte/dépôt) » | le dépôt GitHub des données, par exemple `Woyczek/flight_planner_data` |
 | « Branche » | `main` par défaut |
-| « Jeton personnel » | jeton à grain fin créé sur github.com › Settings › Developer settings › Fine-grained tokens : accès au seul dépôt des données, permission « Contents » en lecture et écriture ; gardé dans ce navigateur seulement, jamais réaffiché |
+| « Jeton personnel » | jeton à grain fin créé sur github.com › Settings › Developer settings › Fine-grained tokens : accès au seul dépôt des données, permission « Contents » en lecture et écriture, expiration de 90 jours au plus ; gardé dans ce navigateur seulement, jamais réaffiché, à ne coller dans aucun message |
 
 - « Tester » vérifie que le dépôt est lisible, que la branche existe et que le jeton peut écrire.
 - « Enregistrer » vérifie, puis active l'accès et ouvre « Aujourd'hui » ; dès lors, toutes les pages de la suite lisent leurs données dans le dépôt (gardées aussi pour le hors ligne).
 - Chaque enregistrement (compte rendu, disponibilités, fiche) devient un commit à votre trigramme. Si quelqu'un d'autre a changé le même fichier entre-temps, il est relu et fusionné avant d'être écrit.
-- « Couper l'accès » efface le jeton de ce navigateur ; les pages reviennent aux données du lanceur.
+- « Couper l'accès » efface le jeton et les copies des données de ce navigateur ; les pages reviennent aux données du lanceur.
+- Téléphone perdu ou volé : supprimez aussi le jeton sur github.com (Settings › Developer settings › Fine-grained tokens) ; il ne vaut alors plus nulle part.
+- Sur un site publié en `….github.io`, la carte rappelle que tout autre site GitHub Pages du même compte partage la même origine et pourrait lire le jeton : n'en publiez pas d'autre sur ce compte.
 
 ### Connexion et mot de passe
 

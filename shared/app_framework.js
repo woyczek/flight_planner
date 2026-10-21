@@ -718,7 +718,9 @@
     }), "warn", {
       timeout: 0
     });
-    if (!item || !/^(https:|http:\/\/(localhost|127\.0\.0\.1|\[::1\]))/.test(origin)) return;
+    // site sans lanceur (GitHub Pages, appli iOS) : liste fixée à la publication, rien à autoriser depuis la page
+    const launcher = location.protocol === "http:" && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    if (!item || !launcher || !/^(https:|http:\/\/(localhost|127\.0\.0\.1|\[::1\]))/.test(origin)) return;
     const b = document.createElement("button");
     b.type = "button";
     b.className = "repo-notify-act";

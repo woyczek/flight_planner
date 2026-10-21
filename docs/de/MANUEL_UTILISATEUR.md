@@ -401,12 +401,14 @@ Für die App ohne Starter (Telefon, auf GitHub Pages veröffentlichte Suite): Di
 |---|---|
 | „Repository (Konto/Repository)“ | das GitHub-Daten-Repository, zum Beispiel `Woyczek/flight_planner_data` |
 | „Zweig“ | standardmäßig `main` |
-| „Persönliches Token“ | feingranulares Token auf github.com › Settings › Developer settings › Fine-grained tokens: nur Zugriff auf das Daten-Repository, Berechtigung „Contents“ Lesen und Schreiben; nur in diesem Browser gespeichert, nie wieder angezeigt |
+| „Persönliches Token“ | feingranulares Token auf github.com › Settings › Developer settings › Fine-grained tokens: nur Zugriff auf das Daten-Repository, Berechtigung „Contents“ Lesen und Schreiben, Ablauf nach höchstens 90 Tagen; nur in diesem Browser gespeichert, nie wieder angezeigt |
 
 - „Testen“ prüft, ob das Repository lesbar ist, der Zweig existiert und das Token schreiben darf.
 - „Speichern“ prüft, schaltet dann den Zugang ein und öffnet Heute; von da an lesen alle Seiten der Suite ihre Daten aus dem Repository (auch offline aufbewahrt).
 - Jede Speicherung (Bericht, Verfügbarkeiten, Blatt) wird ein Commit unter Ihrem Kürzel. Hat jemand anderes dieselbe Datei inzwischen geändert, wird sie neu gelesen und vor dem Schreiben zusammengeführt.
-- „Zugang trennen“ löscht das Token aus diesem Browser; die Seiten kehren zu den Daten des Starters zurück.
+- „Zugang trennen“ löscht das Token und die Datenkopien aus diesem Browser; die Seiten kehren zu den Daten des Starters zurück.
+- Telefon verloren oder gestohlen: das Token auch auf github.com löschen (Settings › Developer settings › Fine-grained tokens); dann gilt es nirgends mehr.
+- Auf einer unter `….github.io` veröffentlichten Website erinnert die Karte daran, dass jede andere GitHub-Pages-Website desselben Kontos denselben Ursprung teilt und das Token lesen könnte: keine weitere auf diesem Konto veröffentlichen.
 
 ### Anmeldung und Passwort
 

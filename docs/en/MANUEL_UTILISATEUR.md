@@ -399,12 +399,14 @@ For the app without the launcher (phone, suite published on GitHub Pages): the a
 |---|---|
 | “Repository (account/repository)” | the GitHub data repository, for example `Woyczek/flight_planner_data` |
 | “Branch” | `main` by default |
-| “Personal token” | fine-grained token created on github.com › Settings › Developer settings › Fine-grained tokens: access to the data repository only, “Contents” permission read and write; kept in this browser only, never shown again |
+| “Personal token” | fine-grained token created on github.com › Settings › Developer settings › Fine-grained tokens: access to the data repository only, “Contents” permission read and write, expiration of 90 days at most; kept in this browser only, never shown again, never to be pasted in a message |
 
 - “Test” checks that the repository is readable, the branch exists and the token can write.
 - “Save” checks, then turns access on and opens Today; from then on every page of the suite reads its data from the repository (also kept for offline use).
 - Each save (report, availability, sheet) becomes a commit under your trigram. If someone else changed the same file in the meantime, it is read again and merged before being written.
-- “Cut access” erases the token from this browser; the pages go back to the launcher's data.
+- “Cut access” erases the token and the data copies from this browser; the pages go back to the launcher's data.
+- Lost or stolen phone: also delete the token on github.com (Settings › Developer settings › Fine-grained tokens); it then works nowhere.
+- On a site published on `….github.io`, the card reminds that any other GitHub Pages site of the same account shares the same origin and could read the token: do not publish another one on this account.
 
 ### Sign-in and password
 

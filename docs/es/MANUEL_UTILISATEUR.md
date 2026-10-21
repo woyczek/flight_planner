@@ -400,12 +400,14 @@ Para la app sin lanzador (teléfono, suite publicada en GitHub Pages): los datos
 |---|---|
 | «Repositorio (cuenta/repositorio)» | el repositorio de datos en GitHub, por ejemplo `Woyczek/flight_planner_data` |
 | «Rama» | `main` por defecto |
-| «Token personal» | token de grano fino creado en github.com › Settings › Developer settings › Fine-grained tokens: acceso solo al repositorio de datos, permiso «Contents» en lectura y escritura; guardado solo en este navegador, nunca vuelto a mostrar |
+| «Token personal» | token de grano fino creado en github.com › Settings › Developer settings › Fine-grained tokens: acceso solo al repositorio de datos, permiso «Contents» en lectura y escritura, caducidad de 90 días como máximo; guardado solo en este navegador, nunca vuelto a mostrar |
 
 - «Probar» comprueba que el repositorio es legible, que la rama existe y que el token puede escribir.
 - «Guardar» comprueba, luego activa el acceso y abre Hoy; a partir de ahí todas las páginas de la suite leen sus datos en el repositorio (guardados también para el uso sin conexión).
 - Cada guardado (informe, disponibilidades, ficha) se convierte en un commit con su trigrama. Si otra persona cambió el mismo archivo entretanto, se vuelve a leer y se fusiona antes de escribirlo.
-- «Cortar el acceso» borra el token de este navegador; las páginas vuelven a los datos del lanzador.
+- «Cortar el acceso» borra el token y las copias de los datos de este navegador; las páginas vuelven a los datos del lanzador.
+- Teléfono perdido o robado: borre también el token en github.com (Settings › Developer settings › Fine-grained tokens); ya no vale en ningún sitio.
+- En un sitio publicado en `….github.io`, la tarjeta recuerda que cualquier otro sitio de GitHub Pages de la misma cuenta comparte el mismo origen y podría leer el token: no publique otro en esta cuenta.
 
 ### Conexión y contraseña
 

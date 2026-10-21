@@ -316,6 +316,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Security
 
+- **App without launcher: immediate measures (S1)** — every page of the GitHub Pages site (and the iOS app built
+  from it) carries the content security policy as a meta tag, built by `tools/build_pages.py` from the list shared with
+  the launcher (`tools/csp_policy.py`): pages may only contact the suite, the GitHub API and the listed services.
+  Settings › My profile › Data access asks for a fine-grained token of 90 days at most, explains “Cut access” and what
+  to do with a lost phone, and warns, on a `….github.io` site, that every other Pages site of the account shares the
+  origin. “Allow this website…” only shows on a launcher page. Keychain storage in the iOS app needs a native plugin:
+  not done, noted in `APPLI_AUTONOME_SECURITE.md` § 6.
 - **Signed user registry, group mode** (signed accounts, batch L3; `shared/sog_registry.js`, Settings › Centre ›
   "Group mode (signed registry)") — in group mode, roles, state and password hashes come from
   `data/utilisateurs/_registre.json`, a signed envelope verified by every browser: next version signed by an admin (or
