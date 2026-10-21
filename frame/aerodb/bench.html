@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — bench</title>
+<!-- Banc de la base aéronautique V3 (frame/aerodb) : lecture des bases publiées par le lecteur provisoire (lanceur ou
+     mode GitHub), temps de lecture par zone, mémoire du tas JavaScript, durée des requêtes de l'API. Page d'outil, hors
+     des applications ; ?zones=fr (France seule) ou ?zones=all (toutes les zones publiées, emprise de l'Europe). -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">aerodb — bench</h1>
+<pre id="out">running…</pre>
+<!-- mode GitHub (réglage githubData:v1) : lecture par l'API du dépôt des données ; sans réglage, fichiers servis par le lanceur -->
+<script src="../../shared/github_data.js?v=0"></script>
+<script src="zones.js?v=0"></script>
+<script src="aircraft.js?v=0"></script>
+<script src="aerodb.js?v=0"></script>
+<script>
+  (async () => {
+    const out = document.getElementById('out'),
+      res = {},
+      mem = () => performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null,
+      time = async (name, fn) => {
+        const t0 = performance.now(),
+          v = await fn();
+        res[name] = {
+          ms: Math.round(performance.now() - t0),
+          ...(typeof v === 'object' && v !== null && !Array.isArray(v) ? v : {
+            n: Array.isArray(v) ? v.length : v
+          })
+        };
+        return v;
+      };
+    const want = new URLSearchParams(location.search).get('zones') || 'fr',
+      db = AeroDB.create();
+    res.heapBeforeMb = mem();
+    res.status0 = await db.status();
+    // France : première demande (zone lue et analysée), puis la même déjà chargée
+    await time('aerodromesParisFirst', () => db.aerodromes({
+      bbox: [1.5, 48.3, 3.2, 49.3]
+    }));
+    await time('aerodromesParisAgain', () => db.aerodromes({
+      bbox: [1.5, 48.3, 3.2, 49.3]
+    }));
+    if (want === 'all') await time('readyEurope', async () => ({
+      zones: (await db.ready({
+        bbox: [-12, 27, 20, 61]
+      })).length
+    }));
+    res.heapAfterLoadMb = mem();
+    const eu = want === 'all' ? [-12, 27, 20, 61] : [-5, 41, 10, 51.5];
+    await time('airspacesWide', () => db.airspaces({
+      bbox: eu
+    }));
+    await time('airspacesRD_Toulouse', () => db.airspaces({
+      lat: 43.6,
+      lon: 1.4,
+      radiusNm: 60,
+      types: ['R', 'D', 'P']
+    }));
+    await time('navaids', () => db.navaids({
+      bbox: eu
+    }));
+    await time('points', () => db.points({
+      bbox: eu
+    }));
+    await time('airways', () => db.airways({
+      bbox: eu
+    }));
+    await time('obstacles100ft', () => db.obstacles({
+      bbox: eu,
+      minHgt: 100
+    }));
+    await time('moraLyon', async () => ({
+      ft: await db.mora(45.7, 4.8)
+    }));
+    await time('moraCells', () => db.moraCells({
+      bbox: eu
+    }));
+    await time('coordsLFBO', async () => ({
+      at: await db.coords('LFBO')
+    }));
+    await time('coordsEGLL', async () => ({
+      at: await db.coords('EGLL')
+    }));
+    await time('findTOUL', async () => ({
+      first: (await db.find('TOUL', 10)).map(x => x.label)
+    }));
+    await time('citiesPrefix', async () => ({
+      first: (await db.cities({
+        prefix: 'Toulou',
+        n: 5
+      })).map(c => c.name)
+    }));
+    await time('aar', async () => ({
+      files: (await db.aar()).length
+    }));
+    await time('nat', async () => ({
+      tracks: (await db.nat())?.tracks?.length ?? null
+    }));
+    const ac = await time('aircraftLoad', async () => ({
+      types: (await db.aircraft()).size()
+    }));
+    const A = await db.aircraft();
+    res.aircraft = {
+      classifyA400M: A.classify('A400M').category,
+      canonicalH145: A.canonical('H145'),
+      labelEC45: A.label('EC45'),
+      estimateTBM9: A.estimate('TBM9')?.kgPerHour,
+      estimateA320: A.estimate('A320'),
+      codeOfRafale: A.codeOf('Rafale B — Patrouille'),
+      searchRAF: A.search('RAF', 5)
+    };
+    // contrôle exact : le monde entier rend toute la base publiée (comparée à la base du poste par le banc)
+    const world = [-180, -90, 180, 90];
+    if (want === 'all') res.world = {
+      airspaces: (await db.airspaces({
+        bbox: world
+      })).length,
+      aerodromes: (await db.aerodromes({
+        bbox: world
+      })).length,
+      points: (await db.points({
+        bbox: world
+      })).length,
+      obstacles: (await db.obstacles({
+        bbox: world
+      })).length,
+      airways: (await db.airways({
+        bbox: world
+      })).length,
+      mora: (await db.moraCells({
+        bbox: world
+      })).length
+    };
+    res.heapEndMb = mem();
+    res.zones = db.stats();
+    res.status = await db.status();
+    window.__bench = res;
+    out.textContent = JSON.stringify(res, null, 1);
+  })().catch(e => {
+    document.getElementById('out').textContent = 'error: ' + (e?.stack || e);
+    window.__bench = {
+      error: String(e?.stack || e)
+    };
+  });
+</script>
+</body></html>

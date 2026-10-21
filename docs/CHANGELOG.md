@@ -36,6 +36,20 @@ waypoints, and the rest listed below.
   Tests: `frame/store/test/index.html` against a standard-library fake GitHub (`frame/store/test/fake_github.py`), 37
   checks.
 
+- **aerodb: the aeronautical database for every module** (`frame/aerodb/`, branch `v3`). It reads the bases published
+  to the data repository by a workstation: the SIA base by zone and cycle, the towns and the aircraft types (JSON, or
+  the V2 `.js` read as a literal, never executed). It builds nothing and writes nothing.
+  - One asynchronous API, by area or identifier, never by zone or file: airspaces, aerodromes, navaids, points,
+    airways, VRP, obstacles, MORA, refuelling and NAT tracks, towns, ranked place search, coordinates, and the
+    aircraft types (classification, aliases, performance, cruise fuel estimate, search).
+  - Zones load on demand, chosen from a generated table of zone frames (`tools/build_aerodb_zones.py`), and are indexed
+    in memory by one-degree cell.
+  - Reading goes through the frame's data contract (`data.read` with policy "reference", `data.list`, `data.watch`), with
+    a provisional reader for the launcher and GitHub mode until the frame delivers it.
+  - Bench (`frame/aerodb/bench.html`, 375 px) on the user's 13 real zones: France in about 120 ms on a phone-like CPU,
+    all zones in about 280 ms, a whole-world question returns exactly the published base.
+  - Documents: `frame/aerodb/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`.
+
 ### Added
 
 - **Settings: the usage level in the header** (`shared/repository_nav.js`, `shared/repository_nav.css`) — every Settings
