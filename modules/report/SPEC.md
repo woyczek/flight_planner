@@ -1,12 +1,13 @@
 # report — specification (regeneration prompt)
 
 This document describes the V3 report module completely enough to rebuild it without seeing its code. The reference
-implementation is `modules/report/module.js` (the screen), with `vocab.js`, `model.js` and `families/*.js` copied from
-V2 (`shared/mission_core/`) unchanged. How the frame mounts it: [INTEGRATION.md](INTEGRATION.md). Choices and dates:
+implementation is `modules/report/module.js` (the screen), with `vocab.js`, `model.js`, `fpl.js`, `text_import.js`
+and `families/*.js` copied from V2 (`shared/mission_core/`) unchanged but for their globals, and `last_flight.js` ported
+from the V2 launcher (`tools/launch.py`). How the frame mounts it: [INTEGRATION.md](INTEGRATION.md). Choices and dates:
 [DECISIONS.md](DECISIONS.md). What V2 did and what was kept: [READING.md](READING.md).
 
 **As a prompt**: ask for ES modules (no build, no dependency) for the frame's loader (`meta`, `mount(el, ctx)`,
-`unmount()`); every rule below is a requirement, section 6 (invariants) always wins.
+`unmount()`); every rule below is a requirement, section 7 (invariants) always wins.
 
 ## 1. Purpose
 
@@ -24,7 +25,7 @@ what is missing is said in the Result step, never blocking.
   route — "Use" fills the empty fields only (registration, type, departure, arrival, alternate, distance, level), each
   filled field shows its source until it is edited. Then date, registration, type, full callsign, departure,
   arrival, engine start, take-off, landing, shutdown; folded: callsign parts, flight plan callsign, departure and
-  return bases, actual landing aerodrome, alternate.
+  return bases, actual landing aerodrome, alternate. Then the **sources** (§ 6).
 - **Mission**: family (every V2 family listed; those not carried yet are disabled), series (the family's, first one
   by default), mission identifier (optional), then the family's blocks, the first one open, the others folded;
   collections (HEMS destinations) with add and remove.
@@ -87,9 +88,37 @@ fields | collection }] with fields { path, label [fr, en, de, es], type (text, n
 options, blank, full }. Statistics, summary sentences and old-format converters stay with V2 (reporting, CPCO).
 Carried today: **HEMS**. Next: FIRE, SPECIAL, then the others.
 
-## 6. Invariants
+## 6. Prefill
+
+Every source fills **empty fields only**; each filled field shows its source until it is edited; when the source
+gave another value for fields already filled, a button offers "Replace the n fields already filled" (V2's rule).
+Times are written in the device's time zone (V2 used the aerodrome's: aerodb has no time zone yet); helicopter
+thresholds for the track when the aircraft (or the family's default category) is rotary.
+
+- **Current flight** of fuel and maps (§ 2).
+- **Last flight proposed at mount**: when the device is online and the identity has an IVAO VID (else a VATSIM CID),
+  the flights of the last 7 days are read once (kept two minutes on the device, `cache/report/last_flights.json`) and
+  the most recent is proposed in a card with **Use**: the report is then one tap from filled.
+- **My last IVAO / VATSIM flight** (other sources): the same list; one flight is taken at once, several are listed to
+  choose. IVAO: `/v2/tracker/sessions` (pilot connections of the VID, 7 days, five pages at most), consecutive sessions
+  of the same flight cut by disconnections grouped (same callsign, reconnected within 30 min, not ended "On Blocks",
+  resumed where it stopped at 600 kt at most), then the chosen flight's sessions, last flight-plan revision and tracks
+  put end to end. VATSIM: `/v2/members/<cid>/history` and `/flightplans` (plan of the connection, else filed for the
+  callsign between 12 h before and the end), no track. Both give an ICAO "(FPL-…)" text read like a pasted plan.
+  Engine start ≈ connection when the track starts on the ground, take-off and landing from the track, shutdown ≈
+  disconnection when it ends on the ground, distance and maximum altitude from the track.
+- **SimBrief flight plan**: the last OFP of the identity's SimBrief id: aircraft, registration, equipment, route,
+  waypoints, level, speed, distance, METAR / TAF, masses, fuel.
+- **Paste**: an ICAO flight plan, an IVAO tracker "details" page, a StatSim flight page, the IVAO connection list, a
+  METAR (V2 `text_import.js`).
+- **Hand-over from another module**: `pilot/handoff.json` `{ to: 'report', from, source, at, values: { path: value } }`
+  is read at every mount, its values filled like a source, then the record is removed.
+- Network refusals: offline → "nothing was requested"; IVAO without key or VATSIM without relay (no launcher) → said,
+  and the paste box opens (the flight page can be pasted instead).
+
+## 7. Invariants
 
 1. Nothing blocks a save; checks are warnings.
 2. A record is the V2 entry plus `schema`, `updated_at`, `by`: the bridge never has to translate a field.
 3. The module writes only `cr/reports/` and its device cache; it never writes `cr/missions.yaml`.
-4. No network call in this lot; no token, no key, no native dialog, no global style sheet.
+4. Network only through `ctx.net`; no token, no key, no native dialog, no global style sheet.

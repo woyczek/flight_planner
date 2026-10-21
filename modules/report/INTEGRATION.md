@@ -11,6 +11,9 @@ module: [SPEC.md](SPEC.md); the frame's adapter: [frame/INTEGRATION.md](../../fr
 | `modules/report/vocab.js` | lists and numbers of V2 (`crId`, outcomes, crew roles, families, fuel units), unchanged |
 | `modules/report/model.js` | the V2 mission model (`emptyMission`, paths, durations, statistics, checks), unchanged |
 | `modules/report/families/hems.js` | the HEMS family of V2 (series, roles, blocks), unchanged but for its export |
+| `modules/report/fpl.js` | V2 flight plan: equipment codes, levels, SimBrief / IVAO / VATSIM plans, filling a mission; network through `configure({ getJson })` |
+| `modules/report/text_import.js` | V2 analysis of a pasted text (FPL, IVAO tracker page, StatSim, IVAO list, METAR), track, filling |
+| `modules/report/last_flight.js` | the V2 launcher's "last flight" (IVAO sessions, VATSIM history) in JavaScript, network passed in |
 | `modules/report/READING.md` | lot 1: what V2 does and what the module keeps |
 
 ## 2. Mounting
@@ -21,13 +24,25 @@ The Pilot application lists it in `frame/app.js` (`{ id: 'report', label: Report
 reads: ['cr/', 'pilot/', 'cache/report/'],
 writes: [
   { prefix: 'cr/reports/', merge: 'record' },        // one JSON record per report
-  { prefix: 'cache/report/', policy: 'cache' }       // the draft: this device only
+  { prefix: 'cache/report/', policy: 'cache' },      // the draft, the last flights read: this device only
+  { prefix: 'pilot/handoff.json', policy: 'cache' }  // hand-over record, removed once taken
 ],
-files: ['vocab.js', 'model.js', 'families/hems.js']   // kept for offline from the first visit
+files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'families/hems.js']
 ```
 
 `ctx` used: `data` (get, put, remove, list), `t`, `lang`, `notify`, `identity` (`trigram` for the author and the
-current flight's path, `ivao` and `vatsim` copied into a new report). No `ctx.net` in this lot.
+current flight's path, `ivao`, `vatsim`, `simbrief` for the prefill), `aerodb` (`aircraft().record`: model and rotary
+wing of a type), `net`:
+
+- `https://api.ivao.aero/v2/tracker/sessions…` (list, a session, its `flightPlans`, its `tracks`): needs the launcher's
+  relay (IVAO key); without it the 401 is reported and the paste offered.
+- `https://api.vatsim.net/v2/members/<cid>/history` and `/flightplans`: relayed by the launcher (no CORS).
+- `https://www.simbrief.com/api/xml.fetcher.php?userid|username=…&json=1`: direct or relayed.
+
+**Hand-over to report** from another module: write `pilot/handoff.json` (cache policy) as `{ to: 'report', from:
+'<module>', source: '<label shown on the fields>', at, values: { '<mission path>': value } }`, then open `#report`
+(`#report?from=<module>` once the frame routes addresses with a query). Report takes it at its next mount, fills the
+empty fields, and removes it.
 
 ## 3. What other modules and the bridge read
 
