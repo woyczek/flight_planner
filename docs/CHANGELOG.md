@@ -22,6 +22,19 @@ and the usage level is set from the header of every Settings page. Flight orders
 member, Fuel and Flight maps open the flight in SimBrief, SkyVector, Navigraph and ChartFox, and My missions is
 the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode on a workstation, SimBrief
 waypoints, and the rest listed below.
+### V3
+
+- **Frame: data layer** (`frame/data/frame_data.js`, `frame/data/transport_github.js`; `frame/SPEC.md`,
+  `frame/INTEGRATION.md`, `frame/DECISIONS.md`) — disconnected mode at the core: one local cache (IndexedDB
+  `sogFrame`) serves every read with no network; writes are queued and sent in batches, one commit per
+  synchronisation (at start, on the button, every 10 minutes online), never one per click; changes made elsewhere are
+  pulled and merged three ways (record: the newest wins, the loser kept and signalled; journal: union; keyed lists:
+  record by record); a refused push pulls and pushes again. Transports: local (single user) and GitHub through the git
+  data API (device token, conditional head request, immutable blobs). Policies per prefix: documents pulled ahead,
+  references (SIA and aircraft bases, for aerodb) read on demand and revalidated. Modules get `get`, `read`, `list`,
+  `put`, `remove`, `watch`, `status`, `sync` through their adapter and may write only under their declared prefixes.
+  Tests: `frame/data/test/index.html` against a standard-library fake GitHub (`frame/data/test/fake_github.py`), 37
+  checks.
 
 ### Added
 
