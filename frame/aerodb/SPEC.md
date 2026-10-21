@@ -20,13 +20,22 @@ A module asks for an area or an identifier, never for a zone or a file.
 
 ## 2. What it reads
 
-- **SIA base by zone and cycle**: `sia/base/<zone>/<cycle>.json`, one active zone, plain JSON (`schema: 1`, `zone`,
-  `cycle`, `parserVersion`, `updated_at`, `airspaces`, `aero` { `aerodromes`, `navaids`, `points`, `airways`, `vrp`,
-  `obstacles` }, `obstacleMax` { "lat|lon": ft }, `moraCells` [{ lat, lon, mora, moraFt, latStep, lonStep, … }],
-  `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …). Airspace rings are `[[lat, lon], …]`; points carry `lat`, `lon`,
-  `id` (aerodromes `icao`), airways carry `a` and `b` ends. Zone ids are those of `AERODB_ZONES`, plus `nat` (oceanic).
-- **Towns**: `sia/base/cities.json` { `cities`: [{ name, lat, lon, population, … }] }, the whole world today (by zone
-  from lot 3).
+- **SIA base, split format (preferred)**: one file per zone, cycle and kind,
+  `sia/base/<zone>/<cycle>/<kind>.json` = { `schema: 2`, `zone`, `cycle`, `kind`, `parserVersion`, `data`,
+  `updated_at` }. Kinds and their `data`: `airspaces`, `aerodromes`, `navaids`, `points`, `vrp`, `airways`,
+  `obstacles` (arrays), `mora` (cells [{ lat, lon, mora, moraFt, latStep, lonStep, … }]), `obstaclemax`
+  ({ "lat|lon": ft }), `cities` (the zone's towns [{ name, lat, lon, population, … }]) and `meta` (everything else:
+  `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …). Next to them:
+  - `sia/base/cities_major.json` { `data`: towns of 100,000 inhabitants or more, the whole world }, for a place search
+    outside the loaded zones;
+  - `sia/base/index.json` { `zones`: { zone: { `cycle`, `prefixes` (first two letters of its aerodromes' ICAO
+    codes), `kb` (size of each file) } } }, the manifest.
+- **SIA base, whole format (V2, read during the transition)**: `sia/base/<zone>/<cycle>.json`, one active zone
+  (`schema: 1`, `airspaces`, `aero` { `aerodromes`, `navaids`, `points`, `airways`, `vrp`, `obstacles` },
+  `obstacleMax`, `moraCells`, `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …), towns in `sia/base/cities.json`
+  { `cities` } for the whole world.
+- In both formats airspace rings are `[[lat, lon], …]`; points carry `lat`, `lon`, `id` (aerodromes `icao`), airways
+  carry `a` and `b` ends. Zone ids are those of `AERODB_ZONES`, plus `nat` (oceanic).
 - **Aircraft types**: `AircraftDB/aircraft_db.json` and `aircraft_perf.json`; when absent, the V2 files
   `aircraft_db.js` and `aircraft_perf.js` (`window.AIRCRAFT_DB = {…};`) read as a JSON literal — never executed.
 - **Zone frames**: `AERODB_ZONES` { id: { n: [fr, en, de, es], b: [[west, south, east, north], …] } }, one frame per
@@ -48,14 +57,20 @@ the suite root) and has no listing.
 
 ## 4. Rules
 
-- **Cycle.** With a listing, each zone's cycles are known: take the most recent cycle already in force (its date is not
-  after today), otherwise the oldest one (published in advance). Without a listing, try the AIRAC cycle in force, then
+- **Published zones.** From the reader's listing (a split cycle counts when its `meta.json` is listed), otherwise
+  from the manifest `sia/base/index.json`, otherwise unknown.
+- **Cycle.** When the published zones are known, take the most recent cycle already in force (its date is not after
+  today), otherwise the oldest one (published in advance). When they are unknown, try the AIRAC cycle in force, then
   the five before it (28-day cycles from 25 January 2024 = AIRAC 2401); the first file found wins. A zone with no file
   is remembered as missing until the next change.
+- **Format.** For the chosen cycle, the split format is preferred (its `meta.json` exists), otherwise the whole file is
+  read.
 - **Zones of an area.** A zone is concerned when one of its frames, widened by half a degree (coasts, territorial
   waters), touches the area. With a listing, only published zones count. When no zone of the table touches the area,
   the published zones unknown to the table (oceanic) are taken.
-- **Loading.** A zone is read once, on the first question that needs it; concurrent questions share the same read.
+- **Loading.** Split format: opening a zone reads only `meta.json`; each kind is read once, on the first question
+  that needs it (a module asking for aerodromes reads `aerodromes.json` and nothing else). Whole format: the zone is
+  read once. Concurrent questions share the same read.
 - **Indexes.** Built per zone and per kind on the first question of that kind, in memory, by one-degree cell
   ("floor(lat)|floor(lon)"):
   - points (aerodromes, navaids, points, VRP, obstacles): the cell of the point;
@@ -68,8 +83,10 @@ the suite root) and has no listing.
   world question is as fast as a large one. Results are exact (filtered by position or frame), without duplicates
   across zones.
 - **MORA.** The cell containing the point; `moraFt`, otherwise the "3⁵" notation read back (superscript = hundreds).
-- **Identifiers.** Search the loaded zones; when nothing matches, load the published zones one by one until it does.
-  `coords` prefers an aerodrome.
+- **Identifiers.** For a four-letter code, first the zones whose manifest lists its two-letter prefix, then the
+  loaded zones, then the published zones one by one until it matches. `coords` prefers an aerodrome.
+- **Towns.** Area questions use the towns of the zones covering the area. Name questions (`find`, `cities` by prefix)
+  use the towns of the loaded zones and the world's major towns. Whole format: the world's towns.
 - **Place search.** Rank: exact code; aerodrome with an ICAO code whose name starts with the text; town (most
   populated first); other place whose code or name starts with the text; then those containing it.
 - **Aircraft types.** Aliases followed to the end (A4M → A400M → A400); the classification rules, the usage names
@@ -83,7 +100,7 @@ the suite root) and has no listing.
 
 | Call | Answer |
 |---|---|
-| `status()` | `{ published: { zone: cycle } \| null, loaded: { zone: cycle }, missing: [zones], cycle }` |
+| `status()` | `{ published: { zone: cycle } \| null, source: 'list' \| 'index' \| 'none', loaded: { zone: cycle }, missing: [zones], cycle }` (a zone read in the whole format shows "(whole)") |
 | `ready(q)` | zones loaded for the area of `q` |
 | `on('change', fn)` | `fn({ zone, cycle } \| { changed } \| { aircraft })`; returns the unsubscribe function |
 | `airspaces(q)` | airspaces touching the area; `q.types` keeps some types |
@@ -97,7 +114,7 @@ the suite root) and has no listing.
 | `find(text, n)` | ranked places: `{ label, lat, lon, name, kind, code }` |
 | `coords(ident)`, `coordsAll(ident)` | position of an identifier; every place carrying it |
 | `aircraft()` | the aircraft base: `canonical`, `related`, `record`, `classify`, `codeOf`, `displayName`, `label`, `perf`, `estimate`, `search`, `size` |
-| `stats()` | per loaded zone: cycle, MB read, read time, indexes built |
+| `stats()` | per loaded zone: cycle, format, MB read, each file read (kind, KB, ms), indexes built |
 
 Every call is asynchronous except the aircraft base's methods once `aircraft()` resolved.
 
@@ -111,5 +128,4 @@ Every call is asynchronous except the aircraft base's methods once `aircraft()` 
 
 ## 7. Out of scope (later lots)
 
-Splitting each zone by kind and towns by zone (lot 3, publication side, reading both formats meanwhile); the vertical
-profile and terrain; airspace activation by date and time; persistence of the indexes between page loads.
+Dropping the whole format (when the ergonomics session ends it); the vertical profile and terrain; airspace activation by date and time; persistence of the indexes between page loads.

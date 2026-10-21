@@ -132,6 +132,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   - Bench (`frame/aerodb/bench.html`, 375 px) on the user's 13 real zones: France in about 120 ms on a phone-like CPU,
     all zones in about 280 ms, a whole-world question returns exactly the published base.
   - Documents: `frame/aerodb/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`.
+- **aerodb lot 3: the SIA base split by kind, towns by zone, the aircraft base as JSON.**
+  - Each rebuild now also publishes one file per zone, cycle and kind (`sia/base/<zone>/<cycle>/<kind>.json`:
+    airspaces, aerodromes, navaids, points, VRP, airways, obstacles, MORA, the zone's towns, meta).
+  - Also published: the world's major towns (`sia/base/cities_major.json`) and a manifest of the published zones
+    (`sia/base/index.json`).
+  - The Maintenance button publishes `AircraftDB/aircraft_db.json` and `aircraft_perf.json` next to the `.js` files.
+  - The old format is still written. aerodb reads both and prefers the new one, so a module asking for the aerodromes
+    around Paris downloads 426 KB instead of 5.6 MB, and a place search never reads the world's towns.
+  - Administrator manuals (4 languages) and `docs/technique/DONNEES_ET_ACCES.md` updated.
 
 ### Added
 

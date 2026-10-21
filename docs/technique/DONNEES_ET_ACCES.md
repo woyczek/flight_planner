@@ -105,7 +105,13 @@ The phone has no SIA folder and never rebuilds the database: it reads the one **
 rebuild on a workstation (Settings › Maintenance › Aeronautical data, or the map studio) also writes the database zone by
 zone into the data folder: `sia/base/<zone>/<cycle>.json` (one active zone, plain JSON, no compression and no LFS: a few
 hundred KB, up to about 5 MB for France) and `sia/base/cities.json` (GeoNames towns, about 4.7 MB). A file is rewritten
-only when its content changes, and older cycles of the zone are removed; "Synchronise" sends them (`sia/base` is part of
+only when its content changes, and older cycles of the zone are removed. The same publication writes the format read
+by V3 (`frame/aerodb/`), split by kind: `sia/base/<zone>/<cycle>/<kind>.json` (`airspaces`, `aerodromes`, `navaids`,
+`points`, `vrp`, `airways`, `obstacles`, `mora`, `obstaclemax`, `cities` — the zone's towns — and `meta`: cycle, AAR
+files, NAT tracks), `sia/base/cities_major.json` (towns over 100,000 inhabitants, for searches outside the loaded
+zones) and the manifest `sia/base/index.json` (per zone: cycle, ICAO prefixes of its aerodromes, size of each file;
+zones published by other workstations kept). Both formats are written until the ergonomics session ends the old one;
+"Synchronise" sends them (`sia/base` is part of
 the pool of `tools/data_sync.py`; two workstations publishing the same file: the newer `updated_at` wins).
 
 In GitHub mode `SiaBase.get()` (`shared/sia_base.js`) lists `sia/base/` in the git tree, reads every published zone
@@ -255,7 +261,7 @@ or a browser), **code** (code of the suite, no data).
 | Mission orders `missions/…` | git data repository | shared | CPCO (workstation); read-only on the phone |
 | Report ledger `cr/missions.yaml` | git data repository | shared | Report; three-way merge |
 | References `references/*.js`, `config/`, `data_tree.js` | git data repository | shared | Administration (workstation) |
-| Aircraft database `AircraftDB/aircraft_db.js`, `aircraft_perf.js` | built on each workstation; published to `AircraftDB/` of the data repository for the phone (Maintenance › Aircraft types, “Publish the aircraft database to the data repository”: only these two files, plain values checked by `tools/data_guard.py`) | specific → shared | Launcher; never published with the site |
+| Aircraft database `AircraftDB/aircraft_db.js`, `aircraft_perf.js` | built on each workstation; published to `AircraftDB/` of the data repository for the phone (Maintenance › Aircraft types, “Publish the aircraft database to the data repository”: only these two files, plain values checked by `tools/data_guard.py`, plus their JSON copy `aircraft_db.json`, `aircraft_perf.json` read by V3) | specific → shared | Launcher; never published with the site |
 | Indexes `_index.json` | workstation: `data/`; phone: rebuilt in memory | local copy | Launcher or `github_data.js` |
 | Offline copies (IndexedDB `sogGithubData`, `githubData:f:*`) | browser | local copy | `github_data.js`; erased by "Cut access" |
 | Offline code (Cache Storage `sog-app`) | browser (website) | code | service worker `sw.js` |
@@ -265,7 +271,7 @@ or a browser), **code** (code of the suite, no data).
 | Chosen folders (IndexedDB `missionCore › handles`) | workstation browser | specific | Installation; unusable on iOS |
 | IVAO keys `secrets/` | workstation (files) | specific | Installation › Keys; never served, outside git and backups |
 | Browser backups `data/local/` | workstation | specific | Save button; outside git |
-| Aeronautical database `sia/base/<zone>/<cycle>.json`, `sia/base/cities.json` | git data repository | shared, produced by a workstation | Rebuild on a workstation (Maintenance, map studio), then Synchronise; read by phones and the website |
+| Aeronautical database `sia/base/<zone>/<cycle>.json`, `sia/base/cities.json`; split format (V3) `sia/base/<zone>/<cycle>/<kind>.json`, `sia/base/cities_major.json`, `sia/base/index.json` | git data repository | shared, produced by a workstation | Rebuild on a workstation (Maintenance, map studio), then Synchronise; read by phones and the website |
 | SIA AIRAC `data/sia/*.xml`, maps `missions/**/*.png` | workstation | specific (regenerable) | SIA importer, studio; outside git |
 
 ## 7. Known limits

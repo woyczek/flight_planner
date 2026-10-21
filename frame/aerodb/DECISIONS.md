@@ -3,7 +3,7 @@
 The memory of the aerodb agent: every choice, dated, with its reason. No chat history is needed beyond this file,
 `SPEC.md`, `INTEGRATION.md` and `docs/technique/V3_SPECIFICATION.md`.
 
-## 22–23 October 2026 — lot 1 (reading) and lot 2 (API over the published bases)
+## 21 October 2026 — lot 1 (reading) and lot 2 (API over the published bases)
 
 - **Role taken** by the session that built the SIA publication by zone (V2 lot A, `shared/sia_base.js` `publish`) and
   the aircraft base publication (V2 `/__setup/aircraft-publish`). Worktree `E:\DEFA-v3-aerodb`, local branch
@@ -33,7 +33,7 @@ The memory of the aerodb agent: every choice, dated, with its reason. No chat hi
   - Airways are indexed on up to 64 cells of their frame, otherwise on their ends.
   - Large areas visit the index's cells rather than the area's: the first version dropped areas above 40,000 cells,
     and a whole-world question found 5 airspaces instead of 6,753. Fixed, and kept as a check of the bench.
-- **Aircraft files**: JSON first (`aircraft_db.json`, `aircraft_perf.json`, the V3 format decided on 23 October), then
+- **Aircraft files**: JSON first (`aircraft_db.json`, `aircraft_perf.json`, the V3 format decided on 21 October), then
   the V2 `.js` read as a JSON literal after `window.NAME =`. Never executed.
 - **Fuel estimate table** ported with shortened source notes: same values, aliases and classes as
   `shared/fuel_reference.js`; the class-based source note is in English, since aerodb carries no interface text.
@@ -43,7 +43,7 @@ The memory of the aerodb agent: every choice, dated, with its reason. No chat hi
   - type search ranks designators, then aliases and usage names, then model words. "RAF" gave Beech*craf*t types; it
     now gives the Rafale.
 
-## Measurements of lot 2 (23 October 2026)
+## Measurements of lot 2 (21 October 2026)
 
 Set: the user's 13 zones (`E:\DEFA\data\sia`, read only), built and published by the V2 code (cycle 2026-10-01, 19.1
 MB with the towns): fr 5.31 MB, es 3.85, gb 2.78, it 0.99, de 0.39, be 0.21, nl 0.21, dz 0.21, ie 0.15, ch 0.12, ma
@@ -65,11 +65,55 @@ the standard library).
 Whole-world questions return exactly the workstation's base: 6,753 airspaces, 5,644 aerodromes, 6,737 points, 24,382
 obstacles, 3,611 airways, 478 MORA cells. GitHub mode reads only the zones the questions need, and nothing else.
 
+## 21 October 2026 — lot 3 (split publication, both formats read)
+
+- **Publication** (`shared/sia_base.js`, V2, `publishSplit`), next to the whole format until the ergonomics session
+  ends it:
+  - one file per zone, cycle and kind, `sia/base/<zone>/<cycle>/<kind>.json`, all with the same envelope
+    (`schema: 2`, `zone`, `cycle`, `kind`, `parserVersion`, `data`, `updated_at`). Kinds: `airspaces`, `aerodromes`,
+    `navaids`, `points`, `vrp`, `airways`, `obstacles`, `mora`, `obstaclemax`, `cities`, and `meta` for everything
+    else (AAR files, NAT tracks, AIRAC);
+  - each town goes to the zone whose contour holds it (then the contour widened by half a degree); towns of no
+    published zone are reachable only through `cities_major.json`;
+  - `sia/base/cities_major.json`: towns of 100,000 inhabitants or more (6,065 of 70,962, 430 KB). The threshold keeps
+    every capital and regional city, so a search for a destination outside the loaded zones still finds it;
+  - the manifest `sia/base/index.json`: cycle, ICAO prefixes and file sizes per zone. Zones published by other
+    workstations are kept. It lets aerodb know the published zones without a listing (launcher), and go straight to
+    the right zone for a code such as `EGLL`;
+  - a file is rewritten only when its content (without `updated_at`) changes; older cycle folders of the zone are
+    removed. `tools/data_sync.py` needs nothing more: `sia/base` is already in the pool, files and folders alike.
+- **Aircraft base as JSON**: the Maintenance button (`/__setup/aircraft-publish`, `tools/launch.py`) writes
+  `aircraft_db.json` and `aircraft_perf.json` from the literals of the `.js` files (already checked by
+  `tools/data_guard.py`), next to the `.js` files as long as V2 reads them. A second pass finds nothing to do.
+- **Reading** (`aerodb.js`): published zones come from the listing, then the manifest, then probing.
+  - For the chosen cycle the split format wins.
+  - Opening a zone reads `meta.json` only; each kind is read on its first question.
+  - Name questions use the loaded zones' towns plus the major towns; area questions use the covering zones' towns.
+  - The whole format remains a fallback, with the world's towns. `bench.html?format=whole` checks it.
+- **`tools/build_aerodb_zones.py` unchanged**: it reads the zone contours, not the publication.
+- **Known limit**: France's manifest lists foreign prefixes (EG for the Channel Islands, LS for Basel-Mulhouse, the
+  overseas territories' prefixes). `coords('EGLL')` may then read France's aerodromes (327 KB) before Great Britain's.
+  This is harmless and not worth a per-code index.
+
+## Measurements of lot 3 (21 October 2026)
+
+Same set and bench as lot 2, republished by the new code: split files of the 13 zones, 17.2 MB in all (France 6.4 MB,
+of which towns 1.1 MB, airspaces 2.9 MB, obstacles 1.5 MB, aerodromes 327 KB, meta 77 KB).
+
+| Measure | Split format, CPU ×4 | Whole format, CPU ×4 |
+|---|---|---|
+| Aerodromes around Paris, first question: bytes downloaded | 426 KB (fr meta + aerodromes, be meta + aerodromes) | 5,655 KB |
+| Same, time | 28–30 ms | 131 ms |
+| `find('TOUL')`, France loaded, first call (no world towns) | 102–105 ms (fr + be towns, major towns) | 156 ms (world towns) |
+| `find('TOUL')` again | 41 ms | 78 ms |
+| All 13 zones opened (`ready` over Europe) | 356 ms | — |
+| JavaScript heap at the end | 57–73 MB | 50–72 MB |
+
+Whole-world questions still return exactly the workstation's base (6,753 airspaces, 5,644 aerodromes, 6,737 points,
+24,382 obstacles, 3,611 airways, 478 MORA cells), in launcher mode and in GitHub mode. In GitHub mode, with the
+listing known, no whole-zone file and no world-towns file is read. The aircraft base is read from the JSON files.
+
 ## Pending
 
-- Lot 3 (decided on 23 October), publication side:
-  - each zone split by kind (`sia/base/<zone>/<cycle>/<kind>.json`);
-  - towns by zone;
-  - aircraft files published as JSON.
-  aerodb will read both formats during the transition.
-- Replace `fetchReader` by the frame's data layer as soon as it is delivered.
+- Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
+- Replace `fetchReader` by the frame's data layer as soon as a frame page mounts `FrameData`.
