@@ -105,3 +105,24 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - `net.fetch` gives 503 offline;
     - the SimBrief relay answers through the launcher; a site not relayed gets a 503; the route needs its header;
     - a changed frame file gives the "new version" notification with "Reload".
+- **23 Oct 2026 — Lot 5, one Pages site for V2 and V3** (option 1A): a repository has a single Pages site, so
+  `pages.yml` builds both branches into one: V2 at the root, V3 under `/v3/`. The same workflow file lives on develop
+  and on v3; either push redeploys the whole site.
+- **23 Oct 2026 — Capacitor shell on the Pilot application**: `build_pages.py --start frame/index.html` turns the root
+  page into a redirect, rather than a second build or a copy of the frame; name "SOG Pilote", same app id so the
+  installed app is updated, not doubled. `ios.yml` stays paused and unchanged; it needs `--start` and the v3 branch
+  when it resumes.
+- **23 Oct 2026 — `meta.files`**: a module lists the files it imports, relative to `module.js`; the frame reads them at
+  installation and sends them with the entry points in the `precache` message, so every module is complete offline
+  from the first visit. Proposed by the fuel module, which declares its own.
+- **23 Oct 2026 — Waiting**: the "take over the V2 setting" button waits for the settings module.
+- **23 Oct 2026 — To check on a device** (not testable here):
+  - CORS of the IVAO API from the `capacitor://localhost` origin;
+  - IndexedDB data kept by WKWebView on iOS (eviction, storage pressure).
+- **23 Oct 2026 — Where the service worker is tested**: it does not register in Claude's built-in browser ("unknown
+  error when fetching the script"). Offline tests are run in a dedicated Chrome with a short profile path (a long one
+  had no CacheStorage).
+- **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
+  no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
+  Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are
+  in the service worker's copies after the first visit.

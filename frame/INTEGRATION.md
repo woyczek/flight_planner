@@ -17,7 +17,8 @@ A module is one folder, `modules/<id>/`, whose entry is `module.js`, an ES modul
 export const meta = {
   id: 'availability', apps: ['pilot'], level: 1,
   reads: ['disponibilites/', 'utilisateurs/'],
-  writes: [{ prefix: 'disponibilites/', merge: 'record' }, { prefix: 'cache/availability/', policy: 'cache' }]
+  writes: [{ prefix: 'disponibilites/', merge: 'record' }, { prefix: 'cache/availability/', policy: 'cache' }],
+  files: ['timeline.js', 'texts.js']
 };
 export async function mount(el, ctx) { /* draw into el with ctx */ }
 export function unmount() { /* stop watchers, timers */ }
@@ -29,6 +30,9 @@ export function unmount() { /* stop watchers, timers */ }
 - Texts are rows `[fr, en, de, es]` passed to `ctx.t`, French first, every text translated (tooltips, statuses and
   composed sentences included).
 - No global style sheet: use the frame's tokens and classes (§ 3.2 of the SPEC).
+- `files`: every other file the module imports (scripts, data, images), as paths relative to `module.js`. The frame
+  keeps them offline from the first visit, before the module is ever opened. A file left out is kept only once it has
+  been loaded, so declare them all; `[]` when there is none.
 
 ## 3. Declaring what the module reads and writes
 
@@ -77,8 +81,8 @@ export function unmount() { /* stop watchers, timers */ }
   - without one, SimBrief and IVAO are called directly;
   - any other outside site gets a 503 carrying `x-sog-unreachable`.
   Never call `fetch` directly. Only string bodies are relayed.
-- Offline is normal. The application starts offline once visited, and your module's entry point is kept from the
-  first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
+- Offline is normal. The application starts offline once visited, and your module's files (entry point and
+  `meta.files`) are kept from the first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
 - `ctx.notify(text, kind)`, `ctx.ask(text)`, `ctx.askText(text, { value })`: the frame's notifications and question
   windows.
 

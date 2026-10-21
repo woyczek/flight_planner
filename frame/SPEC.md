@@ -184,7 +184,9 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 
 - A module is `modules/<id>/module.js`, an ES module loaded on demand with `import()` (never a synchronous script).
 - It exports:
-  - `meta`: `{ id, apps, level, reads, writes }`; `id` must match its folder;
+  - `meta`: `{ id, apps, level, reads, writes, files }`; `id` must match its folder; `files` lists the other files
+    the module imports, as paths relative to `module.js`, so that they are kept offline from the installation
+    (§ 3.6);
   - `mount(el, ctx)`;
   - `unmount()`.
 - Before mounting a module, the frame unmounts the previous one and empties its element.
@@ -259,9 +261,10 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
   - A copy is keyed by its path without the `?v=` stamp, so it is one copy whatever the stamp.
   - Without a copy, the file comes from the network and is kept. Offline with no copy: a 503 marked
     `x-sog-offline`.
-- **Installation**: the frame's files are kept. The page then sends the entry point of each module of its application
-  (message `precache`), so every module opens offline after the first visit. The files a module imports are kept the
-  first time they are loaded.
+- **Installation**: the frame's files are kept. The page then sends every file of every module of its application
+  (message `precache`): each entry point and the files its `meta.files` declares (paths relative to `module.js`). So
+  every module opens offline after the first visit, even one never opened. A file a module imports without declaring
+  it is kept the first time it is loaded; a module that fails to load sends its entry point only.
 - **New version**:
   - when a background check finds a changed file, all copies are fetched again, so the new version arrives whole;
   - then the open pages receive `sog-frame-update` and the frame shows "A new version of the app is ready" with a
@@ -274,6 +277,21 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 - **Offline start**: on the data already cached, the frame, the module and the synchronisation control are drawn with
   no error. The transport falls back as § 3.5 says. When the network comes back, the launcher is looked for again
   and the transport follows.
+
+### 3.7 Publication (GitHub Pages) and the iOS shell
+
+- **One site for two branches**: a repository has one Pages site, and each deployment replaces it whole.
+  `.github/workflows/pages.yml` (the same file on develop and on v3) runs on a push to either branch, checks out both,
+  and builds each with its own `tools/build_pages.py`:
+  - V2 (develop) at the root of the site;
+  - V3 (v3) under `/v3/`: the Pilot application is `/v3/frame/`, and its service worker's scope stays `/v3/frame/`.
+- **Start page** (`tools/build_pages.py --start frame/index.html`): the root `index.html` of the built site becomes a
+  redirect to that path, query and anchor kept; the path must be part of the site. It is for the Capacitor shell,
+  which opens `index.html` at the root.
+- **Capacitor shell** (`mobile/`): name "SOG Pilote", same app id, opening on the Pilot application. It runs without a
+  launcher and without a service worker (no http(s) origin); data go through the `github` transport.
+  `.github/workflows/ios.yml` is paused and unchanged: when it resumes, it needs `--start frame/index.html` and the v3
+  branch.
 
 ## 4. To come in the frame
 

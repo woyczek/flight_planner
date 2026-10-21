@@ -608,10 +608,25 @@
     });
     navigator.serviceWorker.register(new URL('frame/sw.js', ROOT), {
       scope: new URL('frame/', ROOT).pathname
-    }).then(() => navigator.serviceWorker.ready).then(reg => reg.active?.postMessage({
+    }).then(() => navigator.serviceWorker.ready).then(async reg => reg.active?.postMessage({
       type: 'precache',
-      urls: APP.modules.map(m => new URL(`modules/${m.id}/module.js`, ROOT).href)
+      urls: await moduleFiles()
     })).catch(e => console.warn('service worker', e));
+  }
+  /** Fichiers de tous les modules de l'application, à garder dès l'installation : le point d'entrée de chacun et les
+   *  fichiers que son meta.files déclare (chemins relatifs à module.js) ; module illisible : son point d'entrée seul. */
+  async function moduleFiles() {
+    const urls = [];
+    for (const m of APP.modules) {
+      const entry = new URL(`modules/${m.id}/module.js`, ROOT).href;
+      urls.push(entry);
+      try {
+        for (const f of (await import(entry)).meta?.files || []) urls.push(new URL(f, entry).href);
+      } catch {
+        /* module en échec : il le dira à son ouverture */
+      }
+    }
+    return [...new Set(urls)];
   }
 
   window.SogFrame = {
