@@ -7,6 +7,22 @@ RepositoryContentI18n([
   ['Missions affectées par le Centre, disponibilités', 'Missions assigned by the Centre, availability',
     'Vom Zentrum zugewiesene Missionen, Verfügbarkeit', 'Misiones asignadas por el Centro, disponibilidad'
   ],
+  ['Ma prochaine mission, les comptes rendus à écrire, mes disponibilités', 'My next mission, reports to write, my availability',
+    'Meine nächste Mission, zu schreibende Berichte, meine Verfügbarkeit', 'Mi próxima misión, informes por escribir, mi disponibilidad'
+  ],
+  ['Ma prochaine mission', 'My next mission', 'Meine nächste Mission', 'Mi próxima misión'],
+  ['La mission affectée la plus proche, puis celles des sept jours ; un clic ouvre le dossier.',
+    'The nearest assigned mission, then those of the next seven days; a click opens the folder.',
+    'Die nächste zugewiesene Mission, dann die der kommenden sieben Tage; ein Klick öffnet die Mappe.',
+    'La misión asignada más próxima y luego las de los siete días; un clic abre la carpeta.'
+  ],
+  ['Comptes rendus à écrire', 'Reports to write', 'Zu schreibende Berichte', 'Informes por escribir'],
+  ['Missions des trois dernières semaines sans compte rendu dans le registre.',
+    'Missions of the last three weeks without a report in the registry.',
+    'Missionen der letzten drei Wochen ohne Bericht im Register.',
+    'Misiones de las tres últimas semanas sin informe en el registro.'
+  ],
+  ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
   ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
   ['Appareils maîtrisés', 'Aircraft mastered', 'Beherrschte Luftfahrzeuge', 'Aeronaves dominadas'],
   ['Simulateurs', 'Simulators', 'Simulatoren', 'Simuladores'],

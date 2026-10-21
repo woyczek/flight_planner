@@ -36,6 +36,18 @@ assignments of `assignments.js`, report ledger of `mission_core/ledger.js`) and 
 Without a trigram, the first block **asks for the trigram on the spot** (one field, one button) instead of pointing to
 the settings. The home page `index.html` (generated from the sidebar) offers it at the top of "My tasks".
 
+**21 October: merged into "My missions".** `apps/pilot/mes_missions.html` is now the pilot's entry page (first entry
+of the sidebar, `start_url` of the web app); `aujourdhui.html` only redirects there (query and hash kept) and is out of
+the menu. At levels 1 and 2 the page holds four blocks on one 1,400 × 900 screen: "My next mission"
+(`PilotToday.mount(host, 'next', { more: 7, actions: true })`: the card with "Open the folder", "Flight maps" and "Fuel"
+when the suite offers those tools, "Create the report"; then the missions of the next seven days, one line each),
+"Reports to write" (`'pending'`), "My availability" in compact mode (`DisposWeek.mount(host, { compact: true })`: one
+box per day, "Edit my week" unfolds the editor, unfolded at once for an empty week) with its own week bar, and a line of
+links (My flights; Pilot, Aircraft mastered, Simulators from level 2). The full week list comes at level 3. Links to a
+folder carry `data-key` / `data-do`: the page opens the folder in place, then runs `?do=maps | fuel | cr` (Fuel in the
+same tab when it is not a click). Empty blocks are one line ("No upcoming mission.", "No report pending.", "No
+availability entered this week."). "My week" (seven columns) is gone: the list and the availability summary cover it.
+
 ### 2.2 A guided report
 
 `apps/cr/mission_cr.html` starts with **"My missions to report"** (same list as above); the family choice, unchanged,
@@ -66,10 +78,10 @@ in the page's language (`K.t`, `K.tf`), in four languages.
 
 | File | Role |
 |---|---|
-| `shared/pilot_today.js` | next mission, reports to write, week, trigram entry (`PilotToday.mount`) |
-| `apps/pilot/aujourdhui.html` | the arrival page |
+| `shared/pilot_today.js` | next mission and the next seven days, reports to write, week, trigram entry (`PilotToday.mount`) |
+| `apps/pilot/aujourdhui.html` | redirect to `mes_missions.html` (the arrival page since 21 October) |
 | `apps/cr/mission_cr.html` | "My missions to report" block |
-| `apps/pilot/mes_missions.html` | trigram on the spot, `?do=cr` |
+| `apps/pilot/mes_missions.html` | the arrival page: next mission, reports to write, compact availability; `?do=cr \| maps \| fuel` |
 | `shared/app_framework.js` | `notify`: `once`, `minLevel`; `task`: `cancel` |
 | `shared/repository_nav.css` | fields that grow |
 | `shared/icons/repository_icons.js` | `today` icon |

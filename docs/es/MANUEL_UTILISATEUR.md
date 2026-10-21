@@ -23,8 +23,7 @@ Lo que muestra depende de su **nivel de uso** (Mi perfil › «Nivel de uso»): 
 
 | Entrada | Lo que abre | Nivel |
 |---|---|---|
-| «Hoy» | Próxima misión, informes por escribir, semana; primera entrada en todos los niveles | 1 |
-| «Mis misiones» | Misiones asignadas por el Centro y disponibilidad (pastilla roja: misiones no leídas) | 1 |
+| «Mis misiones» | Página de entrada: próxima misión, informes por escribir, disponibilidad; carpetas de las misiones asignadas (pastilla roja: misiones no leídas); primera entrada en todos los niveles | 1 |
 | «Informe» | Introducción de un informe de misión; pestaña «Flota»: dónde están las aeronaves (mapa, filtros, último vuelo) | 1 |
 | «Planificación» | Planificación de órdenes de la semana (Tablero, en solo lectura en el nivel 1 o sin el Centro); en el nivel 4, franjas comunes y misiones probables de la página ODV | 1 |
 | «Misiones» | Generador de misiones y registro, en pestañas; estudio cartográfico en el nivel 4 | 3 |
@@ -131,58 +130,45 @@ La suite ofrece varios diseños. Cambian la forma de las páginas, no la informa
 - En los diseños con materiales, la carpeta de misión de «Mis misiones» se convierte en un auténtico libro, con sus animaciones.
 - La elección se hace en Apariencia: cada diseño se muestra en miniatura y se aplica al instante. Consulte el capítulo [Apariencia](#apariencia).
 
-## Hoy
-<!-- page: apps/pilot/aujourdhui.html -->
+## Mis misiones
+<!-- page: apps/pilot/mes_missions.html -->
 
-Esta página es la primera entrada de la barra lateral, en cualquier nivel de uso. Responde a tres preguntas sin buscar nada: cuál es mi próxima misión, qué informes me quedan por escribir, qué ocurre esta semana.
-Cada bloque ofrece una sola acción. Los datos proceden de las asignaciones del Centro (véase «Mis misiones») y del registro de informes: no hay nada que volver a introducir. La página se vuelve a leer sola cuando cambia de idioma, de trigrama o de sesión.
-La página de inicio también la ofrece al principio de «Mis tareas».
+La página de entrada del piloto: dice primero lo que hay que hacer —la próxima misión, los informes por escribir, la disponibilidad de la semana— y luego da acceso a la carpeta de cada misión. Sustituye a la antigua página «Hoy» (sus enlaces antiguos llevan aquí).
+Se llega a ella por la primera entrada de la barra lateral, «Mis misiones», por el sobre sellado de la cabecera o por la pestaña «Mis misiones».
+En los niveles Tripulación (1) y Planificación (2), la página cabe en una pantalla: «Mi próxima misión», «Informes por escribir», «Mi disponibilidad» (resumida) y, abajo, una línea de enlaces. A partir del nivel Diseño (3), la lista completa de la semana se añade bajo los informes.
+La carpeta de una misión se abre bajo los informes: a todo el ancho en los niveles 1 y 2; a partir del nivel 3, junto a la lista (ocupa dos tercios del ancho). En una pantalla estrecha (menos de 1100 px), todo pasa a una sola columna.
+Línea de enlaces: «Mis vuelos» y luego, a partir del nivel Planificación (2), **Piloto**, **Aeronaves dominadas** y **Simuladores**, hacia Ajustes › Mi perfil (sección «Identidad y redes» para el trigrama; sección «Aeronaves y simuladores»). El botón «Piloto» muestra el trigrama utilizado para encontrar sus misiones y su disponibilidad; en el nivel Tripulación (1), solo aparece mientras el trigrama no esté configurado.
+En modo producción, la página pide primero conectarse; el trigrama es entonces el de la conexión. La página se vuelve a leer sola cuando cambia de idioma, de trigrama, de sesión o de nivel.
+Según el nivel de uso (Mi perfil › «Nivel de uso»), la carpeta de la misión muestra más o menos secciones (véase «Misión»); algunos botones y enlaces solo aparecen a partir del nivel Planificación (2) o en el nivel Experto (4).
 
 ### Mi próxima misión
 
-- La misión que se le ha asignado más próxima (por venir, o despegada hace menos de seis horas): hora en UTC, misión y título, aeronave (tipo y matrícula), aeródromo, indicativo; «traslado» o «alerta, listo a las …» si procede, y «● nueva» mientras no la haya abierto.
-- Acción: **«Abrir la carpeta»** abre la misión en «Mis misiones».
-- Sin trigrama configurado, este bloque lo pide en el acto: el campo «Trigrama» (de dos a cuatro letras) y el botón «Guardar». El trigrama se guarda en el perfil de piloto y los tres bloques se vuelven a leer de inmediato, sin pasar por Ajustes › Mi perfil. En modo producción o durante una suplantación, es el trigrama de la conexión: el bloque indica «Sin trigrama: inicie sesión para ver sus misiones.»
-- Sin misión próxima, el bloque lo dice: «Ninguna misión próxima está asignada a …».
+- La misión asignada más próxima (por venir, o despegada hace menos de seis horas): hora en UTC, misión y título, aeronave (tipo y matrícula), aeródromo, indicativo; «traslado» o «alerta, listo a las …» si procede, y «● nueva» mientras no la haya abierto.
+- **«Abrir la carpeta»** abre la carpeta en el sitio, en el bloque «Misión». **«Mapas de vuelo»** y **«Combustible»** abren la carpeta y luego la herramienta con esta misión, como los botones de la carpeta; solo se ofrecen si la herramienta lo está (nivel Experto, o herramienta marcada en Mi perfil), y no para un traslado. **«Crear el informe»** abre la carpeta y comienza el informe.
+- Debajo, «Después, en los siete días»: las misiones siguientes de los próximos siete días, una línea cada una (siete como máximo); un clic abre su carpeta.
+- Sin trigrama configurado, este bloque lo pide en el sitio: el campo «Trigrama» (de dos a cuatro letras) y el botón «Guardar». El trigrama se guarda en el perfil de piloto y la página se vuelve a leer al instante, sin pasar por Ajustes › Mi perfil. En modo producción o durante una suplantación, el bloque indica «Sin trigrama: inicie sesión para ver sus misiones.»
+- Sin misión próxima, una sola línea: «Ninguna misión próxima.»
 
 ### Informes por escribir
 
 - Las misiones que se le han asignado, despegadas hace menos de 21 días, para las que el registro de informes no contiene ningún informe. La más reciente va primero; siete líneas como máximo.
-- Un informe es conocido si procede de una orden de misión: el registro (`missions.yaml`) lo vincula a la asignación mediante su referencia de orden (misión, piloto, despegue). Un informe iniciado de otro modo, con la familia elegida a mano, no cuenta: la misión permanece en la lista.
-- Cada línea indica la misión, su título, la hora, la aeronave y el aeródromo, con dos botones.
-- **«Escribir el informe»** abre la carpeta de la misión en «Mis misiones» y comienza el informe en la familia de la misión, rellenado desde la orden de misión (dirección `?mission=…&do=cr`).
-- **«Sin informe»** retira la misión de la lista (misión cancelada, no volada…). La elección se memoriza solo en este navegador; el registro no se toca.
-- Si todo está entregado, el bloque dice «Nada pendiente: sus misiones pasadas tienen su informe.» Sin trigrama, remite al campo del primer bloque («Trigrama por introducir arriba.»).
-
-### Mi semana
-
-- Siete columnas, de lunes a domingo de la semana en curso (días en UTC); el día actual aparece rodeado.
-- Sus misiones figuran como mosaicos: hora y número de misión, o «alerta».
-- Acción: un clic en un mosaico abre la carpeta de la misión en «Mis misiones». Sin trigrama, el bloque dice «Sin trigrama, la semana queda vacía.»
-
-## Mis misiones
-<!-- page: apps/pilot/mes_missions.html -->
-
-Esta página reúne las misiones que el Centro le asigna, la carpeta de cada una, su disponibilidad y su trigrama.
-Se llega a ella por la entrada «Mis misiones» de la barra lateral, por el sobre sellado de la cabecera o por la pestaña «Mis misiones».
-Diseño de la página: la lista de misiones y la carpeta abierta una al lado de la otra (la carpeta ocupa dos tercios del ancho), «Mi disponibilidad» debajo, a todo el ancho. Sin carpeta abierta, la lista ocupa todo el ancho. En una pantalla estrecha (menos de 1100 px), todo pasa a una sola columna: misiones, carpeta, disponibilidad.
-En modo producción, la página pide primero conectarse.
-Según el nivel de uso (Mi perfil › «Nivel de uso»), la carpeta de la misión muestra más o menos secciones (véase «Misión»); algunos botones y enlaces solo aparecen a partir del nivel Planificación (2) o en el nivel Experto (4).
+- Un informe se conoce si procede de una orden de misión: el registro (`missions.yaml`) lo vincula a la asignación por su referencia de orden (misión, piloto, despegue). Un informe comenzado de otro modo, con la familia elegida a mano, no cuenta: la misión sigue en la lista.
+- Cada línea da la misión, su título, la hora, la aeronave y el aeródromo, con dos botones.
+- **«Escribir el informe»** abre la carpeta de la misión en el sitio y comienza el informe en la familia de la misión, rellenado desde la orden de misión.
+- **«Sin informe»** retira la misión de la lista (misión anulada, no volada…). La elección se memoriza solo en este navegador; el registro no se toca.
+- Si todo está entregado, una sola línea: «Ningún informe pendiente.»
 
 ### Mis misiones de la semana
 
-La lista de las misiones que tiene asignadas para la semana mostrada, ordenadas por hora de despegue (UTC).
+A partir del nivel Diseño (3): la lista de las misiones que tiene asignadas para la semana mostrada, ordenadas por hora de despegue (UTC).
 
-- **Barra de semana**: «‹» semana anterior, campo de fecha (ir a la semana de una fecha), «›» semana siguiente, «⟲» volver a la semana actual (visible fuera de la semana actual). Es común a la lista y a la disponibilidad: cambiar de semana aquí cambia los dos bloques.
+- **Barra de semana**: «‹» semana anterior, campo de fecha (ir a la semana de una fecha), «›» semana siguiente, «⟲» volver a la semana actual (visible fuera de la semana actual). Va unida a la barra de la disponibilidad: cambiar de semana aquí cambia los dos bloques.
 - **Columnas**: «Despegue (UTC)» (o «guardia» y la hora a la que hay que estar listo), «Misión», «Título», «Aeronave», «Aeródromo», «Indicativo».
 - Un punto ● al principio de la línea señala una misión **nueva, aún no abierta**.
 - Una mención «traslado» indica que traslada una aeronave para otro piloto: solo se le entrega la orden de traslado, no el brief de la misión.
 - Un clic en una línea abre la misión en el bloque «Misión».
 - Casilla «mostrar también las misiones pasadas»: por defecto, una misión desaparece unas horas después de su despegue. La elección se memoriza.
-- Sin trigrama configurado, el campo para introducirlo aparece bajo la lista (campo «Trigrama», botón «Guardar»): una vez guardado, la lista y la disponibilidad se vuelven a leer. En modo producción o durante una suplantación, es el trigrama de la conexión.
-- Una dirección `?mission=…` procedente de «Hoy» o de «Nuevo informe» muestra la semana de esa misión (misiones pasadas mostradas si hace falta); con `?do=cr`, el informe comienza en cuanto se abre la carpeta.
-- **Piloto**, **Aeronaves dominadas**, **Simuladores**: tres botones bajo la lista, hacia Ajustes › Mi perfil (sección «Identidad y redes» para el trigrama; sección «Aeronaves y simuladores», en la tarjeta de aeronaves o en la de simuladores). El botón «Piloto» muestra el trigrama utilizado para encontrar sus misiones y su disponibilidad. En modo producción o durante una suplantación, es el trigrama de la conexión.
-- Estos tres botones aparecen a partir del nivel Planificación (2). En el nivel Tripulación (1), solo aparece «Piloto», mientras el trigrama no esté configurado.
+- Una dirección `?mission=…` (bloques de cabecera, «Nuevo informe», enlaces antiguos de «Hoy») abre la carpeta de esa misión y muestra su semana (misiones pasadas si hace falta); con `?do=cr`, `?do=maps` o `?do=fuel`, el informe, los Mapas de vuelo o el Combustible siguen a la apertura de la carpeta.
 
 ### Misión
 
@@ -248,8 +234,13 @@ El botón «⤢ Ancho completo» del título del bloque extiende la carpeta a to
 
 ### Mi disponibilidad
 
-Su disponibilidad de la semana mostrada, en horas UTC, al minuto. El Centro la utiliza para asignarle misiones. Es la misma introducción que en la página Mi disponibilidad (capítulo siguiente); aquí, la semana es la de la barra de semana de la lista.
-Según el nivel de uso: la barra de semana propia del bloque, la antigua cuadrícula horaria y el enlace «Abrir solo la introducción de disponibilidad» solo aparecen en el nivel Experto; en los demás niveles, la semana se cambia con la barra de la lista.
+Su disponibilidad de la semana mostrada, en horas UTC, al minuto. El Centro la utiliza para asignarle misiones.
+
+- **Barra de semana** del bloque, en todos los niveles: «‹», fecha, «›», «⟲» (a menudo se introduce la semana siguiente). En el nivel 3, va unida a la barra de la lista.
+- **Resumen**: una casilla por día (de lunes a domingo, UTC), cada intervalo con la pastilla de su categoría y sus horas, por ejemplo «D+ 17:00–22:00»; «—» para un día sin nada. Semana vacía: una línea, «Ninguna disponibilidad introducida esta semana.»
+- **«Editar mi semana»** despliega en el sitio la introducción descrita más abajo (paleta, cuadrícula, intervalo preciso, botones); un nuevo clic la pliega. Se despliega sola cuando la semana está vacía y luego se queda como la dejó. El resumen sigue cada retoque.
+
+Es la misma introducción que en la página Mi disponibilidad (capítulo siguiente). La antigua cuadrícula horaria y el enlace «Abrir solo la introducción de disponibilidad» solo aparecen en el nivel Experto.
 
 **Paleta**: las categorías se ordenan por grupo, una línea por grupo («Disponible», «Ejercicio SOG», «Ocupado», «No disponible»). Cada pastilla lleva la letra de código ODV y un texto corto; el texto emergente da el nombre completo. La categoría elegida se memoriza. Bajo la paleta, una línea recuerda los temas de misión que abre la categoría elegida; para una categoría personalizada, el enlace «Mis tipos de misión…» lleva a las preferencias de Mi perfil.
 
@@ -284,7 +275,7 @@ El mensaje bajo el bloque indica adónde se ha enviado lo introducido: «Guardad
 Una cuadrícula horaria antigua existente se importa automáticamente en la semana.
 El enlace «Abrir solo la introducción de disponibilidad» lleva a la página Mi disponibilidad. Este enlace solo aparece en el nivel Experto.
 
-**En el teléfono**: la lista, la carpeta y la disponibilidad se suceden en una sola columna; un toque en una misión lleva su carpeta a la pantalla, y sus acciones («Crear el informe», «Cerrar la carpeta»…) quedan fijadas encima de la barra inferior durante la lectura. Las tablas de la carpeta (puntos de la ruta) se desplazan dentro de su marco.
+**En el teléfono**: los bloques se suceden en una sola columna; el resumen de la disponibilidad pasa a dos columnas. Un toque en una misión lleva su carpeta a la pantalla, y sus acciones («Crear el informe», «Cerrar la carpeta»…) quedan fijadas encima de la barra inferior durante la lectura. Las tablas de la carpeta (puntos de la ruta) se desplazan dentro de su marco.
 
 ## Mis vuelos
 <!-- page: apps/pilot/mes_vols.html -->
@@ -403,7 +394,7 @@ Para la app sin lanzador (teléfono, suite publicada en GitHub Pages): los datos
 | «Token personal» | token de grano fino creado en github.com › Settings › Developer settings › Fine-grained tokens: acceso solo al repositorio de datos, permiso «Contents» en lectura y escritura, caducidad de 90 días como máximo; guardado solo en este navegador, nunca vuelto a mostrar |
 
 - «Probar» comprueba que el repositorio es legible, que la rama existe y que el token puede escribir.
-- «Guardar» comprueba, luego activa el acceso y abre Hoy; a partir de ahí todas las páginas de la suite leen sus datos en el repositorio (guardados también para el uso sin conexión).
+- «Guardar» comprueba, luego activa el acceso y abre Mis misiones; a partir de ahí todas las páginas de la suite leen sus datos en el repositorio (guardados también para el uso sin conexión).
 - Cada guardado (informe, disponibilidades, ficha) se convierte en un commit con su trigrama. Si otra persona cambió el mismo archivo entretanto, se vuelve a leer y se fusiona antes de escribirlo.
 - «Cortar el acceso» borra el token y las copias de los datos de este navegador; las páginas vuelven a los datos del lanzador.
 - Teléfono perdido o robado: borre también el token en github.com (Settings › Developer settings › Fine-grained tokens); ya no vale en ningún sitio.
@@ -534,7 +525,7 @@ navegación en la parte inferior de la pantalla en lugar de la barra lateral, pe
 bloques a todo el ancho, botones y campos más grandes, tablas que se desplazan dentro de su bloque o se muestran en
 tarjetas.
 
-- **Barra inferior**: hasta seis entradas, todas con una etiqueta corta (Hoy, Misiones, Vuelos, Informe…); a partir de
+- **Barra inferior**: hasta seis entradas, todas con una etiqueta corta (Misiones, Vuelos, Informe, Planificación…); a partir de
   ahí, las cinco primeras y «Más», que abre las demás entradas, Ajustes y Ayuda.
 - **Teléfono en horizontal**: la barra pasa a un riel a la izquierda de la pantalla (icono, etiqueta debajo) y la cabecera deja de estar fijada, para dejar la altura al contenido; las curvas de Combustible caben con su cursor de nivel.
 - **Cabecera**: se oculta al bajar por la página y vuelve en cuanto se sube.
@@ -673,7 +664,7 @@ asignado (véase más abajo). Paso a paso completo: [tutorial](../TUTORIAL.md).
 
 ### Mis misiones por informar
 
-Primer bloque de la página: las misiones que se le han asignado, ya pasadas (21 días como máximo) y sin informe en el registro, como en el bloque «Informes por escribir» de la página «Hoy» (siete líneas como máximo).
+Primer bloque de la página: las misiones que se le han asignado, ya pasadas (21 días como máximo) y sin informe en el registro, como en el bloque «Informes por escribir» de la página «Mis misiones» (siete líneas como máximo).
 
 - **«Escribir el informe»** abre la carpeta de la misión en «Mis misiones» y comienza el informe en la familia de la misión, rellenado desde la orden de misión (véase «Retomar una misión asignada»).
 - **«Sin informe»** retira la misión de la lista (se memoriza en este navegador).

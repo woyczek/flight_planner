@@ -3,7 +3,7 @@
  "short_name": "Flight Planner",
  "description": "Missions, comptes rendus, disponibilités, carburant et flotte — la suite sur téléphone.",
  "lang": "fr",
- "start_url": "apps/pilot/aujourdhui.html",
+ "start_url": "apps/pilot/mes_missions.html",
  "scope": "./",
  "display": "standalone",
  "orientation": "any",

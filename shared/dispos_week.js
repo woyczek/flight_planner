@@ -16,8 +16,11 @@
   //   · semaine sans déclaration mais ancienne grille horaire (fichier <TRI>.json d'avant les catégories) : importée,
   //     puis enregistrée ;
   //   · mode mobile (html[data-mobile]) : vue « un jour » (dayRender) au lieu de la grille de la semaine, qui ne se trace
-  //     pas au doigt ; bascule Jour / Semaine (choix gardé : disposView:v1).
-  // API (window.DisposWeek) : mount(hôte, { nav = true }) → { set({ tri, week }), refresh(), touch(), week } ;
+  //     pas au doigt ; bascule Jour / Semaine (choix gardé : disposView:v1) ;
+  //   · mode compact (Mes missions) : la semaine résumée jour par jour (plages et catégories), la saisie repliée sous
+  //     « Modifier ma semaine » — dépliée d'office quand la semaine est vide, puis comme le pilote l'a laissée.
+  // API (window.DisposWeek) : mount(hôte, { nav = true, compact = false }) → { set({ tri, week }), refresh(), touch(),
+  //   week } ;
   //   legend() : HTML des catégories par groupe (pastilles inertes, Planning ODV) ; subtitle(), bindSubtitle(élément) :
   //   sous-titre du bloc de saisie, dans la langue courante.
   const K = window.RepositoryKit,
@@ -141,6 +144,10 @@
 .dw-add label{display:inline-flex;gap:5px;align-items:center;font-size:12.5px}.dw-add select,.dw-add input[type=time]{padding:3px 5px;font:inherit}
 .dw-days{display:inline-flex;flex-wrap:wrap;gap:2px 8px}.dw-days label{font-size:12px}.dw-themes{margin:2px 0 0;font-size:12px;opacity:.85}
 .dw-precise>summary{cursor:pointer;font-size:12px;opacity:.85}.dw-precise[open]>summary{margin-bottom:6px}.dw-msg{margin:0}
+.dw-sum{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.dw-sum-d{display:grid;align-content:start;gap:2px;padding:4px 6px;border:1px solid var(--sk-card-bd,var(--line,#8884));font-size:12px;min-width:0}
+.dw-sum-d>b{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.02em;opacity:.8}.dw-sum-d>span{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.dw-sum-d>i{opacity:.55;font-style:normal}.dw-sum-none{margin:0;opacity:.85}.dw-edit>summary{cursor:pointer;font-weight:600}.dw-edit-in{display:grid;gap:8px;margin-top:8px}
+@media (max-width:800px){.dw-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dw-legend{display:grid;grid-template-columns:max-content 1fr;gap:3px 6px;align-items:center}.dw-legend-r{display:flex;flex-wrap:wrap;gap:2px}
 .dw-legend-n{font:400 10.5px/1.2 system-ui,sans-serif;opacity:.85;white-space:nowrap}
 .dw-view{display:flex;gap:4px}.dw-view button{flex:1}
@@ -179,7 +186,8 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
 
   /** Monte la saisie dans host ; nav : barre de semaine (false : semaine imposée par la page hôte). */
   function mount(host, {
-    nav = true
+    nav = true,
+    compact = false
   } = {}) {
     css();
     let tri = '',
@@ -189,7 +197,8 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
       ready = null,
       loadSeq = 0,
       shownKey = '', // pilote et semaine des données tenues par le composant
-      lastSaved = ''; // updated_at de notre dernière écriture (relecture d'un autre onglet seulement)
+      lastSaved = '', // updated_at de notre dernière écriture (relecture d'un autre onglet seulement)
+      editOpen = null; // mode compact : saisie dépliée ou repliée par le pilote (null : selon la semaine)
     host.classList.add('dw-wrap');
     host.setAttribute('data-no-i18n', ''); // textes composés dans la langue courante (refaits au changement de langue)
     let last = ['', ''];
@@ -217,9 +226,14 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         brush = ui?.brush() || storedBrush();
       ui?.destroy();
       ui = null;
-      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p><div class="dw-view" data-view hidden><button type="button" class="secondary" data-view-set="day">${esc(t(['Jour', 'Day', 'Tag', 'Día']))}</button><button type="button" class="secondary" data-view-set="week">${esc(t(['Semaine', 'Week', 'Woche', 'Semana']))}</button></div><div data-tl></div><div class="dw-dayview" data-dayview hidden></div>
+      const edit = `<div class="dw-view" data-view hidden><button type="button" class="secondary" data-view-set="day">${esc(t(['Jour', 'Day', 'Tag', 'Día']))}</button><button type="button" class="secondary" data-view-set="week">${esc(t(['Semaine', 'Week', 'Woche', 'Semana']))}</button></div><div data-tl></div><div class="dw-dayview" data-dayview hidden></div>
         <details class="dw-precise"><summary>${esc(t(['Plage précise', 'Precise range', 'Genauer Zeitraum', 'Intervalo preciso']))}</summary><div class="dw-add" data-add-form></div></details>
-        <div class="dw-actions" data-actions></div><p class="dw-msg small ${last[1]}">${esc(last[0])}</p>`;
+        <div class="dw-actions" data-actions></div>`;
+      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p>${compact ? `<div data-sum></div><details class="dw-edit" data-edit${editOpen ? ' open' : ''}><summary>${esc(t(['Modifier ma semaine', 'Edit my week', 'Meine Woche bearbeiten', 'Editar mi semana']))}</summary><div class="dw-edit-in">${edit}</div></details>` : edit}<p class="dw-msg small ${last[1]}">${esc(last[0])}</p>`;
+      // mode compact : le pilote déplie ou replie la saisie lui-même (sa décision l'emporte sur la semaine vide)
+      host.querySelector('[data-edit]>summary')?.addEventListener('click', e => {
+        editOpen = !e.target.closest('details').open;
+      });
       if (!tri) return render();
       ui = window.DisposTimeline.mount(host.querySelector('[data-tl]'), {
         config: D.timelineConfig(),
@@ -233,7 +247,10 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         period: false,
         buttonClass: 'repo-plain', // pastilles et ✕ du module : hors du style des boutons des designs (angles : règle
         // « garder » de css(), un design arrondit aussi les boutons repo-plain)
-        onChange: d => queueSave(tri, d)
+        onChange: d => {
+          queueSave(tri, d);
+          summary();
+        }
       });
       const slot = ui.slot('palette');
       if (slot) slot.innerHTML = '<p class="dw-themes" data-themes></p>';
@@ -251,6 +268,40 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         .addEventListener(ev, dayRender);
       render();
       themesHint(ui.brush());
+    }
+    /** Mode compact : semaine résumée jour par jour (plages à la minute, pastille de catégorie), ou une ligne quand rien
+     *  n'est déclaré ; saisie dépliée d'office pour une semaine vide (sauf choix du pilote). */
+    function summary() {
+      const box = host.querySelector('[data-sum]'),
+        D = SD();
+      if (!box || !D) return;
+      const data = loaded() ? ui.get() : null,
+        ranges = (data?.ranges || []).map(r => ({
+          s: Date.parse(r.start),
+          e: Date.parse(r.end),
+          c: D.category(r.cat)
+        })).filter(r => r.e > r.s);
+      const det = host.querySelector('[data-edit]');
+      if (det) det.open = editOpen ?? (!!tri && !ranges.length);
+      if (!tri || !data) return void(box.innerHTML = '');
+      if (!ranges.length) {
+        box.innerHTML = `<p class="dw-sum-none">${esc(t(['Aucune disponibilité saisie cette semaine.', 'No availability entered this week.',
+          'Keine Verfügbarkeit für diese Woche eingetragen.', 'Ninguna disponibilidad introducida esta semana.'
+        ]))}</p>`;
+        return;
+      }
+      const mon = D.weekMonday(week),
+        hm = (ms, d0) => ms >= d0 + 864e5 ? '24:00' : new Date(ms).toISOString().slice(11, 16);
+      box.innerHTML = `<div class="dw-sum">${Array.from({ length: 7 }, (_, i) => {
+        const d0 = mon + i * 864e5,
+          d1 = d0 + 864e5,
+          day = ranges.filter(r => r.s < d1 && r.e > d0);
+        return `<div class="dw-sum-d"><b>${esc(dayLabel(d0))}</b>${day.length ? day.map(r => {
+          const c = r.c,
+            col = c ? D.color(c) : '#999';
+          return `<span><span class="dw-chip" style="background:${col};color:${ink(col)}" title="${esc(c ? D.label(c.label) : '')}">${esc(c ? D.code(c) || D.shortLabel(c) : '?')}</span>${esc(`${hm(Math.max(r.s, d0), d0)}–${hm(Math.min(r.e, d1), d0)}`)}</span>`;
+        }).join('') : '<i>—</i>'}</div>`;
+      }).join('')}</div>`;
     }
     /** Parties de la page autour du composant : barre de semaine, formulaire de plage précise, actions. */
     function render() {
@@ -658,6 +709,7 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
       shownKey = `${t0}|${w0}`;
       lastSaved = weeks[w0]?.updated_at || '';
       render();
+      summary();
       if (old) await queueSave(t0, ui.get(), t(['Ancienne grille horaire importée dans la semaine.',
         'Former hourly grid imported into the week.', 'Frühere Stundentabelle in die Woche übernommen.',
         'Antigua cuadrícula horaria importada en la semana.'
@@ -793,6 +845,7 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
         if (d && d.updated_at && d.updated_at !== lastSaved && loaded()) {
           lastSaved = d.updated_at;
           ui.set(d);
+          summary();
         }
       }).catch(() => {});
     });
@@ -819,17 +872,25 @@ repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparen
     };
   }
   /** Sous-titre du bloc de saisie (Mes missions, Mes disponibilités), dans la langue courante. */
-  const subtitle = () => t([
+  const subtitle = (compact = false) => compact ? t([
+    'Semaine affichée, heures UTC ; « Modifier ma semaine » pour tracer vos plages. Le Centre s’en sert pour affecter les missions.',
+    'Week shown, UTC times; “Edit my week” to draw your ranges. The Centre uses it to assign missions.',
+    'Angezeigte Woche, UTC-Zeiten; „Meine Woche bearbeiten“, um Ihre Zeiträume zu zeichnen. Das Zentrum nutzt sie, um Missionen zuzuteilen.',
+    'Semana mostrada, horas UTC; «Editar mi semana» para trazar sus intervalos. El Centro lo usa para asignar las misiones.'
+  ]) : t([
     'Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis tracer dans la grille (« Comment s’en servir » sous la grille). Le Centre s’en sert pour affecter les missions.',
     'Week shown, UTC times: choose a category in the palette, then draw in the grid (“How to use” under the grid). The Centre uses it to assign missions.',
     'Angezeigte Woche, UTC-Zeiten: eine Kategorie in der Palette wählen, dann im Raster zeichnen („So geht’s“ unter dem Raster). Das Zentrum nutzt sie, um Missionen zuzuteilen.',
     'Semana mostrada, horas UTC: elegir una categoría en la paleta y trazar en la cuadrícula («Cómo usarlo» bajo la cuadrícula). El Centro lo usa para asignar las misiones.'
   ]);
-  /** Remplit (et tient à jour au changement de langue) un sous-titre de bloc avec subtitle(). */
-  function bindSubtitle(el) {
+  /** Remplit (et tient à jour au changement de langue) un sous-titre de bloc avec subtitle() ; compact : celui du mode
+   *  compact (saisie repliée). */
+  function bindSubtitle(el, {
+    compact = false
+  } = {}) {
     if (!el) return;
     const set = () => {
-      const v = subtitle();
+      const v = subtitle(compact);
       if (el.textContent !== v) el.textContent = v;
     };
     set();

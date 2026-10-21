@@ -160,6 +160,21 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **My missions is the pilot's entry page; Today merged into it** (`apps/pilot/mes_missions.html`,
+  `shared/pilot_today.js`, `shared/dispos_week.js`, `apps/pilot/aujourdhui.html`, `config/repository_tree`,
+  `manifest.webmanifest`) — at levels 1 and 2 the page holds four blocks on one 1,400 × 900 screen and says first what
+  there is to do: "My next mission" (time UTC, mission, aircraft, airfield, callsign; "Open the folder", "Flight
+  maps" and "Fuel" when the suite offers those tools, "Create the report"; then the missions of the next seven
+  days, one line each, seven at most), "Reports to write" ("Write the report", "No report"), "My availability" in
+  a compact form (one box per day, "D+ 17:00–22:00"; its own week bar at every level; "Edit my week" unfolds the
+  editor in place, unfolded at once for an empty week; `DisposWeek.mount(host, { compact: true })`, the timeline
+  module untouched) and a line of links (My flights; Pilot, Aircraft mastered, Simulators from level 2). Empty blocks
+  are one line ("No upcoming mission.", "No report pending.", "No availability entered this week."). The full week
+  list (week bar, past missions) comes at level 3; the folder is unchanged, full width at levels 1 and 2. Folder links
+  open the folder in place and then run `?do=maps | fuel | cr` (the folder is opened for it). `aujourdhui.html`
+  redirects to My missions (query and hash kept) and leaves the sidebar and the phone bar; the web app starts on My
+  missions, and so does GitHub mode once enabled. User manual (4 languages): the Today and My missions chapters
+  merged; `docs/technique/V2_FABLE.md` § 2.1.
 - **SimBrief: what was read, and the route points in Fuel** (`shared/simbrief_ofp.js`,
   `shared/flight_vertical_profile.js`, `apps/planner/flight_performance_planner.html`, `apps/cpco/map_parser.html`) —
   a shared module reads the OFP (navlog points in `json=1` and `v2`, alternate, summary, reason when there is no

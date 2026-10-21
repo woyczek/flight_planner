@@ -23,8 +23,7 @@ Was sie zeigt, hängt von Ihrer **Nutzungsstufe** ab (Mein Profil › „Nutzung
 
 | Eintrag | Was er öffnet | Stufe |
 |---|---|---|
-| „Heute“ | Nächste Mission, zu schreibende Berichte, Woche; erster Eintrag auf jeder Stufe | 1 |
-| „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (roter Punkt: ungelesene Missionen) | 1 |
+| „Meine Missionen“ | Einstiegsseite: nächste Mission, zu schreibende Berichte, Verfügbarkeit; Mappen der zugewiesenen Missionen (roter Punkt: ungelesene Missionen); erster Eintrag auf jeder Stufe | 1 |
 | „Bericht“ | Eingabe eines Missionsberichts; Registerkarte „Flotte“: wo die Luftfahrzeuge stehen (Karte, Filter, letzter Flug) | 1 |
 | „Planung“ | Befehlsplanung der Woche (Einsatztafel, auf Stufe 1 oder ohne Zentrum schreibgeschützt); auf Stufe 4 gemeinsame Zeitfenster und wahrscheinliche Missionen der ODV-Seite | 1 |
 | „Missionen“ | Missionsgenerator und Register, als Registerkarten; Kartenstudio auf Stufe 4 | 3 |
@@ -131,58 +130,45 @@ Die Suite bietet mehrere Designs. Sie ändern die Form der Seiten, nicht die Inf
 - In den Material-Designs wird die Missionsmappe von „Meine Missionen“ zu einem richtigen Buch, mit seinen Animationen.
 - Die Wahl erfolgt unter Darstellung: Jedes Design wird dort als Vorschaubild gezeigt und sofort angewendet. Siehe das Kapitel [Darstellung](#darstellung).
 
-## Heute
-<!-- page: apps/pilot/aujourdhui.html -->
+## Meine Missionen
+<!-- page: apps/pilot/mes_missions.html -->
 
-Diese Seite ist der erste Eintrag der Seitenleiste, auf jeder Nutzungsstufe. Sie beantwortet drei Fragen, ohne dass Sie suchen müssen: Wie lautet meine nächste Mission, welche Berichte sind noch zu schreiben, was steht diese Woche an.
-Jeder Block bietet nur eine Aktion. Die Daten stammen aus den Zuweisungen des Zentrums (siehe „Meine Missionen“) und aus dem Berichtsregister: Nichts muss erneut eingegeben werden. Die Seite liest sich von selbst neu, wenn Sie Sprache, Kürzel oder Sitzung wechseln.
-Die Startseite bietet sie außerdem an erster Stelle von „Meine Aufgaben“ an.
+Die Einstiegsseite des Piloten: Sie sagt zuerst, was zu tun ist — die nächste Mission, die zu schreibenden Berichte, die Verfügbarkeit der Woche — und führt dann zur Mappe jeder Mission. Sie ersetzt die frühere Seite „Heute“ (deren alte Links führen hierher).
+Sie erreichen sie über den ersten Eintrag der Seitenleiste, „Meine Missionen“, über den versiegelten Umschlag der Kopfzeile oder über die Registerkarte „Meine Missionen“.
+Auf den Stufen Besatzung (1) und Planung (2) passt die Seite auf einen Bildschirm: „Meine nächste Mission“, „Zu schreibende Berichte“, „Meine Verfügbarkeit“ (zusammengefasst) und unten eine Zeile mit Links. Ab der Stufe Gestaltung (3) kommt die vollständige Liste der Woche unter den Berichten hinzu.
+Die Mappe einer Mission öffnet sich unter den Berichten: über die ganze Breite auf den Stufen 1 und 2; ab Stufe 3 neben der Liste (sie nimmt zwei Drittel der Breite ein). Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte.
+Zeile mit Links: „Meine Flüge“, dann ab der Stufe Planung (2) **Pilot**, **Beherrschte Luftfahrzeuge** und **Simulatoren**, zu Einstellungen › Mein Profil (Abschnitt „Identität und Netzwerke“ für das Kürzel; Abschnitt „Luftfahrzeuge und Simulatoren“). Der Knopf „Pilot“ zeigt das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden; auf der Stufe Besatzung (1) erscheint er nur, solange das Kürzel nicht eingestellt ist.
+Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung; das Kürzel ist dann das der Anmeldung. Die Seite liest sich selbst neu, wenn Sie Sprache, Kürzel, Sitzung oder Stufe wechseln.
+Je nach Nutzungsstufe (Mein Profil › „Nutzungsstufe“) zeigt die Missionsmappe mehr oder weniger Abschnitte (siehe „Mission“); einige Knöpfe und Links erscheinen erst ab der Stufe Planung (2) oder auf der Stufe Experte (4).
 
 ### Meine nächste Mission
 
-- Die nächste Ihnen zugewiesene Mission (anstehend oder vor weniger als sechs Stunden gestartet): Zeit in UTC, Mission und Titel, Luftfahrzeug (Typ und Kennzeichen), Flugplatz, Rufzeichen; gegebenenfalls „Überführung“ oder „Bereitschaft, bereit um …“ sowie „● neu“, solange Sie sie nicht geöffnet haben.
-- Aktion: **„Mappe öffnen“** öffnet die Mission in „Meine Missionen“.
-- Ohne eingestelltes Kürzel fragt dieser Block direkt danach: das Feld „Kürzel“ (zwei bis vier Buchstaben) und der Knopf „Speichern“. Das Kürzel wird im Pilotenprofil gespeichert und die drei Blöcke lesen sich sofort neu, ohne Umweg über Einstellungen › Mein Profil. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung: Der Block zeigt „Kein Kürzel: anmelden, um Ihre Missionen zu sehen.“
-- Ohne anstehende Mission sagt der Block es: „Keine anstehende Mission ist … zugewiesen.“.
+- Die nächste Ihnen zugewiesene Mission (bevorstehend oder vor weniger als sechs Stunden gestartet): Zeit in UTC, Mission und Titel, Luftfahrzeug (Typ und Kennzeichen), Flugplatz, Rufzeichen; gegebenenfalls „Überführung“ oder „Bereitschaft, bereit um …“, und „● neu“, solange Sie sie nicht geöffnet haben.
+- **„Mappe öffnen“** öffnet die Mappe an Ort und Stelle, im Block „Mission“. **„Flugkarten“** und **„Kraftstoff“** öffnen die Mappe und dann das Werkzeug mit dieser Mission, wie die Knöpfe der Mappe; sie werden nur angeboten, wenn das Werkzeug es ist (Stufe Experte oder Werkzeug in Mein Profil angehakt), und nicht für eine Überführung. **„Bericht anlegen“** öffnet die Mappe und beginnt den Bericht.
+- Darunter „Danach, in den nächsten sieben Tagen“: die folgenden Missionen der kommenden sieben Tage, je eine Zeile (höchstens sieben); ein Klick öffnet ihre Mappe.
+- Ohne eingestelltes Kürzel fragt dieser Block es direkt ab: das Feld „Kürzel“ (zwei bis vier Buchstaben) und der Knopf „Speichern“. Das Kürzel wird im Pilotenprofil gespeichert und die Seite liest sich sofort neu, ohne Umweg über Einstellungen › Mein Profil. Im Produktionsmodus oder während einer Identitätsübernahme zeigt der Block „Kein Kürzel: anmelden, um Ihre Missionen zu sehen.“
+- Ohne bevorstehende Mission eine einzige Zeile: „Keine anstehende Mission.“
 
 ### Zu schreibende Berichte
 
 - Die Ihnen zugewiesenen Missionen, die vor weniger als 21 Tagen gestartet sind und für die das Berichtsregister keinen Bericht enthält. Die jüngste steht oben; höchstens sieben Zeilen.
-- Ein Bericht gilt als bekannt, wenn er aus einem Einsatzbefehl stammt: Das Register (`missions.yaml`) ordnet ihn der Zuweisung über seine Befehlsreferenz zu (Mission, Pilot, Start). Ein anders begonnener Bericht, mit von Hand gewählter Familie, zählt nicht: Die Mission bleibt in der Liste.
+- Ein Bericht ist bekannt, wenn er aus einem Einsatzbefehl stammt: Das Register (`missions.yaml`) verbindet ihn über seine Befehlsreferenz (Mission, Pilot, Start) mit der Zuweisung. Ein anders begonnener Bericht, Familie von Hand gewählt, zählt nicht: Die Mission bleibt in der Liste.
 - Jede Zeile nennt die Mission, ihren Titel, die Zeit, das Luftfahrzeug und den Flugplatz, mit zwei Knöpfen.
-- **„Bericht schreiben“** öffnet die Missionsmappe in „Meine Missionen“ und beginnt den Bericht in der Familie der Mission, aus dem Einsatzbefehl vorausgefüllt (Adresse `?mission=…&do=cr`).
-- **„Kein Bericht“** nimmt die Mission aus der Liste (abgesagte, nicht geflogene Mission…). Die Wahl wird nur in diesem Browser gemerkt; das Register bleibt unberührt.
-- Ist alles berichtet, sagt der Block „Nichts offen: Ihre vergangenen Missionen haben ihren Bericht.“ Ohne Kürzel verweist er auf das Feld des ersten Blocks („Kürzel oben eingeben.“).
-
-### Meine Woche
-
-- Sieben Spalten, Montag bis Sonntag der laufenden Woche (Tage in UTC); der aktuelle Tag ist umrandet.
-- Ihre Missionen erscheinen dort als Kacheln: Zeit und Missionsnummer oder „Bereitschaft“.
-- Aktion: Ein Klick auf eine Kachel öffnet die Missionsmappe in „Meine Missionen“. Ohne Kürzel sagt der Block „Ohne Kürzel bleibt die Woche leer.“
-
-## Meine Missionen
-<!-- page: apps/pilot/mes_missions.html -->
-
-Diese Seite vereint die Missionen, die Ihnen das Zentrum zuweist, die Mappe jeder Mission, Ihre Verfügbarkeit und Ihr Kürzel.
-Sie erreichen sie über den Eintrag „Meine Missionen“ der Seitenleiste, über den versiegelten Umschlag der Kopfzeile oder über die Registerkarte „Meine Missionen“.
-Aufbau: die Liste der Missionen und die geöffnete Mappe nebeneinander (die Mappe nimmt zwei Drittel der Breite ein), „Meine Verfügbarkeit“ darunter, über die ganze Breite. Ohne geöffnete Mappe nimmt die Liste die ganze Breite ein. Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte: Missionen, Mappe, Verfügbarkeit.
-Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
-Je nach Nutzungsstufe (Mein Profil › „Nutzungsstufe“) zeigt die Missionsmappe mehr oder weniger Abschnitte (siehe „Mission“); einige Knöpfe und Links erscheinen erst ab der Stufe Planung (2) oder auf der Stufe Experte (4).
+- **„Bericht schreiben“** öffnet die Mappe der Mission an Ort und Stelle und beginnt den Bericht in der Familie der Mission, ausgefüllt aus dem Einsatzbefehl.
+- **„Kein Bericht“** nimmt die Mission aus der Liste (abgesagte, nicht geflogene Mission…). Die Wahl wird nur in diesem Browser gespeichert; das Register bleibt unberührt.
+- Ist alles abgegeben, eine einzige Zeile: „Kein Bericht offen.“
 
 ### Meine Missionen der Woche
 
-Die Liste der Missionen, die Ihnen für die angezeigte Woche zugewiesen sind, sortiert nach Startzeit (UTC).
+Ab der Stufe Gestaltung (3): die Liste der Missionen, die Ihnen für die angezeigte Woche zugewiesen sind, sortiert nach Startzeit (UTC).
 
-- **Wochenleiste**: „‹“ vorherige Woche, Datumsfeld (springt zur Woche eines Datums), „›“ nächste Woche, „⟲“ zurück zur aktuellen Woche (sichtbar außerhalb der aktuellen Woche). Sie gilt für die Liste und die Verfügbarkeit gemeinsam: Ein Wochenwechsel hier ändert beide Blöcke.
+- **Wochenleiste**: „‹“ vorherige Woche, Datumsfeld (springt zur Woche eines Datums), „›“ nächste Woche, „⟲“ zurück zur aktuellen Woche (sichtbar außerhalb der aktuellen Woche). Sie ist mit der Leiste der Verfügbarkeit gekoppelt: Ein Wochenwechsel hier ändert beide Blöcke.
 - **Spalten**: „Start (UTC)“ (oder „Bereitschaft“ und die Uhrzeit, zu der Sie bereit sein müssen), „Mission“, „Titel“, „Luftfahrzeug“, „Flugplatz“, „Rufzeichen“.
 - Ein Punkt ● am Zeilenanfang kennzeichnet eine **neue, noch nicht geöffnete** Mission.
 - Der Vermerk „Überführung“ zeigt, dass Sie ein Luftfahrzeug für einen anderen Piloten überführen: Sie erhalten nur den Überführungsbefehl, nicht das Briefing der Mission.
 - Ein Klick auf eine Zeile öffnet die Mission im Block „Mission“.
 - Kästchen „auch vergangene Missionen anzeigen“: Standardmäßig verschwindet eine Mission einige Stunden nach ihrem Start. Die Wahl wird gespeichert.
-- Ohne eingestelltes Kürzel erscheint das Eingabefeld für das Kürzel unter der Liste (Feld „Kürzel“, Knopf „Speichern“): Nach dem Speichern werden die Liste und die Verfügbarkeit neu gelesen. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
-- Eine Adresse `?mission=…` aus „Heute“ oder aus „Neuer Bericht“ zeigt die Woche dieser Mission (vergangene Missionen bei Bedarf eingeblendet); mit `?do=cr` beginnt der Bericht gleich beim Öffnen der Mappe.
-- **Pilot**, **Beherrschte Luftfahrzeuge**, **Simulatoren**: drei Knöpfe unter der Liste, zu Einstellungen › Mein Profil (Abschnitt „Identität und Netzwerke“ für das Kürzel; Abschnitt „Luftfahrzeuge und Simulatoren“, bei der Karte der Luftfahrzeuge oder der Simulatoren). Der Knopf „Pilot“ zeigt das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
-- Diese drei Knöpfe erscheinen ab der Stufe Planung (2). Auf der Stufe Besatzung (1) erscheint nur „Pilot“, solange das Kürzel nicht eingestellt ist.
+- Eine Adresse `?mission=…` (Kopfblöcke, „Neuer Bericht“, alte Links von „Heute“) öffnet die Mappe dieser Mission und zeigt ihre Woche (vergangene Missionen bei Bedarf eingeblendet); mit `?do=cr`, `?do=maps` oder `?do=fuel` folgen der Bericht, die Flugkarten oder der Kraftstoff dem Öffnen der Mappe.
 
 ### Mission
 
@@ -248,8 +234,13 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 
 ### Meine Verfügbarkeit
 
-Ihre Verfügbarkeit in der angezeigten Woche, in UTC, auf die Minute. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist dieselbe Eingabe wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
-Je nach Nutzungsstufe: Die eigene Wochenleiste des Blocks, das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte; auf den anderen Stufen wechselt man die Woche über die Leiste der Liste.
+Ihre Verfügbarkeit in der angezeigten Woche, in UTC, auf die Minute. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen.
+
+- **Wochenleiste** des Blocks, auf jeder Stufe: „‹“, Datum, „›“, „⟲“ (oft trägt man die nächste Woche ein). Auf Stufe 3 ist sie mit der Leiste der Liste gekoppelt.
+- **Zusammenfassung**: ein Feld pro Tag (Montag bis Sonntag, UTC), jeder Zeitraum mit dem Abzeichen seiner Kategorie und seinen Zeiten, zum Beispiel „D+ 17:00–22:00“; „—“ für einen Tag ohne Eintrag. Leere Woche: eine Zeile, „Keine Verfügbarkeit für diese Woche eingetragen.“
+- **„Meine Woche bearbeiten“** klappt an Ort und Stelle die unten beschriebene Eingabe auf (Palette, Raster, genauer Zeitraum, Knöpfe); ein weiterer Klick klappt sie zu. Bei leerer Woche ist sie sofort aufgeklappt, danach bleibt sie, wie Sie sie gelassen haben. Die Zusammenfassung folgt jeder Änderung.
+
+Es ist dieselbe Eingabe wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel). Das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte.
 
 **Palette**: Die Kategorien sind nach Gruppen geordnet, eine Zeile pro Gruppe („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert. Unter der Palette zeigt eine Zeile die Missionsthemen, die die gewählte Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
 
@@ -284,7 +275,7 @@ Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenor
 Ein vorhandenes altes Stundenraster wird automatisch in die Woche übernommen.
 Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit. Dieser Link erscheint nur auf der Stufe Experte.
 
-**Auf dem Telefon**: Liste, Mappe und Verfügbarkeit folgen in einer Spalte aufeinander; ein Tippen auf eine Mission bringt ihre Mappe auf den Bildschirm, und ihre Aktionen („Bericht erstellen“, „Mappe schließen“…) bleiben beim Lesen über der unteren Leiste fixiert. Die Tabellen der Mappe (Routenpunkte) scrollen in ihrem Rahmen.
+**Auf dem Telefon**: die Blöcke folgen in einer Spalte aufeinander; die Zusammenfassung der Verfügbarkeit steht in zwei Spalten. Ein Tippen auf eine Mission bringt ihre Mappe auf den Bildschirm, und ihre Aktionen („Bericht erstellen“, „Mappe schließen“…) bleiben beim Lesen über der unteren Leiste fixiert. Die Tabellen der Mappe (Routenpunkte) scrollen in ihrem Rahmen.
 
 ## Meine Flüge
 <!-- page: apps/pilot/mes_vols.html -->
@@ -404,7 +395,7 @@ Für die App ohne Starter (Telefon, auf GitHub Pages veröffentlichte Suite): Di
 | „Persönliches Token“ | feingranulares Token auf github.com › Settings › Developer settings › Fine-grained tokens: nur Zugriff auf das Daten-Repository, Berechtigung „Contents“ Lesen und Schreiben, Ablauf nach höchstens 90 Tagen; nur in diesem Browser gespeichert, nie wieder angezeigt |
 
 - „Testen“ prüft, ob das Repository lesbar ist, der Zweig existiert und das Token schreiben darf.
-- „Speichern“ prüft, schaltet dann den Zugang ein und öffnet Heute; von da an lesen alle Seiten der Suite ihre Daten aus dem Repository (auch offline aufbewahrt).
+- „Speichern“ prüft, schaltet dann den Zugang ein und öffnet Meine Missionen; von da an lesen alle Seiten der Suite ihre Daten aus dem Repository (auch offline aufbewahrt).
 - Jede Speicherung (Bericht, Verfügbarkeiten, Blatt) wird ein Commit unter Ihrem Kürzel. Hat jemand anderes dieselbe Datei inzwischen geändert, wird sie neu gelesen und vor dem Schreiben zusammengeführt.
 - „Zugang trennen“ löscht das Token und die Datenkopien aus diesem Browser; die Seiten kehren zu den Daten des Starters zurück.
 - Telefon verloren oder gestohlen: das Token auch auf github.com löschen (Settings › Developer settings › Fine-grained tokens); dann gilt es nirgends mehr.
@@ -535,7 +526,7 @@ in einer Zeile, Navigationsleiste unten auf dem Bildschirm statt der Seitenleist
 Zeile, Blöcke in voller Breite, größere Schaltflächen und Felder, Tabellen, die im Block scrollen oder als Karten
 erscheinen.
 
-- **Leiste unten**: bis zu sechs Einträge, alle mit kurzer Beschriftung (Heute, Missionen, Flüge, Bericht…); darüber
+- **Leiste unten**: bis zu sechs Einträge, alle mit kurzer Beschriftung (Missionen, Flüge, Bericht, Planung…); darüber
   hinaus die ersten fünf und „Mehr“, das die übrigen Einträge, Einstellungen und Hilfe öffnet.
 - **Telefon im Querformat**: die Leiste wird zu einer Schiene links am Bildschirm (Symbol, Beschriftung darunter) und die Kopfzeile ist nicht mehr fixiert, damit die Höhe dem Inhalt bleibt; die Kurven der Kraftstoffseite passen mit ihrem Höhenregler auf den Bildschirm.
 - **Kopfzeile**: sie verschwindet beim Abwärtsscrollen und kommt beim Aufwärtsscrollen sofort zurück.
@@ -674,7 +665,7 @@ zugewiesen wurde (siehe unten). Vollständige Schritt-für-Schritt-Anleitung: [T
 
 ### Meine zu berichtenden Missionen
 
-Erster Block der Seite: die Ihnen zugewiesenen Missionen, die schon vergangen sind (höchstens 21 Tage) und keinen Bericht im Register haben, wie im Block „Zu schreibende Berichte“ der Seite „Heute“ (höchstens sieben Zeilen).
+Erster Block der Seite: die Ihnen zugewiesenen Missionen, die schon vergangen sind (höchstens 21 Tage) und keinen Bericht im Register haben, wie im Block „Zu schreibende Berichte“ der Seite „Meine Missionen“ (höchstens sieben Zeilen).
 
 - **„Bericht schreiben“** öffnet die Missionsmappe in „Meine Missionen“ und beginnt den Bericht in der Familie der Mission, aus dem Einsatzbefehl ausgefüllt (siehe „Zugewiesene Mission übernehmen“).
 - **„Kein Bericht“** nimmt die Mission aus der Liste (in diesem Browser gemerkt).

@@ -25,8 +25,7 @@ Ce qu'elle montre dépend de votre **niveau d'utilisation** (Mon profil › « N
 
 | Entrée | Ce qu'elle ouvre | Niveau |
 |---|---|---|
-| « Aujourd'hui » | Prochaine mission, comptes rendus à écrire, semaine ; première entrée à tout niveau | 1 |
-| « Mes missions » | Missions affectées par le Centre et disponibilités (pastille rouge : missions non lues) | 1 |
+| « Mes missions » | Page d'entrée : prochaine mission, comptes rendus à écrire, disponibilités ; dossiers des missions affectées (pastille rouge : missions non lues) ; première entrée à tout niveau | 1 |
 | « Compte rendu » | Saisie d'un compte rendu de mission ; onglet « Flotte » : où sont les appareils (carte, filtres, dernier vol) | 1 |
 | « Planning » | Planning des ordres de la semaine (Tableau, en lecture seule au niveau 1 ou sans le Centre) ; au niveau 4, créneaux communs et missions probables de la page ODV | 1 |
 | « Missions » | Générateur de mission et registre, en onglets ; studio cartographique au niveau 4 | 3 |
@@ -133,68 +132,50 @@ La suite propose plusieurs designs. Ils changent la forme des pages, pas les inf
 - Dans les designs à matières, le dossier de mission de « Mes missions » devient un véritable livre, avec ses animations.
 - Le choix se fait dans Apparence : chaque design y est montré en vignette et s'applique aussitôt. Voir le chapitre [Apparence](#apparence).
 
-## Aujourd'hui
-<!-- page: apps/pilot/aujourdhui.html -->
+## Mes missions
+<!-- page: apps/pilot/mes_missions.html -->
 
-Cette page est la première entrée de la barre latérale, à tout niveau d'utilisation. Elle répond à trois questions sans rien chercher : quelle est ma prochaine mission, quels comptes rendus me reste-t-il à écrire, que se passe-t-il cette semaine.
-Chaque bloc ne propose qu'une action. Les données viennent des affectations du Centre (voir « Mes missions ») et du registre des comptes rendus : rien n'est à ressaisir. La page se relit toute seule quand vous changez de langue, de trigramme ou de session.
-La page d'accueil la propose aussi en tête de « Mes tâches ».
-
-<!-- capture-manuels: utilisateur-aujourdhui -->
-![Aujourd’hui : prochaine mission, comptes rendus à écrire et calendrier de la semaine.](images/captures-manuels/utilisateur-aujourdhui.png)
-
-*Figure 1 — Aujourd’hui : prochaine mission, comptes rendus à écrire et calendrier de la semaine.*
+Page d'entrée du pilote : elle dit d'abord ce qu'il y a à faire — la prochaine mission, les comptes rendus à écrire, les disponibilités de la semaine — puis donne accès au dossier de chaque mission. Elle remplace l'ancienne page « Aujourd'hui » (ses anciens liens mènent ici).
+On y arrive par la première entrée de la barre latérale, « Mes missions », par le pli cacheté de l'en-tête ou par l'onglet « Mes missions ».
+Aux niveaux Équipage (1) et Planification (2), la page tient sur un écran : « Ma prochaine mission », « Comptes rendus à écrire », « Mes disponibilités » (résumées) et, en bas, une ligne de liens. À partir du niveau Conception (3), la liste complète de la semaine s'ajoute sous les comptes rendus.
+Le dossier d'une mission s'ouvre sous les comptes rendus : sur toute la largeur aux niveaux 1 et 2 ; à partir du niveau 3, à côté de la liste (il prend les deux tiers de la largeur). Sur un écran étroit (moins de 1100 px), tout passe sur une seule colonne.
+Ligne de liens : « Mes vols », puis, à partir du niveau Planification (2), **Pilote**, **Appareils maîtrisés** et **Simulateurs**, vers Paramètres › Mon profil (rubrique « Identité et réseaux » pour le trigramme ; rubrique « Appareils et simulateurs »). Le bouton « Pilote » affiche le trigramme utilisé pour trouver vos missions et vos disponibilités ; au niveau Équipage (1), il n'apparaît que tant que le trigramme n'est pas réglé.
+En mode production, la page demande d'abord de se connecter ; le trigramme est alors celui de la connexion. La page se relit toute seule quand vous changez de langue, de trigramme, de session ou de niveau.
+Selon le niveau d'utilisation (Mon profil › « Niveau d'utilisation »), le dossier de mission montre plus ou moins de rubriques (voir « Mission ») ; quelques boutons et liens n'apparaissent qu'à partir du niveau Planification (2) ou au niveau Expert (4).
 
 ### Ma prochaine mission
 
 - La mission qui vous est affectée la plus proche (à venir, ou décollée depuis moins de six heures) : heure en UTC, mission et titre, appareil (type et immatriculation), terrain, indicatif ; « convoyage » ou « astreinte, prêt à … » le cas échéant, et « ● nouvelle » tant que vous ne l'avez pas ouverte.
-- Action : **« Ouvrir le dossier »** ouvre la mission dans « Mes missions ».
-- Sans trigramme réglé, ce bloc le demande sur place : le champ « Trigramme » (deux à quatre lettres) et le bouton « Enregistrer ». Le trigramme est enregistré dans le profil pilote et les trois blocs se relisent aussitôt, sans passer par Paramètres › Mon profil. En mode production ou pendant une usurpation, le trigramme est celui de la connexion : le bloc indique « Aucun trigramme : connectez-vous pour voir vos missions. »
-- Sans mission à venir, le bloc le dit : « Aucune mission à venir n'est affectée à … ».
+- **« Ouvrir le dossier »** ouvre le dossier sur place, dans le bloc « Mission ». **« Cartes de vol »** et **« Carburant »** ouvrent le dossier puis l'outil avec cette mission, comme les boutons du dossier ; ils ne sont proposés que si l'outil l'est (niveau Expert, ou outil coché dans Mon profil), et pas pour un convoyage. **« Créer le CR »** ouvre le dossier et commence le compte rendu.
+- Dessous, « Ensuite, dans les sept jours » : les missions suivantes des sept jours à venir, une ligne chacune (sept au plus) ; un clic ouvre leur dossier.
+- Sans trigramme réglé, ce bloc le demande sur place : le champ « Trigramme » (deux à quatre lettres) et le bouton « Enregistrer ». Le trigramme est enregistré dans le profil pilote et la page se relit aussitôt, sans passer par Paramètres › Mon profil. En mode production ou pendant une usurpation, le bloc indique « Aucun trigramme : connectez-vous pour voir vos missions. »
+- Sans mission à venir, une seule ligne : « Aucune mission à venir. »
 
 ### Comptes rendus à écrire
 
 - Les missions qui vous ont été affectées, déjà décollées depuis moins de 21 jours, pour lesquelles le registre des comptes rendus ne contient aucun CR. La plus récente est en tête ; sept lignes au plus.
 - Un CR est connu s'il est issu d'un ordre de mission : le registre (`missions.yaml`) le rattache à l'affectation par sa référence d'ordre (mission, pilote, décollage). Un CR commencé autrement, famille choisie à la main, ne compte pas : la mission reste dans la liste.
 - Chaque ligne donne la mission, son titre, l'heure, l'appareil et le terrain, avec deux boutons.
-- **« Écrire le compte rendu »** ouvre le dossier de la mission dans « Mes missions » et commence le CR dans la famille de la mission, rempli depuis l'ordre de mission (adresse `?mission=…&do=cr`).
+- **« Écrire le compte rendu »** ouvre le dossier de la mission sur place et commence le CR dans la famille de la mission, rempli depuis l'ordre de mission.
 - **« Pas de CR »** écarte la mission de la liste (mission annulée, non volée…). Le choix est mémorisé dans ce navigateur seulement ; le registre n'est pas touché.
-- Si tout est rendu, le bloc dit « Rien à rendre : vos missions passées ont leur compte rendu. » Sans trigramme, il renvoie au champ du premier bloc (« Trigramme à saisir ci-dessus. »).
-
-### Ma semaine
-
-- Sept colonnes, du lundi au dimanche de la semaine en cours (jours en UTC) ; le jour courant est entouré.
-- Vos missions y figurent en vignettes : heure et numéro de mission, ou « astreinte ».
-- Action : un clic sur une vignette ouvre le dossier de la mission dans « Mes missions ». Sans trigramme, le bloc dit « Sans trigramme, la semaine reste vide. »
-
-## Mes missions
-<!-- page: apps/pilot/mes_missions.html -->
-
-Cette page réunit les missions que le Centre vous affecte, le dossier de chacune, vos disponibilités et votre trigramme.
-On y arrive par l'entrée « Mes missions » de la barre latérale, par le pli cacheté de l'en-tête ou par l'onglet « Mes missions ».
-Mise en page : la liste des missions et le dossier ouvert côte à côte (le dossier prend les deux tiers de la largeur), « Mes disponibilités » en dessous, sur toute la largeur. Sans dossier ouvert, la liste occupe toute la largeur. Sur un écran étroit (moins de 1100 px), tout passe sur une seule colonne : missions, dossier, disponibilités.
-En mode production, la page demande d'abord de se connecter.
-Selon le niveau d'utilisation (Mon profil › « Niveau d'utilisation »), le dossier de mission montre plus ou moins de rubriques (voir « Mission ») ; quelques boutons et liens n'apparaissent qu'à partir du niveau Planification (2) ou au niveau Expert (4).
+- Si tout est rendu, une seule ligne : « Aucun compte rendu en attente. »
 
 ### Mes missions de la semaine
 
-La liste des missions qui vous sont affectées pour la semaine affichée, triées par heure de décollage (UTC).
+À partir du niveau Conception (3) : la liste des missions qui vous sont affectées pour la semaine affichée, triées par heure de décollage (UTC).
 
-- **Barre de semaine** : « ‹ » semaine précédente, champ de date (aller à la semaine d'une date), « › » semaine suivante, « ⟲ » retour à la semaine en cours (visible hors de la semaine en cours). Elle est commune à la liste et aux disponibilités : changer de semaine ici change les deux blocs.
+- **Barre de semaine** : « ‹ » semaine précédente, champ de date (aller à la semaine d'une date), « › » semaine suivante, « ⟲ » retour à la semaine en cours (visible hors de la semaine en cours). Elle va avec celle des disponibilités : changer de semaine ici change les deux blocs.
 - **Colonnes** : « Décollage (UTC) » (ou « astreinte » et l'heure à laquelle être prêt), « Mission », « Titre », « Appareil », « Terrain », « Indicatif ».
 - Un point ● en tête de ligne signale une mission **nouvelle, pas encore ouverte**.
 - Une mention « convoyage » indique que vous convoyez un appareil pour un autre pilote : seul l'ordre de convoyage vous est remis, pas le brief de la mission.
 - Un clic sur une ligne ouvre la mission dans le bloc « Mission ».
 - Case « afficher aussi les missions passées » : par défaut, une mission disparaît quelques heures après son décollage. Le choix est mémorisé.
-- Sans trigramme réglé, le champ de saisie du trigramme apparaît sous la liste (champ « Trigramme », bouton « Enregistrer ») : une fois enregistré, la liste et les disponibilités se relisent. En mode production ou pendant une usurpation, le trigramme est celui de la connexion.
-- Une adresse `?mission=…` venant de « Aujourd'hui » ou de « Nouveau compte rendu » affiche la semaine de cette mission (missions passées montrées au besoin) ; avec `?do=cr`, le CR commence dès l'ouverture du dossier.
-- **Pilote**, **Appareils maîtrisés**, **Simulateurs** : trois boutons sous la liste, vers Paramètres › Mon profil (rubrique « Identité et réseaux » pour le trigramme ; rubrique « Appareils et simulateurs », à la carte des appareils ou à celle des simulateurs). Le bouton « Pilote » affiche le trigramme utilisé pour trouver vos missions et vos disponibilités. En mode production ou pendant une usurpation, c'est le trigramme de la connexion.
-- Ces trois boutons apparaissent à partir du niveau Planification (2). Au niveau Équipage (1), seul « Pilote » apparaît, tant que le trigramme n'est pas réglé.
+- Une adresse `?mission=…` (blocs de tête, « Nouveau compte rendu », anciens liens d'« Aujourd'hui ») ouvre le dossier de cette mission et montre sa semaine (missions passées au besoin) ; avec `?do=cr`, `?do=maps` ou `?do=fuel`, le CR, les Cartes de vol ou le Carburant suivent l'ouverture du dossier.
 
 <!-- capture-manuels: utilisateur-mes-missions -->
 ![Mes missions : décollage en UTC, titre, appareil, terrain et indicatif de la mission affectée.](images/captures-manuels/utilisateur-mes-missions.png)
 
-*Figure 2 — Mes missions : décollage en UTC, titre, appareil, terrain et indicatif de la mission affectée.*
+*Figure 1 — Mes missions : décollage en UTC, titre, appareil, terrain et indicatif de la mission affectée.*
 
 ### Mission
 
@@ -260,8 +241,13 @@ Le bouton « ⤢ Pleine largeur » du titre du bloc étale le dossier sur toute 
 
 ### Mes disponibilités
 
-Vos disponibilités de la semaine affichée, en heures UTC, à la minute. Le Centre s'en sert pour vous affecter des missions. C'est la même saisie que sur la page Mes disponibilités (chapitre suivant) ; ici, la semaine est celle de la barre de semaine de la liste.
-Selon le niveau d'utilisation : la barre de semaine propre au bloc, l'ancienne grille horaire et le lien « Ouvrir la saisie des disponibilités seule » n'apparaissent qu'au niveau Expert ; aux autres niveaux, la semaine se change par la barre de la liste.
+Vos disponibilités de la semaine affichée, en heures UTC, à la minute. Le Centre s'en sert pour vous affecter des missions.
+
+- **Barre de semaine** du bloc, à tout niveau : « ‹ », date, « › », « ⟲ » (on saisit souvent la semaine suivante). Au niveau 3, elle va avec celle de la liste.
+- **Résumé** : une case par jour (lundi à dimanche, UTC), chaque plage avec la pastille de sa catégorie et ses heures, par exemple « D+ 17:00–22:00 » ; « — » pour un jour sans rien. Semaine vide : une ligne, « Aucune disponibilité saisie cette semaine. »
+- **« Modifier ma semaine »** déplie sur place la saisie décrite ci-dessous (palette, grille, plage précise, boutons) ; un nouveau clic la replie. Elle est dépliée d'office quand la semaine est vide, puis reste comme vous l'avez laissée. Le résumé suit chaque retouche.
+
+C'est la même saisie que sur la page Mes disponibilités (chapitre suivant). L'ancienne grille horaire et le lien « Ouvrir la saisie des disponibilités seule » n'apparaissent qu'au niveau Expert.
 
 **Palette** : les catégories sont rangées par groupe, une ligne par groupe (« Disponible », « Exercice SOG », « Occupé », « Indisponible »). Chaque pastille porte la lettre de code ODV et un libellé court ; l'infobulle donne le libellé complet. La catégorie choisie est mémorisée. Sous la palette, une ligne rappelle les thèmes de mission ouverts par la catégorie choisie ; pour une catégorie personnalisée, le lien « Mes types de missions… » mène aux préférences de Mon profil.
 
@@ -296,7 +282,7 @@ Le message sous le bloc indique où la saisie est partie : « Enregistré dans l
 Une ancienne grille horaire existante est importée automatiquement dans la semaine.
 Le lien « Ouvrir la saisie des disponibilités seule » mène à la page Mes disponibilités. Ce lien n'apparaît qu'au niveau Expert.
 
-**Sur téléphone** : la liste, le dossier et les disponibilités se suivent sur une colonne ; un appui sur une mission amène son dossier à l’écran, et ses actions (« Créer le CR », « Refermer le dossier »…) restent collées au-dessus de la barre du bas pendant la lecture. Les tableaux du dossier (points de la route) défilent dans leur cadre.
+**Sur téléphone** : les blocs se suivent sur une colonne ; le résumé des disponibilités passe sur deux colonnes. Un appui sur une mission amène son dossier à l’écran, et ses actions (« Créer le CR », « Refermer le dossier »…) restent collées au-dessus de la barre du bas pendant la lecture. Les tableaux du dossier (points de la route) défilent dans leur cadre.
 
 ## Mes vols
 <!-- page: apps/pilot/mes_vols.html -->
@@ -364,7 +350,7 @@ Pour la façon dont le Centre exploite ces déclarations, voir [disponibilités 
 <!-- capture-manuels: utilisateur-disponibilites -->
 ![Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.](images/captures-manuels/utilisateur-disponibilites.png)
 
-*Figure 3 — Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.*
+*Figure 2 — Mes disponibilités : palette des catégories, grille horaire en UTC et saisie d’une plage précise.*
 
 **Sur téléphone** : la saisie passe en vue « un jour » (bascule « Jour » / « Semaine » sous la barre de semaine ; la vue choisie est gardée). En tête, le jour affiché avec « ‹ » et « › » (ou un balayage du doigt ; au-delà du dimanche ou du lundi, la semaine voisine est relue), puis les sept jours de la semaine (un point sous ceux qui ont une disponibilité). Choisissez une catégorie dans la palette, appuyez sur l’heure de début dans la colonne des heures, puis sur l’heure de fin : la plage est posée à la demi-heure, fin comprise ; « Journée entière » la pose sur tout le jour, « Annuler » abandonne un début. Les plages du jour sont listées au-dessus de la colonne : « ✕ » retire une disponibilité entière, ou le fond sur ce jour seulement ; « ↶ Défaire » annule la dernière retouche. La colonne s’ouvre une heure avant la première disponibilité du jour (sinon à 07:00) et défile dans son cadre. « Plage précise » reste là pour la minute.
 
@@ -393,7 +379,7 @@ Ce que la suite vous montre, selon votre usage. Quatre cartes, une par niveau (n
 <!-- capture-manuels: utilisateur-profil -->
 ![Mon profil : les quatre niveaux d’utilisation et les outils facultatifs.](images/captures-manuels/utilisateur-profil.png)
 
-*Figure 4 — Mon profil : les quatre niveaux d’utilisation et les outils facultatifs.*
+*Figure 3 — Mon profil : les quatre niveaux d’utilisation et les outils facultatifs.*
 
 ### Identité et réseaux
 
@@ -425,7 +411,7 @@ Pour l'appli sans lanceur (téléphone, suite publiée sur GitHub Pages) : les d
 | « Jeton personnel » | jeton à grain fin créé sur github.com › Settings › Developer settings › Fine-grained tokens : accès au seul dépôt des données, permission « Contents » en lecture et écriture, expiration de 90 jours au plus ; gardé dans ce navigateur seulement, jamais réaffiché, à ne coller dans aucun message |
 
 - « Tester » vérifie que le dépôt est lisible, que la branche existe et que le jeton peut écrire.
-- « Enregistrer » vérifie, puis active l'accès et ouvre « Aujourd'hui » ; dès lors, toutes les pages de la suite lisent leurs données dans le dépôt (gardées aussi pour le hors ligne).
+- « Enregistrer » vérifie, puis active l'accès et ouvre « Mes missions » ; dès lors, toutes les pages de la suite lisent leurs données dans le dépôt (gardées aussi pour le hors ligne).
 - Chaque enregistrement (compte rendu, disponibilités, fiche) devient un commit à votre trigramme. Si quelqu'un d'autre a changé le même fichier entre-temps, il est relu et fusionné avant d'être écrit.
 - « Couper l'accès » efface le jeton et les copies des données de ce navigateur ; les pages reviennent aux données du lanceur.
 - Téléphone perdu ou volé : supprimez aussi le jeton sur github.com (Settings › Developer settings › Fine-grained tokens) ; il ne vaut alors plus nulle part.
@@ -530,7 +516,7 @@ La forme des pages : arrondis, densité, titres, barre latérale.
 <!-- capture-manuels: utilisateur-apparence -->
 ![Apparence : choix du design, du décor et de la couleur ; le design Aqua est sélectionné.](images/captures-manuels/utilisateur-apparence.png)
 
-*Figure 5 — Apparence : choix du design, du décor et de la couleur ; le design Aqua est sélectionné.*
+*Figure 4 — Apparence : choix du design, du décor et de la couleur ; le design Aqua est sélectionné.*
 
 ### Graphiques
 
@@ -560,7 +546,7 @@ Sur un écran étroit (téléphone, fenêtre réduite), la suite passe en **mode
 navigation en bas de l'écran à la place de la barre latérale, onglets sur une ligne qui défile, blocs en pleine largeur,
 boutons et champs plus grands, tableaux qui défilent dans leur bloc ou présentés en cartes.
 
-- **Barre du bas** : jusqu'à six entrées, toutes affichées avec un libellé court (Jour, Missions, Vols, CR…) ; au-delà,
+- **Barre du bas** : jusqu'à six entrées, toutes affichées avec un libellé court (Missions, Vols, CR, Planning…) ; au-delà,
   les cinq premières et « Plus », qui ouvre les autres entrées, Paramètres et Aide.
 - **Téléphone en paysage** : la barre passe en rail à gauche de l'écran (icône, libellé dessous) et l'en-tête n'est plus collé, pour garder la hauteur au contenu ; les courbes du Carburant tiennent avec leur curseur de niveau.
 - **En-tête** : il se range quand vous descendez dans la page et revient dès que vous remontez.
@@ -699,7 +685,7 @@ affectée (voir plus bas). Pas à pas complet : [tutoriel](TUTORIAL.md).
 
 ### Mes missions à rendre
 
-Premier bloc de la page : les missions qui vous ont été affectées, déjà passées (21 jours au plus) et sans CR dans le registre, comme dans le bloc « Comptes rendus à écrire » de la page « Aujourd'hui » (sept lignes au plus).
+Premier bloc de la page : les missions qui vous ont été affectées, déjà passées (21 jours au plus) et sans CR dans le registre, comme dans le bloc « Comptes rendus à écrire » de la page « Mes missions » (sept lignes au plus).
 
 - **« Écrire le compte rendu »** ouvre le dossier de la mission dans « Mes missions » et commence le CR dans la famille de la mission, rempli depuis l'ordre de mission (voir « Reprendre une mission affectée »).
 - **« Pas de CR »** écarte la mission de la liste (mémorisé dans ce navigateur).
@@ -724,7 +710,7 @@ Astuces :
 <!-- capture-manuels: utilisateur-nouveau-cr -->
 ![Nouveau compte rendu : recherche d’une famille et choix parmi les familles de missions.](images/captures-manuels/utilisateur-nouveau-cr.png)
 
-*Figure 6 — Nouveau compte rendu : recherche d’une famille et choix parmi les familles de missions.*
+*Figure 5 — Nouveau compte rendu : recherche d’une famille et choix parmi les familles de missions.*
 
 ### Rechercher la famille d'après la mission
 
@@ -820,7 +806,7 @@ l'étape, le bloc et, s'il le faut, tous ses champs, puis place le curseur dans 
 <!-- capture-manuels: utilisateur-formulaire-cr -->
 ![Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.](images/captures-manuels/utilisateur-formulaire-cr.png)
 
-*Figure 7 — Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.*
+*Figure 6 — Compte rendu FIRE / GAAR : formulaire à gauche, calculs automatiques et aperçu du compte rendu à droite.*
 
 ### En-tête et barre d'outils
 
@@ -1559,7 +1545,7 @@ Aux niveaux 1 à 3 (Mon profil › « Niveau d'utilisation »), la page se limit
 <!-- capture-manuels: utilisateur-cartes-vol -->
 ![Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.](images/captures-manuels/utilisateur-cartes-vol.png)
 
-*Figure 8 — Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.*
+*Figure 7 — Cartes de vol : cheminement, profil cartographique, cadrage et choix des cartes à préparer.*
 
 En tête de page, « Ouvrir dans ▾ » ouvre la route du bloc « Cheminement », son niveau et l'avion choisi dans SimBrief, SkyVector, Navigraph Charts ou ChartFox (cartes des terrains de départ et d'arrivée), dans un nouvel onglet ; même menu que dans le Carburant (voir « Ouvrir dans ▾ » au chapitre Carburant).
 
@@ -1710,7 +1696,7 @@ Sur écran large, au niveau Expert, la page a trois colonnes (saisie et courbes 
 <!-- capture-manuels: utilisateur-carburant -->
 ![Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.](images/captures-manuels/utilisateur-carburant.png)
 
-*Figure 9 — Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.*
+*Figure 8 — Carburant : paramètres du trajet, consignes de montée et résultat du devis pour un DHC-8-400 / Q400.*
 
 ### Ouvrir dans ▾ (services externes)
 
@@ -1937,7 +1923,7 @@ Le dernier fichier chargé est gardé et rechargé à l'ouverture. Ses appareils
 <!-- capture-manuels: utilisateur-atterrissages -->
 ![Atterrissages : filtres de période et d’appareil, tendance et graphiques d’évolution du score et du taux au toucher.](images/captures-manuels/utilisateur-atterrissages.png)
 
-*Figure 10 — Atterrissages : filtres de période et d’appareil, tendance et graphiques d’évolution du score et du taux au toucher.*
+*Figure 9 — Atterrissages : filtres de période et d’appareil, tendance et graphiques d’évolution du score et du taux au toucher.*
 
 ### Chargement du fichier
 

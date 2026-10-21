@@ -23,8 +23,7 @@ What it shows depends on your **usage level** (My profile › “Usage level”)
 
 | Entry | What it opens | Level |
 |---|---|---|
-| “Today” | Next mission, reports to write, week; first entry at every level | 1 |
-| “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
+| “My missions” | Entry page: next mission, reports to write, availability; folders of the assigned missions (red badge: unread missions); first entry at every level | 1 |
 | “Report” | Entry of a mission report; “Fleet” tab: where the aircraft are (map, filters, last flight) | 1 |
 | “Schedule” | Weekly order schedule (Board, read-only at level 1 or without the Centre); at level 4, common slots and likely missions of the ODV page | 1 |
 | “Missions” | Mission generator and registry, as tabs; map studio at level 4 | 3 |
@@ -131,58 +130,45 @@ The suite offers several designs. They change the shape of the pages, not the in
 - In the material designs, the mission folder in “My missions” becomes a real book, with its animations.
 - You choose in Appearance: each design is shown as a thumbnail and applies at once. See the [Appearance](#appearance) chapter.
 
-## Today
-<!-- page: apps/pilot/aujourdhui.html -->
+## My missions
+<!-- page: apps/pilot/mes_missions.html -->
 
-This page is the first entry of the side bar, at every usage level. It answers three questions without any searching: what is my next mission, which reports are left to write, what is happening this week.
-Each block offers a single action. The data comes from the Centre’s assignments (see “My missions”) and from the report registry: nothing has to be entered again. The page rereads itself when you change language, trigram or session.
-The home page also offers it at the top of “My tasks”.
+The pilot's entry page: it first says what there is to do — the next mission, the reports to write, the availability of the week — then gives access to the folder of each mission. It replaces the former “Today” page (its old links lead here).
+You reach it from the first entry of the side bar, “My missions”, from the sealed envelope in the header or from the “My missions” tab.
+At the Crew (1) and Planning (2) levels, the page fits on one screen: “My next mission”, “Reports to write”, “My availability” (summarised) and, at the bottom, a line of links. From the Design level (3), the full list of the week is added below the reports.
+A mission folder opens below the reports: across the full width at levels 1 and 2; from level 3, next to the list (it takes two thirds of the width). On a narrow screen (less than 1100 px), everything moves to a single column.
+Line of links: “My flights”, then, from the Planning level (2), **Pilot**, **Aircraft mastered** and **Simulators**, to Settings › My profile (“Identity and networks” section for the trigram; “Aircraft and simulators” section). The “Pilot” button shows the trigram used to find your missions and your availability; at the Crew level (1), it only appears as long as the trigram is not set.
+In production mode, the page first asks you to sign in; the trigram is then the one you signed in with. The page rereads itself when you change language, trigram, session or level.
+Depending on the usage level (My profile › “Usage level”), the mission folder shows more or fewer sections (see “Mission”); a few buttons and links only appear from the Planning level (2) or at the Expert level (4).
 
 ### My next mission
 
 - The nearest mission assigned to you (upcoming, or taken off less than six hours ago): time in UTC, mission and title, aircraft (type and registration), airfield, callsign; “ferry” or “on call, ready at …” where relevant, and “● new” as long as you have not opened it.
-- Action: **“Open the folder”** opens the mission in “My missions”.
-- With no trigram set, this block asks for it on the spot: the “Trigram” field (two to four letters) and the “Save” button. The trigram is saved in the pilot profile and the three blocks reread at once, without going through Settings › My profile. In production mode or during an impersonation, the trigram is the one you signed in with: the block shows “No trigram: sign in to see your missions.”
-- With no upcoming mission, the block says so: “No upcoming mission is assigned to …”.
+- **“Open the folder”** opens the folder on the spot, in the “Mission” block. **“Flight maps”** and **“Fuel”** open the folder, then the tool with this mission, like the folder's buttons; they are only offered when the tool is (Expert level, or tool ticked in My profile), and not for a ferry. **“Create the report”** opens the folder and starts the report.
+- Below, “Then, within seven days”: the following missions of the next seven days, one line each (seven at most); a click opens their folder.
+- With no trigram set, this block asks for it on the spot: the “Trigram” field (two to four letters) and the “Save” button. The trigram is saved in the pilot profile and the page rereads at once, without going through Settings › My profile. In production mode or during an impersonation, the block shows “No trigram: sign in to see your missions.”
+- With no upcoming mission, a single line: “No upcoming mission.”
 
 ### Reports to write
 
 - The missions assigned to you that took off less than 21 days ago and for which the report registry holds no report. The most recent comes first; seven lines at most.
 - A report is known if it comes from a mission order: the registry (`missions.yaml`) ties it to the assignment through its order reference (mission, pilot, take-off). A report started otherwise, with the family picked by hand, does not count: the mission stays in the list.
 - Each line gives the mission, its title, the time, the aircraft and the airfield, with two buttons.
-- **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (address `?mission=…&do=cr`).
+- **“Write the report”** opens the mission folder on the spot and starts the report in the mission's family, filled in from the mission order.
 - **“No report”** removes the mission from the list (cancelled mission, not flown…). The choice is remembered in this browser only; the registry is not touched.
-- When everything is reported, the block says “Nothing to report: your past missions have their report.” With no trigram, it points to the field of the first block (“Trigram to enter above.”).
-
-### My week
-
-- Seven columns, Monday to Sunday of the current week (days in UTC); the current day is outlined.
-- Your missions appear there as tiles: time and mission number, or “on call”.
-- Action: a click on a tile opens the mission folder in “My missions”. With no trigram, the block says “Without a trigram, the week stays empty.”
-
-## My missions
-<!-- page: apps/pilot/mes_missions.html -->
-
-This page brings together the missions the Centre assigns to you, the folder of each one, your availability and your trigram.
-You reach it from the “My missions” entry of the side bar, from the sealed envelope in the header or from the “My missions” tab.
-Layout: the list of missions and the open folder side by side (the folder takes two thirds of the width), “My availability” below, across the full width. With no folder open, the list takes the full width. On a narrow screen (less than 1100 px), everything moves to a single column: missions, folder, availability.
-In production mode, the page first asks you to sign in.
-Depending on the usage level (My profile › “Usage level”), the mission folder shows more or fewer sections (see “Mission”); a few buttons and links only appear from the Planning level (2) or at the Expert level (4).
+- When everything is reported, a single line: “No report pending.”
 
 ### My missions this week
 
-The list of the missions assigned to you for the week shown, sorted by take-off time (UTC).
+From the Design level (3): the list of the missions assigned to you for the week shown, sorted by take-off time (UTC).
 
-- **Week bar**: “‹” previous week, date field (go to the week of a date), “›” next week, “⟲” back to the current week (visible outside the current week). It is shared by the list and the availability: changing the week here changes both blocks.
+- **Week bar**: “‹” previous week, date field (go to the week of a date), “›” next week, “⟲” back to the current week (visible outside the current week). It goes with the availability's bar: changing the week here changes both blocks.
 - **Columns**: “Take-off (UTC)” (or “standby” and the time to be ready by), “Mission”, “Title”, “Aircraft”, “Airfield”, “Callsign”.
 - A dot ● at the start of a line marks a **new mission, not yet opened**.
 - A “ferry” mention means that you are ferrying an aircraft for another pilot: you only receive the ferry order, not the mission brief.
 - A click on a line opens the mission in the “Mission” block.
 - “also show past missions” box: by default, a mission disappears a few hours after its take-off. The choice is remembered.
-- With no trigram set, the trigram entry field appears under the list (“Trigram” field, “Save” button): once saved, the list and the availability are read again. In production mode or during an impersonation, the trigram is the one you signed in with.
-- An address `?mission=…` coming from “Today” or from “New report” shows the week of that mission (past missions shown if needed); with `?do=cr`, the report starts as soon as the folder opens.
-- **Pilot**, **Aircraft mastered**, **Simulators**: three buttons under the list, to Settings › My profile (“Identity and networks” section for the trigram; “Aircraft and simulators” section, at the aircraft card or the simulators card). The “Pilot” button shows the trigram used to find your missions and your availability. In production mode or during an impersonation, it is the trigram you signed in with.
-- These three buttons appear from the Planning level (2). At the Crew level (1), only “Pilot” appears, as long as the trigram is not set.
+- An address `?mission=…` (top blocks, “New report”, old “Today” links) opens the folder of that mission and shows its week (past missions shown if needed); with `?do=cr`, `?do=maps` or `?do=fuel`, the report, Flight maps or Fuel follow the opening of the folder.
 
 ### Mission
 
@@ -248,8 +234,13 @@ The “⤢ Full width” button in the block title spreads the folder across the
 
 ### My availability
 
-Your availability for the week shown, in UTC, to the minute. The Centre uses it to assign missions to you. It is the same entry as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
-Depending on the usage level: the block’s own week bar, the old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level; at the other levels, the week is changed with the bar of the list.
+Your availability for the week shown, in UTC, to the minute. The Centre uses it to assign missions to you.
+
+- **Week bar** of the block, at every level: “‹”, date, “›”, “⟲” (the next week is often the one to enter). At level 3, it goes with the list's bar.
+- **Summary**: one box per day (Monday to Sunday, UTC), each range with the badge of its category and its times, for example “D+ 17:00–22:00”; “—” for a day with nothing. Empty week: one line, “No availability entered this week.”
+- **“Edit my week”** unfolds on the spot the entry described below (palette, grid, precise range, buttons); another click folds it. It is unfolded at once when the week is empty, then stays as you left it. The summary follows each change.
+
+It is the same entry as on the My availability page (next chapter). The old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level.
 
 **Palette**: the categories are arranged by group, one line per group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered. Under the palette, a line recalls the mission themes opened by the chosen category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
 
@@ -284,7 +275,7 @@ The message under the block tells you where the entry went: “Saved to the data
 An existing old hourly grid is imported automatically into the week.
 The “Open the availability entry on its own” link leads to the My availability page. This link only appears at the Expert level.
 
-**On phones**: the list, the folder and the availability follow one another in a single column; a tap on a mission brings its folder on screen, and its actions (“Create the report”, “Close the folder”…) stay pinned above the bottom bar while reading. The folder's tables (route points) scroll inside their frame.
+**On phones**: the blocks follow one another in a single column; the availability summary uses two columns. A tap on a mission brings its folder on screen, and its actions (“Create the report”, “Close the folder”…) stay pinned above the bottom bar while reading. The folder's tables (route points) scroll inside their frame.
 
 ## My flights
 <!-- page: apps/pilot/mes_vols.html -->
@@ -402,7 +393,7 @@ For the app without the launcher (phone, suite published on GitHub Pages): the a
 | “Personal token” | fine-grained token created on github.com › Settings › Developer settings › Fine-grained tokens: access to the data repository only, “Contents” permission read and write, expiration of 90 days at most; kept in this browser only, never shown again, never to be pasted in a message |
 
 - “Test” checks that the repository is readable, the branch exists and the token can write.
-- “Save” checks, then turns access on and opens Today; from then on every page of the suite reads its data from the repository (also kept for offline use).
+- “Save” checks, then turns access on and opens My missions; from then on every page of the suite reads its data from the repository (also kept for offline use).
 - Each save (report, availability, sheet) becomes a commit under your trigram. If someone else changed the same file in the meantime, it is read again and merged before being written.
 - “Cut access” erases the token and the data copies from this browser; the pages go back to the launcher's data.
 - Lost or stolen phone: also delete the token on github.com (Settings › Developer settings › Fine-grained tokens); it then works nowhere.
@@ -532,7 +523,7 @@ On a narrow screen (phone, reduced window), the suite switches to **mobile mode*
 the bottom of the screen instead of the side bar, tabs on one scrolling line, full-width blocks, larger buttons and
 fields, tables that scroll inside their block or are shown as cards.
 
-- **Bottom bar**: up to six entries, all shown with a short label (Today, Missions, Flights, Report…); beyond that, the
+- **Bottom bar**: up to six entries, all shown with a short label (Missions, Flights, Report, Schedule…); beyond that, the
   first five and “More”, which opens the other entries, Settings and Help.
 - **Phone in landscape**: the bar becomes a rail on the left of the screen (icon, label below) and the header is no longer pinned, to keep the height for the content; the Fuel curves fit with their level slider.
 - **Header**: it slides away when you scroll down the page and comes back as soon as you scroll up.
@@ -671,7 +662,7 @@ to you (see below). Full step by step: [tutorial](../TUTORIAL.md).
 
 ### My missions to report
 
-First block of the page: the missions assigned to you that are already past (21 days at most) and have no report in the registry, as in the “Reports to write” block of the “Today” page (seven lines at most).
+First block of the page: the missions assigned to you that are already past (21 days at most) and have no report in the registry, as in the “Reports to write” block of the “My missions” page (seven lines at most).
 
 - **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (see “Resume an assigned mission”).
 - **“No report”** removes the mission from the list (remembered in this browser).

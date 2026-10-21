@@ -106,15 +106,33 @@
   .pm-cols>[data-block-id="availability"] {
     order: 1
   }
-  /* pilote, appareils, simulateurs : liens vers Paramètres › Mon profil */
-  .pm-me {
+  /* niveaux 1 et 2 : pas de liste de la semaine, le dossier prend toute la largeur */
+  html:is([data-level="1"], [data-level="2"]) #pmMission {
+    grid-column: 1 / -1
+  }
+  /* tête de page : la carte de la prochaine mission sans second cadre (le bloc en est un), boutons resserrés ; barre
+     de semaine des disponibilités rapprochée du résumé — les quatre blocs du niveau 1 tiennent au-dessus du pli */
+  #pmNext .pt-card {
+    padding: 0;
+    border: 0;
+    background: none;
+    gap: 4px
+  }
+  #pmNext .pt-btn {
+    padding: 6px 12px
+  }
+  [data-block-id="availability"] .pm-week {
+    margin-bottom: 4px
+  }
+  /* Mes vols, puis pilote, appareils, simulateurs (liens vers Paramètres › Mon profil) */
+  .pm-links {
     display: flex;
     flex-wrap: wrap;
     gap: 6px 8px;
     align-items: center;
-    margin-top: 8px
+    margin: -6px 0 0
   }
-  .pm-me b {
+  .pm-links b {
     margin-left: .35em;
     letter-spacing: .04em
   }
@@ -1656,28 +1674,36 @@
      convoyage : ordre de convoyage seul ; gestes du pilote portés au journal (LocalStore.logEvent, kind « mission »).
      Données : data/missions/affectations.json (index écrit par le Centre) et fichiers des missions, lus par fetch ;
      socle : shared/assignments.js. Conception : docs/technique/AFFECTATION_MISSIONS.md (§ 10). -->
-<header class="mc-header"><h1>Mes missions</h1><p>Missions affectées par le Centre, disponibilités</p></header>
+<header class="mc-header"><h1>Mes missions</h1><p>Ma prochaine mission, les comptes rendus à écrire, mes disponibilités</p></header>
 <main id="pilotMissions" class="mc-reporting">
+<!-- page d'entrée du pilote (ex-« Aujourd'hui », redirigée ici) : ce qu'il a à faire d'abord — prochaine mission et
+     missions des sept jours (shared/pilot_today.js), comptes rendus à écrire, disponibilités de la semaine (résumé,
+     « Modifier ma semaine ») ; liste complète de la semaine au niveau 3 -->
+<section data-block-id="next" data-icon="send" data-subtitle="La mission affectée la plus proche, puis celles des sept jours ; un clic ouvre le dossier."><h2>Ma prochaine mission</h2>
+  <div id="pmNext"></div>
+</section>
+<section data-block-id="pending" data-icon="clipboard" data-subtitle="Missions des trois dernières semaines sans compte rendu dans le registre."><h2>Comptes rendus à écrire</h2>
+  <div id="pmPending"></div>
+</section>
 <!-- missions et dossier côte à côte, disponibilités en dessous ; une colonne sur écran étroit ; dossier en pleine
      largeur au choix -->
 <div class="pm-cols">
-<section data-block-id="list" data-icon="calendar" data-subtitle="Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Mes missions de la semaine</h2>
+<section data-block-id="list" data-icon="calendar" data-min-level="3" data-subtitle="Missions de la semaine affichée, par heure de décollage (UTC) ; ● : nouvelle, pas encore ouverte."><h2>Mes missions de la semaine</h2>
   <div class="pm-week" data-weekbar></div>
   <div id="pmList" class="pm-list"><p class="pm-empty">Chargement…</p></div>
-  <div id="pmTri"></div>
-  <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label> · <a href="mes_vols.html">Mes vols ↗</a></p>
-  <div class="pm-me"><a class="secondary" id="pmPilot" data-min-level="2" data-icon="headset" href="../settings/profil.html?base=identity" title="Trigramme, réseaux, langue : Paramètres › Mon profil">Pilote</a><a class="secondary" data-min-level="2" data-icon="plane" href="../settings/profil.html?base=equipment#eqTypes" title="Types de la flotte possédés et maîtrisés : Paramètres › Mon profil">Appareils maîtrisés</a><a class="secondary" data-min-level="2" data-icon="globe" href="../settings/profil.html?base=equipment#eqSims" title="Simulateurs installés : Paramètres › Mon profil">Simulateurs</a><span id="pmWhoNote" class="small"></span></div>
+  <p class="small"><label><input type="checkbox" id="pmAll"> afficher aussi les missions passées</label></p>
 </section>
 <section data-block-id="mission" data-icon="target" data-subtitle="Mission affectée, en lecture seule : ce qui vous est demandé, la route, les cartes fournies." id="pmMission" hidden><h2>Mission</h2>
   <div id="pmDetail"></div>
 </section>
 <section data-block-id="availability" data-icon="clock"><h2>Mes disponibilités</h2><p class="repo-block-subtitle" id="pmDisposSub" data-no-i18n></p>
-  <div class="pm-week" data-weekbar data-min-level="4"></div>
+  <div class="pm-week" data-weekbar></div>
   <div id="pmDispos"></div>
   <details id="pmGridOld" class="pm-legacy" data-min-level="4" hidden><summary>Ancienne grille horaire (lecture seule)</summary><div id="pmGrid"></div></details>
   <p class="small" data-min-level="4"><a href="disponibilites.html">Ouvrir la saisie des disponibilités seule</a></p>
 </section>
 </div>
+<p class="pm-links"><a class="secondary" data-icon="list" href="mes_vols.html">Mes vols</a><a class="secondary" id="pmPilot" data-min-level="2" data-icon="headset" href="../settings/profil.html?base=identity" title="Trigramme, réseaux, langue : Paramètres › Mon profil">Pilote</a><a class="secondary" data-min-level="2" data-icon="plane" href="../settings/profil.html?base=equipment#eqTypes" title="Types de la flotte possédés et maîtrisés : Paramètres › Mon profil">Appareils maîtrisés</a><a class="secondary" data-min-level="2" data-icon="globe" href="../settings/profil.html?base=equipment#eqSims" title="Simulateurs installés : Paramètres › Mon profil">Simulateurs</a><span id="pmWhoNote" class="small"></span></p>
 </main>
 <script src="../../shared/kit.js?v=0"></script>
 <script src="../../shared/repository_nav.js?v=0"></script>
@@ -1908,7 +1934,9 @@
     const pick = current ? list.find(a => A.key(a) === A.key(current)) : want ? list.find(a => a.mission === want) : null;
     // mission déjà affichée et inchangée (même clé : mission, pilote, mise à jour) : gardée telle quelle — la relire à
     // chaque rechargement de la liste (langue, semaine, écriture d'un autre onglet) refaisait toutes ses lectures
-    if (pick && !(shown && A.key(pick) === shown && $('pmDetail').querySelector('.pm-content, [data-part]'))) show(pick);
+    if (pick && !(shown && A.key(pick) === shown && $('pmDetail').querySelector('.pm-content, [data-part]'))) show(pick, {
+      open: !!autoDo // geste demandé (?do=…) : dossier ouvert, ses boutons n'existent qu'ouvert
+    });
   }
   $('pmList').addEventListener('click', e => {
     const tr = e.target.closest('tr[data-i]');
@@ -3397,10 +3425,15 @@
       </div>
       ${plis.length ? `<div data-part="plis"><h4>Plis et messages en vol</h4>${plis.map(pliHtml).join('')}</div>` : ''}`;
     $('pmDetail').querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go, a, y, pts, dist));
-    // ?do=cr (Aujourd'hui, Nouveau compte rendu) : le CR commence dès l'ouverture du dossier, une seule fois
-    if (autoDo === 'cr' && y.mission) {
+    // ?do=cr | maps | fuel (tête de page, Nouveau compte rendu) : le geste suit l'ouverture du dossier, une seule fois ;
+    // un geste dont le bouton est grisé (mission sans route…) n'est pas lancé
+    if (autoDo && y.mission) {
+      const act = autoDo;
       autoDo = '';
-      go('cr', a, y, pts, dist);
+      const b = $('pmDetail').querySelector(`[data-go="${act}"]`);
+      if (b && !b.disabled) go(act, a, y, pts, dist, {
+        auto: true
+      });
     }
     // cartes (fournies, jointes aux plis) : visionneuse commune (croix, Échap), pas d'onglet à part ; écoute posée une
     // fois, en capture (avant le clic de page qui tournerait la page)
@@ -3755,7 +3788,11 @@
   }
 
   // ---- transferts
-  function go(where, a, y, pts, dist) {
+  /** Geste du dossier : maps, fuel, cr ; auto : lancé à l'ouverture (hors clic) — le Carburant s'ouvre alors dans
+   *  l'onglet (une fenêtre ouverte sans clic serait bloquée). */
+  function go(where, a, y, pts, dist, {
+    auto = false
+  } = {}) {
     logMission(a, {
       maps: 'ouverte dans les Cartes de vol',
       fuel: 'envoyée au planificateur carburant',
@@ -3790,7 +3827,9 @@
         from: `${a.mission} — ${y.title || ''}`,
         at: Date.now()
       }));
-      window.open(new URL('apps/planner/flight_performance_planner.html?handoff=1', root()).href, '_blank');
+      const url = new URL('apps/planner/flight_performance_planner.html?handoff=1', root()).href;
+      if (auto) location.href = url;
+      else window.open(url, '_blank');
     } else if (where === 'cr') {
       const yaml = structuredClone(y);
       if (yaml.aircraft?.[0] && a.aircraft?.registration) yaml.aircraft[0].registration = a.aircraft.registration;
@@ -3830,9 +3869,12 @@
     if (!window.DisposWeek || !window.SuiteDispos) return;
     // la saisie importe l'ancienne grille de la semaine (shared/dispos_week.js) : plus de copie en lecture seule à côté
     $('pmGridOld').hidden = true;
-    window.DisposWeek.bindSubtitle($('pmDisposSub')); // sous-titre traduit à la source (une fois : l'élément le garde)
+    window.DisposWeek.bindSubtitle($('pmDisposSub'), {
+      compact: true
+    }); // sous-titre traduit à la source (une fois : l'élément le garde)
     dispoEd ||= window.DisposWeek.mount($('pmDispos'), {
-      nav: false // semaine de la page (barre commune à la liste)
+      nav: false, // semaine de la page (barre du bloc, et de la liste au niveau 3)
+      compact: true // résumé par jour ; la saisie se déplie (dépliée d'office pour une semaine vide)
     });
     await dispoEd.set({
       tri,
@@ -3868,13 +3910,35 @@
       weekBars();
     }
   };
-  // trigramme manquant : saisi sur place, sous la liste (shared/pilot_today.js) ; la page se relit ensuite
-  window.PilotToday?.mount($('pmTri'), 'trigram', {
+  // tête de page (shared/pilot_today.js) : prochaine mission et sept jours (trigramme saisi sur place s'il manque ; la
+  // page se relit ensuite), comptes rendus à écrire
+  window.PilotToday?.mount($('pmNext'), 'next', {
+    more: 7,
+    actions: true,
     onSave: () => {
       who();
       load();
       gridLoad();
     }
+  });
+  window.PilotToday?.mount($('pmPending'), 'pending', {
+    trigram: false
+  });
+  // liens vers un dossier (data-key, data-do) : ouvert sur place, geste lancé ensuite (Cartes de vol, Carburant, CR)
+  for (const host of [$('pmNext'), $('pmPending')]) host.addEventListener('click', e => {
+    const l = e.target.closest('a[data-key]');
+    const a = l && A.mine(A._all || [], {
+      all: true
+    }).find(x => A.key(x) === l.dataset.key);
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    autoDo = l.dataset.do || '';
+    show(a, {
+      open: !!autoDo
+    }).then(() => $('pmMission').scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    }));
   });
   keepAll().then(wantedWeek).then(load).then(gridLoad);
 })();

@@ -434,8 +434,8 @@
           G.enable(cfg);
           api.saved();
           notify(r.message, r.write ? 'ok' : 'warn');
-          // les données viennent désormais du dépôt : l'appli s'ouvre sur Aujourd'hui
-          setTimeout(() => location.assign(new URL('../pilot/aujourdhui.html', location.href).href), 600);
+          // les données viennent désormais du dépôt : l'appli s'ouvre sur Mes missions (page d'entrée du pilote)
+          setTimeout(() => location.assign(new URL('../pilot/mes_missions.html', location.href).href), 600);
         }, 'primary'],
         [L('Couper l’accès', 'Cut access', 'Zugang trennen', 'Cortar el acceso'), async () => {
           await G.disable();
