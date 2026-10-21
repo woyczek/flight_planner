@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: numbers of ChatGPT answers, RPM table editor, offline** (`modules/fuel/sheets.js`, `modules/fuel/module.js`,
+  `modules/fuel/test/sheets.html`) — "2,400" is read as 2400 (thousands commas, European form, otherwise decimal
+  comma; V2 read 2.4), with its bench cases (18/18); the RPM / fuel flow table is edited row by row on a computer
+  screen (read only on a phone), removed rows previewed; the calculation files are fetched again when the frame's
+  service worker takes control, so the module is complete offline from the first visit.
 - **fuel: the module in the Pilot application** (`modules/fuel/module.js`, `frame/app.js`; `SPEC.md` § 9,
   `INTEGRATION.md`, `DECISIONS.md`) — mounted by the frame's loader as the first verb. Plan: aircraft, route
   (aerodb positions, or typed distance and track; last SimBrief OFP through `ctx.net`, kept on the device), level and
