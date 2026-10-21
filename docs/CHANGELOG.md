@@ -141,6 +141,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   - The old format is still written. aerodb reads both and prefers the new one, so a module asking for the aerodromes
     around Paris downloads 426 KB instead of 5.6 MB, and a place search never reads the world's towns.
   - Administrator manuals (4 languages) and `docs/technique/DONNEES_ET_ACCES.md` updated.
+- **aerodb mounted by the frame: no longer forgets a zone when a file first arrives.** The frame's data layer reports a
+  reference file entering its cache as a change. aerodb now forgets a zone only when a file it already read gets a new
+  revision. Checked through `frame/index.html` with the launcher transport. Open gap: the local transport reads no
+  reference file (see `frame/aerodb/DECISIONS.md`).
 
 ### Added
 

@@ -49,7 +49,12 @@ aerodb reads files only through a reader with the frame's data contract:
   absent (or offline without a copy). `value` is the parsed JSON; otherwise `text` is parsed. `rev` is opaque: compare
   revisions only with each other.
 - `list(prefix)` → paths, or `null` when no listing is known (launcher without a listing, first launch offline).
-- `watch(prefix, fn)` (optional) → called with the changed paths after a synchronisation.
+- `watch(prefix, fn)` (optional) → called with the changed paths after a synchronisation. The frame's data layer
+  also calls it when a file first arrives in its cache. aerodb therefore reacts only to two cases:
+  - a file it has already read whose `rev` changed: the zone, or the towns, manifest or aircraft base, is forgotten
+    and read again on the next question;
+  - a cycle or zone missing from the listing it holds: the listing is read again.
+  A `change` event is sent only in those cases.
 
 Until the frame delivers its data layer, `AeroDB.fetchReader()` stands in. In GitHub mode it reads through
 `GitHubData` (contents and tree). Otherwise it reads the files served by the launcher (`data/<path>`, `AircraftDB/` at
