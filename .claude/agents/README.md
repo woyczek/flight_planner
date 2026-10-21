@@ -14,6 +14,30 @@ une session de passage, qui suit `CLAUDE.md` et demande à la session **ergonomi
 | Analyse HTML/JSON pour intégration DEFA | `analyse-defa.md` | `E:\DEFA-odv` | 8777 |
 | (utilisateur) | — | `E:\DEFA`, `develop-local` | 8000 |
 
+## V3 (branche `v3`, depuis le 22 octobre 2026) — un agent par module, mémoire dans son `DECISIONS.md`
+
+La V2 reste sur `develop` en corrections seulement (sessions ci-dessus). La V3 vit sur `v3` : un cadre (`frame/`) et
+des modules (`modules/<nom>/`), chacun avec `SPEC.md`, `INTEGRATION.md` et `DECISIONS.md`. Première application :
+Pilote. Cahier des charges et journal des décisions : `docs/technique/V3_SPECIFICATION.md`.
+
+| Rôle (nom de session) | Fichier | Espace | Port |
+|---|---|---|---|
+| V3 frame (couche de données, navigation, chargeur) | `v3-frame.md` | `E:\DEFA-v3-frame` | 8790 |
+| V3 report (compte rendu) | `v3-report.md` | `E:\DEFA-v3-report` | 8791 |
+| V3 website (site DEFA, web service) | `v3-website.md` | `E:\DEFA-v3-website` | 8792 |
+| V3 fuel (carburant, niveau, fiches) | `v3-fuel.md` | `E:\DEFA-v3-fuel` | 8793 |
+| V3 maps (carte vivante, profil vertical) | `v3-maps.md` | `E:\DEFA-v3-maps` | 8794 |
+| V3 flightlog (mes vols) | `v3-flightlog.md` | `E:\DEFA-v3-flightlog` | 8795 |
+| V3 design (jetons, densité, designs) | `v3-design.md` | `E:\DEFA-v3-design` | 8796 |
+| V3 aerodb (bases SIA et appareils) | `v3-aerodb.md` | `E:\DEFA-v3-aerodb` | 8797 |
+| V3 help (aide, tutoriels, manuels) | `v3-help.md` | `E:\DEFA-v3-help` | 8798 |
+| V3 settings (identité, usages, accès, caches) | `v3-settings.md` | `E:\DEFA-v3-settings` | 8799 |
+
+Chaque agent V3 : lit la spécification V3 et `v3-frame.md` (façon de travailler commune), travaille sur `v3` dans son
+espace, un lot = un commit avec ses trois documents, « poussé » + SHA à la session ergonomie, jamais de push sur
+`develop`, `master` ou `v2-fable`. La session ergonomie tient la spécification, répartit, valide les lectures et
+intègre.
+
 ## Synchronisation (ce que chaque session fait, sans exception)
 
 1. **Une seule ligne de temps.** `develop` n'avance qu'en avance rapide : `git fetch`, rebase de son travail sur

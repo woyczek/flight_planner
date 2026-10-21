@@ -89,13 +89,56 @@ by size. Drafted with the user, validated before code.
 - 22 Oct 2026 — stand-alone mode: a local cache and a regular synchronisation with a visible control are required
   (today's direct reads of the git repository are too slow).
 - 22 Oct 2026 — availability entry and mission assignment are to be redesigned for touch (list-based), not adapted.
+- 22 Oct 2026 — **Disconnected mode ("mode déco") is the heart of the exchange system**: every device works on its
+  own copy, exchange is decentralised (git, API, website). **Security is simplified** to stay accessible to
+  newcomers: a token per device and a trigram; the signed-accounts chantier stops (S3, S4 cancelled; L0-L3, S1, S2
+  stay merged, dormant, optional). Signed accounts are not a viable objective beyond three or four people.
+- 22 Oct 2026 — **Order: the Pilot application first**, built from modules that are then optimised for the whole
+  suite. Immediate targets: the interaction with the DEFA Virtual website, the pilot tools (fuel, flight level,
+  flight log, live map — optimised and fast), and writing a report with as few clicks as possible, filling the DEFA
+  side at the same time. Secondary target: the JavaScript modules as the UX/UI base of a PHP backend, to define with
+  the existing website (access "at some point"); CPCO will adhere to the site but must keep working offline.
+- 22 Oct 2026 — **Exchange**: git was attractive but is not convincing as it stands; a website / web-service backend
+  is indispensable — but not for the disconnected mode. The exchange must be simple, with no triple keys: maybe git,
+  but **never "at every click"** — writes are batched and synchronised explicitly or periodically, through a
+  transport the data layer plugs in (git, web service, later the PHP site).
+- 22 Oct 2026 — **Usages are what multiply complexity**: the suite is configured by a checklist of usages (several
+  may be ticked, not one of them): **single user** (local only, nothing to synchronise); **single user, several
+  devices** (my copies kept in step through one transport); **several users** (git data repository); **backend**
+  (web service / PHP site). The data layer enables a transport per ticked usage; the interface shows only what the
+  ticked usages need (synchronisation control, keys, access card). Nothing else differs between usages.
+- 22 Oct 2026 — The mission registry already works locally and is enough to "play" a mission for oneself: V2 stays
+  for that. The unreleased part of V2 is not considered stable; the new way of working starts now, on a `v3` branch.
+- 22 Oct 2026 — One repository: `frame/` and `modules/<name>/`, each module with `SPEC.md`, `INTEGRATION.md`,
+  `DECISIONS.md`; the data repository unchanged. One agent (Claude Desktop session) per module and per transverse
+  block, reachable individually by the user; the ergonomics session keeps the global vision.
 
-## 9. Open questions
+## 9. Plan — first application: Pilot (from 22 October 2026)
 
-1. Order of the three applications: which one first? (Proposal: SOG client, the most used on a phone; then Pilot;
-   CPCO last, desktop-first.)
-2. Repository layout: one repository with `frame/` and `modules/<name>/`, or one repository per module? (Proposal:
-   one repository, one folder per module, each with its spec and guide; the data repository unchanged.)
-3. V2 during V3: bug fixes only on `develop`; V3 on a branch `v3` until the first application ships.
-4. PHP website: what it receives first (reports? flight logs?), and whether it also becomes a data backend behind
-   the data layer.
+Branch `v3` (from `develop`), one commit per lot, each module in `modules/<name>/` with its three documents. Order:
+
+1. **frame/data** — the data layer: local cache (IndexedDB), explicit and background synchronisation with a visible
+   control, behind the launcher, the GitHub mode and the shells; the frame's navigation, levels, translation,
+   notifications, designs taken from V2 as they are. *Agent: frame.*
+2. **modules/report** — the mission report with as few clicks as possible: prefill from the last flight (IVAO,
+   SimBrief, the website log), three steps, and "record the flight on the DEFA website" in the same gesture.
+   *Agent: report.*
+3. **modules/website** — the interaction with the DEFA Virtual website: what it exposes today (pages, forms), what
+   the modules send and read, the bookmarklet, then the PHP backend when access is given. *Agent: website.*
+4. **modules/fuel** — fuel and flight level (from `apps/planner/flight_planner.js`), performance sheets as a
+   sub-module. *Agent: fuel.*
+5. **modules/maps** — the live map: route, airspaces, vertical profile, optimised and fast on a phone (from the
+   studio's rendering, re-cut). *Agent: maps.*
+6. **modules/flightlog** — my flights (reports and website log). *Agent: flightlog.*
+7. Transverse: **design** (tokens, density, day/night), **aerodb** (SIA and aircraft bases published by zone and
+   cycle), **help** (tutorials and manuals per module), **settings** (identity, data access, caches). *One agent
+   each.*
+
+The SOG client and CPCO applications come after, reusing the same modules; availability and assignment are
+redesigned for touch at that point.
+
+## 10. Open questions
+
+1. PHP website: what it receives first (reports? flight logs?), and whether it becomes a data backend behind the data
+   layer — to settle when the user has access to the site.
+2. Which V2 pages stay reachable from the Pilot application during the transition (the full suite on the launcher).
