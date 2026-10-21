@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **report: the mission report in the Pilot application, HEMS first** (`modules/report/module.js`, `vocab.js`,
+  `model.js`, `families/hems.js`, `frame/app.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`) — three steps Flight ·
+  Mission · Result (one at a time on a phone, side by side on a wide screen), nothing required (what is missing and
+  the V2 checks shown as warnings), the current flight of fuel and maps as a one-tap prefill, the HEMS blocks, a draft
+  kept on the device, my last reports reopened for editing. One JSON record per report, `cr/reports/<year>/<CR
+  number>.json`: the V2 registry entry plus `schema`, `updated_at`, `by`, so the launcher's bridge folds it into
+  `cr/missions.yaml` unchanged. V2 vocabulary, model and HEMS family copied, not rewritten.
 - **report: reading of the V2 mission report** (`modules/report/READING.md`, `modules/report/DECISIONS.md`) — what
   the V2 report does on each path, what the Pilot application keeps and what moves to CPCO, the SOG client or other
   modules, today's shortest path (5 clicks to a report saved in the browser, 8 with the website) and the target (3

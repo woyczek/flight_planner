@@ -31,6 +31,10 @@
       label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
       icon: '⛽'
     }, {
+      id: 'report',
+      label: ['Compte rendu', 'Report', 'Bericht', 'Informe'],
+      icon: '✎'
+    }, {
       id: 'hello',
       label: ['Essayer', 'Try', 'Ausprobieren', 'Probar'],
       icon: '◎'
