@@ -24,6 +24,13 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: level decision and climb instructions in pure code** (`modules/fuel/levels.js`; `SPEC.md` § 7,
+  `INTEGRATION.md`, `DECISIONS.md`) — taken out of the V2 view (`shared/flight_perf_view.js`) without its layout:
+  climb goals (economical, best rate, fast, sheet's IAS, manual) and their laws, the whole trip at every level up to
+  110 % of the ceiling (least fuel, fastest, why higher levels cannot be flown), the level curves of the detailed
+  view, the climb instructions to the plan's level (throttle, RPM, IAS, rate, fuel flow, Mach, cumulative time and
+  fuel) and the minimum distance of a level. Bench (`modules/fuel/test/levels.html`) against the V2 view's state on
+  the quote bench's sheet: 24/24. The drawing comes with the module screen, on the frame's loader.
 - **fuel: the pure quote model** (`modules/fuel/model.js`, `modules/fuel/performance_model.js`; `modules/fuel/SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`) — the fuel quote taken out of the V2 page (`calculate` of
   `apps/planner/flight_planner.js`) as a pure function, inputs → quote: cruise flow and TAS with their source (entry
