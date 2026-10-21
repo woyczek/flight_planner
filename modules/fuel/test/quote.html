@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fuel — quote bench</title>
+<!-- Banc du devis V3 (modules/fuel/model.js) : cas connus relevés sur le Carburant V2 (apps/planner/
+     flight_performance_planner.html, calculate) avec une fiche de test complète (turbopropulseur fictif, sans fiche
+     EUROCONTROL ni Poll-Schumann, montée réglée et épingle absentes) ; chaque valeur affichée par la V2 (arrondie comme
+     elle l'affiche) doit être retrouvée par FuelModel.quote. Page d'outil, hors des applications ; ouvrir depuis le
+     lanceur ou un serveur statique à la racine du dépôt. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">fuel — quote bench</h1>
+<pre id="out">running…</pre>
+<script src="../performance_model.js?v=0"></script>
+<script src="../model.js?v=0"></script>
+<script>
+  (() => {
+    'use strict';
+    // fiche de test (fictive : aucune donnée OACI ni EUROCONTROL) et valeurs affichées par la V2 le 22/10/2026
+    const SHEET = {
+      id: 'TEST_TP',
+      name: 'Test turboprop',
+      icao: 'ZZTP',
+      unit: 'kg',
+      engineType: 'turboprop',
+      cruise: {
+        tasKt: 300,
+        fuelFlowPerHour: 1000,
+        refAltFt: 20000,
+        ceilingFt: 25000
+      },
+      climb: {
+        iasKt: 180,
+        rateFpm: 1500,
+        fuelFlowPerHour: 1300,
+        tasKt: 220
+      },
+      descent: {
+        rateFpm: -1500,
+        tasKt: 250,
+        fuelFlowPerHour: 450
+      },
+      taxi: {
+        fuelFlowPerHour: 200
+      },
+      reserveFuelFlowPerHour: 700,
+      tod: {
+        gradientFtPerNm: 300,
+        bufferNm: 5
+      },
+      rpmFuelCurve: []
+    };
+    const CASES = [{
+      name: 'known wind 270/30, 300 NM, FL200',
+      input: {
+        dist: 300,
+        fl: 200,
+        trk: 90,
+        taxi: 10,
+        reserve: 30,
+        cont: 5,
+        wdir: 270,
+        wspd: 30
+      },
+      v2: {
+        block: [1416],
+        taxi: 33,
+        trip: 983,
+        climb: 289,
+        cruise: 594,
+        descent: 100,
+        contingency: 49,
+        reserve: 350,
+        tod: 71.7,
+        time: '1 h 02'
+      }
+    }, {
+      name: 'unknown wind (±25 kt), 300 NM, FL200',
+      input: {
+        dist: 300,
+        fl: 200,
+        trk: 90,
+        taxi: 10,
+        reserve: 30,
+        cont: 5
+      },
+      v2: {
+        block: [1425, 1540],
+        taxi: 33,
+        trip: 1042,
+        climb: 289,
+        cruise: 654,
+        descent: 100,
+        contingency: 52,
+        reserve: 350,
+        tod: 71.7,
+        time: '1 h 06'
+      }
+    }, {
+      name: 'speed only 40 kt (±40), 120 NM, FL100',
+      input: {
+        dist: 120,
+        fl: 100,
+        trk: 90,
+        taxi: 10,
+        reserve: 30,
+        cont: 5,
+        wspd: 40
+      },
+      v2: {
+        block: [815, 903],
+        taxi: 33,
+        trip: 447,
+        climb: 117,
+        cruise: 280,
+        descent: 50,
+        contingency: 22,
+        reserve: 350,
+        tod: 38.3,
+        time: '0 h 28'
+      }
+    }];
+    const M = window.FuelModel,
+      hm = x => `${Math.floor(x / 60)} h ${String(Math.round(x % 60)).padStart(2, '0')}`,
+      lines = [];
+    let pass = 0,
+      fail = 0;
+    /** Compare une valeur calculée à la valeur affichée par la V2 (même arrondi). */
+    const check = (label, got, want) => {
+      const ok = got === want;
+      ok ? pass++ : fail++;
+      lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${got}${ok ? '' : ` (V2 ${want})`}`);
+    };
+    for (const c of CASES) {
+      const sheet = M.normalizeSheet(structuredClone(SHEET)),
+        i = c.input,
+        alt = i.fl * 100,
+        source = M.cruiseSource({
+          sheet,
+          altFt: alt
+        }),
+        perf = M.perfModel(sheet, source, {}),
+        q = M.quote({
+          sheet,
+          source,
+          perf,
+          distanceNm: i.dist,
+          levelFt: alt,
+          trackDeg: i.trk,
+          wind: {
+            dirDeg: i.wdir ?? '',
+            speedKt: i.wspd ?? ''
+          },
+          taxiMin: i.taxi,
+          reserveMin: i.reserve,
+          contingencyPct: i.cont
+        }),
+        r = Math.round;
+      lines.push(`<b>${c.name}</b> — ceiling ${q.ceiling}`);
+      check('block', q.windKnown ? String(r(q.block)) : `${r(q.blockLow)}–${r(q.blockHigh)}`, c.v2.block.join('–'));
+      for (const k of ['taxi', 'trip', 'contingency', 'reserve']) check(k, r(q[k]), c.v2[k]);
+      check('climb', r(q.climb.fuel), c.v2.climb);
+      check('cruise (no wind)', r(q.cruise.fuel), c.v2.cruise);
+      check('descent', r(q.descent.fuel), c.v2.descent);
+      check('TOD (NM)', Math.round(q.todNm * 10) / 10, c.v2.tod);
+      check('flight time', hm(q.minutes), c.v2.time);
+    }
+    lines.unshift(`<b class="${fail ? 'ko' : 'ok'}">${pass} passed, ${fail} failed</b>`);
+    document.getElementById('out').innerHTML = lines.join('\n');
+    document.title = `fuel — quote bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+  })();
+</script>
+</body></html>

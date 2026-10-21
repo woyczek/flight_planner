@@ -24,6 +24,15 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: the pure quote model** (`modules/fuel/model.js`, `modules/fuel/performance_model.js`; `modules/fuel/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`) — the fuel quote taken out of the V2 page (`calculate` of
+  `apps/planner/flight_planner.js`) as a pure function, inputs → quote: cruise flow and TAS with their source (entry
+  for this flight, sheet and RPM table, Poll-Schumann, SimBrief, estimate from aerodb), model sheet completed by the
+  EUROCONTROL record, calibrated climb and cruise (V2 flight mechanics copied unchanged), descent, taxi, contingency,
+  reserve, block (or its range with an unknown wind), time and top of descent. Bench
+  (`modules/fuel/test/quote.html`): three known cases from the V2 page on a fictitious sheet, every displayed value
+  found again (30/30). The current flight shared with maps is specified (`pilot/<trigram>/current_flight.json`).
+  The module screen follows on the frame's loader.
 - **Frame: data layer** (`frame/store/frame_data.js`, `frame/store/transport_github.js`; `frame/SPEC.md`,
   `frame/INTEGRATION.md`, `frame/DECISIONS.md`) — disconnected mode at the core: one local cache (IndexedDB
   `sogFrame`) serves every read with no network; writes are queued and sent in batches, one commit per
