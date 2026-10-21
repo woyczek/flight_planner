@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Settings › Installation in GitHub mode** (app without the launcher, same on a desktop browser): the page is reduced
+  to a single “Data access” card — repository (link) and branch, access status (token check), last successful read
+  (new `GitHubData.lastRead()`), writes pending in the browser outbox with a “Synchronise” button, the aircraft type
+  database read from the repository, link to the virtual airline website and to My profile › Data access, and a
+  sentence saying that local folders, IVAO keys and SIA import are set on a computer with the launcher. The other
+  cards (Sources and folders, Keys and external services, Aeronautical data, Aircraft types) and the “First run” tab
+  are not built in that mode (`ghAccess` section and `github:false` page flag in `config/repository_tree`); outside
+  GitHub mode nothing changes. User manuals (administrator, four languages) updated.
 - Technical documentation: `docs/technique/DONNEES_ET_ACCES.md`, map of data storage and access (git data repository,
   browser, website, launcher workstation, apps), shared versus local; linked from `APPLI_AUTONOME.md`.
 - **Stand-alone app, step 3: iOS shell** (`mobile/`: Capacitor project, Node only there and only in CI; workflow
@@ -188,6 +196,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Settings › Installation and Maintenance on a narrow screen** (`shared/maintenance.css`) — below 900 px the page is a
+  single column, but each block stayed pinned to the second grid column, squeezing it beside the menu; it now sits
+  under the menu.
 - **Settings › Installation › Sources: data repository shown empty** (`shared/maintenance_page.js`) — the “Data
   repository (private)” field only read a browser setting, while the first run saves the address as the remote of
   `data/` (git, through the launcher). The field now shows that remote (`/__setup/sync-remote`), accepts SSH

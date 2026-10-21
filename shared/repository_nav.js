@@ -160,10 +160,12 @@
   }
   /** Modules facultatifs affichés (tous au niveau 4). */
   const modules = () => level() >= 4 ? MODULES.slice() : (K.store.jsonCached(MODULES_KEY, []) || []).filter(m => MODULES.includes(m));
-  /** Page visible au niveau et avec les modules courants (page non déclarée : visible). */
+  /** Page visible au niveau et avec les modules courants (page non déclarée : visible) ; github:false : page du poste avec
+   *  lanceur, absente (onglets, menus) quand les données viennent de GitHub (appli sans lanceur, shared/github_data.js). */
   const visible = p => {
     const d = cfg.pages.find(x => x.path === p);
-    return !d || (d.level || 1) <= level() && (!d.module || modules().includes(d.module));
+    return !d || (d.level || 1) <= level() && (!d.module || modules().includes(d.module)) && !(d.github === false && window.GitHubData
+      ?.on?.());
   };
   /** Utilisateur du Centre : Centre ouvert dans ce navigateur, niveau 2 ou plus, et pas un compte connecté sans le rôle
    *  admin_centre ; seul lui voit les entrées du Centre avec leur icône propre. */

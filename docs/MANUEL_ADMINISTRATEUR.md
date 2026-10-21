@@ -219,6 +219,8 @@ Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources
 Le premier lancement a son propre onglet, « Premier lancement », décrit dans le [manuel utilisateur](MANUEL_UTILISATEUR.md#premier-lancement) ; « Nettoyer et recommencer… » se trouve en bas de cette page-là. Voir aussi [Installation](INSTALL.md), § 1.
 Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` et `keys` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
 
+En mode GitHub (appli sans lanceur : site web, appli iOS ; accès aux données réglé dans Mon profil › Accès aux données), Installation se réduit à la seule carte « Accès aux données » : dépôt des données (lien `https://github.com/<dépôt>`) et branche, état de l'accès (essai du jeton), dernière lecture réussie, écritures en attente dans la boîte d'envoi du navigateur (bouton « Synchroniser » pour les envoyer), base des types d'aéronefs lue dans le dépôt, lien vers le site de la compagnie virtuelle et lien vers Mon profil › Accès aux données. Dossiers locaux, clés IVAO et import SIA se règlent sur un poste avec lanceur : les cartes « Sources et dossiers », « Clés et services externes », « Données aéronautiques » et « Types d’aéronefs » ainsi que l'onglet « Premier lancement » ne sont pas proposés. Le mode ne dépend que du réglage de l'accès, pas de l'appareil : la carte est la même sur un navigateur de bureau.
+
 ### Sources et dossiers
 
 Cette rubrique est le seul endroit où régler les dossiers locaux et les adresses des sources externes.

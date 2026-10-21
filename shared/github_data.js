@@ -15,10 +15,12 @@
   //     des CR) ; un commit par écriture, au nom du trigramme.
   // API (window.GitHubData) : on(), config(), enable({ repo, branch, token }), disable(), test(cfg), read(rel, { method })
   // → Response, readSync(rel) → texte | null, getText(rel) → { text, sha } | null, put(rel, text, { sha, message }) → sha,
-  // remove(rel) ; erreur de conflit : err.conflict = true.
+  // remove(rel) ; erreur de conflit : err.conflict = true ; lastRead() → date ISO de la dernière lecture réussie dans le
+  // dépôt (texte vide s'il n'y en a pas : githubData:readAt, posée au plus toutes les 30 s ; Paramètres › Installation).
   if (window.GitHubData) return;
   const API = 'https://api.github.com',
     KEY = 'githubData:v1', // réglage { repo, branch, token }
+    READ_AT = 'githubData:readAt', // date ISO de la dernière lecture réussie (lastRead)
     REF = 'githubData:f:', // copies des fichiers lus en synchrone (références) : { etag, text }
     DB = 'sogGithubData',
     STORE = 'files'; // copies hors ligne des fichiers lus par fetch : { rel, etag, body }
@@ -41,6 +43,25 @@
     }
   };
   const on = () => !!config();
+  let stamped = 0;
+  /** Note la lecture réussie qui vient d'avoir lieu (au plus une écriture toutes les 30 s). */
+  const stamp = () => {
+    if (Date.now() - stamped < 30e3) return;
+    stamped = Date.now();
+    try {
+      localStorage.setItem(READ_AT, new Date(stamped).toISOString());
+    } catch {
+      /* stockage indisponible : pas de date */
+    }
+  };
+  /** Date ISO de la dernière lecture réussie dans le dépôt ; texte vide s'il n'y en a pas. */
+  const lastRead = () => {
+    try {
+      return localStorage.getItem(READ_AT) || '';
+    } catch {
+      return '';
+    }
+  };
   /** Réglage exigé (erreur expliquée sinon). */
   const need = () => {
     const c = config();
@@ -168,6 +189,7 @@
         headers: headers(c, 'application/vnd.github.raw', old?.etag),
         cache: 'no-store'
       });
+      if (r.ok || r.status === 304) stamp();
       if (r.status === 304 && old) return respond(rel, body(old.body), old.etag);
       if (r.ok) {
         const text = /^(text|application\/(json|xml))/.test(mimeOf(rel)),
@@ -302,6 +324,7 @@
         headers: headers(c, 'application/vnd.github.raw', hit.etag),
         cache: 'no-store'
       }).then(async r => {
+        if (r.ok || r.status === 304) stamp();
         if (r.ok) refSet(rel, {
           etag: r.headers.get('ETag') || '',
           text: await r.text()
@@ -319,6 +342,7 @@
       return null;
     }
     if (x.status !== 200) return null;
+    stamp();
     refSet(rel, {
       etag: x.getResponseHeader('ETag') || '',
       text: x.responseText
@@ -482,6 +506,7 @@
   /** Coupe le mode GitHub : réglage, jeton et copies effacés. */
   async function disable() {
     localStorage.removeItem(KEY);
+    localStorage.removeItem(READ_AT);
     for (const k of Object.keys(localStorage))
       if (k.startsWith(REF)) localStorage.removeItem(k);
     await idb('clear');
@@ -514,6 +539,7 @@
     enable,
     disable,
     test,
+    lastRead,
     read,
     readSync,
     getText,

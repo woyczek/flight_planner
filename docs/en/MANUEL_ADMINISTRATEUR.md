@@ -202,6 +202,8 @@ The side menu has a single group, “Folders and sources”: “Sources and fold
 The first run has its own tab, “First run”, described in the [user manual](MANUEL_UTILISATEUR.md#first-run); “Clean and start again…” is at the bottom of that page. See also [Installation](../INSTALL.md), § 1.
 These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `sources` and `keys` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
 
+In GitHub mode (app without the launcher: website, iOS app; data access set in My profile › Data access), Installation shows only the “Data access” card: data repository (link `https://github.com/<repository>`) and branch, access status (token check), last successful read, writes pending in the browser outbox (“Synchronise” button to send them), the aircraft type database read from the repository, a link to the virtual airline website and a link to My profile › Data access. Local folders, IVAO keys and SIA import are set on a computer with the launcher: the “Sources and folders”, “Keys and external services”, “Aeronautical data” and “Aircraft types” cards and the “First run” tab are not offered. The mode depends only on the data access setting, not on the device: the card is the same in a desktop browser.
+
 ### Sources and folders
 
 This section is the only place to set the local folders and the addresses of the external sources.

@@ -206,6 +206,17 @@
       'Carpetas locales y direcciones de fuentes externas (aerolínea, SIA, repositorios) en un solo lugar'
     ]
   }, {
+    // Installation en mode GitHub (appli sans lanceur) : seule carte de la page (REPOSITORY_TREE.settings.sections.ghAccess)
+    id: 'ghAccess',
+    icon: 'database',
+    title: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
+    sub: [
+      'Dépôt GitHub des données, état de la lecture et des écritures, base des types d’aéronefs, site de la compagnie',
+      'GitHub data repository, read and write status, aircraft type database, airline website',
+      'GitHub-Daten-Repository, Status von Lesen und Schreiben, Luftfahrzeugtypen-Datenbank, Website der Fluggesellschaft',
+      'Repositorio de datos en GitHub, estado de lectura y escritura, base de tipos de aeronave, sitio de la aerolínea'
+    ]
+  }, {
     id: 'keys',
     icon: 'shield',
     title: ['Clés et services externes', 'Keys and external services', 'Schlüssel und externe Dienste',
@@ -315,8 +326,15 @@
   const PAGE = embedded ? main.dataset.settings || '' : '',
     SECTIONS = window.REPOSITORY_TREE?.settings?.sections || {},
     ONLY = !embedded && main.dataset.blocks ? new Set(main.dataset.blocks.split(/[\s,]+/).filter(Boolean)) : null;
+  // Mode GitHub (appli sans lanceur, shared/github_data.js) : Installation se réduit à la carte « Accès aux données » (bloc
+  // ghAccess) — dossiers locaux, clés et import SIA se règlent sur un poste avec lanceur ; le choix se fait ici, à la
+  // construction de la liste des blocs de la page, et dépend du seul mode (même carte sur un navigateur de bureau)
+  const GH_ONLY = PAGE === 'installation' && !!window.GitHubData?.on?.();
+  /** Vrai si la table des rubriques place le bloc id sur la page de Paramètres courante (quel que soit le mode). */
+  const declaredHere = id => !!PAGE && (!SECTIONS[id] || String(SECTIONS[id]).split(',').includes(PAGE));
   /** Vrai si le bloc id appartient à la page de Paramètres courante (ou à la liste data-blocks de la page autonome). */
-  const onPage = id => PAGE ? !SECTIONS[id] || String(SECTIONS[id]).split(',').includes(PAGE) : !ONLY || ONLY.has(id);
+  const onPage = id => PAGE ? GH_ONLY ? id === 'ghAccess' : id !== 'ghAccess' && declaredHere(id) : ONLY ? ONLY.has(id) : id !==
+    'ghAccess';
   const hosts = {};
   for (const b of BLOCKS) {
     const s = document.createElement('section');
@@ -343,6 +361,7 @@
   // ---- rubrique « Maintenance » du menu latéral de Paramètres : une entrée par bloc
   const NAV = {
     updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'],
+    ghAccess: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
     sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'],
     keys: ['Clés et services externes', 'Keys and external services', 'Schlüssel und Dienste', 'Claves y servicios'],
     versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'],
@@ -363,8 +382,8 @@
     navHost.querySelectorAll('h3').forEach(h => {
       h.textContent = h.dataset.mtGroup === 'store' ? t(['Stockage et sauvegarde', 'Storage and backup', 'Speicher und Sicherung',
         'Almacenamiento y copia'
-      ]) : PAGE === 'installation' ? t(['Dossiers et sources', 'Folders and sources', 'Ordner und Quellen',
-        'Carpetas y fuentes'
+      ]) : GH_ONLY ? t(['Installation', 'Installation', 'Installation', 'Instalación']) : PAGE === 'installation' ? t([
+        'Dossiers et sources', 'Folders and sources', 'Ordner und Quellen', 'Carpetas y fuentes'
       ]) : t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
     });
     navHost.querySelectorAll('[data-mt]').forEach(b => {
@@ -394,8 +413,10 @@
   /** Ouvre le bloc id : sur une autre page de Paramètres, y navigue ; sinon masque l'éditeur de base et les autres blocs,
    *  active l'entrée du menu et inscrit ?m=id dans l'adresse. */
   function showBlock(id) {
-    if (embedded && NAV[id] && !onPage(id) && window.RepositoryNav?.settingsUrl) return location.assign(window.RepositoryNav.settingsUrl(
-      id));
+    if (embedded && NAV[id] && !onPage(id)) {
+      if (declaredHere(id)) return; // bloc de cette page écarté par le mode (GitHub) : rien à ouvrir, rien à suivre
+      if (window.RepositoryNav?.settingsUrl) return location.assign(window.RepositoryNav.settingsUrl(id));
+    }
     if (!embedded || !document.getElementById(id) || cpcoLocked(id)) return;
     main.querySelector('.da-main')?.setAttribute('hidden', '');
     BLOCKS.forEach(b => {
@@ -5379,23 +5400,87 @@
       return null;
     }
   };
+  // ===== Accès aux données (Installation en mode GitHub, appli sans lanceur)
+  /** Dessine la carte « Accès aux données » : dépôt et branche, état de l'accès (essai du jeton), dernière lecture, écritures
+   *  en attente (bouton « Synchroniser »), base des types d'aéronefs lue dans le dépôt, site de la compagnie, lien vers
+   *  Mon profil › Accès aux données. Chaque valeur est écrite telle quelle ; seul l'état de l'accès, qui demande le réseau,
+   *  est complété à l'arrivée de la réponse (une seule écriture, si le texte change). */
+  async function renderGhAccess() {
+    const host = hosts.ghAccess,
+      G = window.GitHubData,
+      nav = window.RepositoryNav,
+      A = window.MissionAssignments,
+      c = G?.config?.();
+    if (!c) {
+      host.innerHTML = pill('info', t(['Accès aux données GitHub non réglé.', 'GitHub data access not set.',
+        'GitHub-Datenzugang nicht eingestellt.', 'Acceso a los datos de GitHub no configurado.'
+      ]));
+      return;
+    }
+    const link = (href, label, ext = false) => `<a class="mt-link" href="${esc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${esc(label)}</a>`,
+      row = (label, html) => `<tr><th>${esc(t(label))}</th><td>${html}</td></tr>`,
+      pending = A?.pendingData?.().length || 0,
+      read = G.lastRead?.() || '',
+      types = Object.keys(window.AIRCRAFT_DB || {}).filter(k => !k.startsWith('__')).length,
+      built = window.AIRCRAFT_DB?.__meta?.generated || '',
+      va = nav?.source?.('defa') || window.REPOSITORY_TREE?.sources?.defa?.url || '',
+      profile = nav?.settingsUrl?.('dataAccess') || '../settings/profil.html?base=dataAccess';
+    host.innerHTML = `<table class="mt-table"><tbody>
+      ${row(['Dépôt des données (privé)', 'Data repository (private)', 'Daten-Repository (privat)', 'Repositorio de datos (privado)'], link(`https://github.com/${c.repo}`, `github.com/${c.repo}`, true))}
+      ${row(['Branche', 'Branch', 'Zweig', 'Rama'], `<code>${esc(c.branch)}</code>`)}
+      ${row(['État de l’accès', 'Access status', 'Zugangsstatus', 'Estado del acceso'], `<span data-gh-state>${pill('info', t(['Vérification…', 'Checking…', 'Prüfung…', 'Comprobando…']))}</span>`)}
+      ${row(['Dernière lecture réussie', 'Last successful read', 'Letzte erfolgreiche Lesung', 'Última lectura correcta'], read ? `${esc(fmtDate(read))} <span class="mt-small">(${esc(ago(read))})</span>` : esc(t(['aucune notée dans ce navigateur', 'none noted in this browser', 'keine in diesem Browser vermerkt', 'ninguna anotada en este navegador'])))}
+      ${row(['Écritures en attente', 'Pending writes', 'Ausstehende Schreibvorgänge', 'Escrituras pendientes'], `${pending ? pill('warn', t(['{n} fichier(s) à envoyer', '{n} file(s) to send', '{n} Datei(en) zu senden', '{n} archivo(s) por enviar'], { n: pending })) : pill('ok', t(['aucune', 'none', 'keine', 'ninguna']))}${pending && A?.flushData ? ` <button type="button" class="secondary" data-gh-sync data-icon="refresh">${esc(t(['Synchroniser', 'Synchronise', 'Synchronisieren', 'Sincronizar']))}</button>` : ''}`)}
+      ${row(['Base des types d’aéronefs', 'Aircraft type database', 'Luftfahrzeugtypen-Datenbank', 'Base de tipos de aeronave'], `<code>AircraftDB/aircraft_db.js</code> — ${esc(types ? t(['{n} types, générée le {d}', '{n} types, generated {d}', '{n} Typen, erzeugt am {d}', '{n} tipos, generada el {d}'], { n: types, d: built || '—' }) : t(['lue dans le dépôt des données', 'read from the data repository', 'aus dem Daten-Repository gelesen', 'leída del repositorio de datos']))}`)}
+      ${row(['Site de la compagnie virtuelle', 'Virtual airline website', 'Website der virtuellen Fluggesellschaft', 'Sitio de la aerolínea virtual'], va ? link(va, va.replace(/^https?:\/\//, ''), true) : '—')}
+      </tbody></table>
+      <p class="mt-small">${link(profile, t(['Mon profil › Accès aux données →', 'My profile › Data access →', 'Mein Profil › Datenzugang →', 'Mi perfil › Acceso a los datos →']))}</p>
+      <p class="mt-small">${esc(t(['Dossiers locaux, clés IVAO et import SIA se règlent sur un poste avec lanceur.', 'Local folders, IVAO keys and SIA import are set on a computer with the launcher.', 'Lokale Ordner, IVAO-Schlüssel und SIA-Import werden an einem Rechner mit Starter eingestellt.', 'Las carpetas locales, las claves IVAO y la importación del SIA se ajustan en un equipo con lanzador.']))}</p>`;
+    host.querySelector('[data-gh-sync]')?.addEventListener('click', async () => {
+      try {
+        const done = await A.flushData();
+        window.AppFramework?.notify?.(t(['{n} fichier(s) envoyé(s) au dépôt des données.',
+          '{n} file(s) sent to the data repository.', '{n} Datei(en) an das Daten-Repository gesendet.',
+          '{n} archivo(s) enviado(s) al repositorio de datos.'
+        ], {
+          n: done.length
+        }), 'ok');
+      } catch (e) {
+        window.AppFramework?.notify?.(explain(e), 'warn');
+      }
+      renderGhAccess();
+    });
+    // état de l'accès : essai du réglage (dépôt lisible, branche, droit d'écriture), connu à l'arrivée de la réponse
+    const r = await G.test(c),
+      cell = host.querySelector('[data-gh-state]');
+    if (!cell?.isConnected) return;
+    const html = pill(r.ok ? r.write ? 'ok' : 'warn' : 'err', r.message);
+    if (cell.innerHTML !== html) cell.innerHTML = html;
+  }
+
   /** Rendu complet : titres, attente des modules, état git, dossier SIA et base, puis chaque bloc de la page (erreurs isolées
    *  par guard) ; ouvre ensuite le bloc demandé (?m= ou ancre), « Mises à jour » par défaut sur la page Maintenance. */
   async function renderAll() {
     titles();
-    await guard(['Chargement des modules', 'Loading the modules', 'Laden der Module', 'Carga de los módulos'], () => Promise.all([
-      waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')
-    ]));
-    await Promise.all([guard(['État git', 'Git state', 'Git-Status', 'Estado de git'], () => readGitState(false)), guard(['Dossier SIA',
-      'SIA folder', 'SIA-Ordner', 'Carpeta SIA'
-    ], () => scanSiaFolder(false))]);
-    baseSummary = await guard(['Base SIA du navigateur', 'Browser SIA database', 'SIA-Datenbank des Browsers',
-        'Base SIA del navegador'
-      ],
-      () => window.SiaBase.summary());
+    // mode GitHub (Installation) : ni état git, ni dossier SIA, ni base SIA — rien de tout cela n'existe sans lanceur
+    if (!GH_ONLY) {
+      await guard(['Chargement des modules', 'Loading the modules', 'Laden der Module', 'Carga de los módulos'], () => Promise.all([
+        waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')
+      ]));
+      await Promise.all([guard(['État git', 'Git state', 'Git-Status', 'Estado de git'], () => readGitState(false)), guard([
+        'Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'
+      ], () => scanSiaFolder(false))]);
+      baseSummary = await guard(['Base SIA du navigateur', 'Browser SIA database', 'SIA-Datenbank des Browsers',
+          'Base SIA del navegador'
+        ],
+        () => window.SiaBase.summary());
+    }
     for (const [what, fn, host] of [
         [
           ['Mises à jour', 'Updates', 'Aktualisierungen', 'Actualizaciones'], renderUpdates, hosts.updates
+        ],
+        [
+          ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'], renderGhAccess, hosts.ghAccess
         ],
         [
           ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], renderSources, hosts.sources
@@ -5440,7 +5525,8 @@
       inBlock = !NAV[want] && anchor && (BLOCKS.find(b => document.getElementById(b.id)?.querySelector(`#${CSS.escape(anchor)}`))?.id ||
         (/^mt-aero/.test(anchor) ? 'sia' : ''));
     if (embedded) {
-      if (NAV[want]) showBlock(want);
+      if (NAV[want] && !(declaredHere(want) && !onPage(want))) showBlock(
+        want); // bloc écarté par le mode : le premier bloc de la page s'ouvre
       else if (inBlock) showBlock(inBlock);
       else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock('updates');
       // aucune rubrique de data_admin.js ouverte (Installation) : premier bloc de la page

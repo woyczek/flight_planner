@@ -202,6 +202,8 @@ El menú lateral tiene un solo grupo, «Carpetas y fuentes»: «Fuentes y carpet
 El primer arranque tiene su propia pestaña, «Primer arranque», descrita en el [manual de usuario](MANUEL_UTILISATEUR.md#primer-arranque); «Limpiar y empezar de nuevo…» está al pie de esa página. Véase también [Instalación](../INSTALL.md), § 1.
 Estos apartados se asignan a la página mediante `config/repository_tree` (clave `settings.sections`: `sources` y `keys` → installation; `sia` y `types` → installation,maintenance, es decir, en las dos páginas: la puesta en marcha aquí, la actualización en Mantenimiento, mismos bloques). Todos los demás apartados de mantenimiento se abren en la página Mantenimiento.
 
+En modo GitHub (app sin lanzador: sitio web, app iOS; acceso a los datos configurado en Mi perfil › Acceso a los datos), Instalación muestra solo la tarjeta «Acceso a los datos»: repositorio de datos (enlace `https://github.com/<repositorio>`) y rama, estado del acceso (prueba del token), última lectura correcta, escrituras pendientes en la bandeja de salida del navegador (botón «Sincronizar» para enviarlas), la base de tipos de aeronave leída del repositorio, un enlace al sitio de la aerolínea virtual y un enlace a Mi perfil › Acceso a los datos. Las carpetas locales, las claves IVAO y la importación del SIA se ajustan en un equipo con lanzador: las tarjetas «Fuentes y carpetas», «Claves y servicios externos», «Datos aeronáuticos» y «Tipos de aeronave» y la pestaña «Primer arranque» no se ofrecen. El modo depende solo del ajuste del acceso, no del dispositivo: la tarjeta es la misma en un navegador de escritorio.
+
 ### Fuentes y carpetas
 
 Este apartado es el único lugar donde se ajustan las carpetas locales y las direcciones de las fuentes externas.

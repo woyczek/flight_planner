@@ -189,6 +189,8 @@ window.REPOSITORY_TREE={
       cpco:"centre",users:"centre",dispoCategories:"centre",odv:"centre",odvOrders:"centre",send:"centre",
       // « setup » (Premier lancement, rubrique faite de liens) n'est plus placée : l'onglet Premier lancement la remplace
       sources:"installation",keys:"installation",
+      // carte unique d'Installation en mode GitHub (appli sans lanceur) : shared/maintenance_page.js n'y montre qu'elle, et ni elle hors de ce mode ni les autres dedans
+      ghAccess:"installation",
       fleet:"centre",aircraftDb:"maintenance",callsigns:"maintenance",defaReference:"maintenance",defaLog:"maintenance",merges:"maintenance",ledgers:"maintenance",
       registry:"maintenance",localTypes:"maintenance",learned:"maintenance",airports:"maintenance",
       updates:"maintenance",versions:"maintenance",deps:"maintenance",types:"installation,maintenance",sia:"installation,maintenance",caches:"maintenance",storage:"maintenance",backup:"maintenance",journal:"maintenance"
@@ -246,7 +248,7 @@ window.REPOSITORY_TREE={
     {path:"apps/settings/maintenance.html",mobile:false,level:4,menu:false,slot:"settings",label:"Paramètres — Maintenance",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/settings/apparence.html",menu:false,slot:"settings",label:"Apparence",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/aide/aide.html",menu:"Aide",label:"Aide — manuels et documentation de la suite",theme:"core",favicon:"assets/favicon-flight.svg"},
-    {path:"apps/settings/premier_lancement.html",mobile:false,menu:false,slot:"settings",label:"Premier lancement",theme:"core",favicon:"assets/favicon-flight.svg"},
+    {path:"apps/settings/premier_lancement.html",mobile:false,github:false,menu:false,slot:"settings",label:"Premier lancement",theme:"core",favicon:"assets/favicon-flight.svg"},
     {path:"apps/landing/LandingPerformance_Dashboard_MultiCSV_i18n.html",module:"landings",menu:"Landing Performance Dashboard",label:"Landing Performance Dashboard"},
     {path:"apps/cpco/mission_editor.html",mobile:false,level:3,menu:"Centre — Générateur de mission",label:"Générateur de mission — Centre de planification et de conduite des opérations"},
     {path:"apps/cpco/map_parser.html",mobile:false,level:4,menu:"Centre — Studio cartographique",label:"Studio cartographique — Centre de planification et de conduite des opérations"},
