@@ -657,6 +657,8 @@ Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun é
 
 *Figure 13 — Lire les vols dans les créneaux et comparer leurs horaires aux zones, à l’ATC et aux disponibilités.*
 
+**Sur téléphone** : les plaquettes du jour s'affichent en liste, par heure de début : heure de début et de fin (z), indicatif ou libellé, appareils, équipage, mission et état. Un toucher ouvre la plaquette (fenêtre de l'élément, en lecture seule si la page l'est). Le bouton « Frise » montre la frise du jour ; « Liste » y revient. L'avis « base aéronautique absente » n'est montré qu'à partir du niveau Planification (2).
+
 ### Fenêtre d'un élément
 
 - **Vol** : libellé, indicatif, mission du registre (vide : entraînement), réseau, début, durée, couleur, zones d'un entraînement, axe et offload d'un vol ravitailleur, ravitailleur et heure du ravitaillement, avions (pilote, navigateur, annulé ; huit au plus), tâches (une par ligne, « nom = TRI »), infos, état, motif, CR (ME, Bâché, MNE), partielle, causes de MNE.

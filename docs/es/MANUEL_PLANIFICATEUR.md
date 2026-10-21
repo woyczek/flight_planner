@@ -548,6 +548,8 @@ Manejo:
 
 En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulante está disponible en la hora y media previa al vuelo, «↻» una recurrencia; una barra verde (hecho) o naranja (no hecho) subraya el estado; una ficha cancelada aparece tachada. Bajo la cronología, «Problemas de asignación» lista los conflictos del día: un clic muestra la ficha.
 
+**En el teléfono**: las tiras del día se muestran en lista, por hora de inicio: hora de inicio y de fin (z), indicativo o etiqueta, aeronaves, tripulación, misión y estado. Un toque abre la tira (ventana del elemento, en solo lectura si la página lo está). El botón «Cronología» muestra la cronología del día; «Lista» vuelve. El aviso «base aeronáutica ausente» solo aparece a partir del nivel Planificación (2).
+
 ### Ventana de un elemento
 
 - **Vuelo**: etiqueta, indicativo, misión del registro (vacío: entrenamiento), red, inicio, duración, color, zonas de un entrenamiento, eje y descarga de un vuelo cisterna, cisterna y hora del reabastecimiento, aeronaves (piloto, navegante, cancelado; ocho como máximo), tareas (una por línea, «nombre = TRI»), información, estado, motivo, informe (ME, Bâché, MNE), parcial, causas de MNE.

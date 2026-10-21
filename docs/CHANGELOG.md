@@ -160,6 +160,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **ODV Board on phones: the day's strips as a list** (`apps/cpco/odv_orders.js`, `apps/cpco/odv_orders.html`) — in
+  mobile mode the order of the day lists the strips by start time (start–end z, call sign or label, aircraft, crew,
+  mission, status); a tap opens the strip's window (read-only when the page is); "Timeline" shows the 24-hour
+  timeline and "List" goes back. The "aeronautical database missing" notice is shown from level 2 only (`minLevel`).
+  Planner manual (4 languages).
 - **ODV Board and planning: why the page is view-only** (`apps/cpco/odv_core.js` `OdvCore.readOnlyReason` /
   `showReadOnly`, `apps/cpco/odv_orders.js`, `apps/cpco/odv_planning.js`, `shared/repository_nav.js`) — instead of
   the generic "read-only without the Centre" notice, a floating notice gives the actual reason with a link to the

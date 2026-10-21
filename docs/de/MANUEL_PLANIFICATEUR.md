@@ -548,6 +548,8 @@ Bedienung:
 
 Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass in den 90 Minuten vor dem Flug kein Besatzungsmitglied verfügbar ist, „↻“ eine Wiederholung; ein grüner (erledigt) oder oranger (nicht erledigt) Balken unterstreicht den Status; ein abgesagter Streifen ist durchgestrichen. Unter der Zeitleiste listet „Einteilungsprobleme“ die Konflikte des Tages: ein Klick zeigt den Streifen.
 
+**Auf dem Telefon**: Die Streifen des Tages erscheinen als Liste, nach Beginn: Beginn und Ende (z), Rufzeichen oder Bezeichnung, Luftfahrzeuge, Besatzung, Mission und Status. Ein Tippen öffnet den Streifen (Fenster des Elements, schreibgeschützt, wenn die Seite es ist). Der Knopf „Zeitleiste“ zeigt die Zeitleiste des Tages; „Liste“ kehrt zurück. Der Hinweis „Luftfahrtdatenbank fehlt“ erscheint erst ab der Stufe Planung (2).
+
 ### Fenster eines Elements
 
 - **Flug**: Bezeichnung, Rufzeichen, Mission des Registers (leer: Übung), Netzwerk, Beginn, Dauer, Farbe, Gebiete eines Übungsflugs, Strecke und Abgabe eines Tankerflugs, Tanker und Betankungszeit, Luftfahrzeuge (Pilot, Navigator, abgesagt; höchstens acht), Aufgaben (eine pro Zeile, „Name = TRI“), Infos, Status, Grund, Bericht (ME, Bâché, MNE), teilweise, MNE-Ursachen.

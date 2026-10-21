@@ -547,6 +547,8 @@ Handling:
 
 On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member is available in the hour and a half before the flight, “↻” a recurrence; a green (done) or orange (not done) bar underlines the status; a cancelled strip is struck through. Below the timeline, “Assignment problems” lists the day's conflicts: a click shows the strip.
 
+**On phones**: the day's strips are shown as a list, by start time: start and end time (z), call sign or label, aircraft, crew, mission and status. A tap opens the strip (item window, read-only when the page is). The “Timeline” button shows the day's timeline; “List” goes back. The “aeronautical database missing” notice only appears from the Planning level (2).
+
 ### Item window
 
 - **Flight**: label, callsign, registry mission (empty: training), network, start, duration, colour, areas of a training flight, track and offload of a tanker flight, tanker and refuelling time, aircraft (pilot, navigator, cancelled; eight at most), tasks (one per line, “name = TRI”), info, status, reason, report (ME, Bâché, MNE), partial, MNE causes.

@@ -20,7 +20,7 @@
     REP = () => window.OdvReports,
     MA = () => window.MissionAssignments;
   /** Notification flottante de la suite (AppFramework.notify) ; k : info, warn ou error. */
-  const notify = (m, k = 'info') => window.AppFramework?.notify?.(m, k);
+  const notify = (m, k = 'info', o) => window.AppFramework?.notify?.(m, k, o);
   const $ = (s, r = document) => r.querySelector(s),
     $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const VIEW = 'odvOrdersView:v1',
@@ -942,7 +942,9 @@
       notify(t(L4('Zones : base aéronautique absente ou zone France inactive — Paramètres › Maintenance › Données aéronautiques.',
         'Areas: aeronautical database missing or France zone inactive — Settings › Maintenance › Aeronautical data.',
         'Gebiete: Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv — Einstellungen › Wartung › Luftfahrtdaten.',
-        'Zonas: base aeronáutica ausente o zona Francia inactiva — Ajustes › Mantenimiento › Datos aeronáuticos.')), 'warn');
+        'Zonas: base aeronáutica ausente o zona Francia inactiva — Ajustes › Mantenimiento › Datos aeronáuticos.')), 'warn', {
+        minLevel: 2 // l'équipage (niveau 1) n'y peut rien
+      });
     }
     paintZones();
   }
@@ -1137,9 +1139,54 @@
       ${sect('note', blocks.note.html, blocks.note.h)}
     </div>`;
     host.dataset.s0 = s0;
+    renderList(date);
     renderPalette(date);
     renderProblems(date);
     paintZones();
+  }
+  /** Téléphone (mode mobile) : les plaquettes du jour en liste par heure de début — heure, indicatif ou libellé, appareils,
+   *  équipage, état ; un toucher ouvre la plaquette (fenêtre d'édition, en lecture seule si la page l'est). Le bouton
+   *  « Frise » montre la frise (et « Liste » revient) ; hors mode mobile, la liste est masquée (CSS). */
+  function renderList(date) {
+    const host = $('#odvoList');
+    if (!host) return;
+    const items = S.doc.elements.filter(e => e.date === date).sort((a, b) => min(a.debut) - min(b.debut));
+    const on = $('#odvoDay')?.classList.contains('odvo-frise-on');
+    const row = e => {
+      const cs = e.type === 'vol' ? O().colorFor(e.indicatif, S.cfg) : null,
+        col = tint(cs?.fond || e.fond || e.couleur || '#64748b'),
+        end = hhmm(Math.min(1440, min(e.debut) + (+e.duree || 0)));
+      let head = '',
+        sub = [];
+      if (e.type === 'vol') {
+        const aff = O().missionCrew(e, S.affect);
+        const crew = aff.length ? aff.map(a => a.pilot) : (e.avions || []).flatMap(a => [a.pilote, a.nav]).filter(Boolean);
+        head = [e.indicatif, e.libelle].filter(Boolean).join(' — ') || '—';
+        sub = [(e.avions || []).map(a => a.appareil?.immat || a.appareil?.type || a.poste?.type || '').filter(Boolean).join(', '),
+          crew.join(' '), e.mission || ''
+        ];
+      } else if (e.type === 'note') head = e.texte || '…';
+      else {
+        head = `${t(TX.sections[e.type] || [e.type, e.type, e.type, e.type])} — ${e.libelle || '—'}`;
+        sub = [(e.equipage || []).join(' ')];
+      }
+      if (e.etat && e.etat !== 'prevu') sub.push(t(TX.etats[e.etat] || [e.etat, e.etat, e.etat, e.etat]));
+      sub = sub.filter(Boolean);
+      return `<button type="button" class="odvo-li" data-open="${esc(e.id)}" style="--odvo-li:${esc(col)}"><b>${esc(e.debut)}–${esc(end)}z</b><span><span>${esc(head)}</span>${sub.length ? `<small>${esc(sub.join(' · '))}</small>` : ''}</span></button>`;
+    };
+    host.innerHTML = `<div class="odvo-list-bar"><b>${esc(tf(L4('{n} plaquette(s) ce jour', '{n} strip(s) this day', '{n} Streifen an diesem Tag', '{n} tira(s) este día'), {
+      n: items.length
+    }))}</b><button type="button" class="secondary" data-frise>${esc(on ? t(L4('Liste', 'List', 'Liste', 'Lista')) : t(L4('Frise', 'Timeline', 'Zeitleiste', 'Cronología')))}</button></div><div class="odvo-li-list">${items.length ? items.map(row).join('') : `<p class="odvo-li-empty">${esc(t(L4('Rien de prévu ce jour.', 'Nothing planned this day.', 'Nichts geplant an diesem Tag.', 'Nada previsto este día.')))}</p>`}</div>`;
+    if (!host.dataset.bound) {
+      host.dataset.bound = '1';
+      host.addEventListener('click', ev => {
+        const o = ev.target.closest('[data-open]');
+        if (o) return void openEdit(o.dataset.open);
+        if (!ev.target.closest('[data-frise]')) return;
+        $('#odvoDay').classList.toggle('odvo-frise-on');
+        renderList(curDate());
+      });
+    }
   }
   /** Pastille d'un membre sur une plaquette : couleur, PTA, DLO, qualification sur le type de l'avion, conflit en
    *  infobulle ; locked : non glissable (pilote tenu par l'ordre de mission). */
