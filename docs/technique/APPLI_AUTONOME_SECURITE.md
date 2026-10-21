@@ -118,6 +118,18 @@ The user's decision: no organization for now (migration to come, one tester unti
   - **iOS Keychain: not done.** Capacitor core has no Keychain storage; keeping the token in the Keychain with
     “this device only” accessibility needs a native plugin (a secure-storage plugin) and native code in `mobile/`. Until
     then, the iOS app keeps the token in the WKWebView `localStorage` (app container, part of device backups).
-- **S2 — enrolment without launcher** (L4), **S3 — signed assignments** (L5), **S4 — records signed by the pilots**,
-  registry history through the commits API, conflicts by `sha`: see the reading page sent before S2.
+- **S2 — enrolment without launcher (L4, done)**: My profile › “This device” (fingerprint, registry confirmation,
+  “Request access”), Settings › Centre › Group mode (requests with the recalculated fingerprint, “Approve” / “Reject”,
+  device keys and “Revoke”, “Activate the group” once two admins have a key). The registry history through the commits
+  API, planned for S4, came forward: without it a phone could not join a registry past version 1. Tested without any
+  real token: a launcher device founding the group, two browser origins of the built site in GitHub mode against a
+  local fake GitHub (standard library), request → approval → revocation → activation → revocation refused.
+  **Test for the user, on the phone, with the token they enter themselves:**
+  1. Phone: My profile › This device › “Request access”; note the fingerprint shown.
+  2. Workstation (admin): Settings › Centre › Group mode › Device access requests › “Approve”.
+  3. Before approving, check that the fingerprint on the workstation is exactly the phone's; afterwards the phone shows
+     “Device enrolled for … ✓”.
+  4. Workstation: Device keys › “Revoke” on the phone's key; the phone shows “Not enrolled” again.
+- **S3 — signed assignments** (L5), **S4 — records signed by the pilots**, conflicts by `sha`: see the reading page
+  sent before S2.
 

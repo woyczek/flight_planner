@@ -80,6 +80,27 @@
       'zuerst das Kürzel einstellen (Mein Profil)', 'definir primero el trigrama (Mi perfil)'
     ],
     'deja-groupe': ['déjà en mode groupe', 'already in group mode', 'bereits im Gruppenmodus', 'ya en modo grupo'],
+    'pas-groupe': ['le Centre n’est pas en mode groupe (ou le registre n’est pas encore accepté sur ce poste)',
+      'the Centre is not in group mode (or the registry is not accepted on this device yet)',
+      'das Zentrum ist nicht im Gruppenmodus (oder das Register ist auf diesem Gerät noch nicht akzeptiert)',
+      'el Centro no está en modo grupo (o el registro aún no está aceptado en este equipo)'
+    ],
+    'deja-enrole': ['ce poste est déjà enrôlé pour ce trigramme', 'this device is already enrolled for this trigram',
+      'dieses Gerät ist für dieses Kürzel bereits eingeschrieben', 'este equipo ya está inscrito para este trigrama'
+    ],
+    empreinte: ['demande incohérente : l’empreinte ne correspond pas à la clé publique',
+      'inconsistent request: the fingerprint does not match the public key',
+      'widersprüchliche Anfrage: der Fingerabdruck passt nicht zum öffentlichen Schlüssel',
+      'solicitud incoherente: la huella no corresponde a la clave pública'
+    ],
+    'autre-groupe': ['demande faite pour un autre groupe (registre refondé depuis)',
+      'request made for another group (registry re-founded since)',
+      'Anfrage für eine andere Gruppe (Register seitdem neu gegründet)',
+      'solicitud hecha para otro grupo (registro refundado desde entonces)'
+    ],
+    'deja-actif': ['le groupe est déjà actif', 'the group is already active', 'die Gruppe ist bereits aktiv',
+      'el grupo ya está activo'
+    ],
     'secours-inconnue': ['cette clé de secours n’est pas celle du registre accepté',
       'this recovery key is not the one of the accepted registry',
       'dieser Notfallschlüssel ist nicht der des akzeptierten Registers',
@@ -255,9 +276,29 @@
     for (let t0 = Date.now(); !window[name] && Date.now() - t0 < ms;) await new Promise(r => setTimeout(r, 50));
     return window[name] || null;
   };
-  /** Versions du registre dans l'historique git des données (lanceur, GET /__setup/registre-historique ; le lanceur
-   *  ne vérifie rien) : enveloppes, de la plus ancienne à la plus récente ; [] sans lanceur ou sans git. */
+  /** Versions du registre dans l'historique git des données (lanceur, GET /__setup/registre-historique ; appli sans
+   *  lanceur : API des commits du dépôt GitHub ; rien n'est vérifié ici) : enveloppes, de la plus ancienne à la plus
+   *  récente ; [] sans historique. */
   async function history() {
+    // appli sans lanceur (mode GitHub) : historique du dépôt par l'API des commits, mêmes versions sans doublon
+    if (window.GitHubData?.on?.()) {
+      const seen = new Set(),
+        out = [];
+      for (const text of await window.GitHubData.history(FILE).catch(() => [])) {
+        let env = null;
+        try {
+          env = JSON.parse(text);
+        } catch {
+          /* version illisible : ignorée */
+        }
+        const key = env && typeof env === 'object' ? S().canonical(env) : '';
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          out.push(env);
+        }
+      }
+      return out;
+    }
     try {
       const r = await (await fetch('/__setup/registre-historique', {
         headers: {
@@ -660,7 +701,8 @@
     });
     return w;
   }
-  /** Change l'entrée d'un utilisateur (nom, rôle, état, mot de passe) : nouvelle version signée par un admin. */
+  /** Change l'entrée d'un utilisateur (nom, rôle, état, mot de passe) : nouvelle version signée par un admin ; un
+   *  utilisateur désactivé perd toutes ses clés de poste (révoquées). */
   const setUser = (tri, patch) => publish(c => {
     tri = norm(tri);
     c.utilisateurs[tri] = {
@@ -672,7 +714,177 @@
       ...(c.utilisateurs[tri] || {}),
       ...patch
     };
+    if (c.utilisateurs[tri].actif === false) c.utilisateurs[tri].cles = [];
   });
+
+  // ---- enrôlement des postes (lot L4 / S2) : le pilote demande l'accès depuis son poste (fichier de demande signé par
+  // la clé du poste : preuve de possession), un admin compare l'empreinte reçue par un autre canal et approuve (clé
+  // ajoutée au registre, nouvelle version signée) ou refuse ; révocation d'une clé ; activation du groupe à deux admins
+  const REQ_DIR = 'utilisateurs/demandes';
+  /** Fichier de la demande d'un poste : utilisateurs/demandes/<TRI>_<16 premiers caractères du kid>.json. */
+  const reqPath = (tri, kid) => `${REQ_DIR}/${norm(tri)}_${String(kid).slice(0, 16)}.json`;
+  /** Demande valide ? Forme, kid = empreinte de la clé publique, signée par cette clé (le poste détient la clé privée) ;
+   *  { ok, court, raison } (raisons : format, empreinte, signature). Pure : banc d'essai. */
+  async function checkRequest(r) {
+    if (!r || r.type !== 'demande' || !/^[A-Z0-9]{2,5}$/.test(r.trigramme || '') || !r.kid || !r.pub) return {
+      ok: false,
+      raison: 'format'
+    };
+    let fp;
+    try {
+      fp = await S().fingerprint(r.pub);
+    } catch {
+      return {
+        ok: false,
+        raison: 'format'
+      };
+    }
+    if (fp.kid !== r.kid) return {
+      ok: false,
+      raison: 'empreinte'
+    };
+    const v = await S().verifyRecord(r, kid => kid === r.kid ? {
+      pub: r.pub,
+      alg: r.alg || 'ES256'
+    } : null);
+    return v.ok ? {
+      ok: true,
+      court: fp.court
+    } : {
+      ok: false,
+      raison: 'signature'
+    };
+  }
+  /** Ce poste dans le registre : { id (identité ou null), tri, enrolled (clé de ce poste au trigramme), pending (demande
+   *  déposée et pas encore traitée) }. */
+  async function deviceState() {
+    await ready();
+    const id = await S()?.identity?.({
+        create: false
+      }),
+      tri = norm(window.SuiteUsers?.effective?.() || '');
+    const enrolled = !!id && (st.accepted?.utilisateurs?.[tri]?.cles || []).some(k => k.kid === id.kid);
+    let pending = null;
+    if (id && tri && !enrolled) pending = await A().readData(reqPath(tri, id.kid), {
+      fresh: true
+    }).catch(() => null);
+    return {
+      id,
+      tri,
+      enrolled,
+      pending
+    };
+  }
+  /** « Demander l'accès » : clé de ce poste (créée au besoin), demande signée déposée dans le dépôt des données ;
+   *  { where, error, court }. */
+  async function requestAccess() {
+    await refresh();
+    if (!st.group || !st.accepted) throw fail('pas-groupe');
+    const tri = me(),
+      id = await S().identity();
+    if ((st.accepted.utilisateurs[tri]?.cles || []).some(k => k.kid === id.kid)) throw fail('deja-enrole');
+    const rec = await S().signRecord({
+      type: 'demande',
+      groupe: st.accepted.groupe || '',
+      trigramme: tri,
+      poste: deviceName(),
+      kid: id.kid,
+      alg: id.alg,
+      pub: id.pub,
+      ecdh: id.ecdh,
+      cree: now()
+    });
+    return {
+      ...(await A().writeData(reqPath(tri, id.kid), rec)),
+      court: id.court
+    };
+  }
+  /** Demandes déposées (dépôt GitHub : arbre ; lanceur : GET /__setup/data-list ; plus celles de la boîte d'envoi) :
+   *  [{ rel, req, ok, court, raison, nouveau (trigramme absent du registre) }]. */
+  async function requests() {
+    await ready();
+    let paths = [];
+    if (window.GitHubData?.on?.()) paths = (await window.GitHubData.list(`${REQ_DIR}/`).catch(() => null)) || [];
+    else try {
+      const r = await (await fetch(`/__setup/data-list?dir=${encodeURIComponent(REQ_DIR)}`, {
+        headers: {
+          'X-SOG-Setup': '1'
+        },
+        cache: 'no-store'
+      })).json();
+      paths = (r.files || []).map(f => `${REQ_DIR}/${f}`);
+    } catch {
+      /* sans lanceur ni dépôt GitHub : seulement la boîte d'envoi */
+    }
+    for (const rel of A().pendingData?.() || [])
+      if (rel.startsWith(`${REQ_DIR}/`) && !paths.includes(rel)) paths.push(rel);
+    const out = [];
+    for (const rel of paths.filter(p => /\.json$/.test(p))) {
+      const req = await A().readData(rel, {
+        fresh: true
+      }).catch(() => null);
+      if (!req) continue;
+      const c = await checkRequest(req);
+      if (c.ok && st.accepted && req.groupe && req.groupe !== st.accepted.groupe) Object.assign(c, {
+        ok: false,
+        raison: 'autre-groupe'
+      });
+      out.push({
+        rel,
+        req,
+        ...c,
+        nouveau: !st.accepted?.utilisateurs?.[req.trigramme]
+      });
+    }
+    return out.sort((a, b) => String(a.req.cree).localeCompare(String(b.req.cree)));
+  }
+  /** Approuve une demande (admin) : clé ajoutée au trigramme dans une nouvelle version du registre (utilisateur créé au
+   *  besoin, rôle « utilisateur »), puis demande retirée. */
+  async function approve(item) {
+    const c = await checkRequest(item?.req);
+    if (!c.ok) throw fail(c.raison);
+    const r = item.req;
+    await publish(x => {
+      const u = x.utilisateurs[r.trigramme] ||= {
+        nom: '',
+        role: 'utilisateur',
+        actif: true,
+        mot_de_passe: null,
+        cles: []
+      };
+      u.cles = [...(u.cles || []).filter(k => k.kid !== r.kid), {
+        kid: r.kid,
+        alg: r.alg || 'ES256',
+        pub: r.pub,
+        ecdh: r.ecdh || '',
+        poste: String(r.poste || '').slice(0, 80),
+        depuis: now()
+      }];
+    });
+    await A().writeData(item.rel, null);
+  }
+  /** Refuse une demande (admin) : fichier retiré, rien dans le registre. */
+  async function rejectRequest(item) {
+    await refresh();
+    if (!await isAdminDevice()) throw fail('non-admin');
+    await A().writeData(item.rel, null);
+  }
+  /** Révoque une clé de poste (admin) : nouvelle version sans elle ; ses signatures suivantes sont refusées. Le dernier
+   *  admin à clé (ou le second d'un groupe actif) ne peut pas être retiré (règles du registre). */
+  const revokeKey = (tri, kid) => publish(c => {
+    const u = c.utilisateurs[norm(tri)];
+    if (u) u.cles = (u.cles || []).filter(k => k.kid !== kid);
+  });
+  /** Passe le groupe à l'état actif (admin, deux admins à clé de poste au moins) : le Centre ne s'ouvre plus que par la
+   *  clé d'un admin ; actif_depuis date le début des 30 jours où les données non signées restent acceptées. */
+  async function activate() {
+    await refresh();
+    if (st.accepted?.etat === 'actif') throw fail('deja-actif');
+    return publish(c => {
+      c.etat = 'actif';
+      c.actif_depuis = now();
+    });
+  }
   /** Utilise la clé de secours (fichier + mot de passe) : l'utilisateur tri devient admin, avec la clé de ce poste ;
    *  version signée par la clé de secours (by : « secours »). */
   async function useRecovery(file, password, tri) {
@@ -752,13 +964,22 @@
     useRecovery,
     newRecovery,
     refound,
+    deviceState,
+    requestAccess,
+    requests,
+    approve,
+    rejectRequest,
+    revokeKey,
+    activate,
     why,
     // règles pures (banc d'essai)
     signers,
     keyedAdmins,
     rulesError,
     check,
-    advance
+    advance,
+    checkRequest,
+    REQ_DIR
   };
   // lecture au chargement de la page ; relue quand le registre ou le réglage du Centre change (synchronisation, autre
   // onglet)

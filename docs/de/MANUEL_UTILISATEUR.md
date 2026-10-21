@@ -401,6 +401,22 @@ Für die App ohne Starter (Telefon, auf GitHub Pages veröffentlichte Suite): Di
 - Telefon verloren oder gestohlen: das Token auch auf github.com löschen (Settings › Developer settings › Fine-grained tokens); dann gilt es nirgends mehr.
 - Auf einer unter `….github.io` veröffentlichten Website erinnert die Karte daran, dass jede andere GitHub-Pages-Website desselben Kontos denselben Ursprung teilt und das Token lesen könnte: keine weitere auf diesem Konto veröffentlichen.
 
+### Dieses Gerät
+
+Schlüssel dieses Geräts (Browser dieses Computers oder Telefons) für signierte Konten, nur nötig, wenn das Zentrum der
+Fluggesellschaft im **Gruppenmodus** ist. Der Schlüssel bleibt in diesem Browser, nicht exportierbar.
+
+- Die Karte zeigt den **Fingerabdruck** dieses Geräts (`7F3A-91C2-04BE-D85E`), Ihr Kürzel und den Status: autonomer
+  Modus (nichts zu beantragen), Register zu bestätigen, nicht eingeschrieben, Anfrage offen oder „Gerät für …
+  eingeschrieben ✓“.
+- **Gruppenregister zu bestätigen**: Vergleichen Sie beim ersten Lesen den Fingerabdruck des Gründers mit dem, den der
+  Administrator Ihnen geschickt hat (Discord, SMS, E-Mail): gleich, „Bestätigen“; anders, „Ablehnen“ und ihn warnen.
+- **„Zugang beantragen“** legt eine mit dem Schlüssel dieses Geräts signierte Anfrage ab (im GitHub-Modus: ein Commit im
+  Daten-Repository). Senden Sie danach den Fingerabdruck dieses Geräts über einen anderen Kanal an einen
+  Administrator: Er vergleicht ihn vor dem Genehmigen. „Anfrage erneut senden“ legt sie noch einmal ab.
+- Browser gelöscht, anderes Gerät oder Schlüssel widerrufen: neuer Schlüssel (oder keiner mehr im Register), neue
+  Anfrage.
+
 ### Anmeldung und Passwort
 
 Ihr gemeinsamer Benutzereintrag: Rolle und Passwort (als Hashwert gespeichert, nie im Klartext).

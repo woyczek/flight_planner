@@ -25,7 +25,7 @@ Le verrou masque le Centre tant qu'il n'a pas été activé dans ce navigateur.
 - Dans Paramètres › Centre, seule la rubrique « Accès au Centre et réglages » reste visible ; les autres (« Utilisateurs et droits », « Catégories de disponibilité », « Planning ODV », « Envoi des comptes rendus (webservice) ») sont cachées.
 - L'activation est mémorisée dans ce navigateur seulement : à refaire sur chaque poste et après un effacement des données du site.
 
-Limite : c'est un verrou d'usage, pas une sécurité. Le mot de passe est écrit en clair dans `data/config/centre.json`, partagé avec les données (`DEFA` par défaut), et affiché à côté du bouton « Activer le Centre » : c'est le **mode autonome**. Le mode groupe (registre signé, accès par le rôle d'administrateur) est à venir ([conception](technique/COMPTES_SIGNES.md)).
+Limite : c'est un verrou d'usage, pas une sécurité. Le mot de passe est écrit en clair dans `data/config/centre.json`, partagé avec les données (`DEFA` par défaut), et affiché à côté du bouton « Activer le Centre » : c'est le **mode autonome**. Le mode groupe (registre signé, accès par le rôle d'administrateur) se règle dans la rubrique « Mode groupe (registre signé) » ci-dessous ([conception](technique/COMPTES_SIGNES.md)).
 
 ### Activer ou verrouiller le Centre
 
@@ -159,6 +159,26 @@ fiche modifiée dans le dépôt (« je me donne le rôle admin ») n'a plus d'ef
   une notification et cette rubrique le disent.
 - À la première lecture du registre, un poste montre l'empreinte du fondateur avec « Confirmer » et « Refuser » :
   comparez-la avec celle reçue avant de confirmer.
+- **Demandes d'accès des postes** : un pilote demande l'accès depuis Mon profil › Ce poste, sur un poste avec lanceur
+  comme sur l'appli sans lanceur (téléphone) ; la demande est un fichier signé par la clé de son poste
+  (`data/utilisateurs/demandes/`). La rubrique liste trigramme, nom du poste, date et l'empreinte recalculée par votre
+  page (« nouvel utilisateur » si le trigramme n'est pas encore au registre ; « demande invalide » si la signature ou
+  l'empreinte ne tient pas). Comparez l'empreinte avec celle que le pilote vous a donnée par un autre canal, puis
+  **« Approuver »** (nouvelle version du registre avec sa clé, utilisateur créé au besoin avec le rôle utilisateur) ou
+  **« Refuser »** (demande retirée). Une demande peut venir de quiconque a accès au dépôt : seule l'empreinte prouve le
+  poste.
+- **Clés des postes** : chaque clé du registre, par utilisateur ; **« Révoquer »** (admin) publie une version sans elle :
+  ses signatures suivantes sont refusées, le poste devra refaire une demande. Désactiver un utilisateur (Utilisateurs et
+  droits) révoque toutes ses clés. Le dernier admin à clé ne peut pas perdre la sienne, ni un groupe actif descendre
+  sous deux admins à clé.
+- **« Activer le groupe »** : la carte n'apparaît qu'une fois deux admins dotés d'une clé de poste (un second admin :
+  rôle « Administrateur du Centre » dans Utilisateurs et droits, puis sa demande approuvée). Jusque-là rien ne change
+  et rien n'est ignoré. Une fois le groupe actif : le Centre ne s'ouvre plus que par la clé d'un admin (le mot de passe
+  ne compte plus) ; les données non signées restent acceptées 30 jours, avec la mention « non signé », puis sont
+  ignorées (signature des affectations : lot suivant).
+- Appli sans lanceur (mode GitHub) : un nouveau poste suit la chaîne du registre par l'historique du dépôt (API des
+  commits) ; demandes, approbations et révocations y sont des commits. Passer en mode groupe ou refonder demande un
+  poste avec lanceur.
 
 ### Catégories de disponibilité
 

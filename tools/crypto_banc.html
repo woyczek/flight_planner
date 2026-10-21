@@ -503,6 +503,70 @@ Base IndexedDB séparée <code>sogKeysBanc</code>, effacée au début et à la f
       return [r.ok && G.keyedAdmins(c).length === 2];
     });
 
+    // ---- enrôlement des postes (lot L4 / S2) : demande signée par la clé du poste, révocation, activation
+    /** Demande d'accès signée par le poste id (signer) ; patch modifie la fiche avant signature. */
+    const demande = (id, signer, patch = {}) => S.signRecord({
+      type: 'demande',
+      groupe: 'banc',
+      trigramme: 'CHL',
+      poste: 'banc',
+      kid: id.kid,
+      alg: id.alg,
+      pub: id.pub,
+      ecdh: id.ecdh,
+      cree: '2026-10-21T10:00:00Z',
+      ...patch
+    }, signer);
+    await test('Demande d’accès : signée par la clé du poste qu’elle porte, acceptée (empreinte courte)', async () => {
+      const r = await G.checkRequest(await demande(idB, B2.sign));
+      return [r.ok && r.court === idB.court, r.court];
+    });
+    await test('Demande d’accès : modifiée après signature (trigramme) refusée', async () => {
+      const d = await demande(idB, B2.sign);
+      const r = await G.checkRequest({
+        ...d,
+        trigramme: 'ALF'
+      });
+      return [!r.ok && r.raison === 'signature', r.raison];
+    });
+    await test('Demande d’accès : clé publique d’un autre poste (empreinte ≠ kid) refusée', async () => {
+      const r = await G.checkRequest(await demande(idB, B2.sign, {
+        pub: idA.pub
+      }));
+      return [!r.ok && r.raison === 'empreinte', r.raison];
+    });
+    await test('Demande d’accès : clé d’un poste signée par un autre (sans la clé privée) refusée', async () => {
+      const r = await G.checkRequest(await demande(idB, B.sign));
+      return [!r.ok && r.raison === 'signature', r.raison];
+    });
+    await test('Demande d’accès : forme invalide (trigramme, type) refusée', async () => {
+      const a = await G.checkRequest(await demande(idB, B2.sign, {
+          trigramme: 'c h'
+        })),
+        b = await G.checkRequest({
+          type: 'autre'
+        });
+      return [a.raison === 'format' && b.raison === 'format', `${a.raison} / ${b.raison}`];
+    });
+    await test('Révocation : clé du seul admin retirée refusée ; clé d’un utilisateur retirée acceptée', async () => {
+      const a = G.rulesError(await next(v2, c => {
+        c.utilisateurs.ALF.cles = [];
+      }));
+      const b = G.rulesError(await next(v2, c => {
+        c.utilisateurs.BRV.cles = [];
+      }));
+      return [a === 'admin' && b === '', `${a} / ${b || 'ok'}`];
+    });
+    await test('Révocation : version suivante signée par la clé révoquée refusée', async () => {
+      const w = await next(v2, c => {
+        c.utilisateurs.BRV.role = 'admin_centre';
+        c.utilisateurs.ALF.cles = [];
+      });
+      const r = await G.check(w, await signed(await next(w), B.sign));
+      const r2 = await G.check(w, await signed(await next(w), B2.sign));
+      return [!r.ok && r.raison === 'signataire' && r2.ok, `${r.raison} / ${r2.ok}`];
+    });
+
     await test('Mesures (500 fiches signées puis vérifiées)', async () => {
       const recs = [];
       const tSign = await time(500, async i => recs.push(await S.signRecord({

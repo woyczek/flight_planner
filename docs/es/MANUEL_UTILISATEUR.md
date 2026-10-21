@@ -400,6 +400,20 @@ Para la app sin lanzador (teléfono, suite publicada en GitHub Pages): los datos
 - Teléfono perdido o robado: borre también el token en github.com (Settings › Developer settings › Fine-grained tokens); ya no vale en ningún sitio.
 - En un sitio publicado en `….github.io`, la tarjeta recuerda que cualquier otro sitio de GitHub Pages de la misma cuenta comparte el mismo origen y podría leer el token: no publique otro en esta cuenta.
 
+### Este equipo
+
+Clave de este equipo (navegador de este ordenador o teléfono) para las cuentas firmadas, solo útil si el Centro de la
+aerolínea está en **modo grupo**. La clave se queda en este navegador, no exportable.
+
+- La tarjeta muestra la **huella** de este equipo (`7F3A-91C2-04BE-D85E`), su trigrama y el estado: modo autónomo (nada
+  que solicitar), registro por confirmar, no inscrito, solicitud pendiente o «Equipo inscrito para … ✓».
+- **Registro del grupo por confirmar**: en la primera lectura, compare la huella del fundador con la que el
+  administrador le envió (Discord, SMS, correo): idéntica, «Confirmar»; distinta, «Rechazar» y avísele.
+- **«Solicitar acceso»** deposita una solicitud firmada con la clave de este equipo (en modo GitHub: un commit en el
+  repositorio de datos). Luego envíe la huella de este equipo a un administrador por otro canal: la compara antes de
+  aprobar. «Reenviar la solicitud» la deposita de nuevo.
+- Navegador borrado, otro dispositivo o clave revocada: nueva clave (o ninguna en el registro), nueva solicitud.
+
 ### Conexión y contraseña
 
 Su ficha de usuario compartida: rol y contraseña (conservada en forma de huella, nunca en claro).

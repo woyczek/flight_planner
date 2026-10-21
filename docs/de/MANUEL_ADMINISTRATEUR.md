@@ -23,7 +23,7 @@ Die Sperre blendet das Zentrum aus, solange es in diesem Browser nicht aktiviert
 - Unter Einstellungen › Zentrum bleibt nur die Rubrik „Zugang zum Zentrum und Einstellungen“ sichtbar; die anderen („Benutzer und Rechte“, „Verfügbarkeitskategorien“, „ODV-Planung“, „Berichtsversand (Webdienst)“) sind ausgeblendet.
 - Die Aktivierung wird nur in diesem Browser gespeichert: Sie ist auf jedem Rechner und nach dem Löschen der Websitedaten erneut vorzunehmen.
 
-Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und neben dem Knopf „Zentrum aktivieren“ angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) folgt ([Konzept](../technique/COMPTES_SIGNES.md)).
+Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und neben dem Knopf „Zentrum aktivieren“ angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) wird in der Rubrik „Gruppenmodus (signiertes Register)“ unten eingestellt ([Konzept](../technique/COMPTES_SIGNES.md)).
 
 ### Zentrum aktivieren oder sperren
 
@@ -153,6 +153,26 @@ Eine im Repository geänderte Benutzerdatei („ich gebe mir die Admin-Rolle“)
   behält seine, eine Meldung und diese Rubrik sagen es.
 - Beim ersten Lesen des Registers zeigt ein Gerät den Fingerabdruck des Gründers mit „Bestätigen“ und „Ablehnen“:
   vor dem Bestätigen mit dem erhaltenen vergleichen.
+- **Zugangsanfragen der Geräte**: Ein Pilot beantragt den Zugang unter Mein Profil › Dieses Gerät, auf einem Gerät mit
+  Starter wie in der App ohne Starter (Telefon); die Anfrage ist eine mit dem Schlüssel seines Geräts signierte Datei
+  (`data/utilisateurs/demandes/`). Die Rubrik zeigt Kürzel, Gerätename, Datum und den von Ihrer Seite neu berechneten
+  Fingerabdruck („neuer Benutzer“, wenn das Kürzel noch nicht im Register steht; „ungültige Anfrage“, wenn Signatur
+  oder Fingerabdruck nicht stimmen). Vergleichen Sie den Fingerabdruck mit dem, den der Pilot Ihnen über einen anderen
+  Kanal gegeben hat, dann **„Genehmigen“** (neue Registerversion mit seinem Schlüssel, Benutzer bei Bedarf mit der
+  Benutzerrolle angelegt) oder **„Ablehnen“** (Anfrage entfernt). Eine Anfrage kann von jedem mit Zugang zum Repository
+  kommen: Nur der Fingerabdruck beweist das Gerät.
+- **Geräteschlüssel**: jeder Schlüssel des Registers, nach Benutzer; **„Widerrufen“** (Admin) veröffentlicht eine
+  Version ohne ihn: Seine späteren Signaturen werden abgelehnt, das Gerät muss neu beantragen. Einen Benutzer
+  deaktivieren (Benutzer und Rechte) widerruft alle seine Schlüssel. Der letzte Admin mit Schlüssel kann ihn nicht
+  verlieren, eine aktive Gruppe nicht unter zwei Admins mit Schlüssel fallen.
+- **„Gruppe aktivieren“**: Die Karte erscheint erst, wenn zwei Admins einen Geräteschlüssel haben (ein zweiter Admin:
+  Rolle „Administrator des Zentrums“ unter Benutzer und Rechte, dann seine Anfrage genehmigt). Bis dahin ändert sich nichts
+  und nichts wird ignoriert. Sobald die Gruppe aktiv ist: Das Zentrum öffnet nur noch per Admin-Schlüssel (das Passwort
+  zählt nicht mehr); unsignierte Daten bleiben 30 Tage mit dem Vermerk „unsigniert“ akzeptiert und werden danach
+  ignoriert (signierte Zuweisungen: nächstes Paket).
+- App ohne Starter (GitHub-Modus): Ein neues Gerät folgt der Registerkette über den Verlauf des Repositorys
+  (Commits-API); Anfragen, Genehmigungen und Widerrufe sind dort Commits. In den Gruppenmodus wechseln oder neu gründen
+  erfordert ein Gerät mit Starter.
 
 ### Verfügbarkeitskategorien
 

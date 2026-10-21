@@ -358,6 +358,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Security
 
+- **Device enrolment and revocation (signed accounts L4, S2)** — My profile › "This device" shows the device
+  fingerprint and state, lets a pilot confirm the group registry (no Centre tab needed) and "Request access": a request
+  signed with the device key (proof of possession) in `data/utilisateurs/demandes/<TRI>_<kid>.json`, written through
+  the launcher's data folder or as a commit in GitHub mode. Settings › Centre › "Group mode" lists the requests with the
+  fingerprint recalculated by the admin's page ("Approve": new registry version with the key, user created if needed;
+  "Reject": request removed), the device keys ("Revoke": new version without it; deactivating a user revokes all their
+  keys) and, once two admins have a device key, "Activate the group" (`etat: actif`, `actif_depuis` starts the 30 days
+  of accepted unsigned data). The launcher lists the requests (`/__setup/data-list`, `utilisateurs/demandes` only);
+  in GitHub mode the registry history comes from the commits API (`GitHubData.history`), so a phone can join a group
+  whose registry is past version 1. 7 new tests in `tools/crypto_banc.html` (52 in all).
 - **App without launcher: immediate measures (S1)** — every page of the GitHub Pages site (and the iOS app built
   from it) carries the content security policy as a meta tag, built by `tools/build_pages.py` from the list shared with
   the launcher (`tools/csp_policy.py`): pages may only contact the suite, the GitHub API and the listed services.

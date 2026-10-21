@@ -471,6 +471,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except OSError:
                 pass
             return self._json({'folders': out})
+        if self.path.split('?')[0] == '/__setup/data-list':
+            # fichiers d'un dossier de données de la liste DATA_LISTS (demandes d'accès des postes, comptes signés) :
+            # noms seulement, le contenu se lit comme tout fichier de data/
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(data_list(q.get('dir', [''])[0]))
         if self.path.split('?')[0] == '/__setup/registre-historique':
             # versions du registre signé des utilisateurs dans l'historique git des données (comptes signés : poste
             # resté hors ligne, refondation) ; contenus seulement, rien n'est vérifié ici (les pages vérifient)
@@ -1076,6 +1083,21 @@ def ivao_fail(e):
     if code == 429:
         return {'error': 'IVAO : HTTP 429 (trop de demandes : réessayer plus tard)'}
     return {'error': f'IVAO : HTTP {code}' if code else f'IVAO : {e}'}
+
+
+DATA_LISTS = ('utilisateurs/demandes',)  # dossiers de data/ dont la page peut demander la liste
+
+
+def data_list(rel):
+    """{ files: [noms .json] } d'un dossier de DATA_LISTS ; { files: [] } pour un autre dossier ou un dossier absent."""
+    if rel not in DATA_LISTS:
+        return {'files': []}
+    d = os.path.join(DATA, *rel.split('/'))
+    try:
+        names = sorted(n for n in os.listdir(d) if re.fullmatch(r'[A-Z0-9]{2,5}_[0-9a-f]{16}\.json', n))
+    except OSError:
+        names = []
+    return {'files': names}
 
 
 def registry_history(limit=500):

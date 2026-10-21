@@ -399,6 +399,20 @@ For the app without the launcher (phone, suite published on GitHub Pages): the a
 - Lost or stolen phone: also delete the token on github.com (Settings › Developer settings › Fine-grained tokens); it then works nowhere.
 - On a site published on `….github.io`, the card reminds that any other GitHub Pages site of the same account shares the same origin and could read the token: do not publish another one on this account.
 
+### This device
+
+Key of this device (browser of this computer or phone) for signed accounts, only useful if the airline's Centre is in
+**group mode**. The key stays in this browser, not exportable.
+
+- The card shows the **fingerprint** of this device (`7F3A-91C2-04BE-D85E`), your trigram and the state: standalone
+  mode (nothing to request), registry to confirm, not enrolled, request pending, or “Device enrolled for … ✓”.
+- **Group registry to confirm**: on the first reading, compare the founder's fingerprint with the one the administrator
+  sent you (Discord, SMS, email): identical, “Confirm”; different, “Reject” and warn them.
+- **“Request access”** files a request signed with this device's key (in GitHub mode: a commit in the data
+  repository). Then send this device's fingerprint to an administrator through another channel: they compare it before
+  approving. “Send the request again” files it again.
+- Browser cleared, another device or key revoked: new key (or no key left in the registry), new request.
+
 ### Sign-in and password
 
 Your shared user record: role and password (kept as a hash, never in clear text).

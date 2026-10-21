@@ -449,6 +449,95 @@
     }
   };
 
+  // ---- Mon profil › Ce poste (comptes signés, enrôlement S2 ; shared/sog_registry.js) : empreinte de la clé de ce poste,
+  // état dans le registre, « Demander l'accès » (demande signée par la clé du poste, approuvée par un admin)
+  const device = {
+    id: 'device',
+    group: GROUP_PROFILE,
+    title: L('Ce poste', 'This device', 'Dieses Gerät', 'Este equipo'),
+    intro: L(
+      'Clé de ce poste (navigateur de cet ordinateur ou de ce téléphone) pour les comptes signés : en mode groupe, vos écritures seront signées par elle. Elle reste dans ce navigateur, non exportable ; un admin l’ajoute au registre après avoir comparé son empreinte.',
+      'Key of this device (browser of this computer or phone) for signed accounts: in group mode, your writes will be signed with it. It stays in this browser, not exportable; an admin adds it to the registry after comparing its fingerprint.',
+      'Schlüssel dieses Geräts (Browser dieses Computers oder Telefons) für signierte Konten: Im Gruppenmodus werden Ihre Schreibvorgänge damit signiert. Er bleibt in diesem Browser, nicht exportierbar; ein Admin trägt ihn nach Vergleich des Fingerabdrucks ins Register ein.',
+      'Clave de este equipo (navegador de este ordenador o teléfono) para las cuentas firmadas: en modo grupo, sus escrituras se firmarán con ella. Se queda en este navegador, no exportable; un admin la añade al registro tras comparar su huella.'
+    ),
+    /** Empreinte, trigramme, état (autonome, à confirmer, enrôlé, demande en attente), « Demander l'accès ». */
+    async render(body, api) {
+      const R = await need('SogRegistry');
+      if (!R) {
+        body.textContent = K.t(['Module des comptes signés non chargé.', 'Signed accounts module not loaded.',
+          'Modul der signierten Konten nicht geladen.', 'Módulo de cuentas firmadas no cargado.'
+        ]);
+        return;
+      }
+      const st = await R.refresh(),
+        d = await R.deviceState();
+      const stateText = !st.group ? K.t(['Centre en mode autonome : rien à demander.',
+        'Centre in standalone mode: nothing to request.',
+        'Zentrum im autonomen Modus: nichts zu beantragen.', 'Centro en modo autónomo: nada que solicitar.'
+      ]) : !st.accepted ? K.t([
+        'Registre pas encore accepté sur ce poste : confirmez-le d’abord (ci-dessus).',
+        'Registry not accepted on this device yet: confirm it first (above).',
+        'Register auf diesem Gerät noch nicht akzeptiert: zuerst bestätigen (oben).',
+        'Registro aún no aceptado en este equipo: confírmelo primero (arriba).'
+      ]) : d.enrolled ? K.tf(['Poste enrôlé pour {t} ✓', 'Device enrolled for {t} ✓', 'Gerät für {t} eingeschrieben ✓',
+        'Equipo inscrito para {t} ✓'
+      ], {
+        t: d.tri
+      }) : d.pending ? K.tf(['Demande envoyée le {d} : en attente d’un admin.', 'Request sent on {d}: waiting for an admin.',
+        'Anfrage am {d} gesendet: wartet auf einen Admin.', 'Solicitud enviada el {d}: a la espera de un admin.'
+      ], {
+        d: String(d.pending.cree || '').slice(0, 16).replace('T', ' ')
+      }) : K.t(['Non enrôlé (jamais, ou clé révoquée) : demandez l’accès.', 'Not enrolled (never, or key revoked): request access.',
+        'Nicht eingeschrieben (nie, oder Schlüssel widerrufen): Zugang beantragen.',
+        'No inscrito (nunca, o clave revocada): solicite acceso.'
+      ]);
+      const can = st.group && st.accepted && !d.enrolled;
+      // fondation (ou refondation) du registre à confirmer : ici aussi, un pilote n'ayant pas l'onglet Centre
+      const found = st.pending ? `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Registre du groupe à confirmer', 'Group registry to confirm', 'Gruppenregister zu bestätigen', 'Registro del grupo por confirmar']))}</h3>
+          <p>${esc(K.tf(st.pending.kind === 'refonte' ? ['Le registre a été refondé par {tri} (empreinte {court}).', 'The registry has been re-founded by {tri} (fingerprint {court}).', 'Das Register wurde von {tri} neu gegründet (Fingerabdruck {court}).', 'El registro ha sido refundado por {tri} (huella {court}).'] : ['Registre fondé par {tri} (empreinte {court}).', 'Registry founded by {tri} (fingerprint {court}).', 'Register gegründet von {tri} (Fingerabdruck {court}).', 'Registro fundado por {tri} (huella {court}).'], { tri: st.pending.tri, court: st.pending.court }))}</p>
+          <p class="sp-hint">${esc(K.t(['Comparez cette empreinte avec celle que l’admin vous a envoyée par un autre canal (Discord, SMS, courriel). Identique : « Confirmer ». Différente : « Refuser », et prévenez l’admin.', 'Compare this fingerprint with the one the admin sent you through another channel (Discord, SMS, email). Identical: “Confirm”. Different: “Reject”, and warn the admin.', 'Vergleichen Sie diesen Fingerabdruck mit dem, den der Admin über einen anderen Kanal geschickt hat (Discord, SMS, E-Mail). Gleich: „Bestätigen“. Anders: „Ablehnen“ und den Admin warnen.', 'Compare esta huella con la que el admin le envió por otro canal (Discord, SMS, correo). Idéntica: «Confirmar». Distinta: «Rechazar», y avise al admin.']))}</p>
+          <p class="row"><button type="button" class="primary" data-dev-confirm>${esc(K.t(['Confirmer', 'Confirm', 'Bestätigen', 'Confirmar']))}</button> <button type="button" class="secondary" data-dev-reject>${esc(K.t(['Refuser', 'Reject', 'Ablehnen', 'Rechazar']))}</button></p></div>` : st.status === 'rejete' ? `<div class="sp-card" data-no-i18n><p>${esc(K.t(['Fondation du registre refusée sur ce poste : le registre n’est pas lu.', 'Registry foundation rejected on this device: the registry is not read.', 'Gründung des Registers auf diesem Gerät abgelehnt: Das Register wird nicht gelesen.', 'Fundación del registro rechazada en este equipo: el registro no se lee.']))}</p><p class="row"><button type="button" class="secondary" data-dev-review>${esc(K.t(['Revoir la demande', 'Review the request', 'Anfrage erneut prüfen', 'Revisar la solicitud']))}</button></p></div>` : '';
+      body.innerHTML = `${found}<div class="sp-card" data-no-i18n><div class="sp-form">
+          <label>${esc(K.t(['Empreinte de ce poste', 'Fingerprint of this device', 'Fingerabdruck dieses Geräts', 'Huella de este equipo']))}</label><b>${esc(d.id?.court || K.t(['pas encore de clé', 'no key yet', 'noch kein Schlüssel', 'aún sin clave']))}</b>
+          <label>${esc(K.t(['Trigramme', 'Trigram', 'Kürzel', 'Trigrama']))}</label><span>${esc(d.tri || K.t(['non réglé (Identité et réseaux)', 'not set (Identity and networks)', 'nicht eingestellt (Identität und Netzwerke)', 'no definido (Identidad y redes)']))}</span>
+          <label>${esc(K.t(['État', 'State', 'Status', 'Estado']))}</label><span>${esc(stateText)}</span></div>
+        ${can ? `<p class="row"><button type="button" class="primary" data-dev-ask>${esc(d.pending ? K.t(['Renvoyer la demande', 'Send the request again', 'Anfrage erneut senden', 'Reenviar la solicitud']) : K.t(['Demander l’accès', 'Request access', 'Zugang beantragen', 'Solicitar acceso']))}</button></p>` : ''}
+        <p class="sp-hint">${esc(K.t(['Envoyez l’empreinte de ce poste à un admin par un autre canal (Discord, SMS, courriel) : il la compare avec celle de votre demande avant d’approuver. Navigateur effacé ou autre appareil : nouvelle clé, nouvelle demande.', 'Send the fingerprint of this device to an admin through another channel (Discord, SMS, email): they compare it with the one of your request before approving. Browser cleared or another device: new key, new request.', 'Senden Sie den Fingerabdruck dieses Geräts über einen anderen Kanal an einen Admin (Discord, SMS, E-Mail): Er vergleicht ihn vor der Genehmigung mit dem Ihrer Anfrage. Browser gelöscht oder anderes Gerät: neuer Schlüssel, neue Anfrage.', 'Envíe la huella de este equipo a un admin por otro canal (Discord, SMS, correo): la compara con la de su solicitud antes de aprobar. Navegador borrado u otro dispositivo: nueva clave, nueva solicitud.']))}</p></div>`;
+      /** Action sur le registre puis panneau redessiné ; erreur en notification. */
+      const act = async fn => {
+        try {
+          await fn();
+        } catch (e) {
+          notify(e?.message || String(e), 'err');
+        }
+        device.render(body, api);
+      };
+      body.querySelector('[data-dev-confirm]')?.addEventListener('click', () => act(() => R.confirm()));
+      body.querySelector('[data-dev-reject]')?.addEventListener('click', () => act(() => R.reject()));
+      body.querySelector('[data-dev-review]')?.addEventListener('click', () => act(async () => {
+        await window.SogKeys.del('registre', 'rejete');
+        await R.refresh();
+      }));
+      body.querySelector('[data-dev-ask]')?.addEventListener('click', async () => {
+        try {
+          const r = await R.requestAccess();
+          notify(K.tf(['Demande envoyée : empreinte {c}, à transmettre à un admin.',
+            'Request sent: fingerprint {c}, to give to an admin.',
+            'Anfrage gesendet: Fingerabdruck {c}, an einen Admin weitergeben.',
+            'Solicitud enviada: huella {c}, para dar a un admin.'
+          ], {
+            c: r.court
+          }), 'ok');
+        } catch (e) {
+          notify(e?.message || String(e), 'err');
+        }
+        device.render(body, api);
+      });
+      api.status?.(stateText);
+    }
+  };
+
   // ---------------------------------------------------------------- Mon profil › Appareils et simulateurs
   const equipment = {
     id: 'equipment',
@@ -1140,6 +1229,10 @@
       ]);
       const admins = c ? Object.entries(c.utilisateurs || {}).filter(([, u]) => u.role === 'admin_centre' && u.actif !== false) : [];
       const keyLine = k => `${Sk.shortOf(k.kid)}${k.poste ? ` (${k.poste})` : ''}`;
+      // enrôlement (S2) : demandes déposées, clés par utilisateur, activation à deux admins à clé
+      const reqs = st.group && c ? await R.requests() : [],
+        keyed = c ? R.keyedAdmins(c) : [],
+        day = v => String(v || '').slice(0, 10);
       const pw2 = name => `<label>${esc(L('Mot de passe de la clé de secours', 'Recovery key password', 'Passwort des Notfallschlüssels', 'Contraseña de la clave de emergencia'))}</label><input type="password" autocomplete="new-password" data-${name}="1">
         <label>${esc(L('Le même, encore', 'Same again', 'Noch einmal', 'La misma, otra vez'))}</label><input type="password" autocomplete="new-password" data-${name}="2">`;
       body.innerHTML = `<div class="sp-card"><h3>${esc(L('État', 'State', 'Status', 'Estado'))}</h3>
@@ -1151,13 +1244,24 @@
             <label>${esc(K.t(['Clé de secours', 'Recovery key', 'Notfallschlüssel', 'Clave de emergencia']))}</label><span>${esc((c.secours || []).map(k => Sk.shortOf(k.kid)).join(', ') || '—')}</span>` : ''}
             <label>${esc(K.t(['Ce poste', 'This device', 'Dieses Gerät', 'Este equipo']))}</label><span>${esc(id ? `${id.court}${admin ? ` — ${K.t(['admin du registre', 'registry admin', 'Admin des Registers', 'admin del registro'])}` : ''}` : K.t(['pas encore de clé (créée au passage en mode groupe, ou à l’enrôlement)', 'no key yet (created when switching to group mode, or at enrolment)', 'noch kein Schlüssel (beim Wechsel in den Gruppenmodus oder bei der Einschreibung erzeugt)', 'aún sin clave (se crea al pasar a modo grupo, o en la inscripción)']))}</span>
           </div>
-          ${st.group && c?.etat !== 'actif' ? `<p class="sp-hint">${esc(L('Groupe en constitution : il faut deux admins avec une clé de poste, en plus de la clé de secours (enrôlement des postes : lot suivant). D’ici là, le Centre reste accessible par son mot de passe ; le registre est signé et vérifié.', 'Group being set up: it needs two admins with a device key, in addition to the recovery key (device enrolment: next batch). Until then, the Centre stays accessible with its password; the registry is signed and verified.', 'Gruppe im Aufbau: Es braucht zwei Admins mit Geräteschlüssel, zusätzlich zum Notfallschlüssel (Geräteeinschreibung: nächstes Paket). Bis dahin bleibt das Zentrum per Passwort zugänglich; das Register ist signiert und geprüft.', 'Grupo en constitución: hacen falta dos admins con clave de equipo, además de la clave de emergencia (inscripción de equipos: lote siguiente). Mientras tanto, el Centro sigue accesible con su contraseña; el registro está firmado y verificado.'))}</p>` : ''}</div>
+          ${st.group && c?.etat !== 'actif' ? `<p class="sp-hint">${esc(L('Groupe en constitution : il faut deux admins avec une clé de poste, en plus de la clé de secours (postes enrôlés par les demandes ci-dessous). D’ici là, rien ne change : le Centre reste accessible par son mot de passe, aucune donnée n’est ignorée ; le registre est signé et vérifié.', 'Group being set up: it needs two admins with a device key, in addition to the recovery key (devices enrolled through the requests below). Until then nothing changes: the Centre stays accessible with its password, no data is ignored; the registry is signed and verified.', 'Gruppe im Aufbau: Es braucht zwei Admins mit Geräteschlüssel, zusätzlich zum Notfallschlüssel (Geräte über die Anfragen unten eingeschrieben). Bis dahin ändert sich nichts: Das Zentrum bleibt per Passwort zugänglich, keine Daten werden ignoriert; das Register ist signiert und geprüft.', 'Grupo en constitución: hacen falta dos admins con clave de equipo, además de la clave de emergencia (equipos inscritos con las solicitudes de abajo). Mientras tanto nada cambia: el Centro sigue accesible con su contraseña, no se ignora ningún dato; el registro está firmado y verificado.'))}</p>` : ''}</div>
         ${st.pending ? `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Fondation à confirmer', 'Foundation to confirm', 'Gründung zu bestätigen', 'Fundación por confirmar']))}</h3>
           <p>${esc(K.tf(st.pending.kind === 'refonte' ? ['Le registre a été refondé par {tri} (empreinte {court}).', 'The registry has been re-founded by {tri} (fingerprint {court}).', 'Das Register wurde von {tri} neu gegründet (Fingerabdruck {court}).', 'El registro ha sido refundado por {tri} (huella {court}).'] : ['Registre fondé par {tri} (empreinte {court}).', 'Registry founded by {tri} (fingerprint {court}).', 'Register gegründet von {tri} (Fingerabdruck {court}).', 'Registro fundado por {tri} (huella {court}).'], { tri: st.pending.tri, court: st.pending.court }))}</p>
           <p class="sp-hint">${esc(K.t(['Comparez cette empreinte avec celle que l’admin vous a envoyée par un autre canal (Discord, SMS, courriel). Identique : « Confirmer ». Différente : « Refuser », et prévenez l’admin.', 'Compare this fingerprint with the one the admin sent you through another channel (Discord, SMS, email). Identical: “Confirm”. Different: “Reject”, and warn the admin.', 'Vergleichen Sie diesen Fingerabdruck mit dem, den der Admin über einen anderen Kanal geschickt hat (Discord, SMS, E-Mail). Gleich: „Bestätigen“. Anders: „Ablehnen“ und den Admin warnen.', 'Compare esta huella con la que el admin le envió por otro canal (Discord, SMS, correo). Idéntica: «Confirmar». Distinta: «Rechazar», y avise al admin.']))}</p>
           <p class="row"><button type="button" class="primary" data-g-confirm>${esc(K.t(['Confirmer', 'Confirm', 'Bestätigen', 'Confirmar']))}</button> <button type="button" class="secondary" data-g-reject>${esc(K.t(['Refuser', 'Reject', 'Ablehnen', 'Rechazar']))}</button></p></div>` : ''}
         ${st.status === 'rejete' ? `<div class="sp-card" data-no-i18n><p>${esc(K.t(['Fondation du registre refusée sur ce poste : le registre n’est pas lu.', 'Registry foundation rejected on this device: the registry is not read.', 'Gründung des Registers auf diesem Gerät abgelehnt: Das Register wird nicht gelesen.', 'Fundación del registro rechazada en este equipo: el registro no se lee.']))}</p><p class="row"><button type="button" class="secondary" data-g-review>${esc(K.t(['Revoir la demande', 'Review the request', 'Anfrage erneut prüfen', 'Revisar la solicitud']))}</button></p></div>` : ''}
         ${st.refus.length ? `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Versions refusées', 'Refused versions', 'Abgelehnte Versionen', 'Versiones rechazadas']))}</h3><p>${st.refus.map(esc).join('<br>')}</p></div>` : ''}
+        ${c?.etat === 'actif' ? `<div class="sp-card" data-no-i18n><p>${esc(K.tf(['Groupe actif depuis le {d} : Centre ouvert par la clé d’un admin ; données non signées acceptées (mention « non signé ») jusqu’au {f}, ignorées ensuite.', 'Group active since {d}: Centre opened with an admin key; unsigned data accepted (“unsigned” mention) until {f}, ignored afterwards.', 'Gruppe aktiv seit {d}: Zentrum per Admin-Schlüssel geöffnet; unsignierte Daten bis {f} akzeptiert („unsigniert“), danach ignoriert.', 'Grupo activo desde el {d}: Centro abierto con la clave de un admin; datos no firmados aceptados (mención «no firmado») hasta el {f}, ignorados después.'], { d: day(c.actif_depuis), f: c.actif_depuis ? new Date(Date.parse(c.actif_depuis) + 30 * 864e5).toISOString().slice(0, 10) : '?' }))}</p></div>` : ''}
+        ${st.group && c && c.etat !== 'actif' && keyed.length >= 2 ? `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Le groupe peut passer actif', 'The group can become active', 'Die Gruppe kann aktiv werden', 'El grupo puede pasar a activo']))}</h3>
+          <p class="sp-hint">${esc(K.tf(['Deux admins ont maintenant une clé de poste ({a}). Une fois le groupe actif : le Centre ne s’ouvre plus que par la clé d’un admin (le mot de passe ne sert plus), et les données non signées restent acceptées 30 jours, avec la mention « non signé », puis sont ignorées.', 'Two admins now have a device key ({a}). Once the group is active: the Centre only opens with an admin key (the password no longer counts), and unsigned data stay accepted for 30 days, with the “unsigned” mention, then are ignored.', 'Zwei Admins haben jetzt einen Geräteschlüssel ({a}). Sobald die Gruppe aktiv ist: Das Zentrum öffnet nur noch per Admin-Schlüssel (das Passwort zählt nicht mehr), und unsignierte Daten bleiben 30 Tage mit dem Vermerk „unsigniert“ akzeptiert, danach werden sie ignoriert.', 'Dos admins tienen ahora clave de equipo ({a}). Una vez activo el grupo: el Centro solo se abre con la clave de un admin (la contraseña ya no cuenta), y los datos no firmados se aceptan 30 días, con la mención «no firmado», y luego se ignoran.'], { a: keyed.join(', ') }))}</p>
+          ${admin ? `<p class="row"><button type="button" class="primary" data-g-activate>${esc(K.t(['Activer le groupe', 'Activate the group', 'Gruppe aktivieren', 'Activar el grupo']))}</button></p>` : ''}</div>` : ''}
+        ${st.group && c ? `<div class="sp-card" data-no-i18n><h3>${esc(K.t(['Demandes d’accès des postes', 'Device access requests', 'Zugangsanfragen der Geräte', 'Solicitudes de acceso de los equipos']))}</h3>
+          ${reqs.length ? reqs.map((r, i) => `<p data-g-req="${i}"><b>${esc(r.req.trigramme)}</b> — ${esc(r.req.poste || '?')} — ${esc(String(r.req.cree || '').slice(0, 16).replace('T', ' '))} — ${r.ok ? `<b>${esc(r.court)}</b>${r.nouveau ? ` — ${esc(K.t(['nouvel utilisateur', 'new user', 'neuer Benutzer', 'usuario nuevo']))}` : ''}` : esc(K.tf(['demande invalide : {w}', 'invalid request: {w}', 'ungültige Anfrage: {w}', 'solicitud no válida: {w}'], { w: R.why(r.raison) }))}
+            ${admin ? `<br>${r.ok ? `<button type="button" class="primary" data-g-approve="${i}">${esc(K.t(['Approuver', 'Approve', 'Genehmigen', 'Aprobar']))}</button> ` : ''}<button type="button" class="secondary" data-g-refuse="${i}">${esc(K.t(['Refuser', 'Reject', 'Ablehnen', 'Rechazar']))}</button>` : ''}</p>`).join('') : `<p class="sp-hint">${esc(K.t(['Aucune demande en attente. Un pilote la dépose depuis Mon profil › Ce poste.', 'No pending request. A pilot files it from My profile › This device.', 'Keine offene Anfrage. Ein Pilot stellt sie unter Mein Profil › Dieses Gerät.', 'Ninguna solicitud pendiente. Un piloto la presenta desde Mi perfil › Este equipo.']))}</p>`}
+          <p class="sp-hint">${esc(K.t(['Avant d’approuver, comparez l’empreinte affichée avec celle que le pilote vous a donnée par un autre canal. Une demande peut venir de n’importe qui ayant accès au dépôt des données : c’est l’empreinte qui prouve le poste.', 'Before approving, compare the fingerprint shown with the one the pilot gave you through another channel. A request can come from anyone with access to the data repository: the fingerprint is what proves the device.', 'Vergleichen Sie vor dem Genehmigen den angezeigten Fingerabdruck mit dem, den der Pilot Ihnen über einen anderen Kanal gegeben hat. Eine Anfrage kann von jedem mit Zugang zum Daten-Repository kommen: Der Fingerabdruck beweist das Gerät.', 'Antes de aprobar, compare la huella mostrada con la que el piloto le dio por otro canal. Una solicitud puede venir de cualquiera con acceso al repositorio de datos: la huella es lo que prueba el equipo.']))}</p></div>
+        <div class="sp-card" data-no-i18n><h3>${esc(K.t(['Clés des postes', 'Device keys', 'Geräteschlüssel', 'Claves de los equipos']))}</h3>
+          ${Object.entries(c.utilisateurs || {}).filter(([, u]) => (u.cles || []).length).map(([tri, u]) => (u.cles || []).map(k => `<p class="row">${admin ? `<button type="button" class="secondary" data-g-revoke="${esc(tri)}|${esc(k.kid)}">${esc(K.t(['Révoquer', 'Revoke', 'Widerrufen', 'Revocar']))}</button>` : ''}<span><b>${esc(tri)}</b>${u.role === 'admin_centre' ? ` (${esc(K.t(['admin', 'admin', 'Admin', 'admin']))})` : ''} — ${esc(keyLine(k))} — ${esc(day(k.depuis))}</span></p>`).join('')).join('') || `<p class="sp-hint">${esc(K.t(['Aucune clé de poste.', 'No device key.', 'Kein Geräteschlüssel.', 'Ninguna clave de equipo.']))}</p>`}
+          <p class="sp-hint">${esc(K.t(['Révoquer : la clé sort du registre, ses signatures suivantes sont refusées. Désactiver un utilisateur (Utilisateurs et droits) révoque toutes ses clés.', 'Revoke: the key leaves the registry, its later signatures are refused. Deactivating a user (Users and rights) revokes all their keys.', 'Widerrufen: Der Schlüssel verlässt das Register, seine späteren Signaturen werden abgelehnt. Einen Benutzer deaktivieren (Benutzer und Rechte) widerruft alle seine Schlüssel.', 'Revocar: la clave sale del registro, sus firmas posteriores se rechazan. Desactivar un usuario (Usuarios y derechos) revoca todas sus claves.']))}</p></div>` : ''}
         ${!st.group ? `<div class="sp-card"><h3>${esc(L('Passer en mode groupe', 'Switch to group mode', 'In den Gruppenmodus wechseln', 'Pasar a modo grupo'))}</h3>
           <p class="sp-hint">${esc(L('Vous devenez le premier admin, avec la clé de ce poste ; les fiches existantes sont reprises dans la version 1 du registre, signée. Une clé de secours est créée et téléchargée (sog-cle-secours-….json), chiffrée par le mot de passe ci-dessous : gardez le fichier hors ligne (clé USB) et le mot de passe à part. Exige le Centre activé et la politique de sécurité du lanceur (CSP).', 'You become the first admin, with this device’s key; the existing user files are taken into version 1 of the registry, signed. A recovery key is created and downloaded (sog-cle-secours-….json), encrypted with the password below: keep the file offline (USB stick) and the password separately. Requires the Centre enabled and the launcher security policy (CSP).', 'Sie werden der erste Admin, mit dem Schlüssel dieses Geräts; die vorhandenen Benutzerdateien gehen in Version 1 des Registers ein, signiert. Ein Notfallschlüssel wird erzeugt und heruntergeladen (sog-cle-secours-….json), mit dem Passwort unten verschlüsselt: Datei offline aufbewahren (USB-Stick), Passwort getrennt. Erfordert das aktivierte Zentrum und die Sicherheitsrichtlinie des Starters (CSP).', 'Usted pasa a ser el primer admin, con la clave de este equipo; las fichas existentes se incorporan a la versión 1 del registro, firmada. Se crea y descarga una clave de emergencia (sog-cle-secours-….json), cifrada con la contraseña de abajo: guarde el archivo fuera de línea (memoria USB) y la contraseña aparte. Exige el Centro activado y la política de seguridad del lanzador (CSP).'))}</p>
           <div class="sp-form">${pw2('g-new')}</div>
@@ -1197,6 +1301,52 @@
         }
         again();
       };
+      body.querySelectorAll('[data-g-approve]').forEach(b => b.addEventListener('click', async () => {
+        const r = reqs[+b.dataset.gApprove];
+        if (await window.AppFramework?.ask?.(K.tf([
+            'Approuver le poste « {p} » de {t} ? L’empreinte {c} doit être exactement celle que le pilote vous a donnée.',
+            'Approve the device “{p}” of {t}? The fingerprint {c} must be exactly the one the pilot gave you.',
+            'Gerät „{p}“ von {t} genehmigen? Der Fingerabdruck {c} muss genau der sein, den der Pilot Ihnen gegeben hat.',
+            '¿Aprobar el equipo «{p}» de {t}? La huella {c} debe ser exactamente la que le dio el piloto.'
+          ], {
+            p: r.req.poste || '?',
+            t: r.req.trigramme,
+            c: r.court
+          })) === false) return;
+        run(() => R.approve(r), ['Poste approuvé : clé ajoutée au registre.', 'Device approved: key added to the registry.',
+          'Gerät genehmigt: Schlüssel ins Register eingetragen.', 'Equipo aprobado: clave añadida al registro.'
+        ]);
+      }));
+      body.querySelectorAll('[data-g-refuse]').forEach(b => b.addEventListener('click', () => run(() => R.rejectRequest(reqs[+b
+        .dataset.gRefuse]), ['Demande refusée et retirée.', 'Request rejected and removed.',
+        'Anfrage abgelehnt und entfernt.', 'Solicitud rechazada y retirada.'
+      ])));
+      body.querySelectorAll('[data-g-revoke]').forEach(b => b.addEventListener('click', async () => {
+        const [tri, kid] = b.dataset.gRevoke.split('|');
+        if (await window.AppFramework?.ask?.(K.tf([
+            'Révoquer la clé {c} de {t} ? Ses signatures suivantes seront refusées ; le poste devra refaire une demande.',
+            'Revoke the key {c} of {t}? Its later signatures will be refused; the device will have to request again.',
+            'Schlüssel {c} von {t} widerrufen? Seine späteren Signaturen werden abgelehnt; das Gerät muss neu beantragen.',
+            '¿Revocar la clave {c} de {t}? Sus firmas posteriores se rechazarán; el equipo tendrá que solicitarlo de nuevo.'
+          ], {
+            c: Sk.shortOf(kid),
+            t: tri
+          }), {
+            danger: true
+          }) === false) return;
+        run(() => R.revokeKey(tri, kid), ['Clé révoquée.', 'Key revoked.', 'Schlüssel widerrufen.', 'Clave revocada.']);
+      }));
+      $('[data-g-activate]')?.addEventListener('click', async () => {
+        if (await window.AppFramework?.ask?.(K.t([
+            'Activer le groupe ? Le Centre ne s’ouvrira plus que par la clé d’un admin, et les données non signées seront ignorées dans 30 jours.',
+            'Activate the group? The Centre will only open with an admin key, and unsigned data will be ignored in 30 days.',
+            'Gruppe aktivieren? Das Zentrum öffnet nur noch per Admin-Schlüssel, und unsignierte Daten werden in 30 Tagen ignoriert.',
+            '¿Activar el grupo? El Centro solo se abrirá con la clave de un admin, y los datos no firmados se ignorarán dentro de 30 días.'
+          ]), {
+            danger: true
+          }) === false) return;
+        run(() => R.activate(), ['Groupe actif.', 'Group active.', 'Gruppe aktiv.', 'Grupo activo.']);
+      });
       $('[data-g-confirm]')?.addEventListener('click', () => run(() => R.confirm(), ['Registre accepté sur ce poste.',
         'Registry accepted on this device.', 'Register auf diesem Gerät akzeptiert.', 'Registro aceptado en este equipo.'
       ]));
@@ -1264,7 +1414,7 @@
   };
 
   window.SettingsPanels = {
-    list: [levelPanel, identity, dataAccess, account, themesPanel, equipment, setup, users, groupe, categoriesPanel],
+    list: [levelPanel, identity, dataAccess, device, account, themesPanel, equipment, setup, users, groupe, categoriesPanel],
     /** Ajoute une rubrique (autre module : utilisateurs, catégories de disponibilité). */
     add(panel) {
       this.list.push(panel);

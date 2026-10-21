@@ -23,7 +23,7 @@ The lock hides the Centre until it has been enabled in this browser.
 - In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning”, “Report sending (web service)”) are hidden.
 - Activation is stored in this browser only: repeat it on each computer and after clearing the site data.
 
-Limit: this is a usage lock, not security. The password is written in clear in `data/config/centre.json`, shared with the data (`DEFA` by default), and shown next to the “Enable the Centre” button: this is the **standalone mode**. Group mode (signed registry, access by the administrator role) is coming ([design](../technique/COMPTES_SIGNES.md)).
+Limit: this is a usage lock, not security. The password is written in clear in `data/config/centre.json`, shared with the data (`DEFA` by default), and shown next to the “Enable the Centre” button: this is the **standalone mode**. Group mode (signed registry, access by the administrator role) is set in the “Group mode (signed registry)” section below ([design](../technique/COMPTES_SIGNES.md)).
 
 ### Enable or lock the Centre
 
@@ -151,6 +151,23 @@ repository (“I give myself the admin role”) no longer has any effect. Design
   notification and this section say so.
 - On the first reading of the registry, a device shows the founder's fingerprint with “Confirm” and “Reject”: compare
   it with the one received before confirming.
+- **Device access requests**: a pilot requests access from My profile › This device, on a device with the launcher as
+  well as on the app without launcher (phone); the request is a file signed with the key of their device
+  (`data/utilisateurs/demandes/`). The section lists trigram, device name, date and the fingerprint recalculated by your
+  page (“new user” if the trigram is not in the registry yet; “invalid request” if the signature or the fingerprint
+  does not hold). Compare the fingerprint with the one the pilot gave you through another channel, then **“Approve”**
+  (new registry version with their key, user created if needed with the user role) or **“Reject”** (request removed).
+  A request can come from anyone with access to the repository: only the fingerprint proves the device.
+- **Device keys**: each key of the registry, by user; **“Revoke”** (admin) publishes a version without it: its later
+  signatures are refused, the device will have to request again. Deactivating a user (Users and rights) revokes all
+  their keys. The last admin with a key cannot lose it, and an active group cannot drop below two admins with a key.
+- **“Activate the group”**: the card only shows once two admins have a device key (a second admin: “Centre
+  administrator” role in Users and rights, then their request approved). Until then nothing changes and nothing is
+  ignored. Once the group is active: the Centre only opens with an admin key (the password no longer counts); unsigned
+  data stay accepted for 30 days, with the “unsigned” mention, then are ignored (signed assignments: next batch).
+- App without launcher (GitHub mode): a new device follows the registry chain through the repository history (commits
+  API); requests, approvals and revocations are commits there. Switching to group mode or re-founding needs a device
+  with the launcher.
 
 ### Availability categories
 

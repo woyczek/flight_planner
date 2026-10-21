@@ -23,7 +23,7 @@ El bloqueo oculta el Centro mientras no se haya activado en este navegador.
 - En Ajustes › Centro solo queda visible el apartado «Acceso al Centro y ajustes»; los demás («Usuarios y derechos», «Categorías de disponibilidad», «Planificación ODV», «Envío de informes (servicio web)») quedan ocultos.
 - La activación se guarda solo en este navegador: hay que repetirla en cada puesto y después de borrar los datos del sitio.
 
-Límite: es un bloqueo de uso, no una medida de seguridad. La contraseña está escrita en claro en `data/config/centre.json`, compartida con los datos (`DEFA` por defecto), y se muestra junto al botón «Activar el Centro»: es el **modo autónomo**. El modo grupo (registro firmado, acceso por el rol de administrador) llegará más adelante ([diseño](../technique/COMPTES_SIGNES.md)).
+Límite: es un bloqueo de uso, no una medida de seguridad. La contraseña está escrita en claro en `data/config/centre.json`, compartida con los datos (`DEFA` por defecto), y se muestra junto al botón «Activar el Centro»: es el **modo autónomo**. El modo grupo (registro firmado, acceso por el rol de administrador) se ajusta en el apartado «Modo grupo (registro firmado)» más abajo ([diseño](../technique/COMPTES_SIGNES.md)).
 
 ### Activar o bloquear el Centro
 
@@ -152,6 +152,25 @@ modificada en el repositorio («me doy el rol de admin») ya no tiene efecto. Di
   la suya, una notificación y este apartado lo dicen.
 - En la primera lectura del registro, un equipo muestra la huella del fundador con «Confirmar» y «Rechazar»:
   compárela con la recibida antes de confirmar.
+- **Solicitudes de acceso de los equipos**: un piloto solicita el acceso desde Mi perfil › Este equipo, en un equipo
+  con lanzador como en la app sin lanzador (teléfono); la solicitud es un fichero firmado con la clave de su equipo
+  (`data/utilisateurs/demandes/`). El apartado lista trigrama, nombre del equipo, fecha y la huella recalculada por su
+  página («usuario nuevo» si el trigrama aún no está en el registro; «solicitud no válida» si la firma o la huella no
+  cuadran). Compare la huella con la que el piloto le dio por otro canal y luego **«Aprobar»** (nueva versión del
+  registro con su clave, usuario creado si hace falta con el rol de usuario) o **«Rechazar»** (solicitud retirada). Una
+  solicitud puede venir de cualquiera con acceso al repositorio: solo la huella prueba el equipo.
+- **Claves de los equipos**: cada clave del registro, por usuario; **«Revocar»** (admin) publica una versión sin ella:
+  sus firmas posteriores se rechazan y el equipo tendrá que solicitarlo de nuevo. Desactivar un usuario (Usuarios y
+  derechos) revoca todas sus claves. El último admin con clave no puede perderla, ni un grupo activo bajar de dos
+  admins con clave.
+- **«Activar el grupo»**: la tarjeta solo aparece cuando dos admins tienen clave de equipo (un segundo admin: rol
+  «Administrador del Centro» en Usuarios y derechos, y luego su solicitud aprobada). Hasta entonces nada cambia y no se
+  ignora nada. Una vez activo el grupo: el Centro solo se abre con la clave de un admin (la contraseña ya no cuenta); los
+  datos no firmados se aceptan 30 días, con la mención «no firmado», y luego se ignoran (asignaciones firmadas: lote
+  siguiente).
+- App sin lanzador (modo GitHub): un equipo nuevo sigue la cadena del registro por el historial del repositorio (API de
+  commits); solicitudes, aprobaciones y revocaciones son commits allí. Pasar a modo grupo o refundar requiere un equipo
+  con lanzador.
 
 ### Categorías de disponibilidad
 

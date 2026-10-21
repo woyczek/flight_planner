@@ -260,6 +260,32 @@
   const list = async (prefix = '') => (await paths({
     strict: true
   }))?.filter(x => x.startsWith(prefix)) ?? null;
+  /** Versions successives d'un fichier dans l'historique du dépôt (API des commits de la branche), de la plus ancienne à
+   *  la plus récente : [texte…] ; limit commits au plus (100 par page). Hors ligne ou refusé : ce qui a pu être lu. Sert
+   *  au registre signé (chaîne des versions, fondation : shared/sog_registry.js), comme /__setup/registre-historique. */
+  async function history(rel, limit = 300) {
+    const c = need(),
+      shas = [];
+    for (let page = 1; shas.length < limit; page++) {
+      const r = await nativeFetch(`${API}/repos/${c.repo}/commits?path=${encodeURIComponent(rel)}&sha=${encodeURIComponent(c.branch)}&per_page=100&page=${page}`, {
+        headers: headers(c, 'application/vnd.github+json'),
+        cache: 'no-store'
+      }).catch(() => null);
+      if (!r?.ok) break;
+      const list = await r.json();
+      shas.push(...list.map(x => x.sha).filter(x => /^[0-9a-f]{40}$/.test(x)));
+      if (list.length < 100) break;
+    }
+    const out = [];
+    for (const sha of shas.slice(0, limit).reverse()) {
+      const r = await nativeFetch(`${API}/repos/${c.repo}/contents/${enc(rel)}?ref=${sha}`, {
+        headers: headers(c),
+        cache: 'no-store'
+      }).catch(() => null);
+      if (r?.ok) out.push(await r.text());
+    }
+    return out;
+  }
   /** Index d'un dossier (disponibilites, utilisateurs) absent du dépôt, refait depuis l'arbre (texte JSON) ; null pour
    *  un autre fichier. */
   async function builtIndex(rel) {
@@ -559,6 +585,7 @@
     lastRead,
     read,
     list,
+    history,
     readSync,
     getText,
     put,

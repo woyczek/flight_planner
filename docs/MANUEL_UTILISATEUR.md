@@ -417,6 +417,21 @@ Pour l'appli sans lanceur (téléphone, suite publiée sur GitHub Pages) : les d
 - Téléphone perdu ou volé : supprimez aussi le jeton sur github.com (Settings › Developer settings › Fine-grained tokens) ; il ne vaut alors plus nulle part.
 - Sur un site publié en `….github.io`, la carte rappelle que tout autre site GitHub Pages du même compte partage la même origine et pourrait lire le jeton : n'en publiez pas d'autre sur ce compte.
 
+### Ce poste
+
+Clé de ce poste (navigateur de cet ordinateur ou de ce téléphone) pour les comptes signés, utile seulement si le Centre
+de la compagnie est en **mode groupe**. La clé reste dans ce navigateur, non exportable.
+
+- La carte montre l'**empreinte** de ce poste (`7F3A-91C2-04BE-D85E`), votre trigramme et l'état : mode autonome
+  (rien à demander), registre à confirmer, pas enrôlé, demande en attente, ou « Poste enrôlé pour … ✓ ».
+- **Registre du groupe à confirmer** : à la première lecture, comparez l'empreinte du fondateur avec celle que
+  l'administrateur vous a envoyée (Discord, SMS, courriel) : identique, « Confirmer » ; différente, « Refuser » et
+  prévenez-le.
+- **« Demander l'accès »** dépose une demande signée par la clé de ce poste (en mode GitHub : un commit dans le dépôt
+  des données). Envoyez ensuite l'empreinte de ce poste à un administrateur par un autre canal : il la compare avant
+  d'approuver. « Renvoyer la demande » la dépose de nouveau.
+- Navigateur effacé, autre appareil ou clé révoquée : nouvelle clé (ou plus de clé au registre), nouvelle demande.
+
 ### Connexion et mot de passe
 
 Votre fiche utilisateur partagée : rôle et mot de passe (conservé sous forme d'empreinte, jamais en clair).
