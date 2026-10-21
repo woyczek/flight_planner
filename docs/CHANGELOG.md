@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **fuel: the module in the Pilot application** (`modules/fuel/module.js`, `frame/app.js`; `SPEC.md` § 9,
+  `INTEGRATION.md`, `DECISIONS.md`) — mounted by the frame's loader as the first verb. Plan: aircraft, route
+  (aerodb positions, or typed distance and track; last SimBrief OFP through `ctx.net`, kept on the device), level and
+  wind, level decision drawn (fuel and time by level, least fuel, fastest, tap to choose), block fuel sticky at the
+  bottom; folded: the quote's details, the climb instructions (drawing and table), the quote settings. Sheets: list,
+  import of files or pasted text (CSV, JSON, `.lnmperf`, OFP, ChatGPT answer), new sheet, editor, EUROCONTROL or
+  another sheet to complete, ChatGPT requests, `.lnmperf` and JSON export; every change previewed line by line and
+  written only as ticked. The current flight is shared with maps (`pilot/<trigram>/current_flight.json`).
 - **fuel: performance sheets in pure code** (`modules/fuel/sheets.js`, `modules/fuel/perf_prompt.js`; `SPEC.md` § 8,
   `INTEGRATION.md`, `DECISIONS.md`) — the V2 sheet functions copied verbatim, their globals replaced by the module's
   environment (aerodb's aircraft base, the sheets, the active sheet, texts): performance CSV (simple and enriched),

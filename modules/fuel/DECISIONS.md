@@ -44,6 +44,27 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   the quote bench's sheet (300 NM, FL200, 30 kt tailwind, goal "sheet's climb IAS"): model ceiling and minimum-drag
   speed, manual settings, decision series (step, bounds, least fuel FL250, fastest FL140, five levels), curves
   (highest level, optimums, plan, cruises), climb to FL200 row by row; every value found again to 0.001: 24/24.
+- **Lots 2b, 3b and 4b, the screens on the frame's loader** (`modules/fuel/module.js`, 23 Oct 2026, after
+  `6ce25009b`): one ES module with two screens inside (Plan, Sheets) rather than two modules, so the Pilot application
+  keeps one verb for fuel; the pure files are loaded with `import()` (they are plain scripts that set `window.*`, which
+  works as module scripts) and only once per page. The module's style is a `<style>` inside its own element, every rule
+  prefixed by `[data-module="fuel"]`, on the frame's tokens; no global sheet.
+- **Writes declared on `pilot/`** (merge `record`) and not on `pilot/<trigram>/…`: a declared prefix cannot hold the
+  trigram, and the example module already declares `pilot/` with the same rule; the device's own documents (OFP, last
+  screen, folded blocks) go under `cache/fuel/` with the cache policy.
+- **Route resolution kept small**: "ID lat lon" entries are taken as they are; otherwise each identifier of item 15 is
+  asked of aerodb (`coords`), speed-level groups, `DCT`, airways and procedures left out; the distance is the sum of the
+  legs, the track the departure-to-arrival initial track (as V2's quote). Distance and track can be typed when nothing
+  resolves. Airway expansion belongs to maps.
+- **Sheet editor**: the V2 field list (`PROFILE_FIELDS`, labels in French) with labels translated in the module
+  (`FIELD_TX`, `PATH_TX`); the RPM table is read only here (it comes from imports, ChatGPT or the OFP calibration). An
+  unticked box of a field never filled stays empty (no invented `false`). Sheets are written without their working keys
+  (`_rowId`…), so a save does not change every RPM row of every sheet for the record-by-record merge.
+- **Checked at 375 px** in `frame/index.html` served on port 8793 (static server, local transport: the test sheets stay
+  in the browser's cache, nothing reaches `data/`): fictitious sheet TEST_TP, 300 NM, track 090, FL200, wind 270/30 →
+  block 1,416 kg as on the bench and the V2 page, least fuel FL250 and fastest FL140 as in `test/levels.html`; a tap on
+  the drawing sets FL150; speed only → a range; CSV pasted → new sheet previewed then written; a field edited →
+  one line previewed. No horizontal scroll. Then on a wide screen: the first three blocks side by side.
 - **Lot 4a, the sheets in pure code** (`modules/fuel/sheets.js`, 1,758 lines): 66 declarations of V2
   `flight_planner.js` copied verbatim by an extraction script (a small JavaScript lexer: strings, templates and their
   nested expressions, comments, regex literals) — CSV (simple and enriched), RPM tables, JSON, `.lnmperf` read and

@@ -25,6 +25,10 @@
     name: ['Pilote', 'Pilot', 'Pilot', 'Piloto'],
     // un module = un verbe ; sept au plus
     modules: [{
+      id: 'fuel',
+      label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
+      icon: '⛽'
+    }, {
       id: 'hello',
       label: ['Essayer', 'Try', 'Ausprobieren', 'Probar'],
       icon: '◎'
