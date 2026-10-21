@@ -331,6 +331,8 @@
     store();
     draw().catch(e => status(e.message, true));
   };
+  // coordonnées écrites librement : mises au format du plan de vol à la sortie du champ, avant les autres traitements
+  SiaProfile.coordHelper($('vpRoute'));
   for (const id of ['vpRoute', 'vpFloor', 'vpCeil']) $(id).addEventListener('change', store);
 
   /** Plan de vol → devis : distance (somme des tronçons), route vraie (départ → arrivée), niveau du premier groupe
