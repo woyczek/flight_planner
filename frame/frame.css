@@ -1,0 +1,287 @@
+/* V3 frame — jetons de l'interface (les modules s'en servent, ils ne chargent aucune feuille globale) et mise en page de
+   l'appli : en-tête (menu sur téléphone, nom, bouton de synchronisation, appareil), colonne des verbes (à gauche sur
+   écran, tiroir sur téléphone), vue du module. Thème sombre suivi. */
+:root {
+  --sog-bg: #f5f6f8;
+  --sog-surface: #fff;
+  --sog-fg: #17202a;
+  --sog-muted: #5b6670;
+  --sog-border: #d9dee4;
+  --sog-accent: #1d6fd8;
+  --sog-accent-ink: #fff;
+  --sog-ok: #1e7d32;
+  --sog-warn: #9a5b00;
+  --sog-err: #b3261e;
+  --sog-radius: 6px;
+  --sog-gap: 12px;
+  --sog-touch: 44px;
+  --sog-font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light dark
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sog-bg: #121519;
+    --sog-surface: #1c2127;
+    --sog-fg: #e7ebef;
+    --sog-muted: #9aa5b0;
+    --sog-border: #2f363e;
+    --sog-accent: #5aa2ff;
+    --sog-accent-ink: #0b1220;
+    --sog-ok: #6ccf7a;
+    --sog-warn: #e0a33b;
+    --sog-err: #ff8a80
+  }
+}
+* {
+  box-sizing: border-box
+}
+html,
+body {
+  margin: 0;
+  height: 100%
+}
+body {
+  font: var(--sog-font);
+  background: var(--sog-bg);
+  color: var(--sog-fg);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 210px 1fr;
+  grid-template-areas: "head head" "nav main"
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit
+}
+button {
+  min-height: var(--sog-touch);
+  padding: 0 14px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  background: var(--sog-surface);
+  cursor: pointer
+}
+button.primary {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink);
+  border-color: var(--sog-accent)
+}
+input,
+select,
+textarea {
+  min-height: var(--sog-touch);
+  padding: 6px 10px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  background: var(--sog-surface)
+}
+.f-head {
+  grid-area: head;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--sog-surface);
+  border-bottom: 1px solid var(--sog-border)
+}
+.f-head .f-name {
+  font-weight: 700;
+  margin-right: auto
+}
+.f-burger {
+  display: none
+}
+.f-sync[data-state="ok"] .f-dot {
+  background: var(--sog-ok)
+}
+.f-sync[data-state="pending"] .f-dot,
+.f-sync[data-state="offline"] .f-dot {
+  background: var(--sog-warn)
+}
+.f-sync[data-state="conflicts"] .f-dot,
+.f-sync[data-state="error"] .f-dot {
+  background: var(--sog-err)
+}
+.f-sync[data-state="syncing"] .f-dot {
+  background: var(--sog-accent);
+  animation: f-pulse 1s infinite alternate
+}
+.f-sync[data-state="local"] .f-dot {
+  background: var(--sog-muted)
+}
+.f-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle
+}
+@keyframes f-pulse {
+  to {
+    opacity: .3
+  }
+}
+.f-nav {
+  grid-area: nav;
+  padding: 10px 8px;
+  border-right: 1px solid var(--sog-border);
+  background: var(--sog-surface)
+}
+.f-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px
+}
+.f-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--sog-touch);
+  padding: 0 12px;
+  border-radius: var(--sog-radius);
+  color: inherit;
+  text-decoration: none
+}
+.f-nav a[aria-current="page"] {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink)
+}
+.f-view {
+  grid-area: main;
+  padding: 16px;
+  min-width: 0
+}
+.f-card {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  padding: 12px 14px;
+  margin-bottom: var(--sog-gap)
+}
+.f-muted {
+  color: var(--sog-muted);
+  font-size: .9em
+}
+.f-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center
+}
+.f-field {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0
+}
+.f-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
+.f-check input {
+  min-height: 0;
+  width: 20px;
+  height: 20px
+}
+.f-card pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  max-height: 260px;
+  overflow: auto;
+  background: var(--sog-bg);
+  padding: 8px;
+  border-radius: var(--sog-radius)
+}
+/* notifications flottantes et fenêtres de question (jamais de dialogue natif) */
+.f-notes {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 8px;
+  z-index: 20;
+  width: min(560px, calc(100vw - 24px))
+}
+.f-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--sog-radius);
+  background: var(--sog-fg);
+  color: var(--sog-bg);
+  box-shadow: 0 4px 16px #0004
+}
+.f-note[data-kind="err"] {
+  background: var(--sog-err);
+  color: #fff
+}
+.f-note[data-kind="warn"] {
+  background: var(--sog-warn);
+  color: #fff
+}
+.f-note span {
+  flex: 1
+}
+.f-note button {
+  min-height: 28px;
+  padding: 0 8px;
+  background: transparent;
+  border-color: transparent;
+  color: inherit
+}
+.f-modal {
+  position: fixed;
+  inset: 0;
+  background: #0007;
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  padding: 16px
+}
+.f-modal>div {
+  background: var(--sog-surface);
+  border-radius: var(--sog-radius);
+  padding: 16px;
+  width: min(480px, 100%);
+  display: grid;
+  gap: 12px
+}
+/* téléphone : une colonne, verbes dans un tiroir ouvert par le bouton de menu */
+@media (max-width: 760px) {
+  body {
+    grid-template-columns: 1fr;
+    grid-template-areas: "head" "main"
+  }
+  .f-burger {
+    display: inline-block
+  }
+  .f-nav {
+    position: fixed;
+    inset: 57px 0 0 0;
+    z-index: 10;
+    border-right: 0;
+    display: none
+  }
+  body.f-nav-open .f-nav {
+    display: block
+  }
+  .f-view {
+    padding: 12px
+  }
+  .f-sync .f-lbl-long {
+    display: none
+  }
+}

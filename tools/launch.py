@@ -15,7 +15,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, datetime, fnmatch, glob, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import argparse, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import posixpath, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
@@ -457,6 +457,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
                                'csp': True, 'relaxNav': RELAX['nav']})
+        if self.path.split('?')[0] == '/__setup/changes':
+            # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
+            with FRAME_LOCK:
+                head, tree = frame_tree()
+            return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
         if self.path.split('?')[0] == '/__setup/mission-folders':
             # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
             # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
@@ -656,6 +664,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                                             'ou fenêtre impossible à ouvrir sur cet ordinateur) : dépôt inchangé.')
                 r['saved'] = saved
             return self._json(r)
+        if path == '/__setup/batch':
+            # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            r, code = frame_batch(a if isinstance(a, dict) else {})
+            return self._json(r, code)
         if path == '/__setup/sync':
             # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
             try:
@@ -1164,6 +1180,93 @@ def user_sites():
 
 def sites_view():
     return {'fixed': CSP_CONNECT, 'config': config_sites(), 'user': user_sites()}
+
+
+# ---- V3 frame : transport « lanceur » de la couche de données (frame/store/transport_launcher.js). Le dossier data/ du
+# poste est le dépôt : arbre { chemin: empreinte git du fichier } (gardée par taille et date), tête = empreinte de cet
+# arbre ; un lot d'écritures s'écrit d'un coup, un commit local si data/ est un dépôt git (l'échange avec le dépôt
+# distant reste le passage de synchronisation, /__setup/sync). Hors de l'arbre : .git, local/, copies de conflits et
+# d'avant restauration, index régénérés, repère du lanceur, sources du SIA (seule sia/base/ est publiée).
+FRAME_SKIP = re.compile(r'(^|/)(\.git|_conflits|_avant_restauration)(/|$)|^local(/|$)|(^|/)_index\.json$|^\.defa_instance$|^sia/(?=.)(?!base(/|$))')
+FRAME_LOCK = threading.Lock()
+_frame_memo = {}  # chemin → ((taille, date), empreinte)
+
+
+def frame_tree():
+    """(tête, arbre) de data/ : empreinte git de chaque fichier (relue seulement si sa taille ou sa date change)."""
+    out = {}
+    for d, dirs, files in os.walk(DATA):
+        rel_d = os.path.relpath(d, DATA).replace(os.sep, '/')
+        rel_d = '' if rel_d == '.' else rel_d + '/'
+        dirs[:] = [x for x in dirs if not FRAME_SKIP.search(rel_d + x + '/')]
+        for f in files:
+            rel = rel_d + f
+            if FRAME_SKIP.search(rel):
+                continue
+            full = os.path.join(d, f)
+            try:
+                st = os.stat(full)
+            except OSError:
+                continue
+            key = (st.st_size, st.st_mtime_ns)
+            m = _frame_memo.get(rel)
+            if not m or m[0] != key:
+                with open(full, 'rb') as fh:
+                    b = fh.read()
+                m = (key, hashlib.sha1(b'blob %d\0' % len(b) + b).hexdigest())
+                _frame_memo[rel] = m
+            out[rel] = m[1]
+    return hashlib.sha1(json.dumps(sorted(out.items())).encode()).hexdigest(), out
+
+
+def frame_batch(a):
+    """Lot d'écritures du frame { parent, message, author, changes: [{ path, text | null }] } : refusé si la tête a changé
+    depuis parent (conflict) ou si un chemin sort de data/ ou est exclu ; .js au format des données seulement
+    (tools/data_guard.py) ; écrit, puis commit local au nom de l'auteur si data/ est un dépôt git. Rend { ok, head }."""
+    changes = a.get('changes') if isinstance(a.get('changes'), list) else []
+    author = str(a.get('author') or '').upper()
+    with FRAME_LOCK:
+        head, _ = frame_tree()
+        if str(a.get('parent') or '') != head:
+            return {'ok': False, 'conflict': True, 'head': head, 'message': 'data/ a changé depuis la dernière lecture'}, 409
+        todo = []
+        for c in changes:
+            rel = posixpath.normpath(str(c.get('path') or '')).lstrip('/')
+            if not rel or rel.startswith('..') or rel.startswith('.') or '/.' in rel or FRAME_SKIP.search(rel):
+                return {'ok': False, 'message': f'chemin refusé : {c.get("path")}'}, 400
+            text = c.get('text')
+            if text is not None and rel.lower().endswith('.js'):
+                with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
+                    f.write(text)
+                    tmp = f.name
+                ok, why = data_guard.check_file(tmp)
+                os.remove(tmp)
+                if not ok:
+                    return {'ok': False, 'message': f'{rel} : pas au format des données ({why})'}, 400
+            todo.append((rel, text))
+        for rel, text in todo:
+            full = os.path.join(DATA, *rel.split('/'))
+            if text is None:
+                if os.path.isfile(full):
+                    os.remove(full)
+                continue
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            with open(full, 'w', encoding='utf-8', newline='') as f:
+                f.write(text)
+        if todo and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
+            paths = [r for r, _ in todo]
+            env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+            data_sync.git(DATA, 'add', '-A', '--', *paths, env=env)
+            data_sync.git(DATA, '-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-q', '-m',
+                          str(a.get('message') or f'{author} : lot du frame')[:500], '--', *paths, env=env)
+        head, _ = frame_tree()
+    if any(r.startswith('disponibilites/') for r, _ in todo):
+        with INDEX_LOCK:
+            index_availability()
+    if any(r.startswith('utilisateurs/') for r, _ in todo):
+        with INDEX_LOCK:
+            index_users()
+    return {'ok': True, 'head': head}, 200
 
 
 def csp_policy():

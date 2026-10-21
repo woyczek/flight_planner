@@ -1,7 +1,8 @@
 # V3 frame — specification (regeneration prompt)
 
 This document describes the frame of the V3 suite well enough to rebuild it without its code. It grows lot by lot;
-today it covers the **data layer** (`frame/store/`). The decisions behind it are in [DECISIONS.md](DECISIONS.md), the
+today it covers the **data layer** (`frame/store/`) and the **application skeleton** (`frame/index.html`,
+`frame/app.js`, `frame/frame.css`: navigation, module loader, synchronisation control, conflicts, device). The decisions behind it are in [DECISIONS.md](DECISIONS.md), the
 way a module plugs in is in [INTEGRATION.md](INTEGRATION.md), the project brief is
 `docs/technique/V3_SPECIFICATION.md`.
 
@@ -67,6 +68,15 @@ exchange happens in batches, explicitly or periodically, through a transport the
   - kept while their revision does not change;
   - fetched again during a pass when the tree shows a new revision;
   - never queued.
+- A module declares the prefixes it writes. Several modules may declare the same prefix: the prefix is **shared** and
+  each of them writes there (for example `pilot/<trigram>/current_flight.json`, written by fuel, read and written by
+  maps). The merge rule of a shared prefix is the one of the first module that declares it, so the modules sharing a
+  prefix agree on it in their integration guides.
+- **`cache`** (a write policy, `{ prefix, policy: 'cache' }`, or `put(path, value, { policy: 'cache' })`) is for files
+  of this device only: the last SimBrief OFP, the device's own settings (`device/…`).
+  - Written straight into the cache, never queued, never sent.
+  - Untouched by pulls, listed with the other paths, removed locally.
+  - A module keeps no IndexedDB of its own: it uses this policy.
 
 ### 2.5 Merging a file changed on both sides
 
@@ -75,14 +85,18 @@ exchange happens in batches, explicitly or periodically, through a transport the
   - the remote equals the base: keep the local text;
   - the local text equals the base: take the remote.
 - **Otherwise, the rule declared for the prefix** (the longest declared write prefix):
-  - `record` (default), one record per file: the newest `updated_at` wins, the local one on a tie. The loser is
-    stored in `conflicts` and an event `frame-data-conflict` is fired. Never a blocking question.
+  - `record` (default), one record per file: the newest `updated_at` wins, the local one on a tie. A record without
+    `updated_at` is dated by `updatedAt` (V2 files not yet rewritten). The loser is stored in `conflicts` and an event
+    `frame-data-conflict` is fired. Never a blocking question.
   - `journal`, an append-only `{ entries }`: union, sorted by `at`. No loss.
   - `keyed:<field>:<key>[+<key>]`, a list of records in `<field>` identified by those keys: merged record by record
     (added on one side: kept; removed on one side and unchanged on the other: removed; changed on both sides: the
-    newest, the loser kept).
+    newest by `updated_at`, else `updatedAt`, the loser kept). Example: `keyed:profiles:id` for the performance
+    sheets.
   - A function `(base, local, remote) → { value, lost }`.
 - **Non-JSON text, or JSON that does not parse**: the local text wins and the remote one is kept.
+- **Taking a version back**: `FrameData.restore(id)` makes a kept loser the pending write of its file again (sent at
+  the next pass) and marks the conflict seen.
 
 ### 2.6 Transports
 
@@ -105,8 +119,23 @@ The transports:
   - `commit` makes one tree on the parent's tree (content for written files, `sha: null` for removed ones; a removal
     of a file absent from the tree is skipped), one commit, then a non-forced ref update.
   - A truncated tree is an error.
-- **To come**, same interface: `launcher` (workstation: the `data/` folder and git through the launcher, one commit per
-  batch), web service, the PHP site.
+- **`launcher`** (`frame/store/transport_launcher.js`, workstation): the `data/` folder of the workstation is the
+  repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.
+  - `GET /__setup/changes?since=<head>`: the head (a hash of the tree), and the tree `{ path: git blob sha }` when the
+    head differs from `since`.
+    - The tree leaves out `.git`, `local/`, conflict and pre-restore copies, regenerated indexes, the launcher's
+      marker, and the SIA sources (only `sia/base/` is shared).
+    - Hashes are kept by size and date, so a file is hashed again only when it changes.
+  - `read` gets the served file `data/<path>`.
+  - `POST /__setup/batch { parent, message, author, changes }`: the whole queue at once.
+    - Refused with 409 if `data/` changed since `parent`, so the layer pulls and pushes again.
+    - Refused with 400 for a path outside `data/` or excluded, or a `.js` file not in the data format
+      (`tools/data_guard.py`).
+    - The files are written, then one local commit in the author's name if `data/` is a git repository.
+  - `exchange()`, when the usages ask for an exchange and `data/` is a git repository: `POST /__setup/sync`, the
+    workstation's git pass (commit of the pool, record-by-record merge, push). It runs at the start of a pass, to
+    receive, and after a push, to send. A failure is reported as a warning and blocks nothing local.
+- **To come**, same interface: web service, the PHP site.
 - **Usages to transports**: single user → local; one user on several devices → github, or launcher and git; several
   users → github, or launcher and git; backend → web service. The interface shows only what the ticked usages need.
 
@@ -119,12 +148,12 @@ The transports:
 | `get(path, opts)` | the value (parsed JSON or text), or null |
 | `read(path, { policy, wait })` | `{ value, text, rev, cached, pending, at }` or null. `wait`: for a file never fetched, wait for the network; without it, null now and the value comes through `watch` |
 | `list(prefix)` | the paths, from the last known tree plus pending writes; null if no tree was ever read (the local transport lists the cache) |
-| `put(path, value)` / `remove(path)` | queued; refused outside the module's declared writes |
+| `put(path, value, opts)` / `remove(path)` | queued (or written to the cache for the `cache` policy); refused outside the module's declared writes |
 | `watch(prefix, fn)` | fn(paths) on changes; returns the unsubscribe function |
 | `status()` / `onStatus(fn)` | `{ transport, online, syncing, lastSync, lastError, pending, conflicts }` |
 | `sync()` | asks for a pass now |
 
-The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes: [prefix | { prefix, merge }] }`.
+The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes: [prefix | { prefix, merge | policy }] }`.
 
 ### 2.8 Invariants
 
@@ -135,7 +164,84 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 5. A module writes only under its declared prefixes.
 6. No key or token is ever written to a file, a backup or the repository.
 
-## 3. To come in the frame
+## 3. Application skeleton (`frame/index.html`, `frame/app.js`, `frame/frame.css`)
 
-Module loader (adapter: data, texts, notify, ask, identity, `aerodb` service), navigation and usage levels,
-translation, notifications and confirmations, the synchronisation control, designs taken from V2.
+### 3.1 Navigation
+
+- An application (today: Pilot) lists its modules, one short **verb** each, seven at most.
+- On a screen, the verbs sit in a column on the left. On a phone (760 px or narrower), they sit in a drawer opened by
+  the menu button, and choosing a verb closes it.
+- The address `#<module>` is enough to come back to a screen.
+- The frame has two screens of its own: `#conflicts` and `#device`.
+- Touch targets are at least 44 px high. There is no horizontal scroll at 375 px.
+
+### 3.2 Module loader and context
+
+- A module is `modules/<id>/module.js`, an ES module loaded on demand with `import()` (never a synchronous script).
+- It exports:
+  - `meta`: `{ id, apps, level, reads, writes }`; `id` must match its folder;
+  - `mount(el, ctx)`;
+  - `unmount()`.
+- Before mounting a module, the frame unmounts the previous one and empties its element.
+- The context `ctx` is everything the module may use:
+
+| Field | What it is |
+|---|---|
+| `data` | the module's part of the data layer (2.7), limited to the prefixes of its `meta` |
+| `aerodb` | the aeronautical service, one instance for all modules (`frame/aerodb/INTEGRATION.md`) |
+| `t(row, vars)`, `lang()` | texts as `[fr, en, de, es]` rows, `{name}` filled in, French typography; the language of the application |
+| `notify(text, kind)` | floating notification (`info`, `ok`, `warn`, `err`), closed by itself or by its ✕ |
+| `ask(text)`, `askText(text, { value })` | the frame's own question windows (never a native dialog); promise of true / false, of the text or null |
+| `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame: offline or on a network failure, an immediate 503 response with the header `x-sog-offline`, never an exception (a launcher relay may come later) |
+| `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
+
+- A module loads no global style sheet. It uses the frame's tokens (`--sog-bg`, `--sog-surface`, `--sog-fg`,
+  `--sog-muted`, `--sog-border`, `--sog-accent`, `--sog-ok`, `--sog-warn`, `--sog-err`, `--sog-radius`, `--sog-gap`,
+  `--sog-touch`, `--sog-font`) and the frame's classes (`f-card`, `f-row`, `f-field`, `f-check`, `f-muted`,
+  `primary`).
+- The dark theme follows the system.
+- `modules/hello/` is the example module. It shows a shared prefix, a cache file, `watch` and the texts.
+
+### 3.3 Synchronisation control
+
+- The header button shows one state at a time, in this order:
+  - in progress;
+  - n conflicts;
+  - on this device (local transport, nothing pending);
+  - offline, with the number of pending writes;
+  - synchronisation error;
+  - n pending;
+  - up to date, n minutes ago.
+- Its tooltip gives the transport, the last success, the pending count and the last error.
+- A click synchronises and says what happened: received and sent counts, conflicts, offline, error. When there are
+  conflicts, a click opens the conflicts screen instead.
+- With the local transport, a write is applied to the cache at once.
+- The button is written only when its state changes. It refreshes every 30 s, and when the network comes or goes.
+
+### 3.4 Conflicts screen (`#conflicts`)
+
+- Each unseen conflict shows the file and its date, the version set aside (this device's or another device's) and the
+  version kept.
+- Two actions: "Take this version back" (`FrameData.restore`) and "Seen".
+- Conflicts already seen can be shown too.
+- Never a blocking question.
+
+### 3.5 Device: usages, identity, transport
+
+- The device's settings are cache files, never synchronised:
+  - `device/usages.json`: `single`, `devices`, `users`, `backend`;
+  - `device/identity.json`: `trigram`, `ivao`, `vatsim`, `simbrief`.
+  - The settings module will write them under its prefix; until then the frame's `#device` screen writes them.
+  - They cannot live in the shared repository: they decide how the repository is reached.
+- **Transport chosen from the usages**:
+  - no exchange ticked → local;
+  - otherwise the launcher when the page is served by one (`__setup/status`), exchanging through git if `data/` is a
+    git repository;
+  - otherwise GitHub when a repository and a device token are set;
+  - otherwise local, with a warning that nothing can be exchanged.
+  - Changing the settings switches the transport at once.
+- The GitHub token is entered on that screen, kept in `githubData:frame`, and never shown again.
+
+## 4. To come in the frame
+
+Usage levels, a language choice, designs taken from V2, the launcher relay for `net`, the backend transports.
