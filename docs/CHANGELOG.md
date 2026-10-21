@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **fuel: performance sheets in pure code** (`modules/fuel/sheets.js`, `modules/fuel/perf_prompt.js`; `SPEC.md` § 8,
+  `INTEGRATION.md`, `DECISIONS.md`) — the V2 sheet functions copied verbatim, their globals replaced by the module's
+  environment (aerodb's aircraft base, the sheets, the active sheet, texts): performance CSV (simple and enriched),
+  RPM tables, JSON sheets and databases, Little Navmap `.lnmperf` read and written, SimBrief OFP sheet and
+  calibration, EUROCONTROL proposals, gaps filled from another sheet, merge sheet by sheet (dates, differences,
+  choices), ChatGPT prompts and replies read whatever their shape. `tools/build_perf_prompt.py` also writes the
+  module's copy of the prompts. Bench (`modules/fuel/test/sheets.html`) against the V2 functions on the same inputs:
+  9/9.
 - **fuel: level decision and climb instructions in pure code** (`modules/fuel/levels.js`; `SPEC.md` § 7,
   `INTEGRATION.md`, `DECISIONS.md`) — taken out of the V2 view (`shared/flight_perf_view.js`) without its layout:
   climb goals (economical, best rate, fast, sheet's IAS, manual) and their laws, the whole trip at every level up to

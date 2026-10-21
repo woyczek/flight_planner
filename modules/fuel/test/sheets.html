@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fuel — sheets bench</title>
+<!-- Banc des fiches V3 (modules/fuel/sheets.js) : mêmes entrées que celles passées le 22/10/2026 aux fonctions de la V2
+     (apps/planner/performance_sheets.html) — écriture et relecture .lnmperf, CSV enrichi, réponse ChatGPT désordonnée
+     (bloc de code, commentaire, virgule finale, unités dans les valeurs), différences entre deux fiches, champs
+     comblés par une autre fiche, date d'une fiche, valeurs à plat, champs manquants ; résultats attendus dans
+     sheets_v2.json (identifiants aléatoires, dates et date de création .lnmperf écartés). Page d'outil, servie par un
+     serveur (fetch du JSON). -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">fuel — sheets bench</h1>
+<pre id="out">running…</pre>
+<script src="../performance_model.js?v=0"></script>
+<script src="../model.js?v=0"></script>
+<script src="../perf_prompt.js?v=0"></script>
+<script src="../sheets.js?v=0"></script>
+<script>
+  (async () => {
+    'use strict';
+    const V2 = await fetch('sheets_v2.json').then(r => r.json()),
+      F = window.FuelSheets.configure({
+        lang: () => 'en' // langue de la page V2 au relevé
+      }),
+      lines = [];
+    let pass = 0,
+      fail = 0;
+    /** Copie sans les identifiants aléatoires ni les dates (comme le relevé de la V2). */
+    const strip = o => JSON.parse(JSON.stringify(o, (k, v) => ['_rowId', 'importedAt', 'at', 'appliedAt', 'fetchedAt', 'updatedAt']
+      .includes(
+        k) ? undefined : v));
+    /** Compare un résultat V3 au résultat relevé sur la V2. */
+    const check = (label, got, want) => {
+      const a = JSON.stringify(got),
+        b = JSON.stringify(want),
+        ok = a === b;
+      ok ? pass++ : fail++;
+      lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}${ok ? '' : `\n  V3 ${a.slice(0, 600)}\n  V2 ${b.slice(0, 600)}`}`);
+    };
+    const SHEET = {
+      id: 'TEST_TP',
+      name: 'Test turboprop',
+      icao: 'ZZTP',
+      unit: 'kg',
+      engineType: 'turboprop',
+      fuelAsVolume: false,
+      jetFuel: true,
+      usableFuel: 5000,
+      taxiFuel: 30,
+      reserveFuel: 350,
+      extraFuel: 0,
+      contingencyPercent: 5,
+      minRunwayLengthFt: 3000,
+      runwayType: 'HARD',
+      alternate: {
+        fuelFlowPerHour: 900,
+        tasKt: 280
+      },
+      cruise: {
+        tasKt: 300,
+        fuelFlowPerHour: 1000,
+        refAltFt: 20000,
+        ceilingFt: 25000
+      },
+      climb: {
+        iasKt: 180,
+        rateFpm: 1500,
+        fuelFlowPerHour: 1300,
+        tasKt: 220
+      },
+      descent: {
+        rateFpm: -1500,
+        tasKt: 250,
+        fuelFlowPerHour: 450
+      },
+      taxi: {
+        fuelFlowPerHour: 200
+      },
+      reserveFuelFlowPerHour: 700,
+      tod: {
+        gradientFtPerNm: 300,
+        bufferNm: 5
+      },
+      rpmFuelCurve: [{
+        rpm: 900,
+        fuelFlowPerHour: 800
+      }, {
+        rpm: 1000,
+        fuelFlowPerHour: 1000
+      }]
+    };
+    const noDate = x => String(x).replace(/<CreationDate>[^<]*<\/CreationDate>/, '<CreationDate/>');
+    const lnm = F.toLnmperf(F.normalize(structuredClone(SHEET)));
+    check('.lnmperf written', noDate(lnm), noDate(V2.lnm));
+    check('.lnmperf read back', strip(F.parseLnmperf(lnm, 'test.lnmperf')), V2.lnmBack);
+    const CSV =
+      'Aircraft;ICAO;Registration;Confidence;Basis;Cruise TAS kt;Cruise Fuel Flow lb/h;Climb Rate fpm;Descent Rate fpm;Service Ceiling ft;Fuel Flow vs RPM / Power;LNM Min Runway ft\nTest Twin;ZZTW;F-TEST;medium;manual;250;900;1800;1500;25000;1 000 RPM : 800-900 lb/h | 1 100 RPM : 950 lb/h;3000';
+    check('enriched CSV', strip(F.parsePerformanceCsvEnriched(CSV, 'test.csv')), V2.csv);
+    const GPT =
+      'Here is the sheet:\n```json\n{\n  // profile\n  "name": "Test jet",\n  "icao": "ZZJT",\n  "unit": "kg",\n  "engineType": "jet",\n  "cruise": { "tasKt": "450 kt", "fuelFlowPerHour": "2,400", "refAltFt": 35000, },\n  "climb": { "iasKt": 280, "rateFpm": 2500 },\n  "descent": { "rateFpm": -2000 },\n  "estimated": ["climb.rateFpm"],\n  "sources": ["manufacturer brochure"]\n}\n```\nHope it helps.';
+    check('ChatGPT reply (any shape)', strip(F.parseGptReply(GPT)), V2.gpt);
+    const A = F.normalize(structuredClone(SHEET)),
+      B = F.normalize({
+        ...structuredClone(SHEET),
+        id: 'TEST_TP2',
+        name: 'Test turboprop B',
+        cruise: {
+          tasKt: 310,
+          fuelFlowPerHour: 980
+        },
+        usableFuel: null,
+        climb: {
+          iasKt: 185
+        }
+      });
+    check('differences between two sheets', strip(F.profileDiff(A, B)), V2.diff);
+    const C = F.normalize({
+      id: 'GAPS',
+      icao: 'ZZTP',
+      unit: 'kg',
+      cruise: {
+        tasKt: 300
+      }
+    });
+    check('gaps filled from another sheet', strip(F.fillProfileGaps(C, A)), V2.fill);
+    check('sheet date (latest of its dates)', F.profileWhen({
+      updatedAt: '2026-10-01T00:00:00Z',
+      source: {
+        importedAt: '2026-10-05T00:00:00Z'
+      }
+    }), V2.when);
+    check('sheet values flattened', F.profileLeaves(A), V2.leaves);
+    check('missing fields', F.sheetMissingPaths(F.normalize({
+      id: 'X',
+      cruise: {
+        tasKt: 300
+      }
+    })), V2.missing);
+    lines.unshift(`<b class="${fail ? 'ko' : 'ok'}">${pass} passed, ${fail} failed</b>`);
+    document.getElementById('out').innerHTML = lines.join('\n');
+    document.title = `fuel — sheets bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+  })().catch(e => {
+    document.getElementById('out').textContent = 'ERROR ' + e.stack;
+    document.title = 'fuel — sheets bench: ERROR';
+  });
+</script>
+</body></html>
