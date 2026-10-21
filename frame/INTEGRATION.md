@@ -71,8 +71,14 @@ export function unmount() { /* stop watchers, timers */ }
 
 - `ctx.identity` (read only): `trigram`, `ivao`, `vatsim`, `simbrief` of this device; an empty object when not set.
   Never fail on its absence.
-- `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, the DEFA website): offline it answers at once with
-  a 503 response carrying `x-sog-offline`, never an exception. Never call `fetch` directly.
+- `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, VATSIM, the DEFA website). It never throws:
+  - offline, it answers at once with a 503 carrying `x-sog-offline`;
+  - with a launcher, SimBrief, IVAO and VATSIM are relayed by it, keys and CORS included, with the same signature;
+  - without one, SimBrief and IVAO are called directly;
+  - any other outside site gets a 503 carrying `x-sog-unreachable`.
+  Never call `fetch` directly. Only string bodies are relayed.
+- Offline is normal. The application starts offline once visited, and your module's entry point is kept from the
+  first visit: draw from `ctx.data` first, and treat a 503 from `ctx.net` as "not now", not as an error.
 - `ctx.notify(text, kind)`, `ctx.ask(text)`, `ctx.askText(text, { value })`: the frame's notifications and question
   windows.
 

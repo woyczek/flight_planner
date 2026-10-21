@@ -28,6 +28,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   choices), ChatGPT prompts and replies read whatever their shape. `tools/build_perf_prompt.py` also writes the
   module's copy of the prompts. Bench (`modules/fuel/test/sheets.html`) against the V2 functions on the same inputs:
   9/9.
+- **Frame: offline for real** (`frame/sw.js`, `frame/manifest.webmanifest`).
+  - The Pilot application is installable and starts offline after a first visit: frame and modules are kept by the
+    frame's own service worker, data by the data layer.
+  - A changed file brings the whole new version and a "Reload" notification.
+  - Outgoing calls of modules (`ctx.net`) are relayed by the launcher for SimBrief, IVAO (with its key) and VATSIM
+    (`tools/launch.py`: `POST /__setup/net`), called directly without a launcher where the site allows it, and answer
+    503 instead of failing.
+  - Synchronisation resumes on its own: retry after an offline pass, a pass on wake when one is due, the button's
+    state refreshed when the phone wakes up.
 - **fuel: level decision and climb instructions in pure code** (`modules/fuel/levels.js`; `SPEC.md` § 7,
   `INTEGRATION.md`, `DECISIONS.md`) — taken out of the V2 view (`shared/flight_perf_view.js`) without its layout:
   climb goals (economical, best rate, fast, sheet's IAS, manual) and their laws, the whole trip at every level up to

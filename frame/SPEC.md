@@ -41,6 +41,11 @@ exchange happens in batches, explicitly or periodically, through a transport the
 
 - **When**: at start, on the synchronisation button, and in the background every 10 minutes while the device is
   online, plus when the network comes back. One pass at a time across all tabs (Web Locks, `sog-frame-sync`).
+  - **On wake**: when the page becomes visible again (phone switched back on, tab brought back) or is restored from
+    the back-forward cache, the status is broadcast again, and a pass runs if a write is pending or the last success
+    is older than 10 minutes.
+  - **After an offline pass**: a new attempt runs after 1 minute, then the delay doubles at each failure, up to 10
+    minutes. No action from the user is needed.
 - **Pull**: the transport gives the repository head; if it changed since the last pass, it gives the tree (every path
   with its revision). For each path whose revision changed:
   - a path read by no mounted module is skipped;
@@ -192,7 +197,7 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 | `t(row, vars)`, `lang()` | texts as `[fr, en, de, es]` rows, `{name}` filled in, French typography; the language of the application |
 | `notify(text, kind)` | floating notification (`info`, `ok`, `warn`, `err`), closed by itself or by its ✕ |
 | `ask(text)`, `askText(text, { value })` | the frame's own question windows (never a native dialog); promise of true / false, of the text or null |
-| `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame: offline or on a network failure, an immediate 503 response with the header `x-sog-offline`, never an exception (a launcher relay may come later) |
+| `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM: relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO); any other site: 503 marked `x-sog-unreachable` |
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 
 - A module loads no global style sheet. It uses the frame's tokens (`--sog-bg`, `--sog-surface`, `--sog-fg`,
@@ -242,6 +247,34 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
   - Changing the settings switches the transport at once.
 - The GitHub token is entered on that screen, kept in `githubData:frame`, and never shown again.
 
+### 3.6 Installable and offline application (`frame/sw.js`, `frame/manifest.webmanifest`)
+
+- **Service worker**: registered by the frame for its own folder (scope `frame/`) when the page is served over http(s);
+  a native shell already carries the code. It keeps the application files only: the frame (`frame/…`), the modules
+  (`modules/…`, tests excluded) and the icon.
+- **Not kept**: data (`data/…`, the GitHub API) go through the data layer and its own cache; the launcher's routes
+  (`/__setup/…`) and the V2 pages go to the network.
+- **Serving**:
+  - A file is served from its copy at once and checked again in the background.
+  - A copy is keyed by its path without the `?v=` stamp, so it is one copy whatever the stamp.
+  - Without a copy, the file comes from the network and is kept. Offline with no copy: a 503 marked
+    `x-sog-offline`.
+- **Installation**: the frame's files are kept. The page then sends the entry point of each module of its application
+  (message `precache`), so every module opens offline after the first visit. The files a module imports are kept the
+  first time they are loaded.
+- **New version**:
+  - when a background check finds a changed file, all copies are fetched again, so the new version arrives whole;
+  - then the open pages receive `sog-frame-update` and the frame shows "A new version of the app is ready" with a
+    "Reload" button.
+  - A launcher clears its site's browser cache at its first page (`Clear-Site-Data`), so after a launcher restart the
+    new version is simply served.
+- **No storage for copies** (private browsing, quota, failure): the service worker installs anyway and lets requests
+  through to the network. The application works, without offline.
+- **Manifest**: name "SOG — Pilote", start and scope `./`, standalone display, colours, SVG icon.
+- **Offline start**: on the data already cached, the frame, the module and the synchronisation control are drawn with
+  no error. The transport falls back as § 3.5 says. When the network comes back, the launcher is looked for again
+  and the transport follows.
+
 ## 4. To come in the frame
 
-Usage levels, a language choice, designs taken from V2, the launcher relay for `net`, the backend transports.
+Usage levels, a language choice, designs taken from V2, the backend transports.
