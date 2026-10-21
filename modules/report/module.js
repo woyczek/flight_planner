@@ -7,6 +7,9 @@
 // famille recopiés de la V2 (vocab.js, model.js, families/*.js) ; ici seulement l'écran et ctx.
 import * as V from './vocab.js';
 import * as M from './model.js';
+import * as T from './text_import.js';
+import * as Fpl from './fpl.js';
+import * as LF from './last_flight.js';
 import HEMS from './families/hems.js';
 
 export const meta = {
@@ -20,14 +23,19 @@ export const meta = {
   }, {
     prefix: 'cache/report/',
     policy: 'cache'
+  }, {
+    prefix: 'pilot/handoff.json',
+    policy: 'cache'
   }],
-  files: ['vocab.js', 'model.js', 'families/hems.js']
+  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'families/hems.js']
 };
 
 const FAMILIES = {
     HEMS
   },
   DRAFT = 'cache/report/draft.json',
+  LAST = 'cache/report/last_flights.json',
+  HANDOFF = 'pilot/handoff.json',
   SCHEMA = 'sog-report/1';
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
@@ -85,7 +93,40 @@ const TX = {
     fuel: L('carburant départ et arrivée', 'fuel at start and landing', 'Kraftstoff Start und Landung', 'combustible inicial y final'),
     outcome: L('résultat', 'outcome', 'Ergebnis', 'resultado')
   },
-  warnings: L('Vérifier : {l}.', 'Check: {l}.', 'Prüfen: {l}.', 'Comprobar: {l}.')
+  warnings: L('Vérifier : {l}.', 'Check: {l}.', 'Prüfen: {l}.', 'Comprobar: {l}.'),
+  // sources du préremplissage
+  sources: L('Autres sources', 'Other sources', 'Andere Quellen', 'Otras fuentes'),
+  lastIvao: L('Mon dernier vol IVAO', 'My last IVAO flight', 'Mein letzter IVAO-Flug', 'Mi último vuelo IVAO'),
+  lastVatsim: L('Mon dernier vol VATSIM', 'My last VATSIM flight', 'Mein letzter VATSIM-Flug', 'Mi último vuelo VATSIM'),
+  simbrief: L('Plan de vol SimBrief', 'SimBrief flight plan', 'SimBrief-Flugplan', 'Plan de vuelo SimBrief'),
+  paste: L('Coller un plan de vol, une page du tracker ou un METAR', 'Paste a flight plan, a tracker page or a METAR',
+    'Flugplan, Tracker-Seite oder METAR einfügen', 'Pegar un plan de vuelo, una página del tracker o un METAR'),
+  analyse: L('Analyser', 'Analyse', 'Auswerten', 'Analizar'),
+  lastOn: L('Dernier vol {net}', 'Last flight on {net}', 'Letzter Flug auf {net}', 'Último vuelo en {net}'),
+  choose: L('Plusieurs vols ces 7 jours : lequel ?', 'Several flights in the last 7 days: which one?',
+    'Mehrere Flüge in den letzten 7 Tagen: welcher?',
+    'Varios vuelos en los últimos 7 días: ¿cuál?'),
+  none: L('Aucun vol {net} ces 7 derniers jours ({id}).', 'No {net} flight in the last 7 days ({id}).',
+    'Kein {net}-Flug in den letzten 7 Tagen ({id}).',
+    'Ningún vuelo {net} en los últimos 7 días ({id}).'),
+  offline: L('Hors ligne : rien n’a été demandé.', 'Offline: nothing was requested.', 'Offline: nichts wurde angefragt.',
+    'Sin conexión: no se pidió nada.'),
+  needRelay: L('{net} n’est joignable que par le lanceur (clé, relais) : collez plutôt la page du vol.',
+    '{net} can only be reached through the launcher (key, relay): paste the flight page instead.',
+    '{net} ist nur über den Starter erreichbar (Schlüssel, Relais): stattdessen die Flugseite einfügen.',
+    '{net} solo es accesible a través del lanzador (clave, relé): pegue la página del vuelo.'),
+  netError: L('{net} n’a pas répondu ({e}).', '{net} did not answer ({e}).', '{net} hat nicht geantwortet ({e}).',
+    '{net} no respondió ({e}).'),
+  unknown: L('Texte non reconnu (plan de vol OACI, page du tracker IVAO ou StatSim, METAR).',
+    'Text not recognised (ICAO flight plan, IVAO tracker or StatSim page, METAR).',
+    'Text nicht erkannt (ICAO-Flugplan, IVAO-Tracker- oder StatSim-Seite, METAR).',
+    'Texto no reconocido (plan de vuelo OACI, página del tracker IVAO o StatSim, METAR).'),
+  replace: L('Remplacer les {n} champs déjà saisis', 'Replace the {n} fields already filled',
+    'Die {n} bereits ausgefüllten Felder ersetzen',
+    'Sustituir los {n} campos ya rellenados'),
+  noId: L('Identifiant {net} à régler (⚙).', '{net} identifier to set (⚙).', '{net}-Kennung einstellen (⚙).',
+    'Identificador {net} por ajustar (⚙).'),
+  handoff: L('Repris de {s}', 'Taken from {s}', 'Übernommen aus {s}', 'Tomado de {s}')
 };
 // champs communs du CR court (libellés de shared/mission_core/blocks.js)
 const f = (path, label, type = 'text', extra = {}) => ({
@@ -320,7 +361,7 @@ const STYLE = `
 [data-module="report"] .rp-bar .primary{flex:1;min-width:160px}
 [data-module="report"] .rp-warn{color:var(--sog-warn)}
 [data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between;border-color:var(--sog-accent)}
-[data-module="report"] .rp-recent button{width:100%;text-align:left;margin-bottom:6px}
+[data-module="report"] .rp-recent button,[data-module="report"] .rp-choice{width:100%;text-align:left;margin-bottom:6px}
 @media (min-width: 980px){
   [data-module="report"] .rp-steps{display:none}
   [data-module="report"] .rp-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sog-gap);align-items:start}
@@ -342,7 +383,7 @@ function render() {
     <nav class="rp-steps">${[0, 1, 2].map(i => stepBtn(i, done[i])).join('')}</nav>
     <div class="rp-cols">
       <section class="rp-step" data-s="0"${step === 0 ? '' : ' hidden'}>
-        <div data-prefill></div>
+        <div data-prefill></div><div data-sources></div>
         <div class="f-card"><h2>${esc(tt(TX.steps[0]))}</h2>
           ${grid([FIELDS.date, FIELDS.registration, FIELDS.type, FIELDS.callsign, FIELDS.dep, FIELDS.arr])}
           <h3>${esc(lab(L('Heures', 'Times', 'Zeiten', 'Horas')))}</h3>
@@ -367,6 +408,7 @@ function render() {
     <div class="f-card rp-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button></div>`;
   check();
   prefillCard();
+  sourcesCard();
   const rd = S.body.querySelector('[data-recent]');
   rd.ontoggle = () => rd.open && showRecent();
 }
@@ -409,6 +451,191 @@ async function prefillCard() {
     r = cf.route || {};
   box.innerHTML = `<div class="f-card rp-prefill"><div><b>${esc(tt(TX.current))}</b><div class="f-muted">${esc([a.registration, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
     <button type="button" class="primary" data-do="current">${esc(tt(TX.use))}</button></div>`;
+}
+/** Carte des sources : le dernier vol proposé (réseau de l'identité), les autres sources, le collage, le choix d'un vol
+ *  parmi plusieurs, « Remplacer les champs déjà saisis » après une reprise. */
+function sourcesCard() {
+  const box = S.body?.querySelector('[data-sources]');
+  if (!box) return;
+  const id = S.ctx.identity,
+    p = S.proposal,
+    when = v => v ? new Date(v).toLocaleString(S.ctx.lang(), {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) : '',
+    flight = (net, f) => `${esc(f.callsign)} · ${esc([f.dep, f.arr].filter(Boolean).join(' → ') || '—')} · ${esc(when(f.start))}${f.open ? ' …' : ''}`;
+  box.innerHTML = `${p?.flights?.length ? `<div class="f-card rp-prefill"><div><b>${esc(tt(TX.lastOn, { net: p.label }))}</b><div class="f-muted">${flight(p.net, p.flights[0])}</div></div>
+      <button type="button" class="primary" data-do="pick" data-net="${p.net}" data-id="${esc(p.flights[0].id)}">${esc(tt(TX.use))}</button></div>` : ''}
+    ${S.choices ? `<div class="f-card"><p class="f-muted">${esc(tt(TX.choose))}</p>${S.choices.flights.map(f => `<button type="button" class="rp-choice" data-do="pick" data-net="${S.choices.net}" data-id="${esc(f.id)}">${flight(S.choices.net, f)}</button>`).join('')}</div>` : ''}
+    ${S.kept ? `<div class="f-row" style="margin-bottom:var(--sog-gap)"><button type="button" data-do="replace">${esc(tt(TX.replace, { n: S.kept.n }))}</button></div>` : ''}
+    <details class="f-card"${S.pasteOpen ? ' open' : ''} data-sourcebox><summary>${esc(tt(TX.sources))}</summary>
+      <div class="f-row">
+        <button type="button" data-do="net" data-net="ivao">${esc(tt(TX.lastIvao))}</button>
+        <button type="button" data-do="net" data-net="vatsim">${esc(tt(TX.lastVatsim))}</button>
+        <button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>
+      </div>
+      <label class="f-field"><span>${esc(tt(TX.paste))}</span><textarea rows="4" data-paste></textarea></label>
+      <button type="button" data-do="analyse">${esc(tt(TX.analyse))}</button>
+    </details>`;
+  box.querySelector('[data-sourcebox]').ontoggle = e => S.pasteOpen = e.target.open;
+  void id;
+}
+
+// ---------------------------------------------------------------- préremplissage par le réseau et le collage
+const NETS = {
+  ivao: {
+    label: 'IVAO',
+    id: () => S.ctx.identity.ivao,
+    list: LF.ivaoFlights,
+    one: (g, id, f) => LF.ivaoFlight(g, f)
+  },
+  vatsim: {
+    label: 'VATSIM',
+    id: () => S.ctx.identity.vatsim,
+    list: LF.vatsimFlights,
+    one: (g, id, f) => LF.vatsimFlight(g, id, f)
+  }
+};
+/** JSON d'une adresse par ctx.net ; erreur { code } : offline (pas de réseau), relay (site joignable seulement par le
+ *  lanceur, ou clé refusée), http. */
+async function getJson(url) {
+  const r = await S.ctx.net.fetch(url, {
+      headers: {
+        accept: 'application/json'
+      }
+    }),
+    fail = (code, msg) => Object.assign(new Error(msg || code), {
+      code
+    });
+  if (r.headers.get('x-sog-offline')) throw fail('offline');
+  if (r.headers.get('x-sog-unreachable') || r.status === 401 || r.status === 403) throw fail('relay');
+  if (!r.ok) throw fail('http', `HTTP ${r.status}`);
+  return r.json();
+}
+/** Message d'une erreur réseau pour la source net (libellé). */
+function netNotice(e, net) {
+  if (e.code === 'offline') return S.ctx.notify(tt(TX.offline), 'warn');
+  if (e.code === 'relay') {
+    S.pasteOpen = true;
+    sourcesCard();
+    return S.ctx.notify(tt(TX.needRelay, {
+      net
+    }), 'warn');
+  }
+  S.ctx.notify(tt(TX.netError, {
+    net,
+    e: e.message || e
+  }), 'err');
+}
+/** Vols des 7 derniers jours sur un réseau (gardés deux minutes sur l'appareil) ; null en cas d'échec (dit). */
+async function flightsOf(net, quiet = false) {
+  const N = NETS[net],
+    id = String(N.id() || '').trim();
+  if (!id) return quiet ? null : S.ctx.notify(tt(TX.noId, {
+    net: N.label
+  }), 'warn');
+  const kept = await S.ctx.data.get(LAST);
+  if (kept?.[net]?.id === id && Date.now() - Date.parse(kept[net].at) < 120000) return kept[net].list;
+  try {
+    const list = await N.list(getJson, id);
+    if (list.flights.length) await S.ctx.data.put(LAST, {
+      ...kept,
+      [net]: {
+        id,
+        at: new Date().toISOString(),
+        list
+      }
+    }, {
+      policy: 'cache'
+    });
+    return list;
+  } catch (e) {
+    if (!quiet) netNotice(e, N.label);
+    return null;
+  }
+}
+/** Reprend un résultat analysé (text_import.js) dans les champs vides : heures dans le fuseau de l'appareil, seuils
+ *  hélicoptère si l'appareil est à voilure tournante ; source notée par champ ; « Remplacer » proposé pour les champs
+ *  déjà saisis qui différaient. replace : remplace aussi les champs déjà saisis. */
+function importResult(result, source, replace = false) {
+  const res = T.apply(S.m, result, {
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    rotary: (S.m.aircraft?.[0]?.category || FAMILIES[S.m.family]?.defaultCategory) === 'rotary',
+    today: today(),
+    replace
+  });
+  for (const path of res.done) S.sources[path] = source;
+  S.kept = !replace && res.kept.length ? {
+    result,
+    source,
+    n: res.kept.length
+  } : null;
+  S.choices = null;
+  S.ctx.notify([res.done.length ? tt(TX.filled, {
+    n: res.done.length,
+    s: source
+  }) : tt(TX.nothing), ...res.notes].join(' — '), res.done.length ? 'ok' : 'info');
+  saveDraft();
+  render();
+}
+/** Vol choisi (réseau, identifiant de vol) : détail lu puis repris. */
+async function pickFlight(net, flightId) {
+  const N = NETS[net];
+  try {
+    const got = await N.one(getJson, String(N.id() || '').trim(), flightId),
+      fpl = got.fplText ? T.parseFpl(got.fplText) : null;
+    if (fpl && !got.equipKnown) fpl.equipment = [];
+    importResult({
+      ...got,
+      fpl
+    }, N.label);
+  } catch (e) {
+    netNotice(e, N.label);
+  }
+}
+/** Demande des vols d'un réseau : un seul → repris aussitôt, plusieurs → liste à choisir, aucun → dit. */
+async function askNetwork(net) {
+  const N = NETS[net],
+    list = await flightsOf(net);
+  if (!list) return;
+  if (!list.flights.length) return S.ctx.notify(tt(TX.none, {
+    net: N.label,
+    id: list.id
+  }), 'info');
+  if (list.flights.length === 1) return pickFlight(net, list.flights[0].id);
+  S.choices = {
+    net,
+    flights: list.flights
+  };
+  sourcesCard();
+}
+/** Proposition du dernier vol au montage : réseau de l'identité (IVAO d'abord), sans message en cas d'échec. */
+async function propose() {
+  for (const net of ['ivao', 'vatsim']) {
+    if (!NETS[net].id() || !S.ctx.net?.online?.()) continue;
+    const list = await flightsOf(net, true);
+    if (!S?.body) return;
+    if (list?.flights?.length) {
+      S.proposal = {
+        net,
+        label: NETS[net].label,
+        flights: list.flights
+      };
+      return sourcesCard();
+    }
+  }
+}
+/** Passage d'un autre module (#report?from=…) : pilot/handoff.json destiné à report, repris puis effacé (lu à chaque
+ *  montage : l'adresse seule ne suffit pas, le cadre peut ouvrir le module sans elle). */
+async function takeHandoff() {
+  const h = await S.ctx.data.get(HANDOFF);
+  if (!h || h.to !== 'report') return;
+  if (h.values) fill(h.values, tt(TX.handoff, {
+    s: h.source || h.from || ''
+  }));
+  await S.ctx.data.remove(HANDOFF).catch(() => {});
 }
 /** Remplit les champs vides depuis des valeurs { chemin: valeur } ; source notée par champ ; nombre de champs remplis. */
 function fill(values, source) {
@@ -502,6 +729,32 @@ async function onClick(e) {
       S.step = 0;
       await S.ctx.data.remove(DRAFT).catch(() => {});
       return render();
+    case 'net':
+      return askNetwork(b.dataset.net);
+    case 'pick':
+      return pickFlight(b.dataset.net, b.dataset.id);
+    case 'simbrief': {
+      const id = String(S.ctx.identity.simbrief || '').trim();
+      if (!id) return S.ctx.notify(tt(TX.noId, {
+        net: 'SimBrief'
+      }), 'warn');
+      try {
+        return importResult({
+          kind: 'fpl',
+          fpl: await Fpl.fromSimbrief(id)
+        }, 'SimBrief');
+      } catch (err) {
+        return netNotice(err, 'SimBrief');
+      }
+    }
+    case 'analyse': {
+      const text = S.body.querySelector('[data-paste]').value,
+        r = T.analyse(text);
+      if (['unknown', 'empty', 'vatsim-history'].includes(r.kind)) return S.ctx.notify(tt(TX.unknown), 'warn');
+      return importResult(r, r.source || (r.kind === 'metar' ? 'METAR' : r.kind === 'fpl' ? 'FPL' : 'IVAO'));
+    }
+    case 'replace':
+      return S.kept && importResult(S.kept.result, S.kept.source, true);
     case 'current': {
       const cf = S.current || {},
         a = cf.aircraft || {},
@@ -556,7 +809,27 @@ export async function mount(el, ctx) {
   S.body.addEventListener('input', onInput);
   S.body.addEventListener('change', onInput);
   S.body.addEventListener('click', onClick);
+  // plan de vol : appels par ctx.net ; types d'appareil par aerodb (modèle, voilure tournante)
+  const ac = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
+  Fpl.configure({
+    getJson,
+    aircraft: {
+      find: () => null,
+      canonicalPrefix: x => String(x ?? '').trim().toUpperCase(),
+      lookupType: code => {
+        const r = ac?.record?.(code);
+        return r ? {
+          model: r.model || r.name || '',
+          category: /^H/.test(String(r.description || r.desc || '')) ? 'rotary' : 'fixed',
+          tdesig: r.tdesig || code
+        } : null;
+      },
+      operatorOfDesignator: () => ''
+    }
+  });
   render();
+  await takeHandoff();
+  propose();
 }
 
 export function unmount() {

@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **report: prefill** (`modules/report/fpl.js`, `text_import.js`, `last_flight.js`, `module.js`; `SPEC.md` § 6,
+  `INTEGRATION.md`, `DECISIONS.md`) — my last IVAO flight proposed at mount and taken in one tap (sessions cut by
+  disconnections grouped, times from the track), my last VATSIM flight, the SimBrief flight plan, a pasted flight plan,
+  tracker page or METAR, and a hand-over record from another module (`pilot/handoff.json`); empty fields only, the
+  source shown per field, "Replace the n fields already filled". Networks through `ctx.net` (the launcher relays IVAO
+  with its key and VATSIM); the V2 flight-plan and paste code copied, the launcher's "last flight" ported to
+  JavaScript.
 - **report: the mission report in the Pilot application, HEMS first** (`modules/report/module.js`, `vocab.js`,
   `model.js`, `families/hems.js`, `frame/app.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`) — three steps Flight ·
   Mission · Result (one at a time on a phone, side by side on a wide screen), nothing required (what is missing and

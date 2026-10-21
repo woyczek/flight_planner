@@ -43,6 +43,27 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
     source; HEMS service, patients and a destination; save → `cr/reports/2026/CRM-A01-0.json` with schema, statistics
     (75 min flight) and the HEMS data; a second report → `CRM-A02-0`; a draft restored after a reload; three columns
     on a wide screen.
+- **23 Oct 2026 — lot 3a, prefill** (3b, the website button, waits for the site address: frame `ctx.airline` asked):
+  - **V2 copied again, globals replaced**: `fpl.js` and `text_import.js` extracted by script; `fetch` became
+    `ENV.getJson` (the module passes `ctx.net`), `window.MissionAircraft` an environment (aerodb `record` for the model
+    and rotary wing; no local "known aircraft" registry), `window.MissionAssist.routePoints` copied in. `model.js`
+    gained V2's callsign and registration helpers.
+  - **"Last flight" ported from the launcher** (`last_flight.js`, from `tools/launch.py`): the launcher answered
+    `/__setup/<net>/last-flight`; V3 calls the networks through `ctx.net` (the launcher relays IVAO with its key and
+    VATSIM), with the same grouping of sessions cut by disconnections and the same "(FPL-…)" text read by
+    `text_import.js`. No cache of tracks beyond one reading; the list is kept two minutes on the device.
+  - **One proposal at mount**, IVAO first then VATSIM, only when online and identified, silent on failure: the "Use"
+    card is the 3-tap path's second tap.
+  - **Time zone**: the device's, not the aerodrome's (aerodb has none yet): to revisit when it has.
+  - **Hand-over record read at every mount**, not only with `?from=` in the address: the frame's router takes the
+    whole hash as the module id, so `#report?from=x` opens the first module (reported to the frame); the record is
+    removed once taken, so reading it each time is harmless.
+  - **V2 notes kept in French** (`text_import.js` notes such as "trace : n points…"): copied unchanged; translating
+    them is a V2 change for later.
+  - Checked on 8801: a pasted FPL filled 16 fields (registration F-ZBQU from REG/, callsign, type, route); a fictitious
+    IVAO service behind `ctx.net` (session, plan, seven track points) gave the proposal card, then 25 fields (times
+    from the track, distance); the real IVAO API without key answered 401 → message and paste box; a hand-over record
+    filled two fields "Taken from Mes vols" and was removed; 375 px without horizontal scroll.
 - **Proposed, settled above** (lot 1):
   1. One JSON record per report, `cr/reports/<year>/<reportId>.json`, merge `record`, rather than the shared
      `cr/missions.yaml` (text for the data layer: no record-by-record merge). Joins the pending "reports per year"
