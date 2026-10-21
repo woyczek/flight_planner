@@ -1539,10 +1539,6 @@ This block links three views: the flight plan (text), the map and the vertical s
 - “Draw”: draws the vertical section. “Fuel”: opens the fuel planner with this route (distance, level, true track, aircraft).
 - “Copy ICAO”: copies the strict ICAO flight plan (unpublished points as coordinates).
 - “Syntax and use”: reminder of the accepted forms (beacons, VFR reporting points “MM-CV”, “REN300010”, coordinates “4330N00125E”, levels “/A035”, “VFR”…).
-- Coordinates written another way: type them as you have them (“44.18N 00.038W”, “N44,18-W00,034”, “44°19'52"N
-  00°59'59"W”, “+44.18,-0.038”, “4418N0003W”…); when you leave the field they are rewritten in the flight plan format, to
-  the minute (“4411N00002W”) when the position falls exactly on it, otherwise to the second (“441048N0000217W”); a
-  notification says what was rewritten. “Copy ICAO” always rounds to the minute.
 - At levels 1 to 3, the route field, “Level”, “SimBrief” and “Syntax and use” remain; the “Airways” / “RTBA” menu, “Search”, “Draw”, “Fuel” and “Copy ICAO” are at the Expert level.
 
 On the map: drag a point to move it (it snaps to beacons, reporting points and airfields), click the route to insert a point, right-click to delete one. On the section: click to add a point at that altitude, drag to change the altitude, right-click to delete.

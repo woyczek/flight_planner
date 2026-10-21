@@ -932,10 +932,13 @@
     refreshAirspace();
     renderRequests();
   }
-  /** Base aéronautique absente : un seul avertissement (jusqu'au changement de semaine), zones peintes avec le repli. */
-  function missingBase(r) {
+  /** Base aéronautique absente : un seul avertissement (jusqu'au changement de semaine), zones peintes avec le repli ;
+   *  mode GitHub sans base publiée dans le dépôt des données : pas d'avertissement (rien à faire sur cet appareil, la
+   *  base se publie depuis un poste avec lanceur). */
+  async function missingBase(r) {
     if (!S.airMissing) {
       S.airMissing = r;
+      if (await window.SiaBase?.published?.() === false) return void paintZones();
       notify(t(L4('Zones : base aéronautique absente ou zone France inactive — Paramètres › Maintenance › Données aéronautiques.',
         'Areas: aeronautical database missing or France zone inactive — Settings › Maintenance › Aeronautical data.',
         'Gebiete: Luftfahrtdatenbank fehlt oder Zone Frankreich inaktiv — Einstellungen › Wartung › Luftfahrtdaten.',

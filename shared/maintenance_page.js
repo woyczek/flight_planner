@@ -3606,14 +3606,9 @@
    *  commun de la base (SiaBase.panel), carte MORA et contrôle de cohérence ; branche leurs actions (délégation au panneau). */
   async function renderSia() {
     const host = hosts.sia;
-    // mode GitHub : pas de base aéronautique (ni dossier SIA, ni zones à reconstruire) — une phrase, écrite telle quelle
+    // mode GitHub : ni dossier SIA ni zones à reconstruire ; la base publiée dans le dépôt des données (bloc commun)
     if (window.GitHubData?.on?.()) {
-      host.innerHTML = pill('info', t([
-        'Base aéronautique (SIA) non disponible dans ce mode : elle se produit sur un poste de travail avec lanceur.',
-        'Aeronautical (SIA) database not available in this mode: it is produced on a workstation with the launcher.',
-        'Luftfahrtdatenbank (SIA) in diesem Modus nicht verfügbar: Sie wird an einem Arbeitsplatz mit Starter erzeugt.',
-        'Base aeronáutica (SIA) no disponible en este modo: se produce en un puesto de trabajo con lanzador.'
-      ]));
+      window.SiaBase.panel(host);
       return;
     }
     const Z = await window.SiaBase.zones();

@@ -21,8 +21,10 @@ import json, os, re, shutil, subprocess, sys, tempfile, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_guard  # .js du pool : format des fichiers de données seulement (jamais de code commité)
 
-# chemins synchronisés (relatifs à data/) ; index régénérés et repère du lanceur exclus
-POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv']
+# chemins synchronisés (relatifs à data/) ; index régénérés et repère du lanceur exclus ; sia/base : base aéronautique
+# publiée par zone par le poste qui la reconstruit (shared/sia_base.js, publish), lue par les téléphones (mode GitHub) —
+# les fichiers du SIA eux-mêmes (sia/*.xml) restent hors du dépôt
+POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv', 'sia/base']
 EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':(exclude).defa_instance']
 TIMEOUT = 120
 

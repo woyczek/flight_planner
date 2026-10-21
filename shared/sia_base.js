@@ -7,7 +7,10 @@
  *   - la grille MORA : calcul complet (relief Terrarium + sommets OSM + obstacles) et recalcul simple (obstacles d'un
  *     nouveau cycle, relief du mora.csv existant), notation « 3⁵ », CSV ;
  *   - le bloc d'interface « Base de données SIA » (dossier, relire, purger, messages, inventaire), monté à l'identique
- *     dans les deux pages : SiaBase.panel(host, { onLoaded }).
+ *     dans les deux pages : SiaBase.panel(host, { onLoaded }) ;
+ *   - la base publiée dans le dépôt des données : un poste avec lanceur qui reconstruit la base l'écrit aussi, zone par
+ *     zone, dans data/sia/base/<zone>/<cycle>.json (villes : data/sia/base/cities.json), envoyée par « Synchroniser » ;
+ *     en mode GitHub (appli sans lanceur), get() lit ces fichiers, les recolle et garde la base dans ce navigateur.
  * Dépendances facultatives : window.SiaAero.parseAixm (shared/carto/aero_symbols.js : aérodromes, balises) ; window.FileAccess
  * (dossiers mémorisés) ; window.Airac (cycles). Valeurs MORA calculées, non certifiées.
  */
@@ -122,8 +125,15 @@
       };
     });
   }
-  /** Base mémorisée (objet complet) ; null si absente. any = true : même d'une autre version du format. */
-  async function get({
+  /** Base mémorisée (objet complet) ; null si absente. any = true : même d'une autre version du format. Mode GitHub : la
+   *  base publiée dans le dépôt des données est lue d'abord (attendue à la première ouverture, ensuite contrôlée en
+   *  arrière-plan : ghSync). */
+  async function get(opts = {}) {
+    if (ghOn()) await ghReady();
+    return getLocal(opts);
+  }
+  /** Base mémorisée dans ce navigateur, sans lecture du dépôt (voir get). */
+  async function getLocal({
     any = false
   } = {}) {
     const db = await openDb({
@@ -146,7 +156,7 @@
     inputs = null,
     keepInputs = false
   } = {}) {
-    const old = await get({
+    const old = await getLocal({
       any: true
     });
     if (old && old.cachedAt !== base.cachedAt) {
@@ -224,7 +234,7 @@
       const c = await tx(db, 'readonly', s => s.get(KEY_CITIES)).catch(() => null);
       if (Array.isArray(c) && c.length) return citiesCache = c;
       // base d'avant la séparation : ses villes
-      const b = await get({
+      const b = await getLocal({
         any: true
       });
       if (Array.isArray(b?.cities) && b.cities.length) return citiesCache = b.cities;
@@ -263,7 +273,7 @@
   async function patch(fields, {
     touched = []
   } = {}) {
-    const b = await get({
+    const b = await getLocal({
       any: true
     });
     if (!b) return false;
@@ -278,9 +288,15 @@
   }
   /** Purge : vide le magasin (jamais bloqué par un onglet ouvert, contrairement à deleteDatabase) et oublie le résumé. */
   async function purge() {
-    const had = !!(await get({
+    const had = !!(await getLocal({
       any: true
     }));
+    ghRun = null; // mode GitHub : la base publiée sera relue
+    try {
+      localStorage.removeItem(GH_MARK);
+    } catch {
+      /* stockage indisponible */
+    }
     const db = await openDb({
       create: false
     });
@@ -1341,6 +1357,18 @@
     return null;
   }
   const AIRAC_NAME = /^(?:AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)(\d{4}-\d{2}-\d{2})\.xml$/i;
+  // zone d'origine de chaque élément de la base (espace, aérodrome, point…), d'après le fichier lu : notée par build, lue
+  // par la publication par zone (splitZones) ; rien n'est ajouté à la base mémorisée
+  const ZONE_OF = new WeakMap();
+  /** Note la zone z (fichier d'une zone) des espaces et des éléments aéronautiques de part ; sans zone : rien. */
+  function tagZone(part, z) {
+    if (!z || z === '*') return;
+    for (const a of part.airspaces || []) ZONE_OF.set(a, z);
+    for (const v of Object.values(part.aero || {}))
+      if (Array.isArray(v))
+        for (const x of v)
+          if (x && typeof x === 'object') ZONE_OF.set(x, z);
+  }
   /** Analyse d'un dossier SIA (liste de File) → base (non mémorisée) + compte rendu.
    *  Un seul cycle : le plus récent des fichiers datés (les autres sont écartés, sinon contours mélangés).
    *  progress(texte) : étape en cours. Résultat : { base, report: { airac, skipped, xmlCount, aixmAirspaces, noCities } }. */
@@ -1474,13 +1502,20 @@
       markControlledAerodromes(aero, airspaces);
       aero.vrp = vfrPoints;
     }
+    // fichiers SIA et DIRCAM : zone France
+    if (Z) tagZone({
+      airspaces,
+      aero
+    }, 'fr');
     const cities = city ? parseCities(await text('Villes (villes_geonames.csv)', city)) : [];
     const moraCells = moraFile ? parseMora(await text('Grille MORA (mora.csv)', moraFile)) : [];
     const aarXml = tracks ? await text('Axes de ravitaillement (ENR 5.7)', tracks) : '';
     await step('Enregistrement dans le navigateur…');
     // axes de ravitaillement d'autres pays (zones/<zone>/…-tracks.xml, format de la MILAIP française : UK Mil AIP AARA),
-    // déclarés avant la base qui les référence
-    const aarExtra = [];
+    // déclarés avant la base qui les référence ; aarZones : zone de chacun (publication par zone)
+    const aarExtra = [],
+      aarZones = [];
+    let natZone = '';
     const base = {
       parserVersion: VERSION,
       airac,
@@ -1532,6 +1567,8 @@
         for (const f of list) {
           const t = await text(`${src.id} : lecture de ${f.name}`, f);
           await step(`${src.id} : analyse de ${f.name}…`, 0.5 * f.size);
+          // zone du fichier (X-Plane, données mondiales : aucune, rangées par leur position à la publication)
+          const fz = f.__rel ? Z?.fileSource?.(f.__rel)?.zone || '' : '';
           let part = null,
             role = '';
           try {
@@ -1545,6 +1582,7 @@
                 messages: n.messages || [],
                 source: n.source || ''
               };
+              natZone = fz;
               role = `tracks NAT (${base.natTracks.tracks.length})`;
             } else if (/\.(geo)?json$/i.test(f.name)) {
               part = AS.geojson(JSON.parse(t), f.name);
@@ -1556,6 +1594,7 @@
               role = 'OpenAir';
             } else if (/-tracks\.xml$/i.test(f.name)) {
               aarExtra.push(t);
+              aarZones.push(fz);
               role = 'axes de ravitaillement';
             } else if (/\.xml$/i.test(f.name)) {
               part = AS.aixm5(t);
@@ -1568,7 +1607,10 @@
             file: f,
             role: `${src.id} — ${role || 'format inconnu, ignoré'}`
           });
-          if (part) parts.push(part);
+          if (part) {
+            tagZone(part, fz);
+            parts.push(part);
+          }
         }
         if (src.id === 'xplane') {
           // voies : extrémités prises dans les points et balises lus ; points : seulement ceux de la route (ENRT)
@@ -1631,7 +1673,11 @@
       citiesWhy: city ? '' : appAssetWhy,
       noMora: !moraFile,
       bySource,
-      timings
+      timings,
+      zones: {
+        aar: aarZones,
+        nat: natZone
+      }
     };
     /** À appeler après l'enregistrement : clôt la dernière étape, fixe report.total (ms) et annonce « Terminé ». */
     report.finish = () => {
@@ -1663,6 +1709,8 @@
           }) !== 'granted') throw new Error('Accès au dossier SIA refusé.');
       }
     }
+    // dossier des données (publication de la base par zone) : autorisation demandée maintenant, pendant le clic
+    const pub = await pubDir(request);
     progress?.(`Liste des fichiers du dossier « ${dir.name} »…`, 0);
     const extra = await extraFiles(dir, {
         request
@@ -1681,9 +1729,339 @@
     await put(r.base, {
       inputs
     });
+    progress?.(L(T.publishing), 1);
+    r.report.published = await publish(pub, r.base, r.report).catch(e => ({
+      error: e?.message || String(e)
+    }));
     r.report.finish();
     return r;
   }
+
+  // ===================================================================== base publiée dans le dépôt des données
+  // Poste avec lanceur : à chaque reconstruction, la base est aussi écrite zone par zone dans le dossier des données,
+  // data/sia/base/<zone>/<cycle>.json (une zone, JSON en clair, sans les villes ; un fichier changé seulement si son
+  // contenu change) et data/sia/base/cities.json, envoyés par « Synchroniser » (tools/data_sync.py, POOL). Mode GitHub :
+  // get() lit les fichiers publiés (fetch des adresses data/… détourné vers le dépôt : requêtes conditionnelles), recolle
+  // les zones (joinZones) et garde la base dans ce navigateur ; contrôle au plus toutes les 10 minutes, relecture
+  // seulement si un fichier a changé (siaBaseGh:v1 : fichiers lus et leur ETag).
+  const PUB = 'sia/base/',
+    PUB_FILE = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\.json$/,
+    GH_MARK = 'siaBaseGh:v1',
+    GH_EVERY = 10 * 60e3;
+  const ghOn = () => !!window.GitHubData?.on?.();
+  /** Dossier des données autorisé en écriture { dir } (demande d'accès si request, pendant un clic), sinon { why }. */
+  async function pubDir(request) {
+    const FA = window.FileAccess,
+      st = await FA?.status?.('__data').catch(() => null);
+    if (!st?.handle) return {
+      why: L(T.pubNoDir)
+    };
+    let ok = st.permission === 'granted';
+    if (!ok && request) try {
+      ok = await st.handle.requestPermission({
+        mode: 'readwrite'
+      }) === 'granted';
+    } catch {
+      ok = false; // plus de geste de l'utilisateur en cours
+    }
+    if (!ok) return {
+      why: L(T.pubNoDir)
+    };
+    if (await FA.sameAsServed?.('__data', st.handle) === false) return {
+      why: L(T.pubOther)
+    };
+    return {
+      dir: st.handle
+    };
+  }
+  /** Base découpée par zone : { zone: morceau }. Chaque élément va à la zone de son fichier (ZONE_OF), sinon à la zone
+   *  qui contient sa position (X-Plane, MORA, obstacles), sinon à la zone principale (France si active) ; les autres
+   *  champs (cycle, axes ENR 5.7, fichiers analysés…) vont à la zone principale. meta : report.zones de build. */
+  function splitZones(b, zones, Z, meta = {}) {
+    const home = zones.includes('fr') ? 'fr' : zones[0],
+      parts = Object.fromEntries(zones.map(z => [z, {
+        airspaces: [],
+        aero: {},
+        obstacleMax: {},
+        moraCells: [],
+        aarXmlExtra: []
+      }])),
+      tests = m => Z ? zones.map(z => [z, Z.inZones([z], m)]) : [],
+      near = tests(0),
+      wide = tests(.5);
+    /** Zone qui contient la position (contour, puis contour élargi d'un demi-degré) ; '' si aucune. */
+    const geoOf = (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon) ? (near.find(([, f]) => f(lat, lon)) || wide.find(([, f]) =>
+      f(lat, lon)))?.[0] || '' : '';
+    const zoneOf = (x, lat, lon) => {
+      const z = ZONE_OF.get(x);
+      return parts[z] ? z : geoOf(lat, lon) || home;
+    };
+    /** Barycentre des sommets [lat, lon] du premier anneau d'un espace. */
+    const mid = a => {
+      const r = a.rings?.[0] || [];
+      let la = 0,
+        lo = 0;
+      for (const [y, x] of r) {
+        la += y;
+        lo += x;
+      }
+      return r.length ? [la / r.length, lo / r.length] : [NaN, NaN];
+    };
+    for (const a of b.airspaces || []) parts[zoneOf(a, ...mid(a))].airspaces.push(a);
+    for (const [k, v] of Object.entries(b.aero || {})) {
+      if (!Array.isArray(v)) {
+        parts[home].aero[k] = v;
+        continue;
+      }
+      for (const x of v) {
+        const at = x?.a || x || {}; // voie aérienne : son extrémité a
+        (parts[zoneOf(x, at.lat, at.lon)].aero[k] ||= []).push(x);
+      }
+    }
+    for (const [k, v] of Object.entries(b.obstacleMax || {})) {
+      const [la, lo] = k.split('|').map(Number);
+      parts[geoOf(la + .5, lo + .5) || home].obstacleMax[k] = v;
+    }
+    for (const c of b.moraCells || []) parts[geoOf(c.lat + (c.latStep || 1) / 2, c.lon + (c.lonStep || 1) / 2) || home].moraCells.push(c);
+    (b.aarXmlExtra || []).forEach((t, i) => parts[parts[meta.aar?.[i]] ? meta.aar[i] : home].aarXmlExtra.push(t));
+    if (b.natTracks) parts[parts[meta.nat] ? meta.nat : parts.nat ? 'nat' : home].natTracks = b.natTracks;
+    const SPLIT = new Set(['airspaces', 'aero', 'obstacleMax', 'moraCells', 'aarXmlExtra', 'natTracks', 'cities', 'citiesCount',
+      'sources', 'cachedAt', 'parserVersion', 'outdated'
+    ]);
+    for (const [k, v] of Object.entries(b))
+      if (!SPLIT.has(k)) parts[home][k] = v;
+    return parts;
+  }
+  /** Base recollée à partir des morceaux publiés (un par zone) : la France d'abord, puis les autres zones. */
+  function joinZones(list) {
+    const b = {
+      airspaces: [],
+      aero: {},
+      obstacleMax: {},
+      moraCells: [],
+      aarXmlExtra: [],
+      sources: {
+        zones: []
+      },
+      cachedAt: 0
+    };
+    let version = VERSION;
+    for (const p of [...list].sort((x, y) => (y.zone === 'fr') - (x.zone === 'fr'))) {
+      const {
+        airspaces,
+        aero,
+        obstacleMax,
+        moraCells,
+        aarXmlExtra,
+        natTracks,
+        zone,
+        cycle,
+        schema,
+        updated_at,
+        cachedAt,
+        parserVersion,
+        ...rest
+      } = p;
+      b.airspaces.push(...(airspaces || []));
+      for (const [k, v] of Object.entries(aero || {})) {
+        if (Array.isArray(v))(b.aero[k] ||= []).push(...v);
+        else b.aero[k] = v;
+      }
+      Object.assign(b.obstacleMax, obstacleMax || {});
+      b.moraCells.push(...(moraCells || []));
+      b.aarXmlExtra.push(...(aarXmlExtra || []));
+      if (natTracks) b.natTracks = natTracks;
+      for (const [k, v] of Object.entries(rest))
+        if (!(k in b)) b[k] = v;
+      b.sources.zones.push(zone);
+      b.cachedAt = Math.max(b.cachedAt, +cachedAt || 0);
+      version = Math.min(version, +parserVersion || VERSION);
+    }
+    b.parserVersion = version;
+    return b;
+  }
+  /** Texte d'un fichier d'un dossier (handle) ; null s'il est absent. */
+  const fileText = async (d, name) => {
+    try {
+      return await (await (await d.getFileHandle(name)).getFile()).text();
+    } catch {
+      return null;
+    }
+  };
+  /** Écrit (remplace) un fichier texte dans un dossier (handle). */
+  async function writeText(d, name, text) {
+    const w = await (await d.getFileHandle(name, {
+      create: true
+    })).createWritable();
+    await w.write(text);
+    await w.close();
+  }
+  /** Publie la base b dans le dossier des données (pub : pubDir) : un fichier par zone active, cycle du nom = cycle de la
+   *  base (sinon le cycle AIRAC en vigueur) ; un fichier n'est réécrit que si son contenu change (hors dates), les
+   *  cycles plus anciens de la zone sont retirés ; villes à part. Retour : { cycle, zones, unchanged, mb, cities } ou
+   *  { skipped: raison }. */
+  async function publish(pub, b, report = {}) {
+    if (!pub?.dir) return {
+      skipped: pub?.why || ''
+    };
+    const Z = await needZones(),
+      zones = b.sources?.zones?.length ? b.sources.zones : ['fr'],
+      cycle = b.airac || window.Airac?.cycle?.()?.date || new Date().toISOString().slice(0, 10),
+      parts = splitZones(b, zones, Z, report.zones),
+      at = new Date().toISOString(),
+      name = `${cycle}.json`,
+      out = {
+        cycle,
+        zones: [],
+        unchanged: [],
+        mb: 0,
+        cities: false
+      };
+    let d = pub.dir;
+    for (const n of ['sia', 'base']) d = await d.getDirectoryHandle(n, {
+      create: true
+    });
+    for (const [z, p] of Object.entries(parts)) {
+      const zd = await d.getDirectoryHandle(z, {
+          create: true
+        }),
+        body = {
+          schema: 1,
+          zone: z,
+          cycle,
+          parserVersion: VERSION,
+          ...p
+        },
+        old = await fileText(zd, name);
+      let same = false;
+      if (old) try {
+        const o = JSON.parse(old);
+        delete o.updated_at;
+        delete o.cachedAt;
+        same = JSON.stringify(o) === JSON.stringify(body);
+      } catch {
+        same = false;
+      }
+      if (same) out.unchanged.push(z);
+      else {
+        const text = JSON.stringify({
+          ...body,
+          cachedAt: b.cachedAt || Date.now(),
+          updated_at: at
+        });
+        await writeText(zd, name, text);
+        out.zones.push(z);
+        out.mb += text.length / 1048576;
+      }
+      for await (const h of zd.values())
+      if (h.kind === 'file' && /^\d{4}-\d{2}-\d{2}\.json$/.test(h.name) && h.name !== name) await zd.removeEntry(h.name).catch(
+        () => {});
+    }
+    const villes = Array.isArray(b.cities) ? b.cities : await cities();
+    if (villes.length) {
+      const text = JSON.stringify({
+        schema: 1,
+        cities: villes
+      });
+      if (await fileText(d, 'cities.json') !== text) {
+        await writeText(d, 'cities.json', text);
+        out.cities = true;
+        out.mb += text.length / 1048576;
+      }
+    }
+    return out;
+  }
+  /** État de la base publiée lue en mode GitHub (siaBaseGh:v1) : { published, zones, cycle, files, cities, checkedAt }. */
+  const ghMark = () => {
+    try {
+      return JSON.parse(localStorage.getItem(GH_MARK) || 'null');
+    } catch {
+      return null;
+    }
+  };
+  const ghSave = m => {
+    try {
+      localStorage.setItem(GH_MARK, JSON.stringify(m));
+    } catch {
+      /* quota : nouveau contrôle à la prochaine page */
+    }
+    return m;
+  };
+  let ghRun = null;
+  /** Mode GitHub : lit la base publiée si un de ses fichiers a changé (au plus un contrôle toutes les 10 minutes, sauf
+   *  force) ; une fois par page. Retour : état (ghMark) ; hors ligne : dernier état connu. */
+  function ghSync({
+    force = false
+  } = {}) {
+    if (ghRun && !force) return ghRun;
+    return ghRun = (async () => {
+      const G = window.GitHubData,
+        mark = ghMark(),
+        have = await getLocal({
+          any: true
+        });
+      if (!force && have && mark?.checkedAt && Date.now() - mark.checkedAt < GH_EVERY) return mark;
+      const paths = await G.list(PUB);
+      if (!paths) return mark; // arbre illisible (hors ligne) : la base du navigateur reste
+      const latest = {};
+      for (const x of paths) {
+        const m = PUB_FILE.exec(x);
+        if (m && !(latest[m[1]] >= m[2])) latest[m[1]] = m[2];
+      }
+      const zones = Object.keys(latest).sort();
+      if (!zones.length) return ghSave({
+        published: false,
+        checkedAt: Date.now()
+      });
+      const files = {},
+        answers = [];
+      let changed = !have;
+      for (const z of zones) {
+        const rel = `${PUB}${z}/${latest[z]}.json`,
+          r = await fetch(appUrl('data/' + rel), {
+            cache: 'no-store'
+          });
+        if (!r.ok) continue;
+        files[rel] = r.headers.get('x-gh-etag') || '';
+        if (!files[rel] || mark?.files?.[rel] !== files[rel]) changed = true;
+        answers.push(r);
+      }
+      if (Object.keys(mark?.files || {}).sort().join() !== Object.keys(files).sort().join()) changed = true;
+      const rc = paths.includes(`${PUB}cities.json`) ? await fetch(appUrl(`data/${PUB}cities.json`), {
+          cache: 'no-store'
+        }) : null,
+        citiesTag = rc?.ok ? rc.headers.get('x-gh-etag') || '' : '';
+      const next = {
+        published: true,
+        zones: Object.keys(files).map(rel => PUB_FILE.exec(rel)[1]),
+        cycle: Object.values(latest).sort().pop(),
+        files,
+        cities: citiesTag,
+        checkedAt: Date.now()
+      };
+      if (!changed && citiesTag === (mark?.cities || '')) return ghSave(next);
+      const parts = (await Promise.all(answers.map(r => r.json().catch(() => null)))).filter(p => p && +p.parserVersion >= COMPAT);
+      if (!parts.length) return ghSave({
+        ...next,
+        published: false
+      });
+      const base = joinZones(parts);
+      base.folderName = L(T.pubFolder);
+      if (rc?.ok && (citiesTag !== mark?.cities || !have)) base.cities = (await rc.json().catch(() => null))?.cities || [];
+      else base.citiesCount = have?.citiesCount || 0; // villes inchangées : celles du navigateur restent
+      await put(base);
+      return ghSave(next);
+    })().catch(() => ghMark());
+  }
+  /** Mode GitHub : base publiée attendue s'il n'y a encore rien dans ce navigateur, sinon contrôlée en arrière-plan. */
+  async function ghReady() {
+    const p = ghSync();
+    if (!(await getLocal({
+        any: true
+      }))) await p;
+  }
+  /** Mode GitHub : vrai si une base est publiée dans le dépôt des données ; null hors mode GitHub. */
+  const published = async () => ghOn() ? !!(await ghSync())?.published : null;
 
   // ===================================================================== bloc d'interface commun
   const L = row => row[Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(window.RepositoryNav?.getLanguage?.() || 'fr'))] || row[0];
@@ -1691,12 +2069,6 @@
   const T = {
     folder: ['Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'],
     // mode GitHub (appli sans lanceur) : ni dossier SIA ni relecture
-    ghOff: [
-      'Base aéronautique (SIA) non disponible dans ce mode : aucun dossier à choisir ; elle se produit sur un poste de travail avec lanceur.',
-      'Aeronautical (SIA) database not available in this mode: there is no folder to choose; it is produced on a workstation with the launcher.',
-      'Luftfahrtdatenbank (SIA) in diesem Modus nicht verfügbar: Es ist kein Ordner zu wählen; sie wird an einem Arbeitsplatz mit Starter erzeugt.',
-      'Base aeronáutica (SIA) no disponible en este modo: no hay carpeta que elegir; se produce en un puesto de trabajo con lanzador.'
-    ],
     reread: ['Reconstruire la base aéronautique', 'Rebuild the aeronautical database', 'Luftfahrtdatenbank neu aufbauen',
       'Reconstruir la base aeronáutica'
     ],
@@ -1725,7 +2097,54 @@
       'Aucun avancement depuis {s} s sur « {p} ». Causes possibles : onglet en arrière-plan (le laisser au premier plan), fichier en cours de téléchargement par Synology Drive (fichier « à la demande » : le rendre disponible hors ligne), autre onglet du studio ou de Paramètres ouvert. Annuler puis relancer si cela persiste.',
       'No progress for {s} s on “{p}”. Possible causes: background tab, file being downloaded by the sync client (on-demand file), another studio / Settings tab open. Cancel and retry if it persists.'
     ],
-    durations: ['Durées', 'Durations', 'Dauer', 'Duraciones']
+    durations: ['Durées', 'Durations', 'Dauer', 'Duraciones'],
+    // base publiée dans le dépôt des données
+    publishing: ['Publication dans le dépôt des données…', 'Publishing to the data repository…', 'Veröffentlichung im Datenrepository…',
+      'Publicación en el repositorio de datos…'
+    ],
+    pubDone: ['Publiée dans le dépôt des données (data/sia/base/, cycle {c}, {m} Mo) : {z} — à envoyer par « Synchroniser ».',
+      'Published to the data repository (data/sia/base/, cycle {c}, {m} MB): {z} — send it with “Synchronise”.',
+      'Im Datenrepository veröffentlicht (data/sia/base/, Zyklus {c}, {m} MB): {z} — mit „Synchronisieren“ senden.',
+      'Publicada en el repositorio de datos (data/sia/base/, ciclo {c}, {m} MB): {z} — enviarla con «Sincronizar».'
+    ],
+    pubSame: ['Base publiée dans le dépôt des données inchangée (cycle {c}) : {z}.',
+      'Base published to the data repository unchanged (cycle {c}): {z}.',
+      'Im Datenrepository veröffentlichte Basis unverändert (Zyklus {c}): {z}.',
+      'Base publicada en el repositorio de datos sin cambios (ciclo {c}): {z}.'
+    ],
+    pubNot: ['Base non publiée dans le dépôt des données (téléphones, site) : {w}.',
+      'Base not published to the data repository (phones, website): {w}.',
+      'Basis nicht im Datenrepository veröffentlicht (Telefone, Website): {w}.',
+      'Base no publicada en el repositorio de datos (teléfonos, sitio): {w}.'
+    ],
+    pubNoDir: ['dossier des données non autorisé (Paramètres › Installation › Sources et dossiers)',
+      'data folder not authorised (Settings › Installation › Sources and folders)',
+      'Datenordner nicht freigegeben (Einstellungen › Installation › Quellen und Ordner)',
+      'carpeta de datos no autorizada (Ajustes › Instalación › Fuentes y carpetas)'
+    ],
+    pubOther: ['le dossier des données autorisé n’est pas celui de la suite servie',
+      'the authorised data folder is not the one of the served suite',
+      'der freigegebene Datenordner ist nicht der der bereitgestellten Suite',
+      'la carpeta de datos autorizada no es la de la suite servida'
+    ],
+    pubFolder: ['dépôt des données', 'data repository', 'Datenrepository', 'repositorio de datos'],
+    ghRead: ['Base aéronautique lue dans le dépôt des données : {z} — cycle {c} (publiée par un poste avec lanceur).',
+      'Aeronautical database read from the data repository: {z} — cycle {c} (published by a workstation with the launcher).',
+      'Luftfahrtdatenbank aus dem Datenrepository gelesen: {z} — Zyklus {c} (von einem Arbeitsplatz mit Starter veröffentlicht).',
+      'Base aeronáutica leída del repositorio de datos: {z} — ciclo {c} (publicada por un puesto con lanzador).'
+    ],
+    ghNone: [
+      'Aucune base aéronautique publiée dans le dépôt des données : elle se publie depuis un poste avec lanceur (Paramètres › Maintenance › Données aéronautiques, « Reconstruire la base aéronautique », puis « Synchroniser »).',
+      'No aeronautical database published to the data repository: it is published from a workstation with the launcher (Settings › Maintenance › Aeronautical data, “Rebuild the aeronautical database”, then “Synchronise”).',
+      'Keine Luftfahrtdatenbank im Datenrepository veröffentlicht: Sie wird von einem Arbeitsplatz mit Starter veröffentlicht (Einstellungen › Wartung › Luftfahrtdaten, „Luftfahrtdatenbank neu aufbauen“, dann „Synchronisieren“).',
+      'Ninguna base aeronáutica publicada en el repositorio de datos: se publica desde un puesto con lanzador (Ajustes › Mantenimiento › Datos aeronáuticos, «Reconstruir la base aeronáutica», luego «Sincronizar»).'
+    ],
+    ghReread: ['Relire la base publiée', 'Re-read the published base', 'Veröffentlichte Basis neu lesen', 'Releer la base publicada'],
+    ghOffline: ['Dépôt des données injoignable : base de ce navigateur gardée.',
+      'Data repository unreachable: this browser’s base is kept.',
+      'Datenrepository nicht erreichbar: Die Basis dieses Browsers bleibt.',
+      'Repositorio de datos inaccesible: se conserva la base de este navegador.'
+    ]
   };
   /** Ligne d'état de la base mémorisée (cycle, date, périmé ?). */
   function stateLine(b) {
@@ -1739,11 +2158,13 @@
   function reportHtml(base, r) {
     const warn = [];
     if (r.skipped.length) warn.push(L([`Autre(s) cycle(s) écarté(s) : ${r.skipped.join(', ')} — à archiver (Paramètres › Maintenance).`, `Other cycle(s) skipped: ${r.skipped.join(', ')} — archive them.`]));
+    const pub = r.published || {};
+    if (pub.skipped || pub.error) warn.push(L(T.pubNot).replace('{w}', pub.skipped || pub.error));
     if (r.noCities) warn.push(L(['villes_geonames.csv introuvable (shared/carto/) : noms de villes indisponibles.',
       'villes_geonames.csv not found: no city names.', 'villes_geonames.csv nicht gefunden (shared/carto/): keine Städtenamen.',
       'villes_geonames.csv no encontrado (shared/carto/): sin nombres de ciudades.'
     ]) + (r.citiesWhy ? ` (${r.citiesWhy})` : ''));
-    return `<span class="ok">✓ ${esc(L(['Base chargée et mémorisée', 'Base loaded and stored', 'Basis geladen und gespeichert', 'Base cargada y guardada']))}${r.airac ? ` (AIRAC ${esc(r.airac)})` : ''} : ${r.xmlCount} XML, ${base.airspaces.length} ${esc(L(['espaces', 'airspaces']))}, ${(base.aero?.aerodromes || []).length} ${esc(L(['aérodromes', 'aerodromes']))}, ${Object.keys(base.obstacleMax || {}).length} ${esc(L(['cellules d’obstacles', 'obstacle cells']))}, ${base.cities.length} ${esc(L(['villes', 'cities']))}.</span>${Object.keys(r.bySource || {}).length ? `<br><span class="small">${esc(L(['Autres sources', 'Other sources', 'Weitere Quellen', 'Otras fuentes']))} : ${Object.entries(r.bySource).map(([k, v]) => `${esc(k)} ${v.files} ${esc(L(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)']))}, +${v.airspaces} ${esc(L(['espaces', 'airspaces', 'Lufträume', 'espacios']))}`).join(' · ')}</span>` : ''}${warn.map(w => `<br><span class="err">${esc(w)}</span>`).join('')}`;
+    return `<span class="ok">✓ ${esc(L(['Base chargée et mémorisée', 'Base loaded and stored', 'Basis geladen und gespeichert', 'Base cargada y guardada']))}${r.airac ? ` (AIRAC ${esc(r.airac)})` : ''} : ${r.xmlCount} XML, ${base.airspaces.length} ${esc(L(['espaces', 'airspaces']))}, ${(base.aero?.aerodromes || []).length} ${esc(L(['aérodromes', 'aerodromes']))}, ${Object.keys(base.obstacleMax || {}).length} ${esc(L(['cellules d’obstacles', 'obstacle cells']))}, ${base.cities.length} ${esc(L(['villes', 'cities']))}.</span>${Object.keys(r.bySource || {}).length ? `<br><span class="small">${esc(L(['Autres sources', 'Other sources', 'Weitere Quellen', 'Otras fuentes']))} : ${Object.entries(r.bySource).map(([k, v]) => `${esc(k)} ${v.files} ${esc(L(['fichier(s)', 'file(s)', 'Datei(en)', 'archivo(s)']))}, +${v.airspaces} ${esc(L(['espaces', 'airspaces', 'Lufträume', 'espacios']))}`).join(' · ')}</span>` : ''}${pub.zones ? `<br><span class="small">${esc(L(pub.zones.length || pub.cities ? T.pubDone : T.pubSame).replace('{c}', pub.cycle).replace('{z}', (pub.zones.length ? pub.zones : pub.unchanged).join(', ')).replace('{m}', pub.mb.toFixed(1).replace('.', ',')))}</span>` : ''}${warn.map(w => `<br><span class="err">${esc(w)}</span>`).join('')}`;
   }
   /** Bloc « Base de données SIA » : dossier (bouton FileAccess), Relire, Purger, état, compte rendu, fichiers analysés.
    *  opts.onLoaded(base, report) après une relecture ; opts.onCached(base) quand la base mémorisée est affichée ;
@@ -1751,16 +2172,8 @@
    *  sélecteur de dossier natif. */
   function panel(host, opts = {}) {
     host.classList.add('sia-base-panel');
-    // mode GitHub : la base se produit sur un poste avec lanceur ; ni dossier SIA, ni relecture, ni purge ici
-    if (window.GitHubData?.on?.()) {
-      host.innerHTML = `<p class="sia-base-state small">${esc(L(T.ghOff))}</p>`;
-      return {
-        el: host,
-        reread: async () => null,
-        refresh: async () => null,
-        setMessage: () => {}
-      };
-    }
+    // mode GitHub : base produite et publiée par un poste avec lanceur ; ici, son état et sa relecture seulement
+    if (ghOn()) return ghPanel(host, opts);
     host.innerHTML = `<div class="sia-base-actions"><span class="sia-base-folder"></span><button type="button" class="primary sia-base-reread" data-icon="refresh">${esc(L(opts.rereadLabel || T.reread))}</button><button type="button" class="secondary sia-base-purge" data-icon="trash">${esc(L(T.purge))}</button><label class="secondary sia-base-native" hidden>${esc(L(T.pick))}<input type="file" webkitdirectory directory multiple hidden></label></div>
       <p class="sia-base-state small"></p><div class="sia-base-progress" hidden><progress max="1" value="0"></progress><span class="sia-base-pct"></span><button type="button" class="secondary sia-base-cancel">${esc(L(T.cancel))}</button><div class="sia-base-step small"></div><div class="sia-base-stall small err" hidden></div></div><div class="sia-base-msg" aria-live="polite" data-status></div><details class="sia-base-files small" hidden><summary>${esc(L(T.files))}</summary><ul></ul></details>`;
     // libellés des boutons repris une fois la langue de la page réglée (le bloc peut être créé avant : ils restaient en
@@ -1951,6 +2364,50 @@
       setMessage
     };
   }
+  /** Bloc de la base en mode GitHub : base publiée (zones, cycle) ou mode d'emploi pour la publier, bouton de relecture. */
+  function ghPanel(host, opts = {}) {
+    host.innerHTML = `<p class="sia-base-state small"></p><div class="sia-base-actions"><button type="button" class="secondary sia-base-gh" data-icon="refresh" hidden>${esc(L(T.ghReread))}</button></div><div class="sia-base-msg small" aria-live="polite"></div>`;
+    const state = host.querySelector('.sia-base-state'),
+      btn = host.querySelector('.sia-base-gh'),
+      msg = host.querySelector('.sia-base-msg');
+    /** Écrit l'état (texte changé seulement) d'après l'état m de la base publiée. */
+    const show = m => {
+      const text = m?.published ? L(T.ghRead).replace('{z}', (m.zones || []).join(', ')).replace('{c}', m.cycle || '?') : m ? L(T
+          .ghNone) :
+        L(T.ghOffline);
+      if (state.textContent !== text) state.textContent = text;
+      btn.hidden = !m;
+    };
+    /** Relit la base publiée (force : sans attendre les 10 minutes) ; prévient la page (onLoaded) si une base est là. */
+    async function refresh(force = false) {
+      const m = await ghSync({
+        force
+      });
+      show(m);
+      const b = await getLocal();
+      if (b) opts.onCached?.(b);
+      return b;
+    }
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      msg.textContent = '';
+      try {
+        const b = await refresh(true);
+        if (b) opts.onLoaded?.(b, null);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+    refresh();
+    return {
+      el: host,
+      reread: () => refresh(true),
+      refresh: () => refresh(),
+      setMessage: html => {
+        msg.innerHTML = html || '';
+      }
+    };
+  }
   if (!document.getElementById('siaBaseStyle')) document.head.insertAdjacentHTML('beforeend',
     '<style id="siaBaseStyle">.sia-base-actions{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.sia-base-msg{margin:.4rem 0}.sia-base-state{margin:.4rem 0}.sia-base-progress{margin:.5rem 0;display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center}.sia-base-progress progress{flex:1 1 240px;height:14px}.sia-base-progress .sia-base-step,.sia-base-progress .sia-base-stall{flex-basis:100%}</style>'
   );
@@ -1963,6 +2420,11 @@
     get,
     cities,
     put,
+    published,
+    ghSync,
+    publish,
+    splitZones,
+    joinZones,
     patch,
     purge,
     upToDate,

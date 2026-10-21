@@ -99,6 +99,24 @@ The reference scripts (`references/aircraft_fleet.js`, `callsigns.js`, `data_tre
 synchronous variant: the `localStorage` copy is taken up at once and refreshed afterwards; on the first visit, a
 synchronous XHR request.
 
+### Aeronautical (SIA) database
+
+The phone has no SIA folder and never rebuilds the database: it reads the one **published** by a workstation. Each
+rebuild on a workstation (Settings › Maintenance › Aeronautical data, or the map studio) also writes the database zone by
+zone into the data folder: `sia/base/<zone>/<cycle>.json` (one active zone, plain JSON, no compression and no LFS: a few
+hundred KB, up to about 5 MB for France) and `sia/base/cities.json` (GeoNames towns, about 4.7 MB). A file is rewritten
+only when its content changes, and older cycles of the zone are removed; "Synchronise" sends them (`sia/base` is part of
+the pool of `tools/data_sync.py`; two workstations publishing the same file: the newer `updated_at` wins).
+
+In GitHub mode `SiaBase.get()` (`shared/sia_base.js`) lists `sia/base/` in the git tree, reads every published zone
+(latest cycle) through the diverted fetch (conditional requests: an unchanged file costs a 304), joins the zones back
+into one database and keeps it in IndexedDB `sia-map-parser`, as on a workstation. The first page waits for it; later
+pages use the stored copy and check the repository at most every 10 minutes (`siaBaseGh:v1`: files read and their ETag),
+re-reading only when a published file changed. Each element goes to the zone of the file it came from; X-Plane data,
+MORA cells and obstacle cells, which have no zone file, go to the zone that contains them. Joining the zones gives back
+exactly the workstation's database (checked on 13 zones: 6,753 airspaces, same aerodromes, points, airways, obstacles,
+MORA, refuelling and NAT tracks).
+
 ### Folder indexes
 
 `disponibilites/_index.json` and `utilisateurs/_index.json` are **not in git** (excluded by `tools/data_sync.py`). On a
@@ -159,6 +177,7 @@ flowchart LR
       ADB["AircraftDB/aircraft_db.js, aircraft_perf.js<br/>built on this workstation (© ICAO, Eurocontrol)"]:::spec
       SEC["secrets/ivao.json, secrets/users/TRI.json<br/>IVAO keys; never served to the page"]:::spec
       LOC["data/local/: browser backups<br/>data/sia/*.xml AIRAC, PNG/PDF maps<br/>excluded from git"]:::spec
+      SB["data/sia/base/: aeronautical database<br/>published by zone at each rebuild<br/>in git (pool)"]:::cache
     end
   end
   D[("Data git repository")]:::git
@@ -243,6 +262,7 @@ or a browser), **code** (code of the suite, no data).
 | Chosen folders (IndexedDB `missionCore › handles`) | workstation browser | specific | Installation; unusable on iOS |
 | IVAO keys `secrets/` | workstation (files) | specific | Installation › Keys; never served, outside git and backups |
 | Browser backups `data/local/` | workstation | specific | Save button; outside git |
+| Aeronautical database `sia/base/<zone>/<cycle>.json`, `sia/base/cities.json` | git data repository | shared, produced by a workstation | Rebuild on a workstation (Maintenance, map studio), then Synchronise; read by phones and the website |
 | SIA AIRAC `data/sia/*.xml`, maps `missions/**/*.png` | workstation | specific (regenerable) | SIA importer, studio; outside git |
 
 ## 7. Known limits
@@ -253,7 +273,8 @@ or a browser), **code** (code of the suite, no data).
 - **No sharing between Safari and the iOS app**: two origins, two sets of settings and copies.
 - **Workstations to repoint**: a workstation whose `data/` still follows the former Framagit repository must change its
   remote (Installation › Sources › Data repository).
-- **Mission maps and AIRAC** are absent from the data repository: "map not available" on the phone; the SIA planner
-  remains a workstation function.
+- **Mission maps and AIRAC source files** are absent from the data repository: "map not available" on the phone. The
+  aeronautical database itself is published by zone (§ 2); rebuilding it remains a workstation function, and the phone
+  has it only once a workstation has rebuilt and synchronised.
 - **Import of the last IVAO flight**: needs the launcher's IVAO key, hence a workstation; on the phone, paste from the
   tracker.

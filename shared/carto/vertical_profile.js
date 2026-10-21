@@ -4,7 +4,7 @@
 // d'un profil d'affichage, noms des points (brief, aérodromes, balises, points RNAV, radiale /
 // distance), relief (tuiles Terrarium), lecture de la base SIA mémorisée par le studio.
 // Exposé : window.SiaProfile = { parseRoute, build, draw, zones, selectAirspaces, resolver,
-// destination, terrainSampler, loadStudio, opt, normalizeCoords, coordHelper… }.
+// destination, terrainSampler, loadStudio, opt }.
 (() => {
   const NM = 1852,
     FT = 3.28084,
@@ -994,126 +994,6 @@
     };
     return f(lat, 2, lat >= 0 ? 'N' : 'S') + f(lon, 3, lon >= 0 ? 'E' : 'W');
   }
-  // ---- coordonnées écrites librement → format du plan de vol (aide à la saisie du champ Route)
-  // Règles de lecture (pas une liste close) : une latitude puis une longitude ;
-  //   · chacune en degrés décimaux, en degrés et minutes ou en degrés, minutes, secondes (°, ', " et leurs variantes
-  //     typographiques), point ou virgule décimale, hémisphère N / S puis E / W (O : ouest) devant ou derrière le nombre,
-  //     séparées par une espace, une virgule, un point-virgule ou un tiret ; longitude sans hémisphère : est, si elle
-  //     porte le signe des degrés ;
-  //   · ou collées à la manière OACI (« 4418N0003W ») : chiffres lus deux à deux (degrés, minutes, secondes, puis
-  //     décimales de la seconde), trois chiffres de degrés de longitude dès cinq chiffres ;
-  //   · ou deux nombres décimaux dont le premier est signé (« +44.18,-0.038 ») ;
-  // les coordonnées déjà au format OACI et « lat lon » en décimal non signé (déjà lu tel quel) ne changent pas.
-  // Sortie : case 15 à la minute (« 4411N00002W ») si la position y tombe juste, sinon à la seconde (« 441048N0000217W »,
-  // lue par la suite ; « Copier OACI » arrondit à la minute) : aucune précision donnée n'est perdue.
-  const DEG = '°º˚',
-    MIN = "'′’ʼ",
-    SEC = '"″”';
-  const NUM = String.raw`\d{1,3}(?:[.,]\d+)?`,
-    DMS = String.raw`\d{1,3}\s*[${DEG}]\s*(?:\d{1,2}(?:[.,]\d+)?\s*[${MIN}]?\s*(?:\d{1,2}(?:[.,]\d+)?\s*(?:''|[${SEC}])\s*)?)?`,
-    LEAD = String.raw`(^|[\s,;(])`,
-    TAIL = String.raw`(?=$|[\s,;/)])`;
-  /** Une moitié (latitude : NS, longitude : EWO) : hémisphère devant, signe, nombre, hémisphère derrière. */
-  const half = h => String.raw`(?:([${h}])\s*)?([+-]?)(${DMS}|${NUM})\s*([${h}])?`;
-  const RX_LOOSE = new RegExp(String.raw`${LEAD}${half('NS')}\s*(?:[,;-]\s*)?${half('EWO')}${TAIL}`, 'gi'),
-    RX_PACKED = new RegExp(String.raw`${LEAD}(\d{2,})([NS])(\d{2,})([EWO])${TAIL}`, 'gi'),
-    FPL_COORD = /^\d{2}(?:\d{2}(?:\d{2})?)?[NS]\d{3}(?:\d{2}(?:\d{2})?)?[EW]$/i,
-    RX_SIGNED = new RegExp(String.raw`${LEAD}([+-]\d{1,2}(?:\.\d+)?)\s*[,;\s]\s*([+-]?\d{1,3}(?:\.\d+)?)${TAIL}`, 'g');
-  /** Valeur absolue (degrés) d'un nombre écrit en décimal ou en degrés / minutes / secondes ; null hors limites. */
-  const angleOf = (text, max) => {
-    const n = String(text).replace(/,/g, '.').split(/[^\d.]+/).filter(Boolean).map(Number);
-    if (!n.length || n.some(x => !Number.isFinite(x)) || (n[1] ?? 0) >= 60 || (n[2] ?? 0) >= 60) return null;
-    const v = n[0] + (n[1] || 0) / 60 + (n[2] || 0) / 3600;
-    return v <= max ? v : null;
-  };
-  /** Valeur absolue d'une suite de chiffres collés (« 441819584 » → 44° 18′ 19,584″) ; deg : chiffres des degrés. */
-  const packedOf = (digits, deg, max) => {
-    const d = +digits.slice(0, deg),
-      m = +(digits.slice(deg, deg + 2) || 0),
-      sec = +((digits.slice(deg + 2, deg + 4) || '0') + '.' + (digits.slice(deg + 4) || '0'));
-    if (m >= 60 || sec >= 60) return null;
-    const v = d + m / 60 + sec / 3600;
-    return v <= max ? v : null;
-  };
-  /** Coordonnée de la case 15, hémisphères donnés (une longitude nulle garde son W) : à la minute si elle y tombe juste,
-   *  sinon à la seconde. */
-  function fplCoord(lat, ns, lon, ew) {
-    const sec = v => Math.round(v * 3600),
-      exact = sec(lat) % 60 === 0 && sec(lon) % 60 === 0,
-      f = (v, w) => {
-        const t = sec(v),
-          dd = String(Math.floor(t / 3600)).padStart(w, '0'),
-          mm = String(Math.floor(t % 3600 / 60)).padStart(2, '0');
-        return exact ? dd + mm : dd + mm + String(t % 60).padStart(2, '0');
-      };
-    return f(lat, 2) + ns + f(lon, 3) + ew;
-  }
-  /** Réécrit au format du plan de vol les coordonnées d'un texte de route écrites autrement (règles ci-dessus).
-   *  Retour : { text, changes: [[écrit, réécrit]…] }. */
-  function normalizeCoords(text) {
-    const changes = [];
-    const swap = (whole, lead, out) => {
-      if (!out) return whole;
-      const from = whole.slice(lead.length).trim();
-      if (from === out) return whole;
-      changes.push([from, out]);
-      return lead + out;
-    };
-    let t = String(text ?? '');
-    // collées : « 4418N0003W », « 441819584N00032421849733W » (déjà OACI : inchangées)
-    t = t.replace(RX_PACKED, (whole, lead, la, ns, lo, ew) => {
-      ns = ns.toUpperCase();
-      ew = ew.toUpperCase() === 'O' ? 'W' : ew.toUpperCase();
-      if ([2, 4, 6].includes(la.length) && [3, 5, 7].includes(lo.length) && whole.slice(lead.length) === `${la}${ns}${lo}${ew}`)
-        return whole;
-      const lat = packedOf(la, 2, 90),
-        lon = packedOf(lo, lo.length === 2 || lo.length === 4 ? 2 : 3, 180);
-      return swap(whole, lead, lat != null && lon != null ? fplCoord(lat, ns, lon, ew) : '');
-    });
-    // deux décimaux, le premier signé : « +44.18,-00.038 »
-    t = t.replace(RX_SIGNED, (whole, lead, a, b) => {
-      const lat = +a,
-        lon = +b;
-      return swap(whole, lead, Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? fplCoord(Math.abs(lat), lat < 0 ? 'S' : 'N', Math.abs(lon),
-        lon < 0 ? 'W' : 'E') : '');
-    });
-    // avec hémisphères ou symboles : « 44.18N 00.038W », « N44,18-W00,034 », « 44°19'52"N 00°59'59" », « 44N 00W »
-    t = t.replace(RX_LOOSE, (whole, lead, nsA, sA, la, nsB, ewA, sB, lo, ewB) => {
-      if (FPL_COORD.test(whole.slice(lead.length).trim())) return whole; // déjà au format OACI (« 48N002E »)
-      const ns = (nsA || nsB || '').toUpperCase(),
-        ew = (ewA || ewB || (new RegExp(`[${DEG}]`).test(lo) ? 'E' : '')).toUpperCase().replace('O', 'W');
-      if (!ns || !ew) return whole;
-      const lat = angleOf(la, 90),
-        lon = angleOf(lo, 180);
-      return swap(whole, lead, lat != null && lon != null ? fplCoord(lat, ns, lon, ew) : '');
-    });
-    return {
-      text: t,
-      changes
-    };
-  }
-  /** Aide du champ Route (textarea) : à la sortie du champ, coordonnées réécrites au format du plan de vol (avant les
-   *  traitements de la page : phase de capture), notification de ce qui a changé ; événement input émis. */
-  function coordHelper(el) {
-    if (!el || el.dataset.coordHelper) return;
-    el.dataset.coordHelper = '1';
-    el.addEventListener('change', () => {
-      const r = normalizeCoords(el.value);
-      if (!r.changes.length) return;
-      el.value = r.text;
-      el.dispatchEvent(new Event('input', {
-        bubbles: true
-      }));
-      const K = window.RepositoryKit,
-        list = r.changes.slice(0, 3).map(([a, b]) => `${a} → ${b}`).join(' ; ') + (r.changes.length > 3 ? ` (+${r.changes.length - 3})` : ''),
-        row = ['Coordonnées mises au format du plan de vol : {l}.', 'Coordinates rewritten in the flight plan format: {l}.',
-          'Koordinaten ins Flugplanformat umgeschrieben: {l}.', 'Coordenadas pasadas al formato del plan de vuelo: {l}.'
-        ];
-      window.AppFramework?.notify?.(K?.tf ? K.tf(row, {
-        l: list
-      }) : row[0].replace('{l}', list), 'info');
-    }, true);
-  }
   /** Groupe vitesse / niveau de la case 15 (« N0180F055 », « N0120A035 ») ; niveau de vol si le libellé est un FL ou
    *  à partir de 6000 ft, sinon altitude en centaines de pieds. */
   function icaoGroup(kt, ft, label) {
@@ -1256,8 +1136,6 @@
     toIcaoRoute,
     icaoLatLon,
     icaoLatLonSec,
-    normalizeCoords,
-    coordHelper,
     speedLevel,
     build,
     draw,

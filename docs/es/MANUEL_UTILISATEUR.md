@@ -1548,10 +1548,6 @@ Este bloque relaciona tres vistas: el plan de vuelo (texto), el mapa y el corte 
 - «Trazar»: dibuja el corte vertical. «Combustible»: abre el planificador de combustible con esta ruta (distancia, nivel, ruta verdadera, aeronave).
 - «Copiar OACI»: copia el plan de vuelo OACI estricto (puntos no publicados en coordenadas).
 - «Sintaxis y uso»: recordatorio de las formas aceptadas (balizas, puntos de notificación VFR «MM-CV», «REN300010», coordenadas «4330N00125E», niveles «/A035», «VFR»…).
-- Coordenadas escritas de otra forma: escríbalas como las tenga («44.18N 00.038W», «N44,18-W00,034», «44°19'52"N
-  00°59'59"W», «+44.18,-0.038», «4418N0003W»…); al salir del campo se pasan al formato del plan de vuelo, al minuto
-  («4411N00002W») si la posición cae justo en él, si no al segundo («441048N0000217W»); una notificación indica lo que se
-  ha reescrito. «Copiar OACI» siempre redondea al minuto.
 - En los niveles 1 a 3 quedan el campo de ruta, «Nivel», «SimBrief» y «Sintaxis y uso»; el menú «Aerovías» / «RTBA», «Buscar», «Trazar», «Combustible» y «Copiar OACI» están en el nivel Experto.
 
 En el mapa: arrastre un punto para moverlo (se ajusta a balizas, puntos de notificación y aeródromos), haga clic en la ruta para insertar un punto y clic derecho para eliminar uno. En el corte: clic para añadir un punto a esa altitud, arrastrar para cambiar la altitud, clic derecho para eliminar.

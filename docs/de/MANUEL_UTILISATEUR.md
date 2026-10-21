@@ -1547,10 +1547,6 @@ Dieser Block verbindet drei Ansichten: den Flugplan (Text), die Karte und den Ve
 - „Zeichnen“: zeichnet den Vertikalschnitt. „Kraftstoff“: öffnet den Kraftstoffplaner mit dieser Route (Distanz, Flughöhe, rechtweisender Kurs, Luftfahrzeug).
 - „ICAO kopieren“: kopiert den strikten ICAO-Flugplan (nicht veröffentlichte Punkte als Koordinaten).
 - „Syntax und Verwendung“: Überblick über die akzeptierten Formen (Funkfeuer, VFR-Meldepunkte „MM-CV“, „REN300010“, Koordinaten „4330N00125E“, Höhen „/A035“, „VFR“…).
-- Anders geschriebene Koordinaten: so eingeben, wie sie vorliegen („44.18N 00.038W“, „N44,18-W00,034“, „44°19'52"N
-  00°59'59"W“, „+44.18,-0.038“, „4418N0003W“…); beim Verlassen des Feldes werden sie ins Flugplanformat umgeschrieben, auf
-  die Minute („4411N00002W“), wenn die Position genau darauf fällt, sonst auf die Sekunde („441048N0000217W“); eine
-  Benachrichtigung zeigt, was umgeschrieben wurde. „ICAO kopieren“ rundet immer auf die Minute.
 - Auf den Stufen 1 bis 3 bleiben das Routenfeld, „Höhe“, „SimBrief“ und „Syntax und Verwendung“; das Menü „Luftstraßen“ / „RTBA“, „Suchen“, „Zeichnen“, „Kraftstoff“ und „ICAO kopieren“ gehören zur Stufe Experte.
 
 Auf der Karte: Ziehen Sie einen Punkt, um ihn zu verschieben (er rastet an Funkfeuern, Meldepunkten und Flugplätzen ein), klicken Sie auf die Route, um einen Punkt einzufügen, Rechtsklick, um einen zu löschen. Im Schnitt: Klick, um einen Punkt in dieser Höhe hinzuzufügen, Ziehen, um die Höhe zu ändern, Rechtsklick zum Löschen.

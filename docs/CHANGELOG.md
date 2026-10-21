@@ -12,14 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
-- **Route field: coordinates typed in any common way** (map studio, Flight maps, Fuel planner) — decimal degrees,
-  degrees and minutes or degrees, minutes, seconds, hemisphere letters before or after (O = west), decimal point or
-  comma, packed ICAO-like digits of any precision (“441819584N00032421849733W”), or signed decimals (“+44.18,-0.038”)
-  are rewritten in the flight plan format when leaving the field: to the minute (“4411N00002W”) when the position falls
-  exactly on it, otherwise to the second (“441048N0000217W”); a notification lists what changed. Coordinates already in
-  ICAO form and unsigned decimal “lat lon” are left as they are; “Copy ICAO” still rounds to the minute
-  (`SiaProfile.normalizeCoords`, `SiaProfile.coordHelper`, `shared/carto/vertical_profile.js`; help text and user manual,
-  4 languages).
+- **Aeronautical database published to the data repository, read by phones** — each rebuild on a workstation
+  (Settings › Maintenance › Aeronautical data, map studio) also writes the database zone by zone into the data folder:
+  `sia/base/<zone>/<cycle>.json` (plain JSON, a few hundred KB up to about 5 MB for France) and `sia/base/cities.json`;
+  a file is rewritten only when its content changes, older cycles of the zone are removed, and the rebuild report says
+  what was published (or why not: data folder not authorised). "Synchronise" sends them (`sia/base` added to the pool of
+  `tools/data_sync.py`). In GitHub mode the database is read from these files (conditional requests, latest cycle of
+  each published zone), joined back and kept in the browser; checked at most every 10 minutes, re-read only when a
+  file changed. Map studio, Flight maps and the ODV pages get the same database as the workstation; Settings ›
+  Maintenance › Aeronautical data shows the published zones and cycle, with "Re-read the published base". The ODV
+  orders no longer warn "aeronautical database missing" in GitHub mode while none is published
+  (`shared/sia_base.js`, `shared/github_data.js`, `docs/technique/DONNEES_ET_ACCES.md` § 2).
+
 - **Settings › Installation in GitHub mode** (app without the launcher, same on a desktop browser): the page is reduced
   to a single “Data access” card — repository (link) and branch, access status (token check), last successful read
   (new `GitHubData.lastRead()`), writes pending in the browser outbox with a “Synchronise” button, the aircraft type

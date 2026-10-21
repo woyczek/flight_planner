@@ -14,7 +14,7 @@
   //     jamais écrasé sans relecture), appelées par MissionAssignments (fichiers du pool) et MissionLedger (registre
   //     des CR) ; un commit par écriture, au nom du trigramme.
   // API (window.GitHubData) : on(), config(), enable({ repo, branch, token }), disable(), test(cfg), read(rel, { method })
-  // → Response, readSync(rel) → texte | null, getText(rel) → { text, sha } | null, put(rel, text, { sha, message }) → sha,
+  // → Response, list(préfixe) → chemins | null, readSync(rel) → texte | null, getText(rel) → { text, sha } | null, put(rel, text, { sha, message }) → sha,
   // remove(rel) ; erreur de conflit : err.conflict = true ; lastRead() → date ISO de la dernière lecture réussie dans le
   // dépôt (texte vide s'il n'y en a pas : githubData:readAt, posée au plus toutes les 30 s ; Paramètres › Installation).
   if (window.GitHubData) return;
@@ -228,21 +228,28 @@
   // ---- index des dossiers refaits depuis l'arbre du dépôt (mêmes champs que tools/launch.py : index_availability,
   // index_users) quand le dépôt ne les a pas (exclus des commits de synchronisation)
   let tree = null; // { at, paths }
-  /** Chemins de tous les fichiers du dépôt (une requête, gardée 60 s). */
-  async function paths() {
+  /** Chemins de tous les fichiers du dépôt (une requête, gardée 60 s) ; arbre illisible (hors ligne, jeton) : dernière
+   *  liste connue, sinon [] (strict : null). */
+  async function paths({
+    strict = false
+  } = {}) {
     if (tree && Date.now() - tree.at < 60e3) return tree.paths;
     const c = need(),
       r = await nativeFetch(`${API}/repos/${c.repo}/git/trees/${encodeURIComponent(c.branch)}?recursive=1`, {
         headers: headers(c, 'application/vnd.github+json'),
         cache: 'no-store'
       }).catch(() => null);
-    if (!r?.ok) return tree?.paths || [];
+    if (!r?.ok) return tree?.paths || (strict ? null : []);
     tree = {
       at: Date.now(),
       paths: (await r.json()).tree.filter(x => x.type === 'blob').map(x => x.path)
     };
     return tree.paths;
   }
+  /** Chemins des fichiers du dépôt qui commencent par prefix (« sia/base/ ») ; null si l'arbre n'a pas pu être lu. */
+  const list = async (prefix = '') => (await paths({
+    strict: true
+  }))?.filter(x => x.startsWith(prefix)) ?? null;
   /** Index d'un dossier (disponibilites, utilisateurs) absent du dépôt, refait depuis l'arbre (texte JSON) ; null pour
    *  un autre fichier. */
   async function builtIndex(rel) {
@@ -541,6 +548,7 @@
     test,
     lastRead,
     read,
+    list,
     readSync,
     getText,
     put,

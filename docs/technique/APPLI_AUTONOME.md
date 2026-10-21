@@ -76,8 +76,9 @@ Storage and access map: `DONNEES_ET_ACCES.md`.
   notification per page, empty type base) and with it; Settings › Maintenance keeps versions, the SIA sentence, browser
   caches and space, browser backup (downloaded) and journal.
 - **Still needing a workstation with the launcher**: assignments written by the Centre (`missionsDir()`), reading or
-  filing mission folders (missions registry), the SIA base (map studio and Flight maps show their “SIA base missing”
-  hint), type base completion, git updates. Mission maps (`missions/**/*.png`) are not in the repository: “map not
+  filing mission folders (missions registry), rebuilding the SIA base (the base itself is published by zone into
+  `sia/base/` of the data repository by the workstation that rebuilds it, and read by the app: `DONNEES_ET_ACCES.md`
+  § 2), type base completion, git updates. Mission maps (`missions/**/*.png`) are not in the repository: “map not
   available”.
 
 ### One-time settings (repository owner)
