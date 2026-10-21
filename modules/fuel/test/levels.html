@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fuel — levels bench</title>
+<!-- Banc de la décision du niveau et des consignes de montée V3 (modules/fuel/levels.js) : valeurs relevées le 22/10/2026
+     dans l'état de la vue V2 (FlightPerfView.state : dec, cache, manual, consignes de montée) avec la fiche de test du
+     banc du devis, vol 300 NM, FL200, vent arrière 30 kt, objectif « Badin de la fiche ». Chaque valeur doit être
+     retrouvée à 0,001 près. Page d'outil, hors des applications. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">fuel — levels bench</h1>
+<pre id="out">running…</pre>
+<script src="../performance_model.js?v=0"></script>
+<script src="../model.js?v=0"></script>
+<script src="../levels.js?v=0"></script>
+<script>
+  (() => {
+    'use strict';
+    // même fiche fictive que le banc du devis (aucune donnée OACI ni EUROCONTROL)
+    const SHEET = {
+      id: 'TEST_TP',
+      name: 'Test turboprop',
+      icao: 'ZZTP',
+      unit: 'kg',
+      engineType: 'turboprop',
+      cruise: {
+        tasKt: 300,
+        fuelFlowPerHour: 1000,
+        refAltFt: 20000,
+        ceilingFt: 25000
+      },
+      climb: {
+        iasKt: 180,
+        rateFpm: 1500,
+        fuelFlowPerHour: 1300,
+        tasKt: 220
+      },
+      descent: {
+        rateFpm: -1500,
+        tasKt: 250,
+        fuelFlowPerHour: 450
+      },
+      taxi: {
+        fuelFlowPerHour: 200
+      },
+      reserveFuelFlowPerHour: 700,
+      tod: {
+        gradientFtPerNm: 300,
+        bufferNm: 5
+      },
+      rpmFuelCurve: []
+    };
+    // valeurs de la V2 (FlightPerfView.state), arrondies à 0,001
+    const V2 = {
+      ceiling: 25000,
+      veMd: 163.636,
+      manual: {
+        iMin: 130,
+        iMax: 425,
+        vMax: 2700,
+        ias: 180,
+        vs: 1500,
+        full: false
+      },
+      dec: {
+        step: 1000,
+        xmax: 28000,
+        lo: 1000,
+        hi: 25000,
+        real: 25,
+        best: [25000, 980.728, 64.722],
+        fast: [14000, 995.216, 61.733],
+        at: [
+          [5000, 1033.644, 62.635],
+          [10000, 1009.715, 61.921],
+          [15000, 992.315, 61.748],
+          [20000, 983.055, 62.317],
+          [25000, 980.728, 64.722]
+        ]
+      },
+      cache: {
+        reachTop: 25000,
+        bestProf: [25000, 980.728, 64.722],
+        bestEco: [1000, 727.164, 91.656],
+        fastest: [14000, 995.216, 61.733],
+        plan: [20000, 983.055, 62.317],
+        crN: 49,
+        crE: 49
+      },
+      climb: {
+        top: 20000,
+        reached: true,
+        minutes: 13.333,
+        fuel: 288.881,
+        rows: [
+          [0, 180, 2668, 1673.12, 0, 0],
+          [2000, 180, 2467, 1605.5, 0.779, 21.288],
+          [5000, 180, 2170.3, 1507.53, 2.075, 54.875],
+          [10000, 180, 1687.4, 1353.2, 4.683, 116.852],
+          [15000, 180, 1216.4, 1209.75, 8.159, 190.823],
+          [20000, 180, 754.1, 1076.78, 13.333, 288.881]
+        ]
+      }
+    };
+    const M = window.FuelModel,
+      L = window.FuelLevels,
+      lines = [];
+    let pass = 0,
+      fail = 0;
+    const r = (x, d = 3) => x == null ? null : Math.round(x * 10 ** d) / 10 ** d;
+    /** Compare une valeur calculée à la valeur relevée sur la V2. */
+    const check = (label, got, want) => {
+      const ok = JSON.stringify(got) === JSON.stringify(want);
+      ok ? pass++ : fail++;
+      lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${JSON.stringify(got)}${ok ? '' : ` (V2 ${JSON.stringify(want)})`}`);
+    };
+    const pt = p => p ? [p.h, r(p.fuel), r(p.minutes)] : null;
+    const sheet = M.normalizeSheet(structuredClone(SHEET)),
+      source = M.cruiseSource({
+        sheet,
+        altFt: 20000
+      }),
+      m = M.perfModel(sheet, source, {}),
+      profileIas = +M.modelSheet(sheet, source).climb.iasKt || 0,
+      manual = L.manualSettings(m, sheet),
+      flight = {
+        distanceNm: 300,
+        wc: 30,
+        windKnown: true,
+        low: 30,
+        high: 30,
+        levelFt: 20000
+      };
+    check('ceiling', m.ceiling, V2.ceiling);
+    check('veMd', r(m.veMd), V2.veMd);
+    check('manual settings', [manual.iMin, manual.iMax, manual.vMax, manual.ias, manual.vs, manual.full], Object.values(V2.manual));
+    const goal = L.goalNow('prof', profileIas),
+      D = L.decisionSeries(m, flight, goal, {
+        profileIas,
+        manual
+      });
+    check('decision: step, xmax, lo, hi, levels', [D.step, D.xmax, D.lo, D.hi, D.real.length], [V2.dec.step, V2.dec.xmax, V2.dec.lo, V2
+      .dec.hi, V2.dec.real
+    ]);
+    check('decision: least fuel', pt(D.best), V2.dec.best);
+    check('decision: fastest', pt(D.fast), V2.dec.fast);
+    for (const [h, f, t] of V2.dec.at) check(`decision at ${h} ft`, pt(D.all.find(x => x.h === h)), [h, f, t]);
+    const C = L.levelCurves(m, flight);
+    check('curves: highest level', C.reachTop, V2.cache.reachTop);
+    check('curves: best (profile)', pt(C.bestProf), V2.cache.bestProf);
+    check('curves: best (eco)', pt(C.bestEco), V2.cache.bestEco);
+    check('curves: fastest', pt(C.fastest), V2.cache.fastest);
+    check('curves: plan', pt(C.plan), V2.cache.plan);
+    check('curves: cruises normal / eco', [C.crN.length, C.crE.length], [V2.cache.crN, V2.cache.crE]);
+    const g = L.climbGuide(m, 20000, goal, {
+      profileIas,
+      manual,
+      curve: sheet.rpmFuelCurve
+    });
+    check('climb to FL200: top, reached, minutes, fuel', [g.top, g.reached, r(g.minutes), r(g.fuel)], [V2.climb.top, V2.climb.reached, V2
+      .climb.minutes, V2.climb.fuel
+    ]);
+    g.rows.forEach((x, i) => check(`climb row ${x.h} ft (IAS, ROC, FF, t, f)`, [x.h, r(x.ias, 2), r(x.roc, 1), r(x.ff, 2), r(x.t), r(x.f)], V2.climb.rows[i]));
+    lines.unshift(`<b class="${fail ? 'ko' : 'ok'}">${pass} passed, ${fail} failed</b>`);
+    document.getElementById('out').innerHTML = lines.join('\n');
+    document.title = `fuel — levels bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+  })();
+</script>
+</body></html>

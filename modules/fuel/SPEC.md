@@ -1,7 +1,8 @@
 # fuel — specification (regeneration prompt)
 
 This document describes the V3 fuel module completely enough for a developer or a language model to rebuild it without
-seeing its code. The reference implementation is `modules/fuel/model.js` (the pure quote model) with
+seeing its code. The reference implementation is `modules/fuel/model.js` (the pure quote model),
+`modules/fuel/levels.js` (the level decision and the climb instructions, pure) with
 `modules/fuel/performance_model.js` (the calibrated flight mechanics, copied from V2 unchanged); the module's screens
 (`modules/fuel/index.js`) come with lot 2b, on the frame's module loader. How the frame mounts it and what it reads and
 writes: [INTEGRATION.md](INTEGRATION.md). Choices, measurements and their dates: [DECISIONS.md](DECISIONS.md).
@@ -76,3 +77,24 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 3. Fuel quantities are in the sheet's unit inside the model; conversion to the displayed unit belongs to the screen.
 4. No estimated value is ever written into a sheet without a gesture of the pilot.
 5. ICAO and EUROCONTROL data never enter the repository (tests use a fictitious sheet).
+
+## 7. Level decision and climb instructions (`window.FuelLevels`)
+
+- **Climb goals**: economical (`eco`, least fuel), best rate (`vy`), fast (`fast`, least time), the sheet's climb IAS
+  (`prof`, full throttle at that IAS; becomes `vy` when the sheet has no climb IAS) and manual (`man`: IAS and rate, or
+  throttle at a fixed fraction). Manual settings start from the sheet's climb IAS and rate, bounded by the model:
+  IAS from 0.8 to 2.6 × the minimum-drag speed (jets: 360 kt at most), rate up to the ground climb rate rounded up to
+  100 ft/min (200 at least); a rate at or above that bound means full throttle.
+- **Decision series**: the whole trip (climb with the goal's law, cruise, descent) at every level, by 500 ft (1,000 ft
+  when the ceiling is above 20,000 ft), up to 110 % of the ceiling; beyond the ceiling the series is extrapolated
+  linearly from its last two valid points (marked extrapolated). Levels below 1,000 ft are not candidates. When the
+  trip cannot be flown above some level under the ceiling (too short to climb, not enough thrust), the series stops
+  there and the reason is kept. Answers: the level with the least fuel and the fastest one.
+- **Level curves**: the same trips for the normal and economical cruise modes by 500 ft, the wind range when the wind
+  is unknown, the highest level reachable on the trip and why, the optimums, the sustainable cruises and the trip at the
+  plan's level.
+- **Climb instructions** to the plan's level (bounded to the ceiling, rounded to 100 ft): integrated by steps (half
+  points, 100 to 500 ft), read at the ground, 2,000 ft, 5,000 ft, 10,000 ft, then every 5,000 ft and at the level:
+  throttle, RPM read in the engine map at that altitude (two rows at least), IAS, rate, fuel flow, Mach, cumulative
+  time and fuel. A climb whose rate falls under 20 ft/min is reported as not reaching the level.
+- **Minimum distance** for a level: the climb distance plus the descent distance; none when the cruise cannot be held.

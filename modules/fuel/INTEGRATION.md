@@ -9,10 +9,12 @@ How the frame mounts the fuel module and what the module reads and writes. The r
 |---|---|
 | `modules/fuel/performance_model.js` | `window.FlightPerfModel`: calibrated flight mechanics (copy of V2 `shared/flight_performance_model.js`, unchanged) |
 | `modules/fuel/model.js` | `window.FuelModel`: the pure quote (`cruiseSource`, `modelSheet`, `perfModel`, `quote`, unit and wind helpers) |
+| `modules/fuel/levels.js` | `window.FuelLevels`: level decision series, level curves, climb goals and laws, climb instructions (pure) |
 | `modules/fuel/test/quote.html` | bench: known cases taken from the V2 page, every displayed value found again |
+| `modules/fuel/test/levels.html` | bench: level decision, curves and climb instructions against the V2 view's state |
 | `modules/fuel/index.js` | the module mounted by the frame (lot 2b: `mount(el, ctx)` / `unmount()`) |
 
-Load `performance_model.js` before `model.js`. Neither touches the page, the network or the storage.
+Load `performance_model.js`, then `model.js`, then `levels.js`. None touches the page, the network or the storage.
 
 ## 2. Mounting (lot 2b, on the frame's loader)
 
@@ -78,4 +80,10 @@ const M = window.FuelModel,
   source = M.cruiseSource({ sheet, altFt, entryKg, apd, simbrief: apd?.simbrief, estimate: A.estimate([sheet.type, sheet.icao, sheet.id]) }),
   perf = M.perfModel(sheet, source, { apd, db: { [code]: { description: A.record(code)?.description } }, dIsa }),
   q = M.quote({ sheet, source, perf, apd, distanceNm, levelFt, trackDeg, wind, taxiMin, reserveMin, contingencyPct });
+// level decision and climb instructions (o: the climb IAS of the model sheet, the manual settings, the RPM table)
+const L = window.FuelLevels,
+  o = { profileIas: +M.modelSheet(sheet, source, apd).climb.iasKt || 0, manual: L.manualSettings(perf, sheet), curve: sheet.rpmFuelCurve },
+  goal = L.goalNow(chosenGoal, o.profileIas),
+  decision = L.decisionSeries(perf, { distanceNm, wc: q.wc }, goal, o),
+  climb = L.climbGuide(perf, levelFt, goal, o);
 ```

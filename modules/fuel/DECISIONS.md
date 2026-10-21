@@ -34,6 +34,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   V2 `profileWhen` takes the latest), while the frame's merge decides on `updated_at`. On every write the module sets
   both to the latest of those dates, so V2 pages and the frame agree; to confirm with the frame agent that
   `keyed:profiles:id` compares `updated_at` per sheet.
+- **Lot 3a, the level decision in pure code** (`modules/fuel/levels.js`): from V2 `shared/flight_perf_view.js`, the
+  calculations are taken out of the view (2,235 lines of drawing, panels and sliders): `extendSeries`, `rpmRows`,
+  `rpmForFF`, `ffForRpm`, `ensureManual` (`manualSettings`), `manualLaw`, `goalLaw`, `goalNow`, `tripLaw`,
+  `climbGuide`, `decisionSeries`, `buildCache` (`levelCurves`), `minDistance`. What they read in the view's state
+  (`S.manual`, the active profile, the goal remembered in `localStorage`, `modelProfile` of the page) became
+  parameters. The SVG drawing stays to be rewritten with the module screen (lot 2b + 3, on the frame).
+- **Bench of the level decision** (`modules/fuel/test/levels.html`): the V2 view's state read after a calculation with
+  the quote bench's sheet (300 NM, FL200, 30 kt tailwind, goal "sheet's climb IAS"): model ceiling and minimum-drag
+  speed, manual settings, decision series (step, bounds, least fuel FL250, fastest FL140, five levels), curves
+  (highest level, optimums, plan, cruises), climb to FL200 row by row; every value found again to 0.001: 24/24.
 - **Lot 2 split**: 2a (this commit) = the pure model, its bench and the module documents, independent of the frame;
   2b = the module skeleton on the frame's loader (`mount(el, ctx)` / `unmount`) with the quote screen, once the frame
   pushes its lot 3.
