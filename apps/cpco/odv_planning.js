@@ -831,6 +831,7 @@
       semaine: w,
       readOnly: !canEditActivations()
     });
+    if (!canEditActivations() && window.RepositoryNav?.cpco?.enabled?.()) window.OdvCore?.showReadOnly?.();
     activations = window.OdvActivationsEditor.mount(host, {
       semaine: w,
       readOnly: !canEditActivations(),

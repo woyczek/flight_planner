@@ -332,7 +332,7 @@
   };
   if (cpcoView(page?.path || rel) && !cpcoOn()) {
     /** Page consultable : simple avis flottant (lecture seule, lien vers l'activation du Centre), pas de voile. */
-    const viewNotice = () => window.AppFramework?.notify?.(K.t([
+    const viewNotice = () => window.OdvCore?.showReadOnly ? null : window.AppFramework?.notify?.(K.t([
       "Lecture seule : le planning se consulte sans le Centre ; le modifier demande le Centre activé (Paramètres › Centre).",
       "Read-only: the schedule can be viewed without the Centre; changing it requires the Centre enabled (Settings › Centre).",
       "Nur Lesen: Die Planung ist ohne das Zentrum einsehbar; Änderungen erfordern das aktivierte Zentrum (Einstellungen › Zentrum).",

@@ -1003,6 +1003,7 @@
   function render() {
     S.editable = canEdit();
     document.documentElement.classList.toggle('odvo-ro', !S.editable);
+    if (!S.editable) setTimeout(() => window.OdvCore?.showReadOnly?.(), 300); // pourquoi, et le réglage qui y remédie
     // lecture seule (pilote, Centre fermé ou compte sans droits) : le planning seul, vue du jour ; la semaine (dispos
     // et DLO des membres) et les statistiques restent au Centre
     S.view = 'jour'; // une seule vue : la semaine des membres et les statistiques sont des blocs de la page

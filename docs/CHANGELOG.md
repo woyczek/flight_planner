@@ -160,6 +160,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **ODV Board and planning: why the page is view-only** (`apps/cpco/odv_core.js` `OdvCore.readOnlyReason` /
+  `showReadOnly`, `apps/cpco/odv_orders.js`, `apps/cpco/odv_planning.js`, `shared/repository_nav.js`) — instead of
+  the generic "read-only without the Centre" notice, a floating notice gives the actual reason with a link to the
+  setting that fixes it: Centre locked in this browser (Settings › Centre), Crew level (My profile › Usage level),
+  signed-in account without the `admin_centre` role, production mode without an admin sign-in; in GitHub mode it
+  adds that the Centre lock and the level are settings of this browser. Planner manual (4 languages).
 - **My missions is the pilot's entry page; Today merged into it** (`apps/pilot/mes_missions.html`,
   `shared/pilot_today.js`, `shared/dispos_week.js`, `apps/pilot/aujourdhui.html`, `config/repository_tree`,
   `manifest.webmanifest`) — at levels 1 and 2 the page holds four blocks on one 1,400 × 900 screen and says first what
