@@ -196,6 +196,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Passwords: "not saved" after setting one** — the Centre password (*Settings › Centre › Mode and access*) was
+  written to the data folder but announced "kept in this browser: authorise the data folder", because the page
+  checked for a result that writing never returns (`'data'` instead of `'folder'`, `shared/data_admin.js`). Changing
+  one's own password (*My profile › Sign-in and password*) now says "Password changed in this browser only: …" with
+  the reason when the user file could not be written to the data folder (`shared/settings_panels.js`).
 - **Aircraft sheet: "Home aerodrome" taken from the flight log instead of the Fleet page** — F-ZBMC, based at LFTW
   on the Fleet page, showed "Home aerodrome HCMK", the reference's estimate (most frequent departure, during a
   deployment), which also overrode the base in the common catalogue. The Fleet page's base and home aerodrome now win

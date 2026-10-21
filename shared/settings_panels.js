@@ -601,9 +601,15 @@
           'Die beiden Eingaben unterscheiden sich.', 'Las dos entradas difieren.'
         ]));
         try {
-          wrote(await U.changePassword(pw.old.value, pw.pw.value));
+          const r = wrote(await U.changePassword(pw.old.value, pw.pw.value));
           pw.reset();
-          api.status(K.t(['Mot de passe changé.', 'Password changed.', 'Passwort geändert.', 'Contraseña cambiada.']));
+          // gardé dans ce navigateur (dossier des données non autorisé…) : dit tel quel, la raison suit (alerte de writeData)
+          api.status(r?.where === 'local' ? tf(['Mot de passe changé dans ce navigateur seulement : {e}',
+            'Password changed in this browser only: {e}', 'Passwort nur in diesem Browser geändert: {e}',
+            'Contraseña cambiada solo en este navegador: {e}'
+          ], {
+            e: r.error?.message || ''
+          }) : K.t(['Mot de passe changé.', 'Password changed.', 'Passwort geändert.', 'Contraseña cambiada.']));
         } catch (err) {
           api.status(err.message);
         }

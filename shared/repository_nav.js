@@ -295,7 +295,7 @@
       return true;
     },
     /** Nouveau mot de passe du Centre, écrit dans data/config/centre.json (pool partagé : il part au prochain
-     *  « Synchroniser ») ; Centre activé seulement. Rend { ok, where, error } (where : « data » ou « local »). */
+     *  « Synchroniser ») ; Centre activé seulement. Rend { ok, where, error } (where : « folder » ou « local », comme writeData). */
     async setPassword(password) {
       const p = String(password ?? "").trim();
       if (!cpcoOn() || !p || !window.MissionAssignments?.writeData) return {

@@ -1855,7 +1855,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         const r = await access.setPassword(v);
         status(!r.ok ? tt('Mot de passe non enregistré', 'Password not saved', 'Passwort nicht gespeichert',
             'Contraseña no guardada') :
-          r.where === 'data' ?
+          r.where === 'folder' ? // writeData : « folder » (dossier des données) ou « local » (ce navigateur)
           tt('Mot de passe enregistré dans les données : il part au prochain « Synchroniser »',
             'Password saved in the data: it goes out at the next “Synchronise”',
             'Passwort in den Daten gespeichert: es geht beim nächsten „Synchronisieren“ hinaus',
