@@ -160,6 +160,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Changed
 
+- **Help on phones: the text first** (`apps/aide/aide.html`, `apps/aide/aide.js`) — in mobile mode the contents
+  (search, index, outline) are folded behind "Contents ▾" at the top (a link followed closes them) and "↑ Contents"
+  at the end of each chapter reopens them; the text of a manual now starts right below the header instead of after
+  4,000 px of menu. Large screens unchanged. User manual (4 languages).
 - **ODV Board on phones: the day's strips as a list** (`apps/cpco/odv_orders.js`, `apps/cpco/odv_orders.html`) — in
   mobile mode the order of the day lists the strips by start time (start–end z, call sign or label, aircraft, crew,
   mission, status); a tap opens the strip's window (read-only when the page is); "Timeline" shows the 24-hour
