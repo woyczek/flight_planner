@@ -245,8 +245,17 @@
       identity: {
         trigram: identity.trigram || ''
       },
-      transport: configured
+      transport: configured,
+      references: configured.kind === 'local' ? referenceSource() : null
     });
+  }
+  /** Source en lecture seule des bases de référence (SIA, appareils) quand rien n'est échangé : le lanceur qui sert la
+   *  page, sinon le dépôt GitHub réglé ; null sans l'un ni l'autre (site public : ces bases n'y sont jamais publiées). */
+  function referenceSource() {
+    if (launcherHere?.data) return FD.launcher({
+      exchange: false
+    });
+    return FD.github.config() ? FD.github() : null;
   }
   /** Transport des usages cochés : aucun échange → local ; lanceur si la page en est servie ; GitHub s'il est réglé. */
   async function chooseTransport() {

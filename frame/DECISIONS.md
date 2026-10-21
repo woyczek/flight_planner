@@ -122,6 +122,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
 - **23 Oct 2026 — Where the service worker is tested**: it does not register in Claude's built-in browser ("unknown
   error when fetching the script"). Offline tests are run in a dedicated Chrome with a short profile path (a long one
   had no CacheStorage).
+- **21 Oct 2026 — Reference source for the local transport** (asked by the user, made by the aerodb session):
+  - The problem: with the local transport (single user, the default), the data layer read no `reference` file, so
+    aerodb (and fuel through it) had no SIA base and no aircraft base, even on a page served by the launcher.
+  - `configure({ references })` now takes a read-only source for those files only. `frame/app.js` gives the launcher
+    that serves the page, otherwise the configured GitHub repository. The exchange choice (usages) is unchanged.
+  - Test: a scenario in `frame/store/test/` (read from the source, revalidated, nothing sent, offline pass still
+    successful, no read without a source). `frame/index.html` served by the launcher with no usage ticked: aerodb
+    reads the 13 reference zones, and whole-world counts are identical.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

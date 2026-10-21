@@ -340,6 +340,82 @@
         await d.status());
       check('list from the cache', (await d.list('disponibilites/'))?.length === 1, await d.list(''));
     },
+    async 'local transport with a reference source: references read from it, revalidated, nothing sent'() {
+      const ref = 'sia/base/fr/2026-10-01/aerodromes.json';
+      await FD.reset();
+      await T('offline', {
+        on: false
+      });
+      await T('reset', {
+        files: {
+          [ref]: JSON.stringify({
+            n: 1
+          }),
+          'sia/base/gb/2026-10-01/aerodromes.json': JSON.stringify({
+            n: 1
+          }),
+          'sia/base/es/2026-10-01/aerodromes.json': JSON.stringify({
+            n: 1
+          })
+        }
+      });
+      const commits0 = (await stats()).commits.length;
+      FD.configure({
+        transport: FD.transports.local(),
+        references: FD.github({
+          repo: 'test/data',
+          branch: 'main',
+          token: 'test-token',
+          api: `${location.origin}/api`
+        })
+      });
+      const d = FD.adapter({
+        id: 'essai',
+        reads: ['disponibilites/', {
+          prefix: 'sia/base/',
+          policy: 'reference'
+        }],
+        writes: ['disponibilites/']
+      });
+      check('list sees the references of the source', (await d.list('sia/base/'))?.length === 3, await d.list('sia/base/'));
+      const a = await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      check('first read fetches from the source', a?.value?.n === 1, a);
+      check('the other zone, never asked, not fetched', !(await d.read('sia/base/gb/2026-10-01/aerodromes.json', {
+        policy: 'reference'
+      })), null);
+      const seen = [];
+      d.watch('sia/base/', p => seen.push(...p));
+      await d.put('disponibilites/TST/2026-W50.json', rec('TST', '2026-10-22T15:00:00Z'));
+      await T('write', {
+        files: {
+          [ref]: JSON.stringify({
+            n: 2
+          })
+        }
+      });
+      const r = await d.sync();
+      const st = await stats();
+      check('sync ok, the write stays local', r.ok && r.pushed === 1 && (await d.status()).pending === 0, r);
+      check('nothing sent to the source', st.commits.length === commits0 + 1 && !('disponibilites/TST/2026-W50.json' in st.files),
+        st.commits);
+      check('reference revalidated at sync, watch called', (await d.get(ref))?.n === 2 && seen.includes(ref), seen);
+      await T('offline', {
+        on: true
+      });
+      const off = await d.sync();
+      check('source offline: the local pass still succeeds', off.ok && /offline/.test(off.warning || ''), off);
+      check('reference still read from the cache offline', (await d.get(ref))?.n === 2, null);
+      FD.configure({
+        references: null
+      });
+      check('without a source: no reference read', !(await d.read('sia/base/es/2026-10-01/aerodromes.json', {
+        policy: 'reference',
+        wait: true
+      })), null);
+    },
     async 'cache policy: a device-local file, never queued, kept through pulls'() {
       const d = await fresh();
       const c = FD.adapter({

@@ -15,7 +15,10 @@
   //     réglages de l'appareil device/…) ; un préfixe peut être déclaré par plusieurs modules (partagé) ;
   //   · conflit sur une fiche : la plus récente (updated_at) gagne, la perdante est gardée (magasin conflicts) et
   //     signalée, jamais de question bloquante ; règles par préfixe déclarées par le module (record, keyed, journal).
-  // API (window.FrameData) : configure({ transport, identity, every }), start(), adapter(déclaration) → data (get,
+  //   · sources des références : sans échange (transport local), les fichiers « reference » (bases SIA et appareils)
+  //     viennent d'une source en lecture seule (configure({ references }) : le lanceur qui sert la page, ou le dépôt
+  //     GitHub réglé), lus à la demande et revalidés à la synchronisation ; rien n'y est jamais écrit ;
+  // API (window.FrameData) : configure({ transport, references, identity, every }), start(), adapter(déclaration) → data (get,
   //   read, list, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(), conflictSeen(id),
   //   restore(id), gitSha(texte), merge, transports.local().
   if (window.FrameData) return;
@@ -252,13 +255,15 @@
   // ---------------------------------------------------------------- réglage
   let cfg = {
     transport: null, // transport branché (transports.local(), FrameData.github(…)…)
+    references: null, // source en lecture seule des fichiers « reference » quand le transport est local (head, tree, read)
     identity: {
       trigram: ''
     },
     every: EVERY,
     retry: 60e3 // premier nouvel essai après un passage « hors ligne » (doublé ensuite, plafonné à every)
   };
-  /** Règle la couche : transport, identité ({ trigram }), période de la synchronisation de fond (ms). */
+  /** Règle la couche : transport, source des références (transport local), identité ({ trigram }), période de la
+   *  synchronisation de fond (ms). */
   function configure(o = {}) {
     cfg = {
       ...cfg,
@@ -393,9 +398,14 @@
     const remote = await getMeta('remote'),
       pend = await idb('pending', 'getAll');
     let paths;
-    if (remote?.tree) paths = Object.keys(remote.tree);
-    else if (cfg.transport?.kind === 'local') paths = (await idb('docs', 'getAll')).map(d => d.path);
-    else return null;
+    if (remote?.tree && cfg.transport?.kind !== 'local') paths = Object.keys(remote.tree);
+    else if (cfg.transport?.kind === 'local') {
+      paths = (await idb('docs', 'getAll')).map(d => d.path);
+      // références de la source en lecture seule (arbre gardé ; lu une fois s'il ne l'a jamais été)
+      const R = refSource(),
+        tree = R && await refTree(R).catch(() => null);
+      if (tree) paths.push(...Object.keys(tree).filter(p => policyOf(p) === 'reference'));
+    } else return null;
     const set = new Set(paths);
     for (const p of pend) p.text === null ? set.delete(p.path) : set.add(p.path);
     for (const d of await idb('docs', 'getAll'))
@@ -450,19 +460,26 @@
   function fetchOne(path, policy) {
     if (fetching.has(path)) return fetching.get(path);
     const job = (async () => {
-      const T = cfg.transport;
-      if (!T || T.kind === 'local') return null;
-      let remote = await getMeta('remote');
-      if (!remote?.tree) {
-        const head = await T.head();
-        remote = {
-          head,
-          tree: await T.tree(head),
-          at: Date.now()
-        };
-        await setMeta('remote', remote);
+      let T = cfg.transport,
+        tree;
+      if (!T || T.kind === 'local') {
+        // sans échange : une référence vient de la source en lecture seule, s'il y en a une
+        if (policy !== 'reference' || !(T = refSource())) return null;
+        tree = await refTree(T);
+      } else {
+        let remote = await getMeta('remote');
+        if (!remote?.tree) {
+          const head = await T.head();
+          remote = {
+            head,
+            tree: await T.tree(head),
+            at: Date.now()
+          };
+          await setMeta('remote', remote);
+        }
+        tree = remote.tree;
       }
-      const rev = remote.tree[path];
+      const rev = tree[path];
       if (!rev) return null;
       const text = await T.read(path, rev);
       await idb('docs', 'put', {
@@ -486,6 +503,59 @@
     })().finally(() => fetching.delete(path));
     fetching.set(path, job);
     return job;
+  }
+
+  // ---------------------------------------------------------------- source des références (transport local)
+  /** Source en lecture seule des fichiers « reference » : seulement sans échange (transport local), si elle est réglée. */
+  const refSource = () => (!cfg.transport || cfg.transport.kind === 'local') && cfg.references?.tree ? cfg.references : null;
+  /** Arbre de la source des références (gardé dans meta « refs », relu s'il vient d'une autre source). */
+  async function refTree(R) {
+    const m = await getMeta('refs');
+    if (m?.id === R.id && m.tree) return m.tree;
+    const head = await R.head(),
+      tree = await R.tree(head);
+    await setMeta('refs', {
+      id: R.id,
+      head,
+      tree,
+      at: Date.now()
+    });
+    return tree;
+  }
+  /** Revalide les références du cache contre la source (tête changée : fichiers relus si leur révision change, retirés
+   *  s'ils ont disparu) ; un échec (hors ligne) ne fait pas échouer le passage local, il est rapporté (warning). */
+  async function pullRefs(result) {
+    const R = refSource();
+    if (!R) return;
+    try {
+      const m = await getMeta('refs'),
+        head = await R.head();
+      if (m?.id === R.id && m.head === head && m.tree) return;
+      const tree = await R.tree(head);
+      for (const doc of await idb('docs', 'getAll')) {
+        if (doc.policy !== 'reference' || policyOf(doc.path) !== 'reference' || tree[doc.path] === doc.rev) continue;
+        if (!tree[doc.path]) await idb('docs', 'delete', doc.path);
+        else {
+          const text = await R.read(doc.path, tree[doc.path]);
+          await idb('docs', 'put', {
+            ...doc,
+            text,
+            base: text,
+            rev: tree[doc.path],
+            at: Date.now()
+          });
+        }
+        result.pulled.push(doc.path);
+      }
+      await setMeta('refs', {
+        id: R.id,
+        head,
+        tree,
+        at: Date.now()
+      });
+    } catch (e) {
+      result.warning = e?.offline ? 'references offline' : e?.message || String(e);
+    }
   }
 
   // ---------------------------------------------------------------- synchronisation
@@ -521,6 +591,7 @@
         await applyPushed(pend, null, null);
         result.pushed = pend.length;
         result.ok = true;
+        await pullRefs(result);
         return done(result);
       }
       // transport qui échange lui-même avec un dépôt distant (lanceur : passage git du poste) : avant, pour recevoir
@@ -680,7 +751,7 @@
   let timer = null,
     retryTimer = null,
     retryDelay = 0;
-  const remote = () => cfg.transport && cfg.transport.kind !== 'local';
+  const remote = () => cfg.transport && (cfg.transport.kind !== 'local' || !!refSource());
   /** Passage de fond si l'appareil se dit en ligne et que le transport échange. */
   const tick = () => {
     if (navigator.onLine !== false && remote()) sync({

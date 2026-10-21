@@ -122,11 +122,10 @@ listing known, no whole-zone file and no world-towns file is read. The aircraft 
   aerodromes and zones were read again and again. aerodb now keeps the `rev` of every file it read. It forgets a zone
   only when one of those revisions changes, and reads the listing again only for an unknown cycle or zone. Checked by
   republishing `be/…/aerodromes.json`: one `change` event, Belgium read again, the other zones kept.
-- **Gap left to the frame**: with the local transport (single user, the default when no exchange is ticked) the data
-  layer reads no reference file (`fetchOne` returns `null`), and `list` returns only the cache. aerodb, and the fuel
-  module through it, then has no SIA data and no aircraft base, even on a page served by the launcher or the website.
-  Reference files should come from the launcher or the site whatever the exchange transport. Reported to the ergonomics
-  session for the frame.
+- **Gap with the local transport, closed the same day**: with the local transport (single user, the default when no
+  exchange is ticked), the data layer read no reference file, so aerodb had no data. The frame now takes a read-only
+  reference source in that case (the launcher serving the page, otherwise the configured GitHub repository; see
+  `frame/DECISIONS.md`). Checked on `frame/index.html` with no usage ticked.
 
 ## Pending
 
