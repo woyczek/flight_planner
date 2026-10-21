@@ -669,6 +669,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/aircraft-publish':
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            try:
+                return self._json(aircraft_publish(str(a.get('author') or '').upper(), bool(a.get('apply'))))
+            except (OSError, RuntimeError) as e:
+                return self._json({'ok': False, 'remove': [], 'copy': [], 'message': str(e)[-600:]})
         if path == '/__setup/defa-site':
             # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
             # { auto_enabled } (réglage de Paramètres › Maintenance)
@@ -1762,6 +1771,66 @@ def aircraft_files():
     """Présence des fichiers de la base des types d'aéronefs (aircraft_db.js, aircraft_perf.js)."""
     d = os.path.join(ROOT, 'AircraftDB')
     return {'db': os.path.exists(os.path.join(d, 'aircraft_db.js')), 'perf': os.path.exists(os.path.join(d, 'aircraft_perf.js'))}
+
+
+AIRCRAFT_KEEP = ('aircraft_db.js', 'aircraft_perf.js')
+
+
+def aircraft_publish(author='', apply=False):
+    """Base des types publiée dans le dépôt des données (téléphones et site en mode GitHub ; jamais sur le site public :
+    tools/build_pages.py ne prend que les fichiers suivis du dépôt de la suite) : data/AircraftDB/ ne garde que
+    aircraft_db.js et aircraft_perf.js, copiés depuis AircraftDB/ de la suite (littéraux purs : tools/data_guard.py) ; tout
+    le reste du dossier (caches, scripts, __pycache__…) est retiré. apply faux : liste seulement ce qui serait fait (le
+    bouton la montre et demande l'accord). apply vrai : fait, commit au nom de author, puis passe de synchronisation."""
+    src, dst = os.path.join(ROOT, 'AircraftDB'), os.path.join(DATA, 'AircraftDB')
+    res = {'ok': False, 'remove': [], 'copy': [], 'message': ''}
+    if not data_sync.is_repo(DATA):
+        res['message'] = 'data/ n’est pas un dépôt git : rien à publier.'
+        return res
+    missing = [n for n in AIRCRAFT_KEEP if not os.path.isfile(os.path.join(src, n))]
+    if missing:
+        res['message'] = 'Base des types absente sur ce poste (' + ', '.join(missing) + ') : la compléter d’abord.'
+        return res
+    for n in AIRCRAFT_KEEP:
+        ok, why = data_guard.check_file(os.path.join(src, n))
+        if not ok:
+            res['message'] = f'AircraftDB/{n} refusé ({why}) : rien publié.'
+            return res
+    if os.path.isdir(dst):
+        for d, dirs, files in os.walk(dst):
+            for f in files:
+                rel = os.path.relpath(os.path.join(d, f), dst).replace(os.sep, '/')
+                if rel not in AIRCRAFT_KEEP:
+                    res['remove'].append({'path': 'AircraftDB/' + rel, 'size': os.path.getsize(os.path.join(d, f))})
+    for n in AIRCRAFT_KEEP:
+        a, b = os.path.join(src, n), os.path.join(dst, n)
+        if not os.path.isfile(b) or open(a, 'rb').read() != open(b, 'rb').read():
+            res['copy'].append({'path': 'AircraftDB/' + n, 'size': os.path.getsize(a)})
+    res['ok'] = True
+    if not apply:
+        return res
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
+        return {**res, 'ok': False, 'message': 'Trigramme de l’auteur manquant ou invalide.'}
+    for r in res['remove']:
+        os.remove(os.path.join(DATA, *r['path'].split('/')))
+    for d, dirs, files in os.walk(dst, topdown=False):  # dossiers vidés (caches, __pycache__) retirés
+        if d != dst and not os.listdir(d):
+            os.rmdir(d)
+    os.makedirs(dst, exist_ok=True)
+    for c in res['copy']:
+        shutil.copyfile(os.path.join(src, os.path.basename(c['path'])), os.path.join(DATA, *c['path'].split('/')))
+    env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+    who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
+    data_sync.git(DATA, 'add', '-A', '--', 'AircraftDB', check=True)
+    code, _ = data_sync.git(DATA, 'diff', '--cached', '--quiet')
+    if code:
+        data_sync.git(DATA, *who, 'commit', '-m', f'Base des types publiée ({author})', env=env, check=True)
+    with SYNC_LOCK:
+        res['sync'] = data_sync.run(DATA, author)
+    sync_status_reset()
+    res['ok'] = res['sync'].get('ok', False)
+    res['message'] = res['sync'].get('message', '')
+    return res
 
 
 def aircraft_rebuild(codes, quick=False):

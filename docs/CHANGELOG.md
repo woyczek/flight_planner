@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Settings › Maintenance › Aircraft types: “Publish the aircraft database to the data repository”** (Expert level,
+  workstation with the launcher) — for phones and the website (GitHub mode): copies `AircraftDB/aircraft_db.js` and
+  `aircraft_perf.js` into `AircraftDB/` of the data repository, removes everything else from that folder (caches,
+  scripts, `__pycache__`), commits and synchronises; the page first shows the list of files copied and removed and asks
+  for agreement. Both files must be plain values: `tools/data_guard.py` now admits `window.AIRCRAFT_DB` and
+  `window.AIRCRAFT_PERF` literals. Never published on the public website (`tools/launch.py` `/__setup/aircraft-publish`).
+
 - **Route field: coordinates typed in any common way** (map studio, Flight maps, Fuel planner) — decimal degrees,
   degrees and minutes or degrees, minutes, seconds, hemisphere letters before or after (O = west), decimal point or
   comma, packed ICAO-like digits of any precision (“441819584N00032421849733W”), or signed decimals (“+44.18,-0.038”)

@@ -28,7 +28,9 @@ EXPORTS = {
     'window.DEFA_PERSONAL_AIRCRAFT = data.rows; window.DEFA_PERSONAL_AIRCRAFT_META = META;',
 }
 # variables du format 2
-GLOBALS = {'DATA_TREE', 'MissionLedgerDefaultsB64'}
+# (AIRCRAFT_DB, AIRCRAFT_PERF : base des types publiée dans le dépôt des données pour le mode GitHub, AircraftDB/ ;
+# exécutée par les téléphones, donc littéral pur exigé comme les autres)
+GLOBALS = {'DATA_TREE', 'MissionLedgerDefaultsB64', 'AIRCRAFT_DB', 'AIRCRAFT_PERF'}
 
 EOL = '\n\r  '  # fins de ligne du JavaScript : un commentaire // s'arrête à chacune
 COMMENT = r'//[^\n\r  ]*'

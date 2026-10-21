@@ -65,8 +65,9 @@ Storage and access map: `DONNEES_ET_ACCES.md`.
   from `assets/favicon-flight.svg` with `rsvg-convert`, deploy).
 - **Install**: `manifest.webmanifest` (start page: Today) and the home-screen tags set by `config/repository_tree`.
 - **Aircraft database**: served by the service worker from `AircraftDB/aircraft_db.js` and `aircraft_perf.js` at the
-  root of the data repository (© ICAO, EUROCONTROL: never published with the public site); to be copied there from a
-  launcher workstation.
+  root of the data repository (© ICAO, EUROCONTROL: never published with the public site); published there from a
+  launcher workstation by Settings › Maintenance › Aircraft types, “Publish the aircraft database to the data
+  repository” (the two files only; the rest of the folder is removed after the user agrees to the list).
 
 - **Desktop browser test, fixes of 21 October** (same fake GitHub): the remembered folders (`FileAccess`) are ignored in
   GitHub mode at one decision point (`FileAccess.get()` returns none when `GitHubData.on()`; header of

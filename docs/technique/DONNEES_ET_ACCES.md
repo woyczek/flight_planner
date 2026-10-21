@@ -255,7 +255,7 @@ or a browser), **code** (code of the suite, no data).
 | Mission orders `missions/…` | git data repository | shared | CPCO (workstation); read-only on the phone |
 | Report ledger `cr/missions.yaml` | git data repository | shared | Report; three-way merge |
 | References `references/*.js`, `config/`, `data_tree.js` | git data repository | shared | Administration (workstation) |
-| Aircraft database `AircraftDB/*.js` | built on each workstation; copy to be placed in the data repository for the phone | specific → shared | Launcher; never published with the site |
+| Aircraft database `AircraftDB/aircraft_db.js`, `aircraft_perf.js` | built on each workstation; published to `AircraftDB/` of the data repository for the phone (Maintenance › Aircraft types, “Publish the aircraft database to the data repository”: only these two files, plain values checked by `tools/data_guard.py`) | specific → shared | Launcher; never published with the site |
 | Indexes `_index.json` | workstation: `data/`; phone: rebuilt in memory | local copy | Launcher or `github_data.js` |
 | Offline copies (IndexedDB `sogGithubData`, `githubData:f:*`) | browser | local copy | `github_data.js`; erased by "Cut access" |
 | Offline code (Cache Storage `sog-app`) | browser (website) | code | service worker `sw.js` |

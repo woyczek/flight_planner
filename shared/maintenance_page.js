@@ -1758,6 +1758,69 @@
       [t(['Atterrissage', 'Landing', 'Landung', 'Aterrizaje']), v(p.landing?.distanceM, 'm')]
     ].filter(([, x]) => x);
   }
+  /** Base des types publiée dans le dépôt des données (POST /__setup/aircraft-publish) : liste de ce qui serait retiré et
+   *  copié, accord demandé, puis publication (copie, commit, synchronisation) ; compte rendu en notification. */
+  async function publishAircraft(btn) {
+    const call = body => fetch('/__setup/aircraft-publish', {
+      method: 'POST',
+      headers: {
+        'X-SOG-Setup': '1',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const author = window.SuiteUsers?.effective?.() || window.MissionAssignments?.trigram?.() || '';
+    btn.disabled = true;
+    try {
+      const plan = await call({
+        apply: false
+      });
+      if (!plan?.ok) return void window.AppFramework?.notify?.(plan?.message || t(['Lanceur injoignable.', 'Launcher unreachable.',
+        'Starter nicht erreichbar.', 'Lanzador inaccesible.'
+      ]), 'warn');
+      if (!plan.remove.length && !plan.copy.length) return void window.AppFramework?.notify?.(t([
+        'Base appareils déjà publiée, à jour : rien à faire.',
+        'Aircraft database already published and up to date: nothing to do.',
+        'Luftfahrzeug-Datenbank bereits veröffentlicht und aktuell: nichts zu tun.',
+        'Base de aeronaves ya publicada y al día: nada que hacer.'
+      ]), 'info');
+      const mo = n => `${(n / 1048576).toFixed(1).replace('.', ',')} Mo`,
+        lines = [...plan.copy.map(x => `+ ${x.path} (${mo(x.size)})`), ...plan.remove.map(x => `− ${x.path} (${mo(x.size)})`)];
+      if (!author) return void window.AppFramework?.notify?.(t(['Trigramme inconnu : le régler dans Mon profil.',
+        'Unknown trigram: set it in My profile.', 'Unbekanntes Kürzel: unter Mein Profil einstellen.',
+        'Trigrama desconocido: configurarlo en Mi perfil.'
+      ]), 'warn');
+      if (!await window.AppFramework.ask(t([
+          'Publier la base appareils dans le dépôt des données ?\n{l}\n\nCopiés (+) et retirés du dépôt (−), puis synchronisation.',
+          'Publish the aircraft database to the data repository?\n{l}\n\nCopied (+) and removed from the repository (−), then synchronisation.',
+          'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen?\n{l}\n\nKopiert (+) und aus dem Repository entfernt (−), dann Synchronisierung.',
+          '¿Publicar la base de aeronaves en el repositorio de datos?\n{l}\n\nCopiados (+) y retirados del repositorio (−), luego sincronización.'
+        ], {
+          l: lines.join('\n')
+        }))) return;
+      const r = await call({
+        apply: true,
+        author
+      });
+      window.AppFramework?.notify?.(r?.ok ? t(['Base appareils publiée : {n} fichier(s) copié(s), {m} retiré(s) ; {s}',
+        'Aircraft database published: {n} file(s) copied, {m} removed; {s}',
+        'Luftfahrzeug-Datenbank veröffentlicht: {n} Datei(en) kopiert, {m} entfernt; {s}',
+        'Base de aeronaves publicada: {n} archivo(s) copiado(s), {m} retirado(s); {s}'
+      ], {
+        n: r.copy.length,
+        m: r.remove.length,
+        s: r.message || ''
+      }) : t(['Base appareils non publiée : {e}', 'Aircraft database not published: {e}',
+        'Luftfahrzeug-Datenbank nicht veröffentlicht: {e}',
+        'Base de aeronaves no publicada: {e}'
+      ], {
+        e: r?.message || '?'
+      }), r?.ok ? 'info' : 'warn');
+    } finally {
+      btn.disabled = false;
+    }
+  }
   /** Dessine dans el le bloc « Types d'aéronefs et performances » d'après l'état du lanceur (/__setup/aircraft-db) ;
    *  lists { fleet, fleetCount, missions, local } : types à suivre (gardés pour les redessins). Zone de codes et volet
    *  replié gardés d'un redessin à l'autre (relecture toutes les 5 s pendant une passe). */
@@ -1996,7 +2059,9 @@
       <p class="row"><button type="button" class="secondary" data-ac="one" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button></p></details>
       ${editUrl ? `<p class="mt-small" data-min-level="4"><a class="mt-link" href="${esc(editUrl)}">${esc(t(['Modifier la base à la main…', 'Edit the database by hand…', 'Datenbank von Hand bearbeiten…', 'Editar la base a mano…']))}</a> ${esc(t(['(Fichiers du dépôt › Types d’aéronefs (base OACI) ; types saisis dans les CR : Données du navigateur › Types ajoutés localement)', '(Repository files › Aircraft types (ICAO base); types entered in reports: Browser data › Locally added types)', '(Dateien des Repositorys › Luftfahrzeugmuster (ICAO-Datenbank); in Berichten erfasste Typen: Browserdaten › Lokal hinzugefügte Muster)', '(Archivos del repositorio › Tipos de aeronave (base OACI); tipos introducidos en informes: Datos del navegador › Tipos añadidos localmente)']))}</p>` : ''}
       <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste, lus par toutes les pages à leur prochain chargement : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances), non versionnés (données OACI et EUROCONTROL) : à compléter sur chaque poste ou à recopier d’un poste à l’autre.', 'Files written on this computer, read by every page at its next load: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance), not versioned (ICAO and EUROCONTROL data): complete them on each computer or copy them from one to another.', 'Auf diesem Rechner geschriebene Dateien, von allen Seiten beim nächsten Laden gelesen: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen), nicht versioniert (Daten von ICAO und EUROCONTROL): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo, leídos por todas las páginas en su próxima carga: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos), no versionados (datos de la OACI y EUROCONTROL): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
+      ${s && (s.db || s.perf) ? `<p class="row" data-min-level="4"><button type="button" class="secondary" data-ac-publish data-icon="upload">${esc(t(['Publier la base appareils dans le dépôt des données', 'Publish the aircraft database to the data repository', 'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen', 'Publicar la base de aeronaves en el repositorio de datos']))}</button> <span class="mt-small">${esc(t(['Pour les téléphones et le site (mode GitHub) : AircraftDB/aircraft_db.js et aircraft_perf.js copiés dans le dépôt des données, le reste de son dossier AircraftDB/ retiré (liste montrée avant), puis synchronisation. Jamais publiée sur le site public (données OACI et EUROCONTROL).', 'For phones and the website (GitHub mode): AircraftDB/aircraft_db.js and aircraft_perf.js copied into the data repository, the rest of its AircraftDB/ folder removed (list shown first), then synchronisation. Never published on the public website (ICAO and EUROCONTROL data).', 'Für Telefone und die Website (GitHub-Modus): AircraftDB/aircraft_db.js und aircraft_perf.js in das Datenrepository kopiert, der Rest seines Ordners AircraftDB/ entfernt (Liste vorher gezeigt), dann Synchronisierung. Nie auf der öffentlichen Website veröffentlicht (Daten von ICAO und EUROCONTROL).', 'Para los teléfonos y el sitio (modo GitHub): AircraftDB/aircraft_db.js y aircraft_perf.js copiados en el repositorio de datos, el resto de su carpeta AircraftDB/ retirado (lista mostrada antes), luego sincronización. Nunca publicada en el sitio público (datos de la OACI y EUROCONTROL).']))}</span></p>` : ''}
       ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
+    el.querySelector('[data-ac-publish]')?.addEventListener('click', e => publishAircraft(e.currentTarget));
     if (keep.open) el.querySelector('.mt-ac-more').open = true;
     if (keep.code) el.querySelector('.mt-ac-code').value = keep.code;
     el.querySelectorAll('[data-ac]').forEach(b => b.onclick = async () => {
