@@ -1,0 +1,81 @@
+# fuel — integration
+
+How the frame mounts the fuel module and what the module reads and writes. The rules of the quote are in
+[SPEC.md](SPEC.md); the frame's adapter is described in [frame/INTEGRATION.md](../../frame/INTEGRATION.md).
+
+## 1. Files
+
+| File | Role |
+|---|---|
+| `modules/fuel/performance_model.js` | `window.FlightPerfModel`: calibrated flight mechanics (copy of V2 `shared/flight_performance_model.js`, unchanged) |
+| `modules/fuel/model.js` | `window.FuelModel`: the pure quote (`cruiseSource`, `modelSheet`, `perfModel`, `quote`, unit and wind helpers) |
+| `modules/fuel/test/quote.html` | bench: known cases taken from the V2 page, every displayed value found again |
+| `modules/fuel/index.js` | the module mounted by the frame (lot 2b: `mount(el, ctx)` / `unmount()`) |
+
+Load `performance_model.js` before `model.js`. Neither touches the page, the network or the storage.
+
+## 2. Mounting (lot 2b, on the frame's loader)
+
+`mount(el, ctx)` with `ctx = { data, aerodb, t, notify, ask, askText }`, `unmount()`. Declared to the frame:
+
+```js
+reads: ['planner/', 'pilot/'],
+writes: [
+  { prefix: 'planner/flight_performance_database_merged.fpdb.json', merge: 'keyed:profiles:id' },
+  { prefix: 'pilot/<trigram>/fuel.json', merge: 'record' },
+  { prefix: 'pilot/<trigram>/current_flight.json', merge: 'record' }   // shared with maps
+]
+```
+
+Asked of the frame (agreed 22 Oct 2026, to be delivered by the frame): a **cache** policy for the last SimBrief OFP (a
+document of the device, never synchronised); an **outgoing call** to simbrief.com through the frame (`ctx.net`), the
+SimBrief identifier read from the identity (settings module), never typed in fuel.
+
+## 3. The current flight — `pilot/<trigram>/current_flight.json`
+
+One record per pilot, read and written by fuel and maps (the same flight in both). Merge rule `record`: the newest
+`updated_at` wins the whole document, so a module always reads it, changes its own fields and writes it back whole.
+
+```json
+{
+  "schema": 1,
+  "updated_at": "2026-10-22T14:05:00Z",
+  "by": "fuel",
+  "aircraft": { "sheetId": "SB_C30J_F-RAJA", "type": "C30J", "registration": "F-RAJA", "name": "C-130J" },
+  "route": {
+    "text": "LFRS 47.1569 -1.6078,\nN0236F270,\nLUGEN 46.5833 -1.2000,\nLFML 43.4367 5.2150",
+    "dep": "LFRS", "arr": "LFML", "altn": "LFPG",
+    "points": [{ "id": "LFRS", "lat": 47.1569, "lon": -1.6078 }, { "id": "LUGEN", "lat": 46.5833, "lon": -1.2 }],
+    "distanceNm": 366, "trackDeg": 125
+  },
+  "level": { "ft": 27000 },
+  "wind": { "dirDeg": 270, "speedKt": 30 },
+  "isaDev": 0,
+  "ofp": { "date": "2026-10-19T13:44:06Z", "dep": "LFRS", "arr": "LFML", "altn": "LFPG", "points": 11,
+           "levelFt": 27000, "aircraft": "S210 F-BHHH", "callsign": "" }
+}
+```
+
+- `route.text`: item 15 (`LFBO N0450F350 DCT TOU UN460 NTS LFRN`) or the OFP route list (`ID lat lon[/N0450F370]`
+  entries separated by commas or new lines), the form V2 writes and its "Open in" reads; `points` are its resolved
+  positions; `distanceNm` and `trackDeg` are derived (great circle, departure to arrival track).
+- `wind` is null when unknown; `ofp` is null without a SimBrief flight plan (summary only: the OFP itself stays in the
+  device cache).
+- Maps reads it as is; a field a module does not know is kept when it writes the record back.
+
+## 4. Quote settings — `pilot/<trigram>/fuel.json`
+
+`{ "schema": 1, "updated_at", "taxiMin": 10, "reserveMin": 30, "contingencyPct": 5, "displayUnit": "kg",
+"entries": { "<sheetId>": <cruise kg/h for this flight> } }` (record).
+
+## 5. Using the model
+
+```js
+const M = window.FuelModel,
+  sheet = M.normalizeSheet(structuredClone(record)),
+  A = await ctx.aerodb.aircraft(),
+  apd = A.perf(sheet.icao || sheet.type || sheet.id),
+  source = M.cruiseSource({ sheet, altFt, entryKg, apd, simbrief: apd?.simbrief, estimate: A.estimate([sheet.type, sheet.icao, sheet.id]) }),
+  perf = M.perfModel(sheet, source, { apd, db: { [code]: { description: A.record(code)?.description } }, dIsa }),
+  q = M.quote({ sheet, source, perf, apd, distanceNm, levelFt, trackDeg, wind, taxiMin, reserveMin, contingencyPct });
+```
