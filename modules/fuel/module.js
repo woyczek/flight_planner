@@ -69,7 +69,7 @@ const TX = {
   routeText: ['Route détaillée (item 15 ou « ID lat lon » par ligne)', 'Detailed route (item 15 or “ID lat lon” per line)',
     'Detaillierte Route (Feld 15 oder „ID lat lon“ je Zeile)', 'Ruta detallada (casilla 15 o «ID lat lon» por línea)'
   ],
-  distance: ['Distance (NM)', 'Distance (NM)', 'Entfernung (NM)', 'Distancia (NM)'],
+  distance: ['Distance ({u})', 'Distance ({u})', 'Entfernung ({u})', 'Distancia ({u})'],
   track: ['Route vraie (°)', 'True track (°)', 'Rechtweisender Kurs (°)', 'Rumbo verdadero (°)'],
   unresolved: ['Points inconnus : {l}', 'Unknown points: {l}', 'Unbekannte Punkte: {l}', 'Puntos desconocidos: {l}'],
   simbrief: ['Dernier OFP SimBrief', 'Last SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'],
@@ -97,11 +97,11 @@ const TX = {
     man: ['Manuelle', 'Manual', 'Manuell', 'Manual']
   },
   windDir: ['Vent de (°)', 'Wind from (°)', 'Wind aus (°)', 'Viento de (°)'],
-  windKt: ['Force (kt)', 'Speed (kt)', 'Stärke (kt)', 'Fuerza (kt)'],
+  windKt: ['Force ({u})', 'Speed ({u})', 'Stärke ({u})', 'Fuerza ({u})'],
   isa: ['ISA ± (°C)', 'ISA ± (°C)', 'ISA ± (°C)', 'ISA ± (°C)'],
-  manIas: ['Badin (kt)', 'IAS (kt)', 'IAS (kt)', 'IAS (kt)'],
-  manVs: ['Vario (ft/min, vide : plein gaz)', 'Rate (ft/min, empty: full throttle)', 'Steigrate (ft/min, leer: Vollgas)',
-    'Régimen (ft/min, vacío: gases a fondo)'
+  manIas: ['Badin ({u})', 'IAS ({u})', 'IAS ({u})', 'IAS ({u})'],
+  manVs: ['Vario ({u}, vide : plein gaz)', 'Rate ({u}, empty: full throttle)', 'Steigrate ({u}, leer: Vollgas)',
+    'Régimen ({u}, vacío: gases a fondo)'
   ],
   decision: ['Décision du niveau', 'Level decision', 'Wahl der Flugfläche', 'Decisión del nivel'],
   decisionHint: ['Touchez la courbe pour choisir un niveau.', 'Tap the curve to choose a level.',
@@ -132,7 +132,7 @@ const TX = {
   trip: ['Délestage', 'Trip', 'Strecke', 'Trayecto'],
   time: ['Temps', 'Time', 'Zeit', 'Tiempo'],
   tod: ['Début de descente', 'Top of descent', 'Sinkflugbeginn', 'Inicio de descenso'],
-  todVal: ['{nm} NM avant', '{nm} NM before', '{nm} NM vorher', '{nm} NM antes'],
+  todVal: ['{d} avant', '{d} before', '{d} vorher', '{d} antes'],
   noFuel: ['Aucun débit connu : pas de devis.', 'No fuel flow known: no quote.', 'Kein Verbrauch bekannt: keine Berechnung.',
     'Ningún consumo conocido: sin cálculo.'
   ],
@@ -148,8 +148,8 @@ const TX = {
   contingency: ['Contingence', 'Contingency', 'Zuschlag', 'Contingencia'],
   reserve: ['Réserve', 'Reserve', 'Reserve', 'Reserva'],
   climbGuide: ['Consignes de montée', 'Climb instructions', 'Steigflug-Vorgaben', 'Consignas de ascenso'],
-  notReached: ['La montée n’atteint pas le niveau (vario sous 20 ft/min).', 'The climb does not reach the level (rate under 20 ft/min).',
-    'Der Steigflug erreicht die Flugfläche nicht (unter 20 ft/min).', 'El ascenso no alcanza el nivel (menos de 20 ft/min).'
+  notReached: ['La montée n’atteint pas le niveau (vario sous {r}).', 'The climb does not reach the level (rate under {r}).',
+    'Der Steigflug erreicht die Flugfläche nicht (unter {r}).', 'El ascenso no alcanza el nivel (menos de {r}).'
   ],
   lawFailed: ['La loi de montée choisie n’atteint pas le niveau : montée de la fiche.',
     'The chosen climb law does not reach the level: the sheet’s climb.',
@@ -162,7 +162,11 @@ const TX = {
   taxiMin: ['Roulage (min)', 'Taxi (min)', 'Rollen (min)', 'Rodaje (min)'],
   reserveMin: ['Réserve (min)', 'Reserve (min)', 'Reserve (min)', 'Reserva (min)'],
   contPct: ['Contingence (%)', 'Contingency (%)', 'Zuschlag (%)', 'Contingencia (%)'],
-  unit: ['Unité affichée', 'Displayed unit', 'Angezeigte Einheit', 'Unidad mostrada'],
+  units: ['Unités affichées', 'Displayed units', 'Angezeigte Einheiten', 'Unidades mostradas'],
+  unitFuel: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
+  unitSpeed: ['Vitesse', 'Speed', 'Geschwindigkeit', 'Velocidad'],
+  unitAlt: ['Altitude', 'Altitude', 'Höhe', 'Altitud'],
+  unitDist: ['Distance', 'Distance', 'Entfernung', 'Distancia'],
   entry: ['Débit de croisière de ce vol (kg/h, vide : la fiche)', 'Cruise fuel flow for this flight (kg/h, empty: the sheet)',
     'Reiseverbrauch für diesen Flug (kg/h, leer: Datenblatt)', 'Consumo de crucero de este vuelo (kg/h, vacío: la ficha)'
   ],
@@ -356,6 +360,95 @@ function fuelTxt(v, unit) {
     x = unit && to !== unit ? window.FuelModel.convertFuel(v, unit, to) : v;
   return `${Math.round(x).toLocaleString(S.ctx.lang())} ${to}`;
 }
+
+/** Unités d'affichage de la vitesse (kt, km/h), de l'altitude (ft, m) et de la distance (NM, km, SM) : le modèle, le vol
+ *  courant et les fiches gardent kt, ft et NM ; la conversion est ici, à l'écran, dans les deux sens (affichage et
+ *  saisie), comme pour le carburant. Un niveau de vol (FL120, centaines de pieds) reste un niveau de vol quelle que
+ *  soit l'unité d'altitude. Un nombre affiché qui porte l'une de ces unités passe par les aides de sa grandeur :
+ *  `Txt` (nombre arrondi et unité), `Num` (nombre arrondi seul, pour un tableau dont l'en-tête porte l'unité), `Field`
+ *  (valeur d'un champ de saisie), `Parse` (texte saisi → unité du modèle) et `Label` (symbole). Le symbole d'une unité
+ *  n'est pas traduit. */
+const UNITS = {
+  speed: {
+    key: 'displaySpeed',
+    base: 'kt',
+    list: ['kt', 'kmh'],
+    label: {
+      kt: 'kt',
+      kmh: 'km/h'
+    },
+    conv: 'convertSpeed'
+  },
+  alt: {
+    key: 'displayAlt',
+    base: 'ft',
+    list: ['ft', 'm'],
+    label: {
+      ft: 'ft',
+      m: 'm'
+    },
+    conv: 'convertAlt'
+  },
+  dist: {
+    key: 'displayDist',
+    base: 'NM',
+    list: ['NM', 'km', 'SM'],
+    label: {
+      NM: 'NM',
+      km: 'km',
+      SM: 'SM'
+    },
+    conv: 'convertDist'
+  }
+};
+/** Unité affichée d'une grandeur (speed, alt, dist) : le réglage, sinon (absent ou inconnu) l'unité du modèle. */
+function unitOf(kind) {
+  const u = UNITS[kind],
+    v = S.settings[u.key];
+  return u.list.includes(v) ? v : u.base;
+}
+/** Aides d'une grandeur : kind (speed, alt, dist) ; perMin : vitesse verticale (unité d'altitude par minute). */
+function unitHelpers(kind, perMin = false) {
+  const u = UNITS[kind],
+    suffix = perMin ? '/min' : '',
+    has = v => v !== null && v !== undefined && v !== '' && Number.isFinite(+v),
+    to = v => window.FuelModel[u.conv](+v, u.base, unitOf(kind)),
+    label = () => u.label[unitOf(kind)] + suffix,
+    fmt = v => has(v) ? Math.round(to(v)).toLocaleString(S.ctx.lang()) : '—';
+  return {
+    label,
+    num: fmt,
+    txt: v => has(v) ? `${fmt(v)} ${label()}` : '—',
+    // valeur du champ de saisie : nombre arrondi à l'entier, sans séparateur ; vide sans valeur
+    field: v => has(v) ? Math.round(to(v)) : '',
+    // texte saisi (unité affichée) → unité du modèle, au centième près quand l'unité change (l'entier saisi revient à
+    // l'identique à l'affichage) ; null si vide ou illisible
+    parse: text => {
+      const x = num(text);
+      if (x === null) return null;
+      const m = window.FuelModel[u.conv](x, unitOf(kind), u.base);
+      return unitOf(kind) === u.base ? m : Math.round(m * 100) / 100;
+    }
+  };
+}
+/** Une aide par grandeur et par rôle (les réglages sont lus à chaque appel) ; vs : vitesse verticale (ft/min, m/min). */
+const speedTxt = v => unitHelpers('speed').txt(v),
+  speedNum = v => unitHelpers('speed').num(v),
+  speedField = v => unitHelpers('speed').field(v),
+  speedParse = t => unitHelpers('speed').parse(t),
+  speedLabel = () => unitHelpers('speed').label(),
+  altTxt = v => unitHelpers('alt').txt(v),
+  altNum = v => unitHelpers('alt').num(v),
+  altLabel = () => unitHelpers('alt').label(),
+  distTxt = v => unitHelpers('dist').txt(v),
+  distField = v => unitHelpers('dist').field(v),
+  distParse = t => unitHelpers('dist').parse(t),
+  distLabel = () => unitHelpers('dist').label(),
+  vsTxt = v => unitHelpers('alt', true).txt(v),
+  vsNum = v => unitHelpers('alt', true).num(v),
+  vsField = v => unitHelpers('alt', true).field(v),
+  vsParse = t => unitHelpers('alt', true).parse(t),
+  vsLabel = () => unitHelpers('alt', true).label();
 
 // ---------------------------------------------------------------- géographie
 /** Distance orthodromique (NM) entre deux points { lat, lon }. */
@@ -663,7 +756,7 @@ function climbSvg(G, box) {
     <line x1="${pl}" x2="${W - pr}" y1="${y(G.top)}" y2="${y(G.top)}" class="fu-plan"/>
     <text x="${pl - 6}" y="${y(G.top) + 4}" text-anchor="end">${flTxt(G.top)}</text>
     <path d="${d}" class="fu-line-f"/>
-    ${G.rows.map((r, i) => `<circle cx="${x(r.t)}" cy="${y(r.h)}" r="3.5" class="fu-best"/>${label[i] ? `<text x="${x(r.t) + 7}" y="${y(r.h) + 4}" class="fu-time">${Math.round(r.ias)} kt</text>` : ''}`).join('')}
+    ${G.rows.map((r, i) => `<circle cx="${x(r.t)}" cy="${y(r.h)}" r="3.5" class="fu-best"/>${label[i] ? `<text x="${x(r.t) + 7}" y="${y(r.h) + 4}" class="fu-time">${esc(speedTxt(r.ias))}</text>` : ''}`).join('')}
   </svg>`;
 }
 
@@ -719,7 +812,7 @@ function renderPlan() {
     r = f.route || {},
     sel = f.aircraft?.sheetId || (f.aircraft?.type ? '__type' : S.sheets[0]?.id || '__type'),
     opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
-    fld = (key, label, val, attrs = '') => `<label class="f-field">${esc(tt(label))}<input data-k="${key}" value="${esc(val ?? '')}" ${attrs}></label>`;
+    fld = (key, label, val, attrs = '', vals) => `<label class="f-field">${esc(tt(label, vals))}<input data-k="${key}" value="${esc(val ?? '')}" ${attrs}></label>`;
   S.body.innerHTML = `
   <div class="fu-top">
     <div class="f-card" data-block="aircraft"><h2>${esc(tt(TX.aircraft))}</h2>
@@ -730,7 +823,7 @@ function renderPlan() {
     </div>
     <div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="fu-grid3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="fu-grid3">${fld('dist', TX.distance, r.distanceNm != null ? Math.round(r.distanceNm) : '', 'inputmode="decimal"')}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
+      <div class="fu-grid3">${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
       <details><summary class="f-muted">${esc(tt(TX.routeText))}</summary><label class="f-field"><textarea data-k="rtext" rows="3" aria-label="${esc(tt(TX.routeText))}">${esc(r.text || '')}</textarea></label></details>
       <p class="f-muted fu-warn" data-unres></p>
       <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}</div>
@@ -738,8 +831,8 @@ function renderPlan() {
     <div class="f-card" data-block="level"><h2>${esc(tt(TX.levelWind))}</h2>
       <div class="fu-grid3">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}
         <label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
-      <div class="fu-grid3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, f.wind?.speedKt ?? '', 'inputmode="numeric"')}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
-      <div class="fu-grid3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, S.manualIn?.ias ?? '', 'inputmode="numeric"')}${fld('mvs', TX.manVs, S.manualIn?.vs ?? '', 'inputmode="numeric"')}</div>
+      <div class="fu-grid3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
+      <div class="fu-grid3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
     </div>
   </div>
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div></div>
@@ -748,7 +841,11 @@ function renderPlan() {
   <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
   <details class="f-card" data-fold="settings"><summary>${esc(tt(TX.settings))}</summary>
     <div class="fu-grid3">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}
-      <label class="f-field">${esc(tt(TX.unit))}<select data-k="unit">${['kg', 'lb'].map(u => opt(u, u, (S.settings.displayUnit || 'kg') === u)).join('')}</select></label></div>
+    </div>
+    <p class="f-muted" style="margin:8px 0 4px">${esc(tt(TX.units))}</p>
+    <div class="fu-grid3" data-units>
+      <label class="f-field">${esc(tt(TX.unitFuel))}<select data-k="unit">${['kg', 'lb'].map(u => opt(u, u, (S.settings.displayUnit || 'kg') === u)).join('')}</select></label>
+      ${[['speed', TX.unitSpeed, 'unitSpeed'], ['alt', TX.unitAlt, 'unitAlt'], ['dist', TX.unitDist, 'unitDist']].map(([kind, row, k]) => `<label class="f-field">${esc(tt(row))}<select data-k="${k}">${UNITS[kind].list.map(u => opt(u, UNITS[kind].label[u], unitOf(kind) === u)).join('')}</select></label>`).join('')}</div>
     <div data-entrybox></div>
   </details>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
@@ -811,7 +908,7 @@ function onPlanInput(e) {
       resolveRoute();
       break;
     case 'dist':
-      r.distanceNm = num(v);
+      r.distanceNm = distParse(v);
       r.manual = true;
       break;
     case 'trk':
@@ -826,7 +923,7 @@ function onPlanInput(e) {
     case 'wdir':
     case 'wkt': {
       const dir = num(S.body.querySelector('[data-k="wdir"]').value),
-        kt = num(S.body.querySelector('[data-k="wkt"]').value);
+        kt = speedParse(S.body.querySelector('[data-k="wkt"]').value);
       f.wind = kt === null && dir === null ? null : {
         dirDeg: dir,
         speedKt: kt
@@ -843,8 +940,8 @@ function onPlanInput(e) {
       return refresh();
     case 'mias':
     case 'mvs': {
-      const ias = num(S.body.querySelector('[data-k="mias"]').value),
-        vs = num(S.body.querySelector('[data-k="mvs"]').value);
+      const ias = speedParse(S.body.querySelector('[data-k="mias"]').value),
+        vs = vsParse(S.body.querySelector('[data-k="mvs"]').value);
       S.manualIn = {
         ...(ias ? {
           ias
@@ -871,6 +968,25 @@ function onPlanInput(e) {
       S.settings.displayUnit = v;
       saveSettings();
       return refresh();
+    case 'unitSpeed':
+    case 'unitAlt':
+    case 'unitDist': {
+      // unité d'affichage changée : les champs de saisie portent un nombre et une unité, ils sont redessinés avec la valeur
+      // du modèle dans la nouvelle unité (le vol courant n'est pas touché)
+      const kind = {
+          unitSpeed: 'speed',
+          unitAlt: 'alt',
+          unitDist: 'dist'
+        } [k],
+        a = document.activeElement;
+      // un champ modifié et encore actif valide sa saisie dans l'ancienne unité avant que l'unité change (son événement
+      // « change » partirait sinon pendant le redessin, avec la nouvelle unité)
+      if (a && a !== e.target && S.body.contains(a)) a.blur();
+      S.settings[UNITS[kind].key] = v;
+      saveSettings();
+      renderPlan();
+      return S.body.querySelector(`[data-k="${k}"]`)?.focus();
+    }
     case 'entry': {
       const id = S.C?.sheet?.id;
       if (!id) return;
@@ -932,7 +1048,7 @@ function resolveRoute() {
       r.distanceNm = Math.round(points.slice(1).reduce((s, p, i) => s + gcNm(points[i], p), 0));
       r.trackDeg = Math.round(bearing(points[0], points.at(-1)));
       r.manual = false;
-      S.body.querySelector('[data-k="dist"]').value = r.distanceNm;
+      S.body.querySelector('[data-k="dist"]').value = distField(r.distanceNm);
       S.body.querySelector('[data-k="trk"]').value = r.trackDeg;
     }
     S.body.querySelector('[data-unres]').textContent = unresolved.length ? tt(TX.unresolved, {
@@ -1065,25 +1181,27 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${flTxt(q.levelFt)}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : ''}</div>
+    res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : ''}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
-      <div class="fu-kv"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { nm: Math.round(q.todNm) }))}</b></span></div>
+      <div class="fu-kv"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
       ${q.overMtow ? `<div class="fu-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
   }
   // détail du devis (replié)
   const det = $('[data-details]');
   if ($('[data-fold="details"]').open) det.innerHTML = q?.hasFuel ? `<table class="fu-table"><tbody>
-      ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="n">${p?.min != null ? hmm(p.min) : ''}</td><td class="n">${p?.nm != null ? `${Math.round(p.nm)} NM` : ''}</td><td class="n">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
+      ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="n">${p?.min != null ? hmm(p.min) : ''}</td><td class="n">${p?.nm != null ? esc(distTxt(p.nm)) : ''}</td><td class="n">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
       <tr><td><b>${esc(tt(TX.trip))}</b></td><td class="n">${hmm(q.minutes)}</td><td></td><td class="n"><b>${esc(fuelTxt(q.trip, unit))}</b></td></tr>
       <tr><td>${esc(tt(TX.contingency))}</td><td></td><td></td><td class="n">${esc(fuelTxt(q.contingency, unit))}</td></tr>
       <tr><td>${esc(tt(TX.reserve))}</td><td></td><td></td><td class="n">${esc(fuelTxt(q.reserve, unit))}</td></tr>
       <tr><td><b>${esc(tt(TX.block))}</b></td><td></td><td></td><td class="n"><b>${esc(fuelTxt(q.block, unit))}</b></td></tr>
     </tbody></table>${q.lawFailed ? `<p class="f-muted fu-warn">${esc(tt(TX.lawFailed))}</p>` : ''}` : '';
   // consignes de montée (repliées)
-  const cl = $('[data-climb]');
-  if ($('[data-fold="climb"]').open) cl.innerHTML = G ? climbSvg(G, cl) + `<div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">${esc(tt(TX.alt))}</th><th class="n">${esc(tt(TX.thr))}</th><th class="n">RPM</th><th class="n">IAS</th><th class="n">ft/min</th><th class="n">${esc(unit)}/h</th><th class="n">Mach</th><th class="n">${esc(tt(TX.time))}</th><th class="n">${esc(unit)}</th></tr></thead><tbody>
-      ${G.rows.map(r => `<tr><td class="n">${r.h ? flTxt(r.h) : 'GND'}</td><td class="n">${Math.round(r.frac * 100)} %</td><td class="n">${r.rpm ? Math.round(r.rpm) : '—'}</td><td class="n">${Math.round(r.ias)}</td><td class="n">${Math.round(r.roc)}</td><td class="n">${Math.round(r.ff)}</td><td class="n">${r.mach.toFixed(2)}</td><td class="n">${hmm(r.t)}</td><td class="n">${Math.round(r.f)}</td></tr>`).join('')}
-    </tbody></table></div>${G.reached ? '' : `<p class="fu-warn">${esc(tt(TX.notReached))}</p>`}` : `<p class="f-muted">${esc(tt(C.perf ? TX.noDistance : TX.noModel))}</p>`;
+  const cl = $('[data-climb]'),
+    // colonne d'altitude : niveaux de vol tant que l'unité d'altitude est le pied, sinon l'altitude dans l'unité choisie
+    altUnit = unitOf('alt') !== 'ft';
+  if ($('[data-fold="climb"]').open) cl.innerHTML = G ? climbSvg(G, cl) + `<div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">${esc(tt(TX.alt))}${altUnit ? ` (${esc(altLabel())})` : ''}</th><th class="n">${esc(tt(TX.thr))}</th><th class="n">RPM</th><th class="n">IAS (${esc(speedLabel())})</th><th class="n">${esc(vsLabel())}</th><th class="n">${esc(unit)}/h</th><th class="n">Mach</th><th class="n">${esc(tt(TX.time))}</th><th class="n">${esc(unit)}</th></tr></thead><tbody>
+      ${G.rows.map(r => `<tr><td class="n">${r.h ? altUnit ? altNum(r.h) : flTxt(r.h) : 'GND'}</td><td class="n">${Math.round(r.frac * 100)} %</td><td class="n">${r.rpm ? Math.round(r.rpm) : '—'}</td><td class="n">${speedNum(r.ias)}</td><td class="n">${vsNum(r.roc)}</td><td class="n">${Math.round(r.ff)}</td><td class="n">${r.mach.toFixed(2)}</td><td class="n">${hmm(r.t)}</td><td class="n">${Math.round(r.f)}</td></tr>`).join('')}
+    </tbody></table></div>${G.reached ? '' : `<p class="fu-warn">${esc(tt(TX.notReached, { r: vsTxt(20) }))}</p>`}` : `<p class="f-muted">${esc(tt(C.perf ? TX.noDistance : TX.noModel))}</p>`;
   // débit de ce vol (dans les réglages)
   const eb = $('[data-entrybox]');
   if (sheet && eb.dataset.for !== sheet.id) {
@@ -1535,6 +1653,9 @@ export async function mount(el, ctx) {
     reserveMin: 30,
     contingencyPct: 5,
     displayUnit: 'kg',
+    displaySpeed: 'kt',
+    displayAlt: 'ft',
+    displayDist: 'NM',
     entries: {},
     ...((await ctx.data.get(pilotPath('fuel.json'))) || {})
   };

@@ -189,6 +189,46 @@
       check('TOD (NM)', Math.round(q.todNm * 10) / 10, c.v2.tod);
       check('flight time', hm(q.minutes), c.v2.time);
     }
+    // display units (SPEC § 9): the model keeps kt, ft, NM; conversion is the screen's, both ways
+    const near = (label, got, want, tol = 1e-9) => {
+      const ok = Number.isFinite(got) && Math.abs(got - want) <= tol;
+      ok ? pass++ : fail++;
+      lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${got}${ok ? '' : ` (expected ${want})`}`);
+    };
+    lines.push('<b>display units</b>');
+    near('100 kt → km/h', M.convertSpeed(100, 'kt', 'kmh'), 185.2);
+    near('185.2 km/h → kt', M.convertSpeed(185.2, 'kmh', 'kt'), 100);
+    near('10 000 ft → m', M.convertAlt(10000, 'ft', 'm'), 3048);
+    near('3048 m → ft', M.convertAlt(3048, 'm', 'ft'), 10000);
+    near('100 NM → km', M.convertDist(100, 'NM', 'km'), 185.2);
+    near('100 NM → SM', M.convertDist(100, 'NM', 'SM'), 115.0779);
+    near('100 SM → km', M.convertDist(100, 'SM', 'km'), 160.9344, 1e-3);
+    near('same unit unchanged', M.convertDist(54, 'NM', 'NM'), 54);
+    near('unknown unit unchanged', M.convertSpeed(120, 'kt', 'mph'), 120);
+    check('non-finite unchanged', String(M.convertAlt(NaN, 'ft', 'm')), 'NaN');
+    // exact round trips (floating point): kt → km/h → kt, NM → SM → NM, ft → m → ft, km → SM → km
+    for (const [lab, f, a, b, x] of [
+        ['kt→km/h→kt (250)', M.convertSpeed, 'kt', 'kmh', 250],
+        ['NM→SM→NM (300)', M.convertDist, 'NM', 'SM', 300],
+        ['NM→km→NM (54)', M.convertDist, 'NM', 'km', 54],
+        ['ft→m→ft (20 000)', M.convertAlt, 'ft', 'm', 20000],
+        ['km→SM→km (100)', M.convertDist, 'km', 'SM', 100]
+      ]) near(lab, f(f(x, a, b), b, a), x, 1e-9);
+    // typed round trip as the screen does it: the typed whole number is converted to the model unit rounded to 0.01,
+    // then displayed rounded to the whole number — it must come back as typed, for every whole number of the range
+    const typed = (f, from, base, x) => Math.round(f(Math.round(f(x, from, base) * 100) / 100, base, from));
+    check('100 km typed → model NM (0.01)', String(Math.round(M.convertDist(100, 'km', 'NM') * 100) / 100), '54');
+    for (const [lab, f, from, base, max] of [
+        ['km → NM → km', M.convertDist, 'km', 'NM', 5000],
+        ['SM → NM → SM', M.convertDist, 'SM', 'NM', 5000],
+        ['km/h → kt → km/h', M.convertSpeed, 'kmh', 'kt', 1500],
+        ['m → ft → m', M.convertAlt, 'm', 'ft', 20000]
+      ]) {
+      let bad = 0;
+      for (let x = 1; x <= max; x++)
+        if (typed(f, from, base, x) !== x) bad++;
+      check(`typed whole numbers 1…${max}, ${lab}`, bad, 0);
+    }
     lines.unshift(`<b class="${fail ? 'ko' : 'ok'}">${pass} passed, ${fail} failed</b>`);
     document.getElementById('out').innerHTML = lines.join('\n');
     document.title = `fuel — quote bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;

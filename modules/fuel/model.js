@@ -7,17 +7,52 @@
   // d'interface : les libellés et les formats sont ceux du module (index.js) et du frame.
   // Dépend de window.FlightPerfModel (modules/fuel/performance_model.js, copie de la V2) pour le modèle calibré.
   // API (window.FuelModel) :
-  //   KG_PER_LB, convertFuel(v, from, to), windComponent(track, from, speed), finite(v), normalizeSheet(sheet, name),
+  //   KG_PER_LB, KMH_PER_KT, M_PER_FT, KM_PER_NM, SM_PER_NM, convertFuel(v, from, to), convertSpeed(v, from, to) (kt, kmh),
+  //   convertAlt(v, from, to) (ft, m), convertDist(v, from, to) (NM, km, SM), windComponent(track, from, speed), finite(v), normalizeSheet(sheet, name),
   //   interpRange(curve, rpm, altFt), cruiseSource({ sheet, altFt, entryKg, apd, simbrief, estimate, pollSchumann }),
   //   modelSheet(sheet, source, apd), perfModel(sheet, source, { apd, db, dIsa }), quote(input) → devis (voir quote).
   if (window.FuelModel) return;
-  const KG_PER_LB = 0.45359237;
+  const KG_PER_LB = 0.45359237,
+    KMH_PER_KT = 1.852, // 1 kt = 1.852 km/h (1 NM = 1.852 km exactly)
+    M_PER_FT = 0.3048,
+    KM_PER_NM = 1.852,
+    SM_PER_NM = 1.150779, // statute miles in a nautical mile
+    // quantité de chaque unité pour une unité de base du modèle (kt, ft, NM) ; le modèle garde toujours ces unités,
+    // la conversion vers l'unité affichée (et retour, à la saisie) appartient à l'écran
+    UNIT_PER_BASE = {
+      speed: {
+        kt: 1,
+        kmh: KMH_PER_KT
+      },
+      alt: {
+        ft: 1,
+        m: M_PER_FT
+      },
+      dist: {
+        NM: 1,
+        km: KM_PER_NM,
+        SM: SM_PER_NM
+      }
+    };
 
   /** Convertit une quantité de carburant entre kg et lb (from → to) ; inchangée si l'unité est la même ou absente. */
   function convertFuel(value, from, to) {
     if (!Number.isFinite(value) || !from || !to || from === to) return value;
     return from === 'kg' ? value / KG_PER_LB : value * KG_PER_LB;
   }
+  /** Convertit v d'une unité à l'autre d'une grandeur de UNIT_PER_BASE ; inchangé si les unités sont égales, absentes ou
+   *  inconnues, ou si v n'est pas un nombre fini. */
+  function convertUnit(kind, value, from, to) {
+    const t = UNIT_PER_BASE[kind];
+    if (!Number.isFinite(value) || !from || !to || from === to || !(from in t) || !(to in t)) return value;
+    return value / t[from] * t[to];
+  }
+  /** Vitesse entre kt et kmh (from → to). */
+  const convertSpeed = (value, from, to) => convertUnit('speed', value, from, to);
+  /** Altitude (ou hauteur) entre ft et m. */
+  const convertAlt = (value, from, to) => convertUnit('alt', value, from, to);
+  /** Distance entre NM, km et SM. */
+  const convertDist = (value, from, to) => convertUnit('dist', value, from, to);
   /** Composante de vent sur la route (kt ; positive = arrière) : route vraie, direction d'où vient le vent, vitesse. */
   const windComponent = (track, from, speed) => speed * Math.cos((from - track) * Math.PI / 180) * -1;
   /** Vrai si v est un nombre fini non vide (chaîne numérique acceptée). */
@@ -356,7 +391,14 @@
 
   window.FuelModel = {
     KG_PER_LB,
+    KMH_PER_KT,
+    M_PER_FT,
+    KM_PER_NM,
+    SM_PER_NM,
     convertFuel,
+    convertSpeed,
+    convertAlt,
+    convertDist,
     windComponent,
     finite,
     normalizeSheet,
