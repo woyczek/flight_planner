@@ -712,10 +712,37 @@ async function propose() {
 async function takeHandoff() {
   const h = await S.ctx.data.get(HANDOFF);
   if (!h || h.to !== 'report') return;
+  await S.ctx.data.remove(HANDOFF).catch(() => {});
+  // { open: chemin } : rouvrir ce CR ; { fresh: true } : nouveau CR (dans la famille proposée), puis les valeurs
+  if (h.open) return openReport(h.open);
+  if (h.fresh) {
+    S.m = freshMission(FAMILIES[h.family] ? h.family : S.m.family);
+    S.path = null;
+    S.sources = {};
+    S.step = 0;
+    // la date du jour d'un CR neuf cède à celle du vol passé (V2 : setDate)
+    if (h.values?.['metadata.date']) S.m.metadata.date = '';
+  }
   if (h.values) fill(h.values, tt(TX.handoff, {
     s: h.source || h.from || ''
   }));
-  await S.ctx.data.remove(HANDOFF).catch(() => {});
+  else render();
+}
+/** Rouvre un CR enregistré (chemin de cr/reports/) pour modification. */
+async function openReport(path) {
+  const r = await S.ctx.data.get(path);
+  if (!r) return;
+  const {
+    schema,
+    updated_at,
+    by,
+    ...mission
+  } = r;
+  S.m = M.fillDefaults(mission, M.emptyMission(mission.family));
+  S.path = path;
+  S.sources = {};
+  S.step = 0;
+  render();
 }
 /** Remplit les champs vides depuis des valeurs { chemin: valeur } ; source notée par champ ; nombre de champs remplis. */
 function fill(values, source) {
@@ -791,21 +818,7 @@ async function onClick(e) {
     render();
     return scrollTo(0, 0);
   }
-  if (b.dataset.open) {
-    const r = await S.ctx.data.get(b.dataset.open);
-    if (!r) return;
-    const {
-      schema,
-      updated_at,
-      by,
-      ...mission
-    } = r;
-    S.m = M.fillDefaults(mission, M.emptyMission(mission.family));
-    S.path = b.dataset.open;
-    S.sources = {};
-    S.step = 0;
-    return render();
-  }
+  if (b.dataset.open) return openReport(b.dataset.open);
   const col = b.closest('[data-col]')?.dataset.col;
   switch (b.dataset.do) {
     case 'save':

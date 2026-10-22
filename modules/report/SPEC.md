@@ -136,7 +136,9 @@ thresholds for the track when the aircraft (or the family's default category) is
 - **Paste**: an ICAO flight plan, an IVAO tracker "details" page, a StatSim flight page, the IVAO connection list, a
   METAR (V2 `text_import.js`).
 - **Hand-over from another module**: `pilot/handoff.json` `{ to: 'report', from, source, at, values: { path: value } }`
-  is read at every mount, its values filled like a source, then the record is removed.
+  is read at every mount and removed: `open: '<record path>'` reopens that report; `fresh: true` (with `family`) starts
+  a new report in that family, the hand-over's date replacing today's; then the values fill the empty fields like a
+  source.
 - Network refusals: offline → "nothing was requested"; IVAO without key or VATSIM without relay (no launcher) → said,
   and the paste box opens (the flight page can be pasted instead).
 

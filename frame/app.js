@@ -36,6 +36,10 @@
       label: ['Compte rendu', 'Report', 'Bericht', 'Informe'],
       icon: '✎'
     }, {
+      id: 'flightlog',
+      label: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
+      icon: '☰'
+    }, {
       id: 'hello',
       label: ['Essayer', 'Try', 'Ausprobieren', 'Probar'],
       icon: '◎'

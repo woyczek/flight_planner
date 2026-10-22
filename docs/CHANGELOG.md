@@ -24,6 +24,13 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **flightlog: "My flights" in the Pilot application** (`modules/flightlog/module.js`, `model.js`,
+  `frame/lib/js-yaml.min.js`, `frame/app.js`, `modules/report/module.js`; `SPEC.md`, `INTEGRATION.md`,
+  `DECISIONS.md`) — my past flights, one line per flight, from my reports (V3 records and the V2 registry), the
+  airline website log (`pilot/<trigram>/site_log.json`, written by the website module) and my IVAO / VATSIM
+  sessions, without duplicates (report > log > network); three tiles of totals, period, search, "without report",
+  details on a tap, CSV in More; "Write the report" starts a report prefilled with the flight, "Open the report"
+  reopens it (hand-over `{ fresh, family, values }` and `{ open }`, read by report).
 - **settings: the settings screen of the Pilot application** (`frame/settings/settings.js`, `frame/app.js`,
   `frame/index.html`, `frame/sw.js`, `frame/frame.css`; `frame/settings/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
   `frame/SPEC.md`) — ⚙ opens `#settings`, which replaces the frame's device screen: short cards saved one by one,

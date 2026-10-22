@@ -95,6 +95,9 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
 - **23 Oct 2026 — `last_flight.js` moved to `frame/lib/`** (ergonomics session's rule: a module never imports from
   another module; shared pure code lives in `frame/lib/<name>.js`, listed in `frame/SPEC.md` with its owner). Report
   stays its owner; flightlog imports it from there; `meta.files` lists `../../frame/lib/last_flight.js`.
+- **23 Oct 2026 — hand-over `{ open }`, `{ fresh, family }`** (for flightlog, done in flightlog's lot 2): reopening
+  a report and starting a new one from a past flight without mixing it into a draft in progress; the flight's date
+  replaces the new report's default date (V2 `setDate`).
 - **Proposed, settled above** (lot 1):
   1. One JSON record per report, `cr/reports/<year>/<reportId>.json`, merge `record`, rather than the shared
      `cr/missions.yaml` (text for the data layer: no record-by-record merge). Joins the pending "reports per year"

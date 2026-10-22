@@ -42,7 +42,8 @@ wing of a type), `airline` (`site`, `pages.recordFlight`: the website's "add a f
 - `https://www.simbrief.com/api/xml.fetcher.php?userid|username=…&json=1`: direct or relayed.
 
 **Hand-over to report** from another module: write `pilot/handoff.json` (cache policy) as `{ to: 'report', from:
-'<module>', source: '<label shown on the fields>', at, values: { '<mission path>': value } }`, then open `#report`
+'<module>', source: '<label shown on the fields>', at, values: { '<mission path>': value } }` — or `{ to: 'report',
+open: '<cr/reports/… path>' }` to reopen a report, `fresh: true, family: '<id>'` to start a new one —, then open `#report`
 (`#report?from=<module>` once the frame routes addresses with a query). Report takes it at its next mount, fills the
 empty fields, and removes it.
 
