@@ -11,7 +11,22 @@ import * as T from './text_import.js';
 import * as Fpl from './fpl.js';
 import * as LF from './last_flight.js';
 import * as Site from './website_handoff.js';
+import AAR from './families/aar.js';
+import AIRBORNE from './families/airborne.js';
+import AIRLIFT from './families/airlift.js';
+import COMBAT from './families/combat.js';
+import COMMAND from './families/command.js';
+import FIRE from './families/fire.js';
+import FI from './families/flight_inspection.js';
+import HADR from './families/hadr.js';
 import HEMS from './families/hems.js';
+import ISR from './families/isr.js';
+import LE from './families/law_enforcement.js';
+import MARITIME from './families/maritime.js';
+import SAR from './families/sar.js';
+import SOF from './families/sof.js';
+import SPECIAL from './families/special.js';
+import SURVEY from './families/survey.js';
 
 export const meta = {
   id: 'report',
@@ -28,12 +43,32 @@ export const meta = {
     prefix: 'pilot/handoff.json',
     policy: 'cache'
   }],
-  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'website_handoff.js', 'families/hems.js']
+  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'website_handoff.js', 'families/aar.js',
+    'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
+    'families/flight_inspection.js', 'families/hadr.js', 'families/hems.js', 'families/isr.js', 'families/law_enforcement.js',
+    'families/maritime.js', 'families/sar.js', 'families/sof.js', 'families/special.js', 'families/survey.js'
+  ]
 };
 
 const FAMILIES = {
-    HEMS
+    AAR,
+    AIRBORNE,
+    AIRLIFT,
+    COMBAT,
+    COMMAND,
+    FIRE,
+    FI,
+    HADR,
+    HEMS,
+    ISR,
+    LE,
+    MARITIME,
+    SAR,
+    SOF,
+    SPECIAL,
+    SURVEY
   },
+  PREFS = 'cache/report/prefs.json',
   DRAFT = 'cache/report/draft.json',
   LAST = 'cache/report/last_flights.json',
   HANDOFF = 'pilot/handoff.json',
@@ -68,7 +103,7 @@ const TX = {
   dep: L('Départ (OACI)', 'Departure (ICAO)', 'Abflug (ICAO)', 'Salida (OACI)'),
   arr: L('Arrivée (OACI)', 'Arrival (ICAO)', 'Ankunft (ICAO)', 'Llegada (OACI)'),
   family: L('Famille', 'Family', 'Familie', 'Familia'),
-  familySoon: L('{f} (bientôt)', '{f} (soon)', '{f} (bald)', '{f} (pronto)'),
+  tasking: L('Tâche / ordre de mission', 'Task / mission order', 'Auftrag / Einsatzbefehl', 'Tarea / orden de misión'),
   crew: L('Équipage', 'Crew', 'Besatzung', 'Tripulación'),
   addCrew: L('+ Membre', '+ Member', '+ Mitglied', '+ Miembro'),
   remove: L('Retirer', 'Remove', 'Entfernen', 'Quitar'),
@@ -202,6 +237,10 @@ const FIELDS = {
     'Misión (identificador)'), 'text', {
     code: true
   }),
+  objective: f('tasking.objective', L('Objectif', 'Objective', 'Ziel', 'Objetivo'), 'textarea'),
+  instructions: f('tasking.instructions', L('Instructions particulières', 'Special instructions', 'Besondere Anweisungen',
+    'Instrucciones especiales'), 'textarea'),
+  priority: f('tasking.priority', L('Priorité', 'Priority', 'Priorität', 'Prioridad')),
   outcome: f('results.outcome', L('Résultat', 'Outcome', 'Ergebnis', 'Resultado'), 'select', {
     options: V.outcomes,
     blank: true
@@ -310,6 +349,11 @@ async function save() {
   });
   S.path = path;
   await S.ctx.data.remove(DRAFT).catch(() => {});
+  await S.ctx.data.put(PREFS, {
+    family: m.family
+  }, {
+    policy: 'cache'
+  });
   S.ctx.notify(tt(TX.saved, {
     id: m.metadata.missionId
   }), 'ok');
@@ -332,7 +376,10 @@ function control(fd, v, prefix = '') {
   return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' rp-full' : ''}"><span>${esc(lab(fd.label))} ${src}</span>${input}</label>`;
 }
 /** Grille de champs de la mission. */
-const grid = list => `<div class="rp-grid">${list.map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
+const grid = list => `<div class="rp-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
+/** Bloc ou champ affiché pour la mission (condition when de la V2, contexte M.context : famille, série, capacités,
+ *  catégories d'appareil, drapeaux). */
+const shown = x => !x.when || !!x.when(M.context(S.m, FAMILIES[S.m.family] || {}));
 /** Collection (destinations, équipage) : une ligne de champs par élément, ajout et retrait. */
 function collection(col, title) {
   const items = M.get(S.m, col.path) || [];
@@ -416,9 +463,10 @@ function render() {
       </section>
       <section class="rp-step" data-s="1"${step === 1 ? '' : ' hidden'}>
         <div class="f-card"><h2>${esc(tt(TX.steps[1]))}</h2>
-          <div class="rp-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.entries(V.familyLabels).map(([k, l]) => `<option value="${k}"${k === m.family ? ' selected' : ''}${FAMILIES[k] ? '' : ' disabled'}>${esc(FAMILIES[k] ? tt(l) : tt(TX.familySoon, { f: tt(l) }))}</option>`).join('')}</select></label>
+          <div class="rp-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.entries(V.familyLabels).filter(([k]) => FAMILIES[k]).map(([k, l]) => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(tt(l))}</option>`).join('')}</select></label>
           ${control(FIELDS.series, m.series)}${control(FIELDS.missionNumber, m.metadata.missionNumber)}</div></div>
-        ${(F.blocks || []).map((b, i) => `<details class="f-card"${i === 0 ? ' open' : ''}><summary>${esc(tt(b.title))}</summary>${b.collection ? collection(b.collection) : grid(b.fields)}</details>`).join('')}
+        ${F.ownOrder ? '' : `<details class="f-card"><summary>${esc(tt(TX.tasking))}</summary>${grid([FIELDS.objective, FIELDS.instructions, FIELDS.priority])}</details>`}
+        ${(F.blocks || []).filter(shown).map((b, i) => `<details class="f-card"${i === 0 ? ' open' : ''}><summary>${esc(tt(b.title))}</summary>${b.collection ? collection(b.collection) : grid(b.fields)}</details>`).join('')}
         <div class="f-row rp-next"><button type="button" data-step="2">${esc(tt(TX.next))}</button></div>
       </section>
       <section class="rp-step" data-s="2"${step === 2 ? '' : ' hidden'}>
@@ -694,13 +742,20 @@ async function showRecent() {
     r
   }) => `<button type="button" data-open="${esc(path)}">${esc(r.metadata?.missionId || path)} · ${esc(r.metadata?.date || '')} · ${esc(r.aircraft?.[0]?.registration || '')} ${esc(r.family || '')}</button>`).join('') : `<p class="f-muted">${esc(tt(TX.noRecent))}</p>`;
 }
+/** Définition du champ d'un chemin : champs communs, champs des blocs de la famille, champs de ses collections
+ *  (« chemin.<n>.champ »). */
+function fieldOf(path) {
+  const blocks = FAMILIES[S.m.family]?.blocks || [];
+  return Object.values(FIELDS).find(x => x.path === path) || blocks.flatMap(b => b.fields || []).find(x => x.path === path) || blocks
+    .map(b => b.collection).filter(Boolean).map(c => path.startsWith(`${c.path}.`) && c.fields.find(x => x.path === path.slice(c.path.length +
+      1).replace(/^\d+\./, ''))).find(Boolean);
+}
 /** Valeur saisie d'un contrôle (nombre pour les champs numériques, majuscules pour les codes). */
 function readControl(el) {
   const path = el.dataset.path;
   let v = el.value;
   if (el.classList.contains('rp-code')) v = v.toUpperCase();
-  const fd = Object.values(FIELDS).find(x => x.path === path) || (FAMILIES[S.m.family]?.blocks || []).flatMap(b => b.fields || []).find(x =>
-    x.path === path);
+  const fd = fieldOf(path);
   if (fd?.type === 'number' || /\.(patients|aircraft)$/.test(path)) v = M.num(v);
   return [path, v];
 }
@@ -722,6 +777,7 @@ function onInput(e) {
   M.set(S.m, path, v);
   delete S.sources[path];
   saveDraft();
+  if (path === 'series' && e.type === 'change') return render();
   check();
   const done = progress();
   S.body.querySelectorAll('.rp-steps button').forEach((b, i) => b.classList.toggle('rp-ok', done[i]));
@@ -855,7 +911,7 @@ export async function mount(el, ctx) {
     ctx.notify(tt(TX.draft, {
       d: new Date(d.at).toLocaleString(ctx.lang())
     }), 'info');
-  } else S.m = freshMission('HEMS');
+  } else S.m = freshMission(FAMILIES[(await ctx.data.get(PREFS))?.family] ? (await ctx.data.get(PREFS)).family : 'HEMS');
   S.body.addEventListener('input', onInput);
   S.body.addEventListener('change', onInput);
   S.body.addEventListener('click', onClick);

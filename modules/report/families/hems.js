@@ -1,10 +1,15 @@
-// V3 report — famille HEMS / MEDEVAC, recopiée de la V2 (shared/mission_core/families/hems.js) le 23/10/2026 : séries,
-// rôles d'équipage, événements et blocs (service, mission médicale, horaires, destinations), données sous
-// missionData.hems. Statistiques, résumé et conversion des anciens registres restent à la V2 (reporting, CPCO).
-import {
-  L,
-  opt
-} from '../vocab.js';
+// V3 report — famille HEMS, recopiée de la V2 (shared/mission_core/families/hems.js) le 23/10/2026 par
+// tools d'extraction : listes, aides et définition (séries, rôles, événements, blocs, conditions when) telles quelles ;
+// statistiques, résumé et import des anciens registres restent à la V2 (reporting, CPCO).
+import * as Vocab from '../vocab.js';
+import * as M from '../model.js';
+// Famille HEMS / MEDEVAC reconstruite sur le Mission Report Core (étape 2a) : mêmes
+// champs que le CR HEMS historique (HEMS/hems_medevac_cr.html), plus le modèle commun.
+// legacy.fromRecord convertit une ligne de l'ancien registre CSV ou un ancien JSON
+// (valeurs françaises historiques comprises) vers le modèle commun.
+const V = Vocab,
+  L = V.L,
+  opt = V.opt;
 /** Définition d'un champ de la famille : chemin dans la mission, libellé [fr, en, de, es], type, options (extra). */
 const f = (path, label, type = 'text', extra = {}) => ({
   path,
@@ -30,12 +35,72 @@ const medicalization = [opt('Physician-staffed', L('Médicalisée', 'Physician-s
   'Paramedic-staffed', L('Paramédicalisée', 'Paramedic-staffed', 'Rettungsdienstlich besetzt', 'Paramedicalizada')), opt(
   'Not medically staffed', L('Non médicalisée', 'Not medically staffed', 'Nicht medizinisch besetzt', 'No medicalizada')), opt(
   'Not applicable', L('Non applicable', 'Not applicable', 'Nicht zutreffend', 'No aplicable'))];
+// Anciennes valeurs françaises des listes HEMS → valeurs de référence (cf. mission_values.js).
+const LEGACY = {
+  'Sécurité civile': 'Civil Security',
+  'HEMS privé': 'Private HEMS',
+  'Gendarmerie / secours': 'Gendarmerie / rescue',
+  'Autre': 'Other',
+  'HEMS primaire': 'Primary HEMS',
+  'Transfert interhospitalier (MEDEVAC)': 'Interhospital transfer (MEDEVAC)',
+  'Secours / sauvetage': 'Rescue',
+  'Recherche / évacuation': 'Search / evacuation',
+  'Transport spécialisé': 'Specialized transport',
+  'Entraînement': 'Training',
+  'Terminée': 'Completed',
+  'Patient transporté': 'Patient transported',
+  'Mission annulée': 'Mission cancelled',
+  'Non engagement': 'Not dispatched',
+  'Déroutée': 'Diverted',
+  'Interrompue': 'Interrupted',
+  'Médicalisée': 'Physician-staffed',
+  'Paramédicalisée': 'Paramedic-staffed',
+  'Non médicalisée': 'Not medically staffed',
+  'Non applicable': 'Not applicable',
+  'Déclenchement': 'Dispatch',
+  'Décollage': 'Take-off',
+  'Arrivée zone': 'On-scene arrival',
+  'Pose': 'Touchdown',
+  'Treuil': 'Winch',
+  'Prise en charge': 'Patient contact',
+  'Départ zone': 'Scene departure',
+  'Arrivée destination': 'Destination arrival',
+  'Annulation': 'Cancellation',
+  'Anomalie': 'Issue'
+};
+/** Valeur de référence d'une ancienne valeur française (anciens registres CSV / JSON). */
+const norm = v => LEGACY[String(v ?? '').trim()] ?? String(v ?? '').trim();
+const OUTCOME = {
+  'Completed': 'SUCCESS',
+  'Patient transported': 'SUCCESS',
+  'Mission cancelled': 'CANCELLED',
+  'Not dispatched': 'CANCELLED',
+  'Diverted': 'DIVERTED',
+  'Interrupted': 'ABORTED'
+};
+const EVENT = {
+  'Dispatch': 'DISPATCH',
+  'Take-off': 'TAKEOFF',
+  'On-scene arrival': 'ON_TASK',
+  'Touchdown': 'LANDING',
+  'Winch': 'HOIST',
+  'Patient contact': 'PATIENT_CONTACT',
+  'Scene departure': 'OFF_TASK',
+  'Destination arrival': 'DESTINATION_ARRIVAL',
+  'Cancellation': 'ABORT',
+  'Issue': 'TECHNICAL',
+  'Engine start': 'ENGINE_START',
+  'Final landing': 'LANDING',
+  'Mission end / engine shutdown': 'SHUTDOWN'
+};
+const hems = m => m.missionData?.hems || {};
+const between = M.between;
 
-export default {
+const FAMILY = {
   id: 'HEMS',
   idPrefix: 'HEMS',
   defaultCategory: 'rotary',
-  // Étapes génériques inutiles (destinations HEMS dédiées).
+  // Étapes génériques inutiles (destinations HEMS dédiées).,
   hide: ['legs'],
   pages: {
     cr: 'hems_medevac_cr.html',
@@ -143,3 +208,5 @@ export default {
     }
   }]
 };
+
+export default FAMILY;

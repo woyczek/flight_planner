@@ -10,7 +10,7 @@ module: [SPEC.md](SPEC.md); the frame's adapter: [frame/INTEGRATION.md](../../fr
 | `modules/report/module.js` | the module: `meta`, `mount(el, ctx)`, `unmount()`; the three steps, the draft, saving |
 | `modules/report/vocab.js` | lists and numbers of V2 (`crId`, outcomes, crew roles, families, fuel units), unchanged |
 | `modules/report/model.js` | the V2 mission model (`emptyMission`, paths, durations, statistics, checks), unchanged |
-| `modules/report/families/hems.js` | the HEMS family of V2 (series, roles, blocks), unchanged but for its export |
+| `modules/report/families/*.js` | the sixteen V2 families (series, roles, events, blocks, `when` conditions), unchanged but for their imports and export; no statistics, summary or legacy import |
 | `modules/report/fpl.js` | V2 flight plan: equipment codes, levels, SimBrief / IVAO / VATSIM plans, filling a mission; network through `configure({ getJson })` |
 | `modules/report/text_import.js` | V2 analysis of a pasted text (FPL, IVAO tracker page, StatSim, IVAO list, METAR), track, filling |
 | `modules/report/website_handoff.js` | V2's hand-off to the airline website (flight fields, `#defa=` address, copy line, "→ Vol" bookmark); to move into `modules/website` |
@@ -25,10 +25,10 @@ The Pilot application lists it in `frame/app.js` (`{ id: 'report', label: Report
 reads: ['cr/', 'pilot/', 'cache/report/'],
 writes: [
   { prefix: 'cr/reports/', merge: 'record' },        // one JSON record per report
-  { prefix: 'cache/report/', policy: 'cache' },      // the draft, the last flights read: this device only
+  { prefix: 'cache/report/', policy: 'cache' },      // the draft, the last flights read, my last family: this device only
   { prefix: 'pilot/handoff.json', policy: 'cache' }  // hand-over record, removed once taken
 ],
-files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'website_handoff.js', 'families/hems.js']
+files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'website_handoff.js', 'families/<each family>.js']
 ```
 
 `ctx` used: `data` (get, put, remove, list), `t`, `lang`, `notify`, `identity` (`trigram` for the author and the

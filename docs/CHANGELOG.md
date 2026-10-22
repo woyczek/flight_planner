@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: every family** (`modules/report/families/*.js`, `module.js`, `model.js`, `vocab.js`; `SPEC.md` § 2 and
+  § 5, `INTEGRATION.md`, `DECISIONS.md`) — the sixteen V2 families (FIRE, SPECIAL, SAR, AIRLIFT… with their series,
+  crew roles and blocks) copied from `shared/mission_core/families/`, without their statistics; blocks and fields shown
+  by their V2 conditions (series group, capabilities, aircraft category), the common task block for the families
+  without an order of their own, and a new report opened in the family of my last one.
 - **report: "Save and record on the website"** (`modules/report/website_handoff.js`, `module.js`; `SPEC.md` § 3 bis,
   `INTEGRATION.md`, `DECISIONS.md`) — one gesture opens the airline website's "add a flight" form with the flight in the
   address fragment and saves the report; the "→ Vol" bookmark (V2's, unchanged) fills the form without submitting it;

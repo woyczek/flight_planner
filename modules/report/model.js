@@ -325,7 +325,31 @@ function formatRegistration(value) {
   return s;
 }
 
+// Contexte d'affichage d'une mission (mêmes règles que le formulaire) : famille, série,
+// capacités employées, catégories d'appareil, drapeaux de famille. Sert au formulaire,
+// au compte rendu, aux résumés et aux statistiques (un bloc masqué n'est jamais compté).
+function context(mission, family = {}) {
+  const categories = (mission.aircraft || []).map(a => a.category).filter(Boolean);
+  if (!categories.length && family.defaultCategory) categories.push(family.defaultCategory);
+  const flags = typeof family.flags === 'function' ? family.flags(mission) || {} : family.flags || {};
+  return {
+    family: family.id,
+    series: mission.series || '',
+    mission,
+    flags,
+    capabilities: new Set(mission.capabilities || []),
+    categories: new Set(categories)
+  };
+}
+/** Vrai si le bloc id de la famille est affiché pour cette mission (condition when du bloc). */
+const blockVisible = (mission, family, id) => {
+  const block = (family.blocks || []).find(b => b.id === id);
+  return !!block && (!block.when || block.when(context(mission, family)));
+};
+
 export {
+  context,
+  blockVisible,
   splitCallsign,
   joinCallsign,
   formatRegistration,

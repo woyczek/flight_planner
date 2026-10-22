@@ -79,6 +79,19 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   - Checked on 8801 (the frame gives no `ctx.airline` yet): button greyed with its reason; with a test setting
     (`site.example.test`) the functions give the form address with the fragment, whose JSON reads back (end date-time
     on the next day for a 23:30 → 00:40 flight, block 01:10); the bookmark compiles.
+- **23 Oct 2026 — lot 4, all families**: the sixteen V2 families extracted by script (`families/*.js`): the file's
+  lists and helpers, then the `registerFamily` object copied as is, its `stats`, `summary` and `legacy` properties
+  removed (V2 reporting and CPCO; they were the only users of `MissionStats` and of most `MissionModel` helpers);
+  `window.MissionVocab` / `window.MissionModel` became imports. `model.js` gained V2's `context` and `blockVisible`,
+  `vocab.js` the `capabilityGroups` (ISR sensors). DEMO is not carried (V2 demonstration).
+  - `when` conditions honoured on blocks and fields with V2's context; a series change redraws the Mission step
+    (SPECIAL shows VIP, ferry, test or training blocks by series group).
+  - The common "Task / mission order" block (V2 level 1 unless `ownOrder`) is a folded block of the Mission step.
+  - A new report takes the family of my last saved report (`cache/report/prefs.json`), as V2's "continue with".
+  - Numbers from a family's collections are read as numbers (field found through the collection's definition).
+  - Checked on 8801: sixteen families listed; SPECIAL VIP → "VIP / government transport", ferry → "Ferry flight";
+    FIRE without the common order block (its own "Flight order"); SAR with its six blocks; 375 px without horizontal
+    scroll with every block open; a FIRE report saved as `CRF-A01-0`, the next new report opened in FIRE.
 - **Proposed, settled above** (lot 1):
   1. One JSON record per report, `cr/reports/<year>/<reportId>.json`, merge `record`, rather than the shared
      `cr/missions.yaml` (text for the data layer: no record-by-record merge). Joins the pending "reports per year"

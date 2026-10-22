@@ -158,7 +158,69 @@ const fuelUnits = [opt('kg', L('kg', 'kg')), opt('lb', L('lb', 'lb')), opt('L', 
 const networks = [opt('', L('Hors réseau / non renseigné', 'Offline / not provided', 'Offline / nicht angegeben',
   'Fuera de red / no indicado')), opt('IVAO', L('IVAO', 'IVAO')), opt('VATSIM', L('VATSIM', 'VATSIM'))];
 
+const capabilityGroups = [{
+  id: 'flight',
+  title: L('Vol', 'Flight', 'Flug', 'Vuelo'),
+  items: [
+    opt('IFR', L('IFR', 'IFR')), opt('VFR', L('VFR', 'VFR')), opt('SVFR', L('VFR spécial', 'Special VFR', 'Sonder-VFR',
+      'VFR especial')),
+    opt('NIGHT', L('Nuit', 'Night', 'Nacht', 'Noche')), opt('NVG', L('NVG (jumelles de vision nocturne)',
+      'NVG (night vision goggles)', 'NVG (Nachtsichtbrillen)', 'NVG (gafas de visión nocturna)')),
+    opt('IMC', L('IMC', 'IMC')), opt('LOW_LEVEL', L('Très basse altitude', 'Low level', 'Tiefflug', 'Baja cota')),
+    opt('TERRAIN_FOLLOWING', L('Suivi de terrain', 'Terrain following', 'Geländefolgeflug', 'Seguimiento del terreno')),
+    opt('STOL', L('STOL (décollage/atterrissage courts)', 'STOL (short take-off and landing)', 'STOL (Kurzstart und -landung)',
+      'STOL (despegue y aterrizaje cortos)')),
+    opt('UNPREPARED_STRIP', L('Terrain non préparé', 'Unprepared strip', 'Unbefestigte Piste', 'Pista no preparada')),
+    opt('MOUNTAIN', L('Montagne', 'Mountain', 'Gebirge', 'Montaña')), opt('POLAR', L('Polaire', 'Polar', 'Polar', 'Polar'))
+  ]
+}, {
+  id: 'rotary',
+  title: L('Voilure tournante', 'Rotary wing', 'Drehflügler', 'Ala rotatoria'),
+  when: ctx => ctx.categories.has('rotary'),
+  items: [
+    opt('HOIST', L('Treuillage (HOIST)', 'Hoist', 'Winde (HOIST)', 'Grúa (HOIST)')), opt('RAPPEL', L('Descente en rappel',
+      'Rappel', 'Abseilen', 'Rápel')),
+    opt('FAST_ROPE', L('Corde lisse (fast rope)', 'Fast rope', 'Fast Rope', 'Cuerda rápida')), opt('SLING', L(
+      'Élingue (charge sous élingue)', 'Sling load', 'Außenlast', 'Carga en eslinga')),
+    opt('HOVER_EXIT', L('Sortie en stationnaire', 'Hover exit', 'Ausstieg im Schwebeflug', 'Salida en estacionario')),
+    opt('SHIPBOARD', L('Appontage', 'Shipboard operations', 'Bordbetrieb', 'Operaciones embarcadas')),
+    opt('CONFINED_AREA', L('Zone exiguë', 'Confined area', 'Beengter Landeplatz', 'Zona confinada'))
+  ]
+}, {
+  id: 'fixed',
+  title: L('Voilure fixe', 'Fixed wing', 'Starrflügler', 'Ala fija'),
+  when: ctx => ctx.categories.has('fixed') || ctx.categories.has('amphibious'),
+  items: [
+    opt('PARADROP', L('Largage de personnel', 'Personnel paradrop', 'Personenabsetzen', 'Lanzamiento de personal')),
+    opt('AIRDROP', L('Largage de matériel', 'Cargo airdrop', 'Lastenabwurf', 'Lanzamiento de carga')),
+    opt('LAPES', L('LAPES (extraction à très basse altitude)', 'LAPES (low-altitude extraction)',
+      'LAPES (Tiefflug-Lastenabsetzen)', 'LAPES (extracción a baja altura)')),
+    opt('SHORT_FIELD', L('Piste courte', 'Short field', 'Kurzpiste', 'Pista corta')), opt('ROUGH_FIELD', L('Piste sommaire',
+      'Rough field', 'Behelfspiste', 'Pista irregular')),
+    opt('MARITIME_LOW_LEVEL', L('Très basse altitude maritime', 'Maritime low level', 'Seetiefflug', 'Baja cota marítima'))
+  ]
+}, {
+  id: 'sensors',
+  title: L('Capteurs', 'Sensors', 'Sensoren', 'Sensores'),
+  items: [
+    opt('EO', L('EO (électro-optique)', 'EO (electro-optical)', 'EO (elektrooptisch)', 'EO (electroóptico)')), opt('IR', L(
+      'IR (infrarouge)', 'IR (infrared)', 'IR (Infrarot)', 'IR (infrarrojo)')),
+    opt('EO_IR', L('Boule EO/IR', 'EO/IR turret', 'EO/IR-Turm', 'Torreta EO/IR')), opt('RADAR', L('Radar', 'Radar', 'Radar',
+      'Radar')),
+    opt('WEATHER_RADAR', L('Radar météo', 'Weather radar', 'Wetterradar', 'Radar meteorológico')), opt('MARITIME_RADAR', L(
+      'Radar maritime', 'Maritime radar', 'Seeradar', 'Radar marítimo')),
+    opt('SAR_RADAR', L('Radar à synthèse d’ouverture', 'Synthetic aperture radar', 'Radar mit synthetischer Apertur',
+      'Radar de apertura sintética')),
+    opt('AIS', L('AIS', 'AIS')), opt('DF', L('Radiogoniométrie', 'Direction finding', 'Funkpeilung', 'Radiogoniometría')),
+    opt('LIDAR', L('LiDAR', 'LiDAR')), opt('CAMERA', L('Caméra', 'Camera', 'Kamera', 'Cámara')),
+    opt('MULTISPECTRAL', L('Multispectral', 'Multispectral', 'Multispektral', 'Multiespectral')),
+    opt('MISSION_SENSOR', L('Capteur de mission (générique)', 'Mission sensor (generic)', 'Missionssensor (allgemein)',
+      'Sensor de misión (genérico)'))
+  ]
+}];
+
 export {
+  capabilityGroups,
   L,
   opt,
   familyLabels,

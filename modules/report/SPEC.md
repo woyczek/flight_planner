@@ -26,9 +26,12 @@ what is missing is said in the Result step, never blocking.
   filled field shows its source until it is edited. Then date, registration, type, full callsign, departure,
   arrival, engine start, take-off, landing, shutdown; folded: callsign parts, flight plan callsign, departure and
   return bases, actual landing aerodrome, alternate. Then the **sources** (§ 6).
-- **Mission**: family (every V2 family listed; those not carried yet are disabled), series (the family's, first one
-  by default), mission identifier (optional), then the family's blocks, the first one open, the others folded;
-  collections (HEMS destinations) with add and remove.
+- **Mission**: family (the sixteen V2 families; a new report takes the family of my last saved report, HEMS the
+  first time), series (the family's, first one by default), mission identifier (optional), the common "Task / mission
+  order" block (objective, instructions, priority; folded) for the families without an order block of their own
+  (`ownOrder`: FIRE, ISR, LE), then the family's blocks, the first one open, the others folded; collections with add
+  and remove. A block or a field with a `when` condition is shown only when it holds for the mission (V2 context:
+  family, series, capabilities, aircraft categories, family flags); a change of series redraws the step.
 - **Result**: outcome, observations, crew (role from the family's roles, name; my trigram as aircraft commander in a
   new report), fuel unit, start and landing; the list of what is missing (registration, take-off and landing, crew,
   fuel, outcome) and the V2 consistency checks (date invalid or in the future, invalid time, times out of order,
@@ -105,7 +108,9 @@ A family is an ES module (`families/<id>.js`, default export) copied from V2 `sh
 `defaultCategory`, `hide`, `title`, `series` [{ value, label }], `crewRoles`, `events`, `blocks` [{ id, title,
 fields | collection }] with fields { path, label [fr, en, de, es], type (text, number, time, date, select, textarea),
 options, blank, full }. Statistics, summary sentences and old-format converters stay with V2 (reporting, CPCO).
-Carried today: **HEMS**. Next: FIRE, SPECIAL, then the others.
+Carried: all sixteen — AAR, AIRBORNE, AIRLIFT, COMBAT, COMMAND, FIRE, FI, HADR, HEMS, ISR, LE, MARITIME, SAR, SOF,
+SPECIAL, SURVEY (DEMO, a V2 demonstration family, is not carried). Their `flags`, `ownOrder`, `when` conditions and
+`crewRoles` are honoured; `sensitive` fields (public version) and `idPrefix` belong to V2 and CPCO.
 
 ## 6. Prefill
 
