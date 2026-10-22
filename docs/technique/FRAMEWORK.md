@@ -664,6 +664,23 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
 - `shared/mission_registry.js`: registry and mission folder `data/missions/<letter>_<FAMILY>/<ID>/` = `mission<ID>.yaml`
   (source of truth), `summary<ID>.md` (a rendering of the YAML), `suivi.yaml`, `cartes/`, `recu/`, `versions/`; no PDF
   stored.
+- Drawing fields, written by the studio (`studioToYaml`, `saveVprof`, `storeMapPngs` in `apps/cpco/map_parser.html`) so
+  that another renderer (the V3 maps module) can redraw a map without the studio. Each `maps[]` entry gets:
+  - `profile_def`: a full copy of its display profile as kept in `siaDisplayProfiles` (`id`, `name`, `base`, `layers`,
+    `cities`, `population`, zone, aerodrome and navaid lists and modes, `corridorNm` when set), with `elements` holding
+    every key of `PROFILE_ELEMENTS`, a missing key taking the page default that `el()` reads. Written with `profile`;
+    removed when the map is off or has no profile;
+  - `resolved_bbox`: `[west, south, east, north]`, decimal degrees to 4 places, the extent actually drawn
+    (`mapGeoBbox`: view, else `bbox`, else the automatic framing by type). It is a separate key on purpose: `bbox` stays
+    an input constraint;
+  - `cycle`: the AIRAC date (`YYYY-MM-DD`) of the SIA database used; also set, with `generated_at`, on the maps whose PNG
+    files are produced.
+
+  `vertical_profile` gets `profile_def` (its profile, `vprof` by default), `cycle` and `route_points`
+  (`[{ name, lat, lon, alt_ft }]`, the route as the studio resolved it). These fields never keep a block that is
+  otherwise all defaults. The registry ignores them in `maps[]` and `vertical_profile` only (`canon`, `diffOf`): a mission
+  that gains them is not a new version, and a new version takes them over map by map (same `filename`), like `profile`,
+  `view`, `trace` and `generated_at`.
 - `shared/mission_order.js` (order form), `apps/cpco/mission_skeleton.js` (skeleton), `shared/mission_estimate.js` +
   `mission_routing.js` (probable route, durations, transit), `mission_airspaces.js` (areas to activate),
   `mission_exercise.js` (exercise), `mission_i18n.js` (translated brief); each file header documents its rules.

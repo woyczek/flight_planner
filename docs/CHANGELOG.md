@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Map studio: each mission map carries what it takes to redraw it elsewhere** (`apps/cpco/map_parser.html`,
+  `apps/planner/map_planner.html` rebuilt, `shared/mission_registry.js`) — for the V3 maps module, saving in the studio
+  writes on every `maps[]` entry of `mission<ID>.yaml` a full copy of its display profile with every element resolved
+  (`profile_def`), the extent actually drawn (`resolved_bbox`, separate from the `bbox` input) and the AIRAC date of the
+  SIA database (`cycle`, refreshed with `generated_at` when PNG files are produced); `vertical_profile` gets
+  `profile_def`, `cycle` and the resolved `route_points`. Additions only: no existing mission changes meaning, the
+  registry does not count them as a new version and carries them over to a new version. Format in
+  `docs/technique/FRAMEWORK.md`.
+
 - **Board (flight orders): one thin row per member under “Available together”** — each member's availability ranges of
   the day, in the colour of their category, hatched when they do not make the member assignable to a flight, to see who
   starts earlier, finishes later or covers “together”; with a single member available that day, “together” shows their

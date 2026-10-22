@@ -4689,7 +4689,8 @@ function saveVprof() {
         descent_kt: +$('vprofDescKt').value || 160
       };
       if (!y.vertical_profile.route && !y.vertical_profile.cruise && !y.vertical_profile.ceiling_ft && !y.vertical_profile.floor_ft && !
-        y.vertical_profile.output && vprofDef._profileId === 'vprof') delete y.vertical_profile
+        y.vertical_profile.output && vprofDef._profileId === 'vprof') delete y.vertical_profile;
+      else vprofDraw(y.vertical_profile)
     }, 'Profil vertical enregistré dans la mission.')
   } catch (e) {
     $('vprofStatus').textContent = e.message
@@ -5490,17 +5491,63 @@ function scheduleExerciseMaps() {
     }
   }, 500)
 }
-/* Réglages du studio gardés dans le YAML (profil et emprise de chaque carte) puis mission enregistrée dans son dossier. */
+// ===== Dessin d'une carte ailleurs (appli V3, module maps) =====
+// Chaque carte de la mission porte ce qu'il faut pour la redessiner sans ce studio : profile_def (copie complète de son
+// profil d'affichage, éléments résolus), resolved_bbox (emprise réellement dessinée, [ouest, sud, est, nord], distincte
+// de bbox qui reste une contrainte d'entrée) et cycle (AIRAC de la base SIA) ; vertical_profile : profile_def, cycle et
+// route_points (cheminement résolu). Le registre ne compte pas ces champs comme une nouvelle version.
+/** Cycle AIRAC « AAAA-MM-JJ » de la base SIA utilisée (base chargée, sinon résumé siaBaseInfo:v1) ; vide sans base. */
+const siaCycle = () => window.siaAirac || window.SiaBase?.info?.()?.airac || '';
+/** Copie complète d'un profil d'affichage, éléments résolus : une clé absente prend la valeur par défaut de la page
+ *  (celle que lit el()) ; null sans profil. */
+function profileDef(p) {
+  if (!p) return null;
+  const c = JSON.parse(JSON.stringify(p)),
+    els = c.elements || {};
+  c.elements = {
+    ...els,
+    ...Object.fromEntries(PROFILE_ELEMENTS.filter(id => els[id] === undefined && $(id)).map(id => [id, defaultOf($(id))]))
+  };
+  return c
+}
+/** Degrés arrondis à 4 décimales. */
+const deg4 = v => Math.round(v * 1e4) / 1e4;
+/** Champs de dessin du profil vertical v (bloc du YAML) : profil complet, cycle, points du cheminement résolus. */
+function vprofDraw(v) {
+  const def = profileDef(profileForMap(vprofDef)),
+    cycle = siaCycle(),
+    pts = vprofRoutePts();
+  if (def) v.profile_def = def;
+  if (cycle) v.cycle = cycle;
+  if (pts.length) v.route_points = pts.map(q => ({
+    name: q.name || '',
+    lat: +(+q.lat).toFixed(6),
+    lon: +(+q.lon).toFixed(6),
+    alt_ft: Number.isFinite(q.alt) ? q.alt : null
+  }));
+  else delete v.route_points
+}
+/* Réglages du studio gardés dans le YAML (profil et emprise de chaque carte, champs de dessin) puis mission enregistrée
+   dans son dossier. */
 function studioToYaml() {
   try {
     editDoc(y => {
+      const cycle = siaCycle();
       for (const m of mission?.maps || []) {
         const x = y.maps.find(z => z && String(z.filename ?? z.file ?? '') === m.file);
         if (!x) continue;
         if (m._profileId) x.profile = m._profileId;
         if (m._view) x.view = m._view;
-        else delete x.view
+        else delete x.view;
+        // profil complet tant qu'un profil est posé (carte désactivée ou sans profil : retiré)
+        const def = m._profileId && m._profileId !== 'off' ? profileDef(profileForMap(m)) : null;
+        if (def) x.profile_def = def;
+        else delete x.profile_def;
+        const b = mapGeoBbox(m);
+        if (b && [b.w, b.s, b.e, b.n].every(Number.isFinite)) x.resolved_bbox = [b.w, b.s, b.e, b.n].map(deg4);
+        if (cycle) x.cycle = cycle
       }
+      if (y.vertical_profile && typeof y.vertical_profile === 'object') vprofDraw(y.vertical_profile)
     })
   } catch {}
   return sharedDoc?.yaml
@@ -7835,9 +7882,18 @@ async function storeMapPngs(request) {
     text: 'aucune carte générée'
   };
   const y = studioToYaml(),
-    fo = await MissionRegistryCore.saveMaps(y, lastMapPngs, {
-      request
-    });
+    at = new Date().toISOString(),
+    cycle = siaCycle(),
+    made = new Set(lastMapPngs.map(f => String(f.name).split('/').pop()));
+  // cartes produites : date de génération et cycle de la base qui les a dessinées
+  for (const x of Array.isArray(y?.maps) ? y.maps : [])
+    if (x && made.has(String(x.filename ?? x.file ?? ''))) {
+      x.generated_at = at;
+      if (cycle) x.cycle = cycle
+    }
+  const fo = await MissionRegistryCore.saveMaps(y, lastMapPngs, {
+    request
+  });
   if (!fo) return {
     ok: false,
     text: 'dossier des missions non autorisé dans cette page : bouton « Ranger les cartes dans le dossier » (pied de page) pour les voir dans le registre'
