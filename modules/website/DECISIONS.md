@@ -27,6 +27,13 @@ Memory of the V3 website module: every choice, dated, with its reason. Chat hist
     fixed, H145 D3 variant, F-RBAA / F-HAND; the Airline card saved `site.example.test` with normalised paths, the log
     and fleet cards then linked to their pages, and report's "Save and record on the website" became active; 375 px
     without horizontal scroll, the Airline card read only.
+- **23 Oct 2026 — lot 3, "Read through the launcher"** (on the frame's lot 7: `ctx.net` relays `airline.site`, GET
+  only): one button on the log and fleet cards when the page is set; the page's HTML goes to the paste path (same
+  parsers, same preview). The frame cannot say in advance whether the site is reachable (without a launcher a direct
+  call fails as "offline"), so the button is shown, and the first refusal while the device is online removes it for
+  the session with "paste only"; a real offline keeps it. Checked on 8803: without a launcher the button disappeared
+  with the message; with a relay simulated behind `ctx.net`, one GET of `/log_vols.php`, preview "1 new, 1 unchanged",
+  saved.
 - **Proposed, settled above** (lot 1):
   1. `airline/settings.json` `{ name, site, pages: { recordFlight, log, fleet, aircraft } }` edited in the module's
      settings screen (workstation), the frame exposing it as `ctx.airline`.

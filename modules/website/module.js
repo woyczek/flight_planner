@@ -3,6 +3,8 @@
 //   · Mon journal des vols : la page « Log des vols » collée (HTML du presse-papiers d'abord, texte sinon) → mes lignes
 //     (trigramme) dans pilot/<trigramme>/site_log.json, après l'aperçu de ce qui change ;
 //   · Flotte de la compagnie : la page « Flotte » collée → airline/fleet.json (règles de fusion de la V2), après aperçu ;
+//   · « Lire depuis le lanceur » sur ces deux cartes : la page du site par ctx.net (GET, relais du lanceur), mêmes
+//     analyseurs, même aperçu ; site injoignable d'ici : « collage seulement » ;
 //   · Compagnie : airline/settings.json (nom, adresse du site, pages), modifiable sur écran d'ordinateur, en lecture sur
 //     téléphone ; le cadre l'expose aux modules en ctx.airline.
 // Jamais de POST vers le site, jamais la connexion du pilote, aucune adresse dans le code. « Inscrire le vol » (report)
@@ -47,6 +49,19 @@ const TX = {
     'En el sitio, página «Flotte»: seleccionar todo, copiar y pegar aquí.'
   ],
   openPage: ['Ouvrir la page ↗', 'Open the page ↗', 'Seite öffnen ↗', 'Abrir la página ↗'],
+  fetchSite: ['Lire depuis le lanceur', 'Read through the launcher', 'Über den Starter lesen', 'Leer a través del lanzador'],
+  pasteOnly: ['Le site n’est pas joignable d’ici (pas de lanceur, ou site refusé) : collage seulement.',
+    'The website cannot be reached from here (no launcher, or website refused): paste only.',
+    'Die Website ist von hier nicht erreichbar (kein Starter oder Website abgelehnt): nur Einfügen.',
+    'El sitio no es accesible desde aquí (sin lanzador o sitio rechazado): solo pegar.'
+  ],
+  offline: ['Hors ligne : rien n’a été demandé.', 'Offline: nothing was requested.', 'Offline: nichts wurde angefragt.',
+    'Sin conexión: no se pidió nada.'
+  ],
+  siteError: ['Le site a répondu {s} : collez la page.', 'The website answered {s}: paste the page.',
+    'Die Website antwortete {s}: Seite einfügen.',
+    'El sitio respondió {s}: pegue la página.'
+  ],
   clipboard: ['Coller depuis le presse-papiers', 'Paste from the clipboard', 'Aus der Zwischenablage einfügen',
     'Pegar desde el portapapeles'
   ],
@@ -162,7 +177,8 @@ function pasteCard(kind) {
     ${isLog && !tri() ? `<p class="f-muted" style="color:var(--sog-warn)">${esc(tt(TX.noTrigram))}</p>` : ''}
     <p class="f-muted">${esc(kept)}</p>
     <label class="f-field"><textarea rows="4" data-paste="${kind}" aria-label="${esc(tt(isLog ? TX.log : TX.fleet))}"></textarea></label>
-    <div class="f-row"><button type="button" data-do="clip">${esc(tt(TX.clipboard))}</button><button type="button" class="primary" data-do="read">${esc(tt(TX.read))}</button></div>
+    <div class="f-row">${url && S.canFetch ? `<button type="button" data-do="fetch">${esc(tt(TX.fetchSite))}</button>` : ''}<button type="button" data-do="clip">${esc(tt(TX.clipboard))}</button><button type="button" class="primary" data-do="read">${esc(tt(TX.read))}</button></div>
+    ${url && !S.canFetch ? `<p class="f-muted">${esc(tt(TX.pasteOnly))}</p>` : ''}
     ${pv ? `<div class="ws-preview"><p>${esc(pv.summary)}</p>${pv.rows.length ? `<div class="ws-scroll"><table class="ws-table"><tbody>${pv.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
       <div class="f-row" style="margin-top:8px"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button><button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>` : ''}
   </div>`;
@@ -218,6 +234,32 @@ async function fromClipboard(kind) {
   } catch {
     S.ctx.notify(tt(TX.clipboardDenied), 'warn');
   }
+}
+/** Lit la page du site (journal ou flotte) par ctx.net — GET seulement, sans connexion : le lanceur la relaie ; sans
+ *  lanceur, le navigateur ne peut pas la lire (autre origine) — puis la passe aux mêmes analyseurs que le collage, avec
+ *  le même aperçu. Site injoignable d'ici : le bouton disparaît (« collage seulement ») pour la session. */
+async function fromSite(kind) {
+  const url = W.pageUrl(S.airline, kind === 'log' ? 'log' : 'fleet');
+  if (!url) return;
+  const r = await S.ctx.net.fetch(url, {
+    headers: {
+      accept: 'text/html'
+    }
+  });
+  // hors ligne pour de bon : on garde le bouton ; 503 sans réseau coupé (refus, CORS) ou injoignable : collage seulement
+  if (r.headers.get('x-sog-offline') && S.ctx.net.online?.() === false) return S.ctx.notify(tt(TX.offline), 'warn');
+  if (r.headers.get('x-sog-unreachable') || r.headers.get('x-sog-offline')) {
+    S.canFetch = false;
+    S.ctx.notify(tt(TX.pasteOnly), 'warn');
+    return render();
+  }
+  if (!r.ok) return S.ctx.notify(tt(TX.siteError, {
+    s: r.status
+  }), 'warn');
+  const html = await r.text();
+  S.html[kind] = html;
+  S.text[kind] = '';
+  read(kind);
 }
 /** Analyse le collage d'une carte et prépare l'aperçu de ce qui change (rien n'est écrit). */
 function read(kind) {
@@ -327,6 +369,8 @@ function onClick(e) {
   switch (b.dataset.do) {
     case 'clip':
       return fromClipboard(kind);
+    case 'fetch':
+      return fromSite(kind);
     case 'read':
       return read(kind);
     case 'apply':
@@ -345,7 +389,8 @@ export async function mount(el, ctx) {
     ctx,
     text: {},
     html: {},
-    preview: null
+    preview: null,
+    canFetch: !!ctx.net // le premier refus du site le coupe pour la session
   };
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   S.body = el.querySelector('[data-body]');

@@ -27,7 +27,7 @@ files: ['model.js']
 ```
 
 `ctx` used: `data` (get, put), `t`, `lang`, `notify`, `identity.trigram`, `airline` (first value before the file is
-read). No `ctx.net` in this lot.
+read), `net` (GET of the log and fleet pages of `airline.site`, relayed by the launcher).
 
 ## 3. For other modules
 
@@ -36,8 +36,6 @@ read). No `ctx.net` in this lot.
 - `airline/fleet.json`: report (registration → type, callsigns), maps, CPCO.
 - `frame/lib/website.js`: report's "Save and record on the website".
 
-## 4. Next lot
+## 4. Next
 
-"Read from the launcher": on a workstation with a launcher, the frame's relay (`/__setup/net`) accepting
-`ctx.airline.site` (dynamic list, to ask the frame then), so the log and fleet are read in one tap without pasting —
-the same parsers and preview.
+Nothing planned before the user gives access to the site (PHP web service, READING § 4).

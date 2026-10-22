@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **website: "Read through the launcher"** (`modules/website/module.js`; `SPEC.md` § 3 bis, `INTEGRATION.md`,
+  `DECISIONS.md`) — on a workstation, the website's log and fleet pages are read in one tap through the frame's
+  `ctx.net` (GET, relayed by the launcher), then the same preview as a paste; where the site cannot be reached, the
+  button gives way to "paste only".
 - **website: the airline website in the Pilot application** (`modules/website/module.js`, `model.js`, `frame/app.js`;
   `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`) — verb "Website" (level 2): the website's flight log pasted (HTML from
   the clipboard first) → my rows in `pilot/<trigram>/site_log.json`, the fleet page pasted → `airline/fleet.json`

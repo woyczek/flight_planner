@@ -35,6 +35,15 @@ pasting their public pages, the airline setting (site address and pages), and th
 - Preview: new aircraft, aircraft on the page and how many change, kept outside the page, the new or changed ones
   listed; "Save" writes `{ schema: 1, updated_at, by, aircraft }`.
 
+## 3 bis. Read through the launcher
+
+- On the log and fleet cards, when the airline setting gives the page, **Read through the launcher** asks the page with
+  `ctx.net` (GET only, never a login): on a workstation the launcher relays the airline's site (frame SPEC, `net`); the
+  answer goes to the same parsers and the same preview as a paste; nothing is written before "Save".
+- Offline (the device has no network): said, the button stays. Any other refusal — the frame's 503 marked unreachable,
+  or a direct call that fails (no launcher: another origin) — removes the button for the session with "paste only";
+  pasting stays the door on a phone without a launcher. Another HTTP status: said, paste the page.
+
 ## 4. Airline setting (`airline/settings.json`)
 
 `{ schema: 1, updated_at, by, name, site, pages: { recordFlight, log, fleet, aircraft } }`: the site address without
@@ -49,7 +58,8 @@ gives it to every module as `ctx.airline` (re-read when it changes). The log and
 
 ## 6. Invariants
 
-1. Never a request from the suite to the site (no POST, no download by the browser); never the pilot's login.
+1. Never a write to the site and never the pilot's login: the only request is a GET of a public page through
+   `ctx.net` (the launcher's relay); no download by the browser on its own.
 2. No address in the code: the airline setting only.
 3. Nothing is written without its preview being accepted.
 4. Pasted pages are data: parsed by pure functions, never executed.
