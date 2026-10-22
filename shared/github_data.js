@@ -22,6 +22,7 @@
     KEY = 'githubData:v1', // réglage { repo, branch, token }
     READ_AT = 'githubData:readAt', // date ISO de la dernière lecture réussie (lastRead)
     REF = 'githubData:f:', // copies des fichiers lus en synchrone (références) : { etag, text }
+    ENTRIES = 'githubData:entries', // entrées des index de dossier déjà tirées des fichiers : { chemin: [sha, entrée] }
     DB = 'sogGithubData',
     STORE = 'files'; // copies hors ligne des fichiers lus par fetch : { rel, etag, body }
   const here = document.currentScript?.src || location.href,
@@ -237,7 +238,7 @@
   // index_users) : jamais lus dans le dépôt ni écrits (shared/assignments.js, writeData ; exclus des commits de
   // synchronisation d'un poste)
   const INDEXES = new Set(['disponibilites/_index.json', 'utilisateurs/_index.json']);
-  let tree = null; // { at, paths }
+  let tree = null; // { at, paths, shas : chemin → sha du blob }
   /** Chemins de tous les fichiers du dépôt (une requête, gardée 60 s) ; arbre illisible (hors ligne, jeton) : dernière
    *  liste connue, sinon [] (strict : null). */
   async function paths({
@@ -250,9 +251,11 @@
         cache: 'no-store'
       }).catch(() => null);
     if (!r?.ok) return tree?.paths || (strict ? null : []);
+    const blobs = (await r.json()).tree.filter(x => x.type === 'blob');
     tree = {
       at: Date.now(),
-      paths: (await r.json()).tree.filter(x => x.type === 'blob').map(x => x.path)
+      paths: blobs.map(x => x.path),
+      shas: Object.fromEntries(blobs.map(x => [x.path, x.sha]))
     };
     return tree.paths;
   }
@@ -286,25 +289,92 @@
     }
     return out;
   }
+  // entrées d'index par fichier, gardées avec le sha du blob donné par l'arbre : un fichier dont le sha n'a pas changé
+  // n'est pas relu (l'index refait lisait chaque fiche, une requête après l'autre : une dizaine de secondes par page
+  // pour une quinzaine de fichiers) ; le sha suit le contenu, l'entrée gardée vaut donc pour tout dépôt
+  let entries = null;
+  const memo = () => entries ||= (() => {
+    try {
+      return JSON.parse(localStorage.getItem(ENTRIES) || '{}') || {};
+    } catch {
+      return {};
+    }
+  })();
+  /** Entrée d'index du fichier p : pick(JSON du fichier), gardée par le sha de son blob ; null si le fichier n'a pas pu
+   *  être lu (rien de gardé). */
+  async function entryOf(p, pick) {
+    const sha = tree?.shas?.[p] || '',
+      m = memo();
+    if (sha && m[p]?.[0] === sha) return m[p][1];
+    const d = await json(p);
+    if (!d) return null;
+    const v = pick(d);
+    if (sha) m[p] = [sha, v];
+    return v;
+  }
+  /** Entrées gardées : celles des fichiers encore dans l'arbre, écrites dans ce navigateur. */
+  function keepEntries() {
+    const m = memo();
+    if (tree?.shas)
+      for (const p of Object.keys(m))
+        if (!tree.shas[p]) delete m[p];
+    try {
+      localStorage.setItem(ENTRIES, JSON.stringify(m));
+    } catch {
+      /* stockage plein ou indisponible : entrées gardées le temps de la page */
+    }
+  }
+  /** fn sur chaque élément de list, n à la fois ; résultats dans l'ordre. */
+  async function each(list, fn, n = 6) {
+    const out = new Array(list.length);
+    let i = 0;
+    await Promise.all(Array.from({
+      length: Math.min(n, list.length)
+    }, async () => {
+      while (i < list.length) {
+        const k = i++;
+        out[k] = await fn(list[k]);
+      }
+    }));
+    return out;
+  }
+  const builds = {}; // index refaits, par arbre lu : { rel: { at, p } } (plusieurs lecteurs : une seule construction)
   /** Index d'un dossier (disponibilites, utilisateurs) absent du dépôt, refait depuis l'arbre (texte JSON) ; null pour
    *  un autre fichier. */
   async function builtIndex(rel) {
+    if (!INDEXES.has(rel)) return null;
+    const all = await paths(),
+      at = tree?.at || 0;
+    if (at && builds[rel]?.at === at) return builds[rel].p;
+    const p = buildIndex(rel, all).finally(keepEntries);
+    builds[rel] = {
+      at,
+      p
+    };
+    p.catch(() => builds[rel]?.p === p && delete builds[rel]);
+    return p;
+  }
+  /** Construit l'index rel depuis les chemins all (mêmes champs que le lanceur). */
+  async function buildIndex(rel, all) {
     const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     if (rel === 'disponibilites/_index.json') {
-      const pilots = {};
-      for (const p of await paths()) {
-        const legacy = /^disponibilites\/([A-Za-z0-9]{2,5})\.json$/.exec(p),
-          week = /^disponibilites\/([A-Za-z0-9]{2,5})\/(\d{4}-W\d{2})\.json$/.exec(p);
+      const pilots = {},
+        files = all.map(p => [p, /^disponibilites\/([A-Za-z0-9]{2,5})\.json$/.exec(p),
+          /^disponibilites\/([A-Za-z0-9]{2,5})\/(\d{4}-W\d{2})\.json$/.exec(p)
+        ])
+        .filter(([, legacy, week]) => legacy || week);
+      const sigs = await each(files, ([p]) => entryOf(p, d => String(d?.updated_at || '')));
+      files.forEach(([, legacy, week], i) => {
         if (legacy) Object.assign(pilots[legacy[1].toUpperCase()] ||= {}, {
           legacy: true,
-          legacy_at: String((await json(p))?.updated_at || '')
+          legacy_at: sigs[i] || ''
         });
-        else if (week) {
+        else {
           const e = pilots[week[1].toUpperCase()] ||= {};
           (e.weeks ||= []).push(week[2]);
-          (e.at ||= {})[week[2]] = String((await json(p))?.updated_at || '');
+          (e.at ||= {})[week[2]] = sigs[i] || '';
         }
-      }
+      });
       for (const e of Object.values(pilots)) e.weeks?.sort();
       return JSON.stringify({
         schema: 2,
@@ -312,27 +382,23 @@
         pilots
       }, null, 1);
     }
-    if (rel === 'utilisateurs/_index.json') {
-      const users = {};
-      for (const p of await paths()) {
-        const m = /^utilisateurs\/([A-Z0-9]{2,5})\.json$/.exec(p);
-        if (!m) continue;
-        const u = await json(p);
-        if (u) users[m[1]] = {
-          role: u.role || 'utilisateur',
-          actif: u.actif !== false,
-          nom: u.nom || '',
-          updated_at: String(u.updated_at || '')
-        };
-      }
-      return JSON.stringify({
-        schema: 1,
-        va: '',
-        updated_at: now,
-        utilisateurs: users
-      }, null, 1);
-    }
-    return null;
+    const users = {},
+      files = all.map(p => [p, /^utilisateurs\/([A-Z0-9]{2,5})\.json$/.exec(p)]).filter(([, m]) => m),
+      list = await each(files, ([p]) => entryOf(p, u => ({
+        role: u.role || 'utilisateur',
+        actif: u.actif !== false,
+        nom: u.nom || '',
+        updated_at: String(u.updated_at || '')
+      })));
+    files.forEach(([, m], i) => {
+      if (list[i]) users[m[1]] = list[i];
+    });
+    return JSON.stringify({
+      schema: 1,
+      va: '',
+      updated_at: now,
+      utilisateurs: users
+    }, null, 1);
   }
 
   // ---- lecture synchrone (fichiers de données chargés en <script> pendant l'analyse de la page : shared/data_files.js)
@@ -550,6 +616,8 @@
   async function disable() {
     localStorage.removeItem(KEY);
     localStorage.removeItem(READ_AT);
+    localStorage.removeItem(ENTRIES);
+    entries = null;
     for (const k of Object.keys(localStorage))
       if (k.startsWith(REF)) localStorage.removeItem(k);
     await idb('clear');

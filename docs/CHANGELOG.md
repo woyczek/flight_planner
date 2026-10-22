@@ -263,6 +263,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Settings: an aircraft table appeared in whatever section was open, some ten seconds later** (`shared/data_admin.js`) —
+  the sections of My profile and Settings shared one body: "Aircraft and simulators", slow to read its data, wrote its
+  table into the section shown when it finished, and could clear that section's buttons and status line. Each section
+  now gets its own body, and a section left behind no longer touches the page.
+- **GitHub mode: pages waited about ten seconds for availability and user indexes** (`shared/github_data.js`) — the
+  folder indexes (`disponibilites/_index.json`, `utilisateurs/_index.json`) were rebuilt by reading every file of the
+  folder, one request after the other, and twice per page. Each file's entry is now kept with the blob SHA the repository
+  tree gives, so only changed files are read, six at a time; readers of the same tree share one build. Kept in this
+  browser (`githubData:entries`, excluded from backups like the other `githubData:` keys, cleared with the access).
 - **Availability: Undo forgot every gesture when the language changed** (`shared/dispos_timeline.js`,
   `shared/dispos_week.js`, `labs/dispos_timeline.html`) — the page mounts the component again to change its texts, and
   each mount started a new history. The component takes a new `undoStore` option, a `Map` kept by the page; My

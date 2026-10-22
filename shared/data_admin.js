@@ -1340,6 +1340,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (!root.querySelector('.da-main').hidden) show();
     });
 
+    let shownSeq = 0; // numéro de l'affichage en cours (rubrique quittée : ses rappels ne touchent plus la page)
     /** Affiche la base choisie (rubrique du Centre si elle est verrouillée) : titre, présentation, mode d'emploi,
      *  puis éditeur (tableaux) ou panneau dédié. */
     function show() {
@@ -1360,28 +1361,35 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const howto = root.querySelector('.da-howto');
       howto.hidden = !set.howto;
       howto.querySelector('div').innerHTML = set.howto || '';
-      const body = root.querySelector('.da-body');
-      body.innerHTML = '';
+      // corps neuf à chaque rubrique : une rubrique qui finit de se dessiner après un changement de rubrique (lectures
+      // lentes, mode GitHub : « Appareils et simulateurs » au bout de dix secondes) écrit dans l'ancien, hors de la page,
+      // au lieu de poser son tableau dans la rubrique suivante
+      const old = root.querySelector('.da-body'),
+        body = old.cloneNode(false),
+        seq = ++shownSeq,
+        live = f => (...a) => seq === shownSeq ? f(...a) : undefined;
+      old.replaceWith(body);
       // ni état ni commandes de la base précédente (« État : fichier du dépôt… » restait sur le journal, les boutons
       // « Enregistrer / Annuler » des aérodromes sur les fusions, qui n'ont pas de barre d'actions)
       status('');
       actions([]);
-      // rubrique de shared/settings_panels.js : sa propre interface, avec les outils de la page
+      // rubrique de shared/settings_panels.js : sa propre interface, avec les outils de la page — sans effet une fois la
+      // rubrique quittée (état, commandes et changement de rubrique de celle qui est affichée)
       if (set.render) return set.render(body, {
-        status,
-        actions,
-        changed,
+        status: live(status),
+        actions: live(actions),
+        changed: live(changed),
         /** Modifications enregistrées par la rubrique : plus de garde au départ de la page. */
-        saved: () => {
+        saved: live(() => {
           dirty = false;
-        },
-        show,
+        }),
+        show: live(show),
         /** Ouvre la rubrique id (adresse ?base=id). */
-        open: id => {
+        open: live(id => {
           current.id = id;
           history.replaceState(null, '', `?base=${id}`);
           show();
-        }
+        })
       });
       if (set.custom) return set.id === 'cpco' ? cpcoSettings(body) : set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ?
         sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
