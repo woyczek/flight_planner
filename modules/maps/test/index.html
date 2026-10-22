@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>maps — test page</title>
+<!-- Page d'essai du module maps (V3) : le module monté hors du cadre, avec la couche de données réelle (FrameData en
+     transport local, références lues au lanceur qui sert la page, comme frame/app.js) et aerodb. Un vol d'essai est
+     écrit dans pilot/TST/current_flight.json (?flight=ifr par défaut, ?flight=none pour l'état vide, ?flight=low pour un
+     vol sous le FL195) ; ?tiles=0 : fond uni forcé (fetch des hôtes de tuiles refusé). Page d'outil servie par le
+     lanceur ; cache du frame effacé au départ. -->
+<link rel="stylesheet" href="../../../frame/frame.css?v=0">
+<style>
+  body {
+    margin: 0;
+    padding: 12px;
+    background: var(--sog-bg);
+    color: var(--sog-fg);
+    font: var(--sog-font)
+  }
+</style></head>
+<body>
+<section class="f-module" data-module="maps" id="host"></section>
+<script>
+  const Q = new URLSearchParams(location.search);
+  // fond uni forcé : les hôtes de tuiles refusés (comme sans réseau)
+  if (Q.get('tiles') === '0') {
+    const f = window.fetch.bind(window);
+    window.fetch = (u, o) => /openfreemap|versatiles|amazonaws/.test(String(u?.url || u)) ? Promise.reject(new TypeError('blocked')) : f(u,
+      o);
+    Object.defineProperty(navigator, 'onLine', {
+      get: () => false
+    });
+  }
+</script>
+<script src="../../../frame/store/frame_data.js?v=0"></script>
+<script src="../../../frame/store/transport_github.js?v=0"></script>
+<script src="../../../frame/store/transport_launcher.js?v=0"></script>
+<script src="../../../frame/aerodb/zones.js?v=0"></script>
+<script src="../../../frame/aerodb/aircraft.js?v=0"></script>
+<script src="../../../frame/aerodb/aerodb.js?v=0"></script>
+<script type="module">
+  const FD = window.FrameData,
+    FLIGHTS = {
+      ifr: {
+        aircraft: {
+          type: 'C30J',
+          registration: 'F-RAJA'
+        },
+        route: {
+          text: 'LFRS N0300F270 LUGEN UN869 NEPIX LFML',
+          dep: 'LFRS',
+          arr: 'LFML',
+          altn: 'LFMT',
+          points: [{
+            id: 'LFRS',
+            lat: 47.1569,
+            lon: -1.6078
+          }, {
+            id: 'LUGEN',
+            lat: 46.5833,
+            lon: -1.2
+          }, {
+            id: 'NEPIX',
+            lat: 44.9,
+            lon: 2.4
+          }, {
+            id: 'LFML',
+            lat: 43.4367,
+            lon: 5.215
+          }],
+          distanceNm: 366,
+          trackDeg: 125
+        },
+        level: {
+          ft: 27000
+        }
+      },
+      low: {
+        aircraft: {
+          type: 'TBM9'
+        },
+        route: {
+          dep: 'LFBO',
+          arr: 'LFMT',
+          points: [{
+            id: 'LFBO',
+            lat: 43.6351,
+            lon: 1.3679
+          }, {
+            id: 'LFMT',
+            lat: 43.5762,
+            lon: 3.963
+          }]
+        },
+        level: {
+          ft: 8000
+        }
+      }
+    };
+  (async () => {
+    const out = {};
+    try {
+      if (!await FD.launcher.detect()) throw new Error('serve this page from the launcher');
+      await FD.reset();
+      FD.configure({
+        identity: {
+          trigram: 'TST'
+        },
+        transport: FD.transports.local(),
+        references: FD.launcher({
+          exchange: false
+        })
+      });
+      // vol d'essai, écrit comme Carburant l'écrirait
+      const seed = FD.adapter({
+          id: 'test',
+          reads: ['pilot/'],
+          writes: [{
+            prefix: 'pilot/',
+            merge: 'record'
+          }]
+        }),
+        which = Q.get('flight') || 'ifr';
+      if (FLIGHTS[which]) await seed.put('pilot/TST/current_flight.json', {
+        schema: 1,
+        by: 'fuel',
+        updated_at: new Date().toISOString(),
+        ...FLIGHTS[which]
+      });
+      await FD.sync();
+      const aerodb = AeroDB.create({
+          reader: FD.adapter({
+            id: 'aerodb',
+            reads: [{
+              prefix: 'sia/base/',
+              policy: 'reference'
+            }, {
+              prefix: 'AircraftDB/',
+              policy: 'reference'
+            }],
+            writes: []
+          })
+        }),
+        mod = await import('../module.js?v=0'),
+        lang = () => 'fr',
+        ctx = {
+          app: 'pilot',
+          data: FD.adapter({
+            id: 'maps',
+            reads: mod.meta.reads,
+            writes: mod.meta.writes
+          }),
+          aerodb,
+          t: (row, v = {}) => String(row?.[0] ?? '').replace(/\{(\w+)\}/g, (_, k) => v[k] ?? ''),
+          lang,
+          notify: (text, kind) => console.log('notify', kind, text),
+          net: {
+            online: navigator.onLine,
+            fetch
+          },
+          identity: {
+            trigram: 'TST'
+          },
+          query: {}
+        };
+      const t0 = performance.now();
+      await mod.mount(document.getElementById('host'), ctx);
+      out.mountMs = Math.round(performance.now() - t0);
+      out.meta = mod.meta;
+      window.__maps = {
+        mod,
+        ctx,
+        aerodb
+      };
+    } catch (e) {
+      out.error = String(e?.stack || e);
+    }
+    window.__test = out;
+  })();
+</script>
+</body></html>

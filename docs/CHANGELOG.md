@@ -30,6 +30,16 @@ waypoints, and the rest listed below.
 - **fuel: vertical profile in the current flight** (`modules/fuel/module.js`; `INTEGRATION.md` § 3, `DECISIONS.md`) —
   `pilot/<trigram>/current_flight.json` gains `profile { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` from
   every quote, for maps' vertical profile.
+- **maps lot 2: the route map of the planned flight** (`modules/maps/`).
+  - The Pilot app's map draws fuel's flight (`pilot/<trigram>/current_flight.json`), read only: OpenFreeMap tiles
+    through MapLibre (loaded at the first map), with the aeronautical layer cut out of the V2 studio on a canvas.
+  - The layer shows airspaces within 10 NM of the route, low or high airways by flight level, aerodromes, navaids,
+    MORA, graticule, and the route with NM marks and the alternate. In overview, only what is near the route.
+  - Without tiles (offline, no WebGL), it uses a plain background with the country outlines.
+  - Empty states: no flight, database not published, area not kept offline.
+  - First drawing in 0.5 s, or 1.4 s on a phone-like CPU.
+  - Files: `module.js`, `render.js`, copies in `lib/`, `tools/build_maps_outlines.py`, a test page; `SPEC.md`,
+    `INTEGRATION.md`, `DECISIONS.md`.
 - **website: "Read through the launcher"** (`modules/website/module.js`; `SPEC.md` § 3 bis, `INTEGRATION.md`,
   `DECISIONS.md`) — on a workstation, the website's log and fleet pages are read in one tap through the frame's
   `ctx.net` (GET, relayed by the launcher), then the same preview as a paste; where the site cannot be reached, the

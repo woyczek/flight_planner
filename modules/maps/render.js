@@ -1,0 +1,683 @@
+(() => {
+  'use strict';
+  // V3 maps — noyau de rendu sorti du studio cartographique (apps/cpco/map_parser.html, ses draw*Canvas ;
+  // modules/maps/READING.md § 1, SPEC.md). Tout entre en paramètre, rien n'est lu dans une page ni dans une globale de
+  // données : un profil d'affichage complet (objet), l'emprise affichée, les éléments rendus par aerodb pour cette
+  // emprise, la route ; la projection est donnée (toC(lat, lon) → { x, y } : MapLibre map.project, ou la projection
+  // de Mercator du fond uni). Symboles OACI et placeur de libellés : window.SiaAero (lib/aero_symbols.js, copie de la V2).
+  // Aucun texte d'interface : libellés de données seulement (codes, noms, niveaux).
+  // API : window.MapsRender = { routeProfile(levelFt), selectAirspaces(list, profile, route), bboxOf(points, marginNm),
+  //   distances(points), marks(points, stepNm), mercator(bbox, W, H, pad), drawBackground(ctx, toC, W, H, rings, colors),
+  //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route }) }.
+  if (window.MapsRender) return;
+  const A = () => window.SiaAero,
+    PT = 4 / 3,
+    NM = 1852;
+
+  // ---------------------------------------------------------------- profil d'affichage
+  /** Réglages par défaut d'un élément (ceux du profil « IFR simplifié » du studio). */
+  const DEFAULTS = {
+    airwaysLow: false,
+    airwaysHigh: false,
+    airwayLabels: true,
+    zoneAbbrev: true,
+    zoneLabelsShow: true,
+    zoneOpacity: '25',
+    zoneLimitsShow: false,
+    zoneSmallCross: true,
+    zoneFont: '7',
+    zoneColor: '#17202a',
+    icaoStyle: true,
+    zoneFloor: '',
+    zoneCeil: '',
+    aerodromes: false,
+    navaids: false,
+    obstacles: false,
+    obstacleMin: '300',
+    adLabels: true,
+    navLabels: true,
+    roseSize: '3.2',
+    adPublic: true,
+    adRestricted: false,
+    adState: true,
+    adHeli: false,
+    adStrip: false,
+    adControl: 'all',
+    navVor: true,
+    navTacan: true,
+    navDme: true,
+    navNdb: true,
+    navIls: false,
+    pointFont: '11',
+    graticule: true,
+    graticuleLabels: true,
+    graticuleFont: '7',
+    graticuleColor: '#365a6c',
+    mora: false,
+    moraFont: '12',
+    moraColor: '#8b2d18',
+    moraOpacity: '90',
+    moraSpacing: '70'
+  };
+  /** Profil intégré « route IFR » (V3, jamais en localStorage) : celui du studio pour les routes IFR (ifrRouteProfile,
+   *  couloir de 10 NM, R / D / P / TRA / CTR / TMA / CTA, voies basses ou hautes selon le niveau) avec aérodromes,
+   *  balises et MORA. */
+  function routeProfile(levelFt = 0) {
+    const low = !(levelFt >= 19500);
+    return {
+      id: 'v3-ifr-route',
+      base: 'positron',
+      zones: ['R', 'D', 'P', 'TRA', 'CTR', 'TMA', 'CTA'],
+      zoneList: [],
+      zoneMode: 'white',
+      corridorNm: 10,
+      elements: {
+        ...DEFAULTS,
+        airwaysLow: low,
+        airwaysHigh: !low,
+        zoneFloor: low ? '' : '19500',
+        zoneCeil: low ? '19500' : '',
+        aerodromes: true,
+        navaids: true,
+        mora: true
+      }
+    };
+  }
+  /** Valeur d'un élément du profil (défaut si absent). */
+  const el = (p, id) => {
+    const v = p?.elements?.[id];
+    return v === undefined || v === '' ? DEFAULTS[id] : v;
+  };
+  const on = (p, id) => !!el(p, id);
+
+  // ---------------------------------------------------------------- géométrie
+  const rad = d => d * Math.PI / 180;
+  /** Distance orthodromique (NM). */
+  const gc = (a, b) => {
+    const p1 = rad(a.lat),
+      p2 = rad(b.lat),
+      dl = rad(b.lon - a.lon),
+      h = Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+    return 2 * Math.asin(Math.min(1, Math.sqrt(h))) * 6371008.8 / NM;
+  };
+  /** Distances cumulées (NM) depuis le premier point. */
+  function distances(points) {
+    const out = [0];
+    for (let i = 1; i < points.length; i++) out.push(out[i - 1] + gc(points[i - 1], points[i]));
+    return out;
+  }
+  /** Marques de distance tous les stepNm (défaut : 10 NM sous 150 NM, 50 NM au-delà) : [{ lat, lon, nm }]. */
+  function marks(points, stepNm = 0) {
+    if (points.length < 2) return [];
+    const d = distances(points),
+      total = d[d.length - 1],
+      step = stepNm || (total > 150 ? 50 : 10),
+      out = [];
+    for (let nm = step, i = 1; nm < total; nm += step) {
+      while (i < d.length - 1 && d[i] < nm) i++;
+      const a = points[i - 1],
+        b = points[i],
+        k = d[i] > d[i - 1] ? (nm - d[i - 1]) / (d[i] - d[i - 1]) : 0;
+      out.push({
+        lat: a.lat + (b.lat - a.lat) * k,
+        lon: a.lon + (b.lon - a.lon) * k,
+        nm
+      });
+    }
+    return out;
+  }
+  /** Emprise { w, s, e, n } des points, élargie de marginNm (au moins 10 % de chaque côté). */
+  function bboxOf(points, marginNm = 25) {
+    const ok = points.filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
+    if (!ok.length) return null;
+    let s = 90,
+      n = -90,
+      w = 180,
+      e = -180;
+    for (const p of ok) {
+      s = Math.min(s, p.lat);
+      n = Math.max(n, p.lat);
+      w = Math.min(w, p.lon);
+      e = Math.max(e, p.lon);
+    }
+    const k = Math.max(.2, Math.cos(rad((s + n) / 2))),
+      dy = Math.max(marginNm / 60, (n - s) * .1),
+      dx = Math.max(marginNm / 60 / k, (e - w) * .1);
+    return {
+      w: w - dx,
+      s: Math.max(-85, s - dy),
+      e: e + dx,
+      n: Math.min(85, n + dy)
+    };
+  }
+  /** Projection de Mercator qui fait tenir l'emprise b dans W × H (marge pad px), nord en haut : toC et l'emprise
+   *  réellement affichée. */
+  function mercator(b, W, H, pad = 8) {
+    const my = lat => Math.log(Math.tan(Math.PI / 4 + rad(lat) / 2)),
+      x0 = rad(b.w),
+      x1 = rad(b.e),
+      y0 = my(b.s),
+      y1 = my(b.n),
+      k = Math.min((W - 2 * pad) / (x1 - x0 || 1e-9), (H - 2 * pad) / (y1 - y0 || 1e-9)),
+      ox = (W - (x1 - x0) * k) / 2,
+      oy = (H - (y1 - y0) * k) / 2,
+      inv = (x, y) => ({
+        lon: (((x - ox) / k + x0) * 180) / Math.PI,
+        lat: (2 * Math.atan(Math.exp(y1 - (y - oy) / k)) - Math.PI / 2) * 180 / Math.PI
+      }),
+      tl = inv(0, 0),
+      br = inv(W, H);
+    return {
+      toC: (lat, lon) => ({
+        x: ox + (rad(lon) - x0) * k,
+        y: oy + (y1 - my(lat)) * k
+      }),
+      shown: {
+        w: tl.lon,
+        n: tl.lat,
+        e: br.lon,
+        s: br.lat
+      }
+    };
+  }
+
+  // ---------------------------------------------------------------- choix des espaces
+  const family = (types, t) => types.has(t) || (t === 'RMZ-TMZ' && (types.has('RMZ') || types.has('TMZ')));
+  const ringBox = a => a._mb ??= (() => {
+    let s = 90,
+      n = -90,
+      w = 180,
+      e = -180;
+    for (const r of a.rings || [])
+      for (const [la, lo] of r) {
+        s = Math.min(s, la);
+        n = Math.max(n, la);
+        w = Math.min(w, lo);
+        e = Math.max(e, lo);
+      }
+    return {
+      s,
+      n,
+      w,
+      e
+    };
+  })();
+  /** Échantillons de la route (un tous les 2 NM environ). */
+  function samples(points) {
+    const out = [];
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1],
+        b = points[i],
+        n = Math.max(1, Math.ceil(gc(a, b) / 2));
+      for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, a.lon + (b.lon - a.lon) * k / n]);
+    }
+    if (points.length) out.push([points[points.length - 1].lat, points[points.length - 1].lon]);
+    return out;
+  }
+  /** Vrai si l'espace est à moins de nm NM des échantillons de la route (un échantillon dedans ou un bord proche). */
+  function nearRoute(a, smp, nm) {
+    const b = ringBox(a),
+      m = nm / 60;
+    if (!smp.some(([la, lo]) => la >= b.s - m && la <= b.n + m && lo >= b.w - m * 2 && lo <= b.e + m * 2)) return false;
+    const seg = (la, lo, p, q) => {
+      const k = Math.cos(rad(la)),
+        ax = (p[1] - lo) * 60 * k,
+        ay = (p[0] - la) * 60,
+        bx = (q[1] - lo) * 60 * k,
+        by = (q[0] - la) * 60,
+        dx = bx - ax,
+        dy = by - ay,
+        t = dx || dy ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy))) : 0;
+      return Math.hypot(ax + t * dx, ay + t * dy);
+    };
+    const inside = (la, lo, ring) => {
+      let c = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [yi, xi] = ring[i],
+          [yj, xj] = ring[j];
+        if ((yi > la) !== (yj > la) && lo < (xj - xi) * (la - yi) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    return smp.some(([la, lo]) => a.rings.some(r => inside(la, lo, r) || r.some((p, i) => i && seg(la, lo, r[i - 1], p) <= nm)));
+  }
+  /** Espaces à dessiner selon le profil : familles cochées, plancher / plafond, liste blanche ou noire (nom ou clé),
+   *  couloir autour de la route (corridorNm). */
+  function selectAirspaces(list, profile, route = []) {
+    const types = new Set(profile?.zones || []),
+      lo = parseFloat(el(profile, 'zoneFloor')),
+      hi = parseFloat(el(profile, 'zoneCeil')),
+      names = (profile?.zoneList || []).map(x => String(x).toUpperCase().replace(/[^A-Z0-9]/g, '')).filter(Boolean),
+      hit = a => names.some(q => [a.name, a.key, a.type + a.name].some(v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+        .includes(q))),
+      lim = A()?.limitFt;
+    if (!types.size) return [];
+    let out = (list || []).filter(a => family(types, a.type) && (!(lo > 0) || !lim || lim(a.upper, true) > lo) && (!(hi > 0) || !lim ||
+      lim(a.lower, false) < hi) && (!names.length || (profile.zoneMode === 'black' ? !hit(a) : hit(a))));
+    const nm = +profile?.corridorNm || 0,
+      pts = route.filter(p => Number.isFinite(p?.lat));
+    if (nm > 0 && pts.length >= 2) {
+      const smp = samples(pts);
+      out = out.filter(a => nearRoute(a, smp, nm));
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------- dessin
+  /** Texte gras avec halo blanc, centré verticalement sur y. */
+  function halo(ctx, text, x, y, size, color, align = 'left', alpha = 1) {
+    ctx.save();
+    ctx.font = `700 ${size}px Arial,sans-serif`;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = Math.max(2, size * .28);
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+  const inBox = (b, lat, lon) => lat >= b.s && lat <= b.n && lon >= b.w && lon <= b.e;
+  /** Fond uni (pas de tuiles) : mer, puis terres d'après les contours de pays [lon, lat]. */
+  function drawBackground(ctx, toC, W, H, rings, {
+    sea = '#dfe9f2',
+    land = '#f7f5ef',
+    border = '#b9b3a6'
+  } = {}) {
+    ctx.save();
+    ctx.fillStyle = sea;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = land;
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1;
+    for (const r of rings || []) {
+      ctx.beginPath();
+      r.forEach(([lon, lat], i) => {
+        const q = toC(lat, lon);
+        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      });
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawZones(ctx, zones, toC, W, H, scale, pl, profile, part) {
+    const showLabels = on(profile, 'zoneLabelsShow');
+    if (part === 'labels' && !showLabels) return;
+    A().drawAirspaces(ctx, zones, toC, {
+      W,
+      H,
+      scale,
+      font: +el(profile, 'zoneFont') * PT * scale,
+      limits: on(profile, 'zoneLimitsShow'),
+      alpha: (+el(profile, 'zoneOpacity') || 50) / 100,
+      abbrev: on(profile, 'zoneAbbrev'),
+      smallCross: on(profile, 'zoneSmallCross'),
+      placer: pl,
+      shapes: part !== 'labels',
+      labels: part !== 'shapes' && showLabels
+    });
+  }
+
+  function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile) {
+    const ad = on(profile, 'aerodromes'),
+      nv = on(profile, 'navaids'),
+      ob = on(profile, 'obstacles');
+    if (!(ad || nv || ob)) return;
+    const c = {
+        lat: (b.n + b.s) / 2,
+        lon: (b.e + b.w) / 2
+      },
+      ctl = el(profile, 'adControl') || 'all',
+      adOk = a => (a.type === 'HP' ? on(profile, 'adHeli') : a.type === 'LS' || (!a.hardLen && !a.water) ? on(profile, 'adStrip') : a
+        .state ? on(profile, 'adState') : a.public ? on(profile, 'adPublic') : on(profile, 'adRestricted')) && (ctl === 'all' || (ctl ===
+        'ctl') === !!a.controlled),
+      navOk = n => n.kind === 'ILS' ? on(profile, 'navIls') : n.kind === 'NDB' ? on(profile, 'navNdb') : n.kind === 'DME' ? on(profile,
+        'navDme') : n.kind === 'TACAN' || n.tacan ? on(profile, 'navTacan') : on(profile, 'navVor');
+    A().drawPoints(ctx, {
+      aerodromes: ad ? (data.aerodromes || []).filter(adOk) : [],
+      navaids: nv ? (data.navaids || []).filter(navOk) : [],
+      obstacles: ob ? data.obstacles || [] : []
+    }, toC, {
+      W,
+      H,
+      scale,
+      font: +el(profile, 'pointFont') * PT * scale,
+      aerodromes: ad,
+      navaids: nv,
+      obstacles: ob,
+      obstacleMin: +el(profile, 'obstacleMin') || 300,
+      pxPerDegree: toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
+      placer: pl,
+      rose: +el(profile, 'roseSize'),
+      adLabels: on(profile, 'adLabels'),
+      navLabels: on(profile, 'navLabels')
+    });
+  }
+
+  function drawAirways(ctx, airways, toC, scale, b, pl, profile) {
+    const lo = on(profile, 'airwaysLow'),
+      hi = on(profile, 'airwaysHigh');
+    if (!(lo || hi) || !airways?.length) return;
+    const lab = el(profile, 'airwayLabels') !== false,
+      t = {
+        s: b.s - 1,
+        n: b.n + 1,
+        w: b.w - 1.5,
+        e: b.e + 1.5
+      },
+      seen = new Set();
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const g of airways) {
+      const high = (+g.lower || 0) >= 19500 || /^U/.test(g.route);
+      if (high ? !hi : !lo) continue;
+      if (!inBox(t, g.a.lat, g.a.lon) && !inBox(t, g.b.lat, g.b.lon)) continue;
+      const P = toC(g.a.lat, g.a.lon),
+        Q = toC(g.b.lat, g.b.lon),
+        col = high ? '#6a3fa0' : '#1f6fb2';
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = .85;
+      ctx.lineWidth = (high ? 1.2 : 1.6) * scale;
+      ctx.setLineDash(high ? [6 * scale, 4 * scale] : []);
+      ctx.beginPath();
+      ctx.moveTo(P.x, P.y);
+      ctx.lineTo(Q.x, Q.y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (lab && Math.hypot(Q.x - P.x, Q.y - P.y) > 70 * scale) {
+        const x = (P.x + Q.x) / 2,
+          y = (P.y + Q.y) / 2,
+          k = `${g.route}|${Math.round(x / 120)}|${Math.round(y / 120)}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const f = 9 * PT * scale * .8,
+          w = g.route.length * f * .62;
+        if (!pl || pl.take({
+            x0: x - w / 2 - 2,
+            y0: y - f * .7,
+            x1: x + w / 2 + 2,
+            y1: y + f * .7
+          })) halo(ctx, g.route, x, y, f, col, 'center');
+      }
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  const gridStep = span => [1, 2, 5, 10, 15, 20, 30, 60, 120, 300].map(m => m / 60).find(v => v >= span / 5) || 5;
+
+  function gridValues(a, b, step) {
+    const out = [];
+    for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + 1e-9; v += step) out.push(+v.toFixed(6));
+    return out;
+  }
+
+  function geoLabel(value, lat = false) {
+    const hemi = lat ? (value < 0 ? 'S' : 'N') : (value < 0 ? 'W' : 'E'),
+      a = Math.abs(value);
+    let d = Math.floor(a + 1e-9),
+      m = Math.round((a - d) * 60);
+    if (m === 60) {
+      d++;
+      m = 0;
+    }
+    return `${lat ? d : String(d).padStart(3, '0')}°${String(m).padStart(2, '0')}′${hemi}`;
+  }
+  const moraFt = c => c.moraFt ?? +String(c.mora).replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(d)) * 100;
+  const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  /** Notation MORA « 3⁵ » (milliers, centaines en exposant) d'une hauteur en ft. */
+  const moraLabel = ft => {
+    const h = Math.ceil(ft / 100);
+    return `${Math.floor(h / 10)}${SUP[h % 10]}`;
+  };
+
+  function drawGridMora(ctx, cells, toC, b, W, H, scale, pl, profile) {
+    const gridColor = el(profile, 'graticuleColor'),
+      span = Math.min(b.n - b.s, b.e - b.w),
+      gs = on(profile, 'graticule') ? gridStep(span) : 0;
+    if (gs) {
+      ctx.save();
+      ctx.strokeStyle = gridColor;
+      ctx.globalAlpha = .42;
+      ctx.lineWidth = Math.max(1, scale);
+      const font = +el(profile, 'graticuleFont') * PT * scale,
+        labels = on(profile, 'graticuleLabels');
+      for (const lon of gridValues(b.w, b.e, gs)) {
+        const p = toC(b.n, lon),
+          q = toC(b.s, lon);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(q.x, q.y);
+        ctx.stroke();
+        if (labels) halo(ctx, geoLabel(lon), p.x, 8 * scale + font / 2, font, gridColor, 'center');
+      }
+      for (const lat of gridValues(b.s, b.n, gs)) {
+        const p = toC(lat, b.w),
+          q = toC(lat, b.e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(q.x, q.y);
+        ctx.stroke();
+        if (labels) halo(ctx, geoLabel(lat, true), 4 * scale, p.y, font, gridColor, 'left');
+      }
+      ctx.restore();
+    }
+    if (!on(profile, 'mora') || !cells?.length) return;
+    const font = +el(profile, 'moraFont') * PT * scale,
+      color = el(profile, 'moraColor'),
+      alpha = (+el(profile, 'moraOpacity') || 90) / 100,
+      c = {
+        lat: (b.n + b.s) / 2,
+        lon: (b.e + b.w) / 2
+      },
+      px = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
+      minPx = (+el(profile, 'moraSpacing') || 70) * scale;
+    // cases regroupées (2, 4… degrés) quand un degré fait moins de minPx : la plus haute MORA du groupe
+    let f = 1;
+    while (f < 16 && px * f < minPx) f *= 2;
+    if (gs >= 1) f = Math.max(f, Math.round(gs));
+    const g = new Map();
+    for (const m of cells) {
+      const la = Math.floor(m.lat / f) * f,
+        lo = Math.floor(m.lon / f) * f,
+        k = `${la}|${lo}`,
+        ft = moraFt(m),
+        cur = g.get(k);
+      if (!cur || ft > cur.ft) g.set(k, {
+        lat: la + f / 2,
+        lon: lo + f / 2,
+        ft,
+        text: f === 1 ? m.mora : moraLabel(ft)
+      });
+    }
+    const hw = font * .9,
+      hh = font * .6,
+      d = font * 1.4;
+    for (const m of g.values()) {
+      const q = toC(m.lat, m.lon);
+      if (!(q.x > -50 && q.y > -50 && q.x < W + 50 && q.y < H + 50)) continue;
+      let at = q;
+      if (pl) {
+        at = [
+          [0, 0],
+          [0, -d],
+          [0, d],
+          [-d * 1.3, 0],
+          [d * 1.3, 0],
+          [-d, -d],
+          [d, -d],
+          [-d, d],
+          [d, d]
+        ].map(([dx, dy]) => ({
+          x: q.x + dx,
+          y: q.y + dy
+        })).find(p => pl.free({
+          x0: p.x - hw,
+          y0: p.y - hh,
+          x1: p.x + hw,
+          y1: p.y + hh
+        })) || q;
+        pl.add({
+          x0: at.x - hw,
+          y0: at.y - hh,
+          x1: at.x + hw,
+          y1: at.y + hh
+        });
+      }
+      halo(ctx, String(m.text), at.x, at.y, font, color, 'center', alpha);
+    }
+  }
+  /** Libellés de la route (points : identifiant et niveau ; marques NM) réservés dans le placeur avant tout le reste :
+   *  [{ text, x, y, size, align }] ; les extrémités sont toujours écrites. */
+  function routeLabels(route, toC, scale, pl, mk = []) {
+    const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon)),
+      f = 10 * scale,
+      out = [];
+    if (pts.length < 2) return out;
+    for (const [i, p] of pts.entries()) {
+      const q = toC(p.lat, p.lon),
+        end = i === 0 || i === pts.length - 1,
+        alt = Number.isFinite(p.alt) ? (p.alt >= 10000 ? `FL${Math.round(p.alt / 100)}` : `${p.alt} ft`) : '',
+        text = [p.id || p.name || '', alt].filter(Boolean).join(' · ');
+      if (!text) continue;
+      const r = {
+        x0: q.x + 6 * scale,
+        y0: q.y + 2 * scale,
+        x1: q.x + 8 * scale + text.length * f * .6,
+        y1: q.y + 4 * scale + f * 1.2
+      };
+      if ((pl ? pl.take(r) : true) || end) out.push({
+        text,
+        x: r.x0,
+        y: q.y + 3 * scale + f * .6,
+        size: f,
+        align: 'left'
+      });
+    }
+    for (const m of mk) {
+      const q = toC(m.lat, m.lon),
+        text = String(m.nm),
+        w = text.length * f * .55,
+        r = {
+          x0: q.x - w / 2 - 1,
+          y0: q.y - 4 * scale - f * 1.1,
+          x1: q.x + w / 2 + 1,
+          y1: q.y - 4 * scale
+        };
+      if (!pl || pl.take(r)) out.push({
+        text,
+        x: q.x,
+        y: q.y - 4 * scale - f * .55,
+        size: f * .85,
+        align: 'center'
+      });
+    }
+    return out;
+  }
+  /** Route : trait violet, points, marques de distance (NM), libellés réservés (routeLabels). */
+  function drawRoute(ctx, route, toC, scale, labels = [], {
+    marks: mk = [],
+    color = '#8e24aa'
+  } = {}) {
+    const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
+    if (pts.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(2, 3 * scale);
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const q = toC(p.lat, p.lon);
+      i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+    });
+    ctx.stroke();
+    // marques NM : point plein sur la route
+    ctx.lineWidth = Math.max(1, 1.5 * scale);
+    for (const m of mk) {
+      const q = toC(m.lat, m.lon);
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, 2.2 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+    for (const [i, p] of pts.entries()) {
+      const q = toC(p.lat, p.lon),
+        end = i === 0 || i === pts.length - 1;
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, (end ? 5 : 3.5) * scale, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.stroke();
+    }
+    for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, color, l.align);
+    ctx.restore();
+  }
+  /** Vue d'ensemble (moins de 120 px par degré) : seuls les aérodromes et balises à moins de nearNm NM de la route, les
+   *  voies dont le milieu est à moins de 2 × nearNm NM ; VOR, VOR-DME et TACAN seulement. Vue rapprochée : tout. */
+  function declutter(data, route, pxPerDegree, nearNm = 15) {
+    const pts = (route || []).filter(p => Number.isFinite(p?.lat));
+    if (pxPerDegree >= 120 || pts.length < 2) return data;
+    const smp = samples(pts),
+      k = Math.cos(rad(pts[0].lat)),
+      near = (lat, lon, nm) => {
+        const m = nm / 60;
+        for (const [la, lo] of smp)
+          if (Math.abs(la - lat) <= m && Math.abs(lo - lon) * k <= m && Math.hypot(la - lat, (lo - lon) * k) * 60 <= nm) return true;
+        return false;
+      };
+    return {
+      ...data,
+      aerodromes: (data.aerodromes || []).filter(a => near(a.lat, a.lon, nearNm)),
+      navaids: (data.navaids || []).filter(n => !['NDB', 'DME', 'ILS'].includes(n.kind) && near(n.lat, n.lon, nearNm)),
+      airways: (data.airways || []).filter(w => near((w.a.lat + w.b.lat) / 2, (w.a.lon + w.b.lon) / 2, nearNm * 2)),
+      obstacles: []
+    };
+  }
+  /** Surcouche aéronautique complète, dans l'ordre du studio : espaces (formes), route (réservée en premier pour ses
+   *  libellés), voies, aérodromes et balises, libellés d'espaces, canevas et MORA. data : { airspaces (déjà choisis),
+   *  aerodromes, navaids, obstacles, airways, moraCells } ; bbox : emprise affichée { w, s, e, n }. */
+  function draw(ctx, {
+    toC,
+    W,
+    H,
+    scale = 1,
+    bbox,
+    profile,
+    data = {},
+    route = [],
+    marks: mk = []
+  }) {
+    if (!A()) throw new Error('maps: SiaAero missing');
+    const pl = A().placer(),
+      c = {
+        lat: (bbox.n + bbox.s) / 2,
+        lon: (bbox.e + bbox.w) / 2
+      },
+      shown = declutter(data, route, toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
+      labels = routeLabels(route, toC, scale, pl, mk);
+    drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
+    drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile);
+    drawPoints(ctx, shown, toC, W, H, scale, bbox, pl, profile);
+    drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
+    drawGridMora(ctx, shown.moraCells, toC, bbox, W, H, scale, pl, profile);
+    drawRoute(ctx, route, toC, scale, labels, {
+      marks: mk
+    });
+  }
+
+  window.MapsRender = {
+    routeProfile,
+    selectAirspaces,
+    bboxOf,
+    distances,
+    marks,
+    mercator,
+    drawBackground,
+    draw
+  };
+})();
