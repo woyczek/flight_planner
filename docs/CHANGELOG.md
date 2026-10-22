@@ -24,6 +24,18 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **maps lot 3: the vertical profile under the map, with a common cursor.**
+  - The profile shows:
+    - terrain from elevation tiles, or the MORA of the cells crossed when offline;
+    - the airspaces the planned trajectory enters;
+    - fuel's climb and descent (TOC and TOD), otherwise its own;
+    - the route points and NM marks.
+  - A finger on the profile, or a tap on the route, moves one cursor on both views. A line says the distance, planned
+    altitude, terrain or MORA, and the airspace under it.
+  - TOC and TOD are also drawn on the map.
+  - Airspaces and airways are read leg by leg along the route: 3.64 MB instead of 7.7 MB for Nantes → Marseille.
+  - "Map" is in the Pilot app's menu, after Fuel.
+  - Profile drawn in 1.5 s (2.6 s on a phone-like CPU).
 - **aerodb: zones chosen by the cells their data cover.**
   - The SIA publication writes in `sia/base/index.json`, per zone, the one-degree cells its data cover.
   - aerodb opens a zone only when its data touch the area asked for. Zone frames, which overflow (Spain's covers the

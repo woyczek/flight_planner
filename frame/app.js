@@ -35,6 +35,10 @@
       label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
       icon: '⛽'
     }, {
+      id: 'maps',
+      label: ['Carte', 'Map', 'Karte', 'Mapa'],
+      icon: '⌖'
+    }, {
       id: 'report',
       label: ['Compte rendu', 'Report', 'Bericht', 'Informe'],
       icon: '✎'

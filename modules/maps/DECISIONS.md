@@ -61,6 +61,33 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     airspaces never drawn.
   - Proposed to the ergonomics session as an aerodb lot: the manifest lists, per zone, the one-degree cells its data
     cover, and aerodb chooses zones by those cells.
-- **Waiting on the frame**: the menu entry in `APP.modules`. `meta.lazy` and `meta.net` arrived with frame lot 8 in
-  the same format as declared here; `meta.net` names the terrain tiles by their path prefix
-  (`s3.amazonaws.com/elevation-tiles-prod`).
+- **22 Oct 2026 — aerodb: zones by data cells** (aerodb commit 0812a6ad5, at the ergonomics session's request): the
+  manifest gives each zone's one-degree cells. Germany is no longer read for LFRS → LFML; Spain only through the
+  single corridor rectangle, hence the leg-by-leg corridor of lot 3.
+- **22 Oct 2026 — lot 3, the vertical profile** ([SPEC.md](SPEC.md) § 4 bis).
+  - **The studio's profile code** is copied unchanged (`lib/vertical_profile.js`); `profile.js` adds fuel's trajectory,
+    the MORA fallback, the cursor geometry and what lies under the cursor.
+  - **Fuel's trajectory first**: `tocNm` and `todNm` come from fuel's quote. Drawing them as they are keeps the map,
+    the profile and fuel's result in agreement. `SiaProfile`'s own plan is the fallback.
+  - **Only the airspaces the trajectory enters**: at FL270 from Nantes to Marseille, every TMA and CTA under the route
+    made the 351 px profile unreadable. The strip then lists, as "the airspace under the finger", the ones at the
+    planned altitude, which is what a pilot asks.
+  - **Terrain at zoom 9** (about 300 m, half the tiles of the studio's zoom 10); the highest point within 1 km either
+    side is kept, as in the studio. Offline: the MORA of the cells crossed, said in the status line.
+  - **Cursor**: on the profile, pointer events (`touch-action: pan-y`, so a vertical swipe still scrolls the page); on
+    the map, a tap near the route, never a drag (dragging pans the map).
+  - **Corridor leg by leg** for airspaces and airways (2 NM for the profile, 12 NM for the map).
+  - **Menu entry** added in `frame/app.js` after fuel, as the ergonomics session asked.
+  - **Layout**: map 52 % of the screen height (at least 260 px), profile 30 % (200 to 340 px), the strip under it.
+- **Measurements of lot 3** (375 px, LFRS → LFML at FL270 with fuel's profile; 13 reference zones):
+
+| | CPU ×1 | CPU ×4 |
+|---|---|---|
+| Mount to first map drawing with data (tiles) | 221 ms | 1,176 ms |
+| Mount to profile drawn (20 terrain tiles) | 1,530 ms | 2,634 ms |
+| JavaScript heap | 35 MB | 28 MB |
+
+  - Data read: France 3.54 MB (meta, airspaces 2.8 MB, aerodromes, navaids, airways, MORA), plus Spain and
+    Switzerland about 100 KB without their airspaces: 3.64 MB, against 7.7 MB in lot 2.
+  - LFBO → LFMT at 8,000 ft without fuel's profile: 7 terrain tiles, profile in 1.1 s.
+  - Offline (`?tiles=0`): plain background, profile with MORA, both said in the status line.

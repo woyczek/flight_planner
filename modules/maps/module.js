@@ -1,11 +1,14 @@
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
-// INTEGRATION.md, READING.md). Lot 2 : la carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par
-// Carburant), en lecture seule.
+// INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
+// et son profil vertical, en lecture seule (lots 2 et 3).
 //   · fond : tuiles OpenFreeMap (MapLibre, chargé au premier affichage, appelle lui-même les hôtes de meta.net) ;
 //     sans tuiles (hors ligne, hôte refusé, pas de WebGL), fond uni avec les contours des pays (lib/outlines.js) ;
 //   · surcouche aéronautique sur un canvas (render.js, sorti du studio) : espaces du couloir de la route, voies basses ou
 //     hautes selon le niveau, aérodromes, balises, MORA, canevas, route avec marques de distance ;
-//   · données par aerodb (ctx.aerodb), pour l'emprise affichée seulement ; vol par ctx.data ; rien n'est écrit.
+//   · profil vertical sous la carte (profile.js, SiaProfile copié du studio) : relief des tuiles Terrarium ou MORA,
+//     espaces traversés, trajectoire de Carburant (profile : TOC, TOD), marques NM ; un curseur commun aux deux vues
+//     (doigt sur le profil, ou toucher sur la route), une ligne dit ce qui est dessous ;
+//   · données par aerodb (ctx.aerodb), pour l'emprise utile seulement ; vol par ctx.data ; rien n'est écrit.
 // Styles limités au module ([data-module="maps"]) sur les jetons --sog-… du cadre.
 export const meta = {
   id: 'maps',
@@ -14,7 +17,7 @@ export const meta = {
   reads: ['pilot/'],
   writes: [],
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
-  files: ['render.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/outlines.js?v=0'],
+  files: ['render.js?v=0', 'profile.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0', 'lib/outlines.js?v=0'],
   // gardés au premier usage seulement (MapLibre, 1 Mo, inutile sans tuiles)
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],
   // hôtes publics de tuiles appelés directement par MapLibre (jamais par ctx.net) ; CSP connect-src du cadre
@@ -23,7 +26,9 @@ export const meta = {
 
 const LIBS = [
     ['SiaAero', 'lib/aero_symbols.js'],
+    ['SiaProfile', 'lib/vertical_profile.js'],
     ['MapsRender', 'render.js'],
+    ['MapsProfile', 'profile.js'],
     ['MAPS_OUTLINES', 'lib/outlines.js']
   ],
   STYLE_URL = 'https://tiles.openfreemap.org/styles/positron',
@@ -56,6 +61,25 @@ const TX = {
   summary: ['{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}'],
   altn: ['dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativa {a}'],
   dist: ['{d} NM', '{d} NM', '{d} NM', '{d} NM'],
+  profileLabel: ['Profil vertical de la route', 'Vertical profile of the route', 'Vertikalprofil der Route',
+    'Perfil vertical de la ruta'
+  ],
+  hint: ['Glissez le doigt sur le profil, ou touchez la route sur la carte.',
+    'Slide a finger along the profile, or tap the route on the map.',
+    'Mit dem Finger über das Profil fahren oder die Route auf der Karte antippen.',
+    'Deslice el dedo por el perfil o toque la ruta en el mapa.'
+  ],
+  planned: ['prévu {a}', 'planned {a}', 'geplant {a}', 'previsto {a}'],
+  terrain: ['relief {h}', 'terrain {h}', 'Gelände {h}', 'relieve {h}'],
+  mora: ['MORA {h}', 'MORA {h}', 'MORA {h}', 'MORA {h}'],
+  noZoneHere: ['hors espace choisi', 'outside the airspaces shown', 'außerhalb der gezeigten Lufträume',
+    'fuera de los espacios mostrados'
+  ],
+  noTerrain: ['Relief indisponible : le profil montre les MORA des cases traversées.',
+    'Terrain unavailable: the profile shows the MORA of the cells crossed.',
+    'Gelände nicht verfügbar: das Profil zeigt die MORA der überflogenen Felder.',
+    'Relieve no disponible: el perfil muestra las MORA de las celdas atravesadas.'
+  ],
   credit: ['© OpenFreeMap © OpenStreetMap ; SIA : base publiée, non certifiée',
     '© OpenFreeMap © OpenStreetMap; SIA: published database, not certified',
     '© OpenFreeMap © OpenStreetMap; SIA: veröffentlichte Datenbank, nicht zertifiziert',
@@ -162,17 +186,14 @@ async function loadData(box) {
     p = S.profile,
     E = p.elements,
     route = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])],
-    // profil à couloir : espaces lus pour le couloir de la route seulement (pas pour toute la vue)
-    cb = +p.corridorNm > 0 ? MapsRender.bboxOf(route, +p.corridorNm + 2) : null,
-    cq = cb ? {
-      bbox: [Math.max(box.w, cb.w), Math.max(box.s, cb.s), Math.min(box.e, cb.e), Math.min(box.n, cb.n)]
-    } : q,
-    none = cq.bbox[0] > cq.bbox[2] || cq.bbox[1] > cq.bbox[3]; // vue sans morceau du couloir
+    // profil à couloir : espaces et voies lus pour le couloir de la route, tronçon par tronçon (un rectangle autour
+    // d'une route en diagonale touche des zones voisines : l'Espagne pour une route Nantes → Marseille)
+    boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, box) : [q.bbox];
   const [airspaces, aerodromes, navaids, airways, moraCells, obstacles] = await Promise.all([
-    none ? [] : A.airspaces(cq),
+    many(A.airspaces, boxes),
     E.aerodromes ? A.aerodromes(q) : [],
     E.navaids ? A.navaids(q) : [],
-    E.airwaysLow || E.airwaysHigh ? A.airways(q) : [],
+    E.airwaysLow || E.airwaysHigh ? many(A.airways, boxes) : [],
     E.mora ? A.moraCells(q) : [],
     E.obstacles ? A.obstacles({
       ...q,
@@ -193,6 +214,30 @@ async function loadData(box) {
   };
 }
 const within = (inner, outer) => outer && inner.w >= outer.w && inner.e <= outer.e && inner.s >= outer.s && inner.n <= outer.n;
+/** Emprises du couloir de la route (marge nm NM), une par tronçon, coupées à l'emprise box : [[ouest, sud, est, nord]]. */
+function corridorBoxes(route, nm, box) {
+  const out = [];
+  for (let i = 1; i < route.length; i++) {
+    const b = MapsRender.bboxOf([route[i - 1], route[i]], nm),
+      c = [Math.max(box.w, b.w), Math.max(box.s, b.s), Math.min(box.e, b.e), Math.min(box.n, b.n)];
+    if (c[0] <= c[2] && c[1] <= c[3]) out.push(c);
+  }
+  return out;
+}
+/** Réunion sans doublons des réponses d'une requête aerodb sur plusieurs emprises. */
+async function many(f, boxes) {
+  const seen = new Set(),
+    out = [];
+  for (const bbox of boxes)
+    for (const x of await f({
+        bbox
+      }))
+      if (!seen.has(x)) {
+        seen.add(x);
+        out.push(x);
+      }
+  return out;
+}
 
 // ---------------------------------------------------------------- dessin
 /** Taille du canvas de surcouche à celle de la carte (pixels de l'écran). */
@@ -289,6 +334,7 @@ function draw() {
     ctx.fillText(S.route.altn.id, q.x + 8, q.y);
     ctx.restore();
   }
+  drawPlanOnMap(ctx, toC);
   if (S.data && !S.drawn) {
     S.drawn = true;
     performance.mark('maps:first-draw'); // premier dessin avec les données (mesures : DECISIONS.md)
@@ -296,6 +342,205 @@ function draw() {
   const want = wantBox(shown);
   if (!within(want, S.data?.box)) refresh(want);
 }
+/** TOC et TOD (losanges) et curseur commun (rond) sur la carte, aux distances de la coupe. */
+function drawPlanOnMap(ctx, toC) {
+  const pr = S.prof,
+    col = '#6a1b9a';
+  if (!pr) return;
+  ctx.save();
+  ctx.font = '700 12px Arial,sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  for (const [m, name] of [
+      [pr.plan?.toc, 'TOC'],
+      [pr.plan?.tod, 'TOD']
+    ]) {
+    if (!m || (name === 'TOD' && Math.abs(pr.plan.tod.s - pr.plan.toc.s) < pr.total * .005)) continue;
+    const g = MapsProfile.posAt(pr, m.s),
+      q = toC(g.lat, g.lon);
+    ctx.beginPath();
+    ctx.moveTo(q.x, q.y - 6);
+    ctx.lineTo(q.x + 6, q.y);
+    ctx.lineTo(q.x, q.y + 6);
+    ctx.lineTo(q.x - 6, q.y);
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.strokeText(name, q.x + 8, q.y - 9);
+    ctx.fillText(name, q.x + 8, q.y - 9);
+  }
+  if (S.cursor != null) {
+    const g = MapsProfile.posAt(pr, S.cursor),
+      q = toC(g.lat, g.lon);
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(29,111,216,.25)';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#1d6fd8';
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- profil vertical
+const FT_NM = 1852;
+/** Coupe du vol : espaces de la route (types du profil, sans plancher ni plafond), relief (Terrarium), sinon MORA. */
+async function buildProfile() {
+  const pts = S.route.points,
+    A = S.ctx.aerodb;
+  S.prof = null;
+  S.geo = null;
+  if (pts.length < 2) return drawProfile();
+  const key = S.route.updated;
+  let airspaces = [];
+  if (A) {
+    const list = await many(A.airspaces, corridorBoxes(pts, 2, {
+        w: -180,
+        e: 180,
+        s: -85,
+        n: 85
+      })).catch(() => []),
+      p = S.profile;
+    airspaces = MapsRender.selectAirspaces(list, {
+      ...p,
+      corridorNm: 0,
+      elements: {
+        ...p.elements,
+        zoneFloor: '',
+        zoneCeil: ''
+      }
+    }, pts);
+  }
+  S.terrain ||= SiaProfile.terrainSampler(9);
+  const prof = await MapsProfile.build(pts, {
+    levelFt: S.route.levelFt,
+    profile: S.route.flight?.profile || null,
+    airspaces,
+    elevation: navigator.onLine === false ? null : S.terrain,
+    mora: A ? (lat, lon) => A.mora(lat, lon) : null
+  }).catch(() => null);
+  if (!S || S.route.updated !== key) return;
+  S.prof = prof;
+  performance.mark('maps:profile');
+  drawProfile();
+  strip();
+  status();
+  schedule();
+}
+/** Taille d'un canvas à son cadre (pixels de l'écran) : { W, H, dpr }. */
+function fit(c, box) {
+  const r = box.getBoundingClientRect(),
+    dpr = Math.min(3, window.devicePixelRatio || 1),
+    W = Math.max(1, Math.round(r.width)),
+    H = Math.max(1, Math.round(r.height));
+  if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
+    c.width = Math.round(W * dpr);
+    c.height = Math.round(H * dpr);
+  }
+  return {
+    W,
+    H,
+    dpr
+  };
+}
+/** Coupe dessinée (SiaProfile), marques NM en bas du cadre, puis le curseur. */
+function drawProfile() {
+  if (!S?.pc) return;
+  S.profBox.hidden = !S.prof;
+  if (!S.prof) return;
+  const {
+    W,
+    H,
+    dpr
+  } = fit(S.pc, S.profBox), ctx = S.pc.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  S.geo = MapsProfile.draw(ctx, S.prof, {
+    W,
+    H,
+    scale: W < 500 ? .78 : 1
+  });
+  // marques NM (mêmes que sur la carte) : petits traits au bas du cadre
+  const g = S.geo,
+    yb = g.H - g.padB;
+  ctx.save();
+  ctx.strokeStyle = '#8e24aa';
+  ctx.fillStyle = '#8e24aa';
+  ctx.font = '600 9px Arial,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  for (const m of S.marks || []) {
+    const x = MapsProfile.xOf(g, m.nm * FT_NM);
+    ctx.beginPath();
+    ctx.moveTo(x, yb);
+    ctx.lineTo(x, yb - 6);
+    ctx.stroke();
+    ctx.fillText(String(m.nm), x, yb - 7);
+  }
+  ctx.restore();
+  drawCursor();
+}
+/** Curseur sur le profil (trait vertical, point sur l'altitude prévue). */
+function drawCursor() {
+  if (!S?.pcur || !S.geo) return;
+  const {
+    W,
+    H,
+    dpr
+  } = fit(S.pcur, S.profBox), ctx = S.pcur.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (S.cursor == null) return;
+  const g = S.geo,
+    x = MapsProfile.xOf(g, S.cursor),
+    info = MapsProfile.at(S.prof, S.cursor);
+  ctx.save();
+  ctx.strokeStyle = '#1d6fd8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, g.padT);
+  ctx.lineTo(x, g.H - g.padB);
+  ctx.stroke();
+  if (info.alt != null) {
+    const y = g.padT + (g.H - g.padT - g.padB) * (1 - (Math.min(Math.max(info.alt, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#1d6fd8';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+/** Hauteur lisible : « FL270 » au-dessus de 10 000 ft, sinon « 3 400 ft ». */
+const altTxt = ft => ft >= 10000 ? `FL${String(Math.round(ft / 100)).padStart(3, '0')}` : `${Math.round(ft).toLocaleString(S.ctx.lang())} ft`;
+/** Ligne sous le profil : distance, altitude prévue, relief ou MORA, espaces sous le curseur ; l'aide sans curseur. */
+function strip() {
+  if (!S?.stripEl) return;
+  let text = '';
+  if (S.prof && S.cursor != null) {
+    const i = MapsProfile.at(S.prof, S.cursor),
+      zones = i.zones.map(z => `${z.type} ${z.name} (${z.lower} – ${z.upper})`);
+    text = [tt(TX.dist, {
+      d: i.nm.toFixed(i.nm < 10 ? 1 : 0)
+    }), i.alt != null ? tt(TX.planned, {
+      a: altTxt(i.alt)
+    }) : '', i.terrain != null ? tt(TX.terrain, {
+      h: altTxt(i.terrain)
+    }) : Number.isFinite(i.mora) ? tt(TX.mora, {
+      h: altTxt(i.mora)
+    }) : '', zones.length ? zones.join(', ') : tt(TX.noZoneHere)].filter(Boolean).join(' · ');
+  } else if (S.prof) text = tt(TX.hint);
+  if (S.stripEl.textContent !== text) S.stripEl.textContent = text;
+}
+/** Curseur commun à la distance s (mètres ; null : effacé). */
+function setCursor(s) {
+  S.cursor = s;
+  drawCursor();
+  strip();
+  schedule();
+}
+
 let frame = 0;
 const schedule = () => {
   if (!frame) frame = requestAnimationFrame(() => {
@@ -386,6 +631,11 @@ async function startTiles() {
       S.map = map;
       map.on('move', schedule);
       map.on('moveend', schedule);
+      map.on('click', e => {
+        if (!S?.prof) return;
+        const s = MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y);
+        if (s != null) setCursor(s);
+      });
       finish(true);
     });
   });
@@ -404,6 +654,7 @@ async function status() {
       `<p>${esc(tt(TX.noZone))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
   }
   if (S.plain && S.route.points.length) out.push(`<p class="mp-muted">${esc(tt(TX.plain))}</p>`);
+  if (S.prof && !S.prof.terrainOk) out.push(`<p class="mp-muted">${esc(tt(TX.noTerrain))}</p>`);
   const html = out.join('');
   if (S.stEl.innerHTML !== html) S.stEl.innerHTML = html;
 }
@@ -438,6 +689,7 @@ async function applyFlight() {
   };
   S.marks = MapsRender.marks(S.route.points);
   S.data = null;
+  S.cursor = null;
   S.box.hidden = !S.route.points.length; // pas de vol : pas de carte, le message de l'état
   header();
   if (S.map) S.map.fitBounds([
@@ -449,6 +701,7 @@ async function applyFlight() {
   });
   status();
   schedule();
+  buildProfile();
 }
 
 const STYLE = `
@@ -456,10 +709,13 @@ const STYLE = `
 [data-module="maps"] .mp-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 [data-module="maps"] .mp-head h1{font-size:1.25rem;margin:0}
 [data-module="maps"] .mp-sum{flex:1 1 100%;color:var(--sog-muted);font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-box{position:relative;height:60vh;min-height:280px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:#dfe9f2;touch-action:none}
+[data-module="maps"] .mp-box{position:relative;height:52vh;min-height:260px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:#dfe9f2;touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 [data-module="maps"] .mp-credit{position:absolute;right:4px;bottom:2px;font-size:10px;color:#333;background:#fffc;padding:0 4px;border-radius:3px;pointer-events:none}
+[data-module="maps"] .mp-prof{position:relative;height:clamp(200px,30vh,340px);border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:#fff;touch-action:pan-y;cursor:crosshair}
+[data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
+[data-module="maps"] .mp-strip{min-height:1.4em;font-size:.92em;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-status p{margin:4px 0}
 [data-module="maps"] .mp-muted{color:var(--sog-muted);font-size:.9em}
 `;
@@ -483,13 +739,35 @@ export async function mount(el, ctx) {
 <div class="mp-sum" aria-live="polite"></div></div>
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
+<div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas></div>
+<div class="mp-strip" aria-live="polite"></div>
 <div class="mp-status" aria-live="polite"><p class="mp-muted">${esc(ctx.t(TX.loading))}</p></div>`;
   Object.assign(S, {
     box: el.querySelector('.mp-box'),
     mapEl: el.querySelector('.mp-map'),
     canvas: el.querySelector('canvas.mp-over'),
     hdEl: el.querySelector('.mp-sum'),
-    stEl: el.querySelector('.mp-status')
+    stEl: el.querySelector('.mp-status'),
+    profBox: el.querySelector('.mp-prof'),
+    pc: el.querySelector('canvas.mp-pc'),
+    pcur: el.querySelector('canvas.mp-pcur'),
+    stripEl: el.querySelector('.mp-strip')
+  });
+  // curseur commun : doigt (ou souris) sur le profil
+  const onProf = e => {
+    if (!S?.geo || (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse')) return;
+    const r = S.profBox.getBoundingClientRect();
+    setCursor(MapsProfile.sOf(S.geo, e.clientX - r.left));
+  };
+  S.profBox.addEventListener('pointerdown', onProf);
+  S.profBox.addEventListener('pointermove', onProf);
+  // toucher sur la carte près de la route (fond uni : la boîte reçoit le toucher ; MapLibre : son « click »)
+  S.box.addEventListener('click', e => {
+    if (S.map || !S.prof) return;
+    const r = S.box.getBoundingClientRect(),
+      v = MapsRender.mercator(S.fit, r.width, r.height, 12),
+      s = MapsProfile.nearest(S.prof, v.toC, e.clientX - r.left, e.clientY - r.top);
+    if (s != null) setCursor(s);
   });
   el.addEventListener('click', e => {
     const go = e.target.closest('[data-go]')?.dataset.go;
@@ -531,7 +809,9 @@ export async function mount(el, ctx) {
     schedule();
   });
   ro.observe(S.box);
-  S.stops.push(() => ro.disconnect());
+  const rp = new ResizeObserver(() => drawProfile());
+  rp.observe(S.profBox);
+  S.stops.push(() => ro.disconnect(), () => rp.disconnect());
 }
 
 export function unmount() {

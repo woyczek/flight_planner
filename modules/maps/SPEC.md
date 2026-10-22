@@ -2,20 +2,23 @@
 
 This document describes the V3 map module completely enough for a developer or a language model to rebuild it without
 seeing its code. Reference implementation: `modules/maps/module.js` (the screen), `modules/maps/render.js` (the
-rendering core cut out of the V2 studio), `modules/maps/lib/` (copies: ICAO symbols, MapLibre, country outlines).
+rendering core cut out of the V2 studio), `modules/maps/profile.js` (the vertical profile), `modules/maps/lib/`
+(copies: ICAO symbols, the studio's profile code, MapLibre, country outlines).
 Reading of the V2 studio: [READING.md](READING.md). How it is mounted and what it needs: [INTEGRATION.md](INTEGRATION.md).
 Choices and measurements: [DECISIONS.md](DECISIONS.md).
 
 ## 1. Purpose
 
-The Pilot application's map, read only, fast on a phone. Lot 2: the route map of the planned flight. Later lots: the
-vertical profile with a common cursor (lot 3), the mission maps redrawn from what the studio stores (lot 4).
+The Pilot application's map, read only, fast on a phone: the route map of the planned flight (lot 2) and its vertical
+profile with a common cursor (lot 3). Next: the mission maps redrawn from what the studio stores (lot 4).
 
 ## 2. Inputs
 
 - **The planned flight**: `pilot/<trigram>/current_flight.json` (written by fuel, schema in
   `modules/fuel/INTEGRATION.md`). Used: `route.points` [{ id, lat, lon }], `route.dep`, `route.arr`, `route.altn`,
-  `level.ft`, `aircraft.type`. Nothing is written.
+  `level.ft`, `aircraft.type`, `profile` { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }. Nothing is
+  written.
+- **Terrain**: Terrarium elevation tiles (AWS, zoom 9, about 300 m), read by the profile code itself (`meta.net`).
 - **Aeronautical data**: `ctx.aerodb`, by area only.
 - **Base map**: OpenFreeMap tiles (style `positron`) drawn by MapLibre; MapLibre calls the tile hosts itself (the
   hosts are listed in `meta.net`), never through `ctx.net`.
@@ -61,7 +64,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Data area**:
   - in overview (view at least 90 % as wide as the route's area), the route's area;
   - closer, the view widened by 15 %; read again only when the view leaves it;
-  - airspaces and airways are read for the route's corridor only (`corridorNm` + 2 NM).
+  - airspaces and airways are read for the route's corridor only (`corridorNm` + 2 NM), leg by leg: one rectangle
+    around a diagonal route would touch neighbouring zones (Spain for Nantes → Marseille).
 - **Base map**: MapLibre is loaded at the first map (script and style sheet from `lib/`).
   - With no network, no WebGL, an error, or no style after 10 s, the map uses the plain background. It is fitted to
     the route and static.
@@ -75,6 +79,35 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - `aerodb.on('change')`: the data are read again;
   - `ResizeObserver`: resize and redraw.
 - **Texts**: four languages, through `ctx.t`. Data labels (codes, names, levels) are not translated.
+
+## 4 bis. Vertical profile (`profile.js`, `window.MapsProfile`)
+
+- **Cut**: `SiaProfile.build` (copy of the studio's code). 100 to 800 samples along the route; terrain is the highest
+  point on the line and 1 km either side; airspaces crossed are the sample intervals inside their rings.
+- **Airspaces**: those of the route profile's types along the route (2 NM boxes, leg by leg), without the floor and
+  ceiling filter. Only those that the planned trajectory enters are kept. Limits relative to the ground (ASFC) are
+  raised by the terrain. Without a trajectory (no level), all are kept.
+- **Trajectory**:
+  - with fuel's `profile` and a level: linear climb from the departure's terrain to the level over `tocNm`, cruise,
+    linear descent to the arrival's terrain over `todNm` (fuel's own climb and descent);
+  - otherwise `SiaProfile`'s own plan, with fuel's rates if given, else 1,000 ft/min at 140 kt up and 800 ft/min at
+    160 kt down.
+  TOC and TOD are the ends of the cruise.
+- **Terrain unavailable** (offline, or the first tile refused): the cut has no terrain. The MORA of each 1° cell
+  crossed is drawn as a dashed brown step line (aerodb `mora`), and the status line says so.
+- **Drawing**: `SiaProfile.draw` (axes in ft / FL, airspace bands and labels, terrain, points with their distances,
+  trajectory with TOC / TOD and the cruise level), scale 0.78 under 500 px. Then:
+  - the NM marks of the map, as small ticks at the bottom of the frame;
+  - the cursor, on its own canvas: a vertical line and a dot at the planned altitude.
+- **Common cursor**:
+  - a finger or the mouse on the profile sets the distance;
+  - a tap on the map within 32 px of the route sets it to the nearest sample;
+  - the map shows it as a blue ring, with TOC and TOD as purple diamonds.
+- **The strip under the profile**: distance (NM) · planned altitude · terrain or MORA · the airspaces under the cursor
+  (type, name, limits), or "outside the airspaces shown". Without a cursor, a one-line hint.
+- **API**: `build(points, { levelFt, profile, airspaces, elevation, mora })`, `draw(ctx, cut, { W, H, scale })` →
+  geometry, `xOf(geo, s)`, `sOf(geo, x)`, `at(cut, s)`, `posAt(cut, s)`, `nearest(cut, toC, x, y, maxPx)`; distances in
+  metres, altitudes in feet.
 
 ## 5. Invariants
 
