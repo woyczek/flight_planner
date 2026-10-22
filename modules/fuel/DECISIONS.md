@@ -44,6 +44,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   the quote bench's sheet (300 NM, FL200, 30 kt tailwind, goal "sheet's climb IAS"): model ceiling and minimum-drag
   speed, manual settings, decision series (step, bounds, least fuel FL250, fastest FL140, five levels), curves
   (highest level, optimums, plan, cruises), climb to FL200 row by row; every value found again to 0.001: 24/24.
+- **23 Oct 2026 — vertical profile for maps** (asked by maps, through the ergonomics session): the current flight
+  carries `profile { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` from the quote's climb and descent
+  (rate = level ÷ minutes, ground speed = distance ÷ time), written only when it changes (redraws and resizes do not
+  write). `todNm` is the quote's descent distance, consistent with the descent rate and speed; the result's "top of
+  descent" keeps the V2 gradient rule.
 - **Small lot after the first screen** (23 Oct 2026, the user trying the module on a phone; no new work before
   feedback):
   - **"2,400" fixed** (`gptNumberText` in `sheets.js`): V2 read a ChatGPT value "2,400" as 2.4. The number is now read

@@ -1147,6 +1147,31 @@ function applyOfp(ofp) {
   resolveRoute();
 }
 /** Redessine ce qui dépend du calcul : origine de la croisière, décision, résultat, blocs repliés ouverts. */
+/** Profil vertical du devis pour maps (pilot/<trigramme>/current_flight.json, champ profile) : vario et vitesse sol
+ *  moyens de la montée et de la descente, distances du départ au sommet de montée et du sommet de descente à
+ *  l'arrivée ; null sans devis. Arrondis : 10 ft/min, 1 kt, 0,1 NM. */
+function verticalProfile(q) {
+  if (!q || !(q.levelFt > 0)) return null;
+  const r = (v, s = 1) => Number.isFinite(v) ? +(Math.round(v / s) * s).toFixed(s < 1 ? 1 : 0) : null,
+    rate = p => p?.min > 0 ? r(q.levelFt / p.min, 10) : null,
+    speed = p => p?.min > 0 && Number.isFinite(p.nm) ? r(p.nm / (p.min / 60)) : null;
+  return {
+    climbFpm: rate(q.climb),
+    climbKt: speed(q.climb),
+    descentFpm: rate(q.descent),
+    descentKt: speed(q.descent),
+    tocNm: r(q.climb?.nm, .1),
+    todNm: r(q.descent?.nm, .1)
+  };
+}
+/** Écrit le profil du devis dans le vol courant quand il change (maps le lit pour le profil vertical). */
+function shareProfile(q) {
+  const p = verticalProfile(q);
+  if (JSON.stringify(p) === JSON.stringify(S.flight.profile ?? null)) return;
+  S.flight.profile = p;
+  saveFlight();
+}
+
 function refresh() {
   if (!S?.body || S.view !== 'plan') return;
   const C = S.C = compute(),
@@ -1158,6 +1183,7 @@ function refresh() {
     } = C,
     $ = s => S.body.querySelector(s),
     unit = sheet?.unit || 'kg';
+  shareProfile(q);
   // appareil : origine de la croisière
   $('[data-src]').textContent = C.source ? tt(TX.source, {
     s: `${TX.kinds[C.source.kind] ? tt(TX.kinds[C.source.kind]) : C.source.kind || '—'}${C.source.approx ? ` (${tt(TX.approx)})` : ''}`

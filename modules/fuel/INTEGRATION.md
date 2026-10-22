@@ -63,6 +63,7 @@ One record per pilot, read and written by fuel and maps (the same flight in both
   "level": { "ft": 27000 },
   "wind": { "dirDeg": 270, "speedKt": 30 },
   "isaDev": 0,
+  "profile": { "climbFpm": 1230, "climbKt": 196, "descentFpm": 1500, "descentKt": 253, "tocNm": 48.2, "todNm": 56.1 },
   "ofp": { "date": "2026-10-19T13:44:06Z", "dep": "LFRS", "arr": "LFML", "altn": "LFPG", "points": 11,
            "levelFt": 27000, "aircraft": "S210 F-BHHH", "callsign": "" }
 }
@@ -71,6 +72,11 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 - `route.text`: item 15 (`LFBO N0450F350 DCT TOU UN460 NTS LFRN`) or the OFP route list (`ID lat lon[/N0450F370]`
   entries separated by commas or new lines), the form V2 writes and its "Open in" reads; `points` are its resolved
   positions; `distanceNm` and `trackDeg` are derived (great circle, departure to arrival track).
+- `profile` is written by fuel with every quote that changes it (null without a quote): average climb and descent
+  rates (ft/min, from the ground to the level and back) and ground speeds (kt), the distance from departure to the top
+  of climb (`tocNm`) and from the top of descent to arrival (`todNm`) — the quote's own climb and descent, so the four
+  values close the profile at the level. The "top of descent" shown in fuel's result is the gradient rule (level ÷
+  gradient + buffer), not `todNm`. Maps draws the vertical profile from it and computes its own when it is missing.
 - `wind` is null when unknown; `ofp` is null without a SimBrief flight plan (summary only: the OFP itself stays in the
   device cache).
 - Maps reads it as is; a field a module does not know is kept when it writes the record back.

@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: vertical profile in the current flight** (`modules/fuel/module.js`; `INTEGRATION.md` § 3, `DECISIONS.md`) —
+  `pilot/<trigram>/current_flight.json` gains `profile { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` from
+  every quote, for maps' vertical profile.
 - **website: "Read through the launcher"** (`modules/website/module.js`; `SPEC.md` § 3 bis, `INTEGRATION.md`,
   `DECISIONS.md`) — on a workstation, the website's log and fleet pages are read in one tap through the frame's
   `ctx.net` (GET, relayed by the launcher), then the same preview as a paste; where the site cannot be reached, the
