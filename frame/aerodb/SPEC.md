@@ -55,6 +55,10 @@ aerodb reads files only through a reader with the frame's data contract:
     and read again on the next question;
   - a cycle or zone missing from the listing it holds: the listing is read again.
   A `change` event is sent only in those cases.
+- For the offline data API (§ 5, `offline`), two more calls, both local and without network:
+  - `cached(prefix)` → `[{ path, rev, bytes, at }]`: the local copies under a prefix;
+  - `evict(path)`: drops the local copy of a reference file, never queued, never sent.
+  When they are missing, `offline.supported()` says so, states are `unknown` and `release` throws.
 
 Until the frame delivers its data layer, `AeroDB.fetchReader()` stands in. In GitHub mode it reads through
 `GitHubData` (contents and tree). Otherwise it reads the files served by the launcher (`data/<path>`, `AircraftDB/` at
@@ -66,8 +70,10 @@ the suite root) and has no listing.
   from the manifest `sia/base/index.json`, otherwise unknown.
 - **Cycle.** When the published zones are known, take the most recent cycle already in force (its date is not after
   today), otherwise the oldest one (published in advance). When they are unknown, try the AIRAC cycle in force, then
-  the five before it (28-day cycles from 25 January 2024 = AIRAC 2401); the first file found wins. A zone with no file
-  is remembered as missing until the next change.
+  the five before it (28-day cycles from 25 January 2024 = AIRAC 2401); the first file found wins.
+- **Missing zones.** A zone with no file is remembered as missing until the next change, but only when nothing says it
+  is published. A published zone that cannot be read (offline, not kept) is asked for again at the next question.
+  Likewise, a kind that could not be read answers empty this time and is read again next time.
 - **Format.** For the chosen cycle, the split format is preferred (its `meta.json` exists), otherwise the whole file is
   read.
 - **Zones of an area.** A zone is concerned when one of its frames, widened by half a degree (coasts, territorial
@@ -120,12 +126,19 @@ the suite root) and has no listing.
 | `coords(ident)`, `coordsAll(ident)` | position of an identifier; every place carrying it |
 | `aircraft()` | the aircraft base: `canonical`, `related`, `record`, `classify`, `codeOf`, `displayName`, `label`, `perf`, `estimate`, `search`, `size` |
 | `stats()` | per loaded zone: cycle, format, MB read, each file read (kind, KB, ms), indexes built |
+| `offline.supported()` | `{ cached, evict }`: what the reader allows |
+| `offline.zones()` | published zones, by name: `{ id, names: [fr, en, de, es], prefixes, cycle, format, publishedKb, cachedKb, state, at, staleKb }`; `state` is `absent`, `partial`, `complete` or `unknown`; `at` is the date of the newest local copy; `staleKb` counts the copies of other cycles |
+| `offline.keep(zone, { onProgress })` | reads every kind of the zone's cycle, plus the common files (manifest, major towns), into the frame's cache; `onProgress({ done, total, path, kb })`; returns the zone's state with `failed` (paths) and `readKb` |
+| `offline.release(zone)` | evicts the local copies of every cycle of the zone and closes it in memory; common files stay; returns the zone's state |
+| `offline.common()` | state of the common files |
+| `offline.aircraft()` | aircraft base: `{ files: [{ path, cached, kb }], types, state, cachedKb, at }` (JSON files, or the V2 `.js` when only those are cached) |
 
 Every call is asynchronous except the aircraft base's methods once `aircraft()` resolved.
 
 ## 6. Invariants
 
-1. aerodb never writes, never builds, never executes a file read from the data repository.
+1. aerodb never writes to the data repository, never builds, never executes a file read from it. Keeping and
+   releasing only fill and empty the device's cache.
 2. A module never names a zone or a file; aerodb chooses them.
 3. A question over the whole world returns exactly the published base (same counts as the workstation's base).
 4. No interface text: labels, translations and formatting belong to the modules and the frame.

@@ -178,6 +178,17 @@ waypoints, and the rest listed below.
     page, otherwise the configured GitHub repository.
   - Files are read on demand and revalidated at sync. Nothing is ever sent, and offline the pass still succeeds.
   - New scenario in `frame/store/test/`; `frame/SPEC.md` and `DECISIONS.md` updated.
+- **aerodb lot 4: offline data API** (`aerodb.offline`, for the "Offline data" card of the coming Settings screen).
+  - `zones()` gives, for each published zone: its name in four languages, ICAO prefixes, published size and state
+    (absent, partial, complete, with cycle and date of the newest copy).
+  - `keep(zone)` downloads every kind of the zone into the frame's cache; `release(zone)` frees it; the aircraft base
+    has its own state. Everything goes through the frame's adapter.
+  - The adapter still needs `cached` and `evict`, asked of the frame; until then, states read "unknown" and release is
+    refused.
+  - Bench `frame/aerodb/offline_bench.html` (375 px): France kept (6.9 MB, about 120 ms), answered with the network
+    cut, then released.
+  - Fixes: the manifest of lot 3 is now read (it was looked for one level too deep); a zone or kind unreadable offline
+    is asked for again instead of staying empty.
 
 ### Added
 

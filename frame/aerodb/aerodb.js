@@ -17,11 +17,19 @@
   // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal }.
   // Service : status(), ready(q), on('change', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
   //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), cities(q), find(texte, n), coords(ident),
-  //   coordsAll(ident), aircraft() → base des types (frame/aerodb/aircraft.js), stats().
+  //   coordsAll(ident), aircraft() → base des types (frame/aerodb/aircraft.js), stats(),
+  //   offline : { supported(), zones(), keep(zone, { onProgress }), release(zone), common(), aircraft() } — données
+  //   gardées dans le cache du frame pour le hors-ligne (carte « Données hors ligne » des Réglages) ; le lecteur doit
+  //   alors offrir cached(préfixe) → [{ path, rev, bytes, at }] (copies locales, sans réseau) et evict(chemin) (copie
+  //   locale d'une référence libérée, rien d'envoyé).
   if (window.AeroDB) return;
   const PUB = 'sia/base/',
     PUB_WHOLE = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\.json$/,
     PUB_SPLIT = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\/([a-z_]+)\.json$/,
+    SPLIT_KINDS = ['meta', 'airspaces', 'aerodromes', 'navaids', 'points', 'vrp', 'airways', 'obstacles', 'mora', 'obstaclemax',
+      'cities'
+    ], // sortes publiées d'une zone (format découpé)
+    COMMON = ['sia/base/index.json', 'sia/base/cities_major.json'], // fichiers communs à toutes les zones
     POINT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'obstacles'],
     MARGIN = .5, // marge des cadres de zone (côtes, eaux territoriales, espaces au large), comme la V2
     WIDE = 400; // au-delà de ce nombre de cases, un espace va dans la liste « large » (FIR, UIR) plutôt que case par case
@@ -203,15 +211,20 @@
             cycles: [],
             split: new Set(),
             whole: new Set(),
-            prefixes: []
+            kinds: {}, // cycle → sortes listées
+            prefixes: [],
+            kb: null // cycle du manifeste → { sorte: Ko }
           };
         const paths = await reader.list?.(PUB).catch(() => null);
-        const manifest = valueOf(await read(`${PUB}index.json`))?.data?.zones || null;
+        const mv = valueOf(await read(`${PUB}index.json`)),
+          manifest = mv?.zones || mv?.data?.zones || null; // { zones } au premier niveau (publication du lot 3)
         if (paths) {
           for (const p of paths) {
             let m = PUB_SPLIT.exec(p);
-            if (m && m[3] === 'meta') zone(m[1]).split.add(m[2]);
-            else if ((m = PUB_WHOLE.exec(p))) zone(m[1]).whole.add(m[2]);
+            if (m) {
+              if (m[3] === 'meta') zone(m[1]).split.add(m[2]);
+              (zone(m[1]).kinds[m[2]] ||= []).push(m[3]);
+            } else if ((m = PUB_WHOLE.exec(p))) zone(m[1]).whole.add(m[2]);
           }
         } else if (manifest) {
           for (const [id, e] of Object.entries(manifest))
@@ -221,7 +234,12 @@
           source: 'none'
         };
         for (const [id, e] of Object.entries(manifest || {}))
-          if (out[id]) out[id].prefixes = e.prefixes || [];
+          if (out[id]) Object.assign(out[id], {
+            prefixes: e.prefixes || [],
+            kb: e.cycle ? {
+              [e.cycle]: e.kb || {}
+            } : null
+          });
         for (const z of Object.values(out)) z.cycles = [...new Set([...z.split, ...z.whole])].sort();
         return {
           zones: out,
@@ -308,7 +326,9 @@
             return z;
           }
         }
-        missing.add(id);
+        // absente : retenue seulement si rien ne la dit publiée (sondage) ; publiée mais illisible (hors ligne, zone non
+        // gardée) : redemandée à la prochaine question
+        if (!e) missing.add(id);
         return null;
       })().finally(() => loading.delete(id));
       loading.set(id, p);
@@ -332,6 +352,7 @@
             bytes: sizeOf(r),
             ms: Math.round(performance.now() - t0)
           });
+          if (!r) z.parts.delete(kind); // illisible (hors ligne, sorte non gardée) : vide cette fois, redemandée ensuite
           return valueOf(r)?.data ?? empty;
         })();
       } else {
@@ -347,7 +368,16 @@
 
     // ---- index d'une zone, par sorte, construits à la première demande
     function idx(z, kind) {
-      return z.idx[kind] ||= (async () => {
+      if (z.idx[kind]) return z.idx[kind];
+      const p = z.idx[kind] = buildIdx(z, kind),
+        k = kind.startsWith('ident:') ? kind.slice(6) : kind;
+      // index bâti sur une sorte illisible : oublié avec elle, rebâti à la prochaine question
+      p.then(() => !z.parts.has(k) && z.idx[kind] === p && delete z.idx[kind], () => z.idx[kind] === p && delete z.idx[kind]);
+      return p;
+    }
+
+    function buildIdx(z, kind) {
+      return (async () => {
         if (kind === 'airspaces') {
           const cells = new Map(),
             wide = [],
@@ -447,6 +477,167 @@
         });
       })();
     }
+
+    // ---- données gardées hors ligne (cache du frame)
+    /** Fichiers d'une zone pour son cycle choisi : [{ path, kind, kb }] (kb : taille publiée, null si inconnue), cycle et
+     *  format ; null si la zone n'est pas publiée. */
+    async function zoneFiles(id) {
+      const e = (await published()).zones?.[id];
+      if (!e) return null;
+      const cycle = pickCycle(e.cycles),
+        kb = e.kb?.[cycle] || {};
+      if (e.split.has(cycle)) {
+        const kinds = e.kinds[cycle]?.length ? e.kinds[cycle] : Object.keys(kb).length ? Object.keys(kb) : SPLIT_KINDS;
+        return {
+          cycle,
+          format: 'split',
+          files: kinds.map(k => ({
+            path: `${PUB}${id}/${cycle}/${k}.json`,
+            kind: k,
+            kb: kb[k] ?? null
+          }))
+        };
+      }
+      return {
+        cycle,
+        format: 'whole',
+        files: [{
+          path: `${PUB}${id}/${cycle}.json`,
+          kind: 'whole',
+          kb: null
+        }]
+      };
+    }
+    /** Copies locales du lecteur sous un préfixe : Map chemin → { rev, bytes, at } ; null si le lecteur ne le dit pas. */
+    async function cachedMap(prefix) {
+      if (typeof reader.cached !== 'function') return null;
+      const list = await reader.cached(prefix).catch(() => null);
+      return list ? new Map(list.map(x => [x.path, x])) : null;
+    }
+    /** État d'un ensemble de fichiers attendus dans le cache : absent, partiel, complet ; inconnu sans cached(). */
+    function stateOf(files, cache) {
+      if (!cache) return {
+        state: 'unknown',
+        cachedKb: null,
+        at: null
+      };
+      const hit = files.filter(f => cache.has(f.path)),
+        at = hit.map(f => cache.get(f.path).at).filter(Boolean).sort().pop() || null;
+      return {
+        state: !hit.length ? 'absent' : hit.length === files.length ? 'complete' : 'partial',
+        cachedKb: Math.round(hit.reduce((n, f) => n + (cache.get(f.path).bytes || 0), 0) / 1024),
+        at: at && new Date(at).toISOString()
+      };
+    }
+    /** Lit (et laisse dans le cache du frame) une liste de chemins ; onProgress({ done, total, path, kb }). */
+    async function fetchAll(paths, onProgress) {
+      let done = 0,
+        kb = 0;
+      const failed = [];
+      for (const path of paths) {
+        const r = await read(path);
+        if (r) kb += sizeOf(r) / 1024;
+        else failed.push(path);
+        onProgress?.({
+          done: ++done,
+          total: paths.length,
+          path,
+          kb: Math.round(kb)
+        });
+      }
+      return {
+        failed,
+        kb: Math.round(kb)
+      };
+    }
+    const offline = {
+      /** Ce que le lecteur permet : cached (état du cache sans réseau), evict (libérer). */
+      supported: () => ({
+        cached: typeof reader.cached === 'function',
+        evict: typeof reader.evict === 'function'
+      }),
+      /** Zones publiées : [{ id, names [fr, en, de, es], prefixes, cycle, format, publishedKb, cachedKb, state (absent,
+       *  partial, complete, unknown), at (copie la plus récente), staleKb (copies d'autres cycles) }], par nom. */
+      async zones() {
+        const pub = (await published()).zones || {},
+          cache = await cachedMap(PUB),
+          out = [];
+        for (const id of Object.keys(pub)) {
+          const zf = await zoneFiles(id),
+            known = zf.files.every(f => f.kb !== null),
+            stale = cache ? [...cache.values()].filter(c => (PUB_SPLIT.exec(c.path) || PUB_WHOLE.exec(c.path))?.[1] === id && !zf
+              .files
+              .some(f => f.path === c.path)) : [];
+          out.push({
+            id,
+            names: zones[id]?.n || [id.toUpperCase()],
+            prefixes: pub[id].prefixes,
+            cycle: zf.cycle,
+            format: zf.format,
+            publishedKb: known ? zf.files.reduce((n, f) => n + f.kb, 0) : null,
+            ...stateOf(zf.files, cache),
+            staleKb: cache ? Math.round(stale.reduce((n, c) => n + (c.bytes || 0), 0) / 1024) : null
+          });
+        }
+        return out.sort((a, b) => String(a.names[0]).localeCompare(String(b.names[0])));
+      },
+      /** Garde une zone hors ligne : toutes ses sortes lues dans le cache du frame (et les fichiers communs : manifeste,
+       *  grandes villes) ; rend l'état de la zone et { failed, kb } lus. */
+      async keep(id, {
+        onProgress
+      } = {}) {
+        const zf = await zoneFiles(id);
+        if (!zf) throw new Error(`aerodb: zone ${id} not published`);
+        const got = await fetchAll([...zf.files.map(f => f.path), ...COMMON], onProgress);
+        return {
+          ...(await offline.zones()).find(z => z.id === id),
+          failed: got.failed,
+          readKb: got.kb
+        };
+      },
+      /** Libère une zone : copies locales de tous ses cycles retirées du cache du frame (rien n'est envoyé), zone fermée en
+       *  mémoire ; les fichiers communs restent. */
+      async release(id) {
+        if (typeof reader.evict !== 'function') throw new Error('aerodb: the reader cannot evict (evict missing)');
+        const cache = await cachedMap(`${PUB}${id}/`),
+          paths = cache ? [...cache.keys()] : (await zoneFiles(id))?.files.map(f => f.path) || [];
+        for (const path of paths) {
+          await reader.evict(path);
+          revs.delete(path);
+        }
+        loaded.delete(id);
+        missing.delete(id);
+        emit({
+          released: id
+        });
+        return (await offline.zones()).find(z => z.id === id) || null;
+      },
+      /** Fichiers communs (manifeste, grandes villes du monde) : état dans le cache. */
+      async common() {
+        const files = COMMON.map(path => ({
+          path
+        }));
+        return stateOf(files, await cachedMap(PUB));
+      },
+      /** Base des types : fichiers lus (JSON, sinon .js de la V2) et leur état dans le cache. */
+      async aircraft() {
+        const cache = await cachedMap('AircraftDB/'),
+          json = ['AircraftDB/aircraft_db.json', 'AircraftDB/aircraft_perf.json'],
+          js = ['AircraftDB/aircraft_db.js', 'AircraftDB/aircraft_perf.js'],
+          files = (cache && json.some(p => cache.has(p))) || !cache || !js.some(p => cache.has(p)) ? json : js;
+        return {
+          files: files.map(path => ({
+            path,
+            cached: cache ? cache.has(path) : null,
+            kb: cache?.has(path) ? Math.round((cache.get(path).bytes || 0) / 1024) : null
+          })),
+          types: aircraftP ? (await aircraftP).size() : null,
+          ...stateOf(files.map(path => ({
+            path
+          })), cache)
+        };
+      }
+    };
 
     const api = {
       /** État : zones publiées et leur cycle (null : inconnues), source de la liste (list, index, none), zones ouvertes et
@@ -673,6 +864,8 @@
       },
       /** Base des types (frame/aerodb/aircraft.js), lue à la première demande. */
       aircraft,
+      /** Données gardées hors ligne (voir l'en-tête). */
+      offline,
       /** Mesures : par zone ouverte, cycle, format, octets lus et durée par sorte, index construits. */
       stats: () => [...loaded.values()].map(z => ({
         zone: z.id,

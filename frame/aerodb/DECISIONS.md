@@ -127,7 +127,47 @@ listing known, no whole-zone file and no world-towns file is read. The aircraft 
   reference source in that case (the launcher serving the page, otherwise the configured GitHub repository; see
   `frame/DECISIONS.md`). Checked on `frame/index.html` with no usage ticked.
 
+## 22 October 2026 — lot 4 (offline data API, for the Settings screen)
+
+- **`offline` in the service**: `supported`, `zones`, `keep`, `release`, `common`, `aircraft`, all through the reader.
+  - Zone names come from the zone table, in four languages.
+  - Prefixes and published sizes come from the manifest.
+  - States compare the files expected for the zone's chosen cycle with the reader's local copies.
+- **Two calls asked of the frame's adapter** (requested through the ergonomics session):
+  - `cached(prefix)`: today `read` without `wait` starts a background download, so the state cannot be known without
+    downloading everything;
+  - `evict(path)`: `remove` would queue a deletion for the repository.
+  aerodb detects both calls (`supported()`); until they exist, states are `unknown` and `release` throws. On the real
+  adapter today, `keep('fr')` already works (6.9 MB read into the frame's cache).
+- **Bench without the frame**: `frame/aerodb/offline_bench.html` uses a bench reader that imitates the frame's
+  contract (`read` with `wait`, `list`, `cached`, `evict`) over the provisional reader, with an in-memory cache and a
+  network switch. To be run again on `FrameData.adapter` once it offers both calls.
+- **Fixes found by the bench**:
+  - The manifest was read as `data.zones`, but the publication of lot 3 writes `zones` at the top level. Without a
+    listing (launcher), aerodb fell back to probing the AIRAC cycles, and `coords` had no prefixes. Both levels are now
+    read.
+  - A published zone that could not be read offline was remembered as missing until the next change. It is now asked
+    for again at the next question.
+  - A kind that could not be read stayed empty, with its index, for the life of the zone. It is now read again next
+    time.
+
+## Measurements of lot 4 (22 October 2026)
+
+`offline_bench.html`, 375 px, launcher mode, 13 zones:
+
+| Step | CPU ×1 | CPU ×4 |
+|---|---|---|
+| `zones()` (manifest, no cache) | 14 ms | 64 ms |
+| `keep('fr')`: 13 files, 6,945 KB read (France 6,524 KB, common files 421 KB) | 165 ms | 108–124 ms |
+| France around Toulouse, network cut, on a new instance: aerodromes 107, airspaces 150, navaids 16, obstacles 175, MORA, `coords('LFBO')`, `find('TOUL')`, aircraft base | 32 ms | 174 ms |
+| `release('fr')`: France absent, 0 KB; common files and aircraft base kept (553 KB) | 0 ms | 1 ms |
+
+With the network cut, the only reads attempted were:
+- Spain's `meta.json`: its frame touches the Toulouse area and Spain was not kept. The answers come without it, and
+  it is asked for again later.
+- The two aircraft JSON files: not served in launcher mode, so the `.js` copies were used.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
-- Replace `fetchReader` by the frame's data layer as soon as a frame page mounts `FrameData`.
+- Run `offline_bench.html` again on `FrameData.adapter` when it offers `cached` and `evict`.

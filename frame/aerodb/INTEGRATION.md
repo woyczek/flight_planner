@@ -86,6 +86,26 @@ Rules for modules:
 - **Labels and units are yours.** aerodb returns data only: the module translates and formats.
 - **Expect empty answers** (no zone published, offline at first launch); `status()` says why.
 
+### Offline data (Settings screen, "Offline data" card)
+
+The settings module shows and manages what this device keeps, through `ctx.aerodb.offline` only. It never reads
+`sia/base/`.
+
+```js
+const { offline } = ctx.aerodb;
+const can = offline.supported();                     // { cached, evict }: without them, states are 'unknown'
+const list = await offline.zones();                  // [{ id, names, prefixes, cycle, publishedKb, cachedKb, state, at }]
+await offline.keep('fr', { onProgress: p => bar(p.done / p.total) });
+await offline.release('fr');                         // throws when the reader cannot evict
+const ac = await offline.aircraft();                 // { files, types, state, cachedKb, at }
+```
+
+- Show `names[lang]` (a zone name is data, from the zone table), the size from `publishedKb`, and the state with its
+  cycle and `at`.
+- `keep` downloads the whole zone (France: about 6.5 MB, 13 files). Ask for it on Wi-Fi only if the card offers that
+  choice.
+- A zone used normally is `partial`: only the kinds asked for are in the cache.
+
 ## 5. Costs to know (measured, see DECISIONS.md)
 
 - **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes
@@ -96,3 +116,5 @@ Rules for modules:
 - **Place search**: `find('TOUL')` with France loaded reads France's navaids, points, VRP and towns (1.1 MB) and the
   world's major towns (430 KB), never the world's towns (4.9 MB): about 100 ms on a phone-like CPU the first time,
   40 ms afterwards.
+- **Keeping France offline**: 13 files, 6.9 MB with the common files, 110–165 ms from the launcher. Afterwards, with
+  the network cut, the questions on France answer from the cache alone.
