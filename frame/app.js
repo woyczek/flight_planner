@@ -43,6 +43,10 @@
       label: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
       icon: '☰'
     }, {
+      id: 'website',
+      label: ['Site', 'Website', 'Website', 'Sitio'],
+      icon: '⌂'
+    }, {
       id: 'hello',
       label: ['Essayer', 'Try', 'Ausprobieren', 'Probar'],
       icon: '◎'

@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **website: the airline website in the Pilot application** (`modules/website/module.js`, `model.js`, `frame/app.js`;
+  `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`) — verb "Website" (level 2): the website's flight log pasted (HTML from
+  the clipboard first) → my rows in `pilot/<trigram>/site_log.json`, the fleet page pasted → `airline/fleet.json`
+  (V2 merge rules), each after a preview of what changes; the Airline card (`airline/settings.json`: name, site,
+  pages) edited on a computer screen, read only on a phone, read by the frame as `ctx.airline` (report's website
+  button becomes active). No request to the site, no login, no address in the code.
 - **Frame, lot 7: the airline's website through `ctx.net`** (`frame/app.js`, `tools/launch.py`) — the host of
   `airline.site` is relayed by the launcher (or called directly), GET only, https only, never a local or private
   address, so the website module can read the fleet and the log.
