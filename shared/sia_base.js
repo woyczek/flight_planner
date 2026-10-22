@@ -454,11 +454,16 @@
       ix = n => h.indexOf(n);
     if (['name', 'lat', 'lon', 'population'].some(n => ix(n) < 0)) throw new Error(
       'CSV villes : colonnes name,lat,lon,population requises.');
+    // cc : pays de GeoNames (colonne country, en minuscules) — range la ville dans la zone de son pays à la publication
+    // (tools/check_cities.py : les contours simplifiés en rangent mal près des frontières et sur les îles)
     return rows.filter(c => c.length >= h.length).map(c => ({
         name: c[ix('name')],
         lat: +c[ix('lat')],
         lon: +c[ix('lon')],
-        population: +c[ix('population')]
+        population: +c[ix('population')],
+        ...(ix('country') >= 0 && c[ix('country')] ? {
+          cc: c[ix('country')].trim().toLowerCase()
+        } : {})
       }))
       .filter(c => c.name && Number.isFinite(c.lat) && Number.isFinite(c.lon) && Number.isFinite(c.population));
   }
@@ -1961,7 +1966,7 @@
     if (villes.length) {
       const text = JSON.stringify({
         schema: 1,
-        cities: villes
+        cities: villes.map(plainCity)
       });
       if (await fileText(d, 'cities.json') !== text) {
         await writeText(d, 'cities.json', text);
@@ -2006,6 +2011,11 @@
     await writeText(d, name, text);
     return text.length;
   }
+  /** Ville publiée : sans son pays (cc ne sert qu'à la ranger ; les fichiers publiés gardent leur taille). */
+  const plainCity = ({
+    cc,
+    ...c
+  }) => c;
   /** Zone d'une position parmi zones (contour, puis contour élargi d'un demi-degré) ; '' si aucune. */
   function zoneLocator(zones, Z) {
     const tests = m => Z ? zones.map(z => [z, Z.inZones([z], m)]) : [],
@@ -2106,9 +2116,11 @@
         } else res.unchanged++;
         return n;
       };
+    // ville rangée dans la zone de son pays (GeoNames) quand ce pays a une zone, publiée ici ou non ; sinon (pays sans
+    // zone : outre-mer, micro-États ; ville sans pays, base d'avant cette règle) dans la zone dont le contour la contient
     for (const c of villes || []) {
-      const z = locate(+c.lat, +c.lon);
-      if (byZone[z]) byZone[z].push(c);
+      const z = c.cc && Z?.ringsOf?.(c.cc)?.length ? c.cc : locate(+c.lat, +c.lon);
+      if (byZone[z]) byZone[z].push(plainCity(c));
     }
     const manifest = {};
     for (const [z, p] of Object.entries(parts)) {
@@ -2161,7 +2173,7 @@
         cells: coverage(p)
       };
     }
-    const major = (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP);
+    const major = (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP).map(plainCity);
     count(await writeIfChanged(d, 'cities_major.json', {
       schema: 2,
       kind: 'cities_major',

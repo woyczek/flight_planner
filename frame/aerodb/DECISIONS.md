@@ -216,6 +216,36 @@ With the network cut, the only reads attempted were:
     maps module uses them from its lot 3.
   - Whole-world questions are unchanged (same counts as the workstation's base).
 
+## 22 October 2026 — towns filed by their country
+
+- **The report**: a town labelled "Béziers" near Châtellerault on a mission map.
+- **The cause is not ours**: the label belongs to the base map (OpenFreeMap positron, OpenStreetMap data), in the
+  same style as its Poitiers and Châtellerault. With the tiles off, the map shows no town there. GeoNames has Béziers
+  at 43.34° N, 3.21° E, and the published towns copy it correctly.
+- **The check asked for**: `tools/check_cities.py` (standard library) lists the GeoNames towns outside the contour of
+  their country, with the publication's half-degree margin. On the current file: 70,962 towns, 261 outside, 331 of a
+  country with no contour.
+  - The big ones come from the contours, not from GeoNames:
+    - islands missing from Natural Earth 1:50 M (Jeju, Hawaii, Okinawa);
+    - disputed areas drawn in another country (Crimea, Western Sahara, Somaliland, northern Cyprus);
+    - city states with no contour of their own (Hong Kong, Singapore).
+  - Near our zones, it exposed a real fault of the publication, which filed towns by contour:
+    - the Zeeland towns (Middelburg, Domburg…) went to Belgium: the simplified Dutch contour misses Walcheren;
+    - the Geneva suburbs (Thônex, Plan-les-Ouates…) went to France;
+    - Schengen and Vianden (Luxembourg) went to Germany or Belgium.
+- **The rule changed, not the entries**:
+  - `parseCities` keeps GeoNames' `country` column (`cc`), and the publication files a town under the zone of its
+    country whenever that country has a zone, published here or not.
+  - The contour stays only for towns of a country without a zone (overseas territories, Gibraltar, Monaco) and for
+    towns read before this rule.
+  - `cc` is removed from the published files, so their size is unchanged.
+  - After republishing: Thônex → Switzerland; the Dutch Middelburg → Netherlands (a Belgian Middelburg exists too);
+    Schengen and Vianden → no published zone (Luxembourg is not published); Gibraltar → Spain (no zone of its own).
+- **Seen in the source**: the GeoNames extract (`shared/carto/villes_geonames.csv`) holds only 2 towns for Portugal
+  and 43 for Ireland. A fuller extract is a data task, not a rule.
+- **Develop does not have the split publication**: `publishSplit`, `coverage` and this rule exist only on v3.
+  `parseCities` is shared, but the rest belongs to the port of lot 3 to develop when the ergonomics session decides it.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

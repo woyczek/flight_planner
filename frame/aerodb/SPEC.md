@@ -24,7 +24,8 @@ A module asks for an area or an identifier, never for a zone or a file.
   `sia/base/<zone>/<cycle>/<kind>.json` = { `schema: 2`, `zone`, `cycle`, `kind`, `parserVersion`, `data`,
   `updated_at` }. Kinds and their `data`: `airspaces`, `aerodromes`, `navaids`, `points`, `vrp`, `airways`,
   `obstacles` (arrays), `mora` (cells [{ lat, lon, mora, moraFt, latStep, lonStep, … }]), `obstaclemax`
-  ({ "lat|lon": ft }), `cities` (the zone's towns [{ name, lat, lon, population, … }]) and `meta` (everything else:
+  ({ "lat|lon": ft }), `cities` (the zone's towns [{ name, lat, lon, population, … }]: those of its country in
+  GeoNames, or, for a country without a zone, those inside its contour) and `meta` (everything else:
   `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …). Next to them:
   - `sia/base/cities_major.json` { `data`: towns of 100,000 inhabitants or more, the whole world }, for a place search
     outside the loaded zones;

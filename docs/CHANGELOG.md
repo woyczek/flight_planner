@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **aerodb: towns filed by their country.**
+  - The SIA publication now files each GeoNames town under the zone of its own country, using the zone contours only
+    for countries without a zone. Simplified contours had filed the Zeeland towns under Belgium and the Geneva suburbs
+    under France.
+  - `tools/check_cities.py` lists the towns that fall outside their country's contour.
+  - The "Béziers" seen near Châtellerault was a label of the base map tiles, not our data.
 - **maps lot 4: mission maps redrawn on the phone.**
   - The map module lists the missions of the data repository and redraws each mission map from its YAML.
   - Each map is drawn with its own display profile, extent and route when the studio wrote them (`profile_def`,

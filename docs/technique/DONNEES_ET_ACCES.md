@@ -107,7 +107,8 @@ zone into the data folder: `sia/base/<zone>/<cycle>.json` (one active zone, plai
 hundred KB, up to about 5 MB for France) and `sia/base/cities.json` (GeoNames towns, about 4.7 MB). A file is rewritten
 only when its content changes, and older cycles of the zone are removed. The same publication writes the format read
 by V3 (`frame/aerodb/`), split by kind: `sia/base/<zone>/<cycle>/<kind>.json` (`airspaces`, `aerodromes`, `navaids`,
-`points`, `vrp`, `airways`, `obstacles`, `mora`, `obstaclemax`, `cities` — the zone's towns — and `meta`: cycle, AAR
+`points`, `vrp`, `airways`, `obstacles`, `mora`, `obstaclemax`, `cities` — the zone's towns, by their GeoNames country
+(`tools/check_cities.py` lists the towns outside their country's contour) — and `meta`: cycle, AAR
 files, NAT tracks), `sia/base/cities_major.json` (towns over 100,000 inhabitants, for searches outside the loaded
 zones) and the manifest `sia/base/index.json` (per zone: cycle, ICAO prefixes of its aerodromes, size of each file,
 one-degree cells covered by its data;
