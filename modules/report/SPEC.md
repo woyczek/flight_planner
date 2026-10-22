@@ -70,7 +70,7 @@ what is missing is said in the Result step, never blocking.
 - The "→ Vol" bookmark (V2's, unchanged) runs on the website: aircraft list → the aircraft's page → "Add a flight" →
   fills the form by field name, compares read-only fields, never submits. The suite never posts to the website and
   never handles the pilot's login.
-- `modules/report/website_handoff.js` holds all of it, to be moved as is into the website module.
+- `frame/lib/website.js` (shared pure code, owned by the website module) holds all of it.
 
 ## 4. The record (schema `sog-report/1`)
 

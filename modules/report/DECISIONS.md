@@ -98,6 +98,9 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
 - **23 Oct 2026 — hand-over `{ open }`, `{ fresh, family }`** (for flightlog, done in flightlog's lot 2): reopening
   a report and starting a new one from a past flight without mixing it into a draft in progress; the flight's date
   replaces the new report's default date (V2 `setDate`).
+- **23 Oct 2026 — `website_handoff.js` moved to `frame/lib/website.js`** (owner website, ergonomics decision):
+  self-contained (its own `minutes`, `between` and block / flight durations instead of report's `model.js`), report
+  imports it from there; `meta.files` updated.
 - **Proposed, settled above** (lot 1):
   1. One JSON record per report, `cr/reports/<year>/<reportId>.json`, merge `record`, rather than the shared
      `cr/missions.yaml` (text for the data layer: no record-by-record merge). Joins the pending "reports per year"

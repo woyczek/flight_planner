@@ -1,9 +1,30 @@
-// V3 report — passage au site de la compagnie (« Enregistrer le vol sur le site »), recopié de la V2
-// (shared/mission_core/core.js : defaFields, defaUrl, « Copier les champs », favori « → Vol ») le 23/10/2026 ; à déplacer
-// tel quel dans le module website (modules/website) quand il existera. Le site n'est jamais appelé par la suite : son
-// formulaire « Ajouter un vol » est ouvert avec les champs du vol dans le fragment (#defa=…, jamais envoyé au serveur),
-// puis le favori « → Vol », lancé par le pilote sur le site, remplit le formulaire sans jamais le valider.
-import * as M from './model.js';
+// V3 frame/lib (propriétaire : website) — passage au site de la compagnie (« Enregistrer le vol sur le site »), recopié
+// de la V2 (shared/mission_core/core.js : defaFields, defaUrl, « Copier les champs », favori « → Vol ») le 23/10/2026 ;
+// appelé par report (un module n'importe jamais un autre module : code partagé ici). Le site n'est jamais appelé par la
+// suite : son formulaire « Ajouter un vol » est ouvert avec les champs du vol dans le fragment (#defa=…, jamais envoyé
+// au serveur), puis le favori « → Vol », lancé par le pilote sur le site, remplit le formulaire sans jamais le valider.
+
+/** Minutes d'une heure « HH:MM » (V2 MissionModel.minutes) ; null si invalide. */
+const minutes = text => {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(text || ''));
+  return m && +m[1] < 24 && +m[2] < 60 ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+/** Durée entre deux heures « HH:MM », passage de minuit compris (V2 MissionModel.between) ; null si une heure manque. */
+const between = (a, b) => {
+  a = minutes(a);
+  b = minutes(b);
+  return a == null || b == null ? null : b >= a ? b - a : b - a + 1440;
+};
+/** Durées bloc et vol d'une mission (part de V2 computeStatistics utile ici : bloc = cales, sinon moteurs ; vol plafonné
+ *  par rien d'autre) ; durées déclarées sans heures reprises. */
+const durations = m => {
+  const t = m.timeline || {},
+    num = v => v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v);
+  return {
+    blockMinutes: between(t.offBlock, t.onBlock) ?? between(t.engineStart, t.shutdown) ?? num(t.declared?.blockMinutes),
+    flightMinutes: between(t.takeoff, t.landing) ?? num(t.declared?.flightMinutes)
+  };
+};
 
 /** Champs du formulaire « Ajouter un vol » tirés du CR (premier appareil) : immatriculation sans tiret, type, indicatif
  *  (série, forme plan de vol, numéro), date de fin du vol (date du CR + heure de fin bloc, sinon atterrissage ;
@@ -13,11 +34,11 @@ export function flightFields(mission) {
   const a = (mission.aircraft || [])[0] || {},
     tl = mission.timeline || {},
     nav = mission.navigation || {},
-    st = M.computeStatistics(mission),
+    st = durations(mission),
     mins = st.blockMinutes ?? st.flightMinutes,
     hhmm = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`,
-    end = M.minutes(tl.onBlock || tl.landing || tl.shutdown),
-    start = M.minutes(tl.offBlock || tl.takeoff || tl.engineStart),
+    end = minutes(tl.onBlock || tl.landing || tl.shutdown),
+    start = minutes(tl.offBlock || tl.takeoff || tl.engineStart),
     date = String(mission.metadata?.date || '');
   let when = '';
   if (/^\d{4}-\d{2}-\d{2}$/.test(date) && end != null) {

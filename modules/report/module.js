@@ -10,7 +10,7 @@ import * as M from './model.js';
 import * as T from './text_import.js';
 import * as Fpl from './fpl.js';
 import * as LF from '../../frame/lib/last_flight.js';
-import * as Site from './website_handoff.js';
+import * as Site from '../../frame/lib/website.js';
 import AAR from './families/aar.js';
 import AIRBORNE from './families/airborne.js';
 import AIRLIFT from './families/airlift.js';
@@ -43,7 +43,8 @@ export const meta = {
     prefix: 'pilot/handoff.json',
     policy: 'cache'
   }],
-  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', 'website_handoff.js', 'families/aar.js',
+  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/website.js',
+    'families/aar.js',
     'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
     'families/flight_inspection.js', 'families/hadr.js', 'families/hems.js', 'families/isr.js', 'families/law_enforcement.js',
     'families/maritime.js', 'families/sar.js', 'families/sof.js', 'families/special.js', 'families/survey.js'

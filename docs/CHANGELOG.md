@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **website: "record the flight" moved to `frame/lib/website.js`** — shared pure code owned by the website module,
+  self-contained; report imports it from there.
 - **settings: usage level** (`frame/settings/settings.js`, `frame/app.js`, `frame/frame.css`; `frame/settings/SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`, `frame/SPEC.md` § 3.1) — a Level card in Settings: Discovery, Everyday (the
   default) or Full, one tap, with the menu each level shows; the frame's menu lists only the modules whose
