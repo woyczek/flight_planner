@@ -203,6 +203,50 @@ textarea {
   padding: 8px;
   border-radius: var(--sog-radius)
 }
+/* réglages (frame/settings/settings.js) : liste terme / valeur, message d'une carte, avertissement */
+.f-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 8px 0
+}
+.f-dl dt {
+  color: var(--sog-muted)
+}
+.f-dl dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere
+}
+.f-zone {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--sog-border)
+}
+.f-msg:empty {
+  display: none
+}
+.f-msg[data-kind="ok"] {
+  color: var(--sog-ok)
+}
+.f-msg[data-kind="warn"],
+.f-warn {
+  color: var(--sog-warn)
+}
+.f-msg[data-kind="err"] {
+  color: var(--sog-err)
+}
+.f-card input {
+  width: 100%;
+  box-sizing: border-box
+}
+.f-card .f-check input {
+  width: 20px
+}
 /* notifications flottantes et fenêtres de question (jamais de dialogue natif) */
 .f-notes {
   position: fixed;

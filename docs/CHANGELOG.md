@@ -24,6 +24,16 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: the settings screen of the Pilot application** (`frame/settings/settings.js`, `frame/app.js`,
+  `frame/index.html`, `frame/sw.js`, `frame/frame.css`; `frame/settings/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
+  `frame/SPEC.md`) — ⚙ opens `#settings`, which replaces the frame's device screen: short cards saved one by one,
+  phone first. Identity (trigram, IVAO VID, VATSIM CID, SimBrief, checked in the card); usages, with "Alone on this
+  device" shown as the state when no exchange is ticked and how data are exchanged; for single use, export and import
+  of the device's data in one file; with an exchange, data access (repository, branch, token never shown, "Test",
+  "Cut access") and synchronisation (last success, pending, network, last error, "Synchronise now"); offline data
+  (browser storage, one row per published zone with its state, cycle and size, "Keep offline" and "Free" through
+  `aerodb.offline`, the aircraft base); the launcher's IVAO key when a launcher serves the page; folded diagnostics
+  to copy. V2 settings found on the same origin (identity, GitHub access) are offered once, taken over in one tap.
 - **report: "last flight" moved to `frame/lib/last_flight.js`** — shared pure code (report owns it, flightlog uses
   it): a module never imports from another module.
 - **flightlog: reading of V2 "My flights"** (`modules/flightlog/READING.md`, `modules/flightlog/DECISIONS.md`) —

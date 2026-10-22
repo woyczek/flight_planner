@@ -186,7 +186,8 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 - On a screen, the verbs sit in a column on the left. On a phone (760 px or narrower), they sit in a drawer opened by
   the menu button, and choosing a verb closes it.
 - The address `#<module>` is enough to come back to a screen.
-- The frame has two screens of its own: `#conflicts` and `#device`.
+- The frame has two screens of its own: `#conflicts` and `#settings` (`#device`, its former name, opens it too;
+  `frame/settings/SPEC.md`).
 - Touch targets are at least 44 px high. There is no horizontal scroll at 375 px.
 
 ### 3.2 Module loader and context
@@ -247,7 +248,7 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 - The device's settings are cache files, never synchronised:
   - `device/usages.json`: `single`, `devices`, `users`, `backend`;
   - `device/identity.json`: `trigram`, `ivao`, `vatsim`, `simbrief`.
-  - The settings module will write them under its prefix; until then the frame's `#device` screen writes them.
+  - The settings screen (`frame/settings/`) writes them, with `device/settings.json` for its own answers.
   - They cannot live in the shared repository: they decide how the repository is reached.
 - **Transport chosen from the usages**:
   - no exchange ticked → local;
@@ -256,7 +257,8 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
   - otherwise GitHub when a repository and a device token are set;
   - otherwise local, with a warning that nothing can be exchanged.
   - Changing the settings switches the transport at once.
-- The GitHub token is entered on that screen, kept in `githubData:frame`, and never shown again.
+- The GitHub token is entered on the settings screen, kept in `githubData:frame`, and never shown again; "Cut
+  access" erases it (`FrameData.github.clear`).
 
 ### 3.6 Installable and offline application (`frame/sw.js`, `frame/manifest.webmanifest`)
 

@@ -2,15 +2,16 @@
   'use strict';
   // V3 frame — squelette d'une application (frame/SPEC.md § 3, frame/INTEGRATION.md) : l'appli Pilote.
   //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran, tiroir sur téléphone ;
-  //     l'adresse (#module) suffit à revenir sur un écran ; écrans du cadre : #conflicts, #device ;
+  //     l'adresse (#module) suffit à revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien
+  //     nom, même écran) ;
   //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
   //     unmount() ; ctx = { data (adaptateur de la couche de données, préfixes déclarés dans meta), aerodb (service
   //     unique), t, lang, notify, ask, askText, net, identity (lecture seule) } ; un module ne charge aucune feuille de
   //     style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…) ;
   //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet
   //     appareil seul) ; clic : synchroniser, ou l'écran des conflits s'il y en a ;
-  //   · transport choisi d'après les usages de l'appareil (document local device/usages.json, écrit par le module
-  //     settings — en attendant, par l'écran #device du cadre) : aucun usage d'échange coché → local seul ; sinon le
+  //   · transport choisi d'après les usages de l'appareil (document local device/usages.json, écrit par l'écran des
+  //     réglages, frame/settings/settings.js) : aucun usage d'échange coché → local seul ; sinon le
   //     lanceur si la page en est servie, sinon GitHub s'il est réglé, sinon local ;
   //   · identité (device/identity.json : trigramme, VID IVAO, CID VATSIM, identifiant SimBrief) passée aux modules en
   //     lecture seule, objet vide en son absence ;
@@ -97,7 +98,7 @@
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     menu: ['Menu', 'Menu', 'Menü', 'Menú'],
-    device: ['Cet appareil', 'This device', 'Dieses Gerät', 'Este dispositivo'],
+    device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
       'Modul „{m}“ konnte nicht geladen werden: {e}', 'No se pudo cargar el módulo «{m}»: {e}'
     ]
@@ -326,7 +327,8 @@
   // ---------------------------------------------------------------- navigation
   const ROUTES = {
     conflicts: renderConflicts,
-    device: renderDevice
+    settings: renderSettings,
+    device: renderSettings
   };
   /** Menu des verbes (une fois, puis l'entrée courante marquée). */
   function renderMenu(active) {
@@ -339,9 +341,9 @@
     }
   }
   let current = null; // { id, mod }
-  /** Affiche l'écran de l'adresse (#module, #conflicts, #device) ; démonte le module précédent. */
+  /** Affiche l'écran de l'adresse (#module, #conflicts, #settings) ; démonte le module précédent. */
   async function route() {
-    const id = decodeURIComponent(location.hash.slice(1)) || APP.modules[0]?.id || 'device';
+    const id = decodeURIComponent(location.hash.slice(1)) || APP.modules[0]?.id || 'settings';
     document.body.classList.remove('f-nav-open');
     $('fBurger').setAttribute('aria-expanded', 'false');
     if (current?.mod?.unmount) try {
@@ -355,7 +357,7 @@
     renderMenu(id);
     if (ROUTES[id]) return ROUTES[id](view);
     const entry = APP.modules.find(m => m.id === id) || APP.modules[0];
-    if (!entry) return renderDevice(view);
+    if (!entry) return renderSettings(view);
     try {
       const mod = await import(new URL(`modules/${entry.id}/module.js`, ROOT).href);
       const meta = mod.meta || {};
@@ -445,96 +447,25 @@
     };
   }
 
-  // ---------------------------------------------------------------- écran de l'appareil (en attendant le module settings)
-  const D = {
-    intro: ['Réglages de cet appareil, gardés ici seulement (jamais synchronisés). Le module « Réglages » les reprendra.',
-      'Settings of this device, kept here only (never synchronised). The Settings module will take them over.',
-      'Einstellungen dieses Geräts, nur hier gespeichert (nie synchronisiert). Das Modul „Einstellungen“ übernimmt sie.',
-      'Ajustes de este dispositivo, guardados solo aquí (nunca sincronizados). El módulo «Ajustes» los retomará.'
-    ],
-    identity: ['Identité', 'Identity', 'Identität', 'Identidad'],
-    trigram: ['Trigramme', 'Trigram', 'Trigramm', 'Trigrama'],
-    ivao: ['VID IVAO', 'IVAO VID', 'IVAO-VID', 'VID IVAO'],
-    vatsim: ['CID VATSIM', 'VATSIM CID', 'VATSIM-CID', 'CID VATSIM'],
-    simbrief: ['Identifiant SimBrief', 'SimBrief ID', 'SimBrief-ID', 'Identificador SimBrief'],
-    usages: ['Usages (plusieurs possibles)', 'Usages (several possible)', 'Nutzungen (mehrere möglich)', 'Usos (varios posibles)'],
-    single: ['Seul, sur cet appareil', 'Alone, on this device', 'Allein, auf diesem Gerät', 'Solo, en este dispositivo'],
-    devices: ['Seul, sur plusieurs appareils', 'Alone, on several devices', 'Allein, auf mehreren Geräten',
-      'Solo, en varios dispositivos'
-    ],
-    users: ['À plusieurs (dépôt git des données)', 'Several users (git data repository)', 'Mehrere Nutzer (Git-Datenrepository)',
-      'Varios usuarios (repositorio git de datos)'
-    ],
-    backend: ['Serveur (web service, site) — à venir', 'Server (web service, website) — to come', 'Server (Webdienst, Website) — folgt',
-      'Servidor (servicio web, sitio) — próximamente'
-    ],
-    github: ['Dépôt GitHub des données (site, téléphone)', 'GitHub data repository (website, phone)',
-      'GitHub-Datenrepository (Website, Telefon)',
-      'Repositorio GitHub de datos (sitio, teléfono)'
-    ],
-    repo: ['Dépôt (compte/dépôt)', 'Repository (account/repository)', 'Repository (Konto/Repository)',
-      'Repositorio (cuenta/repositorio)'
-    ],
-    branch: ['Branche', 'Branch', 'Zweig', 'Rama'],
-    token: ['Jeton personnel (gardé sur cet appareil seulement)', 'Personal token (kept on this device only)',
-      'Persönliches Token (nur auf diesem Gerät gespeichert)', 'Token personal (guardado solo en este dispositivo)'
-    ],
-    tokenSet: ['jeton enregistré — vide : inchangé', 'token saved — empty: unchanged', 'Token gespeichert — leer: unverändert',
-      'token guardado — vacío: sin cambios'
-    ],
-    save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
-    saved: ['Réglages de l’appareil enregistrés ; transport : {tr}.', 'Device settings saved; transport: {tr}.',
-      'Geräteeinstellungen gespeichert; Transport: {tr}.', 'Ajustes del dispositivo guardados; transporte: {tr}.'
-    ],
-    missing: [
-      'Aucun moyen d’échange disponible pour ces usages (ni lanceur ni dépôt GitHub réglé) : les données restent sur cet appareil.',
-      'No exchange available for these usages (no launcher, no GitHub repository set): data stay on this device.',
-      'Kein Austausch für diese Nutzungen verfügbar (kein Starter, kein GitHub-Repository eingestellt): die Daten bleiben auf diesem Gerät.',
-      'Ningún intercambio disponible para estos usos (ni lanzador ni repositorio GitHub configurado): los datos quedan en este dispositivo.'
-    ]
-  };
-  async function renderDevice(view) {
-    const gh = FD.github.config() || {},
-      chk = (k, row) => `<label class="f-check"><input type="checkbox" data-u="${k}" ${usages[k] ? 'checked' : ''}>${esc(t(row))}</label>`,
-      fld = (k, row, v, type = 'text') => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${type}" value="${esc(v || '')}" autocomplete="off"></label>`;
-    view.innerHTML = `<h1>${esc(t(T.device))}</h1><p class="f-muted">${esc(t(D.intro))}</p>
-      <div class="f-card"><h2>${esc(t(D.identity))}</h2>${fld('trigram', D.trigram, identity.trigram)}${fld('ivao', D.ivao, identity.ivao)}${fld('vatsim', D.vatsim, identity.vatsim)}${fld('simbrief', D.simbrief, identity.simbrief)}</div>
-      <div class="f-card"><h2>${esc(t(D.usages))}</h2>${chk('single', D.single)}${chk('devices', D.devices)}${chk('users', D.users)}${chk('backend', D.backend)}</div>
-      <div class="f-card"><h2>${esc(t(D.github))}</h2>${fld('repo', D.repo, gh.repo)}${fld('branch', D.branch, gh.branch || 'main')}<label class="f-field">${esc(t(D.token))}<input data-f="token" type="password" autocomplete="off" placeholder="${esc(gh.token ? t(D.tokenSet) : '')}"></label></div>
-      <p><button type="button" class="primary" data-save>${esc(t(D.save))}</button></p>`;
-    view.querySelector('[data-save]').onclick = async () => {
-      const f = k => view.querySelector(`[data-f="${k}"]`).value.trim();
-      await own.put('device/identity.json', {
-        trigram: f('trigram').toUpperCase(),
-        ivao: f('ivao'),
-        vatsim: f('vatsim'),
-        simbrief: f('simbrief'),
-        updated_at: new Date().toISOString()
-      });
-      const u = {
-        updated_at: new Date().toISOString()
-      };
-      for (const i of view.querySelectorAll('[data-u]')) u[i.dataset.u] = i.checked;
-      await own.put('device/usages.json', u);
-      if (f('repo') && (f('token') || gh.token)) FD.github.save({
-        repo: f('repo'),
-        branch: f('branch') || 'main',
-        token: f('token') || gh.token,
-        ...(gh.api ? {
-          api: gh.api
-        } : {})
-      });
-      await loadDevice();
-      const tr = (await FD.status()).transport;
-      notify(t(D.saved, {
-        tr
-      }), 'ok');
-      if (missingTransport()) notify(t(D.missing), 'warn');
-      renderDevice(view);
-    };
+  // ---------------------------------------------------------------- écran des réglages (frame/settings/settings.js)
+  /** Réglages de l'appareil : écran du cadre (il règle transport et jeton), avec son contexte privilégié. */
+  function renderSettings(view) {
+    if (!window.SogSettings) return view.replaceChildren();
+    return SogSettings.render(view, {
+      t,
+      notify,
+      ask,
+      FD,
+      own,
+      reload: loadDevice,
+      identity: () => identity,
+      usages: () => usages,
+      launcher: () => launcherHere,
+      transport: () => configured,
+      aerodb: () => aerodb,
+      syncNow
+    });
   }
-  /** Vrai si les usages demandent un échange que rien ne permet ici. */
-  const missingTransport = () => !!configured?.missing;
 
   // ---------------------------------------------------------------- démarrage
   let aerodb = null,
@@ -550,7 +481,7 @@
       $('fBurger').setAttribute('aria-expanded', String(open));
     };
     $('fDevice').onclick = () => {
-      location.hash = '#device';
+      location.hash = '#settings';
     };
     $('fSync').onclick = async () => {
       const s = await FD.status();

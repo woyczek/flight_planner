@@ -1,0 +1,33 @@
+# settings — how the frame mounts it
+
+For the frame agent and for any module that wonders where a device setting lives. The screen itself is described
+in [SPEC.md](SPEC.md).
+
+## 1. Loading and route
+
+- `frame/index.html` loads `settings/settings.js` (classic script) before `app.js`; the service worker keeps it with
+  the frame's files (`frame/sw.js`, `SHELL`).
+- `frame/app.js` routes `#settings` and the old `#device` to `renderSettings(view)`, which calls
+  `SogSettings.render(view, context)`. The ⚙ button of the header opens `#settings`.
+
+## 2. The context the frame gives
+
+Settings is part of the frame: its context is wider than a module's `ctx`.
+
+| Field | What it is |
+|---|---|
+| `t`, `notify`, `ask` | the frame's texts, notifications and questions |
+| `FD` | `window.FrameData` (status, `onStatus`, `github.config/save/clear`, `github(cfg).head()`, `adapter`) |
+| `own` | the frame's own adapter on `device/` (policy `cache`) |
+| `reload()` | re-reads `device/` and plugs the transport the usages ask for |
+| `identity()`, `usages()` | the device's current identity and usages |
+| `launcher()` | `{ data, dataGit }` when a launcher serves the page, otherwise null |
+| `transport()` | the plugged transport (`missing: true` when the usages ask for an exchange nothing allows) |
+| `aerodb()` | the aerodb service, or null |
+| `syncNow()` | the frame's "synchronise now", with its notifications |
+
+## 3. For modules
+
+- A module reads the identity through `ctx.identity` (read only) and never the files of `device/`.
+- A module's own preferences (units, last OFP…) stay in the module, with the `cache` policy under its own prefix.
+- Usage levels: chosen on this screen when the frame has them (V3 spec: the level is chosen in Settings only).
