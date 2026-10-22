@@ -263,6 +263,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **First run in GitHub mode: step 1 "Folders" stayed to do, with a button that only refused**
+  (`apps/settings/premier_lancement.html`) — with My profile › Data access set, the data come from the GitHub repository
+  and there is no folder to choose: the step is now "not applicable" (–) in the rail, its badge and the checklist, the
+  next steps open, and "Finish" no longer waits for it. The application folder card and "OneDrive folder…" are hidden
+  ("or the Excel file…" stays for the ODV workbook); one sentence names the repository and, on a page served by the
+  launcher, says that GitHub mode wins and where to remove it. User manual ×4 updated.
 - **Settings: an aircraft table appeared in whatever section was open, some ten seconds later** (`shared/data_admin.js`) —
   the sections of My profile and Settings shared one body: "Aircraft and simulators", slow to read its data, wrote its
   table into the section shown when it finished, and could clear that section's buttons and status line. Each section

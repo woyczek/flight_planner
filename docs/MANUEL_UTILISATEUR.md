@@ -617,6 +617,7 @@ Le navigateur demande de désigner chaque dossier une fois ; il s'en souvient en
 - Le dossier de l'application est ouvert **en lecture seule** : aucune page ne peut modifier le code de la suite. Juste après, la page demande « Autoriser l'écriture des données » : cliquez, puis acceptez la demande du navigateur, pour que vos disponibilités, missions et comptes rendus s'écrivent dans `data/`. Après un redémarrage du navigateur, « Autoriser » redemande les deux.
 - Le dossier doit être celui de la suite servie par le lanceur : s'il appartient à une autre copie de la suite, l'étape reste à faire (✗ dans le bilan) avec le message « Suite lancée depuis …, dossier déclaré … » ; rechoisissez le bon dossier.
 - **« Classeur ODV (facultatif) »** : « Dossier OneDrive… » désigne le dossier synchronisé où l'escadrille dépose le classeur (le Planning ODV ouvre le plus récent). Sans OneDrive : « ou le fichier Excel… », gardé dans ce navigateur.
+- **Mode GitHub** (Mon profil › Accès aux données réglé) : les données viennent du dépôt GitHub, aucun dossier n'est à choisir. L'étape est « sans objet » (–) et les suivantes sont ouvertes ; la carte du dossier de l'application et « Dossier OneDrive… » disparaissent, « ou le fichier Excel… » reste. Sur une page servie par le lanceur, le mode GitHub l'emporte aussi et la page le dit : pour travailler avec les dossiers du poste, retirez-le dans Mon profil › Accès aux données.
 
 Cette étape est importante : sans dossier des données autorisé, vos disponibilités restent dans le navigateur et le Centre ne les voit pas.
 

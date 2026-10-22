@@ -595,6 +595,7 @@ El navegador pide designar cada carpeta una vez; después la recuerda.
 - La carpeta de la aplicación se abre **en solo lectura**: ninguna página puede modificar el código de la suite. Justo después, la página pregunta «Autorizar la escritura de los datos»: haga clic y acepte la petición del navegador, para que su disponibilidad, misiones e informes se escriban en `data/`. Tras reiniciar el navegador, «Autorizar» vuelve a pedir ambos.
 - La carpeta debe ser la de la suite servida por el lanzador: si pertenece a otra copia de la suite, el paso queda por hacer (✗ en el balance) con el mensaje «Suite iniciada desde …, carpeta declarada …»; vuelva a elegir la carpeta correcta.
 - **«Libro ODV (opcional)»**: «Carpeta OneDrive…» designa la carpeta sincronizada donde la escuadrilla deposita el libro (la Planificación ODV abre el más reciente). Sin OneDrive: «o el archivo Excel…», guardado en este navegador.
+- **Modo GitHub** (Mi perfil › Acceso a los datos configurado): los datos vienen del repositorio de GitHub, no hay carpeta que elegir. El paso «no aplica» (–) y los siguientes quedan abiertos; la tarjeta de la carpeta de la aplicación y «Carpeta OneDrive…» desaparecen, «o el archivo Excel…» se queda. En una página servida por el lanzador, el modo GitHub también prevalece y la página lo dice: para trabajar con las carpetas del equipo, quítelo en Mi perfil › Acceso a los datos.
 
 Este paso es importante: sin carpeta de datos autorizada, su disponibilidad se queda en el navegador y el Centro no la ve.
 

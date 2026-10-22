@@ -429,9 +429,10 @@
   <section id="plFolders" data-icon="folder"><h2><span class="pl-n">1</span>Dossiers <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint" data-what="plFolders" data-no-i18n></p>
     <p class="pl-status" data-no-i18n></p>
-    <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
+    <p class="pl-hint" id="plFoldersHint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
+    <p class="pl-msg ok" id="plFoldersGh" data-no-i18n hidden></p>
     <div class="pl-grid">
-      <div class="pl-card"><h3>Dossier de l’application</h3>
+      <div class="pl-card" id="plAppCard"><h3>Dossier de l’application</h3>
         <p class="pl-hint">Le dossier qui contient <code>lancer.cmd</code> et <code>lancer.sh</code> : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits.</p>
         <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button><button type="button" class="secondary" id="plRepoGrant" data-icon="check" hidden>Autoriser à nouveau</button></div>
         <p class="pl-msg" id="plRepoMsg"></p>
@@ -704,7 +705,8 @@
     el.innerHTML = v;
   };
   // ---- étapes de l'assistant : ordre, symbole et mot de chaque état (ok faite, todo à faire, opt facultative ou
-  // passée, lock verrouillée faute d'étape 1, bad à refaire, unknown inconnu sans lanceur)
+  // passée, lock verrouillée faute d'étape 1, bad à refaire, unknown inconnu sans lanceur, na sans objet : dossiers en
+  // mode GitHub)
   const STEPS = ['plFolders', 'plData', 'plCompany', 'plProfile', 'plSia', 'plCentre'];
   let lastSteps = []; // états des étapes au dernier rendu (« Terminer » : confirmation si 3 à 5 restent à faire)
   const SYM = {
@@ -713,7 +715,8 @@
     opt: '–',
     lock: '🔒',
     bad: '✗',
-    unknown: '?'
+    unknown: '?',
+    na: '–'
   };
   /** Mot de l'état st d'une étape, dans la langue courante. */
   const stateWord = st => K.t({
@@ -722,7 +725,8 @@
     opt: ['facultative', 'optional', 'optional', 'opcional'],
     lock: ['verrouillée', 'locked', 'gesperrt', 'bloqueado'],
     bad: ['à refaire', 'to redo', 'neu zu machen', 'por rehacer'],
-    unknown: ['inconnue', 'unknown', 'unbekannt', 'desconocido']
+    unknown: ['inconnue', 'unknown', 'unbekannt', 'desconocido'],
+    na: ['sans objet', 'not applicable', 'entfällt', 'no aplica']
   } [st]);
   /** Nom court de l'étape id (rail, « Reste à faire »). */
   const stepName = id => K.t({
@@ -778,7 +782,8 @@
       item('git', S.git ?? null, L('Dépôt git de synchronisation', 'Git sync repository', 'Git-Synchronisierungs-Repository',
         'Repositorio git de sincronización'), 'plRepoCard', true, S.gitUrl || ''),
       item('folder', S.folderOther ? 'bad' : S.folder ?? null, L('Dossier de l’application', 'Application folder', 'Anwendungsordner',
-        'Carpeta de la aplicación'), 'plFolders', false, S.folderName || ''),
+        'Carpeta de la aplicación'), 'plFolders', false, S.folderNa ? L('sans objet en mode GitHub', 'not applicable in GitHub mode',
+        'entfällt im GitHub-Modus', 'no aplica en modo GitHub') : S.folderName || ''),
       item('company', !!(va.name && va.url), L('Compagnie et site', 'Airline and website', 'Fluggesellschaft und Website',
         'Aerolínea y sitio'), 'plCompany', false, [va.name, va.url && va.url.replace(/^https?:\/\//, '')].filter(Boolean).join(' — ')),
       item('ivaoKey', S.ivaoKey ?? null, L('Clé d’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de API IVAO'), 'plCompany',
@@ -866,8 +871,12 @@
       text: id !== 'plFolders' && lock ? '' : text
     });
     // 1. dossiers
-    const s1 = st(by.folder.ok);
-    add('plFolders', s1, s1 === 'ok' ? K.tf(['Fait : dossier de l’application « {f} ».', 'Done: application folder “{f}”.',
+    const s1 = S.folderNa ? 'na' : st(by.folder.ok);
+    add('plFolders', s1, s1 === 'na' ? L('Sans objet : mode GitHub, les données viennent du dépôt.',
+        'Not applicable: GitHub mode, the data come from the repository.',
+        'Entfällt: GitHub-Modus, die Daten kommen aus dem Repository.',
+        'No aplica: modo GitHub, los datos vienen del repositorio.') : s1 === 'ok' ? K.tf(['Fait : dossier de l’application « {f} ».',
+        'Done: application folder “{f}”.',
         'Erledigt: Anwendungsordner „{f}“.', 'Hecho: carpeta de la aplicación «{f}».'
       ], {
         f: S.folderName
@@ -949,7 +958,7 @@
       t: typesNote
     }));
     // 6. Centre : allumé seulement quand 1 à 5 sont faites
-    const prior = out.every(x => x.st === 'ok' || x.st === 'unknown');
+    const prior = out.every(x => x.st === 'ok' || x.st === 'unknown' || x.st === 'na');
     add('plCentre', cpcoOn() && prior ? 'ok' : 'opt', cpcoOn() ? (prior ? L('Fait : Centre activé dans ce navigateur.',
       'Done: Centre enabled in this browser.', 'Erledigt: Zentrum in diesem Browser aktiviert.',
       'Hecho: Centro activado en este navegador.') : L(
@@ -975,7 +984,7 @@
     const end = !curStep;
     setHtml($('plRail'), steps.map(x => `<li><a href="#${x.id}" data-goto="${x.id}" class="pl-s-${x.st}${x.id === curStep ? ' pl-cur' : ''}"${x.id === curStep ? ' aria-current="step"' : ''}><b>${SYM[x.st]}</b><span>${x.n}. ${K.esc(stepName(x.id))}</span><small>${K.esc(stateWord(x.st))}</small></a></li>`).join('') +
       `<li><a href="#plEnd" data-goto="plEnd" class="pl-s-${end ? 'ok' : 'todo'}${end ? ' pl-cur' : ''}"${end ? ' aria-current="step"' : ''}><b>${SYM[end ? 'ok' : 'todo']}</b><span>${K.esc(L('Terminer', 'Finish', 'Abschließen', 'Terminar'))}</span><small>${K.esc(end ? L('prêt', 'ready', 'bereit', 'listo') : L('à la fin', 'at the end', 'am Ende', 'al final'))}</small></a></li>`);
-    const missing = steps.slice(0, 5).filter(x => x.st !== 'ok' && x.st !== 'unknown');
+    const missing = steps.slice(0, 5).filter(x => x.st !== 'ok' && x.st !== 'unknown' && x.st !== 'na');
     lastSteps = steps;
     setText($('plRailHint'), missing.length ? K.tf(['Étape en cours : {n}. {s}. Un clic sur une étape l’ouvre.',
       'Current step: {n}. {s}. Click a step to open it.', 'Aktueller Schritt: {n}. {s}. Ein Klick öffnet einen Schritt.',
@@ -1002,6 +1011,7 @@
       if (next) {
         setText(next, L('Suivant →', 'Next →', 'Weiter →', 'Siguiente →'));
         setText(next.nextElementSibling, x.st === 'ok' ? L('✓ Étape faite.', '✓ Step done.', '✓ Schritt erledigt.', '✓ Paso hecho.') :
+          x.st === 'na' ? L('– Étape sans objet.', '– Step not applicable.', '– Schritt entfällt.', '– Paso que no aplica.') :
           x.st === 'lock' ? '' : L('○ Pas encore faite : elle reste marquée à faire dans le rail, en haut.',
             '○ Not done yet: it stays marked as to do in the rail, at the top.',
             '○ Noch nicht erledigt: bleibt oben in der Leiste als offen markiert.',
@@ -1253,6 +1263,42 @@
   async function foldersState() {
     const FA = window.FileAccess;
     if (!FA) return;
+    // mode GitHub (Mon profil › Accès aux données) : les données viennent du dépôt, aucun dossier à choisir — étape sans
+    // objet, carte du dossier de l'application et « Dossier OneDrive… » masqués (FileAccess.pickFolder les refuse) ;
+    // le classeur ODV reste choisissable comme fichier. Il l'emporte aussi sur une page servie par le lanceur : dit.
+    const gh = window.GitHubData?.on?.() ? window.GitHubData.config() : null;
+    S.folderNa = !!gh;
+    $('plAppCard').hidden = $('plOdvDir').hidden = $('plFoldersHint').hidden = !!gh;
+    $('plFoldersGh').hidden = !gh;
+    if (gh) {
+      S.launcher ??= await api('status').then(() => true, () => false);
+      setText($('plFoldersGh'), K.tf(['Mode GitHub : les données viennent du dépôt {u}, aucun dossier à choisir.{l}',
+        'GitHub mode: the data come from the repository {u}, no folder to choose.{l}',
+        'GitHub-Modus: Die Daten kommen aus dem Repository {u}, kein Ordner zu wählen.{l}',
+        'Modo GitHub: los datos vienen del repositorio {u}, no hay carpeta que elegir.{l}'
+      ], {
+        u: gh.repo,
+        l: S.launcher ? K.t([
+          ' Cette page est servie par le lanceur, mais le mode GitHub l’emporte : pour travailler avec les dossiers de ce poste, le retirer dans Mon profil › Accès aux données.',
+          ' This page is served by the launcher, but GitHub mode wins: to work with this computer’s folders, remove it in My profile › Data access.',
+          ' Diese Seite wird vom Starter bereitgestellt, aber der GitHub-Modus hat Vorrang: Um mit den Ordnern dieses Rechners zu arbeiten, ihn unter Mein Profil › Datenzugang entfernen.',
+          ' Esta página la sirve el lanzador, pero el modo GitHub prevalece: para trabajar con las carpetas de este equipo, quitarlo en Mi perfil › Acceso a los datos.'
+        ]) : ''
+      }));
+      S.folder = true;
+      S.folderOther = false;
+      S.folderName = '';
+      done('plFolders', true);
+      const odvFile = await FA.get('__odvFile');
+      msg('plOdvMsg', odvFile ? K.tf(['Classeur gardé : {f}', 'Workbook kept: {f}', 'Arbeitsmappe gespeichert: {f}',
+        'Libro guardado: {f}'
+      ], {
+        f: odvFile.name || 'ODV'
+      }) : '', odvFile ? 'ok' : '');
+      dataGate();
+      checklist();
+      return;
+    }
     const repo = await FA.status('__repo'),
       odvDir = await FA.status('__odv'),
       odvFile = await FA.get('__odvFile');
@@ -2107,7 +2153,7 @@
   // une autre installation servie au même port n'hérite pas du « Terminer »)
   on('click', 'plFinish', async () => {
     // étapes recommandées pas faites (3 à 5) : on termine quand même, après confirmation (reprise possible à tout moment)
-    const left = lastSteps.filter(x => x.n >= 3 && x.n <= 5 && x.st !== 'ok' && x.st !== 'unknown');
+    const left = lastSteps.filter(x => x.n >= 3 && x.n <= 5 && x.st !== 'ok' && x.st !== 'unknown' && x.st !== 'na');
     if (left.length && !await window.AppFramework.ask(K.tf([
         'Il reste : {l}. Terminer quand même ? Ces réglages restent accessibles dans Paramètres › Premier lancement.',
         'Still left: {l}. Finish anyway? These settings stay available in Settings › First run.',
@@ -2180,6 +2226,7 @@
       aeroState();
       allButton();
       centreState();
+      if (S.folderNa) foldersState(); // phrase du mode GitHub, dans la nouvelle langue
     });
     setInterval(checklist, 15000);
     // étape 5 : états des types et des données aéronautiques, puis l'étape courante ouverte, les autres repliées

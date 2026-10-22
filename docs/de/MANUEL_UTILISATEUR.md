@@ -598,6 +598,7 @@ Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
 - Der Anwendungsordner wird **schreibgeschützt** geöffnet: Keine Seite kann den Code der Suite ändern. Gleich danach fragt die Seite „Schreiben der Daten erlauben“: klicken und die Anfrage des Browsers annehmen, damit Ihre Verfügbarkeit, Missionen und Berichte in `data/` geschrieben werden. Nach einem Neustart des Browsers fragt „Erlauben“ beides erneut.
 - Der Ordner muss der der vom Starter bereitgestellten Suite sein: gehört er zu einer anderen Kopie der Suite, bleibt der Schritt offen (✗ in der Übersicht) mit der Meldung „Suite gestartet aus …, angegebener Ordner …“; wählen Sie den richtigen Ordner neu.
 - **„ODV-Arbeitsmappe (optional)“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
+- **GitHub-Modus** (Mein Profil › Datenzugang eingestellt): Die Daten kommen aus dem GitHub-Repository, es ist kein Ordner zu wählen. Der Schritt „entfällt“ (–), die folgenden sind offen; die Karte des Anwendungsordners und „OneDrive-Ordner…“ verschwinden, „oder die Excel-Datei…“ bleibt. Auf einer vom Starter bereitgestellten Seite hat der GitHub-Modus ebenfalls Vorrang, und die Seite sagt es: Um mit den Ordnern des Rechners zu arbeiten, entfernen Sie ihn unter Mein Profil › Datenzugang.
 
 Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügbarkeit im Browser und das Zentrum sieht sie nicht.
 
