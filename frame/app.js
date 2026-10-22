@@ -15,6 +15,9 @@
   //     lanceur si la page en est servie, sinon GitHub s'il est réglé, sinon local ;
   //   · identité (device/identity.json : trigramme, VID IVAO, CID VATSIM, identifiant SimBrief) passée aux modules en
   //     lecture seule, objet vide en son absence ;
+  //   · niveau d'usage (device/level.json, choisi dans les réglages : 1 découverte, 2 courant par défaut, 3 complet) : le
+  //     menu ne montre que les modules dont meta.level est inférieur ou égal ; un module caché reste joignable par son
+  //     adresse ;
   //   · hors ligne : service worker du cadre (frame/sw.js : le cadre et les modules gardés, nouvelle version proposée au
   //     rechargement), appels sortants des modules relayés par le lanceur s'il y en a un (ctx.net).
   const FD = window.FrameData;
@@ -238,13 +241,20 @@
     }]
   });
   let identity = Object.freeze({}),
-    usages = {};
+    usages = {},
+    level = 2; // niveau d'usage de l'appareil (1 à 3)
+  const LEVELS = [1, 2, 3],
+    DEFAULT_LEVEL = 2;
+  /** Niveau d'usage valide (1 à 3) ; défaut : courant. */
+  const levelFrom = v => LEVELS.includes(+v) ? +v : DEFAULT_LEVEL;
   /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
   async function loadDevice() {
     identity = Object.freeze({
       ...((await own.get('device/identity.json')) || {})
     });
     usages = (await own.get('device/usages.json')) || {};
+    level = levelFrom((await own.get('device/level.json'))?.level);
+    renderMenu();
     configured = await chooseTransport();
     FD.configure({
       identity: {
@@ -334,10 +344,34 @@
     settings: renderSettings,
     device: renderSettings
   };
-  /** Menu des verbes (une fois, puis l'entrée courante marquée). */
-  function renderMenu(active) {
-    const ul = $('fMenu');
-    if (!ul.children.length) ul.innerHTML = APP.modules.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}"><span aria-hidden="true">${esc(m.icon || '•')}</span>${esc(t(m.label))}</a></li>`).join('');
+  // niveau de chaque module (meta.level, 1 par défaut), relevé au démarrage en important les points d'entrée
+  const moduleLevel = {};
+  let levelsP = null; // relevé des niveaux en cours (readLevels)
+  let menuKey = '',
+    menuActive = '';
+  /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré. */
+  const visibleModules = () => APP.modules.filter(m => (moduleLevel[m.id] ?? 1) <= level);
+  /** Niveau déclaré par chaque module (meta.level), puis menu redessiné ; module illisible : niveau 1. */
+  async function readLevels() {
+    await Promise.all(APP.modules.map(async m => {
+      try {
+        moduleLevel[m.id] = levelFrom((await import(new URL(`modules/${m.id}/module.js`, ROOT).href)).meta?.level ?? 1);
+      } catch {
+        moduleLevel[m.id] = 1;
+      }
+    }));
+    renderMenu();
+  }
+  /** Menu des verbes du niveau de l'appareil (redessiné seulement quand la liste change), entrée courante marquée. */
+  function renderMenu(active = menuActive) {
+    menuActive = active;
+    const ul = $('fMenu'),
+      list = visibleModules(),
+      key = list.map(m => m.id).join(',');
+    if (key !== menuKey || !ul.children.length) {
+      menuKey = key;
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}"><span aria-hidden="true">${esc(m.icon || '•')}</span>${esc(t(m.label))}</a></li>`).join('');
+    }
     for (const a of ul.querySelectorAll('a')) {
       const on = a.dataset.id === active;
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
@@ -347,7 +381,7 @@
   let current = null; // { id, mod }
   /** Affiche l'écran de l'adresse (#module, #conflicts, #settings) ; démonte le module précédent. */
   async function route() {
-    const id = decodeURIComponent(location.hash.slice(1)) || APP.modules[0]?.id || 'settings';
+    const id = decodeURIComponent(location.hash.slice(1)) || visibleModules()[0]?.id || 'settings';
     document.body.classList.remove('f-nav-open');
     $('fBurger').setAttribute('aria-expanded', 'false');
     if (current?.mod?.unmount) try {
@@ -467,7 +501,13 @@
       launcher: () => launcherHere,
       transport: () => configured,
       aerodb: () => aerodb,
-      syncNow
+      syncNow,
+      level: () => level,
+      modules: async () => (await levelsP, APP.modules.map(m => ({
+        id: m.id,
+        label: m.label,
+        level: moduleLevel[m.id] ?? 1
+      })))
     });
   }
 
@@ -532,6 +572,7 @@
       if (document.visibilityState === 'visible') FD.status().then(paintSync); // téléphone rallumé : état du moment
     });
     offlineApp();
+    levelsP = readLevels();
     FD.start();
     route();
   }

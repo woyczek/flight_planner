@@ -3,7 +3,8 @@
   // V3 — écran des réglages du cadre (#settings ; frame/settings/SPEC.md) : il remplace l'écran #device. Il fait partie du
   // cadre et non d'un module, parce qu'il règle le transport et le jeton de l'appareil, ce qu'un module ne touche jamais.
   //   · cartes courtes en une colonne (téléphone d'abord), chacune enregistrée seule ;
-  //   · Identité (device/identity.json) ; Usages (device/usages.json) : « Seul sur cet appareil » n'est pas une case,
+  //   · Identité (device/identity.json) ; Niveau (device/level.json : 1 découverte, 2 courant, 3 complet ; le menu du
+  //     cadre suit) ; Usages (device/usages.json) : « Seul sur cet appareil » n'est pas une case,
   //     c'est l'état quand aucun échange n'est coché ; export / import des données de l'appareil dans ce seul cas ;
   //   · Accès (dépôt GitHub, jeton jamais réaffiché, « Couper l'accès ») et Synchronisation, si un échange est coché ;
   //   · Données hors ligne (ctx.aerodb, stockage du navigateur) ; Clés, si un lanceur sert la page ; diagnostic replié ;
@@ -62,6 +63,38 @@
       'With several users the trigram is needed: it signs each sending and files your records.',
       'Mit mehreren Nutzern ist das Kürzel nötig: Es zeichnet jedes Senden und ordnet Ihre Dateien.',
       'Con varios usuarios el trigrama es necesario: firma cada envío y ordena sus ficheros.'
+    ],
+    // niveau d'usage
+    level: ['Niveau', 'Level', 'Stufe', 'Nivel'],
+    levelHint: ['Ce que l’appli vous montre ; un module caché reste joignable par son adresse.',
+      'What the app shows you; a hidden module stays reachable by its address.',
+      'Was die App Ihnen zeigt; ein ausgeblendetes Modul bleibt über seine Adresse erreichbar.',
+      'Lo que la aplicación le muestra; un módulo oculto sigue accesible por su dirección.'
+    ],
+    levels: [
+      [
+        ['Découverte', 'Discovery', 'Einstieg', 'Descubrimiento'],
+        ['L’essentiel, pour commencer.', 'The essentials, to get started.',
+          'Das Wesentliche, für den Anfang.', 'Lo esencial, para empezar.'
+        ]
+      ],
+      [
+        ['Courant', 'Everyday', 'Alltag', 'Habitual'],
+        ['L’usage de tous les jours.', 'Day-to-day use.', 'Der tägliche Gebrauch.',
+          'El uso de todos los días.'
+        ]
+      ],
+      [
+        ['Complet', 'Full', 'Vollständig', 'Completo'],
+        ['Tout, outils avancés compris.', 'Everything, advanced tools included.',
+          'Alles, einschließlich der erweiterten Werkzeuge.', 'Todo, herramientas avanzadas incluidas.'
+        ]
+      ]
+    ],
+    levelShows: ['Menu : {m}', 'Menu: {m}', 'Menü: {m}', 'Menú: {m}'],
+    levelNone: ['aucun module', 'no module', 'kein Modul', 'ningún módulo'],
+    levelSaved: ['Niveau « {l} » : le menu suit.', 'Level “{l}”: the menu follows.', 'Stufe „{l}“: das Menü folgt.',
+      'Nivel «{l}»: el menú sigue.'
     ],
     // usages
     usages: ['Usages', 'Usages', 'Nutzungen', 'Usos'],
@@ -317,6 +350,12 @@
       ${fld('trigram', T.trigram, id.trigram, { cap: true, ph: 'ABC' })}${fld('ivao', T.ivao, id.ivao, { mode: 'numeric' })}${fld('vatsim', T.vatsim, id.vatsim, { mode: 'numeric' })}${fld('simbrief', T.simbrief, id.simbrief)}
       ${us.users && !id.trigram ? `<p class="f-warn">${esc(t(T.needTrigram))}</p>` : ''}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="identity">${esc(t(T.save))}</button></div></div>`);
+    // niveau d'usage : un geste, le menu suit aussitôt
+    const lvl = c.level?.() || 2,
+      mods = (await c.modules?.()) || [],
+      shows = n => mods.filter(m => m.level <= n).map(m => t(m.label)).join(', ') || t(T.levelNone);
+    cards.push(`<div class="f-card" data-card="level"><h2>${esc(t(T.level))}</h2><p class="f-muted">${esc(t(T.levelHint))}</p>
+      ${T.levels.map(([name, desc], i) => `<label class="f-check f-level"><input type="radio" name="sogLevel" data-level="${i + 1}" ${lvl === i + 1 ? 'checked' : ''}><span><b>${esc(t(name))}</b> — ${esc(t(desc))}<br><span class="f-muted">${esc(t(T.levelShows, { m: shows(i + 1) }))}</span></span></label>`).join('')}</div>`);
     // usages
     const chk = (k, row, dis) => `<label class="f-check"><input type="checkbox" data-u="${k}" ${us[k] ? 'checked' : ''} ${dis ? 'disabled' : ''}>${esc(t(row))}</label>`;
     cards.push(`<div class="f-card" data-card="usages"><h2>${esc(t(T.usages))}</h2><p><b>${esc(how)}</b></p><p class="f-muted">${esc(t(T.usagesHint))}</p>
@@ -576,6 +615,17 @@
         c.notify(t(T.copied), 'ok');
       }
     };
+    view.querySelectorAll('[data-level]').forEach(i => i.addEventListener('change', async () => {
+      const n = +i.dataset.level;
+      await c.own.put('device/level.json', {
+        level: n,
+        updated_at: now()
+      });
+      await c.reload();
+      c.notify(t(T.levelSaved, {
+        l: t(T.levels[n - 1][0])
+      }), 'ok');
+    }));
     view.querySelectorAll('[data-u]').forEach(i => i.addEventListener('change', async () => {
       const u = {
         ...us,

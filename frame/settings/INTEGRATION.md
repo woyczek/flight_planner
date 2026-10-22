@@ -25,9 +25,14 @@ Settings is part of the frame: its context is wider than a module's `ctx`.
 | `transport()` | the plugged transport (`missing: true` when the usages ask for an exchange nothing allows) |
 | `aerodb()` | the aerodb service, or null |
 | `syncNow()` | the frame's "synchronise now", with its notifications |
+| `level()` | the device's usage level (1 to 3) |
+| `modules()` | promise of `[{ id, label, level }]`, the application's modules with their `meta.level`, once read |
 
 ## 3. For modules
 
 - A module reads the identity through `ctx.identity` (read only) and never the files of `device/`.
 - A module's own preferences (units, last OFP…) stay in the module, with the `cache` policy under its own prefix.
-- Usage levels: chosen on this screen when the frame has them (V3 spec: the level is chosen in Settings only).
+- **Usage levels**: chosen on this screen only (`device/level.json`: 1 discovery, 2 everyday — the default — 3
+  full). A module declares its level in `meta.level` (1 by default); the frame's menu shows only the modules whose
+  level is at most the device's, and a hidden module stays reachable by its address (`#id`). The level hides verbs,
+  never data: a module never reads the level and never changes with it.

@@ -227,6 +227,13 @@ textarea {
   padding: 8px 0;
   border-top: 1px solid var(--sog-border)
 }
+.f-level {
+  align-items: flex-start;
+  padding: 6px 0
+}
+.f-level input {
+  margin-top: 3px
+}
 .f-msg:empty {
   display: none
 }

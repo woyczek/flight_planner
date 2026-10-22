@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: usage level** (`frame/settings/settings.js`, `frame/app.js`, `frame/frame.css`; `frame/settings/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `frame/SPEC.md` § 3.1) — a Level card in Settings: Discovery, Everyday (the
+  default) or Full, one tap, with the menu each level shows; the frame's menu lists only the modules whose
+  `meta.level` is at most the device's level (`device/level.json`), a hidden module staying reachable by its address.
 - **website: reading of the DEFA Virtual website as V2 uses it** (`modules/website/READING.md`,
   `modules/website/DECISIONS.md`) — the site's pages, forms and fields, what is public and what needs the pilot's
   session, the pasted flight log and fleet towards `pilot/<trigram>/site_log.json` and `airline/fleet.json`, the

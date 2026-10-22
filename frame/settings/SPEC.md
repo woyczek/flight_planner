@@ -22,6 +22,7 @@ module, because it sets the transport and the device token, which modules never 
 | File | Content |
 |---|---|
 | `device/identity.json` | `trigram` (2–5 letters or digits, upper case), `ivao` (digits), `vatsim` (digits), `simbrief`, `updated_at` |
+| `device/level.json` | `level`: 1 (discovery), 2 (everyday, the default), 3 (full); `updated_at` |
 | `device/usages.json` | `devices`, `users`, `backend` (booleans), `single` (true when none of them is ticked), `updated_at` |
 | `device/settings.json` | `v2`: `taken` or `declined` once the V2 take-over was answered |
 
@@ -35,34 +36,38 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    identity and, if no access is set yet, copies the access to the frame's setting (`FrameData.github.save`); "No
    thanks" only records the answer. V2's own settings are left untouched.
 2. **Identity**: the four fields; with "several users" ticked and no trigram, a warning says the trigram is needed.
-3. **Usages**: one sentence first — "Alone on this device: nothing is exchanged" when no exchange is ticked (it is a
+3. **Level**: three choices, one tap each (radio buttons, saved at once): Discovery ("the essentials, to get
+   started"), Everyday ("day-to-day use", the default), Full ("everything, advanced tools included"). Under each, the
+   verbs of the menu at that level, computed from the modules' `meta.level` once the frame has read them. A hint
+   says a hidden module stays reachable by its address. The frame's menu follows at once.
+4. **Usages**: one sentence first — "Alone on this device: nothing is exchanged" when no exchange is ticked (it is a
    state, not a box), otherwise how data are exchanged: through this workstation's launcher (`data/` folder, git or
    not), through the GitHub repository, or "no way to exchange here: set the access below". Then three boxes:
    alone on several devices, several users, server (disabled, "to come").
-4. **Backup of this device** (no exchange only): "Export (one file)" downloads `sog-appareil-<date>.json`
+5. **Backup of this device** (no exchange only): "Export (one file)" downloads `sog-appareil-<date>.json`
    (`{ format: 'sog-device-export', version: 1, at, app, files: { path: text } }`): every file of the device's cache
    and queue except the reference bases (`sia/`, `AircraftDB/`) and the device settings other than the identity.
    "Import a file…" checks the format, keeps only relative paths outside the reference bases, asks before replacing,
    then writes each file (the identity with the cache policy, the rest as writes; no other device file).
-5. **Data access** (an exchange ticked): on a launcher, one sentence (no token here). Otherwise repository, branch and
+6. **Data access** (an exchange ticked): on a launcher, one sentence (no token here). Otherwise repository, branch and
    token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint: a
    fine-grained token on this repository only, Contents read and write, 90 days at most, never pasted in a message.
    "Save", "Test" (the branch head through the transport; offline said as such) and "Cut access" (asks, then
    `FrameData.github.clear`; pending writes stay queued).
-6. **Synchronisation** (an exchange ticked): last success, pending writes, network, last error, kept live through
+7. **Synchronisation** (an exchange ticked): last success, pending writes, network, last error, kept live through
    `onStatus`; "Synchronise now" (the frame's `syncNow`); a link to the conflicts screen when there are some.
-7. **Offline data**: aeronautical bases (`aerodb.status()`: published zones, zones open on this device, cycle), the
+8. **Offline data**: aeronautical bases (`aerodb.status()`: published zones, zones open on this device, cycle), the
    browser storage (`navigator.storage.estimate`), then one row per published zone through `aerodb.offline`
    (`frame/aerodb/INTEGRATION.md` § 4): its name in the application's language, its state on this device (not here,
    partly here, kept offline, unknown), cycle, kept and published sizes; "Keep offline" (progress shown in the row, a
    notification with the size read or the files not read) when the zone is not complete, "Free" when it has copies and
    the frame can evict; a last row for the aircraft base (state, number of types). A hint says keeping downloads the
    whole zone, preferably on Wi-Fi.
-8. **Launcher keys** (page served by a launcher only): the IVAO API key's state (`GET /__setup/secrets`: saved with
+9. **Launcher keys** (page served by a launcher only): the IVAO API key's state (`GET /__setup/secrets`: saved with
    its last characters, given by the launcher's environment, or missing), a new key (empty: unchanged), "Save",
    "Test" (`/__setup/secrets/test?service=ivao`), "Erase" (asks). The key goes to the launcher's `secrets/` folder,
    never to the browser nor to the data.
-9. **Diagnostics** (folded): transport, status, usages, launcher, repository (never the token), aerodb state,
+10. **Diagnostics** (folded): transport, status, usages, launcher, repository (never the token), aerodb state,
    storage, network, browser; "Copy".
 
 ## 4. Invariants

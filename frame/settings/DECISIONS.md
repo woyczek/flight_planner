@@ -50,3 +50,15 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
     workstation): rows, keep with progress, free, aircraft row, notifications, 375 px without horizontal scroll;
   - not testable here: a refused token (the frame's fake GitHub does not check tokens), keep / free on a real
     published base.
+- **23 Oct 2026 — Lot 3, the Level card** (ergonomics session's go):
+  - three levels at most: Discovery (1), Everyday (2, the default), Full (3), in `device/level.json` (device cache);
+  - the frame's menu shows the modules whose `meta.level` is at most the device's; a hidden module stays reachable by
+    its address; the first visible module is the default screen;
+  - done by settings in `frame/app.js` (ergonomics session's request), told to the frame agent through the ergonomics
+    session: `readLevels()` imports each entry point once at start (as the service worker's precache already does)
+    and keeps `meta.level`; the menu is redrawn only when its list changes; `loadDevice` reads the level with the
+    identity and the usages, so a change (here or in another tab) applies at once;
+  - one tap per level, no "Save": the card's "Menu:" lines say what each level shows.
+- **23 Oct 2026 — Tests of lot 3** (fake GitHub serving the repository, 375 px, French): with the example module set
+  to level 3 for the test only (not committed), the menu shows fuel and report at levels 1 and 2 and the three verbs
+  at level 3; `#hello` still opens at level 1; the card's lines match; no JavaScript error.

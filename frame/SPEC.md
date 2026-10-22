@@ -186,6 +186,9 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 - On a screen, the verbs sit in a column on the left. On a phone (760 px or narrower), they sit in a drawer opened by
   the menu button, and choosing a verb closes it.
 - The address `#<module>` is enough to come back to a screen.
+- **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
+  the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
+  stays reachable by its address. The frame reads each module's `meta.level` once at start.
 - The frame has two screens of its own: `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
 - Touch targets are at least 44 px high. There is no horizontal scroll at 375 px.
