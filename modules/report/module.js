@@ -10,6 +10,7 @@ import * as M from './model.js';
 import * as T from './text_import.js';
 import * as Fpl from './fpl.js';
 import * as LF from './last_flight.js';
+import * as Site from './website_handoff.js';
 import HEMS from './families/hems.js';
 
 export const meta = {
@@ -27,7 +28,7 @@ export const meta = {
     prefix: 'pilot/handoff.json',
     policy: 'cache'
   }],
-  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'families/hems.js']
+  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'website_handoff.js', 'families/hems.js']
 };
 
 const FAMILIES = {
@@ -126,7 +127,26 @@ const TX = {
     'Sustituir los {n} campos ya rellenados'),
   noId: L('Identifiant {net} à régler (⚙).', '{net} identifier to set (⚙).', '{net}-Kennung einstellen (⚙).',
     'Identificador {net} por ajustar (⚙).'),
-  handoff: L('Repris de {s}', 'Taken from {s}', 'Übernommen aus {s}', 'Tomado de {s}')
+  handoff: L('Repris de {s}', 'Taken from {s}', 'Übernommen aus {s}', 'Tomado de {s}'),
+  // site de la compagnie
+  saveSite: L('Enregistrer et inscrire sur le site', 'Save and record on the website', 'Speichern und auf der Website eintragen',
+    'Guardar y registrar en el sitio'),
+  siteUnset: L('adresse du site non réglée', 'website address not set', 'Website-Adresse nicht eingestellt',
+    'dirección del sitio no ajustada'),
+  onSite: L('Sur le site de la compagnie', 'On the airline website', 'Auf der Website der Fluggesellschaft',
+    'En el sitio de la aerolínea'),
+  siteHelp: L(
+    '« Enregistrer et inscrire sur le site » ouvre le formulaire « Ajouter un vol » du site avec ce vol ; connectez-vous au besoin, puis lancez le favori « → Vol » : il remplit le formulaire sans le valider. Relisez, puis « Valider » sur le site.',
+    '“Save and record on the website” opens the website’s “Add a flight” form with this flight; log in if needed, then run the “→ Vol” bookmark: it fills the form without submitting it. Check, then “Valider” on the website.',
+    '„Speichern und auf der Website eintragen“ öffnet das Formular „Flug hinzufügen“ der Website mit diesem Flug; bei Bedarf anmelden, dann das Lesezeichen „→ Vol“ starten: es füllt das Formular aus, ohne es abzusenden. Prüfen, dann auf der Website „Valider“.',
+    '«Guardar y registrar en el sitio» abre el formulario «Añadir un vuelo» del sitio con este vuelo; inicie sesión si hace falta y lance el marcador «→ Vol»: rellena el formulario sin enviarlo. Revise y pulse «Valider» en el sitio.'
+  ),
+  bookmark: L('Favori « → Vol » : glissez-le dans la barre des favoris.', 'Bookmark “→ Vol”: drag it to the bookmarks bar.',
+    'Lesezeichen „→ Vol“: in die Lesezeichenleiste ziehen.', 'Marcador «→ Vol»: arrástrelo a la barra de marcadores.'),
+  bookmarkClick: L('À lancer depuis la barre des favoris, sur le site.', 'Run it from the bookmarks bar, on the website.',
+    'Auf der Website aus der Lesezeichenleiste starten.', 'Láncelo desde la barra de marcadores, en el sitio.'),
+  copyFields: L('Copier les champs', 'Copy the fields', 'Felder kopieren', 'Copiar los campos'),
+  copied: L('Champs copiés : {l}', 'Fields copied: {l}', 'Felder kopiert: {l}', 'Campos copiados: {l}')
 };
 // champs communs du CR court (libellés de shared/mission_core/blocks.js)
 const f = (path, label, type = 'text', extra = {}) => ({
@@ -358,7 +378,9 @@ const STYLE = `
 [data-module="report"] details.f-card>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
 [data-module="report"] .rp-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px}
 [data-module="report"] .rp-bar{position:sticky;bottom:0;z-index:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-color:var(--sog-accent);box-shadow:0 -4px 14px #0002}
-[data-module="report"] .rp-bar .primary{flex:1;min-width:160px}
+[data-module="report"] .rp-bar button{flex:1;min-width:150px}
+[data-module="report"] .rp-bar small.rp-unset{display:block;font-size:.75em;opacity:.8}
+[data-module="report"] .rp-mark{display:inline-block;padding:4px 10px;border:1px dashed var(--sog-accent);border-radius:var(--sog-radius)}
 [data-module="report"] .rp-warn{color:var(--sog-warn)}
 [data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between;border-color:var(--sog-accent)}
 [data-module="report"] .rp-recent button,[data-module="report"] .rp-choice{width:100%;text-align:left;margin-bottom:6px}
@@ -375,11 +397,11 @@ function render() {
     F = FAMILIES[m.family] || HEMS,
     step = S.step,
     stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} class="${ok ? 'rp-ok' : ''}">${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
-    done = progress();
+    done = progress(),
+    site = Site.recordPage(S.ctx.airline || {});
   S.body.innerHTML = `
     <div class="f-row" style="margin-bottom:8px"><span class="f-muted">${S.path ? esc(tt(TX.editing, { id: m.metadata.missionId })) : esc(m.metadata.missionId || '')}</span>
       <button type="button" data-do="new">${esc(tt(TX.newReport))}</button></div>
-    <details class="f-card rp-recent" data-recent><summary>${esc(tt(TX.recent))}</summary><div data-recentlist></div></details>
     <nav class="rp-steps">${[0, 1, 2].map(i => stepBtn(i, done[i])).join('')}</nav>
     <div class="rp-cols">
       <section class="rp-step" data-s="0"${step === 0 ? '' : ' hidden'}>
@@ -389,6 +411,7 @@ function render() {
           <h3>${esc(lab(L('Heures', 'Times', 'Zeiten', 'Horas')))}</h3>
           ${grid([FIELDS.engineStart, FIELDS.takeoff, FIELDS.landing, FIELDS.shutdown])}</div>
         <details class="f-card"><summary>${esc(tt(TX.more))}</summary>${grid([FIELDS.callsignPrefix, FIELDS.callsignNumber, FIELDS.callsignFpl, FIELDS.baseDeparture, FIELDS.baseReturn, FIELDS.landingAd, FIELDS.altn])}</details>
+        <details class="f-card rp-recent" data-recent><summary>${esc(tt(TX.recent))}</summary><div data-recentlist></div></details>
         <div class="f-row rp-next"><button type="button" data-step="1">${esc(tt(TX.next))}</button></div>
       </section>
       <section class="rp-step" data-s="1"${step === 1 ? '' : ' hidden'}>
@@ -403,9 +426,18 @@ function render() {
         <div class="f-card">${collection(crewCol(), tt(TX.crew))}</div>
         <div class="f-card"><h2>${esc(tt(TX.fuel))}</h2>${grid([FIELDS.fuelUnit, FIELDS.fuelStart, FIELDS.fuelLanding])}</div>
         <div class="f-card" data-check></div>
+        <details class="f-card"><summary>${esc(tt(TX.onSite))}</summary><p class="f-muted">${esc(tt(TX.siteHelp))}</p>
+          <p>${esc(tt(TX.bookmark))} <a class="rp-mark" href="${esc(Site.BOOKMARKLET)}" data-mark>→ Vol</a></p>
+          <button type="button" data-do="copyfields">${esc(tt(TX.copyFields))}</button></details>
       </section>
     </div>
-    <div class="f-card rp-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button></div>`;
+    <div class="f-card rp-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
+      <button type="button" data-do="savesite"${site ? '' : ` disabled title="${esc(tt(TX.siteUnset))}"`}>${esc(tt(TX.saveSite))}${site ? '' : `<small class="rp-unset">${esc(tt(TX.siteUnset))}</small>`}</button></div>`;
+  const mark = S.body.querySelector('[data-mark]');
+  if (mark) mark.onclick = e => {
+    e.preventDefault(); // depuis la barre des favoris seulement
+    S.ctx.notify(tt(TX.bookmarkClick), 'info');
+  };
   check();
   prefillCard();
   sourcesCard();
@@ -722,6 +754,24 @@ async function onClick(e) {
   switch (b.dataset.do) {
     case 'save':
       return save();
+    case 'savesite': {
+      // l'onglet du site s'ouvre dans le geste même (sinon bloqué), puis le CR est enregistré
+      const url = Site.recordUrl(S.ctx.airline || {}, Site.flightFields(S.m));
+      if (!url) return S.ctx.notify(tt(TX.siteUnset), 'warn');
+      window.open(url, '_blank', 'noopener');
+      return save();
+    }
+    case 'copyfields': {
+      const line = Site.copyLine(Site.flightFields(S.m));
+      try {
+        await navigator.clipboard.writeText(line);
+      } catch {
+        /* presse-papiers refusé : la ligne est montrée */
+      }
+      return S.ctx.notify(tt(TX.copied, {
+        l: line
+      }), 'ok');
+    }
     case 'new':
       S.m = freshMission(S.m.family);
       S.path = null;

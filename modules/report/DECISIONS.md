@@ -64,6 +64,21 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
     IVAO service behind `ctx.net` (session, plan, seven track points) gave the proposal card, then 25 fields (times
     from the track, distance); the real IVAO API without key answered 401 → message and paste box; a hand-over record
     filled two fields "Taken from Mes vols" and was removed; 375 px without horizontal scroll.
+- **23 Oct 2026 — lot 3b, the website hand-off** (settled: option (a), `ctx.airline = { name, site, pages }` from the
+  data repository's `airline/settings.json`, asked of the frame's lot 6):
+  - `website_handoff.js`: V2's `defaFields` / `defaUrl` / copy line rewritten as functions of the mission and the
+    airline setting, and the "→ Vol" bookmark (`defaFlightFill`) copied verbatim by script; the whole file moves to
+    the website module when it exists.
+  - One button **Save and record on the website**: the tab is opened first, inside the click (popup rules), then the
+    report is saved; greyed with "website address not set" without the setting. The V2 hand-off before saving asked
+    "unsaved changes?"; here saving is part of the gesture, so no question.
+  - The bookmark and "Copy the fields" sit in a folded block of the Result step (rarely needed once the bookmark is
+    installed; on a phone the copy line is the fallback).
+  - Ergonomics feedback on lot 2 applied: "My last reports" moved from the top of the screen to a folded one-line-per-
+    report list at the end of the Flight step.
+  - Checked on 8801 (the frame gives no `ctx.airline` yet): button greyed with its reason; with a test setting
+    (`site.example.test`) the functions give the form address with the fragment, whose JSON reads back (end date-time
+    on the next day for a 23:30 → 00:40 flight, block 01:10); the bookmark compiles.
 - **Proposed, settled above** (lot 1):
   1. One JSON record per report, `cr/reports/<year>/<reportId>.json`, merge `record`, rather than the shared
      `cr/missions.yaml` (text for the data layer: no record-by-record merge). Joins the pending "reports per year"

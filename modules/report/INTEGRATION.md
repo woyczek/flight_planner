@@ -13,6 +13,7 @@ module: [SPEC.md](SPEC.md); the frame's adapter: [frame/INTEGRATION.md](../../fr
 | `modules/report/families/hems.js` | the HEMS family of V2 (series, roles, blocks), unchanged but for its export |
 | `modules/report/fpl.js` | V2 flight plan: equipment codes, levels, SimBrief / IVAO / VATSIM plans, filling a mission; network through `configure({ getJson })` |
 | `modules/report/text_import.js` | V2 analysis of a pasted text (FPL, IVAO tracker page, StatSim, IVAO list, METAR), track, filling |
+| `modules/report/website_handoff.js` | V2's hand-off to the airline website (flight fields, `#defa=` address, copy line, "→ Vol" bookmark); to move into `modules/website` |
 | `modules/report/last_flight.js` | the V2 launcher's "last flight" (IVAO sessions, VATSIM history) in JavaScript, network passed in |
 | `modules/report/READING.md` | lot 1: what V2 does and what the module keeps |
 
@@ -27,12 +28,13 @@ writes: [
   { prefix: 'cache/report/', policy: 'cache' },      // the draft, the last flights read: this device only
   { prefix: 'pilot/handoff.json', policy: 'cache' }  // hand-over record, removed once taken
 ],
-files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'families/hems.js']
+files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'website_handoff.js', 'families/hems.js']
 ```
 
 `ctx` used: `data` (get, put, remove, list), `t`, `lang`, `notify`, `identity` (`trigram` for the author and the
 current flight's path, `ivao`, `vatsim`, `simbrief` for the prefill), `aerodb` (`aircraft().record`: model and rotary
-wing of a type), `net`:
+wing of a type), `airline` (`site`, `pages.recordFlight`: the website's "add a flight" page, from the frame's
+`airline/settings.json`; `{}` greys the website button), `net`:
 
 - `https://api.ivao.aero/v2/tracker/sessions…` (list, a session, its `flightPlans`, its `tracks`): needs the launcher's
   relay (IVAO key); without it the 401 is reported and the paste offered.

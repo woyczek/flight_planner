@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: "Save and record on the website"** (`modules/report/website_handoff.js`, `module.js`; `SPEC.md` § 3 bis,
+  `INTEGRATION.md`, `DECISIONS.md`) — one gesture opens the airline website's "add a flight" form with the flight in the
+  address fragment and saves the report; the "→ Vol" bookmark (V2's, unchanged) fills the form without submitting it;
+  "Copy the fields" for a phone. The address comes from the airline setting (`ctx.airline`); without it the button is
+  greyed. "My last reports" is now a folded list under the Flight step.
 - **fuel: display units for speed, altitude and distance** (`modules/fuel/module.js`, `model.js`, `test/quote.html`;
   `SPEC.md` § 6 and § 9, `INTEGRATION.md`, `DECISIONS.md`) — beside kg / lb in the Plan screen's settings, speed in kt
   or km/h, altitude in ft or m, distance in NM, km or SM, saved with the other quote settings; the model, the current

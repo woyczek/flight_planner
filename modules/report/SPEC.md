@@ -33,8 +33,13 @@ what is missing is said in the Result step, never blocking.
   new report), fuel unit, start and landing; the list of what is missing (registration, take-off and landing, crew,
   fuel, outcome) and the V2 consistency checks (date invalid or in the future, invalid time, times out of order,
   timeline over 20 h, final fuel above the start) as warnings.
-- **Top**: the report number (or "Editing CR…"), "New report", "My last reports" (folded; ten most recent of mine,
-  reopened for editing).
+- **Top**: the report number (or "Editing CR…") and "New report". **My last reports** is a folded list at the end
+  of the Flight step, one line per report (number, date, registration, family; ten most recent of mine), a line
+  reopens it for editing — never a screen of its own.
+- **Save bar** (sticky): **Save**, and **Save and record on the website** (§ 3 bis); the latter is greyed with "website
+  address not set" when the airline setting has no address.
+- **Result step, folded "On the airline website"**: how the hand-off works, the "→ Vol" bookmark to drag to the
+  bookmarks bar (a click on it in the suite only explains), "Copy the fields" (one line, for a phone).
 - **Draft**: every change is kept on the device (`cache/report/draft.json`, after a quiet time) and restored at the
   next mount with a notice; saving removes it.
 - Texts in four languages (labels of V2); codes typed in capitals; time and date fields of the device.
@@ -49,6 +54,20 @@ what is missing is said in the Result step, never blocking.
 - **One record per report**: `cr/reports/<year of metadata.date>/<metadata.missionId>.json`, written whole with a new
   `updated_at`; a later save of the same report rewrites the same path (its year does not move if the date changes).
 - After the first save the screen is in editing mode; "New report" starts a fresh one.
+
+## 3 bis. Recording the flight on the airline website
+
+- The address is the airline setting's (`ctx.airline.site` + `pages.recordFlight`, or a full address in
+  `pages.recordFlight`); never in the code.
+- "Save and record on the website" opens, **inside the click** (a tab opened later is blocked), the website's form page
+  with the flight in the fragment (`#defa=` + base64url of the JSON, never sent to the server), then saves the report.
+- Fields (V2 rule): registration without dash, type, callsign series, flight-plan callsign, number, end date-time
+  (report date + on-block, else landing, else shutdown; next day when it precedes the start), block time (else flight
+  time) HH:MM, mission (family, sub-type, operation), departure and arrival ICAO.
+- The "→ Vol" bookmark (V2's, unchanged) runs on the website: aircraft list → the aircraft's page → "Add a flight" →
+  fills the form by field name, compares read-only fields, never submits. The suite never posts to the website and
+  never handles the pilot's login.
+- `modules/report/website_handoff.js` holds all of it, to be moved as is into the website module.
 
 ## 4. The record (schema `sog-report/1`)
 
