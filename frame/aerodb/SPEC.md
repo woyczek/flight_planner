@@ -29,7 +29,11 @@ A module asks for an area or an identifier, never for a zone or a file.
   - `sia/base/cities_major.json` { `data`: towns of 100,000 inhabitants or more, the whole world }, for a place search
     outside the loaded zones;
   - `sia/base/index.json` { `zones`: { zone: { `cycle`, `prefixes` (first two letters of its aerodromes' ICAO
-    codes), `kb` (size of each file) } } }, the manifest.
+    codes), `kb` (size of each file), `cells` } } }, the manifest. `cells` lists the one-degree cells the zone's data
+    cover, as longitude ranges per latitude row: { "43": [[-10, -2], [0, 4]], … }. A cell is covered when:
+    - it holds a point (aerodrome, navaid, point, VRP, obstacle) or a MORA cell;
+    - an airway passes through it (sampled every 0.25°);
+    - an airspace's outline crosses it, or its centre is inside the airspace.
 - **SIA base, whole format (V2, read during the transition)**: `sia/base/<zone>/<cycle>.json`, one active zone
   (`schema: 1`, `airspaces`, `aero` { `aerodromes`, `navaids`, `points`, `airways`, `vrp`, `obstacles` },
   `obstacleMax`, `moraCells`, `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …), towns in `sia/base/cities.json`
@@ -77,9 +81,13 @@ the suite root) and has no listing.
   Likewise, a kind that could not be read answers empty this time and is read again next time.
 - **Format.** For the chosen cycle, the split format is preferred (its `meta.json` exists), otherwise the whole file is
   read.
-- **Zones of an area.** A zone is concerned when one of its frames, widened by half a degree (coasts, territorial
-  waters), touches the area. With a listing, only published zones count. When no zone of the table touches the area,
-  the published zones unknown to the table (oceanic) are taken.
+- **Zones of an area.** A zone is concerned when its data touch the area: one of its manifest `cells` is under the
+  area.
+  - A zone without `cells` (old manifest, or no manifest at all) falls back to its frames from the table, widened by
+    half a degree for coasts and territorial waters. A country's frame overflows it: Spain's covers the south of
+    France.
+  - With a listing, only published zones count.
+  - When nothing touches the area, the published zones with neither cells nor frame (oceanic) are taken.
 - **Loading.** Split format: opening a zone reads only `meta.json`; each kind is read once, on the first question
   that needs it (a module asking for aerodromes reads `aerodromes.json` and nothing else). Whole format: the zone is
   read once. Concurrent questions share the same read.

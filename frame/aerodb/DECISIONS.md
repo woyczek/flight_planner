@@ -191,6 +191,31 @@ With the network cut, the only reads attempted were:
 - The JavaScript heap at the end is 16 MB at CPU ×1 but 158 MB at CPU ×4, with two aerodb instances. The difference is
   garbage not yet collected (the frame parses every file read by `keep`).
 
+## 22 October 2026 — zones chosen by the cells their data cover
+
+- **The problem** (found by maps lot 2): zones were chosen by their frames from the table, widened by half a degree.
+  A country's frame overflows it. For a French IFR route (LFRS → LFML, alternate LFMT), Germany, Switzerland and Spain
+  were read too: 3.6 MB of Spanish airspaces never drawn.
+- **The fix**: the V2 publication (`shared/sia_base.js`, `coverage`) writes in the manifest, per zone, the one-degree
+  cells its data cover. The cells come from the points, the MORA cells, the airways sampled every 0.25°, and the
+  airspaces' outlines and interiors. They are stored as longitude ranges per latitude row: France 139 ranges, 2.3 KB;
+  the whole manifest of the 13 zones 6.8 KB.
+  - aerodb chooses a zone when one of its cells is under the area.
+  - The frames stay as the fallback when a zone has no cells (old manifest, no manifest).
+- **Measured on LFRS → LFML** (the maps module's areas: route area for aerodromes, navaids and MORA, corridor + 12 NM
+  for airspaces and airways):
+
+| | Zones read | MB read |
+|---|---|---|
+| Before (frames + ½°) | de, ch, es, fr | 7.71 |
+| After (cells), one corridor rectangle | ch, es, fr | 7.34 |
+| After (cells), corridor asked leg by leg | fr (+ es, ch: 96 KB without airspaces) | 3.56 |
+
+  - Spain stays with a single rectangle, and that is right: its data do cover 43° N west of 2° W (San Sebastián,
+    Bilbao), and the rectangle around a diagonal route reaches that corner. Leg-by-leg corridor boxes avoid it; the
+    maps module uses them from its lot 3.
+  - Whole-world questions are unchanged (same counts as the workstation's base).
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

@@ -109,7 +109,8 @@ only when its content changes, and older cycles of the zone are removed. The sam
 by V3 (`frame/aerodb/`), split by kind: `sia/base/<zone>/<cycle>/<kind>.json` (`airspaces`, `aerodromes`, `navaids`,
 `points`, `vrp`, `airways`, `obstacles`, `mora`, `obstaclemax`, `cities` — the zone's towns — and `meta`: cycle, AAR
 files, NAT tracks), `sia/base/cities_major.json` (towns over 100,000 inhabitants, for searches outside the loaded
-zones) and the manifest `sia/base/index.json` (per zone: cycle, ICAO prefixes of its aerodromes, size of each file;
+zones) and the manifest `sia/base/index.json` (per zone: cycle, ICAO prefixes of its aerodromes, size of each file,
+one-degree cells covered by its data;
 zones published by other workstations kept). Both formats are written until the ergonomics session ends the old one;
 "Synchronise" sends them (`sia/base` is part of
 the pool of `tools/data_sync.py`; two workstations publishing the same file: the newer `updated_at` wins).

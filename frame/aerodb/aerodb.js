@@ -238,7 +238,8 @@
             prefixes: e.prefixes || [],
             kb: e.cycle ? {
               [e.cycle]: e.kb || {}
-            } : null
+            } : null,
+            cells: e.cells && typeof e.cells === 'object' ? e.cells : null // cases d'un degré couvertes par ses données
           });
         for (const z of Object.values(out)) z.cycles = [...new Set([...z.split, ...z.whole])].sort();
         return {
@@ -254,15 +255,27 @@
       return past.length ? past[past.length - 1] : list[0];
     };
     /** Zones dont un cadre (élargi de la marge) touche l'emprise b ; limitées aux zones publiées si elles sont connues. */
+    /** Vrai si l'emprise b touche une des cases d'un degré d'une zone ({ "lat": [[lon0, lon1], …] }, manifeste). */
+    const cellsHit = (cells, b) => {
+      const x0 = Math.floor(b[0]),
+        x1 = Math.floor(b[2]);
+      for (let y = Math.floor(b[1]); y <= Math.floor(b[3]); y++)
+        if ((cells[y] || []).some(([a, c]) => a <= x1 && c >= x0)) return true;
+      return false;
+    };
+    /** Zones dont les données touchent l'emprise b : par les cases d'un degré du manifeste (couverture réelle des
+     *  données), sinon par les cadres de la table élargis de la marge ; limitées aux zones publiées si elles sont connues. */
     async function zonesFor(b) {
       const pub = (await published()).zones,
         out = [];
+      for (const [id, e] of Object.entries(pub || {}))
+        if (e.cells && cellsHit(e.cells, b)) out.push(id);
       for (const [id, z] of Object.entries(zones)) {
-        if (pub && !pub[id]) continue;
+        if (pub && (!pub[id] || pub[id].cells)) continue;
         if ((z.b || []).some(p => hits([p[0] - MARGIN, p[1] - MARGIN, p[2] + MARGIN, p[3] + MARGIN], b))) out.push(id);
       }
-      // zones publiées absentes de la table (zone océanique, nouvelle zone) : chargées si aucune autre ne couvre l'emprise
-      if (pub && !out.length) out.push(...Object.keys(pub).filter(id => !zones[id]));
+      // zones publiées sans cases ni cadre (zone océanique, nouvelle zone) : chargées si aucune autre ne couvre l'emprise
+      if (pub && !out.length) out.push(...Object.keys(pub).filter(id => !zones[id] && !pub[id].cells));
       return out;
     }
     /** Zone ouverte (cycle et format choisis ; rien n'est encore lu en format découpé) ; null si absente. Sans liste ni

@@ -2014,6 +2014,77 @@
     return (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon) ? (near.find(([, f]) => f(lat, lon)) || wide.find(([, f]) => f(lat,
       lon)))?.[0] || '' : '';
   }
+  /** Cases d'un degré couvertes par les données d'une zone, pour que la V3 (frame/aerodb) ne lise une zone que si ses
+   *  données touchent l'emprise demandée (les cadres des pays débordent : celui de l'Espagne couvre le sud de la France) :
+   *  points (aérodromes, balises, points, VRP, obstacles), cases MORA, voies (échantillonnées tous les 0,25°), espaces
+   *  (cases traversées par leurs contours, et celles dont le centre est dedans). Rend { "lat": [[lon0, lon1], …] }
+   *  (plages de longitudes par ligne de latitude). */
+  function coverage({
+    airspaces = [],
+    aero = {},
+    moraCells = []
+  } = {}) {
+    const set = new Set(),
+      add = (lat, lon) => {
+        if (Number.isFinite(lat) && Number.isFinite(lon)) set.add(`${Math.floor(lat)}|${Math.floor(lon)}`);
+      },
+      line = (a, b) => {
+        const n = Math.max(1, Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / .25));
+        for (let k = 0; k <= n; k++) add(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n);
+      };
+    for (const k of ['aerodromes', 'navaids', 'points', 'vrp', 'obstacles'])
+      for (const x of aero[k] || []) add(+x.lat, +x.lon);
+    for (const w of aero.airways || [])
+      if (Number.isFinite(+w?.a?.lat) && Number.isFinite(+w?.b?.lat)) line([+w.a.lat, +w.a.lon], [+w.b.lat, +w.b.lon]);
+    for (const c of moraCells) add(+c.lat + .5, +c.lon + .5);
+    for (const a of airspaces) {
+      const rings = (a.rings || []).filter(r => r?.length > 2);
+      if (!rings.length) continue;
+      let s = 90,
+        n = -90,
+        w = 180,
+        e = -180;
+      for (const r of rings)
+        for (let i = 0; i < r.length; i++) {
+          const [la, lo] = r[i];
+          s = Math.min(s, la);
+          n = Math.max(n, la);
+          w = Math.min(w, lo);
+          e = Math.max(e, lo);
+          if (i) line(r[i - 1], r[i]);
+        }
+      // intérieur : cases dont le centre est dans un anneau (règle pair-impair)
+      for (let y = Math.floor(s); y <= Math.floor(n); y++)
+        for (let x = Math.floor(w); x <= Math.floor(e); x++) {
+          const la = y + .5,
+            lo = x + .5;
+          if (rings.some(r => {
+              let c = false;
+              for (let i = 0, j = r.length - 1; i < r.length; j = i++)
+                if ((r[i][0] > la) !== (r[j][0] > la) && lo < (r[j][1] - r[i][1]) * (la - r[i][0]) / (r[j][0] - r[i][0]) + r[i][1])
+                  c = !c;
+              return c;
+            })) set.add(`${y}|${x}`);
+        }
+    }
+    const rows = {};
+    for (const k of set) {
+      const [y, x] = k.split('|').map(Number);
+      (rows[y] ||= []).push(x);
+    }
+    const out = {};
+    for (const y of Object.keys(rows).sort((a, b) => a - b)) {
+      const xs = rows[y].sort((a, b) => a - b),
+        ranges = [];
+      for (const x of xs) {
+        const last = ranges[ranges.length - 1];
+        if (last && x === last[1] + 1) last[1] = x;
+        else ranges.push([x, x]);
+      }
+      out[y] = ranges;
+    }
+    return out;
+  }
   async function publishSplit(d, parts, {
     cycle,
     at,
@@ -2086,7 +2157,8 @@
         prefixes: [...new Set((aero.aerodromes || []).map(a => String(a.icao || '').slice(0, 2).toUpperCase()).filter(x =>
           /^[A-Z]{2}$/
           .test(x)))].sort(),
-        kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)]))
+        kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)])),
+        cells: coverage(p)
       };
     }
     const major = (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP);

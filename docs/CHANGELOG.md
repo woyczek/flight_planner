@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **aerodb: zones chosen by the cells their data cover.**
+  - The SIA publication writes in `sia/base/index.json`, per zone, the one-degree cells its data cover.
+  - aerodb opens a zone only when its data touch the area asked for. Zone frames, which overflow (Spain's covers the
+    south of France), remain the fallback for a manifest without cells.
+  - Route LFRS → LFML: Germany no longer read (7.71 → 7.34 MB); 3.56 MB when the corridor is asked leg by leg.
 - **Frame, lot 8: `meta.net` and `meta.lazy`** (`tools/csp_policy.py`, `tools/build_pages.py`, `tools/launch.py`,
   `frame/app.js`) — a module declares the public hosts its library calls by itself (map tiles), added to the page's
   `connect-src` with and without a launcher; heavy files are kept at their first use instead of being preloaded.
