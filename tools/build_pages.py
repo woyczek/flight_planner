@@ -8,7 +8,8 @@ sw.js) dans un dossier de sortie, comme le lanceur les sert :
   · config/build.js (commit affiché en pied de page) écrit depuis git ;
   · .nojekyll (fichiers et dossiers commençant par « _ » servis tels quels) ;
   · politique de sécurité du contenu (CSP) en balise meta dans chaque page (Pages n'envoie pas d'en-têtes ; l'appli iOS
-    reprend ce site) : même liste que le lanceur (tools/csp_policy.py) et les adresses de config/repository_tree.
+    reprend ce site) : même liste que le lanceur (tools/csp_policy.py), les adresses de config/repository_tree et les
+    hôtes déclarés par meta.net des modules de l'appli V3.
 Les images gérées par Git LFS doivent être présentes dans la copie de travail (actions/checkout avec lfs: true) ; un
 pointeur LFS restant arrête la construction.
 
@@ -64,9 +65,10 @@ def main(out, start=''):
     if os.path.isdir(out):
         shutil.rmtree(out)
     files = [f for f in git('ls-files', '-z').split('\0') if f and not f.startswith(SKIP)]
-    # politique de sécurité des pages (balise meta, avant tout script) : liste fixe et adresses de la configuration
+    # politique de sécurité des pages (balise meta, avant tout script) : liste fixe, adresses de la configuration et
+    # hôtes que les bibliothèques des modules V3 appellent elles-mêmes (meta.net)
     with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
-        policy = csp_policy.value(csp_policy.config_sites(f.read()), meta=True)
+        policy = csp_policy.value([*csp_policy.config_sites(f.read()), *csp_policy.module_hosts(ROOT)], meta=True)
     meta = f'<meta http-equiv="Content-Security-Policy" content="{policy}">'.encode()
     pointers = []
     for rel in files:

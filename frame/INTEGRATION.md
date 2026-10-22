@@ -35,6 +35,10 @@ export function unmount() { /* stop watchers, timers */ }
 - `files`: every other file the module imports (scripts, data, images), as paths relative to `module.js`. The frame
   keeps them offline from the first visit, before the module is ever opened. A file left out is kept only once it has
   been loaded, so declare them all; `[]` when there is none.
+- `lazy`: heavy files (a map library) that must not be preloaded: kept at their first use only.
+- `net`: only when a library you use calls a public host by itself (map tiles): list the hosts (`host` or
+  `host/path`), https only. Your own calls still go through `ctx.net`. The page's security policy lets these hosts
+  in; any other direct call is blocked.
 
 ## 3. Declaring what the module reads and writes
 

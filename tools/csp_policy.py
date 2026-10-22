@@ -5,6 +5,7 @@ injecté ne peut plus envoyer les données ailleurs par requête. Scripts : ceux
 pdf.js et acorn épinglés. Images, liens et navigation : non restreints (tuiles, liens d'aide) — fuite résiduelle
 documentée (docs/technique/AUDIT_SECURITE_2026-10-07.md, M2 ; APPLI_AUTONOME_SECURITE.md, S1).
 """
+import os
 import re
 import urllib.parse
 
@@ -39,6 +40,51 @@ def config_sites(config_text):
     """Origines des adresses https du texte de la configuration (config/repository_tree : dépôt de la suite, sources),
     réglées par le code, pas par la page."""
     return sorted({site_origin(u) for u in re.findall(r'https://[^\s"\'`]+', config_text or '')} - {''})
+
+
+# ---- V3 : hôtes publics qu'une bibliothèque d'un module appelle elle-même (meta.net, frame/SPEC.md § 3.2 : MapLibre et
+# ses tuiles), jamais par ctx.net ni par le lanceur ; https seulement ; « hôte » ou « hôte/chemin » (préfixe de chemin)
+NET_RE = re.compile(r'^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:/[A-Za-z0-9._~/-]*)?$')
+
+
+def app_modules(root):
+    """Identifiants des modules de l'appli V3 (APP.modules de frame/app.js) ; [] sans cadre."""
+    try:
+        with open(os.path.join(root, 'frame', 'app.js'), encoding='utf-8') as f:
+            text = f.read()
+    except OSError:
+        return []
+    m = re.search(r'const APP = \{(.*?)\n  \};', text, re.S)
+    block = m.group(1) if m else ''
+    i = block.find('modules:')
+    return re.findall(r"\bid:\s*'([\w-]+)'", block[i:]) if i >= 0 else []
+
+
+def module_files(root):
+    """Points d'entrée (module.js) des modules de l'appli V3."""
+    return [os.path.join(root, 'modules', m, 'module.js') for m in app_modules(root)]
+
+
+def module_hosts(root):
+    """Sources CSP des hôtes déclarés par meta.net des modules de l'appli (https://hôte ou https://hôte/chemin/), dans
+    l'ordre ; une entrée qui n'est pas un hôte public écrit simplement est ignorée."""
+    out = []
+    for p in module_files(root):
+        try:
+            with open(p, encoding='utf-8') as f:
+                text = f.read()
+        except OSError:
+            continue
+        meta = re.search(r'export const meta = \{(.*?)\n\};', text, re.S)
+        net = re.search(r'\bnet\s*:\s*\[([^\]]*)\]', meta.group(1)) if meta else None
+        for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", net.group(1) if net else ''):
+            host = (a or b).strip().lower().removeprefix('https://')
+            if not NET_RE.match(host) or host.split('/')[0] in ('localhost',) or re.fullmatch(r'[\d.]+', host.split('/')[0]):
+                continue
+            src = 'https://' + host if '/' not in host else 'https://' + host.rstrip('/') + '/'
+            if src not in out:
+                out.append(src)
+    return out
 
 
 def value(extra=(), meta=False):

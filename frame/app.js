@@ -687,14 +687,20 @@
     })).catch(e => console.warn('service worker', e));
   }
   /** Fichiers de tous les modules de l'application, à garder dès l'installation : le point d'entrée de chacun et les
-   *  fichiers que son meta.files déclare (chemins relatifs à module.js) ; module illisible : son point d'entrée seul. */
+   *  fichiers que son meta.files déclare (chemins relatifs à module.js) ; ceux de meta.lazy (lourds, gardés à leur
+   *  premier usage) ne sont jamais préchargés ; module illisible : son point d'entrée seul. */
   async function moduleFiles() {
     const urls = [];
     for (const m of APP.modules) {
       const entry = new URL(`modules/${m.id}/module.js`, ROOT).href;
       urls.push(entry);
       try {
-        for (const f of (await import(entry)).meta?.files || []) urls.push(new URL(f, entry).href);
+        const meta = (await import(entry)).meta || {},
+          lazy = new Set((meta.lazy || []).map(f => new URL(f, entry).href));
+        for (const f of meta.files || []) {
+          const u = new URL(f, entry).href;
+          if (!lazy.has(u)) urls.push(u);
+        }
       } catch {
         /* module en échec : il le dira à son ouverture */
       }

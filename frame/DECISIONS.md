@@ -189,6 +189,18 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   device's transport; a backup restores data. In `replace` mode `device/` is taken, never the GitHub access (the token
   is not in a backup). Test: a newer `device/usages.json` in the backup is left out by a merge (`device` count 1) and
   taken by a replace.
+- **22 Oct 2026 — Lot 8, `meta.net` and `meta.lazy`** (asked by maps):
+  - `meta.net`: the public hosts a module's library calls by itself (MapLibre and its tiles), declared, never through
+    `ctx.net` nor the launcher. `tools/csp_policy.py` reads them from the application's modules (`APP.modules` of
+    `frame/app.js`, then each `module.js`), for both the launcher's header (computed again when a module changes) and
+    the `build_pages.py` meta tag, so a map works with and without a launcher.
+  - Only `connect-src` gets them: the policy restricts no image today, and an `img-src` directive would block every
+    other image of the suite. Local and numeric addresses are ignored.
+  - `meta.lazy`: heavy files kept at their first use (the service worker already keeps every module file it serves);
+    the frame only leaves them out of the installation's preloading, even when also listed in `files`.
+  - Tests: a module declaring `net` and `lazy` (temporary, in a copy): the launcher's header and the built pages carry
+    its hosts in `connect-src`, a local address is ignored; the lazy file is not in the service worker's copies after
+    the first visit, and is once loaded.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

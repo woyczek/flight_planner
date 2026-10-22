@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 8: `meta.net` and `meta.lazy`** (`tools/csp_policy.py`, `tools/build_pages.py`, `tools/launch.py`,
+  `frame/app.js`) — a module declares the public hosts its library calls by itself (map tiles), added to the page's
+  `connect-src` with and without a launcher; heavy files are kept at their first use instead of being preloaded.
 - **fuel: vertical profile in the current flight** (`modules/fuel/module.js`; `INTEGRATION.md` § 3, `DECISIONS.md`) —
   `pilot/<trigram>/current_flight.json` gains `profile { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` from
   every quote, for maps' vertical profile.

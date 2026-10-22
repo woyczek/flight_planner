@@ -215,9 +215,18 @@ used alone:
 
 - A module is `modules/<id>/module.js`, an ES module loaded on demand with `import()` (never a synchronous script).
 - It exports:
-  - `meta`: `{ id, apps, level, reads, writes, files }`; `id` must match its folder; `files` lists the other files
-    the module imports, as paths relative to `module.js`, so that they are kept offline from the installation
-    (§ 3.6);
+  - `meta`: `{ id, apps, level, reads, writes, files, lazy, net }`; `id` must match its folder;
+    - `files` lists the other files the module imports, as paths relative to `module.js`, so that they are kept
+      offline from the installation (§ 3.6);
+    - `lazy` lists heavy files (a map library, about 1 MB) kept by the service worker at their first use, never
+      preloaded; a file in both lists is lazy;
+    - `net` lists the public hosts a library of the module calls by itself (MapLibre fetches its own tiles:
+      `tiles.openfreemap.org`, `tiles.versatiles.org`, `s3.amazonaws.com/elevation-tiles-prod`), `host` or
+      `host/path`. This is the one exception to "every outgoing call goes through `ctx.net`": such calls never go
+      through `ctx.net` nor the launcher, https only, GET by nature (tiles). The launcher's header and the
+      `build_pages.py` meta tag add them to the page's `connect-src` (`tools/csp_policy.py`, read from the meta of the
+      application's modules); a local or numeric address is ignored. Images are not restricted by the policy, so
+      nothing is added to `img-src`;
   - `mount(el, ctx)`;
   - `unmount()`.
 - Before mounting a module, the frame unmounts the previous one and empties its element.

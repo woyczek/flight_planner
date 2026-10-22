@@ -1457,11 +1457,13 @@ def frame_net(a):
 
 
 def csp_policy():
-    """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration ou les sites autorisés changent)."""
+    """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration, les sites autorisés ou les modules
+    de l'appli V3 changent : meta.net, hôtes que leurs bibliothèques appellent elles-mêmes)."""
     key = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in
-                (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree')))
+                (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree'),
+                 os.path.join(ROOT, 'frame', 'app.js'), *cspmod.module_files(ROOT)))
     if _csp['key'] != key:
-        _csp.update(key=key, value=cspmod.value([*config_sites(), *user_sites()]))
+        _csp.update(key=key, value=cspmod.value([*config_sites(), *user_sites(), *cspmod.module_hosts(ROOT)]))
     return _csp['value']
 
 
