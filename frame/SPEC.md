@@ -180,8 +180,10 @@ used alone:
 - `load(file | text | object, { mode })`:
   - `merge` (default): nothing of this device is lost. A file absent here, or newer in the backup (`updated_at`),
     becomes a pending write (a device cache file or a reference copy is written directly). A pending write here
-    always wins; a pending deletion of the backup is never taken.
-  - `replace`: copies, queue and conflicts of this device are replaced by the backup's.
+    always wins; a pending deletion of the backup is never taken. The device's own settings (`device/`: usages,
+    identity, level) are never taken: a backup restores data, not this device's transport or identity.
+  - `replace`: copies, queue and conflicts of this device are replaced by the backup's, `device/` included (never the
+    GitHub access: the token is not in a backup).
   - Returns `{ added, updated, kept, pending, conflicts }`. A file that is not an export is refused.
 
 ### 2.8 Invariants

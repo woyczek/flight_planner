@@ -184,6 +184,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - Tests: launcher relay with a stub `airline/settings.json`: GET relayed, POST refused (405), another host refused
     (403), a private address as site refused; in the page, the site read through `ctx.net` (relayed) and a POST answered
     503.
+- **22 Oct 2026 — `device/` out of a merged backup** (decided by the ergonomics session after settings lot 4): `load` in
+  merge mode never takes `device/` (usages, identity, level), because the usages of another device would switch this
+  device's transport; a backup restores data. In `replace` mode `device/` is taken, never the GitHub access (the token
+  is not in a backup). Test: a newer `device/usages.json` in the backup is left out by a merge (`device` count 1) and
+  taken by a replace.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

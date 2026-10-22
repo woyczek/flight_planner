@@ -897,9 +897,11 @@
   }
   /** Reprend une sauvegarde (texte, File ou objet de dump). mode 'merge' (défaut) : rien de cet appareil n'est
    *  perdu — un fichier absent ici ou plus récent dans la sauvegarde (updated_at) devient une écriture en attente (copie
-   *  de l'appareil, base de référence : copie directe), une écriture en attente d'ici l'emporte toujours ; mode
-   *  'replace' : copies, file et conflits de cet appareil remplacés par ceux de la sauvegarde. Rend { added, updated,
-   *  kept, pending, conflicts }. */
+   *  de l'appareil, base de référence : copie directe), une écriture en attente d'ici l'emporte toujours ; les réglages
+   *  de l'appareil (device/ : usages, identité, niveau) ne sont jamais repris (une sauvegarde restaure des données, pas
+   *  le transport ni l'identité de cet appareil) ; mode 'replace' : copies, file et conflits de cet appareil remplacés
+   *  par ceux de la sauvegarde, device/ compris (jamais de jeton : il n'est pas dans la sauvegarde). Rend { added,
+   *  updated, kept, pending, conflicts, device (fichiers device/ laissés de côté) }. */
   async function load(input, {
     mode = 'merge'
   } = {}) {
@@ -910,12 +912,20 @@
       updated: 0,
       kept: 0,
       pending: 0,
-      conflicts: 0
+      conflicts: 0,
+      device: 0
     };
-    const docs = src.docs.filter(d => d && typeof d.path === 'string' && typeof d.text === 'string'),
+    let docs = src.docs.filter(d => d && typeof d.path === 'string' && typeof d.text === 'string'),
       pend = (src.pending || []).filter(p => p && typeof p.path === 'string' && (typeof p.text === 'string' || p.text === null)),
       confl = (src.conflicts || []).filter(c => c && typeof c.path === 'string');
     const paths = [];
+    if (mode !== 'replace') {
+      // fusion : device/ laissé de côté (les usages d'un autre appareil changeraient le transport de celui-ci)
+      const n = docs.length + pend.length;
+      docs = docs.filter(d => !under(d.path, 'device/'));
+      pend = pend.filter(p => !under(p.path, 'device/'));
+      r.device = n - docs.length - pend.length;
+    }
     if (mode === 'replace') {
       for (const s of ['docs', 'pending', 'conflicts']) await idb(s, 'clear');
       for (const d of docs) await idb('docs', 'put', d);

@@ -33,6 +33,8 @@ waypoints, and the rest listed below.
 - **Frame, lot 7: the airline's website through `ctx.net`** (`frame/app.js`, `tools/launch.py`) — the host of
   `airline.site` is relayed by the launcher (or called directly), GET only, https only, never a local or private
   address, so the website module can read the fleet and the log.
+- **Frame: a merged device backup leaves `device/` aside** (`frame/store/frame_data.js`) — `FrameData.load` in merge
+  mode never takes another device's usages, identity or level; "replace" still takes them, never a token.
 - **settings: backup and access on the frame's lot 6** (`frame/settings/settings.js`; `frame/settings/SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`) — the device backup now uses `FrameData.dump()` and `FrameData.load()`: "Export
   (one file)", "Import (merge)…" (nothing of this device is lost) and "Replace from a file…" (asked, says what is

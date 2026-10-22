@@ -568,6 +568,17 @@
       });
       await d.sync();
       await d.put(q, rec('TST', '2026-10-03T00:00:00Z'));
+      const dev = FD.adapter({
+        id: 'essai-device',
+        writes: [{
+          prefix: 'device/',
+          policy: 'cache'
+        }]
+      });
+      await dev.put('device/usages.json', {
+        devices: true,
+        updated_at: '2099-01-01T00:00:00Z'
+      });
       const x = await FD.dump(),
         parsed = JSON.parse(x.text);
       check('export: one JSON file, docs and pending, no meta, no token', parsed.format === 'sog-frame-export/1' && parsed.docs.some(
@@ -577,6 +588,7 @@
       const e = await fresh();
       const r = await FD.load(new Blob([x.text]));
       check('merge onto an empty device: everything taken', r.added >= 2 && r.pending >= 2, r);
+      check('merge: the device settings (device/) are never taken', r.device === 1 && await e.get('device/usages.json') === null, r);
       check('the device cache file is back, not queued', (await e.get('cache/essai/last.json'))?.n === 1 && !(await e.cached('cache/'))
         .some(f => f.policy !== 'cache'), await e.cached('cache/'));
       const s1 = await e.sync();
@@ -595,6 +607,8 @@
       });
       check('replace: the backup becomes the device data', (await e.get(p)).updated_at === '2026-10-02T00:00:00Z' && r4.pending ===
         parsed.pending.length, r4);
+      check('replace: the device settings come with it', (await e.get('device/usages.json'))?.devices === true, await e.get(
+        'device/usages.json'));
       let refused = false;
       try {
         await FD.load('{"a":1}');
