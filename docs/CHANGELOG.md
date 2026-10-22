@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **website: reading of the DEFA Virtual website as V2 uses it** (`modules/website/READING.md`,
+  `modules/website/DECISIONS.md`) — the site's pages, forms and fields, what is public and what needs the pilot's
+  session, the pasted flight log and fleet towards `pilot/<trigram>/site_log.json` and `airline/fleet.json`, the
+  "record the flight" function report calls, the airline setting `airline/settings.json`, and what a future PHP web
+  service would expose as a frame transport, by lots. No code.
 - **flightlog: "My flights" in the Pilot application** (`modules/flightlog/module.js`, `model.js`,
   `frame/lib/js-yaml.min.js`, `frame/app.js`, `modules/report/module.js`; `SPEC.md`, `INTEGRATION.md`,
   `DECISIONS.md`) — my past flights, one line per flight, from my reports (V3 records and the V2 registry), the
