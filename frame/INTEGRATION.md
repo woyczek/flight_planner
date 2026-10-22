@@ -90,6 +90,8 @@ export function unmount() { /* stop watchers, timers */ }
   - with a launcher, SimBrief, IVAO, VATSIM and aviationweather.gov (METAR) are relayed by it, keys and CORS
     included, with the same signature;
   - without one, SimBrief, IVAO and aviationweather.gov are called directly;
+  - the airline's website (`ctx.airline.site`, https) is read the same way, GET only: never send anything to it
+    (any other method gets a 503); without a launcher, a direct read works only if the site allows it (CORS);
   - any other outside site gets a 503 carrying `x-sog-unreachable`.
   Never call `fetch` directly. Only string bodies are relayed.
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and

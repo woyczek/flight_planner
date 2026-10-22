@@ -171,6 +171,19 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     untouched; a second batch leaves the registry as it is; the METAR relay answers;
   - the application: `#report?from=flightlog` opens report, `ctx.airline` read from the repository (unknown fields
     dropped), cut access switches to local and keeps copies.
+- **22 Oct 2026 — Lot 7, the airline's website through `ctx.net`** (asked for the website module: fleet and log in one
+  tap on a workstation with a launcher):
+  - the host of `airline.site` (from `airline/settings.json`, read again at each call on the launcher side) joins the
+    relayed and direct sites, a dynamic list of one;
+  - GET only, on both sides: nothing is ever sent to the website through the relay (a form is opened by the user, as
+    report does);
+  - https only, and never a local or private address (`localhost`, a non-global IP literal): the data repository is
+    shared, so its content must not turn the launcher into a way into the workstation's network;
+  - without a launcher, a direct read works only if the website allows CORS; otherwise the module gets a 503, as for
+    any unreachable site.
+  - Tests: launcher relay with a stub `airline/settings.json`: GET relayed, POST refused (405), another host refused
+    (403), a private address as site refused; in the page, the site read through `ctx.net` (relayed) and a POST answered
+    503.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

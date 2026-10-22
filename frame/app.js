@@ -184,6 +184,15 @@
   const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov'],
     DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'aviationweather.gov'];
   let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
+  /** Hôte du site de la compagnie (ctx.airline.site, en https) : relayé ou appelé en lecture seule (GET) ; '' sinon. */
+  const siteHost = () => {
+    try {
+      const u = new URL(airline.site || '');
+      return u.protocol === 'https:' ? u.hostname : '';
+    } catch {
+      return '';
+    }
+  };
   const unreachable = () => new Response(null, {
     status: 503,
     statusText: 'unreachable',
@@ -193,8 +202,9 @@
   });
   const net = {
     online: () => navigator.onLine !== false,
-    /** fetch par le cadre : hors ligne, réponse 503 tout de suite ; relais du lanceur pour les sites de RELAY ; appel
-     *  direct pour la même origine et les sites de DIRECT ; sinon 503 ; jamais d'exception. */
+    /** fetch par le cadre : hors ligne, réponse 503 tout de suite ; relais du lanceur pour les sites de RELAY et le site
+     *  de la compagnie (GET seulement) ; appel direct pour la même origine, les sites de DIRECT et le site de la
+     *  compagnie (GET) ; sinon 503 ; jamais d'exception. */
     async fetch(url, init = {}) {
       if (navigator.onLine === false) return offline();
       let u;
@@ -203,9 +213,11 @@
       } catch {
         return unreachable();
       }
+      const site = !!siteHost() && u.protocol === 'https:' && u.hostname === siteHost();
+      if (site && String(init.method || 'GET').toUpperCase() !== 'GET') return unreachable(); // jamais d'envoi vers le site
       try {
         if (u.origin === location.origin) return await fetch(u, init);
-        if (launcherHere && RELAY.includes(u.hostname)) {
+        if (launcherHere && (RELAY.includes(u.hostname) || site)) {
           const r = await fetch(new URL('__setup/net', ROOT), {
             method: 'POST',
             cache: 'no-store',
@@ -223,7 +235,7 @@
           });
           return r.headers.get('x-sog-offline') ? offline() : r;
         }
-        if (DIRECT.includes(u.hostname)) return await fetch(u, init);
+        if (DIRECT.includes(u.hostname) || site) return await fetch(u, init);
         return unreachable();
       } catch {
         return offline();

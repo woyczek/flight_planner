@@ -16,7 +16,7 @@ Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [-
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
 import argparse, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
-import posixpath, urllib.parse, urllib.request, webbrowser, zipfile
+import ipaddress, posixpath, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
@@ -1399,24 +1399,46 @@ def registry_bridge():
 
 
 # ---- V3 frame : relais des appels sortants des modules (ctx.net, frame/app.js) : CORS et clés restent ici. Sites relayés
-# seulement (https) ; clé d'API IVAO ajoutée pour api.ivao.aero ; réponse rendue telle quelle (statut, type, corps,
-# 8 Mo au plus) ; réseau injoignable : 502 marqué X-SOG-Offline.
+# seulement (https) ; clé d'API IVAO ajoutée pour api.ivao.aero ; site de la compagnie (data/airline/settings.json, site)
+# en lecture seule (GET) ; réponse rendue telle quelle (statut, type, corps, 8 Mo au plus) ; réseau injoignable : 502
+# marqué X-SOG-Offline.
 NET_HOSTS = {'www.simbrief.com': '', 'api.ivao.aero': 'ivao', 'api.vatsim.net': '', 'data.vatsim.net': '', 'my.vatsim.net': '',
              'aviationweather.gov': ''}
 NET_MAX = 8 * 1048576
+
+
+def airline_host():
+    """Hôte du site de la compagnie (data/airline/settings.json, champ site, en https) ; '' sans site, ou pour une adresse
+    locale ou privée (le relais ne sert jamais à atteindre le réseau du poste)."""
+    try:
+        with open(os.path.join(DATA, 'airline', 'settings.json'), encoding='utf-8-sig') as f:
+            site = json.load(f).get('site')
+    except (OSError, ValueError, AttributeError):
+        return ''
+    u = urllib.parse.urlparse(str(site or '').strip())
+    host = (u.hostname or '').lower()
+    if u.scheme != 'https' or not host or host == 'localhost' or host.endswith('.localhost'):
+        return ''
+    try:
+        if not ipaddress.ip_address(host).is_global:
+            return ''
+    except ValueError:
+        pass  # un nom, pas une adresse
+    return host
 
 
 def frame_net(a):
     """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps)."""
     url = str(a.get('url') or '')
     u = urllib.parse.urlparse(url)
-    if u.scheme != 'https' or u.hostname not in NET_HOSTS:
+    site = u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
+    if u.scheme != 'https' or (u.hostname not in NET_HOSTS and not site):
         return 403, {'Content-Type': 'application/json'}, json.dumps({'error': 'site non relayé'}).encode()
     method = str(a.get('method') or 'GET').upper()
-    if method not in ('GET', 'POST'):
+    if method not in (('GET',) if site else ('GET', 'POST')):
         return 405, {'Content-Type': 'application/json'}, json.dumps({'error': 'méthode refusée'}).encode()
     headers = {'User-Agent': 'SOG-suite', 'Accept': str(a.get('accept') or '*/*')}
-    if NET_HOSTS[u.hostname] == 'ivao':
+    if NET_HOSTS.get(u.hostname) == 'ivao':
         key = ivao_key()
         if key:
             headers['apiKey'] = key

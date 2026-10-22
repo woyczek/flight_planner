@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 7: the airline's website through `ctx.net`** (`frame/app.js`, `tools/launch.py`) — the host of
+  `airline.site` is relayed by the launcher (or called directly), GET only, https only, never a local or private
+  address, so the website module can read the fleet and the log.
 - **settings: backup and access on the frame's lot 6** (`frame/settings/settings.js`; `frame/settings/SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`) — the device backup now uses `FrameData.dump()` and `FrameData.load()`: "Export
   (one file)", "Import (merge)…" (nothing of this device is lost) and "Replace from a file…" (asked, says what is
