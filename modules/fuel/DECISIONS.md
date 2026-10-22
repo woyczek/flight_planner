@@ -97,3 +97,44 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 - **Lot 2 split**: 2a (this commit) = the pure model, its bench and the module documents, independent of the frame;
   2b = the module skeleton on the frame's loader (`mount(el, ctx)` / `unmount`) with the quote screen, once the frame
   pushes its lot 3.
+
+## 22 October 2026 — display units for speed, altitude and distance (decided by the user and the ergonomics session)
+
+- **What**: next to "kg / lb" in the Plan screen's settings fold, three more display units: speed kt / km/h, altitude
+  ft / m, distance NM / km / SM (1 kt = 1.852 km/h, 1 ft = 0.3048 m, 1 NM = 1.852 km = 1.150779 SM). Settings
+  `displaySpeed`, `displayAlt`, `displayDist` live in `pilot/<trigram>/fuel.json` beside `displayUnit` and are saved by
+  `saveSettings()`; defaults kt, ft, NM. Four selects on one grid row (`fu-grid3`, wraps at 390 px, no new CSS).
+- **Invariant 3 kept and widened**: the model (`FuelModel`, `FuelLevels`), the current flight, `fuel.json` entries and the
+  sheets stay in kt, ft, NM, ft/min and the sheet's fuel unit; conversion is the screen's, both ways. The pure
+  arithmetic is `FuelModel.convertSpeed / convertAlt / convertDist` next to `convertFuel` (same behaviour: a value is
+  returned unchanged when the units are equal, absent or unknown, or when it is not finite), benched in
+  `test/quote.html` (conversions, exact round trips kt → km/h → kt, NM → SM → NM, ft → m → ft, km → SM → km).
+  The screen has one set of helpers per quantity (`speedTxt`, `altTxt`, `distTxt`, `vsTxt` and their `Num`, `Field`,
+  `Parse`, `Label` counterparts); the helper reads the setting at each call, so a label and its number cannot disagree.
+- **Flight levels are kept** (FL120 = hundreds of feet, whatever the altitude unit): the level field, the decision chart's
+  axis, legend, buttons and "Above FLxxx" message, the sticky result and the climb drawing's target label. The altitude
+  unit applies where an altitude is a value: the climb table's altitude column, the vertical rate (ft/min, m/min), the
+  level in metres in brackets next to the FL in the sticky result when the unit is not ft.
+- **Rounding**: displayed values are rounded to the whole number (as before for NM, kt and ft/min); a typed value is
+  converted to the model unit and rounded to 0.01 of it when the unit differs (otherwise kept as typed, as before), so
+  a whole number typed in the displayed unit comes back unchanged: 100 km → 54 NM → 100 km. Proven for every whole
+  number 1 to 5,000 km and SM, 1 to 1,500 km/h and 1 to 20,000 m in the bench, and on the screen (390 and 1280 px).
+  A typed value is never "corrected" to a nicer NM figure: 56 km/h is stored as 30.24 kt, not 30.
+- **Inventory of the Plan screen** (`grep "NM\|kt\b\|ft\b\|km"`, 73 lines): converted or labelled by the helpers —
+  the distance field label and value, the wind speed field, the manual IAS and rate fields (label and parse), the top of
+  descent in the sticky result, the distance column of the quote details, the climb table's IAS, rate and altitude
+  columns (headers carry the unit), the climb drawing's IAS labels, the "rate under 20 ft/min" message. Kept: the
+  FL texts above; fuel flow `kg/h` (a fuel unit, entry kept in kg/h as in the sheet); the fuel and time axes of the
+  decision chart; the sheet editor and the preview of changes (Sheets screen: the sheet's own stored fields in
+  kt, ft, NM, with the field labels of V2); `ft: null` and similar code identifiers. The ceiling is not shown as a value
+  anywhere on the Plan screen, so nothing to convert.
+- **Judgement calls**: the vertical speed follows the altitude unit (m/min, the unit that goes with metres on a climb
+  table; m/s would hide the sub-metre values); the climb table's altitude column stays flight levels while the unit is
+  ft (today's display, and flight levels are the rule) and shows metres otherwise; the fuel select's label "Unité
+  affichée" became "Carburant" under a "Unités affichées" heading, as four selects need one heading rather than one
+  label on the first of them; no helper for typed altitudes (the level is typed as FL, nothing else is).
+- **Bug caught on the way**: a field changed and still focused fires its `change` while the unit select redraws the
+  screen, which would have read its text in the new unit (100 km read as 100 SM); the unit change first validates the
+  active field in the old unit.
+- **Help chapter**: no V3 user manual for fuel exists yet (the help block `frame/help/` is not started); the module's
+  SPEC § 9 carries the rule.

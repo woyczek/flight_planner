@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **fuel: display units for speed, altitude and distance** (`modules/fuel/module.js`, `model.js`, `test/quote.html`;
+  `SPEC.md` § 6 and § 9, `INTEGRATION.md`, `DECISIONS.md`) — beside kg / lb in the Plan screen's settings, speed in kt
+  or km/h, altitude in ft or m, distance in NM, km or SM, saved with the other quote settings; the model, the current
+  flight and the sheets stay in kt, ft and NM, conversion is the screen's in both directions (typed distance, wind
+  speed and manual IAS and rate are read in the displayed unit); flight levels stay flight levels. Bench: conversions
+  and round trips (50/50).
 - **settings: reading of the V2 Settings** (`frame/settings/READING.md`, `frame/settings/DECISIONS.md`) — each V2
   Settings card and where it goes in the Pilot application (identity, access, keys on a launcher, offline data, about,
   diagnostics; the rest to modules, CPCO, the design block, or dropped), the usages checklist and the cards each usage

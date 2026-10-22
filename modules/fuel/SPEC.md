@@ -76,6 +76,9 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 1. The quote is a pure function of its inputs: same inputs, same quote, on every device.
 2. The module never reads `sia/base/` or `AircraftDB/`: type data comes from aerodb; data files only through the adapter.
 3. Fuel quantities are in the sheet's unit inside the model; conversion to the displayed unit belongs to the screen.
+   The same holds for speeds, altitudes and distances: the model, the current flight and the sheets keep kt, ft and NM
+   (and ft/min); the displayed units (§ 9, "Display units") are the screen's, in both directions, display and typed
+   input. A converted value is never written into a record.
 4. No estimated value is ever written into a sheet without a gesture of the pilot.
 5. ICAO and EUROCONTROL data never enter the repository (tests use a fictitious sheet).
 
@@ -146,7 +149,28 @@ inside the module, switched by two buttons at the top, the last one kept on the 
   - Folded: the quote's details (taxi, climb, cruise, descent with time and distance, contingency, reserve, block),
     the climb instructions (drawing of altitude against time with the IAS at each reading, then the table: throttle,
     RPM, IAS, rate, fuel flow, Mach, time, fuel), the quote settings (taxi and reserve minutes, contingency, displayed
-    unit, this flight's cruise fuel flow for the sheet).
+    units, this flight's cruise fuel flow for the sheet).
+- **Display units** (the quote settings fold, one grid row of four selects: fuel, speed, altitude, distance; they
+  wrap on a phone). Fuel: kg / lb (`displayUnit`). Speed: kt / km/h (`displaySpeed`, 1 kt = 1.852 km/h). Altitude: ft /
+  m (`displayAlt`, 1 ft = 0.3048 m). Distance: NM / km / SM (`displayDist`, 1 NM = 1.852 km = 1.150779 SM). Defaults
+  kg (the sheet's unit), kt, ft, NM; saved with the other quote settings (`pilot/<trigram>/fuel.json`). Rules:
+  - The conversion is the screen's (invariant 3): `FuelModel.convertFuel / convertSpeed / convertAlt / convertDist`
+    are the pure arithmetic, the screen has one set of helpers per quantity (`speedTxt`, `altTxt`, `distTxt`, and
+    the vertical speed that follows the altitude unit per minute), each with its number-only, input-field and parse
+    counterparts and its unit symbol. Every number on the Plan screen that carries one of these units, and every
+    unit label (field labels, table headers, the sticky result, drawing labels, messages), goes through them. Unit
+    symbols are not translated.
+  - Typed input is parsed back to the model unit (distance, wind speed, manual IAS and rate), rounded to 0.01 of the
+    model unit when the unit differs, so a whole number typed in the displayed unit is displayed again unchanged
+    (100 km → 54 NM → 100 km); in the model's own unit the typed value is kept as typed. Displayed values are rounded
+    to the whole number. Changing a unit redraws the fields with the model's value in the new unit and leaves the
+    current flight untouched.
+  - **Flight levels stay flight levels** (FL120, hundreds of feet) whatever the altitude unit: the level field, the
+    level decision (axis, legend, buttons), the sticky result and the climb drawing's target keep FL. The altitude unit
+    shows as a value where an altitude is a value: the climb table's altitude column (flight levels while the unit is
+    ft, the altitude in metres otherwise), the vertical rate column and the manual rate field (ft/min or m/min), and the
+    level in metres next to the FL in the sticky result when the unit is not ft.
+  - The Sheets screen shows and edits the sheets' own fields (kt, ft, NM, fuel unit of the sheet): it is not affected.
 - **Sheets**: the list (name, type, unit, origin, empty fields, date; "Use" sets it for the flight, "Edit");
   import of files (CSV, JSON, `.lnmperf`, SimBrief OFP) or of a pasted text (the same, or a ChatGPT answer); a new
   sheet from an ICAO code (SimBrief type data when aerodb has them); a sheet from the last OFP (calibrated on its
