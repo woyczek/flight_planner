@@ -116,5 +116,6 @@ const ac = await offline.aircraft();                 // { files, types, state, c
 - **Place search**: `find('TOUL')` with France loaded reads France's navaids, points, VRP and towns (1.1 MB) and the
   world's major towns (430 KB), never the world's towns (4.9 MB): about 100 ms on a phone-like CPU the first time,
   40 ms afterwards.
-- **Keeping France offline**: 13 files, 6.9 MB with the common files, 110–165 ms from the launcher. Afterwards, with
-  the network cut, the questions on France answer from the cache alone.
+- **Keeping France offline** (frame's cache, launcher): 13 files, 6.9 MB with the common files, about 180 ms, or 410 ms
+  on a phone-like CPU. Afterwards, with the network cut, the questions on France answer from the cache alone (about
+  100 ms, or 390 ms on a phone-like CPU, for a first set of questions). Releasing takes 80–200 ms.

@@ -57,8 +57,9 @@ aerodb reads files only through a reader with the frame's data contract:
   A `change` event is sent only in those cases.
 - For the offline data API (§ 5, `offline`), two more calls, both local and without network:
   - `cached(prefix)` → `[{ path, rev, bytes, at }]`: the local copies under a prefix;
-  - `evict(path)`: drops the local copy of a reference file, never queued, never sent.
-  When they are missing, `offline.supported()` says so, states are `unknown` and `release` throws.
+  - `evict(path or prefix/)`: drops the local copies of reference files, never queued, never sent.
+  The frame's adapter offers both (frame lot 6). With a reader that lacks them, `offline.supported()` says so, states
+  are `unknown` and `release` throws.
 
 Until the frame delivers its data layer, `AeroDB.fetchReader()` stands in. In GitHub mode it reads through
 `GitHubData` (contents and tree). Otherwise it reads the files served by the launcher (`data/<path>`, `AircraftDB/` at
@@ -129,7 +130,7 @@ the suite root) and has no listing.
 | `offline.supported()` | `{ cached, evict }`: what the reader allows |
 | `offline.zones()` | published zones, by name: `{ id, names: [fr, en, de, es], prefixes, cycle, format, publishedKb, cachedKb, state, at, staleKb }`; `state` is `absent`, `partial`, `complete` or `unknown`; `at` is the date of the newest local copy; `staleKb` counts the copies of other cycles |
 | `offline.keep(zone, { onProgress })` | reads every kind of the zone's cycle, plus the common files (manifest, major towns), into the frame's cache; `onProgress({ done, total, path, kb })`; returns the zone's state with `failed` (paths) and `readKb` |
-| `offline.release(zone)` | evicts the local copies of every cycle of the zone and closes it in memory; common files stay; returns the zone's state |
+| `offline.release(zone)` | evicts the zone's folder (`sia/base/<zone>/`: every cycle, both formats) in one call and closes the zone in memory; common files stay; returns the zone's state |
 | `offline.common()` | state of the common files |
 | `offline.aircraft()` | aircraft base: `{ files: [{ path, cached, kb }], types, state, cachedKb, at }` (JSON files, or the V2 `.js` when only those are cached) |
 

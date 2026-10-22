@@ -232,6 +232,12 @@ waypoints, and the rest listed below.
     cut, then released.
   - Fixes: the manifest of lot 3 is now read (it was looked for one level too deep); a zone or kind unreadable offline
     is asked for again instead of staying empty.
+- **aerodb lot 4b: offline data on the frame's real adapter.** With the frame's `cached` and `evict` (frame lot 6):
+  - zone states are real (absent, then partial after one question, complete after `keep`);
+  - `release` frees the zone's whole folder in one call;
+  - the bench (`frame/aerodb/offline_bench.html`) runs on `FrameData` as the Pilot app configures it, and its
+    stand-in reader is removed. France kept in about 180 ms (410 ms on a phone-like CPU), answered with the network
+    cut, released in 80–200 ms.
 
 ### Added
 

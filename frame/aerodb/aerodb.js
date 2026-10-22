@@ -20,8 +20,8 @@
   //   coordsAll(ident), aircraft() → base des types (frame/aerodb/aircraft.js), stats(),
   //   offline : { supported(), zones(), keep(zone, { onProgress }), release(zone), common(), aircraft() } — données
   //   gardées dans le cache du frame pour le hors-ligne (carte « Données hors ligne » des Réglages) ; le lecteur doit
-  //   alors offrir cached(préfixe) → [{ path, rev, bytes, at }] (copies locales, sans réseau) et evict(chemin) (copie
-  //   locale d'une référence libérée, rien d'envoyé).
+  //   alors offrir cached(préfixe) → [{ path, rev, bytes, at }] (copies locales, sans réseau) et evict(chemin ou
+  //   préfixe/) (copies locales de références libérées, rien d'envoyé) — l'adaptateur du frame les offre (lot 6).
   if (window.AeroDB) return;
   const PUB = 'sia/base/',
     PUB_WHOLE = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\.json$/,
@@ -599,12 +599,10 @@
        *  mémoire ; les fichiers communs restent. */
       async release(id) {
         if (typeof reader.evict !== 'function') throw new Error('aerodb: the reader cannot evict (evict missing)');
-        const cache = await cachedMap(`${PUB}${id}/`),
-          paths = cache ? [...cache.keys()] : (await zoneFiles(id))?.files.map(f => f.path) || [];
-        for (const path of paths) {
-          await reader.evict(path);
-          revs.delete(path);
-        }
+        // un seul appel pour tout le dossier de la zone (tous cycles, format entier compris : evict d'un préfixe en /)
+        const cache = await cachedMap(`${PUB}${id}/`);
+        await reader.evict(`${PUB}${id}/`);
+        for (const path of cache?.keys() || []) revs.delete(path);
         loaded.delete(id);
         missing.delete(id);
         emit({

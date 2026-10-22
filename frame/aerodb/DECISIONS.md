@@ -141,7 +141,7 @@ listing known, no whole-zone file and no world-towns file is read. The aircraft 
   adapter today, `keep('fr')` already works (6.9 MB read into the frame's cache).
 - **Bench without the frame**: `frame/aerodb/offline_bench.html` uses a bench reader that imitates the frame's
   contract (`read` with `wait`, `list`, `cached`, `evict`) over the provisional reader, with an in-memory cache and a
-  network switch. To be run again on `FrameData.adapter` once it offers both calls.
+  network switch. Replaced in lot 4b by the frame's real adapter.
 - **Fixes found by the bench**:
   - The manifest was read as `data.zones`, but the publication of lot 3 writes `zones` at the top level. Without a
     listing (launcher), aerodb fell back to probing the AIRAC cycles, and `coords` had no prefixes. Both levels are now
@@ -167,7 +167,31 @@ With the network cut, the only reads attempted were:
   it is asked for again later.
 - The two aircraft JSON files: not served in launcher mode, so the `.js` copies were used.
 
+## 22 October 2026 — lot 4b (bench on the frame's real adapter)
+
+- The frame delivered `data.cached(prefix)` and `data.evict(path or prefix/)` (frame lot 6, 8fabe3938).
+  - `release` now evicts the zone's folder in one call: every cycle, both formats.
+  - The bench reader of lot 4 is removed. `offline_bench.html` now runs on `FrameData`, configured as `frame/app.js`
+    does: local transport, references read from the launcher that serves the page.
+  - "Network cut" is a switch on the page's `fetch`, and the frame's cache is wiped at the start.
+- Results (375 px, 13 zones; CPU ×1 / ×4):
+
+| Step | CPU ×1 | CPU ×4 |
+|---|---|---|
+| `zones()` on an empty cache: France `absent`, 6,530 KB published | 36 ms | 61 ms |
+| One question on Paris: France `partial`, 405 KB (meta and aerodromes) | — | — |
+| `keep('fr')`: 13 files, 6,945 KB read, France `complete`, 6,530 KB in the cache | 183 ms | 409 ms |
+| Network cut, new instance around Toulouse: aerodromes 107, airspaces 150, navaids 16, obstacles 175, MORA 4,100 ft, `coords('LFBO')`, `find('TOUL')`, aircraft base (127 types, JSON) | 96 ms | 387 ms |
+| `release('fr')`: France `absent`, no file left under `sia/base/fr/`; common files and aircraft base kept (573 KB) | 76 ms | 202 ms |
+| Next question on Paris after release: read again on demand, France `partial` | — | — |
+
+- With the network cut, only Spain's files were attempted: its frame touches the Toulouse area, and it was not kept.
+  The listing knows both of its formats, so `meta.json` and then the whole file were tried. Spain is asked for again
+  later; the answers come without it.
+- The JavaScript heap at the end is 16 MB at CPU ×1 but 158 MB at CPU ×4, with two aerodb instances. The difference is
+  garbage not yet collected (the frame parses every file read by `keep`).
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
-- Run `offline_bench.html` again on `FrameData.adapter` when it offers `cached` and `evict`.
+- Nothing planned: requests from the modules (maps next).
