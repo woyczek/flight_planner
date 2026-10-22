@@ -2,7 +2,7 @@
 
 This document describes the V3 report module completely enough to rebuild it without seeing its code. The reference
 implementation is `modules/report/module.js` (the screen), with `vocab.js`, `model.js`, `fpl.js`, `text_import.js`
-and `families/*.js` copied from V2 (`shared/mission_core/`) unchanged but for their globals, and `last_flight.js` ported
+and `families/*.js` copied from V2 (`shared/mission_core/`) unchanged but for their globals, and `frame/lib/last_flight.js` (shared pure code, owned by report) ported
 from the V2 launcher (`tools/launch.py`). How the frame mounts it: [INTEGRATION.md](INTEGRATION.md). Choices and dates:
 [DECISIONS.md](DECISIONS.md). What V2 did and what was kept: [READING.md](READING.md).
 

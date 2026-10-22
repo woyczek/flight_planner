@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: "last flight" moved to `frame/lib/last_flight.js`** — shared pure code (report owns it, flightlog uses
+  it): a module never imports from another module.
 - **flightlog: reading of V2 "My flights"** (`modules/flightlog/READING.md`, `modules/flightlog/DECISIONS.md`) —
   the sources of a flight and their key (reports, the airline website log, IVAO / VATSIM sessions), one line per
   flight, filters, totals, CSV, "Write the report" handed to the report module, the phone screen, and what in

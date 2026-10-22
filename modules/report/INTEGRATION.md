@@ -14,7 +14,7 @@ module: [SPEC.md](SPEC.md); the frame's adapter: [frame/INTEGRATION.md](../../fr
 | `modules/report/fpl.js` | V2 flight plan: equipment codes, levels, SimBrief / IVAO / VATSIM plans, filling a mission; network through `configure({ getJson })` |
 | `modules/report/text_import.js` | V2 analysis of a pasted text (FPL, IVAO tracker page, StatSim, IVAO list, METAR), track, filling |
 | `modules/report/website_handoff.js` | V2's hand-off to the airline website (flight fields, `#defa=` address, copy line, "→ Vol" bookmark); to move into `modules/website` |
-| `modules/report/last_flight.js` | the V2 launcher's "last flight" (IVAO sessions, VATSIM history) in JavaScript, network passed in |
+| `frame/lib/last_flight.js` | shared pure code, owned by report: the V2 launcher's "last flight" (IVAO sessions, VATSIM history) in JavaScript, network passed in; also used by flightlog |
 | `modules/report/READING.md` | lot 1: what V2 does and what the module keeps |
 
 ## 2. Mounting
@@ -28,7 +28,7 @@ writes: [
   { prefix: 'cache/report/', policy: 'cache' },      // the draft, the last flights read, my last family: this device only
   { prefix: 'pilot/handoff.json', policy: 'cache' }  // hand-over record, removed once taken
 ],
-files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', 'last_flight.js', 'website_handoff.js', 'families/<each family>.js']
+files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', 'website_handoff.js', 'families/<each family>.js']
 ```
 
 `ctx` used: `data` (get, put, remove, list), `t`, `lang`, `notify`, `identity` (`trigram` for the author and the

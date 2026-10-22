@@ -1,9 +1,10 @@
-// V3 report — « mon dernier vol » IVAO et VATSIM, porté du lanceur V2 (tools/launch.py : ivao_last_flight,
+// V3 frame/lib (propriétaire : report) — « mon dernier vol » IVAO et VATSIM, porté du lanceur V2 (tools/launch.py : ivao_last_flight,
 // vatsim_last_flight, _fpl_text, _ivao_same_flight, _vatsim_level) en JavaScript pur : les appels passent par getJson
 // (ctx.net du module ; avec un lanceur, IVAO reçoit sa clé et VATSIM son relais, sans que la page voie la clé). Même
 // sortie que la route du lanceur : liste des vols des 7 derniers jours (un vol coupé par des déconnexions = une entrée),
 // puis le détail d'un vol au format de text_import.js (kind 'ivao-details' : indicatif, terrains, connexion,
-// déconnexion, trace, plan de vol OACI). Ni page, ni stockage.
+// déconnexion, trace, plan de vol OACI). Ni page, ni stockage. Code pur partagé (report, flightlog) : un module
+// n'importe jamais depuis un autre module, il importe d'ici.
 const IVAO = 'https://api.ivao.aero/v2',
   VATSIM = 'https://api.vatsim.net/v2',
   DAYS = 7;

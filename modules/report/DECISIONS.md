@@ -92,6 +92,9 @@ Memory of the V3 report module: every choice, dated, with its reason. Chat histo
   - Checked on 8801: sixteen families listed; SPECIAL VIP → "VIP / government transport", ferry → "Ferry flight";
     FIRE without the common order block (its own "Flight order"); SAR with its six blocks; 375 px without horizontal
     scroll with every block open; a FIRE report saved as `CRF-A01-0`, the next new report opened in FIRE.
+- **23 Oct 2026 — `last_flight.js` moved to `frame/lib/`** (ergonomics session's rule: a module never imports from
+  another module; shared pure code lives in `frame/lib/<name>.js`, listed in `frame/SPEC.md` with its owner). Report
+  stays its owner; flightlog imports it from there; `meta.files` lists `../../frame/lib/last_flight.js`.
 - **Proposed, settled above** (lot 1):
   1. One JSON record per report, `cr/reports/<year>/<reportId>.json`, merge `record`, rather than the shared
      `cr/missions.yaml` (text for the data layer: no record-by-record merge). Joins the pending "reports per year"
