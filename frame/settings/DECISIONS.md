@@ -62,3 +62,17 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
 - **23 Oct 2026 — Tests of lot 3** (fake GitHub serving the repository, 375 px, French): with the example module set
   to level 3 for the test only (not committed), the menu shows fuel and report at levels 1 and 2 and the three verbs
   at level 3; `#hello` still opens at level 1; the card's lines match; no JavaScript error.
+- **23 Oct 2026 — Lot 4, on the frame's lot 6** (ergonomics session's go):
+  - the backup uses `FrameData.dump()` / `FrameData.load()`; the provisional adapter with the write prefix `''` is
+    gone. Two import buttons rather than one question with two answers: "Import (merge)…", the safe one, and
+    "Replace from a file…", whose question says what is erased;
+  - "Cut access" calls the context's `cutAccess` (the frame owns the token and the transport);
+  - zones: the frame's adapter now has `cached` and `evict`, so `aerodb.offline.supported()` is true and the card shows
+    real states and "Free" with no change in settings; the aircraft row hides an unknown number of types;
+  - sizes are written with the units of the application's language.
+  - Known by the frame's design, told to the ergonomics session: a merge also takes the device files of the backup
+    (`device/…`, cache policy) when they are newer, so the usages of the saved device may come back with them.
+- **23 Oct 2026 — Tests of lot 4** (fake GitHub serving the repository, 375 px, French): export (dump format, counts),
+  merge keeping this device's newer record, replace bringing the backup's record back, both questions; "Cut access"
+  (GitHub → local, setting erased, "no way to exchange" sentence); `cached` / `evict` present on the adapter; real
+  aerodb state for the aircraft base; no JavaScript error. Zones with a real published base: aerodb's bench.

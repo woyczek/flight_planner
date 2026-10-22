@@ -17,7 +17,7 @@ Settings is part of the frame: its context is wider than a module's `ctx`.
 | Field | What it is |
 |---|---|
 | `t`, `notify`, `ask` | the frame's texts, notifications and questions |
-| `FD` | `window.FrameData` (status, `onStatus`, `github.config/save/clear`, `github(cfg).head()`, `adapter`) |
+| `FD` | `window.FrameData` (status, `onStatus`, `github.config/save`, `github(cfg).head()`, `dump`, `load`) |
 | `own` | the frame's own adapter on `device/` (policy `cache`) |
 | `reload()` | re-reads `device/` and plugs the transport the usages ask for |
 | `identity()`, `usages()` | the device's current identity and usages |
@@ -25,6 +25,7 @@ Settings is part of the frame: its context is wider than a module's `ctx`.
 | `transport()` | the plugged transport (`missing: true` when the usages ask for an exchange nothing allows) |
 | `aerodb()` | the aerodb service, or null |
 | `syncNow()` | the frame's "synchronise now", with its notifications |
+| `cutAccess()` | erases the GitHub token and setting of this device and plugs the transport again |
 | `level()` | the device's usage level (1 to 3) |
 | `modules()` | promise of `[{ id, label, level }]`, the application's modules with their `meta.level`, once read |
 

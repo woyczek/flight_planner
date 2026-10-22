@@ -44,16 +44,18 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    state, not a box), otherwise how data are exchanged: through this workstation's launcher (`data/` folder, git or
    not), through the GitHub repository, or "no way to exchange here: set the access below". Then three boxes:
    alone on several devices, several users, server (disabled, "to come").
-5. **Backup of this device** (no exchange only): "Export (one file)" downloads `sog-appareil-<date>.json`
-   (`{ format: 'sog-device-export', version: 1, at, app, files: { path: text } }`): every file of the device's cache
-   and queue except the reference bases (`sia/`, `AircraftDB/`) and the device settings other than the identity.
-   "Import a file…" checks the format, keeps only relative paths outside the reference bases, asks before replacing,
-   then writes each file (the identity with the cache policy, the rest as writes; no other device file).
+5. **Backup of this device** (no exchange only), through the frame's `FrameData.dump()` and `FrameData.load()`:
+   "Export (one file)" downloads the dump (`{ name, text, counts }`: copies, pending writes, conflicts; never a token;
+   reference bases left out) and says how many files, pending writes and bytes. "Import (merge)…" asks, then loads
+   in `merge` mode: nothing of this device is lost, only what is missing here or older here is taken. "Replace from a
+   file…" asks, saying that this device's copies, pending writes and conflicts will be erased, then loads in `replace`
+   mode. A file that is not a device backup is refused with a notification; the result says added, updated, kept
+   and conflicts.
 6. **Data access** (an exchange ticked): on a launcher, one sentence (no token here). Otherwise repository, branch and
    token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint: a
    fine-grained token on this repository only, Contents read and write, 90 days at most, never pasted in a message.
    "Save", "Test" (the branch head through the transport; offline said as such) and "Cut access" (asks, then
-   `FrameData.github.clear`; pending writes stay queued).
+   the context's `cutAccess`; pending writes stay queued).
 7. **Synchronisation** (an exchange ticked): last success, pending writes, network, last error, kept live through
    `onStatus`; "Synchronise now" (the frame's `syncNow`); a link to the conflicts screen when there are some.
 8. **Offline data**: aeronautical bases (`aerodb.status()`: published zones, zones open on this device, cycle), the

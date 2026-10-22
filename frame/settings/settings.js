@@ -14,9 +14,6 @@
   const ROOT = new URL('../../', document.currentScript.src).href; // racine de la suite (routes /__setup du lanceur)
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const now = () => new Date().toISOString();
-  // fichiers de référence (bases publiées, relues à la demande) : jamais dans l'export d'un appareil
-  const REFERENCE = ['sia/', 'AircraftDB/'];
-  const EXPORT_FORMAT = 'sog-device-export';
 
   const T = {
     title: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
@@ -141,14 +138,30 @@
       'Solo en este dispositivo, este fichero es la única copia de sus datos: expórtelo de vez en cuando.'
     ],
     export: ['Exporter (un fichier)', 'Export (one file)', 'Exportieren (eine Datei)', 'Exportar (un fichero)'],
-    import: ['Importer un fichier…', 'Import a file…', 'Datei importieren…', 'Importar un fichero…'],
-    exported: ['{n} fichier(s) exporté(s).', '{n} file(s) exported.', '{n} Datei(en) exportiert.', '{n} fichero(s) exportado(s).'],
-    importAsk: ['Importer {n} fichier(s) du {d} ? Ceux de même nom sur cet appareil seront remplacés.',
-      'Import {n} file(s) of {d}? Those with the same name on this device will be replaced.',
-      '{n} Datei(en) vom {d} importieren? Gleichnamige auf diesem Gerät werden ersetzt.',
-      '¿Importar {n} fichero(s) del {d}? Los del mismo nombre en este dispositivo se sustituirán.'
+    import: ['Importer (fusion)…', 'Import (merge)…', 'Importieren (zusammenführen)…', 'Importar (fusión)…'],
+    replace: ['Remplacer par un fichier…', 'Replace from a file…', 'Durch eine Datei ersetzen…', 'Sustituir por un fichero…'],
+    exported: ['Sauvegarde exportée : {d} fichier(s), {p} écriture(s) en attente, {k}.',
+      'Backup exported: {d} file(s), {p} pending write(s), {k}.',
+      'Sicherung exportiert: {d} Datei(en), {p} ausstehende Änderung(en), {k}.',
+      'Copia exportada: {d} fichero(s), {p} escritura(s) pendiente(s), {k}.'
     ],
-    imported: ['{n} fichier(s) importé(s).', '{n} file(s) imported.', '{n} Datei(en) importiert.', '{n} fichero(s) importado(s).'],
+    importAsk: [
+      'Fusionner la sauvegarde du {d} ? Rien de cet appareil n’est perdu : seul ce qui manque ici ou y est plus ancien est repris.',
+      'Merge the backup of {d}? Nothing of this device is lost: only what is missing here or older here is taken.',
+      'Die Sicherung vom {d} zusammenführen? Nichts von diesem Gerät geht verloren: nur, was hier fehlt oder älter ist, wird übernommen.',
+      '¿Fusionar la copia del {d}? Nada de este dispositivo se pierde: solo se retoma lo que falta aquí o es más antiguo aquí.'
+    ],
+    replaceAsk: [
+      'Remplacer tout ce qui est sur cet appareil par la sauvegarde du {d} ? Copies, écritures en attente et conflits d’ici seront effacés.',
+      'Replace everything on this device with the backup of {d}? This device’s copies, pending writes and conflicts will be erased.',
+      'Alles auf diesem Gerät durch die Sicherung vom {d} ersetzen? Kopien, ausstehende Änderungen und Konflikte dieses Geräts werden gelöscht.',
+      '¿Sustituir todo lo de este dispositivo por la copia del {d}? Se borrarán las copias, escrituras pendientes y conflictos de aquí.'
+    ],
+    imported: ['Sauvegarde reprise : {a} ajouté(s), {u} mis à jour, {k} gardé(s) tels quels, {c} conflit(s).',
+      'Backup taken: {a} added, {u} updated, {k} kept as they were, {c} conflict(s).',
+      'Sicherung übernommen: {a} hinzugefügt, {u} aktualisiert, {k} unverändert behalten, {c} Konflikt(e).',
+      'Copia retomada: {a} añadido(s), {u} actualizado(s), {k} conservado(s) tal cual, {c} conflicto(s).'
+    ],
     badFile: ['Ce fichier n’est pas une sauvegarde d’appareil SOG.', 'This file is not a SOG device backup.',
       'Diese Datei ist keine SOG-Gerätesicherung.', 'Este fichero no es una copia de dispositivo SOG.'
     ],
@@ -285,12 +298,21 @@
   };
 
   /** Taille lisible (Ko, Mo, Go). */
-  const bytes = n => {
-    const f = x => x.toLocaleString(document.documentElement.lang || undefined, {
-      maximumFractionDigits: 1
-    });
-    return !Number.isFinite(n) ? '?' : n < 1e6 ? `${Math.round(n / 1e3)} Ko` : n < 1e9 ? `${f(n / 1e6)} Mo` : `${f(n / 1e9)} Go`;
+  // unités de taille, par langue (octet, kilo, méga, giga)
+  const UNITS = [
+    ['o', 'B', 'B', 'B'],
+    ['Ko', 'KB', 'KB', 'KB'],
+    ['Mo', 'MB', 'MB', 'MB'],
+    ['Go', 'GB', 'GB', 'GB']
+  ];
+  /** Taille lisible dans la langue de l'appli (t : textes du cadre). */
+  const bytes = (n, t) => {
+    if (!Number.isFinite(n)) return '?';
+    const k = n < 1e3 ? 0 : n < 1e6 ? 1 : n < 1e9 ? 2 : 3,
+      v = n / 10 ** (3 * k);
+    return `${v.toLocaleString(document.documentElement.lang || undefined, { maximumFractionDigits: k > 1 ? 1 : 0 })} ${t(UNITS[k])}`;
   };
+
   /** Lecture JSON d'une clé de localStorage ; null si absente ou illisible. */
   const lsJson = k => {
     try {
@@ -361,7 +383,7 @@
     cards.push(`<div class="f-card" data-card="usages"><h2>${esc(t(T.usages))}</h2><p><b>${esc(how)}</b></p><p class="f-muted">${esc(t(T.usagesHint))}</p>
       ${chk('devices', T.devices)}${chk('users', T.users)}${chk('backend', T.backend, true)}</div>`);
     if (!exchange) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
-      <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
+      <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
     // accès et synchronisation, si un échange est coché
     if (exchange) {
       cards.push(L?.data ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p></div>` :
@@ -423,7 +445,7 @@
         }) : ''
       }) : t(T.zonesNone);
       const est = await navigator.storage?.estimate?.().catch(() => null);
-      dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage), q: bytes(est.quota) }) : t(T.unknown))}</dd>`;
+      dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage, t), q: bytes(est.quota, t) }) : t(T.unknown))}</dd>`;
       paintZones();
       view.querySelector('[data-diag]').textContent = JSON.stringify({
         at: now(),
@@ -456,7 +478,7 @@
       const st = z => t(T.zoneState[z.state] || T.zoneState.unknown);
       box.innerHTML = zs.map(z => `<div class="f-zone" data-zone="${esc(z.id)}"><div><b>${esc(t(z.names))}</b><br><span class="f-muted" data-zline>${esc(t(T.zoneLine, { s: st(z), c: z.cycle || '?', k: z.cachedKb ?? '?', p: z.publishedKb ?? '?' }))}</span></div>
         <div class="f-row">${z.state !== 'complete' ? `<button type="button" data-keep="${esc(z.id)}">${esc(t(T.keep))}</button>` : ''}${can.evict && z.cachedKb ? `<button type="button" data-release="${esc(z.id)}">${esc(t(T.release))}</button>` : ''}</div></div>`).join('') +
-        (ac ? `<div class="f-zone"><div><b>${esc(t(T.aircraftDb))}</b><br><span class="f-muted">${esc(t(T.aircraftLine, { s: st(ac), n: ac.types ?? '?' }))}</span></div></div>` : '');
+        (ac ? `<div class="f-zone"><div><b>${esc(t(T.aircraftDb))}</b><br><span class="f-muted">${esc(ac.types == null ? st(ac) : t(T.aircraftLine, { s: st(ac), n: ac.types }))}</span></div></div>` : '');
       box.onclick = async e => {
         const k = e.target.closest('[data-keep]')?.dataset.keep,
           r = e.target.closest('[data-release]')?.dataset.release;
@@ -553,7 +575,11 @@
         return again();
       }
       if (act === 'export') return exportDevice(c);
-      if (act === 'import') return view.querySelector('[data-file]').click();
+      if (act === 'import' || act === 'replace') {
+        const f = view.querySelector('[data-file]');
+        f.dataset.mode = act === 'replace' ? 'replace' : 'merge';
+        return f.click();
+      }
       if (act === 'access' || act === 'test') {
         const r = card('access'),
           cfg = {
@@ -583,8 +609,7 @@
       }
       if (act === 'cut') {
         if (!await c.ask(t(T.cutAsk))) return;
-        FD.github.clear();
-        await c.reload();
+        await c.cutAccess();
         c.notify(t(T.cutDone), 'ok');
         return again();
       }
@@ -640,7 +665,7 @@
     view.querySelector('[data-file]')?.addEventListener('change', async e => {
       const f = e.target.files?.[0];
       e.target.value = '';
-      if (f) await importDevice(c, f);
+      if (f) await importDevice(c, f, e.target.dataset.mode);
       again();
     });
   }
@@ -671,73 +696,54 @@
     return (await setup('secrets'))?.app?.ivao?.apiKey || null;
   }
 
-  /** Exporte en un fichier JSON les données de cet appareil (identité comprise, bases de référence exclues). */
+  /** Exporte la sauvegarde de cet appareil en un fichier (FrameData.dump : copies, écritures en attente, conflits ; jamais
+   *  de jeton ; bases de référence exclues). */
   async function exportDevice(c) {
-    const all = c.FD.adapter({
-        id: 'settings-backup',
-        reads: [],
-        writes: ['']
-      }),
-      files = {};
-    for (const p of (await all.list('')) || []) {
-      if (REFERENCE.some(r => p.startsWith(r)) || (p.startsWith('device/') && p !== 'device/identity.json')) continue;
-      const r = await all.read(p).catch(() => null);
-      if (r) files[p] = r.text ?? (typeof r.value === 'string' ? r.value : JSON.stringify(r.value));
-    }
-    const blob = new Blob([JSON.stringify({
-        format: EXPORT_FORMAT,
-        version: 1,
-        at: now(),
-        app: 'pilot',
-        files
-      }, null, 1)], {
-        type: 'application/json'
-      }),
+    const d = await c.FD.dump(),
       a = Object.assign(document.createElement('a'), {
-        href: URL.createObjectURL(blob),
-        download: `sog-appareil-${now().slice(0, 10)}.json`
+        href: URL.createObjectURL(new Blob([d.text], {
+          type: 'application/json'
+        })),
+        download: d.name
       });
     document.body.append(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
     c.notify(c.t(T.exported, {
-      n: Object.keys(files).length
+      d: d.counts.docs,
+      p: d.counts.pending,
+      k: bytes(d.counts.bytes, c.t)
     }), 'ok');
   }
-  /** Importe un fichier exporté : chaque fichier remis sur cet appareil (identité dans device/, le reste en écriture). */
-  async function importDevice(c, file) {
+  /** Reprend une sauvegarde (FrameData.load) : fusion par défaut (rien d'ici n'est perdu), remplacement sur demande,
+   *  chacun après une question qui dit ce qu'il fait. */
+  async function importDevice(c, file, mode = 'merge') {
     let d = null;
     try {
       d = JSON.parse(await file.text());
     } catch {
       /* illisible */
     }
-    if (d?.format !== EXPORT_FORMAT || !d.files || typeof d.files !== 'object') return c.notify(c.t(T.badFile), 'err');
-    const entries = Object.entries(d.files).filter(([p, v]) => typeof v === 'string' && p && !p.startsWith('/') && !p.includes('..') &&
-      !REFERENCE.some(r => p.startsWith(r)) && (!p.startsWith('device/') || p === 'device/identity.json'));
-    if (!await c.ask(c.t(T.importAsk, {
-        n: entries.length,
-        d: String(d.at || '?').slice(0, 10)
+    if (!d || !Array.isArray(d.docs)) return c.notify(c.t(T.badFile), 'err');
+    const day = String(d.at || '?').slice(0, 10);
+    if (!await c.ask(c.t(mode === 'replace' ? T.replaceAsk : T.importAsk, {
+        d: day
       }))) return;
-    const all = c.FD.adapter({
-      id: 'settings-backup',
-      reads: [],
-      writes: ['']
-    });
-    for (const [p, text] of entries) {
-      let v = text;
-      if (p.endsWith('.json')) try {
-        v = JSON.parse(text);
-      } catch {
-        /* gardé en texte */
-      }
-      if (p.startsWith('device/')) await c.own.put(p, v);
-      else await all.put(p, v);
+    let r;
+    try {
+      r = await c.FD.load(d, {
+        mode
+      });
+    } catch {
+      return c.notify(c.t(T.badFile), 'err');
     }
     await c.reload();
     c.notify(c.t(T.imported, {
-      n: entries.length
+      a: r.added,
+      u: r.updated,
+      k: r.kept,
+      c: r.conflicts
     }), 'ok');
   }
 

@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: backup and access on the frame's lot 6** (`frame/settings/settings.js`; `frame/settings/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`) — the device backup now uses `FrameData.dump()` and `FrameData.load()`: "Export
+  (one file)", "Import (merge)…" (nothing of this device is lost) and "Replace from a file…" (asked, says what is
+  erased); "Cut access" goes through the frame's `cutAccess`; zones show their real state and "Free" now that the
+  frame's adapter offers `cached` and `evict`; sizes in the units of the application's language.
 - **website: "record the flight" moved to `frame/lib/website.js`** — shared pure code owned by the website module,
   self-contained; report imports it from there.
 - **settings: usage level** (`frame/settings/settings.js`, `frame/app.js`, `frame/frame.css`; `frame/settings/SPEC.md`,
