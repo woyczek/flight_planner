@@ -534,7 +534,7 @@ On the left, the palette: flight, control and miscellaneous templates, the note,
 - “RTBA · LL”: RTBA activity slots (activations entered or imported, otherwise the slots from the settings);
 - “Areas”: areas required by each flight (those of its mission, or those entered for a training flight), green if active on the flight's network, orange if requested, red otherwise;
 - “ATC”: the day's ATC sessions within the perimeter (country set in Settings › Centre › ODV planning, shown on hovering the label): trainings and exams in purple, events in blue, bookings faded; a session is outlined in red when it hinders a mission flight (its departure or arrival airfield during the flight);
-- “Available together”: ranges where at least two members can be assigned to a flight;
+- “Available together”: ranges where at least two members can be assigned to a flight (only one member available that day: their ranges); below, one thin row per member (their trigram) shows their ranges of the day, in the colour of their category, hatched when they do not make the member assignable to a flight: you see who starts earlier, finishes later or covers “together”. Beyond seven members, the label's “▾ n” button folds or opens these rows (open by default);
 - “Flights”, “Control”, “Miscellaneous”, “Notes” sections: items stack by themselves.
 
 Handling:
@@ -545,7 +545,7 @@ Handling:
 - in the palette, “Flight pool” keeps the strips removed from the timeline (dragged onto the palette, or “↩ Pool” in their window) and “Mission formations” offers what the placed mission flights call for: patrols of the other missions of the formation, tankers serving them, chiffons of the operation;
 - “Zoom” sets the timeline scale.
 
-On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member is available in the hour and a half before the flight, “↻” a recurrence; a green (done) or orange (not done) bar underlines the status; a cancelled strip is struck through. Below the timeline, “Assignment problems” lists the day's conflicts: a click shows the strip.
+On a strip: “⚠ n” counts its conflicts, “P” flags that no crew member is available in the hour and a half before the flight, “↻” a recurrence; a green (done) or orange (not done) bar underlines the status; a cancelled strip is struck through. An assigned mission flight (mission order issued, “OM” badge) turns black, or white at night and in dark designs, instead of its callsign colour, on the timeline and in the phone list. Below the timeline, “Assignment problems” lists the day's conflicts: a click shows the strip.
 
 **On phones**: the day's strips are shown as a list, by start time: start and end time (z), call sign or label, aircraft, crew, mission and status. A tap opens the strip (item window, read-only when the page is). The “Timeline” button shows the day's timeline; “List” goes back. The “aeronautical database missing” notice only appears from the Planning level (2).
 

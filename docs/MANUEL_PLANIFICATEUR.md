@@ -639,7 +639,7 @@ Les heures sont en z (UTC). Modèle de données : [Tableau](technique/ODV_ORDRES
 - « RTBA · LL » : créneaux d'activité du RTBA (activations saisies ou importées, sinon créneaux des réglages) ;
 - « Zones » : zones requises par chaque vol (celles de sa mission, ou celles saisies pour un entraînement), en vert si actives sur le réseau du vol, en orange si demandées, en rouge sinon ;
 - « ATC » : sessions ATC du jour dans le périmètre (pays réglé dans Paramètres › Centre › Planning ODV, au survol de l'étiquette) : trainings et examens en violet, événements en bleu, réservations estompées ; une session est encadrée en rouge quand elle gêne un vol de mission (son terrain de départ ou d'arrivée pendant le vol) ;
-- « Dispos ensemble » : plages où au moins deux membres sont affectables à un vol ;
+- « Dispos ensemble » : plages où au moins deux membres sont affectables à un vol (un seul membre disponible ce jour-là : ses plages) ; dessous, une ligne fine par membre (son trigramme) montre ses plages du jour, à la couleur de leur catégorie, hachurées quand elles ne rendent pas affectable à un vol : on voit qui commence avant, finit après ou couvre « ensemble ». Au-delà de sept membres, le bouton « ▾ n » de l'étiquette replie ou ouvre ces lignes (ouvertes par défaut) ;
 - sections « Vols », « Contrôle », « Divers », « Notes » : les éléments s'empilent d'eux-mêmes.
 
 Manipulations :
@@ -650,7 +650,7 @@ Manipulations :
 - dans la palette, « Réserve des vols » garde les plaquettes retirées de la frise (glissées sur la palette, ou « ↩ Réserve » dans leur fenêtre) et « Formations des missions » propose ce que les vols de mission posés appellent : patrouilles des autres missions de la formation, ravitailleurs qui les servent, chiffons de l'opération ;
 - « Zoom » règle l'échelle de la frise.
 
-Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun équipier n'est disponible dans l'heure et demie qui précède le vol, « ↻ » une récurrence ; une barre verte (fait) ou orange (non fait) souligne l'état ; une plaquette annulée est barrée. Sous la frise, « Problèmes d'affectation » liste les conflits du jour : un clic montre la plaquette.
+Sur une plaquette : « ⚠ n » compte ses conflits, « P » signale qu'aucun équipier n'est disponible dans l'heure et demie qui précède le vol, « ↻ » une récurrence ; une barre verte (fait) ou orange (non fait) souligne l'état ; une plaquette annulée est barrée. Un vol de mission affecté (ordre de mission émis, badge « OM ») passe en noir, ou en blanc la nuit et dans les designs sombres, à la place de la couleur de son indicatif, sur la frise comme dans la liste du téléphone. Sous la frise, « Problèmes d'affectation » liste les conflits du jour : un clic montre la plaquette.
 
 <!-- capture-manuels: planif-tableau-creneaux -->
 ![Lire les vols dans les créneaux et comparer leurs horaires aux zones, à l’ATC et aux disponibilités.](images/captures-manuels/planif-tableau-creneaux.png)

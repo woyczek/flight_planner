@@ -1080,6 +1080,36 @@
       return [e, i];
     });
   }
+  // lignes des membres sous « Dispos ensemble » : repliables au-delà de sept membres (ouvertes par défaut, choix gardé
+  // dans odvOrdersTogether:v1)
+  const TOG_MAX = 7,
+    TOG_KEY = 'odvOrdersTogether:v1';
+  /** Lignes des membres montrées : toujours jusqu'à sept, au-delà selon le choix de repli (ouvert par défaut). */
+  const togOpen = n => n <= TOG_MAX || K.store.get(TOG_KEY, 'open') !== 'closed';
+  /** Libellé de « Dispos ensemble » : avec plus de sept membres, bouton qui replie ou ouvre leurs lignes. */
+  const togLabel = n => {
+    const lbl = esc(t(TX.sections.ensemble));
+    if (n <= TOG_MAX) return lbl;
+    const open = togOpen(n);
+    return `${lbl} <button type="button" class="odvo-tog-btn" data-togopen aria-expanded="${open}" title="${esc(t(open ? L4('Replier les lignes des membres', 'Fold the member rows', 'Zeilen der Mitglieder einklappen', 'Plegar las filas de los miembros') : L4('Montrer les lignes des membres', 'Show the member rows', 'Zeilen der Mitglieder zeigen', 'Mostrar las filas de los miembros')))}">${open ? '▾' : '▸'} ${n}</button>`;
+  };
+  /** Ligne fine d'un membre sous « Dispos ensemble » : ses plages du jour (couleur de la catégorie ; une plage qui ne
+   *  rend pas affectable à un vol est hachurée), pour voir qui commence avant, finit après ou couvre « ensemble ». */
+  function memberDayRow(m, plages, X, P, s0, e0, W) {
+    const bars = plages.map(x => {
+      const a = Math.max(s0, min(x.debut)),
+        b = Math.min(e0, min(x.fin) || 1440);
+      if (b <= a) return '';
+      const cat = SD()?.category?.(x.categorie),
+        ok = (SD()?.affectable?.(x.categorie) || []).includes('vol'),
+        col = SD()?.color ? SD().color(cat || {
+          couleur: '#BFBFBF'
+        }) : '#BFBFBF';
+      const tip = `${m.tri} · ${cat ? SD().label(cat.label) : x.categorie} · ${x.debut}–${x.fin}z`;
+      return `<div class="odvo-mdp${ok ? '' : ' odvo-mdp-no'}" style="left:${X(a)}px;width:${(b - a) * P}px;--odvo-mdp:${esc(col)}" title="${esc(tip)}"></div>`;
+    }).join('');
+    return `<div class="odvo-row odvo-sec-membre"><div class="odvo-lbl" title="${esc(memberName(m.tri))}">${esc(m.tri)}</div><div class="odvo-lane" style="width:${W}px;height:12px">${bars}</div></div>`;
+  }
   /** Frise du jour sélectionné : heures, tranches, nuit aéronautique, heure courante, lignes RTBA · LL, zones et ATC,
    *  membres disponibles ensemble, plaquettes par section en couloirs ; puis palette, problèmes et zones. */
   function renderDay() {
@@ -1103,8 +1133,9 @@
       if (dawn != null && dawn > s0) night += `<div class="odvo-night" style="left:0;width:${X(Math.min(dawn, e0))}px" title="${esc(t(L4('Nuit aéronautique', 'Aeronautical night', 'Luftfahrtnacht', 'Noche aeronáutica')))}"></div>`;
       if (dusk != null && dusk < e0) night += `<div class="odvo-night" style="left:${X(Math.max(dusk, s0))}px;width:${(e0 - Math.max(dusk, s0)) * P}px" title="${esc(t(L4('Nuit aéronautique', 'Aeronautical night', 'Luftfahrtnacht', 'Noche aeronáutica')))}"></div>`;
     }
-    // ligne de la frise : libellé de la section et couloir d'une hauteur donnée (data-lane : cible du dépôt)
-    const sect = (key, body, h, extra = '') => `<div class="odvo-row odvo-sec-${key}" data-sec="${key}"${extra}><div class="odvo-lbl">${esc(t(TX.sections[key]))}</div><div class="odvo-lane" data-lane="${key}" style="width:${W}px;height:${h}px">${body}</div></div>`;
+    // ligne de la frise : libellé de la section (ou lbl, HTML déjà échappé) et couloir d'une hauteur donnée (data-lane :
+    // cible du dépôt)
+    const sect = (key, body, h, extra = '', lbl = null) => `<div class="odvo-row odvo-sec-${key}" data-sec="${key}"${extra}><div class="odvo-lbl">${lbl ?? esc(t(TX.sections[key]))}</div><div class="odvo-lane" data-lane="${key}" style="width:${W}px;height:${h}px">${body}</div></div>`;
     // sections d'éléments
     const secOf = {
       vol: 'vol',
@@ -1122,9 +1153,13 @@
         h: n * H[key] + 4
       };
     }
+    // membres qui ont des plages ce jour : leurs créneaux, une ligne fine chacun sous « Dispos ensemble » ; un seul
+    // membre : « ensemble » = ses créneaux (au moins un membre au lieu de deux)
+    const dayOf = tri => S.dispos[tri]?.[date] || [];
+    const withSlots = S.members.filter(m => dayOf(m.tri).length);
     const together = O().together(date, S.members.map(m => m.tri), S.dispos, {
       kind: 'vol',
-      min: 2
+      min: withSlots.length <= 1 ? 1 : 2
     }).map(x => `<div class="odvo-tog" style="left:${X(Math.max(s0, min(x.debut)))}px;width:${(Math.min(e0, min(x.fin)) - Math.max(s0, min(x.debut))) * P}px" title="${esc(x.debut + '–' + x.fin + 'z · ' + x.membres.join(' '))}">${x.membres.map(tri => `<span>${esc(tri)}</span>`).join('')}</div>`).join('');
     host.innerHTML = `<div class="odvo-frise" style="--w:${W}px">
       <div class="odvo-row odvo-ruler"><div class="odvo-lbl mut">z</div><div class="odvo-lane" style="width:${W}px">${hours.join('')}</div></div>
@@ -1132,7 +1167,8 @@
       ${sect('ll', '<div id="odvoLL"></div>', 24)}
       ${sect('zones', '<div id="odvoZones"></div>', 30)}
       ${sect('atc', '<div id="odvoAtc"></div>', 26)}
-      ${sect('ensemble', together, 26)}
+      ${sect('ensemble', together, 26, '', togLabel(withSlots.length))}
+      ${togOpen(withSlots.length) ? withSlots.map(m => memberDayRow(m, dayOf(m.tri), X, P, s0, e0, W)).join('') : ''}
       ${sect('vol', blocks.vol.html, blocks.vol.h)}
       ${sect('controle', blocks.controle.html, blocks.controle.h)}
       ${sect('divers', blocks.divers.html, blocks.divers.h)}
@@ -1172,7 +1208,8 @@
       }
       if (e.etat && e.etat !== 'prevu') sub.push(t(TX.etats[e.etat] || [e.etat, e.etat, e.etat, e.etat]));
       sub = sub.filter(Boolean);
-      return `<button type="button" class="odvo-li" data-open="${esc(e.id)}" style="--odvo-li:${esc(col)}"><b>${esc(e.debut)}–${esc(end)}z</b><span><span>${esc(head)}</span>${sub.length ? `<small>${esc(sub.join(' · '))}</small>` : ''}</span></button>`;
+      // vol affecté : ligne pleine à l'encre de la liste (le skin mobile remplace le liseré coloré des boutons)
+      return `<button type="button" class="odvo-li${isAffected(e) ? ' odvo-aff' : ''}" data-open="${esc(e.id)}" style="${isAffected(e) ? (k => `--odvo-li:${esc(k)};background:${esc(k)};color:${ink(k)}`)(affInk('#odvoList')) : `--odvo-li:${esc(col)}`}"><b>${esc(e.debut)}–${esc(end)}z</b><span><span>${esc(head)}</span>${sub.length ? `<small>${esc(sub.join(' · '))}</small>` : ''}</span></button>`;
     };
     host.innerHTML = `<div class="odvo-list-bar"><b>${esc(tf(L4('{n} plaquette(s) ce jour', '{n} strip(s) this day', '{n} Streifen an diesem Tag', '{n} tira(s) este día'), {
       n: items.length
@@ -1222,6 +1259,10 @@
     const fill = e.fond || cs?.fond ? col : 'transparent';
     const border = tint(cs?.contour || e.couleur || '#64748b');
     const fg = fill === 'transparent' ? 'inherit' : ink(col);
+    // mission affectée (ordre de mission émis) : encre de la page en fond (noir le jour, blanc la nuit), texte contrasté,
+    // au lieu des couleurs de l'indicatif
+    const affected = isAffected(e),
+      aBg = affected ? affInk() : '';
     const state = e.etat && e.etat !== 'prevu' ? ` odvo-${e.etat}` : '';
     const tip = [e.libelle || e.texte || '', `${e.debut}z · ${e.duree} min`, ...conf.map(conflictText)].filter(Boolean).join('\n');
     let body = '';
@@ -1259,8 +1300,17 @@
         <div class="odvo-it-c">${planes.map(p => `<span class="odvo-plane">${p.ac ? `<span class="odvo-ac">${esc(p.ac)}</span>` : ''}${p.tris.map(x => crewChip(x, e, p.locked)).join('')}${cfgChips(p.config)}</span>`).join('')}</div>`;
     } else if (e.type === 'note') body = `<div class="odvo-it-n">${esc(e.texte || '…')}</div>`;
     else body = `<div class="odvo-it-h"><b>${esc(e.libelle || '—')}</b>${e.position ? ` <span>${esc(e.position)}</span>` : ''}</div><div class="odvo-it-c">${e.equipage.map(x => crewChip(x, e)).join('')}</div>`;
-    return `<div class="odvo-it odvo-${e.type}${state}${conf.length ? ' conflit' : ''}" data-id="${esc(e.id)}" style="left:${X(s)}px;top:${top}px;width:${w}px;height:${h}px;background:${fill};border-color:${border};color:${fg}" title="${esc(tip)}">${conf.length ? `<span class="odvo-warn">⚠ ${conf.length}</span>` : ''}${e.recurrence ? '<span class="odvo-rec" title="↻">↻</span>' : ''}${body}<span class="odvo-rsz" data-rsz></span></div>`;
+    return `<div class="odvo-it odvo-${e.type}${state}${conf.length ? ' conflit' : ''}${affected ? ' odvo-aff' : ''}" data-id="${esc(e.id)}" style="left:${X(s)}px;top:${top}px;width:${w}px;height:${h}px;background:${affected ? aBg : fill};border-color:${affected ? aBg : border};color:${affected ? ink(aBg) : fg}" title="${esc(tip)}">${conf.length ? `<span class="odvo-warn">⚠ ${conf.length}</span>` : ''}${e.recurrence ? '<span class="odvo-rec" title="↻">↻</span>' : ''}${body}<span class="odvo-rsz" data-rsz></span></div>`;
   }
+  /** Vol de mission affecté : son ordre de mission est émis (au moins une affectation de la mission ce jour, non
+   *  annulée) — la plaquette passe alors en noir (blanc la nuit), frise et liste du téléphone. */
+  const isAffected = e => e.type === 'vol' && O().missionCrew(e, S.affect).some(a => a.status !== 'annulée');
+  /** Couleur des plaquettes affectées : l'encre du texte là où elles s'affichent (frise ou liste du téléphone : noire le
+   *  jour, blanche la nuit et dans les designs sombres) ; noir à défaut. */
+  const affInk = (where = '#odvoGrid') => {
+    const c = getComputedStyle($(where) || document.body).color;
+    return /^rgba?\(/.test(c) ? c : '#111';
+  };
   /** Texte traduit d'un conflit (code de TX.conflicts, ou zone et son état). */
   function conflictText(c) {
     if (c.code === 'zone') return tf(TX.conflicts.zone, {
@@ -1902,6 +1952,10 @@
       it.addEventListener('pointercancel', cancel);
     });
     host.addEventListener('click', ev => {
+      if (ev.target.closest('[data-togopen]')) {
+        K.store.set(TOG_KEY, togOpen(Infinity) ? 'closed' : 'open');
+        return void renderDay();
+      }
       const g = ev.target.closest('[data-goto]');
       if (g) {
         const it = $(`.odvo-it[data-id="${CSS.escape(g.dataset.goto)}"]`);

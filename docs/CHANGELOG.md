@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Board (flight orders): one thin row per member under “Available together”** — each member's availability ranges of
+  the day, in the colour of their category, hatched when they do not make the member assignable to a flight, to see who
+  starts earlier, finishes later or covers “together”; with a single member available that day, “together” shows their
+  ranges (at least one member instead of two). Beyond seven members the rows fold from the label (open by default,
+  remembered in `odvOrdersTogether:v1`); hidden in read-only mode like “together”. An assigned mission flight (mission
+  order issued, “OM” badge) is drawn in the page ink — black by day, white at night and in dark designs — instead of its
+  callsign colour, on the timeline and in the phone list (user manual, 4 languages).
+
 - **Settings › Maintenance › Aircraft types: “Publish the aircraft database to the data repository”** (Expert level,
   workstation with the launcher) — for phones and the website (GitHub mode): copies `AircraftDB/aircraft_db.js` and
   `aircraft_perf.js` into `AircraftDB/` of the data repository, removes everything else from that folder (caches,

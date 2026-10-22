@@ -535,7 +535,7 @@ A la izquierda, la paleta: plantillas de vuelos, de control y de varios, la nota
 - «RTBA · LL»: franjas de actividad del RTBA (activaciones introducidas o importadas, si no las franjas de los ajustes);
 - «Zonas»: zonas requeridas por cada vuelo (las de su misión, o las introducidas para un entrenamiento), en verde si están activas en la red del vuelo, en naranja si están solicitadas, en rojo si no;
 - «ATC»: sesiones ATC del día dentro del perímetro (país ajustado en Ajustes › Centro › Planificación ODV, al pasar sobre la etiqueta): entrenamientos y exámenes en violeta, eventos en azul, reservas atenuadas; una sesión se recuadra en rojo cuando molesta a un vuelo de misión (su aeródromo de salida o de llegada durante el vuelo);
-- «Disponibles juntos»: franjas en las que al menos dos miembros son asignables a un vuelo;
+- «Disponibles juntos»: franjas en las que al menos dos miembros son asignables a un vuelo (un solo miembro disponible ese día: sus franjas); debajo, una fila fina por miembro (su trigrama) muestra sus franjas del día, del color de su categoría, rayadas cuando no lo hacen asignable a un vuelo: se ve quién empieza antes, termina después o cubre «juntos». A partir de ocho miembros, el botón «▾ n» de la etiqueta pliega o abre estas filas (abiertas por defecto);
 - secciones «Vuelos», «Control», «Varios», «Notas»: los elementos se apilan solos.
 
 Manejo:
@@ -546,7 +546,7 @@ Manejo:
 - en la paleta, «Reserva de vuelos» guarda las fichas quitadas de la cronología (arrastradas a la paleta, o «↩ Reserva» en su ventana) y «Formaciones de las misiones» propone lo que piden los vuelos de misión colocados: patrullas de las otras misiones de la formación, cisternas que las atienden, chiffons de la operación;
 - «Zoom» ajusta la escala de la cronología.
 
-En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulante está disponible en la hora y media previa al vuelo, «↻» una recurrencia; una barra verde (hecho) o naranja (no hecho) subraya el estado; una ficha cancelada aparece tachada. Bajo la cronología, «Problemas de asignación» lista los conflictos del día: un clic muestra la ficha.
+En una ficha: «⚠ n» cuenta sus conflictos, «P» indica que ningún tripulante está disponible en la hora y media previa al vuelo, «↻» una recurrencia; una barra verde (hecho) o naranja (no hecho) subraya el estado; una ficha cancelada aparece tachada. Un vuelo de misión asignado (orden de misión emitida, distintivo «OM») pasa a negro, o a blanco de noche y en los diseños oscuros, en lugar del color de su indicativo, en la cronología y en la lista del teléfono. Bajo la cronología, «Problemas de asignación» lista los conflictos del día: un clic muestra la ficha.
 
 **En el teléfono**: las tiras del día se muestran en lista, por hora de inicio: hora de inicio y de fin (z), indicativo o etiqueta, aeronaves, tripulación, misión y estado. Un toque abre la tira (ventana del elemento, en solo lectura si la página lo está). El botón «Cronología» muestra la cronología del día; «Lista» vuelve. El aviso «base aeronáutica ausente» solo aparece a partir del nivel Planificación (2).
 

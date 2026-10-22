@@ -535,7 +535,7 @@ Links die Palette: Vorlagen für Flüge, Lotsendienst und Sonstiges, die Notiz, 
 - „RTBA · LL“: Aktivitätszeitfenster des RTBA (eingegebene oder importierte Aktivierungen, sonst die Zeitfenster der Einstellungen);
 - „Gebiete“: von jedem Flug benötigte Gebiete (die seiner Mission oder die für einen Übungsflug eingegebenen), grün wenn im Netzwerk des Flugs aktiv, orange wenn beantragt, sonst rot;
 - „ATC“: ATC-Sitzungen des Tages im Bereich (Land aus Einstellungen › Zentrum › ODV-Planung, beim Überfahren der Beschriftung): Trainings und Prüfungen violett, Veranstaltungen blau, Buchungen blass; eine Sitzung wird rot umrandet, wenn sie einen Missionsflug behindert (sein Abflug- oder Zielflugplatz während des Flugs);
-- „Gemeinsam verfügbar“: Zeiträume, in denen mindestens zwei Mitglieder für einen Flug einsetzbar sind;
+- „Gemeinsam verfügbar“: Zeiträume, in denen mindestens zwei Mitglieder für einen Flug einsetzbar sind (nur ein Mitglied an diesem Tag verfügbar: seine Zeiträume); darunter zeigt je Mitglied eine schmale Zeile (sein Kürzel) seine Zeiträume des Tages in der Farbe ihrer Kategorie, schraffiert, wenn sie nicht für einen Flug einsetzbar machen: man sieht, wer früher beginnt, später endet oder „gemeinsam“ abdeckt. Ab acht Mitgliedern klappt die Schaltfläche „▾ n“ der Beschriftung diese Zeilen ein oder auf (standardmäßig offen);
 - Abschnitte „Flüge“, „Lotsendienst“, „Sonstiges“, „Notizen“: die Elemente stapeln sich von selbst.
 
 Bedienung:
@@ -546,7 +546,7 @@ Bedienung:
 - in der Palette behält „Flugvorrat“ die von der Zeitleiste genommenen Streifen (auf die Palette gezogen oder „↩ Vorrat“ in ihrem Fenster), und „Formationen der Missionen“ bietet an, was die gesetzten Missionsflüge verlangen: Rotten der anderen Missionen der Formation, Tanker, die sie versorgen, Chiffons der Operation;
 - „Zoom“ stellt den Maßstab der Zeitleiste ein.
 
-Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass in den 90 Minuten vor dem Flug kein Besatzungsmitglied verfügbar ist, „↻“ eine Wiederholung; ein grüner (erledigt) oder oranger (nicht erledigt) Balken unterstreicht den Status; ein abgesagter Streifen ist durchgestrichen. Unter der Zeitleiste listet „Einteilungsprobleme“ die Konflikte des Tages: ein Klick zeigt den Streifen.
+Auf einem Streifen: „⚠ n“ zählt seine Konflikte, „P“ zeigt an, dass in den 90 Minuten vor dem Flug kein Besatzungsmitglied verfügbar ist, „↻“ eine Wiederholung; ein grüner (erledigt) oder oranger (nicht erledigt) Balken unterstreicht den Status; ein abgesagter Streifen ist durchgestrichen. Ein zugewiesener Missionsflug (Missionsbefehl erteilt, Kennzeichen „OM“) wird schwarz, nachts und in dunklen Designs weiß, statt in der Farbe seines Rufzeichens, auf der Zeitleiste wie in der Liste des Telefons. Unter der Zeitleiste listet „Einteilungsprobleme“ die Konflikte des Tages: ein Klick zeigt den Streifen.
 
 **Auf dem Telefon**: Die Streifen des Tages erscheinen als Liste, nach Beginn: Beginn und Ende (z), Rufzeichen oder Bezeichnung, Luftfahrzeuge, Besatzung, Mission und Status. Ein Tippen öffnet den Streifen (Fenster des Elements, schreibgeschützt, wenn die Seite es ist). Der Knopf „Zeitleiste“ zeigt die Zeitleiste des Tages; „Liste“ kehrt zurück. Der Hinweis „Luftfahrtdatenbank fehlt“ erscheint erst ab der Stufe Planung (2).
 

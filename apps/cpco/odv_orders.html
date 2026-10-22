@@ -126,6 +126,7 @@
   .odvo-ro .odvo-sec-zones,
   .odvo-ro .odvo-sec-atc,
   .odvo-ro .odvo-sec-ensemble,
+  .odvo-ro .odvo-sec-membre,
   .odvo-ro #odvoProblems,
   .odvo-ro #odvoLog,
   .odvo-ro [data-block-id="equipe"],
@@ -307,6 +308,35 @@
   .odvo-tog span {
     margin-right: 3px;
     font-weight: 600
+  }
+  /* lignes fines des membres sous « Dispos ensemble » : plages du jour, couleur de la catégorie ; hachurée si elle ne
+     rend pas affectable à un vol */
+  .odvo-sec-membre .odvo-lbl {
+    font-size: 9.5px;
+    line-height: 12px;
+    opacity: .8
+  }
+  .odvo-mdp {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    background: color-mix(in srgb, var(--odvo-mdp) 70%, transparent)
+  }
+  .odvo-mdp-no {
+    background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--odvo-mdp) 55%, transparent) 0 3px, transparent 3px 6px)
+  }
+  .odvo-tog-btn {
+    font: inherit;
+    font-size: 10px;
+    padding: 0 4px;
+    margin-left: 4px
+  }
+  /* vol de mission affecté (ordre de mission émis) : fond à l'encre de la page (noir le jour, blanc la nuit), posé par
+     le script avec un texte contrasté ; textes secondaires de la plaquette à la même encre */
+  .odvo-it.odvo-aff .odvo-it-m,
+  .odvo-it.odvo-aff .odvo-it-t {
+    color: inherit;
+    opacity: .85
   }
   .odvo-zn {
     display: flex;
