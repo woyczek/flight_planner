@@ -66,6 +66,15 @@ waypoints, and the rest listed below.
   address fragment and saves the report; the "→ Vol" bookmark (V2's, unchanged) fills the form without submitting it;
   "Copy the fields" for a phone. The address comes from the airline setting (`ctx.airline`); without it the button is
   greyed. "My last reports" is now a folded list under the Flight step.
+- **Frame, lot 6** (`frame/app.js`, `frame/store/frame_data.js`, `tools/report_bridge.py`, `tools/launch.py`).
+  - Addresses with a query: `#report?from=flightlog` opens report and gives it `ctx.query`.
+  - `ctx.airline`: name, website and pages of the airline, read from `airline/settings.json` of the data repository.
+  - "Cut access" wired in the frame (`FrameData.github.clear()`): the transport switches at once, in every tab.
+  - Data layer: `cached(prefix)` and `evict(path)` for the state of the cache, `FrameData.dump()` /
+    `load(file)` for a backup of the device in one JSON file (merge by default, or replace).
+  - METAR from aviationweather.gov relayed by the launcher, or called directly.
+  - Registry bridge: every V3 report is replayed into the V2 registry `cr/missions.yaml` at each batch and each
+    exchange of the launcher, in V2's exact format.
 - **fuel: display units for speed, altitude and distance** (`modules/fuel/module.js`, `model.js`, `test/quote.html`;
   `SPEC.md` § 6 and § 9, `INTEGRATION.md`, `DECISIONS.md`) — beside kg / lb in the Plan screen's settings, speed in kt
   or km/h, altitude in ft or m, distance in NM, km or SM, saved with the other quote settings; the model, the current

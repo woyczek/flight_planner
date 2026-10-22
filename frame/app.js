@@ -2,11 +2,11 @@
   'use strict';
   // V3 frame — squelette d'une application (frame/SPEC.md § 3, frame/INTEGRATION.md) : l'appli Pilote.
   //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran, tiroir sur téléphone ;
-  //     l'adresse (#module) suffit à revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien
-  //     nom, même écran) ;
+  //     l'adresse (#module, #module?clé=valeur : la suite après « ? » est donnée au module en ctx.query) suffit à
+  //     revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien nom, même écran) ;
   //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
   //     unmount() ; ctx = { data (adaptateur de la couche de données, préfixes déclarés dans meta), aerodb (service
-  //     unique), t, lang, notify, ask, askText, net, identity (lecture seule) } ; un module ne charge aucune feuille de
+  //     unique), t, lang, notify, ask, askText, net, identity et airline (lecture seule), query } ; un module ne charge aucune feuille de
   //     style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…) ;
   //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet
   //     appareil seul) ; clic : synchroniser, ou l'écran des conflits s'il y en a ;
@@ -181,8 +181,8 @@
   });
   // sites relayés par le lanceur (clés et CORS de son côté : tools/launch.py, POST /__setup/net) ; sans lanceur, appel
   // direct seulement vers ceux qui l'autorisent (CORS) ; tout autre site extérieur : 503 marqué x-sog-unreachable
-  const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net'],
-    DIRECT = ['www.simbrief.com', 'api.ivao.aero'];
+  const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov'],
+    DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'aviationweather.gov'];
   let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
   const unreachable = () => new Response(null, {
     status: 503,
@@ -242,11 +242,46 @@
   });
   let identity = Object.freeze({}),
     usages = {},
-    level = 2; // niveau d'usage de l'appareil (1 à 3)
+    level = 2, // niveau d'usage de l'appareil (1 à 3)
+    airline = Object.freeze({});
   const LEVELS = [1, 2, 3],
     DEFAULT_LEVEL = 2;
   /** Niveau d'usage valide (1 à 3) ; défaut : courant. */
   const levelFrom = v => LEVELS.includes(+v) ? +v : DEFAULT_LEVEL;
+  // compagnie : airline/settings.json du dépôt des données (fichier « reference », écrit par website / settings) ; aucune
+  // adresse dans le code : nom, site et pages viennent de ce fichier, {} en son absence
+  const AIRLINE = 'airline/settings.json';
+  const airlineData = FD.adapter({
+    id: 'frame-airline',
+    reads: [{
+      prefix: 'airline/',
+      policy: 'reference'
+    }],
+    writes: []
+  });
+  const str = v => typeof v === 'string' ? v.trim() : '';
+  /** { name, site, pages: { recordFlight, log, fleet } } d'après le fichier (champs texte seulement), gelé. */
+  function airlineOf(v) {
+    if (!v || typeof v !== 'object') return Object.freeze({});
+    const p = v.pages && typeof v.pages === 'object' ? v.pages : {};
+    return Object.freeze({
+      name: str(v.name),
+      site: str(v.site),
+      pages: Object.freeze({
+        recordFlight: str(p.recordFlight),
+        log: str(p.log),
+        fleet: str(p.fleet)
+      })
+    });
+  }
+  /** Relit la compagnie (attendue au plus ms millisecondes la première fois : un module monté ensuite l'a déjà). */
+  async function loadAirline(ms = 2500) {
+    const v = await Promise.race([airlineData.get(AIRLINE, {
+      policy: 'reference',
+      wait: true
+    }).catch(() => null), new Promise(res => setTimeout(() => res(undefined), ms))]);
+    if (v !== undefined) airline = airlineOf(v);
+  }
   /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
   async function loadDevice() {
     identity = Object.freeze({
@@ -271,6 +306,12 @@
       exchange: false
     });
     return FD.github.config() ? FD.github() : null;
+  }
+  /** « Couper l'accès » : jeton et réglage du dépôt GitHub effacés de cet appareil (copies et écritures en attente
+   *  gardées), transport rebranché aussitôt. */
+  async function cutAccess() {
+    FD.github.clear();
+    await loadDevice();
   }
   /** Transport des usages cochés : aucun échange → local ; lanceur si la page en est servie ; GitHub s'il est réglé. */
   async function chooseTransport() {
@@ -344,6 +385,21 @@
     settings: renderSettings,
     device: renderSettings
   };
+  /** Adresse : { id (avant « ? »), query (la suite, en objet gelé : #report?from=flightlog → { from: 'flightlog' }) }. */
+  function parseHash() {
+    const h = location.hash.slice(1),
+      i = h.indexOf('?');
+    let id = i < 0 ? h : h.slice(0, i);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      /* adresse mal formée : prise telle quelle */
+    }
+    return {
+      id,
+      query: Object.freeze(Object.fromEntries(new URLSearchParams(i < 0 ? '' : h.slice(i + 1))))
+    };
+  }
   // niveau de chaque module (meta.level, 1 par défaut), relevé au démarrage en important les points d'entrée
   const moduleLevel = {};
   let levelsP = null; // relevé des niveaux en cours (readLevels)
@@ -379,9 +435,10 @@
     }
   }
   let current = null; // { id, mod }
-  /** Affiche l'écran de l'adresse (#module, #conflicts, #settings) ; démonte le module précédent. */
+  /** Affiche l'écran de l'adresse (#module, #module?…, #conflicts, #settings) ; démonte le module précédent. */
   async function route() {
-    const id = decodeURIComponent(location.hash.slice(1)) || visibleModules()[0]?.id || 'settings';
+    const h = parseHash(),
+      id = h.id || visibleModules()[0]?.id || 'settings';
     document.body.classList.remove('f-nav-open');
     $('fBurger').setAttribute('aria-expanded', 'false');
     if (current?.mod?.unmount) try {
@@ -408,7 +465,7 @@
         id: entry.id,
         mod
       };
-      await mod.mount(el, ctxFor(entry, meta));
+      await mod.mount(el, ctxFor(entry, meta, h.query));
     } catch (e) {
       view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
       notify(t(T.loadErr, {
@@ -418,8 +475,8 @@
     }
   }
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
-   *  appels sortants, identité en lecture seule. */
-  function ctxFor(entry, meta) {
+   *  appels sortants, identité et compagnie en lecture seule, suite de l'adresse (query). */
+  function ctxFor(entry, meta, query = Object.freeze({})) {
     return {
       app: APP.id,
       data: FD.adapter({
@@ -436,7 +493,11 @@
       net,
       get identity() {
         return identity;
-      }
+      },
+      get airline() {
+        return airline;
+      },
+      query
     };
   }
 
@@ -507,7 +568,8 @@
         id: m.id,
         label: m.label,
         level: moduleLevel[m.id] ?? 1
-      })))
+      }))),
+      cutAccess
     });
   }
 
@@ -534,6 +596,10 @@
     };
     launcherHere = await FD.launcher.detect();
     await loadDevice();
+    // accès réglé ou coupé dans un autre onglet : transport rebranché ici aussi
+    window.addEventListener('storage', e => {
+      if (e.key === 'githubData:frame') loadDevice();
+    });
     // aerodb : un service, une instance, lecteur = la couche de données (frame/aerodb/INTEGRATION.md § 3)
     try {
       aerodb = window.AeroDB ? AeroDB.create({
@@ -560,6 +626,8 @@
       });
     });
     own.watch('device/', () => loadDevice());
+    await loadAirline();
+    airlineData.watch('airline/', () => loadAirline(1e4));
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     window.addEventListener('hashchange', route);
     window.addEventListener('online', async () => {
@@ -625,7 +693,9 @@
     ask,
     askText,
     net,
-    syncNow
+    syncNow,
+    airline: () => airline,
+    cutAccess
   };
   boot();
 })();

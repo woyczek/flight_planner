@@ -19,8 +19,9 @@
   //     viennent d'une source en lecture seule (configure({ references }) : le lanceur qui sert la page, ou le dépôt
   //     GitHub réglé), lus à la demande et revalidés à la synchronisation ; rien n'y est jamais écrit ;
   // API (window.FrameData) : configure({ transport, references, identity, every }), start(), adapter(déclaration) → data (get,
-  //   read, list, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(), conflictSeen(id),
-  //   restore(id), gitSha(texte), merge, transports.local().
+  //   read, list, cached, evict, put, remove, watch, status, sync, onStatus), sync(), status(), conflicts(),
+  //   conflictSeen(id), restore(id), cached(préfixe), evict(chemin), dump() et load(sauvegarde, { mode }) (sauvegarde de l’appareil),
+  //   gitSha(texte), merge, transports.local().
   if (window.FrameData) return;
   const DB = 'sogFrame',
     DB_VERSION = 1,
@@ -835,6 +836,156 @@
     })
   };
 
+  // ---------------------------------------------------------------- état du cache, éviction, sauvegarde de l'appareil
+  const bytesOf = text => new Blob([text ?? '']).size;
+  /** Copies locales sous un préfixe, sans réseau : [{ path, rev, bytes, at, policy }] (écritures en attente non comprises :
+   *  status().pending les compte). */
+  async function cached(prefix = '') {
+    return (await idb('docs', 'getAll')).filter(d => under(d.path, prefix)).map(d => ({
+      path: d.path,
+      rev: d.rev || '',
+      bytes: bytesOf(d.text),
+      at: d.at || 0,
+      policy: d.policy || 'document'
+    })).sort((a, b) => a.path.localeCompare(b.path));
+  }
+  /** Retire la copie locale d'un fichier « reference » (ou de tous ceux d'un préfixe finissant par /) : rien en file, rien
+   *  envoyé ; relu à la prochaine demande. Les autres copies (documents, cache de l'appareil) ne sont jamais retirées
+   *  ainsi. Rend le nombre de copies retirées. */
+  async function evict(path) {
+    const p = String(path || '');
+    if (!p) return 0;
+    const all = p.endsWith('/') ? (await idb('docs', 'getAll')).filter(d => under(d.path, p)) : [await idb('docs', 'get', p)].filter(
+      Boolean);
+    let n = 0;
+    for (const d of all) {
+      if ((d.policy || policyOf(d.path)) !== 'reference' || await idb('pending', 'get', d.path)) continue;
+      await idb('docs', 'delete', d.path);
+      n++;
+    }
+    return n;
+  }
+  const EXPORT = 'sog-frame-export/1';
+  /** Sauvegarde des données de l'appareil en un fichier JSON : { name, text, counts }. Copies (docs), écritures en attente,
+   *  conflits ; les bases de référence (relisibles à leur source) seulement avec { references: true } ; ni jeton ni
+   *  réglage d'accès (ils ne sont pas dans cette base), ni l'état du transport (meta, propre à l'appareil). */
+  async function dump({
+    references = false
+  } = {}) {
+    const docs = (await idb('docs', 'getAll')).filter(d => references || d.policy !== 'reference'),
+      pending = await idb('pending', 'getAll'),
+      conflicts = await idb('conflicts', 'getAll'),
+      at = new Date().toISOString();
+    const text = JSON.stringify({
+      format: EXPORT,
+      at,
+      trigram: cfg.identity.trigram || '',
+      docs,
+      pending,
+      conflicts
+    });
+    return {
+      name: `sog-appareil-${(cfg.identity.trigram || 'donnees').toLowerCase()}-${at.slice(0, 10)}.json`,
+      text,
+      counts: {
+        docs: docs.length,
+        pending: pending.length,
+        conflicts: conflicts.length,
+        bytes: bytesOf(text)
+      }
+    };
+  }
+  /** Reprend une sauvegarde (texte, File ou objet de dump). mode 'merge' (défaut) : rien de cet appareil n'est
+   *  perdu — un fichier absent ici ou plus récent dans la sauvegarde (updated_at) devient une écriture en attente (copie
+   *  de l'appareil, base de référence : copie directe), une écriture en attente d'ici l'emporte toujours ; mode
+   *  'replace' : copies, file et conflits de cet appareil remplacés par ceux de la sauvegarde. Rend { added, updated,
+   *  kept, pending, conflicts }. */
+  async function load(input, {
+    mode = 'merge'
+  } = {}) {
+    const src = typeof input === 'string' ? JSON.parse(input) : input instanceof Blob ? JSON.parse(await input.text()) : input;
+    if (src?.format !== EXPORT || !Array.isArray(src.docs)) throw new Error('frame/store: not a device export (sog-frame-export/1)');
+    const r = {
+      added: 0,
+      updated: 0,
+      kept: 0,
+      pending: 0,
+      conflicts: 0
+    };
+    const docs = src.docs.filter(d => d && typeof d.path === 'string' && typeof d.text === 'string'),
+      pend = (src.pending || []).filter(p => p && typeof p.path === 'string' && (typeof p.text === 'string' || p.text === null)),
+      confl = (src.conflicts || []).filter(c => c && typeof c.path === 'string');
+    const paths = [];
+    if (mode === 'replace') {
+      for (const s of ['docs', 'pending', 'conflicts']) await idb(s, 'clear');
+      for (const d of docs) await idb('docs', 'put', d);
+      for (const p of pend) await idb('pending', 'put', p);
+      for (const {
+          id,
+          ...c
+        }
+        of confl) await idb('conflicts', 'add', c);
+      Object.assign(r, {
+        added: docs.length,
+        pending: pend.length,
+        conflicts: confl.length
+      });
+      paths.push(...docs.map(d => d.path), ...pend.map(p => p.path));
+    } else {
+      const queue = async (path, text) => {
+        await idb('pending', 'put', {
+          path,
+          text,
+          at: new Date().toISOString(),
+          author: cfg.identity.trigram || ''
+        });
+        r.pending++;
+        paths.push(path);
+      };
+      for (const d of docs) {
+        const mine = await idb('docs', 'get', d.path);
+        if (await idb('pending', 'get', d.path) || mine?.text === d.text) {
+          r.kept++;
+          continue;
+        }
+        if (mine && !(stampOf(valueOf(d.path, d.text)) > stampOf(valueOf(d.path, mine.text)))) {
+          r.kept++;
+          continue;
+        }
+        mine ? r.updated++ : r.added++;
+        if (d.policy === 'cache' || d.policy === 'reference') {
+          await idb('docs', 'put', {
+            ...d,
+            at: Date.now()
+          });
+          paths.push(d.path);
+        } else await queue(d.path, d.text);
+      }
+      // écritures en attente de la sauvegarde : reprises si rien n'attend ici pour ce fichier et si la copie d'ici n'est
+      // ni la même ni plus récente ; une suppression en attente n'est jamais reprise (rien d'ici n'est perdu)
+      for (const p of pend) {
+        const mine = await idb('docs', 'get', p.path);
+        if (p.text === null || await idb('pending', 'get', p.path) || (mine && (mine.text === p.text || !(stampOf(valueOf(p.path, p
+              .text)) >
+            stampOf(valueOf(p.path, mine.text)))))) r.kept++;
+        else await queue(p.path, p.text);
+      }
+      const seen = new Set((await idb('conflicts', 'getAll')).map(c => `${c.path}|${c.at}|${c.lost}`));
+      for (const {
+          id,
+          ...c
+        }
+        of confl)
+        if (!seen.has(`${c.path}|${c.at}|${c.lost}`)) {
+          await idb('conflicts', 'add', c);
+          r.conflicts++;
+        }
+    }
+    changed([...new Set(paths)]);
+    emitStatus();
+    return r;
+  }
+
   // ---------------------------------------------------------------- adaptateur d'un module
   /** Partie « data » de l'adaptateur d'un module : ses préfixes lus et écrits sont enregistrés ; une écriture hors de
    *  ses préfixes déclarés est refusée (un préfixe déclaré par plusieurs modules est partagé : chacun y écrit).
@@ -850,6 +1001,8 @@
       get,
       read,
       list,
+      cached,
+      evict,
       put: (path, value, opts) => (guard(path), put(path, value, opts)),
       remove: path => (guard(path), remove(path)),
       watch,
@@ -872,6 +1025,10 @@
     conflicts,
     conflictSeen,
     restore,
+    cached,
+    evict,
+    dump,
+    load,
     gitSha,
     merge,
     mergeText,

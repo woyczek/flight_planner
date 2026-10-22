@@ -162,12 +162,27 @@ The transports:
 | `get(path, opts)` | the value (parsed JSON or text), or null |
 | `read(path, { policy, wait })` | `{ value, text, rev, cached, pending, at }` or null. `wait`: for a file never fetched, wait for the network; without it, null now and the value comes through `watch` |
 | `list(prefix)` | the paths, from the last known tree plus pending writes; null if no tree was ever read (the local transport lists the cache) |
+| `cached(prefix)` | the local copies under a prefix, with no network: `[{ path, rev, bytes, at, policy }]` (pending writes are counted by `status`) |
+| `evict(path)` | removes the local copy of a `reference` file (or of all those under a prefix ending with `/`): nothing queued, nothing sent, read again on demand; other copies are never evicted; returns the count |
 | `put(path, value, opts)` / `remove(path)` | queued (or written to the cache for the `cache` policy); refused outside the module's declared writes |
 | `watch(prefix, fn)` | fn(paths) on changes; returns the unsubscribe function |
 | `status()` / `onStatus(fn)` | `{ transport, online, syncing, lastSync, lastError, pending, conflicts }` |
 | `sync()` | asks for a pass now |
 
 The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes: [prefix | { prefix, merge | policy }] }`.
+
+**Device backup** (`FrameData.dump()`, `FrameData.load(backup, { mode })`), the only backup when the device is
+used alone:
+
+- `dump({ references })` returns `{ name, text, counts }`: one JSON file (`sog-frame-export/1`) with the copies,
+  the pending writes and the conflicts. Reference bases only with `references: true` (they can be read again from
+  their source). Never a token or an access setting (they are not in this database), never the transport state.
+- `load(file | text | object, { mode })`:
+  - `merge` (default): nothing of this device is lost. A file absent here, or newer in the backup (`updated_at`),
+    becomes a pending write (a device cache file or a reference copy is written directly). A pending write here
+    always wins; a pending deletion of the backup is never taken.
+  - `replace`: copies, queue and conflicts of this device are replaced by the backup's.
+  - Returns `{ added, updated, kept, pending, conflicts }`. A file that is not an export is refused.
 
 ### 2.8 Invariants
 
@@ -185,7 +200,8 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 - An application (today: Pilot) lists its modules, one short **verb** each, seven at most.
 - On a screen, the verbs sit in a column on the left. On a phone (760 px or narrower), they sit in a drawer opened by
   the menu button, and choosing a verb closes it.
-- The address `#<module>` is enough to come back to a screen.
+- The address `#<module>` is enough to come back to a screen. What follows a `?` is given to the module as
+  `ctx.query`, an object: `#report?from=flightlog` opens report with `{ from: 'flightlog' }`.
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
@@ -212,8 +228,10 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
 | `t(row, vars)`, `lang()` | texts as `[fr, en, de, es]` rows, `{name}` filled in, French typography; the language of the application |
 | `notify(text, kind)` | floating notification (`info`, `ok`, `warn`, `err`), closed by itself or by its ✕ |
 | `ask(text)`, `askText(text, { value })` | the frame's own question windows (never a native dialog); promise of true / false, of the text or null |
-| `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM: relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO); any other site: 503 marked `x-sog-unreachable` |
+| `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM, aviationweather.gov (METAR): relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO, aviationweather.gov); any other site: 503 marked `x-sog-unreachable` |
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
+| `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (`reference` file, text fields only), an empty object when there is none; no address is written in the code |
+| `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 
 - A module loads no global style sheet. It uses the frame's tokens (`--sog-bg`, `--sog-surface`, `--sog-fg`,
   `--sog-muted`, `--sog-border`, `--sog-accent`, `--sog-ok`, `--sog-warn`, `--sog-err`, `--sog-radius`, `--sog-gap`,
@@ -262,6 +280,7 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
   - Changing the settings switches the transport at once.
 - The GitHub token is entered on the settings screen, kept in `githubData:frame`, and never shown again; "Cut
   access" erases it (`FrameData.github.clear`).
+- **Cut access** keeps the copies and the pending writes; the transport switches at once, in the other tabs too.
 
 ### 3.6 Installable and offline application (`frame/sw.js`, `frame/manifest.webmanifest`)
 
@@ -306,6 +325,35 @@ The declaration has the form `{ id, reads: [prefix | { prefix, policy }], writes
   launcher and without a service worker (no http(s) origin); data go through the `github` transport.
   `.github/workflows/ios.yml` is paused and unchanged: when it resumes, it needs `--start frame/index.html` and the v3
   branch.
+
+### 3.8 Registry bridge (launcher side, `tools/report_bridge.py`)
+
+V3 reports (`cr/reports/<year>/<CR number>.json`, `sog-report/1`, `modules/report/SPEC.md` § 4) are replayed into the
+V2 registry `cr/missions.yaml`, so that V2 and CPCO see them. Never the other way.
+
+- **When**: at every batch the launcher receives (`/__setup/batch`, the registry joins the batch's commit) and at every
+  exchange (`/__setup/sync`: before the pass, so the registry leaves with it; after, when files were received, the
+  registry leaves at the next pass). Without a launcher, the registry is updated at the next pass of a workstation
+  that has one.
+- **How**: the V2 entry is the record without `schema`, `updated_at` and `by`; its identity is V2's key
+  `family|metadata.missionId|metadata.date`. An absent key is added at the end; a present one is replaced when the
+  record brings a different value (keys that V2 added alone, its defaults, do not count). Nothing is ever removed.
+- Only the replaced or added entries are rewritten, in V2's exact format (`M.toYaml`: every string double-quoted,
+  indent 2); the rest of the file keeps its text. `updatedAt` becomes the newest `updated_at` replayed, at least the
+  old value plus 1 ms, so two workstations replaying the same records write the same file.
+- The text is read back and checked before it is written; an unreadable registry is never rewritten (the reason is
+  shown in the launcher's console).
+
+### 3.9 Shared pure code (`frame/lib/`)
+
+A module never imports from another module. Code that two modules need (pure functions: no page, no storage, calls
+through the `ctx.net` or reader they are given) goes to `frame/lib/<name>.js`, owned by one module, which alone changes
+it; the others import it as it is.
+
+| File | Owner | Used by | What it does |
+|---|---|---|---|
+| `frame/lib/last_flight.js` | report | report, flightlog | "my last flight" on IVAO and VATSIM (the V2 launcher's route in JavaScript): the flights of the last 7 days, then one flight's details |
+| `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 
 ## 4. To come in the frame
 

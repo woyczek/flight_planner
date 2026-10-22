@@ -64,6 +64,9 @@ export function unmount() { /* stop watchers, timers */ }
   screen that cannot be shown without the file; otherwise call `get` and let `watch` bring the value.
 - `await data.list(prefix)` gives the paths. **null** means "not known yet" (first launch offline), which is not the
   same as "empty".
+- `await data.cached(prefix)` tells what is on the device, with no network: `[{ path, rev, bytes, at, policy }]`.
+  `await data.evict(path)` drops the local copy of a `reference` file (or of a prefix ending with `/`) without
+  sending anything; it is read again on demand. Use `remove` only to delete a file from the repository.
 - Always design for the cached value first: the network may never come.
 
 ## 5. Writing
@@ -77,10 +80,16 @@ export function unmount() { /* stop watchers, timers */ }
 
 - `ctx.identity` (read only): `trigram`, `ivao`, `vatsim`, `simbrief` of this device; an empty object when not set.
   Never fail on its absence.
+- `ctx.airline` (read only): `{ name, site, pages: { recordFlight, log, fleet } }` from the data repository
+  (`airline/settings.json`), an empty object when not set. Never write an address of the airline in a module: take it
+  from here, and hide the action when it is missing.
+- `ctx.query`: what follows `?` in the address, as an object (`#report?from=flightlog` → `{ from: 'flightlog' }`).
+  Another module or page opens yours with it.
 - `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, VATSIM, the DEFA website). It never throws:
   - offline, it answers at once with a 503 carrying `x-sog-offline`;
-  - with a launcher, SimBrief, IVAO and VATSIM are relayed by it, keys and CORS included, with the same signature;
-  - without one, SimBrief and IVAO are called directly;
+  - with a launcher, SimBrief, IVAO, VATSIM and aviationweather.gov (METAR) are relayed by it, keys and CORS
+    included, with the same signature;
+  - without one, SimBrief, IVAO and aviationweather.gov are called directly;
   - any other outside site gets a 503 carrying `x-sog-unreachable`.
   Never call `fetch` directly. Only string bodies are relayed.
 - Offline is normal. The application starts offline once visited, and your module's files (entry point and

@@ -522,6 +522,87 @@
       document.dispatchEvent(new Event('visibilitychange'));
       check('wake does not throw', true, null);
     },
+    async 'cached and evict: cache state without network, references dropped without sending'() {
+      const ref = 'sia/base/fr/2026-10-01.json',
+        doc = 'disponibilites/ABC/2026-W43.json',
+        d = await fresh({
+          [ref]: JSON.stringify({
+            zone: 'fr'
+          }),
+          [doc]: JSON.stringify(rec('ABC', '2026-10-01T00:00:00Z'))
+        });
+      await d.sync();
+      await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      const calls = (await stats()).calls.length,
+        c = await d.cached('sia/base/');
+      check('cached lists the local copy with rev, bytes, at', c.length === 1 && c[0].path === ref && c[0].rev && c[0].bytes === 13 &&
+        c[0].at > 0, c);
+      check('cached reads no network', (await stats()).calls.length === calls, (await stats()).calls.slice(calls));
+      check('evict a document: refused (0)', await d.evict(doc) === 0 && (await d.cached(doc)).length === 1, await d.cached(doc));
+      check('evict a reference: removed', await d.evict('sia/base/') === 1 && (await d.cached('sia/base/')).length === 0, await d
+        .cached(''));
+      check('evict queues nothing', (await d.status()).pending === 0, await d.status());
+      await d.sync();
+      check('the reference is still in the repository', ref in (await stats()).files, null);
+      check('read again on demand', (await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      }))?.value?.zone === 'fr', null);
+    },
+    async 'export and import of the device data: merge keeps this device, replace takes the file'() {
+      const p = 'disponibilites/TST/2026-W44.json',
+        q = 'disponibilites/TST/2026-W45.json',
+        d = await fresh();
+      await d.put(p, rec('TST', '2026-10-02T00:00:00Z'));
+      await FD.adapter({
+        id: 'essai-cache',
+        writes: [{
+          prefix: 'cache/essai/',
+          policy: 'cache'
+        }]
+      }).put('cache/essai/last.json', {
+        n: 1
+      });
+      await d.sync();
+      await d.put(q, rec('TST', '2026-10-03T00:00:00Z'));
+      const x = await FD.dump(),
+        parsed = JSON.parse(x.text);
+      check('export: one JSON file, docs and pending, no meta, no token', parsed.format === 'sog-frame-export/1' && parsed.docs.some(
+        e => e.path === p) && parsed.pending.some(e => e.path === q) && !('meta' in parsed) && !/test-token/.test(x.text), x.counts);
+      check('export: file name with the trigram', /^sog-appareil-tst-\d{4}-\d{2}-\d{2}\.json$/.test(x.name), x.name);
+      // un autre appareil, vide, sur un dépôt vide : la sauvegarde reprise, les fichiers partent à la synchronisation
+      const e = await fresh();
+      const r = await FD.load(new Blob([x.text]));
+      check('merge onto an empty device: everything taken', r.added >= 2 && r.pending >= 2, r);
+      check('the device cache file is back, not queued', (await e.get('cache/essai/last.json'))?.n === 1 && !(await e.cached('cache/'))
+        .some(f => f.policy !== 'cache'), await e.cached('cache/'));
+      const s1 = await e.sync();
+      check('imported writes sent at the next sync', s1.ok && JSON.parse((await stats()).files[q] || '{}').updated_at ===
+        '2026-10-03T00:00:00Z', s1);
+      // fusion : rien de cet appareil n'est perdu
+      await e.put(p, rec('TST', '2026-10-09T00:00:00Z'));
+      const r2 = await FD.load(x.text);
+      check('merge: a pending write here always wins', r2.kept >= 1 && (await e.get(p)).updated_at === '2026-10-09T00:00:00Z', r2);
+      await e.sync();
+      const r3 = await FD.load(x.text);
+      check('merge: an older backup does not overwrite a newer copy', (await e.get(p)).updated_at === '2026-10-09T00:00:00Z' && (await e
+        .status()).pending === 0, r3);
+      const r4 = await FD.load(x.text, {
+        mode: 'replace'
+      });
+      check('replace: the backup becomes the device data', (await e.get(p)).updated_at === '2026-10-02T00:00:00Z' && r4.pending ===
+        parsed.pending.length, r4);
+      let refused = false;
+      try {
+        await FD.load('{"a":1}');
+      } catch {
+        refused = true;
+      }
+      check('a file that is not an export is refused', refused, null);
+    },
     async 'git blob sha matches the repository'() {
       const d = await fresh({
         'disponibilites/A/x.json': 'héllo\n'

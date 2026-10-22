@@ -130,6 +130,47 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - Test: a scenario in `frame/store/test/` (read from the source, revalidated, nothing sent, offline pass still
     successful, no read without a source). `frame/index.html` served by the launcher with no usage ticked: aerodb
     reads the 13 reference zones, and whole-world counts are identical.
+- **22 Oct 2026 — Lot 6, review of `d2a36a4c0`** (reference source for the local transport, made by the aerodb
+  session): taken over as it is. The source is keyed by the transport's `id`, so switching between the launcher and
+  GitHub reads the tree again; an offline revalidation stays a warning on a successful pass.
+- **22 Oct 2026 — Address with a query**: `#module?key=value` opens the module and gives it `ctx.query` (an object);
+  before, `#report?from=flightlog` opened the first module.
+- **22 Oct 2026 — `ctx.airline` from the data repository**: `airline/settings.json`, a `reference` file read by the frame
+  (waited for 2.5 s at most at start, then followed by `watch`), text fields only, frozen. No address of the airline in
+  the code; the input will come with the website / settings work.
+- **22 Oct 2026 — Settings screen**: the settings session made `#settings` (`frame/settings/settings.js`,
+  `SogSettings.render(view, ctx)` with its own privileged context, `#device` kept as an alias). Its contract is the
+  one in `frame/settings/INTEGRATION.md`; the frame's first proposal (an ES module with a `ctx.device` object) was
+  dropped at the rebase so that there is one contract only. The frame adds `cutAccess` to that context.
+- **22 Oct 2026 — Cut access**: `FrameData.github.clear()` (it already existed) is wired in the frame (`cutAccess`): the
+  transport switches at once, in the other tabs too (`storage` event); copies and pending writes stay.
+- **22 Oct 2026 — Shared pure code in `frame/lib/`** (rule set with report): a module never imports from another
+  module; shared pure code goes to `frame/lib/<name>.js` with one owner, listed in SPEC § 3.9.
+- **22 Oct 2026 — `cached` and `evict`** (asked by aerodb): the state of the cache without network, and a way to drop a
+  reference copy that queues nothing (`remove` would send a deletion to the repository). Only `reference` copies can
+  be evicted: a document or a device cache file may be the only copy.
+- **22 Oct 2026 — Device backup: `FrameData.dump()` / `load(file)`, merge by default** (named as the ergonomics
+  session asked; settings switches to it from its prefix-less adapter). `load` merges unless asked to replace, because a backup
+  taken on another device or earlier must never erase what this device holds: a pending write here wins, a newer copy
+  here wins, a pending deletion of the backup is never taken. `replace` exists for "this device becomes the saved
+  one". The export holds no token and no transport state; reference bases only on request (they are large and can be
+  read again). Settings will choose the buttons.
+- **22 Oct 2026 — METAR**: aviationweather.gov added to the launcher's relay and to the direct calls (it allows CORS).
+- **22 Oct 2026 — Registry bridge in the launcher** (`tools/report_bridge.py`, SPEC § 3.8):
+  - Python's standard library has no YAML: the bridge reads the subset V2 writes (block style, double-quoted strings,
+    null, booleans, numbers, `[]`, `{}`) and rewrites only the entries it changes, in V2's exact format. On the real
+    registry (21 entries) every entry read and written again gives its text back byte for byte.
+  - Replayed every time, records win: a V2 edit of an entry that came from a V3 report is overwritten when the record
+    brings a different value. Keys V2 added alone do not trigger a rewrite. Edit a V3 report in V3.
+  - `updatedAt` is computed from the records, not from the clock, so two workstations write the same file and git
+    merges them without a conflict.
+- **22 Oct 2026 — Tests of lot 6**:
+  - `frame/store/test/`: 74 checks (cache state, eviction, export, merge and replace import added);
+  - `python tools/report_bridge.py --essai` (13 checks), and the real registry read and written again identically;
+  - the launcher: a batch with a report adds the entry to `cr/missions.yaml` in the same commit, the other entries
+    untouched; a second batch leaves the registry as it is; the METAR relay answers;
+  - the application: `#report?from=flightlog` opens report, `ctx.airline` read from the repository (unknown fields
+    dropped), cut access switches to local and keeps copies.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

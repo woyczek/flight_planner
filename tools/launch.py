@@ -20,6 +20,7 @@ import posixpath, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
+import report_bridge  # pont du registre : comptes rendus V3 (cr/reports/) rejoués dans cr/missions.yaml (V2)
 import csp_policy as cspmod  # politique de sécurité du contenu, commune au site sans lanceur (tools/build_pages.py)
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
@@ -714,7 +715,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             with SYNC_LOCK:
+                # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
+                # registre rejoué partira au passage suivant)
+                registry_bridge()
                 r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60])
+                if r.get('received'):
+                    registry_bridge()
             sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
             if r.get('received'):
                 with INDEX_LOCK:
@@ -1363,8 +1369,9 @@ def frame_batch(a):
             os.makedirs(os.path.dirname(full), exist_ok=True)
             with open(full, 'w', encoding='utf-8', newline='') as f:
                 f.write(text)
+        bridged = registry_bridge()  # registre V2 à jour des comptes rendus, dans le même commit
         if todo and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
-            paths = [r for r, _ in todo]
+            paths = [r for r, _ in todo] + (['/'.join(report_bridge.REGISTRY)] if bridged else [])
             env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
             data_sync.git(DATA, 'add', '-A', '--', *paths, env=env)
             data_sync.git(DATA, '-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-q', '-m',
@@ -1379,10 +1386,23 @@ def frame_batch(a):
     return {'ok': True, 'head': head}, 200
 
 
+def registry_bridge():
+    """Comptes rendus de la V3 rejoués dans le registre V2 (tools/report_bridge.py) ; vrai si le registre a changé. Un
+    registre illisible n'est jamais réécrit : la raison est dite dans la console du lanceur."""
+    try:
+        r = report_bridge.bridge(DATA)
+    except Exception as e:  # le pont ne bloque jamais un lot ni un échange
+        r = {'error': f'{type(e).__name__}: {e}'}
+    if r.get('error'):
+        say(f'Pont du registre (cr/missions.yaml) : {r["error"]}')
+    return bool(r.get('changed') or r.get('added'))
+
+
 # ---- V3 frame : relais des appels sortants des modules (ctx.net, frame/app.js) : CORS et clés restent ici. Sites relayés
 # seulement (https) ; clé d'API IVAO ajoutée pour api.ivao.aero ; réponse rendue telle quelle (statut, type, corps,
 # 8 Mo au plus) ; réseau injoignable : 502 marqué X-SOG-Offline.
-NET_HOSTS = {'www.simbrief.com': '', 'api.ivao.aero': 'ivao', 'api.vatsim.net': '', 'data.vatsim.net': '', 'my.vatsim.net': ''}
+NET_HOSTS = {'www.simbrief.com': '', 'api.ivao.aero': 'ivao', 'api.vatsim.net': '', 'data.vatsim.net': '', 'my.vatsim.net': '',
+             'aviationweather.gov': ''}
 NET_MAX = 8 * 1048576
 
 
