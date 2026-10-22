@@ -39,6 +39,13 @@ waypoints, and the rest listed below.
   address, so the website module can read the fleet and the log.
 - **Frame: a merged device backup leaves `device/` aside** (`frame/store/frame_data.js`) — `FrameData.load` in merge
   mode never takes another device's usages, identity or level; "replace" still takes them, never a token.
+- **maps: reading of the V2 map studio** (`modules/maps/READING.md`, `modules/maps/DECISIONS.md`) — the minimal
+  rendering core to cut out of the studio (ICAO symbols, profile, cursor sync, the drawing functions once they take a
+  profile object instead of reading the page); what a mission map stores today and what the studio and generator must
+  add for it to redraw alone (a copy of the display profile, the resolved extent, the cycle); the weight on a phone
+  (about 130 KB of code, MapLibre 1 MB on demand, about 3.9 MB of SIA data for a France IFR map); what stays in the
+  studio; what the module asks of aerodb, the frame and fuel; the phone screen (IFR map of the planned flight and a
+  synchronised vertical profile, read only). No code.
 - **settings: backup and access on the frame's lot 6** (`frame/settings/settings.js`; `frame/settings/SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`) — the device backup now uses `FrameData.dump()` and `FrameData.load()`: "Export
   (one file)", "Import (merge)…" (nothing of this device is lost) and "Replace from a file…" (asked, says what is
