@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **flightlog: reading of V2 "My flights"** (`modules/flightlog/READING.md`, `modules/flightlog/DECISIONS.md`) —
+  the sources of a flight and their key (reports, the airline website log, IVAO / VATSIM sessions), one line per
+  flight, filters, totals, CSV, "Write the report" handed to the report module, the phone screen, and what in
+  `shared/my_flights.js` is pure model. No code.
 - **report: every family** (`modules/report/families/*.js`, `module.js`, `model.js`, `vocab.js`; `SPEC.md` § 2 and
   § 5, `INTEGRATION.md`, `DECISIONS.md`) — the sixteen V2 families (FIRE, SPECIAL, SAR, AIRLIFT… with their series,
   crew roles and blocks) copied from `shared/mission_core/families/`, without their statistics; blocks and fields shown
