@@ -8,7 +8,8 @@
   // Aucun texte d'interface : libellés de données seulement (codes, noms, niveaux).
   // API : window.MapsRender = { routeProfile(levelFt), selectAirspaces(list, profile, route), bboxOf(points, marginNm),
   //   distances(points), marks(points, stepNm), mercator(bbox, W, H, pad), drawBackground(ctx, toC, W, H, rings, colors),
-  //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route }) }.
+  //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, mission }) } ; mission : { points, zones } d'une
+  //   carte de mission (points tournants, zones de recherche / mission / exclusion).
   if (window.MapsRender) return;
   const A = () => window.SiaAero,
     PT = 4 / 3,
@@ -57,7 +58,19 @@
     moraFont: '12',
     moraColor: '#8b2d18',
     moraOpacity: '90',
-    moraSpacing: '70'
+    moraSpacing: '70',
+    vrpPoints: false,
+    rnavPoints: false,
+    vrpLabels: true,
+    agglos: false,
+    cityFont: '7',
+    cityColor: '#17202a',
+    cityLabelMin: '20000',
+    turningPoints: true,
+    missionZones: true,
+    pointColor: '#d0021b',
+    pointFill: '#d0021b',
+    pointMarker: '8'
   };
   /** Profil intégré « route IFR » (V3, jamais en localStorage) : celui du studio pour les routes IFR (ifrRouteProfile,
    *  couloir de 10 NM, R / D / P / TRA / CTR / TMA / CTA, voies basses ou hautes selon le niveau) avec aérodromes,
@@ -408,6 +421,219 @@
     ctx.setLineDash([]);
     ctx.restore();
   }
+  /** Points de report VFR (losange vert) et points RNAV en route (triangle bleu), identifiant à côté. */
+  function drawVrp(ctx, data, toC, W, H, scale, b, pl, profile) {
+    const vrp = on(profile, 'vrpPoints') && data.vrp?.length,
+      rnav = on(profile, 'rnavPoints') && data.points?.length;
+    if (!vrp && !rnav) return;
+    const lab = el(profile, 'vrpLabels') !== false,
+      t = {
+        s: b.s - .2,
+        n: b.n + .2,
+        w: b.w - .3,
+        e: b.e + .3
+      },
+      f = 8 * PT * scale * .85,
+      mark = (v, col, r, shape) => {
+        if (!inBox(t, v.lat, v.lon)) return;
+        const p = toC(v.lat, v.lon);
+        if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) return;
+        ctx.beginPath();
+        if (shape === 'tri') {
+          ctx.moveTo(p.x, p.y - r);
+          ctx.lineTo(p.x + r * .87, p.y + r * .5);
+          ctx.lineTo(p.x - r * .87, p.y + r * .5);
+        } else {
+          ctx.moveTo(p.x, p.y - r);
+          ctx.lineTo(p.x + r, p.y);
+          ctx.lineTo(p.x, p.y + r);
+          ctx.lineTo(p.x - r, p.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5 * scale;
+        ctx.stroke();
+        if (lab && v.id) {
+          const w = v.id.length * f * .62;
+          if (!pl || pl.take({
+              x0: p.x + r + 2,
+              y0: p.y - f * .7,
+              x1: p.x + r + 4 + w,
+              y1: p.y + f * .7
+            })) halo(ctx, v.id, p.x + r + 3, p.y, f, col, 'left');
+        }
+      };
+    ctx.save();
+    if (rnav)
+      for (const v of data.points)
+        if (v.type === 'ICAO') mark(v, '#1f5fa8', 4 * scale, 'tri');
+    if (vrp)
+      for (const v of data.vrp) mark(v, '#0b7a3b', 4.5 * scale, 'diamond');
+    ctx.restore();
+  }
+  /** Villes à dessiner (les plus peuplées d'abord, sans recouvrement) : libellés au-dessus de cityLabelMin si le profil
+   *  montre les villes, symboles OACI au-dessus de population si « agglomérations ». */
+  function cityList(cities, profile, toC, b, scale, pl) {
+    const labels = !!profile?.cities,
+      agg = on(profile, 'agglos');
+    if (!(labels || agg) || !cities?.length) return [];
+    const labMin = labels ? (+el(profile, 'cityLabelMin') || 0) : Infinity,
+      min = Math.min(agg ? (+profile.population || 0) : Infinity, labMin),
+      font = +el(profile, 'cityFont') * PT * scale,
+      out = [];
+    for (const c of [...cities].sort((x, y) => (y.population || 0) - (x.population || 0))) {
+      if ((c.population || 0) < min) break;
+      if (!inBox(b, c.lat, c.lon)) continue;
+      const label = (c.population || 0) >= labMin,
+        q = toC(c.lat, c.lon),
+        g = agg ? A().cityGlyph(c.population, scale).r : 3 * scale,
+        r = label ? {
+          x0: q.x - g,
+          y0: q.y - font * 1.2,
+          x1: q.x + g + 5 * scale + String(c.name).length * font * .62,
+          y1: q.y + Math.max(g, font * .5)
+        } : {
+          x0: q.x - g - 1,
+          y0: q.y - g - 1,
+          x1: q.x + g + 1,
+          y1: q.y + g + 1
+        };
+      if (!pl || pl.take(r)) out.push({
+        c,
+        q,
+        label
+      });
+    }
+    return out;
+  }
+
+  function drawCities(ctx, list, profile, scale, W, H) {
+    const font = +el(profile, 'cityFont') * PT * scale,
+      color = el(profile, 'cityColor'),
+      agg = on(profile, 'agglos');
+    for (const {
+        c,
+        q,
+        label
+      }
+      of list) {
+      if (q.x < 0 || q.y < 0 || q.x > W || q.y > H) continue;
+      let r = 2.5 * scale;
+      if (agg) r = A().drawCity(ctx, c.population, q, scale);
+      else {
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      if (label) halo(ctx, c.name, q.x + r + 3 * scale, q.y - r - 3 * scale, font, color);
+    }
+  }
+  const ZONE_STYLE = {
+    search: ['#d0106a', 'rgba(208,16,106,.10)'],
+    exclusion: ['#c62828', 'rgba(198,40,40,.09)'],
+    mission: ['#6a1b9a', 'rgba(106,27,154,.08)']
+  };
+  /** Zones de la mission : fond, hachures à 45°, liseré blanc et tireté de la couleur de la zone, nom au-dessus. */
+  function drawMissionZones(ctx, zones, toC, scale, pl, profile) {
+    if (!zones?.length || !on(profile, 'missionZones')) return;
+    const f = 10 * scale;
+    ctx.save();
+    for (const z of zones) {
+      const [stroke, fill] = ZONE_STYLE[z.kind] || ZONE_STYLE.mission,
+        path = new Path2D();
+      let top;
+      if (z.points?.length) {
+        const q = z.points.map(p => toC(p.lat, p.lon));
+        q.forEach((p, i) => i ? path.lineTo(p.x, p.y) : path.moveTo(p.x, p.y));
+        path.closePath();
+        top = {
+          x: q.reduce((a, p) => a + p.x, 0) / q.length,
+          y: Math.min(...q.map(p => p.y))
+        };
+      } else {
+        const c = toC(z.lat, z.lon),
+          e = toC(z.lat, z.lon + z.radiusKm / (111.32 * Math.cos(rad(z.lat)))),
+          n = toC(z.lat + z.radiusKm / 111.32, z.lon);
+        path.ellipse(c.x, c.y, Math.abs(e.x - c.x), Math.abs(n.y - c.y), 0, 0, Math.PI * 2);
+        top = {
+          x: c.x,
+          y: n.y
+        };
+      }
+      ctx.fillStyle = fill;
+      ctx.fill(path);
+      ctx.save();
+      ctx.clip(path);
+      ctx.strokeStyle = stroke;
+      ctx.globalAlpha = .3;
+      ctx.lineWidth = Math.max(.8, 1.2 * scale);
+      const cv = ctx.canvas,
+        step = 9 * scale,
+        hatch = new Path2D();
+      for (let x = -cv.height; x < cv.width; x += step) {
+        hatch.moveTo(x, 0);
+        hatch.lineTo(x + cv.height, cv.height);
+      }
+      ctx.stroke(hatch);
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(255,255,255,.9)';
+      ctx.lineWidth = Math.max(3, 5 * scale);
+      ctx.stroke(path);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = Math.max(1.6, 2.6 * scale);
+      ctx.setLineDash([9 * scale, 5 * scale]);
+      ctx.stroke(path);
+      ctx.setLineDash([]);
+      const text = z.name || z.id,
+        w = String(text).length * f * .6;
+      if (!pl || pl.take({
+          x0: top.x - w / 2,
+          y0: top.y - f * 1.6,
+          x1: top.x + w / 2,
+          y1: top.y - f * .2
+        })) halo(ctx, text, top.x, top.y - f * .8, f, stroke, 'center');
+    }
+    ctx.restore();
+  }
+  /** Points de la mission (départ, points tournants, cible, rendez-vous…) : rond plein et nom (libellés réservés). */
+  function drawMissionPoints(ctx, points, toC, W, H, scale, profile) {
+    if (!points?.length || !on(profile, 'turningPoints')) return;
+    const radius = (+el(profile, 'pointMarker') || 8) * scale / 2,
+      font = (+el(profile, 'pointFont') || 11) * PT * scale,
+      gap = 3 * scale,
+      color = el(profile, 'pointColor'),
+      fill = el(profile, 'pointFill');
+    for (const point of points) {
+      const p = toC(point.lat, point.lon);
+      if (p.x < 0 || p.y < 0 || p.x > W || p.y > H) continue;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, 2 * scale);
+      ctx.stroke();
+      halo(ctx, point.name || point.id, p.x + radius + gap, p.y - radius - gap, font, color);
+    }
+  }
+  /** Libellés des points de la mission réservés dans le placeur (les cartouches des espaces et des balises les évitent). */
+  function reservePoints(pl, points, toC, scale, profile) {
+    if (!pl || !points?.length || !on(profile, 'turningPoints')) return;
+    const pf = (+el(profile, 'pointFont') || 11) * PT * scale,
+      ms = (+el(profile, 'pointMarker') || 8) * scale;
+    for (const p of points) {
+      const q = toC(p.lat, p.lon);
+      pl.add({
+        x0: q.x - ms / 2,
+        y0: q.y - ms - pf * 1.4,
+        x1: q.x + ms + 6 + String(p.name || p.id).length * pf * .62,
+        y1: q.y + ms / 2
+      });
+    }
+  }
   const gridStep = span => [1, 2, 5, 10, 15, 20, 30, 60, 120, 300].map(m => m / 60).find(v => v >= span / 5) || 5;
 
   function gridValues(a, b, step) {
@@ -650,7 +876,8 @@
     profile,
     data = {},
     route = [],
-    marks: mk = []
+    marks: mk = [],
+    mission = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     const pl = A().placer(),
@@ -658,13 +885,20 @@
         lat: (bbox.n + bbox.s) / 2,
         lon: (bbox.e + bbox.w) / 2
       },
-      shown = declutter(data, route, toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
+      // carte de mission : tout ce que le profil montre dans l'emprise ; vol : allégée en vue d'ensemble
+      shown = mission ? data : declutter(data, route, toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
       labels = routeLabels(route, toC, scale, pl, mk);
+    reservePoints(pl, mission?.points, toC, scale, profile);
+    const towns = cityList(data.cities, profile, toC, bbox, scale, pl);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
     drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile);
     drawPoints(ctx, shown, toC, W, H, scale, bbox, pl, profile);
+    drawVrp(ctx, shown, toC, W, H, scale, bbox, pl, profile);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
     drawGridMora(ctx, shown.moraCells, toC, bbox, W, H, scale, pl, profile);
+    drawMissionZones(ctx, mission?.zones, toC, scale, pl, profile);
+    drawMissionPoints(ctx, mission?.points, toC, W, H, scale, profile);
+    drawCities(ctx, towns, profile, scale, W, H);
     drawRoute(ctx, route, toC, scale, labels, {
       marks: mk
     });

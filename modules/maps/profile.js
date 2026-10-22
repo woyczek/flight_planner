@@ -50,16 +50,23 @@
     elevation = null,
     mora = null
   } = {}) {
-    const pts = points.map((p, i) => ({
-      name: p.id || p.name || '',
-      lat: p.lat,
-      lon: p.lon,
-      ...(i === 0 && levelFt > 0 ? {
-        lvl: {
-          ft: levelFt
-        }
-      } : {})
-    }));
+    // niveaux des points (cheminement d'une mission : lvl, alt) ; sinon le niveau de croisière au départ
+    const own = points.some(p => p.lvl || Number.isFinite(p.alt)),
+      pts = points.map((p, i) => ({
+        name: p.id || p.name || '',
+        lat: p.lat,
+        lon: p.lon,
+        ...(Number.isFinite(p.alt) ? {
+          alt: p.alt
+        } : {}),
+        ...(p.lvl ? {
+          lvl: p.lvl
+        } : i === 0 && levelFt > 0 && !own ? {
+          lvl: {
+            ft: levelFt
+          }
+        } : {})
+      }));
     let terrainOk = !!elevation;
     // relief : une sonde d'abord ; en échec (hors ligne, hôte refusé), coupe sans relief et MORA à la place
     if (elevation) try {

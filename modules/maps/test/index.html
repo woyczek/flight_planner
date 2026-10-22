@@ -5,7 +5,8 @@
      transport local, références lues au lanceur qui sert la page, comme frame/app.js) et aerodb. Un vol d'essai est
      écrit dans pilot/TST/current_flight.json (?flight=ifr par défaut, ?flight=none pour l'état vide, ?flight=low pour un
      vol sous le FL195) ; ?profile=none : vol sans montée ni descente de Carburant (calculées par le profil) ; ?tiles=0 :
-     fond uni forcé (fetch des hôtes de tuiles refusé, relief compris). Page d'outil servie par le
+     fond uni forcé (fetch des hôtes de tuiles refusé, relief compris) ; ?mission=<ID>&map=<fichier> : carte d'une mission
+     du dépôt des données (missions/<l>_<FAMILLE>/<ID>/mission<ID>.yaml). Page d'outil servie par le
      lanceur ; cache du frame effacé au départ. -->
 <link rel="stylesheet" href="../../../frame/frame.css?v=0">
 <style>
@@ -172,7 +173,8 @@
           identity: {
             trigram: 'TST'
           },
-          query: {}
+          // ?mission=<ID>&map=<fichier> : comme l'adresse #maps?mission=…&map=… du cadre
+          query: Object.freeze(Object.fromEntries(['mission', 'map'].filter(k => Q.get(k)).map(k => [k, Q.get(k)])))
         };
       const t0 = performance.now();
       await mod.mount(document.getElementById('host'), ctx);

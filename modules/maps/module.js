@@ -1,6 +1,8 @@
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
-// et son profil vertical, en lecture seule (lots 2 et 3).
+// et son profil vertical, en lecture seule (lots 2 et 3) ; les cartes d'une mission redessinées d'après son YAML
+// (missions/<l>_<FAMILLE>/<ID>/mission<ID>.yaml : emprise, profil d'affichage, points, zones, cheminement ; lot 4),
+// adresse #maps?mission=<ID>&map=<fichier>.
 //   · fond : tuiles OpenFreeMap (MapLibre, chargé au premier affichage, appelle lui-même les hôtes de meta.net) ;
 //     sans tuiles (hors ligne, hôte refusé, pas de WebGL), fond uni avec les contours des pays (lib/outlines.js) ;
 //   · surcouche aéronautique sur un canvas (render.js, sorti du studio) : espaces du couloir de la route, voies basses ou
@@ -14,10 +16,16 @@ export const meta = {
   id: 'maps',
   apps: ['pilot'],
   level: 1,
-  reads: ['pilot/'],
+  // missions/ : lu à la demande seulement (dossiers lourds : PNG, versions, reçus), jamais tiré d'avance
+  reads: ['pilot/', {
+    prefix: 'missions/',
+    policy: 'reference'
+  }],
   writes: [],
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
-  files: ['render.js?v=0', 'profile.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0', 'lib/outlines.js?v=0'],
+  files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
+    'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'
+  ],
   // gardés au premier usage seulement (MapLibre, 1 Mo, inutile sans tuiles)
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],
   // hôtes publics de tuiles appelés directement par MapLibre (jamais par ctx.net) ; CSP connect-src du cadre
@@ -29,9 +37,23 @@ const LIBS = [
     ['SiaProfile', 'lib/vertical_profile.js'],
     ['MapsRender', 'render.js'],
     ['MapsProfile', 'profile.js'],
-    ['MAPS_OUTLINES', 'lib/outlines.js']
+    ['MapsMission', 'mission.js'],
+    ['MAPS_PROFILES', 'lib/profiles.js'],
+    ['MAPS_OUTLINES', 'lib/outlines.js'],
+    ['jsyaml', '../../frame/lib/js-yaml.min.js']
   ],
   STYLE_URL = 'https://tiles.openfreemap.org/styles/positron',
+  // fond d'un profil d'affichage du studio : styles publiés d'OpenFreeMap et de VersaTiles ; le style maison du studio
+  // (vector), OSM standard et OpenTopoMap (hôtes hors de meta.net) sont remplacés par positron
+  STYLES = {
+    'ofm-liberty': 'https://tiles.openfreemap.org/styles/liberty',
+    'ofm-bright': 'https://tiles.openfreemap.org/styles/bright',
+    'ofm-positron': 'https://tiles.openfreemap.org/styles/positron',
+    'vt-colorful': 'https://tiles.versatiles.org/assets/styles/colorful/style.json',
+    'vt-graybeard': 'https://tiles.versatiles.org/assets/styles/graybeard/style.json',
+    'vt-shadow': 'https://tiles.versatiles.org/assets/styles/shadow/style.json',
+    'vt-eclipse': 'https://tiles.versatiles.org/assets/styles/eclipse/style.json'
+  },
   TILE_WAIT = 10e3; // fond pas prêt après ce délai : fond uni
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
@@ -79,6 +101,28 @@ const TX = {
     'Terrain unavailable: the profile shows the MORA of the cells crossed.',
     'Gelände nicht verfügbar: das Profil zeigt die MORA der überflogenen Felder.',
     'Relieve no disponible: el perfil muestra las MORA de las celdas atravesadas.'
+  ],
+  pick: ['Carte à montrer', 'Map to show', 'Anzuzeigende Karte', 'Mapa que mostrar'],
+  flight: ['Vol prévu', 'Planned flight', 'Geplanter Flug', 'Vuelo previsto'],
+  missionsGroup: ['Missions', 'Missions', 'Missionen', 'Misiones'],
+  mapOf: ['Carte de la mission', 'Mission map', 'Karte der Mission', 'Mapa de la misión'],
+  missionMissing: ['Mission introuvable dans le dépôt des données : {m}.', 'Mission not found in the data repository: {m}.',
+    'Mission im Datenrepository nicht gefunden: {m}.', 'Misión no encontrada en el repositorio de datos: {m}.'
+  ],
+  missionBad: ['Mission illisible ({e}).', 'Unreadable mission ({e}).', 'Mission nicht lesbar ({e}).', 'Misión ilegible ({e}).'],
+  noMaps: ['Cette mission ne déclare aucune carte : son cheminement seul est montré.',
+    'This mission declares no map: only its route is shown.',
+    'Diese Mission deklariert keine Karte: nur ihre Route wird gezeigt.',
+    'Esta misión no declara ningún mapa: solo se muestra su ruta.'
+  ],
+  builtin: ['Profil d’affichage intégré « {p} » : la mission n’en porte pas encore la copie.',
+    'Built-in display profile “{p}”: the mission does not carry its copy yet.',
+    'Integriertes Anzeigeprofil „{p}“: die Mission enthält noch keine Kopie davon.',
+    'Perfil de visualización integrado «{p}»: la misión aún no lleva su copia.'
+  ],
+  cycleDiff: ['Carte faite sur le cycle {a} ; base aéronautique du cycle {b}.',
+    'Map made on cycle {a}; aeronautical database of cycle {b}.',
+    'Karte mit Zyklus {a} erstellt; Luftfahrtdatenbank des Zyklus {b}.', 'Mapa hecho con el ciclo {a}; base aeronáutica del ciclo {b}.'
   ],
   credit: ['© OpenFreeMap © OpenStreetMap ; SIA : base publiée, non certifiée',
     '© OpenFreeMap © OpenStreetMap; SIA: published database, not certified',
@@ -189,7 +233,7 @@ async function loadData(box) {
     // profil à couloir : espaces et voies lus pour le couloir de la route, tronçon par tronçon (un rectangle autour
     // d'une route en diagonale touche des zones voisines : l'Espagne pour une route Nantes → Marseille)
     boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, box) : [q.bbox];
-  const [airspaces, aerodromes, navaids, airways, moraCells, obstacles] = await Promise.all([
+  const [airspaces, aerodromes, navaids, airways, moraCells, obstacles, cities, vrp, points] = await Promise.all([
     many(A.airspaces, boxes),
     E.aerodromes ? A.aerodromes(q) : [],
     E.navaids ? A.navaids(q) : [],
@@ -198,7 +242,13 @@ async function loadData(box) {
     E.obstacles ? A.obstacles({
       ...q,
       minHgt: +E.obstacleMin || 300
-    }) : []
+    }) : [],
+    p.cities || E.agglos ? A.cities({
+      ...q,
+      n: 400
+    }) : [],
+    E.vrpPoints ? A.vrp(q) : [],
+    E.rnavPoints ? A.points(q) : []
   ].map(x => Promise.resolve(x).catch(() => [])));
   return {
     box,
@@ -208,7 +258,10 @@ async function loadData(box) {
       navaids,
       airways,
       moraCells,
-      obstacles
+      obstacles,
+      cities,
+      vrp,
+      points
     },
     empty: !airspaces.length && !aerodromes.length && !navaids.length
   };
@@ -311,7 +364,11 @@ function draw() {
     profile: S.profile,
     data: S.data?.data || {},
     route,
-    marks: S.marks
+    marks: S.marks,
+    mission: S.mission ? {
+      points: S.mission.points,
+      zones: S.mission.zones
+    } : null
   });
   if (S.route.altn && route.length) {
     // terrain de dégagement : rond gris et code, par-dessus le reste
@@ -389,7 +446,7 @@ function drawPlanOnMap(ctx, toC) {
 const FT_NM = 1852;
 /** Coupe du vol : espaces de la route (types du profil, sans plancher ni plafond), relief (Terrarium), sinon MORA. */
 async function buildProfile() {
-  const pts = S.route.points,
+  const pts = S.route.profilePoints || S.route.points,
     A = S.ctx.aerodb;
   S.prof = null;
   S.geo = null;
@@ -403,7 +460,7 @@ async function buildProfile() {
         s: -85,
         n: 85
       })).catch(() => []),
-      p = S.profile;
+      p = S.vprofProfile || S.profile;
     airspaces = MapsRender.selectAirspaces(list, {
       ...p,
       corridorNm: 0,
@@ -598,7 +655,7 @@ async function startTiles() {
     try {
       map = new ml.Map({
         container: S.mapEl,
-        style: STYLE_URL,
+        style: STYLES[S.profile?.base] || STYLE_URL,
         bounds: [
           [S.fit.w, S.fit.s],
           [S.fit.e, S.fit.n]
@@ -646,8 +703,21 @@ async function startTiles() {
 async function status() {
   if (!S) return;
   const out = [];
-  if (!S.route.points.length) out.push(`<p>${esc(tt(TX.noFlight))} <button type="button" class="f-btn" data-go="fuel">${esc(tt(TX.toFuel))}</button></p>`);
-  else {
+  if (S.missionError) out.push(`<p>${esc(S.missionError)}</p>`);
+  else if (S.mission) {
+    if (!S.mission.maps.length) out.push(`<p class="mp-muted">${esc(tt(TX.noMaps))}</p>`);
+    if (S.profileSource && S.profileSource !== 'copy') out.push(`<p class="mp-muted">${esc(tt(TX.builtin, {
+      p: S.profile?.name || S.profile?.id || ''
+    }))}</p>`);
+    const cyc = S.mapDef?.cycle,
+      now = (await S.ctx.aerodb?.status().catch(() => null))?.cycle;
+    if (S.mapDef?.cycle && now && S.mapDef.cycle !== now) out.push(`<p class="mp-muted">${esc(tt(TX.cycleDiff, {
+      a: cyc,
+      b: now
+    }))}</p>`);
+  } else if (!S.route.points.length) out.push(
+    `<p>${esc(tt(TX.noFlight))} <button type="button" class="f-btn" data-go="fuel">${esc(tt(TX.toFuel))}</button></p>`);
+  if (!S.missionError && S.route.points.length) {
     const st = await S.ctx.aerodb?.status().catch(() => null);
     if (!st?.published || !Object.keys(st.published).length) out.push(`<p>${esc(tt(TX.noBase))}</p>`);
     else if (S.data?.empty && navigator.onLine === false) out.push(
@@ -660,6 +730,12 @@ async function status() {
 }
 /** En-tête : départ → arrivée, dégagement, niveau, distance. */
 function header() {
+  if (S.mission) {
+    const m = S.mapDef,
+      text = [S.mission.id, S.mission.title, m ? m.description || m.file : ''].filter(Boolean).join(' · ');
+    if (S.hdEl.textContent !== text) S.hdEl.textContent = text;
+    return;
+  }
   const f = S.route.flight,
     r = f?.route || {},
     lvl = S.route.levelFt ? (S.route.levelFt >= 10000 ? `FL${Math.round(S.route.levelFt / 100)}` : `${S.route.levelFt} ft`) : '',
@@ -704,11 +780,156 @@ async function applyFlight() {
   buildProfile();
 }
 
+// ---------------------------------------------------------------- cartes de mission
+const MISSION_YAML = /^missions\/[^/]+\/([^/]+)\/mission[^/]*\.ya?ml$/i;
+/** Missions du dépôt (chemins du YAML de chaque dossier ; liste de l'arbre, rien n'est lu) : [{ id, path }]. */
+async function missionList() {
+  const paths = await S.ctx.data.list('missions/').catch(() => null) || [];
+  return paths.map(path => ({
+    id: MISSION_YAML.exec(path)?.[1],
+    path
+  })).filter(x => x.id).sort((a, b) => a.id.localeCompare(b.id));
+}
+/** Points du cheminement de la mission : route_points écrits par le studio, sinon le texte (vertical_profile.route,
+ *  sinon départ, points tournants, destination) résolu par les points de la mission, puis par aerodb. */
+async function missionRoute(mission) {
+  const v = mission.vprof;
+  if (v.routePoints.length >= 2) return v.routePoints;
+  const text = MapsMission.routeTokens(mission),
+    own = new Map(),
+    K = MapsMission.keyNorm;
+  for (const p of mission.points) {
+    if (p.id) own.set(K(p.id), p);
+    if (p.name) own.set(K(p.name), p);
+  }
+  for (const z of mission.zones) own.set(K(z.id), z);
+  const ext = new Map();
+  if (S.ctx.aerodb)
+    for (const tok of new Set(text.split(/[\s,;]+/).map(t => t.split('/')[0].trim()).filter(Boolean)))
+      if (!own.has(K(tok)) && /^[A-Z0-9]{2,5}$/i.test(tok)) {
+        const c = await S.ctx.aerodb.coords(tok).catch(() => null);
+        if (c) ext.set(tok.toUpperCase(), c);
+      }
+  const resolve = name => {
+    const p = own.get(K(name)) || ext.get(String(name).toUpperCase());
+    return p ? {
+      name: p.id || name,
+      lat: p.lat,
+      lon: p.lon
+    } : null;
+  };
+  try {
+    // niveaux du texte gardés (lvl : niveau de croisière à partir du point ; alt : altitude à atteindre au point)
+    return SiaProfile.parseRoute(text, resolve).points.map(p => ({
+      id: p.name,
+      lat: p.lat,
+      lon: p.lon,
+      ...(Number.isFinite(p.alt) ? {
+        alt: p.alt
+      } : {}),
+      ...(p.lvl ? {
+        lvl: p.lvl
+      } : {})
+    }));
+  } catch {
+    return [];
+  }
+}
+/** Mission (re)lue et carte choisie : profil, emprise, cheminement tracé si la carte le demande, profil vertical. */
+async function applyMission() {
+  const q = S.ctx.query || {},
+    list = await missionList(),
+    hit = list.find(x => x.id === q.mission);
+  S.missions = list;
+  S.mission = null;
+  S.missionError = '';
+  if (!hit) S.missionError = tt(TX.missionMissing, {
+    m: q.mission
+  });
+  else try {
+    const r = await S.ctx.data.read(hit.path, {
+        policy: 'reference',
+        wait: true
+      }),
+      text = typeof r?.value === 'string' ? r.value : r?.text;
+    if (!text) throw new Error('empty');
+    S.mission = MapsMission.parse(window.jsyaml.load(text));
+    S.mission.id ||= hit.id;
+    S.missionRev = r.rev || '';
+  } catch (e) {
+    S.missionError = tt(TX.missionBad, {
+      e: e?.message || e
+    });
+  }
+  if (!S) return;
+  const M = S.mission,
+    m = M ? M.maps.find(x => x.file === q.map) || M.maps[0] || null : null,
+    chosen = m ? MapsMission.profileFor(m, window.MAPS_PROFILES) : {
+      profile: window.MAPS_PROFILES.find(p => p.id === 'ifr-simple'),
+      source: 'builtin-type'
+    };
+  S.mapDef = m;
+  S.profile = chosen.profile;
+  S.profileSource = chosen.source;
+  S.vprofProfile = M?.vprof.profileDef || window.MAPS_PROFILES.find(p => p.id === 'vprof') || null;
+  const pts = M ? await missionRoute(M) : [];
+  if (!S) return;
+  const trace = m?.trace || (M?.vprof.onMap !== false && pts.length > 1 ? 'route' : 'none'),
+    shown = trace === 'route' || trace === 'both' ? pts : [];
+  S.route = {
+    flight: {
+      profile: M?.vprof.rates || null
+    },
+    points: shown,
+    profilePoints: pts,
+    altn: null,
+    levelFt: M?.vprof.cruiseFt || 0,
+    updated: `${q.mission}|${m?.file || ''}|${S.missionRev || ''}`
+  };
+  S.fit = m?.extent || MapsRender.bboxOf([...pts, ...(M?.points || [])], 10) || {
+    w: -5,
+    s: 41,
+    e: 10,
+    n: 51.5
+  };
+  S.marks = shown.length > 1 ? MapsRender.marks(shown) : [];
+  S.data = null;
+  S.cursor = null;
+  S.box.hidden = !M;
+  header();
+  fillPick();
+  status();
+  schedule();
+  buildProfile();
+}
+/** Choix de la carte : vol prévu, puis chaque mission du dépôt ; pour une mission, ses cartes. */
+async function fillPick() {
+  const q = S.ctx.query || {},
+    list = S.missions || await missionList();
+  if (!S) return;
+  S.missions = list;
+  const cur = q.mission ? `m:${q.mission}` : 'flight',
+    html = `<option value="flight">${esc(tt(TX.flight))}</option>${list.length ? `<optgroup label="${esc(tt(TX.missionsGroup))}">${list.map(x => `<option value="m:${esc(x.id)}">${esc(x.id)}</option>`).join('')}</optgroup>` : ''}`;
+  if (S.pickEl.innerHTML !== html) S.pickEl.innerHTML = html;
+  S.pickEl.value = cur;
+  const maps = S.mission?.maps || [],
+    mh = maps.map(m => `<option value="${esc(m.file)}">${esc(m.description || m.file)}</option>`).join('');
+  S.mapPickEl.hidden = maps.length < 2;
+  if (S.mapPickEl.innerHTML !== mh) S.mapPickEl.innerHTML = mh;
+  if (S.mapDef) S.mapPickEl.value = S.mapDef.file;
+}
+/** Adresse de la carte choisie (le cadre remonte le module sur sa nouvelle suite d'adresse). */
+function go(mission, map) {
+  location.hash = mission ? `#maps?mission=${encodeURIComponent(mission)}${map ? `&map=${encodeURIComponent(map)}` : ''}` : '#maps';
+}
+
 const STYLE = `
 [data-module="maps"]{display:flex;flex-direction:column;gap:8px}
 [data-module="maps"] .mp-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 [data-module="maps"] .mp-head h1{font-size:1.25rem;margin:0}
 [data-module="maps"] .mp-sum{flex:1 1 100%;color:var(--sog-muted);font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-picks{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%;min-width:0}
+[data-module="maps"] .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 140px;text-overflow:ellipsis}
 [data-module="maps"] .mp-box{position:relative;height:52vh;min-height:260px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:#dfe9f2;touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -736,6 +957,8 @@ export async function mount(el, ctx) {
 <div class="mp-head"><h1>${esc(ctx.t(TX.title))}</h1>
 <button type="button" class="f-btn" data-go="fuel">${esc(ctx.t(TX.edit))}</button>
 <button type="button" class="f-btn" data-fit>${esc(ctx.t(TX.fit))}</button>
+<div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
+<select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
 <div class="mp-sum" aria-live="polite"></div></div>
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
@@ -751,8 +974,15 @@ export async function mount(el, ctx) {
     profBox: el.querySelector('.mp-prof'),
     pc: el.querySelector('canvas.mp-pc'),
     pcur: el.querySelector('canvas.mp-pcur'),
-    stripEl: el.querySelector('.mp-strip')
+    stripEl: el.querySelector('.mp-strip'),
+    pickEl: el.querySelector('.mp-pick'),
+    mapPickEl: el.querySelector('.mp-mappick')
   });
+  S.pickEl.addEventListener('change', () => {
+    const v = S.pickEl.value;
+    go(v.startsWith('m:') ? v.slice(2) : '', '');
+  });
+  S.mapPickEl.addEventListener('change', () => go(ctx.query?.mission, S.mapPickEl.value));
   // curseur commun : doigt (ou souris) sur le profil
   const onProf = e => {
     if (!S?.geo || (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse')) return;
@@ -784,10 +1014,14 @@ export async function mount(el, ctx) {
   });
   await loadLibs();
   if (!S) return;
-  await applyFlight();
+  if (ctx.query?.mission) await applyMission();
+  else {
+    await applyFlight();
+    fillPick();
+  }
   if (!S) return;
   // fond à tuiles si possible, sinon fond uni (dit une fois)
-  const tiles = S.route.points.length ? await startTiles() : false;
+  const tiles = S.route.points.length || S.mission ? await startTiles() : false;
   if (!S) return;
   if (!tiles) {
     S.plain = true;
@@ -795,9 +1029,13 @@ export async function mount(el, ctx) {
   }
   status();
   schedule();
-  S.stops.push(ctx.data.watch(flightPath(), async () => {
+  if (!ctx.query?.mission) S.stops.push(ctx.data.watch(flightPath(), async () => {
     const f = await ctx.data.get(flightPath()).catch(() => null);
     if (S && (f?.updated_at || '') !== S.route.updated) applyFlight();
+  }));
+  else S.stops.push(ctx.data.watch('missions/', paths => {
+    // le YAML de la mission montrée a changé (studio, nouvelle version) : relu
+    if (S && (paths || []).some(p => MISSION_YAML.exec(p)?.[1] === ctx.query.mission)) applyMission();
   }));
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', () => {
     if (!S) return;

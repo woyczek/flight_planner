@@ -2,15 +2,17 @@
 
 This document describes the V3 map module completely enough for a developer or a language model to rebuild it without
 seeing its code. Reference implementation: `modules/maps/module.js` (the screen), `modules/maps/render.js` (the
-rendering core cut out of the V2 studio), `modules/maps/profile.js` (the vertical profile), `modules/maps/lib/`
-(copies: ICAO symbols, the studio's profile code, MapLibre, country outlines).
+rendering core cut out of the V2 studio), `modules/maps/profile.js` (the vertical profile), `modules/maps/mission.js`
+(a mission's maps), `modules/maps/lib/` (copies: ICAO symbols, the studio's profile code, MapLibre; generated: country
+outlines, built-in display profiles).
 Reading of the V2 studio: [READING.md](READING.md). How it is mounted and what it needs: [INTEGRATION.md](INTEGRATION.md).
 Choices and measurements: [DECISIONS.md](DECISIONS.md).
 
 ## 1. Purpose
 
-The Pilot application's map, read only, fast on a phone: the route map of the planned flight (lot 2) and its vertical
-profile with a common cursor (lot 3). Next: the mission maps redrawn from what the studio stores (lot 4).
+The Pilot application's map, read only, fast on a phone:
+- the route map of the planned flight (lot 2) and its vertical profile with a common cursor (lot 3);
+- the mission maps redrawn from what the mission stores (lot 4).
 
 ## 2. Inputs
 
@@ -108,6 +110,51 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **API**: `build(points, { levelFt, profile, airspaces, elevation, mora })`, `draw(ctx, cut, { W, H, scale })` →
   geometry, `xOf(geo, s)`, `sOf(geo, x)`, `at(cut, s)`, `posAt(cut, s)`, `nearest(cut, toC, x, y, maxPx)`; distances in
   metres, altitudes in feet.
+
+## 4 ter. Mission maps (`mission.js`, `window.MapsMission`)
+
+- **Address**: `#maps?mission=<ID>&map=<file>`. Without `map`, the mission's first map; without `mission`, the planned
+  flight.
+- **Choosers**: in the header, "Planned flight" then every mission of the repository; for a mission with two maps or
+  more, a second chooser with its maps (description, else file name). Choosing changes the address; the frame mounts
+  the module again.
+- **Missions**: `missions/<l>_<FAMILY>/<ID>/mission<ID>.yaml`.
+  - The list comes from the data layer's tree (`list('missions/')`); nothing is read to list them.
+  - Only the chosen mission's YAML is read (policy "reference"), and parsed with `frame/lib/js-yaml.min.js`.
+  - A change to that file (`watch`) reads it again.
+- **Parsing** (the studio's rules, `parseMissionYaml`):
+  - points: origin, destination, target, alternate, turning points, rendezvous;
+  - zones: circle or polygon; kind search, exclusion or mission;
+  - `maps[]`: file, type, description, centre (`centre_ref` or `center`), `bbox` / `range_km` / `width_km` /
+    `height_km`, `view`, `profile`, `trace`; maps with profile `off` are left out;
+  - `vertical_profile`: route, cruise, rates.
+- **Fields written by the V2 studio** (BUGS SOG, develop ea077ae36, v3 f799f8429):
+  - `profile_def`: the full display profile, used as is;
+  - `resolved_bbox`: the extent drawn;
+  - `cycle`: the AIRAC cycle of the map. A cycle different from aerodb's is said in the status line.
+  - In `vertical_profile`: `profile_def`, `cycle`, `route_points` [{ name, lat, lon, alt_ft }].
+- **Without those fields** (older missions):
+  - **Profile**: the built-in profile of the same id, else the built-in profile of the type. Detail, target and rdv
+    give `vfr-detail`; approach gives `vfr-simple`; anything else gives `ifr-simple`. The status line says so.
+  - **Extent**: `view`, else `bbox`, else the automatic frame by type:
+    - general: points and zones, 12 % margin;
+    - zone: the zone, 20 % margin;
+    - detail: 8 × 5 km; target: 100 × 62 km; others: 220 × 140 km;
+    - widened to the studio's 1.6 ratio.
+  - **Route**: `vertical_profile.route` (or origin, turning points or target, destination), parsed by
+    `SiaProfile.parseRoute`. Names resolve against the mission's points and zones, then aerodb's `coords`. The levels
+    of the text (FL240 then FL260) are kept.
+- **Drawing**: the map's profile decides everything: base style (OpenFreeMap and VersaTiles styles; the studio's own
+  style, OSM and OpenTopoMap become `positron`), airspaces, airways, aerodromes, navaids, obstacles, VRP and RNAV
+  points, cities, MORA, graticule. Then:
+  - the mission's zones (hatched, dashed outline, name);
+  - the mission's points (dot and name, labels reserved first);
+  - the route when `trace` is `route` or `both`, or by default when the mission draws its route on maps.
+  No overview declutter: a mission map shows what its profile asks for.
+- **Vertical profile**: the mission's route with its levels and rates. Airspaces come from the `vprof` profile (copy,
+  else built-in: every type). The common cursor works as for the flight.
+- **Not drawn** (later, if asked): probable route and exercise tracks, operation maps, AAR tracks, NAT, built-up
+  areas, summits, relief and contour layers.
 
 ## 5. Invariants
 

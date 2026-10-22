@@ -8,9 +8,9 @@ How the frame mounts the map module and what it needs from the frame, aerodb and
 ```js
 export const meta = {
   id: 'maps', apps: ['pilot'], level: 1,
-  reads: ['pilot/'], writes: [],
-  files: ['render.js?v=0', 'profile.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
-    'lib/outlines.js?v=0'],                                                      // kept at installation
+  reads: ['pilot/', { prefix: 'missions/', policy: 'reference' }], writes: [],
+  files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
+    'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],  // kept at installation
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],                 // kept at first use
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']  // called by MapLibre itself
 };
@@ -27,10 +27,21 @@ export const meta = {
   and without a launcher. `worker-src blob:` (MapLibre's worker) is already in the CSP.
 - `ctx.data` (read `pilot/`, `watch`), `ctx.aerodb`, `ctx.t`, `ctx.identity.trigram`.
 
+## 2 bis. Missions (V2 studio and generator)
+
+- The module reads `missions/<l>_<FAMILY>/<ID>/mission<ID>.yaml` on demand ("reference": never pulled ahead; the
+  folders hold PNG files, received texts and versions). It writes nothing there.
+- Since develop ea077ae36 (v3 f799f8429), the studio writes the drawing fields: `maps[].profile_def`,
+  `resolved_bbox`, `cycle`; `vertical_profile.profile_def`, `cycle`, `route_points`. The registry ignores them when it
+  compares versions, and carries them over to a new version map by map.
+- Built-in profiles: `modules/maps/lib/profiles.js`, generated from the studio by `tools/build_maps_profiles.py`. Run
+  it again when `defaultProfiles` changes (`BASE_PROFILES_VERSION`).
+
 ## 3. What it asks of aerodb
 
 `airspaces`, `aerodromes`, `navaids`, `airways`, `moraCells` and `obstacles` by `bbox`; `coords` (the alternate);
-`status().published`; `on('change')`. Everything is read only for the area shown or the route's corridor.
+`status().published` and `status().cycle`; `on('change')`. For mission maps also `vrp`, `points` and `cities`, by
+`bbox`. Everything is read only for the area shown or the route's corridor.
 
 ## 4. What it reads from fuel
 

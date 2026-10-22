@@ -91,3 +91,33 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     Switzerland about 100 KB without their airspaces: 3.64 MB, against 7.7 MB in lot 2.
   - LFBO → LFMT at 8,000 ft without fuel's profile: 7 terrain tiles, profile in 1.1 s.
   - Offline (`?tiles=0`): plain background, profile with MORA, both said in the status line.
+- **22 Oct 2026 — lot 4, the mission maps** ([SPEC.md](SPEC.md) § 4 ter).
+  - **Specification for V2** (sent to the ergonomics session, made by BUGS SOG on develop ea077ae36, reported on v3
+    f799f8429):
+    - `profile_def`, `resolved_bbox`, `cycle` in each `maps[]` entry;
+    - `profile_def`, `cycle`, `route_points` in `vertical_profile`;
+    - the registry ignores them only in those two places, and carries them over map by map on a new version.
+    - `resolved_bbox` is a key of its own: `bbox` stays an input that the studio reads as a constraint.
+  - **Missions read as "reference"**: listed from the tree, only the chosen YAML read.
+  - **Built-in profiles generated, not copied by hand**: `tools/build_maps_profiles.py` extracts `defaultProfiles`
+    from the studio and derives `ifr-low` and `ifr-high` as `ifrRouteProfile` does. The `vprof` profile keeps every
+    airspace type.
+  - **No overview declutter on mission maps**: their profile was chosen for that map; what it asks for is drawn.
+  - **Base styles**: the studio's own vector style, OSM and OpenTopoMap need hosts outside `meta.net`, so they become
+    `positron`; the OpenFreeMap and VersaTiles styles are used as named.
+  - **Route levels kept**: `route_points.alt_ft`, and the levels of the parsed route text, drive the mission's vertical
+    profile (FL240 to PT1, then FL260 from PT3 in the test mission).
+  - **Layout fix**: a long map description made its chooser wider than the screen; the choosers now shrink (ellipsis).
+  - **Seen in the data, not in the code**: a town labelled "Béziers" near Châtellerault comes from the published towns
+    (GeoNames).
+- **Measurements of lot 4** (375 px; test missions from `tools/jeu_essai`, plus I-999A carrying the studio's fields):
+
+| | CPU ×1 | CPU ×4 |
+|---|---|---|
+| I-001A overview (built-in profile): first drawing / profile | 365 ms / 1,387 ms | 1,056 ms / 2,175 ms |
+| I-999A overview (`profile_def`, `resolved_bbox`, `cycle`, `route_points`): first drawing / profile | 230 ms / 1,023 ms | 1,052 ms / 1,919 ms |
+| JavaScript heap | 24–30 MB | 27 MB |
+
+  - Mounted through `frame/index.html#maps?mission=I-999A&map=cibleI-999A.png`: chooser with 13 entries, built-in VFR
+    detail profile for the target map (no copy on that map), map and profile drawn, no error.
+  - Not checked end to end: a mission saved by the V2 studio itself; the test mission writes the same fields by hand.

@@ -24,6 +24,15 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **maps lot 4: mission maps redrawn on the phone.**
+  - The map module lists the missions of the data repository and redraws each mission map from its YAML.
+  - Each map is drawn with its own display profile, extent and route when the studio wrote them (`profile_def`,
+    `resolved_bbox`, `route_points`), otherwise with the built-in profile of its type and the studio's framing rules.
+  - The mission's zones, points and route are drawn too, and the mission's vertical profile follows its levels.
+  - A map made on another AIRAC cycle is flagged.
+  - Choosers in the header switch between the planned flight, the missions and their maps; address
+    `#maps?mission=<ID>&map=<file>`.
+  - Built-in profiles generated from the studio (`tools/build_maps_profiles.py`).
 - **maps lot 3: the vertical profile under the map, with a common cursor.**
   - The profile shows:
     - terrain from elevation tiles, or the MORA of the cells crossed when offline;
