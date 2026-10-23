@@ -386,3 +386,18 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     37.5 %, VRP lower threshold to 0 → 233 VRP drawn at once; "Save for the airline" → file written (`by: 'maps'`);
     a map reading an airline file with `vrp: [0, 24]` applies it. 375 px: read only, page 375 px wide. Topo over the
     Massif Central: contours with 2,500 and 5,000 ft labels, obstacle heights. No JavaScript error.
+- **23 Oct 2026 — lot 8: started flight.**
+  - **Schemas**: fuel's `progress` (57c9ae2e0) as written: `plannedPos` with `nmFromDep` (used for the along-route
+    distance), `progress.at` for the planned time; the frame's `actual` read in the form of INTEGRATION.md until the
+    frame's SPEC fixes it. The flight is drawn while `started` is not null (no `endedAt`).
+  - **Ahead or late from the route, not from straight lines**: both positions are projected on the route (along-track
+    distance), so a detour or a cut corner gives the real difference; time at the actual ground speed.
+  - **Progress alone does not rebuild anything**: positions may come every few seconds; when the points, the level
+    and the start are unchanged, only the overlay and the profile marks are redrawn.
+  - **"Follow" obeys the camera rule**: its moves are the module's own; the user's first move stops it.
+  - **UTC times** ("14:32Z"), as the wind tooltips and the OFP.
+  - **Bench** (test page, LFRS → LFML started, planned position at 120 NM, actual at 108 NM 3.2 NM right, FL260):
+    1280 px: "En retard de 3 min (12 NM) · 3,2 NM à droite de la route · altitude FL260 (prévue FL270)"; Follow →
+    centre moves with three updates; wheel → Follow off; position 5 min old → greyed with "Position d'il y a 5 min";
+    no actual position → message and link to the settings; not started → nothing, button hidden. 375 px touch: the
+    same, map and profile marks drawn. No JavaScript error.

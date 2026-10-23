@@ -54,6 +54,13 @@ point), sa distance, ses routes, son plancher et son plafond ; pour un espace, s
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
 la carte. Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
 
+**En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
+14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Au-
+dessus de la carte, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
+votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
+estimée (ETA). « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
+ou réseau non activés), la ligne le dit et ouvre les réglages ; une position de plus de 2 minutes est grisée.
+
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
 le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un
 fanion vaut 50 kt, une barbe 10 kt, une demi-barbe 5 kt. Touchez une barbule (ou passez dessus à la souris) : la bulle

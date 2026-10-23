@@ -46,6 +46,19 @@ export const meta = {
   page `#maps?tune=1`), schema in SPEC.md § 4 quinquies. `meta.reads` has `airline/`, `meta.writes` has that file with
   the `record` merge. The pilot's `fuel.json` (`displayAlt`) gives the contour interval.
 
+- **Started flight** (lot 8), read from the current flight: `started` (drawn while not null) and fuel's `progress`
+  (INTEGRATION § 3 of fuel, lot H: `at`, `plannedPos { lat, lon, legIndex, nmFromDep }`, `eta [{ id, at }]`,
+  `fuelRemainingKg`, `remainingNm`, `phase`). The actual position is the frame's, `progress.actual`, read as below until
+  the frame's SPEC fixes it:
+
+```json
+{ "actual": { "lat": 46.0, "lon": 0.3, "altFt": 26000, "trackDeg": 128, "gsKt": 250, "at": "2026-10-23T12:27:10Z",
+              "source": "gps", "trail": [{ "lat": 46.2, "lon": 0.1, "at": "2026-10-23T12:20:00Z" }] } }
+```
+
+  `source`: `gps` or `network`; `trail` optional (the map keeps its own 30-minute trail from the successive
+  positions); `trackDeg` optional (bearing from the previous position); `gsKt` optional (250 kt).
+
 ## 3. What it asks of aerodb
 
 `airspaces`, `aerodromes`, `navaids`, `airways`, `moraCells` and `obstacles` by `bbox`; `coords` (the alternate);

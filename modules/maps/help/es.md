@@ -52,6 +52,13 @@ notación AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de
 bajo el dedo. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o un
 movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
 
+**En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
+14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
+mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
+la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA). «Seguir» mantiene
+el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), la línea lo dice y abre los
+ajustes; una posición de más de 2 minutos aparece en gris.
+
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
 a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
 banderín vale 50 kt, una barba 10 kt, media barba 5 kt. Toque una barba (o pase el ratón por encima): la burbuja da la

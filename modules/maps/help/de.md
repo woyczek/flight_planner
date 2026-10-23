@@ -56,6 +56,14 @@ Blase die Lufträume unter dem Finger. Sie folgt dem Zeiger, bleibt 5 Sekunden, 
 sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger oder Maus ebenso die
 durchflogenen Lufträume.
 
+**Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
+„geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
+Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
+Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
+voraussichtliche Zeit (ETA). „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
+Position (GPS oder Netz nicht aktiviert) sagt die Zeile es und öffnet die Einstellungen; eine Position, die älter als 2
+Minuten ist, erscheint grau.
+
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
 50 kt, eine Fieder für 10 kt, eine halbe Fieder für 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus

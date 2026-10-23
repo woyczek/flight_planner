@@ -51,6 +51,13 @@ Tapped elsewhere inside an airspace, the bubble gives the airspaces under your f
 seconds, gives way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger
 or the mouse give the airspaces crossed in the same way.
 
+**In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned
+14:32Z”) and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted).
+Above the map, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your
+altitude against the planned one; the profile shows both altitudes. Close up, each point carries its estimated time
+(ETA). “Follow” keeps the map on your position; moving the map stops it. Without a position (GPS or network not
+enabled), the line says so and opens the settings; a position older than 2 minutes is greyed.
+
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
 barb 10 kt, a half barb 5 kt. Tap a barb (or move the mouse over it): the bubble gives the direction, the speed, the

@@ -294,6 +294,28 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Changes**: a change of `data-design` or `data-tone` on `<html>`, or of `prefers-color-scheme`, reads the tokens
   again. The module switches the base style when night changes, then redraws the map and the profile.
 
+## 4 sexies. Started flight (lot 8)
+
+While the current flight carries `started` (not null; fuel sets it back to null when the start is cancelled, Report
+when the report is saved), nothing otherwise:
+- **Planned position** (`progress.plannedPos { lat, lon, legIndex, nmFromDep }`, written by fuel every minute):
+  hollow aircraft in the accent colour, turned to the route's track at that point, labelled "planned 14:32Z"
+  (`progress.at`); its along-route distance is `nmFromDep`, its altitude the profile's at that distance.
+- **Actual position** (`progress.actual`, written by the frame from the GPS or the network): filled red aircraft turned
+  to `trackDeg` (else the bearing from the previous position); the trail of the last 30 minutes dotted (kept in memory
+  from the successive positions, plus `actual.trail` when given). Older than 2 minutes: greyed, "Position from n min
+  ago".
+- **Difference**, a line above the map: ahead or late in minutes and NM (both positions projected on the route; time at
+  `actual.gsKt`, else 250 kt), cross-track distance and side, actual altitude against the planned one at that
+  distance (`formatLevel`). Without an actual position: "GPS or network not enabled" with a link to `#settings`.
+- **Profile**: filled dot at the actual distance and altitude, circle at the planned position.
+- **ETA** (`progress.eta`, a list `[{ id, at }]` in the order of the points; a table `{ id: at }` is read too): "ETA 14:52Z" beside
+  each point in a close view (300 px per degree and more).
+- **"Follow"** (in the bar at the top right, shown only during a started flight): keeps the map centred on the actual
+  position at each update (a move of the module, marked as such); any move of the user stops it (camera rule).
+- **Updates**: a write of the record that changes only the progress (same points, level and start) redraws the map and
+  the profile without reading the zones nor building the profile again.
+
 ## 4 quinquies. Zoom thresholds, contour lines, tuning of the profiles (lot 7b)
 
 - **Zoom thresholds**: every element drawn on a flight map has a range of MapLibre zoom (512 px tiles; `zoomOf(px per

@@ -204,6 +204,24 @@ const TX = {
   ptSame: ['niveau précédent conservé', 'previous level kept', 'vorherige Flughöhe bleibt', 'se mantiene el nivel anterior'],
   saveFailed: ['Route non enregistrée : {m}', 'Route not saved: {m}', 'Route nicht gespeichert: {m}', 'Ruta no guardada: {m}'],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
+  follow: ['Suivre', 'Follow', 'Folgen', 'Seguir'],
+  followHelp: ['Garder la carte centrée sur la position réelle', 'Keep the map centred on the actual position',
+    'Karte auf der tatsächlichen Position halten', 'Mantener el mapa centrado en la posición real'
+  ],
+  progPlanned: ['prévu {t}', 'planned {t}', 'geplant {t}', 'previsto {t}'],
+  progAhead: ['En avance de {m} min ({d} NM)', '{m} min ahead ({d} NM)', '{m} min voraus ({d} NM)', 'Adelantado {m} min ({d} NM)'],
+  progLate: ['En retard de {m} min ({d} NM)', '{m} min late ({d} NM)', '{m} min Verspätung ({d} NM)', 'Retrasado {m} min ({d} NM)'],
+  progOnTime: ['À l\'heure', 'On time', 'Pünktlich', 'A la hora'],
+  progSide: ['{d} NM à {s} de la route', '{d} NM {s} of the route', '{d} NM {s} der Route', '{d} NM a la {s} de la ruta'],
+  progLeft: ['gauche', 'left', 'links', 'izquierda'],
+  progRight: ['droite', 'right', 'rechts', 'derecha'],
+  progOnRoute: ['sur la route', 'on the route', 'auf der Route', 'en la ruta'],
+  progAlt: ['altitude {a} (prévue {p})', 'altitude {a} (planned {p})', 'Höhe {a} (geplant {p})', 'altitud {a} (prevista {p})'],
+  progStale: ['Position d\'il y a {m} min', 'Position from {m} min ago', 'Position von vor {m} min', 'Posición de hace {m} min'],
+  progNoPos: ['GPS ou réseau non activés : pas de position réelle.', 'GPS or network not enabled: no actual position.',
+    'GPS oder Netz nicht aktiviert: keine tatsächliche Position.', 'GPS o red no activados: sin posición real.'
+  ],
+  progSettings: ['Ouvrir les réglages', 'Open the settings', 'Einstellungen öffnen', 'Abrir los ajustes'],
   windTip: ['Vent {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Viento {d}° / {k} kt'],
   windSub: ['{t} · {l} · prévision {h}', '{t} · {l} · forecast {h}', '{t} · {l} · Vorhersage {h}', '{t} · {l} · previsión {h}'],
   layerNames: {
@@ -658,6 +676,7 @@ function draw() {
   }
   drawPlanOnMap(ctx, toC, got.routeLabels || []);
   S.windHits = !S.mission && layersNow().wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
+  if (!S.mission && inFlight()) drawProgress(ctx, toC, pxDeg);
   S.toC = toC;
   if (S.edit?.on) drawEdit(ctx, toC);
   if (S.data && !S.drawn) {
@@ -875,6 +894,7 @@ function drawCursor() {
   } = fit(S.pcur, S.profBox), ctx = S.pcur.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
+  if (!S.mission && inFlight()) drawProgressProfile(ctx);
   if (S.cursor == null) return;
   const g = S.geo,
     x = MapsProfile.xOf(g, S.cursor),
@@ -1044,7 +1064,10 @@ async function startTiles() {
         hideTips();
         // tout mouvement qui n'est pas un cadrage du module (geste, molette, clavier) est celui de l'utilisateur : sa
         // caméra est gardée par tous les redessins
-        if (S && !S.selfMove) S.userMoved = true;
+        if (S && !S.selfMove) {
+          S.userMoved = true;
+          if (S.follow) setFollow(false);
+        }
       });
       finish(true);
     });
@@ -2365,6 +2388,295 @@ function markTune(z, lat) {
     });
   if (now && now.textContent !== t) now.textContent = t;
 }
+// ---------------------------------------------------------------- vol démarré (lot 8)
+// Tant que le vol courant porte started : position prévue (progress.plannedPos, de Carburant : symbole creux,
+// « prévu hh:mm ») et position réelle (progress.actual, du cadre : GPS ou réseau ; symbole plein orienté à la route
+// suivie, trace des 30 dernières minutes en pointillé) ; entre les deux, l'écart (avance ou retard en minutes et NM,
+// écart latéral à la route) ; sur le profil, l'altitude réelle contre la prévue ; ETA des points (progress.eta) de près ;
+// « Suivre » garde la carte sur la position réelle (arrêté par un déplacement de l'utilisateur) ; sans position réelle :
+// un message et les réglages ; position de plus de 2 min : grisée. Rien hors d'un vol démarré.
+const STALE_MS = 120e3,
+  TRAIL_MS = 30 * 60e3;
+/** Vrai si le vol courant est en cours : started non nul (remis à null quand Carburant l'annule ou quand le compte rendu
+ *  est enregistré). */
+const inFlight = (f = S.route.flight) => !!f?.started;
+/** Même route (points et niveau) : seule la progression a changé. */
+const sameRoute = (a, b) => !!a && !!b && JSON.stringify([a.route?.points, a.level?.ft, a.started?.at]) === JSON.stringify([b.route?.points,
+  b.level?.ft, b.started?.at
+]);
+/** Position valide { lat, lon } d'un objet, sinon null. */
+const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {
+  ...p,
+  lat: +p.lat,
+  lon: +p.lon
+} : null;
+/** Heure UTC « 14:32Z » d'une date ISO. */
+const hhmm = iso => {
+  const d = new Date(iso);
+  return Number.isNaN(+d) ? '' : `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}Z`;
+};
+/** Progression relue seule : enregistrement, trace, ligne d'état, carte, profil et caméra (« Suivre »). */
+function progressOnly(f) {
+  S.route = {
+    ...S.route,
+    flight: f,
+    updated: f?.updated_at || ''
+  };
+  progressUpdate();
+  schedule();
+  drawCursor();
+}
+/** Trace gardée en mémoire (30 dernières minutes) et état de la progression. */
+function progressUpdate() {
+  const f = S.route.flight,
+    on = inFlight(f),
+    a = on ? posOf(f.progress?.actual) : null;
+  if (S.followBtn.hidden === on) S.followBtn.hidden = !on;
+  if (!on) {
+    S.trail = [];
+    if (S.follow) setFollow(false);
+    if (!S.progEl.hidden) S.progEl.hidden = true;
+    return;
+  }
+  const now = Date.now();
+  S.trail = [...(S.trail || []), ...(Array.isArray(f.progress?.actual?.trail) ? f.progress.actual.trail.map(posOf).filter(Boolean) : []),
+    ...(a ? [a] : [])
+  ].filter((p, i, all) => !p.at || now - Date.parse(p.at) <= TRAIL_MS).filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !==
+    all[i - 1].lon).slice(-400);
+  const st = progressState(),
+    html = progressHtml(st);
+  if (S.progEl.innerHTML !== html) S.progEl.innerHTML = html;
+  if (S.progEl.hidden) S.progEl.hidden = false;
+  if (S.follow && st.actual && S.map) {
+    S.selfMove = true;
+    S.map.once('moveend', () => {
+      if (S) S.selfMove = false;
+    });
+    S.map.easeTo({
+      center: [st.actual.lon, st.actual.lat],
+      duration: 400
+    });
+  }
+}
+/** Projection d'une position sur la route : distance depuis le départ (NM), écart latéral (NM, positif à droite). */
+function alongRoute(p) {
+  const pts = (S.route.flight?.route?.points || []).map(posOf).filter(Boolean);
+  if (pts.length < 2 || !p) return null;
+  const cum = MapsRender.distances(pts);
+  let best = null;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i],
+      b = pts[i + 1],
+      k = Math.cos((a.lat + b.lat) / 2 * Math.PI / 180),
+      bx = (b.lon - a.lon) * k * 60,
+      by = (b.lat - a.lat) * 60,
+      px = (p.lon - a.lon) * k * 60,
+      py = (p.lat - a.lat) * 60,
+      L2 = bx * bx + by * by || 1e-9,
+      t = Math.max(0, Math.min(1, (px * bx + py * by) / L2)),
+      dx = px - t * bx,
+      dy = py - t * by,
+      d = Math.hypot(dx, dy);
+    if (!best || d < best.d) best = {
+      d,
+      s: cum[i] + t * (cum[i + 1] - cum[i]),
+      side: bx * py - by * px < 0 ? 1 : -1 // à droite du sens de vol : produit vectoriel négatif
+    };
+  }
+  return {
+    nm: best.s,
+    xtk: best.d * best.side,
+    total: cum[cum.length - 1]
+  };
+}
+/** État de la progression : positions, écart en distance et en temps, écart latéral, péremption. */
+function progressState() {
+  const f = S.route.flight,
+    planned = posOf(f?.progress?.plannedPos),
+    actual = posOf(f?.progress?.actual),
+    ageMs = actual?.at ? Date.now() - Date.parse(actual.at) : 0,
+    pa = actual ? alongRoute(actual) : null,
+    // distance prévue écrite par Carburant (nmFromDep), sinon la projection de la position prévue
+    pp0 = planned ? alongRoute(planned) : null,
+    pp = pp0 && Number.isFinite(+planned.nmFromDep) ? {
+      ...pp0,
+      nm: +planned.nmFromDep,
+      xtk: 0
+    } : pp0,
+    gs = +actual?.gsKt > 30 ? +actual.gsKt : +f?.profile?.cruiseKt > 30 ? +f.profile.cruiseKt : 250,
+    ahead = pa && pp ? pa.nm - pp.nm : null;
+  return {
+    planned,
+    actual,
+    stale: !!actual && ageMs > STALE_MS,
+    ageMin: Math.round(ageMs / 60e3),
+    pa,
+    pp,
+    aheadNm: ahead,
+    aheadMin: ahead == null ? null : ahead / gs * 60
+  };
+}
+/** Distance en NM à la façon de la langue : une décimale sous 10 NM (« 3,2 »), aucune au-delà. */
+const nmTxt = v => v.toLocaleString(S.ctx.lang(), {
+  minimumFractionDigits: v < 10 ? 1 : 0,
+  maximumFractionDigits: v < 10 ? 1 : 0
+});
+/** Ligne d'état du vol démarré (au-dessus de la carte). */
+function progressHtml(st) {
+  if (!st.actual) return `<p class="f-muted">${esc(tt(TX.progNoPos))} <a href="#settings">${esc(tt(TX.progSettings))}</a></p>`;
+  const parts = [];
+  if (st.aheadMin != null) {
+    const m = Math.round(Math.abs(st.aheadMin)),
+      d = nmTxt(Math.abs(st.aheadNm));
+    parts.push(m < 1 ? tt(TX.progOnTime) : tt(st.aheadMin > 0 ? TX.progAhead : TX.progLate, {
+      m,
+      d
+    }));
+  }
+  if (st.pa) {
+    const x = Math.abs(st.pa.xtk);
+    parts.push(x < .5 ? tt(TX.progOnRoute) : tt(TX.progSide, {
+      d: nmTxt(x),
+      s: tt(st.pa.xtk > 0 ? TX.progRight : TX.progLeft)
+    }));
+  }
+  if (+st.actual.altFt > 0 && st.pa && S.prof) {
+    const pl = MapsProfile.at(S.prof, st.pa.nm * (S.prof.total / (st.pa.total || 1))).alt;
+    if (pl != null) parts.push(tt(TX.progAlt, {
+      a: formatLevel(+st.actual.altFt),
+      p: formatLevel(pl)
+    }));
+  }
+  const stale = st.stale ? ` <span class="mp-stale">(${esc(tt(TX.progStale, { m: st.ageMin }))})</span>` : '';
+  return `<p><b>${esc(parts[0] || '')}</b>${parts.length > 1 ? ` · ${esc(parts.slice(1).join(' · '))}` : ''}${stale}</p>`;
+}
+/** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux. */
+function drawPlane(ctx, c, hdg, col, filled, r = 9) {
+  ctx.save();
+  ctx.translate(c.x, c.y);
+  ctx.rotate((+hdg || 0) * Math.PI / 180);
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * .75, r * .8);
+  ctx.lineTo(0, r * .35);
+  ctx.lineTo(-r * .75, r * .8);
+  ctx.closePath();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = S.theme.bg;
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = col;
+  ctx.fillStyle = col;
+  if (filled) ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+/** Texte avec liseré du fond. */
+function haloText(ctx, t, x, y, col, font = '700 12px Arial,sans-serif', align = 'left') {
+  ctx.save();
+  ctx.font = font;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = S.theme.bg;
+  ctx.lineWidth = 3;
+  ctx.strokeText(t, x, y);
+  ctx.fillStyle = col;
+  ctx.fillText(t, x, y);
+  ctx.restore();
+}
+/** Progression sur la carte : ETA des points de près, trace, position prévue (creuse), position réelle (pleine). */
+function drawProgress(ctx, toC, pxDeg) {
+  const f = S.route.flight,
+    st = progressState(),
+    acc = S.theme.accent,
+    real = st.stale ? S.theme.muted : '#c62828';
+  // ETA des points, de près : progress.eta en liste [{ id, at }] ou en table { id: at }
+  const eta = f.progress?.eta,
+    etaOf = (p, i) => Array.isArray(eta) ? (eta[i]?.id === p.id || !eta[i]?.id ? eta[i]?.at : eta.find(e => e.id === p.id)?.at) : eta?.[p
+      .id
+    ];
+  if (pxDeg >= 300)(f.route?.points || []).forEach((p, i) => {
+    const at = etaOf(p, i),
+      q = posOf(p) && toC(+p.lat, +p.lon);
+    if (at && q) haloText(ctx, `ETA ${hhmm(at)}`, q.x + 8, q.y + 16, acc, '700 11px Arial,sans-serif');
+  });
+  // trace des 30 dernières minutes
+  if (S.trail?.length > 1) {
+    ctx.save();
+    ctx.strokeStyle = real;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([2, 4]);
+    ctx.beginPath();
+    S.trail.forEach((p, i) => {
+      const q = toC(p.lat, p.lon);
+      i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+  if (st.planned) {
+    const q = toC(st.planned.lat, st.planned.lon),
+      hdg = st.pp ? trackAt(st.pp.nm) : 0;
+    drawPlane(ctx, q, hdg, acc, false);
+    const at = st.planned.at || f.progress?.at;
+    if (at) haloText(ctx, tt(TX.progPlanned, {
+      t: hhmm(at)
+    }), q.x + 12, q.y - 12, acc);
+  }
+  if (st.actual) {
+    const q = toC(st.actual.lat, st.actual.lon),
+      tr = S.trail || [],
+      prev = tr.length > 1 ? tr[tr.length - 2] : null,
+      hdg = Number.isFinite(+st.actual.trackDeg) ? +st.actual.trackDeg : prev ? MapsRender.trackOf(prev, st.actual) : 0;
+    drawPlane(ctx, q, hdg, real, true, 10);
+  }
+}
+/** Route vraie de la route au point à nm du départ (pour orienter la position prévue). */
+function trackAt(nm) {
+  const pts = (S.route.flight?.route?.points || []).map(posOf).filter(Boolean),
+    cum = MapsRender.distances(pts);
+  for (let i = 0; i < pts.length - 1; i++)
+    if (nm <= cum[i + 1] || i === pts.length - 2) return MapsRender.trackOf(pts[i], pts[i + 1]);
+  return 0;
+}
+/** Profil : altitude réelle (point plein) à la distance réelle, position prévue (cercle) à la distance prévue. */
+function drawProgressProfile(ctx) {
+  const st = progressState(),
+    g = S.geo;
+  if (!g || !S.prof) return;
+  const k = st.pa?.total ? S.prof.total / st.pa.total : st.pp?.total ? S.prof.total / st.pp.total : 0,
+    y = ft => g.padT + (g.H - g.padT - g.padB) * (1 - (Math.min(Math.max(ft, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
+  ctx.save();
+  if (st.pp && k) {
+    const s = st.pp.nm * k,
+      alt = +st.planned.altFt > 0 ? +st.planned.altFt : MapsProfile.at(S.prof, s).alt;
+    if (alt != null) {
+      ctx.beginPath();
+      ctx.arc(MapsProfile.xOf(g, s), y(alt), 6, 0, Math.PI * 2);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = S.theme.accent;
+      ctx.stroke();
+    }
+  }
+  if (st.pa && k && +st.actual.altFt > 0) {
+    ctx.beginPath();
+    ctx.arc(MapsProfile.xOf(g, st.pa.nm * k), y(+st.actual.altFt), 6, 0, Math.PI * 2);
+    ctx.fillStyle = st.stale ? S.theme.muted : '#c62828';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+/** « Suivre » : la carte reste centrée sur la position réelle ; arrêté par un déplacement de l'utilisateur. */
+function setFollow(on) {
+  S.follow = on;
+  if (S.followBtn.getAttribute('aria-pressed') !== String(on)) S.followBtn.setAttribute('aria-pressed', String(on));
+  if (on) {
+    S.userMoved = false;
+    progressUpdate();
+  }
+}
 /** Cadre la carte sur le vol (seul mouvement de caméra fait par le module, marqué pour ne pas passer pour celui de
  *  l'utilisateur). */
 function fitMap(animate) {
@@ -2411,6 +2723,7 @@ async function applyFlight(live = false) {
   if (other) S.userMoved = false;
   if (S.map && (!live || other || (!S.userMoved && !inView()))) fitMap(false);
   status();
+  progressUpdate();
   schedule();
   buildProfile();
 }
@@ -2627,6 +2940,10 @@ const STYLE = `
 [data-module="maps"] .mp-editbar{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:6px}
 [data-module="maps"] .mp-editbar[hidden],[data-module="maps"] .mp-editbar [hidden]{display:none}
 [data-module="maps"] .mp-editbar button{height:var(--sog-touch);min-height:0;padding:0 12px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;font-weight:600;cursor:pointer}
+[data-module="maps"] .mp-editbar .mp-follow[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
+[data-module="maps"] .mp-progress{font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-progress b{font-weight:700}
+[data-module="maps"] .mp-progress .mp-stale{color:var(--sog-muted)}
 [data-module="maps"] .mp-editbar .mp-edit[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
 [data-module="maps"] .mp-editbar button:disabled{opacity:.5;cursor:default}
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
@@ -2661,6 +2978,7 @@ export async function mount(el, ctx) {
 <div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
 <div class="mp-sum f-muted" aria-live="polite"></div></div>
+<div class="mp-progress" hidden aria-live="polite"></div>
 ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>' : ''}
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
 <div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"></button>
@@ -2671,7 +2989,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
 <label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-2" max="2" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
-<div class="mp-editbar"><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
+<div class="mp-editbar"><button type="button" class="mp-follow" hidden aria-pressed="false" title="${esc(ctx.t(TX.followHelp))}">${esc(ctx.t(TX.follow))}</button><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
@@ -2698,6 +3016,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     layersEl: el.querySelector('.mp-layers'),
     editBar: el.querySelector('.mp-editbar'),
     editBtn: el.querySelector('.mp-edit'),
+    followBtn: el.querySelector('.mp-follow'),
+    progEl: el.querySelector('.mp-progress'),
     undoBtn: el.querySelector('.mp-undo'),
     cardEl: el.querySelector('.mp-pcard'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
@@ -2840,6 +3160,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   // une carte de mission garde son profil : ni mode ni couches
   S.modesEl.hidden = S.layersBtn.hidden = S.editBar.hidden = !!ctx.query?.mission;
   editGestures();
+  S.followBtn.addEventListener('click', () => setFollow(!S.follow));
   levelGestures();
   if (ctx.query?.mission) await applyMission();
   else {
@@ -2866,6 +3187,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       // gestes) n'est pas reprise : elle effacerait ces gestes
       if (S && (f?.updated_at || '') !== S.route.updated && (f?.updated_at || '') > (S.route.updated || '')) {
         performance.mark('maps:live');
+        if (sameRoute(f, S.route.flight)) return progressOnly(f);
         await applyFlight(true);
       }
     }, 300);
