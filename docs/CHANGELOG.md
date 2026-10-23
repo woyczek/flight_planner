@@ -72,6 +72,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   help ×4) — a VOR (or TACAN, DME) keeps its symbol and label over an NDB, an NDB over an ILS; the ILS is drawn
   underneath and, when it shares the VOR's place, named in the VOR's new tooltip ("also here: ILS 25L BG 109.9").
 
+### Fixed
+
+- **Map studio and Flight maps: every town name twice on an OpenFreeMap or VersaTiles background**
+  (`apps/cpco/map_parser.html`, `apps/planner/map_planner.html` rebuilt) — with "Town labels" ticked, the studio wrote its
+  own names over the place names of the vector background. The background's place layers (`place`, `place_labels`) are
+  now hidden while "Town labels" is ticked, and shown again when it is not.
+
 ## [6.0.0-alpha.1] — 2026-10-23
 
 First alpha of the V3 **Pilot application** (`frame/`, `modules/`), published under `/v3/frame/` on the same site
