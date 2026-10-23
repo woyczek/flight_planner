@@ -388,6 +388,17 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   S.body.addEventListener('click', onClick);
   S.airline = W.airlineSettings((await ctx.data.get(SETTINGS)) || ctx.airline || {});
+  // compagnie lue en fond par le cadre (frame INTEGRATION § 6) : arrivée ou changée après le montage (premier passage
+  // d'un dépôt), le fichier est relu et les cartes redessinées ; pas pendant une saisie dans le module
+  S.onAirline = async () => {
+    const self = S;
+    if (!self?.body || self.body.contains(document.activeElement)) return;
+    const v = await Promise.resolve().then(() => ctx.data.read(SETTINGS)).then(r => r?.value).catch(() => null);
+    if (S !== self || !S.body || S.body.contains(document.activeElement)) return;
+    S.airline = W.airlineSettings(v || ctx.airline || {});
+    render();
+  };
+  window.addEventListener('frame-airline', S.onAirline);
   S.logDoc = tri() ? await ctx.data.get(logPath()) : null;
   S.fleetDoc = await ctx.data.get(FLEET);
   render();
@@ -400,6 +411,7 @@ export async function mount(el, ctx) {
 export function unmount() {
   if (!S) return;
   S.mq?.removeEventListener('change', S.onMq);
+  window.removeEventListener('frame-airline', S.onAirline);
   S.body = null;
   S = null;
 }
