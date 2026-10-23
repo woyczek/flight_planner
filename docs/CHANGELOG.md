@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: the route text first** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`)
+  — the route is typed in a field that is always visible and tidied when you leave it (one line, levels as /F280,
+  airways kept, unknown points named under it, ICAO coordinates read); distance and true track are shown with their
+  source and typed only when the route does not resolve; the points list is folded below.
 - **maps: a clearer flight map** (`modules/maps/render.js`, `module.js`; `DECISIONS.md`, `test/render.html`) — the route
   is the strongest line, with its labels larger than the aerodromes' and beacons', MORA and graticule quieter, beacon
   names dropped in the overview; every text reaches WCAG AA contrast by day and by night in the three designs, and

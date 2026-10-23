@@ -12,19 +12,25 @@ les types publiés, et en dernier le code tapé tel quel. Un appareil de la comp
 sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et
 l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation.
 
-**La route.** Tapez le départ et l'arrivée (codes OACI) : la distance et la route vraie se calculent seules. Pour une
-route détaillée, dépliez « Route détaillée » et collez-la (plan de vol OACI, ou une ligne « point latitude longitude »
-par point). Si rien n'est reconnu, tapez la distance et la route à la main. Avec votre identifiant SimBrief réglé
-(⚙), « Dernier OFP SimBrief » reprend d'un coup la route, le niveau, le vent moyen et l'appareil de votre dernier
-plan.
+**La route.** Tapez le départ, l'arrivée et le dégagement (codes OACI), puis la route dans le champ « Route »,
+toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
+NTS/F280 LFRN »). Vous pouvez aussi y coller un plan de vol OACI ou la liste d'un OFP. Quand vous quittez le champ, la
+route est remise au propre : en majuscules sur une ligne, sans DCT ni groupes vitesse-niveau, le départ et l'arrivée
+aux bouts, un changement de niveau écrit « /F280 » après le point où il commence. Les voies aériennes restent écrites
+(le devis suit les points). Les points inconnus restent à leur place et sont signalés juste dessous ; des coordonnées
+s'écrivent à la façon OACI (« 4530N00030E »). La ligne suivante donne la distance et la route vraie, et d'où elles
+viennent (la route, l'OFP SimBrief). Si la route ne se résout pas, « Saisir à la main » ouvre les deux champs. Avec
+votre identifiant SimBrief réglé (⚙), « Dernier OFP SimBrief » reprend d'un coup la route, le niveau, le vent moyen et
+l'appareil de votre dernier plan.
 
-Sous la distance, « Points de la route » liste les points reconnus, du départ à l'arrivée. Les flèches montent ou
+Le pli « Points » liste les points reconnus, du départ à l'arrivée. Les flèches montent ou
 descendent un point dans la liste, la croix le retire ; le champ du bas en ajoute un avant l'arrivée : un identifiant
 (balise, point, terrain) ou « NOM latitude longitude ». Chaque point intermédiaire a un champ de niveau facultatif, en
 FL : c'est le niveau tenu à partir de ce point, pour une montée ou une descente par paliers. Un point sans niveau
 continue le précédent (affiché en grisé) ; le vol part au niveau du plan. Le devis compte chaque palier (sa montée ou
 sa descente, puis la croisière à ce niveau), le résultat affiche la suite des niveaux (FL100 → FL120), et la descente
-part du dernier niveau. Chaque changement réécrit la route détaillée et est aussitôt transmis à la carte.
+part du dernier niveau. Chaque changement réécrit le champ « Route » (les points seuls) et est aussitôt transmis à
+la carte.
 
 **Le niveau et le vent.** Indiquez le niveau de croisière (en FL) et le vent : direction et force. Sans direction, ou
 sans vent du tout, le carburant bloc est donné en fourchette. « Montée » choisit la façon de monter : économique,

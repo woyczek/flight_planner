@@ -4,6 +4,18 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — the route text first** (users' feedback arbitrated by the ergonomics session: the route string is
+  what pilots work with all the time): the text field is always visible and normalised on leaving it; the points list
+  becomes secondary (folded, "Points (n)"); distance and track are read with their source, typed only when nothing
+  resolves. Normalising keeps airways and unknown words in place rather than deleting what the pilot typed (airways
+  carry information, an unknown point is shown, not dropped); positions live in `points`, and a name aerodb does not
+  know is found there again on reading — otherwise a point placed by coordinates (or one from an OFP) would be lost
+  once the text no longer carries coordinates. A known name is tried before the airway pattern (a fix called PT1 would
+  otherwise be read as an airway). Checked at 375 px on 8793 (aerodb's `coords` mocked): `lfbo n0450f350 dct tou
+  un460 LUGEN/n0450f280 xyzzz nts lfrn` → `LFBO TOU UN460 LUGEN/F280 XYZZZ NTS LFRN`, XYZZZ named under the field,
+  301 NM "from the route"; an unresolved route showed "Type them by hand", 120 NM typed → "typed by hand"; an OFP list
+  with PT1 / PT2 → `LFBO PT1 PT2/F140 LFRN`, read back with no unknown point; `LFBO 4530N00030E 4630N00048W LFRN` → 4
+  points.
 - **23 Oct 2026 — weather along the route's corridor** (user's correction through the ergonomics session): no more
   "intermediate aerodrome" field — the first feedback found it too big, the correction removed it. The aerodromes come
   from the route: aerodb's aerodromes by leg box widened by a radius (quote settings, 10 NM), filtered by their

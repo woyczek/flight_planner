@@ -176,13 +176,19 @@ inside the module, switched by two buttons at the top, the last one kept on the 
      `aircraft().aircraftOf(hit)` into the current flight. Former text kept below for the quote's origins: the sheets of the shared database, or "other type" (an ICAO code: aerodb's estimate); the origin
      of the cruise fuel flow (this flight's entry, the sheet's RPM table or cruise flow, Poll-Schumann, SimBrief, the
      type estimate) and whether it is approximate.
-  2. **Route**: departure, arrival, alternate; distance and true track derived from the points (aerodb `coords` of
-     each identifier, or "ID lat lon" entries as the OFP gives them), typed by hand when nothing resolves; the
-     detailed route folded; the unknown points listed. **Route points** (lot C): the resolved points as a list —
+  2. **Route**: departure, arrival, alternate; the **route text, always visible, is the first input** (23 Oct
+     2026): free text read as item 15 or as an OFP list; on leaving the field it is normalised — one line, upper case,
+     DCT and speed-level groups dropped, departure and arrival at the ends, levels as "/Fnnn" after the point where
+     they change, airways, procedures and unknown words kept in place (the unknown points named in a line under the
+     field, no dialog); ICAO coordinates (4530N00030E, 45N005E) and "NAME lat lon" read as points; an identifier
+     aerodb does not know takes the position it already has in the flight's points (a point placed by hand keeps it).
+     Distance and true track are **read, not typed**: a line gives them with their source (the route, the SimBrief
+     OFP, typed by hand); only when nothing resolves does "Type them by hand" unfold the two fields. **Route points**
+     (lot C, folded under "Points (n)", secondary): the resolved points as a list —
      move up, move down, remove, add before the arrival (an identifier from aerodb `coords`, or "NAME lat lon"); each
      intermediate point has an optional level (FL), the level flown from that point on (steps), a point without one
-     continuing the previous (shown as its placeholder). Every change rewrites the detailed route in the OFP form
-     ("ID lat lon[/Fnnn]", one entry per line), derives distance and track, writes the current flight (300 ms after the
+     continuing the previous (shown as its placeholder). Every change rewrites the route text from the points alone
+     ("DEP PT1 PT2/F280 ARR"), derives distance and track, writes the current flight (300 ms after the
      last change) and redoes the quote. Reading a route: the level of an entry (/N0450F370 or /F370), or an item 15
      speed-level group after a point, becomes that point's `alt_ft`, kept only where it changes and never on the
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
