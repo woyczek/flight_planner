@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Fuel: flight date in one touch** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — "+30" next to the
+  flight date sets the flight 30 min from now (30 more at each press), "Now" goes back to the current time; the
+  weather and the winds aloft follow.
 - **Map: VFR reporting points of an aerodrome** (`modules/maps/module.js`, `render.js`; SPEC, INTEGRATION, DECISIONS,
   help ×4) — hovering an aerodrome lights up its reporting points and the sequences of its VAC charts; a tap pins it,
   zooms in on its points and opens its card (sequences, then the VAC instructions page by page), all marked "to be

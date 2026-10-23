@@ -21,6 +21,8 @@ les types publiés, et en dernier le code tapé tel quel. Un appareil de la comp
 sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et
 l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation.
 
+À côté de la date, l'horloge « +30 » pose le vol dans 30 min (arrondi aux 5 min ; chaque appui ajoute 30 min) et « Maint. » revient à l'heure courante : la météo des terrains (le TAF s'il couvre cette heure) et les vents en altitude sont relus aussitôt.
+
 **2 Route.** Tapez la route dans le champ « Route » (Entrée la valide),
 toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
 NTS/F280 LFRN »). Vous pouvez aussi y coller un plan de vol OACI ou la liste d'un OFP. Quand vous quittez le champ, la

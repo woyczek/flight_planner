@@ -273,6 +273,13 @@ const TX = {
   wxDate: ['Date du vol (facultatif : TAF)', 'Flight date (optional: TAF)', 'Flugdatum (optional: TAF)',
     'Fecha del vuelo (opcional: TAF)'
   ],
+  when30: ['Dans 30 min (30 min de plus à chaque appui)', 'In 30 min (30 min more at each press)',
+    'In 30 Min. (bei jedem Tippen 30 Min. mehr)', 'Dentro de 30 min (30 min más en cada pulsación)'
+  ],
+  whenNow: ['Maint.', 'Now', 'Jetzt', 'Ahora'],
+  whenNowLong: ['Maintenant (météo observée)', 'Now (observed weather)', 'Jetzt (beobachtetes Wetter)',
+    'Ahora (tiempo observado)'
+  ],
   wxMids: ['{n} terrains le long de la route', '{n} aerodromes along the route', '{n} Flugplätze entlang der Route',
     '{n} aeródromos a lo largo de la ruta'
   ],
@@ -1134,7 +1141,13 @@ function climbSvg(G, box) {
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
 [data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,8em))} /* codes OACI : 4 lettres, pas plus large */
-[data-module="fuel"] .fu-flight{grid-template-columns:minmax(96px,8em) minmax(0,16em)} /* niveau et date à leur largeur utile */
+[data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-end} /* niveau et date à leur largeur utile ; la date passe dessous sur un téléphone */
+[data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 8em}
+[data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em}
+[data-module="fuel"] .fu-when{display:flex;gap:4px;align-items:stretch}
+[data-module="fuel"] .fu-when input{flex:1;min-width:0}
+[data-module="fuel"] .fu-when button{flex:none;min-width:44px;min-height:44px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;gap:2px}
+[data-module="fuel"] .fu-when button b{font-size:.8em}
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
 [data-module="fuel"] .fu-hide{display:none}
 [data-module="fuel"] .fu-block{display:block}
@@ -1219,7 +1232,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}</div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(f.weather?.when || '')}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -1507,6 +1520,8 @@ function onPlanClick(e) {
   const pk = e.target.closest('[data-pick]');
   if (pk) return pickAircraft(pk.dataset.pick);
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
+  if (e.target.closest('[data-do="when30"]')) return setWhen(30);
+  if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
   if (wb) return wxRead(wb);
   const b = e.target.closest('[data-do]'),
@@ -1934,6 +1949,37 @@ function realProfileHtml(box) {
   <p class="f-muted">${esc(tt(TX.realAxis))}</p>
   ${at ? `<p>${esc(tt(TX.realLevel, { l: flTxt(plan), t: at.tC, d: signed(at.isaDev), da: fmt(da) }))}</p>` : ''}
   <p>${inv.length ? inv.map(v => esc(tt(TX.realInv, { a: fmt(v.fromFt), b: fmt(v.toFt), d: v.dT }))).join('<br>') : esc(tt(TX.realNoInv))}</p>`;
+}
+/** Date du vol rapide : plus = 30 → dans 30 min (à partir de la date posée si elle est à venir : chaque appui ajoute
+ *  30 min), arrondi aux 5 min au-dessus ; plus = 0 → maintenant (date vidée : l'observation, comme au départ du vol).
+ *  Puis la météo des terrains (TAF si la date tombe dans sa validité) et les vents en altitude sont relus pour cette
+ *  heure, après un court temps calme (plusieurs appuis, une lecture). */
+function setWhen(plus) {
+  const f = S.flight,
+    now = Date.now(),
+    set = Date.parse(f.weather?.when || ''),
+    base = Number.isFinite(set) && set > now ? set : now,
+    step = 5 * 60000,
+    t = plus ? Math.ceil((base + plus * 60000) / step) * step : null,
+    d = t ? new Date(t) : null,
+    local = d ? new Date(t - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+  f.weather = {
+    ...f.weather,
+    when: local
+  };
+  const wd = S.body.querySelector('[data-k="wxdate"]');
+  if (wd) wd.value = local;
+  renderWx();
+  saveFlight();
+  clearTimeout(S.whenTimer);
+  const s = S;
+  S.whenTimer = setTimeout(async () => {
+    if (gone(s)) return;
+    await wxFetch(true);
+    if (gone(s)) return;
+    if (S.flight.weather?.real) applyRealWind();
+    refresh();
+  }, 700);
 }
 /** « Lire la météo des terrains » : bouton occupé (« Lecture… ») pendant les appels, rendu ensuite. */
 async function wxRead(btn) {

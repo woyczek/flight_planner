@@ -24,6 +24,8 @@ eigenes Datenblatt, wenn es eines hat, sonst das seines Typs, sonst eine Schätz
 dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt,
 woher der Verbrauch stammt.
 
+Neben dem Datum setzt die Uhr „+30“ den Flug auf in 30 Min. (auf 5 Min. gerundet; jedes Tippen fügt 30 Min. hinzu), „Jetzt“ kehrt zur aktuellen Zeit zurück: Flugplatzwetter (die TAF, wenn sie diese Zeit abdeckt) und Höhenwinde werden sofort neu gelesen.
+
 **2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die
 Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“). Sie können dort auch einen
 ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route bereinigt: in

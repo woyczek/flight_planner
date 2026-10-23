@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — quick flight date** (user's request through Simplification): next to the flight date, a clock
+  "+30" (44 px, label in the tooltip and `aria-label`) sets now + 30 min rounded up to 5 min; a press while the
+  date is still ahead adds 30 min to it (a past date restarts from now); "Now" empties the date (the observation,
+  as the start of the flight does). The aerodromes' weather (TAF when it covers that time) and the winds aloft are
+  read again 0.7 s after the last press (several presses, one reading). On a phone the date goes under the level
+  (flex wrap) so the field and both buttons fit in 375 px. The Departure step does not show the date (the start
+  resets it to now): no button there.
 - **23 Oct 2026 — `keepScroll` from the frame** (frame lot 17, `frame/lib/dom.js`): the module's copy is gone, and
   so is `renderPlan`'s own restoring of the field being typed (value, focus, selection by `data-k` / `data-i`):
   the frame's helper does both (frame INTEGRATION § 6: a render never changes the scroll nor what is typed).

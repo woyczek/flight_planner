@@ -225,7 +225,7 @@ inside the module, switched by two buttons at the top, the last one kept on the 
 
 - **Plan in five steps** (lot G, 23 Oct 2026, the pilot's own order: aerodromes, aircraft, level → route → weather →
   density altitude and quote → correct the route → start): a steps bar as in Report — **1 Flight** (departure,
-  arrival, alternate, flight date, the one-line aircraft, level), **2 Route** (the route text, the read distance, the
+  arrival, alternate, flight date with its quick buttons "+30" and "Now", the one-line aircraft, level), **2 Route** (the route text, the read distance, the
   folded points, "Last SimBrief OFP", "Show the map"), **3 Weather** (wind, ISA and its METAR proposal, real weather,
   the aerodromes of the corridor), **4 Quote** (density altitude, level decision with the climb goal, "Open in",
   details, climb instructions, settings), **5 Departure** (a one-page summary: aircraft, normalised route, level and
