@@ -1098,8 +1098,34 @@ const STYLE = `
 [data-module="fuel"] .fu-wx:last-child{border-bottom:0}`;
 
 // ---------------------------------------------------------------- écran Préparer
-/** Dessine l'écran Préparer (champs une fois ; résultats redessinés par refresh). */
+/** Redessine l'écran Préparer en gardant le champ en cours de frappe (renderPlanBody fait le dessin). */
 function renderPlan() {
+  // champ en cours de frappe (data-k, et data-i pour les niveaux des points) : sa valeur, son focus et sa sélection
+  // sont rendus après le redessin — un rendu ne réécrit jamais ce que l'on tape
+  const act = S.body?.contains(document.activeElement) && document.activeElement.dataset?.k ? {
+    k: document.activeElement.dataset.k,
+    i: document.activeElement.dataset.i,
+    v: document.activeElement.value,
+    a: document.activeElement.selectionStart,
+    b: document.activeElement.selectionEnd
+  } : null;
+  try {
+    renderPlanBody();
+  } finally {
+    const el = act && S.body.querySelector(`[data-k="${act.k}"]${act.i != null ? `[data-i="${act.i}"]` : ''}`);
+    if (el && el.type !== 'checkbox' && el.tagName !== 'SELECT') {
+      el.value = act.v;
+      el.focus();
+      try {
+        el.setSelectionRange(act.a, act.b);
+      } catch {
+        /* champ sans sélection (date) */
+      }
+    }
+  }
+}
+/** Dessine l'écran Préparer (champs une fois ; résultats redessinés par refresh). */
+function renderPlanBody() {
   const f = S.flight,
     r = f.route || {},
     opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
@@ -1172,7 +1198,16 @@ function renderPlan() {
     };
   }
   S.body.oninput = S.body.onchange = e => onPlanInput(e);
-  S.body.onkeydown = e => e.key === 'Enter' && e.target.dataset?.k === 'addpt' && (e.preventDefault(), pointAction('addpt'));
+  S.body.onkeydown = e => {
+    if (e.key !== 'Enter') return;
+    if (e.target.dataset?.k === 'addpt') {
+      e.preventDefault();
+      pointAction('addpt');
+    } else if (e.target.dataset?.k === 'rtext' && !e.shiftKey) {
+      e.preventDefault(); // Entrée : la route est validée (sortie du champ, puis normalisée) ; Maj+Entrée : nouvelle ligne
+      e.target.blur();
+    }
+  };
   renderPts();
   renderRinfo();
   S.body.onclick = e => onPlanClick(e);
@@ -2805,9 +2840,18 @@ export async function mount(el, ctx) {
   S.stops.push(ctx.data.watch(pilotPath('current_flight.json'), async () => {
     const f = await ctx.data.get(pilotPath('current_flight.json'));
     if (!f || f.updated_at === S.writing || f.updated_at === S.flight.updated_at) return;
+    // écho d'une de nos écritures, arrivé après une plus récente : ignoré (il ramènerait un texte plus ancien)
+    if (f.by === 'fuel' && S.writing && String(f.updated_at) < String(S.writing)) return;
+    const typing = S.body?.querySelector('[data-k="rtext"]'),
+      keepText = typing && document.activeElement === typing ? typing.value : null;
     S.flight = {
       ...emptyFlight(),
       ...f
+    };
+    if (keepText != null) S.flight.route = { // route en cours de frappe : la valeur du champ reste la vérité
+      ...emptyFlight().route,
+      ...S.flight.route,
+      text: keepText
     };
     if (S.view === 'plan') S.body.contains(document.activeElement) ? refresh() : renderPlan();
     if (f.by && f.by !== 'fuel') adoptForeignFlight();

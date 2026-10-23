@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: typing in the route is never rewritten** (`modules/fuel/module.js`; `DECISIONS.md`) — a field being typed in
+  keeps its text whatever is redrawn or saved meanwhile; the route is tidied only when you leave it or press Enter.
 - **report: the flight started in fuel comes first** (`modules/report/module.js`; `INTEGRATION.md`, `DECISIONS.md`,
   `help/fr.md`) — "Flight started at hh:mm" is offered before anything else, and no longer once its report is saved.
 - **fuel: weather without a launcher** (`frame/lib/metar.js`, `modules/fuel/module.js`; `test/metar.html`, `SPEC.md`,

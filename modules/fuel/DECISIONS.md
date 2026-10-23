@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — typing is never rewritten** (user's bug, "the route text keeps being rewritten"): the rule is that the
+  route is normalised only on leaving the field (or Enter), and no render touches a field being typed in. Not
+  reproduced on 8793 (ten slow keystrokes, alone and in the dual view with the Map), but two holes were closed: a late
+  watch echo of one of fuel's own writes (older `updated_at` than the last write) replaced the flight in memory with an
+  older route text while typing — such echoes are now ignored, and when a field is being typed in the watched
+  record keeps the field's text; and a full `renderPlan()` (watch while nothing has the focus, unit change, OFP)
+  recreated the field from the stored text — it now gives the focused field back its value, focus and selection.
+  Enter in the route field leaves it (normalises), Shift+Enter makes a new line. Checked: a stale fuel echo ("OLD
+  TEXT", older date) and a newer foreign write ("MAPS TEXT") while typing left the field as typed and the typed text
+  was written back by fuel.
 - **23 Oct 2026 — lot E, weather without a launcher** (frame lot 12, 8ea83b6c6: metar.vatsim.net and avwx.rest
   direct): aviationweather.gov is tried first (one 503 from the frame when there is no launcher, at no cost), then
   the direct sources. The METAR decoder is shared pure code in `frame/lib/metar.js` (maps or report may read a
