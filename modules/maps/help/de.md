@@ -59,6 +59,15 @@ Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Ze
 sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger oder Maus ebenso die
 durchflogenen Lufträume.
 
+**Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
+Sequenzen aus seinen VAC-Karten leuchten auf (benannte grüne Kreise, Striche zwischen den Punkten). Tippen Sie ihn an:
+die Karte rückt an seine Punkte heran, wenn sie eng beieinander liegen, und seine Karte nennt die Sequenzen (mit der
+Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Escape oder ein Antippen anderswo gibt ihn frei.
+Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
+aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet, sind keine veröffentlichte Route und nennen keine
+Flugrichtung; maßgeblich ist die VAC-Karte. Sie erscheinen, sobald der Administrator sie importiert hat
+(Einstellungen › Wartung).
+
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
 Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der

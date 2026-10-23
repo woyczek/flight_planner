@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: VFR reporting points of an aerodrome** (`modules/maps/module.js`, `render.js`; SPEC, INTEGRATION, DECISIONS,
+  help ×4) — hovering an aerodrome lights up its reporting points and the sequences of its VAC charts; a tap pins it,
+  zooms in on its points and opens its card (sequences, then the VAC instructions page by page), all marked "to be
+  checked", never as a published route; departure and arrival shown in VFR mode. The Edit mode now writes the flight
+  through `frame/lib/current_flight.js` (only `route` and `level`).
 - **Frame: what the launcher exposes under `sia/` written down** (SPEC, DECISIONS) — `sia/base/` and `sia/vfr/` only,
   never the raw SIA sources.
 - **Settings: token how-to always shown at import, account sign-up first** (`frame/settings/settings.js`,

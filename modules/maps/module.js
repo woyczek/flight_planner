@@ -6,6 +6,9 @@ import {
   icaoCoord,
   formatLevel
 } from '../../frame/lib/route_text.js';
+import {
+  merge
+} from '../../frame/lib/current_flight.js';
 
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
@@ -49,7 +52,7 @@ export const meta = {
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
-    '../../frame/lib/route_text.js?v=0', 'contours.js?v=0'
+    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', 'contours.js?v=0'
   ],
   // gardés au premier usage seulement (MapLibre, 1 Mo, inutile sans tuiles)
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],
@@ -345,6 +348,26 @@ const TX = {
     'Menos detalles a la izquierda, más a la derecha: desplaza un paso lo que muestra cada zoom.'
   ],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
+  vfrTitle: ['{ad} : points de report VFR', '{ad}: VFR reporting points', '{ad}: VFR-Meldepunkte', '{ad}: puntos de notificación VFR'],
+  vfrLabel: ['Extrait des cartes VAC, à vérifier : ni itinéraire publié, ni sens de parcours.',
+    'Extracted from the VAC charts, to be checked: neither a published route nor a direction of travel.',
+    'Aus den VAC-Karten entnommen, zu prüfen: weder veröffentlichte Route noch Flugrichtung.',
+    'Extraído de las cartas VAC, a verificar: ni itinerario publicado ni sentido de recorrido.'
+  ],
+  vfrMap: ['VAC, à vérifier', 'VAC, to be checked', 'VAC, zu prüfen', 'VAC, a verificar'],
+  vfrNone: ['Aucun point de report VFR importé pour ce terrain.', 'No VFR reporting point imported for this aerodrome.',
+    'Für diesen Flugplatz sind keine VFR-Meldepunkte importiert.', 'Ningún punto de notificación VFR importado para este aeródromo.'
+  ],
+  vfrCounts: ['{p} points de report, {r} séquences', '{p} reporting points, {r} sequences', '{p} Meldepunkte, {r} Sequenzen',
+    '{p} puntos de notificación, {r} secuencias'
+  ],
+  vfrHover: ['{c} : toucher pour les voir', '{c}: tap to see them', '{c}: zum Ansehen antippen', '{c}: toque para verlos'],
+  vfrSeqs: ['Séquences', 'Sequences', 'Sequenzen', 'Secuencias'],
+  vfrNotes: ['Consignes (texte des VAC)', 'Instructions (text of the VAC)', 'Hinweise (Text der VAC)', 'Consignas (texto de las VAC)'],
+  vfrPage: ['page {p}', 'page {p}', 'Seite {p}', 'página {p}'],
+  vfrPart: ['(certaines peuvent n\'être qu\'une partie d\'un itinéraire)', '(some may be only part of a route)',
+    '(manche sind möglicherweise nur ein Teil einer Route)', '(algunas pueden ser solo una parte de un itinerario)'
+  ],
   levelsTitle: ['{n} espaces sur ce point', '{n} airspaces at this point', '{n} Lufträume an diesem Punkt',
     '{n} espacios en este punto'
   ],
@@ -696,6 +719,7 @@ function draw() {
   }) || {};
   S.awHits = got.airways || [];
   S.zoneHits = got.zoneLabels || [];
+  S.adHits = got.aerodromes || [];
   if (altn && route.length) {
     // terrain de dégagement : rond gris et code, par-dessus le reste
     const q = toC(altn.lat, altn.lon);
@@ -718,6 +742,7 @@ function draw() {
     ctx.restore();
   }
   drawPlanOnMap(ctx, toC, got.routeLabels || []);
+  if (!S.mission) drawVfr(ctx, toC);
   S.windHits = !S.mission && layersNow().wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
   if (!S.mission && inFlight()) drawProgress(ctx, toC, pxDeg);
   S.toC = toC;
@@ -1095,7 +1120,12 @@ async function startTiles() {
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
         if (S.edit.on) return editTap(e.point.x, e.point.y);
-        if (!S.cardEl.hidden) return hideTips(); // carte des niveaux ouverte : ce toucher la ferme
+        // carte des niveaux ou d'un terrain ouverte, ou terrain épinglé : ce toucher les ferme
+        if (!S.cardEl.hidden || S.vfrPin) {
+          unpinAd();
+          return hideTips();
+        }
+        if (!S.mission && adAt(e.point.x, e.point.y)) return pinAd(adAt(e.point.x, e.point.y));
         // une barbule, un cartouche ou un libellé (posés sur la route ou près d'elle) passent avant le curseur
         if (tipAt(e.point.x, e.point.y)) return mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
@@ -1111,7 +1141,9 @@ async function startTiles() {
         if (S && !fromTouch(e.originalEvent)) hoverMap(e.point.x, e.point.y);
       });
       map.on('mouseout', e => {
-        if (S && !fromTouch(e.originalEvent)) linger('map');
+        if (!S || fromTouch(e.originalEvent)) return;
+        linger('map');
+        previewAd(null);
       });
       map.on('movestart', () => {
         hideTips();
@@ -1162,7 +1194,10 @@ function followTip(tip, box, x, y, html) {
 /** Survol de la carte en (x, y) : une barbule de vent, le cartouche d'une voie ou le libellé d'un espace sous la
  *  souris, sinon rien (l'infobulle reste 5 s). */
 function hoverMap(x, y) {
-  const t = tipAt(x, y);
+  const t = tipAt(x, y),
+    ad = t || S.mission ? null : adAt(x, y);
+  previewAd(ad?.icao || null);
+  if (ad) return adHover(ad, x, y);
   if (!t) return linger('map');
   stay('map');
   followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1]));
@@ -1353,6 +1388,7 @@ let touchAt = -1e9;
 const fromTouch = e => !!e?.sourceCapabilities?.firesTouchEvents || performance.now() - touchAt < 1000;
 const hideTips = () => {
   if (S?.cardEl && !S.cardEl.hidden) S.cardEl.hidden = true;
+  if (S?.cardEl?.style.maxHeight) S.cardEl.style.maxHeight = ''; // hauteur propre à la carte d'un terrain
   for (const k of ['map', 'prof']) stay(k);
   if (S?.tipEl) S.tipEl.hidden = true;
   if (S?.ptipEl) S.ptipEl.hidden = true;
@@ -1507,8 +1543,9 @@ async function saveRoute(rec) {
   try {
     const path = flightPath(),
       cur = (await S.ctx.data.get(path).catch(() => null)) || {};
-    await S.ctx.data.put(path, {
-      ...cur,
+    // règle commune du vol courant (frame/lib/current_flight.js, modules/fuel/INTEGRATION.md § 3) : la carte ne remplace
+    // que route et level, relus juste avant ; jamais progress (le prévu est à Carburant, la position réelle au cadre)
+    const next = merge(cur, {
       route: {
         ...(cur.route || {}),
         ...rec.route
@@ -1518,10 +1555,13 @@ async function saveRoute(rec) {
           ...(cur.level || {}),
           ...rec.level
         }
-      } : {}),
-      by: 'maps',
-      updated_at: rec.updated_at
+      } : {})
+    }, {
+      fields: rec.level ? ['route', 'level'] : ['route'],
+      by: 'maps'
     });
+    next.updated_at = rec.updated_at; // la version montrée (la vue en direct ne reprend qu'une version plus récente)
+    await S.ctx.data.put(path, next);
   } catch (e) {
     S.ctx.notify?.(tt(TX.saveFailed, {
       m: e?.message || String(e)
@@ -1953,6 +1993,229 @@ function tipAt(x, y, lat = null, lon = null) {
   return l.length ? [l[0], l.length > 2 ? `${l[1]} ${tt(TX.tipMore, {
     n: l.length - 2
   })}` : l[1] || ''] : null;
+}
+// ---------------------------------------------------------------- points de report VFR d'un terrain (VAC)
+// Survol d'un terrain (souris) : aperçu de ses points de report et de ses séquences ; toucher : épinglé, avec sa carte
+// (séquences en texte, consignes des VAC repliées par page), jusqu'à Échap ou un toucher ailleurs ; en mode VFR, départ et
+// arrivée épinglés d'office (dessin seul). Données : aerodb.vfrRoutes (sia/vfr/<OACI>.json), candidats tirés des VAC,
+// toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
+const VFR_COL = '#00897b';
+/** Terrain dessiné sous (x, y), à 12 px près ; null sinon. */
+function adAt(x, y) {
+  let best = null,
+    bd = 12;
+  for (const h of S.adHits || []) {
+    const d = Math.hypot(h.x - x, h.y - y);
+    if (d <= bd && h.a?.icao) {
+      bd = d;
+      best = h.a;
+    }
+  }
+  return best;
+}
+/** Points de report d'un terrain (lus une fois par terrain ; null sans fichier) ; redessin quand ils arrivent. */
+function vfrOf(icao) {
+  const m = S.vfr ||= new Map();
+  if (!m.has(icao)) {
+    m.set(icao, undefined);
+    Promise.resolve(S.ctx.aerodb?.vfrRoutes?.(icao)).then(v => {
+      if (!S) return;
+      m.set(icao, v || null);
+      schedule();
+      if (S.vfrPin === icao && S.vfrCard) pinView(icao);
+    }, () => S && m.set(icao, null));
+  }
+  return m.get(icao);
+}
+/** Séquences d'un terrain, une fois chacune (même suite, même page : tableau bilingue, plusieurs pistes). */
+const seqsOf = v => [...new Map((v?.routes || []).map(r => [`${r.codes.join('-')}|${r.page}`, r])).values()];
+/** Aperçu au survol (un terrain, ou null) ; redessin seulement s'il change. */
+function previewAd(icao) {
+  if ((S.vfrPreview || null) === icao) return;
+  S.vfrPreview = icao;
+  if (icao) vfrOf(icao);
+  schedule();
+}
+/** Infobulle de survol d'un terrain : son code, son nom, ce que les VAC en donnent. */
+function adHover(a, x, y) {
+  const v = vfrOf(a.icao),
+    c = v ? tt(TX.vfrHover, {
+      c: tt(TX.vfrCounts, {
+        p: v.points.length,
+        r: seqsOf(v).length
+      })
+    }) : v === null ? tt(TX.vfrNone) : '';
+  stay('map');
+  followTip(S.tipEl, S.box, x, y, hoverHtml([a.icao, a.name].filter(Boolean).join(' '), c));
+}
+/** Terrain épinglé (toucher) : surbrillance gardée et sa carte. */
+function pinAd(a) {
+  hideTips();
+  S.vfrPin = a.icao;
+  S.vfrCard = {
+    name: a.name || '',
+    lat: +a.lat,
+    lon: +a.lon
+  };
+  if (vfrOf(a.icao) !== undefined) pinView(a.icao);
+  else showAdCard(a.icao); // « … » jusqu'à l'arrivée du fichier
+  schedule();
+}
+/** Terrain épinglé : la carte se rapproche de ses points de report s'ils sont serrés à l'écran (moins de 160 px ; c'est
+ *  le geste de l'utilisateur, la caméra reste ensuite la sienne), en laissant la place de sa carte, puis la carte du
+ *  terrain s'ouvre. */
+function pinView(icao) {
+  const v = vfrOf(icao),
+    c = S.vfrCard;
+  if (!v?.points.length || !S.map || !c) return showAdCard(icao);
+  const pts = [...v.points, c].filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)),
+    px = pts.map(p => S.map.project([+p.lon, +p.lat])),
+    span = Math.max(Math.max(...px.map(q => q.x)) - Math.min(...px.map(q => q.x)), Math.max(...px.map(q => q.y)) - Math.min(...px.map(q =>
+      q.y)));
+  if (span >= 160) return showAdCard(icao);
+  const W = S.box.clientWidth,
+    H = S.box.clientHeight,
+    side = W > 700 ? 380 : 40,
+    left = S.map.project([c.lon, c.lat]).x >= W / 2,
+    narrow = W < 600; // téléphone, volet : la carte du terrain prend le bas du cadre
+  S.map.once('moveend', () => S?.vfrPin === icao && showAdCard(icao));
+  S.map.fitBounds([
+    [Math.min(...pts.map(p => +p.lon)), Math.min(...pts.map(p => +p.lat))],
+    [Math.max(...pts.map(p => +p.lon)), Math.max(...pts.map(p => +p.lat))]
+  ], {
+    padding: narrow ? {
+      top: 56,
+      bottom: Math.round(H * .45) + 16,
+      left: 30,
+      right: 30
+    } : {
+      top: 50,
+      bottom: 40,
+      left: left ? side : 40,
+      right: left ? 40 : side
+    },
+    maxZoom: 11,
+    duration: 500
+  });
+}
+
+function unpinAd() {
+  if (!S.vfrPin) return;
+  S.vfrPin = null;
+  S.vfrCard = null;
+  schedule();
+}
+/** Carte d'un terrain épinglé : séquences en texte (page des VAC), puis consignes repliées par page. */
+function showAdCard(icao) {
+  const v = vfrOf(icao),
+    c = S.vfrCard;
+  if (!c) return;
+  const head = `<div><b>${esc(tt(TX.vfrTitle, { ad: [icao, c.name].filter(Boolean).join(' ') }))}</b></div>`;
+  let body = '';
+  if (v === undefined) body = '<p class="f-muted">…</p>';
+  else if (!v) body = `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
+  else {
+    const page = p => p ? ` <span class="f-muted">(${esc(tt(TX.vfrPage, { p }))})</span>` : '',
+      seqs = seqsOf(v),
+      part = seqs.some(r => r.fragment);
+    body = `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p><p>${esc(tt(TX.vfrCounts, { p: v.points.length, r: seqs.length }))}</p>${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqs))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(r => `<li>${esc(r.codes.join(' – '))}${page(r.page)}</li>`).join('')}</ul>` : ''}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
+  }
+  // carte du côté opposé au terrain, sous les boutons du haut du cadre (Modifier, modes et couches) : les points restent
+  // visibles, aucun bouton n'est couvert
+  const W = S.box.clientWidth,
+    q = S.map ? S.map.project([c.lon, c.lat]) : S.toC?.(c.lat, c.lon) || {
+      x: 0
+    },
+    r0 = S.box.getBoundingClientRect(),
+    right = q.x < W / 2,
+    // à droite, sous « Modifier » ; à gauche, sous les boutons des modes et des couches
+    btn = right ? S.editBtn : S.layersBtn,
+    narrow = W < 600,
+    below = narrow ? Math.round(r0.height * .55) : btn && !btn.hidden ? btn.getBoundingClientRect().bottom - r0.top : 0,
+    mh = `${Math.max(120, Math.round(r0.height - below - 14))}px`;
+  if (S.cardEl.style.maxHeight !== mh) S.cardEl.style.maxHeight = mh;
+  // étroit : en bas du cadre, sur toute sa largeur (les points sont cadrés au-dessus)
+  showTip(S.cardEl, S.box, narrow ? -10 : right ? W : -10, below, head + body);
+  const top = `${Math.round(below + 6)}px`; // juste sous les boutons (ou à mi-hauteur), jamais au-dessus
+  if (S.cardEl.style.top !== top) S.cardEl.style.top = top;
+}
+/** Terrains montrés : l'aperçu, l'épinglé, et en mode VFR le départ et l'arrivée. */
+function vfrShown() {
+  const out = new Set([S.vfrPreview, S.vfrPin].filter(Boolean));
+  if (S.preset === 'vfr') {
+    const pts = S.route?.points || [];
+    for (const p of [pts[0], pts[pts.length - 1]])
+      if (/^[A-Z]{4}$/.test(p?.id || '')) out.add(p.id);
+  }
+  return out;
+}
+/** Surbrillance des points de report des terrains montrés : séquences en tirets, points cerclés et nommés, « VAC, à
+ *  vérifier » près du terrain. */
+function drawVfr(ctx, toC) {
+  const ads = vfrShown();
+  if (!ads.size) return;
+  const vrpName = new Map((S.data?.data?.vrp || []).map(v => [v.id, v.name]));
+  ctx.save();
+  ctx.lineJoin = 'round';
+  for (const icao of ads) {
+    const v = vfrOf(icao);
+    if (!v) continue;
+    const ad = (S.data?.data?.aerodromes || []).find(a => a.icao === icao) || (S.adHits || []).find(h => h.a.icao === icao)?.a,
+      at = new Map(v.points.map(p => [p.code, p]));
+    if (ad) at.set(icao, {
+      lat: +ad.lat,
+      lon: +ad.lon
+    });
+    // séquences : tirets entre les points connus (vers le terrain seulement s'il a une position)
+    ctx.strokeStyle = VFR_COL;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([6, 4]);
+    for (const r of v.routes) {
+      ctx.beginPath();
+      let pen = false;
+      for (const c of r.codes) {
+        const p = at.get(c);
+        if (!p) {
+          pen = false;
+          continue;
+        }
+        const q = toC(+p.lat, +p.lon);
+        pen ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+        pen = true;
+      }
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.font = '700 11px Arial,sans-serif';
+    ctx.textBaseline = 'middle';
+    for (const p of v.points) {
+      const q = toC(+p.lat, +p.lon),
+        name = [p.code, vrpName.get(p.vrp)].filter(Boolean).join(' ');
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = MapsRender.withAlpha(VFR_COL, .15);
+      ctx.fill();
+      ctx.strokeStyle = VFR_COL;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = S.theme.bg;
+      ctx.lineWidth = 3;
+      ctx.strokeText(name, q.x + 10, q.y);
+      ctx.fillStyle = VFR_COL;
+      ctx.fillText(name, q.x + 10, q.y);
+    }
+    if (ad) {
+      const q = toC(+ad.lat, +ad.lon),
+        t = tt(TX.vfrMap);
+      ctx.font = 'italic 600 10px Arial,sans-serif';
+      ctx.strokeStyle = S.theme.bg;
+      ctx.lineWidth = 3;
+      ctx.strokeText(t, q.x + 10, q.y + 14);
+      ctx.fillStyle = VFR_COL;
+      ctx.fillText(t, q.x + 10, q.y + 14);
+    }
+  }
+  ctx.restore();
 }
 /** Couleur d'un type d'espace (celles du profil vertical). */
 const ZONE_COL = {
@@ -3218,6 +3481,11 @@ const STYLE = `
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 [data-module="maps"] .mp-pcard[hidden]{display:none}
 [data-module="maps"] .mp-pcard .f-btn{align-self:flex-start;margin-top:4px}
+[data-module="maps"] .mp-pcard:has(.mp-vfr-warn){width:min(92%,360px);max-height:calc(100% - 12px);overflow:auto}
+[data-module="maps"] .mp-vfr-warn{margin:0;font-size:.9em;color:#00695c;font-style:italic}
+[data-module="maps"] .mp-vfr-seq{margin:2px 0 4px;padding-left:1.2em}
+[data-module="maps"] .mp-vfr-note summary{cursor:pointer}
+[data-module="maps"] .mp-vfr-note>div{white-space:pre-wrap;font-size:.85em;max-height:14em;overflow:auto;border-left:2px solid var(--sog-border);padding-left:6px}
 [data-module="maps"] .mp-pcard:has(.mp-lv){width:min(92%,320px);max-height:calc(100% - 12px);overflow:auto}
 [data-module="maps"] .mp-lv{width:100%;height:auto;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
 [data-module="maps"] .mp-lv-list{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
@@ -3347,7 +3615,11 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       x = e.clientX - r.left,
       y = e.clientY - r.top;
     if (S.edit.on) return editTap(x, y);
-    if (!S.cardEl.hidden) return hideTips();
+    if (!S.cardEl.hidden || S.vfrPin) {
+      unpinAd();
+      return hideTips();
+    }
+    if (!S.mission && adAt(x, y)) return pinAd(adAt(x, y));
     const v = MapsRender.mercator(S.fit, r.width, r.height, 12),
       ll = v.toLL(x, y);
     if (tipAt(x, y)) return mapTip(ll.lat, ll.lon, x, y);
@@ -3380,6 +3652,15 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.layersEl.addEventListener('click', e => {
     if (e.target.closest('[data-layers-reset]')) setLayer(null);
   });
+  // Échap : le terrain épinglé est relâché
+  const esc0 = e => {
+    if (e.key === 'Escape' && S?.vfrPin) {
+      unpinAd();
+      hideTips();
+    }
+  };
+  document.addEventListener('keydown', esc0);
+  S.stops.push(() => document.removeEventListener('keydown', esc0));
   S.layersEl.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       toggleLayers(false);

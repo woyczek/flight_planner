@@ -524,7 +524,7 @@
     const ad = on(profile, 'aerodromes'),
       nv = on(profile, 'navaids'),
       ob = on(profile, 'obstacles');
-    if (!(ad || nv || ob)) return;
+    if (!(ad || nv || ob)) return [];
     const c = {
         lat: (b.n + b.s) / 2,
         lon: (b.e + b.w) / 2
@@ -535,9 +535,10 @@
         'ctl') === !!a.controlled),
       navOk = n => n.kind === 'ILS' ? on(profile, 'navIls') : n.kind === 'NDB' ? on(profile, 'navNdb') : n.kind === 'DME' ? on(profile,
         'navDme') : n.kind === 'TACAN' || n.tacan ? on(profile, 'navTacan') : on(profile, 'navVor');
-    const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x;
+    const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x,
+      ads = ad ? (data.aerodromes || []).filter(adOk) : [];
     A().drawPoints(ctx, {
-      aerodromes: ad ? (data.aerodromes || []).filter(adOk) : [],
+      aerodromes: ads,
       navaids: nv ? (data.navaids || []).filter(navOk) : [],
       obstacles: []
     }, toC, {
@@ -556,6 +557,7 @@
       navLabels: on(profile, 'navLabels')
     });
     if (ob) drawObstacles(ctx, data.obstacles || [], toC, W, H, scale, pl, profile, pxDeg);
+    return ads;
   }
   /** Obstacles : symboles de la copie du studio (regroupés à l'écran, sans leur libellé), puis, de près (vue rapprochée,
    *  300 px par degré et plus), la hauteur à côté du symbole : « 450 AGL (1230) » — hauteur sol en pieds, altitude du
@@ -1474,7 +1476,7 @@
         ...n,
         name: ''
       });
-    drawPoints(ctx, {
+    const adsDrawn = drawPoints(ctx, {
       ...shown,
       navaids: navShown
     }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
@@ -1502,6 +1504,11 @@
     // d'espaces, libellés de la route
     return {
       airways: ends.hits || [],
+      // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
+      aerodromes: (adsDrawn || []).map(a => ({
+        a,
+        ...toC(+a.lat, +a.lon)
+      })).filter(h => h.x > -10 && h.y > -10 && h.x < W + 10 && h.y < H + 10),
       zoneLabels,
       routeLabels: labels.map(l => ({
         x0: l.align === 'center' ? l.x - l.text.length * l.size * .3 : l.x,

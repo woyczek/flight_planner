@@ -57,6 +57,14 @@ bajo el dedo; donde varios se superponen, una tarjeta los muestra todos: un bloq
 hasta el toque siguiente. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o un
 movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
 
+**Los puntos de notificación VFR de un aeródromo.** Pase el ratón sobre un aeródromo: sus puntos de notificación y
+las secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, guiones entre los puntos). Tóquelo: el
+mapa se acerca a sus puntos si están apretados, y su tarjeta da las secuencias (con la página de la VAC) y luego las
+consignas de la VAC, plegadas página por página. Escape o un toque en otro lugar lo suelta. En modo VFR, los puntos del
+aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
+marcados «a verificar», no son un itinerario publicado y no indican el sentido de recorrido; la carta VAC es la que
+vale. Aparecen una vez importados por el administrador (Ajustes › Mantenimiento).
+
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
 14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
 mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a

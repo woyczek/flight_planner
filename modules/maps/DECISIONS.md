@@ -444,3 +444,21 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Bench** (test page, LFRS → LFML): 1280 px, point with 6 airspaces (R 108 HN / RT / HS / RM, TRA 42 N / NT, FL195 to
     UNL): six columns from FL195 to the UNL band, list 1 to 6, card at 753 × 68 inside the 1241 × 468 frame; next tap
     closes it. 375 px: 2 airspaces, card 320 px inside the 351 px frame. No JavaScript error.
+- **23 Oct 2026 — VFR reporting points of an aerodrome (user's request, plan validated by the ergonomics session).**
+  - **Hover previews, tap pins**: hover alone does nothing on a phone and flickers on a dense map; the tap is the gesture
+    that works everywhere, the hover a desktop shortcut.
+  - **Pinning zooms in when the points are crowded**: from a view of France, the ten points of LFBD fit in a dozen pixels;
+    the pilot's need is to see them all at once, so the pin fits them. It is the user's gesture: the camera rule makes
+    it theirs (Recentre returns to the flight).
+  - **The card on the opposite side, under the buttons**; under 600 px, the lower 45 % of the frame, and the fit keeps
+    the points above it.
+  - **Identical sequences shown once** (LFBD: 15 occurrences, 10 distinct; the source repeats a table in two
+    languages); the "part of a route" note once for the list.
+  - **Never presented as published**: teal dashes, no arrow, "to be checked" on the map and in the card, as the
+    compilation's display rules ask.
+  - **Edit mode writes through `current_flight.merge`** (fuel's rule): only `route` and `level`.
+  - **Bench** (test page, LFRS → LFML, the user's compilation imported into the bench data): 1280 px, hover LFBD →
+    "10 points de report, 10 séquences : toucher pour les voir"; tap → zoom on Bordeaux, ten ringed points and the
+    dashed sequences, card on the right under "Modifier" (60 px), sequences then three pages of instructions; Escape →
+    released. 375 px: card in the lower part (top 239 px of a 422 px frame), points above. VFR mode: the VRP names of
+    the base next to the codes. Edit mode unchanged (simple tap, "+", long press, undo). No JavaScript error.

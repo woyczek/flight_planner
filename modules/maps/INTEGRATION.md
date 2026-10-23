@@ -66,6 +66,9 @@ export const meta = {
 `status().published` and `status().cycle`; `on('change')`. For mission maps also `vrp`, `points` and `cities`, by
 `bbox`. Everything is read only for the area shown or the route's corridor.
 
+- **VFR reporting points** (aerodb SPEC § 5 quater): `vfrRoutes(icao)` for a hovered or pinned aerodrome, and for
+  departure and arrival in VFR mode.
+
 ## 4. What it reads from fuel
 
 `pilot/<trigram>/current_flight.json`: `route.points` (resolved positions, optional `alt_ft`), `route.dep / arr /
@@ -77,6 +80,10 @@ keeps the module and fuel scrolls to that step).
 - `route.points[].alt_ft` follows fuel's INTEGRATION § 3 (fuel lot C): the level held from that point on, never on
   the first or the last point; the flight leaves at `level.ft`; a point without it keeps the previous level. The
   profile then draws the steps and computes TOC and TOD per segment.
+- **Writes** of the Edit mode go through `frame/lib/current_flight.js` (fuel's rule, its INTEGRATION § 3):
+  `merge(record read just before, { route, level }, { fields: ['route', 'level'], by: 'maps' })`, without
+  `progressKeys`: the map replaces only `route` and `level`, never `progress` (the planned part is fuel's, `actual` the
+  frame's) nor fuel's other fields; `updated_at` is then set to the version shown (the live view takes only a newer one).
 - Missions keep the studio's meaning for `route_points[].alt_ft`: the altitude reached at the point (`mission.js`).
 - Every write of the file redraws the map and the profile (debounced 300 ms).
 - **Maps writes the record** when the route is edited on the map (lots 6a and 6b): `route.points`, `route.text`

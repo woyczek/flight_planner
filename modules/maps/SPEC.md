@@ -309,6 +309,30 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Changes**: a change of `data-design` or `data-tone` on `<html>`, or of `prefers-color-scheme`, reads the tokens
   again. The module switches the base style when night changes, then redraws the map and the profile.
 
+## 4 septies. VFR reporting points of an aerodrome (VAC)
+
+- **Data**: `aerodb.vfrRoutes(icao)` (aerodb SPEC § 5 quater, `sia/vfr/<ICAO>.json`), read once per aerodrome and kept
+  for the session; null when the aerodrome has no file. Candidates extracted from the VAC charts.
+- **Which aerodromes**: `render.draw()` returns the aerodromes it drew with their screen position (`aerodromes:
+  [{ a, x, y }]`); an aerodrome is under the pointer within 12 px.
+- **Hover** (mouse; an airway box, a barb or an airspace label pass first): preview of the aerodrome's points and
+  sequences; tooltip "LFBD BORDEAUX MERIGNAC · 10 reporting points, 10 sequences: tap to see them", or "No VFR reporting
+  point imported for this aerodrome". Leaving the aerodrome or the map ends the preview.
+- **Tap or click** (not in Edit mode, not on a mission map): the aerodrome is pinned. When its points span less than
+  160 px on screen, the map fits them (aerodrome included, zoom 11 at most, room left for the card); that is the
+  user's gesture, so the camera stays theirs afterwards (Follow stops, Recentre comes back). Then its card:
+  - "LFBD BORDEAUX MERIGNAC: VFR reporting points", the warning "Extracted from the VAC charts, to be checked: neither
+    a published route nor a direction of travel", the counts;
+  - the sequences in text ("LFBD – NA – NE (page 6)"), identical ones (same codes, same page) shown once, with "(some
+    may be only part of a route)" when any is marked `fragment`;
+  - the instructions of the VAC, one folded block per page (its title, its page).
+  The card goes to the side opposite the aerodrome, under the buttons of that side; under 600 px it takes the lower 45 %
+  of the frame and the fit leaves that room. Escape, or a tap elsewhere, releases the aerodrome and closes the card.
+- **VFR mode**: departure and arrival (four-letter codes) are shown anyway, drawing only.
+- **Drawing**, on top of the route: the sequences as thin dashes (teal) between their known points, to the aerodrome
+  only when it has a position; each point ringed and named (code, then the base's VRP name when loaded); "VAC, to be
+  checked" in italics under the aerodrome. No arrow, no direction.
+
 ## 4 sexies. Started flight (lot 8)
 
 While the current flight carries `started` (not null; fuel sets it back to null when the start is cancelled, Report

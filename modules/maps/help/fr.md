@@ -57,6 +57,14 @@ de son plancher à son plafond), puis la liste numérotée avec leurs limites. E
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
 la carte. Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
 
+**Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
+tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les points). Touchez-le : la carte se rapproche
+de ses points s'ils sont serrés, et sa carte donne les séquences (avec la page de la VAC) puis les consignes de la VAC,
+repliées page par page. Échap ou un toucher ailleurs le relâche. En mode VFR, les points du terrain de départ et de celui
+d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
+ne sont pas un itinéraire publié et ne disent pas le sens de parcours ; la carte VAC fait foi. Elles apparaissent une
+fois importées par l'administrateur (Paramètres › Maintenance).
+
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
 14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Au-
 dessus de la carte, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et

@@ -55,6 +55,14 @@ floor to its ceiling), then the numbered list with their limits. It stays until 
 seconds, gives way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger
 or the mouse give the airspaces crossed in the same way.
 
+**The VFR reporting points of an aerodrome.** Move the mouse over an aerodrome: its reporting points and the
+sequences taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in
+on its points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the
+VAC, folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
+aerodromes are shown anyway. These data are extracted automatically from the VAC: they are marked “to be checked”,
+are not a published route and do not give the direction of travel; the VAC chart prevails. They appear once the
+administrator has imported them (Settings › Maintenance).
+
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned
 14:32Z”) and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted).
 Above the map, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your
