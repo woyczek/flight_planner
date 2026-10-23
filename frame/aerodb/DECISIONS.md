@@ -447,3 +447,7 @@ With the network cut, the only reads attempted were:
     (reference of the branch, commit, tree, `airline/settings.json`: 2.4 s); the 3 to 4 s aimed at would need lighter
     files (the types base as JSON, the reference trimmed).
   - Tests: `test/registry.html` 26 / 26; Fuel › Sheets lists the same entries.
+- **23 Oct 2026 — `.lnmperf` follow-up only where a launcher serves the page.** It started 1.5 s after every opening
+  as soon as the reader could write, so a phone loaded `lnmperf.js` (27 KB) for nothing (it needs `/__setup/lnmperf`).
+  Now it starts only when `FrameData.launcher.detect()` finds a launcher. Bench: through the launcher, `lnmperf.js`
+  loaded; served statically (no launcher), not loaded.

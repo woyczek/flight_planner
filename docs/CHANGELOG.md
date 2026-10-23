@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: Little Navmap follow-up only with a launcher** (`frame/aerodb/aerodb.js`; DECISIONS) — a phone no longer loads
+  `lnmperf.js` (27 KB) at each opening.
 - **Fuel: times in UTC** (`modules/fuel/module.js`; DECISIONS, help ×4) — "16:57Z", with the device's time in
   brackets at the departure, the planned take-off and the planned arrival.
 - **Map: times from `frame/lib/time.js`** (`modules/maps/module.js`; SPEC, help ×4) — ETA, planned position and wind

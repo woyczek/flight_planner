@@ -1070,7 +1070,12 @@
       });
     });
     // .lnmperf : passages automatiques seulement avec une couche de données qui écrit (le lecteur provisoire lit)
-    if (lnmAuto && typeof reader.put === 'function') setTimeout(() => lnmperf().then(c => c.start()).catch(() => {}), 1500);
+    // suivi des .lnmperf : seulement quand un lanceur sert la page (il lui faut /__setup/lnmperf) ; ailleurs (téléphone,
+    // site), lnmperf.js n'est pas chargé
+    if (lnmAuto && typeof reader.put === 'function') setTimeout(async () => {
+      const here = await Promise.resolve(window.FrameData?.launcher?.detect?.()).catch(() => null);
+      if (here) lnmperf().then(c => c.start()).catch(() => {});
+    }, 1500);
     return api;
   }
 
