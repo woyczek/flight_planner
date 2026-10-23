@@ -1305,15 +1305,16 @@
     };
     const cur = await liveData.get(flightPath).catch(() => null);
     if (!flying(cur)) return;
-    await liveData.put(flightPath, {
-      ...cur,
+    // fusion commune du vol courant (frame/lib/current_flight.js) : relu juste avant, seul progress.actual remplacé
+    const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href);
+    await liveData.put(flightPath, CF.merge(cur, {
       progress: {
-        ...(cur.progress || {}),
         actual: a
-      },
-      by: 'frame',
-      updated_at: a.at
+      }
     }, {
+      progressKeys: ['actual'],
+      by: 'frame'
+    }), {
       quiet: true // toutes les 10 s : pas un commit à chaque fois, le passage de fond l'emporte
     });
   }

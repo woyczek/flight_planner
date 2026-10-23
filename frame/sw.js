@@ -16,7 +16,7 @@ const CACHE = 'sog-frame-v1',
     'store/frame_data.js', 'store/transport_github.js',
     'store/transport_launcher.js', 'aerodb/zones.js', 'aerodb/aircraft.js', 'aerodb/aerodb.js', 'aerodb/registry.js', 'aerodb/sheets.js',
     'aerodb/lnmperf.js', 'aerodb/aar.js',
-    'settings/admin_links.js', 'settings/config.js', 'settings/settings.js', 'lib/markdown.js', 'lib/dom.js',
+    'settings/admin_links.js', 'settings/config.js', 'settings/settings.js', 'lib/markdown.js', 'lib/dom.js', 'lib/current_flight.js',
     'help/help.js', 'help/roadmap.js', 'help/roadmap.json',
     'help/pilot.fr.md', 'help/pilot.en.md', 'help/pilot.de.md', 'help/pilot.es.md',
     // tutoriels (anglais et français ; leurs captures sont gardées au premier passage)

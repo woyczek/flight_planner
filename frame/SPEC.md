@@ -352,7 +352,8 @@ used alone:
     3. Nothing.
   - **Offline**: the GPS only.
   - **Writing**: only `progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source }` in the current flight (the
-    record, `by: 'frame'`), never fuel's or maps' fields.
+    record, `by: 'frame'`), never fuel's or maps' fields. It goes through the shared `merge` of
+    `frame/lib/current_flight.js`, on the record re-read just before.
     - This is the form maps reads: `at` is ISO, `source` is `xplane`, `lnm`, `gps`, `ivao` or `vatsim`, and `trackDeg` / `gsKt` may be
       null.
     - `trail` is optional and the frame does not write it: the map keeps its own 30-minute trail, and greys a position
@@ -527,6 +528,7 @@ touch only the element they are given.
 | `frame/lib/last_flight.js` | report | report, flightlog | "my last flight" on IVAO and VATSIM (the V2 launcher's route in JavaScript): the flights of the last 7 days, then one flight's details |
 | `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
+| `frame/lib/current_flight.js` | fuel | fuel, report, maps, the frame | `merge(stored, mine, { fields, progressKeys, by })`: each author of the current flight (`pilot/<trigram>/current_flight.json`) re-reads it and replaces only its own fields; `progress.actual` belongs to the frame (its position service writes it with `progressKeys: ['actual'], by: 'frame'`) |
 | `frame/lib/dom.js` | frame | any module (fuel, report, flightlog first) | `keepScroll(box, draw, { focus })`: draws without moving the scroll and without losing the field being typed in. It keeps the scroll position of every scrolling container above `box` (the page included) and holds `box`'s height during the draw. It puts the positions back after the draw and on the next two frames. It finds the focused field again (by `data-k` / `data-i`, or by `id`) and restores its value, its focus (`preventScroll`) and its selection. It replaces the three copies made in fuel, report and flightlog |
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |

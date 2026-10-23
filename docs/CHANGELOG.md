@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame: the actual position written through the shared current-flight merge** (`frame/app.js`, `frame/sw.js`;
+  SPEC § 3.2, § 3.9, DECISIONS) — the position service uses `frame/lib/current_flight.js` like fuel and report: only
+  `progress.actual` is replaced in the record re-read just before.
 - **fuel, report: the real position of the flight is no longer erased** (`frame/lib/current_flight.js`,
   `modules/fuel/module.js`, `modules/report/module.js`) — each module rewrites only its own part of the current
   flight; fuel no longer rewrites it after every position update.

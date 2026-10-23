@@ -497,3 +497,9 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - kept: the container's and the page's positions, the focus, the selection, and the value typed during the draw;
     - `{ focus: false }`: the focus is not restored;
     - no JavaScript error.
+- **23 Oct 2026 — The actual position written through `frame/lib/current_flight.js`** (fuel's fix b298763bc): fuel and
+  report now re-read the current flight and replace only their own fields, so `progress.actual` is no longer lost.
+  The frame's position service uses the same `merge` (`progressKeys: ['actual'], by: 'frame'`) instead of its own
+  fusion, which did the same thing. The record now also gets `schema: 1`, and `updated_at` is the time of the write.
+  The service worker keeps the file with the frame's shell. Test: lot 16's frame test with Fuel open, so that fuel
+  and the frame both write: `actual` stays.
