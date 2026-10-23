@@ -298,11 +298,18 @@
           "es": "Tooltip que sigue al ratón y desaparece, panel Capas (espacios por tipo, aerovías, radioayudas, puntos, VRP, obstáculos, MORA, ciudades, cuadrícula), «solo alrededor de la ruta» desactivable, «Modificar la ruta» llega al campo de ruta"
         },
         {
-          "state": "doing",
-          "fr": "Sélecteur de modes de carte validé (Auto, IFR bas, IFR haut, VFR, Topo, CAM) ; infobulle gardée 5 s, plus légère",
-          "en": "Validated map mode selector (Auto, IFR low, IFR high, VFR, Topo, CAM); tooltip kept 5 s, lighter",
-          "de": "Validierter Kartenmodus-Wähler (Auto, IFR tief, IFR hoch, VFR, Topo, CAM); Tooltip 5 s gehalten, leichter",
-          "es": "Selector de modos de mapa validado (Auto, IFR bajo, IFR alto, VFR, Topo, CAM); tooltip mantenido 5 s, más ligero"
+          "state": "done",
+          "fr": "Sélecteur de modes de carte (Auto, IFR bas, IFR haut, VFR, Topo relief ombré, CAM vol militaire) ; infobulle gardée 5 s, plus légère",
+          "en": "Map mode selector (Auto, IFR low, IFR high, VFR, Topo shaded relief, CAM military flight); tooltip kept 5 s, lighter",
+          "de": "Kartenmodus-Wähler (Auto, IFR tief, IFR hoch, VFR, Topo mit Schummerung, OAT Militärflug); Tooltip 5 s gehalten, leichter",
+          "es": "Selector de modos de mapa (Auto, IFR bajo, IFR alto, VFR, Topo relieve sombreado, CAM vuelo militar); tooltip mantenido 5 s, más ligero"
+        },
+        {
+          "state": "planned",
+          "fr": "Mode CAM : axes AAR (hippodromes) et tracks NAT dessinés sur la carte",
+          "en": "CAM mode: AAR tracks (racetracks) and NAT tracks drawn on the map",
+          "de": "OAT-Modus: AAR-Achsen (Racetracks) und NAT-Tracks auf der Karte",
+          "es": "Modo CAM: ejes AAR (hipódromos) y tracks NAT dibujados en el mapa"
         },
         {
           "state": "done",
