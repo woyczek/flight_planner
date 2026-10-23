@@ -91,3 +91,6 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     - in the dual view: one column, and the Map keeps its half (506 px each);
     - at 375 px: one column;
     - no horizontal scroll, no JavaScript error.
+- **23 Oct 2026 — Icon added by maps** (lot 5d, `13b32160b`): `wand-sparkles`, for the Auto mode of the map modes
+  selector. It follows the set's rules: paths only on the 24 px grid, no colour or stroke of its own. `map`, `plane`
+  and `chevron-down` were already there.

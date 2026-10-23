@@ -251,6 +251,8 @@ used alone:
   - Closing uses `history.back()` when only one frame screen was opened, otherwise it puts the module's address back
     (`replaceState`).
   - The "←" back link is not shown: this is not a passage between modules.
+  - The dual view belongs to modules only: on a frame screen the "Map" toggle is neither shown nor active, and the
+    screen takes the whole area. An open Map pane comes back with the module.
   - Choosing a module in the menu from a frame screen closes it and opens that module.
   - A frame screen opened directly by its address, with no module behind, shows alone as before.
 - **Back to the origin module**: a module opened by a passage from another shows "← <origin module>" in the header.
@@ -471,9 +473,10 @@ it; the others import it as it is.
 | `frame/lib/last_flight.js` | report | report, flightlog | "my last flight" on IVAO and VATSIM (the V2 launcher's route in JavaScript): the flights of the last 7 days, then one flight's details |
 | `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
-| `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu`), `svg(name)` |
+| `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
 | `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |
+| `frame/lib/route_text.js` | fuel | fuel, maps | the route text, pure: `tokenize`, `textFromTokens` (normalised "DEP PT1 UN869 PT2/F280 … ARR"), `textFromPoints` (the text rebuilt from edited points, airways kept between two unchanged neighbouring points), `icaoCoord` |
 | `frame/lib/website.js` | website | report, website | the flight's fields for the airline website, the `#defa=` address, the line to copy, the "→ Vol" bookmark (moved from `modules/report/website_handoff.js`) |
 
 ## 4. To come in the frame

@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame: no "Map" toggle on Settings or Help** (`frame/app.js`, `frame/frame.css`) — the dual view only applies to a
+  module: Settings, Help, the roadmap and the conflicts take the whole area, and the Map comes back with the module.
 - **report: saving the report ends the started flight** (`modules/report/module.js`; docs) — fuel goes back to
   planning and My flights drops "in progress"; the shutdown time is no longer taken from fuel.
 - **fuel: starting a flight redoes the weather and the quote for now** (`modules/fuel/module.js`; docs) — and says

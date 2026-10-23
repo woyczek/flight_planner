@@ -718,7 +718,8 @@
     const b = $('fPane'),
       id = pane?.id || entry?.pane || '',
       p = APP.modules.find(m => m.id === id),
-      show = !!(entry && p && wide.matches);
+      // seulement pour un module : jamais sur un écran du cadre (réglages, aide, feuille de route, conflits)
+      show = !!(entry && p && wide.matches && !over);
     if (b.hidden === show) b.hidden = !show;
     if (!show) return;
     const on = !!pane,
@@ -733,7 +734,7 @@
   /** Ouvre ou ferme le volet du module courant ; l'état est gardé pour ce module, l'adresse suit (sans remonter). */
   async function togglePane() {
     const entry = APP.modules.find(m => m.id === current?.id);
-    if (!entry) return;
+    if (!entry || over) return;
     const id = pane ? '' : entry.pane || pane?.id || '';
     if (pane) closePane();
     else if (id) await openPane(entry, id);
@@ -787,6 +788,7 @@
     renderMenu(current?.id || '');
     paintBack();
     paintToggles();
+    paintPaneButton(null);
     scrollTo(0, 0);
     if (id === 'help') return window.SogHelp?.screen(scr, helpCtx(), h.query);
     if (id === 'roadmap') return window.SogRoadmap?.screen(scr, helpCtx());
@@ -802,6 +804,7 @@
     view.classList.remove('f-over');
     paintBack();
     paintToggles();
+    paintPaneButton(APP.modules.find(m => m.id === current?.id) || null);
     if (!restore) return;
     if (o.sig !== mountSig()) return route(); // réglages changés : le module est remonté avec eux
     renderMenu(current?.id || '');

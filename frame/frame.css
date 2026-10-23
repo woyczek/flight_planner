@@ -100,8 +100,10 @@ body {
   height: calc(100vh - 57px);
   overflow: auto
 }
-/* écran du cadre par-dessus un module : le module (et son volet) masqué, pas démonté */
-.f-view.f-over {
+/* écran du cadre par-dessus un module : le module (et son volet) masqué, pas démonté ; l'écran prend toute la zone, vue
+   double comprise (.f-split : la grille à deux colonnes ne vaut que pour un module) */
+.f-view.f-over,
+.f-view.f-split.f-over {
   display: block
 }
 .f-view.f-over> :not(.f-screen) {

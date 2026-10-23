@@ -379,6 +379,13 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     the accessible name.
   - Tests at 375 px in French, English, German and Spanish, with and without the "←" link: the page is 375 px wide,
     the sync button 52 to 55 px. At 1280 px the full label is unchanged.
+- **23 Oct 2026 — No dual view on the frame's screens** (user bug: on Settings, the "Map" toggle changed the width of
+  the settings column without showing the map):
+  - The cause: the dual view's two-column grid (`.f-split`) won over the frame screen's `display: block`, and the
+    toggle stayed shown.
+  - Now the toggle is hidden and inactive while a frame screen is open, and the screen takes the whole area. The
+    pane, only hidden with its module, comes back with it.
+  - Test at 1280 px: Fuel with the Map → "⚙" (settings 1023 px wide, no toggle) → "⚙" (Fuel with its Map).
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

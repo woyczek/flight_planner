@@ -82,7 +82,7 @@ what depends on the device stays in `@media`: the menu drawer, the header, hidin
 
 ## 5. Icons
 
-- `frame/lib/icons.js` holds the 53 line icons of V2 plus `menu`: a 24 px grid, stroke 2, `currentColor`.
+- `frame/lib/icons.js` holds the 53 line icons of V2 plus `menu` and `wand-sparkles` (maps: the Auto map mode): a 24 px grid, stroke 2, `currentColor`.
 - API: `svg(name, { size, title })`, `has`, `names`. An icon is decorative unless it has a `title`.
 - The frame draws the menu verbs (`APP.modules[].icon` is an icon name) and the header's buttons with them.
 - The textured V2 sets (brass…) are not carried over.
