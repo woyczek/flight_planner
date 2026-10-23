@@ -340,7 +340,7 @@
           "es": "Editar la ruta en el mapa y el perfil: arrastrar un punto (imantado a los fijos), tocar un fijo para insertarlo, quitar, altitud arrastrando, modo «editar» explícito en el teléfono, deshacer"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Flèches de vent au niveau du vol le long de la route (une par point, une tous les 50 NM) ; passe de lisibilité de la carte (épaisseurs, polices, contraste la nuit)",
           "en": "Wind barbs at flight level along the route (one per point, one every 50 NM); map readability pass (line weights, fonts, night contrast)",
           "de": "Windfiedern in Flughöhe entlang der Route (eine je Punkt, eine alle 50 NM); Lesbarkeitsdurchgang der Karte (Strichstärken, Schriften, Nachtkontrast)",
