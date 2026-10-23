@@ -279,14 +279,15 @@ rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
 **Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de giro se rodean de un
 círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
-vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» junto a «Editar» y luego
-el lugar deseado (o mantenga pulsado medio segundo): sobre un fijo, una radioayuda o un aeródromo se coloca allí, en
-otro lugar es un punto libre; se añade al tramo más cercano. Un toque simple no añade nada: muestra la burbuja. Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la
-llegada no se mueven aquí. En el perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto
-que abre ese tramo, en pasos de FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+»
-hacen lo mismo. «Deshacer» deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el
-cálculo; el perfil sigue. «Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en
-texto, «Editar la ruta» abre el paso Ruta de Combustible.
+vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» junto a «Editar»
+y luego el lugar deseado (o mantenga pulsado medio segundo): sobre un fijo, una radioayuda o un aeródromo se coloca
+allí, en otro lugar es un punto libre; se añade al tramo más cercano. Un toque simple no añade nada: muestra la burbuja.
+Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la llegada no se mueven aquí. En el
+perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto que abre ese tramo, en pasos de
+FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+» hacen lo mismo. «Deshacer»
+deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el cálculo; el perfil sigue.
+«Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, «Editar la ruta» abre
+el paso Ruta de Combustible.
 
 ## Sin conexión
 
@@ -318,7 +319,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: ca2540d7c632 -->
+<!-- fr: 103b942e1640 -->
 
 <!-- chapter: report -->
 # Informe

@@ -270,14 +270,14 @@ profile then shows the mission's.
 
 **Editing the route on the map.** Tap “Edit” at the top right of the map: the waypoints get a circle. Drag a point onto
 a fix, a beacon or an airfield: it settles there (dropped elsewhere, it becomes a free point named by its coordinates,
-such as 4530N00030E). To add a point, tap “+” beside “Edit”, then tap the place
-(or keep pressing for half a second): on a fix, a beacon or an airfield it settles there, elsewhere it is a free point;
-it is added to the nearest segment. A simple tap adds nothing: it shows the tooltip. Tap a route point: its
-card gives its level and offers “Remove”. Departure and arrival do not move here. On the profile, drag a level up or
-down: the level changes from the point that opens that segment, in steps of FL10 (on the first segment, it is the
-flight's level); in a point's card, “−” and “+” do the same. “Undo” takes back the last gesture. Each change is saved in
-the flight at once, and Fuel redoes the quote; the profile follows. “Done” closes the mode, and the map moves under your
-finger again. To type the route as text, “Edit the route” opens Fuel's Route step.
+such as 4530N00030E). To add a point, tap “+” beside “Edit”, then tap the place you want (or keep pressing for half a
+second): on a fix, a beacon or an airfield it settles there, elsewhere it is a free point; it is added to the nearest
+segment. A simple tap adds nothing: it shows the bubble. Tap a route point: its card gives its level and offers
+“Remove”. Departure and arrival do not move here. On the profile, drag a level up or down: the level changes from the
+point that opens that segment, in steps of FL10 (on the first segment, it is the flight's level); in a point's card, “−”
+and “+” do the same. “Undo” takes back the last gesture. Each change is saved in the flight at once, and Fuel redoes the
+quote; the profile follows. “Done” closes the mode, and the map moves under your finger again. To type the route as
+text, “Edit the route” opens Fuel's Route step.
 
 ## Without network
 
@@ -309,7 +309,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: ca2540d7c632 -->
+<!-- fr: 103b942e1640 -->
 
 <!-- chapter: report -->
 # Report
