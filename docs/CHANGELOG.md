@@ -10,6 +10,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+### Fixed
+
+- **Map studio and Flight maps: every town name twice on an OpenFreeMap or VersaTiles background**
+  (`apps/cpco/map_parser.html`, `apps/planner/map_planner.html` rebuilt) — with "Town labels" ticked, the studio wrote its
+  own names over the place names of the vector background. The background's place layers (`place`, `place_labels`) are
+  now hidden while "Town labels" is ticked, and shown again when it is not.
+
 ## [5.4.0] — 2026-10-23
 
 Last release of the V2 line, before the V3 Pilot application. The suite now runs without the launcher: the data
