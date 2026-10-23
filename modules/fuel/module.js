@@ -1319,7 +1319,7 @@ function renderPlanBody() {
       <div class="f-list fu-pts" data-pts></div>
       <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
       <p class="f-muted">${esc(tt(TX.ptsHint))}</p></details>
-      <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap">${svg('map')} ${esc(tt(TX.showMap))}</button></div>
+      <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap"${S.ctx.layout?.with === 'maps' ? ' class="fu-hide"' : ''}>${svg('map')} ${esc(tt(TX.showMap))}</button></div>
     </div>`)}
   ${sec(2, `<div class="f-card" data-block="level"><h2>${esc(tt(TX.stepNames[2]))}</h2>
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
@@ -3698,6 +3698,10 @@ export async function mount(el, ctx) {
     if (S.view === 'plan') S.body.contains(document.activeElement) ? refresh() : renderPlan();
     if (f.by && f.by !== 'fuel') adoptForeignFlight();
   }));
+  // vue double : « Afficher la carte » masqué tant que la carte est à côté (ctx.layout du cadre, suivi par frame-layout)
+  const onLayout = () => S?.body?.querySelector('[data-do="showmap"]')?.classList.toggle('fu-hide', S.ctx.layout?.with === 'maps');
+  window.addEventListener('frame-layout', onLayout);
+  S.stops.push(() => window.removeEventListener('frame-layout', onLayout));
   // dessins à la largeur de l'écran
   const ro = new ResizeObserver(() => {
     clearTimeout(S.roTimer);

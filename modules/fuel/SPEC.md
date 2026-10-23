@@ -242,7 +242,8 @@ inside the module, switched by two buttons at the top, the last one kept on the 
   it is wide, without bar or "Next". The sticky result stays under every step; a ✓ marks a filled step (aerodromes,
   aircraft and level; route resolved or typed; weather read or wind given; fuel quoted; flight started). The step is
   kept in `cache/fuel/ui.json`. Everything recomputes live (route → weather → quote, no "redo" button). "Show the
-  map": `#fuel?with=maps` from 980 px (the frame's dual view), else `#maps?from=fuel`. Arriving with
+  map": `#fuel?with=maps` from 980 px (the frame's dual view), else `#maps?from=fuel`; hidden while the map is beside fuel
+  (`ctx.layout.with === 'maps'`, followed through the frame's `frame-layout` event). Arriving with
   `ctx.query.focus === 'route'` (the Map's "Edit the route", `#fuel?from=maps&focus=route`) opens step 2 with the
   route field focused. The blocks below keep their former description:
   1. **Aircraft** (since 23 Oct 2026, aerodb's registry): one line — the chosen aircraft (name, registration,

@@ -4,6 +4,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — "Show the map" hidden beside the map** (end-to-end pass, Simplification's decision (b), frame
+  lot 22): drawn hidden when `ctx.layout.with === 'maps'`, and toggled on the frame's `frame-layout` event (pane
+  opened or closed, without remounting fuel). Checked on 8804 at 1280 px: hidden in `#fuel?with=maps`, shown after
+  "Close the Map pane", hidden again when the button reopens the pane.
 - **23 Oct 2026 — times in UTC** (suite rule, Simplification's decision (c), `frame/lib/time.js` of frame lot 22):
   every time fuel shows is UTC with "Z" (`fmtZ`): the planned times of the route points, the taxi end, the forecast
   aloft ("for 17:00Z (12:00Z run), read on 23/10/2026 16:57Z"), the cached weather; the device's time in brackets
