@@ -634,6 +634,9 @@ Drei Möglichkeiten:
   `data_avant_<Datum>/` beiseitegelegt, dann einfacher Klon. Ein anderes Repository als das konfigurierte wird im
   Fenster des Starters bestätigt; schlägt etwas fehl, bleibt `data/` unverändert. Benutzername und Passwort: nur für
   eine `https://`-Adresse, die Git noch nicht kennt.
+  Die Seite warnt, bevor sich das Bestätigungsfenster öffnet (manchmal hinter dem Browser), und sagt, wenn es nicht
+  gelingt, warum: abgelehnt (neuer Versuch nach 30 s möglich), ein anderes Fenster bereits offen, oder auf diesem Rechner
+  kann kein Fenster geöffnet werden.
 - Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
 
 ### 3 Fluggesellschaft

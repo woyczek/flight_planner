@@ -657,17 +657,19 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             url = str(a.get('url') or '').strip()
-            r = {'check': data_sync.check_remote(url)}
+            # needsConfirm : ni le dépôt actuel ni celui de la configuration — la page prévient avant « Enregistrer »
+            r = {'check': data_sync.check_remote(url),
+                 'needsConfirm': not any(data_sync.same_repo(url, u) for u in (data_sync.remote_info(DATA)['url'], data_repo_url()))}
             if a.get('save'):
                 saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
                 if saved.get('refused'):
                     # autre dépôt : confirmé par l'utilisateur dans une fenêtre du système (ancienne et nouvelle adresse),
                     # hors du navigateur — un script de la page ne peut ni la voir ni y répondre
-                    if confirm_remote(saved.get('current') or '', url):
+                    ok, why = confirm_remote(saved.get('current') or '', url)
+                    if ok:
                         saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url(), url])
                     else:
-                        saved['message'] = ('Changement de dépôt non confirmé dans la fenêtre du lanceur (refusé, fermé, '
-                                            'ou fenêtre impossible à ouvrir sur cet ordinateur) : dépôt inchangé.')
+                        saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
                 r['saved'] = saved
             return self._json(r)
         if path == '/__setup/sync':
@@ -772,9 +774,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'ok': False, 'message': 'Identifiant ou mot de passe invalide (retour à la ligne).'})
             if not data_sync.REMOTE_RE.match(url):
                 return self._json({'ok': False, 'message': data_sync.REMOTE_HELP})
-            if not data_sync.same_repo(url, data_repo_url()) and not confirm_adopt(url):
-                return self._json({'ok': False, 'message': 'Reprise non confirmée dans la fenêtre du lanceur (refusée, fermée, ou '
-                                                           'fenêtre impossible à ouvrir sur cet ordinateur) : data/ inchangé.'})
+            # needsConfirm : autre dépôt que celui de la configuration ; dry : la page le demande avant le clic, rien n'est fait
+            need = not data_sync.same_repo(url, data_repo_url())
+            if a.get('dry'):
+                return self._json({'ok': True, 'dry': True, 'needsConfirm': need, 'state': data_sync.data_state(DATA)})
+            if need:
+                ok, why = confirm_adopt(url)
+                if not ok:
+                    return self._json({'ok': False, 'needsConfirm': True, 'message': f'Reprise non confirmée : {why} data/ inchangé.'})
             git = data_sync.git_exe()
             if git and run([git, 'lfs', 'version'], capture_output=True) == 0:
                 run([git, 'lfs', 'install'], capture_output=True)
@@ -792,7 +799,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                     index_availability()
                     index_users()
             sync_status_reset()
-            return self._json(r)
+            return self._json({**r, 'needsConfirm': need})
         if path == '/__setup/upload':
             kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
             with tempfile.NamedTemporaryFile(delete=False, suffix='.upload') as f:
@@ -874,71 +881,88 @@ def tools_inventory():
 
 # ---- confirmation hors du navigateur : fenêtre Oui / Non du système, ouverte par le lanceur
 CONFIRM_LOCK = threading.Lock()
-_confirm = {'until': 0.0}  # après un « Non » : pas de nouvelle fenêtre pendant 30 s (une page piégée insisterait)
+_confirm = {'until': 0.0, 'no_at': 0.0}  # après un « Non » : pas de nouvelle fenêtre pendant 30 s (une page piégée insisterait)
+CONFIRM_PAUSE = 30
 
 
-def confirm_box(title, text):
-    """Fenêtre Oui / Non du système (« Non » par défaut), au premier plan : une page web ne peut ni la voir ni y
-    répondre. Vrai seulement sur « Oui » ; faux sur « Non », si elle est fermée, si une autre est déjà ouverte ou si
-    aucune fenêtre ne peut s'ouvrir (Linux sans zenity)."""
+def confirm_status(title, text):
+    """Fenêtre Oui / Non du système (« Non » par défaut), au premier plan et modale pour tout le système : une page web ne
+    peut ni la voir ni y répondre. Rend 'yes', 'no' (Non, fermée, sans réponse en 15 min), 'busy' (une autre fenêtre de
+    confirmation est déjà ouverte) ou 'none' (aucune fenêtre ne peut s'ouvrir : Linux sans zenity, session sans bureau)."""
     if not CONFIRM_LOCK.acquire(blocking=False):
-        return False
+        return 'busy'
     try:
+        say('  Fenêtre de confirmation ouverte sur cet ordinateur : répondez Oui ou Non. / Confirmation window open: answer Yes or No.')
         if sys.platform == 'win32':
             import ctypes
-            # MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND | MB_TOPMOST ; IDYES = 6
-            return ctypes.windll.user32.MessageBoxW(None, text, title, 0x4 | 0x30 | 0x100 | 0x10000 | 0x40000) == 6
+            # MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SYSTEMMODAL | MB_SETFOREGROUND | MB_TOPMOST ; IDYES = 6, 0 : échec
+            r = ctypes.windll.user32.MessageBoxW(None, text, title, 0x4 | 0x30 | 0x100 | 0x1000 | 0x10000 | 0x40000)
+            return 'yes' if r == 6 else 'none' if r == 0 else 'no'
         if sys.platform == 'darwin':
             r = subprocess.run(['osascript', '-e', 'on run argv', '-e',
                                 'display dialog (item 2 of argv) with title (item 1 of argv) buttons {"Non", "Oui"} '
                                 'default button "Non" with icon caution', '-e', 'end run', title, text],
                                capture_output=True, text=True, timeout=900)
-            return r.returncode == 0 and 'Oui' in r.stdout
+            return ('yes' if 'Oui' in r.stdout else 'no') if r.returncode == 0 else 'no' if '-128' in r.stderr else 'none'
         zenity = shutil.which('zenity')
         if zenity:
             r = subprocess.run([zenity, '--question', '--no-markup', '--default-cancel', '--title', title, '--text', text,
                                 '--ok-label', 'Oui', '--cancel-label', 'Non'], capture_output=True, timeout=900)
-            return r.returncode == 0
-        return False
+            return 'yes' if r.returncode == 0 else 'no' if r.returncode in (1, 5) else 'none'
+        return 'none'
+    except subprocess.TimeoutExpired:
+        return 'no'
     except (OSError, AttributeError, subprocess.SubprocessError):
-        return False
+        return 'none'
     finally:
         CONFIRM_LOCK.release()
 
 
+def confirm_box(title, text):
+    """Vrai seulement sur « Oui » (confirm_status)."""
+    return confirm_status(title, text) == 'yes'
+
+
+def confirm_ask(title, text, what):
+    """Confirmation dans la fenêtre du lanceur, avec la pause après un refus ; rend (ok, raison en clair si non)."""
+    left = _confirm['until'] - time.time()
+    if left > 0:
+        return False, (f'Refusée il y a {int(time.time() - _confirm["no_at"])} s dans la fenêtre du lanceur : nouvel essai '
+                       f'possible dans {int(left) + 1} s.')
+    st = confirm_status(title, text)
+    say(f'  {what} — ' + {'yes': 'confirmé', 'no': 'refusé', 'busy': 'autre fenêtre déjà ouverte', 'none': 'aucune fenêtre'}[st])
+    if st == 'yes':
+        return True, ''
+    if st == 'no':
+        _confirm.update(until=time.time() + CONFIRM_PAUSE, no_at=time.time())
+        return False, f'Refusée ou fermée dans la fenêtre du lanceur (nouvel essai possible dans {CONFIRM_PAUSE} s).'
+    if st == 'busy':
+        return False, 'Une autre fenêtre de confirmation est déjà ouverte sur cet ordinateur : répondez-lui d’abord, puis réessayez.'
+    return False, ('Aucune fenêtre de confirmation ne peut s’ouvrir sur cet ordinateur (Linux : installer zenity ; session sans '
+                   'bureau) : seul le dépôt de la configuration (sources.dataRepo) est admis sans confirmation.')
+
+
 def confirm_remote(old, new):
-    """Changement du dépôt de synchronisation de data/ confirmé par l'utilisateur (fenêtre du lanceur)."""
-    if time.time() < _confirm['until']:
-        return False
-    ok = confirm_box('SO Group — dépôt des données / data repository', (
+    """Changement du dépôt de synchronisation de data/ confirmé par l'utilisateur (fenêtre du lanceur) ; (ok, raison)."""
+    return confirm_ask('SO Group — dépôt des données / data repository', (
         'Changer le dépôt de synchronisation des données ?\n\n'
         f'Actuel : {old or "(aucun)"}\nNouveau : {new}\n\n'
         'Toutes les données de data/ partiront vers le nouveau dépôt au prochain « Synchroniser ». '
         'Si vous n’avez pas demandé ce changement, répondez Non.\n\n'
         'Change the data synchronisation repository? All data in data/ will be sent to the new repository at the next '
-        '“Synchronise”. If you did not ask for this change, answer No.'))
-    if not ok:
-        _confirm['until'] = time.time() + 30
-    say(f'  Dépôt de synchronisation : {new} — ' + ('confirmé' if ok else 'non confirmé'))
-    return ok
+        '“Synchronise”. If you did not ask for this change, answer No.'), f'Dépôt de synchronisation : {new}')
 
 
 def confirm_adopt(url):
     """Reprise de data/ dans un autre dépôt que celui de la configuration, confirmée par l'utilisateur (fenêtre du
-    lanceur)."""
-    if time.time() < _confirm['until']:
-        return False
-    ok = confirm_box('SO Group — dépôt des données / data repository', (
+    lanceur) ; (ok, raison)."""
+    return confirm_ask('SO Group — dépôt des données / data repository', (
         'Faire du dossier data/ de ce poste un clone de ce dépôt ?\n\n'
         f'Dépôt : {url}\n\n'
         'Les fiches du poste seront gardées dans un commit local, puis partiront vers ce dépôt au prochain « Synchroniser ». '
         'Si vous n’avez pas demandé cette reprise, répondez Non.\n\n'
         'Make this computer’s data/ folder a clone of this repository? Its records are kept in a local commit, then sent to '
-        'this repository at the next “Synchronise”. If you did not ask for this, answer No.'))
-    if not ok:
-        _confirm['until'] = time.time() + 30
-    say(f'  Reprise de data/ dans le dépôt {url} — ' + ('confirmée' if ok else 'non confirmée'))
-    return ok
+        'this repository at the next “Synchronise”. If you did not ask for this, answer No.'), f'Reprise de data/ dans le dépôt {url}')
 
 
 _patterns = []
@@ -1270,7 +1294,7 @@ def relax_set(on):
         'launcher settings stay closed to other websites.'))
     say('  Ouverture depuis un autre site : ' + ('autorisée jusqu’à la fermeture du lanceur' if ok else 'non confirmée'))
     if not ok:
-        _confirm['until'] = time.time() + 30
+        _confirm.update(until=time.time() + 30, no_at=time.time())
         return {'ok': False, 'relaxNav': False, 'message': 'Non confirmé dans la fenêtre du lanceur.'}
     RELAX['nav'] = True
     return {'ok': True, 'relaxNav': True}
@@ -1293,7 +1317,7 @@ def site_allow(url):
         'this, answer No.'))
     say(f'  Site autorisé : {o} — ' + ('confirmé' if ok else 'non confirmé'))
     if not ok:
-        _confirm['until'] = time.time() + 30
+        _confirm.update(until=time.time() + 30, no_at=time.time())
         return {'ok': False, 'origin': o, 'message': 'Ajout non confirmé dans la fenêtre du lanceur.'}
     cur = _read_json(SITES_FILE)
     cur['sites'] = sorted({*user_sites(), o})

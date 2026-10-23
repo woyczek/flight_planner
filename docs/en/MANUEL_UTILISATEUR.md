@@ -628,6 +628,8 @@ Three options:
   folder without this computer’s data: set aside in `data_avant_<date>/`, then a plain clone. A repository other than
   the configured one is confirmed in the launcher’s window; if anything fails, `data/` stays as it was. Username and
   password: only for an `https://` address Git does not know yet.
+  The page warns before the confirmation window opens (sometimes behind the browser) and, if it does not succeed, says
+  why: refused (new try possible 30 s later), another window already open, or no window possible on this computer.
 - Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
 
 ### 3 Airline

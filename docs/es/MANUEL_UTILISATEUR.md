@@ -630,6 +630,9 @@ Tres posibilidades:
   «Sincronizar». Conjunto de prueba o carpeta sin datos del equipo: apartado en `data_avant_<fecha>/` y luego clon
   simple. Un repositorio distinto del configurado se confirma en la ventana del lanzador; si algo falla, `data/` queda
   como estaba. Usuario y contraseña: solo para una dirección `https://` que Git aún no conoce.
+  La página avisa antes de que se abra la ventana de confirmación (a veces detrás del navegador) y, si no prospera, dice
+  por qué: rechazada (nuevo intento posible 30 s después), otra ventana ya abierta, o ninguna ventana posible en este
+  equipo.
 - Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
 
 ### 3 Aerolínea

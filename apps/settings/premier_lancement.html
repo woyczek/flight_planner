@@ -1241,6 +1241,13 @@
       if (c.ok && repo?.branch && !(c.branches || []).includes(repo.branch)) text += ` La branche « ${repo.branch} » n’y est pas encore : la première synchronisation la créera.`;
       if (!c.ok) text +=
         '\nCe n’est pas bloquant : la suite fonctionne sans synchronisation ; à régler avant d’utiliser le bouton « Synchroniser ».';
+      // autre dépôt que l'actuel et celui de la configuration : « Enregistrer » demandera une confirmation au lanceur
+      if (r.needsConfirm && !save) text += L(
+        ' Une fenêtre de confirmation va s’ouvrir sur l’ordinateur où tourne le lanceur (peut-être derrière le navigateur) : répondez « Oui ».',
+        ' A confirmation window will open on the computer running the launcher (maybe behind the browser): answer “Yes”.',
+        ' Auf dem Computer, auf dem der Starter läuft, öffnet sich ein Bestätigungsfenster (vielleicht hinter dem Browser): mit „Ja“ antworten.',
+        ' Se abrirá una ventana de confirmación en el equipo donde se ejecuta el lanzador (quizá detrás del navegador): responda «Sí».'
+      );
       if (r.saved) text = `${r.saved.message}\n${text}`;
       msg('plSyncMsg', text, r.saved && !r.saved.ok ? 'err' : c.ok ? 'ok' : 'warn');
     } catch (e) {
@@ -1278,7 +1285,17 @@
       'Username and password (or token): both, or neither.', 'Benutzername und Passwort (oder Token): beide oder keines.',
       'Usuario y contraseña (o token): los dos o ninguno.'), 'err');
     $('plAdoptGo').disabled = true;
-    msg('plSyncMsg', L(
+    // autre dépôt que celui de la configuration : la page le dit avant que la fenêtre du lanceur s'ouvre
+    const dry = await post('adopt', {
+      url,
+      dry: true
+    }).catch(() => null);
+    msg('plSyncMsg', (dry?.needsConfirm ? L(
+      'Une fenêtre de confirmation va s’ouvrir sur l’ordinateur où tourne le lanceur (peut-être derrière le navigateur) : répondez « Oui ».',
+      'A confirmation window will open on the computer running the launcher (maybe behind the browser): answer “Yes”.',
+      'Auf dem Computer, auf dem der Starter läuft, öffnet sich ein Bestätigungsfenster (vielleicht hinter dem Browser): mit „Ja“ antworten.',
+      'Se abrirá una ventana de confirmación en el equipo donde se ejecuta el lanzador (quizá detrás del navegador): responda «Sí».'
+    ) + ' ' : '') + L(
       'Reprise en cours… (clone du dépôt, puis fusion des fichiers du poste ; quelques minutes la première fois). Autre dépôt que celui de la configuration : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
       'Taking over… (repository clone, then merge of this computer’s files; a few minutes the first time). Another repository than the configured one: confirm in the window the launcher opens on the computer.',
       'Übernahme läuft… (Klon des Repositorys, dann Zusammenführung der Dateien dieses Rechners; beim ersten Mal einige Minuten). Anderes Repository als das konfigurierte: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',

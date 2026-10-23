@@ -652,6 +652,9 @@ Trois possibilités :
   dossier sans données du poste : mis de côté dans `data_avant_<date>/`, puis simple clone. Un autre dépôt que celui de
   la configuration se confirme dans la fenêtre du lanceur ; en cas d'échec, `data/` reste tel quel. Identifiant et mot de
   passe : seulement pour une adresse `https://` que Git ne connaît pas encore.
+  La page prévient avant que la fenêtre de confirmation s'ouvre (parfois derrière le navigateur) et, si elle n'aboutit
+  pas, dit pourquoi : refusée (nouvel essai possible 30 s plus tard), une autre fenêtre déjà ouverte, ou aucune fenêtre
+  possible sur ce poste.
 - Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site de la compagnie, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
 
 ### 3 Compagnie

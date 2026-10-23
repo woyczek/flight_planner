@@ -173,6 +173,12 @@ sequenceDiagram
     clone (put back if the clone fails);
   - same address rules as `sync-remote`: the configured repository is accepted, another one is confirmed in the
     launcher's window. Try it with `python tools/data_sync.py --essai`.
+- **Confirmation window** (`confirm_status` / `confirm_ask` in `tools/launch.py`): system-modal, on top, "No" by default,
+  announced in the launcher's console. Its outcomes are told apart and sent back in plain words: refused or closed (no
+  new window for 30 s, the message says how long is left), another confirmation window already open, no window possible on
+  this computer (Linux without zenity, session without a desktop). `POST /__setup/sync-remote` and `/__setup/adopt`
+  answer `needsConfirm` when the address is neither the current nor the configured repository;
+  `POST /__setup/adopt { url, dry: true }` only answers that (and `state`), so the page warns before the window opens.
 - **Workstation without git or write access**: choose as data folder a **shared folder** (Synology,
   OneDrive…) synchronised by a workstation that has git (the Centre, for example); its writes land in that folder, and the
   equipped workstation pushes them to the repository. This is what the central server will make unnecessary: an account will be enough

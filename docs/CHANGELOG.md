@@ -291,6 +291,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Launcher confirmation window: "not confirmed" without saying why** (`tools/launch.py`,
+  `apps/settings/premier_lancement.html`) — taking `data/` into a repository other than the configured one (or changing
+  the synchronisation repository) answered "refused, closed, or window impossible to open" whatever happened. The window
+  is now system-modal and announced in the launcher's console, and the page gets the actual reason: refused (with the
+  seconds left before a new try), another confirmation window already open, or no window possible on this computer. The
+  routes answer `needsConfirm`, and the page warns before the window opens (`dry` call for the take-over, "Check" for the
+  repository address). User manual ×4, `docs/technique/SYNCHRONISATION.md` § 9.
 - **First run in GitHub mode: step 1 "Folders" stayed to do, with a button that only refused**
   (`apps/settings/premier_lancement.html`) — with My profile › Data access set, the data come from the GitHub repository
   and there is no folder to choose: the step is now "not applicable" (–) in the rail, its badge and the checklist, the
