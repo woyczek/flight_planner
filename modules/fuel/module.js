@@ -162,7 +162,7 @@ const TX = {
   ],
   alt: ['Alt.', 'Alt.', 'Höhe', 'Alt.'],
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
-  openIn: ['Ouvrir dans ▾', 'Open in ▾', 'Öffnen in ▾', 'Abrir en ▾'],
+  openIn: ['Ouvrir dans', 'Open in', 'Öffnen in', 'Abrir en'],
   openInHint: ['Nouvel onglet ; rien n’est envoyé qui ne soit déjà dans le vol.',
     'New tab; nothing is sent that is not already in the flight.',
     'Neuer Tab; nichts wird gesendet, was nicht schon im Flug steht.', 'Pestaña nueva; no se envía nada que no esté ya en el vuelo.'
@@ -770,53 +770,34 @@ function climbSvg(G, box) {
 }
 
 // ---------------------------------------------------------------- styles du module (jetons du cadre)
+// placement seulement (primitives et jetons du cadre : frame/design/INTEGRATION.md) ; les dessins prennent leurs
+// couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
-[data-module="fuel"]{--fu-gap:var(--sog-gap)}
-[data-module="fuel"] h1{font-size:1.25rem;margin:0 0 10px}
-[data-module="fuel"] h2{font-size:1rem;margin:0 0 6px}
-[data-module="fuel"] .fu-tabs{margin-bottom:var(--sog-gap)}
-[data-module="fuel"] .fu-tabs button[aria-pressed="true"]{background:var(--sog-accent);color:var(--sog-accent-ink);border-color:var(--sog-accent)}
-[data-module="fuel"] .fu-grid3{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
-[data-module="fuel"] .fu-grid3 .f-field{margin:0}
-[data-module="fuel"] .f-field input,[data-module="fuel"] .f-field select,[data-module="fuel"] .f-field textarea{width:100%;min-width:0}
-[data-module="fuel"] .f-field{font-size:.9em}
+[data-module="fuel"] .fu-g3{--f-min:96px}
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
+[data-module="fuel"] .fu-hide{display:none}
 [data-module="fuel"] .fu-svg{display:block;max-width:100%;height:auto;touch-action:manipulation}
 [data-module="fuel"] .fu-svg text{font-size:11px;fill:var(--sog-muted)}
-[data-module="fuel"] .fu-grid{stroke:var(--sog-border);stroke-width:1}
-[data-module="fuel"] .fu-gap{fill:var(--sog-warn);opacity:.12}
-[data-module="fuel"] .fu-ceil{stroke:var(--sog-warn);stroke-dasharray:2 3}
-[data-module="fuel"] .fu-plan{stroke:var(--sog-accent);stroke-width:2;stroke-dasharray:6 4}
-[data-module="fuel"] .fu-line-f{fill:none;stroke:var(--sog-fg);stroke-width:2.2}
-[data-module="fuel"] .fu-line-t{fill:none;stroke:var(--sog-muted);stroke-width:1.6;stroke-dasharray:5 4}
+[data-module="fuel"] .fu-grid{stroke:var(--sog-chart-grid);stroke-width:1}
+[data-module="fuel"] .fu-gap{fill:var(--sog-chart-5);opacity:.12}
+[data-module="fuel"] .fu-ceil{stroke:var(--sog-chart-5);stroke-dasharray:2 3}
+[data-module="fuel"] .fu-plan{stroke:var(--sog-fg);stroke-width:2;stroke-dasharray:6 4}
+[data-module="fuel"] .fu-line-f{fill:none;stroke:var(--sog-chart-1);stroke-width:2.2}
+[data-module="fuel"] .fu-line-t{fill:none;stroke:var(--sog-chart-2);stroke-width:1.6;stroke-dasharray:5 4}
 [data-module="fuel"] .fu-ext{stroke-dasharray:1 4;opacity:.7}
-[data-module="fuel"] .fu-best{fill:var(--sog-ok)}
-[data-module="fuel"] .fu-fast{fill:var(--sog-warn)}
-[data-module="fuel"] .fu-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.9em;margin-top:6px}
-[data-module="fuel"] .fu-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
-[data-module="fuel"] .fu-result{position:sticky;bottom:0;z-index:2;border-color:var(--sog-accent);box-shadow:0 -4px 14px #0002}
-[data-module="fuel"] .fu-result .fu-big{font-size:1.5rem;font-weight:700;line-height:1.2}
-[data-module="fuel"] .fu-kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px;margin-top:4px}
-[data-module="fuel"] .fu-kv b{display:block;font-size:1.05em}
-[data-module="fuel"] details.f-card>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
-[data-module="fuel"] .fu-table{width:100%;border-collapse:collapse;font-size:.9em}
-[data-module="fuel"] .fu-table td,[data-module="fuel"] .fu-table th{padding:5px 6px;border-bottom:1px solid var(--sog-border);text-align:left;vertical-align:top}
-[data-module="fuel"] .fu-table td.n,[data-module="fuel"] .fu-table th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-[data-module="fuel"] .fu-scroll{overflow-x:auto}
-[data-module="fuel"] .fu-warn{color:var(--sog-warn)}
-[data-module="fuel"] .fu-sheet{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
-[data-module="fuel"] .fu-sheet .f-row{justify-content:flex-end}
-[data-module="fuel"] .fu-review td input{width:20px;height:20px;min-height:0}
-[data-module="fuel"] .fu-hide{display:none}
-[data-module="fuel"] .fu-links{display:grid;gap:4px}
-[data-module="fuel"] .fu-links a,[data-module="fuel"] .fu-links span{display:block;min-height:var(--sog-touch);padding:6px 10px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);text-decoration:none;color:inherit}
-[data-module="fuel"] .fu-links small{display:block;color:var(--sog-muted);font-size:.8em}
+[data-module="fuel"] .fu-best{fill:var(--sog-chart-3)}
+[data-module="fuel"] .fu-fast{fill:var(--sog-chart-4)}
+[data-module="fuel"] .fu-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
+[data-module="fuel"] .fu-legend .f-dot{margin-right:6px}
+[data-module="fuel"] .fu-legend .fu-sq{border-radius:0}
+[data-module="fuel"] .fu-result{display:block}
+[data-module="fuel"] .fu-big{font-size:var(--sog-h1);font-weight:700;line-height:1.2}
+[data-module="fuel"] .fu-result .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr));margin:6px 0 0}
+[data-module="fuel"] .fu-result .f-tiles b{font-size:var(--sog-h3)}
+[data-module="fuel"] .fu-links .f-item{display:block}
+[data-module="fuel"] .fu-links small{display:block}
 [data-module="fuel"] .fu-links .fu-off{opacity:.55}
-@media (min-width: 980px){
-  [data-module="fuel"] .fu-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sog-gap);align-items:start}
-  [data-module="fuel"] .fu-top>.f-card{margin-bottom:0}
-  [data-module="fuel"] .fu-top+*{margin-top:var(--sog-gap)}
-}`;
+[data-module="fuel"] .f-list .f-row{justify-content:flex-end}`;
 
 // ---------------------------------------------------------------- écran Préparer
 /** Dessine l'écran Préparer (champs une fois ; résultats redessinés par refresh). */
@@ -827,7 +808,7 @@ function renderPlan() {
     opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
     fld = (key, label, val, attrs = '', vals) => `<label class="f-field">${esc(tt(label, vals))}<input data-k="${key}" value="${esc(val ?? '')}" ${attrs}></label>`;
   S.body.innerHTML = `
-  <div class="fu-top">
+  <div class="f-cols">
     <div class="f-card" data-block="aircraft"><h2>${esc(tt(TX.aircraft))}</h2>
       <label class="f-field"><select data-k="sheet" aria-label="${esc(tt(TX.aircraft))}">${S.sheets.map(p => opt(p.id, `${p.name || p.id}${p.icao && p.icao !== p.name ? ` — ${p.icao}` : ''}`, p.id === sel)).join('')}${opt('__type', tt(TX.otherType), sel === '__type')}</select></label>
       <div data-typebox class="${sel === '__type' ? '' : 'fu-hide'}">${fld('type', TX.typeCode, f.aircraft?.type, 'class="fu-code" maxlength="5" autocapitalize="characters"')}</div>
@@ -835,29 +816,29 @@ function renderPlan() {
       ${S.sheets.length ? '' : `<p class="f-muted">${esc(tt(TX.noSheet))}</p>`}
     </div>
     <div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
-      <div class="fu-grid3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="fu-grid3">${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
+      <div class="f-grid fu-g3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      <div class="f-grid fu-g3">${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
       <details><summary class="f-muted">${esc(tt(TX.routeText))}</summary><label class="f-field"><textarea data-k="rtext" rows="3" aria-label="${esc(tt(TX.routeText))}">${esc(r.text || '')}</textarea></label></details>
-      <p class="f-muted fu-warn" data-unres></p>
+      <p class="f-warn" data-unres></p>
       <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}</div>
     </div>
     <div class="f-card" data-block="level"><h2>${esc(tt(TX.levelWind))}</h2>
-      <div class="fu-grid3">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}
+      <div class="f-grid fu-g3">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}
         <label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
-      <div class="fu-grid3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
-      <div class="fu-grid3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
+      <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
+      <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
     </div>
   </div>
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div></div>
-  <div class="f-card fu-result" data-block="result" aria-live="polite"></div>
-  <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="fu-links" data-openin></div></details>
+  <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>
+  <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div></details>
   <details class="f-card" data-fold="details"><summary>${esc(tt(TX.details))}</summary><div data-details></div></details>
   <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
   <details class="f-card" data-fold="settings"><summary>${esc(tt(TX.settings))}</summary>
-    <div class="fu-grid3">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}
+    <div class="f-grid fu-g3">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}
     </div>
     <p class="f-muted" style="margin:8px 0 4px">${esc(tt(TX.units))}</p>
-    <div class="fu-grid3" data-units>
+    <div class="f-grid fu-g3" data-units>
       <label class="f-field">${esc(tt(TX.unitFuel))}<select data-k="unit">${['kg', 'lb'].map(u => opt(u, u, (S.settings.displayUnit || 'kg') === u)).join('')}</select></label>
       ${[['speed', TX.unitSpeed, 'unitSpeed'], ['alt', TX.unitAlt, 'unitAlt'], ['dist', TX.unitDist, 'unitDist']].map(([kind, row, k]) => `<label class="f-field">${esc(tt(row))}<select data-k="${k}">${UNITS[kind].list.map(u => opt(u, UNITS[kind].label[u], unitOf(kind) === u)).join('')}</select></label>`).join('')}</div>
     <div data-entrybox></div>
@@ -1205,7 +1186,7 @@ function openInLinks(C) {
       fl: C.levelFt > 0 ? Math.round(C.levelFt / 100) : '',
       tas: C.q?.cruise?.tas
     }, (row, v) => S.ctx.t(row, v));
-  box.innerHTML = list.map(l => l.href ? `<a href="${esc(l.href)}" target="_blank" rel="noopener noreferrer">${esc(l.label)}<small>${esc(l.why || '')}</small></a>` : `<span class="fu-off" aria-disabled="true">${esc(l.label)}<small>${esc(l.why || '')}</small></span>`).join('');
+  box.innerHTML = list.map(l => l.href ? `<a class="f-item" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer">${esc(l.label)}<small class="f-muted">${esc(l.why || '')}</small></a>` : `<span class="f-item fu-off" aria-disabled="true">${esc(l.label)}<small class="f-muted">${esc(l.why || '')}</small></span>`).join('');
 }
 
 function refresh() {
@@ -1232,39 +1213,39 @@ function refresh() {
   else if (!q) dec.innerHTML = `<p class="f-muted">${esc(tt(TX.noDistance))}</p>`;
   else if (!D) dec.innerHTML = `<p class="f-muted">${esc(tt(TX.reasons.short))}</p>`;
   else dec.innerHTML = decisionSvg(C, dec) + `<div class="fu-legend">
-      <span><span class="fu-dot" style="background:var(--sog-ok)"></span>${esc(tt(TX.leastFuel, { fl: flTxt(D.best.h), f: fuelTxt(D.best.fuel, unit) }))}</span>
-      <span><span class="fu-dot" style="background:var(--sog-warn);border-radius:0"></span>${esc(tt(TX.fastest, { fl: flTxt(D.fast.h), t: hmm(D.fast.minutes) }))}</span>
+      <span><span class="f-dot" style="background:var(--sog-chart-3)"></span>${esc(tt(TX.leastFuel, { fl: flTxt(D.best.h), f: fuelTxt(D.best.fuel, unit) }))}</span>
+      <span><span class="f-dot fu-sq" style="background:var(--sog-chart-4)"></span>${esc(tt(TX.fastest, { fl: flTxt(D.fast.h), t: hmm(D.fast.minutes) }))}</span>
     </div>
-    ${D.gap ? `<p class="f-muted fu-warn">${esc(tt(TX.gap, { fl: flTxt(D.gap.from), r: tt(TX.reasons[D.gap.reason] || TX.reasons.thrust) }))}</p>` : ''}
+    ${D.gap ? `<p class="f-warn">${esc(tt(TX.gap, { fl: flTxt(D.gap.from), r: tt(TX.reasons[D.gap.reason] || TX.reasons.thrust) }))}</p>` : ''}
     <div class="f-row"><button type="button" data-do="level" data-ft="${D.best.h}">${esc(tt(TX.use, { fl: flTxt(D.best.h) }))}</button>${D.fast.h !== D.best.h ? `<button type="button" data-do="level" data-ft="${D.fast.h}">${esc(tt(TX.use, { fl: flTxt(D.fast.h) }))}</button>` : ''}<span class="f-muted">${esc(tt(TX.decisionHint))}</span></div>`;
   // résultat collant
   const res = $('[data-block="result"]');
   if (!q) res.innerHTML = `<span class="f-muted">${esc(tt(sheet ? TX.noDistance : TX.noSheet))}</span>`;
-  else if (!q.hasFuel) res.innerHTML = `<span class="fu-warn">${esc(tt(TX.noFuel))}</span>`;
+  else if (!q.hasFuel) res.innerHTML = `<span class="f-warn">${esc(tt(TX.noFuel))}</span>`;
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
     res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : ''}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
-      <div class="fu-kv"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
-      ${q.overMtow ? `<div class="fu-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
+      <div class="f-tiles"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
+      ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
   }
   // détail du devis (replié)
   const det = $('[data-details]');
-  if ($('[data-fold="details"]').open) det.innerHTML = q?.hasFuel ? `<table class="fu-table"><tbody>
-      ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="n">${p?.min != null ? hmm(p.min) : ''}</td><td class="n">${p?.nm != null ? esc(distTxt(p.nm)) : ''}</td><td class="n">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
-      <tr><td><b>${esc(tt(TX.trip))}</b></td><td class="n">${hmm(q.minutes)}</td><td></td><td class="n"><b>${esc(fuelTxt(q.trip, unit))}</b></td></tr>
-      <tr><td>${esc(tt(TX.contingency))}</td><td></td><td></td><td class="n">${esc(fuelTxt(q.contingency, unit))}</td></tr>
-      <tr><td>${esc(tt(TX.reserve))}</td><td></td><td></td><td class="n">${esc(fuelTxt(q.reserve, unit))}</td></tr>
-      <tr><td><b>${esc(tt(TX.block))}</b></td><td></td><td></td><td class="n"><b>${esc(fuelTxt(q.block, unit))}</b></td></tr>
-    </tbody></table>${q.lawFailed ? `<p class="f-muted fu-warn">${esc(tt(TX.lawFailed))}</p>` : ''}` : '';
+  if ($('[data-fold="details"]').open) det.innerHTML = q?.hasFuel ? `<table class="f-table"><tbody>
+      ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="f-num">${p?.min != null ? hmm(p.min) : ''}</td><td class="f-num">${p?.nm != null ? esc(distTxt(p.nm)) : ''}</td><td class="f-num">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
+      <tr><td><b>${esc(tt(TX.trip))}</b></td><td class="f-num">${hmm(q.minutes)}</td><td></td><td class="f-num"><b>${esc(fuelTxt(q.trip, unit))}</b></td></tr>
+      <tr><td>${esc(tt(TX.contingency))}</td><td></td><td></td><td class="f-num">${esc(fuelTxt(q.contingency, unit))}</td></tr>
+      <tr><td>${esc(tt(TX.reserve))}</td><td></td><td></td><td class="f-num">${esc(fuelTxt(q.reserve, unit))}</td></tr>
+      <tr><td><b>${esc(tt(TX.block))}</b></td><td></td><td></td><td class="f-num"><b>${esc(fuelTxt(q.block, unit))}</b></td></tr>
+    </tbody></table>${q.lawFailed ? `<p class="f-warn">${esc(tt(TX.lawFailed))}</p>` : ''}` : '';
   // consignes de montée (repliées)
   const cl = $('[data-climb]'),
     // colonne d'altitude : niveaux de vol tant que l'unité d'altitude est le pied, sinon l'altitude dans l'unité choisie
     altUnit = unitOf('alt') !== 'ft';
-  if ($('[data-fold="climb"]').open) cl.innerHTML = G ? climbSvg(G, cl) + `<div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">${esc(tt(TX.alt))}${altUnit ? ` (${esc(altLabel())})` : ''}</th><th class="n">${esc(tt(TX.thr))}</th><th class="n">RPM</th><th class="n">IAS (${esc(speedLabel())})</th><th class="n">${esc(vsLabel())}</th><th class="n">${esc(unit)}/h</th><th class="n">Mach</th><th class="n">${esc(tt(TX.time))}</th><th class="n">${esc(unit)}</th></tr></thead><tbody>
-      ${G.rows.map(r => `<tr><td class="n">${r.h ? altUnit ? altNum(r.h) : flTxt(r.h) : 'GND'}</td><td class="n">${Math.round(r.frac * 100)} %</td><td class="n">${r.rpm ? Math.round(r.rpm) : '—'}</td><td class="n">${speedNum(r.ias)}</td><td class="n">${vsNum(r.roc)}</td><td class="n">${Math.round(r.ff)}</td><td class="n">${r.mach.toFixed(2)}</td><td class="n">${hmm(r.t)}</td><td class="n">${Math.round(r.f)}</td></tr>`).join('')}
-    </tbody></table></div>${G.reached ? '' : `<p class="fu-warn">${esc(tt(TX.notReached, { r: vsTxt(20) }))}</p>`}` : `<p class="f-muted">${esc(tt(C.perf ? TX.noDistance : TX.noModel))}</p>`;
+  if ($('[data-fold="climb"]').open) cl.innerHTML = G ? climbSvg(G, cl) + `<div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">${esc(tt(TX.alt))}${altUnit ? ` (${esc(altLabel())})` : ''}</th><th class="f-num">${esc(tt(TX.thr))}</th><th class="f-num">RPM</th><th class="f-num">IAS (${esc(speedLabel())})</th><th class="f-num">${esc(vsLabel())}</th><th class="f-num">${esc(unit)}/h</th><th class="f-num">Mach</th><th class="f-num">${esc(tt(TX.time))}</th><th class="f-num">${esc(unit)}</th></tr></thead><tbody>
+      ${G.rows.map(r => `<tr><td class="f-num">${r.h ? altUnit ? altNum(r.h) : flTxt(r.h) : 'GND'}</td><td class="f-num">${Math.round(r.frac * 100)} %</td><td class="f-num">${r.rpm ? Math.round(r.rpm) : '—'}</td><td class="f-num">${speedNum(r.ias)}</td><td class="f-num">${vsNum(r.roc)}</td><td class="f-num">${Math.round(r.ff)}</td><td class="f-num">${r.mach.toFixed(2)}</td><td class="f-num">${hmm(r.t)}</td><td class="f-num">${Math.round(r.f)}</td></tr>`).join('')}
+    </tbody></table></div>${G.reached ? '' : `<p class="f-warn">${esc(tt(TX.notReached, { r: vsTxt(20) }))}</p>`}` : `<p class="f-muted">${esc(tt(C.perf ? TX.noDistance : TX.noModel))}</p>`;
   // débit de ce vol (dans les réglages)
   const eb = $('[data-entrybox]');
   if (sheet && eb.dataset.for !== sheet.id) {
@@ -1289,14 +1270,14 @@ function renderSheets() {
     </div>
     <div class="f-card fu-hide" data-pastebox><label class="f-field">${esc(tt(TX.pasteAsk))}<textarea data-k="pastetext" rows="6"></textarea></label>
       <button type="button" class="primary" data-do="pasteread">${esc(tt(TX.read))}</button></div>
-    ${S.sheets.map(raw => {
+    <div class="f-list">${S.sheets.map(raw => {
       const p = F.normalize(structuredClone(raw)),
         miss = F.sheetMissingPaths(p).length,
         when = F.profileWhen(p);
-      return `<div class="f-card fu-sheet" data-id="${esc(p.id)}"><div><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
+      return `<div class="f-item" data-id="${esc(p.id)}"><div><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
         <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss ? tt(TX.missing, { n: miss }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
         <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><button type="button" data-do="edit">${esc(tt(TX.edit))}</button></div></div>`;
-    }).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}`;
+    }).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
   S.body.oninput = null;
   S.body.onchange = e => e.target.matches('[data-file]') && importFiles([...e.target.files]);
@@ -1556,7 +1537,7 @@ function renderEditor(id, draft = null) {
     raw = S.sheets.find(x => x.id === id);
   if (!raw) return renderSheets();
   const p = S.edit = draft || F.normalize(structuredClone(raw)),
-    rpmCell = (i, k, v) => `<td class="n"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
+    rpmCell = (i, k, v) => `<td class="f-num"><input data-rpm="${i}" data-rk="${k}" inputmode="decimal" value="${esc(v ?? '')}" style="width:7em" aria-label="${esc(k)}"></td>`,
     groups = [...new Set(F.PROFILE_FIELDS.map(f => f[0]))],
     fuelUnit = path => F.FUEL_PATHS.has(path) ? ` (${p.unit}${path.endsWith('fuelFlowPerHour') ? '/h' : ''})` : '',
     input = ([, , path, type]) => {
@@ -1579,8 +1560,8 @@ function renderEditor(id, draft = null) {
       <label class="f-field">${esc(tt(TX.gptReply))}<textarea data-k="gptreply" rows="4"></textarea></label>
       <button type="button" data-do="gptread">${esc(tt(TX.read))}</button>
     </details>
-    ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="fu-grid3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
-    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">RPM</th><th class="n">ft</th><th class="n">${esc(p.unit)}/h min</th><th class="n">${esc(p.unit)}/h</th><th class="n">${esc(p.unit)}/h max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="fu-scroll"><table class="fu-table"><thead><tr><th class="n">RPM</th><th class="n">ft</th><th class="n">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="n">${esc(r.rpm)}</td><td class="n">${esc(r.altFt ?? '')}</td><td class="n">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    ${groups.map((g, i) => `<details class="f-card"${i < 2 ? ' open' : ''}><summary>${esc(FIELD_TX[g] ? tt(FIELD_TX[g]) : g)}</summary><div class="f-grid fu-g3">${F.PROFILE_FIELDS.filter(f => f[0] === g).map(input).join('')}</div></details>`).join('')}
+    ${rpmEditable() ? `<details class="f-card" open><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h min</th><th class="f-num">${esc(p.unit)}/h</th><th class="f-num">${esc(p.unit)}/h max</th><th></th></tr></thead><tbody>${p.rpmFuelCurve.map((r, i) => `<tr>${rpmCell(i, 'rpm', r.rpm)}${rpmCell(i, 'altFt', r.altFt)}${rpmCell(i, 'fuelFlowMin', r.fuelFlowMin)}${rpmCell(i, 'fuelFlowPerHour', r.fuelFlowPerHour)}${rpmCell(i, 'fuelFlowMax', r.fuelFlowMax)}<td><button type="button" data-do="rpmdel" data-i="${i}" aria-label="${esc(tt(TX.remove))}">✕</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-do="rpmadd">${esc(tt(TX.rpmAdd))}</button></details>` : p.rpmFuelCurve.length ? `<details class="f-card"><summary>${esc(tt(TX.rpmTable))}</summary><div class="f-scroll"><table class="f-table"><thead><tr><th class="f-num">RPM</th><th class="f-num">ft</th><th class="f-num">${esc(p.unit)}/h</th></tr></thead><tbody>${p.rpmFuelCurve.map(r => `<tr><td class="f-num">${esc(r.rpm)}</td><td class="f-num">${esc(r.altFt ?? '')}</td><td class="f-num">${esc([r.fuelFlowMin, r.fuelFlowPerHour, r.fuelFlowMax].filter(x => x != null && x !== '').join(' / '))}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
     <div class="f-row"><button type="button" class="primary" data-do="save">${esc(tt(TX.save))}</button><button type="button" data-do="lnm">${esc(tt(TX.exportLnm))}</button><button type="button" data-do="json">${esc(tt(TX.exportJson))}</button><button type="button" data-do="del">${esc(tt(TX.remove))}</button></div>`;
 }
 /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */
@@ -1636,11 +1617,11 @@ function review(before, after, o = {}) {
     diff,
     gone
   };
-  S.body.innerHTML = `<div class="f-card fu-review"><h2>${esc(before ? tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}</h2>
-    ${rows.length || diff.curve.length || gone.length ? `<div class="fu-scroll"><table class="fu-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="n">${esc(tt(TX.before))}</th><th class="n">${esc(tt(TX.after))}</th></tr></thead><tbody>
-      ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td><td class="n">${show(r.old)}</td><td class="n">${show(r.now)}</td></tr>`).join('')}
-      ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="n">${esc(c.old)}</td><td class="n">${esc(c.now)}</td></tr>`).join('')}
-      ${gone.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="n">${esc(ff(r))}</td><td class="n">—</td></tr>`).join('')}
+  S.body.innerHTML = `<div class="f-card"><h2>${esc(before ? tt(TX.review) : tt(TX.reviewNew, { n: after.name || after.id }))}${o.src ? ` <span class="f-muted">· ${esc(o.src)}</span>` : ''}</h2>
+    ${rows.length || diff.curve.length || gone.length ? `<div class="f-scroll"><table class="f-table"><thead><tr><th></th><th>${esc(tt(TX.field))}</th><th class="f-num">${esc(tt(TX.before))}</th><th class="f-num">${esc(tt(TX.after))}</th></tr></thead><tbody>
+      ${rows.map(r => `<tr>${box(`data-path="${esc(r.path)}"`, !o.checked || o.checked(r.path))}<td>${esc(fieldLabel(r.path, true))}</td><td class="f-num">${show(r.old)}</td><td class="f-num">${show(r.now)}</td></tr>`).join('')}
+      ${diff.curve.map(c => `<tr>${box(`data-curve="${esc(c.key)}"`, true)}<td>RPM ${esc(c.label)} <span class="f-muted">(${esc(tt(c.kind === 'added' ? TX.added : TX.replaced))})</span></td><td class="f-num">${esc(c.old)}</td><td class="f-num">${esc(c.now)}</td></tr>`).join('')}
+      ${gone.map((r, i) => `<tr>${box(`data-gone="${i}"`, true)}<td>RPM ${esc(r.rpm)}${r.altFt !== null && r.altFt !== undefined && r.altFt !== '' ? ` @ ${esc(r.altFt)} ft` : ''} <span class="f-muted">(${esc(tt(TX.rpmGone))})</span></td><td class="f-num">${esc(ff(r))}</td><td class="f-num">—</td></tr>`).join('')}
     </tbody></table></div>` : `<p class="f-muted">${esc(tt(TX.reviewNone))}</p>`}
     <div class="f-row"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button><button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>`;
 }
@@ -1725,10 +1706,10 @@ export async function mount(el, ctx) {
   S.ofp = await ctx.data.get(OFP_PATH);
   S.ui = (await ctx.data.get(UI_PATH)) || {};
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(['Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel']))}</h1>
-    <div class="f-row fu-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
+    <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
   S.body = el.querySelector('[data-body]');
-  el.querySelector('.fu-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
+  el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
   S.stops.push(ctx.data.watch(DB_PATH, async () => {
     await readSheets();

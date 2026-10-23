@@ -4,6 +4,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — design lot 2 primitives** (asked by the design session): result bar, tabs, grids, columns, tables, figures, warnings, sheet list and "Open in" links moved to `f-bar` (block layout, no own shadow), `f-tabs`, `f-grid` (`--f-min: 96px`), `f-cols`, `f-scroll` / `f-table` / `f-num`, `f-tiles` (h3-sized figures in the sticky result), `f-warn`, `f-list` / `f-item`; the drawings' colours from `--sog-chart-1…5`, `--sog-chart-grid` and `--sog-fg` (they follow the design without a redraw); "Open in" lost its own "▾" (the frame's summary has a chevron). The module's own `<style>`
+  only places things now; checked at 375 px and on a screen in standard, cabinet and field, day and night (no white
+  at night, square corners in cabinet and field, no target under 44 px).
 - **Scope kept from V2 Fuel**: one aircraft (picker with search), one route (field, point list, coordinate helper), the
   SimBrief OFP read whole (`shared/simbrief_ofp.js` as is), level and wind, the quote, the climb instructions, the
   level decision chart (two scales), "Open in" (`shared/external_links.js` as is); performance sheets as a sub-module.
