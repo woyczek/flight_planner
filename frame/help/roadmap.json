@@ -174,7 +174,7 @@
           "es": "Unidades de visualización, «Abrir en» (SimBrief, SkyVector, Navigraph, ChartFox), vuelo compartido con Mapa e Informe"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Niveau et vent depuis les METAR / TAF (départ, arrivée, intermédiaire), date prévisionnelle, « météo réelle » le long de la route, METAR simplifié (plafond, vent traversier, CB / TCU)",
           "en": "Level and wind from METAR / TAF (departure, arrival, en route), planned date, “real weather” along the route, simplified METAR (ceiling, crosswind, CB / TCU)",
           "de": "Flugfläche und Wind aus METAR / TAF (Start, Ziel, Zwischenplatz), geplantes Datum, „echtes Wetter“ entlang der Route, vereinfachter METAR (Wolkenuntergrenze, Seitenwind, CB / TCU)",
@@ -207,6 +207,13 @@
           "en": "TEMSI: en-route wind and weather from TEMSI charts",
           "de": "TEMSI: Streckenwind und -wetter aus TEMSI-Karten",
           "es": "TEMSI: viento y meteo en ruta desde las cartas TEMSI"
+        },
+        {
+          "state": "later",
+          "fr": "Météo des terrains sans lanceur (téléphone en mode GitHub) : par le web service du site, aviationweather.gov n'acceptant pas l'appel direct",
+          "en": "Airfield weather without a launcher (phone in GitHub mode): through the site's web service, aviationweather.gov refusing direct calls",
+          "de": "Platzwetter ohne Starter (Telefon im GitHub-Modus): über den Webdienst der Website, da aviationweather.gov keine Direktaufrufe zulässt",
+          "es": "Meteo de aeródromos sin lanzador (teléfono en modo GitHub): a través del servicio web del sitio, ya que aviationweather.gov no acepta llamadas directas"
         }
       ]
     },
