@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Design: "Metro" mock-up, pending decision** (`frame/design/tokens.css`, `frame/design/metro.css`, `frame/design/demo_metro.html`,
+  `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/sw.js`; design SPEC, DECISIONS) — a fourth design, picked
+  in Settings › Design: flat colour blocks, square corners, system fonts, big light page titles, verb blocks in the
+  drawer and a rail on a screen, one landmark colour per module (`--sog-module`, in every design, visible only in
+  Metro). The other designs are unchanged pixel for pixel; the frame amendments it shows are listed for decision.
 - **Technical debt, map module** (`docs/technique/DETTE_TECHNIQUE.md`, new section) — five findings of the user on 23 October:
   the map stops at the antimeridian; the aerodrome card sometimes misplaced and impossible to close; SFC–UNL volumes
   drawn; a tap on an empty spot does not close the card; VFR text written over the map. Each with its cause and what to do.

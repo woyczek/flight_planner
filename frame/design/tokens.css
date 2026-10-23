@@ -1,6 +1,6 @@
 /* V3 design — jetons de l'interface (frame/design/SPEC.md § 2). Un design ne pose que des jetons, jamais une règle ; un
-   module s'en sert et n'en redéfinit aucun. Trois designs : standard (défaut), cabinet et field (texturés : angles droits,
-   leurs polices). Jour / nuit : nuit si le système la demande (prefers-color-scheme), sauf html[data-tone="day"] ;
+   module s'en sert et n'en redéfinit aucun. Quatre designs : standard (défaut), cabinet et field (texturés : angles droits,
+   leurs polices), metro (maquette à trancher : aplats, angles droits, une couleur repère par module). Jour / nuit : nuit si le système la demande (prefers-color-scheme), sauf html[data-tone="day"] ;
    html[data-tone="night"] la force. Les jeux de nuit ne valent qu'à l'écran : l'impression garde l'encre du jour.
    Un design peut aussi être posé sur un bloc ([data-design][data-tone], page de démonstration labs/design_primitives.html) :
    chaque jeu déclare toutes ses couleurs, ses polices et ses rayons. */
@@ -17,6 +17,8 @@
   --sog-h1: 1.25rem;
   --sog-h2: 1rem;
   --sog-h3: .95rem;
+  --sog-title-size: 1.25rem;
+  --sog-title-weight: 700;
   --sog-font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace
 }
 
@@ -38,6 +40,9 @@
   --sog-warn: #9a5b00;
   --sog-err: #b3261e;
   --sog-on-status: #fff;
+  --sog-module: var(--sog-accent);
+  --sog-module-ink: var(--sog-accent-ink);
+  --sog-module-text: var(--sog-link);
   --sog-shadow: 0 4px 16px #0003;
   --sog-shadow-up: 0 -4px 14px #0002;
   --sog-veil: #0007;
@@ -74,6 +79,9 @@
   --sog-warn: #8a5a00;
   --sog-err: #9b1c1c;
   --sog-on-status: #fffaf0;
+  --sog-module: var(--sog-accent);
+  --sog-module-ink: var(--sog-accent-ink);
+  --sog-module-text: var(--sog-link);
   --sog-shadow: 0 4px 16px #2a1d0833;
   --sog-shadow-up: 0 -4px 14px #2a1d0826;
   --sog-veil: #1d1a1488;
@@ -110,6 +118,9 @@
   --sog-warn: #8a5a00;
   --sog-err: #9b1c1c;
   --sog-on-status: #f6f3e6;
+  --sog-module: var(--sog-accent);
+  --sog-module-ink: var(--sog-accent-ink);
+  --sog-module-text: var(--sog-link);
   --sog-shadow: 0 4px 16px #1b1d1440;
   --sog-shadow-up: 0 -4px 14px #1b1d1430;
   --sog-veil: #1b1d1488;
@@ -127,6 +138,98 @@
   --sog-title-spacing: .04em;
   --sog-radius: 0;
   --sog-radius-s: 0
+}
+
+/* ---- metro : maquette à trancher (frame/design/SPEC.md § 3), jour. Aplats, angles droits, polices du système, ni ombre ni
+   texture ; une couleur repère par module (--sog-mod-<module>, remplie de blanc ; …-text : la même, lisible comme texte
+   sur le fond du ton). Les règles du cadre propres à ce design sont dans design/metro.css. */
+[data-design="metro"] {
+  color-scheme: light;
+  --sog-bg: #fff;
+  --sog-surface: #f2f2f2;
+  --sog-surface-2: #e4e4e4;
+  --sog-fg: #111;
+  --sog-muted: #5b5b5b;
+  --sog-border: #cfcfcf;
+  --sog-accent: #0067b8;
+  --sog-accent-ink: #fff;
+  --sog-link: #0067b8;
+  --sog-focus: #0067b8;
+  --sog-ok: #107c10;
+  --sog-warn: #9a5b00;
+  --sog-err: #b3261e;
+  --sog-on-status: #fff;
+  --sog-module: var(--sog-accent);
+  --sog-module-ink: #fff;
+  --sog-module-text: var(--sog-link);
+  --sog-mod-fuel: #0067b8;
+  --sog-mod-fuel-text: #0067b8;
+  --sog-mod-maps: #007589;
+  --sog-mod-maps-text: #007589;
+  --sog-mod-report: #b34700;
+  --sog-mod-report-text: #b34700;
+  --sog-mod-flightlog: #107c10;
+  --sog-mod-flightlog-text: #107c10;
+  --sog-mod-website: #6b3fa0;
+  --sog-mod-website-text: #6b3fa0;
+  --sog-mod-settings: #5d5a58;
+  --sog-mod-settings-text: #5d5a58;
+  --sog-shadow: none;
+  --sog-shadow-up: none;
+  --sog-veil: #0009;
+  --sog-chart-1: #0067b8;
+  --sog-chart-2: #6b3fa0;
+  --sog-chart-3: #107c10;
+  --sog-chart-4: #b34700;
+  --sog-chart-5: #c50f1f;
+  --sog-chart-6: #5d5a58;
+  --sog-chart-grid: #d0d0d0;
+  --sog-chart-bg: #fff;
+  --sog-font: 15px/1.45 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --sog-font-title: "Segoe UI Light", "Segoe UI Semilight", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --sog-title-case: none;
+  --sog-title-spacing: normal;
+  --sog-title-size: clamp(1.9rem, 8.5vw, 2.5rem);
+  --sog-title-weight: 300;
+  --sog-h1: 1.5rem;
+  --sog-h2: 1.5rem;
+  --sog-h3: .85rem;
+  --sog-radius: 0;
+  --sog-radius-s: 0
+}
+
+/* ---- couleur repère du module affiché : le cadre pose data-landmark (id du module ou de l'écran du cadre) sur <html>,
+   sur le volet de chaque module et sur son lien du menu (pas data-module : les modules s'en servent dans leurs propres
+   sélecteurs, qui déborderaient sur la page) ; ailleurs que dans metro, --sog-module reste l'accent */
+[data-design="metro"][data-landmark="fuel"],
+[data-design="metro"] [data-landmark="fuel"] {
+  --sog-module: var(--sog-mod-fuel);
+  --sog-module-text: var(--sog-mod-fuel-text)
+}
+[data-design="metro"][data-landmark="maps"],
+[data-design="metro"] [data-landmark="maps"] {
+  --sog-module: var(--sog-mod-maps);
+  --sog-module-text: var(--sog-mod-maps-text)
+}
+[data-design="metro"][data-landmark="report"],
+[data-design="metro"] [data-landmark="report"] {
+  --sog-module: var(--sog-mod-report);
+  --sog-module-text: var(--sog-mod-report-text)
+}
+[data-design="metro"][data-landmark="flightlog"],
+[data-design="metro"] [data-landmark="flightlog"] {
+  --sog-module: var(--sog-mod-flightlog);
+  --sog-module-text: var(--sog-mod-flightlog-text)
+}
+[data-design="metro"][data-landmark="website"],
+[data-design="metro"] [data-landmark="website"] {
+  --sog-module: var(--sog-mod-website);
+  --sog-module-text: var(--sog-mod-website-text)
+}
+[data-design="metro"][data-landmark="settings"],
+[data-design="metro"] [data-landmark="settings"] {
+  --sog-module: var(--sog-mod-settings);
+  --sog-module-text: var(--sog-mod-settings-text)
 }
 
 /* ---- nuit, à l'écran seulement : forcée (data-tone="night") ou demandée par le système (sauf data-tone="day") */
@@ -216,6 +319,57 @@
     --sog-chart-grid: #5a6148;
     --sog-chart-bg: #3f4632
   }
+  [data-design="metro"][data-tone="night"] {
+    color-scheme: dark;
+    --sog-bg: #000;
+    --sog-surface: #1c1c1c;
+    --sog-surface-2: #2b2b2b;
+    --sog-fg: #f2f2f2;
+    --sog-muted: #a6a6a6;
+    --sog-border: #3a3a3a;
+    --sog-accent: #4cb0ff;
+    --sog-accent-ink: #000;
+    --sog-link: #4cb0ff;
+    --sog-focus: #4cb0ff;
+    --sog-ok: #5fd35f;
+    --sog-warn: #ffb340;
+    --sog-err: #ff7b72;
+    --sog-on-status: #000;
+    --sog-mod-fuel: #0067b8;
+    --sog-mod-fuel-text: #4cb0ff;
+    --sog-mod-maps: #007589;
+    --sog-mod-maps-text: #3cc8de;
+    --sog-mod-report: #b34700;
+    --sog-mod-report-text: #ff9a4d;
+    --sog-mod-flightlog: #107c10;
+    --sog-mod-flightlog-text: #5fd35f;
+    --sog-mod-website: #6b3fa0;
+    --sog-mod-website-text: #b48be0;
+    --sog-mod-settings: #5d5a58;
+    --sog-mod-settings-text: #c0bbb7;
+    --sog-shadow: none;
+    --sog-shadow-up: none;
+    --sog-veil: #000c;
+    --sog-chart-1: #4cb0ff;
+    --sog-chart-2: #b48be0;
+    --sog-chart-3: #5fd35f;
+    --sog-chart-4: #ff9a4d;
+    --sog-chart-5: #ff7b72;
+    --sog-chart-6: #c0bbb7;
+    --sog-chart-grid: #3a3a3a;
+    --sog-chart-bg: #1c1c1c;
+    --sog-font: 15px/1.45 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --sog-font-title: "Segoe UI Light", "Segoe UI Semilight", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --sog-title-case: none;
+    --sog-title-spacing: normal;
+    --sog-title-size: clamp(1.9rem, 8.5vw, 2.5rem);
+    --sog-title-weight: 300;
+    --sog-h1: 1.5rem;
+    --sog-h2: 1.5rem;
+    --sog-h3: .85rem;
+    --sog-radius: 0;
+    --sog-radius-s: 0
+  }
 }
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-tone="day"]) {
@@ -301,5 +455,56 @@
     --sog-chart-6: #8d9478;
     --sog-chart-grid: #5a6148;
     --sog-chart-bg: #3f4632
+  }
+  :root[data-design="metro"]:not([data-tone="day"]) {
+    color-scheme: dark;
+    --sog-bg: #000;
+    --sog-surface: #1c1c1c;
+    --sog-surface-2: #2b2b2b;
+    --sog-fg: #f2f2f2;
+    --sog-muted: #a6a6a6;
+    --sog-border: #3a3a3a;
+    --sog-accent: #4cb0ff;
+    --sog-accent-ink: #000;
+    --sog-link: #4cb0ff;
+    --sog-focus: #4cb0ff;
+    --sog-ok: #5fd35f;
+    --sog-warn: #ffb340;
+    --sog-err: #ff7b72;
+    --sog-on-status: #000;
+    --sog-mod-fuel: #0067b8;
+    --sog-mod-fuel-text: #4cb0ff;
+    --sog-mod-maps: #007589;
+    --sog-mod-maps-text: #3cc8de;
+    --sog-mod-report: #b34700;
+    --sog-mod-report-text: #ff9a4d;
+    --sog-mod-flightlog: #107c10;
+    --sog-mod-flightlog-text: #5fd35f;
+    --sog-mod-website: #6b3fa0;
+    --sog-mod-website-text: #b48be0;
+    --sog-mod-settings: #5d5a58;
+    --sog-mod-settings-text: #c0bbb7;
+    --sog-shadow: none;
+    --sog-shadow-up: none;
+    --sog-veil: #000c;
+    --sog-chart-1: #4cb0ff;
+    --sog-chart-2: #b48be0;
+    --sog-chart-3: #5fd35f;
+    --sog-chart-4: #ff9a4d;
+    --sog-chart-5: #ff7b72;
+    --sog-chart-6: #c0bbb7;
+    --sog-chart-grid: #3a3a3a;
+    --sog-chart-bg: #1c1c1c;
+    --sog-font: 15px/1.45 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --sog-font-title: "Segoe UI Light", "Segoe UI Semilight", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --sog-title-case: none;
+    --sog-title-spacing: normal;
+    --sog-title-size: clamp(1.9rem, 8.5vw, 2.5rem);
+    --sog-title-weight: 300;
+    --sog-h1: 1.5rem;
+    --sog-h2: 1.5rem;
+    --sog-h3: .85rem;
+    --sog-radius: 0;
+    --sog-radius-s: 0
   }
 }
