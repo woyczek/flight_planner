@@ -352,10 +352,10 @@
         },
         {
           "state": "doing",
-          "fr": "Un seul registre des aéronefs : types, performances, fiches du pilote, flotte, référence au même endroit, une seule recherche ; export .lnmperf tenu à jour",
-          "en": "One aircraft registry: types, performances, the pilot's sheets, fleet and reference at one place, one search; .lnmperf export kept in sync",
-          "de": "Ein einziges Luftfahrzeugregister: Typen, Leistungen, Pilotenblätter, Flotte und Referenz an einem Ort, eine Suche; .lnmperf-Export stets aktuell",
-          "es": "Un solo registro de aeronaves: tipos, prestaciones, fichas del piloto, flota y referencia en un mismo lugar, una sola búsqueda; exportación .lnmperf mantenida al día"
+          "fr": "Un seul registre des aéronefs : types, performances, fiches du pilote, flotte, référence au même endroit, une seule recherche ; .lnmperf tenus à jour dans les deux sens (réexport à chaque changement, fusion si le fichier change)",
+          "en": "One aircraft registry: types, performances, the pilot's sheets, fleet and reference at one place, one search; .lnmperf kept in sync both ways (re-export on change, merge when the file changes)",
+          "de": "Ein einziges Luftfahrzeugregister: Typen, Leistungen, Pilotenblätter, Flotte und Referenz an einem Ort, eine Suche; .lnmperf in beide Richtungen aktuell (Neuexport bei Änderung, Zusammenführung, wenn die Datei sich ändert)",
+          "es": "Un solo registro de aeronaves: tipos, prestaciones, fichas del piloto, flota y referencia en un mismo lugar, una sola búsqueda; .lnmperf al día en ambos sentidos (reexportación al cambiar, fusión si el archivo cambia)"
         },
         {
           "state": "planned",

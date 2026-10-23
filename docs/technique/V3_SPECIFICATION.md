@@ -121,8 +121,11 @@ by size. Drafted with the user, validated before code.
 - 23 Oct 2026 — **One aircraft registry in `aerodb`.** All aircraft data (ICAO types and performances, the pilot's
   performance sheets, the airline fleet with registrations and call signs, the anonymised reference, mission aircraft)
   are rationalised in `aerodb` at one place, fed globally, with one search over every source and the origin of each
-  field. The `.lnmperf` files become an **export kept in sync** (one file per sheet, rewritten by the launcher at each
-  save), never a source. `fuel` keeps the screens and edits through the API; `website` feeds the fleet.
+  field. The registry is the master; the `.lnmperf` files are an **export kept in sync both ways**: one file per
+  sheet, rewritten by the launcher whenever a sheet, the fleet or a completion (ChatGPT, EUROCONTROL, SimBrief) changes
+  in the registry; and when a `.lnmperf` file changes on its side (edited in Little Navmap) its changes are merged
+  into the registry, field by field, the most recent wins, the other value kept and reviewable, then re-exported.
+  `fuel` keeps the screens and edits through the API; `website` feeds the fleet.
 
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 
