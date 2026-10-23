@@ -454,11 +454,16 @@
       ix = n => h.indexOf(n);
     if (['name', 'lat', 'lon', 'population'].some(n => ix(n) < 0)) throw new Error(
       'CSV villes : colonnes name,lat,lon,population requises.');
+    // cc : pays de GeoNames (colonne country, en minuscules) — range la ville dans la zone de son pays à la publication
+    // (tools/check_cities.py : les contours simplifiés en rangent mal près des frontières et sur les îles)
     return rows.filter(c => c.length >= h.length).map(c => ({
         name: c[ix('name')],
         lat: +c[ix('lat')],
         lon: +c[ix('lon')],
-        population: +c[ix('population')]
+        population: +c[ix('population')],
+        ...(ix('country') >= 0 && c[ix('country')] ? {
+          cc: c[ix('country')].trim().toLowerCase()
+        } : {})
       }))
       .filter(c => c.name && Number.isFinite(c.lat) && Number.isFinite(c.lon) && Number.isFinite(c.population));
   }
@@ -1961,7 +1966,7 @@
     if (villes.length) {
       const text = JSON.stringify({
         schema: 1,
-        cities: villes
+        cities: villes.map(plainCity)
       });
       if (await fileText(d, 'cities.json') !== text) {
         await writeText(d, 'cities.json', text);
@@ -1969,7 +1974,228 @@
         out.mb += text.length / 1048576;
       }
     }
+    // format découpé (V3, frame/aerodb : une sorte par fichier, villes par zone), écrit à côté de l'ancien pendant la
+    // transition
+    out.split = await publishSplit(d, parts, {
+      cycle,
+      at,
+      villes,
+      zones: Object.keys(parts),
+      Z
+    });
+    out.mb += out.split.mb;
     return out;
+  }
+  // ---- format découpé (V3) : sia/base/<zone>/<cycle>/<sorte>.json — airspaces, aerodromes, navaids, points, vrp,
+  // airways, obstacles, mora (cases MORA), obstaclemax (maximum par case), cities (villes de la zone), meta (cycle,
+  // axes AAR, tracks NAT, fichiers analysés…) — ; sia/base/cities_major.json (grandes villes du monde, recherche hors
+  // emprise) ; sia/base/index.json (manifeste : cycle, préfixes OACI des aérodromes et tailles par zone, zones des
+  // autres postes gardées). Un fichier n'est réécrit que si son contenu change (hors date) ; les cycles plus anciens
+  // d'une zone publiée sont retirés.
+  const SPLIT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'airways', 'obstacles'],
+    MAJOR_POP = 100000; // habitants : seuil de l'index des grandes villes
+  /** Écrit name dans le dossier d (handle) si son contenu (hors updated_at) change ; rend la taille écrite (0 : inchangé). */
+  async function writeIfChanged(d, name, body, at) {
+    const old = await fileText(d, name);
+    if (old) try {
+      const o = JSON.parse(old);
+      delete o.updated_at;
+      if (JSON.stringify(o) === JSON.stringify(body)) return 0;
+    } catch {
+      /* illisible : réécrit */
+    }
+    const text = JSON.stringify({
+      ...body,
+      updated_at: at
+    });
+    await writeText(d, name, text);
+    return text.length;
+  }
+  /** Ville publiée : sans son pays (cc ne sert qu'à la ranger ; les fichiers publiés gardent leur taille). */
+  const plainCity = ({
+    cc,
+    ...c
+  }) => c;
+  /** Zone d'une position parmi zones (contour, puis contour élargi d'un demi-degré) ; '' si aucune. */
+  function zoneLocator(zones, Z) {
+    const tests = m => Z ? zones.map(z => [z, Z.inZones([z], m)]) : [],
+      near = tests(0),
+      wide = tests(.5);
+    return (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon) ? (near.find(([, f]) => f(lat, lon)) || wide.find(([, f]) => f(lat,
+      lon)))?.[0] || '' : '';
+  }
+  /** Cases d'un degré couvertes par les données d'une zone, pour que la V3 (frame/aerodb) ne lise une zone que si ses
+   *  données touchent l'emprise demandée (les cadres des pays débordent : celui de l'Espagne couvre le sud de la France) :
+   *  points (aérodromes, balises, points, VRP, obstacles), cases MORA, voies (échantillonnées tous les 0,25°), espaces
+   *  (cases traversées par leurs contours, et celles dont le centre est dedans). Rend { "lat": [[lon0, lon1], …] }
+   *  (plages de longitudes par ligne de latitude). */
+  function coverage({
+    airspaces = [],
+    aero = {},
+    moraCells = []
+  } = {}) {
+    const set = new Set(),
+      add = (lat, lon) => {
+        if (Number.isFinite(lat) && Number.isFinite(lon)) set.add(`${Math.floor(lat)}|${Math.floor(lon)}`);
+      },
+      line = (a, b) => {
+        const n = Math.max(1, Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / .25));
+        for (let k = 0; k <= n; k++) add(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n);
+      };
+    for (const k of ['aerodromes', 'navaids', 'points', 'vrp', 'obstacles'])
+      for (const x of aero[k] || []) add(+x.lat, +x.lon);
+    for (const w of aero.airways || [])
+      if (Number.isFinite(+w?.a?.lat) && Number.isFinite(+w?.b?.lat)) line([+w.a.lat, +w.a.lon], [+w.b.lat, +w.b.lon]);
+    for (const c of moraCells) add(+c.lat + .5, +c.lon + .5);
+    for (const a of airspaces) {
+      const rings = (a.rings || []).filter(r => r?.length > 2);
+      if (!rings.length) continue;
+      let s = 90,
+        n = -90,
+        w = 180,
+        e = -180;
+      for (const r of rings)
+        for (let i = 0; i < r.length; i++) {
+          const [la, lo] = r[i];
+          s = Math.min(s, la);
+          n = Math.max(n, la);
+          w = Math.min(w, lo);
+          e = Math.max(e, lo);
+          if (i) line(r[i - 1], r[i]);
+        }
+      // intérieur : cases dont le centre est dans un anneau (règle pair-impair)
+      for (let y = Math.floor(s); y <= Math.floor(n); y++)
+        for (let x = Math.floor(w); x <= Math.floor(e); x++) {
+          const la = y + .5,
+            lo = x + .5;
+          if (rings.some(r => {
+              let c = false;
+              for (let i = 0, j = r.length - 1; i < r.length; j = i++)
+                if ((r[i][0] > la) !== (r[j][0] > la) && lo < (r[j][1] - r[i][1]) * (la - r[i][0]) / (r[j][0] - r[i][0]) + r[i][1])
+                  c = !c;
+              return c;
+            })) set.add(`${y}|${x}`);
+        }
+    }
+    const rows = {};
+    for (const k of set) {
+      const [y, x] = k.split('|').map(Number);
+      (rows[y] ||= []).push(x);
+    }
+    const out = {};
+    for (const y of Object.keys(rows).sort((a, b) => a - b)) {
+      const xs = rows[y].sort((a, b) => a - b),
+        ranges = [];
+      for (const x of xs) {
+        const last = ranges[ranges.length - 1];
+        if (last && x === last[1] + 1) last[1] = x;
+        else ranges.push([x, x]);
+      }
+      out[y] = ranges;
+    }
+    return out;
+  }
+  async function publishSplit(d, parts, {
+    cycle,
+    at,
+    villes,
+    zones,
+    Z
+  }) {
+    const res = {
+        files: 0,
+        unchanged: 0,
+        mb: 0
+      },
+      locate = zoneLocator(zones, Z),
+      byZone = Object.fromEntries(zones.map(z => [z, []])),
+      count = n => {
+        if (n) {
+          res.files++;
+          res.mb += n / 1048576;
+        } else res.unchanged++;
+        return n;
+      };
+    // ville rangée dans la zone de son pays (GeoNames) quand ce pays a une zone, publiée ici ou non ; sinon (pays sans
+    // zone : outre-mer, micro-États ; ville sans pays, base d'avant cette règle) dans la zone dont le contour la contient
+    for (const c of villes || []) {
+      const z = c.cc && Z?.ringsOf?.(c.cc)?.length ? c.cc : locate(+c.lat, +c.lon);
+      if (byZone[z]) byZone[z].push(plainCity(c));
+    }
+    const manifest = {};
+    for (const [z, p] of Object.entries(parts)) {
+      const zd = await d.getDirectoryHandle(z, {
+          create: true
+        }),
+        cd = await zd.getDirectoryHandle(cycle, {
+          create: true
+        }),
+        {
+          airspaces,
+          aero = {},
+          moraCells,
+          obstacleMax,
+          ...rest
+        } = p,
+        other = Object.fromEntries(Object.entries(aero).filter(([k]) => !SPLIT_KINDS.includes(k))),
+        files = {
+          airspaces: airspaces || [],
+          ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
+          mora: moraCells || [],
+          obstaclemax: obstacleMax || {},
+          cities: byZone[z] || [],
+          meta: {
+            ...rest,
+            ...(Object.keys(other).length ? {
+              aero: other
+            } : {})
+          }
+        },
+        sizes = {};
+      for (const [kind, data] of Object.entries(files)) sizes[kind] = count(await writeIfChanged(cd, `${kind}.json`, {
+        schema: 2,
+        zone: z,
+        cycle,
+        kind,
+        parserVersion: VERSION,
+        data
+      }, at)) || (await fileText(cd, `${kind}.json`) || '').length;
+      for await (const h of zd.values())
+      if (h.kind === 'directory' && /^\d{4}-\d{2}-\d{2}$/.test(h.name) && h.name !== cycle) await zd.removeEntry(h.name, {
+        recursive: true
+      }).catch(() => {});
+      manifest[z] = {
+        cycle,
+        prefixes: [...new Set((aero.aerodromes || []).map(a => String(a.icao || '').slice(0, 2).toUpperCase()).filter(x =>
+          /^[A-Z]{2}$/
+          .test(x)))].sort(),
+        kb: Object.fromEntries(Object.entries(sizes).map(([k, n]) => [k, Math.ceil(n / 1024)])),
+        cells: coverage(p)
+      };
+    }
+    const major = (villes || []).filter(c => (+c.population || 0) >= MAJOR_POP).map(plainCity);
+    count(await writeIfChanged(d, 'cities_major.json', {
+      schema: 2,
+      kind: 'cities_major',
+      minPopulation: MAJOR_POP,
+      data: major
+    }, at));
+    // manifeste : zones de ce poste remplacées, celles des autres postes gardées
+    let prev = {};
+    try {
+      prev = JSON.parse(await fileText(d, 'index.json') || '{}').zones || {};
+    } catch {
+      prev = {};
+    }
+    count(await writeIfChanged(d, 'index.json', {
+      schema: 2,
+      kind: 'index',
+      zones: {
+        ...prev,
+        ...manifest
+      }
+    }, at));
+    return res;
   }
   /** État de la base publiée lue en mode GitHub (siaBaseGh:v1) : { published, zones, cycle, files, cities, checkedAt }. */
   const ghMark = () => {

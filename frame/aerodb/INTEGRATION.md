@@ -1,0 +1,155 @@
+# aerodb — integration (frame and modules)
+
+How the frame mounts aerodb and how a module uses it. The rules of the component itself are in [SPEC.md](SPEC.md).
+The frontier below was agreed on 21 October 2026 between the aerodb and frame agents and validated by the ergonomics
+session.
+
+## 1. The frontier
+
+- **The frame** reads and caches files of the data repository by path: local cache, revisions, offline, transports
+  (launcher folder, GitHub, shells). It knows nothing of aeronautical data.
+- **aerodb** owns the schema of the published files, the choice of cycle, the parsing, the indexes and the business
+  API. It never reads a file except through the reader the frame gives it.
+- **Modules** never read `sia/base/` or `AircraftDB/`; they ask aerodb through their adapter.
+- **Publication** stays with the V2 launcher: Settings › Maintenance › Aeronautical data (rebuild, then publish by
+  zone) and Aircraft types ("Publish the aircraft database to the data repository").
+
+## 2. What aerodb needs from the frame
+
+The frame's data contract (`adapter.data`), as agreed:
+
+- `data.read(path, { policy: 'reference', wait: true })` → `{ value | text, rev, cached, at }`, or `null` if absent.
+  - `policy: 'reference'`: read only, never queued for writing. The file is kept as long as its revision does not
+    change, revalidated at synchronisation (conditional request), and not fetched in advance: it is read at the first
+    request.
+  - `wait`: wait for the network when the file is not cached yet.
+  - `rev` follows the transport (ETag on GitHub, blob sha on a tree, timestamp on the launcher): compare revisions
+    only with each other, never interpret them.
+- `data.list(prefix)` → paths from the last known tree (updated at each synchronisation), or `null` if no tree was
+  ever read.
+- `data.watch(prefix, fn)` → `fn(changed paths)` after a synchronisation (revalidated references included) or a write
+  in another tab.
+
+aerodb's declaration as a service:
+
+```text
+reads:  [{ prefix: 'sia/base/', policy: 'reference' }, { prefix: 'AircraftDB/', policy: 'reference' }]
+writes: []
+```
+
+## 3. Mounting
+
+Services are mounted first, as one instance each, then modules. With the frame's data layer
+(`frame/store/frame_data.js`, delivered on 21 October), the data adapter of aerodb already has `read`, `list` and
+`watch`, so it is the reader itself:
+
+```js
+const aerodb = AeroDB.create({ reader: FrameData.adapter(AeroDB.declaration()) });
+// then, for every module: adapter.aerodb = aerodb
+```
+
+`AeroDB.declaration()` lists what aerodb reads (SIA base, aircraft base, V2 references, fleet, sheets) and writes
+(the sheets and their V2 mirror): SPEC.md § 5 bis.
+
+`frame/app.js` mounts it this way (`ctx.aerodb`). Checked on 21 October with the launcher transport over the 13
+reference zones: the listing comes from the frame's tree, only the files asked for are read, the whole world is
+identical, and a republished file gives one `change` event and a fresh read of its zone. With the **local**
+transport (single user, no exchange), the reference files come from the launcher serving the page, otherwise from the
+configured GitHub repository. On the public website with neither, aerodb answers empty.
+
+Scripts, in this order: `frame/aerodb/zones.js`, `frame/aerodb/aircraft.js`, `frame/aerodb/aerodb.js`; aerodb loads
+`registry.js` and `sheets.js` itself at the first `aircraft()` (the frame's service worker keeps them).
+
+Until the data layer exists, `AeroDB.create()` without a reader uses `AeroDB.fetchReader()`:
+- in GitHub mode it goes through `shared/github_data.js`, which must then be loaded first;
+- otherwise it reads the files served by the launcher (`data/…`, `AircraftDB/` at the root).
+`frame/aerodb/bench.html` shows both.
+
+## 4. Using it from a module
+
+```js
+const { aerodb } = adapter;
+const near = await aerodb.airspaces({ lat: 43.6, lon: 1.4, radiusNm: 60, types: ['R', 'D', 'P'] });
+const lfbo = await aerodb.coords('LFBO');            // { lat, lon, name, kind }
+const places = await aerodb.find('TOUL', 10);        // ranked: codes, aerodromes, towns, other places
+const ac = await aerodb.aircraft();
+ac.classify('A400M').category;                      // 'turboprop'
+ac.estimate('TBM9');                                // { kgPerHour, tasKt, basis, … } or null
+aerodb.on('change', () => redraw());                // a zone loaded, a published file changed
+```
+
+Rules for modules:
+- **Ask by area or identifier.** Ask for the area on screen or along the route, never for "France".
+- **Draw from the answer.** Never keep a copy that outlives a `change` event.
+- **Labels and units are yours.** aerodb returns data only: the module translates and formats.
+- **Expect empty answers** (no zone published, offline at first launch); `status()` says why.
+
+### Offline data (Settings screen, "Offline data" card)
+
+The settings module shows and manages what this device keeps, through `ctx.aerodb.offline` only. It never reads
+`sia/base/`.
+
+```js
+const { offline } = ctx.aerodb;
+const can = offline.supported();                     // { cached, evict }: without them, states are 'unknown'
+const list = await offline.zones();                  // [{ id, names, prefixes, cycle, publishedKb, cachedKb, state, at }]
+await offline.keep('fr', { onProgress: p => bar(p.done / p.total) });
+await offline.release('fr');                         // throws when the reader cannot evict
+const ac = await offline.aircraft();                 // { files, types, state, cachedKb, at }
+```
+
+- Show `names[lang]` (a zone name is data, from the zone table), the size from `publishedKb`, and the state with its
+  cycle and `at`.
+- `keep` downloads the whole zone (France: about 6.5 MB, 13 files). Ask for it on Wi-Fi only if the card offers that
+  choice.
+- A zone used normally is `partial`: only the kinds asked for are in the cache.
+
+### Aircraft: one registry (fuel, report, settings)
+
+```js
+const A = await ctx.aerodb.aircraft();
+const hits = await A.search('A400', 20);            // sheets → fleet → reference → types → free code, with source
+const flight = { ...current, aircraft: A.aircraftOf(hits[0]) };  // { sheetId, type, registration, callsign, name, source }
+const s = await A.sheets.get(id);                   // with _fields (origin, date) and _kept
+await A.sheets.put({ ...s, cruise: { ...s.cruise, tasKt: 335 } }, { source: 'edit' });
+const parsed = A.lib.parseLnmperf(text);           // the sheets logic (AeroDBSheets)
+```
+
+- fuel edits sheets only through `A.sheets` and stops writing `planner/`. Its picker is `A.search`.
+- report reads `aircraft.registration` and `aircraft.callsign` of the current flight.
+- The registry's own type search is `A.searchTypes` (the former `search`).
+
+### Little Navmap files (settings, fuel)
+
+```js
+const L = await ctx.aerodb.lnmperf();
+await L.card(el, { t, notify });   // Settings, launcher page only: folder, state, Synchronise now, Stop
+await L.download(sheetId);          // a phone: the sheet as a .lnmperf file (pounds)
+L.on(s => …); await L.sync();       // state; a pass now
+```
+
+- The frame's Settings screen shows the card on a launcher page (`frame/settings/settings.js`, card `lnmperf`).
+- aerodb declares `cache/aerodb/` (cache policy) for its manifest.
+- A conflict found here is counted at the frame's button through `FrameData.noteConflict({ path, kept, lost, side })`
+  (`frame/store/frame_data.js`, added with this lot); `restore` takes the file's version back.
+- `toLnmperf` now writes a kg sheet in pounds (it wrote the kg values as they were): fuel's "Export .lnmperf" is
+  right from now on.
+
+- **VFR reporting points of an aerodrome** (maps, pinned aerodrome): `await aerodb.vfrRoutes('LFBD')` → its points
+  (with the base's VRP id when matched), sequences and instructions by page, or null; `await aerodb.vfrIndex()` → which
+  aerodromes have some. Candidates extracted from the VAC charts: draw them dashed, labelled "extracted from the VAC,
+  to be checked", never as published routes (SPEC § 5 quater).
+
+## 5. Costs to know (measured, see DECISIONS.md)
+
+- **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes
+  (and Belgium's, whose frame touches the area): 426 KB, about 30 ms on a phone-like CPU (×4 throttling). The whole
+  France file was 5.6 MB and 120 ms. Later questions take a few milliseconds.
+- **Loading all 13 zones** of the reference set (`ready` over Europe): about 290–360 ms.
+- **Memory**: the JavaScript heap stays around 55 to 75 MB with every index built and the towns loaded.
+- **Place search**: `find('TOUL')` with France loaded reads France's navaids, points, VRP and towns (1.1 MB) and the
+  world's major towns (430 KB), never the world's towns (4.9 MB): about 100 ms on a phone-like CPU the first time,
+  40 ms afterwards.
+- **Keeping France offline** (frame's cache, launcher): 13 files, 6.9 MB with the common files, about 180 ms, or 410 ms
+  on a phone-like CPU. Afterwards, with the network cut, the questions on France answer from the cache alone (about
+  100 ms, or 390 ms on a phone-like CPU, for a first set of questions). Releasing takes 80–200 ms.

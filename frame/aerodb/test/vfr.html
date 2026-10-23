@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — VFR tests</title>
+<!-- Essais de la lecture des points de report VFR tirés des VAC (aerodb.vfrRoutes, vfrIndex : sia/vfr/ du dépôt des
+     données) sur la couche de données réelle (FrameData en transport local, références du lanceur). À ouvrir après un
+     import de vfr-compiled.json (Paramètres › Maintenance › Données aéronautiques). Page d'outil (dossier test/). -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px;
+    background: #f5f6f8;
+    color: #17202a
+  }
+  li.ok::marker {
+    content: '✓ ';
+    color: #1e7d32
+  }
+  li.ko::marker {
+    content: '✗ ';
+    color: #b3261e
+  }
+  li.ko {
+    color: #b3261e
+  }
+  pre {
+    font-size: 12px;
+    white-space: pre-wrap
+  }
+</style></head>
+<body>
+<h1>aerodb — VFR tests</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../../store/frame_data.js?v=0"></script>
+<script src="../../store/transport_github.js?v=0"></script>
+<script src="../../store/transport_launcher.js?v=0"></script>
+<script src="../zones.js?v=0"></script>
+<script src="../aerodb.js?v=0"></script>
+<script>
+  (async () => {
+    const FD = window.FrameData,
+      results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      });
+    try {
+      if (!await FD.launcher.detect()) throw new Error('serve this page from the launcher');
+      await FD.reset();
+      FD.configure({
+        identity: {
+          trigram: 'TST'
+        },
+        transport: FD.transports.local(),
+        references: FD.launcher({
+          exchange: false
+        })
+      });
+      const db = AeroDB.create({
+        reader: FD.adapter(AeroDB.declaration()),
+        lnmperf: false
+      });
+      const ix = await db.vfrIndex();
+      check('index: aerodromes listed, marked as candidates', ix?.aerodromes?.length > 0 && ix.status === 'candidate' && /VAC/.test(ix
+        .label), ix && {
+        n: ix.aerodromes?.length,
+        status: ix.status
+      });
+      // compilation au format 2 (tools/report-vfr/refresh_vfr.py) importée : points de report, sommets de tracé, analyses
+      const bd = await db.vfrRoutes('LFBD'),
+        rp = (bd?.points || []).filter(p => p.role === 'reporting_point');
+      check('LFBD: 10 reporting points, 15 sequences, notes by page', rp.length === 10 && bd.routes.length === 15 && bd.notes.length >
+        0 &&
+        bd.notes.every(n => n.page && typeof n.title === 'string' && n.text), bd && {
+          p: rp.length,
+          r: bd.routes.length,
+          n: bd.notes.length
+        });
+      check('LFBD: reporting points matched with the VRPs of the base', rp.every(p => p.vrp === `BD-${p.code}`), rp.map(p => p.vrp));
+      const s1 = bd?.routes.find(r => r.key === 'RWY23-05-NA-NW');
+      check('LFBD: a named sequence keeps codes, VRPs, pages, runways and conditions', s1 && s1.codes.join('-') === 'AD-NA-NW' && s1
+        .vrps
+        .join() === ',BD-NA,BD-NW' && s1.pages.includes(6) && s1.runways?.join() === '23,05' && s1.conditions?.defaultAltitude
+        ?.value ===
+        1500, s1);
+      check('LFBD: candidate, label "to be checked", analysis interpreted (partial)', bd?.status === 'candidate' && /VAC/.test(bd
+          .label) &&
+        bd.analysis?.status === 'interprété' && bd.analysis.scope === 'partial' && bd.analysis.notes.length > 0, bd && {
+          s: bd.status,
+          a: bd.analysis
+        });
+      const ch = await db.vfrRoutes('LFCH'),
+        ne = ch?.routes.find(r => r.key === 'ARR-NE-N');
+      check('LFCH: ARR-NE-N drawn along its interpreted geometry, one way', ne?.geometry?.length >= 10 && ne.direction === 'forward' &&
+        ne
+        .geometry.every(([la, lo]) => la > 44 && la < 45 && lo > -1.5 && lo < -0.9), ne && {
+          g: ne.geometry?.length,
+          d: ne.direction
+        });
+      check('LFCH: manual vertices are intermediate waypoints, not reporting points', ch?.points.filter(p => /^MAN-/.test(p.code))
+        .every(p =>
+          p.role === 'intermediate_waypoint' && p.origin === 'manual' && !p.vrp), ch?.points.map(p => [p.code, p.role]));
+      const ab = await db.vfrRoutes('LFAB');
+      check('LFAB: automatic extraction only', ab?.analysis?.status === 'calculé' && ab.routes.length === 0, ab?.analysis);
+      check('lower case accepted', (await db.vfrRoutes('lfbd'))?.ad === 'LFBD', null);
+      check('invalid code: null', await db.vfrRoutes('XX1') === null, null);
+      check('aerodrome without a file: null', await db.vfrRoutes('LFZZ') === null, null);
+    } catch (e) {
+      check('threw', false, e.stack || String(e));
+    }
+    const out = document.getElementById('out');
+    for (const r of results) {
+      const li = document.createElement('li');
+      li.className = r.ok ? 'ok' : 'ko';
+      li.innerHTML = `${r.name}${r.detail ? `<pre>${r.detail.replace(/</g, '&lt;')}</pre>` : ''}`;
+      out.append(li);
+    }
+    const ko = results.filter(r => !r.ok);
+    document.getElementById('state').textContent = `${results.length - ko.length} / ${results.length} checks passed`;
+    window.__results = {
+      total: results.length,
+      failed: ko
+    };
+  })();
+</script>
+</body></html>

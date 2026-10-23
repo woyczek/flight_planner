@@ -2088,7 +2088,7 @@
       ${editUrl ? `<p class="mt-small" data-min-level="4"><a class="mt-link" href="${esc(editUrl)}">${esc(t(['Modifier la base à la main…', 'Edit the database by hand…', 'Datenbank von Hand bearbeiten…', 'Editar la base a mano…']))}</a> ${esc(t(['(Fichiers du dépôt › Types d’aéronefs (base OACI) ; types saisis dans les CR : Données du navigateur › Types ajoutés localement)', '(Repository files › Aircraft types (ICAO base); types entered in reports: Browser data › Locally added types)', '(Dateien des Repositorys › Luftfahrzeugmuster (ICAO-Datenbank); in Berichten erfasste Typen: Browserdaten › Lokal hinzugefügte Muster)', '(Archivos del repositorio › Tipos de aeronave (base OACI); tipos introducidos en informes: Datos del navegador › Tipos añadidos localmente)']))}</p>` : ''}
       <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste, lus par toutes les pages à leur prochain chargement : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances), non versionnés (données OACI et EUROCONTROL) : à compléter sur chaque poste ou à recopier d’un poste à l’autre.', 'Files written on this computer, read by every page at its next load: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance), not versioned (ICAO and EUROCONTROL data): complete them on each computer or copy them from one to another.', 'Auf diesem Rechner geschriebene Dateien, von allen Seiten beim nächsten Laden gelesen: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen), nicht versioniert (Daten von ICAO und EUROCONTROL): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo, leídos por todas las páginas en su próxima carga: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos), no versionados (datos de la OACI y EUROCONTROL): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
       ${s && (s.db || s.perf) ? window.RepositoryNav?.levels?.hint?.(4, ['Publier la base appareils dans le dépôt des données', 'Publishing the aircraft database to the data repository', 'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen', 'Publicar la base de aeronaves en el repositorio de datos']) || '' : ''}
-      ${s && (s.db || s.perf) ? `<p class="row" data-min-level="4"><button type="button" class="secondary" data-ac-publish data-icon="upload">${esc(t(['Publier la base appareils dans le dépôt des données', 'Publish the aircraft database to the data repository', 'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen', 'Publicar la base de aeronaves en el repositorio de datos']))}</button> <span class="mt-small">${esc(t(['Pour les téléphones et le site (mode GitHub) : AircraftDB/aircraft_db.js et aircraft_perf.js copiés dans le dépôt des données, le reste de son dossier AircraftDB/ retiré (liste montrée avant), puis synchronisation. Jamais publiée sur le site public (données OACI et EUROCONTROL).', 'For phones and the website (GitHub mode): AircraftDB/aircraft_db.js and aircraft_perf.js copied into the data repository, the rest of its AircraftDB/ folder removed (list shown first), then synchronisation. Never published on the public website (ICAO and EUROCONTROL data).', 'Für Telefone und die Website (GitHub-Modus): AircraftDB/aircraft_db.js und aircraft_perf.js in das Datenrepository kopiert, der Rest seines Ordners AircraftDB/ entfernt (Liste vorher gezeigt), dann Synchronisierung. Nie auf der öffentlichen Website veröffentlicht (Daten von ICAO und EUROCONTROL).', 'Para los teléfonos y el sitio (modo GitHub): AircraftDB/aircraft_db.js y aircraft_perf.js copiados en el repositorio de datos, el resto de su carpeta AircraftDB/ retirado (lista mostrada antes), luego sincronización. Nunca publicada en el sitio público (datos de la OACI y EUROCONTROL).']))}</span></p>` : ''}
+      ${s && (s.db || s.perf) ? `<p class="row" data-min-level="4"><button type="button" class="secondary" data-ac-publish data-icon="upload">${esc(t(['Publier la base appareils dans le dépôt des données', 'Publish the aircraft database to the data repository', 'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen', 'Publicar la base de aeronaves en el repositorio de datos']))}</button> <span class="mt-small">${esc(t(['Pour les téléphones et le site (mode GitHub) : AircraftDB/aircraft_db.js et aircraft_perf.js copiés dans le dépôt des données, avec leur copie en JSON (aircraft_db.json, aircraft_perf.json, lue par la V3), le reste de son dossier AircraftDB/ retiré (liste montrée avant), puis synchronisation. Jamais publiée sur le site public (données OACI et EUROCONTROL).', 'For phones and the website (GitHub mode): AircraftDB/aircraft_db.js and aircraft_perf.js copied into the data repository, with their JSON copy (aircraft_db.json, aircraft_perf.json, read by V3), the rest of its AircraftDB/ folder removed (list shown first), then synchronisation. Never published on the public website (ICAO and EUROCONTROL data).', 'Für Telefone und die Website (GitHub-Modus): AircraftDB/aircraft_db.js und aircraft_perf.js in das Datenrepository kopiert, mit ihrer JSON-Kopie (aircraft_db.json, aircraft_perf.json, von der V3 gelesen), der Rest seines Ordners AircraftDB/ entfernt (Liste vorher gezeigt), dann Synchronisierung. Nie auf der öffentlichen Website veröffentlicht (Daten von ICAO und EUROCONTROL).', 'Para los teléfonos y el sitio (modo GitHub): AircraftDB/aircraft_db.js y aircraft_perf.js copiados en el repositorio de datos, con su copia en JSON (aircraft_db.json, aircraft_perf.json, leída por la V3), el resto de su carpeta AircraftDB/ retirado (lista mostrada antes), luego sincronización. Nunca publicada en el sitio público (datos de la OACI y EUROCONTROL).']))}</span></p>` : ''}
       ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
     el.querySelector('[data-ac-publish]')?.addEventListener('click', e => publishAircraft(e.currentTarget));
     if (keep.open) el.querySelector('.mt-ac-more').open = true;
@@ -3798,6 +3798,98 @@
 
   /** Dessine le bloc « Données aéronautiques » : carte des zones et panneau, actions à faire, tableau des sources et bloc
    *  commun de la base (SiaBase.panel), carte MORA et contrôle de cohérence ; branche leurs actions (délégation au panneau). */
+  /** Compilation VFR des cartes VAC (vfr-compiled.json choisi) importée dans sia/vfr/ du dépôt des données
+   *  (POST /__setup/vfr-import, tools/vfr_import.py) : contrôle et plan d'abord (erreurs ou résumé montrés dans msg),
+   *  accord demandé, puis écriture, commit et synchronisation ; compte rendu en notification. */
+  async function importVfr(input, msg, btn) {
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    const say = (m, k = 'warn') => window.AppFramework?.notify?.(m, k),
+      call = body => fetch('/__setup/vfr-import', {
+        method: 'POST',
+        headers: {
+          'X-SOG-Setup': '1',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body),
+        cache: 'no-store'
+      }).then(r => r.ok ? r.json() : null).catch(() => null);
+    let compiled;
+    try {
+      compiled = JSON.parse(await file.text());
+    } catch {
+      return say(t(['{f} : JSON illisible.', '{f}: unreadable JSON.', '{f}: JSON nicht lesbar.', '{f}: JSON ilegible.'], {
+        f: file.name
+      }));
+    }
+    const author = window.SuiteUsers?.effective?.() || window.MissionAssignments?.trigram?.() || '';
+    btn.disabled = true;
+    try {
+      const plan = await call({
+        compiled,
+        apply: false
+      });
+      if (!plan) return say(t(['Lanceur injoignable.', 'Launcher unreachable.', 'Starter nicht erreichbar.', 'Lanzador inaccesible.']));
+      if (!plan.ok) {
+        msg.innerHTML = `<p class="err">${esc(t(['Fichier refusé, rien n’est écrit :', 'File refused, nothing written:', 'Datei abgelehnt, nichts geschrieben:', 'Archivo rechazado, nada escrito:']))}</p><ul>${(plan.errors || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+        return say(t(['Compilation VFR refusée : {e}', 'VFR compilation refused: {e}', 'VFR-Zusammenstellung abgelehnt: {e}',
+          'Compilación VFR rechazada: {e}'
+        ], {
+          e: plan.errors?.[0] || '?'
+        }));
+      }
+      const S = plan.summary,
+        sum = t([
+          '{a} terrains, {p} points ({u} non rapprochés des VRP de la base), {r} séquences, {n} pages de consignes ; {c} fichier(s) changé(s), {x} retiré(s), {m} Mo.',
+          '{a} aerodromes, {p} points ({u} not matched with the VRPs of the base), {r} sequences, {n} pages of instructions; {c} file(s) changed, {x} removed, {m} MB.',
+          '{a} Flugplätze, {p} Punkte ({u} nicht mit den VRP der Datenbank abgeglichen), {r} Sequenzen, {n} Seiten mit Hinweisen; {c} Datei(en) geändert, {x} entfernt, {m} MB.',
+          '{a} aeródromos, {p} puntos ({u} no cotejados con los VRP de la base), {r} secuencias, {n} páginas de consignas; {c} archivo(s) cambiado(s), {x} retirado(s), {m} MB.'
+        ], {
+          a: S.aerodromes,
+          p: S.points,
+          u: S.unmatchedCount,
+          r: S.routes,
+          n: S.notes,
+          c: S.changed,
+          x: S.remove,
+          m: (S.bytes / 1048576).toFixed(1)
+        });
+      msg.innerHTML = `<p>${esc(sum)}</p>${S.unmatched?.length ? `<details><summary>${esc(t(['Points non rapprochés (gardés avec leurs coordonnées des VAC)', 'Points not matched (kept with their VAC coordinates)', 'Nicht abgeglichene Punkte (mit ihren VAC-Koordinaten behalten)', 'Puntos no cotejados (conservados con sus coordenadas de las VAC)']))}</summary><p>${esc(S.unmatched.join(', '))}</p></details>` : ''}`;
+      if (!S.changed && !S.remove) return say(t(['Compilation VFR déjà importée : rien à faire.',
+        'VFR compilation already imported: nothing to do.', 'VFR-Zusammenstellung bereits importiert: nichts zu tun.',
+        'Compilación VFR ya importada: nada que hacer.'
+      ]), 'info');
+      if (!author) return say(t(['Trigramme inconnu : le régler dans Mon profil.', 'Unknown trigram: set it in My profile.',
+        'Unbekanntes Kürzel: unter Mein Profil einstellen.', 'Trigrama desconocido: configurarlo en Mi perfil.'
+      ]));
+      if (!await window.AppFramework.ask(t([
+          'Écrire la compilation VFR dans le dépôt des données (sia/vfr/) ?\n{s}\n\nPuis synchronisation.',
+          'Write the VFR compilation to the data repository (sia/vfr/)?\n{s}\n\nThen synchronisation.',
+          'VFR-Zusammenstellung in das Datenrepository (sia/vfr/) schreiben?\n{s}\n\nDann Synchronisierung.',
+          '¿Escribir la compilación VFR en el repositorio de datos (sia/vfr/)?\n{s}\n\nLuego sincronización.'
+        ], {
+          s: sum
+        }))) return;
+      const r = await call({
+        compiled,
+        apply: true,
+        author
+      });
+      say(r?.ok ? t(['Compilation VFR importée : {a} terrains ; {s}', 'VFR compilation imported: {a} aerodromes; {s}',
+        'VFR-Zusammenstellung importiert: {a} Flugplätze; {s}', 'Compilación VFR importada: {a} aeródromos; {s}'
+      ], {
+        a: S.aerodromes,
+        s: r.message || ''
+      }) : t(['Compilation VFR non importée : {e}', 'VFR compilation not imported: {e}',
+        'VFR-Zusammenstellung nicht importiert: {e}', 'Compilación VFR no importada: {e}'
+      ], {
+        e: r?.errors?.[0] || r?.message || '?'
+      }), r?.ok ? 'info' : 'warn');
+    } finally {
+      btn.disabled = false;
+    }
+  }
   async function renderSia() {
     const host = hosts.sia;
     // mode GitHub sans lanceur : ni dossier SIA ni zones à reconstruire ; la base publiée dans le dépôt des données (bloc
@@ -3826,7 +3918,14 @@
       <div class="repo-card" id="mt-aero-mora" data-icon="chart" data-subtitle="${esc(t(['Sources de MORA : grille calculée (relief, sommets, obstacles ; ici pour la France et les missions, ou zone par zone dans le panneau), X-Plane (grille mondiale) ; la grille calculée a la priorité.', 'MORA sources: computed grid (terrain, peaks, obstacles; here for France and the missions, or zone by zone in the panel), X-Plane (world grid); the computed grid has priority.']))}"><h3>MORA</h3>
         <p class="row"><button type="button" class="secondary" id="mtMora"${moraBusy ? ' disabled' : ''} data-icon="refresh" title="${esc(t(['Obstacles du nouveau cycle, relief du mora.csv actuel — sans réseau, immédiat', 'New-cycle obstacles, terrain from the current mora.csv — offline, immediate']))}">${esc(t(['Recalcul simple', 'Simple recalculation', 'Einfache Neuberechnung', 'Recálculo simple']))}</button><button type="button" class="secondary" id="mtMoraXp"${moraBusy ? ' disabled' : ''} data-icon="download" title="${esc(t(['Cases de la MORA d’X-Plane (zones actives, source X-Plane) absentes de mora.csv ; sans données d’X-Plane, choisit d’abord le dossier du simulateur et reconstruit la base', 'X-Plane MORA cells (active zones, X-Plane source) missing from mora.csv; without X-Plane data, first chooses the simulator folder and rebuilds the database', 'X-Plane-MORA-Felder (aktive Zonen), die in mora.csv fehlen; ohne X-Plane-Daten wird zuerst der Simulatorordner gewählt und die Datenbank neu aufgebaut', 'Casillas MORA de X-Plane (zonas activas) ausentes de mora.csv; sin datos de X-Plane, elige primero la carpeta del simulador y reconstruye la base']))}">${esc(t(['MORA d’X-Plane → mora.csv', 'X-Plane MORA → mora.csv', 'X-Plane-MORA → mora.csv', 'MORA de X-Plane → mora.csv']))}</button><button type="button" class="secondary" id="mtMoraFull"${moraBusy ? ' disabled' : ''} data-icon="chart">${esc(t(['Calcul complet', 'Full calculation', 'Vollständige Berechnung', 'Cálculo completo']))}</button>${moraPlan && !moraPlan.written ? `<button type="button" class="primary" id="mtMoraWrite" data-icon="save">${esc(t(['Écrire mora.csv (ancien archivé)', 'Write mora.csv (old one archived)', 'mora.csv schreiben (alte archiviert)', 'Escribir mora.csv (antiguo archivado)']))}</button><button type="button" class="secondary" id="mtMoraDl" data-icon="download">mora.csv</button>` : ''}</p>
         <div id="mtMoraMsg">${moraMsg}</div><div>${moraPlan ? moraHtml(moraPlan) : ''}</div></div>
+      ${window.RepositoryNav?.levels?.hint?.(4, ['Points de report VFR (VAC)', 'VFR reporting points (VAC)', 'VFR-Meldepunkte (VAC)', 'Puntos de notificación VFR (VAC)']) || ''}<div class="repo-card" id="mt-aero-vfr" data-icon="map" data-min-level="4" data-subtitle="${esc(t(['Points de report, séquences et consignes des cartes VAC, compilés sur ce poste par tools/report-vfr/refresh_vfr.py', 'Reporting points, sequences and instructions of the VAC charts, compiled on this computer by tools/report-vfr/refresh_vfr.py', 'Meldepunkte, Sequenzen und Hinweise der VAC-Karten, auf diesem Rechner von tools/report-vfr/refresh_vfr.py zusammengestellt', 'Puntos de notificación, secuencias y consignas de las cartas VAC, compilados en este equipo por tools/report-vfr/refresh_vfr.py']))}"><h3>${esc(t(['Points de report VFR (VAC)', 'VFR reporting points (VAC)', 'VFR-Meldepunkte (VAC)', 'Puntos de notificación VFR (VAC)']))}</h3>
+        <p class="mt-small">${esc(t(['Choisir le fichier vfr-compiled.json : il est contrôlé (rien n’est écrit à la moindre erreur), ses points rapprochés des VRP de la base, puis un fichier par terrain est écrit dans sia/vfr/ du dépôt des données après accord, et synchronisé. La carte les montre comme « extrait des VAC, à vérifier », jamais comme un itinéraire publié. À refaire à chaque nouveau cycle VAC, après avoir relancé refresh_vfr.py.', 'Choose the vfr-compiled.json file: it is checked (nothing is written on the slightest error), its points matched with the VRPs of the base, then one file per aerodrome is written to sia/vfr/ of the data repository after your agreement, and synchronised. The map shows them as “extracted from the VAC, to be checked”, never as a published route. To redo at each new VAC cycle, after running refresh_vfr.py again.', 'Die Datei vfr-compiled.json wählen: sie wird geprüft (beim kleinsten Fehler wird nichts geschrieben), ihre Punkte mit den VRP der Datenbank abgeglichen, dann wird nach Ihrer Zustimmung je Flugplatz eine Datei in sia/vfr/ des Datenrepositorys geschrieben und synchronisiert. Die Karte zeigt sie als „aus den VAC entnommen, zu prüfen“, nie als veröffentlichte Route. Bei jedem neuen VAC-Zyklus wiederholen, nachdem refresh_vfr.py erneut ausgeführt wurde.', 'Elegir el archivo vfr-compiled.json: se comprueba (nada se escribe al menor error), sus puntos se cotejan con los VRP de la base, luego se escribe un archivo por aeródromo en sia/vfr/ del repositorio de datos tras su acuerdo, y se sincroniza. El mapa los muestra como «extraído de las VAC, a verificar», nunca como un itinerario publicado. A repetir en cada nuevo ciclo VAC, tras relanzar refresh_vfr.py.']))}</p>
+        <p class="row"><button type="button" class="secondary" id="mtVfrPick" data-icon="upload">${esc(t(['Importer une compilation VFR (VAC)…', 'Import a VFR compilation (VAC)…', 'VFR-Zusammenstellung (VAC) importieren…', 'Importar una compilación VFR (VAC)…']))}</button><input type="file" id="mtVfrFile" accept=".json,application/json" hidden></p>
+        <div id="mtVfrMsg" class="mt-small"></div></div>
       <div class="repo-card" data-icon="plane" data-subtitle="${esc(t(['Espaces, appareils, flotte, performances, terrains des missions', 'Airspace, aircraft, fleet, performance, mission aerodromes']))}"><h3>${esc(t(['Cohérence', 'Consistency', 'Konsistenz', 'Coherencia']))}</h3><div id="mtUsage"><p class="row"><button type="button" class="secondary" id="mtUsageRun" data-icon="search">${esc(t(['Contrôler', 'Check', 'Prüfen', 'Comprobar']))}</button></p></div></div>`;
+    host.querySelector('#mtVfrPick').onclick = () => host.querySelector('#mtVfrFile').click();
+    host.querySelector('#mtVfrFile').onchange = e => importVfr(e.target, host.querySelector('#mtVfrMsg'), host.querySelector(
+      '#mtVfrPick'));
     aeroAges(Z);
     aeroTodo(Z);
     aeroSelShow(Z);

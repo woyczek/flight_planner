@@ -1,0 +1,9 @@
+{
+  "sourceDirectory": "E:\\SynologyDrive\\DOCS\\Flight\\Charts\\VAC\\VAC",
+  "outputDirectory": "data",
+  "cacheDirectory": "cache",
+  "interpretationsDirectory": "interpretations",
+  "sourceAirac": null,
+  "sourceAiracNote": "Index local marqué 2505_ ; cohérence globale du corpus non établie. Ne pas confondre avec l'AIRAC du calcul.",
+  "allowMissingAerodromes": false
+}

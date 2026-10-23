@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — offline bench</title>
+<!-- Banc du lot 4 d'aerodb (données gardées hors ligne) sur la couche de données réelle du frame : FrameData en transport
+     local, références lues au lanceur qui sert la page (comme frame/app.js), lecteur = FrameData.adapter. La France
+     gardée, interrogée réseau coupé (fetch de la page refusé), puis libérée. Page d'outil servie par le lanceur, hors des
+     applications ; cache du frame effacé au départ. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">aerodb — offline bench</h1>
+<pre id="out">running…</pre>
+<script>
+  // interrupteur réseau du banc : fetch refusé (comme hors ligne) et compté, chemins gardés
+  const NET = {
+      off: false,
+      refused: [],
+      reads: 0
+    },
+    realFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const url = String(input instanceof Request ? input.url : input);
+    if (NET.off) {
+      NET.refused.push(decodeURIComponent(url.replace(/^.*?\/data\//, '').replace(/^.*\/__setup\//, '__setup/')));
+      return Promise.reject(new TypeError('Failed to fetch'));
+    }
+    NET.reads++;
+    return realFetch(input, init);
+  };
+</script>
+<script src="../store/frame_data.js?v=0"></script>
+<script src="../store/transport_github.js?v=0"></script>
+<script src="../store/transport_launcher.js?v=0"></script>
+<script src="zones.js?v=0"></script>
+<script src="aircraft.js?v=0"></script>
+<script src="aerodb.js?v=0"></script>
+<script>
+  (async () => {
+    const res = {},
+      FD = window.FrameData,
+      out = document.getElementById('out'),
+      decl = {
+        id: 'aerodb',
+        reads: [{
+          prefix: 'sia/base/',
+          policy: 'reference'
+        }, {
+          prefix: 'AircraftDB/',
+          policy: 'reference'
+        }],
+        writes: []
+      },
+      pick = (list, id) => {
+        const z = list.find(x => x.id === id);
+        return z && {
+          state: z.state,
+          cycle: z.cycle,
+          publishedKb: z.publishedKb,
+          cachedKb: z.cachedKb,
+          at: z.at,
+          staleKb: z.staleKb,
+          prefixes: z.prefixes.join(' ')
+        };
+      },
+      timed = async fn => {
+        const t0 = performance.now(),
+          v = await fn();
+        return [Math.round(performance.now() - t0), v];
+      };
+    if (!await FD.launcher.detect()) throw new Error('this bench needs the page served by the launcher');
+    await FD.reset();
+    FD.configure({
+      identity: {
+        trigram: ''
+      },
+      transport: FD.transports.local(),
+      references: FD.launcher({
+        exchange: false
+      })
+    });
+    const db = AeroDB.create({
+      reader: FD.adapter(decl)
+    });
+    res.supported = db.offline.supported();
+    let [ms, z0] = await timed(() => db.offline.zones());
+    res.zones = {
+      ms,
+      n: z0.length,
+      fr: pick(z0, 'fr'),
+      names: z0.slice(0, 4).map(z => `${z.id} ${z.names[0]} ${z.state} ${z.publishedKb} KB`)
+    };
+    res.source = (await db.status()).source;
+    // usage ordinaire : une question sur Paris laisse la France partielle
+    await db.aerodromes({
+      bbox: [1.5, 48.3, 3.2, 49.3]
+    });
+    res.afterOneQuestion = pick(await db.offline.zones(), 'fr');
+    // la France gardée
+    const steps = [];
+    let kept;
+    [ms, kept] = await timed(() => db.offline.keep('fr', {
+      onProgress: p => steps.push(p.done)
+    }));
+    res.keep = {
+      ms,
+      steps: steps.length,
+      readKb: kept.readKb,
+      failed: kept.failed,
+      state: kept.state,
+      cachedKb: kept.cachedKb,
+      publishedKb: kept.publishedKb,
+      at: kept.at
+    };
+    res.common = await db.offline.common();
+    await db.aircraft();
+    res.aircraft = await db.offline.aircraft();
+    res.frameCacheKb = Math.round((await FD.adapter(decl).cached('')).reduce((n, c) => n + c.bytes, 0) / 1024);
+    // réseau coupé : une instance neuve répond sur la France depuis le cache du frame seul
+    NET.off = true;
+    const off = AeroDB.create({
+        reader: FD.adapter(decl)
+      }),
+      tlse = {
+        lat: 43.6,
+        lon: 1.4,
+        radiusNm: 40
+      };
+    let q;
+    [ms, q] = await timed(async () => ({
+      aerodromes: (await off.aerodromes(tlse)).length,
+      airspaces: (await off.airspaces(tlse)).length,
+      navaids: (await off.navaids(tlse)).length,
+      obstacles: (await off.obstacles(tlse)).length,
+      mora: await off.mora(43.6, 1.4),
+      coordsLFBO: (await off.coords('LFBO'))?.name || null,
+      findTOUL: (await off.find('TOUL', 5)).map(x => x.label),
+      aircraft: (await off.aircraft()).size()
+    }));
+    res.offlineQueries = {
+      ms,
+      ...q,
+      refused: [...new Set(NET.refused)]
+    };
+    res.offlineZones = pick(await off.offline.zones(), 'fr');
+    NET.off = false;
+    // la France libérée
+    let rel;
+    [ms, rel] = await timed(() => db.offline.release('fr'));
+    res.release = {
+      ms,
+      state: rel.state,
+      cachedKb: rel.cachedKb,
+      frameCacheLeftKb: Math.round((await FD.adapter(decl).cached('')).reduce((n, c) => n + c.bytes, 0) / 1024),
+      leftPaths: (await FD.adapter(decl).cached('sia/base/fr/')).length
+    };
+    // relue à la demande après la libération
+    res.afterRelease = {
+      aerodromesParis: (await db.aerodromes({
+        bbox: [1.5, 48.3, 3.2, 49.3]
+      })).length,
+      fr: pick(await db.offline.zones(), 'fr')
+    };
+    res.status = await FD.status();
+    res.heapMb = performance.memory ? +(performance.memory.usedJSHeapSize / 1048576).toFixed(1) : null;
+    window.__bench = res;
+    out.textContent = JSON.stringify(res, null, 1);
+  })().catch(e => {
+    document.getElementById('out').textContent = 'error: ' + (e?.stack || e);
+    window.__bench = {
+      error: String(e?.stack || e)
+    };
+  });
+</script>
+</body></html>

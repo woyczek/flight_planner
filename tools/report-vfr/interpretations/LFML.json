@@ -1,0 +1,517 @@
+{
+  "icao": "LFML",
+  "sourceSha256": "aac69f9a03a703d044360db734469ff4904d78b18a1b79c206ccac8da2700799",
+  "analysedAt": "2026-10-23",
+  "analysedDuringAirac": "2610",
+  "sourceAirac": null,
+  "analyst": "Codex",
+  "scope": "partial",
+  "sourcePages": [
+    6,
+    7,
+    8
+  ],
+  "method": "lecture manuelle du texte et, si indiqué, de la carte",
+  "notes": [
+    "Les tables d’arrivée et de départ sont indépendantes : ne pas inverser automatiquement une route.",
+    "Les altitudes sont transcrites point par point selon les cellules, en ft. Pas de référence verticale ajoutée au-delà du texte de la table.",
+    "Les branches LP et CB sont des alternatives d’entrée ou sortie, pas une liaison LP–CB.",
+    "Le régime VFR spécial et les consignes de nuit restent dans le texte source ; pas de géométrie côtière inventée."
+  ],
+  "points": [],
+  "pointUpdates": {},
+  "routes": [
+    {
+      "key": "ARR-LP",
+      "pointCodes": [
+        "LP",
+        "NA",
+        "NB"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "arrival",
+        "altitudesByPoint": {
+          "LP": {
+            "valueFt": 1700
+          },
+          "NA": {
+            "valueFt": 1500
+          },
+          "NB": {
+            "valueFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-LP",
+      "pointCodes": [
+        "NB",
+        "NA",
+        "LP"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "phase": "departure",
+        "altitudesByPoint": {
+          "NB": {
+            "valueFt": 1500
+          },
+          "NA": {
+            "valueFt": 1500
+          },
+          "LP": {
+            "valueFt": 1700
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "ARR-CB",
+      "pointCodes": [
+        "CB",
+        "NA",
+        "NB"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "arrival",
+        "altitudesByPoint": {
+          "CB": {
+            "valueFt": 2000
+          },
+          "NA": {
+            "valueFt": 1500
+          },
+          "NB": {
+            "valueFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-CB",
+      "pointCodes": [
+        "NB",
+        "NA",
+        "CB"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "phase": "departure",
+        "altitudesByPoint": {
+          "NB": {
+            "valueFt": 1500
+          },
+          "NA": {
+            "valueFt": 1500
+          },
+          "CB": {
+            "valueFt": 2000
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "ARR-E",
+      "pointCodes": [
+        "E",
+        "EA",
+        "NB"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "arrival",
+        "altitudesByPoint": {
+          "E": {
+            "valueFt": 2000
+          },
+          "EA": {
+            "valueFt": 1500
+          },
+          "NB": {
+            "valueFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "ARR-SC",
+      "pointCodes": [
+        "SC",
+        "S",
+        "SA",
+        "SB"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "arrival",
+        "altitudesByPoint": {
+          "SC": {
+            "maxFt": 1500
+          },
+          "S": {
+            "valueFt": 1500
+          },
+          "SA": {
+            "valueFt": 1500
+          },
+          "SB": {
+            "valueFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "ARR-SW",
+      "pointCodes": [
+        "SW",
+        "S",
+        "SA",
+        "SB"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "arrival",
+        "altitudesByPoint": {
+          "SW": {
+            "maxFt": 700
+          },
+          "S": {
+            "valueFt": 1000
+          },
+          "SA": {
+            "valueFt": 1500
+          },
+          "SB": {
+            "valueFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-E-RWY31",
+      "pointCodes": [
+        "NB",
+        "EA",
+        "E"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "phase": "departure",
+        "altitudesByPoint": {
+          "NB": {
+            "valueFt": 1500
+          },
+          "EA": {
+            "valueFt": 1500
+          },
+          "E": {
+            "valueFt": 2000
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": [
+        "31"
+      ],
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-E-RWY13",
+      "pointCodes": [
+        "EB",
+        "EA",
+        "E"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "phase": "departure",
+        "altitudesByPoint": {
+          "EB": {
+            "valueFt": 1500
+          },
+          "EA": {
+            "valueFt": 1500
+          },
+          "E": {
+            "valueFt": 2000
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": [
+        "13"
+      ],
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-SC",
+      "pointCodes": [
+        "SB",
+        "SA",
+        "S",
+        "SC"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "phase": "departure",
+        "altitudesByPoint": {
+          "SB": {
+            "valueFt": 1000
+          },
+          "SA": {
+            "valueFt": 1000
+          },
+          "S": {
+            "valueFt": 1500
+          },
+          "SC": {
+            "maxFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-SW",
+      "pointCodes": [
+        "SB",
+        "SA",
+        "S",
+        "SW"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "phase": "departure",
+        "altitudesByPoint": {
+          "SB": {
+            "valueFt": 1000
+          },
+          "SA": {
+            "valueFt": 1000
+          },
+          "S": {
+            "valueFt": 1000
+          },
+          "SW": {
+            "valueFt": 700
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "TRANSIT-SW-SC",
+      "pointCodes": [
+        "SW",
+        "S",
+        "SC"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "coastal_transit",
+        "altitudesByPoint": {
+          "SW": {
+            "valueFt": 700
+          },
+          "S": {
+            "valueFt": 1000
+          },
+          "SC": {
+            "maxFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "TRANSIT-SC-SW",
+      "pointCodes": [
+        "SC",
+        "S",
+        "SW"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "coastal_transit",
+        "altitudesByPoint": {
+          "SC": {
+            "maxFt": 1500
+          },
+          "S": {
+            "valueFt": 1000
+          },
+          "SW": {
+            "valueFt": 700
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "TRANSIT-SC-SR",
+      "pointCodes": [
+        "SC",
+        "SR"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "coastal_transit",
+        "altitudesByPoint": {
+          "SC": {
+            "valueFt": 1500
+          },
+          "SR": {
+            "valueFt": 1650
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "TRANSIT-SR-SC",
+      "pointCodes": [
+        "SR",
+        "SC"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        7
+      ],
+      "conditions": {
+        "phase": "coastal_transit",
+        "altitudesByPoint": {
+          "SR": {
+            "valueFt": 1650
+          },
+          "SC": {
+            "valueFt": 1500
+          }
+        },
+        "atcMayAssignDifferentRouteOrAltitude": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    }
+  ]
+}

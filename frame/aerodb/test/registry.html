@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — registry tests</title>
+<!-- Essais du registre des aéronefs d'aerodb (frame/aerodb/registry.js, sheets.js) sur la couche de données réelle :
+     FrameData en transport local, références lues au lanceur qui sert la page (references/aircraft_fleet.js,
+     defa_reference.js, AircraftDB), fiches et flotte écrites par l'adaptateur d'aerodb. Cache du frame effacé au départ.
+     Page d'outil servie par le lanceur (hors du service worker : dossier test/). -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px;
+    background: #f5f6f8;
+    color: #17202a
+  }
+  li.ok::marker {
+    content: '✓ ';
+    color: #1e7d32
+  }
+  li.ko::marker {
+    content: '✗ ';
+    color: #b3261e
+  }
+  li.ko {
+    color: #b3261e
+  }
+  pre {
+    font-size: 12px;
+    white-space: pre-wrap
+  }
+</style></head>
+<body>
+<h1>aerodb — registry tests</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../../store/frame_data.js?v=0"></script>
+<script src="../../store/transport_github.js?v=0"></script>
+<script src="../../store/transport_launcher.js?v=0"></script>
+<script src="../zones.js?v=0"></script>
+<script src="../aircraft.js?v=0"></script>
+<script src="../aerodb.js?v=0"></script>
+<script>
+  (async () => {
+    const FD = window.FrameData,
+      results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      });
+    try {
+      if (!await FD.launcher.detect()) throw new Error('serve this page from the launcher');
+      await FD.reset();
+      FD.configure({
+        identity: {
+          trigram: 'TST'
+        },
+        transport: FD.transports.local(),
+        references: FD.launcher({
+          exchange: false
+        })
+      });
+      const decl = AeroDB.declaration(),
+        data = FD.adapter(decl),
+        // écritures des autres : la V2 (fpdb.json) et website (airline/fleet.json)
+        seed = FD.adapter({
+          id: 'seed',
+          reads: ['airline/', 'planner/'],
+          writes: ['airline/', {
+            prefix: 'planner/flight_performance_database_merged.fpdb.json',
+            merge: 'keyed:profiles:id'
+          }]
+        });
+      // V2 : une fiche du planificateur (fpdb.json), plus ancienne
+      await seed.put('planner/flight_performance_database_merged.fpdb.json', {
+        schema: 'flight-performance-db/v1',
+        profiles: [{
+          id: 'A400_V2',
+          name: 'A400M (planificateur)',
+          icao: 'A400',
+          unit: 'kg',
+          cruise: {
+            tasKt: 330,
+            fuelFlowPerHour: 3500
+          },
+          updatedAt: '2026-01-01T00:00:00Z'
+        }]
+      });
+      // flotte de la compagnie (website) : un A400 sans fiche à lui, un C-130J
+      await seed.put('airline/fleet.json', {
+        schema: 1,
+        updated_at: '2026-10-20T10:00:00Z',
+        by: 'website',
+        aircraft: [{
+          operator: 'Test',
+          type: 'A400',
+          variant: 'A400M Atlas',
+          registration: 'F-RBAA',
+          callsigns: ['TEST01'],
+          base: 'LFOE'
+        }, {
+          operator: 'Test',
+          type: 'C30J',
+          variant: 'C-130J',
+          registration: 'F-RAJA',
+          callsigns: ['TEST02'],
+          base: 'LFOJ'
+        }]
+      });
+      await FD.sync();
+      const db = AeroDB.create({
+          reader: data,
+          lnmperf: false
+        }),
+        A = await db.aircraft();
+      check('legacy type API kept (classify, canonical, estimate)', A.classify('A400M').category === 'turboprop' && A.canonical(
+          'A4M') ===
+        'A400' && A.estimate('TBM9')?.kgPerHour > 0, null);
+      // hélicoptères : plafond pratique et niveau économe bas, jamais un plafond d'avion
+      const h = A.estimate('EC45'),
+        hm = A.estimate('A139');
+      check('helicopter estimate: category, ceiling at most 20 000 ft, economy level 3 000 ft', h?.category === 'helico' && h
+        .ceilingFt <=
+        20000 && h.ecoFt === 3000 && hm?.category === 'helico' && hm.ceilingFt <= 20000 && A.estimate('A400')?.category !== 'helico',
+        [h,
+          hm
+        ]);
+      check('sheets library configured (AeroDBSheets, lnmperf parser)', typeof A.lib?.parseLnmperf === 'function' && typeof A.lib
+        ?.toLnmperf ===
+        'function', null);
+      // migration : la fiche de la V2 est adoptée, sans fichier écrit
+      const list0 = await A.sheets.list();
+      check('V2 sheet adopted in reading', list0.some(s => s.id === 'A400_V2' && s._fields?.['cruise.tasKt']?.source === 'v2'), list0);
+      check('nothing written at reading', !(await data.list('aircraft/sheets/'))?.length, await data.list('aircraft/sheets/'));
+      // recherche : ordre fiches → flotte → référence → types → code libre
+      const all = await A.search('', 400),
+        order = [...new Set(all.map(r => r.source))];
+      check('empty search: sheets, then fleet, then reference', order.join() === 'sheet,fleet,reference', order);
+      const a4 = await A.search('A400', 50),
+        srcs = [...new Set(a4.map(r => r.source))];
+      check('search A400: sheet, fleet and type results, in order', srcs[0] === 'sheet' && srcs.includes('fleet') && srcs.includes(
+          'type') &&
+        srcs.indexOf('fleet') < srcs.indexOf('type'), a4.map(r => `${r.source} ${r.label}`));
+      check('free code offered last', (await A.search('ZZ9')).slice(-1)[0]?.kind === 'free', await A.search('ZZ9'));
+      const ref = all.filter(r => r.source === 'reference');
+      check('reference adds registrations, never bare numbers', ref.length > 0 && !ref.some(r => /^\d+$/.test(r.registration)), ref
+        .slice(0,
+          3));
+      // appareil : fiche du type (alias), puis estimation
+      const rb = await A.resolve('F-RBAA'),
+        rj = await A.resolve('F-RAJA');
+      check('fleet aircraft takes its type sheet', rb?.sheetId === 'A400_V2' && rb.sheetVia === 'type', rb);
+      check('without a sheet: estimate', rj?.sheetVia === 'estimate' && rj.estimate, rj);
+      check('fleet first (airline/fleet.json), callsign kept', rb?.callsigns?.includes('TEST01') && rb.origin?.type?.source === 'fleet',
+        rb);
+      // édition : champs tamponnés, valeur précédente gardée, miroir V2
+      const t0 = (await A.sheets.get('A400_V2')),
+        put = await A.sheets.put({
+          ...t0,
+          registration: 'F-RBAA',
+          cruise: {
+            ...t0.cruise,
+            tasKt: 335
+          }
+        }, {
+          source: 'edit'
+        });
+      check('put stamps changed fields only', put._fields['cruise.tasKt'].source === 'edit' && put._fields['cruise.fuelFlowPerHour']
+        .source ===
+        'v2' && put._fields.registration.source === 'edit', put._fields);
+      check('previous value kept', put._kept['cruise.tasKt']?.[0]?.value === 330 && put._kept['cruise.tasKt'][0].source === 'v2', put
+        ._kept);
+      check('sheet file written', (await data.get('aircraft/sheets/A400_V2.json'))?.cruise?.tasKt === 335, null);
+      const mirror = (await data.get('planner/flight_performance_database_merged.fpdb.json'))?.profiles?.find(p => p.id === 'A400_V2');
+      check('V2 mirror: value, updated_at and updatedAt, no registry fields', mirror?.cruise?.tasKt === 335 && mirror.updated_at &&
+        mirror
+        .updatedAt && !mirror._fields && !mirror._kept, mirror);
+      const B = await db.aircraft(),
+        rb2 = await B.resolve('F-RBAA');
+      check('own sheet wins once it carries the registration', rb2?.sheetVia === 'own', rb2);
+      const o = await B.sheets.origins('A400_V2');
+      check('origins: source, date and kept values per field', o['cruise.tasKt']?.source === 'edit' && o['cruise.tasKt'].kept.length ===
+        1,
+        o['cruise.tasKt']);
+      // fusion champ par champ (règle du cadre) : chacun garde ce qu'il a de plus récent ; conflit si un même champ diffère
+      const M = window.AeroDBRegistry.mergeSheets,
+        base = {
+          id: 'S',
+          a: 1,
+          b: 1
+        },
+        loc = {
+          id: 'S',
+          a: 2,
+          b: 1,
+          _fields: {
+            a: {
+              at: '2026-10-23T10:00:00Z',
+              source: 'phone'
+            }
+          }
+        },
+        rem = {
+          id: 'S',
+          a: 1,
+          b: 3,
+          _fields: {
+            b: {
+              at: '2026-10-23T11:00:00Z',
+              source: 'pc'
+            },
+            a: {
+              at: '2026-10-22T00:00:00Z',
+              source: 'pc'
+            }
+          }
+        },
+        m = M(base, loc, rem);
+      check('merge: newest field wins on each side', m.value.a === 2 && m.value.b === 3 && m.value._fields.a.source === 'phone' && m
+        .value
+        ._fields.b.source === 'pc', m.value);
+      check('merge: same field different values → loser kept, conflict reported', m.value._kept.a?.[0]?.value === 1 && !!m.lost, m);
+      const lnm = A.lib.toLnmperf ? (() => {
+        try {
+          return A.lib.toLnmperf(put);
+        } catch (e) {
+          return e.message;
+        }
+      })() : '';
+      check('lnmperf written from a registry sheet (or refused with the missing fields)', typeof lnm === 'string' && lnm.length > 0, lnm
+        .slice(0, 200));
+      // Little Navmap n'a ni immatriculation ni indicatif : jamais requis pour l'export
+      const miss = A.lib.missingLnmperfFields({
+        ...put,
+        registration: '',
+        callsign: ''
+      });
+      check('lnmperf: registration and callsign never required', !miss.some(m => /Immatriculation|Indicatif/.test(String(m))), miss);
+      check('fleet given to the sheets logic (ChatGPT prompt)', (await A.fleetTypes()).some(f => f.type === 'A400' && f.registrations
+        .includes(
+          'F-RBAA')), await A.fleetTypes());
+      // une ligne par immatriculation : fiche à soi sans consommation + flotte → une seule ligne, devis par la fiche du
+      // type (ou l'estimation), champs fusionnés avec leur origine
+      await seed.put('airline/fleet.json', {
+        schema: 1,
+        updated_at: '2026-10-23T10:00:00Z',
+        by: 'website',
+        aircraft: [{
+          operator: 'Test',
+          type: 'A400',
+          variant: 'A400M Atlas',
+          registration: 'F-RBAA',
+          callsigns: ['TEST01'],
+          base: 'LFOE'
+        }, {
+          operator: 'Test',
+          type: 'C30J',
+          variant: 'C-130J',
+          registration: 'F-RAJA',
+          callsigns: ['TEST02'],
+          base: 'LFOJ'
+        }, {
+          operator: 'Test',
+          type: 'A400',
+          variant: 'A400M Atlas',
+          registration: 'F-TEST',
+          callsigns: ['TEST03'],
+          base: 'LFOE'
+        }]
+      });
+      await FD.sync();
+      await (await db.aircraft()).sheets.put({
+        id: 'MY_FTEST',
+        name: 'Mon A400',
+        icao: 'A400',
+        registration: 'F-TEST',
+        unit: 'kg',
+        cruise: {
+          tasKt: 300
+        }
+      }, {
+        source: 'edit'
+      });
+      const C = await db.aircraft(),
+        ft = (await C.search('F-TEST', 50)).filter(r => r.registration === 'F-TEST');
+      check('one line per registration (own sheet and fleet merged)', ft.length === 1 && ft[0].ownSheetId === 'MY_FTEST' && ft[0]
+        .sources.includes('sheet') && ft[0].sources.some(x => x.startsWith('fleet')), ft);
+      check('own sheet without fuel flow: quote from the type sheet, fields merged with origin', ft[0]?.sheetId === 'A400_V2' && ft[0]
+        .sheetVia === 'type' && ft[0].callsign === 'TEST03' && ft[0].origin.callsign !== 'sheet' && ft[0].name === 'Mon A400' && ft[0]
+        .origin.name === 'sheet', ft[0]);
+      const ftR = await C.resolve('F-TEST');
+      check('resolve: own sheet kept as ownSheetId, quote sheet from the type', ftR?.ownSheetId === 'MY_FTEST' && ftR.sheetId ===
+        'A400_V2', ftR);
+    } catch (e) {
+      check('threw', false, e.stack || String(e));
+    }
+    const out = document.getElementById('out');
+    for (const r of results) {
+      const li = document.createElement('li');
+      li.className = r.ok ? 'ok' : 'ko';
+      li.innerHTML = `${r.name}${r.detail ? `<pre>${r.detail.replace(/</g, '&lt;')}</pre>` : ''}`;
+      out.append(li);
+    }
+    const ko = results.filter(r => !r.ok);
+    document.getElementById('state').textContent = `${results.length - ko.length} / ${results.length} checks passed`;
+    window.__results = {
+      total: results.length,
+      failed: ko
+    };
+  })();
+</script>
+</body></html>

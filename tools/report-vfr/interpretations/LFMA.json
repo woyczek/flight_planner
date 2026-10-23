@@ -1,0 +1,83 @@
+{
+  "icao": "LFMA",
+  "sourceSha256": "152623a6d457b40be046568ee5608951a44387a92738b09d2fff2924898397ec",
+  "analysedAt": "2026-10-23",
+  "analysedDuringAirac": "2610",
+  "sourceAirac": null,
+  "analyst": "Codex",
+  "scope": "partial",
+  "sourcePages": [
+    1,
+    7
+  ],
+  "method": "lecture manuelle du texte et, si indiqué, de la carte",
+  "notes": [
+    "AR est affecté à la panne radio ; AS et AW sont sur instruction ATC.",
+    "Après clairance d’entrée CTR déjà obtenue et panne radio : rejoindre AR, 2200 ft AMSL MAX, phares allumés, RM228 vers verticale AD puis circuit à l’ouest.",
+    "AN, AT et AE restent des points publiés ; leurs liaisons ordinaires ne sont pas déduites de leur proximité."
+  ],
+  "points": [
+    {
+      "code": "AD",
+      "coordinates": [
+        5.367222222222222,
+        43.50527777777778
+      ],
+      "role": "aerodrome_reference_point",
+      "origin": "published",
+      "extractionMethod": "manual_transcription",
+      "pdfPage": 1,
+      "status": "checked_against_local_source"
+    }
+  ],
+  "pointUpdates": {
+    "AS": {
+      "usageRestrictions": [
+        "ATC instruction only"
+      ]
+    },
+    "AW": {
+      "usageRestrictions": [
+        "ATC instruction only"
+      ]
+    },
+    "AR": {
+      "usageRestrictions": [
+        "radio communication failure procedure"
+      ]
+    }
+  },
+  "routes": [
+    {
+      "key": "PANNE-RADIO-AR-AD",
+      "pointCodes": [
+        "AR",
+        "AD"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        1,
+        7
+      ],
+      "conditions": {
+        "procedureType": "radio_communication_failure",
+        "CTRentryClearanceAlreadyReceived": true,
+        "maxAltitude": {
+          "value": 2200,
+          "unit": "ft",
+          "reference": "AMSL"
+        },
+        "lightsOn": true,
+        "magneticTrackDegrees": 228,
+        "followingPhase": "Verticale AD puis circuit à l’ouest, non numérisé."
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": [],
+      "geometryOmission": "La verticale et le circuit de panne radio ne sont pas numérisés ; séquence conditionnelle uniquement."
+    }
+  ],
+  "relationsReviewedNote": "Les consignes de panne radio sont conservées ; aucune relation ordinaire n’est affirmée par cette analyse."
+}

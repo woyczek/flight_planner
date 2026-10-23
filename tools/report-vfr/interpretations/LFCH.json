@@ -1,0 +1,624 @@
+{
+  "icao": "LFCH",
+  "sourceSha256": "e97231310c44dd19fa1b85ab159b3279d38d8dc507345db11beed10ee4dbea65",
+  "analysedAt": "2026-10-23",
+  "analysedDuringAirac": "2610",
+  "sourceAirac": null,
+  "analyst": "Codex",
+  "scope": "partial",
+  "sourcePages": [
+    1,
+    4,
+    5
+  ],
+  "method": "lecture manuelle du texte et, si indiqué, de la carte",
+  "notes": [
+    "NE obligatoire pour les aéronefs non basés ; suivre RM 185° jusqu’à l’autoroute, puis l’autoroute vers le lac et RM 250° vers N.",
+    "Les neuf sommets intermédiaires suivent le tracé interprété, pas une interpolation uniforme entre NE et N.",
+    "La branche W est réservée aux aéronefs basés selon la légende APP 01 ; RM 076° vers le nord du point N.",
+    "DEP E/SD à 1000 ft AMSL ; code 7056 pour DEP SD ou ARR W lorsque LF-R 31 A est active.",
+    "Le point P est réservé aux vols courts HEL sous protocole ; l’intégration finale et le cheminement P ne sont pas numérisés."
+  ],
+  "points": [
+    {
+      "code": "AD",
+      "coordinates": [
+        -1.113888888888889,
+        44.596944444444446
+      ],
+      "role": "aerodrome_reference_point",
+      "origin": "published",
+      "extractionMethod": "manual_transcription",
+      "pdfPage": 1,
+      "status": "checked_against_local_source"
+    },
+    {
+      "code": "MAN-A660-01",
+      "coordinates": [
+        -1.048149,
+        44.630814
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        309.04,
+        213
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-02",
+      "coordinates": [
+        -1.049125,
+        44.62255
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        308.32,
+        225
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-03",
+      "coordinates": [
+        -1.052094,
+        44.617301
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        305.44,
+        232.68
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-04",
+      "coordinates": [
+        -1.056092,
+        44.616044
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        301.36,
+        234.6
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-05",
+      "coordinates": [
+        -1.065921,
+        44.61439
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        291.28,
+        237.24
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-06",
+      "coordinates": [
+        -1.083901,
+        44.612543
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        272.8,
+        240.36
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-07",
+      "coordinates": [
+        -1.10141,
+        44.610854
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        254.8,
+        243.24
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-08",
+      "coordinates": [
+        -1.115209,
+        44.608771
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        240.64,
+        246.6
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-A660-09",
+      "coordinates": [
+        -1.123454,
+        44.605765
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        232.24,
+        251.16
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "PDF points from page top-left",
+        "controls": [
+          {
+            "pointCode": "NE",
+            "imageXY": [
+              308.4055,
+              194.46
+            ],
+            "coordinates": [
+              -1.04833333,
+              44.64361111
+            ]
+          },
+          {
+            "pointCode": "N",
+            "imageXY": [
+              228.7248,
+              254.77
+            ],
+            "coordinates": [
+              -1.12694444,
+              44.60333333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Suivre la descente vers A660, son infléchissement et le passage près du lac avant N, conformément à TXT 02 et APP 01.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    }
+  ],
+  "pointUpdates": {
+    "P": {
+      "usageRestrictions": [
+        "HEL short flights only",
+        "protocol with aerodrome operator required"
+      ]
+    }
+  },
+  "routes": [
+    {
+      "key": "ARR-NE-N",
+      "pointCodes": [
+        "NE",
+        "N"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        1,
+        5
+      ],
+      "conditions": {
+        "nonBasedAircraft": "mandatory_NE_entry",
+        "trackSegments": [
+          "RM185_to_motorway",
+          "follow_motorway_to_lake",
+          "RM250_to_N"
+        ]
+      },
+      "runways": null,
+      "geometryPointCodes": [
+        "NE",
+        "MAN-A660-01",
+        "MAN-A660-02",
+        "MAN-A660-03",
+        "MAN-A660-04",
+        "MAN-A660-05",
+        "MAN-A660-06",
+        "MAN-A660-07",
+        "MAN-A660-08",
+        "MAN-A660-09",
+        "N"
+      ],
+      "geometryPartial": false,
+      "geometryMethod": "manually_digitized_chart_with_written_instruction",
+      "reviewRequired": []
+    },
+    {
+      "key": "ARR-W-N",
+      "pointCodes": [
+        "W",
+        "N"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        1,
+        4,
+        5
+      ],
+      "conditions": {
+        "basedAircraftOnly": true,
+        "magneticTrackDegrees": 76,
+        "transponder": {
+          "code": "7056",
+          "when": "LF-R31A_active"
+        }
+      },
+      "runways": null,
+      "geometryPointCodes": [
+        "W",
+        "N"
+      ],
+      "geometryPartial": false,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryEndpointNote": "Consigne : vers le nord du point N ; extrémité affichée au point de report."
+    },
+    {
+      "key": "DEP-E",
+      "pointCodes": [
+        "AD",
+        "E"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        4
+      ],
+      "conditions": {
+        "altitude": {
+          "value": 1000,
+          "unit": "ft",
+          "reference": "AMSL"
+        }
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": [],
+      "geometryOmission": "Trajectoire entre piste et point E non numérisée."
+    },
+    {
+      "key": "DEP-SD",
+      "pointCodes": [
+        "AD",
+        "SD"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        4
+      ],
+      "conditions": {
+        "altitude": {
+          "value": 1000,
+          "unit": "ft",
+          "reference": "AMSL"
+        },
+        "transponder": {
+          "code": "7056",
+          "when": "LF-R31A_active"
+        }
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": [],
+      "geometryOmission": "Trajectoire entre piste et SD non numérisée."
+    }
+  ]
+}
