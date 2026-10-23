@@ -589,6 +589,16 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
   .zoneGrid .wide {
     grid-column: 1/-1
   }
+  .zoomRows {
+    display: grid;
+    grid-template-columns: minmax(12em, auto) auto;
+    gap: 3px 12px;
+    align-items: center;
+    margin-top: 6px
+  }
+  .zoomRows input {
+    width: 4.5em
+  }
   .aarPick summary {
     cursor: pointer;
     padding: 6px 8px;
@@ -1265,6 +1275,8 @@ if (/[?&]carte(?:[=&]|$)/.test(location.search)) document.documentElement.setAtt
 <div class="box elemBox" data-elem="mora"><label class="check elemHead"><input id="mora" type="checkbox"> Grille MORA</label><div class="sub"><div class="colorRow"><label>Valeurs : <output id="moraFontValue">12</output> pt<input id="moraFont" type="range" min="7" max="32" value="12"></label><input id="moraColor" type="color" value="#8b2d18" title="Couleur des valeurs MORA"></div><label>Opacité : <output id="moraOpacityValue">90</output> %<input id="moraOpacity" type="range" min="5" max="100" value="90"></label><label>Espacement minimal : <output id="moraSpacingValue">70</output> px<input id="moraSpacing" type="range" min="30" max="250" step="10" value="70" title="En dessous, les cellules sont fusionnées par 2 × 2 (valeur la plus haute), puis 4 × 4…"></label></div></div>
 <div class="box elemBox"><strong class="elemHead">Libellés des villes</strong><div class="sub"><div class="colorRow"><label>Villes : <output id="cityFontValue">7</output> pt<input id="cityFont" type="range" min="7" max="32" value="7"></label><input id="cityColor" type="color" value="#17202a" title="Couleur des villes"></div></div></div>
 <div class="box elemBox"><label class="check elemHead"><input id="aarTracks" type="checkbox" checked> Hippodrome de ravitaillement (ENR 5.7)</label><details id="aarPick" class="aarPick"><summary id="aarSummary">Automatique</summary><div id="aarOptions" class="aarOptions"></div></details><span id="aarStatus" data-status class="small"></span><label class="check elemHead"><input id="missionZones" type="checkbox" checked> Zones de mission et de recherche</label><span class="small">Tailles en points : elles suivent la dimension de sortie, quel que soit le zoom géographique (7 pt minimum).</span></div>
+<div class="box" id="zoomBox" data-no-i18n><details><summary id="zoomSum"></summary><p class="small" id="zoomHint"></p><div id="zoomRows" class="zoomRows"></div></details></div>
+<div class="box" id="appProfiles" data-no-i18n><strong id="appTitle"></strong><p class="small" id="appHint"></p><div class="profileBar"><label><span id="appModeL"></span><select id="appMode"></select></label><div class="actions"><button type="button" id="appLoad" class="secondary" data-icon="download"></button><button type="button" id="appSave" class="secondary" data-icon="save"></button></div></div><p id="appStatus" data-status class="small"></p></div>
 </div>
 </div>
 </div></details>
@@ -1874,6 +1886,7 @@ function applyProfileToUi() {
     const out = $(id + 'Value');
     if (out) out.value = input.value
   }
+  zoomToUi(p.elements?.zoom);
   syncLayerAvailability();
   syncZoneGroups();
   syncElementBoxes();
@@ -1889,6 +1902,149 @@ const PROFILE_ELEMENTS = ['airwaysLow', 'airwaysHigh', 'airwayLabels', 'natTrack
   'pointFont', 'pointColor', 'pointFill', 'pointMarker', 'cityFont', 'cityColor', 'moraFont', 'moraColor', 'moraOpacity', 'moraSpacing',
   'summitFont', 'summitColor'
 ];
+// ===== Profils de l'appli (V3, module maps) =====
+// airline/map_profiles.json du dépôt des données : un profil d'affichage par mode de la carte de l'appli (auto, low,
+// high, vfr, topo, cam), au format profile_def, complet ou partiel (l'appli le fusionne sur le sien) ; règle record : le
+// document est relu, changé puis réécrit en entier. Les extensions de l'appli (elements.vfrDensity, fixes, awLabels,
+// hillshade…) sont gardées sans être comprises ; elements.zoom { clé: [min, max] } (zoom MapLibre, 24 : sans limite ; clé
+// absente : toujours affiché) se règle ici, le studio ne s'en sert pas (ses cartes de mission montrent ce qu'elles demandent).
+const APP_PROFILES = 'airline/map_profiles.json',
+  APP_MODES = [
+    ['auto', ['Auto', 'Auto', 'Auto', 'Auto']],
+    ['low', ['IFR bas', 'Low IFR', 'IFR unten', 'IFR bajo']],
+    ['high', ['IFR haut', 'High IFR', 'IFR oben', 'IFR alto']],
+    ['vfr', ['VFR', 'VFR', 'VFR', 'VFR']],
+    ['topo', ['Topo', 'Topo', 'Topo', 'Topo']],
+    ['cam', ['CAM', 'CAM', 'CAM', 'CAM']]
+  ],
+  // clés de l'appli (modules/maps/SPEC.md § 4 quinquies, ZOOM_KEYS)
+  ZOOM_KEYS = [
+    ['asFir', ['Espaces FIR, UIR (UTA, LTA, OCA, FRA)', 'FIR, UIR airspaces (UTA, LTA, OCA, FRA)',
+      'Lufträume FIR, UIR (UTA, LTA, OCA, FRA)', 'Espacios FIR, UIR (UTA, LTA, OCA, FRA)'
+    ]],
+    ['asTma', ['TMA', 'TMA', 'TMA', 'TMA']],
+    ['asCta', ['CTA', 'CTA', 'CTA', 'CTA']],
+    ['asCtr', ['CTR', 'CTR', 'CTR', 'CTR']],
+    ['asR', ['Zones R', 'R areas', 'R-Gebiete', 'Zonas R']],
+    ['asD', ['Zones D', 'D areas', 'D-Gebiete', 'Zonas D']],
+    ['asP', ['Zones P', 'P areas', 'P-Gebiete', 'Zonas P']],
+    ['asTsa', ['TSA, TRA, CBA', 'TSA, TRA, CBA', 'TSA, TRA, CBA', 'TSA, TRA, CBA']],
+    ['asOther', ['Autres espaces', 'Other airspaces', 'Andere Lufträume', 'Otros espacios']],
+    ['zoneLabels', ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios']],
+    ['awLow', ['Voies basses', 'Low airways', 'Untere Flugstrecken', 'Aerovías bajas']],
+    ['awHigh', ['Voies hautes', 'High airways', 'Obere Flugstrecken', 'Aerovías altas']],
+    ['awLabels', ['Étiquettes de tronçon (distance, routes)', 'Segment labels (distance, tracks)',
+      'Abschnittsbeschriftungen (Distanz, Kurse)', 'Etiquetas de tramo (distancia, rumbos)'
+    ]],
+    ['navaids', ['Balises', 'Beacons', 'Funkfeuer', 'Radioayudas']],
+    ['fixes', ['Points des voies', 'Airway points', 'Streckenpunkte', 'Puntos de aerovía']],
+    ['vrp', ['Points de report VFR', 'VFR reporting points', 'VFR-Meldepunkte', 'Puntos de notificación VFR']],
+    ['obstacles', ['Obstacles', 'Obstacles', 'Hindernisse', 'Obstáculos']],
+    ['mora', ['MORA', 'MORA', 'MORA', 'MORA']],
+    ['citiesBig', ['Grandes villes (200 000 hab. et plus)', 'Large towns (200,000 and more)', 'Großstädte (200 000 Einw. und mehr)',
+      'Grandes ciudades (200 000 hab. o más)'
+    ]],
+    ['citiesMid', ['Villes moyennes (30 000 hab.)', 'Medium towns (30,000)', 'Mittelstädte (30 000 Einw.)',
+      'Ciudades medianas (30 000 hab.)'
+    ]],
+    ['citiesSmall', ['Petites villes', 'Small towns', 'Kleinstädte', 'Ciudades pequeñas']],
+    ['graticule', ['Canevas (méridiens, parallèles)', 'Graticule (meridians, parallels)', 'Gradnetz (Meridiane, Breitenkreise)',
+      'Retícula (meridianos, paralelos)'
+    ]],
+    ['aar', ['Hippodromes de ravitaillement (AAR)', 'Refuelling tracks (AAR)', 'Luftbetankungsstrecken (AAR)',
+      'Circuitos de reabastecimiento (AAR)'
+    ]],
+    ['nat', ['Routes NAT', 'NAT tracks', 'NAT-Strecken', 'Rutas NAT']],
+    ['wind', ['Barbules de vent', 'Wind barbs', 'Windfiedern', 'Barbas de viento']],
+    ['contours', ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel']]
+  ];
+/** Seuils de zoom du formulaire → { clé: [min, max] } ; clés inconnues de old gardées ; null si rien n'est réglé ;
+ *  formulaire absent (Cartes de vol) : old tel quel. */
+function zoomFromUi(old) {
+  if (!$('zoomRows')?.childElementCount) return old || null;
+  const known = new Set(ZOOM_KEYS.map(([k]) => k)),
+    out = Object.fromEntries(Object.entries(old || {}).filter(([k]) => !known.has(k))),
+    num = (v, d) => v === '' || !Number.isFinite(+v) ? d : Math.max(0, Math.min(24, +v));
+  for (const [k] of ZOOM_KEYS) {
+    const a = $('zoomRows').querySelector(`[data-zmin="${k}"]`).value.trim(),
+      b = $('zoomRows').querySelector(`[data-zmax="${k}"]`).value.trim();
+    if (a !== '' || b !== '') out[k] = [num(a, 0), num(b, 24)]
+  }
+  return Object.keys(out).length ? out : null
+}
+/** Seuils de zoom d'un profil → formulaire (vide : clé absente, toujours affichée). */
+function zoomToUi(zoom) {
+  for (const [k] of ZOOM_KEYS) {
+    const r = Array.isArray(zoom?.[k]) ? zoom[k] : null,
+      a = $('zoomRows')?.querySelector(`[data-zmin="${k}"]`),
+      b = $('zoomRows')?.querySelector(`[data-zmax="${k}"]`);
+    if (a) a.value = r ? r[0] : '';
+    if (b) b.value = r ? r[1] : ''
+  }
+}
+/** Textes et champs des seuils de zoom et des profils de l'appli, dans la langue courante (valeurs du profil actif). */
+function renderAppBoxes() {
+  const K = window.RepositoryKit,
+    T = row => K.t(row),
+    set = (id, v) => {
+      const e = $(id);
+      if (e && e.textContent !== v) e.textContent = v
+    };
+  if (window.SIA_MISSION_NS === 'planner') {
+    $('zoomBox').hidden = $('appProfiles').hidden = true; // Cartes de vol : réglage de la compagnie, réservé au studio
+    return
+  }
+  set('zoomSum', T(['Seuils de zoom de l’appli (V3) : de … à …', 'App zoom thresholds (V3): from … to …',
+    'Zoomschwellen der App (V3): von … bis …', 'Umbrales de zoom de la aplicación (V3): de … a …'
+  ]));
+  set('zoomHint', T([
+    'Zoom MapLibre de la carte de l’appli où chaque élément se montre (France sur un écran ≈ 5,5 ; 100 NM de large ≈ 8,5 ; 24 : sans limite). Vide : toujours affiché. Les cartes de mission du studio ne s’en servent pas.',
+    'MapLibre zoom of the app’s map in which each element shows (France on a screen ≈ 5.5; 100 NM wide ≈ 8.5; 24: no limit). Empty: always shown. The studio’s mission maps do not use it.',
+    'MapLibre-Zoom der App-Karte, in dem jedes Element erscheint (Frankreich auf einem Bildschirm ≈ 5,5; 100 NM breit ≈ 8,5; 24: ohne Grenze). Leer: immer angezeigt. Die Missionskarten des Studios nutzen ihn nicht.',
+    'Zoom MapLibre del mapa de la aplicación en el que aparece cada elemento (Francia en una pantalla ≈ 5,5; 100 NM de ancho ≈ 8,5; 24: sin límite). Vacío: siempre visible. Los mapas de misión del estudio no lo usan.'
+  ]));
+  const from = T(['de', 'from', 'von', 'de']),
+    to = T(['à', 'to', 'bis', 'a']),
+    keep = zoomFromUi(activeProfile()?.elements?.zoom);
+  $('zoomRows').innerHTML = ZOOM_KEYS.map(([k, label]) => `<span>${esc(T(label))}</span><span>${esc(from)} <input type="number" min="0" max="24" step="0.25" data-zmin="${k}"> ${esc(to)} <input type="number" min="0" max="24" step="0.25" data-zmax="${k}"></span>`).join('');
+  zoomToUi(keep || activeProfile()?.elements?.zoom);
+  set('appTitle', T(['Profils de l’appli (V3) — airline/map_profiles.json', 'App profiles (V3) — airline/map_profiles.json',
+    'Profile der App (V3) — airline/map_profiles.json', 'Perfiles de la aplicación (V3) — airline/map_profiles.json'
+  ]));
+  set('appHint', T([
+    'Un profil par mode de la carte de l’appli, partagé par la compagnie (dépôt des données). « Reprendre dans le studio » en fait un profil de ce studio (« Appli — mode ») à régler ici ; « Enregistrer pour l’appli » écrit le profil affiché pour ce mode (le fichier est relu juste avant, les autres modes et les réglages propres à l’appli sont gardés). « Synchroniser » le partage.',
+    'One profile per mode of the app’s map, shared by the airline (data repository). “Take into the studio” makes it a profile of this studio (“App — mode”) to tune here; “Save for the app” writes the profile shown for that mode (the file is read again just before; the other modes and the app’s own settings are kept). “Synchronise” shares it.',
+    'Ein Profil pro Modus der App-Karte, von der Fluggesellschaft geteilt (Daten-Repository). „Ins Studio übernehmen“ macht daraus ein Profil dieses Studios („App — Modus“), hier einzustellen; „Für die App speichern“ schreibt das angezeigte Profil für diesen Modus (die Datei wird kurz vorher neu gelesen; die anderen Modi und die eigenen Einstellungen der App bleiben). „Synchronisieren“ teilt es.',
+    'Un perfil por modo del mapa de la aplicación, compartido por la aerolínea (repositorio de datos). «Llevar al estudio» lo convierte en un perfil de este estudio («Aplicación — modo») que se ajusta aquí; «Guardar para la aplicación» escribe el perfil mostrado para ese modo (el archivo se vuelve a leer justo antes; se conservan los demás modos y los ajustes propios de la aplicación). «Sincronizar» lo comparte.'
+  ]));
+  set('appModeL', T(['Mode de la carte ', 'Map mode ', 'Kartenmodus ', 'Modo del mapa ']));
+  const cur = $('appMode').value || 'vfr';
+  $('appMode').innerHTML = APP_MODES.map(([m, label]) => `<option value="${m}">${esc(T(label))}</option>`).join('');
+  $('appMode').value = cur;
+  set('appLoad', T(['Reprendre dans le studio', 'Take into the studio', 'Ins Studio übernehmen', 'Llevar al estudio']));
+  set('appSave', T(['Enregistrer pour l’appli', 'Save for the app', 'Für die App speichern', 'Guardar para la aplicación']))
+}
+/** Message sous les profils de l'appli (kind : ok, warn, err). */
+const appStatus = (text, kind = '') => {
+  $('appStatus').textContent = text;
+  $('appStatus').className = `small ${kind}`;
+  if (kind === 'err') window.AppFramework?.notify?.(text, 'warn')
+};
+/** airline/map_profiles.json relu (null s'il n'existe pas encore) ; erreur expliquée sans couche de données. */
+async function readAppProfiles() {
+  const A = window.MissionAssignments;
+  if (!A?.readData) throw Error(window.RepositoryKit.t(['Couche de données absente (shared/assignments.js).',
+    'Data layer missing (shared/assignments.js).', 'Datenschicht fehlt (shared/assignments.js).',
+    'Falta la capa de datos (shared/assignments.js).'
+  ]));
+  const d = await A.readData(APP_PROFILES, {
+    fresh: true
+  });
+  return d && typeof d === 'object' ? d : null
+}
+/** Nom affiché d'un mode de l'appli. */
+const appModeName = m => window.RepositoryKit.t((APP_MODES.find(x => x[0] === m) || [m, [m, m, m, m]])[1]);
+
 // Élément d'affichage d'une carte : valeur enregistrée dans son profil, sinon valeur par défaut de la page.
 function el(def, id) {
   const v = profileForMap(def)?.elements?.[id],
@@ -1942,11 +2098,15 @@ function readProfileFromUi() {
     p[l + 'List'] = [...pickState[l].items];
     p[l + 'Mode'] = pickState[l].mode
   }
-  p.elements = {};
+  // éléments que le studio ne connaît pas (extensions de l'appli : vfrDensity, fixes, awLabels…) : gardés tels quels
+  const old = p.elements || {};
+  p.elements = Object.fromEntries(Object.entries(old).filter(([k]) => !PROFILE_ELEMENTS.includes(k) && k !== 'zoom'));
   for (const id of PROFILE_ELEMENTS) {
     const input = $(id);
     p.elements[id] = input.type === 'checkbox' ? input.checked : input.value
   }
+  const zoom = zoomFromUi(old.zoom);
+  if (zoom) p.elements.zoom = zoom
 }
 
 /** Enregistre les profils (localStorage siaDisplayProfiles) d'après l'interface ; assemblage à redessiner. */
@@ -7341,6 +7501,111 @@ $('activeProfile').addEventListener('change', () => {
   schedulePreview()
 });
 $('saveProfile').onclick = saveProfiles;
+// profils de l'appli : un mode du fichier de la compagnie → profil du studio « Appli — mode » (partiel : réglages absents
+// aux valeurs par défaut de la page)
+$('appLoad').onclick = async () => {
+  const K = window.RepositoryKit,
+    mode = $('appMode').value,
+    m = appModeName(mode);
+  try {
+    const src = (await readAppProfiles())?.profiles?.[mode];
+    if (!src || typeof src !== 'object' || !Object.keys(src).length) return appStatus(K.tf([
+      'Pas encore de profil « {m} » pour la compagnie : régler un profil du studio, puis « Enregistrer pour l’appli ».',
+      'No “{m}” profile for the airline yet: tune a studio profile, then “Save for the app”.',
+      'Noch kein Profil „{m}“ für die Fluggesellschaft: ein Studioprofil einstellen, dann „Für die App speichern“.',
+      'Aún no hay perfil «{m}» para la aerolínea: ajuste un perfil del estudio y luego «Guardar para la aplicación».'
+    ], {
+      m
+    }), 'warn');
+    readProfileFromUi();
+    const id = `app-${mode}`,
+      p = {
+        ...JSON.parse(JSON.stringify(src)),
+        id,
+        name: K.tf(['Appli — {m}', 'App — {m}', 'App — {m}', 'Aplicación — {m}'], {
+          m
+        })
+      },
+      i = displayProfiles.findIndex(x => x.id === id);
+    if (i >= 0) displayProfiles[i] = p;
+    else displayProfiles.push(p);
+    {
+      const cm = currentMap();
+      if (cm) cm._profileId = id
+    }
+    fillProfileSelects();
+    $('activeProfile').value = id;
+    applyProfileToUi();
+    saveProfiles();
+    appStatus(K.tf(['Profil « {m} » de la compagnie repris dans le studio (« {n} ») : régler, puis « Enregistrer pour l’appli ».',
+      'Airline “{m}” profile taken into the studio (“{n}”): tune it, then “Save for the app”.',
+      'Profil „{m}“ der Fluggesellschaft ins Studio übernommen („{n}“): einstellen, dann „Für die App speichern“.',
+      'Perfil «{m}» de la aerolínea llevado al estudio («{n}»): ajústelo y luego «Guardar para la aplicación».'
+    ], {
+      m,
+      n: p.name
+    }), 'ok')
+  } catch (e) {
+    appStatus(e.message, 'err')
+  }
+};
+// profil affiché → mode de l'appli : fichier relu, mode remplacé (réglages propres à l'appli gardés), réécrit en entier
+$('appSave').onclick = async () => {
+  const K = window.RepositoryKit,
+    mode = $('appMode').value,
+    m = appModeName(mode);
+  readProfileFromUi();
+  const p = activeProfile();
+  if (!p) return;
+  if (!await window.AppFramework.ask(K.tf(['Remplacer le profil « {m} » de l’appli, pour toute la compagnie, par « {n} » ?',
+      'Replace the app’s “{m}” profile, for the whole airline, with “{n}”?',
+      'Das Profil „{m}“ der App für die ganze Fluggesellschaft durch „{n}“ ersetzen?',
+      '¿Reemplazar el perfil «{m}» de la aplicación, para toda la aerolínea, por «{n}»?'
+    ], {
+      m,
+      n: p.name
+    }))) return;
+  try {
+    const doc = JSON.parse(JSON.stringify(await readAppProfiles() || {})),
+      prev = doc.profiles?.[mode] && typeof doc.profiles[mode] === 'object' ? doc.profiles[mode] : {},
+      def = profileDef(p);
+    delete def.id;
+    delete def.name;
+    doc.schema = doc.schema || 1;
+    doc.profiles = {
+      ...(doc.profiles || {}),
+      [mode]: {
+        ...prev,
+        ...def,
+        elements: {
+          ...(prev.elements || {}),
+          ...def.elements
+        }
+      }
+    };
+    doc.updated_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    doc.by = 'studio';
+    const r = await window.MissionAssignments.writeData(APP_PROFILES, doc);
+    if (r?.where === 'folder') appStatus(K.tf([
+      'Profil « {m} » enregistré pour l’appli (data/airline/map_profiles.json) ; « Synchroniser » le partage avec la compagnie.',
+      '“{m}” profile saved for the app (data/airline/map_profiles.json); “Synchronise” shares it with the airline.',
+      'Profil „{m}“ für die App gespeichert (data/airline/map_profiles.json); „Synchronisieren“ teilt es mit der Fluggesellschaft.',
+      'Perfil «{m}» guardado para la aplicación (data/airline/map_profiles.json); «Sincronizar» lo comparte con la aerolínea.'
+    ], {
+      m
+    }), 'ok');
+    else appStatus(K.tf(['Profil « {m} » gardé dans ce navigateur seulement : {e}', '“{m}” profile kept in this browser only: {e}',
+      'Profil „{m}“ nur in diesem Browser gespeichert: {e}', 'Perfil «{m}» guardado solo en este navegador: {e}'
+    ], {
+      m,
+      e: r?.error?.message || r?.error || ''
+    }), 'warn')
+  } catch (e) {
+    appStatus(e.message, 'err')
+  }
+};
+renderAppBoxes();
+window.addEventListener('repository-language-change', renderAppBoxes);
 $('addProfile').onclick = () => {
   readProfileFromUi();
   const id = 'profile-' + Date.now();
@@ -7430,7 +7695,8 @@ document.addEventListener('change', e => {
     return
   }
   if (e.target.id === 'activeProfile' || e.target.id === 'previewMap' || e.target.id === 'zoneInput' || e.target.closest(
-      '#zoneAliases,#zonePaste,.pickList')) return;
+      '#zoneAliases,#zonePaste,.pickList,#appProfiles')) return;
+  if (e.target.closest('#zoomBox')) return void readProfileFromUi(); // seuils de l'appli : rien à redessiner ici
   syncLayerAvailability();
   readProfileFromUi();
   renderZonePick();

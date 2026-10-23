@@ -61,6 +61,7 @@ flowchart LR
 | `missions/` (missions, assignments, follow-up, log) | `.defa_instance`: launcher marker |
 | `cr/` (reports) | display preferences (theme, language, blocks…): specific to each browser |
 | `atc/` (the week's ATC sessions) | ODV planning settings (`odvPlanning:v1`, see the technical debt) |
+| `airline/` (settings shared with the V3 app: map profiles written by the studio, airline settings and fleet) | |
 
 ## 4. Reading: signed copies
 

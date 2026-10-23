@@ -23,8 +23,9 @@ import data_guard  # .js du pool : format des fichiers de données seulement (ja
 
 # chemins synchronisés (relatifs à data/) ; index régénérés et repère du lanceur exclus ; sia/base : base aéronautique
 # publiée par zone par le poste qui la reconstruit (shared/sia_base.js, publish), lue par les téléphones (mode GitHub) —
-# les fichiers du SIA eux-mêmes (sia/*.xml) restent hors du dépôt
-POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv', 'sia/base']
+# les fichiers du SIA eux-mêmes (sia/*.xml) restent hors du dépôt ; airline : réglages de la compagnie partagés avec
+# l'appli V3 (airline/map_profiles.json écrit par le studio des cartes ; settings.json, fleet.json écrits par l'appli)
+POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv', 'sia/base', 'airline']
 EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':(exclude).defa_instance']
 # index des dossiers : régénérés par le lanceur (et par l'appli en mode GitHub, depuis l'arbre), jamais suivis par git ;
 # une copie suivie dans le dépôt (écrite par une version précédente de l'appli) est retirée du suivi, jamais fusionnée

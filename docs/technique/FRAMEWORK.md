@@ -681,6 +681,20 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
   otherwise all defaults. The registry ignores them in `maps[]` and `vertical_profile` only (`canon`, `diffOf`): a mission
   that gains them is not a new version, and a new version takes them over map by map (same `filename`), like `profile`,
   `view`, `trace` and `generated_at`.
+- The airline's map profiles for the app (V3 maps, `modules/maps/SPEC.md` § 4 quinquies): `airline/map_profiles.json` of
+  the data repository, `{ schema: 1, updated_at, by, profiles: { auto, low, high, vfr, topo, cam } }`, each profile in
+  the `profile_def` format, complete or partial (the app merges it onto its own). The studio's "App profiles (V3)" box
+  (`readAppProfiles`, `appLoad`, `appSave` in `apps/cpco/map_parser.html`, hidden in Flight maps) takes a mode into the
+  studio as a profile `app-<mode>`, or writes the profile shown into a mode, after confirmation, by the `record` rule:
+  the file is read again, the mode replaced (the previous mode's keys the studio does not write are kept: `hillshade`,
+  `elements.vfrDensity`, `fixes`, `awLabels`…; `elements.zoom` is replaced when the studio profile has one), `updated_at`
+  and `by: "studio"` set, and the whole document written (`MissionAssignments.writeData`). A studio profile keeps the
+  element keys it does not know when it is saved (`readProfileFromUi`). `elements.zoom = { key: [min, max] }` (MapLibre
+  zoom, 24: no upper limit; a key without a range is always shown) is edited in "App zoom thresholds (V3)", one
+  "from … to …" line per key of the app's `ZOOM_KEYS` (26: `asFir`, `asTma`, `asCta`, `asCtr`, `asR`, `asD`, `asP`,
+  `asTsa`, `asOther`, `zoneLabels`, `awLow`, `awHigh`, `awLabels`, `navaids`, `fixes`, `vrp`, `obstacles`, `mora`,
+  `citiesBig`, `citiesMid`, `citiesSmall`, `graticule`, `aar`, `nat`, `wind`, `contours`); keys the studio does not list
+  are kept. The studio's own maps do not use it. `airline/` is in the synchronised pool (`tools/data_sync.py`).
 - `shared/mission_order.js` (order form), `apps/cpco/mission_skeleton.js` (skeleton), `shared/mission_estimate.js` +
   `mission_routing.js` (probable route, durations, transit), `mission_airspaces.js` (areas to activate),
   `mission_exercise.js` (exercise), `mission_i18n.js` (translated brief); each file header documents its rules.
