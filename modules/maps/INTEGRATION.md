@@ -9,7 +9,7 @@ How the frame mounts the map module and what it needs from the frame, aerodb and
 export const meta = {
   id: 'maps', apps: ['pilot'], level: 1,
   reads: ['pilot/', { prefix: 'missions/', policy: 'reference' }, 'cache/maps/'],
-  writes: [{ prefix: 'cache/maps/', policy: 'cache' }],                       // preset and layers, per device
+  writes: [{ prefix: 'cache/maps/', policy: 'cache' }],                       // map mode and layers, per device
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],  // kept at installation
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],                 // kept at first use
@@ -37,6 +37,9 @@ export const meta = {
   compares versions, and carries them over to a new version map by map.
 - Built-in profiles: `modules/maps/lib/profiles.js`, generated from the studio by `tools/build_maps_profiles.py`. Run
   it again when `defaultProfiles` changes (`BASE_PROFILES_VERSION`).
+
+- **Icons**: `frame/lib/icons.js` (`svg`), imported by the module; `wand-sparkles` added there for the map modes
+  (owner: design, the frame session told).
 
 ## 3. What it asks of aerodb
 

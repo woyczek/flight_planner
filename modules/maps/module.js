@@ -1,3 +1,7 @@
+import {
+  svg
+} from '../../frame/lib/icons.js';
+
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
 // et son profil vertical, en lecture seule (lots 2 et 3) ; les cartes d'une mission redessinées d'après son YAML
@@ -133,10 +137,33 @@ const TX = {
   ],
   preset: ['Préréglage de la carte', 'Map preset', 'Kartenvoreinstellung', 'Preajuste del mapa'],
   presets: {
-    auto: ['Auto (niveau du vol)', 'Auto (flight level)', 'Auto (Flugfläche)', 'Auto (nivel del vuelo)'],
+    auto: ['Auto', 'Auto', 'Auto', 'Auto'],
     low: ['IFR bas', 'Low IFR', 'IFR unten', 'IFR bajo'],
     high: ['IFR haut', 'High IFR', 'IFR oben', 'IFR alto'],
-    vfr: ['VFR', 'VFR', 'VFR', 'VFR']
+    vfr: ['VFR', 'VFR', 'VFR', 'VFR'],
+    topo: ['Topo', 'Topo', 'Topo', 'Topo'],
+    cam: ['CAM', 'OAT', 'OAT', 'CAM']
+  },
+  modes: ['Modes de carte', 'Map modes', 'Kartenmodi', 'Modos de mapa'],
+  modeHelp: {
+    auto: ['Automatique selon le niveau du vol', 'Automatic, from the flight level', 'Automatisch nach der Flugfläche',
+      'Automático según el nivel del vuelo'
+    ],
+    low: ['IFR bas : sous le plafond 195', 'Low IFR: below FL195', 'IFR unten: unter FL195', 'IFR bajo: por debajo del FL195'],
+    high: ['IFR haut : au-dessus du plancher 195', 'High IFR: above FL195', 'IFR oben: über FL195',
+      'IFR alto: por encima del FL195'
+    ],
+    vfr: ['VFR : espaces, points de report, obstacles', 'VFR: airspaces, reporting points, obstacles',
+      'VFR: Lufträume, Meldepunkte, Hindernisse', 'VFR: espacios, puntos de notificación, obstáculos'
+    ],
+    topo: ['Topographique : relief, surcouche minimale', 'Topographic: relief, minimal overlay',
+      'Topografisch: Relief, minimale Überlagerung', 'Topográfico: relieve, superposición mínima'
+    ],
+    cam: ['CAM : vol militaire (zones R / D / P, TSA / TRA / CBA, RTBA, à tous les niveaux)',
+      'OAT: military flight (R / D / P, TSA / TRA / CBA areas, low-flying network, at all levels)',
+      'OAT: Militärflug (Gebiete R / D / P, TSA / TRA / CBA, Tiefflugnetz, in allen Höhen)',
+      'CAM: vuelo militar (zonas R / D / P, TSA / TRA / CBA, red de vuelo bajo, a todos los niveles)'
+    ]
   },
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
   layerNames: {
@@ -170,6 +197,15 @@ const TX = {
   ]
 };
 
+/** Modes de carte (maquette validée par l'utilisateur) : [clé, icône, classe du choix]. */
+const MODES = [
+  ['auto', `<span class="mp-ic">${svg('wand-sparkles')}</span>`, ''],
+  ['low', '<span class="mp-ifr mp-ceil" aria-hidden="true">IFR</span>', ''],
+  ['high', '<span class="mp-ifr mp-floor" aria-hidden="true">IFR</span>', ''],
+  ['vfr', `<span class="mp-ic">${svg('map')}</span>`, ''],
+  ['topo', '<span class="mp-topo" aria-hidden="true"><span></span><span></span><span></span><span></span></span>', ''],
+  ['cam', `<span class="mp-ic mp-ic-cam">${svg('plane')}</span>`, ' mp-mil']
+];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 let S = null;
 const tt = (row, v) => S.ctx.t(row, v);
@@ -816,15 +852,18 @@ async function startTiles() {
       } catch {
         /* version sans projection réglable : Mercator */
       }
+      if (S?.map === map) relief();
     });
     map.on('error', () => finish(false));
     map.on('load', () => {
       if (!S) return finish(false);
       S.map = map;
+      relief();
       map.on('move', schedule);
       map.on('moveend', schedule);
       map.on('click', e => {
         if (!S) return;
+        if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
         if (s != null) {
@@ -840,7 +879,7 @@ async function startTiles() {
         if (S && !fromTouch(e.originalEvent)) hoverMap(e.point.x, e.point.y);
       });
       map.on('mouseout', e => {
-        if (S && !fromTouch(e.originalEvent)) S.tipEl.hidden = true;
+        if (S && !fromTouch(e.originalEvent)) linger('map');
       });
       map.on('movestart', hideTips);
       finish(true);
@@ -893,12 +932,27 @@ function followTip(tip, box, x, y, html) {
 function hoverMap(x, y) {
   const g = MapsRender.airwaysAt(S.awHits, x, y)[0],
     z = g ? null : (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
-  if (!g && !z) {
-    if (!S.tipEl.hidden && S.tipEl.classList.contains('mp-hover')) S.tipEl.hidden = true;
-    return;
-  }
+  if (!g && !z) return linger('map');
+  stay('map');
   const [a, b] = g ? airwayLines(g) : MapsRender.sia(z.a);
   followTip(S.tipEl, S.box, x, y, hoverHtml(a, b));
+}
+/** Infobulle de survol quittée (libellé, carte, profil) : elle reste 5 s à sa dernière place, puis part ; un nouveau
+ *  survol la remplace, un clic la ferme. */
+function linger(k) {
+  const tip = k === 'map' ? S.tipEl : S.ptipEl;
+  if (tip.hidden || !tip.classList.contains('mp-hover') || S.linger?.[k]) return;
+  (S.linger ||= {})[k] = setTimeout(() => {
+    if (!S) return;
+    S.linger[k] = 0;
+    if (tip.classList.contains('mp-hover')) tip.hidden = true;
+  }, 5000);
+}
+/** Survol repris : l'attente de 5 s est annulée. */
+function stay(k) {
+  if (!S?.linger?.[k]) return;
+  clearTimeout(S.linger[k]);
+  S.linger[k] = 0;
 }
 /** Infobulle du toucher (ou du clic) dans un cadre (carte ou profil), à la position (x, y) du cadre ; reste jusqu'au
  *  toucher suivant ; écrite seulement si elle change. */
@@ -916,6 +970,7 @@ function showTip(tip, box, x, y, html) {
 let touchAt = -1e9;
 const fromTouch = e => !!e?.sourceCapabilities?.firesTouchEvents || performance.now() - touchAt < 1000;
 const hideTips = () => {
+  for (const k of ['map', 'prof']) stay(k);
   if (S?.tipEl) S.tipEl.hidden = true;
   if (S?.ptipEl) S.ptipEl.hidden = true;
 };
@@ -934,7 +989,9 @@ async function setPreset(v) {
   S.profile = effectiveProfile();
   if (!S.layersEl.hidden) fillLayers();
   S.data = null;
-  if (S.map && styleFor() !== before) S.map.setStyle(styleFor());
+  if (S.map && styleFor() !== before) S.map.setStyle(styleFor()); // relief posé au chargement du style
+  else relief();
+  fillModes();
   schedule();
   buildProfile();
 }
@@ -1011,7 +1068,95 @@ function flightProfile() {
       }
     };
   }
+  if (S.preset === 'topo') {
+    // relief (ombrage des tuiles Terrarium) sur fond topographique, surcouche minimale : terrains, villes, obstacles de
+    // près ; les couches ajoutent le reste
+    const p = MapsRender.routeProfile(0);
+    return {
+      ...p,
+      id: 'v3-topo',
+      base: 'ofm-liberty',
+      hillshade: true,
+      cities: true,
+      zones: [],
+      corridorNm: 0,
+      elements: {
+        ...p.elements,
+        airwaysLow: false,
+        airwaysHigh: false,
+        navaids: false,
+        mora: false,
+        graticule: false,
+        obstacles: true,
+        agglos: true,
+        vfrDensity: true
+      }
+    };
+  }
+  if (S.preset === 'cam') {
+    // vol militaire : l'IFR du niveau du vol, plus les zones R / D / P, TSA / TRA / CBA (RTBA comprise) à tous les
+    // niveaux et les terrains d'État
+    const p = MapsRender.routeProfile(S.route.levelFt);
+    return {
+      ...p,
+      id: 'v3-cam',
+      zones: [...new Set([...p.zones, 'TSA', 'CBA', 'PJE'])],
+      elements: {
+        ...p.elements,
+        zoneFloor: '',
+        zoneCeil: '',
+        adState: true
+      }
+    };
+  }
   return MapsRender.routeProfile(S.preset === 'low' ? 5000 : S.preset === 'high' ? 30000 : S.route.levelFt);
+}
+/** Mode de carte choisi : bouton déclencheur (mode courant) et choix marqués ; écritures seulement si elles changent. */
+function fillModes() {
+  const cur = S.modesEl.querySelector('.mp-mode-cur'),
+    txt = tt(TX.presets[S.preset] || TX.presets.auto);
+  if (cur.textContent !== txt) cur.textContent = txt;
+  for (const b of S.modesEl.querySelectorAll('[data-mode]')) {
+    const v = String(b.dataset.mode === S.preset);
+    if (b.getAttribute('aria-pressed') !== v) b.setAttribute('aria-pressed', v);
+  }
+}
+/** Grille des modes ouverte ou fermée. */
+function toggleModes(open = S.modeOpts.hidden) {
+  if (S.modeOpts.hidden === !open) return;
+  S.modeOpts.hidden = !open;
+  S.modeBtn.setAttribute('aria-expanded', String(open));
+}
+/** Relief ombré (mode Topo) : couche hillshade des tuiles Terrarium (hôte de meta.net), posée sous les libellés du fond,
+ *  retirée hors du mode ; rien si le style n'est pas prêt (posée au chargement du style). */
+const DEM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+
+function relief() {
+  const m = S?.map;
+  if (!m?.isStyleLoaded?.()) return;
+  const want = !!S.profile?.hillshade,
+    has = !!m.getLayer('mp-hillshade');
+  if (want === has) return;
+  try {
+    if (!want) return m.removeLayer('mp-hillshade');
+    if (!m.getSource('mp-dem')) m.addSource('mp-dem', {
+      type: 'raster-dem',
+      tiles: [DEM],
+      tileSize: 256,
+      encoding: 'terrarium',
+      maxzoom: 12
+    });
+    m.addLayer({
+      id: 'mp-hillshade',
+      type: 'hillshade',
+      source: 'mp-dem',
+      paint: {
+        'hillshade-exaggeration': .45
+      }
+    }, m.getStyle().layers.find(l => l.type === 'symbol')?.id);
+  } catch {
+    /* style sans place pour la couche : fond sans relief */
+  }
 }
 
 // ---------------------------------------------------------------- couches (panneau « Couches »)
@@ -1313,10 +1458,34 @@ const STYLE = `
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
 [data-module="maps"] .mp-strip{min-height:1.4em;font-size:.92em;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-status p{margin:4px 0}
-[data-module="maps"] .mp-preset{position:absolute;left:8px;top:8px;z-index:3;min-height:var(--sog-touch);max-width:60%;font-size:.88em;padding-block:0}
+[data-module="maps"] .mp-box{container-type:inline-size}
+[data-module="maps"] .mp-modes{position:absolute;left:8px;top:8px;z-index:6;max-width:calc(100% - 16px)}
+[data-module="maps"] .mp-modes[hidden]{display:none}
+[data-module="maps"] .mp-mode-btn{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 12px;height:var(--sog-touch);min-height:0;min-width:92px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-accent);font:inherit;font-weight:600;cursor:pointer}
+[data-module="maps"] .mp-mode-btn svg{width:14px;height:14px}
+[data-module="maps"] .mp-mode-opts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:6px;margin-top:7px;width:min(440px,calc(100cqw - 16px));box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
+[data-module="maps"] .mp-mode-opts[hidden]{display:none}
+[data-module="maps"] .mp-choice{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;height:72px;min-height:0;padding:0;border:0;border-radius:var(--sog-radius-s);background:var(--sog-surface);color:var(--sog-fg);font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
+[data-module="maps"] .mp-choice:hover{background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface))}
+[data-module="maps"] .mp-choice[aria-pressed=true]{color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface));box-shadow:inset 0 0 0 1px var(--sog-accent)}
+[data-module="maps"] .mp-ic{display:flex;align-items:center;justify-content:center;width:35px;height:29px}
+[data-module="maps"] .mp-ic svg{width:26px;height:26px}
+[data-module="maps"] .mp-ifr{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:33px;height:28px;font-size:15px;font-weight:500;letter-spacing:.5px}
+[data-module="maps"] .mp-ceil{border-top:2px solid currentColor;padding-top:2px}
+[data-module="maps"] .mp-floor{border-bottom:2px solid currentColor;padding-bottom:2px}
+[data-module="maps"] .mp-topo{display:block;position:relative;box-sizing:border-box;width:29px;height:29px;overflow:hidden}
+[data-module="maps"] .mp-topo>span{position:absolute;box-sizing:border-box;border:1.35px solid currentColor;border-radius:46% 54% 36% 64% / 36% 62% 38% 64%;transform:rotate(-38deg)}
+[data-module="maps"] .mp-topo>span:nth-child(1){width:40px;height:53px;left:-11px;top:-8px}
+[data-module="maps"] .mp-topo>span:nth-child(2){width:30px;height:41px;left:-6px;top:0}
+[data-module="maps"] .mp-topo>span:nth-child(3){width:20px;height:29px;left:-1px;top:8px}
+[data-module="maps"] .mp-topo>span:nth-child(4){width:10px;height:16px;left:4px;top:16px}
+[data-module="maps"] .mp-choice.mp-mil{color:var(--sog-err)}
+[data-module="maps"] .mp-ic-cam svg{fill:currentColor}
+[data-module="maps"] .mp-mil:hover,[data-module="maps"] .mp-mil[aria-pressed=true]{background:color-mix(in srgb,var(--sog-err) 10%,var(--sog-surface));color:var(--sog-err);box-shadow:inset 0 0 0 1px var(--sog-err)}
+@container (max-width:460px){[data-module="maps"] .mp-mode-opts{grid-template-columns:repeat(3,minmax(0,1fr))}}
 [data-module="maps"] .mp-tip{position:absolute;z-index:4;max-width:min(92%,340px);padding:6px 8px;margin:0;font-size:.88em;line-height:1.35;pointer-events:none;box-shadow:0 2px 8px #0003}
 [data-module="maps"] .mp-tip>div+div{margin-top:4px}
-[data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 80%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
+[data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
 [data-module="maps"] .mp-tip.mp-hover>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
 [data-module="maps"] .mp-layers-btn{position:absolute;left:8px;top:calc(14px + var(--sog-touch));z-index:3;width:var(--sog-touch);height:var(--sog-touch);min-height:0;display:grid;place-items:center;padding:0}
 [data-module="maps"] .mp-layers{position:absolute;left:8px;top:calc(20px + 2 * var(--sog-touch));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 28px - 2 * var(--sog-touch));overflow:auto;display:flex;flex-direction:column;gap:0;font-size:.9em;min-width:min(220px,80%)}
@@ -1346,7 +1515,8 @@ export async function mount(el, ctx) {
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
 <div class="mp-sum f-muted" aria-live="polite"></div></div>
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
-<select class="mp-preset" aria-label="${esc(ctx.t(TX.preset))}">${['auto', 'low', 'high', 'vfr'].map(k => `<option value="${k}">${esc(ctx.t(TX.presets[k]))}</option>`).join('')}</select>
+<div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"><span class="mp-mode-cur"></span>${svg('chevron-down')}</button>
+<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(ctx.t(TX.modeHelp[k]))}" title="${esc(ctx.t(TX.modeHelp[k]))}">${icon}<span>${esc(ctx.t(TX.presets[k]))}</span></button>`).join('')}</div></div>
 <button type="button" class="mp-layers-btn" aria-expanded="false" aria-label="${esc(ctx.t(TX.layers))}" title="${esc(ctx.t(TX.layers))}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg></button>
 <div class="mp-layers f-card" hidden role="group" aria-label="${esc(ctx.t(TX.layers))}"><b>${esc(ctx.t(TX.layers))}</b>
 ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
@@ -1369,7 +1539,9 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     stripEl: el.querySelector('.mp-strip'),
     pickEl: el.querySelector('.mp-pick'),
     mapPickEl: el.querySelector('.mp-mappick'),
-    presetEl: el.querySelector('.mp-preset'),
+    modesEl: el.querySelector('.mp-modes'),
+    modeBtn: el.querySelector('.mp-mode-btn'),
+    modeOpts: el.querySelector('.mp-mode-opts'),
     layersBtn: el.querySelector('.mp-layers-btn'),
     layersEl: el.querySelector('.mp-layers'),
     tipEl: el.querySelector('.mp-box .mp-tip'),
@@ -1389,17 +1561,15 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     const zones = MapsProfile.at(S.prof, S.cursor).zones;
     if (e.pointerType !== 'mouse') return showTip(S.ptipEl, S.profBox, x, e.clientY - r.top, tipHtml(zones));
     // souris : deux lignes au plus (les deux premiers espaces traversés, et combien d'autres)
-    if (!zones.length) {
-      if (!S.ptipEl.hidden) S.ptipEl.hidden = true;
-      return;
-    }
+    if (!zones.length) return linger('prof');
+    stay('prof');
     const l = zones.map(z => MapsRender.sia(z)[0]);
     followTip(S.ptipEl, S.profBox, x, e.clientY - r.top, hoverHtml(l[0], l.length > 2 ? `${l[1]} ${tt(TX.tipMore, {
       n: l.length - 2
     })}` : l[1] || ''));
   };
   S.profBox.addEventListener('pointerleave', e => {
-    if (e.pointerType === 'mouse') S.ptipEl.hidden = true;
+    if (e.pointerType === 'mouse') linger('prof');
   });
   el.addEventListener('pointerdown', e => {
     if (e.pointerType === 'touch') touchAt = performance.now();
@@ -1408,15 +1578,16 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.profBox.addEventListener('pointermove', onProf);
   // toucher sur la carte près de la route (fond uni : la boîte reçoit le toucher ; MapLibre : son « click »)
   S.box.addEventListener('pointermove', e => {
-    if (S.map || e.pointerType !== 'mouse' || e.target.closest('.mp-preset, .mp-tip, .mp-layers, .mp-layers-btn')) return;
+    if (S.map || e.pointerType !== 'mouse' || e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn')) return;
     const r = S.box.getBoundingClientRect();
     hoverMap(e.clientX - r.left, e.clientY - r.top);
   });
   S.box.addEventListener('pointerleave', e => {
-    if (e.pointerType === 'mouse' && S.tipEl.classList.contains('mp-hover')) S.tipEl.hidden = true;
+    if (e.pointerType === 'mouse') linger('map');
   });
   S.box.addEventListener('click', e => {
-    if (S.map || e.target.closest('.mp-preset, .mp-tip, .mp-layers, .mp-layers-btn')) return;
+    if (S.map || e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn')) return;
+    if (!S.modeOpts.hidden) return toggleModes(false);
     if (!S.layersEl.hidden) return toggleLayers(false);
     const r = S.box.getBoundingClientRect(),
       x = e.clientX - r.left,
@@ -1431,7 +1602,19 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     const ll = v.toLL(x, y);
     mapTip(ll.lat, ll.lon, x, y);
   });
-  S.presetEl.addEventListener('change', () => setPreset(S.presetEl.value));
+  S.modeBtn.addEventListener('click', () => toggleModes());
+  S.modeOpts.addEventListener('click', e => {
+    const m = e.target.closest('[data-mode]')?.dataset.mode;
+    if (!m) return;
+    toggleModes(false);
+    if (m !== S.preset) setPreset(m);
+  });
+  S.modesEl.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !S.modeOpts.hidden) {
+      toggleModes(false);
+      S.modeBtn.focus();
+    }
+  });
   S.layersBtn.addEventListener('click', () => toggleLayers());
   S.layersEl.addEventListener('change', e => {
     const k = e.target.closest('input[data-layer]')?.dataset.layer;
@@ -1485,9 +1668,10 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   const ui = (await ctx.data.get('cache/maps/ui.json').catch(() => null)) || {};
   S.preset = ui.preset || 'auto';
   S.layers = ui.layers && typeof ui.layers === 'object' ? ui.layers : {};
-  S.presetEl.value = S.preset;
-  // une carte de mission garde son profil : ni préréglage ni couches
-  S.presetEl.hidden = S.layersBtn.hidden = !!ctx.query?.mission;
+  if (!TX.presets[S.preset]) S.preset = 'auto';
+  fillModes();
+  // une carte de mission garde son profil : ni mode ni couches
+  S.modesEl.hidden = S.layersBtn.hidden = !!ctx.query?.mission;
   if (ctx.query?.mission) await applyMission();
   else {
     await applyFlight();

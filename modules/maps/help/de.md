@@ -23,10 +23,13 @@ das Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der
 auf der Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem
 Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden.
 
-**Drei Karteneinstellungen.** Die Liste oben links auf der Karte wählt, was sie zeigt. „IFR unten“: untere
-Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege (UN…, UM…), Lufträume über FL195. „VFR“:
-topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen, Meldepunkten und Hindernissen. „Auto“ wählt
-nach der Flugfläche Ihres Flugs (IFR oben ab FL195); die Wahl bleibt erhalten.
+**Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um
+die sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere
+Flugwege (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen
+Lufträumen, Meldepunkten und Hindernissen. „Topo“: das Gelände, nur mit Flugplätzen, Städten und Hindernissen.
+„OAT“: Militärflug, das IFR Ihrer Flughöhe plus die Gebiete R, D, P, TSA, TRA, CBA und das Tiefflugnetz in allen
+Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf diesem Gerät
+erhalten.
 
 **Je näher Sie zoomen, desto mehr zeigt sie.** Von weitem zeigt die Karte nur die großen Flugplätze, die Flugwege und
 ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“),
@@ -44,7 +47,7 @@ ohnehin alles gezeichnet.
 Länge, seine Kurse in beide Richtungen, Unter- und Obergrenze. Tippen Sie auf einen Luftraum: die Blase nennt seinen
 Namen, seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“) und seine Zeiten, wenn bekannt. Das nächste
 Antippen oder ein Verschieben der Karte schließt sie. Mit der Maus über den Namen eines Flugwegs oder Luftraums
-fahren: eine kleine Blase folgt dem Zeiger und verschwindet, sobald Sie ihn verlassen. Auf dem Profil nennen Finger
+fahren: eine kleine Blase folgt dem Zeiger und bleibt danach 5 Sekunden stehen; ein Klick schließt sie. Auf dem Profil nennen Finger
 oder Maus die durchflogenen Lufträume.
 
 **Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:

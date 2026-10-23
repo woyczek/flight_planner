@@ -257,3 +257,27 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     profile tooltips unchanged, layers panel opened by a tap and scrolling inside the map, no button on a mission map,
     page 375 px wide. VFR close views near Limoges and Lyon (off the route): TMA, CTR, CTA, R, P with their limits,
     VRP with names. No JavaScript error.
+- **23 Oct 2026 — lot 5d: map modes, Topo and CAM, hover kept 5 s.**
+  - **The user's mock-up integrated as validated** (`modes-carte.css`, `modes-carte-exemple.html`): same trigger, grid,
+    sizes and icons. Translated to the tokens: ink → `--sog-fg`, blue → `--sog-accent`, red → `--sog-err`, soft
+    backgrounds as `color-mix` of the accent (or red) into `--sog-surface`, radii → `--sog-radius`. The breakpoint is a
+    container query on the map box (460 px) rather than the window's 390 px, so the dual view also gets three per row.
+  - **Icons**: of the four Lucide icons, `map`, `plane` and `chevron-down` were already in `frame/lib/icons.js` (the
+    suite's drawings in the Lucide style; the plane already points up, so the mock-up's −45° rotation is not needed).
+    Only `wand-sparkles` is added. No external dependency.
+  - **CAM in English and German is "OAT"** (operational air traffic, the term of their AIPs); "CAM" in French and
+    Spanish.
+  - **Topo**: real relief, a MapLibre hillshade of the Terrarium tiles the profile already reads (host already in
+    `meta.net`, nothing new in the CSP), under the labels of the base; added at each style load, removed outside the
+    mode.
+  - **CAM without AAR axes nor NAT tracks yet**: aerodb gives them (`aar()`: MILAIP ENR 5.7 XML, `nat()`), but maps
+    draws neither. Drawing the AAR racetracks means taking over `shared/aar_tracks.js` (577 lines: pages, groups,
+    racetrack geometry) and NAT needs its own drawing; proposed as a separate lot rather than half-done here.
+  - **Hover kept 5 s** after leaving a label (user's request), background at 65 %; a new hover replaces it, a click
+    closes it, a pan closes it.
+  - **Bench**: frame at 375 px, standard, cabinet and field, day and night: grid three per row, accent and red
+    readable, square corners in cabinet and field; 1280 px standard and field, day and night: six per row. Test page
+    1280 px: Topo (profile `v3-topo`, hillshade, no airspace, 2,158 aerodromes, towns), CAM (16 types, R / D / P,
+    TRA, RMZ at every level); hover visible 2 s after leaving, gone at 5.6 s, closed by a click; background
+    `rgb(255 255 255 / .65)`. No JavaScript error. The page width at 375 px is still 389–393 px because of the
+    frame's header (see lot 5c).

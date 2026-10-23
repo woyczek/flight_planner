@@ -98,17 +98,26 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - the flight file is watched (`ctx.data.watch`): a new `updated_at` refits the map and reads again;
   - `aerodb.on('change')`: the data are read again;
   - `ResizeObserver`: resize and redraw.
-- **Display presets**: a list at the top left of the map (hidden for mission maps): Auto (the flight's level: High
-  IFR from FL195), Low IFR (`routeProfile(5000)`), High IFR (`routeProfile(30000)`), VFR (the built-in `vfr-detail`
-  profile on the `ofm-liberty` base: towns, VFR airspaces, VRP, obstacles). Kept in `cache/maps/ui.json`.
+- **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps): a trigger
+  at the top left (current mode, chevron) opens a grid of six choices with icon and label, 72 px high, six per row,
+  three when the map box is 460 px wide or less (container query); the Layers button stays under the trigger.
+  - Auto (wand, the flight's level: High IFR from FL195), Low IFR ("IFR" under a ceiling, `routeProfile(5000)`), High
+    IFR ("IFR" over a floor, `routeProfile(30000)`), VFR (map icon, the built-in `vfr-detail` profile on the
+    `ofm-liberty` base), Topo (contour lines drawn in CSS: `ofm-liberty` with a hillshade of the Terrarium tiles,
+    aerodromes, towns and close-up obstacles only), CAM / OAT (red plane: the flight level's IFR plus R / D / P, TSA /
+    TRA / CBA and the low-flying network at all levels, state aerodromes).
+  - Icons from `frame/lib/icons.js` (`wand-sparkles` added, `map`, `plane`, `chevron-down`); colours: accent for the
+    choice, `--sog-err` for CAM; corners from `--sog-radius` (square in cabinet and field).
+  - Kept in `cache/maps/ui.json` (`preset`: auto, low, high, vfr, topo, cam); each mode has its own layers.
 - **Tooltips**, a `.mp-tip` card in the map box or the profile box:
   - touch (or click): the airway whose box is under the finger (route, point → point, distance, tracks both ways,
     floor|ceiling, low or high), else the airspaces shown under the point in AIP notation (activation and information
     below), else "No airspace shown here"; it stays until the next tap or a move of the map (a tap near the route
     places the cursor instead);
   - mouse (class `mp-hover`): only over an airway box or an airspace label (`draw()` returns both frames), at once,
-    following the pointer 12 px away (never under it, kept inside the box), gone as soon as the pointer leaves the
-    label or the map; lighter: `--sog-chart-bg` at 80 %, `--sog-fg`, thin border, 11.5 px, two lines at most;
+    following the pointer 12 px away (never under it, kept inside the box); once the pointer leaves the label or the
+    map, it stays 5 s at its last place; a new hover replaces it, a click closes it; lighter: `--sog-chart-bg` at
+    65 %, `--sog-fg`, thin border, 11.5 px, two lines at most;
   - the compatibility mouse events that follow a touch are ignored (`sourceCapabilities.firesTouchEvents`, or within
     1 s of a touch);
   - profile: the airspaces crossed at the cursor; touch as above, mouse as above with the first two and "+n more";

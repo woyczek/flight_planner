@@ -22,10 +22,13 @@ cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en e
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
 espacio aéreo en el que está en ese momento.
 
-**Tres ajustes de mapa.** La lista arriba a la izquierda del mapa elige lo que muestra. «IFR bajo»: aerovías
-inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías superiores (UN…, UM…), espacios por
-encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en VFR, los puntos de notificación y
-los obstáculos. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195); la elección se conserva.
+**Seis modos de mapa.** El botón arriba a la izquierda del mapa muestra el modo elegido; tóquelo para ver los seis
+modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
+superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles
+en VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve, solo con los aeródromos, las ciudades y los
+obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las zonas R, D, P, TSA, TRA, CBA y la red de vuelo bajo a
+todos los niveles. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195). El modo se conserva en este
+dispositivo.
 
 **Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
 Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
@@ -41,8 +44,8 @@ desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, 
 **Toque para saber más.** Toque el nombre de una aerovía: una burbuja da el tramo (punto → punto), su distancia, sus
 rumbos de ida y vuelta, su límite inferior y superior. Toque un espacio aéreo: la burbuja da su nombre, sus límites en
 notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conocen. El toque siguiente o mover el mapa la
-cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y se
-va en cuanto lo deja. En el perfil, el dedo o el ratón dan los espacios atravesados.
+cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y luego
+queda 5 segundos tras dejarlo; un clic la cierra. En el perfil, el dedo o el ratón dan los espacios atravesados.
 
 **Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,
 nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de

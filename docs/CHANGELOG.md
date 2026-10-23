@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 5d: six map modes** (`modules/maps/`, `frame/lib/icons.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — the
+  user's mode selector (Auto, Low IFR, High IFR, VFR, Topo, CAM) replaces the preset list; Topo shows the terrain with
+  a minimal overlay, CAM adds R / D / P, TSA / TRA / CBA and the low-flying network at all levels; the mouse tooltip
+  stays 5 seconds after leaving a label and is lighter.
 - **fuel: no error when leaving while the weather loads** (`modules/fuel/module.js`) — an answer arriving after you
   left Fuel is dropped quietly.
 - **Frame: the header fits a phone in every language** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) — on a

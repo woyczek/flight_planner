@@ -23,10 +23,12 @@ profil : un curseur bleu le suit, et le même curseur se place sur la carte. Tou
 placer là. La ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue,
 hauteur du relief, et l'espace aérien où vous êtes à ce moment-là.
 
-**Trois réglages de carte.** La liste en haut à gauche de la carte choisit ce qu'elle montre. « IFR bas » : voies
-aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies hautes (UN…, UM…), espaces
-au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR, points de report et
-obstacles. « Auto » choisit selon le niveau de votre vol (IFR haut à partir du FL195) ; le choix est gardé.
+**Six modes de carte.** Le bouton en haut à gauche de la carte montre le mode choisi ; touchez-le pour voir les six
+modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
+hautes (UN…, UM…), espaces au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR,
+points de report et obstacles. « Topo » : le relief, avec seulement les terrains, les villes et les obstacles.
+« CAM » : vol militaire, l'IFR de votre niveau plus les zones R, D, P, TSA, TRA, CBA et le RTBA à tous les niveaux.
+« Auto » choisit selon le niveau de votre vol (IFR haut à partir du FL195). Le mode est gardé sur cet appareil.
 
 **Plus vous zoomez, plus elle en dit.** De loin, la carte ne montre que les grands terrains, les voies et leurs noms.
 En vous rapprochant : les points des voies (triangles et balises), le niveau minimal de chaque voie (« F195 »), puis
@@ -43,7 +45,7 @@ carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dess
 ses routes aller et retour, son plancher et son plafond. Touchez un espace aérien : la bulle donne son nom, ses
 limites en notation SIA (« TMA 8 AQUITAINE 2000|FL145 D ») et ses horaires quand ils sont connus. Le toucher suivant
 ou un déplacement de la carte la ferme. Avec une souris, passez sur le nom d'une voie ou d'un espace : une petite
-bulle suit le pointeur et part dès que vous le quittez. Sur le profil, le doigt ou la souris donnent les espaces
+bulle suit le pointeur, puis reste 5 secondes après que vous l'avez quitté ; un clic la ferme. Sur le profil, le doigt ou la souris donnent les espaces
 traversés.
 
 **Les paliers.** Si la route fixe un niveau à certains points dans Carburant, le profil dessine les paliers : montée,

@@ -22,10 +22,12 @@ profile: a blue cursor follows it, and the same cursor moves on the map. Tap the
 line below the profile says what is under the cursor: distance from the departure, planned altitude, terrain height,
 and the airspace you are in at that point.
 
-**Three map settings.** The list at the top left of the map chooses what it shows. “Low IFR”: low airways,
-airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195. “VFR”:
-topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Auto” chooses
-from your flight's level (High IFR from FL195); the choice is kept.
+**Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes.
+“Low IFR”: low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces
+above FL195. “VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and
+obstacles. “Topo”: the terrain, with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your
+level plus the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses from your
+flight's level (High IFR from FL195). The mode is kept on this device.
 
 **The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
 names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
@@ -41,7 +43,7 @@ elsewhere. Close up, everything is drawn anyway.
 **Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks
 both ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation (“TMA 8
 AQUITAINE 2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, move over
-an airway's or an airspace's name: a small bubble follows the pointer and goes as soon as you leave it. On the
+an airway's or an airspace's name: a small bubble follows the pointer, then stays 5 seconds after you leave it; a click closes it. On the
 profile, your finger or the mouse gives the airspaces crossed.
 
 **Steps.** If the route sets a level at some points in Fuel, the profile draws the steps: climb, level-off, new
