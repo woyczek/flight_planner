@@ -242,6 +242,31 @@ const TX = {
   wxMissing: ['Vent non calculé : il manque le vent d’un terrain.', 'Wind not computed: an aerodrome’s wind is missing.',
     'Wind nicht berechnet: der Wind eines Flugplatzes fehlt.', 'Viento no calculado: falta el viento de un aeródromo.'
   ],
+  isaHint: ['ISA {d} d’après le METAR {id} ({t} °C à {e} ft).', 'ISA {d} from the {id} METAR ({t} °C at {e} ft).',
+    'ISA {d} laut METAR {id} ({t} °C auf {e} ft).', 'ISA {d} según el METAR {id} ({t} °C a {e} ft).'
+  ],
+  isaUse: ['Utiliser ISA {d}', 'Use ISA {d}', 'ISA {d} verwenden', 'Usar ISA {d}'],
+  da: ['Altitude-densité', 'Density altitude', 'Dichtehöhe', 'Altitud de densidad'],
+  daAxisX: ['écart ISA (°C)', 'ISA deviation (°C)', 'ISA-Abweichung (°C)', 'desviación ISA (°C)'],
+  daAxisY: ['altitude-densité (ft)', 'density altitude (ft)', 'Dichtehöhe (ft)', 'altitud de densidad (ft)'],
+  daLines: ['Une droite par altitude pression (en milliers de ft) ; trait vertical : l’écart du vol.',
+    'One line per pressure altitude (thousands of ft); vertical line: the flight’s deviation.',
+    'Eine Gerade je Druckhöhe (in Tausend ft); senkrechte Linie: die Abweichung des Flugs.',
+    'Una recta por altitud de presión (en miles de ft); línea vertical: la desviación del vuelo.'
+  ],
+  daDep: ['Au départ ({id}, {t} °C, QNH {q} hPa) : altitude pression {p} ft, altitude-densité {d} ft.',
+    'At departure ({id}, {t} °C, QNH {q} hPa): pressure altitude {p} ft, density altitude {d} ft.',
+    'Beim Abflug ({id}, {t} °C, QNH {q} hPa): Druckhöhe {p} ft, Dichtehöhe {d} ft.',
+    'En la salida ({id}, {t} °C, QNH {q} hPa): altitud de presión {p} ft, altitud de densidad {d} ft.'
+  ],
+  daCeil: ['Plafond de la fiche {c} ft : à ISA {d}, il est atteint vers {p} ft d’altitude pression.',
+    'Sheet ceiling {c} ft: at ISA {d} it is reached around {p} ft pressure altitude.',
+    'Gipfelhöhe des Datenblatts {c} ft: bei ISA {d} wird sie bei etwa {p} ft Druckhöhe erreicht.',
+    'Techo de la ficha {c} ft: a ISA {d} se alcanza hacia {p} ft de altitud de presión.'
+  ],
+  daNoCeil: ['La fiche ne donne pas de plafond.', 'The sheet gives no ceiling.', 'Das Datenblatt nennt keine Gipfelhöhe.',
+    'La ficha no da techo.'
+  ],
   openIn: ['Ouvrir dans', 'Open in', 'Öffnen in', 'Abrir en'],
   openInHint: ['Nouvel onglet ; rien n’est envoyé qui ne soit déjà dans le vol.',
     'New tab; nothing is sent that is not already in the flight.',
@@ -861,6 +886,8 @@ const STYLE = `
 [data-module="fuel"] .fu-line-f{fill:none;stroke:var(--sog-chart-1);stroke-width:2.2}
 [data-module="fuel"] .fu-line-t{fill:none;stroke:var(--sog-chart-2);stroke-width:1.6;stroke-dasharray:5 4}
 [data-module="fuel"] .fu-ext{stroke-dasharray:1 4;opacity:.7}
+[data-module="fuel"] .fu-da{fill:none;stroke:var(--sog-chart-6);stroke-width:1;opacity:.7}
+[data-module="fuel"] .fu-now{stroke:var(--sog-chart-2);stroke-width:1.5;stroke-dasharray:5 3}
 [data-module="fuel"] .fu-best{fill:var(--sog-chart-3)}
 [data-module="fuel"] .fu-fast{fill:var(--sog-chart-4)}
 [data-module="fuel"] .fu-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
@@ -906,6 +933,7 @@ function renderPlan() {
         <label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
       <p class="f-muted" data-windsrc></p>
+      <div class="f-row" data-isahint></div>
       <div class="f-grid fu-g3">${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}${fld('wxmid', TX.wxMid, f.weather?.mid || '', 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
       <label class="f-check"><input type="checkbox" data-k="wxreal"${f.weather?.real ? ' checked' : ''}>${esc(tt(TX.wxReal))}</label>
       <div class="f-row"><button type="button" data-do="wx">${esc(tt(TX.wxRead))}</button></div>
@@ -913,6 +941,7 @@ function renderPlan() {
     </div>
   </div>
   <details class="f-card" data-fold="wx" open><summary>${esc(tt(TX.wxTitle))}</summary><div data-wx></div></details>
+  <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div></div>
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>
   <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div></details>
@@ -1008,6 +1037,8 @@ function onPlanInput(e) {
     }
     case 'isa':
       f.isaDev = num(v) || 0;
+      S.settings.isaDev = f.isaDev; // gardé dans les réglages du devis : le vol suivant part du même écart
+      saveSettings();
       break;
     case 'wxdate':
       f.weather = {
@@ -1103,6 +1134,7 @@ function onPlanInput(e) {
 }
 /** Clic dans Préparer : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
+  if (e.target.closest('[data-do="isause"]')) return useIsa();
   const pk = e.target.closest('[data-pick]');
   if (pk) return pickAircraft(pk.dataset.pick);
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
@@ -1194,7 +1226,9 @@ async function wxFetch(loud = false) {
     }).catch(() => null)) || [])[0] || null;
   if (!S.body) return;
   renderWx();
+  isaHint();
   if (S.flight.weather?.real) applyRealWind();
+  else if (S.C) renderDa(S.C);
 }
 /** Heure visée (secondes) : la date du vol saisie (heure de l'appareil), sinon aucune (METAR). */
 const wxWhen = () => {
@@ -1325,6 +1359,121 @@ function acSelected() {
     origin = a.source || (a.sheetId ? 'sheet' : a.type ? 'free' : '');
   box.innerHTML = `${sheet ? `<b>${esc(a.name || sheet.name || sheet.id)}</b><span class="f-muted">${esc([a.registration, a.callsign, a.type || sheet.icao].filter(Boolean).join(' · '))}</span>${origin ? `<span class="f-badge" data-kind="accent">${esc(tt(TX.origins[origin] || TX.origins.free))}</span>` : ''}` : `<span class="f-muted">${esc(tt(TX.acNone))}</span>`}
     <button type="button" data-do="acopen" aria-label="${esc(tt(TX.acChange))}" title="${esc(tt(TX.acChange))}">${svg('search')}</button>`;
+}
+
+// ---------------------------------------------------------------- écart ISA et altitude-densité
+/** Altitude-densité (ft) d'une altitude pression h (ft) à ISA + dT : l'altitude standard de même densité
+ *  (FlightPerfModel.isa, inversée par dichotomie). */
+function densityAlt(h, dT) {
+  const isa = window.FlightPerfModel.isa,
+    sigma = isa(h, dT).sigma;
+  let lo = -5000,
+    hi = 60000;
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    isa(mid, 0).sigma > sigma ? lo = mid : hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+/** Proposition d'écart ISA d'après le METAR du départ : température − (15 − 1,98 × altitude du terrain en milliers de
+ *  ft) ; altitude du terrain d'aerodb (ft), sinon du METAR (m). Sortie : { id, dT, t, elev, qnh } ou null. */
+function isaProposal() {
+  const id = String(S.flight.route?.dep || '').toUpperCase(),
+    m = S.wx?.metar?.[id];
+  if (!m || !Number.isFinite(+m.temp)) return null;
+  const ad = S.wxAd?.[id],
+    elev = Number.isFinite(+ad?.elev) ? +ad.elev : Number.isFinite(+m.elev) ? +m.elev * 3.28084 : null;
+  if (elev == null) return null;
+  return {
+    id,
+    dT: Math.round(+m.temp - (15 - 1.98 * elev / 1000)),
+    t: +m.temp,
+    elev: Math.round(elev),
+    qnh: Number.isFinite(+m.altim) ? +m.altim : null
+  };
+}
+/** Écart ISA signé (« +3 », « −2 », « 0 »). */
+const signed = d => d > 0 ? `+${d}` : d < 0 ? `−${-d}` : '0';
+/** Ligne de proposition sous les champs du vent : l'écart ISA du METAR du départ et « Utiliser ». */
+function isaHint() {
+  const box = S.body?.querySelector('[data-isahint]');
+  if (!box) return;
+  const pr = isaProposal();
+  box.innerHTML = pr ? `<span class="f-muted">${esc(tt(TX.isaHint, { d: signed(pr.dT), id: pr.id, t: pr.t, e: pr.elev.toLocaleString(S.ctx.lang()) }))}</span>${pr.dT !== (+S.flight.isaDev || 0) ? `<button type="button" data-do="isause">${esc(tt(TX.isaUse, { d: signed(pr.dT) }))}</button>` : ''}` : '';
+}
+/** Prend l'écart ISA proposé : vol courant et réglages du devis (dernier écart retenu). */
+function useIsa() {
+  const pr = isaProposal();
+  if (!pr) return;
+  S.flight.isaDev = pr.dT;
+  S.settings.isaDev = pr.dT;
+  const i = S.body.querySelector('[data-k="isa"]');
+  if (i) i.value = pr.dT || '';
+  saveSettings();
+  saveFlight();
+  refresh();
+}
+/** Abaque de l'altitude-densité : écart ISA en abscisse, altitude-densité en ordonnée, une droite par altitude pression
+ *  (celle où l'écart du vol atteint le plafond en gras) ; écart du vol (trait vertical), plafond de la fiche (trait
+ *  horizontal) et leur croisement ; le départ d'après le METAR (température et QNH) marqué ; lignes de lecture dessous. */
+function renderDa(C) {
+  const box = S.body?.querySelector('[data-da]');
+  if (!box || !S.body.querySelector('[data-fold="da"]').open) return;
+  const dT = +S.flight.isaDev || 0,
+    ceil = +C.sheet?.cruise?.ceilingFt || +C.perf?.ceiling || null,
+    paMax = Math.max(10000, Math.ceil((ceil || 10000) / 5000) * 5000),
+    pr0 = isaProposal(),
+    depPa = pr0 ? pr0.elev + (pr0.qnh != null ? (1013.25 - pr0.qnh) * 27 : 0) : null,
+    depDev = pr0 ? pr0.t - (15 - 0.0019812 * depPa) : null, // température du METAR, pas l'écart du vol
+    depDa = pr0 ? densityAlt(depPa, depDev) : null,
+    xlo = Math.floor(Math.min(-20, dT, depDev ?? 0) / 10) * 10,
+    xhi = Math.ceil(Math.max(40, dT, depDev ?? 0) / 10) * 10,
+    ymin = Math.min(0, densityAlt(0, xlo)),
+    ymax = densityAlt(paMax, xhi),
+    W = svgSize(box)[0],
+    H = Math.min(360, Math.round(W * .75)),
+    pl = 52,
+    pr = 12,
+    pt = 18,
+    pb = 30,
+    x = d => pl + (d - xlo) / (xhi - xlo) * (W - pl - pr),
+    y = v => pt + (1 - (v - ymin) / ((ymax - ymin) || 1)) * (H - pt - pb),
+    line = pa => [xlo, (xlo + xhi) / 2, xhi].map((d, i) => `${i ? 'L' : 'M'}${x(d).toFixed(1)},${y(densityAlt(pa, d)).toFixed(1)}`).join(''),
+    fmt = v => (Math.round(v) || 0).toLocaleString(S.ctx.lang()),
+    kft = v => `${+(v / 1000).toFixed(1)}`;
+  // plafond atteint à l'écart du vol : altitude pression où l'altitude-densité égale le plafond
+  let effective = null;
+  if (ceil) {
+    let lo = -5000,
+      hi = 60000;
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      densityAlt(mid, dT) < ceil ? lo = mid : hi = mid;
+    }
+    effective = Math.round(lo / 100) * 100;
+  }
+  // droites d'altitude pression, étiquetées à gauche quand elles ne se touchent pas
+  const pas = ticks(0, paMax, W < 420 ? 6 : 10);
+  let lastY = Infinity;
+  const lines = pas.map(pa => {
+    const ly = y(densityAlt(pa, xlo)),
+      lab = lastY - ly >= 13 ? (lastY = ly, `<text x="${x(xlo) + 4}" y="${ly - 3}">${kft(pa)}</text>`) : '';
+    return `<path d="${line(pa)}" class="fu-da"/>${lab}`;
+  }).join('');
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(tt(TX.da))}" class="fu-svg" data-chart="da">
+    ${ticks(xlo, xhi, W < 420 ? 4 : 6).map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="${pt}" y2="${H - pb}" class="fu-grid"/><text x="${x(v)}" y="${H - pb + 14}" text-anchor="middle">${signed(v)}</text>`).join('')}
+    ${ticks(ymin, ymax, 5).map(v => `<text x="${pl - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`).join('')}
+    <text x="${pl - 6}" y="${pt - 6}" text-anchor="start">${esc(tt(TX.daAxisY))}</text>
+    <text x="${W - pr}" y="${H - 2}" text-anchor="end">${esc(tt(TX.daAxisX))}</text>
+    ${lines}
+    ${effective != null && effective > 0 && effective <= paMax ? `<path d="${line(effective)}" class="fu-line-f"/>` : ''}
+    <line x1="${x(dT)}" x2="${x(dT)}" y1="${pt}" y2="${H - pb}" class="fu-now"/>
+    ${ceil ? `<line x1="${pl}" x2="${W - pr}" y1="${y(ceil)}" y2="${y(ceil)}" class="fu-ceil"/><circle cx="${x(dT)}" cy="${y(ceil)}" r="5" class="fu-fast"/>` : ''}
+    ${pr0 ? `<circle cx="${x(depDev)}" cy="${y(depDa)}" r="5" class="fu-best"/>` : ''}
+  </svg>
+  <p class="f-muted">${esc(tt(TX.daLines))}</p>
+  ${pr0 ? `<p><span class="f-dot" style="background:var(--sog-chart-3)"></span> ${esc(tt(TX.daDep, { id: pr0.id, t: pr0.t, q: pr0.qnh != null ? Math.round(pr0.qnh) : '—', p: fmt(depPa), d: fmt(depDa) }))}</p>` : ''}
+  <p>${ceil ? `<span class="f-dot" style="background:var(--sog-chart-4)"></span> ${esc(tt(TX.daCeil, { c: fmt(ceil), d: signed(dT), p: fmt(effective) }))}` : esc(tt(TX.daNoCeil))}</p>`;
 }
 
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
@@ -1515,6 +1664,8 @@ function refresh() {
   shareProfile(q);
   openInLinks(C);
   acSelected();
+  isaHint();
+  renderDa(C);
   // appareil : origine de la croisière
   $('[data-src]').textContent = C.source ? tt(TX.source, {
     s: `${TX.kinds[C.source.kind] ? tt(TX.kinds[C.source.kind]) : C.source.kind || '—'}${C.source.approx ? ` (${tt(TX.approx)})` : ''}`
@@ -2008,9 +2159,10 @@ export async function mount(el, ctx) {
     tf: (row, vals) => ctx.t(row, vals)
   });
   await readSheets();
+  const kept = (await ctx.data.get(pilotPath('current_flight.json'))) || {};
   S.flight = {
     ...emptyFlight(),
-    ...((await ctx.data.get(pilotPath('current_flight.json'))) || {})
+    ...kept
   };
   S.settings = {
     taxiMin: 10,
@@ -2023,6 +2175,8 @@ export async function mount(el, ctx) {
     entries: {},
     ...((await ctx.data.get(pilotPath('fuel.json'))) || {})
   };
+  // un vol sans écart ISA part du dernier écart retenu (réglages du devis)
+  if (!Number.isFinite(+kept.isaDev)) S.flight.isaDev = +S.settings.isaDev || 0;
   S.ofp = await ctx.data.get(OFP_PATH);
   // météo : dernières valeurs gardées sur l'appareil, relues ensuite si l'appareil est en ligne
   const wxKept = await ctx.data.get(WX_PATH).catch(() => null);

@@ -22,6 +22,18 @@ plan.
 sans vent du tout, le carburant bloc est donné en fourchette. « Montée » choisit la façon de monter : économique,
 meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
 
+« ISA ± » est l'écart de température à l'atmosphère standard, en °C : il change la puissance disponible, la vitesse
+vraie et le plafond. Une fois la météo lue, la ligne dessous le calcule d'après le METAR du départ — sa température
+moins la température standard du terrain (15 − 1,98 × altitude du terrain en milliers de pieds) — et « Utiliser ISA … »
+le reporte dans le champ. L'écart retenu est gardé dans vos réglages : le vol suivant part du même.
+
+Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une
+droite par millier de pieds) : c'est l'altitude « ressentie » par le rotor, les hélices et le moteur. Le trait vertical
+est l'écart du vol, le trait horizontal le plafond de la fiche ; leur croisement dit à quelle altitude pression l'appareil
+atteint son plafond ce jour-là (droite en gras). Un point marque le départ d’après le METAR (température et QNH).
+Important pour les hélicoptères : par forte chaleur ou en altitude, le plafond réel peut tomber bien sous celui de la
+fiche.
+
 **La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche, pour le départ, l'arrivée et un terrain
 intermédiaire facultatif, ce qui compte pour le vol : la catégorie (VFR, MVFR, IFR, LIFR, en couleur), le vent et ses
 composantes de face et de travers sur la piste principale du terrain (le sens le plus proche du vent), le plafond, la

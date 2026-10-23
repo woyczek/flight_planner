@@ -167,7 +167,18 @@ inside the module, switched by two buttons at the top, the last one kept on the 
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
   3. **Level and wind**: level (FL), climb goal (§ 7), wind direction and speed (speed only or nothing: range), ISA
-     deviation; IAS and rate for the manual goal.
+     deviation; IAS and rate for the manual goal. Once the weather is read, a line proposes the ISA deviation of the
+     departure METAR: temperature − (15 − 1.98 × aerodrome elevation in thousands of ft), the elevation from aerodb
+     (`aerodromes({ icao }).elev`, ft), else the METAR's (m), rounded to 1 °C; "Use ISA …" writes it into the flight
+     and into the quote settings (`isaDev`), which a flight without a deviation starts from; a typed deviation is kept
+     there too.
+  3 bis. **Density altitude** (folded): a chart with the ISA deviation across (−20 to +40 °C, widened to the flight's
+     and the departure's), the density altitude up, one line per pressure altitude (density altitude = the standard
+     altitude of the same density, `FlightPerfModel.isa(h, dT).sigma` inverted by bisection); the flight's deviation
+     (vertical), the sheet's ceiling (`cruise.ceilingFt`, else the model's `perf.ceiling`, horizontal) and their
+     crossing, the pressure altitude where the ceiling is reached at that deviation (bold line), and the departure
+     from the METAR (temperature and QNH: pressure altitude = elevation + 27 ft/hPa × (1013.25 − QNH)). Two reading
+     lines under it give the departure's pressure and density altitudes and the effective ceiling.
   4. **Level decision**: a drawing of the whole trip's fuel (solid) and time (dashed) by level, extrapolated beyond
      the ceiling (dotted), the levels that cannot be flown shaded, the ceiling, the least fuel (dot) and the fastest
      (square), the plan's level (vertical line). A tap on the drawing sets the level (rounded to the series' step,

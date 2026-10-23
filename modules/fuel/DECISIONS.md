@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot D, ISA deviation and density altitude** (user's request, for helicopters): the deviation is
+  proposed from the departure METAR (temperature − (15 − 1.98 × elevation kft)), not applied by itself — the pilot may
+  plan for another hour; it is kept in `fuel.json` as the next flight's start. The density altitude chart first drew
+  density altitude against pressure altitude: the lines for each deviation were nearly on top of one another at
+  375 px, so it became the classic chart (deviation across, one line per pressure altitude), where the flight's
+  deviation and the ceiling cross at a readable point. The departure point uses the METAR's own deviation at its
+  pressure altitude, not the flight's. Checked at 375 px on 8793 with a mocked METAR (LFLS 30 °C, Q1008, aerodb
+  elevation 1,302 ft): ISA +18 proposed, "Use" wrote the field and the settings; departure 1,444 ft pressure, 3,484 ft
+  density; a 25,000 ft ceiling reached at 23,000 ft pressure altitude; the 3 designs day and night, no horizontal
+  scroll.
 - **23 Oct 2026 — lot B, aircraft through aerodb** (user's decision: every aircraft datum in aerodb, one API): fuel
   keeps the screen only. The picker is aerodb's `search` (the prototype kept in a stash matched its result order and
   origins, then was dropped); the Aircraft block is one line with a search button. Sheets are read with
@@ -12,8 +22,8 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   lot 4a is closed there) and writes the V2 mirror. `modules/fuel/sheets.js` removed (aerodb's `sheets.js` is the same
   code plus registration and callsign fields); `modules/fuel/perf_prompt.js` stays (ChatGPT texts, read by aerodb's
   logic as `window.PERF_PROMPT`). The sheets bench now loads `frame/aerodb/sheets.js`: it found that aerodb's two new
-  fields made `.lnmperf` export refuse sheets without them (reported to the aerodb session; the bench stays red until
-  its fix). Checked at 375 px on 8793: empty search → sheets then fleet; "hand" → F-HAND (type estimate) and the free
+  fields made `.lnmperf` export refuse sheets without them (reported to the aerodb session, fixed there in 264a73727;
+  the bench is 18/18). Checked at 375 px on 8793: empty search → sheets then fleet; "hand" → F-HAND (type estimate) and the free
   code; the choice wrote `{ sheetId, type, registration, callsign, name, source: 'fleet' }`; an edited cruise TAS went
   through the review into `aircraft/sheets/TEST_TP.json` stamped `edit`, and into the V2 mirror.
 - **23 Oct 2026 — aerodrome weather** (user's request through the ergonomics session, lot A; TEMSI left for the

@@ -97,8 +97,9 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`
 
 `{ "schema": 1, "updated_at", "taxiMin": 10, "reserveMin": 30, "contingencyPct": 5, "displayUnit": "kg",
-"displaySpeed": "kt", "displayAlt": "ft", "displayDist": "NM", "goal": "prof",
-"entries": { "<sheetId>": <cruise kg/h for this flight> } }` (record). The three `display…` fields are screen
+"displaySpeed": "kt", "displayAlt": "ft", "displayDist": "NM", "goal": "prof", "isaDev": 0,
+"entries": { "<sheetId>": <cruise kg/h for this flight> } }` (record). `isaDev` is the last ISA deviation chosen (typed
+or taken from the departure METAR); a current flight without `isaDev` starts from it. The three `display…` fields are screen
 settings (`kt` | `kmh`, `ft` | `m`, `NM` | `km` | `SM`; absent or unknown: the model's unit); they never change a value
 written to `current_flight.json` or to the sheets, which stay in kt, ft and NM.
 

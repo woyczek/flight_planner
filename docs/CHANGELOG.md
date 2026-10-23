@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: ISA deviation from the departure METAR and a density altitude chart** (`modules/fuel/module.js`; `SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — once the weather is read, the ISA deviation of the departure
+  (temperature against the aerodrome's standard temperature) is proposed in one tap and kept in the quote settings; a
+  folded chart shows the density altitude by ISA deviation and pressure altitude, with the sheet's ceiling and the
+  pressure altitude where it is reached that day — the helicopter case.
 - **report: the callsign from the current flight** (`modules/report/module.js`) — the aircraft chosen in fuel brings
   its registration and callsign into a report in one tap.
 - **fuel: aircraft and sheets through aerodb** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
