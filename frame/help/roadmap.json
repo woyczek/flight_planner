@@ -585,11 +585,11 @@
           "es": "Manual del Piloto en cuatro idiomas, montado a partir de los capítulos de los módulos, ayuda en la página, hoja de ruta"
         },
         {
-          "state": "planned",
-          "fr": "Tutoriels : préparer un vol, écrire un compte rendu",
-          "en": "Tutorials: prepare a flight, write a report",
-          "de": "Tutorials: einen Flug vorbereiten, einen Bericht schreiben",
-          "es": "Tutoriales: preparar un vuelo, escribir un informe"
+          "state": "done",
+          "fr": "Tutoriels « Préparer un vol » et « Écrire un compte rendu », en et fr avec captures, carte d'accueil au premier module (de et es plus tard)",
+          "en": "Tutorials “Prepare a flight” and “Write a report”, en and fr with screenshots, welcome card on the first module (de and es later)",
+          "de": "Tutorials „Flug vorbereiten“ und „Bericht schreiben“, en und fr mit Bildschirmfotos, Begrüßungskarte im ersten Modul (de und es später)",
+          "es": "Tutoriales «Preparar un vuelo» y «Escribir un informe», en y fr con capturas, tarjeta de bienvenida en el primer módulo (de y es más adelante)"
         }
       ]
     },
