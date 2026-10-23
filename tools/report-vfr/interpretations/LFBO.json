@@ -1,0 +1,89 @@
+{
+  "icao": "LFBO",
+  "sourceSha256": "e48c44634bd5f5fca5be9efb4deeddbeee04e09ccabbba662a58d934f02f4af8",
+  "analysedAt": "2026-10-23",
+  "analysedDuringAirac": "2610",
+  "sourceAirac": null,
+  "analyst": "Codex",
+  "scope": "partial",
+  "sourcePages": [
+    1,
+    8
+  ],
+  "method": "lecture manuelle du texte et, si indiqué, de la carte",
+  "notes": [
+    "Trois itinéraires nommés ; la ligne N–NA–EA répétée est une observation de suivi d’autoroute, pas un quatrième itinéraire.",
+    "NA1 : N–NA–EA–EB ; suivre l’autoroute entre N et EA.",
+    "La géométrie de l’autoroute n’est pas encore numérisée ; les coordonnées des points restent disponibles."
+  ],
+  "points": [],
+  "pointUpdates": {},
+  "routes": [
+    {
+      "key": "NA1",
+      "pointCodes": [
+        "N",
+        "NA",
+        "EA",
+        "EB"
+      ],
+      "direction": "unknown",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "flightRegime": "special_VFR",
+        "minVisibilityM": 1500,
+        "helicopterMinVisibilityM": 800,
+        "pathInstruction": "Suivre l’autoroute de N à NA puis EA."
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "WH1",
+      "pointCodes": [
+        "WH",
+        "WF",
+        "WD"
+      ],
+      "direction": "unknown",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "flightRegime": "special_VFR",
+        "minVisibilityM": 2300
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "EN1",
+      "pointCodes": [
+        "EN",
+        "EA",
+        "EB"
+      ],
+      "direction": "unknown",
+      "sourcePages": [
+        8
+      ],
+      "conditions": {
+        "flightRegime": "special_VFR",
+        "minVisibilityM": 3000
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    }
+  ]
+}

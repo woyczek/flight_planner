@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compilation VFR — inspection</title>
+<style>
+body{font:16px system-ui,sans-serif;color:#203246;background:#eef2f6;margin:24px auto;max-width:1280px;padding:0 16px}h1{font-size:25px}header,.panel{background:white;border:1px solid #ccd6e0;border-radius:10px;padding:18px;margin:16px 0}.controls{display:flex;flex-wrap:wrap;gap:16px;align-items:center}select,input{font:inherit;max-width:100%}main{display:grid;grid-template-columns:1fr 1fr;gap:18px}svg{width:100%;height:440px;background:#f5f8fb;border-radius:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 system-ui;max-height:500px;overflow:auto}.note{color:#67501a;background:#fff7df;padding:12px;border-radius:6px}button{font:inherit;background:#e9f0f8;border:1px solid #9eb3cb;border-radius:5px;padding:7px;cursor:pointer}.route{display:block;text-align:left;width:100%;margin:6px 0}.route.active{background:#ffe2ad}#routes{max-height:280px;overflow:auto}.small{font-size:13px;color:#506478}@media(max-width:800px){main{grid-template-columns:1fr}}text{paint-order:stroke;stroke:#f5f8fb;stroke-width:3px;stroke-linejoin:round;font:12px system-ui;fill:#203246}
+</style>
+<header><h1>Inspection de la compilation VFR</h1><p>Points et séquences extraits des VAC locales, avec leur contexte source.</p><div class="controls"><label>Charger le JSON <input id="file" type="file" accept=".json,application/json"></label><label>Aérodrome <select id="ad" disabled></select></label><label><input id="withRoutes" type="checkbox"> Avec séquences seulement</label></div><p id="status">Sélectionner vfr-compiled.json.</p></header>
+<p class="note">Bleu pointillé : liaison schématique. Vert : géométrie interprétée manuellement, parfois partielle. Points orange : sommets manuels, distincts des points de report publiés. Aucune géométrie affichée n’est un tracé officiel certifié.</p>
+<main><section class="panel"><h2 id="title">Aérodrome</h2><svg id="plot" viewBox="0 0 600 440" role="img" aria-label="Schéma des points et séquences"></svg><p id="coverage" class="small"></p><div id="routes"></div></section><section class="panel"><h2>Source et conditions à examiner</h2><p id="source" class="small"></p><label>Page extraite <select id="page"></select></label><pre id="context"></pre></section></main>
+<script>
+const $=id=>document.getElementById(id);let dataset=null,current=null,selected=null;
+function svg(tag,attrs){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n}
+function showPage(n){const page=current.evidencePages.find(p=>p.pdfPage===Number(n));$('context').textContent=page? page.text:'Aucun texte repéré. Consulter la carte source.';$('page').value=String(n)}
+function render(){
+ $('plot').replaceChildren(); const chosen=current.routes.find(r=>r.id===selected);const visibleRefs=chosen?new Set(chosen.geometryPointRefs||chosen.pointRefs):null;const points=current.points.filter(p=>!visibleRefs||visibleRefs.has(p.id));
+ if(!points.length){const t=svg('text',{x:30,y:50});t.textContent='Aucun point extrait automatiquement.';$('plot').append(t);return}
+ const lat=points.reduce((s,p)=>s+p.coordinates[1],0)/points.length,c=Math.cos(lat*Math.PI/180);
+ const xs=points.map(p=>p.coordinates[0]*c),ys=points.map(p=>p.coordinates[1]);
+ const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+ const scale=Math.min(500/Math.max(maxX-minX,.001),340/Math.max(maxY-minY,.001));
+ const project=p=>[300+(p[0]*c-(minX+maxX)/2)*scale,220-(p[1]-(minY+maxY)/2)*scale];
+ const byId=new Map(points.map(p=>[p.id,p]));
+ for(const route of chosen?[chosen]:current.routes){const refs=route.geometryPointRefs||route.pointRefs;for(let i=1;i<refs.length;i++){
+  const a=byId.get(refs[i-1]),b=byId.get(refs[i]);if(!a||!b)continue;
+  const[x1,y1]=project(a.coordinates),[x2,y2]=project(b.coordinates);
+  $('plot').append(svg('line',{x1,y1,x2,y2,stroke:route.id===selected?'#bf6200':route.geometry?'#168154':'#a9b7c6','stroke-width':route.id===selected?4:1.8,'stroke-dasharray':route.geometry?'none':'6 5'}));
+ }}
+ for(const p of points){const[x,y]=project(p.coordinates);const dot=svg('circle',{cx:x,cy:y,r:p.origin==='manual'?3:4,fill:p.origin==='manual'?'#d57b00':'#176c9b'});const tip=svg('title',{});tip.textContent=p.code+' · '+p.origin+(p.reason?' · '+p.reason:'');dot.append(tip);$('plot').append(dot);const t=svg('text',{x:x+7,y:y-7});t.textContent=p.origin==='manual'?'m'+p.code.match(/\d+$/)?.[0]:p.code;$('plot').append(t)}
+}
+function chooseAd(){current=dataset.aerodromes.find(a=>a.icao===$('ad').value);if(!current)return;selected=null;
+ $('title').textContent=current.icao+' · '+current.status+' · '+current.points.length+' points · '+current.routes.length+' séquences';
+ $('source').textContent=current.source.file+' · SHA-256 '+current.source.sha256+' · AIRAC du calcul '+current.lastCalculation.airac+' · AIRAC source '+(current.source.airac||'non établi')+' · portée '+current.interpretationScope;
+ $('coverage').textContent=current.routes.length?'Les segments vers un point sans coordonnées (notamment l’aérodrome) ne sont pas dessinés.':'Aucune séquence reconnue ; cela ne signifie pas qu’aucun itinéraire est publié.';
+ $('page').replaceChildren();for(const p of current.evidencePages){const o=document.createElement('option');o.value=p.pdfPage;o.textContent='Page PDF '+p.pdfPage;$('page').append(o)}
+ $('routes').replaceChildren();for(const r of current.routes){const b=document.createElement('button');b.className='route';const page=r.pdfPage||(r.sourcePages||[]).find(n=>current.evidencePages.some(p=>p.pdfPage===n));b.textContent=r.pointCodes.join(' — ')+' · '+r.origin+' · '+(r.geometry?'géométrie'+(r.geometryPartial?' partielle':''):'schéma');b.onclick=()=>{selected=r.id;for(const e of $('routes').children)e.classList.remove('active');b.classList.add('active');showPage(page);$('context').textContent=JSON.stringify({direction:r.direction,runways:r.runways,conditions:r.conditions,notes:current.interpretation?.notes},null,2)+'\n\n'+$('context').textContent;render()};$('routes').append(b)}
+ showPage(current.evidencePages[0]?.pdfPage);render();
+}
+function options(){if(!dataset)return;const previous=$('ad').value;$('ad').replaceChildren();for(const a of dataset.aerodromes){if($('withRoutes').checked&&!a.routes.length)continue;const o=document.createElement('option');o.value=a.icao;o.textContent=a.icao+' ('+a.routes.length+')';$('ad').append(o)}if([...$('ad').options].some(o=>o.value===previous))$('ad').value=previous;else if([...$('ad').options].some(o=>o.value==='LFBD'))$('ad').value='LFBD';$('ad').disabled=false;chooseAd()}
+ function loadDataset(d){if(d.schemaVersion!=='2.0'||!Array.isArray(d.aerodromes)||!d.aerodromes.length)throw Error('Format de compilation v2 non reconnu ou vide');dataset=d;$('status').textContent=d.summary.aerodromes+' AD · '+d.summary.points+' points dont '+d.summary.manualPoints+' manuels · '+d.summary.routes+' séquences · AIRAC du calcul '+d.calculationAirac;options()}
+ $('file').onchange=async()=>{try{loadDataset(JSON.parse(await $('file').files[0].text()))}catch(e){$('status').textContent='Erreur : '+e.message}};
+ $('ad').onchange=chooseAd;$('page').onchange=()=>showPage($('page').value);$('withRoutes').onchange=options;
+ if(location.protocol==='http:'||location.protocol==='https:')fetch('./data/vfr-compiled.json').then(r=>{if(!r.ok)throw Error('JSON introuvable');return r.json()}).then(loadDataset).catch(e=>{$('status').textContent='Chargement automatique impossible : '+e.message+'. Sélectionner le JSON manuellement.'});
+</script></html>

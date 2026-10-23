@@ -1,0 +1,76 @@
+{
+  "icao": "LFCD",
+  "sourceSha256": "facfff5018ce1477a9248810dda472cf1571b821eb260253e15ce2ab76c11c24",
+  "analysedAt": "2026-10-23",
+  "analysedDuringAirac": "2610",
+  "sourceAirac": null,
+  "analyst": "Codex",
+  "scope": "partial",
+  "sourcePages": [
+    1,
+    2
+  ],
+  "method": "lecture manuelle du texte et, si indiqué, de la carte",
+  "notes": [
+    "DEP ou ARR par N ou SE pour les aéronefs en provenance ou à destination du secteur sud.",
+    "Deux relations AD–N et AD–SE sont conservées ; aucune relation directe N–SE n’est déduite.",
+    "Respecter les évitements de zones habitées et l’axe en montée initiale au QFU 308°. Géométrie d’intégration non numérisée."
+  ],
+  "points": [
+    {
+      "code": "AD",
+      "coordinates": [
+        -1.065,
+        44.755
+      ],
+      "role": "aerodrome_reference_point",
+      "origin": "published",
+      "extractionMethod": "manual_transcription",
+      "pdfPage": 1,
+      "status": "checked_against_local_source"
+    }
+  ],
+  "pointUpdates": {},
+  "routes": [
+    {
+      "key": "SECTEUR-SUD-N",
+      "pointCodes": [
+        "AD",
+        "N"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        2
+      ],
+      "conditions": {
+        "originOrDestinationSector": "south",
+        "avoidBuiltUpAreas": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "SECTEUR-SUD-SE",
+      "pointCodes": [
+        "AD",
+        "SE"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        2
+      ],
+      "conditions": {
+        "originOrDestinationSector": "south",
+        "avoidBuiltUpAreas": true
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    }
+  ]
+}

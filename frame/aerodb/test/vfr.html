@@ -67,26 +67,42 @@
         n: ix.aerodromes?.length,
         status: ix.status
       });
-      const bd = await db.vfrRoutes('LFBD');
-      check('LFBD: 10 points, 15 sequences, notes by page', bd?.points.length === 10 && bd.routes.length === 15 && bd.notes.length >
-        0 && bd.notes
-        .every(n => n.page && typeof n.title === 'string' && n.text), bd && {
-          p: bd.points.length,
+      // compilation au format 2 (tools/report-vfr/refresh_vfr.py) importée : points de report, sommets de tracé, analyses
+      const bd = await db.vfrRoutes('LFBD'),
+        rp = (bd?.points || []).filter(p => p.role === 'reporting_point');
+      check('LFBD: 10 reporting points, 15 sequences, notes by page', rp.length === 10 && bd.routes.length === 15 && bd.notes.length >
+        0 &&
+        bd.notes.every(n => n.page && typeof n.title === 'string' && n.text), bd && {
+          p: rp.length,
           r: bd.routes.length,
           n: bd.notes.length
         });
-      check('LFBD: points matched with the VRPs of the base', bd?.points.every(p => p.vrp === `BD-${p.code}`), bd?.points.map(p => p.vrp));
-      const s1 = bd?.routes.find(r => r.codes.join('-') === 'LFBD-NA-NE');
-      check('LFBD: a sequence keeps its codes, VRPs, page and text', s1 && s1.vrps.join() === ',BD-NA,BD-NE' && s1.page === 6 && s1
-        .text, s1);
-      check('LFBD: status candidate, label "to be checked"', bd?.status === 'candidate' && /VAC/.test(bd.label), bd && {
-        s: bd.status,
-        l: bd
-          .label
-      });
-      const bo = await db.vfrRoutes('LFBO'),
-        seqs = (bo?.routes || []).map(r => r.codes.join('-'));
-      check('LFBO: WH-WF-WD and EN-EA-EB', seqs.some(x => x.includes('WH-WF-WD')) && seqs.some(x => x.includes('EN-EA-EB')), seqs);
+      check('LFBD: reporting points matched with the VRPs of the base', rp.every(p => p.vrp === `BD-${p.code}`), rp.map(p => p.vrp));
+      const s1 = bd?.routes.find(r => r.key === 'RWY23-05-NA-NW');
+      check('LFBD: a named sequence keeps codes, VRPs, pages, runways and conditions', s1 && s1.codes.join('-') === 'AD-NA-NW' && s1
+        .vrps
+        .join() === ',BD-NA,BD-NW' && s1.pages.includes(6) && s1.runways?.join() === '23,05' && s1.conditions?.defaultAltitude
+        ?.value ===
+        1500, s1);
+      check('LFBD: candidate, label "to be checked", analysis interpreted (partial)', bd?.status === 'candidate' && /VAC/.test(bd
+          .label) &&
+        bd.analysis?.status === 'interprété' && bd.analysis.scope === 'partial' && bd.analysis.notes.length > 0, bd && {
+          s: bd.status,
+          a: bd.analysis
+        });
+      const ch = await db.vfrRoutes('LFCH'),
+        ne = ch?.routes.find(r => r.key === 'ARR-NE-N');
+      check('LFCH: ARR-NE-N drawn along its interpreted geometry, one way', ne?.geometry?.length >= 10 && ne.direction === 'forward' &&
+        ne
+        .geometry.every(([la, lo]) => la > 44 && la < 45 && lo > -1.5 && lo < -0.9), ne && {
+          g: ne.geometry?.length,
+          d: ne.direction
+        });
+      check('LFCH: manual vertices are intermediate waypoints, not reporting points', ch?.points.filter(p => /^MAN-/.test(p.code))
+        .every(p =>
+          p.role === 'intermediate_waypoint' && p.origin === 'manual' && !p.vrp), ch?.points.map(p => [p.code, p.role]));
+      const ab = await db.vfrRoutes('LFAB');
+      check('LFAB: automatic extraction only', ab?.analysis?.status === 'calculé' && ab.routes.length === 0, ab?.analysis);
       check('lower case accepted', (await db.vfrRoutes('lfbd'))?.ad === 'LFBD', null);
       check('invalid code: null', await db.vfrRoutes('XX1') === null, null);
       check('aerodrome without a file: null', await db.vfrRoutes('LFZZ') === null, null);

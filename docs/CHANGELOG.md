@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Report VFR in the suite** (`tools/report-vfr/`, `tools/vfr_import.py`; aerodb SPEC, DECISIONS, admin manuals ×4) —
+  the workstation tool that compiles the VAC charts (`refresh_vfr.py`, `vfr_core.py`, manual analyses in
+  `interpretations/`; optional `pypdf`, a clear message without it, an English README); the import now reads its format
+  2 (named routes with direction, runways, conditions and interpreted geometries, manual vertices, analysis status per
+  aerodrome) as well as the first one.
 - **Settings: "Join the airline" assistant and QR code** (`frame/settings/join.js`, `frame/lib/qr.js`,
   `frame/settings/settings.js`, `frame/help/help.js`, `frame/help/tutorial/`; SPEC § 5 and § 7, DECISIONS, help ×4) —
   the configuration link, file, Settings or welcome card open a seven-step assistant (configuration, account, invitation,

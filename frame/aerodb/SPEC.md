@@ -262,31 +262,46 @@ both ways.
 
 ## 5 quater. VFR reporting points of the VAC charts (`sia/vfr/`)
 
-- **Source**: `tools/report-vfr/compile_vfr.py`, run on a workstation over the folder of the VAC PDFs (optional Python
-  module `pypdf`, nothing in the app imports it), writes `vfr-compiled.json` (`schemaVersion` 1.x, `aerodromes[]` with
-  `points`, `routes`, `evidencePages`). Everything in it is a machine-extracted candidate, never a published route.
+- **Source**: `tools/report-vfr/` (README.md), run on a workstation over the folder of the VAC PDFs (optional Python
+  module `pypdf`, nothing in the app imports it): `refresh_vfr.py` (or `compile_vfr.py`) writes `vfr-compiled.json`.
+  Format 1.x (first prototype): `aerodromes[]` with `points`, `routes`, `evidencePages`. Format 2.x: points with `role`
+  (`reporting_point`, `aerodrome_reference_point` "AD", `intermediate_waypoint` "MAN-…" placed by a manual analysis) and
+  `origin`; named routes (`key`) with `direction` (`forward`, `both`, `unknown`), `runways`, `conditions`, an interpreted
+  `geometry` (LineString), `geometryPartial` and `geometryOmission`; written `instructions` by page; the aerodrome's
+  `status` (`calculé`, `interprété`, `obsolète`, `sans relations`), `interpretationScope` and `interpretation.notes`.
+  Everything is extracted from the VAC, never a published route.
 - **Import** (Settings › Maintenance › Aeronautical data, "Import a VFR compilation (VAC)…", Expert level, launcher
   only): the page sends the file to `POST /__setup/vfr-import` (`tools/vfr_import.py`, standard library):
-  - strict check first: `schemaVersion`, ICAO codes, point codes, coordinates `[longitude, latitude]` in range, pages,
-    every code of a sequence known (a point of the aerodrome or the aerodrome itself), text sizes; one error and nothing
-    is written, the first 20 errors are returned and shown;
-  - each point is matched with the base's VRP `<ICAO without its first two letters>-<code>` (latest cycle of
+  - strict check first: `schemaVersion` 1.x or 2.x, ICAO codes, point codes (`[A-Z0-9][A-Z0-9-]{0,23}`), coordinates
+    `[longitude, latitude]` in range, pages, every code of a sequence or of a geometry known (a point of the aerodrome,
+    the aerodrome's ICAO code or "AD"), geometries, directions, text sizes; one error and nothing is written, the first
+    20 errors are returned and shown;
+  - each reporting point is matched with the base's VRP `<ICAO without its first two letters>-<code>` (latest cycle of
     `sia/base/fr/`, within 0.02°); unmatched points keep their VAC coordinates, `vrp: null`;
   - plan first (summary: aerodromes, points, unmatched points, sequences, pages of instructions, files changed and
     removed, size), then, after agreement, writing of `sia/vfr/`, a commit in the author's name and a synchronisation.
     Files no longer produced are removed; an identical import changes nothing.
-  - To redo at each new VAC cycle: run `compile_vfr.py` again, then the button.
-- **Files**: `sia/vfr/<ICAO>.json` = { `schema: 1`, `ad`, `status: 'candidate'`, `label` ("Extrait des VAC, à
-  vérifier"), `source` { `file`, `sha256`, `cycle` }, `generatedAt`, `points` [{ `code`, `vrp`, `lat`, `lon`, `page`,
-  `text` }], `routes` [{ `codes`, `vrps`, `page`, `text`, `fragment` }], `notes` [{ `page`, `title`, `text` }] } (the
-  instructions of the VAC, one per page, titled by the page's first line after the aerodrome's name);
-  `sia/vfr/index.json` = { `schema: 1`, `status`, `label`, `generatedAt`, `datasetStatus`, `aerodromes` [{ `ad`,
-  `points`, `routes`, `notes`, `unmatched` }] }. Reference policy, like `sia/base/`; the launcher's tree shows
+  - To redo at each new VAC cycle: run `refresh_vfr.py` again (tools/report-vfr/README.md), then the button.
+- **Files**: `sia/vfr/<ICAO>.json` = { `schema: 2`, `ad`, `status: 'candidate'`, `label` ("Extrait des VAC, à
+  vérifier"), `analysis` { `status`, `scope`, `notes` } (null fields from a 1.x file), `source` { `file`, `sha256`,
+  `cycle` }, `generatedAt`, `points` [{ `code`, `vrp`, `lat`, `lon`, `role`, `origin`, `page`, `text` }], `routes` [{
+  `key`, `codes`, `vrps`, `pages`, `text`, `fragment`, `status` (`interpreted` or `candidate`), `direction` (from an
+  analysis only, else `unknown`), `runways`, `conditions`, `geometry` ([[lat, lon], …] or null), `partial`, `omission`
+  }], `notes` [{ `page`, `title`, `text` }] } (the written instructions, else the text of the pages found, one per page,
+  titled by the page's first line after the aerodrome's name); `sia/vfr/index.json` = { `schema: 2`, `status`,
+  `label`, `generatedAt`, `sourceSchema`, `datasetStatus`, `aerodromes` [{ `ad`, `points` (reporting points),
+  `routes`, `notes`, `unmatched`, `analysis` }] }. A file written by the first version (`schema: 1`, `page` per route)
+  is still read by maps. Reference policy, like `sia/base/`; the launcher's tree shows
   `sia/vfr/` to the frame (`FRAME_SKIP`).
-- **Display rules** (for maps): always dashed, labelled "extracted from the VAC, to be checked", no direction of
-  travel, a segment to the aerodrome only when it has coordinates.
-- **Tests**: `frame/aerodb/test/vfr.html` (after an import): index, LFBD (10 points matched with BD-…, 15 sequences,
-  notes by page), LFBO (WH-WF-WD, EN-EA-EB), lower case, invalid code and missing file.
+- **Display rules** (for maps): always dashed, labelled "extracted from the VAC, to be checked"; an interpreted
+  geometry drawn as such, otherwise straight dashes between reporting points; never a line to the aerodrome's centre
+  (an integration not digitised is not replaced by a straight line); a direction only from an analysis (`forward`);
+  intermediate waypoints are vertices, not reporting points.
+- **Tests**: `frame/aerodb/test/vfr.html` (after an import of a 2.x compilation): index, LFBD (10 reporting points
+  matched with BD-…, 15 sequences, the named sequence RWY23-05-NA-NW with its runways and conditions, analysis
+  interpreted and partial), LFCH (ARR-NE-N along its interpreted geometry, one way; MAN-… vertices), LFAB (automatic
+  extraction only), LFBO (WH-WF-WD, EN-EA-EB), lower case, invalid code and missing file. The engine's own tests:
+  `tools/report-vfr/tests_vfr.py` (needs `pypdf`).
 
 ## 6. Invariants
 

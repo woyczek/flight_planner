@@ -402,3 +402,19 @@ With the network cut, the only reads attempted were:
   - **Bench** (throwaway git data folder, launcher on 8771): a file with one bad coordinate refused, nothing written;
     the real file: plan "417 aerodromes, 494 points (34 not matched), 133 sequences, 753 pages, 418 files", agreement,
     418 files written, one commit; second import: 0 changed. `test/vfr.html` 9 / 9, `test/registry.html` 26 / 26.
+- **23 Oct 2026 — format 2 of the VFR compilation, `tools/report-vfr/` in the suite.**
+  - **The user's tool moved to a version 2** while the import was being written (`refresh_vfr.py`, `vfr_core.py`, manual
+    analyses in `interpretations/`): named routes with direction, runways, conditions and interpreted geometries, manual
+    vertices "MAN-…", the reference point "AD", the analysis status per aerodrome. The import reads both formats; its
+    strict check refused the 2.0 file before (code "MAN-…", code "AD", `schemaVersion`), which is what it is for.
+  - **`tools/report-vfr/` taken as the user wrote it** (owner: this session, workstation side): two edits only, a clear
+    message when `pypdf` is missing (`vfr_core.compile_corpus`, `audit_vac.py`); an English `README.md` added; the
+    French notes kept.
+  - **Not in git**: what the scripts produce (`data/` is already ignored everywhere, `cache/`, the other `*.json`), and
+    `reviews/*.png`, crops of VAC charts: SIA documents, the code repository feeds the public site and the releases.
+    `config.json` and `interpretations/*.json` are kept (the analyses are sources, tied to a PDF fingerprint).
+  - **`tests_vfr.py` not run here**: `pypdf` is not installed in this session's Python (nothing installed without the
+    user); the import, the aerodb reads and the map were tested on the user's real 2.0 file.
+  - **Bench** (launcher 8771, throwaway git data): 2.0 file → plan "418 aerodromes, 660 reporting points (43 not
+    matched), 115 sequences, 1,110 pages of instructions, 7 analysed", agreement, commit; second import: 0 changed;
+    `test/vfr.html` 11 / 11.

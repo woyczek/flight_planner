@@ -1,0 +1,399 @@
+{
+  "icao": "LFMN",
+  "sourceSha256": "7a3fecd6378801208912ba62734865a84918aa807ec8c282e638a4ad2947af3a",
+  "analysedAt": "2026-10-23",
+  "analysedDuringAirac": "2610",
+  "sourceAirac": null,
+  "analyst": "Codex",
+  "scope": "partial",
+  "sourcePages": [
+    1,
+    5
+  ],
+  "method": "lecture manuelle du texte et, si indiqué, de la carte",
+  "notes": [
+    "N1 arrivée : NA, suivre le Var vers NB puis WN, verticale TWR et intégration selon piste.",
+    "W1 arrivée : EW–WA, puis suivre l’autoroute vers WN ; verticale TWR RM140 et altitude minimum 1500 ft.",
+    "N1 départ : verticale TWR puis NB–NA. W1 départ : verticale TWR puis WN–WA–EW ; variante QFU223 sur instruction CTL.",
+    "Les cinq points manuels suivent le Var sur la carte APP01. La verticale TWR et les tours de piste ne sont pas numérisés.",
+    "Cette analyse concerne seulement les branches terrestres N1 et W1 ; autres transits et hélicoptères à examiner séparément."
+  ],
+  "points": [
+    {
+      "code": "MAN-VAR-01",
+      "coordinates": [
+        7.188038,
+        43.739078
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        382,
+        417
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "pixels from top-left of full page rendered at 130 dpi",
+        "controls": [
+          {
+            "pointCode": "NA",
+            "imageXY": [
+              383,
+              398
+            ],
+            "coordinates": [
+              7.18888889,
+              43.75
+            ]
+          },
+          {
+            "pointCode": "WN",
+            "imageXY": [
+              394,
+              540
+            ],
+            "coordinates": [
+              7.19722222,
+              43.66833333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Sommet choisi sur le cheminement le long du Var entre NA, NB et WN, conformément à la consigne N1.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-VAR-02",
+      "coordinates": [
+        7.184804,
+        43.728737
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        378,
+        435
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "pixels from top-left of full page rendered at 130 dpi",
+        "controls": [
+          {
+            "pointCode": "NA",
+            "imageXY": [
+              383,
+              398
+            ],
+            "coordinates": [
+              7.18888889,
+              43.75
+            ]
+          },
+          {
+            "pointCode": "WN",
+            "imageXY": [
+              394,
+              540
+            ],
+            "coordinates": [
+              7.19722222,
+              43.66833333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Sommet choisi sur le cheminement le long du Var entre NA, NB et WN, conformément à la consigne N1.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-VAR-03",
+      "coordinates": [
+        7.182362,
+        43.71782
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        375,
+        454
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "pixels from top-left of full page rendered at 130 dpi",
+        "controls": [
+          {
+            "pointCode": "NA",
+            "imageXY": [
+              383,
+              398
+            ],
+            "coordinates": [
+              7.18888889,
+              43.75
+            ]
+          },
+          {
+            "pointCode": "WN",
+            "imageXY": [
+              394,
+              540
+            ],
+            "coordinates": [
+              7.19722222,
+              43.66833333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Sommet choisi sur le cheminement le long du Var entre NA, NB et WN, conformément à la consigne N1.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-VAR-04",
+      "coordinates": [
+        7.185388,
+        43.687339
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        379,
+        507
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "pixels from top-left of full page rendered at 130 dpi",
+        "controls": [
+          {
+            "pointCode": "NA",
+            "imageXY": [
+              383,
+              398
+            ],
+            "coordinates": [
+              7.18888889,
+              43.75
+            ]
+          },
+          {
+            "pointCode": "WN",
+            "imageXY": [
+              394,
+              540
+            ],
+            "coordinates": [
+              7.19722222,
+              43.66833333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Sommet choisi sur le cheminement le long du Var entre NA, NB et WN, conformément à la consigne N1.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    },
+    {
+      "code": "MAN-VAR-05",
+      "coordinates": [
+        7.190105,
+        43.676402
+      ],
+      "origin": "manual",
+      "role": "intermediate_waypoint",
+      "status": "interpreted",
+      "isOfficialReportingPoint": false,
+      "radioReportRequired": false,
+      "pdfPage": 1,
+      "imageXY": [
+        385,
+        526
+      ],
+      "calibration": {
+        "model": "two_anchor_local_similarity",
+        "imageCoordinateSystem": "pixels from top-left of full page rendered at 130 dpi",
+        "controls": [
+          {
+            "pointCode": "NA",
+            "imageXY": [
+              383,
+              398
+            ],
+            "coordinates": [
+              7.18888889,
+              43.75
+            ]
+          },
+          {
+            "pointCode": "WN",
+            "imageXY": [
+              394,
+              540
+            ],
+            "coordinates": [
+              7.19722222,
+              43.66833333
+            ]
+          }
+        ],
+        "accuracyM": null,
+        "note": "Calage graphique manuel à deux repères ; précision non validée par un contrôle indépendant."
+      },
+      "manualMethod": "digitized_chart_vertex",
+      "reason": "Sommet choisi sur le cheminement le long du Var entre NA, NB et WN, conformément à la consigne N1.",
+      "accuracyM": null,
+      "accuracyNote": "Lecture graphique ; décimales de stockage et non garantie de précision."
+    }
+  ],
+  "pointUpdates": {},
+  "routes": [
+    {
+      "key": "ARR-N1",
+      "pointCodes": [
+        "NA",
+        "NB",
+        "WN"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        1,
+        5
+      ],
+      "conditions": {
+        "phase": "arrival",
+        "pathInstruction": "Suivre le Var via NB jusqu’à WN, puis verticale TWR ; intégration non numérisée."
+      },
+      "runways": null,
+      "geometryPointCodes": [
+        "NA",
+        "MAN-VAR-01",
+        "MAN-VAR-02",
+        "MAN-VAR-03",
+        "NB",
+        "MAN-VAR-04",
+        "MAN-VAR-05",
+        "WN"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "manually_digitized_chart_with_written_instruction",
+      "reviewRequired": []
+    },
+    {
+      "key": "ARR-W1",
+      "pointCodes": [
+        "EW",
+        "WA",
+        "WN"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        1,
+        5
+      ],
+      "conditions": {
+        "phase": "arrival",
+        "pathInstruction": "EW–WA puis suivre l’autoroute jusqu’à WN ; verticale TWR RM140 et 1500 ft minimum."
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-N1",
+      "pointCodes": [
+        "NB",
+        "NA"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        1,
+        5
+      ],
+      "conditions": {
+        "phase": "departure",
+        "precedingPhase": "Virage selon QFU et retour verticale TWR, non numérisés."
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-W1",
+      "pointCodes": [
+        "WN",
+        "WA",
+        "EW"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        1,
+        5
+      ],
+      "conditions": {
+        "phase": "departure",
+        "precedingPhase": "Virage selon QFU et retour verticale TWR, non numérisés."
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    },
+    {
+      "key": "DEP-W1-ATC223",
+      "pointCodes": [
+        "WA",
+        "EW"
+      ],
+      "direction": "forward",
+      "sourcePages": [
+        5
+      ],
+      "conditions": {
+        "phase": "departure",
+        "atcInstructionRequired": true,
+        "QFU": 223,
+        "precedingPhase": "Après TKOF, virage à droite vers WA ; non numérisé."
+      },
+      "runways": null,
+      "geometryPointCodes": null,
+      "geometryPartial": false,
+      "geometryMethod": null,
+      "reviewRequired": []
+    }
+  ]
+}

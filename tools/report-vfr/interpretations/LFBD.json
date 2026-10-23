@@ -1,0 +1,719 @@
+{
+  "icao": "LFBD",
+  "sourceSha256": "20d33d03bbdb12055a9f074e25aa6e1ef00001e9db37618e1ce73cd225b4bbae",
+  "analysedAt": "2026-10-23",
+  "analysedDuringAirac": "2610",
+  "sourceAirac": null,
+  "analyst": "Codex",
+  "scope": "partial",
+  "sourcePages": [
+    1,
+    5,
+    6
+  ],
+  "method": "lecture manuelle du texte et, si indiqué, de la carte",
+  "notes": [
+    "Tableau par piste relu : 15 occurrences, avec minima de visibilité par branche.",
+    "La géométrie représente seulement le segment entre points de report ; l’intégration près des pistes est laissée indéterminée.",
+    "Altitude par défaut 1500 ft AMSL, sauf clairance particulière ; sortie SW uniquement sur demande, autorisation et altitude du contrôle."
+  ],
+  "points": [
+    {
+      "code": "AD",
+      "coordinates": [
+        -0.7152777777777777,
+        44.828611111111115
+      ],
+      "role": "aerodrome_reference_point",
+      "origin": "published",
+      "extractionMethod": "manual_transcription",
+      "pdfPage": 1,
+      "status": "checked_against_local_source"
+    }
+  ],
+  "pointUpdates": {
+    "NW": {
+      "status": "checked_against_local_source"
+    },
+    "NA": {
+      "status": "checked_against_local_source"
+    },
+    "EA": {
+      "status": "checked_against_local_source"
+    },
+    "N": {
+      "status": "checked_against_local_source"
+    },
+    "NE": {
+      "status": "checked_against_local_source"
+    },
+    "SW": {
+      "status": "checked_against_local_source"
+    },
+    "SA": {
+      "status": "checked_against_local_source"
+    },
+    "S": {
+      "status": "checked_against_local_source"
+    },
+    "SE": {
+      "status": "checked_against_local_source"
+    },
+    "OA": {
+      "status": "checked_against_local_source"
+    }
+  },
+  "routes": [
+    {
+      "key": "RWY23-05-NA-NW",
+      "pointCodes": [
+        "AD",
+        "NA",
+        "NW"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "23",
+        "05"
+      ],
+      "geometryPointCodes": [
+        "NA",
+        "NW"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY23-05-NA-N",
+      "pointCodes": [
+        "AD",
+        "NA",
+        "N"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          3000
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "23",
+        "05"
+      ],
+      "geometryPointCodes": [
+        "NA",
+        "N"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY23-05-NA-NE",
+      "pointCodes": [
+        "AD",
+        "NA",
+        "NE"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          3000
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "23",
+        "05"
+      ],
+      "geometryPointCodes": [
+        "NA",
+        "NE"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY23-05-SA-SW",
+      "pointCodes": [
+        "AD",
+        "SA",
+        "SW"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true,
+        "departureException": {
+          "defaultExitPoint": "S",
+          "SWRequiresAtcApproval": true,
+          "altitude": "assigned_by_ATC"
+        }
+      },
+      "runways": [
+        "23",
+        "05"
+      ],
+      "geometryPointCodes": [
+        "SA",
+        "SW"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY23-05-SA-S",
+      "pointCodes": [
+        "AD",
+        "SA",
+        "S"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "23",
+        "05"
+      ],
+      "geometryPointCodes": [
+        "SA",
+        "S"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY23-05-SA-SE",
+      "pointCodes": [
+        "AD",
+        "SA",
+        "SE"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          3000
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "23",
+        "05"
+      ],
+      "geometryPointCodes": [
+        "SA",
+        "SE"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY29-EA-N",
+      "pointCodes": [
+        "AD",
+        "EA",
+        "N"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "29"
+      ],
+      "geometryPointCodes": [
+        "EA",
+        "N"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY29-EA-NE",
+      "pointCodes": [
+        "AD",
+        "EA",
+        "NE"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          3000
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "29"
+      ],
+      "geometryPointCodes": [
+        "EA",
+        "NE"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY29-SA-SW",
+      "pointCodes": [
+        "AD",
+        "SA",
+        "SW"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true,
+        "departureException": {
+          "defaultExitPoint": "S",
+          "SWRequiresAtcApproval": true,
+          "altitude": "assigned_by_ATC"
+        }
+      },
+      "runways": [
+        "29"
+      ],
+      "geometryPointCodes": [
+        "SA",
+        "SW"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY29-SA-S",
+      "pointCodes": [
+        "AD",
+        "SA",
+        "S"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "29"
+      ],
+      "geometryPointCodes": [
+        "SA",
+        "S"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY29-SA-SE",
+      "pointCodes": [
+        "AD",
+        "SA",
+        "SE"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          3000
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "29"
+      ],
+      "geometryPointCodes": [
+        "SA",
+        "SE"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY11-EA-N",
+      "pointCodes": [
+        "AD",
+        "EA",
+        "N"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "11"
+      ],
+      "geometryPointCodes": [
+        "EA",
+        "N"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY11-EA-NE",
+      "pointCodes": [
+        "AD",
+        "EA",
+        "NE"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          3000
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "11"
+      ],
+      "geometryPointCodes": [
+        "EA",
+        "NE"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY11-OA-SW",
+      "pointCodes": [
+        "AD",
+        "OA",
+        "SW"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          1500
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true,
+        "departureException": {
+          "defaultExitPoint": "S",
+          "SWRequiresAtcApproval": true,
+          "altitude": "assigned_by_ATC"
+        }
+      },
+      "runways": [
+        "11"
+      ],
+      "geometryPointCodes": [
+        "OA",
+        "SW"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    },
+    {
+      "key": "RWY11-OA-S",
+      "pointCodes": [
+        "AD",
+        "OA",
+        "S"
+      ],
+      "direction": "both",
+      "sourcePages": [
+        1,
+        5,
+        6
+      ],
+      "conditions": {
+        "defaultAltitude": {
+          "value": 1500,
+          "unit": "ft",
+          "reference": "AMSL",
+          "unlessAtcClearance": true
+        },
+        "minVisibilityMByLeg": [
+          1500,
+          3000
+        ],
+        "scope": [
+          "VFR_SPECIAL",
+          "VMC_environmental_protection"
+        ],
+        "atcMayAssignDifferentRoute": true
+      },
+      "runways": [
+        "11"
+      ],
+      "geometryPointCodes": [
+        "OA",
+        "S"
+      ],
+      "geometryPartial": true,
+      "geometryMethod": "report_points_only",
+      "reviewRequired": [],
+      "geometryOmission": "Branche AD–point intérieur et intégration non numérisées."
+    }
+  ]
+}
