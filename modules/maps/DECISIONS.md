@@ -169,3 +169,33 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     - 375 px, touch: airspace tap "TRA 9 A FL195|FL335", next tap closes; airway tap "A34 RUMEL → BUGUS · 30 NM ·
       003° / 183° · FL065|FL195 · lower airway"; profile tap "TRA 43 A FL195|UNL / TRA 43 W FL195|UNL"; no JavaScript
       error.
+- **23 Oct 2026 — lot 6, planned (design for validation, nothing coded): editing the route on the map and the
+  profile.**
+  - **Asked by the user**: drag a waypoint (snapped to nearby fixes, navaids and aerodromes); tap a fix or a navaid to
+    insert it in the nearest segment; remove a point; drag a point's level on the profile (steps); each gesture writes
+    the current flight, fuel recomputes, the profile and the quote follow; an explicit "Edit" mode on the phone; undo
+    the last gesture. "Edit the route" towards fuel stays for typed routes.
+  - **One rule on every device**: an "Edit" toggle button in the map box, top right (the preset list stays top left).
+    Outside the mode nothing changes. In the mode:
+    - a press within 22 px of a route point drags that point (MapLibre's pan is off for that gesture only); a press
+      elsewhere pans the map as usual, so the map stays usable;
+    - a candidate under the finger (fix, navaid, aerodrome within 20 px) is ringed; releasing there snaps the point to
+      it (its id and position); releasing elsewhere puts the point back (no free coordinates in lot 6: fuel and the
+      OFP form expect named points; free points can come later as `4530N00215E`);
+    - a tap on a fix, navaid or aerodrome not on the route inserts it where it lengthens the route least;
+    - a tap on a route point opens a small card: its id, its level ("FL280 from here", or "continues"), "Remove";
+      departure and arrival are never moved nor removed here (changing them stays in fuel);
+    - on the profile, dragging the level line of a segment sets the held level from its first point (`alt_ft`, in
+      steps of FL10; on the first segment, `level.ft`); a level equal to the previous one removes `alt_ft`;
+    - "Undo" (in the mode) takes back the last gesture, up to 20, in memory only.
+  - **Writing** (fuel INTEGRATION § 3, merge rule `record`): maps reads the record, changes `route.points` (id, lat,
+    lon, `alt_ft`), rewrites `route.text` in the OFP form (`ID lat lon[/Fnnn]`, one entry per line) as fuel does,
+    `distanceNm` and `trackDeg`, sets `by: 'maps'` and `updated_at`, keeps every other field, and writes it back 400 ms
+    after the last gesture. `meta.writes` gains `pilot/` (document policy, same declaration as fuel).
+  - **The quote**: fuel requotes when it sees a record written by another module (`by` ≠ `fuel`), at once when it is
+    mounted (the dual view shows both), else at its next mount; it then writes `profile` again. Until then maps draws
+    its own TOC and TOD and ignores the stale `profile.tocNm` / `todNm`. To agree with the fuel session (one line in
+    its INTEGRATION § 3).
+  - **Cut**:
+    - 6a: the mode, dragging and snapping, insertion, removal, undo, writing; checked at 375 px touch and 1280 px mouse;
+    - 6b: the levels on the profile (drag, card), and the fuel requote contract once agreed.
