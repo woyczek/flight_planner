@@ -500,7 +500,7 @@
           "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Assistant « Rejoindre la compagnie » pas à pas pour un pilote sans compte GitHub : compte, invitation, jeton (classique sur un dépôt d'utilisateur, à grain fin sur une organisation), test, identifiants ; code QR du lien côté administrateur",
           "en": "“Join the airline” step-by-step wizard for a pilot without a GitHub account: account, invitation, token (classic on a user repository, fine-grained on an organisation), test, network ids; QR code of the link on the admin side",
           "de": "Assistent „Der Gesellschaft beitreten“ Schritt für Schritt für Piloten ohne GitHub-Konto: Konto, Einladung, Token (klassisch bei Nutzer-Repository, feinkörnig bei Organisation), Test, Netzkennungen; QR-Code des Links auf Admin-Seite",
