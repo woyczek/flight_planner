@@ -174,7 +174,7 @@
           "es": "Cálculo (aeronave, ruta, SimBrief, nivel y viento, reservas), decisión del nivel dibujada, consignas de ascenso"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Préparer dans l'ordre du pilote : Vol · Route · Météo · Devis · Départ ; route en texte toujours visible et normalisée, distance et route vraie calculées ; « Afficher la carte » ; « Démarrer le vol »",
           "en": "Prepare in the pilot's order: Flight · Route · Weather · Quote · Departure; route as always-visible normalised text, distance and true track computed; “Show the map”; “Start the flight”",
           "de": "Vorbereiten in der Reihenfolge des Piloten: Flug · Route · Wetter · Berechnung · Abflug; Route als stets sichtbarer, normalisierter Text, Distanz und rechtweisender Kurs berechnet; „Karte anzeigen“; „Flug starten“",
@@ -289,6 +289,13 @@
           "en": "Tooltip that follows the mouse and clears, Layers panel (airspaces by type, airways, navaids, fixes, VRP, obstacles, MORA, cities, grid), “around the route only” switchable, “Edit the route” lands on the route field",
           "de": "Tooltip, der der Maus folgt und verschwindet, Ebenen-Panel (Lufträume nach Typ, Luftstraßen, Funkfeuer, Punkte, VRP, Hindernisse, MORA, Städte, Gitter), „nur um die Route“ abschaltbar, „Route bearbeiten“ landet im Routenfeld",
           "es": "Tooltip que sigue al ratón y desaparece, panel Capas (espacios por tipo, aerovías, radioayudas, puntos, VRP, obstáculos, MORA, ciudades, cuadrícula), «solo alrededor de la ruta» desactivable, «Modificar la ruta» llega al campo de ruta"
+        },
+        {
+          "state": "doing",
+          "fr": "VFR : surcouche gardée à tous les zooms, points de report VFR nommés ; itinéraires VFR (transits de CTR) si le SIA les fournit",
+          "en": "VFR: overlay kept at every zoom, named VFR reporting points; VFR routes (CTR transits) if the SIA provides them",
+          "de": "VFR: Überlagerung bei jedem Zoom, benannte VFR-Meldepunkte; VFR-Strecken (CTR-Durchflüge), sofern das SIA sie liefert",
+          "es": "VFR: superposición mantenida a todos los zooms, puntos de notificación VFR con nombre; itinerarios VFR (tránsitos de CTR) si el SIA los proporciona"
         },
         {
           "state": "doing",
