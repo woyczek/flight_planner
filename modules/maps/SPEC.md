@@ -147,6 +147,13 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   (`aerodb.aarTracks()`, `aerodb.natTracks()`, which opens the `nat` zone); racetrack dashed in dark green with a light
   tint, outbound leg IP → CP as an arrow, the track's name beside it; heavy tracks as their two arrowed legs; NAT
   tracks dashed in slate through their points, "NAT A FL350–400" at the first point.
+- **Winds aloft** (lot 6c; layer "Winds aloft", on by default; not on mission maps): from fuel's
+  `route.points[].wind` (`{ dirDeg, kt, tempC, levelFt, at }`, the forecast at the level held at that point), a barb
+  at each point that has one and every 50 NM between two such points, interpolated by components (and the temperature
+  linearly). Classic barb: staff 30 px towards where the wind comes from, feathers on the low-pressure side (left
+  with the wind at one's back in the northern hemisphere, right in the southern): pennant 50 kt, barb 10 kt, half barb
+  5 kt, a circle under 3 kt; a 5 px background edge under it. Tooltip (mouse hover, or a tap, which takes priority
+  over the cursor on the route): "Wind 290° / 65 kt", then temperature, level (`formatLevel`) and forecast hour.
 - **Profile marks**: the route's points, and the airway points and navaids within 3 NM of the route (at least 30 px
   apart), as small triangles with their id.
 - **TOC and TOD on the map**: their label goes north-east of the diamond, else south-east, north-west, south-west,

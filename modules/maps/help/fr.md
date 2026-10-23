@@ -49,6 +49,12 @@ ou un déplacement de la carte la ferme. Avec une souris, passez sur le nom d'un
 bulle suit le pointeur, puis reste 5 secondes après que vous l'avez quitté ; un clic la ferme. Sur le profil, le doigt ou la souris donnent les espaces
 traversés.
 
+**Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
+le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un
+fanion vaut 50 kt, une barbe 10 kt, une demi-barbe 5 kt. Touchez une barbule (ou passez dessus à la souris) : la bulle
+donne la direction, la force, la température, le niveau et l'heure de la prévision. La couche « Vents en altitude »
+les cache.
+
 **Les paliers.** Si la route fixe un niveau à certains points dans Carburant, le profil dessine les paliers : montée,
 palier, nouvelle montée ou descente, avec la fin de montée et le début de descente recalculés. Les points tournants
 de la route sont aussi repérés sur le profil.

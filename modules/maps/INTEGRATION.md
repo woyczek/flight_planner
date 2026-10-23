@@ -67,6 +67,7 @@ keeps the module and fuel scrolls to that step).
   `updated_at`, on the latest version read; every other field is kept. Fuel requotes on `by` ≠ `fuel`; until then
   maps draws its own TOC and TOD.
 - `frame/lib/route_text.js` is imported by the module and kept at installation (`meta.files`).
+- `route.points[].wind` (fuel lot F) is drawn as barbs; absent, nothing is drawn.
 
 ## 5. Costs (measured, see DECISIONS.md)
 

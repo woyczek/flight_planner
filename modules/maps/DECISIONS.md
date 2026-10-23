@@ -331,3 +331,13 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   now goes through fuel's `formatLevel` (68c435def): header, route labels, point card, dragged level, planned
   altitude. Relief and MORA are heights, not levels: always in feet (a 4,800 m summit was shown "FL158"). The copied
   studio profile (`lib/vertical_profile.js`) keeps its own labels, unchanged.
+- **23 Oct 2026 — lot 6c: wind barbs at the flight level.**
+  - **Interpolated by components**, not by direction and speed: between 270°/35 kt and 290°/65 kt the middle barb is
+    what the wind field gives, and a turn through north does not swing the long way round.
+  - **Feathers on the low-pressure side** (meteorological convention, Buys-Ballot), mirrored south of the equator.
+  - **A background edge** under each barb: without it a navy barb disappeared on the airways and airspace bands.
+  - **A tap on a barb shows the wind** before placing the cursor: the barbs sit on the route, so the cursor took every
+    tap.
+  - **Bench** (flight with winds 270/35, 290/65, 320/15, 010/4 at FL270, forecast 12:00Z): 1280 px hover and 375 px
+    tap on LUGEN → "Vent 290° / 65 kt / -42 °C · FL270 · prévision 12:00Z"; barbs at the points and every 50 NM,
+    pennant at 65 kt, circle at 4 kt; layer present; no JavaScript error.

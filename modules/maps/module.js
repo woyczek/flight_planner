@@ -197,6 +197,8 @@ const TX = {
   ptSame: ['niveau précédent conservé', 'previous level kept', 'vorherige Flughöhe bleibt', 'se mantiene el nivel anterior'],
   saveFailed: ['Route non enregistrée : {m}', 'Route not saved: {m}', 'Route nicht gespeichert: {m}', 'Ruta no guardada: {m}'],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
+  windTip: ['Vent {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Viento {d}° / {k} kt'],
+  windSub: ['{t} · {l} · prévision {h}', '{t} · {l} · forecast {h}', '{t} · {l} · Vorhersage {h}', '{t} · {l} · previsión {h}'],
   layerNames: {
     corridor: ['Autour de la route seulement', 'Around the route only', 'Nur entlang der Route', 'Solo alrededor de la ruta'],
     asTma: ['Espaces TMA / CTR', 'TMA / CTR airspaces', 'Lufträume TMA / CTR', 'Espacios TMA / CTR'],
@@ -216,7 +218,8 @@ const TX = {
     aar: ['Axes de ravitaillement (AAR)', 'Air refuelling tracks (AAR)', 'Luftbetankungsstrecken (AAR)',
       'Pistas de reabastecimiento (AAR)'
     ],
-    nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT']
+    nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
+    wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura']
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
@@ -554,6 +557,7 @@ function draw() {
     ctx.restore();
   }
   drawPlanOnMap(ctx, toC, got.routeLabels || []);
+  S.windHits = !S.mission && layersNow().wind ? drawWinds(ctx, toC) : [];
   S.toC = toC;
   if (S.edit?.on) drawEdit(ctx, toC);
   if (S.data && !S.drawn) {
@@ -917,6 +921,9 @@ async function startTiles() {
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
         if (S.edit.on) return editTap(e.point.x, e.point.y);
+        // une barbule de vent (posée sur la route) passe avant le curseur
+        if (windAt(e.point.x, e.point.y)) return S.tipEl.hidden ? mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y) :
+          hideTips();
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
         if (s != null) {
           hideTips();
@@ -980,14 +987,167 @@ function followTip(tip, box, x, y, html) {
   if (tip.style.left !== left) tip.style.left = left;
   if (tip.style.top !== top) tip.style.top = top;
 }
-/** Survol de la carte en (x, y) : le cartouche d'une voie ou le libellé d'un espace sous la souris, sinon rien. */
+/** Survol de la carte en (x, y) : une barbule de vent, le cartouche d'une voie ou le libellé d'un espace sous la
+ *  souris, sinon rien. */
 function hoverMap(x, y) {
-  const g = MapsRender.airwaysAt(S.awHits, x, y)[0],
-    z = g ? null : (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
-  if (!g && !z) return linger('map');
+  const w = windAt(x, y),
+    g = w ? null : MapsRender.airwaysAt(S.awHits, x, y)[0],
+    z = w || g ? null : (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
+  if (!w && !g && !z) return linger('map');
   stay('map');
-  const [a, b] = g ? airwayLines(g) : MapsRender.sia(z.a);
+  const [a, b] = w ? windLines(w) : g ? airwayLines(g) : MapsRender.sia(z.a);
   followTip(S.tipEl, S.box, x, y, hoverHtml(a, b));
+}
+
+// ---------------------------------------------------------------- vents en altitude (lot 6c)
+// route.points[].wind de Carburant (modules/fuel/INTEGRATION.md § 3) : { dirDeg, kt, tempC, levelFt, at }, le vent prévu
+// au niveau tenu à ce point. Une barbule par point qui en porte un, plus une tous les 50 NM entre deux points qui en
+// portent, interpolée composante par composante (vent et température).
+const WIND_STEP_NM = 50;
+/** Vents à dessiner : [{ lat, lon, dirDeg, kt, tempC, levelFt, at }]. */
+function windPoints() {
+  const pts = (S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+    ok = w => w && Number.isFinite(+w.dirDeg) && Number.isFinite(+w.kt),
+    out = [];
+  if (!pts.some(p => ok(p.wind))) return out;
+  const cum = MapsRender.distances(pts.map(p => ({
+      lat: +p.lat,
+      lon: +p.lon
+    }))),
+    uv = w => {
+      const r = +w.dirDeg * Math.PI / 180;
+      return [- +w.kt * Math.sin(r), - +w.kt * Math.cos(r)]; // vers où souffle le vent (est, nord)
+    };
+  pts.forEach((p, i) => {
+    if (ok(p.wind)) out.push({
+      lat: +p.lat,
+      lon: +p.lon,
+      ...p.wind
+    });
+    const q = pts[i + 1];
+    if (!q || !ok(p.wind) || !ok(q.wind)) return;
+    const a = uv(p.wind),
+      b = uv(q.wind),
+      len = cum[i + 1] - cum[i];
+    for (let d = WIND_STEP_NM; d < len - WIND_STEP_NM / 4; d += WIND_STEP_NM) {
+      const f = d / len,
+        u = a[0] + (b[0] - a[0]) * f,
+        v = a[1] + (b[1] - a[1]) * f,
+        tA = +p.wind.tempC,
+        tB = +q.wind.tempC;
+      out.push({
+        lat: +p.lat + (+q.lat - +p.lat) * f,
+        lon: +p.lon + (+q.lon - +p.lon) * f,
+        dirDeg: (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360,
+        kt: Math.hypot(u, v),
+        tempC: Number.isFinite(tA) && Number.isFinite(tB) ? tA + (tB - tA) * f : null,
+        levelFt: p.wind.levelFt,
+        at: p.wind.at,
+        between: true
+      });
+    }
+  });
+  return out;
+}
+/** Barbule classique au point c : hampe vers d'où vient le vent, barbes du côté des basses pressions (à gauche, dos au
+ *  vent, dans l'hémisphère nord ; à droite au sud) : fanion 50 kt, barbe 10 kt, demi-barbe 5 kt ; sous 3 kt, un cercle. */
+function drawBarb(ctx, c, w, col, lw = 1.8) {
+  const kt = Math.round(+w.kt / 5) * 5,
+    L = 30,
+    r = +w.dirDeg * Math.PI / 180,
+    dx = Math.sin(r),
+    dy = -Math.cos(r),
+    side = w.lat >= 0 ? 1 : -1,
+    nx = -dy * side,
+    ny = dx * side;
+  ctx.save();
+  ctx.strokeStyle = ctx.fillStyle = col;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, 2.5 + (lw - 1.8) / 2, 0, Math.PI * 2);
+  ctx.fill();
+  if (kt < 3) {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    return ctx.restore();
+  }
+  const tip = {
+    x: c.x + dx * L,
+    y: c.y + dy * L
+  };
+  ctx.beginPath();
+  ctx.moveTo(c.x, c.y);
+  ctx.lineTo(tip.x, tip.y);
+  ctx.stroke();
+  let left = kt,
+    at = 0;
+  const pos = k => ({
+      x: tip.x - dx * k,
+      y: tip.y - dy * k
+    }),
+    feather = (k, len) => {
+      const p = pos(k);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + nx * len + dx * 4, p.y + ny * len + dy * 4);
+      ctx.stroke();
+    };
+  while (left >= 50) {
+    const p = pos(at),
+      q = pos(at + 6);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x + nx * 11 + dx * 2, p.y + ny * 11 + dy * 2);
+    ctx.lineTo(q.x, q.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    at += 8;
+    left -= 50;
+  }
+  while (left >= 10) {
+    feather(at, 11);
+    at += 4.5;
+    left -= 10;
+  }
+  if (left >= 5) feather(at === 0 ? 4.5 : at, 6);
+  ctx.restore();
+}
+/** Barbules de la route ; rend les cadres touchés pour l'infobulle : [{ x, y, w }]. */
+function drawWinds(ctx, toC) {
+  const list = windPoints(),
+    col = S.theme?.dark ? '#b3c7ff' : '#1a237e',
+    hits = [];
+  for (const w of list) {
+    const c = toC(w.lat, w.lon);
+    drawBarb(ctx, c, w, S.theme.bg, 5); // liseré du fond : lisible sur les espaces et les voies
+    drawBarb(ctx, c, w, col);
+    hits.push({
+      x: c.x,
+      y: c.y,
+      w
+    });
+  }
+  return hits;
+}
+/** Barbule sous (x, y) (hampe comprise : 18 px autour du point). */
+const windAt = (x, y) => (S.windHits || []).find(h => Math.hypot(h.x - x, h.y - y) <= 18)?.w || null;
+/** Deux lignes d'infobulle d'un vent : « Vent 270° / 45 kt », puis température, niveau et heure de la prévision. */
+function windLines(w) {
+  const t = Number.isFinite(+w.tempC) && w.tempC !== null ? `${Math.round(+w.tempC)} °C` : '',
+    l = +w.levelFt > 0 ? formatLevel(+w.levelFt) : '',
+    h = w.at ? String(w.at).slice(11, 16) + 'Z' : '';
+  return [tt(TX.windTip, {
+    d: String(Math.round(+w.dirDeg) % 360 || 360).padStart(3, '0'),
+    k: Math.round(+w.kt)
+  }), [t, l].filter(Boolean).length || h ? tt(TX.windSub, {
+    t: t || '—',
+    l: l || '—',
+    h: h || '—'
+  }) : ''];
 }
 /** Infobulle de survol quittée (libellé, carte, profil) : elle reste 5 s à sa dernière place, puis part ; un nouveau
  *  survol la remplace, un clic la ferme. */
@@ -1555,6 +1715,11 @@ function editGestures() {
 /** Infobulle de la carte en (x, y) : la voie dont le cartouche est sous le doigt, sinon les espaces montrés sous le
  *  point (lat, lon). */
 function mapTip(lat, lon, x, y) {
+  const w = windAt(x, y);
+  if (w) {
+    const [a, b] = windLines(w);
+    return showTip(S.tipEl, S.box, x, y, `<div><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</div>`);
+  }
   const ways = MapsRender.airwaysAt(S.awHits, x, y);
   showTip(S.tipEl, S.box, x, y, ways.length ? airwayHtml(ways.slice(0, 3)) : tipHtml(MapsRender.airspacesAt(S.data?.data
     ?.airspaces || [], lat, lon)));
@@ -1745,7 +1910,7 @@ const AS_GROUPS = {
   asFir: ['FIR', 'UIR', 'UTA', 'LTA', 'OCA', 'FRA'] // régions et grands volumes (UTA FRANCE) : pas avec les TMA
 };
 const LAYER_KEYS = ['corridor', 'asTma', 'asDrp', 'asFir', 'asOther', 'awLow', 'awHigh', 'navaids', 'fixes', 'vrp', 'obstacles', 'mora',
-  'cities', 'graticule', 'altn', 'aar', 'nat'
+  'cities', 'graticule', 'altn', 'aar', 'nat', 'wind'
 ];
 const groupOf = t => Object.keys(AS_GROUPS).find(g => AS_GROUPS[g].includes(String(t || '').toUpperCase())) || 'asOther';
 /** État des couches par défaut d'un profil d'affichage (celui du préréglage). */
@@ -1770,7 +1935,8 @@ function layerDefaults(B) {
     altn: true,
     // axes AAR et tracks NAT : d'origine en CAM seulement
     aar: B.id === 'v3-cam',
-    nat: B.id === 'v3-cam'
+    nat: B.id === 'v3-cam',
+    wind: true
   };
 }
 /** Couches du préréglage courant : défauts du profil, puis choix gardés sur cet appareil. */
@@ -2198,6 +2364,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       x = e.clientX - r.left,
       y = e.clientY - r.top;
     if (S.edit.on) return editTap(x, y);
+    if (windAt(x, y)) return S.tipEl.hidden ? mapTip(0, 0, x, y) : hideTips();
     const v = MapsRender.mercator(S.fit, r.width, r.height, 12),
       s = S.prof ? MapsProfile.nearest(S.prof, v.toC, x, y) : null;
     if (s != null) {

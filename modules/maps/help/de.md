@@ -50,6 +50,12 @@ Antippen oder ein Verschieben der Karte schließt sie. Mit der Maus über den Na
 fahren: eine kleine Blase folgt dem Zeiger und bleibt danach 5 Sekunden stehen; ein Klick schließt sie. Auf dem Profil nennen Finger
 oder Maus die durchflogenen Lufträume.
 
+**Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
+Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel sind
+50 kt, eine Fieder 10 kt, eine halbe Fieder 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus darüber):
+die Blase nennt Richtung, Stärke, Temperatur, Flughöhe und die Stunde der Vorhersage. Die Ebene „Höhenwinde“
+blendet sie aus.
+
 **Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:
 Steigflug, Reiseflug, neuer Steig- oder Sinkflug, mit neu berechnetem Ende des Steigflugs und Beginn des Sinkflugs.
 Die Wegpunkte der Route sind auch auf dem Profil markiert.

@@ -47,6 +47,11 @@ notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conoce
 cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y luego
 queda 5 segundos tras dejarlo; un clic la cierra. En el perfil, el dedo o el ratón dan los espacios atravesados.
 
+**Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en
+barbas a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta apunta de donde viene el viento;
+un banderín vale 50 kt, una barba 10 kt, media barba 5 kt. Toque una barba (o pase el ratón por encima): la burbuja da
+la dirección, la fuerza, la temperatura, el nivel y la hora de la previsión. La capa «Vientos en altura» las oculta.
+
 **Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,
 nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de
 giro de la ruta también se marcan en el perfil.

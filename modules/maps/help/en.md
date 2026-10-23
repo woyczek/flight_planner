@@ -47,6 +47,11 @@ AQUITAINE 2000|FL145 D”) and its hours when known. The next tap or moving the 
 an airway's or an airspace's name: a small bubble follows the pointer, then stays 5 seconds after you leave it; a click closes it. On the
 profile, your finger or the mouse gives the airspaces crossed.
 
+**Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
+each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
+barb 10 kt, a half barb 5 kt. Tap a barb (or move the mouse over it): the bubble gives the direction, the speed, the
+temperature, the level and the forecast hour. The “Winds aloft” layer hides them.
+
 **Steps.** If the route sets a level at some points in Fuel, the profile draws the steps: climb, level-off, new
 climb or descent, with the top of climb and top of descent computed again. The route's waypoints are also marked on
 the profile.

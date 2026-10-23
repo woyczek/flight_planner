@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 6c: winds aloft** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — wind barbs at the
+  flight level along the route, at each point and every 50 NM, from Fuel's forecast; a tap or a hover gives direction,
+  speed, temperature, level and forecast hour; a layer of their own.
 - **my flights: the flight in progress** (`modules/flightlog/module.js`; docs) — a flight started in fuel and not yet
   reported shows first, with "Write the report".
 - **Map: levels as in Fuel** (`modules/maps/`; SPEC, DECISIONS) — "FL060" from the transition altitude, "3 500 ft"
