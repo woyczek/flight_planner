@@ -44,7 +44,8 @@ Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in f
 
 **1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
 rather than the observation, the aircraft and the cruise level (as a flight level). The aircraft fits on one line: the
-chosen aircraft, its registration, its callsign and where it comes from. The magnifying glass opens the search: type a
+chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
+chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
 sheet, a registration, a callsign or a type. The results come in this order: your performance sheets, the airline's
 aircraft (its fleet, then those known from its logbook), the published types, and last the code as typed. An airline
 aircraft takes its own sheet if it has one, otherwise its type's, otherwise an estimate of the type — the quote then
@@ -110,7 +111,8 @@ aloft unavailable”).
 
 **4 Quote.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
-trip. Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
+trip. Each level is worked out like the quote, with the forecast wind at that level when the real weather is on:
+at the chosen level, the curve and the quote give the same figure. Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
 fast, at the sheet's airspeed, or manual (you give airspeed and rate of climb).
 
 The “Density altitude” fold shows, for the ISA deviation on the horizontal axis, the density altitude of each pressure
@@ -361,7 +363,8 @@ to replace them.
 
 **The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
 if the flight follows one, then the blocks specific to the family. Some blocks only appear for one series (for example
-VIP or ferry for special missions).
+VIP or ferry for special missions). Until you open this step it is marked "to check" instead of ✓: the family and
+the series of a new report are taken by default.
 
 **The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
@@ -424,7 +427,8 @@ report yet, for the chosen period. Just below, the three aircraft types you have
 
 **The filters.** Choose the period (7 days, 31 days, 1 year, all), search for a callsign, a type, a registration, an
 airfield, a mission or a report number, or tick “Without report” to see only the flights waiting for one. Your choices
-stay on the device.
+stay on the device: at the next visit a chip recalls them ("1 year · LFRS ✕") and removes them in one tap. A "—"
+instead of the block time: a report without times.
 
 **The list.** One line per flight: the date, the callsign, the route and the block time. An orange dot marks a flight
 without a report. On a computer, the line also shows the aircraft and the report number.

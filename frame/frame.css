@@ -19,7 +19,9 @@ body {
   min-height: 100%;
   display: grid;
   grid-template-rows: auto 1fr;
-  grid-template-columns: 210px 1fr;
+  /* minmax(0, …) : une colonne ne s'élargit jamais à la largeur minimale de son contenu (un en-tête chargé élargissait
+     toute la page au-delà de l'écran du téléphone) */
+  grid-template-columns: 210px minmax(0, 1fr);
   grid-template-areas: "head head" "nav main"
 }
 .f-head {
@@ -31,6 +33,8 @@ body {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
+  min-width: 0;
+  overflow: hidden;
   background: var(--sog-surface);
   border-bottom: 1px solid var(--sog-border)
 }
@@ -628,8 +632,26 @@ body {
 /* téléphone : une colonne, verbes dans un tiroir ouvert par le bouton de menu */
 @media (max-width: 760px) {
   body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "head" "main"
+  }
+  /* en-tête du téléphone : jamais plus large que l'écran — retour en flèche seule, pastilles réduites à leur icône
+     (libellé dans l'infobulle) */
+  .f-back span,
+  .f-live span,
+  .f-host span,
+  .f-who span {
+    display: none
+  }
+  .f-back,
+  .f-live,
+  .f-host,
+  .f-who {
+    flex: 0 1 var(--sog-touch);
+    /* une cible tactile, qui ne rétrécit que si l'en-tête est encombré */
+    min-width: 0;
+    justify-content: center;
+    padding: 0
   }
   .f-burger {
     display: inline-block

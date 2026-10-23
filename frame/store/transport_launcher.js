@@ -36,6 +36,10 @@
       });
     }
     const j = await r.json().catch(() => ({}));
+    // 400 qui nomme un chemin : cette écriture est refusée pour de bon (la couche la sort de la file)
+    if (r.status === 400 && j.path) throw Object.assign(new Error(j.message || 'refused'), {
+      refused: String(j.path)
+    });
     if (!r.ok) throw Object.assign(new Error(j.message || j.error || `launcher ${r.status}`), {
       status: r.status,
       conflict: r.status === 409

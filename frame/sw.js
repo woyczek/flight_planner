@@ -18,7 +18,7 @@ const CACHE = 'sog-frame-v1',
     'aerodb/lnmperf.js', 'aerodb/aar.js',
     'settings/admin_links.js', 'settings/config.js', 'settings/join.js', 'lib/qr.js', 'lib/clipboard.js', 'settings/settings.js',
     'lib/markdown.js',
-    'lib/dom.js', 'lib/current_flight.js',
+    'lib/dom.js', 'lib/current_flight.js', 'lib/time.js',
     'help/help.js', 'help/roadmap.js', 'help/roadmap.json',
     // l'aide (manuel, tutoriels) : seulement dans la langue de l'appli, demandée par la page (message « precache ») ;
     // les autres langues et les captures des tutoriels sont gardées à leur première lecture

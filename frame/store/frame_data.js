@@ -730,6 +730,11 @@
           if (reason !== 'write' && who) await exchange(T, result);
           return done(result);
         } catch (e) {
+          // écriture refusée pour de bon (chemin ou type interdit) : sortie de la file vers les conflits, le reste repart
+          if (e?.refused && await refuseWrite(e.refused, e.message, T.id)) {
+            i--;
+            continue;
+          }
           if (!e?.conflict) throw e; // le dépôt a bougé pendant l'envoi : tirer et repousser
         }
       }
@@ -738,6 +743,30 @@
       result.error = e?.offline ? 'offline' : e?.message || String(e);
       return done(result);
     }
+  }
+  /** Écriture refusée définitivement par le transport (chemin ou type interdit) : retirée de la file, gardée dans les
+   *  conflits (side 'refused' : ce qui devait être écrit, la raison, le transport) pour la reprendre ou l'écarter ; vrai
+   *  si elle était en file. */
+  async function refuseWrite(path, why, by) {
+    const p = await idb('pending', 'get', path);
+    if (!p) return false;
+    await idb('pending', 'delete', path);
+    await idb('conflicts', 'add', {
+      path,
+      kept: null,
+      lost: p.text,
+      side: 'refused',
+      why: String(why || '').slice(0, 300),
+      by: by || '',
+      at: new Date().toISOString()
+    });
+    window.dispatchEvent(new CustomEvent('frame-data-conflict', {
+      detail: {
+        count: 1
+      }
+    }));
+    emitStatus();
+    return true;
   }
   /** Écritures en file sous un préfixe gardé sur l'appareil (pilot/ANON/, mises en file avant cette règle) : rangées dans
    *  le cache de l'appareil ; une suppression reste en file (elle retire du dépôt un fichier qui y était déjà). */
@@ -1052,7 +1081,7 @@
    *  synchronisation), le conflit est marqué vu. Retour : le chemin, ou '' si le conflit n'existe plus. */
   async function restore(id) {
     const c = await idb('conflicts', 'get', id);
-    if (!c?.lost) return '';
+    if (!c?.lost && !(c?.side === 'refused' && c.lost === null)) return ''; // une suppression refusée se reprend aussi
     await idb('pending', 'put', {
       path: c.path,
       text: c.lost,

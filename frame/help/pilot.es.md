@@ -46,7 +46,8 @@ en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS
 
 **1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
 lugar de la observación, la aeronave y el nivel de crucero (en FL). La aeronave cabe en una línea: la aeronave elegida,
-su matrícula, su indicativo y de dónde viene. La lupa abre la búsqueda: escriba una ficha, una matrícula, un indicativo
+su matrícula, su indicativo y de dónde viene. Un vuelo nuevo toma la última aeronave elegida en este
+dispositivo; sin elección, el cálculo espera. La lupa abre la búsqueda (la última elegida primero): escriba una ficha, una matrícula, un indicativo
 o un tipo. Los resultados llegan en este orden: sus fichas de rendimiento, las aeronaves de la aerolínea (su flota,
 luego las conocidas por su diario), los tipos publicados y, en último lugar, el código tal como se escribió. Una
 aeronave de la aerolínea toma su propia ficha si la tiene, si no la de su tipo, si no una estimación del tipo — el
@@ -115,7 +116,8 @@ disponible»).
 
 **4 Cálculo.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
 El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los niveles que no se
-pueden mantener en este trayecto. Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
+pueden mantener en este trayecto. Cada nivel se calcula como el cálculo, con el viento previsto a ese nivel cuando el tiempo real
+está activado: en el nivel elegido, la curva y el cálculo dan la misma cifra. Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
 de subir: económico, mejor régimen, rápido, a la velocidad de la ficha, o manual (usted da velocidad y régimen de
 ascenso).
 
@@ -371,7 +373,8 @@ botón propone sustituirlos.
 
 **La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
 misión si el vuelo sigue una, y después los bloques propios de la familia. Algunos bloques solo aparecen para una serie
-(por ejemplo VIP o traslado en las misiones especiales).
+(por ejemplo VIP o traslado en las misiones especiales). Mientras no abra este paso, aparece «por ver» en lugar
+de ✓: la familia y la serie de un informe nuevo se toman por defecto.
 
 **El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
 el combustible a la salida y al aterrizaje. Las incoherencias — horas desordenadas, fecha futura, combustible que
@@ -435,7 +438,8 @@ para el período elegido. Justo debajo, los tres tipos de aeronave que más ha v
 
 **Los filtros.** Elija el período (7 días, 31 días, 1 año, todo), busque un indicativo, un tipo, una matrícula, un
 aeródromo, una misión o un número de informe, o marque «Sin informe» para ver solo los vuelos que esperan uno. Sus
-elecciones se quedan en el dispositivo.
+elecciones se quedan en el dispositivo: en la visita siguiente, una pastilla las recuerda («1 año · LFRS ✕») y las
+quita de un toque. Un «—» en lugar del bloque: un informe sin horas.
 
 **La lista.** Una línea por vuelo: la fecha, el indicativo, la ruta y el tiempo de bloque. Un punto naranja marca un
 vuelo sin informe. En un ordenador, la línea muestra también la aeronave y el número del informe.

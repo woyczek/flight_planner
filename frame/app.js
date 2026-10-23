@@ -21,6 +21,12 @@
   //   · hors ligne : service worker du cadre (frame/sw.js : le cadre et les modules gardés, nouvelle version proposée au
   //     rechargement), appels sortants des modules relayés par le lanceur s'il y en a un (ctx.net).
   const FD = window.FrameData;
+  // heures de l'appli : UTC suffixée Z (frame/lib/time.js) ; module chargé en même temps que le reste du démarrage
+  let TZ = null;
+  const timeP = import(new URL('lib/time.js?v=0', document.currentScript.src).href).then(m => TZ = m).catch(e => console
+    .warn('time', e));
+  /** Heure de l'appli : fmtZ (« 16:30Z »), fmtZLocal (« 16:30Z (18:30) »), fmtDateZ (date UTC et heure Z). */
+  const tz = (fn, iso) => TZ?.[fn]?.(iso, lang()) ?? '';
   const ROOT = new URL('../', document.currentScript.src).href;
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -93,6 +99,19 @@
       offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión'],
       conflicts: ['{n} conflit(s)', '{n} conflict(s)', '{n} Konflikt(e)', '{n} conflicto(s)'],
       error: ['Erreur de synchronisation', 'Sync error', 'Sync-Fehler', 'Error de sincronización'],
+      // erreurs de la couche de données, dans la langue de l'appli (le détail d'un serveur reste tel qu'il l'a dit)
+      errs: {
+        offline: ['hors ligne', 'offline', 'offline', 'sin conexión'],
+        moving: ['le dépôt change sans cesse : réessayez', 'the repository keeps changing: try again',
+          'das Repository ändert sich ständig: erneut versuchen', 'el repositorio cambia sin parar: vuelva a intentarlo'
+        ],
+        none: ['aucun moyen d’échange réglé', 'no way of exchanging set', 'kein Austauschweg eingerichtet',
+          'ninguna vía de intercambio configurada'
+        ],
+        other: ['refusé par le serveur : {e}', 'refused by the server: {e}', 'vom Server abgelehnt: {e}',
+          'rechazado por el servidor: {e}'
+        ]
+      },
       local: ['Sur cet appareil', 'On this device', 'Auf diesem Gerät', 'En este dispositivo'],
       title: ['Synchronisation : {tr} — dernière réussie : {last} — {n} écriture(s) en attente{e}',
         'Synchronisation: {tr} — last success: {last} — {n} pending write(s){e}',
@@ -463,9 +482,9 @@
     if (!b) return;
     if (b.hidden === show) b.hidden = !show;
     if (!show) return;
-    const text = t(T.who),
+    const html = `${Icons?.svg('alert') || ''}<span>${esc(t(T.who))}</span>`,
       title = t(T.whoTitle);
-    if (b.textContent !== text) b.textContent = text;
+    if (b.innerHTML !== html) b.innerHTML = html;
     if (b.title !== title) b.title = title;
     try {
       if (localStorage.getItem('sogFrame:trigramAsked')) return;
@@ -609,13 +628,13 @@
       d: ago(s.lastSync)
     }) : t(T.sync.ok)];
     // infobulle : l'état, puis les écritures en attente (chemin, module, heure ; cinq au plus) et la dernière erreur
-    const queue = (s.queue || []).slice(0, 5).map(q => `\n• ${q.deletion ? '✕ ' : ''}${q.path} — ${q.module || '?'}, ${new Date(q.at).toLocaleTimeString(lang())}`)
+    const queue = (s.queue || []).slice(0, 5).map(q => `\n• ${q.deletion ? '✕ ' : ''}${q.path} — ${q.module || '?'}, ${tz('fmtZ', q.at)}`)
       .join('') + ((s.queue || []).length > 5 ? '\n…' : '');
     const title = t(T.sync.title, {
       tr: s.transport,
-      last: s.lastSync ? new Date(s.lastSync).toLocaleString() : t(T.sync.never),
+      last: s.lastSync ? tz('fmtDateZ', s.lastSync) : t(T.sync.never),
       n: s.pending,
-      e: s.lastError ? ` — ${s.lastError}` : ''
+      e: s.lastError ? ` — ${errText(s.lastError)}` : ''
     }) + queue;
     // état court pour un écran étroit (le libellé entier reste dans l'infobulle et le nom accessible du bouton)
     const short = {
@@ -646,7 +665,7 @@
     if (quiet) return r;
     if (r.error === 'offline') notify(t(T.sync.offlineNote), 'warn');
     else if (r.error) notify(t(T.sync.failed, {
-      e: r.error
+      e: errText(r.error)
     }), 'err');
     else notify(t(T.sync.done, {
       p: r.pulled.length,
@@ -655,6 +674,17 @@
     return r;
   }
 
+  /** Erreur de la couche de données dans la langue de l'appli ; celle d'un serveur, citée telle quelle. */
+  const errText = e => {
+    const k = {
+      offline: 'offline',
+      'no transport': 'none',
+      'repository kept moving: try again': 'moving'
+    } [e];
+    return k ? t(T.sync.errs[k]) : t(T.sync.errs.other, {
+      e
+    });
+  };
   // ---------------------------------------------------------------- écrans chargés à la demande
   // Réglages, aide et feuille de route : scripts classiques injectés à la première ouverture de leur écran (le service
   // worker les garde comme les autres fichiers du cadre) ; le démarrage, le menu et le premier module ne les attendent
@@ -855,7 +885,17 @@
     pane.el.remove();
     pane = null;
     $('fView').classList.remove('f-split');
+    layoutChanged();
   }
+  /** Vue double changée (volet ouvert ou fermé) : événement « frame-layout » { main, pane } (ctx.layout le suit). */
+  const layoutChanged = () => window.dispatchEvent(new CustomEvent('frame-layout', {
+    detail: {
+      main: current?.id || null,
+      pane: pane?.id || null
+    }
+  }));
+  /** Module monté à côté de id dans la vue double (le volet pour le module courant, et l'inverse), sinon null. */
+  const besideOf = id => !pane || !current ? null : id === current.id ? pane.id : id === pane.id ? current.id : null;
   /** Monte le module paneId à côté du module courant (seulement sur grand écran). */
   async function openPane(entry, paneId) {
     const p = APP.modules.find(m => m.id === paneId);
@@ -887,6 +927,7 @@
     };
     $('fView').classList.add('f-split');
     $('fView').append(el);
+    layoutChanged();
     try {
       const mod = await import(new URL(`modules/${p.id}/module.js`, ROOT).href);
       if (pane?.el !== el) return; // fermé entre-temps
@@ -1093,6 +1134,12 @@
         return liveApi();
       },
       query,
+      // vue double : { with } le module montré à côté (ou null) ; l'événement « frame-layout » (window) suit chaque changement
+      get layout() {
+        return Object.freeze({
+          with: besideOf(entry.id)
+        });
+      },
       // ctx.help : open() ouvre le panneau d'aide déjà posé (l'aide est alors chargée), link() est une adresse
       help: Object.freeze({
         open: subject => window.SogHelp ? SogHelp.forModule(entry.id, $('fView')).open(subject) : false,
@@ -1128,6 +1175,15 @@
       'Verworfen: die Version eines anderen Geräts', 'Descartada: la versión de otro dispositivo'
     ],
     kept: ['Version gardée', 'Kept version', 'Behaltene Version', 'Versión conservada'],
+    refused: ['Écriture refusée : {p} — reprendre ou écarter', 'Write refused: {p} — take it back or set it aside',
+      'Schreibvorgang abgelehnt: {p} — zurücknehmen oder verwerfen', 'Escritura rechazada: {p} — recuperarla o descartarla'
+    ],
+    refusedWhy: ['Refusée par {s} : {w}. Rien n’a été écrit ; voici ce qui devait l’être.',
+      'Refused by {s}: {w}. Nothing was written; here is what was to be.',
+      'Abgelehnt von {s}: {w}. Nichts wurde geschrieben; hier ist, was geschrieben werden sollte.',
+      'Rechazada por {s}: {w}. No se escribió nada; esto es lo que debía escribirse.'
+    ],
+    refusedDel: ['(une suppression)', '(a deletion)', '(eine Löschung)', '(una eliminación)'],
     restore: ['Reprendre cette version', 'Take this version back', 'Diese Version zurücknehmen', 'Recuperar esta versión'],
     seen: ['Vu', 'Seen', 'Gesehen', 'Visto'],
     restored: ['Version reprise : elle partira à la prochaine synchronisation.',
@@ -1138,7 +1194,7 @@
   };
   async function renderConflicts(view, all = false) {
     const list = (await FD.conflicts()).filter(c => all || !c.seen).sort((a, b) => String(b.at).localeCompare(String(a.at)));
-    view.innerHTML = `<h1>${esc(t(C.title))}</h1><p class="f-muted">${esc(t(C.intro))}</p><label class="f-check"><input type="checkbox" data-all ${all ? 'checked' : ''}>${esc(t(C.all))}</label>${list.length ? list.map(c => `<div class="f-card" data-id="${c.id}"><b>${esc(c.path)}</b> <span class="f-muted">${esc(new Date(c.at).toLocaleString())}</span><details><summary>${esc(t(c.side === 'local' ? C.lostLocal : C.lostRemote))}</summary><pre>${esc(c.lost)}</pre></details><details><summary>${esc(t(C.kept))}</summary><pre>${esc(c.kept)}</pre></details><div class="f-row">${c.restored ? '' : `<button type="button" class="primary" data-restore>${esc(t(C.restore))}</button>`}${c.seen ? '' : `<button type="button" data-seen>${esc(t(C.seen))}</button>`}</div></div>`).join('') : `<p class="f-card">${esc(t(C.none))}</p>`}`;
+    view.innerHTML = `<h1>${esc(t(C.title))}</h1><p class="f-muted">${esc(t(C.intro))}</p><label class="f-check"><input type="checkbox" data-all ${all ? 'checked' : ''}>${esc(t(C.all))}</label>${list.length ? list.map(c => `<div class="f-card" data-id="${c.id}">${c.side === 'refused' ? `<b>${esc(t(C.refused, { p: c.path }))}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><p class="f-muted">${esc(t(C.refusedWhy, { s: c.by || '?', w: c.why || '?' }))}</p><details><summary>${esc(c.path)}</summary><pre>${esc(c.lost || t(C.refusedDel))}</pre></details>` : `<b>${esc(c.path)}</b> <span class="f-muted">${esc(tz('fmtDateZ', c.at))}</span><details><summary>${esc(t(c.side === 'local' ? C.lostLocal : C.lostRemote))}</summary><pre>${esc(c.lost)}</pre></details><details><summary>${esc(t(C.kept))}</summary><pre>${esc(c.kept)}</pre></details>`}<div class="f-row">${c.restored ? '' : `<button type="button" class="primary" data-restore>${esc(t(C.restore))}</button>`}${c.seen ? '' : `<button type="button" data-seen>${esc(t(C.seen))}</button>`}</div></div>`).join('') : `<p class="f-card">${esc(t(C.none))}</p>`}`;
     view.querySelector('[data-all]').onchange = e => renderConflicts(view, e.target.checked);
     view.onclick = async e => {
       const card = e.target.closest('[data-id]');
@@ -1188,6 +1244,12 @@
       }))),
       cutAccess,
       weatherKey,
+      // heures de l'appli (frame/lib/time.js) : « 16:30Z », date UTC et heure Z
+      time: Object.freeze({
+        fmtZ: iso => tz('fmtZ', iso),
+        fmtZLocal: iso => tz('fmtZLocal', iso),
+        fmtDateZ: iso => tz('fmtDateZ', iso)
+      }),
       // accès des appareils du réseau local : seulement sur le poste qui sert la page (pas depuis un appareil appairé)
       lan: () => launcherHere && !launcherHere.lan ? {
         state: () => lanCall(),
@@ -1323,7 +1385,12 @@
   }
   /** Démarre ou arrête le service selon le vol courant. */
   async function liveCheck() {
-    const on = flying(await liveData.get(flightPath).catch(() => null));
+    const cur = await liveData.get(flightPath).catch(() => null),
+      on = flying(cur);
+    // une position plus ancienne que le départ (vol précédent, laissée par un appareil qui n'a pas pu l'effacer) : remise
+    // à null, la carte ne la montre jamais au nouveau départ
+    const stale = on && cur?.progress?.actual?.at && String(cur.progress.actual.at) < String(cur.started.at);
+    if ((stale || !on) && cur?.progress?.actual) await clearActual(cur); // vol arrêté (ici ou ailleurs) : plus de position
     if (on && !live.active) {
       live = {
         active: true,
@@ -1342,6 +1409,22 @@
       clearTimeout(liveLater);
     }
     paintLive();
+  }
+  /** Position réelle remise à null dans le vol courant (service arrêté : compte rendu enregistré, départ annulé, vol de
+   *  plus de 24 h ; ou position d'avant le départ) : seul progress.actual, par la fusion commune. */
+  async function clearActual(cur) {
+    clearTimeout(liveLater);
+    lastWrite = null;
+    live.last = null;
+    const CF = await import(new URL('frame/lib/current_flight.js', ROOT).href);
+    await liveData.put(flightPath, CF.merge(cur, {
+      progress: {
+        actual: null
+      }
+    }, {
+      progressKeys: ['actual'],
+      by: 'frame'
+    })).catch(e => console.warn('live', e));
   }
   /** Permission de position déjà accordée (aucune demande affichée). */
   async function gpsGranted() {
@@ -1565,13 +1648,11 @@
     if (b.hidden === show) b.hidden = !show;
     if (!show) return;
     const h = launcherHere.host || location.hostname,
-      text = t(T.host, {
-        h
-      }),
+      html = `${Icons?.svg('link') || ''}<span>${esc(t(T.host, { h }))}</span>`,
       title = t(T.hostTitle, {
         h
       });
-    if (b.textContent !== text) b.textContent = text;
+    if (b.innerHTML !== html) b.innerHTML = html;
     if (b.title !== title) b.title = title;
   }
   /** Accès des appareils du réseau local, réglé depuis ce poste (GET / POST /__setup/lan du lanceur) : { on, urls,
@@ -1603,7 +1684,7 @@
       html = `${Icons?.svg('pin') || ''}<span>${esc(src)}</span>`,
       title = (live.last ? t(T.live.title, {
         s: src,
-        t: new Date(live.last.at).toLocaleTimeString(lang())
+        t: tz('fmtZ', live.last.at)
       }) : t(launcherHere ? T.live.waitingSim : T.live.waiting)) + ' — ' + t(gpsWatch !== null ? T.live.gpsOff : T.live.gpsOn),
       on = gpsWatch !== null;
     if (b.innerHTML !== html) b.innerHTML = html;
@@ -1708,6 +1789,7 @@
       else syncNow();
     };
     launcherHere = await FD.launcher.detect();
+    await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
     await loadDevice();
     // accès réglé ou coupé dans un autre onglet : transport rebranché ici aussi
     window.addEventListener('storage', e => {

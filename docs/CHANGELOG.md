@@ -30,6 +30,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Fuel: the level decision gives the quote's figures** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — each
   level of the curve is worked out like the quote, with the forecast wind at that level; at the chosen level both
   say the same. Start texts corrected (taxi until when, where the real position comes from).
+- **Frame: header, positions, refused writes, times** (`frame/app.js`, `frame/frame.css`, `frame/store/frame_data.js`,
+  `frame/store/transport_launcher.js`, `frame/lib/time.js`, `tools/launch.py`; SPEC, INTEGRATION, DECISIONS):
+  - on a phone the header never gets wider than the screen;
+  - a new flight no longer shows the previous one's position;
+  - a write the launcher refuses for good leaves the queue for the conflicts ("take it back or set it aside")
+    instead of blocking synchronisation;
+  - the frame's error messages follow the application's language;
+  - every time is in UTC with Z (`frame/lib/time.js`);
+  - modules learn whether the map is beside them (`ctx.layout`).
 - **Frame: lighter start** (`frame/app.js`, `frame/index.html`, `frame/sw.js`, `frame/help/help.js`; SPEC § 3.1 and
   § 3.6, DECISIONS). Settings, help and roadmap load the first time their screen opens; a module's help loads after
   the module. The help is kept offline in the application's language only. On a phone at Fast 3G the menu appears

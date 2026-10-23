@@ -86,6 +86,10 @@ export function unmount() { /* stop watchers, timers */ }
 
 ## 6. Reacting and the rest of the context
 
+- **Times are in UTC with the suffix Z**, through `frame/lib/time.js`: `fmtZ`, `fmtDateZ`, and `fmtZLocal` (the local
+  time in brackets) only for the departure, the planned arrival and the engine start.
+- **Dual view**: `ctx.layout.with` names the module shown beside yours (or `null`). Listen to `frame-layout` on
+  `window` to follow it, and stop listening at `unmount`.
 - **A render never changes the scroll, nor what is being typed.** A module that redraws (a re-read, a watched record,
   a filter) draws through `keepScroll(box, draw)` from `frame/lib/dom.js`:
   `import { keepScroll } from '../../frame/lib/dom.js'`. Give fields a `data-k` (and `data-i` in a list) so that the

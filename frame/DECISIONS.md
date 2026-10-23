@@ -700,3 +700,40 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - in German, the cache holds `pilot.de.md` and the English tutorials only;
     - Spanish read afterwards is kept;
     - no JavaScript error.
+- **23 Oct 2026 — Lot 22, three bugs from Features SOG's second pass and two additions**:
+  1. **Header wider than a phone**:
+     - The bug: at 375 px, with "←", the X-Plane badge and "Sync error", the header was 409 px (423 here). Measured
+       cause: the page grid's single `1fr` column cannot go below its content's minimum width, so the header widened
+       the whole page.
+     - Now:
+       - columns `minmax(0, 1fr)`, and the header has `overflow: hidden`;
+       - on a phone the back button is its arrow only, and the position, launcher and trigram badges are their icon
+         only (labels in the tooltips);
+       - 44 px targets that shrink only when crowded.
+     - Measured: 375 px with back, X-Plane and conflicts, in en, fr and de; all eight items forced visible, still 375
+       px.
+  2. **The previous flight's position for 1.5 s**: the frame clears `progress.actual` when the service stops (report
+     saved, departure cancelled, more than 24 h, here or elsewhere), and at a new departure when it is older than
+     `started.at`. Maps is told to ignore an older `actual.at` too.
+  3. **A refused write blocked the queue for ever**:
+     - The launcher now names the path in its 400 answers (path, type, data format, `pilot/ANON/`).
+     - The launcher transport turns that into `refused`. The data layer takes the write out of the queue into the
+       conflicts (`side: 'refused'`, with the reason and the transport) and sends the rest at once.
+     - The conflicts screen says "Write refused: <path> — take it back or set it aside"; "Take back" queues it again,
+       a deletion included.
+     - The frame's own error messages (offline, repository moving, no transport, "refused by the server: …") follow
+       the application's language. A server's detail is quoted as it is.
+  - **Additions**:
+    - `ctx.layout.with`, and the `frame-layout` event at each pane opening or closing (for Fuel's "Show the map").
+    - `frame/lib/time.js` (`fmtZ`, `fmtZLocal`, `fmtDateZ`), the rule "every time in UTC with Z". The frame uses it
+      for the sync tooltip, the pending queue, the conflicts and the position badge, and gives it to Settings as
+      `time`.
+    - `time.js` is imported in parallel with the start, awaited before the first drawing. It is in the service
+      worker's shell.
+  - **Tests**:
+    - `t_l22` in en, fr and de: 7 / 7 each — header in the window, refused write out of the queue with its conflict
+      and its line on the screen, position cleared at the stop and at a new departure, no JavaScript error;
+    - time.js: "16:30Z", "16:30Z (18:30)", the date in en and de, empty or unreadable gives "";
+    - the sync tooltip in Z;
+    - `frame-layout` `{ main: fuel, pane: maps }` then `pane: null`.
+    - Regressions: `frame/store/test/` 90 / 90, lot 16 simulator test, lot 19 bench 21 / 21.

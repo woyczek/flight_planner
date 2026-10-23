@@ -1760,12 +1760,12 @@ def frame_batch(a):
             rel = c.get('path') if isinstance(c.get('path'), str) else ''
             full = data_file(rel)
             if not full or rel.startswith('.') or '/.' in rel or FRAME_SKIP.search(rel):
-                return {'ok': False, 'message': f'chemin refusé : {str(c.get("path"))[:200]}'}, 400
+                return {'ok': False, 'message': f'chemin refusé : {str(c.get("path"))[:200]}', 'path': rel}, 400
             text = c.get('text')
             if text is not None and rel.startswith('pilot/ANON/'):
-                return {'ok': False, 'message': f'{rel} : document sans trigramme, gardé sur l’appareil'}, 400
+                return {'ok': False, 'message': f'{rel} : document sans trigramme, gardé sur l’appareil', 'path': rel}, 400
             if text is not None and (not isinstance(text, str) or not rel.lower().endswith(DATA_WRITE_EXT)):
-                return {'ok': False, 'message': f'type de fichier refusé : {rel} ({", ".join(DATA_WRITE_EXT)})'}, 400
+                return {'ok': False, 'message': f'type de fichier refusé : {rel} ({", ".join(DATA_WRITE_EXT)})', 'path': rel}, 400
             fulls[rel] = full
             if text is not None and rel.lower().endswith('.js'):
                 with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
@@ -1774,7 +1774,7 @@ def frame_batch(a):
                 ok, why = data_guard.check_file(tmp)
                 os.remove(tmp)
                 if not ok:
-                    return {'ok': False, 'message': f'{rel} : pas au format des données ({why})'}, 400
+                    return {'ok': False, 'message': f'{rel} : pas au format des données ({why})', 'path': rel}, 400
             todo.append((rel, text))
         for rel, text in todo:
             full = fulls[rel]

@@ -254,6 +254,14 @@ used alone:
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
+- **Header on a phone** (760 px or narrower): never wider than the window.
+  - The page grid's columns are `minmax(0, 1fr)`, so content never widens the page.
+  - The header hides its overflow. The back button shows its arrow only, and the position, launcher and trigram
+    badges their icon only, their label staying in the tooltip.
+  - Each is a 44 px target that shrinks only when the header is crowded. With all eight items, the page stays at
+    375 px.
+- **Times**: every time the application shows is in UTC with the suffix Z (`frame/lib/time.js`). The device's local
+  time is added in brackets only next to the departure, the planned arrival and the engine start.
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
@@ -346,6 +354,7 @@ used alone:
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
+| `layout` | the dual view: `{ with }`, the module shown beside this one (the pane for the current module, and the other way round), or `null`. The frame dispatches `frame-layout` on `window`, with `{ main, pane }`, each time the pane opens or closes (Fuel hides "Show the map" while Maps is beside it) |
 
 - **Actual position during a flight** (`ctx.live`, a frame service):
   - **When**: it runs while `pilot/<trigram>/current_flight.json` has `started` (set back to null when fuel cancels the
@@ -374,7 +383,12 @@ used alone:
     3. Nothing.
   - **Offline**: the GPS only.
   - **Writing**: only `progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source }` in the current flight (the
-    record, `by: 'frame'`), never fuel's or maps' fields. It goes through the shared `merge` of
+    record, `by: 'frame'`), never fuel's or maps' fields.
+    - **Cleared** (`actual: null`) when the service stops, whatever stopped it: report saved, departure cancelled, flight
+      older than 24 h, here or on another device.
+    - Cleared too at a new departure when it is older than `started.at`.
+    - So a new flight never shows the previous one's position. Maps also ignores an `actual.at` older than
+      `started.at`. It goes through the shared `merge` of
     `frame/lib/current_flight.js`, on the record re-read just before.
     - This is the form maps reads: `at` is ISO, `source` is `xplane`, `lnm`, `gps`, `ivao` or `vatsim`, and `trackDeg` / `gsKt` may be
       null.
@@ -441,6 +455,13 @@ used alone:
 - Each unseen conflict shows the file and its date, the version set aside (this device's or another device's) and the
   version kept.
 - Two actions: "Take this version back" (`FrameData.restore`) and "Seen".
+- **A write refused for good** (`side: 'refused'`): the transport refused that file itself, not the batch's timing
+  (the launcher: a path or file type it never accepts, answered 400 with that `path`).
+  - The data layer takes the write out of the queue, so the next writes leave and the button no longer shows a
+    permanent error.
+  - The screen says "Write refused: <path> — take it back or set it aside", with the transport's reason and what was
+    to be written (a deletion says so).
+  - "Take this version back" queues it again (after, for instance, setting the trigram); "Seen" sets it aside.
 - **Conflicts found outside a pass** (a file of the workstation, such as a Little Navmap `.lnmperf` sheet read by
   aerodb): `FrameData.noteConflict({ path, kept, lost, side })` keeps the losing version in the same form.
   - `path` is the record in the data repository (`aircraft/sheets/<id>.json`), so "Take this version back" makes the
@@ -566,6 +587,7 @@ touch only the element they are given.
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
 | `frame/lib/current_flight.js` | fuel | fuel, report, maps, the frame | `merge(stored, mine, { fields, progressKeys, by })`: each author of the current flight (`pilot/<trigram>/current_flight.json`) re-reads it and replaces only its own fields; `progress.actual` belongs to the frame (its position service writes it with `progressKeys: ['actual'], by: 'frame'`) |
 | `frame/lib/clipboard.js` | fuel | fuel, report, website, settings | `copyText(text, { box, near })` → `'clipboard'` \| `'exec'` \| `'shown'`, and `canPaste()`: copies also over http (a paired tablet has no `navigator.clipboard`), falling back to `execCommand` and then to a selected field shown next to the button |
+| `frame/lib/time.js` | frame | the frame, fuel, maps, report | the application's times: all in UTC with the suffix Z. `fmtZ(iso)` → "16:30Z"; `fmtZLocal(iso)` → "16:30Z (18:30)", the device's local time in brackets, only next to the departure, the planned arrival and the engine start; `fmtDateZ(iso, lang)` → "23/10/2026 16:30Z", the UTC date in the language's writing. The frame uses it for its own times (sync button, conflicts, position badge) and gives it to Settings (`time`) |
 | `frame/lib/dom.js` | frame | any module (fuel, report, flightlog first) | `keepScroll(box, draw, { focus })`: draws without moving the scroll and without losing the field being typed in. It keeps the scroll position of every scrolling container above `box` (the page included) and holds `box`'s height during the draw. It puts the positions back after the draw and on the next two frames. It finds the focused field again (by `data-k` / `data-i`, or by `id`) and restores its value, its focus (`preventScroll`) and its selection. It replaces the three copies made in fuel, report and flightlog |
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
