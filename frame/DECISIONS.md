@@ -271,6 +271,14 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - at 900 px the pane is unmounted and the button hidden, at 1280 px it is back;
     - closing keeps `fuel: ''`; `#report?with=maps` opens it from the address;
     - on a phone nothing changes; no JavaScript error, no horizontal scroll.
+- **23 Oct 2026 — Review of aerodb lot 5a** (`26ed9d355`, now the frame's):
+  - `frame/app.js` builds aerodb's adapter from `AeroDB.declaration()` instead of a list written in the frame: the
+    owner of the prefixes declares them;
+  - `frame/sw.js` keeps `aerodb/registry.js` and `aerodb/sheets.js` from the installation.
+  - Checked: the page starts with no error and the declaration is complete.
+  - Noted: `airline/` is now declared twice, as `reference` by the frame (`ctx.airline`) and as `document` by aerodb. At
+    equal length the first declaration wins, the frame's: `airline/` files are read on demand and signalled at the
+    pull rather than pulled ahead. Nothing is lost.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

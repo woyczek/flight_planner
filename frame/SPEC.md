@@ -270,7 +270,7 @@ used alone:
 | Field | What it is |
 |---|---|
 | `data` | the module's part of the data layer (2.7), limited to the prefixes of its `meta` |
-| `aerodb` | the aeronautical service, one instance for all modules (`frame/aerodb/INTEGRATION.md`) |
+| `aerodb` | the aeronautical service, one instance for all modules (`frame/aerodb/INTEGRATION.md`); its data adapter is declared by aerodb itself (`AeroDB.declaration()`: SIA base, aircraft base, references, airline, planner, the aircraft registry and its sheets) |
 | `t(row, vars)`, `lang()` | texts as `[fr, en, de, es]` rows, `{name}` filled in, French typography; the language of the application |
 | `notify(text, kind)` | floating notification (`info`, `ok`, `warn`, `err`), closed by itself or by its ✕ |
 | `ask(text)`, `askText(text, { value })` | the frame's own question windows (never a native dialog); promise of true / false, of the text or null |
