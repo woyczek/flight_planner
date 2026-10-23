@@ -188,7 +188,7 @@
           "es": "Preparar en el orden del piloto: Vuelo · Ruta · Meteo · Cálculo · Salida; ruta como texto siempre visible y normalizado, distancia y rumbo verdadero calculados; «Mostrar el mapa»; «Iniciar el vuelo»"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Retours de la passe de bout en bout : vol démarré effacé au changement de départ, source du vent affichée, écart ISA au niveau, notation unique du niveau, bouton météo occupé, vue double gardée au départ",
           "en": "Walkthrough feedback: started flight cleared when departure changes, wind source shown, ISA deviation at level, single level notation, busy weather button, double view kept at departure",
           "de": "Rückmeldungen des Durchlaufs: gestarteter Flug bei Startplatzwechsel gelöscht, Windquelle angezeigt, ISA-Abweichung in Höhe, einheitliche Höhenschreibweise, beschäftigter Wetterknopf, Doppelansicht beim Abflug behalten",
@@ -310,6 +310,13 @@
           "en": "Map mode selector (Auto, IFR low, IFR high, VFR, Topo shaded relief, CAM military flight); tooltip kept 5 s, lighter",
           "de": "Kartenmodus-Wähler (Auto, IFR tief, IFR hoch, VFR, Topo mit Schummerung, OAT Militärflug); Tooltip 5 s gehalten, leichter",
           "es": "Selector de modos de mapa (Auto, IFR bajo, IFR alto, VFR, Topo relieve sombreado, CAM vuelo militar); tooltip mantenido 5 s, más ligero"
+        },
+        {
+          "state": "done",
+          "fr": "Point libre en coordonnées sur la carte ; niveaux écrits comme dans Carburant (FL au-dessus de l'altitude de transition)",
+          "en": "Free point by coordinates on the map; levels written as in Fuel (FL above the transition altitude)",
+          "de": "Freier Punkt nach Koordinaten auf der Karte; Höhen wie im Kraftstoffmodul (FL über der Übergangshöhe)",
+          "es": "Punto libre por coordenadas en el mapa; niveles escritos como en Combustible (FL por encima de la altitud de transición)"
         },
         {
           "state": "done",
@@ -505,7 +512,7 @@
           "es": "Un solo registro de aeronaves: tipos, prestaciones, fichas del piloto, flota y referencia en un mismo lugar, una sola búsqueda; .lnmperf al día en ambos sentidos (reexportación al cambiar, fusión si el archivo cambia)"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Une seule ligne par immatriculation : fiche et flotte fusionnées, fiche incomplète complétée par le type ou l'estimation",
           "en": "One row per registration: sheet and fleet merged, an incomplete sheet completed by the type or the estimate",
           "de": "Eine Zeile je Kennzeichen: Blatt und Flotte zusammengeführt, unvollständiges Blatt durch Typ oder Schätzung ergänzt",
