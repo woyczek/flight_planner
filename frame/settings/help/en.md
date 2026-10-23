@@ -93,4 +93,4 @@ only reported.
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 5669236c0f58 -->
+<!-- fr: 444e218e3f9d -->

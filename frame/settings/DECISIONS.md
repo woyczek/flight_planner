@@ -138,18 +138,24 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   est déjà ouverte…") are shown as they are, the "already open" one recognised by its text. Checked without opening any
   window, the configured address set to a dummy one in this worktree only: configured address (with a final `/`):
   hidden; another: shown; empty or invalid: hidden.
-- **24 Oct 2026 — Usages on a launcher without an exchange** (frame lot 9: on a page served by the launcher, `data/` is
+- **23 Oct 2026 — Usages on a launcher without an exchange** (frame lot 9: on a page served by the launcher, `data/` is
   the device's storage, launcher transport by default; git exchange only with "several devices" or "several users"):
   the state sentence says "This workstation reads and writes the launcher's data/ folder; tick an exchange usage to
   share it through git"; without a launcher, "Alone on this device" as before. The Settings chapter says the same in
   four languages.
-- **24 Oct 2026 — Readable diagnostics** (frame aa9412ffe, `ctx.diagnostic()`): the folded diagnostics of the About card
+- **23 Oct 2026 — Readable diagnostics** (frame aa9412ffe, `ctx.diagnostic()`): the folded diagnostics of the About card
   show one row per value — transport, online, last sync, pending, last error, repository tree (head, read at, files,
   checked), references (known, SIA, aircraft, cached), last read error, aero base (source, published, open, missing
   zones, error) — labels in four languages, values raw; "Copy" puts the full JSON (the frame's diagnostic plus usages,
   launcher, repository without token, storage, browser) on the clipboard. Checked with the launcher; no token in it.
-- **24 Oct 2026 — Weather key** (frame lot 12, contract agreed with the frame session): the key is not a device file —
+- **23 Oct 2026 — Weather key** (frame lot 12, contract agreed with the frame session): the key is not a device file —
   `FrameData.dump()` exports `device/` — but lives in `localStorage` `githubData:avwx`, like the GitHub token (outside
   V2 browser backups and outside the IndexedDB cache); the frame reads it, adds `Authorization` to avwx.rest calls in
   `ctx.net`, and gives settings `weatherKey { has, save, clear, test }` only. Card shown with or without a launcher;
   the Settings chapter has a "Weather key" section in four languages.
+- **23 Oct 2026 — Little Navmap card written by aerodb** (aerodb lot 5b, v3 642bd45fd): accepted exception to "settings
+  draws its own cards". The two-way sync between the performance sheets and a folder of .lnmperf files, its states
+  and its launcher routes belong to aerodb; settings only places an empty, hidden block after the launcher keys (launcher
+  and `aerodb.lnmperf` present) and shows it once aerodb's `card()` has filled it; a failure leaves it hidden. The
+  section "Little Navmap sheets" of the Settings chapter, written by aerodb in four languages, stays in the chapter
+  (labels checked against `lnmperf.js`). Checked at 375 px with the launcher: no horizontal scroll, buttons wrap.

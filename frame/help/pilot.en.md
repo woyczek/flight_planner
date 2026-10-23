@@ -41,18 +41,23 @@ types, and last the code as typed. An airline aircraft takes its own sheet if it
 otherwise an estimate of the type — the quote then marks it “approximate”. The chosen registration and callsign follow
 the flight through to the report. The “Cruise” line says where the fuel flow comes from.
 
-**The route.** Type the departure and the arrival (ICAO codes): the distance and the true track are computed by
-themselves. For a detailed route, unfold “Detailed route” and paste it (ICAO flight plan, or one "point latitude
-longitude" line per point). If nothing is recognised, type the distance and the track by hand. With your SimBrief ID
-set (⚙), “Last SimBrief OFP” takes the route, the level, the mean wind and the aircraft of your last plan in one go.
+**The route.** Type the departure, the arrival and the alternate (ICAO codes), then the route in the “Route” field,
+always visible: the points, the airways and the levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can
+also paste an ICAO flight plan or the list of an OFP there. When you leave the field, the route is tidied up: in
+capitals on one line, without DCT or speed-level groups, the departure and the arrival at the ends, a level change
+written “/F280” after the point where it starts. Airways stay written (the quote follows the points). Unknown points
+stay in place and are reported just below; coordinates are written the ICAO way (“4530N00030E”). The next line gives
+the distance and the true track, and where they come from (the route, the SimBrief OFP). If the route does not resolve,
+“Type them by hand” opens the two fields. With your SimBrief ID set (⚙), “Last SimBrief OFP” takes the route, the
+level, the mean wind and the aircraft of your last plan in one go.
 
-Below the distance, “Route points” lists the recognised points, from departure to arrival. The arrows move a point up or
+The “Points” fold lists the recognised points, from departure to arrival. The arrows move a point up or
 down the list, the cross removes it; the field at the bottom adds one before the arrival: an identifier (beacon, fix,
 airfield) or "NAME latitude longitude". Each intermediate point has an optional level field, in FL: it is the level held
 from that point on, for a step climb or step descent. A point without a level continues the previous one (shown greyed
 out); the flight starts at the plan's level. The quote counts each step (its climb or descent, then the cruise at that
 level), the result shows the sequence of levels (FL100 → FL120), and the descent starts from the last level. Every
-change rewrites the detailed route and is passed straight on to the map.
+change rewrites the “Route” field (the points only) and is passed straight on to the map.
 
 **The level and the wind.** Give the cruise level (as a flight level) and the wind: direction and speed. Without a
 direction, or without any wind, the block fuel is given as a range. “Climb” chooses how to climb: economical, best
@@ -135,7 +140,7 @@ flight levels, and nothing changes in the sheets.
 - **Weather without the launcher**: the weather service can only be reached through a computer's launcher; elsewhere,
   the card shows the last weather kept, or says so.
 
-<!-- fr: 3f5ed3a8110b -->
+<!-- fr: 8b3112cf90c8 -->
 
 <!-- chapter: maps -->
 # Map
@@ -437,6 +442,16 @@ key: “Create a key on avwx.rest ↗” opens the provider's page. Paste it in 
 nor in a backup, and is never shown again. On a workstation served by the launcher it is not needed: the launcher
 provides the TAF.
 
+## Little Navmap sheets
+
+On a workstation served by the launcher, the "Little Navmap sheets (.lnmperf)" card links your performance sheets
+with the .lnmperf files of a folder, both ways. Choose the folder (Little Navmap's is offered when found), then
+"Save". After that, nothing to do: a sheet changed in Fuel rewrites its file, a file changed in Little Navmap updates
+the sheet, a new file becomes a sheet. If the same value changed on both sides, the newest wins and the other stays
+kept in the sheet; the synchronisation button says so. A file is never deleted: the file of a removed sheet goes to
+the `_removed` subfolder. "Synchronise now" runs a pass at once, "Stop" cuts the link. Sheets missing a value that
+Little Navmap requires are listed and not written. On a phone, Fuel downloads the sheet as a .lnmperf file.
+
 ## Launcher keys
 
 On a workstation served by the launcher, “Launcher keys” sets the IVAO API key: it stays in the launcher’s `secrets/`
@@ -473,4 +488,4 @@ only reported.
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 5669236c0f58 -->
+<!-- fr: 444e218e3f9d -->

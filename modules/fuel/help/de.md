@@ -13,20 +13,25 @@ Luftfahrzeug der Fluggesellschaft nimmt sein eigenes Datenblatt, wenn es eines h
 Schätzung des Typs — die Berechnung markiert es dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den
 Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt, woher der Verbrauch stammt.
 
-**Die Route.** Tippen Sie Abflug und Ankunft (ICAO-Codes): Entfernung und rechtweisender Kurs werden von selbst
-berechnet. Für eine detaillierte Route klappen Sie „Detaillierte Route“ auf und fügen sie ein (ICAO-Flugplan oder eine
-Zeile „Punkt Breite Länge“ je Punkt). Wird nichts erkannt, tippen Sie Entfernung und Kurs von Hand. Mit eingestellter
-SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche, mittleren Wind und Luftfahrzeug Ihres letzten
-Plans auf einmal.
+**Die Route.** Tippen Sie Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), dann die Route in das stets sichtbare
+Feld „Route“: die Punkte, die Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“).
+Sie können dort auch einen ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route
+bereinigt: in Großbuchstaben auf einer Zeile, ohne DCT und ohne Geschwindigkeits-Flugflächen-Gruppen, Abflug und
+Ankunft an den Enden, ein Flugflächenwechsel als „/F280“ nach dem Punkt, an dem er beginnt. Luftstraßen bleiben
+geschrieben (die Berechnung folgt den Punkten). Unbekannte Punkte bleiben an ihrer Stelle und werden direkt darunter
+gemeldet; Koordinaten schreibt man nach ICAO-Art („4530N00030E“). Die nächste Zeile gibt Entfernung und rechtweisenden
+Kurs an und woher sie stammen (die Route, der SimBrief-OFP). Lässt sich die Route nicht auflösen, öffnet „Von Hand
+eingeben“ die beiden Felder. Mit eingestellter SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche,
+mittleren Wind und Luftfahrzeug Ihres letzten Plans auf einmal.
 
-Unter der Entfernung listet „Routenpunkte“ die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben
+Der aufklappbare Bereich „Punkte“ listet die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben
 einen Punkt in der Liste nach oben oder unten, das Kreuz entfernt ihn; das Feld unten fügt einen vor der Ankunft hinzu:
 eine Kennung (Funkfeuer, Wegpunkt, Flugplatz) oder „NAME Breite Länge“. Jeder Zwischenpunkt hat ein freiwilliges Feld
 für die Flugfläche, in FL: Das ist die Flugfläche, die ab diesem Punkt gehalten wird, für einen Stufensteigflug oder
 -sinkflug. Ein Punkt ohne Flugfläche setzt die vorige fort (grau angezeigt); der Flug beginnt auf der Flugfläche des
 Plans. Die Berechnung zählt jede Stufe (ihren Steig- oder Sinkflug, dann den Reiseflug auf dieser Flugfläche), das
 Ergebnis zeigt die Folge der Flugflächen (FL100 → FL120), und der Sinkflug beginnt auf der letzten Flugfläche. Jede
-Änderung schreibt die detaillierte Route neu und wird sofort an die Karte weitergegeben.
+Änderung schreibt das Feld „Route“ neu (nur die Punkte) und wird sofort an die Karte weitergegeben.
 
 **Flugfläche und Wind.** Geben Sie die Reiseflugfläche (FL) und den Wind an: Richtung und Stärke. Ohne Richtung oder
 ganz ohne Wind wird der Blockkraftstoff als Spanne angegeben. „Steigflug“ wählt die Art zu steigen: sparsam, bestes
@@ -115,4 +120,4 @@ Datenblättern ändert sich nichts.
 - **Wetter ohne Starter**: Der Wetterdienst ist nur über den Starter eines Rechners erreichbar; anderswo zeigt die Karte
   das zuletzt gespeicherte Wetter oder sagt es.
 
-<!-- fr: 3f5ed3a8110b -->
+<!-- fr: 8b3112cf90c8 -->

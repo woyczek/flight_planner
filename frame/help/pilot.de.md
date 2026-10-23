@@ -44,20 +44,25 @@ Luftfahrzeug der Fluggesellschaft nimmt sein eigenes Datenblatt, wenn es eines h
 Schätzung des Typs — die Berechnung markiert es dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den
 Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt, woher der Verbrauch stammt.
 
-**Die Route.** Tippen Sie Abflug und Ankunft (ICAO-Codes): Entfernung und rechtweisender Kurs werden von selbst
-berechnet. Für eine detaillierte Route klappen Sie „Detaillierte Route“ auf und fügen sie ein (ICAO-Flugplan oder eine
-Zeile „Punkt Breite Länge“ je Punkt). Wird nichts erkannt, tippen Sie Entfernung und Kurs von Hand. Mit eingestellter
-SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche, mittleren Wind und Luftfahrzeug Ihres letzten
-Plans auf einmal.
+**Die Route.** Tippen Sie Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), dann die Route in das stets sichtbare
+Feld „Route“: die Punkte, die Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“).
+Sie können dort auch einen ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route
+bereinigt: in Großbuchstaben auf einer Zeile, ohne DCT und ohne Geschwindigkeits-Flugflächen-Gruppen, Abflug und
+Ankunft an den Enden, ein Flugflächenwechsel als „/F280“ nach dem Punkt, an dem er beginnt. Luftstraßen bleiben
+geschrieben (die Berechnung folgt den Punkten). Unbekannte Punkte bleiben an ihrer Stelle und werden direkt darunter
+gemeldet; Koordinaten schreibt man nach ICAO-Art („4530N00030E“). Die nächste Zeile gibt Entfernung und rechtweisenden
+Kurs an und woher sie stammen (die Route, der SimBrief-OFP). Lässt sich die Route nicht auflösen, öffnet „Von Hand
+eingeben“ die beiden Felder. Mit eingestellter SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche,
+mittleren Wind und Luftfahrzeug Ihres letzten Plans auf einmal.
 
-Unter der Entfernung listet „Routenpunkte“ die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben
+Der aufklappbare Bereich „Punkte“ listet die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben
 einen Punkt in der Liste nach oben oder unten, das Kreuz entfernt ihn; das Feld unten fügt einen vor der Ankunft hinzu:
 eine Kennung (Funkfeuer, Wegpunkt, Flugplatz) oder „NAME Breite Länge“. Jeder Zwischenpunkt hat ein freiwilliges Feld
 für die Flugfläche, in FL: Das ist die Flugfläche, die ab diesem Punkt gehalten wird, für einen Stufensteigflug oder
 -sinkflug. Ein Punkt ohne Flugfläche setzt die vorige fort (grau angezeigt); der Flug beginnt auf der Flugfläche des
 Plans. Die Berechnung zählt jede Stufe (ihren Steig- oder Sinkflug, dann den Reiseflug auf dieser Flugfläche), das
 Ergebnis zeigt die Folge der Flugflächen (FL100 → FL120), und der Sinkflug beginnt auf der letzten Flugfläche. Jede
-Änderung schreibt die detaillierte Route neu und wird sofort an die Karte weitergegeben.
+Änderung schreibt das Feld „Route“ neu (nur die Punkte) und wird sofort an die Karte weitergegeben.
 
 **Flugfläche und Wind.** Geben Sie die Reiseflugfläche (FL) und den Wind an: Richtung und Stärke. Ohne Richtung oder
 ganz ohne Wind wird der Blockkraftstoff als Spanne angegeben. „Steigflug“ wählt die Art zu steigen: sparsam, bestes
@@ -146,7 +151,7 @@ Datenblättern ändert sich nichts.
 - **Wetter ohne Starter**: Der Wetterdienst ist nur über den Starter eines Rechners erreichbar; anderswo zeigt die Karte
   das zuletzt gespeicherte Wetter oder sagt es.
 
-<!-- fr: 3f5ed3a8110b -->
+<!-- fr: 8b3112cf90c8 -->
 
 <!-- chapter: maps -->
 # Karte
@@ -463,6 +468,18 @@ unter „Wetterschlüssel (TAF, avwx.rest)“ ein, dann „Speichern“; „Test
 entfernt ihn. Der Schlüssel bleibt nur auf diesem Gerät, nie im Repository oder in einer Sicherung, und wird nie wieder
 angezeigt. Auf einem vom Starter bedienten Rechner ist er unnötig: Der Starter liefert das TAF.
 
+## Little-Navmap-Profile
+
+Auf einem vom Starter bedienten Rechner verbindet die Karte „Little-Navmap-Profile (.lnmperf)“ Ihre Leistungsprofile
+in beide Richtungen mit den .lnmperf-Dateien eines Ordners. Wählen Sie den Ordner (der von Little Navmap wird
+vorgeschlagen, wenn er gefunden wird) und dann „Speichern“. Danach ist nichts zu tun: ein in Kraftstoff geändertes
+Profil schreibt seine Datei neu, eine in Little Navmap geänderte Datei aktualisiert das Profil, eine neue Datei wird
+ein Profil. Hat sich derselbe Wert auf beiden Seiten geändert, gewinnt der neueste, der andere bleibt im Profil
+erhalten; die Abgleich-Schaltfläche meldet es. Eine Datei wird nie gelöscht: die Datei eines entfernten Profils kommt
+in den Unterordner `_removed`. „Jetzt abgleichen“ macht den Durchgang sofort, „Beenden“ trennt die Verbindung. Profile,
+denen ein von Little Navmap verlangter Wert fehlt, werden aufgeführt und nicht geschrieben. Auf einem Telefon lädt
+Kraftstoff das Profil als .lnmperf-Datei herunter.
+
 ## Die Schlüssel des Starters
 
 Auf einem vom Starter bedienten Rechner stellt „Schlüssel des Starters“ den IVAO-API-Schlüssel ein: Er bleibt im Ordner
@@ -499,4 +516,4 @@ Repository, das nicht antwortet, wird nur gemeldet.
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 5669236c0f58 -->
+<!-- fr: 444e218e3f9d -->

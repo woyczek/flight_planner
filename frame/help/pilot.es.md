@@ -42,18 +42,24 @@ de rendimiento, las aeronaves de la aerolínea (su flota, luego las conocidas po
 su tipo, si no una estimación del tipo — el cálculo la marca entonces «aproximado». La matrícula y el indicativo elegidos
 siguen al vuelo hasta el informe. La línea «Crucero» indica de dónde viene el consumo.
 
-**La ruta.** Escriba la salida y la llegada (códigos OACI): la distancia y el rumbo verdadero se calculan solos. Para
-una ruta detallada, despliegue «Ruta detallada» y péguela (plan de vuelo OACI, o una línea «punto latitud longitud»
-por punto). Si no se reconoce nada, escriba la distancia y el rumbo a mano. Con su identificador SimBrief configurado
-(⚙), «Último OFP de SimBrief» retoma de una vez la ruta, el nivel, el viento medio y la aeronave de su último plan.
+**La ruta.** Escriba la salida, la llegada y la alternativa (códigos OACI), luego la ruta en el campo «Ruta», siempre
+visible: los puntos, las aerovías y los niveles, como en un plan de vuelo («LFBO TOU UN460 NTS/F280 LFRN»). También
+puede pegar ahí un plan de vuelo OACI o la lista de un OFP. Al salir del campo, la ruta se pone en limpio: en
+mayúsculas en una línea, sin DCT ni grupos velocidad-nivel, la salida y la llegada en los extremos, un cambio de nivel
+escrito «/F280» tras el punto donde empieza. Las aerovías siguen escritas (el cálculo sigue los puntos). Los puntos
+desconocidos se quedan en su sitio y se señalan justo debajo; las coordenadas se escriben a la manera OACI
+(«4530N00030E»). La línea siguiente da la distancia y el rumbo verdadero, y de dónde vienen (la ruta, el OFP de
+SimBrief). Si la ruta no se resuelve, «Introducir a mano» abre los dos campos. Con su identificador SimBrief
+configurado (⚙), «Último OFP de SimBrief» retoma de una vez la ruta, el nivel, el viento medio y la aeronave de su
+último plan.
 
-Bajo la distancia, «Puntos de la ruta» enumera los puntos reconocidos, de la salida a la llegada. Las flechas suben o
+El desplegable «Puntos» enumera los puntos reconocidos, de la salida a la llegada. Las flechas suben o
 bajan un punto en la lista, la cruz lo quita; el campo de abajo añade uno antes de la llegada: un identificador
 (radioayuda, punto, aeródromo) o «NOMBRE latitud longitud». Cada punto intermedio tiene un campo de nivel opcional, en
 FL: es el nivel mantenido a partir de ese punto, para un ascenso o un descenso por escalones. Un punto sin nivel
 continúa el anterior (mostrado en gris); el vuelo sale al nivel del plan. El cálculo cuenta cada escalón (su ascenso o
 su descenso, luego el crucero a ese nivel), el resultado muestra la sucesión de niveles (FL100 → FL120), y el descenso
-parte del último nivel. Cada cambio reescribe la ruta detallada y se transmite de inmediato al mapa.
+parte del último nivel. Cada cambio reescribe el campo «Ruta» (solo los puntos) y se transmite de inmediato al mapa.
 
 **El nivel y el viento.** Indique el nivel de crucero (en FL) y el viento: dirección e intensidad. Sin dirección, o sin
 viento alguno, el combustible de bloque se da como horquilla. «Ascenso» elige la forma de subir: económico, mejor
@@ -136,7 +142,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
 - **Meteorología sin lanzador**: el servicio meteorológico solo es accesible a través del lanzador de un ordenador; en
   otro lugar, la tarjeta muestra la última meteorología guardada, o lo dice.
 
-<!-- fr: 3f5ed3a8110b -->
+<!-- fr: 8b3112cf90c8 -->
 
 <!-- chapter: maps -->
 # Mapa
@@ -445,6 +451,17 @@ gratuita de avwx.rest: «Crear una clave en avwx.rest ↗» abre la página del 
 este dispositivo, nunca en el repositorio ni en una copia, y nunca vuelve a mostrarse. En un puesto servido por el
 lanzador es innecesaria: el lanzador proporciona el TAF.
 
+## Fichas de Little Navmap
+
+En un equipo servido por el lanzador, la tarjeta «Fichas de Little Navmap (.lnmperf)» une sus fichas de rendimiento con
+los archivos .lnmperf de una carpeta, en ambos sentidos. Elija la carpeta (se propone la de Little Navmap cuando se
+encuentra) y luego «Guardar». Después, nada que hacer: una ficha cambiada en Combustible reescribe su archivo, un
+archivo cambiado en Little Navmap actualiza la ficha, un archivo nuevo se vuelve ficha. Si el mismo valor cambió en
+ambos lados, gana el más reciente y el otro queda guardado en la ficha; el botón de sincronización lo indica. Un
+archivo nunca se borra: el de una ficha retirada va a la subcarpeta `_removed`. «Sincronizar ahora» hace la pasada en
+seguida, «Detener» corta el vínculo. Las fichas a las que les falta un valor requerido por Little Navmap se listan y no
+se escriben. En un teléfono, Combustible descarga la ficha en .lnmperf.
+
 ## Las claves del lanzador
 
 En un puesto servido por el lanzador, «Claves del lanzador» configura la clave de la API IVAO: se queda en la carpeta
@@ -483,4 +500,4 @@ se señala.
   problema. El token
   nunca figura en él.
 
-<!-- fr: 5669236c0f58 -->
+<!-- fr: 444e218e3f9d -->

@@ -105,6 +105,11 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    its last characters, given by the launcher's environment, or missing), a new key (empty: unchanged), "Save",
    "Test" (`/__setup/secrets/test?service=ivao`), "Erase" (asks). The key goes to the launcher's `secrets/` folder,
    never to the browser nor to the data.
+9b. **Little Navmap sheets (.lnmperf)** (page served by a launcher, when `aerodb.lnmperf` exists): an empty, hidden
+   `[data-card="lnmperf"]` block that settings places after the launcher keys; its content and states (folder, Little
+   Navmap folders found, "Save", "Synchronise now", "Stop", last pass, sheets not written) are drawn by aerodb
+   (`frame/aerodb/lnmperf.js`, `card(el, { t, notify })`), and the block is shown once aerodb has filled it. A failure
+   leaves it hidden. Settings neither reads nor writes the folder or the sheets.
 10. **About**: links to the help (the Settings chapter) and to the roadmap (`#roadmap`), then the **diagnostics**,
    folded inside the card: transport, status, usages, launcher, repository (never the token), aerodb state,
    storage, network, browser; "Copy".
