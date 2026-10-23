@@ -367,17 +367,17 @@ const lab = x => Array.isArray(x) ? tt(x) : String(x ?? '');
 /** Contrôle HTML d'un champ (définition V2 : path, label, type, options, blank) à la valeur v ; source affichée. */
 function control(fd, v, prefix = '') {
   const path = prefix + fd.path,
-    src = S.sources[path] ? `<span class="rp-src">${esc(S.sources[path])}</span>` : '',
+    src = S.sources[path] ? `<span class="f-badge" data-kind="accent">${esc(S.sources[path])}</span>` : '',
     common = `data-path="${esc(path)}" aria-label="${esc(lab(fd.label))}"`,
     opts = fd.path === 'series' ? (FAMILIES[S.m.family]?.series || []) : fd.options || [];
   let input;
   if (fd.type === 'select') input = `<select ${common}>${fd.blank ? '<option value=""></option>' : ''}${opts.map(o => `<option value="${esc(o.value)}"${String(v ?? '') === String(o.value) ? ' selected' : ''}>${esc(lab(o.label))}</option>`).join('')}</select>`;
   else if (fd.type === 'textarea') input = `<textarea rows="3" ${common}>${esc(v ?? '')}</textarea>`;
   else input = `<input ${common} type="${fd.type === 'time' ? 'time' : fd.type === 'date' ? 'date' : 'text'}"${fd.type === 'number' ? ' inputmode="decimal"' : ''}${fd.code ? ' class="rp-code" autocapitalize="characters"' : ''} value="${esc(v ?? '')}">`;
-  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' rp-full' : ''}"><span>${esc(lab(fd.label))} ${src}</span>${input}</label>`;
+  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' f-full' : ''}"><span>${esc(lab(fd.label))} ${src}</span>${input}</label>`;
 }
 /** Grille de champs de la mission. */
-const grid = list => `<div class="rp-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
+const grid = list => `<div class="f-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
 /** Bloc ou champ affiché pour la mission (condition when de la V2, contexte M.context : famille, série, capacités,
  *  catégories d'appareil, drapeaux). */
 const shown = x => !x.when || !!x.when(M.context(S.m, FAMILIES[S.m.family] || {}));
@@ -385,7 +385,7 @@ const shown = x => !x.when || !!x.when(M.context(S.m, FAMILIES[S.m.family] || {}
 function collection(col, title) {
   const items = M.get(S.m, col.path) || [];
   return `<div class="rp-col" data-col="${esc(col.path)}">${title ? `<h3>${esc(title)}</h3>` : ''}
-    ${items.map((it, i) => `<div class="rp-item"><div class="rp-grid">${col.fields.map(fd => control(fd, it?.[fd.path], `${col.path}.${i}.`)).join('')}</div><button type="button" data-do="del" data-i="${i}">${esc(tt(TX.remove))}</button></div>`).join('')}
+    ${items.map((it, i) => `<div class="rp-item"><div class="f-grid">${col.fields.map(fd => control(fd, it?.[fd.path], `${col.path}.${i}.`)).join('')}</div><button type="button" data-do="del" data-i="${i}">${esc(tt(TX.remove))}</button></div>`).join('')}
     <button type="button" data-do="add">${esc(col.add ? tt(col.add) : tt(TX.addCrew))}</button></div>`;
 }
 // équipage (bloc crew de la V2 : rôle, nom ; rôles de la famille)
@@ -407,36 +407,20 @@ const crewCol = () => ({
 });
 
 // ---------------------------------------------------------------- écran
+// placement seulement (primitives et jetons du cadre : frame/design/INTEGRATION.md) : codes en capitales, un pas à
+// la fois sur téléphone et les trois côte à côte sur écran (barre des pas et « Suivant » alors masqués), ligne d'une
+// collection, boutons de la barre, carte de préremplissage
 const STYLE = `
-[data-module="report"] h1{font-size:1.25rem;margin:0 0 10px}
-[data-module="report"] h2{font-size:1rem;margin:0 0 8px}
-[data-module="report"] h3{font-size:.95rem;margin:8px 0 4px}
-[data-module="report"] .rp-steps{display:flex;gap:6px;margin-bottom:var(--sog-gap)}
-[data-module="report"] .rp-steps button{flex:1}
-[data-module="report"] .rp-steps button[aria-current="step"]{background:var(--sog-accent);color:var(--sog-accent-ink);border-color:var(--sog-accent)}
-[data-module="report"] .rp-steps .rp-ok::after{content:" ✓"}
-[data-module="report"] .rp-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
-[data-module="report"] .rp-grid .f-field{margin:0}
-[data-module="report"] .rp-full{grid-column:1/-1}
-[data-module="report"] .f-field input,[data-module="report"] .f-field select,[data-module="report"] .f-field textarea{width:100%;min-width:0}
-[data-module="report"] .f-field>span{font-size:.9em}
 [data-module="report"] .rp-code{text-transform:uppercase}
-[data-module="report"] .rp-src{font-size:.75em;color:var(--sog-accent);margin-left:4px}
 [data-module="report"] .rp-step[hidden]{display:none}
-[data-module="report"] details.f-card>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
 [data-module="report"] .rp-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px}
-[data-module="report"] .rp-bar{position:sticky;bottom:0;z-index:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-color:var(--sog-accent);box-shadow:0 -4px 14px #0002}
-[data-module="report"] .rp-bar button{flex:1;min-width:150px}
-[data-module="report"] .rp-bar small.rp-unset{display:block;font-size:.75em;opacity:.8}
-[data-module="report"] .rp-mark{display:inline-block;padding:4px 10px;border:1px dashed var(--sog-accent);border-radius:var(--sog-radius)}
-[data-module="report"] .rp-warn{color:var(--sog-warn)}
-[data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between;border-color:var(--sog-accent)}
-[data-module="report"] .rp-recent button,[data-module="report"] .rp-choice{width:100%;text-align:left;margin-bottom:6px}
+[data-module="report"] .f-bar button{flex:1;min-width:150px}
+[data-module="report"] .f-bar .rp-unset{display:block}
+[data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between}
+[data-module="report"] .f-badge{margin-left:4px}
 @media (min-width: 980px){
-  [data-module="report"] .rp-steps{display:none}
-  [data-module="report"] .rp-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sog-gap);align-items:start}
+  [data-module="report"] .f-steps,[data-module="report"] .rp-next{display:none}
   [data-module="report"] .rp-step[hidden]{display:block}
-  [data-module="report"] .rp-next{display:none}
 }`;
 
 /** Dessine tout l'écran (étapes, champs, barre d'enregistrement). */
@@ -444,14 +428,14 @@ function render() {
   const m = S.m,
     F = FAMILIES[m.family] || HEMS,
     step = S.step,
-    stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} class="${ok ? 'rp-ok' : ''}">${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
+    stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} ${ok ? ' data-done' : ''}>${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
     done = progress(),
     site = Site.recordPage(S.ctx.airline || {});
   S.body.innerHTML = `
     <div class="f-row" style="margin-bottom:8px"><span class="f-muted">${S.path ? esc(tt(TX.editing, { id: m.metadata.missionId })) : esc(m.metadata.missionId || '')}</span>
       <button type="button" data-do="new">${esc(tt(TX.newReport))}</button></div>
-    <nav class="rp-steps">${[0, 1, 2].map(i => stepBtn(i, done[i])).join('')}</nav>
-    <div class="rp-cols">
+    <nav class="f-steps">${[0, 1, 2].map(i => stepBtn(i, done[i])).join('')}</nav>
+    <div class="f-cols">
       <section class="rp-step" data-s="0"${step === 0 ? '' : ' hidden'}>
         <div data-prefill></div><div data-sources></div>
         <div class="f-card"><h2>${esc(tt(TX.steps[0]))}</h2>
@@ -459,12 +443,12 @@ function render() {
           <h3>${esc(lab(L('Heures', 'Times', 'Zeiten', 'Horas')))}</h3>
           ${grid([FIELDS.engineStart, FIELDS.takeoff, FIELDS.landing, FIELDS.shutdown])}</div>
         <details class="f-card"><summary>${esc(tt(TX.more))}</summary>${grid([FIELDS.callsignPrefix, FIELDS.callsignNumber, FIELDS.callsignFpl, FIELDS.baseDeparture, FIELDS.baseReturn, FIELDS.landingAd, FIELDS.altn])}</details>
-        <details class="f-card rp-recent" data-recent><summary>${esc(tt(TX.recent))}</summary><div data-recentlist></div></details>
+        <details class="f-card" data-recent><summary>${esc(tt(TX.recent))}</summary><div class="f-list" data-recentlist></div></details>
         <div class="f-row rp-next"><button type="button" data-step="1">${esc(tt(TX.next))}</button></div>
       </section>
       <section class="rp-step" data-s="1"${step === 1 ? '' : ' hidden'}>
         <div class="f-card"><h2>${esc(tt(TX.steps[1]))}</h2>
-          <div class="rp-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.entries(V.familyLabels).filter(([k]) => FAMILIES[k]).map(([k, l]) => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(tt(l))}</option>`).join('')}</select></label>
+          <div class="f-grid"><label class="f-field"><span>${esc(tt(TX.family))}</span><select data-family>${Object.entries(V.familyLabels).filter(([k]) => FAMILIES[k]).map(([k, l]) => `<option value="${k}"${k === m.family ? ' selected' : ''}>${esc(tt(l))}</option>`).join('')}</select></label>
           ${control(FIELDS.series, m.series)}${control(FIELDS.missionNumber, m.metadata.missionNumber)}</div></div>
         ${F.ownOrder ? '' : `<details class="f-card"><summary>${esc(tt(TX.tasking))}</summary>${grid([FIELDS.objective, FIELDS.instructions, FIELDS.priority])}</details>`}
         ${(F.blocks || []).filter(shown).map((b, i) => `<details class="f-card"${i === 0 ? ' open' : ''}><summary>${esc(tt(b.title))}</summary>${b.collection ? collection(b.collection) : grid(b.fields)}</details>`).join('')}
@@ -476,12 +460,12 @@ function render() {
         <div class="f-card"><h2>${esc(tt(TX.fuel))}</h2>${grid([FIELDS.fuelUnit, FIELDS.fuelStart, FIELDS.fuelLanding])}</div>
         <div class="f-card" data-check></div>
         <details class="f-card"><summary>${esc(tt(TX.onSite))}</summary><p class="f-muted">${esc(tt(TX.siteHelp))}</p>
-          <p>${esc(tt(TX.bookmark))} <a class="rp-mark" href="${esc(Site.BOOKMARKLET)}" data-mark>→ Vol</a></p>
+          <p>${esc(tt(TX.bookmark))} <a class="f-btn" href="${esc(Site.BOOKMARKLET)}" data-mark>→ Vol</a></p>
           <button type="button" data-do="copyfields">${esc(tt(TX.copyFields))}</button></details>
       </section>
     </div>
-    <div class="f-card rp-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
-      <button type="button" data-do="savesite"${site ? '' : ` disabled title="${esc(tt(TX.siteUnset))}"`}>${esc(tt(TX.saveSite))}${site ? '' : `<small class="rp-unset">${esc(tt(TX.siteUnset))}</small>`}</button></div>`;
+    <div class="f-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
+      <button type="button" data-do="savesite"${site ? '' : ` disabled title="${esc(tt(TX.siteUnset))}"`}>${esc(tt(TX.saveSite))}${site ? '' : `<small class="f-muted rp-unset">${esc(tt(TX.siteUnset))}</small>`}</button></div>`;
   const mark = S.body.querySelector('[data-mark]');
   if (mark) mark.onclick = e => {
     e.preventDefault(); // depuis la barre des favoris seulement
@@ -518,7 +502,7 @@ function check() {
     v: i.value,
     o: i.other
   }));
-  box.innerHTML = `<p class="f-muted">${esc(need.length ? tt(TX.missing, { l: need.join(', ') }) : tt(TX.complete))}</p>${issues.length ? `<p class="rp-warn">${esc(tt(TX.warnings, { l: issues.join(' ; ') }))}</p>` : ''}`;
+  box.innerHTML = `<p class="f-muted">${esc(need.length ? tt(TX.missing, { l: need.join(', ') }) : tt(TX.complete))}</p>${issues.length ? `<p class="f-warn">${esc(tt(TX.warnings, { l: issues.join(' ; ') }))}</p>` : ''}`;
 }
 /** Carte « Vol en cours » : le vol partagé par carburant et carte (pilot/<trigramme>/current_flight.json), s'il a un
  *  appareil ou une route ; « Utiliser » remplit les champs vides. */
@@ -530,7 +514,7 @@ async function prefillCard() {
   if (!S.current || !S.body) return box.innerHTML = '';
   const a = cf.aircraft || {},
     r = cf.route || {};
-  box.innerHTML = `<div class="f-card rp-prefill"><div><b>${esc(tt(TX.current))}</b><div class="f-muted">${esc([a.registration, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
+  box.innerHTML = `<div class="f-card f-accent rp-prefill"><div><b>${esc(tt(TX.current))}</b><div class="f-muted">${esc([a.registration, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
     <button type="button" class="primary" data-do="current">${esc(tt(TX.use))}</button></div>`;
 }
 /** Carte des sources : le dernier vol proposé (réseau de l'identité), les autres sources, le collage, le choix d'un vol
@@ -547,9 +531,9 @@ function sourcesCard() {
       minute: '2-digit'
     }) : '',
     flight = (net, f) => `${esc(f.callsign)} · ${esc([f.dep, f.arr].filter(Boolean).join(' → ') || '—')} · ${esc(when(f.start))}${f.open ? ' …' : ''}`;
-  box.innerHTML = `${p?.flights?.length ? `<div class="f-card rp-prefill"><div><b>${esc(tt(TX.lastOn, { net: p.label }))}</b><div class="f-muted">${flight(p.net, p.flights[0])}</div></div>
+  box.innerHTML = `${p?.flights?.length ? `<div class="f-card f-accent rp-prefill"><div><b>${esc(tt(TX.lastOn, { net: p.label }))}</b><div class="f-muted">${flight(p.net, p.flights[0])}</div></div>
       <button type="button" class="primary" data-do="pick" data-net="${p.net}" data-id="${esc(p.flights[0].id)}">${esc(tt(TX.use))}</button></div>` : ''}
-    ${S.choices ? `<div class="f-card"><p class="f-muted">${esc(tt(TX.choose))}</p>${S.choices.flights.map(f => `<button type="button" class="rp-choice" data-do="pick" data-net="${S.choices.net}" data-id="${esc(f.id)}">${flight(S.choices.net, f)}</button>`).join('')}</div>` : ''}
+    ${S.choices ? `<div class="f-card"><p class="f-muted">${esc(tt(TX.choose))}</p><div class="f-list">${S.choices.flights.map(f => `<button type="button" class="f-item" data-do="pick" data-net="${S.choices.net}" data-id="${esc(f.id)}">${flight(S.choices.net, f)}</button>`).join('')}</div></div>` : ''}
     ${S.kept ? `<div class="f-row" style="margin-bottom:var(--sog-gap)"><button type="button" data-do="replace">${esc(tt(TX.replace, { n: S.kept.n }))}</button></div>` : ''}
     <details class="f-card"${S.pasteOpen ? ' open' : ''} data-sourcebox><summary>${esc(tt(TX.sources))}</summary>
       <div class="f-row">
@@ -768,7 +752,7 @@ async function showRecent() {
   box.innerHTML = list.length ? list.map(({
     path,
     r
-  }) => `<button type="button" data-open="${esc(path)}">${esc(r.metadata?.missionId || path)} · ${esc(r.metadata?.date || '')} · ${esc(r.aircraft?.[0]?.registration || '')} ${esc(r.family || '')}</button>`).join('') : `<p class="f-muted">${esc(tt(TX.noRecent))}</p>`;
+  }) => `<button type="button" class="f-item" data-open="${esc(path)}">${esc(r.metadata?.missionId || path)} · ${esc(r.metadata?.date || '')} · ${esc(r.aircraft?.[0]?.registration || '')} ${esc(r.family || '')}</button>`).join('') : `<p class="f-muted">${esc(tt(TX.noRecent))}</p>`;
 }
 /** Définition du champ d'un chemin : champs communs, champs des blocs de la famille, champs de ses collections
  *  (« chemin.<n>.champ »). */
@@ -808,7 +792,7 @@ function onInput(e) {
   if (path === 'series' && e.type === 'change') return render();
   check();
   const done = progress();
-  S.body.querySelectorAll('.rp-steps button').forEach((b, i) => b.classList.toggle('rp-ok', done[i]));
+  S.body.querySelectorAll('.f-steps button').forEach((b, i) => b.toggleAttribute('data-done', !!done[i]));
 }
 /** Gestes : pas, enregistrement, nouveau CR, vol en cours, collections, CR récent. */
 async function onClick(e) {

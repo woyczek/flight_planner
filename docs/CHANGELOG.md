@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: the frame's design primitives** (`modules/report/module.js`) — its own colours, shadows and title sizes
+  replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
 - **help: a visual roadmap in the app** (`frame/help/roadmap.js`, `frame/help/roadmap.json` de / es,
   `frame/help/build_help.py`, `frame/help/help.js`, `frame/settings/settings.js`, `frame/app.js`, `frame/index.html`,
   `frame/sw.js`, `frame/frame.css`; `frame/help/SPEC.md` § 5, `DECISIONS.md`, `frame/settings/SPEC.md`) — a `#roadmap`

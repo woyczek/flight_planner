@@ -2,6 +2,9 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — design lot 2 primitives** (asked by the design session): save bar, steps, grids, columns, warnings, sources, prefill cards and lists moved to `f-bar` (no own shadow, hidden in print), `f-steps` with `data-done`, `f-grid` / `f-full`, `f-cols`, `f-warn`, `f-badge data-kind=accent`, `f-card f-accent`, `f-list` / `f-item`; the "→ Vol" bookmark is an `a.f-btn` (44 px); title and summary rules left to the frame. The module's own `<style>`
+  only places things now; checked at 375 px and on a screen in standard, cabinet and field, day and night (no white
+  at night, square corners in cabinet and field, no target under 44 px).
 - **23 Oct 2026 — role taken** by the Features SOG session (also V3 fuel), at the ergonomics session's request after
   the user's "go": worktree `E:\DEFA-v3-report`, local branch `v3-report` from `origin/v3` (54ecf0026). Port 8791 was
   found taken by another session's fake GitHub server; the reading was done on 8801.
