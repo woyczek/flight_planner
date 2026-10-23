@@ -65,7 +65,8 @@ One record per pilot, read and written by fuel and maps (the same flight in both
   "route": {
     "text": "LFRS 47.1569 -1.6078,\nN0236F270,\nLUGEN 46.5833 -1.2000,\nLFML 43.4367 5.2150",
     "dep": "LFRS", "arr": "LFML", "altn": "LFPG",
-    "points": [{ "id": "LFRS", "lat": 47.1569, "lon": -1.6078 }, { "id": "LUGEN", "lat": 46.5833, "lon": -1.2 }],
+    "points": [{ "id": "LFRS", "lat": 47.1569, "lon": -1.6078 }, { "id": "LUGEN", "lat": 46.5833, "lon": -1.2, "alt_ft": 29000 },
+               { "id": "LFML", "lat": 43.4367, "lon": 5.215 }],
     "distanceNm": 366, "trackDeg": 125
   },
   "level": { "ft": 27000 },
@@ -80,6 +81,11 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 - `route.text`: item 15 (`LFBO N0450F350 DCT TOU UN460 NTS LFRN`) or the OFP route list (`ID lat lon[/N0450F370]`
   entries separated by commas or new lines), the form V2 writes and its "Open in" reads; `points` are its resolved
   positions; `distanceNm` and `trackDeg` are derived (great circle, departure to arrival track).
+- `route.points[].alt_ft` (lot C, optional, ft): the level flown **from that point on** (steps); absent = the previous
+  level goes on; never on the first or the last point — the flight leaves at `level.ft` and descends to the arrival.
+  The same field as maps' mission `route_points[].alt_ft`. Fuel edits the points (order, add, remove, level) and then
+  rewrites `route.text` in the OFP form (`ID lat lon[/Fnnn]`, one entry per line), so both stay in step; a module that
+  only reads `points` can ignore `text`. Fuel writes the record 300 ms after the last change.
 - `profile` is written by fuel with every quote that changes it (null without a quote): average climb and descent
   rates (ft/min, from the ground to the level and back) and ground speeds (kt), the distance from departure to the top
   of climb (`tocNm`) and from the top of descent to arrival (`todNm`) — the quote's own climb and descent, so the four

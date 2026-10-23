@@ -55,8 +55,16 @@ folded.
   cruise flow; reserve = sheet's reserve flow, otherwise 65 % of the cruise flow.
 - **Wind**: direction and speed known → the component on the track (positive = tailwind). Otherwise a range ±speed
   (speed known) or ±the sheet's typical wind (25 kt): the block is given as a range, low and high.
-- **Totals**: trip = climb + cruise + descent; contingency = trip × %; block = taxi + trip + contingency + reserve.
-- **Time and TOD**: time = climb + cruise + descent minutes; TOD = level ÷ gradient + buffer (NM).
+- **Steps** (`steps: [{ nm, ft }]`, lot C): the flight leaves at the plan's level; at nm NM from departure the level
+  becomes ft. Each change costs a climb (the difference of two model climbs, otherwise the sheet's rate at the climb
+  TAS) or a descent (descent rate and TAS); the cruise is split into legs, each at the model's TAS and flow at its
+  level, shortened by the climb (first leg), the change (next legs) and the descent (last leg). The descent and the TOD
+  start from the last level. A step at the same level, at 0 or beyond the arrival changes nothing; without steps the
+  quote is the single-level one (bench unchanged). The screen gives the intermediate points' `alt_ft` at their
+  cumulated distance (scaled to a typed distance); the level decision still varies the plan's level alone.
+- **Totals**: trip = climb + cruise + steps + descent; contingency = trip × %; block = taxi + trip + contingency +
+  reserve.
+- **Time and TOD**: time = climb + cruise + steps + descent minutes; TOD = last level ÷ gradient + buffer (NM).
 - **No fuel flow known**: the quote says so (`hasFuel` false) instead of a misleading zero.
 
 ## 4. The current flight shared with maps
@@ -163,7 +171,14 @@ inside the module, switched by two buttons at the top, the last one kept on the 
      type estimate) and whether it is approximate.
   2. **Route**: departure, arrival, alternate; distance and true track derived from the points (aerodb `coords` of
      each identifier, or "ID lat lon" entries as the OFP gives them), typed by hand when nothing resolves; the
-     detailed route folded; the unknown points listed. "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
+     detailed route folded; the unknown points listed. **Route points** (lot C): the resolved points as a list —
+     move up, move down, remove, add before the arrival (an identifier from aerodb `coords`, or "NAME lat lon"); each
+     intermediate point has an optional level (FL), the level flown from that point on (steps), a point without one
+     continuing the previous (shown as its placeholder). Every change rewrites the detailed route in the OFP form
+     ("ID lat lon[/Fnnn]", one entry per line), derives distance and track, writes the current flight (300 ms after the
+     last change) and redoes the quote. Reading a route: the level of an entry (/N0450F370 or /F370), or an item 15
+     speed-level group after a point, becomes that point's `alt_ft`, kept only where it changes and never on the
+     departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
   3. **Level and wind**: level (FL), climb goal (§ 7), wind direction and speed (speed only or nothing: range), ISA

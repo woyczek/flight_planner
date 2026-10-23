@@ -248,10 +248,12 @@
    *  repli et la MTOW), distanceNm, levelFt (niveau retenu, épingle comprise), trackDeg, wind { dirDeg, speedKt }
    *  (direction et vitesse connues : vent connu ; vitesse seule : fourchette ±vitesse ; rien : fourchette
    *  ±sheet.typicalWindKt, 25 kt par défaut), taxiMin, reserveMin, contingencyPct, climbLaw (loi de montée réglée,
-   *  perf.manualLaw…, facultative), takeoffMass (unité de la fiche, facultative), mtowKg.
-   *  Carburants dans l'unité de la fiche. Sortie : { hasFuel, approx, windKnown, wc, low, high, levelFt, ceiling,
-   *  climb, cruise, descent ({ min, nm, ff, fuel, map }), cruise.fuelLow / fuelHigh, taxi, trip, contingency, reserve,
-   *  block, blockLow, blockHigh, minutes, todNm, lawUsed, lawFailed, landingMass, overMtow }. */
+   *  perf.manualLaw…, facultative), takeoffMass (unité de la fiche, facultative), mtowKg, steps (paliers facultatifs :
+   *  [{ nm, ft }], le niveau pris à nm NM du départ et tenu jusqu'au palier suivant ; le vol part au niveau retenu).
+   *  Carburants dans l'unité de la fiche. Sortie : { hasFuel, approx, windKnown, wc, low, high, levelFt, endFt, ceiling,
+   *  climb, cruise, descent ({ min, nm, ff, fuel, map }), cruise.fuelLow / fuelHigh, steps ({ min, nm, fuel, levels }
+   *  ou null), taxi, trip, contingency, reserve, block, blockLow, blockHigh, minutes, todNm, lawUsed, lawFailed,
+   *  landingMass, overMtow }. Sans palier, le devis est celui d'un niveau unique. */
   function quote(input) {
     const {
       sheet,
@@ -267,7 +269,8 @@
       contingencyPct = 0,
       climbLaw = null,
       takeoffMass = 0,
-      mtowKg = 0
+      mtowKg = 0,
+      steps = null
     } = input || {};
     if (!sheet) return null;
     const D = +distanceNm || 0,
@@ -305,38 +308,99 @@
     const lawClimb = perf && climbLaw && alt > 0 ? perf.climbTo(Math.min(alt, perf.ceiling), {
         speed: climbLaw
       }) : null,
-      pClimb = lawClimb || (perf && alt > 0 ? perf.climbTo(Math.min(alt, perf.ceiling)) : null),
-      pCruise = perf ? perf.cruise(alt, 'normal') : null;
+      pClimb = lawClimb || (perf && alt > 0 ? perf.climbTo(Math.min(alt, perf.ceiling)) : null);
+    // paliers : niveaux successifs { nm (depuis le départ), ft }, le premier au niveau retenu ; seuls les changements
+    // comptent, et seulement entre le départ et l'arrivée
+    const levels = [{
+      nm: 0,
+      ft: alt
+    }];
+    for (const st of (Array.isArray(steps) ? steps : []).filter(x => +x?.nm > 0 && +x.nm < D && +x?.ft > 0).sort((a, b) =>
+        a.nm - b.nm))
+      if (+st.ft !== levels.at(-1).ft) levels.push({
+        nm: +st.nm,
+        ft: +st.ft
+      });
+    const endFt = levels.at(-1).ft;
     const mpf = modelSheet(sheet, src, apd),
-      climbMin = pClimb ? pClimb.minutes : alt / (Math.abs(+mpf.climb?.rateFpm) || 1200),
-      descentMin = alt / (Math.abs(+mpf.descent?.rateFpm) || 1500),
-      climbNm = pClimb ? pClimb.nm : (+mpf.climb?.tasKt || 220) * climbMin / 60,
-      descentNm = (+mpf.descent?.tasKt || 250) * descentMin / 60,
-      cruiseNm = Math.max(0, D - climbNm - descentNm);
+      climbRate = Math.abs(+mpf.climb?.rateFpm) || 1200,
+      descentRate = Math.abs(+mpf.descent?.rateFpm) || 1500,
+      climbTas = +mpf.climb?.tasKt || 220,
+      descentTas = +mpf.descent?.tasKt || 250,
+      climbMin = pClimb ? pClimb.minutes : alt / climbRate,
+      descentMin = endFt / descentRate,
+      climbNm = pClimb ? pClimb.nm : climbTas * climbMin / 60,
+      descentNm = descentTas * descentMin / 60;
     /** Carburant d'une phase : durée (min) × débit horaire. */
     const phaseFuel = (mins, ff) => mins / 60 * (ff || 0);
     const cruiseFF = hasFuel ? src.ff : 0,
       climbFF = climbPhase.ff ?? cruiseFF,
       descentFF = descentPhase.ff ?? (cruiseFF * .45);
+    /** Montée modélisée jusqu'à h (ft), sous le plafond ; null sans modèle. */
+    const climbAt = h => perf && h > 0 ? perf.climbTo(Math.min(h, perf.ceiling)) : null;
+    // changements de niveau : montée (écart de deux montées du modèle, sinon vario de la fiche) ou descente
+    const trans = levels.slice(1).map((l, i) => {
+      const a = levels[i].ft,
+        b = l.ft;
+      if (b > a) {
+        const ca = climbAt(a),
+          cb = climbAt(b);
+        if (ca && cb) return {
+          min: cb.minutes - ca.minutes,
+          nm: cb.nm - ca.nm,
+          fuel: Number.isFinite(cb.fuel) && Number.isFinite(ca.fuel) ? cb.fuel - ca.fuel : phaseFuel(cb.minutes - ca.minutes,
+            climbFF)
+        };
+        const m = (b - a) / climbRate;
+        return {
+          min: m,
+          nm: climbTas * m / 60,
+          fuel: phaseFuel(m, climbFF)
+        };
+      }
+      const m = (a - b) / descentRate;
+      return {
+        min: m,
+        nm: descentTas * m / 60,
+        fuel: phaseFuel(m, descentFF)
+      };
+    });
+    // tronçons de croisière : longueur moins la montée (premier), le changement de niveau (suivants) et la descente
+    // (dernier) ; vitesse vraie et débit du modèle à leur niveau, sinon ceux de la source
+    const segs = levels.map((l, i) => {
+      const end = levels[i + 1]?.nm ?? D,
+        pc = perf ? perf.cruise(l.ft, 'normal') : null,
+        used = (i ? trans[i - 1].nm : climbNm) + (i === levels.length - 1 ? descentNm : 0);
+      return {
+        ft: l.ft,
+        nm: Math.max(0, end - l.nm - used),
+        tas: pc?.ok ? pc.tas : tas,
+        ff: pc?.ok ? pc.ff : cruiseFF
+      };
+    });
     const climbFuel = pClimb && Number.isFinite(pClimb.fuel) ? pClimb.fuel : phaseFuel(climbMin, climbFF),
       descentFuel = phaseFuel(descentMin, descentFF),
       taxiFuel = phaseFuel(+taxiMin || 0, sheet.taxi?.fuelFlowPerHour || cruiseFF * .25),
-      tasAlt = pCruise?.ok ? pCruise.tas : tas,
-      ffAlt = pCruise?.ok ? pCruise.ff : cruiseFF;
-    /** Carburant de croisière avec une composante de vent w (vitesse sol de 80 kt au moins). */
-    const cruiseFuelFor = w => cruiseNm / Math.max(80, tasAlt + w) * ffAlt;
+      stepMin = trans.reduce((t, x) => t + x.min, 0),
+      stepNm = trans.reduce((t, x) => t + x.nm, 0),
+      stepFuel = trans.reduce((t, x) => t + x.fuel, 0),
+      cruiseNm = segs.reduce((t, g) => t + g.nm, 0);
+    /** Carburant de croisière avec une composante de vent w (vitesse sol de 80 kt au moins), tronçon par tronçon. */
+    const cruiseFuelFor = w => segs.reduce((t, g) => t + g.nm / Math.max(80, g.tas + w) * g.ff, 0);
     const cNom = cruiseFuelFor(windKnown ? wc : 0),
       cLo = cruiseFuelFor(low),
       cHi = cruiseFuelFor(high),
       reserve = phaseFuel(+reserveMin || 0, sheet.reserveFuelFlowPerHour || cruiseFF * .65),
       cont = (+contingencyPct || 0) / 100,
-      trip = climbFuel + cNom + descentFuel,
+      trip = climbFuel + cNom + stepFuel + descentFuel,
       contingency = trip * cont,
       block = taxiFuel + trip + contingency + reserve,
-      bLo = taxiFuel + climbFuel + cLo + descentFuel + (climbFuel + cLo + descentFuel) * cont + reserve,
-      bHi = taxiFuel + climbFuel + cHi + descentFuel + (climbFuel + cHi + descentFuel) * cont + reserve,
-      cruiseMin = cruiseNm / Math.max(80, tasAlt + (windKnown ? wc : 0)) * 60,
-      todNm = alt / (sheet.tod?.gradientFtPerNm || 300) + (sheet.tod?.bufferNm || 0);
+      bLo = taxiFuel + (climbFuel + cLo + stepFuel + descentFuel) * (1 + cont) + reserve,
+      bHi = taxiFuel + (climbFuel + cHi + stepFuel + descentFuel) * (1 + cont) + reserve,
+      cruiseMin = segs.reduce((t, g) => t + g.nm / Math.max(80, g.tas + (windKnown ? wc : 0)) * 60, 0),
+      tasAlt = cruiseNm > 0 ? segs.reduce((t, g) => t + g.tas * g.nm, 0) / cruiseNm : segs[0].tas,
+      ffAlt = cruiseMin > 0 ? cNom / (cruiseMin / 60) : segs[0].ff,
+      todNm = endFt / (sheet.tod?.gradientFtPerNm || 300) + (sheet.tod?.bufferNm || 0);
     const mtow = convertFuel(+mtowKg || 0, 'kg', sheet.unit || 'kg'),
       tow = +takeoffMass || 0;
     return {
@@ -347,6 +411,7 @@
       low,
       high,
       levelFt: alt,
+      endFt,
       ceiling: perf?.ceiling ?? null,
       lawUsed: !!lawClimb,
       lawFailed: !!climbLaw && !lawClimb,
@@ -368,6 +433,15 @@
         fuelHigh: cHi,
         map: cruisePhase.map ? cruisePhase : null
       },
+      steps: trans.length ? {
+        min: stepMin,
+        nm: stepNm,
+        fuel: stepFuel,
+        levels: segs.map((g, i) => ({
+          nm: levels[i].nm,
+          ft: g.ft
+        }))
+      } : null,
       descent: {
         min: descentMin,
         nm: descentNm,
@@ -382,7 +456,7 @@
       block,
       blockLow: Math.min(bLo, bHi),
       blockHigh: Math.max(bLo, bHi),
-      minutes: climbMin + cruiseMin + descentMin,
+      minutes: climbMin + cruiseMin + stepMin + descentMin,
       todNm,
       landingMass: tow > 0 ? tow - trip : null,
       overMtow: tow > 0 && mtow > 0 && tow > mtow

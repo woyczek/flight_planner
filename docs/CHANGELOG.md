@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: editable route points and step levels** (`modules/fuel/module.js`, `model.js`; `SPEC.md`, `INTEGRATION.md`,
+  `DECISIONS.md`, `help/fr.md`, `test/quote.html`) — the route's points as a list to reorder, remove or add to, with an
+  optional level per point flown from that point on; the quote counts each step (its climb or descent, then the
+  cruise at that level) and descends from the last one; levels written in a route (OFP or item 15) are read; every
+  change goes to the map at once (`route.points[].alt_ft`).
 - **fuel: ISA deviation from the departure METAR and a density altitude chart** (`modules/fuel/module.js`; `SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — once the weather is read, the ISA deviation of the departure
   (temperature against the aerodrome's standard temperature) is proposed in one tap and kept in the quote settings; a

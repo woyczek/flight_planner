@@ -189,6 +189,59 @@
       check('TOD (NM)', Math.round(q.todNm * 10) / 10, c.v2.tod);
       check('flight time', hm(q.minutes), c.v2.time);
     }
+    // steps (lot C): levels taken at a distance from departure; a step at the same level, or beyond the arrival, changes
+    // nothing; a step climb adds its own climb, the cruise is split, the descent starts from the last level
+    {
+      const sheet = M.normalizeSheet(structuredClone(SHEET)),
+        source = M.cruiseSource({
+          sheet,
+          altFt: 20000
+        }),
+        perf = M.perfModel(sheet, source, {}),
+        base = {
+          sheet,
+          source,
+          perf,
+          distanceNm: 300,
+          levelFt: 20000,
+          trackDeg: 90,
+          wind: {
+            dirDeg: 270,
+            speedKt: 30
+          },
+          taxiMin: 10,
+          reserveMin: 30,
+          contingencyPct: 5
+        },
+        q0 = M.quote(base),
+        same = M.quote({
+          ...base,
+          steps: [{
+            nm: 100,
+            ft: 20000
+          }, {
+            nm: 400,
+            ft: 30000
+          }]
+        }),
+        up = M.quote({
+          ...base,
+          steps: [{
+            nm: 150,
+            ft: 24000
+          }]
+        }),
+        r = Math.round;
+      lines.push('<b>steps</b> — 300 NM, FL200, wind 270/30');
+      check('same level and beyond arrival: block unchanged', r(same.block), r(q0.block));
+      check('same level: no steps reported', String(same.steps), 'null');
+      check('FL200 → FL240 at 150 NM: end level', up.endFt, 24000);
+      check('trip = climb + cruise + step + descent', r(up.climb.fuel + up.cruise.fuel + up.steps.fuel + up.descent.fuel), r(up.trip));
+      check('time = climb + cruise + step + descent', r(up.climb.min + up.cruise.min + up.steps.min + up.descent.min), r(up.minutes));
+      check('step climb burns fuel', up.steps.fuel > 0, true);
+      check('TOD from FL240 is further out', up.todNm > q0.todNm, true);
+      check('levels reported', up.steps.levels.map(l => `${l.nm}:${l.ft}`).join(' '), '0:20000 150:24000');
+    }
     // display units (SPEC § 9): the model keeps kt, ft, NM; conversion is the screen's, both ways
     const near = (label, got, want, tol = 1e-9) => {
       const ok = Number.isFinite(got) && Math.abs(got - want) <= tol;

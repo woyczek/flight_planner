@@ -4,6 +4,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot C, editable route points and steps** (asked through the ergonomics session): the points become a
+  list (up, down, remove, add); the level is one optional field per intermediate point, read as "from this point on"
+  (as an OFP or an item 15 writes it, and as maps' missions use `route_points.alt_ft`); first and last points never
+  carry one, so the plan's level stays the single start and the decision chart keeps its meaning. Levels read from a
+  text are kept only where they change: an OFP repeats its level at every entry, which would otherwise pin the cruise
+  at the first waypoint once the plan's level is changed. Editing rewrites `route.text` (OFP form) instead of keeping
+  an item 15 next to diverging points — airways typed in an item 15 are lost then, the points are what the quote and
+  the map use. `quote` takes `steps` and splits the cruise into legs; without steps every value is the former one (the
+  bench's three V2 cases unchanged, 8 step checks added: 58/58). The current flight is written 300 ms after the last
+  change (800 before). Checked at 375 px on 8793 (aerodb's `coords` mocked, the sandbox resolves no aerodrome): a
+  4-point route with FL120 from LUGEN gave "FL100 → FL120", TOD from FL120, `alt_ft` in `current_flight.json`;
+  item 15 `LFLS N0120F080 DCT LUGEN/N0120F120 DCT LFMN` gave FL120 on LUGEN only; add by name and by coordinates, an
+  unknown name warned; the rows stay on one line (the level field kept short against the frame's card input width).
 - **23 Oct 2026 — lot D, ISA deviation and density altitude** (user's request, for helicopters): the deviation is
   proposed from the departure METAR (temperature − (15 − 1.98 × elevation kft)), not applied by itself — the pilot may
   plan for another hour; it is kept in `fuel.json` as the next flight's start. The density altitude chart first drew

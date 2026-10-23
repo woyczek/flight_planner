@@ -100,6 +100,25 @@ const TX = {
   ],
   distance: ['Distance ({u})', 'Distance ({u})', 'Entfernung ({u})', 'Distancia ({u})'],
   track: ['Route vraie (°)', 'True track (°)', 'Rechtweisender Kurs (°)', 'Rumbo verdadero (°)'],
+  pts: ['Points de la route', 'Route points', 'Routenpunkte', 'Puntos de la ruta'],
+  ptsHint: ['Niveau facultatif sur un point : tenu à partir de ce point (paliers). Sans niveau, le précédent continue.',
+    'Optional level on a point: flown from that point on (steps). Without one, the previous level goes on.',
+    'Flugfläche je Punkt freiwillig: ab diesem Punkt geflogen (Stufen). Ohne Angabe gilt die vorige weiter.',
+    'Nivel opcional en un punto: se vuela a partir de ese punto (escalones). Sin nivel, sigue el anterior.'
+  ],
+  ptsNone: ['Aucun point : départ et arrivée, ou ajoutez-en.', 'No points: departure and arrival, or add some.',
+    'Keine Punkte: Abflug und Ankunft, oder welche hinzufügen.', 'Sin puntos: salida y llegada, o añada alguno.'
+  ],
+  addPt: ['Ajouter un point (identifiant ou « ID lat lon »)', 'Add a point (identifier or “ID lat lon”)',
+    'Punkt hinzufügen (Kennung oder „ID lat lon“)', 'Añadir un punto (identificador o «ID lat lon»)'
+  ],
+  add: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
+  ptLevel: ['Niveau à partir de {id} (FL)', 'Level from {id} (FL)', 'Flugfläche ab {id} (FL)', 'Nivel desde {id} (FL)'],
+  ptUp: ['Monter {id} dans la liste', 'Move {id} up', '{id} nach oben', 'Subir {id}'],
+  ptDown: ['Descendre {id} dans la liste', 'Move {id} down', '{id} nach unten', 'Bajar {id}'],
+  ptDel: ['Retirer {id}', 'Remove {id}', '{id} entfernen', 'Quitar {id}'],
+  ptUnknown: ['Point inconnu : {id}', 'Unknown point: {id}', 'Unbekannter Punkt: {id}', 'Punto desconocido: {id}'],
+  steps: ['Paliers', 'Steps', 'Stufen', 'Escalones'],
   unresolved: ['Points inconnus : {l}', 'Unknown points: {l}', 'Unbekannte Punkte: {l}', 'Puntos desconocidos: {l}'],
   simbrief: ['Dernier OFP SimBrief', 'Last SimBrief OFP', 'Letzter SimBrief-OFP', 'Último OFP de SimBrief'],
   noSimbrief: ['Identifiant SimBrief à régler (⚙).', 'SimBrief ID to set (⚙).', 'SimBrief-Kennung einstellen (⚙).',
@@ -581,13 +600,15 @@ function bearing(a, b) {
   return (Math.atan2(y, x) / r + 360) % 360;
 }
 /** Points d'une route : entrées « ID lat lon[/N0450F370] » (forme OFP de la V2) gardées telles quelles, sinon item 15
- *  (vitesse-niveau, DCT, voies aériennes et procédures écartées) ; chaque identifiant cherché dans aerodb. Départ et
- *  arrivée ajoutés aux extrémités s'ils manquent. Sortie : { points, unresolved }. */
+ *  (DCT, voies aériennes et procédures écartées) ; chaque identifiant cherché dans aerodb. Le niveau d'une entrée
+ *  (/N0450F370 ou /F370), ou le groupe vitesse-niveau qui suit un point dans l'item 15, devient son alt_ft (niveau tenu à
+ *  partir de ce point), gardé seulement là où il change. Départ et arrivée ajoutés aux extrémités s'ils manquent.
+ *  Sortie : { points, unresolved }. */
 async function routePoints(text, dep, arr) {
   const points = [],
     unresolved = [],
     entries = String(text || '').split(/[,\n]+/).map(s => s.trim()).filter(Boolean),
-    coord = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/i;
+    coord = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[NKM]\d{3,4})?F(\d{3}))?/i;
   const look = async id => {
     const c = S.ctx.aerodb ? await S.ctx.aerodb.coords(id).catch(() => null) : null;
     c ? points.push({
@@ -602,14 +623,22 @@ async function routePoints(text, dep, arr) {
       points.push({
         id: m[1].toUpperCase(),
         lat: +m[2],
-        lon: +m[3]
+        lon: +m[3],
+        ...(m[4] ? {
+          alt_ft: +m[4] * 100
+        } : {})
       });
     }
   else
-    for (const tok of String(text || '').toUpperCase().split(/\s+/).map(s => s.split('/')[0]).filter(Boolean)) {
-      if (/^[NKM]\d{3,4}([FASM]\d{3,4})?$/.test(tok) || tok === 'DCT' || /^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(tok) || /\d[A-Z]$/.test(tok))
-        continue;
-      if (/^[A-Z0-9]{2,5}$/.test(tok)) await look(tok);
+    for (const word of String(text || '').toUpperCase().split(/\s+/).filter(Boolean)) {
+      // groupe vitesse-niveau, seul (niveau du dernier point lu) ou après « / » (niveau de ce point, s'il est connu)
+      const lv = /(?:^|\/)[NKM]\d{3,4}F(\d{3})$/.exec(word),
+        tok = word.split('/')[0],
+        n = points.length,
+        group = /^[NKM]\d{3,4}([FASM]\d{3,4})?$/.test(tok);
+      if (!group && tok !== 'DCT' && !/^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(tok) && !/\d[A-Z]$/.test(tok) && /^[A-Z0-9]{2,5}$/.test(tok))
+        await look(tok);
+      if (lv && points.length && (group || points.length > n)) points.at(-1).alt_ft = +lv[1] * 100;
     }
   if (dep && points[0]?.id !== dep) {
     const n = points.length;
@@ -617,6 +646,14 @@ async function routePoints(text, dep, arr) {
     if (points.length > n) points.unshift(points.pop());
   }
   if (arr && points.at(-1)?.id !== arr) await look(arr);
+  // niveaux : seuls les changements restent (une route d'OFP répète son niveau à chaque point), jamais au départ ni à
+  // l'arrivée — le vol part au niveau du plan
+  let prev = points[0]?.alt_ft;
+  points.forEach((p, i) => {
+    const a = p.alt_ft;
+    if (!i || i === points.length - 1 || a === prev) delete p.alt_ft;
+    if (a) prev = a;
+  });
   return {
     points,
     unresolved
@@ -677,7 +714,7 @@ function saveFlight() {
     };
     s.writing = s.flight.updated_at;
     await s.ctx.data.put(path, s.flight);
-  }, 800);
+  }, 300);
 }
 /** Écrit les réglages du devis (après un temps calme). */
 function saveSettings() {
@@ -757,7 +794,8 @@ function compute() {
       taxiMin: +S.settings.taxiMin,
       reserveMin: +S.settings.reserveMin,
       contingencyPct: +S.settings.contingencyPct,
-      climbLaw: perf ? L.tripLaw(perf, goal, o) : null
+      climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
+      steps: routeSteps(f.route, distanceNm)
     }) : null,
     D = perf && q ? L.decisionSeries(perf, {
       distanceNm,
@@ -887,6 +925,15 @@ const STYLE = `
 [data-module="fuel"] .fu-line-t{fill:none;stroke:var(--sog-chart-2);stroke-width:1.6;stroke-dasharray:5 4}
 [data-module="fuel"] .fu-ext{stroke-dasharray:1 4;opacity:.7}
 [data-module="fuel"] .fu-da{fill:none;stroke:var(--sog-chart-6);stroke-width:1;opacity:.7}
+[data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+[data-module="fuel"] .fu-ptid{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+[data-module="fuel"] .fu-ptid small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="fuel"] .f-card .fu-pt input[data-k]{width:4.2em;flex:none;text-align:center}
+[data-module="fuel"] .fu-ptgap{width:4.2em;flex:none}
+[data-module="fuel"] .fu-pt button{flex:none;min-width:44px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+[data-module="fuel"] .fu-addpt{flex-wrap:nowrap}
+[data-module="fuel"] .fu-addpt input{flex:1;min-width:0}
+[data-module="fuel"] .fu-addpt button{flex:none;min-width:44px}
 [data-module="fuel"] .fu-now{stroke:var(--sog-chart-2);stroke-width:1.5;stroke-dasharray:5 3}
 [data-module="fuel"] .fu-best{fill:var(--sog-chart-3)}
 [data-module="fuel"] .fu-fast{fill:var(--sog-chart-4)}
@@ -924,6 +971,10 @@ function renderPlan() {
     <div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="f-grid fu-g3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
       <div class="f-grid fu-g3">${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
+      <h3>${esc(tt(TX.pts))}</h3>
+      <div class="f-list fu-pts" data-pts></div>
+      <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
+      <p class="f-muted">${esc(tt(TX.ptsHint))}</p>
       <details><summary class="f-muted">${esc(tt(TX.routeText))}</summary><label class="f-field"><textarea data-k="rtext" rows="3" aria-label="${esc(tt(TX.routeText))}">${esc(r.text || '')}</textarea></label></details>
       <p class="f-warn" data-unres></p>
       <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}</div>
@@ -968,6 +1019,8 @@ function renderPlan() {
     };
   }
   S.body.oninput = S.body.onchange = e => onPlanInput(e);
+  S.body.onkeydown = e => e.key === 'Enter' && e.target.dataset?.k === 'addpt' && (e.preventDefault(), pointAction('addpt'));
+  renderPts();
   S.body.onclick = e => onPlanClick(e);
   refresh();
   renderWx();
@@ -1002,6 +1055,14 @@ function onPlanInput(e) {
       r.text = v;
       resolveRoute();
       break;
+    case 'addpt':
+      return; // ajouté par « Ajouter » ou Entrée
+    case 'ptalt': {
+      const p = r.points?.[+e.target.dataset.i];
+      if (!p) return;
+      num(v) > 0 ? p.alt_ft = Math.round(num(v)) * 100 : delete p.alt_ft;
+      return routeEdited(e.type === 'change');
+    }
     case 'dist':
       r.distanceNm = distParse(v);
       r.manual = true;
@@ -1014,6 +1075,7 @@ function onPlanInput(e) {
       f.level = {
         ft: num(v) ? num(v) * 100 : null
       };
+      if (e.type === 'change') renderPts(); // niveaux continués des points
       break;
     case 'wdir':
     case 'wkt': {
@@ -1135,6 +1197,8 @@ function onPlanInput(e) {
 /** Clic dans Préparer : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
   if (e.target.closest('[data-do="isause"]')) return useIsa();
+  const pb = e.target.closest('[data-do^="pt"],[data-do="addpt"]');
+  if (pb) return pointAction(pb.dataset.do, +pb.dataset.i);
   const pk = e.target.closest('[data-pick]');
   if (pk) return pickAircraft(pk.dataset.pick);
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
@@ -1487,6 +1551,94 @@ function setLevel(ft) {
   saveFlight();
   refresh();
 }
+/** Distance (somme des tronçons) et route vraie (départ → arrivée) déduites des points ; champs mis à jour. */
+function routeDerived(r) {
+  const points = r.points || [];
+  if (points.length < 2) return;
+  r.distanceNm = Math.round(points.slice(1).reduce((s, p, i) => s + gcNm(points[i], p), 0));
+  r.trackDeg = Math.round(bearing(points[0], points.at(-1)));
+  r.manual = false;
+  const $ = k => S.body?.querySelector(`[data-k="${k}"]`);
+  if ($('dist')) $('dist').value = distField(r.distanceNm);
+  if ($('trk')) $('trk').value = r.trackDeg;
+}
+/** Texte de la route écrit depuis les points (forme OFP « ID lat lon[/Fnnn] », une entrée par ligne). */
+const pointsText = points => points.map(p => `${p.id} ${(+p.lat).toFixed(4)} ${(+p.lon).toFixed(4)}${p.alt_ft > 0 ? `/F${String(Math.round(p.alt_ft / 100)).padStart(3, '0')}` : ''}`).join(',\n');
+/** Liste des points (ordre, niveau facultatif, monter, descendre, retirer) ; le niveau ne se règle pas au départ ni à
+ *  l'arrivée. L'indication d'un point sans niveau est celui qu'il continue. */
+function renderPts() {
+  const box = S.body?.querySelector('[data-pts]');
+  if (!box) return;
+  const pts = S.flight.route?.points || [],
+    plan = +S.flight.level?.ft || 0;
+  let cur = plan;
+  box.innerHTML = pts.length ? pts.map((p, i) => {
+    const mid = i > 0 && i < pts.length - 1,
+      hint = cur > 0 ? Math.round(cur / 100) : '';
+    if (mid && p.alt_ft > 0) cur = p.alt_ft;
+    const id = esc(p.id || '?');
+    return `<div class="f-item fu-pt"><span class="fu-ptid"><b>${id}</b><small class="f-muted">${(+p.lat).toFixed(2)} ${(+p.lon).toFixed(2)}</small></span>
+      ${mid ? `<input data-k="ptalt" data-i="${i}" inputmode="numeric" maxlength="3" value="${p.alt_ft > 0 ? Math.round(p.alt_ft / 100) : ''}" placeholder="${hint}" aria-label="${esc(tt(TX.ptLevel, { id: p.id }))}">` : '<span class="fu-ptgap"></span>'}
+      <button type="button" data-do="ptup" data-i="${i}" ${i ? '' : 'disabled'} aria-label="${esc(tt(TX.ptUp, { id: p.id }))}">${svg('chevron-up')}</button><button type="button" data-do="ptdown" data-i="${i}" ${i < pts.length - 1 ? '' : 'disabled'} aria-label="${esc(tt(TX.ptDown, { id: p.id }))}">${svg('chevron-down')}</button><button type="button" data-do="ptdel" data-i="${i}" aria-label="${esc(tt(TX.ptDel, { id: p.id }))}">${svg('x')}</button></div>`;
+  }).join('') : `<p class="f-muted">${esc(tt(TX.ptsNone))}</p>`;
+}
+/** Points changés à la main : texte de la route réécrit, distance et route vraie déduites, vol courant écrit, devis
+ *  refait ; la liste est redessinée sauf pendant la frappe d'un niveau (le champ garde la main). */
+function routeEdited(redraw = true) {
+  const r = S.flight.route;
+  r.text = pointsText(r.points || []);
+  const ta = S.body?.querySelector('[data-k="rtext"]');
+  if (ta) ta.value = r.text;
+  routeDerived(r);
+  if (redraw) renderPts();
+  saveFlight();
+  refresh();
+}
+/** Actions de la liste : monter, descendre, retirer un point, ajouter (identifiant cherché dans aerodb, ou « ID lat
+ *  lon ») avant l'arrivée. */
+async function pointAction(act, i) {
+  const r = S.flight.route ||= emptyFlight().route,
+    pts = r.points ||= [];
+  if (act === 'ptup' && i > 0)[pts[i - 1], pts[i]] = [pts[i], pts[i - 1]];
+  else if (act === 'ptdown' && i < pts.length - 1)[pts[i + 1], pts[i]] = [pts[i], pts[i + 1]];
+  else if (act === 'ptdel') pts.splice(i, 1);
+  else if (act === 'addpt') {
+    const inp = S.body.querySelector('[data-k="addpt"]'),
+      txt = inp.value.trim().toUpperCase();
+    if (!txt) return;
+    const m = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/.exec(txt),
+      c = m ? {
+        lat: +m[2],
+        lon: +m[3]
+      } : S.ctx.aerodb ? await S.ctx.aerodb.coords(txt).catch(() => null) : null;
+    if (!c || !Number.isFinite(+c.lat) || !Number.isFinite(+c.lon) || Math.abs(c.lat) > 90 || Math.abs(c.lon) > 180)
+      return S.ctx.notify(tt(TX.ptUnknown, {
+        id: txt
+      }), 'warn');
+    const p = {
+      id: m ? m[1] : txt,
+      lat: +c.lat,
+      lon: +c.lon
+    };
+    pts.length && pts.at(-1).id === r.arr ? pts.splice(pts.length - 1, 0, p) : pts.push(p);
+    inp.value = '';
+  } else return;
+  routeEdited();
+}
+/** Paliers du devis : niveau des points intermédiaires (alt_ft) à leur distance cumulée du départ, ramenée à la
+ *  distance du vol si elle a été tapée. */
+function routeSteps(r, distanceNm) {
+  const pts = r?.points || [];
+  if (pts.length < 3) return null;
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + gcNm(pts[i - 1], pts[i]));
+  const k = cum.at(-1) > 0 ? distanceNm / cum.at(-1) : 1,
+    out = pts.slice(1, -1).map((p, i) => p.alt_ft > 0 ? {
+      nm: cum[i + 1] * k,
+      ft: +p.alt_ft
+    } : null).filter(Boolean);
+  return out.length ? out : null;
+}
 /** Relit les points de la route (texte, départ, arrivée) dans aerodb ; distance et route vraie déduites, sauf saisie à la
  *  main. Dernière demande seule retenue. */
 function resolveRoute() {
@@ -1500,13 +1652,8 @@ function resolveRoute() {
       } = await routePoints(r.text, r.dep, r.arr);
     if (seq !== S.routeSeq || !S.body) return;
     r.points = points;
-    if (points.length >= 2) {
-      r.distanceNm = Math.round(points.slice(1).reduce((s, p, i) => s + gcNm(points[i], p), 0));
-      r.trackDeg = Math.round(bearing(points[0], points.at(-1)));
-      r.manual = false;
-      S.body.querySelector('[data-k="dist"]').value = distField(r.distanceNm);
-      S.body.querySelector('[data-k="trk"]').value = r.trackDeg;
-    }
+    routeDerived(r);
+    renderPts();
     S.body.querySelector('[data-unres]').textContent = unresolved.length ? tt(TX.unresolved, {
       l: unresolved.join(', ')
     }) : '';
@@ -1609,12 +1756,12 @@ function applyOfp(ofp) {
 function verticalProfile(q) {
   if (!q || !(q.levelFt > 0)) return null;
   const r = (v, s = 1) => Number.isFinite(v) ? +(Math.round(v / s) * s).toFixed(s < 1 ? 1 : 0) : null,
-    rate = p => p?.min > 0 ? r(q.levelFt / p.min, 10) : null,
+    rate = (p, ft = q.levelFt) => p?.min > 0 ? r(ft / p.min, 10) : null,
     speed = p => p?.min > 0 && Number.isFinite(p.nm) ? r(p.nm / (p.min / 60)) : null;
   return {
     climbFpm: rate(q.climb),
     climbKt: speed(q.climb),
-    descentFpm: rate(q.descent),
+    descentFpm: rate(q.descent, q.endFt ?? q.levelFt),
     descentKt: speed(q.descent),
     tocNm: r(q.climb?.nm, .1),
     todNm: r(q.descent?.nm, .1)
@@ -1689,7 +1836,7 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : ''}</div>
+    res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : ''}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
@@ -1697,7 +1844,7 @@ function refresh() {
   // détail du devis (replié)
   const det = $('[data-details]');
   if ($('[data-fold="details"]').open) det.innerHTML = q?.hasFuel ? `<table class="f-table"><tbody>
-      ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="f-num">${p?.min != null ? hmm(p.min) : ''}</td><td class="f-num">${p?.nm != null ? esc(distTxt(p.nm)) : ''}</td><td class="f-num">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
+      ${[[TX.taxi, q.taxi], [TX.climb, q.climb], [TX.cruise, q.cruise], ...(q.steps ? [[TX.steps, q.steps]] : []), [TX.descent, q.descent]].map(([l, p]) => `<tr><td>${esc(tt(l))}</td><td class="f-num">${p?.min != null ? hmm(p.min) : ''}</td><td class="f-num">${p?.nm != null ? esc(distTxt(p.nm)) : ''}</td><td class="f-num">${esc(fuelTxt(p?.fuel ?? p, unit))}</td></tr>`).join('')}
       <tr><td><b>${esc(tt(TX.trip))}</b></td><td class="f-num">${hmm(q.minutes)}</td><td></td><td class="f-num"><b>${esc(fuelTxt(q.trip, unit))}</b></td></tr>
       <tr><td>${esc(tt(TX.contingency))}</td><td></td><td></td><td class="f-num">${esc(fuelTxt(q.contingency, unit))}</td></tr>
       <tr><td>${esc(tt(TX.reserve))}</td><td></td><td></td><td class="f-num">${esc(fuelTxt(q.reserve, unit))}</td></tr>
@@ -1743,7 +1890,7 @@ function renderSheets() {
         <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><button type="button" data-do="edit">${esc(tt(TX.edit))}</button></div></div>`;
     }).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
-  S.body.oninput = null;
+  S.body.oninput = S.body.onkeydown = null;
   S.body.onchange = e => e.target.matches('[data-file]') && importFiles([...e.target.files]);
 }
 /** Gestes de l'écran Fiches (liste, éditeur, aperçu des changements). */
