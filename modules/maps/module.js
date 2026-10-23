@@ -27,10 +27,14 @@ export const meta = {
     prefix: 'missions/',
     policy: 'reference'
   }, 'cache/maps/'],
-  // préréglage de carte choisi (propre à l'appareil, jamais synchronisé)
+  // mode et couches de la carte (propres à l'appareil, jamais synchronisés) ; vol courant modifié sur la carte (lot 6 :
+  // enregistrement entier, règle record, comme Carburant — modules/fuel/INTEGRATION.md § 3)
   writes: [{
     prefix: 'cache/maps/',
     policy: 'cache'
+  }, {
+    prefix: 'pilot/',
+    merge: 'record'
   }],
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
@@ -165,6 +169,30 @@ const TX = {
       'CAM: vuelo militar (zonas R / D / P, TSA / TRA / CBA, red de vuelo bajo, a todos los niveles)'
     ]
   },
+  editMode: ['Modifier', 'Edit', 'Bearbeiten', 'Editar'],
+  editDone: ['Terminer', 'Done', 'Fertig', 'Terminar'],
+  editHelp: ['Modifier la route sur la carte', 'Edit the route on the map', 'Route auf der Karte bearbeiten',
+    'Editar la ruta en el mapa'
+  ],
+  undo: ['Annuler', 'Undo', 'Rückgängig', 'Deshacer'],
+  undoHelp: ['Annuler le dernier geste', 'Undo the last gesture', 'Letzte Geste rückgängig', 'Deshacer el último gesto'],
+  editHint: [
+    'Glissez un point vers un fixe, une balise ou un terrain ; touchez-en un pour l\'ajouter à la route, ou un point de la route pour le retirer.',
+    'Drag a point onto a fix, a beacon or an airfield; tap one to add it to the route, or a route point to remove it.',
+    'Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz; tippen Sie einen an, um ihn der Route hinzuzufügen, oder einen Routenpunkt, um ihn zu entfernen.',
+    'Arrastre un punto sobre un fijo, una radioayuda o un aeródromo; toque uno para añadirlo a la ruta, o un punto de la ruta para quitarlo.'
+  ],
+  remove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
+  ptDep: ['départ', 'departure', 'Abflug', 'salida'],
+  ptArr: ['arrivée', 'arrival', 'Ankunft', 'llegada'],
+  ptLevel: ['{l} à partir de ce point', '{l} from this point', '{l} ab diesem Punkt', '{l} desde este punto'],
+  ptSame: ['niveau précédent conservé', 'previous level kept', 'vorherige Flughöhe bleibt', 'se mantiene el nivel anterior'],
+  noSnap: ['Lâché loin d\'un fixe, d\'une balise ou d\'un terrain : le point reste où il était.',
+    'Dropped away from a fix, a beacon or an airfield: the point stays where it was.',
+    'Fern von Fix, Funkfeuer oder Flugplatz losgelassen: der Punkt bleibt, wo er war.',
+    'Soltado lejos de un fijo, una radioayuda o un aeródromo: el punto se queda donde estaba.'
+  ],
+  saveFailed: ['Route non enregistrée : {m}', 'Route not saved: {m}', 'Route nicht gespeichert: {m}', 'Ruta no guardada: {m}'],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
   layerNames: {
     corridor: ['Autour de la route seulement', 'Around the route only', 'Nur entlang der Route', 'Solo alrededor de la ruta'],
@@ -251,23 +279,7 @@ function loadMapLibre() {
 /** Points de la route (route.points, positions résolues par Carburant) et dégagement (aerodb). */
 async function readFlight() {
   const f = (await S.ctx.data.get(flightPath()).catch(() => null)) || null,
-    // alt_ft (facultatif, Carburant, INTEGRATION § 3) : niveau tenu à partir du point, jamais au premier ni au dernier ;
-    // le vol part à level.ft, un point sans alt_ft continue le précédent. Pour le profil : lvl (niveau à partir du
-    // point), comme « /F240 » d'une route OFP ; paliers et TOC / TOD tronçon par tronçon
-    raw = (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
-    pts = raw.map((p, i) => ({
-      id: p.id || '',
-      lat: +p.lat,
-      lon: +p.lon,
-      ...(i > 0 && i < raw.length - 1 && p.alt_ft != null && +p.alt_ft > 0 ? {
-        lvl: {
-          ft: +p.alt_ft
-        }
-      } : {})
-    }));
-  if (pts.some(p => p.lvl) && +f?.level?.ft > 0) pts[0].lvl = {
-    ft: +f.level.ft
-  };
+    pts = pointsOf(f);
   let altn = null;
   if (f?.route?.altn && pts.length && S.ctx.aerodb) {
     const c = await S.ctx.aerodb.coords(f.route.altn).catch(() => null);
@@ -284,6 +296,27 @@ async function readFlight() {
     levelFt: +f?.level?.ft || 0,
     updated: f?.updated_at || ''
   };
+}
+/** Points de la carte et du profil d'après l'enregistrement du vol courant. */
+function pointsOf(f) {
+  const // alt_ft (facultatif, Carburant, INTEGRATION § 3) : niveau tenu à partir du point, jamais au premier ni au dernier ;
+    // le vol part à level.ft, un point sans alt_ft continue le précédent. Pour le profil : lvl (niveau à partir du
+    // point), comme « /F240 » d'une route OFP ; paliers et TOC / TOD tronçon par tronçon
+    raw = (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+    pts = raw.map((p, i) => ({
+      id: p.id || '',
+      lat: +p.lat,
+      lon: +p.lon,
+      ...(i > 0 && i < raw.length - 1 && p.alt_ft != null && +p.alt_ft > 0 ? {
+        lvl: {
+          ft: +p.alt_ft
+        }
+      } : {})
+    }));
+  if (pts.some(p => p.lvl) && +f?.level?.ft > 0) pts[0].lvl = {
+    ft: +f.level.ft
+  };
+  return pts;
 }
 
 // ---------------------------------------------------------------- données (aerodb, emprise utile)
@@ -507,6 +540,8 @@ function draw() {
     ctx.restore();
   }
   drawPlanOnMap(ctx, toC, got.routeLabels || []);
+  S.toC = toC;
+  if (S.edit?.on) drawEdit(ctx, toC);
   if (S.data && !S.drawn) {
     S.drawn = true;
     performance.mark('maps:first-draw'); // premier dessin avec les données (mesures : DECISIONS.md)
@@ -611,7 +646,8 @@ async function buildProfile() {
   S.terrain ||= SiaProfile.terrainSampler(9);
   const prof = await MapsProfile.build(pts, {
     levelFt: S.route.levelFt,
-    profile: S.route.flight?.profile || null,
+    // écrit par un autre module (la carte, lot 6) : profile périmé jusqu'au devis refait par Carburant (by 'fuel')
+    profile: S.route.flight?.by && S.route.flight.by !== 'fuel' ? null : S.route.flight?.profile || null,
     airspaces,
     elevation: navigator.onLine === false ? null : S.terrain,
     mora: A ? (lat, lon) => A.mora(lat, lon) : null
@@ -757,7 +793,8 @@ function strip() {
     }) : Number.isFinite(i.mora) ? tt(TX.mora, {
       h: altTxt(i.mora)
     }) : '', zones.length ? zones.join(', ') : tt(TX.noZoneHere)].filter(Boolean).join(' · ');
-  } else if (S.prof) text = tt(TX.hint);
+  } else if (S.edit?.on) text = tt(TX.editHint);
+  else if (S.prof) text = tt(TX.hint);
   if (S.stripEl.textContent !== text) S.stripEl.textContent = text;
 }
 /** Curseur commun à la distance s (mètres ; null : effacé). */
@@ -865,6 +902,7 @@ async function startTiles() {
         if (!S) return;
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
+        if (S.edit.on) return editTap(e.point.x, e.point.y);
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
         if (s != null) {
           hideTips();
@@ -970,10 +1008,377 @@ function showTip(tip, box, x, y, html) {
 let touchAt = -1e9;
 const fromTouch = e => !!e?.sourceCapabilities?.firesTouchEvents || performance.now() - touchAt < 1000;
 const hideTips = () => {
+  if (S?.cardEl && !S.cardEl.hidden) S.cardEl.hidden = true;
   for (const k of ['map', 'prof']) stay(k);
   if (S?.tipEl) S.tipEl.hidden = true;
   if (S?.ptipEl) S.ptipEl.hidden = true;
 };
+// ---------------------------------------------------------------- modifier la route sur la carte (lot 6a)
+// Mode « Modifier » explicite (téléphone comme poste) : un appui à moins de 22 px d'un point tournant le fait glisser
+// (le déplacement de la carte est coupé pour ce geste seulement), lâché sur un fixe, une balise ou un terrain à moins de
+// 20 px il y prend place, ailleurs il revient ; un toucher sur un fixe hors de la route l'insère dans le tronçon qu'il
+// allonge le moins ; un toucher sur un point de la route ouvre sa carte (niveau, « Retirer »). Départ et arrivée ne
+// bougent pas ici. « Annuler » reprend le dernier geste (20 au plus). Chaque geste est montré tout de suite, puis
+// l'enregistrement du vol courant est écrit 400 ms après le dernier (points et texte ensemble, by 'maps' ; Carburant
+// refait le devis — modules/fuel/INTEGRATION.md § 3).
+const HIT = 22,
+  SNAP = 20;
+/** Points de l'enregistrement (positions résolues) : la route telle qu'elle est écrite. */
+const rawPoints = () => (S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
+/** Point de la route sous (x, y) : son rang, ou null ; movable : sans le départ ni l'arrivée. */
+function pointAt(x, y, movable = false) {
+  const pts = rawPoints();
+  let best = null,
+    bd = HIT;
+  pts.forEach((p, i) => {
+    if (movable && (i === 0 || i === pts.length - 1)) return;
+    const q = S.toC(+p.lat, +p.lon),
+      d = Math.hypot(q.x - x, q.y - y);
+    if (d <= bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  return best;
+}
+/** Points où se poser : balises, terrains, points des voies, points RNAV et de report de la vue (données lues). */
+function anchors() {
+  const d = S.data?.data;
+  if (!d) return [];
+  if (S.edit.anchorsFor === d) return S.edit.anchors;
+  const out = [],
+    add = (id, lat, lon, kind) => {
+      if (id && Number.isFinite(+lat) && Number.isFinite(+lon)) out.push({
+        id: String(id),
+        lat: +lat,
+        lon: +lon,
+        kind
+      });
+    };
+  for (const n of d.navaids || []) add(n.id, n.lat, n.lon, 'navaid');
+  for (const a of d.aerodromes || []) add(a.icao || a.id, a.lat, a.lon, 'aerodrome');
+  for (const w of d.airways || [])
+    for (const e of [w.a, w.b]) add(e?.id, e?.lat, e?.lon, 'fix');
+  for (const p of d.points || []) add(p.id, p.lat, p.lon, 'fix');
+  for (const v of d.vrp || []) add(v.id || v.name, v.lat, v.lon, 'vrp');
+  S.edit.anchorsFor = d;
+  return S.edit.anchors = out;
+}
+/** Point où se poser le plus proche de (x, y), à moins de SNAP px ; null sinon. */
+function snapAt(x, y) {
+  let best = null,
+    bd = SNAP;
+  for (const a of anchors()) {
+    const q = S.toC(a.lat, a.lon),
+      d = Math.hypot(q.x - x, q.y - y);
+    if (d <= bd) {
+      bd = d;
+      best = a;
+    }
+  }
+  return best;
+}
+/** Mode Modifier ouvert ou fermé. */
+function setEdit(on) {
+  S.edit.on = on;
+  S.edit.drag = null;
+  S.editBtn.setAttribute('aria-pressed', String(on));
+  const label = tt(on ? TX.editDone : TX.editMode);
+  if (S.editBtn.textContent !== label) S.editBtn.textContent = label;
+  S.undoBtn.hidden = !on;
+  S.undoBtn.disabled = !S.edit.undo.length;
+  hideTips();
+  strip();
+  schedule();
+}
+const NM_KM = 1.852;
+/** Identifiant OACI de coordonnées (4530N00030E) d'un point sans nom utilisable dans le texte de route. */
+const coordId = p => {
+  const f = (v, w, pos, neg) => {
+    const a = Math.abs(v);
+    let d = Math.floor(a),
+      m = Math.round((a - d) * 60);
+    if (m === 60) {
+      d++;
+      m = 0;
+    }
+    return `${String(d).padStart(w, '0')}${String(m).padStart(2, '0')}${v < 0 ? neg : pos}`;
+  };
+  return f(+p.lat, 2, 'N', 'S') + f(+p.lon, 3, 'E', 'W');
+};
+/** Texte de route normalisé depuis les points (forme de Carburant : « DEP PT1 PT2/F280 ARR »). */
+const routeText = pts => pts.map((p, i) => {
+  const id = /^[A-Z0-9]{2,7}$/.test(String(p.id || '')) ? p.id : coordId(p),
+    lvl = i > 0 && i < pts.length - 1 && +p.alt_ft > 0 ? `/F${String(Math.round(+p.alt_ft / 100)).padStart(3, '0')}` : '';
+  return id + lvl;
+}).join(' ');
+/** Geste appliqué : nouveaux points de l'enregistrement, montrés tout de suite, écrits 400 ms après le dernier geste. */
+function commit(points) {
+  const f = S.route.flight || {},
+    pts = points.map(p => ({
+      ...p,
+      lat: Math.round(+p.lat * 1e6) / 1e6,
+      lon: Math.round(+p.lon * 1e6) / 1e6
+    })),
+    dist = pts.length >= 2 ? MapsRender.distances(pts.map(p => ({
+      lat: +p.lat,
+      lon: +p.lon
+    }))).pop() : 0,
+    rec = {
+      ...f,
+      route: {
+        ...(f.route || {}),
+        points: pts,
+        text: routeText(pts),
+        distanceNm: Math.round(dist * 10) / 10,
+        trackDeg: pts.length >= 2 ? Math.round(MapsRender.trackOf(pts[0], pts[pts.length - 1])) : f.route?.trackDeg,
+        from: 'points',
+        manual: false
+      },
+      by: 'maps',
+      updated_at: new Date().toISOString()
+    };
+  S.route = {
+    ...S.route,
+    flight: rec,
+    points: pointsOf(rec),
+    updated: rec.updated_at
+  };
+  S.marks = MapsRender.marks(S.route.points);
+  S.undoBtn.disabled = !S.edit.undo.length;
+  header();
+  schedule();
+  buildProfile();
+  clearTimeout(S.edit.saveT);
+  S.edit.saveT = setTimeout(() => saveRoute(rec), 400);
+}
+/** Écrit la route sur la dernière version de l'enregistrement (un champ d'un autre module n'est jamais perdu). */
+async function saveRoute(rec) {
+  try {
+    const path = flightPath(),
+      cur = (await S.ctx.data.get(path).catch(() => null)) || {};
+    await S.ctx.data.put(path, {
+      ...cur,
+      route: {
+        ...(cur.route || {}),
+        ...rec.route
+      },
+      by: 'maps',
+      updated_at: rec.updated_at
+    });
+  } catch (e) {
+    S.ctx.notify?.(tt(TX.saveFailed, {
+      m: e?.message || String(e)
+    }), 'err');
+  }
+}
+/** Geste : l'état d'avant gardé pour « Annuler » (20 au plus). */
+function remember() {
+  S.edit.undo.push(structuredClone(rawPoints()));
+  if (S.edit.undo.length > 20) S.edit.undo.shift();
+}
+/** Point i posé sur a (son nom et sa position ; le niveau tenu à partir du point est gardé). */
+function movePoint(i, a) {
+  const pts = rawPoints(),
+    old = pts[i];
+  remember();
+  pts[i] = {
+    id: a.id,
+    lat: a.lat,
+    lon: a.lon,
+    ...(old?.alt_ft != null ? {
+      alt_ft: old.alt_ft
+    } : {})
+  };
+  commit(pts);
+}
+/** Point a inséré dans le tronçon qu'il allonge le moins. */
+function insertPoint(a) {
+  const pts = rawPoints();
+  if (pts.length < 2) return;
+  const gc = (p, q) => MapsRender.distances([p, q]).pop();
+  let at = 1,
+    best = Infinity;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p = {
+        lat: +pts[i].lat,
+        lon: +pts[i].lon
+      },
+      q = {
+        lat: +pts[i + 1].lat,
+        lon: +pts[i + 1].lon
+      },
+      add = gc(p, a) + gc(a, q) - gc(p, q);
+    if (add < best) {
+      best = add;
+      at = i + 1;
+    }
+  }
+  remember();
+  pts.splice(at, 0, {
+    id: a.id,
+    lat: a.lat,
+    lon: a.lon
+  });
+  commit(pts);
+}
+/** Point i retiré (jamais le départ ni l'arrivée). */
+function removePoint(i) {
+  const pts = rawPoints();
+  if (i <= 0 || i >= pts.length - 1) return;
+  remember();
+  pts.splice(i, 1);
+  commit(pts);
+}
+/** Dernier geste repris. */
+function undoEdit() {
+  const prev = S.edit.undo.pop();
+  if (!prev) return;
+  hideTips();
+  commit(prev);
+}
+/** Carte d'un point de la route : nom, rôle ou niveau, « Retirer » (sauf départ et arrivée). */
+function openCard(i) {
+  const pts = rawPoints(),
+    p = pts[i];
+  if (!p) return;
+  const end = i === 0 || i === pts.length - 1,
+    lvl = +p.alt_ft > 0 ? tt(TX.ptLevel, {
+      l: +p.alt_ft >= 10000 ? `FL${Math.round(+p.alt_ft / 100)}` : `${Math.round(+p.alt_ft)} ft`
+    }) : tt(TX.ptSame),
+    html = `<div><b>${esc(p.id || coordId(p))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${end ? '' : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
+    q = S.toC(+p.lat, +p.lon);
+  hideTips();
+  showTip(S.cardEl, S.box, q.x, q.y, html);
+}
+/** Toucher dans le mode Modifier : un point de la route ouvre sa carte, un fixe hors de la route s'insère. */
+function editTap(x, y) {
+  if (performance.now() - (S.edit.tapGuard || 0) < 450) return; // clic qui suit un glisser : déjà traité
+  if (!S.cardEl.hidden) return hideTips();
+  const i = pointAt(x, y);
+  if (i != null) return openCard(i);
+  const a = snapAt(x, y);
+  if (a && !rawPoints().some(p => p.id === a.id && Math.abs(+p.lat - a.lat) < 1e-3 && Math.abs(+p.lon - a.lon) < 1e-3)) insertPoint(a);
+}
+/** Poignées des points tournants, élastique et point visé pendant un glisser. */
+function drawEdit(ctx, toC) {
+  const pts = rawPoints(),
+    acc = S.theme.accent,
+    d = S.edit.drag;
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = acc;
+  pts.forEach((p, i) => {
+    if (i === 0 || i === pts.length - 1 || d?.i === i) return;
+    const q = toC(+p.lat, +p.lon);
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 9, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+  if (d?.moved) {
+    const a = toC(+pts[d.i - 1].lat, +pts[d.i - 1].lon),
+      b = toC(+pts[d.i + 1].lat, +pts[d.i + 1].lon),
+      at = d.snap ? toC(d.snap.lat, d.snap.lon) : {
+        x: d.x,
+        y: d.y
+      };
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(at.x, at.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, d.snap ? 12 : 7, 0, Math.PI * 2);
+    ctx.fillStyle = MapsRender.withAlpha(acc, d.snap ? .3 : .15);
+    ctx.fill();
+    ctx.stroke();
+    if (d.snap) {
+      ctx.font = '700 12px Arial,sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = S.theme.bg;
+      ctx.lineWidth = 3;
+      ctx.strokeText(d.snap.id, at.x + 15, at.y - 12);
+      ctx.fillStyle = acc;
+      ctx.fillText(d.snap.id, at.x + 15, at.y - 12);
+    }
+  }
+  ctx.restore();
+}
+/** Gestes du mode Modifier sur la carte : appui sur un point tournant (capture, avant MapLibre), glisser, lâcher. */
+function editGestures() {
+  const pos = e => {
+    const r = S.box.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
+  const ui = e => e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn, .mp-editbar');
+  S.box.addEventListener('pointerdown', e => {
+    if (!S.edit.on || e.button > 0 || !S.toC || ui(e)) return;
+    const [x, y] = pos(e),
+      i = pointAt(x, y, true);
+    if (i == null) return;
+    e.stopPropagation();
+    e.preventDefault();
+    S.edit.drag = {
+      i,
+      id: e.pointerId,
+      x0: x,
+      y0: y,
+      x,
+      y,
+      moved: false,
+      snap: null
+    };
+    hideTips();
+    try {
+      S.box.setPointerCapture(e.pointerId);
+    } catch {
+      /* capture refusée : le glisser suit quand même tant que le doigt reste sur la carte */
+    }
+  }, true);
+  // le geste commencé sur un point n'est pas un déplacement de la carte (MapLibre écoute mousedown et touchstart)
+  for (const t of ['mousedown', 'touchstart', 'touchmove']) S.box.addEventListener(t, e => {
+    if (!S.edit.drag) return;
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
+  }, {
+    capture: true,
+    passive: false
+  });
+  S.box.addEventListener('pointermove', e => {
+    const d = S.edit.drag;
+    if (!d || e.pointerId !== d.id) return;
+    e.stopPropagation();
+    [d.x, d.y] = pos(e);
+    if (!d.moved && Math.hypot(d.x - d.x0, d.y - d.y0) > 6) d.moved = true;
+    d.snap = d.moved ? snapAt(d.x, d.y) : null;
+    schedule();
+  }, true);
+  const end = e => {
+    const d = S.edit.drag;
+    if (!d || e.pointerId !== d.id) return;
+    e.stopPropagation();
+    S.edit.drag = null;
+    S.edit.tapGuard = performance.now();
+    if (e.type === 'pointercancel') return schedule();
+    if (!d.moved) openCard(d.i);
+    else if (d.snap) movePoint(d.i, d.snap);
+    else S.ctx.notify?.(tt(TX.noSnap), 'warn');
+    schedule();
+  };
+  S.box.addEventListener('pointerup', end, true);
+  S.box.addEventListener('pointercancel', end, true);
+  S.editBtn.addEventListener('click', () => setEdit(!S.edit.on));
+  S.undoBtn.addEventListener('click', undoEdit);
+  S.cardEl.addEventListener('click', e => {
+    const i = e.target.closest('[data-remove]')?.dataset.remove;
+    if (i == null) return;
+    hideTips();
+    removePoint(+i);
+  });
+}
 /** Infobulle de la carte en (x, y) : la voie dont le cartouche est sous le doigt, sinon les espaces montrés sous le
  *  point (lat, lon). */
 function mapTip(lat, lon, x, y) {
@@ -1493,6 +1898,14 @@ const STYLE = `
 [data-module="maps"] .mp-layers .mp-l-main{border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
 [data-module="maps"] .mp-layers [data-layers-reset]{margin-top:6px;align-self:flex-start}
 [data-module="maps"] .mp-layers[hidden],[data-module="maps"] .mp-layers-btn[hidden]{display:none}
+[data-module="maps"] .mp-editbar{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:6px}
+[data-module="maps"] .mp-editbar[hidden],[data-module="maps"] .mp-editbar [hidden]{display:none}
+[data-module="maps"] .mp-editbar button{height:var(--sog-touch);min-height:0;padding:0 12px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;font-weight:600;cursor:pointer}
+[data-module="maps"] .mp-editbar .mp-edit[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
+[data-module="maps"] .mp-editbar button:disabled{opacity:.5;cursor:default}
+[data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
+[data-module="maps"] .mp-pcard[hidden]{display:none}
+[data-module="maps"] .mp-pcard .f-btn{align-self:flex-start;margin-top:4px}
 `;
 
 export async function mount(el, ctx) {
@@ -1501,6 +1914,11 @@ export async function mount(el, ctx) {
     el,
     ctx,
     stops: [],
+    edit: {
+      on: false,
+      undo: [],
+      drag: null
+    },
     route: {
       points: []
     },
@@ -1521,7 +1939,9 @@ export async function mount(el, ctx) {
 <div class="mp-layers f-card" hidden role="group" aria-label="${esc(ctx.t(TX.layers))}"><b>${esc(ctx.t(TX.layers))}</b>
 ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
+<div class="mp-editbar"><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
+<div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
 <div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
@@ -1544,7 +1964,11 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     modeOpts: el.querySelector('.mp-mode-opts'),
     layersBtn: el.querySelector('.mp-layers-btn'),
     layersEl: el.querySelector('.mp-layers'),
-    tipEl: el.querySelector('.mp-box .mp-tip'),
+    editBar: el.querySelector('.mp-editbar'),
+    editBtn: el.querySelector('.mp-edit'),
+    undoBtn: el.querySelector('.mp-undo'),
+    cardEl: el.querySelector('.mp-pcard'),
+    tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
     ptipEl: el.querySelector('.mp-prof .mp-tip')
   });
   S.pickEl.addEventListener('change', () => {
@@ -1591,8 +2015,9 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     if (!S.layersEl.hidden) return toggleLayers(false);
     const r = S.box.getBoundingClientRect(),
       x = e.clientX - r.left,
-      y = e.clientY - r.top,
-      v = MapsRender.mercator(S.fit, r.width, r.height, 12),
+      y = e.clientY - r.top;
+    if (S.edit.on) return editTap(x, y);
+    const v = MapsRender.mercator(S.fit, r.width, r.height, 12),
       s = S.prof ? MapsProfile.nearest(S.prof, v.toC, x, y) : null;
     if (s != null) {
       hideTips();
@@ -1671,7 +2096,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   if (!TX.presets[S.preset]) S.preset = 'auto';
   fillModes();
   // une carte de mission garde son profil : ni mode ni couches
-  S.modesEl.hidden = S.layersBtn.hidden = !!ctx.query?.mission;
+  S.modesEl.hidden = S.layersBtn.hidden = S.editBar.hidden = !!ctx.query?.mission;
+  editGestures();
   if (ctx.query?.mission) await applyMission();
   else {
     await applyFlight();

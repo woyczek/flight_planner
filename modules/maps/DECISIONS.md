@@ -281,3 +281,19 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     TRA, RMZ at every level); hover visible 2 s after leaving, gone at 5.6 s, closed by a click; background
     `rgb(255 255 255 / .65)`. No JavaScript error. The page width at 375 px is still 389–393 px because of the
     frame's header (see lot 5c).
+- **23 Oct 2026 — lot 6a: editing the route on the map** (design validated by the ergonomics session).
+  - **The gesture is caught before MapLibre**: a capturing `pointerdown` on the map box decides whether the press is on
+    a waypoint; then `mousedown`, `touchstart` and `touchmove` are stopped for that gesture only, which is what
+    MapLibre listens to. MapLibre's own `dragPan` is never switched off, so a press elsewhere still pans.
+  - **Anchors are what the map has read** (navaids, aerodromes, airway ends, RNAV points, VRP): no extra read, and
+    what can be snapped to is what the user sees. No free point in 6a.
+  - **Shown at once, written after 400 ms**, merged into the latest version of the record: fuel may have written in
+    between (its requote), and its fields must not be lost.
+  - **Text from the points**: as fuel does when it edits points, so airways of a typed route (`UN869`) are not kept
+    once the route is edited here; the positions are in `points` (fuel's rule since b7c034620).
+  - **Bench** (test page, LFRS → LFML on a view of the Bay of Biscay; 1280 px mouse and 375 px touch, same results):
+    LUGEN dragged onto CNA → record `LFRS CNA NEPIX LFML`, `by: 'maps'`, 377.7 NM, the map did not move during the
+    drag; tap on PT off the route → inserted between LFRS and CNA (420.7 NM); tap on PT → card "niveau précédent
+    conservé · Retirer" → removed; drop 40 px away from any anchor → unchanged; Undo ×3 → back to LUGEN, Undo
+    disabled; Done → mode closed. The profile draws its own TOC (63 NM) while the record is the map's. No
+    JavaScript error.

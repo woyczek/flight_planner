@@ -1,7 +1,7 @@
 # Map
 
 See your flight on an aeronautical chart and its vertical profile, or the maps of a mission: airspaces, airfields,
-beacons, airways, minimum altitudes. The map is for viewing only: it changes nothing.
+beacons, airways, minimum altitudes. The flight's route can also be changed on the map.
 
 ## How to use
 
@@ -59,8 +59,12 @@ airline. For a mission, a second list chooses among its maps (overview, target, 
 the studio: same frame, same display profile, with the mission's points, its hatched areas and its route. The vertical
 profile then shows the mission's.
 
-**Editing the route.** The map does not change the route: “Edit the route” opens Fuel, where you rework it. When you
-come back to the map, the new flight is already there.
+**Editing the route on the map.** Tap “Edit” at the top right of the map: the waypoints get a circle. Drag a
+point onto a fix, a beacon or an airfield: it settles there (dropped elsewhere, it goes back). Tap a fix or a beacon
+off the route: it is added to the nearest segment. Tap a route point: its card gives its level and offers
+“Remove”. Departure and arrival do not move here. “Undo” takes back the last gesture. Each change is saved in the
+flight at once, and Fuel redoes the quote; the profile follows. “Done” closes the mode, and the map moves under
+your finger again. To type the route as text, “Edit the route” opens Fuel's Route step.
 
 ## Without network
 

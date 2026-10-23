@@ -1,7 +1,7 @@
 # Carte
 
 Voir son vol sur une carte aéronautique et son profil vertical, ou les cartes d'une mission : espaces aériens,
-terrains, balises, voies aériennes, altitudes minimales. La carte se consulte seulement : elle ne modifie rien.
+terrains, balises, voies aériennes, altitudes minimales. La route du vol se modifie aussi sur la carte.
 
 ## Comment s'en servir
 
@@ -61,8 +61,13 @@ de la compagnie. Pour une mission, une seconde liste choisit parmi ses cartes (v
 Chaque carte est redessinée comme dans le studio : même cadre, même réglage d'affichage, avec les points de la
 mission, ses zones hachurées et son cheminement. Le profil vertical montre alors celui de la mission.
 
-**Modifier la route.** La carte ne change pas la route : « Modifier la route » ouvre Carburant, où vous la reprenez.
-En revenant sur la carte, le nouveau vol est déjà là.
+**Modifier la route sur la carte.** Touchez « Modifier » en haut à droite de la carte : les points tournants
+s'entourent d'un cercle. Faites glisser un point jusqu'à un fixe, une balise ou un terrain : il s'y pose (lâché
+ailleurs, il revient à sa place). Touchez un fixe ou une balise hors de la route : il s'ajoute au tronçon le plus
+proche. Touchez un point de la route : sa carte donne son niveau et propose « Retirer ». Le départ et l'arrivée ne
+bougent pas ici. « Annuler » reprend le dernier geste. Chaque changement est enregistré aussitôt dans le vol, et
+Carburant refait le devis ; le profil suit. « Terminer » ferme le mode, et la carte se déplace de nouveau au doigt.
+Pour taper la route en texte, « Modifier la route » ouvre l'étape Route de Carburant.
 
 ## Sans réseau
 

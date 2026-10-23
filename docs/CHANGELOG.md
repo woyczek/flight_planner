@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 6a: edit the route on the map** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — an
+  "Edit" mode: drag a waypoint onto a fix, a beacon or an airfield, tap one to insert it, tap a route point to remove
+  it, undo the last gestures; each change is saved in the current flight (`by: 'maps'`) and Fuel redoes the quote.
 - **Map, lot 5d: six map modes** (`modules/maps/`, `frame/lib/icons.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — the
   user's mode selector (Auto, Low IFR, High IFR, VFR, Topo, CAM) replaces the preset list; Topo shows the terrain with
   a minimal overlay, CAM adds R / D / P, TSA / TRA / CBA and the low-flying network at all levels; the mouse tooltip

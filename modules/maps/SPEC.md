@@ -146,6 +146,25 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **TOC and TOD on the map**: their label goes north-east of the diamond, else south-east, north-west, south-west,
   wherever it does not cover a route label (`draw()` returns their frames).
 - **"Edit the route"** opens `#fuel?from=maps&focus=route` (fuel's Route step, text field focused).
+- **Editing the route on the map** (lot 6a; hidden for mission maps): an "Edit" toggle at the top right of the map
+  box, with "Undo" beside it in the mode; the line under the profile gives the gestures.
+  - A press within 22 px of a waypoint (not departure nor arrival) drags it: the press is caught before MapLibre
+    (`pointerdown` in the capture phase, `mousedown` / `touchstart` / `touchmove` stopped while dragging), so the map
+    does not pan; anywhere else the map pans as usual.
+  - While dragging: rubber band from the previous to the next point, the anchor under the finger (navaid, aerodrome,
+    airway point, RNAV point, VRP of the data read, within 20 px) ringed with its id. Released on it: the point takes
+    its id and position, and keeps its `alt_ft`. Released elsewhere: the point goes back, with a notification.
+  - A tap on an anchor off the route inserts it where it lengthens the route least; a tap on a route point opens its
+    card (id, departure / arrival or the level held from it, "Remove" for a waypoint); the click that follows a drag
+    is ignored.
+  - "Undo" restores the points before the last gesture (20 kept, in memory).
+  - Each gesture is shown at once (points, header, profile); 400 ms after the last one, the record is written:
+    `route.points` (rounded to 1e-6°), `route.text` normalised from the points (`DEP PT1 PT2/F280 ARR`, ICAO
+    coordinates `4530N00030E` for a name that is not 2 to 7 letters or digits), `distanceNm`, `trackDeg`,
+    `from: 'points'`, `manual: false`, `by: 'maps'`, `updated_at`, merged into the latest version read (no other field
+    lost).
+  - While the record is not `by: 'fuel'`, the profile ignores fuel's `profile` (TOC, TOD) and computes its own;
+    fuel redoes the quote and writes it back (`modules/fuel/INTEGRATION.md` § 3).
 - **Texts**: four languages, through `ctx.t`. Data labels (codes, names, levels) are not translated.
 
 ## 4 bis. Vertical profile (`profile.js`, `window.MapsProfile`)

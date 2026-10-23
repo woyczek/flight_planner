@@ -1,7 +1,7 @@
 # Karte
 
 Ihren Flug auf einer Luftfahrtkarte und in seinem Vertikalprofil sehen, oder die Karten einer Mission: Lufträume,
-Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Karte dient nur zum Ansehen: Sie ändert nichts.
+Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt sich auch auf der Karte ändern.
 
 ## So geht’s
 
@@ -63,8 +63,14 @@ Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten 
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
 
-**Die Route ändern.** Die Karte ändert die Route nicht: „Route bearbeiten“ öffnet Kraftstoff, wo Sie sie
-überarbeiten. Zurück auf der Karte ist der neue Flug schon da.
+**Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten
+einen Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
+losgelassen, kehrt er zurück). Tippen Sie einen Fix oder ein Funkfeuer abseits der Route an: er kommt in den
+nächsten Abschnitt. Tippen Sie einen Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an.
+Abflug und Ankunft bewegen sich hier nicht. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im
+Flug gespeichert, und Kraftstoff rechnet neu; das Profil folgt. „Fertig“ schließt den Modus, und die Karte lässt sich
+wieder mit dem Finger verschieben. Um die Route als Text einzugeben, öffnet „Route bearbeiten“ den Schritt Route von
+Kraftstoff.
 
 ## Ohne Netz
 

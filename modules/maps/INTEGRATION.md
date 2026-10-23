@@ -9,7 +9,8 @@ How the frame mounts the map module and what it needs from the frame, aerodb and
 export const meta = {
   id: 'maps', apps: ['pilot'], level: 1,
   reads: ['pilot/', { prefix: 'missions/', policy: 'reference' }, 'cache/maps/'],
-  writes: [{ prefix: 'cache/maps/', policy: 'cache' }],                       // map mode and layers, per device
+  writes: [{ prefix: 'cache/maps/', policy: 'cache' },                        // map mode and layers, per device
+    { prefix: 'pilot/', merge: 'record' }],                                   // the current flight, edited on the map
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],  // kept at installation
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],                 // kept at first use
@@ -60,6 +61,11 @@ keeps the module and fuel scrolls to that step).
   profile then draws the steps and computes TOC and TOD per segment.
 - Missions keep the studio's meaning for `route_points[].alt_ft`: the altitude reached at the point (`mission.js`).
 - Every write of the file redraws the map and the profile (debounced 300 ms).
+- **Maps writes the record** when the route is edited on the map (lot 6a): `route.points`, `route.text` (fuel's
+  normalised form, from the points), `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`, `by: 'maps'`,
+  `updated_at`, on the latest version read; every other field is kept. Fuel requotes on `by` ≠ `fuel`; until then
+  maps draws its own TOC and TOD. The airways of a typed route are not kept in the text once the route is edited on
+  the map (the text is rebuilt from the points, as fuel does when it edits points).
 
 ## 5. Costs (measured, see DECISIONS.md)
 

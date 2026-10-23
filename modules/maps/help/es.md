@@ -1,7 +1,7 @@
 # Mapa
 
 Ver su vuelo en una carta aeronáutica y su perfil vertical, o los mapas de una misión: espacios aéreos, aeródromos,
-radioayudas, aerovías, altitudes mínimas. El mapa solo se consulta: no modifica nada.
+radioayudas, aerovías, altitudes mínimas. La ruta del vuelo también se modifica en el mapa.
 
 ## Cómo usarlo
 
@@ -60,8 +60,13 @@ la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista 
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
-**Modificar la ruta.** El mapa no cambia la ruta: «Editar la ruta» abre Combustible, donde usted la retoma. Al volver
-al mapa, el nuevo vuelo ya está allí.
+**Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de la ruta se rodean de un
+círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar,
+vuelve a su sitio). Toque un fijo o una radioayuda fuera de la ruta: se añade al tramo más cercano. Toque un punto de
+la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la llegada no se mueven aquí. «Deshacer» retoma el
+último gesto. Cada cambio se guarda en el vuelo en seguida, y Combustible rehace el presupuesto; el perfil sigue.
+«Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, «Editar la ruta»
+abre el paso Ruta de Combustible.
 
 ## Sin conexión
 
