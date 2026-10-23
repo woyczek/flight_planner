@@ -4,6 +4,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — `keepScroll` from the frame** (frame lot 17, `frame/lib/dom.js`): the module's copy is gone, and
+  so is `renderPlan`'s own restoring of the field being typed (value, focus, selection by `data-k` / `data-i`):
+  the frame's helper does both (frame INTEGRATION § 6: a render never changes the scroll nor what is typed).
+  Checked on 8804: two map writes at 600 px, the page stayed at 600.
 - **23 Oct 2026 — `progress.actual` belongs to the frame** (Simplification's bug: fuel rewrote the current flight
   every 10 to 35 s without `progress.actual`, erasing the real position). `frame/lib/current_flight.js` `merge`:
   the record is read just before every write, fuel replaces only `FUEL_FIELDS` and, in `progress`, only

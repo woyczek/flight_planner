@@ -18,6 +18,9 @@ import * as CF from '../../frame/lib/current_flight.js';
 import {
   svg
 } from '../../frame/lib/icons.js';
+import {
+  keepScroll
+} from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 
 export const meta = {
   id: 'fuel',
@@ -36,7 +39,7 @@ export const meta = {
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/metar.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js',
-    '../../frame/lib/external_links.js', '../../frame/lib/icons.js'
+    '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js'
   ]
 };
 
@@ -1198,58 +1201,11 @@ const STYLE = `
 [data-module="fuel"] .fu-wx:last-child{border-bottom:0}`;
 
 // ---------------------------------------------------------------- écran Préparer
-/** Rend sans bouger le défilement : la position de chaque conteneur qui défile (la page comprise) est gardée et la
- *  hauteur du bloc tenue pendant le rendu, puis les positions sont remises après le rendu et à l'image suivante (un
- *  contenu recréé qui rétrécit un instant ne ramène plus la page en haut). */
-function keepScroll(box, draw) {
-  const sc = [];
-  for (let e = box?.parentElement; e; e = e.parentElement)
-    if (e.scrollHeight > e.clientHeight) sc.push([e, e.scrollTop]);
-  const doc = document.scrollingElement;
-  if (doc && !sc.some(([e]) => e === doc)) sc.push([doc, doc.scrollTop]);
-  if (box) box.style.minHeight = `${box.offsetHeight}px`;
-  try {
-    return draw();
-  } finally {
-    const put = () => {
-      for (const [e, t] of sc)
-        if (e.scrollTop !== t) e.scrollTop = t;
-    };
-    put();
-    requestAnimationFrame(() => {
-      put();
-      if (box) box.style.minHeight = '';
-      requestAnimationFrame(put);
-    });
-  }
-}
 /** Redessine l'écran Préparer en gardant le champ en cours de frappe et le défilement (renderPlanBody fait le dessin). */
 function renderPlan() {
-  // champ en cours de frappe (data-k, et data-i pour les niveaux des points) : sa valeur, son focus et sa sélection
-  // sont rendus après le redessin — un rendu ne réécrit jamais ce que l'on tape
-  const act = S.body?.contains(document.activeElement) && document.activeElement.dataset?.k ? {
-    k: document.activeElement.dataset.k,
-    i: document.activeElement.dataset.i,
-    v: document.activeElement.value,
-    a: document.activeElement.selectionStart,
-    b: document.activeElement.selectionEnd
-  } : null;
-  try {
-    keepScroll(S.body, renderPlanBody);
-  } finally {
-    const el = act && S.body.querySelector(`[data-k="${act.k}"]${act.i != null ? `[data-i="${act.i}"]` : ''}`);
-    if (el && el.type !== 'checkbox' && el.tagName !== 'SELECT') {
-      el.value = act.v;
-      el.focus({
-        preventScroll: true
-      });
-      try {
-        el.setSelectionRange(act.a, act.b);
-      } catch {
-        /* champ sans sélection (date) */
-      }
-    }
-  }
+  // champ en cours de frappe (data-k, et data-i pour les niveaux des points) : valeur, focus et sélection rendus par
+  // keepScroll du cadre (frame/lib/dom.js) — un rendu ne réécrit jamais ce que l'on tape
+  keepScroll(S.body, renderPlanBody);
 }
 /** Dessine l'écran Préparer (champs une fois ; résultats redessinés par refresh). */
 function renderPlanBody() {
