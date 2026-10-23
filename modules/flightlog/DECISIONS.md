@@ -2,6 +2,9 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — renders keep the scroll** (user's bug seen in fuel): the list is redrawn at every reading of the
+  reports, the site's log and the network; `render()` now keeps the scroll (`keepScroll`) and gives the focus back
+  without scrolling.
 - **23 Oct 2026 — the flight in progress** (arbitration 16 of the end-to-end pass): a flight started in fuel and not
   yet reported shows on top, before the site's log knows it. Its "Write the report" opens report rather than a
   handoff with values: report's "current flight" card offers it first and, through its own "Use", marks it done

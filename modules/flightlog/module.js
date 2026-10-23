@@ -224,9 +224,38 @@ const STYLE = `
   [data-module="flightlog"] .f-list .f-item{grid-template-columns:7em 9em 10em minmax(0,1fr) 5em minmax(0,1fr)}
 }`;
 
-/** Dessine les tuiles, les filtres, la liste et « Plus ». */
+/** Rend sans bouger le défilement : la position de chaque conteneur qui défile (la page comprise) est gardée et la
+ *  hauteur du bloc tenue pendant le rendu, puis les positions sont remises après le rendu et à l'image suivante (un
+ *  contenu recréé qui rétrécit un instant ne ramène plus la page en haut). */
+function keepScroll(box, draw) {
+  const sc = [];
+  for (let e = box?.parentElement; e; e = e.parentElement)
+    if (e.scrollHeight > e.clientHeight) sc.push([e, e.scrollTop]);
+  const doc = document.scrollingElement;
+  if (doc && !sc.some(([e]) => e === doc)) sc.push([doc, doc.scrollTop]);
+  if (box) box.style.minHeight = `${box.offsetHeight}px`;
+  try {
+    return draw();
+  } finally {
+    const put = () => {
+      for (const [e, t] of sc)
+        if (e.scrollTop !== t) e.scrollTop = t;
+    };
+    put();
+    requestAnimationFrame(() => {
+      put();
+      if (box) box.style.minHeight = '';
+      requestAnimationFrame(put);
+    });
+  }
+}
+/** Dessine la liste sans bouger le défilement (relectures des CR, du journal et du réseau). */
 function render() {
   if (!S?.body) return;
+  keepScroll(S.body, renderBody);
+}
+/** Dessine les tuiles, les filtres, la liste et « Plus ». */
+function renderBody() {
   const v = S.view,
     list = F.filter(S.flights || [], {
       days: +v.days,
@@ -268,7 +297,9 @@ function render() {
       <button type="button" data-do="csv">${esc(tt(TX.csv))}</button><button type="button" data-do="refresh">${esc(tt(TX.refresh))}</button></div></details>`;
   if (focus) {
     const el = S.body.querySelector(`[data-k="${focus}"]`);
-    el?.focus();
+    el?.focus({
+      preventScroll: true
+    });
     if (el?.type === 'search') el.setSelectionRange(el.value.length, el.value.length);
   }
 }
