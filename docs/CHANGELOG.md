@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 7b** (`modules/maps/`, `contours.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — each element of the
+  map has its own zoom range per mode (VRP very close, CTR close, TMA in a medium view, FIR from afar), tuned by the
+  administrator on `#maps?tune=1` with the map redrawn live and stored in `airline/map_profiles.json` (studio
+  format); a "Complexity (trial)" slider shifts them all; Topo and VFR show contour lines close up, computed from the
+  relief tiles.
 - **Map, lot 7a** (`modules/maps/`; SPEC, DECISIONS, help ×4) — one tooltip for hover, tap and click (follows the
   pointer, stays 5 seconds); map modes as icons; obstacle heights close up ("434 AGL (771)"); the map keeps the
   user's view after a route edit or a new quote, only "Recentre" or another flight reframes it.

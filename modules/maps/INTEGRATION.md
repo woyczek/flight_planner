@@ -42,6 +42,10 @@ export const meta = {
 - **Icons**: `frame/lib/icons.js` (`svg`), imported by the module; `wand-sparkles` added there for the map modes
   (owner: design, the frame session told).
 
+- **Display profiles of the modes**: `airline/map_profiles.json` (read, followed; written by the administrator's tuning
+  page `#maps?tune=1`), schema in SPEC.md § 4 quinquies. `meta.reads` has `airline/`, `meta.writes` has that file with
+  the `record` merge. The pilot's `fuel.json` (`displayAlt`) gives the contour interval.
+
 ## 3. What it asks of aerodb
 
 `airspaces`, `aerodromes`, `navaids`, `airways`, `moraCells` and `obstacles` by `bbox`; `coords` (the alternate);

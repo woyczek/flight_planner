@@ -26,8 +26,8 @@ espacio aéreo en el que está en ese momento.
 **Seis modos de mapa.** El botón arriba a la izquierda del mapa muestra el modo elegido; tóquelo para ver los seis
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
 superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en
-VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve, solo con los aeródromos, las ciudades y los
-obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las
+VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve y, de cerca, las curvas de nivel (cada 500 ft o 100 m según su unidad,
+las directoras numeradas), solo con los aeródromos, las ciudades y los obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las
 zonas R, D, P, TSA, TRA, CBA y la red de vuelo bajo a todos los niveles. «Auto» elige según el nivel de su vuelo (IFR
 alto desde el FL195). El modo se conserva en este dispositivo.
 
@@ -41,7 +41,9 @@ suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
 notificación VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo. Marque o desmarque: el mapa sigue, y
 su elección se conserva para este ajuste en este dispositivo. «Restablecer todo» vuelve a la elección de origen.
 «Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la cercanía de la ruta;
-desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos.
+desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos. Abajo del todo, el control «Complejidad (prueba)» muestra menos detalles hacia la
+izquierda, más hacia la derecha, en todos los zooms. Cada elemento del mapa tiene su rango de zoom: los puntos de
+notificación VFR solo aparecen muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos.
 
 **Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de
 un espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto

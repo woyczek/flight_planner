@@ -294,6 +294,69 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Changes**: a change of `data-design` or `data-tone` on `<html>`, or of `prefers-color-scheme`, reads the tokens
   again. The module switches the base style when night changes, then redraws the map and the profile.
 
+## 4 quinquies. Zoom thresholds, contour lines, tuning of the profiles (lot 7b)
+
+- **Zoom thresholds**: every element drawn on a flight map has a range of MapLibre zoom (512 px tiles; `zoomOf(px per
+  degree)`, `pxOfZoom(z)`) in which it is shown, per mode: `profile.elements.zoom = { key: [min, max] }` (max 24: no
+  upper limit; a key without a range is always shown). Keys (`ZOOM_KEYS`): airspace families `asFir` (FIR, UIR, UTA,
+  LTA, OCA, FRA), `asTma`, `asCta`, `asCtr`, `asR`, `asD`, `asP`, `asTsa` (TSA, TRA, CBA), `asOther`; `zoneLabels`
+  (airspace names); `awLow`, `awHigh`, `awLabels` (segment distance and tracks); `navaids`, `fixes` (airway points),
+  `vrp`, `obstacles`, `mora`; `citiesBig` (200,000 and more), `citiesMid` (30,000), `citiesSmall`; `graticule`, `aar`,
+  `nat`, `wind`, `contours`.
+  - `atZoom(profile, z)` cuts the elements out of their range; `byZoom(data, profile, z, tier)` keeps the data shown
+    (families, beacons, VRP, obstacles, MORA, towns); from afar (`tier` far) only the large aerodromes. Mission maps are
+    not concerned (their studio profile shows what it asks).
+  - The view's zoom is shifted by ¾ of a level per step of the "Complexity (trial)" slider of the Layers panel (−2 to
+    +2, per mode and device), so the whole set moves together.
+  - Starting values (`ZOOM_IFR`, `ZOOM_VFR`): in IFR (Auto, Low, High IFR, CAM) the route corridor already thins the
+    map, so almost everything stays visible (beacons and airway points from 5.75, segment labels from 7.75, VRP from
+    9.25, obstacles from 8.5, medium towns from 6.5, small towns from 8.5, contours from 9); in VFR and Topo the
+    airspaces are graded: FIR up to 7, TMA and CTA from 6, R, D and TSA from 6.5, CTR from 7, P from 7.5, others from 8,
+    names from 6. Landmarks: France on a screen ≈ 5.5, on a phone ≈ 4.3, 100 NM wide on a screen ≈ 8.5.
+  - Precedence: the built-in values, then the airline's (`airline/map_profiles.json`), then the device's
+    (`cache/maps/ui.json`, `layers[mode].zoom`), then the values being tuned (`#maps?tune=1`).
+- **Contour lines** (`contours.js`, `window.MapsContours`): computed in the browser from the Terrarium tiles (the
+  host of the relief, nothing new): marching squares on each tile's elevation grid (a cell every 2 tile pixels),
+  segments kept per tile and interval, projected at each drawing; tile zoom from the view (8 to 12, at most 16 tiles);
+  in memory only (48 tiles). Interval 500 ft (or 100 m when the pilot's altitude unit is metres, `fuel.json`
+  `displayAlt`), every fifth an index contour, thicker and numbered. Drawn under the aeronautical overlay, in VFR and
+  Topo, within the `contours` range (from 9) and with the "Contour lines" layer.
+- **Tuning of the profiles (administrator)**: `#maps?tune=1`, reachable by its address only (no button, nothing in the
+  user help). A panel beside the live map (on a screen of 1,000 px and more; above the map otherwise; read only on a
+  phone): the current zoom (and its NM per cm of screen), the six mode tabs, one line per key with a double slider
+  "from … to …" (zoom 0 to 18, step ¼; 18 means no upper limit) labelled in zoom and NM per cm, the current zoom
+  marked on each slider. The map is redrawn at every move of a slider. "Reset all" (the mode's starting values),
+  "Keep on this device" (`cache/maps/ui.json`), "Save for the airline" (`airline/map_profiles.json`).
+- **The airline's profiles** — `airline/map_profiles.json`, record (merge `record`, the newest `updated_at` wins):
+
+```json
+{
+  "schema": 1,
+  "updated_at": "2026-10-23T18:00:00Z",
+  "by": "maps",
+  "profiles": {
+    "vfr": {
+      "base": "ofm-liberty",
+      "zones": ["D", "P", "CTR", "PJE", "FIR"],
+      "elements": {
+        "vrpPoints": true,
+        "zoom": { "vrp": [9.25, 24], "asCtr": [7, 24], "asTma": [6, 24], "asFir": [0, 7] }
+      }
+    },
+    "auto": {}, "low": {}, "high": {}, "topo": {}, "cam": {}
+  }
+}
+```
+
+  - `profiles[mode]` is a display profile in the studio's `profile_def` format (`base`, `layers`, `cities`,
+    `population`, `zones`, `zoneList`, `zoneMode`, `corridorNm`, `elements`), complete or partial: what it carries
+    replaces the built-in profile's fields, and its `elements` (and `elements.zoom`, key by key) are merged into the
+    built-in ones. Modes: `auto`, `low`, `high`, `vfr`, `topo`, `cam`.
+  - V3 extensions of `profile_def`: `elements.zoom` (above), `elements.vfrDensity`, `hillshade` (Topo relief),
+    `elements.fixes`, `elements.awLabels`.
+  - The device's override stays in `cache/maps/ui.json` (`layers[mode]`: the Layers panel's ticks, `detail`, `zoom`).
+  - Changes of the file are followed (`ctx.data.watch`): the map takes them at once.
+
 ## 5. Invariants
 
 1. Read only: the module writes nothing (`meta.writes` is empty).

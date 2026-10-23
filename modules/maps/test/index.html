@@ -175,7 +175,7 @@
             trigram: 'TST'
           },
           // ?mission=<ID>&map=<fichier> : comme l'adresse #maps?mission=…&map=… du cadre
-          query: Object.freeze(Object.fromEntries(['mission', 'map', 'view'].filter(k => Q.get(k)).map(k => [k, Q.get(k)])))
+          query: Object.freeze(Object.fromEntries(['mission', 'map', 'view', 'tune'].filter(k => Q.get(k)).map(k => [k, Q.get(k)])))
         };
       const t0 = performance.now();
       await mod.mount(document.getElementById('host'), ctx);

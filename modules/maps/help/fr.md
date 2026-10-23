@@ -27,7 +27,8 @@ hauteur du relief, et l'espace aérien où vous êtes à ce moment-là.
 **Six modes de carte.** Le bouton en haut à gauche de la carte montre le mode choisi ; touchez-le pour voir les six
 modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
 hautes (UN…, UM…), espaces au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR,
-points de report et obstacles. « Topo » : le relief, avec seulement les terrains, les villes et les obstacles.
+points de report et obstacles. « Topo » : le relief et, de près, les courbes de niveau (tous les 500 ft ou 100 m selon votre unité, les
+maîtresses chiffrées), avec seulement les terrains, les villes et les obstacles.
 « CAM » : vol militaire, l'IFR de votre niveau plus les axes de ravitaillement, les tracks NAT du jour, les zones R, D, P,
 TSA, TRA, CBA et le RTBA à tous les niveaux.
 « Auto » choisit selon le niveau de votre vol (IFR haut à partir du FL195). Le mode est gardé sur cet appareil.
@@ -42,7 +43,9 @@ d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, 
 VFR, obstacles, altitudes minimales, villes, canevas, dégagement. Cochez ou décochez : la carte suit, et votre choix
 est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. « Autour de la route
 seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ; décochée, toute la
-carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon.
+carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon. Tout en bas, le curseur « Complexité (essai) » montre moins de détails vers la
+gauche, plus vers la droite, à tous les zooms. Chaque élément de la carte a sa plage de zoom : les points de report
+VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les FIR de loin.
 
 **Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
 ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →

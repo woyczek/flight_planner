@@ -707,13 +707,13 @@
         ctx.fillStyle = '#c62828';
         ctx.fillText(lvl, 0, f * 1.35);
       }
-      if (tier === 'near' && Number.isFinite(+g.nm)) {
+      if (el(profile, 'awLabels') !== false && Number.isFinite(+g.nm)) {
         ctx.font = `700 ${f * .85}px Arial,sans-serif`;
         ctx.fillStyle = col;
         ctx.fillText(String(Math.round(+g.nm)), 0, -f * 1.3);
       }
       ctx.restore();
-      if (tier === 'near' && len > 140 * scale) {
+      if (el(profile, 'awLabels') !== false && len > 140 * scale) {
         // routes vraies près de chaque bout (comme « 097° » sur les cartes)
         for (const [A, B, from] of [
             [P, Q, g.a],
@@ -1320,18 +1320,58 @@
    *  et la route de chaque tronçon, les VRP et les obstacles du profil. */
   const tierOf = px => px < 80 ? 'far' : px < 300 ? 'mid' : 'near';
 
-  function densify(data, tier, profile) {
-    if (tier === 'near') return data;
-    // VFR (élément vfrDensity) : points de report à tous les zooms ; obstacles de près seulement (près de 2 000 sur une
-    // vue moyenne de 200 NM : illisible)
-    const vfr = on(profile, 'vfrDensity'),
+  // ---- seuils de zoom (lot 7b) : chaque élément dessiné entre [min, max] de zoom MapLibre (tuiles de 512 px), réglés
+  // par mode (profile.elements.zoom, #maps?tune=1) ; sans seuil, toujours
+  /** Zoom MapLibre d'une échelle en px par degré, et l'inverse. */
+  const zoomOf = px => Math.log2(Math.max(1e-6, px) * 360 / 512),
+    pxOfZoom = z => 512 * 2 ** z / 360;
+  /** Clé de seuil de la famille d'un espace. */
+  const zoneKey = t => {
+    t = String(t || '').toUpperCase();
+    if (/^(FIR|UIR|UTA|LTA|OCA|FRA)$/.test(t)) return 'asFir';
+    if (/^(TMA|CTA|CTR|R|D|P)$/.test(t)) return `as${t[0]}${t.slice(1).toLowerCase()}`;
+    if (/^(TSA|TRA|CBA)$/.test(t)) return 'asTsa';
+    return 'asOther';
+  };
+  /** Vrai si l'élément key est dessiné au zoom z (profile.elements.zoom[key] = [min, max]). */
+  const visibleAt = (profile, key, z) => {
+    const r = profile?.elements?.zoom?.[key];
+    return !Array.isArray(r) || (z >= +r[0] && z <= (r[1] == null ? 99 : +r[1]));
+  };
+  /** Classe de taille d'une ville : grandes (200 000 hab. et plus), moyennes (30 000), petites. */
+  const cityKey = c => (+c.population || 0) >= 2e5 ? 'citiesBig' : (+c.population || 0) >= 3e4 ? 'citiesMid' : 'citiesSmall';
+  /** Profil du dessin au zoom z : les éléments hors de leurs seuils sont coupés. */
+  function atZoom(profile, z) {
+    const v = k => visibleAt(profile, k, z);
+    return {
+      ...profile,
+      elements: {
+        ...(profile.elements || {}),
+        airwaysLow: on(profile, 'airwaysLow') && v('awLow'),
+        airwaysHigh: on(profile, 'airwaysHigh') && v('awHigh'),
+        graticule: on(profile, 'graticule') && v('graticule'),
+        zoneLabelsShow: on(profile, 'zoneLabelsShow') && v('zoneLabels'),
+        aarTracks: on(profile, 'aarTracks') && v('aar'),
+        natTracks: on(profile, 'natTracks') && v('nat'),
+        fixes: el(profile, 'fixes') !== false && v('fixes'),
+        awLabels: v('awLabels')
+      }
+    };
+  }
+  /** Données de la vue gardées par les seuils (familles d'espaces, balises, points de report, obstacles, MORA, villes) ;
+   *  de loin (tier far), les grands terrains seulement. */
+  function byZoom(data, profile, z, tier) {
+    const v = k => visibleAt(profile, k, z),
       big = a => (+a.hardLen || 0) >= 1800 || (a.controlled && (+a.hardLen || 0) >= 1200);
     return {
       ...data,
+      airspaces: (data.airspaces || []).filter(a => v(zoneKey(a.type))),
       aerodromes: tier === 'far' ? (data.aerodromes || []).filter(big) : data.aerodromes,
-      navaids: tier === 'far' ? [] : data.navaids,
-      vrp: vfr ? data.vrp : [],
-      obstacles: []
+      navaids: v('navaids') ? data.navaids : [],
+      vrp: v('vrp') ? data.vrp : [],
+      obstacles: v('obstacles') ? data.obstacles : [],
+      moraCells: v('mora') ? data.moraCells : [],
+      cities: (data.cities || []).filter(c => v(cityKey(c)))
     };
   }
   /** Notation SIA d'un espace : « TMA AQUITAINE 8 2000|FL145 D » — type, nom, plancher | plafond (ft AMSL sans
@@ -1394,7 +1434,8 @@
     marks: mk = [],
     mission = null,
     theme = null,
-    level = null
+    level = null,
+    detail = 0
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     T = theme || tokens();
@@ -1403,19 +1444,22 @@
         lat: (bbox.n + bbox.s) / 2,
         lon: (bbox.e + bbox.w) / 2
       },
-      tier = tierOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
-      // carte de mission : tout ce que le profil montre ; vol : densité selon le zoom
-      shown = mission ? data : densify(data, tier, profile),
+      // zoom de la vue, décalé de ¾ de niveau par cran du curseur de complexité (detail, de −2 à +2 : plus de détails à
+      // droite) ; carte de mission : tout ce que son profil montre ; vol : les seuils de zoom de chaque élément
+      zv = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + (Math.round(+detail) || 0) * .75,
+      tier = tierOf(pxOfZoom(zv));
+    if (!mission) profile = atZoom(profile, zv);
+    const shown = mission ? data : byZoom(data, profile, zv, tier),
       labels = routeLabels(route, toC, scale, pl, mk, level);
     reservePoints(pl, mission?.points, toC, scale, profile);
-    const towns = cityList(data.cities, profile, toC, bbox, scale, pl);
+    const towns = cityList(shown.cities, profile, toC, bbox, scale, pl);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
     const ends = drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier);
     // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
     // autres en triangle
     const fixes = [],
       endNavs = [];
-    if (ends.size && (mission || tier !== 'far') && el(profile, 'fixes') !== false) {
+    if (ends.size && el(profile, 'fixes') !== false) {
       const byId = new Map((data.navaids || []).map(n => [n.id, n]));
       for (const e of ends.values()) {
         const n = byId.get(e.id);
@@ -1482,6 +1526,12 @@
     airspacesAt,
     airwaysAt,
     awLimit,
+    zoomOf,
+    pxOfZoom,
+    zoneKey,
+    visibleAt,
+    atZoom,
+    byZoom,
     /** Valeur d'un élément d'un profil d'affichage (défaut du studio si absent). */
     elementOf: el,
     deg3,

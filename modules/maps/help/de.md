@@ -27,7 +27,8 @@ Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an diese
 **Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
 sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
 (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen,
-Meldepunkten und Hindernissen. „Topo“: das Gelände, nur mit Flugplätzen, Städten und Hindernissen. „OAT“: Militärflug,
+Meldepunkten und Hindernissen. „Topo“: das Gelände und, aus der Nähe, die Höhenlinien (alle 500 ft oder 100 m je nach Ihrer Einheit, die
+Zähllinien beschriftet), nur mit Flugplätzen, Städten und Hindernissen. „OAT“: Militärflug,
 das IFR Ihrer Flughöhe plus die Luftbetankungsstrecken, die NAT-Tracks des Tages, die Gebiete R, D, P, TSA, TRA, CBA und
 das Tiefflugnetz in allen Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf
 diesem Gerät erhalten.
@@ -43,7 +44,9 @@ VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplat
 Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät erhalten. „Alles zurücksetzen“ kehrt zur
 ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt, beschränkt Lufträume und Flugwege auf die
 Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um anderswo zu schauen. Aus der Nähe wird
-ohnehin alles gezeichnet.
+ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach links weniger, nach rechts
+mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte erscheinen erst ganz
+nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
 
 **Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen

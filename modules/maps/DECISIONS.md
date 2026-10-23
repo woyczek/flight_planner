@@ -361,3 +361,28 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     click on "CTA PARIS N" → tooltip, gone 5.6 s after. VFR close view of Paris: "434 AGL (771)", "328 AGL (425)".
     Camera: wheel zoom on LUGEN, drag of a point, fuel's write → view unchanged; Recentre → whole route. Three designs
     at 375 px day and night, page 375 px wide; 6a benches, live view; no JavaScript error.
+- **23 Oct 2026 — lot 7b: zoom thresholds set by the user, contour lines, profiles in the data repository.**
+  - **From a fixed hierarchy to thresholds** (user's decision): a first version graded the airspaces by family and
+    size and gave full detail within 15 NM of the route points; the user preferred to set the zoom levels themselves. Each
+    element has a range per mode, tuned on `#maps?tune=1` with the map redrawn live; the near-route detail is gone (VRP
+    only very close, even in VFR, as asked). The complexity slider stays, as a shift of the view's zoom (¾ of a level
+    per step): simple, and it moves the whole set.
+  - **Starting values**: IFR keeps nearly everything (the corridor thins it already); VFR and Topo grade the families so
+    that France on a screen shows the FIR only, a regional view the TMA, CTA, R and D, a close view the CTR and P. The
+    FIR family is on by default in VFR (otherwise France from afar was empty), and left out of the vertical profile (a
+    region is a landmark, not a volume to cross).
+  - **Thresholds in MapLibre zoom**: the scale MapLibre and the studio share, shown with NM per cm of screen for the
+    user; `profile.elements.zoom` keeps the studio's `profile_def` format, so the V2 studio can edit it later.
+  - **Contour lines computed here, no library**: a marching-squares pass on the Terrarium tiles already used for the
+    relief; segments cached per tile and interval. Measured: 16 ms for a Massif Central view at 1280 px. Small gaps
+    can show at tile edges (one cell); acceptable at these zooms.
+  - **Tuning page only by its address** (ergonomics session): it is for the administrator, not for pilots.
+  - **For the V2 studio** (BUGS SOG): read and write `airline/map_profiles.json` (`profiles.auto … cam`, record); keep
+    the V3 extensions when saving (`elements.zoom` object, `vfrDensity`, `hillshade`, `fixes`, `awLabels`); offer the 26
+    `elements.zoom` keys as "from … to …" zoom fields in its profile editor; a partial profile is valid (merged over
+    V3's built-in one).
+  - **Bench**: 1280 px VFR: France (z 5.58) → 17 regions (FIR, UIR, UTA, FRA), regional view (z 6.75) → 337 (TMA,
+    CTA, R, D), close view (z 9.49) → 24 and 14 VRP. Tuning page: 26 lines, current zoom 6.76 · 10 NM/cm, marks at
+    37.5 %, VRP lower threshold to 0 → 233 VRP drawn at once; "Save for the airline" → file written (`by: 'maps'`);
+    a map reading an airline file with `vrp: [0, 24]` applies it. 375 px: read only, page 375 px wide. Topo over the
+    Massif Central: contours with 2,500 and 5,000 ft labels, obstacle heights. No JavaScript error.

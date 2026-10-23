@@ -25,8 +25,8 @@ and the airspace you are in at that point.
 
 **Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
-“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
-terrain, with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling
+“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit,
+the index contours numbered), with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling
 tracks, the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses
 from your flight's level (High IFR from FL195). The mode is kept on this device.
 
@@ -40,7 +40,9 @@ ground, and the elevation of its top in brackets (“434 AGL (771)”).
 obstacles, minimum altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept
 for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by
 default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
-elsewhere. Close up, everything is drawn anyway.
+elsewhere. Close up, everything is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left,
+more to the right, at every zoom. Each element of the map has its zoom range: VFR reporting points appear only very
+close, CTRs close up, TMAs in a medium view, FIRs from afar.
 
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
 small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,

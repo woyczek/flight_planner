@@ -28,10 +28,11 @@ export const meta = {
   apps: ['pilot'],
   level: 1,
   // missions/ : lu à la demande seulement (dossiers lourds : PNG, versions, reçus), jamais tiré d'avance
+  // airline/map_profiles.json : profils d'affichage des six modes, affinés par la compagnie (SPEC.md, « Profils des modes »)
   reads: ['pilot/', {
     prefix: 'missions/',
     policy: 'reference'
-  }, 'cache/maps/'],
+  }, 'cache/maps/', 'airline/'],
   // mode et couches de la carte (propres à l'appareil, jamais synchronisés) ; vol courant modifié sur la carte (lot 6 :
   // enregistrement entier, règle record, comme Carburant — modules/fuel/INTEGRATION.md § 3)
   writes: [{
@@ -40,11 +41,15 @@ export const meta = {
   }, {
     prefix: 'pilot/',
     merge: 'record'
+  }, {
+    // seuils des modes réglés par l'administrateur (#maps?tune=1)
+    prefix: 'airline/map_profiles.json',
+    merge: 'record'
   }],
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
-    '../../frame/lib/route_text.js?v=0'
+    '../../frame/lib/route_text.js?v=0', 'contours.js?v=0'
   ],
   // gardés au premier usage seulement (MapLibre, 1 Mo, inutile sans tuiles)
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],
@@ -58,6 +63,7 @@ const LIBS = [
     ['MapsRender', 'render.js'],
     ['MapsProfile', 'profile.js'],
     ['MapsMission', 'mission.js'],
+    ['MapsContours', 'contours.js'],
     ['MAPS_PROFILES', 'lib/profiles.js'],
     ['MAPS_OUTLINES', 'lib/outlines.js'],
     ['jsyaml', '../../frame/lib/js-yaml.min.js']
@@ -220,9 +226,84 @@ const TX = {
       'Pistas de reabastecimiento (AAR)'
     ],
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
-    wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura']
+    wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
+    contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel']
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
+  detail: ['Complexité (essai)', 'Complexity (trial)', 'Komplexität (Test)', 'Complejidad (prueba)'],
+  zoomNames: {
+    asFir: ['FIR / UIR', 'FIR / UIR', 'FIR / UIR', 'FIR / UIR'],
+    asTma: ['TMA', 'TMA', 'TMA', 'TMA'],
+    asCta: ['CTA', 'CTA', 'CTA', 'CTA'],
+    asCtr: ['CTR', 'CTR', 'CTR', 'CTR'],
+    asR: ['Zones R', 'R areas', 'Gebiete R', 'Zonas R'],
+    asD: ['Zones D', 'D areas', 'Gebiete D', 'Zonas D'],
+    asP: ['Zones P', 'P areas', 'Gebiete P', 'Zonas P'],
+    asTsa: ['TSA / TRA / CBA', 'TSA / TRA / CBA', 'TSA / TRA / CBA', 'TSA / TRA / CBA'],
+    asOther: ['Autres espaces', 'Other airspaces', 'Andere Lufträume', 'Otros espacios'],
+    zoneLabels: ['Noms des espaces', 'Airspace names', 'Luftraumnamen', 'Nombres de espacios'],
+    awLow: ['Voies basses', 'Lower airways', 'Untere Flugwege', 'Aerovías inferiores'],
+    awHigh: ['Voies hautes', 'Upper airways', 'Obere Flugwege', 'Aerovías superiores'],
+    awLabels: ['Étiquettes de tronçon (distance, route)', 'Segment labels (distance, track)', 'Abschnittsbeschriftungen (Länge, Kurs)',
+      'Etiquetas de tramo (distancia, rumbo)'
+    ],
+    navaids: ['Balises', 'Beacons', 'Funkfeuer', 'Radioayudas'],
+    fixes: ['Points des voies', 'Airway points', 'Flugwegpunkte', 'Puntos de aerovía'],
+    vrp: ['Points de report VFR', 'VFR reporting points', 'VFR-Meldepunkte', 'Puntos de notificación VFR'],
+    obstacles: ['Obstacles', 'Obstacles', 'Hindernisse', 'Obstáculos'],
+    mora: ['Altitudes minimales (MORA)', 'Minimum altitudes (MORA)', 'Mindesthöhen (MORA)', 'Altitudes mínimas (MORA)'],
+    citiesBig: ['Grandes villes (200 000 hab. et plus)', 'Large towns (200,000 and more)', 'Großstädte (ab 200 000 Einw.)',
+      'Ciudades grandes (200 000 hab. o más)'
+    ],
+    citiesMid: ['Villes moyennes (30 000 hab. et plus)', 'Medium towns (30,000 and more)', 'Mittelstädte (ab 30 000 Einw.)',
+      'Ciudades medianas (30 000 hab. o más)'
+    ],
+    citiesSmall: ['Petites villes', 'Small towns', 'Kleinstädte', 'Ciudades pequeñas'],
+    graticule: ['Canevas', 'Graticule', 'Gradnetz', 'Retícula'],
+    aar: ['Axes de ravitaillement (AAR)', 'Air refuelling tracks (AAR)', 'Luftbetankungsstrecken (AAR)',
+      'Pistas de reabastecimiento (AAR)'
+    ],
+    nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
+    wind: ['Barbules de vent', 'Wind barbs', 'Windfiedern', 'Barbas de viento'],
+    contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel']
+  },
+  tuneTitle: ['Réglage de la carte : seuils de zoom', 'Map tuning: zoom thresholds', 'Kartenabstimmung: Zoomschwellen',
+    'Ajuste del mapa: umbrales de zoom'
+  ],
+  tuneHint: [
+    'Chaque élément est dessiné entre ses deux seuils de zoom, réglés par mode ; la carte suit en direct. Le trait marque le zoom courant.',
+    'Each element is drawn between its two zoom thresholds, set per mode; the map follows live. The mark shows the current zoom.',
+    'Jedes Element wird zwischen seinen zwei Zoomschwellen gezeichnet, je Modus eingestellt; die Karte folgt sofort. Die Marke zeigt den aktuellen Zoom.',
+    'Cada elemento se dibuja entre sus dos umbrales de zoom, ajustados por modo; el mapa sigue en directo. La marca indica el zoom actual.'
+  ],
+  tuneNow: ['Zoom courant : {z} · {s} NM par cm d\'écran', 'Current zoom: {z} · {s} NM per cm of screen',
+    'Aktueller Zoom: {z} · {s} NM pro cm Bildschirm', 'Zoom actual: {z} · {s} NM por cm de pantalla'
+  ],
+  tuneRange: ['de {a} à {b}', 'from {a} to {b}', 'von {a} bis {b}', 'de {a} a {b}'],
+  tuneNoLimit: ['sans limite', 'no limit', 'ohne Grenze', 'sin límite'],
+  tuneFrom: ['à partir de {a}', 'from {a}', 'ab {a}', 'desde {a}'],
+  tuneMin: ['Seuil bas de {e}', 'Lower threshold of {e}', 'Untere Schwelle von {e}', 'Umbral inferior de {e}'],
+  tuneMax: ['Seuil haut de {e}', 'Upper threshold of {e}', 'Obere Schwelle von {e}', 'Umbral superior de {e}'],
+  tuneSaveCo: ['Enregistrer pour la compagnie', 'Save for the airline', 'Für die Fluggesellschaft speichern',
+    'Guardar para la aerolínea'
+  ],
+  tuneSaveDev: ['Garder sur cet appareil', 'Keep on this device', 'Auf diesem Gerät behalten', 'Guardar en este dispositivo'],
+  tuneSavedCo: ['Seuils du mode {m} enregistrés pour la compagnie.', 'Thresholds of the {m} mode saved for the airline.',
+    'Schwellen des Modus {m} für die Fluggesellschaft gespeichert.', 'Umbrales del modo {m} guardados para la aerolínea.'
+  ],
+  tuneSavedDev: ['Seuils du mode {m} gardés sur cet appareil.', 'Thresholds of the {m} mode kept on this device.',
+    'Schwellen des Modus {m} auf diesem Gerät behalten.', 'Umbrales del modo {m} guardados en este dispositivo.'
+  ],
+  tuneRO: ['Lecture seule sur un téléphone : réglez les seuils sur un écran ou une tablette.',
+    'Read only on a phone: set the thresholds on a screen or a tablet.',
+    'Auf dem Telefon nur lesbar: stellen Sie die Schwellen auf einem Bildschirm oder Tablet ein.',
+    'Solo lectura en un teléfono: ajuste los umbrales en una pantalla o una tableta.'
+  ],
+  detailHelp: ['Moins de détails à gauche, plus à droite : décale d\'un cran ce que chaque zoom montre.',
+    'Fewer details to the left, more to the right: shifts by one step what each zoom shows.',
+    'Weniger Details links, mehr rechts: verschiebt um eine Stufe, was jeder Zoom zeigt.',
+    'Menos detalles a la izquierda, más a la derecha: desplaza un paso lo que muestra cada zoom.'
+  ],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
   awHigh: ['voie haute', 'upper airway', 'oberer Flugweg', 'aerovía superior'],
   awLow: ['voie basse', 'lower airway', 'unterer Flugweg', 'aerovía inferior'],
@@ -519,6 +600,21 @@ function draw() {
     ctx.stroke();
     ctx.restore();
   }
+  // courbes de niveau (Topo, VFR), de près, sous la surcouche aéronautique
+  const pxDeg = W / Math.max(1e-6, shown.e - shown.w);
+  const zv = MapsRender.zoomOf(pxDeg) + (S.mission ? 0 : (layersNow().detail || 0) * .75),
+    zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
+  if (S.tuneEl) markTune(zv, (shown.n + shown.s) / 2);
+  if (!S.mission && layersNow().contours && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(
+    ctx, {
+      toC,
+      bbox: shown,
+      pxPerDeg: pxDeg,
+      W,
+      H,
+      unit: S.altUnit,
+      onReady: schedule
+    });
   const got = MapsRender.draw(ctx, {
     toC,
     W,
@@ -531,6 +627,7 @@ function draw() {
     marks: S.marks,
     theme: S.theme,
     level: formatLevel,
+    detail: S.mission ? 0 : layersNow().detail || 0,
     mission: S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -560,7 +657,7 @@ function draw() {
     ctx.restore();
   }
   drawPlanOnMap(ctx, toC, got.routeLabels || []);
-  S.windHits = !S.mission && layersNow().wind ? drawWinds(ctx, toC) : [];
+  S.windHits = !S.mission && layersNow().wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
   S.toC = toC;
   if (S.edit?.on) drawEdit(ctx, toC);
   if (S.data && !S.drawn) {
@@ -663,6 +760,8 @@ async function buildProfile() {
         zoneCeil: ''
       }
     }, pts);
+    // régions (FIR, UIR, UTA, FRA…) : des repères de carte, pas des volumes à franchir dans une coupe
+    if (!S.mission) airspaces = airspaces.filter(a => groupOf(a.type) !== 'asFir');
   }
   S.terrain ||= SiaProfile.terrainSampler(9);
   const prof = await MapsProfile.build(pts, {
@@ -1806,12 +1905,94 @@ function header() {
 /** Profil d'affichage du vol selon le préréglage : IFR bas ou haut (voies, espaces de la tranche, MORA, balises), VFR
  *  (profil « VFR détaillé » du studio sur un fond plus topographique), ou automatique selon le niveau du vol. */
 function flightProfile() {
+  return withRepo(builtinProfile());
+}
+/** Profil d'un mode affiné par la compagnie (airline/map_profiles.json, profiles[mode] au format profile_def du studio)
+ *  posé sur le profil intégré : champs remplacés, éléments fusionnés. */
+function withRepo(B) {
+  const own = S.repoProfiles?.[S.preset];
+  if (!own || typeof own !== 'object') return B;
+  return {
+    ...B,
+    ...own,
+    id: B.id,
+    elements: {
+      ...(B.elements || {}),
+      ...(own.elements || {}),
+      zoom: {
+        ...(B.elements?.zoom || {}),
+        ...(own.elements?.zoom || {})
+      }
+    }
+  };
+}
+/** Profil intégré du mode courant. */
+function builtinProfile() {
+  const p = modeProfile();
+  return {
+    ...p,
+    elements: {
+      ...(p.elements || {}),
+      zoom: zoomDefaults(S.preset)
+    }
+  };
+}
+/** Seuils de zoom MapLibre de départ [visible à partir de, jusqu'à] de chaque élément, par mode. En IFR (Auto, IFR bas,
+ *  IFR haut, CAM) le couloir de la route éclaircit déjà : presque tout reste visible ; en VFR et Topo : FIR de loin,
+ *  TMA en vue moyenne, CTR de près, points de report tout près (valeurs à régler dans #maps?tune=1). Repères : la
+ *  France entière ≈ 5,5 sur un écran, ≈ 4,3 sur un téléphone ; 100 NM de large ≈ 8,5. */
+const ZOOM_IFR = {
+    asFir: [0, 24],
+    asTma: [0, 24],
+    asCta: [0, 24],
+    asCtr: [0, 24],
+    asR: [0, 24],
+    asD: [0, 24],
+    asP: [0, 24],
+    asTsa: [0, 24],
+    asOther: [0, 24],
+    zoneLabels: [0, 24],
+    awLow: [0, 24],
+    awHigh: [0, 24],
+    awLabels: [7.75, 24],
+    navaids: [5.75, 24],
+    fixes: [5.75, 24],
+    vrp: [9.25, 24],
+    obstacles: [8.5, 24],
+    mora: [0, 24],
+    citiesBig: [0, 24],
+    citiesMid: [6.5, 24],
+    citiesSmall: [8.5, 24],
+    graticule: [0, 24],
+    aar: [0, 24],
+    nat: [0, 24],
+    wind: [0, 24],
+    contours: [9, 24]
+  },
+  ZOOM_VFR = {
+    ...ZOOM_IFR,
+    asFir: [0, 7],
+    asTma: [6, 24],
+    asCta: [6, 24],
+    asCtr: [7, 24],
+    asR: [6.5, 24],
+    asD: [6.5, 24],
+    asP: [7.5, 24],
+    asTsa: [6.5, 24],
+    asOther: [8, 24],
+    zoneLabels: [6, 24]
+  },
+  ZOOM_KEYS = Object.keys(ZOOM_IFR);
+const zoomDefaults = mode => structuredClone(mode === 'vfr' || mode === 'topo' ? ZOOM_VFR : ZOOM_IFR);
+/** Profil du mode courant, sans ses seuils. */
+function modeProfile() {
   if (S.preset === 'vfr') {
-    // VFR détaillé du studio sur fond topographique, plus les balises et la densité VFR (points de report à tous les
-    // zooms) ; les familles d'espaces viennent des couches (TMA / CTR, D / R / P entiers)
+    // VFR détaillé du studio sur fond topographique, plus les balises, la densité VFR et les FIR (vues de loin, seuils
+    // du mode) ; les familles d'espaces viennent des couches (TMA / CTR, D / R / P entiers)
     const p = structuredClone(window.MAPS_PROFILES.find(x => x.id === 'vfr-detail') || MapsRender.routeProfile(0));
     return {
       ...p,
+      zones: [...new Set([...(p.zones || []), 'FIR'])],
       base: 'ofm-liberty',
       elements: {
         ...p.elements,
@@ -1928,7 +2109,7 @@ const AS_GROUPS = {
   asFir: ['FIR', 'UIR', 'UTA', 'LTA', 'OCA', 'FRA'] // régions et grands volumes (UTA FRANCE) : pas avec les TMA
 };
 const LAYER_KEYS = ['corridor', 'asTma', 'asDrp', 'asFir', 'asOther', 'awLow', 'awHigh', 'navaids', 'fixes', 'vrp', 'obstacles', 'mora',
-  'cities', 'graticule', 'altn', 'aar', 'nat', 'wind'
+  'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'contours'
 ];
 const groupOf = t => Object.keys(AS_GROUPS).find(g => AS_GROUPS[g].includes(String(t || '').toUpperCase())) || 'asOther';
 /** État des couches par défaut d'un profil d'affichage (celui du préréglage). */
@@ -1954,7 +2135,10 @@ function layerDefaults(B) {
     // axes AAR et tracks NAT : d'origine en CAM seulement
     aar: B.id === 'v3-cam',
     nat: B.id === 'v3-cam',
-    wind: true
+    wind: true,
+    // courbes de niveau : modes à densité VFR (VFR, Topo), de près
+    contours: !!MapsRender.elementOf(B, 'vfrDensity'),
+    detail: 0
   };
 }
 /** Couches du préréglage courant : défauts du profil, puis choix gardés sur cet appareil. */
@@ -1986,6 +2170,11 @@ function effectiveProfile() {
   P.zones = Object.keys(AS_GROUPS).filter(g => L[g]).flatMap(g => AS_GROUPS[g]);
   P.otherZones = L.asOther; // types hors familles : ajoutés à la lecture (loadData)
   P.corridorNm = L.corridor ? +B.corridorNm || 10 : 0;
+  E.zoom = {
+    ...(E.zoom || {}),
+    ...(S.layers?.[S.preset]?.zoom || {}),
+    ...(S.tuneZoom?.[S.preset] || {})
+  };
   return P;
 }
 /** Une couche changée (ou toutes remises, key null) : gardée par préréglage sur cet appareil, carte et profil refaits. */
@@ -2013,6 +2202,14 @@ const saveUi = () => S.ctx.data.put('cache/maps/ui.json', {
 function fillLayers() {
   const L = layersNow();
   for (const c of S.layersEl.querySelectorAll('input[data-layer]')) {
+    if (c.type === 'range') {
+      const v = String(Math.round(+L[c.dataset.layer] || 0));
+      if (c.value !== v) c.value = v;
+      const out = S.layersEl.querySelector('[data-detail-v]'),
+        t = +v > 0 ? `+${v}` : v;
+      if (out && out.textContent !== t) out.textContent = t;
+      continue;
+    }
     const v = !!L[c.dataset.layer];
     if (c.checked !== v) c.checked = v;
   }
@@ -2034,6 +2231,140 @@ const viewOf = () => {
     n: v[3]
   } : null;
 };
+/** Profils des modes de la compagnie (airline/map_profiles.json) et unité d'altitude du pilote (fuel.json, displayAlt :
+ *  équidistance des courbes de niveau). */
+async function readSettings() {
+  const P = await S.ctx.data.get('airline/map_profiles.json').catch(() => null),
+    F = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/fuel.json`).catch(() => null);
+  S.repoProfiles = P?.profiles && typeof P.profiles === 'object' ? P.profiles : null;
+  S.altUnit = F?.displayAlt === 'm' ? 'm' : 'ft';
+}
+// ---------------------------------------------------------------- réglage des seuils (#maps?tune=1, administrateur)
+// Une ligne par élément dessiné, un double curseur « visible de … à … » en zoom MapLibre (avec les NM par cm d'écran),
+// par mode (onglets) ; la carte suit en direct (S.tuneZoom) ; « Tout remettre » revient aux valeurs de départ du mode ;
+// enregistrés pour la compagnie (airline/map_profiles.json, profiles[mode].elements.zoom) ou gardés sur cet appareil
+// (cache/maps/ui.json, layers[mode].zoom). Lecture seule sur un téléphone.
+const Z_MAX = 18;
+/** NM par cm d'écran au zoom z, à la latitude lat (tuiles de 512 px, 96 px par pouce). */
+const nmPerCm = (z, lat) => 40075016.686 * Math.cos(lat * Math.PI / 180) / (512 * 2 ** z) * 96 / 2.54 / 1852;
+const fmtNm = v => v >= 10 ? String(Math.round(v)) : v.toFixed(1);
+/** Seuils du mode courant tels qu'ils s'appliquent. */
+const zoomNow = () => S.profile?.elements?.zoom || zoomDefaults(S.preset);
+/** Page de réglage : construite une fois, remplie par mode. */
+function tuneSetup(box) {
+  S.tuneEl = box;
+  S.tuneZoom = {};
+  S.tuneRO = matchMedia('(max-width: 599px)').matches;
+  if (!S.el.classList.contains('mp-tuning')) S.el.classList.add('mp-tuning');
+  box.addEventListener('input', e => {
+    const r = e.target.closest('input[data-z]');
+    if (!r || S.tuneRO) return;
+    const k = r.dataset.z,
+      row = r.closest('[data-row]'),
+      [lo, hi] = [...row.querySelectorAll('input[data-z]')].map(x => +x.value),
+      cur = [Math.min(lo, hi), Math.max(lo, hi) >= Z_MAX ? 24 : Math.max(lo, hi)];
+    (S.tuneZoom[S.preset] ||= {})[k] = cur;
+    S.profile = effectiveProfile();
+    tuneRow(row, k, cur);
+    schedule();
+  });
+  box.addEventListener('click', async e => {
+    const tab = e.target.closest('[data-tune-mode]')?.dataset.tuneMode;
+    if (tab && tab !== S.preset) {
+      await setPreset(tab);
+      return fillTune();
+    }
+    const act = e.target.closest('[data-tune]')?.dataset.tune;
+    if (!act || S.tuneRO) return;
+    if (act === 'reset') {
+      S.tuneZoom[S.preset] = zoomDefaults(S.preset);
+      S.profile = effectiveProfile();
+      fillTune();
+      return schedule();
+    }
+    const z = structuredClone(zoomNow()),
+      name = tt(TX.presets[S.preset]);
+    if (act === 'dev') {
+      ((S.layers ||= {})[S.preset] ||= {}).zoom = z;
+      saveUi();
+      return S.ctx.notify?.(tt(TX.tuneSavedDev, {
+        m: name
+      }), 'info');
+    }
+    const path = 'airline/map_profiles.json',
+      cur = (await S.ctx.data.get(path).catch(() => null)) || {},
+      profiles = {
+        ...(cur.profiles || {})
+      };
+    profiles[S.preset] = {
+      ...(profiles[S.preset] || {}),
+      elements: {
+        ...(profiles[S.preset]?.elements || {}),
+        zoom: z
+      }
+    };
+    await S.ctx.data.put(path, {
+      schema: 1,
+      ...cur,
+      profiles,
+      by: 'maps',
+      updated_at: new Date().toISOString()
+    });
+    S.ctx.notify?.(tt(TX.tuneSavedCo, {
+      m: name
+    }), 'info');
+  });
+  fillTune();
+}
+/** Libellé d'un seuil : « z 6,5 (12 NM/cm) », ou « sans limite ». */
+const zLabel = (z, lat) => z >= Z_MAX ? tt(TX.tuneNoLimit) : `z ${(+z).toFixed(2).replace(/0$/, '').replace(/\.0$/, '')} (${fmtNm(nmPerCm(z, lat))} NM/cm)`;
+/** Ligne d'un élément mise à jour (valeurs, libellé) ; écritures seulement si elles changent. */
+function tuneRow(row, k, [lo, hi]) {
+  const [a, b] = row.querySelectorAll('input[data-z]'),
+    lat = S.tuneLat ?? 46,
+    va = String(lo),
+    vb = String(Math.min(Z_MAX, hi));
+  if (a.value !== va) a.value = va;
+  if (b.value !== vb) b.value = vb;
+  const t = hi >= Z_MAX ? tt(TX.tuneFrom, {
+      a: zLabel(lo, lat)
+    }) : tt(TX.tuneRange, {
+      a: zLabel(lo, lat),
+      b: zLabel(hi, lat)
+    }),
+    out = row.querySelector('[data-range]');
+  if (out.textContent !== t) out.textContent = t;
+}
+/** Page de réglage remplie pour le mode courant. */
+function fillTune() {
+  const box = S.tuneEl,
+    z = zoomNow(),
+    ro = S.tuneRO ? ' disabled' : '';
+  box.innerHTML = `<h2>${esc(tt(TX.tuneTitle))}</h2><p class="f-muted">${esc(tt(TX.tuneHint))}</p>${S.tuneRO ? `<p class="f-muted"><b>${esc(tt(TX.tuneRO))}</b></p>` : ''}
+<p class="mp-tune-now" data-now></p>
+<div class="mp-tune-tabs" role="group">${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-tune-mode="${k}" aria-pressed="${k === S.preset}" title="${esc(modeTitle(S.ctx, k))}" aria-label="${esc(modeTitle(S.ctx, k))}">${icon}</button>`).join('')}</div>
+<div class="mp-tune-rows">${ZOOM_KEYS.map(k => `<div class="mp-tune-row" data-row="${k}"><div class="mp-tune-name">${esc(tt(TX.zoomNames[k]))}</div><div class="mp-tune-dual"><span class="mp-tune-mark" aria-hidden="true"></span><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMin, { e: tt(TX.zoomNames[k]) }))}"${ro}><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMax, { e: tt(TX.zoomNames[k]) }))}"${ro}></div><div class="mp-tune-range f-muted" data-range></div></div>`).join('')}</div>
+<div class="f-row"><button type="button" data-tune="reset"${ro}>${esc(tt(TX.layersReset))}</button><button type="button" data-tune="dev"${ro}>${esc(tt(TX.tuneSaveDev))}</button><button type="button" class="primary" data-tune="co"${ro}>${esc(tt(TX.tuneSaveCo))}</button></div>`;
+  for (const k of ZOOM_KEYS) tuneRow(box.querySelector(`[data-row="${k}"]`), k, z[k] || [0, 24]);
+  S.tuneMarked = null;
+  schedule();
+}
+/** Zoom courant marqué sur chaque curseur, et rappelé en tête (NM par cm) ; écrit seulement s'il change. */
+function markTune(z, lat) {
+  S.tuneLat = lat;
+  const key = `${z.toFixed(2)}|${lat.toFixed(1)}`;
+  if (S.tuneMarked === key) return;
+  S.tuneMarked = key;
+  const left = `${Math.max(0, Math.min(100, z / Z_MAX * 100)).toFixed(2)}%`;
+  for (const m of S.tuneEl.querySelectorAll('.mp-tune-mark'))
+    if (m.style.left !== left) m.style.left = left;
+  const now = S.tuneEl.querySelector('[data-now]'),
+    t = tt(TX.tuneNow, {
+      z: z.toFixed(2),
+      s: fmtNm(nmPerCm(z, lat))
+    });
+  if (now && now.textContent !== t) now.textContent = t;
+}
 /** Cadre la carte sur le vol (seul mouvement de caméra fait par le module, marqué pour ne pas passer pour celui de
  *  l'utilisateur). */
 function fitMap(animate) {
@@ -2274,6 +2605,23 @@ const STYLE = `
 [data-module="maps"] .mp-layers{position:absolute;left:8px;top:calc(20px + 2 * var(--sog-touch));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 28px - 2 * var(--sog-touch));overflow:auto;display:flex;flex-direction:column;gap:0;font-size:.9em;min-width:min(220px,80%)}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
 [data-module="maps"] .mp-layers .mp-l-main{border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
+[data-module="maps"] .mp-layers .mp-l-detail{flex-wrap:wrap;border-top:1px solid var(--sog-border);margin-top:4px;padding-top:6px}
+[data-module="maps"] .mp-layers .mp-l-detail input{flex:1 1 100%;margin:4px 0 0}
+[data-module="maps"] .mp-layers .mp-l-help{font-size:.85em;margin-bottom:2px}
+[data-module="maps"] .mp-tune h2{margin:0 0 4px;font-size:1.1em}
+[data-module="maps"] .mp-tune-now{font-variant-numeric:tabular-nums;margin:4px 0}
+[data-module="maps"] .mp-tune-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 10px}
+[data-module="maps"] .mp-tune-row{display:grid;grid-template-columns:minmax(9em,1fr) minmax(140px,1.4fr);gap:2px 10px;align-items:center;padding:4px 0;border-top:1px solid var(--sog-border)}
+[data-module="maps"] .mp-tune-name{font-size:.92em}
+[data-module="maps"] .mp-tune-range{grid-column:1 / -1;font-size:.82em;font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-tune-dual{position:relative;height:28px}
+[data-module="maps"] .mp-tune-dual input{position:absolute;inset:0;width:100%;margin:0;padding:0;border:0;box-shadow:none;background:none;pointer-events:none;-webkit-appearance:none;appearance:none;height:28px;min-height:0}
+[data-module="maps"] .mp-tune-dual input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--sog-accent);border:2px solid var(--sog-surface);box-shadow:0 0 0 1px var(--sog-accent);cursor:pointer}
+[data-module="maps"] .mp-tune-dual input::-moz-range-thumb{pointer-events:auto;width:16px;height:16px;border-radius:50%;background:var(--sog-accent);border:2px solid var(--sog-surface);cursor:pointer}
+[data-module="maps"] .mp-tune-dual input:disabled::-webkit-slider-thumb{background:var(--sog-muted);box-shadow:none;cursor:default}
+[data-module="maps"] .mp-tune-dual::before{content:'';position:absolute;left:0;right:0;top:13px;height:2px;background:var(--sog-border)}
+[data-module="maps"] .mp-tune-mark{position:absolute;top:6px;width:2px;height:16px;margin-left:-1px;background:var(--sog-err)}
+@media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}}
 [data-module="maps"] .mp-layers [data-layers-reset]{margin-top:6px;align-self:flex-start}
 [data-module="maps"] .mp-layers[hidden],[data-module="maps"] .mp-layers-btn[hidden]{display:none}
 [data-module="maps"] .mp-editbar{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:6px}
@@ -2313,12 +2661,15 @@ export async function mount(el, ctx) {
 <div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
 <div class="mp-sum f-muted" aria-live="polite"></div></div>
+${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>' : ''}
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
 <div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"></button>
 <div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div></div>
 <button type="button" class="mp-layers-btn" aria-expanded="false" aria-label="${esc(ctx.t(TX.layers))}" title="${esc(ctx.t(TX.layers))}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg></button>
 <div class="mp-layers f-card" hidden role="group" aria-label="${esc(ctx.t(TX.layers))}"><b>${esc(ctx.t(TX.layers))}</b>
 ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
+<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-2" max="2" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
+<span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
 <div class="mp-editbar"><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
@@ -2426,12 +2777,14 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   S.layersBtn.addEventListener('click', () => toggleLayers());
   S.layersEl.addEventListener('change', e => {
-    const k = e.target.closest('input[data-layer]')?.dataset.layer;
-    if (k) setLayer(k, e.target.checked);
+    const c = e.target.closest('input[data-layer]'),
+      k = c?.dataset.layer;
+    if (k) setLayer(k, c.type === 'range' ? Math.round(+c.value) : c.checked);
   });
   S.layersEl.addEventListener('click', e => {
     if (e.target.closest('[data-layers-reset]')) setLayer(null);
   });
+  if (ctx.query?.tune) tuneSetup(el.querySelector('.mp-tune'));
   S.layersEl.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       toggleLayers(false);
@@ -2471,6 +2824,15 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   S.stops.push(() => mq.removeEventListener('change', onTheme), () => mo.disconnect());
   const ui = (await ctx.data.get('cache/maps/ui.json').catch(() => null)) || {};
+  await readSettings();
+  S.stops.push(ctx.data.watch('airline/map_profiles.json', async () => {
+    if (!S) return;
+    await readSettings();
+    S.profile = S.mission ? S.profile : effectiveProfile();
+    S.data = null;
+    if (!S.layersEl.hidden) fillLayers();
+    schedule();
+  }));
   S.preset = ui.preset || 'auto';
   S.layers = ui.layers && typeof ui.layers === 'object' ? ui.layers : {};
   if (!TX.presets[S.preset]) S.preset = 'auto';
