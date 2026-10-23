@@ -55,8 +55,9 @@ empty fields, and removes it.
   every record of `cr/reports/` is replayed into `cr/missions.yaml` by V2's registry merge — drop `schema`,
   `updated_at` and `by`, then merge by `family|metadata.missionId|metadata.date`. Without a launcher, the V2 registry
   is updated at the next pass of a workstation that has one.
-- **The current flight** (`pilot/<trigram>/current_flight.json`, fuel and maps) is only read: aircraft registration and
-  type, route departure, arrival, alternate, distance, level.
+- **The current flight** (`pilot/<trigram>/current_flight.json`, fuel and maps) is only read: aircraft registration,
+  callsign and type (fuel's `aircraft`, from aerodb's `aircraftOf`), route departure, arrival, alternate, distance,
+  level.
 
 ## 4. Example
 

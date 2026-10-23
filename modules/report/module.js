@@ -514,7 +514,7 @@ async function prefillCard() {
   if (!S.current || !S.body) return box.innerHTML = '';
   const a = cf.aircraft || {},
     r = cf.route || {};
-  box.innerHTML = `<div class="f-card f-accent rp-prefill"><div><b>${esc(tt(TX.current))}</b><div class="f-muted">${esc([a.registration, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
+  box.innerHTML = `<div class="f-card f-accent rp-prefill"><div><b>${esc(tt(TX.current))}</b><div class="f-muted">${esc([a.registration, a.callsign, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
     <button type="button" class="primary" data-do="current">${esc(tt(TX.use))}</button></div>`;
 }
 /** Carte des sources : le dernier vol proposé (réseau de l'identité), les autres sources, le collage, le choix d'un vol
@@ -866,6 +866,7 @@ async function onClick(e) {
       return fill({
         'aircraft.0.registration': a.registration,
         'aircraft.0.type': a.type,
+        'aircraft.0.callsign': a.callsign,
         'navigation.dep': r.dep,
         'navigation.arr': r.arr,
         'navigation.altn': r.altn,

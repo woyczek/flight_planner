@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: the callsign from the current flight** (`modules/report/module.js`) — the aircraft chosen in fuel brings
+  its registration and callsign into a report in one tap.
 - **fuel: aircraft and sheets through aerodb** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
   `help/fr.md`) — the Aircraft block becomes one line with a search over every source (my sheets, the airline's fleet
   and log, published types, free code), each with its origin and the sheet that will serve it; the chosen

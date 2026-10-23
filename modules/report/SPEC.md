@@ -22,7 +22,8 @@ what is missing is said in the Result step, never blocking.
   bottom of a step, the save button sticky at the bottom of the screen.
 - **Desktop** (980 px and wider): the three steps side by side, no step bar, no "Next".
 - **Flight**: a "current flight" card when `pilot/<trigram>/current_flight.json` (fuel and maps) has an aircraft or a
-  route — "Use" fills the empty fields only (registration, type, departure, arrival, alternate, distance, level), each
+  route — "Use" fills the empty fields only (registration, callsign, type, departure, arrival, alternate, distance,
+  level), each
   filled field shows its source until it is edited. Then date, registration, type, full callsign, departure,
   arrival, engine start, take-off, landing, shutdown; folded: callsign parts, flight plan callsign, departure and
   return bases, actual landing aerodrome, alternate. Then the **sources** (§ 6).
