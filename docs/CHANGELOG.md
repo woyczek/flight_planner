@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 13: forecasts by pressure level** (`frame/app.js`, `tools/launch.py`) — api.open-meteo.com (winds and
+  temperatures by level, no key) is reachable by the modules, relayed by the launcher or called directly.
 - **Map, lot 5: charts that read like en-route charts** (`modules/maps/`; SPEC, INTEGRATION, DECISIONS, help ×4) —
   airway points (triangles and beacons) with their names, boxed airway names along the segment with minimum level,
   distance and tracks when zoomed in; three presets at the top left (Low IFR, High IFR, VFR) chosen automatically from

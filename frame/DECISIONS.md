@@ -316,6 +316,12 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - with the launcher, the METAR is relayed; without it, it is called directly;
     - avwx without a key: 503 `x-sog-unreachable`; with a dummy key: the direct call passes CORS and avwx answers 403;
     - the key is not readable from `SogFrame`; the launcher's CSP has both hosts.
+- **23 Oct 2026 — Lot 13, open-meteo** (decided by the ergonomics session, for fuel's lot F: the wind at the planned
+  level along the route, the real density altitude):
+  - `api.open-meteo.com` is in the relay (the launcher first) and the direct list: no key, https, CORS `*` (checked
+    with curl, hourly 850 hPa temperature and wind for Toulouse);
+  - it was already in `connect-src`.
+  - Tests: relayed with the launcher, direct without one, both 200.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

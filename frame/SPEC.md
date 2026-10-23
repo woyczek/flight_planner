@@ -297,6 +297,7 @@ used alone:
 | VATSIM (`api`, `data`, `my`) | relayed | 503 `x-sog-unreachable` | — |
 | aviationweather.gov (METAR / TAF, decoded JSON) | relayed | 503 (no CORS header) | — |
 | metar.vatsim.net (METAR, raw text, several airports `id=A,B`) | relayed | direct | — |
+| api.open-meteo.com (forecasts: winds and temperatures by pressure level, JSON) | relayed | direct | — |
 | avwx.rest (TAF and METAR, decoded JSON) | direct | direct | the device's own, added by the frame (`Authorization: BEARER …`); without one, 503 `x-sog-unreachable` |
 | the airline's website (`airline.site`) | relayed, GET only | direct, GET only | — |
 | any other site | 503 `x-sog-unreachable` | 503 | — |

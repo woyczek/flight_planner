@@ -1403,7 +1403,7 @@ def registry_bridge():
 # en lecture seule (GET) ; réponse rendue telle quelle (statut, type, corps, 8 Mo au plus) ; réseau injoignable : 502
 # marqué X-SOG-Offline.
 NET_HOSTS = {'www.simbrief.com': '', 'api.ivao.aero': 'ivao', 'api.vatsim.net': '', 'data.vatsim.net': '', 'my.vatsim.net': '',
-             'aviationweather.gov': '', 'metar.vatsim.net': ''}
+             'aviationweather.gov': '', 'metar.vatsim.net': '', 'api.open-meteo.com': ''}
 NET_MAX = 8 * 1048576
 
 
