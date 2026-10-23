@@ -89,22 +89,27 @@ seulement signalé.
 ## Configurer un pilote
 
 **Préparer la configuration (administrateur).** Sur un poste servi par le lanceur, ou sur un appareil réglé sur GitHub,
-dépliez « Exporter une configuration pour un pilote… » dans la carte « Accès aux données ». Tapez le trigramme du pilote
-et l'adresse de l'appli publiée, puis « Créer le fichier et le lien » : le fichier sog-config-<TRI>.json est enregistré
-et le lien s'affiche, prêt à copier. Ils contiennent la compagnie, le dépôt des données, le trigramme et le mode
-d'emploi du jeton, jamais de jeton ni de secret.
+dépliez « Exporter une configuration pour un pilote… » dans la carte « Accès aux données » : il rappelle vos gestes dans
+l'ordre. Invitez d'abord le nom GitHub du pilote sur le dépôt, avec le droit Write (le lien mène à la page des
+collaborateurs du dépôt). Tapez ensuite son trigramme et l'adresse de l'appli publiée, puis « Créer le fichier et le
+lien » : le fichier sog-config-<TRI>.json est enregistré, le lien et son code QR s'affichent. Ils contiennent la
+compagnie, le dépôt des données, le trigramme et le mode d'emploi du jeton, jamais de jeton ni de secret. Envoyez le
+lien ou le fichier, ou faites scanner le code QR par le téléphone du pilote.
 
-**Appliquer la configuration (pilote).** Touchez le lien reçu, ou « Importer une configuration… » dans la carte « Accès
-aux données » (la carte d'accueil de la première ouverture y mène aussi). La carte « Configuration reçue » montre la
-compagnie, le dépôt et le trigramme. Ajoutez si vous voulez vos identifiants IVAO, VATSIM et SimBrief, puis le jeton :
-le mode d'emploi, replié dessous, dit comment le créer sur l'hôte du dépôt. « Tester » vérifie l'accès ; « Appliquer »
-le vérifie encore, règle l'identité, les usages et l'accès, puis fait une première synchronisation. Gardez ensuite la
-zone de vos vols hors ligne (« Aller aux données hors ligne »).
+**Rejoindre la compagnie (pilote).** Le lien, le code QR, « Importer une configuration… » ou « Rejoindre la compagnie… »
+(carte « Accès aux données ») et la carte d'accueil de la première ouverture ouvrent l'assistant « Rejoindre la
+compagnie », un écran par pas : la configuration reçue ; le compte (le créer s'il n'existe pas, avec le lien
+d'inscription) et le nom d'utilisateur ; l'invitation à accepter ; le jeton, pas à pas ; le jeton collé et testé ; les
+identifiants réseau ; enfin « Terminer et synchroniser », puis les données hors ligne. Les cases cochées restent sur
+l'appareil : une carte des réglages propose de reprendre là où vous en étiez. Le tutoriel « Rejoindre la compagnie »
+suit les mêmes pas.
 
-**Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et rien n'est écrit si le jeton est
-refusé ; un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le dépôt que s'il n'en
-a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'accès ne change pas. Sans lanceur, l'appli ne joint qu'un
-dépôt GitHub : pour un dépôt framagit ou GitLab, appliquez la configuration sur un poste avec le lanceur.
+**Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et l'accès n'est enregistré qu'une
+fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore acceptée, jeton mal copié ou expiré, jeton
+sans droit sur le contenu. Un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le
+dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte et le jeton.
+Sans lanceur, l'appli ne joint qu'un dépôt GitHub : pour un dépôt framagit ou GitLab, faites l'accès sur un poste avec
+le lanceur.
 
 ## Administration
 

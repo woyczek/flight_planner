@@ -30,8 +30,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
 
 ## 3. Cards
 
-0. **Configuration received** (§ 5), first, when a configuration is waiting: from the link `#settings?config=…` or a
-   file chosen with "Import a configuration…"; then **Configuration applied** after "Apply".
+0. **Join the airline, resume** (§ 7), first, while the assistant is in progress: the step reached and "Resume"; a
+   configuration refused (link or file) shows its message here instead.
 
 1. **V2 settings found** (once): shown when this origin holds V2 settings — identity in `missionReportingConfig:v1`
    (`trigram`, `ivaoId`, `vatsimId`, `simbriefUser`), access in `githubData:v1` (`repo`, `branch`, `token`) — and
@@ -149,22 +149,24 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   `sog-config-<TRI>.json` is downloaded, and the link `<app>#settings?config=<z + base64url of the deflate-raw JSON>`
   (`j` + base64url of the JSON where the browser cannot compress) is shown with "Copy the link". A local address is
   flagged: it opens only on that workstation.
-- **Import**: "Import a configuration…" at the top of the Access card (always), the link, and the welcome card of the
-  first opening (`#settings?import=1`, which brings the button into view). The file or link is read (256 KB at most,
-  decompressed too) and checked: another schema, a missing trigram or an invalid field is refused with a message,
-  nothing changed; only the known fields are kept. The card shows airline, repository and trigram, asks the IVAO, VATSIM
-  and SimBrief IDs (optional) and the token, with the how-to folded below it (text only, https addresses as links).
+- **Administrator's steps**, listed at the top of the export fold: invite the pilot's account on the repository
+  (GitHub: Write role, link to `https://github.com/<repo>/settings/access`; GitLab / framagit: Developer role, link to
+  the project's members page), export, then send the link or the file, or show the **QR code** of the link
+  (`frame/lib/qr.js`, below the link). The link carries the configuration without its how-to (rebuilt from the template
+  at import), so the code stays small (about version 15).
+- **Import**: "Join the airline…" and "Import a configuration…" at the top of the Access card (always), the link
+  (`#settings?config=…`), and the welcome card of the first opening (`#settings?join=1`). The file or link is read
+  (256 KB at most, decompressed too) and checked: another schema, a missing trigram or an invalid field is refused with
+  a message, nothing changed; only the known fields are kept. A valid one starts the assistant (§ 7).
 - **Access the configuration would set**: on a launcher, `data/` already following that repository — nothing (no token
   asked); another repository — not changed, said; no `data/` or a folder without git — clone or take-over by the
   launcher (`/__setup/clone` or `adopt`, user `x-access-token` for GitHub, `oauth2` otherwise, the token as secret,
   remembered; the launcher may ask for confirmation in its window); without a launcher — the device's GitHub transport
   for a GitHub repository ("Test" first; another access already set is replaced only after a question), nothing for
   another host (said: apply it on a workstation).
-- **Apply**: the access first — tested or cloned; refused, nothing is written. Then the identity (trigram from the file,
-  the IDs typed), the usages of the file when an access is set, the GitHub setting, a reload; a first synchronisation;
-  and `airline/settings.json` written from the file only when the repository has none (the repository's one wins). The
-  address loses its `config=`; the card "Configuration applied" says how the synchronisation went and offers "Go to
-  offline data".
+- **The how-to** of the token starts with the account sign-up (`https://github.com/signup`, or
+  `https://<host>/users/sign_up`) and, for GitHub, the invitation to accept (`https://github.com/<repo>/invitations`);
+  it is shown wherever the token is asked, in the device's language, falling back to French.
 
 ## 6. Administration links (`frame/settings/admin_links.js`, `window.SogAdminLinks`)
 
@@ -178,3 +180,24 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.
 - Paths are relative to the root of the suite; pages outside the app open in a new tab, the app's own addresses in place.
 - The Settings chapter's section "Administration" writes the same addresses out.
+
+## 7. Join the airline (`frame/settings/join.js`, `window.SogJoin`)
+
+- **One screen per step**, "Step n of m", "← Back" / "Next →": (1) the configuration received — airline, repository,
+  trigram; (2) the account — "Do you already have a GitHub account?" Yes / No; No lists creating it (sign-up link, a
+  simple username, verifying the email); then the username (needed to go on); (3) the invitation — give the username to
+  the administrator ("Copy my name"), accept the email invitation (`https://github.com/<repo>/invitations`), a box
+  "Invitation accepted" (the access can only be checked once the token exists); GitLab / framagit: added as Developer;
+  (4) the token, step by step — the direct link to the token page, then name, one year, only the repository, "Contents:
+  Read and write", copy at once; GitLab: personal token with `write_repository`; the airline's how-to folded below;
+  a box "Token copied"; (5) paste and "Test" — 404: invitation not accepted or repository not chosen in the token; 401:
+  copied wrongly or expired; 403: no right on the contents; offline said; checked: the access is saved (another one
+  replaced only after a question); on a workstation, "Clone with the token" (launcher); (6) IVAO, VATSIM, SimBrief,
+  optional, saved with the trigram; (7) "Finish and synchronise" — usages, first synchronisation, airline if the
+  repository has none — then "Offline data", "Prepare a flight" and the tutorial.
+- **Kept on the device** (`device/join.json`, cache policy): the configuration (no secret), the step, the boxes, the
+  account answer and the username — never the token. A settings card offers to resume; "Give up" (asks) stops it
+  without undoing anything.
+- **Steps skipped**: 2 to 5 when the access is not set here — the launcher's `data/` already follows this repository
+  (or another one), or a host the device cannot reach without a launcher (GitLab / framagit on a phone, said at step 1).
+- No screenshots of the host's own pages: the steps give its direct links and exact labels.

@@ -55,6 +55,8 @@ eigenes Datenblatt, wenn es eines hat, sonst das seines Typs, sonst eine Schätz
 dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt,
 woher der Verbrauch stammt.
 
+Neben dem Datum setzt die Uhr „+30“ den Flug auf in 30 Min. (auf 5 Min. gerundet; jedes Tippen fügt 30 Min. hinzu), „Jetzt“ kehrt zur aktuellen Zeit zurück: Flugplatzwetter (die TAF, wenn sie diese Zeit abdeckt) und Höhenwinde werden sofort neu gelesen.
+
 **2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die
 Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“). Sie können dort auch einen
 ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route bereinigt: in
@@ -248,21 +250,32 @@ seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771
 
 **Ebenen.** Die Ebenen-Schaltfläche unter der Karteneinstellung öffnet die Liste dessen, was die Karte zeichnet:
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
-VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz. Haken setzen oder entfernen: die
-Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät erhalten. „Alles zurücksetzen“ kehrt zur
-ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt, beschränkt Lufträume und Flugwege auf die
-Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um anderswo zu schauen. Aus der Nähe wird
-ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach links weniger, nach rechts
-mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte erscheinen erst ganz
-nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
+VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der Lufträume, Namen der
+Flugwege. Haken setzen oder entfernen: die Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät
+erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt,
+beschränkt Lufträume und Flugwege auf die Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um
+anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach
+links weniger, nach rechts mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
+erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
 
 **Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
 Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
 und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, nennt die
-Blase die Lufträume unter dem Finger. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der nächsten Platz und schließt
-sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger oder Maus ebenso die
-durchflogenen Lufträume.
+Blase den Luftraum unter dem Finger; wo sich mehrere überlagern, zeigt eine Karte sie alle: einen Höhenblock wie das
+Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
+Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
+nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger
+oder Maus ebenso die durchflogenen Lufträume.
+
+**Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
+Sequenzen aus seinen VAC-Karten leuchten auf (benannte grüne Kreise, Striche zwischen den Punkten). Tippen Sie ihn an:
+die Karte rückt an seine Punkte heran, wenn sie eng beieinander liegen, und seine Karte nennt die Sequenzen (mit der
+Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Escape oder ein Antippen anderswo gibt ihn frei.
+Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
+aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet, sind keine veröffentlichte Route und nennen keine
+Flugrichtung; maßgeblich ist die VAC-Karte. Sie erscheinen, sobald der Administrator sie importiert hat
+(Einstellungen › Wartung).
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
@@ -270,7 +283,8 @@ Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspäte
 Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
 voraussichtliche Zeit (ETA). „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
 Position (GPS oder Netz nicht aktiviert) sagt die Zeile es und öffnet die Einstellungen; eine Position, die älter als 2
-Minuten ist, erscheint grau.
+Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder Little
+Navmap.
 
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
@@ -335,7 +349,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 103b942e1640 -->
+<!-- fr: 1a6a90e809c4 -->
 
 <!-- chapter: report -->
 # Bericht
@@ -611,23 +625,28 @@ Repository, das nicht antwortet, wird nur gemeldet.
 ## Einen Piloten einrichten
 
 **Die Konfiguration vorbereiten (Administrator).** Klappen Sie auf einem vom Starter bedienten Rechner oder auf einem
-für GitHub eingerichteten Gerät „Konfiguration für einen Piloten exportieren…“ in der Karte „Datenzugang“ auf. Geben Sie
-das Kürzel des Piloten und die Adresse der veröffentlichten App ein, dann „Datei und Link erstellen“: Die Datei
-sog-config-<TRI>.json wird gespeichert und der Link angezeigt, bereit zum Kopieren. Sie enthalten die Fluggesellschaft,
-das Datenrepository, das Kürzel und die Anleitung für das Token, nie ein Token oder Geheimnis.
+für GitHub eingerichteten Gerät „Konfiguration für einen Piloten exportieren…“ in der Karte „Datenzugang“ auf: Sie nennt
+Ihre Schritte der Reihe nach. Laden Sie zuerst den GitHub-Namen des Piloten mit der Rolle Write in das Repository ein
+(der Link führt zur Seite der Mitwirkenden des Repositorys). Geben Sie dann sein Kürzel und die Adresse der
+veröffentlichten App ein, dann „Datei und Link erstellen“: Die Datei sog-config-<TRI>.json wird gespeichert, der Link
+und sein QR-Code werden angezeigt. Sie enthalten die Fluggesellschaft, das Datenrepository, das Kürzel und die Anleitung
+für das Token, nie ein Token oder Geheimnis. Senden Sie den Link oder die Datei, oder lassen Sie das Telefon des Piloten
+den QR-Code scannen.
 
-**Die Konfiguration anwenden (Pilot).** Tippen Sie auf den erhaltenen Link oder auf „Konfiguration importieren…“ in der
-Karte „Datenzugang“ (auch die Begrüßungskarte beim ersten Öffnen führt dorthin). Die Karte „Erhaltene Konfiguration“
-zeigt Fluggesellschaft, Repository und Kürzel. Fügen Sie nach Wunsch Ihre IVAO-, VATSIM- und SimBrief-IDs hinzu, dann
-das Token: Die Anleitung, darunter eingeklappt, sagt, wie Sie es beim Host des Repositorys erstellen. „Testen“ prüft den
-Zugang; „Anwenden“ prüft ihn erneut, richtet Identität, Nutzungen und Zugang ein und führt eine erste Synchronisation
-aus. Halten Sie danach das Gebiet Ihrer Flüge offline bereit („Zu den Offline-Daten“).
+**Der Fluggesellschaft beitreten (Pilot).** Der Link, der QR-Code, „Konfiguration importieren…“ oder „Der
+Fluggesellschaft beitreten…“ (Karte „Datenzugang“) und die Begrüßungskarte beim ersten Öffnen öffnen den Assistenten
+„Der Fluggesellschaft beitreten“, ein Bildschirm pro Schritt: die erhaltene Konfiguration; das Konto (bei Bedarf mit dem
+Registrierungslink erstellen) und der Benutzername; die anzunehmende Einladung; das Token, Schritt für Schritt; das
+eingefügte und getestete Token; die Netzwerk-IDs; zuletzt „Abschließen und synchronisieren“, dann die Offline-Daten.
+Angekreuzte Kästchen bleiben auf dem Gerät: Eine Karte der Einstellungen bietet an, dort fortzusetzen, wo Sie waren. Das
+Tutorial „Der Fluggesellschaft beitreten“ folgt denselben Schritten.
 
-**Nicht mehr als die Datei.** Nur was die Konfiguration enthält, wird eingerichtet, und nichts wird geschrieben, wenn
-das Token abgelehnt wird; eine Datei in einem anderen Format wird mit einer Meldung abgelehnt. Die Fluggesellschaft wird
-nur ins Repository geschrieben, wenn es noch keine hat. Auf einem Rechner, dessen data/ diesem Repository bereits folgt,
-ändert sich der Zugang nicht. Ohne Starter erreicht die App nur ein GitHub-Repository: Wenden Sie die Konfiguration für
-ein Repository auf framagit oder GitLab auf einem Rechner mit Starter an.
+**Nicht mehr als die Datei.** Nur was die Konfiguration enthält, wird eingerichtet, und der Zugang wird erst
+gespeichert, wenn das Token getestet ist; „Testen“ sagt, was nicht stimmt: Einladung noch nicht angenommen, Token falsch
+kopiert oder abgelaufen, Token ohne Recht auf den Inhalt. Eine Datei in einem anderen Format wird mit einer Meldung
+abgelehnt. Die Fluggesellschaft wird nur ins Repository geschrieben, wenn es noch keine hat. Auf einem Rechner, dessen
+data/ diesem Repository bereits folgt, überspringt der Assistent Konto und Token. Ohne Starter erreicht die App nur ein
+GitHub-Repository: Richten Sie den Zugang für ein Repository auf framagit oder GitLab auf einem Rechner mit Starter ein.
 
 ## Verwaltung
 
@@ -658,4 +677,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: b8cbd1317939 -->
+<!-- fr: cdcf52f0dd22 -->

@@ -85,7 +85,7 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
 ## 6. Tutorials (`#help?t=<id>`)
 
 - **What**: one short page per first task, telling what to do, step by step; the chapters say how it works, so nothing
-  is said twice. Today, in the order of use: `prepare-flight` (the five steps of Fuel: Flight, Route with the map and
+  is said twice. Today, in the order of use: `join-airline` (the assistant's seven steps), `prepare-flight` (the five steps of Fuel: Flight, Route with the map and
   its Edit mode, Weather, Quote and density altitude, Departure) and `write-report` (from the started flight or the
   last IVAO flight to "Save and record on the website", then My flights).
 - **Sources**: `frame/help/tutorial/<id>.<lang>.md`, written in English first, then French; German and Spanish later.
@@ -100,8 +100,8 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   "← The manual". A language without its file shows the English one, marked "(in English)" in the lists.
 - **Reached** from the top of the manual (a "Start with…" card after its first paragraph, listing the tutorials) and
   from the **welcome card** drawn by the frame above the first module opened on the device: "First time here? Start
-  with a short tutorial:", the tutorials, ✕, and a link to import a pilot's configuration (`#settings?import=1`,
-  frame/settings/SPEC.md § 5). Closing it or opening a tutorial stores `welcomed` in
+  with a short tutorial:", the tutorials, ✕, and "Joining an airline? Start here" (`#settings?join=1`, the assistant of
+  frame/settings/SPEC.md § 7). Closing it or opening a tutorial stores `welcomed` in
   `device/help.json`; it never comes back on that device.
 - Offline: the English and French texts are in the frame's service worker list; the captures are kept at their first
   view.

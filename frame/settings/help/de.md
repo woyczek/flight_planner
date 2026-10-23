@@ -88,23 +88,28 @@ Repository, das nicht antwortet, wird nur gemeldet.
 ## Einen Piloten einrichten
 
 **Die Konfiguration vorbereiten (Administrator).** Klappen Sie auf einem vom Starter bedienten Rechner oder auf einem
-für GitHub eingerichteten Gerät „Konfiguration für einen Piloten exportieren…“ in der Karte „Datenzugang“ auf. Geben Sie
-das Kürzel des Piloten und die Adresse der veröffentlichten App ein, dann „Datei und Link erstellen“: Die Datei
-sog-config-<TRI>.json wird gespeichert und der Link angezeigt, bereit zum Kopieren. Sie enthalten die Fluggesellschaft,
-das Datenrepository, das Kürzel und die Anleitung für das Token, nie ein Token oder Geheimnis.
+für GitHub eingerichteten Gerät „Konfiguration für einen Piloten exportieren…“ in der Karte „Datenzugang“ auf: Sie nennt
+Ihre Schritte der Reihe nach. Laden Sie zuerst den GitHub-Namen des Piloten mit der Rolle Write in das Repository ein
+(der Link führt zur Seite der Mitwirkenden des Repositorys). Geben Sie dann sein Kürzel und die Adresse der
+veröffentlichten App ein, dann „Datei und Link erstellen“: Die Datei sog-config-<TRI>.json wird gespeichert, der Link
+und sein QR-Code werden angezeigt. Sie enthalten die Fluggesellschaft, das Datenrepository, das Kürzel und die Anleitung
+für das Token, nie ein Token oder Geheimnis. Senden Sie den Link oder die Datei, oder lassen Sie das Telefon des Piloten
+den QR-Code scannen.
 
-**Die Konfiguration anwenden (Pilot).** Tippen Sie auf den erhaltenen Link oder auf „Konfiguration importieren…“ in der
-Karte „Datenzugang“ (auch die Begrüßungskarte beim ersten Öffnen führt dorthin). Die Karte „Erhaltene Konfiguration“
-zeigt Fluggesellschaft, Repository und Kürzel. Fügen Sie nach Wunsch Ihre IVAO-, VATSIM- und SimBrief-IDs hinzu, dann
-das Token: Die Anleitung, darunter eingeklappt, sagt, wie Sie es beim Host des Repositorys erstellen. „Testen“ prüft den
-Zugang; „Anwenden“ prüft ihn erneut, richtet Identität, Nutzungen und Zugang ein und führt eine erste Synchronisation
-aus. Halten Sie danach das Gebiet Ihrer Flüge offline bereit („Zu den Offline-Daten“).
+**Der Fluggesellschaft beitreten (Pilot).** Der Link, der QR-Code, „Konfiguration importieren…“ oder „Der
+Fluggesellschaft beitreten…“ (Karte „Datenzugang“) und die Begrüßungskarte beim ersten Öffnen öffnen den Assistenten
+„Der Fluggesellschaft beitreten“, ein Bildschirm pro Schritt: die erhaltene Konfiguration; das Konto (bei Bedarf mit dem
+Registrierungslink erstellen) und der Benutzername; die anzunehmende Einladung; das Token, Schritt für Schritt; das
+eingefügte und getestete Token; die Netzwerk-IDs; zuletzt „Abschließen und synchronisieren“, dann die Offline-Daten.
+Angekreuzte Kästchen bleiben auf dem Gerät: Eine Karte der Einstellungen bietet an, dort fortzusetzen, wo Sie waren. Das
+Tutorial „Der Fluggesellschaft beitreten“ folgt denselben Schritten.
 
-**Nicht mehr als die Datei.** Nur was die Konfiguration enthält, wird eingerichtet, und nichts wird geschrieben, wenn
-das Token abgelehnt wird; eine Datei in einem anderen Format wird mit einer Meldung abgelehnt. Die Fluggesellschaft wird
-nur ins Repository geschrieben, wenn es noch keine hat. Auf einem Rechner, dessen data/ diesem Repository bereits folgt,
-ändert sich der Zugang nicht. Ohne Starter erreicht die App nur ein GitHub-Repository: Wenden Sie die Konfiguration für
-ein Repository auf framagit oder GitLab auf einem Rechner mit Starter an.
+**Nicht mehr als die Datei.** Nur was die Konfiguration enthält, wird eingerichtet, und der Zugang wird erst
+gespeichert, wenn das Token getestet ist; „Testen“ sagt, was nicht stimmt: Einladung noch nicht angenommen, Token falsch
+kopiert oder abgelaufen, Token ohne Recht auf den Inhalt. Eine Datei in einem anderen Format wird mit einer Meldung
+abgelehnt. Die Fluggesellschaft wird nur ins Repository geschrieben, wenn es noch keine hat. Auf einem Rechner, dessen
+data/ diesem Repository bereits folgt, überspringt der Assistent Konto und Token. Ohne Starter erreicht die App nur ein
+GitHub-Repository: Richten Sie den Zugang für ein Repository auf framagit oder GitLab auf einem Rechner mit Starter ein.
 
 ## Verwaltung
 
@@ -135,4 +140,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: b8cbd1317939 -->
+<!-- fr: cdcf52f0dd22 -->

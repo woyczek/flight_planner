@@ -51,6 +51,8 @@ les types publiés, et en dernier le code tapé tel quel. Un appareil de la comp
 sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et
 l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation.
 
+À côté de la date, l'horloge « +30 » pose le vol dans 30 min (arrondi aux 5 min ; chaque appui ajoute 30 min) et « Maint. » revient à l'heure courante : la météo des terrains (le TAF s'il couvre cette heure) et les vents en altitude sont relus aussitôt.
+
 **2 Route.** Tapez la route dans le champ « Route » (Entrée la valide),
 toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
 NTS/F280 LFRN »). Vous pouvez aussi y coller un plan de vol OACI ou la liste d'un OFP. Quand vous quittez le champ, la
@@ -233,7 +235,8 @@ sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
 **Les couches.** Le bouton aux calques, sous le réglage de la carte, ouvre la liste de ce qu'elle dessine : familles
 d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report
-VFR, obstacles, altitudes minimales, villes, canevas, dégagement. Cochez ou décochez : la carte suit, et votre choix
+VFR, obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces,
+noms des voies. Cochez ou décochez : la carte suit, et votre choix
 est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. « Autour de la route
 seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ; décochée, toute la
 carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon. Tout en bas, le curseur « Complexité (essai) » montre moins de détails vers la
@@ -243,9 +246,19 @@ VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les
 **Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
 ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
 point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
-(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne les espaces sous le doigt. Elle suit
+(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne l'espace sous le doigt ; là où plusieurs se
+superposent, une carte les montre tous : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
+de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste jusqu'au toucher suivant. Elle suit
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
 la carte. Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
+
+**Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
+tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les points). Touchez-le : la carte se rapproche
+de ses points s'ils sont serrés, et sa carte donne les séquences (avec la page de la VAC) puis les consignes de la VAC,
+repliées page par page. Échap ou un toucher ailleurs le relâche. En mode VFR, les points du terrain de départ et de celui
+d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
+ne sont pas un itinéraire publié et ne disent pas le sens de parcours ; la carte VAC fait foi. Elles apparaissent une
+fois importées par l'administrateur (Paramètres › Maintenance).
 
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
 14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Au-
@@ -253,6 +266,7 @@ dessus de la carte, une ligne dit l'écart : en avance ou en retard (minutes et 
 votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
 estimée (ETA). « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
 ou réseau non activés), la ligne le dit et ouvre les réglages ; une position de plus de 2 minutes est grisée.
+La ligne finit par la source de la position : GPS, réseau, IVAO, VATSIM, X-Plane ou Little Navmap.
 
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
 le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un
@@ -578,22 +592,27 @@ seulement signalé.
 ## Configurer un pilote
 
 **Préparer la configuration (administrateur).** Sur un poste servi par le lanceur, ou sur un appareil réglé sur GitHub,
-dépliez « Exporter une configuration pour un pilote… » dans la carte « Accès aux données ». Tapez le trigramme du pilote
-et l'adresse de l'appli publiée, puis « Créer le fichier et le lien » : le fichier sog-config-<TRI>.json est enregistré
-et le lien s'affiche, prêt à copier. Ils contiennent la compagnie, le dépôt des données, le trigramme et le mode
-d'emploi du jeton, jamais de jeton ni de secret.
+dépliez « Exporter une configuration pour un pilote… » dans la carte « Accès aux données » : il rappelle vos gestes dans
+l'ordre. Invitez d'abord le nom GitHub du pilote sur le dépôt, avec le droit Write (le lien mène à la page des
+collaborateurs du dépôt). Tapez ensuite son trigramme et l'adresse de l'appli publiée, puis « Créer le fichier et le
+lien » : le fichier sog-config-<TRI>.json est enregistré, le lien et son code QR s'affichent. Ils contiennent la
+compagnie, le dépôt des données, le trigramme et le mode d'emploi du jeton, jamais de jeton ni de secret. Envoyez le
+lien ou le fichier, ou faites scanner le code QR par le téléphone du pilote.
 
-**Appliquer la configuration (pilote).** Touchez le lien reçu, ou « Importer une configuration… » dans la carte « Accès
-aux données » (la carte d'accueil de la première ouverture y mène aussi). La carte « Configuration reçue » montre la
-compagnie, le dépôt et le trigramme. Ajoutez si vous voulez vos identifiants IVAO, VATSIM et SimBrief, puis le jeton :
-le mode d'emploi, replié dessous, dit comment le créer sur l'hôte du dépôt. « Tester » vérifie l'accès ; « Appliquer »
-le vérifie encore, règle l'identité, les usages et l'accès, puis fait une première synchronisation. Gardez ensuite la
-zone de vos vols hors ligne (« Aller aux données hors ligne »).
+**Rejoindre la compagnie (pilote).** Le lien, le code QR, « Importer une configuration… » ou « Rejoindre la compagnie… »
+(carte « Accès aux données ») et la carte d'accueil de la première ouverture ouvrent l'assistant « Rejoindre la
+compagnie », un écran par pas : la configuration reçue ; le compte (le créer s'il n'existe pas, avec le lien
+d'inscription) et le nom d'utilisateur ; l'invitation à accepter ; le jeton, pas à pas ; le jeton collé et testé ; les
+identifiants réseau ; enfin « Terminer et synchroniser », puis les données hors ligne. Les cases cochées restent sur
+l'appareil : une carte des réglages propose de reprendre là où vous en étiez. Le tutoriel « Rejoindre la compagnie »
+suit les mêmes pas.
 
-**Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et rien n'est écrit si le jeton est
-refusé ; un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le dépôt que s'il n'en
-a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'accès ne change pas. Sans lanceur, l'appli ne joint qu'un
-dépôt GitHub : pour un dépôt framagit ou GitLab, appliquez la configuration sur un poste avec le lanceur.
+**Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et l'accès n'est enregistré qu'une
+fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore acceptée, jeton mal copié ou expiré, jeton
+sans droit sur le contenu. Un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le
+dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte et le jeton.
+Sans lanceur, l'appli ne joint qu'un dépôt GitHub : pour un dépôt framagit ou GitLab, faites l'accès sur un poste avec
+le lanceur.
 
 ## Administration
 

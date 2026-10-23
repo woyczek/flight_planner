@@ -39,8 +39,8 @@
       'Beide bleiben in der Hilfe (?), am Anfang des Handbuchs.', 'Ambos quedan en la ayuda (?), al principio del manual.'
     ],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
-    welcomeImport: ['Une configuration reçue de votre compagnie ? L’importer', 'A configuration from your airline? Import it',
-      'Eine Konfiguration von Ihrer Fluggesellschaft? Importieren', '¿Una configuración de su aerolínea? Importarla'
+    welcomeImport: ['Vous rejoignez une compagnie ? Commencez ici', 'Joining an airline? Start here',
+      'Sie treten einer Fluggesellschaft bei? Hier beginnen', '¿Se une a una aerolínea? Empiece aquí'
     ],
     start: ['Commencer par…', 'Start with…', 'Beginnen Sie mit…', 'Empiece por…'],
     next: ['Tutoriel suivant : {t} →', 'Next tutorial: {t} →', 'Nächstes Tutorial: {t} →', 'Siguiente tutorial: {t} →'],
@@ -48,6 +48,9 @@
   };
   // tutoriels, dans l'ordre d'usage (fichiers frame/help/tutorial/<id>.<langue>.md, vérifiés par build_help.py)
   const TUTORIALS = [{
+    id: 'join-airline',
+    title: ['Rejoindre la compagnie', 'Join the airline', 'Der Fluggesellschaft beitreten', 'Unirse a la aerolínea']
+  }, {
     id: 'prepare-flight',
     title: ['Préparer un vol', 'Prepare a flight', 'Einen Flug vorbereiten', 'Preparar un vuelo']
   }, {
@@ -205,7 +208,7 @@
     const d = document.createElement('div');
     d.className = 'f-card f-welcome';
     d.dataset.welcome = '';
-    d.innerHTML = `<div class="f-row"><b>${esc(c.t(T.welcome))}</b><button type="button" data-x aria-label="${esc(c.t(T.close))}">✕</button></div><ul>${list}</ul><p class="f-muted">${esc(c.t(T.welcomeLater))}</p><p><a href="#settings?import=1" data-import>${esc(c.t(T.welcomeImport))}</a></p>`;
+    d.innerHTML = `<div class="f-row"><b>${esc(c.t(T.welcome))}</b><button type="button" data-x aria-label="${esc(c.t(T.close))}">✕</button></div><ul>${list}</ul><p class="f-muted">${esc(c.t(T.welcomeLater))}</p><p><a href="#settings?join=1" data-import>${esc(c.t(T.welcomeImport))}</a></p>`;
     d.querySelector('[data-x]').onclick = () => {
       d.remove();
       welcomed(c);

@@ -90,3 +90,7 @@ The help agent's memory: every choice, dated, with its reason. Newest last. Proj
   Edit mode, winds aloft), Report (the started flight first, with its start time and fuel) and My flights (the flight in
   progress) in English, German and Spanish, by helper agents, reviewed here; the report tutorial follows ("Use" also
   fills the engine start time and the departure fuel).
+- **23 Oct 2026 — Tutorial "Join the airline"** (en, fr; de and es later): first in the list, as joining comes before
+  everything else; seven captures of the assistant at 375 px, taken by `capture.py --only join` against the fake GitHub
+  (in-memory repository emptied before each language, a token that is not one), so the run needs no launcher, no real
+  account and no real data. The welcome card's link now opens the assistant.

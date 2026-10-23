@@ -13,11 +13,17 @@ et rien d'autre (ni comptes rendus, ni journal, ni flotte) :
   python tools/launch.py --port 8799 --no-browser --data <dossier de test>
 Identité d'essai : trigramme TST, aucun identifiant réseau. La météo est lue en direct (données publiques).
 
+« Rejoindre la compagnie » (--only join) se joue sans lanceur, contre le faux GitHub de frame/store/test/fake_github.py
+(dépôt en mémoire, vidé avant chaque langue ; le jeton d'essai n'est jamais un vrai jeton) :
+  python frame/store/test/fake_github.py 8781
+
 Usage : python frame/help/tutorial/capture.py --data <dossier de test> [--url http://127.0.0.1:8799] [--lang en,fr]
         [--chrome <chrome.exe>]
+        python frame/help/tutorial/capture.py --only join --fake http://127.0.0.1:8781 [--lang en,fr]
 """
 import base64
 import json
+import re
 import os
 import shutil
 import socket
@@ -211,6 +217,35 @@ def write_report(b, lang, out):
     b.shot(out('write-report', 5))
 
 
+def join_airline(b, lang, out, fake):
+    """Rejoindre la compagnie : l'assistant de la configuration reçue (lien), un écran par pas, sur le faux GitHub."""
+    b.go(f'{fake}/frame/index.html#settings')
+    b.js(f"localStorage.setItem('sogFrame:lang', '{lang}'); location.reload();")
+    time.sleep(3)
+    link = b.js(f"""await until(() => window.SogConfig);
+      const c = SogConfig.build({{ airline: {{ name: 'Test Airline', site: 'https://example.invalid', pages: {{}} }},
+        data: {{ host: 'github.com', repo: 'test-airline/data', branch: 'main', api: '{fake}/api' }}, trigram: 'TST' }});
+      delete c.howto; return location.origin + location.pathname + '#settings?config=' + await SogConfig.pack(c);""")
+    b.go(link)
+    b.js("location.reload();")
+    time.sleep(3)
+    nxt = "$('[data-jact=next]').click(); await W(900); scrollTo(0, 0);"
+    b.js("await until(() => $('[data-card=join]')); shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 1))
+    b.js(nxt + "$('[data-jacc=no]').click(); await W(900); set($('[data-f=jUser]'), 'tst-pilot'); shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 2))
+    b.js(nxt + "$('[data-jdone=\"3\"]').click(); await W(400); scrollTo(0, 0);")
+    b.shot(out('join-airline', 3))
+    b.js(nxt + "$('[data-jdone=\"4\"]').click(); await W(400); scrollTo(0, 0);")
+    b.shot(out('join-airline', 4))
+    b.js(nxt + "set($('[data-f=jToken]'), 'test-token-not-real'); $('[data-jact=test]').click(); await W(2000); shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 5))
+    b.js(nxt + "shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 6))
+    b.js(nxt + "$('[data-jact=finish]').click(); await until(() => !$('[data-jact=finish]'), 20000); await W(800); shut(); scrollTo(0, 0);")
+    b.shot(out('join-airline', 7))
+
+
 def main(args):
     opt = dict(zip(args[::2], args[1::2]))
     url = opt.get('--url', 'http://127.0.0.1:8799').rstrip('/')
@@ -218,6 +253,20 @@ def main(args):
     chrome = opt.get('--chrome') or next((c for c in CHROME if os.path.isfile(c)), None)
     if not chrome:
         sys.exit('Chrome ou Edge introuvable : --chrome <chemin>')
+    if opt.get('--only') == 'join':
+        fake = opt.get('--fake', 'http://127.0.0.1:8781').rstrip('/')
+        if not re.match(r'^http://(127\.0\.0\.1|localhost):\d+$', fake):
+            sys.exit('--fake : adresse locale du faux GitHub attendue')
+        os.makedirs(os.path.join(HERE, 'img'), exist_ok=True)
+        for lang in langs:
+            print(lang)
+            urllib.request.urlopen(urllib.request.Request(f'{fake}/__test/reset', data=b'{}', method='POST'))  # dépôt vide
+            b = Browser(chrome)
+            try:
+                join_airline(b, lang, lambda tut, n: os.path.join(HERE, 'img', f'{tut}-{n}.{lang}.png'), fake)
+            finally:
+                b.close()
+        return
     data = opt.get('--data')
     try:
         site = json.load(open(os.path.join(data, 'airline', 'settings.json'), encoding='utf-8')).get('site') if data else None

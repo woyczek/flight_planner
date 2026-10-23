@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- Banc du générateur de code QR (frame/lib/qr.js) : quelques textes (court, lien de configuration, UTF-8, long), leurs
+     codes dessinés, et la grille de chacun en JSON pour le décodeur indépendant :
+       copier le contenu de « Grilles » dans un fichier, puis python frame/lib/test/qr_check.py <fichier>
+     (format et version par leurs codes BCH, syndromes Reed-Solomon de chaque bloc, texte relu identique). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qr — bench</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 16px; background: #f4f5f7; color: #111 }
+  figure { display: inline-block; margin: 8px; text-align: center; vertical-align: top; max-width: 300px }
+  figure svg { width: 240px; height: auto; background: #fff }
+  pre { white-space: pre-wrap; word-break: break-all; max-height: 240px; overflow: auto; background: #fff; padding: 8px }
+</style>
+</head>
+<body>
+<h1>Code QR — banc</h1>
+<div id="codes"></div>
+<h2>Grilles</h2>
+<pre id="rows"></pre>
+<script src="../qr.js"></script>
+<script>
+  const texts = ['HELLO', 'https://example.invalid/v3/frame/#settings?config=' + 'zAbc-_'.repeat(40), 'é€😀 ' + 'x'.repeat(300),
+    'y'.repeat(1000), 'z'.repeat(2000)
+  ];
+  const out = [];
+  for (const t of texts)
+    for (const ecl of ['M', 'L']) {
+      const q = SogQR.encode(t, {
+        ecl
+      });
+      const rows = [];
+      for (let y = 0; y < q.size; y++) {
+        let r = '';
+        for (let x = 0; x < q.size; x++) r += q.dark(x, y) ? '1' : '0';
+        rows.push(r);
+      }
+      out.push({
+        text: t,
+        version: q.version,
+        ecl: q.ecl,
+        mask: q.mask,
+        rows
+      });
+      const f = document.createElement('figure');
+      f.innerHTML = `${SogQR.svg(t, { ecl })}<figcaption>v${q.version} ${q.ecl} · ${t.length} car.</figcaption>`;
+      document.getElementById('codes').append(f);
+    }
+  document.getElementById('rows').textContent = JSON.stringify(out);
+</script>
+</body>
+</html>

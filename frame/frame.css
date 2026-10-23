@@ -284,6 +284,27 @@ body {
   align-items: center;
   min-height: var(--sog-touch)
 }
+/* assistant « Rejoindre la compagnie » et gestes de l'administrateur : pas numérotés aérés ; code QR à la taille d'un
+   écran de téléphone, toujours sur fond blanc */
+.f-join-steps li {
+  margin: 6px 0;
+  overflow-wrap: anywhere
+}
+.f-join-nav {
+  justify-content: space-between;
+  margin-top: 12px
+}
+.f-qr {
+  margin: 8px 0;
+  text-align: center
+}
+.f-qr svg {
+  display: block;
+  width: min(100%, 280px);
+  height: auto;
+  margin: 0 auto 4px;
+  background: #fff
+}
 /* réglages, carte Synchronisation : écritures en attente, une par ligne */
 .f-queue {
   list-style: none;

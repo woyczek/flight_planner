@@ -39,23 +39,22 @@ altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771
 
 **Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios (TMA /
 CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de notificación
-VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo, nombres de los
-espacios, nombres de las aerovías. Marque o desmarque: el mapa sigue, y su elección se
-conserva para este ajuste en este dispositivo. «Restablecer todo» vuelve a la elección de origen. «Solo alrededor de la
-ruta», marcada de origen en IFR, limita espacios y aerovías a la cercanía de la ruta; desmarcada, se dibuja todo el mapa
-visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos. Abajo del todo, el control «Complejidad
-(prueba)» muestra menos detalles hacia la izquierda, más hacia la derecha, en todos los zooms. Cada elemento del mapa
-tiene su rango de zoom: los puntos de notificación VFR solo aparecen muy cerca, los CTR de cerca, las TMA en vista
-media, las FIR de lejos.
+VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo, nombres de los espacios, nombres de las aerovías.
+Marque o desmarque: el mapa sigue, y su elección se conserva para este ajuste en este dispositivo. «Restablecer todo»
+vuelve a la elección de origen. «Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la
+cercanía de la ruta; desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de
+todos modos. Abajo del todo, el control «Complejidad (prueba)» muestra menos detalles hacia la izquierda, más hacia la
+derecha, en todos los zooms. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
+muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos.
 
-**Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de
-un espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto
-→ punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en
-notación AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, la burbuja da el espacio
-bajo el dedo; donde varios se superponen, una tarjeta los muestra todos: un bloque de niveles, como el perfil vertical
-(una columna numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda
-hasta el toque siguiente. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o un
-movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
+**Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de un
+espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto →
+punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en notación
+AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, la burbuja da el espacio bajo el dedo;
+donde varios se superponen, una tarjeta los muestra todos: un bloque de niveles, como el perfil vertical (una columna
+numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda hasta el
+toque siguiente. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
+un movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
 
 **Los puntos de notificación VFR de un aeródromo.** Pase el ratón sobre un aeródromo: sus puntos de notificación y
 las secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, guiones entre los puntos). Tóquelo: el
@@ -70,8 +69,8 @@ vale. Aparecen una vez importados por el administrador (Ajustes › Mantenimient
 mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
 la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA). «Seguir» mantiene
 el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), la línea lo dice y abre los
-ajustes; una posición de más de 2 minutos aparece en gris. La
-línea termina con la fuente de la posición: GPS, red, IVAO, VATSIM, X-Plane o Little Navmap.
+ajustes; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
+IVAO, VATSIM, X-Plane o Little Navmap.
 
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
 a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
@@ -133,4 +132,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 103b942e1640 -->
+<!-- fr: 1a6a90e809c4 -->

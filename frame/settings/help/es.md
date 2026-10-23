@@ -87,23 +87,27 @@ se señala.
 ## Configurar un piloto
 
 **Preparar la configuración (administrador).** En un puesto servido por el lanzador, o en un dispositivo configurado con
-GitHub, despliegue «Exportar una configuración para un piloto…» en la tarjeta «Acceso a los datos». Escriba el trigrama
-del piloto y la dirección de la aplicación publicada, luego «Crear el archivo y el enlace»: el archivo
-sog-config-<TRI>.json se guarda y el enlace aparece, listo para copiar. Contienen la aerolínea, el repositorio de datos,
-el trigrama y las instrucciones del token, nunca un token ni un secreto.
+GitHub, despliegue «Exportar una configuración para un piloto…» en la tarjeta «Acceso a los datos»: recuerda sus pasos
+en orden. Invite primero el nombre de GitHub del piloto al repositorio, con el rol Write (el enlace lleva a la página de
+colaboradores del repositorio). Escriba luego su trigrama y la dirección de la aplicación publicada, y «Crear el archivo
+y el enlace»: el archivo sog-config-<TRI>.json se guarda, el enlace y su código QR aparecen. Contienen la aerolínea, el
+repositorio de datos, el trigrama y las instrucciones del token, nunca un token ni un secreto. Envíe el enlace o el
+archivo, o haga escanear el código QR con el teléfono del piloto.
 
-**Aplicar la configuración (piloto).** Toque el enlace recibido, o «Importar una configuración…» en la tarjeta «Acceso a
-los datos» (la tarjeta de bienvenida de la primera apertura también lleva allí). La tarjeta «Configuración recibida»
-muestra la aerolínea, el repositorio y el trigrama. Añada si quiere sus identificadores IVAO, VATSIM y SimBrief, luego
-el token: las instrucciones, plegadas debajo, dicen cómo crearlo en el servidor del repositorio. «Probar» comprueba el
-acceso; «Aplicar» lo comprueba de nuevo, configura la identidad, los usos y el acceso, y hace una primera
-sincronización. Después, guarde sin conexión la zona de sus vuelos («Ir a los datos sin conexión»).
+**Unirse a la aerolínea (piloto).** El enlace, el código QR, «Importar una configuración…» o «Unirse a la aerolínea…»
+(tarjeta «Acceso a los datos») y la tarjeta de bienvenida de la primera apertura abren el asistente «Unirse a la
+aerolínea», una pantalla por paso: la configuración recibida; la cuenta (crearla si hace falta, con el enlace de
+registro) y el nombre de usuario; la invitación que aceptar; el token, paso a paso; el token pegado y probado; los
+identificadores de red; por último «Terminar y sincronizar», y luego los datos sin conexión. Las casillas marcadas
+quedan en el dispositivo: una tarjeta de los ajustes propone retomar donde lo dejó. El tutorial «Unirse a la aerolínea»
+sigue los mismos pasos.
 
-**Nada más que el archivo.** Solo se configura lo que contiene la configuración, y no se escribe nada si el token es
-rechazado; un archivo de otro formato se rechaza con un mensaje. La aerolínea solo se escribe en el repositorio si aún
-no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el acceso no cambia. Sin lanzador, la aplicación solo
-llega a un repositorio de GitHub: para un repositorio de framagit o GitLab, aplique la configuración en un puesto con el
-lanzador.
+**Nada más que el archivo.** Solo se configura lo que contiene la configuración, y el acceso solo se guarda una vez
+probado el token; «Probar» dice qué falla: invitación aún no aceptada, token mal copiado o caducado, token sin derecho
+sobre el contenido. Un archivo de otro formato se rechaza con un mensaje. La aerolínea solo se escribe en el repositorio
+si aún no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el asistente se salta la cuenta y el token. Sin
+lanzador, la aplicación solo llega a un repositorio de GitHub: para un repositorio de framagit o GitLab, configure el
+acceso en un puesto con el lanzador.
 
 ## Administración
 
@@ -135,4 +139,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: b8cbd1317939 -->
+<!-- fr: cdcf52f0dd22 -->

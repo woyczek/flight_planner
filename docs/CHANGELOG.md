@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Settings: "Join the airline" assistant and QR code** (`frame/settings/join.js`, `frame/lib/qr.js`,
+  `frame/settings/settings.js`, `frame/help/help.js`, `frame/help/tutorial/`; SPEC § 5 and § 7, DECISIONS, help ×4) —
+  the configuration link, file, Settings or welcome card open a seven-step assistant (configuration, account, invitation,
+  token step by step, test with clear messages, network IDs, finish and synchronise), resumable on the device; the
+  administrator's export lists their steps and shows a QR code of the link (pure JavaScript generator, checked by an
+  independent decoder); tutorial "Join the airline" (en, fr).
 - **Fuel: flight date in one touch** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — "+30" next to the
   flight date sets the flight 30 min from now (30 more at each press), "Now" goes back to the current time; the
   weather and the winds aloft follow.

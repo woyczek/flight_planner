@@ -51,6 +51,8 @@ aircraft takes its own sheet if it has one, otherwise its type's, otherwise an e
 marks it “approximate”. The chosen registration and callsign follow the flight through to the report. The “Cruise” line
 says where the fuel flow comes from.
 
+Next to the date, the "+30" clock sets the flight 30 min from now (rounded to 5 min; each press adds 30 min) and "Now" goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again at once.
+
 **2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
 levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
 OFP there. When you leave the field, the route is tidied up: in capitals on one line, without DCT or speed-level groups,
@@ -229,7 +231,8 @@ ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
 **Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families (TMA /
 CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
-altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept for this setting on
+altitudes, towns, graticule, alternate, airspace names, airway
+names. Tick or untick: the map follows, and your choice is kept for this setting on
 this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by default in IFR, keeps
 airspaces and airways near the route; unticked, the whole visible map is drawn, to look elsewhere. Close up, everything
 is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left, more to the right, at
@@ -239,16 +242,27 @@ in a medium view, FIRs from afar.
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
 small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,
 its floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”).
-Tapped elsewhere inside an airspace, the bubble gives the airspaces under your finger. It follows the pointer, stays 5
+Tapped elsewhere inside an airspace, the bubble gives the airspace under your finger; where several
+overlap, a card shows them all: a block of levels, like the vertical profile (one numbered column per airspace, from its
+floor to its ceiling), then the numbered list with their limits. It stays until the next tap. It follows the pointer, stays 5
 seconds, gives way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger
 or the mouse give the airspaces crossed in the same way.
+
+**The VFR reporting points of an aerodrome.** Move the mouse over an aerodrome: its reporting points and the
+sequences taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in
+on its points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the
+VAC, folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
+aerodromes are shown anyway. These data are extracted automatically from the VAC: they are marked “to be checked”,
+are not a published route and do not give the direction of travel; the VAC chart prevails. They appear once the
+administrator has imported them (Settings › Maintenance).
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned
 14:32Z”) and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted).
 Above the map, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your
 altitude against the planned one; the profile shows both altitudes. Close up, each point carries its estimated time
 (ETA). “Follow” keeps the map on your position; moving the map stops it. Without a position (GPS or network not
-enabled), the line says so and opens the settings; a position older than 2 minutes is greyed.
+enabled), the line says so and opens the settings; a position older than 2 minutes is greyed. The
+line ends with the position's source: GPS, network, IVAO, VATSIM, X-Plane or Little Navmap.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
@@ -569,23 +583,26 @@ only reported.
 ## Configuring a pilot
 
 **Preparing the configuration (administrator).** On a workstation served by the launcher, or on a device set up on
-GitHub, unfold “Export a configuration for a pilot…” in the “Data access” card. Type the pilot's trigram and the address
-of the published app, then “Create the file and the link”: the file sog-config-<TRI>.json is saved and the link is
-shown, ready to copy. They hold the airline, the data repository, the trigram and how to create the token, never a token
-or a secret.
+GitHub, unfold “Export a configuration for a pilot…” in the “Data access” card: it lists your steps in order. First
+invite the pilot's GitHub name to the repository, with the Write role (the link leads to the repository's collaborators
+page). Then type their trigram and the address of the published app, and “Create the file and the link”: the file
+sog-config-<TRI>.json is saved, the link and its QR code are shown. They hold the airline, the data repository, the
+trigram and how to create the token, never a token or a secret. Send the link or the file, or have the pilot's phone
+scan the QR code.
 
-**Applying the configuration (pilot).** Tap the link you received, or “Import a configuration…” in the “Data access”
-card (the welcome card of the first opening leads there too). The “Configuration received” card shows the airline, the
-repository and the trigram. Add your IVAO, VATSIM and SimBrief IDs if you wish, then the token: the how-to, folded
-below, says how to create it on the repository's host. “Test” checks the access; “Apply” checks it again, sets the
-identity, the usages and the access, then runs a first synchronisation. Then keep the area of your flights offline (“Go
-to offline data”).
+**Joining the airline (pilot).** The link, the QR code, “Import a configuration…” or “Join the airline…” (“Data access”
+card) and the welcome card of the first opening open the “Join the airline” assistant, one screen per step: the
+configuration received; the account (create it if needed, with the sign-up link) and the username; the invitation to
+accept; the token, step by step; the token pasted and tested; the network IDs; and last “Finish and synchronise”, then
+the offline data. Ticked boxes stay on the device: a settings card offers to resume where you left off. The “Join the
+airline” tutorial follows the same steps.
 
-**Nothing more than the file.** Only what the configuration holds is set, and nothing is written if the token is
-refused; a file in another format is refused with a message. The airline is written to the repository only if it has
-none yet. On a workstation whose data/ already follows this repository, the access does not change. Without a launcher,
-the app only reaches a GitHub repository: for a framagit or GitLab repository, apply the configuration on a workstation
-with the launcher.
+**Nothing more than the file.** Only what the configuration holds is set, and the access is saved only once the token is
+tested; “Test” says what is wrong: invitation not accepted yet, token copied wrongly or expired, token without the right
+on the contents. A file in another format is refused with a message. The airline is written to the repository only if it
+has none yet. On a workstation whose data/ already follows this repository, the assistant skips the account and the
+token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab repository, set the access
+on a workstation with the launcher.
 
 ## Administration
 
@@ -616,4 +633,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: b8cbd1317939 -->
+<!-- fr: cdcf52f0dd22 -->

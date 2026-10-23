@@ -84,23 +84,26 @@ only reported.
 ## Configuring a pilot
 
 **Preparing the configuration (administrator).** On a workstation served by the launcher, or on a device set up on
-GitHub, unfold “Export a configuration for a pilot…” in the “Data access” card. Type the pilot's trigram and the address
-of the published app, then “Create the file and the link”: the file sog-config-<TRI>.json is saved and the link is
-shown, ready to copy. They hold the airline, the data repository, the trigram and how to create the token, never a token
-or a secret.
+GitHub, unfold “Export a configuration for a pilot…” in the “Data access” card: it lists your steps in order. First
+invite the pilot's GitHub name to the repository, with the Write role (the link leads to the repository's collaborators
+page). Then type their trigram and the address of the published app, and “Create the file and the link”: the file
+sog-config-<TRI>.json is saved, the link and its QR code are shown. They hold the airline, the data repository, the
+trigram and how to create the token, never a token or a secret. Send the link or the file, or have the pilot's phone
+scan the QR code.
 
-**Applying the configuration (pilot).** Tap the link you received, or “Import a configuration…” in the “Data access”
-card (the welcome card of the first opening leads there too). The “Configuration received” card shows the airline, the
-repository and the trigram. Add your IVAO, VATSIM and SimBrief IDs if you wish, then the token: the how-to, folded
-below, says how to create it on the repository's host. “Test” checks the access; “Apply” checks it again, sets the
-identity, the usages and the access, then runs a first synchronisation. Then keep the area of your flights offline (“Go
-to offline data”).
+**Joining the airline (pilot).** The link, the QR code, “Import a configuration…” or “Join the airline…” (“Data access”
+card) and the welcome card of the first opening open the “Join the airline” assistant, one screen per step: the
+configuration received; the account (create it if needed, with the sign-up link) and the username; the invitation to
+accept; the token, step by step; the token pasted and tested; the network IDs; and last “Finish and synchronise”, then
+the offline data. Ticked boxes stay on the device: a settings card offers to resume where you left off. The “Join the
+airline” tutorial follows the same steps.
 
-**Nothing more than the file.** Only what the configuration holds is set, and nothing is written if the token is
-refused; a file in another format is refused with a message. The airline is written to the repository only if it has
-none yet. On a workstation whose data/ already follows this repository, the access does not change. Without a launcher,
-the app only reaches a GitHub repository: for a framagit or GitLab repository, apply the configuration on a workstation
-with the launcher.
+**Nothing more than the file.** Only what the configuration holds is set, and the access is saved only once the token is
+tested; “Test” says what is wrong: invitation not accepted yet, token copied wrongly or expired, token without the right
+on the contents. A file in another format is refused with a message. The airline is written to the repository only if it
+has none yet. On a workstation whose data/ already follows this repository, the assistant skips the account and the
+token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab repository, set the access
+on a workstation with the launcher.
 
 ## Administration
 
@@ -131,4 +134,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: b8cbd1317939 -->
+<!-- fr: cdcf52f0dd22 -->

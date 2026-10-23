@@ -40,14 +40,13 @@ seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771
 
 **Ebenen.** Die Ebenen-Schaltfläche unter der Karteneinstellung öffnet die Liste dessen, was die Karte zeichnet:
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
-VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der
-Lufträume, Namen der Flugwege. Haken setzen oder entfernen: die
-Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät erhalten. „Alles zurücksetzen“ kehrt zur
-ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt, beschränkt Lufträume und Flugwege auf die
-Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um anderswo zu schauen. Aus der Nähe wird
-ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach links weniger, nach rechts
-mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte erscheinen erst ganz
-nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
+VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der Lufträume, Namen der
+Flugwege. Haken setzen oder entfernen: die Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät
+erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt,
+beschränkt Lufträume und Flugwege auf die Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um
+anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach
+links weniger, nach rechts mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
+erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
 
 **Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
@@ -55,9 +54,9 @@ Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und O
 und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, nennt die
 Blase den Luftraum unter dem Finger; wo sich mehrere überlagern, zeigt eine Karte sie alle: einen Höhenblock wie das
 Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
-Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der nächsten Platz und schließt
-sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger oder Maus ebenso die
-durchflogenen Lufträume.
+Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
+nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger
+oder Maus ebenso die durchflogenen Lufträume.
 
 **Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
 Sequenzen aus seinen VAC-Karten leuchten auf (benannte grüne Kreise, Striche zwischen den Punkten). Tippen Sie ihn an:
@@ -74,8 +73,8 @@ Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspäte
 Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
 voraussichtliche Zeit (ETA). „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
 Position (GPS oder Netz nicht aktiviert) sagt die Zeile es und öffnet die Einstellungen; eine Position, die älter als 2
-Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder
-Little Navmap.
+Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder Little
+Navmap.
 
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
@@ -140,4 +139,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 103b942e1640 -->
+<!-- fr: 1a6a90e809c4 -->
