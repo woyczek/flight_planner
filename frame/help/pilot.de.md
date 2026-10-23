@@ -185,11 +185,11 @@ Datenblättern ändert sich nichts.
   Wetter warten auf das Netz; der letzte OFP und das letzte Wetter bleiben auf dem Gerät gespeichert.
 - **Wetter ohne Starter** (ein Telefon, ein Tablet): Die METAR kommen dann von metar.vatsim.net, ohne dass etwas
   einzustellen ist. Die TAF (nützlich, wenn Sie ein Flugdatum angeben) kommen von avwx.rest, mit Ihrem persönlichen
-  Wetterschlüssel, einmal auf dem Gerät unter Einstellungen › Schlüssel eingegeben; ohne Schlüssel sagt es die Karte,
-  und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen. Ganz ohne Netz zeigt sie das
-  zuletzt gespeicherte Wetter mit seiner Uhrzeit.
+  Wetterschlüssel, einmal auf dem Gerät in den Einstellungen, Karte „Wetterschlüssel (TAF, avwx.rest)“, eingegeben; ohne
+  Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
+  Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 6f53b81be10a -->
+<!-- fr: eabc01179da1 -->
 
 <!-- chapter: maps -->
 # Karte

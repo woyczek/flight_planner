@@ -144,8 +144,8 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   meteorología esperan a la red; el último OFP y la última meteorología se quedan guardados en el dispositivo.
 - **Meteorología sin lanzador** (un teléfono, una tableta): los METAR vienen entonces de metar.vatsim.net, sin nada que
   configurar. Los TAF (útiles cuando da una fecha de vuelo) vienen de avwx.rest, con su clave meteorológica personal,
-  introducida una vez en el dispositivo en Ajustes › Claves; sin clave, la tarjeta lo dice y responde el METAR en su
-  lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red alguna, muestra la última meteorología
-  guardada, con su hora.
+  introducida una vez en el dispositivo en Ajustes, tarjeta «Clave meteorológica (TAF, avwx.rest)»; sin clave, la
+  tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
+  alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: 6f53b81be10a -->
+<!-- fr: eabc01179da1 -->

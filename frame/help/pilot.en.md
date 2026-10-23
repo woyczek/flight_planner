@@ -168,10 +168,11 @@ flight levels, and nothing changes in the sheets.
   wait for the network; the last OFP and the last weather stay kept on the device.
 - **Weather without the launcher** (a phone, a tablet): METARs then come from metar.vatsim.net, with nothing to set up.
   TAFs (useful when you give a flight date) come from avwx.rest, with your personal weather key, entered once on the
-  device in Settings › Keys; without a key, the card says so and the METAR answers instead. The weather card says where
-  the messages come from. With no network at all, it shows the last weather kept, with its time.
+  device in Settings, “Weather key (TAF, avwx.rest)” card; without a key, the card says so and the METAR answers
+  instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
+  with its time.
 
-<!-- fr: 6f53b81be10a -->
+<!-- fr: eabc01179da1 -->
 
 <!-- chapter: maps -->
 # Map
