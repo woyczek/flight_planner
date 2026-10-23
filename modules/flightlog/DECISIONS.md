@@ -2,6 +2,9 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — wide layout by the module's width** (asked by the design session after the dual view, 1b281c1d8:
+  each pane is a container): `@media (min-width: 980px)` became `@container (min-width: 900px)` — read on the
+  window, the six columns of the list were squeezed into a 506 px pane. Checked at 1280 px: full screen: six columns; dual view (506 px): the three-column phone row.
 - **23 Oct 2026 — design lot 2 primitives** (asked by the design session): tiles, tools, list rows and the no-report dot moved to `f-tiles`, `f-tools`, `f-list` / `f-item` (a row is a button, its details an `f-card` under it), `f-dot data-kind=warn`, `f-dl`, `f-num`; the summary rule left to the frame. The module's own `<style>`
   only places things now; checked at 375 px and on a screen in standard, cabinet and field, day and night (no white
   at night, square corners in cabinet and field, no target under 44 px).

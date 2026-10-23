@@ -193,7 +193,7 @@ const STYLE = `
 [data-module="flightlog"] .fl-mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="flightlog"] .fl-detail{margin:0}
 [data-module="flightlog"] .f-dot{margin-right:6px}
-@media (min-width: 980px){
+@container (min-width: 900px){ /* largeur du module (volet de la vue double compris), pas de la fenêtre */
   [data-module="flightlog"] .f-list .f-item{grid-template-columns:7em 9em 10em minmax(0,1fr) 5em minmax(0,1fr)}
 }`;
 
