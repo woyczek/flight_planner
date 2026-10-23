@@ -394,10 +394,10 @@
       'token guardado — vacío: sin cambios'
     ],
     tokenHint: [
-      'Jeton à grain fin (github.com › Settings › Developer settings › Fine-grained tokens) : ce seul dépôt, « Contents » en lecture et écriture, 90 jours au plus. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
-      'Fine-grained token (github.com › Settings › Developer settings › Fine-grained tokens): this repository only, “Contents” read and write, 90 days at most. Kept on this device only, never shown again; never paste it in a message.',
-      'Feingranulares Token (github.com › Settings › Developer settings › Fine-grained tokens): nur dieses Repository, „Contents“ lesen und schreiben, höchstens 90 Tage. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
-      'Token de grano fino (github.com › Settings › Developer settings › Fine-grained tokens): solo este repositorio, «Contents» lectura y escritura, 90 días como máximo. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
+      'Jeton personnel GitHub : « classique » avec la case « repo » pour le dépôt d’un utilisateur, à grain fin (ce seul dépôt, « Contents » en lecture et écriture) pour celui d’une organisation ; un an au plus. Gardé sur cet appareil seulement, jamais réaffiché ; ne le collez dans aucun message.',
+      'GitHub personal token: “classic” with the “repo” box for a user’s repository, fine-grained (this repository only, “Contents” read and write) for an organisation’s; one year at most. Kept on this device only, never shown again; never paste it in a message.',
+      'Persönliches GitHub-Token: „klassisch“ mit dem Kästchen „repo“ für das Repository eines Benutzers, feingranular (nur dieses Repository, „Contents“ lesen und schreiben) für das einer Organisation; höchstens ein Jahr. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
+      'Token personal de GitHub: «clásico» con la casilla «repo» para el repositorio de un usuario, de grano fino (solo este repositorio, «Contents» lectura y escritura) para el de una organización; un año como máximo. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
     ],
     accessRead: [
       'Sans échange coché, l’accès ne sert qu’à lire les bases aéronautiques et des appareils publiées dans le dépôt des données : rien n’est envoyé.',
@@ -1364,7 +1364,7 @@
     }
   }
   /** Mode d'emploi reçu → HTML en texte seul : une ligne par paragraphe, adresses https en liens. */
-  const howtoHtml = text => String(text).split(/\n+/).filter(Boolean).map(l => `<p>${esc(l).replace(/https:\/\/[^\s<&]+[^\s<&.,;:)]/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</p>`).join('');
+  const howtoHtml = text => String(text).split(/\n+/).filter(Boolean).map(l => `<p>${esc(l).replace(/https:\/\/(?:[^\s<&]|&#38;)+[^\s<&.,;:)]/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</p>`).join('');
   /** « Créer le fichier et le lien » : sog-config-<TRI>.json téléchargé, lien #settings?config=… affiché à copier. */
   async function makeConfig(c, view, src) {
     const t = c.t,
@@ -1384,6 +1384,10 @@
       base = null;
     }
     if (base && !/^https?:$/.test(base.protocol)) base = null;
+    if (src && SogConfig.kind(src) === 'github' && !src.ownerType) src = {
+      ...src,
+      ownerType: await SogConfig.ownerType(src) || undefined
+    };
     const airline = await airlineDoc(c.FD).get(AIRLINE, {
       wait: true
     }).catch(() => null);

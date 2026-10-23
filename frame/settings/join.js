@@ -3,7 +3,7 @@
   // V3 — assistant « Rejoindre la compagnie » (frame/settings/SPEC.md § 7) : un pilote règle son appareil depuis la
   // configuration reçue (frame/settings/config.js), un écran par pas, sans rien savoir de git.
   //   1 la configuration reçue · 2 le compte (GitHub ou l'hôte du dépôt) · 3 l'invitation de l'administrateur · 4 le jeton,
-  //   pas à pas · 5 coller le jeton, tester · 6 les identifiants réseau · 7 terminé (première synchronisation, données hors
+  //   pas à pas (GitHub : classique « repo » pour le dépôt d'un utilisateur, à grain fin pour celui d'une organisation) · 5 coller le jeton, tester · 6 les identifiants réseau · 7 terminé (première synchronisation, données hors
   //   ligne, préparer un vol) ;
   //   · état gardé sur l'appareil (device/join.json : configuration, pas, cases « c'est fait », nom d'utilisateur ; jamais
   //     le jeton) pour reprendre plus tard ; les pas 2 à 5 sautés quand l'accès ne se règle pas ici (data/ du lanceur déjà
@@ -111,32 +111,66 @@
       'El acceso se comprueba en el paso 5, una vez creado el token.'),
     // 4
     s4: L4('Le jeton', 'The token', 'Das Token', 'El token'),
-    s4Hint: L4('Le jeton est la clé de cet appareil pour le dépôt, et lui seul. Sur {h} :',
-      'The token is this device’s key to the repository, and to it only. On {h}:',
-      'Das Token ist der Schlüssel dieses Geräts zum Repository, und nur dazu. Auf {h}:',
-      'El token es la llave de este dispositivo para el repositorio, y solo para él. En {h}:'),
+    s4Hint: L4('Le jeton est la clé de cet appareil pour le dépôt ; il se crée sur {h} :',
+      'The token is this device’s key to the repository; it is created on {h}:',
+      'Das Token ist der Schlüssel dieses Geräts zum Repository; es wird auf {h} erstellt:',
+      'El token es la llave de este dispositivo para el repositorio; se crea en {h}:'),
+    // dépôt d'un utilisateur : un invité ne peut pas viser ce dépôt avec un jeton à grain fin → jeton classique « repo »
+    ghClassic: L4([
+      'Ouvrez {new} : un jeton « classique », déjà prérempli (ou : votre avatar › « Settings » › « Developer settings » › « Personal access tokens » › « Tokens (classic) » › « Generate new token (classic) »).',
+      '« Note » : SOG Pilote. « Expiration » : « Custom », dans un an.',
+      '« Select scopes » : « repo » seulement (déjà cochée).',
+      '« Generate token », puis copiez le jeton tout de suite : il ne se revoit plus.'
+    ], [
+      'Open {new}: a “classic” token, already prefilled (or: your avatar › “Settings” › “Developer settings” › “Personal access tokens” › “Tokens (classic)” › “Generate new token (classic)”).',
+      '“Note”: SOG Pilot. “Expiration”: “Custom”, in one year.',
+      '“Select scopes”: “repo” only (already ticked).',
+      '“Generate token”, then copy the token at once: it is never shown again.'
+    ], [
+      'Öffnen Sie {new}: ein „klassisches“ Token, bereits vorausgefüllt (oder: Ihr Avatar › „Settings“ › „Developer settings“ › „Personal access tokens“ › „Tokens (classic)“ › „Generate new token (classic)“).',
+      '„Note“: SOG Pilot. „Expiration“: „Custom“, in einem Jahr.',
+      '„Select scopes“: nur „repo“ (bereits angekreuzt).',
+      '„Generate token“, dann kopieren Sie das Token sofort: Es wird nie wieder angezeigt.'
+    ], [
+      'Abra {new}: un token «clásico», ya rellenado (o: su avatar › «Settings» › «Developer settings» › «Personal access tokens» › «Tokens (classic)» › «Generate new token (classic)»).',
+      '«Note»: SOG Pilot. «Expiration»: «Custom», dentro de un año.',
+      '«Select scopes»: solo «repo» (ya marcada).',
+      '«Generate token», y copie el token enseguida: no vuelve a mostrarse.'
+    ]),
+    classicNote: L4(
+      'Ce dépôt appartient à un utilisateur : GitHub n’y permet pas de jeton limité à ce seul dépôt. Le jeton classique ouvre tous les dépôts de votre compte ; si ce compte en a d’autres, créez plutôt un compte GitHub dédié au vol (pas 2).',
+      'This repository belongs to a user: GitHub does not allow a token limited to it. The classic token opens all the repositories of your account; if that account has others, create a GitHub account dedicated to flying instead (step 2).',
+      'Dieses Repository gehört einem Benutzer: GitHub erlaubt kein darauf beschränktes Token. Das klassische Token öffnet alle Repositorys Ihres Kontos; hat dieses Konto weitere, erstellen Sie besser ein eigenes GitHub-Konto nur für das Fliegen (Schritt 2).',
+      'Este repositorio pertenece a un usuario: GitHub no permite un token limitado a él. El token clásico abre todos los repositorios de su cuenta; si esa cuenta tiene otros, cree mejor una cuenta de GitHub dedicada al vuelo (paso 2).'
+    ),
+    dedicated: L4(
+      'Le jeton de ce dépôt ouvrira tous les dépôts du compte : si votre compte GitHub a déjà d’autres dépôts, créez-en un dédié au vol.',
+      'This repository’s token will open all the repositories of the account: if your GitHub account already has other repositories, create one dedicated to flying.',
+      'Das Token dieses Repositorys öffnet alle Repositorys des Kontos: Hat Ihr GitHub-Konto schon weitere Repositorys, erstellen Sie ein eigenes nur für das Fliegen.',
+      'El token de este repositorio abrirá todos los repositorios de la cuenta: si su cuenta de GitHub ya tiene otros repositorios, cree una dedicada al vuelo.'
+    ),
     ghSteps: L4([
       'Ouvrez {new} (ou : votre avatar › « Settings » › « Developer settings » › « Personal access tokens » › « Fine-grained tokens » › « Generate new token »).',
       '« Token name » : SOG Pilote. « Expiration » : « Custom », dans un an.',
-      '« Resource owner » : {owner}. « Repository access » : « Only select repositories », puis {repo}.',
+      '« Resource owner » : {owner} (l’organisation). « Repository access » : « Only select repositories », puis {repo}.',
       '« Permissions » › « Repository permissions » › « Contents » : « Read and write ».',
       '« Generate token », puis copiez le jeton tout de suite : il ne se revoit plus.'
     ], [
       'Open {new} (or: your avatar › “Settings” › “Developer settings” › “Personal access tokens” › “Fine-grained tokens” › “Generate new token”).',
       '“Token name”: SOG Pilot. “Expiration”: “Custom”, in one year.',
-      '“Resource owner”: {owner}. “Repository access”: “Only select repositories”, then {repo}.',
+      '“Resource owner”: {owner} (the organisation). “Repository access”: “Only select repositories”, then {repo}.',
       '“Permissions” › “Repository permissions” › “Contents”: “Read and write”.',
       '“Generate token”, then copy the token at once: it is never shown again.'
     ], [
       'Öffnen Sie {new} (oder: Ihr Avatar › „Settings“ › „Developer settings“ › „Personal access tokens“ › „Fine-grained tokens“ › „Generate new token“).',
       '„Token name“: SOG Pilot. „Expiration“: „Custom“, in einem Jahr.',
-      '„Resource owner“: {owner}. „Repository access“: „Only select repositories“, dann {repo}.',
+      '„Resource owner“: {owner} (die Organisation). „Repository access“: „Only select repositories“, dann {repo}.',
       '„Permissions“ › „Repository permissions“ › „Contents“: „Read and write“.',
       '„Generate token“, dann kopieren Sie das Token sofort: Es wird nie wieder angezeigt.'
     ], [
       'Abra {new} (o: su avatar › «Settings» › «Developer settings» › «Personal access tokens» › «Fine-grained tokens» › «Generate new token»).',
       '«Token name»: SOG Pilot. «Expiration»: «Custom», dentro de un año.',
-      '«Resource owner»: {owner}. «Repository access»: «Only select repositories», luego {repo}.',
+      '«Resource owner»: {owner} (la organización). «Repository access»: «Only select repositories», luego {repo}.',
       '«Permissions» › «Repository permissions» › «Contents»: «Read and write».',
       '«Generate token», y copie el token enseguida: no vuelve a mostrarse.'
     ]),
@@ -181,19 +215,21 @@
       'Zugang geprüft: Das Repository antwortet, Zweig {b}. Auf diesem Gerät gespeichert.',
       'Acceso comprobado: el repositorio responde, rama {b}. Guardado en este dispositivo.'),
     e404: L4(
-      'Le dépôt ne répond pas à ce jeton : l’invitation n’est pas encore acceptée (pas 3), ou le dépôt n’a pas été choisi dans le jeton (« Only select repositories »).',
-      'The repository does not answer this token: the invitation is not accepted yet (step 3), or the repository was not chosen in the token (“Only select repositories”).',
-      'Das Repository antwortet diesem Token nicht: Die Einladung ist noch nicht angenommen (Schritt 3), oder das Repository wurde im Token nicht gewählt („Only select repositories“).',
-      'El repositorio no responde a este token: la invitación aún no está aceptada (paso 3), o el repositorio no se eligió en el token («Only select repositories»).'
+      'Le dépôt ne répond pas à ce jeton : l’invitation n’est pas encore acceptée (pas 3), ou le jeton ne couvre pas ce dépôt (pas 4).',
+      'The repository does not answer this token: the invitation is not accepted yet (step 3), or the token does not cover this repository (step 4).',
+      'Das Repository antwortet diesem Token nicht: Die Einladung ist noch nicht angenommen (Schritt 3), oder das Token deckt dieses Repository nicht ab (Schritt 4).',
+      'El repositorio no responde a este token: la invitación aún no está aceptada (paso 3), o el token no cubre este repositorio (paso 4).'
     ),
     e401: L4('Jeton refusé : mal copié, ou expiré. Recopiez-le, ou créez-en un autre (pas 4).',
       'Token refused: copied wrongly, or expired. Copy it again, or create another one (step 4).',
       'Token abgelehnt: falsch kopiert oder abgelaufen. Kopieren Sie es erneut oder erstellen Sie ein neues (Schritt 4).',
       'Token rechazado: mal copiado, o caducado. Cópielo de nuevo, o cree otro (paso 4).'),
-    e403: L4('Jeton sans droit sur le dépôt : « Contents » doit être « Read and write » (pas 4).',
-      'Token without rights on the repository: “Contents” must be “Read and write” (step 4).',
-      'Token ohne Rechte am Repository: „Contents“ muss „Read and write“ sein (Schritt 4).',
-      'Token sin derechos sobre el repositorio: «Contents» debe ser «Read and write» (paso 4).'),
+    e403: L4(
+      'Jeton sans droit sur le dépôt : classique, la case « repo » doit être cochée ; à grain fin, « Contents » doit être « Read and write » (pas 4).',
+      'Token without rights on the repository: classic, the “repo” box must be ticked; fine-grained, “Contents” must be “Read and write” (step 4).',
+      'Token ohne Rechte am Repository: klassisch muss „repo“ angekreuzt sein; feingranular muss „Contents“ „Read and write“ sein (Schritt 4).',
+      'Token sin derechos sobre el repositorio: clásico, la casilla «repo» debe estar marcada; de grano fino, «Contents» debe ser «Read and write» (paso 4).'
+    ),
     offline: L4('Hors ligne : reconnectez l’appareil, puis « Tester ».', 'Offline: reconnect the device, then “Test”.',
       'Offline: Verbinden Sie das Gerät wieder, dann „Testen“.',
       'Sin conexión: vuelva a conectar el dispositivo y luego «Probar».'),
@@ -269,6 +305,7 @@
     const d = cfg.data,
       kind = d ? SogConfig.kind(d) : 'other',
       host = !d ? '' : d.host === 'github.com' ? 'GitHub' : d.host,
+      classic = kind === 'github' && d?.ownerType !== 'Organization', // dépôt d'un utilisateur (ou propriétaire inconnu)
       steps = stepsFor(h.access),
       step = steps.includes(s.step) ? s.step : steps[0],
       idx = steps.indexOf(step),
@@ -287,7 +324,8 @@
       owner: esc(d?.repo.split('/')[0] || ''),
       inv: link(`https://github.com/${d?.repo || ''}/invitations`),
       w: link(web),
-      new: link(kind === 'github' ? 'https://github.com/settings/personal-access-tokens/new' : `https://${d?.host}/-/user_settings/personal_access_tokens`)
+      new: link(classic ? 'https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote' : kind === 'github' ?
+        'https://github.com/settings/personal-access-tokens/new' : `https://${d?.host}/-/user_settings/personal_access_tokens`)
     };
     let body = '';
     if (step === 1) {
@@ -304,13 +342,13 @@
     }
     if (step === 2) body = `<p><b>${fill(t(T.s2Ask), V)}</b></p>
       <div class="f-row"><label class="f-check"><input type="radio" name="jAcc" data-jacc="yes" ${s.account === 'yes' ? 'checked' : ''}>${esc(t(T.yes))}</label><label class="f-check"><input type="radio" name="jAcc" data-jacc="no" ${s.account === 'no' ? 'checked' : ''}>${esc(t(T.no))}</label></div>
-      ${s.account === 'no' ? list(T.create, V) : ''}${s.account ? h.fld('jUser', [t(T.user).replace('{h}', host)], s.user || '') : ''}`;
+      ${classic ? `<p class="f-warn">${esc(t(T.dedicated))}</p>` : ''}${s.account === 'no' ? list(T.create, V) : ''}${s.account ? h.fld('jUser', [t(T.user).replace('{h}', host)], s.user || '') : ''}`;
     if (step === 3) body = `<p>${fill(t(T.s3Give), { u: esc(s.user || '?'), r: esc(d.repo) })}</p><div class="f-row"><button type="button" data-jact="copyUser">${esc(t(T.copyUser))}</button></div>
       <p>${kind === 'github' ? fill(t(T.s3Accept), V) : fill(t(T.s3Gitlab), V)}</p>${check(3, kind === 'github' ? T.s3Done : T.s3DoneGitlab)}<p class="f-muted">${esc(t(T.s3Note))}</p>`;
     if (step === 4) {
       const how = cfg.howto?.token || {},
         text = how[t(['fr', 'en', 'de', 'es'])] || how.fr || '';
-      body = `<p>${fill(t(T.s4Hint), V)}</p>${list(kind === 'github' ? T.ghSteps : T.glSteps, V)}${check(4, T.s4Done)}
+      body = `<p>${fill(t(T.s4Hint), V)}</p>${list(classic ? T.ghClassic : kind === 'github' ? T.ghSteps : T.glSteps, V)}${classic ? `<p class="f-warn">${esc(t(T.classicNote))}</p>` : ''}${check(4, T.s4Done)}
         ${text ? `<details class="f-cfghow"><summary>${esc(t(T.howto))}</summary><div class="f-doc">${h.howtoHtml(text)}</div></details>` : ''}`;
     }
     if (step === 5) body = `<p>${esc(t(T.s5Hint))}</p>${h.fld('jToken', T.token, '', { type: 'password' })}<p class="f-msg" data-msg>${done[5] ? esc(t(T.ok, { b: d.branch })) : ''}</p>

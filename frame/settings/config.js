@@ -2,10 +2,12 @@
   'use strict';
   // V3 — configuration d'un pilote (frame/settings/SPEC.md § 5) : fichier sog-config-<TRI>.json et lien d'import
   // #settings?config=<…>, préparés par l'administrateur sur un poste, appliqués en quelques gestes par le pilote.
-  //   · schéma sog-config/1 : airline { name, site, pages }, data { host, repo, branch, api? }, identity { trigram },
+  //   · schéma sog-config/1 : airline { name, site, pages }, data { host, repo, branch, ownerType?, api? }, identity { trigram },
   //     usages { devices, users }, howto { token: { fr, en, de, es } } — jamais de jeton ni de secret : l'adresse du dépôt
   //     est relue sans ses identifiants ;
-  //   · howto : mode d'emploi du jeton, rempli d'un modèle par hôte (GitHub : jeton à grain fin limité au dépôt ;
+  //   · howto : mode d'emploi du jeton, rempli d'un modèle par hôte (GitHub : dépôt d'un utilisateur → jeton classique
+  //     « repo » — un invité ne peut pas viser ce dépôt avec un jeton à grain fin —, dépôt d'une organisation → jeton à grain
+  //     fin limité au dépôt ; ownerType relevé à l'export ;
   //     GitLab / framagit : jeton de projet, rôle Developer, write_repository) avec l'adresse exacte du dépôt ;
   //   · lien : « z » + base64url du JSON compressé (deflate-raw), « j » + base64url du JSON sans compression ;
   //   · import : validate() ne garde que les champs connus, chacun vérifié ; autre schéma ou champ invalide : refus.
@@ -36,31 +38,53 @@
 
   // modèles du mode d'emploi du jeton, par sorte d'hôte et par langue ; {web} {repo} {owner} {host} remplacés
   const HOWTO = {
-    github: [
+    githubUser: [
+      `Pas encore de compte GitHub ? Créez-le sur https://github.com/signup (vérifiez l'adresse mail, choisissez un nom d'utilisateur simple), donnez ce nom à l'administrateur, qui vous invite sur {repo}, puis acceptez l'invitation reçue par mail (https://github.com/{repo}/invitations).
+1. Connectez-vous à GitHub avec le compte invité sur {repo}, puis ouvrez https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote (un jeton « classique », déjà prérempli).
+2. « Note » : SOG Pilote ; « Expiration » : « Custom », dans un an ; « Select scopes » : « repo » seulement (déjà cochée).
+3. « Generate token », copiez-le tout de suite (il ne se revoit plus) et collez-le ici dans « Jeton personnel ». Ne l'envoyez jamais dans un message.
+{repo} appartient à un utilisateur : GitHub n'y permet pas de jeton à grain fin limité à ce dépôt. Ce jeton classique ouvre tous les dépôts de votre compte : si ce compte en a d'autres, créez plutôt un compte GitHub dédié au vol.`,
+      `No GitHub account yet? Create one at https://github.com/signup (verify the email address, choose a simple username), give that name to the administrator, who invites you to {repo}, then accept the invitation received by email (https://github.com/{repo}/invitations).
+1. Sign in to GitHub with the account invited to {repo}, then open https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote (a “classic” token, already prefilled).
+2. “Note”: SOG Pilot; “Expiration”: “Custom”, in one year; “Select scopes”: “repo” only (already ticked).
+3. “Generate token”, copy it at once (it is never shown again) and paste it here in “Personal token”. Never send it in a message.
+{repo} belongs to a user: GitHub does not allow a fine-grained token limited to it. This classic token opens all the repositories of your account: if that account has others, create a GitHub account dedicated to flying instead.`,
+      `Noch kein GitHub-Konto? Erstellen Sie eines auf https://github.com/signup (E-Mail-Adresse bestätigen, einfachen Benutzernamen wählen), geben Sie diesen Namen dem Administrator, der Sie zu {repo} einlädt, und nehmen Sie dann die per E-Mail erhaltene Einladung an (https://github.com/{repo}/invitations).
+1. Melden Sie sich bei GitHub mit dem zu {repo} eingeladenen Konto an und öffnen Sie https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote (ein „klassisches“ Token, bereits vorausgefüllt).
+2. „Note“: SOG Pilot; „Expiration“: „Custom“, in einem Jahr; „Select scopes“: nur „repo“ (bereits angekreuzt).
+3. „Generate token“, kopieren Sie es sofort (es wird nie wieder angezeigt) und fügen Sie es hier unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht.
+{repo} gehört einem Benutzer: GitHub erlaubt dafür kein feingranulares, auf dieses Repository beschränktes Token. Dieses klassische Token öffnet alle Repositorys Ihres Kontos: Hat dieses Konto weitere, erstellen Sie besser ein eigenes GitHub-Konto nur für das Fliegen.`,
+      `¿Aún sin cuenta de GitHub? Créela en https://github.com/signup (verifique la dirección de correo, elija un nombre de usuario sencillo), dé ese nombre al administrador, que le invita a {repo}, y luego acepte la invitación recibida por correo (https://github.com/{repo}/invitations).
+1. Inicie sesión en GitHub con la cuenta invitada a {repo} y abra https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote (un token «clásico», ya rellenado).
+2. «Note»: SOG Pilot; «Expiration»: «Custom», dentro de un año; «Select scopes»: solo «repo» (ya marcada).
+3. «Generate token», cópielo enseguida (no vuelve a mostrarse) y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje.
+{repo} pertenece a un usuario: GitHub no permite un token de grano fino limitado a él. Este token clásico abre todos los repositorios de su cuenta: si esa cuenta tiene otros, cree mejor una cuenta de GitHub dedicada al vuelo.`
+    ],
+    githubOrg: [
       `Pas encore de compte GitHub ? Créez-le sur https://github.com/signup (vérifiez l'adresse mail, choisissez un nom d'utilisateur simple), donnez ce nom à l'administrateur, qui vous invite sur {repo}, puis acceptez l'invitation reçue par mail (https://github.com/{repo}/invitations).
 1. Connectez-vous à GitHub avec le compte qui a accès à {repo}, puis ouvrez https://github.com/settings/personal-access-tokens/new
-2. « Token name » : SOG Pilote ; « Expiration » : 90 jours au plus ; « Resource owner » : {owner} ; « Repository access » : « Only select repositories », puis {repo}.
+2. « Token name » : SOG Pilote ; « Expiration » : « Custom », dans un an ; « Resource owner » : {owner} (l'organisation) ; « Repository access » : « Only select repositories », puis {repo}.
 3. « Permissions » › « Repository permissions » › « Contents » : « Read and write » (« Metadata » en lecture vient seul).
 4. « Generate token », copiez-le et collez-le ici dans « Jeton personnel ». Ne l'envoyez jamais dans un message ; à son expiration, créez-en un autre de la même façon.
-Si {owner} est une organisation, elle doit accepter les jetons à grain fin (réglages de l'organisation › Personal access tokens).`,
+L'organisation {owner} doit accepter les jetons à grain fin (réglages de l'organisation › Personal access tokens).`,
       `No GitHub account yet? Create one at https://github.com/signup (verify the email address, choose a simple username), give that name to the administrator, who invites you to {repo}, then accept the invitation received by email (https://github.com/{repo}/invitations).
 1. Sign in to GitHub with the account that has access to {repo}, then open https://github.com/settings/personal-access-tokens/new
-2. “Token name”: SOG Pilot; “Expiration”: 90 days at most; “Resource owner”: {owner}; “Repository access”: “Only select repositories”, then {repo}.
+2. “Token name”: SOG Pilot; “Expiration”: “Custom”, in one year; “Resource owner”: {owner} (the organisation); “Repository access”: “Only select repositories”, then {repo}.
 3. “Permissions” › “Repository permissions” › “Contents”: “Read and write” (“Metadata” read-only comes with it).
 4. “Generate token”, copy it and paste it here in “Personal token”. Never send it in a message; when it expires, create a new one the same way.
-If {owner} is an organisation, it must allow fine-grained tokens (organisation settings › Personal access tokens).`,
+The organisation {owner} must allow fine-grained tokens (organisation settings › Personal access tokens).`,
       `Noch kein GitHub-Konto? Erstellen Sie eines auf https://github.com/signup (E-Mail-Adresse bestätigen, einfachen Benutzernamen wählen), geben Sie diesen Namen dem Administrator, der Sie zu {repo} einlädt, und nehmen Sie dann die per E-Mail erhaltene Einladung an (https://github.com/{repo}/invitations).
 1. Melden Sie sich bei GitHub mit dem Konto an, das Zugriff auf {repo} hat, und öffnen Sie https://github.com/settings/personal-access-tokens/new
-2. „Token name“: SOG Pilot; „Expiration“: höchstens 90 Tage; „Resource owner“: {owner}; „Repository access“: „Only select repositories“, dann {repo}.
+2. „Token name“: SOG Pilot; „Expiration“: „Custom“, in einem Jahr; „Resource owner“: {owner} (die Organisation); „Repository access“: „Only select repositories“, dann {repo}.
 3. „Permissions“ › „Repository permissions“ › „Contents“: „Read and write“ („Metadata“ lesend kommt von selbst).
 4. „Generate token“, kopieren Sie es und fügen Sie es hier unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht; wenn es abläuft, erstellen Sie auf dieselbe Weise ein neues.
-Ist {owner} eine Organisation, muss sie feingranulare Tokens erlauben (Einstellungen der Organisation › Personal access tokens).`,
+Die Organisation {owner} muss feingranulare Tokens erlauben (Einstellungen der Organisation › Personal access tokens).`,
       `¿Aún sin cuenta de GitHub? Créela en https://github.com/signup (verifique la dirección de correo, elija un nombre de usuario sencillo), dé ese nombre al administrador, que le invita a {repo}, y luego acepte la invitación recibida por correo (https://github.com/{repo}/invitations).
 1. Inicie sesión en GitHub con la cuenta que tiene acceso a {repo} y abra https://github.com/settings/personal-access-tokens/new
-2. «Token name»: SOG Pilot; «Expiration»: 90 días como máximo; «Resource owner»: {owner}; «Repository access»: «Only select repositories», luego {repo}.
+2. «Token name»: SOG Pilot; «Expiration»: «Custom», dentro de un año; «Resource owner»: {owner} (la organización); «Repository access»: «Only select repositories», luego {repo}.
 3. «Permissions» › «Repository permissions» › «Contents»: «Read and write» («Metadata» de lectura viene solo).
 4. «Generate token», cópielo y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje; cuando caduque, cree otro de la misma forma.
-Si {owner} es una organización, debe aceptar los tokens de grano fino (ajustes de la organización › Personal access tokens).`
+La organización {owner} debe aceptar los tokens de grano fino (ajustes de la organización › Personal access tokens).`
     ],
     gitlab: [
       `Pas encore de compte sur {host} ? Créez-le sur https://{host}/users/sign_up (vérifiez l'adresse mail, choisissez un nom d'utilisateur simple), puis donnez ce nom à l'administrateur, qui vous ajoute au projet {web}.
@@ -91,6 +115,24 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
       `Pregunte a su administrador cómo crear un token de acceso con escritura en {web} y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje.`
     ]
   };
+  /** Variante du mode d'emploi : GitHub, dépôt d'une organisation → jeton à grain fin limité au dépôt ; dépôt d'un
+   *  utilisateur (ou propriétaire inconnu) → jeton classique, seul possible pour un invité ; sinon la sorte d'hôte. */
+  const variant = d => kind(d) !== 'github' ? kind(d) : d.ownerType === 'Organization' ? 'githubOrg' : 'githubUser';
+  /** Propriétaire d'un dépôt GitHub : 'User' ou 'Organization' (API publique users/<compte>) ; null sans réponse. */
+  async function ownerType(d) {
+    if (kind(d) !== 'github') return null;
+    try {
+      const r = await fetch(`${(d.api || 'https://api.github.com').replace(/\/$/, '')}/users/${encodeURIComponent(d.repo.split('/')[0])}`, {
+        headers: {
+          Accept: 'application/vnd.github+json'
+        }
+      });
+      const tp = r.ok ? (await r.json()).type : null;
+      return tp === 'User' || tp === 'Organization' ? tp : null;
+    } catch {
+      return null;
+    }
+  }
   /** Mode d'emploi du jeton pour ce dépôt, dans les quatre langues : { fr, en, de, es }. */
   function howto(d) {
     const v = {
@@ -99,7 +141,7 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
       owner: d.repo.split('/')[0],
       host: d.host
     };
-    return Object.fromEntries(LANGS.map((l, i) => [l, HOWTO[kind(d)][i].replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m)]));
+    return Object.fromEntries(LANGS.map((l, i) => [l, HOWTO[variant(d)][i].replace(/\{(\w+)\}/g, (m, k) => v[k] ?? m)]));
   }
 
   /** Configuration d'un pilote : airline (document de la compagnie), data (dépôt sans identifiants), trigramme ;
@@ -116,6 +158,9 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
       host: data.host,
       repo: data.repo,
       branch: data.branch || 'main',
+      ...(data.ownerType ? {
+        ownerType: data.ownerType
+      } : {}),
       ...(data.api ? {
         api: data.api
       } : {})
@@ -254,6 +299,9 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
         host,
         repo,
         branch,
+        ...(d.ownerType === 'User' || d.ownerType === 'Organization' ? {
+          ownerType: d.ownerType
+        } : {}),
         ...(api ? {
           api
         } : {})
@@ -287,6 +335,8 @@ Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a
     webUrl,
     cloneUrl,
     howto,
+    variant,
+    ownerType,
     build,
     pack,
     unpack,

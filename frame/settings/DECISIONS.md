@@ -222,3 +222,16 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   receive a token without the pilot creating or copying one. It needs a relay (the airline website's web service, or the
   launcher): GitHub's device-flow endpoints do not answer browsers (no CORS), so a phone without a relay cannot use it.
   To take up once such a relay exists.
+- **23 Oct 2026 — Token by repository owner** (the user's finding): a fine-grained token can only target repositories
+  its owner holds, or those of an organisation they belong to; a pilot invited to another user's private repository
+  cannot create one for it. So the export reads the owner's type (`GET users/<owner>`, public API → `data.ownerType`
+  `User` or `Organization`, absent when unknown) and the how-to and the assistant take the matching way:
+  - a user's repository (or unknown owner): a **classic** token — direct prefilled link
+    `https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote`, one year, scope `repo` only — and
+    said honestly: it opens every repository of the account, hence an account dedicated to flying when the pilot has
+    others (said at steps 2 and 4);
+  - an organisation's repository: the fine-grained token as before (resource owner the organisation, only this
+    repository, Contents read and write), the organisation having to allow them;
+  - later, sign-in without a token (OAuth or a GitHub App, like the device flow above) once a relay exists.
+  "Test" accepts both forms (`ghp_…`, `github_pat_…`: the transport sends `Bearer` either way); its 403 sentence names
+  both rights. The how-to's prefilled link is now linked whole (escaped `&` kept in the address).
