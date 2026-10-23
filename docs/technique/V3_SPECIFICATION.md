@@ -166,7 +166,7 @@ redesigned for touch at that point.
 1. PHP website: what it receives first (reports? flight logs?), and whether it becomes a data backend behind the data
    layer — to settle when the user has access to the site.
 2. Which V2 pages stay reachable from the Pilot application during the transition (the full suite on the launcher).
-3. **Designs (user, 23 Oct 2026): three designs are retained for V3 — `metro`, `swiss` and `cupertino`;**
+3. **Designs (user, 23 Oct 2026): four designs are retained for V3 — `metro`, `swiss`, `cupertino` and `material` (Material 3);**
    `cabinet` goes, `field` may stay. Nothing skeuomorphic on a phone. Mock-ups on branch `v3-metro`
    (`frame/design/demo_metro.html`, `frame/design/DECISIONS.md`). Points for the ergonomics session to decide:
    1. the page title written by the frame (the verb as `h1`), the modules dropping their own;
@@ -182,3 +182,10 @@ redesigned for touch at that point.
    9. a web font or not: Segoe UI Light (metro), Inter (swiss) and SF (cupertino) are not available everywhere;
       the mock-ups use system fonts, which keeps the offline shell light; a bundled font costs 250 to 300 KB;
    10. the map's canvas colours, still hard-coded in `modules/maps`, to be taken from the tokens by the maps agent.
+   11. Cupertino's system blue fails 4.5:1 as text on the page and with white on it (day 3.6 / 4.0, night 3.8 on a
+       field): keep Apple's hex and accept it, or take `#0066cc` by day and black ink on the night blue (both pass);
+   12. Swiss: cards as a black top rule without a box (the mock-up) or a hairline box; the night red is lighter than the
+       day red and carries black ink (no red passes both ways on near-black);
+   13. the rules written twice or three times across metro, swiss and cupertino (header buttons without frame, `h3`
+       as small muted capitals, pane `h1` size, table header, outlined buttons, card border, nav on the page colour):
+       promote to tokens (`--sog-btn-border`, `--sog-card-border`…) or primitives, see `frame/design/DECISIONS.md`.
