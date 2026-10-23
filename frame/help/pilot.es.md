@@ -162,7 +162,9 @@ tienen.
 
 ## Fichas de rendimiento
 
-La pestaña «Fichas» reúne las fichas de la aerolínea, compartidas con todos sus dispositivos.
+La pestaña «Fichas» reúne las fichas de la aerolínea, compartidas con todos sus dispositivos. Están ordenadas por
+categoría (helicópteros, turbohélices, reactores, pistón, otros); cada tipo que usa la compañía (flota, referencia) y
+que aún no tiene ficha figura también, «rendimientos por completar», con «Crear la ficha».
 
 - **Importar**: un archivo (CSV de rendimiento, JSON, `.lnmperf` de Little Navmap, OFP de SimBrief) o un texto pegado
   (los mismos, o la respuesta de ChatGPT). Una ficha sacada de un OFP se calibra con sus tiempos y su consumo reales.
@@ -604,7 +606,10 @@ Vuela en el equipo (X-Plane) y quiere el mapa en una tableta o un teléfono: en 
   los dispositivos» vuelve a pedirles un código a todos (una tableta perdida, por ejemplo).
 - En la tableta, la aplicación no funciona sin conexión y no usa su GPS: el navegador solo los concede en https. La
   posición viene del simulador del equipo.
-- 5 códigos erróneos desde un dispositivo: un minuto de espera; 20 en total: un código nuevo, mostrado en la tarjeta.
+- Un código sirve una sola vez y dura 10 minutos: «Código nuevo» da otro. 5 códigos erróneos desde un dispositivo:
+  un minuto de espera; 30 en una hora: la vinculación se cierra hasta el siguiente «Código nuevo». «Olvidar», junto
+  a un dispositivo, retira solo ese.
+- Solo se abre la dirección principal del equipo; las demás (VPN, máquinas virtuales) solo con «Abrirlas también».
 
 ## Un repositorio git para data/
 
@@ -681,4 +686,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: 8ca20e0d7251 -->
+<!-- fr: 690a6cb3e469 -->

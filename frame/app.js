@@ -1048,11 +1048,21 @@
         open: () => lanCall({
           open: true
         }),
+        // les autres adresses privées de ce poste (VPN, machines virtuelles…), seulement sur demande
+        openAll: () => lanCall({
+          open: true,
+          all: true
+        }),
         close: () => lanCall({
           open: false
         }),
-        forget: () => lanCall({
-          forget: true
+        // un code sert une fois et dure 10 minutes ; il rouvre l'appairage fermé après trop d'essais
+        newCode: () => lanCall({
+          code: true
+        }),
+        // un appareil (son id) ou tous
+        forget: id => lanCall({
+          forget: id || true
         })
       } : null,
       // après un clone ou une reprise de data/ par le lanceur : relevé de nouveau, transport rebranché

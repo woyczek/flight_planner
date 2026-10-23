@@ -119,8 +119,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    device included; `frame/SPEC.md` § 3.10):
    - Shows the state ("open until the launcher closes", or "closed: only this computer opens the application"), then,
      while open: the address to open on the device (the main one, the others below), its QR code (`SogQR.svg`), the
-     6-digit pairing code with its limits (once per device; 5 tries a minute per device; a new code after 20 wrong
-     ones); and the number of paired devices.
+     6-digit pairing code with the minutes it has left, or "no code in progress", or "pairing closed"; "New code"
+     (works once, 10 minutes; reopens pairing closed after 30 wrong codes in an hour); the paired devices, each with
+     "Forget" (asks); the computer's other private addresses (VPN, virtual machines), closed, with "Open them too".
    - A warning "trusted network only" (http, unencrypted).
    - "Open to devices of the local network" / "Close access", and "Forget the devices" (asks; disabled with none
      paired). A computer with no private address says there is nothing to open.

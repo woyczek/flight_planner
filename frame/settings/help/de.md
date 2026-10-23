@@ -87,7 +87,10 @@ Starter bedient, öffnet „Zugang des Rechners“ die Pilot-App für Geräte im
   „Geräte vergessen“ verlangt von allen erneut einen Code (zum Beispiel bei einem verlorenen Tablet).
 - Auf dem Tablet funktioniert die App nicht offline und nutzt nicht sein GPS: Der Browser gewährt beides nur über
   https. Die Position kommt vom Simulator des Rechners.
-- 5 falsche Codes von einem Gerät: eine Minute Wartezeit; 20 insgesamt: ein neuer Code, auf der Karte angezeigt.
+- Ein Code gilt nur einmal und 10 Minuten: „Neuer Code“ gibt einen anderen. 5 falsche Codes von einem Gerät: eine
+  Minute Wartezeit; 30 in einer Stunde: Die Kopplung schließt sich bis zum nächsten „Neuer Code“. „Vergessen“ neben
+  einem Gerät entfernt nur dieses.
+- Nur die Hauptadresse des Rechners wird geöffnet; die anderen (VPN, virtuelle Maschinen) nur über „Auch öffnen“.
 
 ## Ein Git-Repository für data/
 
@@ -166,4 +169,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 8ca20e0d7251 -->
+<!-- fr: 690a6cb3e469 -->

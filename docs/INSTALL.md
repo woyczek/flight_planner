@@ -96,7 +96,8 @@ restent lisibles. Le lanceur sert la suite pour éviter ce cas.
 To use the Pilot application on a tablet or a phone while flying on the computer, start the launcher with
 `lancer.cmd --lan` (`./lancer.sh --lan`), or open the access from the computer's Settings. The console shows the
 address to open on the device (`http://<computer's address>:<port>/frame/`) and a 6-digit pairing code. The device
-asks for that code once, and then sees the computer's data and the simulator's position.
+asks for that code once, and then sees the computer's data and the simulator's position. A code works once and lasts
+10 minutes; the computer's Settings give a new one.
 
 - Windows asks to allow Python on the network: allow it for **private networks only**.
 - The device must be on the same local network. Over plain http, use it only on a trusted network (at home), never

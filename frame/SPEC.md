@@ -534,6 +534,7 @@ touch only the element they are given.
 | `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
 | `frame/lib/current_flight.js` | fuel | fuel, report, maps, the frame | `merge(stored, mine, { fields, progressKeys, by })`: each author of the current flight (`pilot/<trigram>/current_flight.json`) re-reads it and replaces only its own fields; `progress.actual` belongs to the frame (its position service writes it with `progressKeys: ['actual'], by: 'frame'`) |
+| `frame/lib/clipboard.js` | fuel | fuel, report, website, settings | `copyText(text, { box, near })` → `'clipboard'` \| `'exec'` \| `'shown'`, and `canPaste()`: copies also over http (a paired tablet has no `navigator.clipboard`), falling back to `execCommand` and then to a selected field shown next to the button |
 | `frame/lib/dom.js` | frame | any module (fuel, report, flightlog first) | `keepScroll(box, draw, { focus })`: draws without moving the scroll and without losing the field being typed in. It keeps the scroll position of every scrolling container above `box` (the page included) and holds `box`'s height during the draw. It puts the positions back after the draw and on the next two frames. It finds the focused field again (by `data-k` / `data-i`, or by `id`) and restores its value, its focus (`preventScroll`) and its selection. It replaces the three copies made in fuel, report and flightlog |
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
@@ -550,9 +551,10 @@ launcher can serve that device over the local network, so the device works as th
 - **Opening**: only on an explicit choice, until the launcher stops.
   - Either `lancer.cmd --lan` (`launch.py --lan`), or the computer's own Settings, through `POST /__setup/lan
     { open: true | false }` (settings context: `lan()`, below).
-  - The launcher then also listens on each **private IPv4 address** of the computer (10/8, 172.16/12, 192.168/16),
-    on the same port. It never listens on `0.0.0.0`, so neither a VPN nor a public interface is opened, and the
-    port never clashes with 127.0.0.1.
+  - The launcher then also listens on the computer's **private IPv4 address of the default route** (10/8,
+    172.16/12, 192.168/16), on the same port. Its other private addresses (VPN, WSL, Hyper-V, Docker) are opened
+    only on request (`{ open: true, all: true }`, "Open them too" in Settings). It never listens on `0.0.0.0`, so
+    no public interface is opened, and the port never clashes with 127.0.0.1.
   - The console shows the address of the Pilot application (`http://<ip>:<port>/frame/`) and the pairing code.
 - **Every request from the local network**:
   - It must come from a private address (or loopback) and name the exact host (`<ip>:<port>`). A domain name that
@@ -565,15 +567,38 @@ launcher can serve that device over the local network, so the device works as th
     adopt, imports, maintenance, relax, `/__setup/lan`) answers 403 "reserved to the computer". A `PUT` is never
     open.
 - **Pairing** (`/__lan/pair`, a form without script, in the browser's language):
-  - The 6-digit code is shown in the console and in the computer's Settings, and is new at each opening.
-  - Once the code is right, the device gets a long random token as a cookie (`sog_lan`, `HttpOnly`,
-    `SameSite=Strict`, one year), then goes back to the page it asked for (a path of this server only).
+  - The 6-digit code is shown in the console and in the computer's Settings. It works **once** and lasts
+    **10 minutes**: after a pairing, or past that time, there is no code until the computer asks for a new one
+    (`POST /__setup/lan { code: true }`, "New code"). Opening the access issues the first.
+  - Once the code is right, the device gets a long random token as a cookie (`sog_lan_<port>`, so two launchers on
+    one computer keep their devices apart; `HttpOnly`, `SameSite=Strict`, one year), then goes back to the page it
+    asked for (a path of this server only).
   - Only the token's SHA-256 is kept, in `tools/.lan.json` (local, git-ignored), so a device pairs **once**: it stays
     paired when access is closed and reopened, or the launcher restarted, as long as the computer keeps its address.
-  - 5 wrong codes from one address: a one-minute wait (429). 20 wrong codes in all: a new code, shown in the console.
-  - "Forget the devices" (`POST /__setup/lan { forget: true }`) empties the list: every device must enter a code
-    again.
-- **`GET /__setup/lan`** (computer only): `{ on, urls (the main address first), code, devices, host }`.
+  - 5 wrong codes from one address: a one-minute wait (429). 30 wrong codes in an hour, all addresses together:
+    pairing **closes** (403) until the computer asks for a new code.
+  - A device is forgotten on its own (`{ forget: '<id>' }`, "Forget" next to it), or all of them (`{ forget: true }`,
+    "Forget the devices"). A forgotten device must enter a code again.
+- **`GET /__setup/lan`** (computer only): `{ on, urls (opened, the main first), available (every private address),
+  code, expires (s), closed, devices (count), paired ([{ id, label, at }]: a short name from the browser, never the
+  hash), host }`.
+- **A paired device is a trusted member**, as the computer itself for the Pilot application's data: it reads and
+  writes all of `data/` (records, `utilisateurs/`, `airline/settings.json`…) through the batch, and triggers the git
+  exchange. Pair only your own devices.
+- **Writes** (every page, the computer's included; `frame_batch`, `data_file()` in `tools/launch.py`):
+  - A path is taken as it is, never normalised. A path with `\`, `:`, a control character, an empty, `.` or `..`
+    component, a component ending with a dot or a space, a Windows device name (`CON`, `NUL`, `COM1`…), a hidden
+    component or an excluded folder is refused (400). Then the real path (links, junctions) must stay under `data/`.
+  - Only data files may be written: `.json`, `.yaml`, `.yml`, `.md`, `.txt`, `.csv`, `.geojson`, `.fms`, and `.js` in
+    the data format (`tools/data_guard.py`). A page, a vector image or an XML, which the browser would run from the
+    same origin as `/__setup/`, is refused. A deletion may name any data file.
+  - At most 5,000 changes a batch. A request body from the local network is 16 MB at most (413).
+  - The tree of `data/` follows neither links nor junctions. A device of the local network gets the tree computed
+    less than 2 s ago again (a batch clears it).
+- **Relay** (`POST /__setup/net`, every page): https only, to the application's hosts or the airline's site. The
+  address really reached must be public, checked before TLS and at every hop (a name that points to 192.168.x or
+  127.0.0.1 is refused, 403). A redirect is followed only to such a host over https, and the IVAO key never follows
+  to another host; otherwise the redirect is given back to the page as it is.
 - **`GET /__setup/status`** also gives `host` (the computer's name) and `lan` (the request came from the local
   network). `FrameData.launcher.detect()` returns `{ data, dataGit, host, lan }`.
 - **The page on the device** is not a secure context (http, not localhost), so:

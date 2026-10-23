@@ -156,7 +156,9 @@ it.
 
 ## Performance sheets
 
-The “Sheets” tab gathers the airline's sheets, shared with all its devices.
+The “Sheets” tab gathers the airline's sheets, shared with all its devices. They are sorted by category
+(helicopters, turboprops, jets, piston engines, others); each type the airline uses (fleet, reference) that has no
+sheet yet is listed too, “performance to fill in”, with “Create the sheet”.
 
 - **Import**: a file (performance CSV, JSON, Little Navmap `.lnmperf`, SimBrief OFP) or pasted text (the same, or
   ChatGPT's answer). A sheet drawn from an OFP is calibrated on its real times and fuel burn.
@@ -583,7 +585,10 @@ You fly on the computer (X-Plane) and want the map on a tablet or a phone: on th
   them all for a code again (a lost tablet, for instance).
 - On the tablet, the application does not work offline and does not use its GPS: the browser grants them only over
   https. The position comes from the computer's simulator.
-- 5 wrong codes from one device: a one-minute wait; 20 in all: a new code, shown on the card.
+- A code works only once and lasts 10 minutes: “New code” gives another. 5 wrong codes from one device: a
+  one-minute wait; 30 in an hour: pairing closes until the next “New code”. “Forget”, next to a device, removes
+  that one only.
+- Only the computer's main address is opened; the others (VPN, virtual machines) only through “Open them too”.
 
 ## A git repository for data/
 
@@ -657,4 +662,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 8ca20e0d7251 -->
+<!-- fr: 690a6cb3e469 -->

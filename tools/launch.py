@@ -16,7 +16,7 @@ Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [-
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
 import argparse, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
-import http.cookies, ipaddress, posixpath, urllib.parse, urllib.request, webbrowser, zipfile
+import http.client, http.cookies, ipaddress, posixpath, ssl, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
@@ -292,7 +292,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             jar.load(self.headers.get('Cookie') or '')
         except http.cookies.CookieError:
             pass
-        token = jar[lan_access.COOKIE].value if lan_access.COOKIE in jar else ''
+        name = lan_access.cookie_name(self.port)
+        token = jar[name].value if name in jar else ''
         if not lan_access.paired(token):
             if self.command == 'GET' and 'text/html' in (self.headers.get('Accept') or '') and not path.startswith('/__setup/'):
                 self._lan_page(safe_next(self.path), 401)
@@ -348,7 +349,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         res, val = lan_access.attempt(self.client_address[0], (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
         if res == 'ok':
             self.send_response(303)
-            self.send_header('Set-Cookie', f'{lan_access.COOKIE}={val}; Path=/; Max-Age={lan_access.MAX_AGE}; HttpOnly; SameSite=Strict')
+            self.send_header('Set-Cookie', f'{lan_access.cookie_name(self.port)}={val}; Path=/; Max-Age={lan_access.MAX_AGE}; HttpOnly; SameSite=Strict')
             self.send_header('Location', nxt)
             self.send_header('Content-Length', '0')
             self.send_header('Cache-Control', 'no-store')
@@ -357,8 +358,11 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return None
         if res == 'wait':
             return self._lan_page(nxt, 429, tx['wait'].format(s=val))
-        if val:
-            say(f'  Réseau local : trop de codes faux, nouveau code d’appairage : {val}')
+        if res == 'closed':
+            say('  Réseau local : trop de codes faux en une heure, appairage fermé (« Nouveau code » sur le poste pour le rouvrir).')
+            return self._lan_page(nxt, 403, tx['closed'])
+        if res == 'expired':
+            return self._lan_page(nxt, 401, tx['expired'])
         return self._lan_page(nxt, 401, tx['bad'])
 
     def _same_origin(self):
@@ -662,7 +666,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
             with FRAME_LOCK:
-                head, tree = frame_tree()
+                # appareil du réseau local : l'arbre calculé il y a moins de 2 s sert de nouveau (un lot l'efface)
+                fresh = self._lan() and _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < 2
+                if fresh:
+                    head, tree = _tree_memo['v']
+                else:
+                    head, tree = frame_tree()
+                    _tree_memo.update(at=time.monotonic(), v=(head, tree))
             return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
         if self.path.split('?')[0] == '/__setup/mission-folders':
             # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
@@ -841,7 +851,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             size = int(self.headers.get('Content-Length') or 0)
         except ValueError:
             return self._json({'error': 'taille invalide'}, 400)
-        if size < 0 or size > self.MAX_UPLOAD:
+        if size < 0 or size > (LAN_MAX_BODY if self._lan() else self.MAX_UPLOAD):
             return self._json({'error': 'fichier trop gros'}, 413)
         body = self.rfile.read(size) if size else b''
         if path in LNMPERF_ROUTES:
@@ -941,12 +951,16 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 a = json.loads(body or b'{}')
             except ValueError:
                 a = {}
-            if a.get('forget'):
+            if a.get('forget') is True:
                 lan_access.forget()
+            elif isinstance(a.get('forget'), str):
+                lan_access.forget(a['forget'])
             if a.get('open') is True:
-                lan_open()
+                lan_open(bool(a.get('all')))
             elif a.get('open') is False:
                 lan_close()
+            if a.get('code') and LAN['servers']:
+                say(f'  Réseau local : nouveau code d’appairage : {lan_access.new_code()} (10 minutes)')
             return self._json(lan_state())
         if path == '/__setup/vfr-import':
             # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
@@ -1287,6 +1301,8 @@ class Server6(Server):
 # ---- réseau local (lot 18, tools/lan_access.py) : serveurs sur les adresses privées de ce poste, même port, ouverts sur
 # demande et fermés avec le lanceur
 LAN = {'servers': [], 'hosts': set(), 'order': [], 'handler': None, 'port': 0}
+LAN_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST venu du réseau local (un lot d'écritures, un relais)
+_tree_memo = {'at': 0.0, 'v': None}  # dernier arbre de data/ calculé (servi de nouveau à un appareil, 2 s au plus)
 LAN_LOCK = threading.Lock()
 NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
 LAN_TEXT = {
@@ -1302,6 +1318,14 @@ LAN_TEXT = {
     'code': {'fr': 'Code d’appairage', 'en': 'Pairing code', 'de': 'Kopplungscode', 'es': 'Código de vinculación'},
     'pair': {'fr': 'Appairer', 'en': 'Pair', 'de': 'Koppeln', 'es': 'Vincular'},
     'bad': {'fr': 'Code incorrect.', 'en': 'Wrong code.', 'de': 'Falscher Code.', 'es': 'Código incorrecto.'},
+    'expired': {'fr': 'Pas de code en cours (un code sert une fois et dure 10 minutes)' + NB + ': demandez-en un sur le poste, Réglages › Accès du poste, « Nouveau code ».',
+                'en': 'No code in progress (a code works once and lasts 10 minutes): ask for one on the computer, Settings › Computer access, “New code”.',
+                'de': 'Kein gültiger Code (ein Code gilt einmal und 10 Minuten): fordern Sie auf dem Rechner einen an, Einstellungen › Zugang des Rechners, „Neuer Code“.',
+                'es': 'No hay código en curso (un código sirve una vez y dura 10 minutos): pida uno en el equipo, Ajustes › Acceso del equipo, «Código nuevo».'},
+    'closed': {'fr': 'Appairage fermé après trop de codes faux' + NB + ': il se rouvre par « Nouveau code » sur le poste (Réglages › Accès du poste).',
+               'en': 'Pairing closed after too many wrong codes: it reopens with “New code” on the computer (Settings › Computer access).',
+               'de': 'Kopplung nach zu vielen falschen Codes geschlossen: Sie öffnet sich wieder mit „Neuer Code“ auf dem Rechner (Einstellungen › Zugang des Rechners).',
+               'es': 'Vinculación cerrada tras demasiados códigos erróneos: se vuelve a abrir con «Código nuevo» en el equipo (Ajustes › Acceso del equipo).'},
     'wait': {'fr': 'Trop d’essais' + NB + ': réessayez dans {s} s.', 'en': 'Too many attempts: try again in {s} s.',
              'de': 'Zu viele Versuche: in {s} s erneut versuchen.', 'es': 'Demasiados intentos: vuelva a intentarlo en {s} s.'},
     'note': {'fr': 'Réseau local en http' + NB + ': à n’utiliser que sur un réseau de confiance (à la maison), jamais sur un wifi public.',
@@ -1321,17 +1345,23 @@ def lan_state():
     """État de l'accès du réseau local : ouvert, adresses de l'appli Pilote (la principale d'abord), code, appareils
     appairés, nom du poste."""
     on = bool(LAN['servers'])
+    cs = lan_access.code_state() if on else {}
     return {'on': on, 'urls': [f'http://{h}/frame/' for h in LAN['order']] if on else [],
-            'code': lan_access.state['code'] if on else '', 'devices': len(lan_access.devices()), 'host': socket.gethostname()}
+            'available': lan_access.addresses(), 'code': cs.get('code', ''), 'expires': cs.get('expires', 0),
+            'closed': bool(cs.get('closed')), 'devices': len(lan_access.devices()), 'paired': lan_access.listing(),
+            'host': socket.gethostname()}
 
 
-def lan_open():
-    """Ouvre l'accès du réseau local : un serveur par adresse privée de ce poste (même port), nouveau code."""
+def lan_open(every=False):
+    """Ouvre l'accès du réseau local sur l'adresse privée de la route par défaut (toutes les adresses privées de ce
+    poste si every : VPN, machines virtuelles…), même port, avec un nouveau code ; déjà ouvert, every ajoute les autres."""
     with LAN_LOCK:
-        if LAN['servers'] or not LAN['handler']:
+        if not LAN['handler'] or (LAN['servers'] and not every):
             return lan_state()
-        order = []
-        for ip in lan_access.addresses():
+        order = list(LAN['order'])
+        for ip in lan_access.addresses()[:None if every else 1]:
+            if f'{ip}:{LAN["port"]}' in LAN['hosts']:
+                continue
             try:
                 srv = Server((ip, LAN['port']), LAN['handler'])
             except OSError as e:
@@ -1345,9 +1375,12 @@ def lan_open():
         if not order:
             say('  Réseau local : aucune adresse privée sur ce poste (réseau 10.x, 172.16-31.x ou 192.168.x).')
             return lan_state()
+        if every and lan_access.code_state().get('code'):
+            say(f'  Réseau local : adresses ouvertes : {", ".join(order)}')
+            return lan_state()
         code = lan_access.new_code()
         say('')
-        say(f'  Réseau local ouvert : http://{order[0]}/frame/ — code d’appairage : {code}')
+        say(f'  Réseau local ouvert : http://{order[0]}/frame/ — code d’appairage : {code} (une fois, 10 minutes)')
         say('  Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.')
         say('  À n’utiliser que sur un réseau de confiance (http, sans chiffrement). Fermé avec le lanceur.')
         say('')
@@ -1652,17 +1685,21 @@ _frame_memo = {}  # chemin → ((taille, date), empreinte)
 
 
 def frame_tree():
-    """(tête, arbre) de data/ : empreinte git de chaque fichier (relue seulement si sa taille ou sa date change)."""
+    """(tête, arbre) de data/ : empreinte git de chaque fichier (relue seulement si sa taille ou sa date change) ; ni
+    lien ni jonction suivis (un dossier relié ailleurs ferait sortir l'arbre de data/, ou le ferait boucler)."""
     out = {}
+    linked = lambda p: os.path.islink(p) or getattr(os.path, 'isjunction', lambda q: False)(p)  # isjunction : Python 3.12+
     for d, dirs, files in os.walk(DATA):
         rel_d = os.path.relpath(d, DATA).replace(os.sep, '/')
         rel_d = '' if rel_d == '.' else rel_d + '/'
-        dirs[:] = [x for x in dirs if not FRAME_SKIP.search(rel_d + x + '/')]
+        dirs[:] = [x for x in dirs if not FRAME_SKIP.search(rel_d + x + '/') and not linked(os.path.join(d, x))]
         for f in files:
             rel = rel_d + f
             if FRAME_SKIP.search(rel):
                 continue
             full = os.path.join(d, f)
+            if linked(full):
+                continue
             try:
                 st = os.stat(full)
             except OSError:
@@ -1678,22 +1715,53 @@ def frame_tree():
     return hashlib.sha1(json.dumps(sorted(out.items())).encode()).hexdigest(), out
 
 
+BATCH_MAX = 5000  # changements par lot
+# fichiers que la page peut écrire dans data/ (une suppression : tout fichier de données) : texte et données, jamais une
+# page, une image vectorielle ni un XML, que le navigateur exécuterait servis de la même origine que /__setup/
+DATA_WRITE_EXT = ('.json', '.yaml', '.yml', '.md', '.txt', '.csv', '.geojson', '.fms', '.js')
+WIN_RESERVED = re.compile(r'(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)(\..*)?', re.I)
+
+
+def data_file(rel):
+    """Fichier de data/ nommé par une page (« a/b/c.json », séparateur « / ») → son chemin sous data/, ou '' (refusé) :
+    ni « \\ » (séparateur de Windows), ni « : » (lecteur, flux NTFS), ni caractère de contrôle, ni chemin absolu, ni
+    composant vide, « . » ou « .. », ni composant finissant par un point ou une espace (Windows les retire), ni nom de
+    périphérique de Windows ; puis le chemin réel (liens, jonctions) doit rester sous data/."""
+    if not isinstance(rel, str) or not rel or len(rel) > 400 or rel.startswith('/') or any(c in rel for c in '\\:') or any(
+            ord(c) < 32 for c in rel):
+        return ''
+    parts = rel.split('/')
+    if any(x in ('', '.', '..') or x != x.rstrip('. ') or WIN_RESERVED.fullmatch(x) for x in parts):
+        return ''
+    full = os.path.join(DATA, *parts)
+    base = os.path.normcase(os.path.realpath(DATA))
+    return full if os.path.normcase(os.path.realpath(full)).startswith(base + os.sep) else ''
+
+
 def frame_batch(a):
     """Lot d'écritures du frame { parent, message, author, changes: [{ path, text | null }] } : refusé si la tête a changé
     depuis parent (conflict) ou si un chemin sort de data/ ou est exclu ; .js au format des données seulement
     (tools/data_guard.py) ; écrit, puis commit local au nom de l'auteur si data/ est un dépôt git. Rend { ok, head }."""
     changes = a.get('changes') if isinstance(a.get('changes'), list) else []
     author = str(a.get('author') or '').upper()
+    if len(changes) > BATCH_MAX:
+        return {'ok': False, 'message': f'lot trop grand : {len(changes)} changements ({BATCH_MAX} au plus)'}, 400
     with FRAME_LOCK:
+        _tree_memo['v'] = None
         head, _ = frame_tree()
         if str(a.get('parent') or '') != head:
             return {'ok': False, 'conflict': True, 'head': head, 'message': 'data/ a changé depuis la dernière lecture'}, 409
-        todo = []
-        for c in changes:
-            rel = posixpath.normpath(str(c.get('path') or '')).lstrip('/')
-            if not rel or rel.startswith('..') or rel.startswith('.') or '/.' in rel or FRAME_SKIP.search(rel):
-                return {'ok': False, 'message': f'chemin refusé : {c.get("path")}'}, 400
+        todo, fulls = [], {}
+        for c in changes if all(isinstance(c, dict) for c in changes) else [{}]:
+            # chemin pris tel quel, jamais normalisé : un chemin qu'il faudrait normaliser est refusé (data_file)
+            rel = c.get('path') if isinstance(c.get('path'), str) else ''
+            full = data_file(rel)
+            if not full or rel.startswith('.') or '/.' in rel or FRAME_SKIP.search(rel):
+                return {'ok': False, 'message': f'chemin refusé : {str(c.get("path"))[:200]}'}, 400
             text = c.get('text')
+            if text is not None and (not isinstance(text, str) or not rel.lower().endswith(DATA_WRITE_EXT)):
+                return {'ok': False, 'message': f'type de fichier refusé : {rel} ({", ".join(DATA_WRITE_EXT)})'}, 400
+            fulls[rel] = full
             if text is not None and rel.lower().endswith('.js'):
                 with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
                     f.write(text)
@@ -1704,7 +1772,7 @@ def frame_batch(a):
                     return {'ok': False, 'message': f'{rel} : pas au format des données ({why})'}, 400
             todo.append((rel, text))
         for rel, text in todo:
-            full = os.path.join(DATA, *rel.split('/'))
+            full = fulls[rel]
             if text is None:
                 if os.path.isfile(full):
                     os.remove(full)
@@ -1720,6 +1788,7 @@ def frame_batch(a):
             data_sync.git(DATA, '-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-q', '-m',
                           str(a.get('message') or f'{author} : lot du frame')[:500], '--', *paths, env=env)
         head, _ = frame_tree()
+        _tree_memo['v'] = None
     if any(r.startswith('disponibilites/') for r, _ in todo):
         with INDEX_LOCK:
             index_availability()
@@ -1770,12 +1839,56 @@ def airline_host():
     return host
 
 
+class NotPublic(OSError):
+    """Hôte relayé qui mène à une adresse non publique (réseau du poste, boucle locale) : refusé."""
+
+
+def relay_host(host):
+    """Hôte que le relais peut joindre : un site de l'appli (NET_HOSTS) ou le site de la compagnie."""
+    return bool(host) and (host in NET_HOSTS or host == airline_host())
+
+
+class _RelayHTTPS(http.client.HTTPSConnection):
+    """Connexion du relais : l'adresse réellement jointe doit être publique, vérifiée avant le TLS et à chaque saut
+    (un nom peut pointer vers 192.168.x ou 127.0.0.1, ou changer entre deux résolutions)."""
+
+    def connect(self):
+        http.client.HTTPConnection.connect(self)
+        ip = self.sock.getpeername()[0]
+        if not ipaddress.ip_address(ip.split('%')[0]).is_global:
+            self.sock.close()
+            raise NotPublic(f'adresse non publique : {ip}')
+        self.sock = self._context.wrap_socket(self.sock, server_hostname=self._tunnel_host or self.host)
+
+
+class _RelayHTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_RelayHTTPS, req, context=self._context)
+
+
+class _RelayRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirection suivie seulement vers un hôte que le relais peut joindre, en https ; la clé d'IVAO ne suit pas vers
+    un autre hôte. Sinon la réponse de redirection est rendue telle quelle à la page."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        u, o = urllib.parse.urlparse(newurl), urllib.parse.urlparse(req.full_url)
+        if u.scheme != 'https' or not relay_host(u.hostname):
+            return None
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and u.hostname != o.hostname:
+            new.remove_header('Apikey')
+        return new
+
+
+NET_OPENER = urllib.request.build_opener(_RelayRedirect(), _RelayHTTPSHandler(context=ssl.create_default_context()))
+
+
 def frame_net(a):
     """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps)."""
     url = str(a.get('url') or '')
     u = urllib.parse.urlparse(url)
     site = u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
-    if u.scheme != 'https' or (u.hostname not in NET_HOSTS and not site):
+    if u.scheme != 'https' or not relay_host(u.hostname):
         return 403, {'Content-Type': 'application/json'}, json.dumps({'error': 'site non relayé'}).encode()
     method = str(a.get('method') or 'GET').upper()
     if method not in (('GET',) if site else ('GET', 'POST')):
@@ -1791,10 +1904,16 @@ def frame_net(a):
         headers['Content-Type'] = str(a.get('contentType') or 'application/json')
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with NET_OPENER.open(req, timeout=20) as r:
             return r.status, {'Content-Type': r.headers.get('Content-Type') or 'application/octet-stream'}, r.read(NET_MAX)
     except urllib.error.HTTPError as e:
         return e.code, {'Content-Type': e.headers.get('Content-Type') or 'text/plain'}, e.read(NET_MAX)
+    except urllib.error.URLError as e:
+        if isinstance(e.reason, NotPublic):
+            return 403, {'Content-Type': 'application/json'}, json.dumps({'error': str(e.reason)}).encode()
+        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1'}, b'unreachable'
+    except NotPublic as e:
+        return 403, {'Content-Type': 'application/json'}, json.dumps({'error': str(e)}).encode()
     except (OSError, ValueError):
         return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1'}, b'unreachable'
 

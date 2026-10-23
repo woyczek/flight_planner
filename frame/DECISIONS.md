@@ -576,3 +576,71 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
       `/frame/`, which is where the QR code leads anyway.
     - A page already open on a device whose token was forgotten gets 401s, and the launcher transport reports an
       error until it is reloaded.
+- **23 Oct 2026 — Lot 20, security review of the local-network access** (review by the Analysis session of 1bfd85154,
+  read only; fixes and a test per point):
+  1. **Blocking: path traversal in `/__setup/batch`.** The check went through `posixpath.normpath` but the write
+     through `os.path.join(DATA, *rel.split('/'))`, which Windows reads with `\` as a separator. So
+     `x\..\..\tools\launch.py`, `C:\Users\…` or `secrets\..\..\secrets\ivao.json` could write (or erase, with
+     `text: null`) any file: code run at the next start.
+     - Now `data_file()` takes the path as it is and refuses `\`, `:`, control characters, empty, `.` and `..`
+       components, trailing dots or spaces, Windows device names and absolute paths. Then the real path must stay
+       under `data/`, which also stops a junction. This applies to every page, the computer's included.
+     - The other routes that take a name were checked:
+       - lnmperf: a single file name, no `\` `/` `:`;
+       - vfr-import: four capital letters;
+       - changes: only `since`;
+       - data-list: a fixed list.
+     - Found by the test: the tree of `data/` followed a junction, so it walked outside and, in the test, looped. It
+       now follows neither links nor junctions.
+  2. **The pairing code** works once and lasts 10 minutes. After a pairing or past that time, there is no code
+     until the computer asks for one ("New code").
+  3. **Brute force**: besides 5 a minute per address, 30 wrong codes in an hour close pairing until the next "New
+     code" from the computer. The former "new code after 20 wrong ones" is gone: it reopened by itself.
+  4. **Relay (SSRF)**: urllib followed redirects, http included, to any host, with the IVAO key. The airline's site
+     comes from `airline/settings.json`, which a paired device can write.
+     - The relay's opener now follows a redirect only to an allowed host over https, and drops the key when the host
+       changes.
+     - Its connection checks that the address really reached is public, before TLS and at every hop. A name that
+       points to the computer's network is refused with 403.
+  5. **Exhaustion**:
+     - a body from the local network is 16 MB at most (413, refused before reading);
+     - 5,000 changes a batch;
+     - a device gets the tree of `data/` computed less than 2 s ago again, and a batch clears it, so a device never
+       sees an old head after its own write.
+  6. **Interfaces**: by default only the private address of the default route. The others (VPN, WSL, Hyper-V,
+     Docker) only through "Open them too".
+  7. **File types written**: a white list of data extensions (`.json .yaml .yml .md .txt .csv .geojson .fms`, and
+     `.js` checked by `data_guard`), for every page. A `.html`, `.svg` or `.xml` would run from the same origin as
+     `/__setup/`. The list covers every extension in the real `data/` and every module's writes. A deletion may name
+     any data file.
+  8. **Cookie**: named `sog_lan_<port>`.
+  11. **Forgetting one device**: through its id (start of the hash), with a short name from its browser.
+  12. **SPEC § 3.10**: a paired device is a trusted member, and writes all of `data/` as the computer does.
+  - Notes 9 (rebinding) and 10 (no leak of the code) needed nothing.
+  - **Settings card** follows:
+    - the code with its minutes left, "no code in progress" or "pairing closed", and "New code";
+    - the paired devices, each with "Forget";
+    - the computer's other addresses, closed, with "Open them too";
+    - the help's last bullet is updated in the four languages, with its fingerprints.
+  - **Tests**: `t_l20` bench, 76 / 76.
+    - The three paths of the review, and 17 other bad ones, are refused: nothing written outside, and a traversal
+      erase refused too. A junction inside `data/` is neither followed by the tree nor written through. A good path
+      is written then erased.
+    - `.html .htm .xhtml .svg .xml` and no extension are refused; `.yaml .md .txt .geojson` accepted; erasing a `.html`
+      accepted. 5,001 changes refused.
+    - The code: present for 10 min; after a pairing there is no code, and the same code again gets "no code in
+      progress"; a new code lets a second device pair.
+    - The cookie is `sog_lan_<port>`; the old `sog_lan` name is refused.
+    - One device forgotten: it gets 401, the other 200.
+    - A 17 MB body from the device: 413 without reading. After a device's batch, its next tree is the new one.
+      Traversal and `.svg` from the device: refused.
+    - Unit: the code expires; 30 wrong codes from 30 addresses close pairing, after which even the right code is
+      refused, and "New code" reopens it; the 6th wrong code from one address waits.
+    - Relay: a site leading to 127.0.0.1 gets 403; http and unknown hosts are refused. Redirects to http, to an
+      unknown host and to a private address are not followed; to the same host the key is kept; to another
+      application host it is dropped. A real IVAO call still works.
+    - Addresses: only the main one by default; "all" tries the others (one absent here is reported, not opened).
+    - The card: code and minutes, "no code in progress" after a pairing, "New code", "Forget" on one device.
+    - The device in Chrome: pairing, launcher transport, X-Plane position, Diagnostic, as in lot 18.
+  - `frame/lib/clipboard.js` (fuel, 423840c4f) is in the table of § 3.9. The frame does not load it itself, so it is
+    not in the service worker's shell; modules declare it in `meta.files`.

@@ -157,7 +157,9 @@ descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances
 
-L'onglet « Fiches » rassemble les fiches de la compagnie, partagées avec tous ses appareils.
+L'onglet « Fiches » rassemble les fiches de la compagnie, partagées avec tous ses appareils. Elles sont rangées par
+catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons, autres) ; chaque type utilisé par la compagnie (flotte,
+référence) qui n'a pas encore de fiche y figure aussi, « performances à renseigner », avec « Créer la fiche ».
 
 - **Importer** : un fichier (CSV de performances, JSON, `.lnmperf` de Little Navmap, OFP SimBrief) ou un texte collé
   (les mêmes, ou la réponse de ChatGPT). Une fiche tirée d'un OFP est calibrée sur ses temps et sa consommation réels.
@@ -593,7 +595,11 @@ lanceur, « Accès du poste » ouvre l'appli Pilote aux appareils du même rése
   appareils » leur redemande à tous un code (tablette perdue, par exemple).
 - Sur la tablette, l'appli ne marche pas hors ligne et n'utilise pas son GPS : le navigateur ne les accorde qu'en
   https. La position vient du simulateur du poste.
-- 5 codes faux d'un même appareil : une minute d'attente ; 20 en tout : un nouveau code, affiché sur la carte.
+- Un code sert une seule fois et dure 10 minutes : « Nouveau code » en donne un autre. 5 codes faux d'un même
+  appareil : une minute d'attente ; 30 en une heure : l'appairage se ferme jusqu'au prochain « Nouveau code ».
+  « Oublier », à côté d'un appareil, retire celui-là seulement.
+- Seule l'adresse principale du poste est ouverte ; les autres (VPN, machines virtuelles) seulement par « Les ouvrir
+  aussi ».
 
 ## Un dépôt git pour data/
 

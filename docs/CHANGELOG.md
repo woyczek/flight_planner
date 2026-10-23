@@ -28,6 +28,12 @@ waypoints, and the rest listed below.
   help ×4) — as in V2, each type the airline uses (fleet, reference) without a sheet is listed "performance to fill in"
   with "Create the sheet", and the list is sorted by category (helicopters first): the company helicopters (EC45,
   AS65, NH90…) show again.
+- **Launcher: security review of the local-network access** (`tools/launch.py`, `tools/lan_access.py`,
+  `frame/app.js`, `frame/settings/settings.js`; SPEC § 3.10, DECISIONS, settings SPEC, help ×4) — the data batch no
+  longer accepts a path that leaves `data/` (Windows `\`, `:`, `..`, junctions) nor a page, SVG or XML file. The
+  relay follows a redirect only to an allowed host and reaches public addresses only. A pairing code works once and
+  lasts 10 minutes, and 30 wrong codes in an hour close pairing. Only the main address is opened by default. Each
+  paired device can be forgotten on its own. Body size and batch length are bounded.
 - **Settings: copying on a paired tablet** (`frame/settings/settings.js`, `join.js`, `frame/sw.js`) — the
   diagnostics, the configuration link and the username copy through `frame/lib/clipboard.js`, so they work over http;
   when nothing can copy, the text is shown selected and the notification says to copy it.

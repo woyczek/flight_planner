@@ -257,3 +257,11 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
     - on the device: no card; the Diagnostic says offline is impossible and gives the computer through the local
       network;
     - 375 px fits; no JavaScript error.
+- **23 Oct 2026 — Card "Computer access" after the security review (lot 20, written by the V3 frame session)**:
+  - The code's minutes left, "no code in progress" or "pairing closed", and "New code" (the launcher no longer
+    renews a code by itself).
+  - Paired devices listed by their short name, each with "Forget" (asks).
+  - The computer's other addresses, closed by default, with "Open them too".
+  - The state key holds the minutes left, not the seconds, so the card is drawn again only when something shown
+    changes.
+  - The help's last bullet ×4 is updated, with the fingerprints.

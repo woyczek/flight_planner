@@ -602,10 +602,33 @@
     ],
     lanCode: ['Code d’appairage', 'Pairing code', 'Kopplungscode', 'Código de vinculación'],
     lanCodeHint: [
-      'Le code est demandé une seule fois par appareil. 5 essais par minute et par appareil ; après 20 codes faux, un nouveau code, affiché ici et dans la fenêtre du lanceur.',
-      'The code is asked only once per device. 5 tries a minute per device; after 20 wrong codes, a new code, shown here and in the launcher window.',
-      'Der Code wird nur einmal pro Gerät abgefragt. 5 Versuche pro Minute und Gerät; nach 20 falschen Codes ein neuer Code, hier und im Fenster des Starters angezeigt.',
-      'El código se pide una sola vez por dispositivo. 5 intentos por minuto y dispositivo; tras 20 códigos erróneos, un código nuevo, mostrado aquí y en la ventana del lanzador.'
+      'Un code sert une seule fois et dure 10 minutes. 5 essais par minute et par appareil ; après 30 codes faux en une heure, l’appairage se ferme jusqu’au prochain « Nouveau code ».',
+      'A code works only once and lasts 10 minutes. 5 tries a minute per device; after 30 wrong codes in an hour, pairing closes until the next “New code”.',
+      'Ein Code gilt nur einmal und 10 Minuten. 5 Versuche pro Minute und Gerät; nach 30 falschen Codes in einer Stunde schließt sich die Kopplung bis zum nächsten „Neuer Code“.',
+      'Un código sirve una sola vez y dura 10 minutos. 5 intentos por minuto y dispositivo; tras 30 códigos erróneos en una hora, la vinculación se cierra hasta el siguiente «Código nuevo».'
+    ],
+    lanCodeLeft: ['{c} — encore {m} min', '{c} — {m} min left', '{c} — noch {m} min', '{c} — quedan {m} min'],
+    lanNoCode: ['aucun code en cours : « Nouveau code » pour appairer un appareil', 'no code in progress: “New code” to pair a device',
+      'kein gültiger Code: „Neuer Code“, um ein Gerät zu koppeln',
+      'ningún código en curso: «Código nuevo» para vincular un dispositivo'
+    ],
+    lanClosed: ['appairage fermé après trop de codes faux : « Nouveau code » le rouvre',
+      'pairing closed after too many wrong codes: “New code” reopens it',
+      'Kopplung nach zu vielen falschen Codes geschlossen: „Neuer Code“ öffnet sie wieder',
+      'vinculación cerrada tras demasiados códigos erróneos: «Código nuevo» la vuelve a abrir'
+    ],
+    lanNewCode: ['Nouveau code', 'New code', 'Neuer Code', 'Código nuevo'],
+    lanOtherClosed: ['Autres adresses de ce poste (VPN, machines virtuelles…), fermées : {u}',
+      'Other addresses of this computer (VPN, virtual machines…), closed: {u}',
+      'Weitere Adressen dieses Rechners (VPN, virtuelle Maschinen…), geschlossen: {u}',
+      'Otras direcciones de este equipo (VPN, máquinas virtuales…), cerradas: {u}'
+    ],
+    lanOpenAll: ['Les ouvrir aussi', 'Open them too', 'Auch öffnen', 'Abrirlas también'],
+    lanForgetOne: ['Oublier', 'Forget', 'Vergessen', 'Olvidar'],
+    lanForgetOneAsk: ['Oublier l’appareil « {d} » ? Il devra saisir un nouveau code.',
+      'Forget the device “{d}”? It will have to enter a new code.',
+      'Das Gerät „{d}“ vergessen? Es muss einen neuen Code eingeben.',
+      '¿Olvidar el dispositivo «{d}»? Tendrá que introducir un código nuevo.'
     ],
     lanDevices: ['Appareils appairés', 'Paired devices', 'Gekoppelte Geräte', 'Dispositivos vinculados'],
     lanOpened: ['Accès ouvert. Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.',
@@ -919,7 +942,7 @@
     const lanApi = c.lan?.() || null;
     if (lanApi) cards.push(`<div class="f-card" data-card="lan"><h2>${esc(t(T.lan))}</h2><p class="f-muted">${esc(t(T.lanHint))}</p>
       <div data-lanstate><p class="f-muted">…</p></div><p class="f-msg" data-kind="warn">${esc(t(T.lanWarn))}</p><p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="lanToggle">${esc(t(T.lanOpen))}</button><button type="button" data-act="lanForget" disabled>${esc(t(T.lanForget))}</button></div></div>`);
+      <div class="f-row"><button type="button" class="primary" data-act="lanToggle">${esc(t(T.lanOpen))}</button><button type="button" data-act="lanCode" hidden>${esc(t(T.lanNewCode))}</button><button type="button" data-act="lanForget" disabled>${esc(t(T.lanForget))}</button></div></div>`);
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
     if (L && c.aerodb()?.lnmperf) cards.push('<div class="f-card" data-card="lnmperf" hidden></div>');
     const help = await c.helpPanel?.().catch(() => null);
@@ -1065,17 +1088,31 @@
     const paintLan = s => {
       const k = card('lan');
       if (!k) return;
-      const key = JSON.stringify(s);
+      // les minutes restantes du code, pas ses secondes : la carte n'est redessinée qu'au changement
+      const min = s?.code ? Math.max(1, Math.ceil(s.expires / 60)) : 0,
+        key = JSON.stringify(s && {
+          ...s,
+          expires: min
+        });
       if (key === lanKey) return;
       lanKey = key;
-      const btn = k.querySelector('[data-act="lanToggle"]');
+      const btn = k.querySelector('[data-act="lanToggle"]'),
+        nc = k.querySelector('[data-act="lanCode"]');
       btn.textContent = t(s?.on ? T.lanClose : T.lanOpen);
       btn.classList.toggle('primary', !s?.on);
+      if (nc.hidden === !!s?.on) nc.hidden = !s?.on;
+      nc.classList.toggle('primary', !!s?.on && !s.code);
       k.querySelector('[data-act="lanForget"]').disabled = !s?.devices;
       const box = k.querySelector('[data-lanstate]');
       if (!s) return void(box.innerHTML = `<p class="f-msg" data-kind="err">${esc(t(T.lanFail))}</p>`);
       const url = s.urls?.[0] || '',
-        row = (label, v) => `<dt>${esc(t(label))}</dt><dd>${v}</dd>`;
+        row = (label, v) => `<dt>${esc(t(label))}</dt><dd>${v}</dd>`,
+        closedIps = (s.available || []).filter(ip => !(s.urls || []).some(u => u.includes(`//${ip}:`))),
+        code = s.closed ? `<span class="f-msg" data-kind="err">${esc(t(T.lanClosed))}</span>` : s.code ? esc(t(T.lanCodeLeft, {
+          c: s.code,
+          m: min
+        })).replace(esc(s.code), `<b class="f-num">${esc(s.code)}</b>`) : esc(t(T.lanNoCode)),
+        devs = (s.paired || []).map(d => `<div class="f-row"><span>${esc(d.label)} — ${esc(d.at ? new Date(d.at).toLocaleDateString() : '?')}</span><button type="button" data-forget="${esc(d.id)}" data-label="${esc(d.label)}">${esc(t(T.lanForgetOne))}</button></div>`).join('');
       let qr = '';
       if (s.on && url && window.SogQR) try {
         qr = `<figure class="f-qr"><div>${SogQR.svg(url, { ecl: 'M', scale: 4 })}</div><figcaption class="f-muted">${esc(t(T.lanQr))}</figcaption></figure>`;
@@ -1083,7 +1120,7 @@
         qr = ''; // adresse trop longue pour un code QR : elle reste écrite
       }
       box.innerHTML = `<dl class="f-dl">${row(T.lanState, esc(t(s.on ? T.lanOn : T.lanOff)))}${s.on ? row(T.lanUrl, `<b>${esc(url)}</b>`) +
-        (s.urls.length > 1 ? row(T.lanOther, esc(s.urls.slice(1).join(', '))) : '') + row(T.lanCode, `<b class="f-num">${esc(s.code)}</b>`) : ''}${row(T.lanDevices, esc(String(s.devices ?? 0)))}</dl>${qr}${s.on ? `<p class="f-muted">${esc(t(T.lanCodeHint))}</p>` : ''}`;
+        (s.urls.length > 1 ? row(T.lanOther, esc(s.urls.slice(1).join(', '))) : '') + row(T.lanCode, code) : ''}${row(T.lanDevices, esc(String(s.devices ?? 0)))}</dl>${devs}${qr}${s.on ? `<p class="f-muted">${esc(t(T.lanCodeHint))}</p>` : ''}${s.on && closedIps.length ? `<p class="f-muted">${esc(t(T.lanOtherClosed, { u: closedIps.join(', ') }))}</p><div class="f-row"><button type="button" data-act="lanAll">${esc(t(T.lanOpenAll))}</button></div>` : ''}`;
     };
     if (lanApi) {
       const el = card('lan'),
@@ -1103,17 +1140,32 @@
 
     // actions
     view.onclick = async e => {
+      const fg = e.target.closest('[data-forget]');
+      if (fg && c.lan?.()) {
+        // un appareil appairé oublié : il devra saisir un nouveau code
+        if (!await c.ask(t(T.lanForgetOneAsk, {
+            d: fg.dataset.label
+          }))) return;
+        fg.disabled = true;
+        const s = await c.lan().forget(fg.dataset.forget).catch(() => null);
+        lanKey = '';
+        paintLan(s);
+        if (s) c.notify(t(T.lanForgotten), 'ok');
+        return;
+      }
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const act = b.dataset.act;
-      if (act === 'lanToggle' || act === 'lanForget') {
+      if (act === 'lanToggle' || act === 'lanForget' || act === 'lanCode' || act === 'lanAll') {
         const api = c.lan?.();
         if (!api) return;
         if (act === 'lanForget' && !await c.ask(t(T.lanForgetAsk))) return;
         b.disabled = true;
         try {
           const before = await api.state(),
-            s = act === 'lanForget' ? await api.forget() : before.on ? await api.close() : await api.open();
+            s = act === 'lanForget' ? await api.forget() : act === 'lanCode' ? await api.newCode() : act === 'lanAll' ? await api
+            .openAll() :
+            before.on ? await api.close() : await api.open();
           say('lan', !before.on && act === 'lanToggle' && !s.on ? t(T.lanNone) : '', 'warn');
           b.disabled = false; // avant le dessin : paintLan décide ensuite de « Oublier » (aucun appareil → grisé)
           lanKey = '';
