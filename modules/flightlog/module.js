@@ -41,6 +41,10 @@ const TX = {
   },
   find: ['Rechercher', 'Search', 'Suchen', 'Buscar'],
   noReport: ['Sans CR', 'Without report', 'Ohne Bericht', 'Sin informe'],
+  noTimes: ['CR sans heures', 'Report without times', 'Bericht ohne Zeiten', 'Informe sin horas'],
+  filtersKept: ['Filtres de la dernière visite : {l} — les retirer', 'Filters from the last visit: {l} — remove them',
+    'Filter des letzten Besuchs: {l} — entfernen', 'Filtros de la última visita: {l} — quitarlos'
+  ],
   tFlights: ['vols', 'flights', 'Flüge', 'vuelos'],
   tBlock: ['heures de bloc', 'block hours', 'Blockstunden', 'horas bloque'],
   tNoCr: ['sans CR', 'without report', 'ohne Bericht', 'sin informe'],
@@ -217,6 +221,7 @@ async function load(loud = false) {
 // recherche qui prend la place, colonnes d'une ligne de vol (téléphone, puis écran large), détail sous sa ligne
 const STYLE = `
 [data-module="flightlog"] .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+[data-module="flightlog"] .fl-chip{min-height:44px;border:1px solid var(--sog-accent);color:var(--sog-accent);background:transparent} /* filtres repris */
 [data-module="flightlog"] .f-tools input[type=search]{flex:1;min-width:8em}
 [data-module="flightlog"] .f-list .f-item{grid-template-columns:5.5em minmax(0,1fr) auto}
 [data-module="flightlog"] .fl-mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -249,7 +254,7 @@ function renderBody() {
       route = [f.dep, f.arr].filter(Boolean).join(' → ') || '—',
       dot = f.source === 'cr' ? '' : '<span class="f-dot" data-kind="warn" aria-hidden="true"></span>';
     return `<div data-key="${esc(k)}">
-      <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span><span class="f-num">${F.hm(f.block)}</span><span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span><span class="f-num">${F.hm(f.block)}</span>`}</button>
+      <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span>${blockCell(f)}<span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span>${blockCell(f)}`}</button>
       ${open ? `<div class="f-card fl-detail"><dl class="f-dl">
         <dt>${esc(tt(TX.source))}</dt><dd>${esc(tt(TX.sources[f.source], { n: f.network || '' }))}${f.open ? ` (${esc(tt(TX.inFlight))})` : ''}</dd>
         <dt>${esc(tt(TX.time))}</dt><dd>${esc(f.date)} ${esc(f.time)}</dd>
@@ -263,6 +268,7 @@ function renderBody() {
   S.body.innerHTML = `
     <div class="f-tiles"><div><b>${tot.flights}</b><span>${esc(tt(TX.tFlights))}</span></div><div><b>${F.hm(tot.blockMinutes)}</b><span>${esc(tt(TX.tBlock))}</span></div><div><b>${tot.noReport}</b><span>${esc(tt(TX.tNoCr))}</span></div></div>
     ${tot.types.length ? `<p class="f-muted">${esc(tt(TX.types, { l: tot.types.map(([k, n]) => `${k} ×${n}`).join(', ') }))}</p>` : ''}
+    ${S.kept ? `<div class="f-row"><button type="button" class="fl-chip" data-do="clearfilters" aria-label="${esc(tt(TX.filtersKept, { l: keptFilters() }))}" title="${esc(tt(TX.filtersKept, { l: keptFilters() }))}">${esc(keptFilters())} ✕</button></div>` : ''}
     <div class="f-tools"><select data-k="days" aria-label="${esc(tt(TX.period))}">${[7, 31, 365, 0].map(d => `<option value="${d}"${+v.days === d ? ' selected' : ''}>${esc(tt(TX.periods[d]))}</option>`).join('')}</select>
       <input type="search" data-k="find" value="${esc(v.find)}" placeholder="${esc(tt(TX.find))}" aria-label="${esc(tt(TX.find))}">
       <label class="f-check"><input type="checkbox" data-k="noReport"${v.noReport ? ' checked' : ''}>${esc(tt(TX.noReport))}</label></div>
@@ -273,10 +279,30 @@ function renderBody() {
     <details class="f-card"><summary>${esc(tt(TX.more))}</summary><div class="f-row">
       <button type="button" data-do="csv">${esc(tt(TX.csv))}</button><button type="button" data-do="refresh">${esc(tt(TX.refresh))}</button></div></details>`;
 }
+/** Case du bloc : sa durée, ou « — » (un CR sans heures le dit en infobulle). */
+function blockCell(f) {
+  if (f.block != null) return `<span class="f-num">${F.hm(f.block)}</span>`;
+  const t = f.source === 'cr' ? tt(TX.noTimes) : '';
+  return `<span class="f-num"${t ? ` title="${esc(t)}" aria-label="${esc(t)}"` : ''}>—</span>`;
+}
+/** Défauts des filtres (une visite neuve). */
+const VIEW_DEFAULT = {
+  days: 365,
+  find: '',
+  noReport: false
+};
+/** Filtres actifs repris d'une visite précédente : « 1 an · LFRS · Sans CR » ; vide s'ils sont ceux par défaut. */
+function keptFilters() {
+  const v = S.view;
+  if (+v.days === VIEW_DEFAULT.days && !String(v.find || '').trim() && !v.noReport) return '';
+  return [tt(TX.periods[+v.days] || TX.periods[365]), String(v.find || '').trim(), v.noReport ? tt(TX.noReport) : ''].filter(Boolean)
+    .join(' · ');
+}
 /** Filtres : gardés sur l'appareil, liste redessinée. */
 function onInput(e) {
   const k = e.target.dataset?.k;
   if (!k) return;
+  S.kept = false; // filtres touchés dans cette visite : la puce des filtres repris s'en va
   S.view[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
   S.ctx.data.put(VIEW, S.view, {
     policy: 'cache'
@@ -294,6 +320,15 @@ async function onClick(e) {
     return render();
   }
   switch (b.dataset.do) {
+    case 'clearfilters': // puce des filtres repris : retour aux filtres par défaut
+      S.view = {
+        ...VIEW_DEFAULT
+      };
+      S.kept = false;
+      S.ctx.data.put(VIEW, S.view, {
+        policy: 'cache'
+      });
+      return render();
     case 'writeNow': // le compte rendu propose d'abord le vol démarré (« Vol démarré à hh:mm »)
       location.hash = '#report?from=flightlog';
       return;
@@ -343,12 +378,11 @@ export async function mount(el, ctx) {
     ctx,
     flights: [],
     view: {
-      days: 365,
-      find: '',
-      noReport: false,
+      ...VIEW_DEFAULT,
       ...((await ctx.data.get(VIEW)) || {})
     }
   };
+  S.kept = !!keptFilters(); // filtres d'une visite précédente : dits par une puce qui les retire
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(tt(TX.title))}</h1><div data-body></div>`;
   S.body = el.querySelector('[data-body]');
   S.body.addEventListener('input', onInput);

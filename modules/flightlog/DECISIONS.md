@@ -2,6 +2,12 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — filters kept from the last visit are said; "—" explained** (end-to-end pass, Simplification's
+  decision (d)): the filters stay on the device (`cache/flightlog/view.json`), and a visit opened on "1 year · LFRS"
+  showed one flight with nothing saying why. When the stored filters differ from the defaults (1 year, no search,
+  all flights), a chip "1 year · LFRS ✕" (44 px, label "Filters from the last visit: … — remove them") brings the
+  defaults back; touching a filter in the visit removes the chip. A report without times shows "—" with the
+  tooltip "Report without times". Checked on 8804.
 - **23 Oct 2026 — a report with only its engine start keeps its time** (end-to-end pass): the report of a started
   flight (fuel's start → report's "Use") has `timeline.engineStart` and no off-block nor take-off yet, and the
   detail said "Time 2026-10-23" with no time. The time is now off-block, else take-off, else engine start (added

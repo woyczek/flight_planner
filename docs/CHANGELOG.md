@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **My flights: filters from the last visit shown** (`modules/flightlog/module.js`; DECISIONS, help ×4) — a chip
+  "1 year · LFRS ✕" recalls and removes them; a report without times says so on its "—".
 - **Fuel: no default aircraft** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — a new flight takes the last
   aircraft chosen on the device, shown first in the search; with none, the quote waits for a choice.
 - **aerodb: aircraft registry read in parallel** (`frame/aerodb/aerodb.js`, `registry.js`; SPEC, DECISIONS) — the

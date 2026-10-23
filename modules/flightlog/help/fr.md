@@ -10,7 +10,8 @@ compte rendu, pour la période choisie. Juste dessous, les trois types d'apparei
 
 **Les filtres.** Choisissez la période (7 jours, 31 jours, un an, tout), cherchez un indicatif, un type, une
 immatriculation, un terrain, une mission ou un numéro de compte rendu, ou cochez « Sans CR » pour ne voir que les vols
-qui en attendent un. Vos choix restent sur l'appareil.
+qui en attendent un. Vos choix restent sur l'appareil : à la visite suivante, une puce les rappelle (« 1 an · LFRS ✕ »)
+et les retire d'un appui. Un « — » à la place du bloc : compte rendu sans heures.
 
 **La liste.** Une ligne par vol : la date, l'indicatif, la route et le temps de bloc. Un point orange marque un vol
 sans compte rendu. Sur un ordinateur, la ligne montre aussi l'appareil et le numéro du compte rendu.

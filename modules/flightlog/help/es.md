@@ -10,7 +10,8 @@ para el período elegido. Justo debajo, los tres tipos de aeronave que más ha v
 
 **Los filtros.** Elija el período (7 días, 31 días, 1 año, todo), busque un indicativo, un tipo, una matrícula, un
 aeródromo, una misión o un número de informe, o marque «Sin informe» para ver solo los vuelos que esperan uno. Sus
-elecciones se quedan en el dispositivo.
+elecciones se quedan en el dispositivo: en la visita siguiente, una pastilla las recuerda («1 año · LFRS ✕») y las
+quita de un toque. Un «—» en lugar del bloque: un informe sin horas.
 
 **La lista.** Una línea por vuelo: la fecha, el indicativo, la ruta y el tiempo de bloque. Un punto naranja marca un
 vuelo sin informe. En un ordenador, la línea muestra también la aeronave y el número del informe.

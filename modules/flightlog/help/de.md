@@ -10,7 +10,9 @@ für den gewählten Zeitraum. Direkt darunter die drei Muster, die Sie am meiste
 
 **Die Filter.** Wählen Sie den Zeitraum (7 Tage, 31 Tage, 1 Jahr, alle), suchen Sie nach einem Rufzeichen, einem
 Muster, einem Kennzeichen, einem Flugplatz, einem Einsatz oder einer Berichtsnummer, oder setzen Sie das Häkchen bei
-„Ohne Bericht“, um nur die Flüge zu sehen, die auf einen warten. Ihre Auswahl bleibt auf dem Gerät.
+„Ohne Bericht“, um nur die Flüge zu sehen, die auf einen warten. Ihre Auswahl bleibt auf dem Gerät: Beim nächsten
+Besuch erinnert ein Chip daran („1 Jahr · LFRS ✕“) und entfernt sie mit einem Tippen. Ein „—“ statt der Blockzeit:
+ein Bericht ohne Zeiten.
 
 **Die Liste.** Eine Zeile pro Flug: Datum, Rufzeichen, Route und Blockzeit. Ein orangefarbener Punkt markiert einen Flug
 ohne Bericht. Auf einem Computer zeigt die Zeile auch das Luftfahrzeug und die Nummer des Berichts.

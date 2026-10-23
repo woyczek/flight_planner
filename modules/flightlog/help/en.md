@@ -10,7 +10,8 @@ report yet, for the chosen period. Just below, the three aircraft types you have
 
 **The filters.** Choose the period (7 days, 31 days, 1 year, all), search for a callsign, a type, a registration, an
 airfield, a mission or a report number, or tick “Without report” to see only the flights waiting for one. Your choices
-stay on the device.
+stay on the device: at the next visit a chip recalls them ("1 year · LFRS ✕") and removes them in one tap. A "—"
+instead of the block time: a report without times.
 
 **The list.** One line per flight: the date, the callsign, the route and the block time. An orange dot marks a flight
 without a report. On a computer, the line also shows the aircraft and the report number.
