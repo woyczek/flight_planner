@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 5: charts that read like en-route charts** (`modules/maps/`; SPEC, INTEGRATION, DECISIONS, help ×4) —
+  airway points (triangles and beacons) with their names, boxed airway names along the segment with minimum level,
+  distance and tracks when zoomed in; three presets at the top left (Low IFR, High IFR, VFR) chosen automatically from
+  the flight's level and kept per device; density by zoom (large airfields and airways from afar, everything close
+  up); tooltips in AIP notation on airspaces and airways, by tap or by hover, also on the profile; live view on every
+  change of the flight, with the levels held from route points (`alt_ft`) drawn as steps.
 - **design: the dual view no longer squeezes three blocks into half a screen** (`frame/design/primitives.css`,
   `frame/frame.css`) — columns, grids and tables are decided on the width of the pane (container queries), not of the
   window: in the dual view Fuel or Report stacks its blocks while the Map keeps its half.

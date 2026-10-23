@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="../../../frame/frame.css?v=0">
 <style>
   body {
+    display: block;
     margin: 0;
     padding: 12px;
     background: var(--sog-bg);
@@ -174,7 +175,7 @@
             trigram: 'TST'
           },
           // ?mission=<ID>&map=<fichier> : comme l'adresse #maps?mission=…&map=… du cadre
-          query: Object.freeze(Object.fromEntries(['mission', 'map'].filter(k => Q.get(k)).map(k => [k, Q.get(k)])))
+          query: Object.freeze(Object.fromEntries(['mission', 'map', 'view'].filter(k => Q.get(k)).map(k => [k, Q.get(k)])))
         };
       const t0 = performance.now();
       await mod.mount(document.getElementById('host'), ctx);

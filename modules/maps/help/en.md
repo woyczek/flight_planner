@@ -22,6 +22,24 @@ profile: a blue cursor follows it, and the same cursor moves on the map. Tap the
 line below the profile says what is under the cursor: distance from the departure, planned altitude, terrain height,
 and the airspace you are in at that point.
 
+**Three map settings.** The list at the top left of the map chooses what it shows. "Low IFR": low airways,
+airspaces, minimum altitudes and beacons. "High IFR": upper airways (UN…, UM…), airspaces above FL195. "VFR":
+topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. "Auto" chooses
+from your flight's level (High IFR from FL195); the choice is kept.
+
+**The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
+names. Closer: the airway points (triangles and beacons), each airway's minimum level ("F195"), then the segment's
+distance, its track ("097°"), the reporting points and the obstacles.
+
+**Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks
+both ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation ("TMA 8
+AQUITAINE 2000|FL145 D") and its hours when known. The next tap or moving the map closes it. With a mouse, just
+stop over it. On the profile, your finger gives the same bubble for the airspaces crossed.
+
+**Steps.** If the route sets a level at some points in Fuel, the profile draws the steps: climb, level-off, new
+climb or descent, with the top of climb and top of descent computed again. The route's waypoints are also marked on
+the profile.
+
 **Climb and descent.** The purple diamonds mark the top of climb (TOC) and the top of descent (TOD), on the map as on
 the profile. They come from the Fuel calculation; without it, the map estimates them with common rates of climb and
 descent.

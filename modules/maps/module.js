@@ -22,8 +22,12 @@ export const meta = {
   reads: ['pilot/', {
     prefix: 'missions/',
     policy: 'reference'
+  }, 'cache/maps/'],
+  // préréglage de carte choisi (propre à l'appareil, jamais synchronisé)
+  writes: [{
+    prefix: 'cache/maps/',
+    policy: 'cache'
   }],
-  writes: [],
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'
@@ -127,6 +131,18 @@ const TX = {
     'Map made on cycle {a}; aeronautical database of cycle {b}.',
     'Karte mit Zyklus {a} erstellt; Luftfahrtdatenbank des Zyklus {b}.', 'Mapa hecho con el ciclo {a}; base aeronáutica del ciclo {b}.'
   ],
+  preset: ['Préréglage de la carte', 'Map preset', 'Kartenvoreinstellung', 'Preajuste del mapa'],
+  presets: {
+    auto: ['Auto (niveau du vol)', 'Auto (flight level)', 'Auto (Flugfläche)', 'Auto (nivel del vuelo)'],
+    low: ['IFR bas', 'Low IFR', 'IFR unten', 'IFR bajo'],
+    high: ['IFR haut', 'High IFR', 'IFR oben', 'IFR alto'],
+    vfr: ['VFR', 'VFR', 'VFR', 'VFR']
+  },
+  awHigh: ['voie haute', 'upper airway', 'oberer Flugweg', 'aerovía superior'],
+  awLow: ['voie basse', 'lower airway', 'unterer Flugweg', 'aerovía inferior'],
+  tipNone: ['Aucun espace choisi ici.', 'No airspace shown here.', 'Hier kein gezeigter Luftraum.',
+    'Ningún espacio mostrado aquí.'
+  ],
   credit: ['© OpenFreeMap © OpenStreetMap ; SIA : base publiée, non certifiée',
     '© OpenFreeMap © OpenStreetMap; SIA: published database, not certified',
     '© OpenFreeMap © OpenStreetMap; SIA: veröffentlichte Datenbank, nicht zertifiziert',
@@ -179,11 +195,23 @@ function loadMapLibre() {
 /** Points de la route (route.points, positions résolues par Carburant) et dégagement (aerodb). */
 async function readFlight() {
   const f = (await S.ctx.data.get(flightPath()).catch(() => null)) || null,
-    pts = (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => ({
+    // alt_ft (facultatif, Carburant, INTEGRATION § 3) : niveau tenu à partir du point, jamais au premier ni au dernier ;
+    // le vol part à level.ft, un point sans alt_ft continue le précédent. Pour le profil : lvl (niveau à partir du
+    // point), comme « /F240 » d'une route OFP ; paliers et TOC / TOD tronçon par tronçon
+    raw = (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+    pts = raw.map((p, i) => ({
       id: p.id || '',
       lat: +p.lat,
-      lon: +p.lon
+      lon: +p.lon,
+      ...(i > 0 && i < raw.length - 1 && p.alt_ft != null && +p.alt_ft > 0 ? {
+        lvl: {
+          ft: +p.alt_ft
+        }
+      } : {})
     }));
+  if (pts.some(p => p.lvl) && +f?.level?.ft > 0) pts[0].lvl = {
+    ft: +f.level.ft
+  };
   let altn = null;
   if (f?.route?.altn && pts.length && S.ctx.aerodb) {
     const c = await S.ctx.aerodb.coords(f.route.altn).catch(() => null);
@@ -365,7 +393,7 @@ function draw() {
     ctx.stroke();
     ctx.restore();
   }
-  MapsRender.draw(ctx, {
+  S.awHits = MapsRender.draw(ctx, {
     toC,
     W,
     H,
@@ -380,7 +408,7 @@ function draw() {
       points: S.mission.points,
       zones: S.mission.zones
     } : null
-  });
+  })?.airways || [];
   if (S.route.altn && route.length) {
     // terrain de dégagement : rond gris et code, par-dessus le reste
     const q = toC(S.route.altn.lat, S.route.altn.lon);
@@ -547,6 +575,39 @@ function drawProfile() {
     ctx.stroke();
     ctx.fillText(String(m.nm), x, yb - 7);
   }
+  // points des voies et balises à moins de 3 NM de la route : petit triangle et nom, au-dessus des marques NM
+  const ends = new Map();
+  for (const w of S.data?.data?.airways || [])
+    for (const e of [w.a, w.b])
+      if (e?.id) ends.set(e.id, e);
+  for (const n of S.data?.data?.navaids || []) ends.set(n.id, n);
+  const own = new Set(S.route.points.map(p => p.id)),
+    marks = [];
+  for (const e of ends.values()) {
+    if (own.has(e.id)) continue; // points de la route : déjà nommés sous le cadre
+    const pr = MapsProfile.project(S.prof, e.lat, e.lon);
+    if (pr.s != null && pr.offNm <= 3) marks.push({
+      id: e.id,
+      x: MapsProfile.xOf(g, pr.s)
+    });
+  }
+  marks.sort((a, b) => a.x - b.x);
+  ctx.fillStyle = S.theme.fg;
+  ctx.strokeStyle = S.theme.fg;
+  ctx.font = '600 9px Arial,sans-serif';
+  let lastX = -Infinity;
+  for (const m of marks) {
+    if (m.x - lastX < 30) continue;
+    lastX = m.x;
+    const y = yb - 22;
+    ctx.beginPath();
+    ctx.moveTo(m.x, y - 4);
+    ctx.lineTo(m.x + 3.5, y + 2);
+    ctx.lineTo(m.x - 3.5, y + 2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillText(m.id, m.x, y - 5);
+  }
   ctx.restore();
   drawCursor();
 }
@@ -582,13 +643,13 @@ function drawCursor() {
 }
 /** Hauteur lisible : « FL270 » au-dessus de 10 000 ft, sinon « 3 400 ft ». */
 const altTxt = ft => ft >= 10000 ? `FL${String(Math.round(ft / 100)).padStart(3, '0')}` : `${Math.round(ft).toLocaleString(S.ctx.lang())} ft`;
-/** Ligne sous le profil : distance, altitude prévue, relief ou MORA, espaces sous le curseur ; l'aide sans curseur. */
+/** Ligne sous le profil : distance, altitude prévue, relief ou MORA, espaces sous le curseur (notation SIA) ; l'aide sans curseur. */
 function strip() {
   if (!S?.stripEl) return;
   let text = '';
   if (S.prof && S.cursor != null) {
     const i = MapsProfile.at(S.prof, S.cursor),
-      zones = i.zones.map(z => `${z.type} ${z.name} (${z.lower} – ${z.upper})`);
+      zones = i.zones.map(z => MapsRender.sia(z)[0]); // notation SIA, comme l'infobulle
     text = [tt(TX.dist, {
       d: i.nm.toFixed(i.nm < 10 ? 1 : 0)
     }), i.alt != null ? tt(TX.planned, {
@@ -700,13 +761,85 @@ async function startTiles() {
       map.on('move', schedule);
       map.on('moveend', schedule);
       map.on('click', e => {
-        if (!S?.prof) return;
-        const s = MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y);
-        if (s != null) setCursor(s);
+        if (!S) return;
+        const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
+        if (s != null) {
+          hideTips();
+          return setCursor(s);
+        }
+        if (S.tipEl.hidden) mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
+        else hideTips(); // toucher suivant : fermée
       });
+      let hover = 0;
+      // survol à la souris seulement : un toucher est suivi d'événements souris de compatibilité, ignorés
+      map.on('mousemove', e => {
+        clearTimeout(hover);
+        if (!S || fromTouch(e.originalEvent)) return;
+        hover = setTimeout(() => S && mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y), 450);
+      });
+      map.on('mouseout', e => {
+        clearTimeout(hover);
+        if (S && !fromTouch(e.originalEvent)) S.tipEl.hidden = true;
+      });
+      map.on('movestart', hideTips);
       finish(true);
     });
   });
+}
+
+// ---------------------------------------------------------------- infobulles des espaces (notation SIA)
+/** Lignes d'infobulle des espaces : « TMA AQUITAINE 8 2000|FL145 D », activation et informations en dessous. */
+const tipHtml = list => list.length ? list.map(a => {
+  const [main, sub] = MapsRender.sia(a);
+  return `<div><b>${esc(main)}</b>${sub ? `<br><span class="f-muted">${esc(sub)}</span>` : ''}</div>`;
+}).join('') : `<div class="f-muted">${esc(tt(TX.tipNone))}</div>`;
+/** Lignes d'infobulle des voies : « UN482 LMG → NEPIX », puis distance, routes vraies aller et retour, plancher|plafond
+ *  et voie basse ou haute. */
+const airwayHtml = list => list.map(g => {
+  const R = MapsRender,
+    high = (+g.lower || 0) >= 19500 || /^U/.test(g.route),
+    sub = [Number.isFinite(+g.nm) ? `${Math.round(+g.nm)} NM` : '', g.a && g.b ? `${R.deg3(R.trackOf(g.a, g.b))} / ${R.deg3(R
+      .trackOf(g.b, g.a))}` : '', `${R.awLimit(g.lower)}|${R.awLimit(g.upper)}`, tt(high ? TX.awHigh : TX.awLow)].filter(
+      Boolean)
+    .join(' · ');
+  return `<div><b>${esc(`${g.route} ${g.a?.id || ''} → ${g.b?.id || ''}`)}</b><br><span class="f-muted">${esc(sub)}</span></div>`;
+}).join('');
+/** Infobulle dans un cadre (carte ou profil), à la position (x, y) du cadre ; écrite seulement si elle change. */
+function showTip(tip, box, x, y, html) {
+  if (tip.innerHTML !== html) tip.innerHTML = html;
+  tip.hidden = false;
+  const r = box.getBoundingClientRect(),
+    w = tip.offsetWidth,
+    h = tip.offsetHeight;
+  tip.style.left = `${Math.max(4, Math.min(r.width - w - 4, x + 10))}px`;
+  tip.style.top = `${Math.max(4, y - h - 10 < 4 ? y + 14 : y - h - 10)}px`;
+}
+/** Dernier toucher dans le module : les événements souris qui le suivent (compatibilité) ne sont pas un survol. */
+let touchAt = -1e9;
+const fromTouch = e => !!e?.sourceCapabilities?.firesTouchEvents || performance.now() - touchAt < 1000;
+const hideTips = () => {
+  if (S?.tipEl) S.tipEl.hidden = true;
+  if (S?.ptipEl) S.ptipEl.hidden = true;
+};
+/** Infobulle de la carte en (x, y) : la voie dont le cartouche est sous le doigt, sinon les espaces montrés sous le
+ *  point (lat, lon). */
+function mapTip(lat, lon, x, y) {
+  const ways = MapsRender.airwaysAt(S.awHits, x, y);
+  showTip(S.tipEl, S.box, x, y, ways.length ? airwayHtml(ways.slice(0, 3)) : tipHtml(MapsRender.airspacesAt(S.data?.data
+    ?.airspaces || [], lat, lon)));
+}
+/** Profil d'affichage choisi au préréglage : profil, données, fond, profil vertical refaits. */
+async function setPreset(v) {
+  S.preset = v;
+  S.ctx.data.put('cache/maps/ui.json', {
+    preset: v
+  }).catch(() => {});
+  const before = styleFor();
+  S.profile = flightProfile();
+  S.data = null;
+  if (S.map && styleFor() !== before) S.map.setStyle(styleFor());
+  schedule();
+  buildProfile();
 }
 
 // ---------------------------------------------------------------- écran
@@ -763,12 +896,33 @@ function header() {
   if (S.hdEl.textContent !== text) S.hdEl.textContent = text;
 }
 /** Vol (re)lu : profil selon le niveau, emprise, marques, données, fond. */
-async function applyFlight() {
+/** Profil d'affichage du vol selon le préréglage : IFR bas ou haut (voies, espaces de la tranche, MORA, balises), VFR
+ *  (profil « VFR détaillé » du studio sur un fond plus topographique), ou automatique selon le niveau du vol. */
+function flightProfile() {
+  if (S.preset === 'vfr') return {
+    ...structuredClone(window.MAPS_PROFILES.find(x => x.id === 'vfr-detail') || MapsRender.routeProfile(0)),
+    base: 'ofm-liberty'
+  };
+  return MapsRender.routeProfile(S.preset === 'low' ? 5000 : S.preset === 'high' ? 30000 : S.route.levelFt);
+}
+/** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
+const viewOf = () => {
+  const v = String(S.ctx.query?.view || '').split(',').map(Number);
+  return v.length === 4 && v.every(Number.isFinite) ? {
+    w: v[0],
+    s: v[1],
+    e: v[2],
+    n: v[3]
+  } : null;
+};
+/** Vol (re)lu. live : écriture du vol courant pendant qu'on le regarde (vue double avec Carburant) — la vue reste où
+ *  l'utilisateur l'a mise tant que la route y tient ; les zones déjà lues par aerodb ne sont pas relues. */
+async function applyFlight(live = false) {
   S.route = await readFlight();
   if (!S) return;
-  S.profile = MapsRender.routeProfile(S.route.levelFt);
+  S.profile = flightProfile();
   const all = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])];
-  S.fit = MapsRender.bboxOf(all, 25) || {
+  S.fit = viewOf() || MapsRender.bboxOf(all, 25) || {
     w: -5,
     s: 41,
     e: 10,
@@ -776,10 +930,14 @@ async function applyFlight() {
   };
   S.marks = MapsRender.marks(S.route.points);
   S.data = null;
-  S.cursor = null;
+  if (!live) S.cursor = null;
   S.box.hidden = !S.route.points.length; // pas de vol : pas de carte, le message de l'état
   header();
-  if (S.map) S.map.fitBounds([
+  const inView = () => {
+    const bb = S.map.getBounds();
+    return all.every(p => p.lon >= bb.getWest() && p.lon <= bb.getEast() && p.lat >= bb.getSouth() && p.lat <= bb.getNorth());
+  };
+  if (S.map && !(live && inView())) S.map.fitBounds([
     [S.fit.w, S.fit.s],
     [S.fit.e, S.fit.n]
   ], {
@@ -897,7 +1055,7 @@ async function applyMission() {
     levelFt: M?.vprof.cruiseFt || 0,
     updated: `${q.mission}|${m?.file || ''}|${S.missionRev || ''}`
   };
-  S.fit = m?.extent || MapsRender.bboxOf([...pts, ...(M?.points || [])], 10) || {
+  S.fit = viewOf() || m?.extent || MapsRender.bboxOf([...pts, ...(M?.points || [])], 10) || {
     w: -5,
     s: 41,
     e: 10,
@@ -948,6 +1106,9 @@ const STYLE = `
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
 [data-module="maps"] .mp-strip{min-height:1.4em;font-size:.92em;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-status p{margin:4px 0}
+[data-module="maps"] .mp-preset{position:absolute;left:8px;top:8px;z-index:3;min-height:var(--sog-touch);max-width:60%;font-size:.88em;padding-block:0}
+[data-module="maps"] .mp-tip{position:absolute;z-index:4;max-width:min(92%,340px);padding:6px 8px;margin:0;font-size:.88em;line-height:1.35;pointer-events:none;box-shadow:0 2px 8px #0003}
+[data-module="maps"] .mp-tip>div+div{margin-top:4px}
 `;
 
 export async function mount(el, ctx) {
@@ -970,8 +1131,11 @@ export async function mount(el, ctx) {
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
 <div class="mp-sum f-muted" aria-live="polite"></div></div>
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
+<select class="mp-preset" aria-label="${esc(ctx.t(TX.preset))}">${['auto', 'low', 'high', 'vfr'].map(k => `<option value="${k}">${esc(ctx.t(TX.presets[k]))}</option>`).join('')}</select>
+<div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
-<div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas></div>
+<div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
+<div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div>
 <div class="mp-status" aria-live="polite"><p class="f-muted">${esc(ctx.t(TX.loading))}</p></div>`;
   Object.assign(S, {
@@ -985,7 +1149,10 @@ export async function mount(el, ctx) {
     pcur: el.querySelector('canvas.mp-pcur'),
     stripEl: el.querySelector('.mp-strip'),
     pickEl: el.querySelector('.mp-pick'),
-    mapPickEl: el.querySelector('.mp-mappick')
+    mapPickEl: el.querySelector('.mp-mappick'),
+    presetEl: el.querySelector('.mp-preset'),
+    tipEl: el.querySelector('.mp-box .mp-tip'),
+    ptipEl: el.querySelector('.mp-prof .mp-tip')
   });
   S.pickEl.addEventListener('change', () => {
     const v = S.pickEl.value;
@@ -995,19 +1162,37 @@ export async function mount(el, ctx) {
   // curseur commun : doigt (ou souris) sur le profil
   const onProf = e => {
     if (!S?.geo || (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse')) return;
-    const r = S.profBox.getBoundingClientRect();
-    setCursor(MapsProfile.sOf(S.geo, e.clientX - r.left));
+    const r = S.profBox.getBoundingClientRect(),
+      x = e.clientX - r.left;
+    setCursor(MapsProfile.sOf(S.geo, x));
+    const zones = MapsProfile.at(S.prof, S.cursor).zones;
+    showTip(S.ptipEl, S.profBox, x, e.clientY - r.top, tipHtml(zones));
   };
+  S.profBox.addEventListener('pointerleave', e => {
+    if (e.pointerType === 'mouse') S.ptipEl.hidden = true;
+  });
+  el.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') touchAt = performance.now();
+  }, true);
   S.profBox.addEventListener('pointerdown', onProf);
   S.profBox.addEventListener('pointermove', onProf);
   // toucher sur la carte près de la route (fond uni : la boîte reçoit le toucher ; MapLibre : son « click »)
   S.box.addEventListener('click', e => {
-    if (S.map || !S.prof) return;
+    if (S.map || e.target.closest('.mp-preset, .mp-tip')) return;
     const r = S.box.getBoundingClientRect(),
+      x = e.clientX - r.left,
+      y = e.clientY - r.top,
       v = MapsRender.mercator(S.fit, r.width, r.height, 12),
-      s = MapsProfile.nearest(S.prof, v.toC, e.clientX - r.left, e.clientY - r.top);
-    if (s != null) setCursor(s);
+      s = S.prof ? MapsProfile.nearest(S.prof, v.toC, x, y) : null;
+    if (s != null) {
+      hideTips();
+      return setCursor(s);
+    }
+    if (!S.tipEl.hidden) return hideTips();
+    const ll = v.toLL(x, y);
+    mapTip(ll.lat, ll.lon, x, y);
   });
+  S.presetEl.addEventListener('change', () => setPreset(S.presetEl.value));
   el.addEventListener('click', e => {
     const go = e.target.closest('[data-go]')?.dataset.go;
     if (go) location.hash = `#${go}`;
@@ -1044,6 +1229,9 @@ export async function mount(el, ctx) {
     attributeFilter: ['data-design', 'data-tone']
   });
   S.stops.push(() => mq.removeEventListener('change', onTheme), () => mo.disconnect());
+  S.preset = ((await ctx.data.get('cache/maps/ui.json').catch(() => null)) || {}).preset || 'auto';
+  S.presetEl.value = S.preset;
+  S.presetEl.hidden = !!ctx.query?.mission; // une carte de mission garde son profil
   if (ctx.query?.mission) await applyMission();
   else {
     await applyFlight();
@@ -1059,10 +1247,18 @@ export async function mount(el, ctx) {
   }
   status();
   schedule();
-  if (!ctx.query?.mission) S.stops.push(ctx.data.watch(flightPath(), async () => {
-    const f = await ctx.data.get(flightPath()).catch(() => null);
-    if (S && (f?.updated_at || '') !== S.route.updated) applyFlight();
-  }));
+  // vue vivante : chaque écriture du vol courant (Carburant à côté) redessine carte et profil, 300 ms après la dernière
+  let live = 0;
+  if (!ctx.query?.mission) S.stops.push(ctx.data.watch(flightPath(), () => {
+    clearTimeout(live);
+    live = setTimeout(async () => {
+      const f = await ctx.data.get(flightPath()).catch(() => null);
+      if (S && (f?.updated_at || '') !== S.route.updated) {
+        performance.mark('maps:live');
+        await applyFlight(true);
+      }
+    }, 300);
+  }), () => clearTimeout(live));
   else S.stops.push(ctx.data.watch('missions/', paths => {
     // le YAML de la mission montrée a changé (studio, nouvelle version) : relu
     if (S && (paths || []).some(p => MISSION_YAML.exec(p)?.[1] === ctx.query.mission)) applyMission();

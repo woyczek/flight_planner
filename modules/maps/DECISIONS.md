@@ -133,3 +133,39 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Checked through `frame/index.html`** at 375 px, flight map and mission map, in standard, cabinet and field, day
     and night (12 runs, design set in `device/design.json`). The profile background equals `--sog-chart-bg` in each
     case, nothing is white at night, there is no JavaScript error, and `f-tools` and `f-muted` are in place.
+- **23 Oct 2026 — lot 5: airway points, presets, density, tooltips, live view.**
+  - **Reference**: Navigraph high-level IFR charts given by the user (boxed airway names along the segment, minimum
+    level, segment distance, tracks, fixes as triangles, MORA "3⁵").
+  - **Airway points**: the ends of the segments drawn. A navaid at the same place (within 0.05°) is drawn with its own
+    symbol, even when the profile hides navaids; the other points are triangles. Their names pass before the track
+    labels, which are placed last.
+  - **Presets rather than a free profile editor**: four choices cover the captures (low, high, VFR) and the automatic
+    one. Auto follows the level of the current flight (FL195, as the V2 `ifrRouteProfile`). The VFR preset takes the
+    studio's `vfr-detail` profile on the topographic `ofm-liberty` base. The choice is per device, in the frame's
+    cache (`cache/maps/ui.json`), never synchronised.
+  - **Density by zoom** replaces part of the overview rule: three tiers by pixels per degree (80, 300). The thresholds
+    were set from 375 px screenshots: the fixes appear from the mid tier, otherwise a phone showing France never sees
+    them.
+  - **Tooltips on the label's place**:
+    - the airspace tooltip uses AIP notation, the same in the line under the profile (before: "FL 195 – FL 999");
+    - airway tooltip asked by the user ("no rollover on airway names on the map"): `draw()` returns the boxes it
+      placed, so the hit test uses exactly what is drawn, and needs no second layout;
+    - touch: Chrome sends compatibility mouse events after a tap; they reopened the map's tooltip 450 ms after the tap
+      that closed it, and the map's `mouseout` hid the profile's. Both are ignored now, and `mouseout` hides only the
+      map's tooltip.
+  - **`alt_ft` is a held level, not an altitude to reach**: fuel lot C defines it as the level from the point on
+    (OFP "/F280"). It is passed to the profile as `lvl`, with `level.ft` on the first point; with `alt`, the profile
+    would reach the level at the point and the steps would start one segment early. Missions keep the studio's
+    meaning (altitude at the point).
+  - **Bench**:
+    - Chrome kept a 150 % zoom for host 127.0.0.1, so a "1280 px" emulation gave 853 CSS px (and "375 px" gave 250).
+      The benches now run on `localhost`, which has no saved zoom;
+    - the test page sets `body { display: block }` (frame.css gives the body the frame's two-column grid, which made
+      the map 210 px wide);
+    - 1280 px, mouse: presets VFR then Low IFR applied and kept; hover on TRA 43 → "TRA 43 C FL195|UNL …", hidden on
+      leaving; hover on an airway box → "UP860 LEMKA → RALIX · 38 NM · 300° / 120° · FL195|FL500 · upper airway";
+    - live view, flight written three times (new point, new level, `alt_ft` on two points): 3 redraws, aerodb reads
+      25 → 25, header updated, steps FL240 → FL280 at LMG → FL180 at NEPIX with TOD recomputed;
+    - 375 px, touch: airspace tap "TRA 9 A FL195|FL335", next tap closes; airway tap "A34 RUMEL → BUGUS · 30 NM ·
+      003° / 183° · FL065|FL195 · lower airway"; profile tap "TRA 43 A FL195|UNL / TRA 43 W FL195|UNL"; no JavaScript
+      error.

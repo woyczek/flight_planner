@@ -23,6 +23,25 @@ das Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der
 auf der Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem
 Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden.
 
+**Drei Karteneinstellungen.** Die Liste oben links auf der Karte wählt, was sie zeigt. „IFR unten“: untere
+Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege (UN…, UM…), Lufträume über FL195. „VFR“:
+topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen, Meldepunkten und Hindernissen. „Auto“ wählt
+nach der Flugfläche Ihres Flugs (IFR oben ab FL195); die Wahl bleibt erhalten.
+
+**Je näher Sie zoomen, desto mehr zeigt sie.** Von weitem zeigt die Karte nur die großen Flugplätze, die Flugwege und
+ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“),
+dann die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse.
+
+**Antippen für mehr.** Tippen Sie auf den Namen eines Flugwegs: eine Blase nennt den Abschnitt (Punkt → Punkt), seine
+Länge, seine Kurse in beide Richtungen, Unter- und Obergrenze. Tippen Sie auf einen Luftraum: die Blase nennt seinen
+Namen, seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“) und seine Zeiten, wenn bekannt. Das nächste
+Antippen oder ein Verschieben der Karte schließt sie. Mit der Maus genügt es, darauf stehen zu bleiben. Auf dem Profil
+gibt der Finger dieselbe Blase für die durchflogenen Lufträume.
+
+**Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:
+Steigflug, Reiseflug, neuer Steig- oder Sinkflug, mit neu berechnetem Ende des Steigflugs und Beginn des Sinkflugs.
+Die Wegpunkte der Route sind auch auf dem Profil markiert.
+
 **Steig- und Sinkflug.** Die violetten Rauten markieren das Ende des Steigflugs (TOC) und den Beginn des Sinkflugs
 (TOD), auf der Karte wie im Profil. Sie stammen aus der Berechnung in Kraftstoff; ohne sie schätzt die Karte sie mit
 üblichen Steig- und Sinkraten.

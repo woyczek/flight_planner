@@ -17,9 +17,14 @@ The Pilot application's map, read only, fast on a phone:
 ## 2. Inputs
 
 - **The planned flight**: `pilot/<trigram>/current_flight.json` (written by fuel, schema in
-  `modules/fuel/INTEGRATION.md`). Used: `route.points` [{ id, lat, lon }], `route.dep`, `route.arr`, `route.altn`,
-  `level.ft`, `aircraft.type`, `profile` { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }. Nothing is
-  written.
+  `modules/fuel/INTEGRATION.md`). Used: `route.points` [{ id, lat, lon, alt_ft? }], `route.dep`, `route.arr`,
+  `route.altn`, `level.ft`, `aircraft.type`, `profile` { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }.
+  Nothing is written there.
+  - `alt_ft` (fuel § 3): the level held from that point on, never on the first or the last point. The flight leaves
+    at `level.ft`, and a point without `alt_ft` keeps the previous level. It becomes the point's `lvl` for the profile
+    (like "/F240" in an OFP route): steps, TOC and TOD per segment; fuel's single-level `tocNm` / `todNm` are then not
+    used. The map writes the level next to the point's name ("LMG · FL280").
+- **The display setting**: `cache/maps/ui.json` { preset } (frame cache, per device).
 - **Terrain**: Terrarium elevation tiles (AWS, zoom 9, about 300 m), read by the profile code itself (`meta.net`).
 - **Aeronautical data**: `ctx.aerodb`, by area only.
 - **Base map**: OpenFreeMap tiles (style `positron`) drawn by MapLibre; MapLibre calls the tile hosts itself (the
@@ -53,6 +58,19 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   7. the route on top: line, points, NM marks and their labels.
 - **Overview rule** (under 120 px per degree): only aerodromes and VOR / TACAN within 15 NM of the route, airways
   whose middle is within 30 NM, no obstacles. Closer views show everything the profile allows.
+- **Density by zoom** (`tierOf(px per degree)`: far under 80, mid under 300, near beyond; `densify(data, tier)`;
+  mission maps are always drawn in full):
+  - far: large aerodromes only, no navaids, airways with their boxed names;
+  - mid: plus the airway points and the minimum level under each name ("F195");
+  - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
+    and obstacles.
+- **Airways** (`drawAirways`), as en-route charts: low airways solid blue, high airways dashed purple; the name in a
+  box laid along the segment (always readable left to right). The segment ends are drawn after them
+  (`drawFixes`: a triangle and the id; a navaid at the same place is drawn with its own symbol instead). The boxes
+  drawn are returned by `draw()` as `{ airways: [{ x, y, r, g }] }` for the tooltips.
+- **AIP notation** (`sia(airspace)` → [main line, activation · information]; `siaLimit`): "TMA 8 AQUITAINE 2000|FL145
+  D": SFC, FL### (FL999 → UNL), ASFC, plain feet AMSL. Airways: `awLimit(ft)` (FL from 5,000 ft, UNL from 66,000 ft).
+  `airspacesAt(list, lat, lon)` and `airwaysAt(hits, x, y)` give what is under a point.
 
 ## 4. Screen (`module.js`)
 
@@ -80,6 +98,23 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - the flight file is watched (`ctx.data.watch`): a new `updated_at` refits the map and reads again;
   - `aerodb.on('change')`: the data are read again;
   - `ResizeObserver`: resize and redraw.
+- **Display presets**: a list at the top left of the map (hidden for mission maps): Auto (the flight's level: High
+  IFR from FL195), Low IFR (`routeProfile(5000)`), High IFR (`routeProfile(30000)`), VFR (the built-in `vfr-detail`
+  profile on the `ofm-liberty` base: towns, VFR airspaces, VRP, obstacles). Kept in `cache/maps/ui.json`.
+- **Tooltips**, a `.mp-tip` card at the pointer's place in the map box or the profile box:
+  - map: the airway whose box is under the pointer (route, point → point, distance, tracks both ways, floor|ceiling,
+    low or high), else the airspaces shown under the point in AIP notation (activation and information below), else
+    "No airspace shown here";
+  - touch: a tap opens it, the next tap or a move closes it (a tap near the route places the cursor instead);
+  - mouse: shown after 450 ms still, hidden when the pointer leaves the map; the compatibility mouse events that
+    follow a touch are ignored (`sourceCapabilities.firesTouchEvents`, or within 1 s of a touch);
+  - profile: the airspaces crossed at the cursor, under the finger or the mouse; the line under the profile uses the
+    same notation.
+- **Live view**: every write of the flight file redraws the map and the profile (debounced 300 ms,
+  `performance.mark('maps:live')`); the view stays when the new route still fits in it; no zone is read again unless
+  the data area changes.
+- **Profile marks**: the route's points, and the airway points and navaids within 3 NM of the route (at least 30 px
+  apart), as small triangles with their id.
 - **Texts**: four languages, through `ctx.t`. Data labels (codes, names, levels) are not translated.
 
 ## 4 bis. Vertical profile (`profile.js`, `window.MapsProfile`)

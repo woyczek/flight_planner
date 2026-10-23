@@ -22,6 +22,25 @@ cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en e
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
 espacio aéreo en el que está en ese momento.
 
+**Tres ajustes de mapa.** La lista arriba a la izquierda del mapa elige lo que muestra. «IFR bajo»: aerovías
+inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías superiores (UN…, UM…), espacios por
+encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en VFR, los puntos de notificación y
+los obstáculos. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195); la elección se conserva.
+
+**Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
+Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
+distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos.
+
+**Toque para saber más.** Toque el nombre de una aerovía: una burbuja da el tramo (punto → punto), su distancia, sus
+rumbos de ida y vuelta, su límite inferior y superior. Toque un espacio aéreo: la burbuja da su nombre, sus límites en
+notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conocen. El toque siguiente o mover el mapa la
+cierra. Con un ratón, basta con detenerse encima. En el perfil, el dedo da la misma burbuja para los espacios
+atravesados.
+
+**Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,
+nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de
+la ruta también se marcan en el perfil.
+
 **Ascenso y descenso.** Los rombos violetas marcan el final del ascenso (TOC) y el inicio del descenso (TOD), tanto en
 el mapa como en el perfil. Vienen del cálculo de Combustible; sin él, el mapa los estima con regímenes de ascenso y de
 descenso habituales.

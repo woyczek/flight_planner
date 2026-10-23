@@ -266,6 +266,7 @@
         x: ox + (rad(lon) - x0) * k,
         y: oy + (y1 - my(lat)) * k
       }),
+      toLL: inv,
       shown: {
         w: tl.lon,
         n: tl.lat,
@@ -453,18 +454,35 @@
     });
   }
 
-  function drawAirways(ctx, airways, toC, scale, b, pl, profile) {
+  /** Route vraie (°) de a vers b. */
+  const trackOf = (a, b) => {
+    const p1 = rad(a.lat),
+      p2 = rad(b.lat),
+      dl = rad(b.lon - a.lon),
+      y = Math.sin(dl) * Math.cos(p2),
+      x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  };
+  const deg3 = d => `${String(Math.round(d) % 360).padStart(3, '0')}°`;
+  /** Voies aériennes : basses (trait bleu) et hautes (tireté violet), selon le profil ; étiquettes comme les cartes en
+   *  route : nom de la voie dans un cartouche couché le long du tronçon, niveau minimal dessous (F195) ; de près, la
+   *  distance du tronçon (NM) et les routes vraies à chaque bout. Rend les bouts des tronçons dessinés (leurs points). */
+  function drawAirways(ctx, airways, toC, scale, b, pl, profile, tier = 'near') {
     const lo = on(profile, 'airwaysLow'),
-      hi = on(profile, 'airwaysHigh');
-    if (!(lo || hi) || !airways?.length) return;
+      hi = on(profile, 'airwaysHigh'),
+      ends = new Map();
+    ends.later = []; // étiquettes à poser après les points des voies
+    ends.hits = []; // cartouches posés (centre, rayon, tronçon) : infobulle des voies
+    if (!(lo || hi) || !airways?.length) return ends;
     const lab = el(profile, 'airwayLabels') !== false,
       t = {
-        s: b.s - 1,
-        n: b.n + 1,
-        w: b.w - 1.5,
-        e: b.e + 1.5
+        s: b.s - .3,
+        n: b.n + .3,
+        w: b.w - .5,
+        e: b.e + .5
       },
-      seen = new Set();
+      seen = new Set(),
+      f = 8.5 * PT * scale * .8;
     ctx.save();
     ctx.lineCap = 'round';
     for (const g of airways) {
@@ -473,7 +491,8 @@
       if (!inBox(t, g.a.lat, g.a.lon) && !inBox(t, g.b.lat, g.b.lon)) continue;
       const P = toC(g.a.lat, g.a.lon),
         Q = toC(g.b.lat, g.b.lon),
-        col = high ? '#6a3fa0' : '#1f6fb2';
+        col = high ? '#6a3fa0' : '#1f6fb2',
+        len = Math.hypot(Q.x - P.x, Q.y - P.y);
       ctx.strokeStyle = col;
       ctx.globalAlpha = .85;
       ctx.lineWidth = (high ? 1.2 : 1.6) * scale;
@@ -482,24 +501,110 @@
       ctx.moveTo(P.x, P.y);
       ctx.lineTo(Q.x, Q.y);
       ctx.stroke();
+      ctx.setLineDash([]);
       ctx.globalAlpha = 1;
-      if (lab && Math.hypot(Q.x - P.x, Q.y - P.y) > 70 * scale) {
-        const x = (P.x + Q.x) / 2,
-          y = (P.y + Q.y) / 2,
-          k = `${g.route}|${Math.round(x / 120)}|${Math.round(y / 120)}`;
-        if (seen.has(k)) continue;
-        seen.add(k);
-        const f = 9 * PT * scale * .8,
-          w = g.route.length * f * .62;
-        if (!pl || pl.take({
-            x0: x - w / 2 - 2,
-            y0: y - f * .7,
-            x1: x + w / 2 + 2,
-            y1: y + f * .7
-          })) halo(ctx, g.route, x, y, f, col, 'center');
+      for (const e of [g.a, g.b])
+        if (e?.id) ends.set(`${e.id}|${e.lat.toFixed(3)}|${e.lon.toFixed(3)}`, e);
+      if (!lab || len < 60 * scale) continue;
+      // cartouche couché le long du tronçon (texte toujours lisible de gauche à droite)
+      const x = (P.x + Q.x) / 2,
+        y = (P.y + Q.y) / 2,
+        k = `${g.route}|${Math.round(x / 90)}|${Math.round(y / 90)}`;
+      if (seen.has(k)) continue;
+      let ang = Math.atan2(Q.y - P.y, Q.x - P.x);
+      if (ang > Math.PI / 2) ang -= Math.PI;
+      if (ang < -Math.PI / 2) ang += Math.PI;
+      const lvl = +g.lower >= 1000 ? `F${String(Math.round(+g.lower / 100)).padStart(3, '0')}` : '',
+        w = g.route.length * f * .62 + 6 * scale,
+        r = Math.max(w, f * 3) / 2 + 2;
+      if (pl && !pl.take({
+          x0: x - r,
+          y0: y - r,
+          x1: x + r,
+          y1: y + r
+        })) continue;
+      seen.add(k);
+      ends.hits.push({
+        x,
+        y,
+        r,
+        g
+      });
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      ctx.fillStyle = col;
+      ctx.fillRect(-w / 2, -f * .7, w, f * 1.4);
+      ctx.font = `700 ${f}px Arial,sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = paper();
+      ctx.fillText(g.route, 0, 0);
+      if (lvl && tier !== 'far') {
+        ctx.font = `700 ${f * .85}px Arial,sans-serif`;
+        ctx.fillStyle = '#c62828';
+        ctx.fillText(lvl, 0, f * 1.35);
+      }
+      if (tier === 'near' && Number.isFinite(+g.nm)) {
+        ctx.font = `700 ${f * .85}px Arial,sans-serif`;
+        ctx.fillStyle = col;
+        ctx.fillText(String(Math.round(+g.nm)), 0, -f * 1.3);
+      }
+      ctx.restore();
+      if (tier === 'near' && len > 140 * scale) {
+        // routes vraies près de chaque bout (comme « 097° » sur les cartes)
+        for (const [A, B, from] of [
+            [P, Q, g.a],
+            [Q, P, g.b]
+          ]) {
+          const d = Math.hypot(B.x - A.x, B.y - A.y),
+            u = 26 * scale / d,
+            px = A.x + (B.x - A.x) * u,
+            py = A.y + (B.y - A.y) * u,
+            to = from === g.a ? g.b : g.a,
+            tw = 4 * f * .8 * .62;
+          // posées après les points des voies (leurs noms passent d'abord)
+          ends.later.push(() => {
+            if (!pl || pl.take({
+                x0: px - tw / 2,
+                y0: py - 7 * scale - f * .5,
+                x1: px + tw / 2,
+                y1: py - 7 * scale + f * .5
+              })) halo(ctx, deg3(trackOf(from, to)), px, py - 7 * scale, f * .8, col, 'center');
+          });
+        }
       }
     }
-    ctx.setLineDash([]);
+    ctx.restore();
+    return ends;
+  }
+  /** Points des voies dessinées qui ne sont pas des balises (fixes, intersections) : triangle et nom. */
+  function drawFixes(ctx, fixes, toC, W, H, scale, pl) {
+    const f = 8 * PT * scale * .85,
+      rr = 4 * scale,
+      col = (T ||= tokens()).fg;
+    ctx.save();
+    for (const v of fixes) {
+      const p = toC(v.lat, v.lon);
+      if (p.x < -10 || p.y < -10 || p.x > W + 10 || p.y > H + 10) continue;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - rr);
+      ctx.lineTo(p.x + rr * .87, p.y + rr * .5);
+      ctx.lineTo(p.x - rr * .87, p.y + rr * .5);
+      ctx.closePath();
+      ctx.fillStyle = paper();
+      ctx.fill();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.3 * scale;
+      ctx.stroke();
+      const w = v.id.length * f * .62;
+      if (!pl || pl.take({
+          x0: p.x - w / 2,
+          y0: p.y + rr + 1,
+          x1: p.x + w / 2,
+          y1: p.y + rr + 1 + f * 1.2
+        })) halo(ctx, v.id, p.x, p.y + rr + 2 + f * .6, f, col, 'center');
+    }
     ctx.restore();
   }
   /** Points de report VFR (losange vert) et points RNAV en route (triangle bleu), identifiant à côté. */
@@ -848,7 +953,9 @@
     for (const [i, p] of pts.entries()) {
       const q = toC(p.lat, p.lon),
         end = i === 0 || i === pts.length - 1,
-        alt = Number.isFinite(p.alt) ? (p.alt >= 10000 ? `FL${Math.round(p.alt / 100)}` : `${p.alt} ft`) : '',
+        // altitude à atteindre au point (alt), sinon niveau tenu à partir du point (lvl ; pas au départ, déjà en tête)
+        h = Number.isFinite(p.alt) ? p.alt : i > 0 && !end && +p.lvl?.ft > 0 ? +p.lvl.ft : NaN,
+        alt = Number.isFinite(h) ? (h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft`) : '',
         text = [p.id || p.name || '', alt].filter(Boolean).join(' · ');
       if (!text) continue;
       const r = {
@@ -924,26 +1031,64 @@
     for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, color, l.align);
     ctx.restore();
   }
-  /** Vue d'ensemble (moins de 120 px par degré) : seuls les aérodromes et balises à moins de nearNm NM de la route, les
-   *  voies dont le milieu est à moins de 2 × nearNm NM ; VOR, VOR-DME et TACAN seulement. Vue rapprochée : tout. */
-  function declutter(data, route, pxPerDegree, nearNm = 15) {
-    const pts = (route || []).filter(p => Number.isFinite(p?.lat));
-    if (pxPerDegree >= 120 || pts.length < 2) return data;
-    const smp = samples(pts),
-      k = Math.cos(rad(pts[0].lat)),
-      near = (lat, lon, nm) => {
-        const m = nm / 60;
-        for (const [la, lo] of smp)
-          if (Math.abs(la - lat) <= m && Math.abs(lo - lon) * k <= m && Math.hypot(la - lat, (lo - lon) * k) * 60 <= nm) return true;
-        return false;
-      };
+  /** Densité selon le zoom (px par degré) : loin (moins de 80) — grands terrains, voies et leurs noms ; moyen (moins de
+   *  300) — tous les terrains et balises du profil, points des voies, niveaux minimaux ; près — tout, dont la distance
+   *  et la route de chaque tronçon, les VRP et les obstacles du profil. */
+  const tierOf = px => px < 80 ? 'far' : px < 300 ? 'mid' : 'near';
+
+  function densify(data, tier) {
+    if (tier === 'near') return data;
+    const big = a => (+a.hardLen || 0) >= 1800 || (a.controlled && (+a.hardLen || 0) >= 1200);
     return {
       ...data,
-      aerodromes: (data.aerodromes || []).filter(a => near(a.lat, a.lon, nearNm)),
-      navaids: (data.navaids || []).filter(n => !['NDB', 'DME', 'ILS'].includes(n.kind) && near(n.lat, n.lon, nearNm)),
-      airways: (data.airways || []).filter(w => near((w.a.lat + w.b.lat) / 2, (w.a.lon + w.b.lon) / 2, nearNm * 2)),
+      aerodromes: tier === 'far' ? (data.aerodromes || []).filter(big) : data.aerodromes,
+      navaids: tier === 'far' ? [] : data.navaids,
+      vrp: [],
       obstacles: []
     };
+  }
+  /** Notation SIA d'un espace : « TMA AQUITAINE 8 2000|FL145 D » — type, nom, plancher | plafond (ft AMSL sans
+   *  unité, ASFC précisé, SFC, FL, UNL), classe ; activation et informations sur une seconde ligne si elles sont
+   *  connues. Rend [ligne principale, ligne secondaire]. */
+  function siaLimit(v) {
+    const t = String(v ?? '').trim().toUpperCase().replace(/\s+/g, ' ');
+    if (!t || /^(SFC|GND)$/.test(t)) return 'SFC';
+    if (/UNL/.test(t) || /^FL\s*999/.test(t)) return 'UNL';
+    let m = /^FL\s*(\d+)/.exec(t);
+    if (m) return `FL${m[1].padStart(3, '0')}`;
+    m = /^(\d+)\s*(FT|M)?\s*(AMSL|MSL|ASFC|AGL|SFC)?/.exec(t);
+    if (m) return m[3] && /ASFC|AGL|SFC/.test(m[3]) ? `${m[1]} ASFC` : m[1];
+    return t;
+  }
+  const sia = a => [
+    [a.type, a.name].filter(Boolean).join(' ') + ` ${siaLimit(a.lower)}|${siaLimit(a.upper)}` + (a.cls ? ` ${a.cls}` : ''),
+    [a.act, a.info].filter(Boolean).join(' · ')
+  ];
+  /** Niveau d'une voie (pieds) en notation SIA : FL au-dessus de 5000 ft, UNL au plafond ouvert. */
+  const awLimit = ft => {
+    const v = +ft;
+    if (!Number.isFinite(v) || v <= 0) return 'SFC';
+    if (v >= 66000) return 'UNL';
+    return v >= 5000 ? `FL${String(Math.round(v / 100)).padStart(3, '0')}` : String(Math.round(v));
+  };
+  /** Tronçons dont le cartouche est sous (x, y) (pixels du canevas), le plus proche d'abord. */
+  const airwaysAt = (hits, x, y) => (hits || []).map(h => ({
+    h,
+    d: Math.hypot(h.x - x, h.y - y)
+  })).filter(o => o.d <= o.h.r + 4).sort((a, b) => a.d - b.d).map(o => o.h.g);
+  /** Espaces de la liste qui contiennent le point (lat, lon), du plus bas au plus haut. */
+  function airspacesAt(list, lat, lon) {
+    const inRing = r => {
+      let c = false;
+      for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+        const [yi, xi] = r[i],
+          [yj, xj] = r[j];
+        if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) c = !c;
+      }
+      return c;
+    };
+    const lim = A()?.limitFt;
+    return (list || []).filter(a => (a.rings || []).some(inRing)).sort((x, y) => (lim ? lim(x.lower, false) - lim(y.lower, false) : 0));
   }
   /** Surcouche aéronautique complète, dans l'ordre du studio : espaces (formes), route (réservée en premier pour ses
    *  libellés), voies, aérodromes et balises, libellés d'espaces, canevas et MORA. data : { airspaces (déjà choisis),
@@ -968,14 +1113,41 @@
         lat: (bbox.n + bbox.s) / 2,
         lon: (bbox.e + bbox.w) / 2
       },
-      // carte de mission : tout ce que le profil montre dans l'emprise ; vol : allégée en vue d'ensemble
-      shown = mission ? data : declutter(data, route, toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
+      tier = tierOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
+      // carte de mission : tout ce que le profil montre ; vol : densité selon le zoom
+      shown = mission ? data : densify(data, tier),
       labels = routeLabels(route, toC, scale, pl, mk);
     reservePoints(pl, mission?.points, toC, scale, profile);
     const towns = cityList(data.cities, profile, toC, bbox, scale, pl);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');
-    drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile);
-    drawPoints(ctx, shown, toC, W, H, scale, bbox, pl, profile);
+    const ends = drawAirways(ctx, shown.airways, toC, scale, bbox, pl, profile, mission ? 'near' : tier);
+    // points des voies dessinées (sauf de loin) : les balises avec leur symbole (ajoutées aux balises montrées), les
+    // autres en triangle
+    const fixes = [],
+      endNavs = [];
+    if (ends.size && (mission || tier !== 'far')) {
+      const byId = new Map((data.navaids || []).map(n => [n.id, n]));
+      for (const e of ends.values()) {
+        const n = byId.get(e.id);
+        if (n && Math.abs(n.lat - e.lat) < .05 && Math.abs(n.lon - e.lon) < .05) endNavs.push(n);
+        else fixes.push(e);
+      }
+    }
+    // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
+    const navAll = on(profile, 'navaids'),
+      navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])];
+    drawPoints(ctx, {
+      ...shown,
+      navaids: navShown
+    }, toC, W, H, scale, bbox, pl, navShown.length && !navAll ? {
+      ...profile,
+      elements: {
+        ...profile.elements,
+        navaids: true
+      }
+    } : profile);
+    drawFixes(ctx, fixes, toC, W, H, scale, pl);
+    for (const f of ends.later || []) f();
     drawVrp(ctx, shown, toC, W, H, scale, bbox, pl, profile);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
     drawGridMora(ctx, shown.moraCells, toC, bbox, W, H, scale, pl, profile);
@@ -985,6 +1157,9 @@
     drawRoute(ctx, route, toC, scale, labels, {
       marks: mk
     });
+    return {
+      airways: ends.hits || []
+    };
   }
 
   window.MapsRender = {
@@ -996,6 +1171,14 @@
     mercator,
     drawBackground,
     draw,
+    sia,
+    siaLimit,
+    airspacesAt,
+    airwaysAt,
+    awLimit,
+    deg3,
+    tierOf,
+    trackOf,
     tokens,
     themed,
     withAlpha

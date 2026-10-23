@@ -87,7 +87,9 @@
       climb: rate(profile?.climbFpm, profile?.climbKt),
       descent: rate(profile?.descentFpm, profile?.descentKt)
     });
-    if (levelFt > 0 && +profile?.tocNm > 0 && +profile?.todNm > 0) data.plan = fuelPlan(data.samples, data.total, levelFt, +profile
+    // trajectoire de Carburant (un seul niveau) ; pas quand les points portent leurs altitudes (paliers par tronçon)
+    if (!own && levelFt > 0 && +profile?.tocNm > 0 && +profile?.todNm > 0) data.plan = fuelPlan(data.samples, data.total, levelFt, +
+      profile
       .tocNm, +profile.todNm);
     data.terrainOk = terrainOk;
     // espaces gardés : ceux où entre la trajectoire prévue (limites ASFC au-dessus du relief) ; sur un téléphone, les
@@ -190,8 +192,29 @@
         type: c.a.type,
         name: c.a.name,
         lower: c.a.lower || 'SFC',
-        upper: c.a.upper || 'UNL'
+        upper: c.a.upper || 'UNL',
+        cls: c.a.cls || '',
+        act: c.a.act || '',
+        info: c.a.info || ''
       }))
+    };
+  }
+  /** Place d'un point sur la route : { s (mètres depuis le départ), offNm (écart à la route) } de l'échantillon le plus
+   *  proche. */
+  function project(data, lat, lon) {
+    let best = null,
+      d = Infinity;
+    const k = Math.cos(lat * Math.PI / 180);
+    for (const q of data.samples) {
+      const e = Math.hypot(q.lat - lat, (q.lon - lon) * k);
+      if (e < d) {
+        d = e;
+        best = q.s;
+      }
+    }
+    return {
+      s: best,
+      offNm: d * 60
     };
   }
   /** Distance (mètres) de l'échantillon le plus proche du point d'écran (x, y), à moins de maxPx ; null sinon. */
@@ -216,6 +239,7 @@
     sOf,
     at,
     posAt,
-    nearest
+    nearest,
+    project
   };
 })();

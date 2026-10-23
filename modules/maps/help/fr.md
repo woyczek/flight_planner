@@ -23,6 +23,25 @@ profil : un curseur bleu le suit, et le même curseur se place sur la carte. Tou
 placer là. La ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue,
 hauteur du relief, et l'espace aérien où vous êtes à ce moment-là.
 
+**Trois réglages de carte.** La liste en haut à gauche de la carte choisit ce qu'elle montre. « IFR bas » : voies
+aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies hautes (UN…, UM…), espaces
+au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR, points de report et
+obstacles. « Auto » choisit selon le niveau de votre vol (IFR haut à partir du FL195) ; le choix est gardé.
+
+**Plus vous zoomez, plus elle en dit.** De loin, la carte ne montre que les grands terrains, les voies et leurs noms.
+En vous rapprochant : les points des voies (triangles et balises), le niveau minimal de chaque voie (« F195 »), puis
+la distance du tronçon, sa route (« 097° »), les points de report et les obstacles.
+
+**Toucher pour en savoir plus.** Touchez le nom d'une voie : une bulle donne le tronçon (point → point), sa distance,
+ses routes aller et retour, son plancher et son plafond. Touchez un espace aérien : la bulle donne son nom, ses
+limites en notation SIA (« TMA 8 AQUITAINE 2000|FL145 D ») et ses horaires quand ils sont connus. Le toucher suivant
+ou un déplacement de la carte la ferme. Avec une souris, il suffit de s'arrêter dessus. Sur le profil, le doigt donne
+la même bulle pour les espaces traversés.
+
+**Les paliers.** Si la route fixe un niveau à certains points dans Carburant, le profil dessine les paliers : montée,
+palier, nouvelle montée ou descente, avec la fin de montée et le début de descente recalculés. Les points tournants
+de la route sont aussi repérés sur le profil.
+
 **Montée et descente.** Les losanges violets marquent la fin de la montée (TOC) et le début de la descente (TOD),
 sur la carte comme sur le profil. Ils viennent du calcul de Carburant ; sans lui, la carte les estime avec des taux
 de montée et de descente courants.
