@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **my flights: the flight in progress** (`modules/flightlog/module.js`; docs) — a flight started in fuel and not yet
+  reported shows first, with "Write the report".
 - **Map: levels as in Fuel** (`modules/maps/`; SPEC, DECISIONS) — "FL060" from the transition altitude, "3 500 ft"
   below, through the shared `formatLevel`; relief and minimum altitudes always in feet.
 - **report: more from the current flight** (`modules/report/module.js`; docs) — the card says everything it will take,

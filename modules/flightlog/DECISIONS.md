@@ -2,6 +2,13 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — the flight in progress** (arbitration 16 of the end-to-end pass): a flight started in fuel and not
+  yet reported shows on top, before the site's log knows it. Its "Write the report" opens report rather than a
+  handoff with values: report's "current flight" card offers it first and, through its own "Use", marks it done
+  when the report is saved — a handoff would have filled the fields without that mark, and the card would have come
+  back. Checked on 8802: card "In progress — started at 13:22 (diverted) · SAMU · EC45 F-HAND · LFRS → LFML"
+  (button 46 px, no horizontal scroll at 375 px); with that `at` in `cache/report/started.json`, no card; the button
+  led to report with "Flight started at 13:22" first.
 - **23 Oct 2026 — wide layout by the module's width** (asked by the design session after the dual view, 1b281c1d8:
   each pane is a container): `@media (min-width: 980px)` became `@container (min-width: 900px)` — read on the
   window, the six columns of the list were squeezed into a 506 px pane. Checked at 1280 px: full screen: six columns; dual view (506 px): the three-column phone row.

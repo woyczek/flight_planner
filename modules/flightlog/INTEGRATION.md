@@ -37,3 +37,9 @@ Write `pilot/<trigram>/site_log.json` as in SPEC § 3 (record, whole, `updated_a
 
 Report reads `pilot/handoff.json` at every mount: `{ open }` reopens a report, `{ fresh, family, values }` starts a new
 one (SPEC § 5).
+
+**The flight in progress** (23 Oct 2026): flightlog reads `pilot/<trigram>/current_flight.json` (`started { at,
+diverted }`, aircraft, route) and `cache/report/started.json` (`{ done: [at, …] }`, written by report when a report
+that used the started flight is saved; `meta.reads` gains `cache/report/`). A started flight not yet done is shown on
+top, "In progress — started at hh:mm"; its "Write the report" opens `#report?from=flightlog`, where report offers the
+started flight first (no handoff: report's own "Use" marks it done on save).

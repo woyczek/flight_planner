@@ -11,7 +11,7 @@ export const meta = {
   id: 'flightlog',
   apps: ['pilot'],
   level: 1,
-  reads: ['cr/', 'pilot/', 'cache/flightlog/'],
+  reads: ['cr/', 'pilot/', 'cache/flightlog/', 'cache/report/'],
   writes: [{
     prefix: 'pilot/handoff.json',
     policy: 'cache'
@@ -62,6 +62,8 @@ const TX = {
   mission: ['Mission', 'Mission', 'Einsatz', 'Misión'],
   notes: ['Remarques', 'Notes', 'Bemerkungen', 'Observaciones'],
   inFlight: ['en cours', 'in progress', 'laufend', 'en curso'],
+  startedNow: ['En cours — démarré à {t}', 'In progress — started at {t}', 'Laufend — gestartet um {t}', 'En curso — iniciado a las {t}'],
+  diverted: [' (déroutement)', ' (diverted)', ' (Ausweichlandung)', ' (desviado)'],
   cols: [
     ['Date', 'Date', 'Datum', 'Fecha'],
     ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
@@ -171,8 +173,32 @@ async function network(loud = false) {
   });
   return out;
 }
+/** Vol démarré dans le carburant (current_flight.started) et pas encore rapporté (cache/report/started.json, écrit par
+ *  le compte rendu à l'enregistrement) : { at, diverted, reg, callsign, type, dep, arr } ou null. */
+async function startedFlight() {
+  const cf = await S.ctx.data.get(`pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`).catch(() => null),
+    at = cf?.started?.at;
+  if (!at) return null;
+  const done = (await S.ctx.data.get('cache/report/started.json').catch(() => null))?.done || [];
+  if (done.includes(at)) return null;
+  const a = cf.aircraft || {},
+    r = cf.route || {};
+  return {
+    at,
+    diverted: !!cf.started.diverted,
+    reg: a.registration || '',
+    callsign: a.callsign || '',
+    type: a.type || '',
+    dep: r.dep || '',
+    arr: r.arr || ''
+  };
+}
 /** Lit les sources du device (CR, journal) puis le réseau ; la liste se redessine à chaque étape. */
 async function load(loud = false) {
+  const s = S,
+    started = await startedFlight();
+  if (S !== s) return;
+  S.started = started;
   const [v3, v2, log] = await Promise.all([reportsV3(), reportsV2(), siteLog()]);
   S.base = [v3, v2, log];
   S.flights = F.merge(...S.base, S.net || []);
@@ -193,6 +219,7 @@ const STYLE = `
 [data-module="flightlog"] .fl-mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="flightlog"] .fl-detail{margin:0}
 [data-module="flightlog"] .f-dot{margin-right:6px}
+[data-module="flightlog"] .fl-now{display:flex;gap:10px;align-items:center;justify-content:space-between}
 @container (min-width: 900px){ /* largeur du module (volet de la vue double compris), pas de la fenêtre */
   [data-module="flightlog"] .f-list .f-item{grid-template-columns:7em 9em 10em minmax(0,1fr) 5em minmax(0,1fr)}
 }`;
@@ -233,6 +260,9 @@ function render() {
     <div class="f-tools"><select data-k="days" aria-label="${esc(tt(TX.period))}">${[7, 31, 365, 0].map(d => `<option value="${d}"${+v.days === d ? ' selected' : ''}>${esc(tt(TX.periods[d]))}</option>`).join('')}</select>
       <input type="search" data-k="find" value="${esc(v.find)}" placeholder="${esc(tt(TX.find))}" aria-label="${esc(tt(TX.find))}">
       <label class="f-check"><input type="checkbox" data-k="noReport"${v.noReport ? ' checked' : ''}>${esc(tt(TX.noReport))}</label></div>
+    ${S.started ? `<div class="f-card f-accent fl-now"><div><b>${esc(tt(TX.startedNow, { t: new Date(S.started.at).toLocaleTimeString(S.ctx.lang(), { hour: '2-digit', minute: '2-digit' }) }))}${S.started.diverted ? esc(tt(TX.diverted)) : ''}</b>
+      <div class="f-muted">${esc([S.started.callsign, [S.started.type, S.started.reg].filter(Boolean).join(' '), [S.started.dep, S.started.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
+      <button type="button" class="primary" data-do="writeNow">${esc(tt(TX.write))}</button></div>` : ''}
     <div class="f-list">${list.map(row).join('') || `<p class="f-card f-muted">${esc(tt(TX.empty))}</p>`}</div>
     <details class="f-card"><summary>${esc(tt(TX.more))}</summary><div class="f-row">
       <button type="button" data-do="csv">${esc(tt(TX.csv))}</button><button type="button" data-do="refresh">${esc(tt(TX.refresh))}</button></div></details>`;
@@ -263,6 +293,9 @@ async function onClick(e) {
     return render();
   }
   switch (b.dataset.do) {
+    case 'writeNow': // le compte rendu propose d'abord le vol démarré (« Vol démarré à hh:mm »)
+      location.hash = '#report?from=flightlog';
+      return;
     case 'write':
       await S.ctx.data.put(HANDOFF, {
         to: 'report',
