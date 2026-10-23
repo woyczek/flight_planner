@@ -118,6 +118,29 @@
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
     back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
+    live: {
+      title: ['Position réelle du vol : {s}, {t}', 'Actual position of the flight: {s}, {t}',
+        'Tatsächliche Position des Flugs: {s}, {t}',
+        'Posición real del vuelo: {s}, {t}'
+      ],
+      waiting: ['Position réelle du vol : en attente (GPS de l’appareil ou session IVAO / VATSIM)',
+        'Actual position of the flight: waiting (this device’s GPS or an IVAO / VATSIM session)',
+        'Tatsächliche Position des Flugs: wartet (GPS des Geräts oder IVAO-/VATSIM-Sitzung)',
+        'Posición real del vuelo: en espera (GPS del dispositivo o sesión IVAO / VATSIM)'
+      ],
+      gpsOn: ['Utiliser la position (GPS) de cet appareil pendant le vol', 'Use this device’s position (GPS) during the flight',
+        'Die Position (GPS) dieses Geräts während des Flugs verwenden', 'Usar la posición (GPS) de este dispositivo durante el vuelo'
+      ],
+      gpsOff: ['Ne plus utiliser la position de cet appareil', 'Stop using this device’s position',
+        'Position dieses Geräts nicht mehr verwenden',
+        'Dejar de usar la posición de este dispositivo'
+      ],
+      denied: ['Position refusée par le navigateur : à autoriser dans ses réglages.',
+        'Position refused by the browser: allow it in its settings.',
+        'Position vom Browser verweigert: in seinen Einstellungen erlauben.',
+        'Posición rechazada por el navegador: autorícela en sus ajustes.'
+      ]
+    },
     paneOpen: ['Afficher {m} à côté', 'Show {m} alongside', '{m} daneben anzeigen', 'Mostrar {m} al lado'],
     paneClose: ['Fermer le volet {m}', 'Close the {m} pane', 'Bereich {m} schließen', 'Cerrar el panel {m}'],
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
@@ -201,7 +224,7 @@
   const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov',
       'metar.vatsim.net', 'api.open-meteo.com'
     ],
-    DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'metar.vatsim.net', 'avwx.rest', 'api.open-meteo.com'];
+    DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'metar.vatsim.net', 'avwx.rest', 'api.open-meteo.com', 'data.vatsim.net'];
   // clé personnelle avwx.rest (TAF sans lanceur) : sur l'appareil seulement, à côté du jeton GitHub (githubData:…, hors
   // des sauvegardes : ni device/ ni la base IndexedDB que FrameData.dump() exporte) ; jamais rendue à une page
   const AVWX = 'githubData:avwx';
@@ -370,6 +393,8 @@
     usages = (await own.get('device/usages.json')) || {};
     level = levelFrom((await own.get('device/level.json'))?.level);
     applyDesign(await own.get('device/design.json'));
+    liveGps = (await own.get('device/live.json'))?.gps === true;
+    liveWatch();
     layout = (await own.get('device/layout.json'))?.panes || {};
     renderMenu();
     configured = await chooseTransport();
@@ -900,6 +925,9 @@
       get airline() {
         return airline;
       },
+      get live() {
+        return liveApi();
+      },
       query,
       help: window.SogHelp ? SogHelp.forModule(entry.id, $('fView')) : Object.freeze({
         open: () => false,
@@ -1024,6 +1052,264 @@
     });
   }
 
+  // ---------------------------------------------------------------- position réelle pendant un vol démarré
+  // actif tant que pilot/<tri>/current_flight.json porte started (remis à null par l'annulation de fuel ou
+  // l'enregistrement du compte rendu), démarré il y a moins de 24 h (un vol oublié ne garde pas le GPS allumé), quel que
+  // soit le module ouvert ; sources, dans l'ordre :
+  //   1. GPS de l'appareil (watchPosition) : permission demandée seulement par un geste (pastille de l'en-tête,
+  //      ctx.live.enable()), jamais au démarrage ; ensuite repris de lui-même si le navigateur l'accorde déjà ;
+  //   2. réseau, sans GPS récent : session en ligne du pilote, IVAO (whazzup public, VID de l'identité) puis VATSIM (flux
+  //      de données, CID) par ctx.net — toutes les 15 s avec un lanceur (relais), toutes les 60 s en appel direct (0,7 à
+  //      1,7 Mo par appel sur un téléphone) ;
+  //   3. rien.
+  // Écrit progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source } dans le vol courant (ce seul champ, by
+  // 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; aucune synchronisation
+  // forcée (la file locale et la synchronisation habituelle suffisent).
+  const LIVE_WRITE = 10e3,
+    LIVE_NET_RELAY = 15e3,
+    LIVE_NET_DIRECT = 60e3,
+    LIVE_GPS_FRESH = 30e3,
+    LIVE_MAX_AGE = 24 * 3600e3;
+  const liveData = FD.adapter({
+    id: 'frame-live',
+    reads: ['pilot/'],
+    writes: [{
+      prefix: 'pilot/',
+      merge: 'record'
+    }]
+  });
+  let live = {
+      active: false,
+      source: '',
+      last: null
+    },
+    liveGps = false, // choix de l'appareil : utiliser le GPS (device/live.json)
+    gpsState = 'off', // off, asking, on, denied, unavailable
+    gpsWatch = null,
+    gpsPoll = null, // relève toutes les 10 s en plus des mesures que le navigateur envoie de lui-même
+    gpsAt = 0,
+    netTimer = null,
+    flightPath = '',
+    unwatchFlight = null,
+    lastWrite = null,
+    liveLater = null; // écriture différée (position venue moins de 10 s après la précédente)
+  const flightPathOf = () => `pilot/${identity.trigram || 'ANON'}/current_flight.json`;
+  /** Vol démarré (started non nul), il y a moins de 24 h. */
+  const flying = f => !!f?.started?.at && Date.now() - Date.parse(f.started.at) < LIVE_MAX_AGE;
+  /** Suit le vol courant du trigramme (rebranché quand l'identité change). */
+  function liveWatch() {
+    const p = flightPathOf();
+    if (p === flightPath) return liveCheck();
+    unwatchFlight?.();
+    flightPath = p;
+    unwatchFlight = liveData.watch(p, () => liveCheck());
+    liveCheck();
+  }
+  /** Démarre ou arrête le service selon le vol courant. */
+  async function liveCheck() {
+    const on = flying(await liveData.get(flightPath).catch(() => null));
+    if (on && !live.active) {
+      live = {
+        active: true,
+        source: '',
+        last: null
+      };
+      lastWrite = null;
+      if (liveGps && await gpsGranted()) gpsStart();
+      netTick();
+    } else if (!on && live.active) {
+      live.active = false;
+      gpsStop();
+      clearTimeout(netTimer);
+      clearTimeout(liveLater);
+    }
+    paintLive();
+  }
+  /** Permission de position déjà accordée (aucune demande affichée). */
+  async function gpsGranted() {
+    try {
+      return (await navigator.permissions?.query({
+        name: 'geolocation'
+      }))?.state === 'granted';
+    } catch {
+      return false;
+    }
+  }
+
+  function gpsStart() {
+    if (!navigator.geolocation || gpsWatch !== null) return;
+    gpsState = 'asking';
+    const got = p => {
+      gpsState = 'on';
+      gpsAt = Date.now();
+      const c = p.coords;
+      onFix('gps', {
+        lat: c.latitude,
+        lon: c.longitude,
+        altFt: c.altitude == null ? null : Math.round(c.altitude * 3.28084),
+        gsKt: c.speed == null ? null : Math.round(c.speed * 1.943844),
+        trackDeg: Number.isFinite(c.heading) ? Math.round(c.heading) : null
+      });
+    };
+    // le navigateur n'envoie une mesure que s'il en a une nouvelle : une relève toutes les 10 s tient la cadence
+    gpsPoll = setInterval(() => navigator.geolocation.getCurrentPosition(got, () => {}, {
+      enableHighAccuracy: true,
+      maximumAge: 5e3,
+      timeout: 20e3
+    }), LIVE_WRITE);
+    gpsWatch = navigator.geolocation.watchPosition(got, e => {
+      gpsState = e.code === 1 ? 'denied' : 'unavailable';
+      if (e.code === 1) {
+        gpsStop(gpsState);
+        notify(t(T.live.denied), 'warn');
+      }
+      paintLive();
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: LIVE_WRITE,
+      timeout: 30e3
+    });
+    paintLive();
+  }
+
+  function gpsStop(state = 'off') {
+    if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+    clearInterval(gpsPoll);
+    gpsPoll = null;
+    gpsWatch = null;
+    gpsState = state;
+  }
+  /** Session en ligne du pilote (sans GPS récent) : IVAO puis VATSIM ; relais toutes les 15 s, direct toutes les 60 s. */
+  async function netTick() {
+    clearTimeout(netTimer);
+    if (!live.active) return;
+    if (Date.now() - gpsAt > LIVE_GPS_FRESH) try {
+      const ivao = String(identity.ivao || '').trim(),
+        vatsim = String(identity.vatsim || '').trim();
+      let fix = null;
+      if (ivao) {
+        const r = await net.fetch('https://api.ivao.aero/v2/tracker/whazzup');
+        const p = r.ok ? (await r.json())?.clients?.pilots?.find(x => String(x.userId) === ivao) : null,
+          k = p?.lastTrack;
+        if (k && Number.isFinite(k.latitude)) fix = ['ivao', {
+          lat: k.latitude,
+          lon: k.longitude,
+          altFt: Math.round(k.altitude),
+          gsKt: Math.round(k.groundSpeed),
+          trackDeg: Math.round(k.heading)
+        }];
+      }
+      if (!fix && vatsim) {
+        const r = await net.fetch('https://data.vatsim.net/v3/vatsim-data.json');
+        const p = r.ok ? (await r.json())?.pilots?.find(x => String(x.cid) === vatsim) : null;
+        if (p) fix = ['vatsim', {
+          lat: p.latitude,
+          lon: p.longitude,
+          altFt: Math.round(p.altitude),
+          gsKt: Math.round(p.groundspeed),
+          trackDeg: Math.round(p.heading)
+        }];
+      }
+      if (fix && Date.now() - gpsAt > LIVE_GPS_FRESH) onFix(...fix);
+    } catch (e) {
+      console.warn('live', e);
+    }
+    netTimer = setTimeout(netTick, launcherHere ? LIVE_NET_RELAY : LIVE_NET_DIRECT);
+  }
+  /** Distance en mètres entre deux points (haversine). */
+  const metres = (a, b) => {
+    const r = Math.PI / 180,
+      s = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+    return 2 * 6371e3 * Math.asin(Math.sqrt(s));
+  };
+  /** Nouvelle position : gardée, montrée, écrite au plus une fois par 10 s si elle a bougé. */
+  async function onFix(source, pos) {
+    // position nulle (0°, 0° : pilote en cours de connexion) ou illisible : ignorée
+    if (!live.active || !Number.isFinite(pos.lat) || !Number.isFinite(pos.lon) || (Math.abs(pos.lat) < .01 && Math.abs(pos.lon) < .01))
+      return;
+    const a = {
+      at: new Date().toISOString(),
+      ...pos,
+      source
+    };
+    live.source = source;
+    live.last = a;
+    paintLive();
+    const moved = !lastWrite || metres(lastWrite, a) > 30 || Math.abs((a.altFt ?? 0) - (lastWrite.altFt ?? 0)) >= 50;
+    if (!moved) return;
+    // au plus une écriture par 10 s : une position venue trop tôt est écrite à la fin du délai (la plus récente)
+    const wait = lastWrite ? LIVE_WRITE - (Date.now() - lastWrite.t) : 0;
+    if (wait > 0) {
+      clearTimeout(liveLater);
+      liveLater = setTimeout(() => live.last === a && onFix(source, pos), wait);
+      return;
+    }
+    lastWrite = {
+      ...a,
+      t: Date.now()
+    };
+    const cur = await liveData.get(flightPath).catch(() => null);
+    if (!flying(cur)) return;
+    await liveData.put(flightPath, {
+      ...cur,
+      progress: {
+        ...(cur.progress || {}),
+        actual: a
+      },
+      by: 'frame',
+      updated_at: a.at
+    });
+  }
+  /** ctx.live : état, source, dernière position, et le GPS de l'appareil (activé par un geste, gardé sur l'appareil). */
+  function liveApi() {
+    return {
+      status: !live.active ? 'off' : live.source ? 'tracking' : 'waiting',
+      source: live.source,
+      last: live.last,
+      gps: gpsState,
+      enable: async () => {
+        liveGps = true;
+        await own.put('device/live.json', {
+          gps: true,
+          updated_at: new Date().toISOString()
+        });
+        if (live.active) gpsStart();
+        paintLive();
+      },
+      disable: async () => {
+        liveGps = false;
+        await own.put('device/live.json', {
+          gps: false,
+          updated_at: new Date().toISOString()
+        });
+        gpsStop();
+        // la dernière position GPS reste lisible (last), mais la source n'est plus le GPS
+        if (live.source === 'gps') live.source = '';
+        gpsAt = 0;
+        netTick();
+        paintLive();
+      }
+    };
+  }
+  /** Pastille de l'en-tête pendant un vol : la source (GPS, IVAO, VATSIM, — en attente) ; bascule du GPS de l'appareil. */
+  function paintLive() {
+    const b = $('fLive');
+    if (!b) return;
+    const show = live.active;
+    if (b.hidden === show) b.hidden = !show;
+    if (!show) return;
+    const src = live.source ? live.source.toUpperCase() : '—',
+      html = `${Icons?.svg('pin') || ''}<span>${esc(src)}</span>`,
+      title = (live.last ? t(T.live.title, {
+        s: src,
+        t: new Date(live.last.at).toLocaleTimeString(lang())
+      }) : t(T.live.waiting)) + ' — ' + t(gpsWatch !== null ? T.live.gpsOff : T.live.gpsOn),
+      on = gpsWatch !== null;
+    if (b.innerHTML !== html) b.innerHTML = html;
+    if (b.title !== title) b.title = title;
+    if (b.getAttribute('aria-pressed') !== String(on)) b.setAttribute('aria-pressed', String(on));
+  }
+
   // ---------------------------------------------------------------- icônes (frame/lib/icons.js)
   let Icons = null;
   /** Icône au trait d'un nom (menu, en-tête) ; sans le jeu d'icônes : le nom tel quel, en caractère décoratif. */
@@ -1083,6 +1369,7 @@
       if (e.key === 'Escape' && over && !document.querySelector('.f-modal')) leaveOver();
     });
     $('fPane').onclick = () => togglePane();
+    $('fLive').onclick = () => gpsWatch !== null ? liveApi().disable() : liveApi().enable();
     $('fBack').onclick = () => {
       const o = origin;
       if (!o) return;
@@ -1212,6 +1499,9 @@
     cutAccess,
     get aerodb() {
       return aerodb;
+    },
+    get live() {
+      return liveApi();
     }
   };
   boot();

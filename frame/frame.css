@@ -44,7 +44,7 @@ body {
 }
 /* boutons à icône seule de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible ; les boutons à libellé
    (synchronisation, retour, bascule de la vue double) gardent leur largeur */
-.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn) {
+.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn):not(.f-live) {
   width: var(--sog-touch);
   padding: 0;
   flex: none
@@ -140,6 +140,18 @@ body {
   grid-area: main;
   padding: 16px;
   min-width: 0
+}
+/* pastille de la position réelle pendant un vol (source : GPS, IVAO, VATSIM, — en attente) ; bascule du GPS */
+.f-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 0 8px;
+  font-size: var(--sog-size-s)
+}
+.f-live[hidden] {
+  display: none
 }
 /* retour au module d'origine (« ← Carte ») ; sur téléphone, il prend la place du nom de l'appli */
 .f-back {

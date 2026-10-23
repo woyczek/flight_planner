@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 15: the actual position during a flight** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) —
+  while a flight is started, the app follows the device's GPS (allowed by a tap on the header badge) or, without GPS,
+  the pilot's IVAO or VATSIM session, and writes the actual position into the current flight for the Map; the badge
+  shows the source.
 - **Settings: configuring a pilot** (`frame/settings/config.js`, `frame/settings/settings.js`, `frame/help/help.js`,
   `frame/index.html`, `frame/sw.js`; SPEC § 5, DECISIONS, help ×4) — on a workstation, "Export a configuration for a
   pilot…" makes `sog-config-<TRI>.json` (schema `sog-config/1`: airline, data repository without credentials, trigram,

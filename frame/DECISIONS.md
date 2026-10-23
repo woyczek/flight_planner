@@ -386,6 +386,34 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - Now the toggle is hidden and inactive while a frame screen is open, and the screen takes the whole area. The
     pane, only hidden with its module, comes back with it.
   - Test at 1280 px: Fuel with the Map → "⚙" (settings 1023 px wide, no toggle) → "⚙" (Fuel with its Map).
+- **23 Oct 2026 — Lot 15, actual position during a started flight** (asked by the user: "where are we, in practice,
+  on a started flight?"):
+  - **Sources measured with curl:**
+    - IVAO `whazzup` v2 is public, with no key, and allows a direct call (the origin is echoed back): 682 KB.
+    - IVAO `now/pilots` needs authentication (401).
+    - The VATSIM data feed has CORS `*`: 1.65 MB, cached 15 s.
+    - `slurper.vatsim.net` answers one tiny line per CID, but with no CORS header and no altitude or speed: not used.
+  - **Network cadence:** every 15 s through the launcher, but every 60 s in a direct call. At 15 s a phone would load
+    160 to 400 MB an hour; the GPS comes first anyway. This departs from the 15 s asked.
+  - **When it runs:** while `started` is not null (no `endedAt`), and not for a flight started more than 24 h ago, so
+    a forgotten flight does not keep the GPS on.
+  - **GPS:**
+    - The permission is asked only by a gesture; the device's choice is kept, and the GPS resumes by itself when the
+      browser already grants it.
+    - `watchPosition` only reports when it has a new fix, so a reading every 10 s keeps the cadence.
+    - A fix that comes less than 10 s after the last write is written at the end of the delay. Without that, the
+      last movement was lost when the device then stood still: found by the test.
+  - **Writing:** only `progress.actual`, with `by: 'frame'` and `updated_at` (the record rule), and only when the
+    position moved.
+  - **Tests (position simulated through the browser's geolocation override, launcher):**
+    - flight started: badge "—";
+    - badge clicked: "GPS", first position written;
+    - 100 m further: written after 10 s; standing still: not written again;
+    - GPS switched off: back to "—";
+    - a fresh page with the VID of a pilot really connected on IVAO: "IVAO", position from the relay;
+    - 375 px: the page fits;
+    - `started` set back to null: the badge disappears;
+    - no JavaScript error.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

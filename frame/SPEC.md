@@ -318,14 +318,41 @@ used alone:
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (a document, pulled ahead and followed with `watch`; text fields only), an empty object when there is none; no address is written in the code |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
+| `live` | the actual position during a started flight: `{ status ('off', 'waiting', 'tracking'), source ('gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
 
+- **Actual position during a flight** (`ctx.live`, a frame service):
+  - **When**: it runs while `pilot/<trigram>/current_flight.json` has `started` (set back to null when fuel cancels the
+    flight or report saves the report), whatever module is open. It never runs for a flight started more than 24 h
+    ago: a forgotten flight does not keep the GPS on.
+  - **Sources, in order**:
+    1. **The device's GPS** (`watchPosition`, plus a reading every 10 s): position, altitude, track, ground speed.
+       - Permission is asked only by a gesture: the header badge, or `ctx.live.enable()`; never at start.
+       - The choice is kept on the device (`device/live.json`); once the browser grants it, the GPS resumes by itself.
+    2. **The network**, when the GPS has given nothing for 30 s: the pilot's online session, IVAO (public `whazzup`,
+       VID of the identity), then VATSIM (data feed, CID).
+       - Every 15 s through the launcher's relay, every 60 s in a direct call (0.7 to 1.7 MB a call on a phone).
+       - A position at 0° / 0° (a pilot still connecting) is ignored.
+    3. Nothing.
+  - **Offline**: the GPS only.
+  - **Writing**: only `progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source }` in the current flight (the
+    record, `by: 'frame'`), never fuel's or maps' fields.
+    - This is the form maps reads: `at` is ISO, `source` is `gps`, `ivao` or `vatsim`, and `trackDeg` / `gsKt` may be
+      null.
+    - `trail` is optional and the frame does not write it: the map keeps its own 30-minute trail, and greys a position
+      older than 2 minutes.
+    - At most once every 10 s, and only when the position moved (30 m, or 50 ft of altitude). A position that comes
+      too early is written at the end of the delay.
+    - No synchronisation is forced: the local queue and the usual pass carry it.
+  - **Badge**: during a flight, a header badge shows the source ("GPS", "IVAO", "VATSIM", "—" while waiting), the time
+    of the last position in its tooltip, and switches the device's GPS on or off (pressed while on).
 - **Outgoing calls (`ctx.net`), by site.** The launcher's relay comes first when the page is served by one.
 
 | Site | With a launcher | Without a launcher | Key |
 |---|---|---|---|
 | SimBrief, IVAO | relayed (IVAO: the launcher's API key) | direct | — |
-| VATSIM (`api`, `data`, `my`) | relayed | 503 `x-sog-unreachable` | — |
+| VATSIM `data.vatsim.net` (data feed) | relayed | direct (CORS `*`) | — |
+| VATSIM (`api`, `my`) | relayed | 503 `x-sog-unreachable` | — |
 | aviationweather.gov (METAR / TAF, decoded JSON) | relayed | 503 (no CORS header) | — |
 | metar.vatsim.net (METAR, raw text, several airports `id=A,B`) | relayed | direct | — |
 | api.open-meteo.com (forecasts: winds and temperatures by pressure level, JSON) | relayed | direct | — |

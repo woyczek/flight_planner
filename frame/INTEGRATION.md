@@ -92,6 +92,10 @@ export function unmount() { /* stop watchers, timers */ }
   from here, and hide the action when it is missing.
 - **In a pane** (dual view, wide screen), your module gets `ctx.query.pane === '1'` and half the width. Draw for the
   width you are given. Never reach the other module: react to the shared records with `watch`.
+- `ctx.live` (read): the actual position during a started flight, from the device's GPS or the pilot's IVAO / VATSIM
+  session: `status`, `source`, `last` `{ at, lat, lon, altFt, gsKt, trackDeg, source }`. A module that wants the GPS
+  offers a button that calls `ctx.live.enable()` (the permission needs a gesture). The frame writes
+  `progress.actual` in the current flight; read it there with `watch`, never write it.
 - `ctx.query`: what follows `?` in the address, as an object (`#report?from=flightlog` → `{ from: 'flightlog' }`).
   Another module or page opens yours with it.
 - `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, VATSIM, the DEFA website). It never throws:
