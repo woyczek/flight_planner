@@ -133,6 +133,9 @@ by size. Drafted with the user, validated before code.
   fine-grained token scoped to that repository; later, sign-in without a token (OAuth / GitHub App) once a relay
   (the site's web service) exists. The onboarding wizard ("Join the airline") takes a pilot without any GitHub
   account by the hand, step by step.
+- 23 Oct 2026 — **`develop` is the V3 line.** After 5.4.0 (last V2 release) the V3 work was squashed into one commit
+  per block on `develop`; `v3` is the same line (sessions keep pushing there, `develop` fast-forwards). V2 fixes go to
+  `v2-maintenance` (from `master`) and are carried over to `v3`.
 
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 
