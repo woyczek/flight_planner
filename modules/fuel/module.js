@@ -1670,7 +1670,8 @@ async function wxCorridor() {
           dLat
         ];
       for (const ad of (await s.ctx.aerodb.aerodromes({
-          bbox
+          bbox,
+          lite: true // index léger des terrains (code, position, altitude, axe de piste) : assez pour le couloir
         }).catch(() => null)) || []) {
         const id = String(ad?.icao || '').toUpperCase();
         if (/^[A-Z]{4}$/.test(id) && Number.isFinite(+ad.lat) && Number.isFinite(+ad.lon)) seen.set(id, ad);

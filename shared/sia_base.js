@@ -2011,6 +2011,23 @@
     await writeText(d, name, text);
     return text.length;
   }
+  /** Index léger des terrains d'une zone (V3 : frame/aerodb SPEC § 2) : les terrains à code OACI seulement, en lignes
+   *  compactes { fields, rows } — code, nom, position, altitude, axe de piste, déclinaison —, lu par l'appli Pilote
+   *  pour trouver un terrain ou ceux d'une route sans lire aerodromes.json (dix fois plus lourd). */
+  const AEROINDEX_FIELDS = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'];
+
+  function aeroIndex(list) {
+    const n = (v, d) => {
+      const x = parseFloat(v);
+      return Number.isFinite(x) ? Math.round(x * 10 ** d) / 10 ** d : null;
+    };
+    return {
+      fields: AEROINDEX_FIELDS,
+      rows: (list || []).filter(a => /^[A-Z]{4}$/.test(String(a?.icao || '').toUpperCase())).map(a => [String(a.icao).toUpperCase(),
+        String(a.name || ''), n(a.lat, 5), n(a.lon, 5), n(a.elev, 0), n(a.bearing, 0), n(a.magVar, 2)
+      ])
+    };
+  }
   /** Ville publiée : sans son pays (cc ne sert qu'à la ranger ; les fichiers publiés gardent leur taille). */
   const plainCity = ({
     cc,
@@ -2141,6 +2158,7 @@
         files = {
           airspaces: airspaces || [],
           ...Object.fromEntries(SPLIT_KINDS.map(k => [k, aero[k] || []])),
+          aeroindex: aeroIndex(aero.aerodromes),
           mora: moraCells || [],
           obstaclemax: obstacleMax || {},
           cities: byZone[z] || [],

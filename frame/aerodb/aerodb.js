@@ -39,9 +39,9 @@
   const PUB = 'sia/base/',
     PUB_WHOLE = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\.json$/,
     PUB_SPLIT = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\/([a-z_]+)\.json$/,
-    SPLIT_KINDS = ['meta', 'airspaces', 'aerodromes', 'navaids', 'points', 'vrp', 'airways', 'obstacles', 'mora', 'obstaclemax',
-      'cities'
-    ], // sortes publiées d'une zone (format découpé)
+    SPLIT_KINDS = ['meta', 'airspaces', 'aerodromes', 'aeroindex', 'navaids', 'points', 'vrp', 'airways', 'obstacles', 'mora',
+      'obstaclemax', 'cities'
+    ], // sortes publiées d'une zone (format découpé) ; aeroindex : index léger des terrains à code OACI (SPEC § 2)
     COMMON = ['sia/base/index.json', 'sia/base/cities_major.json'], // fichiers communs à toutes les zones
     POINT_KINDS = ['aerodromes', 'navaids', 'points', 'vrp', 'obstacles'],
     MARGIN = .5, // marge des cadres de zone (côtes, eaux territoriales, espaces au large), comme la V2
@@ -309,7 +309,10 @@
               cycle,
               parts: new Map(),
               reads: [],
-              idx: {}
+              idx: {},
+              // index léger des terrains publié pour ce cycle (liste de l'arbre ou tailles du manifeste) : lu pour
+              // trouver un terrain par son code ou le long d'une route, au lieu de aerodromes.json (dix fois plus lourd)
+              lite: !!e && ((e.kinds?.[cycle] || []).includes('aeroindex') || e.kb?.[cycle]?.aeroindex != null)
             };
           // découpé : préféré ; méta lue d'emblée (petite : cycle, axes AAR, tracks NAT)
           if (!pub || e.split.has(cycle)) {
@@ -397,7 +400,7 @@
     function idx(z, kind) {
       if (z.idx[kind]) return z.idx[kind];
       const p = z.idx[kind] = buildIdx(z, kind),
-        k = kind.startsWith('ident:') ? kind.slice(6) : kind;
+        k = kind.startsWith('ident:') ? kind.slice(6) : kind === 'aerodromes:lite' ? 'aeroindex:list' : kind;
       // index bâti sur une sorte illisible : oublié avec elle, rebâti à la prochaine question
       p.then(() => !z.parts.has(k) && z.idx[kind] === p && delete z.idx[kind], () => z.idx[kind] === p && delete z.idx[kind]);
       return p;
@@ -438,10 +441,11 @@
           };
         }
         if (kind === 'mora') return new Map((await part(z, 'mora')).map(c => [cellKey(c.lat, c.lon), c]));
-        if (kind.startsWith('ident:')) { // identifiant → éléments d'une sorte (aérodromes par code OACI)
+        if (kind === 'aerodromes:lite') return pointIndex(await aerodromesFor(z));
+        if (kind.startsWith('ident:')) { // identifiant → éléments d'une sorte (aérodromes par code OACI : index léger d'abord)
           const k = kind.slice(6),
             m = new Map();
-          for (const x of await part(z, k)) {
+          for (const x of await (k === 'aerodromes' ? aerodromesFor(z) : part(z, k))) {
             const id = fold(k === 'aerodromes' ? x.icao || x.id : x.id);
             if (id)(m.get(id) || m.set(id, []).get(id)).push(x);
           }
@@ -457,14 +461,38 @@
         return pointIndex(await part(z, kind));
       })();
     }
-    /** Éléments d'une sorte de points dans l'emprise de q (filtre : f(x)) ; toutes zones couvrantes. */
+    /** Terrains légers d'une zone (aeroindex.json : { fields, rows }) en objets { icao, id, name, lat, lon, elev, bearing,
+     *  magVar, lite: true } ; lus une fois. */
+    function liteAerodromes(z) {
+      if (z.parts.has('aeroindex:list')) return z.parts.get('aeroindex:list');
+      const p = part(z, 'aeroindex').then(d => {
+        const f = Array.isArray(d?.fields) ? d.fields : [];
+        if (!f.length || !Array.isArray(d?.rows)) z.parts.delete('aeroindex:list'); // illisible : redemandé ensuite
+        return (d?.rows || []).map(r => {
+          const o = Object.fromEntries(f.map((k, i) => [k, r[i]]));
+          return {
+            ...o,
+            id: o.icao,
+            lite: true
+          };
+        });
+      });
+      z.parts.set('aeroindex:list', p);
+      return p;
+    }
+    /** Terrains d'une zone pour une recherche par code ou le long d'une route : l'index léger s'il est publié et que la
+     *  sorte complète n'est pas déjà lue, sinon aerodromes.json. */
+    const aerodromesFor = z => z.split && z.lite && !z.parts.has('aerodromes') ? liteAerodromes(z) : part(z, 'aerodromes');
+    /** Éléments d'une sorte de points dans l'emprise de q (filtre : f(x)) ; toutes zones couvrantes. q.lite (terrains) :
+     *  l'index léger suffit (code, nom, position, altitude, axe de piste). */
     async function pointsIn(kind, q, f = () => true) {
       const b = boxOf(q);
       if (!b) return [];
       const out = [],
-        seen = new Set();
+        seen = new Set(),
+        k = kind === 'aerodromes' && q?.lite ? 'aerodromes:lite' : kind;
       for (const z of await zonesOf(b))
-        for (const list of within(await idx(z, kind), b))
+        for (const list of within(await idx(z, k), b))
           for (const x of list)
             if (!seen.has(x) && x.lon >= b[0] && x.lon <= b[2] && x.lat >= b[1] && x.lat <= b[3] && f(x)) {
               seen.add(x);
@@ -756,7 +784,8 @@
         }
         return out;
       },
-      /** Aérodromes de l'emprise de q, ou celui de q.icao. */
+      /** Aérodromes de l'emprise de q, ou celui de q.icao (index léger quand il est publié : { icao, name, lat, lon,
+       *  elev, bearing, magVar, lite }) ; q.lite : l'emprise aussi dans l'index léger (pas de type ni de piste en dur). */
       aerodromes: async (q = {}) => q.icao ? (await api.coordsAll(q.icao)).filter(x => x.kind === 'aerodrome').map(x => x.item) :
         pointsIn(
           'aerodromes', q),

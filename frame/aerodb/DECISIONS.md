@@ -451,3 +451,22 @@ With the network cut, the only reads attempted were:
   as soon as the reader could write, so a phone loaded `lnmperf.js` (27 KB) for nothing (it needs `/__setup/lnmperf`).
   Now it starts only when `FrameData.launcher.detect()` finds a launcher. Bench: through the launcher, `lnmperf.js`
   loaded; served statically (no launcher), not loaded.
+- **23 Oct 2026 — light index of the aerodromes (`aeroindex.json`).**
+  - **Why**: the first flight entered in Fuel read the zone's whole `aerodromes.json` (France 328 KB, 1,872 records,
+    heliports and private strips included) to find two ICAO codes and the aerodromes along the route.
+  - **Format**: one file per zone and cycle next to the others, compact rows of the aerodromes with an ICAO code only
+    (code, name, position, elevation, runway axis, magnetic variation: what Fuel uses for the route, the corridor's
+    weather and the crosswind). France: 555 rows, 31 KB. Published by `shared/sia_base.js` with the other kinds (its
+    size goes into the manifest); the user's base gets it at its next publication (Settings › Maintenance ›
+    Aeronautical data). A zone without it is read as before.
+  - **Reader**: the code lookup and `aerodromes({ icao })` use it while the full kind is not read; `aerodromes({ bbox,
+    lite: true })` too (Fuel's corridor, one word in `modules/fuel/module.js`); the map keeps the full file (its
+    symbols need the type, the state and the hard runway).
+  - **Measure** (audit kit, `audit_run.py`, CPU ×4, Fast 3G, GitHub mode with the real tree, `aeroindex.json` added to
+    the bench's tree by the same computation): route LFRS → LFML entered in Fuel, points resolved after 5.7 s → 4.0 s,
+    3 API reads 414 KB → 118 KB (manifest, `meta.json`, the index). The map reads `aerodromes.json` when it opens, as
+    before.
+  - **Still to do for the first GitHub screen (5.7 s), on the publication side, in a later lot**: the types base
+    published as JSON by Maintenance's "Publish the aircraft database" (the V2 `.js` is read as a literal, and the two
+    files weigh 135 KB), and the DEFA reference trimmed to the fields the registry uses (registrations, types,
+    callsigns, bases: `references/defa_reference.js` and `aircraft_fleet.js` together about 100 KB).

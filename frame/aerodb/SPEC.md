@@ -27,6 +27,13 @@ A module asks for an area or an identifier, never for a zone or a file.
   ({ "lat|lon": ft }), `cities` (the zone's towns [{ name, lat, lon, population, … }]: those of its country in
   GeoNames, or, for a country without a zone, those inside its contour) and `meta` (everything else:
   `aarXml`, `aarXmlExtra`, `natTracks`, `airac`, …). Next to them:
+  - `aeroindex.json`, the light index of the zone's aerodromes with an ICAO code (written by the publication of the
+    base, `shared/sia_base.js`, from the next publication on): `data` = { `fields`: [`icao`, `name`, `lat`, `lon`,
+    `elev`, `bearing`, `magVar`], `rows`: [[…], …] } (France: 555 aerodromes, 31 KB, against 328 KB for
+    `aerodromes.json`). Read, when the zone has one (tree listing or manifest sizes), to find an aerodrome by its code
+    (`coords`, `coordsAll`, `aerodromes({ icao })`) and for `aerodromes({ bbox, lite: true })`; its items carry
+    `lite: true` and no type, state nor hard runway. Everything else (the map's symbols, `find`) reads
+    `aerodromes.json`. Without the index (a base published before), `aerodromes.json` as before;
   - `sia/base/cities_major.json` { `data`: towns of 100,000 inhabitants or more, the whole world }, for a place search
     outside the loaded zones;
   - `sia/base/index.json` { `zones`: { zone: { `cycle`, `prefixes` (first two letters of its aerodromes' ICAO
@@ -131,7 +138,7 @@ the suite root) and has no listing.
 | `ready(q)` | zones loaded for the area of `q` |
 | `on('change', fn)` | `fn({ zone, cycle } \| { changed } \| { aircraft })`; returns the unsubscribe function |
 | `airspaces(q)` | airspaces touching the area; `q.types` keeps some types |
-| `aerodromes(q)` | aerodromes of the area, or the one of `q.icao` |
+| `aerodromes(q)` | aerodromes of the area, or the one of `q.icao` (from the light index when published); `q.lite`: the area's aerodromes with an ICAO code from the light index (code, name, position, elevation, runway axis, magnetic variation) |
 | `navaids(q)`, `points(q)`, `vrp(q)` | points of the area |
 | `obstacles(q)` | obstacles of the area; `q.minHgt` (ft) |
 | `airways(q)` | airways with a segment touching the area |

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: light index of the aerodromes** (`frame/aerodb/aerodb.js`, `shared/sia_base.js`, `modules/fuel/module.js`;
+  SPEC, DECISIONS) — the base's publication writes `aeroindex.json` per zone (ICAO aerodromes: code, name, position,
+  elevation, runway axis; France 31 KB instead of 328 KB), read to resolve a route and for Fuel's corridor: first route
+  entered in 4.0 s instead of 5.7 s (Fast 3G); a base published before reads as before.
 - **Report, My flights, Website: times shown in UTC** (`modules/report/module.js`, `modules/flightlog/module.js`,
   `modules/website/module.js`; DECISIONS) — "16:59Z", with the device's time in brackets at the engine start.
 - **aerodb: Little Navmap follow-up only with a launcher** (`frame/aerodb/aerodb.js`; DECISIONS) — a phone no longer loads
