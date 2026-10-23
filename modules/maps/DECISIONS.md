@@ -220,3 +220,40 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     its size, colour after `themed()` and contrast. All texts ≥ 4.5:1 in standard, cabinet and field, day and night,
     at 375 and 900 px. The real base could not be used in that session; the module was checked to load and draw in
     the frame.
+- **23 Oct 2026 — lot 5c: hover that follows the mouse, layers, around the route, VFR in full.**
+  - **Mouse tooltip on labels only** (user's request): with a tooltip that follows the pointer, showing the airspaces
+    under any point would keep a bubble on screen over most of France. It shows only over an airway box or an airspace
+    label. Airspace label frames are taken by drawing the labels one airspace at a time, in the studio's order (largest
+    first), through a view of the shared placer; the studio's copy is not changed.
+  - **Layers per preset and per device**, stored as differences from the preset's defaults, so a change of a preset's
+    profile still reaches the device.
+  - **Families, not the profile's own list**: a ticked family brings all its types. This is what makes the VFR preset
+    show TMA and R areas (the studio's `vfr-detail` names only D, P, CTR, PJE). UTA and LTA go with FIR: UTA FRANCE
+    covers the whole country and would label every IFR map.
+  - **Around the route only, and the close view**: off in VFR (the reason the VFR map went bare at a high zoom was the
+    profile's families, but planning VFR elsewhere needs the whole view too). In a close view everything is read and
+    drawn anyway: it is small, and it is where one looks.
+  - **Cost of the whole view** (LFRS → LFML overview, 1280 px, France loaded): with the corridor 17 airspaces and 226
+    airway segments, read in 1 ms and drawn in 4 ms; without it 177 airspaces and 1,111 segments, 2 ms and 11 ms. No
+    zone more is read: aerodb already holds the zones the view touches.
+  - **VFR density**: VRP at every zoom (names placed where there is room); obstacles stay for the close view only
+    (about 2,000 on a 200 NM view: unreadable).
+  - **Visual pass 3b8dc2cfb checked on the real base** (LFRS → LFML, 375 and 1280 px, standard, cabinet and field, day
+    and night): kept as it is. The hierarchy holds (route 4 px on a 7.5 px edge above everything, beacons and
+    airfields under the route labels, MORA readable), the night colours stay readable on the dark tiles, nothing is
+    white at night. One defect fixed: the TOC / TOD labels covered the name of a route point (LUGEN); they now take
+    the first free corner. Seen but not the map's: at 375 px the frame's header is wider than the screen in English
+    ("up to date, 0 s ago", 170 px), which zooms the whole page out to 389 px.
+  - **VFR routes** (transits of the Nantes and Cannes / Nice CTRs): not in what the publication reads. XML_SIA has
+    routes of two kinds only, AWY (317) and PDR (112), and 1,098 VFR points; AIXM 4.5 has the same 429 routes. openAIP
+    has reporting points but no VFR routes either. They are drawn on the VAC charts (PDF) only: a source would mean
+    entering them by hand per aerodrome, or a paid source. Waiting for the ergonomics session's answer before any code.
+  - **Missions keep the studio's meaning for `route_points[].alt_ft`** (altitude reached at the point), unlike the
+    current flight's `alt_ft` (level held from the point): accepted by the ergonomics session until the studio
+    changes.
+  - **Bench**: 1280 px mouse: hover on "UTA FRANCE (LFFF)" (before the families moved) then on UN862 follows the pointer
+    (567 → 570 px), 11.5 px, two lines, hidden off the label and off the map; layers: upper airways off → none drawn,
+    kept in `cache/maps/ui.json`, reset → back; link `fuel?from=maps&focus=route`. 375 px touch: airspace, airway and
+    profile tooltips unchanged, layers panel opened by a tap and scrolling inside the map, no button on a mission map,
+    page 375 px wide. VFR close views near Limoges and Lyon (off the route): TMA, CTR, CTA, R, P with their limits,
+    VRP with names. No JavaScript error.

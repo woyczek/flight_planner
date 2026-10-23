@@ -446,10 +446,13 @@
     ctx.restore();
   }
 
+  /** Espaces : formes (part 'shapes') ou libellés (part 'labels'). Les libellés sont posés un espace à la fois, dans
+   *  l'ordre du studio (plus grande emprise d'abord), pour relever le cadre de chacun : rend [{ x0, y0, x1, y1, a }]
+   *  (infobulle au survol du libellé). */
   function drawZones(ctx, zones, toC, W, H, scale, pl, profile, part) {
     const showLabels = on(profile, 'zoneLabelsShow');
-    if (part === 'labels' && !showLabels) return;
-    A().drawAirspaces(ctx, zones, toC, {
+    if (part === 'labels' && !showLabels) return [];
+    const opts = {
       W,
       H,
       scale,
@@ -461,7 +464,60 @@
       placer: pl,
       shapes: part !== 'labels',
       labels: part !== 'shapes' && showLabels
-    });
+    };
+    if (part !== 'labels') {
+      A().drawAirspaces(ctx, zones, toC, opts);
+      return [];
+    }
+    const area = a => {
+        let x0 = Infinity,
+          y0 = Infinity,
+          x1 = -Infinity,
+          y1 = -Infinity;
+        for (const r of a.rings || [])
+          for (const [lat, lon] of r) {
+            const q = toC(lat, lon);
+            if (q.x < x0) x0 = q.x;
+            if (q.x > x1) x1 = q.x;
+            if (q.y < y0) y0 = q.y;
+            if (q.y > y1) y1 = q.y;
+          }
+        return x1 > x0 ? (x1 - x0) * (y1 - y0) : 0;
+      },
+      hits = [];
+    let cur = null;
+    // placeur partagé, vu au travers : chaque cadre réservé pendant le libellé d'un espace lui est attribué
+    const seen = pl ? new Proxy(pl, {
+      get(o, p) {
+        if (p === 'take') return r => {
+          const ok = o.take(r);
+          if (ok && cur) hits.push({
+            x0: r.x0,
+            y0: r.y0,
+            x1: r.x1,
+            y1: r.y1,
+            a: cur
+          });
+          return ok;
+        };
+        const v = o[p];
+        return typeof v === 'function' ? v.bind(o) : v;
+      }
+    }) : pl;
+    for (const {
+        a
+      }
+      of zones.map(a => ({
+        a,
+        k: area(a)
+      })).sort((x, y) => y.k - x.k)) {
+      cur = a;
+      A().drawAirspaces(ctx, [a], toC, {
+        ...opts,
+        placer: seen
+      });
+    }
+    return hits;
   }
 
   function drawPoints(ctx, data, toC, W, H, scale, b, pl, profile) {
@@ -1104,14 +1160,17 @@
    *  et la route de chaque tronçon, les VRP et les obstacles du profil. */
   const tierOf = px => px < 80 ? 'far' : px < 300 ? 'mid' : 'near';
 
-  function densify(data, tier) {
+  function densify(data, tier, profile) {
     if (tier === 'near') return data;
-    const big = a => (+a.hardLen || 0) >= 1800 || (a.controlled && (+a.hardLen || 0) >= 1200);
+    // VFR (élément vfrDensity) : points de report à tous les zooms ; obstacles de près seulement (près de 2 000 sur une
+    // vue moyenne de 200 NM : illisible)
+    const vfr = on(profile, 'vfrDensity'),
+      big = a => (+a.hardLen || 0) >= 1800 || (a.controlled && (+a.hardLen || 0) >= 1200);
     return {
       ...data,
       aerodromes: tier === 'far' ? (data.aerodromes || []).filter(big) : data.aerodromes,
       navaids: tier === 'far' ? [] : data.navaids,
-      vrp: [],
+      vrp: vfr ? data.vrp : [],
       obstacles: []
     };
   }
@@ -1129,7 +1188,9 @@
     return t;
   }
   const sia = a => [
-    [a.type, a.name].filter(Boolean).join(' ') + ` ${siaLimit(a.lower)}|${siaLimit(a.upper)}` + (a.cls ? ` ${a.cls}` : ''),
+    // limites omises quand l'espace n'en porte aucune (FIR, UTA de la base : rien plutôt que « SFC|SFC »)
+    [a.type, a.name].filter(Boolean).join(' ') + (a.lower == null && a.upper == null ? '' : ` ${siaLimit(a.lower)}|${siaLimit(a.upper)}`) +
+    (a.cls ? ` ${a.cls}` : ''),
     [a.act, a.info].filter(Boolean).join(' · ')
   ];
   /** Niveau d'une voie (pieds) en notation SIA : FL au-dessus de 5000 ft, UNL au plafond ouvert. */
@@ -1183,7 +1244,7 @@
       },
       tier = tierOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
       // carte de mission : tout ce que le profil montre ; vol : densité selon le zoom
-      shown = mission ? data : densify(data, tier),
+      shown = mission ? data : densify(data, tier, profile),
       labels = routeLabels(route, toC, scale, pl, mk);
     reservePoints(pl, mission?.points, toC, scale, profile);
     const towns = cityList(data.cities, profile, toC, bbox, scale, pl);
@@ -1193,7 +1254,7 @@
     // autres en triangle
     const fixes = [],
       endNavs = [];
-    if (ends.size && (mission || tier !== 'far')) {
+    if (ends.size && (mission || tier !== 'far') && el(profile, 'fixes') !== false) {
       const byId = new Map((data.navaids || []).map(n => [n.id, n]));
       for (const e of ends.values()) {
         const n = byId.get(e.id);
@@ -1221,7 +1282,7 @@
     drawFixes(ctx, fixes, toC, W, H, scale, pl);
     for (const f of ends.later || []) f();
     drawVrp(ctx, shown, toC, W, H, scale, bbox, pl, profile);
-    drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
+    const zoneLabels = drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
     drawGridMora(ctx, shown.moraCells, toC, bbox, W, H, scale, pl, profile);
     drawMissionZones(ctx, mission?.zones, toC, scale, pl, profile);
     drawMissionPoints(ctx, mission?.points, toC, W, H, scale, profile);
@@ -1229,8 +1290,17 @@
     drawRoute(ctx, route, toC, scale, labels, {
       marks: mk
     });
+    // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
+    // d'espaces, libellés de la route
     return {
-      airways: ends.hits || []
+      airways: ends.hits || [],
+      zoneLabels,
+      routeLabels: labels.map(l => ({
+        x0: l.align === 'center' ? l.x - l.text.length * l.size * .3 : l.x,
+        x1: l.align === 'center' ? l.x + l.text.length * l.size * .3 : l.x + l.text.length * l.size * .6,
+        y0: l.y - l.size * .6,
+        y1: l.y + l.size * .6
+      }))
     };
   }
 
@@ -1248,6 +1318,8 @@
     airspacesAt,
     airwaysAt,
     awLimit,
+    /** Valeur d'un élément d'un profil d'affichage (défaut du studio si absent). */
+    elementOf: el,
     deg3,
     tierOf,
     trackOf,

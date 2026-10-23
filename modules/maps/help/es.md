@@ -31,11 +31,18 @@ los obstáculos. «Auto» elige según el nivel de su vuelo (IFR alto desde el F
 Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
 distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos.
 
+**Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios
+(TMA / CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de
+notificación VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo. Marque o desmarque: el mapa sigue, y
+su elección se conserva para este ajuste en este dispositivo. «Restablecer todo» vuelve a la elección de origen.
+«Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la cercanía de la ruta;
+desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos.
+
 **Toque para saber más.** Toque el nombre de una aerovía: una burbuja da el tramo (punto → punto), su distancia, sus
 rumbos de ida y vuelta, su límite inferior y superior. Toque un espacio aéreo: la burbuja da su nombre, sus límites en
 notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conocen. El toque siguiente o mover el mapa la
-cierra. Con un ratón, basta con detenerse encima. En el perfil, el dedo da la misma burbuja para los espacios
-atravesados.
+cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y se
+va en cuanto lo deja. En el perfil, el dedo o el ratón dan los espacios atravesados.
 
 **Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,
 nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de

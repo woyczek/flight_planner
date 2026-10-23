@@ -32,11 +32,20 @@ nach der Flugfläche Ihres Flugs (IFR oben ab FL195); die Wahl bleibt erhalten.
 ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“),
 dann die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse.
 
+**Ebenen.** Die Ebenen-Schaltfläche unter der Karteneinstellung öffnet die Liste dessen, was die Karte zeichnet:
+Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
+VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz. Haken setzen oder entfernen: die
+Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät erhalten. „Alles zurücksetzen“ kehrt zur
+ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt, beschränkt Lufträume und Flugwege auf die
+Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um anderswo zu schauen. Aus der Nähe wird
+ohnehin alles gezeichnet.
+
 **Antippen für mehr.** Tippen Sie auf den Namen eines Flugwegs: eine Blase nennt den Abschnitt (Punkt → Punkt), seine
 Länge, seine Kurse in beide Richtungen, Unter- und Obergrenze. Tippen Sie auf einen Luftraum: die Blase nennt seinen
 Namen, seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“) und seine Zeiten, wenn bekannt. Das nächste
-Antippen oder ein Verschieben der Karte schließt sie. Mit der Maus genügt es, darauf stehen zu bleiben. Auf dem Profil
-gibt der Finger dieselbe Blase für die durchflogenen Lufträume.
+Antippen oder ein Verschieben der Karte schließt sie. Mit der Maus über den Namen eines Flugwegs oder Luftraums
+fahren: eine kleine Blase folgt dem Zeiger und verschwindet, sobald Sie ihn verlassen. Auf dem Profil nennen Finger
+oder Maus die durchflogenen Lufträume.
 
 **Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:
 Steigflug, Reiseflug, neuer Steig- oder Sinkflug, mit neu berechnetem Ende des Steigflugs und Beginn des Sinkflugs.

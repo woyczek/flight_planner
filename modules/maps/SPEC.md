@@ -58,8 +58,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   7. the route on top: line, points, NM marks and their labels.
 - **Overview rule** (under 120 px per degree): only aerodromes and VOR / TACAN within 15 NM of the route, airways
   whose middle is within 30 NM, no obstacles. Closer views show everything the profile allows.
-- **Density by zoom** (`tierOf(px per degree)`: far under 80, mid under 300, near beyond; `densify(data, tier)`;
-  mission maps are always drawn in full):
+- **Density by zoom** (`tierOf(px per degree)`: far under 80, mid under 300, near beyond; `densify(data, tier,
+  profile)`; mission maps are always drawn in full; with `vfrDensity`, VRP at every tier):
   - far: large aerodromes only, no navaids, airways with their boxed names;
   - mid: plus the airway points and the minimum level under each name ("F195");
   - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
@@ -101,20 +101,42 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Display presets**: a list at the top left of the map (hidden for mission maps): Auto (the flight's level: High
   IFR from FL195), Low IFR (`routeProfile(5000)`), High IFR (`routeProfile(30000)`), VFR (the built-in `vfr-detail`
   profile on the `ofm-liberty` base: towns, VFR airspaces, VRP, obstacles). Kept in `cache/maps/ui.json`.
-- **Tooltips**, a `.mp-tip` card at the pointer's place in the map box or the profile box:
-  - map: the airway whose box is under the pointer (route, point → point, distance, tracks both ways, floor|ceiling,
-    low or high), else the airspaces shown under the point in AIP notation (activation and information below), else
-    "No airspace shown here";
-  - touch: a tap opens it, the next tap or a move closes it (a tap near the route places the cursor instead);
-  - mouse: shown after 450 ms still, hidden when the pointer leaves the map; the compatibility mouse events that
-    follow a touch are ignored (`sourceCapabilities.firesTouchEvents`, or within 1 s of a touch);
-  - profile: the airspaces crossed at the cursor, under the finger or the mouse; the line under the profile uses the
-    same notation.
+- **Tooltips**, a `.mp-tip` card in the map box or the profile box:
+  - touch (or click): the airway whose box is under the finger (route, point → point, distance, tracks both ways,
+    floor|ceiling, low or high), else the airspaces shown under the point in AIP notation (activation and information
+    below), else "No airspace shown here"; it stays until the next tap or a move of the map (a tap near the route
+    places the cursor instead);
+  - mouse (class `mp-hover`): only over an airway box or an airspace label (`draw()` returns both frames), at once,
+    following the pointer 12 px away (never under it, kept inside the box), gone as soon as the pointer leaves the
+    label or the map; lighter: `--sog-chart-bg` at 80 %, `--sog-fg`, thin border, 11.5 px, two lines at most;
+  - the compatibility mouse events that follow a touch are ignored (`sourceCapabilities.firesTouchEvents`, or within
+    1 s of a touch);
+  - profile: the airspaces crossed at the cursor; touch as above, mouse as above with the first two and "+n more";
+    the line under the profile uses the same notation;
+  - an airspace without limits in the base (FIR, UTA) shows no "SFC|SFC".
+- **Layers panel** (button with a layers icon under the presets; hidden for mission maps): airspace families (TMA /
+  CTR: TMA, CTR, CTA, TMZ, RMZ; D / R / P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA,
+  FRA; others: every other type present), lower and upper airways, beacons, airway points (`fixes`), VRP, obstacles,
+  MORA, towns, graticule, alternate, and "Around the route only".
+  - Defaults come from the preset's profile (a family is on when the profile names one of its types); the choices
+    are kept per preset and per device in `cache/maps/ui.json` `{ preset, layers: { preset: { key: bool } } }`, only
+    where they differ from the defaults; "Reset all" removes them.
+  - The effective profile (`effectiveProfile()`) is the preset's with the layers applied: elements, `zones` (whole
+    families), `otherZones`, `corridorNm`.
+- **Around the route only**: on by default when the preset's profile has a corridor (IFR), off in VFR. Off, the data
+  area follows the view (widened by 15 %) and airspaces and airways are read and drawn over all of it. In a close view
+  (300 px per degree or more), everything in the view is read and drawn whatever the layer says.
+- **VFR preset**: the studio's `vfr-detail` profile on the `ofm-liberty` base, plus beacons and `vfrDensity` (VRP at
+  every zoom). Its families come from the layers: TMA / CTR and D / R / P whole (the studio's profile only names D, P,
+  CTR and PJE, so a close view outside a CTR was bare).
 - **Live view**: every write of the flight file redraws the map and the profile (debounced 300 ms,
   `performance.mark('maps:live')`); the view stays when the new route still fits in it; no zone is read again unless
   the data area changes.
 - **Profile marks**: the route's points, and the airway points and navaids within 3 NM of the route (at least 30 px
   apart), as small triangles with their id.
+- **TOC and TOD on the map**: their label goes north-east of the diamond, else south-east, north-west, south-west,
+  wherever it does not cover a route label (`draw()` returns their frames).
+- **"Edit the route"** opens `#fuel?from=maps&focus=route` (fuel's Route step, text field focused).
 - **Texts**: four languages, through `ctx.t`. Data labels (codes, names, levels) are not translated.
 
 ## 4 bis. Vertical profile (`profile.js`, `window.MapsProfile`)

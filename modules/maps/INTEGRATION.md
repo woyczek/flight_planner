@@ -9,7 +9,7 @@ How the frame mounts the map module and what it needs from the frame, aerodb and
 export const meta = {
   id: 'maps', apps: ['pilot'], level: 1,
   reads: ['pilot/', { prefix: 'missions/', policy: 'reference' }, 'cache/maps/'],
-  writes: [{ prefix: 'cache/maps/', policy: 'cache' }],                       // display preset, per device
+  writes: [{ prefix: 'cache/maps/', policy: 'cache' }],                       // preset and layers, per device
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],  // kept at installation
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],                 // kept at first use
@@ -49,7 +49,8 @@ export const meta = {
 `pilot/<trigram>/current_flight.json`: `route.points` (resolved positions, optional `alt_ft`), `route.dep / arr /
 altn`, `level.ft`, `aircraft.type`, and `profile: { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` for the
 vertical profile (drawn as fuel computed it; without it, the profile computes its own). "Edit the route" opens
-`#fuel`.
+`#fuel?from=maps&focus=route`: fuel shows its Route step with the text field focused (in the dual view, the frame
+keeps the module and fuel scrolls to that step).
 
 - `route.points[].alt_ft` follows fuel's INTEGRATION § 3 (fuel lot C): the level held from that point on, never on
   the first or the last point; the flight leaves at `level.ft`; a point without it keeps the previous level. The

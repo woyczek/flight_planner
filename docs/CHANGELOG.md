@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 5c: layers, hover, VFR in full** (`modules/maps/`; SPEC, INTEGRATION, DECISIONS, help ×4) — a Layers
+  panel (airspace families, airways, beacons, airway points, VRP, obstacles, MORA, towns, graticule, alternate, "Around
+  the route only"), kept per preset on the device; with a mouse, a light tooltip follows the pointer over airway and
+  airspace names; the VFR map keeps TMA, CTR, R / D / P limits and VRP at every zoom (it went bare close up); close up,
+  the whole view is drawn; TOC / TOD labels no longer cover route names; "Edit the route" opens fuel's Route step.
 - **Frame, lot 14: help and settings over the current module** (`frame/app.js`, `frame/frame.css`) — the menu stays
   in place (it no longer scrolls away on long screens) with the current module marked; "?" and "⚙" are toggles:
   a second click, or Escape, closes help or settings and brings back the module exactly where it was (same step, same

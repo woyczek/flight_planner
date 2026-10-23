@@ -31,10 +31,18 @@ from your flight's level (High IFR from FL195); the choice is kept.
 names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
 distance, its track (“097°”), the reporting points and the obstacles.
 
+**Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families
+(TMA / CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points,
+obstacles, minimum altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept
+for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by
+default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
+elsewhere. Close up, everything is drawn anyway.
+
 **Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks
 both ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation (“TMA 8
-AQUITAINE 2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, just
-stop over it. On the profile, your finger gives the same bubble for the airspaces crossed.
+AQUITAINE 2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, move over
+an airway's or an airspace's name: a small bubble follows the pointer and goes as soon as you leave it. On the
+profile, your finger or the mouse gives the airspaces crossed.
 
 **Steps.** If the route sets a level at some points in Fuel, the profile draws the steps: climb, level-off, new
 climb or descent, with the top of climb and top of descent computed again. The route's waypoints are also marked on
