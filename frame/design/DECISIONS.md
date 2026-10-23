@@ -72,3 +72,22 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     no horizontal scroll;
   - every DOM colour follows the tokens (probe on every colour token), except fuel's and report's own bar shadow;
   - radii 0 in `cabinet` and `field`, except maps' credit (3 px, the module's).
+- **23 Oct 2026 — Container queries for the widths of a pane** (user bug: "maps + three blocks side by side do not
+  work" in the dual view):
+  - The cause: `f-cols` and the modules' own rules were `@media (min-width: 980px)`, decided on the window. In the
+    dual view Fuel had half of a 1280 px screen and squeezed three blocks into 506 px.
+  - Now `.f-view` and every `.f-module` are containers. `f-cols`, the help tables and the roadmap (`.f-doc`, `.f-rm`)
+    use `@container`. The threshold of `f-cols` is a 900 px wide pane: at 1280 px full screen a module is about
+    1020 px wide (three columns), in the dual view 506 px (one column).
+  - Audit of every width `@media`:
+    - device, kept: the header (back link instead of the name), hiding the pane and its button under 980 px, the
+      phone layout and drawer;
+    - pane, moved to `@container`: `f-cols`, `.f-doc` tables, `.f-rm` roadmap; report's and flightlog's own
+      `@media (min-width: 980px)`, sent to their agents.
+    - `f-grid` and `f-tiles` were already intrinsic (auto-fit).
+  - No module uses `position: fixed`, which a container would capture.
+  - Tests:
+    - Fuel and Report at 1280 px full screen: three columns;
+    - in the dual view: one column, and the Map keeps its half (506 px each);
+    - at 375 px: one column;
+    - no horizontal scroll, no JavaScript error.

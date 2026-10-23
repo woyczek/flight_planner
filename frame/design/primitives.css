@@ -2,7 +2,17 @@
    Seulement des jetons --sog-* (frame/design/tokens.css) : un module n'apporte aucune couleur, aucun rayon, aucune taille
    de texte à lui ; ce qu'il dessine lui-même (graphiques, cartes) lit les jetons --sog-chart-*.
    Densité : toute cible tactile fait au moins --sog-touch (44 px) ; les champs écrivent à --sog-field-text (16 px : iOS
-   n'agrandit plus la page à la saisie) ; une colonne jusqu'à 760 px, des colonnes (f-cols) à partir de 980 px. */
+   n'agrandit plus la page à la saisie) ; une colonne jusqu'à 760 px, des colonnes (f-cols) quand le volet a la place.
+   Largeurs : ce qui dépend de la place d'un volet (colonnes, grilles, tableaux) se décide sur la largeur du volet
+   (requêtes de conteneur : la vue et chaque module sont des conteneurs), pas sur celle de la fenêtre — en vue double,
+   un module dans la moitié d'un écran se comporte comme sur une tablette étroite ; seul ce qui dépend de l'appareil
+   (tiroir du menu, en-tête) reste en @media (frame/frame.css). */
+
+/* ---- conteneurs : la vue du cadre et chaque module (le volet de la vue double compris) */
+.f-view,
+.f-module {
+  container-type: inline-size
+}
 
 /* ---- éléments de base */
 body {
@@ -246,7 +256,7 @@ details.f-card[open]>summary {
 .f-full {
   grid-column: 1/-1
 }
-@media (min-width: 980px) {
+@container (min-width: 900px) {
   .f-cols {
     display: grid;
     grid-template-columns: repeat(var(--f-cols, 3), minmax(0, 1fr));

@@ -29,7 +29,12 @@ A design sets tokens and nothing else; a module reads them and never redefines o
 | Density | `touch` (44px), `field-text` (16px) |
 
 All are prefixed `--sog-`. The breakpoints are not tokens: CSS media queries cannot read custom properties. They are
-**760 px** (phone / screen) and **980 px** (columns).
+**760 px** (phone / screen) and **980 px** (dual view), both for the device (`@media`).
+
+**Widths of a pane** (columns, grids, tables) are decided on the pane, not on the window: `.f-view` and every
+`.f-module` are containers (`container-type: inline-size`), and the primitives use container queries. `f-cols` turns to
+columns from a **900 px** wide pane. In the dual view, a module in half a screen behaves like on a narrow tablet. Only
+what depends on the device stays in `@media`: the menu drawer, the header, hiding the pane button.
 
 ## 3. Designs, day and night
 
@@ -65,7 +70,7 @@ All are prefixed `--sog-`. The breakpoints are not tokens: CSS media queries can
 | Folded section | `details` (`.f-card` or not) with `summary` | the summary line is the target (44 px), the frame's chevron |
 | Tabs, steps | `.f-tabs`, `.f-steps` around buttons | active: `aria-pressed="true"`, `aria-selected="true"` or `aria-current`; a done step: `data-done` (✓) |
 | Field grid | `.f-grid` (`--f-min`, default 130px), `.f-full` | auto-fit columns |
-| Columns | `.f-cols` (`--f-cols`, default 3) | one column under 980 px |
+| Columns | `.f-cols` (`--f-cols`, default 3) | columns from a 900 px wide pane (container query), one column below |
 | Sticky bar | `.f-bar` | bottom of the view, accent border, `shadow-up` |
 | Table | `.f-table` in `.f-scroll`, numbers `.f-num` | |
 | Tiles | `.f-tiles` with a `b` per tile | |
@@ -86,7 +91,7 @@ All are prefixed `--sog-`. The breakpoints are not tokens: CSS media queries can
 
 - Every target is at least 44 px. Exception: a text link inside a sentence.
 - Fields write at 16 px: iOS no longer zooms on them.
-- One column under 760 px; `f-cols` from 980 px. There is no design for phones: every design is one.
+- One column under 760 px; `f-cols` from a 900 px wide pane. There is no design for phones: every design is one.
 - **Print** (`@media print`):
   - the day's ink, white background;
   - no header, menu, notes, dialogs, sticky bars, tabs, steps or buttons;

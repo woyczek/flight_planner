@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **design: the dual view no longer squeezes three blocks into half a screen** (`frame/design/primitives.css`,
+  `frame/frame.css`) — columns, grids and tables are decided on the width of the pane (container queries), not of the
+  window: in the dual view Fuel or Report stacks its blocks while the Map keeps its half.
 - **settings: weather key for TAF without a launcher** (`frame/settings/settings.js`, `frame/settings/help/*.md`;
   `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — a "Weather key (TAF, avwx.rest)" card, with or without a
   launcher: METAR works without a key, TAF without a launcher needs a personal avwx.rest key, kept on the device only

@@ -225,7 +225,7 @@ body {
 .f-back {
   margin: 4px 0 var(--sog-gap)
 }
-@media (max-width: 760px) {
+@container (max-width: 760px) {
   .f-doc table,
   .f-doc tbody,
   .f-doc tr,
@@ -367,7 +367,7 @@ body {
 .f-rm-note {
   border-left: 4px solid var(--sog-warn)
 }
-@media (max-width: 760px) {
+@container (max-width: 760px) {
   .f-rm {
     display: block
   }
