@@ -71,12 +71,16 @@ pressure altitude the aircraft reaches its ceiling that day (line in bold). A do
 METAR (temperature and QNH). Important for helicopters: in great heat or at altitude, the real ceiling can fall well
 below the sheet's.
 
-**The weather.** Below “Level and wind”, “Read the aerodromes’ weather” shows, for the departure, the arrival and an
-optional intermediate airfield, what matters for the flight: the category (VFR, MVFR, IFR, LIFR, in colour), the wind
-and its headwind and crosswind components on the airfield's main runway (the direction closest to the wind), the
-ceiling, the visibility, the temperature and the QNH, and a warning when CB or TCU are forecast; the raw message is
-folded away. With a flight date, the TAF answers if it covers that time (and its temporary changes), otherwise the
-METAR. Tick “Real weather” for the quote's wind to become the mean of the airfields' winds along the route — an
+**The weather.** Below “Level and wind”, “Read the aerodromes’ weather” shows the departure, the arrival, the
+alternate and the airfields along the route: all those within 10 NM on either side of the route (radius adjustable in
+the quote settings) that have a METAR or a TAF; the others are ignored. Each airfield gives its distance from the
+departure (the alternate, from the arrival); beyond two, the intermediate airfields are folded away below the
+departure, the arrival and the alternate. For each one, what matters for the flight: the category (VFR, MVFR, IFR,
+LIFR, in colour), the wind and its headwind and crosswind components on the airfield's main runway (the direction
+closest to the wind), the ceiling, the visibility, the temperature and the QNH, and a warning when CB or TCU are
+forecast; the raw message is folded away. With a flight date, the TAF answers if it covers that time (and its
+temporary changes), otherwise the METAR. Tick “Real weather” for the quote's wind to become the mean of the winds of
+the airfields on the route (departure, intermediate airfields, arrival), leg by leg and weighted by their length — an
 approximation from the surface wind, stated below the fields. Offline, the last values read stay displayed with their
 time.
 
@@ -131,7 +135,7 @@ flight levels, and nothing changes in the sheets.
 - **Weather without the launcher**: the weather service can only be reached through a computer's launcher; elsewhere,
   the card shows the last weather kept, or says so.
 
-<!-- fr: 57ed2fb2b35f -->
+<!-- fr: 3f5ed3a8110b -->
 
 <!-- chapter: maps -->
 # Map
@@ -157,6 +161,24 @@ terrain, the airspaces you enter at the planned altitude, and the flight path in
 profile: a blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The
 line below the profile says what is under the cursor: distance from the departure, planned altitude, terrain height,
 and the airspace you are in at that point.
+
+**Three map settings.** The list at the top left of the map chooses what it shows. “Low IFR”: low airways,
+airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195. “VFR”:
+topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Auto” chooses
+from your flight's level (High IFR from FL195); the choice is kept.
+
+**The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
+names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
+distance, its track (“097°”), the reporting points and the obstacles.
+
+**Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks
+both ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation (“TMA 8
+AQUITAINE 2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, just
+stop over it. On the profile, your finger gives the same bubble for the airspaces crossed.
+
+**Steps.** If the route sets a level at some points in Fuel, the profile draws the steps: climb, level-off, new
+climb or descent, with the top of climb and top of descent computed again. The route's waypoints are also marked on
+the profile.
 
 **Climb and descent.** The purple diamonds mark the top of climb (TOC) and the top of descent (TOD), on the map as on
 the profile. They come from the Fuel calculation; without it, the map estimates them with common rates of climb and
@@ -200,7 +222,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 83aa8c905f0e -->
+<!-- fr: 1b3b00cfc354 -->
 
 <!-- chapter: report -->
 # Report

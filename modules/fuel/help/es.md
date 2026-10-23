@@ -41,14 +41,18 @@ vertical es la desviación del vuelo, la horizontal el techo de la ficha; su cru
 aeronave alcanza su techo ese día (recta en negrita). Un punto marca la salida según el METAR (temperatura y QNH).
 Importante para los helicópteros: con mucho calor o en altura, el techo real puede caer muy por debajo del de la ficha.
 
-**La meteorología.** Bajo «Nivel y viento», «Leer la meteorología de los aeródromos» muestra, para la salida, la
-llegada y un aeródromo intermedio opcional, lo que cuenta para el vuelo: la categoría (VFR, MVFR, IFR, LIFR, en color),
-el viento y sus componentes de cara y de costado en la pista principal del aeródromo (el sentido más cercano al viento),
-el techo de nubes, la visibilidad, la temperatura y el QNH, y un aviso cuando se anuncian CB o TCU; el mensaje bruto
-está plegado. Con una fecha de vuelo, responde el TAF si cubre esa hora (y sus cambios temporales), si no el METAR.
-Marque «Meteorología real» para que el viento del cálculo pase a ser la media de los vientos de los aeródromos a lo
-largo de la ruta — una aproximación a partir del viento en superficie, indicada bajo los campos. Sin conexión, los
-últimos valores leídos siguen mostrados con su hora.
+**La meteorología.** Bajo «Nivel y viento», «Leer la meteorología de los aeródromos» muestra la salida, la llegada,
+el alternativo y los aeródromos a lo largo de la ruta: todos los que están a menos de 10 NM a cada lado de la ruta
+(radio ajustable en los ajustes del cálculo) y tienen un METAR o un TAF; los demás se ignoran. Cada aeródromo indica
+su distancia desde la salida (el alternativo, desde la llegada); si son más de dos, los aeródromos intermedios quedan
+plegados bajo la salida, la llegada y el alternativo. Para cada uno, lo que cuenta para el vuelo: la categoría (VFR,
+MVFR, IFR, LIFR, en color), el viento y sus componentes de cara y de costado en la pista principal del aeródromo (el
+sentido más cercano al viento), el techo de nubes, la visibilidad, la temperatura y el QNH, y un aviso cuando se
+anuncian CB o TCU; el mensaje bruto está plegado. Con una fecha de vuelo, responde el TAF si cubre esa hora (y sus
+cambios temporales), si no el METAR. Marque «Meteorología real» para que el viento del cálculo pase a ser la media de
+los vientos de los aeródromos de la ruta (salida, aeródromos intermedios, llegada), tramo por tramo y ponderada por
+su longitud — una aproximación a partir del viento en superficie, indicada bajo los campos. Sin conexión, los últimos
+valores leídos siguen mostrados con su hora.
 
 **La elección del nivel.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su
 duración (guiones). El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los
@@ -102,4 +106,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
 - **Meteorología sin lanzador**: el servicio meteorológico solo es accesible a través del lanzador de un ordenador; en
   otro lugar, la tarjeta muestra la última meteorología guardada, o lo dice.
 
-<!-- fr: 57ed2fb2b35f -->
+<!-- fr: 3f5ed3a8110b -->

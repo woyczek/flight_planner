@@ -71,14 +71,18 @@ vertical es la desviación del vuelo, la horizontal el techo de la ficha; su cru
 aeronave alcanza su techo ese día (recta en negrita). Un punto marca la salida según el METAR (temperatura y QNH).
 Importante para los helicópteros: con mucho calor o en altura, el techo real puede caer muy por debajo del de la ficha.
 
-**La meteorología.** Bajo «Nivel y viento», «Leer la meteorología de los aeródromos» muestra, para la salida, la
-llegada y un aeródromo intermedio opcional, lo que cuenta para el vuelo: la categoría (VFR, MVFR, IFR, LIFR, en color),
-el viento y sus componentes de cara y de costado en la pista principal del aeródromo (el sentido más cercano al viento),
-el techo de nubes, la visibilidad, la temperatura y el QNH, y un aviso cuando se anuncian CB o TCU; el mensaje bruto
-está plegado. Con una fecha de vuelo, responde el TAF si cubre esa hora (y sus cambios temporales), si no el METAR.
-Marque «Meteorología real» para que el viento del cálculo pase a ser la media de los vientos de los aeródromos a lo
-largo de la ruta — una aproximación a partir del viento en superficie, indicada bajo los campos. Sin conexión, los
-últimos valores leídos siguen mostrados con su hora.
+**La meteorología.** Bajo «Nivel y viento», «Leer la meteorología de los aeródromos» muestra la salida, la llegada,
+el alternativo y los aeródromos a lo largo de la ruta: todos los que están a menos de 10 NM a cada lado de la ruta
+(radio ajustable en los ajustes del cálculo) y tienen un METAR o un TAF; los demás se ignoran. Cada aeródromo indica
+su distancia desde la salida (el alternativo, desde la llegada); si son más de dos, los aeródromos intermedios quedan
+plegados bajo la salida, la llegada y el alternativo. Para cada uno, lo que cuenta para el vuelo: la categoría (VFR,
+MVFR, IFR, LIFR, en color), el viento y sus componentes de cara y de costado en la pista principal del aeródromo (el
+sentido más cercano al viento), el techo de nubes, la visibilidad, la temperatura y el QNH, y un aviso cuando se
+anuncian CB o TCU; el mensaje bruto está plegado. Con una fecha de vuelo, responde el TAF si cubre esa hora (y sus
+cambios temporales), si no el METAR. Marque «Meteorología real» para que el viento del cálculo pase a ser la media de
+los vientos de los aeródromos de la ruta (salida, aeródromos intermedios, llegada), tramo por tramo y ponderada por
+su longitud — una aproximación a partir del viento en superficie, indicada bajo los campos. Sin conexión, los últimos
+valores leídos siguen mostrados con su hora.
 
 **La elección del nivel.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su
 duración (guiones). El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los
@@ -132,7 +136,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
 - **Meteorología sin lanzador**: el servicio meteorológico solo es accesible a través del lanzador de un ordenador; en
   otro lugar, la tarjeta muestra la última meteorología guardada, o lo dice.
 
-<!-- fr: 57ed2fb2b35f -->
+<!-- fr: 3f5ed3a8110b -->
 
 <!-- chapter: maps -->
 # Mapa
@@ -158,6 +162,25 @@ aéreos en los que entra a la altitud prevista, y la trayectoria del vuelo en vi
 cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en el mapa para colocarlo allí. La línea
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
 espacio aéreo en el que está en ese momento.
+
+**Tres ajustes de mapa.** La lista arriba a la izquierda del mapa elige lo que muestra. «IFR bajo»: aerovías
+inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías superiores (UN…, UM…), espacios por
+encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en VFR, los puntos de notificación y
+los obstáculos. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195); la elección se conserva.
+
+**Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
+Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
+distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos.
+
+**Toque para saber más.** Toque el nombre de una aerovía: una burbuja da el tramo (punto → punto), su distancia, sus
+rumbos de ida y vuelta, su límite inferior y superior. Toque un espacio aéreo: la burbuja da su nombre, sus límites en
+notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conocen. El toque siguiente o mover el mapa la
+cierra. Con un ratón, basta con detenerse encima. En el perfil, el dedo da la misma burbuja para los espacios
+atravesados.
+
+**Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,
+nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de
+giro de la ruta también se marcan en el perfil.
 
 **Ascenso y descenso.** Los rombos violetas marcan el final del ascenso (TOC) y el inicio del descenso (TOD), tanto en
 el mapa como en el perfil. Vienen del cálculo de Combustible; sin él, el mapa los estima con regímenes de ascenso y de
@@ -201,7 +224,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 83aa8c905f0e -->
+<!-- fr: 1b3b00cfc354 -->
 
 <!-- chapter: report -->
 # Informe

@@ -45,14 +45,18 @@ Druckhöhe das Luftfahrzeug an diesem Tag seine Gipfelhöhe erreicht (fett gezei
 Abflug laut METAR (Temperatur und QNH). Wichtig für Hubschrauber: Bei großer Hitze oder in der Höhe kann die
 tatsächliche Gipfelhöhe weit unter die des Datenblatts fallen.
 
-**Das Wetter.** Unter „Flugfläche und Wind“ zeigt „Flugplatzwetter lesen“ für Abflug, Ankunft und einen freiwilligen
-Zwischenflugplatz, was für den Flug zählt: die Kategorie (VFR, MVFR, IFR, LIFR, farbig), den Wind und seine Gegen- und
-Seitenwindkomponente auf der Hauptpiste des Flugplatzes (die Richtung, die dem Wind am nächsten liegt), die
-Wolkenuntergrenze, die Sicht, die Temperatur und das QNH sowie eine Warnung, wenn CB oder TCU gemeldet sind; die
-Rohmeldung ist zugeklappt. Mit einem Flugdatum antwortet die TAF, wenn sie diese Uhrzeit abdeckt (samt ihren
-vorübergehenden Änderungen), sonst das METAR. Setzen Sie das Häkchen bei „Echtes Wetter“, damit der Wind der Berechnung
-zum Mittel der Winde der Flugplätze entlang der Route wird — eine Näherung aus dem Bodenwind, unter den Feldern
-vermerkt. Ohne Netz bleiben die zuletzt gelesenen Werte mit ihrer Uhrzeit angezeigt.
+**Das Wetter.** Unter „Flugfläche und Wind“ zeigt „Flugplatzwetter lesen“ Abflug, Ankunft, Ausweichflugplatz und
+die Flugplätze entlang der Route: alle, die weniger als 10 NM beiderseits der Route liegen (Radius in den
+Einstellungen der Berechnung einstellbar) und ein METAR oder eine TAF haben; die anderen werden übergangen. Jeder
+Flugplatz nennt seine Entfernung vom Abflug (der Ausweichflugplatz: von der Ankunft); sind es mehr als zwei, werden
+die Zwischenflugplätze unter Abflug, Ankunft und Ausweichflugplatz zugeklappt. Für jeden, was für den Flug zählt: die
+Kategorie (VFR, MVFR, IFR, LIFR, farbig), den Wind und seine Gegen- und Seitenwindkomponente auf der Hauptpiste des
+Flugplatzes (die Richtung, die dem Wind am nächsten liegt), die Wolkenuntergrenze, die Sicht, die Temperatur und das
+QNH sowie eine Warnung, wenn CB oder TCU gemeldet sind; die Rohmeldung ist zugeklappt. Mit einem Flugdatum antwortet
+die TAF, wenn sie diese Uhrzeit abdeckt (samt ihren vorübergehenden Änderungen), sonst das METAR. Setzen Sie das
+Häkchen bei „Echtes Wetter“, damit der Wind der Berechnung zum Mittel der Winde der Flugplätze der Route wird (Abflug,
+Zwischenflugplätze, Ankunft), Abschnitt für Abschnitt und nach dessen Länge gewichtet — eine Näherung aus dem
+Bodenwind, unter den Feldern vermerkt. Ohne Netz bleiben die zuletzt gelesenen Werte mit ihrer Uhrzeit angezeigt.
 
 **Die Wahl der Flugfläche.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und
 die Dauer (gestrichelt). Der grüne Punkt markiert die sparsamste Flugfläche, das orange Quadrat die schnellste; der
@@ -111,4 +115,4 @@ Datenblättern ändert sich nichts.
 - **Wetter ohne Starter**: Der Wetterdienst ist nur über den Starter eines Rechners erreichbar; anderswo zeigt die Karte
   das zuletzt gespeicherte Wetter oder sagt es.
 
-<!-- fr: 57ed2fb2b35f -->
+<!-- fr: 3f5ed3a8110b -->

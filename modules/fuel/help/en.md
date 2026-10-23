@@ -42,12 +42,16 @@ pressure altitude the aircraft reaches its ceiling that day (line in bold). A do
 METAR (temperature and QNH). Important for helicopters: in great heat or at altitude, the real ceiling can fall well
 below the sheet's.
 
-**The weather.** Below “Level and wind”, “Read the aerodromes’ weather” shows, for the departure, the arrival and an
-optional intermediate airfield, what matters for the flight: the category (VFR, MVFR, IFR, LIFR, in colour), the wind
-and its headwind and crosswind components on the airfield's main runway (the direction closest to the wind), the
-ceiling, the visibility, the temperature and the QNH, and a warning when CB or TCU are forecast; the raw message is
-folded away. With a flight date, the TAF answers if it covers that time (and its temporary changes), otherwise the
-METAR. Tick “Real weather” for the quote's wind to become the mean of the airfields' winds along the route — an
+**The weather.** Below “Level and wind”, “Read the aerodromes’ weather” shows the departure, the arrival, the
+alternate and the airfields along the route: all those within 10 NM on either side of the route (radius adjustable in
+the quote settings) that have a METAR or a TAF; the others are ignored. Each airfield gives its distance from the
+departure (the alternate, from the arrival); beyond two, the intermediate airfields are folded away below the
+departure, the arrival and the alternate. For each one, what matters for the flight: the category (VFR, MVFR, IFR,
+LIFR, in colour), the wind and its headwind and crosswind components on the airfield's main runway (the direction
+closest to the wind), the ceiling, the visibility, the temperature and the QNH, and a warning when CB or TCU are
+forecast; the raw message is folded away. With a flight date, the TAF answers if it covers that time (and its
+temporary changes), otherwise the METAR. Tick “Real weather” for the quote's wind to become the mean of the winds of
+the airfields on the route (departure, intermediate airfields, arrival), leg by leg and weighted by their length — an
 approximation from the surface wind, stated below the fields. Offline, the last values read stay displayed with their
 time.
 
@@ -102,4 +106,4 @@ flight levels, and nothing changes in the sheets.
 - **Weather without the launcher**: the weather service can only be reached through a computer's launcher; elsewhere,
   the card shows the last weather kept, or says so.
 
-<!-- fr: 57ed2fb2b35f -->
+<!-- fr: 3f5ed3a8110b -->
