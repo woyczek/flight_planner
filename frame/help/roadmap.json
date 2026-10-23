@@ -382,11 +382,11 @@
           "es": "Vuelo en curso en el mapa y el perfil: posición prevista y real, adelanto / retraso, desvío lateral, ETA por punto, «Seguir»"
         },
         {
-          "state": "later",
-          "fr": "Itinéraires VFR (transits de CTR) : absents du SIA et d'openAIP, seulement sur les cartes VAC ; saisie manuelle par terrain ou source payante, à décider",
-          "en": "VFR routes (CTR transits): absent from the SIA and openAIP, only on VAC charts; manual entry per aerodrome or a paid source, to decide",
-          "de": "VFR-Strecken (CTR-Durchflüge): weder im SIA noch in openAIP, nur auf VAC-Karten; manuelle Erfassung je Platz oder kostenpflichtige Quelle, zu entscheiden",
-          "es": "Itinerarios VFR (tránsitos de CTR): ausentes del SIA y de openAIP, solo en las cartas VAC; captura manual por aeródromo o fuente de pago, por decidir"
+          "state": "doing",
+          "fr": "Points de report et séquences VFR par terrain, extraits des cartes VAC par l'utilisateur : importés dans le dépôt des données (Maintenance), dessinés en tirets « à vérifier » au survol et à l'épinglage d'un terrain ; infobulle complète des espaces sous un point (barres de niveaux)",
+          "en": "VFR reporting points and sequences per aerodrome, extracted from VAC charts by the user: imported into the data repository (Maintenance), drawn dashed “to verify” on hover and when an aerodrome is pinned; full airspace tooltip under a point (level bars)",
+          "de": "VFR-Meldepunkte und -Sequenzen je Platz, vom Nutzer aus VAC-Karten extrahiert: ins Datenrepository importiert (Wartung), gestrichelt „zu prüfen“ bei Hover und angepinntem Platz; vollständiger Luftraum-Tooltip unter einem Punkt (Höhenbalken)",
+          "es": "Puntos de notificación y secuencias VFR por aeródromo, extraídos de las cartas VAC por el usuario: importados al repositorio de datos (Mantenimiento), dibujados a trazos «por verificar» al pasar y al fijar un aeródromo; tooltip completo de espacios bajo un punto (barras de niveles)"
         }
       ]
     },
