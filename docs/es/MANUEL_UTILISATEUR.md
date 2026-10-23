@@ -355,6 +355,8 @@ Según el nivel de uso: «Aeronaves pilotadas (informes)» aparece a partir del 
 
 Lo que la suite le muestra, según su uso. Cuatro tarjetas, una por nivel (número y nombre, lo que muestra el nivel, «Requiere el Centro» para los niveles 2 a 4); la tarjeta elegida se destaca y la línea «Nivel actual» la recuerda. Basta un clic: la página se recarga y la barra lateral sigue.
 
+El nivel también se ajusta en la cabecera de cada página de Ajustes, Mantenimiento incluido: «Nivel de uso», junto al idioma (1 · Tripulación a 4 · Experto); un cambio recarga la página. Un elemento reservado a un nivel superior se anuncia, en su lugar, con una línea «…: en el nivel 4 · Experto — cambiar de nivel» (por ejemplo la publicación de la base de aeronaves en Mantenimiento › Tipos de aeronave).
+
 | Nivel | Para | Lo que se añade |
 |---|---|---|
 | 1 · Tripulación | todo piloto | Mis misiones, Informe, Planificación (lectura) |

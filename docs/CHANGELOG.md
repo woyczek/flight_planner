@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **Settings: the usage level in the header** (`shared/repository_nav.js`, `shared/repository_nav.css`) — every Settings
+  page, Maintenance included, shows "Usage level" next to the language (1 · Crew to 4 · Expert; a change reloads the
+  page), besides My profile › Usage level (with the modules). `RepositoryNav.levels.NAMES` and `levels.hint(n, what)`:
+  a line shown only below level n ("…: at level 4 · Expert — change level"), to put next to an element marked
+  `data-min-level="n"`; used for "Publish the aircraft database" in Maintenance › Aircraft types. User manual ×4.
+
 - **Map studio: the airline's map profiles for the app (V3)** (`apps/cpco/map_parser.html`, `tools/data_sync.py`;
   Flight maps rebuilt, the boxes hidden there) — the studio reads and writes `airline/map_profiles.json` of the data
   repository, one display profile per mode of the app's map (Auto, Low IFR, High IFR, VFR, Topo, CAM) in the

@@ -191,9 +191,38 @@
     if (hash) u.hash = hash;
     return u.href;
   };
+  // noms des niveaux 1 à 4 (Paramètres › Mon profil › Niveau d'utilisation, réglage de l'en-tête de Paramètres, lignes
+  // « au niveau n » sous un élément réservé à un niveau supérieur)
+  const LEVEL_NAMES = [
+    ["Équipage", "Crew", "Besatzung", "Tripulación"],
+    ["Planification", "Planning", "Planung", "Planificación"],
+    ["Conception", "Design", "Gestaltung", "Diseño"],
+    ["Expert", "Expert", "Experte", "Experto"]
+  ];
   /** Niveau d'utilisation et modules (v2) : lecture, réglage (page rechargée par l'appelant), visibilité d'une page. */
   const levels = {
     MODULES,
+    NAMES: LEVEL_NAMES,
+    /** Ligne (HTML) à poser à côté d'un élément data-min-level="n" : montrée sous le niveau n seulement
+     *  (data-max-level = n − 1), « {what} : au niveau n · nom » (sans what : « Carte au niveau n · nom ») et le lien vers
+     *  le réglage du niveau. */
+    hint(n, what = null) {
+      n = Math.min(4, Math.max(2, Math.round(+n || 4)));
+      const name = K.t(LEVEL_NAMES[n - 1]),
+        text = what ? K.tf(["{w} : au niveau {n} · {name}", "{w}: at level {n} · {name}", "{w}: auf Stufe {n} · {name}",
+          "{w}: en el nivel {n} · {name}"
+        ], {
+          w: K.t(what),
+          n,
+          name
+        }) : K.tf(["Carte au niveau {n} · {name}", "Card at level {n} · {name}", "Karte auf Stufe {n} · {name}",
+          "Tarjeta en el nivel {n} · {name}"
+        ], {
+          n,
+          name
+        });
+      return `<p class="repo-level-hint" data-max-level="${n - 1}">${K.esc(text)} — <a href="${K.esc(settingsUrl("level"))}">${K.esc(K.t(["changer de niveau", "change level", "Stufe ändern", "cambiar de nivel"]))}</a></p>`;
+    },
     get: level,
     modules,
     visible,
@@ -667,7 +696,11 @@
   line.append(spacer);
   const tools = document.createElement("div");
   tools.className = "repo-header-tools";
-  tools.innerHTML =
+  // Paramètres : niveau d'utilisation réglable dans l'en-tête, à côté de la langue (aussi dans Mon profil › Niveau
+  // d'utilisation, avec les modules) ; un changement recharge la page (barre latérale, blocs selon le niveau)
+  const LEVEL_HERE = /\/apps\/settings\//.test(location.pathname);
+  tools.innerHTML = (LEVEL_HERE ?
+      '<label class="repo-level"><span class="repo-level-label"></span><select class="repo-level-select"></select></label>' : '') +
     '<span class="repo-language-label">Language</span><div class="repo-language-popup"><button class="repo-language-button" type="button" aria-haspopup="menu" aria-expanded="false" title="Language"><span class="repo-language-flag"></span><span class="repo-caret">▼</span></button><div class="repo-language-menu" role="menu" hidden></div></div><div class="repo-menu-wrap"><button class="repo-menu-button" type="button" aria-label="Menu" aria-expanded="false">☰</button><div class="repo-menu" hidden></div></div>';
   line.append(tools);
   const names = {
@@ -905,6 +938,22 @@
       b.textContent = r[["fr", "en", "de", "es"].indexOf(language)] || r[0]
     });
     tools.querySelector(".repo-language-label").textContent = labels[language];
+    const lvl = tools.querySelector(".repo-level-select");
+    if (lvl) {
+      const i = ["fr", "en", "de", "es"].indexOf(language),
+        pick = (row, at = i) => row[at] || row[0],
+        label = pick(["Niveau d’usage", "Usage level", "Nutzungsstufe", "Nivel de uso"]);
+      tools.querySelector(".repo-level-label").textContent = label;
+      lvl.title = pick(["Niveau d’usage : ce que la suite montre (Paramètres › Mon profil › Niveau d’utilisation pour les modules)",
+        "Usage level: what the suite shows (Settings › My profile › Usage level for the modules)",
+        "Nutzungsstufe: was die Suite zeigt (Einstellungen › Mein Profil › Nutzungsstufe für die Module)",
+        "Nivel de uso: lo que muestra la suite (Ajustes › Mi perfil › Nivel de uso para los módulos)"
+      ]);
+      lvl.setAttribute("aria-label", label);
+      const html = LEVEL_NAMES.map((n, k) => `<option value="${k + 1}">${k + 1} · ${K.esc(pick(n))}</option>`).join("");
+      if (lvl.innerHTML !== html) lvl.innerHTML = html;
+      lvl.value = String(levels.get());
+    }
     tools.querySelector(".repo-language-flag").innerHTML = flagSvg(language);
     languageButton.title = names[language];
     window.dispatchEvent(new CustomEvent("repository-language-change", {
@@ -914,6 +963,11 @@
       }
     }))
   }
+  tools.querySelector(".repo-level-select")?.addEventListener("change", e => {
+    if (+e.target.value === levels.get()) return;
+    levels.set(+e.target.value);
+    location.reload(); // barre latérale, rubriques et blocs selon le nouveau niveau
+  });
   languageMenu.onclick = e => {
     const value = e.target.closest("button")?.dataset.lang;
     if (!value) return;

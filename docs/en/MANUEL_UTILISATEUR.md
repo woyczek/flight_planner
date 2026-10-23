@@ -354,6 +354,8 @@ Depending on the usage level: “Aircraft flown (reports)” appears from the Pl
 
 What the suite shows you, according to your use. Four cards, one per level (number and name, what the level shows, “Requires the Centre” for levels 2 to 4); the chosen card is highlighted and the “Current level” line recalls it. One click is enough: the page reloads and the sidebar follows.
 
+The level is also set in the header of every Settings page, Maintenance included: “Usage level”, next to the language (1 · Crew to 4 · Expert); a change reloads the page. An element kept for a higher level is announced, in its place, by a line “…: at level 4 · Expert — change level” (for example the publication of the aircraft database in Maintenance › Aircraft types).
+
 | Level | For | What is added |
 |---|---|---|
 | 1 · Crew | every pilot | My missions, Report, Schedule (read-only) |

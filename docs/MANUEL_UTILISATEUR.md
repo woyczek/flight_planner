@@ -367,6 +367,8 @@ Selon le niveau d'utilisation : « Appareils pilotés (CR) » apparaît à parti
 
 Ce que la suite vous montre, selon votre usage. Quatre cartes, une par niveau (numéro et nom, ce que le niveau montre, « Demande le Centre » pour les niveaux 2 à 4) ; la carte choisie est en évidence et la ligne « Niveau actuel » le rappelle. Un clic suffit : la page se recharge et la barre latérale suit.
 
+Le niveau se règle aussi dans l'en-tête de chaque page de Paramètres, Maintenance comprise : « Niveau d’usage », à côté de la langue (1 · Équipage à 4 · Expert) ; un changement recharge la page. Un élément réservé à un niveau supérieur est annoncé, à sa place, par une ligne « … : au niveau 4 · Expert — changer de niveau » (par exemple la publication de la base appareils dans Maintenance › Types d’aéronefs).
+
 | Niveau | Pour | Ce qui s'ajoute |
 |---|---|---|
 | 1 · Équipage | tout pilote | Mes missions, Compte rendu, Planning (lecture) |

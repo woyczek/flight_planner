@@ -356,6 +356,8 @@ Je nach Nutzungsstufe: „Geflogene Luftfahrzeuge (Berichte)“ erscheint ab der
 
 Was die Suite Ihnen zeigt, je nach Nutzung. Vier Karten, eine pro Stufe (Nummer und Name, was die Stufe zeigt, „Erfordert das Zentrum“ für die Stufen 2 bis 4); die gewählte Karte ist hervorgehoben, und die Zeile „Aktuelle Stufe“ nennt sie. Ein Klick genügt: die Seite wird neu geladen und die Seitenleiste folgt.
 
+Die Stufe lässt sich auch in der Kopfzeile jeder Einstellungsseite einstellen, Wartung eingeschlossen: „Nutzungsstufe“, neben der Sprache (1 · Besatzung bis 4 · Experte); eine Änderung lädt die Seite neu. Ein einer höheren Stufe vorbehaltenes Element wird an seiner Stelle durch eine Zeile „…: auf Stufe 4 · Experte — Stufe ändern“ angekündigt (zum Beispiel die Veröffentlichung der Luftfahrzeug-Datenbank unter Wartung › Luftfahrzeugtypen).
+
 | Stufe | Für | Was hinzukommt |
 |---|---|---|
 | 1 · Besatzung | jeden Piloten | Meine Missionen, Bericht, Planung (nur lesen) |

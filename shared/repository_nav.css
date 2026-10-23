@@ -321,6 +321,25 @@
     color: inherit;
     white-space: nowrap
   }
+  /* niveau d'utilisation dans l'en-tête de Paramètres (repository_nav.js), à côté de la langue */
+  .repo-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    font: 12px/1 Inter, system-ui, Segoe UI, Arial, sans-serif;
+    white-space: nowrap
+  }
+  .repo-level-select {
+    font: inherit;
+    padding: 3px 4px
+  }
+  /* ligne « au niveau n » posée à côté d'un élément réservé à un niveau supérieur (RepositoryNav.levels.hint) */
+  .repo-level-hint {
+    font-size: 12px;
+    opacity: .8;
+    margin: 4px 0
+  }
   .repo-language-flag {
     align-items: center;
     justify-content: center;
@@ -348,6 +367,9 @@
   @media(max-width:600px) {
     .repo-language-label {
       font-size: 11px
+    }
+    .repo-level-label {
+      display: none
     }
   }
   /* ---- barre latérale (construite par repository_nav.js dès son exécution, icônes posées par side_nav.js) : ici et non
