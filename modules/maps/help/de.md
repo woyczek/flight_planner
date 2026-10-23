@@ -14,7 +14,8 @@ Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen L
 die Flugplätze und die Funkfeuer, und in jedem Ein-Grad-Feld die Mindestsicherheitshöhe (die braune Zahl, in
 Tausenden und Hunderten Fuß: „3⁵“ bedeutet 3 500 ft). Die kleinen violetten Zahlen entlang der Route sind die
 Entfernungen ab dem Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger
-zum Zoomen; „Zentrieren“ kehrt zur ganzen Route zurück. Von weitem gesehen zeigt die Karte nur, was nahe der Route
+zum Zoomen; „Zentrieren“ kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die
+Route ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe der Route
 liegt; zoomen Sie hinein, um alles zu sehen.
 
 **Profil und Cursor.** Unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
@@ -33,7 +34,8 @@ diesem Gerät erhalten.
 
 **Je näher Sie zoomen, desto mehr zeigt sie.** Von weitem zeigt die Karte nur die großen Flugplätze, die Flugwege und
 ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“),
-dann die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse.
+dann die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse. Aus der Nähe trägt jedes Hindernis seine Höhe über
+Grund und die Höhe seiner Spitze in Klammern („434 AGL (771)“).
 
 **Ebenen.** Die Ebenen-Schaltfläche unter der Karteneinstellung öffnet die Liste dessen, was die Karte zeichnet:
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
@@ -43,12 +45,13 @@ ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt, b
 Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um anderswo zu schauen. Aus der Nähe wird
 ohnehin alles gezeichnet.
 
-**Antippen für mehr.** Tippen Sie auf den Namen eines Flugwegs: eine Blase nennt den Abschnitt (Punkt → Punkt), seine
-Länge, seine Kurse in beide Richtungen, Unter- und Obergrenze. Tippen Sie auf einen Luftraum: die Blase nennt seinen
-Namen, seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“) und seine Zeiten, wenn bekannt. Das nächste
-Antippen oder ein Verschieben der Karte schließt sie. Fahren Sie mit der Maus über den Namen eines Flugwegs oder
-Luftraums: eine kleine Blase folgt dem Zeiger und bleibt noch 5 Sekunden, nachdem Sie ihn verlassen haben; ein Klick
-schließt sie. Auf dem Profil nennen Finger oder Maus die durchflogenen Lufträume.
+**Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
+Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
+Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
+und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, nennt die
+Blase die Lufträume unter dem Finger. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der nächsten Platz und schließt
+sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger oder Maus ebenso die
+durchflogenen Lufträume.
 
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für

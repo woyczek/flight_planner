@@ -155,6 +155,7 @@ const TX = {
     cam: ['CAM', 'OAT', 'OAT', 'CAM']
   },
   modes: ['Modes de carte', 'Map modes', 'Kartenmodi', 'Modos de mapa'],
+  pair: ['{a} : {b}', '{a}: {b}', '{a}: {b}', '{a}: {b}'],
   modeHelp: {
     auto: ['Automatique selon le niveau du vol', 'Automatic, from the flight level', 'Automatisch nach der Flugfläche',
       'Automático según el nivel del vuelo'
@@ -225,9 +226,6 @@ const TX = {
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
   awHigh: ['voie haute', 'upper airway', 'oberer Flugweg', 'aerovía superior'],
   awLow: ['voie basse', 'lower airway', 'unterer Flugweg', 'aerovía inferior'],
-  tipNone: ['Aucun espace choisi ici.', 'No airspace shown here.', 'Hier kein gezeigter Luftraum.',
-    'Ningún espacio mostrado aquí.'
-  ],
   credit: ['© OpenFreeMap © OpenStreetMap ; SIA : base publiée, non certifiée',
     '© OpenFreeMap © OpenStreetMap; SIA: published database, not certified',
     '© OpenFreeMap © OpenStreetMap; SIA: veröffentlichte Datenbank, nicht zertifiziert',
@@ -235,6 +233,11 @@ const TX = {
   ]
 };
 
+/** Libellé d'un mode (infobulle, aria-label) : son aide, précédée de son nom pour Auto. */
+const modeTitle = (ctx, k) => k === 'auto' ? ctx.t(TX.pair, {
+  a: ctx.t(TX.presets[k]),
+  b: ctx.t(TX.modeHelp[k])
+}) : ctx.t(TX.modeHelp[k]);
 /** Modes de carte (maquette validée par l'utilisateur) : [clé, icône, classe du choix]. */
 const MODES = [
   ['auto', `<span class="mp-ic">${svg('wand-sparkles')}</span>`, ''],
@@ -921,16 +924,14 @@ async function startTiles() {
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
         if (S.edit.on) return editTap(e.point.x, e.point.y);
-        // une barbule de vent (posée sur la route) passe avant le curseur
-        if (windAt(e.point.x, e.point.y)) return S.tipEl.hidden ? mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y) :
-          hideTips();
+        // une barbule, un cartouche ou un libellé (posés sur la route ou près d'elle) passent avant le curseur
+        if (tipAt(e.point.x, e.point.y)) return mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
         if (s != null) {
           hideTips();
           return setCursor(s);
         }
-        if (S.tipEl.hidden) mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
-        else hideTips(); // toucher suivant : fermée
+        mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y); // rien dessous : fermée
       });
       // survol à la souris seulement (un toucher est suivi d'événements souris de compatibilité, ignorés) : l'infobulle
       // suit le pointeur sur un cartouche de voie ou un libellé d'espace, et part dès qu'il les quitte
@@ -940,18 +941,18 @@ async function startTiles() {
       map.on('mouseout', e => {
         if (S && !fromTouch(e.originalEvent)) linger('map');
       });
-      map.on('movestart', hideTips);
+      map.on('movestart', () => {
+        hideTips();
+        // tout mouvement qui n'est pas un cadrage du module (geste, molette, clavier) est celui de l'utilisateur : sa
+        // caméra est gardée par tous les redessins
+        if (S && !S.selfMove) S.userMoved = true;
+      });
       finish(true);
     });
   });
 }
 
 // ---------------------------------------------------------------- infobulles des espaces (notation SIA)
-/** Lignes d'infobulle des espaces : « TMA AQUITAINE 8 2000|FL145 D », activation et informations en dessous. */
-const tipHtml = list => list.length ? list.map(a => {
-  const [main, sub] = MapsRender.sia(a);
-  return `<div><b>${esc(main)}</b>${sub ? `<br><span class="f-muted">${esc(sub)}</span>` : ''}</div>`;
-}).join('') : `<div class="f-muted">${esc(tt(TX.tipNone))}</div>`;
 /** Deux lignes d'une voie : « UN482 LMG → NEPIX », puis distance, routes vraies aller et retour, plancher|plafond et
  *  voie basse ou haute. */
 const airwayLines = g => {
@@ -962,10 +963,6 @@ const airwayLines = g => {
       TX.awHigh : TX.awLow)
   ].filter(Boolean).join(' · ')];
 };
-const airwayHtml = list => list.map(g => {
-  const [main, sub] = airwayLines(g);
-  return `<div><b>${esc(main)}</b><br><span class="f-muted">${esc(sub)}</span></div>`;
-}).join('');
 /** Infobulle de survol (souris) : deux lignes au plus. */
 const hoverHtml = (a, b) => `<div><b>${esc(a)}</b></div>${b ? `<div>${esc(b)}</div>` : ''}`;
 /** Infobulle de survol qui suit la souris : à 12 px du pointeur, jamais dessous, retenue dans le cadre ; plus légère que
@@ -988,15 +985,12 @@ function followTip(tip, box, x, y, html) {
   if (tip.style.top !== top) tip.style.top = top;
 }
 /** Survol de la carte en (x, y) : une barbule de vent, le cartouche d'une voie ou le libellé d'un espace sous la
- *  souris, sinon rien. */
+ *  souris, sinon rien (l'infobulle reste 5 s). */
 function hoverMap(x, y) {
-  const w = windAt(x, y),
-    g = w ? null : MapsRender.airwaysAt(S.awHits, x, y)[0],
-    z = w || g ? null : (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
-  if (!w && !g && !z) return linger('map');
+  const t = tipAt(x, y);
+  if (!t) return linger('map');
   stay('map');
-  const [a, b] = w ? windLines(w) : g ? airwayLines(g) : MapsRender.sia(z.a);
-  followTip(S.tipEl, S.box, x, y, hoverHtml(a, b));
+  followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1]));
 }
 
 // ---------------------------------------------------------------- vents en altitude (lot 6c)
@@ -1712,17 +1706,33 @@ function editGestures() {
     removePoint(+i);
   });
 }
-/** Infobulle de la carte en (x, y) : la voie dont le cartouche est sous le doigt, sinon les espaces montrés sous le
- *  point (lat, lon). */
-function mapTip(lat, lon, x, y) {
+/** Ce qu'il y a sous (x, y) pour l'infobulle : barbule de vent, cartouche de voie, libellé d'espace ; avec area, les
+ *  espaces sous le point (lat, lon) en dernier (toucher, clic). Deux lignes, ou null. */
+function tipAt(x, y, lat = null, lon = null) {
   const w = windAt(x, y);
-  if (w) {
-    const [a, b] = windLines(w);
-    return showTip(S.tipEl, S.box, x, y, `<div><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</div>`);
+  if (w) return windLines(w);
+  const g = MapsRender.airwaysAt(S.awHits, x, y)[0];
+  if (g) return airwayLines(g);
+  const z = (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
+  if (z) return MapsRender.sia(z.a);
+  if (lat == null) return null;
+  const l = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon).map(a => MapsRender.sia(a)[0]);
+  return l.length ? [l[0], l.length > 2 ? `${l[1]} ${tt(TX.tipMore, {
+    n: l.length - 2
+  })}` : l[1] || ''] : null;
+}
+/** Toucher ou clic sur la carte en (x, y) : la même infobulle qu'au survol, posée là, gardée 5 s, remplacée par la
+ *  suivante ; rien dessous : l'infobulle se ferme. Vrai si elle est montrée. */
+function mapTip(lat, lon, x, y) {
+  const t = tipAt(x, y, lat, lon);
+  if (!t) {
+    hideTips();
+    return false;
   }
-  const ways = MapsRender.airwaysAt(S.awHits, x, y);
-  showTip(S.tipEl, S.box, x, y, ways.length ? airwayHtml(ways.slice(0, 3)) : tipHtml(MapsRender.airspacesAt(S.data?.data
-    ?.airspaces || [], lat, lon)));
+  stay('map');
+  followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1]));
+  linger('map');
+  return true;
 }
 /** Profil d'affichage choisi au préréglage : profil, données, fond, profil vertical refaits. */
 async function setPreset(v) {
@@ -1856,9 +1866,17 @@ function flightProfile() {
 }
 /** Mode de carte choisi : bouton déclencheur (mode courant) et choix marqués ; écritures seulement si elles changent. */
 function fillModes() {
-  const cur = S.modesEl.querySelector('.mp-mode-cur'),
-    txt = tt(TX.presets[S.preset] || TX.presets.auto);
-  if (cur.textContent !== txt) cur.textContent = txt;
+  const icon = (MODES.find(m => m[0] === S.preset) || MODES[0])[1],
+    label = tt(TX.pair, {
+      a: tt(TX.preset),
+      b: tt(TX.modeHelp[S.preset] || TX.modeHelp.auto)
+    });
+  if (S.modeBtn.innerHTML !== icon) S.modeBtn.innerHTML = icon;
+  if (S.modeBtn.title !== label) {
+    S.modeBtn.title = label;
+    S.modeBtn.setAttribute('aria-label', label);
+  }
+  if (S.modeBtn.classList.contains('mp-mil') !== (S.preset === 'cam')) S.modeBtn.classList.toggle('mp-mil');
   for (const b of S.modesEl.querySelectorAll('[data-mode]')) {
     const v = String(b.dataset.mode === S.preset);
     if (b.getAttribute('aria-pressed') !== v) b.setAttribute('aria-pressed', v);
@@ -2016,6 +2034,22 @@ const viewOf = () => {
     n: v[3]
   } : null;
 };
+/** Cadre la carte sur le vol (seul mouvement de caméra fait par le module, marqué pour ne pas passer pour celui de
+ *  l'utilisateur). */
+function fitMap(animate) {
+  S.selfMove = true;
+  S.map.once('moveend', () => {
+    if (S) S.selfMove = false;
+  });
+  S.map.fitBounds([
+    [S.fit.w, S.fit.s],
+    [S.fit.e, S.fit.n]
+  ], {
+    padding: 12,
+    animate
+  });
+  if (!animate) S.selfMove = false;
+}
 /** Vol (re)lu. live : écriture du vol courant pendant qu'on le regarde (vue double avec Carburant) — la vue reste où
  *  l'utilisateur l'a mise tant que la route y tient ; les zones déjà lues par aerodb ne sont pas relues. */
 async function applyFlight(live = false) {
@@ -2035,16 +2069,16 @@ async function applyFlight(live = false) {
   S.box.hidden = !S.route.points.length; // pas de vol : pas de carte, le message de l'état
   header();
   const inView = () => {
-    const bb = S.map.getBounds();
-    return all.every(p => p.lon >= bb.getWest() && p.lon <= bb.getEast() && p.lat >= bb.getSouth() && p.lat <= bb.getNorth());
-  };
-  if (S.map && !(live && inView())) S.map.fitBounds([
-    [S.fit.w, S.fit.s],
-    [S.fit.e, S.fit.n]
-  ], {
-    padding: 12,
-    animate: false
-  });
+      const bb = S.map.getBounds();
+      return all.every(p => p.lon >= bb.getWest() && p.lon <= bb.getEast() && p.lat >= bb.getSouth() && p.lat <= bb.getNorth());
+    },
+    // un autre vol (départ ou arrivée changés) se recadre ; le même vol relu (vue vivante, devis refait par Carburant,
+    // geste sur la carte) garde la caméra dès que l'utilisateur a déplacé ou zoomé la carte
+    key = `${S.route.flight?.route?.dep || ''}>${S.route.flight?.route?.arr || ''}`,
+    other = key !== S.routeKey;
+  S.routeKey = key;
+  if (other) S.userMoved = false;
+  if (S.map && (!live || other || (!S.userMoved && !inView()))) fitMap(false);
   status();
   schedule();
   buildProfile();
@@ -2210,28 +2244,28 @@ const STYLE = `
 [data-module="maps"] .mp-box{container-type:inline-size}
 [data-module="maps"] .mp-modes{position:absolute;left:8px;top:8px;z-index:6;max-width:calc(100% - 16px)}
 [data-module="maps"] .mp-modes[hidden]{display:none}
-[data-module="maps"] .mp-mode-btn{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 12px;height:var(--sog-touch);min-height:0;min-width:92px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-accent);font:inherit;font-weight:600;cursor:pointer}
-[data-module="maps"] .mp-mode-btn svg{width:14px;height:14px}
-[data-module="maps"] .mp-mode-opts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:6px;margin-top:7px;width:min(440px,calc(100cqw - 16px));box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
+[data-module="maps"] .mp-mode-btn,[data-module="maps"] .mp-choice{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
+[data-module="maps"] .mp-mode-btn{color:var(--sog-accent)}
+[data-module="maps"] .mp-mode-btn[aria-expanded=true]{box-shadow:inset 0 0 0 1px var(--sog-accent)}
+[data-module="maps"] .mp-mode-opts{display:flex;gap:4px;padding:4px;margin-top:6px;width:max-content;max-width:calc(100cqw - 16px);flex-wrap:wrap;box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
 [data-module="maps"] .mp-mode-opts[hidden]{display:none}
-[data-module="maps"] .mp-choice{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;height:72px;min-height:0;padding:0;border:0;border-radius:var(--sog-radius-s);background:var(--sog-surface);color:var(--sog-fg);font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
+[data-module="maps"] .mp-choice{border-color:transparent;border-radius:var(--sog-radius-s)}
 [data-module="maps"] .mp-choice:hover{background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface))}
-[data-module="maps"] .mp-choice[aria-pressed=true]{color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface));box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="maps"] .mp-ic{display:flex;align-items:center;justify-content:center;width:35px;height:29px}
-[data-module="maps"] .mp-ic svg{width:26px;height:26px}
-[data-module="maps"] .mp-ifr{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:33px;height:28px;font-size:15px;font-weight:500;letter-spacing:.5px}
-[data-module="maps"] .mp-ceil{border-top:2px solid currentColor;padding-top:2px}
-[data-module="maps"] .mp-floor{border-bottom:2px solid currentColor;padding-bottom:2px}
-[data-module="maps"] .mp-topo{display:block;position:relative;box-sizing:border-box;width:29px;height:29px;overflow:hidden}
-[data-module="maps"] .mp-topo>span{position:absolute;box-sizing:border-box;border:1.35px solid currentColor;border-radius:46% 54% 36% 64% / 36% 62% 38% 64%;transform:rotate(-38deg)}
+[data-module="maps"] .mp-choice[aria-pressed=true]{color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface));box-shadow:inset 0 0 0 1.5px var(--sog-accent),inset 0 2px 3px #0000002e}
+[data-module="maps"] .mp-ic{display:grid;place-items:center;width:24px;height:24px}
+[data-module="maps"] .mp-ic svg{width:20px;height:20px}
+[data-module="maps"] .mp-ifr{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:26px;height:20px;font-size:11px;font-weight:700;letter-spacing:.3px;line-height:1}
+[data-module="maps"] .mp-ceil{border-top:2px solid currentColor;padding-top:1px}
+[data-module="maps"] .mp-floor{border-bottom:2px solid currentColor;padding-bottom:1px}
+[data-module="maps"] .mp-topo{display:block;position:relative;box-sizing:border-box;width:29px;height:29px;overflow:hidden;transform:scale(.72)}
+[data-module="maps"] .mp-topo>span{position:absolute;box-sizing:border-box;border:1.6px solid currentColor;border-radius:46% 54% 36% 64% / 36% 62% 38% 64%;transform:rotate(-38deg)}
 [data-module="maps"] .mp-topo>span:nth-child(1){width:40px;height:53px;left:-11px;top:-8px}
 [data-module="maps"] .mp-topo>span:nth-child(2){width:30px;height:41px;left:-6px;top:0}
 [data-module="maps"] .mp-topo>span:nth-child(3){width:20px;height:29px;left:-1px;top:8px}
 [data-module="maps"] .mp-topo>span:nth-child(4){width:10px;height:16px;left:4px;top:16px}
-[data-module="maps"] .mp-choice.mp-mil{color:var(--sog-err)}
+[data-module="maps"] .mp-mil,[data-module="maps"] .mp-mode-btn.mp-mil{color:var(--sog-err)}
 [data-module="maps"] .mp-ic-cam svg{fill:currentColor}
-[data-module="maps"] .mp-mil:hover,[data-module="maps"] .mp-mil[aria-pressed=true]{background:color-mix(in srgb,var(--sog-err) 10%,var(--sog-surface));color:var(--sog-err);box-shadow:inset 0 0 0 1px var(--sog-err)}
-@container (max-width:460px){[data-module="maps"] .mp-mode-opts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+[data-module="maps"] .mp-mil:hover,[data-module="maps"] .mp-choice.mp-mil[aria-pressed=true]{background:color-mix(in srgb,var(--sog-err) 12%,var(--sog-surface));color:var(--sog-err);box-shadow:inset 0 0 0 1.5px var(--sog-err),inset 0 2px 3px #0000002e}
 [data-module="maps"] .mp-tip{position:absolute;z-index:4;max-width:min(92%,340px);padding:6px 8px;margin:0;font-size:.88em;line-height:1.35;pointer-events:none;box-shadow:0 2px 8px #0003}
 [data-module="maps"] .mp-tip>div+div{margin-top:4px}
 [data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
@@ -2280,8 +2314,8 @@ export async function mount(el, ctx) {
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
 <div class="mp-sum f-muted" aria-live="polite"></div></div>
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
-<div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"><span class="mp-mode-cur"></span>${svg('chevron-down')}</button>
-<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(ctx.t(TX.modeHelp[k]))}" title="${esc(ctx.t(TX.modeHelp[k]))}">${icon}<span>${esc(ctx.t(TX.presets[k]))}</span></button>`).join('')}</div></div>
+<div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"></button>
+<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div></div>
 <button type="button" class="mp-layers-btn" aria-expanded="false" aria-label="${esc(ctx.t(TX.layers))}" title="${esc(ctx.t(TX.layers))}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg></button>
 <div class="mp-layers f-card" hidden role="group" aria-label="${esc(ctx.t(TX.layers))}"><b>${esc(ctx.t(TX.layers))}</b>
 ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
@@ -2330,8 +2364,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       x = e.clientX - r.left;
     setCursor(MapsProfile.sOf(S.geo, x));
     const zones = MapsProfile.at(S.prof, S.cursor).zones;
-    if (e.pointerType !== 'mouse') return showTip(S.ptipEl, S.profBox, x, e.clientY - r.top, tipHtml(zones));
-    // souris : deux lignes au plus (les deux premiers espaces traversés, et combien d'autres)
+    // deux lignes au plus (les deux premiers espaces traversés, et combien d'autres), au doigt comme à la souris
     if (!zones.length) return linger('prof');
     stay('prof');
     const l = zones.map(z => MapsRender.sia(z)[0]);
@@ -2341,6 +2374,10 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   };
   S.profBox.addEventListener('pointerleave', e => {
     if (e.pointerType === 'mouse') linger('prof');
+  });
+  // doigt levé : l'infobulle du profil reste 5 s
+  S.profBox.addEventListener('pointerup', e => {
+    if (e.pointerType !== 'mouse') linger('prof');
   });
   el.addEventListener('pointerdown', e => {
     if (e.pointerType === 'touch') touchAt = performance.now();
@@ -2364,15 +2401,14 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       x = e.clientX - r.left,
       y = e.clientY - r.top;
     if (S.edit.on) return editTap(x, y);
-    if (windAt(x, y)) return S.tipEl.hidden ? mapTip(0, 0, x, y) : hideTips();
     const v = MapsRender.mercator(S.fit, r.width, r.height, 12),
-      s = S.prof ? MapsProfile.nearest(S.prof, v.toC, x, y) : null;
+      ll = v.toLL(x, y);
+    if (tipAt(x, y)) return mapTip(ll.lat, ll.lon, x, y);
+    const s = S.prof ? MapsProfile.nearest(S.prof, v.toC, x, y) : null;
     if (s != null) {
       hideTips();
       return setCursor(s);
     }
-    if (!S.tipEl.hidden) return hideTips();
-    const ll = v.toLL(x, y);
     mapTip(ll.lat, ll.lon, x, y);
   });
   S.modeBtn.addEventListener('click', () => toggleModes());
@@ -2406,12 +2442,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     const go = e.target.closest('[data-go]')?.dataset.go;
     if (go) location.hash = `#${go}`;
     if (e.target.closest('[data-fit]')) {
-      if (S.map) S.map.fitBounds([
-        [S.fit.w, S.fit.s],
-        [S.fit.e, S.fit.n]
-      ], {
-        padding: 12
-      });
+      S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol
+      if (S.map) fitMap(true);
       else schedule();
     }
   });

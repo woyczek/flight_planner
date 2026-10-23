@@ -98,9 +98,10 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - the flight file is watched (`ctx.data.watch`): a new `updated_at` refits the map and reads again;
   - `aerodb.on('change')`: the data are read again;
   - `ResizeObserver`: resize and redraw.
-- **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps): a trigger
-  at the top left (current mode, chevron) opens a grid of six choices with icon and label, 72 px high, six per row,
-  three when the map box is 460 px wide or less (container query); the Layers button stays under the trigger.
+- **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps; icons only
+  since lot 7a): a trigger at the top left showing the current mode's icon, the same size as the Layers button
+  (`--sog-touch`), opens a row of six icon buttons; each has its name and help as tooltip and `aria-label`, the current
+  one pressed (accent ring and inset shadow; red for CAM); the Layers button stays under the trigger.
   - Auto (wand, the flight's level: High IFR from FL195), Low IFR ("IFR" under a ceiling, `routeProfile(5000)`), High
     IFR ("IFR" over a floor, `routeProfile(30000)`), VFR (map icon, the built-in `vfr-detail` profile on the
     `ofm-liberty` base), Topo (contour lines drawn in CSS: `ofm-liberty` with a hillshade of the Terrarium tiles,
@@ -110,20 +111,26 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - Icons from `frame/lib/icons.js` (`wand-sparkles` added, `map`, `plane`, `chevron-down`); colours: accent for the
     choice, `--sog-err` for CAM; corners from `--sog-radius` (square in cabinet and field).
   - Kept in `cache/maps/ui.json` (`preset`: auto, low, high, vfr, topo, cam); each mode has its own layers.
-- **Tooltips**, a `.mp-tip` card in the map box or the profile box:
-  - touch (or click): the airway whose box is under the finger (route, point → point, distance, tracks both ways,
-    floor|ceiling, low or high), else the airspaces shown under the point in AIP notation (activation and information
-    below), else "No airspace shown here"; it stays until the next tap or a move of the map (a tap near the route
-    places the cursor instead);
-  - mouse (class `mp-hover`): only over an airway box or an airspace label (`draw()` returns both frames), at once,
-    following the pointer 12 px away (never under it, kept inside the box); once the pointer leaves the label or the
-    map, it stays 5 s at its last place; a new hover replaces it, a click closes it; lighter: `--sog-chart-bg` at
-    65 %, `--sog-fg`, thin border, 11.5 px, two lines at most;
+- **Tooltip** (lot 7a: one behaviour for hover, tap and click), a light `.mp-tip` (class `mp-hover`: `--sog-chart-bg`
+  at 65 %, `--sog-fg`, thin border, 11.5 px, two lines at most) in the map box or the profile box:
+  - what is under the pointer, in this order: a wind barb, an airway box, an airspace label (`draw()` returns their
+    frames); on a tap or a click only, then the airspaces under the point (the first two and "+n more");
+  - a tap or click on one of the first three takes priority over placing the cursor on the route; on nothing, it
+    closes the tooltip;
+  - it follows the pointer 12 px away (never under it, kept in the box) while the pointer is on the label, stays 5 s at
+    its last place (after the pointer leaves, or after a tap), gives way to the next one, and closes with a tap or click
+    elsewhere or a move of the map;
   - the compatibility mouse events that follow a touch are ignored (`sourceCapabilities.firesTouchEvents`, or within
     1 s of a touch);
-  - profile: the airspaces crossed at the cursor; touch as above, mouse as above with the first two and "+n more";
-    the line under the profile uses the same notation;
+  - profile: the airspaces crossed at the cursor, two lines, same lifetime (5 s after the finger is lifted);
   - an airspace without limits in the base (FIR, UTA) shows no "SFC|SFC".
+- **Camera**: once the user has moved or zoomed the map (any move that is not the module's own framing, `fitMap`),
+  every redraw keeps the user's camera — a gesture of the Edit mode, the live view, fuel's requote. Only "Recentre"
+  or another flight (departure or arrival changed) frames the route again; before any move of the user, a live update
+  frames the route when it leaves the view.
+- **Obstacles**: the studio's symbols (grouped on screen, the highest represents its group) without their label; in a
+  close view (300 px per degree or more), "434 AGL (771)" beside the symbol — height above ground in feet, top
+  elevation in brackets — where there is room.
 - **Layers panel** (button with a layers icon under the presets; hidden for mission maps): airspace families (TMA /
   CTR: TMA, CTR, CTA, TMZ, RMZ; D / R / P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA,
   FRA; others: every other type present), lower and upper airways, beacons, airway points (`fixes`), VRP, obstacles,

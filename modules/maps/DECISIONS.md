@@ -341,3 +341,23 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Bench** (flight with winds 270/35, 290/65, 320/15, 010/4 at FL270, forecast 12:00Z): 1280 px hover and 375 px
     tap on LUGEN → "Vent 290° / 65 kt / -42 °C · FL270 · prévision 12:00Z"; barbs at the points and every 50 NM,
     pennant at 65 kt, circle at 4 kt; layer present; no JavaScript error.
+- **23 Oct 2026 — lot 7a: one tooltip, icon-only modes, obstacle heights, the user's camera.**
+  - **One tooltip** (user's request: "no difference between click and hover"): the light one everywhere, same order
+    of what is under the pointer, same 5 s lifetime. A tap still adds the airspaces under the point when there is no
+    label, because a finger cannot hover; the full card of lots 5–6 is gone (its two helpers and its "No airspace
+    shown here" text removed).
+  - **Icon-only modes**: the trigger is a 44 px icon button like the Layers one; the choices form one row of six 44 px
+    buttons (296 px: fits a phone's map box with the Edit button). Names in the tooltips; "{a} : {b}" composed in four
+    languages (no space before the colon outside French).
+  - **Obstacle labels drawn by the map**, not by the studio's copy: the copy labels only obstacles of 500 ft and more,
+    with the elevation first; the user asked for the height first. The symbols are still the copy's (`font: 0` turns
+    its labels off).
+  - **Camera bug** (user's report): the live view refitted the map whenever a route point was out of view — always the
+    case when zoomed in on a segment, so fuel's requote after a gesture recentred the map. MapLibre's wheel zoom does
+    not mark its `movestart` as a user event, so the module now marks its own framing (`fitMap`) instead, and treats
+    every other move as the user's.
+  - **Bench**: 375 px touch: tooltip on a tap, gone after 5.9 s, back on the next tap, closed by a tap on the sea;
+    trigger and Layers button 44 × 44, six 44 px choices, current pressed, titles without repeated names. 1280 px:
+    click on "CTA PARIS N" → tooltip, gone 5.6 s after. VFR close view of Paris: "434 AGL (771)", "328 AGL (425)".
+    Camera: wheel zoom on LUGEN, drag of a point, fuel's write → view unchanged; Recentre → whole route. Three designs
+    at 375 px day and night, page 375 px wide; 6a benches, live view; no JavaScript error.

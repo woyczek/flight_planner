@@ -13,7 +13,8 @@ type. When the flight changes in Fuel, the map follows by itself.
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in
 each one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means
 3,500 ft). The small purple figures along the route are the distances from the departure, in nautical miles. Drag the
-map with one finger, spread two fingers to zoom; “Recentre” comes back to the whole route. Seen from afar, the map only
+map with one finger, spread two fingers to zoom; “Recentre” comes back to the whole route. The map stays where you put it, even when the route
+changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only
 shows what is near the route; zoom in to see everything.
 
 **The profile and the cursor.** Below the map, the vertical profile cuts through the route from end to end: the
@@ -31,7 +32,8 @@ from your flight's level (High IFR from FL195). The mode is kept on this device.
 
 **The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
 names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
-distance, its track (“097°”), the reporting points and the obstacles.
+distance, its track (“097°”), the reporting points and the obstacles. Close up, each obstacle carries its height above
+ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
 **Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families
 (TMA / CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points,
@@ -40,11 +42,12 @@ for this setting on this device. “Reset all” goes back to the original choic
 default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
 elsewhere. Close up, everything is drawn anyway.
 
-**Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks both
-ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation (“TMA 8 AQUITAINE
-2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, move over an airway's
-or an airspace's name: a small bubble follows the pointer, then stays 5 seconds after you leave it; a click closes it.
-On the profile, your finger or the mouse gives the airspaces crossed.
+**Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
+small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,
+its floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”).
+Tapped elsewhere inside an airspace, the bubble gives the airspaces under your finger. It follows the pointer, stays 5
+seconds, gives way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger
+or the mouse give the airspaces crossed in the same way.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a

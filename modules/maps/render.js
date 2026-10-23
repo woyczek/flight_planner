@@ -535,10 +535,11 @@
         'ctl') === !!a.controlled),
       navOk = n => n.kind === 'ILS' ? on(profile, 'navIls') : n.kind === 'NDB' ? on(profile, 'navNdb') : n.kind === 'DME' ? on(profile,
         'navDme') : n.kind === 'TACAN' || n.tacan ? on(profile, 'navTacan') : on(profile, 'navVor');
+    const pxDeg = toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x;
     A().drawPoints(ctx, {
       aerodromes: ad ? (data.aerodromes || []).filter(adOk) : [],
       navaids: nv ? (data.navaids || []).filter(navOk) : [],
-      obstacles: ob ? data.obstacles || [] : []
+      obstacles: []
     }, toC, {
       W,
       H,
@@ -554,6 +555,65 @@
       adLabels: on(profile, 'adLabels'),
       navLabels: on(profile, 'navLabels')
     });
+    if (ob) drawObstacles(ctx, data.obstacles || [], toC, W, H, scale, pl, profile, pxDeg);
+  }
+  /** Obstacles : symboles de la copie du studio (regroupés à l'écran, sans leur libellé), puis, de près (vue rapprochée,
+   *  300 px par degré et plus), la hauteur à côté du symbole : « 450 AGL (1230) » — hauteur sol en pieds, altitude du
+   *  sommet entre parenthèses ; posée seulement là où il y a la place. */
+  function drawObstacles(ctx, list, toC, W, H, scale, pl, profile, pxDeg) {
+    if (!list.length) return;
+    const min = +el(profile, 'obstacleMin') || 300,
+      detailed = pxDeg >= 180,
+      s = Math.max(4, 6 * scale),
+      cell = s * (detailed ? 2.2 : 3.5),
+      keep = new Map();
+    for (const o of list) {
+      if (o.hgt < min || (!detailed && o.hgt < 500)) continue;
+      const p = toC(o.lat, o.lon);
+      if (p.x < -30 || p.y < -30 || p.x > W + 30 || p.y > H + 30) continue;
+      const k = `${Math.floor(p.x / cell)}|${Math.floor(p.y / cell)}`,
+        cur = keep.get(k);
+      if (!cur || o.elev > cur.o.elev) keep.set(k, {
+        o,
+        p
+      });
+    }
+    const shown = [...keep.values()];
+    A().drawPoints(ctx, {
+      obstacles: shown.map(x => x.o)
+    }, toC, {
+      W,
+      H,
+      scale,
+      font: 0,
+      aerodromes: false,
+      navaids: false,
+      obstacles: true,
+      obstacleMin: min,
+      pxPerDegree: pxDeg,
+      placer: pl
+    });
+    if (pxDeg < 300) return;
+    const f = Math.max(9, +el(profile, 'pointFont') * PT * scale * .85),
+      col = '#1565c0';
+    for (const {
+        o,
+        p
+      }
+      of shown) {
+      if (!Number.isFinite(+o.hgt)) continue;
+      const text = `${Math.round(+o.hgt)} AGL${Number.isFinite(+o.elev) ? ` (${Math.round(+o.elev)})` : ''}`,
+        x0 = p.x + s * .9,
+        y = p.y - s * .9,
+        w = text.length * f * .58;
+      if (pl && !pl.take({
+          x0,
+          y0: y - f * .65,
+          x1: x0 + w,
+          y1: y + f * .65
+        })) continue;
+      halo(ctx, text, x0, y, f, col, 'left');
+    }
   }
 
   /** Route vraie (°) de a vers b. */

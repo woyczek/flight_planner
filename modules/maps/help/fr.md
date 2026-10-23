@@ -14,7 +14,8 @@ réglementées, dangereuses, interdites, espaces contrôlés), les voies aérien
 les terrains et les balises, et dans chaque carré d'un degré l'altitude minimale de sécurité (le chiffre brun, en
 milliers et centaines de pieds : « 3⁵ » veut dire 3 500 ft). Les petits chiffres violets le long de la route sont les
 distances depuis le départ, en milles nautiques. Faites glisser la carte avec un doigt, écartez deux doigts pour
-zoomer ; « Recentrer » revient sur toute la route. Vue de loin, la carte ne montre que ce qui est près de la route ;
+zoomer ; « Recentrer » revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
+seul « Recentrer » (ou un autre vol) la recadre. Vue de loin, la carte ne montre que ce qui est près de la route ;
 rapprochez-vous pour tout voir.
 
 **Le profil et le curseur.** Sous la carte, le profil vertical coupe la route de bout en bout : le relief, les
@@ -33,7 +34,8 @@ TSA, TRA, CBA et le RTBA à tous les niveaux.
 
 **Plus vous zoomez, plus elle en dit.** De loin, la carte ne montre que les grands terrains, les voies et leurs noms.
 En vous rapprochant : les points des voies (triangles et balises), le niveau minimal de chaque voie (« F195 »), puis
-la distance du tronçon, sa route (« 097° »), les points de report et les obstacles.
+la distance du tronçon, sa route (« 097° »), les points de report et les obstacles. De près, chaque obstacle porte sa hauteur au-dessus du
+sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
 **Les couches.** Le bouton aux calques, sous le réglage de la carte, ouvre la liste de ce qu'elle dessine : familles
 d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report
@@ -42,12 +44,12 @@ est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au cho
 seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ; décochée, toute la
 carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon.
 
-**Toucher pour en savoir plus.** Touchez le nom d'une voie : une bulle donne le tronçon (point → point), sa distance,
-ses routes aller et retour, son plancher et son plafond. Touchez un espace aérien : la bulle donne son nom, ses
-limites en notation SIA (« TMA 8 AQUITAINE 2000|FL145 D ») et ses horaires quand ils sont connus. Le toucher suivant
-ou un déplacement de la carte la ferme. Avec une souris, passez sur le nom d'une voie ou d'un espace : une petite
-bulle suit le pointeur, puis reste 5 secondes après que vous l'avez quitté ; un clic la ferme. Sur le profil, le doigt ou la souris donnent les espaces
-traversés.
+**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
+ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
+point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
+(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne les espaces sous le doigt. Elle suit
+le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
+la carte. Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
 
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
 le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un

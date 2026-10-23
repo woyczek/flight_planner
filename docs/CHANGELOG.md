@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 7a** (`modules/maps/`; SPEC, DECISIONS, help ×4) — one tooltip for hover, tap and click (follows the
+  pointer, stays 5 seconds); map modes as icons; obstacle heights close up ("434 AGL (771)"); the map keeps the
+  user's view after a route edit or a new quote, only "Recentre" or another flight reframes it.
 - **Help, lot 4: the two tutorials** (`frame/help/help.js`, `frame/help/build_help.py`, `frame/help/tutorial/`,
   `frame/app.js`, `frame/sw.js`, `frame/frame.css`; SPEC § 6, DECISIONS) — "Prepare a flight" (Fuel's five steps) and
   "Write a report" (to the website and My flights), English and French, one 375 px capture per step taken by

@@ -13,7 +13,8 @@ tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por s�
 peligrosas, prohibidas, espacios controlados), las aerovías bajas o altas según su nivel, los aeródromos y las
 radioayudas, y en cada cuadro de un grado la altitud mínima de seguridad (la cifra marrón, en miles y centenas de pies:
 «3⁵» quiere decir 3500 ft). Las pequeñas cifras violetas a lo largo de la ruta son las distancias desde la salida, en
-millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» vuelve a toda la ruta.
+millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» vuelve a toda la ruta. El mapa se queda donde usted lo puso, aunque la ruta
+cambie: solo «Recentrar» (u otro vuelo) lo reencuadra.
 Visto de lejos, el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
 
 **El perfil y el cursor.** Bajo el mapa, el perfil vertical corta la ruta de punta a punta: el relieve, los espacios
@@ -32,7 +33,8 @@ alto desde el FL195). El modo se conserva en este dispositivo.
 
 **Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
 Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
-distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos.
+distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos. De cerca, cada obstáculo lleva su altura sobre el
+suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
 
 **Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios
 (TMA / CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de
@@ -41,11 +43,12 @@ su elección se conserva para este ajuste en este dispositivo. «Restablecer tod
 «Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la cercanía de la ruta;
 desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos.
 
-**Toque para saber más.** Toque el nombre de una aerovía: una burbuja da el tramo (punto → punto), su distancia, sus
-rumbos de ida y vuelta, su límite inferior y superior. Toque un espacio aéreo: la burbuja da su nombre, sus límites en
-notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conocen. El toque siguiente o mover el mapa la
-cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y luego
-queda 5 segundos tras dejarlo; un clic la cierra. En el perfil, el dedo o el ratón dan los espacios atravesados.
+**Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de
+un espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto
+→ punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en
+notación AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, la burbuja da los espacios
+bajo el dedo. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o un
+movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
 
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
 a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
