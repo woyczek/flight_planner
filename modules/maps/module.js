@@ -758,6 +758,8 @@ function draw() {
   const zv = MapsRender.zoomOf(pxDeg) + (S.mission ? 0 : detailShift(W) * .75),
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
   if (S.tuneEl) markTune(zv, (shown.n + shown.s) / 2);
+  // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
+  baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
   if (!S.mission && layersNow().contours && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(
     ctx, {
       toC,
@@ -776,7 +778,7 @@ function draw() {
     bbox: shown,
     profile: S.profile,
     data: S.data?.data || {},
-    route,
+    route: withEta(route, pxDeg),
     marks: S.marks,
     theme: S.theme,
     level: formatLevel,
@@ -1176,6 +1178,10 @@ async function startTiles() {
       if (S?.map === map) {
         mapSize();
         relief();
+        // nouveau style : ses couches de noms de lieux sont à relever et à régler de nouveau
+        S.placeIds = null;
+        S.placeOff = null;
+        baseNames(S.placeWant);
       }
     });
     map.on('error', () => finish(false));
@@ -2880,6 +2886,26 @@ function relief() {
   }
 }
 
+/** Noms de lieux du fond : les couches de symboles du style dont la source-layer est « place » (OpenMapTiles) ou
+ *  « place_labels » (Shortbread) sont masquées quand nos villes sont dessinées (leurs seuils cities*), et rendues
+ *  sinon : en Topo ou hors des plages de nos villes, le fond garde ses noms. Seules les couches visibles dans le style
+ *  d'origine sont touchées ; écriture au changement seulement, relevé refait à chaque style chargé. */
+function baseNames(off) {
+  const m = S?.map;
+  if (!S || off == null) return;
+  S.placeWant = off;
+  if (!m || S.placeOff === off) return;
+  try {
+    S.placeIds ||= (m.getStyle()?.layers || []).filter(l => l.type === 'symbol' && /^place(_labels)?$/.test(l['source-layer'] || '') &&
+      l.layout?.visibility !== 'none').map(l => l.id);
+    for (const id of S.placeIds)
+      if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', off ? 'none' : 'visible');
+    S.placeOff = off;
+  } catch {
+    S.placeIds = null; // style pas encore chargé : réglé au chargement (style.load)
+  }
+}
+
 // ---------------------------------------------------------------- couches (panneau « Couches »)
 /** Familles d'espaces des couches ; « autres » : tout type hors de ces trois listes. */
 const AS_GROUPS = {
@@ -3428,24 +3454,30 @@ function haloText(ctx, t, x, y, col, font = '700 12px Arial,sans-serif', align =
   ctx.fillText(t, x, y);
   ctx.restore();
 }
-/** Progression sur la carte : ETA des points de près, trace, position prévue (creuse), position réelle (pleine). */
+/** Points de la route pour le dessin, avec leur heure estimée de près (vol démarré, 300 px par degré et plus) :
+ *  progress.eta en liste [{ id, at }] ou en table { id: at } ; heures en UTC (frame/lib/time.js), l'heure locale entre
+ *  parenthèses au départ et à l'arrivée seulement. Placée par render avec les libellés de la route. */
+function withEta(route, pxDeg) {
+  const f = S.route.flight,
+    eta = f?.progress?.eta;
+  if (S.mission || !inFlight(f) || !eta || pxDeg < 300) return route;
+  const pts = f.route?.points || [],
+    etaOf = (p, i) => Array.isArray(eta) ? (eta[i]?.id === p.id || !eta[i]?.id ? eta[i]?.at : eta.find(e => e.id === p.id)?.at) : eta[p.id];
+  return route.map((p, i) => {
+    const at = i < pts.length ? etaOf(p, i) : null;
+    return at ? {
+      ...p,
+      eta: `ETA ${i === 0 || i === pts.length - 1 ? fmtZLocal(at) : fmtZ(at)}`
+    } : p;
+  });
+}
+/** Progression sur la carte : trace, position prévue (creuse), position réelle (pleine) ; les ETA sont des libellés de la route (withEta). */
 function drawProgress(ctx, toC, pxDeg) {
   const f = S.route.flight,
     st = progressState(),
     acc = S.theme.accent,
     real = st.stale ? S.theme.muted : '#c62828';
-  // ETA des points, de près : progress.eta en liste [{ id, at }] ou en table { id: at }
-  const eta = f.progress?.eta,
-    etaOf = (p, i) => Array.isArray(eta) ? (eta[i]?.id === p.id || !eta[i]?.id ? eta[i]?.at : eta.find(e => e.id === p.id)?.at) : eta?.[p
-      .id
-    ];
-  if (pxDeg >= 300)(f.route?.points || []).forEach((p, i) => {
-    const at = etaOf(p, i),
-      q = posOf(p) && toC(+p.lat, +p.lon);
-    // heures en UTC (frame/lib/time.js) ; l'heure locale entre parenthèses au départ et à l'arrivée seulement
-    const last = i === (f.route?.points || []).length - 1;
-    if (at && q) haloText(ctx, `ETA ${i === 0 || last ? fmtZLocal(at) : fmtZ(at)}`, q.x + 8, q.y + 16, acc, '700 11px Arial,sans-serif');
-  });
+  // ETA des points : libellés de la route (withEta, placés par render avant les terrains)
   // trace des 30 dernières minutes
   if (S.trail?.length > 1) {
     ctx.save();

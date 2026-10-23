@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
+  help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA
+  is placed with the route labels, under its name, before the aerodromes.
 - **Map: cards that stay, reporting points as targets** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS, help ×4)
   — the aerodrome's card and the airspaces card stay open (✕, Escape) while the map moves; another aerodrome replaces
   it; a tap on a reporting point opens its aerodrome's card with that point first; the airspaces card from one

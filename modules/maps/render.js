@@ -1266,6 +1266,36 @@
         size: f,
         align: 'left'
       });
+      // heure estimée du point (vol démarré, de près : p.eta, posé par l'écran) : sous son nom, sinon au-dessus du point,
+      // sinon à sa gauche ; réservée avec les libellés de la route, avant les terrains (jamais sur « LFBD »)
+      if (p.eta) {
+        const fe = f * .85,
+          we = p.eta.length * fe * .6,
+          spots = [
+            [r.x0, r.y1 + 1 * scale, 'left'],
+            [q.x + 7 * scale, q.y - 6 * scale - fe * 1.2, 'left'],
+            [q.x - 9 * scale - we, q.y + 2 * scale, 'left'],
+            [q.x - 9 * scale - we, q.y - 6 * scale - fe * 1.2, 'left']
+          ];
+        for (const [x, y, align] of spots) {
+          const e = {
+            x0: x,
+            y0: y,
+            x1: x + we + 2 * scale,
+            y1: y + fe * 1.2
+          };
+          if (pl && !pl.take(e)) continue;
+          out.push({
+            text: p.eta,
+            x,
+            y: y + fe * .6,
+            size: fe,
+            align,
+            color: (T || tokens()).accent
+          });
+          break;
+        }
+      }
     }
     const f = f0;
     for (const m of mk) {
@@ -1333,7 +1363,7 @@
       ctx.lineWidth = Math.max(1.5, (end ? 2.5 : 2) * scale);
       ctx.stroke();
     }
-    for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, color, l.align);
+    for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, l.color || color, l.align);
     ctx.restore();
   }
   /** Densité selon le zoom (px par degré) : loin (moins de 80) — grands terrains, voies et leurs noms ; moyen (moins de

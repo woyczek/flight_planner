@@ -74,7 +74,7 @@ vez importadas. Aparecen una vez importados por el administrador (Ajustes › Ma
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
 14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
 mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
-la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA), en UTC («14:52Z»), la hora local entre paréntesis en la salida y la llegada. «Seguir» mantiene
+la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA) bajo su nombre, sin tapar nunca un aeródromo, en UTC («14:52Z»), la hora local entre paréntesis en la salida y la llegada. «Seguir» mantiene
 el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), la línea lo dice y abre los
 ajustes; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
 IVAO, VATSIM, X-Plane o Little Navmap.

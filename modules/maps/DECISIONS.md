@@ -533,3 +533,14 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     LFCS tapped → replaced; ✕ and Escape → closed. VFR mode at 1280 px (VRP layer drawn from zoom 9.25): BD-EA of the
     layer tapped → LFBD's card, "EA Carrefour D1215/D1 Le Taillan" first, in bold. One airspace tapped → "1 espace sur
     ce point", kept after a wheel move, closed by ✕. No JavaScript error.
+- **23 Oct 2026 — Bordeaux: towns named twice, ETA over "LFBD" (ergonomics session's report).**
+  - **Place names of the background**: OpenFreeMap's own labels were drawn under our towns ("Mérignac Mérignac"). The
+    style's `place` / `place_labels` symbol layers are hidden while our towns are drawn, and shown otherwise — rather
+    than always hidden as first asked: with the Towns layer off, in Topo or below the `cities*` thresholds, the
+    background's names are the only ones and stay. Done again at every `setStyle`.
+  - **ETA as a route label**: it was drawn after everything at a fixed offset (8, 16 px), over the aerodrome's name.
+    It now goes through the placer with the route labels, before the aerodromes, under the point's name first (three
+    other places tried), so the aerodrome labels give way to it, never the reverse.
+  - **Bench** (test page, 1280 px, view of Bordeaux, flight LFRS → LUGEN → LFBD started): "ETA 17:33Z (19:33)" under
+    "LFBD", no overlap among the route labels; the 9 `place` layers of positron visible with Towns off, `none` with
+    Towns on. No JavaScript error.
