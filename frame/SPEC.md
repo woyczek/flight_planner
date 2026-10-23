@@ -231,6 +231,19 @@ used alone:
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
+- **Dual view** (tablet and wide screen, from 980 px): the frame may mount a second module beside the current one.
+  - The current module is on the left, a pane on the right, sticky under the header.
+  - A module offers a pane through `APP.modules[].pane`: Fuel and Report offer the Map.
+  - The header button (the pane's icon and verb) opens or closes it. It is pressed while the pane is open, and hidden
+    under 980 px.
+  - The address carries it (`#fuel?with=maps`): opening or closing updates the address without remounting the module
+    (`history.replaceState`).
+  - The open pane is kept per module in `device/layout.json` (`{ panes: { fuel: 'maps' } }`, cache policy).
+  - Each pane is an ordinary `mount()` with its own `ctx`; the pane gets `ctx.query = { pane: '1' }`. The two never
+    call each other: they are linked only by the records they share, through `watch` (fuel writes
+    `pilot/<trigram>/current_flight.json`, the map redraws).
+  - The pane is unmounted when the module changes, and when the window gets narrower than 980 px (it comes back when
+    it widens). On a phone nothing changes.
 - Touch targets are at least 44 px high. There is no horizontal scroll at 375 px.
 
 ### 3.2 Module loader and context

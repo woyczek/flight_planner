@@ -112,6 +112,45 @@ body {
   padding: 16px;
   min-width: 0
 }
+/* vue double (grand écran) : le module courant à gauche, le volet à droite, collé sous l'en-tête */
+.f-pane-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none
+}
+.f-pane-btn[hidden] {
+  display: none
+}
+.f-pane-btn[aria-pressed="true"] {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink);
+  border-color: var(--sog-accent)
+}
+.f-view.f-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sog-gap);
+  align-items: start
+}
+.f-split>:not(.f-pane) {
+  grid-column: 1
+}
+.f-pane {
+  grid-column: 2;
+  grid-row: 1 / span 20;
+  position: sticky;
+  top: 70px;
+  max-height: calc(100vh - 86px);
+  overflow: auto;
+  min-width: 0
+}
+@media (max-width: 979px) {
+  .f-pane,
+  .f-pane-btn {
+    display: none
+  }
+}
 /* réglages (frame/settings/settings.js) : zones hors ligne, choix du niveau */
 .f-zone {
   display: flex;

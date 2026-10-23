@@ -256,6 +256,21 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   phone in GitHub mode) waits for the PHP web service as a relay.
 - **23 Oct 2026 — Tests of the fix**: `frame/store/test/` 89 checks (a reference pushed later is signalled, listed,
   counted by the diagnostic, read on demand); the real-tree scenario, twice; the application scenario.
+- **23 Oct 2026 — Lot 10, dual view** (asked by the user, to see what a change of the flight plan does):
+  - From 980 px, a pane beside the current module: by default the Map for Fuel and Report (`APP.modules[].pane`).
+  - A header button opens it; the address `#fuel?with=maps` carries it and is updated with `replaceState`, so the
+    module is not remounted.
+  - The state is kept per module in `device/layout.json`.
+  - Two ordinary mounts, each with its own `ctx`, linked only by the shared records (`watch`); no direct call, no
+    shared object.
+  - The pane is unmounted with the module, and below 980 px (kept, reopened when the window widens). The map is never
+    mounted twice: no pane for the module itself.
+  - Tests at 1280 px:
+    - Fuel opens the Map; typing a departure and an arrival in Fuel shows the route in the pane;
+    - Report does not inherit Fuel's pane, and Fuel gets it back;
+    - at 900 px the pane is unmounted and the button hidden, at 1280 px it is back;
+    - closing keeps `fuel: ''`; `#report?with=maps` opens it from the address;
+    - on a phone nothing changes; no JavaScript error, no horizontal scroll.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

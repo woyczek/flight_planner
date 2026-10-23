@@ -33,7 +33,8 @@
     modules: [{
       id: 'fuel',
       label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
-      icon: 'fuel'
+      icon: 'fuel',
+      pane: 'maps' // volet proposé à côté sur grand écran (vue double)
     }, {
       id: 'maps',
       label: ['Carte', 'Map', 'Karte', 'Mapa'],
@@ -41,7 +42,8 @@
     }, {
       id: 'report',
       label: ['Compte rendu', 'Report', 'Bericht', 'Informe'],
-      icon: 'edit'
+      icon: 'edit',
+      pane: 'maps'
     }, {
       id: 'flightlog',
       label: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
@@ -115,6 +117,8 @@
     menu: ['Menu', 'Menu', 'Menü', 'Menú'],
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+    paneOpen: ['Afficher {m} à côté', 'Show {m} alongside', '{m} daneben anzeigen', 'Mostrar {m} al lado'],
+    paneClose: ['Fermer le volet {m}', 'Close the {m} pane', 'Bereich {m} schließen', 'Cerrar el panel {m}'],
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
       'Modul „{m}“ konnte nicht geladen werden: {e}', 'No se pudo cargar el módulo «{m}»: {e}'
     ]
@@ -311,6 +315,7 @@
     usages = (await own.get('device/usages.json')) || {};
     level = levelFrom((await own.get('device/level.json'))?.level);
     applyDesign(await own.get('device/design.json'));
+    layout = (await own.get('device/layout.json'))?.panes || {};
     renderMenu();
     configured = await chooseTransport();
     FD.configure({
@@ -517,9 +522,11 @@
       console.error(e);
     }
     current = null;
+    closePane();
     const view = $('fView');
     view.replaceChildren();
     renderMenu(id);
+    paintPaneButton(null);
     if (id === 'help') return window.SogHelp?.screen(view, helpCtx(), h.query);
     if (id === 'roadmap') return window.SogRoadmap?.screen(view, helpCtx());
     if (ROUTES[id]) return ROUTES[id](view);
@@ -542,6 +549,10 @@
           p, el))
         .catch(e => console.warn('help', e));
       await mod.mount(el, ctxFor(entry, meta, h.query));
+      // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
+      paintPaneButton(entry);
+      const want = APP.modules.some(m => m.id === h.query.with) ? h.query.with : layout[entry.id] || '';
+      if (want && want !== entry.id && current?.id === entry.id) openPane(entry, want);
     } catch (e) {
       view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
       notify(t(T.loadErr, {
@@ -550,6 +561,96 @@
       }), 'err');
     }
   }
+  // ---------------------------------------------------------------- vue double (grand écran, ≥ 980 px)
+  // le module courant à gauche, un second à droite (volet) ; chacun est un mount() ordinaire avec son propre ctx, les deux
+  // ne se parlent qu'à travers les enregistrements partagés (pilot/<tri>/current_flight.json, watch) ; sur téléphone,
+  // rien ne change. Volet ouvert par module : device/layout.json ({ panes: { fuel: 'maps' } }), adresse #fuel?with=maps
+  const wide = matchMedia('(min-width: 980px)');
+  let pane = null, // { id, mod, el }
+    layout = {};
+  /** Démonte le volet (changement de module, fermeture, écran devenu étroit). */
+  function closePane() {
+    if (!pane) return;
+    try {
+      pane.mod.unmount?.();
+    } catch (e) {
+      console.error(e);
+    }
+    pane.el.remove();
+    pane = null;
+    $('fView').classList.remove('f-split');
+  }
+  /** Monte le module paneId à côté du module courant (seulement sur grand écran). */
+  async function openPane(entry, paneId) {
+    const p = APP.modules.find(m => m.id === paneId);
+    if (!p || !wide.matches || pane?.id === paneId) return;
+    closePane();
+    const el = document.createElement('aside'),
+      sec = document.createElement('section');
+    el.className = 'f-pane';
+    sec.className = 'f-module';
+    sec.dataset.module = p.id;
+    el.append(sec);
+    pane = {
+      id: p.id,
+      mod: null,
+      el
+    };
+    $('fView').classList.add('f-split');
+    $('fView').append(el);
+    try {
+      const mod = await import(new URL(`modules/${p.id}/module.js`, ROOT).href);
+      if (pane?.el !== el) return; // fermé entre-temps
+      pane.mod = mod;
+      await mod.mount(sec, ctxFor(p, mod.meta || {}, Object.freeze({
+        pane: '1'
+      })));
+    } catch (e) {
+      notify(t(T.loadErr, {
+        m: p.id,
+        e: e.message || e
+      }), 'err');
+      closePane();
+    }
+    paintPaneButton(entry);
+  }
+  /** Bouton d'en-tête du volet : visible sur grand écran pour un module qui propose un volet (ou en a un d'ouvert). */
+  function paintPaneButton(entry) {
+    const b = $('fPane'),
+      id = pane?.id || entry?.pane || '',
+      p = APP.modules.find(m => m.id === id),
+      show = !!(entry && p && wide.matches);
+    if (b.hidden === show) b.hidden = !show;
+    if (!show) return;
+    const on = !!pane,
+      html = `${Icons?.svg(p.icon) || ''}<span>${esc(t(p.label))}</span>`,
+      title = t(on ? T.paneClose : T.paneOpen, {
+        m: t(p.label)
+      });
+    if (b.innerHTML !== html) b.innerHTML = html;
+    if (b.title !== title) b.title = title;
+    if (b.getAttribute('aria-pressed') !== String(on)) b.setAttribute('aria-pressed', String(on));
+  }
+  /** Ouvre ou ferme le volet du module courant ; l'état est gardé pour ce module, l'adresse suit (sans remonter). */
+  async function togglePane() {
+    const entry = APP.modules.find(m => m.id === current?.id);
+    if (!entry) return;
+    const id = pane ? '' : entry.pane || pane?.id || '';
+    if (pane) closePane();
+    else if (id) await openPane(entry, id);
+    paintPaneButton(entry);
+    layout = {
+      ...layout,
+      [entry.id]: pane?.id || ''
+    };
+    await own.put('device/layout.json', {
+      panes: layout,
+      updated_at: new Date().toISOString()
+    });
+    const hash = `#${entry.id}${pane ? `?with=${pane.id}` : ''}`;
+    if (location.hash !== hash) history.replaceState(null, '', hash);
+  }
+
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
    *  appels sortants, identité et compagnie en lecture seule, suite de l'adresse (query). */
   function ctxFor(entry, meta, query = Object.freeze({})) {
@@ -749,6 +850,14 @@
     $('fDevice').onclick = () => {
       location.hash = '#settings';
     };
+    $('fPane').onclick = () => togglePane();
+    // écran devenu étroit : volet démonté (son état reste gardé) ; redevenu large : rouvert s'il l'était
+    wide.addEventListener('change', () => {
+      const entry = APP.modules.find(m => m.id === current?.id);
+      if (!wide.matches) closePane();
+      else if (entry && layout[entry.id]) openPane(entry, layout[entry.id]);
+      paintPaneButton(entry || null);
+    });
     $('fSync').onclick = async () => {
       const s = await FD.status();
       if (s.conflicts) location.hash = '#conflicts';

@@ -90,6 +90,8 @@ export function unmount() { /* stop watchers, timers */ }
 - `ctx.airline` (read only): `{ name, site, pages: { recordFlight, log, fleet } }` from the data repository
   (`airline/settings.json`), an empty object when not set. Never write an address of the airline in a module: take it
   from here, and hide the action when it is missing.
+- **In a pane** (dual view, wide screen), your module gets `ctx.query.pane === '1'` and half the width. Draw for the
+  width you are given. Never reach the other module: react to the shared records with `watch`.
 - `ctx.query`: what follows `?` in the address, as an object (`#report?from=flightlog` → `{ from: 'flightlog' }`).
   Another module or page opens yours with it.
 - `ctx.net.fetch(url, init)` for any outgoing call (SimBrief, IVAO, VATSIM, the DEFA website). It never throws:

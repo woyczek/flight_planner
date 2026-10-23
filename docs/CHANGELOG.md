@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 10: dual view on a tablet or a wide screen** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) —
+  Fuel and Report can show the Map beside them (header button, address `#fuel?with=maps`, kept per module); a change of
+  the flight plan in Fuel appears in the Map at once. Nothing changes on a phone.
 - **settings: readable diagnostics** (`frame/settings/settings.js`, `frame/settings/help/*.md`; `DECISIONS.md`, manuals
   rebuilt) — Settings › About › Diagnostics shows the frame's diagnostic line by line (transport, sync, errors,
   repository tree, reference bases, aeronautical base), labels in four languages, and "Copy" puts the full JSON on the
