@@ -5,40 +5,78 @@ trip fuel, reserve, block fuel, flight time and top of descent.
 
 ## How to use
 
-**The aircraft.** A single line at the top: the chosen aircraft, its registration, its callsign and where it comes from.
-The magnifying glass opens the search: type a sheet, a registration, a callsign or a type. The results come in this
-order: your performance sheets, the airline's aircraft (its fleet, then those known from its logbook), the published
-types, and last the code as typed. An airline aircraft takes its own sheet if it has one, otherwise its type's,
-otherwise an estimate of the type — the quote then marks it “approximate”. The chosen registration and callsign follow
-the flight through to the report. The “Cruise” line says where the fuel flow comes from.
+Preparation follows five steps, in the order a flight is prepared:
+**1 Flight, 2 Route, 3 Weather, 4 Quote, 5 Departure**. On a phone, the top bar shows one step at a time (touch a number
+to go to it, “Next” at the bottom of each step); on a wide screen, the five steps are one below the other. Everything is
+recomputed at each change: correct the route, and the weather, the quote and the wind follow, with no button to press.
+The result (block fuel, trip fuel, time, top of descent) stays visible at the bottom of the screen at every step, with
+where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060”, “wind typed”). A ✓ marks a completed step.
+Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
-**The route.** Type the departure, the arrival and the alternate (ICAO codes), then the route in the “Route” field,
-always visible: the points, the airways and the levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can
-also paste an ICAO flight plan or the list of an OFP there. When you leave the field, the route is tidied up: in
-capitals on one line, without DCT or speed-level groups, the departure and the arrival at the ends, a level change
-written “/F280” after the point where it starts. Airways stay written (the quote follows the points). Unknown points
-stay in place and are reported just below; coordinates are written the ICAO way (“4530N00030E”). The next line gives
-the distance and the true track, and where they come from (the route, the SimBrief OFP). If the route does not resolve,
-“Type them by hand” opens the two fields. With your SimBrief ID set (⚙), “Last SimBrief OFP” takes the route, the
-level, the mean wind and the aircraft of your last plan in one go.
+**1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
+rather than the observation, the aircraft and the cruise level (as a flight level). The aircraft fits on one line: the
+chosen aircraft, its registration, its callsign and where it comes from. The magnifying glass opens the search: type a
+sheet, a registration, a callsign or a type. The results come in this order: your performance sheets, the airline's
+aircraft (its fleet, then those known from its logbook), the published types, and last the code as typed. An airline
+aircraft takes its own sheet if it has one, otherwise its type's, otherwise an estimate of the type — the quote then
+marks it “approximate”. The chosen registration and callsign follow the flight through to the report. The “Cruise” line
+says where the fuel flow comes from.
 
-The “Points” fold lists the recognised points, from departure to arrival. The arrows move a point up or
-down the list, the cross removes it; the field at the bottom adds one before the arrival: an identifier (beacon, fix,
-airfield) or "NAME latitude longitude". Each intermediate point has an optional level field, in FL: it is the level held
-from that point on, for a step climb or step descent. A point without a level continues the previous one (shown greyed
-out); the flight starts at the plan's level. The quote counts each step (its climb or descent, then the cruise at that
-level), the result shows the sequence of levels (FL100 → FL120), and the descent starts from the last level. Every
-change rewrites the “Route” field (the points only) and is passed straight on to the map.
+**2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
+levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
+OFP there. When you leave the field, the route is tidied up: in capitals on one line, without DCT or speed-level groups,
+the departure and the arrival at the ends, a level change written “/F280” after the point where it starts. Airways stay
+written (the quote follows the points). Unknown points stay in place and are reported just below; coordinates are
+written the ICAO way (“4530N00030E”). The next line gives the distance and the true track, and where they come from (the
+route, the SimBrief OFP). If the route does not resolve, “Type them by hand” opens the two fields. With your SimBrief ID
+set (⚙), “Last SimBrief OFP” takes the route, the level, the mean wind and the aircraft of your last plan in one go.
 
-**The level and the wind.** Give the cruise level (as a flight level) and the wind: direction and speed. Without a
-direction, or without any wind, the block fuel is given as a range. “Climb” chooses how to climb: economical, best
-rate, fast, at the sheet's airspeed, or manual (you give airspeed and rate of climb).
+The “Points” fold lists the recognised points, from departure to arrival. The arrows move a point up or down the list,
+the cross removes it; the field at the bottom adds one before the arrival: an identifier (beacon, fix, airfield) or
+“NAME latitude longitude”. Each intermediate point has an optional level field, in FL: it is the level held from that
+point on, for a step climb or step descent. A point without a level continues the previous one (shown greyed out); the
+flight starts at the plan's level. The quote counts each step (its climb or descent, then the cruise at that level), the
+result shows the sequence of levels (FL100 → FL120), and the descent starts from the last level. Every change rewrites
+the “Route” field and is passed straight on to the map; a typed airway stays written as long as the two points framing
+it stay neighbours and in place.
+
+“Show the map” shows the flight on the map: on a phone the Map opens (the header button brings you back here); on a wide
+screen it opens alongside, and follows every change. “Edit the route” on the map brings you back to this step, with the
+route field ready for typing.
+
+**3 Weather.** The wind (direction and speed) and the ISA deviation. Without a direction, or without any wind, the block
+fuel is given as a range. “Read the aerodromes’ weather” shows the departure, the arrival, the alternate and the
+airfields along the route: all those within 10 NM on either side of the route (radius adjustable in the quote settings)
+that have a METAR or a TAF; the others are ignored. Each airfield gives its distance from the departure (the alternate,
+from the arrival); beyond two, the intermediate airfields are folded away below the departure, the arrival and the
+alternate. For each one, what matters for the flight: the category (VFR, MVFR, IFR, LIFR, in colour), the wind and its
+headwind and crosswind components on the airfield's main runway (the direction closest to the wind), the ceiling, the
+visibility, the temperature and the QNH, and a warning when CB or TCU are forecast; the raw message is folded away. With
+a flight date, the TAF answers if it covers that time (and its temporary changes), otherwise the METAR. Tick “Real
+weather” for the quote's wind to become the mean of the winds of the airfields on the route (departure, intermediate
+airfields, arrival), leg by leg and weighted by their length — an approximation from the surface wind, stated below the
+fields. Offline, the last values read stay displayed with their time.
 
 “ISA ±” is the temperature deviation from the standard atmosphere, in °C: it changes the power available, the true
 airspeed and the ceiling. Once the weather has been read, the line below computes it from the departure METAR — its
-temperature minus the airfield's standard temperature (15 − 1.98 × airfield elevation in thousands of feet) — and
-“Use ISA …” copies it into the field. The deviation chosen is kept in your settings: the next flight starts from the
-same one.
+temperature minus the airfield's standard temperature (15 − 1.98 × airfield elevation in thousands of feet) — and “Use
+ISA …” copies it into the field. The deviation chosen is kept in your settings: the next flight starts from the same
+one. Once the forecast aloft has been read, a second line offers the deviation at the planned level, averaged along the
+route (“ISA −5 at FL060 from the ARPEGE forecast”); with “Real weather”, the quote takes that one, like the wind. “Read
+the aerodromes’ weather” says “Reading…” during the calls.
+
+“Read the aerodromes’ weather” also reads the forecast aloft (Open-Meteo, no key, with or without the launcher) at the
+route's points: the “Winds and temperatures aloft” card gives, for each point, the planned level (its steps included),
+the wind, the temperature and the ISA deviation at that level, with the model (Météo-France AROME / ARPEGE over France,
+ICON elsewhere in Europe, GFS beyond), the target time (the flight date, otherwise now) and the run time. With “Real
+weather”, the quote's wind becomes the mean of these winds at the planned level, along the route, instead of the METARs'
+surface wind; the line below the fields says so. The same winds go to the Map, which draws them as arrows. Offline, the
+last forecast read stays.
+
+**4 Quote.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
+marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
+trip. Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
+fast, at the sheet's airspeed, or manual (you give airspeed and rate of climb).
 
 The “Density altitude” fold shows, for the ISA deviation on the horizontal axis, the density altitude of each pressure
 altitude (one line per thousand feet): it is the altitude “felt” by the rotor, the propellers and the engine. The
@@ -47,36 +85,27 @@ pressure altitude the aircraft reaches its ceiling that day (line in bold). A do
 METAR (temperature and QNH). Important for helicopters: in great heat or at altitude, the real ceiling can fall well
 below the sheet's.
 
-**The weather.** Below “Level and wind”, “Read the aerodromes’ weather” shows the departure, the arrival, the
-alternate and the airfields along the route: all those within 10 NM on either side of the route (radius adjustable in
-the quote settings) that have a METAR or a TAF; the others are ignored. Each airfield gives its distance from the
-departure (the alternate, from the arrival); beyond two, the intermediate airfields are folded away below the
-departure, the arrival and the alternate. For each one, what matters for the flight: the category (VFR, MVFR, IFR,
-LIFR, in colour), the wind and its headwind and crosswind components on the airfield's main runway (the direction
-closest to the wind), the ceiling, the visibility, the temperature and the QNH, and a warning when CB or TCU are
-forecast; the raw message is folded away. With a flight date, the TAF answers if it covers that time (and its
-temporary changes), otherwise the METAR. Tick “Real weather” for the quote's wind to become the mean of the winds of
-the airfields on the route (departure, intermediate airfields, arrival), leg by leg and weighted by their length — an
-approximation from the surface wind, stated below the fields. Offline, the last values read stay displayed with their
-time.
+Below the chart, “Real atmosphere at departure” shows the forecast temperature at each altitude above the departure
+(solid line) against the standard atmosphere (dashes): where the curve moves away from it, the ISA deviation changes
+with altitude, and inversion layers (temperature rising with altitude) are highlighted and stated below. The reading
+line gives, at the planned level, the real temperature, ISA deviation and density altitude.
 
-**Choosing the level.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The
-green dot marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be
-held on this trip. Touch the curve to choose a level, or use the two buttons.
+Unfold “Climb instructions” to follow the climb up to the level: power, RPM, airspeed, rate of climb, fuel flow, Mach,
+time and fuel totals at each step, with the profile drawn. The result gives block fuel, trip fuel, flight time and
+distance of the top of descent before arrival. “Quote details” breaks it down phase by phase.
 
-**The result.** At the bottom of the screen, always visible: block fuel, trip fuel, flight time and distance of the top
-of descent before arrival. “Quote details” breaks it down phase by phase.
+“Open in” prepares the same flight elsewhere, in a new tab: SimBrief (flight options prefilled, SimBrief login
+required), SkyVector (the route drawn, with speed and level), Navigraph and ChartFox (the charts of the departure and
+arrival airfields, login required). A greyed-out entry says what it lacks (airfield, aircraft type). Nothing is sent
+that is not already in the flight. The quote settings (taxi, reserve, margin, weather corridor, units) are in the last
+fold.
 
-**The climb instructions.** Unfold them to follow the climb up to the level: power, RPM, airspeed, rate of climb, fuel
-flow, Mach, time and fuel totals at each step, with the profile drawn.
-
-**Open in.** Below the result, “Open in” prepares the same flight elsewhere, in a new tab: SimBrief (flight options
-prefilled, SimBrief login required), SkyVector (the route drawn, with speed and level), Navigraph and ChartFox (the
-charts of the departure and arrival airfields, login required). A greyed-out entry says what it lacks (airfield,
-aircraft type). Nothing is sent that is not already in the flight.
-
-**On to the map and the report.** The flight prepared here — aircraft, route, level, climb and descent profile — is
-shared: open Map or Report, it is already there.
+**5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
+and its source, the block fuel. “Start the flight” records the departure time in the flight; on a phone it opens the
+Map, on a large screen it stays here with the Map on the right. The report will take this flight up. Changing the
+departure airfield afterwards means preparing another flight: the departure time is cleared. Changing the arrival after
+departure is a diversion: the time is kept and the diversion recorded. The flight prepared here — aircraft, route,
+level, climb and descent profile — is shared: Map and Report already have it.
 
 ## Performance sheets
 
@@ -108,7 +137,9 @@ flight levels, and nothing changes in the sheets.
 - **Unknown route**: the points not recognised are listed; the distance and the true track are typed by hand.
 - **Offline**: everything is computed on the device, from the sheets already received. Only SimBrief and the weather
   wait for the network; the last OFP and the last weather stay kept on the device.
-- **Weather without the launcher**: the weather service can only be reached through a computer's launcher; elsewhere,
-  the card shows the last weather kept, or says so.
+- **Weather without the launcher** (a phone, a tablet): METARs then come from metar.vatsim.net, with nothing to set up.
+  TAFs (useful when you give a flight date) come from avwx.rest, with your personal weather key, entered once on the
+  device in Settings › Keys; without a key, the card says so and the METAR answers instead. The weather card says where
+  the messages come from. With no network at all, it shows the last weather kept, with its time.
 
-<!-- fr: 8b3112cf90c8 -->
+<!-- fr: 6f53b81be10a -->

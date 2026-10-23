@@ -11,6 +11,10 @@ Règles :
   · une traduction porte <!-- fr: <empreinte> --> (12 premiers caractères du SHA-1 de fr.md) : une empreinte absente ou
     différente est signalée « à retraduire », sans refus ;
   · la feuille de route (frame/help/roadmap.json) : chaque texte en quatre langues et des états connus, sinon refus ;
+  · les tutoriels (liste TUTORIALS de help.js) : frame/help/tutorial/<id>.<langue>.md, écrits en anglais ; anglais et
+    français obligatoires, un seul titre « # » en tête, chaque image citée présente dans tutorial/img/, sinon refus ;
+    une traduction porte <!-- en: <empreinte> --> de l'anglais (« à retraduire » sinon) ; allemand ou espagnol absent :
+    signalé (l'anglais est affiché) ;
   · --check : vérifie et dit ce qui changerait, sans écrire.
 Usage : python frame/help/build_help.py [--check]
 """
@@ -86,6 +90,37 @@ def roadmap_errors():
     return out
 
 
+def tutorial_check():
+    """Tutoriels (TUTORIALS de help.js) : (erreurs, notes) — anglais et français présents, titre, images, empreintes."""
+    errors, notes = [], []
+    m = re.search(r'const TUTORIALS = \[(.*?)\];', read(os.path.join(HERE, 'help.js')), re.S)
+    ids = re.findall(r"\bid:\s*'([\w-]+)'", m.group(1)) if m else []
+    if not ids:
+        return ['frame/help/help.js : liste TUTORIALS introuvable'], notes
+    d = os.path.join(HERE, 'tutorial')
+    for tid in ids:
+        en = os.path.join(d, f'{tid}.en.md')
+        fp = fingerprint(read(en).strip()) if os.path.isfile(en) else None
+        for lang in ('en', 'fr', 'de', 'es'):
+            p = os.path.join(d, f'{tid}.{lang}.md')
+            if not os.path.isfile(p):
+                if lang in ('en', 'fr'):
+                    errors.append(f'{rel(p)} manquant')
+                else:
+                    notes.append(f'{rel(p)} : à traduire (l\'anglais est affiché)')
+                continue
+            t = read(p).strip()
+            if not t.startswith('# ') or len(re.findall(r'^# ', t, re.M)) != 1:
+                errors.append(f'{rel(p)} : un seul titre « # … », en tête')
+            for src in re.findall(r'!\[[^\]]*\]\(([^)\s]+)', t):
+                if not re.match(r'^[a-z]+:', src) and not os.path.isfile(os.path.join(d, *src.split('/'))):
+                    errors.append(f'{rel(p)} : image absente {src}')
+            got = re.search(r'<!-- en: ([0-9a-f]{12}) -->', t)
+            if lang != 'en' and fp and (not got or got.group(1) != fp):
+                notes.append(f'{rel(p)} : à retraduire (en: {fp})')
+    return errors, notes
+
+
 def main(args):
     check = '--check' in args
     errors, notes = [], []
@@ -126,6 +161,9 @@ def main(args):
             title, _, rest = t.partition('\n')
             chapters[lang].append(f'<!-- chapter: {mid} -->\n{title}\n\n{rest.strip()}\n')
     errors += roadmap_errors()
+    te, tn = tutorial_check()
+    errors += te
+    notes += tn
     for n in notes:
         print('  ' + n)
     if errors:

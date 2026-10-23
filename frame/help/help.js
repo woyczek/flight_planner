@@ -9,7 +9,10 @@
   //   · écran #help : le texte d'abord (le chapitre du module d'où l'on vient), « Sommaire ▾ » replié sur téléphone,
   //     « ↑ Sommaire » en fin de chapitre ; les liens internes deviennent #help?a=<ancre> (le routeur garde la main) ;
   //   · ctx.help d'un module : open(sujet) ouvre son panneau au paragraphe dont le sujet en gras commence ainsi ;
-  //     link(id) rend l'adresse de son chapitre.
+  //     link(id) rend l'adresse de son chapitre ;
+  //   · tutoriels (frame/help/tutorial/<id>.<langue>.md, anglais d'abord) : écran #help?t=<id>, captures dans img/ ;
+  //     langue absente : l'anglais ; carte d'accueil à la première ouverture (welcome), jusqu'à sa fermeture ou à
+  //     l'ouverture d'un tutoriel (device/help.json, welcomed).
   // Contexte donné par frame/app.js : { t, lang, own (device/, politique cache), root }.
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const LANGS = ['fr', 'en', 'de', 'es'];
@@ -26,9 +29,29 @@
       'Help is not available on this device yet (offline at the first visit?).',
       'Die Hilfe ist auf diesem Gerät noch nicht verfügbar (beim ersten Besuch offline?).',
       'La ayuda aún no está disponible en este dispositivo (¿sin conexión en la primera visita?).'
-    ]
+    ],
+    manual: ['← Le manuel', '← The manual', '← Das Handbuch', '← El manual'],
+    welcome: ['Première fois ? Commencez par un tutoriel court :', 'First time here? Start with a short tutorial:',
+      'Zum ersten Mal hier? Beginnen Sie mit einem kurzen Tutorial:', '¿Primera vez? Empiece con un tutorial corto:'
+    ],
+    welcomeLater: ['Tous deux restent dans l’aide (?), en tête du manuel.', 'Both stay in the help (?), at the top of the manual.',
+      'Beide bleiben in der Hilfe (?), am Anfang des Handbuchs.', 'Ambos quedan en la ayuda (?), al principio del manual.'
+    ],
+    close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    start: ['Commencer par…', 'Start with…', 'Beginnen Sie mit…', 'Empiece por…'],
+    next: ['Tutoriel suivant : {t} →', 'Next tutorial: {t} →', 'Nächstes Tutorial: {t} →', 'Siguiente tutorial: {t} →'],
+    inEnglish: ['(en anglais)', '(in English)', '(auf Englisch)', '(en inglés)']
   };
+  // tutoriels, dans l'ordre d'usage (fichiers frame/help/tutorial/<id>.<langue>.md, vérifiés par build_help.py)
+  const TUTORIALS = [{
+    id: 'prepare-flight',
+    title: ['Préparer un vol', 'Prepare a flight', 'Einen Flug vorbereiten', 'Preparar un vuelo']
+  }, {
+    id: 'write-report',
+    title: ['Écrire un compte rendu', 'Write a report', 'Einen Bericht schreiben', 'Escribir un informe']
+  }];
   const docs = {}; // langue → promesse du texte du manuel (null s'il est introuvable)
+  const tuts = {}; // « id.langue » → promesse du texte d'un tutoriel (null s'il est introuvable)
 
   /** Texte du manuel dans la langue de l'appli (repli : français) ; null s'il est introuvable. */
   async function manual(c) {
@@ -38,7 +61,36 @@
     const l = LANGS.includes(c.lang()) ? c.lang() : 'fr',
       text = (await get(l)) ?? (l === 'fr' ? null : await get('fr'));
     // typographie française, comme les textes du cadre : espace fine insécable avant : ; ! ? » et après «
-    return text && (l === 'fr' || !(await get(l))) ? text.replace(/ ([:;!?»])/g, ' $1').replace(/« /g, '« ') : text;
+    return text && (l === 'fr' || !(await get(l))) ? frTypo(text) : text;
+  }
+  /** Typographie française : espace fine insécable avant : ; ! ? » et après «. */
+  const frTypo = s => s.replace(/ ([:;!?»])/g, ' $1').replace(/« /g, '« ');
+  /** Tutoriel id : { text, lang } dans la langue de l'appli, sinon l'anglais (sa langue d'écriture), sinon le
+   *  français ; null s'il est introuvable. */
+  async function tutorial(c, id) {
+    const get = l => tuts[`${id}.${l}`] ||= fetch(new URL(`frame/help/tutorial/${id}.${l}.md`, c.root), {
+      cache: 'no-cache'
+    }).then(r => r.ok ? r.text() : null).catch(() => null);
+    for (const l of [...new Set([LANGS.includes(c.lang()) ? c.lang() : 'fr', 'en', 'fr'])]) {
+      const text = await get(l);
+      if (text) return {
+        text: l === 'fr' ? frTypo(text) : text,
+        lang: l
+      };
+    }
+    return null;
+  }
+  /** Note la carte d'accueil comme vue (device/help.json : welcomed) ; elle ne revient plus, et celle encore posée sous
+   *  l'écran d'aide (le module reste dessous) est retirée. */
+  async function welcomed(c) {
+    for (const n of document.querySelectorAll('[data-welcome]')) n.remove();
+    const s = (await c.own.get('device/help.json').catch(() => null)) || {};
+    if (s.welcomed) return;
+    await c.own.put('device/help.json', {
+      ...s,
+      welcomed: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).catch(() => {});
   }
   /** Chapitres du manuel : { intro, chapters: { id: texte } } (marqueurs <!-- chapter: id -->). */
   function split(text) {
@@ -61,10 +113,12 @@
       body: end < 0 ? rest : rest.slice(0, end)
     };
   }
-  /** HTML d'un texte Markdown, liens internes ramenés à l'écran d'aide (#help?a=…), liens extérieurs dans un onglet. */
-  function md(text) {
+  /** HTML d'un texte Markdown, liens internes ramenés à l'écran d'aide (#help?a=…) sauf les adresses d'aide déjà
+   *  écrites (#help?t=…, #help?m=…), liens extérieurs dans un onglet ; images relatives à base (dossier des tutoriels). */
+  function md(text, base) {
     const r = window.DocMarkdown.render(text, {
-      link: href => href.startsWith('#') ? `#help?a=${encodeURIComponent(href.slice(1))}` : href
+      link: href => href.startsWith('#help?') ? href : href.startsWith('#') ? `#help?a=${encodeURIComponent(href.slice(1))}` : href,
+      image: src => base && !/^[a-z]+:/i.test(src) ? new URL(src, base).href : src
     });
     return r;
   }
@@ -130,8 +184,64 @@
     });
   }
 
-  /** Écran d'aide : le manuel entier, texte d'abord, ouvert au chapitre q.m ou à l'ancre q.a ; sommaire replié. */
+  /** Liste des tutoriels (liens #help?t=<id>), « (en anglais) » quand la langue de l'appli manque. */
+  async function tutorialList(c) {
+    const items = await Promise.all(TUTORIALS.map(async x => {
+      const got = await tutorial(c, x.id);
+      return got ? `<li><a href="#help?t=${encodeURIComponent(x.id)}">${esc(c.t(x.title))}</a>${got.lang !== c.lang() ? ` <span class="f-muted">${esc(c.t(T.inEnglish))}</span>` : ''}</li>` : '';
+    }));
+    return items.join('');
+  }
+  /** Carte d'accueil de la première ouverture : les tutoriels ; null une fois vue (fermée, ou un tutoriel ouvert). */
+  async function welcome(c) {
+    const s = (await c.own.get('device/help.json').catch(() => null)) || {};
+    if (s.welcomed) return null;
+    const list = await tutorialList(c);
+    if (!list) return null;
+    const d = document.createElement('div');
+    d.className = 'f-card f-welcome';
+    d.dataset.welcome = '';
+    d.innerHTML = `<div class="f-row"><b>${esc(c.t(T.welcome))}</b><button type="button" data-x aria-label="${esc(c.t(T.close))}">✕</button></div><ul>${list}</ul><p class="f-muted">${esc(c.t(T.welcomeLater))}</p>`;
+    d.querySelector('[data-x]').onclick = () => {
+      d.remove();
+      welcomed(c);
+    };
+    return d;
+  }
+  /** Écran d'un tutoriel (#help?t=<id>) : « ← Le manuel », le texte et ses captures, puis le tutoriel suivant ; la
+   *  carte d'accueil ne revient plus. */
+  async function tutorialScreen(view, c, id, q) {
+    const i = TUTORIALS.findIndex(x => x.id === id),
+      got = i < 0 ? null : await tutorial(c, id);
+    if (!got) {
+      view.innerHTML = `<h1>${esc(c.t(T.title))}</h1><p class="f-card">${esc(c.t(T.missing))}</p>`;
+      return;
+    }
+    welcomed(c);
+    const r = md(got.text, new URL('frame/help/tutorial/', c.root).href),
+      next = TUTORIALS[i + 1],
+      doc = document.createElement('article');
+    doc.className = 'f-doc f-tut';
+    doc.dataset.tutorial = id;
+    if (got.lang !== c.lang()) doc.lang = got.lang;
+    doc.innerHTML = r.html;
+    const back = `<a href="#help">${esc(c.t(T.manual))}</a>`;
+    view.innerHTML = `<p class="f-back">${back}</p>`;
+    view.append(doc);
+    view.insertAdjacentHTML('beforeend', `<p class="f-back">${next ? `<a href="#help?t=${encodeURIComponent(next.id)}">${esc(c.t(T.next, { t: c.t(next.title) }))}</a> · ` : ''}${back}</p>`);
+    labelTables(doc, c.t);
+    // permaliens des titres : restent sur ce tutoriel
+    for (const a of doc.querySelectorAll('a.doc-anchor')) a.setAttribute('href', a.getAttribute('href').replace('#help?', `#help?t=${encodeURIComponent(id)}&`));
+    const target = q.a ? doc.querySelector(`[id="${CSS.escape(q.a)}"]`) : null;
+    setTimeout(() => (target || view).scrollIntoView({
+      block: 'start'
+    }), 0);
+  }
+
+  /** Écran d'aide : le manuel entier, texte d'abord, ouvert au chapitre q.m ou à l'ancre q.a ; sommaire replié ;
+   *  « Commencer par… » (les tutoriels) en tête ; q.t : un tutoriel. */
   async function screen(view, c, q = {}) {
+    if (q.t) return tutorialScreen(view, c, q.t, q);
     const text = await manual(c);
     if (!text) {
       view.innerHTML = `<h1>${esc(c.t(T.title))}</h1><p class="f-card">${esc(c.t(T.missing))}</p>`;
@@ -170,6 +280,11 @@
     for (const sec of sections) sec.insertAdjacentHTML('beforeend', back);
     view.replaceChildren(intro);
     intro.insertAdjacentHTML('afterbegin', `<p class="f-rm-link"><a href="#roadmap">${esc(c.t(T.roadmap))}</a></p>`);
+    // « Commencer par… » : les tutoriels, après le titre du manuel
+    const list = await tutorialList(c);
+    if (list)(intro.querySelector('h1 ~ p:not(.f-rm-link)') || intro.querySelector('h1') || intro.firstChild).insertAdjacentHTML(
+      'afterend',
+      `<div class="f-card f-start" data-start><b>${esc(c.t(T.start))}</b><ul>${list}</ul></div>`);
     view.insertAdjacentHTML('beforeend', toc);
     view.append(...sections);
     labelTables(view, c.t);
@@ -187,6 +302,7 @@
     panel,
     forModule,
     screen,
+    welcome,
     split,
     howTo,
     T

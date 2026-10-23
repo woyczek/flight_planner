@@ -11,7 +11,11 @@ usted completa, guarda — y, si lo desea, el vuelo se registra en el sitio de l
 
 **El último vuelo.** Si su identificador IVAO (o VATSIM) está ajustado (⚙) y el dispositivo está en línea, una tarjeta
 propone su último vuelo en la red: «Usar» rellena la aeronave, el indicativo, el trayecto y las horas sacadas de la
-traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («Vuelo actual»).
+traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («Vuelo actual»); si se ha iniciado en
+Combustible («Iniciar el vuelo»), aparece primero, «Vuelo iniciado a las hh:mm». La tarjeta dice en una línea todo lo
+que se va a retomar, incluso lo que un tipo de misión no tiene casilla para mostrar (distancia, nivel). «Usar» rellena
+también la hora de puesta en marcha (la hora de salida en Combustible) y el combustible a la salida (el combustible de
+bloque del cálculo), cada uno marcado con su fuente. Una vez guardado su informe, el vuelo ya no se propone.
 
 **Las otras fuentes.** Despliegue «Otras fuentes» para retomar su último vuelo IVAO o VATSIM, su plan de vuelo
 SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del tracker IVAO o de StatSim, un METAR. Solo
@@ -69,4 +73,4 @@ el formulario, rellena los campos y señala las diferencias. En un teléfono, do
   página del vuelo (tracker IVAO, StatSim) en «Otras fuentes».
 - **Sin trigrama**: el informe se escribe de todos modos; ajuste su trigrama (⚙) para que esté a su nombre.
 
-<!-- fr: b8fc73c91418 -->
+<!-- fr: 6ad5a5814956 -->

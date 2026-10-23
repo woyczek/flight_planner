@@ -22,6 +22,11 @@ Website-Flugbuch, IVAO- oder VATSIM-Netz), seine Uhrzeit, das Luftfahrzeug, der 
 bereits mit diesem Flug ausgefüllt — Datum, Luftfahrzeug, Rufzeichen, Flugplätze — und mit einer vorgeschlagenen
 Einsatzart. Bei einem Flug mit Bericht öffnet „Bericht öffnen“ ihn erneut zum Bearbeiten.
 
+**Der laufende Flug.** Ein in Kraftstoff gestarteter („Flug starten“) und noch nicht berichteter Flug erscheint oben,
+„Laufend — gestartet um hh:mm“ (eine Ausweichlandung wird angezeigt), noch bevor das Website-Flugbuch ihn kennt.
+„Bericht schreiben“ öffnet den Bericht, der diesen Flug zuerst vorschlägt; sobald der Bericht gespeichert ist,
+verschwindet die Zeile.
+
 **Mehr.** Klappen Sie „Mehr“ auf, um die gefilterte Liste als CSV (Tabellenkalkulation) zu exportieren oder Ihre IVAO-
 und VATSIM-Verbindungen neu zu lesen.
 
@@ -43,4 +48,4 @@ und VATSIM-Verbindungen neu zu lesen.
 - **Ohne Starter**: IVAO und VATSIM lassen sich nur über den Starter eines Rechners neu lesen.
 - **Ohne Kürzel**: Stellen Sie es ein (⚙); es wählt Ihre Berichte und Ihre Zeilen im Flugbuch aus.
 
-<!-- fr: 99d023557d9a -->
+<!-- fr: 21df43e2dc4e -->

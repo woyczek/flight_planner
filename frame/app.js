@@ -622,6 +622,8 @@
       if (window.SogHelp && meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(
           p, el))
         .catch(e => console.warn('help', e));
+      // première ouverture : carte d'accueil des tutoriels, en tête, jusqu'à sa fermeture ou à l'ouverture d'un tutoriel
+      window.SogHelp?.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console.warn('help', e));
       lastScreen = {
         id: entry.id,
         hash: location.hash

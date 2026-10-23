@@ -35,41 +35,82 @@ combustible de viaje, reserva, combustible de bloque, tiempo de vuelo e inicio d
 
 ## Cómo usarlo
 
-**La aeronave.** Una sola línea arriba: la aeronave elegida, su matrícula, su indicativo y de dónde viene. La lupa abre
-la búsqueda: escriba una ficha, una matrícula, un indicativo o un tipo. Los resultados llegan en este orden: sus fichas
-de rendimiento, las aeronaves de la aerolínea (su flota, luego las conocidas por su diario), los tipos publicados y, en
-último lugar, el código tal como se escribió. Una aeronave de la aerolínea toma su propia ficha si la tiene, si no la de
-su tipo, si no una estimación del tipo — el cálculo la marca entonces «aproximado». La matrícula y el indicativo elegidos
-siguen al vuelo hasta el informe. La línea «Crucero» indica de dónde viene el consumo.
+La preparación sigue cinco pasos, en el orden en que se prepara un vuelo:
+**1 Vuelo, 2 Ruta, 3 Meteorología, 4 Cálculo, 5 Salida**. En un teléfono, la barra superior muestra un paso cada vez
+(toque un número para ir a él, «Siguiente» al pie de cada paso); en una pantalla ancha, los cinco pasos están uno debajo
+de otro. Todo se recalcula con cada cambio: corrija la ruta, y la meteorología, el cálculo y el viento siguen, sin botón
+que pulsar. El resultado (combustible de bloque, combustible de viaje, tiempo, inicio del descenso) sigue visible abajo
+en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS», «viento: previsión ICON FL060»,
+«viento introducido»). Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
+5000 ft (FL060), en pies por debajo (3500 ft).
 
-**La ruta.** Escriba la salida, la llegada y la alternativa (códigos OACI), luego la ruta en el campo «Ruta», siempre
-visible: los puntos, las aerovías y los niveles, como en un plan de vuelo («LFBO TOU UN460 NTS/F280 LFRN»). También
-puede pegar ahí un plan de vuelo OACI o la lista de un OFP. Al salir del campo, la ruta se pone en limpio: en
-mayúsculas en una línea, sin DCT ni grupos velocidad-nivel, la salida y la llegada en los extremos, un cambio de nivel
-escrito «/F280» tras el punto donde empieza. Las aerovías siguen escritas (el cálculo sigue los puntos). Los puntos
-desconocidos se quedan en su sitio y se señalan justo debajo; las coordenadas se escriben a la manera OACI
-(«4530N00030E»). La línea siguiente da la distancia y el rumbo verdadero, y de dónde vienen (la ruta, el OFP de
-SimBrief). Si la ruta no se resuelve, «Introducir a mano» abre los dos campos. Con su identificador SimBrief
-configurado (⚙), «Último OFP de SimBrief» retoma de una vez la ruta, el nivel, el viento medio y la aeronave de su
-último plan.
+**1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
+lugar de la observación, la aeronave y el nivel de crucero (en FL). La aeronave cabe en una línea: la aeronave elegida,
+su matrícula, su indicativo y de dónde viene. La lupa abre la búsqueda: escriba una ficha, una matrícula, un indicativo
+o un tipo. Los resultados llegan en este orden: sus fichas de rendimiento, las aeronaves de la aerolínea (su flota,
+luego las conocidas por su diario), los tipos publicados y, en último lugar, el código tal como se escribió. Una
+aeronave de la aerolínea toma su propia ficha si la tiene, si no la de su tipo, si no una estimación del tipo — el
+cálculo la marca entonces «aproximado». La matrícula y el indicativo elegidos siguen al vuelo hasta el informe. La línea
+«Crucero» indica de dónde viene el consumo.
 
-El desplegable «Puntos» enumera los puntos reconocidos, de la salida a la llegada. Las flechas suben o
-bajan un punto en la lista, la cruz lo quita; el campo de abajo añade uno antes de la llegada: un identificador
-(radioayuda, punto, aeródromo) o «NOMBRE latitud longitud». Cada punto intermedio tiene un campo de nivel opcional, en
-FL: es el nivel mantenido a partir de ese punto, para un ascenso o un descenso por escalones. Un punto sin nivel
-continúa el anterior (mostrado en gris); el vuelo sale al nivel del plan. El cálculo cuenta cada escalón (su ascenso o
-su descenso, luego el crucero a ese nivel), el resultado muestra la sucesión de niveles (FL100 → FL120), y el descenso
-parte del último nivel. Cada cambio reescribe el campo «Ruta» (solo los puntos) y se transmite de inmediato al mapa.
+**2 Ruta.** Escriba la ruta en el campo «Ruta» (Intro la valida), siempre visible: los puntos, las aerovías y los
+niveles, como en un plan de vuelo («LFBO TOU UN460 NTS/F280 LFRN»). También puede pegar ahí un plan de vuelo OACI o la
+lista de un OFP. Al salir del campo, la ruta se pone en limpio: en mayúsculas en una línea, sin DCT ni grupos
+velocidad-nivel, la salida y la llegada en los extremos, un cambio de nivel escrito «/F280» tras el punto donde empieza.
+Las aerovías siguen escritas (el cálculo sigue los puntos). Los puntos desconocidos se quedan en su sitio y se señalan
+justo debajo; las coordenadas se escriben a la manera OACI («4530N00030E»). La línea siguiente da la distancia y el
+rumbo verdadero, y de dónde vienen (la ruta, el OFP de SimBrief). Si la ruta no se resuelve, «Introducir a mano» abre
+los dos campos. Con su identificador SimBrief configurado (⚙), «Último OFP de SimBrief» retoma de una vez la ruta, el
+nivel, el viento medio y la aeronave de su último plan.
 
-**El nivel y el viento.** Indique el nivel de crucero (en FL) y el viento: dirección e intensidad. Sin dirección, o sin
-viento alguno, el combustible de bloque se da como horquilla. «Ascenso» elige la forma de subir: económico, mejor
-régimen, rápido, a la velocidad de la ficha, o manual (usted da velocidad y régimen de ascenso).
+El desplegable «Puntos» enumera los puntos reconocidos, de la salida a la llegada. Las flechas suben o bajan un punto en
+la lista, la cruz lo quita; el campo de abajo añade uno antes de la llegada: un identificador (radioayuda, punto,
+aeródromo) o «NOMBRE latitud longitud». Cada punto intermedio tiene un campo de nivel opcional, en FL: es el nivel
+mantenido a partir de ese punto, para un ascenso o un descenso por escalones. Un punto sin nivel continúa el anterior
+(mostrado en gris); el vuelo sale al nivel del plan. El cálculo cuenta cada escalón (su ascenso o su descenso, luego el
+crucero a ese nivel), el resultado muestra la sucesión de niveles (FL100 → FL120), y el descenso parte del último nivel.
+Cada cambio reescribe el campo «Ruta» y se transmite de inmediato al mapa; una aerovía escrita se mantiene mientras los
+dos puntos que la enmarcan sigan siendo vecinos y en su sitio.
+
+«Mostrar el mapa» muestra el vuelo en el mapa: en un teléfono se abre el Mapa (el botón de la cabecera devuelve aquí);
+en una pantalla ancha se abre al lado y sigue cada cambio. «Editar la ruta» en el mapa devuelve a este paso, con el
+campo de la ruta listo para escribir.
+
+**3 Meteorología.** El viento (dirección e intensidad) y la desviación ISA. Sin dirección, o sin viento alguno, el
+combustible de bloque se da como horquilla. «Leer la meteorología de los aeródromos» muestra la salida, la llegada, el
+alternativo y los aeródromos a lo largo de la ruta: todos los que están a menos de 10 NM a cada lado de la ruta (radio
+ajustable en los ajustes del cálculo) y tienen un METAR o un TAF; los demás se ignoran. Cada aeródromo indica su
+distancia desde la salida (el alternativo, desde la llegada); si son más de dos, los aeródromos intermedios quedan
+plegados bajo la salida, la llegada y el alternativo. Para cada uno, lo que cuenta para el vuelo: la categoría (VFR,
+MVFR, IFR, LIFR, en color), el viento y sus componentes de cara y de costado en la pista principal del aeródromo (el
+sentido más cercano al viento), el techo de nubes, la visibilidad, la temperatura y el QNH, y un aviso cuando se
+anuncian CB o TCU; el mensaje bruto está plegado. Con una fecha de vuelo, responde el TAF si cubre esa hora (y sus
+cambios temporales), si no el METAR. Marque «Meteorología real» para que el viento del cálculo pase a ser la media de
+los vientos de los aeródromos de la ruta (salida, aeródromos intermedios, llegada), tramo por tramo y ponderada por su
+longitud — una aproximación a partir del viento en superficie, indicada bajo los campos. Sin conexión, los últimos
+valores leídos siguen mostrados con su hora.
 
 «ISA ±» es la desviación de temperatura respecto a la atmósfera estándar, en °C: cambia la potencia disponible, la
 velocidad verdadera y el techo. Una vez leída la meteorología, la línea de debajo la calcula a partir del METAR de la
 salida — su temperatura menos la temperatura estándar del aeródromo (15 − 1,98 × elevación del aeródromo en miles de
 pies) — y «Usar ISA …» la lleva al campo. La desviación elegida se guarda en sus ajustes: el vuelo siguiente parte de la
-misma.
+misma. Una vez leída la previsión en altura, una segunda línea propone la desviación al nivel planificado, promediada a
+lo largo de la ruta («ISA −5 a FL060 según la previsión ARPEGE»); con «Meteorología real», el cálculo toma esa, como el
+viento. «Leer la meteorología de los aeródromos» dice «Leyendo…» durante las consultas.
+
+«Leer la meteorología de los aeródromos» lee también la previsión en altura (Open-Meteo, sin clave, con o sin lanzador)
+en los puntos de la ruta: la tarjeta «Vientos y temperaturas en altura» da, para cada punto, el nivel planificado
+(incluidos sus escalones), el viento, la temperatura y la desviación ISA a ese nivel, con el modelo (Météo-France AROME
+/ ARPEGE sobre Francia, ICON en el resto de Europa, GFS más allá), la hora prevista (la fecha del vuelo, si no ahora) y
+la hora de la pasada. Con «Meteorología real», el viento del cálculo pasa a ser la media de esos vientos al nivel
+planificado, a lo largo de la ruta, en lugar del viento en superficie de los METAR; la línea bajo los campos lo indica.
+Los mismos vientos van al Mapa, que los dibuja como flechas. Sin conexión, se mantiene la última previsión leída.
+
+**4 Cálculo.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
+El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los niveles que no se
+pueden mantener en este trayecto. Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
+de subir: económico, mejor régimen, rápido, a la velocidad de la ficha, o manual (usted da velocidad y régimen de
+ascenso).
 
 El desplegable «Altitud de densidad» muestra, con la desviación ISA en abscisas, la altitud de densidad de cada altitud
 de presión (una recta por cada mil pies): es la altitud que «sienten» el rotor, las hélices y el motor. La línea
@@ -77,36 +118,28 @@ vertical es la desviación del vuelo, la horizontal el techo de la ficha; su cru
 aeronave alcanza su techo ese día (recta en negrita). Un punto marca la salida según el METAR (temperatura y QNH).
 Importante para los helicópteros: con mucho calor o en altura, el techo real puede caer muy por debajo del de la ficha.
 
-**La meteorología.** Bajo «Nivel y viento», «Leer la meteorología de los aeródromos» muestra la salida, la llegada,
-el alternativo y los aeródromos a lo largo de la ruta: todos los que están a menos de 10 NM a cada lado de la ruta
-(radio ajustable en los ajustes del cálculo) y tienen un METAR o un TAF; los demás se ignoran. Cada aeródromo indica
-su distancia desde la salida (el alternativo, desde la llegada); si son más de dos, los aeródromos intermedios quedan
-plegados bajo la salida, la llegada y el alternativo. Para cada uno, lo que cuenta para el vuelo: la categoría (VFR,
-MVFR, IFR, LIFR, en color), el viento y sus componentes de cara y de costado en la pista principal del aeródromo (el
-sentido más cercano al viento), el techo de nubes, la visibilidad, la temperatura y el QNH, y un aviso cuando se
-anuncian CB o TCU; el mensaje bruto está plegado. Con una fecha de vuelo, responde el TAF si cubre esa hora (y sus
-cambios temporales), si no el METAR. Marque «Meteorología real» para que el viento del cálculo pase a ser la media de
-los vientos de los aeródromos de la ruta (salida, aeródromos intermedios, llegada), tramo por tramo y ponderada por
-su longitud — una aproximación a partir del viento en superficie, indicada bajo los campos. Sin conexión, los últimos
-valores leídos siguen mostrados con su hora.
+Bajo el ábaco, «Atmósfera real en la salida» muestra la temperatura prevista a cada altitud sobre la salida (línea
+continua) frente a la atmósfera tipo (guiones): donde la curva se aparta de ella, la desviación ISA cambia con la
+altitud, y las capas de inversión (la temperatura que sube con la altitud) se resaltan y se indican debajo. La línea de
+lectura da, al nivel planificado, la temperatura, la desviación ISA y la altitud de densidad reales.
 
-**La elección del nivel.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su
-duración (guiones). El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los
-niveles que no se pueden mantener en este trayecto. Toque la curva para elegir un nivel, o use los dos botones.
+Despliegue «Consignas de ascenso» para seguir el ascenso hasta el nivel: potencia, régimen, velocidad, régimen de
+ascenso, flujo, Mach, tiempo y combustible acumulados en cada escalón, con el perfil dibujado. El resultado da
+combustible de bloque, combustible de viaje, tiempo de vuelo y distancia del inicio del descenso antes de la llegada.
+«Detalle del cálculo» lo desglosa fase por fase.
 
-**El resultado.** Abajo en la pantalla, siempre visible: combustible de bloque, combustible de viaje, tiempo de vuelo y
-distancia del inicio del descenso antes de la llegada. «Detalle del cálculo» lo desglosa fase por fase.
+«Abrir en» prepara el mismo vuelo en otro lugar, en una pestaña nueva: SimBrief (opciones del vuelo prerrellenadas, se
+requiere sesión en SimBrief), SkyVector (la ruta trazada, con velocidad y nivel), Navigraph y ChartFox (las cartas de
+los aeródromos de salida y llegada, se requiere sesión). Una entrada en gris indica lo que le falta (aeródromo, tipo de
+aeronave). No se envía nada que no esté ya en el vuelo. Los ajustes del cálculo (rodaje, reserva, margen, corredor
+meteorológico, unidades) están en el último desplegable.
 
-**Las consignas de ascenso.** Despliéguelas para seguir el ascenso hasta el nivel: potencia, régimen, velocidad, régimen
-de ascenso, flujo, Mach, tiempo y combustible acumulados en cada escalón, con el perfil dibujado.
-
-**Abrir en.** Bajo el resultado, «Abrir en» prepara el mismo vuelo en otro lugar, en una pestaña nueva: SimBrief
-(opciones del vuelo prerrellenadas, se requiere sesión en SimBrief), SkyVector (la ruta trazada, con velocidad y
-nivel), Navigraph y ChartFox (las cartas de los aeródromos de salida y llegada, se requiere sesión). Una entrada en gris
-indica lo que le falta (aeródromo, tipo de aeronave). No se envía nada que no esté ya en el vuelo.
-
-**Hacia el mapa y el informe.** El vuelo preparado aquí — aeronave, ruta, nivel, perfil de ascenso y de descenso — se
-comparte: abra Mapa o Informe, ya está allí.
+**5 Salida.** Un resumen de una página: la aeronave, la ruta tal como se presentará, el nivel (y sus escalones), el
+viento y su fuente, el combustible de bloque. «Iniciar el vuelo» anota la hora de salida en el vuelo; en un teléfono
+abre el Mapa, en una pantalla grande se queda aquí con el Mapa a la derecha. El informe retomará este vuelo. Cambiar
+después el aeródromo de salida es preparar otro vuelo: la hora de salida se borra. Cambiar la llegada después de la
+salida es un desvío: la hora se conserva y el desvío queda anotado. El vuelo preparado aquí — aeronave, ruta, nivel,
+perfil de ascenso y de descenso — se comparte: Mapa e Informe ya lo tienen.
 
 ## Fichas de rendimiento
 
@@ -139,16 +172,19 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
 - **Ruta desconocida**: se enumeran los puntos no reconocidos; la distancia y el rumbo verdadero se escriben a mano.
 - **Sin conexión**: todo se calcula en el dispositivo, a partir de las fichas ya recibidas. Solo SimBrief y la
   meteorología esperan a la red; el último OFP y la última meteorología se quedan guardados en el dispositivo.
-- **Meteorología sin lanzador**: el servicio meteorológico solo es accesible a través del lanzador de un ordenador; en
-  otro lugar, la tarjeta muestra la última meteorología guardada, o lo dice.
+- **Meteorología sin lanzador** (un teléfono, una tableta): los METAR vienen entonces de metar.vatsim.net, sin nada que
+  configurar. Los TAF (útiles cuando da una fecha de vuelo) vienen de avwx.rest, con su clave meteorológica personal,
+  introducida una vez en el dispositivo en Ajustes › Claves; sin clave, la tarjeta lo dice y responde el METAR en su
+  lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red alguna, muestra la última meteorología
+  guardada, con su hora.
 
-<!-- fr: 8b3112cf90c8 -->
+<!-- fr: 6f53b81be10a -->
 
 <!-- chapter: maps -->
 # Mapa
 
 Ver su vuelo en una carta aeronáutica y su perfil vertical, o los mapas de una misión: espacios aéreos, aeródromos,
-radioayudas, aerovías, altitudes mínimas. El mapa solo se consulta: no modifica nada.
+radioayudas, aerovías, altitudes mínimas. La ruta del vuelo también se modifica en el mapa.
 
 ## Cómo usarlo
 
@@ -169,20 +205,35 @@ cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en e
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
 espacio aéreo en el que está en ese momento.
 
-**Tres ajustes de mapa.** La lista arriba a la izquierda del mapa elige lo que muestra. «IFR bajo»: aerovías
-inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías superiores (UN…, UM…), espacios por
-encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en VFR, los puntos de notificación y
-los obstáculos. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195); la elección se conserva.
+**Seis modos de mapa.** El botón arriba a la izquierda del mapa muestra el modo elegido; tóquelo para ver los seis
+modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
+superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en
+VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve, solo con los aeródromos, las ciudades y los
+obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las
+zonas R, D, P, TSA, TRA, CBA y la red de vuelo bajo a todos los niveles. «Auto» elige según el nivel de su vuelo (IFR
+alto desde el FL195). El modo se conserva en este dispositivo.
 
 **Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
 Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
 distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos.
 
+**Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios
+(TMA / CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de
+notificación VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo. Marque o desmarque: el mapa sigue, y
+su elección se conserva para este ajuste en este dispositivo. «Restablecer todo» vuelve a la elección de origen.
+«Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la cercanía de la ruta;
+desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos.
+
 **Toque para saber más.** Toque el nombre de una aerovía: una burbuja da el tramo (punto → punto), su distancia, sus
 rumbos de ida y vuelta, su límite inferior y superior. Toque un espacio aéreo: la burbuja da su nombre, sus límites en
 notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conocen. El toque siguiente o mover el mapa la
-cierra. Con un ratón, basta con detenerse encima. En el perfil, el dedo da la misma burbuja para los espacios
-atravesados.
+cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y luego
+queda 5 segundos tras dejarlo; un clic la cierra. En el perfil, el dedo o el ratón dan los espacios atravesados.
+
+**Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
+a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
+banderín vale 50 kt, una barba 10 kt, media barba 5 kt. Toque una barba (o pase el ratón por encima): la burbuja da la
+dirección, la fuerza, la temperatura, el nivel y la hora de la previsión. La capa «Vientos en altura» las oculta.
 
 **Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,
 nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de
@@ -197,8 +248,15 @@ la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista 
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
-**Modificar la ruta.** El mapa no cambia la ruta: «Editar la ruta» abre Combustible, donde usted la retoma. Al volver
-al mapa, el nuevo vuelo ya está allí.
+**Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de giro se rodean de un
+círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
+vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Toque un fijo o una radioayuda fuera de la ruta:
+se añade al tramo más cercano. Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la
+llegada no se mueven aquí. En el perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto
+que abre ese tramo, en pasos de FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+»
+hacen lo mismo. «Deshacer» deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el
+cálculo; el perfil sigue. «Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en
+texto, «Editar la ruta» abre el paso Ruta de Combustible.
 
 ## Sin conexión
 
@@ -230,7 +288,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 1b3b00cfc354 -->
+<!-- fr: e49322f78862 -->
 
 <!-- chapter: report -->
 # Informe
@@ -246,7 +304,11 @@ usted completa, guarda — y, si lo desea, el vuelo se registra en el sitio de l
 
 **El último vuelo.** Si su identificador IVAO (o VATSIM) está ajustado (⚙) y el dispositivo está en línea, una tarjeta
 propone su último vuelo en la red: «Usar» rellena la aeronave, el indicativo, el trayecto y las horas sacadas de la
-traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («Vuelo actual»).
+traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («Vuelo actual»); si se ha iniciado en
+Combustible («Iniciar el vuelo»), aparece primero, «Vuelo iniciado a las hh:mm». La tarjeta dice en una línea todo lo
+que se va a retomar, incluso lo que un tipo de misión no tiene casilla para mostrar (distancia, nivel). «Usar» rellena
+también la hora de puesta en marcha (la hora de salida en Combustible) y el combustible a la salida (el combustible de
+bloque del cálculo), cada uno marcado con su fuente. Una vez guardado su informe, el vuelo ya no se propone.
 
 **Las otras fuentes.** Despliegue «Otras fuentes» para retomar su último vuelo IVAO o VATSIM, su plan de vuelo
 SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del tracker IVAO o de StatSim, un METAR. Solo
@@ -304,7 +366,7 @@ el formulario, rellena los campos y señala las diferencias. En un teléfono, do
   página del vuelo (tracker IVAO, StatSim) en «Otras fuentes».
 - **Sin trigrama**: el informe se escribe de todos modos; ajuste su trigrama (⚙) para que esté a su nombre.
 
-<!-- fr: b8fc73c91418 -->
+<!-- fr: 6ad5a5814956 -->
 
 <!-- chapter: flightlog -->
 # Mis vuelos
@@ -331,6 +393,10 @@ IVAO o VATSIM), su hora, la aeronave, la misión y las observaciones.
 con este vuelo — fecha, aeronave, indicativo, aeródromos — y una familia de misión propuesta. En un vuelo que lo tiene,
 «Abrir el informe» lo vuelve a abrir para modificarlo.
 
+**El vuelo en curso.** Un vuelo iniciado en Combustible («Iniciar el vuelo») y aún sin informe aparece en cabeza, «En
+curso — iniciado a las hh:mm» (se señala el desvío), incluso antes de que el diario del sitio lo conozca. «Escribir el
+informe» abre el informe, que propone este vuelo en primer lugar; una vez guardado el informe, la línea desaparece.
+
 **Más.** Despliegue «Más» para exportar la lista filtrada en CSV (hoja de cálculo) o releer sus conexiones IVAO y
 VATSIM.
 
@@ -351,7 +417,7 @@ VATSIM.
 - **Sin lanzador**: IVAO y VATSIM solo se releen a través del lanzador de un equipo.
 - **Sin trigrama**: configúrelo (⚙); es él quien elige sus informes y sus líneas del diario.
 
-<!-- fr: 99d023557d9a -->
+<!-- fr: 21df43e2dc4e -->
 
 <!-- chapter: website -->
 # Sitio de la aerolínea

@@ -247,6 +247,33 @@ body {
   text-decoration: none;
   font-size: .75em
 }
+/* tutoriels : captures d'écran de téléphone, au plus la largeur d'un téléphone, centrées ; carte d'accueil et
+   « Commencer par… » : liens à hauteur tactile */
+.f-tut img {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 8px auto 16px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius-s)
+}
+.f-welcome .f-row {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap
+}
+.f-welcome ul,
+.f-start ul {
+  margin: 4px 0;
+  padding-left: 1.2em
+}
+.f-welcome li a,
+.f-start li a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
 .f-toc ul {
   list-style: none;
   padding: 0;

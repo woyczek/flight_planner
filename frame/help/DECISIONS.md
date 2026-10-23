@@ -67,3 +67,26 @@ The help agent's memory: every choice, dated, with its reason. Newest last. Proj
   - entry points: a link at the top of the manual, and Settings › About (new card: help, roadmap, and the folded
     diagnostics moved into it);
   - tested: 11 lanes, 37 cards, screen and 375 px, French and German, entry points, no JavaScript error.
+- **23 Oct 2026 — Lot 4: the two tutorials** (ergonomics session's request; [SPEC.md](SPEC.md) § 6):
+  - "Prepare a flight" in the order of Fuel's five steps, "Write a report" from the started flight (or the last IVAO
+    flight) to "Save and record on the website" and My flights; English first, French translated; German and Spanish
+    later — until then the English text is shown, marked "(in English)";
+  - read against the chapters: the tutorial says what to do and links to the chapter for how it works; the chapter's
+    details (route tidying, wind sources, ISA formula, the website bookmark…) are not repeated;
+  - captures: one per step at 375 px, taken by a script (`tutorial/capture.py`, Chrome DevTools protocol, standard
+    library, Pillow to reduce to 256 colours: 7 to 60 KB each) so that German and Spanish can be shot the same way;
+    test data only — a fictional airline, published bases, trigram TST, no network ID — and the script refuses a data
+    folder whose airline is not the fictional one, since it removes the test flight and reports (`pilot/`, `cr/`)
+    between languages;
+  - entry points: "Start with…" at the top of the manual (drawn by `help.js`, so the "(in English)" mark follows the
+    files), and a welcome card above the first module opened (`SogHelp.welcome`, one line in the frame's `route()`);
+    the card is removed as soon as a tutorial opens, also the copy left under the help screen (the module stays below
+    it);
+  - help links written `#help?t=…` / `#help?m=…` are kept as they are by the renderer, other `#anchor` links still
+    become `#help?a=…`; a tutorial's heading permalinks stay on the tutorial (`#help?t=<id>&a=…`);
+  - tested at 375 px with the launcher on the test data, French, English and German: welcome card, ✕ and its storage,
+    tutorial screen and images, next tutorial, "Start with…", no horizontal scroll, no JavaScript error.
+- **23 Oct 2026 — Chapters brought up to date** during lot 4 (`--check`): Fuel (the five steps), Map (layers, six modes,
+  Edit mode, winds aloft), Report (the started flight first, with its start time and fuel) and My flights (the flight in
+  progress) in English, German and Spanish, by helper agents, reviewed here; the report tutorial follows ("Use" also
+  fills the engine start time and the departure fuel).

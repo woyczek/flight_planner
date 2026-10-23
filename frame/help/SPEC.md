@@ -20,6 +20,7 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   written and translated by the help agent; listed in `FRAME_CHAPTERS` of the build, placed after the modules.
 - **The application's introduction**: `frame/help/intro.<lang>.md` (what the application is, first start, data and
   synchronisation).
+- **The tutorials**: `frame/help/tutorial/<id>.<lang>.md`, listed in `TUTORIALS` of `help.js` (§ 6).
 - `SPEC.md` of a module is a developer document; it is never shown.
 
 ## 2. Build (`python frame/help/build_help.py [--check]`)
@@ -31,6 +32,9 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   with its single `# ` title, or has no `## ` section; when an introduction is missing.
 - **Reports** without refusing: a module with no chapter yet; a translation whose fingerprint is absent or differs from
   the French file ("to translate again").
+- **Tutorials** (§ 6): refuses a missing English or French file, a file without its single `# ` title first, an image
+  that is not in `tutorial/img/`; reports a translation whose `<!-- en: … -->` fingerprint differs from the English
+  file, and a missing German or Spanish file (English is shown).
 - `--check`: checks and says which files would change.
 
 ## 3. In-page panel
@@ -77,3 +81,26 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
     `--sog-warn`, later `--sog-muted` (a coloured left border).
 - **Reached** from the top of the manual ("Roadmap: what is delivered, in progress, planned") and from Settings ›
   About. Offline: the script and the JSON are in the frame's service worker list.
+
+## 6. Tutorials (`#help?t=<id>`)
+
+- **What**: one short page per first task, telling what to do, step by step; the chapters say how it works, so nothing
+  is said twice. Today, in the order of use: `prepare-flight` (the five steps of Fuel: Flight, Route with the map and
+  its Edit mode, Weather, Quote and density altitude, Departure) and `write-report` (from the started flight or the
+  last IVAO flight to "Save and record on the website", then My flights).
+- **Sources**: `frame/help/tutorial/<id>.<lang>.md`, written in English first, then French; German and Spanish later.
+  A translation ends with `<!-- en: <fingerprint> -->` (first 12 characters of the SHA-1 of the English file). One
+  `# Title`, an italic line (what and how long), "Before you start", then one `## n. Step` per step: one capture, then
+  a few paragraphs, one idea each, subject in bold, the screen's labels in quotes; links to the chapters at the end.
+- **Captures**: `tutorial/img/<id>-<n>.<lang>.png`, one per step, 375 × 812 px, 256 colours; produced by
+  `frame/help/tutorial/capture.py` (Chrome without a window, a fresh profile per language) on a test data folder only
+  — a fictional airline (`https://example.invalid`), the published French aeronautical base and the published types,
+  trigram TST, no network ID; the script refuses another folder.
+- **Screen**: "← The manual", the tutorial (images at most 300 px wide, centred), then "Next tutorial: … →" and
+  "← The manual". A language without its file shows the English one, marked "(in English)" in the lists.
+- **Reached** from the top of the manual (a "Start with…" card after its first paragraph, listing the tutorials) and
+  from the **welcome card** drawn by the frame above the first module opened on the device: "First time here? Start
+  with a short tutorial:", the tutorials, and ✕. Closing it or opening a tutorial stores `welcomed` in
+  `device/help.json`; it never comes back on that device.
+- Offline: the English and French texts are in the frame's service worker list; the captures are kept at their first
+  view.

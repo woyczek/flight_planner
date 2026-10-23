@@ -36,43 +36,85 @@ die Berechnung steht — Rollen, Streckenkraftstoff, Reserve, Blockkraftstoff, F
 
 ## So geht’s
 
-**Das Luftfahrzeug.** Eine einzige Zeile oben: das gewählte Luftfahrzeug, sein Kennzeichen, sein Rufzeichen und woher es
-stammt. Die Lupe öffnet die Suche: Tippen Sie ein Datenblatt, ein Kennzeichen, ein Rufzeichen oder einen Typ. Die
-Ergebnisse kommen in dieser Reihenfolge: Ihre Leistungsdatenblätter, die Luftfahrzeuge der Fluggesellschaft (ihre Flotte,
-dann die aus ihrem Flugbuch bekannten), die veröffentlichten Typen und zuletzt der Code so, wie er getippt wurde. Ein
-Luftfahrzeug der Fluggesellschaft nimmt sein eigenes Datenblatt, wenn es eines hat, sonst das seines Typs, sonst eine
-Schätzung des Typs — die Berechnung markiert es dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den
-Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt, woher der Verbrauch stammt.
+Die Vorbereitung folgt fünf Schritten, in der Reihenfolge, in der man einen Flug vorbereitet:
+**1 Flug, 2 Route, 3 Wetter, 4 Kalkulation, 5 Abflug**. Auf einem Telefon zeigt die obere Leiste jeweils einen Schritt
+(tippen Sie auf eine Nummer, um dorthin zu gehen, „Weiter“ unten in jedem Schritt); auf einem breiten Bildschirm stehen
+die fünf Schritte untereinander. Bei jeder Änderung wird alles neu berechnet: Korrigieren Sie die Route, und Wetter,
+Berechnung und Wind folgen, ohne dass eine Schaltfläche zu drücken ist. Das Ergebnis (Blockkraftstoff,
+Streckenkraftstoff, Zeit, Sinkflugbeginn) bleibt bei jedem Schritt unten im Bildschirm sichtbar, mit der Herkunft des
+Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingegeben“). Ein ✓ markiert einen ausgefüllten Schritt.
+Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), darunter in Fuß (3500 ft).
 
-**Die Route.** Tippen Sie Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), dann die Route in das stets sichtbare
-Feld „Route“: die Punkte, die Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“).
-Sie können dort auch einen ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route
-bereinigt: in Großbuchstaben auf einer Zeile, ohne DCT und ohne Geschwindigkeits-Flugflächen-Gruppen, Abflug und
-Ankunft an den Enden, ein Flugflächenwechsel als „/F280“ nach dem Punkt, an dem er beginnt. Luftstraßen bleiben
-geschrieben (die Berechnung folgt den Punkten). Unbekannte Punkte bleiben an ihrer Stelle und werden direkt darunter
-gemeldet; Koordinaten schreibt man nach ICAO-Art („4530N00030E“). Die nächste Zeile gibt Entfernung und rechtweisenden
-Kurs an und woher sie stammen (die Route, der SimBrief-OFP). Lässt sich die Route nicht auflösen, öffnet „Von Hand
-eingeben“ die beiden Felder. Mit eingestellter SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche,
-mittleren Wind und Luftfahrzeug Ihres letzten Plans auf einmal.
+**1 Flug.** Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), das Flugdatum, wenn Sie die Vorhersage (TAF) statt der
+Beobachtung wollen, das Luftfahrzeug und die Reiseflugfläche (FL). Das Luftfahrzeug passt auf eine Zeile: das gewählte
+Luftfahrzeug, sein Kennzeichen, sein Rufzeichen und woher es stammt. Die Lupe öffnet die Suche: Tippen Sie ein
+Datenblatt, ein Kennzeichen, ein Rufzeichen oder einen Typ. Die Ergebnisse kommen in dieser Reihenfolge: Ihre
+Leistungsdatenblätter, die Luftfahrzeuge der Fluggesellschaft (ihre Flotte, dann die aus ihrem Flugbuch bekannten), die
+veröffentlichten Typen und zuletzt der Code so, wie er getippt wurde. Ein Luftfahrzeug der Fluggesellschaft nimmt sein
+eigenes Datenblatt, wenn es eines hat, sonst das seines Typs, sonst eine Schätzung des Typs — die Berechnung markiert es
+dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt,
+woher der Verbrauch stammt.
 
-Der aufklappbare Bereich „Punkte“ listet die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben
-einen Punkt in der Liste nach oben oder unten, das Kreuz entfernt ihn; das Feld unten fügt einen vor der Ankunft hinzu:
-eine Kennung (Funkfeuer, Wegpunkt, Flugplatz) oder „NAME Breite Länge“. Jeder Zwischenpunkt hat ein freiwilliges Feld
-für die Flugfläche, in FL: Das ist die Flugfläche, die ab diesem Punkt gehalten wird, für einen Stufensteigflug oder
--sinkflug. Ein Punkt ohne Flugfläche setzt die vorige fort (grau angezeigt); der Flug beginnt auf der Flugfläche des
-Plans. Die Berechnung zählt jede Stufe (ihren Steig- oder Sinkflug, dann den Reiseflug auf dieser Flugfläche), das
-Ergebnis zeigt die Folge der Flugflächen (FL100 → FL120), und der Sinkflug beginnt auf der letzten Flugfläche. Jede
-Änderung schreibt das Feld „Route“ neu (nur die Punkte) und wird sofort an die Karte weitergegeben.
+**2 Route.** Tippen Sie die Route in das stets sichtbare Feld „Route“ (die Eingabetaste bestätigt sie): die Punkte, die
+Luftstraßen und die Flugflächen, wie in einem Flugplan („LFBO TOU UN460 NTS/F280 LFRN“). Sie können dort auch einen
+ICAO-Flugplan oder die Liste eines OFP einfügen. Wenn Sie das Feld verlassen, wird die Route bereinigt: in
+Großbuchstaben auf einer Zeile, ohne DCT und ohne Geschwindigkeits-Flugflächen-Gruppen, Abflug und Ankunft an den Enden,
+ein Flugflächenwechsel als „/F280“ nach dem Punkt, an dem er beginnt. Luftstraßen bleiben geschrieben (die Berechnung
+folgt den Punkten). Unbekannte Punkte bleiben an ihrer Stelle und werden direkt darunter gemeldet; Koordinaten schreibt
+man nach ICAO-Art („4530N00030E“). Die nächste Zeile gibt Entfernung und rechtweisenden Kurs an und woher sie stammen
+(die Route, der SimBrief-OFP). Lässt sich die Route nicht auflösen, öffnet „Von Hand eingeben“ die beiden Felder. Mit
+eingestellter SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche, mittleren Wind und Luftfahrzeug Ihres
+letzten Plans auf einmal.
 
-**Flugfläche und Wind.** Geben Sie die Reiseflugfläche (FL) und den Wind an: Richtung und Stärke. Ohne Richtung oder
-ganz ohne Wind wird der Blockkraftstoff als Spanne angegeben. „Steigflug“ wählt die Art zu steigen: sparsam, bestes
-Steigen, schnell, mit der Geschwindigkeit des Datenblatts oder manuell (Sie geben Geschwindigkeit und Steigrate an).
+Der aufklappbare Bereich „Punkte“ listet die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben einen
+Punkt in der Liste nach oben oder unten, das Kreuz entfernt ihn; das Feld unten fügt einen vor der Ankunft hinzu: eine
+Kennung (Funkfeuer, Wegpunkt, Flugplatz) oder „NAME Breite Länge“. Jeder Zwischenpunkt hat ein freiwilliges Feld für die
+Flugfläche, in FL: Das ist die Flugfläche, die ab diesem Punkt gehalten wird, für einen Stufensteigflug oder -sinkflug.
+Ein Punkt ohne Flugfläche setzt die vorige fort (grau angezeigt); der Flug beginnt auf der Flugfläche des Plans. Die
+Berechnung zählt jede Stufe (ihren Steig- oder Sinkflug, dann den Reiseflug auf dieser Flugfläche), das Ergebnis zeigt
+die Folge der Flugflächen (FL100 → FL120), und der Sinkflug beginnt auf der letzten Flugfläche. Jede Änderung schreibt
+das Feld „Route“ neu und wird sofort an die Karte weitergegeben; eine getippte Luftstraße bleibt geschrieben, solange
+die beiden Punkte, die sie einrahmen, benachbart und an ihrer Stelle bleiben.
 
-„ISA ±“ ist die Temperaturabweichung von der Standardatmosphäre, in °C: Sie verändert die verfügbare Leistung, die
-wahre Fluggeschwindigkeit und die Gipfelhöhe. Sobald das Wetter gelesen ist, berechnet die Zeile darunter sie aus dem
-METAR des Abflugs — dessen Temperatur minus die Standardtemperatur des Flugplatzes (15 − 1,98 × Flugplatzhöhe in
-tausend Fuß) — und „ISA … verwenden“ überträgt sie in das Feld. Die gewählte Abweichung bleibt in Ihren Einstellungen
-gespeichert: Der nächste Flug beginnt mit derselben.
+„Karte zeigen“ zeigt den Flug auf der Karte: Auf einem Telefon öffnet sich die Karte (die Schaltfläche in der Kopfzeile
+führt hierher zurück); auf einem breiten Bildschirm öffnet sie sich daneben und folgt jeder Änderung. „Route bearbeiten“
+auf der Karte führt zu diesem Schritt zurück, das Routenfeld bereit zur Eingabe.
+
+**3 Wetter.** Der Wind (Richtung und Stärke) und die ISA-Abweichung. Ohne Richtung oder ganz ohne Wind wird der
+Blockkraftstoff als Spanne angegeben. „Flugplatzwetter lesen“ zeigt Abflug, Ankunft, Ausweichflugplatz und die
+Flugplätze entlang der Route: alle, die weniger als 10 NM beiderseits der Route liegen (Radius in den Einstellungen der
+Berechnung einstellbar) und ein METAR oder eine TAF haben; die anderen werden übergangen. Jeder Flugplatz nennt seine
+Entfernung vom Abflug (der Ausweichflugplatz: von der Ankunft); sind es mehr als zwei, werden die Zwischenflugplätze
+unter Abflug, Ankunft und Ausweichflugplatz zugeklappt. Für jeden, was für den Flug zählt: die Kategorie (VFR, MVFR,
+IFR, LIFR, farbig), den Wind und seine Gegen- und Seitenwindkomponente auf der Hauptpiste des Flugplatzes (die Richtung,
+die dem Wind am nächsten liegt), die Wolkenuntergrenze, die Sicht, die Temperatur und das QNH sowie eine Warnung, wenn
+CB oder TCU gemeldet sind; die Rohmeldung ist zugeklappt. Mit einem Flugdatum antwortet die TAF, wenn sie diese Uhrzeit
+abdeckt (samt ihren vorübergehenden Änderungen), sonst das METAR. Setzen Sie das Häkchen bei „Echtes Wetter“, damit der
+Wind der Berechnung zum Mittel der Winde der Flugplätze der Route wird (Abflug, Zwischenflugplätze, Ankunft), Abschnitt
+für Abschnitt und nach dessen Länge gewichtet — eine Näherung aus dem Bodenwind, unter den Feldern vermerkt. Ohne Netz
+bleiben die zuletzt gelesenen Werte mit ihrer Uhrzeit angezeigt.
+
+„ISA ±“ ist die Temperaturabweichung von der Standardatmosphäre, in °C: Sie verändert die verfügbare Leistung, die wahre
+Fluggeschwindigkeit und die Gipfelhöhe. Sobald das Wetter gelesen ist, berechnet die Zeile darunter sie aus dem METAR
+des Abflugs — dessen Temperatur minus die Standardtemperatur des Flugplatzes (15 − 1,98 × Flugplatzhöhe in tausend Fuß)
+— und „ISA … verwenden“ überträgt sie in das Feld. Die gewählte Abweichung bleibt in Ihren Einstellungen gespeichert:
+Der nächste Flug beginnt mit derselben. Sobald die Höhenvorhersage gelesen ist, schlägt eine zweite Zeile die Abweichung
+auf der geplanten Flugfläche vor, gemittelt entlang der Route („ISA −5 auf FL060 laut ARPEGE-Vorhersage“); mit „Echtes
+Wetter“ übernimmt die Berechnung diese, wie den Wind. „Flugplatzwetter lesen“ zeigt „Wird gelesen…“ während der Abrufe.
+
+„Flugplatzwetter lesen“ liest auch die Höhenvorhersage (Open-Meteo, ohne Schlüssel, mit oder ohne Starter) an den
+Punkten der Route: Die Karte „Höhenwinde und -temperaturen“ gibt für jeden Punkt die geplante Flugfläche (samt ihren
+Stufen), den Wind, die Temperatur und die ISA-Abweichung auf dieser Flugfläche an, mit dem Modell (Météo-France AROME /
+ARPEGE über Frankreich, ICON im übrigen Europa, GFS darüber hinaus), der Zielzeit (das Flugdatum, sonst jetzt) und der
+Uhrzeit des Modelllaufs. Mit „Echtes Wetter“ wird der Wind der Berechnung zum Mittel dieser Winde auf der geplanten
+Flugfläche entlang der Route, anstelle des Bodenwinds der METAR; die Zeile unter den Feldern sagt es. Dieselben Winde
+gehen an die Karte, die sie als Pfeile zeichnet. Ohne Netz bleibt die zuletzt gelesene Vorhersage.
+
+**4 Kalkulation.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und die Dauer
+(gestrichelt). Der grüne Punkt markiert die sparsamste Flugfläche, das orange Quadrat die schnellste; der graue Bereich
+die Flugflächen, die auf dieser Strecke nicht zu halten sind. Tippen Sie auf die Kurve, um eine Flugfläche zu wählen,
+oder nutzen Sie die beiden Schaltflächen. „Steigflug“ wählt die Art zu steigen: sparsam, bestes Steigen, schnell, mit
+der Geschwindigkeit des Datenblatts oder manuell (Sie geben Geschwindigkeit und Steigrate an).
 
 Der aufklappbare Bereich „Dichtehöhe“ zeigt, mit der ISA-Abweichung auf der waagerechten Achse, die Dichtehöhe jeder
 Druckhöhe (eine Gerade je tausend Fuß): Das ist die Höhe, die Rotor, Propeller und Triebwerk „spüren“. Die senkrechte
@@ -81,37 +123,30 @@ Druckhöhe das Luftfahrzeug an diesem Tag seine Gipfelhöhe erreicht (fett gezei
 Abflug laut METAR (Temperatur und QNH). Wichtig für Hubschrauber: Bei großer Hitze oder in der Höhe kann die
 tatsächliche Gipfelhöhe weit unter die des Datenblatts fallen.
 
-**Das Wetter.** Unter „Flugfläche und Wind“ zeigt „Flugplatzwetter lesen“ Abflug, Ankunft, Ausweichflugplatz und
-die Flugplätze entlang der Route: alle, die weniger als 10 NM beiderseits der Route liegen (Radius in den
-Einstellungen der Berechnung einstellbar) und ein METAR oder eine TAF haben; die anderen werden übergangen. Jeder
-Flugplatz nennt seine Entfernung vom Abflug (der Ausweichflugplatz: von der Ankunft); sind es mehr als zwei, werden
-die Zwischenflugplätze unter Abflug, Ankunft und Ausweichflugplatz zugeklappt. Für jeden, was für den Flug zählt: die
-Kategorie (VFR, MVFR, IFR, LIFR, farbig), den Wind und seine Gegen- und Seitenwindkomponente auf der Hauptpiste des
-Flugplatzes (die Richtung, die dem Wind am nächsten liegt), die Wolkenuntergrenze, die Sicht, die Temperatur und das
-QNH sowie eine Warnung, wenn CB oder TCU gemeldet sind; die Rohmeldung ist zugeklappt. Mit einem Flugdatum antwortet
-die TAF, wenn sie diese Uhrzeit abdeckt (samt ihren vorübergehenden Änderungen), sonst das METAR. Setzen Sie das
-Häkchen bei „Echtes Wetter“, damit der Wind der Berechnung zum Mittel der Winde der Flugplätze der Route wird (Abflug,
-Zwischenflugplätze, Ankunft), Abschnitt für Abschnitt und nach dessen Länge gewichtet — eine Näherung aus dem
-Bodenwind, unter den Feldern vermerkt. Ohne Netz bleiben die zuletzt gelesenen Werte mit ihrer Uhrzeit angezeigt.
+Unter dem Diagramm zeigt „Echte Atmosphäre am Abflug“ die vorhergesagte Temperatur in jeder Höhe über dem Abflug
+(durchgezogene Linie) gegenüber der Standardatmosphäre (gestrichelt): Wo die Kurve davon abweicht, ändert sich die
+ISA-Abweichung mit der Höhe, und Inversionsschichten (die Temperatur steigt mit der Höhe) werden hervorgehoben und
+darunter genannt. Die Ablesezeile gibt auf der geplanten Flugfläche die tatsächliche Temperatur, ISA-Abweichung und
+Dichtehöhe an.
 
-**Die Wahl der Flugfläche.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und
-die Dauer (gestrichelt). Der grüne Punkt markiert die sparsamste Flugfläche, das orange Quadrat die schnellste; der
-graue Bereich die Flugflächen, die auf dieser Strecke nicht zu halten sind. Tippen Sie auf die Kurve, um eine
-Flugfläche zu wählen, oder nutzen Sie die beiden Schaltflächen.
+Klappen Sie „Steigflug-Vorgaben“ auf, um dem Steigflug bis zur Flugfläche zu folgen: Leistung, Drehzahl,
+Geschwindigkeit, Steigrate, Durchfluss, Mach, Zeit und Kraftstoff kumuliert an den Stufen, mit gezeichnetem Profil. Das
+Ergebnis gibt Blockkraftstoff, Streckenkraftstoff, Flugzeit und Entfernung des Sinkflugbeginns vor der Ankunft an.
+„Einzelheiten“ schlüsselt es Phase für Phase auf.
 
-**Das Ergebnis.** Unten im Bildschirm, immer sichtbar: Blockkraftstoff, Streckenkraftstoff, Flugzeit und Entfernung des
-Sinkflugbeginns vor der Ankunft. „Einzelheiten“ schlüsselt es Phase für Phase auf.
+„Öffnen in“ bereitet denselben Flug anderswo vor, in einem neuen Tab: SimBrief (Flugoptionen vorausgefüllt,
+SimBrief-Anmeldung nötig), SkyVector (die Route gezeichnet, mit Geschwindigkeit und Flugfläche), Navigraph und ChartFox
+(die Karten von Abflug- und Zielflugplatz, Anmeldung nötig). Ein ausgegrauter Eintrag sagt, was ihm fehlt (Flugplatz,
+Luftfahrzeugtyp). Es wird nichts gesendet, was nicht schon im Flug steht. Die Einstellungen der Berechnung (Rollen,
+Reserve, Zusatzmenge, Wetterkorridor, Einheiten) stehen im letzten aufklappbaren Bereich.
 
-**Die Steigflug-Vorgaben.** Klappen Sie sie auf, um dem Steigflug bis zur Flugfläche zu folgen: Leistung, Drehzahl,
-Geschwindigkeit, Steigrate, Durchfluss, Mach, Zeit und Kraftstoff kumuliert an den Stufen, mit gezeichnetem Profil.
-
-**Öffnen in.** Unter dem Ergebnis bereitet „Öffnen in“ denselben Flug anderswo vor, in einem neuen Tab: SimBrief
-(Flugoptionen vorausgefüllt, SimBrief-Anmeldung nötig), SkyVector (die Route gezeichnet, mit Geschwindigkeit und
-Flugfläche), Navigraph und ChartFox (die Karten von Abflug- und Zielflugplatz, Anmeldung nötig). Ein ausgegrauter
-Eintrag sagt, was ihm fehlt (Flugplatz, Luftfahrzeugtyp). Es wird nichts gesendet, was nicht schon im Flug steht.
-
-**Weiter zu Karte und Bericht.** Der hier vorbereitete Flug — Luftfahrzeug, Route, Flugfläche, Steig- und Sinkprofil —
-wird geteilt: Öffnen Sie Karte oder Bericht, er ist schon da.
+**5 Abflug.** Eine Zusammenfassung auf einer Seite: das Luftfahrzeug, die Route, wie sie aufgegeben wird, die Flugfläche
+(und ihre Stufen), der Wind und seine Quelle, der Blockkraftstoff. „Flug starten“ trägt die Abflugzeit in den Flug ein;
+auf einem Telefon öffnet es die Karte, auf einem großen Bildschirm bleibt es hier mit der Karte rechts. Der Bericht
+übernimmt diesen Flug. Den Abflugplatz danach zu ändern heißt, einen anderen Flug vorzubereiten: Die Abflugzeit wird
+gelöscht. Die Ankunft nach dem Abflug zu ändern ist eine Umleitung: Die Zeit bleibt erhalten, und die Umleitung wird
+vermerkt. Der hier vorbereitete Flug — Luftfahrzeug, Route, Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und
+Bericht haben ihn schon.
 
 ## Leistungsdatenblätter
 
@@ -148,16 +183,19 @@ Datenblättern ändert sich nichts.
   Hand getippt.
 - **Offline**: Alles wird auf dem Gerät berechnet, aus den bereits empfangenen Datenblättern. Nur SimBrief und das
   Wetter warten auf das Netz; der letzte OFP und das letzte Wetter bleiben auf dem Gerät gespeichert.
-- **Wetter ohne Starter**: Der Wetterdienst ist nur über den Starter eines Rechners erreichbar; anderswo zeigt die Karte
-  das zuletzt gespeicherte Wetter oder sagt es.
+- **Wetter ohne Starter** (ein Telefon, ein Tablet): Die METAR kommen dann von metar.vatsim.net, ohne dass etwas
+  einzustellen ist. Die TAF (nützlich, wenn Sie ein Flugdatum angeben) kommen von avwx.rest, mit Ihrem persönlichen
+  Wetterschlüssel, einmal auf dem Gerät unter Einstellungen › Schlüssel eingegeben; ohne Schlüssel sagt es die Karte,
+  und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen. Ganz ohne Netz zeigt sie das
+  zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: 8b3112cf90c8 -->
+<!-- fr: 6f53b81be10a -->
 
 <!-- chapter: maps -->
 # Karte
 
 Ihren Flug auf einer Luftfahrtkarte und in seinem Vertikalprofil sehen, oder die Karten einer Mission: Lufträume,
-Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Karte dient nur zum Ansehen: Sie ändert nichts.
+Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt sich auch auf der Karte ändern.
 
 ## So geht’s
 
@@ -179,20 +217,38 @@ das Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der
 auf der Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem
 Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden.
 
-**Drei Karteneinstellungen.** Die Liste oben links auf der Karte wählt, was sie zeigt. „IFR unten“: untere
-Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege (UN…, UM…), Lufträume über FL195. „VFR“:
-topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen, Meldepunkten und Hindernissen. „Auto“ wählt
-nach der Flugfläche Ihres Flugs (IFR oben ab FL195); die Wahl bleibt erhalten.
+**Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
+sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
+(UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen,
+Meldepunkten und Hindernissen. „Topo“: das Gelände, nur mit Flugplätzen, Städten und Hindernissen. „OAT“: Militärflug,
+das IFR Ihrer Flughöhe plus die Luftbetankungsstrecken, die NAT-Tracks des Tages, die Gebiete R, D, P, TSA, TRA, CBA und
+das Tiefflugnetz in allen Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf
+diesem Gerät erhalten.
 
 **Je näher Sie zoomen, desto mehr zeigt sie.** Von weitem zeigt die Karte nur die großen Flugplätze, die Flugwege und
 ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“),
 dann die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse.
 
+**Ebenen.** Die Ebenen-Schaltfläche unter der Karteneinstellung öffnet die Liste dessen, was die Karte zeichnet:
+Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
+VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz. Haken setzen oder entfernen: die
+Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät erhalten. „Alles zurücksetzen“ kehrt zur
+ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt, beschränkt Lufträume und Flugwege auf die
+Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um anderswo zu schauen. Aus der Nähe wird
+ohnehin alles gezeichnet.
+
 **Antippen für mehr.** Tippen Sie auf den Namen eines Flugwegs: eine Blase nennt den Abschnitt (Punkt → Punkt), seine
 Länge, seine Kurse in beide Richtungen, Unter- und Obergrenze. Tippen Sie auf einen Luftraum: die Blase nennt seinen
 Namen, seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“) und seine Zeiten, wenn bekannt. Das nächste
-Antippen oder ein Verschieben der Karte schließt sie. Mit der Maus genügt es, darauf stehen zu bleiben. Auf dem Profil
-gibt der Finger dieselbe Blase für die durchflogenen Lufträume.
+Antippen oder ein Verschieben der Karte schließt sie. Fahren Sie mit der Maus über den Namen eines Flugwegs oder
+Luftraums: eine kleine Blase folgt dem Zeiger und bleibt noch 5 Sekunden, nachdem Sie ihn verlassen haben; ein Klick
+schließt sie. Auf dem Profil nennen Finger oder Maus die durchflogenen Lufträume.
+
+**Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
+Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
+50 kt, eine Fieder für 10 kt, eine halbe Fieder für 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus
+darüber): die Blase nennt Richtung, Stärke, Temperatur, Flughöhe und die Stunde der Vorhersage. Die Ebene „Höhenwinde“
+blendet sie aus.
 
 **Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:
 Steigflug, Reiseflug, neuer Steig- oder Sinkflug, mit neu berechnetem Ende des Steigflugs und Beginn des Sinkflugs.
@@ -207,8 +263,16 @@ Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten 
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
 
-**Die Route ändern.** Die Karte ändert die Route nicht: „Route bearbeiten“ öffnet Kraftstoff, wo Sie sie
-überarbeiten. Zurück auf der Karte ist der neue Flug schon da.
+**Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten einen
+Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
+losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Tippen Sie einen Fix oder ein
+Funkfeuer abseits der Route an: er wird dem nächstgelegenen Abschnitt hinzugefügt. Tippen Sie einen Routenpunkt an:
+seine Karte nennt seine Flughöhe und bietet „Entfernen“ an. Abflug und Ankunft bewegen sich hier nicht. Auf dem Profil
+ziehen Sie eine Flughöhe nach oben oder unten: sie ändert sich ab dem Punkt, der diesen Abschnitt eröffnet, in Schritten
+von FL10 (auf dem ersten Abschnitt ist es die Flughöhe des Flugs); in der Karte eines Punkts tun „−“ und „+“ dasselbe.
+„Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im Flug gespeichert, und Kraftstoff rechnet neu;
+das Profil folgt. „Fertig“ schließt den Modus, und die Karte lässt sich wieder mit dem Finger verschieben. Um die Route
+als Text einzugeben, öffnet „Route bearbeiten“ den Schritt Route von Kraftstoff.
 
 ## Ohne Netz
 
@@ -241,7 +305,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 1b3b00cfc354 -->
+<!-- fr: e49322f78862 -->
 
 <!-- chapter: report -->
 # Bericht
@@ -256,9 +320,14 @@ der Fluggesellschaft eingetragen.
 Schritt nach dem anderen („Weiter“ unten); auf einem Computer alle drei nebeneinander. Nichts ist Pflicht: Was fehlt,
 wird im letzten Schritt genannt, ohne das Speichern je zu blockieren.
 
-**Der letzte Flug.** Ist Ihre IVAO- (oder VATSIM-)Kennung eingestellt (⚙) und das Gerät online, schlägt eine Karte
-Ihren letzten Flug im Netz vor: „Übernehmen“ füllt Luftfahrzeug, Rufzeichen, Strecke und die aus der Spur gewonnenen
-Zeiten aus. Der in Kraftstoff oder Karte vorbereitete Flug wird auf die gleiche Weise vorgeschlagen („Aktueller Flug“).
+**Der letzte Flug.** Ist Ihre IVAO- (oder VATSIM-)Kennung eingestellt (⚙) und das Gerät online, schlägt eine Karte Ihren
+letzten Flug im Netz vor: „Übernehmen“ füllt Luftfahrzeug, Rufzeichen, Strecke und die aus der Spur gewonnenen Zeiten
+aus. Der in Kraftstoff oder Karte vorbereitete Flug wird auf die gleiche Weise vorgeschlagen („Aktueller Flug“); wurde
+er in Kraftstoff gestartet („Flug starten“), steht er an erster Stelle, „Flug gestartet um hh:mm“. Die Karte nennt in
+einer Zeile alles, was übernommen wird, auch das, wofür eine Einsatzart kein Feld hat (Entfernung, Flugfläche).
+„Übernehmen“ füllt auch die Anlasszeit (die Abflugzeit in Kraftstoff) und den Kraftstoff beim Start (den Blockkraftstoff
+der Kalkulation) aus, jeweils mit ihrer Quelle gekennzeichnet. Sobald sein Bericht gespeichert ist, wird der Flug nicht
+mehr vorgeschlagen.
 
 **Die anderen Quellen.** Klappen Sie „Andere Quellen“ auf, um Ihren letzten IVAO- oder VATSIM-Flug, Ihren
 SimBrief-Flugplan oder einen eingefügten Text zu übernehmen: einen ICAO-Flugplan, die Seite eines Flugs aus dem
@@ -317,7 +386,7 @@ Telefon, wo Lesezeichen umständlich sind, legt „Felder kopieren“ die Zeile 
 - **Ohne Trigramm**: Der Bericht wird trotzdem geschrieben; stellen Sie Ihr Trigramm ein (⚙), damit er auf Ihren Namen
   lautet.
 
-<!-- fr: b8fc73c91418 -->
+<!-- fr: 6ad5a5814956 -->
 
 <!-- chapter: flightlog -->
 # Meine Flüge
@@ -344,6 +413,11 @@ Website-Flugbuch, IVAO- oder VATSIM-Netz), seine Uhrzeit, das Luftfahrzeug, der 
 bereits mit diesem Flug ausgefüllt — Datum, Luftfahrzeug, Rufzeichen, Flugplätze — und mit einer vorgeschlagenen
 Einsatzart. Bei einem Flug mit Bericht öffnet „Bericht öffnen“ ihn erneut zum Bearbeiten.
 
+**Der laufende Flug.** Ein in Kraftstoff gestarteter („Flug starten“) und noch nicht berichteter Flug erscheint oben,
+„Laufend — gestartet um hh:mm“ (eine Ausweichlandung wird angezeigt), noch bevor das Website-Flugbuch ihn kennt.
+„Bericht schreiben“ öffnet den Bericht, der diesen Flug zuerst vorschlägt; sobald der Bericht gespeichert ist,
+verschwindet die Zeile.
+
 **Mehr.** Klappen Sie „Mehr“ auf, um die gefilterte Liste als CSV (Tabellenkalkulation) zu exportieren oder Ihre IVAO-
 und VATSIM-Verbindungen neu zu lesen.
 
@@ -365,7 +439,7 @@ und VATSIM-Verbindungen neu zu lesen.
 - **Ohne Starter**: IVAO und VATSIM lassen sich nur über den Starter eines Rechners neu lesen.
 - **Ohne Kürzel**: Stellen Sie es ein (⚙); es wählt Ihre Berichte und Ihre Zeilen im Flugbuch aus.
 
-<!-- fr: 99d023557d9a -->
+<!-- fr: 21df43e2dc4e -->
 
 <!-- chapter: website -->
 # Website der Fluggesellschaft

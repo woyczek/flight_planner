@@ -22,6 +22,10 @@ IVAO o VATSIM), su hora, la aeronave, la misión y las observaciones.
 con este vuelo — fecha, aeronave, indicativo, aeródromos — y una familia de misión propuesta. En un vuelo que lo tiene,
 «Abrir el informe» lo vuelve a abrir para modificarlo.
 
+**El vuelo en curso.** Un vuelo iniciado en Combustible («Iniciar el vuelo») y aún sin informe aparece en cabeza, «En
+curso — iniciado a las hh:mm» (se señala el desvío), incluso antes de que el diario del sitio lo conozca. «Escribir el
+informe» abre el informe, que propone este vuelo en primer lugar; una vez guardado el informe, la línea desaparece.
+
 **Más.** Despliegue «Más» para exportar la lista filtrada en CSV (hoja de cálculo) o releer sus conexiones IVAO y
 VATSIM.
 
@@ -42,4 +46,4 @@ VATSIM.
 - **Sin lanzador**: IVAO y VATSIM solo se releen a través del lanzador de un equipo.
 - **Sin trigrama**: configúrelo (⚙); es él quien elige sus informes y sus líneas del diario.
 
-<!-- fr: 99d023557d9a -->
+<!-- fr: 21df43e2dc4e -->

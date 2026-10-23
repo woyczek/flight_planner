@@ -22,6 +22,10 @@ VATSIM network), its time, the aircraft, the mission and the notes.
 with this flight — date, aircraft, callsign, airfields — and a suggested mission family. On a flight that has one,
 “Open the report” opens it again for editing.
 
+**The current flight.** A flight started in Fuel (“Start the flight”) and not yet reported appears at the top, “In
+progress — started at hh:mm” (a diversion is flagged), even before the website log knows it. “Write the report” opens
+the report, which offers this flight first; once the report is saved, the line disappears.
+
 **More.** Unfold “More” to export the filtered list as CSV (spreadsheet) or read your IVAO and VATSIM connections again.
 
 ## Where the flights come from
@@ -41,4 +45,4 @@ with this flight — date, aircraft, callsign, airfields — and a suggested mis
 - **No launcher**: IVAO and VATSIM can only be read again through the launcher of a computer.
 - **No trigram**: set it (⚙); it is what picks your reports and your rows of the log.
 
-<!-- fr: 99d023557d9a -->
+<!-- fr: 21df43e2dc4e -->

@@ -22,13 +22,12 @@ profile: a blue cursor follows it, and the same cursor moves on the map. Tap the
 line below the profile says what is under the cursor: distance from the departure, planned altitude, terrain height,
 and the airspace you are in at that point.
 
-**Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes.
-“Low IFR”: low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces
-above FL195. “VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and
-obstacles. “Topo”: the terrain, with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your
-level plus the air refuelling tracks, the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying
-network at all levels. “Auto” chooses from your
-flight's level (High IFR from FL195). The mode is kept on this device.
+**Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
+low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
+“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
+terrain, with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling
+tracks, the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses
+from your flight's level (High IFR from FL195). The mode is kept on this device.
 
 **The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
 names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
@@ -41,11 +40,11 @@ for this setting on this device. “Reset all” goes back to the original choic
 default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
 elsewhere. Close up, everything is drawn anyway.
 
-**Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks
-both ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation (“TMA 8
-AQUITAINE 2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, move over
-an airway's or an airspace's name: a small bubble follows the pointer, then stays 5 seconds after you leave it; a click closes it. On the
-profile, your finger or the mouse gives the airspaces crossed.
+**Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks both
+ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation (“TMA 8 AQUITAINE
+2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, move over an airway's
+or an airspace's name: a small bubble follows the pointer, then stays 5 seconds after you leave it; a click closes it.
+On the profile, your finger or the mouse gives the airspaces crossed.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
@@ -65,14 +64,14 @@ airline. For a mission, a second list chooses among its maps (overview, target, 
 the studio: same frame, same display profile, with the mission's points, its hatched areas and its route. The vertical
 profile then shows the mission's.
 
-**Editing the route on the map.** Tap “Edit” at the top right of the map: the waypoints get a circle. Drag a
-point onto a fix, a beacon or an airfield: it settles there (dropped elsewhere, it becomes a free point named by its coordinates, such as 4530N00030E). Tap a fix or a beacon
-off the route: it is added to the nearest segment. Tap a route point: its card gives its level and offers
-“Remove”. Departure and arrival do not move here. On the profile, drag a level up or down: the level changes from
-the point that opens that segment, in steps of FL10 (on the first segment, it is the flight level); in a point's
-card, “−” and “+” do the same. “Undo” takes back the last gesture. Each change is saved in the
-flight at once, and Fuel redoes the quote; the profile follows. “Done” closes the mode, and the map moves under
-your finger again. To type the route as text, “Edit the route” opens Fuel's Route step.
+**Editing the route on the map.** Tap “Edit” at the top right of the map: the waypoints get a circle. Drag a point onto
+a fix, a beacon or an airfield: it settles there (dropped elsewhere, it becomes a free point named by its coordinates,
+such as 4530N00030E). Tap a fix or a beacon off the route: it is added to the nearest segment. Tap a route point: its
+card gives its level and offers “Remove”. Departure and arrival do not move here. On the profile, drag a level up or
+down: the level changes from the point that opens that segment, in steps of FL10 (on the first segment, it is the
+flight's level); in a point's card, “−” and “+” do the same. “Undo” takes back the last gesture. Each change is saved in
+the flight at once, and Fuel redoes the quote; the profile follows. “Done” closes the mode, and the map moves under your
+finger again. To type the route as text, “Edit the route” opens Fuel's Route step.
 
 ## Without network
 
@@ -104,4 +103,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 1b3b00cfc354 -->
+<!-- fr: e49322f78862 -->

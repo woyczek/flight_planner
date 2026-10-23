@@ -23,13 +23,13 @@ das Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der
 auf der Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem
 Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden.
 
-**Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um
-die sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere
-Flugwege (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen
-Lufträumen, Meldepunkten und Hindernissen. „Topo“: das Gelände, nur mit Flugplätzen, Städten und Hindernissen.
-„OAT“: Militärflug, das IFR Ihrer Flughöhe plus die Luftbetankungsstrecken, die NAT-Tracks des Tages, die Gebiete R,
-D, P, TSA, TRA, CBA und das Tiefflugnetz in allen Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf diesem Gerät
-erhalten.
+**Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
+sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
+(UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen,
+Meldepunkten und Hindernissen. „Topo“: das Gelände, nur mit Flugplätzen, Städten und Hindernissen. „OAT“: Militärflug,
+das IFR Ihrer Flughöhe plus die Luftbetankungsstrecken, die NAT-Tracks des Tages, die Gebiete R, D, P, TSA, TRA, CBA und
+das Tiefflugnetz in allen Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf
+diesem Gerät erhalten.
 
 **Je näher Sie zoomen, desto mehr zeigt sie.** Von weitem zeigt die Karte nur die großen Flugplätze, die Flugwege und
 ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“),
@@ -46,14 +46,14 @@ ohnehin alles gezeichnet.
 **Antippen für mehr.** Tippen Sie auf den Namen eines Flugwegs: eine Blase nennt den Abschnitt (Punkt → Punkt), seine
 Länge, seine Kurse in beide Richtungen, Unter- und Obergrenze. Tippen Sie auf einen Luftraum: die Blase nennt seinen
 Namen, seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“) und seine Zeiten, wenn bekannt. Das nächste
-Antippen oder ein Verschieben der Karte schließt sie. Mit der Maus über den Namen eines Flugwegs oder Luftraums
-fahren: eine kleine Blase folgt dem Zeiger und bleibt danach 5 Sekunden stehen; ein Klick schließt sie. Auf dem Profil nennen Finger
-oder Maus die durchflogenen Lufträume.
+Antippen oder ein Verschieben der Karte schließt sie. Fahren Sie mit der Maus über den Namen eines Flugwegs oder
+Luftraums: eine kleine Blase folgt dem Zeiger und bleibt noch 5 Sekunden, nachdem Sie ihn verlassen haben; ein Klick
+schließt sie. Auf dem Profil nennen Finger oder Maus die durchflogenen Lufträume.
 
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
-Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel sind
-50 kt, eine Fieder 10 kt, eine halbe Fieder 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus darüber):
-die Blase nennt Richtung, Stärke, Temperatur, Flughöhe und die Stunde der Vorhersage. Die Ebene „Höhenwinde“
+Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
+50 kt, eine Fieder für 10 kt, eine halbe Fieder für 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus
+darüber): die Blase nennt Richtung, Stärke, Temperatur, Flughöhe und die Stunde der Vorhersage. Die Ebene „Höhenwinde“
 blendet sie aus.
 
 **Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:
@@ -69,16 +69,16 @@ Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten 
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
 
-**Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten
-einen Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
-losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Tippen Sie einen Fix oder ein Funkfeuer abseits der Route an: er kommt in den
-nächsten Abschnitt. Tippen Sie einen Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an.
-Abflug und Ankunft bewegen sich hier nicht. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten: sie ändert
-sich ab dem Punkt, der diesen Abschnitt eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die
-Flughöhe des Flugs); in der Karte eines Punkts tun „−“ und „+“ dasselbe. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im
-Flug gespeichert, und Kraftstoff rechnet neu; das Profil folgt. „Fertig“ schließt den Modus, und die Karte lässt sich
-wieder mit dem Finger verschieben. Um die Route als Text einzugeben, öffnet „Route bearbeiten“ den Schritt Route von
-Kraftstoff.
+**Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten einen
+Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
+losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Tippen Sie einen Fix oder ein
+Funkfeuer abseits der Route an: er wird dem nächstgelegenen Abschnitt hinzugefügt. Tippen Sie einen Routenpunkt an:
+seine Karte nennt seine Flughöhe und bietet „Entfernen“ an. Abflug und Ankunft bewegen sich hier nicht. Auf dem Profil
+ziehen Sie eine Flughöhe nach oben oder unten: sie ändert sich ab dem Punkt, der diesen Abschnitt eröffnet, in Schritten
+von FL10 (auf dem ersten Abschnitt ist es die Flughöhe des Flugs); in der Karte eines Punkts tun „−“ und „+“ dasselbe.
+„Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im Flug gespeichert, und Kraftstoff rechnet neu;
+das Profil folgt. „Fertig“ schließt den Modus, und die Karte lässt sich wieder mit dem Finger verschieben. Um die Route
+als Text einzugeben, öffnet „Route bearbeiten“ den Schritt Route von Kraftstoff.
 
 ## Ohne Netz
 
@@ -111,4 +111,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 1b3b00cfc354 -->
+<!-- fr: e49322f78862 -->

@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Help, lot 4: the two tutorials** (`frame/help/help.js`, `frame/help/build_help.py`, `frame/help/tutorial/`,
+  `frame/app.js`, `frame/sw.js`, `frame/frame.css`; SPEC § 6, DECISIONS) — "Prepare a flight" (Fuel's five steps) and
+  "Write a report" (to the website and My flights), English and French, one 375 px capture per step taken by
+  `tutorial/capture.py` on test data; reached from "Start with…" at the top of the manual and a welcome card at the
+  first opening; the build checks them. The Fuel, Map, Report and My flights chapters are retranslated in English, German and
+  Spanish.
 - **Map, lot 6c: winds aloft** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — wind barbs at the
   flight level along the route, at each point and every 50 NM, from Fuel's forecast; a tap or a hover gives direction,
   speed, temperature, level and forecast hour; a layer of their own.

@@ -24,11 +24,11 @@ espacio aéreo en el que está en ese momento.
 
 **Seis modos de mapa.** El botón arriba a la izquierda del mapa muestra el modo elegido; tóquelo para ver los seis
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
-superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles
-en VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve, solo con los aeródromos, las ciudades y los
-obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las zonas R, D,
-P, TSA, TRA, CBA y la red de vuelo bajo a todos los niveles. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195). El modo se conserva en este
-dispositivo.
+superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en
+VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve, solo con los aeródromos, las ciudades y los
+obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las
+zonas R, D, P, TSA, TRA, CBA y la red de vuelo bajo a todos los niveles. «Auto» elige según el nivel de su vuelo (IFR
+alto desde el FL195). El modo se conserva en este dispositivo.
 
 **Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
 Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
@@ -47,10 +47,10 @@ notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conoce
 cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y luego
 queda 5 segundos tras dejarlo; un clic la cierra. En el perfil, el dedo o el ratón dan los espacios atravesados.
 
-**Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en
-barbas a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta apunta de donde viene el viento;
-un banderín vale 50 kt, una barba 10 kt, media barba 5 kt. Toque una barba (o pase el ratón por encima): la burbuja da
-la dirección, la fuerza, la temperatura, el nivel y la hora de la previsión. La capa «Vientos en altura» las oculta.
+**Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
+a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
+banderín vale 50 kt, una barba 10 kt, media barba 5 kt. Toque una barba (o pase el ratón por encima): la burbuja da la
+dirección, la fuerza, la temperatura, el nivel y la hora de la previsión. La capa «Vientos en altura» las oculta.
 
 **Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,
 nivel, nuevo ascenso o descenso, con el final del ascenso y el inicio del descenso calculados de nuevo. Los puntos de
@@ -65,14 +65,15 @@ la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista 
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
-**Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de la ruta se rodean de un
-círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar,
-se vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Toque un fijo o una radioayuda fuera de la ruta: se añade al tramo más cercano. Toque un punto de
-la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la llegada no se mueven aquí. En el perfil, arrastre un nivel hacia
-arriba o hacia abajo: el nivel cambia desde el punto que abre ese tramo, en pasos de FL10 (en el primer tramo, es el
-nivel del vuelo); en la tarjeta de un punto, «−» y «+» hacen lo mismo. «Deshacer» retoma el último gesto. Cada cambio se guarda en el vuelo en seguida, y Combustible rehace el presupuesto; el perfil sigue.
-«Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, «Editar la ruta»
-abre el paso Ruta de Combustible.
+**Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de giro se rodean de un
+círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
+vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Toque un fijo o una radioayuda fuera de la ruta:
+se añade al tramo más cercano. Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la
+llegada no se mueven aquí. En el perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto
+que abre ese tramo, en pasos de FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+»
+hacen lo mismo. «Deshacer» deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el
+cálculo; el perfil sigue. «Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en
+texto, «Editar la ruta» abre el paso Ruta de Combustible.
 
 ## Sin conexión
 
@@ -104,4 +105,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 1b3b00cfc354 -->
+<!-- fr: e49322f78862 -->
