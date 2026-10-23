@@ -195,8 +195,53 @@
   });
   // sites relayés par le lanceur (clés et CORS de son côté : tools/launch.py, POST /__setup/net) ; sans lanceur, appel
   // direct seulement vers ceux qui l'autorisent (CORS) ; tout autre site extérieur : 503 marqué x-sog-unreachable
-  const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov'],
-    DIRECT = ['www.simbrief.com', 'api.ivao.aero']; // aviationweather.gov n'envoie pas d'en-tête CORS : relais seulement
+  // météo : aviationweather.gov (METAR / TAF, pas de CORS) par le relais seulement ; sans lanceur, METAR par
+  // metar.vatsim.net (sans clé), TAF par avwx.rest avec la clé de l'appareil, ajoutée ici (jamais vue par un module)
+  const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov',
+      'metar.vatsim.net'
+    ],
+    DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'metar.vatsim.net', 'avwx.rest'];
+  // clé personnelle avwx.rest (TAF sans lanceur) : sur l'appareil seulement, à côté du jeton GitHub (githubData:…, hors
+  // des sauvegardes : ni device/ ni la base IndexedDB que FrameData.dump() exporte) ; jamais rendue à une page
+  const AVWX = 'githubData:avwx';
+  const avwxKey = () => {
+    try {
+      return localStorage.getItem(AVWX) || '';
+    } catch {
+      return '';
+    }
+  };
+  /** Clé météo de l'appareil, pour la carte des réglages : présence, enregistrement, effacement, essai (TAF d'un
+   *  terrain) ; la clé elle-même n'est jamais relue. */
+  const weatherKey = {
+    has: () => !!avwxKey(),
+    save(key) {
+      const k = String(key || '').trim();
+      try {
+        k ? localStorage.setItem(AVWX, k) : localStorage.removeItem(AVWX);
+      } catch {
+        /* stockage indisponible */
+      }
+      return !!k;
+    },
+    clear() {
+      try {
+        localStorage.removeItem(AVWX);
+      } catch {
+        /* stockage indisponible */
+      }
+    },
+    async test(icao = 'LFPG') {
+      const r = await net.fetch(`https://avwx.rest/api/taf/${encodeURIComponent(String(icao).trim().toUpperCase())}`);
+      const why = r.headers.get('x-sog-offline') ? 'offline' : r.headers.get('x-sog-unreachable') ? 'no key' : r.status === 401 ||
+        r.status === 403 ? 'key refused' : r.ok ? 'ok' : `HTTP ${r.status}`;
+      return {
+        ok: r.ok,
+        status: r.status,
+        message: why
+      };
+    }
+  };
   let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
   /** Hôte du site de la compagnie (ctx.airline.site, en https) : relayé ou appelé en lecture seule (GET) ; '' sinon. */
   const siteHost = () => {
@@ -248,6 +293,17 @@
             })
           });
           return r.headers.get('x-sog-offline') ? offline() : r;
+        }
+        if (u.hostname === 'avwx.rest') {
+          // TAF sans lanceur : la clé de l'appareil est ajoutée ici ; sans clé, 503 tout de suite
+          const key = avwxKey();
+          if (!key) return unreachable();
+          const headers = new Headers(init.headers || {});
+          headers.set('Authorization', `BEARER ${key}`);
+          return await fetch(u, {
+            ...init,
+            headers
+          });
         }
         if (DIRECT.includes(u.hostname) || site) return await fetch(u, init);
         return unreachable();
@@ -814,6 +870,7 @@
         level: moduleLevel[m.id] ?? 1
       }))),
       cutAccess,
+      weatherKey,
       // après un clone ou une reprise de data/ par le lanceur : relevé de nouveau, transport rebranché
       redetect: async () => {
         launcherHere = await FD.launcher.detect();

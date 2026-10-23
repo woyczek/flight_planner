@@ -99,8 +99,10 @@ export function unmount() { /* stop watchers, timers */ }
   - with a launcher, SimBrief, IVAO, VATSIM and aviationweather.gov (METAR) are relayed by it, keys and CORS
     included, with the same signature;
   - without one, SimBrief and IVAO are called directly; aviationweather.gov (METAR / TAF) sends no CORS header, so it
-    answers a 503 marked `x-sog-unreachable` at once (the weather without a launcher will come through the web
-    service);
+    answers a 503 marked `x-sog-unreachable` at once;
+  - weather without a launcher: the METAR from `metar.vatsim.net` (raw text, no key), the TAF from `avwx.rest`
+    (decoded JSON). For avwx, never pass a key: the frame adds the device's own, and answers 503 without one (the
+    table by site is in SPEC § 3.2);
   - the airline's website (`ctx.airline.site`, https) is read the same way, GET only: never send anything to it
     (any other method gets a 503); without a launcher, a direct read works only if the site allows it (CORS);
   - any other outside site gets a 503 carrying `x-sog-unreachable`.

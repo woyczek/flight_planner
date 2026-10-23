@@ -289,6 +289,24 @@ used alone:
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
 
+- **Outgoing calls (`ctx.net`), by site.** The launcher's relay comes first when the page is served by one.
+
+| Site | With a launcher | Without a launcher | Key |
+|---|---|---|---|
+| SimBrief, IVAO | relayed (IVAO: the launcher's API key) | direct | — |
+| VATSIM (`api`, `data`, `my`) | relayed | 503 `x-sog-unreachable` | — |
+| aviationweather.gov (METAR / TAF, decoded JSON) | relayed | 503 (no CORS header) | — |
+| metar.vatsim.net (METAR, raw text, several airports `id=A,B`) | relayed | direct | — |
+| avwx.rest (TAF and METAR, decoded JSON) | direct | direct | the device's own, added by the frame (`Authorization: BEARER …`); without one, 503 `x-sog-unreachable` |
+| the airline's website (`airline.site`) | relayed, GET only | direct, GET only | — |
+| any other site | 503 `x-sog-unreachable` | 503 | — |
+
+- **The weather key** (avwx.rest, for the TAF without a launcher):
+  - It is entered on the device in Settings › Keys and kept in `localStorage` (`githubData:avwx`), like the GitHub
+    token. It is never in `device/` nor in the IndexedDB that `FrameData.dump()` exports, and never in the
+    repository.
+  - The frame adds it to the call itself; no page or module ever reads it back.
+  - The settings screen gets `weatherKey { has(), save(key), clear(), test(icao) → { ok, status, message } }`.
 - A module loads no global style sheet. It uses the frame's tokens (`--sog-*`) and primitives (classes `f-…`): the
   list, the designs (standard, cabinet, field), day / night and print are in `frame/design/SPEC.md`, the module's
   rules in `frame/design/INTEGRATION.md`.

@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 12: airport weather without a launcher** (`frame/app.js`, `tools/launch.py`, `tools/csp_policy.py`) —
+  the METAR comes from metar.vatsim.net (no key; relayed by the launcher when there is one), the TAF from avwx.rest with
+  a personal key entered on the device (Settings › Keys), which the app adds itself and never keeps in a backup or in
+  the repository.
 - **fuel: weather along the route's corridor** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
   `help/fr.md`) — the "intermediate aerodrome" field is gone: every aerodrome within a settable distance of the route
   (10 NM by default) that reports a METAR or TAF is shown with its distance along the route, folded beyond two, and

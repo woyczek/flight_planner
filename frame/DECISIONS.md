@@ -300,6 +300,22 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - forward of the browser: no link;
     - a fresh `#report?from=flightlog`: "← My flights", whose return goes by address;
     - on a phone the link replaces the name, with no horizontal scroll; no JavaScript error.
+- **23 Oct 2026 — Lot 12, weather without a launcher** (reading measured with curl, decided by the ergonomics session):
+  - metar.vatsim.net is in the relay and the direct list (the launcher first): CORS `*`, no key, the real METAR of the
+    moment.
+  - avwx.rest is direct only, with the device's key added by the frame.
+  - Rejected: met.no `tafmetar` (CORS `*`, but about 20 h late), NOAA `tgftp` and aviationweather.gov (no CORS: relay
+    only), checkwx (kept for later if needed).
+  - The key lives in `localStorage['githubData:avwx']`, not in `device/`: `FrameData.dump()` exports `device/`, and the
+    `githubData:` keys are already left out of V2's browser backups. This is the settings session's proposal,
+    confirmed.
+  - `weatherKey.test()` calls through `ctx.net` and says `ok`, `no key`, `key refused` (401 / 403), `offline` or the
+    HTTP status.
+  - `connect-src` gets `https://avwx.rest` (`metar.vatsim.net` was already there).
+  - Tests:
+    - with the launcher, the METAR is relayed; without it, it is called directly;
+    - avwx without a key: 503 `x-sog-unreachable`; with a dummy key: the direct call passes CORS and avwx answers 403;
+    - the key is not readable from `SogFrame`; the launcher's CSP has both hosts.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

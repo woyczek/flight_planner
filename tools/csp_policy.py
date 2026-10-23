@@ -19,6 +19,8 @@ CONNECT = [
     # dépôt des données par l'API GitHub (accès aux données, shared/github_data.js)
     'https://api.github.com',
     'https://metar.vatsim.net', 'https://api.open-meteo.com', 'https://archive-api.open-meteo.com',
+    # TAF sans lanceur (appli Pilote V3, clé personnelle de l'appareil ajoutée par le cadre)
+    'https://avwx.rest',
     # base mondiale des aérodromes (sources.airports) et purge de son cache
     'https://cdn.jsdelivr.net', 'https://purge.jsdelivr.net',
 ]
