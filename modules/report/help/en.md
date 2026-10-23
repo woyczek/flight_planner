@@ -25,7 +25,8 @@ to replace them.
 
 **The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
 if the flight follows one, then the blocks specific to the family. Some blocks only appear for one series (for example
-VIP or ferry for special missions).
+VIP or ferry for special missions). Until you open this step it is marked "to check" instead of ✓: the family and
+the series of a new report are taken by default.
 
 **The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are

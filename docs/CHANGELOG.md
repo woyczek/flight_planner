@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report: the Mission step says "to check" until you open it** (`modules/report/module.js`; DECISIONS, help ×4) —
+  a new report no longer shows the Mission step as done when its family and series were only taken by default.
 - **Fuel: the level decision gives the quote's figures** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — each
   level of the curve is worked out like the quote, with the forecast wind at that level; at the chosen level both
   say the same. Start texts corrected (taxi until when, where the real position comes from).

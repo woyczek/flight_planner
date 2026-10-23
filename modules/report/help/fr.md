@@ -26,7 +26,8 @@ un bouton propose de les remplacer.
 
 **La mission.** Au deuxième pas : la famille (proposée d'après votre dernier compte rendu), la série, l'identifiant de
 la mission si le vol en suit une, puis les blocs propres à la famille. Certains blocs n'apparaissent que pour une
-série (par exemple VIP ou convoyage pour les missions spéciales).
+série (par exemple VIP ou convoyage pour les missions spéciales). Tant que vous n'avez pas ouvert ce pas, il est
+marqué « à voir » au lieu du ✓ : la famille et la série d'un compte rendu neuf sont reprises par défaut.
 
 **Le résultat.** Au dernier pas : le résultat, vos observations, l'équipage (vous d'abord, comme commandant de bord) et
 le carburant au départ et à l'atterrissage. Les incohérences — heures dans le désordre, date future, carburant qui

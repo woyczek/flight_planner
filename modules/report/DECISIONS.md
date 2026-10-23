@@ -2,6 +2,14 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — the Mission step is "to check" until seen** (end-to-end pass, Simplification's go): a new report
+  takes the family of the last report (`PREFS`) and its first series, so "2 Mission ✓" showed on a report whose
+  Mission step was never opened, and a family nobody chose went to the log. Now `S.missionSeen`: false for a new
+  report (button, mount without a draft, a module's handoff), true for a report reopened, set by opening the step,
+  by a field of the step or the family, and when the step is on screen (wide module: every step shown); kept in the
+  draft (a draft from before counts as seen). Unseen: the step says "to check" (`data-todo`) instead of ✓, and the
+  Result step lists "mission (family and series taken by default, not seen yet)". Saving stays possible. The family
+  stays the last report's (no empty family: the families' fields depend on it). Checked on 8804 at 375 and 1280 px.
 - **23 Oct 2026 — "Copy the fields" on a tablet over http**: through `copyText` (`frame/lib/clipboard.js`);
   as a last resort the line is shown selected under the button with "copy it". Checked on 8804 without
   `navigator.clipboard`: copied by `execCommand`.

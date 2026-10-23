@@ -150,8 +150,13 @@ const TX = {
     times: L('décollage et atterrissage', 'take-off and landing', 'Start und Landung', 'despegue y aterrizaje'),
     crew: L('équipage', 'crew', 'Besatzung', 'tripulación'),
     fuel: L('carburant départ et arrivée', 'fuel at start and landing', 'Kraftstoff Start und Landung', 'combustible inicial y final'),
-    outcome: L('résultat', 'outcome', 'Ergebnis', 'resultado')
+    outcome: L('résultat', 'outcome', 'Ergebnis', 'resultado'),
+    mission: L('mission (famille et série reprises par défaut, pas encore vues)',
+      'mission (family and series taken by default, not seen yet)',
+      'Mission (Familie und Serie standardmäßig übernommen, noch nicht angesehen)',
+      'misión (familia y serie tomadas por defecto, aún no vistas)')
   },
+  toSee: L('à voir', 'to check', 'prüfen', 'por ver'),
   warnings: L('Vérifier : {l}.', 'Check: {l}.', 'Prüfen: {l}.', 'Comprobar: {l}.'),
   // sources du préremplissage
   sources: L('Autres sources', 'Other sources', 'Andere Quellen', 'Otras fuentes'),
@@ -346,7 +351,8 @@ function saveDraft() {
     at: new Date().toISOString(),
     path: s.path,
     mission: s.m,
-    sources: s.sources
+    sources: s.sources,
+    missionSeen: !!s.missionSeen
   }, {
     policy: 'cache'
   }), 600);
@@ -461,6 +467,7 @@ const crewCol = () => ({
 const STYLE = `
 [data-module="report"] .rp-code{text-transform:uppercase}
 [data-module="report"] .rp-step[hidden]{display:none}
+[data-module="report"] .f-steps>[data-todo]::after{content:" · " attr(data-todo);font-weight:400}
 [data-module="report"] .rp-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px}
 [data-module="report"] .f-bar button{flex:1;min-width:150px}
 [data-module="report"] .f-bar .rp-unset{display:block}
@@ -480,7 +487,8 @@ function renderBody() {
   const m = S.m,
     F = FAMILIES[m.family] || HEMS,
     step = S.step,
-    stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} ${ok ? ' data-done' : ''}>${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
+    // pas Mission jamais ouvert (famille et série d'un CR neuf prises par défaut) : « à voir » au lieu du ✓
+    stepBtn = (i, ok) => `<button type="button" data-step="${i}"${i === step ? ' aria-current="step"' : ''} ${ok ? ' data-done' : ''}${i === 1 && !S.missionSeen ? ` data-todo="${esc(tt(TX.toSee))}"` : ''}>${i + 1} ${esc(tt(TX.steps[i]))}</button>`,
     done = progress(),
     site = Site.recordPage(S.ctx.airline || {});
   S.body.innerHTML = `
@@ -518,6 +526,8 @@ function renderBody() {
     </div>
     <div class="f-bar"><button type="button" class="primary" data-do="save">${esc(tt(S.path ? TX.saveEdit : TX.save))}</button>
       <button type="button" data-do="savesite"${site ? '' : ` disabled title="${esc(tt(TX.siteUnset))}"`}>${esc(tt(TX.saveSite))}${site ? '' : `<small class="f-muted rp-unset">${esc(tt(TX.siteUnset))}</small>`}</button></div>`;
+  // module large (tous les pas affichés, sans barre de pas) : le pas Mission est sous les yeux, donc vu
+  if (!S.missionSeen && S.body.querySelector('.rp-step[data-s="1"]')?.offsetParent) S.missionSeen = true;
   const mark = S.body.querySelector('[data-mark]');
   if (mark) mark.onclick = e => {
     e.preventDefault(); // depuis la barre des favoris seulement
@@ -535,7 +545,9 @@ function progress() {
   const m = S.m,
     a = m.aircraft?.[0] || {},
     t = m.timeline || {};
-  return [!!(a.registration || a.type && a.callsign) && !!(t.takeoff && t.landing), !!m.series, !!m.results?.outcome];
+  return [!!(a.registration || a.type && a.callsign) && !!(t.takeoff && t.landing), !!m.series && !!S.missionSeen, !!m.results
+    ?.outcome
+  ];
 }
 /** Ce qui manque (non bloquant) et les contrôles de cohérence de la V2, au pas Résultat. */
 function check() {
@@ -550,6 +562,7 @@ function check() {
   if (!(m.crew || []).some(c => c.name)) need.push(tt(TX.need.crew));
   if (empty(m.fuel?.start) || empty(m.fuel?.landing)) need.push(tt(TX.need.fuel));
   if (!m.results?.outcome) need.push(tt(TX.need.outcome));
+  if (!S.missionSeen) need.push(tt(TX.need.mission));
   const issues = M.checkMission(m).map(i => tt(TX.issues[i.kind] || TX.issues.invalid, {
     v: i.value,
     o: i.other
@@ -772,6 +785,7 @@ async function takeHandoff() {
   if (h.open) return openReport(h.open);
   if (h.fresh) {
     S.m = freshMission(FAMILIES[h.family] ? h.family : S.m.family);
+    S.missionSeen = false;
     S.path = null;
     S.sources = {};
     S.step = 0;
@@ -794,6 +808,7 @@ async function openReport(path) {
     ...mission
   } = r;
   S.m = M.fillDefaults(mission, M.emptyMission(mission.family));
+  S.missionSeen = true; // CR déjà enregistré : sa mission a été choisie
   S.path = path;
   S.sources = {};
   S.step = 0;
@@ -844,6 +859,10 @@ function readControl(el) {
 /** Saisie : la mission suit le champ, la source d'un champ retouché s'efface, brouillon et repères mis à jour. */
 function onInput(e) {
   const el = e.target;
+  if (!S.missionSeen && (el.dataset.family !== undefined || el.closest('.rp-step[data-s="1"]'))) {
+    S.missionSeen = true;
+    S.body.querySelector('.f-steps [data-todo]')?.removeAttribute('data-todo');
+  }
   if (el.dataset.family !== undefined) {
     const fam = el.value;
     if (FAMILIES[fam] && fam !== S.m.family) {
@@ -870,6 +889,10 @@ async function onClick(e) {
   if (!b) return;
   if (b.dataset.step) {
     S.step = +b.dataset.step;
+    if (S.step === 1 && !S.missionSeen) { // pas Mission ouvert : vu
+      S.missionSeen = true;
+      saveDraft();
+    }
     renderBody(); // changement de pas : la page remonte en haut, exprès
     return scrollTo(0, 0);
   }
@@ -897,6 +920,7 @@ async function onClick(e) {
     }
     case 'new':
       S.m = freshMission(S.m.family);
+      S.missionSeen = false;
       S.path = null;
       S.sources = {};
       S.step = 0;
@@ -987,12 +1011,16 @@ export async function mount(el, ctx) {
   const d = await ctx.data.get(DRAFT);
   if (d?.mission?.family && FAMILIES[d.mission.family]) {
     S.m = M.fillDefaults(d.mission, M.emptyMission(d.mission.family));
+    S.missionSeen = d.missionSeen !== false; // brouillon d'avant ce repère : tenu pour vu
     S.path = d.path || null;
     S.sources = d.sources || {};
     ctx.notify(tt(TX.draft, {
       d: new Date(d.at).toLocaleString(ctx.lang())
     }), 'info');
-  } else S.m = freshMission(FAMILIES[(await ctx.data.get(PREFS))?.family] ? (await ctx.data.get(PREFS)).family : 'HEMS');
+  } else {
+    S.m = freshMission(FAMILIES[(await ctx.data.get(PREFS))?.family] ? (await ctx.data.get(PREFS)).family : 'HEMS');
+    S.missionSeen = false;
+  }
   S.body.addEventListener('input', onInput);
   S.body.addEventListener('change', onInput);
   S.body.addEventListener('click', onClick);

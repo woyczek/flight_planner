@@ -25,7 +25,8 @@ botón propone sustituirlos.
 
 **La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
 misión si el vuelo sigue una, y después los bloques propios de la familia. Algunos bloques solo aparecen para una serie
-(por ejemplo VIP o traslado en las misiones especiales).
+(por ejemplo VIP o traslado en las misiones especiales). Mientras no abra este paso, aparece «por ver» en lugar
+de ✓: la familia y la serie de un informe nuevo se toman por defecto.
 
 **El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
 el combustible a la salida y al aterrizaje. Las incoherencias — horas desordenadas, fecha futura, combustible que
