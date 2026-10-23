@@ -2615,10 +2615,26 @@ function verticalProfile(q) {
 }
 /** Écrit le profil du devis dans le vol courant quand il change (maps le lit pour le profil vertical). */
 function shareProfile(q) {
-  const p = verticalProfile(q);
-  if (JSON.stringify(p) === JSON.stringify(S.flight.profile ?? null)) return;
+  const p = verticalProfile(q),
+    sum = quoteSummary(q);
+  if (JSON.stringify(p) === JSON.stringify(S.flight.profile ?? null) && JSON.stringify(sum) === JSON.stringify(S.flight.quote ?? null))
+    return;
   S.flight.profile = p;
+  S.flight.quote = sum;
   saveFlight();
+}
+/** Résumé du devis pour le compte rendu (current_flight.quote) : carburant bloc et délestage arrondis, dans l'unité de
+ *  la fiche, temps de vol (min), niveau ; null sans devis chiffré. */
+function quoteSummary(q) {
+  if (!q?.hasFuel) return null;
+  return {
+    block: Math.round(q.block),
+    trip: Math.round(q.trip),
+    unit: S.C?.sheet?.unit || 'kg',
+    minutes: Math.round(q.minutes),
+    levelFt: q.levelFt || null,
+    approx: !!q.approx
+  };
 }
 
 /** Liens « Ouvrir dans » (frame/lib/external_links.js, règles de la V2) : SimBrief (dispatch prérempli), SkyVector

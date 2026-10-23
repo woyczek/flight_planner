@@ -4,6 +4,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — the quote in the current flight**: Report fills "fuel at start" with the block fuel (arbitration 15),
+  so fuel writes `current_flight.quote = { block, trip, unit, minutes, levelFt, approx }` with the profile, only when it
+  changes.
 - **23 Oct 2026 — arbitrations of the end-to-end pass** (ergonomics session): `started` cleared when the departure
   changes, kept and marked `diverted` when the arrival changes after the start — and cleared with `null`, because a
   deleted key came back from the stored record through the write's merge (seen in the check); the wind's source in

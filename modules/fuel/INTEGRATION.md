@@ -117,6 +117,9 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 - `weather` (fuel's): `{ when (flight date, device time, optional), real (wind from the aerodromes' weather) }` (`mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
+- `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx }` — the quote's block
+  fuel and trip, rounded, rewritten with every quote that changes them (null without a quote with fuel); Report fills
+  "fuel at start" with `block`.
 - `started` (fuel's, lot G): `{ at (ISO), by: 'fuel', diverted? }` when the pilot pressed "Start the flight" on the
   Departure step; Report takes the flight up from there. Absent until then; `null` once the departure aerodrome
   changes (another flight; null rather than absent because writes merge with the stored record); `diverted: true`
