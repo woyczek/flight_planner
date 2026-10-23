@@ -38,38 +38,37 @@ ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
 **Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families (TMA /
 CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
-altitudes, towns, graticule, alternate, airspace names, airway
-names. Tick or untick: the map follows, and your choice is kept for this setting on
-this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by default in IFR, keeps
-airspaces and airways near the route; unticked, the whole visible map is drawn, to look elsewhere. Close up, everything
-is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left, more to the right, at
-every zoom. Each element of the map has its zoom range: VFR reporting points appear only very close, CTRs close up, TMAs
-in a medium view, FIRs from afar.
+altitudes, towns, graticule, alternate, airspace names, airway names. Tick or untick: the map follows, and your choice
+is kept for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked
+by default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
+elsewhere. Close up, everything is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to
+the left, more to the right, at every zoom. Each element of the map has its zoom range: VFR reporting points appear only
+very close, CTRs close up, TMAs in a medium view, FIRs from afar.
 
-**Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
-small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,
-its floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”).
-Tapped elsewhere inside an airspace, the bubble gives the airspace under your finger; where several
-overlap, a card shows them all: a block of levels, like the vertical profile (one numbered column per airspace, from its
-floor to its ceiling), then the numbered list with their limits. It stays until the next tap. It follows the pointer, stays 5
-seconds, gives way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger
-or the mouse give the airspaces crossed in the same way.
+**Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a small
+bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks, its
+floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
+elsewhere inside an airspace, the bubble gives the airspace under your finger; where several overlap, a card shows them
+all: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
+then the numbered list with their limits. It stays until the next tap. It follows the pointer, stays 5 seconds, gives
+way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger or the mouse give
+the airspaces crossed in the same way.
 
-**The VFR reporting points of an aerodrome.** Move the mouse over an aerodrome: its reporting points and the
-sequences taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in
-on its points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the
-VAC, folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
-aerodromes are shown anyway. These data are extracted automatically from the VAC: they are marked “to be checked”,
+**The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences
+taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in on its
+points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the VAC,
+folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
+airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”,
 are not a published route and do not give the direction of travel; the VAC chart prevails. They appear once the
 administrator has imported them (Settings › Maintenance).
 
-**In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned
-14:32Z”) and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted).
-Above the map, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your
-altitude against the planned one; the profile shows both altitudes. Close up, each point carries its estimated time
-(ETA). “Follow” keeps the map on your position; moving the map stops it. Without a position (GPS or network not
-enabled), the line says so and opens the settings; a position older than 2 minutes is greyed. The
-line ends with the position's source: GPS, network, IVAO, VATSIM, X-Plane or Little Navmap.
+**In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
+and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
+a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
+planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA). “Follow” keeps the
+map on your position; moving the map stops it. Without a position (GPS or network not enabled), the line says so and
+opens the settings; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
+IVAO, VATSIM, X-Plane or Little Navmap.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
@@ -130,4 +129,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 103b942e1640 -->
+<!-- fr: 3208767944e8 -->

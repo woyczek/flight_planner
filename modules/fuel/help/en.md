@@ -22,7 +22,9 @@ aircraft takes its own sheet if it has one, otherwise its type's, otherwise an e
 marks it “approximate”. The chosen registration and callsign follow the flight through to the report. The “Cruise” line
 says where the fuel flow comes from.
 
-Next to the date, the "+30" clock sets the flight 30 min from now (rounded to 5 min; each press adds 30 min) and "Now" goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again at once.
+Next to the date, the “+30” clock sets the flight 30 min from now (rounded to 5 min; each press adds 30 min) and “Now”
+goes back to the current time: the aerodrome weather (the TAF if it covers that time) and the winds aloft are read again
+at once.
 
 **2 Route.** Type the route in the “Route” field (Enter confirms it), always visible: the points, the airways and the
 levels, as in a flight plan (“LFBO TOU UN460 NTS/F280 LFRN”). You can also paste an ICAO flight plan or the list of an
@@ -159,4 +161,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: 1864254f79d8 -->
+<!-- fr: e1923cc95a7a -->

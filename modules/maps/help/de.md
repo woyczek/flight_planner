@@ -64,8 +64,8 @@ die Karte rückt an seine Punkte heran, wenn sie eng beieinander liegen, und sei
 Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Escape oder ein Antippen anderswo gibt ihn frei.
 Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
 aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet, sind keine veröffentlichte Route und nennen keine
-Flugrichtung; maßgeblich ist die VAC-Karte. Sie erscheinen, sobald der Administrator sie importiert hat
-(Einstellungen › Wartung).
+Flugrichtung; maßgeblich ist die VAC-Karte. Sie erscheinen, sobald der Administrator sie importiert hat (Einstellungen ›
+Wartung).
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
@@ -139,4 +139,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 1a6a90e809c4 -->
+<!-- fr: 3208767944e8 -->
