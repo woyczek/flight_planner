@@ -35,18 +35,50 @@ combustible de viaje, reserva, combustible de bloque, tiempo de vuelo e inicio d
 
 ## Cómo usarlo
 
-**La aeronave.** Elija su ficha de rendimiento en la primera tarjeta. Sin ficha, tome «Otro tipo (código OACI)…» y
-escriba su código OACI (C30J, EC45…): el cálculo parte entonces de una estimación del tipo, marcada «aproximado». La
-línea «Crucero» indica de dónde viene el consumo empleado.
+**La aeronave.** Una sola línea arriba: la aeronave elegida, su matrícula, su indicativo y de dónde viene. La lupa abre
+la búsqueda: escriba una ficha, una matrícula, un indicativo o un tipo. Los resultados llegan en este orden: sus fichas
+de rendimiento, las aeronaves de la aerolínea (su flota, luego las conocidas por su diario), los tipos publicados y, en
+último lugar, el código tal como se escribió. Una aeronave de la aerolínea toma su propia ficha si la tiene, si no la de
+su tipo, si no una estimación del tipo — el cálculo la marca entonces «aproximado». La matrícula y el indicativo elegidos
+siguen al vuelo hasta el informe. La línea «Crucero» indica de dónde viene el consumo.
 
 **La ruta.** Escriba la salida y la llegada (códigos OACI): la distancia y el rumbo verdadero se calculan solos. Para
 una ruta detallada, despliegue «Ruta detallada» y péguela (plan de vuelo OACI, o una línea «punto latitud longitud»
 por punto). Si no se reconoce nada, escriba la distancia y el rumbo a mano. Con su identificador SimBrief configurado
 (⚙), «Último OFP de SimBrief» retoma de una vez la ruta, el nivel, el viento medio y la aeronave de su último plan.
 
+Bajo la distancia, «Puntos de la ruta» enumera los puntos reconocidos, de la salida a la llegada. Las flechas suben o
+bajan un punto en la lista, la cruz lo quita; el campo de abajo añade uno antes de la llegada: un identificador
+(radioayuda, punto, aeródromo) o «NOMBRE latitud longitud». Cada punto intermedio tiene un campo de nivel opcional, en
+FL: es el nivel mantenido a partir de ese punto, para un ascenso o un descenso por escalones. Un punto sin nivel
+continúa el anterior (mostrado en gris); el vuelo sale al nivel del plan. El cálculo cuenta cada escalón (su ascenso o
+su descenso, luego el crucero a ese nivel), el resultado muestra la sucesión de niveles (FL100 → FL120), y el descenso
+parte del último nivel. Cada cambio reescribe la ruta detallada y se transmite de inmediato al mapa.
+
 **El nivel y el viento.** Indique el nivel de crucero (en FL) y el viento: dirección e intensidad. Sin dirección, o sin
 viento alguno, el combustible de bloque se da como horquilla. «Ascenso» elige la forma de subir: económico, mejor
 régimen, rápido, a la velocidad de la ficha, o manual (usted da velocidad y régimen de ascenso).
+
+«ISA ±» es la desviación de temperatura respecto a la atmósfera estándar, en °C: cambia la potencia disponible, la
+velocidad verdadera y el techo. Una vez leída la meteorología, la línea de debajo la calcula a partir del METAR de la
+salida — su temperatura menos la temperatura estándar del aeródromo (15 − 1,98 × elevación del aeródromo en miles de
+pies) — y «Usar ISA …» la lleva al campo. La desviación elegida se guarda en sus ajustes: el vuelo siguiente parte de la
+misma.
+
+El desplegable «Altitud de densidad» muestra, con la desviación ISA en abscisas, la altitud de densidad de cada altitud
+de presión (una recta por cada mil pies): es la altitud que «sienten» el rotor, las hélices y el motor. La línea
+vertical es la desviación del vuelo, la horizontal el techo de la ficha; su cruce indica a qué altitud de presión la
+aeronave alcanza su techo ese día (recta en negrita). Un punto marca la salida según el METAR (temperatura y QNH).
+Importante para los helicópteros: con mucho calor o en altura, el techo real puede caer muy por debajo del de la ficha.
+
+**La meteorología.** Bajo «Nivel y viento», «Leer la meteorología de los aeródromos» muestra, para la salida, la
+llegada y un aeródromo intermedio opcional, lo que cuenta para el vuelo: la categoría (VFR, MVFR, IFR, LIFR, en color),
+el viento y sus componentes de cara y de costado en la pista principal del aeródromo (el sentido más cercano al viento),
+el techo de nubes, la visibilidad, la temperatura y el QNH, y un aviso cuando se anuncian CB o TCU; el mensaje bruto
+está plegado. Con una fecha de vuelo, responde el TAF si cubre esa hora (y sus cambios temporales), si no el METAR.
+Marque «Meteorología real» para que el viento del cálculo pase a ser la media de los vientos de los aeródromos a lo
+largo de la ruta — una aproximación a partir del viento en superficie, indicada bajo los campos. Sin conexión, los
+últimos valores leídos siguen mostrados con su hora.
 
 **La elección del nivel.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su
 duración (guiones). El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los
@@ -95,10 +127,12 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   cuanto pueda.
 - **Sin consumo conocido**: el cálculo lo dice en lugar de mostrar un cero engañoso.
 - **Ruta desconocida**: se enumeran los puntos no reconocidos; la distancia y el rumbo verdadero se escriben a mano.
-- **Sin conexión**: todo se calcula en el dispositivo, a partir de las fichas ya recibidas. Solo la llamada a SimBrief
-  espera a la red; el último OFP se queda guardado en el dispositivo.
+- **Sin conexión**: todo se calcula en el dispositivo, a partir de las fichas ya recibidas. Solo SimBrief y la
+  meteorología esperan a la red; el último OFP y la última meteorología se quedan guardados en el dispositivo.
+- **Meteorología sin lanzador**: el servicio meteorológico solo es accesible a través del lanzador de un ordenador; en
+  otro lugar, la tarjeta muestra la última meteorología guardada, o lo dice.
 
-<!-- fr: cad99988d12f -->
+<!-- fr: 57ed2fb2b35f -->
 
 <!-- chapter: maps -->
 # Mapa

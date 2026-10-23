@@ -36,9 +36,13 @@ die Berechnung steht — Rollen, Streckenkraftstoff, Reserve, Blockkraftstoff, F
 
 ## So geht’s
 
-**Das Luftfahrzeug.** Wählen Sie sein Leistungsdatenblatt in der ersten Karte. Ohne Datenblatt nehmen Sie „Anderer Typ
-(ICAO-Code)…“ und tippen seinen ICAO-Code (C30J, EC45…): Die Berechnung geht dann von einer Schätzung des Typs aus,
-markiert „ungefähr“. Die Zeile „Reiseflug“ sagt, woher der verwendete Verbrauch stammt.
+**Das Luftfahrzeug.** Eine einzige Zeile oben: das gewählte Luftfahrzeug, sein Kennzeichen, sein Rufzeichen und woher es
+stammt. Die Lupe öffnet die Suche: Tippen Sie ein Datenblatt, ein Kennzeichen, ein Rufzeichen oder einen Typ. Die
+Ergebnisse kommen in dieser Reihenfolge: Ihre Leistungsdatenblätter, die Luftfahrzeuge der Fluggesellschaft (ihre Flotte,
+dann die aus ihrem Flugbuch bekannten), die veröffentlichten Typen und zuletzt der Code so, wie er getippt wurde. Ein
+Luftfahrzeug der Fluggesellschaft nimmt sein eigenes Datenblatt, wenn es eines hat, sonst das seines Typs, sonst eine
+Schätzung des Typs — die Berechnung markiert es dann „ungefähr“. Das gewählte Kennzeichen und Rufzeichen begleiten den
+Flug bis zum Bericht. Die Zeile „Reiseflug“ sagt, woher der Verbrauch stammt.
 
 **Die Route.** Tippen Sie Abflug und Ankunft (ICAO-Codes): Entfernung und rechtweisender Kurs werden von selbst
 berechnet. Für eine detaillierte Route klappen Sie „Detaillierte Route“ auf und fügen sie ein (ICAO-Flugplan oder eine
@@ -46,9 +50,40 @@ Zeile „Punkt Breite Länge“ je Punkt). Wird nichts erkannt, tippen Sie Entfe
 SimBrief-ID (⚙) übernimmt „Letzter SimBrief-OFP“ Route, Flugfläche, mittleren Wind und Luftfahrzeug Ihres letzten
 Plans auf einmal.
 
+Unter der Entfernung listet „Routenpunkte“ die erkannten Punkte auf, vom Abflug bis zur Ankunft. Die Pfeile schieben
+einen Punkt in der Liste nach oben oder unten, das Kreuz entfernt ihn; das Feld unten fügt einen vor der Ankunft hinzu:
+eine Kennung (Funkfeuer, Wegpunkt, Flugplatz) oder „NAME Breite Länge“. Jeder Zwischenpunkt hat ein freiwilliges Feld
+für die Flugfläche, in FL: Das ist die Flugfläche, die ab diesem Punkt gehalten wird, für einen Stufensteigflug oder
+-sinkflug. Ein Punkt ohne Flugfläche setzt die vorige fort (grau angezeigt); der Flug beginnt auf der Flugfläche des
+Plans. Die Berechnung zählt jede Stufe (ihren Steig- oder Sinkflug, dann den Reiseflug auf dieser Flugfläche), das
+Ergebnis zeigt die Folge der Flugflächen (FL100 → FL120), und der Sinkflug beginnt auf der letzten Flugfläche. Jede
+Änderung schreibt die detaillierte Route neu und wird sofort an die Karte weitergegeben.
+
 **Flugfläche und Wind.** Geben Sie die Reiseflugfläche (FL) und den Wind an: Richtung und Stärke. Ohne Richtung oder
 ganz ohne Wind wird der Blockkraftstoff als Spanne angegeben. „Steigflug“ wählt die Art zu steigen: sparsam, bestes
 Steigen, schnell, mit der Geschwindigkeit des Datenblatts oder manuell (Sie geben Geschwindigkeit und Steigrate an).
+
+„ISA ±“ ist die Temperaturabweichung von der Standardatmosphäre, in °C: Sie verändert die verfügbare Leistung, die
+wahre Fluggeschwindigkeit und die Gipfelhöhe. Sobald das Wetter gelesen ist, berechnet die Zeile darunter sie aus dem
+METAR des Abflugs — dessen Temperatur minus die Standardtemperatur des Flugplatzes (15 − 1,98 × Flugplatzhöhe in
+tausend Fuß) — und „ISA … verwenden“ überträgt sie in das Feld. Die gewählte Abweichung bleibt in Ihren Einstellungen
+gespeichert: Der nächste Flug beginnt mit derselben.
+
+Der aufklappbare Bereich „Dichtehöhe“ zeigt, mit der ISA-Abweichung auf der waagerechten Achse, die Dichtehöhe jeder
+Druckhöhe (eine Gerade je tausend Fuß): Das ist die Höhe, die Rotor, Propeller und Triebwerk „spüren“. Die senkrechte
+Linie ist die Abweichung des Flugs, die waagerechte die Gipfelhöhe des Datenblatts; ihr Schnittpunkt sagt, auf welcher
+Druckhöhe das Luftfahrzeug an diesem Tag seine Gipfelhöhe erreicht (fett gezeichnete Gerade). Ein Punkt markiert den
+Abflug laut METAR (Temperatur und QNH). Wichtig für Hubschrauber: Bei großer Hitze oder in der Höhe kann die
+tatsächliche Gipfelhöhe weit unter die des Datenblatts fallen.
+
+**Das Wetter.** Unter „Flugfläche und Wind“ zeigt „Flugplatzwetter lesen“ für Abflug, Ankunft und einen freiwilligen
+Zwischenflugplatz, was für den Flug zählt: die Kategorie (VFR, MVFR, IFR, LIFR, farbig), den Wind und seine Gegen- und
+Seitenwindkomponente auf der Hauptpiste des Flugplatzes (die Richtung, die dem Wind am nächsten liegt), die
+Wolkenuntergrenze, die Sicht, die Temperatur und das QNH sowie eine Warnung, wenn CB oder TCU gemeldet sind; die
+Rohmeldung ist zugeklappt. Mit einem Flugdatum antwortet die TAF, wenn sie diese Uhrzeit abdeckt (samt ihren
+vorübergehenden Änderungen), sonst das METAR. Setzen Sie das Häkchen bei „Echtes Wetter“, damit der Wind der Berechnung
+zum Mittel der Winde der Flugplätze entlang der Route wird — eine Näherung aus dem Bodenwind, unter den Feldern
+vermerkt. Ohne Netz bleiben die zuletzt gelesenen Werte mit ihrer Uhrzeit angezeigt.
 
 **Die Wahl der Flugfläche.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und
 die Dauer (gestrichelt). Der grüne Punkt markiert die sparsamste Flugfläche, das orange Quadrat die schnellste; der
@@ -102,10 +137,12 @@ Datenblättern ändert sich nichts.
 - **Ohne bekannten Verbrauch**: Die Berechnung sagt es, statt eine irreführende Null anzuzeigen.
 - **Unbekannte Route**: Die nicht erkannten Punkte werden aufgelistet; Entfernung und rechtweisender Kurs werden von
   Hand getippt.
-- **Offline**: Alles wird auf dem Gerät berechnet, aus den bereits empfangenen Datenblättern. Nur der Aufruf von
-  SimBrief wartet auf das Netz; der letzte OFP bleibt auf dem Gerät gespeichert.
+- **Offline**: Alles wird auf dem Gerät berechnet, aus den bereits empfangenen Datenblättern. Nur SimBrief und das
+  Wetter warten auf das Netz; der letzte OFP und das letzte Wetter bleiben auf dem Gerät gespeichert.
+- **Wetter ohne Starter**: Der Wetterdienst ist nur über den Starter eines Rechners erreichbar; anderswo zeigt die Karte
+  das zuletzt gespeicherte Wetter oder sagt es.
 
-<!-- fr: cad99988d12f -->
+<!-- fr: 57ed2fb2b35f -->
 
 <!-- chapter: maps -->
 # Karte

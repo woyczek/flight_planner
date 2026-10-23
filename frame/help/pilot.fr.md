@@ -35,9 +35,12 @@ délestage, réserve, carburant bloc, temps de vol et début de descente.
 
 ## Comment s'en servir
 
-**L'appareil.** Choisissez sa fiche de performances dans la première carte. Sans fiche, prenez « Autre type » et
-tapez son code OACI (C30J, EC45…) : le devis part alors d'une estimation du type, signalée « approché ». La ligne
-« Croisière » dit d'où vient la consommation retenue.
+**L'appareil.** Une seule ligne en haut : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. La
+loupe ouvre la recherche : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
+cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
+les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
+sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et
+l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation.
 
 **La route.** Tapez le départ et l'arrivée (codes OACI) : la distance et la route vraie se calculent seules. Pour une
 route détaillée, dépliez « Route détaillée » et collez-la (plan de vol OACI, ou une ligne « point latitude longitude »
@@ -45,9 +48,29 @@ par point). Si rien n'est reconnu, tapez la distance et la route à la main. Ave
 (⚙), « Dernier OFP SimBrief » reprend d'un coup la route, le niveau, le vent moyen et l'appareil de votre dernier
 plan.
 
+Sous la distance, « Points de la route » liste les points reconnus, du départ à l'arrivée. Les flèches montent ou
+descendent un point dans la liste, la croix le retire ; le champ du bas en ajoute un avant l'arrivée : un identifiant
+(balise, point, terrain) ou « NOM latitude longitude ». Chaque point intermédiaire a un champ de niveau facultatif, en
+FL : c'est le niveau tenu à partir de ce point, pour une montée ou une descente par paliers. Un point sans niveau
+continue le précédent (affiché en grisé) ; le vol part au niveau du plan. Le devis compte chaque palier (sa montée ou
+sa descente, puis la croisière à ce niveau), le résultat affiche la suite des niveaux (FL100 → FL120), et la descente
+part du dernier niveau. Chaque changement réécrit la route détaillée et est aussitôt transmis à la carte.
+
 **Le niveau et le vent.** Indiquez le niveau de croisière (en FL) et le vent : direction et force. Sans direction, ou
 sans vent du tout, le carburant bloc est donné en fourchette. « Montée » choisit la façon de monter : économique,
 meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
+
+« ISA ± » est l'écart de température à l'atmosphère standard, en °C : il change la puissance disponible, la vitesse
+vraie et le plafond. Une fois la météo lue, la ligne dessous le calcule d'après le METAR du départ — sa température
+moins la température standard du terrain (15 − 1,98 × altitude du terrain en milliers de pieds) — et « Utiliser ISA … »
+le reporte dans le champ. L'écart retenu est gardé dans vos réglages : le vol suivant part du même.
+
+Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une
+droite par millier de pieds) : c'est l'altitude « ressentie » par le rotor, les hélices et le moteur. Le trait vertical
+est l'écart du vol, le trait horizontal le plafond de la fiche ; leur croisement dit à quelle altitude pression l'appareil
+atteint son plafond ce jour-là (droite en gras). Un point marque le départ d’après le METAR (température et QNH).
+Important pour les hélicoptères : par forte chaleur ou en altitude, le plafond réel peut tomber bien sous celui de la
+fiche.
 
 **La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche, pour le départ, l'arrivée et un terrain
 intermédiaire facultatif, ce qui compte pour le vol : la catégorie (VFR, MVFR, IFR, LIFR, en couleur), le vent et ses
