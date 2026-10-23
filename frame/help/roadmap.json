@@ -305,7 +305,7 @@
           "es": "Selector de modos de mapa (Auto, IFR bajo, IFR alto, VFR, Topo relieve sombreado, CAM vuelo militar); tooltip mantenido 5 s, más ligero"
         },
         {
-          "state": "planned",
+          "state": "doing",
           "fr": "Mode CAM : axes AAR (hippodromes) et tracks NAT dessinés sur la carte",
           "en": "CAM mode: AAR tracks (racetracks) and NAT tracks drawn on the map",
           "de": "OAT-Modus: AAR-Achsen (Racetracks) und NAT-Tracks auf der Karte",
@@ -319,7 +319,7 @@
           "es": "VFR: superposición mantenida a todos los zooms (TMA, CTR, CTA, R, D, P con sus límites, radioayudas), puntos de notificación VFR con nombre"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Modifier la route sur la carte et le profil : glisser un point (aimanté aux fixes), toucher un fixe pour l'insérer, retirer, altitude par glissement, mode « modifier » sur téléphone, annulation",
           "en": "Edit the route on the map and the profile: drag a point (snapped to fixes), tap a fix to insert it, remove, altitude by dragging, an explicit “edit” mode on the phone, undo",
           "de": "Route auf Karte und Profil bearbeiten: Punkt ziehen (an Fixes gerastet), Fix antippen zum Einfügen, entfernen, Höhe durch Ziehen, expliziter „Bearbeiten“-Modus am Telefon, Rückgängig",
