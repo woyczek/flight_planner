@@ -167,6 +167,14 @@ The transports:
     - Refused with 400 for a path outside `data/` or excluded, or a `.js` file not in the data format
       (`tools/data_guard.py`).
     - The files are written, then one local commit in the author's name if `data/` is a git repository.
+  - **Little Navmap sheets** (aerodb, `frame/aerodb/lnmperf.js`), on a workstation with a launcher:
+    - `GET` / `PUT /__setup/lnmperf-folder`: the folder of `.lnmperf` files, kept in `tools/.lnmperf.json` (local,
+      ignored by git). It must exist, and the data folder is refused.
+    - `GET /__setup/lnmperf`: the list of `*.lnmperf` files (name, size, date, sha). `GET ?name=` reads one, and
+      `PUT ?name=` writes one at once (temporary file, then replace).
+    - `POST ?name=&action=retire` moves a file to `_removed/`; nothing is ever deleted.
+    - Names are a single file name, never a path. A `PUT` anywhere else gets a 405. Same header and size limit as a
+      `POST`.
   - `exchange()`, when the usages ask for an exchange and `data/` is a git repository: `POST /__setup/sync`, the
     workstation's git pass (commit of the pool, record-by-record merge, push). It runs at the start of a pass, to
     receive, and after a push, to send. A failure is reported as a warning and blocks nothing local.
@@ -231,6 +239,20 @@ used alone:
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
+- **The frame's screens** (help, roadmap, settings, conflicts) opened from a module show in the module's area, over
+  it. The module stays mounted, only hidden, with its pane.
+  - The menu stays in place, sticky under the header at any scroll, with the current module still marked.
+  - Their header buttons are toggles: "?" for help and roadmap, "⚙" for settings, the sync button for conflicts. Each
+    is pressed while its screen is open (background tinted with the accent, accent border).
+  - A second click on the same button, Escape (unless a dialog is open) or the browser's back closes the screen. The
+    module comes back exactly as it was: same address with its query, same step, same scroll. Exception: if what a
+    module reads when it mounts changed meanwhile (identity, usages, level, language, transport: a change made in the
+    settings), the module is mounted again with it.
+  - Closing uses `history.back()` when only one frame screen was opened, otherwise it puts the module's address back
+    (`replaceState`).
+  - The "←" back link is not shown: this is not a passage between modules.
+  - Choosing a module in the menu from a frame screen closes it and opens that module.
+  - A frame screen opened directly by its address, with no module behind, shows alone as before.
 - **Back to the origin module**: a module opened by a passage from another shows "← <origin module>" in the header.
   - A passage is either an explicit `?from=<module>` (`#report?from=flightlog`), or an address set by the previous
     module (the Map's "Edit the route" → Fuel, "Write the report" of My flights through `pilot/handoff.json`).
@@ -342,6 +364,11 @@ used alone:
 - Each unseen conflict shows the file and its date, the version set aside (this device's or another device's) and the
   version kept.
 - Two actions: "Take this version back" (`FrameData.restore`) and "Seen".
+- **Conflicts found outside a pass** (a file of the workstation, such as a Little Navmap `.lnmperf` sheet read by
+  aerodb): `FrameData.noteConflict({ path, kept, lost, side })` keeps the losing version in the same form.
+  - `path` is the record in the data repository (`aircraft/sheets/<id>.json`), so "Take this version back" makes the
+    lost version the pending write of that record.
+  - It is counted on the sync button and announced (`frame-data-conflict`), like the conflicts of a pass.
 - Conflicts already seen can be shown too.
 - Never a blocking question.
 
@@ -441,6 +468,8 @@ it; the others import it as it is.
 | `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu`), `svg(name)` |
+| `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
+| `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |
 | `frame/lib/website.js` | website | report, website | the flight's fields for the airline website, the `#defa=` address, the line to copy, the "→ Vol" bookmark (moved from `modules/report/website_handoff.js`) |
 
 ## 4. To come in the frame

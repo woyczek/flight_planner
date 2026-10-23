@@ -569,6 +569,10 @@
   async function route() {
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
+    // écrans du cadre (aide, feuille de route, réglages, conflits) par-dessus le module courant, qui reste monté
+    if (over && location.hash === over.returnHash) return closeOver();
+    if (SCREENS.includes(id) && (current || over)) return openOver(id, h);
+    if (over) closeOver(false);
     document.body.classList.remove('f-nav-open');
     $('fBurger').setAttribute('aria-expanded', 'false');
     if (current?.mod?.unmount) try {
@@ -733,6 +737,79 @@
     if (lastScreen?.id === entry.id) lastScreen.hash = location.hash;
   }
 
+  // ---------------------------------------------------------------- écrans du cadre par-dessus un module
+  // aide, feuille de route, réglages, conflits : ouverts depuis un module, ils se montrent dans la zone du module sans
+  // le démonter (il est seulement masqué) ; le bouton qui les a ouverts (enfoncé tant qu'ils le sont), Échap ou le retour
+  // du navigateur les referment, et l'on retrouve le module tel quel : même adresse, même étape, même défilement
+  const SCREENS = ['help', 'roadmap', 'settings', 'device', 'conflicts'];
+  let over = null; // { id, returnHash, scroll, stack: [adresses des écrans du cadre ouverts], sig }
+  // ce qu'un module lit à son montage (identité, usages, niveau, langue, transport) : changé pendant que l'écran du cadre
+  // était ouvert (réglages), le module est remonté à la fermeture au lieu d'être rendu tel quel
+  const mountSig = () => JSON.stringify([identity, usages.devices, usages.users, level, lang(), configured?.id || '']);
+  /** Ouvre (ou change) l'écran du cadre id par-dessus le module courant. */
+  async function openOver(id, h) {
+    document.body.classList.remove('f-nav-open');
+    $('fBurger').setAttribute('aria-expanded', 'false');
+    if (!over) over = {
+      returnHash: lastScreen?.id === current?.id && lastScreen?.hash ? lastScreen.hash : `#${current?.id || ''}`,
+      scroll: scrollY,
+      stack: [],
+      sig: mountSig()
+    };
+    // retour du navigateur d'un écran du cadre au précédent : la pile recule ; sinon elle avance
+    const k = over.stack.indexOf(location.hash);
+    k >= 0 ? over.stack.length = k + 1 : over.stack.push(location.hash);
+    over.id = id;
+    const view = $('fView');
+    let scr = view.querySelector(':scope > .f-screen');
+    if (!scr) {
+      scr = document.createElement('div');
+      scr.className = 'f-screen';
+      view.append(scr);
+      view.classList.add('f-over');
+    }
+    scr.replaceChildren();
+    scr.onclick = null;
+    renderMenu(current?.id || '');
+    paintBack();
+    paintToggles();
+    scrollTo(0, 0);
+    if (id === 'help') return window.SogHelp?.screen(scr, helpCtx(), h.query);
+    if (id === 'roadmap') return window.SogRoadmap?.screen(scr, helpCtx());
+    return ROUTES[id]?.(scr);
+  }
+  /** Retire l'écran du cadre ; restore : le module réapparaît à son défilement d'avant. */
+  function closeOver(restore = true) {
+    const o = over;
+    if (!o) return;
+    over = null;
+    const view = $('fView');
+    view.querySelector(':scope > .f-screen')?.remove();
+    view.classList.remove('f-over');
+    paintBack();
+    paintToggles();
+    if (!restore) return;
+    if (o.sig !== mountSig()) return route(); // réglages changés : le module est remonté avec eux
+    renderMenu(current?.id || '');
+    requestAnimationFrame(() => scrollTo(0, o.scroll));
+  }
+  /** Ferme l'écran du cadre (second clic sur son bouton, Échap) : retour du navigateur s'il n'y a eu qu'un écran,
+   *  sinon l'adresse du module remise en place. */
+  function leaveOver() {
+    if (!over) return;
+    if (over.stack.length === 1 && history.length > 1) history.back();
+    else {
+      history.replaceState(history.state, '', over.returnHash);
+      closeOver();
+    }
+  }
+  /** Boutons de l'en-tête enfoncés tant que leur écran est ouvert. */
+  function paintToggles() {
+    const set = (b, on) => b && b.getAttribute('aria-pressed') !== String(on) && b.setAttribute('aria-pressed', String(on));
+    set($('fHelp'), !!over && ['help', 'roadmap'].includes(over.id));
+    set($('fDevice'), !!over && ['settings', 'device'].includes(over.id));
+  }
+
   // ---------------------------------------------------------------- retour au module d'origine
   // un module ouvert par passage d'un autre (#fuel?from=maps, ou une adresse posée par le module précédent : « Modifier
   // la route » de la Carte, « Écrire le CR » de Mes vols) montre « ← <module d'origine> » dans l'en-tête ; pas après un
@@ -770,7 +847,7 @@
   /** Bouton de retour de l'en-tête (écrit seulement s'il change). */
   function paintBack() {
     const b = $('fBack'),
-      m = APP.modules.find(x => x.id === origin?.id),
+      m = over ? null : APP.modules.find(x => x.id === origin?.id),
       show = !!m;
     if (b.hidden === show) b.hidden = !show;
     document.querySelector('.f-head').classList.toggle('f-has-back', show);
@@ -977,12 +1054,17 @@
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);
     $('fHelp').onclick = () => {
+      if (over && ['help', 'roadmap'].includes(over.id)) return leaveOver();
       const at = current?.id || (['settings', 'device'].includes(parseHash().id) ? 'settings' : '');
       location.hash = `#help${at ? `?m=${encodeURIComponent(at)}` : ''}`;
     };
     $('fDevice').onclick = () => {
+      if (over && ['settings', 'device'].includes(over.id)) return leaveOver();
       location.hash = '#settings';
     };
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && over && !document.querySelector('.f-modal')) leaveOver();
+    });
     $('fPane').onclick = () => togglePane();
     $('fBack').onclick = () => {
       const o = origin;
@@ -1007,6 +1089,7 @@
     wide.addEventListener('change', onWidth);
     wideAuto.addEventListener('change', onWidth);
     $('fSync').onclick = async () => {
+      if (over?.id === 'conflicts') return leaveOver();
       const s = await FD.status();
       if (s.conflicts) location.hash = '#conflicts';
       else syncNow();

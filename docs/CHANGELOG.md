@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 14: help and settings over the current module** (`frame/app.js`, `frame/frame.css`) — the menu stays
+  in place (it no longer scrolls away on long screens) with the current module marked; "?" and "⚙" are toggles:
+  a second click, or Escape, closes help or settings and brings back the module exactly where it was (same step, same
+  scroll).
 - **fuel: winds and temperatures aloft** (`modules/fuel/winds.js`, `module.js`; `test/winds.html`, `SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — the forecast by level along the route (Open-Meteo: Météo-France,
   ICON or GFS), shown point by point; with real weather, the quote's wind is the wind at the planned level; the real

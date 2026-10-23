@@ -340,6 +340,39 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - the toggle opens it again.
   - Contrast of the toggle, pressed / not pressed: standard 13.4 / 16.5 by day, 10.5 / 13.5 by night; cabinet
     10.8 / 14.1 and 8.6 / 12.8; field 11.0 / 14.0 and 5.8 / 8.2.
+- **23 Oct 2026 — Review of aerodb lot 5b** (`642bd45fd`, now the frame's):
+  - `FrameData.noteConflict()` keeps a conflict found outside a pass in the same form as a pass's. aerodb gives the
+    sheet's record path, so restoring takes the `.lnmperf` file's version into the sheet: the right direction.
+  - `frame/sw.js` keeps `aerodb/lnmperf.js`.
+  - The launcher's `/__setup/lnmperf-folder` and `/__setup/lnmperf`, checked:
+    - a `PUT` goes through the `POST` path (the `X-SOG-Setup` header, the size limit) and is refused on any other route;
+    - names are a single file name;
+    - the data folder is refused, with symbolic links resolved;
+    - a retired file is moved, never deleted;
+    - `tools/.lnmperf.json` is ignored by git.
+  - Nothing to change.
+- **23 Oct 2026 — Lot 14, the frame's screens over the module, toggle buttons** (two user bugs on a computer):
+  - "The help hides the menu": the menu was not hidden but scrolled away. The verbs column was not sticky, and
+    `body { height: 100% }` stopped a sticky element at the window's height. It is now sticky under the header, and the
+    body has `min-height`. Its current entry stays marked on the frame's screens.
+  - The frame's screens open over the current module: it stays mounted and hidden (`.f-view.f-over`), so closing
+    restores the exact context with no remount (address, step, scroll).
+    - A stack of the screens' addresses tells a browser back between two frame screens from a new one; closing uses
+      `history.back()` for a single screen, `replaceState` otherwise.
+    - The header buttons are toggles, pressed while open; Escape closes (not while a dialog is open); no "←".
+    - Exception to the exact return: if what a module reads when it mounts changed while the screen was open
+      (identity, usages, level, language, transport), the module is mounted again. Otherwise a trigram set in the
+      settings would leave the module on the old one. Found by the application scenario, which sets the trigram while
+      a frame screen is open.
+  - Tests at 1280 and 375 px:
+    - Report at step 2, scrolled: "⚙" opens settings ("⚙" pressed, Report still marked in the menu); "⚙" again
+      brings Report back at step 2 at the same scroll (400 px and 265 px), no back link;
+    - "?" then Escape: the same;
+    - help, then the roadmap, then "?": back to Report;
+    - from settings, Fuel through the menu: Fuel opens;
+    - the application scenario: the trigram set while a frame screen is open is taken by the module when it closes;
+    - the menu stays at 57 px from the top while the help is scrolled 1500 px;
+    - no horizontal scroll, no JavaScript error.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

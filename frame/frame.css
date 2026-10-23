@@ -9,10 +9,14 @@
 }
 html,
 body {
-  margin: 0;
+  margin: 0
+}
+html {
   height: 100%
 }
+/* min-height (et non height) : le corps grandit avec la page, la colonne des verbes reste collée sur toute sa hauteur */
 body {
+  min-height: 100%;
   display: grid;
   grid-template-rows: auto 1fr;
   grid-template-columns: 210px 1fr;
@@ -81,11 +85,30 @@ body {
     opacity: .3
   }
 }
+/* colonne des verbes collée sous l'en-tête (57 px) : elle reste à l'écran quand la page défile (aide, réglages) */
 .f-nav {
   grid-area: nav;
   padding: 10px 8px;
   border-right: 1px solid var(--sog-border);
-  background: var(--sog-surface)
+  background: var(--sog-surface);
+  position: sticky;
+  top: 57px;
+  align-self: start;
+  height: calc(100vh - 57px);
+  overflow: auto
+}
+/* écran du cadre par-dessus un module : le module (et son volet) masqué, pas démonté */
+.f-view.f-over {
+  display: block
+}
+.f-view.f-over> :not(.f-screen) {
+  display: none
+}
+/* boutons de l'en-tête enfoncés (aide, réglages, vue double) : fond teinté de l'accent, bordure de l'accent */
+.f-head button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--sog-accent) 15%, var(--sog-surface));
+  color: var(--sog-fg);
+  border-color: var(--sog-accent)
 }
 .f-nav ul {
   list-style: none;
