@@ -8,7 +8,8 @@
   // Aucun texte d'interface : libellés de données seulement (codes, noms, niveaux).
   // API : window.MapsRender = { routeProfile(levelFt), selectAirspaces(list, profile, route), bboxOf(points, marginNm),
   //   distances(points), marks(points, stepNm), mercator(bbox, W, H, pad), drawBackground(ctx, toC, W, H, rings, colors),
-  //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, mission }), tokens(), themed(ctx, tokens) } ;
+  //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, mission }), tokens(), themed(ctx, tokens),
+  //   contrast(c1, c2) (rapport WCAG) } ;
   //   mission : { points, zones } d'une carte de mission (points tournants, zones de recherche / mission / exclusion).
   // Couleurs « de papier » (fond, halos, encre, gris) : jetons du design du cadre (frame/design/INTEGRATION.md), par
   // themed() qui les substitue aux valeurs écrites en dur, ici et dans les copies du studio ; couleurs cartographiques
@@ -59,30 +60,68 @@
     INK = new Set(['#17202a', '#222', '#222222', '#333', '#333333', '#000', '#000000']),
     GREY = new Set(['#56626b', '#5b6670', '#4b5563', '#6b7280', '#9aa5ad']),
     RULE = new Set(['#e3e8ec', '#d9dee4']);
+  /** Luminance relative WCAG d'une couleur [r, g, b] (0-255). */
+  const luminance = rgb => {
+    const [r, g, b] = rgb.map(v => {
+      v /= 255;
+      return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
+    });
+    return .2126 * r + .7152 * g + .0722 * b;
+  };
+  /** Rapport de contraste WCAG de deux couleurs [r, g, b]. */
+  const contrast = (a, b) => {
+    const x = luminance(a),
+      y = luminance(b);
+    return (Math.max(x, y) + .05) / (Math.min(x, y) + .05);
+  };
   /** Contexte 2D dont les couleurs de papier écrites par valeur prennent les jetons t : blanc (fonds, halos, cartouches)
    *  → fond des dessins, encre → texte, gris → texte secondaire, filets → grille. Les autres couleurs (cartographiques)
-   *  passent telles quelles. Sert aux copies du studio (symboles, profil), qu'on ne modifie pas. */
+   *  gardent leur teinte : une couleur pleine sous 4,5:1 avec le fond des halos (WCAG AA pour un texte) est éclaircie la
+   *  nuit, foncée le jour, juste assez ; la nuit, une couleur transparente sombre (bandes, fonds de zone) est éclaircie
+   *  de 45 %. Les jetons eux-mêmes ne sont
+   *  jamais changés. Sert aux copies du studio (symboles, profil), qu'on ne modifie pas. */
   function themed(ctx, t) {
+    const keep = new Set([t.bg, t.page, t.fg, t.muted, t.grid, t.accent].map(c => String(c).replace(/\s+/g, '').toLowerCase())),
+      bgRgb = rgbOf(t.bg) || [0, 0, 0],
+      memo = new Map();
     const map = c => {
       if (typeof c !== 'string') return c; // dégradé, motif
       const k = c.replace(/\s+/g, '').toLowerCase();
+      if (keep.has(k)) return c;
       if (WHITE.test(k)) return t.bg;
       const m = WHITE_A.exec(k);
       if (m) return withAlpha(t.bg, m[1] ?? 1);
       if (INK.has(k)) return t.fg;
       if (GREY.has(k)) return t.muted;
       if (RULE.has(k)) return t.grid;
-      // nuit : une couleur cartographique sombre (bleus, violets, rouges foncés) est éclaircie pour rester lisible sur
-      // le fond et les halos sombres ; son opacité est gardée
+      // nuit : une couleur cartographique trop sombre pour le fond est éclaircie (opacité gardée)
       if (t.dark) {
-        const r = rgbOf(k);
-        if (r && (.2126 * r[0] + .7152 * r[1] + .0722 * r[2]) / 255 < .5) {
-          const a = /^rgba\([^)]*,([\d.]+)\)$/.exec(k)?.[1] ?? 1,
-            l = r.map(x => Math.round(x + (255 - x) * .45));
-          return `rgba(${l.join(',')},${a})`;
+        if (memo.has(k)) return memo.get(k);
+        const r = rgbOf(k),
+          a = +(/^rgba\([^)]*,([\d.]+)\)$/.exec(k)?.[1] ?? 1);
+        let out = c;
+        if (r && a < .6) {
+          if (luminance(r) < .2) out = `rgba(${r.map(x => Math.round(x + (255 - x) * .45)).join(',')},${a})`;
+        } else if (r && contrast(r, bgRgb) < 4.5) {
+          let l = r;
+          for (let i = 1; i <= 20 && contrast(l, bgRgb) < 4.5; i++) l = r.map(x => Math.round(x + (255 - x) * i / 20));
+          out = a < 1 ? `rgba(${l.join(',')},${a})` : `rgb(${l.join(',')})`;
         }
+        memo.set(k, out);
+        return out;
       }
-      return c;
+      // jour : une couleur pleine trop claire pour le fond (fond crème du design durci) est foncée jusqu'à 4,5:1
+      if (memo.has(k)) return memo.get(k);
+      const r = rgbOf(k),
+        a = +(/^rgba\([^)]*,([\d.]+)\)$/.exec(k)?.[1] ?? 1);
+      let out = c;
+      if (r && a >= .6 && contrast(r, bgRgb) < 4.5) {
+        let l = r;
+        for (let i = 1; i <= 20 && contrast(l, bgRgb) < 4.5; i++) l = r.map(x => Math.round(x * (1 - i / 20)));
+        out = a < 1 ? `rgba(${l.join(',')},${a})` : `rgb(${l.join(',')})`;
+      }
+      memo.set(k, out);
+      return out;
     };
     return new Proxy(ctx, {
       get(o, p) {
@@ -173,7 +212,14 @@
         zoneCeil: low ? '19500' : '',
         aerodromes: true,
         navaids: true,
-        mora: true
+        mora: true,
+        // hiérarchie de la carte du vol (px CSS à l'échelle 1) : libellés de la route 12-13, terrains et balises 10,
+        // espaces 9, MORA 12 (sans fond), canevas 8 ; bandes des espaces plus claires pour laisser la route devant
+        pointFont: '9',
+        moraFont: '9',
+        zoneFont: '7',
+        graticuleFont: '6',
+        zoneOpacity: '20'
       }
     };
   }
@@ -494,8 +540,8 @@
         col = high ? '#6a3fa0' : '#1f6fb2',
         len = Math.hypot(Q.x - P.x, Q.y - P.y);
       ctx.strokeStyle = col;
-      ctx.globalAlpha = .85;
-      ctx.lineWidth = (high ? 1.2 : 1.6) * scale;
+      ctx.globalAlpha = .75;
+      ctx.lineWidth = (high ? 1 : 1.2) * scale;
       ctx.setLineDash(high ? [6 * scale, 4 * scale] : []);
       ctx.beginPath();
       ctx.moveTo(P.x, P.y);
@@ -854,10 +900,21 @@
     if (gs) {
       ctx.save();
       ctx.strokeStyle = gridColor;
-      ctx.globalAlpha = .42;
-      ctx.lineWidth = Math.max(1, scale);
+      ctx.globalAlpha = .3;
+      ctx.lineWidth = Math.max(.75, .75 * scale);
       const font = +el(profile, 'graticuleFont') * PT * scale,
-        labels = on(profile, 'graticuleLabels');
+        labels = on(profile, 'graticuleLabels'),
+        // libellé du canevas écrit seulement là où il ne recouvre rien (noms d'espaces, de la route…)
+        gridLabel = (text, x, y, align) => {
+          const w = text.length * font * .6,
+            x0 = align === 'center' ? x - w / 2 : x;
+          if (!pl || pl.take({
+              x0,
+              y0: y - font * .6,
+              x1: x0 + w,
+              y1: y + font * .6
+            })) halo(ctx, text, x, y, font, gridColor, align);
+        };
       for (const lon of gridValues(b.w, b.e, gs)) {
         const p = toC(b.n, lon),
           q = toC(b.s, lon);
@@ -865,7 +922,7 @@
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(q.x, q.y);
         ctx.stroke();
-        if (labels) halo(ctx, geoLabel(lon), p.x, 8 * scale + font / 2, font, gridColor, 'center');
+        if (labels) gridLabel(geoLabel(lon), p.x, 8 * scale + font / 2, 'center');
       }
       for (const lat of gridValues(b.s, b.n, gs)) {
         const p = toC(lat, b.w),
@@ -874,7 +931,7 @@
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(q.x, q.y);
         ctx.stroke();
-        if (labels) halo(ctx, geoLabel(lat, true), 4 * scale, p.y, font, gridColor, 'left');
+        if (labels) gridLabel(geoLabel(lat, true), 4 * scale, p.y, 'left');
       }
       ctx.restore();
     }
@@ -940,14 +997,14 @@
           y1: at.y + hh
         });
       }
-      halo(ctx, String(m.text), at.x, at.y, font, color, 'center', alpha);
+      halo(ctx, String(m.text), at.x, at.y, font, color, 'center', Math.max(alpha, .95));
     }
   }
   /** Libellés de la route (points : identifiant et niveau ; marques NM) réservés dans le placeur avant tout le reste :
    *  [{ text, x, y, size, align }] ; les extrémités sont toujours écrites. */
   function routeLabels(route, toC, scale, pl, mk = []) {
     const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon)),
-      f = 10 * scale,
+      f0 = 12 * scale,
       out = [];
     if (pts.length < 2) return out;
     for (const [i, p] of pts.entries()) {
@@ -958,12 +1015,13 @@
         alt = Number.isFinite(h) ? (h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft`) : '',
         text = [p.id || p.name || '', alt].filter(Boolean).join(' · ');
       if (!text) continue;
-      const r = {
-        x0: q.x + 6 * scale,
-        y0: q.y + 2 * scale,
-        x1: q.x + 8 * scale + text.length * f * .6,
-        y1: q.y + 4 * scale + f * 1.2
-      };
+      const f = end ? 13 * scale : f0,
+        r = {
+          x0: q.x + 7 * scale,
+          y0: q.y + 2 * scale,
+          x1: q.x + 9 * scale + text.length * f * .6,
+          y1: q.y + 4 * scale + f * 1.2
+        };
       if ((pl ? pl.take(r) : true) || end) out.push({
         text,
         x: r.x0,
@@ -972,6 +1030,7 @@
         align: 'left'
       });
     }
+    const f = f0;
     for (const m of mk) {
       const q = toC(m.lat, m.lon),
         text = String(m.nm),
@@ -1000,32 +1059,41 @@
     const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
     if (pts.length < 2) return;
     ctx.save();
-    ctx.strokeStyle = color;
     ctx.lineJoin = 'round';
-    ctx.lineWidth = Math.max(2, 3 * scale);
-    ctx.beginPath();
-    pts.forEach((p, i) => {
-      const q = toC(p.lat, p.lon);
-      i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-    });
-    ctx.stroke();
+    ctx.lineCap = 'round';
+    const line = () => {
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        const q = toC(p.lat, p.lon);
+        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      });
+      ctx.stroke();
+    };
+    // liseré du fond (détache la route des voies et des limites qu'elle croise), puis le trait : le plus épais de la carte
+    ctx.strokeStyle = paper();
+    ctx.lineWidth = Math.max(5, 7.5 * scale);
+    line();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2.5, 4 * scale);
+    line();
     // marques NM : point plein sur la route
     ctx.lineWidth = Math.max(1, 1.5 * scale);
     for (const m of mk) {
       const q = toC(m.lat, m.lon);
       ctx.beginPath();
-      ctx.arc(q.x, q.y, 2.2 * scale, 0, Math.PI * 2);
-      ctx.fillStyle = color;
+      ctx.arc(q.x, q.y, 3 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = color; // plein, de la couleur de la route : un point du fond la ferait paraître tiretée
       ctx.fill();
     }
     for (const [i, p] of pts.entries()) {
       const q = toC(p.lat, p.lon),
         end = i === 0 || i === pts.length - 1;
       ctx.beginPath();
-      ctx.arc(q.x, q.y, (end ? 5 : 3.5) * scale, 0, Math.PI * 2);
+      ctx.arc(q.x, q.y, (end ? 6 : 4.5) * scale, 0, Math.PI * 2);
       ctx.fillStyle = paper();
       ctx.fill();
       ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1.5, (end ? 2.5 : 2) * scale);
       ctx.stroke();
     }
     for (const l of labels) halo(ctx, l.text, l.x, l.y, l.size, color, l.align);
@@ -1135,7 +1203,11 @@
     }
     // balises montrées : celles du profil (et de la densité), plus celles qui sont des bouts de voies
     const navAll = on(profile, 'navaids'),
-      navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])];
+      // nom long d'une balise : trop petit (7 px) hors de la vue rapprochée, l'identifiant et la fréquence suffisent
+      navShown = [...new Set([...(navAll ? shown.navaids || [] : []), ...endNavs])].map(n => mission || tier === 'near' ? n : {
+        ...n,
+        name: ''
+      });
     drawPoints(ctx, {
       ...shown,
       navaids: navShown
@@ -1181,6 +1253,7 @@
     trackOf,
     tokens,
     themed,
-    withAlpha
+    withAlpha,
+    contrast: (a, b) => contrast(rgbOf(a) || [0, 0, 0], rgbOf(b) || [0, 0, 0])
   };
 })();

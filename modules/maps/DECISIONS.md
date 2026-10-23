@@ -199,3 +199,24 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Cut**:
     - 6a: the mode, dragging and snapping, insertion, removal, undo, writing; checked at 375 px touch and 1280 px mouse;
     - 6b: the levels on the profile (drag, card), and the fuel requote contract once agreed.
+- **23 Oct 2026 — the flight map's hierarchy and contrast** (asked by the user directly, done by the fuel session
+  with the ergonomics session's agreement; the vertical profile was judged good and is untouched).
+  - **Hierarchy inverted before**: aerodrome and beacon labels at 14.7 px, MORA at 16 px, the route's labels at 10 px
+    and its NM marks at 8.5 px on a 3 px line — the route read last. Now, at scale 1: route 4 px over a 7.5 px casing
+    of the halo colour (it stands off the airways and limits it crosses), points 4.5 / 6 px rings; route labels
+    12 px, ends 13, marks 10; alternate 12, TOC / TOD 11 with diamonds edged in the background colour; aerodromes
+    and beacons 10 px (`pointFont` 9 in the flight profile), airspace labels 9, MORA 12 (`moraFont` 9, no
+    transparency on the text), airway labels 8.5, graticule 8 (`graticuleFont` 6). Strokes: airways 1.2 / 1 px at
+    75 %, graticule 0.75 px at 30 %, airspace bands at 20 % (`zoneOpacity`). Mission maps keep their studio profile
+    (only the route and the drawing rules apply to them).
+  - **Cleaner overview**: beacons keep their long name only in the near tier of lot 5 (7 px elsewhere, unreadable);
+    graticule labels go through the placer and give way to airspace and route labels. Applied on top of lot 5
+    (cde954c55): its tiers, airway cartouches and fixes are kept as they are.
+  - **Contrast (WCAG AA)**: `themed()` no longer changes the design tokens themselves — at night on the plain
+    background it had lightened `--sog-chart-bg`, giving a grey map. A solid colour under 4.5:1 against the halo
+    background is now lightened at night and darkened by day just enough (the field design's cream background had
+    the restricted-area red at 4.18:1 and the airway blue at 4.26:1); translucent bands keep the 45 % rule.
+  - **Bench** `modules/maps/test/render.html`: fictitious data (XX codes), no launcher; lists every text drawn with
+    its size, colour after `themed()` and contrast. All texts ≥ 4.5:1 in standard, cabinet and field, day and night,
+    at 375 and 900 px. The real base could not be used in that session; the module was checked to load and draw in
+    the frame.

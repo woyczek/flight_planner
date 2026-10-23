@@ -420,7 +420,7 @@ function draw() {
     ctx.strokeStyle = '#6b7280';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.font = '700 13px Arial,sans-serif';
+    ctx.font = '700 12px Arial,sans-serif'; // dégagement : sous les extrémités de la route (13 px)
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = S.theme.bg;
@@ -444,7 +444,7 @@ function drawPlanOnMap(ctx, toC) {
     col = '#6a1b9a';
   if (!pr) return;
   ctx.save();
-  ctx.font = '700 12px Arial,sans-serif';
+  ctx.font = '700 11px Arial,sans-serif'; // sous les libellés de la route (12-13 px)
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
   for (const [m, name] of [
@@ -455,14 +455,16 @@ function drawPlanOnMap(ctx, toC) {
     const g = MapsProfile.posAt(pr, m.s),
       q = toC(g.lat, g.lon);
     ctx.beginPath();
-    ctx.moveTo(q.x, q.y - 6);
-    ctx.lineTo(q.x + 6, q.y);
-    ctx.lineTo(q.x, q.y + 6);
-    ctx.lineTo(q.x - 6, q.y);
+    ctx.moveTo(q.x, q.y - 7);
+    ctx.lineTo(q.x + 7, q.y);
+    ctx.lineTo(q.x, q.y + 7);
+    ctx.lineTo(q.x - 7, q.y);
     ctx.closePath();
     ctx.fillStyle = col;
     ctx.fill();
-    ctx.strokeStyle = S.theme.bg;
+    ctx.strokeStyle = S.theme.bg; // liseré du fond : le losange se détache du trait de la route, de la même teinte
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.lineWidth = 3;
     ctx.strokeText(name, q.x + 8, q.y - 9);
     ctx.fillText(name, q.x + 8, q.y - 9);

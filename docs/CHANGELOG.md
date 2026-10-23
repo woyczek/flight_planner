@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **maps: a clearer flight map** (`modules/maps/render.js`, `module.js`; `DECISIONS.md`, `test/render.html`) — the route
+  is the strongest line, with its labels larger than the aerodromes' and beacons', MORA and graticule quieter, beacon
+  names dropped in the overview; every text reaches WCAG AA contrast by day and by night in the three designs, and
+  the plain background stays dark at night.
 - **Frame, lot 13: forecasts by pressure level** (`frame/app.js`, `tools/launch.py`) — api.open-meteo.com (winds and
   temperatures by level, no key) is reachable by the modules, relayed by the launcher or called directly.
 - **Map, lot 5: charts that read like en-route charts** (`modules/maps/`; SPEC, INTEGRATION, DECISIONS, help ×4) —
