@@ -127,7 +127,7 @@
           "es": "Vista doble que se abre sola desde 1200 px en Combustible e Informe, conmutador «Mapa» legible"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Écrans du cadre (aide, réglages, feuille de route, conflits) sans faire disparaître le menu ; boutons ? et ⚙ bistables qui reviennent au contexte exact",
           "en": "Frame screens (help, settings, roadmap, conflicts) without hiding the menu; ? and ⚙ buttons that toggle back to the exact context",
           "de": "Rahmenbildschirme (Hilfe, Einstellungen, Fahrplan, Konflikte) ohne das Menü auszublenden; ?- und ⚙-Schalter, die exakt in den vorherigen Kontext zurückkehren",
@@ -291,7 +291,7 @@
           "es": "Puntos de las aerovías dibujadas (RNAV, DME, VOR, NDB), etiquetas de tramo (aerovía · NM · rumbo), preajustes IFR bajo / IFR alto / VFR, densidad según el zoom, tooltip de espacio en notación SIA, redibujo a cada cambio del plan de vuelo"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Infobulle qui suit la souris et s'efface, panneau Couches (espaces par type, voies, balises, points, VRP, obstacles, MORA, villes, canevas), « autour de la route seulement » débrayable, « Modifier la route » arrive sur le champ route",
           "en": "Tooltip that follows the mouse and clears, Layers panel (airspaces by type, airways, navaids, fixes, VRP, obstacles, MORA, cities, grid), “around the route only” switchable, “Edit the route” lands on the route field",
           "de": "Tooltip, der der Maus folgt und verschwindet, Ebenen-Panel (Lufträume nach Typ, Luftstraßen, Funkfeuer, Punkte, VRP, Hindernisse, MORA, Städte, Gitter), „nur um die Route“ abschaltbar, „Route bearbeiten“ landet im Routenfeld",
@@ -299,10 +299,17 @@
         },
         {
           "state": "doing",
-          "fr": "VFR : surcouche gardée à tous les zooms, points de report VFR nommés ; itinéraires VFR (transits de CTR) si le SIA les fournit",
-          "en": "VFR: overlay kept at every zoom, named VFR reporting points; VFR routes (CTR transits) if the SIA provides them",
-          "de": "VFR: Überlagerung bei jedem Zoom, benannte VFR-Meldepunkte; VFR-Strecken (CTR-Durchflüge), sofern das SIA sie liefert",
-          "es": "VFR: superposición mantenida a todos los zooms, puntos de notificación VFR con nombre; itinerarios VFR (tránsitos de CTR) si el SIA los proporciona"
+          "fr": "Sélecteur de modes de carte validé (Auto, IFR bas, IFR haut, VFR, Topo, CAM) ; infobulle gardée 5 s, plus légère",
+          "en": "Validated map mode selector (Auto, IFR low, IFR high, VFR, Topo, CAM); tooltip kept 5 s, lighter",
+          "de": "Validierter Kartenmodus-Wähler (Auto, IFR tief, IFR hoch, VFR, Topo, CAM); Tooltip 5 s gehalten, leichter",
+          "es": "Selector de modos de mapa validado (Auto, IFR bajo, IFR alto, VFR, Topo, CAM); tooltip mantenido 5 s, más ligero"
+        },
+        {
+          "state": "done",
+          "fr": "VFR : surcouche gardée à tous les zooms (TMA, CTR, CTA, R, D, P avec leurs limites, balises), points de report VFR nommés",
+          "en": "VFR: overlay kept at every zoom (TMA, CTR, CTA, R, D, P with their limits, navaids), named VFR reporting points",
+          "de": "VFR: Überlagerung bei jedem Zoom (TMA, CTR, CTA, R, D, P mit Grenzen, Funkfeuer), benannte VFR-Meldepunkte",
+          "es": "VFR: superposición mantenida a todos los zooms (TMA, CTR, CTA, R, D, P con sus límites, radioayudas), puntos de notificación VFR con nombre"
         },
         {
           "state": "doing",
@@ -331,6 +338,13 @@
           "en": "Live map (own position and traffic)",
           "de": "Live-Karte (Position und Verkehr in Echtzeit)",
           "es": "Mapa en vivo (posición y tráfico en directo)"
+        },
+        {
+          "state": "later",
+          "fr": "Itinéraires VFR (transits de CTR) : absents du SIA et d'openAIP, seulement sur les cartes VAC ; saisie manuelle par terrain ou source payante, à décider",
+          "en": "VFR routes (CTR transits): absent from the SIA and openAIP, only on VAC charts; manual entry per aerodrome or a paid source, to decide",
+          "de": "VFR-Strecken (CTR-Durchflüge): weder im SIA noch in openAIP, nur auf VAC-Karten; manuelle Erfassung je Platz oder kostenpflichtige Quelle, zu entscheiden",
+          "es": "Itinerarios VFR (tránsitos de CTR): ausentes del SIA y de openAIP, solo en las cartas VAC; captura manual por aeródromo o fuente de pago, por decidir"
         }
       ]
     },
