@@ -62,5 +62,10 @@ intègre.
    la session ergonomie annonce les gels.
 8. **Jamais** : dialogue natif du navigateur, clé ou jeton dans le dépôt ou dans un message, push sur `master`,
    `gitnet` ou `hg`, modification des remotes, suppression d'un fichier déposé par l'utilisateur.
+9. **`v3` suit `develop` par rebase, jamais par cherry-pick ni fusion.** Quand `develop` avance (corrections V2),
+   la session ergonomie rebase `v3` sur `origin/develop` et pousse `--force-with-lease` (framagit et github), puis
+   prévient les sessions V3. Chaque session V3 réaligne alors sa branche locale : `git fetch origin` puis
+   `git rebase origin/v3` (ses seuls commits non poussés sont rejoués) ; une branche sans commit local :
+   `git reset --hard origin/v3`. Personne d'autre ne réécrit `v3`.
 
 Les règles de codage et de documentation sont dans `CLAUDE.md` à la racine ; ce dossier ne les répète pas.

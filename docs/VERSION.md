@@ -5,6 +5,53 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 6.0.0-alpha.1 — 23 October 2026
+
+First alpha of the **Pilot application** (V3). It lives next to the V2 suite: same site (`/v3/frame/`), same
+launcher, same data repository. The V2 pages are unchanged (see 5.4.0 below).
+
+### Summary
+
+- **One app, six verbs**: Fuel, Map, Report, My flights, Site, Settings — phone first, one column, 44 px targets,
+  three designs (standard, cabinet, field), day and night.
+- **Works offline and on every device**: local cache, writes kept and sent in one batch, synchronisation at start,
+  on the button and in the background; this device only, the workstation's launcher, or a GitHub repository.
+- **Prepare a flight in the pilot's order**: airfields, aircraft, route (text, always visible, or edited on the map),
+  weather of the route corridor (METAR / TAF) and winds aloft (Open-Meteo), density altitude, fuel quote, level
+  decision, then "Start the flight": the weather is refreshed, the planned progress and the real position (X-Plane,
+  Little Navmap, GPS, IVAO, VATSIM) are shown on the map and the profile.
+- **Charts like en-route charts**: six modes (Auto, IFR low, IFR high, VFR, Topo, CAM), a layers panel, zoom
+  thresholds tunable per item, airway fixes and labels, airspace tooltips in SIA notation, VFR reporting points and
+  VAC sequences per aerodrome, AAR tracks and NAT.
+- **Report with as few touches as possible**: the started flight or the last IVAO / VATSIM flight, three steps,
+  sixteen families, one JSON per report, "Save and record on the site" in one gesture.
+- **Join the airline**: a configuration exported by the administrator (file, link or QR code) and a step-by-step wizard
+  for a pilot without a GitHub account.
+
+### Actions to take
+
+1. **Workstation**: pull `v3`, restart the launcher, open `/frame/`. Set your trigram in Settings (nothing leaves the
+   device without it). Publish the aeronautical and aircraft databases from the V2 Maintenance page once.
+2. **Phone**: open `/v3/frame/` on the site, add it to the home screen, import the configuration sent by the
+   administrator (or Settings › Access), then Settings › Offline data › keep your zones.
+3. **Tablet next to the simulator**: Settings › Workstation access › Open, pair with the code or the QR code.
+4. **VFR reporting points from VAC charts**: run `tools/report-vfr/refresh_vfr.py` then Maintenance › Aeronautical
+   data › "Import a VFR compilation (VAC)" (Expert level).
+
+### Notes
+
+- Alpha: data formats (`pilot/<tri>/current_flight.json`, `aircraft/sheets/`, `sia/vfr/`) and screens may change.
+- Without a launcher, the TAF needs a personal avwx.rest key (Settings › Weather key); the METAR works without.
+- A private user-owned data repository needs a classic GitHub token for pilots; an organisation allows fine-grained
+  tokens; sign-in without a token will come with the site's web service.
+- VFR routes are the user's VAC extraction, marked "to verify": the VAC chart prevails.
+- Not yet: CPCO and SOG client applications, PHP web service of the site, iOS / Android shells for V3, TEMSI.
+
+### Delivery
+
+- Delivery archive: `xplane-web-suite-6.0.0-alpha.1.zip` — SHA-256 `5026985db8c0bafc202ddae70a4989aa578d697db47fb82407a38f3f4791ae71` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-6.0.0-alpha.1.zip` — SHA-256 `09fa2a2a484acc78f78d940bec91de44351e9803d600e8852cd9154f003fff0b` (outside the repository: `dist/` folder).
+
 ## 5.4.0 — 23 October 2026
 
 Last release of the V2 line. The next line (6.0, "Pilot" application) is being built on the `v3` branch; the V2

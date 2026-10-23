@@ -10,6 +10,781 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+### V3
+
+- **Map: beacons in the same place** (`modules/maps/lib/aero_symbols.js`, `render.js`, `module.js`; SPEC, DECISIONS,
+  help ×4) — a VOR (or TACAN, DME) keeps its symbol and label over an NDB, an NDB over an ILS; the ILS is drawn
+  underneath and, when it shares the VOR's place, named in the VOR's new tooltip ("also here: ILS 25L BG 109.9").
+
+## [6.0.0-alpha.1] — 2026-10-23
+
+First alpha of the V3 **Pilot application** (`frame/`, `modules/`), published under `/v3/frame/` on the same site
+as the V2 suite and served by the same launcher. One frame: a data layer with a local cache, offline writes and
+batched synchronisation (this device only, the workstation's launcher, a GitHub repository), an installable
+offline app, a verb menu, usage levels, in-page help, a network relay, real position during a started flight
+(simulator through the launcher, GPS, IVAO / VATSIM), the launcher opened to a tablet on the local network. Six
+modules: Fuel (five steps in the pilot's order, weather of the route corridor, winds aloft, density altitude,
+editable route, "Start the flight"), Map (en-route charts with modes, layers, tunable zoom thresholds, route
+editing on the map and the profile, wind barbs, VFR reporting points and VAC sequences, flight in progress),
+Report (three steps, sixteen families, prefill, "Save and record on the site"), My flights, Site (log and fleet
+by paste or through the launcher, airline card) and Settings (identity, usages, access, backup, offline data by
+zone, level, keys, pilot configuration export / import, "Join the airline" wizard, administration links). One
+aircraft registry (types, performance sheets, fleet, reference; `.lnmperf` kept in sync both ways), a Pilot manual
+and two tutorials in four languages, a roadmap in the app. Alpha: data formats and screens may still change.
+
+### V3
+
+- **Map: a VFR reporting point drawn once** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS) — a VAC point
+  matched with a base VRP (by id, or within 0.6 NM) is drawn once, at the base's position with its name, the VAC code in
+  the tooltip; the VRP layer no longer redraws the points of a highlighted aerodrome.
+- **Maintenance: VFR card below the Expert level** (`shared/maintenance_page.js`) — under level 4, a line says where
+  the "VFR reporting points (VAC)" card is ("Expert level, menu ☰ › Level") instead of nothing; the card follows the
+  page's mode (`GH_LITE`).
+- **Frame: without a trigram, nothing leaves the device** (`frame/store/frame_data.js`, `frame/app.js`,
+  `frame/index.html`, `frame/frame.css`, `tools/launch.py`; SPEC § 2 and § 3.5, DECISIONS). Documents written
+  without a trigram (`pilot/ANON/`) stay on the device, and nothing is sent or exchanged until the trigram is set. A
+  "Trigram?" button opens Settings. Once the trigram is set, those documents move under it, including a
+  `pilot/ANON/` already in `data/`, which then empties itself. The launcher refuses a batch with no author.
+- **Fuel › Sheets: the airline's types without a sheet, by category** (`modules/fuel/module.js`; SPEC, DECISIONS,
+  help ×4) — as in V2, each type the airline uses (fleet, reference) without a sheet is listed "performance to fill in"
+  with "Create the sheet", and the list is sorted by category (helicopters first): the company helicopters (EC45,
+  AS65, NH90…) show again.
+- **Launcher: security review of the local-network access** (`tools/launch.py`, `tools/lan_access.py`,
+  `frame/app.js`, `frame/settings/settings.js`; SPEC § 3.10, DECISIONS, settings SPEC, help ×4) — the data batch no
+  longer accepts a path that leaves `data/` (Windows `\`, `:`, `..`, junctions) nor a page, SVG or XML file. The
+  relay follows a redirect only to an allowed host and reaches public addresses only. A pairing code works once and
+  lasts 10 minutes, and 30 wrong codes in an hour close pairing. Only the main address is opened by default. Each
+  paired device can be forgotten on its own. Body size and batch length are bounded.
+- **Settings: copying on a paired tablet** (`frame/settings/settings.js`, `join.js`, `frame/sw.js`) — the
+  diagnostics, the configuration link and the username copy through `frame/lib/clipboard.js`, so they work over http;
+  when nothing can copy, the text is shown selected and the notification says to copy it.
+- **Copy and paste on a tablet served by the computer** (`frame/lib/clipboard.js`, fuel, report, website) — copying
+  works over http too (or the text is shown selected to copy it yourself); "Paste from the clipboard" only
+  appears where the browser allows it.
+- **Settings: card "Computer access"** (`frame/settings/settings.js`, settings SPEC, DECISIONS, help ×4) — on the
+  computer that serves the page: open or close the local-network access, the address with its QR code, the pairing
+  code and its limits, the paired devices and "Forget the devices", a "trusted network only" warning; the
+  Diagnostic shows the page's secure context, offline use and the launcher's computer. Help: "The tablet next to the
+  simulator".
+- **Map: an aerodrome's reporting points from the base, aeroplane / helicopter colours** (`modules/maps/module.js`,
+  `render.js`, `tools/vfr_import.py`; SPECs, DECISIONS, help ×4) — the aerodrome's card and hover always list the
+  published base's VRPs, the VAC compilation adds to them ("VAC sequences: not imported" without it); VFR reporting
+  points in black for aeroplanes and green for helicopters ("-H-" in the base) everywhere; the import also matches the
+  helicopter points.
+- **VFR points: restricted use and manual vertices** (`tools/vfr_import.py`, `modules/maps/module.js`; SPECs,
+  DECISIONS) — the import keeps a point's usage restrictions and a manual vertex's accuracy; the aerodrome's card lists
+  the restricted points (dashed ring on the map) and how many vertices were placed by hand; the GeoJSON written next to
+  the compilation is not needed (same content).
+- **Launcher: the Pilot application on a tablet or a phone of the local network** (`tools/lan_access.py`,
+  `tools/launch.py`, `frame/app.js`, `frame/store/frame_data.js`, `frame/store/transport_launcher.js`,
+  `frame/index.html`, `frame/frame.css`, `.gitignore`; SPEC § 3.10, DECISIONS, INSTALL) — `lancer.cmd --lan` (or the
+  computer's Settings) also serves the computer's private addresses until the launcher stops. A device pairs once
+  with a 6-digit code shown in the console, and then works like the computer: its `data/`, the simulator's position,
+  the relay. It gets only the Pilot application's routes, and addresses that are not private are refused. On the
+  device (http): a "Launcher on <computer>" badge, no offline use (said in Diagnostic), the data layer's own SHA-1.
+- **Settings: the right GitHub token for the repository's owner** (`frame/settings/config.js`, `join.js`,
+  `settings.js`) — the export records whether the repository belongs to a user or an organisation; a user's repository
+  gets a classic `repo` token (prefilled link, the account-wide reach said plainly), an organisation's the fine-grained
+  token; "Test" accepts both.
+- **Map: VFR points, format 2** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a route reviewed by hand follows
+  its interpreted track (with its manual vertices), a one-way route gets an arrow, the card gives the analysis status
+  and notes, and each route its name, runways and conditions; no line is drawn to the aerodrome's centre any more.
+- **Report VFR in the suite** (`tools/report-vfr/`, `tools/vfr_import.py`; aerodb SPEC, DECISIONS, admin manuals ×4) —
+  the workstation tool that compiles the VAC charts (`refresh_vfr.py`, `vfr_core.py`, manual analyses in
+  `interpretations/`; optional `pypdf`, a clear message without it, an English README); the import now reads its format
+  2 (named routes with direction, runways, conditions and interpreted geometries, manual vertices, analysis status per
+  aerodrome) as well as the first one.
+- **Settings: the right GitHub token for the repository's owner** (`frame/settings/config.js`, `join.js`,
+  `settings.js`) — the export records whether the repository belongs to a user or an organisation; a user's repository
+  gets a classic `repo` token (prefilled link, the account-wide reach said plainly), an organisation's the fine-grained
+  token; "Test" accepts both.
+- **Settings: "Join the airline" assistant and QR code** (`frame/settings/join.js`, `frame/lib/qr.js`,
+  `frame/settings/settings.js`, `frame/help/help.js`, `frame/help/tutorial/`; SPEC § 5 and § 7, DECISIONS, help ×4) —
+  the configuration link, file, Settings or welcome card open a seven-step assistant (configuration, account, invitation,
+  token step by step, test with clear messages, network IDs, finish and synchronise), resumable on the device; the
+  administrator's export lists their steps and shows a QR code of the link (pure JavaScript generator, checked by an
+  independent decoder); tutorial "Join the airline" (en, fr).
+- **Fuel: flight date in one touch** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — "+30" next to the
+  flight date sets the flight 30 min from now (30 more at each press), "Now" goes back to the current time; the
+  weather and the winds aloft follow.
+- **Map: VFR reporting points of an aerodrome** (`modules/maps/module.js`, `render.js`; SPEC, INTEGRATION, DECISIONS,
+  help ×4) — hovering an aerodrome lights up its reporting points and the sequences of its VAC charts; a tap pins it,
+  zooms in on its points and opens its card (sequences, then the VAC instructions page by page), all marked "to be
+  checked", never as a published route; departure and arrival shown in VFR mode. The Edit mode now writes the flight
+  through `frame/lib/current_flight.js` (only `route` and `level`).
+- **Frame: what the launcher exposes under `sia/` written down** (SPEC, DECISIONS) — `sia/base/` and `sia/vfr/` only,
+  never the raw SIA sources.
+- **Settings: token how-to always shown at import, account sign-up first** (`frame/settings/settings.js`,
+  `frame/settings/config.js`) — the how-to is visible (folded) even on a workstation already following the repository;
+  it starts with the account sign-up link and, for GitHub, the invitation to accept.
+- **aerodb: VFR reporting points of the VAC charts** (`frame/aerodb/aerodb.js`, `tools/vfr_import.py`,
+  `tools/launch.py`, `shared/maintenance_page.js`; SPEC, DECISIONS, admin manuals ×4) — Settings › Maintenance ›
+  Aeronautical data, "Import a VFR compilation (VAC)…" (Expert, launcher): the `vfr-compiled.json` of
+  `tools/report-vfr/compile_vfr.py` is checked strictly, its points matched with the base's VRPs, a plan shown, then one
+  file per aerodrome written to `sia/vfr/` of the data repository (points, sequences, instructions by page) with an
+  index, and synchronised; `aerodb.vfrRoutes(icao)` and `vfrIndex()` read them, marked as candidates to be checked.
+- **Frame: the actual position written through the shared current-flight merge** (`frame/app.js`, `frame/sw.js`;
+  SPEC § 3.2, § 3.9, DECISIONS) — the position service uses `frame/lib/current_flight.js` like fuel and report: only
+  `progress.actual` is replaced in the record re-read just before.
+- **fuel, report: the real position of the flight is no longer erased** (`frame/lib/current_flight.js`,
+  `modules/fuel/module.js`, `modules/report/module.js`) — each module rewrites only its own part of the current
+  flight; fuel no longer rewrites it after every position update.
+- **Map: all the airspaces at a point** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a tap where several
+  airspaces overlap opens a card with a block of levels like the vertical profile (one numbered column per airspace,
+  floor to ceiling) and the numbered list in SIA notation, instead of "TMA … (+3 more)".
+- **Map: source of the actual position** (`modules/maps/module.js`; SPEC, INTEGRATION, help ×4) — the in-flight line
+  ends with "source: GPS / network / IVAO / VATSIM / X-Plane / Little Navmap" (frame lot 16); an unknown value shows
+  nothing.
+- **Map: tuning page boxes, map size, Layers panel** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS, help ×4)
+  — a "drawn" box in front of each line of `#maps?tune=1`, the same as the Layers panel's layer (two new layers:
+  airspace names, airway names), "Reset the boxes" and "Reset the sliders"; the MapLibre background always the size of
+  its frame (also after a hidden or frozen tab, a style change, tiles still loading); the Layers panel's "Reset all" no
+  longer covers the Complexity slider.
+- **Frame: `keepScroll` shared** (`frame/lib/dom.js`, `frame/sw.js`; SPEC § 3.9, INTEGRATION § 6, DECISIONS) — one
+  helper for the modules: a render keeps the scroll of the page and of every scrolling container, and the field
+  being typed in (value, focus, selection); fuel, report and flightlog take it instead of their own copies.
+- **fuel, report, my flights: the page no longer jumps to the top** (`modules/fuel/module.js`, `modules/report/module.js`,
+  `modules/flightlog/module.js`) — a screen redrawn because the flight changed elsewhere keeps where you were.
+- **Frame: the flight simulator as the first source of the actual position** (`tools/sim_position.py`,
+  `tools/launch.py`, `frame/app.js`, `frame/frame.css`; SPEC § 3.2, DECISIONS) — when the launcher serves the page,
+  a started flight follows X-Plane 12 (web API) or Little Navmap (web API) every 5 s, before the device's GPS and the
+  IVAO / VATSIM session; the header badge says "X-Plane" or "Little Navmap"; ports set in `tools/.sim.json`
+  (local), local machine only.
+- **Settings: Administration card** (`frame/settings/admin_links.js`, `frame/settings/settings.js`, `frame/frame.css`,
+  `frame/index.html`, `frame/sw.js`; SPEC § 6, DECISIONS, help ×4) — at the Full level, one card gathers the map
+  threshold tuning, the roadmap, the diagnostics, the benches (workstation with launcher only) and the workstation's V2
+  administration pages (with a launcher), each with a sentence, from a declared list.
+- **Map: narrow pane** (`modules/maps/module.js`, `profile.js`, `lib/vertical_profile.js`; SPEC, DECISIONS, help ×4) —
+  one intermediate step in the IFR thresholds (TMA, CTA, R and TSA shapes before names, airways and MORA) and one step
+  less when the map frame is under 600 px; vertical profile labels never overlap (airspaces entered first, the others
+  counted in "+n"); in Edit mode a point is added only after "+" or a 500 ms press, a simple tap shows the tooltip.
+- **Frame: "Reload" after a new version works** (`frame/sw.js`, `frame/app.js`; SPEC, DECISIONS) — the "new version"
+  notice no longer comes back after every load (the page was checked at another address than its copy); "Reload" lets
+  a waiting service worker take over or fetches every copy again, then reloads, with no Ctrl+Shift+F5. The "Try" page
+  (example module) leaves the Pilot application; developers open it with `localStorage['sogFrame:dev'] = '1'`.
+- **Settings: pending writes listed** (`frame/settings/settings.js`, `frame/frame.css`; SPEC, DECISIONS, help ×4) — the
+  Synchronisation card lists the writes waiting (`FD.status().queue`: path, module, time, ✕ for a deletion), newest
+  first, and shows while some wait even without an exchange.
+- **Frame: no more "1 pending" for ever on a workstation** (`frame/store/frame_data.js`,
+  `frame/store/transport_launcher.js`, `frame/app.js`) — with the launcher, a write goes into `data/` within seconds
+  instead of waiting ten minutes; the sync button's tooltip lists what is waiting (file, module, time) and the last
+  error.
+- **aerodb: helicopter estimates** (`frame/aerodb/aircraft.js`; SPEC, DECISIONS) — a helicopter gets a practical
+  ceiling (12,000 to 20,000 ft by class instead of an aircraft-like value) and a low economical level (3,000 ft) for
+  fuel; the launcher no longer reports a missing types base when the one published in the data repository is there.
+- **Frame, lot 15: the actual position during a flight** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) —
+  while a flight is started, the app follows the device's GPS (allowed by a tap on the header badge) or, without GPS,
+  the pilot's IVAO or VATSIM session, and writes the actual position into the current flight for the Map; the badge
+  shows the source.
+- **Settings: configuring a pilot** (`frame/settings/config.js`, `frame/settings/settings.js`, `frame/help/help.js`,
+  `frame/index.html`, `frame/sw.js`; SPEC § 5, DECISIONS, help ×4) — on a workstation, "Export a configuration for a
+  pilot…" makes `sog-config-<TRI>.json` (schema `sog-config/1`: airline, data repository without credentials, trigram,
+  usages, token how-to per host in four languages, never a token) and a one-tap link `#settings?config=…`; on the
+  pilot's device, the link, "Import a configuration…" or the welcome card show it, ask the network IDs and the token,
+  test the access, then set identity, usages and access, synchronise once and offer Offline data.
+- **fuel: the wind aloft stays while a new forecast loads** (`modules/fuel/module.js`; docs) — no more silent switch
+  to the surface wind; a missing forecast is said; an estimated ceiling is called so.
+- **Map, lot 8: started flight** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — planned and
+  actual positions on the map and the profile, the difference (ahead or late, off the route, altitude), ETA of each
+  point close up, a "Follow" button, and the states without a position or with a stale one.
+- **Frame: no "Map" toggle on Settings or Help** (`frame/app.js`, `frame/frame.css`) — the dual view only applies to a
+  module: Settings, Help, the roadmap and the conflicts take the whole area, and the Map comes back with the module.
+- **report: saving the report ends the started flight** (`modules/report/module.js`; docs) — fuel goes back to
+  planning and My flights drops "in progress"; the shutdown time is no longer taken from fuel.
+- **fuel: starting a flight redoes the weather and the quote for now** (`modules/fuel/module.js`; docs) — and says
+  what changed (wind, block, arrival); "End the flight" is gone: a started flight ends with its report, or is
+  cancelled.
+- **fuel: ending a flight and its planned progress** (`modules/fuel/progress.js`, `module.js`; `test/progress.html`,
+  docs) — "End the flight" and "Cancel the start"; the result shows how long the flight has been going; the Departure
+  step shows where the flight should be — time over each point, distance and fuel remaining — minute by minute, and
+  the map gets it.
+- **Map, lot 7b** (`modules/maps/`, `contours.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — each element of the
+  map has its own zoom range per mode (VRP very close, CTR close, TMA in a medium view, FIR from afar), tuned by the
+  administrator on `#maps?tune=1` with the map redrawn live and stored in `airline/map_profiles.json` (studio
+  format); a "Complexity (trial)" slider shifts them all; Topo and VFR show contour lines close up, computed from the
+  relief tiles.
+- **Map, lot 7a** (`modules/maps/`; SPEC, DECISIONS, help ×4) — one tooltip for hover, tap and click (follows the
+  pointer, stays 5 seconds); map modes as icons; obstacle heights close up ("434 AGL (771)"); the map keeps the
+  user's view after a route edit or a new quote, only "Recentre" or another flight reframes it.
+- **Help, lot 4: the two tutorials** (`frame/help/help.js`, `frame/help/build_help.py`, `frame/help/tutorial/`,
+  `frame/app.js`, `frame/sw.js`, `frame/frame.css`; SPEC § 6, DECISIONS) — "Prepare a flight" (Fuel's five steps) and
+  "Write a report" (to the website and My flights), English and French, one 375 px capture per step taken by
+  `tutorial/capture.py` on test data; reached from "Start with…" at the top of the manual and a welcome card at the
+  first opening; the build checks them. The Fuel, Map, Report and My flights chapters are retranslated in English, German and
+  Spanish.
+- **Map, lot 6c: winds aloft** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — wind barbs at the
+  flight level along the route, at each point and every 50 NM, from Fuel's forecast; a tap or a hover gives direction,
+  speed, temperature, level and forecast hour; a layer of their own.
+- **my flights: the flight in progress** (`modules/flightlog/module.js`; docs) — a flight started in fuel and not yet
+  reported shows first, with "Write the report".
+- **Map: levels as in Fuel** (`modules/maps/`; SPEC, DECISIONS) — "FL060" from the transition altitude, "3 500 ft"
+  below, through the shared `formatLevel`; relief and minimum altitudes always in feet.
+- **report: more from the current flight** (`modules/report/module.js`; docs) — the card says everything it will take,
+  and "Use" also fills the engine start time and the fuel at start from fuel, each marked with its source.
+- **Map: free points** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a waypoint dropped away from any fix,
+  beacon or airfield becomes a free point named by its coordinates (4530N00030E), for VFR and helicopters.
+- **fuel: after the end-to-end pass** (`modules/fuel/module.js`, `frame/lib/route_text.js`, `winds.js`; docs) — the
+  wind's source in the result, the ISA deviation at the planned level, one level notation (FL060 / 3 500 ft), a busy
+  weather button, the start time cleared for a new departure and a diversion noted, the dual view kept when the
+  flight starts on a wide screen, tighter Flight step; changing the departure or arrival no longer stacks aerodromes
+  in the route text.
+- **aerodb: one line per registration** (`frame/aerodb/registry.js`; SPEC, DECISIONS) — the aircraft search merges an
+  aircraft's own sheet, fleet and reference entries into one line, and the chosen sheet always gives a quote: an own
+  sheet without a fuel flow is completed by its type's sheet, else the estimate.
+- **Map, lot 5e: refuelling and NAT tracks** (`frame/aerodb/aar.js`, `aerodb.aarTracks()` and `natTracks()`,
+  `modules/maps/`; SPEC, DECISIONS, help ×4) — the CAM mode draws the air refuelling racetracks (France and the United
+  Kingdom) with their outbound leg and name, and the day's NAT tracks with their levels; two layers of their own.
+- **fuel: an aircraft without its own sheet uses its type's estimate** (`modules/fuel/module.js`) — it no longer
+  borrows the first sheet of the list.
+- **Map, lot 6b: levels on the profile** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — in the
+  Edit mode, drag a level up or down on the profile, or use − / + in a point's card (steps of FL10); the route text
+  keeps the airways of the segments left unchanged (fuel's `frame/lib/route_text.js`).
+- **fuel: airways kept when the points change** (`frame/lib/route_text.js`, `modules/fuel/module.js`;
+  `test/route_text.html`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — editing the points (list or map) no longer
+  erases the airways typed in the route, except on the legs that changed; the route text code is shared with maps.
+- **Map, lot 6a: edit the route on the map** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — an
+  "Edit" mode: drag a waypoint onto a fix, a beacon or an airfield, tap one to insert it, tap a route point to remove
+  it, undo the last gestures; each change is saved in the current flight (`by: 'maps'`) and Fuel redoes the quote.
+- **Map, lot 5d: six map modes** (`modules/maps/`, `frame/lib/icons.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — the
+  user's mode selector (Auto, Low IFR, High IFR, VFR, Topo, CAM) replaces the preset list; Topo shows the terrain with
+  a minimal overlay, CAM adds R / D / P, TSA / TRA / CBA and the low-flying network at all levels; the mouse tooltip
+  stays 5 seconds after leaving a label and is lighter.
+- **fuel: no error when leaving while the weather loads** (`modules/fuel/module.js`) — an answer arriving after you
+  left Fuel is dropped quietly.
+- **Frame: the header fits a phone in every language** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) — on a
+  narrow screen the sync button shows a short state (✓, number pending, ⟳, ✕), the full label staying in its tooltip;
+  the page no longer gets wider than the window at 375 px.
+- **Map, lot 5c: layers, hover, VFR in full** (`modules/maps/`; SPEC, INTEGRATION, DECISIONS, help ×4) — a Layers
+  panel (airspace families, airways, beacons, airway points, VRP, obstacles, MORA, towns, graticule, alternate, "Around
+  the route only"), kept per preset on the device; with a mouse, a light tooltip follows the pointer over airway and
+  airspace names; the VFR map keeps TMA, CTR, R / D / P limits and VRP at every zoom (it went bare close up); close up,
+  the whole view is drawn; TOC / TOD labels no longer cover route names; "Edit the route" opens fuel's Route step.
+- **Frame, lot 14: help and settings over the current module** (`frame/app.js`, `frame/frame.css`) — the menu stays
+  in place (it no longer scrolls away on long screens) with the current module marked; "?" and "⚙" are toggles:
+  a second click, or Escape, closes help or settings and brings back the module exactly where it was (same step, same
+  scroll).
+- **fuel: winds and temperatures aloft** (`modules/fuel/winds.js`, `module.js`; `test/winds.html`, `SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — the forecast by level along the route (Open-Meteo: Météo-France,
+  ICON or GFS), shown point by point; with real weather, the quote's wind is the wind at the planned level; the real
+  atmosphere at departure shows its inversions beside the density altitude chart; the map gets the winds for its
+  arrows.
+- **fuel: typing in the route is never rewritten** (`modules/fuel/module.js`; `DECISIONS.md`) — a field being typed in
+  keeps its text whatever is redrawn or saved meanwhile; the route is tidied only when you leave it or press Enter.
+- **report: the flight started in fuel comes first** (`modules/report/module.js`; `INTEGRATION.md`, `DECISIONS.md`,
+  `help/fr.md`) — "Flight started at hh:mm" is offered before anything else, and no longer once its report is saved.
+- **fuel: weather without a launcher** (`frame/lib/metar.js`, `modules/fuel/module.js`; `test/metar.html`, `SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — on a phone the METARs come from metar.vatsim.net, decoded on the
+  device, and the TAFs from avwx.rest with your own weather key; without a key the card says the TAF is unavailable
+  and uses the METAR.
+- **fuel: Plan in five steps** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) —
+  Flight, Route, Weather, Quote, Departure, one at a time on a phone and all at once on a wide screen, the block fuel
+  always in view; "Show the map" opens the map beside or on its own; "Start the flight" records the departure time
+  and opens the map; the map's "Edit the route" lands on the route, ready to type.
+- **fuel: a route changed on the map is quoted again** (`modules/fuel/module.js`; `INTEGRATION.md`, `DECISIONS.md`) —
+  when another module writes the current flight, fuel keeps its route as written, recomputes distance, quote and
+  climb / descent profile, and writes them back, live or the next time it opens.
+- **aerodb lot 5b: Little Navmap files kept in step** (`frame/aerodb/lnmperf.js`, launcher routes
+  `/__setup/lnmperf-folder` and `/__setup/lnmperf`, Settings card, `FrameData.noteConflict`; SPEC, INTEGRATION,
+  DECISIONS, Settings help ×4) — on a launcher workstation, the performance sheets and the `.lnmperf` files of a chosen
+  folder stay the same both ways: a changed sheet rewrites its file, a changed file updates the sheet, a new file
+  becomes a sheet, a deleted file is written again; a value changed on both sides goes to the newest, the other is
+  kept and a conflict is counted at the frame's button; a removed sheet's file is set aside in `_removed/`, never
+  deleted. Checked at start, after each synchronisation and every two minutes. Fix: a kg sheet was exported to
+  `.lnmperf` with its kg values in the pound fields.
+- **flightlog: wide layout in the dual view** (`modules/flightlog/module.js`) — my flights lays out by its own width, not the window's,
+  so it stays right in half of a wide screen.
+- **report: wide layout in the dual view** (`modules/report/module.js`) — report lays out by its own width, not the window's,
+  so it stays right in half of a wide screen.
+- **Frame: a readable dual view toggle** (`frame/app.js`, `frame/frame.css`) — the "Map" button of the header was
+  clipped to an icon; it is now a toggle with its label, readable in every design, with a "×" on the pane. Fuel and
+  Report open the Map beside them by themselves from 1200 px wide until you choose, and your choice is kept.
+- **fuel: the route text first** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`)
+  — the route is typed in a field that is always visible and tidied when you leave it (one line, levels as /F280,
+  airways kept, unknown points named under it, ICAO coordinates read); distance and true track are shown with their
+  source and typed only when the route does not resolve; the points list is folded below.
+- **maps: a clearer flight map** (`modules/maps/render.js`, `module.js`; `DECISIONS.md`, `test/render.html`) — the route
+  is the strongest line, with its labels larger than the aerodromes' and beacons', MORA and graticule quieter, beacon
+  names dropped in the overview; every text reaches WCAG AA contrast by day and by night in the three designs, and
+  the plain background stays dark at night.
+- **Frame, lot 13: forecasts by pressure level** (`frame/app.js`, `tools/launch.py`) — api.open-meteo.com (winds and
+  temperatures by level, no key) is reachable by the modules, relayed by the launcher or called directly.
+- **Map, lot 5: charts that read like en-route charts** (`modules/maps/`; SPEC, INTEGRATION, DECISIONS, help ×4) —
+  airway points (triangles and beacons) with their names, boxed airway names along the segment with minimum level,
+  distance and tracks when zoomed in; three presets at the top left (Low IFR, High IFR, VFR) chosen automatically from
+  the flight's level and kept per device; density by zoom (large airfields and airways from afar, everything close
+  up); tooltips in AIP notation on airspaces and airways, by tap or by hover, also on the profile; live view on every
+  change of the flight, with the levels held from route points (`alt_ft`) drawn as steps.
+- **design: the dual view no longer squeezes three blocks into half a screen** (`frame/design/primitives.css`,
+  `frame/frame.css`) — columns, grids and tables are decided on the width of the pane (container queries), not of the
+  window: in the dual view Fuel or Report stacks its blocks while the Map keeps its half.
+- **settings: weather key for TAF without a launcher** (`frame/settings/settings.js`, `frame/settings/help/*.md`;
+  `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — a "Weather key (TAF, avwx.rest)" card, with or without a
+  launcher: METAR works without a key, TAF without a launcher needs a personal avwx.rest key, kept on the device only
+  (never in a file, a backup or the repository, never shown again); Save, Test, Erase, link to the provider's sign-up
+  page.
+- **Frame, lot 12: airport weather without a launcher** (`frame/app.js`, `tools/launch.py`, `tools/csp_policy.py`) —
+  the METAR comes from metar.vatsim.net (no key; relayed by the launcher when there is one), the TAF from avwx.rest with
+  a personal key entered on the device (Settings › Keys), which the app adds itself and never keeps in a backup or in
+  the repository.
+- **fuel: weather along the route's corridor** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
+  `help/fr.md`) — the "intermediate aerodrome" field is gone: every aerodrome within a settable distance of the route
+  (10 NM by default) that reports a METAR or TAF is shown with its distance along the route, folded beyond two, and
+  the real wind averages them leg by leg.
+- **Frame, lot 11: back to the module you came from** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) — a
+  module opened from another (the Map's "Edit the route", "Write the report" of My flights, `?from=`) shows
+  "← <that module>" in the header, which goes back to the same place.
+- **fuel: editable route points and step levels** (`modules/fuel/module.js`, `model.js`; `SPEC.md`, `INTEGRATION.md`,
+  `DECISIONS.md`, `help/fr.md`, `test/quote.html`) — the route's points as a list to reorder, remove or add to, with an
+  optional level per point flown from that point on; the quote counts each step (its climb or descent, then the
+  cruise at that level) and descends from the last one; levels written in a route (OFP or item 15) are read; every
+  change goes to the map at once (`route.points[].alt_ft`).
+- **fuel: ISA deviation from the departure METAR and a density altitude chart** (`modules/fuel/module.js`; `SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — once the weather is read, the ISA deviation of the departure
+  (temperature against the aerodrome's standard temperature) is proposed in one tap and kept in the quote settings; a
+  folded chart shows the density altitude by ISA deviation and pressure altitude, with the sheet's ceiling and the
+  pressure altitude where it is reached that day — the helicopter case.
+- **report: the callsign from the current flight** (`modules/report/module.js`) — the aircraft chosen in fuel brings
+  its registration and callsign into a report in one tap.
+- **fuel: aircraft and sheets through aerodb** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
+  `help/fr.md`) — the Aircraft block becomes one line with a search over every source (my sheets, the airline's fleet
+  and log, published types, free code), each with its origin and the sheet that will serve it; the chosen
+  registration and callsign go into the current flight; the Sheets screen reads and writes through aerodb's registry
+  (each change stamped with its source); fuel no longer writes `planner/`, and its copy of the sheets logic is gone.
+- **aerodb: `.lnmperf` export no longer blocked** by the registration and callsign fields added in lot 5a (Little
+  Navmap has no such fields).
+- **Frame, lot 10: dual view on a tablet or a wide screen** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) —
+  Fuel and Report can show the Map beside them (header button, address `#fuel?with=maps`, kept per module); a change of
+  the flight plan in Fuel appears in the Map at once. Nothing changes on a phone.
+- **settings: readable diagnostics** (`frame/settings/settings.js`, `frame/settings/help/*.md`; `DECISIONS.md`, manuals
+  rebuilt) — Settings › About › Diagnostics shows the frame's diagnostic line by line (transport, sync, errors,
+  repository tree, reference bases, aeronautical base), labels in four languages, and "Copy" puts the full JSON on the
+  clipboard to paste in a message from the phone.
+- **Frame: the aeronautical base appears on the phone in GitHub mode** (`frame/store/frame_data.js`, `frame/app.js`) —
+  zones and aircraft pushed to the data repository after the app was opened are signalled at the next
+  synchronisation, with no reload, and a read made before the first synchronisation looks at the repository's tree of
+  the moment. The data layer gives a diagnostic (tree, references, last failed read, what aerodb sees) for the Settings
+  screen. METAR / TAF only through the launcher (aviationweather.gov allows no direct call from a page).
+- **fuel: aerodrome weather** (`modules/fuel/weather.js`, `module.js`; `SPEC.md` § 10, `INTEGRATION.md`, `help/fr.md`)
+  — METAR / TAF of the departure, an intermediate aerodrome and the arrival (aviationweather.gov through the launcher):
+  flight category in colour, wind and runway components, ceiling, visibility, temperature and QNH, CB / TCU warning,
+  raw message folded; TAF when a flight date falls in it; "Real weather" sets the quote's wind to the average along
+  the route; last values kept for offline use.
+- **aerodb lot 5a: one aircraft registry.**
+  - `aerodb.aircraft()` now gathers:
+    - the performance sheets, one file each in `aircraft/sheets/` (V2's sheets adopted, and mirrored back while V2
+      lives);
+    - the company fleet and the V2 reference;
+    - the ICAO types and a free code.
+  - Every field keeps its origin and date; the newest wins and the other value is kept.
+  - One search lists sheets, fleet, reference, types and free code in that order.
+  - An aircraft takes its own sheet, else its type's, else an estimate.
+  - The sheets logic moves from fuel to aerodb.
+  - Fixes in aerodb's watchers for GitHub mode.
+- **settings: usages on a workstation with the launcher** (`frame/settings/settings.js`, `frame/settings/help/*.md`;
+  `DECISIONS.md`, manuals rebuilt) — with no exchange ticked, the Usages card now says that this workstation reads and
+  writes the launcher's `data/` folder and that an exchange usage shares it through git; without a launcher, "Alone on
+  this device" as before.
+- **Frame, lot 9: V2 and V3 see the same data on a workstation** (`frame/app.js`, `frame/store/frame_data.js`) — on a
+  page served by the launcher, `data/` is the device's storage whatever the usages (git exchange only with "several
+  devices" or "several users"); the documents already kept in the browser are taken up at the first pass, with the
+  usual merge (nothing lost: the older version stays in the conflicts screen).
+- **settings: the launcher's confirmation window made visible** (`frame/settings/settings.js`,
+  `frame/settings/help/*.md`; `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — before taking `data/` into
+  another repository or saving another remote address, the Access card says that a Yes / No window will open on the
+  workstation, not in the page; while waiting it says to answer it (maybe behind other windows); after a refusal it
+  shows the launcher's precise reason. The Settings chapter explains why the window exists.
+- **settings: taking data/ into a repository, checked** (`frame/settings/settings.js`; `frame/settings/DECISIONS.md`) —
+  "Take data/ into this repository" tried against the launcher's new route on test copies: the device's trigram is
+  sent as the author of the local "Reprise du poste" commit, and the launcher's report stays in the card after success.
+- **fuel: the frame's design primitives** (`modules/fuel/module.js`) — its own colours, shadows and title sizes
+  replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
+- **settings: Design card** (`frame/settings/settings.js`, `frame/frame.css`, `frame/settings/help/*.md`;
+  `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — a thumbnail per look (Standard, Cabinet, Rugged), each a
+  small live preview of its colours, and the tone Automatic / Day / Night, applied at once by the frame; the help
+  panel's summaries take the frame's common folded style. The Settings chapter describes the Design and About cards.
+- **report: the frame's design primitives** (`modules/report/module.js`) — its own colours, shadows and title sizes
+  replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
+- **help: a visual roadmap in the app** (`frame/help/roadmap.js`, `frame/help/roadmap.json` de / es,
+  `frame/help/build_help.py`, `frame/help/help.js`, `frame/settings/settings.js`, `frame/app.js`, `frame/index.html`,
+  `frame/sw.js`, `frame/frame.css`; `frame/help/SPEC.md` § 5, `DECISIONS.md`, `frame/settings/SPEC.md`) — a `#roadmap`
+  screen: the rule first (what is delivered must work, a gap is a bug; in progress, planned or later is not), the
+  applications and their state, then one row per module or block with its items in four columns Delivered, In
+  progress, Planned, Later (one card per module on a phone), coloured by state; reached from the top of the manual and
+  from Settings › About; offline; the build checks that every text is in four languages.
+- **flightlog: the frame's design primitives** (`modules/flightlog/module.js`) — its own colours, shadows and title sizes
+  replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
+- **website: the frame's design primitives** (`modules/website/module.js`) — its own colours, shadows and title sizes
+  replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
+- **maps: designs, day and night.**
+  - The map and the profile take the frame's design tokens: background, ink, greys, grid and accent cursor.
+  - Night uses a dark base map and lightens dark map colours. Nothing stays white.
+  - The module redraws when the design, the tone or the system theme changes.
+  - It now uses the frame's primitives (`f-tools`, `f-muted`).
+- **design, lot 2: designs for the Pilot application** (`frame/design/tokens.css`, `frame/design/primitives.css`,
+  `frame/lib/icons.js`, `frame/frame.css`, `frame/app.js`, `labs/design_primitives.html`).
+  - Three designs: Standard, Cabinet and Rugged (square corners and their own fonts for the last two), by day and by
+    night, following the system or forced. They are chosen in Settings and applied before the first paint.
+  - Primitives given to the modules: headings, folded sections, tabs and steps, field grid, columns, sticky bar, table,
+    tiles, row list, dot and badge, toolbar, callout, link button.
+  - Line icons in the menu and the header instead of emoji.
+  - 44 px targets, fields at 16 px (no zoom on iOS), links and shadows on the tokens, print of a screen without its
+    chrome.
+- **settings: a door for data/ without git** (`frame/settings/settings.js`, `frame/app.js`, `frame/settings/help/*.md`;
+  `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — on a workstation served by the launcher, the Access card
+  says that `data/` is a folder ignored by the code repository that becomes its own git repository, and offers "Fetch
+  the data" when `data/` is missing (clone) or "Take data/ into this repository" when it has no git (adopt), with the
+  address, an optional username and password or token never kept by the page, and "Remember" in Git; progress and
+  report in the card, state read again afterwards.
+- Roadmap of the V3 applications (`frame/help/roadmap.json`): lanes per module with delivered / in progress / planned / later items, the rule for reporting bugs; rendered by the help screen.
+- **settings: the remote repository of data/ from the frame** (`frame/settings/settings.js`,
+  `frame/settings/help/*.md`; `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — on a workstation served by
+  the launcher, the Access card shows the remote repository of `data/` (address, branch) and lets you check and save a
+  new address, with the V2 first start's rules (another repository confirmed in a window of the launcher, never
+  blocking); without git, a sentence and a link to the help; "Several users" without a remote warns on the Usages
+  card. The Settings chapter gains "A git repository for data/".
+- **help: chapters Report, My flights, Website, Map and Settings** (`modules/{report,flightlog,website,maps}/help/
+  {en,de,es}.md`, `modules/fuel/help/*.md`, `frame/settings/help/*.md`, `frame/help/build_help.py`,
+  `frame/help/pilot.*.md`, `frame/settings/settings.js`, `frame/app.js`; `frame/help/SPEC.md`, `DECISIONS.md`,
+  `frame/settings/SPEC.md`, `DECISIONS.md`) — the chapters written in French by the module agents translated into
+  English, German and Spanish with each screen's own labels, Fuel updated ("Open in"), and a Settings chapter placed
+  after the modules; it says what a device with no access and no launcher sees (no aeronautical or aircraft base) and
+  how to get them. In Settings, data access can now be set without an exchange when no launcher serves the page (it
+  only reads the bases), "Offline data" says what to do when there is no base, and the screen has its own "How to
+  use" panel.
+- **maps: help chapter** (`modules/maps/help/fr.md`, French; the help session translates and assembles it).
+  - How to use: the planned flight, what the map shows, the profile and its cursor, TOC / TOD, mission maps, "Edit the
+    route".
+  - What works offline.
+  - Special cases: no flight, no database, area not kept, different cycle, older mission.
+- **help: the Pilot manual and the in-page help** (`frame/help/help.js`, `frame/help/build_help.py`,
+  `frame/help/intro.*.md`, `frame/help/pilot.*.md`, `frame/lib/markdown.js`, `frame/app.js`, `frame/index.html`,
+  `frame/sw.js`, `frame/frame.css`, `modules/fuel/help/{en,de,es}.md`; `frame/help/SPEC.md`, `INTEGRATION.md`,
+  `DECISIONS.md`, `frame/SPEC.md`, `frame/INTEGRATION.md`) — each module's chapter (`modules/<id>/help/<lang>.md`,
+  written in French by its agent, translated) is assembled with the application's introduction into one manual per
+  language by a standard-library build that refuses a missing language and lists translations to redo; the frame
+  draws a folded "How to use" panel at the top of each module from its chapter's first section, state kept per module,
+  with `ctx.help.open` and `ctx.help.link`; a `#help` screen (header button ?) shows the manual text first at the
+  module's chapter, contents folded on a phone, tables as lists at 375 px, French typography, offline. First chapter:
+  Fuel and level, in four languages.
+- **website: the user's chapter in French** (`modules/website/help/fr.md`) — "How to use" (my flight log, the fleet,
+  the preview, reading through the launcher, the airline card), then good to know and special cases; to be translated
+  and assembled by the help session.
+- **design: reading of V2's designs** (`frame/design/READING.md`, `frame/design/DECISIONS.md`) — what the Pilot
+  application keeps of V2's designs, skins, icons and phone rules; the proposed `--sog-*` token set, the primitives the
+  modules built by hand that move into the frame, density (44 px targets, 16 px field text on touch screens), day /
+  night, print, the design choice in Settings; a survey of the seven screens at 375 px and on a screen, day and night,
+  in two token sets. No code.
+- **flightlog: the user's chapter in French** (`modules/flightlog/help/fr.md`) — "How to use" (totals, filters,
+  list, details, write or open the report, More), then where flights come from and special cases; to be translated and
+  assembled by the help session.
+- **report: the user's chapter in French** (`modules/report/help/fr.md`) — "How to use" (three steps, last flight,
+  other sources, mission, result, saving, recording on the website, my last reports), then prefill in detail, report
+  numbers, the "→ Vol" bookmark, special cases; to be translated and assembled by the help session.
+- **fuel: "Open in ▾"** (`modules/fuel/module.js`, `frame/lib/external_links.js`, `help/fr.md`) — under the result,
+  the same flight in SimBrief (dispatch prefilled), SkyVector (route with speed and level), Navigraph and ChartFox
+  (aerodrome charts), V2's links copied; `meta.files` lists fuel's files for offline use.
+- **fuel: the user's chapter in French** (`modules/fuel/help/fr.md`) — "How to use" (aircraft, route and SimBrief,
+  level and wind, level decision, result, climb instructions, towards maps and the report), then performance sheets,
+  settings and units, special cases; to be translated and assembled by the help session.
+- **help: reading of the V2 help** (`frame/help/READING.md`, `frame/help/DECISIONS.md`) — what the Pilot application
+  keeps (tutorials first, one manual per application with one chapter per module, a help screen with its own bundle),
+  one source per module (`help/<lang>.md`, whose "How to use" section is also the folded in-page help drawn by the frame
+  from `meta.help`), the phone help page, and what the delivered modules have today (no user help yet). No code.
+- **aerodb: towns filed by their country.**
+  - The SIA publication now files each GeoNames town under the zone of its own country, using the zone contours only
+    for countries without a zone. Simplified contours had filed the Zeeland towns under Belgium and the Geneva suburbs
+    under France.
+  - `tools/check_cities.py` lists the towns that fall outside their country's contour.
+  - The "Béziers" seen near Châtellerault was a label of the base map tiles, not our data.
+- **maps lot 4: mission maps redrawn on the phone.**
+  - The map module lists the missions of the data repository and redraws each mission map from its YAML.
+  - Each map is drawn with its own display profile, extent and route when the studio wrote them (`profile_def`,
+    `resolved_bbox`, `route_points`), otherwise with the built-in profile of its type and the studio's framing rules.
+  - The mission's zones, points and route are drawn too, and the mission's vertical profile follows its levels.
+  - A map made on another AIRAC cycle is flagged.
+  - Choosers in the header switch between the planned flight, the missions and their maps; address
+    `#maps?mission=<ID>&map=<file>`.
+  - Built-in profiles generated from the studio (`tools/build_maps_profiles.py`).
+- **maps lot 3: the vertical profile under the map, with a common cursor.**
+  - The profile shows:
+    - terrain from elevation tiles, or the MORA of the cells crossed when offline;
+    - the airspaces the planned trajectory enters;
+    - fuel's climb and descent (TOC and TOD), otherwise its own;
+    - the route points and NM marks.
+  - A finger on the profile, or a tap on the route, moves one cursor on both views. A line says the distance, planned
+    altitude, terrain or MORA, and the airspace under it.
+  - TOC and TOD are also drawn on the map.
+  - Airspaces and airways are read leg by leg along the route: 3.64 MB instead of 7.7 MB for Nantes → Marseille.
+  - "Map" is in the Pilot app's menu, after Fuel.
+  - Profile drawn in 1.5 s (2.6 s on a phone-like CPU).
+- **aerodb: zones chosen by the cells their data cover.**
+  - The SIA publication writes in `sia/base/index.json`, per zone, the one-degree cells its data cover.
+  - aerodb opens a zone only when its data touch the area asked for. Zone frames, which overflow (Spain's covers the
+    south of France), remain the fallback for a manifest without cells.
+  - Route LFRS → LFML: Germany no longer read (7.71 → 7.34 MB); 3.56 MB when the corridor is asked leg by leg.
+- **Frame, lot 8: `meta.net` and `meta.lazy`** (`tools/csp_policy.py`, `tools/build_pages.py`, `tools/launch.py`,
+  `frame/app.js`) — a module declares the public hosts its library calls by itself (map tiles), added to the page's
+  `connect-src` with and without a launcher; heavy files are kept at their first use instead of being preloaded.
+- **fuel: vertical profile in the current flight** (`modules/fuel/module.js`; `INTEGRATION.md` § 3, `DECISIONS.md`) —
+  `pilot/<trigram>/current_flight.json` gains `profile { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` from
+  every quote, for maps' vertical profile.
+- **maps lot 2: the route map of the planned flight** (`modules/maps/`).
+  - The Pilot app's map draws fuel's flight (`pilot/<trigram>/current_flight.json`), read only: OpenFreeMap tiles
+    through MapLibre (loaded at the first map), with the aeronautical layer cut out of the V2 studio on a canvas.
+  - The layer shows airspaces within 10 NM of the route, low or high airways by flight level, aerodromes, navaids,
+    MORA, graticule, and the route with NM marks and the alternate. In overview, only what is near the route.
+  - Without tiles (offline, no WebGL), it uses a plain background with the country outlines.
+  - Empty states: no flight, database not published, area not kept offline.
+  - First drawing in 0.5 s, or 1.4 s on a phone-like CPU.
+  - Files: `module.js`, `render.js`, copies in `lib/`, `tools/build_maps_outlines.py`, a test page; `SPEC.md`,
+    `INTEGRATION.md`, `DECISIONS.md`.
+- **website: "Read through the launcher"** (`modules/website/module.js`; `SPEC.md` § 3 bis, `INTEGRATION.md`,
+  `DECISIONS.md`) — on a workstation, the website's log and fleet pages are read in one tap through the frame's
+  `ctx.net` (GET, relayed by the launcher), then the same preview as a paste; where the site cannot be reached, the
+  button gives way to "paste only".
+- **website: the airline website in the Pilot application** (`modules/website/module.js`, `model.js`, `frame/app.js`;
+  `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`) — verb "Website" (level 2): the website's flight log pasted (HTML from
+  the clipboard first) → my rows in `pilot/<trigram>/site_log.json`, the fleet page pasted → `airline/fleet.json`
+  (V2 merge rules), each after a preview of what changes; the Airline card (`airline/settings.json`: name, site,
+  pages) edited on a computer screen, read only on a phone, read by the frame as `ctx.airline` (report's website
+  button becomes active). No request to the site, no login, no address in the code.
+- **Frame, lot 7: the airline's website through `ctx.net`** (`frame/app.js`, `tools/launch.py`) — the host of
+  `airline.site` is relayed by the launcher (or called directly), GET only, https only, never a local or private
+  address, so the website module can read the fleet and the log.
+- **Frame: a merged device backup leaves `device/` aside** (`frame/store/frame_data.js`) — `FrameData.load` in merge
+  mode never takes another device's usages, identity or level; "replace" still takes them, never a token.
+- **maps: reading of the V2 map studio** (`modules/maps/READING.md`, `modules/maps/DECISIONS.md`) — the minimal
+  rendering core to cut out of the studio (ICAO symbols, profile, cursor sync, the drawing functions once they take a
+  profile object instead of reading the page); what a mission map stores today and what the studio and generator must
+  add for it to redraw alone (a copy of the display profile, the resolved extent, the cycle); the weight on a phone
+  (about 130 KB of code, MapLibre 1 MB on demand, about 3.9 MB of SIA data for a France IFR map); what stays in the
+  studio; what the module asks of aerodb, the frame and fuel; the phone screen (IFR map of the planned flight and a
+  synchronised vertical profile, read only). No code.
+- **settings: backup and access on the frame's lot 6** (`frame/settings/settings.js`; `frame/settings/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`) — the device backup now uses `FrameData.dump()` and `FrameData.load()`: "Export
+  (one file)", "Import (merge)…" (nothing of this device is lost) and "Replace from a file…" (asked, says what is
+  erased); "Cut access" goes through the frame's `cutAccess`; zones show their real state and "Free" now that the
+  frame's adapter offers `cached` and `evict`; sizes in the units of the application's language.
+- **website: "record the flight" moved to `frame/lib/website.js`** — shared pure code owned by the website module,
+  self-contained; report imports it from there.
+- **settings: usage level** (`frame/settings/settings.js`, `frame/app.js`, `frame/frame.css`; `frame/settings/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `frame/SPEC.md` § 3.1) — a Level card in Settings: Discovery, Everyday (the
+  default) or Full, one tap, with the menu each level shows; the frame's menu lists only the modules whose
+  `meta.level` is at most the device's level (`device/level.json`), a hidden module staying reachable by its address.
+- **website: reading of the DEFA Virtual website as V2 uses it** (`modules/website/READING.md`,
+  `modules/website/DECISIONS.md`) — the site's pages, forms and fields, what is public and what needs the pilot's
+  session, the pasted flight log and fleet towards `pilot/<trigram>/site_log.json` and `airline/fleet.json`, the
+  "record the flight" function report calls, the airline setting `airline/settings.json`, and what a future PHP web
+  service would expose as a frame transport, by lots. No code.
+- **flightlog: "My flights" in the Pilot application** (`modules/flightlog/module.js`, `model.js`,
+  `frame/lib/js-yaml.min.js`, `frame/app.js`, `modules/report/module.js`; `SPEC.md`, `INTEGRATION.md`,
+  `DECISIONS.md`) — my past flights, one line per flight, from my reports (V3 records and the V2 registry), the
+  airline website log (`pilot/<trigram>/site_log.json`, written by the website module) and my IVAO / VATSIM
+  sessions, without duplicates (report > log > network); three tiles of totals, period, search, "without report",
+  details on a tap, CSV in More; "Write the report" starts a report prefilled with the flight, "Open the report"
+  reopens it (hand-over `{ fresh, family, values }` and `{ open }`, read by report).
+- **settings: the settings screen of the Pilot application** (`frame/settings/settings.js`, `frame/app.js`,
+  `frame/index.html`, `frame/sw.js`, `frame/frame.css`; `frame/settings/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
+  `frame/SPEC.md`) — ⚙ opens `#settings`, which replaces the frame's device screen: short cards saved one by one,
+  phone first. Identity (trigram, IVAO VID, VATSIM CID, SimBrief, checked in the card); usages, with "Alone on this
+  device" shown as the state when no exchange is ticked and how data are exchanged; for single use, export and import
+  of the device's data in one file; with an exchange, data access (repository, branch, token never shown, "Test",
+  "Cut access") and synchronisation (last success, pending, network, last error, "Synchronise now"); offline data
+  (browser storage, one row per published zone with its state, cycle and size, "Keep offline" and "Free" through
+  `aerodb.offline`, the aircraft base); the launcher's IVAO key when a launcher serves the page; folded diagnostics
+  to copy. V2 settings found on the same origin (identity, GitHub access) are offered once, taken over in one tap.
+- **report: "last flight" moved to `frame/lib/last_flight.js`** — shared pure code (report owns it, flightlog uses
+  it): a module never imports from another module.
+- **flightlog: reading of V2 "My flights"** (`modules/flightlog/READING.md`, `modules/flightlog/DECISIONS.md`) —
+  the sources of a flight and their key (reports, the airline website log, IVAO / VATSIM sessions), one line per
+  flight, filters, totals, CSV, "Write the report" handed to the report module, the phone screen, and what in
+  `shared/my_flights.js` is pure model. No code.
+- **report: every family** (`modules/report/families/*.js`, `module.js`, `model.js`, `vocab.js`; `SPEC.md` § 2 and
+  § 5, `INTEGRATION.md`, `DECISIONS.md`) — the sixteen V2 families (FIRE, SPECIAL, SAR, AIRLIFT… with their series,
+  crew roles and blocks) copied from `shared/mission_core/families/`, without their statistics; blocks and fields shown
+  by their V2 conditions (series group, capabilities, aircraft category), the common task block for the families
+  without an order of their own, and a new report opened in the family of my last one.
+- **report: "Save and record on the website"** (`modules/report/website_handoff.js`, `module.js`; `SPEC.md` § 3 bis,
+  `INTEGRATION.md`, `DECISIONS.md`) — one gesture opens the airline website's "add a flight" form with the flight in the
+  address fragment and saves the report; the "→ Vol" bookmark (V2's, unchanged) fills the form without submitting it;
+  "Copy the fields" for a phone. The address comes from the airline setting (`ctx.airline`); without it the button is
+  greyed. "My last reports" is now a folded list under the Flight step.
+- **Frame, lot 6** (`frame/app.js`, `frame/store/frame_data.js`, `tools/report_bridge.py`, `tools/launch.py`).
+  - Addresses with a query: `#report?from=flightlog` opens report and gives it `ctx.query`.
+  - `ctx.airline`: name, website and pages of the airline, read from `airline/settings.json` of the data repository.
+  - "Cut access" wired in the frame (`FrameData.github.clear()`): the transport switches at once, in every tab.
+  - Data layer: `cached(prefix)` and `evict(path)` for the state of the cache, `FrameData.dump()` /
+    `load(file)` for a backup of the device in one JSON file (merge by default, or replace).
+  - METAR from aviationweather.gov relayed by the launcher, or called directly.
+  - Registry bridge: every V3 report is replayed into the V2 registry `cr/missions.yaml` at each batch and each
+    exchange of the launcher, in V2's exact format.
+- **fuel: display units for speed, altitude and distance** (`modules/fuel/module.js`, `model.js`, `test/quote.html`;
+  `SPEC.md` § 6 and § 9, `INTEGRATION.md`, `DECISIONS.md`) — beside kg / lb in the Plan screen's settings, speed in kt
+  or km/h, altitude in ft or m, distance in NM, km or SM, saved with the other quote settings; the model, the current
+  flight and the sheets stay in kt, ft and NM, conversion is the screen's in both directions (typed distance, wind
+  speed and manual IAS and rate are read in the displayed unit); flight levels stay flight levels. Bench: conversions
+  and round trips (50/50).
+- **settings: reading of the V2 Settings** (`frame/settings/READING.md`, `frame/settings/DECISIONS.md`) — each V2
+  Settings card and where it goes in the Pilot application (identity, access, keys on a launcher, offline data, about,
+  diagnostics; the rest to modules, CPCO, the design block, or dropped), the usages checklist and the cards each usage
+  shows, settings as a frame screen replacing `#device`, a one-tap take-over of V2's identity and access, three
+  questions for the user. No code.
+- **report: prefill** (`modules/report/fpl.js`, `text_import.js`, `last_flight.js`, `module.js`; `SPEC.md` § 6,
+  `INTEGRATION.md`, `DECISIONS.md`) — my last IVAO flight proposed at mount and taken in one tap (sessions cut by
+  disconnections grouped, times from the track), my last VATSIM flight, the SimBrief flight plan, a pasted flight plan,
+  tracker page or METAR, and a hand-over record from another module (`pilot/handoff.json`); empty fields only, the
+  source shown per field, "Replace the n fields already filled". Networks through `ctx.net` (the launcher relays IVAO
+  with its key and VATSIM); the V2 flight-plan and paste code copied, the launcher's "last flight" ported to
+  JavaScript.
+- **report: the mission report in the Pilot application, HEMS first** (`modules/report/module.js`, `vocab.js`,
+  `model.js`, `families/hems.js`, `frame/app.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`) — three steps Flight ·
+  Mission · Result (one at a time on a phone, side by side on a wide screen), nothing required (what is missing and
+  the V2 checks shown as warnings), the current flight of fuel and maps as a one-tap prefill, the HEMS blocks, a draft
+  kept on the device, my last reports reopened for editing. One JSON record per report, `cr/reports/<year>/<CR
+  number>.json`: the V2 registry entry plus `schema`, `updated_at`, `by`, so the launcher's bridge folds it into
+  `cr/missions.yaml` unchanged. V2 vocabulary, model and HEMS family copied, not rewritten.
+- **report: reading of the V2 mission report** (`modules/report/READING.md`, `modules/report/DECISIONS.md`) — what
+  the V2 report does on each path, what the Pilot application keeps and what moves to CPCO, the SOG client or other
+  modules, today's shortest path (5 clicks to a report saved in the browser, 8 with the website) and the target (3
+  taps, 4 with the website), what the module asks of the frame and aerodb, the three phone steps Flight · Mission ·
+  Result, and the website hand-off. No code.
+- **Frame, lot 5: publication and iOS shell** (`.github/workflows/pages.yml`, `tools/build_pages.py`, `mobile/`,
+  `frame/app.js`).
+  - One GitHub Pages site for both branches: V2 (develop) at the root, V3 (v3) under `/v3/` (Pilot application:
+    `/v3/frame/`), rebuilt on a push to either.
+  - `build_pages.py --start PATH`: the root page redirects to the given page; the Capacitor shell, now named "SOG
+    Pilote", opens on the Pilot application.
+  - Modules declare the files they import (`meta.files`); the frame keeps them offline from the first visit.
+- **fuel: numbers of ChatGPT answers, RPM table editor, offline** (`modules/fuel/sheets.js`, `modules/fuel/module.js`,
+  `modules/fuel/test/sheets.html`) — "2,400" is read as 2400 (thousands commas, European form, otherwise decimal
+  comma; V2 read 2.4), with its bench cases (18/18); the RPM / fuel flow table is edited row by row on a computer
+  screen (read only on a phone), removed rows previewed; the calculation files are fetched again when the frame's
+  service worker takes control, so the module is complete offline from the first visit.
+- **fuel: the module in the Pilot application** (`modules/fuel/module.js`, `frame/app.js`; `SPEC.md` § 9,
+  `INTEGRATION.md`, `DECISIONS.md`) — mounted by the frame's loader as the first verb. Plan: aircraft, route
+  (aerodb positions, or typed distance and track; last SimBrief OFP through `ctx.net`, kept on the device), level and
+  wind, level decision drawn (fuel and time by level, least fuel, fastest, tap to choose), block fuel sticky at the
+  bottom; folded: the quote's details, the climb instructions (drawing and table), the quote settings. Sheets: list,
+  import of files or pasted text (CSV, JSON, `.lnmperf`, OFP, ChatGPT answer), new sheet, editor, EUROCONTROL or
+  another sheet to complete, ChatGPT requests, `.lnmperf` and JSON export; every change previewed line by line and
+  written only as ticked. The current flight is shared with maps (`pilot/<trigram>/current_flight.json`).
+- **fuel: performance sheets in pure code** (`modules/fuel/sheets.js`, `modules/fuel/perf_prompt.js`; `SPEC.md` § 8,
+  `INTEGRATION.md`, `DECISIONS.md`) — the V2 sheet functions copied verbatim, their globals replaced by the module's
+  environment (aerodb's aircraft base, the sheets, the active sheet, texts): performance CSV (simple and enriched),
+  RPM tables, JSON sheets and databases, Little Navmap `.lnmperf` read and written, SimBrief OFP sheet and
+  calibration, EUROCONTROL proposals, gaps filled from another sheet, merge sheet by sheet (dates, differences,
+  choices), ChatGPT prompts and replies read whatever their shape. `tools/build_perf_prompt.py` also writes the
+  module's copy of the prompts. Bench (`modules/fuel/test/sheets.html`) against the V2 functions on the same inputs:
+  9/9.
+- **Frame: offline for real** (`frame/sw.js`, `frame/manifest.webmanifest`).
+  - The Pilot application is installable and starts offline after a first visit: frame and modules are kept by the
+    frame's own service worker, data by the data layer.
+  - A changed file brings the whole new version and a "Reload" notification.
+  - Outgoing calls of modules (`ctx.net`) are relayed by the launcher for SimBrief, IVAO (with its key) and VATSIM
+    (`tools/launch.py`: `POST /__setup/net`), called directly without a launcher where the site allows it, and answer
+    503 instead of failing.
+  - Synchronisation resumes on its own: retry after an offline pass, a pass on wake when one is due, the button's
+    state refreshed when the phone wakes up.
+- **fuel: level decision and climb instructions in pure code** (`modules/fuel/levels.js`; `SPEC.md` § 7,
+  `INTEGRATION.md`, `DECISIONS.md`) — taken out of the V2 view (`shared/flight_perf_view.js`) without its layout:
+  climb goals (economical, best rate, fast, sheet's IAS, manual) and their laws, the whole trip at every level up to
+  110 % of the ceiling (least fuel, fastest, why higher levels cannot be flown), the level curves of the detailed
+  view, the climb instructions to the plan's level (throttle, RPM, IAS, rate, fuel flow, Mach, cumulative time and
+  fuel) and the minimum distance of a level. Bench (`modules/fuel/test/levels.html`) against the V2 view's state on
+  the quote bench's sheet: 24/24. The drawing comes with the module screen, on the frame's loader.
+- **fuel: the pure quote model** (`modules/fuel/model.js`, `modules/fuel/performance_model.js`; `modules/fuel/SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`) — the fuel quote taken out of the V2 page (`calculate` of
+  `apps/planner/flight_planner.js`) as a pure function, inputs → quote: cruise flow and TAS with their source (entry
+  for this flight, sheet and RPM table, Poll-Schumann, SimBrief, estimate from aerodb), model sheet completed by the
+  EUROCONTROL record, calibrated climb and cruise (V2 flight mechanics copied unchanged), descent, taxi, contingency,
+  reserve, block (or its range with an unknown wind), time and top of descent. Bench
+  (`modules/fuel/test/quote.html`): three known cases from the V2 page on a fictitious sheet, every displayed value
+  found again (30/30). The current flight shared with maps is specified (`pilot/<trigram>/current_flight.json`).
+  The module screen follows on the frame's loader.
+- **Frame: the Pilot application skeleton** (`frame/index.html`, `frame/app.js`, `frame/frame.css`,
+  `modules/hello/`).
+  - Navigation by short verbs: a column on a screen, a drawer on a phone; `#module` addresses.
+  - Modules loaded on demand (`modules/<id>/module.js`: `meta`, `mount`, `unmount`) with one context: data, aerodb,
+    texts in four languages, notifications, the frame's question windows, outgoing calls that never throw offline,
+    read-only identity.
+  - A synchronisation button with its state (up to date, pending, in progress, offline, conflicts, error, this device
+    only).
+  - A conflicts screen where a set-aside version can be taken back.
+  - A device screen (usages, identity, GitHub access) that chooses the transport: local when nothing is to be
+    exchanged, else the launcher, else GitHub.
+- **Data layer additions**:
+  - the `cache` write policy (device-only files);
+  - shared write prefixes;
+  - `restore`;
+  - merges dated by `updated_at`, falling back to `updatedAt`;
+  - the launcher transport (`frame/store/transport_launcher.js`; `tools/launch.py`: `GET /__setup/changes`,
+    `POST /__setup/batch`, one local commit per batch, git exchange through `/__setup/sync`).
+- **Frame: data layer** (`frame/store/frame_data.js`, `frame/store/transport_github.js`; `frame/SPEC.md`,
+  `frame/INTEGRATION.md`, `frame/DECISIONS.md`) — disconnected mode at the core: one local cache (IndexedDB
+  `sogFrame`) serves every read with no network; writes are queued and sent in batches, one commit per
+  synchronisation (at start, on the button, every 10 minutes online), never one per click; changes made elsewhere are
+  pulled and merged three ways (record: the newest wins, the loser kept and signalled; journal: union; keyed lists:
+  record by record); a refused push pulls and pushes again. Transports: local (single user) and GitHub through the git
+  data API (device token, conditional head request, immutable blobs). Policies per prefix: documents pulled ahead,
+  references (SIA and aircraft bases, for aerodb) read on demand and revalidated. Modules get `get`, `read`, `list`,
+  `put`, `remove`, `watch`, `status`, `sync` through their adapter and may write only under their declared prefixes.
+  Tests: `frame/store/test/index.html` against a standard-library fake GitHub (`frame/store/test/fake_github.py`), 37
+  checks.
+
+- **aerodb: the aeronautical database for every module** (`frame/aerodb/`, branch `v3`). It reads the bases published
+  to the data repository by a workstation: the SIA base by zone and cycle, the towns and the aircraft types (JSON, or
+  the V2 `.js` read as a literal, never executed). It builds nothing and writes nothing.
+  - One asynchronous API, by area or identifier, never by zone or file: airspaces, aerodromes, navaids, points,
+    airways, VRP, obstacles, MORA, refuelling and NAT tracks, towns, ranked place search, coordinates, and the
+    aircraft types (classification, aliases, performance, cruise fuel estimate, search).
+  - Zones load on demand, chosen from a generated table of zone frames (`tools/build_aerodb_zones.py`), and are indexed
+    in memory by one-degree cell.
+  - Reading goes through the frame's data contract (`data.read` with policy "reference", `data.list`, `data.watch`), with
+    a provisional reader for the launcher and GitHub mode until the frame delivers it.
+  - Bench (`frame/aerodb/bench.html`, 375 px) on the user's 13 real zones: France in about 120 ms on a phone-like CPU,
+    all zones in about 280 ms, a whole-world question returns exactly the published base.
+  - Documents: `frame/aerodb/SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`.
+- **aerodb lot 3: the SIA base split by kind, towns by zone, the aircraft base as JSON.**
+  - Each rebuild now also publishes one file per zone, cycle and kind (`sia/base/<zone>/<cycle>/<kind>.json`:
+    airspaces, aerodromes, navaids, points, VRP, airways, obstacles, MORA, the zone's towns, meta).
+  - Also published: the world's major towns (`sia/base/cities_major.json`) and a manifest of the published zones
+    (`sia/base/index.json`).
+  - The Maintenance button publishes `AircraftDB/aircraft_db.json` and `aircraft_perf.json` next to the `.js` files.
+  - The old format is still written. aerodb reads both and prefers the new one, so a module asking for the aerodromes
+    around Paris downloads 426 KB instead of 5.6 MB, and a place search never reads the world's towns.
+  - Administrator manuals (4 languages) and `docs/technique/DONNEES_ET_ACCES.md` updated.
+- **aerodb mounted by the frame: no longer forgets a zone when a file first arrives.** The frame's data layer reports a
+  reference file entering its cache as a change. aerodb now forgets a zone only when a file it already read gets a new
+  revision. Checked through `frame/index.html` with the launcher transport.
+- **Frame: reference files with the local transport.** In single-user mode (no exchange, the default), the data layer
+  read no `reference` file, so aerodb, and the fuel module through it, had no SIA base and no aircraft base.
+  - `FrameData.configure({ references })` now takes a read-only source for those files: the launcher that serves the
+    page, otherwise the configured GitHub repository.
+  - Files are read on demand and revalidated at sync. Nothing is ever sent, and offline the pass still succeeds.
+  - New scenario in `frame/store/test/`; `frame/SPEC.md` and `DECISIONS.md` updated.
+- **aerodb lot 4: offline data API** (`aerodb.offline`, for the "Offline data" card of the coming Settings screen).
+  - `zones()` gives, for each published zone: its name in four languages, ICAO prefixes, published size and state
+    (absent, partial, complete, with cycle and date of the newest copy).
+  - `keep(zone)` downloads every kind of the zone into the frame's cache; `release(zone)` frees it; the aircraft base
+    has its own state. Everything goes through the frame's adapter.
+  - The adapter still needs `cached` and `evict`, asked of the frame; until then, states read "unknown" and release is
+    refused.
+  - Bench `frame/aerodb/offline_bench.html` (375 px): France kept (6.9 MB, about 120 ms), answered with the network
+    cut, then released.
+  - Fixes: the manifest of lot 3 is now read (it was looked for one level too deep); a zone or kind unreadable offline
+    is asked for again instead of staying empty.
+- **aerodb lot 4b: offline data on the frame's real adapter.** With the frame's `cached` and `evict` (frame lot 6):
+  - zone states are real (absent, then partial after one question, complete after `keep`);
+  - `release` frees the zone's whole folder in one call;
+  - the bench (`frame/aerodb/offline_bench.html`) runs on `FrameData` as the Pilot app configures it, and its
+    stand-in reader is removed. France kept in about 180 ms (410 ms on a phone-like CPU), answered with the network
+    cut, released in 80–200 ms.
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-6.0.0-alpha.1.zip` — SHA-256 `5026985db8c0bafc202ddae70a4989aa578d697db47fb82407a38f3f4791ae71` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-6.0.0-alpha.1.zip` — SHA-256 `09fa2a2a484acc78f78d940bec91de44351e9803d600e8852cd9154f003fff0b` (outside the repository: `dist/` folder).
+
 ## [5.4.0] — 2026-10-23
 
 Last release of the V2 line, before the V3 Pilot application. The suite now runs without the launcher: the data
