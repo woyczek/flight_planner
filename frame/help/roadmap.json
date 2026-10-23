@@ -375,7 +375,7 @@
           "es": "Ruta probable, trazas de ejercicio, mapas de operación, AAR / NAT, zonas urbanizadas, relieve sin conexión"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Vol en cours sur la carte et le profil : position prévue et position réelle, avance / retard, écart latéral, ETA par point, « Suivre »",
           "en": "Flight in progress on the map and the profile: planned and actual positions, early / late, cross-track, ETA per point, “Follow”",
           "de": "Laufender Flug auf Karte und Profil: geplante und tatsächliche Position, früh / spät, Querablage, ETA je Punkt, „Folgen“",
@@ -639,7 +639,7 @@
           "es": "Solo correcciones; campos de dibujo de los mapas para la V3; líneas por miembro en las Órdenes de vuelo; Primer inicio en modo GitHub"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Studio : lire et écrire les profils des modes de carte V3 (airline/map_profiles.json, seuils de zoom par élément)",
           "en": "Studio: read and write the V3 map mode profiles (airline/map_profiles.json, zoom thresholds per item)",
           "de": "Studio: V3-Kartenmodusprofile lesen und schreiben (airline/map_profiles.json, Zoomschwellen je Element)",
