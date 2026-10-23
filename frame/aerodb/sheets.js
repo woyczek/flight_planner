@@ -90,8 +90,8 @@
   const PROFILE_FIELDS = [
     ["Identité et format", "Nom", "name", "text"],
     ["Identité et format", "Type / ICAO", "icao", "text"],
-    ["Identité et format", "Immatriculation", "registration", "text"],
-    ["Identité et format", "Indicatif", "callsign", "text"],
+    ["Identité et format", "Immatriculation", "registration", "text", false],
+    ["Identité et format", "Indicatif", "callsign", "text", false],
     ["Identité et format", "Description", "description", "textarea"],
     ["Identité et format", "Carburant en volume", "fuelAsVolume", "bool"],
     ["Identité et format", "Carburant Jet", "jetFuel", "bool"],

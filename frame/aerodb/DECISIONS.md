@@ -302,6 +302,12 @@ With the network cut, the only reads attempted were:
   - fleet given to the sheets logic.
   fuel, report and maps mount through `frame/index.html` without error; the whole world is still identical.
 
+## 23 October 2026 — registration and callsign optional for `.lnmperf`
+
+- Found by fuel's sheets bench (`modules/fuel/test/sheets.html`, now pointing at aerodb's file). The two fields added in
+  5a lacked the "not required by Little Navmap" flag, so `toLnmperf` refused every sheet without a registration and a
+  callsign. Both are now flagged optional, and `test/registry.html` checks it (22 checks).
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

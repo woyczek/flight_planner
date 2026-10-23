@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **aerodb: `.lnmperf` export no longer blocked** by the registration and callsign fields added in lot 5a (Little
+  Navmap has no such fields).
 - **Frame, lot 10: dual view on a tablet or a wide screen** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) —
   Fuel and Report can show the Map beside them (header button, address `#fuel?with=maps`, kept per module); a change of
   the flight plan in Fuel appears in the Map at once. Nothing changes on a phone.

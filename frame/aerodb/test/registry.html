@@ -217,8 +217,14 @@
         }
       })() : '';
       check('lnmperf written from a registry sheet (or refused with the missing fields)', typeof lnm === 'string' && lnm.length > 0, lnm
-        .slice(0,
-          200));
+        .slice(0, 200));
+      // Little Navmap n'a ni immatriculation ni indicatif : jamais requis pour l'export
+      const miss = A.lib.missingLnmperfFields({
+        ...put,
+        registration: '',
+        callsign: ''
+      });
+      check('lnmperf: registration and callsign never required', !miss.some(m => /Immatriculation|Indicatif/.test(String(m))), miss);
       check('fleet given to the sheets logic (ChatGPT prompt)', (await A.fleetTypes()).some(f => f.type === 'A400' && f.registrations
         .includes(
           'F-RBAA')), await A.fleetTypes());
