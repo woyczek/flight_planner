@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **aerodb: helicopter estimates** (`frame/aerodb/aircraft.js`; SPEC, DECISIONS) — a helicopter gets a practical
+  ceiling (12,000 to 20,000 ft by class instead of an aircraft-like value) and a low economical level (3,000 ft) for
+  fuel; the launcher no longer reports a missing types base when the one published in the data repository is there.
 - **Frame, lot 15: the actual position during a flight** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) —
   while a flight is started, the app follows the device's GPS (allowed by a tap on the header badge) or, without GPS,
   the pilot's IVAO or VATSIM session, and writes the actual position into the current flight for the Map; the badge

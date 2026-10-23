@@ -114,6 +114,10 @@ the suite root) and has no listing.
   (RAFALE → RFAL, H145 → EC45), the display name and the cruise fuel estimate (named type, then ICAO class and wake
   category) are those of the V2 suite. Type search ranks: designator starting with the text, alias or usage name
   starting with it, a word of the model starting with it.
+  - **Helicopters** (ICAO class H… or G…, or a helicopter type): `estimate` adds `category: 'helico'`, a practical
+    ceiling (piston 12,000 ft, single turbine 16,000, twin turbine 20,000; Airframe DB's ceiling only when lower — it
+    gave 27,926 ft for an H145) and `ecoFt: 3000`, the low economical cruise level fuel takes for a helicopter; without
+    a named type, fuel flow and speed by maximum mass (1.5, 3, 4, 7.5, 12 t bands). Other aircraft get `category` too.
 
 ## 5. API
 

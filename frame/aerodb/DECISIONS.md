@@ -368,6 +368,20 @@ With the network cut, the only reads attempted were:
 - **Tests**: `frame/aerodb/test/registry.html`, 25 checks (3 new: one line for F-TEST, quote from the A400 type sheet
   with the fleet's callsign and the sheet's name, `resolve` with `ownSheetId`).
 
+## 23 October 2026 — helicopter estimates, types base message
+
+- **Found on the real base** (EC45 F-ZBPD): a ceiling of 27,926 ft and an "economical level" of 1,000 ft. The ceiling
+  came from Airframe DB, which carries an aircraft-like value for some helicopters; the level is fuel's choice, which
+  had nothing telling it the aircraft was a helicopter.
+- **aerodb now says it**: `category: 'helico'`, a practical ceiling capped by class, `ecoFt: 3000`; fuel uses them for
+  its level choice (to its session). Without a named type, fuel flow and speed come from the mass.
+- **"Base des types d'aéronefs absente" at the launcher's start**: the launcher looked only at the suite's own
+  `AircraftDB/` (V2's place, absent from a fresh V3 checkout); V3 reads the base published in the data repository
+  (`data/AircraftDB/`, JSON or the `.js` literal), which was there. Not the cause of the EC45 estimate; the message now
+  appears only when neither exists.
+- **Tests**: registry.html 26 checks (EC45 and A139 helicopters, ceiling at most 20,000 ft, `ecoFt` 3,000; A400 not a
+  helicopter).
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

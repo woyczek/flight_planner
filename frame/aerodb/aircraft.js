@@ -254,9 +254,59 @@
       const w = String(row?.wtc || '').toUpperCase()[0];
       return w && 'LMH'.includes(w) ? w : '';
     };
+    /** Hélicoptère : plafond pratique par classe (piston 12 000 ft, monoturbine 16 000, biturbine 20 000 — Airframe DB
+     *  donne parfois un plafond d'avion, 27 926 ft pour un H145), niveau de croisière économe bas (3 000 ft), et, sans
+     *  type connu, consommation et vitesse typiques par masse maximale. */
+    const HELI_CEIL = {
+        P: 12000,
+        '1T': 16000,
+        '2T': 20000
+      },
+      HELI_MASS = [
+        [1500, 45, 100],
+        [3000, 170, 120],
+        [4000, 230, 125],
+        [7500, 480, 145],
+        [12000, 700, 140],
+        [Infinity, 1300, 140]
+      ];
+
+    function heliOf(est, cls, apd, adb) {
+      const c = String(cls || '').toUpperCase(),
+        cap = /P$/.test(c) ? HELI_CEIL.P : /^.1T/.test(c) ? HELI_CEIL['1T'] : HELI_CEIL['2T'],
+        mtow = +apd?.takeoff?.mtowKg || +adb?.mtowKg || 0,
+        byMass = est.basis === 'class' && mtow > 0 ? HELI_MASS.find(r => mtow < r[0]) : null;
+      return {
+        ...est,
+        ...(byMass ? {
+          kgPerHour: byMass[1],
+          tasKt: adb?.cruiseKt > 0 && adb.cruiseKt < 200 ? adb.cruiseKt : byMass[2],
+          src: `${est.src}; helicopter of ${Math.round(mtow)} kg`
+        } : {}),
+        category: 'helico',
+        ceilingFt: Math.min(est.ceilingFt > 0 ? est.ceilingFt : cap, cap),
+        ecoFt: 3000
+      };
+    }
+    /** Hélicoptère d'après la classe OACI (H… ; G : autogire) ou le tableau des types. */
+    const HELI_TYPES = new Set(['NH90', 'EC25', 'AS32', 'PUMA', 'TIGR', 'H160', 'AS65', 'EC45', 'EC35', 'AS55', 'AS50', 'GAZL', 'EC20']);
     /** Estimation de la consommation de croisière (type nommé, sinon classe OACI et sillage) : { kgPerHour, tasKt,
-     *  ceilingFt, basis: 'type' | 'class', code, cls, wtc, src } ; null si ni le type ni sa classe ne sont connus. */
+     *  ceilingFt, basis: 'type' | 'class', code, cls, wtc, src, category, ecoFt? } ; un hélicoptère reçoit son plafond
+     *  pratique et son niveau économe (heliOf) ; null si ni le type ni sa classe ne sont connus. */
     function estimate(codes) {
+      const e = estimate0(codes);
+      if (!e) return null;
+      const heli = /^[HG]/.test(e.cls) || HELI_TYPES.has(e.code) || [].concat(codes || []).some(k => classify(k)?.category === 'helico');
+      if (!heli) return {
+        ...e,
+        category: [].concat(codes || []).map(k => classify(k)?.category).find(c => c && c !== 'other') || 'other'
+      };
+      const ks = [...new Set([].concat(codes || []).map(fold).filter(Boolean))],
+        apd = ks.map(perfOf).find(Boolean) || null;
+      return heliOf(e, e.cls || 'H2T', apd, apd?.airframedb || null);
+    }
+
+    function estimate0(codes) {
       const ks = [...new Set([].concat(codes || []).map(fold).filter(Boolean))],
         apd = ks.map(perfOf).find(Boolean) || null,
         adb = apd?.airframedb || null;

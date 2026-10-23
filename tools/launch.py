@@ -2576,7 +2576,9 @@ def main():
     mark_instance()
     index_availability()
     index_users()
-    if not aircraft_files()['db']:
+    # base des types : à la racine (V2) ou publiée dans le dépôt des données (V3, AircraftDB/ en .json ou .js)
+    published = any(os.path.exists(os.path.join(DATA, 'AircraftDB', f)) for f in ('aircraft_db.json', 'aircraft_db.js'))
+    if not aircraft_files()['db'] and not published:
         say("  Base des types d'aéronefs absente : la compléter dans Paramètres › Maintenance › Références et dépendances.")
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)

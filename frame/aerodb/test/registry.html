@@ -115,6 +115,15 @@
       check('legacy type API kept (classify, canonical, estimate)', A.classify('A400M').category === 'turboprop' && A.canonical(
           'A4M') ===
         'A400' && A.estimate('TBM9')?.kgPerHour > 0, null);
+      // hélicoptères : plafond pratique et niveau économe bas, jamais un plafond d'avion
+      const h = A.estimate('EC45'),
+        hm = A.estimate('A139');
+      check('helicopter estimate: category, ceiling at most 20 000 ft, economy level 3 000 ft', h?.category === 'helico' && h
+        .ceilingFt <=
+        20000 && h.ecoFt === 3000 && hm?.category === 'helico' && hm.ceilingFt <= 20000 && A.estimate('A400')?.category !== 'helico',
+        [h,
+          hm
+        ]);
       check('sheets library configured (AeroDBSheets, lnmperf parser)', typeof A.lib?.parseLnmperf === 'function' && typeof A.lib
         ?.toLnmperf ===
         'function', null);
