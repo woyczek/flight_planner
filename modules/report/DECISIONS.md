@@ -2,6 +2,9 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — "Copy the fields" on a tablet over http**: through `copyText` (`frame/lib/clipboard.js`);
+  as a last resort the line is shown selected under the button with "copy it". Checked on 8804 without
+  `navigator.clipboard`: copied by `execCommand`.
 - **23 Oct 2026 — `keepScroll` from the frame** (frame lot 17, `frame/lib/dom.js`): the module's copy is gone;
   the frame's helper also gives back the field being typed (frame INTEGRATION § 6).
 - **23 Oct 2026 — ending a flight keeps the real position**: the report's write of the current flight goes through

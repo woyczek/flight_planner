@@ -16,6 +16,9 @@ import {
 } from '../../frame/lib/route_text.js';
 import * as Site from '../../frame/lib/website.js';
 import {
+  copyText
+} from '../../frame/lib/clipboard.js'; // marche aussi en http (tablette servie par le poste)
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import AAR from './families/aar.js';
@@ -59,7 +62,8 @@ export const meta = {
     'families/aar.js',
     'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
     'families/flight_inspection.js', 'families/hadr.js', 'families/hems.js', 'families/isr.js', 'families/law_enforcement.js',
-    'families/maritime.js', 'families/sar.js', 'families/sof.js', 'families/special.js', 'families/survey.js', '../../frame/lib/dom.js'
+    'families/maritime.js', 'families/sar.js', 'families/sof.js', 'families/special.js', 'families/survey.js', '../../frame/lib/dom.js',
+    '../../frame/lib/clipboard.js'
   ]
 };
 
@@ -200,7 +204,11 @@ const TX = {
   bookmarkClick: L('À lancer depuis la barre des favoris, sur le site.', 'Run it from the bookmarks bar, on the website.',
     'Auf der Website aus der Lesezeichenleiste starten.', 'Láncelo desde la barra de marcadores, en el sitio.'),
   copyFields: L('Copier les champs', 'Copy the fields', 'Felder kopieren', 'Copiar los campos'),
-  copied: L('Champs copiés : {l}', 'Fields copied: {l}', 'Felder kopiert: {l}', 'Campos copiados: {l}')
+  copied: L('Champs copiés : {l}', 'Fields copied: {l}', 'Felder kopiert: {l}', 'Campos copiados: {l}'),
+  copyManual: L('Copie impossible ici : la ligne est sélectionnée sous le bouton, copiez-la (Ctrl+C ou appui long).',
+    'Copying is not possible here: the line is selected under the button, copy it (Ctrl+C or long press).',
+    'Kopieren ist hier nicht möglich: Die Zeile ist unter der Schaltfläche markiert, kopieren Sie sie (Strg+C oder lange drücken).',
+    'Aquí no se puede copiar: la línea está seleccionada bajo el botón, cópiela (Ctrl+C o pulsación larga).')
 };
 // champs communs du CR court (libellés de shared/mission_core/blocks.js)
 const f = (path, label, type = 'text', extra = {}) => ({
@@ -879,12 +887,11 @@ async function onClick(e) {
     }
     case 'copyfields': {
       const line = Site.copyLine(Site.flightFields(S.m));
-      try {
-        await navigator.clipboard.writeText(line);
-      } catch {
-        /* presse-papiers refusé : la ligne est montrée */
-      }
-      return S.ctx.notify(tt(TX.copied, {
+      // presse-papiers, sinon copie à l'ancienne, sinon la ligne montrée sélectionnée sous le bouton : « copiez-la »
+      const how = await copyText(line, {
+        near: b
+      });
+      return how === 'shown' ? S.ctx.notify(tt(TX.copyManual), 'warn') : S.ctx.notify(tt(TX.copied, {
         l: line
       }), 'ok');
     }
