@@ -93,23 +93,27 @@ Ihre Schritte der Reihe nach. Laden Sie zuerst den GitHub-Namen des Piloten mit 
 (der Link führt zur Seite der Mitwirkenden des Repositorys). Geben Sie dann sein Kürzel und die Adresse der
 veröffentlichten App ein, dann „Datei und Link erstellen“: Die Datei sog-config-<TRI>.json wird gespeichert, der Link
 und sein QR-Code werden angezeigt. Sie enthalten die Fluggesellschaft, das Datenrepository, das Kürzel und die Anleitung
-für das Token, nie ein Token oder Geheimnis. Senden Sie den Link oder die Datei, oder lassen Sie das Telefon des Piloten
-den QR-Code scannen.
+für das Token, nie ein Token oder Geheimnis; der Eigentümer des Repositorys (Benutzer oder Organisation) ist darin
+vermerkt und bestimmt, welches Token zu erstellen ist. Senden Sie den Link oder die Datei, oder lassen Sie das Telefon
+des Piloten den QR-Code scannen.
 
 **Der Fluggesellschaft beitreten (Pilot).** Der Link, der QR-Code, „Konfiguration importieren…“ oder „Der
 Fluggesellschaft beitreten…“ (Karte „Datenzugang“) und die Begrüßungskarte beim ersten Öffnen öffnen den Assistenten
 „Der Fluggesellschaft beitreten“, ein Bildschirm pro Schritt: die erhaltene Konfiguration; das Konto (bei Bedarf mit dem
-Registrierungslink erstellen) und der Benutzername; die anzunehmende Einladung; das Token, Schritt für Schritt; das
-eingefügte und getestete Token; die Netzwerk-IDs; zuletzt „Abschließen und synchronisieren“, dann die Offline-Daten.
-Angekreuzte Kästchen bleiben auf dem Gerät: Eine Karte der Einstellungen bietet an, dort fortzusetzen, wo Sie waren. Das
-Tutorial „Der Fluggesellschaft beitreten“ folgt denselben Schritten.
+Registrierungslink erstellen) und der Benutzername; die anzunehmende Einladung; das Token, Schritt für Schritt
+(klassisch für das Repository eines Benutzers, feingranular für das einer Organisation); das eingefügte und getestete
+Token; die Netzwerk-IDs; zuletzt „Abschließen und synchronisieren“, dann die Offline-Daten. Angekreuzte Kästchen bleiben
+auf dem Gerät: Eine Karte der Einstellungen bietet an, dort fortzusetzen, wo Sie waren. Das Tutorial „Der
+Fluggesellschaft beitreten“ folgt denselben Schritten.
 
 **Nicht mehr als die Datei.** Nur was die Konfiguration enthält, wird eingerichtet, und der Zugang wird erst
 gespeichert, wenn das Token getestet ist; „Testen“ sagt, was nicht stimmt: Einladung noch nicht angenommen, Token falsch
-kopiert oder abgelaufen, Token ohne Recht auf den Inhalt. Eine Datei in einem anderen Format wird mit einer Meldung
-abgelehnt. Die Fluggesellschaft wird nur ins Repository geschrieben, wenn es noch keine hat. Auf einem Rechner, dessen
-data/ diesem Repository bereits folgt, überspringt der Assistent Konto und Token. Ohne Starter erreicht die App nur ein
-GitHub-Repository: Richten Sie den Zugang für ein Repository auf framagit oder GitLab auf einem Rechner mit Starter ein.
+kopiert oder abgelaufen, Token ohne Recht auf den Inhalt. Ein klassisches Token öffnet alle Repositorys des Kontos: Für
+das Repository eines Benutzers wird ein eigenes GitHub-Konto nur für das Fliegen empfohlen. Eine Datei in einem anderen
+Format wird mit einer Meldung abgelehnt. Die Fluggesellschaft wird nur ins Repository geschrieben, wenn es noch keine
+hat. Auf einem Rechner, dessen data/ diesem Repository bereits folgt, überspringt der Assistent Konto und Token. Ohne
+Starter erreicht die App nur ein GitHub-Repository: Richten Sie den Zugang für ein Repository auf framagit oder GitLab
+auf einem Rechner mit Starter ein.
 
 ## Verwaltung
 
@@ -140,4 +144,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: cdcf52f0dd22 -->
+<!-- fr: d83de238a54d -->

@@ -88,22 +88,23 @@ GitHub, unfold “Export a configuration for a pilot…” in the “Data access
 invite the pilot's GitHub name to the repository, with the Write role (the link leads to the repository's collaborators
 page). Then type their trigram and the address of the published app, and “Create the file and the link”: the file
 sog-config-<TRI>.json is saved, the link and its QR code are shown. They hold the airline, the data repository, the
-trigram and how to create the token, never a token or a secret. Send the link or the file, or have the pilot's phone
-scan the QR code.
+trigram and how to create the token, never a token or a secret; the repository's owner (user or organisation) is noted
+in them, and decides which token to create. Send the link or the file, or have the pilot's phone scan the QR code.
 
 **Joining the airline (pilot).** The link, the QR code, “Import a configuration…” or “Join the airline…” (“Data access”
 card) and the welcome card of the first opening open the “Join the airline” assistant, one screen per step: the
 configuration received; the account (create it if needed, with the sign-up link) and the username; the invitation to
-accept; the token, step by step; the token pasted and tested; the network IDs; and last “Finish and synchronise”, then
-the offline data. Ticked boxes stay on the device: a settings card offers to resume where you left off. The “Join the
-airline” tutorial follows the same steps.
+accept; the token, step by step (classic for a user's repository, fine-grained for an organisation's); the token pasted
+and tested; the network IDs; and last “Finish and synchronise”, then the offline data. Ticked boxes stay on the device:
+a settings card offers to resume where you left off. The “Join the airline” tutorial follows the same steps.
 
 **Nothing more than the file.** Only what the configuration holds is set, and the access is saved only once the token is
 tested; “Test” says what is wrong: invitation not accepted yet, token copied wrongly or expired, token without the right
-on the contents. A file in another format is refused with a message. The airline is written to the repository only if it
-has none yet. On a workstation whose data/ already follows this repository, the assistant skips the account and the
-token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab repository, set the access
-on a workstation with the launcher.
+on the contents. A classic token opens all the repositories of the account: for a user's repository, a GitHub account
+dedicated to flying is advised. A file in another format is refused with a message. The airline is written to the
+repository only if it has none yet. On a workstation whose data/ already follows this repository, the assistant skips
+the account and the token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab
+repository, set the access on a workstation with the launcher.
 
 ## Administration
 
@@ -134,4 +135,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: cdcf52f0dd22 -->
+<!-- fr: d83de238a54d -->

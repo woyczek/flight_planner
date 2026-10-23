@@ -263,8 +263,10 @@ secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, g
 mapa se acerca a sus puntos si están apretados, y su tarjeta da las secuencias (con la página de la VAC) y luego las
 consignas de la VAC, plegadas página por página. Escape o un toque en otro lugar lo suelta. En modo VFR, los puntos del
 aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
-marcados «a verificar», no son un itinerario publicado y no indican el sentido de recorrido; la carta VAC es la que
-vale. Aparecen una vez importados por el administrador (Ajustes › Mantenimiento).
+marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha sido
+analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado
+sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Aparecen una vez importados por el
+administrador (Ajustes › Mantenimiento).
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
 14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
@@ -334,7 +336,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 3208767944e8 -->
+<!-- fr: 2564787c1e12 -->
 
 <!-- chapter: report -->
 # Informe
@@ -607,23 +609,25 @@ GitHub, despliegue «Exportar una configuración para un piloto…» en la tarje
 en orden. Invite primero el nombre de GitHub del piloto al repositorio, con el rol Write (el enlace lleva a la página de
 colaboradores del repositorio). Escriba luego su trigrama y la dirección de la aplicación publicada, y «Crear el archivo
 y el enlace»: el archivo sog-config-<TRI>.json se guarda, el enlace y su código QR aparecen. Contienen la aerolínea, el
-repositorio de datos, el trigrama y las instrucciones del token, nunca un token ni un secreto. Envíe el enlace o el
-archivo, o haga escanear el código QR con el teléfono del piloto.
+repositorio de datos, el trigrama y las instrucciones del token, nunca un token ni un secreto; el propietario del
+repositorio (usuario u organización) queda anotado y decide qué token crear. Envíe el enlace o el archivo, o haga
+escanear el código QR con el teléfono del piloto.
 
 **Unirse a la aerolínea (piloto).** El enlace, el código QR, «Importar una configuración…» o «Unirse a la aerolínea…»
 (tarjeta «Acceso a los datos») y la tarjeta de bienvenida de la primera apertura abren el asistente «Unirse a la
 aerolínea», una pantalla por paso: la configuración recibida; la cuenta (crearla si hace falta, con el enlace de
-registro) y el nombre de usuario; la invitación que aceptar; el token, paso a paso; el token pegado y probado; los
-identificadores de red; por último «Terminar y sincronizar», y luego los datos sin conexión. Las casillas marcadas
-quedan en el dispositivo: una tarjeta de los ajustes propone retomar donde lo dejó. El tutorial «Unirse a la aerolínea»
-sigue los mismos pasos.
+registro) y el nombre de usuario; la invitación que aceptar; el token, paso a paso (clásico para el repositorio de un
+usuario, de grano fino para el de una organización); el token pegado y probado; los identificadores de red; por último
+«Terminar y sincronizar», y luego los datos sin conexión. Las casillas marcadas quedan en el dispositivo: una tarjeta de
+los ajustes propone retomar donde lo dejó. El tutorial «Unirse a la aerolínea» sigue los mismos pasos.
 
 **Nada más que el archivo.** Solo se configura lo que contiene la configuración, y el acceso solo se guarda una vez
 probado el token; «Probar» dice qué falla: invitación aún no aceptada, token mal copiado o caducado, token sin derecho
-sobre el contenido. Un archivo de otro formato se rechaza con un mensaje. La aerolínea solo se escribe en el repositorio
-si aún no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el asistente se salta la cuenta y el token. Sin
-lanzador, la aplicación solo llega a un repositorio de GitHub: para un repositorio de framagit o GitLab, configure el
-acceso en un puesto con el lanzador.
+sobre el contenido. Un token clásico abre todos los repositorios de la cuenta: para el repositorio de un usuario, se
+aconseja una cuenta de GitHub dedicada al vuelo. Un archivo de otro formato se rechaza con un mensaje. La aerolínea solo
+se escribe en el repositorio si aún no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el asistente se
+salta la cuenta y el token. Sin lanzador, la aplicación solo llega a un repositorio de GitHub: para un repositorio de
+framagit o GitLab, configure el acceso en un puesto con el lanzador.
 
 ## Administración
 
@@ -655,4 +659,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: cdcf52f0dd22 -->
+<!-- fr: d83de238a54d -->

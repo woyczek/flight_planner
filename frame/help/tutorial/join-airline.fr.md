@@ -19,7 +19,9 @@ Puis « Suivant → ».
 ![Créer le compte, puis le nom d'utilisateur](img/join-airline-2.fr.png)
 
 **Un compte chez l'hôte du dépôt.** Le plus souvent GitHub. Vous en avez déjà un ? Cochez « Oui ». Sinon cochez « Non,
-je le crée » et suivez les trois lignes : s'inscrire, choisir un nom d'utilisateur simple, vérifier l'adresse mail.
+je le crée » et suivez les trois lignes : s'inscrire, choisir un nom d'utilisateur simple, vérifier l'adresse mail. Si
+le dépôt de votre compagnie appartient à un utilisateur, le jeton ouvrira tous les dépôts de votre compte : si vous en
+avez déjà d'autres, créez un compte dédié au vol.
 
 **Votre nom d'utilisateur.** Tapez-le : l'administrateur en a besoin. Puis « Suivant → ».
 
@@ -36,8 +38,9 @@ je le crée » et suivez les trois lignes : s'inscrire, choisir un nom d'utilisa
 
 ![Créer le jeton sur GitHub, pas à pas](img/join-airline-4.fr.png)
 
-**Créez-le sur GitHub.** Suivez les cinq lignes : le premier lien ouvre la bonne page ; donnez au jeton un nom, un an
-de validité, le seul dépôt de votre compagnie, et « Contents : Read and write ».
+**Créez-le sur GitHub.** Suivez les lignes : le premier lien ouvre la page déjà remplie — un jeton « classique » avec la
+case « repo », auquel vous donnez un an de validité. Si le dépôt de votre compagnie appartient à une organisation,
+l'assistant montre plutôt un jeton à grain fin (ce seul dépôt, « Contents : Read and write »).
 
 **Copiez-le tout de suite.** GitHub ne le montre qu'une fois. Cochez « Jeton copié », puis « Suivant → ».
 
@@ -66,4 +69,4 @@ vos vols hors ligne (« Données hors ligne »), et enchaînez avec [Préparer u
 **Pour aller plus loin.** Le chapitre Réglages du manuel, section « Configurer un pilote »
 ([Réglages](#help?m=settings)).
 
-<!-- en: 06684d457012 -->
+<!-- en: c3a1f59e0eb3 -->

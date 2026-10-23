@@ -135,11 +135,16 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 ## 5. Configuring a pilot (`frame/settings/config.js`, `window.SogConfig`)
 
 - **Schema `sog-config/1`** (JSON): `schema`, `created_at`, `by` (the exporter's trigram), `airline { name, site, pages
-  { recordFlight, log, fleet, aircraft } }` (from `airline/settings.json`), `data { host, repo, branch, api? }` (the
+  { recordFlight, log, fleet, aircraft } }` (from `airline/settings.json`), `data { host, repo, branch, ownerType?, api?
+  }` (`ownerType`: `User` or `Organization`, read at export from GitHub's public `users/<owner>`; the
   repository without its credentials: from the remote of `data/` on a launcher, or the device's GitHub setting, `api`
   then kept), `identity { trigram }`, `usages { devices: true }`, `howto { token { fr, en, de, es } }`.
-- **How-to of the token**, from a template per host: GitHub (`github.com`, or an `api` given) — a fine-grained token
-  limited to the repository, Contents read and write, 90 days at most, organisation allowing such tokens; GitLab /
+- **How-to of the token**, from a template per host: GitHub, an **organisation's** repository — a fine-grained token
+  limited to the repository (resource owner the organisation, Contents read and write, one year), the organisation
+  allowing such tokens; GitHub, a **user's** repository or an unknown owner — a **classic** token, the only kind an
+  invited pilot can make for it: prefilled link `https://github.com/settings/tokens/new?scopes=repo&description=SOG%20Pilote`,
+  one year, scope `repo` only, with the plain warning that it opens every repository of the account (hence an account
+  dedicated to flying); GitLab /
   framagit — a project access token, role Developer, scope `write_repository` (Maintainer needed, otherwise a personal
   token with the same scope), and the note that a phone reaches it only through a workstation's launcher; other hosts —
   ask the administrator. Each with the repository's exact address.
@@ -188,10 +193,12 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   simple username, verifying the email); then the username (needed to go on); (3) the invitation — give the username to
   the administrator ("Copy my name"), accept the email invitation (`https://github.com/<repo>/invitations`), a box
   "Invitation accepted" (the access can only be checked once the token exists); GitLab / framagit: added as Developer;
-  (4) the token, step by step — the direct link to the token page, then name, one year, only the repository, "Contents:
-  Read and write", copy at once; GitLab: personal token with `write_repository`; the airline's how-to folded below;
-  a box "Token copied"; (5) paste and "Test" — 404: invitation not accepted or repository not chosen in the token; 401:
-  copied wrongly or expired; 403: no right on the contents; offline said; checked: the access is saved (another one
+  (4) the token, step by step — GitHub, user's repository: the prefilled classic-token link, one year, `repo` only, copy
+  at once, and the warning on its account-wide reach (also said at step 2); organisation's repository: the fine-grained
+  token page, the organisation as owner, only the repository, "Contents: Read and write"; GitLab: personal token with
+  `write_repository`; the airline's how-to folded below; a box "Token copied"; (5) paste and "Test" — 404: invitation not accepted or repository not chosen in the token; 401:
+  copied wrongly or expired; 403: no right — `repo` box (classic) or Contents (fine-grained); both token forms
+  accepted; offline said; checked: the access is saved (another one
   replaced only after a question); on a workstation, "Clone with the token" (launcher); (6) IVAO, VATSIM, SimBrief,
   optional, saved with the trigram; (7) "Finish and synchronise" — usages, first synchronisation, airline if the
   repository has none — then "Offline data", "Prepare a flight" and the tutorial.

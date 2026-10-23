@@ -253,9 +253,10 @@ the airspaces crossed in the same way.
 taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in on its
 points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the VAC,
 folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
-airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”,
-are not a published route and do not give the direction of travel; the VAC chart prevails. They appear once the
-administrator has imported them (Settings › Maintenance).
+airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
+and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
+the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow
+marks a one-way route. They appear once the administrator has imported them (Settings › Maintenance).
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
@@ -324,7 +325,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 3208767944e8 -->
+<!-- fr: 2564787c1e12 -->
 
 <!-- chapter: report -->
 # Report
@@ -588,22 +589,23 @@ GitHub, unfold “Export a configuration for a pilot…” in the “Data access
 invite the pilot's GitHub name to the repository, with the Write role (the link leads to the repository's collaborators
 page). Then type their trigram and the address of the published app, and “Create the file and the link”: the file
 sog-config-<TRI>.json is saved, the link and its QR code are shown. They hold the airline, the data repository, the
-trigram and how to create the token, never a token or a secret. Send the link or the file, or have the pilot's phone
-scan the QR code.
+trigram and how to create the token, never a token or a secret; the repository's owner (user or organisation) is noted
+in them, and decides which token to create. Send the link or the file, or have the pilot's phone scan the QR code.
 
 **Joining the airline (pilot).** The link, the QR code, “Import a configuration…” or “Join the airline…” (“Data access”
 card) and the welcome card of the first opening open the “Join the airline” assistant, one screen per step: the
 configuration received; the account (create it if needed, with the sign-up link) and the username; the invitation to
-accept; the token, step by step; the token pasted and tested; the network IDs; and last “Finish and synchronise”, then
-the offline data. Ticked boxes stay on the device: a settings card offers to resume where you left off. The “Join the
-airline” tutorial follows the same steps.
+accept; the token, step by step (classic for a user's repository, fine-grained for an organisation's); the token pasted
+and tested; the network IDs; and last “Finish and synchronise”, then the offline data. Ticked boxes stay on the device:
+a settings card offers to resume where you left off. The “Join the airline” tutorial follows the same steps.
 
 **Nothing more than the file.** Only what the configuration holds is set, and the access is saved only once the token is
 tested; “Test” says what is wrong: invitation not accepted yet, token copied wrongly or expired, token without the right
-on the contents. A file in another format is refused with a message. The airline is written to the repository only if it
-has none yet. On a workstation whose data/ already follows this repository, the assistant skips the account and the
-token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab repository, set the access
-on a workstation with the launcher.
+on the contents. A classic token opens all the repositories of the account: for a user's repository, a GitHub account
+dedicated to flying is advised. A file in another format is refused with a message. The airline is written to the
+repository only if it has none yet. On a workstation whose data/ already follows this repository, the assistant skips
+the account and the token. Without a launcher, the app only reaches a GitHub repository: for a framagit or GitLab
+repository, set the access on a workstation with the launcher.
 
 ## Administration
 
@@ -634,4 +636,4 @@ designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeron
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: cdcf52f0dd22 -->
+<!-- fr: d83de238a54d -->

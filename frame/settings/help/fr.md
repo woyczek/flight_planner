@@ -93,23 +93,25 @@ dépliez « Exporter une configuration pour un pilote… » dans la carte « Acc
 l'ordre. Invitez d'abord le nom GitHub du pilote sur le dépôt, avec le droit Write (le lien mène à la page des
 collaborateurs du dépôt). Tapez ensuite son trigramme et l'adresse de l'appli publiée, puis « Créer le fichier et le
 lien » : le fichier sog-config-<TRI>.json est enregistré, le lien et son code QR s'affichent. Ils contiennent la
-compagnie, le dépôt des données, le trigramme et le mode d'emploi du jeton, jamais de jeton ni de secret. Envoyez le
-lien ou le fichier, ou faites scanner le code QR par le téléphone du pilote.
+compagnie, le dépôt des données, le trigramme et le mode d'emploi du jeton, jamais de jeton ni de secret ; le
+propriétaire du dépôt (utilisateur ou organisation) y est noté, il décide du jeton à créer. Envoyez le lien ou le
+fichier, ou faites scanner le code QR par le téléphone du pilote.
 
 **Rejoindre la compagnie (pilote).** Le lien, le code QR, « Importer une configuration… » ou « Rejoindre la compagnie… »
 (carte « Accès aux données ») et la carte d'accueil de la première ouverture ouvrent l'assistant « Rejoindre la
 compagnie », un écran par pas : la configuration reçue ; le compte (le créer s'il n'existe pas, avec le lien
-d'inscription) et le nom d'utilisateur ; l'invitation à accepter ; le jeton, pas à pas ; le jeton collé et testé ; les
-identifiants réseau ; enfin « Terminer et synchroniser », puis les données hors ligne. Les cases cochées restent sur
-l'appareil : une carte des réglages propose de reprendre là où vous en étiez. Le tutoriel « Rejoindre la compagnie »
-suit les mêmes pas.
+d'inscription) et le nom d'utilisateur ; l'invitation à accepter ; le jeton, pas à pas (classique pour le dépôt d'un
+utilisateur, à grain fin pour celui d'une organisation) ; le jeton collé et testé ; les identifiants réseau ; enfin «
+Terminer et synchroniser », puis les données hors ligne. Les cases cochées restent sur l'appareil : une carte des
+réglages propose de reprendre là où vous en étiez. Le tutoriel « Rejoindre la compagnie » suit les mêmes pas.
 
 **Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et l'accès n'est enregistré qu'une
 fois le jeton testé ; « Tester » dit ce qui ne va pas : invitation pas encore acceptée, jeton mal copié ou expiré, jeton
-sans droit sur le contenu. Un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le
-dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte et le jeton.
-Sans lanceur, l'appli ne joint qu'un dépôt GitHub : pour un dépôt framagit ou GitLab, faites l'accès sur un poste avec
-le lanceur.
+sans droit sur le contenu. Un jeton classique ouvre tous les dépôts du compte : pour le dépôt d'un utilisateur, un
+compte GitHub dédié au vol est conseillé. Un fichier d'un autre format est refusé avec un message. La compagnie n'est
+écrite dans le dépôt que s'il n'en a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'assistant saute le compte
+et le jeton. Sans lanceur, l'appli ne joint qu'un dépôt GitHub : pour un dépôt framagit ou GitLab, faites l'accès sur un
+poste avec le lanceur.
 
 ## Administration
 

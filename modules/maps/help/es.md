@@ -61,9 +61,10 @@ secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, g
 mapa se acerca a sus puntos si están apretados, y su tarjeta da las secuencias (con la página de la VAC) y luego las
 consignas de la VAC, plegadas página por página. Escape o un toque en otro lugar lo suelta. En modo VFR, los puntos del
 aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
-marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha
-sido analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado
-revisado sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Aparecen una vez importados por el administrador (Ajustes › Mantenimiento).
+marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha sido
+analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado
+sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Aparecen una vez importados por el
+administrador (Ajustes › Mantenimiento).
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
 14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
@@ -133,4 +134,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 3208767944e8 -->
+<!-- fr: 2564787c1e12 -->

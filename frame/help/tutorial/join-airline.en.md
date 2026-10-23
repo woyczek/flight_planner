@@ -18,8 +18,10 @@ opening, or from ⚙ Settings › “Join the airline…”.
 
 ![Creating the account, then the username](img/join-airline-2.en.png)
 
-**An account on the repository's host.** Most often GitHub. Already have one? Tick “Yes”. Otherwise tick “No, I
-create one” and follow the three lines: sign up, choose a simple username, verify the email address.
+**An account on the repository's host.** Most often GitHub. Already have one? Tick “Yes”. Otherwise tick “No, I create
+one” and follow the three lines: sign up, choose a simple username, verify the email address. If your airline's
+repository belongs to a user, the token will open every repository of your account: if you already have others, create
+an account dedicated to flying.
 
 **Your username.** Type it: the administrator needs it. Then “Next →”.
 
@@ -36,8 +38,9 @@ create one” and follow the three lines: sign up, choose a simple username, ver
 
 ![Creating the token on GitHub, step by step](img/join-airline-4.en.png)
 
-**Create it on GitHub.** Follow the five lines: the first link opens the right page; give the token a name, one year
-of validity, your airline's repository only, and “Contents: Read and write”.
+**Create it on GitHub.** Follow the lines: the first link opens the page already filled in — a “classic” token with the
+“repo” box, to which you give one year of validity. If your airline's repository belongs to an organisation, the
+assistant shows a fine-grained token instead (that repository only, “Contents: Read and write”).
 
 **Copy it at once.** GitHub shows it only once. Tick “Token copied”, then “Next →”.
 
