@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Maintenance: VFR card below the Expert level** (`shared/maintenance_page.js`) — under level 4, a line says where
+  the "VFR reporting points (VAC)" card is ("Expert level, menu ☰ › Level") instead of nothing; the card follows the
+  page's mode (`GH_LITE`).
 - **Fuel › Sheets: the airline's types without a sheet, by category** (`modules/fuel/module.js`; SPEC, DECISIONS,
   help ×4) — as in V2, each type the airline uses (fleet, reference) without a sheet is listed "performance to fill in"
   with "Create the sheet", and the list is sorted by category (helicopters first): the company helicopters (EC45,
