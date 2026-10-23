@@ -349,7 +349,8 @@ system), Day or Night. One tap applies it at once, on this device only.
 
 **The usages.** The sentence at the top of “Usages” says how data are exchanged. With no box ticked you are “Alone on
 this device”: nothing goes elsewhere. Tick “Alone, on several devices” or “Several users (git data repository)” to
-exchange.
+exchange. On a workstation served by the launcher, the app already reads and writes the launcher's `data/` folder, even
+with no box ticked; an exchange usage also shares it through git.
 
 **Data access.** On a phone or on the website, set in “Data access” the repository (account/repository), the branch and
 your personal token, then “Test” and “Save”. On a workstation served by the launcher there is no token: the card
@@ -406,4 +407,4 @@ only reported.
   diagnostics, folded; “Copy” puts it on the clipboard to report a problem. The token is
   never in it.
 
-<!-- fr: d1c0cb5879a0 -->
+<!-- fr: d3ca81fe9923 -->

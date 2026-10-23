@@ -16,7 +16,8 @@ la línea «Menú:» indica qué herramientas muestra; una herramienta oculta si
 
 **Los usos.** La frase al principio de «Usos» indica cómo se intercambian los datos. Sin casilla marcada, está «Solo en
 este dispositivo»: nada sale a otro lugar. Marque «Solo, en varios dispositivos» o «Varios usuarios (repositorio git de
-datos)» para intercambiar.
+datos)» para intercambiar. En un puesto servido por el lanzador, la aplicación ya lee y escribe la carpeta `data/`
+del lanzador, incluso sin casilla marcada; un uso de intercambio la comparte además por git.
 
 **El acceso a los datos.** En un teléfono o en el sitio, configure en «Acceso a los datos» el repositorio
 (cuenta/repositorio), la rama y su token personal, luego «Probar» y «Guardar». En un puesto servido por el lanzador no
@@ -75,4 +76,4 @@ se señala.
   diagnóstico, plegado; «Copiar» lo pone en el portapapeles para señalar un problema. El token
   nunca figura en él.
 
-<!-- fr: d1c0cb5879a0 -->
+<!-- fr: d3ca81fe9923 -->

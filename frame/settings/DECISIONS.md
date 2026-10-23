@@ -138,3 +138,8 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   est déjà ouverte…") are shown as they are, the "already open" one recognised by its text. Checked without opening any
   window, the configured address set to a dummy one in this worktree only: configured address (with a final `/`):
   hidden; another: shown; empty or invalid: hidden.
+- **24 Oct 2026 — Usages on a launcher without an exchange** (frame lot 9: on a page served by the launcher, `data/` is
+  the device's storage, launcher transport by default; git exchange only with "several devices" or "several users"):
+  the state sentence says "This workstation reads and writes the launcher's data/ folder; tick an exchange usage to
+  share it through git"; without a launcher, "Alone on this device" as before. The Settings chapter says the same in
+  four languages.

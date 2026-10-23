@@ -116,6 +116,11 @@
     sample: ['Carte d’exemple', 'Sample card', 'Beispielkarte', 'Tarjeta de ejemplo'],
     // usages
     usages: ['Usages', 'Usages', 'Nutzungen', 'Usos'],
+    aloneLauncher: ['Ce poste lit et écrit le dossier data/ du lanceur ; cochez un usage d’échange pour le partager par git.',
+      'This workstation reads and writes the launcher’s data/ folder; tick an exchange usage to share it through git.',
+      'Dieser Rechner liest und schreibt den Ordner data/ des Starters; kreuzen Sie eine Austauschnutzung an, um ihn über git zu teilen.',
+      'Este puesto lee y escribe la carpeta data/ del lanzador; marque un uso de intercambio para compartirla por git.'
+    ],
     alone: ['Seul sur cet appareil : rien n’est échangé, les données restent ici.',
       'Alone on this device: nothing is exchanged, data stay here.',
       'Allein auf diesem Gerät: nichts wird ausgetauscht, die Daten bleiben hier.',
@@ -485,7 +490,7 @@
       // état de data/ : absent, plain (dossier sans git), repo ; champ state du lanceur, sinon déduit
       gitState = !L ? '' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
-    const how = !exchange ? t(T.alone) : L?.data ? t(T.viaLauncher, {
+    const how = !exchange ? t(L?.data ? T.aloneLauncher : T.alone) : L?.data ? t(T.viaLauncher, {
       g: t(!L.dataGit ? T.viaLauncherNoGit : remote && !remote.url ? T.viaLauncherNoRemote : T.viaLauncherGit)
     }) : gh ? t(T.viaGithub, {
       r: gh.repo

@@ -370,7 +370,8 @@ das System), Tag oder Nacht. Ein Tippen wendet es sofort an, nur auf diesem Ger�
 
 **Die Nutzungen.** Der Satz oben in „Nutzungen“ sagt, wie Daten ausgetauscht werden. Ohne angekreuztes Kästchen sind Sie
 „Allein auf diesem Gerät“: Nichts geht anderswohin. Kreuzen Sie „Allein, auf mehreren Geräten“ oder „Mehrere Nutzer
-(Git-Datenrepository)“ an, um auszutauschen.
+(Git-Datenrepository)“ an, um auszutauschen. Auf einem vom Starter bedienten Rechner liest und schreibt die App bereits
+den Ordner `data/` des Starters, auch ohne angekreuztes Kästchen; eine Austauschnutzung teilt ihn zusätzlich über git.
 
 **Der Datenzugang.** Auf einem Telefon oder auf der Website stellen Sie unter „Datenzugang“ das Repository
 (Konto/Repository), den Zweig und Ihr persönliches Token ein, dann „Testen“ und „Speichern“. Auf einem vom Starter
@@ -429,4 +430,4 @@ Repository, das nicht antwortet, wird nur gemeldet.
   eingeklappt; „Kopieren“ legt sie in die Zwischenablage, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: d1c0cb5879a0 -->
+<!-- fr: d3ca81fe9923 -->
