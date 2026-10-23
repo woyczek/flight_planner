@@ -345,6 +345,14 @@ const TX = {
     'Menos detalles a la izquierda, más a la derecha: desplaza un paso lo que muestra cada zoom.'
   ],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
+  levelsTitle: ['{n} espaces sur ce point', '{n} airspaces at this point', '{n} Lufträume an diesem Punkt',
+    '{n} espacios en este punto'
+  ],
+  levelsAxis: ['Plancher et plafond de chaque espace, du plus bas au plus haut',
+    'Floor and ceiling of each airspace, from the lowest to the highest',
+    'Untergrenze und Obergrenze jedes Luftraums, vom niedrigsten zum höchsten',
+    'Límite inferior y superior de cada espacio, del más bajo al más alto'
+  ],
   awHigh: ['voie haute', 'upper airway', 'oberer Flugweg', 'aerovía superior'],
   awLow: ['voie basse', 'lower airway', 'unterer Flugweg', 'aerovía inferior'],
   credit: ['© OpenFreeMap © OpenStreetMap ; SIA : base publiée, non certifiée',
@@ -1087,6 +1095,7 @@ async function startTiles() {
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
         if (S.edit.on) return editTap(e.point.x, e.point.y);
+        if (!S.cardEl.hidden) return hideTips(); // carte des niveaux ouverte : ce toucher la ferme
         // une barbule, un cartouche ou un libellé (posés sur la route ou près d'elle) passent avant le curseur
         if (tipAt(e.point.x, e.point.y)) return mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
@@ -1336,7 +1345,8 @@ function showTip(tip, box, x, y, html) {
     w = tip.offsetWidth,
     h = tip.offsetHeight;
   tip.style.left = `${Math.max(4, Math.min(r.width - w - 4, x + 10))}px`;
-  tip.style.top = `${Math.max(4, y - h - 10 < 4 ? y + 14 : y - h - 10)}px`;
+  // au-dessus du doigt, sinon dessous ; toujours dans le cadre (une carte haute remonte)
+  tip.style.top = `${Math.max(4, Math.min(r.height - h - 4, y - h - 10 < 4 ? y + 14 : y - h - 10))}px`;
 }
 /** Dernier toucher dans le module : les événements souris qui le suivent (compatibilité) ne sont pas un survol. */
 let touchAt = -1e9;
@@ -1944,9 +1954,85 @@ function tipAt(x, y, lat = null, lon = null) {
     n: l.length - 2
   })}` : l[1] || ''] : null;
 }
+/** Couleur d'un type d'espace (celles du profil vertical). */
+const ZONE_COL = {
+  R: '#d32f2f',
+  P: '#b71c1c',
+  D: '#ef6c00',
+  TRA: '#ef6c00',
+  TSA: '#ef6c00',
+  CTR: '#1565c0',
+  TMA: '#1565c0',
+  CTA: '#3949ab',
+  SIV: '#2e7d32',
+  RMZ: '#555',
+  TMZ: '#555'
+};
+/** Carte des niveaux d'un point : un bloc comme le profil vertical (axe des altitudes, une colonne par espace entre son
+ *  plancher et son plafond, numérotée), puis la liste numérotée en notation SIA, du plancher le plus bas au plus haut.
+ *  Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas lu ici : l'étiquette dit ASFC). */
+function levelsHtml(list) {
+  const lim = window.SiaAero?.limitFt || (() => 0),
+    rows = list.map(a => {
+      const lo = Math.max(0, +lim(a.lower, false) || 0),
+        up = +lim(a.upper, true);
+      return {
+        a,
+        lo,
+        up: Number.isFinite(up) && up > lo && up < 66000 ? up : null, // 66 000 ft et plus : UNL (comme les voies)
+        col: ZONE_COL[String(a.type || '').toUpperCase()] || '#6d4c41'
+      };
+    }),
+    finite = rows.map(r => r.up ?? r.lo).filter(Number.isFinite),
+    unl = rows.some(r => r.up == null),
+    nice = v => {
+      for (const s of [1000, 2000, 2500, 5000, 10000, 20000])
+        if (v / s <= 5) return s;
+      return 50000;
+    },
+    raw = Math.max(5000, ...finite) * 1.08,
+    step = nice(raw),
+    top = Math.ceil(raw / step) * step,
+    W = 280,
+    H = 150,
+    L = 46,
+    T = unl ? 16 : 6,
+    B = H - 6,
+    y = ft => B - (Math.min(ft, top) / top) * (B - T),
+    colW = Math.max(10, Math.min(34, (W - L - 6) / rows.length)),
+    gap = Math.min(4, colW * .2);
+  let svg = '';
+  for (let v = 0; v <= top; v += step) svg +=
+    `<line x1="${L}" x2="${W - 2}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="currentColor" stroke-opacity=".15"/><text x="${L - 4}" y="${y(v).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${esc(v ? formatLevel(v) : 'SFC')}</text>`;
+  if (unl) svg += `<text x="${L - 4}" y="${T - 8}" text-anchor="end" dominant-baseline="middle">UNL</text>`;
+  rows.forEach((r, i) => {
+    const x = L + 4 + i * colW,
+      y0 = r.up == null ? T - 12 : y(r.up),
+      y1 = y(r.lo);
+    svg +=
+      `<rect x="${(x + gap / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${(colW - gap).toFixed(1)}" height="${Math.max(2, y1 - y0).toFixed(1)}" fill="${r.col}" fill-opacity=".18" stroke="${r.col}"/>`;
+    if (colW >= 12) svg +=
+      `<text x="${(x + colW / 2).toFixed(1)}" y="${Math.min(B - 4, Math.max(T, y0 + 9)).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${r.col}" font-weight="700">${i + 1}</text>`;
+  });
+  const items = rows.map((r, i) => {
+    const [a, b] = MapsRender.sia(r.a);
+    return `<li><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</span></li>`;
+  }).join('');
+  return `<div><b>${esc(tt(TX.levelsTitle, { n: rows.length }))}</b></div><svg class="mp-lv" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol>`;
+}
 /** Toucher ou clic sur la carte en (x, y) : la même infobulle qu'au survol, posée là, gardée 5 s, remplacée par la
- *  suivante ; rien dessous : l'infobulle se ferme. Vrai si elle est montrée. */
+ *  suivante ; rien dessous : l'infobulle se ferme. Plusieurs espaces superposés sous le point (ni barbule ni voie sous le
+ *  doigt) : la carte des niveaux, qui reste jusqu'au toucher suivant. Vrai si quelque chose est montré. */
 function mapTip(lat, lon, x, y) {
+  // une barbule ou une voie sous le doigt passent avant ; un libellé d'espace, non (son espace est dans la carte)
+  if (!windAt(x, y) && !MapsRender.airwaysAt(S.awHits, x, y).length) {
+    const list = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon);
+    if (list.length > 1) {
+      hideTips();
+      showTip(S.cardEl, S.box, x, y, levelsHtml(list));
+      return true;
+    }
+  }
   const t = tipAt(x, y, lat, lon);
   if (!t) {
     hideTips();
@@ -3132,6 +3218,11 @@ const STYLE = `
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 [data-module="maps"] .mp-pcard[hidden]{display:none}
 [data-module="maps"] .mp-pcard .f-btn{align-self:flex-start;margin-top:4px}
+[data-module="maps"] .mp-pcard:has(.mp-lv){width:min(92%,320px);max-height:calc(100% - 12px);overflow:auto}
+[data-module="maps"] .mp-lv{width:100%;height:auto;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
+[data-module="maps"] .mp-lv-list{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+[data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline}
+[data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
 [data-module="maps"].mp-editing .mp-prof{touch-action:none;cursor:ns-resize}
@@ -3256,6 +3347,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       x = e.clientX - r.left,
       y = e.clientY - r.top;
     if (S.edit.on) return editTap(x, y);
+    if (!S.cardEl.hidden) return hideTips();
     const v = MapsRender.mercator(S.fit, r.width, r.height, 12),
       ll = v.toLL(x, y);
     if (tipAt(x, y)) return mapTip(ll.lat, ll.lon, x, y);

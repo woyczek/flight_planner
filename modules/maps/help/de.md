@@ -53,7 +53,9 @@ nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
 Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
 und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, nennt die
-Blase die Lufträume unter dem Finger. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der nächsten Platz und schließt
+Blase den Luftraum unter dem Finger; wo sich mehrere überlagern, zeigt eine Karte sie alle: einen Höhenblock wie das
+Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
+Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der nächsten Platz und schließt
 sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger oder Maus ebenso die
 durchflogenen Lufträume.
 

@@ -49,7 +49,9 @@ in a medium view, FIRs from afar.
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
 small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,
 its floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”).
-Tapped elsewhere inside an airspace, the bubble gives the airspaces under your finger. It follows the pointer, stays 5
+Tapped elsewhere inside an airspace, the bubble gives the airspace under your finger; where several
+overlap, a card shows them all: a block of levels, like the vertical profile (one numbered column per airspace, from its
+floor to its ceiling), then the numbered list with their limits. It stays until the next tap. It follows the pointer, stays 5
 seconds, gives way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger
 or the mouse give the airspaces crossed in the same way.
 

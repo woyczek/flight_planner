@@ -51,8 +51,10 @@ media, las FIR de lejos.
 **Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de
 un espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto
 → punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en
-notación AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, la burbuja da los espacios
-bajo el dedo. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o un
+notación AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, la burbuja da el espacio
+bajo el dedo; donde varios se superponen, una tarjeta los muestra todos: un bloque de niveles, como el perfil vertical
+(una columna numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda
+hasta el toque siguiente. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o un
 movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto

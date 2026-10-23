@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: all the airspaces at a point** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a tap where several
+  airspaces overlap opens a card with a block of levels like the vertical profile (one numbered column per airspace,
+  floor to ceiling) and the numbered list in SIA notation, instead of "TMA … (+3 more)".
 - **Map: source of the actual position** (`modules/maps/module.js`; SPEC, INTEGRATION, help ×4) — the in-flight line
   ends with "source: GPS / network / IVAO / VATSIM / X-Plane / Little Navmap" (frame lot 16); an unknown value shows
   nothing.

@@ -114,7 +114,13 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Tooltip** (lot 7a: one behaviour for hover, tap and click), a light `.mp-tip` (class `mp-hover`: `--sog-chart-bg`
   at 65 %, `--sog-fg`, thin border, 11.5 px, two lines at most) in the map box or the profile box:
   - what is under the pointer, in this order: a wind barb, an airway box, an airspace label (`draw()` returns their
-    frames); on a tap or a click only, then the airspaces under the point (the first two and "+n more");
+    frames); on a tap or a click only, then the airspace under the point; where two or more overlap (and no barb nor airway is
+    under the finger, an airspace label does not count), the levels card instead (`levelsHtml`, in the point card that
+    stays until the next tap): the title "n airspaces at this point", an SVG block like the vertical profile (altitude
+    axis SFC to the highest finite ceiling with a nice step, "UNL" above, 66,000 ft and more counted as UNL; one
+    numbered column per airspace from floor to ceiling, coloured by type as in the profile; ASFC limits counted from
+    the ground), then the numbered list in SIA notation with activity and service, lowest floor first; the card stays
+    inside the frame (scrolls if taller) and the next tap closes it;
   - a tap or click on one of the first three takes priority over placing the cursor on the route; on nothing, it
     closes the tooltip;
   - it follows the pointer 12 px away (never under it, kept in the box) while the pointer is on the label, stays 5 s at

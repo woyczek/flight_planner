@@ -435,3 +435,12 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Layers panel**: the column's items shrank to fit its maximum height, so the "Reset all" button rode over the
     Complexity slider; items no longer shrink (`flex-shrink: 0`), the panel scrolls, the button has its own row (29 px
     under the slider at 1280 px).
+- **23 Oct 2026 — the full list instead of "+n more" (user: "lesquels ? où s'affichent-ils ?").**
+  - **A card on the tap, not a longer tooltip**: the hover keeps its two lines (it follows the pointer and must stay
+    light); the tap opens a card that stays, with a block of levels like the vertical profile, which answers "at what
+    height" at a glance, and the numbered list for the names and limits.
+  - **A label under the finger no longer hides the stack**: its airspace is in the card. A barb or an airway keeps its
+    own tooltip.
+  - **Bench** (test page, LFRS → LFML): 1280 px, point with 6 airspaces (R 108 HN / RT / HS / RM, TRA 42 N / NT, FL195 to
+    UNL): six columns from FL195 to the UNL band, list 1 to 6, card at 753 × 68 inside the 1241 × 468 frame; next tap
+    closes it. 375 px: 2 airspaces, card 320 px inside the 351 px frame. No JavaScript error.

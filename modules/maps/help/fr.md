@@ -51,7 +51,9 @@ VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les
 **Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
 ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
 point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
-(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne les espaces sous le doigt. Elle suit
+(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne l'espace sous le doigt ; là où plusieurs se
+superposent, une carte les montre tous : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
+de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste jusqu'au toucher suivant. Elle suit
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
 la carte. Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
 
