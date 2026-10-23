@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: a door for data/ without git** (`frame/settings/settings.js`, `frame/app.js`, `frame/settings/help/*.md`;
+  `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — on a workstation served by the launcher, the Access card
+  says that `data/` is a folder ignored by the code repository that becomes its own git repository, and offers "Fetch
+  the data" when `data/` is missing (clone) or "Take data/ into this repository" when it has no git (adopt), with the
+  address, an optional username and password or token never kept by the page, and "Remember" in Git; progress and
+  report in the card, state read again afterwards.
 - **settings: the remote repository of data/ from the frame** (`frame/settings/settings.js`,
   `frame/settings/help/*.md`; `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — on a workstation served by
   the launcher, the Access card shows the remote repository of `data/` (address, branch) and lets you check and save a

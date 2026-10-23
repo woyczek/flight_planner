@@ -54,9 +54,12 @@ Repository, das nicht antwortet, wird nur gemeldet.
   gespeicherte Zugangsdaten für eine Adresse `https://…`.
 - **Mehrere Nutzer über git** brauchen dieses entfernte Repository: Ohne es führt das Kästchen „Mehrere Nutzer“ nirgends
   hin, und die Karte „Nutzungen“ erinnert daran.
-- **data/ ist kein Git-Repository** (Beispieldaten oder Archiv): Nichts verlässt diesen Rechner. Um eines daraus zu
-  machen, führen Sie den ersten Start der V2 mit der Adresse des Datenrepositorys erneut aus (er klont `data/`), oder
-  klonen Sie bei geschlossenem Starter das Datenrepository selbst nach `data/`.
+- **data/ fehlt oder ohne git**: Die Karte öffnet einen Weg. `data/` ist ein vom Code-Repository ignorierter Ordner;
+  er wird ein eigenes Git-Repository, verbunden mit dem Datenrepository (kein Submodul). Tippen Sie die Adresse des
+  Datenrepositorys und bei Bedarf einen Benutzernamen und ein Passwort oder Token (nie von der Seite gespeichert;
+  „Merken“ überlässt sie Git auf diesem Computer). Ohne `data/` klont „Daten holen“ es; bei einem `data/` ohne git
+  (Beispieldaten oder Archiv) verbindet „data/ in dieses Repository übernehmen“ es mit dem Repository. Die Karte verfolgt
+  die Arbeit und liest den Zustand am Ende neu; ein Fehlschlag wird erklärt, nichts geht verloren.
 
 ## Gut zu wissen
 
@@ -69,4 +72,4 @@ Repository, das nicht antwortet, wird nur gemeldet.
 - **Diagnose**: unten am Bildschirm eingeklappt; „Kopieren“ legt sie in die Zwischenablage, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 151f4632fce5 -->
+<!-- fr: 565166e31eca -->

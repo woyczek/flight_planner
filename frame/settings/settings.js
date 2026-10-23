@@ -193,11 +193,44 @@
       'Guardando y comprobando… Otro repositorio distinto del actual: confirme en la ventana que el lanzador abre en el equipo.'
     ],
     remoteChecking: ['Vérification…', 'Checking…', 'Prüfen…', 'Comprobando…'],
-    noGit: [
-      'data/ n’est pas un dépôt git (données d’exemple ou archive) : rien ne part ailleurs que ce poste. Pour échanger par git, voir « Un dépôt git pour data/ » dans l’aide.',
-      'data/ is not a git repository (example data or archive): nothing leaves this workstation. To exchange through git, see “A git repository for data/” in the help.',
-      'data/ ist kein Git-Repository (Beispieldaten oder Archiv): nichts verlässt diesen Rechner. Für den Austausch über git siehe „Ein Git-Repository für data/“ in der Hilfe.',
-      'data/ no es un repositorio git (datos de ejemplo o archivo): nada sale de este puesto. Para intercambiar por git, vea «Un repositorio git para data/» en la ayuda.'
+    gitWhy: [
+      'data/ est un dossier ignoré par le dépôt du code : il devient son propre dépôt git, relié au dépôt des données (pas un sous-module).',
+      'data/ is a folder ignored by the code repository: it becomes its own git repository, linked to the data repository (not a submodule).',
+      'data/ ist ein vom Code-Repository ignorierter Ordner: Er wird ein eigenes Git-Repository, verbunden mit dem Datenrepository (kein Submodul).',
+      'data/ es una carpeta ignorada por el repositorio del código: se convierte en su propio repositorio git, enlazado al repositorio de datos (no un submódulo).'
+    ],
+    stateAbsent: ['Pas encore de données sur ce poste (data/ absent).', 'No data on this workstation yet (data/ missing).',
+      'Noch keine Daten auf diesem Rechner (data/ fehlt).', 'Aún no hay datos en este puesto (data/ ausente).'
+    ],
+    statePlain: ['data/ est là, mais n’est pas un dépôt git (données d’exemple ou archive) : rien ne part ailleurs que ce poste.',
+      'data/ is here, but is not a git repository (example data or archive): nothing leaves this workstation.',
+      'data/ ist da, aber kein Git-Repository (Beispieldaten oder Archiv): nichts verlässt diesen Rechner.',
+      'data/ está aquí, pero no es un repositorio git (datos de ejemplo o archivo): nada sale de este puesto.'
+    ],
+    gitUser: ['Identifiant (facultatif)', 'Username (optional)', 'Benutzername (optional)', 'Usuario (opcional)'],
+    gitSecret: ['Mot de passe ou jeton (facultatif, jamais gardé par la page)', 'Password or token (optional, never kept by the page)',
+      'Passwort oder Token (optional, nie von der Seite gespeichert)', 'Contraseña o token (opcional, nunca guardado por la página)'
+    ],
+    gitRemember: ['Se souvenir de ces identifiants dans Git, sur cet ordinateur', 'Remember these credentials in Git, on this computer',
+      'Diese Zugangsdaten in Git auf diesem Computer merken', 'Recordar estas credenciales en Git, en este equipo'
+    ],
+    gitCredHint: ['Sans identifiant, ceux que Git connaît déjà sur cet ordinateur servent (clé SSH, identifiants enregistrés).',
+      'Without a username, those Git already knows on this computer are used (SSH key, stored credentials).',
+      'Ohne Benutzernamen werden die verwendet, die Git auf diesem Computer schon kennt (SSH-Schlüssel, gespeicherte Zugangsdaten).',
+      'Sin usuario, se usan las que Git ya conoce en este equipo (clave SSH, credenciales guardadas).'
+    ],
+    clone: ['Récupérer les données', 'Fetch the data', 'Daten holen', 'Recuperar los datos'],
+    adopt: ['Reprendre data/ dans ce dépôt', 'Take data/ into this repository', 'data/ in dieses Repository übernehmen',
+      'Retomar data/ en este repositorio'
+    ],
+    launcherOld: ['Le lanceur de ce poste ne connaît pas encore cette opération : relancez-le à jour (lancer.cmd), puis réessayez.',
+      'This workstation’s launcher does not know this operation yet: restart it up to date (lancer.cmd), then try again.',
+      'Der Starter dieses Rechners kennt diesen Vorgang noch nicht: aktualisiert neu starten (lancer.cmd), dann erneut versuchen.',
+      'El lanzador de este puesto aún no conoce esta operación: reinícielo actualizado (lancer.cmd) y vuelva a intentarlo.'
+    ],
+    gitWorking: ['En cours… (quelques secondes à quelques minutes ; rien ne bloque)',
+      'Working… (a few seconds to a few minutes; nothing blocks)',
+      'Läuft… (einige Sekunden bis einige Minuten; nichts blockiert)', 'En curso… (de unos segundos a unos minutos; nada bloquea)'
     ],
     noGitAnchor: ['un-dépôt-git-pour-data', 'a-git-repository-for-data', 'ein-git-repository-für-data', 'un-repositorio-git-para-data'],
     helpLink: ['Ouvrir l’aide', 'Open the help', 'Hilfe öffnen', 'Abrir la ayuda'],
@@ -407,7 +440,9 @@
       prefs = (await c.own.get('device/settings.json')) || {},
       v2 = !prefs.v2 ? v2Settings() : null,
       st = await FD.status(),
-      remote = L?.data ? await setup('sync-remote') : null; // dépôt distant de data/ (lanceur)
+      remote = L ? await setup('sync-remote') : null, // dépôt distant de data/ (lanceur)
+      // état de data/ : absent, plain (dossier sans git), repo ; champ state du lanceur, sinon déduit
+      gitState = !L ? '' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
     const how = !exchange ? t(T.alone) : L?.data ? t(T.viaLauncher, {
       g: t(!L.dataGit ? T.viaLauncherNoGit : remote && !remote.url ? T.viaLauncherNoRemote : T.viaLauncherGit)
@@ -438,9 +473,9 @@
       <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
     // carte Accès toujours : sur un lanceur, le dépôt distant de data/ ; sinon dépôt GitHub et jeton (sans échange coché :
     // lecture des bases seulement)
-    cards.push(L?.data ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${remote?.repo ? `<h3>${esc(t(T.remote))}</h3><p>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
+    cards.push(L ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? `<h3>${esc(t(T.remote))}</h3><p>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
         ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
-        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div>` : `<p class="f-warn">${esc(t(T.noGit))}</p><p><a href="#help?a=${encodeURIComponent(t(T.noGitAnchor))}">${esc(t(T.helpLink))}</a></p>`}</div>` :
+        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div>` : gitDoor(gitState, t, fld, remote)}</div>` :
       `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
         ${fld('repo', T.repo, gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
         <p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
@@ -710,6 +745,29 @@
         }
         return;
       }
+      if (act === 'gitClone' || act === 'gitAdopt') {
+        const r0 = card('access'),
+          body = {
+            url: val('gitUrl', r0),
+            user: val('gitUser', r0),
+            secret: r0.querySelector('[data-f="gitSecret"]')?.value || '',
+            remember: !!r0.querySelector('[data-f="gitRemember"]')?.checked
+          };
+        // le secret n'est gardé nulle part dans la page : champ vidé avant l'appel
+        const sec = r0.querySelector('[data-f="gitSecret"]');
+        if (sec) sec.value = '';
+        r0.querySelectorAll('button').forEach(x => x.disabled = true);
+        say('access', t(T.gitWorking), 'warn');
+        const r = await setup(act === 'gitClone' ? 'clone' : 'adopt', body);
+        r0.querySelectorAll('button').forEach(x => x.disabled = false);
+        say('access', r?.message || t(T.launcherOld), r?.ok ? 'ok' : 'err');
+        if (r?.ok) {
+          await c.redetect?.();
+          c.notify(r.message || t(T.saved), 'ok');
+          return again();
+        }
+        return;
+      }
       if (act === 'keyTest') {
         const r = await setup('secrets/test?service=ivao');
         return say('keys', r?.ok ? t(T.keyOk) : t(T.keyBad, {
@@ -751,6 +809,15 @@
     });
   }
 
+  /** Porte de la carte Accès quand data/ n'est pas un dépôt git (lanceur) : absent → récupérer les données (clone) ;
+   *  plain → reprendre data/ dans un dépôt (adopt) ; identifiant et secret facultatifs, jamais gardés par la page. */
+  function gitDoor(state, t, fld, remote) {
+    return `<p class="f-warn">${esc(t(state === 'absent' ? T.stateAbsent : T.statePlain))}</p><p class="f-muted">${esc(t(T.gitWhy))}</p>
+      ${fld('gitUrl', T.remoteUrl, remote?.default || '')}${fld('gitUser', T.gitUser, '')}${fld('gitSecret', T.gitSecret, '', { type: 'password' })}
+      <label class="f-check"><input type="checkbox" data-f="gitRemember">${esc(t(T.gitRemember))}</label><p class="f-muted">${esc(t(T.gitCredHint))}</p><p class="f-msg" data-msg></p>
+      <div class="f-row"><button type="button" class="primary" data-act="${state === 'absent' ? 'gitClone' : 'gitAdopt'}">${esc(t(state === 'absent' ? T.clone : T.adopt))}</button></div>
+      <p><a href="#help?a=${encodeURIComponent(t(T.noGitAnchor))}">${esc(t(T.helpLink))}</a></p>`;
+  }
   /** Appel d'une route du lanceur (/__setup/<route>) ; GET sans corps, POST avec ; null en cas d'échec. */
   async function setup(route, body) {
     try {

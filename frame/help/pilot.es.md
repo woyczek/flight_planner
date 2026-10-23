@@ -394,9 +394,12 @@ se señala.
   guardadas en Git para una dirección `https://…`.
 - **Varios usuarios por git** necesitan este repositorio remoto: sin él, la casilla «Varios usuarios» no lleva a
   ninguna parte, y la tarjeta «Usos» lo recuerda.
-- **data/ no es un repositorio git** (datos de ejemplo o archivo): nada sale de este puesto. Para convertirlo en uno,
-  vuelva a hacer el primer inicio de la V2 con la dirección del repositorio de datos (clona `data/`), o, con el
-  lanzador cerrado, clone usted mismo el repositorio de datos en `data/`.
+- **data/ ausente o sin git**: la tarjeta abre una vía. `data/` es una carpeta ignorada por el repositorio del código;
+  se convierte en su propio repositorio git, enlazado al repositorio de datos (no un submódulo). Escriba la dirección
+  del repositorio de datos y, si hace falta, un usuario y una contraseña o token (nunca guardados por la página;
+  «Recordar» los confía a Git en este equipo). Sin `data/`, «Recuperar los datos» lo clona; con un `data/` sin git
+  (datos de ejemplo o archivo), «Retomar data/ en este repositorio» lo enlaza al repositorio. La tarjeta sigue el trabajo
+  y vuelve a leer el estado al final; un fallo se explica, nada se pierde.
 
 ## Conviene saber
 
@@ -409,4 +412,4 @@ se señala.
 - **Diagnóstico**: plegado abajo en la pantalla; «Copiar» lo pone en el portapapeles para señalar un problema. El token
   nunca figura en él.
 
-<!-- fr: 151f4632fce5 -->
+<!-- fr: 565166e31eca -->

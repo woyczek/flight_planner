@@ -57,8 +57,15 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    address field (current address, else the configuration's default), "Check" (`POST { url }`: does it answer) and
    "Save" (`POST { url, save: true }`; another repository than the current one is confirmed in a window the launcher
    opens on the computer, as in V2's first start). Never blocking: the check's report stays in the card after a save.
-   When `data/` is not a git repository: one sentence (nothing leaves this workstation) and a link to the help section
-   "A git repository for data/". On the Usages card, "Several users" ticked with no remote shows a warning pointing to
+   When `data/` is not a git repository, a door rather than a warning (state from the launcher's `state`, `absent` |
+   `plain` | `repo`, else deduced): one sentence saying that `data/` is a folder ignored by the code repository that
+   becomes its own git repository (not a submodule); the address (the configuration's default), an optional username
+   and password or token (never kept by the page: the secret field is emptied before the call), "Remember these
+   credentials in Git, on this computer"; then **"Fetch the data"** (`data/` absent: `POST /__setup/clone { url, user,
+   secret, remember }`) or **"Take data/ into this repository"** (`data/` without git: `POST /__setup/adopt`, same
+   body). Progress and report in the card, buttons disabled meanwhile, never blocking; on success the frame detects the
+   launcher again and plugs the transport, and the card is drawn again from the new state. A launcher that does not
+   know the route is told to restart up to date. A link to the help section "A git repository for data/" stays. On the Usages card, "Several users" ticked with no remote shows a warning pointing to
    this card, and the state sentence says "a git repository with no remote: nothing goes elsewhere". Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
    the data repository, nothing is sent (the frame's local transport with the GitHub repository as reference source). Otherwise repository, branch and
    token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint: a

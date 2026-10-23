@@ -387,9 +387,12 @@ seulement signalé.
   pour une adresse `https://…`.
 - **À plusieurs par git**, ce dépôt distant est nécessaire : sans lui, la case « À plusieurs » ne mène nulle part, et
   la carte « Usages » le rappelle.
-- **data/ n'est pas un dépôt git** (données d'exemple ou archive) : rien ne part ailleurs que ce poste. Pour en faire
-  un, refaites le premier lancement de la V2 avec l'adresse du dépôt des données (il clone `data/`), ou, lanceur
-  fermé, clonez vous-même le dépôt des données dans `data/`.
+- **data/ absent ou sans git** : la carte ouvre une porte. `data/` est un dossier ignoré par le dépôt du code ; il
+  devient son propre dépôt git, relié au dépôt des données (pas un sous-module). Tapez l'adresse du dépôt des données,
+  et au besoin un identifiant et un mot de passe ou jeton (jamais gardés par la page ; « Se souvenir » les confie à Git
+  sur cet ordinateur). Sans `data/`, « Récupérer les données » le clone ; avec un `data/` sans git (données d'exemple
+  ou archive), « Reprendre data/ dans ce dépôt » le relie au dépôt. La carte suit le travail et relit l'état à la fin ;
+  un échec est expliqué, rien n'est perdu.
 
 ## Bon à savoir
 

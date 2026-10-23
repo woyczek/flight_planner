@@ -607,6 +607,11 @@
         level: moduleLevel[m.id] ?? 1
       }))),
       cutAccess,
+      // après un clone ou une reprise de data/ par le lanceur : relevé de nouveau, transport rebranché
+      redetect: async () => {
+        launcherHere = await FD.launcher.detect();
+        await loadDevice();
+      },
       helpPanel: () => window.SogHelp ? SogHelp.panel('settings', helpCtx()) : Promise.resolve(null)
     });
   }

@@ -52,9 +52,12 @@ only reported.
   an `https://…` address.
 - **Several users through git** need this remote repository: without it, the “Several users” box leads nowhere, and
   the “Usages” card says so.
-- **data/ is not a git repository** (example data or archive): nothing leaves this workstation. To make it one, run
-  V2's first start again with the address of the data repository (it clones `data/`), or, with the launcher closed,
-  clone the data repository into `data/` yourself.
+- **data/ missing or without git**: the card opens a door. `data/` is a folder ignored by the code repository; it
+  becomes its own git repository, linked to the data repository (not a submodule). Type the address of the data
+  repository, and if needed a username and a password or token (never kept by the page; “Remember” hands them to Git on
+  this computer). Without `data/`, “Fetch the data” clones it; with a `data/` without git (example data or archive),
+  “Take data/ into this repository” links it to the repository. The card follows the work and reads the state again at
+  the end; a failure is explained, nothing is lost.
 
 ## Good to know
 
@@ -67,4 +70,4 @@ only reported.
 - **Diagnostics**: folded at the bottom of the screen; “Copy” puts it on the clipboard to report a problem. The token is
   never in it.
 
-<!-- fr: 151f4632fce5 -->
+<!-- fr: 565166e31eca -->

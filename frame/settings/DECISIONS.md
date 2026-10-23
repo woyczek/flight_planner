@@ -88,7 +88,21 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - tests on isolated copies of the test data whose remote was first pointed to `https://example.invalid/…` (the copy
     still pointed to the real data repository): current address, check ("unreachable host"), save of the same address
     (no window), no remote, no git. Saving another address was not tried here: it opens a confirmation window on the
-    user's computer. (fake GitHub serving the repository, 375 px, French): export (dump format, counts),
+    user's computer.
+- **23 Oct 2026 — Tests of lot 4** (fake GitHub serving the repository, 375 px, French): export (dump format, counts),
   merge keeping this device's newer record, replace bringing the backup's record back, both questions; "Cut access"
   (GitHub → local, setting erased, "no way to exchange" sentence); `cached` / `evict` present on the adapter; real
   aerodb state for the aircraft base; no JavaScript error. Zones with a real published base: aerodb's bench.
+- **23 Oct 2026 — A door for data/ without git** (the user: "data/ cannot simply become a git repository"):
+  - on a launcher, the Access card now offers "Fetch the data" (`/__setup/clone`, the V2 first start's route) when
+    `data/` is missing, and "Take data/ into this repository" (`/__setup/adopt`, added to the launcher on develop by BUGS
+    SOG) when `data/` has no git; the launcher's `state` field is used when present, else deduced from `/__setup/status`
+    and `sync-remote`;
+  - the frame's launcher detection treated a launcher without `data/` as no launcher: settings now keys the card on the
+    launcher itself, and `redetect()` (settings context) detects it again after a clone or an adoption;
+  - username and secret are optional (Git's own credentials otherwise) and the secret field is emptied before the
+    call; "remember" is the launcher's (`git credential approve`);
+  - tested: absent `data/` (door shown; clone towards an unresolvable address reported; clone of a local test
+    repository served over dumb HTTP succeeded, launcher detected again, card redrawn with its remote and branch),
+    `data/` without git (door shown; the launcher of this worktree has no `adopt` yet: "restart it up to date"); 375 px.
+    To check when the route is there: the adoption itself.
