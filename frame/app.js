@@ -191,7 +191,7 @@
   // sites relayés par le lanceur (clés et CORS de son côté : tools/launch.py, POST /__setup/net) ; sans lanceur, appel
   // direct seulement vers ceux qui l'autorisent (CORS) ; tout autre site extérieur : 503 marqué x-sog-unreachable
   const RELAY = ['www.simbrief.com', 'api.ivao.aero', 'api.vatsim.net', 'data.vatsim.net', 'my.vatsim.net', 'aviationweather.gov'],
-    DIRECT = ['www.simbrief.com', 'api.ivao.aero', 'aviationweather.gov'];
+    DIRECT = ['www.simbrief.com', 'api.ivao.aero']; // aviationweather.gov n'envoie pas d'en-tête CORS : relais seulement
   let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
   /** Hôte du site de la compagnie (ctx.airline.site, en https) : relayé ou appelé en lecture seule (GET) ; '' sinon. */
   const siteHost = () => {
@@ -663,6 +663,23 @@
         await loadDevice();
       },
       helpPanel: () => window.SogHelp ? SogHelp.panel('settings', helpCtx()) : Promise.resolve(null),
+      // carte Diagnostic : état de la couche de données et de la base aéronautique, à copier pour un rapport
+      async diagnostic() {
+        const d = await FD.diagnostic(),
+          a = await aerodb?.status?.().catch(e => ({
+            error: e?.message || String(e)
+          }));
+        return {
+          ...d,
+          aerodb: a ? {
+            source: a.source,
+            zones: Object.keys(a.published || {}),
+            loaded: Object.keys(a.loaded || {}),
+            missing: a.missing,
+            error: a.error
+          } : null
+        };
+      },
       // carte Design : jeux proposés, choix actuel, enregistrement (device/design.json, appliqué aussitôt)
       designs: () => DESIGNS,
       design: () => ({
@@ -844,7 +861,10 @@
     net,
     syncNow,
     airline: () => airline,
-    cutAccess
+    cutAccess,
+    get aerodb() {
+      return aerodb;
+    }
   };
   boot();
 })();

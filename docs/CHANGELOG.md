@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame: the aeronautical base appears on the phone in GitHub mode** (`frame/store/frame_data.js`, `frame/app.js`) —
+  zones and aircraft pushed to the data repository after the app was opened are signalled at the next
+  synchronisation, with no reload, and a read made before the first synchronisation looks at the repository's tree of
+  the moment. The data layer gives a diagnostic (tree, references, last failed read, what aerodb sees) for the Settings
+  screen. METAR / TAF only through the launcher (aviationweather.gov allows no direct call from a page).
 - **fuel: aerodrome weather** (`modules/fuel/weather.js`, `module.js`; `SPEC.md` § 10, `INTEGRATION.md`, `help/fr.md`)
   — METAR / TAF of the departure, an intermediate aerodrome and the arrival (aviationweather.gov through the launcher):
   flight category in colour, wind and runway components, ceiling, visibility, temperature and QNH, CB / TCU warning,

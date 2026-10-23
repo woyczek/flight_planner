@@ -96,7 +96,9 @@ export function unmount() { /* stop watchers, timers */ }
   - offline, it answers at once with a 503 carrying `x-sog-offline`;
   - with a launcher, SimBrief, IVAO, VATSIM and aviationweather.gov (METAR) are relayed by it, keys and CORS
     included, with the same signature;
-  - without one, SimBrief, IVAO and aviationweather.gov are called directly;
+  - without one, SimBrief and IVAO are called directly; aviationweather.gov (METAR / TAF) sends no CORS header, so it
+    answers a 503 marked `x-sog-unreachable` at once (the weather without a launcher will come through the web
+    service);
   - the airline's website (`ctx.airline.site`, https) is read the same way, GET only: never send anything to it
     (any other method gets a 503); without a launcher, a direct read works only if the site allows it (CORS);
   - any other outside site gets a 503 carrying `x-sog-unreachable`.

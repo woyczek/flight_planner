@@ -227,6 +227,35 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     here too, same value untouched, two losers in conflicts, the repository's file pulled, nothing taken up at the
     second pass.
   - The launcher (8794) with no usage ticked: transport `launcher`, a module's write committed into `data/`.
+- **23 Oct 2026 — Bug: no aeronautical base on the phone in GitHub mode** (user, with `sia/base/` and `AircraftDB/` in
+  the data repository; fine with the launcher).
+  - Reproduced with `fake_github.py` filled with the real data tree (513 tracked files, images left out): a first visit
+    without `sia/base/`, then a push of `sia/base/` and `AircraftDB/` on the repository side, then a pass. aerodb kept
+    0 zones while the data layer listed the 123 `sia/base/` paths. A new page saw the 10 zones.
+  - **Cause**: aerodb lists the published zones once, from the kept tree. The pass that brings the new tree skipped
+    references never read without signalling them, so aerodb never listed again. On a phone the app is resumed, not
+    reloaded, so it stayed without zones. Also, a reference read before the first pass of the page looked only at the
+    kept tree, possibly from an older session, and answered "absent".
+  - **Fix**:
+    - the pull signals a reference that appears or changes, without reading it;
+    - a read that misses, and `list`, use the live tree until a pass has checked the kept one (in memory: the pull's
+      own tree is not touched, so it still sees every change).
+    - Both scenarios now pass: the app open during the push (zones as soon as the pass ends, no reload), and the app
+      reopened after the push (zones within 1 s, before the first pass).
+  - **Diagnostic**: `FrameData.diagnostic()`, and `ctx.diagnostic()` for the settings screen, which adds what aerodb
+    sees (source, zones, loaded, missing), so the user can copy it from the phone.
+  - Left to aerodb (sent to its session):
+    - on `AircraftDB/`, a path that arrives without having been read should reset the aircraft list too (today only
+      a changed revision of a file already read does);
+    - on `sia/base/`, a listing that found nothing (`zones: null`) should be redone on arrival.
+  - Test artefacts noted: `FrameData.reset()` empties the declarations, and a change of the address anchor does not
+    reload a page; a scenario that needs a fresh page opens a new tab.
+- **23 Oct 2026 — METAR / TAF only through the launcher**: aviationweather.gov sends no CORS header (checked by fuel with
+  curl), so the direct call from a page always failed. It is removed from the direct list and fails fast with the 503
+  `x-sog-unreachable`. This corrects the lot 6 entry that said it allowed CORS. The weather without a launcher (a
+  phone in GitHub mode) waits for the PHP web service as a relay.
+- **23 Oct 2026 — Tests of the fix**: `frame/store/test/` 89 checks (a reference pushed later is signalled, listed,
+  counted by the diagnostic, read on demand); the real-tree scenario, twice; the application scenario.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

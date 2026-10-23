@@ -73,6 +73,19 @@ exchange happens in batches, explicitly or periodically, through a transport the
   - kept while their revision does not change;
   - fetched again during a pass when the tree shows a new revision;
   - never queued.
+  - **Arrival signalled**: a reference that appears or changes in the repository and was never read is not fetched
+    by the pass, but its path is signalled to the watchers. So a service that lists them (aerodb's published zones)
+    lists again without a reload.
+  - **Live tree before the first pass**: until a pass has compared the kept tree with the repository's head in this
+    page, the kept tree may come from a previous session (an app resumed on a phone).
+    - A read that does not find its file there, and `list`, use the tree of the moment (head read again, tree read if
+      it moved), kept in memory only.
+    - The kept tree stays the one of the last pull, which thus still knows what changed.
+- **Diagnostic** (`FrameData.diagnostic()`, no network), for a report copied from Settings:
+  - the state (transport, last success, last error, pending, conflicts);
+  - the kept tree (head, date, number of files, compared or not in this page);
+  - the reference paths known in the tree (all, `sia/base/`, `AircraftDB/`) and those cached;
+  - the last read that failed.
 - A module declares the prefixes it writes. Several modules may declare the same prefix: the prefix is **shared** and
   each of them writes there (for example `pilot/<trigram>/current_flight.json`, written by fuel, read and written by
   maps). The merge rule of a shared prefix is the one of the first module that declares it, so the modules sharing a
@@ -248,7 +261,7 @@ used alone:
 | `t(row, vars)`, `lang()` | texts as `[fr, en, de, es]` rows, `{name}` filled in, French typography; the language of the application |
 | `notify(text, kind)` | floating notification (`info`, `ok`, `warn`, `err`), closed by itself or by its ✕ |
 | `ask(text)`, `askText(text, { value })` | the frame's own question windows (never a native dialog); promise of true / false, of the text or null |
-| `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM, aviationweather.gov (METAR): relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO, aviationweather.gov); the airline's website (`airline.site`, https): the same, GET only (any other method: 503); any other site: 503 marked `x-sog-unreachable` |
+| `net.fetch(url, init)`, `net.online()` | outgoing calls through the frame, never an exception: offline or on a network failure, an immediate 503 marked `x-sog-offline`; same origin: direct; SimBrief, IVAO, VATSIM, aviationweather.gov (METAR / TAF): relayed by the launcher when the page is served by one (`POST /__setup/net`), otherwise direct for the sites that allow it (SimBrief, IVAO; aviationweather.gov sends no CORS header, so without a launcher it gets the 503); the airline's website (`airline.site`, https): the same, GET only (any other method: 503); any other site: 503 marked `x-sog-unreachable` |
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (`reference` file, text fields only), an empty object when there is none; no address is written in the code |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |

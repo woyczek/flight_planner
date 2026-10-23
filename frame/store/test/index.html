@@ -678,6 +678,37 @@
       }
       check('a file that is not an export is refused', refused, null);
     },
+    async 'a reference pushed later is signalled at the pull, listed and counted by the diagnostic'() {
+      const ref = 'sia/base/fr/2026-10-01.json',
+        d = await fresh({
+          'disponibilites/ABC/2026-W43.json': JSON.stringify(rec('ABC', '2026-10-01T00:00:00Z'))
+        });
+      await d.sync();
+      check('before: no reference in the tree', ((await d.list('sia/base/')) || []).length === 0, await d.list('sia/base/'));
+      await T('write', {
+        files: {
+          [ref]: JSON.stringify({
+            zone: 'fr'
+          })
+        }
+      });
+      const seen = [];
+      d.watch('sia/base/', p => seen.push(...p));
+      const r = await d.sync();
+      check('the pull signals the new reference without reading it', r.ok && r.pulled.includes(ref) && seen.includes(ref) && !(await d
+        .cached('sia/base/')).length, {
+        r,
+        seen
+      });
+      check('listed', (await d.list('sia/base/'))?.includes(ref), await d.list('sia/base/'));
+      const g = await FD.diagnostic();
+      check('diagnostic: tree, references known, none cached yet', g.tree?.files >= 2 && g.tree.checked && g.references.sia === 1 && g
+        .references.cached === 0 && g.lastReadError === null, g);
+      check('read on demand', (await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      }))?.value?.zone === 'fr' && (await FD.diagnostic()).references.cached === 1, null);
+    },
     async 'git blob sha matches the repository'() {
       const d = await fresh({
         'disponibilites/A/x.json': 'héllo\n'

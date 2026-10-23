@@ -399,7 +399,7 @@
     const remote = await getMeta('remote'),
       pend = await idb('pending', 'getAll');
     let paths;
-    if (remote?.tree && cfg.transport?.kind !== 'local') paths = Object.keys(remote.tree);
+    if (remote?.tree && cfg.transport?.kind !== 'local') paths = Object.keys((await liveTree(cfg.transport, remote)) || remote.tree);
     else if (cfg.transport?.kind === 'local') {
       paths = (await idb('docs', 'getAll')).map(d => d.path);
       // références de la source en lecture seule (arbre gardé ; lu une fois s'il ne l'a jamais été)
@@ -457,7 +457,30 @@
 
   // ---------------------------------------------------------------- lecture d'un fichier absent du cache
   const fetching = new Map();
+  // arbre du dépôt comparé à sa tête dans cette page (un passage a tiré, ou l'arbre vient d'être lu) : avant, l'arbre
+  // gardé peut dater d'une session précédente (appli reprise sur le téléphone) et ignorer un fichier poussé depuis.
+  // peek : arbre du moment lu pour une lecture ou une liste faites avant le premier passage (en mémoire seulement :
+  // l'arbre gardé reste celui du dernier tirage, qui sait ainsi ce qui a changé depuis)
+  let treeChecked = false,
+    peek = null;
+  /** Arbre à jour pour une lecture : celui du dernier tirage s'il a été comparé à la tête dans cette page, sinon celui
+   *  du moment (tête relue, arbre lu si elle a bougé) ; hors ligne ou en échec : l'arbre gardé. */
+  async function liveTree(T, remote) {
+    if (treeChecked || navigator.onLine === false) return remote?.tree || null;
+    if (peek) return peek.tree;
+    try {
+      const head = await T.head();
+      peek = {
+        head,
+        tree: head === remote?.head && remote?.tree ? remote.tree : await T.tree(head)
+      };
+      return peek.tree;
+    } catch {
+      return remote?.tree || null;
+    }
+  }
   /** Lit un fichier absent du cache par le transport (arbre lu d'abord s'il n'est pas connu) ; enveloppe ou null. */
+  let lastReadError = null; // { path, message, at } : dernière lecture d'un fichier en échec (diagnostic)
   function fetchOne(path, policy) {
     if (fetching.has(path)) return fetching.get(path);
     const job = (async () => {
@@ -477,8 +500,11 @@
             at: Date.now()
           };
           await setMeta('remote', remote);
+          treeChecked = true;
         }
         tree = remote.tree;
+        // fichier absent d'un arbre pas encore revérifié : arbre du moment (tête relue), sans attendre un passage
+        if (!tree[path]) tree = (await liveTree(T, remote)) || tree;
       }
       const rev = tree[path];
       if (!rev) return null;
@@ -501,7 +527,14 @@
         pending: false,
         at: Date.now()
       };
-    })().finally(() => fetching.delete(path));
+    })().catch(e => {
+      lastReadError = {
+        path,
+        message: e?.offline ? 'offline' : e?.message || String(e),
+        at: new Date().toISOString()
+      };
+      throw e;
+    }).finally(() => fetching.delete(path));
     fetching.set(path, job);
     return job;
   }
@@ -719,14 +752,24 @@
         paths: [],
         conflicts: 0
       };
-    if (remote?.head === head && remote.tree) return out;
+    if (remote?.head === head && remote.tree) {
+      treeChecked = true;
+      peek = null;
+      return out;
+    }
     const tree = await T.tree(head),
       old = remote?.tree || {};
     for (const [path, rev] of Object.entries(tree)) {
       if (old[path] === rev && remote?.head) continue;
       const pol = policyOf(path),
         doc = await idb('docs', 'get', path);
-      if (!pol || (pol === 'reference' && !doc) || doc?.rev === rev) continue;
+      if (!pol || doc?.rev === rev) continue;
+      // référence jamais lue, apparue ou changée dans le dépôt : pas lue maintenant (à la demande), mais signalée, pour
+      // qu'un service qui en dresse la liste (aerodb : zones publiées) la relise
+      if (pol === 'reference' && !doc) {
+        out.paths.push(path);
+        continue;
+      }
       const text = await T.read(path, rev),
         pend = await idb('pending', 'get', path);
       if (pend && pend.text !== null) {
@@ -764,6 +807,8 @@
       tree,
       at: Date.now()
     });
+    treeChecked = true;
+    peek = null;
     return out;
   }
   /** Écritures envoyées : la copie du cache devient la version écrite (révision : empreinte git), la file se vide
@@ -845,6 +890,35 @@
     window.addEventListener('pageshow', e => {
       if (e.persisted) wake();
     });
+  }
+
+  // ---------------------------------------------------------------- diagnostic (Réglages › Diagnostic, à copier)
+  /** État de la couche pour un rapport : transport, état, arbre du dépôt gardé (tête, date, nombre de fichiers, comparé
+   *  ou non à la tête dans cette page), chemins « reference » connus de l'arbre et gardés dans le cache, dernière
+   *  lecture en échec. Sans réseau. */
+  async function diagnostic() {
+    const s = await status(),
+      remote = await getMeta('remote'),
+      tree = cfg.transport?.kind === 'local' ? (await getMeta('refs'))?.tree : remote?.tree,
+      paths = Object.keys(tree || {}),
+      refs = paths.filter(p => policyOf(p) === 'reference'),
+      docs = await idb('docs', 'getAll');
+    return {
+      ...s,
+      tree: tree ? {
+        head: String((cfg.transport?.kind === 'local' ? (await getMeta('refs'))?.head : remote?.head) || '').slice(0, 12),
+        at: new Date((cfg.transport?.kind === 'local' ? (await getMeta('refs'))?.at : remote?.at) || 0).toISOString(),
+        files: paths.length,
+        checked: treeChecked
+      } : null,
+      references: {
+        known: refs.length,
+        sia: refs.filter(p => p.startsWith('sia/base/')).length,
+        aircraft: refs.filter(p => p.startsWith('AircraftDB/')).length,
+        cached: docs.filter(d => d.policy === 'reference').length
+      },
+      lastReadError
+    };
   }
 
   // ---------------------------------------------------------------- conflits gardés
@@ -1089,6 +1163,7 @@
     conflicts,
     conflictSeen,
     restore,
+    diagnostic,
     cached,
     evict,
     dump,
