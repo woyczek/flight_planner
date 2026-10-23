@@ -40,7 +40,8 @@ sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
 **Les couches.** Le bouton aux calques, sous le réglage de la carte, ouvre la liste de ce qu'elle dessine : familles
 d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report
-VFR, obstacles, altitudes minimales, villes, canevas, dégagement. Cochez ou décochez : la carte suit, et votre choix
+VFR, obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces,
+noms des voies. Cochez ou décochez : la carte suit, et votre choix
 est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. « Autour de la route
 seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ; décochée, toute la
 carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon. Tout en bas, le curseur « Complexité (essai) » montre moins de détails vers la

@@ -38,7 +38,8 @@ ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
 **Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families (TMA /
 CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
-altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept for this setting on
+altitudes, towns, graticule, alternate, airspace names, airway
+names. Tick or untick: the map follows, and your choice is kept for this setting on
 this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by default in IFR, keeps
 airspaces and airways near the route; unticked, the whole visible map is drawn, to look elsewhere. Close up, everything
 is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left, more to the right, at

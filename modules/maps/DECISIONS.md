@@ -418,3 +418,20 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     only, no names, airways nor MORA; profile 35 airspaces crossed, 8 in "+8", no overlap. 1280 px: zoom 5.58, all
     families, 6 in "+6". 375 px: "+11". Edit mode: simple tap → 4 points, unchanged; "+" then tap → 5, "+" released;
     500 ms press → 6; two Undo → 4. No JavaScript error.
+- **23 Oct 2026 — tuning page boxes, two resets, map size, Layers panel.**
+  - **A box per line is the Layers panel's layer, not a new state**: the user asked that ticking here and in the panel
+    be the same; a family of airspaces has one layer, so its lines move together (the tooltip names the panel's box).
+    Airspace and airway names had no layer: two were added (`zoneLabels`, `awLabels`), in the panel too, and the
+    render's `atZoom` now respects `awLabels: false`. The boxes are kept at once on the device, like the panel; the
+    sliders still wait for "Keep" or "Save".
+  - **"Reset the boxes" goes back to the built-in values**, as "Reset the sliders" does (not to the airline's), so
+    both buttons mean "starting values of the mode"; the airline's values come back by reloading its profile.
+  - **The tuning page is set up after the libraries**: its boxes read the profile's layers (`MapsRender`).
+  - **Map size**: reproduced a canvas of 1141 × 518 in an 843 × 416 frame after a frozen page was resized (bench:
+    `Page.setWebLifecycleState`); the observer's notifications of that time are lost. `mapSize()` (compare, then
+    `resize` only when different) runs on the observer, `load`, `style.load`, the page's return and every redraw;
+    forced mismatch (canvas styled 400 × 150): corrected by the next redraw and by `visibilitychange`. Dual view, pane
+    closed, Topo, tuning page opened and closed, window 1000 × 700 and 1400 × 1000: canvas = frame each time.
+  - **Layers panel**: the column's items shrank to fit its maximum height, so the "Reset all" button rode over the
+    Complexity slider; items no longer shrink (`flex-shrink: 0`), the panel scrolls, the button has its own row (29 px
+    under the slider at 1280 px).

@@ -251,7 +251,9 @@ const TX = {
     ],
     nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT'],
     wind: ['Vents en altitude', 'Winds aloft', 'Höhenwinde', 'Vientos en altura'],
-    contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel']
+    contours: ['Courbes de niveau', 'Contour lines', 'Höhenlinien', 'Curvas de nivel'],
+    zoneLabels: ['Noms des espaces', 'Airspace names', 'Namen der Lufträume', 'Nombres de los espacios'],
+    awLabels: ['Noms des voies', 'Airway names', 'Namen der Flugwege', 'Nombres de las aerovías']
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
   detail: ['Complexité (essai)', 'Complexity (trial)', 'Komplexität (Test)', 'Complejidad (prueba)'],
@@ -295,10 +297,10 @@ const TX = {
     'Ajuste del mapa: umbrales de zoom'
   ],
   tuneHint: [
-    'Chaque élément est dessiné entre ses deux seuils de zoom, réglés par mode ; la carte suit en direct. Le trait marque le zoom courant.',
-    'Each element is drawn between its two zoom thresholds, set per mode; the map follows live. The mark shows the current zoom.',
-    'Jedes Element wird zwischen seinen zwei Zoomschwellen gezeichnet, je Modus eingestellt; die Karte folgt sofort. Die Marke zeigt den aktuellen Zoom.',
-    'Cada elemento se dibuja entre sus dos umbrales de zoom, ajustados por modo; el mapa sigue en directo. La marca indica el zoom actual.'
+    'Chaque élément est dessiné entre ses deux seuils de zoom, réglés par mode ; la carte suit en direct. Le trait marque le zoom courant. Case décochée : jamais dessiné, quels que soient les seuils (la même case que dans le panneau Couches, gardée aussitôt sur cet appareil).',
+    'Each element is drawn between its two zoom thresholds, set per mode; the map follows live. The mark shows the current zoom. An unticked box: never drawn, whatever the thresholds (the same box as in the Layers panel, kept at once on this device).',
+    'Jedes Element wird zwischen seinen zwei Zoomschwellen gezeichnet, je Modus eingestellt; die Karte folgt sofort. Die Marke zeigt den aktuellen Zoom. Kästchen nicht angekreuzt: nie gezeichnet, unabhängig von den Schwellen (dasselbe Kästchen wie im Bereich Ebenen, sofort auf diesem Gerät behalten).',
+    'Cada elemento se dibuja entre sus dos umbrales de zoom, ajustados por modo; el mapa sigue en directo. La marca indica el zoom actual. Casilla sin marcar: nunca se dibuja, sean cuales sean los umbrales (la misma casilla que en el panel Capas, guardada enseguida en este dispositivo).'
   ],
   tuneNow: ['Zoom courant : {z} · {s} NM par cm d\'écran', 'Current zoom: {z} · {s} NM per cm of screen',
     'Aktueller Zoom: {z} · {s} NM pro cm Bildschirm', 'Zoom actual: {z} · {s} NM por cm de pantalla'
@@ -311,6 +313,11 @@ const TX = {
   tuneSaveCo: ['Enregistrer pour la compagnie', 'Save for the airline', 'Für die Fluggesellschaft speichern',
     'Guardar para la aerolínea'
   ],
+  tuneVis: ['{e} : dessiné (case « {l} » du panneau Couches)', '{e}: drawn ({l} box of the Layers panel)',
+    '{e}: gezeichnet (Kästchen „{l}“ im Bereich Ebenen)', '{e}: dibujado (casilla «{l}» del panel Capas)'
+  ],
+  tuneResetVis: ['Remettre les cases', 'Reset the boxes', 'Kästchen zurücksetzen', 'Restablecer las casillas'],
+  tuneResetZoom: ['Remettre les curseurs', 'Reset the sliders', 'Regler zurücksetzen', 'Restablecer los cursores'],
   tuneSaveDev: ['Garder sur cet appareil', 'Keep on this device', 'Auf diesem Gerät behalten', 'Guardar en este dispositivo'],
   tuneSavedCo: ['Seuils du mode {m} enregistrés pour la compagnie.', 'Thresholds of the {m} mode saved for the airline.',
     'Schwellen des Modus {m} für die Fluggesellschaft gespeichert.', 'Umbrales del modo {m} guardados para la aerolínea.'
@@ -590,9 +597,22 @@ function view(W, H) {
   }
   return MapsRender.mercator(S.fit, W, H, 12);
 }
+/** Fond MapLibre ramené à la taille du cadre s'il ne l'a plus (map.resize seulement dans ce cas). Appelé par
+ *  l'observateur de taille, au chargement et au changement de style, au retour de la page (onglet caché, page gelée :
+ *  les observations de taille faites pendant ce temps sont perdues) et à chaque dessin, pour qu'aucun cas oublié ne
+ *  laisse une bande de fond. */
+function mapSize() {
+  const m = S?.map || S?.mapNew;
+  if (!m) return;
+  const c = m.getCanvas(),
+    w = S.mapEl.clientWidth,
+    h = S.mapEl.clientHeight;
+  if (w && h && (c.clientWidth !== w || c.clientHeight !== h)) m.resize();
+}
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
+  mapSize();
   const {
     W,
     H,
@@ -1001,6 +1021,7 @@ async function startTiles() {
       if (done) return;
       done = true;
       clearTimeout(timer);
+      if (S?.mapNew === map) S.mapNew = null;
       if (!v && map) try {
         map.remove();
       } catch {
@@ -1010,7 +1031,7 @@ async function startTiles() {
     };
     const timer = setTimeout(() => finish(false), TILE_WAIT);
     try {
-      map = new ml.Map({
+      map = S.mapNew = new ml.Map({
         container: S.mapEl,
         style: styleFor(),
         bounds: [
@@ -1038,12 +1059,17 @@ async function startTiles() {
       } catch {
         /* version sans projection réglable : Mercator */
       }
-      if (S?.map === map) relief();
+      if (S?.map === map) {
+        mapSize();
+        relief();
+      }
     });
     map.on('error', () => finish(false));
     map.on('load', () => {
       if (!S) return finish(false);
       S.map = map;
+      S.mapNew = null;
+      mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
       relief();
       map.on('move', schedule);
       map.on('moveend', schedule);
@@ -2200,8 +2226,37 @@ const AS_GROUPS = {
   asFir: ['FIR', 'UIR', 'UTA', 'LTA', 'OCA', 'FRA'] // régions et grands volumes (UTA FRANCE) : pas avec les TMA
 };
 const LAYER_KEYS = ['corridor', 'asTma', 'asDrp', 'asFir', 'asOther', 'awLow', 'awHigh', 'navaids', 'fixes', 'vrp', 'obstacles', 'mora',
-  'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'contours'
+  'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'contours', 'zoneLabels', 'awLabels'
 ];
+/** Couche du panneau Couches qui commande chaque ligne de la page de réglage (une famille d'espaces : une seule case). */
+const LAYER_OF = {
+  asFir: 'asFir',
+  asTma: 'asTma',
+  asCta: 'asTma',
+  asCtr: 'asTma',
+  asR: 'asDrp',
+  asD: 'asDrp',
+  asP: 'asDrp',
+  asTsa: 'asDrp',
+  asOther: 'asOther',
+  zoneLabels: 'zoneLabels',
+  awLow: 'awLow',
+  awHigh: 'awHigh',
+  awLabels: 'awLabels',
+  navaids: 'navaids',
+  fixes: 'fixes',
+  vrp: 'vrp',
+  obstacles: 'obstacles',
+  mora: 'mora',
+  citiesBig: 'cities',
+  citiesMid: 'cities',
+  citiesSmall: 'cities',
+  graticule: 'graticule',
+  aar: 'aar',
+  nat: 'nat',
+  wind: 'wind',
+  contours: 'contours'
+};
 const groupOf = t => Object.keys(AS_GROUPS).find(g => AS_GROUPS[g].includes(String(t || '').toUpperCase())) || 'asOther';
 /** État des couches par défaut d'un profil d'affichage (celui du préréglage). */
 function layerDefaults(B) {
@@ -2229,12 +2284,19 @@ function layerDefaults(B) {
     wind: true,
     // courbes de niveau : modes à densité VFR (VFR, Topo), de près
     contours: !!MapsRender.elementOf(B, 'vfrDensity'),
+    zoneLabels: E('zoneLabelsShow'),
+    awLabels: MapsRender.elementOf(B, 'awLabels') !== false,
     detail: 0
   };
 }
+/** Couches de départ du mode : celles du profil, puis celles que la compagnie a enregistrées (profiles[mode].layers). */
+const baseLayers = () => ({
+  ...layerDefaults(flightProfile()),
+  ...(S.repoProfiles?.[S.preset]?.layers || {})
+});
 /** Couches du préréglage courant : défauts du profil, puis choix gardés sur cet appareil. */
 const layersNow = () => ({
-  ...layerDefaults(flightProfile()),
+  ...baseLayers(),
   ...(S.layers?.[S.preset] || {})
 });
 /** Profil d'affichage du vol : celui du préréglage, couches appliquées (éléments, familles d'espaces, couloir). */
@@ -2254,7 +2316,9 @@ function effectiveProfile() {
     graticule: L.graticule,
     agglos: L.cities && !!MapsRender.elementOf(B, 'agglos'),
     aarTracks: L.aar,
-    natTracks: L.nat
+    natTracks: L.nat,
+    zoneLabelsShow: L.zoneLabels,
+    awLabels: L.awLabels
   });
   if (L.vrp) E.vrpLabels = true;
   P.cities = L.cities;
@@ -2269,18 +2333,20 @@ function effectiveProfile() {
   return P;
 }
 /** Une couche changée (ou toutes remises, key null) : gardée par préréglage sur cet appareil, carte et profil refaits. */
-function setLayer(key, value) {
+function setLayer(key, value, keep = false) {
   const all = S.layers ||= {};
-  if (key == null) delete all[S.preset];
+  if (keep);
+  else if (key == null) delete all[S.preset];
   else {
     const own = all[S.preset] ||= {};
-    if (layerDefaults(flightProfile())[key] === value) delete own[key];
+    if (baseLayers()[key] === value) delete own[key];
     else own[key] = value;
   }
   saveUi();
   S.profile = effectiveProfile();
   S.data = null;
   fillLayers();
+  if (S.tuneEl) tuneVis();
   schedule();
   buildProfile();
 }
@@ -2359,6 +2425,10 @@ function tuneSetup(box) {
     tuneRow(row, k, cur);
     schedule();
   });
+  box.addEventListener('change', e => {
+    const c = e.target.closest('input[data-vis]');
+    if (c && !S.tuneRO) setLayer(c.dataset.vis, c.checked);
+  });
   box.addEventListener('click', async e => {
     const tab = e.target.closest('[data-tune-mode]')?.dataset.tuneMode;
     if (tab && tab !== S.preset) {
@@ -2367,6 +2437,16 @@ function tuneSetup(box) {
     }
     const act = e.target.closest('[data-tune]')?.dataset.tune;
     if (!act || S.tuneRO) return;
+    if (act === 'resetVis') {
+      // cases des lignes remises aux valeurs intégrées du mode (comme les curseurs), le reste des couches gardé
+      const own = (S.layers ||= {})[S.preset] ||= {},
+        B = layerDefaults(builtinProfile()),
+        base = baseLayers();
+      for (const k of new Set(Object.values(LAYER_OF)))
+        if (B[k] === base[k]) delete own[k];
+        else own[k] = B[k];
+      return setLayer(null, null, true);
+    }
     if (act === 'reset') {
       S.tuneZoom[S.preset] = zoomDefaults(S.preset);
       S.profile = effectiveProfile();
@@ -2387,8 +2467,10 @@ function tuneSetup(box) {
       profiles = {
         ...(cur.profiles || {})
       };
+    const L = layersNow();
     profiles[S.preset] = {
       ...(profiles[S.preset] || {}),
+      layers: Object.fromEntries([...new Set(Object.values(LAYER_OF))].map(k => [k, !!L[k]])),
       elements: {
         ...(profiles[S.preset]?.elements || {}),
         zoom: z
@@ -2434,11 +2516,23 @@ function fillTune() {
   box.innerHTML = `<h2>${esc(tt(TX.tuneTitle))}</h2><p class="f-muted">${esc(tt(TX.tuneHint))}</p>${S.tuneRO ? `<p class="f-muted"><b>${esc(tt(TX.tuneRO))}</b></p>` : ''}
 <p class="mp-tune-now" data-now></p>
 <div class="mp-tune-tabs" role="group">${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-tune-mode="${k}" aria-pressed="${k === S.preset}" title="${esc(modeTitle(S.ctx, k))}" aria-label="${esc(modeTitle(S.ctx, k))}">${icon}</button>`).join('')}</div>
-<div class="mp-tune-rows">${ZOOM_KEYS.map(k => `<div class="mp-tune-row" data-row="${k}"><div class="mp-tune-name">${esc(tt(TX.zoomNames[k]))}</div><div class="mp-tune-dual"><span class="mp-tune-mark" aria-hidden="true"></span><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMin, { e: tt(TX.zoomNames[k]) }))}"${ro}><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMax, { e: tt(TX.zoomNames[k]) }))}"${ro}></div><div class="mp-tune-range f-muted" data-range></div></div>`).join('')}</div>
-<div class="f-row"><button type="button" data-tune="reset"${ro}>${esc(tt(TX.layersReset))}</button><button type="button" data-tune="dev"${ro}>${esc(tt(TX.tuneSaveDev))}</button><button type="button" class="primary" data-tune="co"${ro}>${esc(tt(TX.tuneSaveCo))}</button></div>`;
+<div class="mp-tune-rows">${ZOOM_KEYS.map(k => `<div class="mp-tune-row" data-row="${k}"><label class="mp-tune-name" title="${esc(tt(TX.tuneVis, { e: tt(TX.zoomNames[k]), l: tt(TX.layerNames[LAYER_OF[k]]) }))}"><input type="checkbox" data-vis="${LAYER_OF[k]}"${ro}> ${esc(tt(TX.zoomNames[k]))}</label><div class="mp-tune-dual"><span class="mp-tune-mark" aria-hidden="true"></span><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMin, { e: tt(TX.zoomNames[k]) }))}"${ro}><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMax, { e: tt(TX.zoomNames[k]) }))}"${ro}></div><div class="mp-tune-range f-muted" data-range></div></div>`).join('')}</div>
+<div class="f-row"><button type="button" data-tune="resetVis"${ro}>${esc(tt(TX.tuneResetVis))}</button><button type="button" data-tune="reset"${ro}>${esc(tt(TX.tuneResetZoom))}</button><button type="button" data-tune="dev"${ro}>${esc(tt(TX.tuneSaveDev))}</button><button type="button" class="primary" data-tune="co"${ro}>${esc(tt(TX.tuneSaveCo))}</button></div>`;
   for (const k of ZOOM_KEYS) tuneRow(box.querySelector(`[data-row="${k}"]`), k, z[k] || [0, 24]);
+  tuneVis();
   S.tuneMarked = null;
   schedule();
+}
+/** Cases « visible » de la page de réglage selon les couches du mode (lignes décochées grisées) ; écrit seulement ce qui
+ *  change. */
+function tuneVis() {
+  const L = layersNow();
+  for (const c of S.tuneEl.querySelectorAll('input[data-vis]')) {
+    const v = !!L[c.dataset.vis],
+      row = c.closest('[data-row]');
+    if (c.checked !== v) c.checked = v;
+    if (row.classList.contains('mp-tune-off') === v) row.classList.toggle('mp-tune-off', !v);
+  }
 }
 /** Zoom courant marqué sur chaque curseur, et rappelé en tête (NM par cm) ; écrit seulement s'il change. */
 function markTune(z, lat) {
@@ -2996,7 +3090,9 @@ const STYLE = `
 [data-module="maps"] .mp-tune-now{font-variant-numeric:tabular-nums;margin:4px 0}
 [data-module="maps"] .mp-tune-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 10px}
 [data-module="maps"] .mp-tune-row{display:grid;grid-template-columns:minmax(9em,1fr) minmax(140px,1.4fr);gap:2px 10px;align-items:center;padding:4px 0;border-top:1px solid var(--sog-border)}
-[data-module="maps"] .mp-tune-name{font-size:.92em}
+[data-module="maps"] .mp-tune-name{font-size:.92em;display:flex;align-items:center;gap:6px;cursor:pointer}
+[data-module="maps"] .mp-tune-name input{width:auto;min-height:0;margin:0}
+[data-module="maps"] .mp-tune-off .mp-tune-dual,[data-module="maps"] .mp-tune-off .mp-tune-range{opacity:.4}
 [data-module="maps"] .mp-tune-range{grid-column:1 / -1;font-size:.82em;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-tune-dual{position:relative;height:28px}
 [data-module="maps"] .mp-tune-dual input{position:absolute;inset:0;width:100%;margin:0;padding:0;border:0;box-shadow:none;background:none;pointer-events:none;-webkit-appearance:none;appearance:none;height:28px;min-height:0}
@@ -3006,7 +3102,8 @@ const STYLE = `
 [data-module="maps"] .mp-tune-dual::before{content:'';position:absolute;left:0;right:0;top:13px;height:2px;background:var(--sog-border)}
 [data-module="maps"] .mp-tune-mark{position:absolute;top:6px;width:2px;height:16px;margin-left:-1px;background:var(--sog-err)}
 @media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}}
-[data-module="maps"] .mp-layers [data-layers-reset]{margin-top:6px;align-self:flex-start}
+[data-module="maps"] .mp-layers>*{flex-shrink:0}
+[data-module="maps"] .mp-layers [data-layers-reset]{margin-top:10px;align-self:flex-start}
 [data-module="maps"] .mp-layers[hidden],[data-module="maps"] .mp-layers-btn[hidden]{display:none}
 [data-module="maps"] .mp-editbar{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:6px}
 [data-module="maps"] .mp-editbar[hidden],[data-module="maps"] .mp-editbar [hidden]{display:none}
@@ -3178,7 +3275,6 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.layersEl.addEventListener('click', e => {
     if (e.target.closest('[data-layers-reset]')) setLayer(null);
   });
-  if (ctx.query?.tune) tuneSetup(el.querySelector('.mp-tune'));
   S.layersEl.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       toggleLayers(false);
@@ -3196,6 +3292,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   await loadLibs();
   if (!S) return;
+  // page de réglage : après les bibliothèques (les cases lisent les couches du profil, MapsRender)
+  if (ctx.query?.tune) tuneSetup(el.querySelector('.mp-tune'));
   S.theme = MapsRender.tokens();
   // design, ton ou thème du système changés : jetons relus, fond de nuit ou de jour, tout redessiné (observateur
   // d'attributs de <html> : réagit à l'événement, n'écrit rien dans la page)
@@ -3276,10 +3374,24 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     schedule();
   }));
   const ro = new ResizeObserver(() => {
-    S?.map?.resize();
+    mapSize();
     schedule();
   });
   ro.observe(S.box);
+  // retour d'un onglet caché ou d'une page gelée : taille reprise, surcouche redessinée
+  const back = () => {
+    if (document.hidden || !S) return;
+    mapSize();
+    schedule();
+  };
+  document.addEventListener('visibilitychange', back);
+  window.addEventListener('pageshow', back);
+  document.addEventListener('resume', back);
+  S.stops.push(() => {
+    document.removeEventListener('visibilitychange', back);
+    window.removeEventListener('pageshow', back);
+    document.removeEventListener('resume', back);
+  });
   const rp = new ResizeObserver(() => drawProfile());
   rp.observe(S.profBox);
   S.stops.push(() => ro.disconnect(), () => rp.disconnect());

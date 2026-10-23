@@ -1354,7 +1354,7 @@
         aarTracks: on(profile, 'aarTracks') && v('aar'),
         natTracks: on(profile, 'natTracks') && v('nat'),
         fixes: el(profile, 'fixes') !== false && v('fixes'),
-        awLabels: v('awLabels')
+        awLabels: el(profile, 'awLabels') !== false && v('awLabels')
       }
     };
   }

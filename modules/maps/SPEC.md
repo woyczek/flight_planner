@@ -359,8 +359,20 @@ when the report is saved), nothing otherwise:
   user help). A panel beside the live map (on a screen of 1,000 px and more; above the map otherwise; read only on a
   phone): the current zoom (and its NM per cm of screen), the six mode tabs, one line per key with a double slider
   "from … to …" (zoom 0 to 18, step ¼; 18 means no upper limit) labelled in zoom and NM per cm, the current zoom
-  marked on each slider. The map is redrawn at every move of a slider. "Reset all" (the mode's starting values),
-  "Keep on this device" (`cache/maps/ui.json`), "Save for the airline" (`airline/map_profiles.json`).
+  marked on each slider. The map is redrawn at every move of a slider. In front of each line, a "drawn" box: the
+  Layers panel's layer for that line in this mode (`LAYER_OF`: one box per airspace family — TMA / CTA / CTR share
+  "TMA / CTR", R / D / P / TSA share "D / R / P" —, the three town sizes share "Towns"; airspace and airway names are
+  two new layers, `zoneLabels` and `awLabels`, in the panel too). Unticked: never drawn whatever the range; the sliders
+  stay adjustable, greyed. Ticking here or in the panel is the same choice, kept at once on the device
+  (`cache/maps/ui.json`, `layers[mode]`). "Reset the boxes" (the mode's built-in layers for those lines), "Reset the
+  sliders" (the mode's starting values),
+  "Keep on this device" (`cache/maps/ui.json`), "Save for the airline" (`airline/map_profiles.json`: the
+  thresholds in `profiles[mode].elements.zoom`, the boxes in `profiles[mode].layers`, read as the mode's starting
+  layers before the device's choices).
+- **Map size**: the MapLibre canvas follows the frame. A size observer on the frame, the map's `load` and
+  `style.load`, the page's return (`visibilitychange`, `pageshow`, `resume`: observations made while the tab was hidden
+  or frozen are lost) and every redraw compare the canvas with its container and call `map.resize()` only when they
+  differ; the observer also reaches a map still loading its tiles.
 - **The airline's profiles** — `airline/map_profiles.json`, record (merge `record`, the newest `updated_at` wins):
 
 ```json

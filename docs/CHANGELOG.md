@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: tuning page boxes, map size, Layers panel** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS, help ×4)
+  — a "drawn" box in front of each line of `#maps?tune=1`, the same as the Layers panel's layer (two new layers:
+  airspace names, airway names), "Reset the boxes" and "Reset the sliders"; the MapLibre background always the size of
+  its frame (also after a hidden or frozen tab, a style change, tiles still loading); the Layers panel's "Reset all" no
+  longer covers the Complexity slider.
 - **fuel, report, my flights: the page no longer jumps to the top** (`modules/fuel/module.js`, `modules/report/module.js`,
   `modules/flightlog/module.js`) — a screen redrawn because the flight changed elsewhere keeps where you were.
 - **Frame: the flight simulator as the first source of the actual position** (`tools/sim_position.py`,

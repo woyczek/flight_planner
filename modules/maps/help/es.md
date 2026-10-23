@@ -39,7 +39,8 @@ altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771
 
 **Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios (TMA /
 CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de notificación
-VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo. Marque o desmarque: el mapa sigue, y su elección se
+VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo, nombres de los
+espacios, nombres de las aerovías. Marque o desmarque: el mapa sigue, y su elección se
 conserva para este ajuste en este dispositivo. «Restablecer todo» vuelve a la elección de origen. «Solo alrededor de la
 ruta», marcada de origen en IFR, limita espacios y aerovías a la cercanía de la ruta; desmarcada, se dibuja todo el mapa
 visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos. Abajo del todo, el control «Complejidad
