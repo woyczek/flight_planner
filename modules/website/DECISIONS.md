@@ -2,6 +2,9 @@
 
 Memory of the V3 website module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — design lot 2 primitives** (asked by the design session): grids, columns, table, preview and terms list moved to `f-grid`, `f-cols`, `f-scroll` / `f-table`, `f-callout`, `f-dl`, the warning to `f-warn`; title sizes left to the frame. The module's own `<style>`
+  only places things now; checked at 375 px and on a screen in standard, cabinet and field, day and night (no white
+  at night, square corners in cabinet and field, no target under 44 px).
 - **23 Oct 2026 — role taken** by the Features SOG session (also V3 fuel, report, flightlog), at the ergonomics
   session's request: worktree `E:\DEFA-v3-website`, local branch `v3-website` from `origin/v3` (fe9820ea8). Port 8792
   was found in use; trials on 8803.

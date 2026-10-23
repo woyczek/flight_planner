@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **website: the frame's design primitives** (`modules/website/module.js`) — its own colours, shadows and title sizes
+  replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
 - **design, lot 2: designs for the Pilot application** (`frame/design/tokens.css`, `frame/design/primitives.css`,
   `frame/lib/icons.js`, `frame/frame.css`, `frame/app.js`, `labs/design_primitives.html`).
   - Three designs: Standard, Cabinet and Rugged (square corners and their own fonts for the last two), by day and by

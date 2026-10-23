@@ -141,23 +141,9 @@ const wide = () => matchMedia('(min-width: 980px)').matches;
 const when = iso => iso ? new Date(iso).toLocaleString(S.ctx.lang()) : '—';
 
 // ---------------------------------------------------------------- écran
+// placement seulement (primitives et jetons du cadre : frame/design/INTEGRATION.md) : aperçu borné en hauteur
 const STYLE = `
-[data-module="website"] h1{font-size:1.25rem;margin:0 0 10px}
-[data-module="website"] h2{font-size:1rem;margin:0 0 6px}
-[data-module="website"] textarea{width:100%;min-width:0}
-[data-module="website"] .ws-grid{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-[data-module="website"] .ws-grid .f-field{margin:0}
-[data-module="website"] .ws-grid input{width:100%;min-width:0}
-[data-module="website"] .ws-preview{border-left:3px solid var(--sog-accent);padding-left:10px;margin-top:8px}
-[data-module="website"] .ws-table{width:100%;border-collapse:collapse;font-size:.9em}
-[data-module="website"] .ws-table td{padding:3px 6px;border-bottom:1px solid var(--sog-border)}
-[data-module="website"] .ws-scroll{overflow-x:auto;max-height:260px;overflow-y:auto}
-[data-module="website"] dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0}
-[data-module="website"] dt{color:var(--sog-muted)}
-[data-module="website"] dd{margin:0;overflow-wrap:anywhere}
-@media (min-width: 980px){
-  [data-module="website"] .ws-cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--sog-gap);align-items:start}
-}`;
+[data-module="website"] .f-callout .f-scroll{max-height:260px;overflow-y:auto}`;
 
 /** Carte de collage d'une page du site (kind : log | fleet) : aide, lien vers la page, zone, boutons, aperçu. */
 function pasteCard(kind) {
@@ -174,12 +160,12 @@ function pasteCard(kind) {
     pv = S.preview?.kind === kind ? S.preview : null;
   return `<div class="f-card" data-kind="${kind}"><h2>${esc(tt(isLog ? TX.log : TX.fleet))}</h2>
     <p class="f-muted">${esc(tt(isLog ? TX.logHelp : TX.fleetHelp))}${url ? ` <a href="${esc(url)}" target="_blank" rel="noopener">${esc(tt(TX.openPage))}</a>` : ''}</p>
-    ${isLog && !tri() ? `<p class="f-muted" style="color:var(--sog-warn)">${esc(tt(TX.noTrigram))}</p>` : ''}
+    ${isLog && !tri() ? `<p class="f-warn">${esc(tt(TX.noTrigram))}</p>` : ''}
     <p class="f-muted">${esc(kept)}</p>
     <label class="f-field"><textarea rows="4" data-paste="${kind}" aria-label="${esc(tt(isLog ? TX.log : TX.fleet))}"></textarea></label>
     <div class="f-row">${url && S.canFetch ? `<button type="button" data-do="fetch">${esc(tt(TX.fetchSite))}</button>` : ''}<button type="button" data-do="clip">${esc(tt(TX.clipboard))}</button><button type="button" class="primary" data-do="read">${esc(tt(TX.read))}</button></div>
     ${url && !S.canFetch ? `<p class="f-muted">${esc(tt(TX.pasteOnly))}</p>` : ''}
-    ${pv ? `<div class="ws-preview"><p>${esc(pv.summary)}</p>${pv.rows.length ? `<div class="ws-scroll"><table class="ws-table"><tbody>${pv.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
+    ${pv ? `<div class="f-callout"><p>${esc(pv.summary)}</p>${pv.rows.length ? `<div class="f-scroll"><table class="f-table"><tbody>${pv.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
       <div class="f-row" style="margin-top:8px"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button><button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>` : ''}
   </div>`;
 }
@@ -187,12 +173,12 @@ function pasteCard(kind) {
 function airlineCard() {
   const a = S.airline,
     keys = ['recordFlight', 'log', 'fleet', 'aircraft'];
-  if (!wide()) return `<div class="f-card"><h2>${esc(tt(TX.airline))}</h2><dl>
+  if (!wide()) return `<div class="f-card"><h2>${esc(tt(TX.airline))}</h2><dl class="f-dl">
       <dt>${esc(tt(TX.name))}</dt><dd>${esc(a.name || tt(TX.unset))}</dd><dt>${esc(tt(TX.site))}</dt><dd>${esc(a.site || tt(TX.unset))}</dd>
       ${keys.map(k => `<dt>${esc(tt(TX.pages[k], { id: '{id}' }))}</dt><dd>${esc(a.pages[k] || tt(TX.unset))}</dd>`).join('')}</dl>
       <p class="f-muted">${esc(tt(TX.readOnly))}</p></div>`;
   const fld = (k, label, v, hint = '') => `<label class="f-field"><span>${esc(label)}</span><input data-a="${k}" value="${esc(v)}"${hint ? ` placeholder="${esc(hint)}"` : ''}></label>`;
-  return `<div class="f-card"><h2>${esc(tt(TX.airline))}</h2><div class="ws-grid">
+  return `<div class="f-card"><h2>${esc(tt(TX.airline))}</h2><div class="f-grid" style="--f-min:220px">
       ${fld('name', tt(TX.name), a.name)}${fld('site', tt(TX.site), a.site, 'https://…')}
       ${keys.map(k => fld(`pages.${k}`, tt(TX.pages[k], { id: '{id}' }), a.pages[k], '/…')).join('')}</div>
       <p class="f-muted">${esc(tt(TX.pathHint))}</p>
@@ -201,7 +187,7 @@ function airlineCard() {
 /** Dessine les trois cartes. */
 function render() {
   if (!S?.body) return;
-  S.body.innerHTML = `<div class="ws-cols"><div>${pasteCard('log')}${pasteCard('fleet')}</div><div>${airlineCard()}</div></div>`;
+  S.body.innerHTML = `<div class="f-cols" style="--f-cols:2"><div>${pasteCard('log')}${pasteCard('fleet')}</div><div>${airlineCard()}</div></div>`;
   for (const ta of S.body.querySelectorAll('[data-paste]')) {
     if (S.text[ta.dataset.paste]) ta.value = S.text[ta.dataset.paste];
     ta.onpaste = e => {
