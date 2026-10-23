@@ -143,9 +143,13 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 
 ## 12. Progress of a started flight (`modules/fuel/progress.js`, lot H)
 
-- **Start, end, cancel**: "Start the flight" writes `started = { at, by: 'fuel' }`; while it is not ended the Departure
-  step offers "End the flight" (`started.endedAt`) and "Cancel the start" (confirmation, `started = null`, `progress =
-  null`); the sticky result shows "Flight started at hh:mm · for 1 h 12", then "Flight ended at hh:mm · block 1 h 12".
+- **Start, cancel** (rectified by the user, 23 Oct 2026): "Start the flight" launches the flight plan (engine start,
+  push-back, taxi…). It first redoes everything for now — the flight date goes back to now, the aerodromes' weather
+  and the winds aloft are read again (ISA at the level with them), the quote is redone — and says in one line what
+  changed (wind, block, planned arrival); offline it says so and starts with the last quote. Then it writes
+  `started = { at, by: 'fuel' }` (Report's engine start). A started flight ends with its report (report writes
+  `started = null` and `progress = null` on saving) or with "Cancel the start" (confirmation, the same nulls). The
+  sticky result shows "Flight started at hh:mm · for 1 h 12".
 - **Planned timeline** from the start time: taxi (quote settings), the quote's climb, the cruise split by route leg —
   ground speed = cruise TAS + the leg's wind component (the forecast winds at both ends of the leg, else the quote's
   wind), durations scaled so the cruise keeps the quote's time —, the quote's descent; fuel burnt along it by phase.
@@ -153,7 +157,7 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   distance and planned fuel remaining.
 - **Current flight**: `progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }],
   fuelRemainingKg, remainingNm, phase }`, written when it changes — every minute during the flight, at every quote
-  change — and frozen at the end time; `progress.actual` (the real position) is written by the frame or maps and kept.
+  change — until the report or the cancellation; `progress.actual` (the real position) is written by the frame or maps and kept.
 - **Shown**: the Departure step's "Planned progress" card: the line of the moment and the points with their ETA, the
   next point highlighted.
 - Bench `test/progress.html` (14 checks).

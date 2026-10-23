@@ -102,17 +102,23 @@ Navigraph et ChartFox (les cartes des terrains de départ et d'arrivée, connexi
 qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol. Les réglages du devis (roulage, réserve, marge, couloir météo, unités) sont dans le dernier pli.
 
 **5 Départ.** Un récapitulatif d'une page : l'appareil, la route telle qu'elle sera déposée, le niveau (et ses
-paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » note l'heure de départ dans le vol ; sur un
-téléphone il ouvre la Carte, sur un grand écran il reste ici avec la Carte à droite. Le compte rendu reprendra ce vol.
+paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » lance le plan de vol (mise en route,
+repoussage, roulage…). La préparation peut dater de plusieurs jours : il commence donc par tout refaire à l'heure
+réelle — la date du vol revient à maintenant, la météo des terrains et les vents en altitude sont relus, le devis
+refait — et dit en une ligne ce qui a changé (« vent 273°/35 kt → 284°/44 kt · bloc 684 → 644 kg · arrivée prévue
+17:03 ») ; hors ligne, il le dit et démarre avec le dernier devis. Il note ensuite l'heure de départ, qui devient la
+mise en route du compte rendu. Sur un téléphone il ouvre la Carte, sur un grand écran il reste ici avec la Carte à
+droite.
 Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
 après le départ est un déroutement : l'heure est gardée et le déroutement noté.
 
-Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 13:14 · depuis 1 h 10 », et le pas Départ
-propose « Terminer le vol » (l'heure d'arrêt est notée ; le compte rendu reprend les heures de mise en route et
-d'arrêt) et « Annuler le départ » (après confirmation, le vol n'est plus démarré). La carte « Progression prévue » montre
+Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 13:14 · depuis 1 h 10 ». Un vol démarré se
+termine en écrivant son compte rendu : à l'enregistrement, Carburant revient en préparation et Mes vols retire « en
+cours ». Pour revenir en préparation sans compte rendu, « Annuler le départ » (après confirmation). La carte « Progression prévue » montre
 où le vol devrait en être, en théorie : l'heure prévue de passage à chaque point (roulage, montée, croisière tronçon par
 tronçon avec son vent, descente), le prochain point surligné, la distance parcourue et restante et le carburant restant
-prévu. Elle suit l'heure, minute par minute, et part à la Carte avec le vol. Le vol préparé ici — appareil, route, niveau, profil de montée et de
+prévu. Elle suit l'heure, minute par minute, jusqu'au compte rendu ou à l'annulation, et part à la Carte avec le
+vol. Le vol préparé ici — appareil, route, niveau, profil de montée et de
 descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances

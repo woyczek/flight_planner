@@ -132,6 +132,21 @@ const TX = {
   showMap: ['Afficher la carte', 'Show the map', 'Karte zeigen', 'Mostrar el mapa'],
   start: ['Démarrer le vol', 'Start the flight', 'Flug starten', 'Iniciar el vuelo'],
   started: ['Vol démarré à {t}.', 'Flight started at {t}.', 'Flug gestartet um {t}.', 'Vuelo iniciado a las {t}.'],
+  starting: ['Météo et devis refaits à l’heure réelle…', 'Weather and quote redone for now…',
+    'Wetter und Kalkulation werden für jetzt neu berechnet…',
+    'Meteorología y cálculo rehechos para ahora…'
+  ],
+  startDiff: ['À l’heure réelle : {l}.', 'For now: {l}.', 'Für jetzt: {l}.', 'Para ahora: {l}.'],
+  startSame: ['À l’heure réelle : rien ne change.', 'For now: nothing changes.', 'Für jetzt: keine Änderung.',
+    'Para ahora: nada cambia.'
+  ],
+  startOffline: ['Hors ligne : départ avec le dernier devis.', 'Offline: started with the last quote.',
+    'Offline: Start mit der letzten Kalkulation.',
+    'Sin conexión: salida con el último cálculo.'
+  ],
+  diffWind: ['vent {a} → {b}', 'wind {a} → {b}', 'Wind {a} → {b}', 'viento {a} → {b}'],
+  diffBlock: ['bloc {a} → {b}', 'block {a} → {b}', 'Block {a} → {b}', 'bloque {a} → {b}'],
+  diffEta: ['arrivée prévue {t}', 'planned arrival {t}', 'geplante Ankunft {t}', 'llegada prevista {t}'],
   startHint: ['La carte s’ouvre sur ce vol ; le compte rendu le reprendra.',
     'The map opens on this flight; the report will take it up.',
     'Die Karte öffnet sich mit diesem Flug; der Bericht übernimmt ihn.',
@@ -377,7 +392,6 @@ const TX = {
   },
   wxReading: ['Lecture…', 'Reading…', 'Wird gelesen…', 'Leyendo…'],
   diverted: [' — déroutement', ' — diverted', ' — Ausweichlandung', ' — desviado'],
-  endFlight: ['Terminer le vol', 'End the flight', 'Flug beenden', 'Terminar el vuelo'],
   cancelStart: ['Annuler le départ', 'Cancel the start', 'Start abbrechen', 'Anular la salida'],
   cancelAsk: ['Annuler le départ de {t} ? Le vol ne sera plus proposé au compte rendu comme démarré.',
     'Cancel the {t} start? The flight will no longer be offered to the report as started.',
@@ -386,9 +400,6 @@ const TX = {
   ],
   since: ['Vol démarré à {t} · depuis {d}', 'Flight started at {t} · for {d}', 'Flug gestartet um {t} · seit {d}',
     'Vuelo iniciado a las {t} · desde hace {d}'
-  ],
-  ended: ['Vol terminé à {t} · bloc {d}', 'Flight ended at {t} · block {d}', 'Flug beendet um {t} · Block {d}',
-    'Vuelo terminado a las {t} · bloque {d}'
   ],
   progTitle: ['Progression prévue', 'Planned progress', 'Geplanter Fortschritt', 'Progreso previsto'],
   progNow: ['Prévu maintenant : {d} du départ, entre {a} et {b} · reste {r} · carburant restant prévu {f}.',
@@ -590,6 +601,9 @@ let S = null;
 /** Vrai si le montage s a été démonté ou remplacé pendant une attente (réponse réseau, base, dialogue) : la suite est
  *  abandonnée, rien n'est écrit dans l'état d'un autre montage. */
 const gone = s => S !== s;
+/** Ce que la relecture au départ a changé, gardé hors de S (le module peut être remonté quand la vue double s'ouvre) :
+ *  { at (started.at), text }. */
+let startNote = null;
 
 /** Échappe un texte pour le HTML. */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -1119,6 +1133,7 @@ const STYLE = `
 [data-module="fuel"] .fu-ext{stroke-dasharray:1 4;opacity:.7}
 [data-module="fuel"] .fu-da{fill:none;stroke:var(--sog-chart-6);stroke-width:1;opacity:.7}
 [data-module="fuel"] .fu-step[hidden]{display:none}
+[data-module="fuel"] .fu-startnote:empty{display:none}
 [data-module="fuel"] .fu-flightstate{font-weight:700;color:var(--sog-accent)}
 [data-module="fuel"] .fu-eta{grid-template-columns:1fr auto}
 [data-module="fuel"] .fu-next-pt{border-color:var(--sog-accent);box-shadow:inset 3px 0 0 var(--sog-accent)}
@@ -1253,6 +1268,7 @@ function renderPlanBody() {
   </details>`)}
   ${sec(4, `<div class="f-card" data-block="summary"><h2>${esc(tt(TX.stepNames[4]))}</h2><div data-sum></div>
       <div class="f-row" data-startrow></div>
+      <p class="fu-startnote" data-startnote aria-live="polite"></p>
       <p class="f-muted">${esc(tt(TX.startHint))}</p></div>
     <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>`, true)}
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
@@ -1479,7 +1495,6 @@ function onPlanClick(e) {
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   if (e.target.closest('[data-do="start"]')) return startFlight();
-  if (e.target.closest('[data-do="endflight"]')) return endFlight();
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
   if (iu) return useIsa(iu.dataset.v != null ? +iu.dataset.v : undefined);
@@ -2451,10 +2466,61 @@ function showMap() {
 }
 /** « Démarrer le vol » : current_flight.started = { at, by: 'fuel' } écrit tout de suite, puis la Carte ; le compte
  *  rendu reprendra ce vol. */
-function startFlight() {
+async function startFlight() {
+  const s = S,
+    f = S.flight,
+    btn = S.body.querySelector('[data-do="start"]'),
+    note = S.body.querySelector('[data-startnote]'),
+    unit = () => S.C?.sheet?.unit || 'kg',
+    windTxt = w => Number.isFinite(+w?.speedKt) ? `${w.dirDeg != null ? `${String(Math.round(w.dirDeg)).padStart(3, '0')}°/` : ''}${speedTxt(w.speedKt)}` : '—',
+    before = {
+      wind: windTxt(f.wind),
+      block: S.C?.q?.hasFuel ? fuelTxt(S.C.q.block, unit()) : '—'
+    };
+  if (btn) {
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+  }
+  S.startNote = tt(TX.starting);
+  if (note) note.textContent = S.startNote;
+  // la planification peut dater : date du vol = maintenant, météo des terrains, vents en altitude et ISA relus, devis refait
+  f.weather = {
+    ...f.weather,
+    when: ''
+  };
+  const wd = S.body.querySelector('[data-k="wxdate"]');
+  if (wd) wd.value = '';
+  const online = S.ctx.net?.online?.() !== false;
+  if (online) await wxFetch(false);
+  if (gone(s)) return;
+  refresh();
+  const offline = !online || S.wx?.cached,
+    q = S.C?.q,
+    after = {
+      wind: windTxt(f.wind),
+      block: q?.hasFuel ? fuelTxt(q.block, unit()) : '—'
+    },
+    eta = q?.minutes ? hhmmOf(new Date(Date.now() + ((+S.settings.taxiMin || 0) + q.minutes) * 60000).toISOString()) : '',
+    diffs = [after.wind !== before.wind ? tt(TX.diffWind, {
+      a: before.wind,
+      b: after.wind
+    }) : '', after.block !== before.block ? tt(TX.diffBlock, {
+      a: before.block,
+      b: after.block
+    }) : ''].filter(Boolean);
+  S.startNote = offline ? tt(TX.startOffline) : diffs.length ? tt(TX.startDiff, {
+    l: [...diffs, eta ? tt(TX.diffEta, {
+      t: eta
+    }) : ''].filter(Boolean).join(' · ')
+  }) : tt(TX.startSame) + (eta ? ` ${tt(TX.diffEta, { t: eta })}.` : '');
+  if (S.body.querySelector('[data-startnote]')) S.body.querySelector('[data-startnote]').textContent = S.startNote;
   S.flight.started = {
     at: new Date().toISOString(),
     by: 'fuel'
+  };
+  startNote = {
+    at: S.flight.started.at,
+    text: S.startNote
   };
   saveFlight();
   renderSummary(S.C || {});
@@ -2481,25 +2547,10 @@ function flightState() {
   const st = S.flight.started;
   if (!st?.at) return '';
   const div = st.diverted ? tt(TX.diverted) : '';
-  if (st.endedAt) return tt(TX.ended, {
-    t: hhmmOf(st.endedAt),
-    d: dur((Date.parse(st.endedAt) - Date.parse(st.at)) / 60000)
-  }) + div;
   return tt(TX.since, {
     t: hhmmOf(st.at),
     d: dur((Date.now() - Date.parse(st.at)) / 60000)
   }) + div;
-}
-/** « Terminer le vol » : started.endedAt (heure d'arrêt) ; le vol reste proposé au compte rendu avec ses heures. */
-function endFlight() {
-  if (!S.flight.started?.at) return;
-  S.flight.started = {
-    ...S.flight.started,
-    endedAt: new Date().toISOString()
-  };
-  updateProgress(true);
-  saveFlight();
-  refresh();
 }
 /** « Annuler le départ » (après confirmation) : started = null (null et non effacé : l'écriture fusionne avec le vol
  *  gardé), progression effacée. */
@@ -2546,7 +2597,7 @@ function progressCalc(C = S.C) {
     });
   if (!P) return null;
   const start = Date.parse(st.at),
-    now = st.endedAt ? Date.parse(st.endedAt) : Date.now(),
+    now = Date.now(),
     state = PG.at(P, (now - start) / 60000);
   return {
     P,
@@ -2644,10 +2695,12 @@ function renderSummary(C) {
     <dt>${esc(tt(TX.sumBlock))}</dt><dd><b>${esc(block)}</b></dd></dl>`;
   const row = S.body.querySelector('[data-startrow]');
   if (row) {
-    const on = f.started?.at && !f.started.endedAt;
-    row.innerHTML = on ? `<button type="button" class="primary" data-do="endflight">${esc(tt(TX.endFlight))}</button><button type="button" data-do="cancelstart">${esc(tt(TX.cancelStart))}</button>` : `<button type="button" data-do="start">${esc(tt(TX.start))}</button>`;
+    const on = !!f.started?.at; // un vol démarré s'arrête par son compte rendu (report remet started à null) ou s'annule
+    row.innerHTML = on ? `<button type="button" data-do="cancelstart">${esc(tt(TX.cancelStart))}</button>` : `<button type="button" class="primary" data-do="start">${esc(tt(TX.start))}</button>`;
     row.insertAdjacentHTML('beforeend', `<span class="f-muted">${esc(flightState())}</span>`);
   }
+  const sn = S.body.querySelector('[data-startnote]');
+  if (sn) sn.textContent = f.started?.at && startNote?.at === f.started.at ? startNote.text : ''; // ce que la relecture au départ a changé
   renderProgress(C);
 }
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
@@ -3457,7 +3510,7 @@ export async function mount(el, ctx) {
   S.stops.push(() => ro.disconnect());
   // vol démarré et pas terminé : la ligne d'état et la progression prévue suivent l'heure, chaque minute
   const tick = setInterval(() => {
-    if (!S?.body || !S.flight.started?.at || S.flight.started.endedAt || S.view !== 'plan') return;
+    if (!S?.body || !S.flight.started?.at || S.view !== 'plan') return;
     refresh();
   }, 60000);
   S.stops.push(() => clearInterval(tick));

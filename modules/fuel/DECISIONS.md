@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot H rectified by the user**: there is no "End the flight" — writing the report is the normal end of
+  a started flight (report sets `started` and `progress` to null on saving), "Cancel the start" the other one; the
+  button and `started.endedAt` are removed (report no longer takes the shutdown from fuel). "Start the flight" is the
+  launch of the flight plan, and the planning may be days old: it first sets the flight date to now, reads the
+  weather, the winds aloft and the ISA again, redoes the quote and says what changed, then writes `started`. The line
+  of changes is kept outside the module state (`startNote`), since opening the dual view may remount the module.
+  Checked on 8804 with the real base and services (copy of the data's SIA base, references, sheets and fleet in the
+  session's scratch folder, served by the launcher with `--data`; the user's data/ untouched): EC45 F-ZBPD, LFRS NTS
+  LMG LFML 365 NM, flight date in three days → start: "wind 273°/35 kt → 284°/44 kt · block 684 kg → 644 kg · planned
+  arrival 17:03", date back to now; cancel with the frame's confirmation → planning again.
 - **23 Oct 2026 — lot H, ending a flight and its planned progress** (two questions of the user: how is a started
   flight stopped, where should it be in theory): "End the flight" and "Cancel the start" on the Departure step; the
   progress is computed from the start time and the quote — the cruise is split by leg with that leg's forecast wind

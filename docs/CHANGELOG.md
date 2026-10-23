@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: starting a flight redoes the weather and the quote for now** (`modules/fuel/module.js`; docs) — and says
+  what changed (wind, block, arrival); "End the flight" is gone: a started flight ends with its report, or is
+  cancelled.
 - **fuel: ending a flight and its planned progress** (`modules/fuel/progress.js`, `module.js`; `test/progress.html`,
   docs) — "End the flight" and "Cancel the start"; the result shows how long the flight has been going; the Departure
   step shows where the flight should be — time over each point, distance and fuel remaining — minute by minute, and
