@@ -44,15 +44,12 @@ Services are mounted first, as one instance each, then modules. With the frame's
 `watch`, so it is the reader itself:
 
 ```js
-const aerodb = AeroDB.create({
-  reader: FrameData.adapter({
-    id: 'aerodb',
-    reads: [{ prefix: 'sia/base/', policy: 'reference' }, { prefix: 'AircraftDB/', policy: 'reference' }],
-    writes: []
-  })
-});
+const aerodb = AeroDB.create({ reader: FrameData.adapter(AeroDB.declaration()) });
 // then, for every module: adapter.aerodb = aerodb
 ```
+
+`AeroDB.declaration()` lists what aerodb reads (SIA base, aircraft base, V2 references, fleet, sheets) and writes
+(the sheets and their V2 mirror): SPEC.md § 5 bis.
 
 `frame/app.js` mounts it this way (`ctx.aerodb`). Checked on 21 October with the launcher transport over the 13
 reference zones: the listing comes from the frame's tree, only the files asked for are read, the whole world is
@@ -60,7 +57,8 @@ identical, and a republished file gives one `change` event and a fresh read of i
 transport (single user, no exchange), the reference files come from the launcher serving the page, otherwise from the
 configured GitHub repository. On the public website with neither, aerodb answers empty.
 
-Scripts, in this order: `frame/aerodb/zones.js`, `frame/aerodb/aircraft.js`, `frame/aerodb/aerodb.js`.
+Scripts, in this order: `frame/aerodb/zones.js`, `frame/aerodb/aircraft.js`, `frame/aerodb/aerodb.js`; aerodb loads
+`registry.js` and `sheets.js` itself at the first `aircraft()` (the frame's service worker keeps them).
 
 Until the data layer exists, `AeroDB.create()` without a reader uses `AeroDB.fetchReader()`:
 - in GitHub mode it goes through `shared/github_data.js`, which must then be loaded first;
@@ -105,6 +103,21 @@ const ac = await offline.aircraft();                 // { files, types, state, c
 - `keep` downloads the whole zone (France: about 6.5 MB, 13 files). Ask for it on Wi-Fi only if the card offers that
   choice.
 - A zone used normally is `partial`: only the kinds asked for are in the cache.
+
+### Aircraft: one registry (fuel, report, settings)
+
+```js
+const A = await ctx.aerodb.aircraft();
+const hits = await A.search('A400', 20);            // sheets → fleet → reference → types → free code, with source
+const flight = { ...current, aircraft: A.aircraftOf(hits[0]) };  // { sheetId, type, registration, callsign, name, source }
+const s = await A.sheets.get(id);                   // with _fields (origin, date) and _kept
+await A.sheets.put({ ...s, cruise: { ...s.cruise, tasKt: 335 } }, { source: 'edit' });
+const parsed = A.lib.parseLnmperf(text);           // the sheets logic (AeroDBSheets)
+```
+
+- fuel edits sheets only through `A.sheets` and stops writing `planner/`. Its picker is `A.search`.
+- report reads `aircraft.registration` and `aircraft.callsign` of the current flight.
+- The registry's own type search is `A.searchTypes` (the former `search`).
 
 ## 5. Costs to know (measured, see DECISIONS.md)
 

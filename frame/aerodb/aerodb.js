@@ -14,15 +14,27 @@
   // Lecture des fichiers : par le lecteur reçu (couche de données du frame : read(chemin, { policy: 'reference', wait })
   // → { value | text, rev, cached, at } | null ; list(préfixe) → chemins | null ; watch(préfixe, fn)), ou, en attendant
   // le frame, par AeroDB.fetchReader() (lanceur : fichiers servis ; mode GitHub : GitHubData).
-  // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal }.
+  // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal,
+  //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), ready(q), on('change', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
   //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), cities(q), find(texte, n), coords(ident),
-  //   coordsAll(ident), aircraft() → base des types (frame/aerodb/aircraft.js), stats(),
+  //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
+  //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
   //   offline : { supported(), zones(), keep(zone, { onProgress }), release(zone), common(), aircraft() } — données
   //   gardées dans le cache du frame pour le hors-ligne (carte « Données hors ligne » des Réglages) ; le lecteur doit
   //   alors offrir cached(préfixe) → [{ path, rev, bytes, at }] (copies locales, sans réseau) et evict(chemin ou
   //   préfixe/) (copies locales de références libérées, rien d'envoyé) — l'adaptateur du frame les offre (lot 6).
   if (window.AeroDB) return;
+  // dossier de ce script : registry.js et sheets.js y sont chargés au premier appel d'aircraft()
+  const HERE = document.currentScript?.src || location.href;
+  /** Script du dossier d'aerodb chargé une fois (global : nom qu'il définit) ; rien s'il l'est déjà. */
+  const loadOwn = (file, global) => window[global] ? Promise.resolve() : new Promise((ok, ko) => {
+    const sc = document.createElement('script');
+    sc.src = new URL(`${file}?v=0`, HERE).href;
+    sc.onload = () => ok();
+    sc.onerror = () => ko(new Error(`aerodb: ${file} not loaded`));
+    document.head.append(sc);
+  });
   const PUB = 'sia/base/',
     PUB_WHOLE = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\.json$/,
     PUB_SPLIT = /^sia\/base\/([a-z0-9_-]+)\/(\d{4}-\d{2}-\d{2})\/([a-z_]+)\.json$/,
@@ -475,21 +487,49 @@
     }
 
     // ---- base des types (JSON en V3 ; .js de la V2 lu comme littéral tant que le lanceur l'écrit)
+    let aircraftBusy = false; // registre en cours de lecture
     function aircraft() {
       return aircraftP ||= (async () => {
+        aircraftBusy = true;
         const one = async (base, name) => {
           const j = await read(`AircraftDB/${base}.json`);
           if (j) return valueOf(j);
           const s = await read(`AircraftDB/${base}.js`);
           return s ? literal(s.text ?? s.value, name) : null;
         };
-        const [db, perf] = await Promise.all([one('aircraft_db', 'AIRCRAFT_DB'), one('aircraft_perf', 'AIRCRAFT_PERF')]);
-        return window.AeroDBAircraft.create({
-          db: db || {},
-          perf: perf || {}
+        const [db, perf] = await Promise.all([one('aircraft_db', 'AIRCRAFT_DB'), one('aircraft_perf', 'AIRCRAFT_PERF')]),
+          catalog = window.AeroDBAircraft.create({
+            db: db || {},
+            perf: perf || {}
+          });
+        // registre : fiches, flotte, référence, recherche unique (registry.js) ; logique des fiches (sheets.js)
+        await Promise.all([loadOwn('registry.js', 'AeroDBRegistry'), loadOwn('sheets.js', 'AeroDBSheets')]);
+        const reg = registry = window.AeroDBRegistry.create({
+            reader,
+            catalog,
+            now
+          }),
+          state = await reg.load(),
+          fleet = await reg.fleetTypes();
+        window.AeroDBSheets.configure({
+          aircraft: catalog,
+          profiles: () => Object.fromEntries([...state.sheets].map(([id, x]) => [id, x.sheet])),
+          fleet: () => fleet
         });
-      })();
+        return Object.assign(catalog, {
+          searchTypes: catalog.search,
+          search: reg.search,
+          resolve: reg.resolve,
+          aircraftOf: reg.aircraftOf,
+          sheets: reg.sheets,
+          fleetTypes: reg.fleetTypes,
+          lib: window.AeroDBSheets
+        });
+      })().finally(() => {
+        aircraftBusy = false; // lu, ou en échec
+      });
     }
+    let registry = null;
 
     // ---- données gardées hors ligne (cache du frame)
     /** Fichiers d'une zone pour son cycle choisi : [{ path, kind, kb }] (kb : taille publiée, null si inconnue), cycle et
@@ -909,8 +949,10 @@
           if (p === `${PUB}cities_major.json`) majorP = null;
           if (p === `${PUB}cities.json`) worldP = null;
           if (p === `${PUB}index.json`) listedP = null;
-        } else if (m && pub && !pub[m[1]]?.cycles.includes(m[2])) {
-          out.push(p); // cycle ou zone publiés depuis la liste lue
+        } else if (m && (!pub || !pub[m[1]]?.cycles.includes(m[2]))) {
+          // cycle ou zone publiés depuis la liste lue, ou liste vide jusqu'ici (rien de publié à son premier passage :
+          // téléphone en mode GitHub avant la première poussée)
+          out.push(p);
           listedP = null;
           loaded.delete(m[1]);
           missing.clear();
@@ -920,13 +962,23 @@
         changed: out
       });
     });
+    // fiches, flotte, référence changées (synchronisation, autre onglet, écriture) : registre relu à la prochaine demande
+    for (const prefix of ['aircraft/', 'airline/', 'planner/', 'references/'])
+      reader.watch?.(prefix, () => {
+        if (!aircraftP || aircraftBusy) return; // pendant sa propre lecture : ses premières arrivées ne comptent pas
+        aircraftP = null;
+        registry = null;
+        emit({
+          aircraft: true
+        });
+      });
     reader.watch?.('AircraftDB/', async paths => {
       let hit = false;
       for (const p of paths || [])
         if (await changedRev(p)) {
           revs.delete(p);
           hit = true;
-        }
+        } else if (!revs.has(p) && !aircraftBusy) hit = true; // base des types arrivée après l'ouverture (jamais lue)
       if (!hit) return;
       aircraftP = null;
       emit({
@@ -936,10 +988,38 @@
     return api;
   }
 
+  /** Préfixes lus et écrits par aerodb, pour FrameData.adapter : base SIA, base des types et fichiers de la V2 en
+   *  « reference » ; fiches, flotte, fpdb en « document » ; écrit seulement les fiches (aircraft/sheets/, fusion champ par
+   *  champ) et le miroir fpdb de la V2 (fusion fiche par fiche). Jamais la base SIA ni AircraftDB. */
+  const declaration = () => ({
+    id: 'aerodb',
+    reads: [{
+      prefix: 'sia/base/',
+      policy: 'reference'
+    }, {
+      prefix: 'AircraftDB/',
+      policy: 'reference'
+    }, {
+      prefix: 'references/',
+      policy: 'reference'
+    }, 'airline/', 'planner/', 'aircraft/'],
+    writes: [{
+      prefix: 'aircraft/sheets/',
+      merge: (b, l, r) => window.AeroDBRegistry ? window.AeroDBRegistry.mergeSheets(b, l, r) : {
+        value: l,
+        lost: r
+      }
+    }, {
+      prefix: 'planner/flight_performance_database_merged.fpdb.json',
+      merge: 'keyed:profiles:id'
+    }]
+  });
+
   window.AeroDB = {
     create,
     fetchReader,
     airacCycles,
-    literal
+    literal,
+    declaration
   };
 })();

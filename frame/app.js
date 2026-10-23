@@ -871,18 +871,9 @@
     });
     // aerodb : un service, une instance, lecteur = la couche de données (frame/aerodb/INTEGRATION.md § 3)
     try {
+      // préfixes d'aerodb (base SIA, types, registre des aéronefs : fiches, flotte, référence) donnés par aerodb lui-même
       aerodb = window.AeroDB ? AeroDB.create({
-        reader: FD.adapter({
-          id: 'aerodb',
-          reads: [{
-            prefix: 'sia/base/',
-            policy: 'reference'
-          }, {
-            prefix: 'AircraftDB/',
-            policy: 'reference'
-          }],
-          writes: []
-        })
+        reader: FD.adapter(AeroDB.declaration())
       }) : null;
     } catch (e) {
       console.error(e);

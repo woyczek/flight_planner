@@ -246,6 +246,62 @@ With the network cut, the only reads attempted were:
 - **Develop does not have the split publication**: `publishSplit`, `coverage` and this rule exist only on v3.
   `parseCities` is shared, but the rest belongs to the port of lot 3 to develop when the ergonomics session decides it.
 
+## 23 October 2026 — building the bases, and V2 being phased out
+
+- **Decided by the user**: V2 will be switched off progressively. The pace is not decided.
+- **Understanding only, nothing settled**:
+  - Building the bases (reading `data/sia`, MORA, publishing by zone, cycle and kind, the aircraft base) is done today
+    by V2 alone, on the workstation.
+  - It will probably need a desktop client, unless something better comes along. Failing that, at least this part of
+    V2 is kept.
+  - Nothing is decided about a tool that stays separate for good.
+- aerodb only reads what is published.
+- References: `docs/technique/V3_SPECIFICATION.md` § 8, 3d2bc5ae0.
+
+## 23 October 2026 — lot 5a, the aircraft registry
+
+- **The user's decision**: all aircraft data in aerodb, in one place, fed from every source. The `.lnmperf` files
+  become an output kept in sync (lot 5b). Answers of the ergonomics session to the reading:
+  - one file per sheet;
+  - mission aircraft through the reference and the fleet only;
+  - the lnmperf folder set in the V3 Settings of a launcher page.
+- **One file per sheet** (`aircraft/sheets/<id>.json`): small merges, a git history per sheet, one to one with the
+  `.lnmperf` files.
+  - V2's `fpdb.json` is adopted in reading, never rewritten in bulk; a sheet is written at its first change.
+  - Until V2 is switched off, aerodb mirrors each sheet into the `fpdb.json`, with `updated_at` and `updatedAt` both.
+- **Field-level origin** (`_fields`, `_kept`) in the sheet itself: the frame's merge function for `aircraft/sheets/`
+  sees both versions' stamps, so a phone and a workstation editing different fields both keep their change.
+- **`sheets.js` taken over** as `frame/aerodb/sheets.js` (`AeroDBSheets`). Changes:
+  - aerodb configures it with the fleet; fuel never passed it, so the fleet line of the ChatGPT prompt was empty;
+  - registration and callsign are editable;
+  - `convertFuel` is inlined, so aerodb does not depend on fuel;
+  - a latent bug of fuel's copy is fixed: `KG_PER_LB` was used twice but never defined, so a ChatGPT reply or a sheet
+    in pounds would have thrown.
+  fuel's own copy stays until fuel switches to the API.
+- **Search kept separate from the types' search**: `search` is now the registry's (asynchronous); the catalogue's type
+  search is `searchTypes`. A first version called `catalog.search` after replacing it, which made an endless chain of
+  promises: the page froze, and every tab of the same origin with it. The registry now takes the type search before
+  the replacement.
+- **Watchers, asked by the frame session** (its fix aa9412ffe for GitHub mode):
+  - `watch(PUB)` also reads the list again when the previous listing found nothing;
+  - `watch('AircraftDB/')` also reacts to a file never read, for instance a base pushed after the app was opened;
+  - the registry's watchers ignore the arrivals of its own first reads.
+- **Frame files touched**, with the frame session told:
+  - `frame/app.js` mounts aerodb with `AeroDB.declaration()`;
+  - `frame/sw.js` keeps `aerodb/registry.js` and `aerodb/sheets.js`.
+- **Tests**: `frame/aerodb/test/registry.html`, 21 checks on the real data layer (local transport, references from
+  the launcher; real V2 fleet with 206 aircraft and V2 reference with 213 entries, read only):
+  - the old type API is kept;
+  - V2 sheet adopted, nothing written at reading;
+  - search order, free code last, no bare numbers;
+  - fleet aircraft with its type's sheet, else an estimate;
+  - fields stamped and kept values on `put`, sheet file and V2 mirror written;
+  - own sheet once it carries the registration;
+  - field merge and conflict;
+  - `.lnmperf` written from a registry sheet;
+  - fleet given to the sheets logic.
+  fuel, report and maps mount through `frame/index.html` without error; the whole world is still identical.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

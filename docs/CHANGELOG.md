@@ -41,6 +41,17 @@ waypoints, and the rest listed below.
   flight category in colour, wind and runway components, ceiling, visibility, temperature and QNH, CB / TCU warning,
   raw message folded; TAF when a flight date falls in it; "Real weather" sets the quote's wind to the average along
   the route; last values kept for offline use.
+- **aerodb lot 5a: one aircraft registry.**
+  - `aerodb.aircraft()` now gathers:
+    - the performance sheets, one file each in `aircraft/sheets/` (V2's sheets adopted, and mirrored back while V2
+      lives);
+    - the company fleet and the V2 reference;
+    - the ICAO types and a free code.
+  - Every field keeps its origin and date; the newest wins and the other value is kept.
+  - One search lists sheets, fleet, reference, types and free code in that order.
+  - An aircraft takes its own sheet, else its type's, else an estimate.
+  - The sheets logic moves from fuel to aerodb.
+  - Fixes in aerodb's watchers for GitHub mode.
 - **settings: usages on a workstation with the launcher** (`frame/settings/settings.js`, `frame/settings/help/*.md`;
   `DECISIONS.md`, manuals rebuilt) — with no exchange ticked, the Usages card now says that this workstation reads and
   writes the launcher's `data/` folder and that an exchange usage shares it through git; without a launcher, "Alone on

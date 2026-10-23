@@ -134,7 +134,7 @@ the suite root) and has no listing.
 | `cities(q)` | towns of the area, or by `q.prefix` (most populated first), `q.n` at most |
 | `find(text, n)` | ranked places: `{ label, lat, lon, name, kind, code }` |
 | `coords(ident)`, `coordsAll(ident)` | position of an identifier; every place carrying it |
-| `aircraft()` | the aircraft base: `canonical`, `related`, `record`, `classify`, `codeOf`, `displayName`, `label`, `perf`, `estimate`, `search`, `size` |
+| `aircraft()` | the aircraft registry (§ 5 bis): the types (`canonical`, `related`, `record`, `classify`, `codeOf`, `displayName`, `label`, `perf`, `estimate`, `searchTypes`, `size`) and `search`, `resolve`, `aircraftOf`, `sheets`, `fleetTypes`, `lib` (AeroDBSheets) |
 | `stats()` | per loaded zone: cycle, format, MB read, each file read (kind, KB, ms), indexes built |
 | `offline.supported()` | `{ cached, evict }`: what the reader allows |
 | `offline.zones()` | published zones, by name: `{ id, names: [fr, en, de, es], prefixes, cycle, format, publishedKb, cachedKb, state, at, staleKb }`; `state` is `absent`, `partial`, `complete` or `unknown`; `at` is the date of the newest local copy; `staleKb` counts the copies of other cycles |
@@ -145,10 +145,63 @@ the suite root) and has no listing.
 
 Every call is asynchronous except the aircraft base's methods once `aircraft()` resolved.
 
+## 5 bis. Aircraft registry (`registry.js`, `sheets.js`)
+
+All the aircraft data in one place, read from every source and written in one place.
+
+- **Four kinds of entries**:
+  - **sheets**:
+    - performance sheets, one file each: `aircraft/sheets/<id>.json` (the master; `id` kept in the sheet, file name
+      sanitised);
+    - V2's `planner/flight_performance_database_merged.fpdb.json` is adopted in reading (origin `v2`), and merged in
+      when it is newer on a field;
+  - **aircraft**, keyed by registration:
+    - the fleet `airline/fleet.json` (written by website), else V2's `references/aircraft_fleet.js`;
+    - V2's `references/defa_reference.js` adds the registrations that are absent; bare numbers ("1", "110") are not
+      registrations;
+    - V2 `.js` files are read as their `let data = {…};` literal, never executed;
+  - **types**: the published ICAO base (aircraft.js);
+  - **free code**.
+  Mission aircraft come through the reference and the fleet only.
+- **Origin and date of every field**: `_fields: { path: { at, source } }`.
+  - Sources: `edit`, `v2`, `lnmperf`, `chatgpt`, `eurocontrol`, `simbrief`, `ofp`, `import`, `fleet`, `reference`…
+  - The newest wins. The losing values are kept in `_kept: { path: [{ value, at, source }] }` (five per field).
+  - Rule of V2 kept: the fleet's base stays; callsigns are united.
+- **Search**, one for everything: `search(text, n)` returns, in this order, sheets → fleet → reference → types (two
+  letters at least) → free code (two to four letters or digits). With an empty text, the sheets then the fleet.
+  - Each result: `{ kind, source, key, label, sheetId, sheetVia, type, registration, callsign, name }`.
+  - `aircraftOf(result)` gives the current flight's `aircraft` (`{ sheetId, type, registration, callsign, name,
+    source }`).
+- **An aircraft's sheet**: its own (same registration), else its type's (aliases followed by `related`), else none
+  and `estimate(type)`. `resolve(registration)` gives the aircraft, its sheet (`sheetVia`: own, type, estimate) and
+  the estimate when there is no sheet.
+- **Sheets API**, `aircraft().sheets`:
+  - `list()`, `get(id)`, `origins(id)` (source, date and kept values per field);
+  - `put(sheet, { source })`: the changed fields are stamped and the previous values kept;
+    `aircraft/sheets/<id>.json` is written, then the sheet goes into the V2 mirror (`fpdb.json`, without `_fields`
+    and `_kept`, with `updated_at` and `updatedAt`);
+  - `remove(id)`.
+  Writing needs a reader with `put` and `remove` (the frame's adapter); the provisional reader only reads.
+- **Merge** of two versions of a sheet (the rule declared to the frame for `aircraft/sheets/`, `mergeSheets`): field by
+  field, the newest stamp wins, the loser goes to `_kept`. When the same field has two values, the losing version is
+  returned as `lost`, so the frame counts a conflict.
+- **Sheets logic** (`AeroDBSheets`, taken over from fuel): reading CSV, JSON, `.lnmperf`, OFP and ChatGPT replies;
+  merge with choices; `.lnmperf` writing; EUROCONTROL and SimBrief completions. aerodb configures it with the types,
+  the sheets and the fleet (`fleetTypes()`, for the ChatGPT prompt). Registration and callsign are editable fields.
+- **Prefixes** (`AeroDB.declaration()`, given by the frame to `FrameData.adapter`):
+  - reads: `sia/base/`, `AircraftDB/` and `references/` as "reference"; `airline/`, `planner/` and `aircraft/` as
+    documents;
+  - writes: `aircraft/sheets/` (merge `mergeSheets`) and the V2 mirror `planner/…fpdb.json` (merge
+    `keyed:profiles:id`).
+- **Loading**: `aircraft()` loads `registry.js` and `sheets.js` from aerodb's folder at its first call. A change under
+  `aircraft/`, `airline/`, `planner/` or `references/` makes it read again at the next call, and sends
+  `{ aircraft: true }`; changes that are the registry's own first reads do not.
+
 ## 6. Invariants
 
-1. aerodb never writes to the data repository, never builds, never executes a file read from it. Keeping and
-   releasing only fill and empty the device's cache.
+1. aerodb never writes the SIA base nor AircraftDB, never builds, never executes a file read from the data
+   repository. It writes only the performance sheets (`aircraft/sheets/`) and their V2 mirror. Keeping and releasing
+   only fill and empty the device's cache.
 2. A module never names a zone or a file; aerodb chooses them.
 3. A question over the whole world returns exactly the published base (same counts as the workstation's base).
 4. No interface text: labels, translations and formatting belong to the modules and the frame.
