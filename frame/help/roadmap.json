@@ -195,6 +195,13 @@
           "en": "GitHub sign-in without a token to copy (OAuth / GitHub App) once a relay exists (the site's web service)",
           "de": "GitHub-Anmeldung ohne zu kopierendes Token (OAuth / GitHub App), sobald ein Relais existiert (Webdienst der Website)",
           "es": "Inicio de sesión GitHub sin token que copiar (OAuth / GitHub App) en cuanto exista un relé (servicio web del sitio)"
+        },
+        {
+          "state": "done",
+          "fr": "Premier écran sans attendre le réseau : champs de Carburant à 0,8 s au premier passage GitHub (compagnie lue en fond, lectures du dépôt partagées)",
+          "en": "First screen without waiting for the network: Fuel's fields at 0.8 s on the first GitHub pass (airline read in the background, repository reads shared)",
+          "de": "Erster Bildschirm ohne Warten auf das Netz: Felder von Kraftstoff nach 0,8 s beim ersten GitHub-Durchlauf (Gesellschaft im Hintergrund gelesen, geteilte Lesevorgänge)",
+          "es": "Primera pantalla sin esperar a la red: campos de Combustible a 0,8 s en el primer paso GitHub (compañía leída en segundo plano, lecturas compartidas)"
         }
       ]
     },
@@ -286,7 +293,7 @@
           "es": "Ruta como lista de puntos editable (añadir, quitar, mover, altitud por punto) vista en directo en el Mapa; bloque Aeronave reducido a una línea"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Sélecteur d'appareil sur toutes les sources (mes fiches, flotte, types, code libre) par le registre aerodb",
           "en": "Aircraft picker over every source (my sheets, fleet, types, free code) through the aerodb registry",
           "de": "Luftfahrzeugauswahl über alle Quellen (meine Blätter, Flotte, Typen, freier Code) über das aerodb-Register",
@@ -333,7 +340,7 @@
           "es": "Mapa IFR del vuelo previsto (teselas o fondo liso sin conexión), perfil vertical, cursor común, TOC / TOD"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Points VAC rapprochés dessinés une seule fois ; fusion des balises co-localisées : VOR avant NDB avant ILS",
           "en": "Matched VAC points drawn once; co-located navaids merged: VOR before NDB before ILS",
           "de": "Zugeordnete VAC-Punkte nur einmal gezeichnet; ko-lokalisierte Funkfeuer zusammengeführt: VOR vor NDB vor ILS",
@@ -429,6 +436,20 @@
           "en": "VFR reporting points and sequences per aerodrome, extracted from VAC charts by the user: imported into the data repository (Maintenance), drawn dashed “to verify” on hover and when an aerodrome is pinned; full airspace tooltip under a point (level bars); Report VFR tool (tools/report-vfr) in the suite, rerun at each VAC cycle",
           "de": "VFR-Meldepunkte und -Sequenzen je Platz, vom Nutzer aus VAC-Karten extrahiert: ins Datenrepository importiert (Wartung), gestrichelt „zu prüfen“ bei Hover und angepinntem Platz; vollständiger Luftraum-Tooltip unter einem Punkt (Höhenbalken); Werkzeug Report VFR (tools/report-vfr) in der Suite, bei jedem VAC-Zyklus neu ausgeführt",
           "es": "Puntos de notificación y secuencias VFR por aeródromo, extraídos de las cartas VAC por el usuario: importados al repositorio de datos (Mantenimiento), dibujados a trazos «por verificar» al pasar y al fijar un aeródromo; tooltip completo de espacios bajo un punto (barras de niveles); herramienta Report VFR (tools/report-vfr) en la suite, relanzada en cada ciclo VAC"
+        },
+        {
+          "state": "done",
+          "fr": "Cartes qui restent : la carte d'un terrain et celle des espaces restent ouvertes (✕, Échap), un point de report touché ouvre la carte de son terrain, la carte des espaces dès un seul espace",
+          "en": "Cards that stay: the aerodrome's card and the airspaces card stay open (✕, Escape), a tapped reporting point opens its aerodrome's card, the airspaces card from one airspace on",
+          "de": "Karten, die bleiben: die Karte eines Platzes und die der Lufträume bleiben offen (✕, Esc), ein angetippter Meldepunkt öffnet die Karte seines Platzes, die Luftraumkarte ab einem Luftraum",
+          "es": "Tarjetas que permanecen: la tarjeta de un aeródromo y la de los espacios quedan abiertas (✕, Esc), un punto de notificación tocado abre la tarjeta de su aeródromo, la tarjeta de espacios desde un solo espacio"
+        },
+        {
+          "state": "done",
+          "fr": "Noms de lieux du fond masqués sous nos villes ; l'ETA placé comme un libellé de la route",
+          "en": "Background place names hidden under our towns; the ETA placed like a route label",
+          "de": "Ortsnamen des Hintergrunds unter unseren Städten ausgeblendet; die ETA wie ein Streckenlabel gesetzt",
+          "es": "Nombres de lugares del fondo ocultos bajo nuestras ciudades; la ETA colocada como una etiqueta de la ruta"
         }
       ]
     },
@@ -469,6 +490,13 @@
           "en": "Recording on the site without copy-paste (PHP web service)",
           "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)",
           "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)"
+        },
+        {
+          "state": "done",
+          "fr": "Heures du compte rendu en UTC (marqueur Z) ; un ancien CR est montré converti et réécrit à l'enregistrement ; Mes vols en UTC",
+          "en": "Report times in UTC (Z marker); an older report is shown converted and rewritten when saved; My flights in UTC",
+          "de": "Zeiten des Berichts in UTC (Z-Marker); ein älterer Bericht wird umgerechnet gezeigt und beim Speichern neu geschrieben; Meine Flüge in UTC",
+          "es": "Horas del informe en UTC (marcador Z); un informe antiguo se muestra convertido y se reescribe al guardar; Mis vuelos en UTC"
         }
       ]
     },
@@ -596,7 +624,7 @@
           "es": "Base SIA por zona, ciclo y tipo; ciudades; tipos de aeronave; lectura bajo demanda, caché por zona"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Un seul registre des aéronefs (livré) : types, performances, fiches du pilote, flotte, référence au même endroit, une seule recherche ; .lnmperf tenus à jour dans les deux sens (réexport à chaque changement, fusion si le fichier change)",
           "en": "One aircraft registry: types, performances, the pilot's sheets, fleet and reference at one place, one search; .lnmperf kept in sync both ways (re-export on change, merge when the file changes)",
           "de": "Ein einziges Luftfahrzeugregister: Typen, Leistungen, Pilotenblätter, Flotte und Referenz an einem Ort, eine Suche; .lnmperf in beide Richtungen aktuell (Neuexport bei Änderung, Zusammenführung, wenn die Datei sich ändert)",
