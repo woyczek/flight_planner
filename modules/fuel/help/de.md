@@ -30,6 +30,11 @@ Sinkflugbeginns vor der Ankunft. „Einzelheiten“ schlüsselt es Phase für Ph
 **Die Steigflug-Vorgaben.** Klappen Sie sie auf, um dem Steigflug bis zur Flugfläche zu folgen: Leistung, Drehzahl,
 Geschwindigkeit, Steigrate, Durchfluss, Mach, Zeit und Kraftstoff kumuliert an den Stufen, mit gezeichnetem Profil.
 
+**Öffnen in.** Unter dem Ergebnis bereitet „Öffnen in ▾“ denselben Flug anderswo vor, in einem neuen Tab: SimBrief
+(Flugoptionen vorausgefüllt, SimBrief-Anmeldung nötig), SkyVector (die Route gezeichnet, mit Geschwindigkeit und
+Flugfläche), Navigraph und ChartFox (die Karten von Abflug- und Zielflugplatz, Anmeldung nötig). Ein ausgegrauter
+Eintrag sagt, was ihm fehlt (Flugplatz, Luftfahrzeugtyp). Es wird nichts gesendet, was nicht schon im Flug steht.
+
 **Weiter zu Karte und Bericht.** Der hier vorbereitete Flug — Luftfahrzeug, Route, Flugfläche, Steig- und Sinkprofil —
 wird geteilt: Öffnen Sie Karte oder Bericht, er ist schon da.
 
@@ -69,4 +74,4 @@ Datenblättern ändert sich nichts.
 - **Offline**: Alles wird auf dem Gerät berechnet, aus den bereits empfangenen Datenblättern. Nur der Aufruf von
   SimBrief wartet auf das Netz; der letzte OFP bleibt auf dem Gerät gespeichert.
 
-<!-- fr: c6ffb9983705 -->
+<!-- fr: f362e323f497 -->

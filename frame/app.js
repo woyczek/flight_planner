@@ -606,7 +606,8 @@
         label: m.label,
         level: moduleLevel[m.id] ?? 1
       }))),
-      cutAccess
+      cutAccess,
+      helpPanel: () => window.SogHelp ? SogHelp.panel('settings', helpCtx()) : Promise.resolve(null)
     });
   }
 
@@ -626,7 +627,8 @@
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);
     $('fHelp').onclick = () => {
-      location.hash = `#help${current?.id ? `?m=${encodeURIComponent(current.id)}` : ''}`;
+      const at = current?.id || (['settings', 'device'].includes(parseHash().id) ? 'settings' : '');
+      location.hash = `#help${at ? `?m=${encodeURIComponent(at)}` : ''}`;
     };
     $('fDevice').onclick = () => {
       location.hash = '#settings';

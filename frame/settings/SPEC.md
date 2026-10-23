@@ -51,7 +51,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    file…" asks, saying that this device's copies, pending writes and conflicts will be erased, then loads in `replace`
    mode. A file that is not a device backup is refused with a notification; the result says added, updated, kept
    and conflicts.
-6. **Data access** (an exchange ticked): on a launcher, one sentence (no token here). Otherwise repository, branch and
+6. **Data access** (an exchange ticked, or no launcher serving the page): on a launcher, one sentence (no token
+   here). Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
+   the data repository, nothing is sent (the frame's local transport with the GitHub repository as reference source). Otherwise repository, branch and
    token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint: a
    fine-grained token on this repository only, Contents read and write, 90 days at most, never pasted in a message.
    "Save", "Test" (the branch head through the transport; offline said as such) and "Cut access" (asks, then
@@ -64,13 +66,17 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    partly here, kept offline, unknown), cycle, kept and published sizes; "Keep offline" (progress shown in the row, a
    notification with the size read or the files not read) when the zone is not complete, "Free" when it has copies and
    the frame can evict; a last row for the aircraft base (state, number of types). A hint says keeping downloads the
-   whole zone, preferably on Wi-Fi.
+   whole zone, preferably on Wi-Fi. With no launcher and no access set, a warning says the device has no base and
+   gives the two ways in: set the access above, or publish the bases from a workstation with the launcher.
 9. **Launcher keys** (page served by a launcher only): the IVAO API key's state (`GET /__setup/secrets`: saved with
    its last characters, given by the launcher's environment, or missing), a new key (empty: unchanged), "Save",
    "Test" (`/__setup/secrets/test?service=ivao`), "Erase" (asks). The key goes to the launcher's `secrets/` folder,
    never to the browser nor to the data.
 10. **Diagnostics** (folded): transport, status, usages, launcher, repository (never the token), aerodb state,
    storage, network, browser; "Copy".
+
+Under the screen's introduction, the folded "How to use" panel of the Settings chapter (`frame/settings/help/`,
+`frame/help/SPEC.md`).
 
 ## 4. Invariants
 

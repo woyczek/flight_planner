@@ -41,3 +41,18 @@ The help agent's memory: every choice, dated, with its reason. Newest last. Proj
   `#help?m=fuel` at the chapter; contents folded on a phone, "↑ Contents" opens it, contents and permalinks stay on
   the help screen; `ctx.help.open('La route')` opens the panel; English panel "How to use"; narrow no-break spaces in
   French; no horizontal scroll, no JavaScript error.
+- **23 Oct 2026 — Lot 3** (ergonomics session's go): the chapters received in French translated and assembled —
+  Report, My flights, Website, Map, and Fuel again (the "Open in" paragraph) —, plus a Settings chapter written here:
+  - translations of report, flightlog, website and maps made by helper agents under the same rules (structure kept,
+    screen labels taken from each module's `[fr, en, de, es]` rows, “…” / „…“ / «…», fingerprint), then reviewed here:
+    same number of titles, sections and bold subjects in the four languages; one correction: in the website chapter,
+    « Enregistrer mon vol » names a field of the Airline card, whose label is translated on screen ("Record my flight"),
+    while « Log des vols » and « Flotte » are the website's own French page names, kept in French;
+  - English quotes made consistent (“…”) in the fuel chapter;
+  - Settings chapter (`frame/settings/help/`), placed after the modules (`FRAME_CHAPTERS` of the build): its "How to
+    use" says plainly what a device with no access and no launcher sees — no aeronautical and no aircraft base — and the
+    two ways in (set the access, even without an exchange; or publish from a workstation with the launcher). The
+    question came from the user on the GitHub site;
+  - the settings screen shows the Access card without an exchange too when no launcher serves the page (it then only
+    reads the bases), and "Offline data" says what to do when nothing can provide them; the ? button opens the
+    Settings chapter from the settings screen, whose own folded panel sits under its introduction.

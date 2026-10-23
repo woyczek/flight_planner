@@ -24,6 +24,15 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **help: chapters Report, My flights, Website, Map and Settings** (`modules/{report,flightlog,website,maps}/help/
+  {en,de,es}.md`, `modules/fuel/help/*.md`, `frame/settings/help/*.md`, `frame/help/build_help.py`,
+  `frame/help/pilot.*.md`, `frame/settings/settings.js`, `frame/app.js`; `frame/help/SPEC.md`, `DECISIONS.md`,
+  `frame/settings/SPEC.md`, `DECISIONS.md`) — the chapters written in French by the module agents translated into
+  English, German and Spanish with each screen's own labels, Fuel updated ("Open in"), and a Settings chapter placed
+  after the modules; it says what a device with no access and no launcher sees (no aeronautical or aircraft base) and
+  how to get them. In Settings, data access can now be set without an exchange when no launcher serves the page (it
+  only reads the bases), "Offline data" says what to do when there is no base, and the screen has its own "How to
+  use" panel.
 - **maps: help chapter** (`modules/maps/help/fr.md`, French; the help session translates and assembles it).
   - How to use: the planned flight, what the map shows, the profile and its cursor, TOC / TOD, mission maps, "Edit the
     route".

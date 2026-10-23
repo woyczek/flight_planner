@@ -16,6 +16,8 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   sections after it are for the manual only.
 - **A translation** ends with `<!-- fr: <fingerprint> -->`, the first 12 characters of the SHA-1 of the French file it
   translates.
+- **A frame screen's chapter**: the same, in the screen's folder — today `frame/settings/help/<lang>.md` (Settings),
+  written and translated by the help agent; listed in `FRAME_CHAPTERS` of the build, placed after the modules.
 - **The application's introduction**: `frame/help/intro.<lang>.md` (what the application is, first start, data and
   synchronisation).
 - `SPEC.md` of a module is a developer document; it is never shown.
@@ -23,7 +25,8 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
 ## 2. Build (`python frame/help/build_help.py [--check]`)
 
 - Writes `frame/help/pilot.<lang>.md`: a generated-file comment, the introduction, then each module's chapter in the
-  order of `APP.modules` in `frame/app.js`, each preceded by `<!-- chapter: <id> -->`.
+  order of `APP.modules` in `frame/app.js`, then the frame screens' chapters, each preceded by
+  `<!-- chapter: <id> -->`.
 - **Refuses**, writing nothing, when a module that has a `help/` folder misses a language, when a chapter does not start
   with its single `# ` title, or has no `## ` section; when an introduction is missing.
 - **Reports** without refusing: a module with no chapter yet; a translation whose fingerprint is absent or differs from
@@ -54,4 +57,5 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
 - **French typography** as in the frame's texts: a narrow no-break space before `: ; ! ? »` and after `«`.
 - **Language**: the application's; a missing language falls back to French. Offline: the four manuals and the scripts
   are in the frame's service worker list.
-- The header's **?** button opens `#help?m=<current module>`.
+- The header's **?** button opens `#help?m=<current module>`, or `#help?m=settings` from the settings screen.
+- The settings screen shows its own folded panel under its introduction (`helpPanel` of its context).

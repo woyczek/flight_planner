@@ -72,6 +72,10 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - sizes are written with the units of the application's language.
   - Known by the frame's design, told to the ergonomics session: a merge also takes the device files of the backup
     (`device/…`, cache policy) when they are newer, so the usages of the saved device may come back with them.
+- **23 Oct 2026 — Access without an exchange** (help lot 3, the user's question on the GitHub site): a device with
+  neither launcher nor access has no aeronautical and no aircraft base. The Access card now shows without an exchange
+  when no launcher serves the page, with a hint that it then only reads the bases; "Offline data" says what to do when
+  nothing can provide them. Checked: alone with an access set, the transport stays local and the warning goes.
 - **23 Oct 2026 — Tests of lot 4** (fake GitHub serving the repository, 375 px, French): export (dump format, counts),
   merge keeping this device's newer record, replace bringing the backup's record back, both questions; "Cut access"
   (GitHub → local, setting erased, "no way to exchange" sentence); `cached` / `evict` present on the adapter; real

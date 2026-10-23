@@ -2,7 +2,8 @@
 
 Sources :
   · frame/help/intro.<langue>.md : ce qu'est l'application, premier démarrage, synchronisation, réglages ;
-  · modules/<id>/help/<langue>.md : le chapitre de chaque module, dans l'ordre du menu (APP.modules de frame/app.js).
+  · modules/<id>/help/<langue>.md : le chapitre de chaque module, dans l'ordre du menu (APP.modules de frame/app.js) ;
+  · puis les chapitres des écrans du cadre (FRAME_CHAPTERS : frame/settings/help/<langue>.md, Réglages).
 Règles :
   · un module qui a un dossier help/ doit avoir ses quatre langues, un titre « # … » en tête et au moins une section
     « ## … » (la première est l'aide en page) : sinon refus, rien n'est écrit ;
@@ -20,12 +21,18 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 LANGS = ('fr', 'en', 'de', 'es')
+# chapitres des écrans du cadre, après les modules : (id, dossier)
+FRAME_CHAPTERS = [('settings', os.path.join(ROOT, 'frame', 'settings', 'help'))]
 GENERATED = '<!-- Fichier produit par frame/help/build_help.py : ne pas le modifier, modifier les sources (modules/<id>/help/). -->'
 
 
 def read(path):
     with open(path, encoding='utf-8') as f:
         return f.read().replace('\r\n', '\n')
+
+
+def rel(path):
+    return os.path.relpath(path, ROOT).replace(os.sep, '/')
 
 
 def module_order():
@@ -52,8 +59,8 @@ def main(args):
         else:
             intro[lang] = read(p).strip()
     chapters = {lang: [] for lang in LANGS}
-    for mid in module_order():
-        d = os.path.join(ROOT, 'modules', mid, 'help')
+    # chapitres des modules dans l'ordre du menu, puis ceux des écrans du cadre (Réglages)
+    for mid, d in [(m, os.path.join(ROOT, 'modules', m, 'help')) for m in module_order()] + FRAME_CHAPTERS:
         if not os.path.isdir(d):
             notes.append(f'{mid} : sans chapitre')
             continue
@@ -61,22 +68,22 @@ def main(args):
         for lang in LANGS:
             p = os.path.join(d, f'{lang}.md')
             if not os.path.isfile(p):
-                errors.append(f'modules/{mid}/help/{lang}.md manquant')
+                errors.append(f'{rel(d)}/{lang}.md manquant')
                 continue
             t = read(p).strip()
             if not t.startswith('# '):
-                errors.append(f'modules/{mid}/help/{lang}.md : doit commencer par un titre « # … »')
+                errors.append(f'{rel(d)}/{lang}.md : doit commencer par un titre « # … »')
             if len(re.findall(r'^# ', t, re.M)) != 1:
-                errors.append(f'modules/{mid}/help/{lang}.md : un seul titre « # … » par chapitre')
+                errors.append(f'{rel(d)}/{lang}.md : un seul titre « # … » par chapitre')
             if not re.search(r'^## ', t, re.M):
-                errors.append(f'modules/{mid}/help/{lang}.md : aucune section « ## … » (aide en page)')
+                errors.append(f'{rel(d)}/{lang}.md : aucune section « ## … » (aide en page)')
             texts[lang] = t
         if 'fr' in texts:
             fp = fingerprint(read(os.path.join(d, 'fr.md')).strip())
             for lang in LANGS[1:]:
                 got = re.search(r'<!-- fr: ([0-9a-f]{12}) -->', texts.get(lang, ''))
                 if lang in texts and (not got or got.group(1) != fp):
-                    notes.append(f'modules/{mid}/help/{lang}.md : à retraduire (fr: {fp})')
+                    notes.append(f'{rel(d)}/{lang}.md : à retraduire (fr: {fp})')
         for lang, t in texts.items():
             title, _, rest = t.partition('\n')
             chapters[lang].append(f'<!-- chapter: {mid} -->\n{title}\n\n{rest.strip()}\n')

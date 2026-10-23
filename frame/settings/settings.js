@@ -186,6 +186,18 @@
       'Feingranulares Token (github.com › Settings › Developer settings › Fine-grained tokens): nur dieses Repository, „Contents“ lesen und schreiben, höchstens 90 Tage. Nur auf diesem Gerät gespeichert, nie wieder angezeigt; in keine Nachricht einfügen.',
       'Token de grano fino (github.com › Settings › Developer settings › Fine-grained tokens): solo este repositorio, «Contents» lectura y escritura, 90 días como máximo. Guardado solo en este dispositivo, nunca se vuelve a mostrar; no lo pegue en ningún mensaje.'
     ],
+    accessRead: [
+      'Sans échange coché, l’accès ne sert qu’à lire les bases aéronautiques et des appareils publiées dans le dépôt des données : rien n’est envoyé.',
+      'With no exchange ticked, the access only reads the aeronautical and aircraft bases published in the data repository: nothing is sent.',
+      'Ohne angekreuzten Austausch dient der Zugang nur zum Lesen der im Datenrepository veröffentlichten Luftfahrt- und Flugzeugdaten: Es wird nichts gesendet.',
+      'Sin intercambio marcado, el acceso solo sirve para leer las bases aeronáuticas y de aeronaves publicadas en el repositorio de datos: no se envía nada.'
+    ],
+    noBases: [
+      'Aucune base sur cet appareil : ni accès au dépôt des données réglé, ni lanceur. Réglez l’accès ci-dessus, ou publiez les bases depuis un poste avec lanceur (V2 : Paramètres › Maintenance › Données aéronautiques et Types d’aéronefs).',
+      'No base on this device: no access to the data repository set, and no launcher. Set the access above, or publish the bases from a workstation with the launcher (V2: Settings › Maintenance › Aeronautical data and Aircraft types).',
+      'Keine Basis auf diesem Gerät: weder Zugang zum Datenrepository eingestellt noch Starter. Stellen Sie oben den Zugang ein oder veröffentlichen Sie die Basen von einem Rechner mit Starter (V2: Einstellungen › Wartung › Luftfahrtdaten und Luftfahrzeugtypen).',
+      'Ninguna base en este dispositivo: ni acceso al repositorio de datos configurado, ni lanzador. Configure el acceso arriba, o publique las bases desde un puesto con lanzador (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave).'
+    ],
     test: ['Tester', 'Test', 'Testen', 'Probar'],
     testOk: ['Dépôt joignable, branche {b} trouvée.', 'Repository reachable, branch {b} found.',
       'Repository erreichbar, Zweig {b} gefunden.',
@@ -385,24 +397,28 @@
     if (!exchange) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
       <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
     // accès et synchronisation, si un échange est coché
-    if (exchange) {
+    if (exchange || !L?.data) {
       cards.push(L?.data ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p></div>` :
-        `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>
+        `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
         ${fld('repo', T.repo, gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
         <p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`);
+    }
+    if (exchange) {
       cards.push(`<div class="f-card" data-card="sync"><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><p class="f-muted">${esc(t(T.syncHint))}</p>
         <div class="f-row"><button type="button" class="primary" data-act="sync">${esc(t(T.syncNow))}</button>${st.conflicts ? `<a href="#conflicts">${esc(t(T.conflicts, { n: st.conflicts }))}</a>` : ''}</div></div>`);
     }
     // données hors ligne
     cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
-      <div data-zones></div><p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
+      <div data-zones></div>${!L?.data && !gh ? `<p class="f-warn">${esc(t(T.noBases))}</p>` : ''}<p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
     // clés, si un lanceur sert la page
     if (L) cards.push(`<div class="f-card" data-card="keys"><h2>${esc(t(T.keys))}</h2><p class="f-muted">${esc(t(T.keysHint))}</p>
       <p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`);
+    const help = await c.helpPanel?.().catch(() => null);
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
       <details class="f-card"><summary>${esc(t(T.diag))}</summary><pre data-diag></pre><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details>`;
+    if (help) view.querySelector('h1 + p')?.after(help);
 
     const card = k => view.querySelector(`[data-card="${k}"]`);
     const val = (k, root = view) => root.querySelector(`[data-f="${k}"]`)?.value.trim() ?? '';
