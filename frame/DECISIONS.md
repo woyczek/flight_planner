@@ -201,6 +201,32 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - Tests: a module declaring `net` and `lazy` (temporary, in a copy): the launcher's header and the built pages carry
     its hosts in `connect-src`, a local address is ignored; the lazy file is not in the service worker's copies after
     the first visit, and is once loaded.
+- **23 Oct 2026 — Lot 9, `data/` is the device's storage on a launcher's page** (user feedback on localhost:8000:
+  V2 and V3 showed different bases and sheets).
+  - The cause: with no exchange ticked, the frame chose the local transport even on a page served by the launcher. So
+    the pilot's documents (`planner/…fpdb.json`, `cr/reports/`, `pilot/<trigram>/…`) stayed in the browser's cache,
+    and V3 never saw `data/`, which V2 reads directly.
+  - Now the launcher is the transport by default on its pages: `data/` read and written, one local commit per batch.
+    The git exchange happens only with "several devices" or "several users". "Alone on this device" is the case of a
+    page with no launcher.
+- **23 Oct 2026 — Taking up the copies written in local mode** (`adoptLocal`, at the first pass with a repository after
+  local passes):
+  - Without it, a copy written locally and absent from `data/` would stay in the browser and never be sent. A copy
+    present on both sides would be replaced by `data/`'s version without a trace (the pull only compares revisions,
+    and only for the prefixes of mounted modules).
+  - So each copy is compared with the repository's version:
+    - absent there: queued;
+    - another value: the usual merge with no base (newest wins, the loser kept in conflicts);
+    - same value: nothing, so a different formatting neither sends a file nor makes a conflict.
+  - Done before the pull, for every prefix. `meta.mode` remembers the kind of the last successful pass, so it happens
+    once; a failed pass retries it.
+  - Not taken up: an IndexedDB that had already been used with a repository before this lot (it has a remote tree and
+    no `mode`), whose copies came from that repository.
+- **23 Oct 2026 — Tests of lot 9**:
+  - `frame/store/test/`: 84 checks. From local to a repository: newer here sent, only here sent, newer there kept
+    here too, same value untouched, two losers in conflicts, the repository's file pulled, nothing taken up at the
+    second pass.
+  - The launcher (8794) with no usage ticked: transport `launcher`, a module's write committed into `data/`.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

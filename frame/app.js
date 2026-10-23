@@ -10,9 +10,9 @@
   //     style globale : il se sert des jetons du cadre (frame/frame.css, --sog-…) ;
   //   · synchronisation : bouton avec son état (à jour, n en attente, en cours, hors ligne, conflits, erreur, cet
   //     appareil seul) ; clic : synchroniser, ou l'écran des conflits s'il y en a ;
-  //   · transport choisi d'après les usages de l'appareil (document local device/usages.json, écrit par l'écran des
-  //     réglages, frame/settings/settings.js) : aucun usage d'échange coché → local seul ; sinon le
-  //     lanceur si la page en est servie, sinon GitHub s'il est réglé, sinon local ;
+  //   · transport : page servie par un lanceur → son data/ est le stockage de l'appareil (lanceur ; échange git
+  //     seulement si « plusieurs appareils » ou « plusieurs utilisateurs » est coché dans device/usages.json, écrit par
+  //     l'écran des réglages) ; sans lanceur : aucun usage d'échange coché → local seul, sinon GitHub s'il est réglé ;
   //   · identité (device/identity.json : trigramme, VID IVAO, CID VATSIM, identifiant SimBrief) passée aux modules en
   //     lecture seule, objet vide en son absence ;
   //   · niveau d'usage (device/level.json, choisi dans les réglages : 1 découverte, 2 courant par défaut, 3 complet) : le
@@ -381,15 +381,17 @@
     FD.github.clear();
     await loadDevice();
   }
-  /** Transport des usages cochés : aucun échange → local ; lanceur si la page en est servie ; GitHub s'il est réglé. */
+  /** Transport de l'appareil : page servie par un lanceur → son data/ est le stockage (transport lanceur, quels que
+   *  soient les usages ; l'échange git seulement si « plusieurs appareils » ou « plusieurs utilisateurs » est coché) ;
+   *  sinon, aucun échange coché → local ; GitHub s'il est réglé. */
   async function chooseTransport() {
     const exchange = usages.devices || usages.users;
-    if (!exchange && !usages.backend) return FD.transports.local();
     const L = launcherHere;
     if (L?.data) return FD.launcher({
       exchange: !!exchange && L.dataGit,
       author: () => identity.trigram || ''
     });
+    if (!exchange && !usages.backend) return FD.transports.local();
     if (FD.github.config()) return FD.github();
     return {
       ...FD.transports.local(),

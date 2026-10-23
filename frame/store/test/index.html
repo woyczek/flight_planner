@@ -340,6 +340,67 @@
         await d.status());
       check('list from the cache', (await d.list('disponibilites/'))?.length === 1, await d.list(''));
     },
+    async 'from local to a repository: copies written here are taken up at the first pass, usual merge'() {
+      const A = 'disponibilites/TST/2026-W48.json',
+        B = 'disponibilites/TST/2026-W49.json',
+        C = 'disponibilites/TST/2026-W50.json',
+        D = 'disponibilites/ABC/2026-W48.json',
+        E = 'disponibilites/TST/2026-W51.json';
+      const d = await fresh({
+        [A]: JSON.stringify(rec('TST', '2026-10-01T00:00:00Z', {
+          v: 'remote-older'
+        })),
+        [C]: JSON.stringify(rec('TST', '2026-10-20T00:00:00Z', {
+          v: 'remote-newer'
+        })),
+        [D]: JSON.stringify(rec('ABC', '2026-10-05T00:00:00Z')),
+        [E]: JSON.stringify(rec('TST', '2026-10-02T00:00:00Z', {
+          v: 'same'
+        }))
+      });
+      const repo = FD.github({
+        repo: 'test/data',
+        branch: 'main',
+        token: 'test-token',
+        api: `${location.origin}/api`
+      });
+      // usage sans échange : les écritures restent sur l'appareil
+      FD.configure({
+        transport: FD.transports.local()
+      });
+      await d.put(A, rec('TST', '2026-10-10T00:00:00Z', {
+        v: 'local-newer'
+      }));
+      await d.put(B, rec('TST', '2026-10-10T00:00:00Z', {
+        v: 'local-only'
+      }));
+      await d.put(C, rec('TST', '2026-10-05T00:00:00Z', {
+        v: 'local-older'
+      }));
+      await d.put(E, rec('TST', '2026-10-02T00:00:00Z', {
+        v: 'same'
+      }));
+      await d.sync();
+      const before = (await stats()).commits.length;
+      // puis un dépôt (page servie par le lanceur) : premier passage
+      FD.configure({
+        transport: repo
+      });
+      const r = await d.sync(),
+        st = await stats(),
+        files = st.files,
+        last = st.commits[st.commits.length - 1];
+      check('sync ok, one commit', r.ok && st.commits.length === before + 1, r);
+      check('newer here: sent', JSON.parse(files[A]).v === 'local-newer', files[A]);
+      check('only here: sent', JSON.parse(files[B] || '{}').v === 'local-only', Object.keys(files));
+      check('newer in the repository: kept, and here too', JSON.parse(files[C]).v === 'remote-newer' && (await d.get(C)).v ===
+        'remote-newer', files[C]);
+      check('same value: neither sent nor in conflict', !last[2].includes(E) && !last[2].includes(C), last[2]);
+      check('the losers are kept (2 conflicts)', r.conflicts === 2 && (await FD.conflicts()).length === 2, await FD.conflicts());
+      check('a file of the repository arrives', (await d.get(D))?.pilote === 'ABC', null);
+      const r2 = await d.sync();
+      check('second pass: nothing taken up again', r2.ok && r2.pushed === 0 && (await stats()).commits.length === before + 1, r2);
+    },
     async 'local transport with a reference source: references read from it, revalidated, nothing sent'() {
       const ref = 'sia/base/fr/2026-10-01/aerodromes.json';
       await FD.reset();

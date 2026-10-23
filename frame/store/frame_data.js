@@ -597,6 +597,9 @@
       }
       // transport qui échange lui-même avec un dépôt distant (lanceur : passage git du poste) : avant, pour recevoir
       await exchange(T, result);
+      // premier passage avec un dépôt après un usage sans échange : les copies écrites ici sont reprises
+      const mode = await getMeta('mode');
+      if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, await T.head(), result);
       for (let i = 0; i < TRIES; i++) {
         const head = await T.head();
         const pulled = await pull(T, head);
@@ -629,6 +632,51 @@
       return done(result);
     }
   }
+  /** Reprise des copies écrites sans échange (transport local) au premier passage avec un dépôt : une copie absente du
+   *  dépôt devient une écriture en attente ; présente des deux côtés et différente, fusion habituelle sans base commune
+   *  (la plus récente gagne, l'autre est gardée dans les conflits) ; identique, rien. Ni le cache de l'appareil ni les
+   *  références. Faite ici plutôt qu'au tirage, qui ne regarde que les préfixes des modules montés. */
+  async function adoptLocal(T, head, result) {
+    const tree = await T.tree(head),
+      same = (path, a, b) => a === b || JSON.stringify(valueOf(path, a)) === JSON.stringify(valueOf(path, b));
+    for (const d of await idb('docs', 'getAll')) {
+      const pol = d.policy || policyOf(d.path) || 'document';
+      if (pol === 'cache' || pol === 'reference' || isCache(d.path) || tree[d.path] === d.rev || await idb('pending', 'get', d.path))
+        continue;
+      const queue = text => idb('pending', 'put', {
+        path: d.path,
+        text,
+        at: new Date().toISOString(),
+        author: cfg.identity.trigram || ''
+      });
+      if (!tree[d.path]) {
+        await queue(d.text);
+        continue;
+      }
+      const remote = await T.read(d.path, tree[d.path]),
+        m = same(d.path, d.text, remote) ? {
+          text: remote,
+          conflict: null
+        } : mergeText(d.path, null, d.text, remote);
+      await idb('docs', 'put', {
+        ...d,
+        text: remote,
+        base: remote,
+        rev: tree[d.path],
+        at: Date.now()
+      });
+      if (!same(d.path, m.text, remote)) await queue(m.text);
+      if (m.conflict) {
+        result.conflicts++;
+        await idb('conflicts', 'add', {
+          path: d.path,
+          ...m.conflict,
+          at: new Date().toISOString()
+        });
+      }
+      result.pulled.push(d.path);
+    }
+  }
   /** Échange propre au transport (T.exchange) ; un échec ne bloque pas le passage local, il est rapporté (warning). */
   async function exchange(T, result) {
     if (!T.exchange) return;
@@ -642,6 +690,12 @@
   async function done(r) {
     lastError = r.error;
     backoff(r);
+    // genre du dernier passage réussi (local ou dépôt) : un passage avec un dépôt après des passages locaux reprend les
+    // copies écrites ici (adoptLocal)
+    const kind = cfg.transport?.kind === 'local' ? 'local' : 'remote';
+    if (r.ok && (await getMeta('mode'))?.kind !== kind) await setMeta('mode', {
+      kind
+    });
     const prev = await getMeta('status');
     await setMeta('status', {
       lastSync: r.ok ? new Date().toISOString() : prev?.lastSync || '',

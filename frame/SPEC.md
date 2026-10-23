@@ -113,8 +113,16 @@ A transport is `{ id, kind }`, plus, when its kind is `remote`, four methods: `h
 
 The transports:
 
-- **`local`** (only "single user" ticked): no exchange. A pass applies the queue to the cache, and the cache is the
-  truth.
+- **`local`** (a page with no launcher, no exchange ticked): no exchange. A pass applies the queue to the cache, and
+  the cache is the truth.
+  - **Taking up local copies.** The first successful pass with a repository (launcher or GitHub) after local passes
+    takes up the copies written here (`adoptLocal`):
+    - a copy absent from the repository becomes a pending write;
+    - present on both sides with another value: the usual merge with no common base (records: the newest `updated_at`
+      wins, the other is kept in conflicts);
+    - the same value (whatever the formatting): nothing.
+    - The device cache and the references are never taken up.
+    - The kind of the last successful pass is kept (`meta.mode`), so this happens once.
   - **Reference source.** `reference` files (the SIA and aircraft bases) still need a source, which
     `configure({ references })` gives: a read-only transport (`head`, `tree`, `read`). The frame passes the launcher
     that serves the page, otherwise the configured GitHub repository, otherwise nothing (the public website never
@@ -283,12 +291,16 @@ used alone:
   - `device/identity.json`: `trigram`, `ivao`, `vatsim`, `simbrief`.
   - The settings screen (`frame/settings/`) writes them, with `device/settings.json` for its own answers.
   - They cannot live in the shared repository: they decide how the repository is reached.
-- **Transport chosen from the usages**:
-  - no exchange ticked → local;
-  - otherwise the launcher when the page is served by one (`__setup/status`), exchanging through git if `data/` is a
-    git repository;
-  - otherwise GitHub when a repository and a device token are set;
-  - otherwise local, with a warning that nothing can be exchanged.
+- **Transport**:
+  - **On a page served by a launcher** (`__setup/status`), its `data/` is the device's storage. The transport is the
+    launcher whatever the usages: reads and writes go to `data/`, one local commit per batch.
+    - The git exchange (`/__setup/sync` before and after a pass) happens only if "several devices" or "several users"
+      is ticked and `data/` is a git repository.
+    - So V2 and V3 see the same files on that workstation.
+  - Without a launcher:
+    - no exchange ticked → local ("alone on this device");
+    - otherwise GitHub when a repository and a device token are set;
+    - otherwise local, with a warning that nothing can be exchanged.
   - Changing the settings switches the transport at once.
 - The GitHub token is entered on the settings screen, kept in `githubData:frame`, and never shown again; "Cut
   access" erases it (`FrameData.github.clear`).

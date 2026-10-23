@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 9: V2 and V3 see the same data on a workstation** (`frame/app.js`, `frame/store/frame_data.js`) — on a
+  page served by the launcher, `data/` is the device's storage whatever the usages (git exchange only with "several
+  devices" or "several users"); the documents already kept in the browser are taken up at the first pass, with the
+  usual merge (nothing lost: the older version stays in the conflicts screen).
 - **settings: the launcher's confirmation window made visible** (`frame/settings/settings.js`,
   `frame/settings/help/*.md`; `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — before taking `data/` into
   another repository or saving another remote address, the Access card says that a Yes / No window will open on the
