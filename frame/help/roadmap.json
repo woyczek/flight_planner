@@ -113,14 +113,14 @@
           "es": "Publicación: sitio GitHub Pages (/v3/frame/), envoltorio Capacitor listo"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Base aéronautique en mode GitHub sur le téléphone : lecture des références depuis le dépôt (bug en cours), diagnostic copiable",
           "en": "Aeronautical base in GitHub mode on the phone: reference files read from the repository (bug in progress), copyable diagnostics",
           "de": "Luftfahrtdatenbank im GitHub-Modus auf dem Telefon: Referenzdateien aus dem Repository gelesen (Fehler in Arbeit), kopierbare Diagnose",
           "es": "Base aeronáutica en modo GitHub en el teléfono: referencias leídas desde el repositorio (error en curso), diagnóstico copiable"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Vue double sur tablette et écran large : Carburant ou Compte rendu à gauche, Carte à droite, reliés par le vol courant",
           "en": "Double view on tablet and wide screen: Fuel or Report on the left, Map on the right, linked by the current flight",
           "de": "Doppelansicht auf Tablet und Breitbild: Kraftstoff oder Bericht links, Karte rechts, über den aktuellen Flug verbunden",
@@ -179,6 +179,13 @@
           "en": "Level and wind from METAR / TAF (departure, arrival, en route), planned date, “real weather” along the route, simplified METAR (ceiling, crosswind, CB / TCU)",
           "de": "Flugfläche und Wind aus METAR / TAF (Start, Ziel, Zwischenplatz), geplantes Datum, „echtes Wetter“ entlang der Route, vereinfachter METAR (Wolkenuntergrenze, Seitenwind, CB / TCU)",
           "es": "Nivel y viento desde los METAR / TAF (salida, llegada, intermedio), fecha prevista, «meteo real» a lo largo de la ruta, METAR simplificado (techo, viento cruzado, CB / TCU)"
+        },
+        {
+          "state": "doing",
+          "fr": "Écart ISA calculé depuis le METAR du départ et gardé dans les réglages ; graphe de l'altitude-densité avec le plafond de montée de l'appareil (hélicoptères)",
+          "en": "ISA deviation computed from the departure METAR and kept in the settings; density altitude chart with the aircraft's climb ceiling (helicopters)",
+          "de": "ISA-Abweichung aus dem Start-METAR berechnet und in den Einstellungen gehalten; Dichtehöhen-Diagramm mit der Steiggrenze des Luftfahrzeugs (Hubschrauber)",
+          "es": "Desviación ISA calculada desde el METAR de salida y guardada en los ajustes; gráfico de altitud de densidad con el techo de subida de la aeronave (helicópteros)"
         },
         {
           "state": "planned",
@@ -243,10 +250,10 @@
         },
         {
           "state": "doing",
-          "fr": "Points des voies aériennes dessinées (RNAV, DME, VOR, NDB) ; carte et profil redessinés à chaque changement du plan de vol, altitude par point",
-          "en": "Fixes of drawn airways (RNAV, DME, VOR, NDB); map and profile redrawn at each flight plan change, altitude per point",
-          "de": "Punkte der gezeichneten Luftstraßen (RNAV, DME, VOR, NDB); Karte und Profil bei jeder Flugplanänderung neu gezeichnet, Höhe je Punkt",
-          "es": "Puntos de las aerovías dibujadas (RNAV, DME, VOR, NDB); mapa y perfil redibujados a cada cambio del plan de vuelo, altitud por punto"
+          "fr": "Points des voies aériennes dessinées (RNAV, DME, VOR, NDB), étiquettes de tronçon (voie · NM · route), préréglages IFR bas / IFR haut / VFR, densité selon le zoom, infobulle d'espace en notation SIA, redessin à chaque changement du plan de vol",
+          "en": "Fixes of drawn airways (RNAV, DME, VOR, NDB), segment labels (airway · NM · track), IFR low / IFR high / VFR presets, density by zoom, airspace tooltip in SIA notation, redraw at each flight plan change",
+          "de": "Punkte der gezeichneten Luftstraßen (RNAV, DME, VOR, NDB), Abschnittsbeschriftungen (Luftstraße · NM · Kurs), Voreinstellungen IFR tief / IFR hoch / VFR, Dichte nach Zoom, Luftraum-Tooltip in SIA-Notation, Neuzeichnen bei jeder Flugplanänderung",
+          "es": "Puntos de las aerovías dibujadas (RNAV, DME, VOR, NDB), etiquetas de tramo (aerovía · NM · rumbo), preajustes IFR bajo / IFR alto / VFR, densidad según el zoom, tooltip de espacio en notación SIA, redibujo a cada cambio del plan de vuelo"
         },
         {
           "state": "later",
@@ -401,10 +408,17 @@
         },
         {
           "state": "doing",
-          "fr": "Un seul registre des aéronefs : types, performances, fiches du pilote, flotte, référence au même endroit, une seule recherche ; .lnmperf tenus à jour dans les deux sens (réexport à chaque changement, fusion si le fichier change)",
+          "fr": "Un seul registre des aéronefs (livré) : types, performances, fiches du pilote, flotte, référence au même endroit, une seule recherche ; .lnmperf tenus à jour dans les deux sens (réexport à chaque changement, fusion si le fichier change)",
           "en": "One aircraft registry: types, performances, the pilot's sheets, fleet and reference at one place, one search; .lnmperf kept in sync both ways (re-export on change, merge when the file changes)",
           "de": "Ein einziges Luftfahrzeugregister: Typen, Leistungen, Pilotenblätter, Flotte und Referenz an einem Ort, eine Suche; .lnmperf in beide Richtungen aktuell (Neuexport bei Änderung, Zusammenführung, wenn die Datei sich ändert)",
           "es": "Un solo registro de aeronaves: tipos, prestaciones, fichas del piloto, flota y referencia en un mismo lugar, una sola búsqueda; .lnmperf al día en ambos sentidos (reexportación al cambiar, fusión si el archivo cambia)"
+        },
+        {
+          "state": "doing",
+          "fr": "Export .lnmperf tenu à jour dans les deux sens par le lanceur (dossier de Little Navmap réglé dans Réglages)",
+          "en": ".lnmperf export kept in sync both ways by the launcher (Little Navmap folder set in Settings)",
+          "de": ".lnmperf-Export in beide Richtungen durch den Starter aktuell gehalten (Little-Navmap-Ordner in den Einstellungen)",
+          "es": "Exportación .lnmperf mantenida al día en ambos sentidos por el lanzador (carpeta de Little Navmap ajustada en Ajustes)"
         },
         {
           "state": "planned",
