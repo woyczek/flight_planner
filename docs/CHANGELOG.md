@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **help: reading of the V2 help** (`frame/help/READING.md`, `frame/help/DECISIONS.md`) — what the Pilot application
+  keeps (tutorials first, one manual per application with one chapter per module, a help screen with its own bundle),
+  one source per module (`help/<lang>.md`, whose "How to use" section is also the folded in-page help drawn by the frame
+  from `meta.help`), the phone help page, and what the delivered modules have today (no user help yet). No code.
 - **aerodb: towns filed by their country.**
   - The SIA publication now files each GeoNames town under the zone of its own country, using the zone contours only
     for countries without a zone. Simplified contours had filed the Zeeland towns under Belgium and the Geneva suburbs
