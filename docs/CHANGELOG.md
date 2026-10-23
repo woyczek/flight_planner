@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: taking data/ into a repository, checked** (`frame/settings/settings.js`; `frame/settings/DECISIONS.md`) —
+  "Take data/ into this repository" tried against the launcher's new route on test copies: the device's trigram is
+  sent as the author of the local "Reprise du poste" commit, and the launcher's report stays in the card after success.
 - **fuel: the frame's design primitives** (`modules/fuel/module.js`) — its own colours, shadows and title sizes
   replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
 - **settings: Design card** (`frame/settings/settings.js`, `frame/frame.css`, `frame/settings/help/*.md`;

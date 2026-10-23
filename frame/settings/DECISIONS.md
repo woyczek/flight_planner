@@ -116,3 +116,12 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - "About" card added in the same week (help, roadmap, folded diagnostics); the Settings chapter says so;
   - tested: cabinet then night applied on `<html>` and on the thumbnails, back to standard / automatic; no JavaScript
     error.
+- **23 Oct 2026 — Adoption checked on the launcher's route** (v3 010a41d87, `state` absent | plain | repo):
+  - test copies only, with a local repository served over dumb HTTP; the airline's repository never used. Another
+    repository than the configured one opens a confirmation window on the computer, which a page must never answer:
+    the first attempt waited on it and the launcher was stopped (the window closed with it); the tests then set the
+    local repository as the configured one in this worktree only (not committed);
+  - test data set (`jeu_essai: true`): set aside in `data_avant_<date>/`, then cloned; a copy with a record of its own
+    (`ZZZ`): kept and committed locally ("Reprise du poste ZZZ"), one file replaced and copied aside, nothing pushed;
+  - the card now sends the device's trigram as `author` (the launcher used "POSTE" otherwise), and keeps the launcher's
+    report visible in the redrawn card after a success (it says nothing is sent until "Synchronise").

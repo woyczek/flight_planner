@@ -789,7 +789,11 @@
             url: val('gitUrl', r0),
             user: val('gitUser', r0),
             secret: r0.querySelector('[data-f="gitSecret"]')?.value || '',
-            remember: !!r0.querySelector('[data-f="gitRemember"]')?.checked
+            remember: !!r0.querySelector('[data-f="gitRemember"]')?.checked,
+            // auteur du commit de reprise (« Reprise du poste <TRI> ») : le trigramme de l'appareil s'il est réglé
+            ...(c.identity().trigram ? {
+              author: c.identity().trigram
+            } : {})
           };
         // le secret n'est gardé nulle part dans la page : champ vidé avant l'appel
         const sec = r0.querySelector('[data-f="gitSecret"]');
@@ -802,7 +806,9 @@
         if (r?.ok) {
           await c.redetect?.();
           c.notify(r.message || t(T.saved), 'ok');
-          return again();
+          // carte redessinée depuis le nouvel état, le compte rendu du lanceur y reste lisible
+          await again();
+          return say('access', r.message || t(T.saved), 'ok');
         }
         return;
       }
