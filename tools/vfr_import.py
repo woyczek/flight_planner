@@ -108,6 +108,9 @@ def _check(compiled):
                 err(f"{k} {p['code']} : coordonnées [longitude, latitude] invalides.")
             elif p.get('pdfPage') is not None and not _num(p.get('pdfPage'), 1, 999):
                 err(f"{k} {p['code']} : page invalide.")
+            elif p.get('usageRestrictions') is not None and not (isinstance(p['usageRestrictions'], list) and len(p['usageRestrictions']) <= 10
+                                                                and all(_text(x, 300) for x in p['usageRestrictions'])):
+                err(f"{k} {p['code']} : restrictions d'usage mal formées.")
             else:
                 codes.add(p['code'])
         for r in rts:
@@ -163,7 +166,14 @@ def plan(compiled, data_dir):
                 'role': role,  # reporting_point, aerodrome_reference_point, intermediate_waypoint (sommet de tracé)
                 'origin': p.get('origin') or 'published',
                 'page': p.get('pdfPage'),
-                'text': str(p.get('sourceText') or p.get('reason') or '')[:200]
+                'text': str(p.get('sourceText') or p.get('reason') or '')[:200],
+                # usage restreint (panne radio, sur instruction du contrôle, hélicoptères…), tel que lu dans la VAC
+                'restrictions': [str(x) for x in p.get('usageRestrictions') or []],
+                # sommet placé à la main : précision (m, null si non mesurée) et sa note
+                **({
+                    'accuracyM': p.get('accuracyM') if _num(p.get('accuracyM'), 0, 1e5) else None,
+                    'accuracyNote': str(p.get('accuracyNote') or '')[:300] or None
+                } if role == 'intermediate_waypoint' else {})
             })
         out_rts = []
         for r in rts:

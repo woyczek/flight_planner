@@ -474,3 +474,8 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     (partielle)", its three notes, "RWY23-05-NA-NW : AD – NA – NW (pages 1, 5, 6) · pistes 23, 05 · 1500 ft AMSL par
     défaut · visibilité 1500 m au moins"; LFCH (view on Arcachon) → the route along the motorway with its vertices, card
     on the left under the buttons. No JavaScript error.
+- **23 Oct 2026 — restricted points and manual vertices in the aerodrome's card.** A reporting point used only on ATC
+  instruction or in radio failure is not an ordinary entry: dashed ring on the map, its restriction in the card (the
+  VAC's own words, untranslated data). The manual vertices are counted with their accuracy ("not guaranteed" while
+  `accuracyM` is null). Bench: LFMA → "AR : radio communication failure procedure | AS : ATC instruction only | AW :
+  ATC instruction only"; LFCH → "9 sommets de tracé placés à la main sur la carte VAC, précision non garantie.".

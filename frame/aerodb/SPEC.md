@@ -284,7 +284,9 @@ both ways.
   - To redo at each new VAC cycle: run `refresh_vfr.py` again (tools/report-vfr/README.md), then the button.
 - **Files**: `sia/vfr/<ICAO>.json` = { `schema: 2`, `ad`, `status: 'candidate'`, `label` ("Extrait des VAC, à
   vérifier"), `analysis` { `status`, `scope`, `notes` } (null fields from a 1.x file), `source` { `file`, `sha256`,
-  `cycle` }, `generatedAt`, `points` [{ `code`, `vrp`, `lat`, `lon`, `role`, `origin`, `page`, `text` }], `routes` [{
+  `cycle` }, `generatedAt`, `points` [{ `code`, `vrp`, `lat`, `lon`, `role`, `origin`, `page`, `text`, `restrictions` (usage read in the VAC:
+  "ATC instruction only", "radio communication failure procedure"…), and for a manual vertex `accuracyM` (null when
+  not measured) and `accuracyNote` }], `routes` [{
   `key`, `codes`, `vrps`, `pages`, `text`, `fragment`, `status` (`interpreted` or `candidate`), `direction` (from an
   analysis only, else `unknown`), `runways`, `conditions`, `geometry` ([[lat, lon], …] or null), `partial`, `omission`
   }], `notes` [{ `page`, `title`, `text` }] } (the written instructions, else the text of the pages found, one per page,

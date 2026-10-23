@@ -339,6 +339,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   reviewed", "Analysis out of date (the VAC changed): automatic extraction only", "VAC reviewed: no published
   sequence") and its notes; each route with its name (`key`), codes and pages, then runways, default altitude, minimum
   visibility and "one way" when read, and the omission note (what is not digitised). Counts are of reporting points.
+  Then the number of track vertices placed by hand ("…, accuracy not guaranteed", or "within n m" when every vertex
+  has an `accuracyM`) and the points with a restricted use, each with its restrictions as written in the VAC; such a
+  point is drawn with a dashed ring.
   A first-format file (`page` per route, no analysis) is read the same way.
 
 ## 4 sexies. Started flight (lot 8)

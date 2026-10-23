@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **VFR points: restricted use and manual vertices** (`tools/vfr_import.py`, `modules/maps/module.js`; SPECs,
+  DECISIONS) — the import keeps a point's usage restrictions and a manual vertex's accuracy; the aerodrome's card lists
+  the restricted points (dashed ring on the map) and how many vertices were placed by hand; the GeoJSON written next to
+  the compilation is not needed (same content).
 - **Settings: the right GitHub token for the repository's owner** (`frame/settings/config.js`, `join.js`,
   `settings.js`) — the export records whether the repository belongs to a user or an organisation; a user's repository
   gets a classic `repo` token (prefilled link, the account-wide reach said plainly), an organisation's the fine-grained

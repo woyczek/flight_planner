@@ -418,3 +418,11 @@ With the network cut, the only reads attempted were:
   - **Bench** (launcher 8771, throwaway git data): 2.0 file → plan "418 aerodromes, 660 reporting points (43 not
     matched), 115 sequences, 1,110 pages of instructions, 7 analysed", agreement, commit; second import: 0 changed;
     `test/vfr.html` 11 / 11.
+- **23 Oct 2026 — `vfr-geometry.geojson` not imported; usage restrictions kept.**
+  - **The GeoJSON adds nothing**: written by `refresh_vfr.py` from the same compilation for a GIS, its 678 points carry
+    properties all present in `vfr-compiled.json`, and its 18 LineStrings are, coordinate for coordinate, the
+    `geometry` of the compiled routes. Importing it would only make two files to keep in step.
+  - **What the import had dropped** and now keeps: `usageRestrictions` of a point (LFMA: AR radio failure, AS and AW on
+    ATC instruction; LFCH: P helicopter short flights under protocol) and, for a manual vertex, `accuracyM` (null for
+    all 14 today) and `accuracyNote`.
+  - **Check**: the user's file of 16:34 (2.0, 418 aerodromes) is accepted as it is.

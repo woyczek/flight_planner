@@ -389,6 +389,19 @@ const TX = {
   vfrVis: ['visibilité {v} m au moins', 'visibility {v} m at least', 'Sicht mindestens {v} m', 'visibilidad de {v} m como mínimo'],
   vfrOneWay: ['sens unique', 'one way', 'Einbahn', 'sentido único'],
   vfrPages: ['pages {p}', 'pages {p}', 'Seiten {p}', 'páginas {p}'],
+  vfrRestricted: ['Points à usage restreint (texte de la VAC)', 'Points with restricted use (text of the VAC)',
+    'Punkte mit eingeschränkter Nutzung (Text der VAC)', 'Puntos de uso restringido (texto de la VAC)'
+  ],
+  vfrManual: ['{n} sommets de tracé placés à la main sur la carte VAC, précision non garantie.',
+    '{n} track vertices placed by hand on the VAC chart, accuracy not guaranteed.',
+    '{n} Verlaufspunkte von Hand auf der VAC-Karte gesetzt, Genauigkeit nicht garantiert.',
+    '{n} vértices de trazado colocados a mano sobre la carta VAC, precisión no garantizada.'
+  ],
+  vfrAccuracy: ['{n} sommets de tracé placés à la main sur la carte VAC, à {m} m près.',
+    '{n} track vertices placed by hand on the VAC chart, within {m} m.',
+    '{n} Verlaufspunkte von Hand auf der VAC-Karte gesetzt, auf {m} m genau.',
+    '{n} vértices de trazado colocados a mano sobre la carta VAC, con {m} m de precisión.'
+  ],
   vfrNotes: ['Consignes (texte des VAC)', 'Instructions (text of the VAC)', 'Hinweise (Text der VAC)', 'Consignas (texto de las VAC)'],
   vfrPage: ['page {p}', 'page {p}', 'Seite {p}', 'página {p}'],
   vfrPart: ['(certaines peuvent n\'être qu\'une partie d\'un itinéraire)', '(some may be only part of a route)',
@@ -2169,7 +2182,12 @@ function showAdCard(icao) {
         const k = cond(r);
         return `<li>${r.key ? `<b>${esc(r.key)}</b> : ` : ''}${esc(r.codes.join(' – '))}${pages(pagesOf(r))}${k ? `<br><span>${esc(k)}</span>` : ''}${r.omission ? `<br><span class="f-muted">${esc(r.omission)}</span>` : ''}</li>`;
       };
-    body = `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}<p>${esc(tt(TX.vfrCounts, { p: reportOf(v).length, r: seqs.length }))}</p>${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqs))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
+    const restricted = reportOf(v).filter(p => p.restrictions?.length),
+      manual = (v.points || []).filter(p => p.role === 'intermediate_waypoint'),
+      accs = manual.map(p => p.accuracyM).filter(Number.isFinite),
+      man = manual.length ? `<p class="f-muted">${esc(accs.length === manual.length ? tt(TX.vfrAccuracy, { n: manual.length, m: Math.max(...accs) }) : tt(TX.vfrManual, { n: manual.length }))}</p>` : '',
+      res = restricted.length ? `<div><b>${esc(tt(TX.vfrRestricted))}</b></div><ul class="mp-vfr-seq">${restricted.map(p => `<li><b>${esc(p.code)}</b> : ${esc(p.restrictions.join(' ; '))}</li>`).join('')}</ul>` : '';
+    body = `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}<p>${esc(tt(TX.vfrCounts, { p: reportOf(v).length, r: seqs.length }))}</p>${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqs))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${man}${res}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
   }
   // carte du côté opposé au terrain, sous les boutons du haut du cadre (Modifier, modes et couches) : les points restent
   // visibles, aucun bouton n'est couvert
@@ -2268,7 +2286,9 @@ function drawVfr(ctx, toC) {
       ctx.fill();
       ctx.strokeStyle = VFR_COL;
       ctx.lineWidth = 2;
+      if (p.restrictions?.length) ctx.setLineDash([3, 2]); // usage restreint : cercle tireté (la carte du terrain dit lequel)
       ctx.stroke();
+      ctx.setLineDash([]);
       ctx.strokeStyle = S.theme.bg;
       ctx.lineWidth = 3;
       ctx.strokeText(name, q.x + 10, q.y);
