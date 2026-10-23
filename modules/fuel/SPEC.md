@@ -133,6 +133,9 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 - **Wind of the quote** ("Real weather" ticked): the mean of the winds at the planned level along the route, each
   leg the mean of its two ends weighted by its length; preferred to the METARs' surface wind, which stays the
   fallback. Source shown under the wind fields.
+- **While a new forecast loads** (route or hour changed): the previous wind aloft stays, `windSource.pending` and
+  "forecast loading…" in the result; only a failed reading hands over to the METARs' surface wind, said as such
+  (`windSource.aloftFailed`, "forecast aloft unavailable").
 - **Current flight**: `route.points[].wind = { dirDeg, kt, tempC, levelFt, at }` for maps' arrows.
 - **Shown**: step 3, a table per route point (level, wind, temperature, ISA deviation) with model, hour, run and
   reading time; step 4, under the density altitude chart, the real atmosphere at departure — temperature by pressure

@@ -73,7 +73,9 @@ paliers compris), le vent, la température et l'écart ISA à ce niveau, avec le
 la France, ICON ailleurs en Europe, GFS au-delà), l'heure visée (la date du vol, sinon maintenant) et l'heure du run.
 Avec « Météo réelle », le vent du devis devient la moyenne de ces vents au niveau planifié, le long de la route, à la
 place du vent au sol des METAR ; la ligne sous les champs le dit. Les mêmes vents vont à la Carte, qui les dessine en
-flèches. Hors réseau, la dernière prévision lue reste.
+flèches. Hors réseau, la dernière prévision lue reste. Quand la route ou l'heure change, le vent en altitude d'avant
+reste, marqué « prévision en cours… », jusqu'à la nouvelle prévision ; si elle ne vient pas, le vent au sol des METAR
+prend le relais et c'est dit (« prévision en altitude indisponible »).
 
 **4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux

@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — no silent fallback, an estimated ceiling said so** (end-to-end pass on the real base, items 5 and 6):
+  a changed route fell back silently to the METARs' surface wind while the new forecast aloft loaded (284°/44 → 271°/15
+  kt, the block jumping); the previous wind aloft now stays, marked "forecast loading…", and only a failed reading
+  hands over to the METARs, said in the result and under the wind fields. The density altitude chart says "Estimated
+  ceiling" when the ceiling is not a sheet's (no `ceilingFt`, a type estimate). Checked on 8804 with the real base: route
+  changed → 284/44 kept with "forecast loading…", then 285/47 from the new forecast; Open-Meteo answering 503 → METAR
+  wind 271/15 with "forecast aloft unavailable"; EC45 "Estimated ceiling 27,805 ft".
 - **23 Oct 2026 — lot H rectified by the user**: there is no "End the flight" — writing the report is the normal end of
   a started flight (report sets `started` and `progress` to null on saving), "Cancel the start" the other one; the
   button and `started.endedAt` are removed (report no longer takes the shutdown from fuel). "Start the flight" is the

@@ -385,6 +385,13 @@ const TX = {
   isaAloft: ['ISA {d} au {l} d’après la prévision {m}.', 'ISA {d} at {l} from the {m} forecast.', 'ISA {d} auf {l} laut {m}-Vorhersage.',
     'ISA {d} a {l} según la previsión {m}.'
   ],
+  aloftDown: ['prévision en altitude indisponible', 'forecast aloft unavailable', 'Höhenvorhersage nicht verfügbar',
+    'previsión en altura no disponible'
+  ],
+  aloftPending: ['prévision en cours…', 'forecast loading…', 'Vorhersage wird geladen…', 'previsión en curso…'],
+  aloftFailed: ['Prévision en altitude indisponible : vent au sol des METAR.', 'Forecast aloft unavailable: METAR surface wind.',
+    'Höhenvorhersage nicht verfügbar: Bodenwind der METAR.', 'Previsión en altura no disponible: viento en superficie de los METAR.'
+  ],
   windBy: {
     weather: ['vent : {l}', 'wind: {l}', 'Wind: {l}', 'viento: {l}'],
     aloft: ['vent : prévision {m} {l}', 'wind: {m} forecast {l}', 'Wind: {m}-Vorhersage {l}', 'viento: previsión {m} {l}'],
@@ -437,6 +444,11 @@ const TX = {
     'Sheet ceiling {c} ft: at ISA {d} it is reached around {p} ft pressure altitude.',
     'Gipfelhöhe des Datenblatts {c} ft: bei ISA {d} wird sie bei etwa {p} ft Druckhöhe erreicht.',
     'Techo de la ficha {c} ft: a ISA {d} se alcanza hacia {p} ft de altitud de presión.'
+  ],
+  daCeilEst: ['Plafond estimé {c} ft : à ISA {d}, il est atteint vers {p} ft d’altitude pression.',
+    'Estimated ceiling {c} ft: at ISA {d} it is reached around {p} ft pressure altitude.',
+    'Geschätzte Gipfelhöhe {c} ft: bei ISA {d} wird sie bei etwa {p} ft Druckhöhe erreicht.',
+    'Techo estimado {c} ft: a ISA {d} se alcanza hacia {p} ft de altitud de presión.'
   ],
   daNoCeil: ['La fiche ne donne pas de plafond.', 'The sheet gives no ceiling.', 'Das Datenblatt nennt keine Gipfelhöhe.',
     'La ficha no da techo.'
@@ -1025,6 +1037,10 @@ const svgSize = box => {
   const w = Math.round(Math.max(320, Math.min(760, box?.clientWidth || 360)));
   return [w, Math.min(300, Math.round(w * .5))];
 };
+/** Vrai si le plafond du devis ne vient pas d'une fiche : fiche sans plafond (celui du modèle), type seul (estimation
+ *  aerodb), ou croisière estimée. */
+const ceilEstimated = C => !(+C.sheet?.cruise?.ceilingFt > 0) || String(C.sheet?.id || '').startsWith('TYPE_') || C.source?.kind ===
+  'estimate';
 /** Graduations « rondes » de 0 à max (cinq environ). */
 function ticks(min, max, n = 5) {
   const span = Math.max(1e-9, max - min),
@@ -1759,6 +1775,7 @@ async function aloftFetch(loud = false) {
   if (pts.length < 2) return;
   const key = aloftKey();
   if (S.aloft?.key === key && !S.aloft.cached) return aloftApply();
+  S.aloftState = 'loading';
   const smp = WD.samples(pts),
     mid = smp[Math.floor(smp.length / 2)],
     model = WD.modelFor(mid.lat, mid.lon),
@@ -1786,6 +1803,7 @@ async function aloftFetch(loud = false) {
       /* sans heure du run */
     }
     if (gone(s)) return;
+    S.aloftState = 'ok';
     S.aloft = {
       key,
       model: model.name,
@@ -1801,6 +1819,7 @@ async function aloftFetch(loud = false) {
     });
   } catch (e) {
     if (gone(s)) return;
+    S.aloftState = 'failed'; // le vent au sol des METAR prend le relais, et c'est dit
     if (loud && e.code !== 'offline') S.ctx.notify(tt(TX.sbError, {
       e: e.message
     }), 'warn');
@@ -1884,11 +1903,11 @@ function windShort() {
       const m = /^(\S+) \((\w+)\)$/.exec(x);
       return m ? `${m[2]} ${m[1]}` : x;
     }).join(', ')
-  });
+  }) + (src.aloftFailed ? ` · ${tt(TX.aloftDown)}` : '');
   if (src?.kind === 'aloft') return tt(TX.windBy.aloft, {
     m: src.short || src.model || '',
     l: flTxt(src.levelFt)
-  });
+  }) + (src.pending ? ` · ${tt(TX.aloftPending)}` : '');
   return Number.isFinite(+f.wind?.speedKt) ? tt(TX.windBy.typed) : '';
 }
 /** Profil réel au départ (premier lieu de lecture) : température par altitude pression, atmosphère type en tirets,
@@ -2058,7 +2077,18 @@ function applyRealWind() {
     saveFlight();
     return refresh();
   }
-  const list = wxStations().filter(x => x.role !== 'altn' && x.st && x.along != null && Number.isFinite(+x.st.wdir) && Number.isFinite(+x.st
+  // nouvelle prévision en altitude pas encore là (route ou heure changée) : l'ancien vent en altitude reste, dit « en
+  // cours » ; le vent au sol des METAR ne prend le relais qu'après un échec de la prévision, et c'est dit
+  if (S.flight.windSource?.kind === 'aloft' && S.aloftState !== 'failed') {
+    S.flight.windSource = {
+      ...S.flight.windSource,
+      pending: true
+    };
+    windSourceLine();
+    return refresh();
+  }
+  const failed = S.aloftState === 'failed',
+    list = wxStations().filter(x => x.role !== 'altn' && x.st && x.along != null && Number.isFinite(+x.st.wdir) && Number.isFinite(+x.st
       .wspd)),
     legs = list.slice(1).map((x, i) => Math.max(0, x.along - list[i].along)),
     w = list.length >= 2 ? WX.routeWind(list.map(x => x.st), legs) : null,
@@ -2071,7 +2101,10 @@ function applyRealWind() {
   f.wind = w;
   f.windSource = {
     kind: 'weather',
-    ids: list.map(x => `${x.id} (${x.st.source})`)
+    ids: list.map(x => `${x.id} (${x.st.source})`),
+    ...(failed ? {
+      aloftFailed: true
+    } : {})
   };
   const d = S.body?.querySelector('[data-k="wdir"]'),
     k = S.body?.querySelector('[data-k="wkt"]');
@@ -2088,9 +2121,9 @@ function windSourceLine(text) {
   const src = S.flight.windSource;
   el.textContent = text || (src?.kind === 'weather' ? tt(TX.wxSrc, {
     l: src.ids.join(', ')
-  }) : src?.kind === 'aloft' ? tt(TX.aloftSrc, {
+  }) + (src.aloftFailed ? ` ${tt(TX.aloftFailed)}` : '') : src?.kind === 'aloft' ? tt(TX.aloftSrc, {
     m: src.model
-  }) : '');
+  }) + (src.pending ? ` (${tt(TX.aloftPending)})` : '') : '');
 }
 
 // ---------------------------------------------------------------- choix de l'appareil (registre d'aerodb)
@@ -2275,7 +2308,7 @@ function renderDa(C) {
   </svg>
   <p class="f-muted">${esc(tt(TX.daLines))}</p>
   ${pr0 ? `<p><span class="f-dot" style="background:var(--sog-chart-3)"></span> ${esc(tt(TX.daDep, { id: pr0.id, t: pr0.t, q: pr0.qnh != null ? Math.round(pr0.qnh) : '—', p: fmt(depPa), d: fmt(depDa) }))}</p>` : ''}
-  <p>${ceil ? `<span class="f-dot" style="background:var(--sog-chart-4)"></span> ${esc(tt(TX.daCeil, { c: fmt(ceil), d: signed(dT), p: fmt(effective) }))}` : esc(tt(TX.daNoCeil))}</p>
+  <p>${ceil ? `<span class="f-dot" style="background:var(--sog-chart-4)"></span> ${esc(tt(ceilEstimated(C) ? TX.daCeilEst : TX.daCeil, { c: fmt(ceil), d: signed(dT), p: fmt(effective) }))}` : esc(tt(TX.daNoCeil))}</p>
   ${realProfileHtml(box)}`;
 }
 

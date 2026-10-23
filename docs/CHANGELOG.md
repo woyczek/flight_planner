@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: the wind aloft stays while a new forecast loads** (`modules/fuel/module.js`; docs) — no more silent switch
+  to the surface wind; a missing forecast is said; an estimated ceiling is called so.
 - **Map, lot 8: started flight** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — planned and
   actual positions on the map and the profile, the difference (ahead or late, off the route, altitude), ETA of each
   point close up, a "Follow" button, and the states without a position or with a stale one.
