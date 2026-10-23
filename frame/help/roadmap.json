@@ -389,11 +389,11 @@
           "es": "Vuelo en curso en el mapa y el perfil: posición prevista y real, adelanto / retraso, desvío lateral, ETA por punto, «Seguir»"
         },
         {
-          "state": "doing",
-          "fr": "Points de report et séquences VFR par terrain, extraits des cartes VAC par l'utilisateur : importés dans le dépôt des données (Maintenance), dessinés en tirets « à vérifier » au survol et à l'épinglage d'un terrain ; infobulle complète des espaces sous un point (barres de niveaux)",
-          "en": "VFR reporting points and sequences per aerodrome, extracted from VAC charts by the user: imported into the data repository (Maintenance), drawn dashed “to verify” on hover and when an aerodrome is pinned; full airspace tooltip under a point (level bars)",
-          "de": "VFR-Meldepunkte und -Sequenzen je Platz, vom Nutzer aus VAC-Karten extrahiert: ins Datenrepository importiert (Wartung), gestrichelt „zu prüfen“ bei Hover und angepinntem Platz; vollständiger Luftraum-Tooltip unter einem Punkt (Höhenbalken)",
-          "es": "Puntos de notificación y secuencias VFR por aeródromo, extraídos de las cartas VAC por el usuario: importados al repositorio de datos (Mantenimiento), dibujados a trazos «por verificar» al pasar y al fijar un aeródromo; tooltip completo de espacios bajo un punto (barras de niveles)"
+          "state": "done",
+          "fr": "Points de report et séquences VFR par terrain, extraits des cartes VAC par l'utilisateur : importés dans le dépôt des données (Maintenance), dessinés en tirets « à vérifier » au survol et à l'épinglage d'un terrain ; infobulle complète des espaces sous un point (barres de niveaux) ; outil Report VFR (tools/report-vfr) dans la suite, relancé à chaque cycle VAC",
+          "en": "VFR reporting points and sequences per aerodrome, extracted from VAC charts by the user: imported into the data repository (Maintenance), drawn dashed “to verify” on hover and when an aerodrome is pinned; full airspace tooltip under a point (level bars); Report VFR tool (tools/report-vfr) in the suite, rerun at each VAC cycle",
+          "de": "VFR-Meldepunkte und -Sequenzen je Platz, vom Nutzer aus VAC-Karten extrahiert: ins Datenrepository importiert (Wartung), gestrichelt „zu prüfen“ bei Hover und angepinntem Platz; vollständiger Luftraum-Tooltip unter einem Punkt (Höhenbalken); Werkzeug Report VFR (tools/report-vfr) in der Suite, bei jedem VAC-Zyklus neu ausgeführt",
+          "es": "Puntos de notificación y secuencias VFR por aeródromo, extraídos de las cartas VAC por el usuario: importados al repositorio de datos (Mantenimiento), dibujados a trazos «por verificar» al pasar y al fijar un aeródromo; tooltip completo de espacios bajo un punto (barras de niveles); herramienta Report VFR (tools/report-vfr) en la suite, relanzada en cada ciclo VAC"
         }
       ]
     },
