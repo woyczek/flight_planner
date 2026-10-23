@@ -78,6 +78,13 @@
       },
       "items": [
         {
+          "state": "doing",
+          "fr": "Position réelle pendant un vol démarré : GPS de l'appareil ou session IVAO / VATSIM, écrite dans le vol courant, pastille d'en-tête",
+          "en": "Actual position during a started flight: device GPS or IVAO / VATSIM session, written into the current flight, header badge",
+          "de": "Tatsächliche Position während eines gestarteten Flugs: Geräte-GPS oder IVAO/VATSIM-Sitzung, in den aktuellen Flug geschrieben, Kopfzeilen-Pastille",
+          "es": "Posición real durante un vuelo iniciado: GPS del dispositivo o sesión IVAO / VATSIM, escrita en el vuelo actual, pastilla de cabecera"
+        },
+        {
           "state": "done",
           "fr": "Couche de données : cache local, écritures hors ligne, synchro par lots (démarrage, bouton, fond), fusion à trois voies, conflits consultables",
           "en": "Data layer: local cache, offline writes, batched sync (start, button, background), three-way merge, reviewable conflicts",
@@ -188,6 +195,13 @@
           "es": "Preparar en el orden del piloto: Vuelo · Ruta · Meteo · Cálculo · Salida; ruta como texto siempre visible y normalizado, distancia y rumbo verdadero calculados; «Mostrar el mapa»; «Iniciar el vuelo»"
         },
         {
+          "state": "doing",
+          "fr": "Vol démarré : « Terminer le vol », « Annuler le départ », progression prévue (ETA par point, point courant, carburant restant)",
+          "en": "Started flight: “End the flight”, “Cancel departure”, planned progress (ETA per point, current point, remaining fuel)",
+          "de": "Gestarteter Flug: „Flug beenden“, „Abflug abbrechen“, geplanter Fortschritt (ETA je Punkt, aktueller Punkt, Restkraftstoff)",
+          "es": "Vuelo iniciado: «Terminar el vuelo», «Anular la salida», progreso previsto (ETA por punto, punto actual, combustible restante)"
+        },
+        {
           "state": "done",
           "fr": "Retours de la passe de bout en bout : vol démarré effacé au changement de départ, source du vent affichée, écart ISA au niveau, notation unique du niveau, bouton météo occupé, vue double gardée au départ",
           "en": "Walkthrough feedback: started flight cleared when departure changes, wind source shown, ISA deviation at level, single level notation, busy weather button, double view kept at departure",
@@ -285,10 +299,10 @@
         },
         {
           "state": "doing",
-          "fr": "Carte équilibrée : hiérarchie des zones masquées en reculant (détail autour des points tournants), curseur de complexité, courbes de niveau en Topo, hauteur des obstacles, infobulle unique clic / survol, modes en icônes, profils de modes affinables (studio V2 puis page dédiée)",
-          "en": "Balanced map: zone hierarchy hidden when zooming out (detail around the turning points), complexity slider, contour lines in Topo, obstacle heights, one tooltip for click and hover, icon-only modes, tunable mode profiles (V2 studio then a dedicated page)",
-          "de": "Ausgewogene Karte: Zonenhierarchie beim Herauszoomen ausgeblendet (Detail um die Wegpunkte), Komplexitätsregler, Höhenlinien in Topo, Hindernishöhen, ein Tooltip für Klick und Hover, Modi nur als Symbole, anpassbare Modusprofile (V2-Studio, dann eigene Seite)",
-          "es": "Mapa equilibrado: jerarquía de zonas ocultas al alejar (detalle alrededor de los puntos de giro), control de complejidad, curvas de nivel en Topo, altura de los obstáculos, un solo tooltip para clic y paso del ratón, modos solo con iconos, perfiles de modo ajustables (estudio V2 y luego página dedicada)"
+          "fr": "Carte équilibrée : seuils de zoom réglables par élément (page d'administration), points de report VFR de près seulement, courbes de niveau en Topo, hauteur des obstacles, infobulle unique clic / survol, modes en icônes, profils de modes affinables (studio V2 puis page dédiée)",
+          "en": "Balanced map: zoom thresholds tunable per item (admin page), VFR reporting points only when close, contour lines in Topo, obstacle heights, one tooltip for click and hover, icon-only modes, tunable mode profiles (V2 studio then a dedicated page)",
+          "de": "Ausgewogene Karte: je Element einstellbare Zoomschwellen (Admin-Seite), VFR-Meldepunkte nur aus der Nähe, Höhenlinien in Topo, Hindernishöhen, ein Tooltip für Klick und Hover, Modi nur als Symbole, anpassbare Modusprofile (V2-Studio, dann eigene Seite)",
+          "es": "Mapa equilibrado: umbrales de zoom ajustables por elemento (página de administración), puntos de notificación VFR solo de cerca, curvas de nivel en Topo, altura de los obstáculos, un solo tooltip para clic y paso del ratón, modos solo con iconos, perfiles de modo ajustables (estudio V2 y luego página dedicada)"
         },
         {
           "state": "done",
@@ -361,11 +375,11 @@
           "es": "Ruta probable, trazas de ejercicio, mapas de operación, AAR / NAT, zonas urbanizadas, relieve sin conexión"
         },
         {
-          "state": "later",
-          "fr": "Carte vivante (position et trafic en direct)",
-          "en": "Live map (own position and traffic)",
-          "de": "Live-Karte (Position und Verkehr in Echtzeit)",
-          "es": "Mapa en vivo (posición y tráfico en directo)"
+          "state": "doing",
+          "fr": "Vol en cours sur la carte et le profil : position prévue et position réelle, avance / retard, écart latéral, ETA par point, « Suivre »",
+          "en": "Flight in progress on the map and the profile: planned and actual positions, early / late, cross-track, ETA per point, “Follow”",
+          "de": "Laufender Flug auf Karte und Profil: geplante und tatsächliche Position, früh / spät, Querablage, ETA je Punkt, „Folgen“",
+          "es": "Vuelo en curso en el mapa y el perfil: posición prevista y real, adelanto / retraso, desvío lateral, ETA por punto, «Seguir»"
         },
         {
           "state": "later",
@@ -477,6 +491,13 @@
           "en": "Identity, usages, access (token or workstation remote), sync, backup, offline data by zone, level, launcher keys",
           "de": "Identität, Nutzungen, Zugang (Token oder entferntes Repository des Rechners), Synchronisation, Sicherung, Offline-Daten nach Zone, Stufe, Schlüssel des Starters",
           "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador"
+        },
+        {
+          "state": "doing",
+          "fr": "Configuration exportable pour un pilote (compagnie, dépôt git des données, trigramme, mode d'emploi du jeton) et import en quelques gestes par fichier ou par lien",
+          "en": "Exportable pilot configuration (airline, data git repository, trigram, token how-to) and import in a few gestures by file or link",
+          "de": "Exportierbare Pilotenkonfiguration (Gesellschaft, Daten-Git-Repository, Kürzel, Token-Anleitung) und Import in wenigen Gesten per Datei oder Link",
+          "es": "Configuración exportable para un piloto (compañía, repositorio git de datos, trigrama, guía del token) e importación en pocos gestos por archivo o enlace"
         },
         {
           "state": "done",
