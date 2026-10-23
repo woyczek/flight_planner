@@ -121,3 +121,15 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - Mounted through `frame/index.html#maps?mission=I-999A&map=cibleI-999A.png`: chooser with 13 entries, built-in VFR
     detail profile for the target map (no copy on that map), map and profile drawn, no error.
   - Not checked end to end: a mission saved by the V2 studio itself; the test mission writes the same fields by hand.
+- **23 Oct 2026 — designs, day and night** (design lot 2, `frame/design/INTEGRATION.md`).
+  - **A colour-mapping context rather than edited copies**:
+    - the studio's symbols and profile write white, ink and greys by value, and the copies stay unchanged;
+    - `themed()` swaps those values for the tokens as they are set;
+    - the module's own code uses the tokens directly (`paper()`, `S.theme`).
+  - **Night**:
+    - the OpenFreeMap `dark` base, since light tiles would stay white;
+    - dark cartographic colours lightened by 45 %. Before that, blue aerodrome codes and purple route labels on dark
+      halos were hard to read.
+  - **Checked through `frame/index.html`** at 375 px, flight map and mission map, in standard, cabinet and field, day
+    and night (12 runs, design set in `device/design.json`). The profile background equals `--sog-chart-bg` in each
+    case, nothing is white at night, there is no JavaScript error, and `f-tools` and `f-muted` are in place.

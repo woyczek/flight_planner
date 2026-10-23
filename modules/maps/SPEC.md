@@ -156,6 +156,26 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Not drawn** (later, if asked): probable route and exercise tracks, operation maps, AAR tracks, NAT, built-up
   areas, summits, relief and contour layers.
 
+## 4 quater. Designs, day and night (frame/design)
+
+- **Page**: frame primitives only (`f-tools`, `f-btn`, `f-muted`); the module's own style only places things.
+  Backgrounds use `--sog-bg` (map box) and `--sog-chart-bg` (profile); the credit line uses `--sog-chart-bg` and
+  `--sog-fg`.
+- **Canvas**: `MapsRender.tokens()` reads `--sog-chart-bg`, `--sog-bg`, `--sog-fg`, `--sog-muted`,
+  `--sog-chart-grid` and `--sog-accent` with `getComputedStyle(document.documentElement)`. Night is a chart background
+  darker than 45 % luminance.
+  - `MapsRender.themed(ctx, tokens)` wraps the 2D context. Paper colours written by value, in this module and in the
+    studio's copies, are replaced as they are set:
+    - white (backgrounds, halos, label boxes, any alpha) → `--sog-chart-bg`;
+    - ink → `--sog-fg`; greys → `--sog-muted`; rules → `--sog-chart-grid`;
+    - at night, a dark cartographic colour is lightened by 45 % toward white, alpha kept.
+    Other cartographic colours pass unchanged.
+  - The cursor (ring on the map, line and dot on the profile) is `--sog-accent`.
+  - The plain background is sea `--sog-bg`, land `--sog-chart-bg`, borders `--sog-chart-grid`.
+- **Base map at night**: OpenFreeMap `dark` (VersaTiles profiles: `eclipse`).
+- **Changes**: a change of `data-design` or `data-tone` on `<html>`, or of `prefers-color-scheme`, reads the tokens
+  again. The module switches the base style when night changes, then redraws the map and the profile.
+
 ## 5. Invariants
 
 1. Read only: the module writes nothing (`meta.writes` is empty).

@@ -46,6 +46,11 @@ waypoints, and the rest listed below.
   replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
 - **website: the frame's design primitives** (`modules/website/module.js`) — its own colours, shadows and title sizes
   replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
+- **maps: designs, day and night.**
+  - The map and the profile take the frame's design tokens: background, ink, greys, grid and accent cursor.
+  - Night uses a dark base map and lightens dark map colours. Nothing stays white.
+  - The module redraws when the design, the tone or the system theme changes.
+  - It now uses the frame's primitives (`f-tools`, `f-muted`).
 - **design, lot 2: designs for the Pilot application** (`frame/design/tokens.css`, `frame/design/primitives.css`,
   `frame/lib/icons.js`, `frame/frame.css`, `frame/app.js`, `labs/design_primitives.html`).
   - Three designs: Standard, Cabinet and Rugged (square corners and their own fonts for the last two), by day and by

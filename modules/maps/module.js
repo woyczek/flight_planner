@@ -11,7 +11,9 @@
 //     espaces traversés, trajectoire de Carburant (profile : TOC, TOD), marques NM ; un curseur commun aux deux vues
 //     (doigt sur le profil, ou toucher sur la route), une ligne dit ce qui est dessous ;
 //   · données par aerodb (ctx.aerodb), pour l'emprise utile seulement ; vol par ctx.data ; rien n'est écrit.
-// Styles limités au module ([data-module="maps"]) sur les jetons --sog-… du cadre.
+// Styles limités au module ([data-module="maps"]) : primitives f-… et jetons --sog-… du cadre ; le canvas prend les
+// jetons de dessin (MapsRender.tokens / themed), relus et redessinés quand le design, le ton ou le thème du système
+// changent ; la nuit, fond de carte sombre (OpenFreeMap dark).
 export const meta = {
   id: 'maps',
   apps: ['pilot'],
@@ -43,6 +45,7 @@ const LIBS = [
     ['jsyaml', '../../frame/lib/js-yaml.min.js']
   ],
   STYLE_URL = 'https://tiles.openfreemap.org/styles/positron',
+  STYLE_NIGHT = 'https://tiles.openfreemap.org/styles/dark',
   // fond d'un profil d'affichage du studio : styles publiés d'OpenFreeMap et de VersaTiles ; le style maison du studio
   // (vector), OSM standard et OpenTopoMap (hôtes hors de meta.net) sont remplacés par positron
   STYLES = {
@@ -136,6 +139,9 @@ let S = null;
 const tt = (row, v) => S.ctx.t(row, v);
 const flightPath = () => `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`;
 
+/** Style du fond : celui du profil d'affichage, de jour ; la nuit, le style sombre (VersaTiles : eclipse). */
+const styleFor = () => S.theme?.dark ? /^vt-/.test(S.profile?.base || '') ? STYLES['vt-eclipse'] : STYLE_NIGHT : STYLES[S.profile?.base] ||
+  STYLE_URL;
 /** Charge le noyau (scripts du dossier du module, une fois par page). */
 async function loadLibs() {
   for (const [glob, file] of LIBS)
@@ -336,10 +342,14 @@ function draw() {
   } = sizeCanvas(), {
     toC,
     shown
-  } = view(W, H), ctx = S.canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, W, H);
-  if (!S.map) MapsRender.drawBackground(ctx, toC, W, H, window.MAPS_OUTLINES);
+  } = view(W, H), raw = S.canvas.getContext('2d'), t = S.theme, ctx = MapsRender.themed(raw, t);
+  raw.setTransform(dpr, 0, 0, dpr, 0, 0);
+  raw.clearRect(0, 0, W, H);
+  if (!S.map) MapsRender.drawBackground(ctx, toC, W, H, window.MAPS_OUTLINES, {
+    sea: t.page,
+    land: t.bg,
+    border: t.grid
+  });
   const route = S.route.points;
   if (S.route.altn && route.length) {
     // dégagement : tireté gris de l'arrivée au terrain de dégagement
@@ -365,6 +375,7 @@ function draw() {
     data: S.data?.data || {},
     route,
     marks: S.marks,
+    theme: S.theme,
     mission: S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -376,7 +387,7 @@ function draw() {
     ctx.save();
     ctx.beginPath();
     ctx.arc(q.x, q.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = S.theme.bg;
     ctx.fill();
     ctx.strokeStyle = '#6b7280';
     ctx.lineWidth = 2;
@@ -384,7 +395,7 @@ function draw() {
     ctx.font = '700 13px Arial,sans-serif';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = S.theme.bg;
     ctx.lineWidth = 3;
     ctx.strokeText(S.route.altn.id, q.x + 8, q.y);
     ctx.fillStyle = '#4b5563';
@@ -423,7 +434,7 @@ function drawPlanOnMap(ctx, toC) {
     ctx.closePath();
     ctx.fillStyle = col;
     ctx.fill();
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = S.theme.bg;
     ctx.lineWidth = 3;
     ctx.strokeText(name, q.x + 8, q.y - 9);
     ctx.fillText(name, q.x + 8, q.y - 9);
@@ -433,10 +444,10 @@ function drawPlanOnMap(ctx, toC) {
       q = toC(g.lat, g.lon);
     ctx.beginPath();
     ctx.arc(q.x, q.y, 8, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(29,111,216,.25)';
+    ctx.fillStyle = MapsRender.withAlpha(S.theme.accent, .25);
     ctx.fill();
     ctx.lineWidth = 2.5;
-    ctx.strokeStyle = '#1d6fd8';
+    ctx.strokeStyle = S.theme.accent;
     ctx.stroke();
   }
   ctx.restore();
@@ -512,8 +523,8 @@ function drawProfile() {
     W,
     H,
     dpr
-  } = fit(S.pc, S.profBox), ctx = S.pc.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  } = fit(S.pc, S.profBox), raw = S.pc.getContext('2d'), ctx = MapsRender.themed(raw, S.theme);
+  raw.setTransform(dpr, 0, 0, dpr, 0, 0);
   S.geo = MapsProfile.draw(ctx, S.prof, {
     W,
     H,
@@ -554,7 +565,7 @@ function drawCursor() {
     x = MapsProfile.xOf(g, S.cursor),
     info = MapsProfile.at(S.prof, S.cursor);
   ctx.save();
-  ctx.strokeStyle = '#1d6fd8';
+  ctx.strokeStyle = S.theme.accent;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, g.padT);
@@ -564,7 +575,7 @@ function drawCursor() {
     const y = g.padT + (g.H - g.padT - g.padB) * (1 - (Math.min(Math.max(info.alt, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#1d6fd8';
+    ctx.fillStyle = S.theme.accent;
     ctx.fill();
   }
   ctx.restore();
@@ -655,7 +666,7 @@ async function startTiles() {
     try {
       map = new ml.Map({
         container: S.mapEl,
-        style: STYLES[S.profile?.base] || STYLE_URL,
+        style: styleFor(),
         bounds: [
           [S.fit.w, S.fit.s],
           [S.fit.e, S.fit.n]
@@ -705,13 +716,13 @@ async function status() {
   const out = [];
   if (S.missionError) out.push(`<p>${esc(S.missionError)}</p>`);
   else if (S.mission) {
-    if (!S.mission.maps.length) out.push(`<p class="mp-muted">${esc(tt(TX.noMaps))}</p>`);
-    if (S.profileSource && S.profileSource !== 'copy') out.push(`<p class="mp-muted">${esc(tt(TX.builtin, {
+    if (!S.mission.maps.length) out.push(`<p class="f-muted">${esc(tt(TX.noMaps))}</p>`);
+    if (S.profileSource && S.profileSource !== 'copy') out.push(`<p class="f-muted">${esc(tt(TX.builtin, {
       p: S.profile?.name || S.profile?.id || ''
     }))}</p>`);
     const cyc = S.mapDef?.cycle,
       now = (await S.ctx.aerodb?.status().catch(() => null))?.cycle;
-    if (S.mapDef?.cycle && now && S.mapDef.cycle !== now) out.push(`<p class="mp-muted">${esc(tt(TX.cycleDiff, {
+    if (S.mapDef?.cycle && now && S.mapDef.cycle !== now) out.push(`<p class="f-muted">${esc(tt(TX.cycleDiff, {
       a: cyc,
       b: now
     }))}</p>`);
@@ -723,8 +734,8 @@ async function status() {
     else if (S.data?.empty && navigator.onLine === false) out.push(
       `<p>${esc(tt(TX.noZone))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
   }
-  if (S.plain && S.route.points.length) out.push(`<p class="mp-muted">${esc(tt(TX.plain))}</p>`);
-  if (S.prof && !S.prof.terrainOk) out.push(`<p class="mp-muted">${esc(tt(TX.noTerrain))}</p>`);
+  if (S.plain && S.route.points.length) out.push(`<p class="f-muted">${esc(tt(TX.plain))}</p>`);
+  if (S.prof && !S.prof.terrainOk) out.push(`<p class="f-muted">${esc(tt(TX.noTerrain))}</p>`);
   const html = out.join('');
   if (S.stEl.innerHTML !== html) S.stEl.innerHTML = html;
 }
@@ -925,20 +936,18 @@ function go(mission, map) {
 
 const STYLE = `
 [data-module="maps"]{display:flex;flex-direction:column;gap:8px}
-[data-module="maps"] .mp-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-[data-module="maps"] .mp-head h1{font-size:1.25rem;margin:0}
-[data-module="maps"] .mp-sum{flex:1 1 100%;color:var(--sog-muted);font-variant-numeric:tabular-nums}
+[data-module="maps"] .f-tools{margin-bottom:0}
+[data-module="maps"] .mp-sum{flex:1 1 100%;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-picks{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%;min-width:0}
 [data-module="maps"] .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 140px;text-overflow:ellipsis}
-[data-module="maps"] .mp-box{position:relative;height:52vh;min-height:260px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:#dfe9f2;touch-action:none}
+[data-module="maps"] .mp-box{position:relative;height:52vh;min-height:260px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-bg);touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-[data-module="maps"] .mp-credit{position:absolute;right:4px;bottom:2px;font-size:10px;color:#333;background:#fffc;padding:0 4px;border-radius:3px;pointer-events:none}
-[data-module="maps"] .mp-prof{position:relative;height:clamp(200px,30vh,340px);border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:#fff;touch-action:pan-y;cursor:crosshair}
+[data-module="maps"] .mp-credit{position:absolute;right:4px;bottom:2px;font-size:10px;color:var(--sog-fg);background:var(--sog-chart-bg);opacity:.85;padding:0 4px;border-radius:var(--sog-radius-s);pointer-events:none}
+[data-module="maps"] .mp-prof{position:relative;height:clamp(200px,30vh,340px);border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:pan-y;cursor:crosshair}
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
 [data-module="maps"] .mp-strip{min-height:1.4em;font-size:.92em;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-status p{margin:4px 0}
-[data-module="maps"] .mp-muted{color:var(--sog-muted);font-size:.9em}
 `;
 
 export async function mount(el, ctx) {
@@ -954,17 +963,17 @@ export async function mount(el, ctx) {
     plain: false
   };
   el.innerHTML = `<style>${STYLE}</style>
-<div class="mp-head"><h1>${esc(ctx.t(TX.title))}</h1>
+<div class="f-tools"><h1>${esc(ctx.t(TX.title))}</h1>
 <button type="button" class="f-btn" data-go="fuel">${esc(ctx.t(TX.edit))}</button>
 <button type="button" class="f-btn" data-fit>${esc(ctx.t(TX.fit))}</button>
 <div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
-<div class="mp-sum" aria-live="polite"></div></div>
+<div class="mp-sum f-muted" aria-live="polite"></div></div>
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
 <div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas></div>
 <div class="mp-strip" aria-live="polite"></div>
-<div class="mp-status" aria-live="polite"><p class="mp-muted">${esc(ctx.t(TX.loading))}</p></div>`;
+<div class="mp-status" aria-live="polite"><p class="f-muted">${esc(ctx.t(TX.loading))}</p></div>`;
   Object.assign(S, {
     box: el.querySelector('.mp-box'),
     mapEl: el.querySelector('.mp-map'),
@@ -1014,6 +1023,27 @@ export async function mount(el, ctx) {
   });
   await loadLibs();
   if (!S) return;
+  S.theme = MapsRender.tokens();
+  // design, ton ou thème du système changés : jetons relus, fond de nuit ou de jour, tout redessiné (observateur
+  // d'attributs de <html> : réagit à l'événement, n'écrit rien dans la page)
+  const onTheme = () => {
+    if (!S) return;
+    const t = MapsRender.tokens();
+    if (JSON.stringify(t) === JSON.stringify(S.theme)) return;
+    const night = t.dark !== S.theme.dark;
+    S.theme = t;
+    if (night && S.map) S.map.setStyle(styleFor());
+    drawProfile();
+    schedule();
+  };
+  const mq = matchMedia('(prefers-color-scheme: dark)'),
+    mo = new MutationObserver(onTheme);
+  mq.addEventListener('change', onTheme);
+  mo.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-design', 'data-tone']
+  });
+  S.stops.push(() => mq.removeEventListener('change', onTheme), () => mo.disconnect());
   if (ctx.query?.mission) await applyMission();
   else {
     await applyFlight();

@@ -8,12 +8,93 @@
   // Aucun texte d'interface : libellés de données seulement (codes, noms, niveaux).
   // API : window.MapsRender = { routeProfile(levelFt), selectAirspaces(list, profile, route), bboxOf(points, marginNm),
   //   distances(points), marks(points, stepNm), mercator(bbox, W, H, pad), drawBackground(ctx, toC, W, H, rings, colors),
-  //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, mission }) } ; mission : { points, zones } d'une
-  //   carte de mission (points tournants, zones de recherche / mission / exclusion).
+  //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, mission }), tokens(), themed(ctx, tokens) } ;
+  //   mission : { points, zones } d'une carte de mission (points tournants, zones de recherche / mission / exclusion).
+  // Couleurs « de papier » (fond, halos, encre, gris) : jetons du design du cadre (frame/design/INTEGRATION.md), par
+  // themed() qui les substitue aux valeurs écrites en dur, ici et dans les copies du studio ; couleurs cartographiques
+  // (espaces, voies, route) gardées.
   if (window.MapsRender) return;
   const A = () => window.SiaAero,
     PT = 4 / 3,
     NM = 1852;
+
+  // ---------------------------------------------------------------- jetons du design
+  /** Composantes [r, g, b] (0-255) d'une couleur « #rgb », « #rrggbb » ou « rgb(…) » ; null sinon. */
+  function rgbOf(c) {
+    const s = String(c || '').trim();
+    let m = /^#([0-9a-f]{3})$/i.exec(s);
+    if (m) return [...m[1]].map(x => parseInt(x + x, 16));
+    m = /^#([0-9a-f]{6})$/i.exec(s);
+    if (m) return [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
+    m = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i.exec(s);
+    return m ? [+m[1], +m[2], +m[3]] : null;
+  }
+  /** Couleur c avec l'opacité a (rgba) ; c telle quelle si elle n'est pas lisible. */
+  const withAlpha = (c, a) => {
+    const r = rgbOf(c);
+    return r ? `rgba(${r.join(',')},${a})` : c;
+  };
+  /** Jetons de dessin lus sur <html> (design et ton en cours) : fond des dessins, fond de page, encre, gris, grille,
+   *  accent ; dark : fond sombre (nuit), déduit de sa clarté. */
+  function tokens() {
+    const cs = getComputedStyle(document.documentElement),
+      v = (n, d) => cs.getPropertyValue(n).trim() || d,
+      t = {
+        bg: v('--sog-chart-bg', '#fff'),
+        page: v('--sog-bg', '#f5f6f8'),
+        fg: v('--sog-fg', '#17202a'),
+        muted: v('--sog-muted', '#5b6670'),
+        grid: v('--sog-chart-grid', '#d9dee4'),
+        accent: v('--sog-accent', '#1d6fd8')
+      },
+      rgb = rgbOf(t.bg) || [255, 255, 255];
+    t.dark = (.2126 * rgb[0] + .7152 * rgb[1] + .0722 * rgb[2]) / 255 < .45;
+    return t;
+  }
+  /** Jetons du dessin en cours (draw : opts.theme, sinon lus) ; paper() : fond des dessins (halos, cartouches). */
+  let T = null;
+  const paper = () => (T ||= tokens()).bg;
+  const WHITE = /^(#fff|#ffffff|white)$/,
+    WHITE_A = /^rgba?\(255,255,255(?:,([\d.]+))?\)$/,
+    INK = new Set(['#17202a', '#222', '#222222', '#333', '#333333', '#000', '#000000']),
+    GREY = new Set(['#56626b', '#5b6670', '#4b5563', '#6b7280', '#9aa5ad']),
+    RULE = new Set(['#e3e8ec', '#d9dee4']);
+  /** Contexte 2D dont les couleurs de papier écrites par valeur prennent les jetons t : blanc (fonds, halos, cartouches)
+   *  → fond des dessins, encre → texte, gris → texte secondaire, filets → grille. Les autres couleurs (cartographiques)
+   *  passent telles quelles. Sert aux copies du studio (symboles, profil), qu'on ne modifie pas. */
+  function themed(ctx, t) {
+    const map = c => {
+      if (typeof c !== 'string') return c; // dégradé, motif
+      const k = c.replace(/\s+/g, '').toLowerCase();
+      if (WHITE.test(k)) return t.bg;
+      const m = WHITE_A.exec(k);
+      if (m) return withAlpha(t.bg, m[1] ?? 1);
+      if (INK.has(k)) return t.fg;
+      if (GREY.has(k)) return t.muted;
+      if (RULE.has(k)) return t.grid;
+      // nuit : une couleur cartographique sombre (bleus, violets, rouges foncés) est éclaircie pour rester lisible sur
+      // le fond et les halos sombres ; son opacité est gardée
+      if (t.dark) {
+        const r = rgbOf(k);
+        if (r && (.2126 * r[0] + .7152 * r[1] + .0722 * r[2]) / 255 < .5) {
+          const a = /^rgba\([^)]*,([\d.]+)\)$/.exec(k)?.[1] ?? 1,
+            l = r.map(x => Math.round(x + (255 - x) * .45));
+          return `rgba(${l.join(',')},${a})`;
+        }
+      }
+      return c;
+    };
+    return new Proxy(ctx, {
+      get(o, p) {
+        const v = o[p];
+        return typeof v === 'function' ? v.bind(o) : v;
+      },
+      set(o, p, v) {
+        o[p] = p === 'fillStyle' || p === 'strokeStyle' ? map(v) : v;
+        return true;
+      }
+    });
+  }
 
   // ---------------------------------------------------------------- profil d'affichage
   /** Réglages par défaut d'un élément (ceux du profil « IFR simplifié » du studio). */
@@ -284,7 +365,7 @@
     ctx.textAlign = align;
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = paper();
     ctx.lineWidth = Math.max(2, size * .28);
     ctx.strokeText(text, x, y);
     ctx.fillStyle = color;
@@ -450,7 +531,7 @@
           ctx.lineTo(p.x - r, p.y);
         }
         ctx.closePath();
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = paper();
         ctx.fill();
         ctx.strokeStyle = col;
         ctx.lineWidth = 1.5 * scale;
@@ -835,7 +916,7 @@
         end = i === 0 || i === pts.length - 1;
       ctx.beginPath();
       ctx.arc(q.x, q.y, (end ? 5 : 3.5) * scale, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = paper();
       ctx.fill();
       ctx.strokeStyle = color;
       ctx.stroke();
@@ -877,9 +958,11 @@
     data = {},
     route = [],
     marks: mk = [],
-    mission = null
+    mission = null,
+    theme = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
+    T = theme || tokens();
     const pl = A().placer(),
       c = {
         lat: (bbox.n + bbox.s) / 2,
@@ -912,6 +995,9 @@
     marks,
     mercator,
     drawBackground,
-    draw
+    draw,
+    tokens,
+    themed,
+    withAlpha
   };
 })();
