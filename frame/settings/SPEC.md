@@ -72,9 +72,10 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    know the route is told to restart up to date.
    **The launcher's Yes / No window**: taking `data/` into another address than the configured one, or saving another
    remote address than the current or configured one, opens a confirmation window on the computer, never in the page.
-   Before the click, a sentence under the button says so (shown as the address is typed: the launcher's
-   `needsConfirm` when it gives one, else compared with `default` / the current address, ignoring a final `/` or
-   `.git`); while waiting, the card says to answer it, maybe behind other windows; after a refusal, the launcher's own
+   Before the click, a sentence under the button says so (shown as the address is typed, debounced: the
+   launcher's answer to `POST /__setup/adopt { url, dry: true }`, which does nothing and returns `needsConfirm`; the
+   current remote address never asks; without an answer, compared with `default`, ignoring a final `/` or `.git`; an
+   empty or invalid address announces nothing); while waiting, the card says to answer it, maybe behind other windows; after a refusal, the launcher's own
    message (already open / refused / closed / impossible), plus "look for it behind the other windows" when one was
    already open (`confirm: 'open'`, or the message). A link to the help section "A git repository for data/" stays. On the Usages card, "Several users" ticked with no remote shows a warning pointing to
    this card, and the state sentence says "a git repository with no remote: nothing goes elsewhere". Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in

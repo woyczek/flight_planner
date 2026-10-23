@@ -132,3 +132,9 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   the contract (`needsConfirm`, `confirm`) with a local fallback; checked without opening any window: hint shown for
   any address with no configured one, hidden for the current address (also with a final `/` or without `.git`), shown
   for another one.
+- **23 Oct 2026 — Checked against the launcher's contract** (v3 97bc12dec): the sentence before the click asks the
+  launcher (`adopt` with `dry: true`, cached per address and cleared at each drawing) and falls back to the local
+  comparison; the refusal texts ("Reprise non confirmée : <reason> data/ inchangé.", "Une autre fenêtre de confirmation
+  est déjà ouverte…") are shown as they are, the "already open" one recognised by its text. Checked without opening any
+  window, the configured address set to a dummy one in this worktree only: configured address (with a final `/`):
+  hidden; another: shown; empty or invalid: hidden.

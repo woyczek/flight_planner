@@ -480,7 +480,8 @@
       prefs = (await c.own.get('device/settings.json')) || {},
       v2 = !prefs.v2 ? v2Settings() : null,
       st = await FD.status(),
-      remote = remoteNow = L ? await setup('sync-remote') : null, // dépôt distant de data/ (lanceur)
+      remote = remoteNow = L ? (Object.keys(dryCache).forEach(k => delete dryCache[k]), await setup('sync-remote')) :
+      null, // dépôt distant de data/ (lanceur)
       // état de data/ : absent, plain (dossier sans git), repo ; champ state du lanceur, sinon déduit
       gitState = !L ? '' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
@@ -840,10 +841,25 @@
       }
     };
     // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
+    // (le lanceur répond à POST /__setup/adopt { url, dry: true } sans rien faire : needsConfirm ; sans réponse, comparaison
+    // locale ; adresse vide ou invalide : rien d'annoncé)
+    let hintTimer = 0;
     const hint = () => {
-      const h = view.querySelector('[data-confirm-hint]'),
-        f = view.querySelector('[data-f="remote"], [data-f="gitUrl"]');
-      if (h && f) h.hidden = !needsConfirm(f.value, f.dataset.f === 'remote' ? 'remote' : 'adopt');
+      clearTimeout(hintTimer);
+      hintTimer = setTimeout(async () => {
+        const h = view.querySelector('[data-confirm-hint]'),
+          f = view.querySelector('[data-f="remote"], [data-f="gitUrl"]');
+        if (!h || !f) return;
+        const url = f.value.trim();
+        if (url && !(url in dryCache)) {
+          const r = await setup('adopt', {
+            url,
+            dry: true
+          });
+          dryCache[url] = typeof r?.needsConfirm === 'boolean' ? r.needsConfirm : r && !r.ok ? 'invalid' : null;
+        }
+        h.hidden = !url || dryCache[url] === 'invalid' || !needsConfirm(url, f.dataset.f === 'remote' ? 'remote' : 'adopt');
+      }, 250);
     };
     view.querySelector('[data-f="remote"], [data-f="gitUrl"]')?.addEventListener('input', hint);
     hint();
@@ -896,15 +912,18 @@
     const n = u => String(u || '').trim().replace(/\/+$/, '').replace(/\.git$/, '').replace(/^(\w+:\/\/[^/]+)/, h => h.toLowerCase());
     return !!a && !!b && n(a) === n(b);
   };
-  /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Champ needsConfirm du lanceur s'il le donne pour
-   *  cette adresse, sinon : reprise vers une autre adresse que celle de la configuration ; enregistrement d'une autre
-   *  adresse que l'actuelle ou celle de la configuration. */
+  /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Réponse du lanceur pour cette adresse (POST adopt dry,
+   *  needsConfirm : autre dépôt que celui de la configuration), sinon comparaison locale ; enregistrement d'un dépôt
+   *  distant : jamais pour l'adresse actuelle. */
   let remoteNow = null; // dernier GET /__setup/sync-remote (render)
+  const dryCache = {}; // adresse → needsConfirm du lanceur (POST adopt dry), 'invalid', ou null sans réponse
   function needsConfirm(url, kind) {
-    const r = remoteNow || {};
-    if (typeof r.needsConfirm === 'boolean' && sameRepo(url, r.default || r.url)) return r.needsConfirm;
-    if (sameRepo(url, r.default)) return false;
-    return kind === 'remote' ? !sameRepo(url, r.url) : true;
+    const r = remoteNow || {},
+      dry = dryCache[String(url || '').trim()];
+    // dépôt distant : l'adresse actuelle ne demande jamais la fenêtre ; sinon, comme une reprise (autre que la configuration)
+    if (kind === 'remote' && sameRepo(url, r.url)) return false;
+    if (typeof dry === 'boolean') return dry;
+    return !sameRepo(url, r.default);
   }
   /** Refus du lanceur parce qu'une fenêtre est déjà ouverte (champ confirm, sinon le texte du message) ? */
   const confirmOpen = r => !!r && !r.ok && (r.confirm === 'open' || /déjà ouverte|already open/i.test(r.message || ''));
