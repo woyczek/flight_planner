@@ -49,13 +49,14 @@ export const meta = {
     prefix: 'airline/map_profiles.json',
     merge: 'record'
   }],
-  // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
+  // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
-    'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
+    'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', 'contours.js?v=0'
   ],
-  // gardés au premier usage seulement (MapLibre, 1 Mo, inutile sans tuiles)
-  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],
+  // gardés au premier usage seulement : MapLibre (1 Mo, inutile sans tuiles) ; les contours des pays du fond uni (350 Ko,
+  // inutiles avec les tuiles ; gardés d'avance quand MapLibre n'est pas en cache : outlinesAhead)
+  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0'],
   // hôtes publics de tuiles appelés directement par MapLibre (jamais par ctx.net) ; CSP connect-src du cadre
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']
 };
@@ -68,7 +69,6 @@ const LIBS = [
     ['MapsMission', 'mission.js'],
     ['MapsContours', 'contours.js'],
     ['MAPS_PROFILES', 'lib/profiles.js'],
-    ['MAPS_OUTLINES', 'lib/outlines.js'],
     ['jsyaml', '../../frame/lib/js-yaml.min.js']
   ],
   STYLE_URL = 'https://tiles.openfreemap.org/styles/positron',
@@ -463,6 +463,24 @@ async function loadLibs() {
     once: true
   });
 }
+/** Contours des pays du fond uni (lib/outlines.js, 350 Ko), chargés au premier dessin sans tuiles ; la carte est redessinée
+ *  quand ils arrivent (mer seule en attendant). */
+let outlinesP = null;
+const loadOutlines = () => outlinesP ||= import(new URL('lib/outlines.js?v=0', import.meta.url).href).then(() => S && schedule(), () => {
+  outlinesP = null; // hors ligne sans copie : redemandé au dessin suivant
+});
+/** Contours gardés d'avance (service worker) seulement quand MapLibre n'est pas en cache : sans lui, le premier vol hors
+ *  ligne n'aurait que le fond uni. */
+async function outlinesAhead() {
+  try {
+    const ml = await caches.match(new URL('lib/maplibre-gl.js', import.meta.url).href, {
+      ignoreSearch: true
+    });
+    if (!ml) fetch(new URL('lib/outlines.js?v=0', import.meta.url)).catch(() => {});
+  } catch {
+    /* stockage des copies indisponible : rien à garder */
+  }
+}
 /** MapLibre (script UMD et sa feuille), chargé une fois, au premier fond à tuiles ; null s'il ne charge pas. */
 let mlP = null;
 
@@ -707,6 +725,7 @@ function draw() {
   } = view(W, H), raw = S.canvas.getContext('2d'), t = S.theme, ctx = MapsRender.themed(raw, t);
   raw.setTransform(dpr, 0, 0, dpr, 0, 0);
   raw.clearRect(0, 0, W, H);
+  if (S.plain && !window.MAPS_OUTLINES) loadOutlines(); // fond uni confirmé (pas de tuiles) : pas pendant leur chargement
   if (!S.map) MapsRender.drawBackground(ctx, toC, W, H, window.MAPS_OUTLINES, {
     sea: t.page,
     land: t.bg,
@@ -3151,6 +3170,13 @@ const posOf = p => p && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) ? {
   lat: +p.lat,
   lon: +p.lon
 } : null;
+/** Position réelle de ce vol : progress.actual, sauf une position d'avant le départ (celle du vol précédent, gardée
+ *  tant que le cadre ne l'a pas remise à null) ; null sinon. */
+const actualOf = f => {
+  const a = posOf(f?.progress?.actual),
+    t0 = Date.parse(f?.started?.at || '');
+  return a && !(Number.isFinite(t0) && Date.parse(a.at || '') < t0) ? a : null;
+};
 /** Heure UTC « 14:32Z » d'une date ISO. */
 const hhmm = iso => {
   const d = new Date(iso);
@@ -3171,7 +3197,8 @@ function progressOnly(f) {
 function progressUpdate() {
   const f = S.route.flight,
     on = inFlight(f),
-    a = on ? posOf(f.progress?.actual) : null;
+    a = on ? actualOf(f) : null,
+    t0 = Date.parse(f?.started?.at || '');
   if (S.followBtn.hidden === on) S.followBtn.hidden = !on;
   if (!on) {
     S.trail = [];
@@ -3181,9 +3208,10 @@ function progressUpdate() {
   }
   const now = Date.now();
   S.trail = [...(S.trail || []), ...(Array.isArray(f.progress?.actual?.trail) ? f.progress.actual.trail.map(posOf).filter(Boolean) : []),
-    ...(a ? [a] : [])
-  ].filter((p, i, all) => !p.at || now - Date.parse(p.at) <= TRAIL_MS).filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !==
-    all[i - 1].lon).slice(-400);
+      ...(a ? [a] : [])
+    ].filter(p => !p.at || !Number.isFinite(t0) || Date.parse(p.at) >= t0) // rien du vol précédent
+    .filter((p, i, all) => !p.at || now - Date.parse(p.at) <= TRAIL_MS).filter((p, i, all) => !i || p.lat !== all[i - 1].lat || p.lon !==
+      all[i - 1].lon).slice(-400);
   const st = progressState(),
     html = progressHtml(st);
   if (S.progEl.innerHTML !== html) S.progEl.innerHTML = html;
@@ -3233,8 +3261,18 @@ function alongRoute(p) {
 /** État de la progression : positions, écart en distance et en temps, écart latéral, péremption. */
 function progressState() {
   const f = S.route.flight,
-    planned = posOf(f?.progress?.plannedPos),
-    actual = posOf(f?.progress?.actual),
+    dep = posOf(S.route.points?.[0]),
+    // roulage (Carburant : phase « taxi ») : l'avion prévu est encore au terrain, au sol ; la montée commence au
+    // décollage prévu (phase « climb »)
+    taxi = f?.progress?.phase === 'taxi' && dep,
+    planned = taxi ? {
+      ...(f?.progress?.plannedPos || {}),
+      lat: dep.lat,
+      lon: dep.lon,
+      nmFromDep: 0,
+      altFt: 0
+    } : posOf(f?.progress?.plannedPos),
+    actual = actualOf(f),
     ageMs = actual?.at ? Date.now() - Date.parse(actual.at) : 0,
     pa = actual ? alongRoute(actual) : null,
     // distance prévue écrite par Carburant (nmFromDep), sinon la projection de la position prévue
@@ -3902,6 +3940,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   await loadLibs();
   if (!S) return;
+  outlinesAhead();
   // page de réglage : après les bibliothèques (les cases lisent les couches du profil, MapsRender)
   if (ctx.query?.tune) tuneSetup(el.querySelector('.mp-tune'));
   S.theme = MapsRender.tokens();

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: lighter installation, started flight** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS) — the country
+  outlines of the plain background (350 KB) are loaded at their first use (kept ahead only when MapLibre is not
+  cached): installation 2,420 → 2,072 KB; a position from before the start (the previous flight's) is ignored; while
+  taxiing the planned aircraft stays at the departure aerodrome, on the ground.
 - **My flights: filters from the last visit shown** (`modules/flightlog/module.js`; DECISIONS, help ×4) — a chip
   "1 year · LFRS ✕" recalls and removes them; a report without times says so on its "—".
 - **Fuel: no default aircraft** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — a new flight takes the last

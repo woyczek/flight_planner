@@ -12,8 +12,8 @@ export const meta = {
   writes: [{ prefix: 'cache/maps/', policy: 'cache' },                        // map mode and layers, per device
     { prefix: 'pilot/', merge: 'record' }],                                   // the current flight, edited on the map
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
-    'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],  // kept at installation
-  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],                 // kept at first use
+    'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],               // kept at installation
+  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0'],  // kept at first use
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']  // called by MapLibre itself
 };
 ```
@@ -96,8 +96,8 @@ keeps the module and fuel scrolls to that step).
 
 ## 5. Costs (measured, see DECISIONS.md)
 
-- **Code**: core, profile and symbols about 145 KB, outlines 350 KB (kept at installation); MapLibre 1 MB at the first
-  tiled map.
+- **Code**: core, profile and symbols about 145 KB (kept at installation); outlines 350 KB at the first plain
+  background (or ahead when MapLibre is not cached); MapLibre 1 MB at the first tiled map.
 - **Terrain**: 7 to 20 Terrarium tiles for a 100 to 370 NM route (zoom 9).
 - **Data**: France IFR route LFRS → LFML: France's meta, airspaces (2.8 MB), aerodromes, navaids, airways and MORA,
   plus about 100 KB of Spain and Switzerland (no airspaces): 3.64 MB, then from the frame's cache.

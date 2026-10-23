@@ -503,3 +503,19 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   after its ILS (same installation); a stand-alone DME stays above the ILS. Divergence of the studio copy
   (`lib/aero_symbols.js`), marked in the code. Bench (VFR mode): Brest at 560 px/deg and 25,000 px/deg → VOR BZH kept,
   "aussi ici : ILS 25L BG 109.9", DME BG apart; Calvi → ILS 18 CLI with "aussi ici : DME CLI". No JavaScript error.
+- **23 Oct 2026 — country outlines at first use; started flight: previous position, taxi.**
+  - **Outlines (`lib/outlines.js`, 350 KB) in `meta.lazy`**: they only draw the plain background, which shows when the
+    tiles cannot come (offline, host refused, no WebGL). Loaded once the map knows it has no tiles (`S.plain`; not
+    during the tiles' loading, which drew the plain background for a moment), the sea alone until they arrive. Kept
+    ahead (fetched once, so the service worker keeps them) only when MapLibre is not in the cache: a device that has
+    never shown tiles still has its land offline.
+  - **Measure** (audit kit of the frame session, `audit_sizes.py`, files kept at installation): 2,420 KB raw / 824 KB
+    gzip → 2,072 KB / 706 KB; the maps module 771 KB → 422 KB at installation, its deferred files 985 → 1,335 KB.
+    Bench: with tiles, `outlines.js` fetched ahead (test page without MapLibre in cache) and never run; without tiles
+    (tile hosts blocked), loaded and drawn.
+  - **A position from before the start is the previous flight's**: `progress.actual` older than `started.at` is
+    ignored, trail included (the frame also sets it back to null when a flight stops). Bench: actual 30 min before the
+    start → "GPS or network not enabled: no actual position".
+  - **Taxi**: while fuel's phase is `taxi`, the planned aircraft stays at the departure aerodrome, on the ground; the
+    climb starts at the planned take-off (phase `climb`). Bench: phase `taxi` with `nmFromDep` 4 → planned at the
+    aerodrome, on time; phase `climb` → "1 min late (4.0 NM)".
