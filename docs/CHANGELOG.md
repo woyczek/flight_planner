@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **design: reading of V2's designs** (`frame/design/READING.md`, `frame/design/DECISIONS.md`) — what the Pilot
+  application keeps of V2's designs, skins, icons and phone rules; the proposed `--sog-*` token set, the primitives the
+  modules built by hand that move into the frame, density (44 px targets, 16 px field text on touch screens), day /
+  night, print, the design choice in Settings; a survey of the seven screens at 375 px and on a screen, day and night,
+  in two token sets. No code.
 - **flightlog: the user's chapter in French** (`modules/flightlog/help/fr.md`) — "How to use" (totals, filters,
   list, details, write or open the report, More), then where flights come from and special cases; to be translated and
   assembled by the help session.
