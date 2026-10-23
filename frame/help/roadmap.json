@@ -284,6 +284,13 @@
           "es": "Mapa IFR del vuelo previsto (teselas o fondo liso sin conexión), perfil vertical, cursor común, TOC / TOD"
         },
         {
+          "state": "doing",
+          "fr": "Carte équilibrée : hiérarchie des zones masquées en reculant (détail autour des points tournants), curseur de complexité, courbes de niveau en Topo, hauteur des obstacles, infobulle unique clic / survol, modes en icônes, profils de modes affinables (studio V2 puis page dédiée)",
+          "en": "Balanced map: zone hierarchy hidden when zooming out (detail around the turning points), complexity slider, contour lines in Topo, obstacle heights, one tooltip for click and hover, icon-only modes, tunable mode profiles (V2 studio then a dedicated page)",
+          "de": "Ausgewogene Karte: Zonenhierarchie beim Herauszoomen ausgeblendet (Detail um die Wegpunkte), Komplexitätsregler, Höhenlinien in Topo, Hindernishöhen, ein Tooltip für Klick und Hover, Modi nur als Symbole, anpassbare Modusprofile (V2-Studio, dann eigene Seite)",
+          "es": "Mapa equilibrado: jerarquía de zonas ocultas al alejar (detalle alrededor de los puntos de giro), control de complejidad, curvas de nivel en Topo, altura de los obstáculos, un solo tooltip para clic y paso del ratón, modos solo con iconos, perfiles de modo ajustables (estudio V2 y luego página dedicada)"
+        },
+        {
           "state": "done",
           "fr": "Cartes de mission redessinées depuis le dépôt, lecture seule",
           "en": "Mission maps redrawn from the repository, read-only",
