@@ -25,6 +25,7 @@ import csp_policy as cspmod  # politique de sécurité du contenu, commune au si
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
+import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -650,6 +651,18 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if 'ivao' in self.path.split('?')[0]:
                 return self._json(ivao_last_flight(arg('vid'), arg('session')))
             return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
+        if self.path.split('?')[0] == '/__setup/sim/position':
+            # V3 frame, position réelle : simulateur de ce poste (X-Plane 12 puis Little Navmap, boucle locale seulement,
+            # un passage par seconde au plus) ; 204 sans simulateur
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            fix = sim_position.position()
+            if fix:
+                return self._json(fix)
+            self.send_response(204)
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            return None
         if self.path.split('?')[0] == '/__setup/ivao-bookings':
             # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
             # (ivao_key), jamais transmise à la page

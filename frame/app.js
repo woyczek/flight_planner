@@ -135,6 +135,11 @@
         'Tatsächliche Position des Flugs: wartet (GPS des Geräts oder IVAO-/VATSIM-Sitzung)',
         'Posición real del vuelo: en espera (GPS del dispositivo o sesión IVAO / VATSIM)'
       ],
+      waitingSim: ['Position réelle du vol : en attente (simulateur de ce poste, GPS de l’appareil ou session IVAO / VATSIM)',
+        'Actual position of the flight: waiting (this computer’s simulator, the device’s GPS or an IVAO / VATSIM session)',
+        'Tatsächliche Position des Flugs: wartet (Simulator dieses Rechners, GPS des Geräts oder IVAO-/VATSIM-Sitzung)',
+        'Posición real del vuelo: en espera (simulador de este equipo, GPS del dispositivo o sesión IVAO / VATSIM)'
+      ],
       gpsOn: ['Utiliser la position (GPS) de cet appareil pendant le vol', 'Use this device’s position (GPS) during the flight',
         'Die Position (GPS) dieses Geräts während des Flugs verwenden', 'Usar la posición (GPS) de este dispositivo durante el vuelo'
       ],
@@ -1066,6 +1071,9 @@
   // actif tant que pilot/<tri>/current_flight.json porte started (remis à null par l'annulation de fuel ou
   // l'enregistrement du compte rendu), démarré il y a moins de 24 h (un vol oublié ne garde pas le GPS allumé), quel que
   // soit le module ouvert ; sources, dans l'ordre :
+  //   0. page servie par un lanceur : le simulateur de ce poste (GET /__setup/sim/position, toutes les 5 s : X-Plane 12
+  //      puis Little Navmap, tools/sim_position.py), source 'xplane' ou 'lnm' ; le GPS et le réseau attendent tant
+  //      qu'il a donné une position il y a moins de 15 s ;
   //   1. GPS de l'appareil (watchPosition) : permission demandée seulement par un geste (pastille de l'en-tête,
   //      ctx.live.enable()), jamais au démarrage ; ensuite repris de lui-même si le navigateur l'accorde déjà ;
   //   2. réseau, sans GPS récent : session en ligne du pilote, IVAO (whazzup public, VID de l'identité) puis VATSIM (flux
@@ -1076,6 +1084,8 @@
   // 'frame'), au plus une fois par 10 s et seulement si la position a bougé (30 m, 50 ft) ; aucune synchronisation
   // forcée (la file locale et la synchronisation habituelle suffisent).
   const LIVE_WRITE = 10e3,
+    LIVE_SIM = 5e3,
+    LIVE_SIM_FRESH = 15e3,
     LIVE_NET_RELAY = 15e3,
     LIVE_NET_DIRECT = 60e3,
     LIVE_GPS_FRESH = 30e3,
@@ -1098,6 +1108,8 @@
     gpsWatch = null,
     gpsPoll = null, // relève toutes les 10 s en plus des mesures que le navigateur envoie de lui-même
     gpsAt = 0,
+    simAt = 0, // dernière position du simulateur de ce poste
+    simTimer = null,
     netTimer = null,
     flightPath = '',
     unwatchFlight = null,
@@ -1125,11 +1137,13 @@
         last: null
       };
       lastWrite = null;
-      if (liveGps && await gpsGranted()) gpsStart();
+      await simTick(); // le simulateur d'abord : le GPS ne passe pas devant lui au démarrage
+      if (live.active && liveGps && await gpsGranted()) gpsStart();
       netTick();
     } else if (!on && live.active) {
       live.active = false;
       gpsStop();
+      clearTimeout(simTimer);
       clearTimeout(netTimer);
       clearTimeout(liveLater);
     }
@@ -1152,6 +1166,7 @@
     const got = p => {
       gpsState = 'on';
       gpsAt = Date.now();
+      if (simFresh()) return paintLive(); // le simulateur de ce poste passe devant
       const c = p.coords;
       onFix('gps', {
         lat: c.latitude,
@@ -1189,11 +1204,41 @@
     gpsWatch = null;
     gpsState = state;
   }
-  /** Session en ligne du pilote (sans GPS récent) : IVAO puis VATSIM ; relais toutes les 15 s, direct toutes les 60 s. */
+  /** Le simulateur de ce poste a donné une position il y a moins de 15 s. */
+  const simFresh = () => Date.now() - simAt < LIVE_SIM_FRESH;
+  /** Simulateur de ce poste (page servie par un lanceur) : toutes les 5 s ; 204 : aucun simulateur, la main au reste. */
+  async function simTick() {
+    clearTimeout(simTimer);
+    if (!live.active || !launcherHere) return;
+    try {
+      const r = await fetch(new URL('__setup/sim/position', ROOT), {
+        cache: 'no-store',
+        headers: {
+          'X-SOG-Setup': '1'
+        }
+      });
+      const p = r.status === 200 ? await r.json() : null;
+      if (live.active && (p?.source === 'xplane' || p?.source === 'lnm')) {
+        simAt = Date.now();
+        onFix(p.source, {
+          lat: p.lat,
+          lon: p.lon,
+          altFt: p.altFt ?? null,
+          gsKt: p.gsKt ?? null,
+          trackDeg: p.trackDeg ?? null
+        });
+      }
+    } catch {
+      /* lanceur fermé : nouvel essai au tour suivant */
+    }
+    if (live.active) simTimer = setTimeout(simTick, LIVE_SIM);
+  }
+  /** Session en ligne du pilote (sans simulateur ni GPS récents) : IVAO puis VATSIM ; relais toutes les 15 s, direct
+   *  toutes les 60 s. */
   async function netTick() {
     clearTimeout(netTimer);
     if (!live.active) return;
-    if (Date.now() - gpsAt > LIVE_GPS_FRESH) try {
+    if (!simFresh() && Date.now() - gpsAt > LIVE_GPS_FRESH) try {
       const ivao = String(identity.ivao || '').trim(),
         vatsim = String(identity.vatsim || '').trim();
       let fix = null;
@@ -1220,7 +1265,7 @@
           trackDeg: Math.round(p.heading)
         }];
       }
-      if (fix && Date.now() - gpsAt > LIVE_GPS_FRESH) onFix(...fix);
+      if (fix && !simFresh() && Date.now() - gpsAt > LIVE_GPS_FRESH) onFix(...fix);
     } catch (e) {
       console.warn('live', e);
     }
@@ -1303,19 +1348,28 @@
       }
     };
   }
-  /** Pastille de l'en-tête pendant un vol : la source (GPS, IVAO, VATSIM, — en attente) ; bascule du GPS de l'appareil. */
+  // nom de chaque source dans la pastille (noms propres, les mêmes dans les quatre langues)
+  const LIVE_NAMES = {
+    xplane: 'X-Plane',
+    lnm: 'Little Navmap',
+    gps: 'GPS',
+    ivao: 'IVAO',
+    vatsim: 'VATSIM'
+  };
+  /** Pastille de l'en-tête pendant un vol : la source (X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
+   *  bascule du GPS de l'appareil. */
   function paintLive() {
     const b = $('fLive');
     if (!b) return;
     const show = live.active;
     if (b.hidden === show) b.hidden = !show;
     if (!show) return;
-    const src = live.source ? live.source.toUpperCase() : '—',
+    const src = live.source ? LIVE_NAMES[live.source] || live.source.toUpperCase() : '—',
       html = `${Icons?.svg('pin') || ''}<span>${esc(src)}</span>`,
       title = (live.last ? t(T.live.title, {
         s: src,
         t: new Date(live.last.at).toLocaleTimeString(lang())
-      }) : t(T.live.waiting)) + ' — ' + t(gpsWatch !== null ? T.live.gpsOff : T.live.gpsOn),
+      }) : t(launcherHere ? T.live.waitingSim : T.live.waiting)) + ' — ' + t(gpsWatch !== null ? T.live.gpsOff : T.live.gpsOn),
       on = gpsWatch !== null;
     if (b.innerHTML !== html) b.innerHTML = html;
     if (b.title !== title) b.title = title;

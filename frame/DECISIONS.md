@@ -448,3 +448,36 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     the developers' example, opened with `localStorage['sogFrame:dev'] = '1'`.
   - Tests (a marker added to `frame.css`): in a fresh profile and in a profile holding the old version, the notice
     appears, then one click serves the marker, and no notice comes back; no JavaScript error.
+- **23 Oct 2026 — Lot 16, the simulator as the first source of the actual position** (asked by the user, from their
+  workstation: X-Plane 12.4.3 with its web API on 8086; Little Navmap with Little Xpconnect and its web server on 8965;
+  XPUIPC, Navigraph Simlink, Volanta, JoinFS and vmsACARS have no useful local API):
+  - **Launcher**: `GET /__setup/sim/position` (`tools/sim_position.py`, standard library).
+    - Asks X-Plane (REST v2), then Little Navmap (`/api/sim/info`, keys read from its source:
+      `position.lat/lon`, `indicated_altitude` ft, `ground_speed` kt, magnetic `heading`).
+    - Loopback only (127.0.0.1, then [::1]); only the ports can be set (`tools/.sim.json`, git-ignored).
+    - At most one pass a second; both simulators are asked in parallel, 0.8 s each. On Windows a closed loopback port
+      is refused only after about 2 s, so a simulator that did not answer at all is skipped for 10 s.
+  - **Frame**: the simulator comes before the GPS and the network.
+    - It is asked every 5 s while a flight is started and a launcher serves the page.
+    - The GPS and the network wait while it gave a position in the last 15 s.
+    - At start, its first answer comes before the GPS starts. The first test showed a GPS fix written before the
+      first simulator answer.
+    - `progress.actual.source` is `xplane` or `lnm`, and the badge says "X-Plane" or "Little Navmap".
+  - **Tests** (X-Plane and Little Navmap not running: fake servers with the real APIs' shapes):
+    - launcher route:
+      - X-Plane wins over Little Navmap;
+      - a second call within the second is answered from the last pass, without asking X-Plane;
+      - no flight loaded, or 0° / 0°: Little Navmap;
+      - X-Plane restarted (new ids): resolved again, and at rest the track is the true heading;
+      - nothing: 204;
+      - a port set in `.sim.json`: used; a closed port: answered in 1.6 s once, then skipped;
+      - no `X-SOG-Setup` header: 403.
+    - frame, on My flights with the GPS on as well:
+      - badge "X-Plane" and `actual.source: 'xplane'`, which follows the simulator;
+      - simulators off, then a GPS reading: "GPS";
+      - Little Navmap alone: "Little Navmap";
+      - 375 px fits; flight ended: badge hidden; no JavaScript error.
+    - Lot 15 test (GPS, IVAO): unchanged.
+  - **Found on the way, for fuel**: with Fuel open during a flight, fuel rewrites `current_flight.json` (about every
+    10 to 35 s) without `progress.actual`. The frame's actual position is then lost at each of fuel's writes. This
+    was already true of the lot 15 GPS. Reported to fuel's owner.

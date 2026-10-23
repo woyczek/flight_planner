@@ -26,6 +26,11 @@ waypoints, and the rest listed below.
 
 - **fuel, report, my flights: the page no longer jumps to the top** (`modules/fuel/module.js`, `modules/report/module.js`,
   `modules/flightlog/module.js`) — a screen redrawn because the flight changed elsewhere keeps where you were.
+- **Frame: the flight simulator as the first source of the actual position** (`tools/sim_position.py`,
+  `tools/launch.py`, `frame/app.js`, `frame/frame.css`; SPEC § 3.2, DECISIONS) — when the launcher serves the page,
+  a started flight follows X-Plane 12 (web API) or Little Navmap (web API) every 5 s, before the device's GPS and the
+  IVAO / VATSIM session; the header badge says "X-Plane" or "Little Navmap"; ports set in `tools/.sim.json`
+  (local), local machine only.
 - **Settings: Administration card** (`frame/settings/admin_links.js`, `frame/settings/settings.js`, `frame/frame.css`,
   `frame/index.html`, `frame/sw.js`; SPEC § 6, DECISIONS, help ×4) — at the Full level, one card gathers the map
   threshold tuning, the roadmap, the diagnostics, the benches (workstation with launcher only) and the workstation's V2

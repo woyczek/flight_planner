@@ -141,7 +141,8 @@ body {
   padding: 16px;
   min-width: 0
 }
-/* pastille de la position réelle pendant un vol (source : GPS, IVAO, VATSIM, — en attente) ; bascule du GPS */
+/* pastille de la position réelle pendant un vol (source : X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
+   bascule du GPS ; nom de source long tronqué en fenêtre étroite */
 .f-live {
   display: inline-flex;
   align-items: center;
@@ -149,6 +150,12 @@ body {
   flex: none;
   padding: 0 8px;
   font-size: var(--sog-size-s)
+}
+.f-live span {
+  max-width: 7.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
 }
 .f-live[hidden] {
   display: none

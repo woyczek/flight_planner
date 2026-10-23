@@ -322,7 +322,7 @@ used alone:
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (a document, pulled ahead and followed with `watch`; text fields only), an empty object when there is none; no address is written in the code |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
-| `live` | the actual position during a started flight: `{ status ('off', 'waiting', 'tracking'), source ('gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
+| `live` | the actual position during a started flight: `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
 
 - **Actual position during a flight** (`ctx.live`, a frame service):
@@ -330,6 +330,18 @@ used alone:
     flight or report saves the report), whatever module is open. It never runs for a flight started more than 24 h
     ago: a forgotten flight does not keep the GPS on.
   - **Sources, in order**:
+    0. **This computer's flight simulator**, when a launcher serves the page: `GET /__setup/sim/position` every 5 s.
+       - The launcher (`tools/sim_position.py`) asks X-Plane 12's web API (port 8086), then Little Navmap's web
+         API (port 8965, `/api/sim/info`). It answers `{ lat, lon, altFt, trackDeg, gsKt, source: 'xplane' | 'lnm',
+         at }`, or 204 when no simulator gives a position.
+       - The two ports can be changed in `tools/.sim.json` (`{ "xplane": 8086, "lnm": 8965 }`, local, never
+         versioned). The host is always the local machine, and the launcher makes at most one pass a second.
+       - X-Plane: the datarefs' ids are resolved once by name and again after a restart. Altitude comes from
+         `elevation` (MSL), and track from `hpath`, or `true_psi` below 1 m/s. No flight loaded, or a position at
+         0° / 0°, means no position.
+       - Little Navmap: `indicated_altitude`, `ground_speed`, and the magnetic `heading` as track (it gives no track).
+       - The badge shows "X-Plane" or "Little Navmap". While the simulator has given a position in the last 15 s, the
+         GPS and the network wait. At start, the simulator is asked first, before the GPS.
     1. **The device's GPS** (`watchPosition`, plus a reading every 10 s): position, altitude, track, ground speed.
        - Permission is asked only by a gesture: the header badge, or `ctx.live.enable()`; never at start.
        - The choice is kept on the device (`device/live.json`); once the browser grants it, the GPS resumes by itself.
@@ -341,7 +353,7 @@ used alone:
   - **Offline**: the GPS only.
   - **Writing**: only `progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source }` in the current flight (the
     record, `by: 'frame'`), never fuel's or maps' fields.
-    - This is the form maps reads: `at` is ISO, `source` is `gps`, `ivao` or `vatsim`, and `trackDeg` / `gsKt` may be
+    - This is the form maps reads: `at` is ISO, `source` is `xplane`, `lnm`, `gps`, `ivao` or `vatsim`, and `trackDeg` / `gsKt` may be
       null.
     - `trail` is optional and the frame does not write it: the map keeps its own 30-minute trail, and greys a position
       older than 2 minutes.
