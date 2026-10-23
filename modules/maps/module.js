@@ -349,10 +349,10 @@ const TX = {
   ],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
   vfrTitle: ['{ad} : points de report VFR', '{ad}: VFR reporting points', '{ad}: VFR-Meldepunkte', '{ad}: puntos de notificación VFR'],
-  vfrLabel: ['Extrait des cartes VAC, à vérifier : ni itinéraire publié, ni sens de parcours.',
-    'Extracted from the VAC charts, to be checked: neither a published route nor a direction of travel.',
-    'Aus den VAC-Karten entnommen, zu prüfen: weder veröffentlichte Route noch Flugrichtung.',
-    'Extraído de las cartas VAC, a verificar: ni itinerario publicado ni sentido de recorrido.'
+  vfrLabel: ['Extrait des cartes VAC, à vérifier : ce n\'est pas l\'itinéraire publié, la carte VAC fait foi.',
+    'Extracted from the VAC charts, to be checked: this is not the published route, the VAC chart prevails.',
+    'Aus den VAC-Karten entnommen, zu prüfen: dies ist nicht die veröffentlichte Route, maßgeblich ist die VAC-Karte.',
+    'Extraído de las cartas VAC, a verificar: no es el itinerario publicado, la carta VAC es la que vale.'
   ],
   vfrMap: ['VAC, à vérifier', 'VAC, to be checked', 'VAC, zu prüfen', 'VAC, a verificar'],
   vfrNone: ['Aucun point de report VFR importé pour ce terrain.', 'No VFR reporting point imported for this aerodrome.',
@@ -363,6 +363,32 @@ const TX = {
   ],
   vfrHover: ['{c} : toucher pour les voir', '{c}: tap to see them', '{c}: zum Ansehen antippen', '{c}: toque para verlos'],
   vfrSeqs: ['Séquences', 'Sequences', 'Sequenzen', 'Secuencias'],
+  vfrStatus: {
+    'interprété': ['Analyse manuelle de la VAC ({s})', 'Manual analysis of the VAC ({s})', 'Manuelle Auswertung der VAC ({s})',
+      'Análisis manual de la VAC ({s})'
+    ],
+    'calculé': ['Extraction automatique, non relue', 'Automatic extraction, not reviewed', 'Automatische Entnahme, nicht geprüft',
+      'Extracción automática, no revisada'
+    ],
+    'obsolète': ['Analyse périmée (la VAC a changé) : extraction automatique seule',
+      'Analysis out of date (the VAC changed): automatic extraction only',
+      'Auswertung veraltet (die VAC hat sich geändert): nur automatische Entnahme',
+      'Análisis caducado (la VAC cambió): solo extracción automática'
+    ],
+    'sans relations': ['VAC relue : pas de séquence publiée', 'VAC reviewed: no published sequence',
+      'VAC geprüft: keine veröffentlichte Sequenz',
+      'VAC revisada: ninguna secuencia publicada'
+    ]
+  },
+  vfrScope: {
+    partial: ['partielle', 'partial', 'teilweise', 'parcial'],
+    complete: ['complète', 'complete', 'vollständig', 'completo']
+  },
+  vfrRunways: ['pistes {r}', 'runways {r}', 'Pisten {r}', 'pistas {r}'],
+  vfrAlt: ['{a} par défaut', '{a} by default', 'standardmäßig {a}', '{a} por defecto'],
+  vfrVis: ['visibilité {v} m au moins', 'visibility {v} m at least', 'Sicht mindestens {v} m', 'visibilidad de {v} m como mínimo'],
+  vfrOneWay: ['sens unique', 'one way', 'Einbahn', 'sentido único'],
+  vfrPages: ['pages {p}', 'pages {p}', 'Seiten {p}', 'páginas {p}'],
   vfrNotes: ['Consignes (texte des VAC)', 'Instructions (text of the VAC)', 'Hinweise (Text der VAC)', 'Consignas (texto de las VAC)'],
   vfrPage: ['page {p}', 'page {p}', 'Seite {p}', 'página {p}'],
   vfrPart: ['(certaines peuvent n\'être qu\'une partie d\'un itinéraire)', '(some may be only part of a route)',
@@ -2028,7 +2054,11 @@ function vfrOf(icao) {
   return m.get(icao);
 }
 /** Séquences d'un terrain, une fois chacune (même suite, même page : tableau bilingue, plusieurs pistes). */
-const seqsOf = v => [...new Map((v?.routes || []).map(r => [`${r.codes.join('-')}|${r.page}`, r])).values()];
+const seqsOf = v => [...new Map((v?.routes || []).map(r => [`${r.key || ''}|${r.codes.join('-')}|${pagesOf(r).join(',')}`, r])).values()];
+/** Pages de la VAC d'une séquence (format 2 : pages ; format 1 : page). */
+const pagesOf = r => Array.isArray(r.pages) ? r.pages : r.page ? [r.page] : [];
+/** Points de report d'un terrain (sans son point de référence ni les sommets de tracé de l'analyse). */
+const reportOf = v => (v?.points || []).filter(p => !p.role || p.role === 'reporting_point');
 /** Aperçu au survol (un terrain, ou null) ; redessin seulement s'il change. */
 function previewAd(icao) {
   if ((S.vfrPreview || null) === icao) return;
@@ -2041,7 +2071,7 @@ function adHover(a, x, y) {
   const v = vfrOf(a.icao),
     c = v ? tt(TX.vfrHover, {
       c: tt(TX.vfrCounts, {
-        p: v.points.length,
+        p: reportOf(v).length,
         r: seqsOf(v).length
       })
     }) : v === null ? tt(TX.vfrNone) : '';
@@ -2068,7 +2098,8 @@ function pinView(icao) {
   const v = vfrOf(icao),
     c = S.vfrCard;
   if (!v?.points.length || !S.map || !c) return showAdCard(icao);
-  const pts = [...v.points, c].filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)),
+  const pts = [...v.points.filter(p => p.role !== 'aerodrome_reference_point'), c].filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p
+      .lon)),
     px = pts.map(p => S.map.project([+p.lon, +p.lat])),
     span = Math.max(Math.max(...px.map(q => q.x)) - Math.min(...px.map(q => q.x)), Math.max(...px.map(q => q.y)) - Math.min(...px.map(q =>
       q.y)));
@@ -2116,9 +2147,29 @@ function showAdCard(icao) {
   else if (!v) body = `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
   else {
     const page = p => p ? ` <span class="f-muted">(${esc(tt(TX.vfrPage, { p }))})</span>` : '',
+      pages = ps => ps.length > 1 ? ` <span class="f-muted">(${esc(tt(TX.vfrPages, { p: ps.join(', ') }))})</span>` : page(ps[0]),
       seqs = seqsOf(v),
-      part = seqs.some(r => r.fragment);
-    body = `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p><p>${esc(tt(TX.vfrCounts, { p: v.points.length, r: seqs.length }))}</p>${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqs))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(r => `<li>${esc(r.codes.join(' – '))}${page(r.page)}</li>`).join('')}</ul>` : ''}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
+      part = seqs.some(r => r.fragment),
+      A = v.analysis || {},
+      st = TX.vfrStatus[A.status],
+      // conditions lues par l'analyse : altitude par défaut, visibilité minimale ; le reste est dans les consignes
+      cond = r => {
+        const c = r.conditions || {},
+          a = c.defaultAltitude,
+          vis = Array.isArray(c.minVisibilityMByLeg) ? Math.max(...c.minVisibilityMByLeg.filter(Number.isFinite)) : null;
+        return [r.runways?.length ? tt(TX.vfrRunways, {
+          r: r.runways.join(', ')
+        }) : '', a?.value ? tt(TX.vfrAlt, {
+          a: `${a.value} ${a.unit || 'ft'} ${a.reference || ''}`.trim()
+        }) : '', Number.isFinite(vis) && vis > 0 ? tt(TX.vfrVis, {
+          v: vis
+        }) : '', r.direction === 'forward' ? tt(TX.vfrOneWay) : ''].filter(Boolean).join(' · ');
+      },
+      item = r => {
+        const k = cond(r);
+        return `<li>${r.key ? `<b>${esc(r.key)}</b> : ` : ''}${esc(r.codes.join(' – '))}${pages(pagesOf(r))}${k ? `<br><span>${esc(k)}</span>` : ''}${r.omission ? `<br><span class="f-muted">${esc(r.omission)}</span>` : ''}</li>`;
+      };
+    body = `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}<p>${esc(tt(TX.vfrCounts, { p: reportOf(v).length, r: seqs.length }))}</p>${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqs))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
   }
   // carte du côté opposé au terrain, sous les boutons du haut du cadre (Modifier, modes et couches) : les points restent
   // visibles, aucun bouton n'est couvert
@@ -2161,36 +2212,56 @@ function drawVfr(ctx, toC) {
     const v = vfrOf(icao);
     if (!v) continue;
     const ad = (S.data?.data?.aerodromes || []).find(a => a.icao === icao) || (S.adHits || []).find(h => h.a.icao === icao)?.a,
-      at = new Map(v.points.map(p => [p.code, p]));
-    if (ad) at.set(icao, {
-      lat: +ad.lat,
-      lon: +ad.lon
-    });
-    // séquences : tirets entre les points connus (vers le terrain seulement s'il a une position)
+      // points de report et sommets de tracé ; le terrain lui-même (son code, « AD ») n'est jamais relié : une
+      // intégration non numérisée n'est pas remplacée par une droite vers son centre
+      at = new Map(v.points.filter(p => p.role !== 'aerodrome_reference_point' && p.code !== 'AD').map(p => [p.code, p]));
     ctx.strokeStyle = VFR_COL;
     ctx.lineWidth = 1.6;
-    ctx.setLineDash([6, 4]);
     for (const r of v.routes) {
+      // tracé de l'analyse (tirets longs), sinon tirets courts entre les points de report connus
+      const line = r.geometry?.length > 1 ? r.geometry.map(([la, lo]) => toC(la, lo)) : null;
+      ctx.setLineDash(line ? [10, 4] : [6, 4]);
       ctx.beginPath();
-      let pen = false;
-      for (const c of r.codes) {
-        const p = at.get(c);
-        if (!p) {
+      let pen = false,
+        last = null,
+        prev = null;
+      for (const q of line || r.codes.map(c => at.get(c)).map(p => p ? toC(+p.lat, +p.lon) : null)) {
+        if (!q) {
           pen = false;
           continue;
         }
-        const q = toC(+p.lat, +p.lon);
         pen ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+        if (pen)[prev, last] = [last, q];
+        else last = q;
         pen = true;
       }
       ctx.stroke();
+      // sens unique lu par l'analyse : une flèche au bout du tracé
+      if (r.direction === 'forward' && prev && last) {
+        const a = Math.atan2(last.y - prev.y, last.x - prev.x);
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(last.x, last.y);
+        ctx.lineTo(last.x - 9 * Math.cos(a - .45), last.y - 9 * Math.sin(a - .45));
+        ctx.moveTo(last.x, last.y);
+        ctx.lineTo(last.x - 9 * Math.cos(a + .45), last.y - 9 * Math.sin(a + .45));
+        ctx.stroke();
+      }
     }
     ctx.setLineDash([]);
     ctx.font = '700 11px Arial,sans-serif';
     ctx.textBaseline = 'middle';
     for (const p of v.points) {
-      const q = toC(+p.lat, +p.lon),
-        name = [p.code, vrpName.get(p.vrp)].filter(Boolean).join(' ');
+      if (p.role === 'aerodrome_reference_point' || p.code === 'AD') continue;
+      const q = toC(+p.lat, +p.lon);
+      if (p.role === 'intermediate_waypoint') { // sommet de tracé de l'analyse : ni point de report, ni nom
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = VFR_COL;
+        ctx.fill();
+        continue;
+      }
+      const name = [p.code, vrpName.get(p.vrp)].filter(Boolean).join(' ');
       ctx.beginPath();
       ctx.arc(q.x, q.y, 7, 0, Math.PI * 2);
       ctx.fillStyle = MapsRender.withAlpha(VFR_COL, .15);

@@ -58,8 +58,10 @@ the airspaces crossed in the same way.
 taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in on its
 points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the VAC,
 folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
-airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”,
-are not a published route and do not give the direction of travel; the VAC chart prevails. They appear once the
+airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
+and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
+the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow
+marks a one-way route. They appear once the
 administrator has imported them (Settings › Maintenance).
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)

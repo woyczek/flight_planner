@@ -62,7 +62,9 @@ tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les po
 de ses points s'ils sont serrés, et sa carte donne les séquences (avec la page de la VAC) puis les consignes de la VAC,
 repliées page par page. Échap ou un toucher ailleurs le relâche. En mode VFR, les points du terrain de départ et de celui
 d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
-ne sont pas un itinéraire publié et ne disent pas le sens de parcours ; la carte VAC fait foi. Elles apparaissent une
+ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été
+analysé à la main, la carte le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit
+la carte VAC (tirets longs) et une flèche marque un sens unique. Elles apparaissent une
 fois importées par l'administrateur (Paramètres › Maintenance).
 
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu

@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: VFR points, format 2** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a route reviewed by hand follows
+  its interpreted track (with its manual vertices), a one-way route gets an arrow, the card gives the analysis status
+  and notes, and each route its name, runways and conditions; no line is drawn to the aerodrome's centre any more.
 - **Report VFR in the suite** (`tools/report-vfr/`, `tools/vfr_import.py`; aerodb SPEC, DECISIONS, admin manuals ×4) —
   the workstation tool that compiles the VAC charts (`refresh_vfr.py`, `vfr_core.py`, manual analyses in
   `interpretations/`; optional `pypdf`, a clear message without it, an English README); the import now reads its format

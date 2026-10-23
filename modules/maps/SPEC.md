@@ -321,17 +321,25 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Tap or click** (not in Edit mode, not on a mission map): the aerodrome is pinned. When its points span less than
   160 px on screen, the map fits them (aerodrome included, zoom 11 at most, room left for the card); that is the
   user's gesture, so the camera stays theirs afterwards (Follow stops, Recentre comes back). Then its card:
-  - "LFBD BORDEAUX MERIGNAC: VFR reporting points", the warning "Extracted from the VAC charts, to be checked: neither
-    a published route nor a direction of travel", the counts;
+  - "LFBD BORDEAUX MERIGNAC: VFR reporting points", the warning "Extracted from the VAC charts, to be checked: this is not
+    the published route, the VAC chart prevails", the counts;
   - the sequences in text ("LFBD – NA – NE (page 6)"), identical ones (same codes, same page) shown once, with "(some
     may be only part of a route)" when any is marked `fragment`;
   - the instructions of the VAC, one folded block per page (its title, its page).
   The card goes to the side opposite the aerodrome, under the buttons of that side; under 600 px it takes the lower 45 %
   of the frame and the fit leaves that room. Escape, or a tap elsewhere, releases the aerodrome and closes the card.
 - **VFR mode**: departure and arrival (four-letter codes) are shown anyway, drawing only.
-- **Drawing**, on top of the route: the sequences as thin dashes (teal) between their known points, to the aerodrome
-  only when it has a position; each point ringed and named (code, then the base's VRP name when loaded); "VAC, to be
-  checked" in italics under the aerodrome. No arrow, no direction.
+- **Drawing**, on top of the route (teal): a route with an interpreted geometry follows it (long dashes, its manual
+  vertices as small dots), the others are short dashes between their known reporting points; never a line to the
+  aerodrome's centre (an integration not digitised stays undrawn, format 2's rule); an arrow at the end of a route
+  only when an analysis made it one-way (`direction: 'forward'`). Each reporting point ringed and named (code, then the
+  base's VRP name when loaded); the aerodrome's reference point is not drawn; "VAC, to be checked" in italics under
+  the aerodrome.
+- **Format 2 in the card**: the analysis line ("Manual analysis of the VAC (partial)", "Automatic extraction, not
+  reviewed", "Analysis out of date (the VAC changed): automatic extraction only", "VAC reviewed: no published
+  sequence") and its notes; each route with its name (`key`), codes and pages, then runways, default altitude, minimum
+  visibility and "one way" when read, and the omission note (what is not digitised). Counts are of reporting points.
+  A first-format file (`page` per route, no analysis) is read the same way.
 
 ## 4 sexies. Started flight (lot 8)
 

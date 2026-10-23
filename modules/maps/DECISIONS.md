@@ -462,3 +462,15 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     dashed sequences, card on the right under "Modifier" (60 px), sequences then three pages of instructions; Escape →
     released. 375 px: card in the lower part (top 239 px of a 422 px frame), points above. VFR mode: the VRP names of
     the base next to the codes. Edit mode unchanged (simple tap, "+", long press, undo). No JavaScript error.
+- **23 Oct 2026 — VFR points, format 2 (the user's tool moved on).**
+  - **The analysis decides what is drawn**: an interpreted geometry is drawn as such (LFCH: ARR-NE-N along the A660 and
+    the lake, nine manual vertices); a direction only when the analysis gives it; otherwise straight dashes between
+    reporting points, as before.
+  - **No more line to the aerodrome's centre** (it was drawn in the first version when the aerodrome had a position):
+    format 2 says an integration not digitised must not be replaced by a straight line.
+  - **The warning changes**: "this is not the published route, the VAC chart prevails" (a one-way arrow can now be
+    shown, read by an analysis).
+  - **Bench** (the user's 2.0 compilation imported into the bench data): LFBD → "Analyse manuelle de la VAC
+    (partielle)", its three notes, "RWY23-05-NA-NW : AD – NA – NW (pages 1, 5, 6) · pistes 23, 05 · 1500 ft AMSL par
+    défaut · visibilité 1500 m au moins"; LFCH (view on Arcachon) → the route along the motorway with its vertices, card
+    on the left under the buttons. No JavaScript error.
