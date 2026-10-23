@@ -209,7 +209,7 @@
           "es": "Desviación ISA calculada desde el METAR de salida y guardada en los ajustes; gráfico de altitud de densidad con el techo de subida de la aeronave (helicópteros)"
         },
         {
-          "state": "planned",
+          "state": "doing",
           "fr": "Vents et températures par niveau le long de la route (prévisions Open-Meteo) : vent au niveau planifié dans le devis, altitude-densité réelle au départ avec ses inversions",
           "en": "Winds and temperatures per level along the route (Open-Meteo forecasts): wind at the planned level in the quote, real density altitude at departure with its inversions",
           "de": "Wind und Temperatur je Höhenstufe entlang der Route (Open-Meteo-Vorhersagen): Wind in geplanter Höhe in der Berechnung, reale Dichtehöhe am Start mit ihren Inversionen",
@@ -244,7 +244,7 @@
           "es": "TEMSI: viento y meteo en ruta desde las cartas TEMSI"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Météo sans lanceur (téléphone) : METAR par metar.vatsim.net sans clé, TAF par une clé personnelle avwx.rest saisie sur l'appareil ; terrains intermédiaires déduits de la route",
           "en": "Weather without a launcher (phone): METAR through metar.vatsim.net without a key, TAF through a personal avwx.rest key entered on the device; en-route airfields derived from the route",
           "de": "Wetter ohne Starter (Telefon): METAR über metar.vatsim.net ohne Schlüssel, TAF über einen persönlichen avwx.rest-Schlüssel auf dem Gerät; Streckenplätze aus der Route abgeleitet",
