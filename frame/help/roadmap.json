@@ -85,11 +85,18 @@
           "es": "Posición real durante un vuelo iniciado: simulador a través del lanzador (X-Plane 12, Little Navmap), GPS del dispositivo, sesión IVAO / VATSIM; escrita en el vuelo actual, pastilla de cabecera"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Lanceur ouvert aux appareils du réseau local sur option (code d'appairage, code QR) : la tablette voit la position du simulateur et les données du poste",
           "en": "Launcher opened to local-network devices on request (pairing code, QR code): the tablet sees the simulator position and the workstation's data",
           "de": "Starter auf Wunsch für Geräte im lokalen Netz geöffnet (Kopplungscode, QR-Code): das Tablet sieht die Simulatorposition und die Daten des Arbeitsplatzes",
           "es": "Lanzador abierto a los dispositivos de la red local bajo opción (código de emparejamiento, código QR): la tableta ve la posición del simulador y los datos del puesto"
+        },
+        {
+          "state": "doing",
+          "fr": "Sans trigramme, rien ne part vers data/ ni vers le dépôt : documents gardés sur l'appareil, invitation à renseigner le trigramme, reprise ensuite",
+          "en": "Without a trigram nothing goes to data/ nor to the repository: documents kept on the device, prompt to set the trigram, taken over afterwards",
+          "de": "Ohne Kürzel geht nichts nach data/ oder ins Repository: Dokumente bleiben auf dem Gerät, Aufforderung zum Setzen des Kürzels, danach Übernahme",
+          "es": "Sin trigrama nada va a data/ ni al repositorio: documentos guardados en el dispositivo, invitación a indicar el trigrama, recuperación después"
         },
         {
           "state": "done",
@@ -507,6 +514,13 @@
           "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador"
         },
         {
+          "state": "doing",
+          "fr": "Carte « Accès du poste » : ouvrir le lanceur à la tablette, code d'appairage, code QR, appareils appairés",
+          "en": "“Workstation access” card: open the launcher to the tablet, pairing code, QR code, paired devices",
+          "de": "Karte „Zugang zum Arbeitsplatz“: Starter für das Tablet öffnen, Kopplungscode, QR-Code, gekoppelte Geräte",
+          "es": "Tarjeta «Acceso al puesto»: abrir el lanzador a la tableta, código de emparejamiento, código QR, dispositivos emparejados"
+        },
+        {
           "state": "done",
           "fr": "Assistant « Rejoindre la compagnie » pas à pas pour un pilote sans compte GitHub : compte, invitation, jeton (classique sur un dépôt d'utilisateur, à grain fin sur une organisation), test, identifiants ; code QR du lien côté administrateur",
           "en": "“Join the airline” step-by-step wizard for a pilot without a GitHub account: account, invitation, token (classic on a user repository, fine-grained on an organisation), test, network ids; QR code of the link on the admin side",
@@ -665,6 +679,13 @@
           "en": "Fixes only; map drawing fields for V3; per-member lanes in Flight orders; first launch in GitHub mode",
           "de": "Nur Korrekturen; Zeichenfelder der Karten für die V3; Zeilen pro Mitglied in den Flugbefehlen; Erster Start im GitHub-Modus",
           "es": "Solo correcciones; campos de dibujo de los mapas para la V3; líneas por miembro en las Órdenes de vuelo; Primer inicio en modo GitHub"
+        },
+        {
+          "state": "doing",
+          "fr": "Lanceur : mise à jour de data/ au démarrage sans casser sur des modifications locales ; Maintenance : cartes du poste visibles même en mode GitHub",
+          "en": "Launcher: data/ update at start without failing on local changes; Maintenance: workstation cards visible even in GitHub mode",
+          "de": "Starter: data/-Aktualisierung beim Start ohne Abbruch bei lokalen Änderungen; Wartung: Arbeitsplatzkarten auch im GitHub-Modus sichtbar",
+          "es": "Lanzador: actualización de data/ al inicio sin fallar por cambios locales; Mantenimiento: tarjetas del puesto visibles incluso en modo GitHub"
         },
         {
           "state": "done",
