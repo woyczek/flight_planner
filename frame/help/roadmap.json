@@ -188,6 +188,13 @@
           "es": "Preparar en el orden del piloto: Vuelo · Ruta · Meteo · Cálculo · Salida; ruta como texto siempre visible y normalizado, distancia y rumbo verdadero calculados; «Mostrar el mapa»; «Iniciar el vuelo»"
         },
         {
+          "state": "doing",
+          "fr": "Retours de la passe de bout en bout : vol démarré effacé au changement de départ, source du vent affichée, écart ISA au niveau, notation unique du niveau, bouton météo occupé, vue double gardée au départ",
+          "en": "Walkthrough feedback: started flight cleared when departure changes, wind source shown, ISA deviation at level, single level notation, busy weather button, double view kept at departure",
+          "de": "Rückmeldungen des Durchlaufs: gestarteter Flug bei Startplatzwechsel gelöscht, Windquelle angezeigt, ISA-Abweichung in Höhe, einheitliche Höhenschreibweise, beschäftigter Wetterknopf, Doppelansicht beim Abflug behalten",
+          "es": "Retornos del recorrido: vuelo iniciado borrado al cambiar la salida, fuente del viento mostrada, desviación ISA al nivel, notación única del nivel, botón meteo ocupado, vista doble mantenida al salir"
+        },
+        {
           "state": "done",
           "fr": "Fiches de performances : import (CSV, JSON, lnmperf, OFP, ChatGPT), aperçu avant écriture, compléments, exports",
           "en": "Performance sheets: import (CSV, JSON, lnmperf, OFP, ChatGPT), preview before writing, completions, exports",
@@ -305,7 +312,7 @@
           "es": "Selector de modos de mapa (Auto, IFR bajo, IFR alto, VFR, Topo relieve sombreado, CAM vuelo militar); tooltip mantenido 5 s, más ligero"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Mode CAM : axes AAR (hippodromes) et tracks NAT dessinés sur la carte",
           "en": "CAM mode: AAR tracks (racetracks) and NAT tracks drawn on the map",
           "de": "OAT-Modus: AAR-Achsen (Racetracks) und NAT-Tracks auf der Karte",
@@ -326,7 +333,7 @@
           "es": "Editar la ruta en el mapa y el perfil: arrastrar un punto (imantado a los fijos), tocar un fijo para insertarlo, quitar, altitud arrastrando, modo «editar» explícito en el teléfono, deshacer"
         },
         {
-          "state": "planned",
+          "state": "doing",
           "fr": "Flèches de vent au niveau du vol le long de la route (une par point, une tous les 50 NM) ; passe de lisibilité de la carte (épaisseurs, polices, contraste la nuit)",
           "en": "Wind barbs at flight level along the route (one per point, one every 50 NM); map readability pass (line weights, fonts, night contrast)",
           "de": "Windfiedern in Flughöhe entlang der Route (eine je Punkt, eine alle 50 NM); Lesbarkeitsdurchgang der Karte (Strichstärken, Schriften, Nachtkontrast)",
@@ -496,6 +503,13 @@
           "en": "One aircraft registry: types, performances, the pilot's sheets, fleet and reference at one place, one search; .lnmperf kept in sync both ways (re-export on change, merge when the file changes)",
           "de": "Ein einziges Luftfahrzeugregister: Typen, Leistungen, Pilotenblätter, Flotte und Referenz an einem Ort, eine Suche; .lnmperf in beide Richtungen aktuell (Neuexport bei Änderung, Zusammenführung, wenn die Datei sich ändert)",
           "es": "Un solo registro de aeronaves: tipos, prestaciones, fichas del piloto, flota y referencia en un mismo lugar, una sola búsqueda; .lnmperf al día en ambos sentidos (reexportación al cambiar, fusión si el archivo cambia)"
+        },
+        {
+          "state": "doing",
+          "fr": "Une seule ligne par immatriculation : fiche et flotte fusionnées, fiche incomplète complétée par le type ou l'estimation",
+          "en": "One row per registration: sheet and fleet merged, an incomplete sheet completed by the type or the estimate",
+          "de": "Eine Zeile je Kennzeichen: Blatt und Flotte zusammengeführt, unvollständiges Blatt durch Typ oder Schätzung ergänzt",
+          "es": "Una sola línea por matrícula: ficha y flota fusionadas, ficha incompleta completada por el tipo o la estimación"
         },
         {
           "state": "done",
