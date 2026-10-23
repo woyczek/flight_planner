@@ -2,6 +2,9 @@
 
 Memory of the V3 website module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — "Paste from the clipboard" only when it can work**: without `navigator.clipboard.read` /
+  `readText` (the app served over http to a tablet, frame lot 18) the button is not shown (`canPaste()`,
+  `frame/lib/clipboard.js`); the paste box stays.
 - **23 Oct 2026 — design lot 2 primitives** (asked by the design session): grids, columns, table, preview and terms list moved to `f-grid`, `f-cols`, `f-scroll` / `f-table`, `f-callout`, `f-dl`, the warning to `f-warn`; title sizes left to the frame. The module's own `<style>`
   only places things now; checked at 375 px and on a screen in standard, cabinet and field, day and night (no white
   at night, square corners in cabinet and field, no target under 44 px).

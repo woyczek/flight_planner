@@ -10,6 +10,9 @@
 // Jamais de POST vers le site, jamais la connexion du pilote, aucune adresse dans le code. « Inscrire le vol » (report)
 // est servi par frame/lib/website.js. Calcul pur dans model.js.
 import * as W from './model.js';
+import {
+  canPaste
+} from '../../frame/lib/clipboard.js'; // marche aussi en http (tablette servie par le poste)
 
 export const meta = {
   id: 'website',
@@ -26,7 +29,7 @@ export const meta = {
     prefix: 'pilot/',
     merge: 'record'
   }],
-  files: ['model.js']
+  files: ['model.js', '../../frame/lib/clipboard.js']
 };
 
 const SETTINGS = 'airline/settings.json',
@@ -163,7 +166,7 @@ function pasteCard(kind) {
     ${isLog && !tri() ? `<p class="f-warn">${esc(tt(TX.noTrigram))}</p>` : ''}
     <p class="f-muted">${esc(kept)}</p>
     <label class="f-field"><textarea rows="4" data-paste="${kind}" aria-label="${esc(tt(isLog ? TX.log : TX.fleet))}"></textarea></label>
-    <div class="f-row">${url && S.canFetch ? `<button type="button" data-do="fetch">${esc(tt(TX.fetchSite))}</button>` : ''}<button type="button" data-do="clip">${esc(tt(TX.clipboard))}</button><button type="button" class="primary" data-do="read">${esc(tt(TX.read))}</button></div>
+    <div class="f-row">${url && S.canFetch ? `<button type="button" data-do="fetch">${esc(tt(TX.fetchSite))}</button>` : ''}${canPaste() ? `<button type="button" data-do="clip">${esc(tt(TX.clipboard))}</button>` : ''}<button type="button" class="primary" data-do="read">${esc(tt(TX.read))}</button></div>
     ${url && !S.canFetch ? `<p class="f-muted">${esc(tt(TX.pasteOnly))}</p>` : ''}
     ${pv ? `<div class="f-callout"><p>${esc(pv.summary)}</p>${pv.rows.length ? `<div class="f-scroll"><table class="f-table"><tbody>${pv.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
       <div class="f-row" style="margin-top:8px"><button type="button" class="primary" data-do="apply">${esc(tt(TX.apply))}</button><button type="button" data-do="cancel">${esc(tt(TX.cancel))}</button></div></div>` : ''}
