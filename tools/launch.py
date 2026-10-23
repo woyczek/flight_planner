@@ -1296,7 +1296,7 @@ LAN_TEXT = {
               'en': 'The Pilot application of the computer “{host}”, on the local network. Enter the 6-digit code shown on the '
                     'computer (the launcher window, or Settings › Computer access): only once for this device.',
               'de': 'Die Pilot-App des Rechners „{host}“ im lokalen Netz. Geben Sie den 6-stelligen Code ein, der auf dem Rechner '
-                    'angezeigt wird (Fenster des Launchers oder Einstellungen › Zugang des Rechners): nur einmal für dieses Gerät.',
+                    'angezeigt wird (Fenster des Starters oder Einstellungen › Zugang des Rechners): nur einmal für dieses Gerät.',
               'es': 'La aplicación Piloto del equipo «{host}», en la red local. Introduzca el código de 6 cifras que muestra el '
                     'equipo (ventana del lanzador, o Ajustes › Acceso del equipo): una sola vez para este dispositivo.'},
     'code': {'fr': 'Code d’appairage', 'en': 'Pairing code', 'de': 'Kopplungscode', 'es': 'Código de vinculación'},

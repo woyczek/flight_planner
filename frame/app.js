@@ -125,11 +125,11 @@
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
     back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
-    host: ['Lanceur de {h}', 'Launcher on {h}', 'Launcher auf {h}', 'Lanzador de {h}'],
+    host: ['Lanceur de {h}', 'Launcher on {h}', 'Starter auf {h}', 'Lanzador de {h}'],
     hostTitle: [
       'Appli servie par le lanceur du poste « {h} » sur le réseau local : ses données, son simulateur, son relais. Pas de hors ligne sur cet appareil (page en http).',
       'App served by the launcher of the computer “{h}” on the local network: its data, its simulator, its relay. No offline use on this device (page over http).',
-      'App vom Launcher des Rechners „{h}“ im lokalen Netz bereitgestellt: seine Daten, sein Simulator, sein Relais. Kein Offline-Betrieb auf diesem Gerät (Seite über http).',
+      'App vom Starter des Rechners „{h}“ im lokalen Netz bereitgestellt: seine Daten, sein Simulator, sein Relais. Kein Offline-Betrieb auf diesem Gerät (Seite über http).',
       'Aplicación servida por el lanzador del equipo «{h}» en la red local: sus datos, su simulador, su relé. Sin uso sin conexión en este dispositivo (página en http).'
     ],
     live: {

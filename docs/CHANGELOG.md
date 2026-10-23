@@ -27,6 +27,11 @@ waypoints, and the rest listed below.
 - **Copy and paste on a tablet served by the computer** (`frame/lib/clipboard.js`, fuel, report, website) — copying
   works over http too (or the text is shown selected to copy it yourself); "Paste from the clipboard" only
   appears where the browser allows it.
+- **Settings: card "Computer access"** (`frame/settings/settings.js`, settings SPEC, DECISIONS, help ×4) — on the
+  computer that serves the page: open or close the local-network access, the address with its QR code, the pairing
+  code and its limits, the paired devices and "Forget the devices", a "trusted network only" warning; the
+  Diagnostic shows the page's secure context, offline use and the launcher's computer. Help: "The tablet next to the
+  simulator".
 - **Map: an aerodrome's reporting points from the base, aeroplane / helicopter colours** (`modules/maps/module.js`,
   `render.js`, `tools/vfr_import.py`; SPECs, DECISIONS, help ×4) — the aerodrome's card and hover always list the
   published base's VRPs, the VAC compilation adds to them ("VAC sequences: not imported" without it); VFR reporting

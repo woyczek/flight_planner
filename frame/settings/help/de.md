@@ -67,6 +67,28 @@ Kraftstoff das Profil als .lnmperf-Datei herunter.
 Auf einem vom Starter bedienten Rechner stellt „Schlüssel des Starters“ den IVAO-API-Schlüssel ein: Er bleibt im Ordner
 `secrets/` des Starters, nie im Browser oder in den Daten. „Testen“ prüft, ob IVAO antwortet; „Löschen“ entfernt ihn.
 
+## Das Tablet neben dem Simulator
+
+Sie fliegen am Rechner (X-Plane) und möchten die Karte auf einem Tablet oder Telefon: Auf dem Rechner, den der
+Starter bedient, öffnet „Zugang des Rechners“ die Pilot-App für Geräte im selben lokalen Netz (oder starten Sie
+`lancer.cmd --lan`).
+
+1. **Für Geräte im lokalen Netz öffnen**: Die Karte zeigt die auf dem Gerät zu öffnende Adresse, ihren QR-Code und
+   einen 6-stelligen Kopplungscode. Windows fragt eventuell, ob Python erlaubt werden soll: nur für private
+   Netzwerke zulassen.
+2. Scannen Sie auf dem Tablet den QR-Code mit der Kamera (oder tippen Sie die Adresse), dann geben Sie den Code ein.
+   Er wird nur **einmal pro Gerät** abgefragt.
+3. Das Tablet sieht dann die Daten des Rechners, die Position des Simulators im Flugabzeichen und oben „Starter auf
+   <Rechner>“.
+
+- **Nur in einem vertrauenswürdigen Netz**: Alles läuft über http, unverschlüsselt. Zu Hause ja; in einem
+  öffentlichen oder Hotel-WLAN nie.
+- Der Zugang schließt sich mit dem Starter oder mit „Zugang schließen“. Ein gekoppeltes Gerät bleibt gekoppelt;
+  „Geräte vergessen“ verlangt von allen erneut einen Code (zum Beispiel bei einem verlorenen Tablet).
+- Auf dem Tablet funktioniert die App nicht offline und nutzt nicht sein GPS: Der Browser gewährt beides nur über
+  https. Die Position kommt vom Simulator des Rechners.
+- 5 falsche Codes von einem Gerät: eine Minute Wartezeit; 20 insgesamt: ein neuer Code, auf der Karte angezeigt.
+
 ## Ein Git-Repository für data/
 
 Auf einem vom Starter bedienten Rechner zeigt „Datenzugang“ das entfernte Repository von `data/`: seine Adresse und

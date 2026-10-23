@@ -259,7 +259,8 @@ repliées page par page. Échap ou un toucher ailleurs le relâche. En mode VFR,
 d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
 ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été
 analysé à la main, la carte le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit
-la carte VAC (tirets longs) et une flèche marque un sens unique. Elles apparaissent une
+la carte VAC (tirets longs) et une flèche marque un sens unique. Les points de report de la base sont toujours là, en noir pour les avions et en vert pour les
+hélicoptères ; les séquences et les consignes des VAC s'y ajoutent une fois importées. Elles apparaissent une
 fois importées par l'administrateur (Paramètres › Maintenance).
 
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
@@ -572,6 +573,27 @@ en .lnmperf.
 Sur un poste servi par le lanceur, « Clés du lanceur » règle la clé de l'API IVAO : elle reste dans le dossier
 `secrets/` du lanceur, jamais dans le navigateur ni dans les données. « Tester » vérifie qu'IVAO répond ;
 « Effacer » la retire.
+
+## La tablette à côté du simulateur
+
+Vous volez sur le poste (X-Plane) et voulez la carte sur une tablette ou un téléphone : sur le poste servi par le
+lanceur, « Accès du poste » ouvre l'appli Pilote aux appareils du même réseau local (ou lancez `lancer.cmd --lan`).
+
+1. **Ouvrir aux appareils du réseau local** : la carte montre l'adresse à ouvrir sur l'appareil, son code QR et un
+   code d'appairage à 6 chiffres. Windows peut demander d'autoriser Python : acceptez pour les réseaux privés
+   seulement.
+2. Sur la tablette, scannez le code QR avec l'appareil photo (ou tapez l'adresse), puis saisissez le code. Il n'est
+   demandé qu'**une fois par appareil**.
+3. La tablette voit alors les données du poste, la position du simulateur dans la pastille du vol et la mention
+   « Lanceur de <poste> » en haut.
+
+- **Réseau de confiance seulement** : tout passe en http, sans chiffrement. À la maison, oui ; sur un wifi public
+  ou d'hôtel, jamais.
+- L'accès se ferme avec le lanceur, ou par « Fermer l'accès ». Un appareil appairé le reste ; « Oublier les
+  appareils » leur redemande à tous un code (tablette perdue, par exemple).
+- Sur la tablette, l'appli ne marche pas hors ligne et n'utilise pas son GPS : le navigateur ne les accorde qu'en
+  https. La position vient du simulateur du poste.
+- 5 codes faux d'un même appareil : une minute d'attente ; 20 en tout : un nouveau code, affiché sur la carte.
 
 ## Un dépôt git pour data/
 

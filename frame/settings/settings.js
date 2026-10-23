@@ -553,6 +553,68 @@
       'Guardadas por el lanzador de este puesto (carpeta secrets/), nunca por el navegador ni en los datos.'
     ],
     ivaoKey: ['Clé de l’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de la API IVAO'],
+    // accès des appareils du réseau local (carte écrite par la session du cadre, lot 18)
+    lan: ['Accès du poste', 'Computer access', 'Zugang des Rechners', 'Acceso del equipo'],
+    lanHint: [
+      'Ouvrez l’appli Pilote sur une tablette ou un téléphone du même réseau local : il voit les données de ce poste et la position du simulateur. L’accès se ferme avec le lanceur.',
+      'Open the Pilot application on a tablet or a phone of the same local network: it sees this computer’s data and the simulator’s position. Access closes with the launcher.',
+      'Öffnen Sie die Pilot-App auf einem Tablet oder Telefon im selben lokalen Netz: Es sieht die Daten dieses Rechners und die Position des Simulators. Der Zugang schließt sich mit dem Starter.',
+      'Abra la aplicación Piloto en una tableta o un teléfono de la misma red local: ve los datos de este equipo y la posición del simulador. El acceso se cierra con el lanzador.'
+    ],
+    lanWarn: [
+      'Réseau local en http, sans chiffrement : à n’ouvrir que sur un réseau de confiance (à la maison), jamais sur un wifi public ou d’hôtel.',
+      'Local network over http, unencrypted: open it only on a trusted network (at home), never on public or hotel wifi.',
+      'Lokales Netz über http, unverschlüsselt: nur in einem vertrauenswürdigen Netz (zu Hause) öffnen, nie in einem öffentlichen oder Hotel-WLAN.',
+      'Red local en http, sin cifrado: ábrala solo en una red de confianza (en casa), nunca en una wifi pública o de hotel.'
+    ],
+    lanOpen: ['Ouvrir aux appareils du réseau local', 'Open to devices of the local network', 'Für Geräte im lokalen Netz öffnen',
+      'Abrir a los dispositivos de la red local'
+    ],
+    lanClose: ['Fermer l’accès', 'Close access', 'Zugang schließen', 'Cerrar el acceso'],
+    lanForget: ['Oublier les appareils', 'Forget the devices', 'Geräte vergessen', 'Olvidar los dispositivos'],
+    lanForgetAsk: ['Oublier tous les appareils appairés ? Chacun devra saisir un nouveau code.',
+      'Forget all paired devices? Each will have to enter a new code.',
+      'Alle gekoppelten Geräte vergessen? Jedes muss einen neuen Code eingeben.',
+      '¿Olvidar todos los dispositivos vinculados? Cada uno tendrá que introducir un código nuevo.'
+    ],
+    lanForgotten: ['Appareils oubliés.', 'Devices forgotten.', 'Geräte vergessen.', 'Dispositivos olvidados.'],
+    lanState: ['État', 'State', 'Zustand', 'Estado'],
+    lanOn: ['ouvert jusqu’à la fermeture du lanceur', 'open until the launcher closes', 'geöffnet bis zum Schließen des Starters',
+      'abierto hasta que se cierre el lanzador'
+    ],
+    lanOff: ['fermé : seul ce poste ouvre l’appli', 'closed: only this computer opens the application',
+      'geschlossen: nur dieser Rechner öffnet die App', 'cerrado: solo este equipo abre la aplicación'
+    ],
+    lanUrl: ['Adresse à ouvrir sur l’appareil', 'Address to open on the device', 'Auf dem Gerät zu öffnende Adresse',
+      'Dirección que abrir en el dispositivo'
+    ],
+    lanOther: ['Autres adresses de ce poste', 'Other addresses of this computer', 'Weitere Adressen dieses Rechners',
+      'Otras direcciones de este equipo'
+    ],
+    lanQr: ['À scanner avec l’appareil photo de la tablette ou du téléphone', 'To scan with the tablet’s or the phone’s camera',
+      'Mit der Kamera des Tablets oder Telefons scannen', 'Para escanear con la cámara de la tableta o del teléfono'
+    ],
+    lanCode: ['Code d’appairage', 'Pairing code', 'Kopplungscode', 'Código de vinculación'],
+    lanCodeHint: [
+      'Le code est demandé une seule fois par appareil. 5 essais par minute et par appareil ; après 20 codes faux, un nouveau code, affiché ici et dans la fenêtre du lanceur.',
+      'The code is asked only once per device. 5 tries a minute per device; after 20 wrong codes, a new code, shown here and in the launcher window.',
+      'Der Code wird nur einmal pro Gerät abgefragt. 5 Versuche pro Minute und Gerät; nach 20 falschen Codes ein neuer Code, hier und im Fenster des Starters angezeigt.',
+      'El código se pide una sola vez por dispositivo. 5 intentos por minuto y dispositivo; tras 20 códigos erróneos, un código nuevo, mostrado aquí y en la ventana del lanzador.'
+    ],
+    lanDevices: ['Appareils appairés', 'Paired devices', 'Gekoppelte Geräte', 'Dispositivos vinculados'],
+    lanOpened: ['Accès ouvert. Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.',
+      'Access open. Windows may ask to allow Python: accept for private networks only.',
+      'Zugang geöffnet. Windows fragt eventuell, ob Python erlaubt werden soll: nur für private Netzwerke zulassen.',
+      'Acceso abierto. Windows puede pedir que autorice Python: acéptelo solo para redes privadas.'
+    ],
+    lanNone: ['Aucune adresse de réseau local sur ce poste (10.x, 172.16-31.x ou 192.168.x) : rien à ouvrir.',
+      'No local-network address on this computer (10.x, 172.16-31.x or 192.168.x): nothing to open.',
+      'Keine Adresse eines lokalen Netzes auf diesem Rechner (10.x, 172.16-31.x oder 192.168.x): nichts zu öffnen.',
+      'Ninguna dirección de red local en este equipo (10.x, 172.16-31.x o 192.168.x): nada que abrir.'
+    ],
+    lanFail: ['Le lanceur ne répond pas : redémarrez-le à jour.', 'The launcher does not answer: restart it up to date.',
+      'Der Starter antwortet nicht: aktualisiert neu starten.', 'El lanzador no responde: reinícielo actualizado.'
+    ],
     keySet: ['enregistrée ({h})', 'saved ({h})', 'gespeichert ({h})', 'guardada ({h})'],
     keyEnv: ['donnée par l’environnement du lanceur ({h})', 'given by the launcher’s environment ({h})',
       'aus der Umgebung des Starters ({h})', 'dada por el entorno del lanzador ({h})'
@@ -599,6 +661,9 @@
         'Última sincronización correcta'
       ],
       pending: ['Écritures en attente', 'Pending writes', 'Ausstehende Änderungen', 'Escrituras pendientes'],
+      pageSecure: ['Page : contexte sûr', 'Page: secure context', 'Seite: sicherer Kontext', 'Página: contexto seguro'],
+      pageOffline: ['Hors ligne', 'Offline use', 'Offline-Betrieb', 'Uso sin conexión'],
+      lanHost: ['Lanceur', 'Launcher', 'Starter', 'Lanzador'],
       lastError: ['Dernière erreur', 'Last error', 'Letzter Fehler', 'Último error'],
       treeHead: ['Arbre du dépôt : tête', 'Repository tree: head', 'Repository-Baum: Kopf', 'Árbol del repositorio: cabeza'],
       treeAt: ['Arbre du dépôt : lu le', 'Repository tree: read at', 'Repository-Baum: gelesen am', 'Árbol del repositorio: leído el'],
@@ -623,6 +688,17 @@
       ],
       aeroError: ['Base aéro : erreur', 'Aero base: error', 'Luftfahrtbasis: Fehler', 'Base aeronáutica: error']
     },
+    yes: ['oui', 'yes', 'ja', 'sí'],
+    no: ['non', 'no', 'nein', 'no'],
+    offActive: ['actif', 'active', 'aktiv', 'activo'],
+    offWaiting: ['pas encore actif', 'not yet active', 'noch nicht aktiv', 'aún no activo'],
+    offNone: ['impossible : page en http hors de ce poste (il faut https ou le poste lui-même)',
+      'impossible: page over http outside this computer (https or the computer itself is needed)',
+      'nicht möglich: Seite über http außerhalb dieses Rechners (https oder der Rechner selbst nötig)',
+      'imposible: página en http fuera de este equipo (se necesita https o el propio equipo)'
+    ],
+    viaLan: ['{h}, par le réseau local', '{h}, through the local network', '{h}, über das lokale Netz', '{h}, por la red local'],
+    viaHere: ['{h}, ce poste', '{h}, this computer', '{h}, dieser Rechner', '{h}, este equipo'],
     copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
     copied: ['Diagnostic copié.', 'Diagnostics copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.']
   };
@@ -830,6 +906,12 @@
     if (L) cards.push(`<div class="f-card" data-card="keys"><h2>${esc(t(T.keys))}</h2><p class="f-muted">${esc(t(T.keysHint))}</p>
       <p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`);
+    // accès des appareils du réseau local : sur le poste qui sert la page seulement (c.lan() nul ailleurs, même sur un
+    // appareil appairé) ; état dessiné et relu toutes les 5 s par paintLan
+    const lanApi = c.lan?.() || null;
+    if (lanApi) cards.push(`<div class="f-card" data-card="lan"><h2>${esc(t(T.lan))}</h2><p class="f-muted">${esc(t(T.lanHint))}</p>
+      <div data-lanstate><p class="f-muted">…</p></div><p class="f-msg" data-kind="warn">${esc(t(T.lanWarn))}</p><p class="f-msg" data-msg></p>
+      <div class="f-row"><button type="button" class="primary" data-act="lanToggle">${esc(t(T.lanOpen))}</button><button type="button" data-act="lanForget" disabled>${esc(t(T.lanForget))}</button></div></div>`);
     // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
     if (L && c.aerodb()?.lnmperf) cards.push('<div class="f-card" data-card="lnmperf" hidden></div>');
     const help = await c.helpPanel?.().catch(() => null);
@@ -970,6 +1052,40 @@
         paintZones();
       };
     }
+    // accès du réseau local : état, adresse et son code QR, code d'appairage, appareils ; redessiné seulement s'il change
+    let lanKey = '';
+    const paintLan = s => {
+      const k = card('lan');
+      if (!k) return;
+      const key = JSON.stringify(s);
+      if (key === lanKey) return;
+      lanKey = key;
+      const btn = k.querySelector('[data-act="lanToggle"]');
+      btn.textContent = t(s?.on ? T.lanClose : T.lanOpen);
+      btn.classList.toggle('primary', !s?.on);
+      k.querySelector('[data-act="lanForget"]').disabled = !s?.devices;
+      const box = k.querySelector('[data-lanstate]');
+      if (!s) return void(box.innerHTML = `<p class="f-msg" data-kind="err">${esc(t(T.lanFail))}</p>`);
+      const url = s.urls?.[0] || '',
+        row = (label, v) => `<dt>${esc(t(label))}</dt><dd>${v}</dd>`;
+      let qr = '';
+      if (s.on && url && window.SogQR) try {
+        qr = `<figure class="f-qr"><div>${SogQR.svg(url, { ecl: 'M', scale: 4 })}</div><figcaption class="f-muted">${esc(t(T.lanQr))}</figcaption></figure>`;
+      } catch {
+        qr = ''; // adresse trop longue pour un code QR : elle reste écrite
+      }
+      box.innerHTML = `<dl class="f-dl">${row(T.lanState, esc(t(s.on ? T.lanOn : T.lanOff)))}${s.on ? row(T.lanUrl, `<b>${esc(url)}</b>`) +
+        (s.urls.length > 1 ? row(T.lanOther, esc(s.urls.slice(1).join(', '))) : '') + row(T.lanCode, `<b class="f-num">${esc(s.code)}</b>`) : ''}${row(T.lanDevices, esc(String(s.devices ?? 0)))}</dl>${qr}${s.on ? `<p class="f-muted">${esc(t(T.lanCodeHint))}</p>` : ''}`;
+    };
+    if (lanApi) {
+      const el = card('lan'),
+        tick = async () => {
+          if (!el.isConnected) return; // écran quitté ou redessiné : la relève s'arrête
+          paintLan(await lanApi.state().catch(() => null));
+          setTimeout(tick, 5e3); // un nouveau code (trop d'essais faux) ou un appareil appairé apparaissent seuls
+        };
+      tick();
+    }
     if (L) launcherKey().then(k => {
       const b = view.querySelector('[data-key]');
       if (b) b.textContent = !k?.set ? t(T.keyMissing) : t(k.env ? T.keyEnv : T.keySet, {
@@ -982,6 +1098,24 @@
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const act = b.dataset.act;
+      if (act === 'lanToggle' || act === 'lanForget') {
+        const api = c.lan?.();
+        if (!api) return;
+        if (act === 'lanForget' && !await c.ask(t(T.lanForgetAsk))) return;
+        b.disabled = true;
+        try {
+          const before = await api.state(),
+            s = act === 'lanForget' ? await api.forget() : before.on ? await api.close() : await api.open();
+          say('lan', !before.on && act === 'lanToggle' && !s.on ? t(T.lanNone) : '', 'warn');
+          paintLan(s);
+          if (act === 'lanForget') c.notify(t(T.lanForgotten), 'ok');
+          else if (s.on && !before.on) c.notify(t(T.lanOpened), 'info');
+        } catch {
+          say('lan', t(T.lanFail));
+        }
+        b.disabled = false;
+        return;
+      }
       if (act === 'diagOpen') {
         e.preventDefault(); // lien de la carte Administration : le diagnostic replié de la carte À propos, ouvert
         const d = view.querySelector('[data-diagbox]');
@@ -1468,6 +1602,7 @@
     const raw = v => v == null || v === '' ? '—' : Array.isArray(v) ? (v.length ? v.join(', ') : '—') : typeof v === 'object' ? JSON
       .stringify(v) : String(v);
     const tr = d.tree || {},
+      pg = d.page || {},
       rf = d.references || {},
       ae = d.aerodb || {};
     const rows = [
@@ -1475,6 +1610,12 @@
       ['online', d.online],
       ['lastSync', d.lastSync],
       ['pending', d.pending],
+      ['pageSecure', pg.secure == null ? null : t(pg.secure ? T.yes : T.no)],
+      ['pageOffline', !pg.offline ? null : t(pg.offline === 'active' ? T.offActive : /^unavailable/.test(pg.offline) ? T.offNone : T
+        .offWaiting)],
+      ['lanHost', pg.launcher ? t(pg.launcher.lan ? T.viaLan : T.viaHere, {
+        h: pg.launcher.host || '?'
+      }) : null],
       ['lastError', d.lastError || d.error],
       ['treeHead', tr.head],
       ['treeAt', tr.at],

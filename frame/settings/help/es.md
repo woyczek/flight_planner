@@ -66,6 +66,27 @@ En un puesto servido por el lanzador, «Claves del lanzador» configura la clave
 `secrets/` del lanzador, nunca en el navegador ni en los datos. «Probar» comprueba que IVAO responde; «Borrar» la
 quita.
 
+## La tableta junto al simulador
+
+Vuela en el equipo (X-Plane) y quiere el mapa en una tableta o un teléfono: en el equipo servido por el lanzador,
+«Acceso del equipo» abre la aplicación Piloto a los dispositivos de la misma red local (o inicie `lancer.cmd --lan`).
+
+1. **Abrir a los dispositivos de la red local**: la tarjeta muestra la dirección que abrir en el dispositivo, su
+   código QR y un código de vinculación de 6 cifras. Windows puede pedir que autorice Python: acéptelo solo para
+   redes privadas.
+2. En la tableta, escanee el código QR con la cámara (o escriba la dirección) y luego introduzca el código. Se pide
+   **una sola vez por dispositivo**.
+3. La tableta ve entonces los datos del equipo, la posición del simulador en la insignia del vuelo y «Lanzador de
+   <equipo>» arriba.
+
+- **Solo en una red de confianza**: todo pasa por http, sin cifrado. En casa, sí; en una wifi pública o de hotel,
+  nunca.
+- El acceso se cierra con el lanzador, o con «Cerrar el acceso». Un dispositivo vinculado sigue vinculado; «Olvidar
+  los dispositivos» vuelve a pedirles un código a todos (una tableta perdida, por ejemplo).
+- En la tableta, la aplicación no funciona sin conexión y no usa su GPS: el navegador solo los concede en https. La
+  posición viene del simulador del equipo.
+- 5 códigos erróneos desde un dispositivo: un minuto de espera; 20 en total: un código nuevo, mostrado en la tarjeta.
+
 ## Un repositorio git para data/
 
 En un puesto servido por el lanzador, «Acceso a los datos» muestra el repositorio remoto de `data/`: su dirección y su

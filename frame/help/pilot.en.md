@@ -256,7 +256,8 @@ folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the poi
 airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
 and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
 the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow
-marks a one-way route. They appear once the administrator has imported them (Settings › Maintenance).
+marks a one-way route. The reporting points of the base are always there, in black for aeroplanes and in green for
+helicopters; the sequences and instructions of the VAC are added once imported. They appear once the administrator has imported them (Settings › Maintenance).
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
@@ -563,6 +564,25 @@ Little Navmap requires are listed and not written. On a phone, Fuel downloads th
 
 On a workstation served by the launcher, “Launcher keys” sets the IVAO API key: it stays in the launcher’s `secrets/`
 folder, never in the browser nor in the data. “Test” checks that IVAO answers; “Erase” removes it.
+
+## The tablet next to the simulator
+
+You fly on the computer (X-Plane) and want the map on a tablet or a phone: on the computer served by the launcher,
+“Computer access” opens the Pilot application to devices of the same local network (or start `lancer.cmd --lan`).
+
+1. **Open to devices of the local network**: the card shows the address to open on the device, its QR code and a
+   6-digit pairing code. Windows may ask to allow Python: accept for private networks only.
+2. On the tablet, scan the QR code with the camera (or type the address), then enter the code. It is asked only
+   **once per device**.
+3. The tablet then sees the computer's data, the simulator's position in the flight badge, and “Launcher on
+   <computer>” at the top.
+
+- **Trusted network only**: everything goes over http, unencrypted. At home, yes; on public or hotel wifi, never.
+- Access closes with the launcher, or with “Close access”. A paired device stays paired; “Forget the devices” asks
+  them all for a code again (a lost tablet, for instance).
+- On the tablet, the application does not work offline and does not use its GPS: the browser grants them only over
+  https. The position comes from the computer's simulator.
+- 5 wrong codes from one device: a one-minute wait; 20 in all: a new code, shown on the card.
 
 ## A git repository for data/
 

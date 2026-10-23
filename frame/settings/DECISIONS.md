@@ -235,3 +235,19 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - later, sign-in without a token (OAuth or a GitHub App, like the device flow above) once a relay exists.
   "Test" accepts both forms (`ghp_…`, `github_pat_…`: the transport sends `Bearer` either way); its 403 sentence names
   both rights. The how-to's prefilled link is now linked whole (escaped `&` kept in the address).
+- **23 Oct 2026 — Card "Computer access" (written by the V3 frame session, lot 18, while the settings session was
+  closed)**:
+  - Through the frame's `lan()` context (`frame/SPEC.md` § 3.10), only on the computer that serves the page.
+  - It shows the state, the main address with its QR code (`SogQR.svg`, as for a pilot's configuration), the pairing
+    code and its limits, the paired devices, and "Forget the devices" (asks).
+  - A "trusted network only" warning stays visible.
+  - The state is read every 5 s while the card is connected: a code renewed after too many wrong tries, and a new
+    device, appear without reloading. It is drawn only when it changes.
+  - The Diagnostic gains three rows from `d.page`: secure context, offline use, and the launcher's computer (and
+    whether through the local network).
+  - Help section "The tablet next to the simulator" ×4.
+  - Tests:
+    - on the computer: open, then code, address and QR shown; close; reopen with a new code; forget (asked);
+    - on the device: no card; the Diagnostic says offline is impossible and gives the computer through the local
+      network;
+    - 375 px fits; no JavaScript error.

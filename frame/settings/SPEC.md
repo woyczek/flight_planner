@@ -115,9 +115,22 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    Navmap folders found, "Save", "Synchronise now", "Stop", last pass, sheets not written) are drawn by aerodb
    (`frame/aerodb/lnmperf.js`, `card(el, { t, notify })`), and the block is shown once aerodb has filled it. A failure
    leaves it hidden. Settings neither reads nor writes the folder or the sheets.
+9c. **Computer access** (the computer that serves the page only: the frame's `lan()` is `null` elsewhere, a paired
+   device included; `frame/SPEC.md` § 3.10):
+   - Shows the state ("open until the launcher closes", or "closed: only this computer opens the application"), then,
+     while open: the address to open on the device (the main one, the others below), its QR code (`SogQR.svg`), the
+     6-digit pairing code with its limits (once per device; 5 tries a minute per device; a new code after 20 wrong
+     ones); and the number of paired devices.
+   - A warning "trusted network only" (http, unencrypted).
+   - "Open to devices of the local network" / "Close access", and "Forget the devices" (asks; disabled with none
+     paired). A computer with no private address says there is nothing to open.
+   - The state is read again every 5 s while the card is on screen, and drawn only when it changes. A new code or a
+     newly paired device thus appear by themselves.
+   - The help section "The tablet next to the simulator".
 10. **About**: links to the help (the Settings chapter) and to the roadmap (`#roadmap`), then the **diagnostics**,
    folded inside the card: transport, status, usages, launcher, repository (never the token), aerodb state,
-   storage, network, browser; "Copy".
+   storage, network, browser; the page (`d.page`: secure context, offline use active / not yet / impossible over http
+   outside the computer, the launcher's computer and whether through the local network); "Copy".
 11. **Administration** (level Full only; absent otherwise), after About: the links of § 6, one per line with a
    sentence.
 
