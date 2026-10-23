@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Settings: token how-to always shown at import, account sign-up first** (`frame/settings/settings.js`,
+  `frame/settings/config.js`) — the how-to is visible (folded) even on a workstation already following the repository;
+  it starts with the account sign-up link and, for GitHub, the invitation to accept.
 - **aerodb: VFR reporting points of the VAC charts** (`frame/aerodb/aerodb.js`, `tools/vfr_import.py`,
   `tools/launch.py`, `shared/maintenance_page.js`; SPEC, DECISIONS, admin manuals ×4) — Settings › Maintenance ›
   Aeronautical data, "Import a VFR compilation (VAC)…" (Expert, launcher): the `vfr-compiled.json` of

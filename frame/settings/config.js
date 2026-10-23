@@ -37,41 +37,49 @@
   // modèles du mode d'emploi du jeton, par sorte d'hôte et par langue ; {web} {repo} {owner} {host} remplacés
   const HOWTO = {
     github: [
-      `1. Connectez-vous à GitHub avec le compte qui a accès à {repo}, puis ouvrez https://github.com/settings/personal-access-tokens/new
+      `Pas encore de compte GitHub ? Créez-le sur https://github.com/signup (vérifiez l'adresse mail, choisissez un nom d'utilisateur simple), donnez ce nom à l'administrateur, qui vous invite sur {repo}, puis acceptez l'invitation reçue par mail (https://github.com/{repo}/invitations).
+1. Connectez-vous à GitHub avec le compte qui a accès à {repo}, puis ouvrez https://github.com/settings/personal-access-tokens/new
 2. « Token name » : SOG Pilote ; « Expiration » : 90 jours au plus ; « Resource owner » : {owner} ; « Repository access » : « Only select repositories », puis {repo}.
 3. « Permissions » › « Repository permissions » › « Contents » : « Read and write » (« Metadata » en lecture vient seul).
 4. « Generate token », copiez-le et collez-le ici dans « Jeton personnel ». Ne l'envoyez jamais dans un message ; à son expiration, créez-en un autre de la même façon.
 Si {owner} est une organisation, elle doit accepter les jetons à grain fin (réglages de l'organisation › Personal access tokens).`,
-      `1. Sign in to GitHub with the account that has access to {repo}, then open https://github.com/settings/personal-access-tokens/new
+      `No GitHub account yet? Create one at https://github.com/signup (verify the email address, choose a simple username), give that name to the administrator, who invites you to {repo}, then accept the invitation received by email (https://github.com/{repo}/invitations).
+1. Sign in to GitHub with the account that has access to {repo}, then open https://github.com/settings/personal-access-tokens/new
 2. “Token name”: SOG Pilot; “Expiration”: 90 days at most; “Resource owner”: {owner}; “Repository access”: “Only select repositories”, then {repo}.
 3. “Permissions” › “Repository permissions” › “Contents”: “Read and write” (“Metadata” read-only comes with it).
 4. “Generate token”, copy it and paste it here in “Personal token”. Never send it in a message; when it expires, create a new one the same way.
 If {owner} is an organisation, it must allow fine-grained tokens (organisation settings › Personal access tokens).`,
-      `1. Melden Sie sich bei GitHub mit dem Konto an, das Zugriff auf {repo} hat, und öffnen Sie https://github.com/settings/personal-access-tokens/new
+      `Noch kein GitHub-Konto? Erstellen Sie eines auf https://github.com/signup (E-Mail-Adresse bestätigen, einfachen Benutzernamen wählen), geben Sie diesen Namen dem Administrator, der Sie zu {repo} einlädt, und nehmen Sie dann die per E-Mail erhaltene Einladung an (https://github.com/{repo}/invitations).
+1. Melden Sie sich bei GitHub mit dem Konto an, das Zugriff auf {repo} hat, und öffnen Sie https://github.com/settings/personal-access-tokens/new
 2. „Token name“: SOG Pilot; „Expiration“: höchstens 90 Tage; „Resource owner“: {owner}; „Repository access“: „Only select repositories“, dann {repo}.
 3. „Permissions“ › „Repository permissions“ › „Contents“: „Read and write“ („Metadata“ lesend kommt von selbst).
 4. „Generate token“, kopieren Sie es und fügen Sie es hier unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht; wenn es abläuft, erstellen Sie auf dieselbe Weise ein neues.
 Ist {owner} eine Organisation, muss sie feingranulare Tokens erlauben (Einstellungen der Organisation › Personal access tokens).`,
-      `1. Inicie sesión en GitHub con la cuenta que tiene acceso a {repo} y abra https://github.com/settings/personal-access-tokens/new
+      `¿Aún sin cuenta de GitHub? Créela en https://github.com/signup (verifique la dirección de correo, elija un nombre de usuario sencillo), dé ese nombre al administrador, que le invita a {repo}, y luego acepte la invitación recibida por correo (https://github.com/{repo}/invitations).
+1. Inicie sesión en GitHub con la cuenta que tiene acceso a {repo} y abra https://github.com/settings/personal-access-tokens/new
 2. «Token name»: SOG Pilot; «Expiration»: 90 días como máximo; «Resource owner»: {owner}; «Repository access»: «Only select repositories», luego {repo}.
 3. «Permissions» › «Repository permissions» › «Contents»: «Read and write» («Metadata» de lectura viene solo).
 4. «Generate token», cópielo y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje; cuando caduque, cree otro de la misma forma.
 Si {owner} es una organización, debe aceptar los tokens de grano fino (ajustes de la organización › Personal access tokens).`
     ],
     gitlab: [
-      `1. Connectez-vous à {host}, puis ouvrez {web}/-/settings/access_tokens (jetons du projet : il faut le rôle Maintainer sur le projet). Sans ce rôle : votre avatar › « Edit profile » › « Access tokens », pour un jeton personnel de même portée.
+      `Pas encore de compte sur {host} ? Créez-le sur https://{host}/users/sign_up (vérifiez l'adresse mail, choisissez un nom d'utilisateur simple), puis donnez ce nom à l'administrateur, qui vous ajoute au projet {web}.
+1. Connectez-vous à {host}, puis ouvrez {web}/-/settings/access_tokens (jetons du projet : il faut le rôle Maintainer sur le projet). Sans ce rôle : votre avatar › « Edit profile » › « Access tokens », pour un jeton personnel de même portée.
 2. « Token name » : SOG Pilote ; « Expiration date » : 90 jours au plus ; « Role » : Developer ; « Scopes » : write_repository.
 3. Créez le jeton, copiez-le et collez-le ici dans « Jeton personnel ». Ne l'envoyez jamais dans un message.
 Sans lanceur (téléphone), l'appli ne joint un dépôt {host} qu'à travers le lanceur d'un poste : appliquez cette configuration sur un poste.`,
-      `1. Sign in to {host}, then open {web}/-/settings/access_tokens (project tokens: this needs the Maintainer role on the project). Without that role: your avatar › “Edit profile” › “Access tokens”, for a personal token with the same scope.
+      `No account on {host} yet? Create one at https://{host}/users/sign_up (verify the email address, choose a simple username), then give that name to the administrator, who adds you to the project {web}.
+1. Sign in to {host}, then open {web}/-/settings/access_tokens (project tokens: this needs the Maintainer role on the project). Without that role: your avatar › “Edit profile” › “Access tokens”, for a personal token with the same scope.
 2. “Token name”: SOG Pilot; “Expiration date”: 90 days at most; “Role”: Developer; “Scopes”: write_repository.
 3. Create the token, copy it and paste it here in “Personal token”. Never send it in a message.
 Without a launcher (phone), the app reaches a {host} repository only through a workstation's launcher: apply this configuration on a workstation.`,
-      `1. Melden Sie sich bei {host} an und öffnen Sie {web}/-/settings/access_tokens (Projekt-Tokens: dafür braucht es die Rolle Maintainer im Projekt). Ohne diese Rolle: Ihr Avatar › „Edit profile“ › „Access tokens“, für ein persönliches Token mit demselben Umfang.
+      `Noch kein Konto auf {host}? Erstellen Sie eines auf https://{host}/users/sign_up (E-Mail-Adresse bestätigen, einfachen Benutzernamen wählen) und geben Sie diesen Namen dem Administrator, der Sie zum Projekt {web} hinzufügt.
+1. Melden Sie sich bei {host} an und öffnen Sie {web}/-/settings/access_tokens (Projekt-Tokens: dafür braucht es die Rolle Maintainer im Projekt). Ohne diese Rolle: Ihr Avatar › „Edit profile“ › „Access tokens“, für ein persönliches Token mit demselben Umfang.
 2. „Token name“: SOG Pilot; „Expiration date“: höchstens 90 Tage; „Role“: Developer; „Scopes“: write_repository.
 3. Erstellen Sie das Token, kopieren Sie es und fügen Sie es hier unter „Persönliches Token“ ein. Senden Sie es nie in einer Nachricht.
 Ohne Starter (Telefon) erreicht die App ein Repository auf {host} nur über den Starter eines Rechners: Wenden Sie diese Konfiguration auf einem Rechner an.`,
-      `1. Inicie sesión en {host} y abra {web}/-/settings/access_tokens (tokens del proyecto: requiere el rol Maintainer en el proyecto). Sin ese rol: su avatar › «Edit profile» › «Access tokens», para un token personal con el mismo alcance.
+      `¿Aún sin cuenta en {host}? Créela en https://{host}/users/sign_up (verifique la dirección de correo, elija un nombre de usuario sencillo) y dé ese nombre al administrador, que le añade al proyecto {web}.
+1. Inicie sesión en {host} y abra {web}/-/settings/access_tokens (tokens del proyecto: requiere el rol Maintainer en el proyecto). Sin ese rol: su avatar › «Edit profile» › «Access tokens», para un token personal con el mismo alcance.
 2. «Token name»: SOG Pilot; «Expiration date»: 90 días como máximo; «Role»: Developer; «Scopes»: write_repository.
 3. Cree el token, cópielo y péguelo aquí en «Token personal». No lo envíe nunca en un mensaje.
 Sin lanzador (teléfono), la aplicación solo llega a un repositorio de {host} a través del lanzador de un puesto: aplique esta configuración en un puesto.`

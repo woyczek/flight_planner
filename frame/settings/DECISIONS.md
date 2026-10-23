@@ -192,3 +192,9 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   the suite served by it), V2 pages are shown only with a launcher; "Diagnostics" is an action that opens the About
   card's folded diagnostics rather than an anchor, the hash being the router's. Checked: absent at Everyday, present at
   Full with the launcher (eleven links, every page answering 200) and without (benches without links, no V2 page).
+- **23 Oct 2026 — How-to always shown; sign-up first** (user's feedback): the "Configuration received" card hid the
+  token's how-to when the workstation's `data/` already followed the repository — the case of an administrator trying
+  his own export; it is now always there when the file has one (folded, with its title, in the device's language,
+  falling back to French). Each how-to now starts with creating the account (`https://github.com/signup`, or
+  `https://<host>/users/sign_up` for GitLab / framagit) and, for GitHub, accepting the invitation
+  (`https://github.com/<repo>/invitations`). A link opened now wins over a file chosen before it.

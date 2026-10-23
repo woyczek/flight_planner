@@ -737,9 +737,10 @@
     // configuration d'un pilote reçue : fichier choisi, ou lien #settings?config=… (relu à chaque dessin, jusqu'à
     // « Appliquer » ou « Annuler »)
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
-    let incoming = cfgPicked,
+    let incoming = q.get('config') ? null : cfgPicked, // un lien ouvert l'emporte sur un fichier choisi avant
       inErr = '';
-    if (!incoming && q.get('config') && window.SogConfig) {
+    if (q.get('config') && window.SogConfig) {
+      cfgPicked = null;
       try {
         const r = SogConfig.validate(await SogConfig.unpack(q.get('config')));
         if (r.ok) incoming = r.cfg;
@@ -758,9 +759,8 @@
     if (incoming) {
       const a = incoming.airline || {},
         d = incoming.data,
-        how = d ? incoming.howto?.token?.[t(['fr', 'en', 'de', 'es'])] || incoming.howto?.token?.[
-          ['fr', 'en', 'de', 'es'].find(l => incoming.howto?.token?.[l])
-        ] || '' : '';
+        ht = incoming.howto?.token || {},
+        how = d ? ht[t(['fr', 'en', 'de', 'es'])] || ht.fr || ht[['en', 'de', 'es'].find(l => ht[l])] || '' : '';
       const note = {
         same: t(T.cfgSame),
         other: t(T.cfgOther, {
@@ -778,7 +778,7 @@
         ${fld('cfgIvao', T.ivao, id.ivao, { mode: 'numeric' })}${fld('cfgVatsim', T.vatsim, id.vatsim, { mode: 'numeric' })}${fld('cfgSimbrief', T.simbrief, id.simbrief)}
         ${note ? `<p class="${access === 'none' || access === 'other' ? 'f-warn' : 'f-muted'}">${esc(note)}</p>` : ''}
         ${['clone', 'adopt', 'github'].includes(access) ? fld('cfgToken', T.token, '', { type: 'password' }) : ''}
-        ${how && access !== 'same' ? `<details class="f-cfghow"><summary>${esc(t(T.cfgHowto))}</summary><div class="f-doc">${howtoHtml(how)}</div></details>` : ''}
+        ${how ? `<details class="f-cfghow"><summary>${esc(t(T.cfgHowto))}</summary><div class="f-doc">${howtoHtml(how)}</div></details>` : ''}
         <p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="cfgApply">${esc(t(T.cfgApply))}</button>${access === 'github' ? `<button type="button" data-act="cfgTest">${esc(t(T.test))}</button>` : ''}<button type="button" data-act="cfgCancel">${esc(t(T.cfgCancel))}</button></div></div>`);
     }
