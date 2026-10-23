@@ -216,7 +216,11 @@ const TX = {
     mora: ['Altitudes minimales (MORA)', 'Minimum altitudes (MORA)', 'Mindesthöhen (MORA)', 'Altitudes mínimas (MORA)'],
     cities: ['Villes', 'Towns', 'Städte', 'Ciudades'],
     graticule: ['Canevas', 'Graticule', 'Gradnetz', 'Retícula'],
-    altn: ['Dégagement', 'Alternate', 'Ausweichflugplatz', 'Alternativo']
+    altn: ['Dégagement', 'Alternate', 'Ausweichflugplatz', 'Alternativo'],
+    aar: ['Axes de ravitaillement (AAR)', 'Air refuelling tracks (AAR)', 'Luftbetankungsstrecken (AAR)',
+      'Pistas de reabastecimiento (AAR)'
+    ],
+    nat: ['Tracks NAT', 'NAT tracks', 'NAT-Tracks', 'Tracks NAT']
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
@@ -388,6 +392,10 @@ async function loadData(box, corridor = true) {
     E.vrpPoints ? A.vrp(q) : [],
     E.rnavPoints ? A.points(q) : []
   ].map(x => Promise.resolve(x).catch(() => [])));
+  // axes de ravitaillement et tracks NAT (aerodb : zones ouvertes par les lectures ci-dessus ; zone « nat » à la demande)
+  const [aar, nat] = await Promise.all([E.aarTracks && A.aarTracks ? A.aarTracks() : [], E.natTracks && A.natTracks ? A
+    .natTracks() : []
+  ].map(x => Promise.resolve(x).catch(() => [])));
   // couche « Autres espaces » : les types présents hors des trois familles, ajoutés au choix du profil
   const pz = p.otherZones ? {
     ...p,
@@ -408,7 +416,9 @@ async function loadData(box, corridor = true) {
       obstacles,
       cities,
       vrp,
-      points
+      points,
+      aar,
+      nat
     },
     empty: !airspaces.length && !aerodromes.length && !navaids.length
   };
@@ -1715,7 +1725,7 @@ const AS_GROUPS = {
   asFir: ['FIR', 'UIR', 'UTA', 'LTA', 'OCA', 'FRA'] // régions et grands volumes (UTA FRANCE) : pas avec les TMA
 };
 const LAYER_KEYS = ['corridor', 'asTma', 'asDrp', 'asFir', 'asOther', 'awLow', 'awHigh', 'navaids', 'fixes', 'vrp', 'obstacles', 'mora',
-  'cities', 'graticule', 'altn'
+  'cities', 'graticule', 'altn', 'aar', 'nat'
 ];
 const groupOf = t => Object.keys(AS_GROUPS).find(g => AS_GROUPS[g].includes(String(t || '').toUpperCase())) || 'asOther';
 /** État des couches par défaut d'un profil d'affichage (celui du préréglage). */
@@ -1737,7 +1747,10 @@ function layerDefaults(B) {
     mora: E('mora'),
     cities: !!B.cities || E('agglos'),
     graticule: E('graticule'),
-    altn: true
+    altn: true,
+    // axes AAR et tracks NAT : d'origine en CAM seulement
+    aar: B.id === 'v3-cam',
+    nat: B.id === 'v3-cam'
   };
 }
 /** Couches du préréglage courant : défauts du profil, puis choix gardés sur cet appareil. */
@@ -1760,7 +1773,9 @@ function effectiveProfile() {
     obstacles: L.obstacles,
     mora: L.mora,
     graticule: L.graticule,
-    agglos: L.cities && !!MapsRender.elementOf(B, 'agglos')
+    agglos: L.cities && !!MapsRender.elementOf(B, 'agglos'),
+    aarTracks: L.aar,
+    natTracks: L.nat
   });
   if (L.vrp) E.vrpLabels = true;
   P.cities = L.cities;

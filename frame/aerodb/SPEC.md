@@ -131,6 +131,8 @@ the suite root) and has no listing.
 | `airways(q)` | airways with a segment touching the area |
 | `mora(lat, lon)`, `moraCells(q)` | MORA of a point (ft, or null), cells of an area |
 | `aar()`, `nat()` | refuelling track files (XML) of the loaded zones, NAT tracks of the day |
+| `aarTracks()` | the refuelling tracks of the loaded zones ready to draw (`aar.js`, taken over from `shared/aar_tracks.js`): `[{ name, kind: 'track' \| 'heavy', heading, lengthNm, widthNm, side, ip, cp, ring (racetrack outline) \| legs }]`; built again only when the zones' XML change |
+| `natTracks()` | NAT tracks of the day with their points placed: `[{ id, points: [{ id, lat, lon }], west, east (levels), from, to, by }]`; a named point through `coords`, "61/20" or "6130/20" as degrees north and west; an unknown name is left out |
 | `cities(q)` | towns of the area, or by `q.prefix` (most populated first), `q.n` at most |
 | `find(text, n)` | ranked places: `{ label, lat, lon, name, kind, code }` |
 | `coords(ident)`, `coordsAll(ident)` | position of an identifier; every place carrying it |

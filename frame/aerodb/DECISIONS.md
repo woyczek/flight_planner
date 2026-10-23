@@ -344,6 +344,18 @@ With the network cut, the only reads attempted were:
   The registry's 22 checks still pass; Settings at 375 px shows the card with the found Little Navmap folder and the
   state of the start pass, without error.
 
+## 23 October 2026 — lot 5e, refuelling and NAT tracks ready to draw
+
+- **The geometry is aerodb's**: the published XML is data, and the racetrack is the exact shape of a track (width and
+  side from S2), not a drawing choice. `aar.js` keeps only what the map needs from `shared/aar_tracks.js` (the
+  corrected XML reader and the racetrack); the ENR 5.7 PDF reader stays in V2's maintenance page.
+- **Heavy tracks** (two legs) are given as their legs; they have no racetrack.
+- **NAT points**: the day's message names the entry and exit fixes and gives the oceanic points as "61/20". A fix
+  unknown to the published base (a Canadian one, for instance) is left out rather than guessed: the 6 tracks of the
+  test day keep 5 of their 6 points.
+- **Measured** (1280 px, France and North Atlantic views): 51 tracks (37 French and the United Kingdom's AARA), 6 NAT
+  tracks; no JavaScript error.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

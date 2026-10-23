@@ -27,7 +27,8 @@ hauteur du relief, et l'espace aérien où vous êtes à ce moment-là.
 modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
 hautes (UN…, UM…), espaces au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR,
 points de report et obstacles. « Topo » : le relief, avec seulement les terrains, les villes et les obstacles.
-« CAM » : vol militaire, l'IFR de votre niveau plus les zones R, D, P, TSA, TRA, CBA et le RTBA à tous les niveaux.
+« CAM » : vol militaire, l'IFR de votre niveau plus les axes de ravitaillement, les tracks NAT du jour, les zones R, D, P,
+TSA, TRA, CBA et le RTBA à tous les niveaux.
 « Auto » choisit selon le niveau de votre vol (IFR haut à partir du FL195). Le mode est gardé sur cet appareil.
 
 **Plus vous zoomez, plus elle en dit.** De loin, la carte ne montre que les grands terrains, les voies et leurs noms.

@@ -17,7 +17,7 @@
   // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal,
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), ready(q), on('change', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
-  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), cities(q), find(texte, n), coords(ident),
+  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), cities(q), find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
   //   offline : { supported(), zones(), keep(zone, { onProgress }), release(zone), common(), aircraft() } — données
@@ -531,8 +531,9 @@
       });
     }
     let registry = null;
-    // ---- fiches .lnmperf (lnmperf.js), chargé à la première demande
-    let lnmP = null;
+    // ---- fiches .lnmperf (lnmperf.js), chargé à la première demande ; axes AAR dessinables (aar.js)
+    let lnmP = null,
+      aarCache = null;
     const lnmperf = () => lnmP ||= loadOwn('lnmperf.js', 'AeroDBLnmperf').then(() => window.AeroDBLnmperf.create({
       reader,
       aircraft,
@@ -801,6 +802,49 @@
       async nat() {
         const z = await loadZone('nat');
         return (z && (await part(z, 'meta')).natTracks) || null;
+      },
+      /** Axes AAR prêts à dessiner (aar.js : hippodromes, branches des axes lourds) des zones ouvertes ; refaits seulement
+       *  quand les XML des zones ouvertes changent. */
+      async aarTracks() {
+        const xs = await api.aar(),
+          key = xs.map(x => x.length).join(',');
+        if (!xs.length) return [];
+        if (aarCache?.key === key) return aarCache.tracks;
+        await loadOwn('aar.js', 'AeroDBAar');
+        aarCache = {
+          key,
+          tracks: window.AeroDBAar.tracksOf(xs)
+        };
+        return aarCache.tracks;
+      },
+      /** Tracks NAT du jour, points placés : un nom par la base (coords), « 61/20 » ou « 6130/20 » en degrés nord et ouest ;
+       *  [{ id, points: [{ id, lat, lon }], west, east (niveaux), from, to, by }]. */
+      async natTracks() {
+        const n = await api.nat();
+        if (!n?.tracks?.length) return [];
+        const pos = async w => {
+          const m = /^(\d{2})(\d{2})?\/(\d{2,3})$/.exec(String(w));
+          if (m) return {
+            id: String(w),
+            lat: +m[1] + (+m[2] || 0) / 60,
+            lon: - +m[3]
+          };
+          const c = await api.coords(w).catch(() => null);
+          return c ? {
+            id: String(w),
+            lat: c.lat,
+            lon: c.lon
+          } : null;
+        };
+        return Promise.all(n.tracks.map(async t => ({
+          id: t.id,
+          points: (await Promise.all((t.route || []).map(pos))).filter(Boolean),
+          west: t.west || [],
+          east: t.east || [],
+          from: t.from || '',
+          to: t.to || '',
+          by: t.by || ''
+        })));
       },
       /** Villes de l'emprise de q (zones couvrantes), ou dont le nom commence par q.prefix (zones ouvertes et grandes
        *  villes du monde) ; les plus peuplées d'abord, q.n au plus. */

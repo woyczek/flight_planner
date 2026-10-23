@@ -27,8 +27,8 @@ Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an diese
 die sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere
 Flugwege (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen
 Lufträumen, Meldepunkten und Hindernissen. „Topo“: das Gelände, nur mit Flugplätzen, Städten und Hindernissen.
-„OAT“: Militärflug, das IFR Ihrer Flughöhe plus die Gebiete R, D, P, TSA, TRA, CBA und das Tiefflugnetz in allen
-Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf diesem Gerät
+„OAT“: Militärflug, das IFR Ihrer Flughöhe plus die Luftbetankungsstrecken, die NAT-Tracks des Tages, die Gebiete R,
+D, P, TSA, TRA, CBA und das Tiefflugnetz in allen Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf diesem Gerät
 erhalten.
 
 **Je näher Sie zoomen, desto mehr zeigt sie.** Von weitem zeigt die Karte nur die großen Flugplätze, die Flugwege und

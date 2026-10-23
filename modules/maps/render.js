@@ -681,6 +681,105 @@
     return ends;
   }
   /** Points des voies dessinées qui ne sont pas des balises (fixes, intersections) : triangle et nom. */
+  /** Trait fléché de a vers b (points du canevas). */
+  function arrowLine(ctx, a, b, scale) {
+    const ang = Math.atan2(b.y - a.y, b.x - a.x),
+      h = 7 * scale;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - h * Math.cos(ang - .4), b.y - h * Math.sin(ang - .4));
+    ctx.lineTo(b.x - h * Math.cos(ang + .4), b.y - h * Math.sin(ang + .4));
+    ctx.closePath();
+    ctx.fill();
+  }
+  /** Axes de ravitaillement en vol (aerodb.aarTracks) : hippodrome vert sombre légèrement teinté, branche aller fléchée
+   *  IP → CP et nom de l'axe ; axes lourds : leurs deux branches fléchées. */
+  function drawAar(ctx, tracks, toC, scale, b, pl) {
+    if (!tracks?.length) return;
+    const col = '#00695c',
+      t = {
+        s: b.s - 1,
+        n: b.n + 1,
+        w: b.w - 1.5,
+        e: b.e + 1.5
+      },
+      f = 10 * scale;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = ctx.fillStyle = col;
+    for (const tr of tracks) {
+      const legs = tr.ring ? [
+        [tr.ip, tr.cp]
+      ] : tr.legs || [];
+      if (!legs.length || ![...(tr.ring || []), ...legs.flat()].some(p => inBox(t, p.lat, p.lon))) continue;
+      if (tr.ring) {
+        ctx.beginPath();
+        tr.ring.forEach((p, i) => {
+          const q = toC(p.lat, p.lon);
+          i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = withAlpha(col, .08);
+        ctx.fill();
+        ctx.fillStyle = col;
+        ctx.lineWidth = 1.4 * scale;
+        ctx.setLineDash([5 * scale, 3 * scale]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.lineWidth = 2 * scale;
+      for (const [a, c] of legs) arrowLine(ctx, toC(a.lat, a.lon), toC(c.lat, c.lon), scale);
+      const [a, c] = legs[0],
+        m = toC((a.lat + c.lat) / 2, (a.lon + c.lon) / 2),
+        w = tr.name.length * f * .62;
+      if (!pl || pl.take({
+          x0: m.x + 4 * scale,
+          y0: m.y - f * .7,
+          x1: m.x + 6 * scale + w,
+          y1: m.y + f * .7
+        })) halo(ctx, tr.name, m.x + 5 * scale, m.y, f, col, 'left');
+    }
+    ctx.restore();
+  }
+  /** Tracks NAT du jour (aerodb.natTracks) : tireté ardoise par les points de la track, « NAT A FL350–400 » au premier
+   *  point. */
+  function drawNat(ctx, tracks, toC, scale, b, pl) {
+    if (!tracks?.length) return;
+    const col = '#37474f',
+      f = 10 * scale;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = ctx.fillStyle = col;
+    ctx.lineWidth = 1.6 * scale;
+    for (const tr of tracks) {
+      const pts = (tr.points || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
+      if (pts.length < 2) continue;
+      ctx.setLineDash([8 * scale, 4 * scale]);
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        const q = toC(p.lat, p.lon);
+        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const lv = [...(tr.west || []), ...(tr.east || [])].map(Number).filter(Number.isFinite),
+        text = `NAT ${tr.id}${lv.length ? ` FL${Math.min(...lv)}–${Math.max(...lv)}` : ''}`,
+        q = toC(pts[0].lat, pts[0].lon),
+        w = text.length * f * .62;
+      if (!pl || pl.take({
+          x0: q.x + 4 * scale,
+          y0: q.y - f * 1.6,
+          x1: q.x + 6 * scale + w,
+          y1: q.y - f * .2
+        })) halo(ctx, text, q.x + 5 * scale, q.y - f * .9, f, col, 'left');
+    }
+    ctx.restore();
+  }
+
   function drawFixes(ctx, fixes, toC, W, H, scale, pl) {
     const f = 8 * PT * scale * .85,
       rr = 4 * scale,
@@ -1280,6 +1379,9 @@
       }
     } : profile);
     drawFixes(ctx, fixes, toC, W, H, scale, pl);
+    // axes de ravitaillement et tracks NAT (mode CAM, cartes de mission qui les demandent)
+    if (on(profile, 'aarTracks')) drawAar(ctx, data.aar, toC, scale, bbox, pl);
+    if (on(profile, 'natTracks')) drawNat(ctx, data.nat, toC, scale, bbox, pl);
     for (const f of ends.later || []) f();
     drawVrp(ctx, shown, toC, W, H, scale, bbox, pl, profile);
     const zoneLabels = drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');

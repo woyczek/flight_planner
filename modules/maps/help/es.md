@@ -26,8 +26,8 @@ espacio aéreo en el que está en ese momento.
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
 superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles
 en VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve, solo con los aeródromos, las ciudades y los
-obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las zonas R, D, P, TSA, TRA, CBA y la red de vuelo bajo a
-todos los niveles. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195). El modo se conserva en este
+obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las zonas R, D,
+P, TSA, TRA, CBA y la red de vuelo bajo a todos los niveles. «Auto» elige según el nivel de su vuelo (IFR alto desde el FL195). El modo se conserva en este
 dispositivo.
 
 **Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.

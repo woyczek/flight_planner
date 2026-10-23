@@ -26,7 +26,8 @@ and the airspace you are in at that point.
 “Low IFR”: low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces
 above FL195. “VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and
 obstacles. “Topo”: the terrain, with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your
-level plus the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses from your
+level plus the air refuelling tracks, the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying
+network at all levels. “Auto” chooses from your
 flight's level (High IFR from FL195). The mode is kept on this device.
 
 **The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their

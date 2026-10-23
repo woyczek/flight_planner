@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map, lot 5e: refuelling and NAT tracks** (`frame/aerodb/aar.js`, `aerodb.aarTracks()` and `natTracks()`,
+  `modules/maps/`; SPEC, DECISIONS, help ×4) — the CAM mode draws the air refuelling racetracks (France and the United
+  Kingdom) with their outbound leg and name, and the day's NAT tracks with their levels; two layers of their own.
 - **fuel: an aircraft without its own sheet uses its type's estimate** (`modules/fuel/module.js`) — it no longer
   borrows the first sheet of the list.
 - **Map, lot 6b: levels on the profile** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — in the

@@ -104,7 +104,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - Auto (wand, the flight's level: High IFR from FL195), Low IFR ("IFR" under a ceiling, `routeProfile(5000)`), High
     IFR ("IFR" over a floor, `routeProfile(30000)`), VFR (map icon, the built-in `vfr-detail` profile on the
     `ofm-liberty` base), Topo (contour lines drawn in CSS: `ofm-liberty` with a hillshade of the Terrarium tiles,
-    aerodromes, towns and close-up obstacles only), CAM / OAT (red plane: the flight level's IFR plus R / D / P, TSA /
+    aerodromes, towns and close-up obstacles only), CAM / OAT (red plane: the flight level's IFR plus refuelling and
+    NAT tracks, R / D / P, TSA /
     TRA / CBA and the low-flying network at all levels, state aerodromes).
   - Icons from `frame/lib/icons.js` (`wand-sparkles` added, `map`, `plane`, `chevron-down`); colours: accent for the
     choice, `--sog-err` for CAM; corners from `--sog-radius` (square in cabinet and field).
@@ -141,6 +142,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Live view**: every write of the flight file redraws the map and the profile (debounced 300 ms,
   `performance.mark('maps:live')`); the view stays when the new route still fits in it; no zone is read again unless
   the data area changes.
+- **Refuelling and NAT tracks** (`aarTracks`, `natTracks` elements; layers "Air refuelling tracks (AAR)" and "NAT
+  tracks", on by default in CAM only; mission maps whose profile asks for them): read after the zones of the view
+  (`aerodb.aarTracks()`, `aerodb.natTracks()`, which opens the `nat` zone); racetrack dashed in dark green with a light
+  tint, outbound leg IP → CP as an arrow, the track's name beside it; heavy tracks as their two arrowed legs; NAT
+  tracks dashed in slate through their points, "NAT A FL350–400" at the first point.
 - **Profile marks**: the route's points, and the airway points and navaids within 3 NM of the route (at least 30 px
   apart), as small triangles with their id.
 - **TOC and TOD on the map**: their label goes north-east of the diamond, else south-east, north-west, south-west,

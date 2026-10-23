@@ -313,3 +313,12 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     "LFRS LFOO LUGEN UN460 DIDRU LFML"; Undo → the original text; DIDRU dragged onto POI → "LFRS LUGEN POI LFML". The
     6a benches (375 px touch, 1280 px mouse), the touch tooltips and the live view pass unchanged. No JavaScript
     error.
+- **23 Oct 2026 — lot 5e: refuelling and NAT tracks, CAM mode complete.**
+  - **Geometry in aerodb** (`aerodb.aarTracks()`, `natTracks()`; frame/aerodb/DECISIONS.md), drawing here: the
+    racetrack dashed so that it does not read as an airspace boundary, the outbound leg as an arrow (the direction to
+    fly), the name beside the leg; NAT tracks dashed in slate, their letter and levels at the first point.
+  - **Layers, on by default in CAM only**; a mission map whose studio profile asks for them (`aarTracks`,
+    `natTracks`) draws them too, as the studio does.
+  - **Bench** (1280 and 375 px): CAM over France → 51 tracks (SIMONE 14.1 NM left, YVETTE 14 NM right…), the UK's
+    AARA; over the North Atlantic → NAT A to F with "NAT A FL350–400"; Auto → both off; touch tooltips and the page
+    checks unchanged; no JavaScript error.
