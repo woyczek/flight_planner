@@ -1,0 +1,135 @@
+/* V3 design — « Swiss » : ce que le cadre doit changer pour le style typographique international (maquette à trancher,
+   frame/design/SPEC.md § 3, DECISIONS.md du 23 octobre 2026). Tout est derrière [data-design="swiss"] : les autres designs ne
+   changent pas d'un pixel. Les jetons (noir, blanc, gris, rouge signal, Helvetica, angles nuls, grands espaces, grand titre
+   gras) sont dans tokens.css ; ici, seulement les règles que les jetons ne portent pas : filets au lieu de cartes, titres de
+   section en capitales espacées, boutons à filet noir, onglets soulignés, verbes en liste avec le filet du module courant,
+   chiffres tabulaires. Aucun module n'est touché. Écran seulement : l'impression garde l'encre du jour (primitives.css).
+   Les règles du cadre (frame.css) viennent après ce fichier : à égalité de poids elles l'emportent, d'où les sélecteurs
+   composés. Le sélecteur est [data-design="swiss"] (et non html[…]) pour la page de démonstration. */
+@media screen {
+  /* ---- en-tête : fond de la page, filet noir de 2 px dessous, nom en capitales espacées, boutons d'icône sans cadre */
+  [data-design="swiss"] .f-head {
+    background: var(--sog-bg);
+    border-bottom: 2px solid var(--sog-fg)
+  }
+  [data-design="swiss"] .f-head .f-name {
+    font-size: .8rem;
+    letter-spacing: .14em;
+    text-transform: uppercase
+  }
+  [data-design="swiss"] .f-head button {
+    background: transparent;
+    border-color: transparent
+  }
+
+  /* ---- verbes : une liste, le verbe courant en gras avec le filet de la couleur de son module (seul usage de cette
+     couleur) ; sur téléphone, le tiroir est une liste de grandes lignes séparées par un filet */
+  [data-design="swiss"] .f-nav a {
+    border-left: 4px solid transparent;
+    border-radius: 0;
+    padding-left: 8px
+  }
+  [data-design="swiss"] .f-nav a[aria-current="page"] {
+    background: transparent;
+    color: var(--sog-fg);
+    font-weight: 700;
+    border-left-color: var(--sog-module-text)
+  }
+  @media (max-width: 760px) {
+    [data-design="swiss"] .f-nav ul {
+      gap: 0
+    }
+    [data-design="swiss"] .f-nav a {
+      min-height: 56px;
+      border-bottom: 1px solid var(--sog-border);
+      font-size: 1.2rem;
+      letter-spacing: -.01em
+    }
+  }
+
+  /* ---- titres : le titre de page grand et gras (jetons), les titres de section en petites capitales espacées */
+  [data-design="swiss"] .f-view h1 {
+    margin: 8px 0 var(--sog-gap-l);
+    line-height: 1.05;
+    overflow-wrap: anywhere
+  }
+  [data-design="swiss"] .f-pane h1 {
+    font-size: 1.6rem
+  }
+  [data-design="swiss"] .f-view :is(h2, h3) {
+    text-transform: uppercase;
+    letter-spacing: .1em
+  }
+  [data-design="swiss"] .f-view h3 {
+    color: var(--sog-muted)
+  }
+
+  /* ---- des filets au lieu de cartes : un filet noir en haut, ni fond ni cadre ; l'encadré « accent » prend un filet rouge
+     épais ; lignes de liste : un filet dessous ; barre collante : filet noir de 2 px au-dessus */
+  [data-design="swiss"] .f-card,
+  [data-design="swiss"] .f-tiles>* {
+    background: transparent;
+    border-width: 1px 0 0;
+    border-color: var(--sog-fg);
+    padding-inline: 0
+  }
+  [data-design="swiss"] .f-card.f-accent {
+    border-top: 3px solid var(--sog-accent)
+  }
+  [data-design="swiss"] details.f-card>summary {
+    margin-inline: 0;
+    padding-inline: 0
+  }
+  [data-design="swiss"] .f-list {
+    gap: 0
+  }
+  [data-design="swiss"] .f-item {
+    background: transparent;
+    border-width: 0 0 1px;
+    padding-inline: 0
+  }
+  [data-design="swiss"] .f-bar {
+    background: var(--sog-bg);
+    border-width: 2px 0 0;
+    border-color: var(--sog-fg);
+    padding-inline: 0
+  }
+
+  /* ---- boutons : filet noir de 1 px, le principal plein de rouge ; onglets : texte souligné, le courant en gras avec un
+     trait rouge */
+  [data-design="swiss"] button,
+  [data-design="swiss"] .f-btn {
+    border-color: var(--sog-fg)
+  }
+  [data-design="swiss"] button.primary,
+  [data-design="swiss"] .f-btn.primary {
+    border-color: var(--sog-accent)
+  }
+  [data-design="swiss"] .f-tabs {
+    gap: var(--sog-gap);
+    border-bottom: 1px solid var(--sog-border)
+  }
+  [data-design="swiss"] .f-tabs>button {
+    padding: 0 2px;
+    border-width: 0 0 3px;
+    border-color: transparent;
+    background: transparent
+  }
+  [data-design="swiss"] .f-tabs>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
+    background: transparent;
+    color: var(--sog-fg);
+    border-color: var(--sog-accent);
+    font-weight: 700
+  }
+
+  /* ---- tableau : en-tête en petites capitales sous un filet noir ; chiffres tabulaires partout */
+  [data-design="swiss"] .f-table th {
+    border-bottom: 1px solid var(--sog-fg);
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase
+  }
+  [data-design="swiss"] :is(.f-head, .f-view) {
+    font-variant-numeric: tabular-nums
+  }
+}

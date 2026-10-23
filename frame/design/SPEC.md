@@ -11,7 +11,9 @@ Module side: [INTEGRATION.md](INTEGRATION.md).
 | `frame/design/tokens.css` | the `--sog-*` tokens and the three designs, day and night |
 | `frame/design/primitives.css` | base elements and the layout primitives given to modules, print |
 | `frame/design/metro.css` | the rules of the `metro` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="metro"]` |
-| `frame/design/demo_metro.html` | the Metro mock-up page: scenes (phone and screen, day and night) of the real frame markup and primitives |
+| `frame/design/swiss.css` | the rules of the `swiss` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="swiss"]` |
+| `frame/design/cupertino.css` | the rules of the `cupertino` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="cupertino"]` |
+| `frame/design/demo_metro.html` | the mock-up page of the three designs (`?design=metro` by default, `swiss`, `cupertino`): scenes (phone and screen, day and night) of the real frame markup and primitives; the file kept its name, the link is known |
 | `frame/frame.css` | the application's chrome (header, menu, view, notes, dialogs); imports the two files above, so a page that loads `frame.css` has everything |
 | `frame/lib/icons.js` | the line icon set (ES module, owner: design) |
 | `labs/design_primitives.html` | every primitive in every design, day and night, side by side; the icons; the chart colours |
@@ -29,7 +31,7 @@ A design sets tokens and nothing else; a module reads them and never redefines o
 | Space | `gap` (12px), `gap-s` (6px), `gap-l` (20px) |
 | Shape | `radius` (6px), `radius-s` (3px); both 0 in textured designs |
 | Density | `touch` (44px), `field-text` (16px) |
-| Landmark colour (mock-up, pending decision) | `module` (colour of the module on screen), `module-ink` (text on it), `module-text` (the colour as text on the page); equal to `accent`, `accent-ink`, `link` in every design but `metro` |
+| Landmark colour (mock-up, pending decision) | `module` (colour of the module on screen), `module-ink` (text on it), `module-text` (the colour as text on the page); equal to `accent`, `accent-ink`, `link` in every design but the three mock-ups (`metro`, `swiss`, `cupertino`: their `--sog-mod-<module>` palettes) |
 
 All are prefixed `--sog-`. The breakpoints are not tokens: CSS media queries cannot read custom properties. They are
 **760 px** (phone / screen) and **980 px** (dual view), both for the device (`@media`).
@@ -50,13 +52,29 @@ what depends on the device stays in `@media`: the menu drawer, the header, hidin
   [DECISIONS.md](DECISIONS.md) for the frame amendments it shows and what stays open.
   - **One landmark colour per module**: the frame sets `data-landmark` (the module's id; a frame screen takes
     `settings`) on `<html>`, on each module's pane and on its menu link. A design reads it through `--sog-module`
-    (`--sog-module-ink`, `--sog-module-text`). The token exists in every design (it equals the accent); only `metro`
-    shows it (header band, verb blocks, primary buttons, titles, tiles). `data-module`, which modules use in their own
+    (`--sog-module-ink`, `--sog-module-text`). The token exists in every design (it equals the accent); `metro` shows
+    it (header band, verb blocks, primary buttons, titles, tiles), `swiss` only as the rule of the current verb, `cupertino`
+    only as the icon of each verb in the drawer (its own palette, white glyph on the colour 4.85 : 1 to 5.99 : 1). `data-module`, which modules use in their own
     selectors, is not used for this.
   - Palette (white text on the colour, day: 5.4 : 1 to 7.4 : 1): Fuel `#0067b8`, Map `#007589`, Report `#b34700`,
     My flights `#107c10`, Website `#6b3fa0`, Settings `#5d5a58`; as text at night: `#4cb0ff`, `#3cc8de`, `#ff9a4d`,
     `#5fd35f`, `#b48be0`, `#c0bbb7`.
   - A module still brings no colour of its own: it reads the tokens.
+- **`swiss`** (**mock-up, pending decision**, 23 Oct 2026): the International Typographic Style. Strict grid and a lot of
+  air (`gap` 16 px, `gap-l` 28 px), black / white / greys, **one signal red** (`#e30613`, 4.88 : 1 as text on white and with
+  white on it; at night `#ff3b47` with black ink, 5.63 : 1 as text on the page, 5.97 : 1 with its ink), radius 0, thin
+  rules instead of cards, Helvetica / Arial (system fonts only), page title large and bold (`title-size` up to 2.75rem,
+  weight 700, tight tracking), section titles (`h2`, `h3`) as small spaced capitals (the capitals are a rule of
+  `swiss.css`: `title-case` is one token for the three heading levels), figures tabular. The landmark colour exists
+  (the `metro` palette, as `--sog-mod-*`) but is shown only as the rule of the current verb in the menu. Night: near-black
+  (`#0a0a0a`), light grey text, the same red lightened. Frame rules and open points: [DECISIONS.md](DECISIONS.md).
+- **`cupertino`** (**mock-up, pending decision**, 23 Oct 2026): the iOS Settings look. Very light grey page (`#f2f2f7`) with
+  white grouped cards of radius 10, no shadow, system blue (`#007aff` day, `#0a84ff` night, links `#0066cc` by day) for
+  actions and links, hierarchy by spacing, rules and the muted grey, 44 px controls, system fonts (SF where it exists),
+  page title large, 16 px text. Night: black page, `#1c1c1e` cards. Buttons are blue text or a filled blue
+  rectangle (radius 10, never a full pill); tabs and steps are a segmented control; row lists are one rounded group with
+  hairlines and a chevron; the drawer is a grouped list whose icons sit in a square of the module's colour (landmark
+  colour: the icon only), the rail on a screen a plain list. Frame rules and open points: [DECISIONS.md](DECISIONS.md).
 - **Applied by attributes**: `html[data-design]`, and `html[data-tone]` = `day` | `night` (absent: automatic).
 - **Night**: when the system asks for it (`prefers-color-scheme: dark`), unless `data-tone="day"`; always with
   `data-tone="night"`. Night sets are for the screen only (`@media screen`): print keeps the day's ink.

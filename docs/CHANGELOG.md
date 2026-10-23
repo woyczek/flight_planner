@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Design: "Swiss" and "Cupertino" mock-ups, pending decision** (`frame/design/tokens.css`, `frame/design/swiss.css`,
+  `frame/design/cupertino.css`, `frame/design/demo_metro.html`, `frame/app.js`, `frame/frame.css`, `frame/index.html`,
+  `frame/sw.js`; design SPEC, DECISIONS) — two more designs in Settings › Design, built like Metro (token sets first,
+  few frame rules): Swiss, the International Typographic Style (grid and air, black / white / grey, one signal red, radius 0,
+  rules instead of cards, small spaced capitals, tabular figures) and Cupertino, the iOS Settings look (grey page, white
+  grouped cards, system blue, segmented tabs, grouped lists with chevrons). System fonts only. The demo page takes
+  `?design=metro|swiss|cupertino`. The other designs are unchanged; open points are listed for decision.
 - **Design: "Metro" mock-up, pending decision** (`frame/design/tokens.css`, `frame/design/metro.css`, `frame/design/demo_metro.html`,
   `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/sw.js`; design SPEC, DECISIONS) — a fourth design, picked
   in Settings › Design: flat colour blocks, square corners, system fonts, big light page titles, verb blocks in the
