@@ -51,10 +51,11 @@ erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von w
 **Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
 Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
-und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, nennt die
-Blase den Luftraum unter dem Finger; wo sich mehrere überlagern, zeigt eine Karte sie alle: einen Höhenblock wie das
+und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt eine
+Karte die Lufträume unter dem Finger, einen oder mehrere: einen Höhenblock wie das
 Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
-Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
+Liste mit ihren Grenzen. Sie bleibt offen: das ✕ oder Escape schließt sie, ein anderes Antippen ersetzt
+sie. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
 nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Über einem Funkfeuer nennt die Blase Art, Kennung und Frequenz; stehen
 mehrere Funkfeuer am selben Ort, behält die Karte das nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS), und die
 Blase nennt die anderen („auch hier: ILS 25L BG 109.9“). Auf dem Profil nennen Finger
@@ -63,7 +64,9 @@ oder Maus ebenso die durchflogenen Lufträume.
 **Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
 Sequenzen aus seinen VAC-Karten leuchten auf (benannte grüne Kreise, Striche zwischen den Punkten). Tippen Sie ihn an:
 die Karte rückt an seine Punkte heran, wenn sie eng beieinander liegen, und seine Karte nennt die Sequenzen (mit der
-Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Escape oder ein Antippen anderswo gibt ihn frei.
+Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Sie bleibt offen, während Sie die Karte
+verschieben: das ✕ oder Escape schließt sie, ein anderer Flugplatz ersetzt sie. Das Antippen eines Meldepunkts öffnet
+ebenso die Karte seines Flugplatzes, dieser Punkt zuerst.
 Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
 aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet und sind nicht die veröffentlichte Route; maßgeblich ist
 die VAC-Karte. Wurde der Flugplatz von Hand ausgewertet, sagt es die Karte, die Routen tragen ihren Namen, ihre Pisten

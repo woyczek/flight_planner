@@ -352,6 +352,7 @@ const TX = {
     'Menos detalles a la izquierda, más a la derecha: desplaza un paso lo que muestra cada zoom.'
   ],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
+  close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
   vfrTitle: ['{ad} : points de report VFR', '{ad}: VFR reporting points', '{ad}: VFR-Meldepunkte', '{ad}: puntos de notificación VFR'],
   vfrLabel: ['Extrait des cartes VAC, à vérifier : ce n\'est pas l\'itinéraire publié, la carte VAC fait foi.',
     'Extracted from the VAC charts, to be checked: this is not the published route, the VAC chart prevails.',
@@ -419,6 +420,7 @@ const TX = {
   levelsTitle: ['{n} espaces sur ce point', '{n} airspaces at this point', '{n} Lufträume an diesem Punkt',
     '{n} espacios en este punto'
   ],
+  levelsTitle1: ['1 espace sur ce point', '1 airspace at this point', '1 Luftraum an diesem Punkt', '1 espacio en este punto'],
   levelsAxis: ['Plancher et plafond de chaque espace, du plus bas au plus haut',
     'Floor and ceiling of each airspace, from the lowest to the highest',
     'Untergrenze und Obergrenze jedes Luftraums, vom niedrigsten zum höchsten',
@@ -789,6 +791,7 @@ function draw() {
   S.zoneHits = got.zoneLabels || [];
   S.adHits = got.aerodromes || [];
   S.navHits = got.navaids || [];
+  S.vrpHits = got.vrps || [];
   if (altn && route.length) {
     // terrain de dégagement : rond gris et code, par-dessus le reste
     const q = toC(altn.lat, altn.lon);
@@ -1190,11 +1193,10 @@ async function startTiles() {
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
         if (S.edit.on) return editTap(e.point.x, e.point.y);
         // carte des niveaux ou d'un terrain ouverte, ou terrain épinglé : ce toucher les ferme
-        if (!S.cardEl.hidden || S.vfrPin) {
-          unpinAd();
-          return hideTips();
-        }
-        if (!S.mission && adAt(e.point.x, e.point.y)) return pinAd(adAt(e.point.x, e.point.y));
+        if (!S.mission && vrpTap(e.point.x, e.point.y)) return; // point de report : son terrain (point en tête)
+        if (!S.mission && adAt(e.point.x, e.point.y)) return pinAd(adAt(e.point.x, e.point
+          .y)); // un autre terrain la remplace
+        if (!S.cardEl.hidden) return hideTips(); // carte des niveaux ouverte : ce toucher la ferme (celle du terrain reste)
         // une barbule, un cartouche ou un libellé (posés sur la route ou près d'elle) passent avant le curseur
         if (tipAt(e.point.x, e.point.y)) return mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
@@ -2079,10 +2081,10 @@ function tipAt(x, y, lat = null, lon = null) {
 // arrivée épinglés d'office (dessin seul). Données : aerodb.vfrRoutes (sia/vfr/<OACI>.json), candidats tirés des VAC,
 // toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
 const VFR_COL = '#00897b'; // séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor)
-/** Terrain dessiné sous (x, y), à 12 px près ; null sinon. */
+/** Terrain dessiné sous (x, y), à 22 px près (une cible de doigt) ; null sinon. */
 function adAt(x, y) {
   let best = null,
-    bd = 12;
+    bd = 22;
   for (const h of S.adHits || []) {
     const d = Math.hypot(h.x - x, h.y - y);
     if (d <= bd && h.a?.icao) {
@@ -2091,6 +2093,58 @@ function adAt(x, y) {
     }
   }
   return best;
+}
+/** Point de report sous (x, y), à 22 px près, plus proche qu'un terrain : { ad (le terrain à épingler, ou null), code,
+ *  name, id } ; null sinon. Points surlignés d'un terrain (leur terrain est connu), puis ceux de la couche des VRP (le
+ *  terrain de leur préfixe, « BD- » pour LFBD, à 30 NM au plus, sinon le plus proche à 5 NM). */
+function vrpAt(x, y) {
+  const d = h => Math.hypot(h.x - x, h.y - y),
+    a = adAt(x, y),
+    da = a ? d((S.adHits || []).find(h => h.a === a)) : Infinity,
+    hl = (S.vfrHits || []).filter(h => d(h) <= 22).sort((p, q) => d(p) - d(q))[0],
+    ly = (S.vrpHits || []).filter(h => d(h) <= 22).sort((p, q) => d(p) - d(q))[0],
+    best = [hl && [d(hl), hl], ly && [d(ly), ly]].filter(Boolean).sort((p, q) => p[0] - q[0])[0];
+  if (!best || best[0] >= da) return null;
+  const h = best[1];
+  if (h.icao) return {
+    ad: h.icao,
+    id: h.p.id,
+    code: h.p.code,
+    name: h.p.name
+  };
+  const v = h.v,
+    nm = (p, q) => Math.hypot(+p.lat - +q.lat, (+p.lon - +q.lon) * Math.cos(+p.lat * Math.PI / 180)) * 60,
+    ads = [...(S.adHits || []).map(x => x.a), ...(S.data?.data?.aerodromes || [])].filter(x => /^[A-Z]{4}$/.test(x?.icao || '')),
+    pre = String(v.id).split('-')[0],
+    own = ads.filter(x => x.icao.slice(2) === pre && nm(x, v) <= 30).sort((p, q) => nm(p, v) - nm(q, v))[0],
+    near = ads.filter(x => nm(x, v) <= 5).sort((p, q) => nm(p, v) - nm(q, v))[0],
+    ad = own || near;
+  return {
+    ad: ad?.icao || null,
+    adRec: ad || null,
+    id: v.id,
+    code: String(v.id).startsWith(`${pre}-`) ? String(v.id).slice(pre.length + 1).replace(/^H-/, '') : v.id,
+    name: v.name || ''
+  };
+}
+/** Toucher d'un point de report : son terrain épinglé (le point en tête de sa liste), ou, sans terrain, l'infobulle du
+ *  point seul. Vrai si traité. */
+function vrpTap(x, y) {
+  const t = vrpAt(x, y);
+  if (!t) return false;
+  const a = t.adRec || (S.adHits || []).find(h => h.a.icao === t.ad)?.a || (S.data?.data?.aerodromes || []).find(x => x.icao === t.ad) || (
+    t.ad ? {
+      icao: t.ad,
+      ...adPos(t.ad)
+    } : null);
+  if (!a || !Number.isFinite(+a.lat)) {
+    stay('map');
+    followTip(S.tipEl, S.box, x, y, hoverHtml([t.code, t.name].filter(Boolean).join(' '), ''));
+    linger('map');
+    return true;
+  }
+  pinAd(a, t.id);
+  return true;
 }
 /** Position d'un terrain : celle de la carte (terrains dessinés, données lues), sinon celle des points de la route. */
 function adPos(icao) {
@@ -2215,13 +2269,14 @@ function adHover(a, x, y) {
   })));
 }
 /** Terrain épinglé (toucher) : surbrillance gardée et sa carte. */
-function pinAd(a) {
+function pinAd(a, focus = null) {
   hideTips();
   S.vfrPin = a.icao;
   S.vfrCard = {
     name: a.name || '',
     lat: +a.lat,
-    lon: +a.lon
+    lon: +a.lon,
+    focus // identifiant du point de report touché : en tête de la liste, en gras
   };
   vfrOf(a.icao);
   baseVrpOf(a.icao);
@@ -2270,6 +2325,7 @@ function pinView(icao) {
 }
 
 function unpinAd() {
+  if (!S.adCardEl.hidden) S.adCardEl.hidden = true;
   if (!S.vfrPin) return;
   S.vfrPin = null;
   S.vfrCard = null;
@@ -2284,15 +2340,15 @@ function showAdCard(icao) {
     base = baseVrpOf(icao),
     c = S.vfrCard;
   if (!c) return;
-  const head = `<div><b>${esc(tt(TX.vfrTitle, { ad: [icao, c.name].filter(Boolean).join(' ') }))}</b></div>`,
+  const head = `<button type="button" class="mp-adclose" data-adclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(tt(TX.vfrTitle, { ad: [icao, c.name].filter(Boolean).join(' ') }))}</b></div>`,
     page = p => p ? ` <span class="f-muted">(${esc(tt(TX.vfrPage, { p }))})</span>` : '',
-    pts = reportPoints(icao),
+    pts = (l => c.focus ? [...l.filter(p => p.id === c.focus), ...l.filter(p => p.id !== c.focus)] : l)(reportPoints(icao)),
     heli = pts.some(p => MapsRender.vrpRotary(p.id)),
     dot = p => `<i class="mp-vfr-dot" style="background:${MapsRender.vrpColor(p.id)}"></i>`;
   let body = '';
   if (base === undefined || v === undefined) body = '<p class="f-muted">…</p>';
   else {
-    body = pts.length ? `<div><b>${esc(tt(TX.vfrPoints, { n: pts.length }))}</b>${heli ? ` <span class="f-muted">${esc(tt(TX.vfrLegend))}</span>` : ''}</div><ul class="mp-vfr-pts">${pts.map(p => `<li>${dot(p)}<b style="color:${MapsRender.vrpColor(p.id)}">${esc(p.code)}</b> ${esc(p.name)}${p.restrictions.length ? ` <span class="mp-vfr-warn">(${esc(p.restrictions.join(' ; '))})</span>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
+    body = pts.length ? `<div><b>${esc(tt(TX.vfrPoints, { n: pts.length }))}</b>${heli ? ` <span class="f-muted">${esc(tt(TX.vfrLegend))}</span>` : ''}</div><ul class="mp-vfr-pts">${pts.map(p => `<li${p.id === c.focus ? ' class="mp-vfr-focus"' : ''}>${dot(p)}<b style="color:${MapsRender.vrpColor(p.id)}">${esc(p.code)}</b> ${esc(p.name)}${p.restrictions.length ? ` <span class="mp-vfr-warn">(${esc(p.restrictions.join(' ; '))})</span>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
     if (!v) body += `<p class="f-muted">${esc(tt(TX.vfrNoVac))}</p>`;
     else {
       const pages = ps => ps.length > 1 ? ` <span class="f-muted">(${esc(tt(TX.vfrPages, { p: ps.join(', ') }))})</span>` : page(ps[0]),
@@ -2336,11 +2392,13 @@ function showAdCard(icao) {
     narrow = W < 600,
     below = narrow ? Math.round(r0.height * .55) : btn && !btn.hidden ? btn.getBoundingClientRect().bottom - r0.top : 0,
     mh = `${Math.max(120, Math.round(r0.height - below - 14))}px`;
-  if (S.cardEl.style.maxHeight !== mh) S.cardEl.style.maxHeight = mh;
-  // étroit : en bas du cadre, sur toute sa largeur (les points sont cadrés au-dessus)
-  showTip(S.cardEl, S.box, narrow ? -10 : right ? W : -10, below, head + body);
+  const A = S.adCardEl;
+  if (A.style.maxHeight !== mh) A.style.maxHeight = mh;
+  // étroit : en bas du cadre, sur toute sa largeur (les points sont cadrés au-dessus) ; le reste du cadre se déplace au
+  // doigt comme d'habitude
+  showTip(A, S.box, narrow ? -10 : right ? W : -10, below, head + body);
   const top = `${Math.round(below + 6)}px`; // juste sous les boutons (ou à mi-hauteur), jamais au-dessus
-  if (S.cardEl.style.top !== top) S.cardEl.style.top = top;
+  if (A.style.top !== top) A.style.top = top;
 }
 /** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */
 function vfrVrpIds() {
@@ -2441,7 +2499,8 @@ function drawVfr(ctx, toC) {
       S.vfrHits.push({
         x: q.x,
         y: q.y,
-        p
+        p,
+        icao
       });
     }
     const ad = v && adPos(icao);
@@ -2525,7 +2584,7 @@ function levelsHtml(list) {
     const [a, b] = MapsRender.sia(r.a);
     return `<li><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</span></li>`;
   }).join('');
-  return `<div><b>${esc(tt(TX.levelsTitle, { n: rows.length }))}</b></div><svg class="mp-lv" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol>`;
+  return `<button type="button" class="mp-adclose" data-lvclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(rows.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, { n: rows.length }))}</b></div><svg class="mp-lv" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol>`;
 }
 /** Toucher ou clic sur la carte en (x, y) : la même infobulle qu'au survol, posée là, gardée 5 s, remplacée par la
  *  suivante ; rien dessous : l'infobulle se ferme. Plusieurs espaces superposés sous le point (ni barbule ni voie sous le
@@ -2534,9 +2593,10 @@ function mapTip(lat, lon, x, y) {
   // une barbule ou une voie sous le doigt passent avant ; un libellé d'espace, non (son espace est dans la carte)
   if (!windAt(x, y) && !MapsRender.airwaysAt(S.awHits, x, y).length) {
     const list = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon);
-    if (list.length > 1) {
+    // un espace ou plus sous le point : la carte des niveaux, qui reste (✕, Échap) ; un autre toucher la remplace
+    if (list.length) {
       hideTips();
-      showTip(S.cardEl, S.box, x, y, levelsHtml(list));
+      showTip(S.lvCardEl, S.box, x, y, levelsHtml(list));
       return true;
     }
   }
@@ -3740,6 +3800,10 @@ const STYLE = `
 [data-module="maps"] .mp-editbar button:disabled{opacity:.5;cursor:default}
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 [data-module="maps"] .mp-pcard[hidden]{display:none}
+[data-module="maps"] .mp-adcard{z-index:5}
+[data-module="maps"] .mp-adclose{position:absolute;top:2px;right:2px;width:44px;height:44px;min-height:0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit}
+[data-module="maps"] .mp-adhead{padding-right:40px}
+[data-module="maps"] .mp-vfr-focus{font-weight:700;background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
 [data-module="maps"] .mp-pcard .f-btn{align-self:flex-start;margin-top:4px}
 [data-module="maps"] .mp-pcard:has(.mp-vfr-warn){width:min(92%,360px);max-height:calc(100% - 12px);overflow:auto}
 [data-module="maps"] .mp-vfr-warn{margin:0;font-size:.9em;color:#00695c;font-style:italic}
@@ -3796,7 +3860,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
 <div class="mp-editbar"><button type="button" class="mp-follow" hidden aria-pressed="false" title="${esc(ctx.t(TX.followHelp))}">${esc(ctx.t(TX.follow))}</button><button type="button" class="mp-add" hidden aria-pressed="false" title="${esc(ctx.t(TX.addPoint))}" aria-label="${esc(ctx.t(TX.addPoint))}">+</button><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
-<div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
+<div class="mp-tip mp-pcard f-card" hidden role="dialog"></div><div class="mp-tip mp-pcard mp-adcard f-card" hidden role="dialog"></div><div class="mp-tip mp-pcard mp-lvcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
 <div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
@@ -3825,7 +3889,9 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     progEl: el.querySelector('.mp-progress'),
     undoBtn: el.querySelector('.mp-undo'),
     addBtn: el.querySelector('.mp-add'),
-    cardEl: el.querySelector('.mp-pcard'),
+    cardEl: el.querySelector('.mp-pcard:not(.mp-adcard)'),
+    adCardEl: el.querySelector('.mp-adcard'),
+    lvCardEl: el.querySelector('.mp-lvcard'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
     ptipEl: el.querySelector('.mp-prof .mp-tip')
   });
@@ -3878,11 +3944,9 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       x = e.clientX - r.left,
       y = e.clientY - r.top;
     if (S.edit.on) return editTap(x, y);
-    if (!S.cardEl.hidden || S.vfrPin) {
-      unpinAd();
-      return hideTips();
-    }
+    if (!S.mission && vrpTap(x, y)) return;
     if (!S.mission && adAt(x, y)) return pinAd(adAt(x, y));
+    if (!S.cardEl.hidden) return hideTips();
     const v = MapsRender.mercator(S.fit, r.width, r.height, 12),
       ll = v.toLL(x, y);
     if (tipAt(x, y)) return mapTip(ll.lat, ll.lon, x, y);
@@ -3917,11 +3981,18 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   // Échap : le terrain épinglé est relâché
   const esc0 = e => {
-    if (e.key === 'Escape' && S?.vfrPin) {
-      unpinAd();
-      hideTips();
-    }
+    if (e.key !== 'Escape' || !S) return;
+    if (!S.lvCardEl.hidden) S.lvCardEl.hidden = true; // la carte des niveaux d'abord, puis celle du terrain
+    else if (S.vfrPin) unpinAd();
   };
+  // ✕ de la carte des niveaux
+  S.lvCardEl.addEventListener('click', e => {
+    if (e.target.closest('[data-lvclose]')) S.lvCardEl.hidden = true;
+  });
+  // ✕ de la carte d'un terrain
+  S.adCardEl.addEventListener('click', e => {
+    if (e.target.closest('[data-adclose]')) unpinAd();
+  });
   document.addEventListener('keydown', esc0);
   S.stops.push(() => document.removeEventListener('keydown', esc0));
   S.layersEl.addEventListener('keydown', e => {

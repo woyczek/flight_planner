@@ -51,9 +51,10 @@ VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les
 **Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
 ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
 point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
-(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne l'espace sous le doigt ; là où plusieurs se
-superposent, une carte les montre tous : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
-de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste jusqu'au toucher suivant. Elle suit
+(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, une carte montre les espaces sous le doigt,
+un ou plusieurs : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
+de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste ouverte : la croix ✕ ou Échap la ferment, un autre toucher la
+remplace. Elle suit
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
 la carte. Sur une balise, la bulle donne son type, son indicatif et sa fréquence ; quand
 plusieurs balises sont au même endroit, la carte garde la plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle
@@ -62,7 +63,9 @@ nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur le profil, le doigt o
 **Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
 tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les points). Touchez-le : la carte se rapproche
 de ses points s'ils sont serrés, et sa carte donne les séquences (avec la page de la VAC) puis les consignes de la VAC,
-repliées page par page. Échap ou un toucher ailleurs le relâche. En mode VFR, les points du terrain de départ et de celui
+repliées page par page. Elle reste ouverte pendant que vous déplacez la carte : la croix ✕ ou
+Échap la ferment, un autre terrain la remplace. Toucher un point de report ouvre de même la carte de son terrain, ce point
+en tête. En mode VFR, les points du terrain de départ et de celui
 d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
 ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été
 analysé à la main, la carte le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit

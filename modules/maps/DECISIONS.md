@@ -519,3 +519,17 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Taxi**: while fuel's phase is `taxi`, the planned aircraft stays at the departure aerodrome, on the ground; the
     climb starts at the planned take-off (phase `climb`). Bench: phase `taxi` with `nmFromDep` 4 → planned at the
     aerodrome, on time; phase `climb` → "1 min late (4.0 NM)".
+- **23 Oct 2026 — cards that stay; a tap on a reporting point (user's requests).**
+  - **The aerodrome's card and the levels card stay open** (✕ of 44 px, Escape), each in its own element, so that a
+    tap elsewhere, a move of the map or another tooltip no longer close them; another aerodrome (or another tap on
+    airspaces) replaces the content. On a phone and in the dual view the aerodrome's card keeps the lower part of the
+    frame; the rest of the map pans as usual.
+  - **The levels card from one airspace**: the tap behaves the same everywhere ("1 airspace at this point", one
+    column, the same SIA list); the light tooltip stays for the hover and the targets that come first.
+  - **A reporting point is a target**: before, a tap on it gave the levels card of the airspaces around it ("8
+    airspaces at this point"). Now it pins its aerodrome, the point first; targets of 22 px for points and aerodromes
+    (was 12 px for aerodromes), the nearer one wins.
+  - **Bench** (test page): 1280 and 375 px — LFBD tapped → its card; tap elsewhere and a wheel move → still open;
+    LFCS tapped → replaced; ✕ and Escape → closed. VFR mode at 1280 px (VRP layer drawn from zoom 9.25): BD-EA of the
+    layer tapped → LFBD's card, "EA Carrefour D1215/D1 Le Taillan" first, in bold. One airspace tapped → "1 espace sur
+    ce point", kept after a wheel move, closed by ✕. No JavaScript error.

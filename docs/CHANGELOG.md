@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: cards that stay, reporting points as targets** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS, help ×4)
+  — the aerodrome's card and the airspaces card stay open (✕, Escape) while the map moves; another aerodrome replaces
+  it; a tap on a reporting point opens its aerodrome's card with that point first; the airspaces card from one
+  airspace on ("1 airspace at this point").
 - **Report: times in UTC** (`modules/report/module.js`; INTEGRATION, DECISIONS, help ×4, website SPEC) — a new report
   is marked `timeline.tz = "Z"` with UTC times; an older one is shown converted ("entered 18:30 local") and
   rewritten in UTC only when saved.

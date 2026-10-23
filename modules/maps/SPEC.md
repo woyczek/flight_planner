@@ -116,13 +116,15 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Tooltip** (lot 7a: one behaviour for hover, tap and click), a light `.mp-tip` (class `mp-hover`: `--sog-chart-bg`
   at 65 %, `--sog-fg`, thin border, 11.5 px, two lines at most) in the map box or the profile box:
   - what is under the pointer, in this order: a wind barb, an airway box, an airspace label (`draw()` returns their
-    frames); on a tap or a click only, then the airspace under the point; where two or more overlap (and no barb nor airway is
-    under the finger, an airspace label does not count), the levels card instead (`levelsHtml`, in the point card that
-    stays until the next tap): the title "n airspaces at this point", an SVG block like the vertical profile (altitude
+    frames); on a tap or a click only, when no barb nor airway is under the
+    finger (an airspace label does not count), the airspaces under the point in the levels card (`levelsHtml`, from one
+    airspace on, its own element `.mp-lvcard`): the title "1 airspace at this point" or "n airspaces at this point", an SVG block like the vertical profile (altitude
     axis SFC to the highest finite ceiling with a nice step, "UNL" above, 66,000 ft and more counted as UNL; one
     numbered column per airspace from floor to ceiling, coloured by type as in the profile; ASFC limits counted from
     the ground), then the numbered list in SIA notation with activity and service, lowest floor first; the card stays
-    inside the frame (scrolls if taller) and the next tap closes it;
+    inside the frame (scrolls if taller) and stays open: its ✕ (44 px) or Escape closes it, another tap on airspaces
+    replaces it, a move of the map leaves it; the light tooltip stays for the mouse hover and for the targets that come
+    first (barb, airway box, label);
   - a tap or click on one of the first three takes priority over placing the cursor on the route; on nothing, it
     closes the tooltip;
   - it follows the pointer 12 px away (never under it, kept in the box) while the pointer is on the label, stays 5 s at
@@ -355,7 +357,14 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     may be only part of a route)" when any is marked `fragment`;
   - the instructions of the VAC, one folded block per page (its title, its page).
   The card goes to the side opposite the aerodrome, under the buttons of that side; under 600 px it takes the lower 45 %
-  of the frame and the fit leaves that room. Escape, or a tap elsewhere, releases the aerodrome and closes the card.
+  of the frame and the fit leaves that room. The card has its own element (`.mp-adcard`) and stays open while the map
+  moves or is tapped elsewhere: its ✕ (44 px, top right) or Escape closes it and releases the aerodrome; another
+  aerodrome replaces it. The points and sequences stay highlighted while it is open.
+- **Tap targets** (22 px, a finger): first a reporting point (the highlighted ones, whose aerodrome is known, then
+  those of the VRP layer, `render.draw()` returning them as `vrps`: the aerodrome of their prefix within 30 NM, else
+  the nearest within 5 NM) when it is nearer than an aerodrome: its aerodrome is pinned, the point first and in bold in
+  the list; a VRP without aerodrome gives its own tooltip (code, name). Then an aerodrome. Both before the tooltips and
+  the levels card.
 - **VFR mode**: departure and arrival (four-letter codes) are shown anyway, drawing only.
 - **Drawing**, on top of the route (teal): a route with an interpreted geometry follows it (long dashes, its manual
   vertices as small dots), the others are short dashes between their known reporting points; never a line to the

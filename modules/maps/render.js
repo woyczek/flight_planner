@@ -885,8 +885,9 @@
 
   function drawVrp(ctx, data, toC, W, H, scale, b, pl, profile) {
     const vrp = on(profile, 'vrpPoints') && data.vrp?.length,
-      rnav = on(profile, 'rnavPoints') && data.points?.length;
-    if (!vrp && !rnav) return;
+      rnav = on(profile, 'rnavPoints') && data.points?.length,
+      hits = []; // points de report dessinés, à leur place à l'écran (toucher d'un point de report)
+    if (!vrp && !rnav) return hits;
     const lab = el(profile, 'vrpLabels') !== false,
       t = {
         s: b.s - .2,
@@ -896,9 +897,9 @@
       },
       f = 8 * PT * scale * .85,
       mark = (v, col, r, shape) => {
-        if (!inBox(t, v.lat, v.lon)) return;
+        if (!inBox(t, v.lat, v.lon)) return false;
         const p = toC(v.lat, v.lon);
-        if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) return;
+        if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) return false;
         ctx.beginPath();
         if (shape === 'tri') {
           ctx.moveTo(p.x, p.y - r);
@@ -925,14 +926,20 @@
               y1: p.y + f * .7
             })) halo(ctx, v.id, p.x + r + 3, p.y, f, col, 'left');
         }
+        return true;
       };
     ctx.save();
     if (rnav)
       for (const v of data.points)
         if (v.type === 'ICAO') mark(v, '#1f5fa8', 4 * scale, 'tri');
     if (vrp)
-      for (const v of data.vrp) mark(v, vrpColor(v.id), 4.5 * scale, 'diamond');
+      for (const v of data.vrp)
+        if (mark(v, vrpColor(v.id), 4.5 * scale, 'diamond')) hits.push({
+          v,
+          ...toC(v.lat, v.lon)
+        });
     ctx.restore();
+    return hits;
   }
   /** Villes à dessiner (les plus peuplées d'abord, sans recouvrement) : libellés au-dessus de cityLabelMin si le profil
    *  montre les villes, symboles OACI au-dessus de population si « agglomérations ». */
@@ -1504,7 +1511,7 @@
     if (on(profile, 'aarTracks')) drawAar(ctx, data.aar, toC, scale, bbox, pl);
     if (on(profile, 'natTracks')) drawNat(ctx, data.nat, toC, scale, bbox, pl);
     for (const f of ends.later || []) f();
-    drawVrp(ctx, hideVrp?.size ? {
+    const vrpHits = drawVrp(ctx, hideVrp?.size ? {
       ...shown,
       vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
     } : shown, toC, W, H, scale, bbox, pl, profile);
@@ -1523,6 +1530,7 @@
       // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
       // balises dessinées et celles qui leur sont rattachées faute de place (même endroit) : infobulle
       navaids: pts.navs,
+      vrps: vrpHits || [],
       aerodromes: (pts.ads || []).map(a => ({
         a,
         ...toC(+a.lat, +a.lon)

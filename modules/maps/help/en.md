@@ -48,9 +48,9 @@ very close, CTRs close up, TMAs in a medium view, FIRs from afar.
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a small
 bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks, its
 floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
-elsewhere inside an airspace, the bubble gives the airspace under your finger; where several overlap, a card shows them
-all: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
-then the numbered list with their limits. It stays until the next tap. It follows the pointer, stays 5 seconds, gives
+elsewhere inside an airspace, a card shows the airspaces under your finger,
+one or several: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
+then the numbered list with their limits. It stays open: the ✕ or Escape closes it, another tap replaces it. It follows the pointer, stays 5 seconds, gives
 way to the next one, and closes with a tap elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several
 beacons share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the
 others (“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give
@@ -59,7 +59,8 @@ the airspaces crossed in the same way.
 **The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences
 taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in on its
 points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the VAC,
-folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
+folded page by page. It stays open while you move the map: the ✕ or Escape closes it,
+another airfield replaces it. Tapping a reporting point opens its airfield's card in the same way, that point first. In VFR mode, the points of the departure and arrival
 airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
 and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
 the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow

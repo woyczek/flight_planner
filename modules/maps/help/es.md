@@ -50,10 +50,10 @@ muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos.
 **Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de un
 espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto →
 punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en notación
-AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, la burbuja da el espacio bajo el dedo;
-donde varios se superponen, una tarjeta los muestra todos: un bloque de niveles, como el perfil vertical (una columna
-numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda hasta el
-toque siguiente. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
+AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, una tarjeta muestra los espacios
+bajo el dedo, uno o varios: un bloque de niveles, como el perfil vertical (una columna
+numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda abierta: la ✕ o Escape la cierran, otro toque la
+reemplaza. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
 un movimiento del mapa. Sobre una radioayuda, la burbuja da su tipo, su indicativo y su frecuencia;
 cuando varias están en el mismo lugar, el mapa guarda la más útil (VOR, TACAN o DME, luego NDB, luego ILS) y la burbuja
 nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
@@ -61,7 +61,9 @@ nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo 
 **Los puntos de notificación VFR de un aeródromo.** Pase el ratón sobre un aeródromo: sus puntos de notificación y las
 secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, guiones entre los puntos). Tóquelo: el
 mapa se acerca a sus puntos si están apretados, y su tarjeta da las secuencias (con la página de la VAC) y luego las
-consignas de la VAC, plegadas página por página. Escape o un toque en otro lugar lo suelta. En modo VFR, los puntos del
+consignas de la VAC, plegadas página por página. Queda abierta mientras mueve el mapa: la ✕ o
+Escape la cierran, otro aeródromo la reemplaza. Tocar un punto de notificación abre igualmente la tarjeta de su
+aeródromo, con ese punto primero. En modo VFR, los puntos del
 aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
 marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha sido
 analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado
