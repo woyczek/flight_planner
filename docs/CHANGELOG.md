@@ -32,6 +32,10 @@ waypoints, and the rest listed below.
   one intermediate step in the IFR thresholds (TMA, CTA, R and TSA shapes before names, airways and MORA) and one step
   less when the map frame is under 600 px; vertical profile labels never overlap (airspaces entered first, the others
   counted in "+n"); in Edit mode a point is added only after "+" or a 500 ms press, a simple tap shows the tooltip.
+- **Frame: "Reload" after a new version works** (`frame/sw.js`, `frame/app.js`; SPEC, DECISIONS) — the "new version"
+  notice no longer comes back after every load (the page was checked at another address than its copy); "Reload" lets
+  a waiting service worker take over or fetches every copy again, then reloads, with no Ctrl+Shift+F5. The "Try" page
+  (example module) leaves the Pilot application; developers open it with `localStorage['sogFrame:dev'] = '1'`.
 - **Settings: pending writes listed** (`frame/settings/settings.js`, `frame/frame.css`; SPEC, DECISIONS, help ×4) — the
   Synchronisation card lists the writes waiting (`FD.status().queue`: path, module, time, ✕ for a deletion), newest
   first, and shows while some wait even without an exchange.

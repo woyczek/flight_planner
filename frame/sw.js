@@ -40,11 +40,13 @@ self.addEventListener('install', e => {
     const c = await store();
     if (!c) return self.skipWaiting();
     await Promise.all(SHELL.map(async p => {
+      const key = keyOf(new URL(p, self
+        .location)); // la page : lue à l'adresse de sa copie, comme à chaque revérification
       try {
-        const r = await fetch(new URL(p, self.location), {
+        const r = await fetch(key, {
           cache: 'no-cache'
         });
-        if (r.ok) await c.put(keyOf(new URL(p, self.location)), r);
+        if (r.ok) await c.put(key, r);
       } catch {
         /* hors ligne à l'installation : gardé au premier passage */
       }
@@ -60,6 +62,16 @@ self.addEventListener('activate', e => {
   })());
 });
 self.addEventListener('message', e => {
+  // « Recharger » de la page : un worker en attente prend la main ; sinon toutes les copies sont relues (cache ignoré),
+  // puis la page en est prévenue (port de réponse) et recharge
+  if (e.data?.type === 'skip-waiting') return void self.skipWaiting();
+  if (e.data?.type === 'refresh') return void e.waitUntil((async () => {
+    const c = await store();
+    if (c) await refreshAll(c, false);
+    e.ports[0]?.postMessage({
+      type: 'refreshed'
+    });
+  })());
   // points d'entrée des modules de l'application : gardés dès la première visite
   if (e.data?.type === 'precache') e.waitUntil((async () => {
     const c = await store();
@@ -97,7 +109,10 @@ async function serve(req, e) {
   const key = keyOf(req.url),
     hit = await c.match(key),
     old = hit?.clone(); // copie lue plus tard pour la comparaison (le corps de hit part à la page)
-  const net = fetch(req.mode === 'navigate' ? req.url : req, {
+  // la page est revérifiée à l'adresse de sa copie (…/frame/index.html) : un serveur peut répondre autrement pour le
+  // dossier (le lanceur ne pose ses empreintes ?v= que sur index.html) et chaque chargement verrait sinon une nouvelle
+  // version — l'avis « Nouvelle version » revenait en boucle
+  const net = fetch(req.mode === 'navigate' ? key : req, {
     cache: 'no-cache'
   }).then(async r => {
     if (!r.ok) return r;
@@ -117,8 +132,8 @@ async function serve(req, e) {
     }
   });
 }
-/** Un fichier a changé : toutes les copies relues (la nouvelle version entière), puis les pages prévenues. */
-async function refreshAll(c) {
+/** Un fichier a changé : toutes les copies relues (la nouvelle version entière), puis les pages prévenues (tell). */
+async function refreshAll(c, tell = true) {
   for (const req of await c.keys()) {
     try {
       const r = await fetch(req.url, {
@@ -129,6 +144,7 @@ async function refreshAll(c) {
       return; // réseau perdu en route : nouvelle tentative au prochain passage
     }
   }
+  if (!tell) return;
   for (const client of await self.clients.matchAll({
       type: 'window'
     })) client.postMessage({

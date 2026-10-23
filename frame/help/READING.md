@@ -55,7 +55,7 @@ the in-page help, the phone help page, and what the delivered modules have today
 | flightlog | none | SPEC (sources, filters, totals) |
 | maps | one hint line ("drag along the profile…") | SPEC, READING |
 | website | paste instructions per page (flight log, fleet) | SPEC, READING (what the website is) |
-| hello | none (example module) | — |
+| hello | none (developer example, not in the application) | — |
 | settings, aerodb (frame) | card hints in settings; none in aerodb | settings SPEC § 3 (cards) |
 
 No module has a "How to use" panel or user-facing help file yet; every user text is a `[fr, en, de, es]` row in

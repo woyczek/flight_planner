@@ -1,7 +1,8 @@
 # V3 frame — how a module plugs in
 
 This guide is for the agent or developer of a V3 module. It says what the frame gives a module and the rules a module
-follows. The frame itself is described in [SPEC.md](SPEC.md). Start from the example module, `modules/hello/module.js`.
+follows. The frame itself is described in [SPEC.md](SPEC.md). Start from the example module, `modules/hello/module.js`
+(not in the application's menu: set `localStorage['sogFrame:dev'] = '1'` on a development workstation to open it).
 
 ## 1. The rule
 

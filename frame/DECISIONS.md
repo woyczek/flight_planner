@@ -432,3 +432,19 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are
   in the service worker's copies after the first visit.
+- **23 Oct 2026 — "Reload" after a new version, and no more "Try" page**:
+  - The failure, reproduced in a fresh Chrome profile and in one with the old version: the click did reload, and the
+    new version was served, but the "new version" notice came back after every load. So "Reload" seemed to do
+    nothing, and only Ctrl+Shift+F5 seemed to help.
+  - The cause: the service worker keeps the page as `frame/index.html`, re-reads it at that address, but checked
+    each navigation at `frame/`. The launcher stamps `?v=` on `index.html` only, so the two always differed: a "new
+    version" at every load.
+  - Now:
+    - a navigation is checked, and the page installed, at the address of its copy (a fresh install no longer shows a
+      false notice at its second load);
+    - "Reload" lets a waiting worker take over (`skip-waiting`, then `controllerchange`), or else has every copy
+      fetched again without the browser cache (`refresh`), then reloads, after 8 s at most.
+  - "Try" (`hello`) leaves the Pilot application: no menu entry, no cached copy, no help. `modules/hello/` stays as
+    the developers' example, opened with `localStorage['sogFrame:dev'] = '1'`.
+  - Tests (a marker added to `frame.css`): in a fresh profile and in a profile holding the old version, the notice
+    appears, then one click serves the marker, and no notice comes back; no JavaScript error.

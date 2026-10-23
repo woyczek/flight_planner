@@ -52,12 +52,19 @@
       id: 'website',
       label: ['Site', 'Website', 'Website', 'Sitio'],
       icon: 'globe'
-    }, {
-      id: 'hello',
-      label: ['Essayer', 'Try', 'Ausprobieren', 'Probar'],
-      icon: 'target'
     }]
   };
+  // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le
+  // menu (et la mise en cache) seulement sur un poste de développement, localStorage « sogFrame:dev » = 1
+  try {
+    if (localStorage.getItem('sogFrame:dev') === '1') APP.modules.push({
+      id: 'hello',
+      label: ['Exemple', 'Example', 'Beispiel', 'Ejemplo'],
+      icon: 'target'
+    });
+  } catch {
+    /* stockage indisponible : pas de poste de développement */
+  }
 
   // ---------------------------------------------------------------- langue et textes (fr d'abord)
   const LANGS = ['fr', 'en', 'de', 'es'];
@@ -1459,7 +1466,7 @@
       if (e.data?.type === 'sog-frame-update') notify(t(U.update), 'info', {
         action: {
           label: t(U.reload),
-          run: () => location.reload()
+          run: reloadNewVersion
         }
       });
     });
@@ -1469,6 +1476,34 @@
       type: 'precache',
       urls: await moduleFiles()
     })).catch(e => console.warn('service worker', e));
+  }
+  /** « Recharger » après une nouvelle version : un service worker en attente prend la main (controllerchange) ; sinon
+   *  toutes les copies sont relues sans cache ; puis la page recharge (8 s au plus d'attente : recharge quand même). */
+  async function reloadNewVersion() {
+    const sw = navigator.serviceWorker,
+      reg = await sw?.getRegistration(new URL('frame/', ROOT).pathname).catch(() => null),
+      within = p => Promise.race([p, new Promise(r => setTimeout(r, 8e3))]);
+    try {
+      if (reg?.waiting) {
+        const changed = new Promise(r => sw.addEventListener('controllerchange', r, {
+          once: true
+        }));
+        reg.waiting.postMessage({
+          type: 'skip-waiting'
+        });
+        await within(changed);
+      } else if (sw?.controller) {
+        const ch = new MessageChannel(),
+          done = new Promise(r => ch.port1.onmessage = r);
+        sw.controller.postMessage({
+          type: 'refresh'
+        }, [ch.port2]);
+        await within(done);
+      }
+    } catch (e) {
+      console.warn('reload', e);
+    }
+    location.reload();
   }
   /** Fichiers de tous les modules de l'application, à garder dès l'installation : le point d'entrée de chacun et les
    *  fichiers que son meta.files déclare (chemins relatifs à module.js) ; ceux de meta.lazy (lourds, gardés à leur

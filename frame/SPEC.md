@@ -374,7 +374,10 @@ used alone:
   list, the designs (standard, cabinet, field), day / night and print are in `frame/design/SPEC.md`, the module's
   rules in `frame/design/INTEGRATION.md`.
 - Day / night follows the system, and Settings may force either.
-- `modules/hello/` is the example module. It shows a shared prefix, a cache file, `watch` and the texts.
+- `modules/hello/` is the example module, for developers only. It shows a shared prefix, a cache file, `watch` and
+  the texts. It is not part of the Pilot application (no menu entry, no cached copy, no help). On a development
+  workstation, `localStorage['sogFrame:dev'] = '1'` adds it to the menu as "Example", and it is kept for offline
+  use like the other modules.
 
 ### 3.3 Synchronisation control
 
@@ -443,6 +446,8 @@ used alone:
 - **Serving**:
   - A file is served from its copy at once and checked again in the background.
   - A copy is keyed by its path without the `?v=` stamp, so it is one copy whatever the stamp.
+  - The page (`frame/`) is kept as `frame/index.html` and checked again at that same address. The launcher stamps
+    `index.html` but not the folder address, so comparing the two would always find a change.
   - Without a copy, the file comes from the network and is kept. Offline with no copy: a 503 marked
     `x-sog-offline`.
 - **Installation**: the frame's files are kept. The page then sends every file of every module of its application
@@ -453,6 +458,9 @@ used alone:
   - when a background check finds a changed file, all copies are fetched again, so the new version arrives whole;
   - then the open pages receive `sog-frame-update` and the frame shows "A new version of the app is ready" with a
     "Reload" button.
+  - "Reload": if a service worker is waiting, the page asks it to take over (`skip-waiting`) and waits for
+    `controllerchange`. Otherwise it asks the active worker to fetch every copy again without the browser cache
+    (`refresh`, answered on a message port). Then it reloads. It waits 8 s at most, then reloads anyway.
   - A launcher clears its site's browser cache at its first page (`Clear-Site-Data`), so after a launcher restart the
     new version is simply served.
 - **No storage for copies** (private browsing, quota, failure): the service worker installs anyway and lets requests
