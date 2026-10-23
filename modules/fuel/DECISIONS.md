@@ -4,6 +4,18 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot B, aircraft through aerodb** (user's decision: every aircraft datum in aerodb, one API): fuel
+  keeps the screen only. The picker is aerodb's `search` (the prototype kept in a stash matched its result order and
+  origins, then was dropped); the Aircraft block is one line with a search button. Sheets are read with
+  `sheets.list()` and written with `sheets.put(sheet, { source })` / `remove` — the review's origin becomes the source
+  (eurocontrol, chatgpt, lnmperf, ofp, import, edit); aerodb stamps `updated_at` and `updatedAt` (the gap noted in
+  lot 4a is closed there) and writes the V2 mirror. `modules/fuel/sheets.js` removed (aerodb's `sheets.js` is the same
+  code plus registration and callsign fields); `modules/fuel/perf_prompt.js` stays (ChatGPT texts, read by aerodb's
+  logic as `window.PERF_PROMPT`). The sheets bench now loads `frame/aerodb/sheets.js`: it found that aerodb's two new
+  fields made `.lnmperf` export refuse sheets without them (reported to the aerodb session; the bench stays red until
+  its fix). Checked at 375 px on 8793: empty search → sheets then fleet; "hand" → F-HAND (type estimate) and the free
+  code; the choice wrote `{ sheetId, type, registration, callsign, name, source: 'fleet' }`; an edited cruise TAS went
+  through the review into `aircraft/sheets/TEST_TP.json` stamped `edit`, and into the V2 mirror.
 - **23 Oct 2026 — aerodrome weather** (user's request through the ergonomics session, lot A; TEMSI left for the
   roadmap): METAR / TAF of aviationweather.gov through `ctx.net` (the service sends no CORS header: a direct call from a
   page fails, the launcher relays it; checked with curl that the JSON gives `fltCat`, clouds with bases and types,

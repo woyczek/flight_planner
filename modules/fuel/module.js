@@ -10,16 +10,17 @@
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
+import {
+  svg
+} from '../../frame/lib/icons.js';
 
 export const meta = {
   id: 'fuel',
   apps: ['pilot'],
   level: 1,
-  reads: ['planner/', 'pilot/', 'cache/fuel/'],
+  reads: ['pilot/', 'cache/fuel/'],
+  // fiches, flotte et référence : par aerodb (aircraft()), qui seul écrit aircraft/sheets/ et le miroir V2
   writes: [{
-    prefix: 'planner/flight_performance_database_merged.fpdb.json',
-    merge: 'keyed:profiles:id'
-  }, {
     prefix: 'pilot/',
     merge: 'record'
   }, {
@@ -27,21 +28,19 @@ export const meta = {
     policy: 'cache'
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
-  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'sheets.js', 'weather.js',
-    '../../frame/lib/external_links.js'
+  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js',
+    '../../frame/lib/external_links.js', '../../frame/lib/icons.js'
   ]
 };
 
-const DB_PATH = 'planner/flight_performance_database_merged.fpdb.json',
-  OFP_PATH = 'cache/fuel/last_ofp.json',
+const OFP_PATH = 'cache/fuel/last_ofp.json',
   WX_PATH = 'cache/fuel/weather.json',
   UI_PATH = 'cache/fuel/ui.json',
   LIBS = [
     ['FlightPerfModel', 'performance_model.js'],
     ['FuelModel', 'model.js'],
     ['FuelLevels', 'levels.js'],
-    ['PERF_PROMPT', 'perf_prompt.js'],
-    ['FuelSheets', 'sheets.js']
+    ['PERF_PROMPT', 'perf_prompt.js']
   ];
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
@@ -49,6 +48,28 @@ const TX = {
   plan: ['Préparer', 'Plan', 'Planen', 'Preparar'],
   sheets: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
   aircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+  acSearch: ['Fiche, immatriculation, indicatif ou type', 'Sheet, registration, callsign or type',
+    'Datenblatt, Kennzeichen, Rufzeichen oder Typ',
+    'Ficha, matrícula, indicativo o tipo'
+  ],
+  acChange: ['Changer d’appareil', 'Change aircraft', 'Luftfahrzeug wechseln', 'Cambiar de aeronave'],
+  acNone: ['Aucun appareil : cherchez-le.', 'No aircraft: search for it.', 'Kein Luftfahrzeug: suchen.', 'Ninguna aeronave: búsquela.'],
+  acNoRegistry: ['Base des aéronefs indisponible (aerodb).', 'Aircraft base unavailable (aerodb).',
+    'Luftfahrzeugbasis nicht verfügbar (aerodb).',
+    'Base de aeronaves no disponible (aerodb).'
+  ],
+  origins: {
+    sheet: ['ma fiche', 'my sheet', 'mein Datenblatt', 'mi ficha'],
+    fleet: ['flotte de la compagnie', 'airline fleet', 'Flotte der Fluggesellschaft', 'flota de la aerolínea'],
+    reference: ['appareil connu (journal)', 'known aircraft (log)', 'bekanntes Luftfahrzeug (Flugbuch)', 'aeronave conocida (diario)'],
+    type: ['type publié', 'published type', 'veröffentlichter Typ', 'tipo publicado'],
+    free: ['code libre', 'free code', 'freier Code', 'código libre']
+  },
+  via: {
+    own: ['sa fiche', 'its sheet', 'eigenes Datenblatt', 'su ficha'],
+    type: ['fiche de son type', 'its type’s sheet', 'Datenblatt des Typs', 'ficha de su tipo'],
+    estimate: ['estimation du type', 'type estimate', 'Typschätzung', 'estimación del tipo']
+  },
   otherType: ['Autre type (code OACI)…', 'Other type (ICAO code)…', 'Anderer Typ (ICAO-Code)…', 'Otro tipo (código OACI)…'],
   typeCode: ['Code OACI du type', 'ICAO type code', 'ICAO-Typcode', 'Código OACI del tipo'],
   noSheet: ['Aucune fiche : importez-en une dans Fiches, ou choisissez un type (estimation).',
@@ -326,6 +347,8 @@ const FIELD_TX = {
   'Nom': ['Nom', 'Name', 'Name', 'Nombre'],
   'Type / ICAO': ['Type / OACI', 'Type / ICAO', 'Typ / ICAO', 'Tipo / OACI'],
   'Description': ['Description', 'Description', 'Beschreibung', 'Descripción'],
+  'Immatriculation': ['Immatriculation', 'Registration', 'Kennzeichen', 'Matrícula'],
+  'Indicatif': ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
   'Carburant en volume': ['Carburant en volume', 'Fuel as volume', 'Kraftstoff als Volumen', 'Combustible en volumen'],
   'Carburant Jet': ['Carburant Jet', 'Jet fuel', 'Jet-Kraftstoff', 'Combustible jet'],
   'Carburant utilisable': ['Carburant utilisable', 'Usable fuel', 'Nutzbarer Kraftstoff', 'Combustible utilizable'],
@@ -413,7 +436,7 @@ async function loadLibs() {
 const tt = (row, v) => S.ctx.t(row, v);
 /** Libellé traduit d'un champ de fiche (chemin) ; groupe compris si group. */
 function fieldLabel(path, group = false) {
-  const f = window.FuelSheets.PROFILE_FIELDS.find(x => x[2] === path);
+  const f = SH().PROFILE_FIELDS.find(x => x[2] === path);
   if (!f) return PATH_TX[path] ? tt(PATH_TX[path]) : path;
   const tr = s => FIELD_TX[s] ? tt(FIELD_TX[s]) : s,
     label = f[1].split(' · ').map(tr).join(' · ');
@@ -598,29 +621,19 @@ const emptyFlight = () => ({
   isaDev: 0,
   ofp: null
 });
-/** Lit les fiches de la base partagée (brutes, telles que dans le fichier). */
+/** Logique des fiches (lecture des formats, fusion, ChatGPT, .lnmperf) : celle d'aerodb (AeroDBSheets). */
+const SH = () => S.A?.lib || window.AeroDBSheets;
+/** Fiches du registre d'aerodb (les plus récentes d'abord) ; aucune sans aerodb. */
 async function readSheets() {
-  const doc = await S.ctx.data.get(DB_PATH);
-  S.sheets = Array.isArray(doc?.profiles) ? doc.profiles : [];
+  S.sheets = S.A?.sheets ? await S.A.sheets.list().catch(() => []) : [];
 }
-/** Écrit la base des fiches (fiches sans clés de travail ; les autres champs du fichier gardés). */
-async function writeSheets() {
-  const doc = (await S.ctx.data.get(DB_PATH)) || {};
-  await S.ctx.data.put(DB_PATH, {
-    ...doc,
-    schema: 'flight-performance-db/v1',
-    profiles: S.sheets.map(plain)
+/** Enregistre une fiche par aerodb (champs changés tamponnés avec leur source, fichier aircraft/sheets/<id>.json et
+ *  miroir V2 écrits par aerodb), puis relit la liste. */
+async function storeSheet(p, source = 'edit') {
+  await S.A.sheets.put(plain(p), {
+    source
   });
-}
-/** Remplace (ou ajoute) une fiche, datée maintenant, puis écrit la base. */
-async function storeSheet(p) {
-  const rec = plain({
-      ...p,
-      updatedAt: new Date().toISOString()
-    }),
-    i = S.sheets.findIndex(x => x.id === rec.id);
-  i >= 0 ? S.sheets.splice(i, 1, rec) : S.sheets.push(rec);
-  await writeSheets();
+  await readSheets();
   S.ctx.notify(tt(TX.saved), 'ok');
 }
 /** Écrit le vol courant (après un temps calme) : relu, champs du module changés, reste gardé (partagé avec maps). */
@@ -835,6 +848,10 @@ const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
 [data-module="fuel"] .fu-hide{display:none}
+[data-module="fuel"] .fu-block{display:block}
+[data-module="fuel"] [data-acsel]{flex-wrap:nowrap}
+[data-module="fuel"] [data-acsel] .f-muted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="fuel"] [data-acsel] button{margin-left:auto;flex:none}
 [data-module="fuel"] .fu-svg{display:block;max-width:100%;height:auto;touch-action:manipulation}
 [data-module="fuel"] .fu-svg text{font-size:11px;fill:var(--sog-muted)}
 [data-module="fuel"] .fu-grid{stroke:var(--sog-chart-grid);stroke-width:1}
@@ -865,16 +882,17 @@ const STYLE = `
 function renderPlan() {
   const f = S.flight,
     r = f.route || {},
-    sel = f.aircraft?.sheetId || (f.aircraft?.type ? '__type' : S.sheets[0]?.id || '__type'),
     opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
     fld = (key, label, val, attrs = '', vals) => `<label class="f-field">${esc(tt(label, vals))}<input data-k="${key}" value="${esc(val ?? '')}" ${attrs}></label>`;
   S.body.innerHTML = `
   <div class="f-cols">
     <div class="f-card" data-block="aircraft"><h2>${esc(tt(TX.aircraft))}</h2>
-      <label class="f-field"><select data-k="sheet" aria-label="${esc(tt(TX.aircraft))}">${S.sheets.map(p => opt(p.id, `${p.name || p.id}${p.icao && p.icao !== p.name ? ` — ${p.icao}` : ''}`, p.id === sel)).join('')}${opt('__type', tt(TX.otherType), sel === '__type')}</select></label>
-      <div data-typebox class="${sel === '__type' ? '' : 'fu-hide'}">${fld('type', TX.typeCode, f.aircraft?.type, 'class="fu-code" maxlength="5" autocapitalize="characters"')}</div>
+      <div class="f-row" data-acsel></div>
+      <div class="fu-hide" data-acpanel>
+        <label class="f-field"><input type="search" data-k="acsearch" placeholder="${esc(tt(TX.acSearch))}" aria-label="${esc(tt(TX.acSearch))}" autocomplete="off"></label>
+        <div class="f-list" data-acres></div>
+      </div>
       <p class="f-muted" data-src></p>
-      ${S.sheets.length ? '' : `<p class="f-muted">${esc(tt(TX.noSheet))}</p>`}
     </div>
     <div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <div class="f-grid fu-g3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
@@ -940,31 +958,8 @@ function onPlanInput(e) {
   if (e.type === 'input' && e.target.tagName === 'SELECT') return;
   const r = f.route ||= emptyFlight().route;
   switch (k) {
-    case 'sheet': {
-      const p = S.sheets.find(x => x.id === v);
-      S.body.querySelector('[data-typebox]').classList.toggle('fu-hide', v !== '__type');
-      f.aircraft = p ? {
-        sheetId: p.id,
-        type: p.icao || p.type || '',
-        registration: p.registration || '',
-        name: p.name || p.id
-      } : {
-        sheetId: '',
-        type: (f.aircraft?.type || '').toUpperCase(),
-        registration: '',
-        name: ''
-      };
-      S.manual = null;
-      break;
-    }
-    case 'type':
-      f.aircraft = {
-        sheetId: '',
-        type: v.trim().toUpperCase(),
-        registration: '',
-        name: v.trim().toUpperCase()
-      };
-      break;
+    case 'acsearch':
+      return acResults(v);
     case 'dep':
     case 'arr':
     case 'altn':
@@ -1108,6 +1103,9 @@ function onPlanInput(e) {
 }
 /** Clic dans Préparer : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
+  const pk = e.target.closest('[data-pick]');
+  if (pk) return pickAircraft(pk.dataset.pick);
+  if (e.target.closest('[data-do="acopen"]')) return acOpen();
   if (e.target.closest('[data-do="wx"]')) return wxFetch(true);
   const b = e.target.closest('[data-do]'),
     pick = e.target.closest('[data-pick]');
@@ -1283,6 +1281,52 @@ function windSourceLine(text) {
   }) : '');
 }
 
+// ---------------------------------------------------------------- choix de l'appareil (registre d'aerodb)
+/** Ouvre (ou referme) la recherche d'appareil sous la ligne de l'appareil retenu. */
+function acOpen() {
+  const panel = S.body.querySelector('[data-acpanel]');
+  panel.classList.toggle('fu-hide');
+  if (!panel.classList.contains('fu-hide')) {
+    panel.querySelector('input').focus();
+    acResults('');
+  }
+}
+/** Résultats de la recherche unique d'aerodb (fiches → flotte → référence → types → code libre), chacun avec son
+ *  origine et, pour un appareil, la fiche qui le servira (la sienne, celle de son type, ou l'estimation). La dernière
+ *  demande seule est dessinée. */
+async function acResults(text) {
+  const box = S.body?.querySelector('[data-acres]');
+  if (!box) return;
+  if (!S.A?.search) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.acNoRegistry))}</p>`;
+  const seq = S.acSeq = (S.acSeq || 0) + 1,
+    hits = await S.A.search(text, 30).catch(() => []);
+  if (seq !== S.acSeq || !S.body) return;
+  S.acHits = new Map(hits.map(h => [h.key, h]));
+  box.innerHTML = hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc(tt(TX.origins[h.source] || TX.origins.free))}</span></button>`).join('');
+}
+/** Appareil retenu : le vol courant prend aircraftOf (fiche, type, immatriculation, indicatif, nom, origine). */
+function pickAircraft(key) {
+  const hit = S.acHits?.get(key);
+  if (!hit) return;
+  S.flight.aircraft = S.A.aircraftOf(hit);
+  S.manual = null;
+  const panel = S.body.querySelector('[data-acpanel]');
+  panel.classList.add('fu-hide');
+  panel.querySelector('input').value = '';
+  saveFlight();
+  refresh();
+}
+/** Ligne de l'appareil retenu : nom, immatriculation, indicatif, type, badge d'origine, bouton de recherche. */
+function acSelected() {
+  const box = S.body?.querySelector('[data-acsel]');
+  if (!box) return;
+  const a = S.flight.aircraft || {},
+    sheet = S.C?.sheet,
+    origin = a.source || (a.sheetId ? 'sheet' : a.type ? 'free' : '');
+  box.innerHTML = `${sheet ? `<b>${esc(a.name || sheet.name || sheet.id)}</b><span class="f-muted">${esc([a.registration, a.callsign, a.type || sheet.icao].filter(Boolean).join(' · '))}</span>${origin ? `<span class="f-badge" data-kind="accent">${esc(tt(TX.origins[origin] || TX.origins.free))}</span>` : ''}` : `<span class="f-muted">${esc(tt(TX.acNone))}</span>`}
+    <button type="button" data-do="acopen" aria-label="${esc(tt(TX.acChange))}" title="${esc(tt(TX.acChange))}">${svg('search')}</button>`;
+}
+
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
 function setLevel(ft) {
   if (!(ft > 0)) return;
@@ -1337,7 +1381,7 @@ async function loadSimbrief() {
   }
   if (res.headers.get('x-sog-offline')) return S.ctx.notify(tt(TX.offline), 'warn');
   const ofp = res.ok ? await res.json().catch(() => null) : null;
-  if (!ofp || !window.FuelSheets.isSimbriefOfp(ofp)) return S.ctx.notify(tt(TX.sbError, {
+  if (!ofp || !SH().isSimbriefOfp(ofp)) return S.ctx.notify(tt(TX.sbError, {
     e: ofp?.fetch?.status || res.status
   }), 'err');
   await S.ctx.data.put(OFP_PATH, ofp, {
@@ -1470,6 +1514,7 @@ function refresh() {
     unit = sheet?.unit || 'kg';
   shareProfile(q);
   openInLinks(C);
+  acSelected();
   // appareil : origine de la croisière
   $('[data-src]').textContent = C.source ? tt(TX.source, {
     s: `${TX.kinds[C.source.kind] ? tt(TX.kinds[C.source.kind]) : C.source.kind || '—'}${C.source.approx ? ` (${tt(TX.approx)})` : ''}`
@@ -1525,7 +1570,7 @@ function refresh() {
 // ---------------------------------------------------------------- écran Fiches
 /** Dessine la liste des fiches et les gestes d'import. */
 function renderSheets() {
-  const F = window.FuelSheets,
+  const F = SH(),
     lang = S.ctx.lang();
   S.edit = null;
   S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.sheetsIntro))}</p>
@@ -1554,7 +1599,7 @@ function renderSheets() {
 async function onSheetsClick(e) {
   const b = e.target.closest('[data-do]');
   if (!b) return;
-  const F = window.FuelSheets,
+  const F = SH(),
     id = b.closest('[data-id]')?.dataset.id,
     p = S.edit;
   switch (b.dataset.do) {
@@ -1596,9 +1641,11 @@ async function onSheetsClick(e) {
       const raw = S.sheets.find(x => x.id === id);
       S.flight.aircraft = {
         sheetId: raw.id,
-        type: raw.icao || '',
+        type: raw.icao || raw.type || '',
         registration: raw.registration || '',
-        name: raw.name || raw.id
+        callsign: raw.callsign || '',
+        name: raw.name || raw.id,
+        source: 'sheet'
       };
       saveFlight();
       return show('plan');
@@ -1638,14 +1685,16 @@ async function onSheetsClick(e) {
       // une valeur déjà renseignée n'est remplacée que cochée par le pilote
       return review(p, out, {
         checked: path => filled.has(path),
-        src: 'EUROCONTROL'
+        src: 'EUROCONTROL',
+        source: 'eurocontrol'
       });
     }
     case 'fill': {
       const other = S.sheets.find(x => x.id === S.body.querySelector('[data-k="fillfrom"]')?.value);
       if (!other) return;
       return review(p, F.fillProfileGaps(structuredClone(p), F.normalize(structuredClone(other))), {
-        src: other.name || other.id
+        src: other.name || other.id,
+        source: 'edit'
       });
     }
     case 'gpt':
@@ -1676,7 +1725,8 @@ async function onSheetsClick(e) {
           incoming = r.profile?.sheets ? r.profile.sheets.find(x => x.id === p.id) || r.profile.sheets[0] : r.profile;
         for (const w of r.warnings || []) S.ctx.notify(w, 'warn');
         return review(p, mergeInto(p, F.normalize(incoming)), {
-          src: 'ChatGPT'
+          src: 'ChatGPT',
+          source: 'chatgpt'
         });
       } catch (err) {
         return S.ctx.notify(String(err.message || err), 'err');
@@ -1694,8 +1744,8 @@ async function onSheetsClick(e) {
       if (!(await S.ctx.ask(tt(TX.removeAsk, {
           n: p.name || p.id
         })))) return;
-      S.sheets = S.sheets.filter(x => x.id !== p.id);
-      await writeSheets();
+      await S.A.sheets.remove(p.id);
+      await readSheets();
       return renderSheets();
     case 'apply':
       return applyReview();
@@ -1715,7 +1765,7 @@ function uniqueId(id) {
 /** Fiche entrante ramenée à la fiche existante p : même identifiant et nom, carburant dans l'unité de p, champs vides de
  *  l'entrante complétés par p (la réponse l'emporte champ par champ, le pilote choisit ensuite). */
 function mergeInto(p, incoming) {
-  const F = window.FuelSheets;
+  const F = SH();
   let src = structuredClone(incoming);
   if (src.unit && p.unit && src.unit !== p.unit && ['kg', 'lb'].includes(src.unit) && ['kg', 'lb'].includes(p.unit)) src = F
     .fuelConvertedCopy(src, src.unit, p.unit, true);
@@ -1731,8 +1781,9 @@ function proposeIncoming(list) {
   const np = list[0];
   if (!np) return renderSheets();
   const old = S.sheets.find(x => x.id === np.id);
-  return review(old || null, old ? mergeInto(window.FuelSheets.normalize(structuredClone(old)), np) : np, {
-    src: np.source?.format || np.source?.file || ''
+  return review(old || null, old ? mergeInto(SH().normalize(structuredClone(old)), np) : np, {
+    src: np.source?.format || np.source?.file || '',
+    source: /lnm/i.test(np.source?.format || '') ? 'lnmperf' : np.calibration ? 'ofp' : 'import'
   });
 }
 /** Lit des fichiers choisis (CSV, JSON, .lnmperf, OFP) puis propose leurs fiches. */
@@ -1752,7 +1803,7 @@ async function importText(txt, name) {
 /** Fiches d'un texte, selon sa forme : XML .lnmperf, JSON (base, fiche, OFP SimBrief calibré), CSV de performances,
  *  sinon réponse ChatGPT ; notification du nombre lu ou de l'échec. */
 function readText(txt, name) {
-  const F = window.FuelSheets,
+  const F = SH(),
     s = String(txt || '').replace(/^﻿/, '').trim();
   let list = [];
   try {
@@ -1801,7 +1852,7 @@ const rpmEditable = () => matchMedia('(min-width: 761px)').matches;
 /** Éditeur d'une fiche : champs par groupe (libellés traduits), table RPM (modifiable sur écran d'ordinateur),
  *  compléments, ChatGPT, exports. draft : fiche en cours de saisie (ligne RPM ajoutée ou retirée), sinon celle de la base. */
 function renderEditor(id, draft = null) {
-  const F = window.FuelSheets,
+  const F = SH(),
     raw = S.sheets.find(x => x.id === id);
   if (!raw) return renderSheets();
   const p = S.edit = draft || F.normalize(structuredClone(raw)),
@@ -1834,7 +1885,7 @@ function renderEditor(id, draft = null) {
 }
 /** Fiche de l'éditeur avec les valeurs des champs (nombres lus, vides → null). */
 function readEditor(p, keepEmpty = false) {
-  const F = window.FuelSheets,
+  const F = SH(),
     out = structuredClone(p);
   // table RPM saisie (écran d'ordinateur) : chaque ligne reprend ses autres champs ; sans régime, retirée à
   // l'enregistrement
@@ -1862,7 +1913,7 @@ function readEditor(p, keepEmpty = false) {
 /** Aperçu des changements before → after : une ligne cochable par champ et par ligne de table RPM ; o.checked(path) :
  *  coché d'office (tout sinon), o.src : origine affichée. Appliquer écrit la sélection (pickChanges). */
 function review(before, after, o = {}) {
-  const F = window.FuelSheets,
+  const F = SH(),
     diff = F.profileDiff(before, after, {}, o.src || ''),
     rows = diff.rows.filter(r => r.changed && !r.path.startsWith('source') && !r.path.startsWith('calibration') && r.path !==
       'description' || (r.changed && r.path === 'description' && before)),
@@ -1880,6 +1931,7 @@ function review(before, after, o = {}) {
     gone = (before?.rpmFuelCurve || []).filter(r => r.rpm !== null && r.rpm !== '' && !(after.rpmFuelCurve || []).some(a => rpmKey(a) ===
       rpmKey(r)));
   S.pending = {
+    source: o.source || 'edit',
     before,
     after,
     diff,
@@ -1895,7 +1947,7 @@ function review(before, after, o = {}) {
 }
 /** Écrit la sélection de l'aperçu (champs décochés gardés tels qu'avant), puis la fiche suivante de la file. */
 async function applyReview() {
-  const F = window.FuelSheets,
+  const F = SH(),
     {
       before,
       after,
@@ -1911,7 +1963,7 @@ async function applyReview() {
   for (const i of S.body.querySelectorAll('[data-gone]'))
     if (!i.checked) out.rpmFuelCurve = [...(out.rpmFuelCurve || []), structuredClone(S.pending.gone[+i.dataset.gone])];
   if (!before) out.id = uniqueId(out.id);
-  await storeSheet(out);
+  await storeSheet(out, S.pending.source);
   S.pending = null;
   if (S.queue?.length) return proposeIncoming(S.queue);
   return S.edit && S.sheets.some(x => x.id === S.edit.id) ? renderEditor(S.edit.id) : renderSheets();
@@ -1947,8 +1999,8 @@ export async function mount(el, ctx) {
     view: 'plan'
   };
   S.A = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
-  window.FuelSheets.configure({
-    aircraft: S.A,
+  // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
+  SH()?.configure({
     profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
     active: () => S.edit || S.C?.sheet || null,
     lang: () => ctx.lang(),
@@ -1985,7 +2037,9 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
-  S.stops.push(ctx.data.watch(DB_PATH, async () => {
+  S.stops.push(ctx.aerodb?.on?.('change', async e => {
+    if (!e?.aircraft || !S?.body) return;
+    S.A = await ctx.aerodb.aircraft().catch(() => S.A);
     await readSheets();
     if (S.view === 'sheets' && !S.edit && !S.pending) renderSheets();
     else if (S.view === 'plan') refresh();

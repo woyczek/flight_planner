@@ -5,9 +5,12 @@ délestage, réserve, carburant bloc, temps de vol et début de descente.
 
 ## Comment s'en servir
 
-**L'appareil.** Choisissez sa fiche de performances dans la première carte. Sans fiche, prenez « Autre type » et
-tapez son code OACI (C30J, EC45…) : le devis part alors d'une estimation du type, signalée « approché ». La ligne
-« Croisière » dit d'où vient la consommation retenue.
+**L'appareil.** Une seule ligne en haut : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. La
+loupe ouvre la recherche : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
+cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
+les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
+sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et
+l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation.
 
 **La route.** Tapez le départ et l'arrivée (codes OACI) : la distance et la route vraie se calculent seules. Pour une
 route détaillée, dépliez « Route détaillée » et collez-la (plan de vol OACI, ou une ligne « point latitude longitude »

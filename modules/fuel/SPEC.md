@@ -65,7 +65,12 @@ A record `pilot/<trigram>/current_flight.json` (merge rule `record`: the newest 
 both modules work on; the schema is in [INTEGRATION.md](INTEGRATION.md) § 3. Read it at mount; write it with every
 field kept (read, change own fields, write the whole record with a new `updated_at`).
 
-## 5. Performance sheets (lot 4)
+## 5. Performance sheets (lot 4; owned by aerodb since 23 Oct 2026)
+
+Read and written through `aircraft().sheets` (`list`, `get`, `put(sheet, { source })`, `remove`): aerodb stamps every
+changed field with its source (`edit`, `eurocontrol`, `chatgpt`, `lnmperf`, `ofp`, `import`), writes
+`aircraft/sheets/<id>.json` and the V2 mirror; fuel no longer writes `planner/`. The sheets logic is aerodb's
+(`aircraft().lib`, formerly `modules/fuel/sheets.js`). The text below describes the V2 file aerodb adopts.
 
 Data of the module, in `planner/flight_performance_database_merged.fpdb.json` (`{ schema: 'flight-performance-db/v1',
 profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest wins). aerodb only completes a sheet
@@ -149,7 +154,11 @@ Styles are scoped to `[data-module="fuel"]` and built on the frame's tokens and 
 inside the module, switched by two buttons at the top, the last one kept on the device (`cache/fuel/ui.json`).
 
 - **Plan**, one column on a phone, the first three blocks side by side on a wide screen:
-  1. **Aircraft**: the sheets of the shared database, or "other type" (an ICAO code: aerodb's estimate); the origin
+  1. **Aircraft** (since 23 Oct 2026, aerodb's registry): one line — the chosen aircraft (name, registration,
+     callsign, type) with its origin, and a search button that unfolds one field and its results from
+     `aircraft().search(text)` (sheets → fleet → reference → types → free code, each with its origin; an aircraft shows
+     the sheet that will serve it: its own, its type's, or the type estimate). Choosing writes
+     `aircraft().aircraftOf(hit)` into the current flight. Former text kept below for the quote's origins: the sheets of the shared database, or "other type" (an ICAO code: aerodb's estimate); the origin
      of the cruise fuel flow (this flight's entry, the sheet's RPM table or cruise flow, Poll-Schumann, SimBrief, the
      type estimate) and whether it is approximate.
   2. **Route**: departure, arrival, alternate; distance and true track derived from the points (aerodb `coords` of

@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: aircraft and sheets through aerodb** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
+  `help/fr.md`) — the Aircraft block becomes one line with a search over every source (my sheets, the airline's fleet
+  and log, published types, free code), each with its origin and the sheet that will serve it; the chosen
+  registration and callsign go into the current flight; the Sheets screen reads and writes through aerodb's registry
+  (each change stamped with its source); fuel no longer writes `planner/`, and its copy of the sheets logic is gone.
 - **aerodb: `.lnmperf` export no longer blocked** by the registration and callsign fields added in lot 5a (Little
   Navmap has no such fields).
 - **Frame, lot 10: dual view on a tablet or a wide screen** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) —

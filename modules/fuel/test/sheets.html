@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>fuel — sheets bench</title>
-<!-- Banc des fiches V3 (modules/fuel/sheets.js) : mêmes entrées que celles passées le 22/10/2026 aux fonctions de la V2
+<!-- Banc des fiches V3 (frame/aerodb/sheets.js, logique reprise de fuel par aerodb le 23/10/2026) : mêmes entrées que celles passées le 22/10/2026 aux fonctions de la V2
      (apps/planner/performance_sheets.html) — écriture et relecture .lnmperf, CSV enrichi, réponse ChatGPT désordonnée
      (bloc de code, commentaire, virgule finale, unités dans les valeurs), différences entre deux fiches, champs
      comblés par une autre fiche, date d'une fiche, valeurs à plat, champs manquants ; résultats attendus dans
@@ -39,12 +39,12 @@
 <script src="../performance_model.js?v=0"></script>
 <script src="../model.js?v=0"></script>
 <script src="../perf_prompt.js?v=0"></script>
-<script src="../sheets.js?v=0"></script>
+<script src="../../../frame/aerodb/sheets.js?v=0"></script>
 <script>
   (async () => {
     'use strict';
     const V2 = await fetch('sheets_v2.json').then(r => r.json()),
-      F = window.FuelSheets.configure({
+      F = window.AeroDBSheets.configure({
         lang: () => 'en' // langue de la page V2 au relevé
       }),
       lines = [];
