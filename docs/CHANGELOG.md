@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: the user's chapter in French** (`modules/fuel/help/fr.md`) — "How to use" (aircraft, route and SimBrief,
+  level and wind, level decision, result, climb instructions, towards maps and the report), then performance sheets,
+  settings and units, special cases; to be translated and assembled by the help session.
 - **help: reading of the V2 help** (`frame/help/READING.md`, `frame/help/DECISIONS.md`) — what the Pilot application
   keeps (tutorials first, one manual per application with one chapter per module, a help screen with its own bundle),
   one source per module (`help/<lang>.md`, whose "How to use" section is also the folded in-page help drawn by the frame
