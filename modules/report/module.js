@@ -456,8 +456,37 @@ const STYLE = `
   [data-module="report"] .rp-step[hidden]{display:block}
 }`;
 
-/** Dessine tout l'écran (étapes, champs, barre d'enregistrement). */
+/** Rend sans bouger le défilement : la position de chaque conteneur qui défile (la page comprise) est gardée et la
+ *  hauteur du bloc tenue pendant le rendu, puis les positions sont remises après le rendu et à l'image suivante (un
+ *  contenu recréé qui rétrécit un instant ne ramène plus la page en haut). */
+function keepScroll(box, draw) {
+  const sc = [];
+  for (let e = box?.parentElement; e; e = e.parentElement)
+    if (e.scrollHeight > e.clientHeight) sc.push([e, e.scrollTop]);
+  const doc = document.scrollingElement;
+  if (doc && !sc.some(([e]) => e === doc)) sc.push([doc, doc.scrollTop]);
+  if (box) box.style.minHeight = `${box.offsetHeight}px`;
+  try {
+    return draw();
+  } finally {
+    const put = () => {
+      for (const [e, t] of sc)
+        if (e.scrollTop !== t) e.scrollTop = t;
+    };
+    put();
+    requestAnimationFrame(() => {
+      put();
+      if (box) box.style.minHeight = '';
+      requestAnimationFrame(put);
+    });
+  }
+}
+/** Dessine tout l'écran sans bouger le défilement (sauf au changement de pas, qui remonte exprès en haut). */
 function render() {
+  return keepScroll(S.body, renderBody);
+}
+/** Dessine tout l'écran (étapes, champs, barre d'enregistrement). */
+function renderBody() {
   const m = S.m,
     F = FAMILIES[m.family] || HEMS,
     step = S.step,
@@ -851,7 +880,7 @@ async function onClick(e) {
   if (!b) return;
   if (b.dataset.step) {
     S.step = +b.dataset.step;
-    render();
+    renderBody(); // changement de pas : la page remonte en haut, exprès
     return scrollTo(0, 0);
   }
   if (b.dataset.open) return openReport(b.dataset.open);

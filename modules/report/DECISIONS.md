@@ -2,6 +2,9 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — renders keep the scroll** (user's bug seen in fuel): `render()` draws through `keepScroll`, so a
+  family or series change or a source taken up no longer moves the page; a step change still goes to the top on
+  purpose. Checked on 8804 at 375 px: family changed at 600 px, the page stayed at 600.
 - **23 Oct 2026 — the report ends a started flight** (user's rectification of fuel's lot H): there is no "End the
   flight" in fuel any more, so the shutdown is no longer taken from it (0a5a994d4 undone). Saving the report that used
   the started flight ("Use" on the card) sets `started` and `progress` to null in the current flight, by report,
