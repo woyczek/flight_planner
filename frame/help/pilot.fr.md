@@ -49,6 +49,15 @@ plan.
 sans vent du tout, le carburant bloc est donné en fourchette. « Montée » choisit la façon de monter : économique,
 meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
 
+**La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche, pour le départ, l'arrivée et un terrain
+intermédiaire facultatif, ce qui compte pour le vol : la catégorie (VFR, MVFR, IFR, LIFR, en couleur), le vent et ses
+composantes de face et de travers sur la piste principale du terrain (le sens le plus proche du vent), le plafond, la
+visibilité, la température et le QNH, et un avertissement quand des CB ou des TCU sont annoncés ; le message brut est
+replié. Avec une date de vol, c'est le TAF qui répond s'il couvre cette heure (et ses passages temporaires), sinon le
+METAR. Cochez « Météo réelle » pour que le vent du devis devienne la moyenne des vents des terrains le long de la route —
+une approximation à partir du vent au sol, dite sous les champs. Hors réseau, les dernières valeurs lues restent
+affichées avec leur heure.
+
 **La décision du niveau.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
 qu'on ne peut pas tenir sur ce trajet. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons.
@@ -96,8 +105,10 @@ altitudes et les distances à l'écran ; les niveaux restent des niveaux de vol,
   que possible.
 - **Sans consommation connue** : le devis le dit plutôt que d'afficher un zéro trompeur.
 - **Route inconnue** : les points non reconnus sont listés ; la distance et la route vraie se tapent à la main.
-- **Hors ligne** : tout se calcule sur l'appareil, à partir des fiches déjà reçues. Seul l'appel à SimBrief attend le
-  réseau ; le dernier OFP reste gardé sur l'appareil.
+- **Hors ligne** : tout se calcule sur l'appareil, à partir des fiches déjà reçues. Seuls SimBrief et la météo attendent
+  le réseau ; le dernier OFP et la dernière météo restent gardés sur l'appareil.
+- **Météo sans lanceur** : le service météo n'est joignable qu'à travers le lanceur d'un poste ; ailleurs, la carte
+  montre la dernière météo gardée, ou le dit.
 
 <!-- chapter: maps -->
 # Carte
@@ -406,5 +417,7 @@ seulement signalé.
 - **Réglages de la V2** : si ce navigateur a déjà servi à la V2, la carte « Réglages de la V2 trouvés » propose une fois
   de reprendre votre identité et votre accès.
 - **À propos** : liens vers cette aide et la feuille de route (ce qui est livré, en cours, prévu), puis le
-  diagnostic, replié ; « Copier » le met dans le presse-papiers pour signaler un problème. Le
+  diagnostic, replié : transport, dernière synchro, erreurs, arbre du dépôt, bases de référence et base aéronautique,
+  ligne par ligne ; « Copier » met le tout dans le presse-papiers, à coller dans votre message pour signaler un
+  problème. Le
   jeton n'y figure jamais.

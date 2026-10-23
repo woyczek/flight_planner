@@ -143,3 +143,8 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   the state sentence says "This workstation reads and writes the launcher's data/ folder; tick an exchange usage to
   share it through git"; without a launcher, "Alone on this device" as before. The Settings chapter says the same in
   four languages.
+- **24 Oct 2026 — Readable diagnostics** (frame aa9412ffe, `ctx.diagnostic()`): the folded diagnostics of the About card
+  show one row per value — transport, online, last sync, pending, last error, repository tree (head, read at, files,
+  checked), references (known, SIA, aircraft, cached), last read error, aero base (source, published, open, missing
+  zones, error) — labels in four languages, values raw; "Copy" puts the full JSON (the frame's diagnostic plus usages,
+  launcher, repository without token, storage, browser) on the clipboard. Checked with the launcher; no token in it.

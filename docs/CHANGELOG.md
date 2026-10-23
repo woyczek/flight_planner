@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: readable diagnostics** (`frame/settings/settings.js`, `frame/settings/help/*.md`; `DECISIONS.md`, manuals
+  rebuilt) — Settings › About › Diagnostics shows the frame's diagnostic line by line (transport, sync, errors,
+  repository tree, reference bases, aeronautical base), labels in four languages, and "Copy" puts the full JSON on the
+  clipboard to paste in a message from the phone.
 - **Frame: the aeronautical base appears on the phone in GitHub mode** (`frame/store/frame_data.js`, `frame/app.js`) —
   zones and aircraft pushed to the data repository after the app was opened are signalled at the next
   synchronisation, with no reload, and a read made before the first synchronisation looks at the repository's tree of

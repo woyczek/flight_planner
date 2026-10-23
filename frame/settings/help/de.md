@@ -73,7 +73,8 @@ Repository, das nicht antwortet, wird nur gemeldet.
 - **V2-Einstellungen**: Wurde dieser Browser schon für V2 benutzt, bietet die Karte „V2-Einstellungen gefunden“ einmal
   an, Ihre Identität und Ihren Zugang zu übernehmen.
 - **Über**: Links zu dieser Hilfe und zum Fahrplan (was geliefert, in Arbeit, geplant ist), dann die Diagnose,
-  eingeklappt; „Kopieren“ legt sie in die Zwischenablage, um ein Problem zu melden. Das
+  eingeklappt: Transport, letzte Synchronisation, Fehler, Repository-Baum, Referenzbasen und Luftfahrtbasis, Zeile
+  für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: d3ca81fe9923 -->
+<!-- fr: dbfed441ce70 -->

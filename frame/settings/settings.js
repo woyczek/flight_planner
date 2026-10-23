@@ -422,6 +422,43 @@
       'Fahrplan: was geliefert, in Arbeit, geplant ist', 'Hoja de ruta: lo entregado, en curso, previsto'
     ],
     diag: ['Diagnostic', 'Diagnostics', 'Diagnose', 'Diagnóstico'],
+    diagHint: ['« Copier » met tout dans le presse-papiers : collez-le dans votre message pour signaler un problème.',
+      '“Copy” puts everything on the clipboard: paste it in your message to report a problem.',
+      '„Kopieren“ legt alles in die Zwischenablage: Fügen Sie es in Ihre Nachricht ein, um ein Problem zu melden.',
+      '«Copiar» lo pone todo en el portapapeles: péguelo en su mensaje para señalar un problema.'
+    ],
+    // lignes du diagnostic (valeurs brutes)
+    dg: {
+      transport: ['Transport', 'Transport', 'Transport', 'Transporte'],
+      online: ['En ligne', 'Online', 'Online', 'En línea'],
+      lastSync: ['Dernière synchro réussie', 'Last successful sync', 'Letzte erfolgreiche Synchronisation',
+        'Última sincronización correcta'
+      ],
+      pending: ['Écritures en attente', 'Pending writes', 'Ausstehende Änderungen', 'Escrituras pendientes'],
+      lastError: ['Dernière erreur', 'Last error', 'Letzter Fehler', 'Último error'],
+      treeHead: ['Arbre du dépôt : tête', 'Repository tree: head', 'Repository-Baum: Kopf', 'Árbol del repositorio: cabeza'],
+      treeAt: ['Arbre du dépôt : lu le', 'Repository tree: read at', 'Repository-Baum: gelesen am', 'Árbol del repositorio: leído el'],
+      treeFiles: ['Arbre du dépôt : fichiers', 'Repository tree: files', 'Repository-Baum: Dateien', 'Árbol del repositorio: ficheros'],
+      treeChecked: ['Arbre du dépôt : vérifié', 'Repository tree: checked', 'Repository-Baum: geprüft',
+        'Árbol del repositorio: comprobado'
+      ],
+      refKnown: ['Références connues', 'Known references', 'Bekannte Referenzen', 'Referencias conocidas'],
+      refSia: ['Références SIA', 'SIA references', 'SIA-Referenzen', 'Referencias SIA'],
+      refAircraft: ['Références appareils', 'Aircraft references', 'Flugzeugreferenzen', 'Referencias de aeronaves'],
+      refCached: ['Références en cache', 'Cached references', 'Referenzen im Cache', 'Referencias en caché'],
+      lastReadError: ['Dernière erreur de lecture', 'Last read error', 'Letzter Lesefehler', 'Último error de lectura'],
+      aeroSource: ['Base aéro : source', 'Aero base: source', 'Luftfahrtbasis: Quelle', 'Base aeronáutica: fuente'],
+      aeroZones: ['Base aéro : zones publiées', 'Aero base: published zones', 'Luftfahrtbasis: veröffentlichte Zonen',
+        'Base aeronáutica: zonas publicadas'
+      ],
+      aeroLoaded: ['Base aéro : zones ouvertes', 'Aero base: open zones', 'Luftfahrtbasis: geöffnete Zonen',
+        'Base aeronáutica: zonas abiertas'
+      ],
+      aeroMissing: ['Base aéro : zones manquantes', 'Aero base: missing zones', 'Luftfahrtbasis: fehlende Zonen',
+        'Base aeronáutica: zonas ausentes'
+      ],
+      aeroError: ['Base aéro : erreur', 'Aero base: error', 'Luftfahrtbasis: Fehler', 'Base aeronáutica: error']
+    },
     copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
     copied: ['Diagnostic copié.', 'Diagnostics copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.']
   };
@@ -551,9 +588,10 @@
       <p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`);
     const help = await c.helpPanel?.().catch(() => null);
+    let diagJson = '{}'; // diagnostic complet (bouton « Copier »)
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
       <div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2><p><a href="#help?m=settings">${esc(t(T.aboutHelp))}</a></p><p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
-      <details><summary>${esc(t(T.diag))}</summary><pre data-diag></pre><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
+      <details><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
     if (help) view.querySelector('h1 + p')?.after(help);
 
     const card = k => view.querySelector(`[data-card="${k}"]`);
@@ -599,18 +637,19 @@
       const est = await navigator.storage?.estimate?.().catch(() => null);
       dl.innerHTML = `<dt>${esc(t(T.zones))}</dt><dd>${esc(zones)}</dd><dt>${esc(t(T.storage))}</dt><dd>${esc(est ? t(T.storageState, { u: bytes(est.usage, t), q: bytes(est.quota, t) }) : t(T.unknown))}</dd>`;
       paintZones();
-      view.querySelector('[data-diag]').textContent = JSON.stringify({
+      const dg = c.diagnostic ? await c.diagnostic().catch(e => ({
+        error: e?.message || String(e)
+      })) : {};
+      diagJson = JSON.stringify({
         at: now(),
         app: 'pilot',
-        transport: (await FD.status()).transport,
-        status: await FD.status(),
+        ...dg,
         usages: c.usages(),
         launcher: c.launcher(),
         github: gh ? {
           repo: gh.repo,
           branch: gh.branch
         } : null,
-        aerodb: s,
         storage: est ? {
           usage: est.usage,
           quota: est.quota
@@ -618,6 +657,7 @@
         online: navigator.onLine,
         agent: navigator.userAgent
       }, null, 1);
+      paintDiag(view.querySelector('[data-diag]'), dg, t);
     })();
     /** Zones publiées et base des appareils, avec leur état sur cet appareil (aerodb.offline) ; garder / libérer. */
     async function paintZones() {
@@ -841,7 +881,7 @@
         }), r?.ok ? 'ok' : 'err');
       }
       if (act === 'copy') {
-        await navigator.clipboard?.writeText(view.querySelector('[data-diag]').textContent).catch(() => null);
+        await navigator.clipboard?.writeText(diagJson).catch(() => null);
         c.notify(t(T.copied), 'ok');
       }
     };
@@ -932,6 +972,37 @@
   }
   /** Refus du lanceur parce qu'une fenêtre est déjà ouverte (champ confirm, sinon le texte du message) ? */
   const confirmOpen = r => !!r && !r.ok && (r.confirm === 'open' || /déjà ouverte|already open/i.test(r.message || ''));
+  /** Lignes lisibles du diagnostic du cadre (libellés traduits, valeurs brutes) ; absent : « — ». */
+  function paintDiag(dl, d, t) {
+    if (!dl) return;
+    const raw = v => v == null || v === '' ? '—' : Array.isArray(v) ? (v.length ? v.join(', ') : '—') : typeof v === 'object' ? JSON
+      .stringify(v) : String(v);
+    const tr = d.tree || {},
+      rf = d.references || {},
+      ae = d.aerodb || {};
+    const rows = [
+      ['transport', d.transport],
+      ['online', d.online],
+      ['lastSync', d.lastSync],
+      ['pending', d.pending],
+      ['lastError', d.lastError || d.error],
+      ['treeHead', tr.head],
+      ['treeAt', tr.at],
+      ['treeFiles', tr.files],
+      ['treeChecked', tr.checked],
+      ['refKnown', rf.known],
+      ['refSia', rf.sia],
+      ['refAircraft', rf.aircraft],
+      ['refCached', rf.cached],
+      ['lastReadError', d.lastReadError],
+      ['aeroSource', ae.source],
+      ['aeroZones', ae.zones],
+      ['aeroLoaded', ae.loaded],
+      ['aeroMissing', ae.missing],
+      ['aeroError', ae.error]
+    ];
+    dl.innerHTML = rows.map(([k, v]) => `<dt>${esc(t(T.dg[k]))}</dt><dd>${esc(raw(v))}</dd>`).join('');
+  }
   /** Porte de la carte Accès quand data/ n'est pas un dépôt git (lanceur) : absent → récupérer les données (clone) ;
    *  plain → reprendre data/ dans un dépôt (adopt) ; identifiant et secret facultatifs, jamais gardés par la page. */
   function gitDoor(state, t, fld, remote) {

@@ -404,7 +404,8 @@ only reported.
 - **V2 settings**: if this browser was already used for V2, the “V2 settings found” card offers once to take over your
   identity and your access.
 - **About**: links to this help and to the roadmap (what is delivered, in progress, planned), then the
-  diagnostics, folded; “Copy” puts it on the clipboard to report a problem. The token is
+  diagnostics, folded: transport, last sync, errors, repository tree, reference bases and aeronautical base, line by
+  line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: d3ca81fe9923 -->
+<!-- fr: dbfed441ce70 -->

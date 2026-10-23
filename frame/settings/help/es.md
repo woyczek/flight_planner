@@ -73,7 +73,9 @@ se señala.
 - **Ajustes de la V2**: si este navegador ya se usó para la V2, la tarjeta «Ajustes de la V2 encontrados» propone una
   vez retomar su identidad y su acceso.
 - **Acerca de**: enlaces a esta ayuda y a la hoja de ruta (lo entregado, en curso, previsto), luego el
-  diagnóstico, plegado; «Copiar» lo pone en el portapapeles para señalar un problema. El token
+  diagnóstico, plegado: transporte, última sincronización, errores, árbol del repositorio, bases de referencia y base
+  aeronáutica, línea por línea; «Copiar» lo pone todo en el portapapeles, para pegarlo en su mensaje y señalar un
+  problema. El token
   nunca figura en él.
 
-<!-- fr: d3ca81fe9923 -->
+<!-- fr: dbfed441ce70 -->

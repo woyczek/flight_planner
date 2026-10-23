@@ -73,5 +73,7 @@ seulement signalé.
 - **Réglages de la V2** : si ce navigateur a déjà servi à la V2, la carte « Réglages de la V2 trouvés » propose une fois
   de reprendre votre identité et votre accès.
 - **À propos** : liens vers cette aide et la feuille de route (ce qui est livré, en cours, prévu), puis le
-  diagnostic, replié ; « Copier » le met dans le presse-papiers pour signaler un problème. Le
+  diagnostic, replié : transport, dernière synchro, erreurs, arbre du dépôt, bases de référence et base aéronautique,
+  ligne par ligne ; « Copier » met le tout dans le presse-papiers, à coller dans votre message pour signaler un
+  problème. Le
   jeton n'y figure jamais.
