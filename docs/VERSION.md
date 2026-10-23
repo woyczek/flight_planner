@@ -5,6 +5,51 @@ Une section par version publiée, la plus récente en tête, écrite à chaque r
 effectuer** (ce que chacun doit faire après la mise à jour), **notes** (limites connues, points d'attention, à venir).
 Entre deux versions, le pied de page affiche le commit en cours (`v4.6.0+abc1234`).
 
+## 5.4.0 — 23 October 2026
+
+Last release of the V2 line. The next line (6.0, "Pilot" application) is being built on the `v3` branch; the V2
+pages keep living next to it on the same site and launcher.
+
+### Summary
+
+- **The suite without the launcher.** The data can live in a GitHub repository (Settings › Installation, GitHub
+  mode); the pages are published on GitHub Pages as an installable app, with an iOS shell ready in `mobile/`. A
+  mobile mode adapts My missions, availability, the report, Settings and the help to a phone.
+- **Published databases.** Each rebuild of the aeronautical database on a workstation also publishes it to the data
+  repository, zone by zone; Settings › Maintenance › Aircraft types publishes the aircraft database the same way.
+  Phones and the website read these copies.
+- **Map studio.** Every mission map saved carries a full copy of its display profile, the extent actually drawn and
+  the AIRAC cycle, so the V3 app redraws it; the studio also edits the airline's map profiles of the V3 app (one per
+  mode, with the zoom thresholds).
+- **Launcher.** `data/` is updated at start without failing on local changes (the workstation's files are committed
+  first, nothing is pushed); a `data/` folder that already holds data can join the data repository ("Take data/ into
+  this repository"); the confirmation window says why it did not go through.
+- **Settings.** The usage level is set from the header of every Settings page; cards hidden by the level say so.
+- **Flight orders.** One availability row per member under "Available together"; an assigned mission flight is drawn
+  in the page ink.
+- **Fuel and Flight maps.** "Open in" (SimBrief, SkyVector with the route, Navigraph, ChartFox); the SimBrief flight
+  plan brings its waypoints and alternate; the route field accepts coordinates typed in any common way.
+- **My missions** is the pilot's entry page (Today merged into it); the fleet map page; performance sheets and the
+  help readable on a phone.
+
+### Actions to take
+
+1. **Restart the launcher**, then reload each page (Ctrl+F5): new routes (adopt, aircraft publication, LAN access
+   off by default) and the update of `data/` at start.
+2. **Workstation with the launcher**: Settings › Maintenance › Aeronautical data › rebuild once to publish the
+   database zone by zone, and Aircraft types › "Publish the aircraft database" (Expert level), then "Synchronise".
+3. **Phone or website**: Settings › Installation › GitHub mode (data repository and device token); the published
+   databases are then read from the repository.
+4. **Map studio**: open and save each mission whose maps the V3 app should redraw (the drawing fields are written at
+   save time; older missions use the built-in profile of their type).
+
+### Notes
+
+- V2 receives fixes only from now on; new work goes to the V3 Pilot application (`v3` branch, published under
+  `/v3/` on the same site).
+- The LAN access of the launcher (tablet next to the simulator) is a V3 feature; it is off by default.
+- Known limits: the iOS shell is not published on TestFlight (no Apple keys); VATSIM gives connection times only.
+
 ## 5.3.0 — 19 October 2026
 
 ### Summary

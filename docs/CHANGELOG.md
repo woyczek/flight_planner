@@ -10,6 +10,19 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+## [5.4.0] — 2026-10-23
+
+Last release of the V2 line, before the V3 Pilot application. The suite now runs without the launcher: the data
+live in a GitHub repository, the pages are published on GitHub Pages as an installable app, an iOS shell is
+ready, a mobile mode adapts the main pages to a phone, and the aeronautical database and the aircraft database
+are published to the data repository so that phones read them. The map studio writes, on every mission map, what
+it takes to redraw it elsewhere, and edits the airline's map profiles for the V3 app. The launcher updates `data/`
+at start without failing on local changes, a `data/` folder that already holds data can join the data repository,
+and the usage level is set from the header of every Settings page. Flight orders show one availability row per
+member, Fuel and Flight maps open the flight in SimBrief, SkyVector, Navigraph and ChartFox, and My missions is
+the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode on a workstation, SimBrief
+waypoints, and the rest listed below.
+
 ### Added
 
 - **Settings: the usage level in the header** (`shared/repository_nav.js`, `shared/repository_nav.css`) — every Settings
