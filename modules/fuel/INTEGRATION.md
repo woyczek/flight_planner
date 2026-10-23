@@ -120,7 +120,13 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 - `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx }` — the quote's block
   fuel and trip, rounded, rewritten with every quote that changes them (null without a quote with fuel); Report fills
   "fuel at start" with `block`.
-- `started` (fuel's, lot G): `{ at (ISO), by: 'fuel', diverted? }` when the pilot pressed "Start the flight" on the
+- `progress` (fuel's, lot H): `{ at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }], fuelRemainingKg,
+  remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived'), actual? }` — the planned progress of the
+  started flight, rewritten every minute while it flies and at every quote change; null once the start is cancelled.
+  `actual` (the real position: phone GPS, IVAO / VATSIM network) belongs to the frame and maps; fuel keeps it as
+  written.
+- `started` (fuel's, lot G): `{ at (ISO), by: 'fuel', diverted?, endedAt? }` — `endedAt` when the pilot pressed "End
+  the flight" (Report takes it as the shutdown time); when the pilot pressed "Start the flight" on the
   Departure step; Report takes the flight up from there. Absent until then; `null` once the departure aerodrome
   changes (another flight; null rather than absent because writes merge with the stored record); `diverted: true`
   when the arrival changes after the start.

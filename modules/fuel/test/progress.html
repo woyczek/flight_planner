@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fuel — progress bench</title>
+<!-- Banc de la progression prévue (modules/fuel/progress.js) : horaire roulage / montée / croisière par tronçon /
+     descente cohérent avec le devis, heures de passage croissantes, tronçon à vent de face plus long, position et
+     carburant à un instant, arrivée. Devis fictif. Page d'outil, hors des applications. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">fuel — progress bench</h1>
+<pre id="out">running…</pre>
+<script type="module">
+  import * as PG from '../progress.js';
+  const lines = [];
+  let pass = 0,
+    fail = 0;
+  /** Compare une valeur (JSON) à l'attendue. */
+  const check = (label, got, want) => {
+    const g = JSON.stringify(got),
+      w = JSON.stringify(want),
+      ok = g === w;
+    ok ? pass++ : fail++;
+    lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${g}${ok ? '' : ` (expected ${w})`}`);
+  };
+  // trois points en ligne vers l'est, 60 NM par tronçon environ (1° de longitude à l'équateur)
+  const pts = [{
+      id: 'AAAA',
+      lat: 0,
+      lon: 0
+    }, {
+      id: 'MID',
+      lat: 0,
+      lon: 1
+    }, {
+      id: 'BBBB',
+      lat: 0,
+      lon: 2
+    }],
+    q = {
+      hasFuel: true,
+      taxi: 10,
+      climb: {
+        nm: 20,
+        min: 10,
+        fuel: 30
+      },
+      cruise: {
+        nm: 70,
+        min: 35,
+        fuel: 70,
+        tas: 120
+      },
+      descent: {
+        nm: 30,
+        min: 12,
+        fuel: 12
+      },
+      block: 200
+    },
+    // composante : vent d'ouest (270) = arrière vers l'est
+    wc = (track, dir, speed) => speed * Math.cos(((dir + 180) - track) * Math.PI / 180),
+    P = PG.plan({
+      points: pts,
+      distanceNm: 120,
+      taxiMin: 5,
+      q,
+      legWinds: [{
+        dirDeg: 90,
+        kt: 40
+      }, {
+        dirDeg: 270,
+        kt: 40
+      }],
+      windComponent: wc
+    }),
+    r1 = x => Math.round(x * 10) / 10;
+  check('total = taxi + climb + cruise + descent', r1(P.total), 5 + 10 + 35 + 12);
+  check('cruise time kept to the quote', r1(P.segs.filter(s => s.phase === 'cruise').reduce((s, x) => s + x.t1 - x.t0, 0)), 35);
+  const legs = P.segs.filter(s => s.phase === 'cruise'),
+    rate = s => (s.t1 - s.t0) / (s.d1 - s.d0);
+  check('headwind leg slower than tailwind leg', rate(legs[0]) > rate(legs[1]), true);
+  check('fuel used at the end = taxi + trip', r1(P.segs.at(-1).f1), 10 + 30 + 70 + 12);
+  const start = Date.UTC(2026, 9, 23, 12, 0),
+    E = PG.etas(P, start).map(e => (e.at - start) / 60000);
+  check('departure ETA after taxi', r1(E[0]), 5);
+  check('ETAs increasing', E.every((x, i) => !i || x > E[i - 1]), true);
+  check('arrival ETA = total', r1(E.at(-1)), r1(P.total));
+  check('at 2 min: taxiing at departure', [PG.at(P, 2).phase, r1(PG.at(P, 2).nmFromDep)], ['taxi', 0]);
+  check('at the top of climb', [PG.at(P, 15).phase, r1(PG.at(P, 15).nmFromDep)], ['climb', 20]);
+  const mid = PG.at(P, 40);
+  check('in cruise: between the points', [mid.phase, mid.nmFromDep > 20 && mid.nmFromDep < 90], ['cruise', true]);
+  check('remaining + done = distance', r1(mid.nmFromDep + mid.remainingNm), 120);
+  check('after the total: arrived', [PG.at(P, 90).phase, PG.at(P, 90).remainingNm], ['arrived', 0]);
+  const pos = PG.position(pts, P.cum, 90);
+  check('position at 90 NM: second leg, on the line', [pos.legIndex, r1(pos.lat)], [1, 0]);
+  check('no fuel, no plan', PG.plan({
+    points: pts,
+    q: {
+      hasFuel: false
+    }
+  }), null);
+  document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
+  document.title = `fuel — progress bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+</script>
+</body></html>

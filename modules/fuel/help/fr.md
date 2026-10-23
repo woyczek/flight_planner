@@ -105,7 +105,14 @@ qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà
 paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » note l'heure de départ dans le vol ; sur un
 téléphone il ouvre la Carte, sur un grand écran il reste ici avec la Carte à droite. Le compte rendu reprendra ce vol.
 Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
-après le départ est un déroutement : l'heure est gardée et le déroutement noté. Le vol préparé ici — appareil, route, niveau, profil de montée et de
+après le départ est un déroutement : l'heure est gardée et le déroutement noté.
+
+Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 13:14 · depuis 1 h 10 », et le pas Départ
+propose « Terminer le vol » (l'heure d'arrêt est notée ; le compte rendu reprend les heures de mise en route et
+d'arrêt) et « Annuler le départ » (après confirmation, le vol n'est plus démarré). La carte « Progression prévue » montre
+où le vol devrait en être, en théorie : l'heure prévue de passage à chaque point (roulage, montée, croisière tronçon par
+tronçon avec son vent, descente), le prochain point surligné, la distance parcourue et restante et le carburant restant
+prévu. Elle suit l'heure, minute par minute, et part à la Carte avec le vol. Le vol préparé ici — appareil, route, niveau, profil de montée et de
 descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances

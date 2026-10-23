@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: ending a flight and its planned progress** (`modules/fuel/progress.js`, `module.js`; `test/progress.html`,
+  docs) — "End the flight" and "Cancel the start"; the result shows how long the flight has been going; the Departure
+  step shows where the flight should be — time over each point, distance and fuel remaining — minute by minute, and
+  the map gets it.
 - **Map, lot 7b** (`modules/maps/`, `contours.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — each element of the
   map has its own zoom range per mode (VRP very close, CTR close, TMA in a medium view, FIR from afar), tuned by the
   administrator on `#maps?tune=1` with the map redrawn live and stored in `airline/map_profiles.json` (studio

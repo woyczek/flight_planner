@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot H, ending a flight and its planned progress** (two questions of the user: how is a started
+  flight stopped, where should it be in theory): "End the flight" and "Cancel the start" on the Departure step; the
+  progress is computed from the start time and the quote — the cruise is split by leg with that leg's forecast wind
+  (as the map's arrows show it) but scaled to the quote's cruise time, so the arrival ETA and the result's flight time
+  agree; taxi comes first because the start time is the engine start. `progress` is written only when something else
+  than its `at` changes (once a minute in flight), to keep writes low. Checked on 8793: start → "End the flight" and
+  "Cancel the start", "Flight started at 14:24 · for 0 min"; a start 70 min earlier → "123 NM from departure, between
+  LUGEN and NEPIX · 251 NM to go · planned fuel remaining 380 kg", NEPIX highlighted, ETAs 13:24 to 15:54; end →
+  "Flight ended at 14:24 · block 0 min"; cancel, confirmed in the frame's dialog → `started` and `progress` null.
+  Bench 14/14.
 - **23 Oct 2026 — the level changed by the decision** (seen by the help session): "Use FL220" kept the wind of
   FL280 — `setLevel` did not re-apply the forecast aloft. It now does, like the level field and a flight changed on the
   map: wind, ISA at the level and their source are redone, then the quote, the sticky result and the Departure step.

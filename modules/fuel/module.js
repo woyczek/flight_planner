@@ -12,6 +12,7 @@ import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
 import * as MT from '../../frame/lib/metar.js';
 import * as WD from './winds.js';
+import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
 import {
   svg
@@ -31,7 +32,8 @@ export const meta = {
     policy: 'cache'
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
-  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', '../../frame/lib/metar.js',
+  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
+    '../../frame/lib/metar.js',
     '../../frame/lib/route_text.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js'
   ]
@@ -375,6 +377,38 @@ const TX = {
   },
   wxReading: ['Lecture…', 'Reading…', 'Wird gelesen…', 'Leyendo…'],
   diverted: [' — déroutement', ' — diverted', ' — Ausweichlandung', ' — desviado'],
+  endFlight: ['Terminer le vol', 'End the flight', 'Flug beenden', 'Terminar el vuelo'],
+  cancelStart: ['Annuler le départ', 'Cancel the start', 'Start abbrechen', 'Anular la salida'],
+  cancelAsk: ['Annuler le départ de {t} ? Le vol ne sera plus proposé au compte rendu comme démarré.',
+    'Cancel the {t} start? The flight will no longer be offered to the report as started.',
+    'Start um {t} abbrechen? Der Flug wird dem Bericht nicht mehr als gestartet angeboten.',
+    '¿Anular la salida de las {t}? El vuelo ya no se propondrá al informe como iniciado.'
+  ],
+  since: ['Vol démarré à {t} · depuis {d}', 'Flight started at {t} · for {d}', 'Flug gestartet um {t} · seit {d}',
+    'Vuelo iniciado a las {t} · desde hace {d}'
+  ],
+  ended: ['Vol terminé à {t} · bloc {d}', 'Flight ended at {t} · block {d}', 'Flug beendet um {t} · Block {d}',
+    'Vuelo terminado a las {t} · bloque {d}'
+  ],
+  progTitle: ['Progression prévue', 'Planned progress', 'Geplanter Fortschritt', 'Progreso previsto'],
+  progNow: ['Prévu maintenant : {d} du départ, entre {a} et {b} · reste {r} · carburant restant prévu {f}.',
+    'Planned now: {d} from departure, between {a} and {b} · {r} to go · planned fuel remaining {f}.',
+    'Jetzt geplant: {d} nach dem Abflug, zwischen {a} und {b} · noch {r} · geplanter Restkraftstoff {f}.',
+    'Previsto ahora: {d} desde la salida, entre {a} y {b} · faltan {r} · combustible restante previsto {f}.'
+  ],
+  progTaxi: ['Prévu maintenant : roulage au départ · carburant restant prévu {f}.',
+    'Planned now: taxiing at departure · planned fuel remaining {f}.',
+    'Jetzt geplant: Rollen am Abflug · geplanter Restkraftstoff {f}.',
+    'Previsto ahora: rodaje en la salida · combustible restante previsto {f}.'
+  ],
+  progArrived: ['Arrivée prévue atteinte · carburant restant prévu {f}.', 'Planned arrival reached · planned fuel remaining {f}.',
+    'Geplante Ankunft erreicht · geplanter Restkraftstoff {f}.', 'Llegada prevista alcanzada · combustible restante previsto {f}.'
+  ],
+  progHint: ['Calculée depuis l’heure de départ et le devis (vent compris) ; la position réelle viendra de la carte.',
+    'Worked out from the start time and the quote (wind included); the real position will come from the map.',
+    'Aus Startzeit und Kalkulation berechnet (Wind inbegriffen); die echte Position kommt von der Karte.',
+    'Calculado desde la hora de salida y el cálculo (viento incluido); la posición real vendrá del mapa.'
+  ],
   da: ['Altitude-densité', 'Density altitude', 'Dichtehöhe', 'Altitud de densidad'],
   daAxisX: ['écart ISA (°C)', 'ISA deviation (°C)', 'ISA-Abweichung (°C)', 'desviación ISA (°C)'],
   daAxisY: ['altitude-densité (ft)', 'density altitude (ft)', 'Dichtehöhe (ft)', 'altitud de densidad (ft)'],
@@ -1085,6 +1119,9 @@ const STYLE = `
 [data-module="fuel"] .fu-ext{stroke-dasharray:1 4;opacity:.7}
 [data-module="fuel"] .fu-da{fill:none;stroke:var(--sog-chart-6);stroke-width:1;opacity:.7}
 [data-module="fuel"] .fu-step[hidden]{display:none}
+[data-module="fuel"] .fu-flightstate{font-weight:700;color:var(--sog-accent)}
+[data-module="fuel"] .fu-eta{grid-template-columns:1fr auto}
+[data-module="fuel"] .fu-next-pt{border-color:var(--sog-accent);box-shadow:inset 3px 0 0 var(--sog-accent)}
 [data-module="fuel"] .fu-steps>button{flex:1 1 0;min-width:44px;padding-inline:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-module="fuel"] .fu-steps>button span{display:none} /* étroit : le numéro seul, le nom pour le pas en cours */
 [data-module="fuel"] .fu-steps>button[aria-current]{flex:3 1 0}
@@ -1215,8 +1252,9 @@ function renderPlanBody() {
     <div data-entrybox></div>
   </details>`)}
   ${sec(4, `<div class="f-card" data-block="summary"><h2>${esc(tt(TX.stepNames[4]))}</h2><div data-sum></div>
-      <div class="f-row"><button type="button" data-do="start">${esc(tt(TX.start))}</button><span class="f-muted" data-started></span></div>
-      <p class="f-muted">${esc(tt(TX.startHint))}</p></div>`, true)}
+      <div class="f-row" data-startrow></div>
+      <p class="f-muted">${esc(tt(TX.startHint))}</p></div>
+    <div class="f-card fu-hide" data-progcard><h2>${esc(tt(TX.progTitle))}</h2><div data-prog></div><p class="f-muted">${esc(tt(TX.progHint))}</p></div>`, true)}
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
     d.open = !!S.ui.open?.[d.dataset.fold];
@@ -1441,6 +1479,8 @@ function onPlanClick(e) {
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   if (e.target.closest('[data-do="start"]')) return startFlight();
+  if (e.target.closest('[data-do="endflight"]')) return endFlight();
+  if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
   if (iu) return useIsa(iu.dataset.v != null ? +iu.dataset.v : undefined);
   if (e.target.closest('[data-do="rmanual"]')) {
@@ -2425,6 +2465,164 @@ function startFlight() {
     if (!/with=maps/.test(location.hash)) location.hash = '#fuel?with=maps';
   } else setTimeout(() => location.hash = '#maps?from=fuel', 350);
 }
+/** Durée « 1 h 12 » (« 12 min » sous l'heure). */
+const dur = min => {
+  const m = Math.max(0, Math.round(min));
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+};
+/** Heure locale « hh:mm » d'un instant ISO. */
+const hhmmOf = iso => new Date(iso).toLocaleTimeString(S.ctx.lang(), {
+  hour: '2-digit',
+  minute: '2-digit'
+});
+/** État du vol démarré, en une ligne : « Vol démarré à 13:22 · depuis 1 h 12 », « Vol terminé à 14:34 · bloc 1 h 12 »,
+ *  déroutement signalé ; vide sans départ. */
+function flightState() {
+  const st = S.flight.started;
+  if (!st?.at) return '';
+  const div = st.diverted ? tt(TX.diverted) : '';
+  if (st.endedAt) return tt(TX.ended, {
+    t: hhmmOf(st.endedAt),
+    d: dur((Date.parse(st.endedAt) - Date.parse(st.at)) / 60000)
+  }) + div;
+  return tt(TX.since, {
+    t: hhmmOf(st.at),
+    d: dur((Date.now() - Date.parse(st.at)) / 60000)
+  }) + div;
+}
+/** « Terminer le vol » : started.endedAt (heure d'arrêt) ; le vol reste proposé au compte rendu avec ses heures. */
+function endFlight() {
+  if (!S.flight.started?.at) return;
+  S.flight.started = {
+    ...S.flight.started,
+    endedAt: new Date().toISOString()
+  };
+  updateProgress(true);
+  saveFlight();
+  refresh();
+}
+/** « Annuler le départ » (après confirmation) : started = null (null et non effacé : l'écriture fusionne avec le vol
+ *  gardé), progression effacée. */
+async function cancelStart() {
+  const st = S.flight.started;
+  if (!st?.at) return;
+  const s = S;
+  if (!(await S.ctx.ask(tt(TX.cancelAsk, {
+      t: hhmmOf(st.at)
+    }))) || gone(s)) return;
+  S.flight.started = null;
+  S.flight.progress = null;
+  saveFlight();
+  refresh();
+}
+/** Progression prévue du vol démarré (progress.js) à l'instant (ou à l'heure d'arrêt) : { P, st, pos, etas } ; null sans
+ *  départ ou sans devis. */
+function progressCalc(C = S.C) {
+  const f = S.flight,
+    st = f.started,
+    pts = f.route?.points || [];
+  if (!st?.at || !C?.q?.hasFuel || pts.length < 2) return null;
+  // vent de chaque tronçon : moyenne vectorielle des vents prévus à ses deux bouts (prévision en altitude), sinon celui du devis
+  const vec = w => [w.kt * Math.sin(w.dirDeg * Math.PI / 180), w.kt * Math.cos(w.dirDeg * Math.PI / 180)],
+    legWinds = pts.slice(1).map((p, i) => {
+      const a = pts[i].wind,
+        b = p.wind;
+      if (!a || !b) return null;
+      const x = (vec(a)[0] + vec(b)[0]) / 2,
+        y = (vec(a)[1] + vec(b)[1]) / 2;
+      return {
+        dirDeg: (Math.atan2(x, y) * 180 / Math.PI + 360) % 360,
+        kt: Math.hypot(x, y)
+      };
+    }),
+    P = PG.plan({
+      points: pts,
+      distanceNm: +f.route.distanceNm || 0,
+      taxiMin: +S.settings.taxiMin || 0,
+      q: C.q,
+      legWinds,
+      wind: f.wind,
+      windComponent: window.FuelModel.windComponent
+    });
+  if (!P) return null;
+  const start = Date.parse(st.at),
+    now = st.endedAt ? Date.parse(st.endedAt) : Date.now(),
+    state = PG.at(P, (now - start) / 60000);
+  return {
+    P,
+    st: state,
+    pos: PG.position(pts, P.cum, state.nmFromDep),
+    etas: PG.etas(P, start)
+  };
+}
+/** current_flight.progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta: [{ id, at }], fuelRemainingKg,
+ *  remainingNm, phase } ; null sans vol démarré. Écrit quand il change (chaque minute pendant le vol). force : écrit
+ *  même si seul « at » change. */
+function updateProgress(force = false) {
+  const c = progressCalc(),
+    f = S.flight,
+    pts = f.route?.points || [];
+  let next = null;
+  if (c) {
+    const unit = S.C?.sheet?.unit || 'kg',
+      rem = Math.max(0, (S.C.q.block || 0) - c.st.fuelUsed);
+    next = {
+      at: new Date().toISOString(),
+      plannedPos: {
+        lat: +c.pos.lat.toFixed(4),
+        lon: +c.pos.lon.toFixed(4),
+        legIndex: c.pos.legIndex,
+        nmFromDep: Math.round(c.st.nmFromDep * 10) / 10
+      },
+      eta: c.etas.map(e => ({
+        id: pts[e.i]?.id || '',
+        at: new Date(e.at).toISOString()
+      })),
+      fuelRemainingKg: Math.round(window.FuelModel.convertFuel(rem, unit, 'kg')),
+      remainingNm: Math.round(c.st.remainingNm),
+      phase: c.st.phase,
+      ...(f.progress?.actual ? {
+        actual: f.progress.actual // position réelle : écrite par le cadre ou la carte, gardée
+      } : {})
+    };
+  }
+  const same = (a, b) => JSON.stringify({
+    ...a,
+    at: 0
+  }) === JSON.stringify({
+    ...b,
+    at: 0
+  });
+  if (!next && !f.progress) return;
+  if (!force && next && f.progress && same(next, f.progress)) return;
+  f.progress = next;
+  saveFlight();
+}
+/** Carte « Progression prévue » du pas Départ : la ligne de l'instant et la liste des points avec leur heure prévue, le
+ *  tronçon en cours surligné. */
+function renderProgress(C) {
+  const card = S.body?.querySelector('[data-progcard]'),
+    box = S.body?.querySelector('[data-prog]');
+  if (!card || !box) return;
+  const c = progressCalc(C);
+  card.classList.toggle('fu-hide', !c);
+  if (!c) return;
+  const pts = S.flight.route.points,
+    unit = C.sheet?.unit || 'kg',
+    rem = fuelTxt(Math.max(0, C.q.block - c.st.fuelUsed), unit),
+    line = c.st.phase === 'arrived' ? tt(TX.progArrived, {
+      f: rem
+    }) : c.st.phase === 'taxi' ? tt(TX.progTaxi, {
+      f: rem
+    }) : tt(TX.progNow, {
+      d: distTxt(c.st.nmFromDep),
+      a: pts[c.pos.legIndex]?.id || '',
+      b: pts[c.pos.legIndex + 1]?.id || '',
+      r: distTxt(c.st.remainingNm),
+      f: rem
+    });
+  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b></span><span class="f-num">${esc(hhmmOf(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+}
 /** Récapitulatif du pas Départ : appareil, route normalisée, niveau (paliers), vent et sa source, carburant bloc. */
 function renderSummary(C) {
   const box = S.body?.querySelector('[data-sum]');
@@ -2444,13 +2642,13 @@ function renderSummary(C) {
     <dt>${esc(tt(TX.sumLevel))}</dt><dd>${esc(lvl)}</dd>
     <dt>${esc(tt(TX.sumWind))}</dt><dd>${esc(wind)}${windShort() ? ` <span class="f-muted">(${esc(windShort())})</span>` : ''}</dd>
     <dt>${esc(tt(TX.sumBlock))}</dt><dd><b>${esc(block)}</b></dd></dl>`;
-  const st = S.body.querySelector('[data-started]');
-  if (st) st.textContent = f.started?.at ? tt(TX.started, {
-    t: new Date(f.started.at).toLocaleTimeString(S.ctx.lang(), {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }) + (f.started.diverted ? tt(TX.diverted) : '') : '';
+  const row = S.body.querySelector('[data-startrow]');
+  if (row) {
+    const on = f.started?.at && !f.started.endedAt;
+    row.innerHTML = on ? `<button type="button" class="primary" data-do="endflight">${esc(tt(TX.endFlight))}</button><button type="button" data-do="cancelstart">${esc(tt(TX.cancelStart))}</button>` : `<button type="button" data-do="start">${esc(tt(TX.start))}</button>`;
+    row.insertAdjacentHTML('beforeend', `<span class="f-muted">${esc(flightState())}</span>`);
+  }
+  renderProgress(C);
 }
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
  *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
@@ -2676,6 +2874,7 @@ function refresh() {
   openInLinks(C);
   acSelected();
   renderSummary(C);
+  updateProgress();
   const done = stepsDone(C);
   S.body.querySelectorAll('.fu-steps button').forEach((b, i) => b.toggleAttribute('data-done', !!done[i]));
   isaHint();
@@ -2703,7 +2902,7 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : windShort() ? ` · ${esc(windShort())}` : ''}</div>
+    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted">${esc(tt(TX.block))} · ${q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : windShort() ? ` · ${esc(windShort())}` : ''}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
@@ -3256,6 +3455,12 @@ export async function mount(el, ctx) {
   });
   ro.observe(el);
   S.stops.push(() => ro.disconnect());
+  // vol démarré et pas terminé : la ligne d'état et la progression prévue suivent l'heure, chaque minute
+  const tick = setInterval(() => {
+    if (!S?.body || !S.flight.started?.at || S.flight.started.endedAt || S.view !== 'plan') return;
+    refresh();
+  }, 60000);
+  S.stops.push(() => clearInterval(tick));
   show(S.focusRoute || S.ui.view !== 'sheets' ? 'plan' : 'sheets');
   if (S.focusRoute) { // « Modifier la route » de la Carte : le champ de la route prêt à la frappe, curseur au bout
     const ta = S.body.querySelector('[data-k="rtext"]');
