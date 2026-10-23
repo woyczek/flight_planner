@@ -426,9 +426,11 @@
         }]));
       },
       /** Enregistre une fiche : champs changés tamponnés (source : edit, chatgpt, eurocontrol, simbrief, ofp, import,
-       *  lnmperf…), aircraft/sheets/<id>.json écrit, miroir dans le fpdb.json de la V2 (updated_at et updatedAt). */
+       *  lnmperf…), aircraft/sheets/<id>.json écrit, miroir dans le fpdb.json de la V2 (updated_at et updatedAt) ;
+       *  kept : { chemin: [{ value, at, source }] } ajoutés aux valeurs gardées. */
       async put(next, {
-        source = 'edit'
+        source = 'edit',
+        kept = null
       } = {}) {
         if (!next?.id) throw new Error('aerodb: sheet without id');
         if (typeof reader.put !== 'function') throw new Error('aerodb: the reader cannot write');
@@ -437,6 +439,8 @@
           old = st.sheets.get(id)?.sheet || null,
           at = new Date(now()).toISOString(),
           s = stamp(old, next, source, at);
+        // valeurs écartées venues d'ailleurs (ex. un fichier .lnmperf plus ancien) : gardées comme les autres
+        for (const [k, v] of Object.entries(kept || {})) s._kept[k] = [...[].concat(v), ...(s._kept[k] || [])].slice(0, KEPT);
         await reader.put(fileOf(id), s);
         const doc = clone(st.fpdb) || {
             schema: 'flight-performance-db/v1',

@@ -327,6 +327,81 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return None
         return self._json({'error': 'refusé'}, 403)
 
+    def do_PUT(self):
+        """PUT /__setup/lnmperf-folder et /__setup/lnmperf (fiches Little Navmap) : mêmes contrôles qu'un POST ; toute
+        autre route refuse la méthode."""
+        return self.do_POST()
+
+    def _lnmperf(self, body):
+        """Dossier des fiches Little Navmap de ce poste (V3 aerodb, frame/aerodb/lnmperf.js) :
+        · GET / PUT /__setup/lnmperf-folder : { folder, exists, suggestions } ; PUT { folder } (dossier existant, hors du
+          dossier de données ; vide : réglage retiré), gardé dans tools/.lnmperf.json (local, jamais versionné) ;
+        · GET /__setup/lnmperf : { folder, files: [{ name, size, mtime, sha }] } (*.lnmperf du dossier, sans sous-dossier) ;
+        · GET /__setup/lnmperf?name=… : { name, text, size, mtime, sha } ;
+        · PUT /__setup/lnmperf?name=… (texte) : fichier écrit d'un coup (temporaire puis remplacement) → { name, size, mtime,
+          sha } ;
+        · POST /__setup/lnmperf?name=…&action=retire : fichier rangé dans _removed/ du dossier (jamais effacé).
+        Dossier non réglé ou absent : 409. Noms : un nom de fichier .lnmperf seul, sans chemin."""
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        u = urllib.parse.urlparse(self.path)
+        q = urllib.parse.parse_qs(u.query)
+        if u.path == '/__setup/lnmperf-folder':
+            if self.command == 'GET':
+                f = _read_json(LNMPERF_STATE).get('folder') or ''
+                return self._json({'folder': f, 'exists': bool(f) and os.path.isdir(f), 'suggestions': lnmperf_suggestions()})
+            if self.command != 'PUT':
+                return self._json({'error': 'méthode refusée'}, 405)
+            try:
+                folder = str((json.loads(body or b'{}') or {}).get('folder') or '').strip()
+            except (ValueError, AttributeError):
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            if folder:
+                folder = os.path.abspath(os.path.expanduser(folder))
+                if not os.path.isdir(folder):
+                    return self._json({'ok': False, 'error': 'absent', 'message': 'Dossier absent.'}, 400)
+                data = os.path.normcase(os.path.realpath(DATA))
+                real = os.path.normcase(os.path.realpath(folder))
+                if real == data or real.startswith(data + os.sep):
+                    return self._json({'ok': False, 'error': 'data', 'message': 'Dossier de données refusé.'}, 400)
+            _write_json(LNMPERF_STATE, {'folder': folder})
+            return self._json({'ok': True, 'folder': folder})
+        folder = lnmperf_folder()
+        if not folder:
+            return self._json({'error': 'dossier non réglé', 'folder': ''}, 409)
+        name = (q.get('name') or [''])[0]
+        if self.command == 'GET' and not name:
+            files = [lnmperf_entry(os.path.join(folder, n)) for n in sorted(os.listdir(folder))
+                     if LNMPERF_NAME.match(n) and os.path.isfile(os.path.join(folder, n))]
+            return self._json({'folder': folder, 'files': files})
+        if not LNMPERF_NAME.match(name or ''):
+            return self._json({'error': 'nom refusé'}, 400)
+        path = os.path.join(folder, name)
+        if self.command == 'GET':
+            if not os.path.isfile(path):
+                return self._json({'error': 'fichier absent'}, 404)
+            e = lnmperf_entry(path)
+            with open(path, 'rb') as f:
+                e['text'] = f.read().decode('utf-8', 'replace')
+            return self._json(e)
+        if self.command == 'PUT':
+            tmp = path + '.tmp'
+            with open(tmp, 'wb') as f:
+                f.write(body)
+            os.replace(tmp, path)
+            return self._json(lnmperf_entry(path))
+        if (q.get('action') or [''])[0] == 'retire':
+            if not os.path.isfile(path):
+                return self._json({'ok': True, 'moved': ''})
+            out = os.path.join(folder, '_removed')
+            os.makedirs(out, exist_ok=True)
+            dest = os.path.join(out, name)
+            if os.path.exists(dest):
+                dest = os.path.join(out, f'{name[:-8]}_{time.strftime("%Y%m%d-%H%M%S")}.lnmperf')
+            shutil.move(path, dest)
+            return self._json({'ok': True, 'moved': '_removed/' + os.path.basename(dest)})
+        return self._json({'error': 'inconnu'}, 404)
+
     def _allowed(self):
         """Vrai si une requête /__setup/ vient de la page servie ici : hôte local, même origine, en-tête X-SOG-Setup."""
         return (self._local_host() and self._same_origin()
@@ -467,6 +542,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             with INDEX_LOCK:
                 index_users()
         self._purge = Setup.purge and re.search(r'(\.html|/)$', self.path.split('?')[0]) is not None
+        if self.path.split('?')[0] in LNMPERF_ROUTES:
+            return self._lnmperf(b'')
         if self.path.split('?')[0] == '/__setup/status':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
@@ -648,6 +725,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if size < 0 or size > self.MAX_UPLOAD:
             return self._json({'error': 'fichier trop gros'}, 413)
         body = self.rfile.read(size) if size else b''
+        if path in LNMPERF_ROUTES:
+            return self._lnmperf(body)
+        if self.command != 'POST':
+            return self._json({'error': 'méthode refusée'}, 405)
         if path == '/__setup/perf':
             # mesures de l'audit de performance (tools/perf_audit.html) : docs/technique/perf/runs/<nom>.json
             name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
@@ -1116,6 +1197,39 @@ def _secret_file(scope, tri='', service=''):
     if scope == 'app':
         return os.path.join(SECRETS, f'{service}.json')
     return os.path.join(SECRETS, 'users', f'{tri}.json')
+
+
+LNMPERF_STATE = os.path.join(ROOT, 'tools', '.lnmperf.json')  # dossier des fiches .lnmperf de ce poste (jamais versionné)
+LNMPERF_ROUTES = ('/__setup/lnmperf-folder', '/__setup/lnmperf')
+LNMPERF_NAME = re.compile(r'^(?!\.)[^\\/:*?"<>|\x00-\x1f]{1,120}\.lnmperf$', re.I)  # un nom de fichier seul
+
+
+def lnmperf_folder():
+    """Dossier des fiches Little Navmap réglé sur ce poste, '' s'il ne l'est pas ou n'existe plus."""
+    f = _read_json(LNMPERF_STATE).get('folder') or ''
+    return f if f and os.path.isdir(f) else ''
+
+
+def lnmperf_suggestions():
+    """Dossiers habituels de Little Navmap présents sur ce poste (Documents, OneDrive compris)."""
+    home = os.path.expanduser('~')
+    docs = [os.path.join(home, 'Documents'), os.path.join(home, 'OneDrive', 'Documents')]
+    out = []
+    for d in docs:
+        for sub in ('Little Navmap Files', 'Little Navmap'):
+            p = os.path.join(d, sub)
+            if os.path.isdir(p) and p not in out:
+                out.append(p)
+    return out
+
+
+def lnmperf_entry(path):
+    """{ name, size, mtime (ISO, UTC), sha (SHA-1 du contenu) } d'un fichier .lnmperf."""
+    with open(path, 'rb') as f:
+        b = f.read()
+    mt = datetime.datetime.fromtimestamp(os.path.getmtime(path), datetime.timezone.utc)
+    return {'name': os.path.basename(path), 'size': len(b), 'mtime': mt.isoformat().replace('+00:00', 'Z'),
+            'sha': hashlib.sha1(b).hexdigest()}
 
 
 def _read_json(path):

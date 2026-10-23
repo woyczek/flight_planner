@@ -197,14 +197,64 @@ All the aircraft data in one place, read from every source and written in one pl
   `aircraft/`, `airline/`, `planner/` or `references/` makes it read again at the next call, and sends
   `{ aircraft: true }`; changes that are the registry's own first reads do not.
 
+## 5 ter. Little Navmap files kept in step (`lnmperf.js`)
+
+On a workstation served by the launcher, the performance sheets and the `.lnmperf` files of one folder stay the same
+both ways.
+
+- **Folder**: set in Settings › "Little Navmap sheets" (a launcher page only), kept by the launcher in
+  `tools/.lnmperf.json` (local, never versioned). The data folder is refused.
+- **Launcher routes** (`tools/launch.py`, `X-SOG-Setup` header, page served there only):
+  - `GET / PUT /__setup/lnmperf-folder`: `{ folder, exists, suggestions }` (the usual Little Navmap folders found);
+    `PUT { folder }` (empty: off);
+  - `GET /__setup/lnmperf`: `{ folder, files: [{ name, size, mtime, sha }] }` (SHA-1 of the content);
+  - `GET /__setup/lnmperf?name=…`: `{ name, text, size, mtime, sha }`; `PUT /__setup/lnmperf?name=…` (text): written
+    at once (temporary file, then replace);
+  - `POST /__setup/lnmperf?name=…&action=retire`: the file moved to `_removed/` in the folder, never deleted;
+  - no folder set: 409; names are a bare `.lnmperf` file name.
+- **Manifest** `cache/aerodb/lnmperf.json` (frame cache, this device): `{ schema, folder, files: { name: { sheetId, sha,
+  view } } }`. `view` is the sheet's `.lnmperf` fields at the last pass, in the sheet's unit, rounded to the
+  thousandth as the file stores them. A new folder starts a new manifest.
+- **Comparison** on the fields a `.lnmperf` carries (`LNM_PATHS`: name, type, description, fuel kind, contingency,
+  extra, reserve, taxi and usable fuel, runway, and fuel flow, TAS and vertical speed of alternate, climb, cruise and
+  descent). A sheet's view is read back from the text it would write, so both sides go through the same rounding.
+- **The five cases**, for each file and its sheet:
+  1. sheet changed → file rewritten;
+  2. file changed → the changed fields go into the sheet (origin `lnmperf`, previous values kept);
+  3. both changed → field by field: a field changed on one side only takes that side; changed on both sides with
+     different values, the newest wins (the field's date in `_fields` against the file's date), the losing value goes
+     to `_kept` (a file value with origin `lnmperf` and the file's date), and one conflict per sheet is counted at the
+     frame's synchronisation button (`FrameData.noteConflict`, the file's version as the losing one, which `restore`
+     can take back); the file is rewritten when the sheet kept a value of its own;
+  4. new file → a new sheet (origin `lnmperf`, id from the file name, made unique); a file named after a sheet that
+     has no file yet is merged with it (no common base: every difference is a conflict);
+  5. file deleted → rewritten from the sheet.
+  A sheet removed: its file goes to `_removed/` if it did not change since the last pass, else it becomes a sheet
+  again. A sheet without the fields Little Navmap requires is not written, and is listed. An unreadable file is
+  listed, never removed.
+- **Units**: a `.lnmperf` holds pounds (or gallons, `FuelAsVolume`). A sheet in kg is converted to pounds when written
+  (`toLnmperf`) and back when read; fuel in gallons is never compared with a mass.
+- **When**: at start (1.5 s after aerodb, then 4 s), after each synchronisation of the frame (`onStatus`, a new
+  `lastSync`), and every two minutes while the page is visible; one pass at a time. Without a launcher or a folder,
+  nothing is scheduled. `AeroDB.create({ lnmperf: false })` turns the automatic passes off (tests).
+- **API**: `aerodb.lnmperf()` → `{ start, sync, status, on, folder, setFolder, download, card, stop }`:
+  - `status()`: `{ state: off | idle | running | error, folder, at, linked, written, imported, merged, retired,
+    conflicts, lastConflicts, incomplete: [ids], errors: [{ name, message }] }`;
+  - `download(id)`: the sheet as a `.lnmperf` file (a phone, no launcher);
+  - `card(el, { t, notify })`: the Settings card (folder, found folders, Save, Synchronise now, Stop, state), the one
+    screen aerodb gives (invariant 4).
+
 ## 6. Invariants
 
 1. aerodb never writes the SIA base nor AircraftDB, never builds, never executes a file read from the data
-   repository. It writes only the performance sheets (`aircraft/sheets/`) and their V2 mirror. Keeping and releasing
-   only fill and empty the device's cache.
+   repository. It writes only the performance sheets (`aircraft/sheets/`) and their V2 mirror, and, through the
+   launcher, the `.lnmperf` files of the folder set by the user. Keeping and releasing only fill and empty the
+   device's cache.
 2. A module never names a zone or a file; aerodb chooses them.
 3. A question over the whole world returns exactly the published base (same counts as the workstation's base).
-4. No interface text: labels, translations and formatting belong to the modules and the frame.
+4. No interface text: labels, translations and formatting belong to the modules and the frame. One exception: the
+   Settings card of the `.lnmperf` folder (§ 5 ter), in four languages, so that the Settings screen does not carry the
+   synchronisation's states.
 5. ICAO and EUROCONTROL data are never part of the public website.
 
 ## 7. Out of scope (later lots)

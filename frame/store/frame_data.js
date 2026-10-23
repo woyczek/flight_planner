@@ -934,6 +934,27 @@
     emitStatus();
   }
 
+  /** Conflit trouvé hors d'une synchronisation (fichier d'un poste, ex. fiche .lnmperf d'aerodb) : version perdante
+   *  gardée comme un conflit de synchronisation, comptée au bouton du cadre et reprenable (restore). c : { path, kept,
+   *  lost (texte), side }. Retour : l'identifiant du conflit. */
+  async function noteConflict(c) {
+    if (!c?.path || c.lost == null) return null;
+    const id = await idb('conflicts', 'add', {
+      path: String(c.path),
+      kept: c.kept == null || typeof c.kept === 'string' ? c.kept ?? null : JSON.stringify(c.kept, null, 1),
+      lost: typeof c.lost === 'string' ? c.lost : JSON.stringify(c.lost, null, 1),
+      side: c.side || 'external',
+      at: new Date().toISOString()
+    });
+    emitStatus();
+    window.dispatchEvent(new CustomEvent('frame-data-conflict', {
+      detail: {
+        count: 1
+      }
+    }));
+    return id;
+  }
+
   /** Reprend une version écartée : elle redevient l'écriture en attente de son fichier (envoyée à la prochaine
    *  synchronisation), le conflit est marqué vu. Retour : le chemin, ou '' si le conflit n'existe plus. */
   async function restore(id) {
@@ -1162,6 +1183,7 @@
     onStatus,
     conflicts,
     conflictSeen,
+    noteConflict,
     restore,
     diagnostic,
     cached,

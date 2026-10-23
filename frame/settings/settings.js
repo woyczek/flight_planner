@@ -644,6 +644,8 @@
     if (L) cards.push(`<div class="f-card" data-card="keys"><h2>${esc(t(T.keys))}</h2><p class="f-muted">${esc(t(T.keysHint))}</p>
       <p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
       <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`);
+    // fiches Little Navmap (.lnmperf), si un lanceur sert la page : carte écrite par aerodb (frame/aerodb/lnmperf.js)
+    if (L && c.aerodb()?.lnmperf) cards.push('<div class="f-card" data-card="lnmperf" hidden></div>');
     const help = await c.helpPanel?.().catch(() => null);
     let diagJson = '{}'; // diagnostic complet (bouton « Copier »)
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
@@ -652,6 +654,13 @@
     if (help) view.querySelector('h1 + p')?.after(help);
 
     const card = k => view.querySelector(`[data-card="${k}"]`);
+    if (card('lnmperf')) c.aerodb().lnmperf().then(x => x.card(card('lnmperf'), {
+      t,
+      notify: c.notify
+    })).then(() => {
+      const k = card('lnmperf');
+      if (k?.firstChild) k.hidden = false;
+    }).catch(() => {});
     const val = (k, root = view) => root.querySelector(`[data-f="${k}"]`)?.value.trim() ?? '';
     /** Message dans la carte (kind : ok, warn, err) ; vide l'efface. */
     const say = (k, text, kind = 'err') => {

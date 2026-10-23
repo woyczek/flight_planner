@@ -626,6 +626,8 @@
   function toLnmperf(p) {
     const missing = missingLnmperfFields(p);
     if (missing.length) throw Error("Export `.lnmperf` bloqué : champs non renseignés : " + missing.join(" ; "));
+    // un .lnmperf est en livres (ou en gallons) : une fiche en kg est convertie (avant : ses kg écrits tels quels)
+    if (p.unit === "kg") p = fuelConvertedCopy(p, "kg", "lb", true);
     p = {
       ...p,
       simbriefAirframeId: ""

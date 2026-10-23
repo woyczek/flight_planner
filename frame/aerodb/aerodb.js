@@ -189,7 +189,8 @@
   function create({
     reader = fetchReader(),
     zones = window.AERODB_ZONES || {},
-    now = () => Date.now()
+    now = () => Date.now(),
+    lnmperf: lnmAuto = true // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
   } = {}) {
     const loaded = new Map(), // zone → { id, cycle, split, base | data, parts, reads, idx } ; chargée une fois
       loading = new Map(), // zone → promesse de chargement
@@ -530,6 +531,13 @@
       });
     }
     let registry = null;
+    // ---- fiches .lnmperf (lnmperf.js), chargé à la première demande
+    let lnmP = null;
+    const lnmperf = () => lnmP ||= loadOwn('lnmperf.js', 'AeroDBLnmperf').then(() => window.AeroDBLnmperf.create({
+      reader,
+      aircraft,
+      launcherRoot: new URL('../../', HERE).href
+    }));
 
     // ---- données gardées hors ligne (cache du frame)
     /** Fichiers d'une zone pour son cycle choisi : [{ path, kind, kb }] (kb : taille publiée, null si inconnue), cycle et
@@ -915,6 +923,9 @@
       },
       /** Base des types (frame/aerodb/aircraft.js), lue à la première demande. */
       aircraft,
+      /** Fiches et fichiers Little Navmap tenus pareils (lnmperf.js, SPEC.md § 5 ter) : contrôleur { start, sync, status,
+       *  on, folder, setFolder, download, card }, chargé à la première demande. */
+      lnmperf,
       /** Données gardées hors ligne (voir l'en-tête). */
       offline,
       /** Mesures : par zone ouverte, cycle, format, octets lus et durée par sorte, index construits. */
@@ -985,6 +996,8 @@
         aircraft: true
       });
     });
+    // .lnmperf : passages automatiques seulement avec une couche de données qui écrit (le lecteur provisoire lit)
+    if (lnmAuto && typeof reader.put === 'function') setTimeout(() => lnmperf().then(c => c.start()).catch(() => {}), 1500);
     return api;
   }
 
@@ -1002,8 +1015,11 @@
     }, {
       prefix: 'references/',
       policy: 'reference'
-    }, 'airline/', 'planner/', 'aircraft/'],
+    }, 'airline/', 'planner/', 'aircraft/', 'cache/aerodb/'],
     writes: [{
+      prefix: 'cache/aerodb/',
+      policy: 'cache' // manifeste des fichiers .lnmperf de ce poste
+    }, {
       prefix: 'aircraft/sheets/',
       merge: (b, l, r) => window.AeroDBRegistry ? window.AeroDBRegistry.mergeSheets(b, l, r) : {
         value: l,

@@ -24,6 +24,14 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **aerodb lot 5b: Little Navmap files kept in step** (`frame/aerodb/lnmperf.js`, launcher routes
+  `/__setup/lnmperf-folder` and `/__setup/lnmperf`, Settings card, `FrameData.noteConflict`; SPEC, INTEGRATION,
+  DECISIONS, Settings help ×4) — on a launcher workstation, the performance sheets and the `.lnmperf` files of a chosen
+  folder stay the same both ways: a changed sheet rewrites its file, a changed file updates the sheet, a new file
+  becomes a sheet, a deleted file is written again; a value changed on both sides goes to the newest, the other is
+  kept and a conflict is counted at the frame's button; a removed sheet's file is set aside in `_removed/`, never
+  deleted. Checked at start, after each synchronisation and every two minutes. Fix: a kg sheet was exported to
+  `.lnmperf` with its kg values in the pound fields.
 - **flightlog: wide layout in the dual view** (`modules/flightlog/module.js`) — my flights lays out by its own width, not the window's,
   so it stays right in half of a wide screen.
 - **report: wide layout in the dual view** (`modules/report/module.js`) — report lays out by its own width, not the window's,

@@ -47,6 +47,16 @@ key: “Create a key on avwx.rest ↗” opens the provider's page. Paste it in 
 nor in a backup, and is never shown again. On a workstation served by the launcher it is not needed: the launcher
 provides the TAF.
 
+## Little Navmap sheets
+
+On a workstation served by the launcher, the "Little Navmap sheets (.lnmperf)" card links your performance sheets
+with the .lnmperf files of a folder, both ways. Choose the folder (Little Navmap's is offered when found), then
+"Save". After that, nothing to do: a sheet changed in Fuel rewrites its file, a file changed in Little Navmap updates
+the sheet, a new file becomes a sheet. If the same value changed on both sides, the newest wins and the other stays
+kept in the sheet; the synchronisation button says so. A file is never deleted: the file of a removed sheet goes to
+the `_removed` subfolder. "Synchronise now" runs a pass at once, "Stop" cuts the link. Sheets missing a value that
+Little Navmap requires are listed and not written. On a phone, Fuel downloads the sheet as a .lnmperf file.
+
 ## Launcher keys
 
 On a workstation served by the launcher, “Launcher keys” sets the IVAO API key: it stays in the launcher’s `secrets/`

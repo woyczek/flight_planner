@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aerodb — lnmperf tests</title>
+<!-- Essais de la synchronisation des fiches et des fichiers Little Navmap (frame/aerodb/lnmperf.js) sur la couche de
+     données réelle (FrameData en transport local, références du lanceur) et les routes /__setup/lnmperf du lanceur qui
+     sert la page. ?folder=<dossier> : dossier d'essai, vidé de ses .lnmperf au départ par le script d'essai, réglé par la
+     page puis retiré à la fin. Cache du frame effacé au départ. Page d'outil (dossier test/, hors du service worker). -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px;
+    background: #f5f6f8;
+    color: #17202a
+  }
+  li.ok::marker {
+    content: '✓ ';
+    color: #1e7d32
+  }
+  li.ko::marker {
+    content: '✗ ';
+    color: #b3261e
+  }
+  li.ko {
+    color: #b3261e
+  }
+  pre {
+    font-size: 12px;
+    white-space: pre-wrap
+  }
+</style></head>
+<body>
+<h1>aerodb — lnmperf tests</h1>
+<p id="state">running…</p>
+<ol id="out"></ol>
+<script src="../../store/frame_data.js?v=0"></script>
+<script src="../../store/transport_github.js?v=0"></script>
+<script src="../../store/transport_launcher.js?v=0"></script>
+<script src="../zones.js?v=0"></script>
+<script src="../aircraft.js?v=0"></script>
+<script src="../aerodb.js?v=0"></script>
+<script>
+  (async () => {
+    const FD = window.FrameData,
+      results = [],
+      check = (name, ok, detail) => results.push({
+        name,
+        ok: !!ok,
+        detail: ok ? '' : JSON.stringify(detail)
+      }),
+      wait = ms => new Promise(r => setTimeout(r, ms)),
+      folder = new URLSearchParams(location.search).get('folder') || '',
+      H = {
+        'X-SOG-Setup': '1'
+      },
+      route = (q, o = {}) => fetch(`../../../__setup/lnmperf${q}`, {
+        cache: 'no-store',
+        headers: H,
+        ...o
+      }).then(r => r.json()),
+      // fichier .lnmperf d'essai (livres), comme l'écrit Little Navmap
+      lnm = (name, type, o = {}) => `<?xml version="1.0" encoding="UTF-8"?>
+<LittleNavmap><AircraftPerf><Options><Name>${name}</Name><AircraftType>${type}</AircraftType><Description>essai</Description><FuelAsVolume>0</FuelAsVolume><JetFuel>1</JetFuel></Options>
+<Perf><ContingencyFuelPercent>5.0</ContingencyFuelPercent><ExtraFuelLbsGal>0</ExtraFuelLbsGal><MinRunwayLengthFt>3000</MinRunwayLengthFt><ReserveFuelLbsGal>2000</ReserveFuelLbsGal><RunwayType>HARD</RunwayType><TaxiFuelLbsGal>200</TaxiFuelLbsGal><UsableFuelLbsGal>40000</UsableFuelLbsGal>
+<Alternate><FuelFlowLbsGalPerHour>5000</FuelFlowLbsGalPerHour><SpeedKtsTAS>250</SpeedKtsTAS></Alternate>
+<Climb><FuelFlowLbsGalPerHour>7000</FuelFlowLbsGalPerHour><SpeedKtsTAS>200</SpeedKtsTAS><VertSpeedFtPerMin>${o.roc ?? 1200}</VertSpeedFtPerMin></Climb>
+<Cruise><FuelFlowLbsGalPerHour>${o.ff ?? 6000}</FuelFlowLbsGalPerHour><SpeedKtsTAS>${o.tas ?? 300}</SpeedKtsTAS></Cruise>
+<Descent><FuelFlowLbsGalPerHour>3000</FuelFlowLbsGalPerHour><SpeedKtsTAS>280</SpeedKtsTAS><VertSpeedFtPerMin>1500</VertSpeedFtPerMin></Descent>
+</Perf></AircraftPerf></LittleNavmap>
+`,
+      put = (name, text) => route(`?name=${encodeURIComponent(name)}`, {
+        method: 'PUT',
+        body: text
+      }),
+      files = async () => (await route('')).files?.map(f => f.name).sort() || [];
+    try {
+      if (!await FD.launcher.detect()) throw new Error('serve this page from the launcher');
+      if (!folder) throw new Error('?folder= missing');
+      await FD.reset();
+      FD.configure({
+        identity: {
+          trigram: 'TST'
+        },
+        transport: FD.transports.local(),
+        references: FD.launcher({
+          exchange: false
+        })
+      });
+      const data = FD.adapter(AeroDB.declaration()),
+        db = AeroDB.create({
+          reader: data,
+          lnmperf: false
+        }),
+        A0 = await db.aircraft(),
+        L = await db.lnmperf(),
+        lib = A0.lib,
+        // registre courant : aerodb le relit après chaque écriture sous aircraft/
+        A = {
+          sheets: {
+            get: async id => (await db.aircraft()).sheets.get(id),
+            put: async (x, o) => (await db.aircraft()).sheets.put(x, o),
+            remove: async id => (await db.aircraft()).sheets.remove(id)
+          }
+        };
+      // fiche en kg, complète pour Little Navmap (tirée d'un .lnmperf, convertie) ; fiche incomplète
+      const base = lib.parseLnmperf(lnm('C-130J essai', 'C30J'), 'x.lnmperf'),
+        kg = lib.fuelConvertedCopy(base, 'lb', 'kg', true);
+      await A.sheets.put({
+        ...kg,
+        id: 'C30J_TEST',
+        unit: 'kg',
+        lnmSource: false
+      }, {
+        source: 'edit'
+      });
+      await A.sheets.put({
+        id: 'BROKEN',
+        name: 'incomplète',
+        unit: 'kg'
+      }, {
+        source: 'edit'
+      });
+      // dossier réglé ; un fichier venu de Little Navmap seul
+      const sf = await L.setFolder(folder);
+      check('folder saved through the launcher', sf.ok && sf.folder, sf);
+      await put('Foreign.lnmperf', lnm('Foreign', 'PC12', {
+        tas: 270
+      }));
+      // 1er passage : fichier nouveau importé, fiche écrite (lb), fiche incomplète signalée
+      let s = await L.sync('test');
+      check('pass 1: new file imported, sheet written, incomplete sheet listed', s.imported === 1 && s.written >= 1 && s.incomplete
+        .includes('BROKEN'), s);
+      const foreign = await A.sheets.get('Foreign');
+      check('imported sheet: values and origin lnmperf', foreign?.cruise?.tasKt === 270 && foreign._fields?.['cruise.tasKt']?.source ===
+        'lnmperf', foreign);
+      const f1 = await route('?name=C30J_TEST.lnmperf'),
+        v1 = lib.parseLnmperf(f1.text, 'x');
+      check('kg sheet written in pounds', Math.abs(v1.cruise.fuelFlowPerHour - 6000) < .01 && Math.abs(v1.usableFuel - 40000) < .01, v1
+        .cruise);
+      check('files: imported and written, never the incomplete one', JSON.stringify(await files()) === JSON.stringify([
+        'C30J_TEST.lnmperf', 'Foreign.lnmperf'
+      ]), await files());
+      // 2e passage sans changement : rien
+      s = await L.sync('test');
+      check('pass 2: nothing changed, nothing written', !s.written && !s.imported && !s.merged, s);
+      // fiche changée → fichier réécrit
+      let c = await A.sheets.get('C30J_TEST');
+      await A.sheets.put({
+        ...c,
+        cruise: {
+          ...c.cruise,
+          tasKt: 310
+        }
+      }, {
+        source: 'edit'
+      });
+      s = await L.sync('test');
+      check('sheet changed → file rewritten', s.written === 1 && lib.parseLnmperf((await route('?name=C30J_TEST.lnmperf')).text, 'x')
+        .cruise.tasKt === 310, s);
+      // fichier changé → fiche mise à jour (carburant reconverti en kg)
+      await wait(1100);
+      await put('C30J_TEST.lnmperf', lnm('C-130J essai', 'C30J', {
+        tas: 315,
+        ff: 6500
+      }));
+      s = await L.sync('test');
+      c = await A.sheets.get('C30J_TEST');
+      check('file changed → sheet updated, origin lnmperf, fuel back in kg', c.cruise.tasKt === 315 && Math.abs(c.cruise
+        .fuelFlowPerHour - 6500 * 0.45359237) < .01 && c._fields['cruise.tasKt'].source === 'lnmperf' && s.merged === 1, c.cruise);
+      // changé des deux côtés, le fichier plus récent : le fichier gagne, la valeur de la fiche est gardée, conflit compté
+      const conflicts0 = (await FD.conflicts()).length;
+      c = await A.sheets.get('C30J_TEST');
+      await A.sheets.put({
+        ...c,
+        climb: {
+          ...c.climb,
+          rateFpm: 1500
+        }
+      }, {
+        source: 'edit'
+      });
+      await wait(1100);
+      await put('C30J_TEST.lnmperf', lnm('C-130J essai', 'C30J', {
+        tas: 315,
+        ff: 6500,
+        roc: 1600
+      }));
+      s = await L.sync('test');
+      c = await A.sheets.get('C30J_TEST');
+      const cf = await FD.conflicts();
+      check('both changed, file newer: file wins, sheet value kept, conflict counted', c.climb.rateFpm === 1600 && c._kept[
+          'climb.rateFpm']?.[0]?.value === 1500 && s.lastConflicts === 1 && cf.length === conflicts0 + 1 && cf.at(-1).side ===
+        'lnmperf', {
+          climb: c.climb,
+          kept: c._kept['climb.rateFpm'],
+          s
+        });
+      // changé des deux côtés, la fiche plus récente : la fiche gagne, la valeur du fichier est gardée, fichier réécrit
+      await put('C30J_TEST.lnmperf', lnm('C-130J essai', 'C30J', {
+        tas: 320,
+        ff: 6500,
+        roc: 1600
+      }));
+      await wait(1100);
+      c = await A.sheets.get('C30J_TEST');
+      await A.sheets.put({
+        ...c,
+        cruise: {
+          ...c.cruise,
+          tasKt: 330
+        }
+      }, {
+        source: 'edit'
+      });
+      s = await L.sync('test');
+      c = await A.sheets.get('C30J_TEST');
+      check('both changed, sheet newer: sheet wins, file value kept with origin lnmperf, file rewritten', c.cruise.tasKt === 330 && c
+        ._kept['cruise.tasKt']?.[0]?.value === 320 && c._kept['cruise.tasKt'][0].source === 'lnmperf' && lib.parseLnmperf((
+          await route(
+            '?name=C30J_TEST.lnmperf')).text, 'x').cruise.tasKt === 330, {
+          cruise: c.cruise,
+          kept: c._kept['cruise.tasKt']
+        });
+      // fichier supprimé (mis de côté hors du dossier) → réécrit
+      await route('?name=C30J_TEST.lnmperf&action=retire', {
+        method: 'POST',
+        body: '{}'
+      });
+      s = await L.sync('test');
+      check('file deleted → rewritten from the sheet', (await files()).includes('C30J_TEST.lnmperf') && s.written === 1, s);
+      // fiche retirée, fichier inchangé → fichier rangé dans _removed/
+      await A.sheets.remove('Foreign');
+      s = await L.sync('test');
+      check('sheet removed → its unchanged file set aside in _removed/', s.retired === 1 && !(await files()).includes(
+          'Foreign.lnmperf'),
+        s);
+      // aucune perte : la fiche C30J garde toutes les valeurs écartées
+      check('nothing lost silently: kept values carry their source', Object.values(c._kept).flat().every(x => x.source && 'value' in x),
+        c._kept);
+      // passages programmés : start() → un passage tout seul
+      const t0 = L.status().at;
+      await put('Late.lnmperf', lnm('Late', 'B350'));
+      await L.start();
+      await wait(6000);
+      check('start(): a pass runs by itself', L.status().at !== t0 && !!(await A.sheets.get('Late')), L.status());
+      L.stop();
+      // nom de fichier d'une fiche
+      check('file names: forbidden characters replaced', AeroDBLnmperf.fileName('A/B:C*') === 'A_B_C_.lnmperf', AeroDBLnmperf.fileName(
+        'A/B:C*'));
+      const off = await L.setFolder('');
+      check('folder removed: synchronisation off', off.ok && (await L.sync('test')).state === 'off', off);
+    } catch (e) {
+      check('threw', false, e.stack || String(e));
+    }
+    const out = document.getElementById('out');
+    for (const r of results) {
+      const li = document.createElement('li');
+      li.className = r.ok ? 'ok' : 'ko';
+      li.innerHTML = `${r.name}${r.detail ? `<pre>${r.detail.replace(/</g, '&lt;')}</pre>` : ''}`;
+      out.append(li);
+    }
+    const ko = results.filter(r => !r.ok);
+    document.getElementById('state').textContent = `${results.length - ko.length} / ${results.length} checks passed`;
+    window.__results = {
+      total: results.length,
+      failed: ko
+    };
+  })();
+</script>
+</body></html>

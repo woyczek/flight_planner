@@ -308,6 +308,42 @@ With the network cut, the only reads attempted were:
   5a lacked the "not required by Little Navmap" flag, so `toLnmperf` refused every sheet without a registration and a
   callsign. Both are now flagged optional, and `test/registry.html` checks it (22 checks).
 
+## 23 October 2026 — lot 5b, `.lnmperf` files kept in step both ways
+
+- **Asked**: the five cases (sheet changed, file changed, both, new file, deleted file), never a silent loss, detection
+  at start, after a sync and every two minutes while visible, a manifest in `cache/aerodb/`, download on the phone, the
+  folder in the V3 Settings of a launcher page.
+- **Comparison through the file**: a sheet's view is the fields read back from the text it would write. Comparing the
+  sheet's own values with the file's would see differences that are only rounding (three decimals) or units.
+- **Units**: a latent bug of the sheets logic (V2 and fuel alike): `toLnmperf` wrote a kg sheet's values in the
+  `…LbsGal` fields as they were, so Little Navmap read 3,500 kg/h as 3,500 lb/h. Fixed at the source in `toLnmperf`.
+  Files written before keep their wrong values; their first comparison with the sheet shows the difference as a
+  conflict, the newest side wins and the other value is kept.
+- **"Newest wins" for a field changed on both sides**: the field's date (`_fields`) against the file's modification
+  date. A file has no per-field date; its date is the best that exists.
+- **Losing file values in `_kept`**: `sheets.put(sheet, { kept })` adds values to the kept ones (a `put` only kept the
+  previous values of the sheet itself).
+- **A removed sheet's file is set aside, not deleted** (`_removed/` in the folder), and only when it did not change
+  since the last pass; otherwise the file wins and becomes a sheet again.
+- **Conflicts counted at the frame's button**: a public `FrameData.noteConflict` (small edit of `frame/store/`, the
+  frame session told). The conflict record has the same shape as a sync conflict, so the frame's list and `restore`
+  work unchanged.
+- **The card is aerodb's** (exception to invariant 4): the folder, the found folders and the pass's state belong to
+  the synchronisation. `frame/settings/settings.js` only places the card on a launcher page.
+- **The folder is the launcher's** (`tools/.lnmperf.json`), not the device's: it is a path of the workstation, and
+  the routes refuse a folder inside `data/`. `PUT` for the folder and the files, as asked; any other `/__setup/` route
+  refuses `PUT` (405).
+- **Tests**: `frame/aerodb/test/lnmperf.html`, 16 checks on the real data layer and launcher routes, with a test
+  folder:
+  - new file imported, sheet written in pounds, incomplete sheet listed, nothing written on a second pass;
+  - sheet changed → file rewritten; file changed → sheet updated, origin `lnmperf`, fuel back in kg;
+  - both changed, file newer → file wins, sheet value kept, one conflict at the frame; sheet newer → sheet wins, file
+    value kept with origin `lnmperf`, file rewritten;
+  - file deleted → rewritten; sheet removed → file in `_removed/`;
+  - `start()` runs a pass by itself; folder removed → off.
+  The registry's 22 checks still pass; Settings at 375 px shows the card with the found Little Navmap folder and the
+  state of the start pass, without error.
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

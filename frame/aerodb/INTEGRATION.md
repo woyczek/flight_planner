@@ -119,6 +119,22 @@ const parsed = A.lib.parseLnmperf(text);           // the sheets logic (AeroDBSh
 - report reads `aircraft.registration` and `aircraft.callsign` of the current flight.
 - The registry's own type search is `A.searchTypes` (the former `search`).
 
+### Little Navmap files (settings, fuel)
+
+```js
+const L = await ctx.aerodb.lnmperf();
+await L.card(el, { t, notify });   // Settings, launcher page only: folder, state, Synchronise now, Stop
+await L.download(sheetId);          // a phone: the sheet as a .lnmperf file (pounds)
+L.on(s => …); await L.sync();       // state; a pass now
+```
+
+- The frame's Settings screen shows the card on a launcher page (`frame/settings/settings.js`, card `lnmperf`).
+- aerodb declares `cache/aerodb/` (cache policy) for its manifest.
+- A conflict found here is counted at the frame's button through `FrameData.noteConflict({ path, kept, lost, side })`
+  (`frame/store/frame_data.js`, added with this lot); `restore` takes the file's version back.
+- `toLnmperf` now writes a kg sheet in pounds (it wrote the kg values as they were): fuel's "Export .lnmperf" is
+  right from now on.
+
 ## 5. Costs to know (measured, see DECISIONS.md)
 
 - **Only what you ask for is read.** Asking for the aerodromes around Paris reads France's `meta` and aerodromes

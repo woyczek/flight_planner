@@ -48,6 +48,17 @@ gratuita de avwx.rest: «Crear una clave en avwx.rest ↗» abre la página del 
 este dispositivo, nunca en el repositorio ni en una copia, y nunca vuelve a mostrarse. En un puesto servido por el
 lanzador es innecesaria: el lanzador proporciona el TAF.
 
+## Fichas de Little Navmap
+
+En un equipo servido por el lanzador, la tarjeta «Fichas de Little Navmap (.lnmperf)» une sus fichas de rendimiento con
+los archivos .lnmperf de una carpeta, en ambos sentidos. Elija la carpeta (se propone la de Little Navmap cuando se
+encuentra) y luego «Guardar». Después, nada que hacer: una ficha cambiada en Combustible reescribe su archivo, un
+archivo cambiado en Little Navmap actualiza la ficha, un archivo nuevo se vuelve ficha. Si el mismo valor cambió en
+ambos lados, gana el más reciente y el otro queda guardado en la ficha; el botón de sincronización lo indica. Un
+archivo nunca se borra: el de una ficha retirada va a la subcarpeta `_removed`. «Sincronizar ahora» hace la pasada en
+seguida, «Detener» corta el vínculo. Las fichas a las que les falta un valor requerido por Little Navmap se listan y no
+se escriben. En un teléfono, Combustible descarga la ficha en .lnmperf.
+
 ## Las claves del lanzador
 
 En un puesto servido por el lanzador, «Claves del lanzador» configura la clave de la API IVAO: se queda en la carpeta
