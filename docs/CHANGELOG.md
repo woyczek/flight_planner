@@ -15,9 +15,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Map studio: the airline's map profiles for the app (V3)** (`apps/cpco/map_parser.html`, `tools/data_sync.py`;
   Flight maps rebuilt, the boxes hidden there) — the studio reads and writes `airline/map_profiles.json` of the data
   repository, one display profile per mode of the app's map (Auto, Low IFR, High IFR, VFR, Topo, CAM) in the
-  `profile_def` format: "Take into the studio" makes a mode an "App — mode" profile, "Save for the app" writes the profile
-  shown into a mode after confirmation (record rule: the file is read again and written whole; the other modes and the
-  app's own settings are kept). New "App zoom thresholds (V3)": the 26 keys of the app's `elements.zoom`, each "from …
+  `profile_def` format: "Take into the studio" makes a mode an "App — mode" profile, "Save for the app" writes into a mode,
+  after confirmation, a partial profile — what the profile shown changes from the studio's defaults and the zoom
+  thresholds filled in, the rest keeping the app's built-in values (record rule: the file is read again and written
+  whole; the other modes and the app's own settings are kept). New "App zoom thresholds (V3)": the 26 keys of the app's `elements.zoom`, each "from …
   to …" in MapLibre zoom. A studio profile now keeps, when saved, the element keys it does not know (the app's
   extensions: `vfrDensity`, `fixes`, `awLabels`, `zoom`). `airline/` joins the synchronised pool, so "Synchronise"
   shares the file. Planner manual ×4, `docs/technique/FRAMEWORK.md`, `docs/technique/SYNCHRONISATION.md` § 3.

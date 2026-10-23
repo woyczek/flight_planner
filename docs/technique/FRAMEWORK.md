@@ -686,9 +686,12 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
   the `profile_def` format, complete or partial (the app merges it onto its own). The studio's "App profiles (V3)" box
   (`readAppProfiles`, `appLoad`, `appSave` in `apps/cpco/map_parser.html`, hidden in Flight maps) takes a mode into the
   studio as a profile `app-<mode>`, or writes the profile shown into a mode, after confirmation, by the `record` rule:
-  the file is read again, the mode replaced (the previous mode's keys the studio does not write are kept: `hillshade`,
-  `elements.vfrDensity`, `fixes`, `awLabels`…; `elements.zoom` is replaced when the studio profile has one), `updated_at`
-  and `by: "studio"` set, and the whole document written (`MissionAssignments.writeData`). A studio profile keeps the
+  the file is read again, the mode replaced, `updated_at` and `by: "studio"` set, and the whole document written
+  (`MissionAssignments.writeData`). What is written is a **partial** profile (`appPartial`): only what differs from the
+  studio's defaults (a new profile, `newProfileBase`, layers compared one by one; elements as the page offers them), the
+  zoom thresholds filled in, and the keys the studio does not know (`hillshade`, `elements.vfrDensity`, `fixes`,
+  `awLabels`…, from the profile or else from the mode's previous profile); the app merges it onto its built-in values
+  (built-in < airline < device), so what the administrator did not touch keeps the app's value. A studio profile keeps the
   element keys it does not know when it is saved (`readProfileFromUi`). `elements.zoom = { key: [min, max] }` (MapLibre
   zoom, 24: no upper limit; a key without a range is always shown) is edited in "App zoom thresholds (V3)", one
   "from … to …" line per key of the app's `ZOOM_KEYS` (26: `asFir`, `asTma`, `asCta`, `asCtr`, `asR`, `asD`, `asP`,

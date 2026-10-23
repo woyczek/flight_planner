@@ -2012,10 +2012,10 @@ function renderAppBoxes() {
     'Profile der App (V3) — airline/map_profiles.json', 'Perfiles de la aplicación (V3) — airline/map_profiles.json'
   ]));
   set('appHint', T([
-    'Un profil par mode de la carte de l’appli, partagé par la compagnie (dépôt des données). « Reprendre dans le studio » en fait un profil de ce studio (« Appli — mode ») à régler ici ; « Enregistrer pour l’appli » écrit le profil affiché pour ce mode (le fichier est relu juste avant, les autres modes et les réglages propres à l’appli sont gardés). « Synchroniser » le partage.',
-    'One profile per mode of the app’s map, shared by the airline (data repository). “Take into the studio” makes it a profile of this studio (“App — mode”) to tune here; “Save for the app” writes the profile shown for that mode (the file is read again just before; the other modes and the app’s own settings are kept). “Synchronise” shares it.',
-    'Ein Profil pro Modus der App-Karte, von der Fluggesellschaft geteilt (Daten-Repository). „Ins Studio übernehmen“ macht daraus ein Profil dieses Studios („App — Modus“), hier einzustellen; „Für die App speichern“ schreibt das angezeigte Profil für diesen Modus (die Datei wird kurz vorher neu gelesen; die anderen Modi und die eigenen Einstellungen der App bleiben). „Synchronisieren“ teilt es.',
-    'Un perfil por modo del mapa de la aplicación, compartido por la aerolínea (repositorio de datos). «Llevar al estudio» lo convierte en un perfil de este estudio («Aplicación — modo») que se ajusta aquí; «Guardar para la aplicación» escribe el perfil mostrado para ese modo (el archivo se vuelve a leer justo antes; se conservan los demás modos y los ajustes propios de la aplicación). «Sincronizar» lo comparte.'
+    'Un profil par mode de la carte de l’appli, partagé par la compagnie (dépôt des données). « Reprendre dans le studio » en fait un profil de ce studio (« Appli — mode ») à régler ici ; « Enregistrer pour l’appli » écrit pour ce mode ce que le profil affiché change aux valeurs par défaut du studio, et les seuils de zoom remplis : le reste garde les valeurs de l’appli (le fichier est relu juste avant ; les autres modes et les réglages propres à l’appli sont gardés). « Synchroniser » le partage.',
+    'One profile per mode of the app’s map, shared by the airline (data repository). “Take into the studio” makes it a profile of this studio (“App — mode”) to tune here; “Save for the app” writes for that mode what the profile shown changes from the studio’s defaults, and the zoom thresholds filled in: the rest keeps the app’s values (the file is read again just before; the other modes and the app’s own settings are kept). “Synchronise” shares it.',
+    'Ein Profil pro Modus der App-Karte, von der Fluggesellschaft geteilt (Daten-Repository). „Ins Studio übernehmen“ macht daraus ein Profil dieses Studios („App — Modus“), hier einzustellen; „Für die App speichern“ schreibt für diesen Modus, was das angezeigte Profil an den Standardwerten des Studios ändert, und die ausgefüllten Zoomschwellen: Der Rest behält die Werte der App (die Datei wird kurz vorher neu gelesen; die anderen Modi und die eigenen Einstellungen der App bleiben). „Synchronisieren“ teilt es.',
+    'Un perfil por modo del mapa de la aplicación, compartido por la aerolínea (repositorio de datos). «Llevar al estudio» lo convierte en un perfil de este estudio («Aplicación — modo») que se ajusta aquí; «Guardar para la aplicación» escribe para ese modo lo que el perfil mostrado cambia respecto a los valores por defecto del estudio, y los umbrales de zoom rellenados: el resto conserva los valores de la aplicación (el archivo se vuelve a leer justo antes; se conservan los demás modos y los ajustes propios de la aplicación). «Sincronizar» lo comparte.'
   ]));
   set('appModeL', T(['Mode de la carte ', 'Map mode ', 'Kartenmodus ', 'Modo del mapa ']));
   const cur = $('appMode').value || 'vfr';
@@ -2041,6 +2041,68 @@ async function readAppProfiles() {
     fresh: true
   });
   return d && typeof d === 'object' ? d : null
+}
+/** Réglages d'un profil neuf du studio (« Nouveau ») : fond, couches, villes, familles et liste de zones. */
+const newProfileBase = () => ({
+  base: 'vector',
+  layers: {
+    land: true,
+    urban: true,
+    water: true,
+    transport: true,
+    buildings: false,
+    boundaries: true,
+    relief: false,
+    contours: false,
+    summits: false
+  },
+  cities: false,
+  population: 200000,
+  zones: ['R', 'D', 'P'],
+  zoneList: [],
+  zoneMode: 'white'
+});
+// réglages de premier niveau que le studio écrit (les autres clés d'un profil de l'appli lui sont inconnues)
+const STUDIO_TOP = ['base', 'layers', 'cities', 'population', 'zones', 'zoneList', 'zoneMode', 'adList', 'adMode', 'navList', 'navMode',
+  'corridorNm'
+];
+/** Profil PARTIEL pour un mode de l'appli : ce qui diffère des valeurs par défaut du studio (profil neuf, éléments tels que
+ *  la page les propose), les bornes de zoom remplies, et les clés que le studio ne connaît pas (extensions de l'appli, de
+ *  ce profil ou, à défaut, de prev : l'ancien profil du mode). L'appli le fusionne sur ses valeurs intégrées : ce que
+ *  l'administrateur n'a pas touché garde la valeur de l'appli. */
+function appPartial(p, prev = {}) {
+  const base = {
+      adList: [],
+      adMode: 'white',
+      navList: [],
+      navMode: 'white',
+      ...newProfileBase()
+    },
+    // couches : comparées une à une, sur celles que la page propose (« urban » n'a pas de case)
+    same = (a, b, k) => k === 'layers' && a && b ? Object.entries(a).every(([x, v]) => !!v === !!b[x]) : JSON.stringify(a) === JSON
+    .stringify(b),
+    out = Object.fromEntries(Object.entries({
+      ...prev,
+      ...p
+    }).filter(([k]) => !STUDIO_TOP.includes(k) && !['id', 'name', 'elements', 'allZones'].includes(k)));
+  for (const k of STUDIO_TOP)
+    if (p[k] !== undefined && !same(p[k], base[k], k)) out[k] = p[k];
+  const els = p.elements || {},
+    pe = prev.elements || {},
+    e = Object.fromEntries(Object.entries({
+      ...pe,
+      ...els
+    }).filter(([k]) => !PROFILE_ELEMENTS.includes(k) && k !== 'zoom'));
+  for (const id of PROFILE_ELEMENTS)
+    if (els[id] !== undefined && $(id) && String(els[id]) !== String(defaultOf($(id)))) e[id] = els[id];
+  const known = new Set(ZOOM_KEYS.map(([k]) => k)),
+    zoom = {
+      ...Object.fromEntries(Object.entries(pe.zoom || {}).filter(([k]) => !known.has(k))),
+      ...(els.zoom || {})
+    };
+  if (Object.keys(zoom).length) e.zoom = zoom;
+  if (Object.keys(e).length) out.elements = e;
+  return out
 }
 /** Nom affiché d'un mode de l'appli. */
 const appModeName = m => window.RepositoryKit.t((APP_MODES.find(x => x[0] === m) || [m, [m, m, m, m]])[1]);
@@ -7549,7 +7611,8 @@ $('appLoad').onclick = async () => {
     appStatus(e.message, 'err')
   }
 };
-// profil affiché → mode de l'appli : fichier relu, mode remplacé (réglages propres à l'appli gardés), réécrit en entier
+// profil affiché → mode de l'appli : fichier relu, mode remplacé par le profil partiel (appPartial : ce qui diffère des
+// valeurs par défaut du studio, réglages propres à l'appli gardés), document réécrit en entier
 $('appSave').onclick = async () => {
   const K = window.RepositoryKit,
     mode = $('appMode').value,
@@ -7567,21 +7630,11 @@ $('appSave').onclick = async () => {
     }))) return;
   try {
     const doc = JSON.parse(JSON.stringify(await readAppProfiles() || {})),
-      prev = doc.profiles?.[mode] && typeof doc.profiles[mode] === 'object' ? doc.profiles[mode] : {},
-      def = profileDef(p);
-    delete def.id;
-    delete def.name;
+      prev = doc.profiles?.[mode] && typeof doc.profiles[mode] === 'object' ? doc.profiles[mode] : {};
     doc.schema = doc.schema || 1;
     doc.profiles = {
       ...(doc.profiles || {}),
-      [mode]: {
-        ...prev,
-        ...def,
-        elements: {
-          ...(prev.elements || {}),
-          ...def.elements
-        }
-      }
+      [mode]: appPartial(p, prev)
     };
     doc.updated_at = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     doc.by = 'studio';
@@ -7616,23 +7669,7 @@ $('addProfile').onclick = () => {
   displayProfiles.push({
     id,
     name: 'Nouveau profil',
-    base: 'vector',
-    layers: {
-      land: true,
-      urban: true,
-      water: true,
-      transport: true,
-      buildings: false,
-      boundaries: true,
-      relief: false,
-      contours: false,
-      summits: false
-    },
-    cities: false,
-    population: 200000,
-    zones: ['R', 'D', 'P'],
-    zoneList: [],
-    zoneMode: 'white'
+    ...newProfileBase()
   });
   fillProfileSelects();
   $('activeProfile').value = id;
