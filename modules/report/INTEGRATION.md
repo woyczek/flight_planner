@@ -57,8 +57,11 @@ empty fields, and removes it.
   is updated at the next pass of a workstation that has one.
 - **The current flight** (`pilot/<trigram>/current_flight.json`, fuel and maps) is only read: aircraft registration,
   callsign and type (fuel's `aircraft`, from aerodb's `aircraftOf`), route departure, arrival, alternate, distance,
-  level, and `started { at, by }` (fuel's "Start the flight"): a started flight is offered first, "Flight started at
-  hh:mm". Once a report that used it is saved, its `started.at` goes into `cache/report/started.json`
+  level, `quote { block, unit, … }` and `started { at, by }` (fuel's "Start the flight"): a started flight is offered
+  first, "Flight started at hh:mm"; the card's line lists everything taken (distance and level too, even when the
+  family has no field for them). "Use" also fills `timeline.engineStart` with `started.at` (device time zone, like the
+  other imports; source "Flight started (fuel)") and `fuel.start` / `fuel.unit` with the quote's block fuel (source
+  "Fuel quote"). Levels are written with `formatLevel` (`frame/lib/route_text.js`). Once a report that used it is saved, its `started.at` goes into `cache/report/started.json`
   (`{ done: [at, …] }`, the last 20, device only) and the card no longer offers it.
 
 ## 4. Example

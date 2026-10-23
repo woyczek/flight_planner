@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: more from the current flight** (`modules/report/module.js`; docs) — the card says everything it will take,
+  and "Use" also fills the engine start time and the fuel at start from fuel, each marked with its source.
 - **Map: free points** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a waypoint dropped away from any fix,
   beacon or airfield becomes a free point named by its coordinates (4530N00030E), for VFR and helicopters.
 - **fuel: after the end-to-end pass** (`modules/fuel/module.js`, `frame/lib/route_text.js`, `winds.js`; docs) — the

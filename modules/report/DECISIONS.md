@@ -2,6 +2,12 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — what the current flight brings** (arbitrations 14 and 15 of the end-to-end pass): the card lists
+  everything taken in one line — the HEMS family has no distance or level field, so the pilot did not see them taken;
+  engine start comes from fuel's `started.at`, fuel at start from fuel's new `quote.block`, each with its own source
+  badge (`fill(values, source, by)`). The level is written with the suite's `formatLevel` (FL060 / 3 500 ft). Checked
+  on 8801: card "F-HAND · SAMU · EC45 · LFRS → LFML · alternate LFMT · 374 NM · FL060 · block fuel 616 kg"; "Use"
+  gave 13:21 "Flight started (fuel)" and 616 "Fuel quote".
 - **23 Oct 2026 — the started flight first** (ergonomics session, after fuel's lot G): the "current flight" card
   shows "Flight started at hh:mm" when fuel's `started` is set, above the last network flight (the card already came
   first); "Use" remembers `started.at`, and saving the report keeps it in `cache/report/started.json`, so the

@@ -10,6 +10,9 @@ import * as M from './model.js';
 import * as T from './text_import.js';
 import * as Fpl from './fpl.js';
 import * as LF from '../../frame/lib/last_flight.js';
+import {
+  formatLevel
+} from '../../frame/lib/route_text.js';
 import * as Site from '../../frame/lib/website.js';
 import AAR from './families/aar.js';
 import AIRBORNE from './families/airborne.js';
@@ -43,7 +46,8 @@ export const meta = {
     prefix: 'pilot/handoff.json',
     policy: 'cache'
   }],
-  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/website.js',
+  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/route_text.js',
+    '../../frame/lib/website.js',
     'families/aar.js',
     'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
     'families/flight_inspection.js', 'families/hadr.js', 'families/hems.js', 'families/isr.js', 'families/law_enforcement.js',
@@ -98,6 +102,10 @@ const TX = {
     'Vuelo actual (combustible / mapa)'),
   use: L('Utiliser', 'Use', 'Übernehmen', 'Usar'),
   startedAt: L('Vol démarré à {t}', 'Flight started at {t}', 'Flug gestartet um {t}', 'Vuelo iniciado a las {t}'),
+  takenBlock: L('carburant bloc {f}', 'block fuel {f}', 'Blockkraftstoff {f}', 'combustible bloque {f}'),
+  takenAltn: L('dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativo {a}'),
+  srcStarted: L('Vol démarré (carburant)', 'Flight started (fuel)', 'Flug gestartet (Kraftstoff)', 'Vuelo iniciado (combustible)'),
+  srcQuote: L('Devis carburant', 'Fuel quote', 'Kraftstoffkalkulation', 'Cálculo de combustible'),
   filled: L('{n} champ(s) rempli(s) depuis {s}.', '{n} field(s) filled from {s}.', '{n} Feld(er) aus {s} ausgefüllt.',
     '{n} campo(s) rellenado(s) desde {s}.'),
   nothing: L('Rien à reprendre : les champs sont déjà remplis.', 'Nothing to take: the fields are already filled.',
@@ -536,7 +544,14 @@ async function prefillCard() {
         minute: '2-digit'
       })
     }) : tt(TX.current);
-  box.innerHTML = `<div class="f-card f-accent rp-prefill"><div><b>${esc(title)}</b><div class="f-muted">${esc([a.registration, a.callsign, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
+  const q = cf.quote || {},
+    taken = [a.registration, a.callsign, a.type, [r.dep, r.arr].filter(Boolean).join(' → '), r.altn ? tt(TX.takenAltn, {
+      a: r.altn
+    }) : '', r.distanceNm > 0 ? `${Math.round(r.distanceNm)} NM` : '', cf.level?.ft > 0 ? formatLevel(cf.level.ft) : '', q.block > 0 ? tt(TX.takenBlock, {
+      f: `${q.block.toLocaleString(S.ctx.lang())} ${q.unit || 'kg'}`
+    }) : ''];
+  // ce qui est repris, en une ligne, même ce que la famille n'a pas de champ pour montrer (distance, niveau)
+  box.innerHTML = `<div class="f-card f-accent rp-prefill"><div><b>${esc(title)}</b><div class="f-muted">${esc(taken.filter(Boolean).join(' · '))}</div></div>
     <button type="button" class="primary" data-do="current">${esc(tt(TX.use))}</button></div>`;
 }
 /** Carte des sources : le dernier vol proposé (réseau de l'identité), les autres sources, le collage, le choix d'un vol
@@ -752,12 +767,12 @@ async function openReport(path) {
   render();
 }
 /** Remplit les champs vides depuis des valeurs { chemin: valeur } ; source notée par champ ; nombre de champs remplis. */
-function fill(values, source) {
+function fill(values, source, by = {}) {
   let n = 0;
   for (const [path, v] of Object.entries(values)) {
     if (empty(v) || !empty(M.get(S.m, path))) continue;
     M.set(S.m, path, v);
-    S.sources[path] = source;
+    S.sources[path] = by[path] || source; // source propre d'un champ (heure de départ, devis), sinon celle de la reprise
     n++;
   }
   S.ctx.notify(n ? tt(TX.filled, {
@@ -894,8 +909,20 @@ async function onClick(e) {
         'navigation.arr': r.arr,
         'navigation.altn': r.altn,
         'navigation.distanceNm': r.distanceNm,
-        'navigation.altitude': cf.level?.ft ? `FL${String(Math.round(cf.level.ft / 100)).padStart(3, '0')}` : ''
-      }, tt(TX.current));
+        'navigation.altitude': cf.level?.ft ? formatLevel(cf.level.ft) : '',
+        // heure de départ du carburant (fuseau de l'appareil, comme les autres reprises) et carburant bloc du devis
+        'timeline.engineStart': cf.started?.at ? new Date(cf.started.at).toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23'
+        }) : '',
+        'fuel.unit': cf.quote?.block > 0 ? cf.quote.unit : '',
+        'fuel.start': cf.quote?.block > 0 ? cf.quote.block : ''
+      }, tt(TX.current), {
+        'timeline.engineStart': tt(TX.srcStarted),
+        'fuel.unit': tt(TX.srcQuote),
+        'fuel.start': tt(TX.srcQuote)
+      });
     }
     case 'add': {
       const def = col === 'crew' ? crewCol() : (FAMILIES[S.m.family]?.blocks || []).map(x => x.collection).find(c => c?.path === col);
