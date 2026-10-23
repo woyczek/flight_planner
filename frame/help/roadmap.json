@@ -113,6 +113,20 @@
           "es": "Publicación: sitio GitHub Pages (/v3/frame/), envoltorio Capacitor listo"
         },
         {
+          "state": "doing",
+          "fr": "Base aéronautique en mode GitHub sur le téléphone : lecture des références depuis le dépôt (bug en cours), diagnostic copiable",
+          "en": "Aeronautical base in GitHub mode on the phone: reference files read from the repository (bug in progress), copyable diagnostics",
+          "de": "Luftfahrtdatenbank im GitHub-Modus auf dem Telefon: Referenzdateien aus dem Repository gelesen (Fehler in Arbeit), kopierbare Diagnose",
+          "es": "Base aeronáutica en modo GitHub en el teléfono: referencias leídas desde el repositorio (error en curso), diagnóstico copiable"
+        },
+        {
+          "state": "doing",
+          "fr": "Vue double sur tablette et écran large : Carburant ou Compte rendu à gauche, Carte à droite, reliés par le vol courant",
+          "en": "Double view on tablet and wide screen: Fuel or Report on the left, Map on the right, linked by the current flight",
+          "de": "Doppelansicht auf Tablet und Breitbild: Kraftstoff oder Bericht links, Karte rechts, über den aktuellen Flug verbunden",
+          "es": "Vista doble en tableta y pantalla ancha: Combustible o Informe a la izquierda, Mapa a la derecha, enlazados por el vuelo actual"
+        },
+        {
           "state": "planned",
           "fr": "Le site web de la compagnie comme transport (quand le web service PHP existera)",
           "en": "The airline website as a transport (once the PHP web service exists)",
@@ -161,6 +175,20 @@
         },
         {
           "state": "doing",
+          "fr": "Niveau et vent depuis les METAR / TAF (départ, arrivée, intermédiaire), date prévisionnelle, « météo réelle » le long de la route, METAR simplifié (plafond, vent traversier, CB / TCU)",
+          "en": "Level and wind from METAR / TAF (departure, arrival, en route), planned date, “real weather” along the route, simplified METAR (ceiling, crosswind, CB / TCU)",
+          "de": "Flugfläche und Wind aus METAR / TAF (Start, Ziel, Zwischenplatz), geplantes Datum, „echtes Wetter“ entlang der Route, vereinfachter METAR (Wolkenuntergrenze, Seitenwind, CB / TCU)",
+          "es": "Nivel y viento desde los METAR / TAF (salida, llegada, intermedio), fecha prevista, «meteo real» a lo largo de la ruta, METAR simplificado (techo, viento cruzado, CB / TCU)"
+        },
+        {
+          "state": "planned",
+          "fr": "Route en liste de points éditable (ajouter, retirer, déplacer, altitude par point) vue en direct sur la Carte ; bloc Appareil réduit à une ligne",
+          "en": "Route as an editable point list (add, remove, move, altitude per point) seen live on the Map; Aircraft block reduced to one line",
+          "de": "Route als bearbeitbare Punktliste (hinzufügen, entfernen, verschieben, Höhe je Punkt) live auf der Karte; Luftfahrzeugblock auf eine Zeile reduziert",
+          "es": "Ruta como lista de puntos editable (añadir, quitar, mover, altitud por punto) vista en directo en el Mapa; bloque Aeronave reducido a una línea"
+        },
+        {
+          "state": "doing",
           "fr": "Sélecteur d'appareil sur toutes les sources (mes fiches, flotte, types, code libre) par le registre aerodb",
           "en": "Aircraft picker over every source (my sheets, fleet, types, free code) through the aerodb registry",
           "de": "Luftfahrzeugauswahl über alle Quellen (meine Blätter, Flotte, Typen, freier Code) über das aerodb-Register",
@@ -172,6 +200,13 @@
           "en": "RPM table editing on the phone",
           "de": "Bearbeiten der RPM-Tabelle auf dem Telefon",
           "es": "Edición de la tabla RPM en el teléfono"
+        },
+        {
+          "state": "later",
+          "fr": "TEMSI : vent et météo en route depuis les cartes TEMSI",
+          "en": "TEMSI: en-route wind and weather from TEMSI charts",
+          "de": "TEMSI: Streckenwind und -wetter aus TEMSI-Karten",
+          "es": "TEMSI: viento y meteo en ruta desde las cartas TEMSI"
         }
       ]
     },
@@ -198,6 +233,13 @@
           "en": "Mission maps redrawn from the repository, read-only",
           "de": "Missionskarten, aus dem Repository neu gezeichnet, nur lesend",
           "es": "Mapas de misión redibujados desde el repositorio, solo lectura"
+        },
+        {
+          "state": "doing",
+          "fr": "Points des voies aériennes dessinées (RNAV, DME, VOR, NDB) ; carte et profil redessinés à chaque changement du plan de vol, altitude par point",
+          "en": "Fixes of drawn airways (RNAV, DME, VOR, NDB); map and profile redrawn at each flight plan change, altitude per point",
+          "de": "Punkte der gezeichneten Luftstraßen (RNAV, DME, VOR, NDB); Karte und Profil bei jeder Flugplanänderung neu gezeichnet, Höhe je Punkt",
+          "es": "Puntos de las aerovías dibujadas (RNAV, DME, VOR, NDB); mapa y perfil redibujados a cada cambio del plan de vuelo, altitud por punto"
         },
         {
           "state": "later",
