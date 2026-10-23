@@ -279,8 +279,9 @@ rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
 **Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de giro se rodean de un
 círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
-vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Toque un fijo o una radioayuda fuera de la ruta:
-se añade al tramo más cercano. Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la
+vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» junto a «Editar» y luego
+el lugar deseado (o mantenga pulsado medio segundo): sobre un fijo, una radioayuda o un aeródromo se coloca allí, en
+otro lugar es un punto libre; se añade al tramo más cercano. Un toque simple no añade nada: muestra la burbuja. Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la
 llegada no se mueven aquí. En el perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto
 que abre ese tramo, en pasos de FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+»
 hacen lo mismo. «Deshacer» deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el
@@ -604,6 +605,22 @@ no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el acceso no ca
 llega a un repositorio de GitHub: para un repositorio de framagit o GitLab, aplique la configuración en un puesto con el
 lanzador.
 
+## Administración
+
+**Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
+de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
+aplicación: el ajuste de los umbrales del mapa (`#maps?tune=1`, solo lectura en un teléfono), la hoja de ruta
+(`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
+
+**Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se
+nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primitives.html` (primitivas y diseños),
+`frame/aerodb/bench.html` y `frame/aerodb/offline_bench.html` (base aeronáutica, en línea y sin conexión),
+`frame/store/test/` (capa de datos, contra el GitHub falso) y `modules/maps/test/render.html` (renderizado del mapa).
+
+**Las páginas V2 del puesto.** Solo se muestran cuando un lanzador sirve la página: Ajustes › Mantenimiento
+(`apps/settings/maintenance.html`), Primer inicio (`apps/settings/premier_lancement.html`) y el estudio cartográfico
+(`apps/cpco/map_parser.html`).
+
 ## Conviene saber
 
 - **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
@@ -618,4 +635,4 @@ lanzador.
   problema. El token
   nunca figura en él.
 
-<!-- fr: 61ffba358b5d -->
+<!-- fr: b8cbd1317939 -->

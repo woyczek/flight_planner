@@ -186,3 +186,9 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   shows without an exchange while writes wait — the launcher is the default transport since frame lot 9, and a write
   waiting there was otherwise invisible — and hides again once the queue is empty. "Synchronise now" unchanged. Checked
   with the launcher on the test folder: a write and a deletion listed, then gone 2 s later once sent.
+- **23 Oct 2026 — Administration card** (the user's request, through the ergonomics session; [SPEC.md](SPEC.md) § 6):
+  a card after About, only at the Full level, from a declared list (`admin_links.js`) so a link is added without
+  touching the screen; benches are always named, but linked only on a workstation with a launcher (they are files of
+  the suite served by it), V2 pages are shown only with a launcher; "Diagnostics" is an action that opens the About
+  card's folded diagnostics rather than an anchor, the hash being the router's. Checked: absent at Everyday, present at
+  Full with the launcher (eleven links, every page answering 200) and without (benches without links, no V2 page).

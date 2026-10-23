@@ -106,6 +106,22 @@ refusé ; un fichier d'un autre format est refusé avec un message. La compagnie
 a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'accès ne change pas. Sans lanceur, l'appli ne joint qu'un
 dépôt GitHub : pour un dépôt framagit ou GitLab, appliquez la configuration sur un poste avec le lanceur.
 
+## Administration
+
+**Les pages d'administration.** Au niveau « Complet » (carte « Niveau »), la carte « Administration », sous « À propos
+», réunit les pages d'administration et d'essai, chacune avec une phrase ; aux autres niveaux, elle n'apparaît pas. Dans
+l'appli : le réglage des seuils de la carte (`#maps?tune=1`, en lecture seule sur un téléphone), la feuille de route
+(`#roadmap`) et le diagnostic de la carte « À propos ».
+
+**Les bancs, sur un poste.** Servis par le lanceur, ils ne s'ouvrent que sur un poste avec lanceur (ailleurs, ils sont
+nommés sans lien) ; chemins relatifs à la racine de la suite : `labs/design_primitives.html` (primitives et designs),
+`frame/aerodb/bench.html` et `frame/aerodb/offline_bench.html` (base aéronautique, en ligne et hors ligne),
+`frame/store/test/` (couche de données, contre le faux GitHub) et `modules/maps/test/render.html` (rendu de la carte).
+
+**Les pages V2 du poste.** Montrées seulement quand un lanceur sert la page : Paramètres › Maintenance
+(`apps/settings/maintenance.html`), Premier lancement (`apps/settings/premier_lancement.html`) et le studio
+cartographique (`apps/cpco/map_parser.html`).
+
 ## Bon à savoir
 
 - **Le jeton** : un jeton à grain fin de github.com, sur le seul dépôt des données, « Contents » en lecture et

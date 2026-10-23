@@ -102,6 +102,22 @@ none yet. On a workstation whose data/ already follows this repository, the acce
 the app only reaches a GitHub repository: for a framagit or GitLab repository, apply the configuration on a workstation
 with the launcher.
 
+## Administration
+
+**The administration pages.** At the “Full” level (“Level” card), the “Administration” card, below “About”, gathers the
+administration and test pages, each with a sentence; at the other levels, it does not appear. In the app: the map
+threshold tuning (`#maps?tune=1`, read only on a phone), the roadmap (`#roadmap`) and the diagnostics of the “About”
+card.
+
+**The benches, on a workstation.** Served by the launcher, they only open on a workstation with a launcher (elsewhere
+they are named without a link); paths relative to the root of the suite: `labs/design_primitives.html` (primitives and
+designs), `frame/aerodb/bench.html` and `frame/aerodb/offline_bench.html` (aeronautical base, online and offline),
+`frame/store/test/` (data layer, against the fake GitHub) and `modules/maps/test/render.html` (map rendering).
+
+**The workstation's V2 pages.** Shown only when a launcher serves the page: Settings › Maintenance
+(`apps/settings/maintenance.html`), First launch (`apps/settings/premier_lancement.html`) and the map studio
+(`apps/cpco/map_parser.html`).
+
 ## Good to know
 
 - **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
@@ -115,4 +131,4 @@ with the launcher.
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 61ffba358b5d -->
+<!-- fr: b8cbd1317939 -->

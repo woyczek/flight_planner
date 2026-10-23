@@ -275,8 +275,9 @@ mission, ses zones hachurées et son cheminement. Le profil vertical montre alor
 
 **Modifier la route sur la carte.** Touchez « Modifier » en haut à droite de la carte : les points tournants
 s'entourent d'un cercle. Faites glisser un point jusqu'à un fixe, une balise ou un terrain : il s'y pose (lâché
-ailleurs, il devient un point libre, nommé par ses coordonnées, comme 4530N00030E). Touchez un fixe ou une balise hors de la route : il s'ajoute au tronçon le plus
-proche. Touchez un point de la route : sa carte donne son niveau et propose « Retirer ». Le départ et l'arrivée ne
+ailleurs, il devient un point libre, nommé par ses coordonnées, comme 4530N00030E). Pour ajouter un point, touchez « + » à côté de « Modifier », puis touchez
+l'endroit voulu (ou restez appuyé une demi-seconde) : sur un fixe, une balise ou un terrain il s'y pose, ailleurs c'est
+un point libre ; il s'ajoute au tronçon le plus proche. Un simple toucher n'ajoute rien : il montre l'infobulle. Touchez un point de la route : sa carte donne son niveau et propose « Retirer ». Le départ et l'arrivée ne
 bougent pas ici. Sur le profil, glissez un palier vers le haut ou le bas : le niveau change à partir du point qui
 ouvre ce tronçon, par pas de FL10 (sur le premier tronçon, c'est le niveau du vol) ; dans la carte d'un point, « − »
 et « + » font de même. « Annuler » reprend le dernier geste. Chaque changement est enregistré aussitôt dans le vol, et
@@ -593,6 +594,22 @@ zone de vos vols hors ligne (« Aller aux données hors ligne »).
 refusé ; un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le dépôt que s'il n'en
 a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'accès ne change pas. Sans lanceur, l'appli ne joint qu'un
 dépôt GitHub : pour un dépôt framagit ou GitLab, appliquez la configuration sur un poste avec le lanceur.
+
+## Administration
+
+**Les pages d'administration.** Au niveau « Complet » (carte « Niveau »), la carte « Administration », sous « À propos
+», réunit les pages d'administration et d'essai, chacune avec une phrase ; aux autres niveaux, elle n'apparaît pas. Dans
+l'appli : le réglage des seuils de la carte (`#maps?tune=1`, en lecture seule sur un téléphone), la feuille de route
+(`#roadmap`) et le diagnostic de la carte « À propos ».
+
+**Les bancs, sur un poste.** Servis par le lanceur, ils ne s'ouvrent que sur un poste avec lanceur (ailleurs, ils sont
+nommés sans lien) ; chemins relatifs à la racine de la suite : `labs/design_primitives.html` (primitives et designs),
+`frame/aerodb/bench.html` et `frame/aerodb/offline_bench.html` (base aéronautique, en ligne et hors ligne),
+`frame/store/test/` (couche de données, contre le faux GitHub) et `modules/maps/test/render.html` (rendu de la carte).
+
+**Les pages V2 du poste.** Montrées seulement quand un lanceur sert la page : Paramètres › Maintenance
+(`apps/settings/maintenance.html`), Premier lancement (`apps/settings/premier_lancement.html`) et le studio
+cartographique (`apps/cpco/map_parser.html`).
 
 ## Bon à savoir
 

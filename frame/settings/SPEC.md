@@ -118,6 +118,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
 10. **About**: links to the help (the Settings chapter) and to the roadmap (`#roadmap`), then the **diagnostics**,
    folded inside the card: transport, status, usages, launcher, repository (never the token), aerodb state,
    storage, network, browser; "Copy".
+11. **Administration** (level Full only; absent otherwise), after About: the links of § 6, one per line with a
+   sentence.
 
 Under the screen's introduction, the folded "How to use" panel of the Settings chapter (`frame/settings/help/`,
 `frame/help/SPEC.md`).
@@ -163,3 +165,16 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
   and `airline/settings.json` written from the file only when the repository has none (the repository's one wins). The
   address loses its `config=`; the card "Configuration applied" says how the synchronisation went and offers "Go to
   offline data".
+
+## 6. Administration links (`frame/settings/admin_links.js`, `window.SogAdminLinks`)
+
+- **A declared list**, depending on no module: `{ id, href | act, where, title, text }`, texts in four languages.
+  `where`: `app` (everywhere), `bench` (a bench or demonstration page served by the launcher: a link only on a
+  workstation with a launcher, otherwise named without a link; its sentence ends with "workstation with launcher
+  only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page).
+- **Today**: map threshold tuning `#maps?tune=1` (read only on a phone), roadmap `#roadmap`, diagnostics (`act:
+  diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
+  `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
+  V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.
+- Paths are relative to the root of the suite; pages outside the app open in a new tab, the app's own addresses in place.
+- The Settings chapter's section "Administration" writes the same addresses out.

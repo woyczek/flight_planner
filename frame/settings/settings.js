@@ -14,6 +14,8 @@
   //   · Données hors ligne (ctx.aerodb, stockage du navigateur) ; Clé météo (TAF avwx.rest, avec ou sans lanceur : weatherKey
   //     du cadre, clé dans localStorage githubData:avwx, jamais réaffichée) ; Clés, si un lanceur sert la page ; diagnostic ;
   //   · reprise des réglages V2 de la même origine en un geste (identité, accès GitHub), proposée une fois ;
+  //   · Administration (niveau Complet seulement) : liens déclarés dans frame/settings/admin_links.js (SogAdminLinks) —
+  //     pages de l'appli, bancs (actifs sur un poste avec lanceur), pages V2 du poste (avec un lanceur seulement) ;
   //   · configuration d'un pilote (frame/settings/config.js, SogConfig) : « Exporter une configuration pour un pilote… »
   //     dans la carte Accès d'un poste (fichier sog-config-<TRI>.json et lien #settings?config=…) ; « Importer une
   //     configuration… » (fichier), le lien, ou #settings?import=1 (carte d'accueil) : carte « Configuration reçue » en
@@ -613,6 +615,14 @@
       'Fahrplan: was geliefert, in Arbeit, geplant ist', 'Hoja de ruta: lo entregado, en curso, previsto'
     ],
     diag: ['Diagnostic', 'Diagnostics', 'Diagnose', 'Diagnóstico'],
+    // carte Administration (niveau Complet)
+    admin: ['Administration', 'Administration', 'Verwaltung', 'Administración'],
+    adminHint: ['Les pages d’administration et d’essai, réunies ici.', 'The administration and test pages, gathered here.',
+      'Die Verwaltungs- und Testseiten, hier gesammelt.', 'Las páginas de administración y de prueba, reunidas aquí.'
+    ],
+    launcherOnly: ['poste avec lanceur seulement', 'workstation with launcher only', 'nur Rechner mit Starter',
+      'solo puesto con lanzador'
+    ],
     diagHint: ['« Copier » met tout dans le presse-papiers : collez-le dans votre message pour signaler un problème.',
       '“Copy” puts everything on the clipboard: paste it in your message to report a problem.',
       '„Kopieren“ legt alles in die Zwischenablage: Fügen Sie es in Ihre Nachricht ein, um ein Problem zu melden.',
@@ -861,7 +871,7 @@
     let diagJson = '{}'; // diagnostic complet (bouton « Copier »)
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
       <div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2><p><a href="#help?m=settings">${esc(t(T.aboutHelp))}</a></p><p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
-      <details><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
+      <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>${lvl === 3 ? adminCard(t, L) : ''}`;
     if (help) view.querySelector('h1 + p')?.after(help);
 
     const card = k => view.querySelector(`[data-card="${k}"]`);
@@ -1007,6 +1017,14 @@
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const act = b.dataset.act;
+      if (act === 'diagOpen') {
+        e.preventDefault(); // lien de la carte Administration : le diagnostic replié de la carte À propos, ouvert
+        const d = view.querySelector('[data-diagbox]');
+        if (d) d.open = true;
+        return d?.scrollIntoView({
+          block: 'start'
+        });
+      }
       if (act === 'v2take') {
         const d = v2Settings();
         if (d) {
@@ -1429,6 +1447,22 @@
       if (f) await importDevice(c, f, e.target.dataset.mode);
       again();
     });
+  }
+
+  /** Carte Administration (niveau Complet) : un lien et une phrase par entrée de SogAdminLinks ; bancs actifs seulement
+   *  sur un poste avec lanceur (sinon nommés, sans lien), pages V2 montrées seulement avec un lanceur. */
+  function adminCard(t, L) {
+    const links = window.SogAdminLinks || [];
+    if (!links.length) return '';
+    const row = x => {
+      const label = esc(t(x.title)),
+        out = x.href && !x.href.startsWith('#');
+      const link = x.act ? `<a href="#settings" data-act="${esc(x.act)}">${label}</a>` : x.where === 'bench' && !L ? `<b>${label}</b>` :
+        `<a href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
+      return `<li data-admin="${esc(x.id)}">${link}<br><span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span></li>`;
+    };
+    return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>
+      <ul class="f-admin">${links.filter(x => x.where !== 'v2' || L).map(row).join('')}</ul></div>`;
   }
 
   // ---- configuration d'un pilote (frame/settings/config.js)

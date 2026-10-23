@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Settings: Administration card** (`frame/settings/admin_links.js`, `frame/settings/settings.js`, `frame/frame.css`,
+  `frame/index.html`, `frame/sw.js`; SPEC § 6, DECISIONS, help ×4) — at the Full level, one card gathers the map
+  threshold tuning, the roadmap, the diagnostics, the benches (workstation with launcher only) and the workstation's V2
+  administration pages (with a launcher), each with a sentence, from a declared list.
 - **Map: narrow pane** (`modules/maps/module.js`, `profile.js`, `lib/vertical_profile.js`; SPEC, DECISIONS, help ×4) —
   one intermediate step in the IFR thresholds (TMA, CTA, R and TSA shapes before names, airways and MORA) and one step
   less when the map frame is under 600 px; vertical profile labels never overlap (airspaces entered first, the others

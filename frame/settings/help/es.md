@@ -105,6 +105,22 @@ no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el acceso no ca
 llega a un repositorio de GitHub: para un repositorio de framagit o GitLab, aplique la configuración en un puesto con el
 lanzador.
 
+## Administración
+
+**Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
+de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
+aplicación: el ajuste de los umbrales del mapa (`#maps?tune=1`, solo lectura en un teléfono), la hoja de ruta
+(`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
+
+**Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se
+nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primitives.html` (primitivas y diseños),
+`frame/aerodb/bench.html` y `frame/aerodb/offline_bench.html` (base aeronáutica, en línea y sin conexión),
+`frame/store/test/` (capa de datos, contra el GitHub falso) y `modules/maps/test/render.html` (renderizado del mapa).
+
+**Las páginas V2 del puesto.** Solo se muestran cuando un lanzador sirve la página: Ajustes › Mantenimiento
+(`apps/settings/maintenance.html`), Primer inicio (`apps/settings/premier_lancement.html`) y el estudio cartográfico
+(`apps/cpco/map_parser.html`).
+
 ## Conviene saber
 
 - **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
@@ -119,4 +135,4 @@ lanzador.
   problema. El token
   nunca figura en él.
 
-<!-- fr: 61ffba358b5d -->
+<!-- fr: b8cbd1317939 -->

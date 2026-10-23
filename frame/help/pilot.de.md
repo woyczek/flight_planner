@@ -293,8 +293,10 @@ schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mi
 
 **Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten einen
 Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
-losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Tippen Sie einen Fix oder ein
-Funkfeuer abseits der Route an: er wird dem nächstgelegenen Abschnitt hinzugefügt. Tippen Sie einen Routenpunkt an:
+losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Um einen Punkt hinzuzufügen, tippen Sie auf
+„+“ neben „Bearbeiten“ und dann auf die gewünschte Stelle (oder halten Sie eine halbe Sekunde gedrückt): auf einem Fix,
+einem Funkfeuer oder einem Flugplatz setzt er sich dort, anderswo ist es ein freier Punkt; er kommt in den
+nächstgelegenen Abschnitt. Ein einfaches Tippen fügt nichts hinzu: es zeigt die Infobox. Tippen Sie einen Routenpunkt an:
 seine Karte nennt seine Flughöhe und bietet „Entfernen“ an. Abflug und Ankunft bewegen sich hier nicht. Auf dem Profil
 ziehen Sie eine Flughöhe nach oben oder unten: sie ändert sich ab dem Punkt, der diesen Abschnitt eröffnet, in Schritten
 von FL10 (auf dem ersten Abschnitt ist es die Flughöhe des Flugs); in der Karte eines Punkts tun „−“ und „+“ dasselbe.
@@ -627,6 +629,22 @@ nur ins Repository geschrieben, wenn es noch keine hat. Auf einem Rechner, desse
 ändert sich der Zugang nicht. Ohne Starter erreicht die App nur ein GitHub-Repository: Wenden Sie die Konfiguration für
 ein Repository auf framagit oder GitLab auf einem Rechner mit Starter an.
 
+## Verwaltung
+
+**Die Verwaltungsseiten.** Auf der Stufe „Vollständig“ (Karte „Stufe“) sammelt die Karte „Verwaltung“ unter „Über“ die
+Verwaltungs- und Testseiten, jede mit einem Satz; auf den anderen Stufen erscheint sie nicht. In der App: die Abstimmung
+der Kartenschwellen (`#maps?tune=1`, auf einem Telefon nur lesbar), der Fahrplan (`#roadmap`) und die Diagnose der Karte
+„Über“.
+
+**Die Prüfstände, auf einem Rechner.** Vom Starter bedient, öffnen sie sich nur auf einem Rechner mit Starter (anderswo
+werden sie ohne Link genannt); Pfade relativ zur Wurzel der Suite: `labs/design_primitives.html` (Primitive und
+Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftfahrtbasis, online und offline),
+`frame/store/test/` (Datenschicht, gegen das falsche GitHub) und `modules/maps/test/render.html` (Kartendarstellung).
+
+**Die V2-Seiten des Rechners.** Nur gezeigt, wenn ein Starter die Seite bedient: Einstellungen › Wartung
+(`apps/settings/maintenance.html`), Erster Start (`apps/settings/premier_lancement.html`) und das Kartenstudio
+(`apps/cpco/map_parser.html`).
+
 ## Gut zu wissen
 
 - **Das Token**: ein feingranulares Token von github.com, nur für das Datenrepository, „Contents“ lesen und schreiben,
@@ -640,4 +658,4 @@ ein Repository auf framagit oder GitLab auf einem Rechner mit Starter an.
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 61ffba358b5d -->
+<!-- fr: b8cbd1317939 -->
