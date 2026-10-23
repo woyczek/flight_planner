@@ -87,6 +87,14 @@
     }
     return null;
   }
+  /** Fichiers de l'aide pour une langue (chemins relatifs à frame/help/) : le manuel, et chaque tutoriel dans cette
+   *  langue, plus l'anglais (sa langue d'écriture) quand elle n'est ni le français ni l'anglais ; le cadre les garde dès
+   *  l'installation, les autres langues l'étant à leur première lecture. */
+  function files(l) {
+    const lg = LANGS.includes(l) ? l : 'fr',
+      tl = lg === 'fr' || lg === 'en' ? [lg] : [lg, 'en'];
+    return [`pilot.${lg}.md`, ...TUTORIALS.flatMap(x => tl.map(k => `tutorial/${x.id}.${k}.md`))];
+  }
   /** Note la carte d'accueil comme vue (device/help.json : welcomed) ; elle ne revient plus, et celle encore posée sous
    *  l'écran d'aide (le module reste dessous) est retirée. */
   async function welcomed(c) {
@@ -310,6 +318,7 @@
   window.SogHelp = {
     panel,
     forModule,
+    files,
     screen,
     welcome,
     split,

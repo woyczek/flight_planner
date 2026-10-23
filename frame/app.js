@@ -655,6 +655,68 @@
     return r;
   }
 
+  // ---------------------------------------------------------------- écrans chargés à la demande
+  // Réglages, aide et feuille de route : scripts classiques injectés à la première ouverture de leur écran (le service
+  // worker les garde comme les autres fichiers du cadre) ; le démarrage, le menu et le premier module ne les attendent
+  // jamais ; l'aide en page d'un module est chargée après son montage
+  const LAZY = {
+    help: ['lib/markdown.js?v=0', 'help/help.js?v=0'],
+    roadmap: ['help/roadmap.js?v=0'],
+    settings: ['settings/admin_links.js?v=0', 'settings/config.js?v=0', 'settings/join.js?v=0', 'lib/qr.js?v=0',
+      'settings/settings.js?v=0'
+    ]
+  };
+  const injected = new Map(); // chemin → promesse du script chargé
+  /** Charge un script classique du cadre une fois (dans l'ordre : chacun après le précédent). */
+  const script = p => injected.get(p) || injected.set(p, new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = new URL(`frame/${p}`, ROOT).href;
+    s.onload = res;
+    s.onerror = () => {
+      injected.delete(p); // hors ligne sans copie : nouvel essai à la prochaine ouverture
+      s.remove();
+      rej(new Error(p.split('?')[0]));
+    };
+    document.head.append(s);
+  })).get(p);
+  /** Scripts d'un écran (help, roadmap, settings), chargés une fois. */
+  async function need(k) {
+    for (const p of LAZY[k]) await script(p);
+  }
+  /** Écran d'aide ou de feuille de route : ses scripts d'abord ; rien si l'adresse a changé entre-temps. */
+  async function showDoc(id, box, query) {
+    const at = location.hash;
+    try {
+      await need(id);
+    } catch (e) {
+      return notify(t(T.loadErr, {
+        m: id,
+        e: e.message || e
+      }), 'err');
+    }
+    if (location.hash !== at || !box.isConnected) return;
+    return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : SogRoadmap.screen(box, helpCtx());
+  }
+  /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), posé
+   *  avant lui, et carte d'accueil des tutoriels à la première ouverture ; chargée après le module, jamais avant. */
+  function moduleHelp(entry, meta, el, view) {
+    need('help').then(() => {
+      if (!el.isConnected) return;
+      if (meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(p, el))
+        .catch(e => console.warn('help', e));
+      SogHelp.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console.warn('help', e));
+    }).catch(e => console.warn('help', e));
+  }
+  /** Fichiers de l'aide dans la langue de l'appli (manuel, tutoriels), gardés dès l'installation. */
+  async function helpFiles() {
+    try {
+      await need('help');
+      return (SogHelp.files?.(lang()) || []).map(p => new URL(`frame/help/${p}`, ROOT).href);
+    } catch {
+      return [];
+    }
+  }
+
   // ---------------------------------------------------------------- navigation
   const ROUTES = {
     conflicts: renderConflicts,
@@ -735,8 +797,7 @@
     view.replaceChildren();
     renderMenu(id);
     paintPaneButton(null);
-    if (id === 'help') return window.SogHelp?.screen(view, helpCtx(), h.query);
-    if (id === 'roadmap') return window.SogRoadmap?.screen(view, helpCtx());
+    if (id === 'help' || id === 'roadmap') return showDoc(id, view, h.query);
     if (ROUTES[id]) return ROUTES[id](view);
     const entry = APP.modules.find(m => m.id === id) || APP.modules[0];
     if (!entry) return renderSettings(view);
@@ -752,17 +813,12 @@
         id: entry.id,
         mod
       };
-      // aide en page : panneau replié « Comment s'en servir » tiré du chapitre du module (frame/help), posé avant lui
-      if (window.SogHelp && meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(
-          p, el))
-        .catch(e => console.warn('help', e));
-      // première ouverture : carte d'accueil des tutoriels, en tête, jusqu'à sa fermeture ou à l'ouverture d'un tutoriel
-      window.SogHelp?.welcome?.(helpCtx()).then(w => w && el.isConnected && view.prepend(w)).catch(e => console.warn('help', e));
       lastScreen = {
         id: entry.id,
         hash: location.hash
       };
       await mod.mount(el, ctxFor(entry, meta, h.query));
+      moduleHelp(entry, meta, el, view);
       // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
       paintPaneButton(entry);
       const want = paneWanted(entry, h.query);
@@ -924,8 +980,7 @@
     paintToggles();
     paintPaneButton(null);
     scrollTo(0, 0);
-    if (id === 'help') return window.SogHelp?.screen(scr, helpCtx(), h.query);
-    if (id === 'roadmap') return window.SogRoadmap?.screen(scr, helpCtx());
+    if (id === 'help' || id === 'roadmap') return showDoc(id, scr, h.query);
     return ROUTES[id]?.(scr);
   }
   /** Retire l'écran du cadre ; restore : le module réapparaît à son défilement d'avant. */
@@ -1038,9 +1093,10 @@
         return liveApi();
       },
       query,
-      help: window.SogHelp ? SogHelp.forModule(entry.id, $('fView')) : Object.freeze({
-        open: () => false,
-        link: () => '#help'
+      // ctx.help : open() ouvre le panneau d'aide déjà posé (l'aide est alors chargée), link() est une adresse
+      help: Object.freeze({
+        open: subject => window.SogHelp ? SogHelp.forModule(entry.id, $('fView')).open(subject) : false,
+        link: (m = entry.id) => `#help?m=${encodeURIComponent(m)}`
       })
     };
   }
@@ -1099,7 +1155,17 @@
 
   // ---------------------------------------------------------------- écran des réglages (frame/settings/settings.js)
   /** Réglages de l'appareil : écran du cadre (il règle transport et jeton), avec son contexte privilégié. */
-  function renderSettings(view) {
+  async function renderSettings(view) {
+    const at = location.hash;
+    try {
+      await need('settings');
+    } catch (e) {
+      return notify(t(T.loadErr, {
+        m: 'settings',
+        e: e.message || e
+      }), 'err');
+    }
+    if (location.hash !== at || !view.isConnected) return; // écran quitté pendant le chargement
     if (!window.SogSettings) return view.replaceChildren();
     return SogSettings.render(view, {
       t,
@@ -1150,7 +1216,7 @@
         launcherHere = await FD.launcher.detect();
         await loadDevice();
       },
-      helpPanel: () => window.SogHelp ? SogHelp.panel('settings', helpCtx()) : Promise.resolve(null),
+      helpPanel: () => need('help').then(() => SogHelp.panel('settings', helpCtx())).catch(() => null),
       // carte Diagnostic : état de la couche de données et de la base aéronautique, à copier pour un rapport
       async diagnostic() {
         const d = await FD.diagnostic(),
@@ -1705,7 +1771,7 @@
       scope: new URL('frame/', ROOT).pathname
     }).then(() => navigator.serviceWorker.ready).then(async reg => reg.active?.postMessage({
       type: 'precache',
-      urls: await moduleFiles()
+      urls: [...await moduleFiles(), ...await helpFiles()]
     })).catch(e => console.warn('service worker', e));
   }
   /** « Recharger » après une nouvelle version : un service worker en attente prend la main (controllerchange) ; sinon

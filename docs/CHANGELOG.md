@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: lighter start** (`frame/app.js`, `frame/index.html`, `frame/sw.js`, `frame/help/help.js`; SPEC § 3.1 and
+  § 3.6, DECISIONS). Settings, help and roadmap load the first time their screen opens; a module's help loads after
+  the module. The help is kept offline in the application's language only. On a phone at Fast 3G the menu appears
+  1.3 s sooner, and the installation is 168 KB lighter.
 - **Map: beacons in the same place** (`modules/maps/lib/aero_symbols.js`, `render.js`, `module.js`; SPEC, DECISIONS,
   help ×4) — a VOR (or TACAN, DME) keeps its symbol and label over an NDB, an NDB over an ILS; the ILS is drawn
   underneath and, when it shares the VOR's place, named in the VOR's new tooltip ("also here: ILS 25L BG 109.9").

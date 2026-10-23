@@ -676,3 +676,27 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - no JavaScript error.
     - Regressions: `frame/store/test/` 90 / 90; the frame application bench, whose first GitHub commit no longer
       carries `pilot/ANON/hello.json`, only `pilot/TST/hello.json`; the simulator test.
+- **23 Oct 2026 — Lot 21, screens loaded on demand** (measure 3 of the phone audit, decided by the coordinator):
+  - **What**:
+    - Settings, help and roadmap leave `index.html`. The frame injects their scripts, in order, the first time
+      their screen opens, and checks the address again after loading.
+    - A module's help loads after the module has mounted. `ctx.help.open()` and `link()` work without it.
+    - The help is kept at installation in the application's language only (`SogHelp.files(lang)`, added to
+      `help.js`); the other languages are kept the first time they are read.
+  - **Measured before / after** (same script `audit_run.py`, phase 1; fake GitHub serving the files uncompressed;
+    Chrome with a cleared profile, 375 px, CPU ×4, Fast 3G; three runs after, identical within 30 ms):
+    - DOMContentLoaded: 4.2 s → 2.8 s.
+    - menu: 5.4 s → 4.1 s (−1.3 s).
+    - first module (Fuel) mounted: 8.8 s → 7.4 s (−1.4 s).
+    - files loaded before the module: 29 (989 KB) → 21 (765 KB).
+    - installation: 88 files, 2,417 KB → 82 files, 2,249 KB (−168 KB: the help in three other languages).
+    - next opening offline: unchanged (menu 0.12 s, module 0.34 s).
+    - Over real gzip (Pages), about a third of the bytes: the network share of the gain shrinks, the CPU share stays.
+  - **Tests** (`t_l21`, 12 / 12):
+    - the menu appears with none of these scripts loaded;
+    - after the module, the help is loaded (panel drawn) but not Settings;
+    - `#settings` loads and draws, with its help panel; `#roadmap` and `#help` draw;
+    - `#settings` left 5 ms after opening draws nothing over Fuel;
+    - in German, the cache holds `pilot.de.md` and the English tutorials only;
+    - Spanish read afterwards is kept;
+    - no JavaScript error.

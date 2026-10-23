@@ -258,7 +258,9 @@ AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espaci
 donde varios se superponen, una tarjeta los muestra todos: un bloque de niveles, como el perfil vertical (una columna
 numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda hasta el
 toque siguiente. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
-un movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
+un movimiento del mapa. Sobre una radioayuda, la burbuja da su tipo, su indicativo y su frecuencia;
+cuando varias están en el mismo lugar, el mapa guarda la más útil (VOR, TACAN o DME, luego NDB, luego ILS) y la burbuja
+nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
 
 **Los puntos de notificación VFR de un aeródromo.** Pase el ratón sobre un aeródromo: sus puntos de notificación y las
 secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, guiones entre los puntos). Tóquelo: el

@@ -252,7 +252,9 @@ point), sa distance, ses routes, son plancher et son plafond ; pour un espace, s
 superposent, une carte les montre tous : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
 de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste jusqu'au toucher suivant. Elle suit
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
-la carte. Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
+la carte. Sur une balise, la bulle donne son type, son indicatif et sa fréquence ; quand
+plusieurs balises sont au même endroit, la carte garde la plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle
+nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
 
 **Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
 tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les points). Touchez-le : la carte se rapproche

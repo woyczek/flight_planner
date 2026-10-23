@@ -94,3 +94,8 @@ The help agent's memory: every choice, dated, with its reason. Newest last. Proj
   everything else; seven captures of the assistant at 375 px, taken by `capture.py --only join` against the fake GitHub
   (in-memory repository emptied before each language, a token that is not one), so the run needs no launcher, no real
   account and no real data. The welcome card's link now opens the assistant.
+- **23 Oct 2026 — `SogHelp.files(lang)` (added by the V3 frame session, lot 21)**: the help's files for one language,
+  relative to `frame/help/`: the manual, and each tutorial in that language, plus English when the language is
+  neither French nor English (the tutorials' own fallback). The frame now keeps only those at installation, instead of
+  the four manuals and every tutorial in the service worker's shell. `help.js` and `markdown.js` are injected by the
+  frame on demand: after a module mounts (its panel), or when `#help` opens.

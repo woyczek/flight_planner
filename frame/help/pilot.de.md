@@ -270,7 +270,9 @@ und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Ande
 Blase den Luftraum unter dem Finger; wo sich mehrere überlagern, zeigt eine Karte sie alle: einen Höhenblock wie das
 Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
 Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
-nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger
+nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Über einem Funkfeuer nennt die Blase Art, Kennung und Frequenz; stehen
+mehrere Funkfeuer am selben Ort, behält die Karte das nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS), und die
+Blase nennt die anderen („auch hier: ILS 25L BG 109.9“). Auf dem Profil nennen Finger
 oder Maus ebenso die durchflogenen Lufträume.
 
 **Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die

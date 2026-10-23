@@ -248,7 +248,9 @@ floor and ceiling; for an airspace, its name and its limits in AIP notation (“
 elsewhere inside an airspace, the bubble gives the airspace under your finger; where several overlap, a card shows them
 all: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
 then the numbered list with their limits. It stays until the next tap. It follows the pointer, stays 5 seconds, gives
-way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger or the mouse give
+way to the next one, and closes with a tap elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several
+beacons share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the
+others (“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give
 the airspaces crossed in the same way.
 
 **The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences

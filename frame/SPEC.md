@@ -257,6 +257,14 @@ used alone:
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
+- **Loaded on demand**: the scripts of Settings (`settings/admin_links`, `config`, `join`, `lib/qr`,
+  `settings/settings`), of the help (`lib/markdown`, `help/help`) and of the roadmap (`help/roadmap`) are not in
+  `index.html`. The frame injects them, in order, the first time their screen opens (`need`).
+  - A screen left while its scripts load draws nothing: the address is checked after loading.
+  - A module's help (its folded panel, the welcome card) loads after the module has mounted, never before.
+  - `ctx.help.open()` opens the panel already drawn; `ctx.help.link()` is an address.
+  - So the menu and the first module never wait for them. The service worker keeps them like the frame's other
+    files, so they open offline.
 - **The frame's screens** (help, roadmap, settings, conflicts) opened from a module show in the module's area, over
   it. The module stays mounted, only hidden, with its pane.
   - The menu stays in place, sticky under the header at any scroll, with the current module still marked.
@@ -491,6 +499,10 @@ used alone:
   (message `precache`): each entry point and the files its `meta.files` declares (paths relative to `module.js`). So
   every module opens offline after the first visit, even one never opened. A file a module imports without declaring
   it is kept the first time it is loaded; a module that fails to load sends its entry point only.
+- **Help**: only in the application's language at installation. The page adds to `precache` the files that
+  `SogHelp.files(lang)` gives: the manual `pilot.<lang>.md`, and each tutorial in that language, plus English when the
+  language is neither French nor English. Another language, and the tutorials' captures, are kept the first time
+  they are read.
 - **New version**:
   - when a background check finds a changed file, all copies are fetched again, so the new version arrives whole;
   - then the open pages receive `sog-frame-update` and the frame shows "A new version of the app is ready" with a

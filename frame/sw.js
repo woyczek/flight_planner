@@ -20,11 +20,8 @@ const CACHE = 'sog-frame-v1',
     'lib/markdown.js',
     'lib/dom.js', 'lib/current_flight.js',
     'help/help.js', 'help/roadmap.js', 'help/roadmap.json',
-    'help/pilot.fr.md', 'help/pilot.en.md', 'help/pilot.de.md', 'help/pilot.es.md',
-    // tutoriels (anglais et français ; leurs captures sont gardées au premier passage)
-    'help/tutorial/join-airline.en.md', 'help/tutorial/join-airline.fr.md', 'help/tutorial/prepare-flight.en.md',
-    'help/tutorial/prepare-flight.fr.md',
-    'help/tutorial/write-report.en.md', 'help/tutorial/write-report.fr.md',
+    // l'aide (manuel, tutoriels) : seulement dans la langue de l'appli, demandée par la page (message « precache ») ;
+    // les autres langues et les captures des tutoriels sont gardées à leur première lecture
     '../assets/favicon-flight.svg'
   ];
 /** Fichier de l'appli (gardé) ? Le cadre, les modules, l'icône ; pas les essais. */
