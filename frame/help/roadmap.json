@@ -79,10 +79,10 @@
       "items": [
         {
           "state": "done",
-          "fr": "Position réelle pendant un vol démarré : GPS de l'appareil ou session IVAO / VATSIM, écrite dans le vol courant, pastille d'en-tête",
-          "en": "Actual position during a started flight: device GPS or IVAO / VATSIM session, written into the current flight, header badge",
-          "de": "Tatsächliche Position während eines gestarteten Flugs: Geräte-GPS oder IVAO/VATSIM-Sitzung, in den aktuellen Flug geschrieben, Kopfzeilen-Pastille",
-          "es": "Posición real durante un vuelo iniciado: GPS del dispositivo o sesión IVAO / VATSIM, escrita en el vuelo actual, pastilla de cabecera"
+          "fr": "Position réelle pendant un vol démarré : simulateur par le lanceur (X-Plane 12, Little Navmap), GPS de l'appareil, session IVAO / VATSIM ; écrite dans le vol courant, pastille d'en-tête",
+          "en": "Actual position during a started flight: simulator through the launcher (X-Plane 12, Little Navmap), device GPS, IVAO / VATSIM session; written into the current flight, header badge",
+          "de": "Tatsächliche Position während eines gestarteten Flugs: Simulator über den Starter (X-Plane 12, Little Navmap), Geräte-GPS, IVAO/VATSIM-Sitzung; in den aktuellen Flug geschrieben, Kopfzeilen-Pastille",
+          "es": "Posición real durante un vuelo iniciado: simulador a través del lanzador (X-Plane 12, Little Navmap), GPS del dispositivo, sesión IVAO / VATSIM; escrita en el vuelo actual, pastilla de cabecera"
         },
         {
           "state": "done",
@@ -498,6 +498,13 @@
           "en": "Exportable pilot configuration (airline, data git repository, trigram, token how-to) and import in a few gestures by file or link",
           "de": "Exportierbare Pilotenkonfiguration (Gesellschaft, Daten-Git-Repository, Kürzel, Token-Anleitung) und Import in wenigen Gesten per Datei oder Link",
           "es": "Configuración exportable para un piloto (compañía, repositorio git de datos, trigrama, guía del token) e importación en pocos gestos por archivo o enlace"
+        },
+        {
+          "state": "done",
+          "fr": "Carte Administration (niveau Complet) : réglage des seuils de la carte, feuille de route, diagnostic, bancs, pages V2 du poste",
+          "en": "Administration card (Complete level): map thresholds tuning, roadmap, diagnostics, benches, the workstation's V2 pages",
+          "de": "Verwaltungskarte (Stufe Vollständig): Kartenschwellen, Fahrplan, Diagnose, Prüfstände, V2-Seiten des Arbeitsplatzes",
+          "es": "Tarjeta Administración (nivel Completo): ajuste de umbrales del mapa, hoja de ruta, diagnóstico, bancos, páginas V2 del puesto"
         },
         {
           "state": "done",
