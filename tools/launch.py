@@ -15,15 +15,19 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, datetime, fnmatch, glob, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
-import posixpath, urllib.parse, urllib.request, webbrowser, zipfile
+import argparse, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import http.client, http.cookies, ipaddress, posixpath, ssl, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
+import report_bridge  # pont du registre : comptes rendus V3 (cr/reports/) rejoués dans cr/missions.yaml (V2)
 import csp_policy as cspmod  # politique de sécurité du contenu, commune au site sans lanceur (tools/build_pages.py)
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
+import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
+import lan_access  # appareils du réseau local (tablette, téléphone) appairés par un code : état, essais, appareils
+import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -262,7 +266,104 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _local_host(self):
         """En-tête Host de cette machine : une page d'un autre site qui ferait pointer son nom vers 127.0.0.1
         (« DNS rebinding ») envoie son propre nom et se voit refuser tout le dossier, données comprises."""
+        if self._lan():  # serveur du réseau local : l'adresse privée exacte de ce poste (jamais un nom de domaine)
+            return self.headers.get('Host') in LAN['hosts']
         return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
+
+    def _lan(self):
+        """Requête reçue par un serveur du réseau local (« Ouvrir aux appareils du réseau local »)."""
+        return getattr(self.server, 'lan', False)
+
+    def _lan_gate(self):
+        """Appareil du réseau local : adresse privée et hôte exact exigés, appairage (cookie) exigé pour tout — page
+        d'appairage pour une page demandée, 401 sinon —, puis seulement les routes /__setup/ de l'appli Pilote
+        (tools/lan_access.py). Vrai si la requête a reçu sa réponse ici."""
+        if not self._lan():
+            return False
+        if not lan_access.private(self.client_address[0]) or not self._local_host():
+            self._json({'error': 'refusé'}, 403)
+            return True
+        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if path == '/__lan/pair':
+            self._lan_pair()
+            return True
+        jar = http.cookies.SimpleCookie()
+        try:
+            jar.load(self.headers.get('Cookie') or '')
+        except http.cookies.CookieError:
+            pass
+        name = lan_access.cookie_name(self.port)
+        token = jar[name].value if name in jar else ''
+        if not lan_access.paired(token):
+            if self.command == 'GET' and 'text/html' in (self.headers.get('Accept') or '') and not path.startswith('/__setup/'):
+                self._lan_page(safe_next(self.path), 401)
+            else:
+                self._json({'error': 'appareil non appairé'}, 401)
+            return True
+        if path.startswith('/__setup/') and not lan_access.allowed_route(self.command, path):
+            self._json({'error': 'réservé au poste'}, 403)
+            return True
+        return False
+
+    def _lan_lang(self):
+        """Langue de la page d'appairage : la première des langues du navigateur que la suite connaît, sinon fr."""
+        for part in (self.headers.get('Accept-Language') or '').split(','):
+            code = part.split(';')[0].strip()[:2].lower()
+            if code in LAN_TEXT['title']:
+                return code
+        return 'fr'
+
+    def _lan_page(self, nxt, code=200, msg=''):
+        """Page d'appairage (sans script : formulaire envoyé à /__lan/pair), dans la langue du navigateur."""
+        lg = self._lan_lang()
+        tx = {k: v[lg] for k, v in LAN_TEXT.items()}
+        e = lambda s: str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+        body = (f'<!doctype html><html lang="{lg}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{e(tx["title"])}</title><body style="font:17px system-ui,sans-serif;margin:0;padding:24px 16px;max-width:30em">'
+                f'<h1 style="font-size:1.3em">{e(tx["title"])}</h1><p>{e(tx["intro"].format(host=socket.gethostname()))}</p>'
+                + (f'<p role="alert" style="color:#b00020"><b>{e(msg)}</b></p>' if msg else '')
+                + f'<form method="post" action="/__lan/pair"><input type="hidden" name="next" value="{e(nxt)}">'
+                f'<label>{e(tx["code"])}<br><input name="code" inputmode="numeric" pattern="[0-9]{{6}}" maxlength="6" '
+                f'autocomplete="one-time-code" required autofocus style="font-size:1.6em;letter-spacing:.2em;width:7em;margin:8px 0"></label><br>'
+                f'<button type="submit" style="font-size:1.1em;padding:8px 20px">{e(tx["pair"])}</button></form>'
+                f'<p style="color:#666;font-size:.9em">{e(tx["note"])}</p></body></html>').encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _lan_pair(self):
+        """/__lan/pair : GET la page ; POST le code saisi — bon : jeton en cookie, retour à la page demandée ; faux ou
+        trop d'essais : la page avec le motif."""
+        tx = {k: v[self._lan_lang()] for k, v in LAN_TEXT.items()}
+        if self.command != 'POST':
+            return self._lan_page('/frame/')
+        try:
+            size = min(int(self.headers.get('Content-Length') or 0), 2048)
+        except ValueError:
+            size = 0
+        form = urllib.parse.parse_qs(self.rfile.read(size).decode('utf-8', 'replace') if size > 0 else '')
+        nxt = safe_next((form.get('next') or ['/frame/'])[0])
+        res, val = lan_access.attempt(self.client_address[0], (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
+        if res == 'ok':
+            self.send_response(303)
+            self.send_header('Set-Cookie', f'{lan_access.cookie_name(self.port)}={val}; Path=/; Max-Age={lan_access.MAX_AGE}; HttpOnly; SameSite=Strict')
+            self.send_header('Location', nxt)
+            self.send_header('Content-Length', '0')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            say(f'  Réseau local : appareil appairé ({self.client_address[0]}).')
+            return None
+        if res == 'wait':
+            return self._lan_page(nxt, 429, tx['wait'].format(s=val))
+        if res == 'closed':
+            say('  Réseau local : trop de codes faux en une heure, appairage fermé (« Nouveau code » sur le poste pour le rouvrir).')
+            return self._lan_page(nxt, 403, tx['closed'])
+        if res == 'expired':
+            return self._lan_page(nxt, 401, tx['expired'])
+        return self._lan_page(nxt, 401, tx['bad'])
 
     def _same_origin(self):
         """Requête de la suite elle-même : en-tête Sec-Fetch-Site du navigateur « same-origin » ou « none » (adresse
@@ -325,6 +426,81 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(body)
             return None
         return self._json({'error': 'refusé'}, 403)
+
+    def do_PUT(self):
+        """PUT /__setup/lnmperf-folder et /__setup/lnmperf (fiches Little Navmap) : mêmes contrôles qu'un POST ; toute
+        autre route refuse la méthode."""
+        return self.do_POST()
+
+    def _lnmperf(self, body):
+        """Dossier des fiches Little Navmap de ce poste (V3 aerodb, frame/aerodb/lnmperf.js) :
+        · GET / PUT /__setup/lnmperf-folder : { folder, exists, suggestions } ; PUT { folder } (dossier existant, hors du
+          dossier de données ; vide : réglage retiré), gardé dans tools/.lnmperf.json (local, jamais versionné) ;
+        · GET /__setup/lnmperf : { folder, files: [{ name, size, mtime, sha }] } (*.lnmperf du dossier, sans sous-dossier) ;
+        · GET /__setup/lnmperf?name=… : { name, text, size, mtime, sha } ;
+        · PUT /__setup/lnmperf?name=… (texte) : fichier écrit d'un coup (temporaire puis remplacement) → { name, size, mtime,
+          sha } ;
+        · POST /__setup/lnmperf?name=…&action=retire : fichier rangé dans _removed/ du dossier (jamais effacé).
+        Dossier non réglé ou absent : 409. Noms : un nom de fichier .lnmperf seul, sans chemin."""
+        if not self._allowed():
+            return self._json({'error': 'refusé'}, 403)
+        u = urllib.parse.urlparse(self.path)
+        q = urllib.parse.parse_qs(u.query)
+        if u.path == '/__setup/lnmperf-folder':
+            if self.command == 'GET':
+                f = _read_json(LNMPERF_STATE).get('folder') or ''
+                return self._json({'folder': f, 'exists': bool(f) and os.path.isdir(f), 'suggestions': lnmperf_suggestions()})
+            if self.command != 'PUT':
+                return self._json({'error': 'méthode refusée'}, 405)
+            try:
+                folder = str((json.loads(body or b'{}') or {}).get('folder') or '').strip()
+            except (ValueError, AttributeError):
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            if folder:
+                folder = os.path.abspath(os.path.expanduser(folder))
+                if not os.path.isdir(folder):
+                    return self._json({'ok': False, 'error': 'absent', 'message': 'Dossier absent.'}, 400)
+                data = os.path.normcase(os.path.realpath(DATA))
+                real = os.path.normcase(os.path.realpath(folder))
+                if real == data or real.startswith(data + os.sep):
+                    return self._json({'ok': False, 'error': 'data', 'message': 'Dossier de données refusé.'}, 400)
+            _write_json(LNMPERF_STATE, {'folder': folder})
+            return self._json({'ok': True, 'folder': folder})
+        folder = lnmperf_folder()
+        if not folder:
+            return self._json({'error': 'dossier non réglé', 'folder': ''}, 409)
+        name = (q.get('name') or [''])[0]
+        if self.command == 'GET' and not name:
+            files = [lnmperf_entry(os.path.join(folder, n)) for n in sorted(os.listdir(folder))
+                     if LNMPERF_NAME.match(n) and os.path.isfile(os.path.join(folder, n))]
+            return self._json({'folder': folder, 'files': files})
+        if not LNMPERF_NAME.match(name or ''):
+            return self._json({'error': 'nom refusé'}, 400)
+        path = os.path.join(folder, name)
+        if self.command == 'GET':
+            if not os.path.isfile(path):
+                return self._json({'error': 'fichier absent'}, 404)
+            e = lnmperf_entry(path)
+            with open(path, 'rb') as f:
+                e['text'] = f.read().decode('utf-8', 'replace')
+            return self._json(e)
+        if self.command == 'PUT':
+            tmp = path + '.tmp'
+            with open(tmp, 'wb') as f:
+                f.write(body)
+            os.replace(tmp, path)
+            return self._json(lnmperf_entry(path))
+        if (q.get('action') or [''])[0] == 'retire':
+            if not os.path.isfile(path):
+                return self._json({'ok': True, 'moved': ''})
+            out = os.path.join(folder, '_removed')
+            os.makedirs(out, exist_ok=True)
+            dest = os.path.join(out, name)
+            if os.path.exists(dest):
+                dest = os.path.join(out, f'{name[:-8]}_{time.strftime("%Y%m%d-%H%M%S")}.lnmperf')
+            shutil.move(path, dest)
+            return self._json({'ok': True, 'moved': '_removed/' + os.path.basename(dest)})
+        return self._json({'error': 'inconnu'}, 404)
 
     def _allowed(self):
         """Vrai si une requête /__setup/ vient de la page servie ici : hôte local, même origine, en-tête X-SOG-Setup."""
@@ -415,6 +591,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
 
     def do_HEAD(self):
         """HEAD : mêmes refus que GET."""
+        if self._lan_gate():
+            return None
         why = self._refused()
         if why:
             return self._deny(why)
@@ -451,6 +629,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         """GET : refus (chemins cachés, autre site, scripts de données hors format), index du pool refaits avant d'être
         servis, routes /__setup/, sinon fichier statique."""
+        if self._lan_gate():
+            return None
         why = self._refused()
         if why:
             return self._deny(why)
@@ -466,13 +646,34 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             with INDEX_LOCK:
                 index_users()
         self._purge = Setup.purge and re.search(r'(\.html|/)$', self.path.split('?')[0]) is not None
+        if self.path.split('?')[0] in LNMPERF_ROUTES:
+            return self._lnmperf(b'')
         if self.path.split('?')[0] == '/__setup/status':
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
-                               'csp': True, 'relaxNav': RELAX['nav']})
+                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname(), 'lan': self._lan()})
+        if self.path.split('?')[0] == '/__setup/lan':
+            # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
+            if not self._allowed() or self._lan():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(lan_state())
+        if self.path.split('?')[0] == '/__setup/changes':
+            # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
+            with FRAME_LOCK:
+                # appareil du réseau local : l'arbre calculé il y a moins de 2 s sert de nouveau (un lot l'efface)
+                fresh = self._lan() and _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < 2
+                if fresh:
+                    head, tree = _tree_memo['v']
+                else:
+                    head, tree = frame_tree()
+                    _tree_memo.update(at=time.monotonic(), v=(head, tree))
+            return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
         if self.path.split('?')[0] == '/__setup/mission-folders':
             # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
             # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
@@ -564,6 +765,18 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if 'ivao' in self.path.split('?')[0]:
                 return self._json(ivao_last_flight(arg('vid'), arg('session')))
             return self._json(vatsim_last_flight(arg('cid'), arg('connection')))
+        if self.path.split('?')[0] == '/__setup/sim/position':
+            # V3 frame, position réelle : simulateur de ce poste (X-Plane 12 puis Little Navmap, boucle locale seulement,
+            # un passage par seconde au plus) ; 204 sans simulateur
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            fix = sim_position.position()
+            if fix:
+                return self._json(fix)
+            self.send_response(204)
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            return None
         if self.path.split('?')[0] == '/__setup/ivao-bookings':
             # réservations ATC d'IVAO (trainings, examens, réservations ; shared/atc_sessions.js) : API sous clé
             # (ivao_key), jamais transmise à la page
@@ -629,6 +842,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         """POST /__setup/… (page servie ici seulement) : synchronisation, secrets, imports, jeu d'essai, clone et dépôt
         des données."""
+        if self._lan_gate():
+            return None
         path = self.path.split('?')[0]
         if not path.startswith('/__setup/') or not self._allowed():
             return self._json({'error': 'refusé'}, 403)
@@ -636,9 +851,13 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             size = int(self.headers.get('Content-Length') or 0)
         except ValueError:
             return self._json({'error': 'taille invalide'}, 400)
-        if size < 0 or size > self.MAX_UPLOAD:
+        if size < 0 or size > (LAN_MAX_BODY if self._lan() else self.MAX_UPLOAD):
             return self._json({'error': 'fichier trop gros'}, 413)
         body = self.rfile.read(size) if size else b''
+        if path in LNMPERF_ROUTES:
+            return self._lnmperf(body)
+        if self.command != 'POST':
+            return self._json({'error': 'méthode refusée'}, 405)
         if path == '/__setup/perf':
             # mesures de l'audit de performance (tools/perf_audit.html) : docs/technique/perf/runs/<nom>.json
             name = re.sub(r'[^\w.-]+', '_', urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('name', ['audit'])[0])[:80]
@@ -675,6 +894,30 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                         saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
                 r['saved'] = saved
             return self._json(r)
+        if path == '/__setup/net':
+            # V3 frame : appel sortant d'un module relayé (SimBrief, IVAO, VATSIM)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'error': 'JSON invalide'}, 400)
+            code, hdrs, out = frame_net(a if isinstance(a, dict) else {})
+            self.send_response(code)
+            for k, v in hdrs.items():
+                self.send_header(k, v)
+            self.send_header('Content-Length', str(len(out)))
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-SOG-Relay', '1')
+            self.end_headers()
+            self.wfile.write(out)
+            return None
+        if path == '/__setup/batch':
+            # V3 frame : lot d'écritures de la couche de données, en une fois (frame/store/transport_launcher.js)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
+            r, code = frame_batch(a if isinstance(a, dict) else {})
+            return self._json(r, code)
         if path == '/__setup/sync':
             # un passage de synchronisation (commit au nom du trigramme, fusion fiche par fiche, envoi), un à la fois
             try:
@@ -682,7 +925,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             with SYNC_LOCK:
+                # pont du registre avant (le registre rejoué part dans ce passage) et après (comptes rendus reçus : le
+                # registre rejoué partira au passage suivant)
+                registry_bridge()
                 r = data_sync.run(DATA, str(a.get('author') or '').upper(), str(a.get('name') or '')[:60])
+                if r.get('received'):
+                    registry_bridge()
             sync_status_reset()  # état relu au prochain appel : le bouton reflète le passage qui vient d'avoir lieu
             if r.get('received'):
                 with INDEX_LOCK:
@@ -695,6 +943,36 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/lan':
+            # ouvrir ou fermer l'accès du réseau local, oublier les appareils appairés — ce poste seulement
+            if self._lan():
+                return self._json({'error': 'refusé'}, 403)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            if a.get('forget') is True:
+                lan_access.forget()
+            elif isinstance(a.get('forget'), str):
+                lan_access.forget(a['forget'])
+            if a.get('open') is True:
+                lan_open(bool(a.get('all')))
+            elif a.get('open') is False:
+                lan_close()
+            if a.get('code') and LAN['servers']:
+                say(f'  Réseau local : nouveau code d’appairage : {lan_access.new_code()} (10 minutes)')
+            return self._json(lan_state())
+        if path == '/__setup/vfr-import':
+            # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
+            # plan rendu sans rien écrire (apply faux), puis écriture de sia/vfr/, commit et synchronisation
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'ok': False, 'errors': ['JSON illisible.'], 'summary': {}})
+            try:
+                return self._json(vfr_publish(a.get('compiled'), str(a.get('author') or '').upper(), bool(a.get('apply'))))
+            except (OSError, RuntimeError) as e:
+                return self._json({'ok': False, 'errors': [str(e)[-600:]], 'summary': {}})
         if path == '/__setup/aircraft-publish':
             try:
                 a = json.loads(body or b'{}')
@@ -1020,6 +1298,108 @@ class Server6(Server):
     address_family = socket.AF_INET6
 
 
+# ---- réseau local (lot 18, tools/lan_access.py) : serveurs sur les adresses privées de ce poste, même port, ouverts sur
+# demande et fermés avec le lanceur
+LAN = {'servers': [], 'hosts': set(), 'order': [], 'handler': None, 'port': 0}
+LAN_MAX_BODY = 16 * 1024 * 1024  # corps d'un POST venu du réseau local (un lot d'écritures, un relais)
+_tree_memo = {'at': 0.0, 'v': None}  # dernier arbre de data/ calculé (servi de nouveau à un appareil, 2 s au plus)
+LAN_LOCK = threading.Lock()
+NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
+LAN_TEXT = {
+    'title': {'fr': 'Appairer cet appareil', 'en': 'Pair this device', 'de': 'Dieses Gerät koppeln', 'es': 'Vincular este dispositivo'},
+    'intro': {'fr': 'L’appli Pilote du poste « {host} », sur le réseau local. Saisissez le code à 6 chiffres affiché sur le poste '
+                    '(fenêtre du lanceur, ou Réglages › Accès du poste)' + NB + ': une seule fois pour cet appareil.',
+              'en': 'The Pilot application of the computer “{host}”, on the local network. Enter the 6-digit code shown on the '
+                    'computer (the launcher window, or Settings › Computer access): only once for this device.',
+              'de': 'Die Pilot-App des Rechners „{host}“ im lokalen Netz. Geben Sie den 6-stelligen Code ein, der auf dem Rechner '
+                    'angezeigt wird (Fenster des Starters oder Einstellungen › Zugang des Rechners): nur einmal für dieses Gerät.',
+              'es': 'La aplicación Piloto del equipo «{host}», en la red local. Introduzca el código de 6 cifras que muestra el '
+                    'equipo (ventana del lanzador, o Ajustes › Acceso del equipo): una sola vez para este dispositivo.'},
+    'code': {'fr': 'Code d’appairage', 'en': 'Pairing code', 'de': 'Kopplungscode', 'es': 'Código de vinculación'},
+    'pair': {'fr': 'Appairer', 'en': 'Pair', 'de': 'Koppeln', 'es': 'Vincular'},
+    'bad': {'fr': 'Code incorrect.', 'en': 'Wrong code.', 'de': 'Falscher Code.', 'es': 'Código incorrecto.'},
+    'expired': {'fr': 'Pas de code en cours (un code sert une fois et dure 10 minutes)' + NB + ': demandez-en un sur le poste, Réglages › Accès du poste, « Nouveau code ».',
+                'en': 'No code in progress (a code works once and lasts 10 minutes): ask for one on the computer, Settings › Computer access, “New code”.',
+                'de': 'Kein gültiger Code (ein Code gilt einmal und 10 Minuten): fordern Sie auf dem Rechner einen an, Einstellungen › Zugang des Rechners, „Neuer Code“.',
+                'es': 'No hay código en curso (un código sirve una vez y dura 10 minutos): pida uno en el equipo, Ajustes › Acceso del equipo, «Código nuevo».'},
+    'closed': {'fr': 'Appairage fermé après trop de codes faux' + NB + ': il se rouvre par « Nouveau code » sur le poste (Réglages › Accès du poste).',
+               'en': 'Pairing closed after too many wrong codes: it reopens with “New code” on the computer (Settings › Computer access).',
+               'de': 'Kopplung nach zu vielen falschen Codes geschlossen: Sie öffnet sich wieder mit „Neuer Code“ auf dem Rechner (Einstellungen › Zugang des Rechners).',
+               'es': 'Vinculación cerrada tras demasiados códigos erróneos: se vuelve a abrir con «Código nuevo» en el equipo (Ajustes › Acceso del equipo).'},
+    'wait': {'fr': 'Trop d’essais' + NB + ': réessayez dans {s} s.', 'en': 'Too many attempts: try again in {s} s.',
+             'de': 'Zu viele Versuche: in {s} s erneut versuchen.', 'es': 'Demasiados intentos: vuelva a intentarlo en {s} s.'},
+    'note': {'fr': 'Réseau local en http' + NB + ': à n’utiliser que sur un réseau de confiance (à la maison), jamais sur un wifi public.',
+             'en': 'Local network over http: use it only on a trusted network (at home), never on public wifi.',
+             'de': 'Lokales Netz über http: nur in einem vertrauenswürdigen Netz (zu Hause) verwenden, nie in einem öffentlichen WLAN.',
+             'es': 'Red local en http: úsela solo en una red de confianza (en casa), nunca en una wifi pública.'},
+}
+
+
+def safe_next(p):
+    """Page où revenir après l'appairage : un chemin de ce serveur, jamais un autre site."""
+    p = str(p or '')
+    return p if p.startswith('/') and not p.startswith('//') and '\\' not in p and not p.startswith('/__') else '/frame/'
+
+
+def lan_state():
+    """État de l'accès du réseau local : ouvert, adresses de l'appli Pilote (la principale d'abord), code, appareils
+    appairés, nom du poste."""
+    on = bool(LAN['servers'])
+    cs = lan_access.code_state() if on else {}
+    return {'on': on, 'urls': [f'http://{h}/frame/' for h in LAN['order']] if on else [],
+            'available': lan_access.addresses(), 'code': cs.get('code', ''), 'expires': cs.get('expires', 0),
+            'closed': bool(cs.get('closed')), 'devices': len(lan_access.devices()), 'paired': lan_access.listing(),
+            'host': socket.gethostname()}
+
+
+def lan_open(every=False):
+    """Ouvre l'accès du réseau local sur l'adresse privée de la route par défaut (toutes les adresses privées de ce
+    poste si every : VPN, machines virtuelles…), même port, avec un nouveau code ; déjà ouvert, every ajoute les autres."""
+    with LAN_LOCK:
+        if not LAN['handler'] or (LAN['servers'] and not every):
+            return lan_state()
+        order = list(LAN['order'])
+        for ip in lan_access.addresses()[:None if every else 1]:
+            if f'{ip}:{LAN["port"]}' in LAN['hosts']:
+                continue
+            try:
+                srv = Server((ip, LAN['port']), LAN['handler'])
+            except OSError as e:
+                say(f'  Réseau local : {ip}:{LAN["port"]} indisponible ({e}).')
+                continue
+            srv.lan = True
+            threading.Thread(target=srv.serve_forever, daemon=True).start()
+            LAN['servers'].append(srv)
+            order.append(f'{ip}:{LAN["port"]}')
+        LAN.update(hosts=set(order), order=order)
+        if not order:
+            say('  Réseau local : aucune adresse privée sur ce poste (réseau 10.x, 172.16-31.x ou 192.168.x).')
+            return lan_state()
+        if every and lan_access.code_state().get('code'):
+            say(f'  Réseau local : adresses ouvertes : {", ".join(order)}')
+            return lan_state()
+        code = lan_access.new_code()
+        say('')
+        say(f'  Réseau local ouvert : http://{order[0]}/frame/ — code d’appairage : {code} (une fois, 10 minutes)')
+        say('  Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.')
+        say('  À n’utiliser que sur un réseau de confiance (http, sans chiffrement). Fermé avec le lanceur.')
+        say('')
+    return lan_state()
+
+
+def lan_close():
+    """Ferme l'accès du réseau local (les appareils appairés le restent pour la prochaine ouverture)."""
+    with LAN_LOCK:
+        for srv in LAN['servers']:
+            srv.shutdown()
+            srv.server_close()
+        if LAN['servers']:
+            say('  Réseau local fermé.')
+        LAN.update(servers=[], hosts=set(), order=[])
+        lan_access.clear_code()
+    return lan_state()
+
+
 def ours(port):
     """Vrai si la suite répond déjà sur ce port (lanceur relancé)."""
     for path in ('config/repository_tree', 'repository_tree'):
@@ -1078,6 +1458,39 @@ def _secret_file(scope, tri='', service=''):
     if scope == 'app':
         return os.path.join(SECRETS, f'{service}.json')
     return os.path.join(SECRETS, 'users', f'{tri}.json')
+
+
+LNMPERF_STATE = os.path.join(ROOT, 'tools', '.lnmperf.json')  # dossier des fiches .lnmperf de ce poste (jamais versionné)
+LNMPERF_ROUTES = ('/__setup/lnmperf-folder', '/__setup/lnmperf')
+LNMPERF_NAME = re.compile(r'^(?!\.)[^\\/:*?"<>|\x00-\x1f]{1,120}\.lnmperf$', re.I)  # un nom de fichier seul
+
+
+def lnmperf_folder():
+    """Dossier des fiches Little Navmap réglé sur ce poste, '' s'il ne l'est pas ou n'existe plus."""
+    f = _read_json(LNMPERF_STATE).get('folder') or ''
+    return f if f and os.path.isdir(f) else ''
+
+
+def lnmperf_suggestions():
+    """Dossiers habituels de Little Navmap présents sur ce poste (Documents, OneDrive compris)."""
+    home = os.path.expanduser('~')
+    docs = [os.path.join(home, 'Documents'), os.path.join(home, 'OneDrive', 'Documents')]
+    out = []
+    for d in docs:
+        for sub in ('Little Navmap Files', 'Little Navmap'):
+            p = os.path.join(d, sub)
+            if os.path.isdir(p) and p not in out:
+                out.append(p)
+    return out
+
+
+def lnmperf_entry(path):
+    """{ name, size, mtime (ISO, UTC), sha (SHA-1 du contenu) } d'un fichier .lnmperf."""
+    with open(path, 'rb') as f:
+        b = f.read()
+    mt = datetime.datetime.fromtimestamp(os.path.getmtime(path), datetime.timezone.utc)
+    return {'name': os.path.basename(path), 'size': len(b), 'mtime': mt.isoformat().replace('+00:00', 'Z'),
+            'sha': hashlib.sha1(b).hexdigest()}
 
 
 def _read_json(path):
@@ -1260,12 +1673,264 @@ def sites_view():
     return {'fixed': CSP_CONNECT, 'config': config_sites(), 'user': user_sites()}
 
 
+# ---- V3 frame : transport « lanceur » de la couche de données (frame/store/transport_launcher.js). Le dossier data/ du
+# poste est le dépôt : arbre { chemin: empreinte git du fichier } (gardée par taille et date), tête = empreinte de cet
+# arbre ; un lot d'écritures s'écrit d'un coup, un commit local si data/ est un dépôt git (l'échange avec le dépôt
+# distant reste le passage de synchronisation, /__setup/sync). Hors de l'arbre : .git, local/, copies de conflits et
+# d'avant restauration, index régénérés, repère du lanceur, sources du SIA (seules sia/base/, la base publiée, et
+# sia/vfr/, les points VFR tirés des VAC, sont vues).
+FRAME_SKIP = re.compile(r'(^|/)(\.git|_conflits|_avant_restauration)(/|$)|^local(/|$)|(^|/)_index\.json$|^\.defa_instance$|^sia/(?=.)(?!(base|vfr)(/|$))')
+FRAME_LOCK = threading.Lock()
+_frame_memo = {}  # chemin → ((taille, date), empreinte)
+
+
+def frame_tree():
+    """(tête, arbre) de data/ : empreinte git de chaque fichier (relue seulement si sa taille ou sa date change) ; ni
+    lien ni jonction suivis (un dossier relié ailleurs ferait sortir l'arbre de data/, ou le ferait boucler)."""
+    out = {}
+    linked = lambda p: os.path.islink(p) or getattr(os.path, 'isjunction', lambda q: False)(p)  # isjunction : Python 3.12+
+    for d, dirs, files in os.walk(DATA):
+        rel_d = os.path.relpath(d, DATA).replace(os.sep, '/')
+        rel_d = '' if rel_d == '.' else rel_d + '/'
+        dirs[:] = [x for x in dirs if not FRAME_SKIP.search(rel_d + x + '/') and not linked(os.path.join(d, x))]
+        for f in files:
+            rel = rel_d + f
+            if FRAME_SKIP.search(rel):
+                continue
+            full = os.path.join(d, f)
+            if linked(full):
+                continue
+            try:
+                st = os.stat(full)
+            except OSError:
+                continue
+            key = (st.st_size, st.st_mtime_ns)
+            m = _frame_memo.get(rel)
+            if not m or m[0] != key:
+                with open(full, 'rb') as fh:
+                    b = fh.read()
+                m = (key, hashlib.sha1(b'blob %d\0' % len(b) + b).hexdigest())
+                _frame_memo[rel] = m
+            out[rel] = m[1]
+    return hashlib.sha1(json.dumps(sorted(out.items())).encode()).hexdigest(), out
+
+
+BATCH_MAX = 5000  # changements par lot
+# fichiers que la page peut écrire dans data/ (une suppression : tout fichier de données) : texte et données, jamais une
+# page, une image vectorielle ni un XML, que le navigateur exécuterait servis de la même origine que /__setup/
+DATA_WRITE_EXT = ('.json', '.yaml', '.yml', '.md', '.txt', '.csv', '.geojson', '.fms', '.js')
+WIN_RESERVED = re.compile(r'(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)(\..*)?', re.I)
+
+
+def data_file(rel):
+    """Fichier de data/ nommé par une page (« a/b/c.json », séparateur « / ») → son chemin sous data/, ou '' (refusé) :
+    ni « \\ » (séparateur de Windows), ni « : » (lecteur, flux NTFS), ni caractère de contrôle, ni chemin absolu, ni
+    composant vide, « . » ou « .. », ni composant finissant par un point ou une espace (Windows les retire), ni nom de
+    périphérique de Windows ; puis le chemin réel (liens, jonctions) doit rester sous data/."""
+    if not isinstance(rel, str) or not rel or len(rel) > 400 or rel.startswith('/') or any(c in rel for c in '\\:') or any(
+            ord(c) < 32 for c in rel):
+        return ''
+    parts = rel.split('/')
+    if any(x in ('', '.', '..') or x != x.rstrip('. ') or WIN_RESERVED.fullmatch(x) for x in parts):
+        return ''
+    full = os.path.join(DATA, *parts)
+    base = os.path.normcase(os.path.realpath(DATA))
+    return full if os.path.normcase(os.path.realpath(full)).startswith(base + os.sep) else ''
+
+
+def frame_batch(a):
+    """Lot d'écritures du frame { parent, message, author, changes: [{ path, text | null }] } : refusé si la tête a changé
+    depuis parent (conflict) ou si un chemin sort de data/ ou est exclu ; .js au format des données seulement
+    (tools/data_guard.py) ; écrit, puis commit local au nom de l'auteur si data/ est un dépôt git. Rend { ok, head }."""
+    changes = a.get('changes') if isinstance(a.get('changes'), list) else []
+    author = str(a.get('author') or '').upper()
+    if len(changes) > BATCH_MAX:
+        return {'ok': False, 'message': f'lot trop grand : {len(changes)} changements ({BATCH_MAX} au plus)'}, 400
+    # un lot a un auteur : sans trigramme, l'appli garde ses écritures sur l'appareil (frame/SPEC.md § 2)
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author) or author == 'ANON':
+        return {'ok': False, 'message': 'trigramme de l’auteur manquant : rien n’est écrit sans lui'}, 400
+    with FRAME_LOCK:
+        _tree_memo['v'] = None
+        head, _ = frame_tree()
+        if str(a.get('parent') or '') != head:
+            return {'ok': False, 'conflict': True, 'head': head, 'message': 'data/ a changé depuis la dernière lecture'}, 409
+        todo, fulls = [], {}
+        for c in changes if all(isinstance(c, dict) for c in changes) else [{}]:
+            # chemin pris tel quel, jamais normalisé : un chemin qu'il faudrait normaliser est refusé (data_file)
+            rel = c.get('path') if isinstance(c.get('path'), str) else ''
+            full = data_file(rel)
+            if not full or rel.startswith('.') or '/.' in rel or FRAME_SKIP.search(rel):
+                return {'ok': False, 'message': f'chemin refusé : {str(c.get("path"))[:200]}'}, 400
+            text = c.get('text')
+            if text is not None and rel.startswith('pilot/ANON/'):
+                return {'ok': False, 'message': f'{rel} : document sans trigramme, gardé sur l’appareil'}, 400
+            if text is not None and (not isinstance(text, str) or not rel.lower().endswith(DATA_WRITE_EXT)):
+                return {'ok': False, 'message': f'type de fichier refusé : {rel} ({", ".join(DATA_WRITE_EXT)})'}, 400
+            fulls[rel] = full
+            if text is not None and rel.lower().endswith('.js'):
+                with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
+                    f.write(text)
+                    tmp = f.name
+                ok, why = data_guard.check_file(tmp)
+                os.remove(tmp)
+                if not ok:
+                    return {'ok': False, 'message': f'{rel} : pas au format des données ({why})'}, 400
+            todo.append((rel, text))
+        for rel, text in todo:
+            full = fulls[rel]
+            if text is None:
+                if os.path.isfile(full):
+                    os.remove(full)
+                continue
+            os.makedirs(os.path.dirname(full), exist_ok=True)
+            with open(full, 'w', encoding='utf-8', newline='') as f:
+                f.write(text)
+        bridged = registry_bridge()  # registre V2 à jour des comptes rendus, dans le même commit
+        if todo and os.path.isdir(os.path.join(DATA, '.git')) and re.fullmatch(r'[A-Z0-9]{2,5}', author):
+            paths = [r for r, _ in todo] + (['/'.join(report_bridge.REGISTRY)] if bridged else [])
+            env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+            data_sync.git(DATA, 'add', '-A', '--', *paths, env=env)
+            data_sync.git(DATA, '-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-q', '-m',
+                          str(a.get('message') or f'{author} : lot du frame')[:500], '--', *paths, env=env)
+        head, _ = frame_tree()
+        _tree_memo['v'] = None
+    if any(r.startswith('disponibilites/') for r, _ in todo):
+        with INDEX_LOCK:
+            index_availability()
+    if any(r.startswith('utilisateurs/') for r, _ in todo):
+        with INDEX_LOCK:
+            index_users()
+    return {'ok': True, 'head': head}, 200
+
+
+def registry_bridge():
+    """Comptes rendus de la V3 rejoués dans le registre V2 (tools/report_bridge.py) ; vrai si le registre a changé. Un
+    registre illisible n'est jamais réécrit : la raison est dite dans la console du lanceur."""
+    try:
+        r = report_bridge.bridge(DATA)
+    except Exception as e:  # le pont ne bloque jamais un lot ni un échange
+        r = {'error': f'{type(e).__name__}: {e}'}
+    if r.get('error'):
+        say(f'Pont du registre (cr/missions.yaml) : {r["error"]}')
+    return bool(r.get('changed') or r.get('added'))
+
+
+# ---- V3 frame : relais des appels sortants des modules (ctx.net, frame/app.js) : CORS et clés restent ici. Sites relayés
+# seulement (https) ; clé d'API IVAO ajoutée pour api.ivao.aero ; site de la compagnie (data/airline/settings.json, site)
+# en lecture seule (GET) ; réponse rendue telle quelle (statut, type, corps, 8 Mo au plus) ; réseau injoignable : 502
+# marqué X-SOG-Offline.
+NET_HOSTS = {'www.simbrief.com': '', 'api.ivao.aero': 'ivao', 'api.vatsim.net': '', 'data.vatsim.net': '', 'my.vatsim.net': '',
+             'aviationweather.gov': '', 'metar.vatsim.net': '', 'api.open-meteo.com': ''}
+NET_MAX = 8 * 1048576
+
+
+def airline_host():
+    """Hôte du site de la compagnie (data/airline/settings.json, champ site, en https) ; '' sans site, ou pour une adresse
+    locale ou privée (le relais ne sert jamais à atteindre le réseau du poste)."""
+    try:
+        with open(os.path.join(DATA, 'airline', 'settings.json'), encoding='utf-8-sig') as f:
+            site = json.load(f).get('site')
+    except (OSError, ValueError, AttributeError):
+        return ''
+    u = urllib.parse.urlparse(str(site or '').strip())
+    host = (u.hostname or '').lower()
+    if u.scheme != 'https' or not host or host == 'localhost' or host.endswith('.localhost'):
+        return ''
+    try:
+        if not ipaddress.ip_address(host).is_global:
+            return ''
+    except ValueError:
+        pass  # un nom, pas une adresse
+    return host
+
+
+class NotPublic(OSError):
+    """Hôte relayé qui mène à une adresse non publique (réseau du poste, boucle locale) : refusé."""
+
+
+def relay_host(host):
+    """Hôte que le relais peut joindre : un site de l'appli (NET_HOSTS) ou le site de la compagnie."""
+    return bool(host) and (host in NET_HOSTS or host == airline_host())
+
+
+class _RelayHTTPS(http.client.HTTPSConnection):
+    """Connexion du relais : l'adresse réellement jointe doit être publique, vérifiée avant le TLS et à chaque saut
+    (un nom peut pointer vers 192.168.x ou 127.0.0.1, ou changer entre deux résolutions)."""
+
+    def connect(self):
+        http.client.HTTPConnection.connect(self)
+        ip = self.sock.getpeername()[0]
+        if not ipaddress.ip_address(ip.split('%')[0]).is_global:
+            self.sock.close()
+            raise NotPublic(f'adresse non publique : {ip}')
+        self.sock = self._context.wrap_socket(self.sock, server_hostname=self._tunnel_host or self.host)
+
+
+class _RelayHTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_RelayHTTPS, req, context=self._context)
+
+
+class _RelayRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirection suivie seulement vers un hôte que le relais peut joindre, en https ; la clé d'IVAO ne suit pas vers
+    un autre hôte. Sinon la réponse de redirection est rendue telle quelle à la page."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        u, o = urllib.parse.urlparse(newurl), urllib.parse.urlparse(req.full_url)
+        if u.scheme != 'https' or not relay_host(u.hostname):
+            return None
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and u.hostname != o.hostname:
+            new.remove_header('Apikey')
+        return new
+
+
+NET_OPENER = urllib.request.build_opener(_RelayRedirect(), _RelayHTTPSHandler(context=ssl.create_default_context()))
+
+
+def frame_net(a):
+    """Relais d'un appel { url, method, accept, contentType, body } : (statut, en-têtes, corps)."""
+    url = str(a.get('url') or '')
+    u = urllib.parse.urlparse(url)
+    site = u.scheme == 'https' and bool(u.hostname) and u.hostname not in NET_HOSTS and u.hostname == airline_host()
+    if u.scheme != 'https' or not relay_host(u.hostname):
+        return 403, {'Content-Type': 'application/json'}, json.dumps({'error': 'site non relayé'}).encode()
+    method = str(a.get('method') or 'GET').upper()
+    if method not in (('GET',) if site else ('GET', 'POST')):
+        return 405, {'Content-Type': 'application/json'}, json.dumps({'error': 'méthode refusée'}).encode()
+    headers = {'User-Agent': 'SOG-suite', 'Accept': str(a.get('accept') or '*/*')}
+    if NET_HOSTS.get(u.hostname) == 'ivao':
+        key = ivao_key()
+        if key:
+            headers['apiKey'] = key
+    data = None
+    if method == 'POST' and isinstance(a.get('body'), str):
+        data = a['body'].encode('utf-8')
+        headers['Content-Type'] = str(a.get('contentType') or 'application/json')
+    req = urllib.request.Request(url, data=data, method=method, headers=headers)
+    try:
+        with NET_OPENER.open(req, timeout=20) as r:
+            return r.status, {'Content-Type': r.headers.get('Content-Type') or 'application/octet-stream'}, r.read(NET_MAX)
+    except urllib.error.HTTPError as e:
+        return e.code, {'Content-Type': e.headers.get('Content-Type') or 'text/plain'}, e.read(NET_MAX)
+    except urllib.error.URLError as e:
+        if isinstance(e.reason, NotPublic):
+            return 403, {'Content-Type': 'application/json'}, json.dumps({'error': str(e.reason)}).encode()
+        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1'}, b'unreachable'
+    except NotPublic as e:
+        return 403, {'Content-Type': 'application/json'}, json.dumps({'error': str(e)}).encode()
+    except (OSError, ValueError):
+        return 502, {'Content-Type': 'text/plain', 'X-SOG-Offline': '1'}, b'unreachable'
+
+
 def csp_policy():
-    """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration ou les sites autorisés changent)."""
+    """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration, les sites autorisés ou les modules
+    de l'appli V3 changent : meta.net, hôtes que leurs bibliothèques appellent elles-mêmes)."""
     key = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in
-                (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree')))
+                (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree'),
+                 os.path.join(ROOT, 'frame', 'app.js'), *cspmod.module_files(ROOT)))
     if _csp['key'] != key:
-        _csp.update(key=key, value=cspmod.value([*config_sites(), *user_sites()]))
+        _csp.update(key=key, value=cspmod.value([*config_sites(), *user_sites(), *cspmod.module_hosts(ROOT)]))
     return _csp['value']
 
 
@@ -1889,7 +2554,24 @@ def aircraft_files():
     return {'db': os.path.exists(os.path.join(d, 'aircraft_db.js')), 'perf': os.path.exists(os.path.join(d, 'aircraft_perf.js'))}
 
 
-AIRCRAFT_KEEP = ('aircraft_db.js', 'aircraft_perf.js')
+AIRCRAFT_KEEP = ('aircraft_db.js', 'aircraft_perf.js', 'aircraft_db.json', 'aircraft_perf.json')
+AIRCRAFT_JSON = {'aircraft_db.json': ('aircraft_db.js', 'AIRCRAFT_DB'), 'aircraft_perf.json': ('aircraft_perf.js', 'AIRCRAFT_PERF')}
+
+
+def aircraft_json(src, js, name):
+    """Texte JSON tiré du littéral « window.NOM = {…}; » d'un .js de la base des types (déjà contrôlé par data_guard) ;
+    None s'il n'en est pas un."""
+    try:
+        text = open(os.path.join(src, js), encoding='utf-8').read()
+    except OSError:
+        return None
+    m = re.search(r'window\.' + name + r'\s*=\s*', text)
+    if not m:
+        return None
+    try:
+        return json.dumps(json.loads(text[m.end():].strip().rstrip(';').strip()), ensure_ascii=False, separators=(',', ':'))
+    except ValueError:
+        return None
 
 
 def aircraft_publish(author='', apply=False):
@@ -1897,17 +2579,21 @@ def aircraft_publish(author='', apply=False):
     tools/build_pages.py ne prend que les fichiers suivis du dépôt de la suite) : data/AircraftDB/ ne garde que
     aircraft_db.js et aircraft_perf.js, copiés depuis AircraftDB/ de la suite (littéraux purs : tools/data_guard.py) ; tout
     le reste du dossier (caches, scripts, __pycache__…) est retiré. apply faux : liste seulement ce qui serait fait (le
-    bouton la montre et demande l'accord). apply vrai : fait, commit au nom de author, puis passe de synchronisation."""
+    bouton la montre et demande l'accord). apply vrai : fait, commit au nom de author, puis passe de synchronisation.
+    Les mêmes bases sont aussi écrites en JSON (aircraft_db.json, aircraft_perf.json : format de la V3, frame/aerodb, qui
+    n'exécute aucun script venu du dépôt), à côté des .js tant que la V2 les lit."""
     src, dst = os.path.join(ROOT, 'AircraftDB'), os.path.join(DATA, 'AircraftDB')
     res = {'ok': False, 'remove': [], 'copy': [], 'message': ''}
     if not data_sync.is_repo(DATA):
         res['message'] = 'data/ n’est pas un dépôt git : rien à publier.'
         return res
-    missing = [n for n in AIRCRAFT_KEEP if not os.path.isfile(os.path.join(src, n))]
+    missing = [n for n in AIRCRAFT_KEEP if n not in AIRCRAFT_JSON and not os.path.isfile(os.path.join(src, n))]
     if missing:
         res['message'] = 'Base des types absente sur ce poste (' + ', '.join(missing) + ') : la compléter d’abord.'
         return res
     for n in AIRCRAFT_KEEP:
+        if n in AIRCRAFT_JSON:
+            continue
         ok, why = data_guard.check_file(os.path.join(src, n))
         if not ok:
             res['message'] = f'AircraftDB/{n} refusé ({why}) : rien publié.'
@@ -1918,10 +2604,19 @@ def aircraft_publish(author='', apply=False):
                 rel = os.path.relpath(os.path.join(d, f), dst).replace(os.sep, '/')
                 if rel not in AIRCRAFT_KEEP:
                     res['remove'].append({'path': 'AircraftDB/' + rel, 'size': os.path.getsize(os.path.join(d, f))})
+    texts = {}
     for n in AIRCRAFT_KEEP:
-        a, b = os.path.join(src, n), os.path.join(dst, n)
-        if not os.path.isfile(b) or open(a, 'rb').read() != open(b, 'rb').read():
-            res['copy'].append({'path': 'AircraftDB/' + n, 'size': os.path.getsize(a)})
+        b = os.path.join(dst, n)
+        if n in AIRCRAFT_JSON:
+            t = aircraft_json(src, *AIRCRAFT_JSON[n])
+            if t is None:
+                res['message'] = f'AircraftDB/{AIRCRAFT_JSON[n][0]} : littéral illisible en JSON, rien publié.'
+                return res
+            data = texts[n] = t.encode('utf-8')
+        else:
+            data = open(os.path.join(src, n), 'rb').read()
+        if not os.path.isfile(b) or open(b, 'rb').read() != data:
+            res['copy'].append({'path': 'AircraftDB/' + n, 'size': len(data)})
     res['ok'] = True
     if not apply:
         return res
@@ -1934,13 +2629,47 @@ def aircraft_publish(author='', apply=False):
             os.rmdir(d)
     os.makedirs(dst, exist_ok=True)
     for c in res['copy']:
-        shutil.copyfile(os.path.join(src, os.path.basename(c['path'])), os.path.join(DATA, *c['path'].split('/')))
+        n = os.path.basename(c['path'])
+        if n in texts:
+            with open(os.path.join(DATA, *c['path'].split('/')), 'wb') as f:
+                f.write(texts[n])
+        else:
+            shutil.copyfile(os.path.join(src, n), os.path.join(DATA, *c['path'].split('/')))
     env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
     who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
     data_sync.git(DATA, 'add', '-A', '--', 'AircraftDB', check=True)
     code, _ = data_sync.git(DATA, 'diff', '--cached', '--quiet')
     if code:
         data_sync.git(DATA, *who, 'commit', '-m', f'Base des types publiée ({author})', env=env, check=True)
+    with SYNC_LOCK:
+        res['sync'] = data_sync.run(DATA, author)
+    sync_status_reset()
+    res['ok'] = res['sync'].get('ok', False)
+    res['message'] = res['sync'].get('message', '')
+    return res
+
+
+def vfr_publish(compiled, author='', apply=False):
+    """Compilation VFR des cartes VAC dans le dépôt des données (tools/vfr_import.py) : apply faux, le plan seulement
+    (erreurs, ou résumé : terrains, points, séquences, consignes, points non rapprochés des VRP, fichiers changés et
+    retirés) ; apply vrai, écriture de sia/vfr/, commit au nom de author, puis passe de synchronisation."""
+    if not data_sync.is_repo(DATA):
+        return {'ok': False, 'errors': ['data/ n’est pas un dépôt git : rien à importer.'], 'summary': {}}
+    p = vfr_import.plan(compiled, DATA)
+    res = {'ok': p['ok'], 'errors': p['errors'], 'summary': p['summary']}
+    if not p['ok'] or not apply:
+        return res
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
+        return {**res, 'ok': False, 'errors': ['Trigramme de l’auteur manquant ou invalide.']}
+    vfr_import.write(p, DATA)
+    env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+    who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
+    data_sync.git(DATA, 'add', '-A', '--', 'sia/vfr', check=True)
+    code, _ = data_sync.git(DATA, 'diff', '--cached', '--quiet')
+    if code:
+        s = p['summary']
+        data_sync.git(DATA, *who, 'commit', '-m', f"Points de report VFR des VAC importés ({s['aerodromes']} terrains, {s['routes']} séquences ; {author})",
+                      env=env, check=True)
     with SYNC_LOCK:
         res['sync'] = data_sync.run(DATA, author)
     sync_status_reset()
@@ -2191,6 +2920,8 @@ def main():
     ap.add_argument('--no-browser', action='store_true')
     ap.add_argument('--no-data', action='store_true')
     ap.add_argument('--data', help='autre dossier de données servi sous /data/ (essais sur une copie, ex. synchronisation)')
+    ap.add_argument('--lan', action='store_true',
+                    help='ouvrir aussi aux appareils du réseau local (adresses privées, code d’appairage ; jusqu’à la fermeture)')
     a = ap.parse_args()
     global DATA
     if a.data:  # autre dossier de données (copie d'essai) : servi sous /data/, ni clone ni mise à jour au démarrage
@@ -2229,7 +2960,9 @@ def main():
     mark_instance()
     index_availability()
     index_users()
-    if not aircraft_files()['db']:
+    # base des types : à la racine (V2) ou publiée dans le dépôt des données (V3, AircraftDB/ en .json ou .js)
+    published = any(os.path.exists(os.path.join(DATA, 'AircraftDB', f)) for f in ('aircraft_db.json', 'aircraft_db.js'))
+    if not aircraft_files()['db'] and not published:
         say("  Base des types d'aéronefs absente : la compléter dans Paramètres › Maintenance › Références et dépendances.")
     handler = lambda *x, **k: Setup(*x, directory=ROOT, **k)
     srv = Server(('127.0.0.1', port), handler)
@@ -2238,8 +2971,11 @@ def main():
         threading.Thread(target=srv6.serve_forever, daemon=True).start()
     except OSError:
         pass
+    LAN.update(handler=handler, port=port)
     url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache
     say(f'  Suite servie sur http://127.0.0.1:{port}/')
+    if a.lan:
+        lan_open()
     say('')
     say('3. Navigateur')
     say(f'  {url}')

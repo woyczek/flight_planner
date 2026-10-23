@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>frame/store — tests</title>
+<!-- Essais de la couche de données du cadre V3 (frame/store/frame_data.js, transport_github.js) contre le faux GitHub de
+     frame/store/test/fake_github.py, qui sert aussi cette page : python frame/store/test/fake_github.py, puis
+     http://127.0.0.1:8790/frame/store/test/ et « Run ». Chaque scénario repart d'un cache et d'un dépôt vides. -->
+<style>
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px;
+    background: #f5f6f8;
+    color: #17202a
+  }
+  li.ok::marker {
+    content: '✓ ';
+    color: #1e7d32
+  }
+  li.ko::marker {
+    content: '✗ ';
+    color: #b3261e
+  }
+  li.ko {
+    color: #b3261e
+  }
+  pre {
+    font-size: 12px;
+    white-space: pre-wrap
+  }
+</style></head>
+<body>
+<h1>frame/store — tests</h1>
+<p><button type="button" id="run">Run</button> <span id="state"></span></p>
+<ol id="out"></ol>
+<script src="../frame_data.js"></script>
+<script src="../transport_github.js"></script>
+<script>
+  const FD = window.FrameData,
+    $ = id => document.getElementById(id);
+  const T = (cmd, body) => fetch(`/__test/${cmd}`, {
+    method: 'POST',
+    body: JSON.stringify(body || {})
+  }).then(r => r.json());
+  const stats = () => fetch('/__test/stats').then(r => r.json());
+  const results = [];
+  /** Vérification : nom, condition, détail montré en cas d'échec. */
+  const check = (name, ok, detail) => results.push({
+    name,
+    ok: !!ok,
+    detail: ok ? '' : JSON.stringify(detail)
+  });
+  const rec = (who, at, extra = {}) => ({
+    pilote: who,
+    updated_at: at,
+    ...extra
+  });
+  /** Couche neuve : cache effacé, dépôt d'essai, transport github sur le faux GitHub, module « essai » déclaré. */
+  async function fresh(files = {}) {
+    await FD.reset();
+    await T('offline', {
+      on: false
+    });
+    await T('reset', {
+      files
+    });
+    FD.configure({
+      transport: FD.github({
+        repo: 'test/data',
+        branch: 'main',
+        token: 'test-token',
+        api: `${location.origin}/api`
+      }),
+      identity: {
+        trigram: 'TST'
+      }
+    });
+    return FD.adapter({
+      id: 'essai',
+      reads: ['disponibilites/', 'cr/', {
+        prefix: 'sia/base/',
+        policy: 'reference'
+      }],
+      writes: [{
+        prefix: 'disponibilites/',
+        merge: 'record'
+      }, {
+        prefix: 'cr/log.json',
+        merge: 'journal'
+      }, {
+        prefix: 'cr/affectations.json',
+        merge: 'keyed:assignments:mission+pilot'
+      }]
+    });
+  }
+  const scenarios = {
+    async 'offline: writes wait in the queue, reads answer from the cache'() {
+      const d = await fresh();
+      await T('offline', {
+        on: true
+      });
+      await d.put('disponibilites/TST/2026-W43.json', rec('TST', '2026-10-22T10:00:00Z'));
+      await d.put('disponibilites/TST/2026-W44.json', rec('TST', '2026-10-22T10:01:00Z'));
+      const s = await d.status(),
+        v = await d.get('disponibilites/TST/2026-W43.json');
+      check('2 writes pending', s.pending === 2, s);
+      check('the queue tells each path and the module that wrote it', s.queue?.length === 2 && s.queue.every(q => q.module ===
+        'essai' && q.path && q.at), s.queue);
+      check('read returns the local write', v?.pilote === 'TST', v);
+      const r = await d.sync();
+      check('sync offline: error "offline", nothing lost', r.error === 'offline' && (await d.status()).pending === 2, r);
+      const st = await stats();
+      check('no commit while offline', st.commits.length === 1, st.commits);
+    },
+    async 'batch: several writes and a removal leave in ONE commit'() {
+      const d = await fresh({
+        'disponibilites/OLD/2026-W40.json': JSON.stringify(rec('OLD', '2026-10-01T00:00:00Z'))
+      });
+      await d.sync();
+      for (let i = 0; i < 5; i++) await d.put(`disponibilites/TST/2026-W4${i}.json`, rec('TST', `2026-10-22T10:0${i}:00Z`));
+      await d.remove('disponibilites/OLD/2026-W40.json');
+      const r = await d.sync(),
+        st = await stats(),
+        last = st.commits[st.commits.length - 1];
+      check('sync ok, 6 pushed', r.ok && r.pushed === 6, r);
+      check('one commit for the batch', st.commits.length === 2 && last[2].length === 6, st.commits);
+      check('commit message names the trigram', /^TST : 6 fichier/.test(last[1]), last[1]);
+      check('removed file gone from the repository', !('disponibilites/OLD/2026-W40.json' in st.files), Object.keys(st.files));
+      check('queue empty after push', (await d.status()).pending === 0, await d.status());
+      check('list sees the pushed files', (await d.list('disponibilites/TST/'))?.length === 5, await d.list('disponibilites/'));
+    },
+    async 'pull: a change made on another device arrives, watch is called'() {
+      const d = await fresh({
+        'disponibilites/ABC/2026-W43.json': JSON.stringify(rec('ABC', '2026-10-20T00:00:00Z'))
+      });
+      await d.sync();
+      const seen = [];
+      const stop = d.watch('disponibilites/', p => seen.push(...p));
+      await T('write', {
+        files: {
+          'disponibilites/ABC/2026-W43.json': JSON.stringify(rec('ABC', '2026-10-22T08:00:00Z', {
+            note: 'remote'
+          }))
+        }
+      });
+      const before = await d.get('disponibilites/ABC/2026-W43.json');
+      check('before sync: the cached version (no network in a read)', before?.note === undefined, before);
+      await d.sync();
+      const after = await d.get('disponibilites/ABC/2026-W43.json');
+      check('after sync: the remote version', after?.note === 'remote', after);
+      check('watch called with the path', seen.includes('disponibilites/ABC/2026-W43.json'), seen);
+      stop();
+    },
+    async 'conflict on a record: the newest wins, the loser is kept'() {
+      const p = 'disponibilites/TST/2026-W45.json',
+        d = await fresh({
+          [p]: JSON.stringify(rec('TST', '2026-10-20T00:00:00Z', {
+            v: 'base'
+          }))
+        });
+      await d.sync();
+      await d.put(p, rec('TST', '2026-10-22T09:00:00Z', {
+        v: 'local-older'
+      }));
+      await T('write', {
+        files: {
+          [p]: JSON.stringify(rec('TST', '2026-10-22T11:00:00Z', {
+            v: 'remote-newer'
+          }))
+        }
+      });
+      let alerted = 0;
+      const on = () => alerted++;
+      window.addEventListener('frame-data-conflict', on);
+      const r = await d.sync();
+      window.removeEventListener('frame-data-conflict', on);
+      const st = await stats(),
+        cs = await FD.conflicts();
+      check('sync ok, 1 conflict counted', r.ok && r.conflicts === 1, r);
+      check('repository keeps the newest (remote)', JSON.parse(st.files[p]).v === 'remote-newer', st.files[p]);
+      check('loser kept and consultable', cs.length === 1 && JSON.parse(cs[0].lost).v === 'local-older', cs);
+      check('conflict signalled (event), no question asked', alerted === 1, alerted);
+      check('status counts the unseen conflict', (await d.status()).conflicts === 1, await d.status());
+    },
+    async 'journal and keyed lists merge without loss'() {
+      const log = 'cr/log.json',
+        aff = 'cr/affectations.json',
+        d = await fresh({
+          [log]: JSON.stringify({
+            entries: [{
+              at: '1',
+              e: 'a'
+            }]
+          }),
+          [aff]: JSON.stringify({
+            assignments: [{
+              mission: 'M1',
+              pilot: 'AAA'
+            }]
+          })
+        });
+      d.watch('cr/', () => {});
+      await d.sync();
+      // module « cr » : ses écritures déclarées (la déclaration de fresh couvre cr/log.json et cr/affectations.json)
+      await d.put(log, {
+        entries: [{
+          at: '1',
+          e: 'a'
+        }, {
+          at: '3',
+          e: 'local'
+        }]
+      });
+      await d.put(aff, {
+        assignments: [{
+          mission: 'M1',
+          pilot: 'AAA'
+        }, {
+          mission: 'M2',
+          pilot: 'TST'
+        }]
+      });
+      await T('write', {
+        files: {
+          [log]: JSON.stringify({
+            entries: [{
+              at: '1',
+              e: 'a'
+            }, {
+              at: '2',
+              e: 'remote'
+            }]
+          }),
+          [aff]: JSON.stringify({
+            assignments: [{
+              mission: 'M1',
+              pilot: 'AAA'
+            }, {
+              mission: 'M3',
+              pilot: 'BBB'
+            }]
+          })
+        }
+      });
+      const r = await d.sync(),
+        st = await stats();
+      check('journal: union of both sides, sorted', JSON.parse(st.files[log]).entries.map(e => e.e).join() === 'a,remote,local', st
+        .files[log]);
+      check('keyed: both new assignments kept', JSON.parse(st.files[aff]).assignments.map(a => a.mission).sort().join() === 'M1,M2,M3',
+        st.files[aff]);
+      check('no conflict counted', r.ok && r.conflicts === 0, r);
+    },
+    async 'race: the branch moves during the push, the layer pulls and pushes again'() {
+      const d = await fresh();
+      await d.sync();
+      await d.put('disponibilites/TST/2026-W46.json', rec('TST', '2026-10-22T12:00:00Z'));
+      await T('race', {
+        files: {
+          'disponibilites/XYZ/2026-W46.json': JSON.stringify(rec('XYZ', '2026-10-22T12:00:01Z'))
+        }
+      });
+      const r = await d.sync(),
+        st = await stats();
+      check('sync ok after the refused push', r.ok && r.pushed === 1, r);
+      check('both files in the repository', 'disponibilites/TST/2026-W46.json' in st.files && 'disponibilites/XYZ/2026-W46.json' in st
+        .files,
+        Object.keys(st.files));
+      check('the other device’s file pulled into the cache', (await d.get('disponibilites/XYZ/2026-W46.json'))?.pilote === 'XYZ', null);
+    },
+    async 'reference policy: read on demand, never queued, revalidated at sync'() {
+      const ref = 'sia/base/fr/2026-10-01.json',
+        d = await fresh({
+          [ref]: JSON.stringify({
+            zone: 'fr',
+            n: 1
+          }),
+          'sia/base/gb/2026-10-01.json': JSON.stringify({
+            zone: 'gb',
+            n: 1
+          })
+        });
+      await d.sync();
+      const st0 = await stats();
+      check('not prefetched: no blob read at sync', !st0.calls.some(c => c === 'GET blobs'), st0.calls);
+      check('list before any read: tree known', (await d.list('sia/base/'))?.length === 2, await d.list('sia/base/'));
+      const a = await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      check('first read waits and fetches', a?.value?.n === 1 && a.cached === false, a);
+      const b = await d.read(ref, {
+        policy: 'reference'
+      });
+      check('second read from the cache', b?.cached === true, b);
+      check('never in the queue', (await d.status()).pending === 0, await d.status());
+      const seen = [];
+      d.watch('sia/base/', p => seen.push(...p));
+      await T('write', {
+        files: {
+          [ref]: JSON.stringify({
+            zone: 'fr',
+            n: 2
+          })
+        }
+      });
+      await d.sync();
+      check('revalidated at sync, watch called', (await d.get(ref))?.n === 2 && seen.includes(ref), seen);
+      check('the other zone, never asked, still not fetched', !(await d.read('sia/base/gb/2026-10-01.json', {
+        policy: 'reference'
+      })), null);
+    },
+    async 'list is null before the first tree (offline first launch)'() {
+      const d = await fresh();
+      await T('offline', {
+        on: true
+      });
+      check('list null offline before any sync', (await d.list('disponibilites/')) === null, await d.list(''));
+    },
+    async 'module writes outside its declared prefixes are refused'() {
+      const d = await fresh();
+      let err = '';
+      try {
+        await d.put('utilisateurs/TST.json', {});
+      } catch (e) {
+        err = e.message;
+      }
+      check('refused with a clear message', /may not write utilisateurs\/TST\.json/.test(err), err);
+    },
+    async 'local transport (single user): the queue becomes the cache, nothing sent'() {
+      await FD.reset();
+      FD.configure({
+        transport: FD.transports.local()
+      });
+      const d = FD.adapter({
+        id: 'essai',
+        reads: ['disponibilites/'],
+        writes: ['disponibilites/']
+      });
+      await d.put('disponibilites/TST/2026-W47.json', rec('TST', '2026-10-22T13:00:00Z'));
+      const r = await d.sync();
+      check('sync ok, no network', r.ok && r.pushed === 1, r);
+      check('cache holds the file, queue empty', (await d.get('disponibilites/TST/2026-W47.json'))?.pilote === 'TST' && (await d
+          .status()).pending === 0,
+        await d.status());
+      check('list from the cache', (await d.list('disponibilites/'))?.length === 1, await d.list(''));
+    },
+    async 'from local to a repository: copies written here are taken up at the first pass, usual merge'() {
+      const A = 'disponibilites/TST/2026-W48.json',
+        B = 'disponibilites/TST/2026-W49.json',
+        C = 'disponibilites/TST/2026-W50.json',
+        D = 'disponibilites/ABC/2026-W48.json',
+        E = 'disponibilites/TST/2026-W51.json';
+      const d = await fresh({
+        [A]: JSON.stringify(rec('TST', '2026-10-01T00:00:00Z', {
+          v: 'remote-older'
+        })),
+        [C]: JSON.stringify(rec('TST', '2026-10-20T00:00:00Z', {
+          v: 'remote-newer'
+        })),
+        [D]: JSON.stringify(rec('ABC', '2026-10-05T00:00:00Z')),
+        [E]: JSON.stringify(rec('TST', '2026-10-02T00:00:00Z', {
+          v: 'same'
+        }))
+      });
+      const repo = FD.github({
+        repo: 'test/data',
+        branch: 'main',
+        token: 'test-token',
+        api: `${location.origin}/api`
+      });
+      // usage sans échange : les écritures restent sur l'appareil
+      FD.configure({
+        transport: FD.transports.local()
+      });
+      await d.put(A, rec('TST', '2026-10-10T00:00:00Z', {
+        v: 'local-newer'
+      }));
+      await d.put(B, rec('TST', '2026-10-10T00:00:00Z', {
+        v: 'local-only'
+      }));
+      await d.put(C, rec('TST', '2026-10-05T00:00:00Z', {
+        v: 'local-older'
+      }));
+      await d.put(E, rec('TST', '2026-10-02T00:00:00Z', {
+        v: 'same'
+      }));
+      await d.sync();
+      const before = (await stats()).commits.length;
+      // puis un dépôt (page servie par le lanceur) : premier passage
+      FD.configure({
+        transport: repo
+      });
+      const r = await d.sync(),
+        st = await stats(),
+        files = st.files,
+        last = st.commits[st.commits.length - 1];
+      check('sync ok, one commit', r.ok && st.commits.length === before + 1, r);
+      check('newer here: sent', JSON.parse(files[A]).v === 'local-newer', files[A]);
+      check('only here: sent', JSON.parse(files[B] || '{}').v === 'local-only', Object.keys(files));
+      check('newer in the repository: kept, and here too', JSON.parse(files[C]).v === 'remote-newer' && (await d.get(C)).v ===
+        'remote-newer', files[C]);
+      check('same value: neither sent nor in conflict', !last[2].includes(E) && !last[2].includes(C), last[2]);
+      check('the losers are kept (2 conflicts)', r.conflicts === 2 && (await FD.conflicts()).length === 2, await FD.conflicts());
+      check('a file of the repository arrives', (await d.get(D))?.pilote === 'ABC', null);
+      const r2 = await d.sync();
+      check('second pass: nothing taken up again', r2.ok && r2.pushed === 0 && (await stats()).commits.length === before + 1, r2);
+    },
+    async 'local transport with a reference source: references read from it, revalidated, nothing sent'() {
+      const ref = 'sia/base/fr/2026-10-01/aerodromes.json';
+      await FD.reset();
+      await T('offline', {
+        on: false
+      });
+      await T('reset', {
+        files: {
+          [ref]: JSON.stringify({
+            n: 1
+          }),
+          'sia/base/gb/2026-10-01/aerodromes.json': JSON.stringify({
+            n: 1
+          }),
+          'sia/base/es/2026-10-01/aerodromes.json': JSON.stringify({
+            n: 1
+          })
+        }
+      });
+      const commits0 = (await stats()).commits.length;
+      FD.configure({
+        transport: FD.transports.local(),
+        references: FD.github({
+          repo: 'test/data',
+          branch: 'main',
+          token: 'test-token',
+          api: `${location.origin}/api`
+        })
+      });
+      const d = FD.adapter({
+        id: 'essai',
+        reads: ['disponibilites/', {
+          prefix: 'sia/base/',
+          policy: 'reference'
+        }],
+        writes: ['disponibilites/']
+      });
+      check('list sees the references of the source', (await d.list('sia/base/'))?.length === 3, await d.list('sia/base/'));
+      const a = await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      check('first read fetches from the source', a?.value?.n === 1, a);
+      check('the other zone, never asked, not fetched', !(await d.read('sia/base/gb/2026-10-01/aerodromes.json', {
+        policy: 'reference'
+      })), null);
+      const seen = [];
+      d.watch('sia/base/', p => seen.push(...p));
+      await d.put('disponibilites/TST/2026-W50.json', rec('TST', '2026-10-22T15:00:00Z'));
+      await T('write', {
+        files: {
+          [ref]: JSON.stringify({
+            n: 2
+          })
+        }
+      });
+      const r = await d.sync();
+      const st = await stats();
+      check('sync ok, the write stays local', r.ok && r.pushed === 1 && (await d.status()).pending === 0, r);
+      check('nothing sent to the source', st.commits.length === commits0 + 1 && !('disponibilites/TST/2026-W50.json' in st.files),
+        st.commits);
+      check('reference revalidated at sync, watch called', (await d.get(ref))?.n === 2 && seen.includes(ref), seen);
+      await T('offline', {
+        on: true
+      });
+      const off = await d.sync();
+      check('source offline: the local pass still succeeds', off.ok && /offline/.test(off.warning || ''), off);
+      check('reference still read from the cache offline', (await d.get(ref))?.n === 2, null);
+      FD.configure({
+        references: null
+      });
+      check('without a source: no reference read', !(await d.read('sia/base/es/2026-10-01/aerodromes.json', {
+        policy: 'reference',
+        wait: true
+      })), null);
+    },
+    async 'cache policy: a device-local file, never queued, kept through pulls'() {
+      const d = await fresh();
+      const c = FD.adapter({
+        id: 'essai-cache',
+        reads: ['cache/'],
+        writes: [{
+          prefix: 'cache/',
+          policy: 'cache'
+        }]
+      });
+      await c.put('cache/ofp.json', {
+        last: 'OFP-1'
+      });
+      check('never queued', (await d.status()).pending === 0, await d.status());
+      await T('write', {
+        files: {
+          'disponibilites/Z/x.json': '{}'
+        }
+      });
+      await d.sync();
+      const st = await stats();
+      check('not sent to the repository', !('cache/ofp.json' in st.files), Object.keys(st.files));
+      check('still readable after a pull', (await c.get('cache/ofp.json'))?.last === 'OFP-1', null);
+      check('listed with its prefix', (await c.list('cache/'))?.includes('cache/ofp.json'), await c.list('cache/'));
+      await c.remove('cache/ofp.json');
+      check('removed locally, nothing queued', !(await c.get('cache/ofp.json')) && (await d.status()).pending === 0, null);
+    },
+    async 'shared prefix: two modules write the same file'() {
+      const d = await fresh();
+      const a = FD.adapter({
+          id: 'fuel',
+          reads: ['pilot/'],
+          writes: [{
+            prefix: 'pilot/',
+            merge: 'record'
+          }]
+        }),
+        b = FD.adapter({
+          id: 'maps',
+          reads: ['pilot/'],
+          writes: [{
+            prefix: 'pilot/',
+            merge: 'record'
+          }]
+        });
+      await a.put('pilot/TST/current_flight.json', rec('TST', '2026-10-23T08:00:00Z', {
+        by: 'fuel'
+      }));
+      await b.put('pilot/TST/current_flight.json', rec('TST', '2026-10-23T08:01:00Z', {
+        by: 'maps'
+      }));
+      check('both may write, the last write is the pending one', (await a.get('pilot/TST/current_flight.json'))?.by === 'maps', null);
+    },
+    async 'restore: a set-aside version becomes the pending write'() {
+      const p = 'disponibilites/TST/2026-W48.json',
+        d = await fresh({
+          [p]: JSON.stringify(rec('TST', '2026-10-20T00:00:00Z', {
+            v: 'base'
+          }))
+        });
+      await d.sync();
+      await d.put(p, rec('TST', '2026-10-22T09:00:00Z', {
+        v: 'mine'
+      }));
+      await T('write', {
+        files: {
+          [p]: JSON.stringify(rec('TST', '2026-10-22T11:00:00Z', {
+            v: 'theirs'
+          }))
+        }
+      });
+      await d.sync();
+      const [c] = await FD.conflicts();
+      const path = await FD.restore(c.id);
+      check('restore returns the path and queues the version', path === p && (await d.get(p))?.v === 'mine' && (await d.status())
+        .pending === 1,
+        await d.status());
+      check('conflict marked seen and restored', (await FD.conflicts())[0].seen && !!(await FD.conflicts())[0].restored, null);
+      await d.sync();
+      check('the taken-back version reaches the repository', JSON.parse((await stats()).files[p]).v === 'mine', null);
+    },
+    async 'background: retried automatically after an offline pass, no user action'() {
+      const d = await fresh();
+      await d.sync();
+      FD.configure({
+        retry: 400,
+        every: 60e3
+      });
+      FD.start(); // dernier scénario qui démarre la synchronisation de fond (minuterie gardée jusqu'à la fin de la page)
+      await T('offline', {
+        on: true
+      });
+      await d.put('disponibilites/TST/2026-W49.json', rec('TST', '2026-10-23T10:00:00Z'));
+      const r = await d.sync();
+      check('offline pass', r.error === 'offline', r);
+      await T('offline', {
+        on: false
+      });
+      await new Promise(res => setTimeout(res, 1500));
+      const s = await d.status(),
+        st = await stats();
+      check('retried by itself: queue empty, file in the repository', s.pending === 0 && 'disponibilites/TST/2026-W49.json' in st.files,
+        s);
+      document.dispatchEvent(new Event('visibilitychange'));
+      check('wake does not throw', true, null);
+    },
+    async 'cached and evict: cache state without network, references dropped without sending'() {
+      const ref = 'sia/base/fr/2026-10-01.json',
+        doc = 'disponibilites/ABC/2026-W43.json',
+        d = await fresh({
+          [ref]: JSON.stringify({
+            zone: 'fr'
+          }),
+          [doc]: JSON.stringify(rec('ABC', '2026-10-01T00:00:00Z'))
+        });
+      await d.sync();
+      await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      });
+      const calls = (await stats()).calls.length,
+        c = await d.cached('sia/base/');
+      check('cached lists the local copy with rev, bytes, at', c.length === 1 && c[0].path === ref && c[0].rev && c[0].bytes === 13 &&
+        c[0].at > 0, c);
+      check('cached reads no network', (await stats()).calls.length === calls, (await stats()).calls.slice(calls));
+      check('evict a document: refused (0)', await d.evict(doc) === 0 && (await d.cached(doc)).length === 1, await d.cached(doc));
+      check('evict a reference: removed', await d.evict('sia/base/') === 1 && (await d.cached('sia/base/')).length === 0, await d
+        .cached(''));
+      check('evict queues nothing', (await d.status()).pending === 0, await d.status());
+      await d.sync();
+      check('the reference is still in the repository', ref in (await stats()).files, null);
+      check('read again on demand', (await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      }))?.value?.zone === 'fr', null);
+    },
+    async 'export and import of the device data: merge keeps this device, replace takes the file'() {
+      const p = 'disponibilites/TST/2026-W44.json',
+        q = 'disponibilites/TST/2026-W45.json',
+        d = await fresh();
+      await d.put(p, rec('TST', '2026-10-02T00:00:00Z'));
+      await FD.adapter({
+        id: 'essai-cache',
+        writes: [{
+          prefix: 'cache/essai/',
+          policy: 'cache'
+        }]
+      }).put('cache/essai/last.json', {
+        n: 1
+      });
+      await d.sync();
+      await d.put(q, rec('TST', '2026-10-03T00:00:00Z'));
+      const dev = FD.adapter({
+        id: 'essai-device',
+        writes: [{
+          prefix: 'device/',
+          policy: 'cache'
+        }]
+      });
+      await dev.put('device/usages.json', {
+        devices: true,
+        updated_at: '2099-01-01T00:00:00Z'
+      });
+      const x = await FD.dump(),
+        parsed = JSON.parse(x.text);
+      check('export: one JSON file, docs and pending, no meta, no token', parsed.format === 'sog-frame-export/1' && parsed.docs.some(
+        e => e.path === p) && parsed.pending.some(e => e.path === q) && !('meta' in parsed) && !/test-token/.test(x.text), x.counts);
+      check('export: file name with the trigram', /^sog-appareil-tst-\d{4}-\d{2}-\d{2}\.json$/.test(x.name), x.name);
+      // un autre appareil, vide, sur un dépôt vide : la sauvegarde reprise, les fichiers partent à la synchronisation
+      const e = await fresh();
+      const r = await FD.load(new Blob([x.text]));
+      check('merge onto an empty device: everything taken', r.added >= 2 && r.pending >= 2, r);
+      check('merge: the device settings (device/) are never taken', r.device === 1 && await e.get('device/usages.json') === null, r);
+      check('the device cache file is back, not queued', (await e.get('cache/essai/last.json'))?.n === 1 && !(await e.cached('cache/'))
+        .some(f => f.policy !== 'cache'), await e.cached('cache/'));
+      const s1 = await e.sync();
+      check('imported writes sent at the next sync', s1.ok && JSON.parse((await stats()).files[q] || '{}').updated_at ===
+        '2026-10-03T00:00:00Z', s1);
+      // fusion : rien de cet appareil n'est perdu
+      await e.put(p, rec('TST', '2026-10-09T00:00:00Z'));
+      const r2 = await FD.load(x.text);
+      check('merge: a pending write here always wins', r2.kept >= 1 && (await e.get(p)).updated_at === '2026-10-09T00:00:00Z', r2);
+      await e.sync();
+      const r3 = await FD.load(x.text);
+      check('merge: an older backup does not overwrite a newer copy', (await e.get(p)).updated_at === '2026-10-09T00:00:00Z' && (await e
+        .status()).pending === 0, r3);
+      const r4 = await FD.load(x.text, {
+        mode: 'replace'
+      });
+      check('replace: the backup becomes the device data', (await e.get(p)).updated_at === '2026-10-02T00:00:00Z' && r4.pending ===
+        parsed.pending.length, r4);
+      check('replace: the device settings come with it', (await e.get('device/usages.json'))?.devices === true, await e.get(
+        'device/usages.json'));
+      let refused = false;
+      try {
+        await FD.load('{"a":1}');
+      } catch {
+        refused = true;
+      }
+      check('a file that is not an export is refused', refused, null);
+    },
+    async 'a reference pushed later is signalled at the pull, listed and counted by the diagnostic'() {
+      const ref = 'sia/base/fr/2026-10-01.json',
+        d = await fresh({
+          'disponibilites/ABC/2026-W43.json': JSON.stringify(rec('ABC', '2026-10-01T00:00:00Z'))
+        });
+      await d.sync();
+      check('before: no reference in the tree', ((await d.list('sia/base/')) || []).length === 0, await d.list('sia/base/'));
+      await T('write', {
+        files: {
+          [ref]: JSON.stringify({
+            zone: 'fr'
+          })
+        }
+      });
+      const seen = [];
+      d.watch('sia/base/', p => seen.push(...p));
+      const r = await d.sync();
+      check('the pull signals the new reference without reading it', r.ok && r.pulled.includes(ref) && seen.includes(ref) && !(await d
+        .cached('sia/base/')).length, {
+        r,
+        seen
+      });
+      check('listed', (await d.list('sia/base/'))?.includes(ref), await d.list('sia/base/'));
+      const g = await FD.diagnostic();
+      check('diagnostic: tree, references known, none cached yet', g.tree?.files >= 2 && g.tree.checked && g.references.sia === 1 && g
+        .references.cached === 0 && g.lastReadError === null, g);
+      check('read on demand', (await d.read(ref, {
+        policy: 'reference',
+        wait: true
+      }))?.value?.zone === 'fr' && (await FD.diagnostic()).references.cached === 1, null);
+    },
+    async 'git blob sha matches the repository'() {
+      const d = await fresh({
+        'disponibilites/A/x.json': 'héllo\n'
+      });
+      await d.sync();
+      const tree = (await stats()).files;
+      check('same text, same sha', await FD.gitSha('héllo\n') === (await d.read('disponibilites/A/x.json')).rev, null);
+    }
+  };
+  async function runAll() {
+    results.length = 0;
+    $('out').innerHTML = '';
+    $('state').textContent = 'running…';
+    for (const [name, fn] of Object.entries(scenarios)) {
+      const start = results.length;
+      try {
+        await fn();
+      } catch (e) {
+        check(`${name}: threw`, false, e.stack || String(e));
+      }
+      const mine = results.slice(start),
+        li = document.createElement('li');
+      li.className = mine.every(x => x.ok) ? 'ok' : 'ko';
+      li.innerHTML = `<b>${name}</b><ul>${mine.map(x => `<li class="${x.ok ? 'ok' : 'ko'}">${x.name}${x.detail ? `<pre>${x.detail.replace(/</g, '&lt;')}</pre>` : ''}</li>`).join('')}</ul>`;
+      $('out').append(li);
+    }
+    await T('offline', {
+      on: false
+    });
+    const ko = results.filter(x => !x.ok).length;
+    $('state').textContent = `${results.length - ko} / ${results.length} checks passed`;
+    window.__results = {
+      total: results.length,
+      failed: results.filter(x => !x.ok)
+    };
+    return window.__results;
+  }
+  $('run').onclick = runAll;
+</script>
+</body></html>

@@ -1,0 +1,663 @@
+/* V3 frame — mise en page de l'appli : en-tête (menu sur téléphone, nom, bouton de synchronisation, aide, réglages),
+   colonne des verbes (à gauche sur écran, tiroir sur téléphone), vue du module, notes et fenêtres du cadre. Les jetons
+   (couleurs, polices, rayons, densité ; designs standard, cabinet, field ; jour / nuit) et les primitives données aux
+   modules viennent de frame/design/ (importés ici : une page qui charge frame.css a tout). */
+@import url("design/tokens.css");
+@import url("design/primitives.css");
+* {
+  box-sizing: border-box
+}
+html,
+body {
+  margin: 0
+}
+html {
+  height: 100%
+}
+/* min-height (et non height) : le corps grandit avec la page, la colonne des verbes reste collée sur toute sa hauteur */
+body {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 210px 1fr;
+  grid-template-areas: "head head" "nav main"
+}
+.f-head {
+  grid-area: head;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--sog-surface);
+  border-bottom: 1px solid var(--sog-border)
+}
+.f-head .f-name {
+  font-weight: 700;
+  margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+/* boutons à icône seule de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible ; les boutons à libellé
+   (synchronisation, retour, bascule de la vue double) gardent leur largeur */
+.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn):not(.f-live):not(.f-who) {
+  width: var(--sog-touch);
+  padding: 0;
+  flex: none
+}
+.f-sync {
+  min-width: 0;
+  max-width: 50vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+.f-burger {
+  display: none
+}
+.f-sync[data-state="ok"] .f-dot {
+  background: var(--sog-ok)
+}
+.f-sync[data-state="pending"] .f-dot,
+.f-sync[data-state="offline"] .f-dot {
+  background: var(--sog-warn)
+}
+.f-sync[data-state="conflicts"] .f-dot,
+.f-sync[data-state="error"] .f-dot {
+  background: var(--sog-err)
+}
+.f-sync[data-state="syncing"] .f-dot {
+  background: var(--sog-accent);
+  animation: f-pulse 1s infinite alternate
+}
+.f-sync[data-state="local"] .f-dot {
+  background: var(--sog-muted)
+}
+.f-sync .f-dot {
+  margin-right: 8px
+}
+.f-lbl-short {
+  display: none
+}
+@keyframes f-pulse {
+  to {
+    opacity: .3
+  }
+}
+/* colonne des verbes collée sous l'en-tête (57 px) : elle reste à l'écran quand la page défile (aide, réglages) */
+.f-nav {
+  grid-area: nav;
+  padding: 10px 8px;
+  border-right: 1px solid var(--sog-border);
+  background: var(--sog-surface);
+  position: sticky;
+  top: 57px;
+  align-self: start;
+  height: calc(100vh - 57px);
+  overflow: auto
+}
+/* écran du cadre par-dessus un module : le module (et son volet) masqué, pas démonté ; l'écran prend toute la zone, vue
+   double comprise (.f-split : la grille à deux colonnes ne vaut que pour un module) */
+.f-view.f-over,
+.f-view.f-split.f-over {
+  display: block
+}
+.f-view.f-over> :not(.f-screen) {
+  display: none
+}
+/* boutons de l'en-tête enfoncés (aide, réglages, vue double) : fond teinté de l'accent, bordure de l'accent */
+.f-head button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--sog-accent) 15%, var(--sog-surface));
+  color: var(--sog-fg);
+  border-color: var(--sog-accent)
+}
+.f-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px
+}
+.f-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--sog-touch);
+  padding: 0 12px;
+  border-radius: var(--sog-radius);
+  color: inherit;
+  text-decoration: none
+}
+.f-nav a[aria-current="page"] {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink)
+}
+.f-view {
+  grid-area: main;
+  padding: 16px;
+  min-width: 0
+}
+/* pastille de la position réelle pendant un vol (source : X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
+   bascule du GPS ; nom de source long tronqué en fenêtre étroite */
+.f-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 0 8px;
+  font-size: var(--sog-size-s)
+}
+.f-live span {
+  max-width: 7.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+.f-live[hidden] {
+  display: none
+}
+/* sans trigramme : invitation à le poser dans les Réglages (ses documents restent sur l'appareil jusque-là) */
+.f-who {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 0 10px;
+  font-size: var(--sog-size-s);
+  color: var(--sog-warn, inherit)
+}
+.f-who[hidden] {
+  display: none
+}
+/* page servie par le lanceur d'un autre poste du réseau local : « Lanceur de <poste> » (nom tronqué si étroit) */
+.f-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 12em;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+.f-host[hidden] {
+  display: none
+}
+/* retour au module d'origine (« ← Carte ») ; sur téléphone, il prend la place du nom de l'appli */
+.f-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 0 10px 0 6px
+}
+.f-back[hidden] {
+  display: none
+}
+@media (max-width: 760px) {
+  .f-head.f-has-back .f-name {
+    display: none
+  }
+}
+/* vue double (grand écran) : le module courant à gauche, le volet à droite, collé sous l'en-tête */
+.f-pane-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 0 12px;
+  white-space: nowrap
+}
+.f-pane-btn[hidden] {
+  display: none
+}
+/* bascule enfoncée : fond teinté de l'accent, bordure de l'accent, texte de la page (lisible dans tous les designs) */
+.f-pane-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--sog-accent) 15%, var(--sog-surface));
+  color: var(--sog-fg);
+  border-color: var(--sog-accent)
+}
+.f-pane-bar {
+  display: flex;
+  justify-content: flex-end
+}
+.f-pane-close {
+  width: var(--sog-touch);
+  padding: 0
+}
+.f-view.f-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sog-gap);
+  align-items: start
+}
+.f-split>:not(.f-pane) {
+  grid-column: 1
+}
+.f-pane {
+  grid-column: 2;
+  grid-row: 1 / span 20;
+  position: sticky;
+  top: 70px;
+  max-height: calc(100vh - 86px);
+  overflow: auto;
+  min-width: 0
+}
+@media (max-width: 979px) {
+  .f-pane,
+  .f-pane-btn {
+    display: none
+  }
+}
+/* réglages (frame/settings/settings.js) : zones hors ligne, choix du niveau */
+.f-zone {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid var(--sog-border)
+}
+.f-level {
+  align-items: flex-start;
+  padding: 6px 0
+}
+.f-level input {
+  margin-top: 3px
+}
+/* aide (frame/help/help.js) : panneau replié en tête d'un module, écran #help ; tableaux en listes sur téléphone */
+.f-doc {
+  overflow-wrap: anywhere
+}
+.f-doc p,
+.f-doc li {
+  max-width: 70ch
+}
+.f-doc table {
+  border-collapse: collapse;
+  margin: 8px 0
+}
+.f-doc th,
+.f-doc td {
+  border: 1px solid var(--sog-border);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top
+}
+.f-doc .doc-anchor {
+  margin-left: .3em;
+  color: var(--sog-muted);
+  text-decoration: none;
+  font-size: .75em
+}
+/* réglages, carte Administration : une entrée par ligne, lien à hauteur tactile */
+.f-admin {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0
+}
+.f-admin li {
+  padding: 6px 0;
+  border-top: 1px solid var(--sog-border)
+}
+.f-admin a,
+.f-admin b {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
+/* assistant « Rejoindre la compagnie » et gestes de l'administrateur : pas numérotés aérés ; code QR à la taille d'un
+   écran de téléphone, toujours sur fond blanc */
+.f-join-steps li {
+  margin: 6px 0;
+  overflow-wrap: anywhere
+}
+.f-join-nav {
+  justify-content: space-between;
+  margin-top: 12px
+}
+.f-qr {
+  margin: 8px 0;
+  text-align: center
+}
+.f-qr svg {
+  display: block;
+  width: min(100%, 280px);
+  height: auto;
+  margin: 0 auto 4px;
+  background: #fff
+}
+/* réglages, carte Synchronisation : écritures en attente, une par ligne */
+.f-queue {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 8px
+}
+.f-queue li {
+  padding: 4px 0;
+  border-top: 1px solid var(--sog-border);
+  overflow-wrap: anywhere
+}
+.f-queue code {
+  font-family: var(--sog-font-mono);
+  font-size: .85em
+}
+/* tutoriels : captures d'écran de téléphone, au plus la largeur d'un téléphone, centrées ; carte d'accueil et
+   « Commencer par… » : liens à hauteur tactile */
+.f-tut img {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 8px auto 16px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius-s)
+}
+.f-welcome .f-row {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap
+}
+.f-welcome ul,
+.f-start ul {
+  margin: 4px 0;
+  padding-left: 1.2em
+}
+.f-welcome li a,
+.f-start li a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
+.f-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0
+}
+.f-toc li a {
+  display: flex;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
+.f-toc li.f-toc2 a {
+  padding-left: 16px
+}
+.f-back {
+  margin: 4px 0 var(--sog-gap)
+}
+@container (max-width: 760px) {
+  .f-doc table,
+  .f-doc tbody,
+  .f-doc tr,
+  .f-doc td {
+    display: block
+  }
+  .f-doc thead {
+    display: none
+  }
+  .f-doc tr {
+    border-top: 1px solid var(--sog-border);
+    padding: 6px 0
+  }
+  .f-doc td {
+    border: 0;
+    padding: 2px 0
+  }
+  .f-doc td[data-label]::before {
+    content: attr(data-label) " ";
+    color: var(--sog-muted)
+  }
+}
+/* réglages, carte Design : une vignette par jeu (le design posé sur le bloc, jetons du jeu), choix en cours souligné */
+.f-designs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--sog-gap);
+  margin: 8px 0
+}
+.f-design {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  text-align: left;
+  min-height: var(--sog-touch)
+}
+.f-design[aria-pressed="true"] {
+  outline: 3px solid var(--sog-accent);
+  outline-offset: 1px
+}
+.f-design-thumb {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  height: 4.5rem;
+  background: var(--sog-bg);
+  color: var(--sog-fg);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  font: var(--sog-font);
+  font-size: 11px;
+  overflow: hidden
+}
+.f-design-bar {
+  height: 8px;
+  background: var(--sog-surface);
+  border-bottom: 1px solid var(--sog-border)
+}
+.f-design-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius)
+}
+.f-design-chip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--sog-accent)
+}
+/* feuille de route (frame/help/roadmap.js) : tableau sur écran, une carte par voie sur téléphone ; couleur par état */
+.f-rm [data-state="done"],
+.f-rm-apps [data-state="done"] {
+  --rm: var(--sog-ok)
+}
+.f-rm [data-state="doing"],
+.f-rm-apps [data-state="doing"] {
+  --rm: var(--sog-accent)
+}
+.f-rm [data-state="planned"],
+.f-rm-apps [data-state="planned"] {
+  --rm: var(--sog-warn)
+}
+.f-rm [data-state="later"],
+.f-rm-apps [data-state="later"] {
+  --rm: var(--sog-muted)
+}
+.f-rm {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) repeat(4, minmax(0, 1fr));
+  gap: 6px 10px;
+  align-items: start
+}
+.f-rm-head,
+.f-rm-lane {
+  display: contents
+}
+.f-rm-head span {
+  font-weight: 600;
+  padding: 4px 0;
+  border-bottom: 3px solid var(--rm, transparent)
+}
+.f-rm-lane h2 {
+  grid-column: 1;
+  font-size: 1rem;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--sog-border)
+}
+.f-rm-col {
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--sog-border)
+}
+.f-rm-col h3 {
+  display: none
+}
+.f-rm-col ul,
+.f-rm-apps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px
+}
+.f-rm-item {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-left: 4px solid var(--rm, var(--sog-border));
+  border-radius: var(--sog-radius);
+  padding: 6px 8px;
+  font-size: .9em;
+  overflow-wrap: anywhere
+}
+.f-rm-note {
+  border-left: 4px solid var(--sog-warn)
+}
+@container (max-width: 760px) {
+  .f-rm {
+    display: block
+  }
+  .f-rm-head {
+    display: none
+  }
+  .f-rm-lane {
+    display: block;
+    background: var(--sog-surface);
+    border: 1px solid var(--sog-border);
+    border-radius: var(--sog-radius);
+    padding: 10px 12px;
+    margin-bottom: var(--sog-gap)
+  }
+  .f-rm-lane h2,
+  .f-rm-col {
+    border-top: 0;
+    padding-top: 0
+  }
+  .f-rm-col[data-empty] {
+    display: none
+  }
+  .f-rm-col h3 {
+    display: block;
+    font-size: .85em;
+    margin: 8px 0 4px;
+    color: var(--rm)
+  }
+}
+/* notifications flottantes et fenêtres de question (jamais de dialogue natif) */
+.f-notes {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 8px;
+  z-index: 20;
+  width: min(560px, calc(100vw - 24px))
+}
+.f-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--sog-radius);
+  background: var(--sog-fg);
+  color: var(--sog-bg);
+  box-shadow: var(--sog-shadow)
+}
+.f-note[data-kind="err"] {
+  background: var(--sog-err);
+  color: var(--sog-on-status)
+}
+.f-note[data-kind="warn"] {
+  background: var(--sog-warn);
+  color: var(--sog-on-status)
+}
+.f-note span {
+  flex: 1
+}
+.f-note {
+  align-items: center
+}
+.f-note button {
+  min-width: var(--sog-touch);
+  padding: 0 8px;
+  background: transparent;
+  border-color: transparent;
+  color: inherit
+}
+.f-modal {
+  position: fixed;
+  inset: 0;
+  background: var(--sog-veil);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  padding: 16px
+}
+.f-modal>div {
+  background: var(--sog-surface);
+  box-shadow: var(--sog-shadow);
+  border-radius: var(--sog-radius);
+  padding: 16px;
+  width: min(480px, 100%);
+  display: grid;
+  gap: 12px
+}
+/* téléphone : une colonne, verbes dans un tiroir ouvert par le bouton de menu */
+@media (max-width: 760px) {
+  body {
+    grid-template-columns: 1fr;
+    grid-template-areas: "head" "main"
+  }
+  .f-burger {
+    display: inline-block
+  }
+  .f-nav {
+    position: fixed;
+    inset: 57px 0 0 0;
+    z-index: 10;
+    border-right: 0;
+    display: none
+  }
+  body.f-nav-open .f-nav {
+    display: block
+  }
+  .f-view {
+    padding: 12px
+  }
+  .f-sync .f-lbl-long {
+    display: none
+  }
+  /* bouton de synchronisation : la pastille et un état court (✓, 3, ⟳, ✕) ; le détail dans l'infobulle */
+  .f-sync .f-lbl {
+    display: none
+  }
+  .f-sync .f-lbl-short {
+    display: inline
+  }
+  .f-sync .f-dot {
+    margin-right: 4px
+  }
+}

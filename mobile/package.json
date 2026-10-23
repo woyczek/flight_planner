@@ -1,9 +1,9 @@
 {
   "name": "flight-planner-mobile",
   "private": true,
-  "description": "Appli iOS embarquée (Capacitor) de la suite Flight Planner",
+  "description": "Appli iOS embarquée (Capacitor) : l'appli Pilote de la V3 (frame/index.html)",
   "scripts": {
-    "build": "python3 ../tools/build_pages.py ../_site",
+    "build": "python3 ../tools/build_pages.py ../_site --start frame/index.html",
     "ios:add": "cap add ios",
     "ios:sync": "cap sync ios"
   },

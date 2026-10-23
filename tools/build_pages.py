@@ -8,12 +8,18 @@ sw.js) dans un dossier de sortie, comme le lanceur les sert :
   · config/build.js (commit affiché en pied de page) écrit depuis git ;
   · .nojekyll (fichiers et dossiers commençant par « _ » servis tels quels) ;
   · politique de sécurité du contenu (CSP) en balise meta dans chaque page (Pages n'envoie pas d'en-têtes ; l'appli iOS
-    reprend ce site) : même liste que le lanceur (tools/csp_policy.py) et les adresses de config/repository_tree.
+    reprend ce site) : même liste que le lanceur (tools/csp_policy.py), les adresses de config/repository_tree et les
+    hôtes déclarés par meta.net des modules de l'appli V3.
 Les images gérées par Git LFS doivent être présentes dans la copie de travail (actions/checkout avec lfs: true) ; un
 pointeur LFS restant arrête la construction.
 
-Usage : python tools/build_pages.py _site
+Page de départ (--start chemin, enveloppe Capacitor de mobile/ : l'appli ouvre index.html à la racine) : la page
+d'accueil du site est remplacée par un renvoi vers ce chemin (par ex. frame/index.html, l'appli Pilote de la V3),
+adresse et ancre gardées ; le chemin doit faire partie du site construit.
+
+Usage : python tools/build_pages.py _site [--start frame/index.html]
 """
+import json
 import os
 import re
 import shutil
@@ -40,14 +46,29 @@ def with_csp(body, meta):
     return body[:m.end()] + meta + body[m.end():] if m else body
 
 
-def main(out):
+def start_page(out, start, meta):
+    """Page d'accueil remplacée par un renvoi vers start (chemin relatif à la racine du site, présent dans le site)."""
+    if not os.path.isfile(os.path.join(out, *start.split('/'))):
+        sys.exit(f'Page de départ absente du site : {start}')
+    target = json.dumps(start)
+    page = (f'<!doctype html><html lang="fr"><head><meta charset="utf-8">'
+            f'<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
+            f'<meta http-equiv="refresh" content="0; url={start}"><title>SOG Pilote</title>'
+            f'<script>location.replace({target} + location.search + location.hash)</script></head><body></body></html>\n').encode()
+    with open(os.path.join(out, 'index.html'), 'wb') as f:
+        f.write(with_csp(page, meta))
+    print(f'page de départ : {start}')
+
+
+def main(out, start=''):
     out = os.path.abspath(out)
     if os.path.isdir(out):
         shutil.rmtree(out)
     files = [f for f in git('ls-files', '-z').split('\0') if f and not f.startswith(SKIP)]
-    # politique de sécurité des pages (balise meta, avant tout script) : liste fixe et adresses de la configuration
+    # politique de sécurité des pages (balise meta, avant tout script) : liste fixe, adresses de la configuration et
+    # hôtes que les bibliothèques des modules V3 appellent elles-mêmes (meta.net)
     with open(os.path.join(ROOT, 'config', 'repository_tree'), encoding='utf-8') as f:
-        policy = csp_policy.value(csp_policy.config_sites(f.read()), meta=True)
+        policy = csp_policy.value([*csp_policy.config_sites(f.read()), *csp_policy.module_hosts(ROOT)], meta=True)
     meta = f'<meta http-equiv="Content-Security-Policy" content="{policy}">'.encode()
     pointers = []
     for rel in files:
@@ -75,8 +96,18 @@ def main(out):
     with open(os.path.join(out, 'config', 'build.js'), 'w', encoding='utf-8', newline='\n') as f:
         f.write(f'window.REPOSITORY_BUILD = {{ sha: "{sha}", branch: "{branch}", tag: "" }};\n')
     open(os.path.join(out, '.nojekyll'), 'w').close()
+    if start:
+        start_page(out, start.strip('/'), meta)
     print(f'{len(files)} fichiers → {out}')
 
 
 if __name__ == '__main__':
-    main(sys.argv[1] if len(sys.argv) > 1 else '_site')
+    args = sys.argv[1:]
+    start = ''
+    if '--start' in args:
+        i = args.index('--start')
+        start = args[i + 1] if i + 1 < len(args) else ''
+        del args[i:i + 2]
+        if not start:
+            sys.exit('--start : chemin de la page de départ attendu (ex. frame/index.html)')
+    main(args[0] if args else '_site', start)

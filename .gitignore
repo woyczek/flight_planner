@@ -25,6 +25,10 @@ defa_local_store.yaml
 flight_performance_database_merged.fpdb.json
 tools/.assets_seen.json
 tools/.defa_site.json
+tools/.lnmperf.json
+tools/.sim.json
+tools/.lan.json
+tools/.lan.json.tmp
 
 # Commit courant pour le pied de page (tools/write_build.sh, crochets git)
 config/build.js
@@ -37,3 +41,10 @@ secrets/
 
 # Site statique construit par tools/build_pages.py (appli iOS : mobile/, .github/workflows/ios.yml)
 _site/
+
+# Report VFR (tools/report-vfr, README.md) : ce que les scripts produisent (data/ l'est déjà par la règle data/ ci-dessus),
+# leur cache, les autres JSON du dossier, et les extraits des cartes VAC (documents du SIA, non publiés avec le code)
+tools/report-vfr/cache/
+tools/report-vfr/*.json
+!tools/report-vfr/config.json
+tools/report-vfr/reviews/*.png
