@@ -60,7 +60,8 @@ movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espaci
 mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
 la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA). «Seguir» mantiene
 el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), la línea lo dice y abre los
-ajustes; una posición de más de 2 minutos aparece en gris.
+ajustes; una posición de más de 2 minutos aparece en gris. La
+línea termina con la fuente de la posición: GPS, red, IVAO, VATSIM, X-Plane o Little Navmap.
 
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
 a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un

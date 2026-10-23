@@ -56,7 +56,8 @@ export const meta = {
               "source": "gps", "trail": [{ "lat": 46.2, "lon": 0.1, "at": "2026-10-23T12:20:00Z" }] } }
 ```
 
-  `source`: `gps` or `network`; `trail` optional (the map keeps its own 30-minute trail from the successive
+  `source`: `gps`, `network`, `ivao`, `vatsim`, `xplane` or `lnm` (frame lot 16; another value is accepted, shown
+  without a label); `trail` optional (the map keeps its own 30-minute trail from the successive
   positions); `trackDeg` optional (bearing from the previous position); `gsKt` optional (250 kt).
 
 ## 3. What it asks of aerodb

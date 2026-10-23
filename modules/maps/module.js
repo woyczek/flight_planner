@@ -227,6 +227,15 @@ const TX = {
   progNoPos: ['GPS ou réseau non activés : pas de position réelle.', 'GPS or network not enabled: no actual position.',
     'GPS oder Netz nicht aktiviert: keine tatsächliche Position.', 'GPS o red no activados: sin posición real.'
   ],
+  progFrom: ['source : {s}', 'source: {s}', 'Quelle: {s}', 'fuente: {s}'],
+  progSources: {
+    gps: ['GPS', 'GPS', 'GPS', 'GPS'],
+    network: ['réseau', 'network', 'Netz', 'red'],
+    ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],
+    vatsim: ['VATSIM', 'VATSIM', 'VATSIM', 'VATSIM'],
+    xplane: ['X-Plane', 'X-Plane', 'X-Plane', 'X-Plane'],
+    lnm: ['Little Navmap', 'Little Navmap', 'Little Navmap', 'Little Navmap']
+  },
   progSettings: ['Ouvrir les réglages', 'Open the settings', 'Einstellungen öffnen', 'Abrir los ajustes'],
   windTip: ['Vent {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Wind {d}° / {k} kt', 'Viento {d}° / {k} kt'],
   windSub: ['{t} · {l} · prévision {h}', '{t} · {l} · forecast {h}', '{t} · {l} · Vorhersage {h}', '{t} · {l} · previsión {h}'],
@@ -2709,8 +2718,12 @@ function progressHtml(st) {
       p: formatLevel(pl)
     }));
   }
-  const stale = st.stale ? ` <span class="mp-stale">(${esc(tt(TX.progStale, { m: st.ageMin }))})</span>` : '';
-  return `<p><b>${esc(parts[0] || '')}</b>${parts.length > 1 ? ` · ${esc(parts.slice(1).join(' · '))}` : ''}${stale}</p>`;
+  const stale = st.stale ? ` <span class="mp-stale">(${esc(tt(TX.progStale, { m: st.ageMin }))})</span>` : '',
+    // source de la position (progress.actual.source, posée par le cadre) ; une valeur inconnue : rien
+    src = Object.hasOwn(TX.progSources, st.actual.source) ? ` <span class="f-muted">· ${esc(tt(TX.progFrom, {
+      s: tt(TX.progSources[st.actual.source])
+    }))}</span>` : '';
+  return `<p><b>${esc(parts[0] || '')}</b>${parts.length > 1 ? ` · ${esc(parts.slice(1).join(' · '))}` : ''}${stale}${src}</p>`;
 }
 /** Avion vu de dessus orienté au cap (degrés vrais), plein ou creux. */
 function drawPlane(ctx, c, hdg, col, filled, r = 9) {

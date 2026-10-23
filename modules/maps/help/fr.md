@@ -61,6 +61,7 @@ dessus de la carte, une ligne dit l'écart : en avance ou en retard (minutes et 
 votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
 estimée (ETA). « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
 ou réseau non activés), la ligne le dit et ouvre les réglages ; une position de plus de 2 minutes est grisée.
+La ligne finit par la source de la position : GPS, réseau, IVAO, VATSIM, X-Plane ou Little Navmap.
 
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
 le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un

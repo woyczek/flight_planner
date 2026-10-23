@@ -58,7 +58,8 @@ or the mouse give the airspaces crossed in the same way.
 Above the map, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your
 altitude against the planned one; the profile shows both altitudes. Close up, each point carries its estimated time
 (ETA). “Follow” keeps the map on your position; moving the map stops it. Without a position (GPS or network not
-enabled), the line says so and opens the settings; a position older than 2 minutes is greyed.
+enabled), the line says so and opens the settings; a position older than 2 minutes is greyed. The
+line ends with the position's source: GPS, network, IVAO, VATSIM, X-Plane or Little Navmap.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a

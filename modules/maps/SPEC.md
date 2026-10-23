@@ -313,7 +313,8 @@ when the report is saved), nothing otherwise:
 - **Actual position** (`progress.actual`, written by the frame from the GPS or the network): filled red aircraft turned
   to `trackDeg` (else the bearing from the previous position); the trail of the last 30 minutes dotted (kept in memory
   from the successive positions, plus `actual.trail` when given). Older than 2 minutes: greyed, "Position from n min
-  ago".
+  ago". The line ends with the source (`actual.source`: `gps`, `network`, `ivao`, `vatsim`, `xplane` "X-Plane", `lnm`
+  "Little Navmap"); any other value: no label, no error.
 - **Difference**, a line above the map: ahead or late in minutes and NM (both positions projected on the route; time at
   `actual.gsKt`, else 250 kt), cross-track distance and side, actual altitude against the planned one at that
   distance (`formatLevel`). Without an actual position: "GPS or network not enabled" with a link to `#settings`.
