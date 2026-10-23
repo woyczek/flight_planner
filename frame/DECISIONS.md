@@ -481,3 +481,19 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - **Found on the way, for fuel**: with Fuel open during a flight, fuel rewrites `current_flight.json` (about every
     10 to 35 s) without `progress.actual`. The frame's actual position is then lost at each of fuel's writes. This
     was already true of the lot 15 GPS. Reported to fuel's owner.
+- **23 Oct 2026 — Lot 17, `keepScroll` in the frame** (asked by the coordinator):
+  - fuel, report and flightlog each had a copy of `keepScroll(box, draw)` (bc4fb7dc0, 54a5297c8, e5639ccfc). Two of
+    them also restored the focused field by hand.
+  - `frame/lib/dom.js`, owned by the frame, now gives one `keepScroll(box, draw, { focus = true })`:
+    - the same scroll keeping as the copies;
+    - the focused field found again by `data-k` / `data-i` (fuel's and flightlog's convention), or by `id`, with its
+      value, focus (`preventScroll`) and selection;
+    - a checkbox or a select keeps the value the render gives it.
+  - The frame keeps it for offline use (service worker shell).
+  - The modules switch to it at their next pass, and their copies go.
+  - INTEGRATION § 6 gains the rule: a render never changes the scroll, nor what is being typed.
+  - Test (in the frame page, through an import):
+    - a scrolling container and the page scrolled, a field focused with a selection, then the content redrawn;
+    - kept: the container's and the page's positions, the focus, the selection, and the value typed during the draw;
+    - `{ focus: false }`: the focus is not restored;
+    - no JavaScript error.

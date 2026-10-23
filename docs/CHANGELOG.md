@@ -32,6 +32,9 @@ waypoints, and the rest listed below.
   airspace names, airway names), "Reset the boxes" and "Reset the sliders"; the MapLibre background always the size of
   its frame (also after a hidden or frozen tab, a style change, tiles still loading); the Layers panel's "Reset all" no
   longer covers the Complexity slider.
+- **Frame: `keepScroll` shared** (`frame/lib/dom.js`, `frame/sw.js`; SPEC § 3.9, INTEGRATION § 6, DECISIONS) — one
+  helper for the modules: a render keeps the scroll of the page and of every scrolling container, and the field
+  being typed in (value, focus, selection); fuel, report and flightlog take it instead of their own copies.
 - **fuel, report, my flights: the page no longer jumps to the top** (`modules/fuel/module.js`, `modules/report/module.js`,
   `modules/flightlog/module.js`) — a screen redrawn because the flight changed elsewhere keeps where you were.
 - **Frame: the flight simulator as the first source of the actual position** (`tools/sim_position.py`,

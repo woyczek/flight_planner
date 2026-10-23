@@ -517,15 +517,17 @@ V2 registry `cr/missions.yaml`, so that V2 and CPCO see them. Never the other wa
 
 ### 3.9 Shared pure code (`frame/lib/`)
 
-A module never imports from another module. Code that two modules need (pure functions: no page, no storage, calls
-through the `ctx.net` or reader they are given) goes to `frame/lib/<name>.js`, owned by one module, which alone changes
-it; the others import it as it is.
+A module never imports from another module. Code that two modules need goes to `frame/lib/<name>.js`. It is owned by
+one module (or the frame), which alone changes it; the others import it as it is. Such code is pure functions (no
+page, no storage, calls through the `ctx.net` or reader they are given), or, for `dom.js`, rendering helpers that
+touch only the element they are given.
 
 | File | Owner | Used by | What it does |
 |---|---|---|---|
 | `frame/lib/last_flight.js` | report | report, flightlog | "my last flight" on IVAO and VATSIM (the V2 launcher's route in JavaScript): the flights of the last 7 days, then one flight's details |
 | `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
+| `frame/lib/dom.js` | frame | any module (fuel, report, flightlog first) | `keepScroll(box, draw, { focus })`: draws without moving the scroll and without losing the field being typed in. It keeps the scroll position of every scrolling container above `box` (the page included) and holds `box`'s height during the draw. It puts the positions back after the draw and on the next two frames. It finds the focused field again (by `data-k` / `data-i`, or by `id`) and restores its value, its focus (`preventScroll`) and its selection. It replaces the three copies made in fuel, report and flightlog |
 | `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu` and `wand-sparkles`), `svg(name)` |
 | `frame/lib/markdown.js` | help | the frame's help screen | the Markdown rendering of the help, copied as it is from V2 (`apps/aide/markdown.js`); a classic script loaded with the frame |
 | `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |

@@ -86,6 +86,11 @@ export function unmount() { /* stop watchers, timers */ }
 
 ## 6. Reacting and the rest of the context
 
+- **A render never changes the scroll, nor what is being typed.** A module that redraws (a re-read, a watched record,
+  a filter) draws through `keepScroll(box, draw)` from `frame/lib/dom.js`:
+  `import { keepScroll } from '../../frame/lib/dom.js'`. Give fields a `data-k` (and `data-i` in a list) so that the
+  focused field is found again. Only a change of screen that the user asked for (the next step of a form) goes back to
+  the top, outside `keepScroll`.
 - `ctx.identity` (read only): `trigram`, `ivao`, `vatsim`, `simbrief` of this device; an empty object when not set.
   Never fail on its absence.
 - `ctx.airline` (read only): `{ name, site, pages: { recordFlight, log, fleet } }` from the data repository
