@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: no error when leaving while the weather loads** (`modules/fuel/module.js`) — an answer arriving after you
+  left Fuel is dropped quietly.
 - **Frame: the header fits a phone in every language** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) — on a
   narrow screen the sync button shows a short state (✓, number pending, ⟳, ✕), the full label staying in its tooltip;
   the page no longer gets wider than the window at 375 px.

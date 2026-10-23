@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — answers after unmount** (bug seen by the frame: "Cannot set properties of null (setting 'wx')" in
+  `wxFetch`, Fuel then Map quickly): every asynchronous path keeps the mount it started from and stops when `S` has
+  changed meanwhile (`gone(s)`) — weather, corridor, Open-Meteo, aircraft search, point lookup, route reading,
+  SimBrief, sheets dialogs and imports, aerodb and current-flight re-reads; the pending weather timer is cleared at
+  unmount. Nothing is ever written into another mount's state. Reproduced on 8793 with 1.5 s slow answers, Fuel →
+  Map three times: the former code threw three times, the new one never.
 - **23 Oct 2026 — lot F, winds and temperatures aloft** (user's question through the ergonomics session: wind arrows
   at the planned level, inversions in the density altitude): METARs only give the surface wind, so a forecast by
   pressure level is needed — Open-Meteo, no key, added by the frame (7eb6aa2c0). A flight level is a pressure, so the

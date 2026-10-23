@@ -541,6 +541,9 @@ const PATH_TX = {
 
 // ---------------------------------------------------------------- état du module (un montage à la fois)
 let S = null;
+/** Vrai si le montage s a été démonté ou remplacé pendant une attente (réponse réseau, base, dialogue) : la suite est
+ *  abandonnée, rien n'est écrit dans l'état d'un autre montage. */
+const gone = s => S !== s;
 
 /** Échappe un texte pour le HTML. */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -707,7 +710,8 @@ function bearing(a, b) {
  *  l'arrivée. Sortie : { points, unresolved, tokens } — tokens : la suite lue ({ pt: point } | { keep: mot }) pour
  *  réécrire le texte normalisé (routeText). */
 async function routePoints(text, dep, arr, known = new Map()) {
-  const points = [],
+  const ctx = S.ctx,
+    points = [],
     unresolved = [],
     tokens = [],
     entries = String(text || '').split(/[,\n]+/).map(x => x.trim()).filter(Boolean),
@@ -716,7 +720,7 @@ async function routePoints(text, dep, arr, known = new Map()) {
     numRe = /^-?\d+(?:\.\d+)?$/;
   /** Position d'un identifiant : aerodb, sinon un point déjà connu du vol ; null sinon. */
   const find = async id => {
-    const c = S.ctx.aerodb ? await S.ctx.aerodb.coords(id).catch(() => null) : null;
+    const c = ctx.aerodb ? await ctx.aerodb.coords(id).catch(() => null) : null;
     if (c && Number.isFinite(+c.lat)) return {
       lat: +c.lat,
       lon: +c.lon
@@ -855,16 +859,20 @@ const emptyFlight = () => ({
 const SH = () => S.A?.lib || window.AeroDBSheets;
 /** Fiches du registre d'aerodb (les plus récentes d'abord) ; aucune sans aerodb. */
 async function readSheets() {
-  S.sheets = S.A?.sheets ? await S.A.sheets.list().catch(() => []) : [];
+  const s = S,
+    list = S.A?.sheets ? await S.A.sheets.list().catch(() => []) : [];
+  if (!gone(s)) S.sheets = list;
 }
 /** Enregistre une fiche par aerodb (champs changés tamponnés avec leur source, fichier aircraft/sheets/<id>.json et
  *  miroir V2 écrits par aerodb), puis relit la liste. */
 async function storeSheet(p, source = 'edit') {
+  const s = S;
   await S.A.sheets.put(plain(p), {
     source
   });
+  if (gone(s)) return;
   await readSheets();
-  S.ctx.notify(tt(TX.saved), 'ok');
+  if (!gone(s)) S.ctx.notify(tt(TX.saved), 'ok');
 }
 /** Écrit le vol courant (après un temps calme) : relu, champs du module changés, reste gardé (partagé avec maps). */
 function saveFlight() {
@@ -1500,7 +1508,8 @@ function alongRoute(pts, p) {
  *  (10 NM par défaut), gardés à ce rayon de la route, départ et arrivée exclus, triés le long de la route. Gardé tant que
  *  la route et le rayon ne changent pas ; ceux sans METAR ni TAF sont écartés à l'affichage et pour le vent. */
 async function wxCorridor() {
-  const r = S.flight.route || {},
+  const s = S,
+    r = S.flight.route || {},
     radius = Math.max(0, +(S.settings.wxRadiusNm ?? 10) || 0),
     pts = (r.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)),
     key = JSON.stringify([pts.map(p => [p.id, p.lat, p.lon]), radius, r.dep, r.arr]);
@@ -1510,7 +1519,7 @@ async function wxCorridor() {
     list: [],
     pts
   };
-  if (pts.length >= 2 && radius > 0 && S.ctx.aerodb?.aerodromes) {
+  if (pts.length >= 2 && radius > 0 && s.ctx.aerodb?.aerodromes) {
     const seen = new Map(),
       dLat = radius / 60;
     for (let i = 1; i < pts.length; i++) {
@@ -1520,7 +1529,7 @@ async function wxCorridor() {
         bbox = [Math.min(a.lon, b.lon) - dLon, Math.min(a.lat, b.lat) - dLat, Math.max(a.lon, b.lon) + dLon, Math.max(a.lat, b.lat) +
           dLat
         ];
-      for (const ad of (await S.ctx.aerodb.aerodromes({
+      for (const ad of (await s.ctx.aerodb.aerodromes({
           bbox
         }).catch(() => null)) || []) {
         const id = String(ad?.icao || '').toUpperCase();
@@ -1539,15 +1548,15 @@ async function wxCorridor() {
           ad,
           ...pos
         });
-        S.wxAd = {
-          ...S.wxAd,
+        s.wxAd = {
+          ...s.wxAd,
           [id]: ad
         };
       }
     }
     out.list.sort((x, y) => x.along - y.along);
   }
-  return S.wxCorr = out;
+  return s.wxCorr = out;
 }
 /** Relit la météo un peu après un changement de terrain, si elle a déjà été lue ou si la météo réelle est cochée. */
 function scheduleWx() {
@@ -1559,7 +1568,11 @@ function scheduleWx() {
  *  réseau, les dernières valeurs gardées, avec leur heure. Fiche des terrains (axe de piste) par aerodb. loud : les
  *  refus sont dits. */
 async function wxFetch(loud = false) {
+  if (!S) return; // lecture programmée (scheduleWx) partie après le démontage
+  const s = S,
+    when = wxWhen();
   await wxCorridor();
+  if (gone(s)) return;
   const ids = wxIds();
   if (!ids.length) {
     if (loud) S.ctx.notify(tt(TX.wxNone), 'warn');
@@ -1570,13 +1583,13 @@ async function wxFetch(loud = false) {
   /** Appel par le cadre : réponse, ou erreur codée (offline : hors réseau ; relay : site injoignable d'ici, sans
    *  lanceur ou sans clé ; http : refus du service). */
   const call = async (url, accept = 'application/json') => {
-    const res = await S.ctx.net.fetch(url, {
+    const res = await s.ctx.net.fetch(url, {
       headers: {
         accept
       }
     });
     if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable')) throw Object.assign(new Error('net'), {
-      code: S.ctx.net.online?.() === false || res.headers.get('x-sog-offline') ? 'offline' : 'relay'
+      code: s.ctx.net.online?.() === false || res.headers.get('x-sog-offline') ? 'offline' : 'relay'
     });
     if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
       code: 'http'
@@ -1604,9 +1617,9 @@ async function wxFetch(loud = false) {
       `https://metar.vatsim.net/metar.php?id=${encodeURIComponent(c.join(','))}`, 'text/plain')).text())))).flat();
     const tafs = [];
     let noTaf = false;
-    if (wxWhen() != null) {
+    if (when != null) {
       const withMetar = new Set(metars.map(m => m.icaoId)),
-        r = S.flight.route || {},
+        r = s.flight.route || {},
         want = ids.filter(id => withMetar.has(id) || [r.dep, r.arr, r.altn].includes(id)).slice(0, 12);
       for (const id of want) {
         try {
@@ -1627,7 +1640,7 @@ async function wxFetch(loud = false) {
       noTaf
     };
   };
-  const kept = (await S.ctx.data.get(WX_PATH).catch(() => null)) || {
+  const kept = (await s.ctx.data.get(WX_PATH).catch(() => null)) || {
     metar: {},
     taf: {}
   };
@@ -1644,14 +1657,16 @@ async function wxFetch(loud = false) {
     kept.at = new Date().toISOString();
     kept.source = got.source;
     kept.noTaf = got.noTaf;
-    await S.ctx.data.put(WX_PATH, kept, {
+    await s.ctx.data.put(WX_PATH, kept, {
       policy: 'cache'
     });
+    if (gone(s)) return;
     S.wx = {
       ...kept,
       cached: false
     };
   } catch (e) {
+    if (gone(s)) return;
     S.wx = kept.at ? {
       ...kept,
       cached: true
@@ -1660,13 +1675,14 @@ async function wxFetch(loud = false) {
       e: e.message
     }), 'warn');
   }
-  S.wxAd = S.wxAd || {};
+  s.wxAd = s.wxAd || {};
   for (const id of ids)
-    if (!(id in S.wxAd)) S.wxAd[id] = ((await S.ctx.aerodb?.aerodromes?.({
+    if (!(id in s.wxAd)) s.wxAd[id] = ((await s.ctx.aerodb?.aerodromes?.({
       icao: id
     }).catch(() => null)) || [])[0] || null;
+  if (gone(s)) return;
   await aloftFetch(loud);
-  if (!S.body) return;
+  if (gone(s) || !S.body) return;
   renderWx();
   isaHint();
   if (S.flight.weather?.real) applyRealWind();
@@ -1683,7 +1699,8 @@ function aloftKey() {
  *  du vol (sinon maintenant) ; heure du run lue à part si le service la donne. Gardée sur l'appareil ; hors réseau, la
  *  dernière. Puis appliquée au vol (aloftApply). */
 async function aloftFetch(loud = false) {
-  const pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
+  const s = S,
+    pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
   if (pts.length < 2) return;
   const key = aloftKey();
   if (S.aloft?.key === key && !S.aloft.cached) return aloftApply();
@@ -1692,7 +1709,7 @@ async function aloftFetch(loud = false) {
     model = WD.modelFor(mid.lat, mid.lon),
     t = wxWhen() ?? Math.round(Date.now() / 1000);
   try {
-    const res = await S.ctx.net.fetch(WD.forecastUrl(smp, model.id), {
+    const res = await s.ctx.net.fetch(WD.forecastUrl(smp, model.id), {
       headers: {
         accept: 'application/json'
       }
@@ -1703,7 +1720,7 @@ async function aloftFetch(loud = false) {
     const profiles = WD.profiles(await res.json(), t);
     let run = null;
     try { // heure du dernier run du modèle (métadonnées d'Open-Meteo), facultative
-      const meta = await S.ctx.net.fetch(`https://api.open-meteo.com/data/${{
+      const meta = await s.ctx.net.fetch(`https://api.open-meteo.com/data/${{
         meteofrance_seamless: 'meteofrance_arpege_europe',
         icon_seamless: 'dwd_icon',
         gfs_seamless: 'ncep_gfs025'
@@ -1713,6 +1730,7 @@ async function aloftFetch(loud = false) {
     } catch {
       /* sans heure du run */
     }
+    if (gone(s)) return;
     S.aloft = {
       key,
       model: model.name,
@@ -1722,16 +1740,17 @@ async function aloftFetch(loud = false) {
       samples: smp,
       profiles
     };
-    await S.ctx.data.put(ALOFT_PATH, S.aloft, {
+    await s.ctx.data.put(ALOFT_PATH, S.aloft, {
       policy: 'cache'
     });
   } catch (e) {
+    if (gone(s)) return;
     if (loud && e.code !== 'offline') S.ctx.notify(tt(TX.sbError, {
       e: e.message
     }), 'warn');
     if (S.aloft) S.aloft.cached = true;
   }
-  aloftApply();
+  if (!gone(s)) aloftApply();
 }
 /** Vents et températures au niveau planifié (paliers compris) : aux lieux de lecture et aux points de la route ;
  *  null sans prévision pour cette route. */
@@ -1993,9 +2012,10 @@ async function acResults(text) {
   const box = S.body?.querySelector('[data-acres]');
   if (!box) return;
   if (!S.A?.search) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.acNoRegistry))}</p>`;
-  const seq = S.acSeq = (S.acSeq || 0) + 1,
+  const s = S,
+    seq = S.acSeq = (S.acSeq || 0) + 1,
     hits = await S.A.search(text, 30).catch(() => []);
-  if (seq !== S.acSeq || !S.body) return;
+  if (gone(s) || seq !== S.acSeq || !S.body) return;
   S.acHits = new Map(hits.map(h => [h.key, h]));
   box.innerHTML = hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc(tt(TX.origins[h.source] || TX.origins.free))}</span></button>`).join('');
 }
@@ -2224,7 +2244,8 @@ function routeEdited(redraw = true) {
 /** Actions de la liste : monter, descendre, retirer un point, ajouter (identifiant cherché dans aerodb, ou « ID lat
  *  lon ») avant l'arrivée. */
 async function pointAction(act, i) {
-  const r = S.flight.route ||= emptyFlight().route,
+  const s = S,
+    r = S.flight.route ||= emptyFlight().route,
     pts = r.points ||= [];
   if (act === 'ptup' && i > 0)[pts[i - 1], pts[i]] = [pts[i], pts[i - 1]];
   else if (act === 'ptdown' && i < pts.length - 1)[pts[i + 1], pts[i]] = [pts[i], pts[i + 1]];
@@ -2238,6 +2259,7 @@ async function pointAction(act, i) {
         lat: +m[2],
         lon: +m[3]
       } : S.ctx.aerodb ? await S.ctx.aerodb.coords(txt).catch(() => null) : null;
+    if (gone(s)) return;
     if (!c || !Number.isFinite(+c.lat) || !Number.isFinite(+c.lon) || Math.abs(c.lat) > 90 || Math.abs(c.lon) > 180)
       return S.ctx.notify(tt(TX.ptUnknown, {
         id: txt
@@ -2362,14 +2384,15 @@ function resolveRoute(normalize = true) {
   const seq = S.routeSeq = (S.routeSeq || 0) + 1;
   clearTimeout(S.routeTimer);
   S.routeTimer = setTimeout(async () => {
-    const r = S.flight.route,
+    const s = S,
+      r = S.flight.route,
       known = new Map((r.points || []).filter(p => p?.id && Number.isFinite(+p.lat)).map(p => [p.id, p])),
       {
         points,
         unresolved,
         tokens
       } = await routePoints(r.text, r.dep, r.arr, known);
-    if (seq !== S.routeSeq || !S.body) return;
+    if (gone(s) || seq !== S.routeSeq || !S.body) return;
     r.points = points;
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
@@ -2390,25 +2413,30 @@ function resolveRoute(normalize = true) {
 /** Dernier OFP SimBrief (identifiant de l'identité) par ctx.net : gardé sur l'appareil (cache), route, niveau, vent et
  *  appareil repris dans le vol courant. */
 async function loadSimbrief() {
-  const id = String(S.ctx.identity.simbrief || '').trim();
+  const s = S,
+    id = String(S.ctx.identity.simbrief || '').trim();
   if (!id) return S.ctx.notify(tt(TX.noSimbrief), 'warn');
   const url = `https://www.simbrief.com/api/xml.fetcher.php?${/^\d+$/.test(id) ? 'userid' : 'username'}=${encodeURIComponent(id)}&json=v2`;
   let res;
   try {
     res = await S.ctx.net.fetch(url);
   } catch (e) {
+    if (gone(s)) return;
     return S.ctx.notify(tt(TX.sbError, {
       e: e.message || e
     }), 'err');
   }
+  if (gone(s)) return;
   if (res.headers.get('x-sog-offline')) return S.ctx.notify(tt(TX.offline), 'warn');
   const ofp = res.ok ? await res.json().catch(() => null) : null;
+  if (gone(s)) return;
   if (!ofp || !SH().isSimbriefOfp(ofp)) return S.ctx.notify(tt(TX.sbError, {
     e: ofp?.fetch?.status || res.status
   }), 'err');
   await S.ctx.data.put(OFP_PATH, ofp, {
     policy: 'cache'
   });
+  if (gone(s)) return;
   S.ofp = ofp;
   applyOfp(ofp);
 }
@@ -2625,7 +2653,8 @@ function renderSheets() {
 }
 /** Gestes de l'écran Fiches (liste, éditeur, aperçu des changements). */
 async function onSheetsClick(e) {
-  const b = e.target.closest('[data-do]');
+  const s = S,
+    b = e.target.closest('[data-do]');
   if (!b) return;
   const F = SH(),
     id = b.closest('[data-id]')?.dataset.id,
@@ -2648,7 +2677,7 @@ async function onSheetsClick(e) {
       const code = (await S.ctx.askText(tt(TX.typeCode), {
         value: ''
       }) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-      if (!code) return;
+      if (!code || gone(s)) return;
       const sb = F.simbriefRecordFor(code),
         np = sb ? F.profileFromSimbriefType(code, sb) : F.normalize({
           id: code,
@@ -2772,9 +2801,10 @@ async function onSheetsClick(e) {
       if (!(await S.ctx.ask(tt(TX.removeAsk, {
           n: p.name || p.id
         })))) return;
+      if (gone(s)) return;
       await S.A.sheets.remove(p.id);
       await readSheets();
-      return renderSheets();
+      return gone(s) ? undefined : renderSheets();
     case 'apply':
       return applyReview();
     case 'cancel':
@@ -2816,12 +2846,13 @@ function proposeIncoming(list) {
 }
 /** Lit des fichiers choisis (CSV, JSON, .lnmperf, OFP) puis propose leurs fiches. */
 async function importFiles(files) {
-  const all = [];
+  const s = S,
+    all = [];
   for (const file of files) {
     const txt = await file.text();
     all.push(...readText(txt, file.name));
   }
-  if (all.length) proposeIncoming(all);
+  if (all.length && !gone(s)) proposeIncoming(all);
 }
 /** Lit un texte collé (fiche, CSV, .lnmperf, OFP, réponse ChatGPT) puis propose ses fiches. */
 async function importText(txt, name) {
@@ -2991,7 +3022,9 @@ async function applyReview() {
   for (const i of S.body.querySelectorAll('[data-gone]'))
     if (!i.checked) out.rpmFuelCurve = [...(out.rpmFuelCurve || []), structuredClone(S.pending.gone[+i.dataset.gone])];
   if (!before) out.id = uniqueId(out.id);
+  const s = S;
   await storeSheet(out, S.pending.source);
+  if (gone(s)) return;
   S.pending = null;
   if (S.queue?.length) return proposeIncoming(S.queue);
   return S.edit && S.sheets.some(x => x.id === S.edit.id) ? renderEditor(S.edit.id) : renderSheets();
@@ -3076,16 +3109,21 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
+  const self = S; // ce montage : une relecture qui revient après le démontage n'écrit rien
   S.stops.push(ctx.aerodb?.on?.('change', async e => {
-    if (!e?.aircraft || !S?.body) return;
-    S.A = await ctx.aerodb.aircraft().catch(() => S.A);
+    if (!e?.aircraft || gone(self) || !S.body) return;
+    const A = await ctx.aerodb.aircraft().catch(() => S.A);
+    if (gone(self)) return;
+    S.A = A;
     await readSheets();
+    if (gone(self)) return;
     if (S.view === 'sheets' && !S.edit && !S.pending) renderSheets();
     else if (S.view === 'plan') refresh();
   }));
   S.stops.push(ctx.data.watch(pilotPath('current_flight.json'), async () => {
+    if (gone(self)) return;
     const f = await ctx.data.get(pilotPath('current_flight.json'));
-    if (!f || f.updated_at === S.writing || f.updated_at === S.flight.updated_at) return;
+    if (gone(self) || !f || f.updated_at === S.writing || f.updated_at === S.flight.updated_at) return;
     // écho d'une de nos écritures, arrivé après une plus récente : ignoré (il ramènerait un texte plus ancien)
     if (f.by === 'fuel' && S.writing && String(f.updated_at) < String(S.writing)) return;
     const typing = S.body?.querySelector('[data-k="rtext"]'),
@@ -3128,6 +3166,7 @@ export function unmount() {
   }
   clearTimeout(S.routeTimer);
   clearTimeout(S.roTimer);
+  clearTimeout(S.wxTimer);
   S.body = null;
   S = null;
 }
