@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>maps — render bench</title>
+<!-- Banc du rendu de la carte (modules/maps/render.js et lib/aero_symbols.js), sans lanceur ni base : données entièrement
+     fictives (codes XX…, géométries inventées), fond uni aux jetons du design. ?design=standard|cabinet|field,
+     ?tone=day|night, ?w=375 (largeur du dessin), ?zoom=2 (affiché agrandi). Sous le dessin : relevé de chaque texte écrit (taille, couleur après
+     themed()) et son contraste WCAG avec le fond des halos (--sog-chart-bg) ; un texte sous 4,5:1 est signalé, comme un
+     trait de route sous 3:1. Page d'outil, hors des applications. -->
+<link rel="stylesheet" href="../../../frame/frame.css?v=0">
+<style>
+  body {
+    margin: 0;
+    padding: 12px;
+    background: var(--sog-bg);
+    color: var(--sog-fg);
+    font: var(--sog-font)
+  }
+  canvas {
+    display: block;
+    border: 1px solid var(--sog-border)
+  }
+  pre {
+    white-space: pre-wrap;
+    font-size: 12px
+  }
+  .ko {
+    color: var(--sog-err, #b3261e);
+    font-weight: 700
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">maps — render bench</h1>
+<canvas id="c"></canvas>
+<pre id="out">running…</pre>
+<script>
+  const Q = new URLSearchParams(location.search);
+  document.documentElement.dataset.design = Q.get('design') || 'standard';
+  document.documentElement.dataset.tone = Q.get('tone') || 'day';
+</script>
+<script src="../lib/aero_symbols.js?v=0"></script>
+<script src="../render.js?v=0"></script>
+<script>
+  (() => {
+    const R = window.MapsRender,
+      W = +(Q.get('w') || 375),
+      H = Math.round(W * .8),
+      zoom = +(Q.get('zoom') || 1),
+      dpr = Math.max(zoom, Math.min(3, window.devicePixelRatio || 1)),
+      cv = document.getElementById('c');
+    cv.width = W * dpr;
+    cv.height = H * dpr;
+    cv.style.width = `${W * zoom}px`; // ?zoom=2 : le dessin du téléphone agrandi, net, pour le relire
+    // ---- données fictives : un vol XXAA → XXEE au FL120 et ce qu'il y a autour
+    const route = [{
+        id: 'XXAA',
+        lat: 46.9,
+        lon: 0.4
+      }, {
+        id: 'XLONG',
+        lat: 46.2,
+        lon: 1.6
+      }, {
+        id: 'XBETA',
+        lat: 45.5,
+        lon: 2.9,
+        alt: 14000
+      }, {
+        id: 'XGAMA',
+        lat: 44.8,
+        lon: 4.1
+      }, {
+        id: 'XXEE',
+        lat: 44.3,
+        lon: 5.1
+      }],
+      circle = (lat, lon, nm, n = 36) => Array.from({
+        length: n + 1
+      }, (_, i) => {
+        const a = i / n * 2 * Math.PI;
+        return [lat + nm / 60 * Math.cos(a), lon + nm / 60 * Math.sin(a) / Math.cos(lat * Math.PI / 180)];
+      }),
+      airspaces = [{
+        type: 'CTR',
+        cls: 'D',
+        name: 'XXAA CTR',
+        lower: 'SFC',
+        upper: '2000 ft AMSL',
+        rings: [circle(46.9, 0.4, 9)]
+      }, {
+        type: 'TMA',
+        cls: 'D',
+        name: 'XXAA TMA 1',
+        lower: '1500 ft AMSL',
+        upper: 'FL115',
+        rings: [
+          [
+            [47.4, -0.2],
+            [47.4, 1.2],
+            [46.4, 1.4],
+            [46.3, -0.1],
+            [47.4, -0.2]
+          ]
+        ]
+      }, {
+        type: 'CTA',
+        cls: 'C',
+        name: 'XXCC CTA',
+        lower: 'FL065',
+        upper: 'FL195',
+        rings: [
+          [
+            [45.9, 2.2],
+            [45.9, 3.8],
+            [45.0, 3.9],
+            [45.0, 2.1],
+            [45.9, 2.2]
+          ]
+        ]
+      }, {
+        type: 'R',
+        name: 'R 99 XX',
+        lower: 'SFC',
+        upper: 'FL145',
+        rings: [circle(45.3, 3.4, 12)]
+      }, {
+        type: 'D',
+        name: 'D 98 XX',
+        lower: '1000 ft AGL',
+        upper: 'FL085',
+        rings: [circle(46.4, 2.0, 8)]
+      }, {
+        type: 'TRA',
+        cls: 'G',
+        name: 'TRA XX',
+        lower: 'FL065',
+        upper: 'FL195',
+        rings: [
+          [
+            [44.9, 4.4],
+            [44.9, 5.6],
+            [44.2, 5.7],
+            [44.2, 4.3],
+            [44.9, 4.4]
+          ]
+        ]
+      }, {
+        type: 'CTR',
+        cls: 'D',
+        name: 'XXEE CTR',
+        lower: 'SFC',
+        upper: '3000 ft AMSL',
+        rings: [circle(44.3, 5.1, 7)]
+      }],
+      aerodromes = [
+        ['XXAA', 46.9, 0.4, 2800, true],
+        ['XXEE', 44.3, 5.1, 2500, true],
+        ['XXBB', 46.3, 1.1, 1400, false],
+        ['XXCC', 45.6, 2.6, 2400, true],
+        ['XXDD', 45.0, 3.9, 900, false],
+        ['XXFF', 44.6, 4.5, 1100, false],
+        ['XXGG', 46.6, 0.9, 0, false],
+        ['XXHH', 45.2, 2.4, 1600, false]
+      ].map(([icao, lat, lon, hardLen, controlled]) => ({
+        icao,
+        name: `Aérodrome ${icao}`,
+        lat,
+        lon,
+        hardLen,
+        controlled,
+        public: true,
+        bearing: 120,
+        magVar: 1
+      })),
+      navaids = [
+        ['XAV', 46.5, 1.0, 'VOR', '113.10'],
+        ['XBV', 45.7, 2.4, 'VOR', '116.25'],
+        ['XCV', 44.9, 3.7, 'VOR', '112.40'],
+        ['XDN', 45.4, 4.5, 'NDB', '355']
+      ].map(([id, lat, lon, kind, freq]) => ({
+        id,
+        name: `Balise ${id}`,
+        lat,
+        lon,
+        kind,
+        freq,
+        dme: kind === 'VOR'
+      })),
+      airways = [
+        ['XA10', [47.2, 0.2],
+          [46.5, 1.0]
+        ],
+        ['XA10', [46.5, 1.0],
+          [45.7, 2.4]
+        ],
+        ['XB20', [45.7, 2.4],
+          [44.9, 3.7]
+        ],
+        ['XB20', [44.9, 3.7],
+          [44.1, 5.0]
+        ],
+        ['XG30', [46.5, 1.0],
+          [45.4, 0.6]
+        ],
+        ['XG40', [45.7, 2.4],
+          [46.6, 3.4]
+        ]
+      ].map(([route, a, b]) => ({
+        route,
+        lower: 3500,
+        a: {
+          lat: a[0],
+          lon: a[1]
+        },
+        b: {
+          lat: b[0],
+          lon: b[1]
+        }
+      })),
+      moraCells = [];
+    for (let la = 43; la < 48; la++)
+      for (let lo = -1; lo < 6; lo++) moraCells.push({
+        lat: la,
+        lon: lo,
+        moraFt: 2500 + ((la * 7 + lo * 13) % 9) * 700
+      });
+    moraCells.forEach(m => m.mora = `${Math.floor(Math.ceil(m.moraFt / 100) / 10)}${'⁰¹²³⁴⁵⁶⁷⁸⁹'[Math.ceil(m.moraFt / 100) % 10]}`);
+    // ---- dessin, comme modules/maps/module.js (fond uni)
+    const t = R.tokens(),
+      fit = R.bboxOf(route, 25),
+      {
+        toC,
+        shown
+      } = R.mercator(fit, W, H, 12),
+      raw = cv.getContext('2d'),
+      texts = [],
+      strokes = [];
+    // relevé des textes écrits et des traits de la route (couleur réellement posée, après themed)
+    const spy = new Proxy(raw, {
+      get(o, p) {
+        if (p === 'fillText') return (s, x, y) => {
+          texts.push({
+            s: String(s),
+            color: o.fillStyle,
+            font: o.font,
+            alpha: o.globalAlpha
+          });
+          return o.fillText(s, x, y);
+        };
+        if (p === 'stroke') return a => {
+          strokes.push({
+            color: o.strokeStyle,
+            w: o.lineWidth
+          });
+          return a ? o.stroke(a) : o.stroke();
+        };
+        const v = o[p];
+        return typeof v === 'function' ? v.bind(o) : v;
+      },
+      set(o, p, v) {
+        o[p] = v;
+        return true;
+      }
+    });
+    const ctx = R.themed(spy, t);
+    raw.setTransform(dpr, 0, 0, dpr, 0, 0);
+    R.drawBackground(ctx, toC, W, H, [], {
+      sea: t.bg,
+      land: t.bg,
+      border: t.grid
+    });
+    const profile = R.routeProfile(12000),
+      marks = R.marks(route);
+    R.draw(ctx, {
+      toC,
+      W,
+      H,
+      scale: 1,
+      bbox: shown,
+      profile,
+      data: {
+        airspaces: R.selectAirspaces(airspaces, profile, route),
+        aerodromes,
+        navaids,
+        airways,
+        moraCells
+      },
+      route,
+      marks,
+      theme: t
+    });
+    // ---- contraste WCAG avec le fond des halos
+    const lum = c => {
+        const m = /^#([0-9a-f]{6})$/i.exec(c),
+          r = m ? [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16)) : (/rgba?\(([^)]+)\)/.exec(c)?.[1].split(',').slice(0, 3).map(
+            Number));
+        if (!r) return null;
+        const [a, b, d] = r.map(v => {
+          v /= 255;
+          return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
+        });
+        return .2126 * a + .7152 * b + .0722 * d;
+      },
+      ratio = (c1, c2) => {
+        const a = lum(c1),
+          b = lum(c2);
+        return a == null || b == null ? null : (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+      },
+      groups = new Map();
+    for (const x of texts) {
+      const size = +(/(\d+(?:\.\d+)?)px/.exec(x.font)?.[1] || 0),
+        k = `${x.color}|${size.toFixed(1)}`;
+      const g = groups.get(k) || {
+        color: x.color,
+        size,
+        n: 0,
+        ex: x.s,
+        alpha: x.alpha
+      };
+      g.n++;
+      groups.set(k, g);
+    }
+    const bgHex = (() => {
+      const c = document.createElement('canvas').getContext('2d');
+      c.fillStyle = t.bg;
+      return c.fillStyle;
+    })();
+    let bad = 0;
+    const rows = [...groups.values()].sort((a, b) => b.size - a.size).map(g => {
+      // texte de la couleur du fond : écrit dans une case colorée (lettre de classe d'un espace), pas sur le fond
+      if (ratio(g.color, bgHex) === 1) return `· ${g.size.toFixed(1)} px  ${g.color.padEnd(26)} dans une case  ×${g.n}  « ${g.ex} »`;
+      const r = ratio(g.color, bgHex),
+        ko = r != null && r < 4.5;
+      if (ko) bad++;
+      return `${ko ? '<span class="ko">✗</span>' : '✓'} ${g.size.toFixed(1)} px  ${g.color.padEnd(26)} ${r ? r.toFixed(2) : '?'}:1  ×${g.n}  « ${g.ex} »${g.alpha < 1 ? `  alpha ${g.alpha}` : ''}`;
+    });
+    const routeStroke = strokes.filter(s => s.w >= 3).map(s => `${s.color} ${s.w}px ${ratio(s.color, bgHex)?.toFixed(2)}:1`);
+    document.getElementById('out').innerHTML = `${document.documentElement.dataset.design} / ${document.documentElement.dataset.tone} — fond des halos ${bgHex}\n` +
+      `${bad} texte(s) sous 4,5:1\n\n` + rows.join('\n') + `\n\ntraits ≥ 3 px : ${[...new Set(routeStroke)].join(' ; ')}`;
+    document.title = `maps — render bench: ${bad ? `${bad} low contrast` : 'contrast OK'}`;
+  })();
+</script>
+</body></html>
