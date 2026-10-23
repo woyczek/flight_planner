@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report: times in UTC** (`modules/report/module.js`; INTEGRATION, DECISIONS, help ×4, website SPEC) — a new report
+  is marked `timeline.tz = "Z"` with UTC times; an older one is shown converted ("entered 18:30 local") and
+  rewritten in UTC only when saved.
 - **Fuel: first screen sooner** (`modules/fuel/module.js`; DECISIONS) — Fuel shows its fields from what the device
   has, says "Loading…" while the aircraft and sheets arrive, then completes the quote; nothing is written in
   between.

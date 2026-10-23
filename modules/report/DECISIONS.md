@@ -2,6 +2,17 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — the report's times in UTC** (Simplification's decision, points 1 to 5): a new report carries
+  `timeline.tz = 'Z'`, its times in UTC and its day in UTC (`todayZ`); the time fields say "(Z)". A report without
+  the marker (V2, older V3) is converted in memory (`toZ`: the report's date as the day, the device's time zone with
+  summer time), shown with "entered 18:30 local" under each field, and rewritten in UTC with the marker only when
+  saved; nothing migrated in bulk. Its date is never moved, even when the first time falls the day before in UTC: the
+  date is part of the V2 registry key and the bridge would add a duplicate. The marker is not in `emptyMission`
+  (`fillDefaults` would put it on an old report before its conversion). Imports in UTC: the started flight
+  (`hhmmZ(started.at)`), the network (`T.apply(…, { tz: 'UTC', today: todayZ() })`). The bridge copies `tz` as is
+  (checked in `tools/report_bridge.py`); the site gets the values without conversion (website SPEC § 5). Checked on
+  8804: CRF-A01-0 (18:30, no marker) shown "16:30" (Z) with "entered 18:30 local", the stored record unchanged; a
+  new report taking the started flight gets 17:14, the UTC time of the start.
 - **23 Oct 2026 — times shown in UTC** (suite rule, `frame/lib/time.js`, frame lot 22): the started-flight card says
   "Flight started at 16:59Z (18:59)" (engine start: UTC and the device's time), the network flights and the
   restored draft "23/10/2026 16:57Z" (`fmtDateZ`). The report's time fields (`timeline.*`, `type=time`) keep their

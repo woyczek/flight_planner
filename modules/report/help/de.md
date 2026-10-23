@@ -49,7 +49,9 @@ wieder zu öffnen und zu ändern. „Neuer Bericht“ beginnt mit einem leeren B
 - **IVAO und VATSIM**: die Flüge der letzten sieben Tage Ihrer Kennung. Ein durch Verbindungsabbrüche unterbrochener
   Flug zählt als ein einziger Flug. Anlassen und Abstellen entsprechen Verbindung und Trennung, wenn die Spur am Boden
   beginnt und endet; Start und Landung stammen aus der Spur.
-- **Die Zeiten** werden in der Uhrzeit Ihres Geräts geschrieben.
+- **Die Zeiten** sind UTC, mit „(Z)“ an den Feldern; der gestartete Flug und das Netz füllen sie in UTC. Ein älterer
+  Bericht, in der Uhrzeit des Geräts eingegeben, wird umgerechnet gezeigt, darunter die eingegebene Zeit („lokal
+  eingegeben 18:30“); er wird nur in UTC neu geschrieben, wenn Sie ihn speichern.
 - **SimBrief**: Ihr letzter Plan (Kennung in ⚙ eingestellt) — Luftfahrzeug, Route, Flugfläche, Geschwindigkeit,
   geplanter Kraftstoff, METAR und TAF.
 - **Aus Meine Flüge**: „Bericht schreiben“ bei einem Flug öffnet einen neuen Bericht, bereits mit diesem Flug und seinem

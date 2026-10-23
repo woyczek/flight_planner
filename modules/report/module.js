@@ -22,6 +22,7 @@ import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
+  fmtZ,
   fmtZLocal,
   fmtDateZ
 } from '../../frame/lib/time.js'; // heures en UTC, l'heure locale seulement à la mise en route
@@ -117,6 +118,7 @@ const TX = {
   current: L('Vol en cours (carburant / carte)', 'Current flight (fuel / maps)', 'Aktueller Flug (Kraftstoff / Karte)',
     'Vuelo actual (combustible / mapa)'),
   use: L('Utiliser', 'Use', 'Übernehmen', 'Usar'),
+  enteredLocal: L('saisi {t} locale', 'entered {t} local', 'lokal eingegeben {t}', 'introducido {t} local'),
   startedAt: L('Vol démarré à {t}', 'Flight started at {t}', 'Flug gestartet um {t}', 'Vuelo iniciado a las {t}'),
   takenBlock: L('carburant bloc {f}', 'block fuel {f}', 'Blockkraftstoff {f}', 'combustible bloque {f}'),
   takenAltn: L('dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativo {a}'),
@@ -301,6 +303,35 @@ const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+/** Aujourd'hui en UTC, AAAA-MM-JJ : le jour d'un CR aux heures UTC (timeline.tz = 'Z'). */
+const todayZ = () => new Date().toISOString().slice(0, 10);
+/** Heures de la frise (timeline.*) : en UTC dans un CR marqué timeline.tz = 'Z'. */
+const TIME_KEYS = ['briefing', 'engineStart', 'offBlock', 'takeoff', 'zoneEntry', 'missionStart', 'missionEnd', 'zoneExit',
+  'landing', 'onBlock', 'shutdown'
+];
+/** « HH:MM » UTC d'un instant (ISO, nombre ou Date) ; vide s'il est illisible. */
+const hhmmZ = iso => fmtZ(iso).slice(0, 5);
+/** CR sans le marqueur timeline.tz (V2, anciens V3) : ses heures sont celles de l'appareil ; converties en UTC en
+ *  mémoire (le jour du CR comme date), le marqueur posé. Le jour du CR ne bouge pas, même si la première heure tombe
+ *  la veille en UTC : il fait partie de la clé du registre V2 (famille | n° | date), le pont créerait un doublon.
+ *  S.tzOrigin garde ce qui a été saisi, pour « saisi 18:30 locale ». Rien n'est écrit : le CR n'est réécrit (en UTC,
+ *  marqué) que s'il est enregistré. */
+function toZ(m) {
+  S.tzOrigin = {};
+  const t = m.timeline || (m.timeline = {});
+  if (t.tz === 'Z') return m;
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(m.metadata?.date || '') ? m.metadata.date : today();
+  for (const k of TIME_KEYS) {
+    const v = String(t[k] || '');
+    if (!/^\d{2}:\d{2}$/.test(v)) continue;
+    const d = new Date(`${day}T${v}:00`); // heure de l'appareil, ce jour-là (heure d'été comprise)
+    if (!Number.isFinite(d.getTime())) continue;
+    S.tzOrigin[`timeline.${k}`] = v;
+    t[k] = hhmmZ(d);
+  }
+  t.tz = 'Z';
+  return m;
+}
 /** Valeur vide (chaîne vide, null, indéfinie) ? */
 const empty = v => v === undefined || v === null || v === '';
 
@@ -331,10 +362,12 @@ async function recentReports() {
 /** CR neuf : mission vide de la famille (première série, date du jour, catégorie de la famille, moi commandant de bord,
  *  identifiants réseau de l'identité) — le fresh() de la V2 sans le registre ni la météo. */
 function freshMission(fam = 'HEMS') {
+  S.tzOrigin = {};
   const F = FAMILIES[fam],
     m = M.emptyMission(fam);
   m.series = F.series?.[0]?.value || '';
-  m.metadata.date = today();
+  m.metadata.date = todayZ();
+  m.timeline.tz = 'Z'; // heures du CR en UTC (règle de l'appli Pilote)
   m.aircraft[0].category = F.defaultCategory || '';
   const tri = S.ctx.identity.trigram || '';
   if (tri) m.crew = [{
@@ -413,6 +446,7 @@ async function save() {
   }, {
     policy: 'cache'
   });
+  S.tzOrigin = {}; // ancien CR : réécrit en UTC et marqué, les heures saisies n'ont plus à être rappelées
   S.ctx.notify(tt(TX.saved, {
     id: m.metadata.missionId
   }), 'ok');
@@ -432,7 +466,9 @@ function control(fd, v, prefix = '') {
   if (fd.type === 'select') input = `<select ${common}>${fd.blank ? '<option value=""></option>' : ''}${opts.map(o => `<option value="${esc(o.value)}"${String(v ?? '') === String(o.value) ? ' selected' : ''}>${esc(lab(o.label))}</option>`).join('')}</select>`;
   else if (fd.type === 'textarea') input = `<textarea rows="3" ${common}>${esc(v ?? '')}</textarea>`;
   else input = `<input ${common} type="${fd.type === 'time' ? 'time' : fd.type === 'date' ? 'date' : 'text'}"${fd.type === 'number' ? ' inputmode="decimal"' : ''}${fd.code ? ' class="rp-code" autocapitalize="characters"' : ''} value="${esc(v ?? '')}">`;
-  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' f-full' : ''}"><span>${esc(lab(fd.label))} ${src}</span>${input}</label>`;
+  const z = fd.type === 'time' && path.startsWith('timeline.') ? ' (Z)' : '',
+    was = S.tzOrigin?.[path] ? `<small class="f-muted rp-was">${esc(tt(TX.enteredLocal, { t: S.tzOrigin[path] }))}</small>` : '';
+  return `<label class="f-field${fd.full || fd.type === 'textarea' ? ' f-full' : ''}"><span>${esc(lab(fd.label))}${z} ${src}${was}</span>${input}</label>`;
 }
 /** Grille de champs de la mission. */
 const grid = list => `<div class="f-grid">${list.filter(shown).map(fd => control(fd, M.get(S.m, fd.path))).join('')}</div>`;
@@ -475,6 +511,7 @@ const STYLE = `
 [data-module="report"] .rp-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:8px}
 [data-module="report"] .f-bar button{flex:1;min-width:150px}
 [data-module="report"] .f-bar .rp-unset{display:block}
+[data-module="report"] .rp-was{display:block;font-weight:400} /* ancien CR : l'heure saisie, en heure de l'appareil */
 [data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between}
 [data-module="report"] .f-badge{margin-left:4px}
 @container (min-width: 900px){ /* largeur du module (volet de la vue double compris), pas de la fenêtre */
@@ -700,14 +737,14 @@ async function flightsOf(net, quiet = false) {
     return null;
   }
 }
-/** Reprend un résultat analysé (text_import.js) dans les champs vides : heures dans le fuseau de l'appareil, seuils
+/** Reprend un résultat analysé (text_import.js) dans les champs vides : heures et jour en UTC, seuils
  *  hélicoptère si l'appareil est à voilure tournante ; source notée par champ ; « Remplacer » proposé pour les champs
  *  déjà saisis qui différaient. replace : remplace aussi les champs déjà saisis. */
 function importResult(result, source, replace = false) {
   const res = T.apply(S.m, result, {
-    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    tz: 'UTC', // heures du CR en UTC (timeline.tz = 'Z')
     rotary: (S.m.aircraft?.[0]?.category || FAMILIES[S.m.family]?.defaultCategory) === 'rotary',
-    today: today(),
+    today: todayZ(),
     replace
   });
   for (const path of res.done) S.sources[path] = source;
@@ -803,7 +840,7 @@ async function openReport(path) {
     by,
     ...mission
   } = r;
-  S.m = M.fillDefaults(mission, M.emptyMission(mission.family));
+  S.m = toZ(M.fillDefaults(mission, M.emptyMission(mission.family)));
   S.missionSeen = true; // CR déjà enregistré : sa mission a été choisie
   S.path = path;
   S.sources = {};
@@ -962,12 +999,8 @@ async function onClick(e) {
         'navigation.altn': r.altn,
         'navigation.distanceNm': r.distanceNm,
         'navigation.altitude': cf.level?.ft ? formatLevel(cf.level.ft) : '',
-        // heure de départ du carburant (fuseau de l'appareil, comme les autres reprises) et carburant bloc du devis
-        'timeline.engineStart': cf.started?.at ? new Date(cf.started.at).toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hourCycle: 'h23'
-        }) : '',
+        // heure de départ du carburant (UTC, comme toutes les heures du CR) et carburant bloc du devis
+        'timeline.engineStart': cf.started?.at ? hhmmZ(cf.started.at) : '',
         'fuel.unit': cf.quote?.block > 0 ? cf.quote.unit : '',
         'fuel.start': cf.quote?.block > 0 ? cf.quote.block : ''
       }, tt(TX.current), {
@@ -1006,7 +1039,7 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   const d = await ctx.data.get(DRAFT);
   if (d?.mission?.family && FAMILIES[d.mission.family]) {
-    S.m = M.fillDefaults(d.mission, M.emptyMission(d.mission.family));
+    S.m = toZ(M.fillDefaults(d.mission, M.emptyMission(d.mission.family)));
     S.missionSeen = d.missionSeen !== false; // brouillon d'avant ce repère : tenu pour vu
     S.path = d.path || null;
     S.sources = d.sources || {};

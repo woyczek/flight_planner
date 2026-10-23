@@ -117,7 +117,8 @@ SPECIAL, SURVEY (DEMO, a V2 demonstration family, is not carried). Their `flags`
 
 Every source fills **empty fields only**; each filled field shows its source until it is edited; when the source
 gave another value for fields already filled, a button offers "Replace the n fields already filled" (V2's rule).
-Times are written in the device's time zone (V2 used the aerodrome's: aerodb has no time zone yet); helicopter
+Times are written in UTC, the report marked `timeline.tz = "Z"` (since 23 Oct 2026; before, the device's time
+zone, and V2 used the aerodrome's): INTEGRATION § 3 bis; helicopter
 thresholds for the track when the aircraft (or the family's default category) is rotary.
 
 - **Current flight** of fuel and maps (§ 2).

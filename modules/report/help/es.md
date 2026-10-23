@@ -48,7 +48,9 @@ modificarlo. «Nuevo informe» vuelve a empezar con un informe en blanco.
 - **IVAO y VATSIM**: los vuelos de los últimos siete días de su identificador. Un vuelo cortado por desconexiones
   cuenta como un solo vuelo. La puesta en marcha y la parada corresponden a la conexión y a la desconexión cuando la
   traza empieza y termina en tierra; el despegue y el aterrizaje vienen de la traza.
-- **Las horas** se escriben en la hora de su dispositivo.
+- **Las horas** están en UTC, marcadas «(Z)» en los campos; el vuelo iniciado y la red las rellenan en UTC. Un
+  informe más antiguo, introducido en la hora del dispositivo, se muestra convertido con la hora introducida debajo
+  («introducido 18:30 local»); solo se reescribe en UTC si lo guarda.
 - **SimBrief**: su último plan (identificador ajustado en ⚙) — aeronave, ruta, nivel, velocidad, combustible previsto,
   METAR y TAF.
 - **Desde Mis vuelos**: «Escribir el informe» de un vuelo abre un informe nuevo, ya rellenado con ese vuelo y su fecha;

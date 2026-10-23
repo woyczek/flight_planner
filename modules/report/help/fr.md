@@ -49,7 +49,9 @@ modifier. « Nouveau CR » repart d'un compte rendu vierge.
 - **IVAO et VATSIM** : les vols des sept derniers jours de votre identifiant. Un vol coupé par des déconnexions
   compte pour un seul vol. La mise en route et l'arrêt correspondent à la connexion et à la déconnexion quand la trace
   commence et finit au sol ; le décollage et l'atterrissage viennent de la trace.
-- **Les heures** sont écrites à l'heure de votre appareil.
+- **Les heures** sont en UTC, notées « (Z) » sur les champs ; la reprise du vol démarré et celles du réseau les
+  remplissent en UTC. Un compte rendu plus ancien, saisi à l'heure de l'appareil, est montré converti avec l'heure
+  saisie dessous (« saisi 18:30 locale ») ; il n'est réécrit en UTC que si vous l'enregistrez.
 - **SimBrief** : votre dernier plan (identifiant réglé dans ⚙) — appareil, route, niveau, vitesse, carburant prévu,
   METAR et TAF.
 - **Depuis Mes vols** : « Écrire le CR » d'un vol ouvre un compte rendu neuf, déjà rempli avec ce vol et sa date ;

@@ -59,8 +59,8 @@ empty fields, and removes it.
   callsign and type (fuel's `aircraft`, from aerodb's `aircraftOf`), route departure, arrival, alternate, distance,
   level, `quote { block, unit, … }` and `started { at, by }` (fuel's "Start the flight"): a started flight is offered
   first, "Flight started at hh:mm"; the card's line lists everything taken (distance and level too, even when the
-  family has no field for them). "Use" also fills `timeline.engineStart` with `started.at` (device time zone, like the
-  other imports; source "Flight started (fuel)") and `fuel.start` / `fuel.unit` with the quote's block fuel (source
+  family has no field for them). "Use" also fills `timeline.engineStart` with `started.at` (UTC, like every time of the
+  report; source "Flight started (fuel)") and `fuel.start` / `fuel.unit` with the quote's block fuel (source
   "Fuel quote"). Levels are written with `formatLevel` (`frame/lib/route_text.js`). Once a report that used it is saved, its `started.at` goes into `cache/report/started.json`
   (`{ done: [at, …] }`, the last 20, device only, kept as a guard against offering it twice) and the card no longer offers
   it.
@@ -71,6 +71,21 @@ empty fields, and removes it.
   progress. `meta.writes` declares `pilot/` (record) for it. Who writes `started`: fuel at the start and at a
   cancellation, report at the report's saving.
 
+## 3 bis. Times of a report (`timeline.tz`, since 23 Oct 2026)
+
+- A report written by V3 carries `timeline.tz = "Z"`: its times (`timeline.*`: briefing, engine start, off-block,
+  take-off, zone, mission, landing, on-block, shutdown) are UTC "HH:MM", and `metadata.date` is the UTC day of a new
+  report. The fields say "(Z)".
+- A report without the marker (V2, older V3) has the device's times. Report shows them converted to UTC (the report's
+  date as the day, summer time included) with "entered 18:30 local" under each field, and rewrites them in UTC with
+  the marker only when the report is saved; nothing is migrated in bulk. Its `metadata.date` never changes (it is part
+  of the V2 registry key: family | number | date).
+- The imports fill in UTC: the started flight (`started.at`), the network (IVAO / VATSIM, `text_import.apply` with
+  `tz: 'UTC'`), the day from the same instants.
+- The bridge to V2 (`tools/report_bridge.py`) copies the record as it is, `timeline.tz` included. The passage to the
+  airline's website keeps the site form's convention: the values go as they are, without conversion (website SPEC § 5).
+- Readers: a time is UTC when `timeline.tz === 'Z'`, else the device time of whoever wrote it.
+
 ## 4. Example
 
 ```js
@@ -79,7 +94,7 @@ empty fields, and removes it.
   "schemaVersion": 2, "family": "HEMS", "series": "Primary HEMS",
   "metadata": { "missionId": "CRM-A03-0", "date": "2026-10-23", "reportedBy": "RBR", ... },
   "aircraft": [{ "registration": "F-ZBQU", "type": "EC45", ... }],
-  "timeline": { "takeoff": "10:05", "landing": "11:20", ... },
+  "timeline": { "tz": "Z", "takeoff": "10:05", "landing": "11:20", ... },
   "missionData": { "hems": { "service": "SAMU / SMUR", "patients": 1, "destinations": [{ "name": "CHU Purpan" }] } },
   "results": { "outcome": "SUCCESS" }, "statistics": { "flightMinutes": 75, ... } }
 ```

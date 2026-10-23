@@ -55,6 +55,9 @@ gives it to every module as `ctx.airline` (re-read when it changes). The log and
 
 `flightFields(mission)`, `recordPage(airline)`, `recordUrl(airline, fields)`, `copyLine(fields)`, `BOOKMARKLET`
 ("→ Vol"): report SPEC § 3 bis. Self-contained (its own time helpers).
+- **Times sent to the site** (23 Oct 2026): the record's values go as they are, without conversion — the site's form
+  convention is unchanged. A V3 report (`timeline.tz = "Z"`) therefore sends UTC times and the UTC day; an older one
+  its device times (report INTEGRATION § 3 bis).
 
 ## 6. Invariants
 

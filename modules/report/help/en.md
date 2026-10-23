@@ -48,7 +48,9 @@ report” starts again from a blank report.
 - **IVAO and VATSIM**: the flights of the last seven days for your identifier. A flight cut by disconnections counts as
   a single flight. Start-up and shutdown match the connection and the disconnection when the track begins and ends on
   the ground; take-off and landing come from the track.
-- **Times** are written in your device's time.
+- **Times** are UTC, marked "(Z)" on the fields; the started flight and the network fill them in UTC. An older
+  report, entered in the device's time, is shown converted with the entered time below ("entered 18:30 local"); it
+  is rewritten in UTC only if you save it.
 - **SimBrief**: your last plan (identifier set in ⚙) — aircraft, route, level, speed, planned fuel, METAR and TAF.
 - **From My flights**: “Write the report” on a flight opens a new report, already filled with that flight and its date;
   “Open the report” reopens the existing one.
