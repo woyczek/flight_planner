@@ -13,7 +13,7 @@ const CACHE = 'sog-frame-v1',
   SCOPE = new URL('./', self.location).pathname, // …/frame/
   ROOT = new URL('../', self.location).pathname, // racine de la suite
   SHELL = ['./', 'app.js', 'frame.css', 'design/tokens.css', 'design/primitives.css', 'design/metro.css', 'design/swiss.css',
-    'design/cupertino.css', 'lib/icons.js',
+    'design/cupertino.css', 'design/material.css', 'lib/icons.js',
     'manifest.webmanifest',
     'store/frame_data.js', 'store/transport_github.js',
     'store/transport_launcher.js', 'aerodb/zones.js', 'aerodb/aircraft.js', 'aerodb/aerodb.js', 'aerodb/registry.js', 'aerodb/sheets.js',

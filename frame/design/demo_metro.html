@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maquettes de design</title>
-<!-- Maquettes « Metro », « Swiss » et « Cupertino » du cadre V3 (frame/design/DECISIONS.md, 23 octobre 2026) : page de
+<!-- Maquettes « Metro », « Swiss », « Cupertino » et « Material » du cadre V3 (frame/design/DECISIONS.md, 23 octobre 2026) : page de
      démonstration statique, sans code de module (le nom du fichier est resté, le lien est connu). Le design vient de la
-     requête : ?design=metro|swiss|cupertino (metro par défaut), à combiner avec les paramètres ci-dessous. Sans scène :
+     requête : ?design=metro|swiss|cupertino|material (metro par défaut), à combiner avec les paramètres ci-dessous. Sans scène :
      une galerie de scènes, jour et nuit, téléphone (390 px) et écran (1280 px), chacune dans un cadre de la largeur voulue (les requêtes @media du cadre ont besoin d'une vraie fenêtre) ; avec ?scene=home|fuel|report
      &tone=day|night (&design=…) : la scène elle-même, faite du balisage du cadre (en-tête, verbes, vue) et des primitives de
      frame/design/primitives.css. Textes d'exemple en français, aucune donnée ; les icônes viennent de frame/lib/icons.js. -->
@@ -11,7 +11,7 @@
   // design de la requête posé avant le premier affichage (metro sans paramètre ou si le nom est inconnu)
   {
     const d = new URLSearchParams(location.search).get('design');
-    document.documentElement.dataset.design = /^(swiss|cupertino)$/.test(d) ? d : 'metro'
+    document.documentElement.dataset.design = /^(swiss|cupertino|material)$/.test(d) ? d : 'metro'
   }
 </script>
 <link rel="stylesheet" href="../frame.css?v=0">
@@ -61,6 +61,11 @@
   html[data-design="cupertino"] {
     --demo-night-muted: #98989d;
     --demo-night-fg: #fff
+  }
+  html[data-design="material"] {
+    --demo-night-bg: #1c1b1f;
+    --demo-night-fg: #e6e1e9;
+    --demo-night-muted: #cac4d0
   }
   .demo-gallery .demo-set[data-tone="night"] h2 {
     flex-basis: 100%;
@@ -169,12 +174,18 @@
         Arial.`,
       cupertino: `Façon Réglages d'iOS : fond gris très clair, cartes blanches groupées, bleu système pour les actions,
         hiérarchie par les espaces et les filets, listes groupées à chevron, contrôle segmenté, icône du verbe teintée
-        de la couleur du module. Police du système : San Francisco sur Apple, sinon celle de l'appareil.`
+        de la couleur du module. Police du système : San Francisco sur Apple, sinon celle de l'appareil.`,
+      material: `Material Design 3 : surfaces tonales (page, cartes et champs de trois teintes), un primaire bleu-violet,
+        boutons en pastille, champs à filet fin qui passe à 2 px à la saisie, onglets à indicateur souligné, pas en puces,
+        deux niveaux d'élévation seulement, barre d'application sur la surface, tiroir de navigation sur téléphone et rail
+        sur écran (indicateur actif teinté de la couleur du module). Police : Roboto si elle est installée, sinon celle du
+        système.`
     };
     document.body.innerHTML = `<h1>${design[0].toUpperCase() + design.slice(1)} — maquette du cadre</h1>
       <p>${INTRO[design]} Aucun module n'a été modifié : tout passe par les jetons et le balisage du cadre. Maquette,
       <b>à trancher</b> (frame/design/DECISIONS.md). Autres maquettes : <a href="?design=metro">metro</a>,
-      <a href="?design=swiss">swiss</a>, <a href="?design=cupertino">cupertino</a>.</p>` + ['day', 'night'].map(t => `<div class="demo-set" data-tone="${t}"><h2>${t === 'day' ? 'Jour' : 'Nuit'}</h2>${SC.map(([k, s, cap]) => `<figure data-k="${k}"><figcaption>${cap}</figcaption><div class="demo-box"><iframe title="${cap}" src="?scene=${s}&tone=${t}&design=${design}" width="${W[k]}" height="${HH[k]}" loading="lazy"></iframe></div></figure>`).join('')}</div>`).join('');
+      <a href="?design=swiss">swiss</a>, <a href="?design=cupertino">cupertino</a>,
+      <a href="?design=material">material</a>.</p>` + ['day', 'night'].map(t => `<div class="demo-set" data-tone="${t}"><h2>${t === 'day' ? 'Jour' : 'Nuit'}</h2>${SC.map(([k, s, cap]) => `<figure data-k="${k}"><figcaption>${cap}</figcaption><div class="demo-box"><iframe title="${cap}" src="?scene=${s}&tone=${t}&design=${design}" width="${W[k]}" height="${HH[k]}" loading="lazy"></iframe></div></figure>`).join('')}</div>`).join('');
     // les cadres sont réduits pour tenir dans la largeur de la page (écran : deux de front sur un grand écran), sans
     // changer leur fenêtre
     const fit = () => document.querySelectorAll('figure[data-k]').forEach(f => {

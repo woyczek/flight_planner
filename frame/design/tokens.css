@@ -1,7 +1,7 @@
 /* V3 design — jetons de l'interface (frame/design/SPEC.md § 2). Un design ne pose que des jetons, jamais une règle ; un
-   module s'en sert et n'en redéfinit aucun. Six designs : standard (défaut), cabinet et field (texturés : angles droits,
-   leurs polices) ; metro, swiss et cupertino (maquettes à trancher : aplats, style typographique international, Réglages
-   d'iOS). Jour / nuit : nuit si le système la demande (prefers-color-scheme), sauf html[data-tone="day"] ;
+   module s'en sert et n'en redéfinit aucun. Sept designs : standard (défaut), cabinet et field (texturés : angles droits,
+   leurs polices) ; metro, swiss, cupertino et material (maquettes à trancher : aplats, style typographique international, Réglages
+   d'iOS, Material Design 3). Jour / nuit : nuit si le système la demande (prefers-color-scheme), sauf html[data-tone="day"] ;
    html[data-tone="night"] la force. Les jeux de nuit ne valent qu'à l'écran : l'impression garde l'encre du jour.
    Un design peut aussi être posé sur un bloc ([data-design][data-tone], page de démonstration labs/design_primitives.html) :
    chaque jeu déclare toutes ses couleurs, ses polices et ses rayons. */
@@ -323,36 +323,103 @@
   --sog-radius-s: 6px
 }
 
+/* ---- material : maquette à trancher (frame/design/SPEC.md § 3), jour. Material Design 3 : surfaces tonales (page « surface »,
+   cartes « surface-container » à peine teintées, champs « surface-container-high »), un primaire bleu-violet discret (4,72 : 1
+   en texte sur un champ, blanc dessus 5,81), deux niveaux d'élévation seulement (--sog-shadow-card : 1 dp sur les cartes ;
+   --sog-shadow, --sog-shadow-up : 3 dp sur la barre collante, les notes et les fenêtres), rayon 12 (cartes), 4 (champs),
+   boutons en pastille (règle du cadre), police Roboto si elle est installée, sinon celle du système. --sog-outline et
+   --sog-shadow-card sont deux jetons propres à ce design (lus par design/material.css seulement). La couleur repère des modules
+   n'y teinte que l'indicateur actif du tiroir et du rail (jetons --sog-mod-*). Règles du cadre : design/material.css. */
+[data-design="material"] {
+  color-scheme: light;
+  --sog-bg: #fbf8ff;
+  --sog-surface: #f3f0fa;
+  --sog-surface-2: #e9e6f1;
+  --sog-fg: #1b1b21;
+  --sog-muted: #47464f;
+  --sog-border: #c8c5d0;
+  --sog-outline: #777680;
+  --sog-accent: #5359c6;
+  --sog-accent-ink: #fff;
+  --sog-link: #5359c6;
+  --sog-focus: #5359c6;
+  --sog-ok: #1b6e3a;
+  --sog-warn: #8a5100;
+  --sog-err: #ba1a1a;
+  --sog-on-status: #fff;
+  --sog-module: var(--sog-accent);
+  --sog-module-ink: #fff;
+  --sog-module-text: var(--sog-link);
+  --sog-mod-fuel: #0067b8;
+  --sog-mod-fuel-text: #0067b8;
+  --sog-mod-maps: #007589;
+  --sog-mod-maps-text: #007589;
+  --sog-mod-report: #b34700;
+  --sog-mod-report-text: #b34700;
+  --sog-mod-flightlog: #107c10;
+  --sog-mod-flightlog-text: #107c10;
+  --sog-mod-website: #6b3fa0;
+  --sog-mod-website-text: #6b3fa0;
+  --sog-mod-settings: #5d5a58;
+  --sog-mod-settings-text: #5d5a58;
+  --sog-shadow: 0 1px 3px #00000040, 0 4px 8px 3px #00000020;
+  --sog-shadow-up: 0 -1px 3px #00000040, 0 -4px 8px 3px #00000020;
+  --sog-shadow-card: 0 1px 2px #00000033, 0 1px 3px 1px #0000001a;
+  --sog-veil: #00000052;
+  --sog-chart-1: #5359c6;
+  --sog-chart-2: #00696f;
+  --sog-chart-3: #9c4a73;
+  --sog-chart-4: #8a5100;
+  --sog-chart-5: #2e6b2f;
+  --sog-chart-6: #77767f;
+  --sog-chart-grid: #d9d5e2;
+  --sog-chart-bg: #f3f0fa;
+  --sog-font: 15px/1.5 Roboto, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --sog-font-title: Roboto, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --sog-title-case: none;
+  --sog-title-spacing: 0;
+  --sog-title-size: 1.75rem;
+  --sog-title-weight: 500;
+  --sog-h1: 1.5rem;
+  --sog-h2: 1.25rem;
+  --sog-h3: .875rem;
+  --sog-gap: 16px;
+  --sog-gap-s: 8px;
+  --sog-gap-l: 24px;
+  --sog-radius: 12px;
+  --sog-radius-s: 4px
+}
+
 /* ---- couleur repère du module affiché : le cadre pose data-landmark (id du module ou de l'écran du cadre) sur <html>,
    sur le volet de chaque module et sur son lien du menu (pas data-module : les modules s'en servent dans leurs propres
-   sélecteurs, qui déborderaient sur la page) ; ailleurs que dans metro, swiss et cupertino, --sog-module reste l'accent */
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"])[data-landmark="fuel"],
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"]) [data-landmark="fuel"] {
+   sélecteurs, qui déborderaient sur la page) ; ailleurs que dans metro, swiss, cupertino et material, --sog-module reste l'accent */
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"])[data-landmark="fuel"],
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"]) [data-landmark="fuel"] {
   --sog-module: var(--sog-mod-fuel);
   --sog-module-text: var(--sog-mod-fuel-text)
 }
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"])[data-landmark="maps"],
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"]) [data-landmark="maps"] {
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"])[data-landmark="maps"],
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"]) [data-landmark="maps"] {
   --sog-module: var(--sog-mod-maps);
   --sog-module-text: var(--sog-mod-maps-text)
 }
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"])[data-landmark="report"],
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"]) [data-landmark="report"] {
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"])[data-landmark="report"],
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"]) [data-landmark="report"] {
   --sog-module: var(--sog-mod-report);
   --sog-module-text: var(--sog-mod-report-text)
 }
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"])[data-landmark="flightlog"],
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"]) [data-landmark="flightlog"] {
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"])[data-landmark="flightlog"],
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"]) [data-landmark="flightlog"] {
   --sog-module: var(--sog-mod-flightlog);
   --sog-module-text: var(--sog-mod-flightlog-text)
 }
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"])[data-landmark="website"],
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"]) [data-landmark="website"] {
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"])[data-landmark="website"],
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"]) [data-landmark="website"] {
   --sog-module: var(--sog-mod-website);
   --sog-module-text: var(--sog-mod-website-text)
 }
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"])[data-landmark="settings"],
-:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"]) [data-landmark="settings"] {
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"])[data-landmark="settings"],
+:is([data-design="metro"], [data-design="swiss"], [data-design="cupertino"], [data-design="material"]) [data-landmark="settings"] {
   --sog-module: var(--sog-mod-settings);
   --sog-module-text: var(--sog-mod-settings-text)
 }
@@ -603,6 +670,65 @@
     --sog-radius: 10px;
     --sog-radius-s: 6px
   }
+  [data-design="material"][data-tone="night"] {
+    color-scheme: dark;
+    --sog-bg: #1c1b1f;
+    --sog-surface: #26242b;
+    --sog-surface-2: #312f38;
+    --sog-fg: #e6e1e9;
+    --sog-muted: #cac4d0;
+    --sog-border: #49454f;
+    --sog-outline: #938f99;
+    --sog-accent: #b9bdff;
+    --sog-accent-ink: #1c2170;
+    --sog-link: #b9bdff;
+    --sog-focus: #b9bdff;
+    --sog-ok: #79d98f;
+    --sog-warn: #f0b95a;
+    --sog-err: #ffb4ab;
+    --sog-on-status: #000;
+    --sog-module: var(--sog-accent);
+    --sog-module-ink: #fff;
+    --sog-module-text: var(--sog-link);
+    --sog-mod-fuel: #0067b8;
+    --sog-mod-fuel-text: #4cb0ff;
+    --sog-mod-maps: #007589;
+    --sog-mod-maps-text: #3cc8de;
+    --sog-mod-report: #b34700;
+    --sog-mod-report-text: #ff9a4d;
+    --sog-mod-flightlog: #107c10;
+    --sog-mod-flightlog-text: #5fd35f;
+    --sog-mod-website: #6b3fa0;
+    --sog-mod-website-text: #b48be0;
+    --sog-mod-settings: #5d5a58;
+    --sog-mod-settings-text: #c0bbb7;
+    --sog-shadow: 0 1px 3px #000000b3, 0 4px 8px 3px #00000066;
+    --sog-shadow-up: 0 -1px 3px #000000b3, 0 -4px 8px 3px #00000066;
+    --sog-shadow-card: 0 1px 2px #000000b3, 0 1px 3px 1px #00000080;
+    --sog-veil: #00000099;
+    --sog-chart-1: #b9bdff;
+    --sog-chart-2: #4fd8d8;
+    --sog-chart-3: #ffafd3;
+    --sog-chart-4: #f0b95a;
+    --sog-chart-5: #8fd98f;
+    --sog-chart-6: #938f99;
+    --sog-chart-grid: #3b3944;
+    --sog-chart-bg: #26242b;
+    --sog-font: 15px/1.5 Roboto, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --sog-font-title: Roboto, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --sog-title-case: none;
+    --sog-title-spacing: 0;
+    --sog-title-size: 1.75rem;
+    --sog-title-weight: 500;
+    --sog-h1: 1.5rem;
+    --sog-h2: 1.25rem;
+    --sog-h3: .875rem;
+    --sog-gap: 16px;
+    --sog-gap-s: 8px;
+    --sog-gap-l: 24px;
+    --sog-radius: 12px;
+    --sog-radius-s: 4px
+  }
 }
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-tone="day"]) {
@@ -847,5 +973,64 @@
     --sog-gap-l: 24px;
     --sog-radius: 10px;
     --sog-radius-s: 6px
+  }
+  :root[data-design="material"]:not([data-tone="day"]) {
+    color-scheme: dark;
+    --sog-bg: #1c1b1f;
+    --sog-surface: #26242b;
+    --sog-surface-2: #312f38;
+    --sog-fg: #e6e1e9;
+    --sog-muted: #cac4d0;
+    --sog-border: #49454f;
+    --sog-outline: #938f99;
+    --sog-accent: #b9bdff;
+    --sog-accent-ink: #1c2170;
+    --sog-link: #b9bdff;
+    --sog-focus: #b9bdff;
+    --sog-ok: #79d98f;
+    --sog-warn: #f0b95a;
+    --sog-err: #ffb4ab;
+    --sog-on-status: #000;
+    --sog-module: var(--sog-accent);
+    --sog-module-ink: #fff;
+    --sog-module-text: var(--sog-link);
+    --sog-mod-fuel: #0067b8;
+    --sog-mod-fuel-text: #4cb0ff;
+    --sog-mod-maps: #007589;
+    --sog-mod-maps-text: #3cc8de;
+    --sog-mod-report: #b34700;
+    --sog-mod-report-text: #ff9a4d;
+    --sog-mod-flightlog: #107c10;
+    --sog-mod-flightlog-text: #5fd35f;
+    --sog-mod-website: #6b3fa0;
+    --sog-mod-website-text: #b48be0;
+    --sog-mod-settings: #5d5a58;
+    --sog-mod-settings-text: #c0bbb7;
+    --sog-shadow: 0 1px 3px #000000b3, 0 4px 8px 3px #00000066;
+    --sog-shadow-up: 0 -1px 3px #000000b3, 0 -4px 8px 3px #00000066;
+    --sog-shadow-card: 0 1px 2px #000000b3, 0 1px 3px 1px #00000080;
+    --sog-veil: #00000099;
+    --sog-chart-1: #b9bdff;
+    --sog-chart-2: #4fd8d8;
+    --sog-chart-3: #ffafd3;
+    --sog-chart-4: #f0b95a;
+    --sog-chart-5: #8fd98f;
+    --sog-chart-6: #938f99;
+    --sog-chart-grid: #3b3944;
+    --sog-chart-bg: #26242b;
+    --sog-font: 15px/1.5 Roboto, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --sog-font-title: Roboto, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --sog-title-case: none;
+    --sog-title-spacing: 0;
+    --sog-title-size: 1.75rem;
+    --sog-title-weight: 500;
+    --sog-h1: 1.5rem;
+    --sog-h2: 1.25rem;
+    --sog-h3: .875rem;
+    --sog-gap: 16px;
+    --sog-gap-s: 8px;
+    --sog-gap-l: 24px;
+    --sog-radius: 12px;
+    --sog-radius-s: 4px
   }
 }

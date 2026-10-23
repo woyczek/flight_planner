@@ -578,6 +578,11 @@
       id: 'cupertino',
       label: ['Cupertino', 'Cupertino', 'Cupertino', 'Cupertino'],
       textured: false
+    }, {
+      // maquette à trancher : Material Design 3 (surfaces tonales, deux niveaux d'élévation, boutons en pastille, tiroir et rail)
+      id: 'material',
+      label: ['Material', 'Material', 'Material', 'Material'],
+      textured: false
     }],
     TONES = ['auto', 'day', 'night'],
     DESIGN_MIRROR = 'sogFrame:design';

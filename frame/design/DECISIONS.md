@@ -236,3 +236,94 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     then `cabinet` and `field` (fuel, report, drawer, 390 px, day and night): identical except the Settings page, which gains
     two thumbnails. A few captures differ run to run on unchanged code (async loading; seen between two runs of the previous
     commit), so the ones that differed were repeated three times on each side at 390 px: the stable renderings are identical.
+- **23 Oct 2026 — "Material" (Material Design 3) mock-up, on the user's decision** (fourth design kept for V3, after `metro`,
+  `swiss`, `cupertino`; `docs/technique/V3_SPECIFICATION.md` § 10 point 3). Branch `v3-metro`, nothing pushed. **Mock-up,
+  pending decision**, same pattern: token set first, frame rules only where tokens cannot carry the look, all behind
+  `[data-design="material"]` and `@media screen`, no module touched, system fonts only (`Roboto` first when installed, no web
+  font; the capture machine has none, so every capture shows the fallback sans).
+  - **What changed**: the set in `tokens.css` (day, forced night, system night, every token declared; the six landmark
+    selectors now list the four mock-ups); `DESIGNS` in `frame/app.js` (label "Material" in the four languages,
+    `textured: false`: it appears in the Settings Design card and persists like the others); the first-paint regex of
+    `frame/index.html`; `frame/design/material.css` (168 lines, imported by `frame.css` after `cupertino.css`, listed in
+    `sw.js`); the demo page takes `?design=material`.
+  - **Tokens**: page `surface` `#fbf8ff`, cards `surface-container` `#f3f0fa` (shadow of 1 dp), fields `surface-container-high`
+    `#e9e6f1`; ink `#1b1b21`, secondary text `#47464f`, hairline `#c8c5d0` (outline-variant); primary `#5359c6`, a muted
+    blue-violet (the standard design's blue `#1d6fd8` gives 4.63 on the page but 4.32 on a card and 3.95 on a field, below 4.5 :
+    1; this one passes everywhere), white ink; status colours tonal (`#1b6e3a`, `#8a5100`, `#ba1a1a`). Radius 12 (cards, dialogs), `radius-s` 4 (fields,
+    badges, callouts); `gap` 16 / 8 / 24; base text 15 px; `h2` 1.25rem, `h3` .875rem sentence case, page title 1.75rem at weight
+    500 (`title-weight` is one token for the three levels, so 500 and not the 400 of Material's headline); tracking 0.
+    **Night**: page `#1c1b1f`, cards `#26242b`, fields `#312f38`, ink `#e6e1e9`, primary `#b9bdff` with ink `#1c2170`; the status
+    colours lightened; shadows stronger (they barely show on a dark surface). Landmark palette: the `metro` hues (white on each
+    5.4 : 1 to 7.4 : 1, lighter text variants at night).
+    - **Two design-private tokens** (declared only in the three `material` sets, read only by `material.css`): `--sog-outline`
+      (`#777680` day, `#938f99` night: the outline of a field or a button, 3.64 to 4.26 : 1 day and 4.16 to 5.41 night, against
+      the 1.4 to 1.6 : 1 of `--sog-border`, which stays the hairline of rules and cards) and `--sog-shadow-card` (1 dp).
+      `--sog-shadow` / `--sog-shadow-up` carry the second level (3 dp).
+  - **Frame rules tokens cannot carry** (all in `material.css`): header on the page surface (not on the card tone), name at
+    22 px / 400; every button a pill (radius = half the target, so 22 px for 44 px: "20 px" of the brief was a 40 px button),
+    outline colour, primary-colour text, a state layer while pressed (the primary darkens); written with `:where()` so that a
+    module's own button rule wins, and so that list rows (`.f-item`) and the Settings thumbnails (`.f-design`) keep their
+    shape; fields with radius 4, outline, and on focus the primary colour plus an inner 1 px ring (2 px, the box does not
+    move) instead of the focus ring; card shadow, tonal tiles, a discreet border on the sticky bar; tabs underlined by
+    3 px of primary under the current one (equal widths, 1 px rule under the row), steps as tonal chips of radius 8 (the
+    current one tinted with the primary); the drawer and the rail: on a phone 56 px rows, icon and label, an active
+    indicator in a full pill; from 761 px a rail (the `body` column goes from 210 to 88 px, icon above a 12 px label, a 56 × 32
+    pill behind the icon, drawn by a pseudo-element); the indicator is the module's colour mixed 24 % into the card tone,
+    from the **text variant** of the colour (the fill variants are too dark to show at night: 1.2 : 1 against 1.5 to 1.7 : 1),
+    the text and icon keep their ink.
+  - **Rules of the other mock-ups deliberately NOT copied** (each exists in two or three of metro / swiss / cupertino; the
+    look loses a little, the duplication does not grow; add them to the candidates below):
+    1. **Header buttons without frame** (all three): `material` has outlined round icon buttons and a pill sync chip in the
+       app bar (Material's "outlined icon button" and "assist chip": legitimate, but busier than a bare icon). Six lines
+       would give frameless buttons.
+    2. **Card without a visible border** (metro, cupertino): `material` keeps the hairline (`--sog-border`) round the
+       card besides its 1 dp shadow (Material's "outlined card" with elevation, 1.5 : 1 against the page).
+    3. **`.f-nav` on the page colour** (metro, cupertino): the drawer and the rail stay on the card tone (Material's own
+       drawer is a container tone; its rail sits on the surface).
+    4. **`h1` margin, line height and `overflow-wrap: anywhere`** (all three): a very long title word could overflow at 28 px
+       on a phone; none of the four languages' module names does today (not checked beyond the Pilot's verbs).
+    5. Not needed: `.f-pane h1` at 1.6rem (the 1.75rem title is kept in the pane), `h3` and the table header as capitals
+       (titles are in sentence case).
+  - **Rules written that echo another mock-up** (one other design, or the same declaration with another value; kept in
+    `material.css`): header on the page colour (swiss), underlined tabs (swiss), tonal tile background and sticky bar border
+    colour (cupertino, same declaration), button border colour (swiss, `--sog-fg`; metro 2 px; cupertino none): **a fourth
+    variant of the "button chrome" candidate**, which makes the `--sog-btn-border` token pair more worth having.
+  - **Candidates for a token or a primitive, added by this lot** (with the five of the previous entry):
+    1. `--sog-radius-btn` / `--sog-radius-field`: today the buttons and fields take `--sog-radius`; `material` needs a pill
+       and 4 px, `metro` and `swiss` 0, `cupertino` 10 (one token each would remove the pill rule).
+    2. `--sog-outline` and `--sog-shadow-card` promoted to public tokens (the first is the field / button outline the
+       "button chrome" and "field chrome" candidates already ask for; the second would let any design lift its cards).
+    3. `--sog-head-bg` (swiss, material: header on the page colour) and a header-buttons token (now four designs).
+    4. `--sog-nav-width` (210 px today; `material`'s rail takes 88 px by a `body` rule: the grid column is the only thing a
+       design had to override to reshape the menu).
+    5. A "tonal fill" (`color-mix` of the accent or module colour into a surface: `material` uses it for the current step and
+       the active indicator, `cupertino` for the segmented track, `metro` for pressed header buttons).
+  - **Contrast (computed on the tokens as the browser resolves them; forced night and system night checked identical, all 61
+    tokens)**, WCAG ratios, page / card / field:
+    | | Day | Night |
+    |---|---|---|
+    | Primary as text (`link`, `focus`: the same colour) | 5.53 / 5.16 / 4.72 | 9.61 / 8.61 / 7.39 |
+    | White on the primary | 5.81 | 1.78 (not used: night ink is `#1c2170`) |
+    | Ink of the primary (`accent-ink`) on it | 5.81 (white) | 7.85 |
+    | Ink / secondary text | 16.30 / 15.22 / 13.92 ; 8.85 / 8.27 / 7.56 | 13.31 / 11.91 / 10.23 ; 10.05 / 8.99 / 7.73 |
+    | Status colours as text (ok, warn, err) | 5.11 to 6.14 | 7.40 to 10.09 |
+    | Outline against surface (non-text, 3 : 1) | 4.26 / 3.98 / 3.64 | 5.41 / 4.84 / 4.16 |
+    | Ink on the active step chip | 10.14 | 5.96 |
+    | Ink on the drawer / rail indicator, six modules | 10.56 to 10.90 | 6.99 to 7.85 |
+    Every text pair passes 4.5 : 1 (the field is the hardest case; a lighter field would let the primary be brighter).
+  - **Judgement calls**: base text 15 px, not Material's 16: at 16 px the `+30` / `Now` row of the Fuel module overflows its
+    card by 4 px and the page scrolls sideways at 390 px (as `cupertino` does today); the Settings design card shows the new
+    thumbnail; the drawer indicator and the tonal chips use `color-mix` (already used by the frame); the sticky bar keeps its
+    12 px radius and floats (Material's bottom bar is square); `:where()` on the button rule gives it zero weight, so a
+    module's own selector wins, and the notification's close button keeps the frame's rule.
+  - **Open points**: the primary (a fleet blue in place of the blue-violet is possible if darkened (`#1d5fb8`: 5.91 / 5.52 / 5.04
+    as text, 6.21 with white)); frameless header buttons (candidate 1 above, the most visible gap); the rail's 88 px column against
+    the other designs' 210 px (labels wrap at 12 px: "Compte rendu" takes two lines); Roboto is not bundled (a web font
+    costs 150 KB for three weights); the dual view was checked at 1280 px with the Map in the pane only.
+  - **Checks**: the real Pilot application (`frame/index.html`) on `#fuel`, `#maps`, `#report`, `#flightlog`, `#settings` and
+    the phone drawer, 390 and 1280 px, day and night (22 captures; `app_<module>_material_<tone>_<width>.png`): no JavaScript
+    error, no horizontal scroll at 390 px, every target at least 44 px (the toast's close button measures 43 × 44 in every
+    design, also before this lot). Pixel comparison against the previous commit (`git archive` served on another port):
+    `standard`, `metro`, `swiss`, `cupertino` on `#fuel` and the drawer, 390 px, day and night: identical; three captures
+    differ by a 2 to 3 px patch at the toast edge, and the same happens between two runs of the unchanged previous commit
+    (async loading), so each was repeated three times on both sides: the stable renderings are identical.
