@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame: what the launcher exposes under `sia/` written down** (SPEC, DECISIONS) — `sia/base/` and `sia/vfr/` only,
+  never the raw SIA sources.
 - **Settings: token how-to always shown at import, account sign-up first** (`frame/settings/settings.js`,
   `frame/settings/config.js`) — the how-to is visible (folded) even on a workstation already following the repository;
   it starts with the account sign-up link and, for GitHub, the invitation to accept.

@@ -162,8 +162,13 @@ The transports:
   repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.
   - `GET /__setup/changes?since=<head>`: the head (a hash of the tree), and the tree `{ path: git blob sha }` when the
     head differs from `since`.
-    - The tree leaves out `.git`, `local/`, conflict and pre-restore copies, regenerated indexes, the launcher's
-      marker, and the SIA sources (only `sia/base/` is shared).
+    - The tree leaves out `.git`, `local/`, conflict and pre-restore copies, regenerated indexes (`_index.json`), and
+      the launcher's marker.
+    - Under `sia/`, only two folders are exposed: `sia/base/` (the published aeronautical base) and `sia/vfr/` (the
+      VFR reporting points taken from the VAC charts: one file per aerodrome and `index.json`). The raw SIA sources
+      (eAIP, AIXM, downloads and any other folder) are never in the tree. A write to a path left out of the tree is
+      refused with 400 (`FRAME_SKIP` in `tools/launch.py`).
+    - A new folder under `sia/` reaches the frame only when it is added to that rule and to this list.
     - Hashes are kept by size and date, so a file is hashed again only when it changes.
   - `read` gets the served file `data/<path>`.
   - `POST /__setup/batch { parent, message, author, changes }`: the whole queue at once.

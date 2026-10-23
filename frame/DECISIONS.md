@@ -503,3 +503,11 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   fusion, which did the same thing. The record now also gets `schema: 1`, and `updated_at` is the time of the write.
   The service worker keeps the file with the frame's shell. Test: lot 16's frame test with Fuel open, so that fuel
   and the frame both write: `actual` stays.
+- **23 Oct 2026 — What the launcher's tree exposes under `sia/`** (aerodb's aecf6bf2f, VFR reporting points from the
+  VAC charts):
+  - `FRAME_SKIP` now lets `sia/vfr/` through as well as `sia/base/`. Re-read and checked on edge cases:
+    - seen: `sia/`, `sia/base/…`, `sia/vfr/…`, `sia/vfr/index.json`;
+    - left out: `sia/vfrx/…`, `sia/vfr_raw/…`, `sia/eAIP/…`, `sia/AIXM.xml`, and an `_index.json` anywhere, by the
+      general rule. aerodb's index is `index.json`, so it is served.
+  - The same rule refuses writes to a hidden path (400).
+  - The rule is now written in SPEC § 2 (launcher transport).
