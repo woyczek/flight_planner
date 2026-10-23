@@ -16,6 +16,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   brackets at the departure, the planned take-off and the planned arrival.
 - **Map: times from `frame/lib/time.js`** (`modules/maps/module.js`; SPEC, help ×4) — ETA, planned position and wind
   forecasts in UTC ("14:52Z"), the local time in brackets beside departure and arrival only.
+- **Frame: smaller installation, UTC times in Settings** (`frame/sw.js`, `frame/settings/settings.js`; DECISIONS) — the
+  Little Navmap and AAR helpers are kept offline the first time they are used, not at installation; the
+  Synchronisation card shows its times in UTC with Z.
 - **Map: lighter installation, started flight** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS) — the country
   outlines of the plain background (350 KB) are loaded at their first use (kept ahead only when MapLibre is not
   cached): installation 2,420 → 2,072 KB; a position from before the start (the previous flight's) is ignored; while

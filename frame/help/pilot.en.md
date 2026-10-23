@@ -141,13 +141,14 @@ fold.
 and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
 may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the
 aerodrome weather and the winds aloft are read again, the quote is redone — and says in one line what has changed (“wind
-273°/35 kt → 284°/44 kt · block 684 → 644 kg · planned arrival 17:03”); offline, it says so and starts with the last
+273°/35 kt → 284°/44 kt · block 684 → 644 kg · planned arrival 15:03Z (17:03)”); offline, it says so and starts with the last
 quote. It then records the departure time, which becomes the report's start-up time. On a phone it opens the Map, on a
 large screen it stays here with the Map on the right. Changing the departure airfield afterwards means preparing another
 flight: the departure time is cleared. Changing the arrival after departure is a diversion: the time is kept and the
 diversion recorded.
 
-Once the flight has started, the result at the bottom of the screen says “Flight started at 13:14 · for 1 h 10”. A
+Once the flight has started, the result at the bottom of the screen says “Flight started at 11:14Z (13:14) · for 1 h 10”. Times are UTC (“Z”);
+the device's time is added in brackets at the departure, the planned take-off and the planned arrival. A
 started flight ends with the writing of its report: when it is saved, Fuel goes back to preparation and My flights
 removes “in progress”. To go back to preparation without a report, “Cancel the start” (after confirmation). The “Planned
 progress” card shows where the flight should be, in theory: the planned time over each point (taxi, climb, cruise leg by
@@ -269,7 +270,7 @@ imported them (Settings › Maintenance).
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
 a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
-planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA). “Follow” keeps the
+planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA), in UTC (“14:52Z”), the local time in brackets at departure and arrival. “Follow” keeps the
 map on your position; moving the map stops it. Without a position (GPS or network not enabled), the line says so and
 opens the settings; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
 IVAO, VATSIM, X-Plane or Little Navmap.

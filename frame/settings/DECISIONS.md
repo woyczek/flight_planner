@@ -265,3 +265,7 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - The state key holds the minutes left, not the seconds, so the card is drawn again only when something shown
     changes.
   - The help's last bullet ×4 is updated, with the fingerprints.
+- **23 Oct 2026 — Times of the Synchronisation card in UTC (written by the V3 frame session, lot 23, the settings
+  session being unreachable)**: following the rule "every time in UTC with Z" (`frame/lib/time.js`), "Last sync" goes
+  through the frame's `c.time.fmtDateZ`, and each pending write shows `c.time.fmtZ` the same UTC day, otherwise
+  `c.time.fmtDateZ`. Nothing else changed in `frame/settings/`.

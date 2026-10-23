@@ -737,3 +737,17 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - the sync tooltip in Z;
     - `frame-layout` `{ main: fuel, pane: maps }` then `pane: null`.
     - Regressions: `frame/store/test/` 90 / 90, lot 16 simulator test, lot 19 bench 21 / 21.
+- **23 Oct 2026 — Lot 23, `aerodb/lnmperf.js` and `aerodb/aar.js` out of the service worker's shell** (measure 6 of
+  the audit). aerodb loads both the first time they are asked for, and the service worker keeps them then. Measured:
+  - **static count** (`audit_sizes.py`): installation 2,191 KB → 2,180 KB raw (735 KB gzip), 78 → 77 files. The two
+    files weigh 32.5 KB raw (11 KB gzip), not the audit's "−90 KB": that figure also counted `sheets.js`, which stays.
+  - **really kept** (fresh service worker, fake GitHub, no launcher): 81 files, 1,915 KB. `aar.js` is no longer kept
+    (−6 KB) until the map draws AAR tracks. `lnmperf.js` is kept anyway: aerodb starts the `.lnmperf` follow-up 1.5 s
+    after every opening (`lnmAuto`), even with no launcher, so it loads it at once.
+    - The real gain for `lnmperf.js` (27 KB) needs aerodb to start it only when a launcher serves the page (it needs
+      `/__setup/lnmperf`). That is a line in `frame/aerodb/aerodb.js`, for aerodb.
+  - Since lot 21 the installation went from 2,249 KB to 1,915 KB, mostly through maps' lazy `outlines.js`
+    (21a742eb8).
+- **23 Oct 2026 — Settings' Synchronisation card in UTC** (lot 23, `frame/settings/settings.js`, noted in the settings'
+  DECISIONS): "Last sync" and the pending writes' times go through `c.time` ("23/10/2026 16:56Z", "16:56Z" the same
+  UTC day). Checked on screen.

@@ -976,24 +976,19 @@
       const dl = view.querySelector('[data-sync]');
       if (!dl) return;
       dl.innerHTML = [
-        [T.last, s.lastSync ? new Date(s.lastSync).toLocaleString() : t(T.never)],
+        [T.last, s.lastSync ? c.time.fmtDateZ(s.lastSync) : t(T.never)],
         [T.pending, String(s.pending || 0)],
         [T.network, t(s.online === false ? T.offline : T.online)],
         ...(s.lastError ? [
           [T.lastError, s.lastError]
         ] : [])
       ].map(([k, v]) => `<dt>${esc(t(k))}</dt><dd>${esc(v)}</dd>`).join('');
-      // les écritures en attente, les plus récentes d'abord (20 au plus) : chemin, module, heure ; ✕ : suppression
+      // les écritures en attente, les plus récentes d'abord (20 au plus) : chemin, module, heure ; ✕ : suppression ; heures
+      // de l'appli en UTC avec Z (frame/lib/time.js) : l'heure seule le jour même (UTC), sinon la date et l'heure
       const box = view.querySelector('[data-queue]'),
         q = s.queue || [],
-        day = new Date().toDateString(),
-        when = at => {
-          const d = new Date(at);
-          return isNaN(d) ? '' : d.toDateString() === day ? d.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
-          }) : d.toLocaleString();
-        },
+        day = new Date().toISOString().slice(0, 10),
+        when = at => String(at || '').slice(0, 10) === day ? c.time.fmtZ(at) : c.time.fmtDateZ(at),
         modName = id => t(mods.find(m => m.id === id)?.label || [id || '?']);
       if (box) box.closest('[data-card]').hidden = !exchange && !q.length;
       if (box) box.innerHTML = !q.length ? '' : `<h3>${esc(t(T.queue))}</h3><ul class="f-queue">${q.slice(0, 20).map(x => `<li>${x.deletion ? `<span aria-label="${esc(t(T.queueDel))}" title="${esc(t(T.queueDel))}">✕</span> ` : ''}<code>${esc(x.path)}</code> <span class="f-muted">${esc([modName(x.module), when(x.at)].filter(Boolean).join(' · '))}</span></li>`).join('')}${q.length > 20 ? `<li class="f-muted">${esc(t(T.queueMore, { n: q.length - 20 }))}</li>` : ''}</ul>`;
