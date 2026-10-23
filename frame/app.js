@@ -125,6 +125,13 @@
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
     back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
+    host: ['Lanceur de {h}', 'Launcher on {h}', 'Launcher auf {h}', 'Lanzador de {h}'],
+    hostTitle: [
+      'Appli servie par le lanceur du poste « {h} » sur le réseau local : ses données, son simulateur, son relais. Pas de hors ligne sur cet appareil (page en http).',
+      'App served by the launcher of the computer “{h}” on the local network: its data, its simulator, its relay. No offline use on this device (page over http).',
+      'App vom Launcher des Rechners „{h}“ im lokalen Netz bereitgestellt: seine Daten, sein Simulator, sein Relais. Kein Offline-Betrieb auf diesem Gerät (Seite über http).',
+      'Aplicación servida por el lanzador del equipo «{h}» en la red local: sus datos, su simulador, su relé. Sin uso sin conexión en este dispositivo (página en http).'
+    ],
     live: {
       title: ['Position réelle du vol : {s}, {t}', 'Actual position of the flight: {s}, {t}',
         'Tatsächliche Position des Flugs: {s}, {t}',
@@ -146,6 +153,12 @@
       gpsOff: ['Ne plus utiliser la position de cet appareil', 'Stop using this device’s position',
         'Position dieses Geräts nicht mehr verwenden',
         'Dejar de usar la posición de este dispositivo'
+      ],
+      insecure: [
+        'Le GPS de cet appareil n’est pas disponible sur une page ouverte en http depuis le réseau local (le navigateur ne le donne qu’en https ou sur le poste lui-même).',
+        'This device’s GPS is not available on a page opened over http from the local network (the browser gives it only over https or on the computer itself).',
+        'Das GPS dieses Geräts ist auf einer über http aus dem lokalen Netz geöffneten Seite nicht verfügbar (der Browser gibt es nur über https oder auf dem Rechner selbst).',
+        'El GPS de este dispositivo no está disponible en una página abierta en http desde la red local (el navegador solo lo da en https o en el propio equipo).'
       ],
       denied: ['Position refusée par le navigateur : à autoriser dans ses réglages.',
         'Position refused by the browser: allow it in its settings.',
@@ -399,6 +412,7 @@
   }
   /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
   async function loadDevice() {
+    paintHost();
     identity = Object.freeze({
       ...((await own.get('device/identity.json')) || {})
     });
@@ -1028,6 +1042,19 @@
       }))),
       cutAccess,
       weatherKey,
+      // accès des appareils du réseau local : seulement sur le poste qui sert la page (pas depuis un appareil appairé)
+      lan: () => launcherHere && !launcherHere.lan ? {
+        state: () => lanCall(),
+        open: () => lanCall({
+          open: true
+        }),
+        close: () => lanCall({
+          open: false
+        }),
+        forget: () => lanCall({
+          forget: true
+        })
+      } : null,
       // après un clone ou une reprise de data/ par le lanceur : relevé de nouveau, transport rebranché
       redetect: async () => {
         launcherHere = await FD.launcher.detect();
@@ -1042,6 +1069,17 @@
           }));
         return {
           ...d,
+          // la page : contexte sûr (https ou ce poste) ou non ; hors ligne (service worker) actif, absent ou impossible
+          page: {
+            secure: !!window.isSecureContext,
+            offline: !navigator.serviceWorker ?
+              'unavailable: page over http outside this computer (a service worker needs https or localhost)' : navigator
+              .serviceWorker.controller ? 'active' : 'not yet active',
+            launcher: launcherHere ? {
+              host: launcherHere.host,
+              lan: launcherHere.lan
+            } : null
+          },
           aerodb: a ? {
             source: a.source,
             zones: Object.keys(a.published || {}),
@@ -1162,6 +1200,11 @@
 
   function gpsStart() {
     if (!navigator.geolocation || gpsWatch !== null) return;
+    if (!window.isSecureContext) { // page en http depuis le réseau local : le navigateur refuserait sans rien demander
+      gpsState = 'unavailable';
+      notify(t(T.live.insecure), 'warn');
+      return paintLive();
+    }
     gpsState = 'asking';
     const got = p => {
       gpsState = 'on';
@@ -1357,6 +1400,41 @@
     ivao: 'IVAO',
     vatsim: 'VATSIM'
   };
+  /** Pastille « Lanceur de <poste> » : la page vient du lanceur d'un autre poste du réseau local (son data/, son
+   *  simulateur, son relais) ; écrite seulement si elle change. */
+  function paintHost() {
+    const b = $('fHost'),
+      show = !!launcherHere?.lan;
+    if (!b) return;
+    if (b.hidden === show) b.hidden = !show;
+    if (!show) return;
+    const h = launcherHere.host || location.hostname,
+      text = t(T.host, {
+        h
+      }),
+      title = t(T.hostTitle, {
+        h
+      });
+    if (b.textContent !== text) b.textContent = text;
+    if (b.title !== title) b.title = title;
+  }
+  /** Accès des appareils du réseau local, réglé depuis ce poste (GET / POST /__setup/lan du lanceur) : { on, urls,
+   *  code, devices, host }. */
+  async function lanCall(body) {
+    const r = await fetch(new URL('__setup/lan', ROOT), {
+      method: body ? 'POST' : 'GET',
+      cache: 'no-store',
+      headers: {
+        'X-SOG-Setup': '1',
+        ...(body ? {
+          'Content-Type': 'application/json'
+        } : {})
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) throw new Error(`lan ${r.status}`);
+    return r.json();
+  }
   /** Pastille de l'en-tête pendant un vol : la source (X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
    *  bascule du GPS de l'appareil. */
   function paintLive() {

@@ -327,7 +327,7 @@ used alone:
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (a document, pulled ahead and followed with `watch`; text fields only), an empty object when there is none; no address is written in the code |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
-| `live` | the actual position during a started flight: `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
+| `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
 
 - **Actual position during a flight** (`ctx.live`, a frame service):
@@ -540,6 +540,54 @@ touch only the element they are given.
 | `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |
 | `frame/lib/route_text.js` | fuel | fuel, maps | the route text, pure: `tokenize`, `textFromTokens` (normalised "DEP PT1 UN869 PT2/F280 … ARR"), `textFromPoints` (the text rebuilt from edited points, airways kept between two unchanged neighbouring points), `icaoCoord` |
 | `frame/lib/website.js` | website | report, website | the flight's fields for the airline website, the `#defa=` address, the line to copy, the "→ Vol" bookmark (moved from `modules/report/website_handoff.js`) |
+
+### 3.10 Devices of the local network (`tools/lan_access.py`, `tools/launch.py`)
+
+A pilot flies on the computer (the launcher, X-Plane) and wants the Pilot application on a tablet or a phone. The
+launcher can serve that device over the local network, so the device works as the computer does: the computer's
+`data/` (launcher transport), the simulator's position, and the launcher's network relay.
+
+- **Opening**: only on an explicit choice, until the launcher stops.
+  - Either `lancer.cmd --lan` (`launch.py --lan`), or the computer's own Settings, through `POST /__setup/lan
+    { open: true | false }` (settings context: `lan()`, below).
+  - The launcher then also listens on each **private IPv4 address** of the computer (10/8, 172.16/12, 192.168/16),
+    on the same port. It never listens on `0.0.0.0`, so neither a VPN nor a public interface is opened, and the
+    port never clashes with 127.0.0.1.
+  - The console shows the address of the Pilot application (`http://<ip>:<port>/frame/`) and the pairing code.
+- **Every request from the local network**:
+  - It must come from a private address (or loopback) and name the exact host (`<ip>:<port>`). A domain name that
+    points here ("DNS rebinding") is refused with 403.
+  - It must carry the pairing cookie. Without it, a page request gets the pairing page (401), anything else a 401,
+    files of `data/` included. Over http outside the computer the browser sends no `Sec-Fetch-Site`, so the strict
+    cookie is what keeps other websites out.
+  - Then only the Pilot application's launcher routes are open: `GET status, changes, sim/position, lnmperf,
+    lnmperf-folder`, and `POST batch, sync, net`. They still need `X-SOG-Setup`. Everything else (keys, clone,
+    adopt, imports, maintenance, relax, `/__setup/lan`) answers 403 "reserved to the computer". A `PUT` is never
+    open.
+- **Pairing** (`/__lan/pair`, a form without script, in the browser's language):
+  - The 6-digit code is shown in the console and in the computer's Settings, and is new at each opening.
+  - Once the code is right, the device gets a long random token as a cookie (`sog_lan`, `HttpOnly`,
+    `SameSite=Strict`, one year), then goes back to the page it asked for (a path of this server only).
+  - Only the token's SHA-256 is kept, in `tools/.lan.json` (local, git-ignored), so a device pairs **once**: it stays
+    paired when access is closed and reopened, or the launcher restarted, as long as the computer keeps its address.
+  - 5 wrong codes from one address: a one-minute wait (429). 20 wrong codes in all: a new code, shown in the console.
+  - "Forget the devices" (`POST /__setup/lan { forget: true }`) empties the list: every device must enter a code
+    again.
+- **`GET /__setup/lan`** (computer only): `{ on, urls (the main address first), code, devices, host }`.
+- **`GET /__setup/status`** also gives `host` (the computer's name) and `lan` (the request came from the local
+  network). `FrameData.launcher.detect()` returns `{ data, dataGit, host, lan }`.
+- **The page on the device** is not a secure context (http, not localhost), so:
+  - there is **no service worker**, so no offline use. The application works without it, and the Diagnostic says so
+    (`page: { secure, offline, launcher }`);
+  - there is no `crypto.subtle`, so the data layer computes git blob hashes with its own SHA-1;
+  - the device's GPS is not offered: the badge says why. The simulator's position comes from the computer;
+  - the clipboard (`navigator.clipboard`) is missing, so modules' "Copy" buttons must cope with its absence.
+- **Header badge**: "Launcher on <computer>" while the page comes from another device of the local network (muted,
+  truncated when narrow). Its tooltip says the data, simulator and relay are the computer's, and that offline use
+  is not available.
+- **Settings context** (computer only; `null` on a paired device): `lan()` returns `{ state(), open(), close(),
+  forget() }`, each resolving to the `GET /__setup/lan` state. The card "Computer access" (code, addresses, QR code
+  through `SogQR`, open / close, forget) belongs to `frame/settings/`.
 
 ## 4. To come in the frame
 

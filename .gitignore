@@ -27,6 +27,8 @@ tools/.assets_seen.json
 tools/.defa_site.json
 tools/.lnmperf.json
 tools/.sim.json
+tools/.lan.json
+tools/.lan.json.tmp
 
 # Commit courant pour le pied de page (tools/write_build.sh, crochets git)
 config/build.js

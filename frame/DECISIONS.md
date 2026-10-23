@@ -511,3 +511,68 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
       general rule. aerodb's index is `index.json`, so it is served.
   - The same rule refuses writes to a hidden path (400).
   - The rule is now written in SPEC § 2 (launcher transport).
+- **23 Oct 2026 — Lot 18, the Pilot application on a tablet through the computer's launcher** (asked by the user: they
+  fly X-Plane on the computer and want the map on a tablet or a phone, which no launcher serves):
+  - **Design** (frame/SPEC.md § 3.10, `tools/lan_access.py`):
+    - an opt-in second listener on the computer's private addresses, the same port, closed with the launcher;
+    - a pairing code that is exchanged once for a long token in a strict cookie;
+    - only the Pilot application's routes are open to paired devices.
+  - **Where the request was changed, and why:**
+    - **Not `0.0.0.0`**: one listener per private IPv4 address of the computer. `0.0.0.0` would also open a VPN or a
+      public interface, and on Linux it clashes with the 127.0.0.1 listener on the same port.
+    - **The code is not the credential**: six digits are short, and the code goes over http. The device gets a
+      32-byte random token instead, and only its hash is stored, so "once per device" holds across restarts. A
+      cookie (not localStorage) is needed because the files of `data/` must be protected too, and a script cannot
+      add a header to an `<img>` or a navigation.
+    - **An allow-list of routes**: a paired tablet reads and writes `data/` like the computer, but never reaches the
+      keys, clone, imports or maintenance.
+    - **No button in V2's Settings**: V2 is develop's code. The opening is `--lan` and, in V3, the settings card,
+      handed to `frame/settings/` with the `lan()` context (code, addresses, QR, open / close, forget).
+  - **Risks** (written for the user, also on the pairing page and in the console):
+    - **A shared local network**: everything goes over plain http. On the same network, someone can read the
+      traffic: the pairing code when it is typed, the token, and the data the device shows or writes. So it is for
+      a trusted network (at home), never a public or hotel wifi. Brute force is bounded: 5 tries a minute per
+      address, and a new code after 20 wrong ones.
+    - **A device that is lost**: its token stays valid until "Forget the devices". Access is closed when the
+      launcher stops, so a lost tablet reaches nothing until the launcher is opened to the network again.
+    - **CSP**: unchanged. `connect-src 'self'` covers the device's own origin. The device's page keeps
+      `form-action 'self'` (pairing form), `frame-ancestors 'self'` and `X-Frame-Options`.
+    - **Cookies**: the strict cookie is never sent on a request started by another site. It does not protect
+      against someone who can read the network (above). It is per address: if the computer's address changes
+      (DHCP), the device pairs again.
+    - **The router**: a port forwarded from the internet would arrive from a public address, which is refused (403).
+    - **Windows firewall**: Windows asks to allow Python. The console says to accept it for private networks only.
+  - **What the device lacks** (not a secure context): no service worker (so no offline use, shown in Diagnostic),
+    no `crypto.subtle` (the data layer has its own SHA-1, checked equal to `crypto.subtle` on 13 sizes from 0 to
+    200,001 bytes), no GPS (the badge says why), no clipboard ("Copy" buttons of fuel, report and website: reported
+    to their owners).
+  - **Tests** (the computer `Mitth`, 192.168.45.145; the device simulated by a second origin in Chrome,
+    `http://192.168.45.145:8794`, with its own cookies, storage and no service worker):
+    - HTTP:
+      - unpaired: page 401 (pairing page, in German for a German browser), `data/` file 401, routes 401;
+      - Host spoofed: 403;
+      - wrong code: 401 with the reason; after 5 wrong codes even the right one waits (429);
+      - right code: 303 back to a local path (an external `next` is ignored), cookie `HttpOnly; SameSite=Strict`;
+      - paired: page, status (`lan: true`) and changes 200;
+      - keys, `/__setup/lan` (GET and POST), clone, `PUT lnmperf-folder` and relax: 403;
+      - without `X-SOG-Setup`: 403; a made-up cookie: 401; the computer itself (127.0.0.1): unchanged.
+    - Unit:
+      - private: 10/8, 172.16/12, 192.168/16, loopback, IPv4-mapped;
+      - not private: 172.32/16, 100.64/10, public, link-local, ULA, documentation IPv6;
+      - a new code after 20 wrong ones: the old code is refused and the new one accepted.
+    - Browser:
+      - the pairing page, then a wrong code, then the right code: the application opens;
+      - on the device: no secure context, no service worker, no `crypto.subtle`; badge "Launcher on Mitth";
+      - the launcher transport synchronises with no error and no conflict, so the SHA-1 is right;
+      - a flight started from the device: the badge says "X-Plane" (fake X-Plane), and the computer's `data/` gets
+        `progress.actual` from xplane;
+      - GPS touched: the explanation; Diagnostic `page.offline` says why there is no offline use;
+      - from the computer: `lan()` state, close (the address no longer answers), reopen with a new code (the device
+        still paired, no code asked), forget (the pairing page again, then a new pairing works);
+      - no JavaScript error.
+    - Regressions: frame application bench, lot 16 simulator test, `frame/store/test/` 90 / 90.
+  - **Known limits**:
+    - The page's anchor (`#flightlog`) is lost at pairing: the server never sees it, so the device lands on
+      `/frame/`, which is where the QR code leads anyway.
+    - A page already open on a device whose token was forgotten gets 401s, and the launcher transport reports an
+      error until it is reloaded.

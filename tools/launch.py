@@ -16,7 +16,7 @@ Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [-
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
 import argparse, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
-import ipaddress, posixpath, urllib.parse, urllib.request, webbrowser, zipfile
+import http.cookies, ipaddress, posixpath, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
@@ -26,6 +26,7 @@ import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Main
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
 import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
+import lan_access  # appareils du réseau local (tablette, téléphone) appairés par un code : état, essais, appareils
 import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -265,7 +266,100 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def _local_host(self):
         """En-tête Host de cette machine : une page d'un autre site qui ferait pointer son nom vers 127.0.0.1
         (« DNS rebinding ») envoie son propre nom et se voit refuser tout le dossier, données comprises."""
+        if self._lan():  # serveur du réseau local : l'adresse privée exacte de ce poste (jamais un nom de domaine)
+            return self.headers.get('Host') in LAN['hosts']
         return self.headers.get('Host') in (f'127.0.0.1:{self.port}', f'localhost:{self.port}', f'[::1]:{self.port}')
+
+    def _lan(self):
+        """Requête reçue par un serveur du réseau local (« Ouvrir aux appareils du réseau local »)."""
+        return getattr(self.server, 'lan', False)
+
+    def _lan_gate(self):
+        """Appareil du réseau local : adresse privée et hôte exact exigés, appairage (cookie) exigé pour tout — page
+        d'appairage pour une page demandée, 401 sinon —, puis seulement les routes /__setup/ de l'appli Pilote
+        (tools/lan_access.py). Vrai si la requête a reçu sa réponse ici."""
+        if not self._lan():
+            return False
+        if not lan_access.private(self.client_address[0]) or not self._local_host():
+            self._json({'error': 'refusé'}, 403)
+            return True
+        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if path == '/__lan/pair':
+            self._lan_pair()
+            return True
+        jar = http.cookies.SimpleCookie()
+        try:
+            jar.load(self.headers.get('Cookie') or '')
+        except http.cookies.CookieError:
+            pass
+        token = jar[lan_access.COOKIE].value if lan_access.COOKIE in jar else ''
+        if not lan_access.paired(token):
+            if self.command == 'GET' and 'text/html' in (self.headers.get('Accept') or '') and not path.startswith('/__setup/'):
+                self._lan_page(safe_next(self.path), 401)
+            else:
+                self._json({'error': 'appareil non appairé'}, 401)
+            return True
+        if path.startswith('/__setup/') and not lan_access.allowed_route(self.command, path):
+            self._json({'error': 'réservé au poste'}, 403)
+            return True
+        return False
+
+    def _lan_lang(self):
+        """Langue de la page d'appairage : la première des langues du navigateur que la suite connaît, sinon fr."""
+        for part in (self.headers.get('Accept-Language') or '').split(','):
+            code = part.split(';')[0].strip()[:2].lower()
+            if code in LAN_TEXT['title']:
+                return code
+        return 'fr'
+
+    def _lan_page(self, nxt, code=200, msg=''):
+        """Page d'appairage (sans script : formulaire envoyé à /__lan/pair), dans la langue du navigateur."""
+        lg = self._lan_lang()
+        tx = {k: v[lg] for k, v in LAN_TEXT.items()}
+        e = lambda s: str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+        body = (f'<!doctype html><html lang="{lg}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                f'<title>{e(tx["title"])}</title><body style="font:17px system-ui,sans-serif;margin:0;padding:24px 16px;max-width:30em">'
+                f'<h1 style="font-size:1.3em">{e(tx["title"])}</h1><p>{e(tx["intro"].format(host=socket.gethostname()))}</p>'
+                + (f'<p role="alert" style="color:#b00020"><b>{e(msg)}</b></p>' if msg else '')
+                + f'<form method="post" action="/__lan/pair"><input type="hidden" name="next" value="{e(nxt)}">'
+                f'<label>{e(tx["code"])}<br><input name="code" inputmode="numeric" pattern="[0-9]{{6}}" maxlength="6" '
+                f'autocomplete="one-time-code" required autofocus style="font-size:1.6em;letter-spacing:.2em;width:7em;margin:8px 0"></label><br>'
+                f'<button type="submit" style="font-size:1.1em;padding:8px 20px">{e(tx["pair"])}</button></form>'
+                f'<p style="color:#666;font-size:.9em">{e(tx["note"])}</p></body></html>').encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _lan_pair(self):
+        """/__lan/pair : GET la page ; POST le code saisi — bon : jeton en cookie, retour à la page demandée ; faux ou
+        trop d'essais : la page avec le motif."""
+        tx = {k: v[self._lan_lang()] for k, v in LAN_TEXT.items()}
+        if self.command != 'POST':
+            return self._lan_page('/frame/')
+        try:
+            size = min(int(self.headers.get('Content-Length') or 0), 2048)
+        except ValueError:
+            size = 0
+        form = urllib.parse.parse_qs(self.rfile.read(size).decode('utf-8', 'replace') if size > 0 else '')
+        nxt = safe_next((form.get('next') or ['/frame/'])[0])
+        res, val = lan_access.attempt(self.client_address[0], (form.get('code') or [''])[0], self.headers.get('User-Agent') or '')
+        if res == 'ok':
+            self.send_response(303)
+            self.send_header('Set-Cookie', f'{lan_access.COOKIE}={val}; Path=/; Max-Age={lan_access.MAX_AGE}; HttpOnly; SameSite=Strict')
+            self.send_header('Location', nxt)
+            self.send_header('Content-Length', '0')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            say(f'  Réseau local : appareil appairé ({self.client_address[0]}).')
+            return None
+        if res == 'wait':
+            return self._lan_page(nxt, 429, tx['wait'].format(s=val))
+        if val:
+            say(f'  Réseau local : trop de codes faux, nouveau code d’appairage : {val}')
+        return self._lan_page(nxt, 401, tx['bad'])
 
     def _same_origin(self):
         """Requête de la suite elle-même : en-tête Sec-Fetch-Site du navigateur « same-origin » ou « none » (adresse
@@ -493,6 +587,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
 
     def do_HEAD(self):
         """HEAD : mêmes refus que GET."""
+        if self._lan_gate():
+            return None
         why = self._refused()
         if why:
             return self._deny(why)
@@ -529,6 +625,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         """GET : refus (chemins cachés, autre site, scripts de données hors format), index du pool refaits avant d'être
         servis, routes /__setup/, sinon fichier statique."""
+        if self._lan_gate():
+            return None
         why = self._refused()
         if why:
             return self._deny(why)
@@ -552,7 +650,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
                                'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
-                               'csp': True, 'relaxNav': RELAX['nav']})
+                               'csp': True, 'relaxNav': RELAX['nav'], 'host': socket.gethostname(), 'lan': self._lan()})
+        if self.path.split('?')[0] == '/__setup/lan':
+            # accès des appareils du réseau local (Réglages du poste) : état, adresses, code — ce poste seulement
+            if not self._allowed() or self._lan():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(lan_state())
         if self.path.split('?')[0] == '/__setup/changes':
             # V3 frame : tête de data/ et, si elle a changé depuis since, son arbre (transport « lanceur »)
             if not self._allowed():
@@ -729,6 +832,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         """POST /__setup/… (page servie ici seulement) : synchronisation, secrets, imports, jeu d'essai, clone et dépôt
         des données."""
+        if self._lan_gate():
+            return None
         path = self.path.split('?')[0]
         if not path.startswith('/__setup/') or not self._allowed():
             return self._json({'error': 'refusé'}, 403)
@@ -828,6 +933,21 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/lan':
+            # ouvrir ou fermer l'accès du réseau local, oublier les appareils appairés — ce poste seulement
+            if self._lan():
+                return self._json({'error': 'refusé'}, 403)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            if a.get('forget'):
+                lan_access.forget()
+            if a.get('open') is True:
+                lan_open()
+            elif a.get('open') is False:
+                lan_close()
+            return self._json(lan_state())
         if path == '/__setup/vfr-import':
             # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
             # plan rendu sans rien écrire (apply faux), puis écriture de sia/vfr/, commit et synchronisation
@@ -1162,6 +1282,89 @@ class Server6(Server):
     """Même serveur sur l'adresse IPv6 locale (::1) : « localhost » y mène d'abord sous Windows ; sans elle, chaque
     connexion attend le repli sur 127.0.0.1 (≈ 0,2 à 0,3 s par fichier, page affichée en 1,5 s au lieu de 0,15 s)."""
     address_family = socket.AF_INET6
+
+
+# ---- réseau local (lot 18, tools/lan_access.py) : serveurs sur les adresses privées de ce poste, même port, ouverts sur
+# demande et fermés avec le lanceur
+LAN = {'servers': [], 'hosts': set(), 'order': [], 'handler': None, 'port': 0}
+LAN_LOCK = threading.Lock()
+NB = '\u202f'  # espace fine insécable avant : ; ! ? en français
+LAN_TEXT = {
+    'title': {'fr': 'Appairer cet appareil', 'en': 'Pair this device', 'de': 'Dieses Gerät koppeln', 'es': 'Vincular este dispositivo'},
+    'intro': {'fr': 'L’appli Pilote du poste « {host} », sur le réseau local. Saisissez le code à 6 chiffres affiché sur le poste '
+                    '(fenêtre du lanceur, ou Réglages › Accès du poste)' + NB + ': une seule fois pour cet appareil.',
+              'en': 'The Pilot application of the computer “{host}”, on the local network. Enter the 6-digit code shown on the '
+                    'computer (the launcher window, or Settings › Computer access): only once for this device.',
+              'de': 'Die Pilot-App des Rechners „{host}“ im lokalen Netz. Geben Sie den 6-stelligen Code ein, der auf dem Rechner '
+                    'angezeigt wird (Fenster des Launchers oder Einstellungen › Zugang des Rechners): nur einmal für dieses Gerät.',
+              'es': 'La aplicación Piloto del equipo «{host}», en la red local. Introduzca el código de 6 cifras que muestra el '
+                    'equipo (ventana del lanzador, o Ajustes › Acceso del equipo): una sola vez para este dispositivo.'},
+    'code': {'fr': 'Code d’appairage', 'en': 'Pairing code', 'de': 'Kopplungscode', 'es': 'Código de vinculación'},
+    'pair': {'fr': 'Appairer', 'en': 'Pair', 'de': 'Koppeln', 'es': 'Vincular'},
+    'bad': {'fr': 'Code incorrect.', 'en': 'Wrong code.', 'de': 'Falscher Code.', 'es': 'Código incorrecto.'},
+    'wait': {'fr': 'Trop d’essais' + NB + ': réessayez dans {s} s.', 'en': 'Too many attempts: try again in {s} s.',
+             'de': 'Zu viele Versuche: in {s} s erneut versuchen.', 'es': 'Demasiados intentos: vuelva a intentarlo en {s} s.'},
+    'note': {'fr': 'Réseau local en http' + NB + ': à n’utiliser que sur un réseau de confiance (à la maison), jamais sur un wifi public.',
+             'en': 'Local network over http: use it only on a trusted network (at home), never on public wifi.',
+             'de': 'Lokales Netz über http: nur in einem vertrauenswürdigen Netz (zu Hause) verwenden, nie in einem öffentlichen WLAN.',
+             'es': 'Red local en http: úsela solo en una red de confianza (en casa), nunca en una wifi pública.'},
+}
+
+
+def safe_next(p):
+    """Page où revenir après l'appairage : un chemin de ce serveur, jamais un autre site."""
+    p = str(p or '')
+    return p if p.startswith('/') and not p.startswith('//') and '\\' not in p and not p.startswith('/__') else '/frame/'
+
+
+def lan_state():
+    """État de l'accès du réseau local : ouvert, adresses de l'appli Pilote (la principale d'abord), code, appareils
+    appairés, nom du poste."""
+    on = bool(LAN['servers'])
+    return {'on': on, 'urls': [f'http://{h}/frame/' for h in LAN['order']] if on else [],
+            'code': lan_access.state['code'] if on else '', 'devices': len(lan_access.devices()), 'host': socket.gethostname()}
+
+
+def lan_open():
+    """Ouvre l'accès du réseau local : un serveur par adresse privée de ce poste (même port), nouveau code."""
+    with LAN_LOCK:
+        if LAN['servers'] or not LAN['handler']:
+            return lan_state()
+        order = []
+        for ip in lan_access.addresses():
+            try:
+                srv = Server((ip, LAN['port']), LAN['handler'])
+            except OSError as e:
+                say(f'  Réseau local : {ip}:{LAN["port"]} indisponible ({e}).')
+                continue
+            srv.lan = True
+            threading.Thread(target=srv.serve_forever, daemon=True).start()
+            LAN['servers'].append(srv)
+            order.append(f'{ip}:{LAN["port"]}')
+        LAN.update(hosts=set(order), order=order)
+        if not order:
+            say('  Réseau local : aucune adresse privée sur ce poste (réseau 10.x, 172.16-31.x ou 192.168.x).')
+            return lan_state()
+        code = lan_access.new_code()
+        say('')
+        say(f'  Réseau local ouvert : http://{order[0]}/frame/ — code d’appairage : {code}')
+        say('  Windows peut demander d’autoriser Python : acceptez pour les réseaux privés seulement.')
+        say('  À n’utiliser que sur un réseau de confiance (http, sans chiffrement). Fermé avec le lanceur.')
+        say('')
+    return lan_state()
+
+
+def lan_close():
+    """Ferme l'accès du réseau local (les appareils appairés le restent pour la prochaine ouverture)."""
+    with LAN_LOCK:
+        for srv in LAN['servers']:
+            srv.shutdown()
+            srv.server_close()
+        if LAN['servers']:
+            say('  Réseau local fermé.')
+        LAN.update(servers=[], hosts=set(), order=[])
+        lan_access.clear_code()
+    return lan_state()
 
 
 def ours(port):
@@ -2593,6 +2796,8 @@ def main():
     ap.add_argument('--no-browser', action='store_true')
     ap.add_argument('--no-data', action='store_true')
     ap.add_argument('--data', help='autre dossier de données servi sous /data/ (essais sur une copie, ex. synchronisation)')
+    ap.add_argument('--lan', action='store_true',
+                    help='ouvrir aussi aux appareils du réseau local (adresses privées, code d’appairage ; jusqu’à la fermeture)')
     a = ap.parse_args()
     global DATA
     if a.data:  # autre dossier de données (copie d'essai) : servi sous /data/, ni clone ni mise à jour au démarrage
@@ -2642,8 +2847,11 @@ def main():
         threading.Thread(target=srv6.serve_forever, daemon=True).start()
     except OSError:
         pass
+    LAN.update(handler=handler, port=port)
     url = f'http://127.0.0.1:{port}/{a.page}?t={int(time.time())}'  # adresse neuve : page jamais reprise du cache
     say(f'  Suite servie sur http://127.0.0.1:{port}/')
+    if a.lan:
+        lan_open()
     say('')
     say('3. Navigateur')
     say(f'  {url}')

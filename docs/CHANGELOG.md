@@ -33,6 +33,13 @@ waypoints, and the rest listed below.
   DECISIONS) — the import keeps a point's usage restrictions and a manual vertex's accuracy; the aerodrome's card lists
   the restricted points (dashed ring on the map) and how many vertices were placed by hand; the GeoJSON written next to
   the compilation is not needed (same content).
+- **Launcher: the Pilot application on a tablet or a phone of the local network** (`tools/lan_access.py`,
+  `tools/launch.py`, `frame/app.js`, `frame/store/frame_data.js`, `frame/store/transport_launcher.js`,
+  `frame/index.html`, `frame/frame.css`, `.gitignore`; SPEC § 3.10, DECISIONS, INSTALL) — `lancer.cmd --lan` (or the
+  computer's Settings) also serves the computer's private addresses until the launcher stops. A device pairs once
+  with a 6-digit code shown in the console, and then works like the computer: its `data/`, the simulator's position,
+  the relay. It gets only the Pilot application's routes, and addresses that are not private are refused. On the
+  device (http): a "Launcher on <computer>" badge, no offline use (said in Diagnostic), the data layer's own SHA-1.
 - **Settings: the right GitHub token for the repository's owner** (`frame/settings/config.js`, `join.js`,
   `settings.js`) — the export records whether the repository belongs to a user or an organisation; a user's repository
   gets a classic `repo` token (prefilled link, the account-wide reach said plainly), an organisation's the fine-grained

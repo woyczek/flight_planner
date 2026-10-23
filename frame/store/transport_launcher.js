@@ -10,7 +10,8 @@
   //   · exchange() (si demandé : usages « plusieurs appareils » ou « plusieurs utilisateurs ») : POST /__setup/sync, le
   //     passage git du poste (commit du pool, fusion fiche par fiche, envoi).
   // En-tête X-SOG-Setup sur chaque route du lanceur ; réseau coupé → err.offline. API : FrameData.launcher({ exchange,
-  //   author }) → transport ; FrameData.launcher.detect() → { data, dataGit } | null (page servie par un lanceur ?).
+  //   author }) → transport ; FrameData.launcher.detect() → { data, dataGit, host, lan } | null (page servie par un
+  //   lanceur ? host : nom du poste ; lan : page ouverte depuis un autre appareil du réseau local).
   const FD = window.FrameData;
   if (!FD || FD.launcher) return;
   const ROOT = new URL('../../', document.currentScript?.src || location.href).href;
@@ -103,7 +104,9 @@
       const j = await call('__setup/status');
       return j?.server ? {
         data: !!j.data,
-        dataGit: !!j.dataGit
+        dataGit: !!j.dataGit,
+        host: String(j.host || ''),
+        lan: !!j.lan
       } : null;
     } catch {
       return null;

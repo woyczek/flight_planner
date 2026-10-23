@@ -160,6 +160,24 @@ body {
 .f-live[hidden] {
   display: none
 }
+/* page servie par le lanceur d'un autre poste du réseau local : « Lanceur de <poste> » (nom tronqué si étroit) */
+.f-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 12em;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+.f-host[hidden] {
+  display: none
+}
 /* retour au module d'origine (« ← Carte ») ; sur téléphone, il prend la place du nom de l'appli */
 .f-back {
   display: inline-flex;

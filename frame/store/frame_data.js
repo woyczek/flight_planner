@@ -90,7 +90,41 @@
       all = new Uint8Array(head.length + body.length);
     all.set(head);
     all.set(body, head.length);
+    if (!globalThis.crypto?.subtle) return sha1(all); // page en http hors de ce poste (réseau local) : pas de crypto.subtle
     return [...new Uint8Array(await crypto.subtle.digest('SHA-1', all))].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  /** SHA-1 d'octets, en hexadécimal (FIPS 180-4) : le navigateur n'offre crypto.subtle que dans un contexte sûr (https,
+   *  ce poste) ; une page servie par le lanceur d'un autre poste du réseau local, en http, s'en passe. */
+  function sha1(bytes) {
+    const n = bytes.length,
+      words = ((n + 8 >> 6) + 1) * 16,
+      w = new Uint32Array(words),
+      x = new Uint32Array(80);
+    for (let i = 0; i < n; i++) w[i >> 2] |= bytes[i] << (24 - (i & 3) * 8);
+    w[n >> 2] |= 0x80 << (24 - (n & 3) * 8);
+    w[words - 2] = Math.floor(n / 0x20000000); // longueur en bits, sur 64 bits
+    w[words - 1] = n * 8 >>> 0;
+    let h = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+    for (let o = 0; o < words; o += 16) {
+      for (let i = 0; i < 16; i++) x[i] = w[o + i];
+      for (let i = 16; i < 80; i++) {
+        const v = x[i - 3] ^ x[i - 8] ^ x[i - 14] ^ x[i - 16];
+        x[i] = v << 1 | v >>> 31;
+      }
+      let [a, b, c, d, e] = h;
+      for (let i = 0; i < 80; i++) {
+        const f = i < 20 ? (b & c | ~b & d) + 0x5a827999 : i < 40 ? (b ^ c ^ d) + 0x6ed9eba1 : i < 60 ? (b & c | b & d | c & d) +
+          0x8f1bbcdc : (b ^ c ^ d) + 0xca62c1d6,
+          t = ((a << 5 | a >>> 27) + f + e + x[i]) >>> 0;
+        e = d;
+        d = c;
+        c = (b << 30 | b >>> 2) >>> 0;
+        b = a;
+        a = t;
+      }
+      h = h.map((v, i) => v + [a, b, c, d, e][i] >>> 0);
+    }
+    return h.map(v => v.toString(16).padStart(8, '0')).join('');
   }
   /** Texte d'une valeur écrite : JSON indenté d'un espace pour un .json (comme les fichiers du pool), sinon texte. */
   const textOf = (path, value) => /\.json$/i.test(path) ? JSON.stringify(value, null, 1) + '\n' : String(value ?? '');

@@ -91,6 +91,18 @@ Ouvertes directement depuis le disque (`file://`), les pages s'affichent, mais l
 fichiers voisins (registres YAML, données, fichiers servis) ; seules les copies du navigateur et les dossiers autorisés
 restent lisibles. Le lanceur sert la suite pour éviter ce cas.
 
+### Tablet or phone on the local network (`--lan`)
+
+To use the Pilot application on a tablet or a phone while flying on the computer, start the launcher with
+`lancer.cmd --lan` (`./lancer.sh --lan`), or open the access from the computer's Settings. The console shows the
+address to open on the device (`http://<computer's address>:<port>/frame/`) and a 6-digit pairing code. The device
+asks for that code once, and then sees the computer's data and the simulator's position.
+
+- Windows asks to allow Python on the network: allow it for **private networks only**.
+- The device must be on the same local network. Over plain http, use it only on a trusted network (at home), never
+  on public or hotel wifi.
+- The access closes with the launcher. On the device the application does not work offline (no https).
+
 ## 4. Installation manuelle (avancé)
 
 ```bash
