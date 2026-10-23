@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel, report, my flights: the page no longer jumps to the top** (`modules/fuel/module.js`, `modules/report/module.js`,
+  `modules/flightlog/module.js`) — a screen redrawn because the flight changed elsewhere keeps where you were.
 - **Settings: Administration card** (`frame/settings/admin_links.js`, `frame/settings/settings.js`, `frame/frame.css`,
   `frame/index.html`, `frame/sw.js`; SPEC § 6, DECISIONS, help ×4) — at the Full level, one card gathers the map
   threshold tuning, the roadmap, the diagnostics, the benches (workstation with launcher only) and the workstation's V2

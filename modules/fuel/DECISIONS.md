@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — the page no longer jumps to the top** (user's bug): a full `renderPlan()` — the current flight
+  written by the map, report or another device while nothing has the focus — replaced the screen, which shrank for
+  a moment, and the browser pulled the page up (900 → 517 px on 8804; to the top on a short page). `keepScroll`
+  keeps every scrolling container's position and the block's height during the render, puts the positions back
+  after it and on the next frame; the focus given back to a field no longer scrolls (`preventScroll`). The
+  periodic updates (progress every minute, weather) were already partial (`refresh`) and did not move the page (85 s
+  observed). Checked on 8804: two writes by the map at 900 and 500 px, no movement.
 - **23 Oct 2026 — no silent fallback, an estimated ceiling said so** (end-to-end pass on the real base, items 5 and 6):
   a changed route fell back silently to the METARs' surface wind while the new forecast aloft loaded (284°/44 → 271°/15
   kt, the block jumping); the previous wind aloft now stays, marked "forecast loading…", and only a failed reading

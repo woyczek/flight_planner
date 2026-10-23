@@ -1198,7 +1198,32 @@ const STYLE = `
 [data-module="fuel"] .fu-wx:last-child{border-bottom:0}`;
 
 // ---------------------------------------------------------------- écran Préparer
-/** Redessine l'écran Préparer en gardant le champ en cours de frappe (renderPlanBody fait le dessin). */
+/** Rend sans bouger le défilement : la position de chaque conteneur qui défile (la page comprise) est gardée et la
+ *  hauteur du bloc tenue pendant le rendu, puis les positions sont remises après le rendu et à l'image suivante (un
+ *  contenu recréé qui rétrécit un instant ne ramène plus la page en haut). */
+function keepScroll(box, draw) {
+  const sc = [];
+  for (let e = box?.parentElement; e; e = e.parentElement)
+    if (e.scrollHeight > e.clientHeight) sc.push([e, e.scrollTop]);
+  const doc = document.scrollingElement;
+  if (doc && !sc.some(([e]) => e === doc)) sc.push([doc, doc.scrollTop]);
+  if (box) box.style.minHeight = `${box.offsetHeight}px`;
+  try {
+    return draw();
+  } finally {
+    const put = () => {
+      for (const [e, t] of sc)
+        if (e.scrollTop !== t) e.scrollTop = t;
+    };
+    put();
+    requestAnimationFrame(() => {
+      put();
+      if (box) box.style.minHeight = '';
+      requestAnimationFrame(put);
+    });
+  }
+}
+/** Redessine l'écran Préparer en gardant le champ en cours de frappe et le défilement (renderPlanBody fait le dessin). */
 function renderPlan() {
   // champ en cours de frappe (data-k, et data-i pour les niveaux des points) : sa valeur, son focus et sa sélection
   // sont rendus après le redessin — un rendu ne réécrit jamais ce que l'on tape
@@ -1210,12 +1235,14 @@ function renderPlan() {
     b: document.activeElement.selectionEnd
   } : null;
   try {
-    renderPlanBody();
+    keepScroll(S.body, renderPlanBody);
   } finally {
     const el = act && S.body.querySelector(`[data-k="${act.k}"]${act.i != null ? `[data-i="${act.i}"]` : ''}`);
     if (el && el.type !== 'checkbox' && el.tagName !== 'SELECT') {
       el.value = act.v;
-      el.focus();
+      el.focus({
+        preventScroll: true
+      });
       try {
         el.setSelectionRange(act.a, act.b);
       } catch {
@@ -3511,7 +3538,7 @@ export async function mount(el, ctx) {
     S.A = A;
     await readSheets();
     if (gone(self)) return;
-    if (S.view === 'sheets' && !S.edit && !S.pending) renderSheets();
+    if (S.view === 'sheets' && !S.edit && !S.pending) keepScroll(S.body, renderSheets);
     else if (S.view === 'plan') refresh();
   }));
   S.stops.push(ctx.data.watch(pilotPath('current_flight.json'), async () => {
