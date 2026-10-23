@@ -181,3 +181,8 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
     once — a second import left it), by file from the welcome card, refusal of another schema and of a broken link,
     and on a launcher whose `data/` already follows the repository (no token asked, access unchanged). Clone and
     take-over through the launcher were not run (they open the launcher's confirmation window on this computer).
+- **23 Oct 2026 — Pending writes listed** (frame f4c9f7211: `FD.status().queue`): the Synchronisation card lists
+  them under its figures, newest first (20 at most), with path, module, time and ✕ for a deletion; the card now also
+  shows without an exchange while writes wait — the launcher is the default transport since frame lot 9, and a write
+  waiting there was otherwise invisible — and hides again once the queue is empty. "Synchronise now" unchanged. Checked
+  with the launcher on the test folder: a write and a deletion listed, then gone 2 s later once sent.

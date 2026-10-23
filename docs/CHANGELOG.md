@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Settings: pending writes listed** (`frame/settings/settings.js`, `frame/frame.css`; SPEC, DECISIONS, help ×4) — the
+  Synchronisation card lists the writes waiting (`FD.status().queue`: path, module, time, ✕ for a deletion), newest
+  first, and shows while some wait even without an exchange.
 - **Frame: no more "1 pending" for ever on a workstation** (`frame/store/frame_data.js`,
   `frame/store/transport_launcher.js`, `frame/app.js`) — with the launcher, a write goes into `data/` within seconds
   instead of waiting ten minutes; the sync button's tooltip lists what is waiting (file, module, time) and the last

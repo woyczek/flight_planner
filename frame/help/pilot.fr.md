@@ -519,7 +519,9 @@ Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez
 
 **La synchronisation.** Avec un échange coché, la carte « Synchronisation » donne la dernière réussie, les écritures en
 attente et le réseau ; « Synchroniser maintenant » envoie et reçoit tout de suite. Sinon, elle se fait seule au
-démarrage, toutes les 10 minutes en ligne et au retour du réseau.
+démarrage, toutes les 10 minutes en ligne et au retour du réseau. démarrage, toutes les 10 minutes en ligne et au retour
+du réseau. Tant que des écritures attendent, la carte les liste, les plus récentes d'abord : chemin, module et heure, ✕
+pour une suppression, avec la dernière erreur s'il y en a une.
 
 **La sauvegarde.** Seul sur cet appareil, « Exporter (un fichier) » garde toutes vos données dans un fichier : c'est la
 seule copie. « Importer (fusion)… » la reprend sans rien perdre d'ici ; « Remplacer par un fichier… » efface d'abord ce

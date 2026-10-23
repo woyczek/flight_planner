@@ -478,6 +478,10 @@
     last: ['Dernière réussie', 'Last success', 'Zuletzt erfolgreich', 'Última correcta'],
     never: ['jamais', 'never', 'nie', 'nunca'],
     pending: ['En attente', 'Pending', 'Ausstehend', 'Pendiente'],
+    // écritures en attente (FD.status().queue) : chemin, module, heure, ✕ pour une suppression
+    queue: ['Écritures en attente', 'Pending writes', 'Ausstehende Änderungen', 'Escrituras pendientes'],
+    queueDel: ['suppression', 'deletion', 'Löschung', 'eliminación'],
+    queueMore: ['… et {n} de plus', '… and {n} more', '… und {n} weitere', '… y {n} más'],
     lastError: ['Dernière erreur', 'Last error', 'Letzter Fehler', 'Último error'],
     network: ['Réseau', 'Network', 'Netz', 'Red'],
     online: ['en ligne', 'online', 'online', 'en línea'],
@@ -832,9 +836,9 @@
     const ai = cards.findIndex(x => x.startsWith('<div class="f-card" data-card="access">'));
     if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`).replace(
       /<\/div>$/, `${cfgOut}</div>`);
-    // synchronisation, si un échange est coché
-    if (exchange) {
-      cards.push(`<div class="f-card" data-card="sync"><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><p class="f-muted">${esc(t(T.syncHint))}</p>
+    // synchronisation : montrée si un échange est coché ou tant que des écritures attendent (suit l'état)
+    {
+      cards.push(`<div class="f-card" data-card="sync"${exchange || st.pending ? '' : ' hidden'}><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><div data-queue></div><p class="f-muted">${esc(t(T.syncHint))}</p>
         <div class="f-row"><button type="button" class="primary" data-act="sync">${esc(t(T.syncNow))}</button>${st.conflicts ? `<a href="#conflicts">${esc(t(T.conflicts, { n: st.conflicts }))}</a>` : ''}</div></div>`);
     }
     // données hors ligne
@@ -891,6 +895,20 @@
           [T.lastError, s.lastError]
         ] : [])
       ].map(([k, v]) => `<dt>${esc(t(k))}</dt><dd>${esc(v)}</dd>`).join('');
+      // les écritures en attente, les plus récentes d'abord (20 au plus) : chemin, module, heure ; ✕ : suppression
+      const box = view.querySelector('[data-queue]'),
+        q = s.queue || [],
+        day = new Date().toDateString(),
+        when = at => {
+          const d = new Date(at);
+          return isNaN(d) ? '' : d.toDateString() === day ? d.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : d.toLocaleString();
+        },
+        modName = id => t(mods.find(m => m.id === id)?.label || [id || '?']);
+      if (box) box.closest('[data-card]').hidden = !exchange && !q.length;
+      if (box) box.innerHTML = !q.length ? '' : `<h3>${esc(t(T.queue))}</h3><ul class="f-queue">${q.slice(0, 20).map(x => `<li>${x.deletion ? `<span aria-label="${esc(t(T.queueDel))}" title="${esc(t(T.queueDel))}">✕</span> ` : ''}<code>${esc(x.path)}</code> <span class="f-muted">${esc([modName(x.module), when(x.at)].filter(Boolean).join(' · '))}</span></li>`).join('')}${q.length > 20 ? `<li class="f-muted">${esc(t(T.queueMore, { n: q.length - 20 }))}</li>` : ''}</ul>`;
     };
     paintSync(st);
     const off = FD.onStatus(s => view.isConnected ? paintSync(s) : off?.());

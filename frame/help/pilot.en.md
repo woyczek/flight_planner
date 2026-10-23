@@ -513,8 +513,9 @@ then only reads the bases); or, on a workstation with the launcher, publish the 
 Maintenance › Aeronautical data and Aircraft types), then synchronise.
 
 **Synchronisation.** With an exchange ticked, the “Synchronisation” card gives the last success, the pending writes and
-the network; “Synchronise now” sends and receives at once. Otherwise it runs by itself at start, every 10 minutes
-online and when the network comes back.
+the network; “Synchronise now” sends and receives at once. Otherwise it runs by itself at start, every 10 minutes online
+and when the network comes back. While writes are waiting, the card lists them, newest first: path, module and time, ✕
+for a deletion, with the last error if there is one.
 
 **The backup.** Alone on this device, “Export (one file)” keeps all your data in a file: it is the only copy. “Import
 (merge)…” takes it back without losing anything here; “Replace from a file…” first erases what is on the device.
@@ -597,4 +598,4 @@ with the launcher.
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: dcfd5f72ab89 -->
+<!-- fr: 61ffba358b5d -->

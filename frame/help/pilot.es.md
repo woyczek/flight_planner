@@ -530,7 +530,8 @@ repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de ae
 
 **La sincronización.** Con un intercambio marcado, la tarjeta «Sincronización» da la última correcta, las escrituras
 pendientes y la red; «Sincronizar ahora» envía y recibe en el acto. Si no, se hace sola al inicio, cada 10 minutos en
-línea y al volver la red.
+línea y al volver la red. Mientras haya escrituras pendientes, la tarjeta las lista, las más recientes primero: ruta,
+módulo y hora, ✕ para una eliminación, con el último error si lo hay.
 
 **La copia.** Solo en este dispositivo, «Exportar (un fichero)» guarda todos sus datos en un fichero: es la única
 copia. «Importar (fusión)…» la retoma sin perder nada de aquí; «Sustituir por un fichero…» borra primero lo que hay en
@@ -617,4 +618,4 @@ lanzador.
   problema. El token
   nunca figura en él.
 
-<!-- fr: dcfd5f72ab89 -->
+<!-- fr: 61ffba358b5d -->

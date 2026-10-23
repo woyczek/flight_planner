@@ -553,7 +553,8 @@ Repository (V2: Einstellungen › Wartung › Luftfahrtdaten und Luftfahrzeugtyp
 
 **Die Synchronisation.** Mit angekreuztem Austausch zeigt die Karte „Synchronisation“ den letzten Erfolg, die
 ausstehenden Änderungen und das Netz; „Jetzt synchronisieren“ sendet und empfängt sofort. Sonst läuft sie von selbst
-beim Start, alle 10 Minuten online und bei Rückkehr des Netzes.
+beim Start, alle 10 Minuten online und bei Rückkehr des Netzes. Solange Änderungen ausstehen, listet die Karte sie auf,
+die neuesten zuerst: Pfad, Modul und Uhrzeit, ✕ für eine Löschung, mit dem letzten Fehler, falls es einen gibt.
 
 **Die Sicherung.** Allein auf diesem Gerät bewahrt „Exportieren (eine Datei)“ alle Ihre Daten in einer Datei auf: Sie
 ist die einzige Kopie. „Importieren (zusammenführen)…“ übernimmt sie, ohne hier etwas zu verlieren; „Durch eine Datei
@@ -639,4 +640,4 @@ ein Repository auf framagit oder GitLab auf einem Rechner mit Starter an.
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: dcfd5f72ab89 -->
+<!-- fr: 61ffba358b5d -->

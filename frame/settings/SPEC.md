@@ -87,8 +87,10 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    fine-grained token on this repository only, Contents read and write, 90 days at most, never pasted in a message.
    "Save", "Test" (the branch head through the transport; offline said as such) and "Cut access" (asks, then
    the context's `cutAccess`; pending writes stay queued).
-7. **Synchronisation** (an exchange ticked): last success, pending writes, network, last error, kept live through
-   `onStatus`; "Synchronise now" (the frame's `syncNow`); a link to the conflicts screen when there are some.
+7. **Synchronisation** (an exchange ticked, or writes waiting — the card follows the state): last success, pending
+   writes, network, last error, kept live through `onStatus`; then the **pending writes** themselves
+   (`FD.status().queue`, newest first, 20 at most then "… and n more"): path, module (its menu label), time (the date
+   too when not today), ✕ for a deletion; "Synchronise now" (the frame's `syncNow`); a link to the conflicts screen when there are some.
 8. **Offline data**: aeronautical bases (`aerodb.status()`: published zones, zones open on this device, cycle), the
    browser storage (`navigator.storage.estimate`), then one row per published zone through `aerodb.offline`
    (`frame/aerodb/INTEGRATION.md` § 4): its name in the application's language, its state on this device (not here,
