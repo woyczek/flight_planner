@@ -147,6 +147,9 @@ const TX = {
   startSame: ['À l’heure réelle : rien ne change.', 'For now: nothing changes.', 'Für jetzt: keine Änderung.',
     'Para ahora: nada cambia.'
   ],
+  startSameEta: ['À l’heure réelle : rien ne change ; arrivée prévue {t}.', 'For now: nothing changes; planned arrival {t}.',
+    'Für jetzt: keine Änderung; geplante Ankunft {t}.', 'Para ahora: nada cambia; llegada prevista {t}.'
+  ],
   startOffline: ['Hors ligne : départ avec le dernier devis.', 'Offline: started with the last quote.',
     'Offline: Start mit der letzten Kalkulation.',
     'Sin conexión: salida con el último cálculo.'
@@ -428,18 +431,19 @@ const TX = {
     'Jetzt geplant: {d} nach dem Abflug, zwischen {a} und {b} · noch {r} · geplanter Restkraftstoff {f}.',
     'Previsto ahora: {d} desde la salida, entre {a} y {b} · faltan {r} · combustible restante previsto {f}.'
   ],
-  progTaxi: ['Prévu maintenant : roulage au départ · carburant restant prévu {f}.',
-    'Planned now: taxiing at departure · planned fuel remaining {f}.',
-    'Jetzt geplant: Rollen am Abflug · geplanter Restkraftstoff {f}.',
-    'Previsto ahora: rodaje en la salida · combustible restante previsto {f}.'
+  progTaxi: ['Prévu maintenant : roulage au départ jusqu’à {t} · carburant restant prévu {f}.',
+    'Planned now: taxiing at departure until {t} · planned fuel remaining {f}.',
+    'Jetzt geplant: Rollen am Abflug bis {t} · geplanter Restkraftstoff {f}.',
+    'Previsto ahora: rodaje en la salida hasta las {t} · combustible restante previsto {f}.'
   ],
   progArrived: ['Arrivée prévue atteinte · carburant restant prévu {f}.', 'Planned arrival reached · planned fuel remaining {f}.',
     'Geplante Ankunft erreicht · geplanter Restkraftstoff {f}.', 'Llegada prevista alcanzada · combustible restante previsto {f}.'
   ],
-  progHint: ['Calculée depuis l’heure de départ et le devis (vent compris) ; la position réelle viendra de la carte.',
-    'Worked out from the start time and the quote (wind included); the real position will come from the map.',
-    'Aus Startzeit und Kalkulation berechnet (Wind inbegriffen); die echte Position kommt von der Karte.',
-    'Calculado desde la hora de salida y el cálculo (viento incluido); la posición real vendrá del mapa.'
+  progHint: [
+    'Calculée depuis l’heure de départ et le devis (vent compris) ; la position réelle (simulateur de ce poste, GPS ou réseau) se voit sur la carte.',
+    'Worked out from the start time and the quote (wind included); the real position (this computer’s simulator, GPS or network) shows on the map.',
+    'Aus Startzeit und Kalkulation berechnet (Wind inbegriffen); die echte Position (Simulator dieses Rechners, GPS oder Netz) erscheint auf der Karte.',
+    'Calculado desde la hora de salida y el cálculo (viento incluido); la posición real (simulador de este equipo, GPS o red) se ve en el mapa.'
   ],
   da: ['Altitude-densité', 'Density altitude', 'Dichtehöhe', 'Altitud de densidad'],
   daAxisX: ['écart ISA (°C)', 'ISA deviation (°C)', 'ISA-Abweichung (°C)', 'desviación ISA (°C)'],
@@ -1033,7 +1037,7 @@ function compute() {
   }
   const goal = perf ? L.goalNow(S.settings.goal || 'prof', o.profileIas) : null,
     distanceNm = +f.route?.distanceNm || 0,
-    q = distanceNm > 0 ? M.quote({
+    qIn = {
       sheet,
       source,
       perf,
@@ -1047,11 +1051,19 @@ function compute() {
       contingencyPct: +S.settings.contingencyPct,
       climbLaw: perf ? L.tripLaw(perf, goal, o) : null,
       steps: routeSteps(f.route, distanceNm)
-    }) : null,
-    D = perf && q ? L.decisionSeries(perf, {
+    },
+    q = distanceNm > 0 ? M.quote(qIn) : null,
+    D = perf && q ? requoteDecision(L.decisionSeries(perf, {
       distanceNm,
       wc: q.windKnown ? q.wc : 0
-    }, goal, o) : null,
+    }, goal, o), h => M.quote({
+      ...qIn,
+      levelFt: h,
+      // au niveau retenu : le devis tel quel (vent, paliers de la route) ; ailleurs, vol à ce niveau avec le vent de la
+      // prévision à ce niveau quand la météo réelle le donne
+      wind: h === levelFt ? qIn.wind : aloftMeanAt(h) || qIn.wind,
+      steps: h === levelFt ? qIn.steps : null
+    })) : null,
     G = perf && levelFt > 0 ? L.climbGuide(perf, levelFt, goal, o) : null;
   return {
     sheet,
@@ -1084,6 +1096,30 @@ function ticks(min, max, n = 5) {
     out = [];
   for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) out.push(v);
   return out;
+}
+/** Courbe de décision chiffrée comme le devis : chaque niveau tenable (sous le plafond, non extrapolé) reprend le
+ *  délestage et la durée de M.quote à ce niveau (même vent, même loi de montée, même descente), de sorte qu'au niveau
+ *  retenu la courbe et le devis disent le même chiffre ; le moins de carburant et le plus court sont relus ensuite. Les
+ *  points au-delà du plafond gardent le prolongement du modèle (pointillés). */
+function requoteDecision(D, quoteAt) {
+  if (!D) return D;
+  const memo = new Map(),
+    fix = r => {
+      if (!r || !r.ok || r.extrap || r.h > D.hi) return r;
+      if (!memo.has(r.h)) memo.set(r.h, quoteAt(r.h));
+      const x = memo.get(r.h);
+      return x?.hasFuel && Number.isFinite(x.trip) && Number.isFinite(x.minutes) ? {
+        ...r,
+        fuel: x.trip,
+        minutes: x.minutes
+      } : r;
+    };
+  D.rows = D.rows.map(fix);
+  D.real = D.real.map(fix);
+  D.all = D.all.map(fix);
+  D.best = D.real.reduce((a, b) => b.fuel < a.fuel ? b : a);
+  D.fast = D.real.reduce((a, b) => b.minutes < a.minutes ? b : a);
+  return D;
 }
 /** Courbes de la décision du niveau : carburant (trait plein) et temps (tirets) du trajet entier selon le niveau, partie
  *  extrapolée au-delà du plafond en pointillés, zone non tenable grisée, plafond, moins de carburant (rond), plus rapide
@@ -2103,6 +2139,16 @@ function renderWx() {
 }
 /** « Météo réelle » : vent moyen des terrains le long de la route (frame : moyenne des vecteurs pondérée par les
  *  segments départ → intermédiaire → arrivée), écrit dans le vol courant avec sa source. */
+/** Vent moyen le long de la route à l'altitude constante h (ft), lu dans la prévision en altitude quand la météo réelle
+ *  est retenue et que la prévision est celle de la route et de l'heure ; null sinon (la courbe de décision garde alors le
+ *  vent du devis). */
+function aloftMeanAt(h) {
+  const A = S.aloft;
+  if (!S.flight.weather?.real || S.flight.windSource?.kind !== 'aloft' || !A?.profiles?.length || A.key !== aloftKey())
+    return null;
+  return WD.meanWind(A.samples.map((smp, i) => WD.atLevel(A.profiles[i], h)), A.samples.map(x => x.nm));
+}
+
 function applyRealWind() {
   const al = aloftCalc(),
     mean = al ? WD.meanWind(al.winds, al.nms) : null;
@@ -2599,7 +2645,9 @@ async function startFlight() {
     l: [...diffs, eta ? tt(TX.diffEta, {
       t: eta
     }) : ''].filter(Boolean).join(' · ')
-  }) : tt(TX.startSame) + (eta ? ` ${tt(TX.diffEta, { t: eta })}.` : '');
+  }) : eta ? tt(TX.startSameEta, {
+    t: eta
+  }) : tt(TX.startSame);
   if (S.body.querySelector('[data-startnote]')) S.body.querySelector('[data-startnote]').textContent = S.startNote;
   S.flight.started = {
     at: new Date().toISOString(),
@@ -2755,6 +2803,7 @@ function renderProgress(C) {
     line = c.st.phase === 'arrived' ? tt(TX.progArrived, {
       f: rem
     }) : c.st.phase === 'taxi' ? tt(TX.progTaxi, {
+      t: c.etas[0] ? hhmmOf(new Date(c.etas[0].at).toISOString()) : '—', // décollage prévu : fin du roulage
       f: rem
     }) : tt(TX.progNow, {
       d: distTxt(c.st.nmFromDep),
@@ -2788,7 +2837,6 @@ function renderSummary(C) {
   if (row) {
     const on = !!f.started?.at; // un vol démarré s'arrête par son compte rendu (report remet started à null) ou s'annule
     row.innerHTML = on ? `<button type="button" data-do="cancelstart">${esc(tt(TX.cancelStart))}</button>` : `<button type="button" class="primary" data-do="start">${esc(tt(TX.start))}</button>`;
-    row.insertAdjacentHTML('beforeend', `<span class="f-muted">${esc(flightState())}</span>`);
   }
   const sn = S.body.querySelector('[data-startnote]');
   if (sn) sn.textContent = f.started?.at && startNote?.at === f.started.at ? startNote.text : ''; // ce que la relecture au départ a changé

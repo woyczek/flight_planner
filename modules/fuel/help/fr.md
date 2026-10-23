@@ -81,7 +81,8 @@ prend le relais et c'est dit (« prévision en altitude indisponible »).
 
 **4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
-qu'on ne peut pas tenir sur ce trajet. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
+qu'on ne peut pas tenir sur ce trajet. Chaque niveau est chiffré comme le devis, avec le vent prévu à ce niveau quand
+la météo réelle est retenue : au niveau choisi, la courbe et le devis disent le même chiffre. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
 meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
 
 Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une

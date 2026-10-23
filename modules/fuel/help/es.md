@@ -85,7 +85,8 @@ disponible»).
 
 **4 Cálculo.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
 El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los niveles que no se
-pueden mantener en este trayecto. Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
+pueden mantener en este trayecto. Cada nivel se calcula como el cálculo, con el viento previsto a ese nivel cuando el tiempo real
+está activado: en el nivel elegido, la curva y el cálculo dan la misma cifra. Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
 de subir: económico, mejor régimen, rápido, a la velocidad de la ficha, o manual (usted da velocidad y régimen de
 ascenso).
 

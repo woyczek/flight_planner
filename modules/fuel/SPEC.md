@@ -62,6 +62,11 @@ folded.
   start from the last level. A step at the same level, at 0 or beyond the arrival changes nothing; without steps the
   quote is the single-level one (bench unchanged). The screen gives the intermediate points' `alt_ft` at their
   cumulated distance (scaled to a typed distance); the level decision still varies the plan's level alone.
+- **Level decision = the quote** (23 Oct 2026): each holdable level of the decision curve (below the ceiling, not
+  extrapolated) takes the trip fuel and time of `M.quote` at that level (same climb law, cruise legs and descent),
+  with the forecast wind at that level when the real weather is on (`aloftMeanAt`), else the quote's wind; at the
+  plan's level the quote itself (its wind and route steps). Least fuel and fastest are read again from these values;
+  beyond the ceiling the model's extension stays (dotted).
 - **Totals**: trip = climb + cruise + steps + descent; contingency = trip × %; block = taxi + trip + contingency +
   reserve.
 - **Time and TOD**: time = climb + cruise + steps + descent minutes; TOD = last level ÷ gradient + buffer (NM).

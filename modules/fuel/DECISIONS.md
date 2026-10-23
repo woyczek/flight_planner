@@ -4,6 +4,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — the level decision gives the quote's figures** (end-to-end pass, Simplification's go): the curve
+  came from the performance model's own trip (`levels.js` `m.trip`, one mean wind for every level) while the quote
+  uses `M.quote` (climb law, cruise legs, the sheet's descent): at FL060 the quote said 534 kg / 2:23, the curve
+  546 kg / 2:28 and "least fuel: 2 000 ft (553 kg)" — more than the plan. Now `requoteDecision` re-quotes every
+  holdable level with `M.quote`, with the forecast wind at that level when the real weather is on (`aloftMeanAt`,
+  Open-Meteo pressure levels). Checked on 8804 (EC45 F-ZBPD, LFRS NTS LMG LFML, ARPEGE): "least fuel: FL220
+  (489 kg)", and the quote at FL220 gives 489 kg, 2:02. The EC45's levels up to FL230 come from aerodb's type
+  estimate (ceiling 27,926 ft), not from this change.
+- **23 Oct 2026 — texts of the start** (end-to-end pass): "For now: nothing changes; planned arrival 09:15 PM."
+  (was "… changes. planned arrival …"); the taxi line says until when ("taxiing at departure until 06:52 PM", the
+  planned take-off); the progress hint says the real position comes from this computer's simulator, the GPS or the
+  network and shows on the map (it said "will come from the map"); the flight state is no longer repeated next to
+  "Cancel the start" (the quote bar under the steps already says it).
 - **23 Oct 2026 — copying works on a tablet served over http** (frame lot 18: the launcher serves the app to a
   tablet, a non-secure context without `navigator.clipboard`): new `frame/lib/clipboard.js` (owner fuel; report,
   website and the frame may use it): `copyText(text, { box, near })` tries the clipboard, then a hidden field and
