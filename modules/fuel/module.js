@@ -12,6 +12,7 @@ import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
 import * as MT from '../../frame/lib/metar.js';
 import * as WD from './winds.js';
+import * as RT from '../../frame/lib/route_text.js';
 import {
   svg
 } from '../../frame/lib/icons.js';
@@ -31,6 +32,7 @@ export const meta = {
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', '../../frame/lib/metar.js',
+    '../../frame/lib/route_text.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js'
   ]
 };
@@ -713,11 +715,7 @@ async function routePoints(text, dep, arr, known = new Map()) {
   const ctx = S.ctx,
     points = [],
     unresolved = [],
-    tokens = [],
-    entries = String(text || '').split(/[,\n]+/).map(x => x.trim()).filter(Boolean),
-    coord = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[NKM]\d{3,4})?F(\d{3}))?/i,
-    icaoLl = /^(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])$/,
-    numRe = /^-?\d+(?:\.\d+)?$/;
+    tokens = [];
   /** Position d'un identifiant : aerodb, sinon un point déjà connu du vol ; null sinon. */
   const find = async id => {
     const c = ctx.aerodb ? await ctx.aerodb.coords(id).catch(() => null) : null;
@@ -746,54 +744,23 @@ async function routePoints(text, dep, arr, known = new Map()) {
       pt: p
     });
   };
-  if (entries.length && entries.every(e => coord.test(e)))
-    for (const e of entries) {
-      const m = coord.exec(e);
-      add(m[1].toUpperCase(), {
-        lat: +m[2],
-        lon: +m[3]
-      }, m[4] ? +m[4] * 100 : 0);
-    }
-  else {
-    const words = String(text || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i],
-        lv = /(?:^|\/)(?:[NKM]\d{3,4})?F(\d{3})$/.exec(word),
-        tok = word.split('/')[0],
-        n = points.length;
-      if (/^[NKM]\d{3,4}([FASM]\d{3,4})?$/.test(tok)) { // groupe vitesse-niveau seul : niveau du dernier point
-        if (lv && points.length) points.at(-1).alt_ft = +lv[1] * 100;
-        continue;
+  // jetons du texte (frame/lib/route_text.js) ; un nom est cherché dans aerodb, puis parmi les points connus
+  for (const t of RT.tokenize(text)) {
+    if (t.kind === 'group') { // groupe vitesse-niveau seul : niveau du dernier point
+      if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
+    } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
+    else if (t.kind === 'name') {
+      const c = await find(t.id);
+      if (c) add(t.id, c, t.alt_ft);
+      else {
+        if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte
+        tokens.push({
+          keep: t.id
+        });
       }
-      if (tok === 'DCT') continue;
-      let m;
-      if ((m = icaoLl.exec(tok))) add(tok, {
-        lat: (+m[1] + (+m[2] || 0) / 60) * (m[3] === 'S' ? -1 : 1),
-        lon: (+m[4] + (+m[5] || 0) / 60) * (m[6] === 'W' ? -1 : 1)
-      });
-      else if (/^[A-Z0-9]{2,7}$/.test(tok) && numRe.test(words[i + 1] || '') && numRe.test(words[i + 2] || '')) {
-        add(tok, {
-          lat: +words[i + 1],
-          lon: +words[i + 2]
-        });
-        i += 2;
-      } else if (/^[A-Z0-9]{2,7}$/.test(tok)) {
-        const c = await find(tok);
-        if (c) add(tok, c);
-        else if (/^[A-Z]{1,2}\d{1,4}[A-Z]?$/.test(tok) || /\d[A-Z]$/.test(tok)) tokens.push({
-          keep: tok // voie aérienne ou procédure : gardée dans le texte
-        });
-        else {
-          unresolved.push(tok);
-          tokens.push({
-            keep: tok
-          });
-        }
-      } else tokens.push({
-        keep: word
-      });
-      if (lv && points.length > n) points.at(-1).alt_ft = +lv[1] * 100;
-    }
+    } else tokens.push({
+      keep: t.id
+    });
   }
   if (dep && points[0]?.id !== dep) {
     const c = await find(dep);
@@ -829,8 +796,8 @@ async function routePoints(text, dep, arr, known = new Map()) {
   };
 }
 /** Texte normalisé de la route : « DEP PT1 UN460 PT2/F280 … ARR » — points par leur identifiant (niveau en /Fnnn là
- *  où il change), voies, procédures et mots inconnus gardés à leur place, une seule ligne. */
-const routeText = tokens => tokens.map(t => t.pt ? `${t.pt.id}${t.pt.alt_ft > 0 ? `/F${String(Math.round(t.pt.alt_ft / 100)).padStart(3, '0')}` : ''}` : t.keep).join(' ');
+ *  où il change), voies, procédures et mots inconnus gardés à leur place, une seule ligne (frame/lib/route_text.js). */
+const routeText = RT.textFromTokens;
 
 // ---------------------------------------------------------------- données (vol courant, réglages, fiches)
 /** Chemin d'un document du pilote (trigramme de l'identité, ANON sans identité). */
@@ -2228,9 +2195,7 @@ function renderPts() {
  *  refait ; la liste est redessinée sauf pendant la frappe d'un niveau (le champ garde la main). */
 function routeEdited(redraw = true) {
   const r = S.flight.route;
-  r.text = routeText((r.points || []).map(pt => ({
-    pt
-  })));
+  r.text = RT.textFromPoints(r.points || [], r.text || ''); // voies gardées entre deux points restés voisins
   r.from = 'points';
   const ta = S.body?.querySelector('[data-k="rtext"]');
   if (ta) ta.value = r.text;

@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — airways survive a points change** (ergonomics decision after maps 6a, 867d71217): rebuilding the
+  text from the points alone dropped the airways typed (UN869). The route text code moved to shared pure code,
+  `frame/lib/route_text.js` (fuel owns it, maps uses it): `tokenize` is the former reading of fuel's `routePoints`
+  (resolution by aerodb stays in fuel), `textFromTokens` the former normalisation, and `textFromPoints` keeps the
+  words between two consecutive points that were already neighbours in the previous text and are unchanged (same
+  name, same position within 0.5 NM when the caller gives the previous points — maps does after a drag; fuel's list
+  only reorders, removes, adds or sets levels, so names suffice). An airway between two points is a property of
+  that pair: insert a point inside a direct leg and both airways stay; move a point and the airways touching it drop.
+  Bench `test/route_text.html` 14/14; on 8793 the normalisation gave the same text as before, and moving LUGEN down
+  the list dropped UN460 only.
 - **23 Oct 2026 — answers after unmount** (bug seen by the frame: "Cannot set properties of null (setting 'wx')" in
   `wxFetch`, Fuel then Map quickly): every asynchronous path keeps the mount it started from and stops when `S` has
   changed meanwhile (`gone(s)`) — weather, corridor, Open-Meteo, aircraft search, point lookup, route reading,

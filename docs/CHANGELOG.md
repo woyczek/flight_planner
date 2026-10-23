@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: airways kept when the points change** (`frame/lib/route_text.js`, `modules/fuel/module.js`;
+  `test/route_text.html`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — editing the points (list or map) no longer
+  erases the airways typed in the route, except on the legs that changed; the route text code is shared with maps.
 - **Map, lot 6a: edit the route on the map** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — an
   "Edit" mode: drag a waypoint onto a fix, a beacon or an airfield, tap one to insert it, tap a route point to remove
   it, undo the last gestures; each change is saved in the current flight (`by: 'maps'`) and Fuel redoes the quote.

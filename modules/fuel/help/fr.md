@@ -36,8 +36,8 @@ descendent un point dans la liste, la croix le retire ; le champ du bas en ajout
 FL : c'est le niveau tenu à partir de ce point, pour une montée ou une descente par paliers. Un point sans niveau
 continue le précédent (affiché en grisé) ; le vol part au niveau du plan. Le devis compte chaque palier (sa montée ou
 sa descente, puis la croisière à ce niveau), le résultat affiche la suite des niveaux (FL100 → FL120), et la descente
-part du dernier niveau. Chaque changement réécrit le champ « Route » (les points seuls) et est aussitôt transmis à
-la carte.
+part du dernier niveau. Chaque changement réécrit le champ « Route » et est aussitôt transmis à la carte ; une voie
+aérienne tapée reste écrite tant que les deux points qui l'encadrent restent voisins et à leur place.
 
 « Afficher la carte » montre le vol sur la carte : sur un téléphone la Carte s'ouvre (le bouton de l'en-tête ramène
 ici) ; sur un écran large elle s'ouvre à côté, et suit chaque changement. « Modifier la route » sur la carte ramène à
