@@ -246,11 +246,10 @@ used alone:
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
 
-- A module loads no global style sheet. It uses the frame's tokens (`--sog-bg`, `--sog-surface`, `--sog-fg`,
-  `--sog-muted`, `--sog-border`, `--sog-accent`, `--sog-ok`, `--sog-warn`, `--sog-err`, `--sog-radius`, `--sog-gap`,
-  `--sog-touch`, `--sog-font`) and the frame's classes (`f-card`, `f-row`, `f-field`, `f-check`, `f-muted`,
-  `primary`).
-- The dark theme follows the system.
+- A module loads no global style sheet. It uses the frame's tokens (`--sog-*`) and primitives (classes `f-…`): the
+  list, the designs (standard, cabinet, field), day / night and print are in `frame/design/SPEC.md`, the module's
+  rules in `frame/design/INTEGRATION.md`.
+- Day / night follows the system, and Settings may force either.
 - `modules/hello/` is the example module. It shows a shared prefix, a cache file, `watch` and the texts.
 
 ### 3.3 Synchronisation control
@@ -368,6 +367,7 @@ it; the others import it as it is.
 | `frame/lib/last_flight.js` | report | report, flightlog | "my last flight" on IVAO and VATSIM (the V2 launcher's route in JavaScript): the flights of the last 7 days, then one flight's details |
 | `frame/lib/js-yaml.min.js` | flightlog | flightlog | js-yaml 4.1.0, a copy of V2's vendored library, to read V2's YAML registry |
 | `frame/lib/external_links.js` | fuel | fuel | "Open in" links (SimBrief, SkyVector, Navigraph, ChartFox): the pure part of V2's `shared/external_links.js`, translation passed as a parameter |
+| `frame/lib/icons.js` | design | frame, any module | the line icon set (V2's 53 icons plus `menu`), `svg(name)` |
 | `frame/lib/website.js` | website | report, website | the flight's fields for the airline website, the `#defa=` address, the line to copy, the "→ Vol" bookmark (moved from `modules/report/website_handoff.js`) |
 
 ## 4. To come in the frame

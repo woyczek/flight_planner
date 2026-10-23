@@ -24,6 +24,15 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **design, lot 2: designs for the Pilot application** (`frame/design/tokens.css`, `frame/design/primitives.css`,
+  `frame/lib/icons.js`, `frame/frame.css`, `frame/app.js`, `labs/design_primitives.html`).
+  - Three designs: Standard, Cabinet and Rugged (square corners and their own fonts for the last two), by day and by
+    night, following the system or forced. They are chosen in Settings and applied before the first paint.
+  - Primitives given to the modules: headings, folded sections, tabs and steps, field grid, columns, sticky bar, table,
+    tiles, row list, dot and badge, toolbar, callout, link button.
+  - Line icons in the menu and the header instead of emoji.
+  - 44 px targets, fields at 16 px (no zoom on iOS), links and shadows on the tokens, print of a screen without its
+    chrome.
 - **settings: a door for data/ without git** (`frame/settings/settings.js`, `frame/app.js`, `frame/settings/help/*.md`;
   `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — on a workstation served by the launcher, the Access card
   says that `data/` is a folder ignored by the code repository that becomes its own git repository, and offers "Fetch

@@ -1,0 +1,438 @@
+/* V3 design — primitives de mise en page données aux modules (frame/design/SPEC.md § 3, frame/design/INTEGRATION.md).
+   Seulement des jetons --sog-* (frame/design/tokens.css) : un module n'apporte aucune couleur, aucun rayon, aucune taille
+   de texte à lui ; ce qu'il dessine lui-même (graphiques, cartes) lit les jetons --sog-chart-*.
+   Densité : toute cible tactile fait au moins --sog-touch (44 px) ; les champs écrivent à --sog-field-text (16 px : iOS
+   n'agrandit plus la page à la saisie) ; une colonne jusqu'à 760 px, des colonnes (f-cols) à partir de 980 px. */
+
+/* ---- éléments de base */
+body {
+  font: var(--sog-font);
+  background: var(--sog-bg);
+  color: var(--sog-fg)
+}
+a {
+  color: var(--sog-link)
+}
+:focus-visible {
+  outline: 2px solid var(--sog-focus);
+  outline-offset: 2px
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit
+}
+button,
+.f-btn {
+  min-height: var(--sog-touch);
+  padding: 0 14px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer
+}
+.f-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px
+}
+button.primary,
+.f-btn.primary {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink);
+  border-color: var(--sog-accent)
+}
+button:disabled,
+.f-btn[aria-disabled="true"] {
+  opacity: .55;
+  cursor: default
+}
+input,
+select,
+textarea {
+  min-height: var(--sog-touch);
+  padding: 6px 10px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  background: var(--sog-surface-2);
+  font-size: var(--sog-field-text)
+}
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 0;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--sog-accent)
+}
+.f-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  vertical-align: -4px
+}
+
+/* ---- titres (dans un module et sur les écrans du cadre) */
+.f-view h1,
+.f-view h2,
+.f-view h3 {
+  font-family: var(--sog-font-title);
+  text-transform: var(--sog-title-case);
+  letter-spacing: var(--sog-title-spacing);
+  line-height: 1.25
+}
+.f-view h1 {
+  font-size: var(--sog-h1);
+  margin: 0 0 10px
+}
+.f-view h2 {
+  font-size: var(--sog-h2);
+  margin: 0 0 8px
+}
+.f-view h3 {
+  font-size: var(--sog-h3);
+  margin: 8px 0 4px
+}
+
+/* ---- carte, ligne, champ, case, texte secondaire, messages */
+.f-card {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  padding: 12px 14px;
+  margin-bottom: var(--sog-gap)
+}
+.f-card.f-accent {
+  border-color: var(--sog-accent)
+}
+.f-muted {
+  color: var(--sog-muted);
+  font-size: var(--sog-size-s)
+}
+.f-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center
+}
+.f-field {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0
+}
+.f-field input,
+.f-field select,
+.f-field textarea,
+.f-card input:not([type="checkbox"]):not([type="radio"]) {
+  width: 100%;
+  min-width: 0
+}
+.f-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: var(--sog-touch);
+  cursor: pointer
+}
+.f-card pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: var(--sog-size-xs)/1.4 var(--sog-font-mono);
+  max-height: 260px;
+  overflow: auto;
+  background: var(--sog-bg);
+  padding: 8px;
+  border-radius: var(--sog-radius)
+}
+.f-dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 8px 0
+}
+.f-dl dt {
+  color: var(--sog-muted)
+}
+.f-dl dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere
+}
+.f-msg:empty {
+  display: none
+}
+.f-msg[data-kind="ok"],
+.f-ok {
+  color: var(--sog-ok)
+}
+.f-msg[data-kind="warn"],
+.f-warn {
+  color: var(--sog-warn)
+}
+.f-msg[data-kind="err"],
+.f-err {
+  color: var(--sog-err)
+}
+
+/* ---- section repliée : la ligne de titre entière est la cible (44 px), chevron du cadre */
+summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--sog-touch);
+  cursor: pointer;
+  list-style: none
+}
+summary::-webkit-details-marker {
+  display: none
+}
+summary::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(-45deg);
+  margin: 0 4px 0 2px;
+  transition: transform .15s
+}
+details[open]>summary::before {
+  transform: rotate(45deg)
+}
+details.f-card>summary {
+  font-weight: 600;
+  margin: -12px -14px;
+  padding: 0 14px
+}
+details.f-card[open]>summary {
+  margin-bottom: 8px
+}
+
+/* ---- onglets et pas : boutons d'un groupe ; l'actif est marqué par aria-pressed, aria-selected ou aria-current */
+.f-tabs,
+.f-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--sog-gap)
+}
+.f-steps>button {
+  flex: 1
+}
+:is(.f-tabs, .f-steps)>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
+  background: var(--sog-accent);
+  color: var(--sog-accent-ink);
+  border-color: var(--sog-accent)
+}
+.f-steps>[data-done]::after {
+  content: " ✓"
+}
+
+/* ---- grille de champs (auto, --f-min : largeur minimale d'une case) et colonnes sur grand écran */
+.f-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(var(--f-min, 130px), 1fr))
+}
+.f-grid>.f-field {
+  margin: 0
+}
+.f-full {
+  grid-column: 1/-1
+}
+@media (min-width: 980px) {
+  .f-cols {
+    display: grid;
+    grid-template-columns: repeat(var(--f-cols, 3), minmax(0, 1fr));
+    gap: var(--sog-gap);
+    align-items: start
+  }
+}
+
+/* ---- barre collante en bas (résultat, enregistrement) */
+.f-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-accent);
+  border-radius: var(--sog-radius);
+  padding: 10px 14px;
+  margin-bottom: var(--sog-gap);
+  box-shadow: var(--sog-shadow-up)
+}
+
+/* ---- tableau (dans f-scroll : défilement de côté sur téléphone) */
+.f-scroll {
+  overflow-x: auto
+}
+.f-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--sog-size-s)
+}
+.f-table th,
+.f-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--sog-border);
+  text-align: left;
+  vertical-align: top
+}
+.f-table th {
+  color: var(--sog-muted);
+  font-weight: 600
+}
+.f-table .f-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap
+}
+
+/* ---- tuiles de chiffres */
+.f-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: var(--sog-gap)
+}
+.f-tiles>* {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  padding: 8px 10px;
+  color: var(--sog-muted);
+  font-size: var(--sog-size-s)
+}
+.f-tiles b {
+  display: block;
+  color: var(--sog-fg);
+  font-size: var(--sog-h1)
+}
+
+/* ---- liste de lignes (choix, fiches, vols) */
+.f-list {
+  display: grid;
+  gap: 6px;
+  margin-bottom: var(--sog-gap)
+}
+.f-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  min-height: var(--sog-touch);
+  padding: 6px 12px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  text-align: left;
+  text-decoration: none;
+  width: 100%
+}
+
+/* ---- pastille, badge, barre d'outils, encadré */
+.f-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sog-muted);
+  vertical-align: middle
+}
+:is(.f-dot, .f-badge)[data-kind="ok"] {
+  --f-kind: var(--sog-ok)
+}
+:is(.f-dot, .f-badge)[data-kind="warn"] {
+  --f-kind: var(--sog-warn)
+}
+:is(.f-dot, .f-badge)[data-kind="err"] {
+  --f-kind: var(--sog-err)
+}
+:is(.f-dot, .f-badge)[data-kind="accent"] {
+  --f-kind: var(--sog-accent)
+}
+.f-dot[data-kind] {
+  background: var(--f-kind)
+}
+.f-badge {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--f-kind, var(--sog-border));
+  border-radius: var(--sog-radius-s);
+  color: var(--f-kind, var(--sog-muted));
+  font-size: var(--sog-size-xs);
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle
+}
+.f-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: var(--sog-gap)
+}
+.f-tools>h1 {
+  margin: 0 auto 0 0
+}
+.f-callout {
+  border-left: 3px solid var(--sog-accent);
+  background: var(--sog-surface-2);
+  border-radius: var(--sog-radius-s);
+  padding: 8px 12px;
+  margin: 8px 0
+}
+
+/* ---- impression (le compte rendu d'abord) : encre du jour (les jeux de nuit ne valent qu'à l'écran), une colonne,
+   sans en-tête, menu, barres, boutons ni notes ; les sections repliées sont ouvertes par le cadre (beforeprint).
+   !important : l'impression doit l'emporter sur toute règle d'écran, celles des modules comprises. */
+@media print {
+  body {
+    display: block !important;
+    background: #fff !important;
+    color: #000 !important
+  }
+  .f-head,
+  .f-nav,
+  .f-notes,
+  .f-modal,
+  .f-bar,
+  .f-tabs,
+  .f-steps,
+  .f-tools button,
+  button,
+  .f-btn {
+    display: none !important
+  }
+  .f-view {
+    padding: 0 !important
+  }
+  .f-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    background: #fff !important
+  }
+  .f-cols {
+    display: block !important
+  }
+  summary::before {
+    display: none
+  }
+  input,
+  select,
+  textarea {
+    border-color: #999;
+    background: #fff
+  }
+}

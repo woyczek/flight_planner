@@ -33,27 +33,27 @@
     modules: [{
       id: 'fuel',
       label: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
-      icon: '⛽'
+      icon: 'fuel'
     }, {
       id: 'maps',
       label: ['Carte', 'Map', 'Karte', 'Mapa'],
-      icon: '⌖'
+      icon: 'map'
     }, {
       id: 'report',
       label: ['Compte rendu', 'Report', 'Bericht', 'Informe'],
-      icon: '✎'
+      icon: 'edit'
     }, {
       id: 'flightlog',
       label: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
-      icon: '☰'
+      icon: 'list'
     }, {
       id: 'website',
       label: ['Site', 'Website', 'Website', 'Sitio'],
-      icon: '⌂'
+      icon: 'globe'
     }, {
       id: 'hello',
       label: ['Essayer', 'Try', 'Ausprobieren', 'Probar'],
-      icon: '◎'
+      icon: 'target'
     }]
   };
 
@@ -310,6 +310,7 @@
     });
     usages = (await own.get('device/usages.json')) || {};
     level = levelFrom((await own.get('device/level.json'))?.level);
+    applyDesign(await own.get('device/design.json'));
     renderMenu();
     configured = await chooseTransport();
     FD.configure({
@@ -319,6 +320,52 @@
       transport: configured,
       references: configured.kind === 'local' ? referenceSource() : null
     });
+  }
+  // ---------------------------------------------------------------- design (frame/design/SPEC.md § 4)
+  // jeux de jetons (frame/design/tokens.css) ; choix de l'appareil dans device/design.json (carte Design des réglages),
+  // copié dans localStorage pour que la ligne de démarrage de frame/index.html pose les attributs avant le premier
+  // affichage
+  const DESIGNS = [{
+      id: 'standard',
+      label: ['Standard', 'Standard', 'Standard', 'Estándar'],
+      textured: false
+    }, {
+      id: 'cabinet',
+      label: ['Cabinet', 'Cabinet', 'Kabinett', 'Gabinete'],
+      textured: true
+    }, {
+      id: 'field',
+      label: ['Durci', 'Rugged', 'Robust', 'Robusto'],
+      textured: true
+    }],
+    TONES = ['auto', 'day', 'night'],
+    DESIGN_MIRROR = 'sogFrame:design';
+  let design = {
+    design: 'standard',
+    tone: 'auto'
+  };
+  /** Choix valide : design connu (standard sinon), ton auto / day / night (auto sinon). */
+  const designFrom = v => ({
+    design: DESIGNS.some(d => d.id === v?.design) ? v.design : 'standard',
+    tone: TONES.includes(v?.tone) ? v.tone : 'auto'
+  });
+  /** Pose design et ton sur <html> (seulement s'ils changent), garde le miroir et la couleur de la barre du système. */
+  function applyDesign(v) {
+    design = designFrom(v);
+    const h = document.documentElement;
+    if (h.dataset.design !== design.design) h.dataset.design = design.design;
+    if (design.tone === 'auto') {
+      if (h.hasAttribute('data-tone')) h.removeAttribute('data-tone');
+    } else if (h.dataset.tone !== design.tone) h.dataset.tone = design.tone;
+    try {
+      const text = JSON.stringify(design);
+      if (localStorage.getItem(DESIGN_MIRROR) !== text) localStorage.setItem(DESIGN_MIRROR, text);
+    } catch {
+      /* stockage indisponible : la page démarre sur le design standard puis applique celui-ci */
+    }
+    const meta = document.querySelector('meta[name="theme-color"]'),
+      bar = getComputedStyle(h).getPropertyValue('--sog-surface').trim();
+    if (meta && bar && meta.content !== bar) meta.content = bar;
   }
   /** Source en lecture seule des bases de référence (SIA, appareils) quand rien n'est échangé : le lanceur qui sert la
    *  page, sinon le dépôt GitHub réglé ; null sans l'un ni l'autre (site public : ces bases n'y sont jamais publiées). */
@@ -447,7 +494,7 @@
       key = list.map(m => m.id).join(',');
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}"><span aria-hidden="true">${esc(m.icon || '•')}</span>${esc(t(m.label))}</a></li>`).join('');
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('');
     }
     for (const a of ul.querySelectorAll('a')) {
       const on = a.dataset.id === active;
@@ -612,14 +659,58 @@
         launcherHere = await FD.launcher.detect();
         await loadDevice();
       },
-      helpPanel: () => window.SogHelp ? SogHelp.panel('settings', helpCtx()) : Promise.resolve(null)
+      helpPanel: () => window.SogHelp ? SogHelp.panel('settings', helpCtx()) : Promise.resolve(null),
+      // carte Design : jeux proposés, choix actuel, enregistrement (device/design.json, appliqué aussitôt)
+      designs: () => DESIGNS,
+      design: () => ({
+        ...design
+      }),
+      async saveDesign(v) {
+        const d = designFrom(v);
+        await own.put('device/design.json', {
+          ...d,
+          updated_at: new Date().toISOString()
+        });
+        applyDesign(d);
+      }
     });
   }
+
+  // ---------------------------------------------------------------- icônes (frame/lib/icons.js)
+  let Icons = null;
+  /** Icône au trait d'un nom (menu, en-tête) ; sans le jeu d'icônes : le nom tel quel, en caractère décoratif. */
+  const icon = name => Icons?.svg(name) || `<span aria-hidden="true">${esc(name ? '•' : '')}</span>`;
+  /** Icône d'un bouton de l'en-tête (posée au démarrage, seulement si elle change). */
+  const headIcon = (id, name) => {
+    const b = $(id),
+      html = Icons?.svg(name);
+    if (b && html && b.innerHTML !== html) b.innerHTML = html;
+  };
+
+  // ---------------------------------------------------------------- impression : sections repliées ouvertes le temps
+  // d'imprimer (réaction à l'événement, refermées ensuite)
+  let printOpened = [];
+  window.addEventListener('beforeprint', () => {
+    printOpened = [...document.querySelectorAll('#fView details:not([open])')];
+    for (const d of printOpened) d.open = true;
+  });
+  window.addEventListener('afterprint', () => {
+    for (const d of printOpened) d.open = false;
+    printOpened = [];
+  });
 
   // ---------------------------------------------------------------- démarrage
   let aerodb = null,
     configured = null; // transport branché (missing : usages d'échange sans moyen d'échange ici)
   async function boot() {
+    try {
+      Icons = await import(new URL('frame/lib/icons.js', ROOT).href);
+    } catch (e) {
+      console.warn('frame/lib/icons.js', e);
+    }
+    headIcon('fBurger', 'menu');
+    headIcon('fHelp', 'help');
+    headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
     $('fBurger').setAttribute('aria-label', t(T.menu));

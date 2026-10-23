@@ -12,7 +12,8 @@
 const CACHE = 'sog-frame-v1',
   SCOPE = new URL('./', self.location).pathname, // …/frame/
   ROOT = new URL('../', self.location).pathname, // racine de la suite
-  SHELL = ['./', 'app.js', 'frame.css', 'manifest.webmanifest', 'store/frame_data.js', 'store/transport_github.js',
+  SHELL = ['./', 'app.js', 'frame.css', 'design/tokens.css', 'design/primitives.css', 'lib/icons.js', 'manifest.webmanifest',
+    'store/frame_data.js', 'store/transport_github.js',
     'store/transport_launcher.js', 'aerodb/zones.js', 'aerodb/aircraft.js', 'aerodb/aerodb.js', 'settings/settings.js', 'lib/markdown.js',
     'help/help.js',
     'help/pilot.fr.md', 'help/pilot.en.md', 'help/pilot.de.md', 'help/pilot.es.md',

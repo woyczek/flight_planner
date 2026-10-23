@@ -1,37 +1,9 @@
-/* V3 frame — jetons de l'interface (les modules s'en servent, ils ne chargent aucune feuille globale) et mise en page de
-   l'appli : en-tête (menu sur téléphone, nom, bouton de synchronisation, appareil), colonne des verbes (à gauche sur
-   écran, tiroir sur téléphone), vue du module. Thème sombre suivi. */
-:root {
-  --sog-bg: #f5f6f8;
-  --sog-surface: #fff;
-  --sog-fg: #17202a;
-  --sog-muted: #5b6670;
-  --sog-border: #d9dee4;
-  --sog-accent: #1d6fd8;
-  --sog-accent-ink: #fff;
-  --sog-ok: #1e7d32;
-  --sog-warn: #9a5b00;
-  --sog-err: #b3261e;
-  --sog-radius: 6px;
-  --sog-gap: 12px;
-  --sog-touch: 44px;
-  --sog-font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light dark
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --sog-bg: #121519;
-    --sog-surface: #1c2127;
-    --sog-fg: #e7ebef;
-    --sog-muted: #9aa5b0;
-    --sog-border: #2f363e;
-    --sog-accent: #5aa2ff;
-    --sog-accent-ink: #0b1220;
-    --sog-ok: #6ccf7a;
-    --sog-warn: #e0a33b;
-    --sog-err: #ff8a80
-  }
-}
+/* V3 frame — mise en page de l'appli : en-tête (menu sur téléphone, nom, bouton de synchronisation, aide, réglages),
+   colonne des verbes (à gauche sur écran, tiroir sur téléphone), vue du module, notes et fenêtres du cadre. Les jetons
+   (couleurs, polices, rayons, densité ; designs standard, cabinet, field ; jour / nuit) et les primitives données aux
+   modules viennent de frame/design/ (importés ici : une page qui charge frame.css a tout). */
+@import url("design/tokens.css");
+@import url("design/primitives.css");
 * {
   box-sizing: border-box
 }
@@ -41,42 +13,10 @@ body {
   height: 100%
 }
 body {
-  font: var(--sog-font);
-  background: var(--sog-bg);
-  color: var(--sog-fg);
   display: grid;
   grid-template-rows: auto 1fr;
   grid-template-columns: 210px 1fr;
   grid-template-areas: "head head" "nav main"
-}
-button,
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit
-}
-button {
-  min-height: var(--sog-touch);
-  padding: 0 14px;
-  border: 1px solid var(--sog-border);
-  border-radius: var(--sog-radius);
-  background: var(--sog-surface);
-  cursor: pointer
-}
-button.primary {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink);
-  border-color: var(--sog-accent)
-}
-input,
-select,
-textarea {
-  min-height: var(--sog-touch);
-  padding: 6px 10px;
-  border: 1px solid var(--sog-border);
-  border-radius: var(--sog-radius);
-  background: var(--sog-surface)
 }
 .f-head {
   grid-area: head;
@@ -92,7 +32,24 @@ textarea {
 }
 .f-head .f-name {
   font-weight: 700;
-  margin-right: auto
+  margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+/* boutons à icône de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible */
+.f-head button:not(.f-sync) {
+  width: var(--sog-touch);
+  padding: 0;
+  flex: none
+}
+.f-sync {
+  min-width: 0;
+  max-width: 50vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
 }
 .f-burger {
   display: none
@@ -115,13 +72,8 @@ textarea {
 .f-sync[data-state="local"] .f-dot {
   background: var(--sog-muted)
 }
-.f-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 8px;
-  vertical-align: middle
+.f-sync .f-dot {
+  margin-right: 8px
 }
 @keyframes f-pulse {
   to {
@@ -160,64 +112,7 @@ textarea {
   padding: 16px;
   min-width: 0
 }
-.f-card {
-  background: var(--sog-surface);
-  border: 1px solid var(--sog-border);
-  border-radius: var(--sog-radius);
-  padding: 12px 14px;
-  margin-bottom: var(--sog-gap)
-}
-.f-muted {
-  color: var(--sog-muted);
-  font-size: .9em
-}
-.f-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center
-}
-.f-field {
-  display: grid;
-  gap: 4px;
-  margin: 8px 0
-}
-.f-check {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  min-height: var(--sog-touch)
-}
-.f-check input {
-  min-height: 0;
-  width: 20px;
-  height: 20px
-}
-.f-card pre {
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 12px;
-  max-height: 260px;
-  overflow: auto;
-  background: var(--sog-bg);
-  padding: 8px;
-  border-radius: var(--sog-radius)
-}
-/* réglages (frame/settings/settings.js) : liste terme / valeur, message d'une carte, avertissement */
-.f-dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
-  margin: 8px 0
-}
-.f-dl dt {
-  color: var(--sog-muted)
-}
-.f-dl dd {
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere
-}
+/* réglages (frame/settings/settings.js) : zones hors ligne, choix du niveau */
 .f-zone {
   display: flex;
   flex-wrap: wrap;
@@ -306,26 +201,6 @@ textarea {
     color: var(--sog-muted)
   }
 }
-.f-msg:empty {
-  display: none
-}
-.f-msg[data-kind="ok"] {
-  color: var(--sog-ok)
-}
-.f-msg[data-kind="warn"],
-.f-warn {
-  color: var(--sog-warn)
-}
-.f-msg[data-kind="err"] {
-  color: var(--sog-err)
-}
-.f-card input {
-  width: 100%;
-  box-sizing: border-box
-}
-.f-card .f-check input {
-  width: 20px
-}
 /* notifications flottantes et fenêtres de question (jamais de dialogue natif) */
 .f-notes {
   position: fixed;
@@ -345,21 +220,24 @@ textarea {
   border-radius: var(--sog-radius);
   background: var(--sog-fg);
   color: var(--sog-bg);
-  box-shadow: 0 4px 16px #0004
+  box-shadow: var(--sog-shadow)
 }
 .f-note[data-kind="err"] {
   background: var(--sog-err);
-  color: #fff
+  color: var(--sog-on-status)
 }
 .f-note[data-kind="warn"] {
   background: var(--sog-warn);
-  color: #fff
+  color: var(--sog-on-status)
 }
 .f-note span {
   flex: 1
 }
+.f-note {
+  align-items: center
+}
 .f-note button {
-  min-height: 28px;
+  min-width: var(--sog-touch);
   padding: 0 8px;
   background: transparent;
   border-color: transparent;
@@ -368,7 +246,7 @@ textarea {
 .f-modal {
   position: fixed;
   inset: 0;
-  background: #0007;
+  background: var(--sog-veil);
   display: grid;
   place-items: center;
   z-index: 30;
@@ -376,6 +254,7 @@ textarea {
 }
 .f-modal>div {
   background: var(--sog-surface);
+  box-shadow: var(--sog-shadow);
   border-radius: var(--sog-radius);
   padding: 16px;
   width: min(480px, 100%);
