@@ -91,8 +91,8 @@ One record per pilot, read and written by fuel and maps (the same flight in both
   of climb (`tocNm`) and from the top of descent to arrival (`todNm`) — the quote's own climb and descent, so the four
   values close the profile at the level. The "top of descent" shown in fuel's result is the gradient rule (level ÷
   gradient + buffer), not `todNm`. Maps draws the vertical profile from it and computes its own when it is missing.
-- `weather` (fuel's): `{ when (flight date, device time, optional), mid (intermediate aerodrome), real (wind from the
-  aerodromes' weather) }`; `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
+- `weather` (fuel's): `{ when (flight date, device time, optional), real (wind from the aerodromes' weather) }` (`mid`,
+  the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
 - `aircraft` (fuel's, from `aircraft().aircraftOf(hit)`): `{ sheetId, type, registration, callsign, name, source }`
   (`source`: `sheet`, `fleet`, `reference`, `type`, `free`); report takes the registration and the callsign.
@@ -103,7 +103,7 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`
 
 `{ "schema": 1, "updated_at", "taxiMin": 10, "reserveMin": 30, "contingencyPct": 5, "displayUnit": "kg",
-"displaySpeed": "kt", "displayAlt": "ft", "displayDist": "NM", "goal": "prof", "isaDev": 0,
+"displaySpeed": "kt", "displayAlt": "ft", "displayDist": "NM", "goal": "prof", "isaDev": 0, "wxRadiusNm": 10,
 "entries": { "<sheetId>": <cruise kg/h for this flight> } }` (record). `isaDev` is the last ISA deviation chosen (typed
 or taken from the departure METAR); a current flight without `isaDev` starts from it. The three `display…` fields are screen
 settings (`kt` | `kmh`, `ft` | `m`, `NM` | `km` | `SM`; absent or unknown: the model's unit); they never change a value

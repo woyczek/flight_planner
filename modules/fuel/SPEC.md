@@ -87,8 +87,12 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 ## 10. Aerodrome weather (`modules/fuel/weather.js`)
 
 - **Source**: aviationweather.gov, `api/data/metar` and `api/data/taf` (`ids=<ICAO,…>&format=json`), through
-  `ctx.net` (relayed by the launcher: the service has no CORS); the stations are the departure, an optional
-  intermediate aerodrome and the arrival. The last answers are kept on the device (`cache/fuel/weather.json`) and shown,
+  `ctx.net` (relayed by the launcher: the service has no CORS), 40 stations per call; the stations are the departure,
+  the aerodromes of the route's corridor, the arrival and the alternate. **Corridor** (23 Oct 2026, replaces the
+  "intermediate aerodrome" field): aerodb `aerodromes({ bbox })` of each leg's box widened by the radius of the quote
+  settings (`wxRadiusNm`, default 10 NM, 0 to 50), kept within that radius of the route (projection on the nearest leg,
+  local plane), departure and arrival excluded, sorted by distance along the route; recomputed when the points or the
+  radius change. A corridor aerodrome without METAR or TAF is ignored. The last answers are kept on the device (`cache/fuel/weather.json`) and shown,
   with their time, when the network cannot be reached.
 - **Which message**: with a flight date (optional, device time) inside the TAF's validity, the TAF: its base group
   (last group without change, BECMG or FM covering the time) and its temporary groups (TEMPO, PROB) covering it;
@@ -98,8 +102,11 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   crosswind components on the main runway's end closest to the wind (aerodb aerodrome `bearing`, true; runway number
   from `bearing − magVar`), ceiling (lowest BKN / OVC, else vertical visibility), visibility in km ("≥ 10 km" for
   6+ SM), temperature and QNH, weather, temporary groups, a warning for CB / TCU, the raw message folded.
-- **Real weather** (box): the quote's wind becomes the average of the aerodromes' wind vectors along the route, each
-  segment (departure → intermediate → arrival) the mean of its two ends, weighted by its length; its source is written
+- **Card**: departure, arrival, alternate, then the corridor aerodromes (folded under "n aerodromes along the route"
+  when more than two); each line gives its distance from departure (the alternate: from arrival).
+- **Real weather** (box): the quote's wind becomes the average of the wind vectors of the departure, the corridor
+  aerodromes and the arrival that have a wind, each segment between two of them the mean of its two ends, weighted by
+  its length along the route (at least two aerodromes, else said); its source is written
   under the wind fields. Typing a wind unticks it. Surface wind as a stand-in for the wind at the level: an
   approximation, said as such.
 

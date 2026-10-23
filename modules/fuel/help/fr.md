@@ -42,13 +42,17 @@ atteint son plafond ce jour-là (droite en gras). Un point marque le départ d�
 Important pour les hélicoptères : par forte chaleur ou en altitude, le plafond réel peut tomber bien sous celui de la
 fiche.
 
-**La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche, pour le départ, l'arrivée et un terrain
-intermédiaire facultatif, ce qui compte pour le vol : la catégorie (VFR, MVFR, IFR, LIFR, en couleur), le vent et ses
+**La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche le départ, l'arrivée, le dégagement et
+les terrains le long de la route : tous ceux à moins de 10 NM de part et d'autre de la route (rayon réglable dans les
+réglages du devis) qui ont un METAR ou un TAF ; les autres sont ignorés. Chaque terrain dit sa distance depuis le
+départ (le dégagement, depuis l'arrivée) ; au-delà de deux, les terrains intermédiaires sont repliés sous le départ,
+l'arrivée et le dégagement. Pour chacun, ce qui compte pour le vol : la catégorie (VFR, MVFR, IFR, LIFR, en couleur), le vent et ses
 composantes de face et de travers sur la piste principale du terrain (le sens le plus proche du vent), le plafond, la
 visibilité, la température et le QNH, et un avertissement quand des CB ou des TCU sont annoncés ; le message brut est
 replié. Avec une date de vol, c'est le TAF qui répond s'il couvre cette heure (et ses passages temporaires), sinon le
-METAR. Cochez « Météo réelle » pour que le vent du devis devienne la moyenne des vents des terrains le long de la route —
-une approximation à partir du vent au sol, dite sous les champs. Hors réseau, les dernières valeurs lues restent
+METAR. Cochez « Météo réelle » pour que le vent du devis devienne la moyenne des vents des terrains de la route
+(départ, terrains intermédiaires, arrivée), tronçon par tronçon et pondérée par leur longueur — une approximation à
+partir du vent au sol, dite sous les champs. Hors réseau, les dernières valeurs lues restent
 affichées avec leur heure.
 
 **La décision du niveau.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée

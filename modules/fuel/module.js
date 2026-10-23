@@ -209,7 +209,16 @@ const TX = {
   wxDate: ['Date du vol (facultatif : TAF)', 'Flight date (optional: TAF)', 'Flugdatum (optional: TAF)',
     'Fecha del vuelo (opcional: TAF)'
   ],
-  wxMid: ['Terrain intermédiaire', 'Intermediate aerodrome', 'Zwischenflugplatz', 'Aeródromo intermedio'],
+  wxMids: ['{n} terrains le long de la route', '{n} aerodromes along the route', '{n} Flugplätze entlang der Route',
+    '{n} aeródromos a lo largo de la ruta'
+  ],
+  wxAlong: ['à {d} du départ', '{d} from departure', '{d} nach dem Abflug', 'a {d} de la salida'],
+  wxAltnAt: ['dégagement, à {d} de l’arrivée', 'alternate, {d} from arrival', 'Ausweich, {d} von der Ankunft',
+    'alternativo, a {d} de la llegada'
+  ],
+  wxRadius: ['Couloir météo (NM de part et d’autre)', 'Weather corridor (NM each side)', 'Wetterkorridor (NM je Seite)',
+    'Corredor meteorológico (NM a cada lado)'
+  ],
   wxReal: ['Météo réelle : vent le long de la route', 'Real weather: wind along the route', 'Echtes Wetter: Wind entlang der Route',
     'Meteorología real: viento a lo largo de la ruta'
   ],
@@ -258,8 +267,10 @@ const TX = {
     'Wind: Mittel von {l} entlang der Route (Bodenwind, Näherung).',
     'Viento: media de {l} a lo largo de la ruta (viento en superficie, aproximación).'
   ],
-  wxMissing: ['Vent non calculé : il manque le vent d’un terrain.', 'Wind not computed: an aerodrome’s wind is missing.',
-    'Wind nicht berechnet: der Wind eines Flugplatzes fehlt.', 'Viento no calculado: falta el viento de un aeródromo.'
+  wxMissing: ['Vent non calculé : il faut le vent d’au moins deux terrains de la route.',
+    'Wind not computed: it needs the wind of at least two aerodromes on the route.',
+    'Wind nicht berechnet: es braucht den Wind von mindestens zwei Flugplätzen der Route.',
+    'Viento no calculado: hace falta el viento de al menos dos aeródromos de la ruta.'
   ],
   isaHint: ['ISA {d} d’après le METAR {id} ({t} °C à {e} ft).', 'ISA {d} from the {id} METAR ({t} °C at {e} ft).',
     'ISA {d} laut METAR {id} ({t} °C auf {e} ft).', 'ISA {d} según el METAR {id} ({t} °C a {e} ft).'
@@ -985,7 +996,7 @@ function renderPlan() {
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
       <p class="f-muted" data-windsrc></p>
       <div class="f-row" data-isahint></div>
-      <div class="f-grid fu-g3">${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}${fld('wxmid', TX.wxMid, f.weather?.mid || '', 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      <div class="f-grid fu-g3">${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}</div>
       <label class="f-check"><input type="checkbox" data-k="wxreal"${f.weather?.real ? ' checked' : ''}>${esc(tt(TX.wxReal))}</label>
       <div class="f-row"><button type="button" data-do="wx">${esc(tt(TX.wxRead))}</button></div>
       <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
@@ -999,7 +1010,7 @@ function renderPlan() {
   <details class="f-card" data-fold="details"><summary>${esc(tt(TX.details))}</summary><div data-details></div></details>
   <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
   <details class="f-card" data-fold="settings"><summary>${esc(tt(TX.settings))}</summary>
-    <div class="f-grid fu-g3">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}
+    <div class="f-grid fu-g3">${fld('taxiMin', TX.taxiMin, S.settings.taxiMin, 'inputmode="numeric"')}${fld('reserveMin', TX.reserveMin, S.settings.reserveMin, 'inputmode="numeric"')}${fld('contPct', TX.contPct, S.settings.contingencyPct, 'inputmode="decimal"')}${fld('wxRadius', TX.wxRadius, S.settings.wxRadiusNm ?? 10, 'inputmode="numeric"')}
     </div>
     <p class="f-muted" style="margin:8px 0 4px">${esc(tt(TX.units))}</p>
     <div class="f-grid fu-g3" data-units>
@@ -1110,13 +1121,6 @@ function onPlanInput(e) {
       renderWx();
       if (f.weather.real) applyRealWind();
       break;
-    case 'wxmid':
-      f.weather = {
-        ...f.weather,
-        mid: v.trim().toUpperCase()
-      };
-      scheduleWx();
-      break;
     case 'wxreal':
       f.weather = {
         ...f.weather,
@@ -1148,6 +1152,10 @@ function onPlanInput(e) {
       };
       return refresh();
     }
+    case 'wxRadius':
+      S.settings.wxRadiusNm = Math.max(0, Math.min(50, num(v) ?? 10));
+      saveSettings();
+      return scheduleWx();
     case 'taxiMin':
     case 'reserveMin':
       S.settings[k] = num(v) ?? 0;
@@ -1223,10 +1231,88 @@ function onPlanClick(e) {
 // ---------------------------------------------------------------- météo des terrains (aviationweather.gov)
 /** Terrains de la météo, dans l'ordre de la route : départ, intermédiaire, arrivée (codes OACI, sans doublon). */
 const wxIds = () => {
-  const f = S.flight,
-    r = f.route || {};
-  return [...new Set([r.dep, f.weather?.mid, r.arr].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z]{4}$/.test(x)))];
+  const r = S.flight.route || {},
+    corr = S.wxCorr?.list?.map(x => x.id) || [];
+  return [...new Set([r.dep, ...corr, r.arr, r.altn].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z]{4}$/.test(x)))];
 };
+/** Position d'un point le long de la route (polyligne de points { lat, lon }) : { along (NM depuis le départ), cross
+ *  (NM de la route) }, par projection sur le tronçon le plus proche (plan local, assez juste à l'échelle du couloir). */
+function alongRoute(pts, p) {
+  let best = null,
+    cum = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1],
+      b = pts[i],
+      k = Math.cos(a.lat * Math.PI / 180) * 60,
+      bx = (b.lon - a.lon) * k,
+      by = (b.lat - a.lat) * 60,
+      px = (p.lon - a.lon) * k,
+      py = (p.lat - a.lat) * 60,
+      l2 = bx * bx + by * by,
+      t = l2 > 0 ? Math.max(0, Math.min(1, (px * bx + py * by) / l2)) : 0,
+      cross = Math.hypot(px - t * bx, py - t * by),
+      len = gcNm(a, b);
+    if (!best || cross < best.cross) best = {
+      along: cum + t * len,
+      cross
+    };
+    cum += len;
+  }
+  return best;
+}
+/** Terrains du couloir de la route : aerodromes d'aerodb dans l'emprise de chaque tronçon élargie du rayon des réglages
+ *  (10 NM par défaut), gardés à ce rayon de la route, départ et arrivée exclus, triés le long de la route. Gardé tant que
+ *  la route et le rayon ne changent pas ; ceux sans METAR ni TAF sont écartés à l'affichage et pour le vent. */
+async function wxCorridor() {
+  const r = S.flight.route || {},
+    radius = Math.max(0, +(S.settings.wxRadiusNm ?? 10) || 0),
+    pts = (r.points || []).filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon)),
+    key = JSON.stringify([pts.map(p => [p.id, p.lat, p.lon]), radius, r.dep, r.arr]);
+  if (S.wxCorr?.key === key && S.wxCorr.list.length) return S.wxCorr; // vide : relu (base pas encore chargée)
+  const out = {
+    key,
+    list: [],
+    pts
+  };
+  if (pts.length >= 2 && radius > 0 && S.ctx.aerodb?.aerodromes) {
+    const seen = new Map(),
+      dLat = radius / 60;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1],
+        b = pts[i],
+        dLon = radius / (60 * Math.max(.1, Math.cos(Math.max(Math.abs(a.lat), Math.abs(b.lat)) * Math.PI / 180))),
+        bbox = [Math.min(a.lon, b.lon) - dLon, Math.min(a.lat, b.lat) - dLat, Math.max(a.lon, b.lon) + dLon, Math.max(a.lat, b.lat) +
+          dLat
+        ];
+      for (const ad of (await S.ctx.aerodb.aerodromes({
+          bbox
+        }).catch(() => null)) || []) {
+        const id = String(ad?.icao || '').toUpperCase();
+        if (/^[A-Z]{4}$/.test(id) && Number.isFinite(+ad.lat) && Number.isFinite(+ad.lon)) seen.set(id, ad);
+      }
+    }
+    for (const [id, ad] of seen) {
+      if (id === r.dep || id === r.arr) continue;
+      const pos = alongRoute(pts, {
+        lat: +ad.lat,
+        lon: +ad.lon
+      });
+      if (pos && pos.cross <= radius) {
+        out.list.push({
+          id,
+          ad,
+          ...pos
+        });
+        S.wxAd = {
+          ...S.wxAd,
+          [id]: ad
+        };
+      }
+    }
+    out.list.sort((x, y) => x.along - y.along);
+  }
+  return S.wxCorr = out;
+}
 /** Relit la météo un peu après un changement de terrain, si elle a déjà été lue ou si la météo réelle est cochée. */
 function scheduleWx() {
   clearTimeout(S.wxTimer);
@@ -1237,13 +1323,16 @@ function scheduleWx() {
  *  réseau, les dernières valeurs gardées, avec leur heure. Fiche des terrains (axe de piste) par aerodb. loud : les
  *  refus sont dits. */
 async function wxFetch(loud = false) {
+  await wxCorridor();
   const ids = wxIds();
   if (!ids.length) {
     if (loud) S.ctx.notify(tt(TX.wxNone), 'warn');
     return renderWx();
   }
-  const q = encodeURIComponent(ids.join(',')),
-    get = async kind => {
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += 40) chunks.push(encodeURIComponent(ids.slice(i, i + 40).join(',')));
+  const get = async kind => (await Promise.all(chunks.map(q => getOne(kind, q)))).flat(),
+    getOne = async (kind, q) => {
       const res = await S.ctx.net.fetch(`https://aviationweather.gov/api/data/${kind}?ids=${q}&format=json`, {
         headers: {
           accept: 'application/json'
@@ -1301,11 +1390,28 @@ const wxWhen = () => {
   return Number.isFinite(t) ? Math.round(t / 1000) : null;
 };
 /** Résumés des terrains (METAR, ou TAF si la date du vol tombe dans sa validité). */
-const wxStations = () => wxIds().map(id => ({
-  id,
-  ad: S.wxAd?.[id] || null,
-  st: WX.station(S.wx?.metar?.[id], S.wx?.taf?.[id], wxWhen())
-}));
+const wxStations = () => {
+  const r = S.flight.route || {},
+    corr = new Map((S.wxCorr?.list || []).map(x => [x.id, x])),
+    pts = S.wxCorr?.pts || [],
+    total = pts.length >= 2 ? pts.slice(1).reduce((t, p, i) => t + gcNm(pts[i], p), 0) : null;
+  return wxIds().map(id => {
+    const ad = S.wxAd?.[id] || null,
+      role = id === r.dep ? 'dep' : id === r.arr ? 'arr' : id === r.altn && !corr.has(id) ? 'altn' : 'mid',
+      along = role === 'dep' ? 0 : role === 'arr' ? total : corr.get(id)?.along ?? null;
+    return {
+      id,
+      ad,
+      role,
+      along,
+      fromArr: role === 'altn' && ad && pts.length ? gcNm(pts.at(-1), {
+        lat: +ad.lat,
+        lon: +ad.lon
+      }) : null,
+      st: WX.station(S.wx?.metar?.[id], S.wx?.taf?.[id], wxWhen())
+    };
+  }).filter(x => x.st || x.role !== 'mid'); // terrain du couloir sans METAR ni TAF : ignoré
+};
 /** Carte météo : pour chaque terrain, catégorie de vol en couleur, vent et composantes sur la piste la plus proche du
  *  vent, plafond, visibilité, température et QNH, CB / TCU en avertissement, groupes temporaires du TAF, message brut
  *  replié ; hors réseau, l'heure des valeurs. */
@@ -1322,14 +1428,20 @@ function renderWx() {
     hhmm = s => s ? new Date(s * 1000).toISOString().slice(11, 16) + 'Z' : '',
     vis = v => !v ? '—' : v.plus && v.sm >= 6 ? '≥ 10 km' : `${(v.sm * 1.609).toFixed(v.sm < 3 ? 1 : 0)} km`,
     wind = (d, sp, g) => sp == null ? '—' : `${d == null ? '—' : typeof d === 'number' ? `${String(d).padStart(3, '0')}°` : d} ${sp} kt${g ? ` G${g}` : ''}`;
-  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: new Date(S.wx.at).toLocaleString(S.ctx.lang()) }))}</p>` : '') + wxStations().map(({
-    id,
-    ad,
-    st
-  }) => {
-    if (!st) return `<div class="f-item"><span><b>${esc(id)}</b> <span class="f-muted">${esc(tt(TX.wxNoData))}</span></span></div>`;
-    const rw = ad ? WX.runwayWind(ad.bearing, ad.magVar, st.wdir, st.wspd) : null;
-    return `<div class="fu-wx"><div class="f-row"><b>${esc(id)}</b><span class="f-muted">${esc(ad?.name || '')} · ${esc(st.source)} ${esc(hhmm(st.at))}</span>${st.cat ? `<span class="f-badge" data-kind="${kinds[st.cat] || 'accent'}">${esc(st.cat)}</span>` : ''}</div>
+  const where = x => x.role === 'altn' ? x.fromArr != null ? tt(TX.wxAltnAt, {
+      d: distTxt(x.fromArr)
+    }) : '' : x.role !== 'dep' && x.along != null ? tt(TX.wxAlong, {
+      d: distTxt(x.along)
+    }) : '',
+    card = x => {
+      const {
+        id,
+        ad,
+        st
+      } = x;
+      if (!st) return `<div class="f-item"><span><b>${esc(id)}</b> <span class="f-muted">${esc([where(x), tt(TX.wxNoData)].filter(Boolean).join(' · '))}</span></span></div>`;
+      const rw = ad ? WX.runwayWind(ad.bearing, ad.magVar, st.wdir, st.wspd) : null;
+      return `<div class="fu-wx"><div class="f-row"><b>${esc(id)}</b><span class="f-muted">${esc([ad?.name, where(x), `${st.source} ${hhmm(st.at)}`].filter(Boolean).join(' · '))}</span>${st.cat ? `<span class="f-badge" data-kind="${kinds[st.cat] || 'accent'}">${esc(st.cat)}</span>` : ''}</div>
       <dl class="f-dl"><dt>${esc(tt(TX.wxWind))}</dt><dd>${esc(wind(st.wdir, st.wspd, st.wgst))}</dd>
       ${rw ? `<dt>${esc(tt(TX.wxRwy, { r: rw.ident }))}</dt><dd>${esc(tt(TX.wxComp, { h: Math.abs(rw.head), hw: tt(rw.head >= 0 ? TX.wxHead : TX.wxTail), c: rw.cross, s: tt(rw.side === 'L' ? TX.wxLeft : TX.wxRight) }))} <span class="f-muted">(${esc(tt(TX.wxRwyHint))})</span></dd>` : ''}
       <dt>${esc(tt(TX.wxCeil))}</dt><dd>${st.ceil != null ? `${st.ceil.toLocaleString(S.ctx.lang())} ft` : esc(tt(TX.wxNoCeil))}${st.wx ? ` · ${esc(st.wx)}` : ''}</dd>
@@ -1338,18 +1450,22 @@ function renderWx() {
       ${st.tempo.map(g => `<dt>${esc(g.change)}</dt><dd>${esc(wind(g.wdir, g.wspd, g.wgst))} · ${esc(vis(g.vis))}${g.ceil != null ? ` · ${g.ceil} ft` : ''}${g.wx ? ` · ${esc(g.wx)}` : ''}${g.cat ? ` <span class="f-badge" data-kind="${kinds[g.cat] || 'accent'}">${esc(g.cat)}</span>` : ''}</dd>`).join('')}</dl>
       ${st.convective ? `<p class="f-warn">${esc(tt(TX.wxCb))}</p>` : ''}
       <details><summary>${esc(tt(TX.wxRaw))}</summary><pre>${esc(st.raw)}</pre></details></div>`;
-  }).join('');
+    },
+    all = wxStations(),
+    ends = all.filter(x => x.role !== 'mid'),
+    mids = all.filter(x => x.role === 'mid');
+  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: new Date(S.wx.at).toLocaleString(S.ctx.lang()) }))}</p>` : '') + ends.map(card).join('') +
+    (mids.length > 2 ? `<details data-wxmids${S.ui.wxMidsOpen ? ' open' : ''}><summary>${esc(tt(TX.wxMids, { n: mids.length }))}</summary>${mids.map(card).join('')}</details>` : mids.map(card).join(''));
+  const det = box.querySelector('[data-wxmids]');
+  if (det) det.ontoggle = () => S.ui.wxMidsOpen = det.open;
 }
 /** « Météo réelle » : vent moyen des terrains le long de la route (frame : moyenne des vecteurs pondérée par les
  *  segments départ → intermédiaire → arrivée), écrit dans le vol courant avec sa source. */
 function applyRealWind() {
-  const list = wxStations().filter(x => x.st),
-    pos = list.map(x => x.ad && Number.isFinite(+x.ad.lat) ? {
-      lat: +x.ad.lat,
-      lon: +x.ad.lon
-    } : null),
-    legs = list.slice(1).map((x, i) => pos[i] && pos[i + 1] ? gcNm(pos[i], pos[i + 1]) : 1),
-    w = list.length === wxIds().length ? WX.routeWind(list.map(x => x.st), legs) : null,
+  const list = wxStations().filter(x => x.role !== 'altn' && x.st && x.along != null && Number.isFinite(+x.st.wdir) && Number.isFinite(+x.st
+      .wspd)),
+    legs = list.slice(1).map((x, i) => Math.max(0, x.along - list[i].along)),
+    w = list.length >= 2 ? WX.routeWind(list.map(x => x.st), legs) : null,
     f = S.flight;
   if (!w) {
     f.windSource = null;
@@ -1593,6 +1709,7 @@ function routeEdited(redraw = true) {
   if (redraw) renderPts();
   saveFlight();
   refresh();
+  scheduleWx();
 }
 /** Actions de la liste : monter, descendre, retirer un point, ajouter (identifiant cherché dans aerodb, ou « ID lat
  *  lon ») avant l'arrivée. */
@@ -1654,6 +1771,7 @@ function resolveRoute() {
     r.points = points;
     routeDerived(r);
     renderPts();
+    scheduleWx();
     S.body.querySelector('[data-unres]').textContent = unresolved.length ? tt(TX.unresolved, {
       l: unresolved.join(', ')
     }) : '';

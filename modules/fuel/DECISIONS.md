@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — weather along the route's corridor** (user's correction through the ergonomics session): no more
+  "intermediate aerodrome" field — the first feedback found it too big, the correction removed it. The aerodromes come
+  from the route: aerodb's aerodromes by leg box widened by a radius (quote settings, 10 NM), filtered by their
+  distance to the route, sorted along it; those without a report are dropped from the card and the wind. The real
+  wind averages, leg by leg, every aerodrome that has one (two at least), no longer requiring all of them. Calls go by
+  40 stations. An empty corridor is not kept (aerodb may not have loaded the area yet). Checked at 375 px on 8793 with
+  aerodb's aerodromes and the METAR mocked: route LFLS → LUGEN → LFMN, 10 NM: LFNC, LFNA, LFNS kept and folded, LFMX
+  (no METAR) dropped, LFLE (off the corridor) out; wind from the five; a 3 NM radius redid the corridor.
 - **23 Oct 2026 — lot C, editable route points and steps** (asked through the ergonomics session): the points become a
   list (up, down, remove, add); the level is one optional field per intermediate point, read as "from this point on"
   (as an OFP or an item 15 writes it, and as maps' missions use `route_points.alt_ft`); first and last points never

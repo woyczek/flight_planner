@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: weather along the route's corridor** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`,
+  `help/fr.md`) — the "intermediate aerodrome" field is gone: every aerodrome within a settable distance of the route
+  (10 NM by default) that reports a METAR or TAF is shown with its distance along the route, folded beyond two, and
+  the real wind averages them leg by leg.
 - **Frame, lot 11: back to the module you came from** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) — a
   module opened from another (the Map's "Edit the route", "Write the report" of My flights, `?from=`) shows
   "← <that module>" in the header, which goes back to the same place.
