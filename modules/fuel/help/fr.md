@@ -111,13 +111,14 @@ paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » lance 
 repoussage, roulage…). La préparation peut dater de plusieurs jours : il commence donc par tout refaire à l'heure
 réelle — la date du vol revient à maintenant, la météo des terrains et les vents en altitude sont relus, le devis
 refait — et dit en une ligne ce qui a changé (« vent 273°/35 kt → 284°/44 kt · bloc 684 → 644 kg · arrivée prévue
-17:03 ») ; hors ligne, il le dit et démarre avec le dernier devis. Il note ensuite l'heure de départ, qui devient la
+15:03Z (17:03) ») ; hors ligne, il le dit et démarre avec le dernier devis. Il note ensuite l'heure de départ, qui devient la
 mise en route du compte rendu. Sur un téléphone il ouvre la Carte, sur un grand écran il reste ici avec la Carte à
 droite.
 Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
 après le départ est un déroutement : l'heure est gardée et le déroutement noté.
 
-Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 13:14 · depuis 1 h 10 ». Un vol démarré se
+Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 11:14Z (13:14) · depuis 1 h 10 ». Les heures sont en UTC (« Z ») ;
+l'heure de l'appareil s'ajoute entre parenthèses au départ, au décollage et à l'arrivée prévus. Un vol démarré se
 termine en écrivant son compte rendu : à l'enregistrement, Carburant revient en préparation et Mes vols retire « en
 cours ». Pour revenir en préparation sans compte rendu, « Annuler le départ » (après confirmation). La carte « Progression prévue » montre
 où le vol devrait en être, en théorie : l'heure prévue de passage à chaque point (roulage, montée, croisière tronçon par

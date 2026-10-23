@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: times in UTC** (`modules/fuel/module.js`; DECISIONS, help ×4) — "16:57Z", with the device's time in
+  brackets at the departure, the planned take-off and the planned arrival.
 - **Map: times from `frame/lib/time.js`** (`modules/maps/module.js`; SPEC, help ×4) — ETA, planned position and wind
   forecasts in UTC ("14:52Z"), the local time in brackets beside departure and arrival only.
 - **Map: lighter installation, started flight** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS) — the country

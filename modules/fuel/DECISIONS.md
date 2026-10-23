@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — times in UTC** (suite rule, Simplification's decision (c), `frame/lib/time.js` of frame lot 22):
+  every time fuel shows is UTC with "Z" (`fmtZ`): the planned times of the route points, the taxi end, the forecast
+  aloft ("for 17:00Z (12:00Z run), read on 23/10/2026 16:57Z"), the cached weather; the device's time in brackets
+  only at the departure ("Flight started at 16:57Z (18:57)", the cancel question), the planned take-off (first
+  point) and the planned arrival (last point, the start note) (`fmtZLocal`). The flight date field stays a
+  `datetime-local` (device time), like the browser's picker. Checked on 8804.
 - **23 Oct 2026 — no default aircraft; the last chosen is taken again** (end-to-end pass, Simplification's
   decision (a)): an empty flight took the first sheet of the list (King Air 350) before the pilot chose anything.
   `currentSheet` no longer falls back on it: the quote stays empty until a choice. Every choice is kept on the

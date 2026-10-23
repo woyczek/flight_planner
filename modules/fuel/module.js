@@ -24,6 +24,11 @@ import {
 import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import {
+  fmtZ,
+  fmtZLocal,
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »), l'heure locale seulement au départ et à l'arrivée
 
 export const meta = {
   id: 'fuel',
@@ -42,7 +47,8 @@ export const meta = {
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/metar.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js',
-    '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js'
+    '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
+    '../../frame/lib/time.js'
   ]
 };
 
@@ -310,9 +316,9 @@ const TX = {
     'Abflug und Ankunft als ICAO-Codes, dann „Flugplatzwetter lesen“.',
     'Salida y llegada en códigos OACI, luego «Leer la meteorología de los aeródromos».'
   ],
-  wxCached: ['Hors réseau : dernières valeurs lues à {t}.', 'No network: last values read at {t}.',
-    'Kein Netz: zuletzt gelesene Werte um {t}.',
-    'Sin red: últimos valores leídos a las {t}.'
+  wxCached: ['Hors réseau : dernières valeurs lues le {t}.', 'No network: last values read on {t}.',
+    'Kein Netz: zuletzt gelesene Werte am {t}.',
+    'Sin red: últimos valores leídos el {t}.'
   ],
   aloftTitle: ['Vents et températures en altitude', 'Winds and temperatures aloft', 'Höhenwinde und -temperaturen',
     'Vientos y temperaturas en altura'
@@ -322,10 +328,10 @@ const TX = {
     'Noch keine Höhenvorhersage: „Flugplatzwetter lesen“ liest sie mit, sobald Route und Flugfläche angegeben sind.',
     'Aún no hay previsión en altura: «Leer la meteorología» también la lee, una vez dadas la ruta y el nivel.'
   ],
-  aloftAt: ['Prévision {m} pour {t} UTC{run}, lue à {r}.', '{m} forecast for {t} UTC{run}, read at {r}.',
-    '{m}-Vorhersage für {t} UTC{run}, gelesen um {r}.', 'Previsión {m} para las {t} UTC{run}, leída a las {r}.'
+  aloftAt: ['Prévision {m} pour {t}{run}, lue le {r}.', '{m} forecast for {t}{run}, read on {r}.',
+    '{m}-Vorhersage für {t}{run}, gelesen am {r}.', 'Previsión {m} para las {t}{run}, leída el {r}.'
   ],
-  aloftRun: [' (run de {r} UTC)', ' ({r} UTC run)', ' (Lauf {r} UTC)', ' (pasada de las {r} UTC)'],
+  aloftRun: [' (run de {r})', ' ({r} run)', ' (Lauf {r})', ' (pasada de las {r})'],
   aloftCols: [
     ['Point', 'Point', 'Punkt', 'Punto'],
     ['Niveau', 'Level', 'Fläche', 'Nivel'],
@@ -1946,9 +1952,9 @@ function renderAloft(c = aloftCalc()) {
   if (!box) return;
   const A = S.aloft;
   if (!c) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftNone))}</p>`;
-  const hh = sec => new Date(sec * 1000).toISOString().slice(11, 16),
+  const hh = sec => fmtZ(sec * 1000),
     pts = S.flight.route.points;
-  box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftAt, { m: A.model, t: hh(A.time), run: A.run ? tt(TX.aloftRun, { r: hh(A.run) }) : '', r: new Date(A.at).toLocaleString(S.ctx.lang(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) }))}</p>
+  box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftAt, { m: A.model, t: hh(A.time), run: A.run ? tt(TX.aloftRun, { r: hh(A.run) }) : '', r: fmtDateZ(A.at, S.ctx.lang()) }))}</p>
     <div class="f-scroll"><table class="f-table"><thead><tr>${TX.aloftCols.map((h, i) => `<th${i ? ' class="f-num"' : ''}>${esc(tt(h))}</th>`).join('')}</tr></thead><tbody>
     ${c.points.map((w, i) => w ? `<tr><td>${esc(pts[i].id || '')}</td><td class="f-num">${flTxt(w.levelFt)}</td><td class="f-num">${String(w.dirDeg).padStart(3, '0')}° ${esc(speedTxt(w.kt))}</td><td class="f-num">${w.tempC} °C</td><td class="f-num">${w.isaDev > 0 ? '+' : ''}${w.isaDev}</td></tr>` : '').join('')}
     </tbody></table></div>`;
@@ -2131,7 +2137,7 @@ function renderWx() {
     all = wxStations(),
     ends = all.filter(x => x.role !== 'mid'),
     mids = all.filter(x => x.role === 'mid');
-  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: new Date(S.wx.at).toLocaleString(S.ctx.lang()) }))}</p>` : '') +
+  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: fmtDateZ(S.wx.at, S.ctx.lang()) }))}</p>` : '') +
     (S.wx.source === 'direct' ? `<p class="f-muted">${esc(tt(TX.wxDirect))}</p>` : '') +
     (S.wx.noTaf && wxWhen() != null ? `<p class="f-warn">${esc(tt(TX.wxNoTaf))}</p>` : '') + ends.map(card).join('') +
     (mids.length > 2 ? `<details data-wxmids${S.ui.wxMidsOpen ? ' open' : ''}><summary>${esc(tt(TX.wxMids, { n: mids.length }))}</summary>${mids.map(card).join('')}</details>` : mids.map(card).join(''));
@@ -2645,7 +2651,7 @@ async function startFlight() {
       wind: windTxt(f.wind),
       block: q?.hasFuel ? fuelTxt(q.block, unit()) : '—'
     },
-    eta = q?.minutes ? hhmmOf(new Date(Date.now() + ((+S.settings.taxiMin || 0) + q.minutes) * 60000).toISOString()) : '',
+    eta = q?.minutes ? hhmmLocal(new Date(Date.now() + ((+S.settings.taxiMin || 0) + q.minutes) * 60000).toISOString()) : '',
     diffs = [after.wind !== before.wind ? tt(TX.diffWind, {
       a: before.wind,
       b: after.wind
@@ -2683,11 +2689,10 @@ const dur = min => {
   const m = Math.max(0, Math.round(min));
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
 };
-/** Heure locale « hh:mm » d'un instant ISO. */
-const hhmmOf = iso => new Date(iso).toLocaleTimeString(S.ctx.lang(), {
-  hour: '2-digit',
-  minute: '2-digit'
-});
+/** Heure UTC « 16:30Z » d'un instant ISO (frame/lib/time.js). */
+const hhmmOf = iso => fmtZ(iso);
+/** Heure UTC et heure locale de l'appareil « 16:30Z (18:30) » : seulement au départ, au décollage et à l'arrivée prévus. */
+const hhmmLocal = iso => fmtZLocal(iso);
 /** État du vol démarré, en une ligne : « Vol démarré à 13:22 · depuis 1 h 12 », « Vol terminé à 14:34 · bloc 1 h 12 »,
  *  déroutement signalé ; vide sans départ. */
 function flightState() {
@@ -2695,7 +2700,7 @@ function flightState() {
   if (!st?.at) return '';
   const div = st.diverted ? tt(TX.diverted) : '';
   return tt(TX.since, {
-    t: hhmmOf(st.at),
+    t: hhmmLocal(st.at),
     d: dur((Date.now() - Date.parse(st.at)) / 60000)
   }) + div;
 }
@@ -2706,7 +2711,7 @@ async function cancelStart() {
   if (!st?.at) return;
   const s = S;
   if (!(await S.ctx.ask(tt(TX.cancelAsk, {
-      t: hhmmOf(st.at)
+      t: hhmmLocal(st.at)
     }))) || gone(s)) return;
   S.flight.started = null;
   S.flight.progress = null;
@@ -2824,7 +2829,7 @@ function renderProgress(C) {
       r: distTxt(c.st.remainingNm),
       f: rem
     });
-  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b></span><span class="f-num">${esc(hhmmOf(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b></span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
 }
 /** Récapitulatif du pas Départ : appareil, route normalisée, niveau (paliers), vent et sa source, carburant bloc. */
 function renderSummary(C) {

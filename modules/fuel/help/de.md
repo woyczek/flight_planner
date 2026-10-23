@@ -122,13 +122,14 @@ Reserve, Zusatzmenge, Wetterkorridor, Einheiten) stehen im letzten aufklappbaren
 Zurückstoßen, Rollen…). Die Vorbereitung kann mehrere Tage alt sein: Deshalb wird zuerst alles auf die tatsächliche
 Uhrzeit gebracht — das Flugdatum springt auf jetzt zurück, Flugplatzwetter und Höhenwinde werden neu gelesen, die
 Berechnung wird neu erstellt — und in einer Zeile gesagt, was sich geändert hat („Wind 273°/35 kt → 284°/44 kt · Block
-684 → 644 kg · geplante Ankunft 17:03“); offline wird das gesagt und mit der letzten Berechnung gestartet. Danach wird
+684 → 644 kg · geplante Ankunft 15:03Z (17:03)“); offline wird das gesagt und mit der letzten Berechnung gestartet. Danach wird
 die Abflugzeit eingetragen, die zur Anlasszeit des Berichts wird. Auf einem Telefon öffnet es die Karte, auf einem
 großen Bildschirm bleibt es hier mit der Karte rechts. Den Abflugplatz danach zu ändern heißt, einen anderen Flug
 vorzubereiten: Die Abflugzeit wird gelöscht. Die Ankunft nach dem Abflug zu ändern ist eine Umleitung: Die Zeit bleibt
 erhalten, und die Umleitung wird vermerkt.
 
-Sobald der Flug gestartet ist, zeigt das Ergebnis unten im Bildschirm „Flug gestartet um 13:14 · seit 1 h 10“. Ein
+Sobald der Flug gestartet ist, zeigt das Ergebnis unten im Bildschirm „Flug gestartet um 11:14Z (13:14) · seit 1 h 10“. Die Zeiten sind UTC („Z“);
+die Uhrzeit des Geräts steht in Klammern bei Abflug, geplantem Start und geplanter Ankunft. Ein
 gestarteter Flug endet mit dem Schreiben seines Berichts: Beim Speichern kehrt Kraftstoff zur Vorbereitung zurück, und
 Meine Flüge entfernt „laufend“. Um ohne Bericht zur Vorbereitung zurückzukehren: „Start abbrechen“ (nach Bestätigung).
 Die Karte „Geplanter Fortschritt“ zeigt, wo der Flug theoretisch sein sollte: die geplante Überflugzeit an jedem Punkt
