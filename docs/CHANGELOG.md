@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame, lot 11: back to the module you came from** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) — a
+  module opened from another (the Map's "Edit the route", "Write the report" of My flights, `?from=`) shows
+  "← <that module>" in the header, which goes back to the same place.
 - **fuel: editable route points and step levels** (`modules/fuel/module.js`, `model.js`; `SPEC.md`, `INTEGRATION.md`,
   `DECISIONS.md`, `help/fr.md`, `test/quote.html`) — the route's points as a list to reorder, remove or add to, with an
   optional level per point flown from that point on; the quote counts each step (its climb or descent, then the

@@ -286,6 +286,20 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     with `watch`.
   - There is no double declaration any more; aerodb's identical one is redundant and may stay. This replaces the lot 6
     entry that made it a reference file.
+- **23 Oct 2026 — Lot 11, back to the origin module** (asked by the user):
+  - The frame finds the origin itself, with no change in the modules: `?from=` when it names a module, otherwise the
+    previous screen if it was a module and the user did not come through the menu.
+  - Each history entry is marked when first shown (`history.state.sogSeen`): a revisited entry (back or forward of
+    the browser) shows no back link, so going back never offers to go back to the screen just left.
+  - The back button itself counts as a menu choice, for the same reason.
+  - `history.back()` when the origin is the previous page of the session (same address, its query included),
+    otherwise the origin's address.
+  - Tests at 1280 and 375 px:
+    - Fuel through the menu: no link;
+    - Map → Fuel by passage: "← Map", and back lands on the Map without a link;
+    - forward of the browser: no link;
+    - a fresh `#report?from=flightlog`: "← My flights", whose return goes by address;
+    - on a phone the link replaces the name, with no horizontal scroll; no JavaScript error.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are

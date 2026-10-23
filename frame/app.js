@@ -117,6 +117,7 @@
     menu: ['Menu', 'Menu', 'Menü', 'Menú'],
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+    back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
     paneOpen: ['Afficher {m} à côté', 'Show {m} alongside', '{m} daneben anzeigen', 'Mostrar {m} al lado'],
     paneClose: ['Fermer le volet {m}', 'Close the {m} pane', 'Bereich {m} schließen', 'Cerrar el panel {m}'],
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
@@ -520,6 +521,9 @@
     }
     current = null;
     closePane();
+    // retour : ce module est-il ouvert par passage d'un autre ? (avant de noter l'écran courant)
+    origin = originOf(id, h.query);
+    paintBack();
     const view = $('fView');
     view.replaceChildren();
     renderMenu(id);
@@ -545,6 +549,10 @@
       if (window.SogHelp && meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(
           p, el))
         .catch(e => console.warn('help', e));
+      lastScreen = {
+        id: entry.id,
+        hash: location.hash
+      };
       await mod.mount(el, ctxFor(entry, meta, h.query));
       // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
       paintPaneButton(entry);
@@ -645,7 +653,58 @@
       updated_at: new Date().toISOString()
     });
     const hash = `#${entry.id}${pane ? `?with=${pane.id}` : ''}`;
-    if (location.hash !== hash) history.replaceState(null, '', hash);
+    if (location.hash !== hash) history.replaceState(history.state, '', hash);
+    if (lastScreen?.id === entry.id) lastScreen.hash = location.hash;
+  }
+
+  // ---------------------------------------------------------------- retour au module d'origine
+  // un module ouvert par passage d'un autre (#fuel?from=maps, ou une adresse posée par le module précédent : « Modifier
+  // la route » de la Carte, « Écrire le CR » de Mes vols) montre « ← <module d'origine> » dans l'en-tête ; pas après un
+  // choix dans le menu ; disparaît au changement de module. Retour : page précédente de la session si c'est elle,
+  // sinon l'adresse du module d'origine
+  let lastScreen = null, // { id, hash } : dernier écran affiché
+    origin = null, // { id, hash, back }
+    viaMenu = false; // navigation demandée par le menu des verbes
+  const isModule = id => APP.modules.some(m => m.id === id);
+  /** Module d'origine de l'écran id : ?from= s'il nomme un module, sinon l'écran précédent s'il était un module et que
+   *  l'on n'arrive pas par le menu ; null sinon. */
+  function originOf(id, query) {
+    const prev = lastScreen,
+      menu = viaMenu,
+      // entrée d'historique déjà vue (retour ou avance du navigateur, ou notre retour) : pas de « ← » vers l'écran quitté
+      revisit = !!history.state?.sogSeen;
+    viaMenu = false;
+    if (!revisit) history.replaceState({
+      ...(history.state || {}),
+      sogSeen: true
+    }, '');
+    if (!isModule(id) || revisit) return null;
+    if (isModule(query.from) && query.from !== id) return {
+      id: query.from,
+      hash: prev?.id === query.from ? prev.hash : `#${query.from}`,
+      back: prev?.id === query.from
+    };
+    if (!menu && prev && prev.id !== id && isModule(prev.id)) return {
+      id: prev.id,
+      hash: prev.hash,
+      back: true
+    };
+    return null;
+  }
+  /** Bouton de retour de l'en-tête (écrit seulement s'il change). */
+  function paintBack() {
+    const b = $('fBack'),
+      m = APP.modules.find(x => x.id === origin?.id),
+      show = !!m;
+    if (b.hidden === show) b.hidden = !show;
+    document.querySelector('.f-head').classList.toggle('f-has-back', show);
+    if (!show) return;
+    const html = `${Icons?.svg('chevron-left') || '←'}<span>${esc(t(m.label))}</span>`,
+      title = t(T.back, {
+        m: t(m.label)
+      });
+    if (b.innerHTML !== html) b.innerHTML = html;
+    if (b.title !== title) b.title = title;
   }
 
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
@@ -848,6 +907,16 @@
       location.hash = '#settings';
     };
     $('fPane').onclick = () => togglePane();
+    $('fBack').onclick = () => {
+      const o = origin;
+      if (!o) return;
+      viaMenu = true; // un retour n'appelle pas de retour vers l'écran quitté
+      if (o.back && history.length > 1) history.back();
+      else location.hash = o.hash;
+    };
+    $('fMenu').addEventListener('click', e => {
+      if (e.target.closest('a')) viaMenu = true;
+    });
     // écran devenu étroit : volet démonté (son état reste gardé) ; redevenu large : rouvert s'il l'était
     wide.addEventListener('change', () => {
       const entry = APP.modules.find(m => m.id === current?.id);

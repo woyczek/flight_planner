@@ -112,6 +112,22 @@ body {
   padding: 16px;
   min-width: 0
 }
+/* retour au module d'origine (« ← Carte ») ; sur téléphone, il prend la place du nom de l'appli */
+.f-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 0 10px 0 6px
+}
+.f-back[hidden] {
+  display: none
+}
+@media (max-width: 760px) {
+  .f-head.f-has-back .f-name {
+    display: none
+  }
+}
 /* vue double (grand écran) : le module courant à gauche, le volet à droite, collé sous l'en-tête */
 .f-pane-btn {
   display: inline-flex;

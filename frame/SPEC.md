@@ -231,6 +231,15 @@ used alone:
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
+- **Back to the origin module**: a module opened by a passage from another shows "← <origin module>" in the header.
+  - A passage is either an explicit `?from=<module>` (`#report?from=flightlog`), or an address set by the previous
+    module (the Map's "Edit the route" → Fuel, "Write the report" of My flights through `pilot/handoff.json`).
+  - It is not a passage when the user chose the menu, used the back button itself, or came back to an entry of the
+    history already seen (back or forward of the browser).
+  - The button goes back with `history.back()` when the origin is the previous page of this session, otherwise to the
+    origin's address.
+  - It disappears at the next change of module. On a phone it takes the place of the application's name. With the
+    dual view it is not needed, but it stays.
 - **Dual view** (tablet and wide screen, from 980 px): the frame may mount a second module beside the current one.
   - The current module is on the left, a pane on the right, sticky under the header.
   - A module offers a pane through `APP.modules[].pane`: Fuel and Report offer the Map.
