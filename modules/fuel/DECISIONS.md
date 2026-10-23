@@ -4,6 +4,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — weight, step 1: the mount's reads together** (frame weight audit, measure 1): the mount waited in
+  turn for the four libraries, `aerodb.aircraft()`, the sheets then the airline's types, and seven `ctx.data.get`.
+  Now the libraries (they only use each other when called), the registry and the seven reads start together
+  (`Promise.all`), and the sheets with the airline's types. Measured with the frame's audit kit (copied, my ports:
+  fake GitHub 8805 on this repository, Chrome 9338, test profile; CPU ×4, Fast 3G, 375 px, real tree of
+  `E:/DEFA/data` read only, 927 files): first GitHub pass on `#fuel`, module drawn at 7.87 s and 5.47 s before,
+  5.52 s and 5.52 s after; first local opening 7.35 / 7.36 s before, 7.44 / 7.41 s after; offline 0.18 / 0.23 s.
+  No measurable gain: in GitHub mode every read waits for the first pass of the tree (9 API calls, 381 KB, ~5.5 s
+  under Fast 3G), not for the other reads; locally the time is the files' download. Kept (no cost, and it removes
+  the waits in turn when the reads are slow one by one); step 2 draws before them.
 - **23 Oct 2026 — "Show the map" hidden beside the map** (end-to-end pass, Simplification's decision (b), frame
   lot 22): drawn hidden when `ctx.layout.with === 'maps'`, and toggled on the frame's `frame-layout` event (pane
   opened or closed, without remounting fuel). Checked on 8804 at 1280 px: hidden in `#fuel?with=maps`, shown after

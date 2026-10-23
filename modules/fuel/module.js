@@ -682,8 +682,9 @@ const plain = p => JSON.parse(JSON.stringify(p, (k, v) => k.startsWith('_') ? un
 /** Charge le calcul pur (scripts du dossier du module, une fois par page), tous au montage : le service worker du
  *  cadre garde le point d'entrée du module dès la première visite et les fichiers qu'il importe au premier passage. */
 async function loadLibs() {
-  for (const [glob, file] of LIBS)
-    if (!window[glob]) await import(new URL(`${file}?v=0`, import.meta.url).href);
+  // en parallèle : les bibliothèques ne se lisent les unes les autres qu'à l'appel (window.FlightPerfModel…), pas au
+  // chargement
+  await Promise.all(LIBS.filter(([glob]) => !window[glob]).map(([, file]) => import(new URL(`${file}?v=0`, import.meta.url).href)));
   // première visite : la page tourne avant que le service worker la contrôle, ces fichiers lui ont échappé ; relus une
   // fois quand il prend la main, pour que Carburant soit complet hors ligne
   const sw = navigator.serviceWorker;
@@ -942,9 +943,11 @@ const SH = () => S.A?.lib || window.AeroDBSheets;
 /** Fiches du registre d'aerodb (les plus récentes d'abord) ; aucune sans aerodb. */
 async function readSheets() {
   const s = S,
-    list = S.A?.sheets ? await S.A.sheets.list().catch(() => []) : [],
-    // types de la compagnie (flotte, référence) : ceux sans fiche sont proposés « à compléter » (comme la V2)
-    co = S.A?.fleetTypes ? await S.A.fleetTypes().catch(() => []) : [];
+    // types de la compagnie (flotte, référence) : ceux sans fiche sont proposés « à compléter » (comme la V2) ; les deux
+    // lectures ensemble
+    [list, co] = await Promise.all([S.A?.sheets ? S.A.sheets.list().catch(() => []) : [], S.A?.fleetTypes ? S.A.fleetTypes()
+      .catch(() => []) : []
+    ]);
   if (gone(s)) return;
   S.sheets = list;
   S.coTypes = co;
@@ -3598,7 +3601,6 @@ function show(view) {
 }
 
 export async function mount(el, ctx) {
-  await loadLibs();
   S = {
     el,
     ctx,
@@ -3606,7 +3608,15 @@ export async function mount(el, ctx) {
     stops: [],
     view: 'plan'
   };
-  S.A = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
+  // toutes les lectures du montage en même temps (en mode GitHub chacune peut être un aller-retour réseau) : les
+  // bibliothèques, le registre d'aerodb, le vol courant, les réglages du devis et ce qui est gardé sur l'appareil
+  const get = (path, quiet) => quiet ? ctx.data.get(path).catch(() => null) : ctx.data.get(path),
+    [, A, kept0, fuelSettings, ofp, wxKept, ui, aloftKept, lastAcKept] = await Promise.all([loadLibs(),
+      ctx.aerodb?.aircraft ? ctx.aerodb.aircraft().catch(() => null) : null, get(pilotPath('current_flight.json')),
+      get(pilotPath('fuel.json')), get(OFP_PATH), get(WX_PATH, true), get(UI_PATH), get(ALOFT_PATH, true), get(LAST_AC_PATH,
+        true)
+    ]);
+  S.A = A;
   // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
   SH()?.configure({
     profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
@@ -3616,7 +3626,7 @@ export async function mount(el, ctx) {
     tf: (row, vals) => ctx.t(row, vals)
   });
   await readSheets();
-  const kept = (await ctx.data.get(pilotPath('current_flight.json'))) || {};
+  const kept = kept0 || {};
   S.flight = {
     ...emptyFlight(),
     ...kept
@@ -3630,25 +3640,23 @@ export async function mount(el, ctx) {
     displayAlt: 'ft',
     displayDist: 'NM',
     entries: {},
-    ...((await ctx.data.get(pilotPath('fuel.json'))) || {})
+    ...(fuelSettings || {})
   };
   // vol sans appareil : le dernier choisi sur cet appareil est repris d'office (plus de première fiche par défaut)
-  S.lastAc = (await ctx.data.get(LAST_AC_PATH).catch(() => null))?.aircraft || null;
+  S.lastAc = lastAcKept?.aircraft || null;
   const ka = S.flight.aircraft || {};
   if (S.lastAc && !(ka.sheetId || ka.type || ka.registration)) S.flight.aircraft = {
     ...S.lastAc
   };
   // un vol sans écart ISA part du dernier écart retenu (réglages du devis)
   if (!Number.isFinite(+kept.isaDev)) S.flight.isaDev = +S.settings.isaDev || 0;
-  S.ofp = await ctx.data.get(OFP_PATH);
+  S.ofp = ofp;
   // météo : dernières valeurs gardées sur l'appareil, relues ensuite si l'appareil est en ligne
-  const wxKept = await ctx.data.get(WX_PATH).catch(() => null);
   S.wx = wxKept?.at ? {
     ...wxKept,
     cached: true
   } : null;
-  S.ui = (await ctx.data.get(UI_PATH)) || {};
-  const aloftKept = await ctx.data.get(ALOFT_PATH).catch(() => null);
+  S.ui = ui || {};
   S.aloft = aloftKept?.profiles ? {
     ...aloftKept,
     cached: true
