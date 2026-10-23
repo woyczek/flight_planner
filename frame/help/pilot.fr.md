@@ -382,8 +382,7 @@ Sur un poste servi par le lanceur, « Clés du lanceur » règle la clé de l'AP
 
 Sur un poste servi par le lanceur, « Accès aux données » montre le dépôt distant de `data/` : son adresse et sa
 branche. Pour le régler ou en changer, tapez l'adresse (`git@hôte:compte/dépôt.git` ou `https://…`, sans mot de passe
-ni jeton dedans) : « Vérifier » dit si le dépôt répond, « Enregistrer » le règle. Vers un autre dépôt que l'actuel, le
-lanceur demande confirmation dans une fenêtre sur l'ordinateur. Rien ne bloque : un dépôt qui ne répond pas est
+ni jeton dedans) : « Vérifier » dit si le dépôt répond, « Enregistrer » le règle. Vers une autre adresse que celle de la configuration, une fenêtre Oui / Non s'ouvre sur l'ordinateur, pas dans la page : la carte le dit avant le clic ; répondez-lui (elle peut être derrière les autres fenêtres), puis revenez. Refusée, fermée ou déjà ouverte : la carte en donne la raison et `data/` reste tel quel. C'est voulu : une page piégée ne doit pas pouvoir envoyer vos données ailleurs. Rien ne bloque : un dépôt qui ne répond pas est
 seulement signalé.
 
 - **L'accès au dépôt** se règle sur l'ordinateur : clé SSH pour une adresse `git@…`, identifiants enregistrés dans Git

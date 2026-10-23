@@ -69,7 +69,14 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    secret, remember }`) or **"Take data/ into this repository"** (`data/` without git: `POST /__setup/adopt`, same
    body). Progress and report in the card, buttons disabled meanwhile, never blocking; on success the frame detects the
    launcher again and plugs the transport, and the card is drawn again from the new state. A launcher that does not
-   know the route is told to restart up to date. A link to the help section "A git repository for data/" stays. On the Usages card, "Several users" ticked with no remote shows a warning pointing to
+   know the route is told to restart up to date.
+   **The launcher's Yes / No window**: taking `data/` into another address than the configured one, or saving another
+   remote address than the current or configured one, opens a confirmation window on the computer, never in the page.
+   Before the click, a sentence under the button says so (shown as the address is typed: the launcher's
+   `needsConfirm` when it gives one, else compared with `default` / the current address, ignoring a final `/` or
+   `.git`); while waiting, the card says to answer it, maybe behind other windows; after a refusal, the launcher's own
+   message (already open / refused / closed / impossible), plus "look for it behind the other windows" when one was
+   already open (`confirm: 'open'`, or the message). A link to the help section "A git repository for data/" stays. On the Usages card, "Several users" ticked with no remote shows a warning pointing to
    this card, and the state sentence says "a git repository with no remote: nothing goes elsewhere". Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
    the data repository, nothing is sent (the frame's local transport with the GitHub repository as reference source). Otherwise repository, branch and
    token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint: a

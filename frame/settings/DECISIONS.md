@@ -125,3 +125,10 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
     (`ZZZ`): kept and committed locally ("Reprise du poste ZZZ"), one file replaced and copied aside, nothing pushed;
   - the card now sends the device's trigram as `author` (the launcher used "POSTE" otherwise), and keeps the launcher's
     report visible in the redrawn card after a success (it says nothing is sent until "Synchronise").
+- **23 Oct 2026 — The launcher's confirmation window made visible** (the user did not know what to do with "takeover
+  not confirmed"): with an empty `dataRepo`, every address asks for the Yes / No window on the computer. The card now
+  says so before the click, tells to answer it while waiting, and passes the launcher's precise reason after a refusal,
+  with a pointer to look behind other windows when one is already open; same for saving another remote. Coded against
+  the contract (`needsConfirm`, `confirm`) with a local fallback; checked without opening any window: hint shown for
+  any address with no configured one, hidden for the current address (also with a final `/` or without `.git`), shown
+  for another one.

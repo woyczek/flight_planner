@@ -47,8 +47,7 @@ folder, never in the browser nor in the data. “Test” checks that IVAO answer
 
 On a workstation served by the launcher, “Data access” shows the remote repository of `data/`: its address and its
 branch. To set or change it, type the address (`git@host:account/repo.git` or `https://…`, with no password or token
-in it): “Check” says whether the repository answers, “Save” sets it. Towards another repository than the current one,
-the launcher asks for confirmation in a window on the computer. Nothing blocks: a repository that does not answer is
+in it): “Check” says whether the repository answers, “Save” sets it. Towards another address than the configured one, a Yes / No window opens on the computer, not in the page: the card says so before the click; answer it (it may be behind other windows), then come back. Refused, closed or already open: the card gives the reason and `data/` stays as it is. This is on purpose: a malicious page must not be able to send your data elsewhere. Nothing blocks: a repository that does not answer is
 only reported.
 
 - **Access to the repository** is set on the computer: an SSH key for a `git@…` address, credentials stored in Git for
@@ -74,4 +73,4 @@ only reported.
   diagnostics, folded; “Copy” puts it on the clipboard to report a problem. The token is
   never in it.
 
-<!-- fr: 18543b526915 -->
+<!-- fr: d1c0cb5879a0 -->

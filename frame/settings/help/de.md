@@ -49,8 +49,7 @@ Auf einem vom Starter bedienten Rechner stellt „Schlüssel des Starters“ den
 
 Auf einem vom Starter bedienten Rechner zeigt „Datenzugang“ das entfernte Repository von `data/`: seine Adresse und
 seinen Zweig. Um es einzustellen oder zu ändern, tippen Sie die Adresse (`git@host:konto/repo.git` oder `https://…`,
-ohne Passwort oder Token darin): „Prüfen“ sagt, ob das Repository antwortet, „Speichern“ stellt es ein. Für ein anderes
-Repository als das aktuelle fragt der Starter in einem Fenster auf dem Computer nach Bestätigung. Nichts blockiert: Ein
+ohne Passwort oder Token darin): „Prüfen“ sagt, ob das Repository antwortet, „Speichern“ stellt es ein. Für eine andere Adresse als die der Konfiguration öffnet sich ein Ja-/Nein-Fenster auf dem Computer, nicht auf der Seite: Die Karte sagt es vor dem Klick; beantworten Sie es (es kann hinter anderen Fenstern liegen), dann kehren Sie zurück. Abgelehnt, geschlossen oder schon geöffnet: Die Karte nennt den Grund, und `data/` bleibt, wie es ist. Das ist gewollt: Eine präparierte Seite darf Ihre Daten nicht anderswohin senden können. Nichts blockiert: Ein
 Repository, das nicht antwortet, wird nur gemeldet.
 
 - **Der Zugang zum Repository** wird auf dem Computer eingestellt: ein SSH-Schlüssel für eine Adresse `git@…`, in Git
@@ -76,4 +75,4 @@ Repository, das nicht antwortet, wird nur gemeldet.
   eingeklappt; „Kopieren“ legt sie in die Zwischenablage, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 18543b526915 -->
+<!-- fr: d1c0cb5879a0 -->

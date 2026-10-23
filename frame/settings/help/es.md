@@ -49,8 +49,7 @@ quita.
 
 En un puesto servido por el lanzador, «Acceso a los datos» muestra el repositorio remoto de `data/`: su dirección y su
 rama. Para configurarlo o cambiarlo, escriba la dirección (`git@host:cuenta/repo.git` o `https://…`, sin contraseña ni
-token dentro): «Comprobar» indica si el repositorio responde, «Guardar» lo configura. Hacia otro repositorio distinto
-del actual, el lanzador pide confirmación en una ventana del equipo. Nada bloquea: un repositorio que no responde solo
+token dentro): «Comprobar» indica si el repositorio responde, «Guardar» lo configura. Hacia otra dirección distinta de la configurada, se abre una ventana Sí / No en el equipo, no en la página: la tarjeta lo dice antes del clic; respóndala (puede estar detrás de otras ventanas) y vuelva. Rechazada, cerrada o ya abierta: la tarjeta da el motivo y `data/` se queda tal cual. Es a propósito: una página trampa no debe poder enviar sus datos a otro lugar. Nada bloquea: un repositorio que no responde solo
 se señala.
 
 - **El acceso al repositorio** se configura en el equipo: una clave SSH para una dirección `git@…`, credenciales
@@ -76,4 +75,4 @@ se señala.
   diagnóstico, plegado; «Copiar» lo pone en el portapapeles para señalar un problema. El token
   nunca figura en él.
 
-<!-- fr: 18543b526915 -->
+<!-- fr: d1c0cb5879a0 -->

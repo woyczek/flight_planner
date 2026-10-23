@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: the launcher's confirmation window made visible** (`frame/settings/settings.js`,
+  `frame/settings/help/*.md`; `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — before taking `data/` into
+  another repository or saving another remote address, the Access card says that a Yes / No window will open on the
+  workstation, not in the page; while waiting it says to answer it (maybe behind other windows); after a refusal it
+  shows the launcher's precise reason. The Settings chapter explains why the window exists.
 - **settings: taking data/ into a repository, checked** (`frame/settings/settings.js`; `frame/settings/DECISIONS.md`) —
   "Take data/ into this repository" tried against the launcher's new route on test copies: the device's trigram is
   sent as the author of the local "Reprise du poste" commit, and the launcher's report stays in the card after success.

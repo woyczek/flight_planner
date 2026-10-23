@@ -246,6 +246,21 @@
       'Der Starter dieses Rechners kennt diesen Vorgang noch nicht: aktualisiert neu starten (lancer.cmd), dann erneut versuchen.',
       'El lanzador de este puesto aún no conoce esta operación: reinícielo actualizado (lancer.cmd) y vuelva a intentarlo.'
     ],
+    confirmHint: ['Une fenêtre Oui / Non s’ouvrira sur ce poste (pas dans cette page) : répondez-lui avant de revenir ici.',
+      'A Yes / No window will open on this workstation (not in this page): answer it before coming back here.',
+      'Ein Ja-/Nein-Fenster öffnet sich auf diesem Rechner (nicht auf dieser Seite): Beantworten Sie es, bevor Sie hierher zurückkehren.',
+      'Se abrirá una ventana Sí / No en este puesto (no en esta página): respóndala antes de volver aquí.'
+    ],
+    confirmWait: ['Répondez à la fenêtre Oui / Non ouverte sur ce poste (elle peut être derrière les autres fenêtres)…',
+      'Answer the Yes / No window open on this workstation (it may be behind other windows)…',
+      'Beantworten Sie das auf diesem Rechner geöffnete Ja-/Nein-Fenster (es kann hinter anderen Fenstern liegen)…',
+      'Responda a la ventana Sí / No abierta en este puesto (puede estar detrás de otras ventanas)…'
+    ],
+    confirmOpen: ['Cherchez-la derrière les autres fenêtres (barre des tâches), répondez, puis réessayez.',
+      'Look for it behind the other windows (taskbar), answer it, then try again.',
+      'Suchen Sie es hinter den anderen Fenstern (Taskleiste), beantworten Sie es, dann erneut versuchen.',
+      'Búsquela detrás de las otras ventanas (barra de tareas), respóndala y vuelva a intentarlo.'
+    ],
     gitWorking: ['En cours… (quelques secondes à quelques minutes ; rien ne bloque)',
       'Working… (a few seconds to a few minutes; nothing blocks)',
       'Läuft… (einige Sekunden bis einige Minuten; nichts blockiert)', 'En curso… (de unos segundos a unos minutos; nada bloquea)'
@@ -465,7 +480,7 @@
       prefs = (await c.own.get('device/settings.json')) || {},
       v2 = !prefs.v2 ? v2Settings() : null,
       st = await FD.status(),
-      remote = L ? await setup('sync-remote') : null, // dépôt distant de data/ (lanceur)
+      remote = remoteNow = L ? await setup('sync-remote') : null, // dépôt distant de data/ (lanceur)
       // état de data/ : absent, plain (dossier sans git), repo ; champ state du lanceur, sinon déduit
       gitState = !L ? '' : remote?.state || (!L.data ? 'absent' : remote?.repo ? 'repo' : 'plain');
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
@@ -512,7 +527,7 @@
     // lecture des bases seulement)
     cards.push(L ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${gitState === 'repo' ? `<h3>${esc(t(T.remote))}</h3><p>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
         ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
-        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div>` : gitDoor(gitState, t, fld, remote)}</div>` :
+        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div><p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p>` : gitDoor(gitState, t, fld, remote)}</div>` :
       `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
         ${fld('repo', T.repo, gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
         <p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
@@ -763,7 +778,7 @@
       if (act === 'remoteCheck' || act === 'remoteSave') {
         const url = val('remote', card('access')),
           save = act === 'remoteSave';
-        say('access', t(save ? T.remoteSaving : T.remoteChecking), 'warn');
+        say('access', t(!save ? T.remoteChecking : needsConfirm(url, 'remote') ? T.confirmWait : T.remoteSaving), 'warn');
         const r = await setup('sync-remote', {
           url,
           ...(save ? {
@@ -771,7 +786,7 @@
           } : {})
         });
         const ck = r?.check || {},
-          text = [r?.saved?.message, ck.message].filter(Boolean).join(' — ') || '?';
+          text = [r?.saved?.message, confirmOpen(r?.saved) ? t(T.confirmOpen) : '', ck.message].filter(Boolean).join(' — ') || '?';
         say('access', text, r?.saved && !r.saved.ok ? 'err' : ck.ok ? 'ok' : 'warn');
         // enregistré : la ligne « Actuel » suit, le compte rendu de la vérification reste affiché
         if (save && r?.saved?.ok) {
@@ -799,10 +814,11 @@
         const sec = r0.querySelector('[data-f="gitSecret"]');
         if (sec) sec.value = '';
         r0.querySelectorAll('button').forEach(x => x.disabled = true);
-        say('access', t(T.gitWorking), 'warn');
+        say('access', t(act === 'gitAdopt' && needsConfirm(body.url, 'adopt') ? T.confirmWait : T.gitWorking), 'warn');
         const r = await setup(act === 'gitClone' ? 'clone' : 'adopt', body);
         r0.querySelectorAll('button').forEach(x => x.disabled = false);
-        say('access', r?.message || t(T.launcherOld), r?.ok ? 'ok' : 'err');
+        say('access', [r?.message || t(T.launcherOld), confirmOpen(r) ? t(T.confirmOpen) : ''].filter(Boolean).join(' '), r?.ok ?
+          'ok' : 'err');
         if (r?.ok) {
           await c.redetect?.();
           c.notify(r.message || t(T.saved), 'ok');
@@ -823,6 +839,14 @@
         c.notify(t(T.copied), 'ok');
       }
     };
+    // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
+    const hint = () => {
+      const h = view.querySelector('[data-confirm-hint]'),
+        f = view.querySelector('[data-f="remote"], [data-f="gitUrl"]');
+      if (h && f) h.hidden = !needsConfirm(f.value, f.dataset.f === 'remote' ? 'remote' : 'adopt');
+    };
+    view.querySelector('[data-f="remote"], [data-f="gitUrl"]')?.addEventListener('input', hint);
+    hint();
     view.querySelectorAll('[data-design-pick]').forEach(b => b.addEventListener('click', async () => {
       await c.saveDesign({
         ...(c.design?.() || {}),
@@ -867,13 +891,30 @@
     });
   }
 
+  /** Adresse de dépôt comparable (sans .git ni barre finale, hôte en minuscules). */
+  const sameRepo = (a, b) => {
+    const n = u => String(u || '').trim().replace(/\/+$/, '').replace(/\.git$/, '').replace(/^(\w+:\/\/[^/]+)/, h => h.toLowerCase());
+    return !!a && !!b && n(a) === n(b);
+  };
+  /** L'opération ouvrira-t-elle la fenêtre Oui / Non du lanceur ? Champ needsConfirm du lanceur s'il le donne pour
+   *  cette adresse, sinon : reprise vers une autre adresse que celle de la configuration ; enregistrement d'une autre
+   *  adresse que l'actuelle ou celle de la configuration. */
+  let remoteNow = null; // dernier GET /__setup/sync-remote (render)
+  function needsConfirm(url, kind) {
+    const r = remoteNow || {};
+    if (typeof r.needsConfirm === 'boolean' && sameRepo(url, r.default || r.url)) return r.needsConfirm;
+    if (sameRepo(url, r.default)) return false;
+    return kind === 'remote' ? !sameRepo(url, r.url) : true;
+  }
+  /** Refus du lanceur parce qu'une fenêtre est déjà ouverte (champ confirm, sinon le texte du message) ? */
+  const confirmOpen = r => !!r && !r.ok && (r.confirm === 'open' || /déjà ouverte|already open/i.test(r.message || ''));
   /** Porte de la carte Accès quand data/ n'est pas un dépôt git (lanceur) : absent → récupérer les données (clone) ;
    *  plain → reprendre data/ dans un dépôt (adopt) ; identifiant et secret facultatifs, jamais gardés par la page. */
   function gitDoor(state, t, fld, remote) {
     return `<p class="f-warn">${esc(t(state === 'absent' ? T.stateAbsent : T.statePlain))}</p><p class="f-muted">${esc(t(T.gitWhy))}</p>
       ${fld('gitUrl', T.remoteUrl, remote?.default || '')}${fld('gitUser', T.gitUser, '')}${fld('gitSecret', T.gitSecret, '', { type: 'password' })}
       <label class="f-check"><input type="checkbox" data-f="gitRemember">${esc(t(T.gitRemember))}</label><p class="f-muted">${esc(t(T.gitCredHint))}</p><p class="f-msg" data-msg></p>
-      <div class="f-row"><button type="button" class="primary" data-act="${state === 'absent' ? 'gitClone' : 'gitAdopt'}">${esc(t(state === 'absent' ? T.clone : T.adopt))}</button></div>
+      <div class="f-row"><button type="button" class="primary" data-act="${state === 'absent' ? 'gitClone' : 'gitAdopt'}">${esc(t(state === 'absent' ? T.clone : T.adopt))}</button></div>${state === 'absent' ? '' : `<p class="f-muted" data-confirm-hint hidden>${esc(t(T.confirmHint))}</p>`}
       <p><a href="#help?a=${encodeURIComponent(t(T.noGitAnchor))}">${esc(t(T.helpLink))}</a></p>`;
   }
   /** Appel d'une route du lanceur (/__setup/<route>) ; GET sans corps, POST avec ; null en cas d'échec. */
