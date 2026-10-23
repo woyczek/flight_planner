@@ -10,6 +10,7 @@ import * as M from './model.js';
 import * as T from './text_import.js';
 import * as Fpl from './fpl.js';
 import * as LF from '../../frame/lib/last_flight.js';
+import * as CF from '../../frame/lib/current_flight.js';
 import {
   formatLevel
 } from '../../frame/lib/route_text.js';
@@ -49,7 +50,8 @@ export const meta = {
     prefix: 'pilot/handoff.json',
     policy: 'cache'
   }],
-  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/route_text.js',
+  files: ['vocab.js', 'model.js', 'fpl.js', 'text_import.js', '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js',
+    '../../frame/lib/route_text.js',
     '../../frame/lib/website.js',
     'families/aar.js',
     'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
@@ -370,17 +372,19 @@ async function save() {
     }, {
       policy: 'cache'
     });
-    // le compte rendu est la fin normale d'un vol démarré : le vol courant (relu entier, réécrit avec started et progress
-    // à null, rien d'autre touché) repasse en préparation — carburant, Mes vols, carte et cadre le voient
+    // le compte rendu est la fin normale d'un vol démarré : le vol courant (relu juste avant, started à null et la
+    // progression prévue effacée, rien d'autre touché — progress.actual appartient au cadre) repasse en préparation —
+    // carburant, Mes vols, carte et cadre le voient
     const cfPath = `pilot/${S.ctx.identity.trigram || 'ANON'}/current_flight.json`,
       cf = await S.ctx.data.get(cfPath).catch(() => null);
-    if (cf?.started?.at === S.usedStarted) await S.ctx.data.put(cfPath, {
-      ...cf,
+    if (cf?.started?.at === S.usedStarted) await S.ctx.data.put(cfPath, CF.merge(cf, {
       started: null,
-      progress: null,
-      by: 'report',
-      updated_at: new Date().toISOString()
-    });
+      progress: null
+    }, {
+      fields: ['started'],
+      progressKeys: CF.FUEL_PROGRESS,
+      by: 'report'
+    }));
     S.usedStarted = '';
   }
   await S.ctx.data.put(PREFS, {

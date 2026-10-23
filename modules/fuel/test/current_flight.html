@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fuel — current flight bench</title>
+<!-- Banc de l'écriture du vol courant à plusieurs mains (frame/lib/current_flight.js) : une écriture du cadre
+     (progress.actual) puis une de fuel laisse actual intact ; les champs d'un autre module restent ; progress: null
+     n'efface que les clés de l'auteur ; un champ absent n'est pas touché. Page d'outil, hors des applications. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">fuel — current flight bench</h1>
+<pre id="out">running…</pre>
+<script type="module">
+  import * as CF from '../../../frame/lib/current_flight.js';
+  const lines = [];
+  let pass = 0,
+    fail = 0;
+  /** Compare une valeur (JSON) à l'attendue. */
+  const check = (label, got, want) => {
+    const g = JSON.stringify(got),
+      w = JSON.stringify(want),
+      ok = g === w;
+    ok ? pass++ : fail++;
+    lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${g}${ok ? '' : ` (expected ${w})`}`);
+  };
+  const fuel = {
+      fields: CF.FUEL_FIELDS,
+      progressKeys: CF.FUEL_PROGRESS,
+      by: 'fuel'
+    },
+    actual = {
+      lat: 46.1,
+      lon: 0.2,
+      at: '2026-10-23T13:39:07Z',
+      source: 'gps'
+    };
+  // le vol tel que fuel l'a en mémoire (ancien, sans actual), puis le cadre écrit la position réelle
+  const fuelMem = {
+      route: {
+        dep: 'LFRS',
+        arr: 'LFML'
+      },
+      level: {
+        ft: 6000
+      },
+      progress: {
+        at: '2026-10-23T13:38:00Z',
+        phase: 'cruise',
+        remainingNm: 200
+      },
+      by: 'fuel'
+    },
+    stored = {
+      ...fuelMem,
+      progress: {
+        ...fuelMem.progress,
+        actual
+      },
+      mapsView: {
+        zoom: 8
+      },
+      by: 'frame'
+    },
+    next = CF.merge(stored, {
+      ...fuelMem,
+      progress: {
+        at: '2026-10-23T13:39:08Z',
+        phase: 'cruise',
+        remainingNm: 190
+      }
+    }, fuel);
+  check('frame then fuel: progress.actual intact', next.progress.actual, actual);
+  check('fuel keys of progress replaced', [next.progress.remainingNm, next.progress.at], [190, '2026-10-23T13:39:08Z']);
+  check('another module\'s field kept', next.mapsView, {
+    zoom: 8
+  });
+  check('by is the writer', next.by, 'fuel');
+  check('a fuel field written', CF.merge(stored, {
+    level: {
+      ft: 7000
+    }
+  }, fuel).level, {
+    ft: 7000
+  });
+  check('a field absent from mine untouched', CF.merge(stored, {
+    level: {
+      ft: 7000
+    }
+  }, fuel).route, stored.route);
+  check('progress null clears fuel\'s keys, keeps the frame\'s actual (cancelled start)', CF.merge(stored, {
+    progress: null
+  }, fuel).progress, {
+    actual
+  });
+  check('progress null without actual → null', CF.merge(fuelMem, {
+    progress: null
+  }, fuel).progress, null);
+  check('report: started and planned progress cleared, actual and fuel fields kept', (r => [r.started, r.progress, r.level,
+    r.by
+  ])(CF.merge({
+    ...stored,
+    started: {
+      at: '2026-10-23T12:00:00Z'
+    }
+  }, {
+    started: null,
+    progress: null
+  }, {
+    fields: ['started'],
+    progressKeys: CF.FUEL_PROGRESS,
+    by: 'report'
+  })), [null, {
+    actual
+  }, fuelMem.level, 'report']);
+  check('a foreign key in mine.progress ignored', CF.merge(stored, {
+    progress: {
+      actual: null,
+      phase: 'descent'
+    }
+  }, fuel).progress.actual, actual);
+  check('started null written', CF.merge(stored, {
+    started: null
+  }, fuel).started, null);
+  document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
+  document.title = `fuel — current flight bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+</script>
+</body></html>

@@ -65,7 +65,8 @@ empty fields, and removes it.
   (`{ done: [at, …] }`, the last 20, device only, kept as a guard against offering it twice) and the card no longer offers
   it.
 - **Report ends a started flight**: saving the report that took the started flight up rewrites the current flight
-  (read whole, written back) with `started: null`, `progress: null`, `by: 'report'` and nothing else changed — fuel goes
+  (read just before, `frame/lib/current_flight.js` `merge`) with `started: null`, the planned progress cleared and
+  `by: 'report'`, nothing else changed — `progress.actual` belongs to the frame and stays — fuel goes
   back to planning, My flights drops "in progress", the frame stops the real position, the map clears the flight in
   progress. `meta.writes` declares `pilot/` (record) for it. Who writes `started`: fuel at the start and at a
   cancellation, report at the report's saving.

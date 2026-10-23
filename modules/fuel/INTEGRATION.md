@@ -59,6 +59,19 @@ texts. A change of the registry (`aerodb.on('change')` with `aircraft`) reloads 
 One record per pilot, read and written by fuel and maps (the same flight in both). Merge rule `record`: the newest
 `updated_at` wins the whole document, so a module always reads it, changes its own fields and writes it back whole.
 
+**Who writes what** (`frame/lib/current_flight.js`, `merge(stored, mine, { fields, progressKeys, by })`): every writer
+reads the record just before writing and replaces only its own fields; `by` is the writer, never copied from another.
+`progress` is shared: each writer replaces only its own keys in it. **`progress.actual` belongs to the frame**: fuel,
+report and maps never write nor erase it.
+
+| Writer | Fields | Keys of `progress` |
+|---|---|---|
+| fuel | `FUEL_FIELDS`: `aircraft`, `route`, `level`, `wind`, `windSource`, `isaDev`, `profile`, `quote`, `weather`, `ofp`, `started` | `FUEL_PROGRESS`: `at`, `plannedPos`, `eta`, `fuelRemainingKg`, `remainingNm`, `phase` |
+| report (report saved) | `started` (null) | `FUEL_PROGRESS` cleared |
+| frame | — | `actual` |
+
+`progress: null` from a writer clears its keys only; `progress` becomes null when nothing is left (no `actual`).
+
 ```json
 {
   "schema": 1,
@@ -122,10 +135,11 @@ One record per pilot, read and written by fuel and maps (the same flight in both
   "fuel at start" with `block`.
 - `progress` (fuel's, lot H): `{ at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }], fuelRemainingKg,
   remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived'), actual? }` — the planned progress of the
-  started flight, rewritten every minute while it flies and at every quote change; null once the start is cancelled
-  or the report saved.
-  `actual` (the real position: phone GPS, IVAO / VATSIM network) belongs to the frame and maps; fuel keeps it as
-  written.
+  started flight, written at most once a minute while it flies (at once on a phase change, a cancelled start or a
+  quote change) — a frame write (the real position) no longer causes a fuel write; fuel's keys cleared once the start
+  is cancelled or the report saved.
+  `actual` (the real position: phone GPS, IVAO / VATSIM network) belongs to the frame; fuel and report keep it as
+  written (table above).
 - `started` (lot G): `{ at (ISO), by: 'fuel', diverted? }` — written by fuel at the start (after the weather and the
   quote were redone for now) and set to null by fuel when the start is cancelled, by report when the report that took
   the flight up is saved (the normal end of a started flight); `at` is the report's engine start; when the pilot pressed "Start the flight" on the

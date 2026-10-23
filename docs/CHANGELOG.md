@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel, report: the real position of the flight is no longer erased** (`frame/lib/current_flight.js`,
+  `modules/fuel/module.js`, `modules/report/module.js`) — each module rewrites only its own part of the current
+  flight; fuel no longer rewrites it after every position update.
 - **Map: all the airspaces at a point** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a tap where several
   airspaces overlap opens a card with a block of levels like the vertical profile (one numbered column per airspace,
   floor to ceiling) and the numbered list in SIA notation, instead of "TMA … (+3 more)".

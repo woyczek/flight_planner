@@ -14,6 +14,7 @@ import * as MT from '../../frame/lib/metar.js';
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
+import * as CF from '../../frame/lib/current_flight.js';
 import {
   svg
 } from '../../frame/lib/icons.js';
@@ -34,7 +35,7 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/metar.js',
-    '../../frame/lib/route_text.js',
+    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js'
   ]
 };
@@ -913,20 +914,19 @@ async function storeSheet(p, source = 'edit') {
   await readSheets();
   if (!gone(s)) S.ctx.notify(tt(TX.saved), 'ok');
 }
-/** Écrit le vol courant (après un temps calme) : relu, champs du module changés, reste gardé (partagé avec maps). */
+/** Écrit le vol courant (après un temps calme) : relu juste avant, seuls les champs de fuel remplacés (et dans progress
+ *  ses seules clés : progress.actual appartient au cadre), le reste gardé tel qu'il est (frame/lib/current_flight.js). */
 function saveFlight() {
   clearTimeout(S.flightTimer);
   const s = S; // gardé : l'écriture part même si le module est démonté entre-temps
   s.flightTimer = setTimeout(async () => {
     const path = `pilot/${s.ctx.identity.trigram || 'ANON'}/current_flight.json`,
       cur = (await s.ctx.data.get(path)) || {};
-    s.flight = {
-      ...cur,
-      ...s.flight,
-      schema: 1,
-      by: 'fuel',
-      updated_at: new Date().toISOString()
-    };
+    s.flight = CF.merge(cur, s.flight, {
+      fields: CF.FUEL_FIELDS,
+      progressKeys: CF.FUEL_PROGRESS,
+      by: 'fuel'
+    });
     s.writing = s.flight.updated_at;
     await s.ctx.data.put(path, s.flight);
   }, 300);
@@ -2691,22 +2691,26 @@ function updateProgress(force = false) {
       })),
       fuelRemainingKg: Math.round(window.FuelModel.convertFuel(rem, unit, 'kg')),
       remainingNm: Math.round(c.st.remainingNm),
-      phase: c.st.phase,
-      ...(f.progress?.actual ? {
-        actual: f.progress.actual // position réelle : écrite par le cadre ou la carte, gardée
-      } : {})
+      phase: c.st.phase
     };
   }
-  const same = (a, b) => JSON.stringify({
-    ...a,
-    at: 0
-  }) === JSON.stringify({
-    ...b,
-    at: 0
-  });
-  if (!next && !f.progress) return;
-  if (!force && next && f.progress && same(next, f.progress)) return;
-  f.progress = next;
+  // comparées sur les seules clés de fuel (hors at) : la position réelle écrite par le cadre (progress.actual) ne
+  // déclenche aucune réécriture ; elle reste en mémoire et dans le fichier (CF.merge ne touche pas aux clés d'autrui)
+  const mine = x => JSON.stringify(CF.FUEL_PROGRESS.filter(k => k !== 'at').map(k => x?.[k] ?? null));
+  if (!next && !CF.FUEL_PROGRESS.some(k => f.progress?.[k] != null)) return; // rien de fuel à effacer (actual seul : au cadre)
+  if (!force && next && f.progress && mine(next) === mine(f.progress)) return;
+  // la position prévue avance à chaque rendu (une écriture du cadre en provoque un) : écrite au plus une fois par
+  // minute, sauf changement de phase, effacement ou demande expresse
+  if (!force && next && f.progress && next.phase === f.progress.phase && Date.now() - (S.progressWritten || 0) < 60000) {
+    return; // f.progress reste la dernière écrite : la suivante part dès la minute passée
+  }
+  S.progressWritten = next ? Date.now() : 0;
+  f.progress = next ? {
+    ...(f.progress?.actual ? {
+      actual: f.progress.actual
+    } : {}),
+    ...next
+  } : null;
   saveFlight();
 }
 /** Carte « Progression prévue » du pas Départ : la ligne de l'instant et la liste des points avec leur heure prévue, le
@@ -3548,7 +3552,11 @@ export async function mount(el, ctx) {
     // écho d'une de nos écritures, arrivé après une plus récente : ignoré (il ramènerait un texte plus ancien)
     if (f.by === 'fuel' && S.writing && String(f.updated_at) < String(S.writing)) return;
     const typing = S.body?.querySelector('[data-k="rtext"]'),
-      keepText = typing && document.activeElement === typing ? typing.value : null;
+      keepText = typing && document.activeElement === typing ? typing.value : null,
+      // ce qui fait le devis : une écriture d'ailleurs qui n'y touche pas (la position réelle du cadre, une vue de la
+      // carte) est relue sans être refaite ni réécrite
+      plan = x => JSON.stringify([x?.route?.points, x?.route?.distanceNm, x?.level, x?.aircraft, x?.started?.at ?? null]),
+      planChanged = plan(f) !== plan(S.flight);
     S.flight = {
       ...emptyFlight(),
       ...f
@@ -3558,6 +3566,7 @@ export async function mount(el, ctx) {
       ...S.flight.route,
       text: keepText
     };
+    if (!planChanged && f.by !== 'fuel') return S.view === 'plan' ? refresh() : undefined; // progression seulement
     if (S.view === 'plan') S.body.contains(document.activeElement) ? refresh() : renderPlan();
     if (f.by && f.by !== 'fuel') adoptForeignFlight();
   }));

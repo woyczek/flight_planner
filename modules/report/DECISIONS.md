@@ -2,6 +2,9 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — ending a flight keeps the real position**: the report's write of the current flight goes through
+  `frame/lib/current_flight.js` `merge` (`started` null, fuel's progress keys cleared); `progress.actual` belongs to
+  the frame and stays.
 - **23 Oct 2026 — renders keep the scroll** (user's bug seen in fuel): `render()` draws through `keepScroll`, so a
   family or series change or a source taken up no longer moves the page; a step change still goes to the top on
   purpose. Checked on 8804 at 375 px: family changed at 600 px, the page stayed at 600.

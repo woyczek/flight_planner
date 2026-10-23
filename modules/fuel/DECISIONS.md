@@ -4,6 +4,14 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — `progress.actual` belongs to the frame** (Simplification's bug: fuel rewrote the current flight
+  every 10 to 35 s without `progress.actual`, erasing the real position). `frame/lib/current_flight.js` `merge`:
+  the record is read just before every write, fuel replaces only `FUEL_FIELDS` and, in `progress`, only
+  `FUEL_PROGRESS`; `progress: null` clears only those keys. A frame write no longer triggers a fuel write: the
+  watch re-reads without redoing the quote when the plan (route, level, aircraft, start) is unchanged, the
+  progress is compared on fuel's keys only, and written at most once a minute (the planned position moves at every
+  render). Report ends a flight through the same merge. Bench `test/current_flight.html` 11/11; on 8804, four
+  frame writes 3 s apart: no fuel write, then fuel's minute write with `actual` intact.
 - **23 Oct 2026 — the page no longer jumps to the top** (user's bug): a full `renderPlan()` — the current flight
   written by the map, report or another device while nothing has the focus — replaced the screen, which shrank for
   a moment, and the browser pulled the page up (900 → 517 px on 8804; to the top on a short page). `keepScroll`
