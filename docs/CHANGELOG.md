@@ -30,6 +30,7 @@ waypoints, and the rest listed below.
   the data" when `data/` is missing (clone) or "Take data/ into this repository" when it has no git (adopt), with the
   address, an optional username and password or token never kept by the page, and "Remember" in Git; progress and
   report in the card, state read again afterwards.
+- Roadmap of the V3 applications (`frame/help/roadmap.json`): lanes per module with delivered / in progress / planned / later items, the rule for reporting bugs; rendered by the help screen.
 - **settings: the remote repository of data/ from the frame** (`frame/settings/settings.js`,
   `frame/settings/help/*.md`; `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — on a workstation served by
   the launcher, the Access card shows the remote repository of `data/` (address, branch) and lets you check and save a
