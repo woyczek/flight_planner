@@ -22,6 +22,25 @@ and the usage level is set from the header of every Settings page. Flight orders
 member, Fuel and Flight maps open the flight in SimBrief, SkyVector, Navigraph and ChartFox, and My missions is
 the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode on a workstation, SimBrief
 waypoints, and the rest listed below.
+
+### V3
+
+## [6.0.0-alpha.1] — 2026-10-23
+
+First alpha of the V3 **Pilot application** (`frame/`, `modules/`), published under `/v3/frame/` on the same site
+as the V2 suite and served by the same launcher. One frame: a data layer with a local cache, offline writes and
+batched synchronisation (this device only, the workstation's launcher, a GitHub repository), an installable
+offline app, a verb menu, usage levels, in-page help, a network relay, real position during a started flight
+(simulator through the launcher, GPS, IVAO / VATSIM), the launcher opened to a tablet on the local network. Six
+modules: Fuel (five steps in the pilot's order, weather of the route corridor, winds aloft, density altitude,
+editable route, "Start the flight"), Map (en-route charts with modes, layers, tunable zoom thresholds, route
+editing on the map and the profile, wind barbs, VFR reporting points and VAC sequences, flight in progress),
+Report (three steps, sixteen families, prefill, "Save and record on the site"), My flights, Site (log and fleet
+by paste or through the launcher, airline card) and Settings (identity, usages, access, backup, offline data by
+zone, level, keys, pilot configuration export / import, "Join the airline" wizard, administration links). One
+aircraft registry (types, performance sheets, fleet, reference; `.lnmperf` kept in sync both ways), a Pilot manual
+and two tutorials in four languages, a roadmap in the app. Alpha: data formats and screens may still change.
+
 ### V3
 
 - **Map: a VFR reporting point drawn once** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS) — a VAC point
