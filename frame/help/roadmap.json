@@ -120,7 +120,7 @@
           "es": "Base aeronáutica en modo GitHub en el teléfono: referencias leídas desde el repositorio (error en curso), diagnóstico copiable"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Retour « ← module d'origine » après un passage entre modules ; sources météo directes (vatsim, avwx avec clé de l'appareil)",
           "en": "“← origin module” return after a hand-off between modules; direct weather sources (vatsim, avwx with the device key)",
           "de": "Zurück „← Ursprungsmodul“ nach einer Übergabe zwischen Modulen; direkte Wetterquellen (vatsim, avwx mit Geräteschlüssel)",
@@ -195,7 +195,14 @@
           "es": "Desviación ISA calculada desde el METAR de salida y guardada en los ajustes; gráfico de altitud de densidad con el techo de subida de la aeronave (helicópteros)"
         },
         {
-          "state": "doing",
+          "state": "planned",
+          "fr": "Vents et températures par niveau le long de la route (prévisions Open-Meteo) : vent au niveau planifié dans le devis, altitude-densité réelle au départ avec ses inversions",
+          "en": "Winds and temperatures per level along the route (Open-Meteo forecasts): wind at the planned level in the quote, real density altitude at departure with its inversions",
+          "de": "Wind und Temperatur je Höhenstufe entlang der Route (Open-Meteo-Vorhersagen): Wind in geplanter Höhe in der Berechnung, reale Dichtehöhe am Start mit ihren Inversionen",
+          "es": "Vientos y temperaturas por nivel a lo largo de la ruta (previsiones Open-Meteo): viento al nivel previsto en el cálculo, altitud de densidad real en salida con sus inversiones"
+        },
+        {
+          "state": "done",
           "fr": "Route en liste de points éditable (ajouter, retirer, déplacer, altitude par point) vue en direct sur la Carte ; bloc Appareil réduit à une ligne",
           "en": "Route as an editable point list (add, remove, move, altitude per point) seen live on the Map; Aircraft block reduced to one line",
           "de": "Route als bearbeitbare Punktliste (hinzufügen, entfernen, verschieben, Höhe je Punkt) live auf der Karte; Luftfahrzeugblock auf eine Zeile reduziert",
@@ -256,18 +263,25 @@
           "es": "Mapas de misión redibujados desde el repositorio, solo lectura"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Points des voies aériennes dessinées (RNAV, DME, VOR, NDB), étiquettes de tronçon (voie · NM · route), préréglages IFR bas / IFR haut / VFR, densité selon le zoom, infobulle d'espace en notation SIA, redessin à chaque changement du plan de vol",
           "en": "Fixes of drawn airways (RNAV, DME, VOR, NDB), segment labels (airway · NM · track), IFR low / IFR high / VFR presets, density by zoom, airspace tooltip in SIA notation, redraw at each flight plan change",
           "de": "Punkte der gezeichneten Luftstraßen (RNAV, DME, VOR, NDB), Abschnittsbeschriftungen (Luftstraße · NM · Kurs), Voreinstellungen IFR tief / IFR hoch / VFR, Dichte nach Zoom, Luftraum-Tooltip in SIA-Notation, Neuzeichnen bei jeder Flugplanänderung",
           "es": "Puntos de las aerovías dibujadas (RNAV, DME, VOR, NDB), etiquetas de tramo (aerovía · NM · rumbo), preajustes IFR bajo / IFR alto / VFR, densidad según el zoom, tooltip de espacio en notación SIA, redibujo a cada cambio del plan de vuelo"
         },
         {
-          "state": "planned",
+          "state": "doing",
           "fr": "Modifier la route sur la carte et le profil : glisser un point (aimanté aux fixes), toucher un fixe pour l'insérer, retirer, altitude par glissement, mode « modifier » sur téléphone, annulation",
           "en": "Edit the route on the map and the profile: drag a point (snapped to fixes), tap a fix to insert it, remove, altitude by dragging, an explicit “edit” mode on the phone, undo",
           "de": "Route auf Karte und Profil bearbeiten: Punkt ziehen (an Fixes gerastet), Fix antippen zum Einfügen, entfernen, Höhe durch Ziehen, expliziter „Bearbeiten“-Modus am Telefon, Rückgängig",
           "es": "Editar la ruta en el mapa y el perfil: arrastrar un punto (imantado a los fijos), tocar un fijo para insertarlo, quitar, altitud arrastrando, modo «editar» explícito en el teléfono, deshacer"
+        },
+        {
+          "state": "planned",
+          "fr": "Flèches de vent au niveau du vol le long de la route (une par point, une tous les 50 NM) ; passe de lisibilité de la carte (épaisseurs, polices, contraste la nuit)",
+          "en": "Wind barbs at flight level along the route (one per point, one every 50 NM); map readability pass (line weights, fonts, night contrast)",
+          "de": "Windfiedern in Flughöhe entlang der Route (eine je Punkt, eine alle 50 NM); Lesbarkeitsdurchgang der Karte (Strichstärken, Schriften, Nachtkontrast)",
+          "es": "Barbas de viento al nivel de vuelo a lo largo de la ruta (una por punto, una cada 50 NM); pasada de legibilidad del mapa (grosores, fuentes, contraste nocturno)"
         },
         {
           "state": "later",
@@ -395,7 +409,7 @@
           "es": "Recuperar o incorporar data/ al repositorio de datos desde la tarjeta Acceso"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Carte Design (choix du design, jour / nuit)",
           "en": "Design card (design choice, day / night)",
           "de": "Karte Design (Wahl des Designs, Tag / Nacht)",
