@@ -127,6 +127,13 @@
           "es": "Vista doble que se abre sola desde 1200 px en Combustible e Informe, conmutador «Mapa» legible"
         },
         {
+          "state": "doing",
+          "fr": "Écrans du cadre (aide, réglages, feuille de route, conflits) sans faire disparaître le menu ; boutons ? et ⚙ bistables qui reviennent au contexte exact",
+          "en": "Frame screens (help, settings, roadmap, conflicts) without hiding the menu; ? and ⚙ buttons that toggle back to the exact context",
+          "de": "Rahmenbildschirme (Hilfe, Einstellungen, Fahrplan, Konflikte) ohne das Menü auszublenden; ?- und ⚙-Schalter, die exakt in den vorherigen Kontext zurückkehren",
+          "es": "Pantallas del marco (ayuda, ajustes, hoja de ruta, conflictos) sin ocultar el menú; botones ? y ⚙ conmutables que vuelven al contexto exacto"
+        },
+        {
           "state": "done",
           "fr": "Retour « ← module d'origine » après un passage entre modules ; sources météo directes (vatsim, avwx avec clé de l'appareil)",
           "en": "“← origin module” return after a hand-off between modules; direct weather sources (vatsim, avwx with the device key)",
@@ -209,7 +216,7 @@
           "es": "Desviación ISA calculada desde el METAR de salida y guardada en los ajustes; gráfico de altitud de densidad con el techo de subida de la aeronave (helicópteros)"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Vents et températures par niveau le long de la route (prévisions Open-Meteo) : vent au niveau planifié dans le devis, altitude-densité réelle au départ avec ses inversions",
           "en": "Winds and temperatures per level along the route (Open-Meteo forecasts): wind at the planned level in the quote, real density altitude at departure with its inversions",
           "de": "Wind und Temperatur je Höhenstufe entlang der Route (Open-Meteo-Vorhersagen): Wind in geplanter Höhe in der Berechnung, reale Dichtehöhe am Start mit ihren Inversionen",
