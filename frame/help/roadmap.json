@@ -195,7 +195,7 @@
           "es": "Preparar en el orden del piloto: Vuelo · Ruta · Meteo · Cálculo · Salida; ruta como texto siempre visible y normalizado, distancia y rumbo verdadero calculados; «Mostrar el mapa»; «Iniciar el vuelo»"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Vol démarré : « Terminer le vol », « Annuler le départ », progression prévue (ETA par point, point courant, carburant restant)",
           "en": "Started flight: “End the flight”, “Cancel departure”, planned progress (ETA per point, current point, remaining fuel)",
           "de": "Gestarteter Flug: „Flug beenden“, „Abflug abbrechen“, geplanter Fortschritt (ETA je Punkt, aktueller Punkt, Restkraftstoff)",
