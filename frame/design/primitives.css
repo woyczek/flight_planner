@@ -94,10 +94,11 @@ input[type="radio"] {
   font-family: var(--sog-font-title);
   text-transform: var(--sog-title-case);
   letter-spacing: var(--sog-title-spacing);
+  font-weight: var(--sog-title-weight);
   line-height: 1.25
 }
 .f-view h1 {
-  font-size: var(--sog-h1);
+  font-size: var(--sog-title-size);
   margin: 0 0 10px
 }
 .f-view h2 {

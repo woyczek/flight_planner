@@ -9,9 +9,14 @@
 try {
   const d = JSON.parse(localStorage.getItem('sogFrame:design') || '{}'),
     h = document.documentElement;
-  if (/^(standard|cabinet|field)$/.test(d.design)) h.dataset.design = d.design;
+  if (/^(standard|cabinet|field|metro)$/.test(d.design)) h.dataset.design = d.design;
   if (/^(day|night)$/.test(d.tone)) h.dataset.tone = d.tone
 } catch (e) {}
+// module de l'adresse : la couleur repère du design metro dès le premier affichage (frame/app.js, paintModule)
+{
+  const m = /^#([a-z]+)/.exec(location.hash);
+  if (m) document.documentElement.dataset.landmark = m[1]
+}
 </script>
 <link rel="stylesheet" href="frame.css?v=0">
 <link rel="manifest" href="manifest.webmanifest">

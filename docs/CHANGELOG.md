@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Design: "Metro" mock-up, pending decision** (`frame/design/tokens.css`, `frame/design/metro.css`, `frame/design/demo_metro.html`,
+  `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/sw.js`; design SPEC, DECISIONS) — a fourth design, picked
+  in Settings › Design: flat colour blocks, square corners, system fonts, big light page titles, verb blocks in the
+  drawer and a rail on a screen, one landmark colour per module (`--sog-module`, in every design, visible only in
+  Metro). The other designs are unchanged pixel for pixel; the frame amendments it shows are listed for decision.
 - **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
   help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA
   is placed with the route labels, under its name, before the aerodromes.

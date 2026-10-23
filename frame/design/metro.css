@@ -1,0 +1,242 @@
+/* V3 design — « Metro » : ce que le cadre doit changer pour un habillage en aplats (maquette à trancher, frame/design/SPEC.md § 3,
+   DECISIONS.md du 23 octobre 2026). Tout est derrière [data-design="metro"] : les autres designs ne changent pas d'un pixel.
+   Les jetons (couleurs, polices, tailles de titre, rayons nuls) sont dans tokens.css ; ici, seulement les règles que les
+   jetons ne portent pas : bandeau de couleur du module, verbes en aplats, titre de page, titres « pivot », boutons plats,
+   champs à filet inférieur. Aucun module n'est touché : tout passe par les primitives et le balisage du cadre.
+   Écran seulement : l'impression garde l'encre du jour (primitives.css). Le sélecteur est [data-design="metro"] (et non
+   html[…]) pour que la page de démonstration puisse poser le design sur un bloc ; dans l'appli, c'est <html>. */
+@media screen {
+  /* ---- bandeau d'en-tête : la couleur du module affiché (le cadre pose data-module sur <html>) ; boutons à plat */
+  [data-design="metro"] .f-head {
+    background: var(--sog-module);
+    color: var(--sog-module-ink);
+    border-bottom-color: var(--sog-module)
+  }
+  [data-design="metro"] .f-head .f-name {
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase
+  }
+  [data-design="metro"] .f-head button {
+    background: transparent;
+    border-color: transparent;
+    color: inherit
+  }
+  [data-design="metro"] .f-head button:active {
+    background: color-mix(in srgb, var(--sog-module-ink) 25%, transparent)
+  }
+  [data-design="metro"] .f-head button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--sog-module-ink) 25%, transparent);
+    color: inherit;
+    border-color: var(--sog-module-ink)
+  }
+  [data-design="metro"] .f-head .f-who,
+  [data-design="metro"] .f-head .f-host {
+    color: inherit
+  }
+  [data-design="metro"] .f-head .f-who {
+    font-weight: 700
+  }
+  /* pastille d'état : cerclée de blanc pour rester lisible sur la couleur du module */
+  [data-design="metro"] .f-head .f-dot {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--sog-module-ink)
+  }
+
+  /* ---- verbes : sur téléphone, des aplats de la couleur de chaque module (deux par ligne, le dernier impair sur toute la
+     largeur) dans le tiroir ; sur écran, un rail : filet de la couleur du module, plein pour le verbe courant */
+  [data-design="metro"] .f-nav {
+    background: var(--sog-bg);
+    border-right-color: transparent
+  }
+  [data-design="metro"] .f-nav ul {
+    gap: 2px
+  }
+  [data-design="metro"] .f-nav a {
+    background: var(--sog-surface);
+    border-left: 8px solid var(--sog-module);
+    padding-left: 10px
+  }
+  [data-design="metro"] .f-nav a[aria-current="page"] {
+    background: var(--sog-module);
+    color: var(--sog-module-ink)
+  }
+  @media (max-width: 760px) {
+    [data-design="metro"] .f-nav {
+      padding: 6px
+    }
+    [data-design="metro"] .f-nav ul {
+      grid-template-columns: 1fr 1fr;
+      gap: 6px
+    }
+    [data-design="metro"] .f-nav li:last-child:nth-child(odd) {
+      grid-column: 1 / -1
+    }
+    [data-design="metro"] .f-nav a {
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0;
+      min-height: 104px;
+      padding: 10px 12px;
+      border-left: 0;
+      background: var(--sog-module);
+      color: var(--sog-module-ink);
+      font-size: 1.05rem
+    }
+    [data-design="metro"] .f-nav a .f-icon {
+      width: 32px;
+      height: 32px
+    }
+    [data-design="metro"] .f-nav a[aria-current="page"] {
+      outline: 3px solid var(--sog-module-ink);
+      outline-offset: -6px
+    }
+  }
+
+  /* ---- titre de page : le verbe, grand, léger, à gauche, dans la couleur du module, sans cadre ; titres de section en
+     « pivot » (grands, légers), petits titres en capitales discrètes */
+  [data-design="metro"] .f-view h1 {
+    margin-block: 2px 12px;
+    line-height: 1.1;
+    color: var(--sog-module-text);
+    overflow-wrap: anywhere
+  }
+  [data-design="metro"] .f-pane h1 {
+    font-size: 1.6rem
+  }
+  [data-design="metro"] .f-view h2 {
+    color: var(--sog-module-text);
+    line-height: 1.15
+  }
+  [data-design="metro"] .f-view h3 {
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--sog-muted)
+  }
+  [data-design="metro"] details.f-card>summary {
+    font-size: 1.15rem;
+    font-weight: 300
+  }
+  [data-design="metro"] .f-pane .f-module {
+    border-top: 6px solid var(--sog-module);
+    padding-top: 8px
+  }
+
+  /* ---- boutons plats : filet de 2 px, rien dedans ; le principal est plein de la couleur du module ; enfoncé : inversé */
+  [data-design="metro"] button,
+  [data-design="metro"] .f-btn {
+    border: 2px solid var(--sog-fg);
+    background: transparent
+  }
+  [data-design="metro"] button:not(:disabled):active,
+  [data-design="metro"] .f-btn:active {
+    background: var(--sog-fg);
+    color: var(--sog-bg)
+  }
+  [data-design="metro"] button.primary,
+  [data-design="metro"] .f-btn.primary {
+    background: var(--sog-module);
+    border-color: var(--sog-module);
+    color: var(--sog-module-ink)
+  }
+  [data-design="metro"] button.primary:not(:disabled):active,
+  [data-design="metro"] .f-btn.primary:active {
+    background: var(--sog-fg);
+    border-color: var(--sog-fg);
+    color: var(--sog-bg)
+  }
+
+  /* ---- champs : fond gris plat, filet de 2 px dessous (de la couleur du module quand on écrit) */
+  [data-design="metro"] input,
+  [data-design="metro"] select,
+  [data-design="metro"] textarea {
+    border: 0;
+    border-bottom: 2px solid var(--sog-muted)
+  }
+  [data-design="metro"] input:focus,
+  [data-design="metro"] select:focus,
+  [data-design="metro"] textarea:focus {
+    border-bottom-color: var(--sog-module)
+  }
+  [data-design="metro"] input[type="checkbox"],
+  [data-design="metro"] input[type="radio"] {
+    accent-color: var(--sog-module)
+  }
+  [data-design="metro"] .f-field {
+    color: var(--sog-muted);
+    font-size: var(--sog-size-s)
+  }
+  [data-design="metro"] .f-field :is(input, select, textarea) {
+    color: var(--sog-fg);
+    font-size: var(--sog-field-text)
+  }
+
+  /* ---- cartes en aplat gris sans filet ; barre collante : filet de couleur en haut, rien d'autre (son contenu garde les
+     couleurs d'état) */
+  [data-design="metro"] .f-card {
+    border-color: transparent
+  }
+  [data-design="metro"] .f-card.f-accent,
+  [data-design="metro"] .f-callout {
+    border-left: 6px solid var(--sog-module)
+  }
+  [data-design="metro"] .f-bar {
+    border-color: transparent;
+    border-top: 6px solid var(--sog-module)
+  }
+
+  /* ---- onglets : titres de pivot (le courant dans la couleur du module) ; pas : aplats, le courant plein */
+  [data-design="metro"] .f-tabs>button {
+    border: 0;
+    background: transparent;
+    padding: 0 10px 0 0;
+    font-size: 1.25rem;
+    font-weight: 300;
+    color: var(--sog-muted)
+  }
+  [data-design="metro"] .f-tabs>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
+    background: transparent;
+    color: var(--sog-module-text)
+  }
+  [data-design="metro"] .f-steps>button {
+    border: 0;
+    background: var(--sog-surface)
+  }
+  [data-design="metro"] .f-steps>:is([aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"])) {
+    background: var(--sog-module);
+    color: var(--sog-module-ink)
+  }
+
+  /* ---- tableau : filet de la couleur du module sous l'en-tête, en capitales discrètes ; tuiles de chiffres : aplats de
+     la couleur du module, chiffre grand et léger ; lignes de liste : à plat avec un liseré */
+  [data-design="metro"] .f-table th {
+    border-bottom: 2px solid var(--sog-module);
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase
+  }
+  [data-design="metro"] .f-tiles>* {
+    background: var(--sog-module);
+    border-color: transparent;
+    color: var(--sog-module-ink)
+  }
+  [data-design="metro"] .f-tiles b {
+    color: inherit;
+    font-weight: 300;
+    font-size: 1.6rem
+  }
+  [data-design="metro"] .f-item {
+    border-color: transparent;
+    border-left: 4px solid var(--sog-module)
+  }
+
+  /* ---- notes et fenêtres : plats, un filet de la couleur du module */
+  [data-design="metro"] .f-modal>div {
+    border: 2px solid var(--sog-module)
+  }
+}

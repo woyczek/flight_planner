@@ -94,3 +94,58 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
 - **23 Oct 2026 — Icon added by maps** (lot 5d, `13b32160b`): `wand-sparkles`, for the Auto mode of the map modes
   selector. It follows the set's rules: paths only on the 24 px grid, no colour or stroke of its own. `map`, `plane`
   and `chevron-down` were already there.
+- **23 Oct 2026 — "Metro" mock-up, on the user's request** ("on a branch, propose a Metro mock-up; once the frame is
+  amended, we will decide the tokens"). Branch `v3-metro`, nothing pushed. **Mock-up, pending decision.**
+  - What it is: a design `metro` (`tokens.css`, day and night, `DESIGNS` in `frame/app.js`, so it appears in the Settings
+    Design card and persists like the others); its frame rules in `frame/design/metro.css` (all behind
+    `[data-design="metro"]`, screen only); a demo page, `frame/design/demo_metro.html`, to open first.
+  - What it does: flat colour blocks, square corners, no shadow, system fonts (`Segoe UI` first, no web font); page title
+    (the module's `h1`) twice as large, light, left-aligned, in the module's colour, no card; section headings (`h2`)
+    as pivot headings; small headings in discreet capitals; flat 2 px-outlined buttons, the primary one filled with the
+    module's colour; fields on a flat grey with a 2 px bottom rule (the module's colour while typing); numbers tiles as
+    colour blocks; table header ruled in the module's colour.
+  - **One landmark colour per module**: `--sog-module`, `--sog-module-ink`, `--sog-module-text`, in **every** design (equal
+    to the accent, link-coloured as text, so a module can use them later); only `metro` makes them visible. The frame
+    posts `data-landmark` on `<html>` (`paintModule`, only when it changes; the inline line of `index.html` also reads
+    the address, so the first paint has the colour), on each pane and on each menu link, **not** `data-module`: modules
+    write selectors such as `[data-module="maps"] …`, which would have spread over the header and the menu (seen on the
+    first try: the Map verb turned into a column).
+  - Contrast (computed): white on the module colours 5.37 to 7.38 : 1 (WCAG AA 4.5); module colour as text on the
+    day's white page 5.37 to 7.38, on a grey card 4.79 to 6.60; at night the lighter text variants 5.20 to 11.03 on
+    the night surfaces. Orange had to go dark (`#b34700`): the usual Metro orange fails with white text.
+  - **Frame amendments proposed for decision** (each: what, why, cost):
+    1. **The page title belongs to the frame**: it writes the verb as the page's `h1` and modules drop their own (today
+       each module writes its own `h1`: "Fuel and level", "Mission report", "Map"). Why: a Metro title is the verb,
+       identical everywhere, and a single place sets its size, colour and position. Cost: one line in the frame, one
+       line out of each module (`fuel`, `report`, `flightlog`, `maps`, `website`), their `DECISIONS.md`; maps' `h1`
+       sits in its toolbar. The mock-up styles the existing `h1` and changes no module.
+    2. **`data-landmark` and the three module tokens in the frame's contract** (`INTEGRATION.md`): modules may read
+       `--sog-module*` for their own accents (a map layer, a chip), never write them. Cost: a paragraph; no behaviour.
+    3. **A tint on the header and on the system bar** (`theme-color` now follows the header's real colour, not
+       `--sog-surface`): the colour of the module on screen. Cost: `paintBar` in the frame; identical in the other
+       designs (the header is still the surface colour).
+    4. **Verb blocks in the drawer** (two per row, 104 px, icon and verb; the last odd one full width) and a rail on a
+       screen. Why: the verbs become the application's home on a phone, with the colours learned by sight. Cost: CSS
+       only; it needs the menu to stay at seven verbs or fewer (an eighth makes a fifth row; the drawer scrolls).
+    5. **Title tokens**: `--sog-title-size` and `--sog-title-weight` (every design: 1.25rem and 700, today's look,
+       checked pixel for pixel); `--sog-h1` stays the size of figures (`fu-big`, tiles), not of the page title. Cost: two
+       tokens, one rule.
+    6. **Flat buttons and bottom-ruled fields** are tokenless rules in `metro.css`. If Metro is chosen, either they stay
+       in that file (a design owns its rules), or the primitives take tokens (`--sog-btn-border`, `--sog-field-rule`) so
+       that every design can use them. Cost of the second: ten lines of primitives, nothing for a module.
+    7. **Tiles of numbers** as colour blocks (`.f-tiles`) change the meaning of that primitive: a coloured tile reads
+       as a button. Open: keep them, or use a left rule only.
+  - **Left open**:
+    - the palette (the exact hues, orange in particular; an alternative is dark text on light fills, which breaks the
+      "white on colour" rule) and the night fills (the day's, with light text variants);
+    - whether the sticky bar (`.f-bar`) takes the module's colour as a block: not done, because its content carries
+      status colours (`f-warn`, `f-err`) that would lose their contrast on a colour block; it has a 6 px rule in the
+      module's colour instead;
+    - titles in lower case (Metro style) and the Segoe UI Light face: on a device without it, the system font at weight
+      300 may fall back to regular (the capture machine had no light face);
+    - the settings card keeps the grey of `settings`; help and conflicts take it too;
+    - no module was changed. Noted for their agents if Metro is chosen: fuel's `+30` / `Now` row overflows its card by
+      a few pixels on a phone (also in `standard`); maps' canvas colours are not tokens yet.
+  - Checks: `standard`, `cabinet`, `field` identical to the commit before, pixel for pixel (Fuel, Report, Map,
+    My flights, menu, 390 and 1280 px, day and night; only the Settings page differs, by the new Metro thumbnail);
+    no JavaScript error; no horizontal scroll at 390 px; every target at least 44 px.

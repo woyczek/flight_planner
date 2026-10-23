@@ -563,6 +563,11 @@
       id: 'field',
       label: ['Durci', 'Rugged', 'Robust', 'Robusto'],
       textured: true
+    }, {
+      // maquette à trancher (frame/design/SPEC.md § 3) : aplats, angles droits, une couleur repère par module
+      id: 'metro',
+      label: ['Metro', 'Metro', 'Metro', 'Metro'],
+      textured: false
     }],
     TONES = ['auto', 'day', 'night'],
     DESIGN_MIRROR = 'sogFrame:design';
@@ -589,9 +594,23 @@
     } catch {
       /* stockage indisponible : la page démarre sur le design standard puis applique celui-ci */
     }
+    paintBar();
+  }
+  /** Couleur de la barre du système : celle de l'en-tête, qui suit le design, le ton et (metro) le module affiché. */
+  function paintBar() {
     const meta = document.querySelector('meta[name="theme-color"]'),
-      bar = getComputedStyle(h).getPropertyValue('--sog-surface').trim();
+      head = document.querySelector('.f-head'),
+      bar = head ? getComputedStyle(head).backgroundColor : '';
     if (meta && bar && meta.content !== bar) meta.content = bar;
+  }
+  /** Module (ou écran du cadre) affiché : son id sur <html> (data-landmark), d'où le design metro tire la couleur repère
+   *  (--sog-module, frame/design/tokens.css) de l'en-tête ; les écrans du cadre ont celle des réglages. Posé seulement
+   *  s'il change ; le volet, le module et le menu portent la leur (data-landmark posé à leur création). */
+  function paintModule(id) {
+    const h = document.documentElement,
+      m = SCREENS.includes(id) ? 'settings' : id || '';
+    if (m && h.dataset.landmark !== m) h.dataset.landmark = m;
+    paintBar();
   }
   /** Source en lecture seule des bases de référence (SIA, appareils) quand rien n'est échangé : le lanceur qui sert la
    *  page, sinon le dépôt GitHub réglé ; null sans l'un ni l'autre (site public : ces bases n'y sont jamais publiées). */
@@ -810,7 +829,7 @@
       key = list.map(m => m.id).join(',');
     if (key !== menuKey || !ul.children.length) {
       menuKey = key;
-      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('');
+      ul.innerHTML = list.map(m => `<li><a href="#${esc(m.id)}" data-id="${esc(m.id)}" data-landmark="${esc(m.id)}">${icon(m.icon)}${esc(t(m.label))}</a></li>`).join('');
     }
     for (const a of ul.querySelectorAll('a')) {
       const on = a.dataset.id === active;
@@ -827,6 +846,7 @@
     if (over && location.hash === over.returnHash) return closeOver();
     if (SCREENS.includes(id) && (current || over)) return openOver(id, h);
     if (over) closeOver(false);
+    paintModule(id);
     document.body.classList.remove('f-nav-open');
     $('fBurger').setAttribute('aria-expanded', 'false');
     if (current?.mod?.unmount) try {
@@ -854,6 +874,7 @@
       const el = document.createElement('section');
       el.className = 'f-module';
       el.dataset.module = entry.id;
+      el.dataset.landmark = entry.id;
       view.append(el);
       current = {
         id: entry.id,
@@ -922,6 +943,7 @@
     el.className = 'f-pane';
     sec.className = 'f-module';
     sec.dataset.module = p.id;
+    sec.dataset.landmark = p.id;
     // « × » : ferme le volet comme la bascule (choix gardé)
     const bar = document.createElement('div'),
       x = document.createElement('button');
@@ -1022,6 +1044,7 @@
     const k = over.stack.indexOf(location.hash);
     k >= 0 ? over.stack.length = k + 1 : over.stack.push(location.hash);
     over.id = id;
+    paintModule(id);
     const view = $('fView');
     let scr = view.querySelector(':scope > .f-screen');
     if (!scr) {
@@ -1052,6 +1075,7 @@
     paintToggles();
     paintPaneButton(APP.modules.find(m => m.id === current?.id) || null);
     if (!restore) return;
+    paintModule(current?.id);
     if (o.sig !== mountSig()) return route(); // réglages changés : le module est remonté avec eux
     renderMenu(current?.id || '');
     requestAnimationFrame(() => scrollTo(0, o.scroll));
