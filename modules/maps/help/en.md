@@ -25,24 +25,25 @@ and the airspace you are in at that point.
 
 **Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
-“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit,
-the index contours numbered), with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling
-tracks, the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses
-from your flight's level (High IFR from FL195). The mode is kept on this device.
+“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
+terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit, the index contours numbered),
+with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling tracks,
+the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses from
+your flight's level (High IFR from FL195). The mode is kept on this device.
 
 **The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
 names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
 distance, its track (“097°”), the reporting points and the obstacles. Close up, each obstacle carries its height above
 ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
-**Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families
-(TMA / CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points,
-obstacles, minimum altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept
-for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by
-default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
-elsewhere. Close up, everything is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left,
-more to the right, at every zoom. Each element of the map has its zoom range: VFR reporting points appear only very
-close, CTRs close up, TMAs in a medium view, FIRs from afar.
+**Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families (TMA /
+CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
+altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept for this setting on
+this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by default in IFR, keeps
+airspaces and airways near the route; unticked, the whole visible map is drawn, to look elsewhere. Close up, everything
+is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left, more to the right, at
+every zoom. Each element of the map has its zoom range: VFR reporting points appear only very close, CTRs close up, TMAs
+in a medium view, FIRs from afar.
 
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
 small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,
@@ -115,4 +116,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 8c7b1fa48287 -->
+<!-- fr: ca2540d7c632 -->

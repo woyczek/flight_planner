@@ -74,7 +74,10 @@ en los puntos de la ruta: la tarjeta «Vientos y temperaturas en altura» da, pa
 / ARPEGE sobre Francia, ICON en el resto de Europa, GFS más allá), la hora prevista (la fecha del vuelo, si no ahora) y
 la hora de la pasada. Con «Meteorología real», el viento del cálculo pasa a ser la media de esos vientos al nivel
 planificado, a lo largo de la ruta, en lugar del viento en superficie de los METAR; la línea bajo los campos lo indica.
-Los mismos vientos van al Mapa, que los dibuja como flechas. Sin conexión, se mantiene la última previsión leída.
+Los mismos vientos van al Mapa, que los dibuja como flechas. Sin conexión, se mantiene la última previsión leída. Cuando
+cambian la ruta o la hora, el viento en altura anterior se mantiene, marcado «previsión en curso…», hasta la nueva
+previsión; si no llega, el viento en superficie de los METAR toma el relevo y se indica («previsión en altura no
+disponible»).
 
 **4 Cálculo.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
 El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los niveles que no se
@@ -105,11 +108,23 @@ aeronave). No se envía nada que no esté ya en el vuelo. Los ajustes del cálcu
 meteorológico, unidades) están en el último desplegable.
 
 **5 Salida.** Un resumen de una página: la aeronave, la ruta tal como se presentará, el nivel (y sus escalones), el
-viento y su fuente, el combustible de bloque. «Iniciar el vuelo» anota la hora de salida en el vuelo; en un teléfono
-abre el Mapa, en una pantalla grande se queda aquí con el Mapa a la derecha. El informe retomará este vuelo. Cambiar
+viento y su fuente, el combustible de bloque. «Iniciar el vuelo» lanza el plan de vuelo (puesta en marcha, retroceso,
+rodaje…). La preparación puede tener varios días: por eso empieza rehaciéndolo todo a la hora real — la fecha del vuelo
+vuelve a ahora, la meteorología de los aeródromos y los vientos en altura se vuelven a leer, el cálculo se rehace — y
+dice en una línea lo que ha cambiado («viento 273°/35 kt → 284°/44 kt · bloque 684 → 644 kg · llegada prevista 17:03»);
+sin conexión, lo dice y arranca con el último cálculo. Después anota la hora de salida, que pasa a ser la puesta en
+marcha del informe. En un teléfono abre el Mapa, en una pantalla grande se queda aquí con el Mapa a la derecha. Cambiar
 después el aeródromo de salida es preparar otro vuelo: la hora de salida se borra. Cambiar la llegada después de la
-salida es un desvío: la hora se conserva y el desvío queda anotado. El vuelo preparado aquí — aeronave, ruta, nivel,
-perfil de ascenso y de descenso — se comparte: Mapa e Informe ya lo tienen.
+salida es un desvío: la hora se conserva y el desvío queda anotado.
+
+Una vez iniciado el vuelo, el resultado al pie de la pantalla dice «Vuelo iniciado a las 13:14 · desde hace 1 h 10». Un
+vuelo iniciado termina al escribir su informe: al guardarlo, Combustible vuelve a la preparación y Mis vuelos quita «en
+curso». Para volver a la preparación sin informe, «Anular la salida» (tras confirmación). La tarjeta «Progreso previsto»
+muestra dónde debería estar el vuelo, en teoría: la hora prevista de paso por cada punto (rodaje, ascenso, crucero tramo
+por tramo con su viento, descenso), el próximo punto resaltado, la distancia recorrida y la restante y el combustible
+restante previsto. Sigue la hora, minuto a minuto, hasta el informe o la anulación, y pasa al Mapa con el vuelo. El
+vuelo preparado aquí — aeronave, ruta, nivel, perfil de ascenso y de descenso — se comparte: Mapa e Informe ya lo
+tienen.
 
 ## Fichas de rendimiento
 
@@ -148,4 +163,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: eabc01179da1 -->
+<!-- fr: 1864254f79d8 -->

@@ -77,7 +77,9 @@ Stufen), den Wind, die Temperatur und die ISA-Abweichung auf dieser Flugfläche 
 ARPEGE über Frankreich, ICON im übrigen Europa, GFS darüber hinaus), der Zielzeit (das Flugdatum, sonst jetzt) und der
 Uhrzeit des Modelllaufs. Mit „Echtes Wetter“ wird der Wind der Berechnung zum Mittel dieser Winde auf der geplanten
 Flugfläche entlang der Route, anstelle des Bodenwinds der METAR; die Zeile unter den Feldern sagt es. Dieselben Winde
-gehen an die Karte, die sie als Pfeile zeichnet. Ohne Netz bleibt die zuletzt gelesene Vorhersage.
+gehen an die Karte, die sie als Pfeile zeichnet. Ohne Netz bleibt die zuletzt gelesene Vorhersage. Ändern sich Route
+oder Uhrzeit, bleibt der bisherige Höhenwind, markiert mit „Vorhersage wird geladen…“, bis zur neuen Vorhersage; kommt
+sie nicht, übernimmt der Bodenwind der METAR, und das wird gesagt („Höhenvorhersage nicht verfügbar“).
 
 **4 Kalkulation.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und die Dauer
 (gestrichelt). Der grüne Punkt markiert die sparsamste Flugfläche, das orange Quadrat die schnellste; der graue Bereich
@@ -110,12 +112,24 @@ Luftfahrzeugtyp). Es wird nichts gesendet, was nicht schon im Flug steht. Die Ei
 Reserve, Zusatzmenge, Wetterkorridor, Einheiten) stehen im letzten aufklappbaren Bereich.
 
 **5 Abflug.** Eine Zusammenfassung auf einer Seite: das Luftfahrzeug, die Route, wie sie aufgegeben wird, die Flugfläche
-(und ihre Stufen), der Wind und seine Quelle, der Blockkraftstoff. „Flug starten“ trägt die Abflugzeit in den Flug ein;
-auf einem Telefon öffnet es die Karte, auf einem großen Bildschirm bleibt es hier mit der Karte rechts. Der Bericht
-übernimmt diesen Flug. Den Abflugplatz danach zu ändern heißt, einen anderen Flug vorzubereiten: Die Abflugzeit wird
-gelöscht. Die Ankunft nach dem Abflug zu ändern ist eine Umleitung: Die Zeit bleibt erhalten, und die Umleitung wird
-vermerkt. Der hier vorbereitete Flug — Luftfahrzeug, Route, Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und
-Bericht haben ihn schon.
+(und ihre Stufen), der Wind und seine Quelle, der Blockkraftstoff. „Flug starten“ startet den Flugplan (Anlassen,
+Zurückstoßen, Rollen…). Die Vorbereitung kann mehrere Tage alt sein: Deshalb wird zuerst alles auf die tatsächliche
+Uhrzeit gebracht — das Flugdatum springt auf jetzt zurück, Flugplatzwetter und Höhenwinde werden neu gelesen, die
+Berechnung wird neu erstellt — und in einer Zeile gesagt, was sich geändert hat („Wind 273°/35 kt → 284°/44 kt · Block
+684 → 644 kg · geplante Ankunft 17:03“); offline wird das gesagt und mit der letzten Berechnung gestartet. Danach wird
+die Abflugzeit eingetragen, die zur Anlasszeit des Berichts wird. Auf einem Telefon öffnet es die Karte, auf einem
+großen Bildschirm bleibt es hier mit der Karte rechts. Den Abflugplatz danach zu ändern heißt, einen anderen Flug
+vorzubereiten: Die Abflugzeit wird gelöscht. Die Ankunft nach dem Abflug zu ändern ist eine Umleitung: Die Zeit bleibt
+erhalten, und die Umleitung wird vermerkt.
+
+Sobald der Flug gestartet ist, zeigt das Ergebnis unten im Bildschirm „Flug gestartet um 13:14 · seit 1 h 10“. Ein
+gestarteter Flug endet mit dem Schreiben seines Berichts: Beim Speichern kehrt Kraftstoff zur Vorbereitung zurück, und
+Meine Flüge entfernt „laufend“. Um ohne Bericht zur Vorbereitung zurückzukehren: „Start abbrechen“ (nach Bestätigung).
+Die Karte „Geplanter Fortschritt“ zeigt, wo der Flug theoretisch sein sollte: die geplante Überflugzeit an jedem Punkt
+(Rollen, Steigflug, Reiseflug Abschnitt für Abschnitt mit seinem Wind, Sinkflug), den nächsten Punkt hervorgehoben, die
+zurückgelegte und die verbleibende Entfernung und den geplanten Restkraftstoff. Sie folgt der Uhr, Minute für Minute,
+bis zum Bericht oder zum Abbruch, und geht mit dem Flug an die Karte. Der hier vorbereitete Flug — Luftfahrzeug, Route,
+Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und Bericht haben ihn schon.
 
 ## Leistungsdatenblätter
 
@@ -158,4 +172,4 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: eabc01179da1 -->
+<!-- fr: 1864254f79d8 -->

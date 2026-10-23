@@ -15,8 +15,8 @@ flight on the network: “Use” fills in the aircraft, the callsign, the route 
 flight prepared in Fuel or Map is offered the same way (“Current flight”); if it was started in Fuel (“Start the
 flight”), it comes first, “Flight started at hh:mm”. The card says in one line everything that will be taken, even what
 a mission type has no box to show (distance, level). “Use” also fills in the start-up time (the departure time in Fuel)
-and the fuel at departure (the block fuel of the quote), each marked with its source. Once its report is saved, the
-flight is no longer offered.
+and the fuel at departure (the block fuel of the quote), each marked with its source. Saving the report ends the started
+flight: Fuel goes back to preparation, My flights removes “In progress”, and the flight is no longer offered.
 
 **The other sources.** Unfold “Other sources” to take your last IVAO or VATSIM flight, your SimBrief flight plan, or a
 pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or from StatSim, a METAR. Only empty fields
@@ -73,4 +73,4 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: 6ad5a5814956 -->
+<!-- fr: 5bd862ad5bb7 -->

@@ -100,7 +100,9 @@ the wind, the temperature and the ISA deviation at that level, with the model (M
 ICON elsewhere in Europe, GFS beyond), the target time (the flight date, otherwise now) and the run time. With “Real
 weather”, the quote's wind becomes the mean of these winds at the planned level, along the route, instead of the METARs'
 surface wind; the line below the fields says so. The same winds go to the Map, which draws them as arrows. Offline, the
-last forecast read stays.
+last forecast read stays. When the route or the time changes, the previous wind aloft stays, marked “forecast loading…”,
+until the new forecast arrives; if it does not come, the METARs' surface wind takes over and this is stated (“forecast
+aloft unavailable”).
 
 **4 Quote.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
@@ -130,11 +132,23 @@ that is not already in the flight. The quote settings (taxi, reserve, margin, we
 fold.
 
 **5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
-and its source, the block fuel. “Start the flight” records the departure time in the flight; on a phone it opens the
-Map, on a large screen it stays here with the Map on the right. The report will take this flight up. Changing the
-departure airfield afterwards means preparing another flight: the departure time is cleared. Changing the arrival after
-departure is a diversion: the time is kept and the diversion recorded. The flight prepared here — aircraft, route,
-level, climb and descent profile — is shared: Map and Report already have it.
+and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
+may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the
+aerodrome weather and the winds aloft are read again, the quote is redone — and says in one line what has changed (“wind
+273°/35 kt → 284°/44 kt · block 684 → 644 kg · planned arrival 17:03”); offline, it says so and starts with the last
+quote. It then records the departure time, which becomes the report's start-up time. On a phone it opens the Map, on a
+large screen it stays here with the Map on the right. Changing the departure airfield afterwards means preparing another
+flight: the departure time is cleared. Changing the arrival after departure is a diversion: the time is kept and the
+diversion recorded.
+
+Once the flight has started, the result at the bottom of the screen says “Flight started at 13:14 · for 1 h 10”. A
+started flight ends with the writing of its report: when it is saved, Fuel goes back to preparation and My flights
+removes “in progress”. To go back to preparation without a report, “Cancel the start” (after confirmation). The “Planned
+progress” card shows where the flight should be, in theory: the planned time over each point (taxi, climb, cruise leg by
+leg with its wind, descent), the next point highlighted, the distance flown and remaining, and the planned remaining
+fuel. It follows the clock, minute by minute, until the report or the cancellation, and goes to the Map with the flight.
+The flight prepared here — aircraft, route, level, climb and descent profile — is shared: Map and Report already have
+it.
 
 ## Performance sheets
 
@@ -172,7 +186,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: eabc01179da1 -->
+<!-- fr: 1864254f79d8 -->
 
 <!-- chapter: maps -->
 # Map
@@ -202,24 +216,25 @@ and the airspace you are in at that point.
 
 **Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
-“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit,
-the index contours numbered), with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling
-tracks, the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses
-from your flight's level (High IFR from FL195). The mode is kept on this device.
+“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
+terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit, the index contours numbered),
+with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling tracks,
+the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses from
+your flight's level (High IFR from FL195). The mode is kept on this device.
 
 **The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
 names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
 distance, its track (“097°”), the reporting points and the obstacles. Close up, each obstacle carries its height above
 ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
-**Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families
-(TMA / CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points,
-obstacles, minimum altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept
-for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by
-default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
-elsewhere. Close up, everything is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left,
-more to the right, at every zoom. Each element of the map has its zoom range: VFR reporting points appear only very
-close, CTRs close up, TMAs in a medium view, FIRs from afar.
+**Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families (TMA /
+CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
+altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept for this setting on
+this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by default in IFR, keeps
+airspaces and airways near the route; unticked, the whole visible map is drawn, to look elsewhere. Close up, everything
+is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left, more to the right, at
+every zoom. Each element of the map has its zoom range: VFR reporting points appear only very close, CTRs close up, TMAs
+in a medium view, FIRs from afar.
 
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
 small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,
@@ -292,7 +307,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 8c7b1fa48287 -->
+<!-- fr: ca2540d7c632 -->
 
 <!-- chapter: report -->
 # Report
@@ -312,8 +327,8 @@ flight on the network: “Use” fills in the aircraft, the callsign, the route 
 flight prepared in Fuel or Map is offered the same way (“Current flight”); if it was started in Fuel (“Start the
 flight”), it comes first, “Flight started at hh:mm”. The card says in one line everything that will be taken, even what
 a mission type has no box to show (distance, level). “Use” also fills in the start-up time (the departure time in Fuel)
-and the fuel at departure (the block fuel of the quote), each marked with its source. Once its report is saved, the
-flight is no longer offered.
+and the fuel at departure (the block fuel of the quote), each marked with its source. Saving the report ends the started
+flight: Fuel goes back to preparation, My flights removes “In progress”, and the flight is no longer offered.
 
 **The other sources.** Unfold “Other sources” to take your last IVAO or VATSIM flight, your SimBrief flight plan, or a
 pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or from StatSim, a METAR. Only empty fields
@@ -370,7 +385,7 @@ flight's line on the clipboard.
   flight's page (IVAO tracker, StatSim) into “Other sources”.
 - **Without a trigram**: the report is written all the same; set your trigram (⚙) so that it is in your name.
 
-<!-- fr: 6ad5a5814956 -->
+<!-- fr: 5bd862ad5bb7 -->
 
 <!-- chapter: flightlog -->
 # My flights

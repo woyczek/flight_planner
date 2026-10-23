@@ -71,7 +71,9 @@ the wind, the temperature and the ISA deviation at that level, with the model (M
 ICON elsewhere in Europe, GFS beyond), the target time (the flight date, otherwise now) and the run time. With “Real
 weather”, the quote's wind becomes the mean of these winds at the planned level, along the route, instead of the METARs'
 surface wind; the line below the fields says so. The same winds go to the Map, which draws them as arrows. Offline, the
-last forecast read stays.
+last forecast read stays. When the route or the time changes, the previous wind aloft stays, marked “forecast loading…”,
+until the new forecast arrives; if it does not come, the METARs' surface wind takes over and this is stated (“forecast
+aloft unavailable”).
 
 **4 Quote.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
@@ -101,11 +103,23 @@ that is not already in the flight. The quote settings (taxi, reserve, margin, we
 fold.
 
 **5 Departure.** A one-page summary: the aircraft, the route as it will be filed, the level (and its steps), the wind
-and its source, the block fuel. “Start the flight” records the departure time in the flight; on a phone it opens the
-Map, on a large screen it stays here with the Map on the right. The report will take this flight up. Changing the
-departure airfield afterwards means preparing another flight: the departure time is cleared. Changing the arrival after
-departure is a diversion: the time is kept and the diversion recorded. The flight prepared here — aircraft, route,
-level, climb and descent profile — is shared: Map and Report already have it.
+and its source, the block fuel. “Start the flight” launches the flight plan (start-up, pushback, taxi…). The preparation
+may date back several days: so it begins by redoing everything at the real time — the flight date returns to now, the
+aerodrome weather and the winds aloft are read again, the quote is redone — and says in one line what has changed (“wind
+273°/35 kt → 284°/44 kt · block 684 → 644 kg · planned arrival 17:03”); offline, it says so and starts with the last
+quote. It then records the departure time, which becomes the report's start-up time. On a phone it opens the Map, on a
+large screen it stays here with the Map on the right. Changing the departure airfield afterwards means preparing another
+flight: the departure time is cleared. Changing the arrival after departure is a diversion: the time is kept and the
+diversion recorded.
+
+Once the flight has started, the result at the bottom of the screen says “Flight started at 13:14 · for 1 h 10”. A
+started flight ends with the writing of its report: when it is saved, Fuel goes back to preparation and My flights
+removes “in progress”. To go back to preparation without a report, “Cancel the start” (after confirmation). The “Planned
+progress” card shows where the flight should be, in theory: the planned time over each point (taxi, climb, cruise leg by
+leg with its wind, descent), the next point highlighted, the distance flown and remaining, and the planned remaining
+fuel. It follows the clock, minute by minute, until the report or the cancellation, and goes to the Map with the flight.
+The flight prepared here — aircraft, route, level, climb and descent profile — is shared: Map and Report already have
+it.
 
 ## Performance sheets
 
@@ -143,4 +157,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: eabc01179da1 -->
+<!-- fr: 1864254f79d8 -->
