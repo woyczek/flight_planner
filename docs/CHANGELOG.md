@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: no default aircraft** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — a new flight takes the last
+  aircraft chosen on the device, shown first in the search; with none, the quote waits for a choice.
 - **aerodb: aircraft registry read in parallel** (`frame/aerodb/aerodb.js`, `registry.js`; SPEC, DECISIONS) — the
   types base and every source of the registry (sheets, V2 fpdb, fleet, reference) are asked at once instead of one
   after the other: first GitHub screen 7.46 s → 5.70 s (CPU ×4, Fast 3G).

@@ -15,7 +15,8 @@ Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in f
 
 **1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
 rather than the observation, the aircraft and the cruise level (as a flight level). The aircraft fits on one line: the
-chosen aircraft, its registration, its callsign and where it comes from. The magnifying glass opens the search: type a
+chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
+chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
 sheet, a registration, a callsign or a type. The results come in this order: your performance sheets, the airline's
 aircraft (its fleet, then those known from its logbook), the published types, and last the code as typed. An airline
 aircraft takes its own sheet if it has one, otherwise its type's, otherwise an estimate of the type — the quote then

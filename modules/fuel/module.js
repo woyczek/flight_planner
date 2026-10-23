@@ -50,6 +50,7 @@ const OFP_PATH = 'cache/fuel/last_ofp.json',
   WX_PATH = 'cache/fuel/weather.json',
   ALOFT_PATH = 'cache/fuel/aloft.json', // prévision en altitude (Open-Meteo) : profils aux lieux de la route
   UI_PATH = 'cache/fuel/ui.json',
+  LAST_AC_PATH = 'cache/fuel/last_aircraft.json', // dernier appareil choisi sur cet appareil : proposé, repris d'office
   LIBS = [
     ['FlightPerfModel', 'performance_model.js'],
     ['FuelModel', 'model.js'],
@@ -73,6 +74,7 @@ const TX = {
     'Base de aeronaves no disponible (aerodb).'
   ],
   origins: {
+    last: ['dernier choisi', 'last chosen', 'zuletzt gewählt', 'último elegido'],
     sheet: ['ma fiche', 'my sheet', 'mein Datenblatt', 'mi ficha'],
     fleet: ['flotte de la compagnie', 'airline fleet', 'Flotte der Fluggesellschaft', 'flota de la aerolínea'],
     reference: ['appareil connu (journal)', 'known aircraft (log)', 'bekanntes Luftfahrzeug (Flugbuch)', 'aeronave conocida (diario)'],
@@ -981,12 +983,11 @@ function saveSettings() {
 }
 
 // ---------------------------------------------------------------- calcul du devis et de la décision
-/** Fiche du vol (normalisée) : celle de l'appareil choisi, sinon son type seul (estimation aerodb) ; la première fiche
- *  de la liste seulement quand aucun appareil n'est choisi ; null sans rien. */
+/** Fiche du vol (normalisée) : celle de l'appareil choisi, sinon son type seul (estimation aerodb) ; null tant
+ *  qu'aucun appareil n'est choisi (plus de première fiche de la liste par défaut : le devis attend le choix). */
 function currentSheet() {
   const a = S.flight.aircraft || {},
-    chosen = !!(a.sheetId || a.type || a.registration),
-    raw = S.sheets.find(p => p.id === a.sheetId) || (chosen ? null : S.sheets[0]) || null;
+    raw = S.sheets.find(p => p.id === a.sheetId) || null;
   if (raw) return window.FuelModel.normalizeSheet(structuredClone(raw));
   if (a.type) return window.FuelModel.normalizeSheet({
     id: `TYPE_${a.type}`,
@@ -2248,13 +2249,24 @@ async function acResults(text) {
     hits = await S.A.search(text, 30).catch(() => []);
   if (gone(s) || seq !== S.acSeq || !S.body) return;
   S.acHits = new Map(hits.map(h => [h.key, h]));
-  box.innerHTML = hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc([...new Set((h.sources?.length > 1 ? h.sources : [h.source]).map(x => /^fleet/.test(x) ? 'fleet' : x))].map(x => tt(TX.origins[x] || TX.origins.free)).join(' + '))}</span></button>`).join(''); // ligne fusionnée (une par immatriculation) : toutes ses origines
+  const last = !String(text || '').trim() && S.lastAc?.name ? S.lastAc : null; // recherche vide : le dernier choisi d'abord
+  box.innerHTML = (last ? `<button type="button" class="f-item" data-pick="last"><span>${esc([last.name, last.registration, last.callsign].filter(Boolean).join(' — '))}</span><span class="f-badge" data-kind="accent">${esc(tt(TX.origins.last))}</span></button>` : '') + hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc([...new Set((h.sources?.length > 1 ? h.sources : [h.source]).map(x => /^fleet/.test(x) ? 'fleet' : x))].map(x => tt(TX.origins[x] || TX.origins.free)).join(' + '))}</span></button>`).join(
+    ''); // ligne fusionnée (une par immatriculation) : toutes ses origines
 }
 /** Appareil retenu : le vol courant prend aircraftOf (fiche, type, immatriculation, indicatif, nom, origine). */
 function pickAircraft(key) {
-  const hit = S.acHits?.get(key);
-  if (!hit) return;
-  S.flight.aircraft = S.A.aircraftOf(hit);
+  const hit = key === 'last' ? null : S.acHits?.get(key);
+  if (!hit && !(key === 'last' && S.lastAc)) return;
+  S.flight.aircraft = hit ? S.A.aircraftOf(hit) : {
+    ...S.lastAc
+  };
+  S.lastAc = {
+    ...S.flight.aircraft
+  };
+  S.ctx.data.put(LAST_AC_PATH, {
+    aircraft: S.lastAc,
+    at: new Date().toISOString()
+  });
   S.manual = null;
   const panel = S.body.querySelector('[data-acpanel]');
   panel.classList.add('fu-hide');
@@ -3614,6 +3626,12 @@ export async function mount(el, ctx) {
     displayDist: 'NM',
     entries: {},
     ...((await ctx.data.get(pilotPath('fuel.json'))) || {})
+  };
+  // vol sans appareil : le dernier choisi sur cet appareil est repris d'office (plus de première fiche par défaut)
+  S.lastAc = (await ctx.data.get(LAST_AC_PATH).catch(() => null))?.aircraft || null;
+  const ka = S.flight.aircraft || {};
+  if (S.lastAc && !(ka.sheetId || ka.type || ka.registration)) S.flight.aircraft = {
+    ...S.lastAc
   };
   // un vol sans écart ISA part du dernier écart retenu (réglages du devis)
   if (!Number.isFinite(+kept.isaDev)) S.flight.isaDev = +S.settings.isaDev || 0;

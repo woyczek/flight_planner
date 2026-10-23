@@ -16,7 +16,8 @@ Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), daru
 
 **1 Flug.** Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), das Flugdatum, wenn Sie die Vorhersage (TAF) statt der
 Beobachtung wollen, das Luftfahrzeug und die Reiseflugfläche (FL). Das Luftfahrzeug passt auf eine Zeile: das gewählte
-Luftfahrzeug, sein Kennzeichen, sein Rufzeichen und woher es stammt. Die Lupe öffnet die Suche: Tippen Sie ein
+Luftfahrzeug, sein Kennzeichen, sein Rufzeichen und woher es stammt. Ein neuer Flug übernimmt das zuletzt auf diesem Gerät
+gewählte Luftfahrzeug; ohne Wahl wartet die Kalkulation. Die Lupe öffnet die Suche (das zuletzt gewählte zuerst): Tippen Sie ein
 Datenblatt, ein Kennzeichen, ein Rufzeichen oder einen Typ. Die Ergebnisse kommen in dieser Reihenfolge: Ihre
 Leistungsdatenblätter, die Luftfahrzeuge der Fluggesellschaft (ihre Flotte, dann die aus ihrem Flugbuch bekannten), die
 veröffentlichten Typen und zuletzt der Code so, wie er getippt wurde. Ein Luftfahrzeug der Fluggesellschaft nimmt sein

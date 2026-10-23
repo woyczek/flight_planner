@@ -14,8 +14,8 @@ début de descente) reste visible en bas de l'écran à chaque pas, avec d'où v
 façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).
 
 **1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt
-que l'observation, l'appareil et le niveau de croisière (en FL). L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. La
-loupe ouvre la recherche : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
+que l'observation, l'appareil et le niveau de croisière (en FL). L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. Un nouveau vol reprend le dernier
+appareil choisi sur cet appareil ; sans choix, le devis attend. La loupe ouvre la recherche (le dernier choisi en tête) : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
 cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
 les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
 sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et

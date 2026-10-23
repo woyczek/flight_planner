@@ -4,6 +4,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — no default aircraft; the last chosen is taken again** (end-to-end pass, Simplification's
+  decision (a)): an empty flight took the first sheet of the list (King Air 350) before the pilot chose anything.
+  `currentSheet` no longer falls back on it: the quote stays empty until a choice. Every choice is kept on the
+  device (`cache/fuel/last_aircraft.json`), shown first in the empty search ("last chosen") and taken at mount by
+  a flight without aircraft. Checked on 8804: flight set without aircraft by another module → "No aircraft" and
+  "No sheet…"; reload → EC45 F-ZBQK back, quote back.
 - **23 Oct 2026 — the level decision gives the quote's figures** (end-to-end pass, Simplification's go): the curve
   came from the performance model's own trip (`levels.js` `m.trip`, one mean wind for every level) while the quote
   uses `M.quote` (climb law, cruise legs, the sheet's descent): at FL060 the quote said 534 kg / 2:23, the curve

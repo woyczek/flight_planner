@@ -16,7 +16,8 @@ en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS
 
 **1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
 lugar de la observación, la aeronave y el nivel de crucero (en FL). La aeronave cabe en una línea: la aeronave elegida,
-su matrícula, su indicativo y de dónde viene. La lupa abre la búsqueda: escriba una ficha, una matrícula, un indicativo
+su matrícula, su indicativo y de dónde viene. Un vuelo nuevo toma la última aeronave elegida en este
+dispositivo; sin elección, el cálculo espera. La lupa abre la búsqueda (la última elegida primero): escriba una ficha, una matrícula, un indicativo
 o un tipo. Los resultados llegan en este orden: sus fichas de rendimiento, las aeronaves de la aerolínea (su flota,
 luego las conocidas por su diario), los tipos publicados y, en último lugar, el código tal como se escribió. Una
 aeronave de la aerolínea toma su propia ficha si la tiene, si no la de su tipo, si no una estimación del tipo — el
