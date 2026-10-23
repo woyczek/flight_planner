@@ -11,6 +11,9 @@ werden und was das Gerät offline behält. Sie bleiben auf dem Gerät, nie synch
 **Die Stufe.** „Stufe“ wählt, was das Menü zeigt: Einstieg, Alltag oder Vollständig, mit einem Tippen. Unter jeder Wahl
 sagt die Zeile „Menü:“, welche Werkzeuge sie zeigt; ein ausgeblendetes Werkzeug bleibt über seine Adresse erreichbar.
 
+**Das Design.** „Design“ zeigt eine Vorschau je Aussehen — Standard, Kabinett, Robust — und den Ton: Automatisch (wie
+das System), Tag oder Nacht. Ein Tippen wendet es sofort an, nur auf diesem Gerät.
+
 **Die Nutzungen.** Der Satz oben in „Nutzungen“ sagt, wie Daten ausgetauscht werden. Ohne angekreuztes Kästchen sind Sie
 „Allein auf diesem Gerät“: Nichts geht anderswohin. Kreuzen Sie „Allein, auf mehreren Geräten“ oder „Mehrere Nutzer
 (Git-Datenrepository)“ an, um auszutauschen.
@@ -69,7 +72,8 @@ Repository, das nicht antwortet, wird nur gemeldet.
   Zugang wieder eingestellt ist. Telefon verloren oder gestohlen: Löschen Sie das Token auch auf github.com.
 - **V2-Einstellungen**: Wurde dieser Browser schon für V2 benutzt, bietet die Karte „V2-Einstellungen gefunden“ einmal
   an, Ihre Identität und Ihren Zugang zu übernehmen.
-- **Diagnose**: unten am Bildschirm eingeklappt; „Kopieren“ legt sie in die Zwischenablage, um ein Problem zu melden. Das
+- **Über**: Links zu dieser Hilfe und zum Fahrplan (was geliefert, in Arbeit, geplant ist), dann die Diagnose,
+  eingeklappt; „Kopieren“ legt sie in die Zwischenablage, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 565166e31eca -->
+<!-- fr: 18543b526915 -->

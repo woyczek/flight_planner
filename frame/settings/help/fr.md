@@ -11,6 +11,9 @@ sont échangées, et ce que l'appareil garde hors ligne. Ils restent sur l'appar
 **Le niveau.** « Niveau » choisit ce que le menu montre : Découverte, Courant ou Complet, d'un toucher. Sous chaque
 choix, la ligne « Menu : » dit quels outils il montre ; un outil caché reste joignable par son adresse.
 
+**Le design.** « Design » montre une vignette par habillage — Standard, Cabinet, Durci — et le ton : Automatique
+(comme le système), Jour ou Nuit. Un toucher l'applique aussitôt, sur cet appareil seulement.
+
 **Les usages.** La phrase en tête de « Usages » dit comment les données sont échangées. Sans case cochée, vous êtes
 « Seul sur cet appareil » : rien ne part ailleurs. Cochez « Seul, sur plusieurs appareils » ou « À plusieurs (dépôt git
 des données) » pour échanger.
@@ -69,5 +72,6 @@ seulement signalé.
   sera de nouveau réglé. Téléphone perdu ou volé : supprimez aussi le jeton sur github.com.
 - **Réglages de la V2** : si ce navigateur a déjà servi à la V2, la carte « Réglages de la V2 trouvés » propose une fois
   de reprendre votre identité et votre accès.
-- **Diagnostic** : replié en bas de l'écran ; « Copier » le met dans le presse-papiers pour signaler un problème. Le
+- **À propos** : liens vers cette aide et la feuille de route (ce qui est livré, en cours, prévu), puis le
+  diagnostic, replié ; « Copier » le met dans le presse-papiers pour signaler un problème. Le
   jeton n'y figure jamais.

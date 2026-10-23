@@ -4,7 +4,8 @@
   // cadre et non d'un module, parce qu'il règle le transport et le jeton de l'appareil, ce qu'un module ne touche jamais.
   //   · cartes courtes en une colonne (téléphone d'abord), chacune enregistrée seule ;
   //   · Identité (device/identity.json) ; Niveau (device/level.json : 1 découverte, 2 courant, 3 complet ; le menu du
-  //     cadre suit) ; Usages (device/usages.json) : « Seul sur cet appareil » n'est pas une case,
+  //     cadre suit) ; Design (vignettes des jeux du cadre, ton auto / jour / nuit : ctx.saveDesign, le cadre applique et garde
+  //     device/design.json) ; Usages (device/usages.json) : « Seul sur cet appareil » n'est pas une case,
   //     c'est l'état quand aucun échange n'est coché ; export / import des données de l'appareil dans ce seul cas ;
   //   · Accès, toujours : sur un poste servi par le lanceur, le dépôt distant de data/ (GET / POST /__setup/sync-remote :
   //     vérifier, enregistrer ; autre dépôt confirmé dans une fenêtre du lanceur) ; sinon dépôt GitHub, jeton jamais
@@ -96,6 +97,23 @@
     levelSaved: ['Niveau « {l} » : le menu suit.', 'Level “{l}”: the menu follows.', 'Stufe „{l}“: das Menü folgt.',
       'Nivel «{l}»: el menú sigue.'
     ],
+    // design
+    design: ['Design', 'Design', 'Design', 'Diseño'],
+    designHint: ['L’habillage de l’appli et son ton, sur cet appareil seulement ; appliqués aussitôt.',
+      'The app’s look and its tone, on this device only; applied at once.',
+      'Das Aussehen der App und ihr Ton, nur auf diesem Gerät; sofort angewandt.',
+      'El aspecto de la aplicación y su tono, solo en este dispositivo; aplicados en el acto.'
+    ],
+    tone: ['Ton', 'Tone', 'Ton', 'Tono'],
+    tones: {
+      auto: ['Automatique (comme le système)', 'Automatic (as the system)', 'Automatisch (wie das System)',
+        'Automático (como el sistema)'
+      ],
+      day: ['Jour', 'Day', 'Tag', 'Día'],
+      night: ['Nuit', 'Night', 'Nacht', 'Noche']
+    },
+    textured: ['texturé', 'textured', 'texturiert', 'texturizado'],
+    sample: ['Carte d’exemple', 'Sample card', 'Beispielkarte', 'Tarjeta de ejemplo'],
     // usages
     usages: ['Usages', 'Usages', 'Nutzungen', 'Usos'],
     alone: ['Seul sur cet appareil : rien n’est échangé, les données restent ici.',
@@ -472,6 +490,18 @@
       shows = n => mods.filter(m => m.level <= n).map(m => t(m.label)).join(', ') || t(T.levelNone);
     cards.push(`<div class="f-card" data-card="level"><h2>${esc(t(T.level))}</h2><p class="f-muted">${esc(t(T.levelHint))}</p>
       ${T.levels.map(([name, desc], i) => `<label class="f-check f-level"><input type="radio" name="sogLevel" data-level="${i + 1}" ${lvl === i + 1 ? 'checked' : ''}><span><b>${esc(t(name))}</b> — ${esc(t(desc))}<br><span class="f-muted">${esc(t(T.levelShows, { m: shows(i + 1) }))}</span></span></label>`).join('')}</div>`);
+    // design : vignettes des jeux du cadre (chaque vignette porte son design et le ton du moment), ton auto / jour / nuit ;
+    // le cadre applique et garde le choix (ctx.saveDesign), rien n'est écrit ici
+    const sets = c.designs?.() || [];
+    if (sets.length) {
+      const cur = c.design?.() || {},
+        night = cur.tone === 'night' || (cur.tone !== 'day' && matchMedia('(prefers-color-scheme: dark)').matches);
+      cards.push(`<div class="f-card" data-card="design"><h2>${esc(t(T.design))}</h2><p class="f-muted">${esc(t(T.designHint))}</p>
+        <div class="f-designs">${sets.map(d => `<button type="button" class="f-design" data-design-pick="${esc(d.id)}" aria-pressed="${cur.design === d.id}">
+          <span class="f-design-thumb" data-design="${esc(d.id)}" data-tone="${night ? 'night' : 'day'}"><span class="f-design-bar"></span><span class="f-design-card">${esc(t(T.sample))}<span class="f-design-chip"></span></span></span>
+          <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div>
+        <h3>${esc(t(T.tone))}</h3>${['auto', 'day', 'night'].map(k => `<label class="f-check"><input type="radio" name="sogTone" data-tone-pick="${k}" ${(cur.tone || 'auto') === k ? 'checked' : ''}>${esc(t(T.tones[k]))}</label>`).join('')}</div>`);
+    }
     // usages
     const chk = (k, row, dis) => `<label class="f-check"><input type="checkbox" data-u="${k}" ${us[k] ? 'checked' : ''} ${dis ? 'disabled' : ''}>${esc(t(row))}</label>`;
     cards.push(`<div class="f-card" data-card="usages"><h2>${esc(t(T.usages))}</h2><p><b>${esc(how)}</b></p><p class="f-muted">${esc(t(T.usagesHint))}</p>
@@ -787,6 +817,20 @@
         c.notify(t(T.copied), 'ok');
       }
     };
+    view.querySelectorAll('[data-design-pick]').forEach(b => b.addEventListener('click', async () => {
+      await c.saveDesign({
+        ...(c.design?.() || {}),
+        design: b.dataset.designPick
+      });
+      again();
+    }));
+    view.querySelectorAll('[data-tone-pick]').forEach(i => i.addEventListener('change', async () => {
+      await c.saveDesign({
+        ...(c.design?.() || {}),
+        tone: i.dataset.tonePick
+      });
+      again();
+    }));
     view.querySelectorAll('[data-level]').forEach(i => i.addEventListener('change', async () => {
       const n = +i.dataset.level;
       await c.own.put('device/level.json', {

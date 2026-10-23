@@ -11,6 +11,9 @@ intercambian los datos y lo que el dispositivo guarda sin conexión. Se quedan e
 **El nivel.** «Nivel» elige lo que muestra el menú: Descubrimiento, Habitual o Completo, con un toque. Bajo cada opción,
 la línea «Menú:» indica qué herramientas muestra; una herramienta oculta sigue accesible por su dirección.
 
+**El diseño.** «Diseño» muestra una miniatura por aspecto — Estándar, Gabinete, Robusto — y el tono: Automático
+(como el sistema), Día o Noche. Un toque lo aplica en el acto, solo en este dispositivo.
+
 **Los usos.** La frase al principio de «Usos» indica cómo se intercambian los datos. Sin casilla marcada, está «Solo en
 este dispositivo»: nada sale a otro lugar. Marque «Solo, en varios dispositivos» o «Varios usuarios (repositorio git de
 datos)» para intercambiar.
@@ -69,7 +72,8 @@ se señala.
   acceso vuelva a configurarse. Teléfono perdido o robado: borre también el token en github.com.
 - **Ajustes de la V2**: si este navegador ya se usó para la V2, la tarjeta «Ajustes de la V2 encontrados» propone una
   vez retomar su identidad y su acceso.
-- **Diagnóstico**: plegado abajo en la pantalla; «Copiar» lo pone en el portapapeles para señalar un problema. El token
+- **Acerca de**: enlaces a esta ayuda y a la hoja de ruta (lo entregado, en curso, previsto), luego el
+  diagnóstico, plegado; «Copiar» lo pone en el portapapeles para señalar un problema. El token
   nunca figura en él.
 
-<!-- fr: 565166e31eca -->
+<!-- fr: 18543b526915 -->

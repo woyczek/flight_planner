@@ -344,6 +344,9 @@ tools use them to prefill; with several users, the trigram is needed.
 **The level.** “Level” chooses what the menu shows: Discovery, Everyday or Full, with one tap. Under each choice, the
 “Menu:” line says which tools it shows; a hidden tool stays reachable by its address.
 
+**The design.** “Design” shows one thumbnail per look — Standard, Cabinet, Rugged — and the tone: Automatic (as the
+system), Day or Night. One tap applies it at once, on this device only.
+
 **The usages.** The sentence at the top of “Usages” says how data are exchanged. With no box ticked you are “Alone on
 this device”: nothing goes elsewhere. Tick “Alone, on several devices” or “Several users (git data repository)” to
 exchange.
@@ -400,7 +403,8 @@ only reported.
   Lost or stolen phone: also delete the token on github.com.
 - **V2 settings**: if this browser was already used for V2, the “V2 settings found” card offers once to take over your
   identity and your access.
-- **Diagnostics**: folded at the bottom of the screen; “Copy” puts it on the clipboard to report a problem. The token is
+- **About**: links to this help and to the roadmap (what is delivered, in progress, planned), then the
+  diagnostics, folded; “Copy” puts it on the clipboard to report a problem. The token is
   never in it.
 
-<!-- fr: 565166e31eca -->
+<!-- fr: 18543b526915 -->

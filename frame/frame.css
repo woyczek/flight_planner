@@ -130,14 +130,6 @@ body {
   margin-top: 3px
 }
 /* aide (frame/help/help.js) : panneau replié en tête d'un module, écran #help ; tableaux en listes sur téléphone */
-.f-help>summary,
-.f-toc>summary {
-  min-height: var(--sog-touch);
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  font-weight: 600
-}
 .f-doc {
   overflow-wrap: anywhere
 }
@@ -200,6 +192,58 @@ body {
     content: attr(data-label) " ";
     color: var(--sog-muted)
   }
+}
+/* réglages, carte Design : une vignette par jeu (le design posé sur le bloc, jetons du jeu), choix en cours souligné */
+.f-designs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--sog-gap);
+  margin: 8px 0
+}
+.f-design {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  text-align: left;
+  min-height: var(--sog-touch)
+}
+.f-design[aria-pressed="true"] {
+  outline: 3px solid var(--sog-accent);
+  outline-offset: 1px
+}
+.f-design-thumb {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  height: 4.5rem;
+  background: var(--sog-bg);
+  color: var(--sog-fg);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  font: var(--sog-font);
+  font-size: 11px;
+  overflow: hidden
+}
+.f-design-bar {
+  height: 8px;
+  background: var(--sog-surface);
+  border-bottom: 1px solid var(--sog-border)
+}
+.f-design-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius)
+}
+.f-design-chip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--sog-accent)
 }
 /* feuille de route (frame/help/roadmap.js) : tableau sur écran, une carte par voie sur téléphone ; couleur par état */
 .f-rm [data-state="done"],

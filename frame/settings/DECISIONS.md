@@ -106,3 +106,13 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
     repository served over dumb HTTP succeeded, launcher detected again, card redrawn with its remote and branch),
     `data/` without git (door shown; the launcher of this worktree has no `adopt` yet: "restart it up to date"); 375 px.
     To check when the route is there: the adoption itself.
+- **23 Oct 2026 — Design card** (design lot 2, through the ergonomics session):
+  - thumbnails are real previews: the design is put on a small block (`[data-design][data-tone]`, allowed by the
+    design tokens), so each shows its own background, surface, border and accent; the tone shown is the one in use;
+  - settings only calls `ctx.saveDesign` and reads `ctx.design()` / `ctx.designs()`; the frame applies and keeps the
+    mirror and `device/design.json`;
+  - the help panel's and contents' summaries take the frame's common style (44 px, chevron): the `.f-help>summary`
+    rules are gone from `frame.css`;
+  - "About" card added in the same week (help, roadmap, folded diagnostics); the Settings chapter says so;
+  - tested: cabinet then night applied on `<html>` and on the thumbnails, back to standard / automatic; no JavaScript
+    error.

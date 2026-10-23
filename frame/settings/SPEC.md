@@ -40,6 +40,10 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    started"), Everyday ("day-to-day use", the default), Full ("everything, advanced tools included"). Under each, the
    verbs of the menu at that level, computed from the modules' `meta.level` once the frame has read them. A hint
    says a hidden module stays reachable by its address. The frame's menu follows at once.
+3b. **Design**: one thumbnail per set of the frame (`designs()`: id, label in four languages, textured), each a small
+   block carrying that design and the current tone (`[data-design][data-tone]`, the frame's tokens), the current one
+   outlined; the tone Automatic (as the system), Day, Night. One tap calls `saveDesign({ design, tone })`: the frame
+   applies it and keeps `device/design.json`; settings never writes it.
 4. **Usages**: one sentence first — "Alone on this device: nothing is exchanged" when no exchange is ticked (it is a
    state, not a box), otherwise how data are exchanged: through this workstation's launcher (`data/` folder, git or
    not), through the GitHub repository, or "no way to exchange here: set the access below". Then three boxes:

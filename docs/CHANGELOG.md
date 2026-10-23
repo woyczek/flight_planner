@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: Design card** (`frame/settings/settings.js`, `frame/frame.css`, `frame/settings/help/*.md`;
+  `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — a thumbnail per look (Standard, Cabinet, Rugged), each a
+  small live preview of its colours, and the tone Automatic / Day / Night, applied at once by the frame; the help
+  panel's summaries take the frame's common folded style. The Settings chapter describes the Design and About cards.
 - **report: the frame's design primitives** (`modules/report/module.js`) — its own colours, shadows and title sizes
   replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
 - **help: a visual roadmap in the app** (`frame/help/roadmap.js`, `frame/help/roadmap.json` de / es,
