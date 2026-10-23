@@ -61,8 +61,9 @@ folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the poi
 airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
 and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
 the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow
-marks a one-way route. The reporting points of the base are always there, in black for aeroplanes and in green for
-helicopters; the sequences and instructions of the VAC are added once imported. They appear once the administrator has imported them (Settings › Maintenance).
+marks a one-way route. The reporting points of the database are always there, in black for aeroplanes and in green for
+helicopters; the sequences and instructions of the VAC are added once imported. They appear once the administrator has
+imported them (Settings › Maintenance).
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
@@ -131,4 +132,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 2564787c1e12 -->
+<!-- fr: 16866d3245cc -->

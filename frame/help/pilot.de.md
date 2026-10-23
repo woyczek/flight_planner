@@ -277,8 +277,10 @@ Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Escape 
 Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
 aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet und sind nicht die veröffentlichte Route; maßgeblich ist
 die VAC-Karte. Wurde der Flugplatz von Hand ausgewertet, sagt es die Karte, die Routen tragen ihren Namen, ihre Pisten
-und Bedingungen, ein geprüfter Verlauf folgt der VAC-Karte (lange Striche) und ein Pfeil zeigt eine Einbahnroute. Die Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für
-Hubschrauber; die Sequenzen und Hinweise der VAC kommen hinzu, sobald sie importiert sind. Sie erscheinen, sobald der Administrator sie importiert hat (Einstellungen › Wartung).
+und Bedingungen, ein geprüfter Verlauf folgt der VAC-Karte (lange Striche) und ein Pfeil zeigt eine Einbahnroute. Die
+Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für Hubschrauber; die Sequenzen und Hinweise der
+VAC kommen hinzu, sobald sie importiert sind. Sie erscheinen, sobald der Administrator sie importiert hat (Einstellungen
+› Wartung).
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
@@ -352,7 +354,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 2564787c1e12 -->
+<!-- fr: 16866d3245cc -->
 
 <!-- chapter: report -->
 # Bericht
@@ -706,4 +708,4 @@ Designs), `frame/aerodb/bench.html` und `frame/aerodb/offline_bench.html` (Luftf
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: d83de238a54d -->
+<!-- fr: 8ca20e0d7251 -->

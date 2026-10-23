@@ -1115,13 +1115,15 @@
           const before = await api.state(),
             s = act === 'lanForget' ? await api.forget() : before.on ? await api.close() : await api.open();
           say('lan', !before.on && act === 'lanToggle' && !s.on ? t(T.lanNone) : '', 'warn');
+          b.disabled = false; // avant le dessin : paintLan décide ensuite de « Oublier » (aucun appareil → grisé)
+          lanKey = '';
           paintLan(s);
           if (act === 'lanForget') c.notify(t(T.lanForgotten), 'ok');
           else if (s.on && !before.on) c.notify(t(T.lanOpened), 'info');
         } catch {
+          b.disabled = false;
           say('lan', t(T.lanFail));
         }
-        b.disabled = false;
         return;
       }
       if (act === 'diagOpen') {

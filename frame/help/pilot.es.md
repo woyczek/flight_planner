@@ -265,9 +265,9 @@ consignas de la VAC, plegadas página por página. Escape o un toque en otro lug
 aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
 marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha sido
 analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado
-sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Los puntos de notificación de la base siempre están, en negro para los aviones y en verde
-para los helicópteros; las secuencias y consignas de las VAC se añaden una vez importadas. Aparecen una vez importados por el
-administrador (Ajustes › Mantenimiento).
+sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Los puntos de notificación de la base siempre
+están, en negro para los aviones y en verde para los helicópteros; las secuencias y consignas de las VAC se añaden una
+vez importadas. Aparecen una vez importados por el administrador (Ajustes › Mantenimiento).
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
 14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
@@ -337,7 +337,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 2564787c1e12 -->
+<!-- fr: 16866d3245cc -->
 
 <!-- chapter: report -->
 # Informe
@@ -681,4 +681,4 @@ nombran sin enlace); rutas relativas a la raíz de la suite: `labs/design_primit
   problema. El token
   nunca figura en él.
 
-<!-- fr: d83de238a54d -->
+<!-- fr: 8ca20e0d7251 -->
