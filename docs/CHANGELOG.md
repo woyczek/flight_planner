@@ -525,6 +525,11 @@ waypoints, and the rest listed below.
   Sources and folders. The launcher reports `csp: true` (prerequisite for the group mode of signed accounts). Images and
   navigation stay open (documented residual leak).
 
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.4.0.zip` — SHA-256 `aa79dfdc83e24e67f19f25d289f4bf49793c11dd35b8166d778f0400cfa42b01` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-5.4.0.zip` — SHA-256 `b4ce114db4938b25af740f891167dcf1528f8887f8bb995b966d5a45e2616822` (outside the repository: `dist/` folder).
+
 ## [5.3.0] — 2026-10-19
 
 The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,

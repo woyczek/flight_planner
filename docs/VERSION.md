@@ -50,6 +50,11 @@ pages keep living next to it on the same site and launcher.
 - The LAN access of the launcher (tablet next to the simulator) is a V3 feature; it is off by default.
 - Known limits: the iOS shell is not published on TestFlight (no Apple keys); VATSIM gives connection times only.
 
+### Delivery
+
+- Delivery archive: `xplane-web-suite-5.4.0.zip` — SHA-256 `aa79dfdc83e24e67f19f25d289f4bf49793c11dd35b8166d778f0400cfa42b01` (code only, outside the repository: `dist/` folder).
+- Module package: `dispos-module-5.4.0.zip` — SHA-256 `b4ce114db4938b25af740f891167dcf1528f8887f8bb995b966d5a45e2616822` (outside the repository: `dist/` folder).
+
 ## 5.3.0 — 19 October 2026
 
 ### Summary
