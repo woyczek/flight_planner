@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: the user's chapter in French** (`modules/report/help/fr.md`) — "How to use" (three steps, last flight,
+  other sources, mission, result, saving, recording on the website, my last reports), then prefill in detail, report
+  numbers, the "→ Vol" bookmark, special cases; to be translated and assembled by the help session.
 - **fuel: "Open in ▾"** (`modules/fuel/module.js`, `frame/lib/external_links.js`, `help/fr.md`) — under the result,
   the same flight in SimBrief (dispatch prefilled), SkyVector (route with speed and level), Navigraph and ChartFox
   (aerodrome charts), V2's links copied; `meta.files` lists fuel's files for offline use.
