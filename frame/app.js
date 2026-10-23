@@ -273,15 +273,13 @@
     DEFAULT_LEVEL = 2;
   /** Niveau d'usage valide (1 à 3) ; défaut : courant. */
   const levelFrom = v => LEVELS.includes(+v) ? +v : DEFAULT_LEVEL;
-  // compagnie : airline/settings.json du dépôt des données (fichier « reference », écrit par website / settings) ; aucune
-  // adresse dans le code : nom, site et pages viennent de ce fichier, {} en son absence
+  // compagnie : airline/settings.json du dépôt des données (document écrit par le module website, tiré d'avance comme
+  // airline/fleet.json : recherche d'appareils hors ligne) ; aucune adresse dans le code : nom, site et pages viennent de
+  // ce fichier, {} en son absence
   const AIRLINE = 'airline/settings.json';
   const airlineData = FD.adapter({
     id: 'frame-airline',
-    reads: [{
-      prefix: 'airline/',
-      policy: 'reference'
-    }],
+    reads: ['airline/'],
     writes: []
   });
   const str = v => typeof v === 'string' ? v.trim() : '';
@@ -302,7 +300,6 @@
   /** Relit la compagnie (attendue au plus ms millisecondes la première fois : un module monté ensuite l'a déjà). */
   async function loadAirline(ms = 2500) {
     const v = await Promise.race([airlineData.get(AIRLINE, {
-      policy: 'reference',
       wait: true
     }).catch(() => null), new Promise(res => setTimeout(() => res(undefined), ms))]);
     if (v !== undefined) airline = airlineOf(v);

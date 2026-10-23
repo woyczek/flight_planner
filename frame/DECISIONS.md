@@ -279,6 +279,13 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - Noted: `airline/` is now declared twice, as `reference` by the frame (`ctx.airline`) and as `document` by aerodb. At
     equal length the first declaration wins, the frame's: `airline/` files are read on demand and signalled at the
     pull rather than pulled ahead. Nothing is lost.
+- **23 Oct 2026 — `airline/` is a document prefix** (decided by the ergonomics session):
+  - `airline/settings.json` and `airline/fleet.json` are written by the website module and must be pulled ahead, for
+    the aircraft search offline. So the frame declares `airline/` as `document`, no longer `reference`.
+  - `ctx.airline` reads `airline/settings.json` as a document (`get`, waited for 2.5 s at most at start) and follows it
+    with `watch`.
+  - There is no double declaration any more; aerodb's identical one is redundant and may stay. This replaces the lot 6
+    entry that made it a reference file.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are
