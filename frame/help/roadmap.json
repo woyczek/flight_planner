@@ -99,7 +99,7 @@
           "es": "Endurecimiento del acceso de red local tras la revisión de seguridad (rutas, código de un solo uso, límites, relé sin redirecciones, interfaces, extensiones)"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Sans trigramme, rien ne part vers data/ ni vers le dépôt : documents gardés sur l'appareil, invitation à renseigner le trigramme, reprise ensuite",
           "en": "Without a trigram nothing goes to data/ nor to the repository: documents kept on the device, prompt to set the trigram, taken over afterwards",
           "de": "Ohne Kürzel geht nichts nach data/ oder ins Repository: Dokumente bleiben auf dem Gerät, Aufforderung zum Setzen des Kürzels, danach Übernahme",
