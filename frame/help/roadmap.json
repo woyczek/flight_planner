@@ -120,6 +120,13 @@
           "es": "Base aeronáutica en modo GitHub en el teléfono: referencias leídas desde el repositorio (error en curso), diagnóstico copiable"
         },
         {
+          "state": "doing",
+          "fr": "Vue double ouverte d'elle-même dès 1200 px sur Carburant et Compte rendu, bascule « Carte » lisible",
+          "en": "Double view opening by itself from 1200 px on Fuel and Report, legible “Map” toggle",
+          "de": "Doppelansicht öffnet sich ab 1200 px bei Kraftstoff und Bericht von selbst, lesbarer „Karte“-Schalter",
+          "es": "Vista doble que se abre sola desde 1200 px en Combustible e Informe, conmutador «Mapa» legible"
+        },
+        {
           "state": "done",
           "fr": "Retour « ← module d'origine » après un passage entre modules ; sources météo directes (vatsim, avwx avec clé de l'appareil)",
           "en": "“← origin module” return after a hand-off between modules; direct weather sources (vatsim, avwx with the device key)",
@@ -165,6 +172,13 @@
           "en": "Quote (aircraft, route, SimBrief, level and wind, reserves), drawn level decision, climb guidance",
           "de": "Kraftstoffberechnung (Luftfahrzeug, Route, SimBrief, Flugfläche und Wind, Reserven), gezeichnete Wahl der Flugfläche, Steigflughinweise",
           "es": "Cálculo (aeronave, ruta, SimBrief, nivel y viento, reservas), decisión del nivel dibujada, consignas de ascenso"
+        },
+        {
+          "state": "doing",
+          "fr": "Préparer dans l'ordre du pilote : Vol · Route · Météo · Devis · Départ ; route en texte toujours visible et normalisée, distance et route vraie calculées ; « Afficher la carte » ; « Démarrer le vol »",
+          "en": "Prepare in the pilot's order: Flight · Route · Weather · Quote · Departure; route as always-visible normalised text, distance and true track computed; “Show the map”; “Start the flight”",
+          "de": "Vorbereiten in der Reihenfolge des Piloten: Flug · Route · Wetter · Berechnung · Abflug; Route als stets sichtbarer, normalisierter Text, Distanz und rechtweisender Kurs berechnet; „Karte anzeigen“; „Flug starten“",
+          "es": "Preparar en el orden del piloto: Vuelo · Ruta · Meteo · Cálculo · Salida; ruta como texto siempre visible y normalizado, distancia y rumbo verdadero calculados; «Mostrar el mapa»; «Iniciar el vuelo»"
         },
         {
           "state": "done",
@@ -268,6 +282,13 @@
           "en": "Fixes of drawn airways (RNAV, DME, VOR, NDB), segment labels (airway · NM · track), IFR low / IFR high / VFR presets, density by zoom, airspace tooltip in SIA notation, redraw at each flight plan change",
           "de": "Punkte der gezeichneten Luftstraßen (RNAV, DME, VOR, NDB), Abschnittsbeschriftungen (Luftstraße · NM · Kurs), Voreinstellungen IFR tief / IFR hoch / VFR, Dichte nach Zoom, Luftraum-Tooltip in SIA-Notation, Neuzeichnen bei jeder Flugplanänderung",
           "es": "Puntos de las aerovías dibujadas (RNAV, DME, VOR, NDB), etiquetas de tramo (aerovía · NM · rumbo), preajustes IFR bajo / IFR alto / VFR, densidad según el zoom, tooltip de espacio en notación SIA, redibujo a cada cambio del plan de vuelo"
+        },
+        {
+          "state": "doing",
+          "fr": "Infobulle qui suit la souris et s'efface, panneau Couches (espaces par type, voies, balises, points, VRP, obstacles, MORA, villes, canevas), « autour de la route seulement » débrayable, « Modifier la route » arrive sur le champ route",
+          "en": "Tooltip that follows the mouse and clears, Layers panel (airspaces by type, airways, navaids, fixes, VRP, obstacles, MORA, cities, grid), “around the route only” switchable, “Edit the route” lands on the route field",
+          "de": "Tooltip, der der Maus folgt und verschwindet, Ebenen-Panel (Lufträume nach Typ, Luftstraßen, Funkfeuer, Punkte, VRP, Hindernisse, MORA, Städte, Gitter), „nur um die Route“ abschaltbar, „Route bearbeiten“ landet im Routenfeld",
+          "es": "Tooltip que sigue al ratón y desaparece, panel Capas (espacios por tipo, aerovías, radioayudas, puntos, VRP, obstáculos, MORA, ciudades, cuadrícula), «solo alrededor de la ruta» desactivable, «Modificar la ruta» llega al campo de ruta"
         },
         {
           "state": "doing",
