@@ -1,7 +1,7 @@
 # Technical debt
 
 Known issues, kept as they are by choice or for lack of time, to be revisited. Each entry: what happens, why we
-keep it, what should be done. Updated: 20 October 2026.
+keep it, what should be done. Updated: 23 October 2026.
 
 ## Data and synchronisation
 
@@ -36,6 +36,18 @@ keep it, what should be done. Updated: 20 October 2026.
 | 05/10/2026 | Cabinet folder rack in layers | the Cabinet animation uses three layers cut out of the cover (`tools/cabinet_layers.py`) | — | rerun the script if the cover image changes (measurements carried over into `mes_missions.html`, constant `CAB`) |
 | 09/10/2026 | **Styles moved into a layer after the fact** (`shared/kit.js`) | every `<style>` added by a module is rewritten into `@layer app` by an observer, after its insertion | some thirty modules inject their styles; rewriting them one by one is a redesign | write `@layer app { … }` at the source (shared helper `K.style(css)`), then remove the observer |
 | 09/10/2026 | **Status areas relayed after the fact** (`shared/app_framework.js`, `watchStatus`) | one observer per `[data-status]` area detects a displayed error message and turns it into a notification (the inline message is hidden) | all pages write their errors into these areas | call `AppFramework.notify` where the error is produced, page by page, then remove the relay |
+
+## V3 — map module (`modules/maps`)
+
+Reported by the user on 23 October 2026 while flying with the Pilot application; to be taken by the maps agent in its next lots.
+
+| Since | Subject | Finding | Why we keep it | To do |
+|---|---|---|---|---|
+| 23/10/2026 | **V3 map stops at the antimeridian** (`modules/maps/module.js`: `renderWorldCopies: false`, data boxes bounded to `w: -180, e: 180`; `mission.js` rejects a longitude beyond ±180) | a flight that crosses 180° east ↔ west (Pacific) cannot be drawn: the route breaks at the edge, the loaded box never wraps, no tile beyond the edge | the published base and the corridor boxes are cut at ±180 and every distance uses a flat `cos(lat)` formula; no such flight in the fleet's missions yet | let the map "turn" sideways: `renderWorldCopies: true`, longitudes unwrapped along the route (a point east of 180 drawn at `lon + 360` when the previous point is near 180), data boxes split in two when they cross the antimeridian (`corridorBoxes`, `loadData`), the profile and ETA distances on the unwrapped longitudes; the poles stay out of scope (no wrap in latitude, to keep the calculations simple) |
+| 23/10/2026 | **Aerodrome card (VFR reporting points) sometimes misplaced, and then impossible to close** (`modules/maps/module.js` `pinView`, `showAdCard`, `.mp-adcard`) | after a tap on an aerodrome the card can land off the pane (the side is chosen from the aerodrome's screen position *before* `fitBounds` moves the map; under 600 px the lower 45 % is assumed free), its ✕ then out of reach; Escape is the only way out | the "cards that stay" lot (23 Oct) fixed the position once at opening and kept it while the map moves | place the card after `moveend` from the aerodrome's *new* position, keep it inside the pane (clamp), give it a swipe-down / backdrop tap to close on touch, and a close button that is always visible (sticky header of the card) |
+| 23/10/2026 | **Airspaces from SFC to UNL drawn** (`modules/maps/render.js` `selectAirspaces`: a floor / ceiling filter only when the profile sets `zoneFloor` / `zoneCeil`) | volumes with no useful vertical extent (SFC to UNL: FIR-like sectors, some R/D containers) fill the map with outlines and labels that help nobody | kept as the SIA base gives them; the filter exists but no preset excludes them | exclude from drawing any airspace whose lower limit is SFC/GND **and** upper limit UNL (keep them in the levels card and in the tap list), in every preset; a Layers switch "full-height volumes" to show them on demand |
+| 23/10/2026 | **Tap on an empty spot does not close the aerodrome card** (`modules/maps/module.js`: the card "stays" since lot "cards that stay"; `unpinAd` only on ✕, Escape or another aerodrome) | the user taps an aerodrome to see its reporting points, then taps a blank area of the map: the card and the highlighted points remain, which reads as "stuck" | the 23 Oct lot made both cards sticky on purpose, so that a move or a tooltip does not close them | distinguish *pinned* from *open*: a tap on the aerodrome opens the card (a tap on empty map closes it); a second tap on the aerodrome, or a pin button in the card, pins it (then only ✕ / Escape close it); a drag or wheel never closes anything |
+| 23/10/2026 | **VFR information written on the map itself** (`modules/maps/module.js` `drawVfr`, `.mp-adcard` over the pane; sequences, codes, instructions, warnings all in the map frame) | the aerodrome's card and the VAC sequences cover the map on a phone (45 % of the frame) and on a narrow pane; the instructions (text of the VAC) have nothing to do on a drawing | the module had no other surface than its pane when the VAC lot was built | move the textual VFR information (points list, sequences, instructions, analysis notes) to a panel outside the map: below it on a phone (a sheet that scrolls, the map staying visible above), beside it on a wide screen; the map keeps only the drawing (points, dashed sequences, highlighted selection) and a one-line tooltip |
 
 ## Tooling
 
