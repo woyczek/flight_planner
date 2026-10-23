@@ -114,6 +114,7 @@
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     menu: ['Menu', 'Menu', 'Menü', 'Menú'],
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
+    help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
     loadErr: ['Module « {m} » impossible à charger : {e}', 'Module “{m}” could not be loaded: {e}',
       'Modul „{m}“ konnte nicht geladen werden: {e}', 'No se pudo cargar el módulo «{m}»: {e}'
     ]
@@ -470,6 +471,7 @@
     const view = $('fView');
     view.replaceChildren();
     renderMenu(id);
+    if (id === 'help') return window.SogHelp?.screen(view, helpCtx(), h.query);
     if (ROUTES[id]) return ROUTES[id](view);
     const entry = APP.modules.find(m => m.id === id) || APP.modules[0];
     if (!entry) return renderSettings(view);
@@ -485,6 +487,10 @@
         id: entry.id,
         mod
       };
+      // aide en page : panneau replié « Comment s'en servir » tiré du chapitre du module (frame/help), posé avant lui
+      if (window.SogHelp && meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(
+          p, el))
+        .catch(e => console.warn('help', e));
       await mod.mount(el, ctxFor(entry, meta, h.query));
     } catch (e) {
       view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
@@ -517,9 +523,20 @@
       get airline() {
         return airline;
       },
-      query
+      query,
+      help: window.SogHelp ? SogHelp.forModule(entry.id, $('fView')) : Object.freeze({
+        open: () => false,
+        link: () => '#help'
+      })
     };
   }
+  /** Contexte de l'aide (frame/help/help.js) : textes, langue, documents de l'appareil, racine de la suite. */
+  const helpCtx = () => ({
+    t,
+    lang,
+    own,
+    root: ROOT
+  });
 
   // ---------------------------------------------------------------- écran des conflits
   const C = {
@@ -605,6 +622,11 @@
     $('fBurger').onclick = () => {
       const open = document.body.classList.toggle('f-nav-open');
       $('fBurger').setAttribute('aria-expanded', String(open));
+    };
+    $('fHelp').setAttribute('aria-label', t(T.help));
+    $('fHelp').title = t(T.help);
+    $('fHelp').onclick = () => {
+      location.hash = `#help${current?.id ? `?m=${encodeURIComponent(current.id)}` : ''}`;
     };
     $('fDevice').onclick = () => {
       location.hash = '#settings';

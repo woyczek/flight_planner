@@ -234,6 +234,78 @@ textarea {
 .f-level input {
   margin-top: 3px
 }
+/* aide (frame/help/help.js) : panneau replié en tête d'un module, écran #help ; tableaux en listes sur téléphone */
+.f-help>summary,
+.f-toc>summary {
+  min-height: var(--sog-touch);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600
+}
+.f-doc {
+  overflow-wrap: anywhere
+}
+.f-doc p,
+.f-doc li {
+  max-width: 70ch
+}
+.f-doc table {
+  border-collapse: collapse;
+  margin: 8px 0
+}
+.f-doc th,
+.f-doc td {
+  border: 1px solid var(--sog-border);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top
+}
+.f-doc .doc-anchor {
+  margin-left: .3em;
+  color: var(--sog-muted);
+  text-decoration: none;
+  font-size: .75em
+}
+.f-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0
+}
+.f-toc li a {
+  display: flex;
+  align-items: center;
+  min-height: var(--sog-touch)
+}
+.f-toc li.f-toc2 a {
+  padding-left: 16px
+}
+.f-back {
+  margin: 4px 0 var(--sog-gap)
+}
+@media (max-width: 760px) {
+  .f-doc table,
+  .f-doc tbody,
+  .f-doc tr,
+  .f-doc td {
+    display: block
+  }
+  .f-doc thead {
+    display: none
+  }
+  .f-doc tr {
+    border-top: 1px solid var(--sog-border);
+    padding: 6px 0
+  }
+  .f-doc td {
+    border: 0;
+    padding: 2px 0
+  }
+  .f-doc td[data-label]::before {
+    content: attr(data-label) " ";
+    color: var(--sog-muted)
+  }
+}
 .f-msg:empty {
   display: none
 }

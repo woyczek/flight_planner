@@ -24,6 +24,16 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **help: the Pilot manual and the in-page help** (`frame/help/help.js`, `frame/help/build_help.py`,
+  `frame/help/intro.*.md`, `frame/help/pilot.*.md`, `frame/lib/markdown.js`, `frame/app.js`, `frame/index.html`,
+  `frame/sw.js`, `frame/frame.css`, `modules/fuel/help/{en,de,es}.md`; `frame/help/SPEC.md`, `INTEGRATION.md`,
+  `DECISIONS.md`, `frame/SPEC.md`, `frame/INTEGRATION.md`) — each module's chapter (`modules/<id>/help/<lang>.md`,
+  written in French by its agent, translated) is assembled with the application's introduction into one manual per
+  language by a standard-library build that refuses a missing language and lists translations to redo; the frame
+  draws a folded "How to use" panel at the top of each module from its chapter's first section, state kept per module,
+  with `ctx.help.open` and `ctx.help.link`; a `#help` screen (header button ?) shows the manual text first at the
+  module's chapter, contents folded on a phone, tables as lists at 375 px, French typography, offline. First chapter:
+  Fuel and level, in four languages.
 - **website: the user's chapter in French** (`modules/website/help/fr.md`) — "How to use" (my flight log, the fleet,
   the preview, reading through the launcher, the airline card), then good to know and special cases; to be translated
   and assembled by the help session.

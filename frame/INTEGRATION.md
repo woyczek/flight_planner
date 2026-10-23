@@ -27,6 +27,9 @@ export function unmount() { /* stop watchers, timers */ }
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
   `ask`, `askText`, `net`, `identity`.
 - Its verb in the application's menu is set in `frame/app.js` (`APP.modules`): one short verb, seven modules at most.
+- `meta.help` (true by default): the frame draws the folded "How to use" panel at the top of the module as soon as
+  the module's chapter (`modules/<id>/help/<lang>.md`) is in the application's manual; `false` hides it. Writing the
+  chapter: `frame/help/INTEGRATION.md`.
 - `meta.level` (1 to 3, 1 by default): the menu lists the module only when the device's usage level, chosen in
   Settings, is at least this one (1 discovery, 2 everyday, 3 full); a hidden module stays reachable by `#id`.
 - Texts are rows `[fr, en, de, es]` passed to `ctx.t`, French first, every text translated (tooltips, statuses and

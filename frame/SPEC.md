@@ -207,7 +207,8 @@ used alone:
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
-- The frame has two screens of its own: `#conflicts` and `#settings` (`#device`, its former name, opens it too;
+- The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
+  module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
 - Touch targets are at least 44 px high. There is no horizontal scroll at 375 px.
 
@@ -243,6 +244,7 @@ used alone:
 | `identity` | read only: the identity record of the device (`trigram`, `ivao`, `vatsim`, `simbrief`), an empty object when there is none |
 | `airline` | read only: `{ name, site, pages: { recordFlight, log, fleet } }` from `airline/settings.json` of the data repository (`reference` file, text fields only), an empty object when there is none; no address is written in the code |
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
+| `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
 
 - A module loads no global style sheet. It uses the frame's tokens (`--sog-bg`, `--sog-surface`, `--sog-fg`,
   `--sog-muted`, `--sog-border`, `--sog-accent`, `--sog-ok`, `--sog-warn`, `--sog-err`, `--sog-radius`, `--sog-gap`,
