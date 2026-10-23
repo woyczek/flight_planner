@@ -112,6 +112,12 @@ by size. Drafted with the user, validated before code.
 - 22 Oct 2026 — One repository: `frame/` and `modules/<name>/`, each module with `SPEC.md`, `INTEGRATION.md`,
   `DECISIONS.md`; the data repository unchanged. One agent (Claude Desktop session) per module and per transverse
   block, reachable individually by the user; the ergonomics session keeps the global vision.
+- 23 Oct 2026 — **Aeronautical database generation stays a separate tool.** Building the SIA base (reading the
+  `data/sia` folder, MORA, publication by zone, cycle and kind) and publishing the aircraft base are workstation
+  jobs, never part of the Pilot application: today the V2 pages served by the launcher (Settings › Maintenance), later
+  a standalone tool. `aerodb` only reads what they publish into the data repository.
+- 23 Oct 2026 — **Progressive shutdown of V2 is deferred**: V2 pages keep living next to V3 (same site, same launcher)
+  until the user decides; no V2 feature is removed for V3's sake.
 
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 

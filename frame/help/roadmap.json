@@ -349,6 +349,13 @@
           "en": "Fuller GeoNames extract (Portugal, Ireland)",
           "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
           "es": "Extracto de GeoNames más completo (Portugal, Irlanda)"
+        },
+        {
+          "state": "later",
+          "fr": "Génération des bases (SIA par zone, MORA, base appareils) : outil séparé du poste, jamais dans l'appli Pilote ; aujourd'hui les pages V2 du lanceur",
+          "en": "Base generation (SIA by zone, MORA, aircraft base): a separate workstation tool, never inside the Pilot app; today the launcher's V2 pages",
+          "de": "Erzeugung der Datenbanken (SIA nach Zone, MORA, Luftfahrzeugbasis): eigenes Werkzeug am Arbeitsplatz, nie in der Piloten-App; heute die V2-Seiten des Starters",
+          "es": "Generación de las bases (SIA por zona, MORA, base de aeronaves): herramienta aparte del puesto, nunca en la app Piloto; hoy las páginas V2 del lanzador"
         }
       ]
     },
@@ -434,6 +441,13 @@
           "en": "CPCO V3 app: planning, assignments, reporting; SOG client app: my missions to deliver",
           "de": "App CPCO V3: Planung, Zuweisungen, Reporting; App SOG-Client: meine abzugebenden Missionen",
           "es": "App CPCO V3: planificación, asignaciones, reporting; app Cliente SOG: mis misiones por entregar"
+        },
+        {
+          "state": "later",
+          "fr": "Extinction progressive de la V2 : remise à plus tard, les pages V2 vivent à côté de la V3",
+          "en": "Progressive shutdown of V2: deferred, V2 pages live next to V3",
+          "de": "Schrittweise Abschaltung der V2: verschoben, die V2-Seiten leben neben der V3",
+          "es": "Apagado progresivo de la V2: aplazado, las páginas V2 viven junto a la V3"
         }
       ]
     }
