@@ -418,7 +418,7 @@ const STYLE = `
 [data-module="report"] .f-bar .rp-unset{display:block}
 [data-module="report"] .rp-prefill{display:flex;gap:10px;align-items:center;justify-content:space-between}
 [data-module="report"] .f-badge{margin-left:4px}
-@media (min-width: 980px){
+@container (min-width: 900px){ /* largeur du module (volet de la vue double compris), pas de la fenêtre */
   [data-module="report"] .f-steps,[data-module="report"] .rp-next{display:none}
   [data-module="report"] .rp-step[hidden]{display:block}
 }`;

@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: wide layout in the dual view** (`modules/report/module.js`) — report lays out by its own width, not the window's,
+  so it stays right in half of a wide screen.
 - **Frame: a readable dual view toggle** (`frame/app.js`, `frame/frame.css`) — the "Map" button of the header was
   clipped to an icon; it is now a toggle with its label, readable in every design, with a "×" on the pane. Fuel and
   Report open the Map beside them by themselves from 1200 px wide until you choose, and your choice is kept.

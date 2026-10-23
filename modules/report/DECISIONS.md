@@ -2,6 +2,9 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — wide layout by the module's width** (asked by the design session after the dual view, 1b281c1d8:
+  each pane is a container): `@media (min-width: 980px)` became `@container (min-width: 900px)` — read on the
+  window, the steps bar was hidden with the three steps stacked in a 506 px pane. Checked at 1280 px: full screen (1,023 px): the three steps side by side, no steps bar; dual view (506 px): the steps bar and one step.
 - **23 Oct 2026 — the current flight's callsign**: fuel now writes `aircraft = { sheetId, type, registration, callsign,
   name, source }` (aerodb's `aircraftOf`); the "current flight" card shows and fills the callsign too.
 - **23 Oct 2026 — design lot 2 primitives** (asked by the design session): save bar, steps, grids, columns, warnings, sources, prefill cards and lists moved to `f-bar` (no own shadow, hidden in print), `f-steps` with `data-done`, `f-grid` / `f-full`, `f-cols`, `f-warn`, `f-badge data-kind=accent`, `f-card f-accent`, `f-list` / `f-item`; the "→ Vol" bookmark is an `a.f-btn` (44 px); title and summary rules left to the frame. The module's own `<style>`
