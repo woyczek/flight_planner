@@ -15,6 +15,9 @@
   const LANGS = ['fr', 'en', 'de', 'es'];
   const T = {
     title: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+    roadmap: ['Feuille de route : ce qui est livré, en cours, prévu', 'Roadmap: what is delivered, in progress, planned',
+      'Fahrplan: was geliefert, in Arbeit, geplant ist', 'Hoja de ruta: lo entregado, en curso, previsto'
+    ],
     label: ['{h} :', '{h}:', '{h}:', '{h}:'],
     contents: ['Sommaire', 'Contents', 'Inhalt', 'Índice'],
     back: ['↑ Sommaire', '↑ Contents', '↑ Inhalt', '↑ Índice'],
@@ -166,6 +169,7 @@
     }
     for (const sec of sections) sec.insertAdjacentHTML('beforeend', back);
     view.replaceChildren(intro);
+    intro.insertAdjacentHTML('afterbegin', `<p class="f-rm-link"><a href="#roadmap">${esc(c.t(T.roadmap))}</a></p>`);
     view.insertAdjacentHTML('beforeend', toc);
     view.append(...sections);
     labelTables(view, c.t);

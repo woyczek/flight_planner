@@ -86,7 +86,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    its last characters, given by the launcher's environment, or missing), a new key (empty: unchanged), "Save",
    "Test" (`/__setup/secrets/test?service=ivao`), "Erase" (asks). The key goes to the launcher's `secrets/` folder,
    never to the browser nor to the data.
-10. **Diagnostics** (folded): transport, status, usages, launcher, repository (never the token), aerodb state,
+10. **About**: links to the help (the Settings chapter) and to the roadmap (`#roadmap`), then the **diagnostics**,
+   folded inside the card: transport, status, usages, launcher, repository (never the token), aerodb state,
    storage, network, browser; "Copy".
 
 Under the screen's introduction, the folded "How to use" panel of the Settings chapter (`frame/settings/help/`,

@@ -10,10 +10,12 @@ Règles :
   · un module sans dossier help/ est signalé (« sans chapitre ») et laissé de côté ;
   · une traduction porte <!-- fr: <empreinte> --> (12 premiers caractères du SHA-1 de fr.md) : une empreinte absente ou
     différente est signalée « à retraduire », sans refus ;
+  · la feuille de route (frame/help/roadmap.json) : chaque texte en quatre langues et des états connus, sinon refus ;
   · --check : vérifie et dit ce qui changerait, sans écrire.
 Usage : python frame/help/build_help.py [--check]
 """
 import hashlib
+import json
 import os
 import re
 import sys
@@ -46,6 +48,42 @@ def module_order():
 
 def fingerprint(text):
     return hashlib.sha1(text.encode('utf-8')).hexdigest()[:12]
+
+
+def roadmap_errors():
+    """Feuille de route (frame/help/roadmap.json, sog-roadmap/1) : chaque texte en quatre langues, états connus."""
+    p = os.path.join(HERE, 'roadmap.json')
+    if not os.path.isfile(p):
+        return []
+    try:
+        d = json.loads(read(p))
+    except ValueError as e:
+        return [f'frame/help/roadmap.json : JSON illisible ({e})']
+    out = []
+    if d.get('schema') != 'sog-roadmap/1':
+        out.append('frame/help/roadmap.json : schéma attendu sog-roadmap/1')
+    states = d.get('states') or {}
+
+    def texts(o, where):
+        for lang in LANGS:
+            if not str((o or {}).get(lang) or '').strip():
+                out.append(f'frame/help/roadmap.json : {where} sans texte « {lang} »')
+
+    texts(d.get('note'), 'note')
+    for k, v in states.items():
+        texts(v, f'état {k}')
+    for a in d.get('apps') or []:
+        texts(a.get('label'), f"application {a.get('id')}")
+        if a.get('state') not in states:
+            out.append(f"frame/help/roadmap.json : application {a.get('id')} à l'état inconnu « {a.get('state')} »")
+    for lane in d.get('lanes') or []:
+        lid = lane.get('id')
+        texts(lane.get('label'), f'voie {lid}')
+        for i, it in enumerate(lane.get('items') or []):
+            texts(it, f'voie {lid}, élément {i + 1}')
+            if it.get('state') not in states:
+                out.append(f"frame/help/roadmap.json : voie {lid}, élément {i + 1} à l'état inconnu « {it.get('state')} »")
+    return out
 
 
 def main(args):
@@ -87,6 +125,7 @@ def main(args):
         for lang, t in texts.items():
             title, _, rest = t.partition('\n')
             chapters[lang].append(f'<!-- chapter: {mid} -->\n{title}\n\n{rest.strip()}\n')
+    errors += roadmap_errors()
     for n in notes:
         print('  ' + n)
     if errors:

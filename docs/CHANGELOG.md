@@ -24,6 +24,13 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **help: a visual roadmap in the app** (`frame/help/roadmap.js`, `frame/help/roadmap.json` de / es,
+  `frame/help/build_help.py`, `frame/help/help.js`, `frame/settings/settings.js`, `frame/app.js`, `frame/index.html`,
+  `frame/sw.js`, `frame/frame.css`; `frame/help/SPEC.md` § 5, `DECISIONS.md`, `frame/settings/SPEC.md`) — a `#roadmap`
+  screen: the rule first (what is delivered must work, a gap is a bug; in progress, planned or later is not), the
+  applications and their state, then one row per module or block with its items in four columns Delivered, In
+  progress, Planned, Later (one card per module on a phone), coloured by state; reached from the top of the manual and
+  from Settings › About; offline; the build checks that every text is in four languages.
 - **flightlog: the frame's design primitives** (`modules/flightlog/module.js`) — its own colours, shadows and title sizes
   replaced by the `f-…` primitives and `--sog-…` tokens, so it follows the three designs by day and by night.
 - **website: the frame's design primitives** (`modules/website/module.js`) — its own colours, shadows and title sizes

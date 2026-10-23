@@ -56,3 +56,14 @@ The help agent's memory: every choice, dated, with its reason. Newest last. Proj
   - the settings screen shows the Access card without an exchange too when no launcher serves the page (it then only
     reads the bases), and "Offline data" says what to do when nothing can provide them; the ? button opens the
     Settings chapter from the settings screen, whose own folded panel sits under its introduction.
+- **23 Oct 2026 — Roadmap** (the user's request, through the ergonomics session, which owns the content):
+  - `#roadmap` screen from `frame/help/roadmap.json` (sog-roadmap/1): a table on a screen (one row per lane, four state
+    columns, short cards), one card per lane on a phone; colours by state from the frame's tokens; the rule "delivered
+    must work, the rest is not a bug" shown first;
+  - German and Spanish added to the JSON by a helper agent with the app's terms, reviewed here; one term aligned with
+    the fuel screen ("devis" → Kraftstoffberechnung / cálculo, not "Kostenvoranschlag" / "presupuesto");
+  - the build's check now refuses a roadmap text missing a language or an item with an unknown state (tested on a
+    modified copy);
+  - entry points: a link at the top of the manual, and Settings › About (new card: help, roadmap, and the folded
+    diagnostics moved into it);
+  - tested: 11 lanes, 37 cards, screen and 375 px, French and German, entry points, no JavaScript error.

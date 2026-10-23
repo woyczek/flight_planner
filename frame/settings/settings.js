@@ -376,6 +376,13 @@
     ],
     keyBad: ['Clé IVAO : {e}', 'IVAO key: {e}', 'IVAO-Schlüssel: {e}', 'Clave IVAO: {e}'],
     // diagnostic
+    about: ['À propos', 'About', 'Über', 'Acerca de'],
+    aboutHelp: ['Aide : le manuel de l’appli', 'Help: the app’s manual', 'Hilfe: das Handbuch der App',
+      'Ayuda: el manual de la aplicación'
+    ],
+    aboutRoadmap: ['Feuille de route : ce qui est livré, en cours, prévu', 'Roadmap: what is delivered, in progress, planned',
+      'Fahrplan: was geliefert, in Arbeit, geplant ist', 'Hoja de ruta: lo entregado, en curso, previsto'
+    ],
     diag: ['Diagnostic', 'Diagnostics', 'Diagnose', 'Diagnóstico'],
     copy: ['Copier', 'Copy', 'Kopieren', 'Copiar'],
     copied: ['Diagnostic copié.', 'Diagnostics copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.']
@@ -494,7 +501,8 @@
       <div class="f-row"><button type="button" class="primary" data-act="keySave">${esc(t(T.save))}</button><button type="button" data-act="keyTest">${esc(t(T.test))}</button><button type="button" data-act="keyErase">${esc(t(T.erase))}</button></div></div>`);
     const help = await c.helpPanel?.().catch(() => null);
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
-      <details class="f-card"><summary>${esc(t(T.diag))}</summary><pre data-diag></pre><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details>`;
+      <div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2><p><a href="#help?m=settings">${esc(t(T.aboutHelp))}</a></p><p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
+      <details><summary>${esc(t(T.diag))}</summary><pre data-diag></pre><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
     if (help) view.querySelector('h1 + p')?.after(help);
 
     const card = k => view.querySelector(`[data-card="${k}"]`);

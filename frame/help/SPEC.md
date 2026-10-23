@@ -59,3 +59,21 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   are in the frame's service worker list.
 - The header's **?** button opens `#help?m=<current module>`, or `#help?m=settings` from the settings screen.
 - The settings screen shows its own folded panel under its introduction (`helpPanel` of its context).
+
+## 5. Roadmap (`#roadmap`, `frame/help/roadmap.js`)
+
+- **Source**: `frame/help/roadmap.json`, schema `sog-roadmap/1`, kept by the ergonomics session: `note` (what is
+  delivered must work, a gap is a bug; in progress, planned or later is not), `states` (`done`, `doing`, `planned`,
+  `later`), `apps` (id, label, state), `lanes` (one per module or block: id, app, label, `items` of `{ state, fr, en,
+  de, es }`), `updated`. Every text is in the four languages; the build's check refuses a missing one or an unknown
+  state.
+- **Screen**: the title, the note first (a card), the update date and a link to the help, the applications with their
+  state, then the lanes.
+  - On a screen: a table, one row per lane (its label and application), four columns Delivered, In progress, Planned,
+    Later, items as short cards.
+  - On a phone (760 px or narrower): one card per lane, items grouped by state under the state's name, empty states
+    left out.
+  - Colour per state with the frame's tokens only: delivered `--sog-ok`, in progress `--sog-accent`, planned
+    `--sog-warn`, later `--sog-muted` (a coloured left border).
+- **Reached** from the top of the manual ("Roadmap: what is delivered, in progress, planned") and from Settings ›
+  About. Offline: the script and the JSON are in the frame's service worker list.

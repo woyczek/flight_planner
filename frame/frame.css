@@ -201,6 +201,103 @@ body {
     color: var(--sog-muted)
   }
 }
+/* feuille de route (frame/help/roadmap.js) : tableau sur écran, une carte par voie sur téléphone ; couleur par état */
+.f-rm [data-state="done"],
+.f-rm-apps [data-state="done"] {
+  --rm: var(--sog-ok)
+}
+.f-rm [data-state="doing"],
+.f-rm-apps [data-state="doing"] {
+  --rm: var(--sog-accent)
+}
+.f-rm [data-state="planned"],
+.f-rm-apps [data-state="planned"] {
+  --rm: var(--sog-warn)
+}
+.f-rm [data-state="later"],
+.f-rm-apps [data-state="later"] {
+  --rm: var(--sog-muted)
+}
+.f-rm {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) repeat(4, minmax(0, 1fr));
+  gap: 6px 10px;
+  align-items: start
+}
+.f-rm-head,
+.f-rm-lane {
+  display: contents
+}
+.f-rm-head span {
+  font-weight: 600;
+  padding: 4px 0;
+  border-bottom: 3px solid var(--rm, transparent)
+}
+.f-rm-lane h2 {
+  grid-column: 1;
+  font-size: 1rem;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--sog-border)
+}
+.f-rm-col {
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--sog-border)
+}
+.f-rm-col h3 {
+  display: none
+}
+.f-rm-col ul,
+.f-rm-apps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px
+}
+.f-rm-item {
+  background: var(--sog-surface);
+  border: 1px solid var(--sog-border);
+  border-left: 4px solid var(--rm, var(--sog-border));
+  border-radius: var(--sog-radius);
+  padding: 6px 8px;
+  font-size: .9em;
+  overflow-wrap: anywhere
+}
+.f-rm-note {
+  border-left: 4px solid var(--sog-warn)
+}
+@media (max-width: 760px) {
+  .f-rm {
+    display: block
+  }
+  .f-rm-head {
+    display: none
+  }
+  .f-rm-lane {
+    display: block;
+    background: var(--sog-surface);
+    border: 1px solid var(--sog-border);
+    border-radius: var(--sog-radius);
+    padding: 10px 12px;
+    margin-bottom: var(--sog-gap)
+  }
+  .f-rm-lane h2,
+  .f-rm-col {
+    border-top: 0;
+    padding-top: 0
+  }
+  .f-rm-col[data-empty] {
+    display: none
+  }
+  .f-rm-col h3 {
+    display: block;
+    font-size: .85em;
+    margin: 8px 0 4px;
+    color: var(--rm)
+  }
+}
 /* notifications flottantes et fenêtres de question (jamais de dialogue natif) */
 .f-notes {
   position: fixed;

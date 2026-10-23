@@ -519,6 +519,7 @@
     view.replaceChildren();
     renderMenu(id);
     if (id === 'help') return window.SogHelp?.screen(view, helpCtx(), h.query);
+    if (id === 'roadmap') return window.SogRoadmap?.screen(view, helpCtx());
     if (ROUTES[id]) return ROUTES[id](view);
     const entry = APP.modules.find(m => m.id === id) || APP.modules[0];
     if (!entry) return renderSettings(view);
