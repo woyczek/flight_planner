@@ -64,7 +64,8 @@ repliées page par page. Échap ou un toucher ailleurs le relâche. En mode VFR,
 d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
 ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été
 analysé à la main, la carte le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit
-la carte VAC (tirets longs) et une flèche marque un sens unique. Elles apparaissent une
+la carte VAC (tirets longs) et une flèche marque un sens unique. Les points de report de la base sont toujours là, en noir pour les avions et en vert pour les
+hélicoptères ; les séquences et les consignes des VAC s'y ajoutent une fois importées. Elles apparaissent une
 fois importées par l'administrateur (Paramètres › Maintenance).
 
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu

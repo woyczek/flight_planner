@@ -358,11 +358,17 @@ const TX = {
   vfrNone: ['Aucun point de report VFR importé pour ce terrain.', 'No VFR reporting point imported for this aerodrome.',
     'Für diesen Flugplatz sind keine VFR-Meldepunkte importiert.', 'Ningún punto de notificación VFR importado para este aeródromo.'
   ],
-  vfrCounts: ['{p} points de report, {r} séquences', '{p} reporting points, {r} sequences', '{p} Meldepunkte, {r} Sequenzen',
-    '{p} puntos de notificación, {r} secuencias'
-  ],
   vfrHover: ['{c} : toucher pour les voir', '{c}: tap to see them', '{c}: zum Ansehen antippen', '{c}: toque para verlos'],
-  vfrSeqs: ['Séquences', 'Sequences', 'Sequenzen', 'Secuencias'],
+  vfrPoints: ['Points de report ({n})', 'Reporting points ({n})', 'Meldepunkte ({n})', 'Puntos de notificación ({n})'],
+  vfrBaseCount: ['{n} points de report', '{n} reporting points', '{n} Meldepunkte', '{n} puntos de notificación'],
+  vfrSeqCount: ['{r} séquences VAC', '{r} VAC sequences', '{r} VAC-Sequenzen', '{r} secuencias VAC'],
+  vfrNoVac: ['séquences VAC : non importées', 'VAC sequences: not imported', 'VAC-Sequenzen: nicht importiert',
+    'secuencias VAC: no importadas'
+  ],
+  vfrLegend: ['(noir : avions ; vert : hélicoptères)', '(black: aeroplanes; green: helicopters)',
+    '(schwarz: Flugzeuge; grün: Hubschrauber)',
+    '(negro: aviones; verde: helicópteros)'
+  ],
   vfrStatus: {
     'interprété': ['Analyse manuelle de la VAC ({s})', 'Manual analysis of the VAC ({s})', 'Manuelle Auswertung der VAC ({s})',
       'Análisis manual de la VAC ({s})'
@@ -389,9 +395,6 @@ const TX = {
   vfrVis: ['visibilité {v} m au moins', 'visibility {v} m at least', 'Sicht mindestens {v} m', 'visibilidad de {v} m como mínimo'],
   vfrOneWay: ['sens unique', 'one way', 'Einbahn', 'sentido único'],
   vfrPages: ['pages {p}', 'pages {p}', 'Seiten {p}', 'páginas {p}'],
-  vfrRestricted: ['Points à usage restreint (texte de la VAC)', 'Points with restricted use (text of the VAC)',
-    'Punkte mit eingeschränkter Nutzung (Text der VAC)', 'Puntos de uso restringido (texto de la VAC)'
-  ],
   vfrManual: ['{n} sommets de tracé placés à la main sur la carte VAC, précision non garantie.',
     '{n} track vertices placed by hand on the VAC chart, accuracy not guaranteed.',
     '{n} Verlaufspunkte von Hand auf der VAC-Karte gesetzt, Genauigkeit nicht garantiert.',
@@ -2038,7 +2041,7 @@ function tipAt(x, y, lat = null, lon = null) {
 // (séquences en texte, consignes des VAC repliées par page), jusqu'à Échap ou un toucher ailleurs ; en mode VFR, départ et
 // arrivée épinglés d'office (dessin seul). Données : aerodb.vfrRoutes (sia/vfr/<OACI>.json), candidats tirés des VAC,
 // toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
-const VFR_COL = '#00897b';
+const VFR_COL = '#00897b'; // séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor)
 /** Terrain dessiné sous (x, y), à 12 px près ; null sinon. */
 function adAt(x, y) {
   let best = null,
@@ -2052,7 +2055,50 @@ function adAt(x, y) {
   }
   return best;
 }
-/** Points de report d'un terrain (lus une fois par terrain ; null sans fichier) ; redessin quand ils arrivent. */
+/** Position d'un terrain : celle de la carte (terrains dessinés, données lues), sinon celle des points de la route. */
+function adPos(icao) {
+  const a = (S.adHits || []).find(h => h.a.icao === icao)?.a || (S.data?.data?.aerodromes || []).find(x => x.icao === icao) || (S.route
+    ?.points || []).find(p => p.id === icao);
+  return a && Number.isFinite(+a.lat) && Number.isFinite(+a.lon) ? {
+    lat: +a.lat,
+    lon: +a.lon,
+    name: a.name || ''
+  } : null;
+}
+/** Points de report de la base publiée pour un terrain (aerodb.vrp) : ceux dont l'identifiant porte son préfixe
+ *  (« MN- » pour LFMN), à 30 NM au plus ; à défaut, ceux à moins de 15 NM. Lus une fois par terrain ; [{ id, code, name,
+ *  lat, lon }] ; undefined pendant la lecture. */
+function baseVrpOf(icao) {
+  const m = S.vrpBase ||= new Map();
+  if (m.has(icao)) return m.get(icao);
+  const at = adPos(icao);
+  if (!at) return [];
+  m.set(icao, undefined);
+  Promise.resolve(S.ctx.aerodb?.vrp?.({
+    lat: at.lat,
+    lon: at.lon,
+    radiusNm: 30
+  })).then(list => {
+    if (!S) return;
+    const pre = `${icao.slice(2)}-`,
+      nm = v => Math.hypot(+v.lat - at.lat, (+v.lon - at.lon) * Math.cos(at.lat * Math.PI / 180)) * 60,
+      all = (list || []).filter(v => v?.id),
+      own = all.filter(v => v.id.startsWith(pre)),
+      rows = (own.length ? own : all.filter(v => nm(v) <= 15)).map(v => ({
+        id: v.id,
+        // code tel que l'écrit la VAC : « HE » pour MN-H-HE (la couleur dit l'hélicoptère)
+        code: (v.id.startsWith(pre) ? v.id.slice(pre.length) : v.id).replace(/^H-/, ''),
+        name: v.name || '',
+        lat: +v.lat,
+        lon: +v.lon
+      })).sort((x, y) => x.code.localeCompare(y.code));
+    m.set(icao, rows);
+    schedule();
+    if (S.vfrPin === icao && S.vfrCard) pinView(icao);
+  }, () => S && m.set(icao, []));
+  return undefined;
+}
+/** Compilation VAC d'un terrain (aerodb.vfrRoutes ; lue une fois par terrain ; null sans import) ; redessin à l'arrivée. */
 function vfrOf(icao) {
   const m = S.vfr ||= new Map();
   if (!m.has(icao)) {
@@ -2070,26 +2116,54 @@ function vfrOf(icao) {
 const seqsOf = v => [...new Map((v?.routes || []).map(r => [`${r.key || ''}|${r.codes.join('-')}|${pagesOf(r).join(',')}`, r])).values()];
 /** Pages de la VAC d'une séquence (format 2 : pages ; format 1 : page). */
 const pagesOf = r => Array.isArray(r.pages) ? r.pages : r.page ? [r.page] : [];
-/** Points de report d'un terrain (sans son point de référence ni les sommets de tracé de l'analyse). */
+/** Points de report de la compilation (sans le point de référence du terrain ni les sommets de tracé de l'analyse). */
 const reportOf = v => (v?.points || []).filter(p => !p.role || p.role === 'reporting_point');
+/** Points de report d'un terrain à montrer : ceux de la base, puis ceux des VAC qui n'y sont pas ; chacun avec ses
+ *  restrictions lues dans les VAC. [{ id, code, name, lat, lon, restrictions }] */
+function reportPoints(icao) {
+  const base = baseVrpOf(icao) || [],
+    v = vfrOf(icao),
+    vac = reportOf(v),
+    byId = new Map(vac.filter(p => p.vrp).map(p => [p.vrp, p])),
+    ids = new Set(base.map(b => b.id));
+  return [...base.map(b => ({
+    ...b,
+    restrictions: byId.get(b.id)?.restrictions || []
+  })), ...vac.filter(p => !p.vrp || !ids.has(p.vrp)).map(p => ({
+    id: p.vrp || `${icao.slice(2)}-${p.code}`,
+    code: p.code,
+    name: '',
+    lat: +p.lat,
+    lon: +p.lon,
+    restrictions: p.restrictions || []
+  }))];
+}
+/** Ligne d'état d'un terrain : ses points de report, et les séquences VAC (ou « non importées »). */
+function adCounts(icao) {
+  const v = vfrOf(icao),
+    n = reportPoints(icao).length;
+  return [tt(TX.vfrBaseCount, {
+    n
+  }), v ? tt(TX.vfrSeqCount, {
+    r: seqsOf(v).length
+  }) : v === null ? tt(TX.vfrNoVac) : ''].filter(Boolean).join(' · ');
+}
 /** Aperçu au survol (un terrain, ou null) ; redessin seulement s'il change. */
 function previewAd(icao) {
   if ((S.vfrPreview || null) === icao) return;
   S.vfrPreview = icao;
-  if (icao) vfrOf(icao);
+  if (icao) {
+    vfrOf(icao);
+    baseVrpOf(icao);
+  }
   schedule();
 }
-/** Infobulle de survol d'un terrain : son code, son nom, ce que les VAC en donnent. */
+/** Infobulle de survol d'un terrain : son code, son nom, ses points de report et ses séquences VAC. */
 function adHover(a, x, y) {
-  const v = vfrOf(a.icao),
-    c = v ? tt(TX.vfrHover, {
-      c: tt(TX.vfrCounts, {
-        p: reportOf(v).length,
-        r: seqsOf(v).length
-      })
-    }) : v === null ? tt(TX.vfrNone) : '';
   stay('map');
-  followTip(S.tipEl, S.box, x, y, hoverHtml([a.icao, a.name].filter(Boolean).join(' '), c));
+  followTip(S.tipEl, S.box, x, y, hoverHtml([a.icao, a.name].filter(Boolean).join(' '), tt(TX.vfrHover, {
+    c: adCounts(a.icao)
+  })));
 }
 /** Terrain épinglé (toucher) : surbrillance gardée et sa carte. */
 function pinAd(a) {
@@ -2100,20 +2174,23 @@ function pinAd(a) {
     lat: +a.lat,
     lon: +a.lon
   };
-  if (vfrOf(a.icao) !== undefined) pinView(a.icao);
-  else showAdCard(a.icao); // « … » jusqu'à l'arrivée du fichier
+  vfrOf(a.icao);
+  baseVrpOf(a.icao);
+  pinView(a.icao);
   schedule();
 }
 /** Terrain épinglé : la carte se rapproche de ses points de report s'ils sont serrés à l'écran (moins de 160 px ; c'est
  *  le geste de l'utilisateur, la caméra reste ensuite la sienne), en laissant la place de sa carte, puis la carte du
- *  terrain s'ouvre. */
+ *  terrain s'ouvre (« … » tant que la base ou la compilation sont en lecture). */
 function pinView(icao) {
-  const v = vfrOf(icao),
-    c = S.vfrCard;
-  if (!v?.points.length || !S.map || !c) return showAdCard(icao);
-  const pts = [...v.points.filter(p => p.role !== 'aerodrome_reference_point'), c].filter(p => Number.isFinite(+p.lat) && Number.isFinite(+p
-      .lon)),
-    px = pts.map(p => S.map.project([+p.lon, +p.lat])),
+  const c = S.vfrCard;
+  if (!c) return;
+  if (S.vfrZoomed === icao || baseVrpOf(icao) === undefined || vfrOf(icao) === undefined || !S.map) return showAdCard(icao);
+  S.vfrZoomed = icao; // une seule fois par épinglage
+  const pts = [...reportPoints(icao), ...(vfrOf(icao)?.points || []).filter(p => p.role === 'intermediate_waypoint'), c].filter(p => Number
+    .isFinite(+p.lat) && Number.isFinite(+p.lon));
+  if (pts.length < 2) return showAdCard(icao);
+  const px = pts.map(p => S.map.project([+p.lon, +p.lat])),
     span = Math.max(Math.max(...px.map(q => q.x)) - Math.min(...px.map(q => q.x)), Math.max(...px.map(q => q.y)) - Math.min(...px.map(q =>
       q.y)));
   if (span >= 160) return showAdCard(icao);
@@ -2147,47 +2224,55 @@ function unpinAd() {
   if (!S.vfrPin) return;
   S.vfrPin = null;
   S.vfrCard = null;
+  S.vfrZoomed = null;
   schedule();
 }
-/** Carte d'un terrain épinglé : séquences en texte (page des VAC), puis consignes repliées par page. */
+/** Carte d'un terrain épinglé : ses points de report (base publiée, couleur avion ou hélicoptère), puis, si la
+ *  compilation VAC est importée, l'analyse, les séquences, les points restreints, les sommets manuels et les consignes
+ *  repliées par page ; sinon « séquences VAC : non importées ». */
 function showAdCard(icao) {
   const v = vfrOf(icao),
+    base = baseVrpOf(icao),
     c = S.vfrCard;
   if (!c) return;
-  const head = `<div><b>${esc(tt(TX.vfrTitle, { ad: [icao, c.name].filter(Boolean).join(' ') }))}</b></div>`;
+  const head = `<div><b>${esc(tt(TX.vfrTitle, { ad: [icao, c.name].filter(Boolean).join(' ') }))}</b></div>`,
+    page = p => p ? ` <span class="f-muted">(${esc(tt(TX.vfrPage, { p }))})</span>` : '',
+    pts = reportPoints(icao),
+    heli = pts.some(p => MapsRender.vrpRotary(p.id)),
+    dot = p => `<i class="mp-vfr-dot" style="background:${MapsRender.vrpColor(p.id)}"></i>`;
   let body = '';
-  if (v === undefined) body = '<p class="f-muted">…</p>';
-  else if (!v) body = `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
+  if (base === undefined || v === undefined) body = '<p class="f-muted">…</p>';
   else {
-    const page = p => p ? ` <span class="f-muted">(${esc(tt(TX.vfrPage, { p }))})</span>` : '',
-      pages = ps => ps.length > 1 ? ` <span class="f-muted">(${esc(tt(TX.vfrPages, { p: ps.join(', ') }))})</span>` : page(ps[0]),
-      seqs = seqsOf(v),
-      part = seqs.some(r => r.fragment),
-      A = v.analysis || {},
-      st = TX.vfrStatus[A.status],
-      // conditions lues par l'analyse : altitude par défaut, visibilité minimale ; le reste est dans les consignes
-      cond = r => {
-        const c = r.conditions || {},
-          a = c.defaultAltitude,
-          vis = Array.isArray(c.minVisibilityMByLeg) ? Math.max(...c.minVisibilityMByLeg.filter(Number.isFinite)) : null;
-        return [r.runways?.length ? tt(TX.vfrRunways, {
-          r: r.runways.join(', ')
-        }) : '', a?.value ? tt(TX.vfrAlt, {
-          a: `${a.value} ${a.unit || 'ft'} ${a.reference || ''}`.trim()
-        }) : '', Number.isFinite(vis) && vis > 0 ? tt(TX.vfrVis, {
-          v: vis
-        }) : '', r.direction === 'forward' ? tt(TX.vfrOneWay) : ''].filter(Boolean).join(' · ');
-      },
-      item = r => {
-        const k = cond(r);
-        return `<li>${r.key ? `<b>${esc(r.key)}</b> : ` : ''}${esc(r.codes.join(' – '))}${pages(pagesOf(r))}${k ? `<br><span>${esc(k)}</span>` : ''}${r.omission ? `<br><span class="f-muted">${esc(r.omission)}</span>` : ''}</li>`;
-      };
-    const restricted = reportOf(v).filter(p => p.restrictions?.length),
-      manual = (v.points || []).filter(p => p.role === 'intermediate_waypoint'),
-      accs = manual.map(p => p.accuracyM).filter(Number.isFinite),
-      man = manual.length ? `<p class="f-muted">${esc(accs.length === manual.length ? tt(TX.vfrAccuracy, { n: manual.length, m: Math.max(...accs) }) : tt(TX.vfrManual, { n: manual.length }))}</p>` : '',
-      res = restricted.length ? `<div><b>${esc(tt(TX.vfrRestricted))}</b></div><ul class="mp-vfr-seq">${restricted.map(p => `<li><b>${esc(p.code)}</b> : ${esc(p.restrictions.join(' ; '))}</li>`).join('')}</ul>` : '';
-    body = `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}<p>${esc(tt(TX.vfrCounts, { p: reportOf(v).length, r: seqs.length }))}</p>${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqs))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${man}${res}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
+    body = pts.length ? `<div><b>${esc(tt(TX.vfrPoints, { n: pts.length }))}</b>${heli ? ` <span class="f-muted">${esc(tt(TX.vfrLegend))}</span>` : ''}</div><ul class="mp-vfr-pts">${pts.map(p => `<li>${dot(p)}<b style="color:${MapsRender.vrpColor(p.id)}">${esc(p.code)}</b> ${esc(p.name)}${p.restrictions.length ? ` <span class="mp-vfr-warn">(${esc(p.restrictions.join(' ; '))})</span>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
+    if (!v) body += `<p class="f-muted">${esc(tt(TX.vfrNoVac))}</p>`;
+    else {
+      const pages = ps => ps.length > 1 ? ` <span class="f-muted">(${esc(tt(TX.vfrPages, { p: ps.join(', ') }))})</span>` : page(ps[0]),
+        seqs = seqsOf(v),
+        part = seqs.some(r => r.fragment),
+        A = v.analysis || {},
+        st = TX.vfrStatus[A.status],
+        // conditions lues par l'analyse : altitude par défaut, visibilité minimale ; le reste est dans les consignes
+        cond = r => {
+          const k = r.conditions || {},
+            a = k.defaultAltitude,
+            vis = Array.isArray(k.minVisibilityMByLeg) ? Math.max(...k.minVisibilityMByLeg.filter(Number.isFinite)) : null;
+          return [r.runways?.length ? tt(TX.vfrRunways, {
+            r: r.runways.join(', ')
+          }) : '', a?.value ? tt(TX.vfrAlt, {
+            a: `${a.value} ${a.unit || 'ft'} ${a.reference || ''}`.trim()
+          }) : '', Number.isFinite(vis) && vis > 0 ? tt(TX.vfrVis, {
+            v: vis
+          }) : '', r.direction === 'forward' ? tt(TX.vfrOneWay) : ''].filter(Boolean).join(' · ');
+        },
+        item = r => {
+          const k = cond(r);
+          return `<li>${r.key ? `<b>${esc(r.key)}</b> : ` : ''}${esc(r.codes.join(' – '))}${pages(pagesOf(r))}${k ? `<br><span>${esc(k)}</span>` : ''}${r.omission ? `<br><span class="f-muted">${esc(r.omission)}</span>` : ''}</li>`;
+        },
+        manual = (v.points || []).filter(p => p.role === 'intermediate_waypoint'),
+        accs = manual.map(p => p.accuracyM).filter(Number.isFinite),
+        man = manual.length ? `<p class="f-muted">${esc(accs.length === manual.length ? tt(TX.vfrAccuracy, { n: manual.length, m: Math.max(...accs) }) : tt(TX.vfrManual, { n: manual.length }))}</p>` : '';
+      body += `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqCount, { r: seqs.length }))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${man}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
+    }
   }
   // carte du côté opposé au terrain, sous les boutons du haut du cadre (Modifier, modes et couches) : les points restent
   // visibles, aucun bouton n'est couvert
@@ -2218,85 +2303,88 @@ function vfrShown() {
   }
   return out;
 }
-/** Surbrillance des points de report des terrains montrés : séquences en tirets, points cerclés et nommés, « VAC, à
- *  vérifier » près du terrain. */
+/** Surbrillance des terrains montrés : séquences et tracés VAC en tirets (sarcelle), sommets manuels en petits points,
+ *  points de report cerclés et nommés (avions en noir, hélicoptères en vert ; usage restreint : cercle tireté),
+ *  « VAC, à vérifier » près du terrain quand la compilation est là. */
 function drawVfr(ctx, toC) {
   const ads = vfrShown();
   if (!ads.size) return;
-  const vrpName = new Map((S.data?.data?.vrp || []).map(v => [v.id, v.name]));
   ctx.save();
   ctx.lineJoin = 'round';
   for (const icao of ads) {
-    const v = vfrOf(icao);
-    if (!v) continue;
-    const ad = (S.data?.data?.aerodromes || []).find(a => a.icao === icao) || (S.adHits || []).find(h => h.a.icao === icao)?.a,
-      // points de report et sommets de tracé ; le terrain lui-même (son code, « AD ») n'est jamais relié : une
-      // intégration non numérisée n'est pas remplacée par une droite vers son centre
-      at = new Map(v.points.filter(p => p.role !== 'aerodrome_reference_point' && p.code !== 'AD').map(p => [p.code, p]));
-    ctx.strokeStyle = VFR_COL;
-    ctx.lineWidth = 1.6;
-    for (const r of v.routes) {
-      // tracé de l'analyse (tirets longs), sinon tirets courts entre les points de report connus
-      const line = r.geometry?.length > 1 ? r.geometry.map(([la, lo]) => toC(la, lo)) : null;
-      ctx.setLineDash(line ? [10, 4] : [6, 4]);
-      ctx.beginPath();
-      let pen = false,
-        last = null,
-        prev = null;
-      for (const q of line || r.codes.map(c => at.get(c)).map(p => p ? toC(+p.lat, +p.lon) : null)) {
-        if (!q) {
-          pen = false;
-          continue;
-        }
-        pen ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-        if (pen)[prev, last] = [last, q];
-        else last = q;
-        pen = true;
-      }
-      ctx.stroke();
-      // sens unique lu par l'analyse : une flèche au bout du tracé
-      if (r.direction === 'forward' && prev && last) {
-        const a = Math.atan2(last.y - prev.y, last.x - prev.x);
-        ctx.setLineDash([]);
+    const v = vfrOf(icao),
+      pts = reportPoints(icao);
+    if (v) {
+      // points de la compilation ; le terrain lui-même (son code, « AD ») n'est jamais relié : une intégration non
+      // numérisée n'est pas remplacée par une droite vers son centre
+      const at = new Map(v.points.filter(p => p.role !== 'aerodrome_reference_point' && p.code !== 'AD').map(p => [p.code, p]));
+      ctx.strokeStyle = VFR_COL;
+      ctx.lineWidth = 1.6;
+      for (const r of v.routes) {
+        // tracé de l'analyse (tirets longs), sinon tirets courts entre les points de report connus
+        const line = r.geometry?.length > 1 ? r.geometry.map(([la, lo]) => toC(la, lo)) : null;
+        ctx.setLineDash(line ? [10, 4] : [6, 4]);
         ctx.beginPath();
-        ctx.moveTo(last.x, last.y);
-        ctx.lineTo(last.x - 9 * Math.cos(a - .45), last.y - 9 * Math.sin(a - .45));
-        ctx.moveTo(last.x, last.y);
-        ctx.lineTo(last.x - 9 * Math.cos(a + .45), last.y - 9 * Math.sin(a + .45));
+        let pen = false,
+          last = null,
+          prev = null;
+        for (const q of line || r.codes.map(c => at.get(c)).map(p => p ? toC(+p.lat, +p.lon) : null)) {
+          if (!q) {
+            pen = false;
+            continue;
+          }
+          pen ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+          if (pen)[prev, last] = [last, q];
+          else last = q;
+          pen = true;
+        }
         ctx.stroke();
+        // sens unique lu par l'analyse : une flèche au bout du tracé
+        if (r.direction === 'forward' && prev && last) {
+          const a = Math.atan2(last.y - prev.y, last.x - prev.x);
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(last.x, last.y);
+          ctx.lineTo(last.x - 9 * Math.cos(a - .45), last.y - 9 * Math.sin(a - .45));
+          ctx.moveTo(last.x, last.y);
+          ctx.lineTo(last.x - 9 * Math.cos(a + .45), last.y - 9 * Math.sin(a + .45));
+          ctx.stroke();
+        }
       }
-    }
-    ctx.setLineDash([]);
-    ctx.font = '700 11px Arial,sans-serif';
-    ctx.textBaseline = 'middle';
-    for (const p of v.points) {
-      if (p.role === 'aerodrome_reference_point' || p.code === 'AD') continue;
-      const q = toC(+p.lat, +p.lon);
-      if (p.role === 'intermediate_waypoint') { // sommet de tracé de l'analyse : ni point de report, ni nom
+      ctx.setLineDash([]);
+      // sommets de tracé de l'analyse : ni points de report, ni noms
+      ctx.fillStyle = VFR_COL;
+      for (const p of v.points.filter(p => p.role === 'intermediate_waypoint')) {
+        const q = toC(+p.lat, +p.lon);
         ctx.beginPath();
         ctx.arc(q.x, q.y, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = VFR_COL;
         ctx.fill();
-        continue;
       }
-      const name = [p.code, vrpName.get(p.vrp)].filter(Boolean).join(' ');
+    }
+    ctx.font = '700 11px Arial,sans-serif';
+    ctx.textBaseline = 'middle';
+    for (const p of pts) {
+      const q = toC(p.lat, p.lon),
+        col = MapsRender.vrpColor(p.id),
+        name = [p.code, p.name.length > 28 ? `${p.name.slice(0, 27)}…` : p.name].filter(Boolean).join(' ');
       ctx.beginPath();
       ctx.arc(q.x, q.y, 7, 0, Math.PI * 2);
-      ctx.fillStyle = MapsRender.withAlpha(VFR_COL, .15);
+      ctx.fillStyle = MapsRender.withAlpha(col, .12);
       ctx.fill();
-      ctx.strokeStyle = VFR_COL;
+      ctx.strokeStyle = col;
       ctx.lineWidth = 2;
-      if (p.restrictions?.length) ctx.setLineDash([3, 2]); // usage restreint : cercle tireté (la carte du terrain dit lequel)
+      if (p.restrictions.length) ctx.setLineDash([3, 2]); // usage restreint : cercle tireté (la carte du terrain dit lequel)
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.strokeStyle = S.theme.bg;
       ctx.lineWidth = 3;
       ctx.strokeText(name, q.x + 10, q.y);
-      ctx.fillStyle = VFR_COL;
+      ctx.fillStyle = col;
       ctx.fillText(name, q.x + 10, q.y);
     }
+    const ad = v && adPos(icao);
     if (ad) {
-      const q = toC(+ad.lat, +ad.lon),
+      const q = toC(ad.lat, ad.lon),
         t = tt(TX.vfrMap);
       ctx.font = 'italic 600 10px Arial,sans-serif';
       ctx.strokeStyle = S.theme.bg;
@@ -3575,6 +3663,9 @@ const STYLE = `
 [data-module="maps"] .mp-pcard:has(.mp-vfr-warn){width:min(92%,360px);max-height:calc(100% - 12px);overflow:auto}
 [data-module="maps"] .mp-vfr-warn{margin:0;font-size:.9em;color:#00695c;font-style:italic}
 [data-module="maps"] .mp-vfr-seq{margin:2px 0 4px;padding-left:1.2em}
+[data-module="maps"] .mp-vfr-pts{margin:2px 0 6px;padding:0;list-style:none}
+[data-module="maps"] .mp-vfr-pts li{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+[data-module="maps"] .mp-vfr-dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none}
 [data-module="maps"] .mp-vfr-note summary{cursor:pointer}
 [data-module="maps"] .mp-vfr-note>div{white-space:pre-wrap;font-size:.85em;max-height:14em;overflow:auto;border-left:2px solid var(--sog-border);padding-left:6px}
 [data-module="maps"] .mp-pcard:has(.mp-lv){width:min(92%,320px);max-height:calc(100% - 12px);overflow:auto}

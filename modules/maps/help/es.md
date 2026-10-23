@@ -63,7 +63,8 @@ consignas de la VAC, plegadas página por página. Escape o un toque en otro lug
 aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
 marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha sido
 analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado
-sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Aparecen una vez importados por el
+sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Los puntos de notificación de la base siempre están, en negro para los aviones y en verde
+para los helicópteros; las secuencias y consignas de las VAC se añaden una vez importadas. Aparecen una vez importados por el
 administrador (Ajustes › Mantenimiento).
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto

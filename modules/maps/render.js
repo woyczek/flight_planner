@@ -871,6 +871,12 @@
     ctx.restore();
   }
   /** Points de report VFR (losange vert) et points RNAV en route (triangle bleu), identifiant à côté. */
+  /** VRP d'hélicoptères : « -H- » dans l'identifiant de la base publiée (MN-H-HE). */
+  const vrpRotary = id => /-H-/.test(String(id || ''));
+  /** Couleur d'un point de report VFR : voilure fixe dans la couleur du texte (--sog-fg), voilure tournante en vert. */
+  const vrpColor = id => vrpRotary(id) ? VRP_HELI : (T || tokens()).fg;
+  const VRP_HELI = '#2e7d32';
+
   function drawVrp(ctx, data, toC, W, H, scale, b, pl, profile) {
     const vrp = on(profile, 'vrpPoints') && data.vrp?.length,
       rnav = on(profile, 'rnavPoints') && data.points?.length;
@@ -919,7 +925,7 @@
       for (const v of data.points)
         if (v.type === 'ICAO') mark(v, '#1f5fa8', 4 * scale, 'tri');
     if (vrp)
-      for (const v of data.vrp) mark(v, '#0b7a3b', 4.5 * scale, 'diamond');
+      for (const v of data.vrp) mark(v, vrpColor(v.id), 4.5 * scale, 'diamond');
     ctx.restore();
   }
   /** Villes à dessiner (les plus peuplées d'abord, sans recouvrement) : libellés au-dessus de cityLabelMin si le profil
@@ -1520,6 +1526,8 @@
   }
 
   window.MapsRender = {
+    vrpRotary,
+    vrpColor,
     routeProfile,
     selectAirspaces,
     bboxOf,

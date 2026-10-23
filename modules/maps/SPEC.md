@@ -311,17 +311,26 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 
 ## 4 septies. VFR reporting points of an aerodrome (VAC)
 
-- **Data**: `aerodb.vfrRoutes(icao)` (aerodb SPEC § 5 quater, `sia/vfr/<ICAO>.json`), read once per aerodrome and kept
-  for the session; null when the aerodrome has no file. Candidates extracted from the VAC charts.
+- **Data**: the reporting points of the published base first, always (`aerodb.vrp({ lat, lon, radiusNm: 30 })`: those
+  whose id carries the aerodrome's prefix, "MN-" for LFMN; otherwise those within 15 NM; code shown as the VAC writes
+  it, "HE" for MN-H-HE), then the VAC compilation when imported (`aerodb.vfrRoutes(icao)`, aerodb SPEC § 5 quater,
+  `sia/vfr/<ICAO>.json`): its sequences, instructions, manual vertices and the reporting points the base does not
+  have. Both read once per aerodrome and kept for the session.
+- **Colours of the VFR reporting points**, everywhere (VRP layer, highlighted points, labels, the card): fixed wing in
+  the text colour (`--sog-fg`), rotary wing in green (`#2e7d32`): "-H-" in the base's id (MN-H-HE), confirmed in the
+  published base (`MapsRender.vrpRotary`, `vrpColor`). Sequences and tracks from the VAC stay teal.
 - **Which aerodromes**: `render.draw()` returns the aerodromes it drew with their screen position (`aerodromes:
   [{ a, x, y }]`); an aerodrome is under the pointer within 12 px.
 - **Hover** (mouse; an airway box, a barb or an airspace label pass first): preview of the aerodrome's points and
-  sequences; tooltip "LFBD BORDEAUX MERIGNAC · 10 reporting points, 10 sequences: tap to see them", or "No VFR reporting
-  point imported for this aerodrome". Leaving the aerodrome or the map ends the preview.
+  sequences; tooltip "LFMN NICE COTE D'AZUR · 21 reporting points · 5 VAC sequences: tap to see them", or "… · VAC
+  sequences: not imported" without the compilation. Leaving the aerodrome or the map ends the preview.
 - **Tap or click** (not in Edit mode, not on a mission map): the aerodrome is pinned. When its points span less than
   160 px on screen, the map fits them (aerodrome included, zoom 11 at most, room left for the card); that is the
   user's gesture, so the camera stays theirs afterwards (Follow stops, Recentre comes back). Then its card:
-  - "LFBD BORDEAUX MERIGNAC: VFR reporting points", the warning "Extracted from the VAC charts, to be checked: this is not
+  - "LFMN NICE COTE D'AZUR: VFR reporting points", then "Reporting points (n)" with the legend "(black: aeroplanes;
+    green: helicopters)" when both kinds are there, one line per point (coloured code, name, restrictions read in the
+    VAC); without the compilation, "VAC sequences: not imported" and nothing else;
+  - with it, the warning "Extracted from the VAC charts, to be checked: this is not
     the published route, the VAC chart prevails", the counts;
   - the sequences in text ("LFBD – NA – NE (page 6)"), identical ones (same codes, same page) shown once, with "(some
     may be only part of a route)" when any is marked `fragment`;

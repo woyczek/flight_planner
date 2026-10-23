@@ -276,7 +276,8 @@ both ways.
     `[longitude, latitude]` in range, pages, every code of a sequence or of a geometry known (a point of the aerodrome,
     the aerodrome's ICAO code or "AD"), geometries, directions, text sizes; one error and nothing is written, the first
     20 errors are returned and shown;
-  - each reporting point is matched with the base's VRP `<ICAO without its first two letters>-<code>` (latest cycle of
+  - each reporting point is matched with the base's VRP `<ICAO without its first two letters>-<code>`, or
+    `…-H-<code>` for a helicopter point (the VAC writes "HE", the base "MN-H-HE") (latest cycle of
     `sia/base/fr/`, within 0.02°); unmatched points keep their VAC coordinates, `vrp: null`;
   - plan first (summary: aerodromes, points, unmatched points, sequences, pages of instructions, files changed and
     removed, size), then, after agreement, writing of `sia/vfr/`, a commit in the author's name and a synchronisation.

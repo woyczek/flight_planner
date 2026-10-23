@@ -479,3 +479,14 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   VAC's own words, untranslated data). The manual vertices are counted with their accuracy ("not guaranteed" while
   `accuracyM` is null). Bench: LFMA → "AR : radio communication failure procedure | AS : ATC instruction only | AW :
   ATC instruction only"; LFCH → "9 sommets de tracé placés à la main sur la carte VAC, précision non garantie.".
+- **23 Oct 2026 — the aerodrome's card no longer depends on the VAC import; colours aeroplane / helicopter.**
+  - **The published base first**: LFMN said "no reporting point" while the base has its MN-*; the card and the hover
+    now list the base's VRPs of the aerodrome (its prefix, within 30 NM: MN-SE "Pointe Matautu" belongs to another
+    "MN" aerodrome far away; else within 15 NM), and the VAC compilation adds to them. Without it: "VAC sequences: not
+    imported".
+  - **Helicopter VRPs are marked in the base**: "-H-" in the id (MN-H-HE, MD-H-HV, LP-H-HS…), confirmed in the
+    published base; shown green, the others in the text colour; the code as the VAC writes it ("HE").
+  - **The import matches "-H-" too**: unmatched reporting points from 43 to 16 on the user's compilation.
+  - **Bench** (1280 px, view on Nice): without the VAC files of LFMN and LFMD → 20 and 18 points from the base, "VAC
+    sequences: not imported"; with them → 21 points (EA from the VAC added) and 5 sequences for LFMN, 18 points and 1
+    sequence for LFMD; black and green rings and codes on the map and in the card. No JavaScript error.

@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: an aerodrome's reporting points from the base, aeroplane / helicopter colours** (`modules/maps/module.js`,
+  `render.js`, `tools/vfr_import.py`; SPECs, DECISIONS, help ×4) — the aerodrome's card and hover always list the
+  published base's VRPs, the VAC compilation adds to them ("VAC sequences: not imported" without it); VFR reporting
+  points in black for aeroplanes and green for helicopters ("-H-" in the base) everywhere; the import also matches the
+  helicopter points.
 - **VFR points: restricted use and manual vertices** (`tools/vfr_import.py`, `modules/maps/module.js`; SPECs,
   DECISIONS) — the import keeps a point's usage restrictions and a manual vertex's accuracy; the aerodrome's card lists
   the restricted points (dashed ring on the map) and how many vertices were placed by hand; the GeoJSON written next to

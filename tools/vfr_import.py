@@ -152,8 +152,10 @@ def plan(compiled, data_dir):
         for p in pts:
             lon, lat = p['coordinates']
             role = p.get('role') or 'reporting_point'
-            vid = f"{k[2:]}-{p['code']}"
-            b = base.get(vid) if role == 'reporting_point' else None
+            # identifiant de la base : « MN-WA » (avions) ou « MN-H-HE » (hélicoptères, la VAC écrit « HE »)
+            vid, b = next(((i, base[i]) for i in (f"{k[2:]}-{p['code']}", f"{k[2:]}-H-{p['code']}") if i in base), (None, None))
+            if role != 'reporting_point':
+                vid, b = None, None
             ok = b is not None and _num(b[0], -90, 90) and _num(b[1], -180, 180) and abs(b[0] - lat) < .02 and abs(b[1] - lon) < .02
             vrp_of[p['code']] = vid if ok else None
             if role == 'reporting_point' and not ok:

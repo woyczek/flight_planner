@@ -65,8 +65,8 @@ Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Escape 
 Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
 aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet und sind nicht die veröffentlichte Route; maßgeblich ist
 die VAC-Karte. Wurde der Flugplatz von Hand ausgewertet, sagt es die Karte, die Routen tragen ihren Namen, ihre Pisten
-und Bedingungen, ein geprüfter Verlauf folgt der VAC-Karte (lange Striche) und ein Pfeil zeigt eine Einbahnroute. Sie
-erscheinen, sobald der Administrator sie importiert hat (Einstellungen › Wartung).
+und Bedingungen, ein geprüfter Verlauf folgt der VAC-Karte (lange Striche) und ein Pfeil zeigt eine Einbahnroute. Die Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für
+Hubschrauber; die Sequenzen und Hinweise der VAC kommen hinzu, sobald sie importiert sind. Sie erscheinen, sobald der Administrator sie importiert hat (Einstellungen › Wartung).
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
