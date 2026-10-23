@@ -2,6 +2,13 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — the started flight first** (ergonomics session, after fuel's lot G): the "current flight" card
+  shows "Flight started at hh:mm" when fuel's `started` is set, above the last network flight (the card already came
+  first); "Use" remembers `started.at`, and saving the report keeps it in `cache/report/started.json`, so the
+  card is not offered again for that departure (a report saved without using it does not count). Checked on 8801
+  with the TST flight: card titled "Flight started at 11:42" first; with that `at` in `started.json`, no card. The
+  save path that writes `started.json` was not run end to end (a full report needed); it runs after the report is
+  written and the draft removed.
 - **23 Oct 2026 — wide layout by the module's width** (asked by the design session after the dual view, 1b281c1d8:
   each pane is a container): `@media (min-width: 980px)` became `@container (min-width: 900px)` — read on the
   window, the steps bar was hidden with the three steps stacked in a 506 px pane. Checked at 1280 px: full screen (1,023 px): the three steps side by side, no steps bar; dual view (506 px): the steps bar and one step.

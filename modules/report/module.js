@@ -72,6 +72,7 @@ const FAMILIES = {
   PREFS = 'cache/report/prefs.json',
   DRAFT = 'cache/report/draft.json',
   LAST = 'cache/report/last_flights.json',
+  STARTED = 'cache/report/started.json', // vols démarrés déjà rapportés : { done: [started.at, …] }
   HANDOFF = 'pilot/handoff.json',
   SCHEMA = 'sog-report/1';
 
@@ -96,6 +97,7 @@ const TX = {
   current: L('Vol en cours (carburant / carte)', 'Current flight (fuel / maps)', 'Aktueller Flug (Kraftstoff / Karte)',
     'Vuelo actual (combustible / mapa)'),
   use: L('Utiliser', 'Use', 'Übernehmen', 'Usar'),
+  startedAt: L('Vol démarré à {t}', 'Flight started at {t}', 'Flug gestartet um {t}', 'Vuelo iniciado a las {t}'),
   filled: L('{n} champ(s) rempli(s) depuis {s}.', '{n} field(s) filled from {s}.', '{n} Feld(er) aus {s} ausgefüllt.',
     '{n} campo(s) rellenado(s) desde {s}.'),
   nothing: L('Rien à reprendre : les champs sont déjà remplis.', 'Nothing to take: the fields are already filled.',
@@ -350,6 +352,15 @@ async function save() {
   });
   S.path = path;
   await S.ctx.data.remove(DRAFT).catch(() => {});
+  if (S.usedStarted) { // vol démarré rapporté : la carte « Vol en cours » ne le repropose plus
+    const kept = (await S.ctx.data.get(STARTED).catch(() => null))?.done || [];
+    await S.ctx.data.put(STARTED, {
+      done: [...new Set([...kept, S.usedStarted])].slice(-20)
+    }, {
+      policy: 'cache'
+    });
+    S.usedStarted = '';
+  }
   await S.ctx.data.put(PREFS, {
     family: m.family
   }, {
@@ -505,16 +516,27 @@ function check() {
   box.innerHTML = `<p class="f-muted">${esc(need.length ? tt(TX.missing, { l: need.join(', ') }) : tt(TX.complete))}</p>${issues.length ? `<p class="f-warn">${esc(tt(TX.warnings, { l: issues.join(' ; ') }))}</p>` : ''}`;
 }
 /** Carte « Vol en cours » : le vol partagé par carburant et carte (pilot/<trigramme>/current_flight.json), s'il a un
- *  appareil ou une route ; « Utiliser » remplit les champs vides. */
+ *  appareil ou une route ; « Utiliser » remplit les champs vides. Un vol démarré dans le carburant (started) est
+ *  proposé d'abord, « Vol démarré à hh:mm », avant le dernier vol réseau ; une fois son compte rendu enregistré, il
+ *  n'est plus proposé (started.at gardé dans cache/report/started.json). */
 async function prefillCard() {
   const box = S.body?.querySelector('[data-prefill]');
   if (!box) return;
-  const cf = await S.ctx.data.get(`pilot/${S.ctx.identity.trigram || 'ANON'}/current_flight.json`);
-  S.current = cf && (cf.aircraft?.registration || cf.aircraft?.type || cf.route?.dep) ? cf : null;
+  const cf = await S.ctx.data.get(`pilot/${S.ctx.identity.trigram || 'ANON'}/current_flight.json`),
+    done = (await S.ctx.data.get(STARTED).catch(() => null))?.done || [],
+    started = cf?.started?.at || '';
+  S.current = cf && (cf.aircraft?.registration || cf.aircraft?.type || cf.route?.dep) && !(started && done.includes(started)) ? cf :
+    null;
   if (!S.current || !S.body) return box.innerHTML = '';
   const a = cf.aircraft || {},
-    r = cf.route || {};
-  box.innerHTML = `<div class="f-card f-accent rp-prefill"><div><b>${esc(tt(TX.current))}</b><div class="f-muted">${esc([a.registration, a.callsign, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
+    r = cf.route || {},
+    title = started ? tt(TX.startedAt, {
+      t: new Date(started).toLocaleTimeString(S.ctx.lang(), {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }) : tt(TX.current);
+  box.innerHTML = `<div class="f-card f-accent rp-prefill"><div><b>${esc(title)}</b><div class="f-muted">${esc([a.registration, a.callsign, a.type, [r.dep, r.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
     <button type="button" class="primary" data-do="current">${esc(tt(TX.use))}</button></div>`;
 }
 /** Carte des sources : le dernier vol proposé (réseau de l'identité), les autres sources, le collage, le choix d'un vol
@@ -863,6 +885,7 @@ async function onClick(e) {
       const cf = S.current || {},
         a = cf.aircraft || {},
         r = cf.route || {};
+      S.usedStarted = cf.started?.at || ''; // ce compte rendu est celui du vol démarré
       return fill({
         'aircraft.0.registration': a.registration,
         'aircraft.0.type': a.type,

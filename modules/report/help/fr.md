@@ -12,7 +12,9 @@ dernier pas, sans jamais bloquer l'enregistrement.
 
 **Le dernier vol.** Si votre identifiant IVAO (ou VATSIM) est réglé (⚙) et que l'appareil est en ligne, une carte
 propose votre dernier vol sur le réseau : « Utiliser » remplit l'avion, l'indicatif, le trajet et les heures tirées
-de la trace. Le vol préparé dans Carburant ou Carte est proposé de la même façon (« Vol en cours »).
+de la trace. Le vol préparé dans Carburant ou Carte est proposé de la même façon (« Vol en cours ») ; s'il a été
+démarré dans Carburant (« Démarrer le vol »), il vient en premier, « Vol démarré à hh:mm ». Une fois son compte rendu
+enregistré, il n'est plus proposé.
 
 **Les autres sources.** Dépliez « Autres sources » pour reprendre votre dernier vol IVAO ou VATSIM, votre plan de vol
 SimBrief, ou un texte collé : un plan de vol OACI, la page d'un vol du tracker IVAO ou de StatSim, un METAR. Seuls les

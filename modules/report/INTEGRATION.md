@@ -57,7 +57,9 @@ empty fields, and removes it.
   is updated at the next pass of a workstation that has one.
 - **The current flight** (`pilot/<trigram>/current_flight.json`, fuel and maps) is only read: aircraft registration,
   callsign and type (fuel's `aircraft`, from aerodb's `aircraftOf`), route departure, arrival, alternate, distance,
-  level.
+  level, and `started { at, by }` (fuel's "Start the flight"): a started flight is offered first, "Flight started at
+  hh:mm". Once a report that used it is saved, its `started.at` goes into `cache/report/started.json`
+  (`{ done: [at, …] }`, the last 20, device only) and the card no longer offers it.
 
 ## 4. Example
 

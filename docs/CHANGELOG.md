@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **report: the flight started in fuel comes first** (`modules/report/module.js`; `INTEGRATION.md`, `DECISIONS.md`,
+  `help/fr.md`) — "Flight started at hh:mm" is offered before anything else, and no longer once its report is saved.
 - **fuel: weather without a launcher** (`frame/lib/metar.js`, `modules/fuel/module.js`; `test/metar.html`, `SPEC.md`,
   `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — on a phone the METARs come from metar.vatsim.net, decoded on the
   device, and the TAFs from avwx.rest with your own weather key; without a key the card says the TAF is unavailable
