@@ -3,7 +3,8 @@ import {
 } from '../../frame/lib/icons.js';
 import {
   textFromPoints,
-  icaoCoord
+  icaoCoord,
+  formatLevel
 } from '../../frame/lib/route_text.js';
 
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
@@ -523,6 +524,7 @@ function draw() {
     route,
     marks: S.marks,
     theme: S.theme,
+    level: formatLevel,
     mission: S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -787,8 +789,8 @@ function drawCursor() {
   }
   ctx.restore();
 }
-/** Hauteur lisible : « FL270 » au-dessus de 10 000 ft, sinon « 3 400 ft ». */
-const altTxt = ft => ft >= 10000 ? `FL${String(Math.round(ft / 100)).padStart(3, '0')}` : `${Math.round(ft).toLocaleString(S.ctx.lang())} ft`;
+/** Hauteur lisible (relief, MORA) : toujours en pieds ; un niveau s'écrit par formatLevel (frame/lib/route_text.js). */
+const altTxt = ft => `${Math.round(ft).toLocaleString(S.ctx.lang())} ft`;
 /** Ligne sous le profil : distance, altitude prévue, relief ou MORA, espaces sous le curseur (notation SIA) ; l'aide sans curseur. */
 function strip() {
   if (!S?.stripEl) return;
@@ -799,7 +801,7 @@ function strip() {
     text = [tt(TX.dist, {
       d: i.nm.toFixed(i.nm < 10 ? 1 : 0)
     }), i.alt != null ? tt(TX.planned, {
-      a: altTxt(i.alt)
+      a: formatLevel(i.alt)
     }) : '', i.terrain != null ? tt(TX.terrain, {
       h: altTxt(i.terrain)
     }) : Number.isFinite(i.mora) ? tt(TX.mora, {
@@ -1331,7 +1333,7 @@ function drawLevelDrag() {
   ctx.lineJoin = 'round';
   ctx.strokeStyle = S.theme.bg;
   ctx.lineWidth = 3;
-  const t = altTxt(d.ft);
+  const t = formatLevel(d.ft);
   ctx.strokeText(t, (x0 + x1) / 2, y - 4);
   ctx.fillStyle = S.theme.accent;
   ctx.fillText(t, (x0 + x1) / 2, y - 4);
@@ -1396,10 +1398,10 @@ function openCard(i) {
   if (!p) return;
   const end = i === 0 || i === pts.length - 1,
     lvl = +p.alt_ft > 0 ? tt(TX.ptLevel, {
-      l: +p.alt_ft >= 10000 ? `FL${Math.round(+p.alt_ft / 100)}` : `${Math.round(+p.alt_ft)} ft`
+      l: formatLevel(+p.alt_ft)
     }) : tt(TX.ptSame),
     held = i < pts.length - 1 ? heldLevel(i) : 0,
-    step = held ? `<div class="mp-lvl"><button type="button" class="f-btn" data-lvl="${i}" data-d="-1000" aria-label="${esc(tt(TX.lvlDown))}" title="${esc(tt(TX.lvlDown))}">−</button><b>${esc(altTxt(held))}</b><button type="button" class="f-btn" data-lvl="${i}" data-d="1000" aria-label="${esc(tt(TX.lvlUp))}" title="${esc(tt(TX.lvlUp))}">+</button></div>` : '',
+    step = held ? `<div class="mp-lvl"><button type="button" class="f-btn" data-lvl="${i}" data-d="-1000" aria-label="${esc(tt(TX.lvlDown))}" title="${esc(tt(TX.lvlDown))}">−</button><b>${esc(formatLevel(held))}</b><button type="button" class="f-btn" data-lvl="${i}" data-d="1000" aria-label="${esc(tt(TX.lvlUp))}" title="${esc(tt(TX.lvlUp))}">+</button></div>` : '',
     html = `<div><b>${esc(p.id || coordId(p))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${step}${end ? '' : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
     q = S.toC(+p.lat, +p.lon);
   hideTips();
@@ -1612,7 +1614,7 @@ function header() {
   }
   const f = S.route.flight,
     r = f?.route || {},
-    lvl = S.route.levelFt ? (S.route.levelFt >= 10000 ? `FL${Math.round(S.route.levelFt / 100)}` : `${S.route.levelFt} ft`) : '',
+    lvl = S.route.levelFt ? formatLevel(S.route.levelFt) : '',
     d = S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
     parts = [r.dep || r.arr ? tt(TX.summary, {
       dep: r.dep || '?',

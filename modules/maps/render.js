@@ -1157,7 +1157,7 @@
   }
   /** Libellés de la route (points : identifiant et niveau ; marques NM) réservés dans le placeur avant tout le reste :
    *  [{ text, x, y, size, align }] ; les extrémités sont toujours écrites. */
-  function routeLabels(route, toC, scale, pl, mk = []) {
+  function routeLabels(route, toC, scale, pl, mk = [], level = null) {
     const pts = (route || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon)),
       f0 = 12 * scale,
       out = [];
@@ -1167,7 +1167,8 @@
         end = i === 0 || i === pts.length - 1,
         // altitude à atteindre au point (alt), sinon niveau tenu à partir du point (lvl ; pas au départ, déjà en tête)
         h = Number.isFinite(p.alt) ? p.alt : i > 0 && !end && +p.lvl?.ft > 0 ? +p.lvl.ft : NaN,
-        alt = Number.isFinite(h) ? (h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft`) : '',
+        // niveau écrit comme dans toute la suite (formatLevel de frame/lib/route_text.js, donné par l'écran)
+        alt = Number.isFinite(h) ? level ? level(h) : h >= 10000 ? `FL${Math.round(h / 100)}` : `${h} ft` : '',
         text = [p.id || p.name || '', alt].filter(Boolean).join(' · ');
       if (!text) continue;
       const f = end ? 13 * scale : f0,
@@ -1332,7 +1333,8 @@
     route = [],
     marks: mk = [],
     mission = null,
-    theme = null
+    theme = null,
+    level = null
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     T = theme || tokens();
@@ -1344,7 +1346,7 @@
       tier = tierOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x),
       // carte de mission : tout ce que le profil montre ; vol : densité selon le zoom
       shown = mission ? data : densify(data, tier, profile),
-      labels = routeLabels(route, toC, scale, pl, mk);
+      labels = routeLabels(route, toC, scale, pl, mk, level);
     reservePoints(pl, mission?.points, toC, scale, profile);
     const towns = cityList(data.cities, profile, toC, bbox, scale, pl);
     drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'shapes');

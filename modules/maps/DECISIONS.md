@@ -327,3 +327,7 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   `frame/lib/route_text.js`), which fuel reads back from `points`; useful in VFR and for helicopters. An anchor within
   20 px keeps the priority, and the name shown while dragging is the one the point will take. Bench: dropped 40 px
   from any anchor → `4711N00517W` (1280 px mouse), `4550N00155W` (375 px touch); Undo still goes back.
+- **23 Oct 2026 — levels written as fuel writes them**: the map wrote "6000 ft" where fuel wrote "FL060". Every level
+  now goes through fuel's `formatLevel` (68c435def): header, route labels, point card, dragged level, planned
+  altitude. Relief and MORA are heights, not levels: always in feet (a 4,800 m summit was shown "FL158"). The copied
+  studio profile (`lib/vertical_profile.js`) keeps its own labels, unchanged.

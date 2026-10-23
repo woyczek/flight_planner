@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: levels as in Fuel** (`modules/maps/`; SPEC, DECISIONS) — "FL060" from the transition altitude, "3 500 ft"
+  below, through the shared `formatLevel`; relief and minimum altitudes always in feet.
 - **report: more from the current flight** (`modules/report/module.js`; docs) — the card says everything it will take,
   and "Use" also fills the engine start time and the fuel at start from fuel, each marked with its source.
 - **Map: free points** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a waypoint dropped away from any fix,

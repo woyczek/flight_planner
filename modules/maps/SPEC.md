@@ -181,6 +181,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     gesture, coming back after newer gestures, would otherwise undo them.
   - While the record is not `by: 'fuel'`, the profile ignores fuel's `profile` (TOC, TOD) and computes its own;
     fuel redoes the quote and writes it back (`modules/fuel/INTEGRATION.md` § 3).
+- **Levels** are written as everywhere in the suite, by `formatLevel(ft)` of `frame/lib/route_text.js` ("FL060" from
+  the transition altitude, "3 500 ft" below): header, route labels (given to `draw()` as `level`), the point card,
+  the level being dragged, the planned altitude under the profile. Heights (relief, MORA) stay in feet.
 - **Texts**: four languages, through `ctx.t`. Data labels (codes, names, levels) are not translated.
 
 ## 4 bis. Vertical profile (`profile.js`, `window.MapsProfile`)
