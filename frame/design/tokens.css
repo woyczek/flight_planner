@@ -1,0 +1,305 @@
+/* V3 design — jetons de l'interface (frame/design/SPEC.md § 2). Un design ne pose que des jetons, jamais une règle ; un
+   module s'en sert et n'en redéfinit aucun. Trois designs : standard (défaut), cabinet et field (texturés : angles droits,
+   leurs polices). Jour / nuit : nuit si le système la demande (prefers-color-scheme), sauf html[data-tone="day"] ;
+   html[data-tone="night"] la force. Les jeux de nuit ne valent qu'à l'écran : l'impression garde l'encre du jour.
+   Un design peut aussi être posé sur un bloc ([data-design][data-tone], page de démonstration labs/design_primitives.html) :
+   chaque jeu déclare toutes ses couleurs, ses polices et ses rayons. */
+
+/* ---- communs à tous les designs : espaces, densité, échelle du texte */
+:root {
+  --sog-gap: 12px;
+  --sog-gap-s: 6px;
+  --sog-gap-l: 20px;
+  --sog-touch: 44px;
+  --sog-field-text: 16px;
+  --sog-size-s: .9em;
+  --sog-size-xs: .8em;
+  --sog-h1: 1.25rem;
+  --sog-h2: 1rem;
+  --sog-h3: .95rem;
+  --sog-font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace
+}
+
+/* ---- standard : le cadre tel qu'il était, jour */
+:root,
+[data-design="standard"] {
+  color-scheme: light;
+  --sog-bg: #f5f6f8;
+  --sog-surface: #fff;
+  --sog-surface-2: #fff;
+  --sog-fg: #17202a;
+  --sog-muted: #5b6670;
+  --sog-border: #d9dee4;
+  --sog-accent: #1d6fd8;
+  --sog-accent-ink: #fff;
+  --sog-link: #1a5fbf;
+  --sog-focus: #1d6fd8;
+  --sog-ok: #1e7d32;
+  --sog-warn: #9a5b00;
+  --sog-err: #b3261e;
+  --sog-on-status: #fff;
+  --sog-shadow: 0 4px 16px #0003;
+  --sog-shadow-up: 0 -4px 14px #0002;
+  --sog-veil: #0007;
+  --sog-chart-1: #1d6fd8;
+  --sog-chart-2: #8e24aa;
+  --sog-chart-3: #1e7d32;
+  --sog-chart-4: #c25e00;
+  --sog-chart-5: #c62828;
+  --sog-chart-6: #546e7a;
+  --sog-chart-grid: #d9dee4;
+  --sog-chart-bg: #fff;
+  --sog-font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sog-font-title: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sog-title-case: none;
+  --sog-title-spacing: normal;
+  --sog-radius: 6px;
+  --sog-radius-s: 3px
+}
+
+/* ---- cabinet : parchemin, encre, marine et laiton (V2 « Cabinet »), jour */
+[data-design="cabinet"] {
+  color-scheme: light;
+  --sog-bg: #efe3c4;
+  --sog-surface: #fbf5e6;
+  --sog-surface-2: #fffaf0;
+  --sog-fg: #2b2418;
+  --sog-muted: #45361f;
+  --sog-border: #9c7a44;
+  --sog-accent: #1d3557;
+  --sog-accent-ink: #f4ecd8;
+  --sog-link: #1d3557;
+  --sog-focus: #8a6526;
+  --sog-ok: #2e6b2e;
+  --sog-warn: #8a5a00;
+  --sog-err: #9b1c1c;
+  --sog-on-status: #fffaf0;
+  --sog-shadow: 0 4px 16px #2a1d0833;
+  --sog-shadow-up: 0 -4px 14px #2a1d0826;
+  --sog-veil: #1d1a1488;
+  --sog-chart-1: #1d3557;
+  --sog-chart-2: #6a1b9a;
+  --sog-chart-3: #2e6b2e;
+  --sog-chart-4: #8a6526;
+  --sog-chart-5: #9b1c1c;
+  --sog-chart-6: #5a4a2e;
+  --sog-chart-grid: #c9b68c;
+  --sog-chart-bg: #fbf5e6;
+  --sog-font: 15px/1.45 "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --sog-font-title: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --sog-title-case: none;
+  --sog-title-spacing: normal;
+  --sog-radius: 0;
+  --sog-radius-s: 0
+}
+
+/* ---- field : plaque kaki et acier (V2 « Durci »), jour */
+[data-design="field"] {
+  color-scheme: light;
+  --sog-bg: #d8d1b2;
+  --sog-surface: #ece7d2;
+  --sog-surface-2: #f6f3e6;
+  --sog-fg: #1d1a14;
+  --sog-muted: #4a4634;
+  --sog-border: #8d9478;
+  --sog-accent: #3f4632;
+  --sog-accent-ink: #ece7d2;
+  --sog-link: #2f5a1a;
+  --sog-focus: #3fa83f;
+  --sog-ok: #2f7a2f;
+  --sog-warn: #8a5a00;
+  --sog-err: #9b1c1c;
+  --sog-on-status: #f6f3e6;
+  --sog-shadow: 0 4px 16px #1b1d1440;
+  --sog-shadow-up: 0 -4px 14px #1b1d1430;
+  --sog-veil: #1b1d1488;
+  --sog-chart-1: #3f4632;
+  --sog-chart-2: #8a6526;
+  --sog-chart-3: #2f7a2f;
+  --sog-chart-4: #b06a00;
+  --sog-chart-5: #9b1c1c;
+  --sog-chart-6: #6b7258;
+  --sog-chart-grid: #b3ad92;
+  --sog-chart-bg: #ece7d2;
+  --sog-font: 15px/1.45 Bahnschrift, "Roboto Condensed", "Arial Narrow", sans-serif;
+  --sog-font-title: Bahnschrift, "Roboto Condensed", "Arial Narrow", sans-serif;
+  --sog-title-case: uppercase;
+  --sog-title-spacing: .04em;
+  --sog-radius: 0;
+  --sog-radius-s: 0
+}
+
+/* ---- nuit, à l'écran seulement : forcée (data-tone="night") ou demandée par le système (sauf data-tone="day") */
+@media screen {
+  :root[data-tone="night"],
+  [data-design="standard"][data-tone="night"] {
+    color-scheme: dark;
+    --sog-bg: #121519;
+    --sog-surface: #1c2127;
+    --sog-surface-2: #15191e;
+    --sog-fg: #e7ebef;
+    --sog-muted: #9aa5b0;
+    --sog-border: #2f363e;
+    --sog-accent: #5aa2ff;
+    --sog-accent-ink: #0b1220;
+    --sog-link: #8cc0ff;
+    --sog-focus: #5aa2ff;
+    --sog-ok: #6ccf7a;
+    --sog-warn: #e0a33b;
+    --sog-err: #ff8a80;
+    --sog-on-status: #121519;
+    --sog-shadow: 0 4px 16px #000a;
+    --sog-shadow-up: 0 -4px 14px #0008;
+    --sog-veil: #000a;
+    --sog-chart-1: #5aa2ff;
+    --sog-chart-2: #ce93d8;
+    --sog-chart-3: #6ccf7a;
+    --sog-chart-4: #ffb74d;
+    --sog-chart-5: #ff8a80;
+    --sog-chart-6: #b0bec5;
+    --sog-chart-grid: #2f363e;
+    --sog-chart-bg: #1c2127
+  }
+  [data-design="cabinet"][data-tone="night"] {
+    color-scheme: dark;
+    --sog-bg: #121722;
+    --sog-surface: #1c2230;
+    --sog-surface-2: #121722;
+    --sog-fg: #efe6cf;
+    --sog-muted: #cdbf9c;
+    --sog-border: #7a6440;
+    --sog-accent: #f3de98;
+    --sog-accent-ink: #2b2418;
+    --sog-link: #f3de98;
+    --sog-focus: #c9a24a;
+    --sog-ok: #8fcf8f;
+    --sog-warn: #e8b85a;
+    --sog-err: #ff9a8a;
+    --sog-on-status: #121722;
+    --sog-shadow: 0 4px 16px #000a;
+    --sog-shadow-up: 0 -4px 14px #0008;
+    --sog-veil: #000a;
+    --sog-chart-1: #f3de98;
+    --sog-chart-2: #ce93d8;
+    --sog-chart-3: #8fcf8f;
+    --sog-chart-4: #c9a24a;
+    --sog-chart-5: #ff9a8a;
+    --sog-chart-6: #cdbf9c;
+    --sog-chart-grid: #3a3f4c;
+    --sog-chart-bg: #1c2230
+  }
+  [data-design="field"][data-tone="night"] {
+    color-scheme: dark;
+    --sog-bg: #2a2f22;
+    --sog-surface: #3f4632;
+    --sog-surface-2: #121410;
+    --sog-fg: #e8ecd9;
+    --sog-muted: #c9d1b0;
+    --sog-border: #6b7258;
+    --sog-accent: #9fe870;
+    --sog-accent-ink: #121410;
+    --sog-link: #9fe870;
+    --sog-focus: #9fe870;
+    --sog-ok: #9fe870;
+    --sog-warn: #e8b85a;
+    --sog-err: #ff8a70;
+    --sog-on-status: #121410;
+    --sog-shadow: 0 4px 16px #000c;
+    --sog-shadow-up: 0 -4px 14px #000a;
+    --sog-veil: #000b;
+    --sog-chart-1: #9fe870;
+    --sog-chart-2: #e8b85a;
+    --sog-chart-3: #7fd0ff;
+    --sog-chart-4: #c9d1b0;
+    --sog-chart-5: #ff8a70;
+    --sog-chart-6: #8d9478;
+    --sog-chart-grid: #5a6148;
+    --sog-chart-bg: #3f4632
+  }
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-tone="day"]) {
+    color-scheme: dark;
+    --sog-bg: #121519;
+    --sog-surface: #1c2127;
+    --sog-surface-2: #15191e;
+    --sog-fg: #e7ebef;
+    --sog-muted: #9aa5b0;
+    --sog-border: #2f363e;
+    --sog-accent: #5aa2ff;
+    --sog-accent-ink: #0b1220;
+    --sog-link: #8cc0ff;
+    --sog-focus: #5aa2ff;
+    --sog-ok: #6ccf7a;
+    --sog-warn: #e0a33b;
+    --sog-err: #ff8a80;
+    --sog-on-status: #121519;
+    --sog-shadow: 0 4px 16px #000a;
+    --sog-shadow-up: 0 -4px 14px #0008;
+    --sog-veil: #000a;
+    --sog-chart-1: #5aa2ff;
+    --sog-chart-2: #ce93d8;
+    --sog-chart-3: #6ccf7a;
+    --sog-chart-4: #ffb74d;
+    --sog-chart-5: #ff8a80;
+    --sog-chart-6: #b0bec5;
+    --sog-chart-grid: #2f363e;
+    --sog-chart-bg: #1c2127
+  }
+  :root[data-design="cabinet"]:not([data-tone="day"]) {
+    color-scheme: dark;
+    --sog-bg: #121722;
+    --sog-surface: #1c2230;
+    --sog-surface-2: #121722;
+    --sog-fg: #efe6cf;
+    --sog-muted: #cdbf9c;
+    --sog-border: #7a6440;
+    --sog-accent: #f3de98;
+    --sog-accent-ink: #2b2418;
+    --sog-link: #f3de98;
+    --sog-focus: #c9a24a;
+    --sog-ok: #8fcf8f;
+    --sog-warn: #e8b85a;
+    --sog-err: #ff9a8a;
+    --sog-on-status: #121722;
+    --sog-shadow: 0 4px 16px #000a;
+    --sog-shadow-up: 0 -4px 14px #0008;
+    --sog-veil: #000a;
+    --sog-chart-1: #f3de98;
+    --sog-chart-2: #ce93d8;
+    --sog-chart-3: #8fcf8f;
+    --sog-chart-4: #c9a24a;
+    --sog-chart-5: #ff9a8a;
+    --sog-chart-6: #cdbf9c;
+    --sog-chart-grid: #3a3f4c;
+    --sog-chart-bg: #1c2230
+  }
+  :root[data-design="field"]:not([data-tone="day"]) {
+    color-scheme: dark;
+    --sog-bg: #2a2f22;
+    --sog-surface: #3f4632;
+    --sog-surface-2: #121410;
+    --sog-fg: #e8ecd9;
+    --sog-muted: #c9d1b0;
+    --sog-border: #6b7258;
+    --sog-accent: #9fe870;
+    --sog-accent-ink: #121410;
+    --sog-link: #9fe870;
+    --sog-focus: #9fe870;
+    --sog-ok: #9fe870;
+    --sog-warn: #e8b85a;
+    --sog-err: #ff8a70;
+    --sog-on-status: #121410;
+    --sog-shadow: 0 4px 16px #000c;
+    --sog-shadow-up: 0 -4px 14px #000a;
+    --sog-veil: #000b;
+    --sog-chart-1: #9fe870;
+    --sog-chart-2: #e8b85a;
+    --sog-chart-3: #7fd0ff;
+    --sog-chart-4: #c9d1b0;
+    --sog-chart-5: #ff8a70;
+    --sog-chart-6: #8d9478;
+    --sog-chart-grid: #5a6148;
+    --sog-chart-bg: #3f4632
+  }
+}

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V3 — primitives et designs</title>
+<!-- Page de démonstration du design V3 (frame/design/SPEC.md) : chaque primitive du cadre dans chaque design (standard,
+     cabinet, field), de jour et de nuit, côte à côte ; le jeu d'icônes au trait (frame/lib/icons.js) et les couleurs de
+     graphique. Outil de développement : textes d'exemple en français, aucune donnée. Les panneaux posent design et ton
+     sur eux-mêmes ([data-design][data-tone]) : la page n'a pas d'autre style que sa grille. -->
+<link rel="stylesheet" href="../frame/frame.css?v=0">
+<style>
+  body {
+    display: block;
+    padding: 12px
+  }
+  .lab-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr))
+  }
+  .lab-panel {
+    background: var(--sog-bg);
+    color: var(--sog-fg);
+    font: var(--sog-font);
+    border: 1px solid var(--sog-border);
+    min-width: 0
+  }
+  .lab-panel>.f-view {
+    padding: 14px
+  }
+  .lab-icons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px
+  }
+  .lab-icons span {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    width: 64px;
+    font-size: 10px;
+    color: var(--sog-muted)
+  }
+  .lab-icons svg {
+    color: var(--sog-fg)
+  }
+  .lab-sw {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--sog-border)
+  }
+</style>
+</head>
+<body>
+<h1>V3 — primitives et designs</h1>
+<p>Trois designs, de jour et de nuit. Agrandir ou réduire la fenêtre : une colonne jusqu'à 760 px, des colonnes
+  (f-cols) à partir de 980 px.</p>
+<div class="lab-grid" id="grid"></div>
+<template id="tpl">
+  <div class="f-view">
+    <div class="f-tools"><h1 data-title>Titre</h1><button type="button" class="f-btn" data-ic="refresh"></button><button type="button" class="primary">Action</button></div>
+    <h2>Titre de carte (h2)</h2>
+    <h3>Sous-titre (h3)</h3>
+    <div class="f-tabs"><button type="button" aria-pressed="true">Plan</button><button type="button" aria-pressed="false">Fiches</button></div>
+    <div class="f-steps"><button type="button" data-done>1 Vol</button><button type="button" aria-current="step">2 Mission</button><button type="button">3 Résultat</button></div>
+    <div class="f-card">
+      <h2>Carte</h2>
+      <p>Texte courant avec <a href="#">un lien</a> et du <span class="f-muted">texte secondaire</span>.</p>
+      <p class="f-ok">Réussi.</p>
+      <p class="f-warn">Attention : avertissement.</p>
+      <p class="f-err">Erreur.</p>
+      <div class="f-grid">
+        <label class="f-field"><span>Départ</span><input value="LFBO"></label>
+        <label class="f-field"><span>Arrivée</span><input placeholder="OACI"></label>
+        <label class="f-field"><span>Unité</span><select><option>kg</option><option>lb</option></select></label>
+        <label class="f-field f-full"><span>Remarques (pleine largeur)</span><textarea rows="2"></textarea></label>
+      </div>
+      <label class="f-check"><input type="checkbox" checked>Case à cocher</label>
+      <label class="f-check"><input type="radio" name="r" checked>Bouton radio</label>
+      <div class="f-row"><button type="button">Bouton</button><button type="button" class="primary">Principal</button><button type="button" disabled>Inactif</button><a class="f-btn" href="#">Lien bouton</a></div>
+    </div>
+    <details class="f-card"><summary>Section repliée (44 px)</summary><p>Contenu de la section.</p></details>
+    <details class="f-card" open><summary>Section ouverte</summary>
+      <dl class="f-dl"><dt>Terme</dt><dd>Valeur</dd><dt>Autre</dt><dd>Valeur longue qui revient à la ligne sans déborder</dd></dl>
+    </details>
+    <div class="f-tiles"><div><b>12</b>vols</div><div><b>18 h 40</b>de vol</div><div><b>3</b>appareils</div></div>
+    <div class="f-list">
+      <button type="button" class="f-item"><span>Ligne de liste<br><small class="f-muted">détail</small></span><span class="f-badge" data-kind="ok">gardé</span></button>
+      <button type="button" class="f-item"><span><span class="f-dot" data-kind="warn"></span> Avec pastille</span><span class="f-badge">neutre</span></button>
+      <button type="button" class="f-item"><span><span class="f-dot" data-kind="err"></span> Erreur</span><span class="f-badge" data-kind="err">refusé</span></button>
+    </div>
+    <div class="f-callout">Encadré : un aperçu ou une proposition à relire.</div>
+    <div class="f-scroll"><table class="f-table"><thead><tr><th>Niveau</th><th class="f-num">Carburant</th><th class="f-num">Temps</th></tr></thead>
+      <tbody><tr><td>FL080</td><td class="f-num">142 kg</td><td class="f-num">1 h 12</td></tr><tr><td>FL100</td><td class="f-num">138 kg</td><td class="f-num">1 h 10</td></tr></tbody></table></div>
+    <div class="f-cols"><div class="f-card">Colonne 1</div><div class="f-card">Colonne 2</div><div class="f-card">Colonne 3</div></div>
+    <div class="f-card"><h3>Graphique (--sog-chart-*)</h3><span class="lab-sw" style="background:var(--sog-chart-1)"></span> <span class="lab-sw" style="background:var(--sog-chart-2)"></span> <span class="lab-sw" style="background:var(--sog-chart-3)"></span> <span class="lab-sw" style="background:var(--sog-chart-4)"></span> <span class="lab-sw" style="background:var(--sog-chart-5)"></span> <span class="lab-sw" style="background:var(--sog-chart-6)"></span></div>
+    <div class="f-card"><h3>Icônes</h3><div class="lab-icons" data-icons></div></div>
+    <div class="f-bar"><button type="button" class="primary">Enregistrer</button><button type="button">Barre collante</button></div>
+  </div>
+</template>
+<script type="module">
+  import {
+    svg,
+    names
+  } from '../frame/lib/icons.js';
+  const grid = document.getElementById('grid'),
+    tpl = document.getElementById('tpl');
+  const LABEL = {
+      standard: 'Standard',
+      cabinet: 'Cabinet',
+      field: 'Durci'
+    },
+    TONE = {
+      day: 'jour',
+      night: 'nuit'
+    };
+  const only = new URLSearchParams(location.search);
+  for (const design of ['standard', 'cabinet', 'field'])
+    for (const tone of ['day', 'night']) {
+      if (only.get('design') && only.get('design') !== design || only.get('tone') && only.get('tone') !== tone) continue;
+      const p = document.createElement('section');
+      p.className = 'lab-panel';
+      p.dataset.design = design;
+      p.dataset.tone = tone;
+      p.append(tpl.content.cloneNode(true));
+      p.querySelector('[data-title]').textContent = `${LABEL[design]} — ${TONE[tone]}`;
+      p.querySelector('[data-ic]').innerHTML = svg('refresh') + 'Icône';
+      p.querySelector('[data-icons]').innerHTML = names().map(n => `<span>${svg(n, { size: 24 })}${n}</span>`).join('');
+      grid.append(p);
+    }
+</script>
+</body></html>
