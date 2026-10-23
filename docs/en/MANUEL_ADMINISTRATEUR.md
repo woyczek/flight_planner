@@ -546,7 +546,7 @@ The git credentials are those of the system (SSH key, credential manager); the s
 
 ### Several users, until the central server
 
-- Each computer **receives** at each launch (the launcher runs a `git pull` of `data/`) and **sends** with the
+- Each computer **receives** at each launch (the launcher updates `data/` from the repository, sending nothing) and **sends** with the
   “Synchronise” button (commit, merge with the others, push).
 - Each computer that sends needs: git, the suite opened by the launcher, **write access to the data repository**
   (one account per person on the git host, or a shared account) and an SSH key or HTTPS credentials
@@ -580,7 +580,7 @@ The suite is served by a small local server, supplied with it. The data lives in
 
 - **Windows**: double-click `lancer.cmd`. **macOS / Linux**: `sh lancer.sh`. Both call `tools/launch.py`, which follows three steps:
   1. **Python**: it is looked for, and installed if needed (version 3.8 at least).
-  2. **Data**: if `data/` is present, it is updated (`git pull --ff-only`, without blocking on failure). Otherwise, a `.zip` archive dropped next to the launcher is extracted; failing that, the data repository is cloned.
+  2. **Data**: if `data/` is present, it is updated without `git pull`: the pool files changed on this computer are committed first (“Modifications du poste <TRI>”), then the remote branch is merged record by record as with the “Synchronise” button, sending nothing. A file outside the pool changed locally (for example `sia/mora.csv`) is left as it is; if the update would overwrite it, the update is put off and the console names it. The console says what was done (files committed, received, reception put off and why); never blocking. Otherwise, a `.zip` archive dropped next to the launcher is extracted; failing that, the data repository is cloned.
   3. **Server and browser**: the server starts on `http://127.0.0.1`, on the first free port from 8000, then the browser opens. If the suite is already running, only the browser opens.
 - Leave the launcher window open while you use the suite; close it (or Ctrl+C) to stop the suite.
 - Options: `--port 8010`, `--page apps/…`, `--no-browser`, `--no-data`, and `--data <dossier>` to serve another copy of the data under `/data/`, without clone or update. The `--data` option is for tests, for example of synchronisation.

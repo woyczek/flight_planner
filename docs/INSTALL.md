@@ -41,7 +41,7 @@ Ce que fait le lanceur (`lancer.cmd` / `lancer.sh` → `tools/launch.py`) :
 | Étape | Détail |
 |---|---|
 | Python | cherché (`py`, `python`, `python3`, version 3.8 ou plus) ; absent : installé — `winget` sous Windows, Homebrew ou outils de développement d'Apple sous macOS, gestionnaire de paquets sous Linux (après accord) ; à défaut, la page de téléchargement de python.org s'ouvre |
-| Données `data/` | présentes : mises à jour (`git pull`) si c'est un clone ; sinon une archive `.zip` déposée à côté du lanceur est extraite dans `data/` ; sinon clone du dépôt privé si Git connaît déjà les identifiants — à défaut, la page de premier lancement les demande |
+| Données `data/` | présentes : mises à jour depuis le dépôt si c'est un clone (fiches du poste commitées d'abord, rien d'envoyé) ; sinon une archive `.zip` déposée à côté du lanceur est extraite dans `data/` ; sinon clone du dépôt privé si Git connaît déjà les identifiants — à défaut, la page de premier lancement les demande |
 | Serveur | serveur web local de Python sur `http://127.0.0.1`, premier port libre à partir de 8000, avec l'interface de la page de premier lancement (`/__setup/…`, réservée aux pages servies par ce serveur) ; déjà lancé : le navigateur est seulement rouvert |
 | Navigateur | ouvert sur la page Premier lancement (l'accueil une fois la suite réglée) |
 

@@ -190,9 +190,12 @@ def ensure_data():
     git = data_sync.git_exe()
     if has_data():
         if git and os.path.isdir(os.path.join(DATA, '.git')):
-            say('  Données présentes : mise à jour (git pull)…')
-            if run(data_sync.git_cmd('-C', DATA, 'pull', '--ff-only'), timeout=180, env=git_env()) != 0:
-                say('  Mise à jour impossible pour l’instant (réseau, accès ou modifications locales) : données actuelles gardées.')
+            # mise à jour sans « git pull » (son réglage pull.rebase et une modification locale l'arrêtaient) : fiches du
+            # poste commitées d'abord, branche distante fusionnée fiche par fiche, rien d'envoyé (tools/data_sync.update)
+            say('  Données présentes : mise à jour depuis le dépôt…')
+            with SYNC_LOCK:
+                r = data_sync.update(DATA)
+            say('  ' + r['message'])
         else:
             say('  Données présentes.')
         return True

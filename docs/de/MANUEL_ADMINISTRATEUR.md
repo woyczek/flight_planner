@@ -553,7 +553,7 @@ Die Git-Zugangsdaten sind die des Systems (SSH-Schlüssel, Anmeldeinformationsve
 
 ### Mehrere Benutzer, bis der zentrale Server kommt
 
-- Jeder Rechner **empfängt** bei jedem Start (der Starter führt ein `git pull` von `data/` aus) und **sendet** mit der Schaltfläche
+- Jeder Rechner **empfängt** bei jedem Start (der Starter aktualisiert `data/` aus dem Repository, ohne etwas zu senden) und **sendet** mit der Schaltfläche
   „Synchronisieren“ (Commit, Zusammenführung mit den anderen, Senden).
 - Jeder sendende Rechner braucht: Git, die vom Starter geöffnete Suite, ein **Schreibrecht auf das Datenrepository**
   (ein Konto pro Person beim Git-Hoster oder ein gemeinsames Konto) und einen SSH-Schlüssel oder in Git gespeicherte
@@ -587,7 +587,7 @@ Die Suite wird von einem kleinen lokalen Server bereitgestellt, der mitgeliefert
 
 - **Windows**: Doppelklicken Sie auf `lancer.cmd`. **macOS / Linux**: `sh lancer.sh`. Beide rufen `tools/launch.py` auf, das drei Schritte durchläuft:
   1. **Python**: wird gesucht und bei Bedarf installiert (mindestens Version 3.8).
-  2. **Daten**: Ist `data/` vorhanden, wird es aktualisiert (`git pull --ff-only`, ohne bei einem Fehler zu blockieren). Andernfalls wird ein neben dem Starter abgelegtes `.zip`-Archiv entpackt; fehlt auch dieses, wird das Datenrepository geklont.
+  2. **Daten**: Ist `data/` vorhanden, wird es ohne `git pull` aktualisiert: Die auf diesem Rechner geänderten Dateien des Pools werden zuerst committet („Modifications du poste <TRI>“), dann wird der entfernte Zweig wie beim Knopf „Synchronisieren“ Datensatz für Datensatz zusammengeführt, ohne etwas zu senden. Eine lokal geänderte Datei außerhalb des Pools (zum Beispiel `sia/mora.csv`) bleibt unverändert; würde die Aktualisierung sie überschreiben, wird sie verschoben und die Konsole nennt sie. Die Konsole sagt, was getan wurde (committete und empfangene Dateien, verschobener Empfang und warum); nie blockierend. Andernfalls wird ein neben dem Starter abgelegtes `.zip`-Archiv entpackt; fehlt auch dieses, wird das Datenrepository geklont.
   3. **Server und Browser**: Der Server startet auf `http://127.0.0.1`, am ersten freien Port ab 8000, dann öffnet sich der Browser. Läuft die Suite bereits, öffnet sich nur der Browser.
 - Lassen Sie das Fenster des Starters während der Nutzung offen; schließen Sie es (oder Strg+C), um die Suite zu beenden.
 - Optionen: `--port 8010`, `--page apps/…`, `--no-browser`, `--no-data`, und `--data <dossier>`, um eine andere Kopie der Daten unter `/data/` bereitzustellen, ohne Klon oder Aktualisierung. Die Option `--data` dient Tests, zum Beispiel der Synchronisierung.

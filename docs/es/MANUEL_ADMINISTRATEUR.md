@@ -550,7 +550,7 @@ Los identificadores git son los del sistema (clave SSH, gestor de credenciales);
 
 ### Varios usuarios, a la espera del servidor central
 
-- Cada puesto **recibe** en cada arranque (el lanzador hace un `git pull` de `data/`) y **envía** con el botón
+- Cada puesto **recibe** en cada arranque (el lanzador actualiza `data/` desde el repositorio, sin enviar nada) y **envía** con el botón
   «Sincronizar» (commit, fusión con los demás, envío).
 - Por cada puesto que envía hace falta: git, la suite abierta por el lanzador, un **derecho de escritura en el repositorio de datos**
   (una cuenta por persona en el alojamiento git, o una cuenta compartida) y una clave SSH o credenciales HTTPS
@@ -584,7 +584,7 @@ La suite la sirve un pequeño servidor local, incluido con ella. Los datos está
 
 - **Windows**: haga doble clic en `lancer.cmd`. **macOS / Linux**: `sh lancer.sh`. Ambos llaman a `tools/launch.py`, que sigue tres pasos:
   1. **Python**: se busca y, si es necesario, se instala (versión 3.8 como mínimo).
-  2. **Datos**: si `data/` está presente, se actualiza (`git pull --ff-only`, sin bloquear en caso de fallo). Si no, se extrae un archivo `.zip` dejado junto al lanzador; en su defecto, se clona el repositorio de datos.
+  2. **Datos**: si `data/` está presente, se actualiza sin `git pull`: los archivos del pool modificados en este equipo se confirman primero («Modifications du poste <TRI>»), luego la rama remota se fusiona registro por registro como con el botón «Sincronizar», sin enviar nada. Un archivo fuera del pool modificado localmente (por ejemplo `sia/mora.csv`) se deja tal cual; si la actualización lo sobrescribiera, se aplaza y la consola lo nombra. La consola dice lo que se hizo (archivos confirmados, recibidos, recepción aplazada y por qué); nunca bloquea. Si no, se extrae un archivo `.zip` dejado junto al lanzador; en su defecto, se clona el repositorio de datos.
   3. **Servidor y navegador**: el servidor arranca en `http://127.0.0.1`, en el primer puerto libre a partir de 8000, y después se abre el navegador. Si la suite ya está en marcha, solo se abre el navegador.
 - Deje abierta la ventana del lanzador mientras use la suite; ciérrela (o pulse Ctrl+C) para detener la suite.
 - Opciones: `--port 8010`, `--page apps/…`, `--no-browser`, `--no-data` y `--data <dossier>` para servir otra copia de los datos bajo `/data/`, sin clon ni actualización. La opción `--data` sirve para pruebas, por ejemplo de sincronización.

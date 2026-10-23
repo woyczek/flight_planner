@@ -583,7 +583,7 @@ Les identifiants git sont ceux du système (clé SSH, gestionnaire d'identifiant
 
 ### Plusieurs utilisateurs, en attendant le serveur central
 
-- Chaque poste **reçoit** à chaque lancement (le lanceur fait un `git pull` de `data/`) et **envoie** avec le bouton
+- Chaque poste **reçoit** à chaque lancement (le lanceur met `data/` à jour depuis le dépôt, sans rien envoyer) et **envoie** avec le bouton
   « Synchroniser » (commit, fusion avec les autres, envoi).
 - Il faut, par poste qui envoie : git, la suite ouverte par le lanceur, un **droit d'écriture sur le dépôt de données**
   (un compte par personne sur l'hébergeur git, ou un compte partagé) et une clé SSH ou des identifiants HTTPS
@@ -617,7 +617,7 @@ La suite est servie par un petit serveur local, fourni avec elle. Les données v
 
 - **Windows** : double-cliquez sur `lancer.cmd`. **macOS / Linux** : `sh lancer.sh`. Les deux appellent `tools/launch.py`, qui suit trois étapes :
   1. **Python** : il est cherché, et installé au besoin (version 3.8 au moins).
-  2. **Données** : si `data/` est présent, il est mis à jour (`git pull --ff-only`, sans bloquer en cas d'échec). Sinon, une archive `.zip` déposée à côté du lanceur est extraite ; à défaut, le dépôt de données est cloné.
+  2. **Données** : si `data/` est présent, il est mis à jour sans `git pull` : les fichiers du pool modifiés sur ce poste sont d'abord commités (« Modifications du poste <TRI> »), puis la branche distante est fusionnée fiche par fiche comme au bouton « Synchroniser », sans rien envoyer. Un fichier hors du pool modifié (par exemple `sia/mora.csv`) est laissé tel quel ; si la mise à jour devait l'écraser, elle est reportée et la console le nomme. La console dit ce qui a été fait (fichiers commités, reçus, réception reportée et pourquoi) ; jamais bloquant. Sinon, une archive `.zip` déposée à côté du lanceur est extraite ; à défaut, le dépôt de données est cloné.
   3. **Serveur et navigateur** : le serveur démarre sur `http://127.0.0.1`, au premier port libre à partir de 8000, puis le navigateur s'ouvre. Si la suite tourne déjà, seul le navigateur s'ouvre.
 - Laissez la fenêtre du lanceur ouverte pendant l'utilisation ; fermez-la (ou Ctrl+C) pour arrêter la suite.
 - Options : `--port 8010`, `--page apps/…`, `--no-browser`, `--no-data`, et `--data <dossier>` pour servir une autre copie des données sous `/data/`, sans clone ni mise à jour. L'option `--data` sert aux essais, par exemple de synchronisation.

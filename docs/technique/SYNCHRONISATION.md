@@ -143,7 +143,14 @@ sequenceDiagram
 
 ## 9. Several users, pending the central server
 
-- **Receive**: at each start, the launcher runs a `git pull` of `data/`; the "Synchronise" button also receives
+- **Receive**: at each start, the launcher updates `data/` (`data_sync.update`, never `git pull`, whose `pull.rebase`
+  setting and any local change stopped it): the pool files changed on the workstation are committed ("Modifications du
+  poste <TRI>", the trigram of the last synchronisation, else POSTE), the remote branch is merged record by record as in
+  a synchronisation, nothing is pushed; a file outside the pool changed locally stays as it is, and if the merge would
+  overwrite it (computed: files changed upstream since the common base that are modified or untracked here), the merge
+  is put off and the console names it. Generated indexes, conflict copies and the launcher marker are added to
+  `.git/info/exclude` (a data repository older than `tools/data_template/.gitignore` does not ignore them). The
+  "Synchronise" button also receives
   whatever has arrived since (its counter shows it, remote repository rechecked at the configured frequency).
 - **Send**: the "Synchronise" button commits the workstation's changes, merges them with everyone else's and pushes.
 - **What each sending workstation needs**: git installed, the suite opened through the launcher, **write access

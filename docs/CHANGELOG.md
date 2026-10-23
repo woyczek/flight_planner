@@ -302,6 +302,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Launcher start: "cannot pull with rebase: You have unstaged changes"** (`tools/launch.py`, `tools/data_sync.py`
+  `update`) — the start-up `git pull --ff-only` stopped on any local change (and followed the user's `pull.rebase`). The
+  launcher no longer pulls: it commits the pool files changed on the workstation ("Modifications du poste <TRI>", same
+  rules as "Synchronise"), merges the remote branch record by record and pushes nothing. A file outside the pool changed
+  locally (`sia/mora.csv`) is left as it is; when the update would overwrite it, the update is put off and the console
+  names the file. Generated indexes, conflict copies and the launcher marker go to `.git/info/exclude`. The console says
+  what was done. Synchronisation steps shared with `run`. Administrator manual ×4, `INSTALL.md`,
+  `docs/technique/SYNCHRONISATION.md` § 9; `python tools/data_sync.py --essai` covers it.
 - **Maintenance on a workstation with the launcher, GitHub mode set in the same browser: the workstation's cards were
   missing** (`shared/maintenance_page.js`) — the page preferred GitHub mode to the launcher: "Aeronautical data" only
   offered "Re-read the published database", and building or publishing the SIA database, the MORA or the aircraft
