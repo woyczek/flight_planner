@@ -120,6 +120,13 @@
           "es": "Base aeronáutica en modo GitHub en el teléfono: referencias leídas desde el repositorio (error en curso), diagnóstico copiable"
         },
         {
+          "state": "doing",
+          "fr": "Retour « ← module d'origine » après un passage entre modules ; sources météo directes (vatsim, avwx avec clé de l'appareil)",
+          "en": "“← origin module” return after a hand-off between modules; direct weather sources (vatsim, avwx with the device key)",
+          "de": "Zurück „← Ursprungsmodul“ nach einer Übergabe zwischen Modulen; direkte Wetterquellen (vatsim, avwx mit Geräteschlüssel)",
+          "es": "Volver «← módulo de origen» tras un paso entre módulos; fuentes meteo directas (vatsim, avwx con la clave del dispositivo)"
+        },
+        {
           "state": "done",
           "fr": "Vue double sur tablette et écran large : Carburant ou Compte rendu à gauche, Carte à droite, reliés par le vol courant",
           "en": "Double view on tablet and wide screen: Fuel or Report on the left, Map on the right, linked by the current flight",
@@ -181,14 +188,14 @@
           "es": "Nivel y viento desde los METAR / TAF (salida, llegada, intermedio), fecha prevista, «meteo real» a lo largo de la ruta, METAR simplificado (techo, viento cruzado, CB / TCU)"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Écart ISA calculé depuis le METAR du départ et gardé dans les réglages ; graphe de l'altitude-densité avec le plafond de montée de l'appareil (hélicoptères)",
           "en": "ISA deviation computed from the departure METAR and kept in the settings; density altitude chart with the aircraft's climb ceiling (helicopters)",
           "de": "ISA-Abweichung aus dem Start-METAR berechnet und in den Einstellungen gehalten; Dichtehöhen-Diagramm mit der Steiggrenze des Luftfahrzeugs (Hubschrauber)",
           "es": "Desviación ISA calculada desde el METAR de salida y guardada en los ajustes; gráfico de altitud de densidad con el techo de subida de la aeronave (helicópteros)"
         },
         {
-          "state": "planned",
+          "state": "doing",
           "fr": "Route en liste de points éditable (ajouter, retirer, déplacer, altitude par point) vue en direct sur la Carte ; bloc Appareil réduit à une ligne",
           "en": "Route as an editable point list (add, remove, move, altitude per point) seen live on the Map; Aircraft block reduced to one line",
           "de": "Route als bearbeitbare Punktliste (hinzufügen, entfernen, verschieben, Höhe je Punkt) live auf der Karte; Luftfahrzeugblock auf eine Zeile reduziert",
@@ -216,11 +223,11 @@
           "es": "TEMSI: viento y meteo en ruta desde las cartas TEMSI"
         },
         {
-          "state": "later",
-          "fr": "Météo des terrains sans lanceur (téléphone en mode GitHub) : par le web service du site, aviationweather.gov n'acceptant pas l'appel direct",
-          "en": "Airfield weather without a launcher (phone in GitHub mode): through the site's web service, aviationweather.gov refusing direct calls",
-          "de": "Platzwetter ohne Starter (Telefon im GitHub-Modus): über den Webdienst der Website, da aviationweather.gov keine Direktaufrufe zulässt",
-          "es": "Meteo de aeródromos sin lanzador (teléfono en modo GitHub): a través del servicio web del sitio, ya que aviationweather.gov no acepta llamadas directas"
+          "state": "doing",
+          "fr": "Météo sans lanceur (téléphone) : METAR par metar.vatsim.net sans clé, TAF par une clé personnelle avwx.rest saisie sur l'appareil ; terrains intermédiaires déduits de la route",
+          "en": "Weather without a launcher (phone): METAR through metar.vatsim.net without a key, TAF through a personal avwx.rest key entered on the device; en-route airfields derived from the route",
+          "de": "Wetter ohne Starter (Telefon): METAR über metar.vatsim.net ohne Schlüssel, TAF über einen persönlichen avwx.rest-Schlüssel auf dem Gerät; Streckenplätze aus der Route abgeleitet",
+          "es": "Meteo sin lanzador (teléfono): METAR por metar.vatsim.net sin clave, TAF con una clave personal avwx.rest introducida en el dispositivo; aeródromos intermedios deducidos de la ruta"
         }
       ]
     },
@@ -254,6 +261,13 @@
           "en": "Fixes of drawn airways (RNAV, DME, VOR, NDB), segment labels (airway · NM · track), IFR low / IFR high / VFR presets, density by zoom, airspace tooltip in SIA notation, redraw at each flight plan change",
           "de": "Punkte der gezeichneten Luftstraßen (RNAV, DME, VOR, NDB), Abschnittsbeschriftungen (Luftstraße · NM · Kurs), Voreinstellungen IFR tief / IFR hoch / VFR, Dichte nach Zoom, Luftraum-Tooltip in SIA-Notation, Neuzeichnen bei jeder Flugplanänderung",
           "es": "Puntos de las aerovías dibujadas (RNAV, DME, VOR, NDB), etiquetas de tramo (aerovía · NM · rumbo), preajustes IFR bajo / IFR alto / VFR, densidad según el zoom, tooltip de espacio en notación SIA, redibujo a cada cambio del plan de vuelo"
+        },
+        {
+          "state": "planned",
+          "fr": "Modifier la route sur la carte et le profil : glisser un point (aimanté aux fixes), toucher un fixe pour l'insérer, retirer, altitude par glissement, mode « modifier » sur téléphone, annulation",
+          "en": "Edit the route on the map and the profile: drag a point (snapped to fixes), tap a fix to insert it, remove, altitude by dragging, an explicit “edit” mode on the phone, undo",
+          "de": "Route auf Karte und Profil bearbeiten: Punkt ziehen (an Fixes gerastet), Fix antippen zum Einfügen, entfernen, Höhe durch Ziehen, expliziter „Bearbeiten“-Modus am Telefon, Rückgängig",
+          "es": "Editar la ruta en el mapa y el perfil: arrastrar un punto (imantado a los fijos), tocar un fijo para insertarlo, quitar, altitud arrastrando, modo «editar» explícito en el teléfono, deshacer"
         },
         {
           "state": "later",
