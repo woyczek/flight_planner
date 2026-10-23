@@ -269,10 +269,11 @@ erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von w
 **Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
 Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
-und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, nennt die
-Blase den Luftraum unter dem Finger; wo sich mehrere überlagern, zeigt eine Karte sie alle: einen Höhenblock wie das
+und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt eine
+Karte die Lufträume unter dem Finger, einen oder mehrere: einen Höhenblock wie das
 Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
-Liste mit ihren Grenzen. Sie bleibt bis zum nächsten Antippen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
+Liste mit ihren Grenzen. Sie bleibt offen: das ✕ oder Escape schließt sie, ein anderes Antippen ersetzt
+sie. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
 nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Über einem Funkfeuer nennt die Blase Art, Kennung und Frequenz; stehen
 mehrere Funkfeuer am selben Ort, behält die Karte das nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS), und die
 Blase nennt die anderen („auch hier: ILS 25L BG 109.9“). Auf dem Profil nennen Finger
@@ -281,7 +282,9 @@ oder Maus ebenso die durchflogenen Lufträume.
 **Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
 Sequenzen aus seinen VAC-Karten leuchten auf (benannte grüne Kreise, Striche zwischen den Punkten). Tippen Sie ihn an:
 die Karte rückt an seine Punkte heran, wenn sie eng beieinander liegen, und seine Karte nennt die Sequenzen (mit der
-Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Escape oder ein Antippen anderswo gibt ihn frei.
+Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Sie bleibt offen, während Sie die Karte
+verschieben: das ✕ oder Escape schließt sie, ein anderer Flugplatz ersetzt sie. Das Antippen eines Meldepunkts öffnet
+ebenso die Karte seines Flugplatzes, dieser Punkt zuerst.
 Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
 aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet und sind nicht die veröffentlichte Route; maßgeblich ist
 die VAC-Karte. Wurde der Flugplatz von Hand ausgewertet, sagt es die Karte, die Routen tragen ihren Namen, ihre Pisten
@@ -294,7 +297,7 @@ VAC kommen hinzu, sobald sie importiert sind. Sie erscheinen, sobald der Adminis
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
 Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
 Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
-voraussichtliche Zeit (ETA), in UTC („14:52Z“), die Ortszeit in Klammern bei Abflug und Ankunft. „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
+voraussichtliche Zeit (ETA) unter seinem Namen, nie über einem Flugplatz, in UTC („14:52Z“), die Ortszeit in Klammern bei Abflug und Ankunft. „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
 Position (GPS oder Netz nicht aktiviert) sagt die Zeile es und öffnet die Einstellungen; eine Position, die älter als 2
 Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder Little
 Navmap.
@@ -416,7 +419,9 @@ wieder zu öffnen und zu ändern. „Neuer Bericht“ beginnt mit einem leeren B
 - **IVAO und VATSIM**: die Flüge der letzten sieben Tage Ihrer Kennung. Ein durch Verbindungsabbrüche unterbrochener
   Flug zählt als ein einziger Flug. Anlassen und Abstellen entsprechen Verbindung und Trennung, wenn die Spur am Boden
   beginnt und endet; Start und Landung stammen aus der Spur.
-- **Die Zeiten** werden in der Uhrzeit Ihres Geräts geschrieben.
+- **Die Zeiten** sind UTC, mit „(Z)“ an den Feldern; der gestartete Flug und das Netz füllen sie in UTC. Ein älterer
+  Bericht, in der Uhrzeit des Geräts eingegeben, wird umgerechnet gezeigt, darunter die eingegebene Zeit („lokal
+  eingegeben 18:30“); er wird nur in UTC neu geschrieben, wenn Sie ihn speichern.
 - **SimBrief**: Ihr letzter Plan (Kennung in ⚙ eingestellt) — Luftfahrzeug, Route, Flugfläche, Geschwindigkeit,
   geplanter Kraftstoff, METAR und TAF.
 - **Aus Meine Flüge**: „Bericht schreiben“ bei einem Flug öffnet einen neuen Bericht, bereits mit diesem Flug und seinem

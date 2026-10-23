@@ -250,9 +250,10 @@ VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les
 **Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
 ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
 point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
-(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne l'espace sous le doigt ; là où plusieurs se
-superposent, une carte les montre tous : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
-de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste jusqu'au toucher suivant. Elle suit
+(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, une carte montre les espaces sous le doigt,
+un ou plusieurs : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
+de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste ouverte : la croix ✕ ou Échap la ferment, un autre toucher la
+remplace. Elle suit
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
 la carte. Sur une balise, la bulle donne son type, son indicatif et sa fréquence ; quand
 plusieurs balises sont au même endroit, la carte garde la plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle
@@ -261,7 +262,9 @@ nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur le profil, le doigt o
 **Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
 tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les points). Touchez-le : la carte se rapproche
 de ses points s'ils sont serrés, et sa carte donne les séquences (avec la page de la VAC) puis les consignes de la VAC,
-repliées page par page. Échap ou un toucher ailleurs le relâche. En mode VFR, les points du terrain de départ et de celui
+repliées page par page. Elle reste ouverte pendant que vous déplacez la carte : la croix ✕ ou
+Échap la ferment, un autre terrain la remplace. Toucher un point de report ouvre de même la carte de son terrain, ce point
+en tête. En mode VFR, les points du terrain de départ et de celui
 d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
 ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été
 analysé à la main, la carte le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit
@@ -273,7 +276,7 @@ fois importées par l'administrateur (Paramètres › Maintenance).
 14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Au-
 dessus de la carte, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
 votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
-estimée (ETA), en UTC (« 14:52Z »), l'heure locale entre parenthèses au départ et à l'arrivée. « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
+estimée (ETA) sous son nom, sans jamais couvrir un terrain, en UTC (« 14:52Z »), l'heure locale entre parenthèses au départ et à l'arrivée. « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
 ou réseau non activés), la ligne le dit et ouvre les réglages ; une position de plus de 2 minutes est grisée.
 La ligne finit par la source de la position : GPS, réseau, IVAO, VATSIM, X-Plane ou Little Navmap.
 
@@ -389,7 +392,9 @@ modifier. « Nouveau CR » repart d'un compte rendu vierge.
 - **IVAO et VATSIM** : les vols des sept derniers jours de votre identifiant. Un vol coupé par des déconnexions
   compte pour un seul vol. La mise en route et l'arrêt correspondent à la connexion et à la déconnexion quand la trace
   commence et finit au sol ; le décollage et l'atterrissage viennent de la trace.
-- **Les heures** sont écrites à l'heure de votre appareil.
+- **Les heures** sont en UTC, notées « (Z) » sur les champs ; la reprise du vol démarré et celles du réseau les
+  remplissent en UTC. Un compte rendu plus ancien, saisi à l'heure de l'appareil, est montré converti avec l'heure
+  saisie dessous (« saisi 18:30 locale ») ; il n'est réécrit en UTC que si vous l'enregistrez.
 - **SimBrief** : votre dernier plan (identifiant réglé dans ⚙) — appareil, route, niveau, vitesse, carburant prévu,
   METAR et TAF.
 - **Depuis Mes vols** : « Écrire le CR » d'un vol ouvre un compte rendu neuf, déjà rempli avec ce vol et sa date ;

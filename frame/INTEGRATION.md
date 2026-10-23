@@ -88,6 +88,9 @@ export function unmount() { /* stop watchers, timers */ }
 
 - **Times are in UTC with the suffix Z**, through `frame/lib/time.js`: `fmtZ`, `fmtDateZ`, and `fmtZLocal` (the local
   time in brackets) only for the departure, the planned arrival and the engine start.
+- **The airline's settings** (`ctx.airline`) are read in the background at start: a module mounted before they
+  arrive sees an empty object. Read `ctx.airline` when you draw, not once at `mount`, and redraw on `frame-airline`
+  (on `window`) if what you show depends on it.
 - **Dual view**: `ctx.layout.with` names the module shown beside yours (or `null`). Listen to `frame-layout` on
   `window` to follow it, and stop listening at `unmount`.
 - **A render never changes the scroll, nor what is being typed.** A module that redraws (a re-read, a watched record,

@@ -751,3 +751,35 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
 - **23 Oct 2026 — Settings' Synchronisation card in UTC** (lot 23, `frame/settings/settings.js`, noted in the settings'
   DECISIONS): "Last sync" and the pending writes' times go through `c.time` ("23/10/2026 16:56Z", "16:56Z" the same
   UTC day). Checked on screen.
+- **23 Oct 2026 — Lot 24, the first module never waits for the network** (asked after fuel's a6755394e: Fuel drew 59
+  ms after its mount, but the frame called it 2.8 s after the menu):
+  - **What blocked**: `await loadAirline()` before the first route. Over a repository's first pass,
+    `airline/settings.json` costs the whole ref → commit → tree → blob chain, about 2.8 s at Fast 3G (with a 2.5 s
+    cap). No module needs it at mount:
+    - fuel reads `transitionFt` when it formats;
+    - report reads `ctx.airline` at each render;
+    - website reads its own settings.
+  - **Now**:
+    - the airline is read in the background, with `frame-airline` when it arrives or changes;
+    - the relay waits for that first reading only for an unknown host;
+    - the launcher is looked for only over http (never on GitHub Pages).
+  - **Found on the way, by the same bench**: with Fuel mounted at once, its reference reads started during the
+    repository's very first pass. Each read with no tree yet read its own ref → commit → tree chain: 54 calls instead
+    of 9, 2.1 MB instead of 381 KB, a first pass of 12.6 s instead of 4.1 s.
+    - Now `treeNow()` shares the tree being read between the pass's take-over of local copies (`adoptLocal`) and the
+      first file reads.
+    - `liveTree()` shares its read of the moment too.
+    - Only a read in progress is shared: nothing is kept after it, neither a failure nor an ageing tree.
+    - A first version kept the result 2 s. The store bench caught it: after its offline test, the next tests got the
+      kept "offline", 43 / 88. `FrameData.reset()` now clears these shared reads.
+  - **Measured** (audit kit, first GitHub pass, Fuel, real tree of the data repository, CPU ×4, Fast 3G, 375 px; two
+    runs each):
+    - menu: 0.69 / 0.67 s → 0.69 / 0.67 s (unchanged);
+    - Fuel's fields: 3.44 / 3.40 s → 0.84 / 0.84 s (target 1.5 s);
+    - first pass: 4.1 s, 9 calls, 381 KB → unchanged;
+    - Fuel's references (now drawn first, filled after) all arrive by 5.8 s, in parallel.
+  - **Tests**: `frame/store/test/` 90 / 90 (uncached run); frame application bench (the airline still reaches it,
+    step 8); lots 19 (21 / 21) and 21 (12 / 12); no JavaScript error.
+  - **Audit kit** (`audit_kit/`, outside the repository): the per-phase counter missed reads that ended during a
+    pause, because `cdp.py` stores events only during a call. The map's reads (11 calls, 7.9 MB, including
+    `airspaces.json`) were then counted nowhere. The counter now drains the events until the network rests.

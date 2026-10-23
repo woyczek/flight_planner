@@ -248,9 +248,9 @@ very close, CTRs close up, TMAs in a medium view, FIRs from afar.
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a small
 bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks, its
 floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
-elsewhere inside an airspace, the bubble gives the airspace under your finger; where several overlap, a card shows them
-all: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
-then the numbered list with their limits. It stays until the next tap. It follows the pointer, stays 5 seconds, gives
+elsewhere inside an airspace, a card shows the airspaces under your finger,
+one or several: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
+then the numbered list with their limits. It stays open: the ✕ or Escape closes it, another tap replaces it. It follows the pointer, stays 5 seconds, gives
 way to the next one, and closes with a tap elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several
 beacons share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the
 others (“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give
@@ -259,7 +259,8 @@ the airspaces crossed in the same way.
 **The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences
 taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in on its
 points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the VAC,
-folded page by page. Escape or a tap elsewhere releases it. In VFR mode, the points of the departure and arrival
+folded page by page. It stays open while you move the map: the ✕ or Escape closes it,
+another airfield replaces it. Tapping a reporting point opens its airfield's card in the same way, that point first. In VFR mode, the points of the departure and arrival
 airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
 and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
 the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow
@@ -270,7 +271,7 @@ imported them (Settings › Maintenance).
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
 a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
-planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA), in UTC (“14:52Z”), the local time in brackets at departure and arrival. “Follow” keeps the
+planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA) under its name, never over an airfield, in UTC (“14:52Z”), the local time in brackets at departure and arrival. “Follow” keeps the
 map on your position; moving the map stops it. Without a position (GPS or network not enabled), the line says so and
 opens the settings; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
 IVAO, VATSIM, X-Plane or Little Navmap.
@@ -387,7 +388,9 @@ report” starts again from a blank report.
 - **IVAO and VATSIM**: the flights of the last seven days for your identifier. A flight cut by disconnections counts as
   a single flight. Start-up and shutdown match the connection and the disconnection when the track begins and ends on
   the ground; take-off and landing come from the track.
-- **Times** are written in your device's time.
+- **Times** are UTC, marked "(Z)" on the fields; the started flight and the network fill them in UTC. An older
+  report, entered in the device's time, is shown converted with the entered time below ("entered 18:30 local"); it
+  is rewritten in UTC only if you save it.
 - **SimBrief**: your last plan (identifier set in ⚙) — aircraft, route, level, speed, planned fuel, METAR and TAF.
 - **From My flights**: “Write the report” on a flight opens a new report, already filled with that flight and its date;
   “Open the report” reopens the existing one.

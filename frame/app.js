@@ -322,6 +322,7 @@
     }
   };
   let launcherHere = null; // { data, dataGit } si la page est servie par un lanceur (relevé au démarrage)
+  let airlineP = Promise.resolve(); // première lecture de la compagnie, en cours au démarrage
   /** Hôte du site de la compagnie (ctx.airline.site, en https) : relayé ou appelé en lecture seule (GET) ; '' sinon. */
   const siteHost = () => {
     try {
@@ -351,6 +352,10 @@
       } catch {
         return unreachable();
       }
+      // un hôte qui n'est ni de la même origine ni d'une liste connue peut être le site de la compagnie : sa première
+      // lecture est attendue (une seule fois, au démarrage) avant de décider
+      if (!airlineKnown && u.origin !== location.origin && !RELAY.includes(u.hostname) && !DIRECT.includes(u.hostname)) await
+      airlineP;
       const site = !!siteHost() && u.protocol === 'https:' && u.hostname === siteHost();
       if (site && String(init.method || 'GET').toUpperCase() !== 'GET') return unreachable(); // jamais d'envoi vers le site
       try {
@@ -433,12 +438,23 @@
       })
     });
   }
-  /** Relit la compagnie (attendue au plus ms millisecondes la première fois : un module monté ensuite l'a déjà). */
-  async function loadAirline(ms = 2500) {
-    const v = await Promise.race([airlineData.get(AIRLINE, {
-      wait: true
-    }).catch(() => null), new Promise(res => setTimeout(() => res(undefined), ms))]);
-    if (v !== undefined) airline = airlineOf(v);
+  let airlineKnown = false; // la compagnie a été lue une fois (le relais attend cette première lecture pour son site)
+  /** Relit la compagnie ; ms : attente au plus (sans ms, jusqu'à la réponse) ; changée, les modules en sont prévenus
+   *  (événement « frame-airline » sur window ; ctx.airline donne toujours la dernière). Le premier module n'attend
+   *  jamais cette lecture : au premier passage d'un dépôt, elle coûte toute la chaîne de lecture de l'arbre. */
+  async function loadAirline(ms = 0) {
+    const read = airlineData.get(AIRLINE, {
+        wait: true
+      }).catch(() => null),
+      v = await (ms ? Promise.race([read, new Promise(res => setTimeout(() => res(undefined), ms))]) : read);
+    if (v === undefined) return;
+    airlineKnown = true;
+    const next = airlineOf(v);
+    if (JSON.stringify(next) === JSON.stringify(airline)) return;
+    airline = next;
+    window.dispatchEvent(new CustomEvent('frame-airline', {
+      detail: airline
+    }));
   }
   /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
   async function loadDevice() {
@@ -1812,7 +1828,7 @@
       });
     });
     own.watch('device/', () => loadDevice());
-    await loadAirline();
+    airlineP = loadAirline(); // en fond : le premier module ne l'attend pas
     airlineData.watch('airline/', () => loadAirline(1e4));
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     window.addEventListener('hashchange', route);

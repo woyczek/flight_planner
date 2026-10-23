@@ -265,6 +265,13 @@ used alone:
 - The frame has three screens of its own: `#help` (`frame/help/SPEC.md`; the header's ? opens it at the current
   module's chapter), `#conflicts` and `#settings` (`#device`, its former name, opens it too;
   `frame/settings/SPEC.md`).
+- **Start**: the frame mounts the first module as soon as the shell, the device's settings and the transport are
+  there. It never waits for a first synchronisation or for the airline's settings.
+  - Over a repository's first pass, reading the airline's settings costs the whole ref → commit → tree chain (2.8 s
+    at Fast 3G). The frame reads them in the background, and `ctx.airline` always gives the latest.
+  - When they arrive or change, `frame-airline` is dispatched on `window`.
+  - The relay waits for that first reading only for a host it does not otherwise know (it may be the airline's site).
+  - The launcher is looked for only over http: a launcher never serves https, so GitHub Pages saves a round trip.
 - **Loaded on demand**: the scripts of Settings (`settings/admin_links`, `config`, `join`, `lib/qr`,
   `settings/settings`), of the help (`lib/markdown`, `help/help`) and of the roadmap (`help/roadmap`) are not in
   `index.html`. The frame injects them, in order, the first time their screen opens (`need`).
@@ -354,6 +361,7 @@ used alone:
 | `query` | read only: the part of the address after `?`, as an object (empty when there is none) |
 | `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
+| `airline` (event) | `frame-airline` on `window` when the airline's settings arrive (read in the background at start) or change; `ctx.airline` then gives them |
 | `layout` | the dual view: `{ with }`, the module shown beside this one (the pane for the current module, and the other way round), or `null`. The frame dispatches `frame-layout` on `window`, with `{ main, pane }`, each time the pane opens or closes (Fuel hides "Show the map" while Maps is beside it) |
 
 - **Actual position during a flight** (`ctx.live`, a frame service):

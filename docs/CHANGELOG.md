@@ -22,6 +22,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Report: times in UTC** (`modules/report/module.js`; INTEGRATION, DECISIONS, help ×4, website SPEC) — a new report
   is marked `timeline.tz = "Z"` with UTC times; an older one is shown converted ("entered 18:30 local") and
   rewritten in UTC only when saved.
+- **Frame: the first screen no longer waits for the network** (`frame/app.js`, `frame/store/frame_data.js`,
+  `frame/store/transport_launcher.js`; SPEC, INTEGRATION, DECISIONS) — the airline's settings are read in the
+  background, and a repository's first tree is read once for everything that needs it. On a phone at Fast 3G, the
+  first GitHub opening shows Fuel's fields at 0.8 s instead of 3.4 s.
 - **Fuel: first screen sooner** (`modules/fuel/module.js`; DECISIONS) — Fuel shows its fields from what the device
   has, says "Loading…" while the aircraft and sheets arrive, then completes the quote; nothing is written in
   between.
