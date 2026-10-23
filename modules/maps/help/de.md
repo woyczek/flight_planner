@@ -65,7 +65,7 @@ schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mi
 
 **Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten
 einen Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
-losgelassen, kehrt er zurück). Tippen Sie einen Fix oder ein Funkfeuer abseits der Route an: er kommt in den
+losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Tippen Sie einen Fix oder ein Funkfeuer abseits der Route an: er kommt in den
 nächsten Abschnitt. Tippen Sie einen Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an.
 Abflug und Ankunft bewegen sich hier nicht. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten: sie ändert
 sich ab dem Punkt, der diesen Abschnitt eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die

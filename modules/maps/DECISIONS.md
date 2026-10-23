@@ -322,3 +322,8 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Bench** (1280 and 375 px): CAM over France → 51 tracks (SIMONE 14.1 NM left, YVETTE 14 NM right…), the UK's
     AARA; over the North Atlantic → NAT A to F with "NAT A FL350–400"; Auto → both off; touch tooltips and the page
     checks unchanged; no JavaScript error.
+- **23 Oct 2026 — free points on the map** (fuel's end-to-end pass): a point dropped away from any anchor is no
+  longer refused. It takes the position under the finger and the name of its ICAO coordinates (`icaoCoord` of
+  `frame/lib/route_text.js`), which fuel reads back from `points`; useful in VFR and for helicopters. An anchor within
+  20 px keeps the priority, and the name shown while dragging is the one the point will take. Bench: dropped 40 px
+  from any anchor → `4711N00517W` (1280 px mouse), `4550N00155W` (375 px touch); Undo still goes back.

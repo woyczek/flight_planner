@@ -159,7 +159,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     does not pan; anywhere else the map pans as usual.
   - While dragging: rubber band from the previous to the next point, the anchor under the finger (navaid, aerodrome,
     airway point, RNAV point, VRP of the data read, within 20 px) ringed with its id. Released on it: the point takes
-    its id and position, and keeps its `alt_ft`. Released elsewhere: the point goes back, with a notification.
+    its id and position, and keeps its `alt_ft`. Released elsewhere: a free point at the finger's position, named by its ICAO
+    coordinates (`icaoCoord`, "4530N00030E"), for VFR and helicopters; an anchor within 20 px keeps the priority.
   - A tap on an anchor off the route inserts it where it lengthens the route least; a tap on a route point opens its
     card (id, departure / arrival or the level held from it, "Remove" for a waypoint); the click that follows a drag
     is ignored.

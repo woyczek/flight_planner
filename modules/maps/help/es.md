@@ -62,7 +62,7 @@ rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
 **Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de la ruta se rodean de un
 círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar,
-vuelve a su sitio). Toque un fijo o una radioayuda fuera de la ruta: se añade al tramo más cercano. Toque un punto de
+se vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Toque un fijo o una radioayuda fuera de la ruta: se añade al tramo más cercano. Toque un punto de
 la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la llegada no se mueven aquí. En el perfil, arrastre un nivel hacia
 arriba o hacia abajo: el nivel cambia desde el punto que abre ese tramo, en pasos de FL10 (en el primer tramo, es el
 nivel del vuelo); en la tarjeta de un punto, «−» y «+» hacen lo mismo. «Deshacer» retoma el último gesto. Cada cambio se guarda en el vuelo en seguida, y Combustible rehace el presupuesto; el perfil sigue.

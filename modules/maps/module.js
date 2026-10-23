@@ -182,10 +182,10 @@ const TX = {
   undo: ['Annuler', 'Undo', 'Rückgängig', 'Deshacer'],
   undoHelp: ['Annuler le dernier geste', 'Undo the last gesture', 'Letzte Geste rückgängig', 'Deshacer el último gesto'],
   editHint: [
-    'Glissez un point vers un fixe, une balise ou un terrain ; touchez-en un pour l\'ajouter à la route, ou un point de la route pour le retirer. Sur le profil, glissez un palier vers le haut ou le bas.',
-    'Drag a point onto a fix, a beacon or an airfield; tap one to add it to the route, or a route point to remove it. On the profile, drag a level up or down.',
-    'Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz; tippen Sie einen an, um ihn der Route hinzuzufügen, oder einen Routenpunkt, um ihn zu entfernen. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten.',
-    'Arrastre un punto sobre un fijo, una radioayuda o un aeródromo; toque uno para añadirlo a la ruta, o un punto de la ruta para quitarlo. En el perfil, arrastre un nivel hacia arriba o hacia abajo.'
+    'Glissez un point : sur un fixe, une balise ou un terrain il s\'y pose, ailleurs il devient un point libre ; touchez un fixe pour l\'ajouter à la route, ou un point de la route pour le retirer. Sur le profil, glissez un palier vers le haut ou le bas.',
+    'Drag a point: onto a fix, a beacon or an airfield it settles there, elsewhere it becomes a free point; tap a fix to add it to the route, or a route point to remove it. On the profile, drag a level up or down.',
+    'Ziehen Sie einen Punkt: auf einem Fix, Funkfeuer oder Flugplatz setzt er sich dort, anderswo wird er ein freier Punkt; tippen Sie einen Fix an, um ihn der Route hinzuzufügen, oder einen Routenpunkt, um ihn zu entfernen. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten.',
+    'Arrastre un punto: sobre un fijo, una radioayuda o un aeródromo se coloca allí, en otro lugar se vuelve un punto libre; toque un fijo para añadirlo a la ruta, o un punto de la ruta para quitarlo. En el perfil, arrastre un nivel hacia arriba o hacia abajo.'
   ],
   lvlDown: ['Niveau plus bas (−FL10)', 'Lower level (−FL10)', 'Niedrigere Flughöhe (−FL10)', 'Nivel más bajo (−FL10)'],
   lvlUp: ['Niveau plus haut (+FL10)', 'Higher level (+FL10)', 'Höhere Flughöhe (+FL10)', 'Nivel más alto (+FL10)'],
@@ -194,11 +194,6 @@ const TX = {
   ptArr: ['arrivée', 'arrival', 'Ankunft', 'llegada'],
   ptLevel: ['{l} à partir de ce point', '{l} from this point', '{l} ab diesem Punkt', '{l} desde este punto'],
   ptSame: ['niveau précédent conservé', 'previous level kept', 'vorherige Flughöhe bleibt', 'se mantiene el nivel anterior'],
-  noSnap: ['Lâché loin d\'un fixe, d\'une balise ou d\'un terrain : le point reste où il était.',
-    'Dropped away from a fix, a beacon or an airfield: the point stays where it was.',
-    'Fern von Fix, Funkfeuer oder Flugplatz losgelassen: der Punkt bleibt, wo er war.',
-    'Soltado lejos de un fijo, una radioayuda o un aeródromo: el punto se queda donde estaba.'
-  ],
   saveFailed: ['Route non enregistrée : {m}', 'Route not saved: {m}', 'Route nicht gespeichert: {m}', 'Ruta no guardada: {m}'],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
   layerNames: {
@@ -1081,6 +1076,18 @@ function anchors() {
   S.edit.anchorsFor = d;
   return S.edit.anchors = out;
 }
+/** Position géographique sous (x, y) de la carte (MapLibre, sinon le Mercator du fond uni) ; null sans carte. */
+function llAt(x, y) {
+  if (S.map) {
+    const p = S.map.unproject([x, y]);
+    return {
+      lat: Math.round(p.lat * 1e6) / 1e6,
+      lon: Math.round(p.lng * 1e6) / 1e6
+    };
+  }
+  const r = S.box.getBoundingClientRect();
+  return r.width ? MapsRender.mercator(S.fit, r.width, r.height, 12).toLL(x, y) : null;
+}
 /** Point où se poser le plus proche de (x, y), à moins de SNAP px ; null sinon. */
 function snapAt(x, y) {
   let best = null,
@@ -1441,15 +1448,18 @@ function drawEdit(ctx, toC) {
     ctx.fillStyle = MapsRender.withAlpha(acc, d.snap ? .3 : .15);
     ctx.fill();
     ctx.stroke();
-    if (d.snap) {
+    // nom du point visé, sinon celui du point libre (coordonnées OACI)
+    const ll = d.snap ? null : llAt(d.x, d.y),
+      name = d.snap ? d.snap.id : ll ? icaoCoord(ll.lat, ll.lon) : '';
+    if (name) {
       ctx.font = '700 12px Arial,sans-serif';
       ctx.textBaseline = 'middle';
       ctx.lineJoin = 'round';
       ctx.strokeStyle = S.theme.bg;
       ctx.lineWidth = 3;
-      ctx.strokeText(d.snap.id, at.x + 15, at.y - 12);
+      ctx.strokeText(name, at.x + 15, at.y - 12);
       ctx.fillStyle = acc;
-      ctx.fillText(d.snap.id, at.x + 15, at.y - 12);
+      ctx.fillText(name, at.x + 15, at.y - 12);
     }
   }
   ctx.restore();
@@ -1512,7 +1522,15 @@ function editGestures() {
     if (e.type === 'pointercancel') return schedule();
     if (!d.moved) openCard(d.i);
     else if (d.snap) movePoint(d.i, d.snap);
-    else S.ctx.notify?.(tt(TX.noSnap), 'warn');
+    else {
+      // loin de tout point où se poser : point libre, nommé par ses coordonnées OACI (VFR, hélicoptère)
+      const ll = llAt(d.x, d.y);
+      if (ll) movePoint(d.i, {
+        id: icaoCoord(ll.lat, ll.lon),
+        lat: ll.lat,
+        lon: ll.lon
+      });
+    }
     schedule();
   };
   S.box.addEventListener('pointerup', end, true);

@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: free points** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a waypoint dropped away from any fix,
+  beacon or airfield becomes a free point named by its coordinates (4530N00030E), for VFR and helicopters.
 - **fuel: after the end-to-end pass** (`modules/fuel/module.js`, `frame/lib/route_text.js`, `winds.js`; docs) — the
   wind's source in the result, the ISA deviation at the planned level, one level notation (FL060 / 3 500 ft), a busy
   weather button, the start time cleared for a new departure and a diversion noted, the dual view kept when the
