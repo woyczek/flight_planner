@@ -9,104 +9,432 @@
     "es": "Lo «entregado» debe funcionar: una diferencia es un error que hay que señalar. Lo que está «en curso», «previsto» o «más adelante» no es un error."
   },
   "states": {
-    "done": { "fr": "Livré", "en": "Delivered", "de": "Geliefert", "es": "Entregado" },
-    "doing": { "fr": "En cours", "en": "In progress", "de": "In Arbeit", "es": "En curso" },
-    "planned": { "fr": "Prévu", "en": "Planned", "de": "Geplant", "es": "Previsto" },
-    "later": { "fr": "Plus tard", "en": "Later", "de": "Später", "es": "Más adelante" }
+    "done": {
+      "fr": "Livré",
+      "en": "Delivered",
+      "de": "Geliefert",
+      "es": "Entregado"
+    },
+    "doing": {
+      "fr": "En cours",
+      "en": "In progress",
+      "de": "In Arbeit",
+      "es": "En curso"
+    },
+    "planned": {
+      "fr": "Prévu",
+      "en": "Planned",
+      "de": "Geplant",
+      "es": "Previsto"
+    },
+    "later": {
+      "fr": "Plus tard",
+      "en": "Later",
+      "de": "Später",
+      "es": "Más adelante"
+    }
   },
   "apps": [
-    { "id": "pilot", "label": { "fr": "Pilote", "en": "Pilot", "de": "Pilot", "es": "Piloto" }, "state": "doing" },
-    { "id": "cpco", "label": { "fr": "CPCO (planification)", "en": "CPCO (planning)", "de": "CPCO (Planung)", "es": "CPCO (planificación)" }, "state": "later" },
-    { "id": "client", "label": { "fr": "Client SOG", "en": "SOG client", "de": "SOG-Client", "es": "Cliente SOG" }, "state": "later" }
+    {
+      "id": "pilot",
+      "label": {
+        "fr": "Pilote",
+        "en": "Pilot",
+        "de": "Pilot",
+        "es": "Piloto"
+      },
+      "state": "doing"
+    },
+    {
+      "id": "cpco",
+      "label": {
+        "fr": "CPCO (planification)",
+        "en": "CPCO (planning)",
+        "de": "CPCO (Planung)",
+        "es": "CPCO (planificación)"
+      },
+      "state": "later"
+    },
+    {
+      "id": "client",
+      "label": {
+        "fr": "Client SOG",
+        "en": "SOG client",
+        "de": "SOG-Client",
+        "es": "Cliente SOG"
+      },
+      "state": "later"
+    }
   ],
   "lanes": [
     {
-      "id": "frame", "app": "pilot", "label": { "fr": "Cadre", "en": "Frame", "de": "Rahmen", "es": "Marco" },
+      "id": "frame",
+      "app": "pilot",
+      "label": {
+        "fr": "Cadre",
+        "en": "Frame",
+        "de": "Rahmen",
+        "es": "Marco"
+      },
       "items": [
-        { "state": "done", "fr": "Couche de données : cache local, écritures hors ligne, synchro par lots (démarrage, bouton, fond), fusion à trois voies, conflits consultables", "en": "Data layer: local cache, offline writes, batched sync (start, button, background), three-way merge, reviewable conflicts", "de": "Datenschicht: lokaler Cache, Offline-Schreibvorgänge, Synchronisation in Stapeln (Start, Schaltfläche, Hintergrund), Drei-Wege-Zusammenführung, einsehbare Konflikte", "es": "Capa de datos: caché local, escrituras sin conexión, sincronización por lotes (inicio, botón, segundo plano), fusión a tres bandas, conflictos consultables" },
-        { "state": "done", "fr": "Transports : seul sur l'appareil, lanceur du poste, dépôt GitHub", "en": "Transports: this device only, workstation launcher, GitHub repository", "de": "Transporte: nur auf dem Gerät, Starter des Rechners, GitHub-Repository", "es": "Transportes: solo en el dispositivo, lanzador del puesto, repositorio GitHub" },
-        { "state": "done", "fr": "Appli installable et hors ligne (service worker, nouvelle version entière)", "en": "Installable, offline app (service worker, whole new version)", "de": "Installierbare Offline-App (Service Worker, neue Version als Ganzes)", "es": "App instalable y sin conexión (service worker, nueva versión completa)" },
-        { "state": "done", "fr": "Navigation par verbes, niveaux, adresses #module, aide en page, relais réseau (SimBrief, IVAO, VATSIM, METAR, site de la compagnie)", "en": "Verb navigation, levels, #module addresses, in-page help, network relay (SimBrief, IVAO, VATSIM, METAR, airline site)", "de": "Navigation nach Verben, Stufen, #module-Adressen, Hilfe auf der Seite, Netzwerk-Relais (SimBrief, IVAO, VATSIM, METAR, Website der Fluggesellschaft)", "es": "Navegación por verbos, niveles, direcciones #module, ayuda en la página, relé de red (SimBrief, IVAO, VATSIM, METAR, sitio de la aerolínea)" },
-        { "state": "done", "fr": "Publication : site GitHub Pages (/v3/frame/), enveloppe Capacitor prête", "en": "Publishing: GitHub Pages site (/v3/frame/), Capacitor shell ready", "de": "Veröffentlichung: GitHub-Pages-Website (/v3/frame/), Capacitor-Hülle bereit", "es": "Publicación: sitio GitHub Pages (/v3/frame/), envoltorio Capacitor listo" },
-        { "state": "planned", "fr": "Le site web de la compagnie comme transport (quand le web service PHP existera)", "en": "The airline website as a transport (once the PHP web service exists)", "de": "Die Website der Fluggesellschaft als Transport (sobald der PHP-Webservice existiert)", "es": "El sitio web de la aerolínea como transporte (cuando exista el servicio web PHP)" },
-        { "state": "later", "fr": "Appli iOS / Android (reprise de l'enveloppe)", "en": "iOS / Android app (shell resumed)", "de": "iOS- / Android-App (Wiederaufnahme der Hülle)", "es": "App iOS / Android (retomando el envoltorio)" }
+        {
+          "state": "done",
+          "fr": "Couche de données : cache local, écritures hors ligne, synchro par lots (démarrage, bouton, fond), fusion à trois voies, conflits consultables",
+          "en": "Data layer: local cache, offline writes, batched sync (start, button, background), three-way merge, reviewable conflicts",
+          "de": "Datenschicht: lokaler Cache, Offline-Schreibvorgänge, Synchronisation in Stapeln (Start, Schaltfläche, Hintergrund), Drei-Wege-Zusammenführung, einsehbare Konflikte",
+          "es": "Capa de datos: caché local, escrituras sin conexión, sincronización por lotes (inicio, botón, segundo plano), fusión a tres bandas, conflictos consultables"
+        },
+        {
+          "state": "done",
+          "fr": "Transports : seul sur l'appareil, lanceur du poste, dépôt GitHub",
+          "en": "Transports: this device only, workstation launcher, GitHub repository",
+          "de": "Transporte: nur auf dem Gerät, Starter des Rechners, GitHub-Repository",
+          "es": "Transportes: solo en el dispositivo, lanzador del puesto, repositorio GitHub"
+        },
+        {
+          "state": "done",
+          "fr": "Appli installable et hors ligne (service worker, nouvelle version entière)",
+          "en": "Installable, offline app (service worker, whole new version)",
+          "de": "Installierbare Offline-App (Service Worker, neue Version als Ganzes)",
+          "es": "App instalable y sin conexión (service worker, nueva versión completa)"
+        },
+        {
+          "state": "done",
+          "fr": "Navigation par verbes, niveaux, adresses #module, aide en page, relais réseau (SimBrief, IVAO, VATSIM, METAR, site de la compagnie)",
+          "en": "Verb navigation, levels, #module addresses, in-page help, network relay (SimBrief, IVAO, VATSIM, METAR, airline site)",
+          "de": "Navigation nach Verben, Stufen, #module-Adressen, Hilfe auf der Seite, Netzwerk-Relais (SimBrief, IVAO, VATSIM, METAR, Website der Fluggesellschaft)",
+          "es": "Navegación por verbos, niveles, direcciones #module, ayuda en la página, relé de red (SimBrief, IVAO, VATSIM, METAR, sitio de la aerolínea)"
+        },
+        {
+          "state": "done",
+          "fr": "Publication : site GitHub Pages (/v3/frame/), enveloppe Capacitor prête",
+          "en": "Publishing: GitHub Pages site (/v3/frame/), Capacitor shell ready",
+          "de": "Veröffentlichung: GitHub-Pages-Website (/v3/frame/), Capacitor-Hülle bereit",
+          "es": "Publicación: sitio GitHub Pages (/v3/frame/), envoltorio Capacitor listo"
+        },
+        {
+          "state": "planned",
+          "fr": "Le site web de la compagnie comme transport (quand le web service PHP existera)",
+          "en": "The airline website as a transport (once the PHP web service exists)",
+          "de": "Die Website der Fluggesellschaft als Transport (sobald der PHP-Webservice existiert)",
+          "es": "El sitio web de la aerolínea como transporte (cuando exista el servicio web PHP)"
+        },
+        {
+          "state": "later",
+          "fr": "Appli iOS / Android (reprise de l'enveloppe)",
+          "en": "iOS / Android app (shell resumed)",
+          "de": "iOS- / Android-App (Wiederaufnahme der Hülle)",
+          "es": "App iOS / Android (retomando el envoltorio)"
+        }
       ]
     },
     {
-      "id": "fuel", "app": "pilot", "label": { "fr": "Carburant", "en": "Fuel", "de": "Kraftstoff", "es": "Combustible" },
+      "id": "fuel",
+      "app": "pilot",
+      "label": {
+        "fr": "Carburant",
+        "en": "Fuel",
+        "de": "Kraftstoff",
+        "es": "Combustible"
+      },
       "items": [
-        { "state": "done", "fr": "Devis (appareil, route, SimBrief, niveau et vent, réserves), décision du niveau dessinée, consignes de montée", "en": "Quote (aircraft, route, SimBrief, level and wind, reserves), drawn level decision, climb guidance", "de": "Kraftstoffberechnung (Luftfahrzeug, Route, SimBrief, Flugfläche und Wind, Reserven), gezeichnete Wahl der Flugfläche, Steigflughinweise", "es": "Cálculo (aeronave, ruta, SimBrief, nivel y viento, reservas), decisión del nivel dibujada, consignas de ascenso" },
-        { "state": "done", "fr": "Fiches de performances : import (CSV, JSON, lnmperf, OFP, ChatGPT), aperçu avant écriture, compléments, exports", "en": "Performance sheets: import (CSV, JSON, lnmperf, OFP, ChatGPT), preview before writing, completions, exports", "de": "Leistungsdatenblätter: Import (CSV, JSON, lnmperf, OFP, ChatGPT), Vorschau vor dem Schreiben, Ergänzungen, Exporte", "es": "Fichas de rendimiento: importación (CSV, JSON, lnmperf, OFP, ChatGPT), vista previa antes de escribir, complementos, exportaciones" },
-        { "state": "done", "fr": "Unités d'affichage, « Ouvrir dans » (SimBrief, SkyVector, Navigraph, ChartFox), vol partagé avec Carte et Compte rendu", "en": "Display units, “Open in” (SimBrief, SkyVector, Navigraph, ChartFox), flight shared with Map and Report", "de": "Anzeigeeinheiten, „Öffnen in“ (SimBrief, SkyVector, Navigraph, ChartFox), Flug geteilt mit Karte und Bericht", "es": "Unidades de visualización, «Abrir en» (SimBrief, SkyVector, Navigraph, ChartFox), vuelo compartido con Mapa e Informe" },
-        { "state": "later", "fr": "Édition de la table RPM sur téléphone", "en": "RPM table editing on the phone", "de": "Bearbeiten der RPM-Tabelle auf dem Telefon", "es": "Edición de la tabla RPM en el teléfono" }
+        {
+          "state": "done",
+          "fr": "Devis (appareil, route, SimBrief, niveau et vent, réserves), décision du niveau dessinée, consignes de montée",
+          "en": "Quote (aircraft, route, SimBrief, level and wind, reserves), drawn level decision, climb guidance",
+          "de": "Kraftstoffberechnung (Luftfahrzeug, Route, SimBrief, Flugfläche und Wind, Reserven), gezeichnete Wahl der Flugfläche, Steigflughinweise",
+          "es": "Cálculo (aeronave, ruta, SimBrief, nivel y viento, reservas), decisión del nivel dibujada, consignas de ascenso"
+        },
+        {
+          "state": "done",
+          "fr": "Fiches de performances : import (CSV, JSON, lnmperf, OFP, ChatGPT), aperçu avant écriture, compléments, exports",
+          "en": "Performance sheets: import (CSV, JSON, lnmperf, OFP, ChatGPT), preview before writing, completions, exports",
+          "de": "Leistungsdatenblätter: Import (CSV, JSON, lnmperf, OFP, ChatGPT), Vorschau vor dem Schreiben, Ergänzungen, Exporte",
+          "es": "Fichas de rendimiento: importación (CSV, JSON, lnmperf, OFP, ChatGPT), vista previa antes de escribir, complementos, exportaciones"
+        },
+        {
+          "state": "done",
+          "fr": "Unités d'affichage, « Ouvrir dans » (SimBrief, SkyVector, Navigraph, ChartFox), vol partagé avec Carte et Compte rendu",
+          "en": "Display units, “Open in” (SimBrief, SkyVector, Navigraph, ChartFox), flight shared with Map and Report",
+          "de": "Anzeigeeinheiten, „Öffnen in“ (SimBrief, SkyVector, Navigraph, ChartFox), Flug geteilt mit Karte und Bericht",
+          "es": "Unidades de visualización, «Abrir en» (SimBrief, SkyVector, Navigraph, ChartFox), vuelo compartido con Mapa e Informe"
+        },
+        {
+          "state": "later",
+          "fr": "Édition de la table RPM sur téléphone",
+          "en": "RPM table editing on the phone",
+          "de": "Bearbeiten der RPM-Tabelle auf dem Telefon",
+          "es": "Edición de la tabla RPM en el teléfono"
+        }
       ]
     },
     {
-      "id": "maps", "app": "pilot", "label": { "fr": "Carte", "en": "Map", "de": "Karte", "es": "Mapa" },
+      "id": "maps",
+      "app": "pilot",
+      "label": {
+        "fr": "Carte",
+        "en": "Map",
+        "de": "Karte",
+        "es": "Mapa"
+      },
       "items": [
-        { "state": "done", "fr": "Carte IFR du vol prévu (tuiles ou fond uni hors ligne), profil vertical, curseur commun, TOC / TOD", "en": "IFR map of the planned flight (tiles or plain background offline), vertical profile, shared cursor, TOC / TOD", "de": "IFR-Karte des geplanten Flugs (Kacheln oder offline einfarbiger Hintergrund), Vertikalprofil, gemeinsamer Cursor, TOC / TOD", "es": "Mapa IFR del vuelo previsto (teselas o fondo liso sin conexión), perfil vertical, cursor común, TOC / TOD" },
-        { "state": "done", "fr": "Cartes de mission redessinées depuis le dépôt, lecture seule", "en": "Mission maps redrawn from the repository, read-only", "de": "Missionskarten, aus dem Repository neu gezeichnet, nur lesend", "es": "Mapas de misión redibujados desde el repositorio, solo lectura" },
-        { "state": "later", "fr": "Route probable, traces d'exercice, cartes d'opération, AAR / NAT, zones bâties, relief hors ligne", "en": "Probable route, exercise traces, operation maps, AAR / NAT, built-up areas, offline terrain", "de": "Wahrscheinliche Route, Übungsspuren, Einsatzkarten, AAR / NAT, bebaute Gebiete, Gelände offline", "es": "Ruta probable, trazas de ejercicio, mapas de operación, AAR / NAT, zonas urbanizadas, relieve sin conexión" },
-        { "state": "later", "fr": "Carte vivante (position et trafic en direct)", "en": "Live map (own position and traffic)", "de": "Live-Karte (Position und Verkehr in Echtzeit)", "es": "Mapa en vivo (posición y tráfico en directo)" }
+        {
+          "state": "done",
+          "fr": "Carte IFR du vol prévu (tuiles ou fond uni hors ligne), profil vertical, curseur commun, TOC / TOD",
+          "en": "IFR map of the planned flight (tiles or plain background offline), vertical profile, shared cursor, TOC / TOD",
+          "de": "IFR-Karte des geplanten Flugs (Kacheln oder offline einfarbiger Hintergrund), Vertikalprofil, gemeinsamer Cursor, TOC / TOD",
+          "es": "Mapa IFR del vuelo previsto (teselas o fondo liso sin conexión), perfil vertical, cursor común, TOC / TOD"
+        },
+        {
+          "state": "done",
+          "fr": "Cartes de mission redessinées depuis le dépôt, lecture seule",
+          "en": "Mission maps redrawn from the repository, read-only",
+          "de": "Missionskarten, aus dem Repository neu gezeichnet, nur lesend",
+          "es": "Mapas de misión redibujados desde el repositorio, solo lectura"
+        },
+        {
+          "state": "later",
+          "fr": "Route probable, traces d'exercice, cartes d'opération, AAR / NAT, zones bâties, relief hors ligne",
+          "en": "Probable route, exercise traces, operation maps, AAR / NAT, built-up areas, offline terrain",
+          "de": "Wahrscheinliche Route, Übungsspuren, Einsatzkarten, AAR / NAT, bebaute Gebiete, Gelände offline",
+          "es": "Ruta probable, trazas de ejercicio, mapas de operación, AAR / NAT, zonas urbanizadas, relieve sin conexión"
+        },
+        {
+          "state": "later",
+          "fr": "Carte vivante (position et trafic en direct)",
+          "en": "Live map (own position and traffic)",
+          "de": "Live-Karte (Position und Verkehr in Echtzeit)",
+          "es": "Mapa en vivo (posición y tráfico en directo)"
+        }
       ]
     },
     {
-      "id": "report", "app": "pilot", "label": { "fr": "Compte rendu", "en": "Report", "de": "Bericht", "es": "Informe" },
+      "id": "report",
+      "app": "pilot",
+      "label": {
+        "fr": "Compte rendu",
+        "en": "Report",
+        "de": "Bericht",
+        "es": "Informe"
+      },
       "items": [
-        { "state": "done", "fr": "Trois pas Vol · Mission · Résultat, rien d'obligatoire, seize familles, un JSON par CR", "en": "Three steps Flight · Mission · Result, nothing mandatory, sixteen families, one JSON per report", "de": "Drei Schritte Flug · Mission · Ergebnis, nichts verpflichtend, sechzehn Familien, ein JSON pro Bericht", "es": "Tres pasos Vuelo · Misión · Resultado, nada obligatorio, dieciséis familias, un JSON por informe" },
-        { "state": "done", "fr": "Préremplissage : vol en cours, dernier vol IVAO / VATSIM, SimBrief, collage, passage depuis Mes vols", "en": "Prefill: current flight, last IVAO / VATSIM flight, SimBrief, paste, hand-off from My flights", "de": "Vorausfüllen: laufender Flug, letzter IVAO- / VATSIM-Flug, SimBrief, Einfügen, Übergabe aus Meine Flüge", "es": "Prerrelleno: vuelo en curso, último vuelo IVAO / VATSIM, SimBrief, pegado, paso desde Mis vuelos" },
-        { "state": "done", "fr": "« Enregistrer et inscrire sur le site » dans le même geste ; pont vers le registre V2 par le lanceur", "en": "“Save and record on the site” in one gesture; bridge to the V2 registry through the launcher", "de": "„Speichern und auf der Website eintragen“ in einem Schritt; Brücke zum V2-Register über den Starter", "es": "«Guardar e inscribir en el sitio» en un solo gesto; puente hacia el registro V2 a través del lanzador" },
-        { "state": "planned", "fr": "Inscription sur le site sans copier-coller (web service PHP)", "en": "Recording on the site without copy-paste (PHP web service)", "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)", "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)" }
+        {
+          "state": "done",
+          "fr": "Trois pas Vol · Mission · Résultat, rien d'obligatoire, seize familles, un JSON par CR",
+          "en": "Three steps Flight · Mission · Result, nothing mandatory, sixteen families, one JSON per report",
+          "de": "Drei Schritte Flug · Mission · Ergebnis, nichts verpflichtend, sechzehn Familien, ein JSON pro Bericht",
+          "es": "Tres pasos Vuelo · Misión · Resultado, nada obligatorio, dieciséis familias, un JSON por informe"
+        },
+        {
+          "state": "done",
+          "fr": "Préremplissage : vol en cours, dernier vol IVAO / VATSIM, SimBrief, collage, passage depuis Mes vols",
+          "en": "Prefill: current flight, last IVAO / VATSIM flight, SimBrief, paste, hand-off from My flights",
+          "de": "Vorausfüllen: laufender Flug, letzter IVAO- / VATSIM-Flug, SimBrief, Einfügen, Übergabe aus Meine Flüge",
+          "es": "Prerrelleno: vuelo en curso, último vuelo IVAO / VATSIM, SimBrief, pegado, paso desde Mis vuelos"
+        },
+        {
+          "state": "done",
+          "fr": "« Enregistrer et inscrire sur le site » dans le même geste ; pont vers le registre V2 par le lanceur",
+          "en": "“Save and record on the site” in one gesture; bridge to the V2 registry through the launcher",
+          "de": "„Speichern und auf der Website eintragen“ in einem Schritt; Brücke zum V2-Register über den Starter",
+          "es": "«Guardar e inscribir en el sitio» en un solo gesto; puente hacia el registro V2 a través del lanzador"
+        },
+        {
+          "state": "planned",
+          "fr": "Inscription sur le site sans copier-coller (web service PHP)",
+          "en": "Recording on the site without copy-paste (PHP web service)",
+          "de": "Eintragen auf der Website ohne Kopieren und Einfügen (PHP-Webservice)",
+          "es": "Inscripción en el sitio sin copiar y pegar (servicio web PHP)"
+        }
       ]
     },
     {
-      "id": "flightlog", "app": "pilot", "label": { "fr": "Mes vols", "en": "My flights", "de": "Meine Flüge", "es": "Mis vuelos" },
+      "id": "flightlog",
+      "app": "pilot",
+      "label": {
+        "fr": "Mes vols",
+        "en": "My flights",
+        "de": "Meine Flüge",
+        "es": "Mis vuelos"
+      },
       "items": [
-        { "state": "done", "fr": "Une ligne par vol depuis les CR, le journal du site et les sessions IVAO / VATSIM ; filtres, totaux, CSV, « Écrire le CR »", "en": "One row per flight from reports, the site log and IVAO / VATSIM sessions; filters, totals, CSV, “Write the report”", "de": "Eine Zeile pro Flug aus den Berichten, dem Flugbuch der Website und den IVAO- / VATSIM-Sitzungen; Filter, Summen, CSV, „Bericht schreiben“", "es": "Una línea por vuelo a partir de los informes, el diario del sitio y las sesiones IVAO / VATSIM; filtros, totales, CSV, «Escribir el informe»" }
+        {
+          "state": "done",
+          "fr": "Une ligne par vol depuis les CR, le journal du site et les sessions IVAO / VATSIM ; filtres, totaux, CSV, « Écrire le CR »",
+          "en": "One row per flight from reports, the site log and IVAO / VATSIM sessions; filters, totals, CSV, “Write the report”",
+          "de": "Eine Zeile pro Flug aus den Berichten, dem Flugbuch der Website und den IVAO- / VATSIM-Sitzungen; Filter, Summen, CSV, „Bericht schreiben“",
+          "es": "Una línea por vuelo a partir de los informes, el diario del sitio y las sesiones IVAO / VATSIM; filtros, totales, CSV, «Escribir el informe»"
+        }
       ]
     },
     {
-      "id": "website", "app": "pilot", "label": { "fr": "Site", "en": "Site", "de": "Website", "es": "Sitio" },
+      "id": "website",
+      "app": "pilot",
+      "label": {
+        "fr": "Site",
+        "en": "Site",
+        "de": "Website",
+        "es": "Sitio"
+      },
       "items": [
-        { "state": "done", "fr": "Journal des vols et flotte par collage ou lecture depuis le lanceur, aperçu avant écriture ; carte Compagnie (adresse du site)", "en": "Flight log and fleet by paste or read through the launcher, preview before writing; Airline card (site address)", "de": "Flugbuch und Flotte per Einfügen oder Lesen über den Starter, Vorschau vor dem Schreiben; Karte Fluggesellschaft (Adresse der Website)", "es": "Diario de vuelos y flota por pegado o lectura a través del lanzador, vista previa antes de escribir; tarjeta Compañía (dirección del sitio)" },
-        { "state": "planned", "fr": "Web service PHP : flotte et journal en JSON, bouton « → Vol » côté site (quand l'accès au site sera donné)", "en": "PHP web service: fleet and log as JSON, “→ Flight” button on the site (once site access is granted)", "de": "PHP-Webservice: Flotte und Flugbuch als JSON, Schaltfläche „→ Flug“ auf der Website (sobald Zugang zur Website gewährt wird)", "es": "Servicio web PHP: flota y diario en JSON, botón «→ Vuelo» en el sitio (cuando se conceda el acceso al sitio)" }
+        {
+          "state": "done",
+          "fr": "Journal des vols et flotte par collage ou lecture depuis le lanceur, aperçu avant écriture ; carte Compagnie (adresse du site)",
+          "en": "Flight log and fleet by paste or read through the launcher, preview before writing; Airline card (site address)",
+          "de": "Flugbuch und Flotte per Einfügen oder Lesen über den Starter, Vorschau vor dem Schreiben; Karte Fluggesellschaft (Adresse der Website)",
+          "es": "Diario de vuelos y flota por pegado o lectura a través del lanzador, vista previa antes de escribir; tarjeta Compañía (dirección del sitio)"
+        },
+        {
+          "state": "planned",
+          "fr": "Web service PHP : flotte et journal en JSON, bouton « → Vol » côté site (quand l'accès au site sera donné)",
+          "en": "PHP web service: fleet and log as JSON, “→ Flight” button on the site (once site access is granted)",
+          "de": "PHP-Webservice: Flotte und Flugbuch als JSON, Schaltfläche „→ Flug“ auf der Website (sobald Zugang zur Website gewährt wird)",
+          "es": "Servicio web PHP: flota y diario en JSON, botón «→ Vuelo» en el sitio (cuando se conceda el acceso al sitio)"
+        }
       ]
     },
     {
-      "id": "settings", "app": "pilot", "label": { "fr": "Réglages", "en": "Settings", "de": "Einstellungen", "es": "Ajustes" },
+      "id": "settings",
+      "app": "pilot",
+      "label": {
+        "fr": "Réglages",
+        "en": "Settings",
+        "de": "Einstellungen",
+        "es": "Ajustes"
+      },
       "items": [
-        { "state": "done", "fr": "Identité, usages, accès (jeton ou dépôt distant du poste), synchronisation, sauvegarde, données hors ligne par zone, niveau, clés du lanceur", "en": "Identity, usages, access (token or workstation remote), sync, backup, offline data by zone, level, launcher keys", "de": "Identität, Nutzungen, Zugang (Token oder entferntes Repository des Rechners), Synchronisation, Sicherung, Offline-Daten nach Zone, Stufe, Schlüssel des Starters", "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador" },
-        { "state": "doing", "fr": "Récupérer ou reprendre data/ dans le dépôt des données depuis la carte Accès", "en": "Fetch or adopt data/ into the data repository from the Access card", "de": "data/ aus der Karte Zugang abrufen oder in das Daten-Repository übernehmen", "es": "Recuperar o incorporar data/ al repositorio de datos desde la tarjeta Acceso" },
-        { "state": "doing", "fr": "Carte Design (choix du design, jour / nuit)", "en": "Design card (design choice, day / night)", "de": "Karte Design (Wahl des Designs, Tag / Nacht)", "es": "Tarjeta Diseño (elección del diseño, día / noche)" }
+        {
+          "state": "done",
+          "fr": "Identité, usages, accès (jeton ou dépôt distant du poste), synchronisation, sauvegarde, données hors ligne par zone, niveau, clés du lanceur",
+          "en": "Identity, usages, access (token or workstation remote), sync, backup, offline data by zone, level, launcher keys",
+          "de": "Identität, Nutzungen, Zugang (Token oder entferntes Repository des Rechners), Synchronisation, Sicherung, Offline-Daten nach Zone, Stufe, Schlüssel des Starters",
+          "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador"
+        },
+        {
+          "state": "done",
+          "fr": "Récupérer ou reprendre data/ dans le dépôt des données depuis la carte Accès",
+          "en": "Fetch or adopt data/ into the data repository from the Access card",
+          "de": "data/ aus der Karte Zugang abrufen oder in das Daten-Repository übernehmen",
+          "es": "Recuperar o incorporar data/ al repositorio de datos desde la tarjeta Acceso"
+        },
+        {
+          "state": "doing",
+          "fr": "Carte Design (choix du design, jour / nuit)",
+          "en": "Design card (design choice, day / night)",
+          "de": "Karte Design (Wahl des Designs, Tag / Nacht)",
+          "es": "Tarjeta Diseño (elección del diseño, día / noche)"
+        }
       ]
     },
     {
-      "id": "aerodb", "app": "pilot", "label": { "fr": "Base aéronautique", "en": "Aeronautical database", "de": "Luftfahrtdatenbank", "es": "Base aeronáutica" },
+      "id": "aerodb",
+      "app": "pilot",
+      "label": {
+        "fr": "Base aéronautique",
+        "en": "Aeronautical database",
+        "de": "Luftfahrtdatenbank",
+        "es": "Base aeronáutica"
+      },
       "items": [
-        { "state": "done", "fr": "Base SIA par zone, cycle et sorte ; villes ; types d'aéronefs ; lecture à la demande, cache par zone", "en": "SIA base by zone, cycle and kind; cities; aircraft types; on-demand reading, cache by zone", "de": "SIA-Basis nach Zone, Zyklus und Art; Städte; Luftfahrzeugtypen; Lesen bei Bedarf, Cache nach Zone", "es": "Base SIA por zona, ciclo y tipo; ciudades; tipos de aeronave; lectura bajo demanda, caché por zona" },
-        { "state": "planned", "fr": "Extrait GeoNames plus complet (Portugal, Irlande)", "en": "Fuller GeoNames extract (Portugal, Ireland)", "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)", "es": "Extracto de GeoNames más completo (Portugal, Irlanda)" }
+        {
+          "state": "done",
+          "fr": "Base SIA par zone, cycle et sorte ; villes ; types d'aéronefs ; lecture à la demande, cache par zone",
+          "en": "SIA base by zone, cycle and kind; cities; aircraft types; on-demand reading, cache by zone",
+          "de": "SIA-Basis nach Zone, Zyklus und Art; Städte; Luftfahrzeugtypen; Lesen bei Bedarf, Cache nach Zone",
+          "es": "Base SIA por zona, ciclo y tipo; ciudades; tipos de aeronave; lectura bajo demanda, caché por zona"
+        },
+        {
+          "state": "planned",
+          "fr": "Extrait GeoNames plus complet (Portugal, Irlande)",
+          "en": "Fuller GeoNames extract (Portugal, Ireland)",
+          "de": "Vollständigerer GeoNames-Auszug (Portugal, Irland)",
+          "es": "Extracto de GeoNames más completo (Portugal, Irlanda)"
+        }
       ]
     },
     {
-      "id": "design", "app": "pilot", "label": { "fr": "Design", "en": "Design", "de": "Design", "es": "Diseño" },
+      "id": "design",
+      "app": "pilot",
+      "label": {
+        "fr": "Design",
+        "en": "Design",
+        "de": "Design",
+        "es": "Diseño"
+      },
       "items": [
-        { "state": "doing", "fr": "Jetons, designs standard / cabinet / field, primitives du cadre, icônes au trait, cibles de 44 px, jour / nuit", "en": "Tokens, standard / cabinet / field designs, frame primitives, line icons, 44 px targets, day / night", "de": "Tokens, Designs standard / cabinet / field, Grundelemente des Rahmens, Strichsymbole, 44-px-Ziele, Tag / Nacht", "es": "Tokens, diseños standard / cabinet / field, primitivas del marco, iconos de trazo, objetivos de 44 px, día / noche" },
-        { "state": "planned", "fr": "Autres designs V2, impression du compte rendu", "en": "Other V2 designs, report printing", "de": "Weitere V2-Designs, Drucken des Berichts", "es": "Otros diseños V2, impresión del informe" }
+        {
+          "state": "done",
+          "fr": "Jetons, designs standard / cabinet / field, primitives du cadre, icônes au trait, cibles de 44 px, jour / nuit",
+          "en": "Tokens, standard / cabinet / field designs, frame primitives, line icons, 44 px targets, day / night",
+          "de": "Tokens, Designs standard / cabinet / field, Grundelemente des Rahmens, Strichsymbole, 44-px-Ziele, Tag / Nacht",
+          "es": "Tokens, diseños standard / cabinet / field, primitivas del marco, iconos de trazo, objetivos de 44 px, día / noche"
+        },
+        {
+          "state": "planned",
+          "fr": "Autres designs V2, impression du compte rendu",
+          "en": "Other V2 designs, report printing",
+          "de": "Weitere V2-Designs, Drucken des Berichts",
+          "es": "Otros diseños V2, impresión del informe"
+        }
       ]
     },
     {
-      "id": "help", "app": "pilot", "label": { "fr": "Aide", "en": "Help", "de": "Hilfe", "es": "Ayuda" },
+      "id": "help",
+      "app": "pilot",
+      "label": {
+        "fr": "Aide",
+        "en": "Help",
+        "de": "Hilfe",
+        "es": "Ayuda"
+      },
       "items": [
-        { "state": "done", "fr": "Manuel Pilote en quatre langues assemblé depuis les chapitres des modules, aide en page, feuille de route", "en": "Pilot manual in four languages assembled from the modules' chapters, in-page help, roadmap", "de": "Pilot-Handbuch in vier Sprachen, aus den Kapiteln der Module zusammengestellt, Hilfe auf der Seite, Roadmap", "es": "Manual del Piloto en cuatro idiomas, montado a partir de los capítulos de los módulos, ayuda en la página, hoja de ruta" },
-        { "state": "planned", "fr": "Tutoriels : préparer un vol, écrire un compte rendu", "en": "Tutorials: prepare a flight, write a report", "de": "Tutorials: einen Flug vorbereiten, einen Bericht schreiben", "es": "Tutoriales: preparar un vuelo, escribir un informe" }
+        {
+          "state": "done",
+          "fr": "Manuel Pilote en quatre langues assemblé depuis les chapitres des modules, aide en page, feuille de route",
+          "en": "Pilot manual in four languages assembled from the modules' chapters, in-page help, roadmap",
+          "de": "Pilot-Handbuch in vier Sprachen, aus den Kapiteln der Module zusammengestellt, Hilfe auf der Seite, Roadmap",
+          "es": "Manual del Piloto en cuatro idiomas, montado a partir de los capítulos de los módulos, ayuda en la página, hoja de ruta"
+        },
+        {
+          "state": "planned",
+          "fr": "Tutoriels : préparer un vol, écrire un compte rendu",
+          "en": "Tutorials: prepare a flight, write a report",
+          "de": "Tutorials: einen Flug vorbereiten, einen Bericht schreiben",
+          "es": "Tutoriales: preparar un vuelo, escribir un informe"
+        }
       ]
     },
     {
-      "id": "v2", "app": "cpco", "label": { "fr": "Suite V2 (develop)", "en": "V2 suite (develop)", "de": "V2-Suite (develop)", "es": "Suite V2 (develop)" },
+      "id": "v2",
+      "app": "cpco",
+      "label": {
+        "fr": "Suite V2 (develop)",
+        "en": "V2 suite (develop)",
+        "de": "V2-Suite (develop)",
+        "es": "Suite V2 (develop)"
+      },
       "items": [
-        { "state": "done", "fr": "Corrections seulement ; champs de dessin des cartes pour la V3 ; lignes par membre dans les Ordres de vols ; Premier lancement en mode GitHub", "en": "Fixes only; map drawing fields for V3; per-member lanes in Flight orders; first launch in GitHub mode", "de": "Nur Korrekturen; Zeichenfelder der Karten für die V3; Zeilen pro Mitglied in den Flugbefehlen; Erster Start im GitHub-Modus", "es": "Solo correcciones; campos de dibujo de los mapas para la V3; líneas por miembro en las Órdenes de vuelo; Primer inicio en modo GitHub" },
-        { "state": "doing", "fr": "Lanceur : reprendre un data/ existant dans le dépôt des données", "en": "Launcher: adopt an existing data/ into the data repository", "de": "Starter: ein vorhandenes data/ in das Daten-Repository übernehmen", "es": "Lanzador: incorporar un data/ existente al repositorio de datos" },
-        { "state": "later", "fr": "Appli CPCO V3 : planification, affectations, reporting ; appli Client SOG : mes missions à rendre", "en": "CPCO V3 app: planning, assignments, reporting; SOG client app: my missions to deliver", "de": "App CPCO V3: Planung, Zuweisungen, Reporting; App SOG-Client: meine abzugebenden Missionen", "es": "App CPCO V3: planificación, asignaciones, reporting; app Cliente SOG: mis misiones por entregar" }
+        {
+          "state": "done",
+          "fr": "Corrections seulement ; champs de dessin des cartes pour la V3 ; lignes par membre dans les Ordres de vols ; Premier lancement en mode GitHub",
+          "en": "Fixes only; map drawing fields for V3; per-member lanes in Flight orders; first launch in GitHub mode",
+          "de": "Nur Korrekturen; Zeichenfelder der Karten für die V3; Zeilen pro Mitglied in den Flugbefehlen; Erster Start im GitHub-Modus",
+          "es": "Solo correcciones; campos de dibujo de los mapas para la V3; líneas por miembro en las Órdenes de vuelo; Primer inicio en modo GitHub"
+        },
+        {
+          "state": "done",
+          "fr": "Lanceur : reprendre un data/ existant dans le dépôt des données",
+          "en": "Launcher: adopt an existing data/ into the data repository",
+          "de": "Starter: ein vorhandenes data/ in das Daten-Repository übernehmen",
+          "es": "Lanzador: incorporar un data/ existente al repositorio de datos"
+        },
+        {
+          "state": "later",
+          "fr": "Appli CPCO V3 : planification, affectations, reporting ; appli Client SOG : mes missions à rendre",
+          "en": "CPCO V3 app: planning, assignments, reporting; SOG client app: my missions to deliver",
+          "de": "App CPCO V3: Planung, Zuweisungen, Reporting; App SOG-Client: meine abzugebenden Missionen",
+          "es": "App CPCO V3: planificación, asignaciones, reporting; app Cliente SOG: mis misiones por entregar"
+        }
       ]
     }
   ]
