@@ -2,6 +2,9 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — design lot 2 primitives** (asked by the design session): tiles, tools, list rows and the no-report dot moved to `f-tiles`, `f-tools`, `f-list` / `f-item` (a row is a button, its details an `f-card` under it), `f-dot data-kind=warn`, `f-dl`, `f-num`; the summary rule left to the frame. The module's own `<style>`
+  only places things now; checked at 375 px and on a screen in standard, cabinet and field, day and night (no white
+  at night, square corners in cabinet and field, no target under 44 px).
 - **23 Oct 2026 — role taken** by the Features SOG session (also V3 fuel and V3 report), at the ergonomics session's
   request: worktree `E:\DEFA-v3-flightlog`, local branch `v3-flightlog` from `origin/v3` (80c416012). Port 8795 was
   found in use; trials on 8802.

@@ -184,27 +184,17 @@ async function load(loud = false) {
 }
 
 // ---------------------------------------------------------------- écran
+// placement seulement (primitives et jetons du cadre : frame/design/INTEGRATION.md) : trois tuiles sur une rangée,
+// recherche qui prend la place, colonnes d'une ligne de vol (téléphone, puis écran large), détail sous sa ligne
 const STYLE = `
-[data-module="flightlog"] h1{font-size:1.25rem;margin:0 0 10px}
-[data-module="flightlog"] .fl-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
-[data-module="flightlog"] .fl-tiles div{background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);padding:8px;text-align:center}
-[data-module="flightlog"] .fl-tiles b{display:block;font-size:1.3rem}
-[data-module="flightlog"] .fl-tiles span{font-size:.8em;color:var(--sog-muted)}
-[data-module="flightlog"] .fl-tools{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:8px}
-[data-module="flightlog"] .fl-tools input[type=search]{width:100%;min-width:0}
-[data-module="flightlog"] .fl-list{display:grid;gap:6px}
-[data-module="flightlog"] .fl-row{background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius)}
-[data-module="flightlog"] .fl-row>button{width:100%;display:grid;grid-template-columns:5.5em 1fr auto;gap:8px;align-items:center;text-align:left;border:0;background:transparent;min-height:var(--sog-touch)}
-[data-module="flightlog"] .fl-row .fl-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sog-warn);margin-right:6px;vertical-align:1px}
-[data-module="flightlog"] .fl-row .fl-mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="flightlog"] .fl-row .fl-block{font-variant-numeric:tabular-nums}
-[data-module="flightlog"] .fl-detail{padding:4px 12px 12px}
-[data-module="flightlog"] .fl-detail dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0 0 8px}
-[data-module="flightlog"] .fl-detail dt{color:var(--sog-muted)}
-[data-module="flightlog"] .fl-detail dd{margin:0}
-[data-module="flightlog"] details.f-card>summary{min-height:var(--sog-touch);display:flex;align-items:center;cursor:pointer;font-weight:600}
+[data-module="flightlog"] .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+[data-module="flightlog"] .f-tools input[type=search]{flex:1;min-width:8em}
+[data-module="flightlog"] .f-list .f-item{grid-template-columns:5.5em minmax(0,1fr) auto}
+[data-module="flightlog"] .fl-mid{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="flightlog"] .fl-detail{margin:0}
+[data-module="flightlog"] .f-dot{margin-right:6px}
 @media (min-width: 980px){
-  [data-module="flightlog"] .fl-row>button{grid-template-columns:7em 9em 10em 1fr 5em 1fr}
+  [data-module="flightlog"] .f-list .f-item{grid-template-columns:7em 9em 10em minmax(0,1fr) 5em minmax(0,1fr)}
 }`;
 
 /** Dessine les tuiles, les filtres, la liste et « Plus ». */
@@ -224,10 +214,10 @@ function render() {
     const k = F.keyOf(f),
       open = S.open === k,
       route = [f.dep, f.arr].filter(Boolean).join(' → ') || '—',
-      dot = f.source === 'cr' ? '' : '<span class="fl-dot" aria-hidden="true"></span>';
-    return `<div class="fl-row" data-key="${esc(k)}">
-      <button type="button" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span><span class="fl-block">${F.hm(f.block)}</span><span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span><span class="fl-block">${F.hm(f.block)}</span>`}</button>
-      ${open ? `<div class="fl-detail"><dl>
+      dot = f.source === 'cr' ? '' : '<span class="f-dot" data-kind="warn" aria-hidden="true"></span>';
+    return `<div data-key="${esc(k)}">
+      <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span><span class="f-num">${F.hm(f.block)}</span><span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span><span class="f-num">${F.hm(f.block)}</span>`}</button>
+      ${open ? `<div class="f-card fl-detail"><dl class="f-dl">
         <dt>${esc(tt(TX.source))}</dt><dd>${esc(tt(TX.sources[f.source], { n: f.network || '' }))}${f.open ? ` (${esc(tt(TX.inFlight))})` : ''}</dd>
         <dt>${esc(tt(TX.time))}</dt><dd>${esc(f.date)} ${esc(f.time)}</dd>
         <dt>${esc(tt(TX.aircraft))}</dt><dd>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</dd>
@@ -238,13 +228,13 @@ function render() {
       </div>` : ''}</div>`;
   };
   S.body.innerHTML = `
-    <div class="fl-tiles"><div><b>${tot.flights}</b><span>${esc(tt(TX.tFlights))}</span></div><div><b>${F.hm(tot.blockMinutes)}</b><span>${esc(tt(TX.tBlock))}</span></div><div><b>${tot.noReport}</b><span>${esc(tt(TX.tNoCr))}</span></div></div>
+    <div class="f-tiles"><div><b>${tot.flights}</b><span>${esc(tt(TX.tFlights))}</span></div><div><b>${F.hm(tot.blockMinutes)}</b><span>${esc(tt(TX.tBlock))}</span></div><div><b>${tot.noReport}</b><span>${esc(tt(TX.tNoCr))}</span></div></div>
     ${tot.types.length ? `<p class="f-muted">${esc(tt(TX.types, { l: tot.types.map(([k, n]) => `${k} ×${n}`).join(', ') }))}</p>` : ''}
-    <div class="fl-tools"><select data-k="days" aria-label="${esc(tt(TX.period))}">${[7, 31, 365, 0].map(d => `<option value="${d}"${+v.days === d ? ' selected' : ''}>${esc(tt(TX.periods[d]))}</option>`).join('')}</select>
+    <div class="f-tools"><select data-k="days" aria-label="${esc(tt(TX.period))}">${[7, 31, 365, 0].map(d => `<option value="${d}"${+v.days === d ? ' selected' : ''}>${esc(tt(TX.periods[d]))}</option>`).join('')}</select>
       <input type="search" data-k="find" value="${esc(v.find)}" placeholder="${esc(tt(TX.find))}" aria-label="${esc(tt(TX.find))}">
       <label class="f-check"><input type="checkbox" data-k="noReport"${v.noReport ? ' checked' : ''}>${esc(tt(TX.noReport))}</label></div>
-    <div class="fl-list">${list.map(row).join('') || `<p class="f-card f-muted">${esc(tt(TX.empty))}</p>`}</div>
-    <details class="f-card" style="margin-top:var(--sog-gap)"><summary>${esc(tt(TX.more))}</summary><div class="f-row">
+    <div class="f-list">${list.map(row).join('') || `<p class="f-card f-muted">${esc(tt(TX.empty))}</p>`}</div>
+    <details class="f-card"><summary>${esc(tt(TX.more))}</summary><div class="f-row">
       <button type="button" data-do="csv">${esc(tt(TX.csv))}</button><button type="button" data-do="refresh">${esc(tt(TX.refresh))}</button></div></details>`;
   if (focus) {
     const el = S.body.querySelector(`[data-k="${focus}"]`);
