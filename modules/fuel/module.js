@@ -871,10 +871,12 @@ function saveSettings() {
 }
 
 // ---------------------------------------------------------------- calcul du devis et de la décision
-/** Fiche du vol (normalisée) : celle choisie, sinon un type seul (estimation aerodb) ; null sans rien. */
+/** Fiche du vol (normalisée) : celle de l'appareil choisi, sinon son type seul (estimation aerodb) ; la première fiche
+ *  de la liste seulement quand aucun appareil n'est choisi ; null sans rien. */
 function currentSheet() {
   const a = S.flight.aircraft || {},
-    raw = S.sheets.find(p => p.id === a.sheetId) || (a.sheetId ? null : S.sheets[0]) || null;
+    chosen = !!(a.sheetId || a.type || a.registration),
+    raw = S.sheets.find(p => p.id === a.sheetId) || (chosen ? null : S.sheets[0]) || null;
   if (raw) return window.FuelModel.normalizeSheet(structuredClone(raw));
   if (a.type) return window.FuelModel.normalizeSheet({
     id: `TYPE_${a.type}`,

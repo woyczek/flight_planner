@@ -4,6 +4,11 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — an aircraft without its own sheet took the first sheet** (found during the end-to-end pass): a fleet
+  aircraft with no sheet (`sheetId` empty, the type estimate in the picker) fell back to the first sheet of the list —
+  a turboprop for the H145, so FL240 and 1,636 kg over 374 NM, under "Cruise: sheet's cruise fuel flow". The first
+  sheet is now only a default when no aircraft is chosen; otherwise the type estimate (approximate) serves, as the
+  picker said. Checked: the H145 gives 616 kg, 2:19, "type estimate (approximate)".
 - **23 Oct 2026 — airways survive a points change** (ergonomics decision after maps 6a, 867d71217): rebuilding the
   text from the points alone dropped the airways typed (UN869). The route text code moved to shared pure code,
   `frame/lib/route_text.js` (fuel owns it, maps uses it): `tokenize` is the former reading of fuel's `routePoints`

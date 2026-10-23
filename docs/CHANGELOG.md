@@ -24,6 +24,8 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: an aircraft without its own sheet uses its type's estimate** (`modules/fuel/module.js`) — it no longer
+  borrows the first sheet of the list.
 - **Map, lot 6b: levels on the profile** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — in the
   Edit mode, drag a level up or down on the profile, or use − / + in a point's card (steps of FL10); the route text
   keeps the airways of the segments left unchanged (fuel's `frame/lib/route_text.js`).
