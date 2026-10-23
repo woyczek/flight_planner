@@ -1,11 +1,19 @@
 <!doctype html>
-<html lang="fr" data-design="metro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Metro — maquette</title>
-<!-- Maquette « Metro » du cadre V3 (frame/design/DECISIONS.md, 23 octobre 2026) : page de démonstration statique, sans code
-     de module. Sans paramètre : une galerie de scènes, jour et nuit, téléphone (390 px) et écran (1280 px), chacune dans un
-     cadre de la largeur voulue (les requêtes @media du cadre ont besoin d'une vraie fenêtre) ; avec ?scene=home|fuel|report
-     &tone=day|night : la scène elle-même, faite du balisage du cadre (en-tête, verbes, vue) et des primitives de
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maquettes de design</title>
+<!-- Maquettes « Metro », « Swiss » et « Cupertino » du cadre V3 (frame/design/DECISIONS.md, 23 octobre 2026) : page de
+     démonstration statique, sans code de module (le nom du fichier est resté, le lien est connu). Le design vient de la
+     requête : ?design=metro|swiss|cupertino (metro par défaut), à combiner avec les paramètres ci-dessous. Sans scène :
+     une galerie de scènes, jour et nuit, téléphone (390 px) et écran (1280 px), chacune dans un cadre de la largeur voulue (les requêtes @media du cadre ont besoin d'une vraie fenêtre) ; avec ?scene=home|fuel|report
+     &tone=day|night (&design=…) : la scène elle-même, faite du balisage du cadre (en-tête, verbes, vue) et des primitives de
      frame/design/primitives.css. Textes d'exemple en français, aucune donnée ; les icônes viennent de frame/lib/icons.js. -->
+<script>
+  // design de la requête posé avant le premier affichage (metro sans paramètre ou si le nom est inconnu)
+  {
+    const d = new URLSearchParams(location.search).get('design');
+    document.documentElement.dataset.design = /^(swiss|cupertino)$/.test(d) ? d : 'metro'
+  }
+</script>
 <link rel="stylesheet" href="../frame.css?v=0">
 <style>
   /* galerie seulement : la grille de la page du cadre (en-tête / verbes / vue) ne vaut que pour une scène */
@@ -39,12 +47,20 @@
     transform-origin: 0 0
   }
   .demo-gallery .demo-set[data-tone="night"] {
-    background: #000;
+    background: var(--demo-night-bg, #000);
     padding: 16px 16px 0;
     margin-inline: -16px;
-    color: #f2f2f2;
-    --sog-fg: #f2f2f2;
-    --sog-muted: #a6a6a6
+    color: var(--demo-night-fg, #f2f2f2);
+    --sog-fg: var(--demo-night-fg, #f2f2f2);
+    --sog-muted: var(--demo-night-muted, #a6a6a6)
+  }
+  html[data-design="swiss"] {
+    --demo-night-bg: #0a0a0a;
+    --demo-night-muted: #a3a3a3
+  }
+  html[data-design="cupertino"] {
+    --demo-night-muted: #98989d;
+    --demo-night-fg: #fff
   }
   .demo-gallery .demo-set[data-tone="night"] h2 {
     flex-basis: 100%;
@@ -65,6 +81,7 @@
     scene = q.get('scene'),
     tone = q.get('tone') === 'night' ? 'night' : 'day',
     h = document.documentElement,
+    design = h.dataset.design,
     VERBS = [
       ['fuel', 'Carburant', 'fuel'],
       ['maps', 'Carte', 'map'],
@@ -136,17 +153,28 @@
         desk: 800
       },
       SC = [
-        ['phone', 'home', 'Accueil du Pilote : les verbes en aplats'],
+        ['phone', 'home', 'Accueil du Pilote : le menu des verbes'],
         ['phone', 'fuel', 'Carburant'],
         ['phone', 'report', 'Compte rendu, trois pas'],
         ['desk', 'fuel', 'Carburant, écran : rail des verbes, trois colonnes'],
         ['desk', 'report', 'Compte rendu, écran']
       ];
-    document.body.innerHTML = `<h1>Metro — maquette du cadre</h1>
-      <p>Une couleur repère par module (Carburant bleu, Carte cyan, Compte rendu orange, Mes vols vert, Site violet,
-      Réglages gris), des aplats, des angles droits, des champs à filet inférieur, les titres de page et de section
-      grands et légers. Aucun module n'a été modifié : tout passe par les jetons et le balisage du cadre. Maquette,
-      <b>à trancher</b> (frame/design/DECISIONS.md). Police du système : « Segoe UI » sur Windows, sinon celle de l'appareil.</p>` + ['day', 'night'].map(t => `<div class="demo-set" data-tone="${t}"><h2>${t === 'day' ? 'Jour' : 'Nuit'}</h2>${SC.map(([k, s, cap]) => `<figure data-k="${k}"><figcaption>${cap}</figcaption><div class="demo-box"><iframe title="${cap}" src="?scene=${s}&tone=${t}" width="${W[k]}" height="${HH[k]}" loading="lazy"></iframe></div></figure>`).join('')}</div>`).join('');
+    const INTRO = {
+      metro: `Une couleur repère par module (Carburant bleu, Carte cyan, Compte rendu orange, Mes vols vert, Site violet,
+        Réglages gris), des aplats, des angles droits, des champs à filet inférieur, les titres de page et de section
+        grands et légers. Police du système : « Segoe UI » sur Windows, sinon celle de l'appareil.`,
+      swiss: `Style typographique international : grille et beaucoup d'air, noir, blanc et gris, un seul rouge signal,
+        angles nuls, des filets fins au lieu de cartes, titres de section en petites capitales espacées, chiffres
+        tabulaires. La couleur du module n'apparaît que sur le filet du verbe courant. Police du système : Helvetica ou
+        Arial.`,
+      cupertino: `Façon Réglages d'iOS : fond gris très clair, cartes blanches groupées, bleu système pour les actions,
+        hiérarchie par les espaces et les filets, listes groupées à chevron, contrôle segmenté, icône du verbe teintée
+        de la couleur du module. Police du système : San Francisco sur Apple, sinon celle de l'appareil.`
+    };
+    document.body.innerHTML = `<h1>${design[0].toUpperCase() + design.slice(1)} — maquette du cadre</h1>
+      <p>${INTRO[design]} Aucun module n'a été modifié : tout passe par les jetons et le balisage du cadre. Maquette,
+      <b>à trancher</b> (frame/design/DECISIONS.md). Autres maquettes : <a href="?design=metro">metro</a>,
+      <a href="?design=swiss">swiss</a>, <a href="?design=cupertino">cupertino</a>.</p>` + ['day', 'night'].map(t => `<div class="demo-set" data-tone="${t}"><h2>${t === 'day' ? 'Jour' : 'Nuit'}</h2>${SC.map(([k, s, cap]) => `<figure data-k="${k}"><figcaption>${cap}</figcaption><div class="demo-box"><iframe title="${cap}" src="?scene=${s}&tone=${t}&design=${design}" width="${W[k]}" height="${HH[k]}" loading="lazy"></iframe></div></figure>`).join('')}</div>`).join('');
     // les cadres sont réduits pour tenir dans la largeur de la page (écran : deux de front sur un grand écran), sans
     // changer leur fenêtre
     const fit = () => document.querySelectorAll('figure[data-k]').forEach(f => {

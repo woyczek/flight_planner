@@ -149,3 +149,90 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
   - Checks: `standard`, `cabinet`, `field` identical to the commit before, pixel for pixel (Fuel, Report, Map,
     My flights, menu, 390 and 1280 px, day and night; only the Settings page differs, by the new Metro thumbnail);
     no JavaScript error; no horizontal scroll at 390 px; every target at least 44 px.
+- **23 Oct 2026 — "Swiss" and "Cupertino" mock-ups, on the user's decision** (three designs kept for V3: `metro`, `swiss`,
+  `cupertino`; `cabinet` goes, `field` may stay — `docs/technique/V3_SPECIFICATION.md` § 10 point 3). Branch `v3-metro`,
+  nothing pushed. **Mock-ups, pending decision**, built the way Metro was: token sets first, frame rules only where tokens
+  cannot carry the look, everything behind `[data-design="swiss"]` / `[data-design="cupertino"]` and `@media screen`, no
+  module touched, system fonts only (no web font).
+  - **What changed**: both sets in `tokens.css` (day, forced night, system night; every token declared like the others,
+    including the `--sog-mod-*` palettes); both in `DESIGNS` of `frame/app.js` (labels "Swiss" / "Cupertino" in the four
+    languages, `textured: false`, so they appear in the Settings Design card and persist like the others); `swiss.css`
+    (about 130 lines) and `cupertino.css` (about 190), imported by `frame.css` after `metro.css` and added to `sw.js`; the
+    inline first-paint line of `frame/index.html` accepts the two names (without it a reload would paint `standard` first);
+    the landmark selectors of `tokens.css` now read `:is([data-design="metro"], […"swiss"], […"cupertino"])` (one block per
+    module instead of one per design; Metro unchanged); the demo page takes `?design=metro|swiss|cupertino` (default metro,
+    same scenes, the file keeps its name).
+  - **Swiss**: tokens — white page, cards white on white, `#0a0a0a` ink, grey `#595959` secondary text, `#ccc` hairlines,
+    red `#e30613` (link text `#d70010`), radius 0, `gap` 16 / `gap-l` 28, Helvetica / Arial stack, `title-size` up to 2.75rem
+    at weight 700, `h2` / `h3` 0.8 / 0.75rem. Night: `#0a0a0a`, `#f2f2f2`, red `#ff3b47` with **black** ink.
+    - Frame rules tokens cannot carry (all in `swiss.css`): header on the page colour with a 2 px black rule and the
+      name in spaced capitals; header icon buttons without frame; menu as a plain list (the current verb bold with a 4 px
+      rule in its module colour; on a phone large 56 px rows with a hairline); page title margins and line height; `h2` / `h3`
+      as small spaced capitals (`title-case` is one token for the three levels, so h1 cannot be left alone); card, tiles,
+      list item, sticky bar as a top rule or a bottom hairline instead of a box (a rule on `.f-card` also takes the
+      `summary` margins); buttons with a black 1 px border and a red primary; tabs as underlined text; table header as
+      small capitals under a black rule; tabular figures on the header and the view (`font-variant-numeric`).
+    - Shared with Metro (same rule, written twice): the header name in spaced capitals, header buttons without frame, `h3` as
+      muted capitals, `.f-pane h1` at 1.6rem, `h1` line height / margin / `overflow-wrap: anywhere`, table header as small
+      capitals under a rule, sticky bar border, outlined buttons, list rows as lines.
+  - **Cupertino**: tokens — `#f2f2f7` page, white cards of radius 10 (`radius-s` 6), `#eeeef3` field fill, `#6c6c70`
+    secondary text, `#c6c6c8` hairlines, `#007aff` accent, `#0066cc` link, 16 px base text (the other designs 15), no shadow,
+    `gap` 16 / `gap-l` 24. Night: `#000` page, `#1c1c1e` cards, `#2c2c2e` fields, `#0a84ff`. Landmark palette: its own
+    (darkened iOS hues, white on each 4.85 to 5.99 : 1; lighter variants at night, unused in the day's list).
+    - Frame rules tokens cannot carry (all in `cupertino.css`): header icon buttons as blue icons without frame; every
+      button as blue text without frame or fill (the primary a filled blue rectangle, radius 10), a light grey fill while
+      pressed; tabs and steps as a segmented control (grey track, the current one on a card-coloured thumb, lighter at
+      night through `light-dark()`); cards, tiles and fields without a visible border (the "accent" card keeps its
+      border; a focused field takes the accent); row lists as one rounded group with hairlines and a chevron on every
+      `.f-item` (a pseudo-element in a third 12 px column); menu as a grouped list on a phone (icon in a 30 px square of the
+      module colour, hairline starting after the icon, chevron, current verb in link colour), a plain list in the rail on a
+      screen (module-coloured icon, current verb blue as today); `h3` as muted capitals; page title spacing.
+    - Shared with Metro: header buttons without frame, `h3` as muted capitals, `.f-pane h1` 1.6rem, `h1` spacing, card
+      border made transparent, `.f-nav` on the page colour.
+  - **Candidates for a token or a primitive** (the same rule written for two or three designs; to settle with point 6 of
+    the open points in the specification):
+    1. **Section label case**: `h3` (and Swiss's `h2`) as small muted capitals is in all three mock-ups. A pair
+       `--sog-label-case` / `--sog-label-spacing` (and a `--sog-label-color`) would remove three rules.
+    2. **Button chrome**: Metro 2 px black outline, Swiss 1 px black outline, Cupertino no outline and blue text; one
+       `--sog-btn-border` (width, colour) and `--sog-btn-ink` would carry all three (plus today's looks) — the token pair
+       already named in the specification (`--sog-btn-border`, `--sog-field-rule`).
+    3. **Card chrome**: no border (Metro, Cupertino), a top rule (Swiss): `--sog-card-border` (a shorthand per side) would
+       carry the three.
+    4. **Header buttons without frame** (all three): a primitive modifier or a token (`--sog-head-btn-border`).
+    5. **Pane title size** (`.f-pane h1` 1.6rem, all three): a token `--sog-title-size-pane`, or a container query on the
+       title size.
+    6. Field chrome (Metro bottom rule, Swiss and Cupertino none or a fill) and the tab / step / row-list looks (pivot
+       titles, underline, segmented; left rule, hairline, grouped with chevron) are genuinely per design: they stay rules.
+  - **Contrast (computed on the final tokens)**, WCAG ratios, forced night and system night checked identical:
+    - Swiss day: red as text 4.88 : 1 on the page and cards, 4.56 on a field; link `#d70010` 5.39 / 5.03; white on the red 4.88.
+      Night: red as text 5.63 : 1 on the page and cards, 4.95 on a field; the ink is black on the red, 5.97 (white would be 3.52
+      — on `#0a0a0a` a red needs a relative luminance of at least 0.189 to reach 4.5 : 1 as text, and at most 0.183 to reach
+      it with white on it: no red does both). Secondary text 7.0 (day) / 7.85 (night); status colours 5.08 to 10.49.
+    - Cupertino, **below 4.5 : 1 (kept to the user's hexes)**: day, `#007aff` as text 4.02 on a card, 3.60 on the page, 3.47 on a
+      field, **white on `#007aff` 4.02** (the filled buttons); night, white on `#0a84ff` 3.65, `#0a84ff` as text 4.66 on a card
+      (passes), 3.82 on a field. Passing: link `#0066cc` 5.57 / 4.99 / 4.81, secondary text 4.52 to 7.31, status colours
+      4.99 to 10.39. To pass everywhere: day accent `#0066cc` (white 5.57, on the grey page 4.99); night, black ink on `#0a84ff`
+      (5.76). Both are one token each.
+  - **Open points**:
+    - Swiss: red as the only accent (all modules red) or the module hues on the current verb as now (the mock-up shows the
+      Metro hues there, a discreet 4 px rule); card as a top rule (shown) or a hairline box (token only, no rule); the night
+      red is lighter than the day's (`#ff3b47` against `#e30613`) and its ink black; `h2` at 0.8rem capitals also reaches the
+      help and settings headings; tabs underlined but steps kept as outlined boxes with a red current one; fields keep a
+      hairline grey box (no bottom rule); `Helvetica Neue` falls back to Arial / Liberation Sans on Windows, Android and
+      Linux (no web font, as decided for the mock-ups).
+    - Cupertino: the blue and its contrast (above); **fields are an inset fill without border** (a label-above field in an
+      auto-fit grid cannot become an iOS row with a hairline without touching the modules' markup; row separators exist
+      for lists, tables and the drawer); a chevron on every `.f-item`, also where it is not navigation; the drawer icon as a
+      coloured square (the user's "icon tint") against a tinted glyph only; 16 px base text against 15 elsewhere (checked: no
+      overflow at 390 px); `light-dark()` for the segmented thumb needs Chrome 123 / Safari 17.5 / Firefox 120 (older: the
+      day's card colour also at night); the toast stays the inverted dark / light bar of the frame.
+    - Both: the dual view and the rail were checked at 1280 px only with the Map in the pane; `fuel`'s `+30` / `Now` row still
+      overflows its card by a few pixels on a phone in every design; the three-design choice itself is the ergonomics
+      session's.
+  - **Checks**: the real Pilot application (`frame/index.html`) on `#fuel`, `#maps`, `#report`, `#flightlog`, `#settings` and
+    the phone drawer, 390 and 1280 px, day and night, both designs (52 captures): no JavaScript error, no horizontal
+    scroll at 390 px, every target at least 44 px. Pixel comparison against the previous commit (served from `git archive`):
+    `standard` and `metro` (fuel, map, report, my flights, settings, drawer, 390 and 1280 px, day and night, 44 captures),
+    then `cabinet` and `field` (fuel, report, drawer, 390 px, day and night): identical except the Settings page, which gains
+    two thumbnails. A few captures differ run to run on unchanged code (async loading; seen between two runs of the previous
+    commit), so the ones that differed were repeated three times on each side at 390 px: the stable renderings are identical.

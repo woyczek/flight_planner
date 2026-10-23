@@ -568,6 +568,16 @@
       id: 'metro',
       label: ['Metro', 'Metro', 'Metro', 'Metro'],
       textured: false
+    }, {
+      // maquette à trancher : style typographique international (grille, filets, rouge signal, angles nuls)
+      id: 'swiss',
+      label: ['Swiss', 'Swiss', 'Swiss', 'Swiss'],
+      textured: false
+    }, {
+      // maquette à trancher : façon Réglages d'iOS (fond gris, cartes blanches groupées, bleu système)
+      id: 'cupertino',
+      label: ['Cupertino', 'Cupertino', 'Cupertino', 'Cupertino'],
+      textured: false
     }],
     TONES = ['auto', 'day', 'night'],
     DESIGN_MIRROR = 'sogFrame:design';
