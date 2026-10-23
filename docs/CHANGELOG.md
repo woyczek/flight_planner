@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **maps: help chapter** (`modules/maps/help/fr.md`, French; the help session translates and assembles it).
+  - How to use: the planned flight, what the map shows, the profile and its cursor, TOC / TOD, mission maps, "Edit the
+    route".
+  - What works offline.
+  - Special cases: no flight, no database, area not kept, different cycle, older mission.
 - **help: the Pilot manual and the in-page help** (`frame/help/help.js`, `frame/help/build_help.py`,
   `frame/help/intro.*.md`, `frame/help/pilot.*.md`, `frame/lib/markdown.js`, `frame/app.js`, `frame/index.html`,
   `frame/sw.js`, `frame/frame.css`, `modules/fuel/help/{en,de,es}.md`; `frame/help/SPEC.md`, `INTEGRATION.md`,
