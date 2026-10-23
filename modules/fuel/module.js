@@ -365,6 +365,16 @@ const TX = {
     'ISA {d} laut METAR {id} ({t} °C auf {e} ft).', 'ISA {d} según el METAR {id} ({t} °C a {e} ft).'
   ],
   isaUse: ['Utiliser ISA {d}', 'Use ISA {d}', 'ISA {d} verwenden', 'Usar ISA {d}'],
+  isaAloft: ['ISA {d} au {l} d’après la prévision {m}.', 'ISA {d} at {l} from the {m} forecast.', 'ISA {d} auf {l} laut {m}-Vorhersage.',
+    'ISA {d} a {l} según la previsión {m}.'
+  ],
+  windBy: {
+    weather: ['vent : {l}', 'wind: {l}', 'Wind: {l}', 'viento: {l}'],
+    aloft: ['vent : prévision {m} {l}', 'wind: {m} forecast {l}', 'Wind: {m}-Vorhersage {l}', 'viento: previsión {m} {l}'],
+    typed: ['vent saisi', 'wind typed', 'Wind eingegeben', 'viento introducido']
+  },
+  wxReading: ['Lecture…', 'Reading…', 'Wird gelesen…', 'Leyendo…'],
+  diverted: [' — déroutement', ' — diverted', ' — Ausweichlandung', ' — desviado'],
   da: ['Altitude-densité', 'Density altitude', 'Dichtehöhe', 'Altitud de densidad'],
   daAxisX: ['écart ISA (°C)', 'ISA deviation (°C)', 'ISA-Abweichung (°C)', 'desviación ISA (°C)'],
   daAxisY: ['altitude-densité (ft)', 'density altitude (ft)', 'Dichtehöhe (ft)', 'altitud de densidad (ft)'],
@@ -555,7 +565,9 @@ const num = v => {
   return String(v ?? '').trim() !== '' && Number.isFinite(x) ? x : null;
 };
 /** FL d'une altitude en pieds (FL090). */
-const flTxt = h => 'FL' + String(Math.round(h / 100)).padStart(3, '0');
+/** Niveau écrit comme partout dans la suite : FL au-dessus de l'altitude de transition (5 000 ft par défaut, celle de la
+ *  compagnie quand elle la donnera), pieds en dessous (frame/lib/route_text.js). */
+const flTxt = h => RT.formatLevel(h, +S?.ctx?.airline?.transitionFt || 5000);
 /** Durée en minutes → h:mm. */
 const hmm = m => {
   const x = Math.max(0, Math.round(+m || 0));
@@ -1054,6 +1066,8 @@ function climbSvg(G, box) {
 // couleurs dans --sog-chart-* (suivent le design et la nuit sans redessin)
 const STYLE = `
 [data-module="fuel"] .fu-g3{--f-min:96px}
+[data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,8em))} /* codes OACI : 4 lettres, pas plus large */
+[data-module="fuel"] .fu-flight{grid-template-columns:minmax(96px,8em) minmax(0,16em)} /* niveau et date à leur largeur utile */
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
 [data-module="fuel"] .fu-hide{display:none}
 [data-module="fuel"] .fu-block{display:block}
@@ -1153,8 +1167,8 @@ function renderPlanBody() {
   S.body.innerHTML = `
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
-      <div class="f-grid fu-g3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="f-grid fu-g3">${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}</div>
+      <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}</div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -1163,7 +1177,6 @@ function renderPlanBody() {
       </div>
       <p class="f-muted" data-src></p>
       </div>
-      <div class="f-grid fu-g3">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}</div>
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label>
@@ -1253,13 +1266,29 @@ function onPlanInput(e) {
       return acResults(v);
     case 'dep':
     case 'arr':
-    case 'altn':
+    case 'altn': {
+      const was = r[k];
       r[k] = v.trim().toUpperCase();
+      // vol démarré : un autre départ, c'est un autre vol ; une autre arrivée, un déroutement (gardé et noté)
+      if (f.started?.at && was && r[k] !== was) {
+        if (k === 'dep') f.started = null; // null et non delete : l'écriture fusionne avec le vol gardé
+        else if (k === 'arr') f.started = {
+          ...f.started,
+          diverted: true
+        };
+      }
       if (k !== 'altn') {
+        // le terrain changé l'est aussi dans le texte de la route (sinon le nouveau s'ajoute devant ou derrière l'ancien)
+        if (was && r.text && r[k] !== was) {
+          r.text = swapEnd(r.text, was, r[k], k === 'arr');
+          const ta = S.body?.querySelector('[data-k="rtext"]');
+          if (ta && document.activeElement !== ta) ta.value = r.text;
+        }
         resolveRoute();
         scheduleWx();
       }
       break;
+    }
     case 'rtext':
       r.text = v;
       if (e.type === 'input') r.from = 'route';
@@ -1412,7 +1441,8 @@ function onPlanClick(e) {
   if (st) return goStep(+st.dataset.step);
   if (e.target.closest('[data-do="showmap"]')) return showMap();
   if (e.target.closest('[data-do="start"]')) return startFlight();
-  if (e.target.closest('[data-do="isause"]')) return useIsa();
+  const iu = e.target.closest('[data-do="isause"]');
+  if (iu) return useIsa(iu.dataset.v != null ? +iu.dataset.v : undefined);
   if (e.target.closest('[data-do="rmanual"]')) {
     S.rmanualOpen = true;
     renderRinfo();
@@ -1423,7 +1453,8 @@ function onPlanClick(e) {
   const pk = e.target.closest('[data-pick]');
   if (pk) return pickAircraft(pk.dataset.pick);
   if (e.target.closest('[data-do="acopen"]')) return acOpen();
-  if (e.target.closest('[data-do="wx"]')) return wxFetch(true);
+  const wb = e.target.closest('[data-do="wx"]');
+  if (wb) return wxRead(wb);
   const b = e.target.closest('[data-do]'),
     pick = e.target.closest('[data-pick]');
   if (b?.dataset.do === 'simbrief') return loadSimbrief();
@@ -1703,6 +1734,7 @@ async function aloftFetch(loud = false) {
     S.aloft = {
       key,
       model: model.name,
+      short: model.short,
       run,
       time: profiles[0]?.time ?? t,
       at: new Date().toISOString(),
@@ -1787,6 +1819,23 @@ function renderAloft(c = aloftCalc()) {
     ${c.points.map((w, i) => w ? `<tr><td>${esc(pts[i].id || '')}</td><td class="f-num">${flTxt(w.levelFt)}</td><td class="f-num">${String(w.dirDeg).padStart(3, '0')}° ${esc(speedTxt(w.kt))}</td><td class="f-num">${w.tempC} °C</td><td class="f-num">${w.isaDev > 0 ? '+' : ''}${w.isaDev}</td></tr>` : '').join('')}
     </tbody></table></div>`;
 }
+/** Source du vent du devis, en court : « vent : METAR LFRS, TAF LFML », « vent : prévision ICON FL060 », « vent saisi » ;
+ *  vide sans vent. */
+function windShort() {
+  const f = S.flight,
+    src = f.windSource;
+  if (src?.kind === 'weather') return tt(TX.windBy.weather, {
+    l: (src.ids || []).map(x => {
+      const m = /^(\S+) \((\w+)\)$/.exec(x);
+      return m ? `${m[2]} ${m[1]}` : x;
+    }).join(', ')
+  });
+  if (src?.kind === 'aloft') return tt(TX.windBy.aloft, {
+    m: src.short || src.model || '',
+    l: flTxt(src.levelFt)
+  });
+  return Number.isFinite(+f.wind?.speedKt) ? tt(TX.windBy.typed) : '';
+}
 /** Profil réel au départ (premier lieu de lecture) : température par altitude pression, atmosphère type en tirets,
  *  inversions surlignées, niveau planifié ; lignes de lecture (température, écart ISA et altitude-densité au niveau,
  *  inversions). Chaîne HTML, vide sans prévision. */
@@ -1828,6 +1877,23 @@ function realProfileHtml(box) {
   <p class="f-muted">${esc(tt(TX.realAxis))}</p>
   ${at ? `<p>${esc(tt(TX.realLevel, { l: flTxt(plan), t: at.tC, d: signed(at.isaDev), da: fmt(da) }))}</p>` : ''}
   <p>${inv.length ? inv.map(v => esc(tt(TX.realInv, { a: fmt(v.fromFt), b: fmt(v.toFt), d: v.dT }))).join('<br>') : esc(tt(TX.realNoInv))}</p>`;
+}
+/** « Lire la météo des terrains » : bouton occupé (« Lecture… ») pendant les appels, rendu ensuite. */
+async function wxRead(btn) {
+  if (btn.disabled) return;
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  btn.textContent = tt(TX.wxReading);
+  try {
+    await wxFetch(true);
+  } finally {
+    if (btn.isConnected) {
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      btn.textContent = label;
+    }
+  }
 }
 /** Heure visée (secondes) : la date du vol saisie (heure de l'appareil), sinon aucune (METAR). */
 const wxWhen = () => {
@@ -1918,14 +1984,22 @@ function applyRealWind() {
     f.windSource = {
       kind: 'aloft',
       model: S.aloft.model,
+      short: S.aloft.short,
       levelFt: +f.level?.ft || 0,
       at: new Date(S.aloft.time * 1000).toISOString()
     };
     const d = S.body?.querySelector('[data-k="wdir"]'),
-      k = S.body?.querySelector('[data-k="wkt"]');
+      k = S.body?.querySelector('[data-k="wkt"]'),
+      ia = isaAloft();
     if (d) d.value = mean.dirDeg;
     if (k) k.value = speedField(mean.speedKt);
+    if (ia) { // météo réelle : l'écart ISA au niveau planifié, comme le vent
+      f.isaDev = ia.dT;
+      const i = S.body?.querySelector('[data-k="isa"]');
+      if (i && document.activeElement !== i) i.value = ia.dT || '';
+    }
     windSourceLine();
+    isaHint();
     saveFlight();
     return refresh();
   }
@@ -1986,7 +2060,7 @@ async function acResults(text) {
     hits = await S.A.search(text, 30).catch(() => []);
   if (gone(s) || seq !== S.acSeq || !S.body) return;
   S.acHits = new Map(hits.map(h => [h.key, h]));
-  box.innerHTML = hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc(tt(TX.origins[h.source] || TX.origins.free))}</span></button>`).join('');
+  box.innerHTML = hits.map(h => `<button type="button" class="f-item" data-pick="${esc(h.key)}"><span>${esc(h.label)}${h.kind === 'aircraft' && h.sheetVia ? `<small class="f-muted fu-block">${esc(tt(TX.via[h.sheetVia] || TX.via.estimate))}</small>` : ''}</span><span class="f-badge">${esc([...new Set((h.sources?.length > 1 ? h.sources : [h.source]).map(x => /^fleet/.test(x) ? 'fleet' : x))].map(x => tt(TX.origins[x] || TX.origins.free)).join(' + '))}</span></button>`).join(''); // ligne fusionnée (une par immatriculation) : toutes ses origines
 }
 /** Appareil retenu : le vol courant prend aircraftOf (fiche, type, immatriculation, indicatif, nom, origine). */
 function pickAircraft(key) {
@@ -2048,17 +2122,40 @@ const signed = d => d > 0 ? `+${d}` : d < 0 ? `−${-d}` : '0';
 function isaHint() {
   const box = S.body?.querySelector('[data-isahint]');
   if (!box) return;
-  const pr = isaProposal();
-  box.innerHTML = pr ? `<span class="f-muted">${esc(tt(TX.isaHint, { d: signed(pr.dT), id: pr.id, t: pr.t, e: pr.elev.toLocaleString(S.ctx.lang()) }))}</span>${pr.dT !== (+S.flight.isaDev || 0) ? `<button type="button" data-do="isause">${esc(tt(TX.isaUse, { d: signed(pr.dT) }))}</button>` : ''}` : '';
+  const pr = isaProposal(),
+    al = isaAloft(),
+    cur = +S.flight.isaDev || 0;
+  box.innerHTML = (pr ? `<span class="f-muted">${esc(tt(TX.isaHint, { d: signed(pr.dT), id: pr.id, t: pr.t, e: pr.elev.toLocaleString(S.ctx.lang()) }))}</span>${pr.dT !== cur ? `<button type="button" data-do="isause" data-v="${pr.dT}">${esc(tt(TX.isaUse, { d: signed(pr.dT) }))}</button>` : ''}` : '') +
+    (al ? `<span class="f-muted">${esc(tt(TX.isaAloft, { d: signed(al.dT), l: flTxt(al.levelFt), m: al.short }))}</span>${al.dT !== cur ? `<button type="button" data-do="isause" data-v="${al.dT}">${esc(tt(TX.isaUse, { d: signed(al.dT) }))}</button>` : ''}` : '');
+}
+/** Écart ISA au niveau planifié d'après la prévision en altitude : moyenne le long de la route, pondérée par les
+ *  tronçons ; null sans prévision. { dT, levelFt, short }. */
+function isaAloft() {
+  const al = aloftCalc();
+  if (!al) return null;
+  let sum = 0,
+    tot = 0;
+  for (let i = 1; i < al.winds.length; i++) {
+    const a = al.winds[i - 1],
+      b = al.winds[i],
+      len = Math.max(0, al.nms[i] - al.nms[i - 1]);
+    if (!a || !b || !len) continue;
+    sum += (a.isaDev + b.isaDev) / 2 * len;
+    tot += len;
+  }
+  return tot ? {
+    dT: Math.round(sum / tot),
+    levelFt: +S.flight.level?.ft || 0,
+    short: S.aloft.short || S.aloft.model
+  } : null;
 }
 /** Prend l'écart ISA proposé : vol courant et réglages du devis (dernier écart retenu). */
-function useIsa() {
-  const pr = isaProposal();
-  if (!pr) return;
-  S.flight.isaDev = pr.dT;
-  S.settings.isaDev = pr.dT;
+function useIsa(v = isaProposal()?.dT) {
+  if (!Number.isFinite(+v)) return;
+  S.flight.isaDev = +v;
+  S.settings.isaDev = +v;
   const i = S.body.querySelector('[data-k="isa"]');
-  if (i) i.value = pr.dT || '';
+  if (i) i.value = +v || '';
   saveSettings();
   saveFlight();
   refresh();
@@ -2137,6 +2234,28 @@ function setLevel(ft) {
   if (i) i.value = Math.round(ft / 100);
   saveFlight();
   refresh();
+}
+/** Remplace le terrain was par now au début (départ) ou à la fin (arrivée) du texte de la route, s'il y est : dans un
+ *  texte libre le mot (niveau collé gardé) ; dans une liste d'OFP « ID lat lon », l'entrée est retirée (la lecture de la
+ *  route remet le nouveau terrain à sa place, aux coordonnées d'aerodb). Ailleurs, le texte ne change pas. */
+function swapEnd(text, was, now, atEnd) {
+  const t = String(text || ''),
+    esc = was.replace(/[^A-Z0-9]/gi, ''),
+    entries = t.split(/[,\n]+/).map(x => x.trim()).filter(Boolean);
+  if (!esc) return t;
+  if (entries.length > 1 && entries.every(x => /^[A-Z0-9]{2,7}\s+-?\d/i.test(x))) {
+    const i = atEnd ? entries.length - 1 : 0;
+    if (entries[i].toUpperCase().split(/\s+/)[0] !== was) return t;
+    entries.splice(i, 1);
+    return entries.join(',\n');
+  }
+  const words = t.trim().split(/\s+/),
+    i = atEnd ? words.length - 1 : 0,
+    w = words[i] || '';
+  if (w.toUpperCase().split('/')[0] !== was) return t;
+  if (now) words[i] = now + (w.includes('/') ? w.slice(w.indexOf('/')) : '');
+  else words.splice(i, 1);
+  return words.join(' ');
 }
 /** Distance (somme des tronçons) et route vraie (départ → arrivée) déduites des points ; champs et ligne de lecture
  *  mis à jour. */
@@ -2297,7 +2416,12 @@ function startFlight() {
   };
   saveFlight();
   renderSummary(S.C || {});
-  setTimeout(() => location.hash = '#maps?from=fuel', 350); // après l'écriture du vol courant (300 ms)
+  refresh();
+  // écran large : on reste sur le pas Départ, la Carte à droite (vue double) ; téléphone : la Carte, après l'écriture du
+  // vol courant (300 ms)
+  if (matchMedia('(min-width: 980px)').matches) {
+    if (!/with=maps/.test(location.hash)) location.hash = '#fuel?with=maps';
+  } else setTimeout(() => location.hash = '#maps?from=fuel', 350);
 }
 /** Récapitulatif du pas Départ : appareil, route normalisée, niveau (paliers), vent et sa source, carburant bloc. */
 function renderSummary(C) {
@@ -2316,7 +2440,7 @@ function renderSummary(C) {
     <dt>${esc(tt(TX.sumAircraft))}</dt><dd>${esc([a.name || a.type, a.registration, a.callsign].filter(Boolean).join(' · ') || none)}</dd>
     <dt>${esc(tt(TX.sumRoute))}</dt><dd><code class="fu-sumroute">${esc(r.text || [r.dep, r.arr].filter(Boolean).join(' ') || none)}</code></dd>
     <dt>${esc(tt(TX.sumLevel))}</dt><dd>${esc(lvl)}</dd>
-    <dt>${esc(tt(TX.sumWind))}</dt><dd>${esc(wind)}${f.windSource?.kind === 'weather' ? ` <span class="f-muted">(${esc(f.windSource.ids.join(', '))})</span>` : ''}</dd>
+    <dt>${esc(tt(TX.sumWind))}</dt><dd>${esc(wind)}${windShort() ? ` <span class="f-muted">(${esc(windShort())})</span>` : ''}</dd>
     <dt>${esc(tt(TX.sumBlock))}</dt><dd><b>${esc(block)}</b></dd></dl>`;
   const st = S.body.querySelector('[data-started]');
   if (st) st.textContent = f.started?.at ? tt(TX.started, {
@@ -2324,7 +2448,7 @@ function renderSummary(C) {
       hour: '2-digit',
       minute: '2-digit'
     })
-  }) : '';
+  }) + (f.started.diverted ? tt(TX.diverted) : '') : '';
 }
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
  *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
@@ -2561,7 +2685,7 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : ''}</div>
+    res.innerHTML = `<div class="f-muted">${esc(tt(TX.block))} · ${q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : windShort() ? ` · ${esc(windShort())}` : ''}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
       <div class="f-tiles"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;

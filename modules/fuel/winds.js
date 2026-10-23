@@ -15,19 +15,22 @@ export const hPaOf = ft => 1013.25 * (1 - 6.87559e-6 * ft) ** 5.25588;
 export const isaC = ft => 15 - 0.0019812 * ft;
 
 /** Modèle de prévision selon le lieu (milieu de la route) : AROME / ARPEGE de Météo-France sur la France et ses
- *  abords, ICON (DWD) sur le reste de l'Europe, GFS (NOAA) ailleurs. { id (paramètre models d'Open-Meteo), name }. */
+ *  abords, ICON (DWD) sur le reste de l'Europe, GFS (NOAA) ailleurs. { id (paramètre models d'Open-Meteo), name, short }. */
 export function modelFor(lat, lon) {
   if (lat >= 38 && lat <= 55 && lon >= -10 && lon <= 16) return {
     id: 'meteofrance_seamless',
-    name: 'Météo-France AROME / ARPEGE'
+    name: 'Météo-France AROME / ARPEGE',
+    short: 'ARPEGE'
   };
   if (lat >= 30 && lat <= 72 && lon >= -30 && lon <= 45) return {
     id: 'icon_seamless',
-    name: 'DWD ICON'
+    name: 'DWD ICON',
+    short: 'ICON'
   };
   return {
     id: 'gfs_seamless',
-    name: 'NOAA GFS'
+    name: 'NOAA GFS',
+    short: 'GFS'
   };
 }
 

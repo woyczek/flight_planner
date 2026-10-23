@@ -14,6 +14,8 @@
 //     gardés ; ailleurs, rien (direct). Inchangé : même identifiant, et même position à 0,5 NM près si previousPoints
 //     est donné. Niveaux en /Fnnn d'après alt_ft ; coordonnées OACI pour un point sans nom utilisable.
 //   icaoCoord(lat, lon) : « 4530N00030E » (degrés et minutes).
+//   formatLevel(ft, transitionFt = 5000) : une seule notation des niveaux dans la suite — « FL060 » à partir de
+//     l'altitude de transition, « 3 500 ft » en dessous (centaines, espace fine insécable entre les milliers).
 
 const COORD = /^([A-Z0-9]{2,7})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\/(?:[NKM]\d{3,4})?F(\d{3}))?/i,
   ICAO_LL = /^(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])$/,
@@ -146,4 +148,12 @@ export function textFromPoints(points, previousText = '', previousPoints = null)
     out.push(pointWord(p));
   });
   return out.join(' ');
+}
+
+/** Niveau ou altitude d'un vol (voir l'en-tête) ; chaîne vide sans valeur. */
+export function formatLevel(ft, transitionFt = 5000) {
+  if (!Number.isFinite(+ft) || ft === null || ft === '') return '';
+  const v = Math.round(+ft / 100) * 100;
+  if (v >= (+transitionFt || 5000)) return `FL${String(v / 100).padStart(3, '0')}`;
+  return `${String(v).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} ft`;
 }

@@ -4,6 +4,20 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — arbitrations of the end-to-end pass** (ergonomics session): `started` cleared when the departure
+  changes, kept and marked `diverted` when the arrival changes after the start — and cleared with `null`, because a
+  deleted key came back from the stored record through the write's merge (seen in the check); the wind's source in
+  the sticky result and on the Departure step; the ISA deviation at the planned level from the forecast, proposed and
+  taken with "Real weather"; one level notation (`formatLevel` in `frame/lib/route_text.js`, FL from 5,000 ft, feet
+  below; maps will use it); "Read the aerodromes' weather" busy while reading; "Start the flight" keeps the dual view
+  on a wide screen; the Flight step's fields at their useful width (codes 8 em, level, date). Found while checking:
+  changing the departure or arrival added the new aerodrome in front of (behind) the old one in the route text —
+  repeated changes stacked "LFRS LFBO LFRS…", 2,451 NM; the old aerodrome is now replaced (free text) or its entry
+  removed (OFP list). The aircraft picker shows every origin of a merged line (aerodb 94e7feb54: one line per
+  registration), `fleet-v2` read as the fleet. Checked on 8793 at 375 and 1280 px: busy button, "wind: ARPEGE forecast
+  FL060", "3 500 ft" at FL035, "ISA −2 at FL060 from the ARPEGE forecast", start → `#fuel?with=maps`, diverted noted,
+  `started` null after a departure change, route text kept clean over two departure and two arrival changes; route
+  text bench 20/20.
 - **23 Oct 2026 — an aircraft without its own sheet took the first sheet** (found during the end-to-end pass): a fleet
   aircraft with no sheet (`sheetId` empty, the type estimate in the picker) fell back to the first sheet of the list —
   a turboprop for the H145, so FL240 and 1,636 kg over 374 NM, under "Cruise: sheet's cruise fuel flow". The first

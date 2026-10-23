@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: after the end-to-end pass** (`modules/fuel/module.js`, `frame/lib/route_text.js`, `winds.js`; docs) — the
+  wind's source in the result, the ISA deviation at the planned level, one level notation (FL060 / 3 500 ft), a busy
+  weather button, the start time cleared for a new departure and a diversion noted, the dual view kept when the
+  flight starts on a wide screen, tighter Flight step; changing the departure or arrival no longer stacks aerodromes
+  in the route text.
 - **aerodb: one line per registration** (`frame/aerodb/registry.js`; SPEC, DECISIONS) — the aircraft search merges an
   aircraft's own sheet, fleet and reference entries into one line, and the chosen sheet always gives a quote: an own
   sheet without a fuel flow is completed by its type's sheet, else the estimate.

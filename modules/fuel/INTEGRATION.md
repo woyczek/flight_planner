@@ -117,8 +117,14 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 - `weather` (fuel's): `{ when (flight date, device time, optional), real (wind from the aerodromes' weather) }` (`mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
-- `started` (fuel's, lot G): `{ at (ISO), by: 'fuel' }` when the pilot pressed "Start the flight" on the Departure
-  step; Report takes the flight up from there. Absent until then.
+- `started` (fuel's, lot G): `{ at (ISO), by: 'fuel', diverted? }` when the pilot pressed "Start the flight" on the
+  Departure step; Report takes the flight up from there. Absent until then; `null` once the departure aerodrome
+  changes (another flight; null rather than absent because writes merge with the stored record); `diverted: true`
+  when the arrival changes after the start.
+- Levels shown anywhere in the suite: `formatLevel(ft, transitionFt = 5000)` of `frame/lib/route_text.js` — "FL060"
+  from the transition altitude, "3 500 ft" below (the airline's transition altitude when it has one).
+- `windSource` `{ kind: 'aloft', model, short, levelFt, at }`: `short` is the model's short name (ARPEGE, ICON,
+  GFS) shown in "wind: ARPEGE forecast FL060".
 - Addresses: fuel opens the map with `#maps?from=fuel` (phone) or `#fuel?with=maps` (dual view, from 980 px); the
   Map's "Edit the route" comes back with `#fuel?from=maps&focus=route` (step 2, route field focused).
 - `aircraft` (fuel's, from `aircraft().aircraftOf(hit)`): `{ sheetId, type, registration, callsign, name, source }`

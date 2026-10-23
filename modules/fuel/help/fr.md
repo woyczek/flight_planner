@@ -9,7 +9,9 @@ La préparation suit cinq pas, dans l'ordre où on prépare un vol : **1 Vol, 2 
 un téléphone, la barre du haut montre un pas à la fois (touchez un numéro pour y aller, « Suivant » en bas de chaque
 pas) ; sur un écran large, les cinq pas sont les uns sous les autres. Tout se recalcule à chaque changement : corrigez
 la route, la météo, le devis et le vent suivent, sans bouton à presser. Le résultat (carburant bloc, délestage, temps,
-début de descente) reste visible en bas de l'écran à chaque pas. Un ✓ marque un pas rempli.
+début de descente) reste visible en bas de l'écran à chaque pas, avec d'où vient le vent (« vent : METAR LFRS »,
+« vent : prévision ICON FL060 », « vent saisi »). Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
+façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).
 
 **1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt
 que l'observation, l'appareil et le niveau de croisière (en FL). L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. La
@@ -60,7 +62,10 @@ affichées avec leur heure.
 « ISA ± » est l'écart de température à l'atmosphère standard, en °C : il change la puissance disponible, la vitesse
 vraie et le plafond. Une fois la météo lue, la ligne dessous le calcule d'après le METAR du départ — sa température
 moins la température standard du terrain (15 − 1,98 × altitude du terrain en milliers de pieds) — et « Utiliser ISA … »
-le reporte dans le champ. L'écart retenu est gardé dans vos réglages : le vol suivant part du même.
+le reporte dans le champ. L'écart retenu est gardé dans vos réglages : le vol suivant part du même. Une fois la
+prévision en altitude lue, une seconde ligne propose l'écart au niveau planifié, moyenné le long de la route
+(« ISA −5 au FL060 d'après la prévision ARPEGE ») ; avec « Météo réelle », le devis prend celui-là, comme le vent.
+« Lire la météo des terrains » dit « Lecture… » pendant les appels.
 
 « Lire la météo des terrains » lit aussi la prévision en altitude (Open-Meteo, sans clé, avec ou sans lanceur) aux
 points de la route : la carte « Vents et températures en altitude » donne, pour chaque point, le niveau planifié (ses
@@ -97,8 +102,10 @@ Navigraph et ChartFox (les cartes des terrains de départ et d'arrivée, connexi
 qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol. Les réglages du devis (roulage, réserve, marge, couloir météo, unités) sont dans le dernier pli.
 
 **5 Départ.** Un récapitulatif d'une page : l'appareil, la route telle qu'elle sera déposée, le niveau (et ses
-paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » note l'heure de départ dans le vol et ouvre la
-Carte ; le compte rendu reprendra ce vol. Le vol préparé ici — appareil, route, niveau, profil de montée et de
+paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » note l'heure de départ dans le vol ; sur un
+téléphone il ouvre la Carte, sur un grand écran il reste ici avec la Carte à droite. Le compte rendu reprendra ce vol.
+Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
+après le départ est un déroutement : l'heure est gardée et le déroutement noté. Le vol préparé ici — appareil, route, niveau, profil de montée et de
 descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances

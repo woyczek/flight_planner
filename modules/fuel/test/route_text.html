@@ -115,6 +115,13 @@
   }, pt('LFML')], 'LFRS LFML'), 'LFRS 4530N00030E LFML');
   check('speed-level group of the old text ignored', RT.textFromPoints(before, 'LFRS N0300F270 UN869 LUGEN NEPIX UM3 LFML'),
     'LFRS UN869 LUGEN NEPIX UM3 LFML');
+  lines.push('<b>level notation</b>');
+  check('FL060 above the transition', RT.formatLevel(6000), 'FL060');
+  check('at the transition', RT.formatLevel(5000), 'FL050');
+  check('below: feet, thin space', RT.formatLevel(3500), '3 500 ft');
+  check('rounded to the hundred', RT.formatLevel(3449), '3 400 ft');
+  check('another transition (FL070)', RT.formatLevel(6000, 7000), '6 000 ft');
+  check('no value', RT.formatLevel(null), '');
   document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
   document.title = `fuel — route text bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
 </script>
