@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fuel — METAR bench</title>
+<!-- Banc du décodeur météo hors lanceur (frame/lib/metar.js) : METAR bruts de la forme que rend metar.vatsim.net (rafales,
+     CAVOK, vent variable, couches multiples, CB / TCU, visibilité verticale, unités US, MPS, temps présent, tendance
+     et remarques ignorées), puis METAR et TAF au format décodé d'avwx.rest, chacun lu par modules/fuel/weather.js
+     (station) comme le JSON d'aviationweather. Page d'outil, hors des applications. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">fuel — METAR bench</h1>
+<pre id="out">running…</pre>
+<script type="module">
+  import * as MT from '../../../frame/lib/metar.js';
+  import * as WX from '../weather.js';
+  const NOW = Date.UTC(2026, 9, 23, 14, 30),
+    lines = [];
+  let pass = 0,
+    fail = 0;
+  /** Compare une valeur (JSON) à l'attendue. */
+  const check = (label, got, want) => {
+    const g = JSON.stringify(got),
+      w = JSON.stringify(want),
+      ok = g === w;
+    ok ? pass++ : fail++;
+    lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${g}${ok ? '' : ` (expected ${w})`}`);
+  };
+  const pick = (o, keys) => Object.fromEntries(keys.map(k => [k, o?.[k] ?? null]));
+  const CASES = [{
+    raw: 'LFPG 231400Z 24015G28KT 9999 FEW020 BKN035 OVC080 14/09 Q1008 NOSIG',
+    want: {
+      icaoId: 'LFPG',
+      wdir: 240,
+      wspd: 15,
+      wgst: 28,
+      visib: '6+',
+      temp: 14,
+      dewp: 9,
+      altim: 1008,
+      fltCat: 'VFR'
+    },
+    ceil: 3500,
+    clouds: 3
+  }, {
+    raw: 'LFBO 231400Z 31008KT 280V350 CAVOK 22/11 Q1015',
+    want: {
+      icaoId: 'LFBO',
+      wdir: 310,
+      wspd: 8,
+      wgst: null,
+      visib: '6+',
+      wxString: '',
+      temp: 22,
+      altim: 1015,
+      fltCat: 'VFR'
+    },
+    ceil: null,
+    clouds: 0
+  }, {
+    raw: 'LFML 231400Z VRB02KT CAVOK 25/14 Q1012',
+    want: {
+      wdir: 'VRB',
+      wspd: 2,
+      visib: '6+',
+      fltCat: 'VFR'
+    },
+    ceil: null,
+    clouds: 0
+  }, {
+    raw: 'LFRS 231400Z 20012KT 3000 -RA BR SCT006 BKN009 OVC015 12/11 Q0998 TEMPO 1500 RA BKN004',
+    want: {
+      wdir: 200,
+      wspd: 12,
+      visib: 1.86,
+      wxString: '-RA BR',
+      altim: 998,
+      fltCat: 'IFR'
+    },
+    ceil: 900,
+    clouds: 3
+  }, {
+    raw: 'LFLL 231400Z 18010KT 9000 VCTS FEW030CB SCT040TCU 26/18 Q1011 RMK SOMETHING 9999',
+    want: {
+      wxString: 'VCTS',
+      visib: 5.59,
+      fltCat: 'VFR'
+    },
+    ceil: null,
+    clouds: 2,
+    conv: true
+  }, {
+    raw: 'EGLL 231420Z AUTO 00000KT 0200 R27L/0400N FG VV001 08/08 Q1021',
+    want: {
+      wdir: 0,
+      wspd: 0,
+      visib: 0.12,
+      wxString: 'FG',
+      fltCat: 'LIFR'
+    },
+    ceil: 100,
+    clouds: 0
+  }, {
+    raw: 'KJFK 231351Z 31018G27KT 10SM FEW045 SCT250 18/02 A2992 RMK AO2 PK WND 30031/1320',
+    want: {
+      wdir: 310,
+      wspd: 18,
+      wgst: 27,
+      visib: '6+',
+      altim: 1013.2,
+      fltCat: 'VFR'
+    },
+    ceil: null,
+    clouds: 2
+  }, {
+    raw: 'KSFO 231356Z 28012KT 1 1/2SM BR OVC004 12/11 A3001',
+    want: {
+      visib: 1.5,
+      wxString: 'BR',
+      altim: 1016.3,
+      fltCat: 'LIFR'
+    },
+    ceil: 400,
+    clouds: 1
+  }, {
+    raw: 'UUEE 231400Z 27007MPS 9999 -SHSN BKN012CB M02/M05 Q1003',
+    want: {
+      wdir: 270,
+      wspd: 14,
+      temp: -2,
+      dewp: -5,
+      wxString: '-SHSN',
+      fltCat: 'MVFR'
+    },
+    ceil: 1200,
+    clouds: 1,
+    conv: true
+  }, {
+    raw: 'METAR LFQQ 231400Z 05006KT 4500 HZ NSC 19/07 Q1020=',
+    want: {
+      icaoId: 'LFQQ',
+      visib: 2.8,
+      wxString: 'HZ',
+      fltCat: 'IFR'
+    },
+    ceil: null,
+    clouds: 0
+  }];
+  lines.push('<b>raw METAR (metar.vatsim.net)</b>');
+  for (const c of CASES) {
+    const d = MT.decodeMetar(c.raw, NOW),
+      st = WX.station(d, null);
+    lines.push(`<i>${c.raw}</i>`);
+    check('fields', pick(d, Object.keys(c.want)), c.want);
+    check('obsTime is the 23rd', new Date(d.obsTime * 1000).getUTCDate(), 23);
+    check('cloud layers', d.clouds.length, c.clouds);
+    check('ceiling (weather.js)', st.ceil, c.ceil);
+    check('CB / TCU', st.convective, !!c.conv);
+  }
+  check('several lines (vatsim answer)', MT.decodeMetars(`${CASES[0].raw}\n${CASES[1].raw}\n\nnot a metar`, NOW).map(d => d.icaoId), ['LFPG', 'LFBO']);
+  check('not a METAR', MT.decodeMetar('hello world', NOW), null);
+  check('day after today: previous month', new Date(MT.decodeMetar('LFPG 302330Z 24005KT CAVOK 10/05 Q1020', NOW).obsTime * 1000)
+    .getUTCMonth(), 8);
+
+  lines.push('<b>avwx.rest (decoded JSON)</b>');
+  const avM = {
+    station: 'LFBO',
+    raw: 'LFBO 231400Z 31008G20KT 9999 SCT030 BKN045CB 22/11 Q1015',
+    time: {
+      dt: '2026-10-23T14:00:00Z'
+    },
+    wind_direction: {
+      value: 310,
+      repr: '310'
+    },
+    wind_speed: {
+      value: 8
+    },
+    wind_gust: {
+      value: 20
+    },
+    visibility: {
+      value: 9999,
+      repr: '9999'
+    },
+    clouds: [{
+      type: 'SCT',
+      altitude: 30
+    }, {
+      type: 'BKN',
+      altitude: 45,
+      modifier: 'CB'
+    }],
+    temperature: {
+      value: 22
+    },
+    dewpoint: {
+      value: 11
+    },
+    altimeter: {
+      value: 1015
+    },
+    flight_rules: 'VFR',
+    wx_codes: [],
+    units: {
+      altimeter: 'hPa',
+      visibility: 'm',
+      wind_speed: 'kt'
+    }
+  };
+  const m = MT.fromAvwxMetar(avM),
+    sm = WX.station(m, null);
+  check('METAR fields', pick(m, ['icaoId', 'wdir', 'wspd', 'wgst', 'visib', 'temp', 'altim', 'fltCat']), {
+    icaoId: 'LFBO',
+    wdir: 310,
+    wspd: 8,
+    wgst: 20,
+    visib: '6+',
+    temp: 22,
+    altim: 1015,
+    fltCat: 'VFR'
+  });
+  check('METAR ceiling and CB', [sm.ceil, sm.convective], [4500, true]);
+  check('US units (inHg, SM)', pick(MT.fromAvwxMetar({
+    ...avM,
+    station: 'KJFK',
+    altimeter: {
+      value: 29.92
+    },
+    visibility: {
+      value: 3,
+      repr: '3'
+    },
+    flight_rules: '',
+    units: {
+      altimeter: 'inHg',
+      visibility: 'sm',
+      wind_speed: 'kt'
+    }
+  }), ['altim', 'visib', 'fltCat']), {
+    altim: 1013.2,
+    visib: 3,
+    fltCat: 'MVFR'
+  });
+  const avT = {
+    station: 'LFBO',
+    raw: 'TAF LFBO 231100Z 2312/2412 30010KT 9999 SCT030 TEMPO 2314/2318 4000 TSRA BKN020CB BECMG 2320/2322 VRB03KT',
+    start_time: {
+      dt: '2026-10-23T12:00:00Z'
+    },
+    end_time: {
+      dt: '2026-10-24T12:00:00Z'
+    },
+    units: {
+      altimeter: 'hPa',
+      visibility: 'm',
+      wind_speed: 'kt'
+    },
+    forecast: [{
+      type: 'FROM',
+      start_time: {
+        dt: '2026-10-23T12:00:00Z'
+      },
+      end_time: {
+        dt: '2026-10-24T12:00:00Z'
+      },
+      wind_direction: {
+        value: 300
+      },
+      wind_speed: {
+        value: 10
+      },
+      visibility: {
+        value: 9999,
+        repr: '9999'
+      },
+      clouds: [{
+        type: 'SCT',
+        altitude: 30
+      }]
+    }, {
+      type: 'TEMPO',
+      start_time: {
+        dt: '2026-10-23T14:00:00Z'
+      },
+      end_time: {
+        dt: '2026-10-23T18:00:00Z'
+      },
+      visibility: {
+        value: 4000,
+        repr: '4000'
+      },
+      wx_codes: [{
+        repr: 'TSRA'
+      }],
+      clouds: [{
+        type: 'BKN',
+        altitude: 20,
+        modifier: 'CB'
+      }]
+    }, {
+      type: 'BECMG',
+      start_time: {
+        dt: '2026-10-23T20:00:00Z'
+      },
+      end_time: {
+        dt: '2026-10-23T22:00:00Z'
+      },
+      wind_direction: {
+        value: null,
+        repr: 'VRB'
+      },
+      wind_speed: {
+        value: 3
+      }
+    }]
+  };
+  const t = MT.fromAvwxTaf(avT),
+    at = Date.UTC(2026, 9, 23, 15) / 1000,
+    st = WX.station(null, t, at);
+  check('TAF validity', [t.validTimeFrom, t.validTimeTo], [Date.UTC(2026, 9, 23, 12) / 1000, Date.UTC(2026, 9, 24, 12) / 1000]);
+  check('TAF changes', t.fcsts.map(f => f.fcstChange), [null, 'TEMPO', 'BECMG']);
+  check('TAF at 15Z: source, wind, TEMPO', [st.source, st.wdir, st.wspd, st.tempo.length, st.tempo[0]?.wx], ['TAF', 300, 10, 1, 'TSRA']);
+  check('TAF at 15Z: TEMPO CB warned', st.convective, true);
+  check('BECMG VRB', t.fcsts[2].wdir, 'VRB');
+
+  document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
+  document.title = `fuel — METAR bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+</script>
+</body></html>

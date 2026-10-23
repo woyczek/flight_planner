@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fuel — winds bench</title>
+<!-- Banc des vents et températures en altitude (modules/fuel/winds.js) : altitude pression des niveaux de pression,
+     vent et température interpolés au niveau (logarithme de la pression, vent en vecteur), lieux de lecture le long de
+     la route, niveau en vigueur avec les paliers, vent moyen pondéré, inversions, lecture d'une réponse d'Open-Meteo
+     fictive (un lieu, puis plusieurs). Page d'outil, hors des applications. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">fuel — winds bench</h1>
+<pre id="out">running…</pre>
+<script type="module">
+  import * as W from '../winds.js';
+  const lines = [];
+  let pass = 0,
+    fail = 0;
+  /** Compare une valeur (JSON) à l'attendue. */
+  const check = (label, got, want) => {
+    const g = JSON.stringify(got),
+      w = JSON.stringify(want),
+      ok = g === w;
+    ok ? pass++ : fail++;
+    lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${g}${ok ? '' : ` (expected ${w})`}`);
+  };
+  const r = Math.round;
+  lines.push('<b>pressure altitude</b>');
+  check('1013.25 hPa → 0 ft', r(W.paFt(1013.25)), 0);
+  check('850 hPa → ft (ISA ≈ 4 781)', r(W.paFt(850) / 10) * 10, 4780);
+  check('700 hPa → ft (ISA ≈ 9 882)', r(W.paFt(700) / 10) * 10, 9880);
+  check('500 hPa → ft (ISA ≈ 18 289)', r(W.paFt(500) / 10) * 10, 18290);
+  check('FL100 → hPa (≈ 696.8)', r(W.hPaOf(10000) * 10) / 10, 696.8);
+  check('round trip FL250', r(W.paFt(W.hPaOf(25000))), 25000);
+  check('ISA at FL100 (°C)', r(W.isaC(10000) * 100) / 100, -4.81);
+  // un profil : 1000 hPa 10 °C 270/10, 850 hPa 4 °C 280/30, 700 hPa -4 °C 300/50
+  const prof = {
+    levels: [{
+      hPa: 1000,
+      ft: W.paFt(1000),
+      tC: 10,
+      dir: 270,
+      kt: 10
+    }, {
+      hPa: 850,
+      ft: W.paFt(850),
+      tC: 4,
+      dir: 280,
+      kt: 30
+    }, {
+      hPa: 700,
+      ft: W.paFt(700),
+      tC: -4,
+      dir: 300,
+      kt: 50
+    }]
+  };
+  lines.push('<b>at a level</b>');
+  check('at 850 hPa exactly', W.atLevel(prof, W.paFt(850)), {
+    dirDeg: 280,
+    kt: 30,
+    tC: 4,
+    isaDev: r(4 - W.isaC(W.paFt(850)))
+  });
+  const mid = W.atLevel(prof, 7000);
+  check('FL070 between 850 and 700: direction between', mid.dirDeg > 280 && mid.dirDeg < 300, true);
+  check('FL070: speed between', mid.kt > 30 && mid.kt < 50, true);
+  check('FL070: temperature between', mid.tC < 4 && mid.tC > -4, true);
+  check('above the top: the top level', W.atLevel(prof, 30000).kt, 50);
+  check('below the ground level: the lowest', W.atLevel(prof, 0).kt, 10);
+  lines.push('<b>route</b>');
+  const pts = [{
+      lat: 45,
+      lon: 0
+    }, {
+      lat: 45,
+      lon: 2,
+      alt_ft: 12000
+    }, {
+      lat: 45,
+      lon: 4
+    }],
+    smp = W.samples(pts, 30, 24);
+  check('samples start at the departure', [smp[0].point, smp[0].nm], [0, 0]);
+  check('samples end at the arrival', smp.at(-1).point, 2);
+  check('samples ordered along the route', smp.every((x, i) => !i || x.nm > smp[i - 1].nm), true);
+  check('route points kept', smp.filter(x => x.point >= 0).length, 3);
+  const nmPts = [0, smp.find(x => x.point === 1).nm, smp.at(-1).nm];
+  check('level before the step: the plan', W.levelAt(pts, nmPts, 8000, nmPts[1] / 2), 8000);
+  check('level from the step point', W.levelAt(pts, nmPts, 8000, nmPts[1] + 1), 12000);
+  check('mean of two equal winds', W.meanWind([{
+    dirDeg: 270,
+    kt: 20
+  }, {
+    dirDeg: 270,
+    kt: 20
+  }], [0, 100]), {
+    dirDeg: 270,
+    speedKt: 20
+  });
+  check('mean weighted by legs', W.meanWind([{
+    dirDeg: 270,
+    kt: 20
+  }, {
+    dirDeg: 270,
+    kt: 20
+  }, {
+    dirDeg: 270,
+    kt: 40
+  }], [0, 90, 100]).speedKt, 21);
+  lines.push('<b>inversions and Open-Meteo answer</b>');
+  check('inversion found', W.inversions({
+    levels: [{
+      ft: 360,
+      tC: 8
+    }, {
+      ft: 1060,
+      tC: 11
+    }, {
+      ft: 1770,
+      tC: 10
+    }]
+  }), [{
+    fromFt: 360,
+    toFt: 1060,
+    dT: 3
+  }]);
+  const hourly = {
+    time: [1000, 4600, 8200]
+  };
+  for (const l of W.LEVELS) {
+    hourly[`temperature_${l}hPa`] = [1, 2, 3];
+    hourly[`wind_speed_${l}hPa`] = [10, 20, 30];
+    hourly[`wind_direction_${l}hPa`] = [90, 180, 270];
+  }
+  const one = W.profiles({
+    latitude: 45,
+    longitude: 1,
+    hourly
+  }, 5000);
+  check('one place: the nearest hour', [one.length, one[0].time, one[0].levels[0].kt], [1, 4600, 20]);
+  check('one place: every level', one[0].levels.length, W.LEVELS.length);
+  check('several places', W.profiles([{
+    hourly
+  }, {
+    hourly
+  }], 9000).map(p => p.levels[0].dir), [270, 270]);
+  check('model in France', W.modelFor(46, 2).id, 'meteofrance_seamless');
+  check('model in Germany', W.modelFor(52, 20).id, 'icon_seamless');
+  check('model elsewhere', W.modelFor(40, -100).id, 'gfs_seamless');
+  check('URL: places and levels', /latitude=45\.000,46\.000&longitude=1\.000,2\.000&hourly=temperature_1000hPa/.test(W.forecastUrl([{
+    lat: 45,
+    lon: 1
+  }, {
+    lat: 46,
+    lon: 2
+  }], 'icon_seamless')), true);
+  document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
+  document.title = `fuel — winds bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+</script>
+</body></html>
