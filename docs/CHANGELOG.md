@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: narrow pane** (`modules/maps/module.js`, `profile.js`, `lib/vertical_profile.js`; SPEC, DECISIONS, help ×4) —
+  one intermediate step in the IFR thresholds (TMA, CTA, R and TSA shapes before names, airways and MORA) and one step
+  less when the map frame is under 600 px; vertical profile labels never overlap (airspaces entered first, the others
+  counted in "+n"); in Edit mode a point is added only after "+" or a 500 ms press, a simple tap shows the tooltip.
 - **Settings: pending writes listed** (`frame/settings/settings.js`, `frame/frame.css`; SPEC, DECISIONS, help ×4) — the
   Synchronisation card lists the writes waiting (`FD.status().queue`: path, module, time, ✕ for a deletion), newest
   first, and shows while some wait even without an exchange.

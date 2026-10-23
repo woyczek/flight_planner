@@ -175,7 +175,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     airway point, RNAV point, VRP of the data read, within 20 px) ringed with its id. Released on it: the point takes
     its id and position, and keeps its `alt_ft`. Released elsewhere: a free point at the finger's position, named by its ICAO
     coordinates (`icaoCoord`, "4530N00030E"), for VFR and helicopters; an anchor within 20 px keeps the priority.
-  - A tap on an anchor off the route inserts it where it lengthens the route least; a tap on a route point opens its
+  - Adding is an explicit gesture: the "+" button of the bar (shown in the mode, pressed while armed) arms one
+    insertion, and the next tap adds the anchor under the finger (else a free point at its ICAO coordinates) where it
+    lengthens the route least, then disarms; a press held 500 ms without moving (8 px) does the same at once (the
+    browser menu is suppressed in the mode). A simple tap never inserts: on a route point it opens its card, elsewhere
+    the map's tooltip. A tap on a route point opens its
     card (id, departure / arrival or the level held from it, "Remove" for a waypoint); the click that follows a drag
     is ignored.
   - Levels (lot 6b): in the mode, a vertical drag on the profile (more than 6 px) sets the level held on the segment
@@ -216,8 +220,13 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Terrain unavailable** (offline, or the first tile refused): the cut has no terrain. The MORA of each 1° cell
   crossed is drawn as a dashed brown step line (aerodb `mora`), and the status line says so.
 - **Drawing**: `SiaProfile.draw` (axes in ft / FL, airspace bands and labels, terrain, points with their distances,
-  trajectory with TOC / TOD and the cruise level), scale 0.78 under 500 px. Then:
+  trajectory with TOC / TOD and the cruise level), scale 0.78 under 500 px. Labels use the copy's `strictLabels`
+  option: the airspaces the trajectory enters first (then the widest), each label only against its own band (inside,
+  just above or just below), never over another label, TOC / TOD or the bottom 18 px (NM marks); a label without room is
+  not drawn and the count goes to "+n" in a reserved box at the top right of the cut. Then:
   - the NM marks of the map, as small ticks at the bottom of the frame;
+  - the airway points and beacons within 3 NM of the route, a small triangle and the id, skipped where an airspace
+    label already sits (`geo.taken`);
   - the cursor, on its own canvas: a vertical line and a dot at the planned altitude.
 - **Common cursor**:
   - a finger or the mouse on the profile sets the distance;
@@ -329,9 +338,12 @@ when the report is saved), nothing otherwise:
     (families, beacons, VRP, obstacles, MORA, towns); from afar (`tier` far) only the large aerodromes. Mission maps are
     not concerned (their studio profile shows what it asks).
   - The view's zoom is shifted by ¾ of a level per step of the "Complexity (trial)" slider of the Layers panel (−2 to
-    +2, per mode and device), so the whole set moves together.
+    +2, per mode and device), so the whole set moves together; a map frame narrower than 600 px (pane of the dual
+    view, phone) takes one step less.
   - Starting values (`ZOOM_IFR`, `ZOOM_VFR`): in IFR (Auto, Low, High IFR, CAM) the route corridor already thins the
-    map, so almost everything stays visible (beacons and airway points from 5.75, segment labels from 7.75, VRP from
+    map, so the airspaces are graded in one intermediate step: the overview shows the route, the winds, the
+    aerodromes and the shapes of TMA, CTA, R and TSA / TRA (the only ones above FL195); CTR, D and airspace names from
+    4.75, airways from 5, P from 5.25, other airspaces and MORA from 5.5; beacons and airway points from 5.75, segment labels from 7.75, VRP from
     9.25, obstacles from 8.5, medium towns from 6.5, small towns from 8.5, contours from 9); in VFR and Topo the
     airspaces are graded: FIR up to 7, TMA and CTA from 6, R, D and TSA from 6.5, CTR from 7, P from 7.5, others from 8,
     names from 6. Landmarks: France on a screen ≈ 5.5, on a phone ≈ 4.3, 100 NM wide on a screen ≈ 8.5.

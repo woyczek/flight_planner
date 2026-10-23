@@ -133,7 +133,9 @@
       scale,
       limitFt: window.SiaAero.limitFt,
       abbrev: true,
-      limits: false
+      limits: false,
+      strictLabels: true,
+      reserveBottom: 18 * scale // marques NM posées par module.js au bas de la coupe
     });
     if (!data.terrainOk && data.samples.some(q => Number.isFinite(q.mora))) {
       const X = s => xOf(geo, s),

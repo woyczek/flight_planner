@@ -188,12 +188,18 @@ const TX = {
     'Editar la ruta en el mapa'
   ],
   undo: ['Annuler', 'Undo', 'Rückgängig', 'Deshacer'],
+  addPoint: ['Ajouter un point', 'Add a point', 'Punkt hinzufügen', 'Añadir un punto'],
+  addHint: ['Touchez là où ajouter le point : sur un fixe, une balise ou un terrain il s\'y pose, ailleurs c\'est un point libre.',
+    'Tap where to add the point: on a fix, a beacon or an airfield it settles there, elsewhere it is a free point.',
+    'Tippen Sie, wo der Punkt hinzukommt: auf einem Fix, Funkfeuer oder Flugplatz setzt er sich dort, anderswo ist es ein freier Punkt.',
+    'Toque donde añadir el punto: sobre un fijo, una radioayuda o un aeródromo se coloca allí, en otro lugar es un punto libre.'
+  ],
   undoHelp: ['Annuler le dernier geste', 'Undo the last gesture', 'Letzte Geste rückgängig', 'Deshacer el último gesto'],
   editHint: [
-    'Glissez un point : sur un fixe, une balise ou un terrain il s\'y pose, ailleurs il devient un point libre ; touchez un fixe pour l\'ajouter à la route, ou un point de la route pour le retirer. Sur le profil, glissez un palier vers le haut ou le bas.',
-    'Drag a point: onto a fix, a beacon or an airfield it settles there, elsewhere it becomes a free point; tap a fix to add it to the route, or a route point to remove it. On the profile, drag a level up or down.',
-    'Ziehen Sie einen Punkt: auf einem Fix, Funkfeuer oder Flugplatz setzt er sich dort, anderswo wird er ein freier Punkt; tippen Sie einen Fix an, um ihn der Route hinzuzufügen, oder einen Routenpunkt, um ihn zu entfernen. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten.',
-    'Arrastre un punto: sobre un fijo, una radioayuda o un aeródromo se coloca allí, en otro lugar se vuelve un punto libre; toque un fijo para añadirlo a la ruta, o un punto de la ruta para quitarlo. En el perfil, arrastre un nivel hacia arriba o hacia abajo.'
+    'Glissez un point : sur un fixe, une balise ou un terrain il s\'y pose, ailleurs il devient un point libre ; « + » puis un toucher (ou un appui long) ajoute un point ; touchez un point de la route pour le retirer. Sur le profil, glissez un palier vers le haut ou le bas.',
+    'Drag a point: onto a fix, a beacon or an airfield it settles there, elsewhere it becomes a free point; “+” then a tap (or a long press) adds a point; tap a route point to remove it. On the profile, drag a level up or down.',
+    'Ziehen Sie einen Punkt: auf einem Fix, Funkfeuer oder Flugplatz setzt er sich dort, anderswo wird er ein freier Punkt; „+“ und dann ein Tippen (oder langes Drücken) fügt einen Punkt hinzu; tippen Sie einen Routenpunkt an, um ihn zu entfernen. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten.',
+    'Arrastre un punto: sobre un fijo, una radioayuda o un aeródromo se coloca allí, en otro lugar se vuelve un punto libre; «+» y luego un toque (o una pulsación larga) añade un punto; toque un punto de la ruta para quitarlo. En el perfil, arrastre un nivel hacia arriba o hacia abajo.'
   ],
   lvlDown: ['Niveau plus bas (−FL10)', 'Lower level (−FL10)', 'Niedrigere Flughöhe (−FL10)', 'Nivel más bajo (−FL10)'],
   lvlUp: ['Niveau plus haut (+FL10)', 'Higher level (+FL10)', 'Höhere Flughöhe (+FL10)', 'Nivel más alto (+FL10)'],
@@ -620,7 +626,7 @@ function draw() {
   }
   // courbes de niveau (Topo, VFR), de près, sous la surcouche aéronautique
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w);
-  const zv = MapsRender.zoomOf(pxDeg) + (S.mission ? 0 : (layersNow().detail || 0) * .75),
+  const zv = MapsRender.zoomOf(pxDeg) + (S.mission ? 0 : detailShift(W) * .75),
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
   if (S.tuneEl) markTune(zv, (shown.n + shown.s) / 2);
   if (!S.mission && layersNow().contours && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(
@@ -645,7 +651,7 @@ function draw() {
     marks: S.marks,
     theme: S.theme,
     level: formatLevel,
-    detail: S.mission ? 0 : layersNow().detail || 0,
+    detail: S.mission ? 0 : detailShift(W),
     mission: S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -870,9 +876,11 @@ function drawProfile() {
   ctx.font = '600 9px Arial,sans-serif';
   let lastX = -Infinity;
   for (const m of marks) {
-    if (m.x - lastX < 30) continue;
+    const y = yb - 22,
+      w = ctx.measureText(m.id).width / 2 + 2;
+    // jamais sur un libellé d'espace déjà posé dans la coupe
+    if (m.x - lastX < 30 || (g.taken || []).some(r => m.x - w < r.x1 && m.x + w > r.x0 && y - 14 < r.y1 && y + 3 > r.y0)) continue;
     lastX = m.x;
-    const y = yb - 22;
     ctx.beginPath();
     ctx.moveTo(m.x, y - 4);
     ctx.lineTo(m.x + 3.5, y + 2);
@@ -933,7 +941,8 @@ function strip() {
     }) : Number.isFinite(i.mora) ? tt(TX.mora, {
       h: altTxt(i.mora)
     }) : '', zones.length ? zones.join(', ') : tt(TX.noZoneHere)].filter(Boolean).join(' · ');
-  } else if (S.edit?.on) text = tt(TX.editHint);
+  } else if (S.edit?.adding) text = tt(TX.addHint);
+  else if (S.edit?.on) text = tt(TX.editHint);
   else if (S.prof) text = tt(TX.hint);
   if (S.stripEl.textContent !== text) S.stripEl.textContent = text;
 }
@@ -1388,6 +1397,8 @@ function setEdit(on) {
   const label = tt(on ? TX.editDone : TX.editMode);
   if (S.editBtn.textContent !== label) S.editBtn.textContent = label;
   S.undoBtn.hidden = !on;
+  S.addBtn.hidden = !on;
+  setAdding(false);
   if (S.el.classList.contains('mp-editing') !== on) S.el.classList.toggle('mp-editing', on);
   S.undoBtn.disabled = !S.edit.undo.length;
   hideTips();
@@ -1689,8 +1700,31 @@ function editTap(x, y) {
   if (!S.cardEl.hidden) return hideTips();
   const i = pointAt(x, y);
   if (i != null) return openCard(i);
-  const a = snapAt(x, y);
+  if (!S.edit.adding) return mapTip(...llOf(x, y), x, y); // toucher simple : l'infobulle, jamais d'ajout
+  addAt(x, y);
+}
+/** Ajoute le fixe, la balise ou le terrain sous (x, y), sinon un point libre nommé par ses coordonnées OACI (mode « + »
+ *  ou appui long : le geste est voulu) ; le mode « + » se referme. */
+function addAt(x, y) {
+  const ll = llAt(x, y),
+    a = snapAt(x, y) || (ll ? {
+      id: icaoCoord(ll.lat, ll.lon),
+      lat: ll.lat,
+      lon: ll.lon
+    } : null);
   if (a && !rawPoints().some(p => p.id === a.id && Math.abs(+p.lat - a.lat) < 1e-3 && Math.abs(+p.lon - a.lon) < 1e-3)) insertPoint(a);
+  setAdding(false);
+}
+/** Position (lat, lon) sous (x, y), pour l'infobulle. */
+const llOf = (x, y) => {
+  const p = llAt(x, y);
+  return p ? [p.lat, p.lon] : [0, 0];
+};
+/** Mode « + » : le prochain toucher ajoute un point. */
+function setAdding(on) {
+  S.edit.adding = on;
+  if (S.addBtn.getAttribute('aria-pressed') !== String(on)) S.addBtn.setAttribute('aria-pressed', String(on));
+  strip();
 }
 /** Poignées des points tournants, élastique et point visé pendant un glisser. */
 function drawEdit(ctx, toC) {
@@ -1814,6 +1848,38 @@ function editGestures() {
   S.box.addEventListener('pointerup', end, true);
   S.box.addEventListener('pointercancel', end, true);
   S.editBtn.addEventListener('click', () => setEdit(!S.edit.on));
+  S.addBtn.addEventListener('click', () => setAdding(!S.edit.adding));
+  // appui long (500 ms) hors d'un point de la route : ajout là où le doigt reste
+  let longT = 0,
+    longAt = null;
+  S.box.addEventListener('pointerdown', e => {
+    clearTimeout(longT);
+    if (!S.edit.on || S.edit.drag || e.button > 0 || ui(e)) return;
+    const [x, y] = pos(e);
+    longAt = [x, y];
+    longT = setTimeout(() => {
+      if (!longAt || S.edit.drag) return;
+      S.edit.tapGuard = performance.now() + 300; // le toucher qui finit l'appui long n'est pas un toucher simple
+      addAt(...longAt);
+      longAt = null;
+    }, 500);
+  });
+  S.box.addEventListener('pointermove', e => {
+    if (!longAt) return;
+    const [x, y] = pos(e);
+    if (Math.hypot(x - longAt[0], y - longAt[1]) > 8) {
+      clearTimeout(longT);
+      longAt = null;
+    }
+  });
+  for (const t of ['pointerup', 'pointercancel']) S.box.addEventListener(t, () => {
+    clearTimeout(longT);
+    longAt = null;
+  });
+  // l'appui long n'ouvre pas le menu du navigateur pendant le mode Modifier
+  S.box.addEventListener('contextmenu', e => {
+    if (S.edit.on && !ui(e)) e.preventDefault();
+  });
   S.undoBtn.addEventListener('click', undoEdit);
   S.cardEl.addEventListener('click', e => {
     const lv = e.target.closest('[data-lvl]');
@@ -1965,24 +2031,26 @@ function builtinProfile() {
  *  TMA en vue moyenne, CTR de près, points de report tout près (valeurs à régler dans #maps?tune=1). Repères : la
  *  France entière ≈ 5,5 sur un écran, ≈ 4,3 sur un téléphone ; 100 NM de large ≈ 8,5. */
 const ZOOM_IFR = {
+    // vue d'ensemble : route, vents, terrains, formes des TMA / CTA, R et TSA / TRA (seules au-dessus du FL195) ; puis
+    // CTR, D, noms des zones et voies ; puis MORA et autres zones ; puis balises et points
     asFir: [0, 24],
     asTma: [0, 24],
     asCta: [0, 24],
-    asCtr: [0, 24],
+    asCtr: [4.75, 24],
     asR: [0, 24],
-    asD: [0, 24],
-    asP: [0, 24],
+    asD: [4.75, 24],
+    asP: [5.25, 24],
     asTsa: [0, 24],
-    asOther: [0, 24],
-    zoneLabels: [0, 24],
-    awLow: [0, 24],
-    awHigh: [0, 24],
+    asOther: [5.5, 24],
+    zoneLabels: [4.75, 24],
+    awLow: [5, 24],
+    awHigh: [5, 24],
     awLabels: [7.75, 24],
     navaids: [5.75, 24],
     fixes: [5.75, 24],
     vrp: [9.25, 24],
     obstacles: [8.5, 24],
-    mora: [0, 24],
+    mora: [5.5, 24],
     citiesBig: [0, 24],
     citiesMid: [6.5, 24],
     citiesSmall: [8.5, 24],
@@ -2677,6 +2745,9 @@ function setFollow(on) {
     progressUpdate();
   }
 }
+/** Décalage des seuils en crans : le curseur de complexité, et un cran de moins dans un cadre de moins de 600 px (volet
+ *  de la vue double, téléphone). */
+const detailShift = W => (layersNow().detail || 0) - (W < 600 ? 1 : 0);
 /** Cadre la carte sur le vol (seul mouvement de caméra fait par le module, marqué pour ne pas passer pour celui de
  *  l'utilisateur). */
 function fitMap(animate) {
@@ -2940,6 +3011,8 @@ const STYLE = `
 [data-module="maps"] .mp-editbar{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:6px}
 [data-module="maps"] .mp-editbar[hidden],[data-module="maps"] .mp-editbar [hidden]{display:none}
 [data-module="maps"] .mp-editbar button{height:var(--sog-touch);min-height:0;padding:0 12px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;font-weight:600;cursor:pointer}
+[data-module="maps"] .mp-editbar .mp-add{width:var(--sog-touch);padding:0;font-size:1.3em}
+[data-module="maps"] .mp-editbar .mp-add[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
 [data-module="maps"] .mp-editbar .mp-follow[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
 [data-module="maps"] .mp-progress{font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-progress b{font-weight:700}
@@ -2989,7 +3062,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
 <label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-2" max="2" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
-<div class="mp-editbar"><button type="button" class="mp-follow" hidden aria-pressed="false" title="${esc(ctx.t(TX.followHelp))}">${esc(ctx.t(TX.follow))}</button><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
+<div class="mp-editbar"><button type="button" class="mp-follow" hidden aria-pressed="false" title="${esc(ctx.t(TX.followHelp))}">${esc(ctx.t(TX.follow))}</button><button type="button" class="mp-add" hidden aria-pressed="false" title="${esc(ctx.t(TX.addPoint))}" aria-label="${esc(ctx.t(TX.addPoint))}">+</button><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
@@ -3019,6 +3092,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     followBtn: el.querySelector('.mp-follow'),
     progEl: el.querySelector('.mp-progress'),
     undoBtn: el.querySelector('.mp-undo'),
+    addBtn: el.querySelector('.mp-add'),
     cardEl: el.querySelector('.mp-pcard'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
     ptipEl: el.querySelector('.mp-prof .mp-tip')

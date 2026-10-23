@@ -401,3 +401,20 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     centre moves with three updates; wheel → Follow off; position 5 min old → greyed with "Position d'il y a 5 min";
     no actual position → message and link to the settings; not started → nothing, button hidden. 375 px touch: the
     same, map and profile marks drawn. No JavaScript error.
+- **23 Oct 2026 — narrow pane (fuel's pass, EC45 F-ZBPD LFRS NTS LMG LFML, dual view, 491 px pane).**
+  - **One more step in the IFR starting values**: TMA / CTA, then airways and MORA, as asked; R and TSA / TRA shapes
+    join the first step, because on a high-level flight they are the only airspaces left above FL195 (without them the
+    first step was the route alone). Names, CTR and D come at 4.75, airways at 5, MORA at 5.5.
+  - **One step less under 600 px**: the frame's width, not the screen's, so the pane of the dual view and a phone get
+    the lighter map; the Complexity slider still moves the whole set.
+  - **Profile labels**: the studio placer posed a label anyway when no place was free (overlaps), and searched the whole
+    cut (labels far from their bands with long leader lines). The copy takes an opt-in `strictLabels` (the studio is
+    unchanged): priority to the airspaces the trajectory enters, a place only against the band, TOC / TOD and the NM
+    strip reserved, the rest counted in "+n". The airway points drawn by the module after the cut skip the label boxes.
+  - **Adding a point is explicit**: a simple tap added a fix by mistake. "+" arms one insertion (then disarms), or a
+    500 ms press; since the gesture is deliberate, a place without an anchor gives a free point. A simple tap shows the
+    tooltip.
+  - **Bench** (test page, LFRS → LFML FL270): 491 px viewport (452 px frame): zoom 4.49, TMA / CTA / R / TSA shapes
+    only, no names, airways nor MORA; profile 35 airspaces crossed, 8 in "+8", no overlap. 1280 px: zoom 5.58, all
+    families, 6 in "+6". 375 px: "+11". Edit mode: simple tap → 4 points, unchanged; "+" then tap → 5, "+" released;
+    500 ms press → 6; two Undo → 4. No JavaScript error.
