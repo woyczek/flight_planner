@@ -493,7 +493,7 @@
           "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Configuration exportable pour un pilote (compagnie, dépôt git des données, trigramme, mode d'emploi du jeton) et import en quelques gestes par fichier ou par lien",
           "en": "Exportable pilot configuration (airline, data git repository, trigram, token how-to) and import in a few gestures by file or link",
           "de": "Exportierbare Pilotenkonfiguration (Gesellschaft, Daten-Git-Repository, Kürzel, Token-Anleitung) und Import in wenigen Gesten per Datei oder Link",
