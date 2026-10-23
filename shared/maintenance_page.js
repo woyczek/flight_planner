@@ -335,12 +335,31 @@
   // ghAccess) — dossiers locaux, clés et import SIA se règlent sur un poste avec lanceur ; le choix se fait ici, à la
   // construction de la liste des blocs de la page, et dépend du seul mode (même carte sur un navigateur de bureau)
   const GH_ONLY = PAGE === 'installation' && !!window.GitHubData?.on?.();
+  // Page servie par le lanceur alors que le mode GitHub est réglé dans ce navigateur (127.0.0.1 : les deux coexistent) :
+  // les lectures viennent du dépôt, mais les productions du poste (base SIA, base appareils, MORA…) restent possibles —
+  // les blocs du poste sont montrés, avec une phrase. Sondé une fois, en mode GitHub sur une adresse locale seulement
+  // (jamais depuis GitHub Pages ni l'appli), de façon synchrone : la liste des blocs se construit tout de suite après.
+  const GH_SERVED = !!window.GitHubData?.on?.() && /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname) && (() => {
+    try {
+      const x = new XMLHttpRequest();
+      x.open('GET', '/__setup/status', false);
+      x.setRequestHeader('X-SOG-Setup', '1');
+      x.send();
+      return x.status === 200;
+    } catch {
+      return false;
+    }
+  })();
+  // mode GitHub sans lanceur : ce que la page ne peut pas faire (git, dossiers, base SIA à construire) disparaît
+  const GH_LITE = !!window.GitHubData?.on?.() && !GH_SERVED;
   // Mode GitHub, page Maintenance : seuls restent les blocs qui marchent sans lanceur ni dossier — versions, données
   // aéronautiques (une phrase : la base se produit sur un poste avec lanceur), caches et stockage du navigateur, sauvegarde du
   // navigateur (téléchargée), journal. Absents : mises à jour (git), références et dépendances (état git), types d'aéronefs
   // (reconstruction de la base), synchronisation. Choisi ici, à la construction de la liste des blocs.
-  const GH_MAINT = PAGE === 'maintenance' && !!window.GitHubData?.on?.();
+  const GH_MAINT = PAGE === 'maintenance' && GH_LITE;
   const GH_KEEP = new Set(['versions', 'sia', 'caches', 'storage', 'backup', 'journal']);
+  // blocs qui produisent ou publient depuis ce poste (base SIA et MORA, base appareils)
+  const GH_PRODUCE = new Set(['sia', 'types']);
   /** Vrai si la table des rubriques place le bloc id sur la page de Paramètres courante (quel que soit le mode). */
   const declaredHere = id => !!PAGE && (!SECTIONS[id] || String(SECTIONS[id]).split(',').includes(PAGE));
   /** Vrai si le bloc id appartient à la page de Paramètres courante (ou à la liste data-blocks de la page autonome). */
@@ -355,7 +374,7 @@
     s.dataset.icon = b.icon;
     s.dataset.noI18n = '';
     s.className = 'mt-block';
-    s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><div class="mt-body"></div>`;
+    s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><p class="mt-small mt-ghnote" hidden></p><div class="mt-body"></div>`;
     if (embedded || (ONLY && !ONLY.has(b.id)) || (b.id === 'storage' && !window.RepositoryNav?.cpco?.enabled?.())) s.hidden = true;
     main.append(s);
     hosts[b.id] = s.querySelector('.mt-body');
@@ -396,6 +415,15 @@
       const s = document.getElementById(b.id);
       s.querySelector('h2').textContent = t(b.title);
       s.querySelector('.mt-sub').textContent = t(GH_MAINT && GH_SUB[b.id] || b.sub);
+      // mode GitHub et lanceur : les blocs de production du poste disent d'où viennent les données et où se publie
+      const note = s.querySelector('.mt-ghnote');
+      note.hidden = !(GH_SERVED && GH_PRODUCE.has(b.id));
+      if (!note.hidden) note.textContent = t([
+        'Mode GitHub actif dans ce navigateur : les données lues viennent du dépôt, les publications se font sur ce poste (lanceur).',
+        'GitHub mode active in this browser: the data read come from the repository, publications are made on this workstation (launcher).',
+        'GitHub-Modus in diesem Browser aktiv: Die gelesenen Daten kommen aus dem Repository, Veröffentlichungen erfolgen an diesem Arbeitsplatz (Starter).',
+        'Modo GitHub activo en este navegador: los datos leídos vienen del repositorio, las publicaciones se hacen en este puesto (lanzador).'
+      ]);
     }
     navLabels();
   }
@@ -1319,7 +1347,7 @@
    *  utilisateur) : version, date de synchro, état et outil de chaque élément, lus dans le navigateur et le dépôt. */
   async function renderVersions() {
     const host = hosts.versions,
-      GH = !!window.GitHubData?.on?.(); // mode GitHub : ni git, ni dossier SIA, ni synchronisation (poste avec lanceur)
+      GH = GH_LITE; // mode GitHub sans lanceur : ni git, ni dossier SIA, ni synchronisation (poste avec lanceur)
     const rows = [];
     const add = (group, name, version, sync, state, source) => rows.push({
       group,
@@ -3771,8 +3799,9 @@
    *  commun de la base (SiaBase.panel), carte MORA et contrôle de cohérence ; branche leurs actions (délégation au panneau). */
   async function renderSia() {
     const host = hosts.sia;
-    // mode GitHub : ni dossier SIA ni zones à reconstruire ; la base publiée dans le dépôt des données (bloc commun)
-    if (window.GitHubData?.on?.()) {
+    // mode GitHub sans lanceur : ni dossier SIA ni zones à reconstruire ; la base publiée dans le dépôt des données (bloc
+    // commun)
+    if (GH_LITE) {
       window.SiaBase.panel(host);
       return;
     }
@@ -4545,7 +4574,7 @@
   /** Sources de fichiers de la sauvegarde totale : dépôt de données, journaux d'atterrissage, profils de performance, puis
    *  les dossiers ajoutés par l'utilisateur (suiteBackupSources:v1, motif converti en expression régulière). */
   // mode GitHub : aucun dossier — la sauvegarde contient les données du navigateur et se télécharge
-  const SOURCES = () => window.GitHubData?.on?.() ? [] : [
+  const SOURCES = () => GH_LITE ? [] : [
     // v3 : tout le dépôt de données (data/) — registres, missions, références, SIA hors XML AIRAC, performances
     {
       id: 'data',
@@ -4638,7 +4667,7 @@
         expect: x.label
       };
     const lastFull = journal.find(e => e.kind === 'full-backup'),
-      GH = !!window.GitHubData?.on?.(); // mode GitHub : données du navigateur seulement, archive téléchargée (aucun dossier)
+      GH = GH_LITE; // mode GitHub sans lanceur : données du navigateur seulement, archive téléchargée (aucun dossier)
     host.innerHTML = `
       <div class="mt-grid2">
         <div class="repo-card" data-icon="folder" data-subtitle="${esc(t(['Ce qui entre dans l’archive', 'What goes into the archive']))}">
@@ -5308,7 +5337,7 @@
         warn: msg
       } : msg;
     }
-  }].filter(c => !window.GitHubData?.on?.() || !['sia', 'update'].includes(c
+  }].filter(c => !GH_LITE || !['sia', 'update'].includes(c
     .id)); // mode GitHub : ni base SIA ni contrôle des mises à jour (git)
   let cacheMsg = '';
   /** Dessine le bloc « Caches » : une ligne par cache (état, effet de la purge, bouton) et « Tout purger et recharger » ;
@@ -5350,7 +5379,7 @@
       await done([await c.purge()], c.reload);
     });
     host.querySelector('#mtPurgeAll').onclick = async e => {
-      if (!await window.AppFramework.ask(window.GitHubData?.on?.() ? t(['Purger tous les caches et recharger la page ?',
+      if (!await window.AppFramework.ask(GH_LITE ? t(['Purger tous les caches et recharger la page ?',
           'Purge all caches and reload the page?', 'Alle Caches leeren und die Seite neu laden?',
           '¿Purgar todos los cachés y recargar la página?'
         ]) : t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?',
@@ -5492,8 +5521,8 @@
   /** Dessine le bloc « Espace disque » : boutons de calcul et de purge, totaux du dossier des missions et du navigateur,
    *  tableau par mission (une fois calculé, storageState) et place des données aéronautiques par zone. */
   function renderStorage() {
-    // mode GitHub : place occupée par le navigateur seulement (pas de dossier des missions ni de dossier SIA à mesurer)
-    if (window.GitHubData?.on?.()) {
+    // mode GitHub sans lanceur : place occupée par le navigateur seulement (pas de dossier des missions ni SIA à mesurer)
+    if (GH_LITE) {
       const host = hosts.storage,
         fmt = b => window.MissionRegistryCore?.fmtBytes?.(b) || fmtSize(b);
       host.innerHTML = `<p class="mt-small">${esc(t(['Mode GitHub : les données de la compagnie sont dans le dépôt GitHub ; seule la place occupée par ce navigateur est mesurée.', 'GitHub mode: the company data are in the GitHub repository; only the space used by this browser is measured.', 'GitHub-Modus: Die Daten der Gesellschaft liegen im GitHub-Repository; gemessen wird nur der von diesem Browser belegte Platz.', 'Modo GitHub: los datos de la compañía están en el repositorio de GitHub; solo se mide el espacio usado por este navegador.']))}</p><p data-storage-usage></p><p class="row"><a class="mt-link" href="?m=caches">${esc(t(['Caches du navigateur →', 'Browser caches →', 'Browser-Caches →', 'Cachés del navegador →']))}</a></p>`;

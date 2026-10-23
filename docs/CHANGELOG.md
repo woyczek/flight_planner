@@ -302,6 +302,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Fixed
 
+- **Maintenance on a workstation with the launcher, GitHub mode set in the same browser: the workstation's cards were
+  missing** (`shared/maintenance_page.js`) — the page preferred GitHub mode to the launcher: "Aeronautical data" only
+  offered "Re-read the published database", and building or publishing the SIA database, the MORA or the aircraft
+  database could not be done. When the launcher serves the page (one `/__setup/status` probe, in GitHub mode on a local
+  address only), Maintenance now shows all its blocks and buttons, with on "Aeronautical data" and "Aircraft types" the
+  sentence "GitHub mode active in this browser: the data read come from the repository, publications are made on this
+  workstation (launcher)". Without the launcher, the GitHub variant is unchanged. Administrator manual ×4.
 - **Launcher confirmation window: "not confirmed" without saying why** (`tools/launch.py`,
   `apps/settings/premier_lancement.html`) — taking `data/` into a repository other than the configured one (or changing
   the synchronisation repository) answered "refused, closed, or window impossible to open" whatever happened. The window
