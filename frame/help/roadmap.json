@@ -298,7 +298,7 @@
           "es": "Mapa IFR del vuelo previsto (teselas o fondo liso sin conexión), perfil vertical, cursor común, TOC / TOD"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Carte équilibrée : seuils de zoom réglables par élément (page d'administration), points de report VFR de près seulement, courbes de niveau en Topo, hauteur des obstacles, infobulle unique clic / survol, modes en icônes, profils de modes affinables (studio V2 puis page dédiée)",
           "en": "Balanced map: zoom thresholds tunable per item (admin page), VFR reporting points only when close, contour lines in Topo, obstacle heights, one tooltip for click and hover, icon-only modes, tunable mode profiles (V2 studio then a dedicated page)",
           "de": "Ausgewogene Karte: je Element einstellbare Zoomschwellen (Admin-Seite), VFR-Meldepunkte nur aus der Nähe, Höhenlinien in Topo, Hindernishöhen, ein Tooltip für Klick und Hover, Modi nur als Symbole, anpassbare Modusprofile (V2-Studio, dann eigene Seite)",
@@ -637,6 +637,13 @@
           "en": "Fixes only; map drawing fields for V3; per-member lanes in Flight orders; first launch in GitHub mode",
           "de": "Nur Korrekturen; Zeichenfelder der Karten für die V3; Zeilen pro Mitglied in den Flugbefehlen; Erster Start im GitHub-Modus",
           "es": "Solo correcciones; campos de dibujo de los mapas para la V3; líneas por miembro en las Órdenes de vuelo; Primer inicio en modo GitHub"
+        },
+        {
+          "state": "doing",
+          "fr": "Studio : lire et écrire les profils des modes de carte V3 (airline/map_profiles.json, seuils de zoom par élément)",
+          "en": "Studio: read and write the V3 map mode profiles (airline/map_profiles.json, zoom thresholds per item)",
+          "de": "Studio: V3-Kartenmodusprofile lesen und schreiben (airline/map_profiles.json, Zoomschwellen je Element)",
+          "es": "Estudio: leer y escribir los perfiles de modos de mapa V3 (airline/map_profiles.json, umbrales de zoom por elemento)"
         },
         {
           "state": "done",
