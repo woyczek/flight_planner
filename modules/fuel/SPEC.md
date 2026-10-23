@@ -146,6 +146,10 @@ inside the module, switched by two buttons at the top, the last one kept on the 
      within the flyable levels); two buttons take the least-fuel and the fastest levels.
   5. **Result**, sticky at the bottom: block fuel (a range when the wind is unknown), trip, time, top of descent,
      approximate source and MTOW warnings.
+  - Folded, under the result: **Open in ▾**, the V2 links (`frame/lib/external_links.js`, copied from
+    `shared/external_links.js`): SimBrief dispatch prefilled (departure, arrival, type, route points, registration,
+    callsign, alternate, level), SkyVector (`?fpl=` with the speed / level group, departure, points, arrival), Navigraph
+    and ChartFox (departure and arrival aerodrome pages); plain links in a new tab, an entry greyed with what it lacks.
   - Folded: the quote's details (taxi, climb, cruise, descent with time and distance, contingency, reserve, block),
     the climb instructions (drawing of altitude against time with the IAS at each reading, then the table: throttle,
     RPM, IAS, rate, fuel flow, Mach, time, fuel), the quote settings (taxi and reserve minutes, contingency, displayed

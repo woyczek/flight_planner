@@ -44,6 +44,12 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   the quote bench's sheet (300 NM, FL200, 30 kt tailwind, goal "sheet's climb IAS"): model ceiling and minimum-drag
   speed, manual settings, decision series (step, bounds, least fuel FL250, fastest FL140, five levels), curves
   (highest level, optimums, plan, cruises), climb to FL200 row by row; every value found again to 0.001: 24/24.
+- **23 Oct 2026 — "Open in ▾"** (asked by the user in V2, kept by the Pilot application): the pure part of V2's
+  `shared/external_links.js` (route entries, SimBrief and SkyVector points, normalised flight, menu entries) copied into
+  `frame/lib/external_links.js` (owner fuel; maps and report may use it), translation passed in. No request is needed:
+  every entry is a plain link opened in a new tab; the V2 popup menu became a folded block under the result (one tap,
+  phone-sized rows, the reason of a greyed entry under it). `meta.files` now lists fuel's calculation files and the
+  shared one, kept offline from the first visit.
 - **23 Oct 2026 — vertical profile for maps** (asked by maps, through the ergonomics session): the current flight
   carries `profile { climbFpm, climbKt, descentFpm, descentKt, tocNm, todNm }` from the quote's climb and descent
   (rate = level ÷ minutes, ground speed = distance ÷ time), written only when it changes (redraws and resizes do not

@@ -8,6 +8,8 @@
 // Calcul pur dans performance_model.js, model.js, levels.js, sheets.js (chargés à la demande, une fois) ; ici seulement
 // l'écran, les lectures et écritures par ctx.data, SimBrief par ctx.net, l'identité par ctx.identity. Styles limités au
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
+import * as XL from '../../frame/lib/external_links.js';
+
 export const meta = {
   id: 'fuel',
   apps: ['pilot'],
@@ -22,7 +24,9 @@ export const meta = {
   }, {
     prefix: 'cache/fuel/',
     policy: 'cache'
-  }]
+  }],
+  // gardés hors ligne dès la première visite (service worker du cadre)
+  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'sheets.js', '../../frame/lib/external_links.js']
 };
 
 const DB_PATH = 'planner/flight_performance_database_merged.fpdb.json',
@@ -158,6 +162,11 @@ const TX = {
   ],
   alt: ['Alt.', 'Alt.', 'Höhe', 'Alt.'],
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
+  openIn: ['Ouvrir dans ▾', 'Open in ▾', 'Öffnen in ▾', 'Abrir en ▾'],
+  openInHint: ['Nouvel onglet ; rien n’est envoyé qui ne soit déjà dans le vol.',
+    'New tab; nothing is sent that is not already in the flight.',
+    'Neuer Tab; nichts wird gesendet, was nicht schon im Flug steht.', 'Pestaña nueva; no se envía nada que no esté ya en el vuelo.'
+  ],
   settings: ['Réglages du devis', 'Quote settings', 'Einstellungen', 'Ajustes del cálculo'],
   taxiMin: ['Roulage (min)', 'Taxi (min)', 'Rollen (min)', 'Rodaje (min)'],
   reserveMin: ['Réserve (min)', 'Reserve (min)', 'Reserve (min)', 'Reserva (min)'],
@@ -799,6 +808,10 @@ const STYLE = `
 [data-module="fuel"] .fu-sheet .f-row{justify-content:flex-end}
 [data-module="fuel"] .fu-review td input{width:20px;height:20px;min-height:0}
 [data-module="fuel"] .fu-hide{display:none}
+[data-module="fuel"] .fu-links{display:grid;gap:4px}
+[data-module="fuel"] .fu-links a,[data-module="fuel"] .fu-links span{display:block;min-height:var(--sog-touch);padding:6px 10px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);text-decoration:none;color:inherit}
+[data-module="fuel"] .fu-links small{display:block;color:var(--sog-muted);font-size:.8em}
+[data-module="fuel"] .fu-links .fu-off{opacity:.55}
 @media (min-width: 980px){
   [data-module="fuel"] .fu-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sog-gap);align-items:start}
   [data-module="fuel"] .fu-top>.f-card{margin-bottom:0}
@@ -837,6 +850,7 @@ function renderPlan() {
   </div>
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div></div>
   <div class="f-card fu-result" data-block="result" aria-live="polite"></div>
+  <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="fu-links" data-openin></div></details>
   <details class="f-card" data-fold="details"><summary>${esc(tt(TX.details))}</summary><div data-details></div></details>
   <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
   <details class="f-card" data-fold="settings"><summary>${esc(tt(TX.settings))}</summary>
@@ -1172,6 +1186,28 @@ function shareProfile(q) {
   saveFlight();
 }
 
+/** Liens « Ouvrir dans » (frame/lib/external_links.js, règles de la V2) : SimBrief (dispatch prérempli), SkyVector
+ *  (route avec vitesse et niveau), Navigraph et ChartFox (pages des terrains) ; une entrée grisée dit ce qui manque. */
+function openInLinks(C) {
+  const box = S.body?.querySelector('[data-openin]');
+  if (!box) return;
+  const f = S.flight,
+    r = f.route || {},
+    a = f.aircraft || {},
+    list = XL.links({
+      dep: r.dep,
+      arr: r.arr,
+      route: r.text,
+      type: a.type || C.sheet?.icao || '',
+      reg: a.registration,
+      callsign: f.ofp?.callsign || '',
+      altn: r.altn,
+      fl: C.levelFt > 0 ? Math.round(C.levelFt / 100) : '',
+      tas: C.q?.cruise?.tas
+    }, (row, v) => S.ctx.t(row, v));
+  box.innerHTML = list.map(l => l.href ? `<a href="${esc(l.href)}" target="_blank" rel="noopener noreferrer">${esc(l.label)}<small>${esc(l.why || '')}</small></a>` : `<span class="fu-off" aria-disabled="true">${esc(l.label)}<small>${esc(l.why || '')}</small></span>`).join('');
+}
+
 function refresh() {
   if (!S?.body || S.view !== 'plan') return;
   const C = S.C = compute(),
@@ -1184,6 +1220,7 @@ function refresh() {
     $ = s => S.body.querySelector(s),
     unit = sheet?.unit || 'kg';
   shareProfile(q);
+  openInLinks(C);
   // appareil : origine de la croisière
   $('[data-src]').textContent = C.source ? tt(TX.source, {
     s: `${TX.kinds[C.source.kind] ? tt(TX.kinds[C.source.kind]) : C.source.kind || '—'}${C.source.approx ? ` (${tt(TX.approx)})` : ''}`
