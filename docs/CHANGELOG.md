@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame: the header fits a phone in every language** (`frame/app.js`, `frame/frame.css`, `frame/index.html`) — on a
+  narrow screen the sync button shows a short state (✓, number pending, ⟳, ✕), the full label staying in its tooltip;
+  the page no longer gets wider than the window at 375 px.
 - **Map, lot 5c: layers, hover, VFR in full** (`modules/maps/`; SPEC, INTEGRATION, DECISIONS, help ×4) — a Layers
   panel (airspace families, airways, beacons, airway points, VRP, obstacles, MORA, towns, graticule, alternate, "Around
   the route only"), kept per preset on the device; with a mouse, a light tooltip follows the pointer over airway and

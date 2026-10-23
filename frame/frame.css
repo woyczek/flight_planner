@@ -80,6 +80,9 @@ body {
 .f-sync .f-dot {
   margin-right: 8px
 }
+.f-lbl-short {
+  display: none
+}
 @keyframes f-pulse {
   to {
     opacity: .3
@@ -516,5 +519,15 @@ body {
   }
   .f-sync .f-lbl-long {
     display: none
+  }
+  /* bouton de synchronisation : la pastille et un état court (✓, 3, ⟳, ✕) ; le détail dans l'infobulle */
+  .f-sync .f-lbl {
+    display: none
+  }
+  .f-sync .f-lbl-short {
+    display: inline
+  }
+  .f-sync .f-dot {
+    margin-right: 4px
   }
 }

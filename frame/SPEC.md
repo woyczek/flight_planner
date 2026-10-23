@@ -354,6 +354,10 @@ used alone:
   - n pending;
   - up to date, n minutes ago.
 - Its tooltip gives the transport, the last success, the pending count and the last error.
+- On a phone (760 px or narrower), it shows only its dot and a short state: "✓" up to date, the number of pending
+  writes, "⟳" in progress, "✕" offline or error, "! n" conflicts, nothing for "on this device".
+  - The whole label stays in the tooltip and in the button's accessible name, and the details are in Settings.
+  - So the header never makes the page wider than the window, in any of the four languages.
 - A click synchronises and says what happened: received and sent counts, conflicts, offline, error. When there are
   conflicts, a click opens the conflicts screen instead.
 - With the local transport, a write is applied to the cache at once.

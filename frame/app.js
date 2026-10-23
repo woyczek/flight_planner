@@ -483,13 +483,25 @@
       n: s.pending,
       e: s.lastError ? ` — ${s.lastError}` : ''
     });
-    const key = JSON.stringify([state, label, title]);
+    // état court pour un écran étroit (le libellé entier reste dans l'infobulle et le nom accessible du bouton)
+    const short = {
+      ok: '✓',
+      pending: String(s.pending),
+      syncing: '⟳',
+      offline: '✕',
+      error: '✕',
+      conflicts: `! ${s.conflicts}`,
+      local: ''
+    } [state];
+    const key = JSON.stringify([state, label, title, short]);
     if (key === lastSyncState) return;
     lastSyncState = key;
     const b = $('fSync');
     b.dataset.state = state;
     b.title = title;
+    b.setAttribute('aria-label', label);
     b.querySelector('.f-lbl').textContent = label;
+    b.querySelector('.f-lbl-short').textContent = short;
   }
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
   async function syncNow(quiet = false) {

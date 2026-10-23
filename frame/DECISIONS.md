@@ -373,6 +373,12 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - the application scenario: the trigram set while a frame screen is open is taken by the module when it closes;
     - the menu stays at 57 px from the top while the help is scrolled 1500 px;
     - no horizontal scroll, no JavaScript error.
+- **23 Oct 2026 — Short sync state on a phone** (bug found by maps: at 375 px in English, "up to date, 0 s ago" made
+  the sync button 170 px and the page 389 px wide):
+  - Under 760 px the button shows its dot and a short state (✓, n, ⟳, ✕, ! n); the full label is in the tooltip and
+    the accessible name.
+  - Tests at 375 px in French, English, German and Spanish, with and without the "←" link: the page is 375 px wide,
+    the sync button 52 to 55 px. At 1280 px the full label is unchanged.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are
