@@ -187,11 +187,12 @@ airfield in grey dashes. At the top, a line sums it up: departure and arrival, a
 type. When the flight changes in Fuel, the map follows by itself.
 
 **The map and what it shows.** Around the route: the airspaces it crosses or skirts (restricted, danger and prohibited
-areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in
-each one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means
-3,500 ft). The small purple figures along the route are the distances from the departure, in nautical miles. Drag the
-map with one finger, spread two fingers to zoom; “Recentre” comes back to the whole route. Seen from afar, the map only
-shows what is near the route; zoom in to see everything.
+areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
+one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means 3,500 ft).
+The small purple figures along the route are the distances from the departure, in nautical miles. Drag the map with one
+finger, spread two fingers to zoom; “Recentre” comes back to the whole route. The map stays where you put it, even when
+the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
+route; zoom in to see everything.
 
 **The profile and the cursor.** Below the map, the vertical profile cuts through the route from end to end: the
 terrain, the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the
@@ -201,27 +202,38 @@ and the airspace you are in at that point.
 
 **Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
-“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
-terrain, with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling
+“VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit,
+the index contours numbered), with only airfields, towns and obstacles. “OAT”: military flight, the IFR of your level plus the air refuelling
 tracks, the day's NAT tracks, the R, D, P, TSA, TRA, CBA areas and the low-flying network at all levels. “Auto” chooses
 from your flight's level (High IFR from FL195). The mode is kept on this device.
 
 **The closer you zoom, the more it tells.** From afar, the map shows only the large airfields, the airways and their
 names. Closer: the airway points (triangles and beacons), each airway's minimum level (“F195”), then the segment's
-distance, its track (“097°”), the reporting points and the obstacles.
+distance, its track (“097°”), the reporting points and the obstacles. Close up, each obstacle carries its height above
+ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
 **Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families
 (TMA / CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points,
 obstacles, minimum altitudes, towns, graticule, alternate. Tick or untick: the map follows, and your choice is kept
 for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked by
 default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
-elsewhere. Close up, everything is drawn anyway.
+elsewhere. Close up, everything is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to the left,
+more to the right, at every zoom. Each element of the map has its zoom range: VFR reporting points appear only very
+close, CTRs close up, TMAs in a medium view, FIRs from afar.
 
-**Tap to learn more.** Tap an airway's name: a bubble gives the segment (point → point), its distance, its tracks both
-ways, its floor and ceiling. Tap an airspace: the bubble gives its name, its limits in AIP notation (“TMA 8 AQUITAINE
-2000|FL145 D”) and its hours when known. The next tap or moving the map closes it. With a mouse, move over an airway's
-or an airspace's name: a small bubble follows the pointer, then stays 5 seconds after you leave it; a click closes it.
-On the profile, your finger or the mouse gives the airspaces crossed.
+**Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a
+small bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks,
+its floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”).
+Tapped elsewhere inside an airspace, the bubble gives the airspaces under your finger. It follows the pointer, stays 5
+seconds, gives way to the next one, and closes with a tap elsewhere or a move of the map. On the profile, your finger
+or the mouse give the airspaces crossed in the same way.
+
+**In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned
+14:32Z”) and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted).
+Above the map, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your
+altitude against the planned one; the profile shows both altitudes. Close up, each point carries its estimated time
+(ETA). “Follow” keeps the map on your position; moving the map stops it. Without a position (GPS or network not
+enabled), the line says so and opens the settings; a position older than 2 minutes is greyed.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
@@ -280,7 +292,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: e49322f78862 -->
+<!-- fr: 8c7b1fa48287 -->
 
 <!-- chapter: report -->
 # Report
@@ -536,6 +548,27 @@ only reported.
   “Take data/ into this repository” links it to the repository. The card follows the work and reads the state again at
   the end; a failure is explained, nothing is lost.
 
+## Configuring a pilot
+
+**Preparing the configuration (administrator).** On a workstation served by the launcher, or on a device set up on
+GitHub, unfold “Export a configuration for a pilot…” in the “Data access” card. Type the pilot's trigram and the address
+of the published app, then “Create the file and the link”: the file sog-config-<TRI>.json is saved and the link is
+shown, ready to copy. They hold the airline, the data repository, the trigram and how to create the token, never a token
+or a secret.
+
+**Applying the configuration (pilot).** Tap the link you received, or “Import a configuration…” in the “Data access”
+card (the welcome card of the first opening leads there too). The “Configuration received” card shows the airline, the
+repository and the trigram. Add your IVAO, VATSIM and SimBrief IDs if you wish, then the token: the how-to, folded
+below, says how to create it on the repository's host. “Test” checks the access; “Apply” checks it again, sets the
+identity, the usages and the access, then runs a first synchronisation. Then keep the area of your flights offline (“Go
+to offline data”).
+
+**Nothing more than the file.** Only what the configuration holds is set, and nothing is written if the token is
+refused; a file in another format is refused with a message. The airline is written to the repository only if it has
+none yet. On a workstation whose data/ already follows this repository, the access does not change. Without a launcher,
+the app only reaches a GitHub repository: for a framagit or GitLab repository, apply the configuration on a workstation
+with the launcher.
+
 ## Good to know
 
 - **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
@@ -549,4 +582,4 @@ only reported.
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 444e218e3f9d -->
+<!-- fr: dcfd5f72ab89 -->

@@ -80,6 +80,27 @@ only reported.
   “Take data/ into this repository” links it to the repository. The card follows the work and reads the state again at
   the end; a failure is explained, nothing is lost.
 
+## Configuring a pilot
+
+**Preparing the configuration (administrator).** On a workstation served by the launcher, or on a device set up on
+GitHub, unfold “Export a configuration for a pilot…” in the “Data access” card. Type the pilot's trigram and the address
+of the published app, then “Create the file and the link”: the file sog-config-<TRI>.json is saved and the link is
+shown, ready to copy. They hold the airline, the data repository, the trigram and how to create the token, never a token
+or a secret.
+
+**Applying the configuration (pilot).** Tap the link you received, or “Import a configuration…” in the “Data access”
+card (the welcome card of the first opening leads there too). The “Configuration received” card shows the airline, the
+repository and the trigram. Add your IVAO, VATSIM and SimBrief IDs if you wish, then the token: the how-to, folded
+below, says how to create it on the repository's host. “Test” checks the access; “Apply” checks it again, sets the
+identity, the usages and the access, then runs a first synchronisation. Then keep the area of your flights offline (“Go
+to offline data”).
+
+**Nothing more than the file.** Only what the configuration holds is set, and nothing is written if the token is
+refused; a file in another format is refused with a message. The airline is written to the repository only if it has
+none yet. On a workstation whose data/ already follows this repository, the access does not change. Without a launcher,
+the app only reaches a GitHub repository: for a framagit or GitLab repository, apply the configuration on a workstation
+with the launcher.
+
 ## Good to know
 
 - **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
@@ -93,4 +114,4 @@ only reported.
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: 444e218e3f9d -->
+<!-- fr: dcfd5f72ab89 -->

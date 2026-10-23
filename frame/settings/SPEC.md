@@ -30,6 +30,9 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
 
 ## 3. Cards
 
+0. **Configuration received** (§ 5), first, when a configuration is waiting: from the link `#settings?config=…` or a
+   file chosen with "Import a configuration…"; then **Configuration applied** after "Apply".
+
 1. **V2 settings found** (once): shown when this origin holds V2 settings — identity in `missionReportingConfig:v1`
    (`trigram`, `ivaoId`, `vatsimId`, `simbriefUser`), access in `githubData:v1` (`repo`, `branch`, `token`) — and
    `device/settings.json` has no answer yet. It lists what it found (the token is never shown). "Take over" writes the
@@ -123,3 +126,38 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 2. "Alone on this device" is never a box that contradicts another one.
 3. A device setting is never synchronised.
 4. Nothing on this screen blocks: offline, every card still draws from the device.
+5. A pilot's configuration never carries a token or a secret, and its import sets nothing it does not hold.
+
+## 5. Configuring a pilot (`frame/settings/config.js`, `window.SogConfig`)
+
+- **Schema `sog-config/1`** (JSON): `schema`, `created_at`, `by` (the exporter's trigram), `airline { name, site, pages
+  { recordFlight, log, fleet, aircraft } }` (from `airline/settings.json`), `data { host, repo, branch, api? }` (the
+  repository without its credentials: from the remote of `data/` on a launcher, or the device's GitHub setting, `api`
+  then kept), `identity { trigram }`, `usages { devices: true }`, `howto { token { fr, en, de, es } }`.
+- **How-to of the token**, from a template per host: GitHub (`github.com`, or an `api` given) — a fine-grained token
+  limited to the repository, Contents read and write, 90 days at most, organisation allowing such tokens; GitLab /
+  framagit — a project access token, role Developer, scope `write_repository` (Maintainer needed, otherwise a personal
+  token with the same scope), and the note that a phone reaches it only through a workstation's launcher; other hosts —
+  ask the administrator. Each with the repository's exact address.
+- **Export**, in the Access card of a workstation (launcher) or of a device set up on GitHub: "Export a configuration
+  for a pilot…" (folded) asks the pilot's trigram and the address of the published app (this one when it is published
+  over https, else the last one given, kept in `localStorage` `sogFrame:appUrl`), then "Create the file and the link":
+  `sog-config-<TRI>.json` is downloaded, and the link `<app>#settings?config=<z + base64url of the deflate-raw JSON>`
+  (`j` + base64url of the JSON where the browser cannot compress) is shown with "Copy the link". A local address is
+  flagged: it opens only on that workstation.
+- **Import**: "Import a configuration…" at the top of the Access card (always), the link, and the welcome card of the
+  first opening (`#settings?import=1`, which brings the button into view). The file or link is read (256 KB at most,
+  decompressed too) and checked: another schema, a missing trigram or an invalid field is refused with a message,
+  nothing changed; only the known fields are kept. The card shows airline, repository and trigram, asks the IVAO, VATSIM
+  and SimBrief IDs (optional) and the token, with the how-to folded below it (text only, https addresses as links).
+- **Access the configuration would set**: on a launcher, `data/` already following that repository — nothing (no token
+  asked); another repository — not changed, said; no `data/` or a folder without git — clone or take-over by the
+  launcher (`/__setup/clone` or `adopt`, user `x-access-token` for GitHub, `oauth2` otherwise, the token as secret,
+  remembered; the launcher may ask for confirmation in its window); without a launcher — the device's GitHub transport
+  for a GitHub repository ("Test" first; another access already set is replaced only after a question), nothing for
+  another host (said: apply it on a workstation).
+- **Apply**: the access first — tested or cloned; refused, nothing is written. Then the identity (trigram from the file,
+  the IDs typed), the usages of the file when an access is set, the GitHub setting, a reload; a first synchronisation;
+  and `airline/settings.json` written from the file only when the repository has none (the repository's one wins). The
+  address loses its `config=`; the card "Configuration applied" says how the synchronisation went and offers "Go to
+  offline data".

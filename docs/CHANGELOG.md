@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Settings: configuring a pilot** (`frame/settings/config.js`, `frame/settings/settings.js`, `frame/help/help.js`,
+  `frame/index.html`, `frame/sw.js`; SPEC § 5, DECISIONS, help ×4) — on a workstation, "Export a configuration for a
+  pilot…" makes `sog-config-<TRI>.json` (schema `sog-config/1`: airline, data repository without credentials, trigram,
+  usages, token how-to per host in four languages, never a token) and a one-tap link `#settings?config=…`; on the
+  pilot's device, the link, "Import a configuration…" or the welcome card show it, ask the network IDs and the token,
+  test the access, then set identity, usages and access, synchronise once and offer Offline data.
 - **fuel: the wind aloft stays while a new forecast loads** (`modules/fuel/module.js`; docs) — no more silent switch
   to the surface wind; a missing forecast is said; an estimated ceiling is called so.
 - **Map, lot 8: started flight** (`modules/maps/module.js`; SPEC, INTEGRATION, DECISIONS, help ×4) — planned and

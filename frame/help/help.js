@@ -12,7 +12,8 @@
   //     link(id) rend l'adresse de son chapitre ;
   //   · tutoriels (frame/help/tutorial/<id>.<langue>.md, anglais d'abord) : écran #help?t=<id>, captures dans img/ ;
   //     langue absente : l'anglais ; carte d'accueil à la première ouverture (welcome), jusqu'à sa fermeture ou à
-  //     l'ouverture d'un tutoriel (device/help.json, welcomed).
+  //     l'ouverture d'un tutoriel (device/help.json, welcomed) ; elle mène aussi à l'import d'une configuration
+  //     (#settings?import=1).
   // Contexte donné par frame/app.js : { t, lang, own (device/, politique cache), root }.
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const LANGS = ['fr', 'en', 'de', 'es'];
@@ -38,6 +39,9 @@
       'Beide bleiben in der Hilfe (?), am Anfang des Handbuchs.', 'Ambos quedan en la ayuda (?), al principio del manual.'
     ],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    welcomeImport: ['Une configuration reçue de votre compagnie ? L’importer', 'A configuration from your airline? Import it',
+      'Eine Konfiguration von Ihrer Fluggesellschaft? Importieren', '¿Una configuración de su aerolínea? Importarla'
+    ],
     start: ['Commencer par…', 'Start with…', 'Beginnen Sie mit…', 'Empiece por…'],
     next: ['Tutoriel suivant : {t} →', 'Next tutorial: {t} →', 'Nächstes Tutorial: {t} →', 'Siguiente tutorial: {t} →'],
     inEnglish: ['(en anglais)', '(in English)', '(auf Englisch)', '(en inglés)']
@@ -201,11 +205,13 @@
     const d = document.createElement('div');
     d.className = 'f-card f-welcome';
     d.dataset.welcome = '';
-    d.innerHTML = `<div class="f-row"><b>${esc(c.t(T.welcome))}</b><button type="button" data-x aria-label="${esc(c.t(T.close))}">✕</button></div><ul>${list}</ul><p class="f-muted">${esc(c.t(T.welcomeLater))}</p>`;
+    d.innerHTML = `<div class="f-row"><b>${esc(c.t(T.welcome))}</b><button type="button" data-x aria-label="${esc(c.t(T.close))}">✕</button></div><ul>${list}</ul><p class="f-muted">${esc(c.t(T.welcomeLater))}</p><p><a href="#settings?import=1" data-import>${esc(c.t(T.welcomeImport))}</a></p>`;
     d.querySelector('[data-x]').onclick = () => {
       d.remove();
       welcomed(c);
     };
+    // importer une configuration vaut ouverture : la carte ne revient plus
+    d.querySelector('[data-import]').onclick = () => welcomed(c);
     return d;
   }
   /** Écran d'un tutoriel (#help?t=<id>) : « ← Le manuel », le texte et ses captures, puis le tutoriel suivant ; la

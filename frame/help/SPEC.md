@@ -100,7 +100,8 @@ decisions: [DECISIONS.md](DECISIONS.md); how a module gets its help: [INTEGRATIO
   "← The manual". A language without its file shows the English one, marked "(in English)" in the lists.
 - **Reached** from the top of the manual (a "Start with…" card after its first paragraph, listing the tutorials) and
   from the **welcome card** drawn by the frame above the first module opened on the device: "First time here? Start
-  with a short tutorial:", the tutorials, and ✕. Closing it or opening a tutorial stores `welcomed` in
+  with a short tutorial:", the tutorials, ✕, and a link to import a pilot's configuration (`#settings?import=1`,
+  frame/settings/SPEC.md § 5). Closing it or opening a tutorial stores `welcomed` in
   `device/help.json`; it never comes back on that device.
 - Offline: the English and French texts are in the frame's service worker list; the captures are kept at their first
   view.

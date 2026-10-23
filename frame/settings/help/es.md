@@ -83,6 +83,27 @@ se señala.
   (datos de ejemplo o archivo), «Retomar data/ en este repositorio» lo enlaza al repositorio. La tarjeta sigue el trabajo
   y vuelve a leer el estado al final; un fallo se explica, nada se pierde.
 
+## Configurar un piloto
+
+**Preparar la configuración (administrador).** En un puesto servido por el lanzador, o en un dispositivo configurado con
+GitHub, despliegue «Exportar una configuración para un piloto…» en la tarjeta «Acceso a los datos». Escriba el trigrama
+del piloto y la dirección de la aplicación publicada, luego «Crear el archivo y el enlace»: el archivo
+sog-config-<TRI>.json se guarda y el enlace aparece, listo para copiar. Contienen la aerolínea, el repositorio de datos,
+el trigrama y las instrucciones del token, nunca un token ni un secreto.
+
+**Aplicar la configuración (piloto).** Toque el enlace recibido, o «Importar una configuración…» en la tarjeta «Acceso a
+los datos» (la tarjeta de bienvenida de la primera apertura también lleva allí). La tarjeta «Configuración recibida»
+muestra la aerolínea, el repositorio y el trigrama. Añada si quiere sus identificadores IVAO, VATSIM y SimBrief, luego
+el token: las instrucciones, plegadas debajo, dicen cómo crearlo en el servidor del repositorio. «Probar» comprueba el
+acceso; «Aplicar» lo comprueba de nuevo, configura la identidad, los usos y el acceso, y hace una primera
+sincronización. Después, guarde sin conexión la zona de sus vuelos («Ir a los datos sin conexión»).
+
+**Nada más que el archivo.** Solo se configura lo que contiene la configuración, y no se escribe nada si el token es
+rechazado; un archivo de otro formato se rechaza con un mensaje. La aerolínea solo se escribe en el repositorio si aún
+no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el acceso no cambia. Sin lanzador, la aplicación solo
+llega a un repositorio de GitHub: para un repositorio de framagit o GitLab, aplique la configuración en un puesto con el
+lanzador.
+
 ## Conviene saber
 
 - **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
@@ -97,4 +118,4 @@ se señala.
   problema. El token
   nunca figura en él.
 
-<!-- fr: 444e218e3f9d -->
+<!-- fr: dcfd5f72ab89 -->

@@ -103,7 +103,9 @@ paliers compris), le vent, la température et l'écart ISA à ce niveau, avec le
 la France, ICON ailleurs en Europe, GFS au-delà), l'heure visée (la date du vol, sinon maintenant) et l'heure du run.
 Avec « Météo réelle », le vent du devis devient la moyenne de ces vents au niveau planifié, le long de la route, à la
 place du vent au sol des METAR ; la ligne sous les champs le dit. Les mêmes vents vont à la Carte, qui les dessine en
-flèches. Hors réseau, la dernière prévision lue reste.
+flèches. Hors réseau, la dernière prévision lue reste. Quand la route ou l'heure change, le vent en altitude d'avant
+reste, marqué « prévision en cours… », jusqu'à la nouvelle prévision ; si elle ne vient pas, le vent au sol des METAR
+prend le relais et c'est dit (« prévision en altitude indisponible »).
 
 **4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
@@ -132,10 +134,23 @@ Navigraph et ChartFox (les cartes des terrains de départ et d'arrivée, connexi
 qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol. Les réglages du devis (roulage, réserve, marge, couloir météo, unités) sont dans le dernier pli.
 
 **5 Départ.** Un récapitulatif d'une page : l'appareil, la route telle qu'elle sera déposée, le niveau (et ses
-paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » note l'heure de départ dans le vol ; sur un
-téléphone il ouvre la Carte, sur un grand écran il reste ici avec la Carte à droite. Le compte rendu reprendra ce vol.
+paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » lance le plan de vol (mise en route,
+repoussage, roulage…). La préparation peut dater de plusieurs jours : il commence donc par tout refaire à l'heure
+réelle — la date du vol revient à maintenant, la météo des terrains et les vents en altitude sont relus, le devis
+refait — et dit en une ligne ce qui a changé (« vent 273°/35 kt → 284°/44 kt · bloc 684 → 644 kg · arrivée prévue
+17:03 ») ; hors ligne, il le dit et démarre avec le dernier devis. Il note ensuite l'heure de départ, qui devient la
+mise en route du compte rendu. Sur un téléphone il ouvre la Carte, sur un grand écran il reste ici avec la Carte à
+droite.
 Changer le terrain de départ ensuite, c'est préparer un autre vol : l'heure de départ est effacée. Changer l'arrivée
-après le départ est un déroutement : l'heure est gardée et le déroutement noté. Le vol préparé ici — appareil, route, niveau, profil de montée et de
+après le départ est un déroutement : l'heure est gardée et le déroutement noté.
+
+Une fois le vol démarré, le résultat en bas d'écran dit « Vol démarré à 13:14 · depuis 1 h 10 ». Un vol démarré se
+termine en écrivant son compte rendu : à l'enregistrement, Carburant revient en préparation et Mes vols retire « en
+cours ». Pour revenir en préparation sans compte rendu, « Annuler le départ » (après confirmation). La carte « Progression prévue » montre
+où le vol devrait en être, en théorie : l'heure prévue de passage à chaque point (roulage, montée, croisière tronçon par
+tronçon avec son vent, descente), le prochain point surligné, la distance parcourue et restante et le carburant restant
+prévu. Elle suit l'heure, minute par minute, jusqu'au compte rendu ou à l'annulation, et part à la Carte avec le
+vol. Le vol préparé ici — appareil, route, niveau, profil de montée et de
 descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances
@@ -192,7 +207,8 @@ réglementées, dangereuses, interdites, espaces contrôlés), les voies aérien
 les terrains et les balises, et dans chaque carré d'un degré l'altitude minimale de sécurité (le chiffre brun, en
 milliers et centaines de pieds : « 3⁵ » veut dire 3 500 ft). Les petits chiffres violets le long de la route sont les
 distances depuis le départ, en milles nautiques. Faites glisser la carte avec un doigt, écartez deux doigts pour
-zoomer ; « Recentrer » revient sur toute la route. Vue de loin, la carte ne montre que ce qui est près de la route ;
+zoomer ; « Recentrer » revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
+seul « Recentrer » (ou un autre vol) la recadre. Vue de loin, la carte ne montre que ce qui est près de la route ;
 rapprochez-vous pour tout voir.
 
 **Le profil et le curseur.** Sous la carte, le profil vertical coupe la route de bout en bout : le relief, les
@@ -204,28 +220,39 @@ hauteur du relief, et l'espace aérien où vous êtes à ce moment-là.
 **Six modes de carte.** Le bouton en haut à gauche de la carte montre le mode choisi ; touchez-le pour voir les six
 modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
 hautes (UN…, UM…), espaces au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR,
-points de report et obstacles. « Topo » : le relief, avec seulement les terrains, les villes et les obstacles.
+points de report et obstacles. « Topo » : le relief et, de près, les courbes de niveau (tous les 500 ft ou 100 m selon votre unité, les
+maîtresses chiffrées), avec seulement les terrains, les villes et les obstacles.
 « CAM » : vol militaire, l'IFR de votre niveau plus les axes de ravitaillement, les tracks NAT du jour, les zones R, D, P,
 TSA, TRA, CBA et le RTBA à tous les niveaux.
 « Auto » choisit selon le niveau de votre vol (IFR haut à partir du FL195). Le mode est gardé sur cet appareil.
 
 **Plus vous zoomez, plus elle en dit.** De loin, la carte ne montre que les grands terrains, les voies et leurs noms.
 En vous rapprochant : les points des voies (triangles et balises), le niveau minimal de chaque voie (« F195 »), puis
-la distance du tronçon, sa route (« 097° »), les points de report et les obstacles.
+la distance du tronçon, sa route (« 097° »), les points de report et les obstacles. De près, chaque obstacle porte sa hauteur au-dessus du
+sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
 **Les couches.** Le bouton aux calques, sous le réglage de la carte, ouvre la liste de ce qu'elle dessine : familles
 d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report
 VFR, obstacles, altitudes minimales, villes, canevas, dégagement. Cochez ou décochez : la carte suit, et votre choix
 est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. « Autour de la route
 seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ; décochée, toute la
-carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon.
+carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon. Tout en bas, le curseur « Complexité (essai) » montre moins de détails vers la
+gauche, plus vers la droite, à tous les zooms. Chaque élément de la carte a sa plage de zoom : les points de report
+VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les FIR de loin.
 
-**Toucher pour en savoir plus.** Touchez le nom d'une voie : une bulle donne le tronçon (point → point), sa distance,
-ses routes aller et retour, son plancher et son plafond. Touchez un espace aérien : la bulle donne son nom, ses
-limites en notation SIA (« TMA 8 AQUITAINE 2000|FL145 D ») et ses horaires quand ils sont connus. Le toucher suivant
-ou un déplacement de la carte la ferme. Avec une souris, passez sur le nom d'une voie ou d'un espace : une petite
-bulle suit le pointeur, puis reste 5 secondes après que vous l'avez quitté ; un clic la ferme. Sur le profil, le doigt ou la souris donnent les espaces
-traversés.
+**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
+ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
+point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
+(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, la bulle donne les espaces sous le doigt. Elle suit
+le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
+la carte. Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
+
+**En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
+14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Au-
+dessus de la carte, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
+votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
+estimée (ETA). « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
+ou réseau non activés), la ligne le dit et ouvre les réglages ; une position de plus de 2 minutes est grisée.
 
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
 le long de la route : à chaque point, et tous les 50 NM entre deux points. La hampe pointe d'où vient le vent ; un
@@ -304,8 +331,9 @@ propose votre dernier vol sur le réseau : « Utiliser » remplit l'avion, l'ind
 de la trace. Le vol préparé dans Carburant ou Carte est proposé de la même façon (« Vol en cours ») ; s'il a été
 démarré dans Carburant (« Démarrer le vol »), il vient en premier, « Vol démarré à hh:mm ». La carte dit en une ligne
 tout ce qui sera repris, même ce qu'un type de mission n'a pas de case pour montrer (distance, niveau). « Utiliser »
-remplit aussi l'heure de mise en route (l'heure du départ dans Carburant) et le carburant au départ (le carburant bloc
-du devis), chacun marqué de sa source. Une fois son compte rendu enregistré, le vol n'est plus proposé.
+remplit aussi l'heure de mise en route (l'heure du départ dans Carburant) et le carburant au départ (le carburant
+bloc du devis), chacun marqué de sa source. Enregistrer le compte rendu termine le vol démarré : Carburant revient en
+préparation, Mes vols retire « en cours », et le vol n'est plus proposé.
 
 **Les autres sources.** Dépliez « Autres sources » pour reprendre votre dernier vol IVAO ou VATSIM, votre plan de vol
 SimBrief, ou un texte collé : un plan de vol OACI, la page d'un vol du tracker IVAO ou de StatSim, un METAR. Seuls les
@@ -543,6 +571,26 @@ seulement signalé.
   sur cet ordinateur). Sans `data/`, « Récupérer les données » le clone ; avec un `data/` sans git (données d'exemple
   ou archive), « Reprendre data/ dans ce dépôt » le relie au dépôt. La carte suit le travail et relit l'état à la fin ;
   un échec est expliqué, rien n'est perdu.
+
+## Configurer un pilote
+
+**Préparer la configuration (administrateur).** Sur un poste servi par le lanceur, ou sur un appareil réglé sur GitHub,
+dépliez « Exporter une configuration pour un pilote… » dans la carte « Accès aux données ». Tapez le trigramme du pilote
+et l'adresse de l'appli publiée, puis « Créer le fichier et le lien » : le fichier sog-config-<TRI>.json est enregistré
+et le lien s'affiche, prêt à copier. Ils contiennent la compagnie, le dépôt des données, le trigramme et le mode
+d'emploi du jeton, jamais de jeton ni de secret.
+
+**Appliquer la configuration (pilote).** Touchez le lien reçu, ou « Importer une configuration… » dans la carte « Accès
+aux données » (la carte d'accueil de la première ouverture y mène aussi). La carte « Configuration reçue » montre la
+compagnie, le dépôt et le trigramme. Ajoutez si vous voulez vos identifiants IVAO, VATSIM et SimBrief, puis le jeton :
+le mode d'emploi, replié dessous, dit comment le créer sur l'hôte du dépôt. « Tester » vérifie l'accès ; « Appliquer »
+le vérifie encore, règle l'identité, les usages et l'accès, puis fait une première synchronisation. Gardez ensuite la
+zone de vos vols hors ligne (« Aller aux données hors ligne »).
+
+**Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et rien n'est écrit si le jeton est
+refusé ; un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le dépôt que s'il n'en
+a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'accès ne change pas. Sans lanceur, l'appli ne joint qu'un
+dépôt GitHub : pour un dépôt framagit ou GitLab, appliquez la configuration sur un poste avec le lanceur.
 
 ## Bon à savoir
 

@@ -196,8 +196,9 @@ tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por s�
 peligrosas, prohibidas, espacios controlados), las aerovías bajas o altas según su nivel, los aeródromos y las
 radioayudas, y en cada cuadro de un grado la altitud mínima de seguridad (la cifra marrón, en miles y centenas de pies:
 «3⁵» quiere decir 3500 ft). Las pequeñas cifras violetas a lo largo de la ruta son las distancias desde la salida, en
-millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» vuelve a toda la ruta.
-Visto de lejos, el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
+millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» vuelve a toda la ruta. El
+mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Visto de lejos,
+el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
 
 **El perfil y el cursor.** Bajo el mapa, el perfil vertical corta la ruta de punta a punta: el relieve, los espacios
 aéreos en los que entra a la altitud prevista, y la trayectoria del vuelo en violeta. Deslice el dedo por el perfil: un
@@ -208,27 +209,38 @@ espacio aéreo en el que está en ese momento.
 **Seis modos de mapa.** El botón arriba a la izquierda del mapa muestra el modo elegido; tóquelo para ver los seis
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
 superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en
-VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve, solo con los aeródromos, las ciudades y los
-obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las
+VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve y, de cerca, las curvas de nivel (cada 500 ft o 100 m según su unidad,
+las directoras numeradas), solo con los aeródromos, las ciudades y los obstáculos. «CAM»: vuelo militar, el IFR de su nivel más las pistas de reabastecimiento, los tracks NAT del día, las
 zonas R, D, P, TSA, TRA, CBA y la red de vuelo bajo a todos los niveles. «Auto» elige según el nivel de su vuelo (IFR
 alto desde el FL195). El modo se conserva en este dispositivo.
 
 **Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
 Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
-distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos.
+distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos. De cerca, cada obstáculo lleva su
+altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
 
 **Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios
 (TMA / CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de
 notificación VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo. Marque o desmarque: el mapa sigue, y
 su elección se conserva para este ajuste en este dispositivo. «Restablecer todo» vuelve a la elección de origen.
 «Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la cercanía de la ruta;
-desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos.
+desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de todos modos. Abajo del todo, el control «Complejidad (prueba)» muestra menos detalles hacia la
+izquierda, más hacia la derecha, en todos los zooms. Cada elemento del mapa tiene su rango de zoom: los puntos de
+notificación VFR solo aparecen muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos.
 
-**Toque para saber más.** Toque el nombre de una aerovía: una burbuja da el tramo (punto → punto), su distancia, sus
-rumbos de ida y vuelta, su límite inferior y superior. Toque un espacio aéreo: la burbuja da su nombre, sus límites en
-notación AIP («TMA 8 AQUITAINE 2000|FL145 D») y sus horarios cuando se conocen. El toque siguiente o mover el mapa la
-cierra. Con un ratón, pase sobre el nombre de una aerovía o de un espacio: una pequeña burbuja sigue al puntero y luego
-queda 5 segundos tras dejarlo; un clic la cierra. En el perfil, el dedo o el ratón dan los espacios atravesados.
+**Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de
+un espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto
+→ punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en
+notación AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, la burbuja da los espacios
+bajo el dedo. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o un
+movimiento del mapa. En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
+
+**En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
+14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
+mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
+la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA). «Seguir» mantiene
+el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), la línea lo dice y abre los
+ajustes; una posición de más de 2 minutos aparece en gris.
 
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
 a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
@@ -288,7 +300,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: e49322f78862 -->
+<!-- fr: 8c7b1fa48287 -->
 
 <!-- chapter: report -->
 # Informe
@@ -552,6 +564,27 @@ se señala.
   (datos de ejemplo o archivo), «Retomar data/ en este repositorio» lo enlaza al repositorio. La tarjeta sigue el trabajo
   y vuelve a leer el estado al final; un fallo se explica, nada se pierde.
 
+## Configurar un piloto
+
+**Preparar la configuración (administrador).** En un puesto servido por el lanzador, o en un dispositivo configurado con
+GitHub, despliegue «Exportar una configuración para un piloto…» en la tarjeta «Acceso a los datos». Escriba el trigrama
+del piloto y la dirección de la aplicación publicada, luego «Crear el archivo y el enlace»: el archivo
+sog-config-<TRI>.json se guarda y el enlace aparece, listo para copiar. Contienen la aerolínea, el repositorio de datos,
+el trigrama y las instrucciones del token, nunca un token ni un secreto.
+
+**Aplicar la configuración (piloto).** Toque el enlace recibido, o «Importar una configuración…» en la tarjeta «Acceso a
+los datos» (la tarjeta de bienvenida de la primera apertura también lleva allí). La tarjeta «Configuración recibida»
+muestra la aerolínea, el repositorio y el trigrama. Añada si quiere sus identificadores IVAO, VATSIM y SimBrief, luego
+el token: las instrucciones, plegadas debajo, dicen cómo crearlo en el servidor del repositorio. «Probar» comprueba el
+acceso; «Aplicar» lo comprueba de nuevo, configura la identidad, los usos y el acceso, y hace una primera
+sincronización. Después, guarde sin conexión la zona de sus vuelos («Ir a los datos sin conexión»).
+
+**Nada más que el archivo.** Solo se configura lo que contiene la configuración, y no se escribe nada si el token es
+rechazado; un archivo de otro formato se rechaza con un mensaje. La aerolínea solo se escribe en el repositorio si aún
+no tiene una. En un puesto cuyo data/ ya sigue este repositorio, el acceso no cambia. Sin lanzador, la aplicación solo
+llega a un repositorio de GitHub: para un repositorio de framagit o GitLab, aplique la configuración en un puesto con el
+lanzador.
+
 ## Conviene saber
 
 - **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
@@ -566,4 +599,4 @@ se señala.
   problema. El token
   nunca figura en él.
 
-<!-- fr: 444e218e3f9d -->
+<!-- fr: dcfd5f72ab89 -->

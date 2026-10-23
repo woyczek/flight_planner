@@ -13,7 +13,11 @@
   //     est coché ;
   //   · Données hors ligne (ctx.aerodb, stockage du navigateur) ; Clé météo (TAF avwx.rest, avec ou sans lanceur : weatherKey
   //     du cadre, clé dans localStorage githubData:avwx, jamais réaffichée) ; Clés, si un lanceur sert la page ; diagnostic ;
-  //   · reprise des réglages V2 de la même origine en un geste (identité, accès GitHub), proposée une fois.
+  //   · reprise des réglages V2 de la même origine en un geste (identité, accès GitHub), proposée une fois ;
+  //   · configuration d'un pilote (frame/settings/config.js, SogConfig) : « Exporter une configuration pour un pilote… »
+  //     dans la carte Accès d'un poste (fichier sog-config-<TRI>.json et lien #settings?config=…) ; « Importer une
+  //     configuration… » (fichier), le lien, ou #settings?import=1 (carte d'accueil) : carte « Configuration reçue » en
+  //     tête, « Appliquer » écrit identité, usages et accès (testé avant), puis synchronise et propose Données hors ligne.
   // Contexte donné par frame/app.js : { t, notify, ask, FD, own (device/, politique cache), reload, identity(), usages(),
   // launcher(), transport(), aerodb(), syncNow }.
   const ROOT = new URL('../../', document.currentScript.src).href; // racine de la suite (routes /__setup du lanceur)
@@ -198,6 +202,139 @@
     ],
     // accès
     access: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
+    // configuration d'un pilote (frame/settings/config.js)
+    cfgImport: ['Importer une configuration…', 'Import a configuration…', 'Konfiguration importieren…', 'Importar una configuración…'],
+    cfgImportHint: [
+      'Votre compagnie vous a envoyé une configuration (fichier sog-config ou lien) ? Elle règle cet appareil en quelques gestes.',
+      'Did your airline send you a configuration (sog-config file or link)? It sets up this device in a few steps.',
+      'Hat Ihnen Ihre Fluggesellschaft eine Konfiguration geschickt (sog-config-Datei oder Link)? Sie richtet dieses Gerät in wenigen Schritten ein.',
+      '¿Su aerolínea le envió una configuración (archivo sog-config o enlace)? Configura este dispositivo en pocos pasos.'
+    ],
+    cfgExport: ['Exporter une configuration pour un pilote…', 'Export a configuration for a pilot…',
+      'Konfiguration für einen Piloten exportieren…',
+      'Exportar una configuración para un piloto…'
+    ],
+    cfgExportHint: [
+      'Un fichier et un lien pour un pilote : la compagnie, le dépôt des données, son trigramme et le mode d’emploi du jeton. Jamais de jeton ni de secret.',
+      'A file and a link for a pilot: the airline, the data repository, their trigram and how to create the token. Never a token or a secret.',
+      'Eine Datei und ein Link für einen Piloten: die Fluggesellschaft, das Datenrepository, sein Kürzel und die Anleitung für das Token. Nie ein Token oder Geheimnis.',
+      'Un archivo y un enlace para un piloto: la aerolínea, el repositorio de datos, su trigrama y cómo crear el token. Nunca un token ni un secreto.'
+    ],
+    cfgPilot: ['Trigramme du pilote', 'Pilot’s trigram', 'Kürzel des Piloten', 'Trigrama del piloto'],
+    cfgApp: ['Adresse de l’appli publiée (pour le lien)', 'Address of the published app (for the link)',
+      'Adresse der veröffentlichten App (für den Link)',
+      'Dirección de la aplicación publicada (para el enlace)'
+    ],
+    cfgMake: ['Créer le fichier et le lien', 'Create the file and the link', 'Datei und Link erstellen',
+      'Crear el archivo y el enlace'
+    ],
+    cfgLink: ['Lien d’import (un toucher sur le téléphone du pilote)', 'Import link (one tap on the pilot’s phone)',
+      'Import-Link (ein Tippen auf dem Telefon des Piloten)', 'Enlace de importación (un toque en el teléfono del piloto)'
+    ],
+    cfgCopy: ['Copier le lien', 'Copy the link', 'Link kopieren', 'Copiar el enlace'],
+    cfgCopied: ['Lien copié.', 'Link copied.', 'Link kopiert.', 'Enlace copiado.'],
+    cfgMade: ['{f} enregistré : envoyez-le au pilote, ou le lien ci-dessous.', '{f} saved: send it to the pilot, or the link below.',
+      '{f} gespeichert: Senden Sie sie dem Piloten, oder den Link unten.', '{f} guardado: envíelo al piloto, o el enlace de abajo.'
+    ],
+    cfgLocal: ['Cette adresse ne s’ouvre que sur ce poste : donnez celle de l’appli publiée pour un téléphone.',
+      'This address only opens on this workstation: give the published app’s address for a phone.',
+      'Diese Adresse öffnet sich nur auf diesem Rechner: Geben Sie für ein Telefon die Adresse der veröffentlichten App an.',
+      'Esta dirección solo se abre en este puesto: indique la de la aplicación publicada para un teléfono.'
+    ],
+    cfgNoRepo: ['Aucun dépôt des données à transmettre : le fichier ne réglera que la compagnie et l’identité.',
+      'No data repository to pass on: the file will only set the airline and the identity.',
+      'Kein Datenrepository weiterzugeben: Die Datei richtet nur die Fluggesellschaft und die Identität ein.',
+      'Ningún repositorio de datos que transmitir: el archivo solo configurará la aerolínea y la identidad.'
+    ],
+    cfgTitle: ['Configuration reçue', 'Configuration received', 'Erhaltene Konfiguration', 'Configuración recibida'],
+    cfgAirline: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Aerolínea'],
+    cfgRepo: ['Dépôt des données', 'Data repository', 'Datenrepository', 'Repositorio de datos'],
+    cfgWhat: [
+      '« Appliquer » règle l’identité, les usages (plusieurs appareils) et l’accès au dépôt, rien d’autre ; les identifiants réseau sont facultatifs.',
+      '“Apply” sets the identity, the usages (several devices) and the repository access, nothing else; the network IDs are optional.',
+      '„Anwenden“ richtet Identität, Nutzungen (mehrere Geräte) und den Repository-Zugang ein, sonst nichts; die Netzwerk-IDs sind optional.',
+      '«Aplicar» configura la identidad, los usos (varios dispositivos) y el acceso al repositorio, nada más; los identificadores de red son opcionales.'
+    ],
+    cfgHowto: ['Créer le jeton : mode d’emploi', 'Creating the token: how to', 'Das Token erstellen: Anleitung',
+      'Crear el token: instrucciones'
+    ],
+    cfgApply: ['Appliquer', 'Apply', 'Anwenden', 'Aplicar'],
+    cfgCancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
+    cfgSame: ['Le dossier data/ de ce poste suit déjà ce dépôt : l’accès ne change pas.',
+      'This workstation’s data/ folder already follows this repository: access does not change.',
+      'Der Ordner data/ dieses Rechners folgt bereits diesem Repository: Der Zugang ändert sich nicht.',
+      'La carpeta data/ de este puesto ya sigue este repositorio: el acceso no cambia.'
+    ],
+    cfgOther: ['Le dossier data/ de ce poste suit un autre dépôt ({u}) : l’accès n’est pas changé (voir la carte Accès).',
+      'This workstation’s data/ folder follows another repository ({u}): access is not changed (see the Access card).',
+      'Der Ordner data/ dieses Rechners folgt einem anderen Repository ({u}): Der Zugang wird nicht geändert (siehe Karte Zugang).',
+      'La carpeta data/ de este puesto sigue otro repositorio ({u}): el acceso no se cambia (vea la tarjeta Acceso).'
+    ],
+    cfgClone: ['Le lanceur de ce poste va cloner ce dépôt dans data/ avec le jeton (il peut demander confirmation dans une fenêtre).',
+      'This workstation’s launcher will clone this repository into data/ with the token (it may ask for confirmation in a window).',
+      'Der Starter dieses Rechners klont dieses Repository mit dem Token nach data/ (er kann in einem Fenster um Bestätigung bitten).',
+      'El lanzador de este puesto clonará este repositorio en data/ con el token (puede pedir confirmación en una ventana).'
+    ],
+    cfgNone: [
+      'Ce dépôt est sur {h} : sans lanceur, l’appli ne joint qu’un dépôt GitHub. L’accès n’est pas réglé ici ; appliquez la configuration sur un poste avec le lanceur.',
+      'This repository is on {h}: without a launcher, the app only reaches a GitHub repository. Access is not set here; apply the configuration on a workstation with the launcher.',
+      'Dieses Repository liegt auf {h}: Ohne Starter erreicht die App nur ein GitHub-Repository. Der Zugang wird hier nicht eingerichtet; wenden Sie die Konfiguration auf einem Rechner mit Starter an.',
+      'Este repositorio está en {h}: sin lanzador, la aplicación solo llega a un repositorio de GitHub. El acceso no se configura aquí; aplique la configuración en un puesto con el lanzador.'
+    ],
+    cfgNeedToken: ['Collez le jeton pour l’accès au dépôt (mode d’emploi ci-dessous).',
+      'Paste the token for the repository access (how to, below).',
+      'Fügen Sie das Token für den Repository-Zugang ein (Anleitung unten).',
+      'Pegue el token para el acceso al repositorio (instrucciones abajo).'
+    ],
+    cfgTesting: ['Test de l’accès…', 'Testing the access…', 'Zugang wird getestet…', 'Probando el acceso…'],
+    cfgTestFail: ['Accès refusé ({e}) : rien n’est changé. Vérifiez le jeton.',
+      'Access refused ({e}): nothing is changed. Check the token.',
+      'Zugang verweigert ({e}): Nichts wird geändert. Prüfen Sie das Token.',
+      'Acceso denegado ({e}): no se cambia nada. Compruebe el token.'
+    ],
+    cfgNoTest: ['Sur un poste, le clonage par le lanceur sert de test : « Appliquer ».',
+      'On a workstation, cloning through the launcher is the test: “Apply”.',
+      'Auf einem Rechner ist das Klonen durch den Starter der Test: „Anwenden“.',
+      'En un puesto, la clonación por el lanzador sirve de prueba: «Aplicar».'
+    ],
+    cfgReplace: ['Cet appareil a déjà un accès ({r}) : le remplacer par celui de la configuration ?',
+      'This device already has an access ({r}): replace it with the configuration’s?',
+      'Dieses Gerät hat bereits einen Zugang ({r}): durch den der Konfiguration ersetzen?',
+      'Este dispositivo ya tiene un acceso ({r}): ¿reemplazarlo por el de la configuración?'
+    ],
+    cfgBadSchema: ['Ce fichier n’est pas une configuration SOG (schéma « {s} ») : rien n’est changé.',
+      'This file is not a SOG configuration (schema “{s}”): nothing is changed.',
+      'Diese Datei ist keine SOG-Konfiguration (Schema „{s}“): Nichts wird geändert.',
+      'Este archivo no es una configuración SOG (esquema «{s}»): no se cambia nada.'
+    ],
+    cfgBadField: ['Configuration refusée : {f} invalide. Rien n’est changé.',
+      'Configuration refused: {f} is invalid. Nothing is changed.',
+      'Konfiguration abgelehnt: {f} ist ungültig. Nichts wird geändert.',
+      'Configuración rechazada: {f} no es válido. No se cambia nada.'
+    ],
+    cfgBadFile: ['Configuration illisible : rien n’est changé.', 'Unreadable configuration: nothing is changed.',
+      'Unlesbare Konfiguration: Nichts wird geändert.',
+      'Configuración ilegible: no se cambia nada.'
+    ],
+    cfgDone: ['Configuration appliquée', 'Configuration applied', 'Konfiguration angewendet', 'Configuración aplicada'],
+    cfgSynced: ['Première synchronisation faite.', 'First synchronisation done.', 'Erste Synchronisation erledigt.',
+      'Primera sincronización hecha.'
+    ],
+    cfgSyncErr: ['Première synchronisation pas encore faite ({e}) : elle reprendra seule.',
+      'First synchronisation not done yet ({e}): it will resume by itself.',
+      'Erste Synchronisation noch nicht erfolgt ({e}): Sie wird von selbst fortgesetzt.',
+      'Primera sincronización aún no hecha ({e}): se reanudará sola.'
+    ],
+    cfgNoAccess: ['Identité réglée ; l’accès au dépôt reste à faire.', 'Identity set; the repository access is still to be done.',
+      'Identität eingerichtet; der Repository-Zugang steht noch aus.', 'Identidad configurada; falta el acceso al repositorio.'
+    ],
+    cfgNext: ['Ensuite : gardez hors ligne la zone de vos vols, pour avoir la carte et les terrains même sans réseau.',
+      'Next: keep the area of your flights offline, to have the map and the airfields even without network.',
+      'Danach: Halten Sie das Gebiet Ihrer Flüge offline bereit, damit Karte und Flugplätze auch ohne Netz da sind.',
+      'Después: guarde sin conexión la zona de sus vuelos, para tener el mapa y los aeródromos incluso sin red.'
+    ],
+    cfgGoOffline: ['Aller aux données hors ligne', 'Go to offline data', 'Zu den Offline-Daten', 'Ir a los datos sin conexión'],
+    close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     remote: ['Dépôt distant de data/', 'Remote repository of data/', 'Entferntes Repository von data/', 'Repositorio remoto de data/'],
     remoteNow: ['Actuel : {u} (branche {b})', 'Current: {u} (branch {b})', 'Aktuell: {u} (Zweig {b})', 'Actual: {u} (rama {b})'],
     remoteNowBare: ['Actuel : {u}', 'Current: {u}', 'Aktuell: {u}', 'Actual: {u}'],
@@ -583,6 +720,56 @@
       r: gh.repo
     }) : t(T.viaNone);
     const cards = [];
+    // configuration d'un pilote reçue : fichier choisi, ou lien #settings?config=… (relu à chaque dessin, jusqu'à
+    // « Appliquer » ou « Annuler »)
+    const q = new URLSearchParams(location.hash.split('?')[1] || '');
+    let incoming = cfgPicked,
+      inErr = '';
+    if (!incoming && q.get('config') && window.SogConfig) {
+      try {
+        const r = SogConfig.validate(await SogConfig.unpack(q.get('config')));
+        if (r.ok) incoming = r.cfg;
+        else inErr = cfgError(r, t);
+      } catch {
+        inErr = t(T.cfgBadFile);
+      }
+    }
+    // accès que la configuration réglerait sur cet appareil : same / other (data/ du lanceur déjà un dépôt), clone / adopt
+    // (par le lanceur), github (transport de l'appareil), none (hôte sans transport sans lanceur), nodata
+    const access = !incoming?.data ? 'nodata' : L ? (gitState === 'repo' ? (sameRepo(remote?.url, SogConfig.cloneUrl(incoming.data)) ?
+        'same' : 'other') :
+      gitState === 'absent' ? 'clone' : 'adopt') : SogConfig.kind(incoming.data) === 'github' ? 'github' : 'none';
+    if (inErr) cards.push(`<div class="f-card" data-card="cfg"><h2>${esc(t(T.cfgTitle))}</h2><p class="f-msg" data-kind="err">${esc(inErr)}</p>
+      <div class="f-row"><button type="button" data-act="cfgCancel">${esc(t(T.close))}</button></div></div>`);
+    if (incoming) {
+      const a = incoming.airline || {},
+        d = incoming.data,
+        how = d ? incoming.howto?.token?.[t(['fr', 'en', 'de', 'es'])] || incoming.howto?.token?.[
+          ['fr', 'en', 'de', 'es'].find(l => incoming.howto?.token?.[l])
+        ] || '' : '';
+      const note = {
+        same: t(T.cfgSame),
+        other: t(T.cfgOther, {
+          u: remote?.url || '?'
+        }),
+        clone: t(T.cfgClone),
+        adopt: t(T.cfgClone),
+        none: t(T.cfgNone, {
+          h: d?.host || '?'
+        })
+      } [access];
+      cards.push(`<div class="f-card" data-card="cfg" data-access="${access}"><h2>${esc(t(T.cfgTitle))}</h2>
+        <dl class="f-dl">${a.name || a.site ? `<dt>${esc(t(T.cfgAirline))}</dt><dd>${esc([a.name, a.site].filter(Boolean).join(' — '))}</dd>` : ''}${d ? `<dt>${esc(t(T.cfgRepo))}</dt><dd>${esc(`${d.host}/${d.repo} (${d.branch})`)}</dd>` : ''}<dt>${esc(t(T.trigram))}</dt><dd>${esc(incoming.identity.trigram)}</dd></dl>
+        <p class="f-muted">${esc(t(T.cfgWhat))}</p>
+        ${fld('cfgIvao', T.ivao, id.ivao, { mode: 'numeric' })}${fld('cfgVatsim', T.vatsim, id.vatsim, { mode: 'numeric' })}${fld('cfgSimbrief', T.simbrief, id.simbrief)}
+        ${note ? `<p class="${access === 'none' || access === 'other' ? 'f-warn' : 'f-muted'}">${esc(note)}</p>` : ''}
+        ${['clone', 'adopt', 'github'].includes(access) ? fld('cfgToken', T.token, '', { type: 'password' }) : ''}
+        ${how && access !== 'same' ? `<details class="f-cfghow"><summary>${esc(t(T.cfgHowto))}</summary><div class="f-doc">${howtoHtml(how)}</div></details>` : ''}
+        <p class="f-msg" data-msg></p>
+        <div class="f-row"><button type="button" class="primary" data-act="cfgApply">${esc(t(T.cfgApply))}</button>${access === 'github' ? `<button type="button" data-act="cfgTest">${esc(t(T.test))}</button>` : ''}<button type="button" data-act="cfgCancel">${esc(t(T.cfgCancel))}</button></div></div>`);
+    }
+    if (cfgApplied) cards.push(`<div class="f-card" data-card="cfgdone"><h2>${esc(t(T.cfgDone))}</h2><p>${esc(cfgApplied)}</p><p class="f-muted">${esc(t(T.cfgNext))}</p>
+      <div class="f-row"><button type="button" class="primary" data-act="cfgOffline">${esc(t(T.cfgGoOffline))}</button><button type="button" data-act="cfgDoneClose">${esc(t(T.close))}</button></div></div>`);
     // reprise V2, une fois
     if (v2) cards.push(`<div class="f-card" data-card="v2"><h2>${esc(t(T.v2))}</h2><p class="f-muted">${esc(t(T.v2Intro))}</p>
       <ul>${Object.entries(v2.identity).map(([k, v]) => `<li>${esc(t(T.pair, { k: t(T[k]) }))} <b>${esc(v)}</b></li>`).join('')}${v2.access ? `<li>${esc(t(T.v2Access, { r: v2.access.repo, b: v2.access.branch }))}</li>` : ''}</ul>
@@ -625,6 +812,26 @@
         ${fld('repo', T.repo, gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
         <p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`);
+    // configuration d'un pilote, dans la carte Accès : importer (toujours, en tête), exporter (poste ou accès GitHub réglé)
+    const src = L ? (remote?.url ? window.SogConfig?.parseRepo(remote.url) : null) : gh ? {
+      host: gh.api ? new URL(gh.api).host : 'github.com',
+      repo: gh.repo
+    } : null;
+    const xsrc = src ? {
+      ...src,
+      branch: L ? (/^[\w./-]+$/.test(remote?.branch || '') ? remote.branch : 'main') : gh.branch || 'main',
+      ...(!L && gh?.api ? {
+        api: gh.api
+      } : {})
+    } : null;
+    const cfgIn = window.SogConfig ? `<p class="f-muted">${esc(t(T.cfgImportHint))}</p><div class="f-row"><button type="button" data-act="cfgImport">${esc(t(T.cfgImport))}</button><input type="file" accept="application/json,.json" data-cfgfile hidden></div>` : '';
+    const cfgOut = window.SogConfig && (L || gh) ? `<details class="f-cfgx" data-cfgx><summary>${esc(t(T.cfgExport))}</summary><p class="f-muted">${esc(t(T.cfgExportHint))}</p>
+      ${xsrc ? '' : `<p class="f-warn">${esc(t(T.cfgNoRepo))}</p>`}${fld('cfgPilot', T.cfgPilot, '', { cap: true, ph: 'ABC' })}${fld('cfgApp', T.cfgApp, appUrl(), { ph: 'https://…/v3/frame/' })}
+      <div class="f-row"><button type="button" class="primary" data-act="cfgMake">${esc(t(T.cfgMake))}</button></div><p class="f-msg" data-xmsg></p>
+      <div data-cfgout hidden><label class="f-field">${esc(t(T.cfgLink))}<textarea data-cfglink rows="3" readonly spellcheck="false"></textarea></label><div class="f-row"><button type="button" data-act="cfgCopy">${esc(t(T.cfgCopy))}</button></div></div></details>` : '';
+    const ai = cards.findIndex(x => x.startsWith('<div class="f-card" data-card="access">'));
+    if (ai >= 0) cards[ai] = cards[ai].replace(/^(<div class="f-card" data-card="access"><h2>[^<]*<\/h2>)/, `$1${cfgIn}`).replace(
+      /<\/div>$/, `${cfgOut}</div>`);
     // synchronisation, si un échange est coché
     if (exchange) {
       cards.push(`<div class="f-card" data-card="sync"><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><p class="f-muted">${esc(t(T.syncHint))}</p>
@@ -982,7 +1189,163 @@
         await navigator.clipboard?.writeText(diagJson).catch(() => null);
         c.notify(t(T.copied), 'ok');
       }
+      // ---- configuration d'un pilote
+      if (act === 'cfgImport') return view.querySelector('[data-cfgfile]')?.click();
+      if (act === 'cfgCancel') {
+        cfgPicked = null;
+        dropConfigHash();
+        return again();
+      }
+      if (act === 'cfgDoneClose' || act === 'cfgOffline') {
+        cfgApplied = '';
+        await again();
+        if (act === 'cfgOffline') card('offline')?.scrollIntoView({
+          block: 'start'
+        });
+        return;
+      }
+      if (act === 'cfgMake') return makeConfig(c, view, xsrc);
+      if (act === 'cfgCopy') {
+        await navigator.clipboard?.writeText(view.querySelector('[data-cfglink]')?.value || '').catch(() => null);
+        return c.notify(t(T.cfgCopied), 'ok');
+      }
+      if ((act === 'cfgApply' || act === 'cfgTest') && incoming) {
+        const k = card('cfg'),
+          ivao = val('cfgIvao', k),
+          vatsim = val('cfgVatsim', k),
+          tokF = k.querySelector('[data-f="cfgToken"]'),
+          token = tokF?.value.trim() || '',
+          d = incoming.data;
+        if (ivao && !/^\d+$/.test(ivao)) return say('cfg', t(T.badNumber, {
+          f: t(T.ivao)
+        }));
+        if (vatsim && !/^\d+$/.test(vatsim)) return say('cfg', t(T.badNumber, {
+          f: t(T.vatsim)
+        }));
+        if (['clone', 'adopt', 'github'].includes(access) && !token) return say('cfg', t(T.cfgNeedToken));
+        if (act === 'cfgTest' && access !== 'github') return say('cfg', t(T.cfgNoTest), 'warn');
+        // l'accès d'abord, testé : rien n'est écrit s'il est refusé
+        let gcfg = null;
+        if (access === 'github') {
+          gcfg = {
+            repo: d.repo,
+            branch: d.branch,
+            token,
+            ...(d.api ? {
+              api: d.api
+            } : {})
+          };
+          say('cfg', t(T.cfgTesting), 'warn');
+          try {
+            await FD.github(gcfg).head();
+          } catch (err) {
+            return say('cfg', err?.offline ? t(T.testOffline) : t(T.cfgTestFail, {
+              e: err?.message || String(err)
+            }), err?.offline ? 'warn' : 'err');
+          }
+          if (act === 'cfgTest') return say('cfg', t(T.testOk, {
+            b: d.branch
+          }), 'ok');
+          if (gh && gh.repo !== d.repo && !await c.ask(t(T.cfgReplace, {
+              r: gh.repo
+            }))) return say('cfg', '');
+        }
+        if (access === 'clone' || access === 'adopt') {
+          if (tokF) tokF.value = ''; // le jeton ne reste pas dans la page
+          k.querySelectorAll('button').forEach(x => x.disabled = true);
+          say('cfg', t(T.gitWorking), 'warn');
+          const r = await setup(access, {
+            url: SogConfig.cloneUrl(d),
+            user: SogConfig.kind(d) === 'github' ? 'x-access-token' : 'oauth2',
+            secret: token,
+            remember: true,
+            author: incoming.identity.trigram
+          });
+          k.querySelectorAll('button').forEach(x => x.disabled = false);
+          if (!r?.ok) return say('cfg', [r?.message || t(T.launcherOld), confirmOpen(r) ? t(T.confirmOpen) : ''].filter(Boolean)
+            .join(' '));
+          await c.redetect?.();
+        }
+        const linked = ['same', 'clone', 'adopt', 'github'].includes(access);
+        await c.own.put('device/identity.json', {
+          ...c.identity(),
+          trigram: incoming.identity.trigram,
+          ivao,
+          vatsim,
+          simbrief: val('cfgSimbrief', k),
+          updated_at: now()
+        });
+        // usages seulement avec un accès : un échange coché sans dépôt ne mènerait nulle part
+        if (linked && incoming.usages) {
+          const u = {
+            ...c.usages(),
+            ...incoming.usages,
+            updated_at: now()
+          };
+          u.single = !(u.devices || u.users || u.backend);
+          await c.own.put('device/usages.json', u);
+        }
+        if (gcfg) FD.github.save(gcfg);
+        await c.reload();
+        // première synchronisation, puis la compagnie si le dépôt n'en a pas encore (celle du dépôt prime)
+        let line = t(T.cfgNoAccess);
+        if (linked) {
+          const r = await c.syncNow(true).catch(e => ({
+            error: e?.message || String(e)
+          }));
+          line = r?.error ? t(T.cfgSyncErr, {
+            e: r.error
+          }) : t(T.cfgSynced);
+          if (!r?.error && incoming.airline?.name) {
+            const A = airlineDoc(FD);
+            if (!(await A.get(AIRLINE, {
+                wait: true
+              }).catch(() => null))) {
+              await A.put(AIRLINE, {
+                ...incoming.airline,
+                schema: 1,
+                updated_at: now(),
+                by: incoming.identity.trigram
+              });
+              await c.syncNow(true).catch(() => null);
+            }
+          }
+        }
+        cfgPicked = null;
+        cfgApplied = line;
+        dropConfigHash();
+        c.notify(t(T.cfgDone), 'ok');
+        await again();
+        return scrollTo(0, 0);
+      }
     };
+    view.querySelector('[data-cfgfile]')?.addEventListener('change', async e => {
+      const f = e.target.files?.[0];
+      e.target.value = '';
+      if (!f) return;
+      let r = null;
+      try {
+        r = SogConfig.validate(await SogConfig.read(f));
+      } catch {
+        r = null;
+      }
+      if (!r?.ok) return c.notify(r ? cfgError(r, t) : t(T.cfgBadFile), 'err');
+      cfgPicked = r.cfg;
+      cfgApplied = '';
+      await again();
+      scrollTo(0, 0);
+    });
+    // #settings?import=1 (carte d'accueil) : le bouton d'import à portée
+    if (q.get('import') && !incoming) {
+      dropConfigHash(); // une fois : le dessin suivant (après le choix du fichier) reste en tête
+      const b = view.querySelector('[data-act="cfgImport"]');
+      setTimeout(() => {
+        b?.scrollIntoView({
+          block: 'center'
+        });
+        b?.focus();
+      }, 0);
+    }
     // indication « fenêtre Oui / Non sur ce poste » sous le bouton, selon l'adresse saisie
     // (le lanceur répond à POST /__setup/adopt { url, dry: true } sans rien faire : needsConfirm ; sans réponse, comparaison
     // locale ; adresse vide ou invalide : rien d'annoncé)
@@ -1048,6 +1411,95 @@
       if (f) await importDevice(c, f, e.target.dataset.mode);
       again();
     });
+  }
+
+  // ---- configuration d'un pilote (frame/settings/config.js)
+  let cfgPicked = null, // configuration lue d'un fichier, en attente de « Appliquer »
+    cfgApplied = ''; // compte rendu de la dernière configuration appliquée (carte « Configuration appliquée »)
+  const AIRLINE = 'airline/settings.json';
+  let airlineA = null;
+  /** Document de la compagnie (airline/settings.json du dépôt des données) : lecture, et écriture par l'import. */
+  const airlineDoc = FD => airlineA ||= FD.adapter({
+    id: 'frame-settings-airline',
+    reads: ['airline/'],
+    writes: [AIRLINE]
+  });
+  /** Message d'une configuration refusée (validate). */
+  const cfgError = (r, t) => r.error === 'schema' ? t(T.cfgBadSchema, {
+    s: r.schema
+  }) : r.error === 'field' ? t(T.cfgBadField, {
+    f: r.field
+  }) : t(T.cfgBadFile);
+  /** Retire config= / import= de l'adresse (la configuration n'est plus proposée au dessin suivant). */
+  const dropConfigHash = () => {
+    if (/[?&](config|import)=/.test(location.hash)) history.replaceState(null, '', `${location.pathname}${location.search}#settings`);
+  };
+  const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+  /** Adresse de l'appli pour le lien : celle-ci si elle est publiée (https, pas locale), sinon la dernière donnée ici. */
+  function appUrl() {
+    if (location.protocol === 'https:' && !LOCAL.test(location.hostname)) return `${location.origin}${location.pathname}`;
+    try {
+      return localStorage.getItem('sogFrame:appUrl') || '';
+    } catch {
+      return '';
+    }
+  }
+  /** Mode d'emploi reçu → HTML en texte seul : une ligne par paragraphe, adresses https en liens. */
+  const howtoHtml = text => String(text).split(/\n+/).filter(Boolean).map(l => `<p>${esc(l).replace(/https:\/\/[^\s<&]+[^\s<&.,;:)]/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}</p>`).join('');
+  /** « Créer le fichier et le lien » : sog-config-<TRI>.json téléchargé, lien #settings?config=… affiché à copier. */
+  async function makeConfig(c, view, src) {
+    const t = c.t,
+      box = view.querySelector('[data-cfgx]'),
+      msg = (text, kind = 'err') => {
+        const m = box.querySelector('[data-xmsg]');
+        m.textContent = text;
+        m.dataset.kind = kind;
+      };
+    const tri = box.querySelector('[data-f="cfgPilot"]').value.trim().toUpperCase(),
+      app = box.querySelector('[data-f="cfgApp"]').value.trim();
+    if (!/^[A-Z0-9]{2,5}$/.test(tri)) return msg(t(T.badTrigram));
+    let base = null;
+    try {
+      base = app ? new URL(app) : null;
+    } catch {
+      base = null;
+    }
+    if (base && !/^https?:$/.test(base.protocol)) base = null;
+    const airline = await airlineDoc(c.FD).get(AIRLINE, {
+      wait: true
+    }).catch(() => null);
+    const cfg = SogConfig.build({
+      airline,
+      data: src,
+      trigram: tri,
+      by: c.identity().trigram || ''
+    });
+    const name = `sog-config-${tri}.json`,
+      a = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(new Blob([JSON.stringify(cfg, null, 1)], {
+          type: 'application/json'
+        })),
+        download: name
+      });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1e4);
+    const out = box.querySelector('[data-cfgout]');
+    if (base) {
+      base.hash = '';
+      try {
+        if (base.href !== `${location.origin}${location.pathname}`) localStorage.setItem('sogFrame:appUrl', base.href);
+      } catch {
+        /* stockage indisponible */
+      }
+      out.querySelector('[data-cfglink]').value = `${base.href}#settings?config=${await SogConfig.pack(cfg)}`;
+      out.hidden = false;
+    } else out.hidden = true;
+    msg([t(T.cfgMade, {
+        f: name
+      }), base && LOCAL.test(base.hostname) ? t(T.cfgLocal) : ''].filter(Boolean).join(' '), base && LOCAL.test(base.hostname) ?
+      'warn' : 'ok');
   }
 
   /** Adresse de dépôt comparable (sans .git ni barre finale, hôte en minuscules). */

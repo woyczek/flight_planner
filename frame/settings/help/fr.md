@@ -84,6 +84,26 @@ seulement signalé.
   ou archive), « Reprendre data/ dans ce dépôt » le relie au dépôt. La carte suit le travail et relit l'état à la fin ;
   un échec est expliqué, rien n'est perdu.
 
+## Configurer un pilote
+
+**Préparer la configuration (administrateur).** Sur un poste servi par le lanceur, ou sur un appareil réglé sur GitHub,
+dépliez « Exporter une configuration pour un pilote… » dans la carte « Accès aux données ». Tapez le trigramme du pilote
+et l'adresse de l'appli publiée, puis « Créer le fichier et le lien » : le fichier sog-config-<TRI>.json est enregistré
+et le lien s'affiche, prêt à copier. Ils contiennent la compagnie, le dépôt des données, le trigramme et le mode
+d'emploi du jeton, jamais de jeton ni de secret.
+
+**Appliquer la configuration (pilote).** Touchez le lien reçu, ou « Importer une configuration… » dans la carte « Accès
+aux données » (la carte d'accueil de la première ouverture y mène aussi). La carte « Configuration reçue » montre la
+compagnie, le dépôt et le trigramme. Ajoutez si vous voulez vos identifiants IVAO, VATSIM et SimBrief, puis le jeton :
+le mode d'emploi, replié dessous, dit comment le créer sur l'hôte du dépôt. « Tester » vérifie l'accès ; « Appliquer »
+le vérifie encore, règle l'identité, les usages et l'accès, puis fait une première synchronisation. Gardez ensuite la
+zone de vos vols hors ligne (« Aller aux données hors ligne »).
+
+**Rien de plus que le fichier.** Seul ce que contient la configuration est réglé, et rien n'est écrit si le jeton est
+refusé ; un fichier d'un autre format est refusé avec un message. La compagnie n'est écrite dans le dépôt que s'il n'en
+a pas encore. Sur un poste dont data/ suit déjà ce dépôt, l'accès ne change pas. Sans lanceur, l'appli ne joint qu'un
+dépôt GitHub : pour un dépôt framagit ou GitLab, appliquez la configuration sur un poste avec le lanceur.
+
 ## Bon à savoir
 
 - **Le jeton** : un jeton à grain fin de github.com, sur le seul dépôt des données, « Contents » en lecture et

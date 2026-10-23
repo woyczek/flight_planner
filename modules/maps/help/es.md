@@ -13,9 +13,9 @@ tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por s�
 peligrosas, prohibidas, espacios controlados), las aerovías bajas o altas según su nivel, los aeródromos y las
 radioayudas, y en cada cuadro de un grado la altitud mínima de seguridad (la cifra marrón, en miles y centenas de pies:
 «3⁵» quiere decir 3500 ft). Las pequeñas cifras violetas a lo largo de la ruta son las distancias desde la salida, en
-millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» vuelve a toda la ruta. El mapa se queda donde usted lo puso, aunque la ruta
-cambie: solo «Recentrar» (u otro vuelo) lo reencuadra.
-Visto de lejos, el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
+millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» vuelve a toda la ruta. El
+mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Visto de lejos,
+el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
 
 **El perfil y el cursor.** Bajo el mapa, el perfil vertical corta la ruta de punta a punta: el relieve, los espacios
 aéreos en los que entra a la altitud prevista, y la trayectoria del vuelo en violeta. Deslice el dedo por el perfil: un
@@ -33,8 +33,8 @@ alto desde el FL195). El modo se conserva en este dispositivo.
 
 **Cuanto más se acerca, más dice.** De lejos, el mapa solo muestra los grandes aeródromos, las aerovías y sus nombres.
 Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel mínimo de cada aerovía («F195»), luego la
-distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos. De cerca, cada obstáculo lleva su altura sobre el
-suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
+distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos. De cerca, cada obstáculo lleva su
+altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
 
 **Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios
 (TMA / CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de
@@ -117,4 +117,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: e49322f78862 -->
+<!-- fr: 8c7b1fa48287 -->

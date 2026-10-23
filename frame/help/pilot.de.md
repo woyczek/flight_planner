@@ -204,12 +204,13 @@ Ausweichflugplatz grau gestrichelt. Oben fasst eine Zeile ihn zusammen: Abflug u
 Flugfläche, Entfernung, Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
 
 **Die Karte und was sie zeigt.** Rund um die Route: die Lufträume, die sie durchquert oder streift (Flugbeschränkungs-,
-Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche,
-die Flugplätze und die Funkfeuer, und in jedem Ein-Grad-Feld die Mindestsicherheitshöhe (die braune Zahl, in
-Tausenden und Hunderten Fuß: „3⁵“ bedeutet 3 500 ft). Die kleinen violetten Zahlen entlang der Route sind die
-Entfernungen ab dem Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger
-zum Zoomen; „Zentrieren“ kehrt zur ganzen Route zurück. Von weitem gesehen zeigt die Karte nur, was nahe der Route
-liegt; zoomen Sie hinein, um alles zu sehen.
+Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
+Flugplätze und die Funkfeuer, und in jedem Ein-Grad-Feld die Mindestsicherheitshöhe (die braune Zahl, in Tausenden und
+Hunderten Fuß: „3⁵“ bedeutet 3 500 ft). Die kleinen violetten Zahlen entlang der Route sind die Entfernungen ab dem
+Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger zum Zoomen;
+„Zentrieren“ kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
+ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe
+der Route liegt; zoomen Sie hinein, um alles zu sehen.
 
 **Profil und Cursor.** Unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
 Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über
@@ -220,14 +221,16 @@ Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an diese
 **Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
 sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
 (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen,
-Meldepunkten und Hindernissen. „Topo“: das Gelände, nur mit Flugplätzen, Städten und Hindernissen. „OAT“: Militärflug,
+Meldepunkten und Hindernissen. „Topo“: das Gelände und, aus der Nähe, die Höhenlinien (alle 500 ft oder 100 m je nach Ihrer Einheit, die
+Zähllinien beschriftet), nur mit Flugplätzen, Städten und Hindernissen. „OAT“: Militärflug,
 das IFR Ihrer Flughöhe plus die Luftbetankungsstrecken, die NAT-Tracks des Tages, die Gebiete R, D, P, TSA, TRA, CBA und
 das Tiefflugnetz in allen Höhen. „Auto“ wählt nach der Flugfläche Ihres Flugs (IFR oben ab FL195). Der Modus bleibt auf
 diesem Gerät erhalten.
 
 **Je näher Sie zoomen, desto mehr zeigt sie.** Von weitem zeigt die Karte nur die großen Flugplätze, die Flugwege und
-ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“),
-dann die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse.
+ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindestflugfläche jedes Flugwegs („F195“), dann
+die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse. Aus der Nähe trägt jedes Hindernis
+seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771)“).
 
 **Ebenen.** Die Ebenen-Schaltfläche unter der Karteneinstellung öffnet die Liste dessen, was die Karte zeichnet:
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
@@ -235,14 +238,25 @@ VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplat
 Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät erhalten. „Alles zurücksetzen“ kehrt zur
 ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt, beschränkt Lufträume und Flugwege auf die
 Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um anderswo zu schauen. Aus der Nähe wird
-ohnehin alles gezeichnet.
+ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach links weniger, nach rechts
+mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte erscheinen erst ganz
+nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
 
-**Antippen für mehr.** Tippen Sie auf den Namen eines Flugwegs: eine Blase nennt den Abschnitt (Punkt → Punkt), seine
-Länge, seine Kurse in beide Richtungen, Unter- und Obergrenze. Tippen Sie auf einen Luftraum: die Blase nennt seinen
-Namen, seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“) und seine Zeiten, wenn bekannt. Das nächste
-Antippen oder ein Verschieben der Karte schließt sie. Fahren Sie mit der Maus über den Namen eines Flugwegs oder
-Luftraums: eine kleine Blase folgt dem Zeiger und bleibt noch 5 Sekunden, nachdem Sie ihn verlassen haben; ein Klick
-schließt sie. Auf dem Profil nennen Finger oder Maus die durchflogenen Lufträume.
+**Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
+Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
+Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
+und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, nennt die
+Blase die Lufträume unter dem Finger. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der nächsten Platz und schließt
+sich durch Antippen anderswo oder ein Verschieben der Karte. Auf dem Profil nennen Finger oder Maus ebenso die
+durchflogenen Lufträume.
+
+**Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
+„geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
+Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
+Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
+voraussichtliche Zeit (ETA). „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
+Position (GPS oder Netz nicht aktiviert) sagt die Zeile es und öffnet die Einstellungen; eine Position, die älter als 2
+Minuten ist, erscheint grau.
 
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
@@ -305,7 +319,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: e49322f78862 -->
+<!-- fr: 8c7b1fa48287 -->
 
 <!-- chapter: report -->
 # Bericht
@@ -577,6 +591,27 @@ Repository, das nicht antwortet, wird nur gemeldet.
   (Beispieldaten oder Archiv) verbindet „data/ in dieses Repository übernehmen“ es mit dem Repository. Die Karte verfolgt
   die Arbeit und liest den Zustand am Ende neu; ein Fehlschlag wird erklärt, nichts geht verloren.
 
+## Einen Piloten einrichten
+
+**Die Konfiguration vorbereiten (Administrator).** Klappen Sie auf einem vom Starter bedienten Rechner oder auf einem
+für GitHub eingerichteten Gerät „Konfiguration für einen Piloten exportieren…“ in der Karte „Datenzugang“ auf. Geben Sie
+das Kürzel des Piloten und die Adresse der veröffentlichten App ein, dann „Datei und Link erstellen“: Die Datei
+sog-config-<TRI>.json wird gespeichert und der Link angezeigt, bereit zum Kopieren. Sie enthalten die Fluggesellschaft,
+das Datenrepository, das Kürzel und die Anleitung für das Token, nie ein Token oder Geheimnis.
+
+**Die Konfiguration anwenden (Pilot).** Tippen Sie auf den erhaltenen Link oder auf „Konfiguration importieren…“ in der
+Karte „Datenzugang“ (auch die Begrüßungskarte beim ersten Öffnen führt dorthin). Die Karte „Erhaltene Konfiguration“
+zeigt Fluggesellschaft, Repository und Kürzel. Fügen Sie nach Wunsch Ihre IVAO-, VATSIM- und SimBrief-IDs hinzu, dann
+das Token: Die Anleitung, darunter eingeklappt, sagt, wie Sie es beim Host des Repositorys erstellen. „Testen“ prüft den
+Zugang; „Anwenden“ prüft ihn erneut, richtet Identität, Nutzungen und Zugang ein und führt eine erste Synchronisation
+aus. Halten Sie danach das Gebiet Ihrer Flüge offline bereit („Zu den Offline-Daten“).
+
+**Nicht mehr als die Datei.** Nur was die Konfiguration enthält, wird eingerichtet, und nichts wird geschrieben, wenn
+das Token abgelehnt wird; eine Datei in einem anderen Format wird mit einer Meldung abgelehnt. Die Fluggesellschaft wird
+nur ins Repository geschrieben, wenn es noch keine hat. Auf einem Rechner, dessen data/ diesem Repository bereits folgt,
+ändert sich der Zugang nicht. Ohne Starter erreicht die App nur ein GitHub-Repository: Wenden Sie die Konfiguration für
+ein Repository auf framagit oder GitLab auf einem Rechner mit Starter an.
+
 ## Gut zu wissen
 
 - **Das Token**: ein feingranulares Token von github.com, nur für das Datenrepository, „Contents“ lesen und schreiben,
@@ -590,4 +625,4 @@ Repository, das nicht antwortet, wird nur gemeldet.
   für Zeile; „Kopieren“ legt alles in die Zwischenablage, zum Einfügen in Ihre Nachricht, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 444e218e3f9d -->
+<!-- fr: dcfd5f72ab89 -->

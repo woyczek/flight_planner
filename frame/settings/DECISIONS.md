@@ -159,3 +159,25 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   and `aerodb.lnmperf` present) and shows it once aerodb's `card()` has filled it; a failure leaves it hidden. The
   section "Little Navmap sheets" of the Settings chapter, written by aerodb in four languages, stays in the chapter
   (labels checked against `lnmperf.js`). Checked at 375 px with the launcher: no horizontal scroll, buttons wrap.
+- **23 Oct 2026 — Configuring a pilot** (the user's request, through the ergonomics session; [SPEC.md](SPEC.md) § 5):
+  - the logic apart, in `frame/settings/config.js` (schema, templates, compression, validation), the screen in
+    `settings.js`; no change to `frame/app.js`: settings reads the address's query itself and declares its own adapter
+    for `airline/settings.json`;
+  - the repository is read from the remote of `data/` without its credentials (an address `https://user:secret@…`
+    loses them), so a file never carries a secret; the token's how-to is in four languages in the file, so the pilot
+    reads it in theirs;
+  - the GitHub transport of a device without launcher speaks only the GitHub API: a GitLab / framagit repository can
+    only be joined through a workstation's launcher (clone with the token), and the import says so instead of setting a
+    half access; usages are ticked only when an access is set, so a device never exchanges with no repository;
+  - the airline is written to the repository only when it has none after the first synchronisation: the repository's
+    document stays the reference;
+  - the link's base: the app's own address when it is published (https, not local), else an address typed once and kept
+    on the device (`sogFrame:appUrl`); the code holds no site address;
+  - an optional `data.api` (https, or http on 127.0.0.1 / localhost) keeps GitHub Enterprise possible and made the tests
+    possible on the fake GitHub of `frame/store/test/fake_github.py`;
+  - tested: export on a launcher (screen, fictional airline committed in a test copy whose remote is
+    `example.invalid`: "ask your administrator" how-to) and from a device set on the fake GitHub (GitHub how-to); import
+    by link at 375 px in a fresh browser (Test, Apply: identity, usages, access, first synchronisation, airline written
+    once — a second import left it), by file from the welcome card, refusal of another schema and of a broken link,
+    and on a launcher whose `data/` already follows the repository (no token asked, access unchanged). Clone and
+    take-over through the launcher were not run (they open the launcher's confirmation window on this computer).
