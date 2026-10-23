@@ -9,6 +9,10 @@ import {
 import {
   merge
 } from '../../frame/lib/current_flight.js';
+import {
+  fmtZ,
+  fmtZLocal
+} from '../../frame/lib/time.js';
 
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
@@ -52,7 +56,7 @@ export const meta = {
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
-    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', 'contours.js?v=0'
+    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0'
   ],
   // gardés au premier usage seulement : MapLibre (1 Mo, inutile sans tuiles) ; les contours des pays du fond uni (350 Ko,
   // inutiles avec les tuiles ; gardés d'avance quand MapLibre n'est pas en cache : outlinesAhead)
@@ -1408,7 +1412,7 @@ const windAt = (x, y) => (S.windHits || []).find(h => Math.hypot(h.x - x, h.y - 
 function windLines(w) {
   const t = Number.isFinite(+w.tempC) && w.tempC !== null ? `${Math.round(+w.tempC)} °C` : '',
     l = +w.levelFt > 0 ? formatLevel(+w.levelFt) : '',
-    h = w.at ? String(w.at).slice(11, 16) + 'Z' : '';
+    h = fmtZ(w.at);
   return [tt(TX.windTip, {
     d: String(Math.round(+w.dirDeg) % 360 || 360).padStart(3, '0'),
     k: Math.round(+w.kt)
@@ -3177,11 +3181,6 @@ const actualOf = f => {
     t0 = Date.parse(f?.started?.at || '');
   return a && !(Number.isFinite(t0) && Date.parse(a.at || '') < t0) ? a : null;
 };
-/** Heure UTC « 14:32Z » d'une date ISO. */
-const hhmm = iso => {
-  const d = new Date(iso);
-  return Number.isNaN(+d) ? '' : `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}Z`;
-};
 /** Progression relue seule : enregistrement, trace, ligne d'état, carte, profil et caméra (« Suivre »). */
 function progressOnly(f) {
   S.route = {
@@ -3383,7 +3382,9 @@ function drawProgress(ctx, toC, pxDeg) {
   if (pxDeg >= 300)(f.route?.points || []).forEach((p, i) => {
     const at = etaOf(p, i),
       q = posOf(p) && toC(+p.lat, +p.lon);
-    if (at && q) haloText(ctx, `ETA ${hhmm(at)}`, q.x + 8, q.y + 16, acc, '700 11px Arial,sans-serif');
+    // heures en UTC (frame/lib/time.js) ; l'heure locale entre parenthèses au départ et à l'arrivée seulement
+    const last = i === (f.route?.points || []).length - 1;
+    if (at && q) haloText(ctx, `ETA ${i === 0 || last ? fmtZLocal(at) : fmtZ(at)}`, q.x + 8, q.y + 16, acc, '700 11px Arial,sans-serif');
   });
   // trace des 30 dernières minutes
   if (S.trail?.length > 1) {
@@ -3405,7 +3406,7 @@ function drawProgress(ctx, toC, pxDeg) {
     drawPlane(ctx, q, hdg, acc, false);
     const at = st.planned.at || f.progress?.at;
     if (at) haloText(ctx, tt(TX.progPlanned, {
-      t: hhmm(at)
+      t: fmtZ(at)
     }), q.x + 12, q.y - 12, acc);
   }
   if (st.actual) {

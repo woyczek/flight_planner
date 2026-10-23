@@ -393,7 +393,9 @@ when the report is saved), nothing otherwise:
   distance (`formatLevel`). Without an actual position: "GPS or network not enabled" with a link to `#settings`.
 - **Profile**: filled dot at the actual distance and altitude, circle at the planned position.
 - **ETA** (`progress.eta`, a list `[{ id, at }]` in the order of the points; a table `{ id: at }` is read too): "ETA 14:52Z" beside
-  each point in a close view (300 px per degree and more).
+  each point in a close view (300 px per degree and more); departure and arrival add the device's local time,
+  "ETA 16:10Z (18:10)". Every time of the map (ETA, "planned 14:32Z", wind forecasts) comes from `frame/lib/time.js`
+  (`fmtZ`, `fmtZLocal`).
 - **"Follow"** (in the bar at the top right, shown only during a started flight): keeps the map centred on the actual
   position at each update (a move of the module, marked as such); any move of the user stops it (camera rule).
 - **Updates**: a write of the record that changes only the progress (same points, level and start) redraws the map and

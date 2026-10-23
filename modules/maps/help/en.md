@@ -70,7 +70,7 @@ imported them (Settings › Maintenance).
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
 a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
-planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA). “Follow” keeps the
+planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA), in UTC (“14:52Z”), the local time in brackets at departure and arrival. “Follow” keeps the
 map on your position; moving the map stops it. Without a position (GPS or network not enabled), the line says so and
 opens the settings; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
 IVAO, VATSIM, X-Plane or Little Navmap.
