@@ -13,6 +13,9 @@ import * as W from './model.js';
 import {
   canPaste
 } from '../../frame/lib/clipboard.js'; // marche aussi en http (tablette servie par le poste)
+import {
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
 
 export const meta = {
   id: 'website',
@@ -29,7 +32,7 @@ export const meta = {
     prefix: 'pilot/',
     merge: 'record'
   }],
-  files: ['model.js', '../../frame/lib/clipboard.js']
+  files: ['model.js', '../../frame/lib/clipboard.js', '../../frame/lib/time.js']
 };
 
 const SETTINGS = 'airline/settings.json',
@@ -140,8 +143,8 @@ const tri = () => String(S.ctx.identity.trigram || '').trim().toUpperCase();
 const logPath = () => `pilot/${tri()}/site_log.json`;
 /** Écran d'ordinateur (la carte Compagnie s'y modifie). */
 const wide = () => matchMedia('(min-width: 980px)').matches;
-/** Date lisible. */
-const when = iso => iso ? new Date(iso).toLocaleString(S.ctx.lang()) : '—';
+/** Date et heure UTC lisibles (« 23/10/2026 16:57Z »). */
+const when = iso => iso ? fmtDateZ(iso, S.ctx.lang()) || '—' : '—';
 
 // ---------------------------------------------------------------- écran
 // placement seulement (primitives et jetons du cadre : frame/design/INTEGRATION.md) : aperçu borné en hauteur
