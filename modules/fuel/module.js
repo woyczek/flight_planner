@@ -10,6 +10,7 @@
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
+import * as MT from '../../frame/lib/metar.js';
 import {
   svg
 } from '../../frame/lib/icons.js';
@@ -28,7 +29,7 @@ export const meta = {
     policy: 'cache'
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
-  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js',
+  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', '../../frame/lib/metar.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js'
   ]
 };
@@ -272,6 +273,15 @@ const TX = {
   wxCached: ['Hors réseau : dernières valeurs lues à {t}.', 'No network: last values read at {t}.',
     'Kein Netz: zuletzt gelesene Werte um {t}.',
     'Sin red: últimos valores leídos a las {t}.'
+  ],
+  wxDirect: ['Sans lanceur : METAR de metar.vatsim.net, TAF d’avwx.rest.',
+    'Without a launcher: METAR from metar.vatsim.net, TAF from avwx.rest.',
+    'Ohne Starter: METAR von metar.vatsim.net, TAF von avwx.rest.', 'Sin lanzador: METAR de metar.vatsim.net, TAF de avwx.rest.'
+  ],
+  wxNoTaf: ['TAF indisponible sans lanceur ni clé météo (Réglages › Clés) : le METAR répond à la place.',
+    'TAF unavailable without a launcher or a weather key (Settings › Keys): the METAR answers instead.',
+    'TAF ohne Starter oder Wetterschlüssel nicht verfügbar (Einstellungen › Schlüssel): das METAR antwortet stattdessen.',
+    'TAF no disponible sin lanzador ni clave meteorológica (Ajustes › Claves): responde el METAR.'
   ],
   wxRelay: ['La météo n’est joignable que par le lanceur d’un poste.', 'Weather can only be reached through a workstation’s launcher.',
     'Das Wetter ist nur über den Starter eines Arbeitsplatzes erreichbar.',
@@ -1475,32 +1485,84 @@ async function wxFetch(loud = false) {
     return renderWx();
   }
   const chunks = [];
-  for (let i = 0; i < ids.length; i += 40) chunks.push(encodeURIComponent(ids.slice(i, i + 40).join(',')));
-  const get = async kind => (await Promise.all(chunks.map(q => getOne(kind, q)))).flat(),
-    getOne = async (kind, q) => {
-      const res = await S.ctx.net.fetch(`https://aviationweather.gov/api/data/${kind}?ids=${q}&format=json`, {
-        headers: {
-          accept: 'application/json'
-        }
-      });
-      if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable')) throw Object.assign(new Error('net'), {
-        code: S.ctx.net.online?.() === false ? 'offline' : 'relay'
-      });
-      if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
-        code: 'http'
-      });
+  for (let i = 0; i < ids.length; i += 40) chunks.push(ids.slice(i, i + 40));
+  /** Appel par le cadre : réponse, ou erreur codée (offline : hors réseau ; relay : site injoignable d'ici, sans
+   *  lanceur ou sans clé ; http : refus du service). */
+  const call = async (url, accept = 'application/json') => {
+    const res = await S.ctx.net.fetch(url, {
+      headers: {
+        accept
+      }
+    });
+    if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable')) throw Object.assign(new Error('net'), {
+      code: S.ctx.net.online?.() === false || res.headers.get('x-sog-offline') ? 'offline' : 'relay'
+    });
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
+      code: 'http'
+    });
+    return res;
+  };
+  // 1. aviationweather.gov (JSON décodé), relayé par le lanceur quand la page est servie par un
+  const viaLauncher = async () => {
+    const get = async kind => (await Promise.all(chunks.map(async c => {
+      const res = await call(`https://aviationweather.gov/api/data/${kind}?ids=${encodeURIComponent(c.join(','))}&format=json`);
       return res.status === 204 ? [] : res.json();
+    }))).flat();
+    const [metars, tafs] = await Promise.all([get('metar'), get('taf')]);
+    return {
+      metars,
+      tafs,
+      source: 'launcher',
+      noTaf: false
     };
+  };
+  // 2. sans lanceur : METAR bruts de metar.vatsim.net (décodés par frame/lib/metar.js), TAF d'avwx.rest avec la clé de
+  // l'appareil (ajoutée par le cadre) — seulement si une date de vol les rend utiles, terrain par terrain, douze au plus
+  const direct = async () => {
+    const metars = (await Promise.all(chunks.map(async c => MT.decodeMetars(await (await call(
+      `https://metar.vatsim.net/metar.php?id=${encodeURIComponent(c.join(','))}`, 'text/plain')).text())))).flat();
+    const tafs = [];
+    let noTaf = false;
+    if (wxWhen() != null) {
+      const withMetar = new Set(metars.map(m => m.icaoId)),
+        r = S.flight.route || {},
+        want = ids.filter(id => withMetar.has(id) || [r.dep, r.arr, r.altn].includes(id)).slice(0, 12);
+      for (const id of want) {
+        try {
+          const t = MT.fromAvwxTaf(await (await call(`https://avwx.rest/api/taf/${encodeURIComponent(id)}`)).json());
+          if (t) tafs.push(t);
+        } catch (e) {
+          if (e.code === 'relay') {
+            noTaf = true; // pas de clé météo sur l'appareil : inutile d'insister
+            break;
+          }
+        }
+      }
+    }
+    return {
+      metars,
+      tafs,
+      source: 'direct',
+      noTaf
+    };
+  };
   const kept = (await S.ctx.data.get(WX_PATH).catch(() => null)) || {
     metar: {},
     taf: {}
   };
   try {
-    const [m, t] = await Promise.all([get('metar'), get('taf')]),
-      at = new Date().toISOString();
-    for (const x of m || []) kept.metar[x.icaoId] = x;
-    for (const x of t || []) kept.taf[x.icaoId] = x;
-    kept.at = at;
+    let got;
+    try {
+      got = await viaLauncher();
+    } catch (e) {
+      if (e.code !== 'relay') throw e;
+      got = await direct(); // aviationweather injoignable d'ici (pas de lanceur) : sources directes
+    }
+    for (const x of got.metars || []) kept.metar[x.icaoId] = x;
+    for (const x of got.tafs || []) kept.taf[x.icaoId] = x;
+    kept.at = new Date().toISOString();
+    kept.source = got.source;
+    kept.noTaf = got.noTaf;
     await S.ctx.data.put(WX_PATH, kept, {
       policy: 'cache'
     });
@@ -1599,7 +1661,9 @@ function renderWx() {
     all = wxStations(),
     ends = all.filter(x => x.role !== 'mid'),
     mids = all.filter(x => x.role === 'mid');
-  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: new Date(S.wx.at).toLocaleString(S.ctx.lang()) }))}</p>` : '') + ends.map(card).join('') +
+  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: new Date(S.wx.at).toLocaleString(S.ctx.lang()) }))}</p>` : '') +
+    (S.wx.source === 'direct' ? `<p class="f-muted">${esc(tt(TX.wxDirect))}</p>` : '') +
+    (S.wx.noTaf && wxWhen() != null ? `<p class="f-warn">${esc(tt(TX.wxNoTaf))}</p>` : '') + ends.map(card).join('') +
     (mids.length > 2 ? `<details data-wxmids${S.ui.wxMidsOpen ? ' open' : ''}><summary>${esc(tt(TX.wxMids, { n: mids.length }))}</summary>${mids.map(card).join('')}</details>` : mids.map(card).join(''));
   const det = box.querySelector('[data-wxmids]');
   if (det) det.ontoggle = () => S.ui.wxMidsOpen = det.open;

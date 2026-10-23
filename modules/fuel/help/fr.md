@@ -119,5 +119,8 @@ altitudes et les distances à l'écran ; les niveaux restent des niveaux de vol,
 - **Route inconnue** : les points non reconnus sont listés ; la distance et la route vraie se tapent à la main.
 - **Hors ligne** : tout se calcule sur l'appareil, à partir des fiches déjà reçues. Seuls SimBrief et la météo attendent
   le réseau ; le dernier OFP et la dernière météo restent gardés sur l'appareil.
-- **Météo sans lanceur** : le service météo n'est joignable qu'à travers le lanceur d'un poste ; ailleurs, la carte
-  montre la dernière météo gardée, ou le dit.
+- **Météo sans lanceur** (un téléphone, une tablette) : les METAR viennent alors de metar.vatsim.net, sans rien à
+  régler. Les TAF (utiles quand vous donnez une date de vol) viennent d'avwx.rest, avec votre clé météo personnelle,
+  saisie une fois sur l'appareil dans Réglages › Clés ; sans clé, la carte le dit et le METAR répond à la place. La
+  carte météo dit d'où viennent les messages. Sans réseau du tout, elle montre la dernière météo gardée, avec son
+  heure.

@@ -4,6 +4,19 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot E, weather without a launcher** (frame lot 12, 8ea83b6c6: metar.vatsim.net and avwx.rest
+  direct): aviationweather.gov is tried first (one 503 from the frame when there is no launcher, at no cost), then
+  the direct sources. The METAR decoder is shared pure code in `frame/lib/metar.js` (maps or report may read a
+  METAR later) and gives exactly aviationweather's form, so `weather.js` and the card did not change; its flight
+  category uses the same FAA rules. TAFs are asked one station per call (avwx), so only when a flight date makes them
+  useful, at most twelve, and the first 503 (no key) stops the loop. Bench `test/metar.html`, 61/61: ten raw METARs
+  of the vatsim kind (gusts, CAVOK, VRB and variable sector, three layers, CB / TCU, vertical visibility, US units
+  and fractions, MPS, haze with NSC, trends and remarks ignored), the month rollover, an avwx METAR (CB, inHg / SM)
+  and an avwx TAF read by `station()` at 15Z (TEMPO TSRA with CB warned, BECMG VRB). Two of my first expected values
+  were wrong (9,000 m is 5.59 SM, VFR; A3001 is 1016.3 hPa), the decoder right. The avwx JSON shape was written from
+  its documentation without a live answer to compare: to check with a real key. Checked on 8793 with mocked answers:
+  no date → METAR only from vatsim; date, no key → one avwx call then the warning; date with a key → one TAF per
+  station, the card on TAF.
 - **23 Oct 2026 — lot G, Plan in five steps** (ergonomics session, from the user's own way of preparing a flight):
   the blocks are regrouped by step rather than by data — the level goes with the flight (step 1), wind and ISA with the
   weather (step 3), the climb goal with the level decision (step 4). Narrow module (phone, pane): one step at a time,

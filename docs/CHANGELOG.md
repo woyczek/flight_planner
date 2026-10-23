@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: weather without a launcher** (`frame/lib/metar.js`, `modules/fuel/module.js`; `test/metar.html`, `SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — on a phone the METARs come from metar.vatsim.net, decoded on the
+  device, and the TAFs from avwx.rest with your own weather key; without a key the card says the TAF is unavailable
+  and uses the METAR.
 - **fuel: Plan in five steps** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) —
   Flight, Route, Weather, Quote, Departure, one at a time on a phone and all at once on a wide screen, the block fuel
   always in view; "Show the map" opens the map beside or on its own; "Start the flight" records the departure time

@@ -87,7 +87,13 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 ## 10. Aerodrome weather (`modules/fuel/weather.js`)
 
 - **Source**: aviationweather.gov, `api/data/metar` and `api/data/taf` (`ids=<ICAO,…>&format=json`), through
-  `ctx.net` (relayed by the launcher: the service has no CORS), 40 stations per call; the stations are the departure,
+  `ctx.net` (relayed by the launcher: the service has no CORS), 40 stations per call. **Without a launcher** (lot E,
+  23 Oct 2026; the frame answers 503 `x-sog-unreachable` for aviationweather.gov at once): the METAR from
+  `metar.vatsim.net/metar.php?id=A,B` (raw text, decoded by `frame/lib/metar.js` into the same JSON form), the TAF
+  from `avwx.rest/api/taf/<ICAO>` (decoded JSON, converted by `fromAvwxTaf`; the frame adds the device's key) — only
+  when a flight date is given (the TAF is only read then), for the departure, arrival, alternate and the stations
+  that have a METAR, twelve at most, stopping at the first 503 (no key: "TAF unavailable without a launcher or a
+  weather key", the METAR answers); the card says the source. Offline: the kept values, as before; the stations are the departure,
   the aerodromes of the route's corridor, the arrival and the alternate. **Corridor** (23 Oct 2026, replaces the
   "intermediate aerodrome" field): aerodb `aerodromes({ bbox })` of each leg's box widened by the radius of the quote
   settings (`wxRadiusNm`, default 10 NM, 0 to 50), kept within that radius of the route (projection on the nearest leg,
