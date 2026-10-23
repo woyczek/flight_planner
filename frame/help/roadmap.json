@@ -352,10 +352,10 @@
         },
         {
           "state": "later",
-          "fr": "Génération des bases (SIA par zone, MORA, base appareils) : outil séparé du poste, jamais dans l'appli Pilote ; aujourd'hui les pages V2 du lanceur",
-          "en": "Base generation (SIA by zone, MORA, aircraft base): a separate workstation tool, never inside the Pilot app; today the launcher's V2 pages",
-          "de": "Erzeugung der Datenbanken (SIA nach Zone, MORA, Luftfahrzeugbasis): eigenes Werkzeug am Arbeitsplatz, nie in der Piloten-App; heute die V2-Seiten des Starters",
-          "es": "Generación de las bases (SIA por zona, MORA, base de aeronaves): herramienta aparte del puesto, nunca en la app Piloto; hoy las páginas V2 del lanzador"
+          "fr": "Génération des bases (SIA par zone, MORA, base appareils) : faite aujourd'hui par la V2 seule, sur le poste ; il faudra probablement un client lourd, sauf mieux ; faute de mieux, cette partie de la V2 est gardée",
+          "en": "Base generation (SIA by zone, MORA, aircraft base): done today by V2 only, on the workstation; a desktop client will probably be needed, unless something better is found; failing better, that part of V2 is kept",
+          "de": "Erzeugung der Datenbanken (SIA nach Zone, MORA, Luftfahrzeugbasis): heute nur durch die V2 am Arbeitsplatz; wahrscheinlich wird ein Desktop-Client nötig sein, sofern nichts Besseres gefunden wird; andernfalls bleibt dieser Teil der V2",
+          "es": "Generación de las bases (SIA por zona, MORA, base de aeronaves): hoy solo la hace la V2, en el puesto; probablemente hará falta un cliente de escritorio, salvo algo mejor; a falta de algo mejor, se conserva esa parte de la V2"
         }
       ]
     },
@@ -443,11 +443,11 @@
           "es": "App CPCO V3: planificación, asignaciones, reporting; app Cliente SOG: mis misiones por entregar"
         },
         {
-          "state": "later",
-          "fr": "Extinction progressive de la V2 : remise à plus tard, les pages V2 vivent à côté de la V3",
-          "en": "Progressive shutdown of V2: deferred, V2 pages live next to V3",
-          "de": "Schrittweise Abschaltung der V2: verschoben, die V2-Seiten leben neben der V3",
-          "es": "Apagado progresivo de la V2: aplazado, las páginas V2 viven junto a la V3"
+          "state": "planned",
+          "fr": "Extinction progressive de la V2 (décidée ; le rythme ne l'est pas) ; d'ici là les pages V2 vivent à côté de la V3",
+          "en": "Progressive shutdown of V2 (decided; the pace is not); until then V2 pages live next to V3",
+          "de": "Schrittweise Abschaltung der V2 (beschlossen; das Tempo nicht); bis dahin leben die V2-Seiten neben der V3",
+          "es": "Apagado progresivo de la V2 (decidido; el ritmo no); hasta entonces las páginas V2 viven junto a la V3"
         }
       ]
     }
