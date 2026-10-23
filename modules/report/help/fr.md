@@ -15,7 +15,7 @@ propose votre dernier vol sur le réseau : « Utiliser » remplit l'avion, l'ind
 de la trace. Le vol préparé dans Carburant ou Carte est proposé de la même façon (« Vol en cours ») ; s'il a été
 démarré dans Carburant (« Démarrer le vol »), il vient en premier, « Vol démarré à hh:mm ». La carte dit en une ligne
 tout ce qui sera repris, même ce qu'un type de mission n'a pas de case pour montrer (distance, niveau). « Utiliser »
-remplit aussi l'heure de mise en route (l'heure du départ dans Carburant) et le carburant au départ (le carburant bloc
+remplit aussi l'heure de mise en route (l'heure du départ dans Carburant), l'heure d'arrêt si le vol y a été terminé et le carburant au départ (le carburant bloc
 du devis), chacun marqué de sa source. Une fois son compte rendu enregistré, le vol n'est plus proposé.
 
 **Les autres sources.** Dépliez « Autres sources » pour reprendre votre dernier vol IVAO ou VATSIM, votre plan de vol

@@ -916,10 +916,17 @@ async function onClick(e) {
           minute: '2-digit',
           hourCycle: 'h23'
         }) : '',
+        // heure d'arrêt : « Terminer le vol » du carburant
+        'timeline.shutdown': cf.started?.endedAt ? new Date(cf.started.endedAt).toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23'
+        }) : '',
         'fuel.unit': cf.quote?.block > 0 ? cf.quote.unit : '',
         'fuel.start': cf.quote?.block > 0 ? cf.quote.block : ''
       }, tt(TX.current), {
         'timeline.engineStart': tt(TX.srcStarted),
+        'timeline.shutdown': tt(TX.srcStarted),
         'fuel.unit': tt(TX.srcQuote),
         'fuel.start': tt(TX.srcQuote)
       });
