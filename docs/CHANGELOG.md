@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **website: the user's chapter in French** (`modules/website/help/fr.md`) — "How to use" (my flight log, the fleet,
+  the preview, reading through the launcher, the airline card), then good to know and special cases; to be translated
+  and assembled by the help session.
 - **design: reading of V2's designs** (`frame/design/READING.md`, `frame/design/DECISIONS.md`) — what the Pilot
   application keeps of V2's designs, skins, icons and phone rules; the proposed `--sog-*` token set, the primitives the
   modules built by hand that move into the frame, density (44 px targets, 16 px field text on touch screens), day /
