@@ -1,6 +1,10 @@
 import {
   svg
 } from '../../frame/lib/icons.js';
+import {
+  textFromPoints,
+  icaoCoord
+} from '../../frame/lib/route_text.js';
 
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
@@ -38,7 +42,8 @@ export const meta = {
   }],
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles, les contours du fond uni
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
-    'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'
+    'lib/outlines.js?v=0', 'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
+    '../../frame/lib/route_text.js?v=0'
   ],
   // gardés au premier usage seulement (MapLibre, 1 Mo, inutile sans tuiles)
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0'],
@@ -177,11 +182,13 @@ const TX = {
   undo: ['Annuler', 'Undo', 'Rückgängig', 'Deshacer'],
   undoHelp: ['Annuler le dernier geste', 'Undo the last gesture', 'Letzte Geste rückgängig', 'Deshacer el último gesto'],
   editHint: [
-    'Glissez un point vers un fixe, une balise ou un terrain ; touchez-en un pour l\'ajouter à la route, ou un point de la route pour le retirer.',
-    'Drag a point onto a fix, a beacon or an airfield; tap one to add it to the route, or a route point to remove it.',
-    'Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz; tippen Sie einen an, um ihn der Route hinzuzufügen, oder einen Routenpunkt, um ihn zu entfernen.',
-    'Arrastre un punto sobre un fijo, una radioayuda o un aeródromo; toque uno para añadirlo a la ruta, o un punto de la ruta para quitarlo.'
+    'Glissez un point vers un fixe, une balise ou un terrain ; touchez-en un pour l\'ajouter à la route, ou un point de la route pour le retirer. Sur le profil, glissez un palier vers le haut ou le bas.',
+    'Drag a point onto a fix, a beacon or an airfield; tap one to add it to the route, or a route point to remove it. On the profile, drag a level up or down.',
+    'Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz; tippen Sie einen an, um ihn der Route hinzuzufügen, oder einen Routenpunkt, um ihn zu entfernen. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten.',
+    'Arrastre un punto sobre un fijo, una radioayuda o un aeródromo; toque uno para añadirlo a la ruta, o un punto de la ruta para quitarlo. En el perfil, arrastre un nivel hacia arriba o hacia abajo.'
   ],
+  lvlDown: ['Niveau plus bas (−FL10)', 'Lower level (−FL10)', 'Niedrigere Flughöhe (−FL10)', 'Nivel más bajo (−FL10)'],
+  lvlUp: ['Niveau plus haut (+FL10)', 'Higher level (+FL10)', 'Höhere Flughöhe (+FL10)', 'Nivel más alto (+FL10)'],
   remove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
   ptDep: ['départ', 'departure', 'Abflug', 'salida'],
   ptArr: ['arrivée', 'arrival', 'Ankunft', 'llegada'],
@@ -1086,34 +1093,17 @@ function setEdit(on) {
   const label = tt(on ? TX.editDone : TX.editMode);
   if (S.editBtn.textContent !== label) S.editBtn.textContent = label;
   S.undoBtn.hidden = !on;
+  if (S.el.classList.contains('mp-editing') !== on) S.el.classList.toggle('mp-editing', on);
   S.undoBtn.disabled = !S.edit.undo.length;
   hideTips();
   strip();
   schedule();
 }
 const NM_KM = 1.852;
-/** Identifiant OACI de coordonnées (4530N00030E) d'un point sans nom utilisable dans le texte de route. */
-const coordId = p => {
-  const f = (v, w, pos, neg) => {
-    const a = Math.abs(v);
-    let d = Math.floor(a),
-      m = Math.round((a - d) * 60);
-    if (m === 60) {
-      d++;
-      m = 0;
-    }
-    return `${String(d).padStart(w, '0')}${String(m).padStart(2, '0')}${v < 0 ? neg : pos}`;
-  };
-  return f(+p.lat, 2, 'N', 'S') + f(+p.lon, 3, 'E', 'W');
-};
-/** Texte de route normalisé depuis les points (forme de Carburant : « DEP PT1 PT2/F280 ARR »). */
-const routeText = pts => pts.map((p, i) => {
-  const id = /^[A-Z0-9]{2,7}$/.test(String(p.id || '')) ? p.id : coordId(p),
-    lvl = i > 0 && i < pts.length - 1 && +p.alt_ft > 0 ? `/F${String(Math.round(+p.alt_ft / 100)).padStart(3, '0')}` : '';
-  return id + lvl;
-}).join(' ');
+/** Identifiant OACI de coordonnées (4530N00030E) d'un point sans nom utilisable. */
+const coordId = p => icaoCoord(+p.lat, +p.lon);
 /** Geste appliqué : nouveaux points de l'enregistrement, montrés tout de suite, écrits 400 ms après le dernier geste. */
-function commit(points) {
+function commit(points, levelFt = null) {
   const f = S.route.flight || {},
     pts = points.map(p => ({
       ...p,
@@ -1129,12 +1119,20 @@ function commit(points) {
       route: {
         ...(f.route || {}),
         points: pts,
-        text: routeText(pts),
+        // texte de Carburant refait depuis les points (frame/lib/route_text.js) : les voies des tronçons restés intacts
+        // sont gardées, seule celle d'un tronçon modifié tombe
+        text: textFromPoints(pts, f.route?.text || '', f.route?.points || null),
         distanceNm: Math.round(dist * 10) / 10,
         trackDeg: pts.length >= 2 ? Math.round(MapsRender.trackOf(pts[0], pts[pts.length - 1])) : f.route?.trackDeg,
         from: 'points',
         manual: false
       },
+      ...(levelFt > 0 ? {
+        level: {
+          ...(f.level || {}),
+          ft: levelFt
+        }
+      } : {}),
       by: 'maps',
       updated_at: new Date().toISOString()
     };
@@ -1142,6 +1140,7 @@ function commit(points) {
     ...S.route,
     flight: rec,
     points: pointsOf(rec),
+    levelFt: +rec.level?.ft || 0,
     updated: rec.updated_at
   };
   S.marks = MapsRender.marks(S.route.points);
@@ -1163,6 +1162,12 @@ async function saveRoute(rec) {
         ...(cur.route || {}),
         ...rec.route
       },
+      ...(rec.level ? {
+        level: {
+          ...(cur.level || {}),
+          ...rec.level
+        }
+      } : {}),
       by: 'maps',
       updated_at: rec.updated_at
     });
@@ -1174,7 +1179,10 @@ async function saveRoute(rec) {
 }
 /** Geste : l'état d'avant gardé pour « Annuler » (20 au plus). */
 function remember() {
-  S.edit.undo.push(structuredClone(rawPoints()));
+  S.edit.undo.push({
+    points: structuredClone(rawPoints()),
+    level: +S.route.flight?.level?.ft || 0
+  });
   if (S.edit.undo.length > 20) S.edit.undo.shift();
 }
 /** Point i posé sur a (son nom et sa position ; le niveau tenu à partir du point est gardé). */
@@ -1235,7 +1243,134 @@ function undoEdit() {
   const prev = S.edit.undo.pop();
   if (!prev) return;
   hideTips();
-  commit(prev);
+  commit(prev.points, prev.level);
+}
+/** Niveau tenu sur le tronçon qui part du point i : celui du point s'il en porte un, sinon le précédent, sinon le niveau
+ *  du vol. */
+function heldLevel(i) {
+  const pts = rawPoints();
+  let l = +S.route.flight?.level?.ft || 0;
+  for (let k = 1; k <= i && k < pts.length - 1; k++)
+    if (+pts[k].alt_ft > 0) l = +pts[k].alt_ft;
+  return l;
+}
+/** Niveau ft tenu à partir du point i (paliers de FL10) : au départ, le niveau du vol ; ailleurs alt_ft, retiré quand il
+ *  redevient celui du tronçon précédent. */
+function setLevel(i, ft) {
+  const pts = rawPoints();
+  ft = Math.max(1000, Math.round(ft / 1000) * 1000);
+  if (i < 0 || i >= pts.length - 1 || ft === heldLevel(i)) return;
+  remember();
+  if (i === 0) return commit(pts, ft);
+  const p = {
+    ...pts[i]
+  };
+  if (ft === heldLevel(i - 1)) delete p.alt_ft;
+  else p.alt_ft = ft;
+  pts[i] = p;
+  commit(pts);
+}
+/** Tronçon du profil sous la distance s (unités de la coupe) : rang du point qui l'ouvre et bornes [s0, s1]. */
+function segmentAt(sDist) {
+  const pts = rawPoints().map(p => ({
+      lat: +p.lat,
+      lon: +p.lon
+    })),
+    cum = MapsRender.distances(pts),
+    tot = cum[cum.length - 1] || 1,
+    k = S.geo.total / tot;
+  for (let i = 0; i < pts.length - 1; i++)
+    if (sDist <= cum[i + 1] * k || i === pts.length - 2) return {
+      i,
+      s0: cum[i] * k,
+      s1: cum[i + 1] * k
+    };
+  return null;
+}
+/** Altitude (ft) à la hauteur y du profil, et l'inverse. */
+const altAtY = (g, y) => g.bottom + (1 - (y - g.padT) / (g.H - g.padT - g.padB)) * (g.top - g.bottom);
+const yAtAlt = (g, a) => g.padT + (g.H - g.padT - g.padB) * (1 - (Math.min(Math.max(a, g.bottom), g.top) - g.bottom) / (g.top - g.bottom));
+/** Palier en cours de glisser sur le profil : trait tireté du tronçon au nouveau niveau, et son nom. */
+function drawLevelDrag() {
+  const d = S.edit.ldrag;
+  if (!d?.moved || !S.geo) return;
+  const g = S.geo,
+    ctx = S.pcur.getContext('2d'),
+    x0 = MapsProfile.xOf(g, d.s0),
+    x1 = MapsProfile.xOf(g, d.s1),
+    y = yAtAlt(g, d.ft);
+  ctx.save();
+  ctx.strokeStyle = S.theme.accent;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([7, 4]);
+  ctx.beginPath();
+  ctx.moveTo(x0, y);
+  ctx.lineTo(x1, y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = '700 13px Arial,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = S.theme.bg;
+  ctx.lineWidth = 3;
+  const t = altTxt(d.ft);
+  ctx.strokeText(t, (x0 + x1) / 2, y - 4);
+  ctx.fillStyle = S.theme.accent;
+  ctx.fillText(t, (x0 + x1) / 2, y - 4);
+  ctx.restore();
+}
+/** Gestes du mode Modifier sur le profil : glisser verticalement règle le palier du tronçon touché ; un toucher sans
+ *  glisser place le curseur comme d'habitude. */
+function levelGestures() {
+  const pos = e => {
+    const r = S.profBox.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
+  S.profBox.addEventListener('pointerdown', e => {
+    if (!S.edit.on || !S.geo || e.button > 0 || e.target.closest('.mp-tip')) return;
+    const [x, y] = pos(e),
+      seg = segmentAt(MapsProfile.sOf(S.geo, x));
+    if (!seg) return;
+    e.stopPropagation();
+    e.preventDefault();
+    S.edit.ldrag = {
+      ...seg,
+      id: e.pointerId,
+      x,
+      y0: y,
+      ft: heldLevel(seg.i),
+      moved: false
+    };
+    try {
+      S.profBox.setPointerCapture(e.pointerId);
+    } catch {
+      /* capture refusée : le glisser suit tant que le doigt reste sur le profil */
+    }
+  }, true);
+  S.profBox.addEventListener('pointermove', e => {
+    const d = S.edit.ldrag;
+    if (!d || e.pointerId !== d.id) return;
+    e.stopPropagation();
+    const [, y] = pos(e);
+    if (!d.moved && Math.abs(y - d.y0) > 6) d.moved = true;
+    if (!d.moved) return;
+    d.ft = Math.max(1000, Math.min(S.geo.top, Math.round(altAtY(S.geo, y) / 1000) * 1000));
+    drawCursor();
+    drawLevelDrag();
+  }, true);
+  const end = e => {
+    const d = S.edit.ldrag;
+    if (!d || e.pointerId !== d.id) return;
+    e.stopPropagation();
+    S.edit.ldrag = null;
+    if (e.type === 'pointercancel') return drawCursor();
+    if (d.moved) setLevel(d.i, d.ft);
+    else setCursor(MapsProfile.sOf(S.geo, d.x));
+    drawCursor();
+  };
+  S.profBox.addEventListener('pointerup', end, true);
+  S.profBox.addEventListener('pointercancel', end, true);
 }
 /** Carte d'un point de la route : nom, rôle ou niveau, « Retirer » (sauf départ et arrivée). */
 function openCard(i) {
@@ -1246,7 +1381,9 @@ function openCard(i) {
     lvl = +p.alt_ft > 0 ? tt(TX.ptLevel, {
       l: +p.alt_ft >= 10000 ? `FL${Math.round(+p.alt_ft / 100)}` : `${Math.round(+p.alt_ft)} ft`
     }) : tt(TX.ptSame),
-    html = `<div><b>${esc(p.id || coordId(p))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${end ? '' : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
+    held = i < pts.length - 1 ? heldLevel(i) : 0,
+    step = held ? `<div class="mp-lvl"><button type="button" class="f-btn" data-lvl="${i}" data-d="-1000" aria-label="${esc(tt(TX.lvlDown))}" title="${esc(tt(TX.lvlDown))}">−</button><b>${esc(altTxt(held))}</b><button type="button" class="f-btn" data-lvl="${i}" data-d="1000" aria-label="${esc(tt(TX.lvlUp))}" title="${esc(tt(TX.lvlUp))}">+</button></div>` : '',
+    html = `<div><b>${esc(p.id || coordId(p))}</b></div><div class="f-muted">${esc(i === 0 ? tt(TX.ptDep) : end ? tt(TX.ptArr) : lvl)}</div>${step}${end ? '' : `<button type="button" class="f-btn" data-remove="${i}">${esc(tt(TX.remove))}</button>`}`,
     q = S.toC(+p.lat, +p.lon);
   hideTips();
   showTip(S.cardEl, S.box, q.x, q.y, html);
@@ -1373,6 +1510,12 @@ function editGestures() {
   S.editBtn.addEventListener('click', () => setEdit(!S.edit.on));
   S.undoBtn.addEventListener('click', undoEdit);
   S.cardEl.addEventListener('click', e => {
+    const lv = e.target.closest('[data-lvl]');
+    if (lv) {
+      const i = +lv.dataset.lvl;
+      setLevel(i, heldLevel(i) + +lv.dataset.d);
+      return openCard(i); // la carte reste ouverte, niveau à jour
+    }
     const i = e.target.closest('[data-remove]')?.dataset.remove;
     if (i == null) return;
     hideTips();
@@ -1906,6 +2049,9 @@ const STYLE = `
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 [data-module="maps"] .mp-pcard[hidden]{display:none}
 [data-module="maps"] .mp-pcard .f-btn{align-self:flex-start;margin-top:4px}
+[data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
+[data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
+[data-module="maps"].mp-editing .mp-prof{touch-action:none;cursor:ns-resize}
 `;
 
 export async function mount(el, ctx) {
@@ -2098,6 +2244,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   // une carte de mission garde son profil : ni mode ni couches
   S.modesEl.hidden = S.layersBtn.hidden = S.editBar.hidden = !!ctx.query?.mission;
   editGestures();
+  levelGestures();
   if (ctx.query?.mission) await applyMission();
   else {
     await applyFlight();
@@ -2119,7 +2266,9 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     clearTimeout(live);
     live = setTimeout(async () => {
       const f = await ctx.data.get(flightPath()).catch(() => null);
-      if (S && (f?.updated_at || '') !== S.route.updated) {
+      // une version plus ancienne que celle montrée (l'écriture d'un geste de la carte qui revient après d'autres
+      // gestes) n'est pas reprise : elle effacerait ces gestes
+      if (S && (f?.updated_at || '') !== S.route.updated && (f?.updated_at || '') > (S.route.updated || '')) {
         performance.mark('maps:live');
         await applyFlight(true);
       }

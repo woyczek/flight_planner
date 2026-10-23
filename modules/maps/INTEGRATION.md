@@ -61,11 +61,12 @@ keeps the module and fuel scrolls to that step).
   profile then draws the steps and computes TOC and TOD per segment.
 - Missions keep the studio's meaning for `route_points[].alt_ft`: the altitude reached at the point (`mission.js`).
 - Every write of the file redraws the map and the profile (debounced 300 ms).
-- **Maps writes the record** when the route is edited on the map (lot 6a): `route.points`, `route.text` (fuel's
-  normalised form, from the points), `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`, `by: 'maps'`,
+- **Maps writes the record** when the route is edited on the map (lots 6a and 6b): `route.points`, `route.text`
+  (`textFromPoints` of `frame/lib/route_text.js`, owned by fuel: airways of unchanged segments kept), `level.ft` when
+  the first segment's level changes, `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`, `by: 'maps'`,
   `updated_at`, on the latest version read; every other field is kept. Fuel requotes on `by` ≠ `fuel`; until then
-  maps draws its own TOC and TOD. The airways of a typed route are not kept in the text once the route is edited on
-  the map (the text is rebuilt from the points, as fuel does when it edits points).
+  maps draws its own TOC and TOD.
+- `frame/lib/route_text.js` is imported by the module and kept at installation (`meta.files`).
 
 ## 5. Costs (measured, see DECISIONS.md)
 

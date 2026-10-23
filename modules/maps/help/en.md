@@ -62,7 +62,9 @@ profile then shows the mission's.
 **Editing the route on the map.** Tap “Edit” at the top right of the map: the waypoints get a circle. Drag a
 point onto a fix, a beacon or an airfield: it settles there (dropped elsewhere, it goes back). Tap a fix or a beacon
 off the route: it is added to the nearest segment. Tap a route point: its card gives its level and offers
-“Remove”. Departure and arrival do not move here. “Undo” takes back the last gesture. Each change is saved in the
+“Remove”. Departure and arrival do not move here. On the profile, drag a level up or down: the level changes from
+the point that opens that segment, in steps of FL10 (on the first segment, it is the flight level); in a point's
+card, “−” and “+” do the same. “Undo” takes back the last gesture. Each change is saved in the
 flight at once, and Fuel redoes the quote; the profile follows. “Done” closes the mode, and the map moves under
 your finger again. To type the route as text, “Edit the route” opens Fuel's Route step.
 

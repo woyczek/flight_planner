@@ -65,7 +65,9 @@ mission, ses zones hachurées et son cheminement. Le profil vertical montre alor
 s'entourent d'un cercle. Faites glisser un point jusqu'à un fixe, une balise ou un terrain : il s'y pose (lâché
 ailleurs, il revient à sa place). Touchez un fixe ou une balise hors de la route : il s'ajoute au tronçon le plus
 proche. Touchez un point de la route : sa carte donne son niveau et propose « Retirer ». Le départ et l'arrivée ne
-bougent pas ici. « Annuler » reprend le dernier geste. Chaque changement est enregistré aussitôt dans le vol, et
+bougent pas ici. Sur le profil, glissez un palier vers le haut ou le bas : le niveau change à partir du point qui
+ouvre ce tronçon, par pas de FL10 (sur le premier tronçon, c'est le niveau du vol) ; dans la carte d'un point, « − »
+et « + » font de même. « Annuler » reprend le dernier geste. Chaque changement est enregistré aussitôt dans le vol, et
 Carburant refait le devis ; le profil suit. « Terminer » ferme le mode, et la carte se déplace de nouveau au doigt.
 Pour taper la route en texte, « Modifier la route » ouvre l'étape Route de Carburant.
 

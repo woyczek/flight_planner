@@ -67,7 +67,9 @@ schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mi
 einen Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
 losgelassen, kehrt er zurück). Tippen Sie einen Fix oder ein Funkfeuer abseits der Route an: er kommt in den
 nächsten Abschnitt. Tippen Sie einen Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an.
-Abflug und Ankunft bewegen sich hier nicht. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im
+Abflug und Ankunft bewegen sich hier nicht. Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten: sie ändert
+sich ab dem Punkt, der diesen Abschnitt eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die
+Flughöhe des Flugs); in der Karte eines Punkts tun „−“ und „+“ dasselbe. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im
 Flug gespeichert, und Kraftstoff rechnet neu; das Profil folgt. „Fertig“ schließt den Modus, und die Karte lässt sich
 wieder mit dem Finger verschieben. Um die Route als Text einzugeben, öffnet „Route bearbeiten“ den Schritt Route von
 Kraftstoff.

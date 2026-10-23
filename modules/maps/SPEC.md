@@ -157,12 +157,21 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - A tap on an anchor off the route inserts it where it lengthens the route least; a tap on a route point opens its
     card (id, departure / arrival or the level held from it, "Remove" for a waypoint); the click that follows a drag
     is ignored.
-  - "Undo" restores the points before the last gesture (20 kept, in memory).
+  - Levels (lot 6b): in the mode, a vertical drag on the profile (more than 6 px) sets the level held on the segment
+    under the finger, in steps of 1,000 ft, shown as a dashed line with its level while dragging; a tap without
+    dragging places the cursor as usual. The level applies from the point that opens the segment: on the first
+    segment it is `level.ft`, elsewhere the point's `alt_ft`, removed when it equals the previous segment's level. In
+    the mode the profile has `touch-action: none` (the page does not scroll under the finger). A point's card shows
+    the level held from it with "−" and "+" (FL10).
+  - "Undo" restores the points and the flight level before the last gesture (20 kept, in memory).
   - Each gesture is shown at once (points, header, profile); 400 ms after the last one, the record is written:
-    `route.points` (rounded to 1e-6°), `route.text` normalised from the points (`DEP PT1 PT2/F280 ARR`, ICAO
-    coordinates `4530N00030E` for a name that is not 2 to 7 letters or digits), `distanceNm`, `trackDeg`,
-    `from: 'points'`, `manual: false`, `by: 'maps'`, `updated_at`, merged into the latest version read (no other field
-    lost).
+    `route.points` (rounded to 1e-6°), `route.text` from fuel's `textFromPoints(points, previousText,
+    previousPoints)` (`frame/lib/route_text.js`: the airway between two neighbouring points left unchanged is kept,
+    the one of a changed segment drops; ICAO coordinates for a point without a usable name), `level.ft` when the first
+    segment's level changed, `distanceNm`, `trackDeg`, `from: 'points'`, `manual: false`, `by: 'maps'`, `updated_at`,
+    merged into the latest version read (no other field lost).
+  - The live view takes a version of the record only if it is newer than the one shown: the write of an earlier
+    gesture, coming back after newer gestures, would otherwise undo them.
   - While the record is not `by: 'fuel'`, the profile ignores fuel's `profile` (TOC, TOD) and computes its own;
     fuel redoes the quote and writes it back (`modules/fuel/INTEGRATION.md` § 3).
 - **Texts**: four languages, through `ctx.t`. Data labels (codes, names, levels) are not translated.

@@ -297,3 +297,19 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     conservé · Retirer" → removed; drop 40 px away from any anchor → unchanged; Undo ×3 → back to LUGEN, Undo
     disabled; Done → mode closed. The profile draws its own TOC (63 NM) while the record is the map's. No
     JavaScript error.
+- **23 Oct 2026 — lot 6b: levels on the profile.**
+  - **A vertical drag in the mode, a tap still places the cursor**: the profile keeps its reading role, and the
+    level gesture needs no extra button. Steps of 1,000 ft (FL10), clamped between 1,000 ft and the top of the scale.
+  - **The level belongs to the point that opens the segment** (fuel's `alt_ft`: held from that point on); the first
+    segment is the flight level, which the map now writes too (`level.ft`); a level equal to the previous segment's is
+    removed rather than repeated.
+  - **Bug found by the bench and fixed**: the live view reloaded the map's own earlier write after newer gestures
+    (card "−", "−", "+" gave FL280 instead of FL270). It now ignores a version older than the one shown.
+  - **Route text from fuel's `frame/lib/route_text.js`** (ed94e6442), as decided by the ergonomics session: the airway
+    of a segment whose two ends did not change is kept.
+  - **Bench**: 1280 px mouse: drag on the second segment → `LUGEN/F280`, page not scrolled; drag on the first segment →
+    `level.ft` 20,000; card − − + → FL270; brought back to the previous level → `alt_ft` removed; Undo down to the
+    start → FL270 flight, no step. Route "LFRS LUGEN UN460 DIDRU LFML": LFOO inserted on the direct LFRS → LUGEN →
+    "LFRS LFOO LUGEN UN460 DIDRU LFML"; Undo → the original text; DIDRU dragged onto POI → "LFRS LUGEN POI LFML". The
+    6a benches (375 px touch, 1280 px mouse), the touch tooltips and the live view pass unchanged. No JavaScript
+    error.
