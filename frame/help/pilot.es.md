@@ -357,7 +357,7 @@ datos)» para intercambiar.
 
 **El acceso a los datos.** En un teléfono o en el sitio, configure en «Acceso a los datos» el repositorio
 (cuenta/repositorio), la rama y su token personal, luego «Probar» y «Guardar». En un puesto servido por el lanzador no
-hay nada que configurar: el lanzador se encarga.
+hay token: la tarjeta muestra el repositorio remoto de `data/` (vea «Un repositorio git para data/»).
 
 **Sin acceso ni lanzador, no hay bases.** Un dispositivo sin acceso configurado y sin lanzador — el sitio abierto en un
 teléfono por primera vez, por ejemplo — no tiene ni la base aeronáutica (espacios, aeródromos, radioayudas) ni la base
@@ -382,6 +382,22 @@ En un puesto servido por el lanzador, «Claves del lanzador» configura la clave
 `secrets/` del lanzador, nunca en el navegador ni en los datos. «Probar» comprueba que IVAO responde; «Borrar» la
 quita.
 
+## Un repositorio git para data/
+
+En un puesto servido por el lanzador, «Acceso a los datos» muestra el repositorio remoto de `data/`: su dirección y su
+rama. Para configurarlo o cambiarlo, escriba la dirección (`git@host:cuenta/repo.git` o `https://…`, sin contraseña ni
+token dentro): «Comprobar» indica si el repositorio responde, «Guardar» lo configura. Hacia otro repositorio distinto
+del actual, el lanzador pide confirmación en una ventana del equipo. Nada bloquea: un repositorio que no responde solo
+se señala.
+
+- **El acceso al repositorio** se configura en el equipo: una clave SSH para una dirección `git@…`, credenciales
+  guardadas en Git para una dirección `https://…`.
+- **Varios usuarios por git** necesitan este repositorio remoto: sin él, la casilla «Varios usuarios» no lleva a
+  ninguna parte, y la tarjeta «Usos» lo recuerda.
+- **data/ no es un repositorio git** (datos de ejemplo o archivo): nada sale de este puesto. Para convertirlo en uno,
+  vuelva a hacer el primer inicio de la V2 con la dirección del repositorio de datos (clona `data/`), o, con el
+  lanzador cerrado, clone usted mismo el repositorio de datos en `data/`.
+
 ## Conviene saber
 
 - **El token**: un token de grano fino de github.com, solo sobre el repositorio de datos, «Contents» lectura y
@@ -393,4 +409,4 @@ quita.
 - **Diagnóstico**: plegado abajo en la pantalla; «Copiar» lo pone en el portapapeles para señalar un problema. El token
   nunca figura en él.
 
-<!-- fr: 69c8dc337c1f -->
+<!-- fr: 151f4632fce5 -->

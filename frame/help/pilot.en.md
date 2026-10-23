@@ -349,8 +349,8 @@ this device”: nothing goes elsewhere. Tick “Alone, on several devices” or 
 exchange.
 
 **Data access.** On a phone or on the website, set in “Data access” the repository (account/repository), the branch and
-your personal token, then “Test” and “Save”. On a workstation served by the launcher there is nothing to set: the
-launcher takes care of it.
+your personal token, then “Test” and “Save”. On a workstation served by the launcher there is no token: the card
+shows the remote repository of `data/` (see “A git repository for data/”).
 
 **No access and no launcher, no bases.** A device with no access set and no launcher — the website opened on a phone
 for the first time, for instance — has neither the aeronautical base (airspaces, airfields, beacons) nor the aircraft
@@ -373,6 +373,22 @@ downloads it whole (preferably on Wi-Fi); “Free” gives the space back.
 On a workstation served by the launcher, “Launcher keys” sets the IVAO API key: it stays in the launcher’s `secrets/`
 folder, never in the browser nor in the data. “Test” checks that IVAO answers; “Erase” removes it.
 
+## A git repository for data/
+
+On a workstation served by the launcher, “Data access” shows the remote repository of `data/`: its address and its
+branch. To set or change it, type the address (`git@host:account/repo.git` or `https://…`, with no password or token
+in it): “Check” says whether the repository answers, “Save” sets it. Towards another repository than the current one,
+the launcher asks for confirmation in a window on the computer. Nothing blocks: a repository that does not answer is
+only reported.
+
+- **Access to the repository** is set on the computer: an SSH key for a `git@…` address, credentials stored in Git for
+  an `https://…` address.
+- **Several users through git** need this remote repository: without it, the “Several users” box leads nowhere, and
+  the “Usages” card says so.
+- **data/ is not a git repository** (example data or archive): nothing leaves this workstation. To make it one, run
+  V2's first start again with the address of the data repository (it clones `data/`), or, with the launcher closed,
+  clone the data repository into `data/` yourself.
+
 ## Good to know
 
 - **The token**: a fine-grained token from github.com, on the data repository only, “Contents” read and write, 90 days
@@ -384,4 +400,4 @@ folder, never in the browser nor in the data. “Test” checks that IVAO answer
 - **Diagnostics**: folded at the bottom of the screen; “Copy” puts it on the clipboard to report a problem. The token is
   never in it.
 
-<!-- fr: 69c8dc337c1f -->
+<!-- fr: 151f4632fce5 -->

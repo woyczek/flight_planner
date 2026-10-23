@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: the remote repository of data/ from the frame** (`frame/settings/settings.js`,
+  `frame/settings/help/*.md`; `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — on a workstation served by
+  the launcher, the Access card shows the remote repository of `data/` (address, branch) and lets you check and save a
+  new address, with the V2 first start's rules (another repository confirmed in a window of the launcher, never
+  blocking); without git, a sentence and a link to the help; "Several users" without a remote warns on the Usages
+  card. The Settings chapter gains "A git repository for data/".
 - **help: chapters Report, My flights, Website, Map and Settings** (`modules/{report,flightlog,website,maps}/help/
   {en,de,es}.md`, `modules/fuel/help/*.md`, `frame/settings/help/*.md`, `frame/help/build_help.py`,
   `frame/help/pilot.*.md`, `frame/settings/settings.js`, `frame/app.js`; `frame/help/SPEC.md`, `DECISIONS.md`,

@@ -51,8 +51,15 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    file…" asks, saying that this device's copies, pending writes and conflicts will be erased, then loads in `replace`
    mode. A file that is not a device backup is refused with a notification; the result says added, updated, kept
    and conflicts.
-6. **Data access** (an exchange ticked, or no launcher serving the page): on a launcher, one sentence (no token
-   here). Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
+6. **Data access** (always): on a launcher, one sentence (no token here), then the **remote repository of `data/`**
+   (`GET /__setup/sync-remote`: `repo`, `remote`, `url`, `branch`, `default`): the current address and branch (a
+   branch that is not a branch name is left out), or "no remote repository: nothing leaves this workstation"; an
+   address field (current address, else the configuration's default), "Check" (`POST { url }`: does it answer) and
+   "Save" (`POST { url, save: true }`; another repository than the current one is confirmed in a window the launcher
+   opens on the computer, as in V2's first start). Never blocking: the check's report stays in the card after a save.
+   When `data/` is not a git repository: one sentence (nothing leaves this workstation) and a link to the help section
+   "A git repository for data/". On the Usages card, "Several users" ticked with no remote shows a warning pointing to
+   this card, and the state sentence says "a git repository with no remote: nothing goes elsewhere". Without an exchange, a hint says the access then only reads the aeronautical and aircraft bases published in
    the data repository, nothing is sent (the frame's local transport with the GitHub repository as reference source). Otherwise repository, branch and
    token; the token field is always empty, its placeholder says a token is saved, an empty field keeps it. Hint: a
    fine-grained token on this repository only, Contents read and write, 90 days at most, never pasted in a message.

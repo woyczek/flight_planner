@@ -16,8 +16,8 @@ choix, la ligne « Menu : » dit quels outils il montre ; un outil caché reste 
 des données) » pour échanger.
 
 **L'accès aux données.** Sur un téléphone ou sur le site, réglez dans « Accès aux données » le dépôt (compte/dépôt), la
-branche et votre jeton personnel, puis « Tester » et « Enregistrer ». Sur un poste servi par le lanceur, il n'y a rien à
-régler : le lanceur s'en charge.
+branche et votre jeton personnel, puis « Tester » et « Enregistrer ». Sur un poste servi par le lanceur, pas de jeton : la
+carte montre le dépôt distant de `data/` (voir « Un dépôt git pour data/ »).
 
 **Sans accès ni lanceur, pas de bases.** Un appareil sans accès réglé et sans lanceur — le site ouvert sur un téléphone
 pour la première fois, par exemple — n'a ni base aéronautique (espaces, terrains, balises) ni base des appareils :
@@ -41,6 +41,22 @@ qui est sur l'appareil.
 Sur un poste servi par le lanceur, « Clés du lanceur » règle la clé de l'API IVAO : elle reste dans le dossier
 `secrets/` du lanceur, jamais dans le navigateur ni dans les données. « Tester » vérifie qu'IVAO répond ;
 « Effacer » la retire.
+
+## Un dépôt git pour data/
+
+Sur un poste servi par le lanceur, « Accès aux données » montre le dépôt distant de `data/` : son adresse et sa
+branche. Pour le régler ou en changer, tapez l'adresse (`git@hôte:compte/dépôt.git` ou `https://…`, sans mot de passe
+ni jeton dedans) : « Vérifier » dit si le dépôt répond, « Enregistrer » le règle. Vers un autre dépôt que l'actuel, le
+lanceur demande confirmation dans une fenêtre sur l'ordinateur. Rien ne bloque : un dépôt qui ne répond pas est
+seulement signalé.
+
+- **L'accès au dépôt** se règle sur l'ordinateur : clé SSH pour une adresse `git@…`, identifiants enregistrés dans Git
+  pour une adresse `https://…`.
+- **À plusieurs par git**, ce dépôt distant est nécessaire : sans lui, la case « À plusieurs » ne mène nulle part, et
+  la carte « Usages » le rappelle.
+- **data/ n'est pas un dépôt git** (données d'exemple ou archive) : rien ne part ailleurs que ce poste. Pour en faire
+  un, refaites le premier lancement de la V2 avec l'adresse du dépôt des données (il clone `data/`), ou, lanceur
+  fermé, clonez vous-même le dépôt des données dans `data/`.
 
 ## Bon à savoir
 

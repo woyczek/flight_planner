@@ -76,7 +76,19 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   neither launcher nor access has no aeronautical and no aircraft base. The Access card now shows without an exchange
   when no launcher serves the page, with a hint that it then only reads the bases; "Offline data" says what to do when
   nothing can provide them. Checked: alone with an access set, the transport stays local and the warning goes.
-- **23 Oct 2026 — Tests of lot 4** (fake GitHub serving the repository, 375 px, French): export (dump format, counts),
+- **23 Oct 2026 — Remote repository of data/ on a launcher** (the user's question, through the ergonomics session):
+  - the Access card is always shown; on a launcher it reads `GET /__setup/sync-remote` and sets the address with
+    `POST /__setup/sync-remote` (check, then save), the V2 first start's routes and rules: another repository than the
+    current one or the configured one is confirmed in a window the launcher opens on the computer, which a page can
+    neither see nor answer; never blocking;
+  - the check's report stays shown after a save (only the "Current" line changes), so an unreachable repository is
+    seen even when saved;
+  - without git: a sentence and a link to the help section "A git repository for data/" (anchors checked in the four
+    manuals); "Several users" without a remote: a warning on the Usages card;
+  - tests on isolated copies of the test data whose remote was first pointed to `https://example.invalid/…` (the copy
+    still pointed to the real data repository): current address, check ("unreachable host"), save of the same address
+    (no window), no remote, no git. Saving another address was not tried here: it opens a confirmation window on the
+    user's computer. (fake GitHub serving the repository, 375 px, French): export (dump format, counts),
   merge keeping this device's newer record, replace bringing the backup's record back, both questions; "Cut access"
   (GitHub → local, setting erased, "no way to exchange" sentence); `cached` / `evict` present on the adapter; real
   aerodb state for the aircraft base; no JavaScript error. Zones with a real published base: aerodb's bench.

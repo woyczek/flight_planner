@@ -371,7 +371,8 @@ sagt die Zeile „Menü:“, welche Werkzeuge sie zeigt; ein ausgeblendetes Werk
 
 **Der Datenzugang.** Auf einem Telefon oder auf der Website stellen Sie unter „Datenzugang“ das Repository
 (Konto/Repository), den Zweig und Ihr persönliches Token ein, dann „Testen“ und „Speichern“. Auf einem vom Starter
-bedienten Rechner ist nichts einzustellen: Der Starter übernimmt das.
+bedienten Rechner gibt es kein Token: Die Karte zeigt das entfernte Repository von `data/` (siehe „Ein Git-Repository
+für data/“).
 
 **Ohne Zugang und ohne Starter keine Basen.** Ein Gerät ohne eingestellten Zugang und ohne Starter — etwa die Website,
 zum ersten Mal auf einem Telefon geöffnet — hat weder die Luftfahrtdatenbasis (Lufträume, Flugplätze, Funkfeuer) noch
@@ -395,6 +396,22 @@ Größe. „Offline behalten“ lädt sie ganz herunter (am besten im WLAN); „
 Auf einem vom Starter bedienten Rechner stellt „Schlüssel des Starters“ den IVAO-API-Schlüssel ein: Er bleibt im Ordner
 `secrets/` des Starters, nie im Browser oder in den Daten. „Testen“ prüft, ob IVAO antwortet; „Löschen“ entfernt ihn.
 
+## Ein Git-Repository für data/
+
+Auf einem vom Starter bedienten Rechner zeigt „Datenzugang“ das entfernte Repository von `data/`: seine Adresse und
+seinen Zweig. Um es einzustellen oder zu ändern, tippen Sie die Adresse (`git@host:konto/repo.git` oder `https://…`,
+ohne Passwort oder Token darin): „Prüfen“ sagt, ob das Repository antwortet, „Speichern“ stellt es ein. Für ein anderes
+Repository als das aktuelle fragt der Starter in einem Fenster auf dem Computer nach Bestätigung. Nichts blockiert: Ein
+Repository, das nicht antwortet, wird nur gemeldet.
+
+- **Der Zugang zum Repository** wird auf dem Computer eingestellt: ein SSH-Schlüssel für eine Adresse `git@…`, in Git
+  gespeicherte Zugangsdaten für eine Adresse `https://…`.
+- **Mehrere Nutzer über git** brauchen dieses entfernte Repository: Ohne es führt das Kästchen „Mehrere Nutzer“ nirgends
+  hin, und die Karte „Nutzungen“ erinnert daran.
+- **data/ ist kein Git-Repository** (Beispieldaten oder Archiv): Nichts verlässt diesen Rechner. Um eines daraus zu
+  machen, führen Sie den ersten Start der V2 mit der Adresse des Datenrepositorys erneut aus (er klont `data/`), oder
+  klonen Sie bei geschlossenem Starter das Datenrepository selbst nach `data/`.
+
 ## Gut zu wissen
 
 - **Das Token**: ein feingranulares Token von github.com, nur für das Datenrepository, „Contents“ lesen und schreiben,
@@ -406,4 +423,4 @@ Auf einem vom Starter bedienten Rechner stellt „Schlüssel des Starters“ den
 - **Diagnose**: unten am Bildschirm eingeklappt; „Kopieren“ legt sie in die Zwischenablage, um ein Problem zu melden. Das
   Token steht nie darin.
 
-<!-- fr: 69c8dc337c1f -->
+<!-- fr: 151f4632fce5 -->

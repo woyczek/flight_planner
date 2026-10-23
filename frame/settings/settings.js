@@ -6,7 +6,10 @@
   //   · Identité (device/identity.json) ; Niveau (device/level.json : 1 découverte, 2 courant, 3 complet ; le menu du
   //     cadre suit) ; Usages (device/usages.json) : « Seul sur cet appareil » n'est pas une case,
   //     c'est l'état quand aucun échange n'est coché ; export / import des données de l'appareil dans ce seul cas ;
-  //   · Accès (dépôt GitHub, jeton jamais réaffiché, « Couper l'accès ») et Synchronisation, si un échange est coché ;
+  //   · Accès, toujours : sur un poste servi par le lanceur, le dépôt distant de data/ (GET / POST /__setup/sync-remote :
+  //     vérifier, enregistrer ; autre dépôt confirmé dans une fenêtre du lanceur) ; sinon dépôt GitHub, jeton jamais
+  //     réaffiché, « Couper l'accès » (sans échange coché : lecture des bases seulement) ; Synchronisation si un échange
+  //     est coché ;
   //   · Données hors ligne (ctx.aerodb, stockage du navigateur) ; Clés, si un lanceur sert la page ; diagnostic replié ;
   //   · reprise des réglages V2 de la même origine en un geste (identité, accès GitHub), proposée une fois.
   // Contexte donné par frame/app.js : { t, notify, ask, FD, own (device/, politique cache), reload, identity(), usages(),
@@ -118,6 +121,10 @@
       'Intercambio por el lanzador de este puesto (carpeta data/{g}).'
     ],
     viaLauncherGit: [', synchronisé par git', ', synchronised through git', ', über git synchronisiert', ', sincronizada por git'],
+    viaLauncherNoRemote: [', dépôt git sans distant : rien ne part ailleurs',
+      ', a git repository with no remote: nothing goes elsewhere',
+      ', Git-Repository ohne entferntes: nichts geht anderswohin', ', repositorio git sin remoto: nada sale a otro lugar'
+    ],
     viaLauncherNoGit: [' : pas un dépôt git, rien ne part ailleurs', ': not a git repository, nothing goes elsewhere',
       ': kein Git-Repository, nichts geht anderswohin', ': no es un repositorio git, nada sale a otro lugar'
     ],
@@ -167,6 +174,38 @@
     ],
     // accès
     access: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
+    remote: ['Dépôt distant de data/', 'Remote repository of data/', 'Entferntes Repository von data/', 'Repositorio remoto de data/'],
+    remoteNow: ['Actuel : {u} (branche {b})', 'Current: {u} (branch {b})', 'Aktuell: {u} (Zweig {b})', 'Actual: {u} (rama {b})'],
+    remoteNowBare: ['Actuel : {u}', 'Current: {u}', 'Aktuell: {u}', 'Actual: {u}'],
+    remoteNone: ['Aucun dépôt distant : rien ne part ailleurs que ce poste.', 'No remote repository: nothing leaves this workstation.',
+      'Kein entferntes Repository: nichts verlässt diesen Rechner.', 'Ningún repositorio remoto: nada sale de este puesto.'
+    ],
+    remoteUrl: ['Adresse du dépôt (git@hôte:compte/dépôt.git ou https://…)',
+      'Repository address (git@host:account/repo.git or https://…)',
+      'Repository-Adresse (git@host:konto/repo.git oder https://…)',
+      'Dirección del repositorio (git@host:cuenta/repo.git o https://…)'
+    ],
+    remoteCheck: ['Vérifier', 'Check', 'Prüfen', 'Comprobar'],
+    remoteSaving: [
+      'Enregistrement, puis vérification… Autre dépôt que l’actuel : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
+      'Saving, then checking… Another repository than the current one: confirm in the window the launcher opens on the computer.',
+      'Speichern, dann prüfen… Anderes Repository als das aktuelle: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
+      'Guardando y comprobando… Otro repositorio distinto del actual: confirme en la ventana que el lanzador abre en el equipo.'
+    ],
+    remoteChecking: ['Vérification…', 'Checking…', 'Prüfen…', 'Comprobando…'],
+    noGit: [
+      'data/ n’est pas un dépôt git (données d’exemple ou archive) : rien ne part ailleurs que ce poste. Pour échanger par git, voir « Un dépôt git pour data/ » dans l’aide.',
+      'data/ is not a git repository (example data or archive): nothing leaves this workstation. To exchange through git, see “A git repository for data/” in the help.',
+      'data/ ist kein Git-Repository (Beispieldaten oder Archiv): nichts verlässt diesen Rechner. Für den Austausch über git siehe „Ein Git-Repository für data/“ in der Hilfe.',
+      'data/ no es un repositorio git (datos de ejemplo o archivo): nada sale de este puesto. Para intercambiar por git, vea «Un repositorio git para data/» en la ayuda.'
+    ],
+    noGitAnchor: ['un-dépôt-git-pour-data', 'a-git-repository-for-data', 'ein-git-repository-für-data', 'un-repositorio-git-para-data'],
+    helpLink: ['Ouvrir l’aide', 'Open the help', 'Hilfe öffnen', 'Abrir la ayuda'],
+    needRemote: ['À plusieurs par git, il faut un dépôt distant pour data/ : réglez-le dans « Accès aux données » ci-dessous.',
+      'Several users through git need a remote repository for data/: set it in “Data access” below.',
+      'Mehrere Nutzer über git brauchen ein entferntes Repository für data/: unter „Datenzugang“ unten einstellen.',
+      'Varios usuarios por git necesitan un repositorio remoto para data/: configúrelo en «Acceso a los datos» abajo.'
+    ],
     accessLauncher: ['Ce poste passe par son lanceur : pas de jeton à régler ici.',
       'This workstation goes through its launcher: no token to set here.',
       'Dieser Rechner nutzt seinen Starter: hier ist kein Token einzustellen.',
@@ -367,10 +406,11 @@
       gh = FD.github.config(),
       prefs = (await c.own.get('device/settings.json')) || {},
       v2 = !prefs.v2 ? v2Settings() : null,
-      st = await FD.status();
+      st = await FD.status(),
+      remote = L?.data ? await setup('sync-remote') : null; // dépôt distant de data/ (lanceur)
     const fld = (k, row, v, o = {}) => `<label class="f-field">${esc(t(row))}<input data-f="${k}" type="${o.type || 'text'}" value="${esc(v || '')}" autocomplete="off" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.ph ? `placeholder="${esc(o.ph)}"` : ''} ${o.cap ? 'autocapitalize="characters"' : 'autocapitalize="off"'} spellcheck="false"></label>`;
     const how = !exchange ? t(T.alone) : L?.data ? t(T.viaLauncher, {
-      g: t(L.dataGit ? T.viaLauncherGit : T.viaLauncherNoGit)
+      g: t(!L.dataGit ? T.viaLauncherNoGit : remote && !remote.url ? T.viaLauncherNoRemote : T.viaLauncherGit)
     }) : gh ? t(T.viaGithub, {
       r: gh.repo
     }) : t(T.viaNone);
@@ -393,17 +433,19 @@
     // usages
     const chk = (k, row, dis) => `<label class="f-check"><input type="checkbox" data-u="${k}" ${us[k] ? 'checked' : ''} ${dis ? 'disabled' : ''}>${esc(t(row))}</label>`;
     cards.push(`<div class="f-card" data-card="usages"><h2>${esc(t(T.usages))}</h2><p><b>${esc(how)}</b></p><p class="f-muted">${esc(t(T.usagesHint))}</p>
-      ${chk('devices', T.devices)}${chk('users', T.users)}${chk('backend', T.backend, true)}</div>`);
+      ${chk('devices', T.devices)}${chk('users', T.users)}${chk('backend', T.backend, true)}${us.users && L?.data && !remote?.url ? `<p class="f-warn">${esc(t(T.needRemote))}</p>` : ''}</div>`);
     if (!exchange) cards.push(`<div class="f-card" data-card="backup"><h2>${esc(t(T.backup))}</h2><p class="f-muted">${esc(t(T.backupHint))}</p>
       <div class="f-row"><button type="button" class="primary" data-act="export">${esc(t(T.export))}</button><button type="button" data-act="import">${esc(t(T.import))}</button><button type="button" data-act="replace">${esc(t(T.replace))}</button><input type="file" accept="application/json,.json" data-file hidden></div></div>`);
-    // accès et synchronisation, si un échange est coché
-    if (exchange || !L?.data) {
-      cards.push(L?.data ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p></div>` :
-        `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
+    // carte Accès toujours : sur un lanceur, le dépôt distant de data/ ; sinon dépôt GitHub et jeton (sans échange coché :
+    // lecture des bases seulement)
+    cards.push(L?.data ? `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2><p>${esc(t(T.accessLauncher))}</p>${remote?.repo ? `<h3>${esc(t(T.remote))}</h3><p>${esc(remote.url ? (/^[\w./-]+$/.test(remote.branch || '') ? t(T.remoteNow, { u: remote.url, b: remote.branch }) : t(T.remoteNowBare, { u: remote.url })) : t(T.remoteNone))}</p>
+        ${fld('remote', T.remoteUrl, remote.url || remote.default || '')}<p class="f-msg" data-msg></p>
+        <div class="f-row"><button type="button" class="primary" data-act="remoteSave">${esc(t(T.save))}</button><button type="button" data-act="remoteCheck">${esc(t(T.remoteCheck))}</button></div>` : `<p class="f-warn">${esc(t(T.noGit))}</p><p><a href="#help?a=${encodeURIComponent(t(T.noGitAnchor))}">${esc(t(T.helpLink))}</a></p>`}</div>` :
+      `<div class="f-card" data-card="access"><h2>${esc(t(T.access))}</h2>${exchange ? '' : `<p class="f-muted">${esc(t(T.accessRead))}</p>`}
         ${fld('repo', T.repo, gh?.repo, { ph: 'compte/flight_planner_data' })}${fld('branch', T.branch, gh?.branch || 'main')}${fld('token', T.token, '', { type: 'password', ph: gh ? t(T.tokenSet) : '' })}
         <p class="f-muted">${esc(t(T.tokenHint))}</p><p class="f-msg" data-msg></p>
         <div class="f-row"><button type="button" class="primary" data-act="access">${esc(t(T.save))}</button><button type="button" data-act="test">${esc(t(T.test))}</button>${gh ? `<button type="button" data-act="cut">${esc(t(T.cut))}</button>` : ''}</div></div>`);
-    }
+    // synchronisation, si un échange est coché
     if (exchange) {
       cards.push(`<div class="f-card" data-card="sync"><h2>${esc(t(T.sync))}</h2><dl class="f-dl" data-sync></dl><p class="f-muted">${esc(t(T.syncHint))}</p>
         <div class="f-row"><button type="button" class="primary" data-act="sync">${esc(t(T.syncNow))}</button>${st.conflicts ? `<a href="#conflicts">${esc(t(T.conflicts, { n: st.conflicts }))}</a>` : ''}</div></div>`);
@@ -644,6 +686,29 @@
         if (!r?.ok) return say('keys', r?.message || '?');
         c.notify(t(T.saved), 'ok');
         return again();
+      }
+      if (act === 'remoteCheck' || act === 'remoteSave') {
+        const url = val('remote', card('access')),
+          save = act === 'remoteSave';
+        say('access', t(save ? T.remoteSaving : T.remoteChecking), 'warn');
+        const r = await setup('sync-remote', {
+          url,
+          ...(save ? {
+            save: true
+          } : {})
+        });
+        const ck = r?.check || {},
+          text = [r?.saved?.message, ck.message].filter(Boolean).join(' — ') || '?';
+        say('access', text, r?.saved && !r.saved.ok ? 'err' : ck.ok ? 'ok' : 'warn');
+        // enregistré : la ligne « Actuel » suit, le compte rendu de la vérification reste affiché
+        if (save && r?.saved?.ok) {
+          const now = card('access').querySelector('h3 + p');
+          if (now) now.textContent = t(T.remoteNowBare, {
+            u: url
+          });
+          c.notify(t(T.saved), 'ok');
+        }
+        return;
       }
       if (act === 'keyTest') {
         const r = await setup('secrets/test?service=ivao');
