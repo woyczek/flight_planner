@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: Plan in five steps** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) —
+  Flight, Route, Weather, Quote, Departure, one at a time on a phone and all at once on a wide screen, the block fuel
+  always in view; "Show the map" opens the map beside or on its own; "Start the flight" records the departure time
+  and opens the map; the map's "Edit the route" lands on the route, ready to type.
 - **fuel: a route changed on the map is quoted again** (`modules/fuel/module.js`; `INTEGRATION.md`, `DECISIONS.md`) —
   when another module writes the current flight, fuel keeps its route as written, recomputes distance, quote and
   climb / descent profile, and writes them back, live or the next time it opens.

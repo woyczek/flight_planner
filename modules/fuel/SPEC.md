@@ -168,7 +168,21 @@ An ES module for the frame (`meta`, `mount(el, ctx)`, `unmount()`); it loads the
 Styles are scoped to `[data-module="fuel"]` and built on the frame's tokens and classes; no global sheet. Two screens
 inside the module, switched by two buttons at the top, the last one kept on the device (`cache/fuel/ui.json`).
 
-- **Plan**, one column on a phone, the first three blocks side by side on a wide screen:
+- **Plan in five steps** (lot G, 23 Oct 2026, the pilot's own order: aerodromes, aircraft, level → route → weather →
+  density altitude and quote → correct the route → start): a steps bar as in Report — **1 Flight** (departure,
+  arrival, alternate, flight date, the one-line aircraft, level), **2 Route** (the route text, the read distance, the
+  folded points, "Last SimBrief OFP", "Show the map"), **3 Weather** (wind, ISA and its METAR proposal, real weather,
+  the aerodromes of the corridor), **4 Quote** (density altitude, level decision with the climb goal, "Open in",
+  details, climb instructions, settings), **5 Departure** (a one-page summary: aircraft, normalised route, level and
+  steps, wind and source, block fuel; "Start the flight" writes `current_flight.started = { at, by: 'fuel' }` and
+  opens the Map). One step at a time when the module is narrow (phone, dual-view pane: `@container` under 900 px; the
+  bar shows the numbers, the current step with its name; "Next" under each step); all five one under the other when
+  it is wide, without bar or "Next". The sticky result stays under every step; a ✓ marks a filled step (aerodromes,
+  aircraft and level; route resolved or typed; weather read or wind given; fuel quoted; flight started). The step is
+  kept in `cache/fuel/ui.json`. Everything recomputes live (route → weather → quote, no "redo" button). "Show the
+  map": `#fuel?with=maps` from 980 px (the frame's dual view), else `#maps?from=fuel`. Arriving with
+  `ctx.query.focus === 'route'` (the Map's "Edit the route", `#fuel?from=maps&focus=route`) opens step 2 with the
+  route field focused. The blocks below keep their former description:
   1. **Aircraft** (since 23 Oct 2026, aerodb's registry): one line — the chosen aircraft (name, registration,
      callsign, type) with its origin, and a search button that unfolds one field and its results from
      `aircraft().search(text)` (sheets → fleet → reference → types → free code, each with its origin; an aircraft shows

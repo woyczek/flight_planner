@@ -105,6 +105,10 @@ One record per pilot, read and written by fuel and maps (the same flight in both
 - `weather` (fuel's): `{ when (flight date, device time, optional), real (wind from the aerodromes' weather) }` (`mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
+- `started` (fuel's, lot G): `{ at (ISO), by: 'fuel' }` when the pilot pressed "Start the flight" on the Departure
+  step; Report takes the flight up from there. Absent until then.
+- Addresses: fuel opens the map with `#maps?from=fuel` (phone) or `#fuel?with=maps` (dual view, from 980 px); the
+  Map's "Edit the route" comes back with `#fuel?from=maps&focus=route` (step 2, route field focused).
 - `aircraft` (fuel's, from `aircraft().aircraftOf(hit)`): `{ sheetId, type, registration, callsign, name, source }`
   (`source`: `sheet`, `fleet`, `reference`, `type`, `free`); report takes the registration and the callsign.
 - `wind` is null when unknown; `ofp` is null without a SimBrief flight plan (summary only: the OFP itself stays in the

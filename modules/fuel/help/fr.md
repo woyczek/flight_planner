@@ -5,14 +5,21 @@ délestage, réserve, carburant bloc, temps de vol et début de descente.
 
 ## Comment s'en servir
 
-**L'appareil.** Une seule ligne en haut : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. La
+La préparation suit cinq pas, dans l'ordre où on prépare un vol : **1 Vol, 2 Route, 3 Météo, 4 Devis, 5 Départ**. Sur
+un téléphone, la barre du haut montre un pas à la fois (touchez un numéro pour y aller, « Suivant » en bas de chaque
+pas) ; sur un écran large, les cinq pas sont les uns sous les autres. Tout se recalcule à chaque changement : corrigez
+la route, la météo, le devis et le vent suivent, sans bouton à presser. Le résultat (carburant bloc, délestage, temps,
+début de descente) reste visible en bas de l'écran à chaque pas. Un ✓ marque un pas rempli.
+
+**1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt
+que l'observation, l'appareil et le niveau de croisière (en FL). L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. La
 loupe ouvre la recherche : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
 cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
 les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
 sinon celle de son type, sinon une estimation du type — le devis le dit alors « approché ». L'immatriculation et
 l'indicatif choisis suivent le vol jusqu'au compte rendu. La ligne « Croisière » dit d'où vient la consommation.
 
-**La route.** Tapez le départ, l'arrivée et le dégagement (codes OACI), puis la route dans le champ « Route »,
+**2 Route.** Tapez la route dans le champ « Route »,
 toujours visible : les points, les voies aériennes et les niveaux, comme dans un plan de vol (« LFBO TOU UN460
 NTS/F280 LFRN »). Vous pouvez aussi y coller un plan de vol OACI ou la liste d'un OFP. Quand vous quittez le champ, la
 route est remise au propre : en majuscules sur une ligne, sans DCT ni groupes vitesse-niveau, le départ et l'arrivée
@@ -32,23 +39,12 @@ sa descente, puis la croisière à ce niveau), le résultat affiche la suite des
 part du dernier niveau. Chaque changement réécrit le champ « Route » (les points seuls) et est aussitôt transmis à
 la carte.
 
-**Le niveau et le vent.** Indiquez le niveau de croisière (en FL) et le vent : direction et force. Sans direction, ou
-sans vent du tout, le carburant bloc est donné en fourchette. « Montée » choisit la façon de monter : économique,
-meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
+« Afficher la carte » montre le vol sur la carte : sur un téléphone la Carte s'ouvre (le bouton de l'en-tête ramène
+ici) ; sur un écran large elle s'ouvre à côté, et suit chaque changement. « Modifier la route » sur la carte ramène à
+ce pas, le champ de la route prêt à la frappe.
 
-« ISA ± » est l'écart de température à l'atmosphère standard, en °C : il change la puissance disponible, la vitesse
-vraie et le plafond. Une fois la météo lue, la ligne dessous le calcule d'après le METAR du départ — sa température
-moins la température standard du terrain (15 − 1,98 × altitude du terrain en milliers de pieds) — et « Utiliser ISA … »
-le reporte dans le champ. L'écart retenu est gardé dans vos réglages : le vol suivant part du même.
-
-Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une
-droite par millier de pieds) : c'est l'altitude « ressentie » par le rotor, les hélices et le moteur. Le trait vertical
-est l'écart du vol, le trait horizontal le plafond de la fiche ; leur croisement dit à quelle altitude pression l'appareil
-atteint son plafond ce jour-là (droite en gras). Un point marque le départ d’après le METAR (température et QNH).
-Important pour les hélicoptères : par forte chaleur ou en altitude, le plafond réel peut tomber bien sous celui de la
-fiche.
-
-**La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche le départ, l'arrivée, le dégagement et
+**3 Météo.** Le vent (direction et force) et l'écart ISA. Sans direction, ou sans vent du tout, le carburant bloc est
+donné en fourchette. « Lire la météo des terrains » affiche le départ, l'arrivée, le dégagement et
 les terrains le long de la route : tous ceux à moins de 10 NM de part et d'autre de la route (rayon réglable dans les
 réglages du devis) qui ont un METAR ou un TAF ; les autres sont ignorés. Chaque terrain dit sa distance depuis le
 départ (le dégagement, depuis l'arrivée) ; au-delà de deux, les terrains intermédiaires sont repliés sous le départ,
@@ -61,23 +57,36 @@ METAR. Cochez « Météo réelle » pour que le vent du devis devienne la moyenn
 partir du vent au sol, dite sous les champs. Hors réseau, les dernières valeurs lues restent
 affichées avec leur heure.
 
-**La décision du niveau.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
-(tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
-qu'on ne peut pas tenir sur ce trajet. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons.
+« ISA ± » est l'écart de température à l'atmosphère standard, en °C : il change la puissance disponible, la vitesse
+vraie et le plafond. Une fois la météo lue, la ligne dessous le calcule d'après le METAR du départ — sa température
+moins la température standard du terrain (15 − 1,98 × altitude du terrain en milliers de pieds) — et « Utiliser ISA … »
+le reporte dans le champ. L'écart retenu est gardé dans vos réglages : le vol suivant part du même.
 
-**Le résultat.** En bas de l'écran, toujours visible : carburant bloc, délestage, temps de vol et distance du début
+**4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
+(tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
+qu'on ne peut pas tenir sur ce trajet. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
+meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
+
+Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une
+droite par millier de pieds) : c'est l'altitude « ressentie » par le rotor, les hélices et le moteur. Le trait vertical
+est l'écart du vol, le trait horizontal le plafond de la fiche ; leur croisement dit à quelle altitude pression l'appareil
+atteint son plafond ce jour-là (droite en gras). Un point marque le départ d’après le METAR (température et QNH).
+Important pour les hélicoptères : par forte chaleur ou en altitude, le plafond réel peut tomber bien sous celui de la
+fiche.
+
+Dépliez « Consignes de montée » pour suivre la montée jusqu'au niveau : gaz, régime, badin, vario, débit,
+Mach, temps et carburant cumulés aux paliers, avec le profil dessiné. Le résultat donne carburant bloc, délestage, temps de vol et distance du début
 de descente avant l'arrivée. « Détail du devis » le décompose phase par phase.
 
-**Les consignes de montée.** Dépliez-les pour suivre la montée jusqu'au niveau : gaz, régime, badin, vario, débit,
-Mach, temps et carburant cumulés aux paliers, avec le profil dessiné.
-
-**Ouvrir dans.** Sous le résultat, « Ouvrir dans » prépare le même vol ailleurs, dans un nouvel onglet : SimBrief
+« Ouvrir dans » prépare le même vol ailleurs, dans un nouvel onglet : SimBrief
 (options du vol préremplies, connexion SimBrief requise), SkyVector (la route tracée, avec vitesse et niveau),
 Navigraph et ChartFox (les cartes des terrains de départ et d'arrivée, connexion requise). Une entrée grisée dit ce
-qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol.
+qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol. Les réglages du devis (roulage, réserve, marge, couloir météo, unités) sont dans le dernier pli.
 
-**Vers la carte et le compte rendu.** Le vol préparé ici — appareil, route, niveau, profil de montée et de descente —
-est partagé : ouvrez Carte ou Compte rendu, il y est déjà.
+**5 Départ.** Un récapitulatif d'une page : l'appareil, la route telle qu'elle sera déposée, le niveau (et ses
+paliers), le vent et sa source, le carburant bloc. « Démarrer le vol » note l'heure de départ dans le vol et ouvre la
+Carte ; le compte rendu reprendra ce vol. Le vol préparé ici — appareil, route, niveau, profil de montée et de
+descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances
 

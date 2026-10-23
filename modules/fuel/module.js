@@ -113,6 +113,29 @@ const TX = {
   ],
   rmanual: ['Saisir à la main', 'Type them by hand', 'Von Hand eingeben', 'Introducir a mano'],
   ptsN: ['Points ({n})', 'Points ({n})', 'Punkte ({n})', 'Puntos ({n})'],
+  stepNames: [
+    ['Vol', 'Flight', 'Flug', 'Vuelo'],
+    ['Route', 'Route', 'Route', 'Ruta'],
+    ['Météo', 'Weather', 'Wetter', 'Meteorología'],
+    ['Devis', 'Quote', 'Kalkulation', 'Cálculo'],
+    ['Départ', 'Departure', 'Abflug', 'Salida']
+  ],
+  stepsNav: ['Étapes de la préparation', 'Preparation steps', 'Schritte der Vorbereitung', 'Pasos de la preparación'],
+  next: ['Suivant', 'Next', 'Weiter', 'Siguiente'],
+  showMap: ['Afficher la carte', 'Show the map', 'Karte zeigen', 'Mostrar el mapa'],
+  start: ['Démarrer le vol', 'Start the flight', 'Flug starten', 'Iniciar el vuelo'],
+  started: ['Vol démarré à {t}.', 'Flight started at {t}.', 'Flug gestartet um {t}.', 'Vuelo iniciado a las {t}.'],
+  startHint: ['La carte s’ouvre sur ce vol ; le compte rendu le reprendra.',
+    'The map opens on this flight; the report will take it up.',
+    'Die Karte öffnet sich mit diesem Flug; der Bericht übernimmt ihn.',
+    'El mapa se abre con este vuelo; el informe lo retomará.'
+  ],
+  sumRoute: ['Route', 'Route', 'Route', 'Ruta'],
+  sumLevel: ['Niveau', 'Level', 'Flugfläche', 'Nivel'],
+  sumWind: ['Vent', 'Wind', 'Wind', 'Viento'],
+  sumBlock: ['Carburant bloc', 'Block fuel', 'Blockkraftstoff', 'Combustible bloque'],
+  sumAircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
+  sumNone: ['—', '—', '—', '—'],
   distance: ['Distance ({u})', 'Distance ({u})', 'Entfernung ({u})', 'Distancia ({u})'],
   track: ['Route vraie (°)', 'True track (°)', 'Rechtweisender Kurs (°)', 'Rumbo verdadero (°)'],
   pts: ['Points de la route', 'Route points', 'Routenpunkte', 'Puntos de la ruta'],
@@ -1021,6 +1044,21 @@ const STYLE = `
 [data-module="fuel"] .fu-line-t{fill:none;stroke:var(--sog-chart-2);stroke-width:1.6;stroke-dasharray:5 4}
 [data-module="fuel"] .fu-ext{stroke-dasharray:1 4;opacity:.7}
 [data-module="fuel"] .fu-da{fill:none;stroke:var(--sog-chart-6);stroke-width:1;opacity:.7}
+[data-module="fuel"] .fu-step[hidden]{display:none}
+[data-module="fuel"] .fu-steps>button{flex:1 1 0;min-width:44px;padding-inline:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="fuel"] .fu-steps>button span{display:none} /* étroit : le numéro seul, le nom pour le pas en cours */
+[data-module="fuel"] .fu-steps>button[aria-current]{flex:3 1 0}
+[data-module="fuel"] .fu-steps>button[aria-current] span{display:inline}
+@container (min-width: 560px){
+  [data-module="fuel"] .fu-steps>button span{display:inline}
+  [data-module="fuel"] .fu-steps>button[aria-current]{flex:1 1 0}
+}
+[data-module="fuel"] .fu-next{justify-content:flex-end;margin:4px 0 var(--sog-gap)}
+[data-module="fuel"] .fu-sumroute{white-space:normal;word-break:break-word;font-size:14px}
+@container (min-width: 900px){ /* module large : tous les pas visibles, sans barre de pas ni « Suivant » */
+  [data-module="fuel"] .fu-steps,[data-module="fuel"] .fu-next{display:none}
+  [data-module="fuel"] .fu-step[hidden]{display:block}
+}
 [data-module="fuel"] .fu-rinfo{flex-wrap:wrap;gap:4px 12px;margin:4px 0}
 [data-module="fuel"] .fu-linkbtn{min-height:44px;padding:0 4px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
@@ -1056,18 +1094,24 @@ function renderPlan() {
     r = f.route || {},
     opt = (v, l, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(l)}</option>`,
     fld = (key, label, val, attrs = '', vals) => `<label class="f-field">${esc(tt(label, vals))}<input data-k="${key}" value="${esc(val ?? '')}" ${attrs}></label>`;
+  const step = S.step ?? 0,
+    sec = (i, body, last = false) => `<section class="fu-step" data-s="${i}"${step === i ? '' : ' hidden'}>${body}${last ? '' : `<div class="f-row fu-next"><button type="button" data-step="${i + 1}">${esc(tt(TX.next))} · ${esc(tt(TX.stepNames[i + 1]))}</button></div>`}</section>`;
   S.body.innerHTML = `
-  <div class="f-cols">
-    <div class="f-card" data-block="aircraft"><h2>${esc(tt(TX.aircraft))}</h2>
+  <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
+  ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
+      <div class="f-grid fu-g3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      <div class="f-grid fu-g3">${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}</div>
+      <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
         <label class="f-field"><input type="search" data-k="acsearch" placeholder="${esc(tt(TX.acSearch))}" aria-label="${esc(tt(TX.acSearch))}" autocomplete="off"></label>
         <div class="f-list" data-acres></div>
       </div>
       <p class="f-muted" data-src></p>
-    </div>
-    <div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
-      <div class="f-grid fu-g3">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      </div>
+      <div class="f-grid fu-g3">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}</div>
+    </div>`)}
+  ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
       <label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label>
       <p class="f-warn" data-unres></p>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
@@ -1076,24 +1120,20 @@ function renderPlan() {
       <div class="f-list fu-pts" data-pts></div>
       <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
       <p class="f-muted">${esc(tt(TX.ptsHint))}</p></details>
-      <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}</div>
-    </div>
-    <div class="f-card" data-block="level"><h2>${esc(tt(TX.levelWind))}</h2>
-      <div class="f-grid fu-g3">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}
-        <label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
+      <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap">${svg('map')} ${esc(tt(TX.showMap))}</button></div>
+    </div>`)}
+  ${sec(2, `<div class="f-card" data-block="level"><h2>${esc(tt(TX.stepNames[2]))}</h2>
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
       <p class="f-muted" data-windsrc></p>
       <div class="f-row" data-isahint></div>
-      <div class="f-grid fu-g3">${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}</div>
       <label class="f-check"><input type="checkbox" data-k="wxreal"${f.weather?.real ? ' checked' : ''}>${esc(tt(TX.wxReal))}</label>
       <div class="f-row"><button type="button" data-do="wx">${esc(tt(TX.wxRead))}</button></div>
-      <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
     </div>
-  </div>
-  <details class="f-card" data-fold="wx" open><summary>${esc(tt(TX.wxTitle))}</summary><div data-wx></div></details>
-  <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
-  <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div></div>
-  <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>
+  <div class="f-card"><h2>${esc(tt(TX.wxTitle))}</h2><div data-wx></div></div>`)}
+  ${sec(3, `  <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
+  <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div>      <div class="f-grid fu-g3"><label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
+      <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
+</div>
   <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div></details>
   <details class="f-card" data-fold="details"><summary>${esc(tt(TX.details))}</summary><div data-details></div></details>
   <details class="f-card" data-fold="climb"><summary>${esc(tt(TX.climbGuide))}</summary><div data-climb></div></details>
@@ -1105,9 +1145,13 @@ function renderPlan() {
       <label class="f-field">${esc(tt(TX.unitFuel))}<select data-k="unit">${['kg', 'lb'].map(u => opt(u, u, (S.settings.displayUnit || 'kg') === u)).join('')}</select></label>
       ${[['speed', TX.unitSpeed, 'unitSpeed'], ['alt', TX.unitAlt, 'unitAlt'], ['dist', TX.unitDist, 'unitDist']].map(([kind, row, k]) => `<label class="f-field">${esc(tt(row))}<select data-k="${k}">${UNITS[kind].list.map(u => opt(u, UNITS[kind].label[u], unitOf(kind) === u)).join('')}</select></label>`).join('')}</div>
     <div data-entrybox></div>
-  </details>`;
+  </details>`)}
+  ${sec(4, `<div class="f-card" data-block="summary"><h2>${esc(tt(TX.stepNames[4]))}</h2><div data-sum></div>
+      <div class="f-row"><button type="button" data-do="start">${esc(tt(TX.start))}</button><span class="f-muted" data-started></span></div>
+      <p class="f-muted">${esc(tt(TX.startHint))}</p></div>`, true)}
+  <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
-    d.open = S.ui.open?.[d.dataset.fold] ?? d.dataset.fold === 'wx'; // météo ouverte tant qu'on ne l'a pas repliée
+    d.open = !!S.ui.open?.[d.dataset.fold];
     d.ontoggle = () => {
       S.ui.open = {
         ...S.ui.open,
@@ -1296,6 +1340,10 @@ function onPlanInput(e) {
 }
 /** Clic dans Préparer : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
+  const st = e.target.closest('[data-step]');
+  if (st) return goStep(+st.dataset.step);
+  if (e.target.closest('[data-do="showmap"]')) return showMap();
+  if (e.target.closest('[data-do="start"]')) return startFlight();
   if (e.target.closest('[data-do="isause"]')) return useIsa();
   if (e.target.closest('[data-do="rmanual"]')) {
     S.rmanualOpen = true;
@@ -1880,6 +1928,77 @@ function routeSteps(r, distanceNm) {
     } : null).filter(Boolean);
   return out.length ? out : null;
 }
+// ---------------------------------------------------------------- pas de la préparation
+/** Va au pas i (0 Vol, 1 Route, 2 Météo, 3 Devis, 4 Départ) : un seul pas visible sur téléphone et dans un volet ;
+ *  dans un module large tous le sont (CSS @container) et la barre de pas est cachée. Pas gardé sur l'appareil. */
+function goStep(i) {
+  S.step = Math.max(0, Math.min(4, i));
+  S.ui.step = S.step;
+  S.ctx.data.put(UI_PATH, S.ui);
+  for (const sec of S.body.querySelectorAll('.fu-step')) sec.hidden = +sec.dataset.s !== S.step;
+  S.body.querySelectorAll('.fu-steps button').forEach((b, k) => k === S.step ? b.setAttribute('aria-current', 'step') : b.removeAttribute(
+    'aria-current'));
+  refresh();
+  S.body.querySelector('.fu-steps')?.scrollIntoView?.({
+    block: 'nearest'
+  });
+}
+/** Pas faits (✓ dans la barre) : vol (terrains, appareil, niveau), route (résolue ou saisie), météo (lue ou vent
+ *  donné), devis (carburant chiffré), départ (vol démarré). */
+function stepsDone(C) {
+  const f = S.flight,
+    r = f.route || {};
+  return [
+    !!(r.dep && r.arr && (f.aircraft?.type || f.aircraft?.sheetId) && f.level?.ft > 0),
+    (r.points || []).length >= 2 || (r.manual && r.distanceNm > 0),
+    !!S.wx || Number.isFinite(+f.wind?.speedKt),
+    !!C.q?.hasFuel,
+    !!f.started?.at
+  ];
+}
+/** « Afficher la carte » : sur un écran large, la carte s'ouvre en volet à côté (vue double, #fuel?with=maps) ; sur
+ *  téléphone, la Carte (retour vers le Carburant par l'en-tête). */
+function showMap() {
+  location.hash = matchMedia('(min-width: 980px)').matches ? '#fuel?with=maps' : '#maps?from=fuel';
+}
+/** « Démarrer le vol » : current_flight.started = { at, by: 'fuel' } écrit tout de suite, puis la Carte ; le compte
+ *  rendu reprendra ce vol. */
+function startFlight() {
+  S.flight.started = {
+    at: new Date().toISOString(),
+    by: 'fuel'
+  };
+  saveFlight();
+  renderSummary(S.C || {});
+  setTimeout(() => location.hash = '#maps?from=fuel', 350); // après l'écriture du vol courant (300 ms)
+}
+/** Récapitulatif du pas Départ : appareil, route normalisée, niveau (paliers), vent et sa source, carburant bloc. */
+function renderSummary(C) {
+  const box = S.body?.querySelector('[data-sum]');
+  if (!box) return;
+  const f = S.flight,
+    r = f.route || {},
+    q = C.q,
+    a = f.aircraft || {},
+    none = tt(TX.sumNone),
+    unit = C.sheet?.unit || 'kg',
+    lvl = q ? q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt) : f.level?.ft ? flTxt(f.level.ft) : none,
+    wind = Number.isFinite(+f.wind?.speedKt) ? `${f.wind.dirDeg != null ? `${String(Math.round(f.wind.dirDeg)).padStart(3, '0')}° ` : ''}${speedTxt(f.wind.speedKt)}` : none,
+    block = q?.hasFuel ? q.windKnown || !Number.isFinite(q.blockLow) ? fuelTxt(q.block, unit) : `${fuelTxt(q.blockLow, unit)} – ${fuelTxt(q.blockHigh, unit)}` : none;
+  box.innerHTML = `<dl class="f-dl">
+    <dt>${esc(tt(TX.sumAircraft))}</dt><dd>${esc([a.name || a.type, a.registration, a.callsign].filter(Boolean).join(' · ') || none)}</dd>
+    <dt>${esc(tt(TX.sumRoute))}</dt><dd><code class="fu-sumroute">${esc(r.text || [r.dep, r.arr].filter(Boolean).join(' ') || none)}</code></dd>
+    <dt>${esc(tt(TX.sumLevel))}</dt><dd>${esc(lvl)}</dd>
+    <dt>${esc(tt(TX.sumWind))}</dt><dd>${esc(wind)}${f.windSource?.kind === 'weather' ? ` <span class="f-muted">(${esc(f.windSource.ids.join(', '))})</span>` : ''}</dd>
+    <dt>${esc(tt(TX.sumBlock))}</dt><dd><b>${esc(block)}</b></dd></dl>`;
+  const st = S.body.querySelector('[data-started]');
+  if (st) st.textContent = f.started?.at ? tt(TX.started, {
+    t: new Date(f.started.at).toLocaleTimeString(S.ctx.lang(), {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }) : '';
+}
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
  *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
  *  refait, profil réécrit et vol courant réécrit par fuel (by: 'fuel') — maps sait alors que TOC et TOD sont à jour.
@@ -2079,6 +2198,9 @@ function refresh() {
   shareProfile(q);
   openInLinks(C);
   acSelected();
+  renderSummary(C);
+  const done = stepsDone(C);
+  S.body.querySelectorAll('.fu-steps button').forEach((b, i) => b.toggleAttribute('data-done', !!done[i]));
   isaHint();
   renderDa(C);
   // appareil : origine de la croisière
@@ -2600,6 +2722,9 @@ export async function mount(el, ctx) {
     cached: true
   } : null;
   S.ui = (await ctx.data.get(UI_PATH)) || {};
+  // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
+  S.focusRoute = ctx.query?.focus === 'route';
+  S.step = S.focusRoute ? 1 : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(['Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel']))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>
     <div data-body></div>`;
@@ -2630,7 +2755,12 @@ export async function mount(el, ctx) {
   });
   ro.observe(el);
   S.stops.push(() => ro.disconnect());
-  show(S.ui.view === 'sheets' ? 'sheets' : 'plan');
+  show(S.focusRoute || S.ui.view !== 'sheets' ? 'plan' : 'sheets');
+  if (S.focusRoute) { // « Modifier la route » de la Carte : le champ de la route prêt à la frappe, curseur au bout
+    const ta = S.body.querySelector('[data-k="rtext"]');
+    ta?.focus();
+    ta?.setSelectionRange?.(ta.value.length, ta.value.length);
+  }
   if (S.flight.by && S.flight.by !== 'fuel') adoptForeignFlight(); // vol modifié ailleurs pendant l'absence de fuel
   else if (S.flight.route?.text || S.flight.route?.dep) S.flight.route.manual || resolveRoute();
 }

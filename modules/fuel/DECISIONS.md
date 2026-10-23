@@ -4,6 +4,17 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot G, Plan in five steps** (ergonomics session, from the user's own way of preparing a flight):
+  the blocks are regrouped by step rather than by data — the level goes with the flight (step 1), wind and ISA with the
+  weather (step 3), the climb goal with the level decision (step 4). Narrow module (phone, pane): one step at a time,
+  the bar shows numbers only except the current step (five names did not fit in 375 px: "1 Fligh…"); wide module: all
+  steps visible, as Report does, by `@container` (900 px) so that a 506 px pane steps through. "Start the flight"
+  writes `started` and navigates 350 ms later, after the 300 ms write of the current flight. `TX.steps` already named
+  the quote's "Steps" row: the step names are `TX.stepNames`. Checked on 8793: 375 px — bar 44 px high, "3 Weather"
+  current with numbers around, summary on step 5, sticky result on every step, `#fuel?from=maps&focus=route` → step 2
+  with the route field focused, "Show the map" → `#maps?from=fuel`, "Start the flight" → `started { at, by: 'fuel' }`
+  then the Map; 1280 px — full screen (1,023 px) all five steps, no bar; dual view (506 px) one step; "Show the map"
+  from full screen → `#fuel?with=maps`, pane opened.
 - **23 Oct 2026 — a flight changed elsewhere** (contract with maps for its lot 6, through the ergonomics session):
   when the current flight's `by` is not `fuel`, fuel adopts it — keeps `points` and `text` as written (normalising
   maps' text would overwrite what it just wrote), derives distance and track from the points, redoes the quote and
