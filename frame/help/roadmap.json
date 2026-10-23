@@ -120,7 +120,7 @@
           "es": "Base aeronáutica en modo GitHub en el teléfono: referencias leídas desde el repositorio (error en curso), diagnóstico copiable"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Vue double ouverte d'elle-même dès 1200 px sur Carburant et Compte rendu, bascule « Carte » lisible",
           "en": "Double view opening by itself from 1200 px on Fuel and Report, legible “Map” toggle",
           "de": "Doppelansicht öffnet sich ab 1200 px bei Kraftstoff und Bericht von selbst, lesbarer „Karte“-Schalter",
@@ -463,7 +463,7 @@
           "es": "Un solo registro de aeronaves: tipos, prestaciones, fichas del piloto, flota y referencia en un mismo lugar, una sola búsqueda; .lnmperf al día en ambos sentidos (reexportación al cambiar, fusión si el archivo cambia)"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Export .lnmperf tenu à jour dans les deux sens par le lanceur (dossier de Little Navmap réglé dans Réglages)",
           "en": ".lnmperf export kept in sync both ways by the launcher (Little Navmap folder set in Settings)",
           "de": ".lnmperf-Export in beide Richtungen durch den Starter aktuell gehalten (Little-Navmap-Ordner in den Einstellungen)",
