@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: aerodrome weather** (`modules/fuel/weather.js`, `module.js`; `SPEC.md` § 10, `INTEGRATION.md`, `help/fr.md`)
+  — METAR / TAF of the departure, an intermediate aerodrome and the arrival (aviationweather.gov through the launcher):
+  flight category in colour, wind and runway components, ceiling, visibility, temperature and QNH, CB / TCU warning,
+  raw message folded; TAF when a flight date falls in it; "Real weather" sets the quote's wind to the average along
+  the route; last values kept for offline use.
 - **settings: usages on a workstation with the launcher** (`frame/settings/settings.js`, `frame/settings/help/*.md`;
   `DECISIONS.md`, manuals rebuilt) — with no exchange ticked, the Usages card now says that this workstation reads and
   writes the launcher's `data/` folder and that an exchange usage shares it through git; without a launcher, "Alone on

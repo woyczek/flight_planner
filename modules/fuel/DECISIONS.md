@@ -4,6 +4,17 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — aerodrome weather** (user's request through the ergonomics session, lot A; TEMSI left for the
+  roadmap): METAR / TAF of aviationweather.gov through `ctx.net` (the service sends no CORS header: a direct call from a
+  page fails, the launcher relays it; checked with curl that the JSON gives `fltCat`, clouds with bases and types,
+  `fcsts` with `fcstChange`). The runway is the main runway's end closest to the wind, from aerodb's aerodrome
+  `bearing` and `magVar` (no runway list in the SIA base): said under the components, since the runway in use is not
+  known without ATIS. "Real weather" averages wind vectors weighted by leg length, a stand-in assumed and shown.
+  `weather.js` pure; the weather card is open by default and its folded state kept. Checked on 8793 with answers copied
+  from a real reading behind a simulated relay: TAF chosen for a flight date 3 h ahead with its TEMPO (IFR), METAR for
+  the other aerodrome, CB warnings, wind 244° / 5 kt from LFBO (TAF) and LFML (METAR); the network refused → last values
+  with their time; components on LFBO 32 checked by hand (260° / 10 kt → 5 kt head, 9 kt from the left); 375 px and the
+  three designs, day and night.
 - **23 Oct 2026 — design lot 2 primitives** (asked by the design session): result bar, tabs, grids, columns, tables, figures, warnings, sheet list and "Open in" links moved to `f-bar` (block layout, no own shadow), `f-tabs`, `f-grid` (`--f-min: 96px`), `f-cols`, `f-scroll` / `f-table` / `f-num`, `f-tiles` (h3-sized figures in the sticky result), `f-warn`, `f-list` / `f-item`; the drawings' colours from `--sog-chart-1…5`, `--sog-chart-grid` and `--sog-fg` (they follow the design without a redraw); "Open in" lost its own "▾" (the frame's summary has a chevron). The module's own `<style>`
   only places things now; checked at 375 px and on a screen in standard, cabinet and field, day and night (no white
   at night, square corners in cabinet and field, no target under 44 px).

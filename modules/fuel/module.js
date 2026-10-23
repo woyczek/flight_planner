@@ -9,6 +9,7 @@
 // l'écran, les lectures et écritures par ctx.data, SimBrief par ctx.net, l'identité par ctx.identity. Styles limités au
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
 import * as XL from '../../frame/lib/external_links.js';
+import * as WX from './weather.js';
 
 export const meta = {
   id: 'fuel',
@@ -26,11 +27,14 @@ export const meta = {
     policy: 'cache'
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
-  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'sheets.js', '../../frame/lib/external_links.js']
+  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'sheets.js', 'weather.js',
+    '../../frame/lib/external_links.js'
+  ]
 };
 
 const DB_PATH = 'planner/flight_performance_database_merged.fpdb.json',
   OFP_PATH = 'cache/fuel/last_ofp.json',
+  WX_PATH = 'cache/fuel/weather.json',
   UI_PATH = 'cache/fuel/ui.json',
   LIBS = [
     ['FlightPerfModel', 'performance_model.js'],
@@ -162,6 +166,61 @@ const TX = {
   ],
   alt: ['Alt.', 'Alt.', 'Höhe', 'Alt.'],
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
+  wxDate: ['Date du vol (facultatif : TAF)', 'Flight date (optional: TAF)', 'Flugdatum (optional: TAF)',
+    'Fecha del vuelo (opcional: TAF)'
+  ],
+  wxMid: ['Terrain intermédiaire', 'Intermediate aerodrome', 'Zwischenflugplatz', 'Aeródromo intermedio'],
+  wxReal: ['Météo réelle : vent le long de la route', 'Real weather: wind along the route', 'Echtes Wetter: Wind entlang der Route',
+    'Meteorología real: viento a lo largo de la ruta'
+  ],
+  wxRead: ['Lire la météo des terrains', 'Read the aerodromes’ weather', 'Flugplatzwetter lesen',
+    'Leer la meteorología de los aeródromos'
+  ],
+  wxTitle: ['Météo des terrains', 'Aerodrome weather', 'Flugplatzwetter', 'Meteorología de los aeródromos'],
+  wxNone: ['Départ et arrivée en codes OACI, puis « Lire la météo des terrains ».',
+    'Departure and arrival as ICAO codes, then “Read the aerodromes’ weather”.',
+    'Abflug und Ankunft als ICAO-Codes, dann „Flugplatzwetter lesen“.',
+    'Salida y llegada en códigos OACI, luego «Leer la meteorología de los aeródromos».'
+  ],
+  wxCached: ['Hors réseau : dernières valeurs lues à {t}.', 'No network: last values read at {t}.',
+    'Kein Netz: zuletzt gelesene Werte um {t}.',
+    'Sin red: últimos valores leídos a las {t}.'
+  ],
+  wxRelay: ['La météo n’est joignable que par le lanceur d’un poste.', 'Weather can only be reached through a workstation’s launcher.',
+    'Das Wetter ist nur über den Starter eines Arbeitsplatzes erreichbar.',
+    'La meteorología solo es accesible a través del lanzador de un puesto.'
+  ],
+  wxNoData: ['pas de METAR ni de TAF', 'no METAR or TAF', 'kein METAR oder TAF', 'sin METAR ni TAF'],
+  wxWind: ['Vent', 'Wind', 'Wind', 'Viento'],
+  wxRwy: ['Piste {r}', 'Runway {r}', 'Piste {r}', 'Pista {r}'],
+  wxComp: ['{h} kt de {hw}, {c} kt de travers {s}', '{h} kt {hw}, {c} kt crosswind from the {s}',
+    '{h} kt {hw}, {c} kt Seitenwind von {s}',
+    '{h} kt {hw}, {c} kt de través desde la {s}'
+  ],
+  wxHead: ['face', 'headwind', 'Gegenwind', 'cara'],
+  wxTail: ['dos', 'tailwind', 'Rückenwind', 'cola'],
+  wxLeft: ['gauche', 'left', 'links', 'izquierda'],
+  wxRight: ['droite', 'right', 'rechts', 'derecha'],
+  wxRwyHint: ['piste principale, sens le plus proche du vent', 'main runway, the end closest to the wind',
+    'Hauptpiste, Richtung am nächsten zum Wind',
+    'pista principal, sentido más cercano al viento'
+  ],
+  wxCeil: ['Plafond', 'Ceiling', 'Wolkenuntergrenze', 'Techo'],
+  wxNoCeil: ['aucun', 'none', 'keine', 'ninguno'],
+  wxVis: ['Visibilité', 'Visibility', 'Sicht', 'Visibilidad'],
+  wxTemp: ['Température, QNH', 'Temperature, QNH', 'Temperatur, QNH', 'Temperatura, QNH'],
+  wxCb: ['CB / TCU annoncés : orages possibles sur la route.', 'CB / TCU reported: thunderstorms possible on the route.',
+    'CB / TCU gemeldet: Gewitter auf der Route möglich.', 'CB / TCU anunciados: posibles tormentas en la ruta.'
+  ],
+  wxRaw: ['Message brut', 'Raw message', 'Rohmeldung', 'Mensaje bruto'],
+  wxSrc: ['Vent : moyenne de {l} le long de la route (vent au sol, approximation).',
+    'Wind: average of {l} along the route (surface wind, approximation).',
+    'Wind: Mittel von {l} entlang der Route (Bodenwind, Näherung).',
+    'Viento: media de {l} a lo largo de la ruta (viento en superficie, aproximación).'
+  ],
+  wxMissing: ['Vent non calculé : il manque le vent d’un terrain.', 'Wind not computed: an aerodrome’s wind is missing.',
+    'Wind nicht berechnet: der Wind eines Flugplatzes fehlt.', 'Viento no calculado: falta el viento de un aeródromo.'
+  ],
   openIn: ['Ouvrir dans', 'Open in', 'Öffnen in', 'Abrir en'],
   openInHint: ['Nouvel onglet ; rien n’est envoyé qui ne soit déjà dans le vol.',
     'New tab; nothing is sent that is not already in the flight.',
@@ -797,7 +856,9 @@ const STYLE = `
 [data-module="fuel"] .fu-links .f-item{display:block}
 [data-module="fuel"] .fu-links small{display:block}
 [data-module="fuel"] .fu-links .fu-off{opacity:.55}
-[data-module="fuel"] .f-list .f-row{justify-content:flex-end}`;
+[data-module="fuel"] .f-list .f-row{justify-content:flex-end}
+[data-module="fuel"] .fu-wx{padding:8px 0;border-bottom:1px solid var(--sog-border)}
+[data-module="fuel"] .fu-wx:last-child{border-bottom:0}`;
 
 // ---------------------------------------------------------------- écran Préparer
 /** Dessine l'écran Préparer (champs une fois ; résultats redessinés par refresh). */
@@ -826,9 +887,14 @@ function renderPlan() {
       <div class="f-grid fu-g3">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}
         <label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
       <div class="f-grid fu-g3">${fld('wdir', TX.windDir, f.wind?.dirDeg ?? '', 'inputmode="numeric"')}${fld('wkt', TX.windKt, speedField(f.wind?.speedKt), 'inputmode="numeric"', { u: speedLabel() })}${fld('isa', TX.isa, f.isaDev || '', 'inputmode="numeric"')}</div>
+      <p class="f-muted" data-windsrc></p>
+      <div class="f-grid fu-g3">${fld('wxdate', TX.wxDate, f.weather?.when || '', 'type="datetime-local"')}${fld('wxmid', TX.wxMid, f.weather?.mid || '', 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
+      <label class="f-check"><input type="checkbox" data-k="wxreal"${f.weather?.real ? ' checked' : ''}>${esc(tt(TX.wxReal))}</label>
+      <div class="f-row"><button type="button" data-do="wx">${esc(tt(TX.wxRead))}</button></div>
       <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
     </div>
   </div>
+  <details class="f-card" data-fold="wx" open><summary>${esc(tt(TX.wxTitle))}</summary><div data-wx></div></details>
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div></div>
   <div class="f-bar fu-result" data-block="result" aria-live="polite"></div>
   <details class="f-card" data-fold="openin"><summary>${esc(tt(TX.openIn))}</summary><p class="f-muted">${esc(tt(TX.openInHint))}</p><div class="f-list fu-links" data-openin></div></details>
@@ -844,7 +910,7 @@ function renderPlan() {
     <div data-entrybox></div>
   </details>`;
   for (const d of S.body.querySelectorAll('details[data-fold]')) {
-    d.open = !!S.ui.open?.[d.dataset.fold];
+    d.open = S.ui.open?.[d.dataset.fold] ?? d.dataset.fold === 'wx'; // météo ouverte tant qu'on ne l'a pas repliée
     d.ontoggle = () => {
       S.ui.open = {
         ...S.ui.open,
@@ -857,6 +923,13 @@ function renderPlan() {
   S.body.oninput = S.body.onchange = e => onPlanInput(e);
   S.body.onclick = e => onPlanClick(e);
   refresh();
+  renderWx();
+  windSourceLine();
+  // météo lue une fois par montage quand l'appareil est en ligne et la route a ses terrains
+  if (!S.wxTried && wxIds().length && S.ctx.net?.online?.() !== false) {
+    S.wxTried = true;
+    wxFetch(false);
+  }
 }
 /** Champ changé dans Préparer : vol courant ou réglages mis à jour, route relue si elle change, résultats redessinés. */
 function onPlanInput(e) {
@@ -896,7 +969,10 @@ function onPlanInput(e) {
     case 'arr':
     case 'altn':
       r[k] = v.trim().toUpperCase();
-      if (k !== 'altn') resolveRoute();
+      if (k !== 'altn') {
+        resolveRoute();
+        scheduleWx();
+      }
       break;
     case 'rtext':
       r.text = v;
@@ -917,6 +993,16 @@ function onPlanInput(e) {
       break;
     case 'wdir':
     case 'wkt': {
+      if (f.weather?.real) {
+        f.weather = {
+          ...f.weather,
+          real: false
+        };
+        f.windSource = null;
+        const box = S.body.querySelector('[data-k="wxreal"]');
+        if (box) box.checked = false;
+        windSourceLine();
+      }
       const dir = num(S.body.querySelector('[data-k="wdir"]').value),
         kt = speedParse(S.body.querySelector('[data-k="wkt"]').value);
       f.wind = kt === null && dir === null ? null : {
@@ -927,6 +1013,30 @@ function onPlanInput(e) {
     }
     case 'isa':
       f.isaDev = num(v) || 0;
+      break;
+    case 'wxdate':
+      f.weather = {
+        ...f.weather,
+        when: v
+      };
+      renderWx();
+      if (f.weather.real) applyRealWind();
+      break;
+    case 'wxmid':
+      f.weather = {
+        ...f.weather,
+        mid: v.trim().toUpperCase()
+      };
+      scheduleWx();
+      break;
+    case 'wxreal':
+      f.weather = {
+        ...f.weather,
+        real: e.target.checked
+      };
+      if (f.weather.real) S.wx ? applyRealWind() : wxFetch(true);
+      else f.windSource = null;
+      windSourceLine();
       break;
     case 'goal':
       S.settings.goal = v;
@@ -998,6 +1108,7 @@ function onPlanInput(e) {
 }
 /** Clic dans Préparer : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
+  if (e.target.closest('[data-do="wx"]')) return wxFetch(true);
   const b = e.target.closest('[data-do]'),
     pick = e.target.closest('[data-pick]');
   if (b?.dataset.do === 'simbrief') return loadSimbrief();
@@ -1015,6 +1126,163 @@ function onPlanClick(e) {
     setLevel(Math.max(D.lo, Math.min(D.hi, h)));
   }
 }
+// ---------------------------------------------------------------- météo des terrains (aviationweather.gov)
+/** Terrains de la météo, dans l'ordre de la route : départ, intermédiaire, arrivée (codes OACI, sans doublon). */
+const wxIds = () => {
+  const f = S.flight,
+    r = f.route || {};
+  return [...new Set([r.dep, f.weather?.mid, r.arr].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z]{4}$/.test(x)))];
+};
+/** Relit la météo un peu après un changement de terrain, si elle a déjà été lue ou si la météo réelle est cochée. */
+function scheduleWx() {
+  clearTimeout(S.wxTimer);
+  if (!S.wx && !S.flight.weather?.real) return;
+  S.wxTimer = setTimeout(() => wxFetch(false), 1200);
+}
+/** METAR et TAF des terrains par ctx.net (aviationweather.gov, relayé par le lanceur), gardés sur l'appareil ; hors
+ *  réseau, les dernières valeurs gardées, avec leur heure. Fiche des terrains (axe de piste) par aerodb. loud : les
+ *  refus sont dits. */
+async function wxFetch(loud = false) {
+  const ids = wxIds();
+  if (!ids.length) {
+    if (loud) S.ctx.notify(tt(TX.wxNone), 'warn');
+    return renderWx();
+  }
+  const q = encodeURIComponent(ids.join(',')),
+    get = async kind => {
+      const res = await S.ctx.net.fetch(`https://aviationweather.gov/api/data/${kind}?ids=${q}&format=json`, {
+        headers: {
+          accept: 'application/json'
+        }
+      });
+      if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable')) throw Object.assign(new Error('net'), {
+        code: S.ctx.net.online?.() === false ? 'offline' : 'relay'
+      });
+      if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
+        code: 'http'
+      });
+      return res.status === 204 ? [] : res.json();
+    };
+  const kept = (await S.ctx.data.get(WX_PATH).catch(() => null)) || {
+    metar: {},
+    taf: {}
+  };
+  try {
+    const [m, t] = await Promise.all([get('metar'), get('taf')]),
+      at = new Date().toISOString();
+    for (const x of m || []) kept.metar[x.icaoId] = x;
+    for (const x of t || []) kept.taf[x.icaoId] = x;
+    kept.at = at;
+    await S.ctx.data.put(WX_PATH, kept, {
+      policy: 'cache'
+    });
+    S.wx = {
+      ...kept,
+      cached: false
+    };
+  } catch (e) {
+    S.wx = kept.at ? {
+      ...kept,
+      cached: true
+    } : null;
+    if (loud) S.ctx.notify(e.code === 'offline' ? tt(TX.offline) : e.code === 'relay' ? tt(TX.wxRelay) : tt(TX.sbError, {
+      e: e.message
+    }), 'warn');
+  }
+  S.wxAd = S.wxAd || {};
+  for (const id of ids)
+    if (!(id in S.wxAd)) S.wxAd[id] = ((await S.ctx.aerodb?.aerodromes?.({
+      icao: id
+    }).catch(() => null)) || [])[0] || null;
+  if (!S.body) return;
+  renderWx();
+  if (S.flight.weather?.real) applyRealWind();
+}
+/** Heure visée (secondes) : la date du vol saisie (heure de l'appareil), sinon aucune (METAR). */
+const wxWhen = () => {
+  const w = S.flight.weather?.when;
+  const t = w ? Date.parse(w) : NaN;
+  return Number.isFinite(t) ? Math.round(t / 1000) : null;
+};
+/** Résumés des terrains (METAR, ou TAF si la date du vol tombe dans sa validité). */
+const wxStations = () => wxIds().map(id => ({
+  id,
+  ad: S.wxAd?.[id] || null,
+  st: WX.station(S.wx?.metar?.[id], S.wx?.taf?.[id], wxWhen())
+}));
+/** Carte météo : pour chaque terrain, catégorie de vol en couleur, vent et composantes sur la piste la plus proche du
+ *  vent, plafond, visibilité, température et QNH, CB / TCU en avertissement, groupes temporaires du TAF, message brut
+ *  replié ; hors réseau, l'heure des valeurs. */
+function renderWx() {
+  const box = S.body?.querySelector('[data-wx]');
+  if (!box) return;
+  if (!S.wx) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.wxNone))}</p>`;
+  const kinds = {
+      VFR: 'ok',
+      MVFR: 'accent',
+      IFR: 'warn',
+      LIFR: 'err'
+    },
+    hhmm = s => s ? new Date(s * 1000).toISOString().slice(11, 16) + 'Z' : '',
+    vis = v => !v ? '—' : v.plus && v.sm >= 6 ? '≥ 10 km' : `${(v.sm * 1.609).toFixed(v.sm < 3 ? 1 : 0)} km`,
+    wind = (d, sp, g) => sp == null ? '—' : `${d == null ? '—' : typeof d === 'number' ? `${String(d).padStart(3, '0')}°` : d} ${sp} kt${g ? ` G${g}` : ''}`;
+  box.innerHTML = (S.wx.cached ? `<p class="f-muted">${esc(tt(TX.wxCached, { t: new Date(S.wx.at).toLocaleString(S.ctx.lang()) }))}</p>` : '') + wxStations().map(({
+    id,
+    ad,
+    st
+  }) => {
+    if (!st) return `<div class="f-item"><span><b>${esc(id)}</b> <span class="f-muted">${esc(tt(TX.wxNoData))}</span></span></div>`;
+    const rw = ad ? WX.runwayWind(ad.bearing, ad.magVar, st.wdir, st.wspd) : null;
+    return `<div class="fu-wx"><div class="f-row"><b>${esc(id)}</b><span class="f-muted">${esc(ad?.name || '')} · ${esc(st.source)} ${esc(hhmm(st.at))}</span>${st.cat ? `<span class="f-badge" data-kind="${kinds[st.cat] || 'accent'}">${esc(st.cat)}</span>` : ''}</div>
+      <dl class="f-dl"><dt>${esc(tt(TX.wxWind))}</dt><dd>${esc(wind(st.wdir, st.wspd, st.wgst))}</dd>
+      ${rw ? `<dt>${esc(tt(TX.wxRwy, { r: rw.ident }))}</dt><dd>${esc(tt(TX.wxComp, { h: Math.abs(rw.head), hw: tt(rw.head >= 0 ? TX.wxHead : TX.wxTail), c: rw.cross, s: tt(rw.side === 'L' ? TX.wxLeft : TX.wxRight) }))} <span class="f-muted">(${esc(tt(TX.wxRwyHint))})</span></dd>` : ''}
+      <dt>${esc(tt(TX.wxCeil))}</dt><dd>${st.ceil != null ? `${st.ceil.toLocaleString(S.ctx.lang())} ft` : esc(tt(TX.wxNoCeil))}${st.wx ? ` · ${esc(st.wx)}` : ''}</dd>
+      <dt>${esc(tt(TX.wxVis))}</dt><dd>${esc(vis(st.vis))}</dd>
+      ${st.temp != null || st.qnh != null ? `<dt>${esc(tt(TX.wxTemp))}</dt><dd>${st.temp != null ? `${st.temp} °C` : '—'} · ${st.qnh != null ? `${Math.round(st.qnh)} hPa` : '—'}</dd>` : ''}
+      ${st.tempo.map(g => `<dt>${esc(g.change)}</dt><dd>${esc(wind(g.wdir, g.wspd, g.wgst))} · ${esc(vis(g.vis))}${g.ceil != null ? ` · ${g.ceil} ft` : ''}${g.wx ? ` · ${esc(g.wx)}` : ''}${g.cat ? ` <span class="f-badge" data-kind="${kinds[g.cat] || 'accent'}">${esc(g.cat)}</span>` : ''}</dd>`).join('')}</dl>
+      ${st.convective ? `<p class="f-warn">${esc(tt(TX.wxCb))}</p>` : ''}
+      <details><summary>${esc(tt(TX.wxRaw))}</summary><pre>${esc(st.raw)}</pre></details></div>`;
+  }).join('');
+}
+/** « Météo réelle » : vent moyen des terrains le long de la route (frame : moyenne des vecteurs pondérée par les
+ *  segments départ → intermédiaire → arrivée), écrit dans le vol courant avec sa source. */
+function applyRealWind() {
+  const list = wxStations().filter(x => x.st),
+    pos = list.map(x => x.ad && Number.isFinite(+x.ad.lat) ? {
+      lat: +x.ad.lat,
+      lon: +x.ad.lon
+    } : null),
+    legs = list.slice(1).map((x, i) => pos[i] && pos[i + 1] ? gcNm(pos[i], pos[i + 1]) : 1),
+    w = list.length === wxIds().length ? WX.routeWind(list.map(x => x.st), legs) : null,
+    f = S.flight;
+  if (!w) {
+    f.windSource = null;
+    windSourceLine(tt(TX.wxMissing));
+    return;
+  }
+  f.wind = w;
+  f.windSource = {
+    kind: 'weather',
+    ids: list.map(x => `${x.id} (${x.st.source})`)
+  };
+  const d = S.body?.querySelector('[data-k="wdir"]'),
+    k = S.body?.querySelector('[data-k="wkt"]');
+  if (d) d.value = w.dirDeg;
+  if (k) k.value = speedField(w.speedKt);
+  windSourceLine();
+  saveFlight();
+  refresh();
+}
+/** Ligne d'origine du vent sous les champs (météo réelle, ou rien). */
+function windSourceLine(text) {
+  const el = S.body?.querySelector('[data-windsrc]');
+  if (!el) return;
+  const src = S.flight.windSource;
+  el.textContent = text || (src?.kind === 'weather' ? tt(TX.wxSrc, {
+    l: src.ids.join(', ')
+  }) : '');
+}
+
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
 function setLevel(ft) {
   if (!(ft > 0)) return;
@@ -1704,6 +1972,12 @@ export async function mount(el, ctx) {
     ...((await ctx.data.get(pilotPath('fuel.json'))) || {})
   };
   S.ofp = await ctx.data.get(OFP_PATH);
+  // météo : dernières valeurs gardées sur l'appareil, relues ensuite si l'appareil est en ligne
+  const wxKept = await ctx.data.get(WX_PATH).catch(() => null);
+  S.wx = wxKept?.at ? {
+    ...wxKept,
+    cached: true
+  } : null;
   S.ui = (await ctx.data.get(UI_PATH)) || {};
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(['Carburant et niveau', 'Fuel and level', 'Kraftstoff und Flugfläche', 'Combustible y nivel']))}</h1>
     <div class="f-tabs" role="group"><button type="button" data-view="plan">${esc(tt(TX.plan))}</button><button type="button" data-view="sheets">${esc(tt(TX.sheets))}</button></div>

@@ -71,6 +71,25 @@ Data of the module, in `planner/flight_performance_database_merged.fpdb.json` (`
 profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest wins). aerodb only completes a sheet
 (EUROCONTROL, SimBrief, estimate); it never holds the pilot's sheets.
 
+## 10. Aerodrome weather (`modules/fuel/weather.js`)
+
+- **Source**: aviationweather.gov, `api/data/metar` and `api/data/taf` (`ids=<ICAO,…>&format=json`), through
+  `ctx.net` (relayed by the launcher: the service has no CORS); the stations are the departure, an optional
+  intermediate aerodrome and the arrival. The last answers are kept on the device (`cache/fuel/weather.json`) and shown,
+  with their time, when the network cannot be reached.
+- **Which message**: with a flight date (optional, device time) inside the TAF's validity, the TAF: its base group
+  (last group without change, BECMG or FM covering the time) and its temporary groups (TEMPO, PROB) covering it;
+  otherwise the METAR.
+- **Shown per aerodrome**: flight category (LIFR: ceiling < 500 ft or visibility < 1 SM; IFR: < 1,000 ft or < 3 SM;
+  MVFR: ≤ 3,000 ft or ≤ 5 SM; else VFR — the METAR's own category when it gives one), wind with gust, head / tail and
+  crosswind components on the main runway's end closest to the wind (aerodb aerodrome `bearing`, true; runway number
+  from `bearing − magVar`), ceiling (lowest BKN / OVC, else vertical visibility), visibility in km ("≥ 10 km" for
+  6+ SM), temperature and QNH, weather, temporary groups, a warning for CB / TCU, the raw message folded.
+- **Real weather** (box): the quote's wind becomes the average of the aerodromes' wind vectors along the route, each
+  segment (departure → intermediate → arrival) the mean of its two ends, weighted by its length; its source is written
+  under the wind fields. Typing a wind unticks it. Surface wind as a stand-in for the wind at the level: an
+  approximation, said as such.
+
 ## 6. Invariants
 
 1. The quote is a pure function of its inputs: same inputs, same quote, on every device.

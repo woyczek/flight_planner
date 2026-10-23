@@ -78,6 +78,9 @@ One record per pilot, read and written by fuel and maps (the same flight in both
   of climb (`tocNm`) and from the top of descent to arrival (`todNm`) — the quote's own climb and descent, so the four
   values close the profile at the level. The "top of descent" shown in fuel's result is the gradient rule (level ÷
   gradient + buffer), not `todNm`. Maps draws the vertical profile from it and computes its own when it is missing.
+- `weather` (fuel's): `{ when (flight date, device time, optional), mid (intermediate aerodrome), real (wind from the
+  aerodromes' weather) }`; `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
+  null.
 - `wind` is null when unknown; `ofp` is null without a SimBrief flight plan (summary only: the OFP itself stays in the
   device cache).
 - Maps reads it as is; a field a module does not know is kept when it writes the record back.
