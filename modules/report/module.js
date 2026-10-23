@@ -1053,6 +1053,10 @@ export async function mount(el, ctx) {
   S.body.addEventListener('input', onInput);
   S.body.addEventListener('change', onInput);
   S.body.addEventListener('click', onClick);
+  // compagnie lue en fond par le cadre (frame INTEGRATION § 6) : arrivée ou changée après le montage, la barre
+  // d'enregistrement (« Enregistrer et inscrire sur le site ») est redessinée
+  S.onAirline = () => S?.body && render();
+  window.addEventListener('frame-airline', S.onAirline);
   // plan de vol : appels par ctx.net ; types d'appareil par aerodb (modèle, voilure tournante)
   const ac = ctx.aerodb?.aircraft ? await ctx.aerodb.aircraft().catch(() => null) : null;
   Fpl.configure({
@@ -1078,6 +1082,7 @@ export async function mount(el, ctx) {
 
 export function unmount() {
   if (!S) return;
+  window.removeEventListener('frame-airline', S.onAirline);
   // un brouillon en attente part quand même (son minuteur garde l'état)
   S.body = null;
   S = null;

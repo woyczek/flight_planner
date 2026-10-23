@@ -2,6 +2,10 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — the airline arriving after the mount** (frame lot 24: `ctx.airline` read in the background, event
+  `frame-airline`): the module listens to it and redraws, so the save bar's "Save and record on the website" turns on
+  when the airline arrives. Bench (fake GitHub, cleared profile, new repository with `airline/settings.json`): the
+  button "disabled — website address not set" at 2.8 s, enabled at 3.3 s, without reloading.
 - **23 Oct 2026 — the report's times in UTC** (Simplification's decision, points 1 to 5): a new report carries
   `timeline.tz = 'Z'`, its times in UTC and its day in UTC (`todayZ`); the time fields say "(Z)". A report without
   the marker (V2, older V3) is converted in memory (`toZ`: the report's date as the day, the device's time zone with
