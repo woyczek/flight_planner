@@ -58,7 +58,7 @@ distancia del inicio del descenso antes de la llegada. «Detalle del cálculo» 
 **Las consignas de ascenso.** Despliéguelas para seguir el ascenso hasta el nivel: potencia, régimen, velocidad, régimen
 de ascenso, flujo, Mach, tiempo y combustible acumulados en cada escalón, con el perfil dibujado.
 
-**Abrir en.** Bajo el resultado, «Abrir en ▾» prepara el mismo vuelo en otro lugar, en una pestaña nueva: SimBrief
+**Abrir en.** Bajo el resultado, «Abrir en» prepara el mismo vuelo en otro lugar, en una pestaña nueva: SimBrief
 (opciones del vuelo prerrellenadas, se requiere sesión en SimBrief), SkyVector (la ruta trazada, con velocidad y
 nivel), Navigraph y ChartFox (las cartas de los aeródromos de salida y llegada, se requiere sesión). Una entrada en gris
 indica lo que le falta (aeródromo, tipo de aeronave). No se envía nada que no esté ya en el vuelo.
@@ -98,7 +98,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
 - **Sin conexión**: todo se calcula en el dispositivo, a partir de las fichas ya recibidas. Solo la llamada a SimBrief
   espera a la red; el último OFP se queda guardado en el dispositivo.
 
-<!-- fr: f362e323f497 -->
+<!-- fr: cad99988d12f -->
 
 <!-- chapter: maps -->
 # Mapa

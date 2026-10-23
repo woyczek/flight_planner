@@ -59,7 +59,7 @@ de descente avant l'arrivée. « Détail du devis » le décompose phase par pha
 **Les consignes de montée.** Dépliez-les pour suivre la montée jusqu'au niveau : gaz, régime, badin, vario, débit,
 Mach, temps et carburant cumulés aux paliers, avec le profil dessiné.
 
-**Ouvrir dans.** Sous le résultat, « Ouvrir dans ▾ » prépare le même vol ailleurs, dans un nouvel onglet : SimBrief
+**Ouvrir dans.** Sous le résultat, « Ouvrir dans » prépare le même vol ailleurs, dans un nouvel onglet : SimBrief
 (options du vol préremplies, connexion SimBrief requise), SkyVector (la route tracée, avec vitesse et niveau),
 Navigraph et ChartFox (les cartes des terrains de départ et d'arrivée, connexion requise). Une entrée grisée dit ce
 qui lui manque (terrain, type d'appareil). Rien n'est envoyé qui ne soit déjà dans le vol.

@@ -28,7 +28,7 @@ of descent before arrival. “Quote details” breaks it down phase by phase.
 **The climb instructions.** Unfold them to follow the climb up to the level: power, RPM, airspeed, rate of climb, fuel
 flow, Mach, time and fuel totals at each step, with the profile drawn.
 
-**Open in.** Below the result, “Open in ▾” prepares the same flight elsewhere, in a new tab: SimBrief (flight options
+**Open in.** Below the result, “Open in” prepares the same flight elsewhere, in a new tab: SimBrief (flight options
 prefilled, SimBrief login required), SkyVector (the route drawn, with speed and level), Navigraph and ChartFox (the
 charts of the departure and arrival airfields, login required). A greyed-out entry says what it lacks (airfield,
 aircraft type). Nothing is sent that is not already in the flight.
@@ -67,4 +67,4 @@ flight levels, and nothing changes in the sheets.
 - **Offline**: everything is computed on the device, from the sheets already received. Only the SimBrief call waits for
   the network; the last OFP stays kept on the device.
 
-<!-- fr: f362e323f497 -->
+<!-- fr: cad99988d12f -->
