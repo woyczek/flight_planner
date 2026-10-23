@@ -102,6 +102,8 @@
       const s = await d.status(),
         v = await d.get('disponibilites/TST/2026-W43.json');
       check('2 writes pending', s.pending === 2, s);
+      check('the queue tells each path and the module that wrote it', s.queue?.length === 2 && s.queue.every(q => q.module ===
+        'essai' && q.path && q.at), s.queue);
       check('read returns the local write', v?.pilote === 'TST', v);
       const r = await d.sync();
       check('sync offline: error "offline", nothing lost', r.error === 'offline' && (await d.status()).pending === 2, r);

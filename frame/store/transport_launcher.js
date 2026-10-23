@@ -47,6 +47,7 @@
     return {
       id: 'launcher',
       kind: 'remote',
+      quick: true, // data/ du poste : un passage est local et rapide, la couche envoie une écriture aussitôt (2 s)
       async head() {
         const j = await call(`__setup/changes?since=${encodeURIComponent(last?.head || '')}`);
         if (!j.same) last = {

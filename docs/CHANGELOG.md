@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame: no more "1 pending" for ever on a workstation** (`frame/store/frame_data.js`,
+  `frame/store/transport_launcher.js`, `frame/app.js`) — with the launcher, a write goes into `data/` within seconds
+  instead of waiting ten minutes; the sync button's tooltip lists what is waiting (file, module, time) and the last
+  error.
 - **aerodb: helicopter estimates** (`frame/aerodb/aircraft.js`; SPEC, DECISIONS) — a helicopter gets a practical
   ceiling (12,000 to 20,000 ft by class instead of an aircraft-like value) and a low economical level (3,000 ft) for
   fuel; the launcher no longer reports a missing types base when the one published in the data repository is there.

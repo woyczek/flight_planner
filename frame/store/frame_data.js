@@ -317,14 +317,22 @@
     lastError = '';
   /** État : { transport, online, syncing, lastSync, lastError, pending, conflicts }. */
   async function status() {
-    const s = await getMeta('status').catch(() => null);
+    const s = await getMeta('status').catch(() => null),
+      pend = await idb('pending', 'getAll').catch(() => []);
     return {
       transport: cfg.transport?.id || 'none',
       online: navigator.onLine !== false,
       syncing: !!syncing,
       lastSync: s?.lastSync || '',
       lastError: lastError || s?.lastError || '',
-      pending: (await idb('pending', 'getAll').catch(() => [])).length,
+      pending: pend.length,
+      // écritures en attente : chemin, module qui l'a faite, date, suppression ou non (les plus récentes d'abord)
+      queue: pend.map(p => ({
+        path: p.path,
+        module: p.module || '',
+        at: p.at,
+        deletion: p.text === null
+      })).sort((a, b) => String(b.at).localeCompare(String(a.at))),
       conflicts: (await idb('conflicts', 'getAll').catch(() => [])).filter(c => !c.seen).length
     };
   }
@@ -433,13 +441,26 @@
       path,
       text,
       at: new Date().toISOString(),
-      author: cfg.identity.trigram || ''
+      author: cfg.identity.trigram || '',
+      module: opts.module || ''
     });
     changed([path]);
     emitStatus();
+    if (!opts.quiet) soon();
   }
+  // transport local au poste (le lanceur et son data/, T.quick) : une écriture part 2 s après la dernière, sans attendre
+  // le passage de fond ; l'échange git (T.exchange) garde son rythme (passage « write » : sans échange) ; une écriture
+  // fréquente et sans enjeu (opts.quiet : la position réelle d'un vol, toutes les 10 s) attend le passage de fond
+  let soonTimer = null;
+  const soon = () => {
+    if (!cfg.transport?.quick) return;
+    clearTimeout(soonTimer);
+    soonTimer = setTimeout(() => sync({
+      reason: 'write'
+    }), 2e3);
+  };
   /** Supprime un fichier (suppression envoyée à la prochaine synchronisation ; document en cache : effacé ici). */
-  async function remove(path) {
+  async function remove(path, opts = {}) {
     if (isCache(path) || (await idb('docs', 'get', path))?.policy === 'cache') {
       await idb('docs', 'delete', path);
       changed([path]);
@@ -449,10 +470,12 @@
       path,
       text: null,
       at: new Date().toISOString(),
-      author: cfg.identity.trigram || ''
+      author: cfg.identity.trigram || '',
+      module: opts.module || ''
     });
     changed([path]);
     emitStatus();
+    soon();
   }
 
   // ---------------------------------------------------------------- lecture d'un fichier absent du cache
@@ -629,7 +652,7 @@
         return done(result);
       }
       // transport qui échange lui-même avec un dépôt distant (lanceur : passage git du poste) : avant, pour recevoir
-      await exchange(T, result);
+      if (reason !== 'write') await exchange(T, result);
       // premier passage avec un dépôt après un usage sans échange : les copies écrites ici sont reprises
       const mode = await getMeta('mode');
       if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, await T.head(), result);
@@ -653,7 +676,7 @@
           result.pushed = pend.length;
           result.ok = true;
           // puis après, pour envoyer le lot (ce qu'il a reçu en plus est tiré au passage suivant)
-          await exchange(T, result);
+          if (reason !== 'write') await exchange(T, result);
           return done(result);
         } catch (e) {
           if (!e?.conflict) throw e; // le dépôt a bougé pendant l'envoi : tirer et repousser
@@ -1162,8 +1185,13 @@
       list,
       cached,
       evict,
-      put: (path, value, opts) => (guard(path), put(path, value, opts)),
-      remove: path => (guard(path), remove(path)),
+      put: (path, value, opts) => (guard(path), put(path, value, {
+        ...(opts || {}),
+        module: decl.id || ''
+      })),
+      remove: path => (guard(path), remove(path, {
+        module: decl.id || ''
+      })),
       watch,
       status,
       onStatus,

@@ -41,6 +41,10 @@ exchange happens in batches, explicitly or periodically, through a transport the
 
 - **When**: at start, on the synchronisation button, and in the background every 10 minutes while the device is
   online, plus when the network comes back. One pass at a time across all tabs (Web Locks, `sog-frame-sync`).
+  - **Quick pass** with a transport local to the workstation (the launcher and its `data/`, `T.quick`): a write goes
+    2 s after the last one, without the git exchange, which keeps its own rhythm.
+  - A frequent write that does not matter much (`put(…, { quiet: true })`: the actual position of a flight every
+    10 s) waits for the background pass, so that `data/` does not get a commit every 10 s.
   - **On wake**: when the page becomes visible again (phone switched back on, tab brought back) or is restored from
     the back-forward cache, the status is broadcast again, and a pass runs if a write is pending or the last success
     is older than 10 minutes.
@@ -382,7 +386,9 @@ used alone:
   - synchronisation error;
   - n pending;
   - up to date, n minutes ago.
-- Its tooltip gives the transport, the last success, the pending count and the last error.
+- Its tooltip gives the transport, the last success, the pending count and the last error, then the pending writes:
+  path, module that wrote it, time (five at most). `FrameData.status().queue` gives the same list
+  (`[{ path, module, at, deletion }]`, newest first) to the settings screen's synchronisation card.
 - On a phone (760 px or narrower), it shows only its dot and a short state: "✓" up to date, the number of pending
   writes, "⟳" in progress, "✕" offline or error, "! n" conflicts, nothing for "on this device".
   - The whole label stays in the tooltip and in the button's accessible name, and the details are in Settings.

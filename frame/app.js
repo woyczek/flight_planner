@@ -502,12 +502,15 @@
     else [state, label] = ['ok', s.lastSync ? t(T.sync.ago, {
       d: ago(s.lastSync)
     }) : t(T.sync.ok)];
+    // infobulle : l'état, puis les écritures en attente (chemin, module, heure ; cinq au plus) et la dernière erreur
+    const queue = (s.queue || []).slice(0, 5).map(q => `\n• ${q.deletion ? '✕ ' : ''}${q.path} — ${q.module || '?'}, ${new Date(q.at).toLocaleTimeString(lang())}`)
+      .join('') + ((s.queue || []).length > 5 ? '\n…' : '');
     const title = t(T.sync.title, {
       tr: s.transport,
       last: s.lastSync ? new Date(s.lastSync).toLocaleString() : t(T.sync.never),
       n: s.pending,
       e: s.lastError ? ` — ${s.lastError}` : ''
-    });
+    }) + queue;
     // état court pour un écran étroit (le libellé entier reste dans l'infobulle et le nom accessible du bouton)
     const short = {
       ok: '✓',
@@ -1258,6 +1261,8 @@
       },
       by: 'frame',
       updated_at: a.at
+    }, {
+      quiet: true // toutes les 10 s : pas un commit à chaque fois, le passage de fond l'emporte
     });
   }
   /** ctx.live : état, source, dernière position, et le GPS de l'appareil (activé par un geste, gardé sur l'appareil). */

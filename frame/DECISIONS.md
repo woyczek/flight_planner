@@ -414,6 +414,20 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - 375 px: the page fits;
     - `started` set back to null: the badge disappears;
     - no JavaScript error.
+- **23 Oct 2026 — "1 pending" for ever with the launcher** (pass on the real base):
+  - The cause: since lot 9 the launcher is the default transport, and its writes waited for the background pass
+    (10 minutes). Fuel writes the current flight each time it opens, so a write was almost always waiting. Nothing was
+    refused, it was simply not sent yet.
+  - Now:
+    - the launcher transport says `quick`, and a write goes 2 s after the last one, in a pass without the git exchange
+      (`reason: 'write'`); the exchange keeps its rhythm;
+    - the actual position (lot 15) writes `quiet`, so `data/` does not get a commit every 10 s;
+    - each pending write records the module that made it (`module`);
+    - `status().queue` lists them, and the button's tooltip shows them with the last error.
+  - Tests:
+    - on the launcher, Fuel opened: "1 pending" with "pilot/TST/current_flight.json — fuel" in the tooltip, then
+      "up to date" within 5 s, with a local commit in the trigram's name;
+    - `frame/store/test/`: 90 checks.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are
