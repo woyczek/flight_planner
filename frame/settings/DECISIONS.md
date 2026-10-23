@@ -148,3 +148,8 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   checked), references (known, SIA, aircraft, cached), last read error, aero base (source, published, open, missing
   zones, error) — labels in four languages, values raw; "Copy" puts the full JSON (the frame's diagnostic plus usages,
   launcher, repository without token, storage, browser) on the clipboard. Checked with the launcher; no token in it.
+- **24 Oct 2026 — Weather key** (frame lot 12, contract agreed with the frame session): the key is not a device file —
+  `FrameData.dump()` exports `device/` — but lives in `localStorage` `githubData:avwx`, like the GitHub token (outside
+  V2 browser backups and outside the IndexedDB cache); the frame reads it, adds `Authorization` to avwx.rest calls in
+  `ctx.net`, and gives settings `weatherKey { has, save, clear, test }` only. Card shown with or without a launcher;
+  the Settings chapter has a "Weather key" section in four languages.

@@ -40,6 +40,14 @@ el dispositivo.
 **Los datos sin conexión.** Cada zona publicada tiene su línea: su estado en este dispositivo, su ciclo y su tamaño.
 «Guardar sin conexión» la descarga entera (mejor por wifi); «Liberar» devuelve el espacio.
 
+## La clave meteorológica
+
+El METAR funciona sin clave. El TAF, en un dispositivo sin lanzador (teléfono, sitio), requiere una clave personal y
+gratuita de avwx.rest: «Crear una clave en avwx.rest ↗» abre la página del proveedor. Péguela en «Clave meteorológica
+(TAF, avwx.rest)», luego «Guardar»; «Probar» pide el TAF de un aeródromo, «Borrar» la quita. La clave se queda solo en
+este dispositivo, nunca en el repositorio ni en una copia, y nunca vuelve a mostrarse. En un puesto servido por el
+lanzador es innecesaria: el lanzador proporciona el TAF.
+
 ## Las claves del lanzador
 
 En un puesto servido por el lanzador, «Claves del lanzador» configura la clave de la API IVAO: se queda en la carpeta
@@ -78,4 +86,4 @@ se señala.
   problema. El token
   nunca figura en él.
 
-<!-- fr: dbfed441ce70 -->
+<!-- fr: 5669236c0f58 -->

@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **settings: weather key for TAF without a launcher** (`frame/settings/settings.js`, `frame/settings/help/*.md`;
+  `frame/settings/SPEC.md`, `DECISIONS.md`, manuals rebuilt) — a "Weather key (TAF, avwx.rest)" card, with or without a
+  launcher: METAR works without a key, TAF without a launcher needs a personal avwx.rest key, kept on the device only
+  (never in a file, a backup or the repository, never shown again); Save, Test, Erase, link to the provider's sign-up
+  page.
 - **Frame, lot 12: airport weather without a launcher** (`frame/app.js`, `tools/launch.py`, `tools/csp_policy.py`) —
   the METAR comes from metar.vatsim.net (no key; relayed by the launcher when there is one), the TAF from avwx.rest with
   a personal key entered on the device (Settings › Keys), which the app adds itself and never keeps in a backup or in

@@ -94,6 +94,13 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
    the frame can evict; a last row for the aircraft base (state, number of types). A hint says keeping downloads the
    whole zone, preferably on Wi-Fi. With no launcher and no access set, a warning says the device has no base and
    gives the two ways in: set the access above, or publish the bases from a workstation with the launcher.
+8b. **Weather key (TAF, avwx.rest)**, with or without a launcher, when the frame gives `weatherKey` (`has`, `save`,
+   `clear`, `test(icao)`): METAR works without a key; TAF without a launcher needs a personal avwx.rest key. The frame
+   keeps it in `localStorage` (`githubData:avwx`), never in `device/`, never in a backup nor in the repository, and never
+   gives it back; `ctx.net` adds it to calls to avwx.rest. The card shows whether a key is saved (never the key), a
+   password field emptied on save, "Test" (`test('LFPG')`: the launcher's or provider's status and message), "Erase"
+   (asks), a link to the provider's sign-up page; on a launcher, a sentence says it is not needed (the launcher
+   provides the TAF).
 9. **Launcher keys** (page served by a launcher only): the IVAO API key's state (`GET /__setup/secrets`: saved with
    its last characters, given by the launcher's environment, or missing), a new key (empty: unchanged), "Save",
    "Test" (`/__setup/secrets/test?service=ivao`), "Erase" (asks). The key goes to the launcher's `secrets/` folder,

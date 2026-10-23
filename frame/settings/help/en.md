@@ -39,6 +39,14 @@ online and when the network comes back.
 **Offline data.** Each published zone has its row: its state on this device, its cycle and its size. “Keep offline”
 downloads it whole (preferably on Wi-Fi); “Free” gives the space back.
 
+## The weather key
+
+METAR works without a key. TAF, on a device without a launcher (phone, website), needs a personal and free avwx.rest
+key: “Create a key on avwx.rest ↗” opens the provider's page. Paste it in “Weather key (TAF, avwx.rest)”, then “Save”;
+“Test” asks for the TAF of an airfield, “Erase” removes it. The key stays on this device only, never in the repository
+nor in a backup, and is never shown again. On a workstation served by the launcher it is not needed: the launcher
+provides the TAF.
+
 ## Launcher keys
 
 On a workstation served by the launcher, “Launcher keys” sets the IVAO API key: it stays in the launcher’s `secrets/`
@@ -75,4 +83,4 @@ only reported.
   line; “Copy” puts it all on the clipboard, to paste in your message to report a problem. The token is
   never in it.
 
-<!-- fr: dbfed441ce70 -->
+<!-- fr: 5669236c0f58 -->

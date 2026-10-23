@@ -72,13 +72,17 @@ atteint son plafond ce jour-là (droite en gras). Un point marque le départ d�
 Important pour les hélicoptères : par forte chaleur ou en altitude, le plafond réel peut tomber bien sous celui de la
 fiche.
 
-**La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche, pour le départ, l'arrivée et un terrain
-intermédiaire facultatif, ce qui compte pour le vol : la catégorie (VFR, MVFR, IFR, LIFR, en couleur), le vent et ses
+**La météo.** Sous « Niveau et vent », « Lire la météo des terrains » affiche le départ, l'arrivée, le dégagement et
+les terrains le long de la route : tous ceux à moins de 10 NM de part et d'autre de la route (rayon réglable dans les
+réglages du devis) qui ont un METAR ou un TAF ; les autres sont ignorés. Chaque terrain dit sa distance depuis le
+départ (le dégagement, depuis l'arrivée) ; au-delà de deux, les terrains intermédiaires sont repliés sous le départ,
+l'arrivée et le dégagement. Pour chacun, ce qui compte pour le vol : la catégorie (VFR, MVFR, IFR, LIFR, en couleur), le vent et ses
 composantes de face et de travers sur la piste principale du terrain (le sens le plus proche du vent), le plafond, la
 visibilité, la température et le QNH, et un avertissement quand des CB ou des TCU sont annoncés ; le message brut est
 replié. Avec une date de vol, c'est le TAF qui répond s'il couvre cette heure (et ses passages temporaires), sinon le
-METAR. Cochez « Météo réelle » pour que le vent du devis devienne la moyenne des vents des terrains le long de la route —
-une approximation à partir du vent au sol, dite sous les champs. Hors réseau, les dernières valeurs lues restent
+METAR. Cochez « Météo réelle » pour que le vent du devis devienne la moyenne des vents des terrains de la route
+(départ, terrains intermédiaires, arrivée), tronçon par tronçon et pondérée par leur longueur — une approximation à
+partir du vent au sol, dite sous les champs. Hors réseau, les dernières valeurs lues restent
 affichées avec leur heure.
 
 **La décision du niveau.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
@@ -406,6 +410,14 @@ qui est sur l'appareil.
 
 **Les données hors ligne.** Chaque zone publiée a sa ligne : son état sur cet appareil, son cycle et sa taille.
 « Garder hors ligne » la télécharge entière (de préférence en Wi-Fi) ; « Libérer » rend la place.
+
+## La clé météo
+
+Le METAR marche sans clé. Le TAF, sur un appareil sans lanceur (téléphone, site), demande une clé personnelle et
+gratuite d'avwx.rest : « Créer une clé sur avwx.rest ↗ » ouvre la page du fournisseur. Collez-la dans « Clé météo (TAF,
+avwx.rest) », puis « Enregistrer » ; « Tester » demande le TAF d'un terrain, « Effacer » la retire. La clé reste sur cet
+appareil seulement, jamais dans le dépôt ni dans une sauvegarde, et n'est jamais réaffichée. Sur un poste servi par le
+lanceur, elle est inutile : le lanceur fournit le TAF.
 
 ## Les clés du lanceur
 

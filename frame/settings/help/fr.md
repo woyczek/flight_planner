@@ -40,6 +40,14 @@ qui est sur l'appareil.
 **Les données hors ligne.** Chaque zone publiée a sa ligne : son état sur cet appareil, son cycle et sa taille.
 « Garder hors ligne » la télécharge entière (de préférence en Wi-Fi) ; « Libérer » rend la place.
 
+## La clé météo
+
+Le METAR marche sans clé. Le TAF, sur un appareil sans lanceur (téléphone, site), demande une clé personnelle et
+gratuite d'avwx.rest : « Créer une clé sur avwx.rest ↗ » ouvre la page du fournisseur. Collez-la dans « Clé météo (TAF,
+avwx.rest) », puis « Enregistrer » ; « Tester » demande le TAF d'un terrain, « Effacer » la retire. La clé reste sur cet
+appareil seulement, jamais dans le dépôt ni dans une sauvegarde, et n'est jamais réaffichée. Sur un poste servi par le
+lanceur, elle est inutile : le lanceur fournit le TAF.
+
 ## Les clés du lanceur
 
 Sur un poste servi par le lanceur, « Clés du lanceur » règle la clé de l'API IVAO : elle reste dans le dossier

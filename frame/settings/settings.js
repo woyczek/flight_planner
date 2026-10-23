@@ -11,7 +11,8 @@
   //     vérifier, enregistrer ; autre dépôt confirmé dans une fenêtre du lanceur) ; sinon dépôt GitHub, jeton jamais
   //     réaffiché, « Couper l'accès » (sans échange coché : lecture des bases seulement) ; Synchronisation si un échange
   //     est coché ;
-  //   · Données hors ligne (ctx.aerodb, stockage du navigateur) ; Clés, si un lanceur sert la page ; diagnostic replié ;
+  //   · Données hors ligne (ctx.aerodb, stockage du navigateur) ; Clé météo (TAF avwx.rest, avec ou sans lanceur : weatherKey
+  //     du cadre, clé dans localStorage githubData:avwx, jamais réaffichée) ; Clés, si un lanceur sert la page ; diagnostic ;
   //   · reprise des réglages V2 de la même origine en un geste (identité, accès GitHub), proposée une fois.
   // Contexte donné par frame/app.js : { t, notify, ask, FD, own (device/, politique cache), reload, identity(), usages(),
   // launcher(), transport(), aerodb(), syncNow }.
@@ -391,6 +392,55 @@
     unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
     // clés du lanceur
     keys: ['Clés du lanceur', 'Launcher keys', 'Schlüssel des Starters', 'Claves del lanzador'],
+    // clé météo de l'appareil (TAF par avwx.rest sans lanceur ; frame lot 12 : weatherKey du contexte)
+    wx: ['Clé météo (TAF, avwx.rest)', 'Weather key (TAF, avwx.rest)', 'Wetterschlüssel (TAF, avwx.rest)',
+      'Clave meteorológica (TAF, avwx.rest)'
+    ],
+    wxHint: [
+      'Le METAR marche sans clé. Le TAF, sans lanceur, demande une clé personnelle d’avwx.rest (gratuite) : gardée sur cet appareil seulement, jamais dans le dépôt ni dans une sauvegarde, jamais réaffichée.',
+      'METAR works without a key. TAF, without a launcher, needs a personal avwx.rest key (free): kept on this device only, never in the repository nor in a backup, never shown again.',
+      'METAR funktioniert ohne Schlüssel. TAF braucht ohne Starter einen persönlichen avwx.rest-Schlüssel (kostenlos): nur auf diesem Gerät gespeichert, nie im Repository oder in einer Sicherung, nie wieder angezeigt.',
+      'El METAR funciona sin clave. El TAF, sin lanzador, requiere una clave personal de avwx.rest (gratuita): guardada solo en este dispositivo, nunca en el repositorio ni en una copia, nunca vuelta a mostrar.'
+    ],
+    wxLauncher: ['Inutile ici : la page est servie par un lanceur, qui fournit le TAF.',
+      'Not needed here: the page is served by a launcher, which provides the TAF.',
+      'Hier nicht nötig: Die Seite wird von einem Starter bedient, der das TAF liefert.',
+      'Innecesaria aquí: la página la sirve un lanzador, que proporciona el TAF.'
+    ],
+    wxSet: ['Clé enregistrée sur cet appareil.', 'Key saved on this device.', 'Schlüssel auf diesem Gerät gespeichert.',
+      'Clave guardada en este dispositivo.'
+    ],
+    wxNone: ['Aucune clé sur cet appareil.', 'No key on this device.', 'Kein Schlüssel auf diesem Gerät.',
+      'Ninguna clave en este dispositivo.'
+    ],
+    wxKey: ['Clé personnelle avwx.rest', 'Personal avwx.rest key', 'Persönlicher avwx.rest-Schlüssel', 'Clave personal de avwx.rest'],
+    wxSignup: ['Créer une clé sur avwx.rest ↗', 'Create a key on avwx.rest ↗', 'Schlüssel auf avwx.rest erstellen ↗',
+      'Crear una clave en avwx.rest ↗'
+    ],
+    wxOk: ['Clé valide : avwx.rest répond ({s}).', 'Key valid: avwx.rest answers ({s}).',
+      'Schlüssel gültig: avwx.rest antwortet ({s}).',
+      'Clave válida: avwx.rest responde ({s}).'
+    ],
+    wxKeySet: ['clé enregistrée — vide : inchangée', 'key saved — empty: unchanged', 'Schlüssel gespeichert — leer: unverändert',
+      'clave guardada — vacío: sin cambios'
+    ],
+    wxNoKey: ['Aucune clé enregistrée sur cet appareil.', 'No key saved on this device.',
+      'Kein Schlüssel auf diesem Gerät gespeichert.',
+      'Ninguna clave guardada en este dispositivo.'
+    ],
+    wxRefused: ['Clé refusée par avwx.rest ({s}) : vérifiez-la ou créez-en une nouvelle.',
+      'Key refused by avwx.rest ({s}): check it or create a new one.',
+      'Schlüssel von avwx.rest abgelehnt ({s}): prüfen oder einen neuen erstellen.',
+      'Clave rechazada por avwx.rest ({s}): compruébela o cree una nueva.'
+    ],
+    wxHttp: ['avwx.rest répond {s} : réessayez plus tard.', 'avwx.rest answers {s}: try again later.',
+      'avwx.rest antwortet {s}: später erneut versuchen.',
+      'avwx.rest responde {s}: vuelva a intentarlo más tarde.'
+    ],
+    wxEraseAsk: ['Effacer la clé météo de cet appareil ?', 'Erase the weather key from this device?',
+      'Den Wetterschlüssel von diesem Gerät löschen?',
+      '¿Borrar la clave meteorológica de este dispositivo?'
+    ],
     keysHint: ['Gardées par le lanceur de ce poste (dossier secrets/), jamais par le navigateur ni dans les données.',
       'Kept by this workstation’s launcher (secrets/ folder), never by the browser nor in the data.',
       'Vom Starter dieses Rechners verwahrt (Ordner secrets/), nie im Browser oder in den Daten.',
@@ -583,6 +633,13 @@
     // données hors ligne
     cards.push(`<div class="f-card" data-card="offline"><h2>${esc(t(T.offlineData))}</h2><dl class="f-dl" data-offline><dt>${esc(t(T.zones))}</dt><dd>…</dd><dt>${esc(t(T.storage))}</dt><dd>…</dd></dl>
       <div data-zones></div>${!L?.data && !gh ? `<p class="f-warn">${esc(t(T.noBases))}</p>` : ''}<p class="f-muted">${esc(t(T.zoneHint))}</p></div>`);
+    // clé météo de l'appareil, avec ou sans lanceur (le cadre la garde hors de device/ et de toute sauvegarde)
+    const wk = c.weatherKey;
+    if (wk) cards.push(`<div class="f-card" data-card="wx"><h2>${esc(t(T.wx))}</h2><p class="f-muted">${esc(t(T.wxHint))}</p>
+      ${L ? `<p class="f-muted">${esc(t(T.wxLauncher))}</p>` : ''}<p><b>${esc(t(wk.has() ? T.wxSet : T.wxNone))}</b></p>
+      ${fld('wxKey', T.wxKey, '', { type: 'password', ph: wk.has() ? t(T.wxKeySet) : '' })}<p class="f-msg" data-msg></p>
+      <div class="f-row"><button type="button" class="primary" data-act="wxSave">${esc(t(T.save))}</button><button type="button" data-act="wxTest" ${wk.has() ? '' : 'disabled'}>${esc(t(T.test))}</button><button type="button" data-act="wxErase" ${wk.has() ? '' : 'disabled'}>${esc(t(T.erase))}</button></div>
+      <p><a href="https://account.avwx.rest/" target="_blank" rel="noopener">${esc(t(T.wxSignup))}</a></p></div>`);
     // clés, si un lanceur sert la page
     if (L) cards.push(`<div class="f-card" data-card="keys"><h2>${esc(t(T.keys))}</h2><p class="f-muted">${esc(t(T.keysHint))}</p>
       <p>${esc(t(T.pair, { k: t(T.ivaoKey) }))} <b data-key>…</b></p>${fld('ivaoKey', T.keyNew, '', { type: 'password' })}<p class="f-msg" data-msg></p>
@@ -873,6 +930,38 @@
           return say('access', r.message || t(T.saved), 'ok');
         }
         return;
+      }
+      if (act === 'wxSave') {
+        const f = card('wx').querySelector('[data-f="wxKey"]'),
+          k = f?.value.trim() || '';
+        if (f) f.value = '';
+        if (!k) return say('wx', '');
+        await c.weatherKey.save(k);
+        c.notify(t(T.saved), 'ok');
+        return again();
+      }
+      if (act === 'wxTest') {
+        say('wx', '…', 'warn');
+        const r = await c.weatherKey.test('LFPG').catch(e => ({
+          ok: false,
+          message: e?.message || String(e)
+        }));
+        // messages du cadre : ok, no key, key refused, offline, HTTP <n> — traduits ici
+        const m = String(r?.message || ''),
+          http = /^HTTP (\d+)/.exec(m);
+        return say('wx', r?.ok ? t(T.wxOk, {
+          s: r.status || 200
+        }) : m === 'no key' ? t(T.wxNoKey) : m === 'key refused' ? t(T.wxRefused, {
+          s: r.status || '401'
+        }) : m === 'offline' ? t(T.testOffline) : http ? t(T.wxHttp, {
+          s: http[1]
+        }) : m || '?', r?.ok ? 'ok' : m === 'offline' ? 'warn' : 'err');
+      }
+      if (act === 'wxErase') {
+        if (!await c.ask(t(T.wxEraseAsk))) return;
+        await c.weatherKey.clear();
+        c.notify(t(T.saved), 'ok');
+        return again();
       }
       if (act === 'keyTest') {
         const r = await setup('secrets/test?service=ivao');
