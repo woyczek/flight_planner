@@ -9,7 +9,8 @@
   //   · une recherche : fiches → flotte → référence → types → code libre, chacune avec son origine ;
   //   · un appareil prend sa fiche, sinon celle de son type (alias suivis), sinon l'estimation du type.
   // Les fichiers V2 (.js) sont lus comme des littéraux (« let data = {…}; »), jamais exécutés. Aucun texte d'interface.
-  // API : window.AeroDBRegistry = { create({ reader, catalog, now }) → registre, mergeSheets, stamp, whenOf, PATHS }.
+  // API : window.AeroDBRegistry = { create({ reader, catalog, now, raw }) → registre, readAll(reader) (toutes les sources
+  //   lues en parallèle, à passer en raw), mergeSheets, stamp, whenOf, PATHS }.
   if (window.AeroDBRegistry) return;
   const PATHS = {
     sheets: 'aircraft/sheets/',
@@ -177,10 +178,42 @@
   /** Nom de fichier d'une fiche (identifiant gardé dans la fiche). */
   const fileOf = id => `${PATHS.sheets}${String(id).replace(/[^A-Za-z0-9._-]/g, '_')}.json`;
 
+  /** Lecture d'une source du registre (références en « reference », le reste en « document ») ; null si absente. */
+  const readOne = (reader, path) => reader.read(path, {
+    policy: path.startsWith('references/') ? 'reference' : 'document',
+    wait: true
+  }).catch(() => null);
+  /** Toutes les sources du registre lues en parallèle, sans rien interpréter : la liste des fiches (arbre en mémoire) puis
+   *  chacune, la base partagée de la V2, la flotte, la référence, et la flotte de la V2 quand l'arbre dit que
+   *  airline/fleet.json manque (sans arbre : lue à la demande). Lancées par aerodb dès que ce fichier est chargé, en même
+   *  temps que la base des types : sur un réseau lent, une attente au lieu de six. */
+  async function readAll(reader) {
+    const listP = reader.list ? reader.list(PATHS.sheets).catch(() => null) : Promise.resolve(null),
+      airline = reader.list ? reader.list('airline/').catch(() => null) : Promise.resolve(null),
+      one = p => readOne(reader, p);
+    const [paths, aPaths] = await Promise.all([listP, airline]),
+      noFleet = Array.isArray(aPaths) && !aPaths.includes(PATHS.fleet),
+      [own, fpdb, fleet, reference, fleetV2] = await Promise.all([
+        Promise.all((paths || []).filter(x => /\.json$/i.test(x)).map(p => one(p).then(r => [p, valueOf(r)]))),
+        one(PATHS.fpdb),
+        noFleet ? null : one(PATHS.fleet),
+        one(PATHS.reference),
+        noFleet ? one(PATHS.fleetV2) : null
+      ]);
+    return {
+      own,
+      fpdb,
+      fleet,
+      reference,
+      fleetV2
+    };
+  }
+
   function create({
     reader,
     catalog,
-    now = () => Date.now()
+    now = () => Date.now(),
+    raw = null // promesse de readAll(reader) lancée d'avance (aerodb), sinon lue au premier load()
   } = {}) {
     // recherche des types du catalogue, prise avant qu'aerodb ne donne sa propre search au catalogue (sinon elle
     // s'appellerait elle-même)
@@ -189,22 +222,23 @@
       policy: path.startsWith('references/') ? 'reference' : 'document',
       wait: true
     }).catch(() => null);
-    let loadP = null;
+    let loadP = null,
+      rawP = raw || null; // lectures lancées d'avance par aerodb (readAll), prises par le premier load()
 
     // ---------------------------------------------------------------- lecture de toutes les sources
     function load() {
       return loadP ||= (async () => {
+        // toutes les sources lues d'un coup (readAll), puis interprétées
+        const R = await (rawP || readAll(reader));
+        rawP = null;
         // fiches : les siennes (aircraft/sheets/), puis celles de la V2 adoptées ou fusionnées
-        const own = new Map(),
-          paths = (await reader.list?.(PATHS.sheets).catch(() => null)) || [];
-        for (const p of paths.filter(x => /\.json$/i.test(x))) {
-          const s = valueOf(await read(p));
+        const own = new Map();
+        for (const [p, s] of R.own)
           if (s?.id) own.set(String(s.id), {
             sheet: s,
             path: p
           });
-        }
-        const fpdb = valueOf(await read(PATHS.fpdb)),
+        const fpdb = valueOf(R.fpdb),
           sheets = new Map();
         for (const [id, x] of own) sheets.set(id, {
           sheet: x.sheet,
@@ -224,8 +258,8 @@
           });
         }
         // appareils : flotte (airline/fleet.json, sinon la V2), puis référence pour les immatriculations absentes
-        const fleetDoc = valueOf(await read(PATHS.fleet)),
-          v2 = fleetDoc?.aircraft?.length ? null : v2File(textOf(await read(PATHS.fleetV2))),
+        const fleetDoc = valueOf(R.fleet),
+          v2 = fleetDoc?.aircraft?.length ? null : v2File(textOf(R.fleetV2 || await readOne(reader, PATHS.fleetV2))),
           rows = fleetDoc?.aircraft?.length ? fleetDoc.aircraft : v2?.data?.rows || [],
           fleetAt = fleetDoc?.updated_at || v2?.meta?.updatedAt || '',
           fleetSrc = fleetDoc?.aircraft?.length ? 'fleet' : 'fleet-v2',
@@ -253,7 +287,7 @@
           e.callsigns = [...new Set((r.callsigns || (r.callsign ? [r.callsign] : [])).map(c => String(c).toUpperCase()))];
           aircraft.set(reg, e);
         }
-        const ref = v2File(textOf(await read(PATHS.reference)));
+        const ref = v2File(textOf(R.reference));
         for (const r of ref?.data?.aircraft || []) {
           const reg = regOf(r.registration);
           if (!reg || /^\d+$/.test(reg)) continue; // numéros purs (« 1 », « 110 ») : pas des immatriculations
@@ -550,6 +584,7 @@
 
   window.AeroDBRegistry = {
     create,
+    readAll,
     mergeSheets,
     stamp,
     whenOf,

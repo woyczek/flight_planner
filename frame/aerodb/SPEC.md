@@ -209,7 +209,12 @@ All the aircraft data in one place, read from every source and written in one pl
     documents;
   - writes: `aircraft/sheets/` (merge `mergeSheets`) and the V2 mirror `planner/…fpdb.json` (merge
     `keyed:profiles:id`).
-- **Loading**: `aircraft()` loads `registry.js` and `sheets.js` from aerodb's folder at its first call. A change under
+- **Loading**: `aircraft()` loads `registry.js` and `sheets.js` from aerodb's folder at its first call. Everything is
+  read in parallel: the two scripts, the types base (`aircraft_db` and `aircraft_perf`: the JSON or the V2 `.js`,
+  chosen from the repository's tree when the reader lists it, otherwise both asked at once, the JSON preferred) and,
+  as soon as `registry.js` is there, every source of the registry (`AeroDBRegistry.readAll`: the sheets of
+  `aircraft/sheets/`, the V2 fpdb, the fleet, the reference, and the V2 fleet only when the tree says
+  `airline/fleet.json` is missing), handed to `create({ raw })` and interpreted by the first `load()`. A change under
   `aircraft/`, `airline/`, `planner/` or `references/` makes it read again at the next call, and sends
   `{ aircraft: true }`; changes that are the registry's own first reads do not.
 

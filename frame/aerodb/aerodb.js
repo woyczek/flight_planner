@@ -493,11 +493,23 @@
     function aircraft() {
       return aircraftP ||= (async () => {
         aircraftBusy = true;
+        // tout en parallèle (premier écran sur un réseau lent : une attente au lieu de six) : les scripts du registre, les
+        // sources du registre dès que registry.js est là (readAll), et la base des types ; JSON ou .js de la V2 choisi
+        // d'après l'arbre du dépôt quand le lecteur le connaît (sinon les deux demandés à la fois, le JSON préféré)
+        const libsP = Promise.all([loadOwn('registry.js', 'AeroDBRegistry'), loadOwn('sheets.js', 'AeroDBSheets')]),
+          rawP = libsP.then(() => window.AeroDBRegistry.readAll(reader)),
+          listed = reader.list ? await reader.list('AircraftDB/').catch(() => null) : null;
         const one = async (base, name) => {
-          const j = await read(`AircraftDB/${base}.json`);
+          const jp = `AircraftDB/${base}.json`,
+            sp = `AircraftDB/${base}.js`,
+            has = p => !Array.isArray(listed) || listed.includes(p),
+            [j, s] = await Promise.all([has(jp) ? read(jp) : null, has(sp) && !(Array.isArray(listed) && listed.includes(jp)) ?
+              read(sp) :
+              null
+            ]);
           if (j) return valueOf(j);
-          const s = await read(`AircraftDB/${base}.js`);
-          return s ? literal(s.text ?? s.value, name) : null;
+          const t = s || (Array.isArray(listed) && listed.includes(jp) && has(sp) ? await read(sp) : null);
+          return t ? literal(t.text ?? t.value, name) : null;
         };
         const [db, perf] = await Promise.all([one('aircraft_db', 'AIRCRAFT_DB'), one('aircraft_perf', 'AIRCRAFT_PERF')]),
           catalog = window.AeroDBAircraft.create({
@@ -505,11 +517,12 @@
             perf: perf || {}
           });
         // registre : fiches, flotte, référence, recherche unique (registry.js) ; logique des fiches (sheets.js)
-        await Promise.all([loadOwn('registry.js', 'AeroDBRegistry'), loadOwn('sheets.js', 'AeroDBSheets')]);
+        await libsP;
         const reg = registry = window.AeroDBRegistry.create({
             reader,
             catalog,
-            now
+            now,
+            raw: rawP
           }),
           state = await reg.load(),
           fleet = await reg.fleetTypes();

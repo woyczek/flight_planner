@@ -426,3 +426,24 @@ With the network cut, the only reads attempted were:
     ATC instruction; LFCH: P helicopter short flights under protocol) and, for a manual vertex, `accuracyM` (null for
     all 14 today) and `accuracyNote`.
   - **Check**: the user's file of 16:34 (2.0, 418 aerodromes) is accepted as it is.
+- **23 Oct 2026 — the registry's reads in parallel (weight audit of the frame: first GitHub screen at 7.4 s).**
+  - **Cause**: `aircraft()` read the types base, then loaded `registry.js`, whose `load()` read the V2 fpdb, the fleet
+    (V2 fleet when `airline/fleet.json` is absent) and the reference one after the other, each sheet too: four round
+    trips of 0.6 to 0.9 s on Fast 3G after the types base.
+  - **Now**: the scripts, the types base and every source of the registry are asked at once
+    (`AeroDBRegistry.readAll`, started as soon as `registry.js` is there, handed to `create({ raw })`); JSON or V2 `.js`
+    chosen from the tree; the V2 fleet read only when the tree says the V3 fleet is missing.
+  - **Measure** (audit kit of the frame session, `audit_run.py`: fake GitHub serving the real tree of the data
+    repository, Chrome 375 px, CPU ×4, Fast 3G, fresh profile; before = v3 0a0cf3c95, after = this change):
+
+    | GitHub first pass | Before | After |
+    |---|---|---|
+    | Fuel module shown | 7.46 s | 5.70 s |
+    | First synchronisation done | 7.6 s | 5.7 s |
+    | API reads (count, KB) | 9, 381 | 9, 381 |
+    | Types base + registry sources | 2.84 → 6.62 s, four in series | all from 2.78 s, done at 4.82 s |
+
+    The remaining wait is the network's bandwidth (381 KB at Fast 3G) and the frame's own reads before aerodb
+    (reference of the branch, commit, tree, `airline/settings.json`: 2.4 s); the 3 to 4 s aimed at would need lighter
+    files (the types base as JSON, the reference trimmed).
+  - Tests: `test/registry.html` 26 / 26; Fuel › Sheets lists the same entries.

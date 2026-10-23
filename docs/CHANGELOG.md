@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: aircraft registry read in parallel** (`frame/aerodb/aerodb.js`, `registry.js`; SPEC, DECISIONS) — the
+  types base and every source of the registry (sheets, V2 fpdb, fleet, reference) are asked at once instead of one
+  after the other: first GitHub screen 7.46 s → 5.70 s (CPU ×4, Fast 3G).
 - **My flights: the time of a report with only its engine start** (`modules/flightlog/model.js`; DECISIONS) — the
   detail shows the engine start when there is no off-block nor take-off time yet.
 - **Report: the Mission step says "to check" until you open it** (`modules/report/module.js`; DECISIONS, help ×4) —
