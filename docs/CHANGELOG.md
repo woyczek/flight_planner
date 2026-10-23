@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: a route changed on the map is quoted again** (`modules/fuel/module.js`; `INTEGRATION.md`, `DECISIONS.md`) —
+  when another module writes the current flight, fuel keeps its route as written, recomputes distance, quote and
+  climb / descent profile, and writes them back, live or the next time it opens.
 - **aerodb lot 5b: Little Navmap files kept in step** (`frame/aerodb/lnmperf.js`, launcher routes
   `/__setup/lnmperf-folder` and `/__setup/lnmperf`, Settings card, `FrameData.noteConflict`; SPEC, INTEGRATION,
   DECISIONS, Settings help ×4) — on a launcher workstation, the performance sheets and the `.lnmperf` files of a chosen

@@ -91,6 +91,12 @@ One record per pilot, read and written by fuel and maps (the same flight in both
   The same field as maps' mission `route_points[].alt_ft`. Fuel edits the points (order, add, remove, level) and then
   rewrites `route.text` from the points alone (`DEP PT1 PT2/F280 ARR`), so both stay in step; a module that only reads
   `points` can ignore `text`. Fuel writes the record 300 ms after the last change.
+- **A flight written by another module** (`by` ≠ `fuel`: maps, lot 6, the route changed on the map; contract of
+  23 Oct 2026): fuel, when it sees such a record (watch while mounted, or at its next mount), keeps the route as
+  written — `points` and `text` are neither read again nor normalised —, derives `distanceNm` and `trackDeg` from the
+  points, redoes the quote and writes the record back with a fresh `profile` and `by: 'fuel'`. Until then the writer
+  treats `profile.tocNm` / `todNm` as stale. The writer writes `points` together with `text` (the positions are only in
+  `points`).
 - `profile` is written by fuel with every quote that changes it (null without a quote): average climb and descent
   rates (ft/min, from the ground to the level and back) and ground speeds (kt), the distance from departure to the top
   of climb (`tocNm`) and from the top of descent to arrival (`todNm`) — the quote's own climb and descent, so the four

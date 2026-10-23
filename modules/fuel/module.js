@@ -1880,6 +1880,23 @@ function routeSteps(r, distanceNm) {
     } : null).filter(Boolean);
   return out.length ? out : null;
 }
+/** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
+ *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
+ *  refait, profil réécrit et vol courant réécrit par fuel (by: 'fuel') — maps sait alors que TOC et TOD sont à jour.
+ *  Que l'écran soit Préparer ou Fiches. */
+function adoptForeignFlight() {
+  const r = S.flight.route ||= emptyFlight().route;
+  routeDerived(r);
+  const C = S.C = compute();
+  S.flight.profile = verticalProfile(C.q);
+  if (S.view === 'plan' && S.body) {
+    const ta = S.body.querySelector('[data-k="rtext"]');
+    if (ta && document.activeElement !== ta) ta.value = r.text || '';
+    renderPts();
+    refresh();
+  }
+  saveFlight();
+}
 /** Relit les points de la route (texte, départ, arrivée) dans aerodb, les points déjà connus du vol en secours ;
  *  distance et route vraie déduites. normalize : le texte est réécrit sous sa forme normalisée (routeText) — à la sortie
  *  du champ, pas pendant la frappe. Dernière demande seule retenue. */
@@ -2603,7 +2620,8 @@ export async function mount(el, ctx) {
       ...emptyFlight(),
       ...f
     };
-    if (S.view === 'plan' && !S.body.contains(document.activeElement)) renderPlan();
+    if (S.view === 'plan') S.body.contains(document.activeElement) ? refresh() : renderPlan();
+    if (f.by && f.by !== 'fuel') adoptForeignFlight();
   }));
   // dessins à la largeur de l'écran
   const ro = new ResizeObserver(() => {
@@ -2613,7 +2631,8 @@ export async function mount(el, ctx) {
   ro.observe(el);
   S.stops.push(() => ro.disconnect());
   show(S.ui.view === 'sheets' ? 'sheets' : 'plan');
-  if (S.flight.route?.text || S.flight.route?.dep) S.flight.route.manual || resolveRoute();
+  if (S.flight.by && S.flight.by !== 'fuel') adoptForeignFlight(); // vol modifié ailleurs pendant l'absence de fuel
+  else if (S.flight.route?.text || S.flight.route?.dep) S.flight.route.manual || resolveRoute();
 }
 
 export function unmount() {

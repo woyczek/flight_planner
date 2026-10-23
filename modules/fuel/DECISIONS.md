@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — a flight changed elsewhere** (contract with maps for its lot 6, through the ergonomics session):
+  when the current flight's `by` is not `fuel`, fuel adopts it — keeps `points` and `text` as written (normalising
+  maps' text would overwrite what it just wrote), derives distance and track from the points, redoes the quote and
+  writes `profile` with `by: 'fuel'`, on the plan or the sheets screen, live (watch) or at the next mount. Checked on
+  8793 through the data layer (an adapter declaring `pilot/` as maps does): live, a 5-point route with FL140 at PT2
+  gave 301 NM, "FL100 → FL140", TOD 38.9 NM in `profile`, maps' OFP text untouched; with fuel unmounted (on #report),
+  a 3-point route was adopted on returning to #fuel (297 NM, profile rewritten).
 - **23 Oct 2026 — the route text first** (users' feedback arbitrated by the ergonomics session: the route string is
   what pilots work with all the time): the text field is always visible and normalised on leaving it; the points list
   becomes secondary (folded, "Points (n)"); distance and track are read with their source, typed only when nothing
