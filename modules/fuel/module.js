@@ -319,10 +319,10 @@ const TX = {
     'Without a launcher: METAR from metar.vatsim.net, TAF from avwx.rest.',
     'Ohne Starter: METAR von metar.vatsim.net, TAF von avwx.rest.', 'Sin lanzador: METAR de metar.vatsim.net, TAF de avwx.rest.'
   ],
-  wxNoTaf: ['TAF indisponible sans lanceur ni clé météo (Réglages › Clés) : le METAR répond à la place.',
-    'TAF unavailable without a launcher or a weather key (Settings › Keys): the METAR answers instead.',
-    'TAF ohne Starter oder Wetterschlüssel nicht verfügbar (Einstellungen › Schlüssel): das METAR antwortet stattdessen.',
-    'TAF no disponible sin lanzador ni clave meteorológica (Ajustes › Claves): responde el METAR.'
+  wxNoTaf: ['TAF indisponible sans lanceur ni clé météo (Réglages › Clé météo (TAF, avwx.rest)) : le METAR répond à la place.',
+    'TAF unavailable without a launcher or a weather key (Settings › Weather key (TAF, avwx.rest)): the METAR answers instead.',
+    'TAF ohne Starter oder Wetterschlüssel nicht verfügbar (Einstellungen › Wetterschlüssel (TAF, avwx.rest)): das METAR antwortet stattdessen.',
+    'TAF no disponible sin lanzador ni clave meteorológica (Ajustes › Clave meteorológica (TAF, avwx.rest)): responde el METAR.'
   ],
   wxRelay: ['La météo n’est joignable que par le lanceur d’un poste.', 'Weather can only be reached through a workstation’s launcher.',
     'Das Wetter ist nur über den Starter eines Arbeitsplatzes erreichbar.',
@@ -2232,6 +2232,8 @@ function setLevel(ft) {
   };
   const i = S.body.querySelector('[data-k="fl"]');
   if (i) i.value = Math.round(ft / 100);
+  renderPts(); // niveaux continués des points
+  if (S.aloft) aloftApply(); // vent, ISA au niveau et leur source refaits au nouveau niveau (puis devis)
   saveFlight();
   refresh();
 }

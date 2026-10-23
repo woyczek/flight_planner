@@ -4,6 +4,10 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — the level changed by the decision** (seen by the help session): "Use FL220" kept the wind of
+  FL280 — `setLevel` did not re-apply the forecast aloft. It now does, like the level field and a flight changed on the
+  map: wind, ISA at the level and their source are redone, then the quote, the sticky result and the Departure step.
+  Help and the TAF message name the settings card as it is: "Weather key (TAF, avwx.rest)".
 - **23 Oct 2026 — the quote in the current flight**: Report fills "fuel at start" with the block fuel (arbitration 15),
   so fuel writes `current_flight.quote = { block, trip, unit, minutes, levelFt, approx }` with the profile, only when it
   changes.
