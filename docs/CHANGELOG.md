@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report, My flights, Website: times shown in UTC** (`modules/report/module.js`, `modules/flightlog/module.js`,
+  `modules/website/module.js`; DECISIONS) — "16:59Z", with the device's time in brackets at the engine start.
 - **aerodb: Little Navmap follow-up only with a launcher** (`frame/aerodb/aerodb.js`; DECISIONS) — a phone no longer loads
   `lnmperf.js` (27 KB) at each opening.
 - **Fuel: times in UTC** (`modules/fuel/module.js`; DECISIONS, help ×4) — "16:57Z", with the device's time in

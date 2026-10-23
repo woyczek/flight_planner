@@ -21,6 +21,10 @@ import {
 import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import {
+  fmtZLocal,
+  fmtDateZ
+} from '../../frame/lib/time.js'; // heures en UTC, l'heure locale seulement à la mise en route
 import AAR from './families/aar.js';
 import AIRBORNE from './families/airborne.js';
 import AIRLIFT from './families/airlift.js';
@@ -63,7 +67,7 @@ export const meta = {
     'families/airborne.js', 'families/airlift.js', 'families/combat.js', 'families/command.js', 'families/fire.js',
     'families/flight_inspection.js', 'families/hadr.js', 'families/hems.js', 'families/isr.js', 'families/law_enforcement.js',
     'families/maritime.js', 'families/sar.js', 'families/sof.js', 'families/special.js', 'families/survey.js', '../../frame/lib/dom.js',
-    '../../frame/lib/clipboard.js'
+    '../../frame/lib/clipboard.js', '../../frame/lib/time.js'
   ]
 };
 
@@ -585,10 +589,7 @@ async function prefillCard() {
   const a = cf.aircraft || {},
     r = cf.route || {},
     title = started ? tt(TX.startedAt, {
-      t: new Date(started).toLocaleTimeString(S.ctx.lang(), {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      t: fmtZLocal(started) // mise en route : l'heure UTC et celle de l'appareil
     }) : tt(TX.current);
   const q = cf.quote || {},
     taken = [a.registration, a.callsign, a.type, [r.dep, r.arr].filter(Boolean).join(' → '), r.altn ? tt(TX.takenAltn, {
@@ -607,12 +608,7 @@ function sourcesCard() {
   if (!box) return;
   const id = S.ctx.identity,
     p = S.proposal,
-    when = v => v ? new Date(v).toLocaleString(S.ctx.lang(), {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }) : '',
+    when = v => v ? fmtDateZ(v, S.ctx.lang()) : '',
     flight = (net, f) => `${esc(f.callsign)} · ${esc([f.dep, f.arr].filter(Boolean).join(' → ') || '—')} · ${esc(when(f.start))}${f.open ? ' …' : ''}`;
   box.innerHTML = `${p?.flights?.length ? `<div class="f-card f-accent rp-prefill"><div><b>${esc(tt(TX.lastOn, { net: p.label }))}</b><div class="f-muted">${flight(p.net, p.flights[0])}</div></div>
       <button type="button" class="primary" data-do="pick" data-net="${p.net}" data-id="${esc(p.flights[0].id)}">${esc(tt(TX.use))}</button></div>` : ''}
@@ -1015,7 +1011,7 @@ export async function mount(el, ctx) {
     S.path = d.path || null;
     S.sources = d.sources || {};
     ctx.notify(tt(TX.draft, {
-      d: new Date(d.at).toLocaleString(ctx.lang())
+      d: fmtDateZ(d.at, ctx.lang())
     }), 'info');
   } else {
     S.m = freshMission(FAMILIES[(await ctx.data.get(PREFS))?.family] ? (await ctx.data.get(PREFS)).family : 'HEMS');

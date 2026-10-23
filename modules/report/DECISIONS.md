@@ -2,6 +2,11 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — times shown in UTC** (suite rule, `frame/lib/time.js`, frame lot 22): the started-flight card says
+  "Flight started at 16:59Z (18:59)" (engine start: UTC and the device's time), the network flights and the
+  restored draft "23/10/2026 16:57Z" (`fmtDateZ`). The report's time fields (`timeline.*`, `type=time`) keep their
+  values in the device's time, like the V2 reports already saved: turning them to UTC changes the data, a decision
+  asked to Simplification.
 - **23 Oct 2026 — the Mission step is "to check" until seen** (end-to-end pass, Simplification's go): a new report
   takes the family of the last report (`PREFS`) and its first series, so "2 Mission ✓" showed on a report whose
   Mission step was never opened, and a family nobody chose went to the log. Now `S.missionSeen`: false for a new
