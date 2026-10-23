@@ -126,6 +126,13 @@ by size. Drafted with the user, validated before code.
   in the registry; and when a `.lnmperf` file changes on its side (edited in Little Navmap) its changes are merged
   into the registry, field by field, the most recent wins, the other value kept and reviewable, then re-exported.
   `fuel` keeps the screens and edits through the API; `website` feeds the fleet.
+- 23 Oct 2026 — **Pilot access to a private data repository on GitHub.** A fine-grained token can only target
+  repositories the token's owner owns (or an organisation's); an invited collaborator cannot create one for another
+  user's private repository. Three ways, chosen at export from the repository owner's type: a user-owned repository →
+  a classic token with the `repo` scope (dedicated GitHub account advised); an organisation-owned repository →
+  fine-grained token scoped to that repository; later, sign-in without a token (OAuth / GitHub App) once a relay
+  (the site's web service) exists. The onboarding wizard ("Join the airline") takes a pilot without any GitHub
+  account by the hand, step by step.
 
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 

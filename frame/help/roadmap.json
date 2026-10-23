@@ -167,6 +167,13 @@
           "en": "iOS / Android app (shell resumed)",
           "de": "iOS- / Android-App (Wiederaufnahme der Hülle)",
           "es": "App iOS / Android (retomando el envoltorio)"
+        },
+        {
+          "state": "later",
+          "fr": "Connexion GitHub sans jeton à copier (OAuth / GitHub App) dès qu'un relais existera (web service du site)",
+          "en": "GitHub sign-in without a token to copy (OAuth / GitHub App) once a relay exists (the site's web service)",
+          "de": "GitHub-Anmeldung ohne zu kopierendes Token (OAuth / GitHub App), sobald ein Relais existiert (Webdienst der Website)",
+          "es": "Inicio de sesión GitHub sin token que copiar (OAuth / GitHub App) en cuanto exista un relé (servicio web del sitio)"
         }
       ]
     },
@@ -491,6 +498,13 @@
           "en": "Identity, usages, access (token or workstation remote), sync, backup, offline data by zone, level, launcher keys",
           "de": "Identität, Nutzungen, Zugang (Token oder entferntes Repository des Rechners), Synchronisation, Sicherung, Offline-Daten nach Zone, Stufe, Schlüssel des Starters",
           "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador"
+        },
+        {
+          "state": "doing",
+          "fr": "Assistant « Rejoindre la compagnie » pas à pas pour un pilote sans compte GitHub : compte, invitation, jeton (classique sur un dépôt d'utilisateur, à grain fin sur une organisation), test, identifiants ; code QR du lien côté administrateur",
+          "en": "“Join the airline” step-by-step wizard for a pilot without a GitHub account: account, invitation, token (classic on a user repository, fine-grained on an organisation), test, network ids; QR code of the link on the admin side",
+          "de": "Assistent „Der Gesellschaft beitreten“ Schritt für Schritt für Piloten ohne GitHub-Konto: Konto, Einladung, Token (klassisch bei Nutzer-Repository, feinkörnig bei Organisation), Test, Netzkennungen; QR-Code des Links auf Admin-Seite",
+          "es": "Asistente «Unirse a la compañía» paso a paso para un piloto sin cuenta GitHub: cuenta, invitación, token (clásico en repositorio de usuario, granular en organización), prueba, identificadores; código QR del enlace del lado administrador"
         },
         {
           "state": "done",
