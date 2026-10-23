@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **flightlog: the user's chapter in French** (`modules/flightlog/help/fr.md`) — "How to use" (totals, filters,
+  list, details, write or open the report, More), then where flights come from and special cases; to be translated and
+  assembled by the help session.
 - **report: the user's chapter in French** (`modules/report/help/fr.md`) — "How to use" (three steps, last flight,
   other sources, mission, result, saving, recording on the website, my last reports), then prefill in detail, report
   numbers, the "→ Vol" bookmark, special cases; to be translated and assembled by the help session.
