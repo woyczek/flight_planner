@@ -243,8 +243,15 @@ used alone:
 - **Dual view** (tablet and wide screen, from 980 px): the frame may mount a second module beside the current one.
   - The current module is on the left, a pane on the right, sticky under the header.
   - A module offers a pane through `APP.modules[].pane`: Fuel and Report offer the Map.
-  - The header button (the pane's icon and verb) opens or closes it. It is pressed while the pane is open, and hidden
-    under 980 px.
+  - The header button is a toggle: the pane's icon and its verb ("Map"), 44 px high, never clipped.
+    - Pressed while the pane is open: the background tinted with the accent (15 %), an accent border, the page's text.
+      Contrast is at least 4.5:1 in the three designs, by day and by night.
+    - It shows only above 980 px, decided at once (`matchMedia`, no transition): never half drawn while the window is
+      resized.
+  - The pane has its own "×", which closes it like the toggle.
+  - **Opening by itself**: from 1200 px, a module that offers a pane (Fuel, Report) opens it the first time. Between
+    980 and 1200 px it opens only on demand. When the user opens or closes it, the choice is kept for that module, and
+    a closed pane stays closed at every width.
   - The address carries it (`#fuel?with=maps`): opening or closing updates the address without remounting the module
     (`history.replaceState`).
   - The open pane is kept per module in `device/layout.json` (`{ panes: { fuel: 'maps' } }`, cache policy).

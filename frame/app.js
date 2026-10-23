@@ -613,7 +613,7 @@
       await mod.mount(el, ctxFor(entry, meta, h.query));
       // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
       paintPaneButton(entry);
-      const want = APP.modules.some(m => m.id === h.query.with) ? h.query.with : layout[entry.id] || '';
+      const want = paneWanted(entry, h.query);
       if (want && want !== entry.id && current?.id === entry.id) openPane(entry, want);
     } catch (e) {
       view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
@@ -627,7 +627,13 @@
   // le module courant à gauche, un second à droite (volet) ; chacun est un mount() ordinaire avec son propre ctx, les deux
   // ne se parlent qu'à travers les enregistrements partagés (pilot/<tri>/current_flight.json, watch) ; sur téléphone,
   // rien ne change. Volet ouvert par module : device/layout.json ({ panes: { fuel: 'maps' } }), adresse #fuel?with=maps
-  const wide = matchMedia('(min-width: 980px)');
+  const wide = matchMedia('(min-width: 980px)'),
+    // à partir de 1200 px, un module qui propose un volet l'ouvre de lui-même tant que l'utilisateur n'a rien choisi
+    wideAuto = matchMedia('(min-width: 1200px)');
+  /** Volet voulu pour un module : l'adresse (?with=), sinon le choix gardé (y compris « fermé »), sinon son volet
+   *  proposé sur un écran d'au moins 1200 px. */
+  const paneWanted = (entry, query = {}) => isModule(query.with) && query.with !== entry.id ? query.with : entry.id in layout ?
+    layout[entry.id] : entry.pane && wideAuto.matches ? entry.pane : '';
   let pane = null, // { id, mod, el }
     layout = {};
   /** Démonte le volet (changement de module, fermeture, écran devenu étroit). */
@@ -652,7 +658,20 @@
     el.className = 'f-pane';
     sec.className = 'f-module';
     sec.dataset.module = p.id;
-    el.append(sec);
+    // « × » : ferme le volet comme la bascule (choix gardé)
+    const bar = document.createElement('div'),
+      x = document.createElement('button');
+    bar.className = 'f-pane-bar';
+    x.type = 'button';
+    x.className = 'f-pane-close';
+    x.innerHTML = Icons?.svg('x') || '×';
+    x.title = t(T.paneClose, {
+      m: t(p.label)
+    });
+    x.setAttribute('aria-label', x.title);
+    x.onclick = () => togglePane();
+    bar.append(x);
+    el.append(bar, sec);
     pane = {
       id: p.id,
       mod: null,
@@ -976,12 +995,17 @@
       if (e.target.closest('a')) viaMenu = true;
     });
     // écran devenu étroit : volet démonté (son état reste gardé) ; redevenu large : rouvert s'il l'était
-    wide.addEventListener('change', () => {
+    const onWidth = () => {
       const entry = APP.modules.find(m => m.id === current?.id);
       if (!wide.matches) closePane();
-      else if (entry && layout[entry.id]) openPane(entry, layout[entry.id]);
+      else if (entry && !pane) {
+        const want = paneWanted(entry);
+        if (want && want !== entry.id) openPane(entry, want);
+      }
       paintPaneButton(entry || null);
-    });
+    };
+    wide.addEventListener('change', onWidth);
+    wideAuto.addEventListener('change', onWidth);
     $('fSync').onclick = async () => {
       const s = await FD.status();
       if (s.conflicts) location.hash = '#conflicts';

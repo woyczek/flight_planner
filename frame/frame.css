@@ -38,8 +38,9 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap
 }
-/* boutons à icône de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible */
-.f-head button:not(.f-sync) {
+/* boutons à icône seule de l'en-tête (menu, aide, réglages) : carrés de la taille d'une cible ; les boutons à libellé
+   (synchronisation, retour, bascule de la vue double) gardent leur largeur */
+.f-head button:not(.f-sync):not(.f-back):not(.f-pane-btn) {
   width: var(--sog-touch);
   padding: 0;
   flex: none
@@ -133,15 +134,26 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex: none
+  flex: none;
+  padding: 0 12px;
+  white-space: nowrap
 }
 .f-pane-btn[hidden] {
   display: none
 }
+/* bascule enfoncée : fond teinté de l'accent, bordure de l'accent, texte de la page (lisible dans tous les designs) */
 .f-pane-btn[aria-pressed="true"] {
-  background: var(--sog-accent);
-  color: var(--sog-accent-ink);
+  background: color-mix(in srgb, var(--sog-accent) 15%, var(--sog-surface));
+  color: var(--sog-fg);
   border-color: var(--sog-accent)
+}
+.f-pane-bar {
+  display: flex;
+  justify-content: flex-end
+}
+.f-pane-close {
+  width: var(--sog-touch);
+  padding: 0
 }
 .f-view.f-split {
   display: grid;

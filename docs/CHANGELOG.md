@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Frame: a readable dual view toggle** (`frame/app.js`, `frame/frame.css`) — the "Map" button of the header was
+  clipped to an icon; it is now a toggle with its label, readable in every design, with a "×" on the pane. Fuel and
+  Report open the Map beside them by themselves from 1200 px wide until you choose, and your choice is kept.
 - **fuel: the route text first** (`modules/fuel/module.js`; `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`)
   — the route is typed in a field that is always visible and tidied when you leave it (one line, levels as /F280,
   airways kept, unknown points named under it, ICAO coordinates read); distance and true track are shown with their

@@ -322,6 +322,24 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     with curl, hourly 850 hPa temperature and wind for Toulouse);
   - it was already in `connect-src`.
   - Tests: relayed with the launcher, direct without one, both 200.
+- **23 Oct 2026 — Dual view toggle** (user bug: "the Maps button appears but cannot be read when the window widens"):
+  - The cause: the design lot 2 rule that squares the header's icon-only buttons (`.f-head button:not(.f-sync)`,
+    44 px wide, no padding) also caught the toggle, whose label was clipped. The back button of lot 11 had the same
+    defect. Buttons with a label are now left out of that rule.
+  - The toggle, as decided by the ergonomics session:
+    - pressed: the background tinted with the accent (15 %), an accent border, the page's text;
+    - the pane has a "×";
+    - from 1200 px, Fuel and Report open the Map by themselves until the user chooses; between 980 and 1200 px only
+      on demand; the choice is kept per module (`device/layout.json`, `''` = closed);
+    - below 980 px the pane closes and the toggle disappears, the choice is kept.
+  - Reproduced and checked: widening from 900 to 1400 px by steps of 50 px:
+    - no toggle up to 950;
+    - "Map" readable (82 px, not clipped) from 1000;
+    - the pane opens by itself at 1200;
+    - "×" closes it and keeps `fuel: ''`, and it stays closed at 1000 and 1400;
+    - the toggle opens it again.
+  - Contrast of the toggle, pressed / not pressed: standard 13.4 / 16.5 by day, 10.5 / 13.5 by night; cabinet
+    10.8 / 14.1 and 8.6 / 12.8; field 11.0 / 14.0 and 5.8 / 8.2.
 - **23 Oct 2026 — Tests of lot 5**: a locally built site served as Pages would (`/flight_planner/`): V2 at the root with
   no JavaScript error, the Pilot application at `/v3/frame/` with its service worker limited to that scope; the
   Capacitor-style build redirects from its root to `frame/index.html`, anchor kept; the modules' declared files are
