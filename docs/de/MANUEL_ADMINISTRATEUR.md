@@ -380,6 +380,8 @@ Methode des berechneten Gitters: für jedes Feld von 1° × 1° der höchste Pun
 **Konsistenz**: „Prüfen“ kontrolliert Lufträume, Luftfahrzeuge, Flotte, Leistungen und Flugplätze der Missionen.
 Die AIRAC-XML-Dateien (etwa 80 MB pro Zyklus) bleiben außerhalb des Repositorys, wie die Dateien der anderen Quellen. Die MORA-Werte sind berechnet, nicht zertifiziert.
 
+**VFR-Meldepunkte der VAC-Karten.** Die Karte kann für jeden Flugplatz seine Meldepunkte, die Sequenzen und die Hinweise seiner VAC-Karten zeigen, die `tools/report-vfr/compile_vfr.py` aus den PDF entnimmt (auf diesem Rechner, mit dem optionalen Python-Modul `pypdf`: `python -m pip install -r tools/report-vfr/requirements-vfr.txt`). Bei jedem neuen VAC-Zyklus: `compile_vfr.py` erneut auf den VAC-Ordner anwenden (Anleitung in `tools/report-vfr/`), dann in diesem Abschnitt „VFR-Zusammenstellung (VAC) importieren…“ (Stufe Experte) und die erzeugte `vfr-compiled.json` wählen. Die Seite prüft sie (beim kleinsten Fehler wird nichts geschrieben, die Fehlerliste wird gezeigt), gleicht ihre Punkte mit den VRP der Datenbank ab, zeigt die Zusammenfassung (Flugplätze, Punkte, nicht abgeglichene Punkte, Sequenzen, Seiten mit Hinweisen, geänderte Dateien) und fragt nach Zustimmung; dann schreibt sie je Flugplatz eine Datei in `sia/vfr/` des Datenrepositorys und synchronisiert. Diese Daten bleiben Kandidaten: die Karte kennzeichnet sie als „aus den VAC entnommen, zu prüfen“ und zeigt sie nie als veröffentlichte Routen.
+
 ### Caches
 
 Dieser Block leert die Daten, die die Suite wieder aufbauen kann. Keine Benutzerdaten werden berührt (Register, Entwürfe, Profile, OFP, Sicherungen).

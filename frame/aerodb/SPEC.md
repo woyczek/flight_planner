@@ -43,6 +43,8 @@ A module asks for an area or an identifier, never for a zone or a file.
   carry `a` and `b` ends. Zone ids are those of `AERODB_ZONES`, plus `nat` (oceanic).
 - **Aircraft types**: `AircraftDB/aircraft_db.json` and `aircraft_perf.json`; when absent, the V2 files
   `aircraft_db.js` and `aircraft_perf.js` (`window.AIRCRAFT_DB = {…};`) read as a JSON literal — never executed.
+- **VFR reporting points of the VAC charts** (§ 5 quater): `sia/vfr/<ICAO>.json`, one file per aerodrome, and
+  `sia/vfr/index.json`, read on demand.
 - **Zone frames**: `AERODB_ZONES` { id: { n: [fr, en, de, es], b: [[west, south, east, north], …] } }, one frame per
   part of the zone, generated from the zone contours of the suite.
 
@@ -137,6 +139,8 @@ the suite root) and has no listing.
 | `aar()`, `nat()` | refuelling track files (XML) of the loaded zones, NAT tracks of the day |
 | `aarTracks()` | the refuelling tracks of the loaded zones ready to draw (`aar.js`, taken over from `shared/aar_tracks.js`): `[{ name, kind: 'track' \| 'heavy', heading, lengthNm, widthNm, side, ip, cp, ring (racetrack outline) \| legs }]`; built again only when the zones' XML change |
 | `natTracks()` | NAT tracks of the day with their points placed: `[{ id, points: [{ id, lat, lon }], west, east (levels), from, to, by }]`; a named point through `coords`, "61/20" or "6130/20" as degrees north and west; an unknown name is left out |
+| `vfrRoutes(icao)` | VFR reporting points, sequences and instructions of an aerodrome extracted from its VAC charts (§ 5 quater), or null |
+| `vfrIndex()` | the aerodromes of the VFR compilation with their counts, or null before any import |
 | `cities(q)` | towns of the area, or by `q.prefix` (most populated first), `q.n` at most |
 | `find(text, n)` | ranked places: `{ label, lat, lon, name, kind, code }` |
 | `coords(ident)`, `coordsAll(ident)` | position of an identifier; every place carrying it |
@@ -255,6 +259,34 @@ both ways.
   - `download(id)`: the sheet as a `.lnmperf` file (a phone, no launcher);
   - `card(el, { t, notify })`: the Settings card (folder, found folders, Save, Synchronise now, Stop, state), the one
     screen aerodb gives (invariant 4).
+
+## 5 quater. VFR reporting points of the VAC charts (`sia/vfr/`)
+
+- **Source**: `tools/report-vfr/compile_vfr.py`, run on a workstation over the folder of the VAC PDFs (optional Python
+  module `pypdf`, nothing in the app imports it), writes `vfr-compiled.json` (`schemaVersion` 1.x, `aerodromes[]` with
+  `points`, `routes`, `evidencePages`). Everything in it is a machine-extracted candidate, never a published route.
+- **Import** (Settings › Maintenance › Aeronautical data, "Import a VFR compilation (VAC)…", Expert level, launcher
+  only): the page sends the file to `POST /__setup/vfr-import` (`tools/vfr_import.py`, standard library):
+  - strict check first: `schemaVersion`, ICAO codes, point codes, coordinates `[longitude, latitude]` in range, pages,
+    every code of a sequence known (a point of the aerodrome or the aerodrome itself), text sizes; one error and nothing
+    is written, the first 20 errors are returned and shown;
+  - each point is matched with the base's VRP `<ICAO without its first two letters>-<code>` (latest cycle of
+    `sia/base/fr/`, within 0.02°); unmatched points keep their VAC coordinates, `vrp: null`;
+  - plan first (summary: aerodromes, points, unmatched points, sequences, pages of instructions, files changed and
+    removed, size), then, after agreement, writing of `sia/vfr/`, a commit in the author's name and a synchronisation.
+    Files no longer produced are removed; an identical import changes nothing.
+  - To redo at each new VAC cycle: run `compile_vfr.py` again, then the button.
+- **Files**: `sia/vfr/<ICAO>.json` = { `schema: 1`, `ad`, `status: 'candidate'`, `label` ("Extrait des VAC, à
+  vérifier"), `source` { `file`, `sha256`, `cycle` }, `generatedAt`, `points` [{ `code`, `vrp`, `lat`, `lon`, `page`,
+  `text` }], `routes` [{ `codes`, `vrps`, `page`, `text`, `fragment` }], `notes` [{ `page`, `title`, `text` }] } (the
+  instructions of the VAC, one per page, titled by the page's first line after the aerodrome's name);
+  `sia/vfr/index.json` = { `schema: 1`, `status`, `label`, `generatedAt`, `datasetStatus`, `aerodromes` [{ `ad`,
+  `points`, `routes`, `notes`, `unmatched` }] }. Reference policy, like `sia/base/`; the launcher's tree shows
+  `sia/vfr/` to the frame (`FRAME_SKIP`).
+- **Display rules** (for maps): always dashed, labelled "extracted from the VAC, to be checked", no direction of
+  travel, a segment to the aerodrome only when it has coordinates.
+- **Tests**: `frame/aerodb/test/vfr.html` (after an import): index, LFBD (10 points matched with BD-…, 15 sequences,
+  notes by page), LFBO (WH-WF-WD, EN-EA-EB), lower case, invalid code and missing file.
 
 ## 6. Invariants
 

@@ -386,3 +386,19 @@ With the network cut, the only reads attempted were:
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.
 - Nothing planned: requests from the modules (maps next).
+- **23 Oct 2026 — VFR reporting points of the VAC charts (user's compilation, plan validated by the ergonomics
+  session).**
+  - **A kind of its own, `sia/vfr/`, not an enrichment of `vrp`**: the published base and machine-extracted
+    candidates stay apart; the map can always say which is which.
+  - **One file per aerodrome, read on demand**, with the instructions (the text of the pages found, by page): an
+    aerodrome pinned on the map shows them; the light index lists what exists. 2.3 MB for 417 aerodromes, a few KB
+    each.
+  - **The check and the conversion run in the launcher** (standard library, `tools/vfr_import.py`), not in the page:
+    the same code checks and writes; the page only picks the file, shows the plan and asks.
+  - **Matching with the base's VRPs**: 460 of 494 points by `<ICAO without LF>-<code>` within 0.02° on the latest
+    cycle; the 34 others (mostly helicopter points, H…) keep their VAC coordinates, listed in the summary.
+  - **Launcher messages in French only**, like the other `/__setup/` routes (the page's own texts are in four
+    languages).
+  - **Bench** (throwaway git data folder, launcher on 8771): a file with one bad coordinate refused, nothing written;
+    the real file: plan "417 aerodromes, 494 points (34 not matched), 133 sequences, 753 pages, 418 files", agreement,
+    418 files written, one commit; second import: 0 changed. `test/vfr.html` 9 / 9, `test/registry.html` 26 / 26.

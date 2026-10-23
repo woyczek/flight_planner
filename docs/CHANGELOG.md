@@ -24,6 +24,12 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **aerodb: VFR reporting points of the VAC charts** (`frame/aerodb/aerodb.js`, `tools/vfr_import.py`,
+  `tools/launch.py`, `shared/maintenance_page.js`; SPEC, DECISIONS, admin manuals ×4) — Settings › Maintenance ›
+  Aeronautical data, "Import a VFR compilation (VAC)…" (Expert, launcher): the `vfr-compiled.json` of
+  `tools/report-vfr/compile_vfr.py` is checked strictly, its points matched with the base's VRPs, a plan shown, then one
+  file per aerodrome written to `sia/vfr/` of the data repository (points, sequences, instructions by page) with an
+  index, and synchronised; `aerodb.vfrRoutes(icao)` and `vfrIndex()` read them, marked as candidates to be checked.
 - **Frame: the actual position written through the shared current-flight merge** (`frame/app.js`, `frame/sw.js`;
   SPEC § 3.2, § 3.9, DECISIONS) — the position service uses `frame/lib/current_flight.js` like fuel and report: only
   `progress.actual` is replaced in the record re-read just before.

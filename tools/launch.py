@@ -26,6 +26,7 @@ import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Main
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
 import sim_position  # position du simulateur de ce poste (X-Plane 12, Little Navmap) pour le cadre V3
+import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée dans sia/vfr/ du dépôt des données
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -827,6 +828,17 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/vfr-import':
+            # compilation VFR (vfr-compiled.json choisi sur la page) : { apply, author, compiled } ; contrôle strict,
+            # plan rendu sans rien écrire (apply faux), puis écriture de sia/vfr/, commit et synchronisation
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                return self._json({'ok': False, 'errors': ['JSON illisible.'], 'summary': {}})
+            try:
+                return self._json(vfr_publish(a.get('compiled'), str(a.get('author') or '').upper(), bool(a.get('apply'))))
+            except (OSError, RuntimeError) as e:
+                return self._json({'ok': False, 'errors': [str(e)[-600:]], 'summary': {}})
         if path == '/__setup/aircraft-publish':
             try:
                 a = json.loads(body or b'{}')
@@ -1429,8 +1441,9 @@ def sites_view():
 # poste est le dépôt : arbre { chemin: empreinte git du fichier } (gardée par taille et date), tête = empreinte de cet
 # arbre ; un lot d'écritures s'écrit d'un coup, un commit local si data/ est un dépôt git (l'échange avec le dépôt
 # distant reste le passage de synchronisation, /__setup/sync). Hors de l'arbre : .git, local/, copies de conflits et
-# d'avant restauration, index régénérés, repère du lanceur, sources du SIA (seule sia/base/ est publiée).
-FRAME_SKIP = re.compile(r'(^|/)(\.git|_conflits|_avant_restauration)(/|$)|^local(/|$)|(^|/)_index\.json$|^\.defa_instance$|^sia/(?=.)(?!base(/|$))')
+# d'avant restauration, index régénérés, repère du lanceur, sources du SIA (seules sia/base/, la base publiée, et
+# sia/vfr/, les points VFR tirés des VAC, sont vues).
+FRAME_SKIP = re.compile(r'(^|/)(\.git|_conflits|_avant_restauration)(/|$)|^local(/|$)|(^|/)_index\.json$|^\.defa_instance$|^sia/(?=.)(?!(base|vfr)(/|$))')
 FRAME_LOCK = threading.Lock()
 _frame_memo = {}  # chemin → ((taille, date), empreinte)
 
@@ -2301,6 +2314,35 @@ def aircraft_publish(author='', apply=False):
     code, _ = data_sync.git(DATA, 'diff', '--cached', '--quiet')
     if code:
         data_sync.git(DATA, *who, 'commit', '-m', f'Base des types publiée ({author})', env=env, check=True)
+    with SYNC_LOCK:
+        res['sync'] = data_sync.run(DATA, author)
+    sync_status_reset()
+    res['ok'] = res['sync'].get('ok', False)
+    res['message'] = res['sync'].get('message', '')
+    return res
+
+
+def vfr_publish(compiled, author='', apply=False):
+    """Compilation VFR des cartes VAC dans le dépôt des données (tools/vfr_import.py) : apply faux, le plan seulement
+    (erreurs, ou résumé : terrains, points, séquences, consignes, points non rapprochés des VRP, fichiers changés et
+    retirés) ; apply vrai, écriture de sia/vfr/, commit au nom de author, puis passe de synchronisation."""
+    if not data_sync.is_repo(DATA):
+        return {'ok': False, 'errors': ['data/ n’est pas un dépôt git : rien à importer.'], 'summary': {}}
+    p = vfr_import.plan(compiled, DATA)
+    res = {'ok': p['ok'], 'errors': p['errors'], 'summary': p['summary']}
+    if not p['ok'] or not apply:
+        return res
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
+        return {**res, 'ok': False, 'errors': ['Trigramme de l’auteur manquant ou invalide.']}
+    vfr_import.write(p, DATA)
+    env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+    who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
+    data_sync.git(DATA, 'add', '-A', '--', 'sia/vfr', check=True)
+    code, _ = data_sync.git(DATA, 'diff', '--cached', '--quiet')
+    if code:
+        s = p['summary']
+        data_sync.git(DATA, *who, 'commit', '-m', f"Points de report VFR des VAC importés ({s['aerodromes']} terrains, {s['routes']} séquences ; {author})",
+                      env=env, check=True)
     with SYNC_LOCK:
         res['sync'] = data_sync.run(DATA, author)
     sync_status_reset()

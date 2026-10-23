@@ -17,7 +17,8 @@
   // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal,
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), ready(q), on('change', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
-  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), cities(q), find(texte, n), coords(ident),
+  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), cities(q),
+  //   find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
   //   offline : { supported(), zones(), keep(zone, { onProgress }), release(zone), common(), aircraft() } — données
@@ -798,6 +799,21 @@
         }
         return out;
       },
+      /** Points de report, séquences et consignes VFR d'un terrain, extraits des cartes VAC (sia/vfr/<OACI>.json, écrit par
+       *  Paramètres › Maintenance › « Importer une compilation VFR ») : { ad, status: 'candidate', label, source, points
+       *  [{ code, vrp, lat, lon, page, text }], routes [{ codes, vrps, page, text, fragment }], notes [{ page, title, text
+       *  }] } ; candidats à vérifier, jamais un itinéraire publié. null sans fichier pour ce terrain. */
+      async vfrRoutes(icao) {
+        const k = String(icao || '').toUpperCase();
+        if (!/^[A-Z]{4}$/.test(k)) return null;
+        const v = valueOf(await read(`sia/vfr/${k}.json`));
+        return v?.ad === k ? v : null;
+      },
+      /** Index des terrains de la compilation VFR (sia/vfr/index.json) : { aerodromes [{ ad, points, routes, notes,
+       *  unmatched }], generatedAt, label } ; null sans import. */
+      async vfrIndex() {
+        return valueOf(await read('sia/vfr/index.json')) || null;
+      },
       /** Tracks NAT du jour (zone océanique « nat », ouverte à la demande). */
       async nat() {
         const z = await loadZone('nat');
@@ -1055,6 +1071,9 @@
       policy: 'reference'
     }, {
       prefix: 'AircraftDB/',
+      policy: 'reference'
+    }, {
+      prefix: 'sia/vfr/',
       policy: 'reference'
     }, {
       prefix: 'references/',

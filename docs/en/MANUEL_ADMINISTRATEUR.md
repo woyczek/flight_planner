@@ -373,6 +373,8 @@ Computed grid method: for each 1° × 1° cell, the highest point among the terr
 **Consistency**: “Check” verifies airspace, aircraft, fleet, performance and mission aerodromes.
 AIRAC XML files (about 80 MB per cycle) stay outside the repository, like the files of the other sources. MORA values are computed, not certified.
 
+**VFR reporting points of the VAC charts.** The map can show, for each aerodrome, its reporting points, the sequences and the instructions of its VAC charts, taken from the PDFs by `tools/report-vfr/compile_vfr.py` (on this computer, with the optional Python module `pypdf`: `python -m pip install -r tools/report-vfr/requirements-vfr.txt`). At each new VAC cycle: run `compile_vfr.py` again on the VAC folder (instructions in `tools/report-vfr/`), then, in this section, “Import a VFR compilation (VAC)…” (Expert level) and choose the `vfr-compiled.json` produced. The page checks it (nothing is written on the slightest error, the list of errors is shown), matches its points with the VRPs of the base, shows the summary (aerodromes, points, points not matched, sequences, pages of instructions, files changed) and asks for agreement; it then writes one file per aerodrome to `sia/vfr/` of the data repository, and synchronises. These data stay candidates: the map marks them “extracted from the VAC, to be checked” and never presents them as published routes.
+
 ### Caches
 
 This block purges the data the suite can rebuild. No user data is touched (ledgers, drafts, profiles, OFPs, backups).
