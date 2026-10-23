@@ -166,3 +166,19 @@ redesigned for touch at that point.
 1. PHP website: what it receives first (reports? flight logs?), and whether it becomes a data backend behind the data
    layer — to settle when the user has access to the site.
 2. Which V2 pages stay reachable from the Pilot application during the transition (the full suite on the launcher).
+3. **Designs (user, 23 Oct 2026): three designs are retained for V3 — `metro`, `swiss` and `cupertino`;**
+   `cabinet` goes, `field` may stay. Nothing skeuomorphic on a phone. Mock-ups on branch `v3-metro`
+   (`frame/design/demo_metro.html`, `frame/design/DECISIONS.md`). Points for the ergonomics session to decide:
+   1. the page title written by the frame (the verb as `h1`), the modules dropping their own;
+   2. `data-landmark` and `--sog-module*` (one landmark colour per module) in the integration contract, visible in
+      every design or in metro only;
+   3. the system bar (`theme-color`) following the header's real colour in every design;
+   4. verb blocks in the phone drawer and a coloured rail on a screen (CSS only; more than seven verbs = a fifth row);
+   5. the two title tokens `--sog-title-size` / `--sog-title-weight` kept (because `--sog-h1` also sizes figures);
+   6. flat buttons and bottom-ruled fields: rules of the metro sheet, or tokens for every design
+      (`--sog-btn-border`, `--sog-field-rule`);
+   7. number tiles as colour blocks, or a left rule only (a coloured tile reads as a button);
+   8. the exact hues of the landmark colours (Report is a dark orange so that white text keeps 4.5:1);
+   9. a web font or not: Segoe UI Light (metro), Inter (swiss) and SF (cupertino) are not available everywhere;
+      the mock-ups use system fonts, which keeps the offline shell light; a bundled font costs 250 to 300 KB;
+   10. the map's canvas colours, still hard-coded in `modules/maps`, to be taken from the tokens by the maps agent.
