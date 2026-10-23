@@ -92,7 +92,7 @@
           "es": "Lanzador abierto a los dispositivos de la red local bajo opción (código de emparejamiento, código QR): la tableta ve la posición del simulador y los datos del puesto"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Durcissement de l'accès réseau local après relecture sécurité (chemins, code à usage unique, plafonds, relais sans redirection, interfaces, extensions)",
           "en": "Hardening of the local-network access after the security review (paths, one-time code, caps, relay without redirects, interfaces, extensions)",
           "de": "Härtung des lokalen Netzzugangs nach dem Sicherheitsreview (Pfade, Einmalcode, Obergrenzen, Relais ohne Weiterleitungen, Schnittstellen, Erweiterungen)",
@@ -217,6 +217,13 @@
         },
         {
           "state": "done",
+          "fr": "Écran Fiches comme la V2 : les types de la compagnie sans fiche (hélicoptères compris) listés « performances à renseigner » par catégorie, « Créer la fiche »",
+          "en": "Sheets screen as in V2: the airline's types without a sheet (helicopters included) listed “performance to fill in” by category, “Create the sheet”",
+          "de": "Blätter-Bildschirm wie in V2: Typen der Gesellschaft ohne Blatt (auch Hubschrauber) als „Leistungen auszufüllen“ nach Kategorie, „Blatt erstellen“",
+          "es": "Pantalla Fichas como en V2: los tipos de la compañía sin ficha (helicópteros incluidos) listados «prestaciones por completar» por categoría, «Crear la ficha»"
+        },
+        {
+          "state": "done",
           "fr": "Préparer dans l'ordre du pilote : Vol · Route · Météo · Devis · Départ ; route en texte toujours visible et normalisée, distance et route vraie calculées ; « Afficher la carte » ; « Démarrer le vol »",
           "en": "Prepare in the pilot's order: Flight · Route · Weather · Quote · Departure; route as always-visible normalised text, distance and true track computed; “Show the map”; “Start the flight”",
           "de": "Vorbereiten in der Reihenfolge des Piloten: Flug · Route · Wetter · Berechnung · Abflug; Route als stets sichtbarer, normalisierter Text, Distanz und rechtweisender Kurs berechnet; „Karte anzeigen“; „Flug starten“",
@@ -324,6 +331,13 @@
           "en": "IFR map of the planned flight (tiles or plain background offline), vertical profile, shared cursor, TOC / TOD",
           "de": "IFR-Karte des geplanten Flugs (Kacheln oder offline einfarbiger Hintergrund), Vertikalprofil, gemeinsamer Cursor, TOC / TOD",
           "es": "Mapa IFR del vuelo previsto (teselas o fondo liso sin conexión), perfil vertical, cursor común, TOC / TOD"
+        },
+        {
+          "state": "doing",
+          "fr": "Points VAC rapprochés dessinés une seule fois ; fusion des balises co-localisées : VOR avant NDB avant ILS",
+          "en": "Matched VAC points drawn once; co-located navaids merged: VOR before NDB before ILS",
+          "de": "Zugeordnete VAC-Punkte nur einmal gezeichnet; ko-lokalisierte Funkfeuer zusammengeführt: VOR vor NDB vor ILS",
+          "es": "Puntos VAC emparejados dibujados una sola vez; radioayudas co-localizadas fusionadas: VOR antes que NDB antes que ILS"
         },
         {
           "state": "done",
@@ -688,7 +702,7 @@
           "es": "Solo correcciones; campos de dibujo de los mapas para la V3; líneas por miembro en las Órdenes de vuelo; Primer inicio en modo GitHub"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Lanceur : mise à jour de data/ au démarrage sans casser sur des modifications locales ; Maintenance : cartes du poste visibles même en mode GitHub",
           "en": "Launcher: data/ update at start without failing on local changes; Maintenance: workstation cards visible even in GitHub mode",
           "de": "Starter: data/-Aktualisierung beim Start ohne Abbruch bei lokalen Änderungen; Wartung: Arbeitsplatzkarten auch im GitHub-Modus sichtbar",
