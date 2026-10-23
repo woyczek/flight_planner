@@ -4,6 +4,17 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — lot F, winds and temperatures aloft** (user's question through the ergonomics session: wind arrows
+  at the planned level, inversions in the density altitude): METARs only give the surface wind, so a forecast by
+  pressure level is needed — Open-Meteo, no key, added by the frame (7eb6aa2c0). A flight level is a pressure, so the
+  interpolation is in ln(p) between pressure levels, not on geopotential heights. One call for up to 24 places along
+  the route; the hour nearest to the flight date is kept (a date change refetches: the full hourly set would weigh
+  hundreds of KB in the cache). The METARs' surface wind stays as the fallback of "Real weather". The ISA proposal
+  stays the departure METAR's (the user's request, lot D); the real atmosphere at departure is shown beside the ISA
+  chart rather than replacing it. Checked on 8793: a real answer (the module read Open-Meteo at mount: Météo-France
+  model, 00:00 UTC run, three points at FL080 with wind, temperature and ISA deviation written into
+  `route.points[].wind`, "Real weather" taking the mean aloft), then a mocked answer with a ground inversion
+  (364 to 1,061 ft, +3 °C) drawn and listed at 375 px; bench 29/29.
 - **23 Oct 2026 — typing is never rewritten** (user's bug, "the route text keeps being rewritten"): the rule is that the
   route is normalised only on leaving the field (or Enter), and no render touches a field being typed in. Not
   reproduced on 8793 (ten slow keystrokes, alone and in the dual view with the Map), but two holes were closed: a late

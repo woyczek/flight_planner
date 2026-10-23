@@ -11,6 +11,7 @@
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
 import * as MT from '../../frame/lib/metar.js';
+import * as WD from './winds.js';
 import {
   svg
 } from '../../frame/lib/icons.js';
@@ -29,13 +30,14 @@ export const meta = {
     policy: 'cache'
   }],
   // gardés hors ligne dès la première visite (service worker du cadre)
-  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', '../../frame/lib/metar.js',
+  files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', '../../frame/lib/metar.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js'
   ]
 };
 
 const OFP_PATH = 'cache/fuel/last_ofp.json',
   WX_PATH = 'cache/fuel/weather.json',
+  ALOFT_PATH = 'cache/fuel/aloft.json', // prévision en altitude (Open-Meteo) : profils aux lieux de la route
   UI_PATH = 'cache/fuel/ui.json',
   LIBS = [
     ['FlightPerfModel', 'performance_model.js'],
@@ -274,6 +276,43 @@ const TX = {
     'Kein Netz: zuletzt gelesene Werte um {t}.',
     'Sin red: últimos valores leídos a las {t}.'
   ],
+  aloftTitle: ['Vents et températures en altitude', 'Winds and temperatures aloft', 'Höhenwinde und -temperaturen',
+    'Vientos y temperaturas en altura'
+  ],
+  aloftNone: ['Pas encore de prévision en altitude : « Lire la météo des terrains » la lit aussi, une fois la route et le niveau donnés.',
+    'No forecast aloft yet: “Read the aerodromes’ weather” reads it too, once the route and the level are given.',
+    'Noch keine Höhenvorhersage: „Flugplatzwetter lesen“ liest sie mit, sobald Route und Flugfläche angegeben sind.',
+    'Aún no hay previsión en altura: «Leer la meteorología» también la lee, una vez dadas la ruta y el nivel.'
+  ],
+  aloftAt: ['Prévision {m} pour {t} UTC{run}, lue à {r}.', '{m} forecast for {t} UTC{run}, read at {r}.',
+    '{m}-Vorhersage für {t} UTC{run}, gelesen um {r}.', 'Previsión {m} para las {t} UTC{run}, leída a las {r}.'
+  ],
+  aloftRun: [' (run de {r} UTC)', ' ({r} UTC run)', ' (Lauf {r} UTC)', ' (pasada de las {r} UTC)'],
+  aloftCols: [
+    ['Point', 'Point', 'Punkt', 'Punto'],
+    ['Niveau', 'Level', 'Fläche', 'Nivel'],
+    ['Vent', 'Wind', 'Wind', 'Viento'],
+    ['Temp.', 'Temp.', 'Temp.', 'Temp.'],
+    ['ISA ±', 'ISA ±', 'ISA ±', 'ISA ±']
+  ],
+  aloftSrc: ['Vent : moyenne au niveau planifié le long de la route, prévision {m}.',
+    'Wind: average at the planned level along the route, {m} forecast.',
+    'Wind: Mittel auf der geplanten Fläche entlang der Route, {m}-Vorhersage.',
+    'Viento: media al nivel planificado a lo largo de la ruta, previsión {m}.'
+  ],
+  realTitle: ['Atmosphère réelle au départ ({m})', 'Real atmosphere at departure ({m})', 'Echte Atmosphäre am Abflug ({m})',
+    'Atmósfera real en la salida ({m})'
+  ],
+  realAxis: ['température (°C) · tirets : atmosphère type', 'temperature (°C) · dashed: standard atmosphere',
+    'Temperatur (°C) · gestrichelt: Standardatmosphäre', 'temperatura (°C) · discontinua: atmósfera tipo'
+  ],
+  realLevel: ['Au {l} : {t} °C (ISA {d}), altitude-densité {da} ft.', 'At {l}: {t} °C (ISA {d}), density altitude {da} ft.',
+    'Auf {l}: {t} °C (ISA {d}), Dichtehöhe {da} ft.', 'A {l}: {t} °C (ISA {d}), altitud de densidad {da} ft.'
+  ],
+  realInv: ['Inversion de {a} à {b} ft (+{d} °C).', 'Inversion from {a} to {b} ft (+{d} °C).', 'Inversion von {a} bis {b} ft (+{d} °C).',
+    'Inversión de {a} a {b} ft (+{d} °C).'
+  ],
+  realNoInv: ['Pas d’inversion au départ.', 'No inversion at departure.', 'Keine Inversion am Abflug.', 'Sin inversión en la salida.'],
   wxDirect: ['Sans lanceur : METAR de metar.vatsim.net, TAF d’avwx.rest.',
     'Without a launcher: METAR from metar.vatsim.net, TAF from avwx.rest.',
     'Ohne Starter: METAR von metar.vatsim.net, TAF von avwx.rest.', 'Sin lanzador: METAR de metar.vatsim.net, TAF de avwx.rest.'
@@ -1080,6 +1119,8 @@ const STYLE = `
 [data-module="fuel"] .fu-addpt{flex-wrap:nowrap}
 [data-module="fuel"] .fu-addpt input{flex:1;min-width:0}
 [data-module="fuel"] .fu-addpt button{flex:none;min-width:44px}
+[data-module="fuel"] .fu-isa{fill:none;stroke:var(--sog-muted);stroke-width:1.2;stroke-dasharray:5 4}
+[data-module="fuel"] .fu-inv{fill:var(--sog-chart-4);opacity:.18}
 [data-module="fuel"] .fu-now{stroke:var(--sog-chart-2);stroke-width:1.5;stroke-dasharray:5 3}
 [data-module="fuel"] .fu-best{fill:var(--sog-chart-3)}
 [data-module="fuel"] .fu-fast{fill:var(--sog-chart-4)}
@@ -1165,7 +1206,8 @@ function renderPlanBody() {
       <label class="f-check"><input type="checkbox" data-k="wxreal"${f.weather?.real ? ' checked' : ''}>${esc(tt(TX.wxReal))}</label>
       <div class="f-row"><button type="button" data-do="wx">${esc(tt(TX.wxRead))}</button></div>
     </div>
-  <div class="f-card"><h2>${esc(tt(TX.wxTitle))}</h2><div data-wx></div></div>`)}
+  <div class="f-card"><h2>${esc(tt(TX.wxTitle))}</h2><div data-wx></div></div>
+  <div class="f-card"><h2>${esc(tt(TX.aloftTitle))}</h2><div data-aloft></div></div>`)}
   ${sec(3, `  <details class="f-card" data-fold="da"><summary>${esc(tt(TX.da))}</summary><div data-da></div></details>
   <div class="f-card" data-block="decision"><h2>${esc(tt(TX.decision))}</h2><div data-dec></div>      <div class="f-grid fu-g3"><label class="f-field">${esc(tt(TX.goal))}<select data-k="goal">${window.FuelLevels.GOALS.map(g => opt(g, tt(TX.goals[g]), (S.settings.goal || 'prof') === g)).join('')}</select></label></div>
       <div class="f-grid fu-g3 ${(S.settings.goal || 'prof') === 'man' ? '' : 'fu-hide'}" data-manbox>${fld('mias', TX.manIas, speedField(S.manualIn?.ias), 'inputmode="numeric"', { u: speedLabel() })}${fld('mvs', TX.manVs, vsField(S.manualIn?.vs), 'inputmode="numeric"', { u: vsLabel() })}</div>
@@ -1213,6 +1255,7 @@ function renderPlanBody() {
   S.body.onclick = e => onPlanClick(e);
   refresh();
   renderWx();
+  renderAloft();
   windSourceLine();
   // météo lue une fois par montage quand l'appareil est en ligne et la route a ses terrains
   if (!S.wxTried && wxIds().length && S.ctx.net?.online?.() !== false) {
@@ -1267,7 +1310,10 @@ function onPlanInput(e) {
       f.level = {
         ft: num(v) ? num(v) * 100 : null
       };
-      if (e.type === 'change') renderPts(); // niveaux continués des points
+      if (e.type === 'change') {
+        renderPts(); // niveaux continués des points
+        if (S.aloft) aloftApply(); // vent et température au nouveau niveau
+      }
       break;
     case 'wdir':
     case 'wkt': {
@@ -1619,11 +1665,181 @@ async function wxFetch(loud = false) {
     if (!(id in S.wxAd)) S.wxAd[id] = ((await S.ctx.aerodb?.aerodromes?.({
       icao: id
     }).catch(() => null)) || [])[0] || null;
+  await aloftFetch(loud);
   if (!S.body) return;
   renderWx();
   isaHint();
   if (S.flight.weather?.real) applyRealWind();
   else if (S.C) renderDa(S.C);
+}
+// ---------------------------------------------------------------- vents et températures en altitude (Open-Meteo)
+/** Clé de la prévision gardée : positions des points de la route et heure visée (à l'heure près). */
+function aloftKey() {
+  const pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
+  return JSON.stringify([pts.map(p => [(+p.lat).toFixed(2), (+p.lon).toFixed(2)]), Math.round((wxWhen() ?? Date.now() / 1000) / 3600)]);
+}
+/** Prévision par niveaux aux lieux de la route (points, plus un lieu tous les 50 NM environ, 24 au plus), par ctx.net
+ *  (relayée par le lanceur ou directe, sans clé), modèle selon la région (WD.modelFor), heure la plus proche de la date
+ *  du vol (sinon maintenant) ; heure du run lue à part si le service la donne. Gardée sur l'appareil ; hors réseau, la
+ *  dernière. Puis appliquée au vol (aloftApply). */
+async function aloftFetch(loud = false) {
+  const pts = (S.flight.route?.points || []).filter(p => Number.isFinite(+p.lat));
+  if (pts.length < 2) return;
+  const key = aloftKey();
+  if (S.aloft?.key === key && !S.aloft.cached) return aloftApply();
+  const smp = WD.samples(pts),
+    mid = smp[Math.floor(smp.length / 2)],
+    model = WD.modelFor(mid.lat, mid.lon),
+    t = wxWhen() ?? Math.round(Date.now() / 1000);
+  try {
+    const res = await S.ctx.net.fetch(WD.forecastUrl(smp, model.id), {
+      headers: {
+        accept: 'application/json'
+      }
+    });
+    if (res.headers.get('x-sog-offline') || res.headers.get('x-sog-unreachable') || !res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), {
+      code: res.headers.get('x-sog-offline') ? 'offline' : 'http'
+    });
+    const profiles = WD.profiles(await res.json(), t);
+    let run = null;
+    try { // heure du dernier run du modèle (métadonnées d'Open-Meteo), facultative
+      const meta = await S.ctx.net.fetch(`https://api.open-meteo.com/data/${{
+        meteofrance_seamless: 'meteofrance_arpege_europe',
+        icon_seamless: 'dwd_icon',
+        gfs_seamless: 'ncep_gfs025'
+      }[model.id]}/static/meta.json`);
+      const m = meta.ok && !meta.headers.get('x-sog-unreachable') ? await meta.json() : null;
+      run = Number.isFinite(+m?.last_run_initialisation_time) ? +m.last_run_initialisation_time : null;
+    } catch {
+      /* sans heure du run */
+    }
+    S.aloft = {
+      key,
+      model: model.name,
+      run,
+      time: profiles[0]?.time ?? t,
+      at: new Date().toISOString(),
+      samples: smp,
+      profiles
+    };
+    await S.ctx.data.put(ALOFT_PATH, S.aloft, {
+      policy: 'cache'
+    });
+  } catch (e) {
+    if (loud && e.code !== 'offline') S.ctx.notify(tt(TX.sbError, {
+      e: e.message
+    }), 'warn');
+    if (S.aloft) S.aloft.cached = true;
+  }
+  aloftApply();
+}
+/** Vents et températures au niveau planifié (paliers compris) : aux lieux de lecture et aux points de la route ;
+ *  null sans prévision pour cette route. */
+function aloftCalc() {
+  const A = S.aloft,
+    pts = S.flight.route?.points || [],
+    plan = +S.flight.level?.ft || 0;
+  if (!A?.profiles?.length || A.key !== aloftKey() || !(plan > 0) || pts.length < 2) return null;
+  const nmPts = [0];
+  for (let i = 1; i < pts.length; i++) nmPts.push(nmPts[i - 1] + gcNm(pts[i - 1], pts[i]));
+  const at = new Date(A.time * 1000).toISOString(),
+    winds = A.samples.map((smp, i) => WD.atLevel(A.profiles[i], WD.levelAt(pts, nmPts, plan, smp.nm)));
+  return {
+    winds,
+    nms: A.samples.map(x => x.nm),
+    points: pts.map((p, i) => {
+      const k = A.samples.findIndex(x => x.point === i),
+        lv = WD.levelAt(pts, nmPts, plan, nmPts[i]),
+        w = k >= 0 ? WD.atLevel(A.profiles[k], lv) : null;
+      return w ? {
+        dirDeg: w.dirDeg,
+        kt: w.kt,
+        tempC: w.tC,
+        isaDev: w.isaDev,
+        levelFt: lv,
+        at
+      } : null;
+    })
+  };
+}
+/** Prévision appliquée au vol : route.points[].wind = { dirDeg, kt, tempC, levelFt, at } (flèches de la carte) ;
+ *  avec « Météo réelle », le vent du devis devient la moyenne au niveau planifié (applyRealWind). */
+function aloftApply() {
+  const c = aloftCalc(),
+    pts = S.flight.route?.points || [];
+  if (c) pts.forEach((p, i) => {
+    if (c.points[i]) p.wind = {
+      dirDeg: c.points[i].dirDeg,
+      kt: c.points[i].kt,
+      tempC: c.points[i].tempC,
+      levelFt: c.points[i].levelFt,
+      at: c.points[i].at
+    };
+    else delete p.wind;
+  });
+  if (!S.body) return;
+  renderAloft(c);
+  if (S.flight.weather?.real) applyRealWind();
+  else {
+    saveFlight();
+    if (S.C) renderDa(S.C);
+  }
+}
+/** Carte « Vents et températures en altitude » : source (modèle, heure visée, run, lecture) et une ligne par point de
+ *  la route — niveau, vent, température, écart ISA. */
+function renderAloft(c = aloftCalc()) {
+  const box = S.body?.querySelector('[data-aloft]');
+  if (!box) return;
+  const A = S.aloft;
+  if (!c) return box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftNone))}</p>`;
+  const hh = sec => new Date(sec * 1000).toISOString().slice(11, 16),
+    pts = S.flight.route.points;
+  box.innerHTML = `<p class="f-muted">${esc(tt(TX.aloftAt, { m: A.model, t: hh(A.time), run: A.run ? tt(TX.aloftRun, { r: hh(A.run) }) : '', r: new Date(A.at).toLocaleString(S.ctx.lang(), { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) }))}</p>
+    <div class="f-scroll"><table class="f-table"><thead><tr>${TX.aloftCols.map((h, i) => `<th${i ? ' class="f-num"' : ''}>${esc(tt(h))}</th>`).join('')}</tr></thead><tbody>
+    ${c.points.map((w, i) => w ? `<tr><td>${esc(pts[i].id || '')}</td><td class="f-num">${flTxt(w.levelFt)}</td><td class="f-num">${String(w.dirDeg).padStart(3, '0')}° ${esc(speedTxt(w.kt))}</td><td class="f-num">${w.tempC} °C</td><td class="f-num">${w.isaDev > 0 ? '+' : ''}${w.isaDev}</td></tr>` : '').join('')}
+    </tbody></table></div>`;
+}
+/** Profil réel au départ (premier lieu de lecture) : température par altitude pression, atmosphère type en tirets,
+ *  inversions surlignées, niveau planifié ; lignes de lecture (température, écart ISA et altitude-densité au niveau,
+ *  inversions). Chaîne HTML, vide sans prévision. */
+function realProfileHtml(box) {
+  const A = S.aloft,
+    prof = A?.key === aloftKey() ? A.profiles?.[0] : null;
+  if (!prof?.levels?.length) return '';
+  const plan = +S.flight.level?.ft || 0,
+    ceil = +S.C?.perf?.ceiling || 0,
+    top = Math.min(prof.levels.at(-1).ft, Math.max(10000, plan * 1.3, ceil * 1.1)),
+    L = prof.levels.filter(l => l.ft <= top + 1),
+    tMin = Math.floor(Math.min(...L.map(l => l.tC), WD.isaC(top)) / 5) * 5 - 5,
+    tMax = Math.ceil(Math.max(...L.map(l => l.tC), 15) / 5) * 5 + 5,
+    W = svgSize(box)[0],
+    H = Math.min(320, Math.round(W * .7)),
+    pl = 52,
+    pr = 12,
+    pt = 12,
+    pb = 30,
+    x = c => pl + (c - tMin) / (tMax - tMin) * (W - pl - pr),
+    y = ft => pt + (1 - ft / top) * (H - pt - pb),
+    line = pts => pts.map(([c, ft], i) => `${i ? 'L' : 'M'}${x(c).toFixed(1)},${y(ft).toFixed(1)}`).join(''),
+    inv = WD.inversions({
+      levels: L
+    }),
+    fmt = v => (Math.round(v) || 0).toLocaleString(S.ctx.lang()),
+    at = plan > 0 ? WD.atLevel(prof, plan) : null,
+    da = at ? densityAlt(plan, at.isaDev) : null;
+  return `<h3>${esc(tt(TX.realTitle, { m: A.model }))}</h3>
+  <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(tt(TX.realTitle, { m: A.model }))}" class="fu-svg" data-chart="real">
+    ${ticks(tMin, tMax, W < 420 ? 4 : 6).map(c => `<line x1="${x(c)}" x2="${x(c)}" y1="${pt}" y2="${H - pb}" class="fu-grid"/><text x="${x(c)}" y="${H - pb + 14}" text-anchor="middle">${c}</text>`).join('')}
+    ${ticks(0, top, 4).map(ft => `<text x="${pl - 6}" y="${y(ft) + 4}" text-anchor="end">${fmt(ft)}</text>`).join('')}
+    <path d="${line([[15, 0], [WD.isaC(top), top]])}" class="fu-isa"/>
+    ${inv.map(v => `<rect x="${pl}" y="${y(v.toFt)}" width="${W - pl - pr}" height="${Math.max(1, y(v.fromFt) - y(v.toFt))}" class="fu-inv"/>`).join('')}
+    <path d="${line(L.map(l => [l.tC, l.ft]))}" class="fu-line-f"/>
+    ${L.map(l => `<circle cx="${x(l.tC)}" cy="${y(l.ft)}" r="3" class="fu-best"/>`).join('')}
+    ${plan > 0 && plan <= top ? `<line x1="${pl}" x2="${W - pr}" y1="${y(plan)}" y2="${y(plan)}" class="fu-now"/>` : ''}
+  </svg>
+  <p class="f-muted">${esc(tt(TX.realAxis))}</p>
+  ${at ? `<p>${esc(tt(TX.realLevel, { l: flTxt(plan), t: at.tC, d: signed(at.isaDev), da: fmt(da) }))}</p>` : ''}
+  <p>${inv.length ? inv.map(v => esc(tt(TX.realInv, { a: fmt(v.fromFt), b: fmt(v.toFt), d: v.dT }))).join('<br>') : esc(tt(TX.realNoInv))}</p>`;
 }
 /** Heure visée (secondes) : la date du vol saisie (heure de l'appareil), sinon aucune (METAR). */
 const wxWhen = () => {
@@ -1706,6 +1922,25 @@ function renderWx() {
 /** « Météo réelle » : vent moyen des terrains le long de la route (frame : moyenne des vecteurs pondérée par les
  *  segments départ → intermédiaire → arrivée), écrit dans le vol courant avec sa source. */
 function applyRealWind() {
+  const al = aloftCalc(),
+    mean = al ? WD.meanWind(al.winds, al.nms) : null;
+  if (mean) { // prévision en altitude au niveau planifié : prioritaire sur le vent au sol des METAR
+    const f = S.flight;
+    f.wind = mean;
+    f.windSource = {
+      kind: 'aloft',
+      model: S.aloft.model,
+      levelFt: +f.level?.ft || 0,
+      at: new Date(S.aloft.time * 1000).toISOString()
+    };
+    const d = S.body?.querySelector('[data-k="wdir"]'),
+      k = S.body?.querySelector('[data-k="wkt"]');
+    if (d) d.value = mean.dirDeg;
+    if (k) k.value = speedField(mean.speedKt);
+    windSourceLine();
+    saveFlight();
+    return refresh();
+  }
   const list = wxStations().filter(x => x.role !== 'altn' && x.st && x.along != null && Number.isFinite(+x.st.wdir) && Number.isFinite(+x.st
       .wspd)),
     legs = list.slice(1).map((x, i) => Math.max(0, x.along - list[i].along)),
@@ -1736,6 +1971,8 @@ function windSourceLine(text) {
   const src = S.flight.windSource;
   el.textContent = text || (src?.kind === 'weather' ? tt(TX.wxSrc, {
     l: src.ids.join(', ')
+  }) : src?.kind === 'aloft' ? tt(TX.aloftSrc, {
+    m: src.model
   }) : '');
 }
 
@@ -1897,7 +2134,8 @@ function renderDa(C) {
   </svg>
   <p class="f-muted">${esc(tt(TX.daLines))}</p>
   ${pr0 ? `<p><span class="f-dot" style="background:var(--sog-chart-3)"></span> ${esc(tt(TX.daDep, { id: pr0.id, t: pr0.t, q: pr0.qnh != null ? Math.round(pr0.qnh) : '—', p: fmt(depPa), d: fmt(depDa) }))}</p>` : ''}
-  <p>${ceil ? `<span class="f-dot" style="background:var(--sog-chart-4)"></span> ${esc(tt(TX.daCeil, { c: fmt(ceil), d: signed(dT), p: fmt(effective) }))}` : esc(tt(TX.daNoCeil))}</p>`;
+  <p>${ceil ? `<span class="f-dot" style="background:var(--sog-chart-4)"></span> ${esc(tt(TX.daCeil, { c: fmt(ceil), d: signed(dT), p: fmt(effective) }))}` : esc(tt(TX.daNoCeil))}</p>
+  ${realProfileHtml(box)}`;
 }
 
 /** Niveau du plan fixé (ft) : champ, vol courant, résultats. */
@@ -1978,6 +2216,7 @@ function routeEdited(redraw = true) {
   if (ta) ta.value = r.text;
   routeDerived(r);
   if (redraw) renderPts();
+  if (S.aloft) aloftApply();
   saveFlight();
   refresh();
   scheduleWx();
@@ -2105,6 +2344,7 @@ function renderSummary(C) {
 function adoptForeignFlight() {
   const r = S.flight.route ||= emptyFlight().route;
   routeDerived(r);
+  if (S.aloft) aloftApply(); // vents en altitude aux nouveaux points (relus si la route a changé : scheduleWx)
   const C = S.C = compute();
   S.flight.profile = verticalProfile(C.q);
   if (S.view === 'plan' && S.body) {
@@ -2131,6 +2371,7 @@ function resolveRoute(normalize = true) {
       } = await routePoints(r.text, r.dep, r.arr, known);
     if (seq !== S.routeSeq || !S.body) return;
     r.points = points;
+    if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
     if (normalize && tokens.length && document.activeElement !== ta) {
       r.text = routeText(tokens);
@@ -2821,6 +3062,11 @@ export async function mount(el, ctx) {
     cached: true
   } : null;
   S.ui = (await ctx.data.get(UI_PATH)) || {};
+  const aloftKept = await ctx.data.get(ALOFT_PATH).catch(() => null);
+  S.aloft = aloftKept?.profiles ? {
+    ...aloftKept,
+    cached: true
+  } : null;
   // pas de la préparation : celui gardé, ou Route quand la Carte envoie « Modifier la route » (#fuel?focus=route)
   S.focusRoute = ctx.query?.focus === 'route';
   S.step = S.focusRoute ? 1 : Math.max(0, Math.min(4, +S.ui.step || 0));

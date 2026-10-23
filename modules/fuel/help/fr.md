@@ -62,6 +62,14 @@ vraie et le plafond. Une fois la météo lue, la ligne dessous le calcule d'apr�
 moins la température standard du terrain (15 − 1,98 × altitude du terrain en milliers de pieds) — et « Utiliser ISA … »
 le reporte dans le champ. L'écart retenu est gardé dans vos réglages : le vol suivant part du même.
 
+« Lire la météo des terrains » lit aussi la prévision en altitude (Open-Meteo, sans clé, avec ou sans lanceur) aux
+points de la route : la carte « Vents et températures en altitude » donne, pour chaque point, le niveau planifié (ses
+paliers compris), le vent, la température et l'écart ISA à ce niveau, avec le modèle (Météo-France AROME / ARPEGE sur
+la France, ICON ailleurs en Europe, GFS au-delà), l'heure visée (la date du vol, sinon maintenant) et l'heure du run.
+Avec « Météo réelle », le vent du devis devient la moyenne de ces vents au niveau planifié, le long de la route, à la
+place du vent au sol des METAR ; la ligne sous les champs le dit. Les mêmes vents vont à la Carte, qui les dessine en
+flèches. Hors réseau, la dernière prévision lue reste.
+
 **4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
 qu'on ne peut pas tenir sur ce trajet. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
@@ -73,6 +81,11 @@ est l'écart du vol, le trait horizontal le plafond de la fiche ; leur croisemen
 atteint son plafond ce jour-là (droite en gras). Un point marque le départ d’après le METAR (température et QNH).
 Important pour les hélicoptères : par forte chaleur ou en altitude, le plafond réel peut tomber bien sous celui de la
 fiche.
+
+Sous l'abaque, « Atmosphère réelle au départ » montre la température prévue à chaque altitude au-dessus du départ
+(trait plein) face à l'atmosphère type (tirets) : là où la courbe s'en écarte, l'écart ISA change avec l'altitude, et
+les couches d'inversion (la température qui monte avec l'altitude) sont surlignées et dites dessous. La ligne de
+lecture donne, au niveau planifié, la température, l'écart ISA et l'altitude-densité réelles.
 
 Dépliez « Consignes de montée » pour suivre la montée jusqu'au niveau : gaz, régime, badin, vario, débit,
 Mach, temps et carburant cumulés aux paliers, avec le profil dessiné. Le résultat donne carburant bloc, délestage, temps de vol et distance du début

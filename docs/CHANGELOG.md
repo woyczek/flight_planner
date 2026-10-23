@@ -24,6 +24,11 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **fuel: winds and temperatures aloft** (`modules/fuel/winds.js`, `module.js`; `test/winds.html`, `SPEC.md`,
+  `INTEGRATION.md`, `DECISIONS.md`, `help/fr.md`) — the forecast by level along the route (Open-Meteo: Météo-France,
+  ICON or GFS), shown point by point; with real weather, the quote's wind is the wind at the planned level; the real
+  atmosphere at departure shows its inversions beside the density altitude chart; the map gets the winds for its
+  arrows.
 - **fuel: typing in the route is never rewritten** (`modules/fuel/module.js`; `DECISIONS.md`) — a field being typed in
   keeps its text whatever is redrawn or saved meanwhile; the route is tidied only when you leave it or press Enter.
 - **report: the flight started in fuel comes first** (`modules/report/module.js`; `INTEGRATION.md`, `DECISIONS.md`,

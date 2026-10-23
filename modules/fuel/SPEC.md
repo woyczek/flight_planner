@@ -116,6 +116,31 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   under the wind fields. Typing a wind unticks it. Surface wind as a stand-in for the wind at the level: an
   approximation, said as such.
 
+## 11. Winds and temperatures aloft (`modules/fuel/winds.js`, lot F)
+
+- **Source**: Open-Meteo `api.open-meteo.com/v1/forecast` through `ctx.net` (relayed by the launcher or direct, no
+  key; frame 7eb6aa2c0): temperature, wind speed (kt) and direction at 14 pressure levels (1000 to 200 hPa), hourly,
+  two days, for up to 24 places in one call — the route's points plus a place about every 50 NM. Model by the route's
+  middle: `meteofrance_seamless` (AROME / ARPEGE) over France and its surroundings, `icon_seamless` elsewhere in
+  Europe, `gfs_seamless` beyond; named in the source. The run time is read from Open-Meteo's model metadata
+  (`/data/<model>/static/meta.json`, `last_run_initialisation_time`) when it answers. The hour nearest to the flight
+  date (else now) is kept. Kept on the device (`cache/fuel/aloft.json`, with the places, the hour, the run and the
+  reading time); offline, the last one. Read with the aerodromes' weather, again when the route's points or the
+  flight hour change.
+- **At a level**: a flight level is a pressure (ISA): wind (as a vector) and temperature are interpolated in
+  ln(pressure) between the two levels around it; ISA deviation = temperature − ISA temperature at that pressure
+  altitude. The level of each place is the plan's, then the steps' (`alt_ft` from their point on).
+- **Wind of the quote** ("Real weather" ticked): the mean of the winds at the planned level along the route, each
+  leg the mean of its two ends weighted by its length; preferred to the METARs' surface wind, which stays the
+  fallback. Source shown under the wind fields.
+- **Current flight**: `route.points[].wind = { dirDeg, kt, tempC, levelFt, at }` for maps' arrows.
+- **Shown**: step 3, a table per route point (level, wind, temperature, ISA deviation) with model, hour, run and
+  reading time; step 4, under the density altitude chart, the real atmosphere at departure — temperature by pressure
+  altitude against ISA (dashed), inversion layers shaded and listed, the planned level marked, and at that level the
+  temperature, ISA deviation and density altitude.
+- Bench `test/winds.html` (29 checks: pressure altitudes, interpolation, samples, steps, mean wind, inversions,
+  Open-Meteo answer with one or several places, model choice, URL).
+
 ## 6. Invariants
 
 1. The quote is a pure function of its inputs: same inputs, same quote, on every device.
