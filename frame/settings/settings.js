@@ -271,6 +271,12 @@
     ],
     cfgCopy: ['Copier le lien', 'Copy the link', 'Link kopieren', 'Copiar el enlace'],
     cfgCopied: ['Lien copié.', 'Link copied.', 'Link kopiert.', 'Enlace copiado.'],
+    // presse-papiers indisponible (appareil appairé en http) : le texte est montré sélectionné
+    copyShown: ['Copie impossible ici : le texte est sélectionné, copiez-le vous-même.',
+      'Cannot copy here: the text is selected, copy it yourself.',
+      'Kopieren hier nicht möglich: Der Text ist markiert, kopieren Sie ihn selbst.',
+      'No se puede copiar aquí: el texto está seleccionado, cópielo usted mismo.'
+    ],
     cfgMade: ['{f} enregistré : envoyez-le au pilote, ou le lien ci-dessous.', '{f} saved: send it to the pilot, or the link below.',
       '{f} gespeichert: Senden Sie sie dem Piloten, oder den Link unten.', '{f} guardado: envíelo al piloto, o el enlace de abajo.'
     ],
@@ -809,6 +815,8 @@
       airlineDoc,
       AIRLINE,
       howtoHtml,
+      copy,
+      copyShown: T.copyShown,
       pick: () => pickConfig(c, view)
     });
     if (inErr) cards.push(`<div class="f-card" data-card="cfg"><h2>${esc(t(T.cfgTitle))}</h2><p class="f-msg" data-kind="err">${esc(inErr)}</p>
@@ -1321,8 +1329,10 @@
         }), r?.ok ? 'ok' : 'err');
       }
       if (act === 'copy') {
-        await navigator.clipboard?.writeText(diagJson).catch(() => null);
-        c.notify(t(T.copied), 'ok');
+        const how = await copy(diagJson, {
+          near: b.closest('.f-row')
+        });
+        c.notify(t(how === 'shown' ? T.copyShown : T.copied), how === 'shown' ? 'warn' : 'ok');
       }
       // ---- configuration d'un pilote
       if (act === 'cfgImport') return view.querySelector('[data-cfgfile]')?.click();
@@ -1336,8 +1346,11 @@
       }
       if (act === 'cfgMake') return makeConfig(c, view, xsrc);
       if (act === 'cfgCopy') {
-        await navigator.clipboard?.writeText(view.querySelector('[data-cfglink]')?.value || '').catch(() => null);
-        return c.notify(t(T.cfgCopied), 'ok');
+        const box = view.querySelector('[data-cfglink]'),
+          how = await copy(box?.value || '', {
+            box
+          });
+        return c.notify(t(how === 'shown' ? T.copyShown : T.cfgCopied), how === 'shown' ? 'warn' : 'ok');
       }
     };
     view.querySelector('[data-cfgfile]')?.addEventListener('change', async e => {
@@ -1444,6 +1457,16 @@
     };
     return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>
       <ul class="f-admin">${links.filter(x => x.where !== 'v2' || L).map(row).join('')}</ul></div>`;
+  }
+
+  /** Copie vers le presse-papiers, aussi hors contexte sûr (appareil appairé en http) : frame/lib/clipboard.js (module,
+   *  chargé à la demande) — 'clipboard', 'exec' ou 'shown' (texte montré sélectionné dans box, ou après near). */
+  async function copy(text, o = {}) {
+    try {
+      return await (await import(new URL('frame/lib/clipboard.js', ROOT).href)).copyText(text, o);
+    } catch {
+      return 'shown';
+    }
   }
 
   // ---- configuration d'un pilote (frame/settings/config.js)

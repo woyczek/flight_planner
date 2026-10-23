@@ -235,6 +235,12 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - later, sign-in without a token (OAuth or a GitHub App, like the device flow above) once a relay exists.
   "Test" accepts both forms (`ghp_…`, `github_pat_…`: the transport sends `Bearer` either way); its 403 sentence names
   both rights. The how-to's prefilled link is now linked whole (escaped `&` kept in the address).
+- **23 Oct 2026 — Copies that work on a paired tablet** (frame lot 18: the app served over http by the workstation's
+  launcher has no `navigator.clipboard`): the diagnostics, the configuration link and the assistant's username are
+  copied through fuel's `frame/lib/clipboard.js` (loaded on demand, settings being classic scripts): the clipboard, else
+  a hidden field and `execCommand`, else the text shown selected — in the link's own field, or in a field after the
+  button — with "Cannot copy here: the text is selected, copy it yourself". `lib/clipboard.js` is in the service
+  worker's list. Checked with the clipboard removed, then `execCommand` failing too.
 - **23 Oct 2026 — Card "Computer access" (written by the V3 frame session, lot 18, while the settings session was
   closed)**:
   - Through the frame's `lan()` context (`frame/SPEC.md` § 3.10), only on the computer that serves the page.

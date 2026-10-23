@@ -425,8 +425,10 @@
       }
       if (act === 'back') return go(steps[idx - 1]);
       if (act === 'copyUser') {
-        await navigator.clipboard?.writeText(cur.user || '').catch(() => null);
-        return h.c.notify(t(T.copied), 'ok');
+        const how = await h.copy(cur.user || '', {
+          near: b.closest('.f-row')
+        });
+        return h.c.notify(t(how === 'shown' ? h.copyShown : T.copied), how === 'shown' ? 'warn' : 'ok');
       }
       if (act === 'next') {
         if (step === 2) {

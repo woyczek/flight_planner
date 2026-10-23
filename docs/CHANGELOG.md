@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Settings: copying on a paired tablet** (`frame/settings/settings.js`, `join.js`, `frame/sw.js`) — the
+  diagnostics, the configuration link and the username copy through `frame/lib/clipboard.js`, so they work over http;
+  when nothing can copy, the text is shown selected and the notification says to copy it.
 - **Copy and paste on a tablet served by the computer** (`frame/lib/clipboard.js`, fuel, report, website) — copying
   works over http too (or the text is shown selected to copy it yourself); "Paste from the clipboard" only
   appears where the browser allows it.
