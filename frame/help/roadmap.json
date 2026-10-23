@@ -160,6 +160,13 @@
           "es": "Unidades de visualización, «Abrir en» (SimBrief, SkyVector, Navigraph, ChartFox), vuelo compartido con Mapa e Informe"
         },
         {
+          "state": "doing",
+          "fr": "Sélecteur d'appareil sur toutes les sources (mes fiches, flotte, types, code libre) par le registre aerodb",
+          "en": "Aircraft picker over every source (my sheets, fleet, types, free code) through the aerodb registry",
+          "de": "Luftfahrzeugauswahl über alle Quellen (meine Blätter, Flotte, Typen, freier Code) über das aerodb-Register",
+          "es": "Selector de aeronave sobre todas las fuentes (mis fichas, flota, tipos, código libre) mediante el registro aerodb"
+        },
+        {
           "state": "later",
           "fr": "Édition de la table RPM sur téléphone",
           "en": "RPM table editing on the phone",
@@ -342,6 +349,13 @@
           "en": "SIA base by zone, cycle and kind; cities; aircraft types; on-demand reading, cache by zone",
           "de": "SIA-Basis nach Zone, Zyklus und Art; Städte; Luftfahrzeugtypen; Lesen bei Bedarf, Cache nach Zone",
           "es": "Base SIA por zona, ciclo y tipo; ciudades; tipos de aeronave; lectura bajo demanda, caché por zona"
+        },
+        {
+          "state": "doing",
+          "fr": "Un seul registre des aéronefs : types, performances, fiches du pilote, flotte, référence au même endroit, une seule recherche ; export .lnmperf tenu à jour",
+          "en": "One aircraft registry: types, performances, the pilot's sheets, fleet and reference at one place, one search; .lnmperf export kept in sync",
+          "de": "Ein einziges Luftfahrzeugregister: Typen, Leistungen, Pilotenblätter, Flotte und Referenz an einem Ort, eine Suche; .lnmperf-Export stets aktuell",
+          "es": "Un solo registro de aeronaves: tipos, prestaciones, fichas del piloto, flota y referencia en un mismo lugar, una sola búsqueda; exportación .lnmperf mantenida al día"
         },
         {
           "state": "planned",

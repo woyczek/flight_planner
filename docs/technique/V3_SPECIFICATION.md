@@ -118,6 +118,11 @@ by size. Drafted with the user, validated before code.
   V2 only (reading `data/sia`, MORA, publication by zone, cycle and kind; aircraft base publication from Settings ›
   Maintenance). This is a workstation job and will probably need a "big" desktop client, unless something better is
   found. The only decision: failing better, at least that part of V2 is kept. `aerodb` only reads what is published.
+- 23 Oct 2026 — **One aircraft registry in `aerodb`.** All aircraft data (ICAO types and performances, the pilot's
+  performance sheets, the airline fleet with registrations and call signs, the anonymised reference, mission aircraft)
+  are rationalised in `aerodb` at one place, fed globally, with one search over every source and the origin of each
+  field. The `.lnmperf` files become an **export kept in sync** (one file per sheet, rewritten by the launcher at each
+  save), never a source. `fuel` keeps the screens and edits through the API; `website` feeds the fleet.
 
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 
