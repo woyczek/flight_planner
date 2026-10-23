@@ -154,6 +154,25 @@ sequenceDiagram
   data yet, the address is used to fetch it). **Never blocking**: a repository that does not answer (access denied,
   not found, host unreachable) is reported, and the suite keeps working, without sharing. A branch missing from the remote
   repository is created by the first synchronisation.
+- **A `data/` folder that is not a repository yet** (examples, archive, data entered before any repository): `data/` is
+  ignored by the code repository, so a nested data repository is the normal setup. `GET /__setup/sync-remote` says which
+  case applies (`state`: `absent`, `plain`, `repo`); for `plain`, the same card offers "Take data/ into this repository",
+  `POST /__setup/adopt { url, user?, secret?, remember?, author? }` (`tools/data_sync.adopt`):
+  - the repository is cloned without checkout next to `data/`, its `.git` is moved into `data/`, and the index is set to
+    the remote branch while the workstation's files stay untouched;
+  - a file of the repository missing on the workstation is checked out; a file present on both sides and different is
+    merged by the synchronisation rules when it belongs to the pool (`merge_raw`, with no common base: the newest
+    `updated_at` wins, or, without one, the newest date between the local file and the repository's last commit; the
+    other version goes to `_conflits/`; assignments merged record by record; signed registry: highest version), and is
+    taken from the repository otherwise; the workstation's own files stay;
+  - one local commit "Reprise du poste <TRI>" of the pool files (same `.js` check as a synchronisation), **nothing is
+    pushed**: the next "Synchronise" sends it;
+  - every workstation file replaced is first copied to `data_avant_<date>/`, next to `data/`; any failure puts everything
+    back (`data/` as before, `.git` removed);
+  - sample data (`jeu_essai: true`), or a folder with no pool file: set aside whole in `data_avant_<date>/`, then a plain
+    clone (put back if the clone fails);
+  - same address rules as `sync-remote`: the configured repository is accepted, another one is confirmed in the
+    launcher's window. Try it with `python tools/data_sync.py --essai`.
 - **Workstation without git or write access**: choose as data folder a **shared folder** (Synology,
   OneDrive…) synchronised by a workstation that has git (the Centre, for example); its writes land in that folder, and the
   equipped workstation pushes them to the repository. This is what the central server will make unnecessary: an account will be enough

@@ -480,6 +480,11 @@
       <p class="pl-hint" id="plRepoNow"></p>
       <div class="pl-form"><label for="plSyncUrl">Adresse du dépôt</label><input type="text" id="plSyncUrl" spellcheck="false" autocomplete="off" placeholder="git@hôte:compte/dépôt.git"></div>
       <div class="pl-row"><button type="button" class="secondary" id="plRepoCheck">Vérifier</button><button type="button" class="primary" id="plRepoSave">Enregistrer</button></div>
+      <div id="plAdopt" data-no-i18n hidden>
+        <p class="pl-hint" id="plAdoptHint"></p>
+        <div class="pl-form"><label for="plAdoptUser" id="plAdoptUserL"></label><input type="text" id="plAdoptUser" spellcheck="false" autocomplete="username"><label for="plAdoptSecret" id="plAdoptSecretL"></label><input type="password" id="plAdoptSecret" autocomplete="current-password"></div>
+        <div class="pl-row"><label><input type="checkbox" id="plAdoptRemember"> <span id="plAdoptRememberL"></span></label><button type="button" class="primary" id="plAdoptGo" data-icon="download"></button></div>
+      </div>
       <p class="pl-msg" id="plSyncMsg"></p>
     </div>
     <div class="pl-card" id="plLogCard" hidden style="margin-top:14px"><h3>Journal des vols (facultatif)</h3>
@@ -1195,7 +1200,16 @@
     }
     $('plRepoCard').hidden = false;
     if (!$('plSyncUrl').value) $('plSyncUrl').value = repo.url || '';
-    $('plRepoNow').textContent = !repo.repo ?
+    // data/ déjà rempli sans être un dépôt (exemples, archive, données saisies) : reprise dans le dépôt (POST adopt)
+    $('plAdopt').hidden = repo.state !== 'plain';
+    adoptTexts();
+    $('plRepoNow').textContent = repo.state === 'plain' ? L(
+        'data/ contient déjà des données mais n’est pas un dépôt git : « Reprendre data/ dans ce dépôt » en fait un clone, sans rien perdre ni envoyer.',
+        'data/ already holds data but is not a git repository: “Take data/ into this repository” makes it a clone, losing and sending nothing.',
+        'data/ enthält bereits Daten, ist aber kein Git-Repository: „data/ in dieses Repository übernehmen“ macht daraus einen Klon, ohne etwas zu verlieren oder zu senden.',
+        'data/ ya contiene datos pero no es un repositorio git: «Incorporar data/ a este repositorio» lo convierte en un clon, sin perder ni enviar nada.'
+      ) :
+      !repo.repo ?
       'data/ n’est pas encore un dépôt git : les données récupérées depuis un dépôt (carte « Dépôt de données ») en gardent l’adresse.' :
       repo.url ? `Actuel : dépôt distant « ${repo.remote} » — ${repo.url} (branche ${repo.branch}).` :
       'data/ est un dépôt git sans dépôt distant : rien n’est partagé tant qu’aucune adresse n’est enregistrée.';
@@ -1237,6 +1251,60 @@
   };
   on('click', 'plRepoCheck', () => repoCheck(false));
   on('click', 'plRepoSave', () => repoCheck(true));
+  /** Textes du bloc « Reprendre data/ dans ce dépôt », dans la langue courante. */
+  function adoptTexts() {
+    setText($('plAdoptHint'), L(
+      'Le lanceur clone le dépôt à côté, pose son historique dans data/, puis reprend les fichiers de ce poste : une fiche présente des deux côtés garde la plus récente (l’autre va dans _conflits/), les affectations sont réunies, les fichiers de la suite viennent du dépôt. Un commit local « Reprise du poste », rien n’est envoyé avant « Synchroniser ». Les originaux remplacés sont copiés dans data_avant_<date>/. Jeu d’essai : mis de côté, puis simple clone. Identifiants : seulement pour une adresse https:// que Git ne connaît pas encore.',
+      'The launcher clones the repository alongside, puts its history into data/, then takes over this computer’s files: a record on both sides keeps the newest (the other goes to _conflits/), assignments are merged, the suite’s files come from the repository. One local commit “Reprise du poste”, nothing is sent before “Synchronise”. Replaced originals are copied to data_avant_<date>/. Sample data: set aside, then a plain clone. Credentials: only for an https:// address Git does not know yet.',
+      'Der Starter klont das Repository daneben, legt seine Historie in data/ ab und übernimmt dann die Dateien dieses Rechners: Ein Datensatz auf beiden Seiten behält den neuesten (der andere kommt nach _conflits/), Zuweisungen werden zusammengeführt, die Dateien der Suite kommen aus dem Repository. Ein lokaler Commit „Reprise du poste“, nichts wird vor „Synchronisieren“ gesendet. Ersetzte Originale werden nach data_avant_<Datum>/ kopiert. Testdaten: beiseitegelegt, dann einfacher Klon. Zugangsdaten: nur für eine https://-Adresse, die Git noch nicht kennt.',
+      'El lanzador clona el repositorio al lado, coloca su historial en data/ y luego incorpora los archivos de este equipo: un registro presente en ambos lados conserva el más reciente (el otro va a _conflits/), las asignaciones se reúnen, los archivos de la suite vienen del repositorio. Un commit local «Reprise du poste», nada se envía antes de «Sincronizar». Los originales reemplazados se copian en data_avant_<fecha>/. Conjunto de prueba: apartado y luego clon simple. Credenciales: solo para una dirección https:// que Git aún no conoce.'
+    ));
+    setText($('plAdoptUserL'), L('Identifiant (facultatif)', 'Username (optional)', 'Benutzername (optional)', 'Usuario (opcional)'));
+    setText($('plAdoptSecretL'), L('Mot de passe ou jeton', 'Password or token', 'Passwort oder Token', 'Contraseña o token'));
+    setText($('plAdoptRememberL'), L('Se souvenir (Git)', 'Remember (Git)', 'Merken (Git)', 'Recordar (Git)'));
+    setText($('plAdoptGo'), L('Reprendre data/ dans ce dépôt', 'Take data/ into this repository', 'data/ in dieses Repository übernehmen',
+      'Incorporar data/ a este repositorio'));
+  }
+  // reprise de data/ (POST /__setup/adopt) : clone du dépôt, fiches du poste reprises, rien d'envoyé
+  on('click', 'plAdoptGo', async () => {
+    const url = $('plSyncUrl').value.trim(),
+      user = $('plAdoptUser').value.trim(),
+      secret = $('plAdoptSecret').value;
+    if (!url) return msg('plSyncMsg', L('Adresse du dépôt à préciser (git@… ou https://…).',
+        'Repository address to fill in (git@… or https://…).',
+        'Repository-Adresse angeben (git@… oder https://…).', 'Indicar la dirección del repositorio (git@… o https://…).'),
+      'err');
+    if (!!user !== !!secret) return msg('plSyncMsg', L('Identifiant et mot de passe (ou jeton) : les deux, ou aucun.',
+      'Username and password (or token): both, or neither.', 'Benutzername und Passwort (oder Token): beide oder keines.',
+      'Usuario y contraseña (o token): los dos o ninguno.'), 'err');
+    $('plAdoptGo').disabled = true;
+    msg('plSyncMsg', L(
+      'Reprise en cours… (clone du dépôt, puis fusion des fichiers du poste ; quelques minutes la première fois). Autre dépôt que celui de la configuration : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
+      'Taking over… (repository clone, then merge of this computer’s files; a few minutes the first time). Another repository than the configured one: confirm in the window the launcher opens on the computer.',
+      'Übernahme läuft… (Klon des Repositorys, dann Zusammenführung der Dateien dieses Rechners; beim ersten Mal einige Minuten). Anderes Repository als das konfigurierte: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
+      'Incorporación en curso… (clon del repositorio y fusión de los archivos de este equipo; unos minutos la primera vez). Otro repositorio distinto del configurado: confirme en la ventana que el lanzador abre en el equipo.'
+    ));
+    try {
+      const r = await post('adopt', {
+        url,
+        user,
+        secret,
+        remember: $('plAdoptRemember').checked,
+        author: read(PROFILE).trigram || ''
+      });
+      msg('plSyncMsg', r.message, r.ok ? 'ok' : 'err');
+      if (r.ok) {
+        $('plAdoptSecret').value = '';
+        dataState();
+      }
+    } catch (e) {
+      msg('plSyncMsg', K.tf(['Échec : {m}', 'Failed: {m}', 'Fehlgeschlagen: {m}', 'Error: {m}'], {
+        m: e.message
+      }), 'err');
+    }
+    $('plAdoptGo').disabled = false;
+    await repoState();
+  });
   /** Envoi d'un fichier choisi au lanceur (kind : data pour l'archive des données, log pour le journal), puis after. */
   const upload = (id, kind, out, after) => on('change', id, async e => {
     const input = e.target,
@@ -2227,6 +2295,7 @@
       allButton();
       centreState();
       if (S.folderNa) foldersState(); // phrase du mode GitHub, dans la nouvelle langue
+      if (repo) repoState(); // carte du dépôt de synchronisation (reprise de data/), dans la nouvelle langue
     });
     setInterval(checklist, 15000);
     // étape 5 : états des types et des données aéronautiques, puis l'étape courante ouverte, les autres repliées

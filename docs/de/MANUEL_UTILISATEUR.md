@@ -625,6 +625,15 @@ Drei Möglichkeiten:
   Für ein anderes Repository als das aktuelle öffnet der Starter ein Bestätigungsfenster auf dem Computer (aktuelle und neue
   Adresse, „Nein“ voreingestellt): mit „Ja“ antworten, um zu wechseln; keine Seite kann an Ihrer Stelle antworten. Nie ein Passwort oder Token in der Adresse.
   die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
+- **„data/ in dieses Repository übernehmen“** (in derselben Karte, wenn `data/` bereits Daten enthält, ohne ein
+  Git-Repository zu sein: Beispiele, Archiv, eingegebene Daten): Der Starter klont das Repository daneben, legt seine
+  Historie in `data/` ab und übernimmt dann die Dateien des Rechners. Ein Datensatz auf beiden Seiten behält den
+  neuesten (der andere kommt nach `_conflits/`), Zuweisungen werden zusammengeführt, die Dateien der Suite kommen aus
+  dem Repository; ersetzte Originale werden nach `data_avant_<Datum>/` kopiert. Ein lokaler Commit „Reprise du poste“,
+  nichts wird vor „Synchronisieren“ gesendet. Testdaten oder ein Ordner ohne Daten des Rechners: nach
+  `data_avant_<Datum>/` beiseitegelegt, dann einfacher Klon. Ein anderes Repository als das konfigurierte wird im
+  Fenster des Starters bestätigt; schlägt etwas fehl, bleibt `data/` unverändert. Benutzername und Passwort: nur für
+  eine `https://`-Adresse, die Git noch nicht kennt.
 - Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
 
 ### 3 Fluggesellschaft

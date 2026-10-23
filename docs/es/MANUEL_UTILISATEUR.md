@@ -622,6 +622,14 @@ Tres posibilidades:
   Para otro repositorio distinto del actual, el lanzador abre una ventana de confirmación en el equipo (dirección actual
   y nueva, «No» por defecto): responda «Sí» para cambiar; ninguna página puede responder en su lugar. Nunca ponga una contraseña ni un token en la dirección.
   y la suite funciona sin compartir. Detalles: [sincronización](../technique/SYNCHRONISATION.md).
+- **«Incorporar data/ a este repositorio»** (en la misma tarjeta, cuando `data/` ya contiene datos sin ser un
+  repositorio git: ejemplos, archivo, datos introducidos): el lanzador clona el repositorio al lado, coloca su historial
+  en `data/` y luego incorpora los archivos del equipo. Un registro presente en ambos lados conserva el más reciente (el
+  otro va a `_conflits/`), las asignaciones se reúnen, los archivos de la suite vienen del repositorio; los originales
+  reemplazados se copian en `data_avant_<fecha>/`. Un commit local «Reprise du poste», nada se envía antes de
+  «Sincronizar». Conjunto de prueba o carpeta sin datos del equipo: apartado en `data_avant_<fecha>/` y luego clon
+  simple. Un repositorio distinto del configurado se confirma en la ventana del lanzador; si algo falla, `data/` queda
+  como estaba. Usuario y contraseña: solo para una dirección `https://` que Git aún no conoce.
 - Una vez presentes los datos, la tarjeta opcional «Registro de vuelos» ofrece «Registro (.html)…»: la página «Log des vols» del sitio de la aerolínea, guardada, rellena los pilotos y las aeronaves de la referencia (ayuda a la introducción).
 
 ### 3 Aerolínea

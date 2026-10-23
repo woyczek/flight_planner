@@ -127,6 +127,24 @@ def git_env():
     return data_sync.git_env()
 
 
+def git_auth(user, secret):
+    """Identifiants de la page le temps d'une commande git : (variables d'environnement, options -c) — assistant
+    d'identifiants éphémère, rien n'est écrit dans .git/config ni dans l'adresse. Sans les deux : ({}, [])."""
+    if not (user and secret):
+        return {}, []
+    return ({'DEFA_GIT_U': user, 'DEFA_GIT_P': secret},
+            ['-c', 'credential.helper=', '-c', 'credential.helper=!f() { echo "username=$DEFA_GIT_U"; echo "password=$DEFA_GIT_P"; }; f'])
+
+
+def remember_credentials(url, user, secret):
+    """Identifiants confiés à l'assistant d'identifiants de Git (case « Se souvenir »)."""
+    git = data_sync.git_exe()
+    if git and user and secret:
+        host = urllib.parse.urlparse(url)
+        subprocess.run([git, 'credential', 'approve'], input=f'protocol={host.scheme}\nhost={host.netloc}\nusername={user}\npassword={secret}\n\n',
+                       text=True, capture_output=True, cwd=ROOT)
+
+
 def clone(user=None, secret=None, remember=False, url=None):
     """Clone du dépôt de données ; identifiants : ceux de la page (le temps du clone), sinon ceux que Git connaît.
     Retourne (ok, journal)."""
@@ -142,12 +160,9 @@ def clone(user=None, secret=None, remember=False, url=None):
         return False, 'Adresse du dépôt de données à préciser.'
     if not data_sync.REMOTE_RE.match(url):
         return False, data_sync.REMOTE_HELP
-    env = git_env()
-    cmd = data_sync.git_cmd()
-    if user and secret:
-        # assistant d'identifiants le temps de cette commande : rien n'est écrit dans .git/config ni dans l'adresse
-        env.update(DEFA_GIT_U=user, DEFA_GIT_P=secret)
-        cmd += ['-c', 'credential.helper=', '-c', 'credential.helper=!f() { echo "username=$DEFA_GIT_U"; echo "password=$DEFA_GIT_P"; }; f']
+    extra, auth = git_auth(user, secret)
+    env = dict(git_env(), **extra)
+    cmd = data_sync.git_cmd(*auth)
     if run([git, 'lfs', 'version'], capture_output=True) == 0:
         run([git, 'lfs', 'install'], capture_output=True)
     try:
@@ -163,10 +178,8 @@ def clone(user=None, secret=None, remember=False, url=None):
             return False, 'Accès refusé : identifiant, mot de passe ou jeton incorrect, ou accès au dépôt pas encore donné.'
         return False, log or 'Échec du clone.'
     ensure_lfs(DATA, 'data', 'Données')  # données clonées : fichiers Git LFS récupérés, ou signalés
-    if remember and user and secret:
-        host = urllib.parse.urlparse(url)
-        subprocess.run([git, 'credential', 'approve'], input=f'protocol={host.scheme}\nhost={host.netloc}\nusername={user}\npassword={secret}\n\n',
-                       text=True, capture_output=True, cwd=ROOT)
+    if remember:
+        remember_credentials(url, user, secret)
     return True, 'Données récupérées.'
 
 
@@ -493,7 +506,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
-            return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url()})
+            # state : 'absent' (rien : clone), 'plain' (des fichiers sans dépôt : reprise, POST /__setup/adopt), 'repo'
+            return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': data_sync.data_state(DATA)})
         if self.path.split('?')[0] == '/__setup/sync-status':
             # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
             # sur le dépôt distant (commits à recevoir)
@@ -744,6 +758,41 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if ok:
                 mark_instance()
             return self._json({'ok': ok, 'message': log})
+        if path == '/__setup/adopt':
+            # data/ déjà là sans être un dépôt (exemples, archive, données saisies) devenu un clone du dépôt des données,
+            # fiches du poste reprises par les règles de la synchronisation, rien d'envoyé (tools/data_sync.adopt) ;
+            # dépôt de la configuration admis, autre dépôt : confirmé dans la fenêtre du lanceur, comme sync-remote
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            url = str(a.get('url') or '').strip() or data_repo_url()
+            user, secret = str(a.get('user') or '').strip(), str(a.get('secret') or '')
+            if any(c in user + secret for c in '\r\n\0'):
+                return self._json({'ok': False, 'message': 'Identifiant ou mot de passe invalide (retour à la ligne).'})
+            if not data_sync.REMOTE_RE.match(url):
+                return self._json({'ok': False, 'message': data_sync.REMOTE_HELP})
+            if not data_sync.same_repo(url, data_repo_url()) and not confirm_adopt(url):
+                return self._json({'ok': False, 'message': 'Reprise non confirmée dans la fenêtre du lanceur (refusée, fermée, ou '
+                                                           'fenêtre impossible à ouvrir sur cet ordinateur) : data/ inchangé.'})
+            git = data_sync.git_exe()
+            if git and run([git, 'lfs', 'version'], capture_output=True) == 0:
+                run([git, 'lfs', 'install'], capture_output=True)
+            extra, auth = git_auth(user, secret)
+            with SYNC_LOCK:
+                r = data_sync.adopt(DATA, url, str(a.get('author') or 'POSTE').upper(), env=dict(git_env(), **extra),
+                                    name=str(a.get('name') or '')[:60], auth=auth)
+            if r.get('ok'):
+                say(f'  Reprise de data/ dans le dépôt {url} : ' + r.get('message', ''))
+                ensure_lfs(DATA, 'data', 'Données')
+                mark_instance()
+                if a.get('remember'):
+                    remember_credentials(url, user, secret)
+                with INDEX_LOCK:
+                    index_availability()
+                    index_users()
+            sync_status_reset()
+            return self._json(r)
         if path == '/__setup/upload':
             kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
             with tempfile.NamedTemporaryFile(delete=False, suffix='.upload') as f:
@@ -871,6 +920,24 @@ def confirm_remote(old, new):
     if not ok:
         _confirm['until'] = time.time() + 30
     say(f'  Dépôt de synchronisation : {new} — ' + ('confirmé' if ok else 'non confirmé'))
+    return ok
+
+
+def confirm_adopt(url):
+    """Reprise de data/ dans un autre dépôt que celui de la configuration, confirmée par l'utilisateur (fenêtre du
+    lanceur)."""
+    if time.time() < _confirm['until']:
+        return False
+    ok = confirm_box('SO Group — dépôt des données / data repository', (
+        'Faire du dossier data/ de ce poste un clone de ce dépôt ?\n\n'
+        f'Dépôt : {url}\n\n'
+        'Les fiches du poste seront gardées dans un commit local, puis partiront vers ce dépôt au prochain « Synchroniser ». '
+        'Si vous n’avez pas demandé cette reprise, répondez Non.\n\n'
+        'Make this computer’s data/ folder a clone of this repository? Its records are kept in a local commit, then sent to '
+        'this repository at the next “Synchronise”. If you did not ask for this, answer No.'))
+    if not ok:
+        _confirm['until'] = time.time() + 30
+    say(f'  Reprise de data/ dans le dépôt {url} — ' + ('confirmée' if ok else 'non confirmée'))
     return ok
 
 

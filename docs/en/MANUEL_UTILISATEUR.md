@@ -620,6 +620,14 @@ Three options:
   For another repository than the current one, the launcher opens a confirmation window on the computer (current and new
   address, “No” by default): answer “Yes” to change; no page can answer it for you. Never put a password or a token in the address.
   and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
+- **“Take data/ into this repository”** (in the same card, when `data/` already holds data without being a git
+  repository: examples, archive, data entered): the launcher clones the repository alongside, puts its history into
+  `data/`, then takes over the computer’s files. A record on both sides keeps the newest (the other goes to
+  `_conflits/`), assignments are merged, the suite’s files come from the repository; replaced originals are copied to
+  `data_avant_<date>/`. One local commit “Reprise du poste”, nothing is sent before “Synchronise”. Sample data, or a
+  folder without this computer’s data: set aside in `data_avant_<date>/`, then a plain clone. A repository other than
+  the configured one is confirmed in the launcher’s window; if anything fails, `data/` stays as it was. Username and
+  password: only for an `https://` address Git does not know yet.
 - Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
 
 ### 3 Airline

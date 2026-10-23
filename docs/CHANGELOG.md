@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### Added
 
+- **First run: "Take data/ into this repository"** (`tools/launch.py` `POST /__setup/adopt`, `tools/data_sync.py`
+  `adopt`, `apps/settings/premier_lancement.html`) — a `data/` folder that already holds data without being a git
+  repository (examples, archive, data entered) had no way to join the data repository: saving the address was refused.
+  The "Git repository for data synchronisation" card now offers to make it a clone: the repository is cloned alongside,
+  its history moved into `data/`, the workstation's files merged by the synchronisation rules (newest record kept, the
+  other in `_conflits/`, assignments merged), one local commit "Reprise du poste", nothing pushed; replaced originals go
+  to `data_avant_<date>/`, a failure leaves `data/` as it was. Sample data is set aside and replaced by a plain clone.
+  Same address rules as `sync-remote` (another repository confirmed in the launcher's window); `GET
+  /__setup/sync-remote` gains `state` (`absent`, `plain`, `repo`). The synchronisation merge rules are shared
+  (`merge_raw`). User manual ×4, `docs/technique/SYNCHRONISATION.md` § 9; `python tools/data_sync.py --essai` covers it.
+
 - **Map studio: each mission map carries what it takes to redraw it elsewhere** (`apps/cpco/map_parser.html`,
   `apps/planner/map_planner.html` rebuilt, `shared/mission_registry.js`) — for the V3 maps module, saving in the studio
   writes on every `maps[]` entry of `mission<ID>.yaml` a full copy of its display profile with every element resolved

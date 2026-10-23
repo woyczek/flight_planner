@@ -644,6 +644,14 @@ Trois possibilités :
   Vers un autre dépôt que celui en place, le lanceur ouvre une fenêtre de confirmation sur l'ordinateur (adresse actuelle
   et nouvelle, « Non » par défaut) : répondez « Oui » pour changer ; aucune page ne peut y répondre à votre place. Jamais de mot de passe ni de jeton dans l'adresse.
   la suite fonctionne sans partage. Détails : [synchronisation](technique/SYNCHRONISATION.md).
+- **« Reprendre data/ dans ce dépôt »** (dans la même carte, quand `data/` contient déjà des données sans être un dépôt
+  git : exemples, archive, données saisies) : le lanceur clone le dépôt à côté, pose son historique dans `data/`, puis
+  reprend les fichiers du poste. Une fiche présente des deux côtés garde la plus récente (l'autre va dans `_conflits/`),
+  les affectations sont réunies, les fichiers de la suite viennent du dépôt ; les originaux remplacés sont copiés dans
+  `data_avant_<date>/`. Un commit local « Reprise du poste », rien n'est envoyé avant « Synchroniser ». Jeu d'essai ou
+  dossier sans données du poste : mis de côté dans `data_avant_<date>/`, puis simple clone. Un autre dépôt que celui de
+  la configuration se confirme dans la fenêtre du lanceur ; en cas d'échec, `data/` reste tel quel. Identifiant et mot de
+  passe : seulement pour une adresse `https://` que Git ne connaît pas encore.
 - Une fois les données présentes, la carte facultative « Journal des vols » propose « Journal (.html)… » : la page « Log des vols » du site de la compagnie, enregistrée, remplit les pilotes et appareils de la référence (aide à la saisie).
 
 ### 3 Compagnie
