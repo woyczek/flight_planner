@@ -9,6 +9,9 @@ import * as LF from '../../frame/lib/last_flight.js';
 import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
+import {
+  fmtZLocal
+} from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »)
 
 export const meta = {
   id: 'flightlog',
@@ -22,7 +25,9 @@ export const meta = {
     prefix: 'cache/flightlog/',
     policy: 'cache'
   }],
-  files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js']
+  files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js',
+    '../../frame/lib/time.js'
+  ]
 };
 
 const VIEW = 'cache/flightlog/view.json',
@@ -272,7 +277,7 @@ function renderBody() {
     <div class="f-tools"><select data-k="days" aria-label="${esc(tt(TX.period))}">${[7, 31, 365, 0].map(d => `<option value="${d}"${+v.days === d ? ' selected' : ''}>${esc(tt(TX.periods[d]))}</option>`).join('')}</select>
       <input type="search" data-k="find" value="${esc(v.find)}" placeholder="${esc(tt(TX.find))}" aria-label="${esc(tt(TX.find))}">
       <label class="f-check"><input type="checkbox" data-k="noReport"${v.noReport ? ' checked' : ''}>${esc(tt(TX.noReport))}</label></div>
-    ${S.started ? `<div class="f-card f-accent fl-now"><div><b>${esc(tt(TX.startedNow, { t: new Date(S.started.at).toLocaleTimeString(S.ctx.lang(), { hour: '2-digit', minute: '2-digit' }) }))}${S.started.diverted ? esc(tt(TX.diverted)) : ''}</b>
+    ${S.started ? `<div class="f-card f-accent fl-now"><div><b>${esc(tt(TX.startedNow, { t: fmtZLocal(S.started.at) }))}${S.started.diverted ? esc(tt(TX.diverted)) : ''}</b>
       <div class="f-muted">${esc([S.started.callsign, [S.started.type, S.started.reg].filter(Boolean).join(' '), [S.started.dep, S.started.arr].filter(Boolean).join(' → ')].filter(Boolean).join(' · '))}</div></div>
       <button type="button" class="primary" data-do="writeNow">${esc(tt(TX.write))}</button></div>` : ''}
     <div class="f-list">${list.map(row).join('') || `<p class="f-card f-muted">${esc(tt(TX.empty))}</p>`}</div>

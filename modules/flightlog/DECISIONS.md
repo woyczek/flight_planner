@@ -2,6 +2,9 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — times shown in UTC** (suite rule, `frame/lib/time.js`, frame lot 22): "In progress — started at
+  16:59Z (18:59)" (engine start: UTC and the device's time). The flights' own times come from the reports and the
+  site's log as written there.
 - **23 Oct 2026 — filters kept from the last visit are said; "—" explained** (end-to-end pass, Simplification's
   decision (d)): the filters stay on the device (`cache/flightlog/view.json`), and a visit opened on "1 year · LFRS"
   showed one flight with nothing saying why. When the stored filters differ from the defaults (1 year, no search,
