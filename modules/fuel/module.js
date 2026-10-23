@@ -19,6 +19,9 @@ import {
   svg
 } from '../../frame/lib/icons.js';
 import {
+  copyText
+} from '../../frame/lib/clipboard.js'; // marche aussi en http (tablette servie par le poste)
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 
@@ -39,7 +42,7 @@ export const meta = {
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/metar.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js',
-    '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js'
+    '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js'
   ]
 };
 
@@ -512,6 +515,11 @@ const TX = {
   gptPrompt: ['Copier la demande ChatGPT', 'Copy the ChatGPT request', 'ChatGPT-Anfrage kopieren', 'Copiar la petición a ChatGPT'],
   gptMissing: ['Demande pour les champs vides', 'Request for the empty fields', 'Anfrage für die leeren Felder',
     'Petición para los campos vacíos'
+  ],
+  copyManual: ['Copie impossible ici : le texte est sélectionné, copiez-le (Ctrl+C ou appui long).',
+    'Copying is not possible here: the text is selected, copy it (Ctrl+C or long press).',
+    'Kopieren ist hier nicht möglich: Der Text ist markiert, kopieren Sie ihn (Strg+C oder lange drücken).',
+    'Aquí no se puede copiar: el texto está seleccionado, cópielo (Ctrl+C o pulsación larga).'
   ],
   copied: ['Demande copiée : collez-la dans ChatGPT, puis sa réponse ci-dessous.',
     'Request copied: paste it into ChatGPT, then its answer below.',
@@ -3193,12 +3201,11 @@ async function onSheetsClick(e) {
       const box = S.body.querySelector('[data-k="gptprompt"]');
       box.value = txt;
       box.closest('label').classList.remove('fu-hide');
-      try {
-        await navigator.clipboard.writeText(txt);
-        S.ctx.notify(tt(TX.copied), 'ok');
-      } catch {
-        box.select();
-      }
+      // presse-papiers, sinon copie à l'ancienne, sinon la demande reste sélectionnée dans sa zone : « copiez-la »
+      const how = await copyText(txt, {
+        box
+      });
+      S.ctx.notify(tt(how === 'shown' ? TX.copyManual : TX.copied), how === 'shown' ? 'warn' : 'ok');
       return;
     }
     case 'gptread': {

@@ -4,6 +4,13 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — copying works on a tablet served over http** (frame lot 18: the launcher serves the app to a
+  tablet, a non-secure context without `navigator.clipboard`): new `frame/lib/clipboard.js` (owner fuel; report,
+  website and the frame may use it): `copyText(text, { box, near })` tries the clipboard, then a hidden field and
+  `execCommand('copy')`, then shows the text selected (in `box`, or a read-only field after `near`) and the module
+  says "copy it"; `canPaste()`. The ChatGPT request goes through it (shown selected in its box as a last resort).
+  Checked on 8804 with `navigator.clipboard` removed: real click → copied by `execCommand`; without a gesture →
+  shown selected.
 - **23 Oct 2026 — quick flight date** (user's request through Simplification): next to the flight date, a clock
   "+30" (44 px, label in the tooltip and `aria-label`) sets now + 30 min rounded up to 5 min; a press while the
   date is still ahead adds 30 min to it (a past date restarts from now); "Now" empties the date (the observation,

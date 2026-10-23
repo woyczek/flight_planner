@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Copy and paste on a tablet served by the computer** (`frame/lib/clipboard.js`, fuel, report, website) — copying
+  works over http too (or the text is shown selected to copy it yourself); "Paste from the clipboard" only
+  appears where the browser allows it.
 - **Map: an aerodrome's reporting points from the base, aeroplane / helicopter colours** (`modules/maps/module.js`,
   `render.js`, `tools/vfr_import.py`; SPECs, DECISIONS, help ×4) — the aerodrome's card and hover always list the
   published base's VRPs, the VAC compilation adds to them ("VAC sequences: not imported" without it); VFR reporting
