@@ -93,6 +93,13 @@
         },
         {
           "state": "doing",
+          "fr": "Durcissement de l'accès réseau local après relecture sécurité (chemins, code à usage unique, plafonds, relais sans redirection, interfaces, extensions)",
+          "en": "Hardening of the local-network access after the security review (paths, one-time code, caps, relay without redirects, interfaces, extensions)",
+          "de": "Härtung des lokalen Netzzugangs nach dem Sicherheitsreview (Pfade, Einmalcode, Obergrenzen, Relais ohne Weiterleitungen, Schnittstellen, Erweiterungen)",
+          "es": "Endurecimiento del acceso de red local tras la revisión de seguridad (rutas, código de un solo uso, límites, relé sin redirecciones, interfaces, extensiones)"
+        },
+        {
+          "state": "doing",
           "fr": "Sans trigramme, rien ne part vers data/ ni vers le dépôt : documents gardés sur l'appareil, invitation à renseigner le trigramme, reprise ensuite",
           "en": "Without a trigram nothing goes to data/ nor to the repository: documents kept on the device, prompt to set the trigram, taken over afterwards",
           "de": "Ohne Kürzel geht nichts nach data/ oder ins Repository: Dokumente bleiben auf dem Gerät, Aufforderung zum Setzen des Kürzels, danach Übernahme",
@@ -514,7 +521,7 @@
           "es": "Identidad, usos, acceso (token o repositorio remoto del puesto), sincronización, copia de seguridad, datos sin conexión por zona, nivel, claves del lanzador"
         },
         {
-          "state": "doing",
+          "state": "done",
           "fr": "Carte « Accès du poste » : ouvrir le lanceur à la tablette, code d'appairage, code QR, appareils appairés",
           "en": "“Workstation access” card: open the launcher to the tablet, pairing code, QR code, paired devices",
           "de": "Karte „Zugang zum Arbeitsplatz“: Starter für das Tablet öffnen, Kopplungscode, QR-Code, gekoppelte Geräte",
