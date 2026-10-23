@@ -2,6 +2,10 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — the report ends a started flight** (user's rectification of fuel's lot H): there is no "End the
+  flight" in fuel any more, so the shutdown is no longer taken from it (0a5a994d4 undone). Saving the report that used
+  the started flight ("Use" on the card) sets `started` and `progress` to null in the current flight, by report,
+  only if `started.at` is still the one used — a flight started again meanwhile is left alone.
 - **23 Oct 2026 — what the current flight brings** (arbitrations 14 and 15 of the end-to-end pass): the card lists
   everything taken in one line — the HEMS family has no distance or level field, so the pilot did not see them taken;
   engine start comes from fuel's `started.at`, fuel at start from fuel's new `quote.block`, each with its own source

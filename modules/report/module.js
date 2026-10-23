@@ -40,6 +40,9 @@ export const meta = {
     prefix: 'cr/reports/',
     merge: 'record'
   }, {
+    prefix: 'pilot/', // le vol courant : started et progress remis à null quand le CR d'un vol démarré est enregistré
+    merge: 'record'
+  }, {
     prefix: 'cache/report/',
     policy: 'cache'
   }, {
@@ -366,6 +369,17 @@ async function save() {
       done: [...new Set([...kept, S.usedStarted])].slice(-20)
     }, {
       policy: 'cache'
+    });
+    // le compte rendu est la fin normale d'un vol démarré : le vol courant (relu entier, réécrit avec started et progress
+    // à null, rien d'autre touché) repasse en préparation — carburant, Mes vols, carte et cadre le voient
+    const cfPath = `pilot/${S.ctx.identity.trigram || 'ANON'}/current_flight.json`,
+      cf = await S.ctx.data.get(cfPath).catch(() => null);
+    if (cf?.started?.at === S.usedStarted) await S.ctx.data.put(cfPath, {
+      ...cf,
+      started: null,
+      progress: null,
+      by: 'report',
+      updated_at: new Date().toISOString()
     });
     S.usedStarted = '';
   }
@@ -916,17 +930,10 @@ async function onClick(e) {
           minute: '2-digit',
           hourCycle: 'h23'
         }) : '',
-        // heure d'arrêt : « Terminer le vol » du carburant
-        'timeline.shutdown': cf.started?.endedAt ? new Date(cf.started.endedAt).toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hourCycle: 'h23'
-        }) : '',
         'fuel.unit': cf.quote?.block > 0 ? cf.quote.unit : '',
         'fuel.start': cf.quote?.block > 0 ? cf.quote.block : ''
       }, tt(TX.current), {
         'timeline.engineStart': tt(TX.srcStarted),
-        'timeline.shutdown': tt(TX.srcStarted),
         'fuel.unit': tt(TX.srcQuote),
         'fuel.start': tt(TX.srcQuote)
       });

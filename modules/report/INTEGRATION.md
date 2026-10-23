@@ -59,10 +59,16 @@ empty fields, and removes it.
   callsign and type (fuel's `aircraft`, from aerodb's `aircraftOf`), route departure, arrival, alternate, distance,
   level, `quote { block, unit, … }` and `started { at, by }` (fuel's "Start the flight"): a started flight is offered
   first, "Flight started at hh:mm"; the card's line lists everything taken (distance and level too, even when the
-  family has no field for them). "Use" also fills `timeline.engineStart` with `started.at` and `timeline.shutdown` with `started.endedAt` (fuel's "End the flight") (device time zone, like the
+  family has no field for them). "Use" also fills `timeline.engineStart` with `started.at` (device time zone, like the
   other imports; source "Flight started (fuel)") and `fuel.start` / `fuel.unit` with the quote's block fuel (source
   "Fuel quote"). Levels are written with `formatLevel` (`frame/lib/route_text.js`). Once a report that used it is saved, its `started.at` goes into `cache/report/started.json`
-  (`{ done: [at, …] }`, the last 20, device only) and the card no longer offers it.
+  (`{ done: [at, …] }`, the last 20, device only, kept as a guard against offering it twice) and the card no longer offers
+  it.
+- **Report ends a started flight**: saving the report that took the started flight up rewrites the current flight
+  (read whole, written back) with `started: null`, `progress: null`, `by: 'report'` and nothing else changed — fuel goes
+  back to planning, My flights drops "in progress", the frame stops the real position, the map clears the flight in
+  progress. `meta.writes` declares `pilot/` (record) for it. Who writes `started`: fuel at the start and at a
+  cancellation, report at the report's saving.
 
 ## 4. Example
 
