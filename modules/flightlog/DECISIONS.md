@@ -2,6 +2,10 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — a report with only its engine start keeps its time** (end-to-end pass): the report of a started
+  flight (fuel's start → report's "Use") has `timeline.engineStart` and no off-block nor take-off yet, and the
+  detail said "Time 2026-10-23" with no time. The time is now off-block, else take-off, else engine start (added
+  last: rows that had a time keep it). Checked on 8804: "2026-10-23 18:30".
 - **23 Oct 2026 — `keepScroll` from the frame** (frame lot 17, `frame/lib/dom.js`): the module's copy and its own
   focus restoring are gone; the frame's helper keeps the scroll and the field being typed, caret included
   (frame INTEGRATION § 6). Checked on 8804: "LFRS" typed in the search, one render per key, focus and caret kept.

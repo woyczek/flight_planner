@@ -12,6 +12,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **My flights: the time of a report with only its engine start** (`modules/flightlog/model.js`; DECISIONS) — the
+  detail shows the engine start when there is no off-block nor take-off time yet.
 - **Report: the Mission step says "to check" until you open it** (`modules/report/module.js`; DECISIONS, help ×4) —
   a new report no longer shows the Mission step as done when its family and series were only taken by default.
 - **Fuel: the level decision gives the quote's figures** (`modules/fuel/module.js`; SPEC, DECISIONS, help ×4) — each

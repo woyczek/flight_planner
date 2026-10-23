@@ -32,7 +32,8 @@ function between(a, b) {
 /** Vol d'un compte rendu (enregistrement V3 de cr/reports/, ou entrée du registre V2 : même schéma) ; path : chemin de
  *  l'enregistrement V3 (vide pour un CR du registre V2). Mêmes règles que la source 'cr' de la V2 : premier appareil,
  *  indicatif complet sinon série + numéro, départ = navigation sinon base, arrivée = terrain réel sinon navigation
- *  sinon base de retour, bloc = statistiques (bloc, sinon vol), sinon heures. */
+ *  sinon base de retour, heure = sortie des cales, sinon décollage, sinon mise en route, bloc = statistiques (bloc,
+ *  sinon vol), sinon heures. */
 export function fromReport(m, path = '') {
   const a = (m.aircraft || [])[0] || {},
     tl = m.timeline || {},
@@ -41,7 +42,7 @@ export function fromReport(m, path = '') {
   return {
     source: 'cr',
     date: String(m.metadata?.date || ''),
-    time: tl.offBlock || tl.takeoff || m.metadata?.timeUtc || '',
+    time: tl.offBlock || tl.takeoff || tl.engineStart || m.metadata?.timeUtc || '', // CR d'un vol démarré : la mise en route seule
     callsign: up(a.callsign || [a.callsignPrefix, a.callsignNumber].filter(Boolean).join(' ')),
     type: up(a.type),
     reg: up(a.registration),
