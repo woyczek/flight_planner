@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Fuel › Sheets: the airline's types without a sheet, by category** (`modules/fuel/module.js`; SPEC, DECISIONS,
+  help ×4) — as in V2, each type the airline uses (fleet, reference) without a sheet is listed "performance to fill in"
+  with "Create the sheet", and the list is sorted by category (helicopters first): the company helicopters (EC45,
+  AS65, NH90…) show again.
 - **Settings: copying on a paired tablet** (`frame/settings/settings.js`, `join.js`, `frame/sw.js`) — the
   diagnostics, the configuration link and the username copy through `frame/lib/clipboard.js`, so they work over http;
   when nothing can copy, the text is shown selected and the notification says to copy it.

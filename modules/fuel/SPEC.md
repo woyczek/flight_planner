@@ -311,7 +311,11 @@ inside the module, switched by two buttons at the top, the last one kept on the 
     ft, the altitude in metres otherwise), the vertical rate column and the manual rate field (ft/min or m/min), and the
     level in metres next to the FL in the sticky result when the unit is not ft.
   - The Sheets screen shows and edits the sheets' own fields (kt, ft, NM, fuel unit of the sheet): it is not affected.
-- **Sheets**: the list (name, type, unit, origin, empty fields, date; "Use" sets it for the flight, "Edit");
+- **Sheets**: the list, sorted like V2's by category (helicopters, turboprops, jets, piston engines, others: aerodb
+  `classify`), then by name: each sheet (name, type, unit, origin, empty fields, date; "Use" sets it for the flight,
+  "Edit"), then the airline's types without a sheet (aerodb `fleetTypes()`: fleet and reference, aliases resolved;
+  a type is covered when a sheet's ICAO code, type or id resolves to it), "Company type (n aircraft): performance to
+  fill in", with "Create the sheet" (the "new sheet" flow without asking the code, named after the model);
   import of files (CSV, JSON, `.lnmperf`, SimBrief OFP) or of a pasted text (the same, or a ChatGPT answer); a new
   sheet from an ICAO code (SimBrief type data when aerodb has them); a sheet from the last OFP (calibrated on its
   navlog). The editor: the fields by group (labels in the four languages), the RPM table (edited row by row on a

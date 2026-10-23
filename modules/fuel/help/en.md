@@ -127,7 +127,9 @@ it.
 
 ## Performance sheets
 
-The “Sheets” tab gathers the airline's sheets, shared with all its devices.
+The “Sheets” tab gathers the airline's sheets, shared with all its devices. They are sorted by category
+(helicopters, turboprops, jets, piston engines, others); each type the airline uses (fleet, reference) that has no
+sheet yet is listed too, “performance to fill in”, with “Create the sheet”.
 
 - **Import**: a file (performance CSV, JSON, Little Navmap `.lnmperf`, SimBrief OFP) or pasted text (the same, or
   ChatGPT's answer). A sheet drawn from an OFP is calibrated on its real times and fuel burn.

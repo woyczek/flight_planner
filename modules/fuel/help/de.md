@@ -137,7 +137,10 @@ Flugfläche, Steig- und Sinkprofil — wird geteilt: Karte und Bericht haben ihn
 
 ## Leistungsdatenblätter
 
-Die Registerkarte „Datenblätter“ versammelt die Datenblätter der Fluggesellschaft, geteilt mit all ihren Geräten.
+Die Registerkarte „Datenblätter“ versammelt die Datenblätter der Fluggesellschaft, geteilt mit all ihren Geräten. Sie
+sind nach Kategorie geordnet (Hubschrauber, Turboprops, Strahlflugzeuge, Kolbenmotoren, andere); jeder Typ, den die
+Fluggesellschaft nutzt (Flotte, Referenz) und der noch kein Datenblatt hat, steht ebenfalls dort, „Leistungen
+einzutragen“, mit „Datenblatt anlegen“.
 
 - **Importieren**: eine Datei (Leistungs-CSV, JSON, `.lnmperf` von Little Navmap, SimBrief-OFP) oder eingefügter Text
   (dasselbe oder die Antwort von ChatGPT). Ein aus einem OFP gewonnenes Datenblatt wird an dessen echten Zeiten und

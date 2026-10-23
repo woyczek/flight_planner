@@ -132,7 +132,9 @@ tienen.
 
 ## Fichas de rendimiento
 
-La pestaña «Fichas» reúne las fichas de la aerolínea, compartidas con todos sus dispositivos.
+La pestaña «Fichas» reúne las fichas de la aerolínea, compartidas con todos sus dispositivos. Están ordenadas por
+categoría (helicópteros, turbohélices, reactores, pistón, otros); cada tipo que usa la compañía (flota, referencia) y
+que aún no tiene ficha figura también, «rendimientos por completar», con «Crear la ficha».
 
 - **Importar**: un archivo (CSV de rendimiento, JSON, `.lnmperf` de Little Navmap, OFP de SimBrief) o un texto pegado
   (los mismos, o la respuesta de ChatGPT). Una ficha sacada de un OFP se calibra con sus tiempos y su consumo reales.

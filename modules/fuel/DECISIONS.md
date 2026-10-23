@@ -372,3 +372,18 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   active field in the old unit.
 - **Help chapter**: no V3 user manual for fuel exists yet (the help block `frame/help/` is not started); the module's
   SPEC § 9 carries the rule.
+- **23 Oct 2026 — helicopters on the Sheets screen (user: "j'ai des hélicoptères en base côté V2, mais toujours pas en
+  V3").**
+  - **Cause**: nothing was lost in V3. The aircraft base (`aircraft_db.js`, 126 types, EC45, AS65… with their aliases) is
+    read and classified (EC45: family H, category `helico`; `search('EC45')`, `search('H145')`, `search('BK117')`
+    find it). The V2 screen shows, besides the sheets, every type the airline uses that has no sheet
+    (`landingOnlyAircraft`: fleet, reference, missions), "perfs à renseigner", grouped by category. No helicopter has a
+    sheet in the shared base (`flight_performance_database_merged.fpdb.json`: 19 sheets, none rotary), so in V2 the
+    helicopters were those company types; V3's screen listed real sheets only.
+  - **Fix**: the same company types (aerodb `fleetTypes()`) shown "to fill in" with "Create the sheet", and the list
+    sorted by category as in V2. Bench (aerodb launcher): "Helicopters" with 11 company types (AS32, AS55, AS65, EC35,
+    EC45, TIGR, EC25, GAZL, H160, NH90, PUMA), then turboprops, jets, pistons, others; "Create the sheet" on EC45 →
+    new sheet "EC-145" (EC45) in the review. 375 px: no error.
+  - **In passing**: the route's delayed reading wrote the "unresolved points" line of the Plan screen even when the
+    Sheets screen had replaced it (TypeError at load when the device's last screen was Sheets); now written only when
+    the line exists and changes.

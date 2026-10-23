@@ -488,6 +488,18 @@ const TX = {
   import: ['Importer un fichier', 'Import a file', 'Datei importieren', 'Importar un archivo'],
   paste: ['Coller un texte', 'Paste a text', 'Text einfügen', 'Pegar un texto'],
   newSheet: ['Nouvelle fiche', 'New sheet', 'Neues Datenblatt', 'Nueva ficha'],
+  sheetCats: {
+    helico: ['Hélicoptères', 'Helicopters', 'Hubschrauber', 'Helicópteros'],
+    turboprop: ['Turbopropulseurs', 'Turboprops', 'Turboprops', 'Turbohélices'],
+    jet: ['Réacteurs', 'Jets', 'Strahlflugzeuge', 'Reactores'],
+    piston: ['Pistons', 'Piston engines', 'Kolbenmotoren', 'Pistón'],
+    other: ['Autres', 'Others', 'Andere', 'Otros']
+  },
+  coType: ['Type de la compagnie ({n} appareil(s)) : performances à renseigner',
+    'Company type ({n} aircraft): performance to fill in', 'Typ der Fluggesellschaft ({n} Luftfahrzeug(e)): Leistungen einzutragen',
+    'Tipo de la compañía ({n} aeronave(s)): rendimientos por completar'
+  ],
+  createSheet: ['Créer la fiche', 'Create the sheet', 'Datenblatt anlegen', 'Crear la ficha'],
   fromOfp: ['Depuis le dernier OFP', 'From the last OFP', 'Aus dem letzten OFP', 'Desde el último OFP'],
   sheetsIntro: ['Fiches de la base partagée ; chaque changement est montré avant d’être écrit.',
     'Sheets of the shared database; every change is shown before it is written.',
@@ -918,8 +930,12 @@ const SH = () => S.A?.lib || window.AeroDBSheets;
 /** Fiches du registre d'aerodb (les plus récentes d'abord) ; aucune sans aerodb. */
 async function readSheets() {
   const s = S,
-    list = S.A?.sheets ? await S.A.sheets.list().catch(() => []) : [];
-  if (!gone(s)) S.sheets = list;
+    list = S.A?.sheets ? await S.A.sheets.list().catch(() => []) : [],
+    // types de la compagnie (flotte, référence) : ceux sans fiche sont proposés « à compléter » (comme la V2)
+    co = S.A?.fleetTypes ? await S.A.fleetTypes().catch(() => []) : [];
+  if (gone(s)) return;
+  S.sheets = list;
+  S.coTypes = co;
 }
 /** Enregistre une fiche par aerodb (champs changés tamponnés avec leur source, fichier aircraft/sheets/<id>.json et
  *  miroir V2 écrits par aerodb), puis relit la liste. */
@@ -1158,6 +1174,7 @@ const STYLE = `
 [data-module="fuel"] .fu-when button b{font-size:.8em}
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
 [data-module="fuel"] .fu-hide{display:none}
+[data-module="fuel"] .fu-cat{margin:var(--sog-gap) 0 4px;font-size:1em;color:var(--sog-muted)}
 [data-module="fuel"] .fu-block{display:block}
 [data-module="fuel"] [data-acsel]{flex-wrap:nowrap}
 [data-module="fuel"] [data-acsel] .f-muted{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2821,9 +2838,12 @@ function resolveRoute(normalize = true) {
     routeDerived(r);
     renderPts();
     scheduleWx();
-    S.body.querySelector('[data-unres]').textContent = unresolved.length ? tt(TX.unresolved, {
-      l: unresolved.join(', ')
-    }) : '';
+    // écran Fiches ouvert entre-temps : pas de ligne des points non reconnus à écrire
+    const un = S.body.querySelector('[data-unres]'),
+      ut = unresolved.length ? tt(TX.unresolved, {
+        l: unresolved.join(', ')
+      }) : '';
+    if (un && un.textContent !== ut) un.textContent = ut;
     saveFlight();
     refresh();
   }, 500);
@@ -3074,17 +3094,43 @@ function renderSheets() {
     </div>
     <div class="f-card fu-hide" data-pastebox><label class="f-field">${esc(tt(TX.pasteAsk))}<textarea data-k="pastetext" rows="6"></textarea></label>
       <button type="button" class="primary" data-do="pasteread">${esc(tt(TX.read))}</button></div>
-    <div class="f-list">${S.sheets.map(raw => {
-      const p = F.normalize(structuredClone(raw)),
+    <div class="f-list">${sheetGroups().map(g => `<h3 class="fu-cat">${esc(tt(TX.sheetCats[g.cat]))}</h3>${g.rows.map(r => {
+      if (r.todo) return `<div class="f-item" data-type="${esc(r.todo.type)}"><div><b>${esc(S.A.label?.(r.todo.type) || r.todo.type)}</b>
+        <div class="f-muted">${esc(tt(TX.coType, { n: r.todo.registrations.length }))}</div></div>
+        <div class="f-row"><button type="button" data-do="newfor">${esc(tt(TX.createSheet))}</button></div></div>`;
+      const p = F.normalize(structuredClone(r.sheet)),
         miss = F.sheetMissingPaths(p).length,
         when = F.profileWhen(p);
       return `<div class="f-item" data-id="${esc(p.id)}"><div><b>${esc(p.name || p.id)}</b> <span class="f-muted">${esc(p.icao || '')} · ${esc(p.unit)}</span>
         <div class="f-muted">${esc(F.profileSourceText(p))} · ${esc(miss ? tt(TX.missing, { n: miss }) : tt(TX.complete))}${when ? ` · ${esc(tt(TX.updated, { d: new Date(when).toLocaleDateString(lang) }))}` : ''}</div></div>
         <div class="f-row"><button type="button" data-do="use">${esc(tt(TX.useSheet))}</button><button type="button" data-do="edit">${esc(tt(TX.edit))}</button></div></div>`;
-    }).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
+    }).join('')}`).join('') || `<p class="f-card f-muted">${esc(tt(TX.noSheet))}</p>`}</div>`;
   S.body.onclick = e => onSheetsClick(e);
   S.body.oninput = S.body.onkeydown = null;
   S.body.onchange = e => e.target.matches('[data-file]') && importFiles([...e.target.files]);
+}
+/** Liste de l'écran Fiches rangée comme la V2 : par catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons,
+ *  autres ; aerodb classify), les fiches, puis les types de la compagnie qui n'en ont pas (« à compléter ») ; par nom. */
+function sheetGroups() {
+  const A = S.A || {},
+    canon = c => String(A.canonical?.(c) || c || '').toUpperCase(),
+    catOf = c => A.classify?.(c)?.category || 'other',
+    covered = new Set(S.sheets.flatMap(x => [x.icao, x.type, x.id].filter(Boolean).map(canon))),
+    rows = [...S.sheets.map(sheet => ({
+      sheet,
+      cat: catOf(sheet.icao || sheet.type || sheet.id),
+      name: String(sheet.name || sheet.id)
+    })), ...(S.coTypes || []).filter(t => !covered.has(canon(t.type))).map(todo => ({
+      todo,
+      cat: catOf(todo.type),
+      name: String(A.label?.(todo.type) || todo.type)
+    }))];
+  return ['helico', 'turboprop', 'jet', 'piston', 'other'].map(cat => ({
+    cat,
+    rows: rows.filter(r => r.cat === cat).sort((a, b) => (!!a.todo - !!b.todo) || a.name.localeCompare(b.name, undefined, {
+      numeric: true
+    }))
+  })).filter(g => g.rows.length);
 }
 /** Gestes de l'écran Fiches (liste, éditeur, aperçu des changements). */
 async function onSheetsClick(e) {
@@ -3108,16 +3154,18 @@ async function onSheetsClick(e) {
       if (txt.trim()) await importText(txt, tt(TX.pasted));
       return;
     }
-    case 'new': {
-      const code = (await S.ctx.askText(tt(TX.typeCode), {
+    case 'new':
+    case 'newfor': { // « Créer la fiche » d'un type de la compagnie : son code, sans le demander
+      const code = (b.dataset.do === 'newfor' ? b.closest('[data-type]')?.dataset.type || '' : await S.ctx.askText(tt(TX.typeCode), {
         value: ''
       }) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (!code || gone(s)) return;
       const sb = F.simbriefRecordFor(code),
+        model = S.A?.record?.(code)?.model, // nom du modèle (base des types) : « EC-145 » plutôt que « EC45 »
         np = sb ? F.profileFromSimbriefType(code, sb) : F.normalize({
           id: code,
           icao: code,
-          name: code
+          name: model && S.A.displayName ? S.A.displayName(model).split(' — ')[0] : code
         });
       np.id = uniqueId(np.id || code);
       return review(null, F.normalize(np), {});

@@ -127,7 +127,9 @@ descente — est partagé : Carte et Compte rendu l'ont déjà.
 
 ## Les fiches de performances
 
-L'onglet « Fiches » rassemble les fiches de la compagnie, partagées avec tous ses appareils.
+L'onglet « Fiches » rassemble les fiches de la compagnie, partagées avec tous ses appareils. Elles sont rangées par
+catégorie (hélicoptères, turbopropulseurs, réacteurs, pistons, autres) ; chaque type utilisé par la compagnie (flotte,
+référence) qui n'a pas encore de fiche y figure aussi, « performances à renseigner », avec « Créer la fiche ».
 
 - **Importer** : un fichier (CSV de performances, JSON, `.lnmperf` de Little Navmap, OFP SimBrief) ou un texte collé
   (les mêmes, ou la réponse de ChatGPT). Une fiche tirée d'un OFP est calibrée sur ses temps et sa consommation réels.
