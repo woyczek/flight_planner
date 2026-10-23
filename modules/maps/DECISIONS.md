@@ -490,3 +490,8 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Bench** (1280 px, view on Nice): without the VAC files of LFMN and LFMD → 20 and 18 points from the base, "VAC
     sequences: not imported"; with them → 21 points (EA from the VAC added) and 5 sequences for LFMN, 18 points and 1
     sequence for LFMD; black and green rings and codes on the map and in the card. No JavaScript error.
+- **23 Oct 2026 — "conflit entre points de report VFR et les nouveaux" (user).** After an import, a reporting point
+  could show twice: the VRP layer's symbol and label under the highlight's ring, and a VAC point whose `vrp` was empty
+  (imported before "-H-" matching) drawn at its slightly different VAC position. Now the layer skips the shown
+  aerodromes' VRPs, and a VAC point within 0.6 NM of a base VRP is that VRP. Bench: LFMN → 20 VRPs left out of the layer,
+  21 points in the card (EA from the VAC only); LFMD with every `vrp` emptied → 18 points, none doubled.

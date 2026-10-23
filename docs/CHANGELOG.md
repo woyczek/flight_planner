@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Map: a VFR reporting point drawn once** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS) — a VAC point
+  matched with a base VRP (by id, or within 0.6 NM) is drawn once, at the base's position with its name, the VAC code in
+  the tooltip; the VRP layer no longer redraws the points of a highlighted aerodrome.
 - **Maintenance: VFR card below the Expert level** (`shared/maintenance_page.js`) — under level 4, a line says where
   the "VFR reporting points (VAC)" card is ("Expert level, menu ☰ › Level") instead of nothing; the card follows the
   page's mode (`GH_LITE`).

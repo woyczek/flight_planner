@@ -316,6 +316,11 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   it, "HE" for MN-H-HE), then the VAC compilation when imported (`aerodb.vfrRoutes(icao)`, aerodb SPEC § 5 quater,
   `sia/vfr/<ICAO>.json`): its sequences, instructions, manual vertices and the reporting points the base does not
   have. Both read once per aerodrome and kept for the session.
+- **One point, one drawing**: a VAC point is the base's VRP it was matched with at import (`vrp`), else the nearest
+  base VRP of the aerodrome within 0.6 NM (a compilation imported before the helicopter points were matched, a code
+  written otherwise); it is drawn once, at the base's position with the base's name, the VAC code in its tooltip when it
+  differs ("VAC code: HE"), its restrictions too. Only unmatched VAC points and manual vertices are added. While an
+  aerodrome is shown, `render.draw({ hideVrp })` leaves its VRPs out of the VRP layer (no second symbol or label).
 - **Colours of the VFR reporting points**, everywhere (VRP layer, highlighted points, labels, the card): fixed wing in
   the text colour (`--sog-fg`), rotary wing in green (`#2e7d32`): "-H-" in the base's id (MN-H-HE), confirmed in the
   published base (`MapsRender.vrpRotary`, `vrpColor`). Sequences and tracks from the VAC stay teal.

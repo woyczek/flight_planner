@@ -1443,7 +1443,8 @@
     mission = null,
     theme = null,
     level = null,
-    detail = 0
+    detail = 0,
+    hideVrp = null // identifiants de VRP que l'écran dessine lui-même (terrain survolé ou épinglé) : pas deux fois
   }) {
     if (!A()) throw new Error('maps: SiaAero missing');
     T = theme || tokens();
@@ -1497,7 +1498,10 @@
     if (on(profile, 'aarTracks')) drawAar(ctx, data.aar, toC, scale, bbox, pl);
     if (on(profile, 'natTracks')) drawNat(ctx, data.nat, toC, scale, bbox, pl);
     for (const f of ends.later || []) f();
-    drawVrp(ctx, shown, toC, W, H, scale, bbox, pl, profile);
+    drawVrp(ctx, hideVrp?.size ? {
+      ...shown,
+      vrp: (shown.vrp || []).filter(v => !hideVrp.has(v.id))
+    } : shown, toC, W, H, scale, bbox, pl, profile);
     const zoneLabels = drawZones(ctx, shown.airspaces || [], toC, W, H, scale, pl, profile, 'labels');
     drawGridMora(ctx, shown.moraCells, toC, bbox, W, H, scale, pl, profile);
     drawMissionZones(ctx, mission?.zones, toC, scale, pl, profile);

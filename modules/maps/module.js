@@ -359,6 +359,7 @@ const TX = {
     'Für diesen Flugplatz sind keine VFR-Meldepunkte importiert.', 'Ningún punto de notificación VFR importado para este aeródromo.'
   ],
   vfrHover: ['{c} : toucher pour les voir', '{c}: tap to see them', '{c}: zum Ansehen antippen', '{c}: toque para verlos'],
+  vfrVacCode: ['code VAC : {c}', 'VAC code: {c}', 'VAC-Code: {c}', 'código VAC: {c}'],
   vfrPoints: ['Points de report ({n})', 'Reporting points ({n})', 'Meldepunkte ({n})', 'Puntos de notificación ({n})'],
   vfrBaseCount: ['{n} points de report', '{n} reporting points', '{n} Meldepunkte', '{n} puntos de notificación'],
   vfrSeqCount: ['{r} séquences VAC', '{r} VAC sequences', '{r} VAC-Sequenzen', '{r} secuencias VAC'],
@@ -754,6 +755,7 @@ function draw() {
     theme: S.theme,
     level: formatLevel,
     detail: S.mission ? 0 : detailShift(W),
+    hideVrp: S.mission ? null : vfrVrpIds(),
     mission: S.mission ? {
       points: S.mission.points,
       zones: S.mission.zones
@@ -2026,6 +2028,12 @@ function editGestures() {
 function tipAt(x, y, lat = null, lon = null) {
   const w = windAt(x, y);
   if (w) return windLines(w);
+  const vp = (S.vfrHits || []).find(h => Math.hypot(h.x - x, h.y - y) <= 9)?.p;
+  if (vp) return [
+    [vp.code, vp.name].filter(Boolean).join(' '), [vp.vacCode && vp.vacCode !== vp.code ? tt(TX.vfrVacCode, {
+      c: vp.vacCode
+    }) : '', vp.restrictions.join(' ; ')].filter(Boolean).join(' · ')
+  ];
   const g = MapsRender.airwaysAt(S.awHits, x, y)[0];
   if (g) return airwayLines(g);
   const z = (S.zoneHits || []).find(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
@@ -2124,12 +2132,24 @@ function reportPoints(icao) {
   const base = baseVrpOf(icao) || [],
     v = vfrOf(icao),
     vac = reportOf(v),
-    byId = new Map(vac.filter(p => p.vrp).map(p => [p.vrp, p])),
-    ids = new Set(base.map(b => b.id));
+    ids = new Set(base.map(b => b.id)),
+    nm = (a, b) => Math.hypot(+a.lat - +b.lat, (+a.lon - +b.lon) * Math.cos(+a.lat * Math.PI / 180)) * 60,
+    // VRP de la base d'un point VAC : son identifiant rapproché à l'import, sinon le plus proche à 0,6 NM au plus (une
+    // compilation importée avant le rapprochement des points hélicoptères, un code écrit autrement)
+    twin = p => p.vrp && ids.has(p.vrp) ? p.vrp : base.map(b => [b, nm(b, p)]).filter(([, d]) => d <= .6).sort((a, b) => a[1] - b[1])[0]?.[
+      0
+    ]
+    .id,
+    byId = new Map();
+  for (const p of vac) {
+    const id = twin(p);
+    if (id && !byId.has(id)) byId.set(id, p);
+  }
   return [...base.map(b => ({
     ...b,
+    vacCode: byId.get(b.id)?.code || '',
     restrictions: byId.get(b.id)?.restrictions || []
-  })), ...vac.filter(p => !p.vrp || !ids.has(p.vrp)).map(p => ({
+  })), ...vac.filter(p => !twin(p)).map(p => ({
     id: p.vrp || `${icao.slice(2)}-${p.code}`,
     code: p.code,
     name: '',
@@ -2293,6 +2313,13 @@ function showAdCard(icao) {
   const top = `${Math.round(below + 6)}px`; // juste sous les boutons (ou à mi-hauteur), jamais au-dessus
   if (S.cardEl.style.top !== top) S.cardEl.style.top = top;
 }
+/** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */
+function vfrVrpIds() {
+  const out = new Set();
+  for (const icao of vfrShown())
+    for (const b of baseVrpOf(icao) || []) out.add(b.id);
+  return out;
+}
 /** Terrains montrés : l'aperçu, l'épinglé, et en mode VFR le départ et l'arrivée. */
 function vfrShown() {
   const out = new Set([S.vfrPreview, S.vfrPin].filter(Boolean));
@@ -2308,6 +2335,7 @@ function vfrShown() {
  *  « VAC, à vérifier » près du terrain quand la compilation est là. */
 function drawVfr(ctx, toC) {
   const ads = vfrShown();
+  S.vfrHits = [];
   if (!ads.size) return;
   ctx.save();
   ctx.lineJoin = 'round';
@@ -2381,6 +2409,11 @@ function drawVfr(ctx, toC) {
       ctx.strokeText(name, q.x + 10, q.y);
       ctx.fillStyle = col;
       ctx.fillText(name, q.x + 10, q.y);
+      S.vfrHits.push({
+        x: q.x,
+        y: q.y,
+        p
+      });
     }
     const ad = v && adPos(icao);
     if (ad) {
