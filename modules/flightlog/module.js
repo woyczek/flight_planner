@@ -262,7 +262,7 @@ function renderBody() {
       <button type="button" class="f-item" aria-expanded="${open}">${wide ? `<span>${dot}${esc(f.date)}</span><span>${esc(f.callsign || '—')}</span><span>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</span><span class="fl-mid">${esc(route)}</span>${blockCell(f)}<span class="fl-mid">${esc(f.crId || f.mission || '')}</span>` : `<span>${dot}${esc(f.date.slice(5))}</span><span class="fl-mid">${esc(f.callsign || '—')} · ${esc(route)}</span>${blockCell(f)}`}</button>
       ${open ? `<div class="f-card fl-detail"><dl class="f-dl">
         <dt>${esc(tt(TX.source))}</dt><dd>${esc(tt(TX.sources[f.source], { n: f.network || '' }))}${f.open ? ` (${esc(tt(TX.inFlight))})` : ''}</dd>
-        <dt>${esc(tt(TX.time))}</dt><dd>${esc(f.date)} ${esc(f.time)}</dd>
+        <dt>${esc(tt(TX.time))}</dt><dd>${esc(f.whenZ || `${f.date} ${f.time}`)}</dd>
         <dt>${esc(tt(TX.aircraft))}</dt><dd>${esc([f.type, f.reg].filter(Boolean).join(' ') || '—')}</dd>
         <dt>${esc(tt(TX.mission))}</dt><dd>${esc(f.mission || f.family || '—')}</dd>
         ${f.notes ? `<dt>${esc(tt(TX.notes))}</dt><dd>${esc(f.notes)}</dd>` : ''}

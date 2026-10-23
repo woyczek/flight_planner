@@ -29,6 +29,17 @@ function between(a, b) {
   return x == null || y == null ? null : y >= x ? y - x : y - x + 1440;
 }
 
+/** « AAAA-MM-JJ HH:MMZ » d'un instant (date UTC, heure UTC) ; vide s'il est illisible. */
+const isoZ = d => d && Number.isFinite(d.getTime()) ? `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}Z` : '';
+/** Jour et heure d'un CR à montrer, en UTC : CR marqué timeline.tz = 'Z' tel quel ; CR plus ancien (heures de
+ *  l'appareil) converti ; heure UTC du plan de vol (metadata.timeUtc) telle quelle ; le jour seul sans heure. */
+function crWhenZ(m, date, tl) {
+  const t = tl.offBlock || tl.takeoff || tl.engineStart || '';
+  if (/^\d{2}:\d{2}$/.test(t)) return tl.tz === 'Z' ? `${date} ${t}Z` : isoZ(new Date(`${date}T${t}:00`)) || date;
+  const u = String(m.metadata?.timeUtc || '');
+  return /^\d{2}:\d{2}$/.test(u) ? `${date} ${u}Z` : date;
+}
+
 /** Vol d'un compte rendu (enregistrement V3 de cr/reports/, ou entrée du registre V2 : même schéma) ; path : chemin de
  *  l'enregistrement V3 (vide pour un CR du registre V2). Mêmes règles que la source 'cr' de la V2 : premier appareil,
  *  indicatif complet sinon série + numéro, départ = navigation sinon base, arrivée = terrain réel sinon navigation
@@ -43,6 +54,7 @@ export function fromReport(m, path = '') {
     source: 'cr',
     date: String(m.metadata?.date || ''),
     time: tl.offBlock || tl.takeoff || tl.engineStart || m.metadata?.timeUtc || '', // CR d'un vol démarré : la mise en route seule
+    whenZ: crWhenZ(m, String(m.metadata?.date || ''), tl), // à montrer : en UTC (règle de l'appli Pilote)
     callsign: up(a.callsign || [a.callsignPrefix, a.callsignNumber].filter(Boolean).join(' ')),
     type: up(a.type),
     reg: up(a.registration),
@@ -65,6 +77,7 @@ export function fromLog(r) {
     source: 'log',
     date: String(r.date || ''),
     time: String(r.time || ''),
+    whenZ: [r.date, r.time].filter(Boolean).join(' '), // convention du formulaire du site, sans conversion
     callsign: up(r.callsign),
     type: up(r.type),
     reg: up(r.registration),
@@ -91,6 +104,7 @@ export function fromNetwork(f, network) {
     netId: f.id,
     date: s ? `${s.getFullYear()}-${pad(s.getMonth() + 1)}-${pad(s.getDate())}` : '',
     time: s ? `${pad(s.getHours())}:${pad(s.getMinutes())}` : '',
+    whenZ: s ? isoZ(s) : '',
     callsign: up(f.callsign),
     type: '',
     reg: '',

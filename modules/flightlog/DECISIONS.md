@@ -2,6 +2,11 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — a flight's time shown in UTC** (report's times in UTC, report INTEGRATION § 3 bis): the detail
+  shows `whenZ` — a report marked `timeline.tz = 'Z'` as it is ("2026-10-23 17:14Z"), an older one converted from
+  the device's time ("18:30" → "16:30Z"), the flight plan's `metadata.timeUtc` with Z, a network session from its
+  instant in UTC, a line of the site's log as the site wrote it. The rows' own `date` / `time` (sorting, the
+  network sessions matched by date and callsign) are unchanged.
 - **23 Oct 2026 — times shown in UTC** (suite rule, `frame/lib/time.js`, frame lot 22): "In progress — started at
   16:59Z (18:59)" (engine start: UTC and the device's time). The flights' own times come from the reports and the
   site's log as written there.
