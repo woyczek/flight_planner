@@ -235,6 +235,10 @@ def main(args):
     --check : liste seulement les fichiers qui changeraient."""
     check = '--check' in args
     liste = [a for a in args if a != '--check'] or fichiers()
+    # fichiers nommés hors champ (générés, minifiés, carto…) : laissés tels quels, même donnés en argument
+    for f in [f for f in liste if EXCLUS.search(f.replace('\\', '/'))]:
+        print(f'  laissé tel quel (hors champ) : {f}')
+    liste = [f for f in liste if not EXCLUS.search(f.replace('\\', '/'))]
     paires, changes = [], []
     for f in liste:
         nom, neuf, nl = mettre_en_forme(os.path.join(ROOT, f), paires)

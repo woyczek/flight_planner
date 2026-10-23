@@ -1,7 +1,7 @@
 # Technical debt
 
 Known issues, kept as they are by choice or for lack of time, to be revisited. Each entry: what happens, why we
-keep it, what should be done. Updated: 12 October 2026.
+keep it, what should be done. Updated: 20 October 2026.
 
 ## Data and synchronisation
 
@@ -26,6 +26,8 @@ keep it, what should be done. Updated: 12 October 2026.
 
 | Since | Subject | Finding | Why we keep it | To do |
 |---|---|---|---|---|
+| 20/10/2026 | **SkyVector: ETD, fuel and aircraft not filled** | “Open in ▾ › SkyVector” fills route, speed and level only: SkyVector takes nothing else from the address (checked against its code and API, `docs/technique/V2_FABLE.md` § External links); its panel sets ETD, fuel and the aircraft (a profile of the user's SkyVector account) through session-bound `/api/fpl` commands. Today: the OFP departure time is copied on click, to paste into the ETD field | user's decision (20 October 2026): technical debt | a “→ SkyVector” bookmarklet run on the SkyVector page (same origin: `SkyVector.fpl({cmd: 'etdz' / 'fuel' / 'aircraft'})`), values carried in the address fragment; fuel unit and aircraft matching (tail number) to check with a real account |
+| 20/10/2026 | **Mobile skins: styles to rework** | the two mobile skins (`shared/mobile.css`: “Mobile”, flat, default; “Swiss”, brutalist) are prototype styles: many `!important` and `:not(#imp)` rules to win over the pages' own styles and the designs; the Swiss skin's button outline is a placeholder; page-specific widgets (Fuel charts and RPM table, availability grid, report blocks, mission analysis “Data” row) are only partly covered | user's decision (20 October 2026): styles are technical debt, the functional work comes first | a mobile token layer shared by the pages (instead of overrides), Swiss button styling, per-page review in `tools/mobile_preview.html` |
 | 12/10/2026 | **Documentation screenshots** | the tutorials and manuals carry screenshots (`docs/tutorial/img`, manuals) that are not precise or relevant enough: taken before the v2 levels, the three manuals, the typed sections, the skeleton and the studio's "Points to place"; some show states that no longer exist | the help overhaul (one source per subject, three manuals, tutorials first) comes first; screenshots are retaken once the pages are stable | a screenshot campaign: one capture per step of each tutorial and per chapter opening, same design (Standard) and level, 1280 px wide, named `<doc>-<step>.png`, produced by a script driving the browser so that they can be regenerated at every release |
 | 05/10/2026 | ODV, "Assign free pilots" window | "Save (2)" shown as soon as a slot that already has missions is opened (existing assignments count as changes) | not a nuisance in use | count only changes relative to the assignments read on opening (`apps/cpco/odv_assign.js`) |
 | 05/10/2026 | **Untranslated interface text** (found while translating the manuals) | text hard-coded in French in the pages (Flight charts: "Plot", "Search", plotting options, messages; Fuel: "Aircraft" menu, "Remaining", audit columns; studio, Registry, ODV, envelope-opening notification); `T(fr, en)` calls in Settings with no German or Spanish entry (Centre activation: the interface shows English); launcher messages (synchronisation, remote repository) in French only | not blocking: the meaning remains understandable | move these texts into the translation tables (translation audit `tools/audit_i18n.html`), launcher messages translated by the page |

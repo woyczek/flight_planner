@@ -124,11 +124,11 @@
     'help.title': 'Comment s\'en servir',
     'help.layers': 'Deux couches. Le fond dit la nature d\'une indisponibilité (indisponible, congés, récupération, activité réelle) : la couleur seule, sur toute la hauteur de la rangée. La première couche porte les dispos, exercices et occupations : des rectangles avec une lettre et leurs horaires. Une minute n\'a qu\'un état : là où un rectangle est posé, le fond dessous ne compte pas, mais il reste en place et revient quand le rectangle s\'en va.',
     'help.palette': 'La palette. Cliquer sur une puce choisit le pinceau : il dit seulement QUOI tracer. Les puces de fond sont sur la dernière ligne.',
-    'help.draw': 'Tracer. Glisser dans le vide ou dans l\'espace entre deux rangées : la forme s\'aimante à la demi-heure. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.',
-    'help.grab': 'Saisir une forme. Un geste qui part sur une forme, rectangle ou bande, la saisit quel que soit le pinceau : un clic la sélectionne, un glisser la déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords la redimensionnent. Maj+glisser trace par-dessus : c\'est ainsi qu\'on pose une dispo sur un jour déjà couvert d\'une bande.',
+    'help.draw': 'Tracer. Glisser dans le vide, sur une bande de fond ou dans l\'espace entre deux rangées : la forme s\'aimante à la demi-heure. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.',
+    'help.grab': 'Saisir une dispo. Un geste qui part sur un rectangle le saisit, quel que soit le pinceau : un clic le sélectionne, un glisser le déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords le redimensionnent ; Maj+glisser trace par-dessus. Les bandes de fond ne sont pas des objets : autour d\'une dispo, elles remplissent le reste du jour et ne se déplacent pas ; un geste qui part sur une bande trace.',
     'help.cut': 'Découper. La dernière forme gagne : un rectangle tracé sur un autre le découpe, un fond tracé à travers un rectangle aussi. La découpe se voit pendant le geste.',
     'help.drop': 'Déposer, double-cliquer. Glisser une puce sur une forme : la forme prend cette nature. La déposer sur le vide d\'une rangée ou sur le nom du jour : toute la journée, et une puce de fond ne change alors que le fond, les rectangles restent. Double-clic sur une bande : sa couleur devient le fond de toute la journée ; sur une puce de fond : de toute la semaine.',
-    'help.fix': 'Corriger. Le ✕ d\'une forme, ou Suppr sur la sélection, l\'efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit.',
+    'help.fix': 'Corriger. Le ✕ d\'une dispo, ou Suppr sur la sélection, l\'efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit.',
     'help.period': 'Période répétitive. Le cadre au-dessus de la grille pose une catégorie sur les jours de la semaine cochés, entre deux dates, aux mêmes horaires, sur plusieurs semaines. Horaires vides : journée entière ; une fin avant le début va jusqu\'au lendemain.',
     'help.saved': 'Ce qui est enregistré. Les heures sont en UTC, les semaines sont des semaines ISO (du lundi au dimanche). Chaque semaine est un document JSON : ses plages sont la déclaration, un seul état par minute ; le temps sans rien est indisponible.',
     'group.indispo': 'Indisponible',
@@ -219,6 +219,7 @@
   const tri = () => $('tri').value.trim().toUpperCase() || 'TST';
   const week0 = T.weekId(Date.now());
   let ui = null;
+  const undo = new Map(); // historique gardé d'un montage à l'autre (densité changée) ; vidé au changement de pilote
   /** Monte (ou remonte, changement de densité) le composant sur la semaine voulue. */
   const mountUi = (week, data) => {
     ui?.destroy();
@@ -229,6 +230,7 @@
       density: $('density').value, // compacte : l'aspect de l'ancienne grille ; confortable : rangées hautes
       help: true,
       data,
+      undoStore: undo,
       onChange: d => {
         if (write(d)) $('status').textContent = `enregistré ${new Date().toLocaleTimeString('fr-FR')}`;
         show(d);
@@ -255,7 +257,7 @@
     show(ui.get());
   };
   $('host').addEventListener('dispos-week', load);
-  $('tri').addEventListener('change', load);
+  $('tri').addEventListener('change', () => (undo.clear(), load()));
   $('density').addEventListener('change', () => mountUi(ui.week(), ui.get()));
   $('fmt').addEventListener('change', () => show(ui.get()));
   // vider : un geste comme un autre (il s'annule) ; boutons d'historique grisés quand il n'y a rien

@@ -5,7 +5,10 @@
   // performances » de la page Fiches de performances est la face performances (mêmes lignes, même ordre, même nom).
   //   · appareils de la flotte possédés (dans son simulateur) / maîtrisés — une sous-carte par catégorie (hélicoptères,
   //     turbopropulseurs, réacteurs, pistons) ; tableau : type (silhouette, nom, désignateur et classe), variantes de la
-  //     flotte, appareils et bases, performances, cases Possédé / Maîtrisé (maîtrisé implique possédé) ;
+  //     flotte, appareils et bases, performances, pastille d'état (un appui la fait tourner : non possédé → possédé,
+  //     rouge → néophyte, orange → maîtrisé, vert → non possédé ; néophyte et maîtrisé impliquent possédé), menu « ⋯ » des
+  //     actions de la ligne (variantes, fiche, performances, correction) ; mode mobile : appareil, état et « ⋯ » seuls,
+  //     les autres colonnes passent dans le menu ;
   //   · autres appareils (hors flotte) : ajoutés par un NOM (« CL-415 », « Canadair 415 », « Caravelle ») : le
   //     désignateur est cherché dans la flotte, la base des types de ce poste et ses alias, la liste OACI publiée ; rien
   //     de sûr : l'appareil est gardé sous son nom, « type OACI à confirmer » (jamais de code OACI obligatoire) ; partagés
@@ -47,10 +50,26 @@
 .eq-name .eq-bdg code{font-size:10.5px}.eq-find{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px}.eq-find input{flex:0 1 22em;min-width:12em}.eq-find small{opacity:.75}
 .eq-perf{font-size:12px}.eq-perf .eq-perf-acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.eq-perf .eq-perf-acts a{font-size:11.5px;padding:2px 7px;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:999px;text-decoration:none;color:inherit}
 .eq-perf .eq-perf-acts a:hover{background:color-mix(in srgb,currentColor 10%,transparent)}.eq-tbc{color:#c98a1b;font-weight:600}
-.eq-unvar{padding:0 6px;margin-left:6px;line-height:1.4;font-size:11px}.eq-table tr.eq-var td{padding-top:2px}
+.eq-unvar{padding:0 6px;margin-left:6px;line-height:1.4;font-size:11px}
+.eq-table .eq-s{width:3.2em;text-align:center}.eq-table .eq-mc{width:2.6em;text-align:center;padding-left:0;padding-right:0}
+.eq-st{all:unset;box-sizing:border-box;display:inline-block;width:22px;height:22px;border-radius:50%;cursor:pointer;vertical-align:middle;
+border:2px solid color-mix(in srgb,currentColor 45%,transparent)}.eq-st:focus-visible{outline:2px solid var(--accent,#1d6fd8);outline-offset:2px}
+.eq-st[data-s="1"]{background:#ff0000;border-color:#ff0000}.eq-st[data-s="2"]{background:#ffc000;border-color:#ffc000}.eq-st[data-s="3"]{background:#00b050;border-color:#00b050}
+.eq-legend{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:0 0 8px;font-size:12px}.eq-legend span{display:inline-flex;align-items:center;gap:5px}
+.eq-legend .eq-st{width:14px;height:14px;cursor:default}
+.eq-more{display:inline-block}.eq-more>summary{list-style:none;cursor:pointer;padding:2px 8px;border-radius:6px;font-weight:700;line-height:1.2;user-select:none}
+.eq-more>summary::-webkit-details-marker{display:none}.eq-more>summary:hover,.eq-more[open]>summary{background:color-mix(in srgb,currentColor 12%,transparent)}
+.eq-pop{position:fixed;z-index:1200;display:grid;gap:6px;min-width:220px;max-width:min(330px,92vw);max-height:60vh;overflow:auto;padding:10px 12px;text-align:left;
+background:var(--repo-card-bg,var(--card,Canvas));color:var(--ink,CanvasText);border:1px solid color-mix(in srgb,currentColor 22%,transparent);border-radius:8px;box-shadow:0 8px 24px #0004}
+.eq-pop .eq-pi{font-size:12px;line-height:1.35}.eq-pop .eq-pi b{display:block;font-size:11px;opacity:.75;font-weight:600}
+.eq-pop button,.eq-pop .eq-perf-acts a{display:block;width:100%;text-align:left;box-sizing:border-box}.eq-pop .eq-perf-acts{display:grid;gap:4px}
+.eq-pop .eq-perf-acts a{font-size:12.5px;padding:6px 8px;border-radius:6px}.eq-m{display:none}
+html[data-mobile="on"] .eq-table .eq-d{display:none}html[data-mobile="on"] .eq-m{display:block}
+html[data-mobile="on"] .eq-table td{padding:4px 6px}html[data-mobile="on"] .eq-name{max-width:none}
+html[data-mobile="on"] .eq-table{table-layout:fixed}
+html[data-mobile="on"] .eq-table .eq-s{width:44px}html[data-mobile="on"] .eq-table .eq-mc{width:46px}
+html[data-mobile="on"] .eq-table .eq-st{width:30px;height:30px}html[data-mobile="on"] .eq-more>summary{padding:6px 10px;font-size:18px}.eq-table tr.eq-var td{padding-top:2px}
 .eq-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0}.eq-add .eq-field{position:relative;flex:1 1 16em;min-width:0;display:flex}.eq-add input{flex:1 1 auto;min-width:0}
-.eq-sugg{position:absolute;z-index:30;left:0;right:0;top:100%;margin:2px 0 0;padding:2px 0;list-style:none;max-height:16em;overflow:auto;background:var(--repo-card-bg,Canvas);color:inherit;border:1px solid color-mix(in srgb,currentColor 25%,transparent);box-shadow:0 4px 14px rgba(0,0,0,.18)}
-.eq-sugg li{padding:4px 8px;cursor:pointer;font-size:12.5px}.eq-sugg li small{opacity:.7;margin-left:6px}.eq-sugg li[aria-selected=true],.eq-sugg li:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
 .eq-sims{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px}.eq-sims label{display:inline-flex;align-items:center;gap:6px;margin:0}.eq-sims input{margin:0}
 dialog.eq-dialog{max-width:min(680px,94vw);width:100%;border:1px solid color-mix(in srgb,currentColor 25%,transparent);background:var(--repo-card-bg,Canvas);color:inherit;padding:14px 16px}
 dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-content:flex-end;gap:6px;margin-top:10px}dialog.eq-dialog .eq-added{margin:8px 0 0}`;
@@ -73,6 +92,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     const extra = {
       appareils: {
         possedes: av?.aircraft?.owned || [],
+        neophytes: av?.aircraft?.novice || [],
         maitrises: av?.aircraft?.mastered || [],
         variantes: av?.aircraft?.variants || {}
       },
@@ -207,6 +227,18 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
    *  silhouettes chargées à la demande (page qui ne les charge pas). */
   const loadScript = file => new Promise(res => {
     const s = document.createElement('script');
+    // mode GitHub : base des types et performances lues dans le dépôt des données (AircraftDB/ à sa racine, comme le font les
+    // balises data_files.js), jamais sur le site du code, qui ne les publie pas ; absente du dépôt : rien n'est chargé
+    if (window.GitHubData?.on?.() && /^aircraft_(db|perf)\.js$/.test(file)) {
+      const text = window.GitHubData.readSync(`AircraftDB/${file}`);
+      if (text != null) {
+        s.textContent = text;
+        document.head.append(s);
+        s.remove();
+      }
+      res();
+      return;
+    }
     s.src = new URL(`../AircraftDB/${file}?t=${Date.now()}`, HERE).href;
     s.onload = s.onerror = () => {
       s.remove();
@@ -253,6 +285,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   }
   /** Demande au lanceur de compléter un code (passe courte, ou file d'attente si une passe tourne), puis le suit. */
   async function completeType(code, redraw) {
+    if (window.GitHubData?.on?.()) return; // mode GitHub : pas de lanceur, la base des types est lue dans le dépôt des données
     if (redraw) redraws.add(redraw);
     running.add(code);
     redraw?.();
@@ -284,6 +317,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   /** À l'ouverture : passe en cours ou file d'attente qui concernent ces codes → suivies ; dernière passe terminée
    *  sans fiche pour un code → « introuvable ». */
   async function resumeTypes(codes, redraw) {
+    if (window.GitHubData?.on?.()) return; // mode GitHub : pas de lanceur
     redraws.add(redraw);
     const s = await acApi();
     if (!s) return;
@@ -432,11 +466,16 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
   const fuelUrl = (code, create = '') => new URL(`../apps/planner/performance_sheets.html?aircraft=${encodeURIComponent(code)}${create ? `&create=${create}` : ''}`, HERE).href;
   /** Cellule « Performances » (Paramètres) : source du profil (lien vers le Carburant), ou « aucune » et les trois façons
    *  d'en créer une. */
-  const perfCell = code => {
+  const perfCell = (code, {
+    acts = true
+  } = {}) => {
     const p = perfOf(code);
+    if (!acts) return `<div class="eq-perf">${p ? `<a href="${esc(fuelUrl(code))}">${esc(p.source)} ↗</a>` : esc(t(['aucune', 'none', 'keine', 'ninguno']))}</div>`;
     if (p) return `<div class="eq-perf"><a href="${esc(fuelUrl(code))}" title="${esc(t(['Ouvrir sa fiche dans les Fiches de performances', 'Open its sheet in Performance sheets', 'Sein Blatt in den Leistungsblättern öffnen', 'Abrir su ficha en las Fichas de rendimiento']))}">${esc(p.source)} ↗</a></div>`;
-    return `<div class="eq-perf"><span>${esc(t(['aucune', 'none', 'keine', 'ninguno']))}</span><div class="eq-perf-acts">${simbriefKnows(code) ? `<a href="${esc(fuelUrl(code, 'simbrief'))}">${esc(t(['Créer depuis SimBrief', 'Create from SimBrief', 'Aus SimBrief anlegen', 'Crear desde SimBrief']))}</a>` : ''}<a href="${esc(fuelUrl(code, 'gpt'))}">${esc(t(['Demander à ChatGPT', 'Ask ChatGPT', 'ChatGPT fragen', 'Preguntar a ChatGPT']))}</a>${(window.AircraftCatalog?.classify?.(code)?.category || 'other') !== 'other' ? `<a href="${esc(fuelUrl(code, 'estimate'))}">${esc(t(['Estimer par la classe', 'Estimate from the class', 'Aus der Klasse schätzen', 'Estimar por la clase']))}</a>` : ''}</div></div>`;
+    return `<div class="eq-perf"><span>${esc(t(['aucune', 'none', 'keine', 'ninguno']))}</span><div class="eq-perf-acts">${perfActs(code)}</div></div>`;
   };
+  /** Liens qui créent la fiche de performances d'un type sans fiche (SimBrief, ChatGPT, estimation par la classe). */
+  const perfActs = code => `${simbriefKnows(code) ? `<a href="${esc(fuelUrl(code, 'simbrief'))}">${esc(t(['Créer depuis SimBrief', 'Create from SimBrief', 'Aus SimBrief anlegen', 'Crear desde SimBrief']))}</a>` : ''}<a href="${esc(fuelUrl(code, 'gpt'))}">${esc(t(['Demander à ChatGPT', 'Ask ChatGPT', 'ChatGPT fragen', 'Preguntar a ChatGPT']))}</a>${(window.AircraftCatalog?.classify?.(code)?.category || 'other') !== 'other' ? `<a href="${esc(fuelUrl(code, 'estimate'))}">${esc(t(['Estimer par la classe', 'Estimate from the class', 'Aus der Klasse schätzen', 'Estimar por la clase']))}</a>` : ''}`;
   /** Cellule de nom commune à Paramètres et au Carburant : silhouette, nom en gras, désignateur et classe en petit
    *  (« type OACI à confirmer » pour un appareil gardé sous son nom) ; a.common : variante d'un désignateur partagé
    *  (« variantes de CL2T ») ; a.note : mention ajoutée aux badges (« pas dans Mes appareils »). Silhouette dans une boîte
@@ -466,7 +505,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
 
   /** Appareils du pilote, flotte comprise (possédés ou maîtrisés), dans l'ordre commun : catégorie (CATEGORIES), puis
    *  nom ; une entrée par variante déclarée d'un désignateur partagé. Sortie : [{ code, variant, name, category, fleet,
-   *  owned, mastered }] (variant : '' sans variante ; plusieurs entrées du même code partagent son profil). */
+   *  owned, novice, mastered }] (variant : '' sans variante ; plusieurs entrées du même code partagent son profil). */
   async function myAircraft(tri) {
     const M = A();
     tri = String(tri || M?.trigram?.() || '').toUpperCase();
@@ -474,6 +513,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     const d = await M.availability(tri).catch(() => null),
       owned = new Set([...(d?.aircraft?.owned || []), ...(d?.aircraft?.mastered || [])]),
       mastered = new Set(d?.aircraft?.mastered || []),
+      novice = new Set(d?.aircraft?.novice || []),
       fleet = new Set((M.fleetTypes?.() || []).map(x => x.type)),
       out = [];
     for (const code of owned) {
@@ -482,6 +522,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
           category: categoryOf(code),
           fleet: fleet.has(code),
           owned: true,
+          novice: !mastered.has(code) && novice.has(code),
           mastered: mastered.has(code)
         },
         vs = variantsIn(d?.aircraft?.variants, code);
@@ -501,84 +542,56 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     }));
   }
 
-  /** Suggestions d'un champ de saisie (communes à Paramètres et à la fenêtre d'ajout) : liste sous le champ, flèches,
-   *  Entrée, Échap ; une ligne par variante d'un désignateur partagé (CL2T — Canadair CL-215T, CL2T — Canadair CL-415).
-   *  search : makeSearch() ; origin(code) : texte de provenance ; onPick(code, variante) ; onEnter() : Entrée sans
-   *  suggestion choisie ; onEscape() → vrai si l'Échap a servi. Sortie : { show, close }. */
-  function attachSuggest(input, sugg, search, origin, {
+  /** Suggestions d'un champ de saisie (communes à Paramètres et à la fenêtre d'ajout) : sélecteur commun en mode champ
+   *  (shared/aircraft_picker.js : liste sous le champ, silhouettes, flèches, Entrée, Échap), groupée par provenance
+   *  dans l'ordre d'usage (flotte, base du poste, liste OACI) ; une ligne par variante d'un désignateur partagé
+   *  (CL2T — Canadair CL-215T, CL2T — Canadair CL-415). search : makeSearch() (déjà noté : gardé tel quel) ;
+   *  origin(code) : texte de provenance ; onPick(code, variante) ; onEnter() : Entrée sans suggestion choisie (aucune
+   *  active d'office : la saisie libre reste la règle) ; onEscape() → vrai si l'Échap a servi. Sortie : { show, close }. */
+  function attachSuggest(input, search, origin, {
     onPick,
     onEnter,
     onEscape
   }) {
-    let act = -1;
-    const close = () => {
-      sugg.hidden = true;
-      input.setAttribute('aria-expanded', 'false');
-      act = -1;
+    const P = window.AircraftPicker;
+    if (!P) return {
+      show() {},
+      close() {}
     };
-    const show = () => {
-      const items = search.candidates(input.value).filter(c => c.base >= 48).slice(0, 8).flatMap(c => {
-        const ch = designator(c.code) ? variantChoices(c.code) : [];
-        return ch.length > 1 ? ch.map(v => ({
-          code: c.code,
-          variant: v,
-          label: v
-        })) : [{
-          code: c.code,
-          variant: '',
-          label: fullName(c.code)
-        }];
-      }).slice(0, 10);
-      act = -1;
-      if (!items.length) return close();
-      sugg.innerHTML = items.map((c, i) => `<li role="option" id="${sugg.id}${i}" data-code="${esc(c.code)}" data-variant="${esc(c.variant)}" aria-selected="false"><b>${esc(c.code)}</b>${c.label ? ` — ${esc(c.label)}` : ''}<small>${esc(origin(c.code))}</small></li>`).join('');
-      sugg.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-    };
-    const mark = n => {
-      const items = [...sugg.children];
-      if (!items.length) return;
-      act = (n + items.length) % items.length;
-      items.forEach((li, i) => li.setAttribute('aria-selected', String(i === act)));
-      input.setAttribute('aria-activedescendant', items[act].id);
-      items[act].scrollIntoView({
-        block: 'nearest'
-      });
-    };
-    input.oninput = show;
-    input.onblur = () => setTimeout(close, 150);
-    sugg.onmousedown = e => {
-      const li = e.target.closest('li[data-code]');
-      if (!li) return;
-      e.preventDefault();
-      close();
-      onPick(li.dataset.code, li.dataset.variant || '');
-    };
-    input.onkeydown = e => {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        if (sugg.hidden) show();
-        mark(act + (e.key === 'ArrowDown' ? 1 : -1));
-        e.preventDefault();
-      } else if (e.key === 'Escape') {
-        if (!sugg.hidden) close();
-        else if (!onEscape?.()) return;
-        e.preventDefault();
-        e.stopPropagation();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!sugg.hidden && act >= 0) {
-          const li = sugg.children[act];
-          close();
-          onPick(li.dataset.code, li.dataset.variant || '');
-        } else {
-          close();
-          onEnter();
-        }
-      }
-    };
+    const picker = P.attach(input, {
+      kind: 'field',
+      filter: false,
+      activeFirst: false,
+      hideEmpty: true,
+      limit: 10,
+      sources: q => {
+        const groups = new Map();
+        search.candidates(q).filter(c => c.base >= 48).slice(0, 8).forEach(c => {
+          const ch = designator(c.code) ? variantChoices(c.code) : [],
+            from = origin(c.code);
+          if (!groups.has(from)) groups.set(from, []);
+          (ch.length > 1 ? ch : ['']).forEach(v => groups.get(from).push({
+            key: `${c.code}|${v}`,
+            label: v || fullName(c.code) || c.code,
+            sub: c.code,
+            type: c.code
+          }));
+        });
+        return [...groups].map(([group, items]) => ({
+          group,
+          items
+        }));
+      },
+      onPick: it => {
+        const [code, variant = ''] = it.key.split('|');
+        onPick(code, variant);
+      },
+      onEnter: () => onEnter(),
+      onEscape
+    });
     return {
-      show,
-      close
+      show: () => picker.open(),
+      close: () => picker.close()
     };
   }
   /** Lecture d'une saisie : { code } (désignateur sûr), { name } (rien ne correspond : appareil gardé sous son nom) ou
@@ -640,13 +653,12 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     d.className = 'eq-dialog';
     d.innerHTML = `<h3>${esc(t(['Ajouter un appareil', 'Add an aircraft', 'Luftfahrzeug hinzufügen', 'Añadir una aeronave']))}</h3>
       <p class="small">${esc(t(['L’appareil part dans « Mes appareils » (Paramètres › Mon profil › Appareils et simulateurs) ; ses performances sont dans ce bloc.', 'The aircraft goes into “My aircraft” (Settings › My profile › Aircraft and simulators); its performance is in this block.', 'Das Luftfahrzeug kommt in „Meine Luftfahrzeuge“ (Einstellungen › Mein Profil › Luftfahrzeuge und Simulatoren); seine Leistungen stehen in diesem Block.', 'La aeronave pasa a «Mis aeronaves» (Ajustes › Mi perfil › Aeronaves y simuladores); su rendimiento está en este bloque.']))}</p>
-      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="eqDlgSugg" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"><ul class="eq-sugg" id="eqDlgSugg" role="listbox" hidden></ul></div>
+      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"></div>
       <button type="button" class="primary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button></div>
       <p class="sp-hint small">${esc(addHint())}</p>
       <footer><button type="button" class="secondary" data-eq-close>${esc(t(['Fermer', 'Close', 'Schließen', 'Cerrar']))}</button></footer>`;
     document.body.append(d);
     const input = d.querySelector('input'),
-      sugg = d.querySelector('.eq-sugg'),
       origin = code => fleet.has(code) ? t(['flotte', 'fleet', 'Flotte', 'flota']) : dbInfo(code).model ? t(['base du poste',
         'this computer’s base', 'Basis dieses Rechners', 'base de este equipo'
       ]) : t(['liste OACI', 'ICAO list', 'ICAO-Liste', 'lista OACI']);
@@ -669,6 +681,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       if (variant) variants[key] = [...new Set([...variantsIn(av?.aircraft?.variants, key), variant])];
       const saved = M.saveAircraft(tri, {
         owned: [...(av?.aircraft?.owned || []), key],
+        novice: av?.aircraft?.novice || [],
         mastered: av?.aircraft?.mastered || [],
         variants
       });
@@ -685,7 +698,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
         name
       });
     };
-    const sg = attachSuggest(input, sugg, search, origin, {
+    const sg = attachSuggest(input, search, origin, {
       onPick: (code, variant) => add(code, variant),
       onEnter: () => add(),
       onEscape: () => false
@@ -712,7 +725,8 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       mastered: []
     };
     const owned = new Set([...(ac.owned || []), ...(ac.mastered || [])]),
-      mastered = new Set(ac.mastered || []);
+      mastered = new Set(ac.mastered || []),
+      novice = new Set((ac.novice || []).filter(c => !mastered.has(c)));
     // variantes déclarées (désignateur → noms) ; l'ancien nom d'usage de ce navigateur reprend sa place de variante
     let variants = Object.fromEntries([...owned].map(c => [c, variantsIn(ac.variants, c)]).filter(([, v]) => v.length));
     let others = new Map(); // types hors flotte des autres pilotes (lus après le premier dessin)
@@ -741,13 +755,46 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       o: [...owned].filter(ty => fleet.has(ty)).length,
       n: types.length
     });
-    const PERF_TH = `<th>${esc(t(['Performances', 'Performance', 'Leistungen', 'Rendimiento']))}</th>`;
-    /** Cellule « Performances » d'une ligne : profil ou « aucune », pour un appareil possédé ; « — » sinon. */
-    const perfTd = code => `<td data-eq-perf="${esc(code)}">${owned.has(code) ? perfCell(code) : '—'}</td>`;
-    /** Bouton « × » qui retire une variante déclarée (la ligne de son type reste). */
-    const unvarBtn = (code, v) => ` <button type="button" class="secondary eq-unvar" data-eq-unvar="${esc(code)}" data-v="${esc(v)}" title="${esc(tf(['Retirer la variante {v}', 'Remove the variant {v}', 'Variante {v} entfernen', 'Quitar la variante {v}'], { v }))}">×</button>`;
+    const PERF_TH = `<th class="eq-d">${esc(t(['Performances', 'Performance', 'Leistungen', 'Rendimiento']))}</th>`,
+      STATE_TH = `<th class="eq-s">${esc(t(['État', 'State', 'Status', 'Estado']))}</th><th class="eq-mc"></th>`;
+    /** Performances d'un type (profil ou « aucune » pour un appareil possédé, « — » sinon), sans les liens de création. */
+    const perfHtml = code => owned.has(code) ? perfCell(code, {
+      acts: false
+    }) : '—';
+    /** Cellule « Performances » d'une ligne (masquée en mode mobile : dans le menu « ⋯ »). */
+    const perfTd = code => `<td class="eq-d" data-eq-perf="${esc(code)}">${perfHtml(code)}</td>`;
+    /** Liens de création de fiche (menu « ⋯ ») : appareil possédé sans fiche. */
+    const actsHtml = code => owned.has(code) && !perfOf(code) ? perfActs(code) : '';
+    const perfActsBox = code => `<div class="eq-perf-acts" data-eq-perfacts="${esc(code)}">${actsHtml(code)}</div>`;
+    /** Bouton du menu « ⋯ » qui retire une variante déclarée (la ligne de son type reste). */
+    const unvarBtn = (code, v) => `<button type="button" class="secondary" data-eq-unvar="${esc(code)}" data-v="${esc(v)}">${esc(tf(['Retirer la variante {v}', 'Remove the variant {v}', 'Variante {v} entfernen', 'Quitar la variante {v}'], { v }))}</button>`;
+    // état d'un type, couleurs et sens du classeur ODV (feuille FLOTTE, apps/cpco/odv_core.js levelOfColor) : 0 non
+    // possédé, 1 NQ — possédé, non qualifié (rouge), 2 à qualifier — néophyte (orange), 3 maîtrisé (vert)
+    const LEVELS = [
+      ['non possédé', 'not owned', 'nicht besessen', 'no poseído'],
+      ['NQ — possédé, non qualifié', 'NQ — owned, not qualified', 'NQ — besessen, nicht qualifiziert', 'NQ — poseído, no calificado'],
+      ['à qualifier — néophyte', 'to qualify — novice', 'zu qualifizieren — Neuling', 'por calificar — novato'],
+      ['maîtrisé', 'mastered', 'beherrscht', 'dominado']
+    ];
+    const level = c => mastered.has(c) ? 3 : novice.has(c) ? 2 : owned.has(c) ? 1 : 0;
+    /** Infobulle de la pastille : état, puis celui qu'un appui donne. */
+    const stTitle = (c, name) => tf(['{m} : {s} — un appui : {n}', '{m}: {s} — a tap: {n}', '{m}: {s} — Tippen: {n}',
+      '{m}: {s} — un toque: {n}'
+    ], {
+      m: name,
+      s: t(LEVELS[level(c)]),
+      n: t(LEVELS[(level(c) + 1) % 4])
+    });
+    /** Cellule de la pastille d'état (span : hors du style des boutons des designs ; Entrée ou Espace au clavier). */
+    const stTd = (c, name) => `<td class="eq-s"><span class="eq-st" role="button" tabindex="0" data-eq-st="${esc(c)}" data-name="${esc(name)}" data-s="${level(c)}" title="${esc(stTitle(c, name))}" aria-label="${esc(stTitle(c, name))}"></span></td>`;
+    /** Cellule du menu « ⋯ » : info [[libellé, html]] (colonnes masquées en mode mobile : lignes eq-m), puis les actions. */
+    const moreTd = (info, acts) => {
+      const body = info.filter(([, v]) => v).map(([k, v]) => `<div class="eq-pi eq-m"><b>${esc(t(k))}</b>${v}</div>`).join('') + acts.filter(Boolean).join('');
+      return `<td class="eq-mc">${body ? `<details class="eq-more"><summary title="${esc(t(['Détails et actions', 'Details and actions', 'Details und Aktionen', 'Detalles y acciones']))}" aria-label="${esc(t(['Détails et actions', 'Details and actions', 'Details und Aktionen', 'Detalles y acciones']))}">⋯</summary><div class="eq-pop">${body}</div></details>` : ''}</td>`;
+    };
+    const PERF_K = ['Performances', 'Performance', 'Leistungen', 'Rendimiento'];
     /** Lignes supplémentaires d'un type : une par variante déclarée après la première (nom, performances communes). */
-    const varRows = (code, cols) => (owned.has(code) ? variants[code] || [] : []).slice(1).map(v => `<tr class="eq-var"><td>${nameCell({ code, name: v, common: true })}${unvarBtn(code, v)}</td>${'<td></td>'.repeat(cols)}${perfTd(code)}<td class="eq-c"></td><td class="eq-c"></td></tr>`).join('');
+    const varRows = (code, cols) => (owned.has(code) ? variants[code] || [] : []).slice(1).map(v => `<tr class="eq-var"><td>${nameCell({ code, name: v, common: true })}</td>${'<td class="eq-d"></td>'.repeat(cols)}${perfTd(code)}<td class="eq-s"></td>${moreTd([[PERF_K, perfHtml(code)]], [unvarBtn(code, v)])}</tr>`).join('');
     /** Lignes de la carte « Autres appareils » : appareils hors flotte du pilote, puis ceux des autres pilotes. */
     const otherRows = () => {
       const list = [...new Set([...shown, ...others.keys()])].map(ty => ({
@@ -759,7 +806,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
         numeric: true
       }));
       if (!list.length) return `<p class="small">${esc(t(['Aucun appareil hors flotte déclaré.', 'No aircraft outside the fleet declared.', 'Kein Luftfahrzeug außerhalb der Flotte angegeben.', 'Ninguna aeronave fuera de la flota declarada.']))}</p>`;
-      return `<table class="eq-table"><thead><tr><th>${esc(t(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave']))}</th><th>${esc(t(['Aussi déclaré par', 'Also declared by', 'Auch angegeben von', 'También declarado por']))}</th>${PERF_TH}<th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${list.map(x => {
+      return `<table class="eq-table m-fit"><thead><tr><th>${esc(t(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave']))}</th><th class="eq-d">${esc(t(['Aussi déclaré par', 'Also declared by', 'Auch angegeben von', 'También declarado por']))}</th>${PERF_TH}${STATE_TH}</tr></thead><tbody>${list.map(x => {
         const vs = owned.has(x.type) ? variants[x.type] || [] : [],
           name = vs[0] || fullName(x.type) || x.type,
           named = !designator(x.type) && !x.info.model; // appareil gardé sous son nom
@@ -770,13 +817,13 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
         const mineRow = owned.has(x.type) || shown.has(x.type);
         // désignateur sans fiche, jamais cherché sur cette page : recherche à la demande ; appareil gardé sous son nom :
         // « Chercher le type » ouvre son édition (le nom dans le champ, suggestions comprises)
-        const ask = mineRow && named ? ` <button type="button" class="secondary" data-eq-fixbtn="${esc(x.type)}">${esc(t(['Chercher le type', 'Find the type', 'Typ suchen', 'Buscar el tipo']))}</button>` :
-          mineRow && !x.info.model && designator(x.type) && !tried.has(x.type) && !running.has(x.type) ? ` <button type="button" class="secondary" data-eq-complete="${esc(x.type)}">${esc(t(['Chercher la fiche', 'Look up the record', 'Eintrag suchen', 'Buscar la ficha']))}</button>` : '';
+        const ask = mineRow && named ? `<button type="button" class="secondary" data-eq-fixbtn="${esc(x.type)}">${esc(t(['Chercher le type', 'Find the type', 'Typ suchen', 'Buscar el tipo']))}</button>` :
+          mineRow && !x.info.model && designator(x.type) && !tried.has(x.type) && !running.has(x.type) ? `<button type="button" class="secondary" data-eq-complete="${esc(x.type)}">${esc(t(['Chercher la fiche', 'Look up the record', 'Eintrag suchen', 'Buscar la ficha']))}</button>` : '';
         const fixAttr = mineRow ? ` data-eq-fix="${esc(x.type)}" tabindex="0" role="button" title="${esc(tf(['Cliquer pour corriger ou supprimer {m}', 'Click to correct or delete {m}', 'Klicken, um {m} zu korrigieren oder zu löschen', 'Hacer clic para corregir o eliminar {m}'], { m: name }))}"` : '';
-        return `<tr${editing === x.type ? ' class="eq-fixing"' : ''}><td${fixAttr}>${nameCell({ code: x.type, name, common: !!vs.length })}${vs.length ? unvarBtn(x.type, vs[0]) : ''}${note ? `<small>${esc(note)}</small>` : ''}${ask}</td>
-          <td>${esc(x.by.join(', ') || '—')}</td>${perfTd(x.type)}
-          <td class="eq-c"><input type="checkbox" data-own="${esc(x.type)}"${owned.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} possédé', '{m} owned', '{m} besessen', '{m} poseído'], { m: name }))}"></td>
-          <td class="eq-c"><input type="checkbox" data-master="${esc(x.type)}"${mastered.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} maîtrisé', '{m} mastered', '{m} beherrscht', '{m} dominado'], { m: name }))}"></td></tr>${varRows(x.type, 1)}`;
+        const fixBtn = mineRow ? `<button type="button" class="secondary" data-eq-fixbtn="${esc(x.type)}">${esc(t(['Corriger ou supprimer', 'Correct or delete', 'Korrigieren oder löschen', 'Corregir o eliminar']))}</button>` : '';
+        return `<tr${editing === x.type ? ' class="eq-fixing"' : ''}><td${fixAttr}>${nameCell({ code: x.type, name, common: !!vs.length })}${note ? `<small>${esc(note)}</small>` : ''}</td>
+          <td class="eq-d">${esc(x.by.join(', ') || '—')}</td>${perfTd(x.type)}
+          ${stTd(x.type, name)}${moreTd([[['Aussi déclaré par', 'Also declared by', 'Auch angegeben von', 'También declarado por'], esc(x.by.join(', '))], [PERF_K, perfHtml(x.type)]], [perfActsBox(x.type), vs.length ? unvarBtn(x.type, vs[0]) : '', ask, fixBtn])}</tr>${varRows(x.type, 1)}`;
       }).join('')}</tbody></table>`;
     };
     /** Origine d'un type proposé : flotte, base du poste, liste OACI (fiche complétée à l'ajout), déclaré par d'autres. */
@@ -793,19 +840,22 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     ].filter(Boolean).join(' · ');
     const otherHtml = `<div class="sp-card" id="eqOther" data-no-i18n><h3>${esc(t(['Autres appareils (hors flotte)', 'Other aircraft (outside the fleet)', 'Andere Luftfahrzeuge (außerhalb der Flotte)', 'Otras aeronaves (fuera de la flota)']))}</h3><p class="sp-hint">${esc(t(['Appareils que vous possédez dans votre simulateur sans qu’ils soient dans la flotte : ajoutés ici, ils font partie de vos appareils et partent avec vos disponibilités déclarées — le Centre les voit pour les affectations et les autres pilotes les retrouvent dans cette carte.', 'Aircraft you own in your simulator that are not in the fleet: added here, they are part of your aircraft and go with your declared availability — the Centre sees them for assignments and other pilots find them in this card.', 'Luftfahrzeuge, die Sie in Ihrem Simulator besitzen, die aber nicht zur Flotte gehören: Hier hinzugefügt, gehören sie zu Ihren Luftfahrzeugen und gehen mit Ihren angegebenen Verfügbarkeiten mit — das Zentrum sieht sie für Zuweisungen, andere Piloten finden sie in dieser Karte.', 'Aeronaves que posee en su simulador sin que estén en la flota: añadidas aquí, forman parte de sus aeronaves y van con sus disponibilidades declaradas — el Centro las ve para las asignaciones y los demás pilotos las encuentran en esta tarjeta.']))}</p>
       <div data-eq-other>${otherRows()}</div>
-      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="eqSugg" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"><ul class="eq-sugg" id="eqSugg" role="listbox" hidden data-eq-sugg></ul></div>
+      <div class="eq-add"><div class="eq-field"><input type="text" autocomplete="off" data-eq-add-input placeholder="${esc(t(['Nom ou type (ex. CL-415, Canadair 415, PC-12)', 'Name or type (e.g. CL-415, Canadair 415, PC-12)', 'Name oder Typ (z. B. CL-415, Canadair 415, PC-12)', 'Nombre o tipo (p. ej. CL-415, Canadair 415, PC-12)']))}" aria-label="${esc(t(['Appareil à ajouter', 'Aircraft to add', 'Hinzuzufügendes Luftfahrzeug', 'Aeronave que añadir']))}"></div>
         <button type="button" class="secondary" data-eq-add>${esc(t(['Ajouter', 'Add', 'Hinzufügen', 'Añadir']))}</button><button type="button" class="secondary" data-eq-delete hidden>${esc(t(['Supprimer', 'Delete', 'Löschen', 'Eliminar']))}</button><button type="button" class="secondary" data-eq-cancel hidden>${esc(t(['Annuler', 'Cancel', 'Abbrechen', 'Cancelar']))}</button></div>
       <p class="small" data-eq-fixing hidden></p>
       <p class="sp-hint">${esc(addHint())}</p>
       <p class="sp-hint"><a href="https://www.aviationfanatic.com/ent_list.php?ent=4" target="_blank" rel="noopener">${esc(t(['Chercher soi-même un type compatible sur Aviation Fanatic ↗', 'Look up a compatible type yourself on Aviation Fanatic ↗', 'Selbst einen passenden Typ bei Aviation Fanatic suchen ↗', 'Buscar uno mismo un tipo compatible en Aviation Fanatic ↗']))}</a> — ${esc(t(['liste des types d’aéronefs avec leur désignateur, retirés compris (site externe, en anglais).', 'list of aircraft types with their designator, retired ones included (external site).', 'Liste der Luftfahrzeugtypen mit Kennung, auch ausgemusterte (externe Website, auf Englisch).', 'lista de tipos de aeronaves con su designador, incluidos los retirados (sitio externo, en inglés).']))}</p></div>`;
-    const typesHtml = () => types.length ? `<p class="eq-sum" data-eq-sum>${esc(summary())}</p><div class="eq-cards">${groups.map(g => `<div class="repo-card" data-icon="${ICON[categoryOf(g[0].type)] || 'plane'}" data-subtitle="${esc(tf(['{n} type(s)', '{n} type(s)', '{n} Typ(en)', '{n} tipo(s)'], { n: g.length }))}"><h3>${esc(categoryLabel(categoryOf(g[0].type)))}</h3>
-      <table class="eq-table"><thead><tr><th>${esc(t(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave']))}</th><th>${esc(t(['Variantes de la flotte', 'Fleet variants', 'Flottenvarianten', 'Variantes de la flota']))}</th><th>${esc(t(['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']))}</th>${PERF_TH}<th class="eq-c">${esc(t(['Possédé', 'Owned', 'Besessen', 'Poseído']))}</th><th class="eq-c">${esc(t(['Maîtrisé', 'Mastered', 'Beherrscht', 'Dominado']))}</th></tr></thead><tbody>${g.sort((a, b) => String(a.model).localeCompare(String(b.model), 'fr', { numeric: true })).map(x => `<tr>
-        <td>${nameCell({ code: x.type, name: (owned.has(x.type) && variants[x.type]?.[0]) || fullName(x.type) || x.model, common: !!(owned.has(x.type) && variants[x.type]?.length) })}${owned.has(x.type) && variants[x.type]?.length ? unvarBtn(x.type, variants[x.type][0]) : ''}</td>
-        <td>${esc(x.variants.join(', ') || '—')}</td>
-        <td><b>${x.operational}</b>${x.operational < x.count ? `<small> / ${x.count}</small>` : ''}<br><small title="${esc(x.bases.join(', '))}">${esc(x.bases.slice(0, 3).join(', '))}${x.bases.length > 3 ? '…' : ''}</small></td>
+    /** Appareils de la flotte d'un type : en service (sur le total), puis les bases. */
+    const fleetCount = x => `<b>${x.operational}</b>${x.operational < x.count ? `<small> / ${x.count}</small>` : ''}<br><small title="${esc(x.bases.join(', '))}">${esc(x.bases.slice(0, 3).join(', '))}${x.bases.length > 3 ? '…' : ''}</small>`;
+    /** Légende des pastilles d'état, au-dessus des cartes. */
+    const legendHtml = () => `<p class="eq-legend">${LEVELS.slice(1).map((l, i) => `<span><span class="eq-st" data-s="${i + 1}"></span>${esc(t(l))}</span>`).join('')}<span>${esc(t(['un appui fait tourner l’état', 'a tap cycles the state', 'Tippen wechselt den Status', 'un toque hace girar el estado']))}</span></p>`;
+    const typesHtml = () => types.length ? `<p class="eq-sum" data-eq-sum>${esc(summary())}</p>${legendHtml()}<div class="eq-cards">${groups.map(g => `<div class="repo-card" data-icon="${ICON[categoryOf(g[0].type)] || 'plane'}" data-subtitle="${esc(tf(['{n} type(s)', '{n} type(s)', '{n} Typ(en)', '{n} tipo(s)'], { n: g.length }))}"><h3>${esc(categoryLabel(categoryOf(g[0].type)))}</h3>
+      <table class="eq-table m-fit"><thead><tr><th>${esc(t(['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave']))}</th><th class="eq-d">${esc(t(['Variantes de la flotte', 'Fleet variants', 'Flottenvarianten', 'Variantes de la flota']))}</th><th class="eq-d">${esc(t(['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves']))}</th>${PERF_TH}${STATE_TH}</tr></thead><tbody>${g.sort((a, b) => String(a.model).localeCompare(String(b.model), 'fr', { numeric: true })).map(x => `<tr>
+        <td>${nameCell({ code: x.type, name: (owned.has(x.type) && variants[x.type]?.[0]) || fullName(x.type) || x.model, common: !!(owned.has(x.type) && variants[x.type]?.length) })}</td>
+        <td class="eq-d">${esc(x.variants.join(', ') || '—')}</td>
+        <td class="eq-d">${fleetCount(x)}</td>
         ${perfTd(x.type)}
-        <td class="eq-c"><input type="checkbox" data-own="${esc(x.type)}"${owned.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} possédé', '{m} owned', '{m} besessen', '{m} poseído'], { m: x.model }))}"></td>
-        <td class="eq-c"><input type="checkbox" data-master="${esc(x.type)}"${mastered.has(x.type) ? ' checked' : ''} aria-label="${esc(tf(['{m} maîtrisé', '{m} mastered', '{m} beherrscht', '{m} dominado'], { m: x.model }))}"></td></tr>${varRows(x.type, 2)}`).join('')}</tbody></table></div>`).join('')}</div>` : `<p class="small">${esc(t(['Flotte non chargée.', 'Fleet not loaded.', 'Flotte nicht geladen.', 'Flota no cargada.']))}</p>`;
+        ${stTd(x.type, x.model)}${moreTd([[['Variantes de la flotte', 'Fleet variants', 'Flottenvarianten', 'Variantes de la flota'], esc(x.variants.join(', '))], [['Appareils', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'], fleetCount(x)], [PERF_K, perfHtml(x.type)]], [perfActsBox(x.type), owned.has(x.type) && variants[x.type]?.length ? unvarBtn(x.type, variants[x.type][0]) : ''])}</tr>${varRows(x.type, 2)}`).join('')}</tbody></table></div>`).join('')}</div>` : `<p class="small">${esc(t(['Flotte non chargée.', 'Fleet not loaded.', 'Flotte nicht geladen.', 'Flota no cargada.']))}</p>`;
     host.innerHTML = `<div class="sp-card" id="eqTypes" data-no-i18n><h3>${esc(t(['Mes appareils', 'My aircraft', 'Meine Luftfahrzeuge', 'Mis aeronaves']))}</h3><p class="sp-hint">${esc(t(['Vos appareils, flotte comprise : ceux que vous possédez dans votre simulateur et ceux que vous maîtrisez — le Centre s’en sert pour vous affecter un appareil. Leurs fiches de performances sont dans Outils › Fiches de performances (mêmes appareils) : colonne « Performances », un lien vers la fiche.', 'Your aircraft, fleet included: those you own in your simulator and those you have mastered — the Centre uses them to assign you an aircraft. Their performance sheets are in Tools › Performance sheets (same aircraft): “Performance” column, a link to the sheet.', 'Ihre Luftfahrzeuge, Flotte inbegriffen: die, die Sie in Ihrem Simulator besitzen, und die, die Sie beherrschen — das Zentrum nutzt sie, um Ihnen ein Luftfahrzeug zuzuweisen. Ihre Leistungsblätter stehen unter Werkzeuge › Leistungsblätter (dieselben Luftfahrzeuge): Spalte „Leistungen“, ein Link zum Blatt.', 'Sus aeronaves, flota incluida: las que posee en su simulador y las que domina — el Centro las usa para asignarle una aeronave. Sus fichas de rendimiento están en Herramientas › Fichas de rendimiento (mismas aeronaves): columna «Rendimiento», un enlace a la ficha.']))}</p><div class="eq-find"><input type="search" data-eq-find placeholder="${esc(t(['Chercher un appareil (nom, variante, désignateur, classe, source)', 'Search an aircraft (name, variant, designator, class, source)', 'Luftfahrzeug suchen (Name, Variante, Kennung, Klasse, Quelle)', 'Buscar una aeronave (nombre, variante, designador, clase, origen)']))}" aria-label="${esc(t(['Chercher un appareil', 'Search an aircraft', 'Luftfahrzeug suchen', 'Buscar una aeronave']))}"><small data-eq-found></small></div><div data-eq-types>${typesHtml()}</div></div>
       ${otherHtml}
       <div class="sp-card" id="eqSims" data-no-i18n><h3>${esc(t(['Simulateurs', 'Simulators', 'Simulatoren', 'Simuladores']))}</h3><p class="sp-hint">${esc(t(['Simulateurs et outils installés (colonnes de la feuille FLOTTE du classeur ODV) : le Centre s’en sert pour réunir des pilotes sur un simulateur commun.', 'Installed simulators and tools (columns of the FLOTTE sheet of the ODV workbook): the Centre uses them to gather pilots on a common simulator.', 'Installierte Simulatoren und Werkzeuge (Spalten des Blatts FLOTTE der ODV-Arbeitsmappe): Das Zentrum nutzt sie, um Piloten auf einem gemeinsamen Simulator zusammenzubringen.', 'Simuladores y herramientas instalados (columnas de la hoja FLOTTE del libro ODV): el Centro los usa para reunir a pilotos en un simulador común.']))}</p>
@@ -838,15 +888,23 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       }, 600);
     };
     /** Cellules « Performances » remises à jour (coche, profil créé dans le Carburant d'un autre onglet). */
-    const refreshPerf = () => host.querySelectorAll('[data-eq-perf]').forEach(td => {
-      const html = owned.has(td.dataset.eqPerf) ? perfCell(td.dataset.eqPerf) : '—';
-      if (td.innerHTML !== html) td.innerHTML = html;
-    });
-    /** Types cochés (flotte et hors flotte) enregistrés ; extra : appareil ajouté à la main, possédé. */
+    const refreshPerf = () => {
+      host.querySelectorAll('[data-eq-perf]').forEach(td => {
+        const html = perfHtml(td.dataset.eqPerf);
+        if (td.innerHTML !== html) td.innerHTML = html;
+      });
+      host.querySelectorAll('[data-eq-perfacts]').forEach(el => {
+        const html = actsHtml(el.dataset.eqPerfacts);
+        if (el.innerHTML !== html) el.innerHTML = html;
+      });
+    };
+    /** États des types (flotte et hors flotte) enregistrés ; extra : appareil ajouté à la main, possédé. */
     const saveTypes = (extra = '') => {
+      if (extra) owned.add(extra);
       const d = M.saveAircraft(tri, {
-        owned: [...host.querySelectorAll('[data-own]:checked')].map(i => i.dataset.own).concat(extra ? [extra] : []),
-        mastered: [...host.querySelectorAll('[data-master]:checked')].map(i => i.dataset.master),
+        owned: [...owned],
+        novice: [...novice],
+        mastered: [...mastered],
         variants
       });
       variants = {
@@ -856,6 +914,9 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       d.aircraft.owned.forEach(v => owned.add(v));
       mastered.clear();
       d.aircraft.mastered.forEach(v => mastered.add(v));
+      novice.clear();
+      (d.aircraft.novice || []).forEach(v => novice.add(v));
+      paintStates();
       const sum = host.querySelector('[data-eq-sum]');
       if (sum) sum.textContent = summary();
       refreshPerf();
@@ -907,14 +968,36 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       if (e.key === 'flightPerfState' && host.isConnected) refreshPerf();
     });
     host.onchange = e => {
-      const x = e.target;
-      if (!x.matches('[data-own], [data-master], [data-sim]')) return;
-      if (x.dataset.master && x.checked) host.querySelector(`[data-own="${x.dataset.master}"]`).checked = true; // maîtrisé → possédé
-      if (x.dataset.own && !x.checked) host.querySelector(`[data-master="${x.dataset.own}"]`).checked = false; // non possédé → non maîtrisé
-      if (x.dataset.sim) M.saveSims(tri, [...host.querySelectorAll('[data-sim]:checked')].map(i => i.dataset.sim));
-      else saveTypes();
+      if (!e.target.matches('[data-sim]')) return;
+      M.saveSims(tri, [...host.querySelectorAll('[data-sim]:checked')].map(i => i.dataset.sim));
       scheduleSync();
     };
+    /** Pastilles d'état à jour (couleur, infobulle), écrites seulement si elles changent. */
+    function paintStates() {
+      host.querySelectorAll('[data-eq-st]').forEach(el => {
+        const c = el.dataset.eqSt,
+          s = String(level(c)),
+          tip = stTitle(c, el.dataset.name);
+        if (el.dataset.s !== s) el.dataset.s = s;
+        if (el.title !== tip) {
+          el.title = tip;
+          el.setAttribute('aria-label', tip);
+        }
+      });
+    }
+    /** Pose l'état s d'un type (0 non possédé … 3 maîtrisé), sans enregistrer. */
+    function setLevel(c, s) {
+      for (const set of[owned, novice, mastered]) set.delete(c);
+      if (s >= 1) owned.add(c);
+      if (s === 2) novice.add(c);
+      if (s === 3) mastered.add(c);
+    }
+    /** Appui sur une pastille : état suivant, enregistré et recopié dans les semaines déclarées. */
+    function cycle(el) {
+      setLevel(el.dataset.eqSt, (level(el.dataset.eqSt) + 1) % 4);
+      saveTypes();
+      scheduleSync();
+    }
     /** Ajout à la main : type de la flotte → sa case cochée ; autre type → ligne de « Autres appareils », possédé ;
      *  rien ne correspond → appareil gardé sous son nom (« type OACI à confirmer ») ; plusieurs types possibles → le plus
      *  proche repris dans le champ. */
@@ -934,15 +1017,14 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       input.value = '';
       // correction : l'ancien appareil retiré, « Maîtrisé » reporté sur le nouveau
       const old = editing,
-        wasMastered = !!old && mastered.has(old);
+        was = old ? level(old) : 0; // état de l'ancien appareil, reporté sur le nouveau
       if (old) {
         endFix();
         if (old !== ty) dropType(old, false);
       }
       if (fleet.has(ty)) {
-        const box = host.querySelector(`[data-own="${ty}"]`);
-        if (box) box.checked = true;
-        box?.closest('tr')?.scrollIntoView({
+        setLevel(ty, Math.max(1, was, level(ty)));
+        host.querySelector(`[data-eq-st="${CSS.escape(ty)}"]`)?.closest('tr')?.scrollIntoView({
           block: 'center'
         });
         window.AppFramework?.notify?.(tf(['{t} fait partie de la flotte : coché dans la carte « Mes appareils ».',
@@ -952,17 +1034,12 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
         ], {
           t: `${typeName(ty)} (${ty})`
         }), 'info');
-        if (wasMastered) host.querySelector(`[data-master="${ty}"]`).checked = true;
         saveTypes();
         redrawAll(); // nom de la variante, lignes des variantes
       } else {
         shown.add(ty);
-        saveTypes(ty);
-        if (wasMastered) {
-          redrawOther();
-          host.querySelector(`[data-master="${ty}"]`).checked = true;
-          saveTypes();
-        }
+        setLevel(ty, Math.max(1, was));
+        saveTypes();
         // désignateur absent de la base de ce poste : fiche cherchée par le lanceur (passe courte ou file : OACI,
         // EUROCONTROL, puis Aviation Fanatic pour un type retiré) ; appareil gardé sous son nom : rien à chercher
         if (!dbInfo(ty).model && designator(ty) && !tried.has(ty)) completeType(ty, redrawOther);
@@ -981,7 +1058,7 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     /** Retire un appareil (cases décochées, ligne ôtée sauf s'il est déclaré par d'autres) ; sync : recopie dans les
      *  semaines déclarées (non pendant une correction, qui la fait elle-même). */
     function dropType(code, sync = true) {
-      host.querySelectorAll(`[data-own="${CSS.escape(code)}"], [data-master="${CSS.escape(code)}"]`).forEach(x => x.checked = false);
+      setLevel(code, 0);
       shown.delete(code);
       saveTypes();
       redrawOther();
@@ -1006,10 +1083,10 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       host.querySelector('[data-eq-delete]').hidden = false;
       const line = host.querySelector('[data-eq-fixing]');
       line.textContent = tf([
-        'Édition de {c} ({n}) : saisissez ou choisissez le bon type, puis « Remplacer » (« Maîtrisé » est reporté) ; ou « Supprimer ».',
-        'Editing {c} ({n}): type or choose the right type, then “Replace” (“Mastered” is carried over); or “Delete”.',
-        'Bearbeitung von {c} ({n}): den richtigen Typ eingeben oder wählen, dann „Ersetzen“ („Beherrscht“ wird übertragen); oder „Löschen“.',
-        'Edición de {c} ({n}): escriba o elija el tipo correcto y luego «Sustituir» («Dominado» se traslada); o «Eliminar».'
+        'Édition de {c} ({n}) : saisissez ou choisissez le bon type, puis « Remplacer » (son état est reporté) ; ou « Supprimer ».',
+        'Editing {c} ({n}): type or choose the right type, then “Replace” (its state is carried over); or “Delete”.',
+        'Bearbeitung von {c} ({n}): den richtigen Typ eingeben oder wählen, dann „Ersetzen“ (sein Status wird übertragen); oder „Löschen“.',
+        'Edición de {c} ({n}): escriba o elija el tipo correcto y luego «Sustituir» (su estado se traslada); o «Eliminar».'
       ], {
         c: code,
         n: typeName(code) || code
@@ -1036,6 +1113,9 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
       }), 'info');
     };
     host.onclick = e => {
+      const st = e.target.closest('[data-eq-st]');
+      if (st) return cycle(st);
+      if (e.target.closest('.eq-pop button')) e.target.closest('.eq-more').open = false; // action du menu : menu refermé
       const unvar = e.target.closest('[data-eq-unvar]');
       if (unvar) {
         const c = unvar.dataset.eqUnvar;
@@ -1067,14 +1147,44 @@ dialog.eq-dialog h3{margin:0 0 6px}dialog.eq-dialog footer{display:flex;justify-
     };
     // clavier : Entrée ou Espace sur la cellule d'un appareil ouvre son édition
     host.onkeydown = e => {
+      const st = (e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-eq-st]') ? e.target : null;
+      if (st) {
+        e.preventDefault();
+        return cycle(st);
+      }
       const fix = (e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-eq-fix]') ? e.target : null;
       if (!fix) return;
       e.preventDefault();
       startFix(fix.dataset.eqFix);
     };
-    const input = host.querySelector('[data-eq-add-input]'),
-      sugg = host.querySelector('[data-eq-sugg]');
-    const sg = attachSuggest(input, sugg, search, originOf, {
+    // menu « ⋯ » : un seul ouvert, posé sous son bouton (position fixe : hors du défilement du tableau, au-dessus s'il
+    // déborde en bas), suivi au défilement de la page (refermé si son bouton sort de l'écran), refermé par un appui ailleurs
+    const place = d => {
+      const r = d.querySelector('summary').getBoundingClientRect(),
+        pop = d.querySelector('.eq-pop'),
+        w = pop.offsetWidth,
+        h = pop.offsetHeight;
+      if (r.bottom < 0 || r.top > innerHeight) return void(d.open = false);
+      pop.style.left = `${Math.max(8, Math.min(r.right - w, innerWidth - w - 8))}px`;
+      pop.style.top = `${r.bottom + 4 + h > innerHeight - 8 && r.top - 4 - h > 8 ? r.top - 4 - h : r.bottom + 4}px`;
+    };
+    host.addEventListener('toggle', e => {
+      const d = e.target;
+      if (!d.matches?.('.eq-more') || !d.open) return;
+      host.querySelectorAll('.eq-more[open]').forEach(x => x !== d && (x.open = false));
+      place(d);
+    }, true);
+    document.addEventListener('click', e => {
+      if (host.isConnected && !e.target.closest?.('.eq-more')) host.querySelectorAll('.eq-more[open]').forEach(x => x.open = false);
+    });
+    window.addEventListener('scroll', e => {
+      if (host.isConnected && !e.target.closest?.('.eq-pop')) host.querySelectorAll('.eq-more[open]').forEach(place);
+    }, {
+      passive: true,
+      capture: true
+    });
+    const input = host.querySelector('[data-eq-add-input]');
+    const sg = attachSuggest(input, search, originOf, {
       onPick: (code, variant) => addTyped(code, variant),
       onEnter: () => addTyped(),
       onEscape: () => {

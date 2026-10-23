@@ -44,17 +44,46 @@
       return null;
     }
   };
+  /** Vol en cours partagé avec les Cartes de vol : route, niveau (FL du devis), fiche de l'appareil actif, dégagement ;
+   *  écrit seulement s'il change (date « at » : le plus récent l'emporte). Le dégagement vient du dernier OFP SimBrief
+   *  quand il porte le même trajet (lu ensuite, sans retarder l'écriture). */
   const writeFpl = route => {
-    try {
-      const cur = readFpl();
-      if (cur?.route !== route) localStorage.setItem(FPL_KEY, JSON.stringify({
+    const put = next => {
+      try {
+        const cur = readFpl() || {};
+        if (Object.keys(next).some(k => String(cur[k] || '') !== String(next[k] || ''))) localStorage.setItem(FPL_KEY, JSON
+          .stringify({
+            ...cur,
+            ...next,
+            at: Date.now(),
+            by: 'planner'
+          }));
+      } catch {
+        /* stockage indisponible */
+      }
+    };
+    const cur = readFpl() || {},
+      next = {
         route,
-        at: Date.now(),
-        by: 'planner'
-      }));
-    } catch {
-      /* stockage indisponible */
-    }
+        fl: String(document.getElementById('fl')?.value || '').trim(),
+        aircraft: (typeof active !== 'undefined' && active?.id) || '',
+        altn: cur.route === route ? cur.altn || '' : ''
+      };
+    put(next);
+    // départ et arrivée : premier mot du premier et du dernier point (« LFBO 43.6290 1.3640, …, LFRN 48.0690 -1.7340 »
+    // ou case 15 « LFBO DCT TOU … LFRN ») ; groupes vitesse / niveau écartés
+    const pts = route.toUpperCase().split(/[,\n]+/).map(t => t.trim()).filter(t => t && !/^[NKM]\d{3,4}[FASM]\d{3,4}$/.test(t)),
+      words = route.toUpperCase().split(/[\s,]+/).filter(Boolean),
+      dep = (pts.length > 1 ? pts[0] : words[0] || '').split(/\s+/)[0],
+      arr = (pts.length > 1 ? pts[pts.length - 1] : words[words.length - 1] || '').split(/\s+/)[0];
+    if (typeof loadOFP === 'function') loadOFP().then(o => {
+      const raw = o?.raw,
+        altn = [].concat(raw?.alternate || [])[0]?.icao_code;
+      if (raw?.origin?.icao_code === dep && raw?.destination?.icao_code === arr && altn) put({
+        ...next,
+        altn
+      });
+    }, () => {});
   };
   const store = () => {
     try {
@@ -107,7 +136,7 @@
   // points du navlog en coordonnées (TOC / TOD recalculés ici, donc écartés), paliers de croisière
   // (changement d'altitude en phase CRZ → nouveau groupe au point), arrivée.
   function routeFromOfp(raw) {
-    const fixes = findNavlog(raw) || [],
+    const fixes = (window.SimbriefOfp?.fixes(raw).length ? window.SimbriefOfp.fixes(raw) : findNavlog(raw)) || [],
       num = v => parseFloat(v),
       items = [],
       gen = raw.general || {};
@@ -246,6 +275,36 @@
           '; keine Flughöhe angegeben (VFR): keine Flugbahn gezeichnet.', '; sin nivel indicado (VFR): trayectoria no trazada.')));
   }
 
+  /** Ligne de résultat de l'OFP lu (#ofpSummary) : résumé (date, trajet, points, niveau, dégagement, appareil) et
+   *  « Voir le JSON » ; si l'OFP n'a pas de route point par point, la raison (navlog vide…) en erreur. tell : aussi en
+   *  notification (le bouton est dans l'en-tête, loin de la ligne). */
+  function showOfp(raw, tell, error = '') {
+    const O = window.SimbriefOfp;
+    if (!O || !raw) return;
+    const why = error || O.problem(raw);
+    O.render($('ofpSummary'), raw, {
+      error: why ? `${why} ${tl('Route réduite aux terrains.', 'Route reduced to the airfields.', 'Route auf die Flugplätze reduziert.', 'Ruta reducida a los aeródromos.')}` : ''
+    });
+    if (tell) window.AppFramework?.notify?.(why ? `SimBrief — ${why}` : `SimBrief — ${O.summary(raw)}`, why ? 'warn' : 'ok');
+  }
+  /** Points de la route sous le plan de vol (#fplPoints) : terrains en gras, points des voies aériennes atténués, niveau
+   *  après le point où il change ; vide sans route. */
+  function showPoints(points) {
+    const box = $('fplPoints');
+    if (!box) return;
+    box.textContent = '';
+    box.hidden = !points?.length;
+    for (const [i, p] of(points || []).entries()) {
+      const s = document.createElement('span'),
+        lvl = p.lvl?.ft ? (p.lvl.ft >= 6000 ? ` FL${Math.round(p.lvl.ft / 100)}` : ` ${p.lvl.ft} ft`) : '';
+      s.textContent = (p.id || p.name || '?') + lvl;
+      s.title = Number.isFinite(p.lat) ? `${p.name || p.id || ''} ${p.lat.toFixed(4)} ${p.lon.toFixed(4)}${p.awy ? ` — ${p.awy}` : ''}` : '';
+      if (p.awy) s.className = 'awy';
+      else if (i === 0 || i === points.length - 1) s.className = 'ad';
+      box.append(s);
+    }
+  }
+
   // L'OFP importé par le bouton d'en-tête (« Récupérer dernier FPL SimBrief ») ou le fichier OFP donne la
   // route : storeOFP (enregistrement de l'OFP par la page) est complété pour la reprendre et tracer.
   if (typeof storeOFP === 'function') {
@@ -255,9 +314,14 @@
       const out = await original.call(this, raw, ...rest);
       try {
         $('vpRoute').value = routeFromOfp(raw);
+        showOfp(raw, true);
+        showPoints(SiaProfile.parseRoute($('vpRoute').value, SiaProfile.resolver({
+          aero: studio?.base?.aero || {}
+        })).points);
         store();
         await draw();
       } catch (e) {
+        showOfp(raw, true, e.message);
         status(e.message, true);
       }
       return out;
@@ -267,6 +331,8 @@
     store();
     draw().catch(e => status(e.message, true));
   };
+  // coordonnées écrites librement : mises au format du plan de vol à la sortie du champ, avant les autres traitements
+  SiaProfile.coordHelper($('vpRoute'));
   for (const id of ['vpRoute', 'vpFloor', 'vpCeil']) $(id).addEventListener('change', store);
 
   /** Plan de vol → devis : distance (somme des tronçons), route vraie (départ → arrivée), niveau du premier groupe
@@ -276,6 +342,7 @@
       info = $('fplInfo');
     if (!text) {
       if (info) info.textContent = '';
+      showPoints([]);
       return;
     }
     if (!studio) {
@@ -291,6 +358,7 @@
     } = SiaProfile.parseRoute(text, SiaProfile.resolver({
       aero: studio?.base?.aero || {}
     }));
+    showPoints(points);
     if (points.length < 2) {
       if (info) info.textContent = unknown.length ? tl(`Point(s) inconnu(s) : ${unknown.join(', ')}`, `Unknown point(s): ${unknown.join(', ')}`) : '';
       return;
@@ -319,6 +387,11 @@
     }
   }
   $('vpRoute').addEventListener('change', () => applyRoute());
+  // niveau du devis changé : vol en cours partagé mis à jour (Cartes de vol)
+  document.getElementById('fl')?.addEventListener('change', () => {
+    const route = $('vpRoute').value.trim();
+    if (route) writeFpl(route);
+  });
   // vers les Cartes de vol : même plan de vol (partagé), carte, profil vertical et cartes
   $('fplToMaps')?.addEventListener('click', () => {
     store();
@@ -369,6 +442,7 @@
     const o = await loadOFP();
     if (o) {
       $('vpRoute').value = routeFromOfp(o.raw || o);
+      showOfp(o.raw || o, false);
       store();
     }
   }).catch(e => status(e.message, true));

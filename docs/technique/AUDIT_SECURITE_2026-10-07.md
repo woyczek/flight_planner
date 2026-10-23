@@ -64,9 +64,11 @@ Verified with the same hostile page, forged requests and loading the 60 pages of
 | M1 | **fixed** (colours, status, performance profile, help, density altitude, ODV colours) |
 | C1 | **stopgap**: `.js` files of `data/` served and committed only in the data format (`tools/data_guard.py`); the underlying fix (data in JSON, batch 6) remains to be done |
 | C3 | **fixed** at extraction (neither `.git` nor executable); git hardened (`core.fsmonitor`, `ext::`, submodules) |
-| M2 | **partial**: framing protection in place; the CSP that closes the exits (`connect-src`) remains in batch 4 |
+| M2 | **fixed** (batch 4a, 9 October): launcher CSP — `connect-src` as a list (fixed, configuration, websites confirmed in the launcher window), restricted `script-src` (suite, inline, pinned pdf.js and acorn), `worker-src`, `object-src 'none'`, `base-uri`, `form-action`, `frame-ancestors`; images and navigation stay open (a leak through `<img src>` or a link is still possible) |
 | M6 | **partial**: no more password or token in the repository address, `secrets/` no longer served; secrets still in clear on disk and in browser storage (batch 8) |
-| E4, E6, E7, M3, M4 | to do (batches 4, 5, 7, 9) |
+| E4 | **fixed** (batch 4b, 9 October): application, X-Plane, ODV workbook and backup sources read-only (`FileAccess.modeOf`); write access to `data/` asked separately (`grantData`), one-off write on click (`FileAccess.writable`); checked by permission simulation (OPFS), test in Chrome with the native picker still to do |
+| E7 | **partial** (signed accounts L3, 19 October): in group mode, roles, state and password hashes come from the signed registry, verified by every browser (a user file edited in the repository no longer grants a role); enrolment of a second admin (L4) and signed assignments (L5) still to do; standalone mode unchanged |
+| E6, M3, M4 | to do (batches 5, 7, 9) |
 
 Choices made while fixing:
 
@@ -74,6 +76,8 @@ Choices made while fixing:
   send the files. The danger came from the `.git/` received in an archive, which is no longer extracted.
 - **Navigations coming from another site refused.** The launcher renders an explanatory page with a link to the home page,
   never to the requested address.
+  Can be switched off to work with an extension (Claude in Chrome sends its navigations as coming from another
+  site): HTML pages only, confirmed in the launcher window, until it closes, red button in the header.
 - **Remote repository change confirmed outside the browser.** For a repository other than the current one or the one in the
   configuration, the launcher opens a system Yes / No window. It shows the current and the new address,
   with “No” as default. A confirmation in the page would protect nothing, since an injected script would validate it

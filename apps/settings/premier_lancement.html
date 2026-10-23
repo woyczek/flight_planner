@@ -429,9 +429,10 @@
   <section id="plFolders" data-icon="folder"><h2><span class="pl-n">1</span>Dossiers <span class="pl-badge" data-no-i18n></span></h2>
     <p class="pl-hint" data-what="plFolders" data-no-i18n></p>
     <p class="pl-status" data-no-i18n></p>
-    <p class="pl-hint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
+    <p class="pl-hint" id="plFoldersHint">Le navigateur demande de désigner chaque dossier une fois (il le mémorise).</p>
+    <p class="pl-msg ok" id="plFoldersGh" data-no-i18n hidden></p>
     <div class="pl-grid">
-      <div class="pl-card"><h3>Dossier de l’application</h3>
+      <div class="pl-card" id="plAppCard"><h3>Dossier de l’application</h3>
         <p class="pl-hint">Le dossier qui contient <code>lancer.cmd</code> et <code>lancer.sh</code> : données, registre, missions, SIA, performances et sauvegarde locale en sont déduits.</p>
         <div class="pl-row"><button type="button" class="primary" id="plRepo" data-icon="folder">Choisir le dossier de l’application</button><button type="button" class="secondary" id="plRepoGrant" data-icon="check" hidden>Autoriser à nouveau</button></div>
         <p class="pl-msg" id="plRepoMsg"></p>
@@ -479,6 +480,11 @@
       <p class="pl-hint" id="plRepoNow"></p>
       <div class="pl-form"><label for="plSyncUrl">Adresse du dépôt</label><input type="text" id="plSyncUrl" spellcheck="false" autocomplete="off" placeholder="git@hôte:compte/dépôt.git"></div>
       <div class="pl-row"><button type="button" class="secondary" id="plRepoCheck">Vérifier</button><button type="button" class="primary" id="plRepoSave">Enregistrer</button></div>
+      <div id="plAdopt" data-no-i18n hidden>
+        <p class="pl-hint" id="plAdoptHint"></p>
+        <div class="pl-form"><label for="plAdoptUser" id="plAdoptUserL"></label><input type="text" id="plAdoptUser" spellcheck="false" autocomplete="username"><label for="plAdoptSecret" id="plAdoptSecretL"></label><input type="password" id="plAdoptSecret" autocomplete="current-password"></div>
+        <div class="pl-row"><label><input type="checkbox" id="plAdoptRemember"> <span id="plAdoptRememberL"></span></label><button type="button" class="primary" id="plAdoptGo" data-icon="download"></button></div>
+      </div>
       <p class="pl-msg" id="plSyncMsg"></p>
     </div>
     <div class="pl-card" id="plLogCard" hidden style="margin-top:14px"><h3>Journal des vols (facultatif)</h3>
@@ -595,9 +601,9 @@
 <script src="../../shared/repository_nav.js?v=0"></script>
 <script src="../../shared/content_i18n.js?v=0"></script><script src="premier_lancement_i18n.js?v=0"></script>
 <!-- blocs « Données aéronautiques » et « Types d'aéronefs » (shared/maintenance_page.js) et leurs dépendances -->
-<script src="../../AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script>
+<script src="../../shared/data_files.js?v=0" data-file="AircraftDB/aircraft_db.js"></script><script src="../../shared/data_files.js?v=0" data-file="references/aircraft_fleet.js"></script>
 <script src="../../shared/mission_core/vendor/js-yaml.min.js"></script>
-<script src="../../AircraftDB/aircraft_perf.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../cpco/mission_prompt.js?v=0"></script>
+<script src="../../shared/data_files.js?v=0" data-file="AircraftDB/aircraft_perf.js"></script><script src="../../shared/aircraft_catalog.js?v=0"></script><script src="../../shared/fuel_reference.js?v=0"></script><script src="../cpco/mission_prompt.js?v=0"></script>
 <script src="../../shared/zip_store.js?v=0"></script><script src="../../shared/airac.js?v=0"></script><script src="../../shared/carto/aero_symbols.js?v=0"></script><script src="../../shared/sia_base.js?v=0"></script>
 <script src="../../shared/mission_table.js?v=0"></script><script src="../cpco/mission_store.js?v=0"></script><script src="../../shared/mission_routing.js?v=0"></script><script src="../../shared/mission_registry.js?v=0"></script>
 <script src="../../shared/maintenance_page.js?v=0"></script>
@@ -704,7 +710,8 @@
     el.innerHTML = v;
   };
   // ---- étapes de l'assistant : ordre, symbole et mot de chaque état (ok faite, todo à faire, opt facultative ou
-  // passée, lock verrouillée faute d'étape 1, bad à refaire, unknown inconnu sans lanceur)
+  // passée, lock verrouillée faute d'étape 1, bad à refaire, unknown inconnu sans lanceur, na sans objet : dossiers en
+  // mode GitHub)
   const STEPS = ['plFolders', 'plData', 'plCompany', 'plProfile', 'plSia', 'plCentre'];
   let lastSteps = []; // états des étapes au dernier rendu (« Terminer » : confirmation si 3 à 5 restent à faire)
   const SYM = {
@@ -713,7 +720,8 @@
     opt: '–',
     lock: '🔒',
     bad: '✗',
-    unknown: '?'
+    unknown: '?',
+    na: '–'
   };
   /** Mot de l'état st d'une étape, dans la langue courante. */
   const stateWord = st => K.t({
@@ -722,7 +730,8 @@
     opt: ['facultative', 'optional', 'optional', 'opcional'],
     lock: ['verrouillée', 'locked', 'gesperrt', 'bloqueado'],
     bad: ['à refaire', 'to redo', 'neu zu machen', 'por rehacer'],
-    unknown: ['inconnue', 'unknown', 'unbekannt', 'desconocido']
+    unknown: ['inconnue', 'unknown', 'unbekannt', 'desconocido'],
+    na: ['sans objet', 'not applicable', 'entfällt', 'no aplica']
   } [st]);
   /** Nom court de l'étape id (rail, « Reste à faire »). */
   const stepName = id => K.t({
@@ -778,7 +787,8 @@
       item('git', S.git ?? null, L('Dépôt git de synchronisation', 'Git sync repository', 'Git-Synchronisierungs-Repository',
         'Repositorio git de sincronización'), 'plRepoCard', true, S.gitUrl || ''),
       item('folder', S.folderOther ? 'bad' : S.folder ?? null, L('Dossier de l’application', 'Application folder', 'Anwendungsordner',
-        'Carpeta de la aplicación'), 'plFolders', false, S.folderName || ''),
+        'Carpeta de la aplicación'), 'plFolders', false, S.folderNa ? L('sans objet en mode GitHub', 'not applicable in GitHub mode',
+        'entfällt im GitHub-Modus', 'no aplica en modo GitHub') : S.folderName || ''),
       item('company', !!(va.name && va.url), L('Compagnie et site', 'Airline and website', 'Fluggesellschaft und Website',
         'Aerolínea y sitio'), 'plCompany', false, [va.name, va.url && va.url.replace(/^https?:\/\//, '')].filter(Boolean).join(' — ')),
       item('ivaoKey', S.ivaoKey ?? null, L('Clé d’API IVAO', 'IVAO API key', 'IVAO-API-Schlüssel', 'Clave de API IVAO'), 'plCompany',
@@ -866,8 +876,12 @@
       text: id !== 'plFolders' && lock ? '' : text
     });
     // 1. dossiers
-    const s1 = st(by.folder.ok);
-    add('plFolders', s1, s1 === 'ok' ? K.tf(['Fait : dossier de l’application « {f} ».', 'Done: application folder “{f}”.',
+    const s1 = S.folderNa ? 'na' : st(by.folder.ok);
+    add('plFolders', s1, s1 === 'na' ? L('Sans objet : mode GitHub, les données viennent du dépôt.',
+        'Not applicable: GitHub mode, the data come from the repository.',
+        'Entfällt: GitHub-Modus, die Daten kommen aus dem Repository.',
+        'No aplica: modo GitHub, los datos vienen del repositorio.') : s1 === 'ok' ? K.tf(['Fait : dossier de l’application « {f} ».',
+        'Done: application folder “{f}”.',
         'Erledigt: Anwendungsordner „{f}“.', 'Hecho: carpeta de la aplicación «{f}».'
       ], {
         f: S.folderName
@@ -949,7 +963,7 @@
       t: typesNote
     }));
     // 6. Centre : allumé seulement quand 1 à 5 sont faites
-    const prior = out.every(x => x.st === 'ok' || x.st === 'unknown');
+    const prior = out.every(x => x.st === 'ok' || x.st === 'unknown' || x.st === 'na');
     add('plCentre', cpcoOn() && prior ? 'ok' : 'opt', cpcoOn() ? (prior ? L('Fait : Centre activé dans ce navigateur.',
       'Done: Centre enabled in this browser.', 'Erledigt: Zentrum in diesem Browser aktiviert.',
       'Hecho: Centro activado en este navegador.') : L(
@@ -975,7 +989,7 @@
     const end = !curStep;
     setHtml($('plRail'), steps.map(x => `<li><a href="#${x.id}" data-goto="${x.id}" class="pl-s-${x.st}${x.id === curStep ? ' pl-cur' : ''}"${x.id === curStep ? ' aria-current="step"' : ''}><b>${SYM[x.st]}</b><span>${x.n}. ${K.esc(stepName(x.id))}</span><small>${K.esc(stateWord(x.st))}</small></a></li>`).join('') +
       `<li><a href="#plEnd" data-goto="plEnd" class="pl-s-${end ? 'ok' : 'todo'}${end ? ' pl-cur' : ''}"${end ? ' aria-current="step"' : ''}><b>${SYM[end ? 'ok' : 'todo']}</b><span>${K.esc(L('Terminer', 'Finish', 'Abschließen', 'Terminar'))}</span><small>${K.esc(end ? L('prêt', 'ready', 'bereit', 'listo') : L('à la fin', 'at the end', 'am Ende', 'al final'))}</small></a></li>`);
-    const missing = steps.slice(0, 5).filter(x => x.st !== 'ok' && x.st !== 'unknown');
+    const missing = steps.slice(0, 5).filter(x => x.st !== 'ok' && x.st !== 'unknown' && x.st !== 'na');
     lastSteps = steps;
     setText($('plRailHint'), missing.length ? K.tf(['Étape en cours : {n}. {s}. Un clic sur une étape l’ouvre.',
       'Current step: {n}. {s}. Click a step to open it.', 'Aktueller Schritt: {n}. {s}. Ein Klick öffnet einen Schritt.',
@@ -1002,6 +1016,7 @@
       if (next) {
         setText(next, L('Suivant →', 'Next →', 'Weiter →', 'Siguiente →'));
         setText(next.nextElementSibling, x.st === 'ok' ? L('✓ Étape faite.', '✓ Step done.', '✓ Schritt erledigt.', '✓ Paso hecho.') :
+          x.st === 'na' ? L('– Étape sans objet.', '– Step not applicable.', '– Schritt entfällt.', '– Paso que no aplica.') :
           x.st === 'lock' ? '' : L('○ Pas encore faite : elle reste marquée à faire dans le rail, en haut.',
             '○ Not done yet: it stays marked as to do in the rail, at the top.',
             '○ Noch nicht erledigt: bleibt oben in der Leiste als offen markiert.',
@@ -1185,7 +1200,16 @@
     }
     $('plRepoCard').hidden = false;
     if (!$('plSyncUrl').value) $('plSyncUrl').value = repo.url || '';
-    $('plRepoNow').textContent = !repo.repo ?
+    // data/ déjà rempli sans être un dépôt (exemples, archive, données saisies) : reprise dans le dépôt (POST adopt)
+    $('plAdopt').hidden = repo.state !== 'plain';
+    adoptTexts();
+    $('plRepoNow').textContent = repo.state === 'plain' ? L(
+        'data/ contient déjà des données mais n’est pas un dépôt git : « Reprendre data/ dans ce dépôt » en fait un clone, sans rien perdre ni envoyer.',
+        'data/ already holds data but is not a git repository: “Take data/ into this repository” makes it a clone, losing and sending nothing.',
+        'data/ enthält bereits Daten, ist aber kein Git-Repository: „data/ in dieses Repository übernehmen“ macht daraus einen Klon, ohne etwas zu verlieren oder zu senden.',
+        'data/ ya contiene datos pero no es un repositorio git: «Incorporar data/ a este repositorio» lo convierte en un clon, sin perder ni enviar nada.'
+      ) :
+      !repo.repo ?
       'data/ n’est pas encore un dépôt git : les données récupérées depuis un dépôt (carte « Dépôt de données ») en gardent l’adresse.' :
       repo.url ? `Actuel : dépôt distant « ${repo.remote} » — ${repo.url} (branche ${repo.branch}).` :
       'data/ est un dépôt git sans dépôt distant : rien n’est partagé tant qu’aucune adresse n’est enregistrée.';
@@ -1217,6 +1241,13 @@
       if (c.ok && repo?.branch && !(c.branches || []).includes(repo.branch)) text += ` La branche « ${repo.branch} » n’y est pas encore : la première synchronisation la créera.`;
       if (!c.ok) text +=
         '\nCe n’est pas bloquant : la suite fonctionne sans synchronisation ; à régler avant d’utiliser le bouton « Synchroniser ».';
+      // autre dépôt que l'actuel et celui de la configuration : « Enregistrer » demandera une confirmation au lanceur
+      if (r.needsConfirm && !save) text += L(
+        ' Une fenêtre de confirmation va s’ouvrir sur l’ordinateur où tourne le lanceur (peut-être derrière le navigateur) : répondez « Oui ».',
+        ' A confirmation window will open on the computer running the launcher (maybe behind the browser): answer “Yes”.',
+        ' Auf dem Computer, auf dem der Starter läuft, öffnet sich ein Bestätigungsfenster (vielleicht hinter dem Browser): mit „Ja“ antworten.',
+        ' Se abrirá una ventana de confirmación en el equipo donde se ejecuta el lanzador (quizá detrás del navegador): responda «Sí».'
+      );
       if (r.saved) text = `${r.saved.message}\n${text}`;
       msg('plSyncMsg', text, r.saved && !r.saved.ok ? 'err' : c.ok ? 'ok' : 'warn');
     } catch (e) {
@@ -1227,6 +1258,70 @@
   };
   on('click', 'plRepoCheck', () => repoCheck(false));
   on('click', 'plRepoSave', () => repoCheck(true));
+  /** Textes du bloc « Reprendre data/ dans ce dépôt », dans la langue courante. */
+  function adoptTexts() {
+    setText($('plAdoptHint'), L(
+      'Le lanceur clone le dépôt à côté, pose son historique dans data/, puis reprend les fichiers de ce poste : une fiche présente des deux côtés garde la plus récente (l’autre va dans _conflits/), les affectations sont réunies, les fichiers de la suite viennent du dépôt. Un commit local « Reprise du poste », rien n’est envoyé avant « Synchroniser ». Les originaux remplacés sont copiés dans data_avant_<date>/. Jeu d’essai : mis de côté, puis simple clone. Identifiants : seulement pour une adresse https:// que Git ne connaît pas encore.',
+      'The launcher clones the repository alongside, puts its history into data/, then takes over this computer’s files: a record on both sides keeps the newest (the other goes to _conflits/), assignments are merged, the suite’s files come from the repository. One local commit “Reprise du poste”, nothing is sent before “Synchronise”. Replaced originals are copied to data_avant_<date>/. Sample data: set aside, then a plain clone. Credentials: only for an https:// address Git does not know yet.',
+      'Der Starter klont das Repository daneben, legt seine Historie in data/ ab und übernimmt dann die Dateien dieses Rechners: Ein Datensatz auf beiden Seiten behält den neuesten (der andere kommt nach _conflits/), Zuweisungen werden zusammengeführt, die Dateien der Suite kommen aus dem Repository. Ein lokaler Commit „Reprise du poste“, nichts wird vor „Synchronisieren“ gesendet. Ersetzte Originale werden nach data_avant_<Datum>/ kopiert. Testdaten: beiseitegelegt, dann einfacher Klon. Zugangsdaten: nur für eine https://-Adresse, die Git noch nicht kennt.',
+      'El lanzador clona el repositorio al lado, coloca su historial en data/ y luego incorpora los archivos de este equipo: un registro presente en ambos lados conserva el más reciente (el otro va a _conflits/), las asignaciones se reúnen, los archivos de la suite vienen del repositorio. Un commit local «Reprise du poste», nada se envía antes de «Sincronizar». Los originales reemplazados se copian en data_avant_<fecha>/. Conjunto de prueba: apartado y luego clon simple. Credenciales: solo para una dirección https:// que Git aún no conoce.'
+    ));
+    setText($('plAdoptUserL'), L('Identifiant (facultatif)', 'Username (optional)', 'Benutzername (optional)', 'Usuario (opcional)'));
+    setText($('plAdoptSecretL'), L('Mot de passe ou jeton', 'Password or token', 'Passwort oder Token', 'Contraseña o token'));
+    setText($('plAdoptRememberL'), L('Se souvenir (Git)', 'Remember (Git)', 'Merken (Git)', 'Recordar (Git)'));
+    setText($('plAdoptGo'), L('Reprendre data/ dans ce dépôt', 'Take data/ into this repository', 'data/ in dieses Repository übernehmen',
+      'Incorporar data/ a este repositorio'));
+  }
+  // reprise de data/ (POST /__setup/adopt) : clone du dépôt, fiches du poste reprises, rien d'envoyé
+  on('click', 'plAdoptGo', async () => {
+    const url = $('plSyncUrl').value.trim(),
+      user = $('plAdoptUser').value.trim(),
+      secret = $('plAdoptSecret').value;
+    if (!url) return msg('plSyncMsg', L('Adresse du dépôt à préciser (git@… ou https://…).',
+        'Repository address to fill in (git@… or https://…).',
+        'Repository-Adresse angeben (git@… oder https://…).', 'Indicar la dirección del repositorio (git@… o https://…).'),
+      'err');
+    if (!!user !== !!secret) return msg('plSyncMsg', L('Identifiant et mot de passe (ou jeton) : les deux, ou aucun.',
+      'Username and password (or token): both, or neither.', 'Benutzername und Passwort (oder Token): beide oder keines.',
+      'Usuario y contraseña (o token): los dos o ninguno.'), 'err');
+    $('plAdoptGo').disabled = true;
+    // autre dépôt que celui de la configuration : la page le dit avant que la fenêtre du lanceur s'ouvre
+    const dry = await post('adopt', {
+      url,
+      dry: true
+    }).catch(() => null);
+    msg('plSyncMsg', (dry?.needsConfirm ? L(
+      'Une fenêtre de confirmation va s’ouvrir sur l’ordinateur où tourne le lanceur (peut-être derrière le navigateur) : répondez « Oui ».',
+      'A confirmation window will open on the computer running the launcher (maybe behind the browser): answer “Yes”.',
+      'Auf dem Computer, auf dem der Starter läuft, öffnet sich ein Bestätigungsfenster (vielleicht hinter dem Browser): mit „Ja“ antworten.',
+      'Se abrirá una ventana de confirmación en el equipo donde se ejecuta el lanzador (quizá detrás del navegador): responda «Sí».'
+    ) + ' ' : '') + L(
+      'Reprise en cours… (clone du dépôt, puis fusion des fichiers du poste ; quelques minutes la première fois). Autre dépôt que celui de la configuration : confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
+      'Taking over… (repository clone, then merge of this computer’s files; a few minutes the first time). Another repository than the configured one: confirm in the window the launcher opens on the computer.',
+      'Übernahme läuft… (Klon des Repositorys, dann Zusammenführung der Dateien dieses Rechners; beim ersten Mal einige Minuten). Anderes Repository als das konfigurierte: im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
+      'Incorporación en curso… (clon del repositorio y fusión de los archivos de este equipo; unos minutos la primera vez). Otro repositorio distinto del configurado: confirme en la ventana que el lanzador abre en el equipo.'
+    ));
+    try {
+      const r = await post('adopt', {
+        url,
+        user,
+        secret,
+        remember: $('plAdoptRemember').checked,
+        author: read(PROFILE).trigram || ''
+      });
+      msg('plSyncMsg', r.message, r.ok ? 'ok' : 'err');
+      if (r.ok) {
+        $('plAdoptSecret').value = '';
+        dataState();
+      }
+    } catch (e) {
+      msg('plSyncMsg', K.tf(['Échec : {m}', 'Failed: {m}', 'Fehlgeschlagen: {m}', 'Error: {m}'], {
+        m: e.message
+      }), 'err');
+    }
+    $('plAdoptGo').disabled = false;
+    await repoState();
+  });
   /** Envoi d'un fichier choisi au lanceur (kind : data pour l'archive des données, log pour le journal), puis after. */
   const upload = (id, kind, out, after) => on('change', id, async e => {
     const input = e.target,
@@ -1253,6 +1348,42 @@
   async function foldersState() {
     const FA = window.FileAccess;
     if (!FA) return;
+    // mode GitHub (Mon profil › Accès aux données) : les données viennent du dépôt, aucun dossier à choisir — étape sans
+    // objet, carte du dossier de l'application et « Dossier OneDrive… » masqués (FileAccess.pickFolder les refuse) ;
+    // le classeur ODV reste choisissable comme fichier. Il l'emporte aussi sur une page servie par le lanceur : dit.
+    const gh = window.GitHubData?.on?.() ? window.GitHubData.config() : null;
+    S.folderNa = !!gh;
+    $('plAppCard').hidden = $('plOdvDir').hidden = $('plFoldersHint').hidden = !!gh;
+    $('plFoldersGh').hidden = !gh;
+    if (gh) {
+      S.launcher ??= await api('status').then(() => true, () => false);
+      setText($('plFoldersGh'), K.tf(['Mode GitHub : les données viennent du dépôt {u}, aucun dossier à choisir.{l}',
+        'GitHub mode: the data come from the repository {u}, no folder to choose.{l}',
+        'GitHub-Modus: Die Daten kommen aus dem Repository {u}, kein Ordner zu wählen.{l}',
+        'Modo GitHub: los datos vienen del repositorio {u}, no hay carpeta que elegir.{l}'
+      ], {
+        u: gh.repo,
+        l: S.launcher ? K.t([
+          ' Cette page est servie par le lanceur, mais le mode GitHub l’emporte : pour travailler avec les dossiers de ce poste, le retirer dans Mon profil › Accès aux données.',
+          ' This page is served by the launcher, but GitHub mode wins: to work with this computer’s folders, remove it in My profile › Data access.',
+          ' Diese Seite wird vom Starter bereitgestellt, aber der GitHub-Modus hat Vorrang: Um mit den Ordnern dieses Rechners zu arbeiten, ihn unter Mein Profil › Datenzugang entfernen.',
+          ' Esta página la sirve el lanzador, pero el modo GitHub prevalece: para trabajar con las carpetas de este equipo, quitarlo en Mi perfil › Acceso a los datos.'
+        ]) : ''
+      }));
+      S.folder = true;
+      S.folderOther = false;
+      S.folderName = '';
+      done('plFolders', true);
+      const odvFile = await FA.get('__odvFile');
+      msg('plOdvMsg', odvFile ? K.tf(['Classeur gardé : {f}', 'Workbook kept: {f}', 'Arbeitsmappe gespeichert: {f}',
+        'Libro guardado: {f}'
+      ], {
+        f: odvFile.name || 'ODV'
+      }) : '', odvFile ? 'ok' : '');
+      dataGate();
+      checklist();
+      return;
+    }
     const repo = await FA.status('__repo'),
       odvDir = await FA.status('__odv'),
       odvFile = await FA.get('__odvFile');
@@ -1287,13 +1418,15 @@
     const h = (await window.FileAccess.status('__repo')).handle;
     if (!h) return;
     try {
+      // dossier de l'application : lecture seule (FileAccess.modeOf) ; écriture des données demandée ensuite
       await h.requestPermission({
-        mode: 'readwrite'
+        mode: window.FileAccess.modeOf?.('__repo') || 'read'
       });
     } catch {
       /* refus : l'état le dit */
     }
     await rederive();
+    await window.FileAccess.grantData?.();
     foldersState();
   });
   /** Action d'un bouton « Choisir le dossier » (FileAccess.pickFolder) ; un refus ou une annulation est silencieux. */
@@ -2105,7 +2238,7 @@
   // une autre installation servie au même port n'hérite pas du « Terminer »)
   on('click', 'plFinish', async () => {
     // étapes recommandées pas faites (3 à 5) : on termine quand même, après confirmation (reprise possible à tout moment)
-    const left = lastSteps.filter(x => x.n >= 3 && x.n <= 5 && x.st !== 'ok' && x.st !== 'unknown');
+    const left = lastSteps.filter(x => x.n >= 3 && x.n <= 5 && x.st !== 'ok' && x.st !== 'unknown' && x.st !== 'na');
     if (left.length && !await window.AppFramework.ask(K.tf([
         'Il reste : {l}. Terminer quand même ? Ces réglages restent accessibles dans Paramètres › Premier lancement.',
         'Still left: {l}. Finish anyway? These settings stay available in Settings › First run.',
@@ -2178,6 +2311,8 @@
       aeroState();
       allButton();
       centreState();
+      if (S.folderNa) foldersState(); // phrase du mode GitHub, dans la nouvelle langue
+      if (repo) repoState(); // carte du dépôt de synchronisation (reprise de data/), dans la nouvelle langue
     });
     setInterval(checklist, 15000);
     // étape 5 : états des types et des données aéronautiques, puis l'étape courante ouverte, les autres repliées

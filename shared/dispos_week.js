@@ -14,8 +14,13 @@
   //     dans l'ordre, avec appareils et simulateurs du pilote relus ; semaine relue quand un autre onglet l'écrit
   //     (defa-data-change), composant remonté au changement de langue ou de catégories ;
   //   · semaine sans déclaration mais ancienne grille horaire (fichier <TRI>.json d'avant les catégories) : importée,
-  //     puis enregistrée.
-  // API (window.DisposWeek) : mount(hôte, { nav = true }) → { set({ tri, week }), refresh(), touch(), week } ;
+  //     puis enregistrée ;
+  //   · mode mobile (html[data-mobile]) : vue « un jour » (dayRender) au lieu de la grille de la semaine, qui ne se trace
+  //     pas au doigt ; bascule Jour / Semaine (choix gardé : disposView:v1) ;
+  //   · mode compact (Mes missions) : la semaine résumée jour par jour (plages et catégories), la saisie repliée sous
+  //     « Modifier ma semaine » — dépliée d'office quand la semaine est vide, puis comme le pilote l'a laissée.
+  // API (window.DisposWeek) : mount(hôte, { nav = true, compact = false }) → { set({ tri, week }), refresh(), touch(),
+  //   week } ;
   //   legend() : HTML des catégories par groupe (pastilles inertes, Planning ODV) ; subtitle(), bindSubtitle(élément) :
   //   sous-titre du bloc de saisie, dans la langue courante.
   const K = window.RepositoryKit,
@@ -91,16 +96,16 @@
       'La paleta. Un clic en una ficha elige el pincel: solo indica QUÉ trazar. Las fichas de fondo están en la última línea.'
     ],
     'help.draw': [
-      'Tracer. Glisser dans le vide ou dans l’espace entre deux rangées : la forme s’aimante à la demi-heure. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.',
-      'Draw. Drag on empty space or in the gap between two rows: the shape snaps to the half hour. Across several days, a selection rectangle lays the same hours on each day it crosses.',
-      'Zeichnen. Im leeren Bereich oder im Abstand zwischen zwei Zeilen ziehen: die Form rastet auf der halben Stunde ein. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.',
-      'Trazar. Arrastrar en el vacío o en el espacio entre dos filas: la forma se ajusta a la media hora. En varios días, un rectángulo de selección pone el mismo horario en cada día que cruza.'
+      'Tracer. Glisser dans le vide, sur une bande de fond ou dans l’espace entre deux rangées : la forme s’aimante à la demi-heure. Sur plusieurs jours, un rectangle de sélection pose la même plage horaire sur chaque jour traversé.',
+      'Draw. Drag on empty space, on a background band or in the gap between two rows: the shape snaps to the half hour. Across several days, a selection rectangle lays the same hours on each day it crosses.',
+      'Zeichnen. Im leeren Bereich, auf einem Hintergrundband oder im Abstand zwischen zwei Zeilen ziehen: die Form rastet auf der halben Stunde ein. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.',
+      'Trazar. Arrastrar en el vacío, sobre una banda de fondo o en el espacio entre dos filas: la forma se ajusta a la media hora. En varios días, un rectángulo de selección pone el mismo horario en cada día que cruza.'
     ],
     'help.grab': [
-      'Saisir une forme. Un geste qui part sur une forme, rectangle ou bande, la saisit quel que soit le pinceau : un clic la sélectionne, un glisser la déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords la redimensionnent. Maj+glisser trace par-dessus : c’est ainsi qu’on pose une dispo sur un jour déjà couvert d’une bande.',
-      'Take a shape. A gesture that starts on a shape, rectangle or band, takes it whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it. Shift+drag draws over it instead, which is how to draw an availability on a day already covered by a band.',
-      'Eine Form greifen. Eine Geste, die auf einer Form (Rechteck oder Band) beginnt, greift sie, egal welcher Pinsel: ein Klick wählt sie aus, Ziehen verschiebt sie (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), ihre Ränder ändern die Größe. Umschalt+Ziehen zeichnet darüber: so legt man eine Verfügbarkeit auf einen Tag, der schon von einem Band bedeckt ist.',
-      'Tomar una forma. Un gesto que empieza sobre una forma, rectángulo o banda, la toma sea cual sea el pincel: un clic la selecciona, arrastrar la mueve (pasos de 5 min; hacia arriba o abajo: mismo horario, otro día), sus bordes la redimensionan. Mayús+arrastrar traza encima: así se pone una disponibilidad en un día ya cubierto por una banda.'
+      'Saisir une dispo. Un geste qui part sur un rectangle le saisit, quel que soit le pinceau : un clic le sélectionne, un glisser le déplace (pas de 5 min ; vers le haut ou le bas : même horaire, autre jour), ses bords le redimensionnent ; Maj+glisser trace par-dessus. Les bandes de fond ne sont pas des objets : autour d’une dispo, elles remplissent le reste du jour et ne se déplacent pas ; un geste qui part sur une bande trace.',
+      'Take an availability. A gesture that starts on a rectangle takes it, whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it; Shift+drag draws over it instead. Background bands are not objects: around an availability they fill the rest of the day and do not move; a gesture that starts on a band draws.',
+      'Eine Verfügbarkeit greifen. Eine Geste, die auf einem Rechteck beginnt, greift es, egal welcher Pinsel: Ein Klick wählt es aus, Ziehen verschiebt es (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), seine Ränder ändern die Größe; Umschalt+Ziehen zeichnet stattdessen darüber. Hintergrundbänder sind keine Objekte: Um eine Verfügbarkeit herum füllen sie den Rest des Tages und bewegen sich nicht; eine Geste, die auf einem Band beginnt, zeichnet.',
+      'Tomar una disponibilidad. Un gesto que empieza sobre un rectángulo lo toma, sea cual sea el pincel: un clic lo selecciona, arrastrar lo mueve (pasos de 5 min; hacia arriba o abajo: mismo horario, otro día), sus bordes lo redimensionan; Mayús+arrastrar traza encima. Las bandas de fondo no son objetos: alrededor de una disponibilidad llenan el resto del día y no se mueven; un gesto que empieza sobre una banda traza.'
     ],
     'help.cut': [
       'Découper. La dernière forme gagne : un rectangle tracé sur un autre le découpe, un fond tracé à travers un rectangle aussi. La découpe se voit pendant le geste.',
@@ -115,10 +120,10 @@
       'Soltar, doble clic. Arrastrar una ficha sobre una forma: la forma toma esa naturaleza. Soltarla en el vacío de una fila o en el nombre del día: el día entero, y una ficha de fondo solo cambia entonces el fondo, los rectángulos se quedan. Doble clic en una banda: su color pasa a ser el fondo de todo el día; en una ficha de fondo: de toda la semana.'
     ],
     'help.fix': [
-      'Corriger. Le ✕ d’une forme, ou Suppr sur la sélection, l’efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit.',
-      'Correct. ✕ on a shape, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes.',
-      'Korrigieren. Das ✕ einer Form oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht rückgängig, Strg+Y oder Strg+Umschalt+Z stellt wieder her.',
-      'Corregir. La ✕ de una forma, o Supr sobre la selección, la borra; las flechas la mueven (← → 5 min, ↑ ↓ un día); Esc quita la selección. Ctrl+Z deshace, Ctrl+Y o Ctrl+Mayús+Z rehace.'
+      'Corriger. Le ✕ d’une dispo, ou Suppr sur la sélection, l’efface ; les flèches la déplacent (← → 5 min, ↑ ↓ un jour) ; Échap désélectionne. Ctrl+Z annule, Ctrl+Y ou Ctrl+Maj+Z rétablit.',
+      'Correct. ✕ on an availability, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes.',
+      'Korrigieren. Das ✕ einer Verfügbarkeit oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht rückgängig, Strg+Y oder Strg+Umschalt+Z stellt wieder her.',
+      'Corregir. La ✕ de una disponibilidad, o Supr sobre la selección, la borra; las flechas la mueven (← → 5 min, ↑ ↓ un día); Esc quita la selección. Ctrl+Z deshace, Ctrl+Y o Ctrl+Mayús+Z rehace.'
     ],
     'help.saved': [
       'Ce qui est enregistré. Les heures sont en UTC, les semaines sont des semaines ISO (du lundi au dimanche). Chaque retouche est enregistrée (dossier des données, sinon ce navigateur) ; le Centre s’en sert pour affecter les missions. Le temps sans rien est indisponible.',
@@ -139,8 +144,28 @@
 .dw-add label{display:inline-flex;gap:5px;align-items:center;font-size:12.5px}.dw-add select,.dw-add input[type=time]{padding:3px 5px;font:inherit}
 .dw-days{display:inline-flex;flex-wrap:wrap;gap:2px 8px}.dw-days label{font-size:12px}.dw-themes{margin:2px 0 0;font-size:12px;opacity:.85}
 .dw-precise>summary{cursor:pointer;font-size:12px;opacity:.85}.dw-precise[open]>summary{margin-bottom:6px}.dw-msg{margin:0}
+.dw-sum{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.dw-sum-d{cursor:pointer;display:grid;align-content:start;gap:2px;padding:4px 6px;border:1px solid var(--sk-card-bd,var(--line,#8884));font-size:12px;min-width:0}
+.dw-sum-d>b{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.02em;opacity:.8}.dw-sum-d>span{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.dw-sum-d>i{opacity:.55;font-style:normal}.dw-sum-none{margin:0;opacity:.85}.dw-edit>summary{cursor:pointer;font-weight:600}.dw-edit-in{display:grid;gap:8px;margin-top:8px}
+@media (max-width:800px){.dw-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dw-legend{display:grid;grid-template-columns:max-content 1fr;gap:3px 6px;align-items:center}.dw-legend-r{display:flex;flex-wrap:wrap;gap:2px}
 .dw-legend-n{font:400 10.5px/1.2 system-ui,sans-serif;opacity:.85;white-space:nowrap}
+.dw-view{display:flex;gap:4px}.dw-view button{flex:1}
+.dw-wrap :is(.dw-view button[aria-pressed=true],.dw-dpills button[aria-current=true]):not(#imp){background:var(--accent,#1d6fd8) !important /* garder */;color:#fff !important /* garder */}
+.dw-day-on [data-tl] :is(.dt-grid,.dt-helpbox){display:none}.dw-dayview{display:grid;gap:8px}
+.dw-dhead{display:flex;align-items:center;gap:8px}.dw-dhead b{flex:1;text-align:center;font-size:15px}
+.dw-dpills{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.dw-dpills button{padding:5px 0;font-size:12px;line-height:1.15}
+.dw-dpills button.has::after{content:'';display:block;width:6px;height:6px;margin:2px auto 0;border-radius:50%;background:currentColor}
+.dw-dhint{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0;font-size:13px}
+.dw-dlist{list-style:none;margin:0;padding:0;display:grid;gap:4px}.dw-dlist li{display:flex;align-items:center;gap:8px;font-size:13px}
+.dw-dlist li>span{flex:1}.dw-dlist i{flex:none;width:14px;height:14px;border:1px solid #0003}
+.dw-colbox{max-height:62vh;overflow-y:auto;overscroll-behavior:contain}.dw-col{position:relative;cursor:pointer;touch-action:manipulation;border:1px solid color-mix(in srgb,currentColor 25%,transparent);
+background-image:repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 22%,transparent) 0 1px,transparent 1px 48px),
+repeating-linear-gradient(to bottom,color-mix(in srgb,currentColor 9%,transparent) 0 1px,transparent 1px 24px)}
+.dw-col .dw-h{position:absolute;left:4px;font-size:11px;opacity:.75;padding-top:1px;pointer-events:none}
+.dw-col :is(.dw-dbg,.dw-dfg,.dw-dpick){position:absolute;pointer-events:none;box-sizing:border-box}.dw-dbg{left:46px;right:0;opacity:.55}
+.dw-dfg{left:58px;right:6px;padding:2px 6px;font-size:12px;line-height:1.3;overflow:hidden;border-radius:4px;box-shadow:0 1px 2px #0004}
+.dw-dpick{left:46px;right:0;outline:2px dashed var(--accent,#1d6fd8);outline-offset:-2px;background:color-mix(in srgb,var(--accent,#1d6fd8) 18%,transparent)}
 .dw-wrap :is(.dt-brush,.dt-x){border-radius:0 !important /* garder */;min-height:0 !important /* garder */;height:auto !important /* garder */;letter-spacing:0 !important /* garder */;text-transform:none !important /* garder */;text-shadow:none !important /* garder */;margin:0 !important /* garder */}.dw-chip{padding:0 3px;border:1px solid rgba(0,0,0,.3);font:400 9.5px/1.45 system-ui,sans-serif;white-space:nowrap}`;
     document.head.append(s);
   }
@@ -161,7 +186,8 @@
 
   /** Monte la saisie dans host ; nav : barre de semaine (false : semaine imposée par la page hôte). */
   function mount(host, {
-    nav = true
+    nav = true,
+    compact = false
   } = {}) {
     css();
     let tri = '',
@@ -171,7 +197,12 @@
       ready = null,
       loadSeq = 0,
       shownKey = '', // pilote et semaine des données tenues par le composant
-      lastSaved = ''; // updated_at de notre dernière écriture (relecture d'un autre onglet seulement)
+      lastSaved = '', // updated_at de notre dernière écriture (relecture d'un autre onglet seulement)
+      editOpen = null, // mode compact : saisie dépliée ou repliée par le pilote (null : selon la semaine)
+      undo = {
+        tri: '',
+        map: new Map()
+      }; // historique du composant, gardé quand il est remonté (langue changée)
     host.classList.add('dw-wrap');
     host.setAttribute('data-no-i18n', ''); // textes composés dans la langue courante (refaits au changement de langue)
     let last = ['', ''];
@@ -199,10 +230,20 @@
         brush = ui?.brush() || storedBrush();
       ui?.destroy();
       ui = null;
-      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p><div data-tl></div>
+      const view = `<div class="dw-view" data-view hidden><button type="button" class="secondary" data-view-set="day">${esc(t(['Jour', 'Day', 'Tag', 'Día']))}</button><button type="button" class="secondary" data-view-set="week">${esc(t(['Semaine', 'Week', 'Woche', 'Semana']))}</button></div>`,
+        edit = `${compact ? '' : view}<div data-tl></div><div class="dw-dayview" data-dayview hidden></div>
         <details class="dw-precise"><summary>${esc(t(['Plage précise', 'Precise range', 'Genauer Zeitraum', 'Intervalo preciso']))}</summary><div class="dw-add" data-add-form></div></details>
-        <div class="dw-actions" data-actions></div><p class="dw-msg small ${last[1]}">${esc(last[0])}</p>`;
+        <div class="dw-actions" data-actions></div>`;
+      host.innerHTML = `${nav ? '<div class="dw-nav" data-nav></div>' : ''}<p class="small" data-notri hidden></p>${compact ? `${view}<div data-sum></div><details class="dw-edit" data-edit${editOpen ? ' open' : ''}><summary>${esc(t(['Modifier ma semaine', 'Edit my week', 'Meine Woche bearbeiten', 'Editar mi semana']))}</summary><div class="dw-edit-in">${edit}</div></details>` : edit}<p class="dw-msg small ${last[1]}">${esc(last[0])}</p>`;
+      // mode compact : le pilote déplie ou replie la saisie lui-même (sa décision l'emporte sur la semaine vide)
+      host.querySelector('[data-edit]>summary')?.addEventListener('click', e => {
+        editOpen = !e.target.closest('details').open;
+      });
       if (!tri) return render();
+      if (undo.tri !== tri) undo = {
+        tri,
+        map: new Map()
+      };
       ui = window.DisposTimeline.mount(host.querySelector('[data-tl]'), {
         config: D.timelineConfig(),
         week,
@@ -215,7 +256,11 @@
         period: false,
         buttonClass: 'repo-plain', // pastilles et ✕ du module : hors du style des boutons des designs (angles : règle
         // « garder » de css(), un design arrondit aussi les boutons repo-plain)
-        onChange: d => queueSave(tri, d)
+        undoStore: undo.map,
+        onChange: d => {
+          queueSave(tri, d);
+          summary();
+        }
       });
       const slot = ui.slot('palette');
       if (slot) slot.innerHTML = '<p class="dw-themes" data-themes></p>';
@@ -228,8 +273,45 @@
         }
         themesHint(e.detail.id);
       });
+      // vue « un jour » redessinée à chaque retouche, annulation, semaine relue ou pinceau choisi
+      for (const ev of ['dispos-change', 'dispos-history', 'dispos-week', 'dispos-brush']) host.querySelector('[data-tl]')
+        .addEventListener(ev, dayRender);
       render();
       themesHint(ui.brush());
+    }
+    /** Mode compact : semaine résumée jour par jour (plages à la minute, pastille de catégorie), ou une ligne quand rien
+     *  n'est déclaré ; saisie dépliée d'office pour une semaine vide (sauf choix du pilote). */
+    function summary() {
+      const box = host.querySelector('[data-sum]'),
+        D = SD();
+      if (!box || !D) return;
+      const data = loaded() ? ui.get() : null,
+        ranges = (data?.ranges || []).map(r => ({
+          s: Date.parse(r.start),
+          e: Date.parse(r.end),
+          c: D.category(r.cat)
+        })).filter(r => r.e > r.s);
+      const det = host.querySelector('[data-edit]');
+      if (det) det.open = editOpen ?? (!!tri && !ranges.length);
+      if (!tri || !data) return void(box.innerHTML = '');
+      if (!ranges.length) {
+        box.innerHTML = `<p class="dw-sum-none">${esc(t(['Aucune disponibilité saisie cette semaine.', 'No availability entered this week.',
+          'Keine Verfügbarkeit für diese Woche eingetragen.', 'Ninguna disponibilidad introducida esta semana.'
+        ]))}</p>`;
+        return;
+      }
+      const mon = D.weekMonday(week),
+        hm = (ms, d0) => ms >= d0 + 864e5 ? '24:00' : new Date(ms).toISOString().slice(11, 16);
+      box.innerHTML = `<div class="dw-sum">${Array.from({ length: 7 }, (_, i) => {
+        const d0 = mon + i * 864e5,
+          d1 = d0 + 864e5,
+          day = ranges.filter(r => r.s < d1 && r.e > d0);
+        return `<div class="dw-sum-d" data-sum-day="${i}" role="button" tabindex="0" title="${esc(t(['Modifier ce jour', 'Edit this day', 'Diesen Tag bearbeiten', 'Editar este día']))}"><b>${esc(dayLabel(d0))}</b>${day.length ? day.map(r => {
+          const c = r.c,
+            col = c ? D.color(c) : '#999';
+          return `<span><span class="dw-chip" style="background:${col};color:${ink(col)}" title="${esc(c ? D.label(c.label) : '')}">${esc(c ? D.code(c) || D.shortLabel(c) : '?')}</span>${esc(`${hm(Math.max(r.s, d0), d0)}–${hm(Math.min(r.e, d1), d0)}`)}</span>`;
+        }).join('') : '<i>—</i>'}</div>`;
+      }).join('')}</div>`;
     }
     /** Parties de la page autour du composant : barre de semaine, formulaire de plage précise, actions. */
     function render() {
@@ -264,7 +346,234 @@
         ${pending ? `<button type="button" class="secondary" data-flush data-icon="save">${esc(tf(['Écrire dans le dossier des données ({n})', 'Write to the data folder ({n})', 'In den Datenordner schreiben ({n})', 'Escribir en la carpeta de datos ({n})'], { n: pending }))}</button>` : ''}`;
       const box = host.querySelector('[data-actions]');
       if (box.innerHTML !== actions) box.innerHTML = actions;
+      dayRender();
     }
+
+    // ---- vue « un jour » (mode mobile) : un jour à la fois, heures de haut en bas (une demi-heure : CELL px) ; un appui
+    // pose le début, un second la fin (demi-heure comprise), avec la catégorie choisie dans la palette du module ; liste
+    // des plages du jour, ✕ pour en retirer une ; « Annuler » (pas de Ctrl+Z sur téléphone). Même composant, mêmes
+    // données : la grille de la semaine est seulement masquée (classe dw-day-on).
+    const VIEW = 'disposView:v1',
+      CELL = 24;
+    let dayIdx = null, // jour affiché (0 : lundi) ; null : aujourd'hui s'il est dans la semaine, sinon lundi
+      pick = null, // minute du jour du début choisi, en attente de la fin
+      shownDay = ''; // semaine et jour dessinés (colonne replacée au changement de jour)
+    const mobile = () => document.documentElement.dataset.mobile === 'on';
+    const dayOn = () => {
+      if (!mobile()) return false;
+      try {
+        return localStorage.getItem(VIEW) !== 'week';
+      } catch {
+        return true;
+      }
+    };
+    const hm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    const isoAt = ms => new Date(ms).toISOString().slice(0, 16);
+    /** Début (ms UTC) du jour affiché. */
+    const dayStart = () => SD().weekMonday(week) + dayIdx * 864e5;
+    /** Plages de la semaine (fond visible et dispos) coupées au jour d0 : { start, end, cat, a, b } (a, b : minutes). */
+    const dayParts = (data, d0) => data.ranges.map(r => ({
+      ...r,
+      a: Math.max(Date.parse(`${r.start}:00Z`), d0),
+      b: Math.min(Date.parse(`${r.end}:00Z`), d0 + 864e5)
+    })).filter(r => r.b > r.a).map(r => ({
+      ...r,
+      a: (r.a - d0) / 6e4,
+      b: (r.b - d0) / 6e4
+    }));
+    /** Dessine la vue « un jour » (écrit seulement ce qui change) ; ailleurs qu'en mode mobile, la cache. */
+    function dayRender() {
+      const box = host.querySelector('[data-dayview]'),
+        sw = host.querySelector('[data-view]');
+      if (!box || !sw) return;
+      const on = !!ui && loaded() && dayOn();
+      host.classList.toggle('dw-day-on', on);
+      sw.hidden = !ui || !mobile();
+      for (const b of sw.querySelectorAll('[data-view-set]')) b.setAttribute('aria-pressed', String((b.dataset.viewSet === 'day') ===
+        dayOn()));
+      box.hidden = !on;
+      if (!on) return;
+      const D = SD(),
+        cats = new Map(D.timelineConfig().categories.map(c => [c.id, c])),
+        mon = D.weekMonday(week);
+      if (dayIdx === null) {
+        const today = Math.floor((Date.now() - mon) / 864e5);
+        dayIdx = today >= 0 && today < 7 ? today : 0;
+      }
+      const d0 = dayStart(),
+        data = ui.get(),
+        parts = dayParts(data, d0),
+        brush = ui.brush(),
+        bc = cats.get(brush),
+        bg = r => cats.get(r.cat)?.layer === 'background',
+        name = r => cats.get(r.cat)?.label || r.cat,
+        title = new Date(d0).toLocaleDateString(loc(), {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          timeZone: 'UTC'
+        });
+      const pills = Array.from({
+        length: 7
+      }, (_, j) => {
+        const has = dayParts(data, mon + j * 864e5).some(r => !bg(r)),
+          lab = new Date(mon + j * 864e5).toLocaleDateString(loc(), {
+            weekday: 'short',
+            timeZone: 'UTC'
+          }).replace('.', '');
+        return `<button type="button" class="secondary${has ? ' has' : ''}" data-dpill="${j}" aria-current="${j === dayIdx}">${esc(lab)}<br>${new Date(mon + j * 864e5).getUTCDate()}</button>`;
+      }).join('');
+      const brushName = brush === '__erase' ? t(['effacer le fond', 'clear the background', 'Hintergrund löschen',
+        'borrar el fondo'
+      ]) : bc ? [bc.letter, bc.label].filter(Boolean).join(' ') : '—';
+      const hint = pick === null ? `<span>${esc(tf(['Appuyer sur l’heure de début, puis sur l’heure de fin : {c}.',
+          'Tap the start time, then the end time: {c}.', 'Auf die Anfangszeit tippen, dann auf die Endzeit: {c}.',
+          'Tocar la hora de inicio y luego la hora de fin: {c}.'
+        ], { c: brushName }))}</span><button type="button" class="secondary" data-dall>${esc(t(['Journée entière', 'Whole day', 'Ganzer Tag', 'Día entero']))}</button>` :
+        `<span>${esc(tf(['Début {h} : appuyer sur l’heure de fin.', 'Start {h}: tap the end time.',
+          'Beginn {h}: auf die Endzeit tippen.', 'Inicio {h}: tocar la hora de fin.'
+        ], { h: hm(pick) }))}</span><button type="button" class="ghost" data-dcancel>${esc(t(['Annuler', 'Cancel', 'Abbrechen', 'Cancelar']))}</button>`;
+      const undo = ui.history().undo ? `<button type="button" class="secondary" data-dundo>↶ ${esc(t(['Défaire', 'Undo', 'Rückgängig', 'Deshacer']))}</button>` : '';
+      const list = parts.map((r, i) => `<li><i style="background:${esc(cats.get(r.cat)?.color || '#ccc')}"></i><span>${hm(r.a)}–${hm(r.b)} · ${esc(name(r))}</span><button type="button" class="ghost" data-dx="${i}" title="${esc(t(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}">✕</button></li>`).join('');
+      const col = Array.from({
+        length: 24
+      }, (_, h) => `<span class="dw-h" style="top:${h * 2 * CELL}px">${hm(h * 60)}</span>`).join('') + parts.map(r => {
+        const c = cats.get(r.cat),
+          pos = `top:${r.a / 30 * CELL}px;height:${(r.b - r.a) / 30 * CELL}px;background:${esc(c?.color || '#ccc')}`;
+        return bg(r) ? `<div class="dw-dbg" style="${pos}"></div>` : `<div class="dw-dfg" style="${pos};color:${ink(c?.color || '#ccc')}">${hm(r.a)}–${hm(r.b)} ${esc([c?.letter, c?.short || name(r)].filter(Boolean).join(' '))}</div>`;
+      }).join('') + (pick === null ? '' : `<div class="dw-dpick" style="top:${pick / 30 * CELL}px;height:${CELL}px"></div>`);
+      const html = `<div class="dw-dhead"><button type="button" class="secondary" data-dstep="-1" title="${esc(t(['Jour précédent', 'Previous day', 'Vorheriger Tag', 'Día anterior']))}">‹</button><b>${esc(title)} (UTC)</b><button type="button" class="secondary" data-dstep="1" title="${esc(t(['Jour suivant', 'Next day', 'Nächster Tag', 'Día siguiente']))}">›</button></div>
+        <div class="dw-dpills">${pills}</div><p class="dw-dhint">${hint}${undo}</p>${list ? `<ul class="dw-dlist">${list}</ul>` : ''}
+        <div class="dw-colbox" data-colbox><div class="dw-col" data-col style="height:${48 * CELL}px">${col}</div></div>`;
+      if (box.innerHTML !== html) {
+        const top = box.querySelector('[data-colbox]')?.scrollTop || 0; // même jour : la colonne reste où elle était
+        box.innerHTML = html;
+        box.querySelector('[data-colbox]').scrollTop = top;
+      }
+      // autre jour : la colonne s'ouvre une heure avant la première dispo du jour, sinon à 07:00
+      const key = `${week}|${dayIdx}`;
+      if (key !== shownDay) {
+        shownDay = key;
+        const first = parts.find(r => !bg(r));
+        box.querySelector('[data-colbox]').scrollTop = Math.max(0, ((first ? first.a : 480) - 60) / 30 * CELL);
+      }
+    }
+    /** Jour affiché décalé de n : au-delà de la semaine, semaine voisine relue (dimanche → lundi suivant, et l'inverse). */
+    function dayStep(n) {
+      pick = null;
+      const j = dayIdx + n;
+      if (j >= 0 && j < 7) {
+        dayIdx = j;
+        return dayRender();
+      }
+      dayIdx = j < 0 ? 6 : 0;
+      setWeek(SD().addWeek(week, j < 0 ? -1 : 1));
+    }
+    /** Mode compact : déplie la saisie (« Modifier ma semaine ») et retient ce choix. */
+    const openEdit = () => {
+      const det = host.querySelector('[data-edit]');
+      if (!det) return;
+      editOpen = true;
+      det.open = true;
+    };
+    /** Appui dans la vue « un jour » ; rend true s'il la concernait. */
+    function dayClick(e) {
+      const view = e.target.closest('[data-view-set]');
+      if (view) {
+        try {
+          localStorage.setItem(VIEW, view.dataset.viewSet);
+        } catch {
+          /* stockage indisponible : choix le temps de la page */
+        }
+        pick = null;
+        openEdit();
+        dayRender();
+        return true;
+      }
+      // mode compact : un jour du résumé ouvre la saisie sur ce jour (vue « un jour » en mode mobile)
+      const sumDay = e.target.closest('[data-sum-day]');
+      if (sumDay) {
+        dayIdx = +sumDay.dataset.sumDay;
+        if (mobile()) try {
+          localStorage.setItem(VIEW, 'day');
+        } catch {
+          /* stockage indisponible : vue du moment */
+        }
+        pick = null;
+        openEdit();
+        dayRender();
+        return true;
+      }
+      if (!e.target.closest('[data-dayview]') || !loaded()) return false;
+      const el = sel => e.target.closest(sel),
+        d0 = dayStart();
+      if (el('[data-dstep]')) dayStep(+el('[data-dstep]').dataset.dstep);
+      else if (el('[data-dpill]')) {
+        dayIdx = +el('[data-dpill]').dataset.dpill;
+        pick = null;
+        dayRender();
+      } else if (el('[data-dcancel]')) {
+        pick = null;
+        dayRender();
+      } else if (el('[data-dundo]')) ui.undo();
+      else if (el('[data-dall]')) ui.add([{
+        start: isoAt(d0),
+        end: isoAt(d0 + 864e5),
+        cat: ui.brush()
+      }]);
+      else if (el('[data-dx]')) {
+        // dispo : retirée entière (même si elle passe minuit) ; fond : effacé sur ce jour seulement
+        const r = dayParts(ui.get(), d0)[+el('[data-dx]').dataset.dx],
+          D = SD();
+        if (!r) return true;
+        if (D.timelineConfig().categories.find(c => c.id === r.cat)?.layer === 'background') ui.add([{
+          start: isoAt(d0 + r.a * 6e4),
+          end: isoAt(d0 + r.b * 6e4),
+          cat: '__erase'
+        }]);
+        else {
+          const d = ui.get();
+          ui.replace({
+            ...d,
+            ranges: d.ranges.filter(x => !(x.start === r.start && x.end === r.end && x.cat === r.cat))
+          });
+        }
+      } else if (el('[data-col]')) {
+        const y = e.clientY - el('[data-col]').getBoundingClientRect().top,
+          m = Math.max(0, Math.min(47, Math.floor(y / CELL))) * 30;
+        if (pick === null) {
+          pick = m;
+          dayRender();
+        } else {
+          const a = Math.min(pick, m),
+            b = Math.max(pick, m) + 30;
+          pick = null;
+          if (!ui.add([{
+              start: isoAt(d0 + a * 6e4),
+              end: isoAt(d0 + b * 6e4),
+              cat: ui.brush()
+            }])) dayRender();
+        }
+      }
+      return true;
+    }
+    // balayage horizontal sur la vue « un jour » : jour suivant ou précédent
+    let swipe = null;
+    host.addEventListener('touchstart', e => {
+      swipe = e.target.closest('[data-dayview]') && e.touches.length === 1 ? [e.touches[0].clientX, e.touches[0].clientY] : null;
+    }, {
+      passive: true
+    });
+    host.addEventListener('touchend', e => {
+      if (!swipe || !loaded()) return;
+      const dx = e.changedTouches[0].clientX - swipe[0],
+        dy = e.changedTouches[0].clientY - swipe[1];
+      swipe = null;
+      if (Math.abs(dx) > 60 && Math.abs(dy) < 40) dayStep(dx < 0 ? 1 : -1);
+    }, {
+      passive: true
+    });
+    window.addEventListener('repository-mobile-change', dayRender);
     /** Catégories du groupe choisi dans « Plage précise ». */
     function fillCats() {
       const D = SD(),
@@ -305,6 +614,7 @@
       if (av) extra = {
         appareils: {
           possedes: av.aircraft?.owned || [],
+          neophytes: av.aircraft?.novice || [],
           maitrises: av.aircraft?.mastered || [],
           ...(av.aircraft?.variants ? {
             variantes: av.aircraft.variants
@@ -348,9 +658,12 @@
         ], {
           e: r.error?.message || ''
         }), 'warn');
-        else msg(text || t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.',
+        else msg(text || (window.GitHubData?.on?.() ? t(['Enregistré dans le dépôt des données (GitHub).',
+          'Saved to the data repository (GitHub).', 'Im Daten-Repository gespeichert (GitHub).',
+          'Guardado en el repositorio de datos (GitHub).'
+        ]) : t(['Enregistré dans le dossier des données.', 'Saved to the data folder.', 'Im Datenordner gespeichert.',
           'Guardado en la carpeta de datos.'
-        ]), 'ok');
+        ])), 'ok');
       } catch (e) {
         if (`${t0}|${w0}` !== `${tri}|${week}`) return window.AppFramework?.notify?.(e.message, 'err');
         msg(e.message, 'err');
@@ -428,6 +741,7 @@
       shownKey = `${t0}|${w0}`;
       lastSaved = weeks[w0]?.updated_at || '';
       render();
+      summary();
       if (old) await queueSave(t0, ui.get(), t(['Ancienne grille horaire importée dans la semaine.',
         'Former hourly grid imported into the week.', 'Frühere Stundentabelle in die Woche übernommen.',
         'Antigua cuadrícula horaria importada en la semana.'
@@ -440,6 +754,7 @@
       if (e.target.matches('[data-wk-date]') && e.target.value) setWeek(SD().weekId(Date.parse(`${e.target.value}T12:00:00Z`)));
     });
     host.addEventListener('click', async e => {
+      if (dayClick(e)) return;
       const D = SD();
       const wk = e.target.closest('[data-wk]');
       if (wk) return setWeek(+wk.dataset.wk ? D.addWeek(week, +wk.dataset.wk) : D.weekId(Date.now()));
@@ -548,9 +863,10 @@
         }
       }));
     }
-    // langue ou catégories changées : composant remonté (textes, palette), semaine gardée
+    // langue ou catégories changées : composant remonté (textes, palette), semaine gardée ; langue : historique gardé
     window.addEventListener('repository-language-change', () => tri && (frame(), ready = load()));
-    window.addEventListener('suite-dispos-config', () => tri && ui && (frame(), ready = load()));
+    // catégories changées : l'historique peut nommer une catégorie retirée, il repart de zéro
+    window.addEventListener('suite-dispos-config', () => tri && ui && (undo.map.clear(), frame(), ready = load()));
     // semaine écrite par un autre onglet (ou relue du dossier) : relue, sauf notre propre écriture
     window.addEventListener('defa-data-change', e => {
       const path = e.detail?.path || '';
@@ -562,6 +878,7 @@
         if (d && d.updated_at && d.updated_at !== lastSaved && loaded()) {
           lastSaved = d.updated_at;
           ui.set(d);
+          summary();
         }
       }).catch(() => {});
     });
@@ -588,17 +905,25 @@
     };
   }
   /** Sous-titre du bloc de saisie (Mes missions, Mes disponibilités), dans la langue courante. */
-  const subtitle = () => t([
+  const subtitle = (compact = false) => compact ? t([
+    'Semaine affichée, heures UTC ; « Modifier ma semaine » pour tracer vos plages. Le Centre s’en sert pour affecter les missions.',
+    'Week shown, UTC times; “Edit my week” to draw your ranges. The Centre uses it to assign missions.',
+    'Angezeigte Woche, UTC-Zeiten; „Meine Woche bearbeiten“, um Ihre Zeiträume zu zeichnen. Das Zentrum nutzt sie, um Missionen zuzuteilen.',
+    'Semana mostrada, horas UTC; «Editar mi semana» para trazar sus intervalos. El Centro lo usa para asignar las misiones.'
+  ]) : t([
     'Semaine affichée, heures UTC : choisir une catégorie dans la palette, puis tracer dans la grille (« Comment s’en servir » sous la grille). Le Centre s’en sert pour affecter les missions.',
     'Week shown, UTC times: choose a category in the palette, then draw in the grid (“How to use” under the grid). The Centre uses it to assign missions.',
     'Angezeigte Woche, UTC-Zeiten: eine Kategorie in der Palette wählen, dann im Raster zeichnen („So geht’s“ unter dem Raster). Das Zentrum nutzt sie, um Missionen zuzuteilen.',
     'Semana mostrada, horas UTC: elegir una categoría en la paleta y trazar en la cuadrícula («Cómo usarlo» bajo la cuadrícula). El Centro lo usa para asignar las misiones.'
   ]);
-  /** Remplit (et tient à jour au changement de langue) un sous-titre de bloc avec subtitle(). */
-  function bindSubtitle(el) {
+  /** Remplit (et tient à jour au changement de langue) un sous-titre de bloc avec subtitle() ; compact : celui du mode
+   *  compact (saisie repliée). */
+  function bindSubtitle(el, {
+    compact = false
+  } = {}) {
     if (!el) return;
     const set = () => {
-      const v = subtitle();
+      const v = subtitle(compact);
       if (el.textContent !== v) el.textContent = v;
     };
     set();

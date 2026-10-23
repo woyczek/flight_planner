@@ -33,6 +33,15 @@ if (!window.DataIndex) {
     src
   }));
 }
+// Données sur GitHub (shared/github_data.js : appli sans lanceur, docs/technique/APPLI_AUTONOME.md) : inséré de même,
+// avant les scripts de la page (écritures du pool et du registre, service worker des lectures).
+if (!window.GitHubData) {
+  const src = new URL('github_data.js?v=0', document.currentScript?.src || location.href).href;
+  if (document.readyState === 'loading') document.write(`<script src="${src}"></scr` + 'ipt>');
+  else document.head.append(Object.assign(document.createElement('script'), {
+    src
+  }));
+}
 (() => {
   'use strict';
   if (window.RepositoryKit) return;

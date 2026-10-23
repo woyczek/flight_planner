@@ -23,16 +23,15 @@ What it shows depends on your **usage level** (My profile › “Usage level”)
 
 | Entry | What it opens | Level |
 |---|---|---|
-| “Today” | Next mission, reports to write, week; first entry at every level | 1 |
-| “My missions” | Missions assigned by the Centre and availability (red badge: unread missions) | 1 |
-| “Report” | Entry of a mission report | 1 |
+| “My missions” | Entry page: next mission, reports to write, availability; folders of the assigned missions (red badge: unread missions); first entry at every level | 1 |
+| “Report” | Entry of a mission report; “Fleet” tab: where the aircraft are (map, filters, last flight) | 1 |
 | “Schedule” | Weekly order schedule (Board, read-only at level 1 or without the Centre); at level 4, common slots and likely missions of the ODV page | 1 |
 | “Missions” | Mission generator and registry, as tabs; map studio at level 4 | 3 |
 | “Tools” | Flight maps, fuel, landings, mission analysis (tools ticked in My profile, all at level 4) | 1 to 4 |
 
 - The level arranges the interface, it grants no rights: the Centre pages (Missions, ODV planning, changing the Board) still require the Centre enabled.
 - At the bottom of the column: “Settings” (My profile, Appearance, Centre, Installation, Maintenance, First run, as tabs) and **“Help”**. These two entries stay fixed at the bottom of the screen: only the upper list scrolls when there are too many icons (window under 460 px high: the whole bar scrolls).
-- “Help” opens the documentation in a window, above the current page, directly at the chapter of that page. The window closes with ✕, Esc or a click beside it; reopened, it resumes where you were. “↗” opens it as a full page (Ctrl-click on “Help”: in a new tab). It replaces the old “Menu” entry. It also works when the suite is opened from the disk, without the launcher: the documents are built into the page.
+- “Help” opens the documentation in a window, above the current page, directly at the chapter of that page. The window closes with ✕, Esc or a click beside it; reopened, it resumes where you were. “↗” opens it as a full page (Ctrl-click on “Help”: in a new tab). It replaces the old “Menu” entry. It also works when the suite is opened from the disk, without the launcher: the documents are built into the page. On phones, the text comes first: the contents (search, index, outline of the document) are folded behind “Contents ▾” at the top of the page, and “↑ Contents” at the end of each chapter reopens them.
 - The logo at the top of the column opens the virtual airline's website in a new tab.
 - The bar is hidden on a narrow screen (less than 760 px) and when printing. You can hide it or always show it: Appearance › Icons › “Side bar”.
 
@@ -99,9 +98,11 @@ Messages from the suite (success, warnings, errors) appear at the bottom centre 
 - A repetitive reminder (for example “SIA database missing from this browser…” of the Map studio and the Flight maps) is shown only **once per session** of the browser. Some messages are reserved for higher usage levels: below them they are not shown, but warnings and errors stay in the log of the “⚠ n” indicator.
 - Cleared warnings and errors can still be read through the “⚠ n” indicator in the header: “ACK” acknowledges an alert, “Acknowledge all” acknowledges them all, “Clear” empties the list. This log is lost when you change page.
 - A long task (reading, generation…) shows a progress bar in the same stack. Leaving the page during the task asks for confirmation. When the task can be interrupted, the bar carries a **“Stop”** button: the step in progress finishes, the next ones are not started, then the bubble says “Cancelled.”. The button exists for the generation and previews of the maps (Map studio and Flight maps: stop between two maps), the MORA calculation (of a zone, of the full grid or by blocks), the MILAIP ENR 5.7 import and the setting up of the zones (Maintenance), and the reading of the missions folder (Registry).
-- A stopped task says what remains partial. Maps: a stopped generation downloads no ZIP and files nothing in the mission folder (a batch of missions says how many are finished); the previews already shown stay. MORA by blocks (button “Stop (resume later)”): the blocks already computed are written to `mora.csv` (partial grid), “Resume the full calculation…” continues later. MORA of a zone, MORA grid and MILAIP import: nothing is written. Reading of the missions folder: the registry stays unchanged.
+- A stopped task says what remains partial. Maps: a stopped generation downloads no ZIP (Centre's map studio) or shows no image (Flight maps) and files nothing in the mission folder (a batch of missions says how many are finished); the previews already shown stay. MORA by blocks (button “Stop (resume later)”): the blocks already computed are written to `mora.csv` (partial grid), “Resume the full calculation…” continues later. MORA of a zone, MORA grid and MILAIP import: nothing is written. Reading of the missions folder: the registry stays unchanged.
 - Error messages say what failed and what to do, instead of a bare code. Examples: “the server does not answer — check that the suite is opened by the launcher (lancer.cmd / lancer.sh), restart it if needed, then try again”; “file missing — check that it is in the expected folder (or create it again), then try again”; “browser storage full — free some space (Settings › Maintenance › Disk space), then try again”. Other cases: online service not answering, server error, access denied by the browser, timeout; an unexpected error is shown as “failed” followed by the technical detail in brackets.
 - Questions (“Clear…?”) open in a small window with “Confirm” and “Cancel”.
+- “Connection blocked to …”: the suite only contacts the expected websites (launcher security policy). For a wanted website (report web service, other repository), “Allow this website…” then “Yes” in the launcher window; the list is reviewed in Settings › Installation › Sources and folders.
+- “⚠ Reduced protection — restore” (red header button): suite pages can be opened from another website or an extension, a setting chosen in Settings › Installation; one click restores the protection (it also comes back when the launcher closes).
 
 ### Sign-in, develop or production mode, impersonation
 
@@ -129,58 +130,45 @@ The suite offers several designs. They change the shape of the pages, not the in
 - In the material designs, the mission folder in “My missions” becomes a real book, with its animations.
 - You choose in Appearance: each design is shown as a thumbnail and applies at once. See the [Appearance](#appearance) chapter.
 
-## Today
-<!-- page: apps/pilot/aujourdhui.html -->
+## My missions
+<!-- page: apps/pilot/mes_missions.html -->
 
-This page is the first entry of the side bar, at every usage level. It answers three questions without any searching: what is my next mission, which reports are left to write, what is happening this week.
-Each block offers a single action. The data comes from the Centre’s assignments (see “My missions”) and from the report registry: nothing has to be entered again. The page rereads itself when you change language, trigram or session.
-The home page also offers it at the top of “My tasks”.
+The pilot's entry page: it first says what there is to do — the next mission, the reports to write, the availability of the week — then gives access to the folder of each mission. It replaces the former “Today” page (its old links lead here).
+You reach it from the first entry of the side bar, “My missions”, from the sealed envelope in the header or from the “My missions” tab.
+At the Crew (1) and Planning (2) levels, the page fits on one screen: “My next mission”, “Reports to write”, “My availability” (summarised) and, at the bottom, a line of links. From the Design level (3), the full list of the week is added below the reports.
+A mission folder opens below the reports: across the full width at levels 1 and 2; from level 3, next to the list (it takes two thirds of the width). On a narrow screen (less than 1100 px), everything moves to a single column.
+Line of links: “My flights”, then, from the Planning level (2), **Pilot**, **Aircraft mastered** and **Simulators**, to Settings › My profile (“Identity and networks” section for the trigram; “Aircraft and simulators” section). The “Pilot” button shows the trigram used to find your missions and your availability; at the Crew level (1), it only appears as long as the trigram is not set.
+In production mode, the page first asks you to sign in; the trigram is then the one you signed in with. The page rereads itself when you change language, trigram, session or level.
+Depending on the usage level (My profile › “Usage level”), the mission folder shows more or fewer sections (see “Mission”); a few buttons and links only appear from the Planning level (2) or at the Expert level (4).
 
 ### My next mission
 
 - The nearest mission assigned to you (upcoming, or taken off less than six hours ago): time in UTC, mission and title, aircraft (type and registration), airfield, callsign; “ferry” or “on call, ready at …” where relevant, and “● new” as long as you have not opened it.
-- Action: **“Open the folder”** opens the mission in “My missions”.
-- With no trigram set, this block asks for it on the spot: the “Trigram” field (two to four letters) and the “Save” button. The trigram is saved in the pilot profile and the three blocks reread at once, without going through Settings › My profile. In production mode or during an impersonation, the trigram is the one you signed in with: the block shows “No trigram: sign in to see your missions.”
-- With no upcoming mission, the block says so: “No upcoming mission is assigned to …”.
+- **“Open the folder”** opens the folder on the spot, in the “Mission” block. **“Flight maps”** and **“Fuel”** open the folder, then the tool with this mission, like the folder's buttons; they are only offered when the tool is (Expert level, or tool ticked in My profile), and not for a ferry. **“Create the report”** opens the folder and starts the report.
+- Below, “Then, within seven days”: the following missions of the next seven days, one line each (seven at most); a click opens their folder.
+- With no trigram set, this block asks for it on the spot: the “Trigram” field (two to four letters) and the “Save” button. The trigram is saved in the pilot profile and the page rereads at once, without going through Settings › My profile. In production mode or during an impersonation, the block shows “No trigram: sign in to see your missions.”
+- With no upcoming mission, a single line: “No upcoming mission.”
 
 ### Reports to write
 
 - The missions assigned to you that took off less than 21 days ago and for which the report registry holds no report. The most recent comes first; seven lines at most.
 - A report is known if it comes from a mission order: the registry (`missions.yaml`) ties it to the assignment through its order reference (mission, pilot, take-off). A report started otherwise, with the family picked by hand, does not count: the mission stays in the list.
 - Each line gives the mission, its title, the time, the aircraft and the airfield, with two buttons.
-- **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (address `?mission=…&do=cr`).
+- **“Write the report”** opens the mission folder on the spot and starts the report in the mission's family, filled in from the mission order.
 - **“No report”** removes the mission from the list (cancelled mission, not flown…). The choice is remembered in this browser only; the registry is not touched.
-- When everything is reported, the block says “Nothing to report: your past missions have their report.” With no trigram, it points to the field of the first block (“Trigram to enter above.”).
-
-### My week
-
-- Seven columns, Monday to Sunday of the current week (days in UTC); the current day is outlined.
-- Your missions appear there as tiles: time and mission number, or “on call”.
-- Action: a click on a tile opens the mission folder in “My missions”. With no trigram, the block says “Without a trigram, the week stays empty.”
-
-## My missions
-<!-- page: apps/pilot/mes_missions.html -->
-
-This page brings together the missions the Centre assigns to you, the folder of each one, your availability and your trigram.
-You reach it from the “My missions” entry of the side bar, from the sealed envelope in the header or from the “My missions” tab.
-Layout: the list of missions and the open folder side by side (the folder takes two thirds of the width), “My availability” below, across the full width. With no folder open, the list takes the full width. On a narrow screen (less than 1100 px), everything moves to a single column: missions, folder, availability.
-In production mode, the page first asks you to sign in.
-Depending on the usage level (My profile › “Usage level”), the mission folder shows more or fewer sections (see “Mission”); a few buttons and links only appear from the Planning level (2) or at the Expert level (4).
+- When everything is reported, a single line: “No report pending.”
 
 ### My missions this week
 
-The list of the missions assigned to you for the week shown, sorted by take-off time (UTC).
+From the Design level (3): the list of the missions assigned to you for the week shown, sorted by take-off time (UTC).
 
-- **Week bar**: “‹” previous week, date field (go to the week of a date), “›” next week, “⟲” back to the current week (visible outside the current week). It is shared by the list and the availability: changing the week here changes both blocks.
+- **Week bar**: “‹” previous week, date field (go to the week of a date), “›” next week, “⟲” back to the current week (visible outside the current week). It goes with the availability's bar: changing the week here changes both blocks.
 - **Columns**: “Take-off (UTC)” (or “standby” and the time to be ready by), “Mission”, “Title”, “Aircraft”, “Airfield”, “Callsign”.
 - A dot ● at the start of a line marks a **new mission, not yet opened**.
 - A “ferry” mention means that you are ferrying an aircraft for another pilot: you only receive the ferry order, not the mission brief.
 - A click on a line opens the mission in the “Mission” block.
 - “also show past missions” box: by default, a mission disappears a few hours after its take-off. The choice is remembered.
-- With no trigram set, the trigram entry field appears under the list (“Trigram” field, “Save” button): once saved, the list and the availability are read again. In production mode or during an impersonation, the trigram is the one you signed in with.
-- An address `?mission=…` coming from “Today” or from “New report” shows the week of that mission (past missions shown if needed); with `?do=cr`, the report starts as soon as the folder opens.
-- **Pilot**, **Aircraft mastered**, **Simulators**: three buttons under the list, to Settings › My profile (“Identity and networks” section for the trigram; “Aircraft and simulators” section, at the aircraft card or the simulators card). The “Pilot” button shows the trigram used to find your missions and your availability. In production mode or during an impersonation, it is the trigram you signed in with.
-- These three buttons appear from the Planning level (2). At the Crew level (1), only “Pilot” appears, as long as the trigram is not set.
+- An address `?mission=…` (top blocks, “New report”, old “Today” links) opens the folder of that mission and shows its week (past missions shown if needed); with `?do=cr`, `?do=maps` or `?do=fuel`, the report, Flight maps or Fuel follow the opening of the folder.
 
 ### Mission
 
@@ -246,8 +234,13 @@ The “⤢ Full width” button in the block title spreads the folder across the
 
 ### My availability
 
-Your availability for the week shown, in UTC, to the minute. The Centre uses it to assign missions to you. It is the same entry as on the My availability page (next chapter); here, the week is the one of the week bar of the list.
-Depending on the usage level: the block’s own week bar, the old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level; at the other levels, the week is changed with the bar of the list.
+Your availability for the week shown, in UTC, to the minute. The Centre uses it to assign missions to you.
+
+- **Week bar** of the block, at every level: “‹”, date, “›”, “⟲” (the next week is often the one to enter). At level 3, it goes with the list's bar.
+- **Summary**: one box per day (Monday to Sunday, UTC), each range with the badge of its category and its times, for example “D+ 17:00–22:00”; “—” for a day with nothing. Empty week: one line, “No availability entered this week.” A tap (or click) on a day opens the entry on that day; on phones, in “Day” view. On phones, the “Day / Week” switch sits above the summary, visible even with the entry folded.
+- **“Edit my week”** unfolds on the spot the entry described below (palette, grid, precise range, buttons); another click folds it. It is unfolded at once when the week is empty, then stays as you left it. The summary follows each change.
+
+It is the same entry as on the My availability page (next chapter). The old hourly grid and the “Open the availability entry on its own” link only appear at the Expert level.
 
 **Palette**: the categories are arranged by group, one line per group (“Available”, “SOG exercise”, “Busy”, “Unavailable”). Each badge carries the ODV code letter and a short label; the tooltip gives the full label. The chosen category is remembered. Under the palette, a line recalls the mission themes opened by the chosen category; for a custom category, the “My mission types…” link leads to the preferences in My profile.
 
@@ -264,11 +257,11 @@ Default categories (the Centre can change this list):
 
 - **Two layers.** The background gives the nature of an unavailability (“Unavailable” group): colour only, full row height. The first layer holds the availabilities, exercises and busy times: rectangles with their letter in the middle, the start time on the left and the end time on the right (shortened, “8 O 12”, on a narrow rectangle). A minute has one state only: where a rectangle lies, the background under it does not count, but it stays in place and comes back when the rectangle moves away. Time with nothing is unavailable.
 - **The palette.** Click a badge to choose the brush: it only says what to draw.
-- **Draw.** Drag on the empty part of a row or in the gap between two rows: the shape snaps to the half hour and shows its times while you drag. Across several days, a selection rectangle lays the same hours on each day it crosses.
-- **Take a shape.** A gesture that starts on a shape, rectangle or background band, takes it whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it. Shift+drag draws over it instead, which is how to draw an availability on a day already covered by a band.
+- **Draw.** Drag on the empty part of a row, on a background band or in the gap between two rows: the shape snaps to the half hour and shows its times while you drag. Across several days, a selection rectangle lays the same hours on each day it crosses.
+- **Take an availability.** A gesture that starts on a rectangle takes it, whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it; Shift+drag draws over it instead. Background bands are not objects: around an availability they fill the rest of the day and do not move; a gesture that starts on a band draws.
 - **Cut.** The last shape wins: a rectangle drawn over another cuts it, and a background drawn through a rectangle cuts it too. The cut shows while you drag.
 - **Drop and double-click.** Drag a badge from the palette onto a shape: the shape takes that nature. Dropped on the empty part of a row or on the day name, it covers the whole day; a background badge then changes only the background, rectangles stay. Double-click a band: its colour becomes the background of the whole day; double-click a background badge: of the whole week.
-- **Correct.** ✕ on a shape, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes a change, Ctrl+Y or Ctrl+Shift+Z redoes it (50 changes per week shown).
+- **Correct.** ✕ on an availability, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes a change, Ctrl+Y or Ctrl+Shift+Z redoes it (50 changes per week shown).
 - **What is saved.** Each change is saved at once (data folder, otherwise this browser): there is no “Save” button. On hover, a tooltip gives the range in words, for example “Wednesday 14 October, 00:00 to 05:30: Unavailable”.
 
 **“Precise range”** (collapsed: a click on its title opens it): “Group”, “Category”, day boxes, “from” and “to” (UTC, to the minute), then “Add”. The range is laid on each ticked day, with the last-shape rule. Empty times = whole day; with no end, until midnight; an end before the start is refused. Ctrl+Z undoes the addition.
@@ -281,6 +274,8 @@ Default categories (the Centre can change this list):
 The message under the block tells you where the entry went: “Saved to the data folder.”, or “Kept in this browser, the Centre cannot see it: …” if the data folder is not allowed (see [First run](#first-run), step 3).
 An existing old hourly grid is imported automatically into the week.
 The “Open the availability entry on its own” link leads to the My availability page. This link only appears at the Expert level.
+
+**On phones**: the blocks follow one another in a single column; the availability summary uses two columns. A tap on a mission brings its folder on screen, and its actions (“Create the report”, “Close the folder”…) stay pinned above the bottom bar while reading. The folder's tables (route points) scroll inside their frame.
 
 ## My flights
 <!-- page: apps/pilot/mes_vols.html -->
@@ -317,6 +312,8 @@ Below 800 px wide, only the date, call sign, route and duration remain; a click 
 You also get there through “My flights ↗” in My missions (next to “also show past missions”) and in the “Send” menu
 of a report.
 
+**On phones**: the totals become tiles (flights, block hours, flights without a report, most flown types) and each flight a card (date and call sign at the top); a tap unfolds its details, with “Open the report” or “Write the report”.
+
 ## My availability
 <!-- page: apps/pilot/disponibilites.html -->
 
@@ -342,6 +339,8 @@ Tips and limits:
 
 For the way the Centre uses these declarations, see [availability and reorganisation](../technique/DISPOS_ET_REORGANISATION.md).
 
+**On a phone**: input switches to a “one day” view (“Day” / “Week” toggle under the week bar; the chosen view is kept). At the top, the day shown with “‹” and “›” (or a finger swipe; past Sunday or Monday, the neighbouring week is read), then the seven days of the week (a dot under those with an availability). Choose a category in the palette, tap the start time in the hours column, then the end time: the range is laid to the half hour, end included; “Whole day” lays it over the whole day, “Cancel” drops a start. The day’s ranges are listed above the column: “✕” removes a whole availability, or the background on that day only; “↶ Undo” undoes the last change. The column opens one hour before the day’s first availability (otherwise at 07:00) and scrolls within its frame. “Precise range” is still there for the minute.
+
 ## My profile
 <!-- page: apps/settings/profil.html -->
 
@@ -354,6 +353,8 @@ Depending on the usage level: “Aircraft flown (reports)” appears from the Pl
 ### Usage level
 
 What the suite shows you, according to your use. Four cards, one per level (number and name, what the level shows, “Requires the Centre” for levels 2 to 4); the chosen card is highlighted and the “Current level” line recalls it. One click is enough: the page reloads and the sidebar follows.
+
+The level is also set in the header of every Settings page, Maintenance included: “Usage level”, next to the language (1 · Crew to 4 · Expert); a change reloads the page. An element kept for a higher level is announced, in its place, by a line “…: at level 4 · Expert — change level” (for example the publication of the aircraft database in Maintenance › Aircraft types).
 
 | Level | For | What is added |
 |---|---|---|
@@ -372,7 +373,7 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 |---|---|
 | “Pilot” | “Trigram”, “VATSIM ID (CID)”, “IVAO ID (VID)”, “SimBrief (username or ID)” |
 | “Airline website” | “Login”, “Password” |
-| “IVAO — OAuth client (personal)” (Expert level) | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
+| “IVAO — OAuth client (personal)” | “Client ID”, “Client secret”, “Redirect URL to declare at IVAO” (to copy on developers.ivao.aero); “Save the IVAO client” button: kept by this computer’s launcher, the secret is never shown again |
 | “Language” (Expert level) | “Suite language”: Automatic (browser language), Français, English, Deutsch, Español |
 
 1. Fill in the fields.
@@ -382,6 +383,37 @@ Your identity in the suite, used by all pages (☰ › Pilot profile, reports, r
 - The airline website credentials stay in this browser only: they are never written to a file or to a backup.
 - The language is usually chosen with the “Language” flag of the header; the “Language” card (Expert level) applies as soon as you choose it, without “Save”.
 - In production mode, the trigram is the one of the signed-in user and cannot be changed here.
+
+### Data access
+
+For the app without the launcher (phone, suite published on GitHub Pages): the airline data is read from and written to a GitHub repository (a copy of the data repository), with your personal token. On a computer that uses the launcher, this section is not needed.
+
+| Field | Content |
+|---|---|
+| “Repository (account/repository)” | the GitHub data repository, for example `Woyczek/flight_planner_data` |
+| “Branch” | `main` by default |
+| “Personal token” | fine-grained token created on github.com › Settings › Developer settings › Fine-grained tokens: access to the data repository only, “Contents” permission read and write, expiration of 90 days at most; kept in this browser only, never shown again, never to be pasted in a message |
+
+- “Test” checks that the repository is readable, the branch exists and the token can write.
+- “Save” checks, then turns access on and opens My missions; from then on every page of the suite reads its data from the repository (also kept for offline use).
+- Each save (report, availability, sheet) becomes a commit under your trigram. If someone else changed the same file in the meantime, it is read again and merged before being written.
+- “Cut access” erases the token and the data copies from this browser; the pages go back to the launcher's data.
+- Lost or stolen phone: also delete the token on github.com (Settings › Developer settings › Fine-grained tokens); it then works nowhere.
+- On a site published on `….github.io`, the card reminds that any other GitHub Pages site of the same account shares the same origin and could read the token: do not publish another one on this account.
+
+### This device
+
+Key of this device (browser of this computer or phone) for signed accounts, only useful if the airline's Centre is in
+**group mode**. The key stays in this browser, not exportable.
+
+- The card shows the **fingerprint** of this device (`7F3A-91C2-04BE-D85E`), your trigram and the state: standalone
+  mode (nothing to request), registry to confirm, not enrolled, request pending, or “Device enrolled for … ✓”.
+- **Group registry to confirm**: on the first reading, compare the founder's fingerprint with the one the administrator
+  sent you (Discord, SMS, email): identical, “Confirm”; different, “Reject” and warn them.
+- **“Request access”** files a request signed with this device's key (in GitHub mode: a commit in the data
+  repository). Then send this device's fingerprint to an administrator through another channel: they compare it before
+  approving. “Send the request again” files it again.
+- Browser cleared, another device or key revoked: new key (or no key left in the registry), new request.
 
 ### Sign-in and password
 
@@ -393,6 +425,7 @@ Your shared user record: role and password (kept as a hash, never in clear text)
 - The “Sign out” button appears once you are signed in.
 - A temporary password is flagged (“temporary password, to be changed”): change it at the first sign-in.
 - Forgotten password: ask a Centre administrator for a reset.
+- **Group mode** (signed registry): your password is in the registry; a Centre administrator changes it for you. On the first opening after the switch to group mode, a notification shows the founder's fingerprint with “Confirm” and “Reject”: compare it with the one the administrator sent you (Discord, SMS, email) before confirming.
 
 ### Mission types
 
@@ -418,14 +451,15 @@ The preferences are kept in your user record, shared with the Centre by synchron
 | “Fleet variants” | Variants present in the fleet |
 | “Aircraft” | Number of aircraft in service (out of the total) and their bases |
 | “Performance” | For an owned aircraft: a link — the source of its sheet, which opens the “Performance sheets” page on this aircraft, or “none” and the ways to create one, which open that same page |
-| “Owned” | You have this type in your simulator |
-| “Mastered” | You fly it with ease |
+| “State” | Dot: empty, not owned; red, NQ — owned, not qualified (you have this type in your simulator); orange, to qualify — novice; green, mastered (you fly it with ease). Same colours and meaning as the FLOTTE sheet of the ODV workbook. A tap cycles it in this order, then back to empty |
+| “⋯” | Row menu: its actions (create the performance sheet, remove a variant, find the type or the record, correct or delete); on a phone, the hidden columns too |
 
-- Ticking “Mastered” also ticks “Owned”; unticking “Owned” unticks “Mastered”.
+- Novice and mastered count as owned for the Centre; “novice” is saved separately in your declared availability.
+- On a phone, the table only keeps the aircraft, the dot and “⋯”: variants, fleet aircraft and performance move into the menu.
 - “Search an aircraft”, above the cards, filters as you type on the name, variant, designator, class and performance source: cards with a match stay unfolded, the others fold, and “n aircraft” gives the count; empty field: everything.
-- Variants: a designator shared by several models (CL2T: CL-215T and CL-415) has one row per declared variant, under its name (“Canadair CL-415”, “Canadair CL-215T”); “×” removes a variant. Without a declared variant, the aircraft bears the name of the record and of its known variants (“Canadair CL-215T / CL-415”). The performance profile stays the designator's: “performance shared by the variants”. When adding, the list offers each variant (model of the record, fleet variants, common names from the base), or keep your own text; the variant is saved in your declaration.
+- Variants: a designator shared by several models (CL2T: CL-215T and CL-415) has one row per declared variant, under its name (“Canadair CL-415”, “Canadair CL-215T”); “Remove the variant”, in the “⋯” menu, removes a variant. Without a declared variant, the aircraft bears the name of the record and of its known variants (“Canadair CL-215T / CL-415”). The performance profile stays the designator's: “performance shared by the variants”. When adding, the list offers each variant (model of the record, fleet variants, common names from the base), or keep your own text; the variant is saved in your declaration.
 
-**“Other aircraft (outside the fleet)” card**: the aircraft you own that are not in the fleet. You always add them by a name, never by a mandatory code: type what you know (“CL-415”, “Canadair 415”, “PC-12”, “Caravelle”). While you type, a list suggests the types of the fleet, of this computer's type base with their common names and of the published ICAO list, with their origin; this is computed locally, with no network. The designator is found for you: “CL-415”, “Canadair 415” and “CL415” give CL2T, shown as “Canadair CL-415” (the variant name is kept). A fleet type is simply ticked in the “My aircraft” card. If several types are possible, the closest one is put in the field — “Add” to confirm it, or choose from the list. If nothing matches, the aircraft is kept under its name, marked “ICAO type to confirm”; “Find the type”, on its row, links it to a designator later. To correct or delete an added aircraft, click its row: its code or name goes into the field and “Add” becomes “Replace” (“Mastered” is carried over), next to “Delete” and “Cancel” (or Esc). This computer's base is completed by the launcher only when you click “Add”, for a designator it is missing: the row shows “completing the type base…” during a short pass, one pass at a time (a type requested during a pass is queued); leaving the page does not stop it. A retired type that the official sources no longer know is looked up as a last resort on Aviation Fanatic; if it is not there, the note “not found (ICAO, EUROCONTROL, Aviation Fanatic)” says so. These aircraft go with your declared availability: the Centre sees them for assignments, and the other pilots find them in this card, “Also declared by” column — they only have to tick “Owned”.
+**“Other aircraft (outside the fleet)” card**: the aircraft you own that are not in the fleet. You always add them by a name, never by a mandatory code: type what you know (“CL-415”, “Canadair 415”, “PC-12”, “Caravelle”). While you type, a drop-down list with search (silhouettes, ↑ ↓ Enter, Esc) suggests, grouped by origin, the types of the fleet, of this computer's type base with their common names and of the published ICAO list; this is computed locally, with no network. The designator is found for you: “CL-415”, “Canadair 415” and “CL415” give CL2T, shown as “Canadair CL-415” (the variant name is kept). A fleet type is simply ticked in the “My aircraft” card. If several types are possible, the closest one is put in the field — “Add” to confirm it, or choose from the list. If nothing matches, the aircraft is kept under its name, marked “ICAO type to confirm”; “Find the type”, on its row, links it to a designator later. To correct or delete an added aircraft, click its row: its code or name goes into the field and “Add” becomes “Replace” (its state is carried over), next to “Delete” and “Cancel” (or Esc). This computer's base is completed by the launcher only when you click “Add”, for a designator it is missing: the row shows “completing the type base…” during a short pass, one pass at a time (a type requested during a pass is queued); leaving the page does not stop it. A retired type that the official sources no longer know is looked up as a last resort on Aviation Fanatic; if it is not there, the note “not found (ICAO, EUROCONTROL, Aviation Fanatic)” says so. These aircraft go with your declared availability: the Centre sees them for assignments, and the other pilots find them in this card, “Also declared by” column — a tap on the dot is all they need.
 
 **“Simulators” card**: tick the simulators and tools installed.
 
@@ -499,6 +533,27 @@ The stroke width of the icons, or no icons at all. Each row shows a preview of t
 
 **“Side bar”**: “Depending on design”, “Always” or “Never”. By default, it is always shown (except on a narrow screen and when printing). “Icon size”: “Small”, “Medium” (default) or “Large”. “Display” (Expert level): “Icon and label” (default), “Icon only” (narrower bar, entry name as a tooltip) or “Label only”.
 
+### On phones
+
+On a narrow screen (phone, reduced window), the suite switches to **mobile mode**: one-line header, navigation bar at
+the bottom of the screen instead of the side bar, tabs on one scrolling line, full-width blocks, larger buttons and
+fields, tables that scroll inside their block or are shown as cards.
+
+- **Bottom bar**: up to six entries, all shown with a short label (Missions, Flights, Report, Schedule…); beyond that, the
+  first five and “More”, which opens the other entries, Settings and Help.
+- **Phone in landscape**: the bar becomes a rail on the left of the screen (icon, label below) and the header is no longer pinned, to keep the height for the content; the Fuel curves fit with their level slider.
+- **Header**: it slides away when you scroll down the page and comes back as soon as you scroll up.
+- **Mobile mode**: “Automatic (narrow screen)”, “Always” or “Never”. In automatic mode, a phone turned to landscape stays in mobile mode.
+- **This page on a phone**: “On phones” comes first. Under a phone skin, design, icons, side bar and theme colours (computer settings, with no effect under this skin) are not shown; phone skin “My design” brings them back.
+- **Phone skin**: “Mobile” (default, flat and light), “Swiss” (black and white, square corners, red accent) or “My
+  design” (the design chosen above). Applied the next time a page is loaded on a touch screen.
+- **Day / night**: “Follows the phone” (the phone's light or dark setting), “Day” or “Night”.
+- On a touch screen, the pages designed for a large screen (flight maps, Centre preparation pages,
+  installation settings) are left out of the bar and the tabs; opened anyway, they show a notice. A reduced computer
+  window keeps all its pages.
+- **Mobile preview on a computer** (Expert level): a page of the suite in phone and tablet frames, with the chosen skin
+  and day / night, to check the rendering without a phone.
+
 ### Theme colours
 
 Each page of the suite has a colour theme (banner, banner text, accent). For each theme, you choose a colour family and a tone; the colours are calculated from them, with a readability check. Expert level section.
@@ -537,8 +592,10 @@ The same state is shown as a badge in each step title (the number turns green wh
 The browser asks you to point to each folder once; it remembers it afterwards.
 
 - **“Application folder”**: “Choose the application folder”, then point to the folder that contains `lancer.cmd` and `lancer.sh`. The other folders (data, registry, missions, SIA, performance, local backup) are deduced from it; the message tells you how many were set.
+- The application folder is opened **read-only**: no page can modify the suite's code. Right after, the page asks “Allow writing the data”: click, then accept the browser's request, so that your availability, missions and reports are written to `data/`. After a browser restart, “Allow” asks for both again.
 - The folder must be the one of the suite served by the launcher: if it belongs to another copy of the suite, the step stays to do (✗ in the summary) with the message “Suite launched from …, declared folder …”; choose the right folder again.
 - **“ODV workbook (optional)”**: “OneDrive folder…” points to the synchronised folder where the squadron drops the workbook (the ODV planning opens the most recent one). Without OneDrive: “or the Excel file…”, kept in this browser.
+- **GitHub mode** (My profile › Data access set): the data come from the GitHub repository, there is no folder to choose. The step is “not applicable” (–) and the next ones are open; the application folder card and “OneDrive folder…” disappear, “or the Excel file…” stays. On a page served by the launcher, GitHub mode wins too and the page says so: to work with the computer’s folders, remove it in My profile › Data access.
 
 This step matters: without an allowed data folder, your availability stays in the browser and the Centre cannot see it.
 
@@ -565,6 +622,16 @@ Three options:
   For another repository than the current one, the launcher opens a confirmation window on the computer (current and new
   address, “No” by default): answer “Yes” to change; no page can answer it for you. Never put a password or a token in the address.
   and the suite works without sharing. Details: [synchronisation](../technique/SYNCHRONISATION.md).
+- **“Take data/ into this repository”** (in the same card, when `data/` already holds data without being a git
+  repository: examples, archive, data entered): the launcher clones the repository alongside, puts its history into
+  `data/`, then takes over the computer’s files. A record on both sides keeps the newest (the other goes to
+  `_conflits/`), assignments are merged, the suite’s files come from the repository; replaced originals are copied to
+  `data_avant_<date>/`. One local commit “Reprise du poste”, nothing is sent before “Synchronise”. Sample data, or a
+  folder without this computer’s data: set aside in `data_avant_<date>/`, then a plain clone. A repository other than
+  the configured one is confirmed in the launcher’s window; if anything fails, `data/` stays as it was. Username and
+  password: only for an `https://` address Git does not know yet.
+  The page warns before the confirmation window opens (sometimes behind the browser) and, if it does not succeed, says
+  why: refused (new try possible 30 s later), another window already open, or no window possible on this computer.
 - Once the data is present, the optional “Flight log” card offers “Log (.html)…”: the “Flight log” page of the airline website, saved, fills in the pilots and aircraft of the reference (entry help).
 
 ### 3 Airline
@@ -622,7 +689,7 @@ to you (see below). Full step by step: [tutorial](../TUTORIAL.md).
 
 ### My missions to report
 
-First block of the page: the missions assigned to you that are already past (21 days at most) and have no report in the registry, as in the “Reports to write” block of the “Today” page (seven lines at most).
+First block of the page: the missions assigned to you that are already past (21 days at most) and have no report in the registry, as in the “Reports to write” block of the “My missions” page (seven lines at most).
 
 - **“Write the report”** opens the mission folder in “My missions” and starts the report in the mission’s family, filled in from the mission order (see “Resume an assigned mission”).
 - **“No report”** removes the mission from the list (remembered in this browser).
@@ -731,6 +798,8 @@ levels 3 and 4, all the fields are there. Values in hidden fields (import, fligh
 report. A click on a consistency anomaly, under the calculations, opens the step, the block and, if needed, all its
 fields, then puts the cursor in the field.
 
+**On a phone**: only one step is open at a time — on arrival, the first one to complete; opening a step folds the others and brings it to the top of the screen. The “1 Flight · 2 Mission · 3 Result” bar stays pinned at the top while you type and marks the open step; the mission header scrolls with the page. “Add to ledger” floats above the bottom bar; “Send” and “Prefill” stay in the header, at the top of the page.
+
 ### Header and toolbar
 
 The header stays fixed at the top of the page. From left to right:
@@ -802,7 +871,8 @@ One card per aircraft involved; there is always at least one. The “+” in the
 
 1. Type the registration (`F-ZB…`): known aircraft are suggested with type, callsign, operator
    and base. Choose one: type, category, callsign, ICAO operator, base and equipment are
-   filled in.
+   filled in. A click in the field opens a drop-down list with search (silhouettes, by category); typing filters it
+   (registration, type, callsign, operator), ↑ ↓ Enter, Esc. The “Type (ICAO)” field has the same list.
 2. Or start from the callsign: `ctm58` in “Callsign” gives the series, the number, the full callsign
    and the “Flight plan callsign (7 chars max)”.
 
@@ -1005,7 +1075,8 @@ Both lists need your trigram (Settings › My profile).
 - **“Filed flight plan (SimBrief / IVAO / VATSIM)”**: the window offers “Latest SimBrief OFP” (your SimBrief
   identifier from the pilot profile), “IVAO flight plan (current flight)” (your VID), “VATSIM flight plan (current
   or prefiled)” (your CID): aircraft, ICAO equipment, route, waypoints, levels, airfields, METAR / TAF, planned
-  masses and fuel (SimBrief).
+  masses and fuel (SimBrief). The waypoints follow the route: when the import fills the route, they are replaced by
+  those of the flight plan (the SimBrief OFP's navlog), even if the field already held some.
 - **“Paste a flight plan, a tracker page or a METAR”**: paste (Ctrl+V) into the box, the analysis is immediate; or
   “Paste from clipboard” (Chrome asks for permission once). Recognised texts: ICAO flight plan “(FPL-…)”, IVAO
   tracker page (details of a flight or list of connections), StatSim flight page (VATSIM), VATSIM history (JSON),
@@ -1119,6 +1190,35 @@ gives the family's own indicators, used in the reporting pages.
 The HEMS and FIRE families can take over their old CSV ledger: see
 [Family reporting](#family-reporting).
 
+## Fleet
+<!-- page: apps/cr/flotte.html -->
+
+Where the fleet aircraft are: “Fleet” tab of the “Report” button of the side bar, next to the “Report” tab. The page
+is read-only and open to everyone; with the Centre enabled in this browser, the “Edit the fleet” button leads to the
+editable table (Settings › Centre › Fleet).
+
+- **Map**: each aircraft is at its current aerodrome (location given by the airline website, or landing aerodrome of a
+  report from a mission order, otherwise its home base), on an OpenStreetMap background. Overview: one badge per
+  aerodrome with the number of aircraft; aerodromes too close to be told apart at this zoom are merged into a single
+  badge (“LFMI +2”) with the total number of aircraft. When zooming in (“+” / “−” buttons, Ctrl + wheel,
+  double-click), the aircraft of an aerodrome are lined up one by one on an apron; “Whole fleet” fits the map again.
+- **Hover**: on a badge with several aircraft, their number per callsign (series) and type; on a badge with several
+  aerodromes, also the number per aerodrome; on an aircraft (or a badge with a single one), its short sheet:
+  callsigns, operator, current aerodrome and since when, home base, date and time of the last flight (airline flight
+  log and reports: the latest).
+- **Selection**: click an aircraft; click a badge: its aircraft, and zoom to it; Ctrl or Shift + click: add or remove;
+  Shift + drag: rectangle; Esc or “Clear the selection”. The list under the map leads to each aircraft sheet, and the
+  selected rows are highlighted in the table.
+- **Filters** (at the top of the map, combined): operator, type, callsign (series), aerodrome, status, origin of the
+  position (website, mission order, base), last flight (less than 7, 30, 90 days, more than 90 days, no known flight)
+  and free search (registration, callsign, type…). Each list gives the number of aircraft per value; “Reset the
+  filters” clears them. The choices are kept in this browser.
+- **Table** “Fleet aircraft”: the aircraft kept by the filters (registration, type, variant, callsigns, operator,
+  current aerodrome and origin, home base, last flight, status), sortable by column. Hovering a row: its position is
+  highlighted on the map; click: the aircraft is selected and the map centred on its aerodrome; the registration opens
+  the aircraft sheet.
+- “n without a known aerodrome” (tooltip) lists the aircraft with no aerodrome, or whose aerodrome cannot be found.
+
 ## Aircraft sheet
 <!-- page: apps/cr/appareil.html -->
 
@@ -1137,6 +1237,8 @@ The title shows the registration, the type and the model. Below it, three badges
   Log);
 - “🏠 Home aerodrome”.
 
+**Getting around**: the sheet is under the “Fleet” tab (Report › Fleet), which leads back to the list and the map. At the top of the sheet, the fleet list (by type) opens another aircraft; “‹” and “›” go to the previous or next aircraft of the same type.
+
 The reporting **period** bar (presets, dates, ◀ − ▶) is in the header: activity,
 chart and table follow it. An aircraft unknown to the databases shows “Unknown in the bases: the
 sheet will fill as reports come in”.
@@ -1153,8 +1255,8 @@ sheet will fill as reports come in”.
 | “Callsigns used”, “Equipment” | no | collected from the missions, with their count |
 | “Notes” | yes | free text |
 
-Click “Save sheet”: the sheet is kept **in this browser** (included in the local
-backup). The identity is calculated over the whole history, whatever the period.
+The editable fields come first in the block; each one is saved as soon as it changes, **in this browser** (included in the local
+backup): the time of the last save is shown under the notes. The identity is calculated over the whole history, whatever the period.
 
 “Merge with… / rename”: choose another registration, then “Merge”. The ledger missions
 that carry the old value take the new one (after confirmation, with a trace in
@@ -1220,7 +1322,7 @@ in the header, as for the aircraft sheet.
 | “Qualifications (one per line)” | yes | free text |
 | “Notes” | yes | free text |
 
-“Save sheet” keeps it in this browser. “Merge with… / rename” brings together two
+Each field is saved in this browser as soon as it changes. “Merge with… / rename” brings together two
 spellings of the same pilot (e.g. GRR → RBR): the ledger missions take the new value, with
 a trace, after confirmation.
 
@@ -1425,7 +1527,17 @@ This page is used to prepare your own flight maps: route, route map, approach, r
 It is open to all pilots. To go there: “Tools” in the side bar, “Flight maps” tab, the “Open in the flight maps” button of a mission in My missions, or the “Flight maps” button of the fuel planner.
 It uses the engine of the Centre's map studio, but works in a space of its own in your browser: your settings never change the Centre's mission.
 Each block collapses (“Hide” / “Show”) and moves (↕ handle). The SIA database must be read once in this browser (see the last block).
-At levels 1 to 3 (My profile › “Usage level”), the page is limited to two blocks: “Route” (route field, “Level”, “SimBrief”, control map with “⤢ Enlarge”) and “Maps”, with its single “Generate the maps and the ZIP” button. The other controls described below only appear at level 4 (Expert).
+At levels 1 to 3 (My profile › “Usage level”), the page is limited to two blocks: “Route” (route field, “Level”, “SimBrief”, control map with “⤢ Enlarge”) and “Maps”, with its single “Generate the maps” button. The other controls described below only appear at level 4 (Expert).
+
+At the top of the page, “Open in ▾” opens the route of the “Route” block, its level and the chosen aircraft in SimBrief, SkyVector, Navigraph Charts or ChartFox (departure and arrival aerodrome charts), in a new tab; same menu as in Fuel (see “Open in ▾” in the Fuel chapter).
+
+**On opening: the current flight.** The page takes the flight prepared in Fuel (“Vertical profile” block and fuel plan):
+route, cruise level, aircraft sheet and alternate (the one of the last SimBrief OFP when it has the same trip).
+The most recent wins between this flight and what was entered here. As soon as the SIA database is loaded, the route
+map and the vertical section are shown at once, without another click. The route map uses the “IFR low” profile
+(flight up to FL195: low airways) or “IFR high” (above: high airways, NAT tracks), with the ICAO symbology and the
+R, D, P, TRA, CTR, TMA and CTA areas of the layer that pass within 10 NM of the route; departure, destination and
+alternate are named on it. A mission received from My missions is kept as it is.
 
 ### Receiving a mission (“Open in the flight maps”)
 
@@ -1434,10 +1546,10 @@ The page has no “Mission” block: the mission arrives on its own from My miss
 1. In My missions, open the mission folder.
 2. Click “Open in the flight maps”. The aircraft assigned to you is placed first in the mission.
 3. The page opens with the route and the level of the mission in the “Route” block, and all the maps planned by the mission in “Maps to produce” (plus `profil_vertical.png`). The “Maps to produce” list is only visible at the Expert level.
-4. Adjust each map if needed (Expert level), then click “Generate the maps and the ZIP”: in the “Maps” block at levels 1 to 3, in the footer at the Expert level.
+4. Adjust each map if needed (Expert level), then click “Generate the maps”: in the “Maps” block at levels 1 to 3, in the footer at the Expert level.
 
-The footer shows the number of maps in the ZIP (“… map(s) in the ZIP + index map”), or “No mission loaded”.
-Mission received: “Draw” and “Fuel” work on the loaded mission without replacing it. At levels 1 to 3, “Generate the maps and the ZIP” generates its maps as they are. At the Expert level, “Prepare the maps” asks for confirmation before replacing it with a free flight “Flight departure → destination” built from the route; with no mission loaded, the maps are created directly.
+The footer shows the number of maps to generate (“… map(s) to generate”), or “No mission loaded”.
+Mission received: “Draw” and “Fuel” work on the loaded mission without replacing it. At levels 1 to 3, “Generate the maps” generates its maps as they are. At the Expert level, “Prepare the maps” asks for confirmation before replacing it with a free flight “Flight departure → destination” built from the route; with no mission loaded, the maps are created directly.
 
 ### Route
 
@@ -1446,29 +1558,36 @@ This block links three views: the flight plan (text), the map and the vertical s
 - Route field: item 15 of the ICAO flight plan, or a comma list (for example `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Empty: route of the mission.
 - “Level”: cruise level (“FL65” or “6500”).
 - “Airways” / “RTBA (low level)” menu, then “Search”: calculates a route between the points of the field. The result replaces the field.
-- “SimBrief”: takes the route of the latest OFP. The SimBrief identifier is entered in Settings › My profile.
+- “SimBrief”: takes the route of the latest OFP point by point (each navlog point with its position, airway and
+  procedure points included), its level and, in Flight maps, its alternate; the line below the block says what was read (same summary as in Fuel, “View the JSON”). The SimBrief identifier is entered in Settings › My profile.
 - “Draw”: draws the vertical section. “Fuel”: opens the fuel planner with this route (distance, level, true track, aircraft).
 - “Copy ICAO”: copies the strict ICAO flight plan (unpublished points as coordinates).
 - “Syntax and use”: reminder of the accepted forms (beacons, VFR reporting points “MM-CV”, “REN300010”, coordinates “4330N00125E”, levels “/A035”, “VFR”…).
+- Coordinates written another way: type them as you have them (“44.18N 00.038W”, “N44,18-W00,034”, “44°19'52"N
+  00°59'59"W”, “+44.18,-0.038”, “4418N0003W”…); when you leave the field they are rewritten in the flight plan format, to
+  the minute (“4411N00002W”) when the position falls exactly on it, otherwise to the second (“441048N0000217W”); a
+  notification says what was rewritten. “Copy ICAO” always rounds to the minute.
 - At levels 1 to 3, the route field, “Level”, “SimBrief” and “Syntax and use” remain; the “Airways” / “RTBA” menu, “Search”, “Draw”, “Fuel” and “Copy ICAO” are at the Expert level.
 
 On the map: drag a point to move it (it snaps to beacons, reporting points and airfields), click the route to insert a point, right-click to delete one. On the section: click to add a point at that altitude, drag to change the altitude, right-click to delete.
 
+The map and the section work together. Hovering over the section puts a blue marker at the same place of the route on the map; hovering over the route on the map draws a blue line at the same distance in the section. The section's tooltip gives the altitude, the height above ground, the terrain, the distance from departure (NM) and the airspace flown through at that altitude, which is highlighted on the map. Clicking a point of the section without moving it centres the map on it. The map also shows the TOC (top of climb) and TOD (top of descent) marks and NM graduations along the route.
+
 ### Control map and framing (Route block)
 
-Under the route field, a control map shows the chosen map with its display profile. It is redrawn at each setting. At levels 1 to 3, only “⤢ Enlarge” is offered; the other controls of the table and the “Profile settings: section, aircraft, climb rate, outputs” are at the Expert level.
+Under the route field, a control map shows the chosen map with its display profile. It is redrawn at each setting. The route is the route editor's red line (draggable points); the purple dashes appear only on the generated maps. At levels 1 to 3, only “⤢ Enlarge” is offered; the other controls of the table and the “Profile settings: section, aircraft, climb rate, outputs” are at the Expert level.
 
 | Control | Effect |
 |---|---|
 | “Map” | Map shown (by default: the general route map). |
 | “Profile” | Display profile of this map (same setting as in “Maps to produce”). |
-| “ZIP” | Put this map in the ZIP or not. |
+| “Generate” | Generate this map or not. |
 | “Refresh” | Redraw the preview. |
 | “Keep this framing” | The generated map will use exactly the frame shown (zoom and move with the mouse). |
 | “Recentre” / “Automatic framing” | Go back to the saved framing / forget it for a frame calculated from the mission. |
 | “⧉ Window” / “⤢ Enlarge” | Open the map in a separate window / enlarge it (Esc to go back). |
 
-“Profile settings: section, aircraft, climb rate, outputs” sets the vertical section: floor and ceiling (0 = auto), aircraft (fuel planner profiles) or climb and descent rates, `profil_vertical.png` image in the outputs, drawing of the route on the maps.
+“Profile settings: section, aircraft, climb rate, outputs” sets the vertical section: floor and ceiling (0 = auto), aircraft (performance sheets, a drop-down list with search) or climb and descent rates, `profil_vertical.png` image in the outputs, drawing of the route on the maps.
 
 ### Profile settings: base map, airspaces, ICAO symbols, elements
 
@@ -1487,14 +1606,19 @@ Remember to click “Save” to keep a changed profile. The suggestion lists of 
 This block creates the maps of a flight from the route, without a Centre mission; at levels 1 to 3, it also generates them.
 
 1. Enter the route and the level in the “Route” block (at least a departure and a destination known to the SIA database).
-2. Optional: “Rendezvous (optional)”, a point or coordinates “44.2, 0.6”.
-3. Tick the maps you want: “route (overview, IFR)”, “approach”, “rendezvous”, “destination”.
-4. Click “Generate the maps and the ZIP” (levels 1 to 3): the maps are created then generated, the progress (with “Stop”) and the report are shown just below and the ZIP is downloaded. At the Expert level, “Prepare the maps” only creates them: settings in “Maps to produce”, generation in the footer.
+2. Optional: “Rendezvous (optional)”, a point or coordinates “44.2, 0.6”; “Alternate (ICAO, optional)”, taken from
+   Fuel if it is known there; an alternate missing from the SIA database is reported and the maps are made without it.
+3. Tick the maps you want: “route (overview, IFR)” (IFR low or high profile according to the level, see above),
+   “approach”, “rendezvous”, “destination”.
+4. Click “Generate the maps” (levels 1 to 3): the maps are created then generated, the progress (with “Stop”) and
+   the report are shown just below. The images (each map and `profil_vertical.png`) are then shown in the block: a
+   click enlarges, “Download” saves the image, “Print” prints it, “Print all” prints all the images, one per page.
+   There is no ZIP any more. At the Expert level, “Prepare the maps” only creates them: settings in “Maps to produce”, generation in the footer.
 
 The page builds a “Flight departure → destination” mission with the ticked maps and the vertical profile. The rendezvous map is only created if a rendezvous is entered.
 At levels 1 to 3, the page has neither footer nor “Previews and generation” block: everything starts from this block's button.
 After that, any change to the route, the level or the rendezvous updates the maps automatically.
-Arriving from the fuel planner (“Flight maps” button): the maps are created on their own as soon as the SIA database is loaded.
+Arriving from the fuel planner (“Flight maps” button): same opening on the current flight, maps created on their own as soon as the SIA database is loaded.
 Possible error messages: “SIA database missing from this browser”, “Route: unknown in the SIA database”, “No map chosen”.
 
 ### Maps to produce
@@ -1507,7 +1631,7 @@ Expert level block. The “Mission maps” list gives one line per map:
 | Profile | Display profile of the map, or “Disabled”. |
 | Line | “No line”, “Brief: route”, “Organisation: probable route”, “Route + probable route”. |
 | Recipient | Only for exercise missions: brief, organisation, exercise target or crew. |
-| “ZIP” | Untick to not generate the map. |
+| “Generate” | Untick to not generate the map. |
 | “×” | Remove the map from the mission. |
 
 To add a map: enter a name (“nouvelle_carte.png”), choose the type (general, target, detail, area), then “+ Map”. Its extent is the view shown.
@@ -1518,14 +1642,15 @@ With no mission and no maps created, the list shows “No map: add one below.”
 Expert-level block; at levels 1 to 3, the generation report (maps generated, failures and “Retry this one”) is shown under the button of the “Maps” block.
 
 1. “Show all maps”: draws a preview of each map with its profile. The previews create no file. Click on a preview: enlargement.
-2. Each preview keeps its “ZIP” box.
-3. “Generate the maps and the ZIP” (button of the footer): downloads a ZIP with each map, the index map and `profil_vertical.png` if this output is ticked.
+2. Each preview keeps its “Generate” box.
+3. “Generate the maps” (button of the footer): the images of each map and `profil_vertical.png` are shown in the
+   “Maps” block, to download or print one by one (no ZIP).
 
-The “Index map” appears by itself under the previews; it uses the profile of the general map.
+The “Index map” appears by itself under the previews (preview only); it uses the profile of the general map.
 Formats: ☰ menu › Map outputs (PNG, editable SVG, PNG width from 400 to 5000 px; 1600 px by default).
-If a map fails (base map unavailable, timeout), the ZIP contains `rapport_generation.txt` and the list offers “Retry this one”.
+If a map fails (base map unavailable, timeout), the report says so and offers “Retry this one”, which replaces its image.
 Keep the tab visible during generation: the browser slows down background tabs, and a map may fail (“Timeout while loading the base map”); “Retry this one” relaunches it.
-The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation downloads no ZIP (it would be incomplete); the previews already shown stay. Run “Generate the maps and the ZIP” again for all the maps.
+The buttons stay greyed out as long as there is no map to produce. During the previews and the generation, the progress bar carries a “Stop” button: the map in progress is completed, the next ones are not made. A stopped generation shows no image (they would be incomplete); the previews already shown stay. Run “Generate the maps” again for all the maps.
 
 ### SIA database
 
@@ -1548,6 +1673,18 @@ Header: “Aircraft” button, a drop-down list with search (the existing perfor
 Depending on the usage level: at levels 1 to 3 (Crew, Planning, Design), the page shows the aircraft, the flight plan (and “Fetch latest SimBrief FPL”), the collapsible “Flight parameters” section, “Calculate” and the Result, in two columns; the ☰ menu only keeps exporting and importing the preferences. Curves, panels, instruments and the vertical profile are added at the Expert level, where the page is complete.
 On a wide screen, at the Expert level, the page has three columns (input and curves | Result and panels | instruments): drag the handles between columns to set their width; double-click: default widths.
 
+### Open in ▾ (external services)
+
+The “Open in ▾” button, under the flight plan, opens the page's flight in another service, in a new tab: departure,
+arrival, route, level and active aircraft; alternate, call sign and registration of the last SimBrief OFP if it has
+the same route. Nothing else is sent (no personal ID, no key). Escape or a click elsewhere closes the menu.
+- “SimBrief — plan this flight”: flight options prefilled (SimBrief sign-in required); greyed out without departure,
+  arrival or aircraft type.
+- “SkyVector — the route”: flight plan drawn on the chart; greyed out without departure or arrival.
+- “Navigraph Charts” and “ChartFox” — departure, arrival: aerodrome charts (sign-in required; aerodrome page if the
+  site keeps it).
+A greyed-out entry gives its reason on hover.
+
 ### Choose the aircraft
 
 1. Click the aircraft button in the header (“No aircraft” at first): the list only shows the aircraft that have a performance sheet, those of “My aircraft” first, then the others by category (icon, name, type, sheet source, state).
@@ -1558,8 +1695,8 @@ The chosen sheet stays visible read-only in the Result (collapsible group “Fli
 
 ### Fuel plan
 
-1. “Flight plan (item 15)”: enter the route. It is the same plan as the Flight maps (the most recent one wins). The distance, the true track and the level are deduced from it.
-2. Complete or correct the fields of the collapsible “Flight parameters” section (unfolded from the start at the Expert level, collapsed otherwise; the default values are enough for a quick estimate): “Distance (NM)”, “Level (FL)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
+1. “Flight plan (item 15)”: enter the route. It is the same plan as the Flight maps (the most recent one wins). The distance, the true track and the level are deduced from it. Below the field, the route points are shown one by one (airfields in bold, airway points dimmed, level after the point where it changes; hover: position). After “Fetch latest SimBrief FPL”, a line says what was read, for example “OFP of 19/10 · LFRS → LFML · 11 points · FL270 · alternate LFPG · S210 F-BHHH” (also as a notification), with “View the JSON” (window with the OFP's JSON, “Copy”). An OFP without a point-by-point route says so (“empty navlog…”): the route is then reduced to the airfields.
+2. Set “Level (FL)”, the only parameter always shown, then complete or correct the fields of the collapsible “Flight parameters” section (unfolded from the start at the Expert level on a computer, collapsed otherwise and on a phone; the default values are enough for a quick estimate): “Distance (NM)”, “True track (°)”, “Taxi (min)”, “Wind from (°)”, “Wind (kt)”, “Reserve (min)”, “Contingency (%)”.
 3. Optional, in the same section: “Planned take-off mass”, compared with the type's MTOW; “ISA deviation (°C)”, or “Ground temperature (°C)” with “Field elevation (ft)”, or “Temperature at level (°C)”. “Cruise fuel flow (kg/h)”: filled in from the profile; without a profile, the page says which value it will use and where it comes from (for example “≈ 4,000 kg/h, type estimate A400”); “Use this value” copies it into the field, “Remember for this type” keeps it for the next flights. “Chosen climb” (detailed view): three sliders, “IAS”, climb rate and “Throttle (%)” (RPM or N1 if the profile has an engine map), each preceded by a “fixed” box; two are fixed, the third is calculated and greyed out; “full throttle” shows under the climb rate; the line below gives fuel flow, TAS and throttle at mid-climb. This is the climb the fuel plan counts.
 4. Click “Calculate”.
 
@@ -1626,6 +1763,8 @@ An imported SimBrief OFP fills in the route and draws the profile on its own.
 You need the SIA database of this browser, read in the Flight maps (“SIA database” block) or in Settings › Maintenance. Without it, only points given as coordinates are recognised, without airspaces.
 The terrain comes from a terrain model of about 150 m: the ASFC limits follow this model, not the actual ground.
 
+**On phones**: the page goes to a single column (quote, then Result, then the other blocks); after “Calculate”, the Result is brought on screen. The curve table scrolls inside its frame.
+
 ## Performance sheets
 <!-- page: apps/planner/performance_sheets.html -->
 
@@ -1637,6 +1776,8 @@ This page (side bar “Tools”, from the Design level) manages the performance 
 - Under the table, four cards: “Sheet being edited” (flight regimes and fields of the sheet, from the Design level), “Engine” (engine map, RPM table, interpolation), “SimBrief” (airframe, OFP calibration, traceability, audit) and “File” (last imported JSON, folded), described below.
 - A sheet saved here is picked up at once by a Fuel page open in another tab (the sheet it shows, and its fuel plan).
 
+
+**On phones** (portrait): the page stays in the bar; the title shortens to “Sheets”. The table becomes a list: aircraft, origin of the sheet and what it lacks; a tap on a line chooses the aircraft and also shows the map, the cruise fuel flow and the ceiling. The sheet's sections (identity and format, fuel and operation, runway and alternate, climb, cruise, descent, power setting and consumption) are folded one by one, in a single column; buttons and fields are at least 40 px.
 ### Bottom bar and ☰ menu
 
 The bottom bar shows “Sheet saved — …”, “Unsaved changes — …”, “No sheet for …” (chosen aircraft without a sheet, with the creation buttons) or “No sheet open.”. “Save the sheet” writes it to the local database; “Discard changes” (only when there are some) rereads the local database and reopens the sheet as it was saved. To delete the sheet: “Delete” (its row ticked). Notifications appear above the bar.
@@ -1655,7 +1796,7 @@ This block (from the Design level), the first of the page, is the performance si
 - The box at the head of the column ticks or unticks every displayed row; the box of each group (before “Helicopters (n)”…) ticks or unticks all its sheets, folded group included; the whole cell of a box ticks or unticks it (a click next to the box does not replace the selection); drag the edges of the titles to set the column widths (double-click: default widths).
 - “Search an aircraft”, before “Sort by”, filters the same way (name, variant, designator, class, source): groups with a match unfolded, the others folded, “n aircraft”.
 - “Import…” (bottom bar) opens a window with two ways: “Choose one or more files…” (`.lnmperf`, JSON, CSV, several at once), or paste a text — a JSON sheet, a ChatGPT answer (with its text and code blocks), a `.lnmperf` or a performance CSV (separated by “;”, “,” or tab) — in “Or paste a JSON (sheet, ChatGPT answer) or a performance CSV here”, then “Import the pasted text”. The pasted text follows the path of a file; a ChatGPT answer becomes a sheet “… — ChatGPT”. A JSON with several entries (an array, or a “sheets”, “profiles”… list) gives as many sheets: each is matched with the existing sheets by its identifier, then its type (aliases included), then its name; an unreadable entry does not stop the others. At the end, a single summary: “n sheet(s) completed, m merged, k created”, with the unreadable entries. An empty or unreadable text is reported in the window, which stays open; Esc or “Close” closes it. A sheet that already exists is completed, merged or doubled (see “Bottom bar and ☰ menu”).
-- “Folder…” (choose the performance folder) and “Reread”, on the folder line. The folder is read again by itself when it changes elsewhere (Settings, another tab).
+- “Folder…” (choose the performance folder) and “Reread”, on the folder line. The folder is read again by itself when it changes elsewhere (Settings, another tab). In GitHub mode (app without the launcher) there is no folder: the sheets are read from `planner/flight_performance_database_merged.fpdb.json` of the data repository (when the page opens and with “Reread”), “Folder…” is not offered and “Save to the folder (n)” becomes “Save to the repository (n)”: the ticked sheets are written into that file (one commit). A sheet of the repository replaces the browser's one only if it is more recent. “Delete (n)” also removes it from that file (one commit): it no longer comes back at the next reread; “Undo” puts it back in the repository.
 - In the sheet of the active profile, “Update from SimBrief” takes the type’s SimBrief record (cruise fuel flow, weights, ceiling, speed) and keeps your entries; against a personal profile, it offers “Fill the empty fields”, “Merge” (the record counts as a profile dated from its retrieval: the most recent wins field by field, empty fields are filled), “Replace” (SimBrief values instead, the rest kept) or “New profile”. When fields change, a preview shows them before you confirm.
 - The boxes before the names select profiles for the “Selection (n) ▾” menu of the bottom bar (opens upwards; Esc or a click elsewhere closes it): “Merge (n)” (at least two profiles of the same type, or a single one when SimBrief knows the type: the box “Include the type’s SimBrief record”, ticked beforehand, adds it to the sources; name chosen, the most complete one’s by default; the most recent wins field by field, the others fill its gaps, the engine map gathers their rows; the window first shows the changes — current value, kept value and its source, unchanged fields folded, engine map rows added or replaced; one box per changing value (unticked: the current value is kept), “Take everything” / “Take nothing”, and the button says what will be taken, “Merge (7 fields, 1 engine map row)”; the merge note only lists what was taken; the notification says what was taken from each source, “Undo” 10 s), “Export (n)” (one downloaded file per profile: `.lnmperf` if the profile is complete, JSON otherwise), “Save to the folder (n)” (one JSON file per profile in the performance folder, named after the profile) and “Delete (n)” (one confirmation, a single message for the batch with “Undo” for 10 s; a profile from the performance folder is removed from it too: exported database rewritten without it, single-profile file renamed .bak; “Undo” also restores the files; if the folder is not writable, the profile will come back at the next reread). “Folder…” and “Reread” take back everything the folder holds; as long as a deleted profile remains there (CSV with several profiles, writing denied), a line “n removed profile(s) still in the folder — Restore” says so.
 - “Ask ChatGPT” (above the table, and sheet of the active profile) opens a panel for the chosen aircraft (header selector or click on its row): “Copy the prompt and open ChatGPT” (a single ChatGPT tab, where you paste the prompt). The panel follows the chosen aircraft. The prompt, in the page’s language, asks to compile every source (manuals, manufacturer, authorities, Wikipedia, simulation forums), in kt, ft, ft/min and kg/h, estimated values marked, engine map included; it also gives what the suite already knows (EUROCONTROL, SimBrief, Airframe DB, current profile) so that ChatGPT completes rather than repeats. “Show the prompt” displays it. Paste the answer (the JSON, or a performance CSV) under the button, then “Import as a new profile” (“<name> — ChatGPT”) or “Merge with “…”” (the answer is dated today: it wins field by field, empty fields are filled; preview of the changes first, values to tick). Unknown keys and unreadable or out-of-range values are discarded and reported; estimated values appear under “Missing data” (“estimated: …”) and stop being estimated as soon as you change them by hand (sheet or engine map). The type and the name come from the answer (the chosen aircraft is only a fallback); if the answer describes another type, a question decides: import as one or the other, or, for a merge, a new profile or merge anyway. A CSV with commas or semicolons is accepted.
@@ -1766,7 +1907,7 @@ The status line recalls the file, the number of measurements used, the aircraft,
 
 ### Header: aircraft, period, trend
 
-- “Aircraft”: “All”, or a type (with its icon).
+- “Aircraft”: “All”, or a type (with its icon); a drop-down list with search, by category.
 - “Period”: “All dates”, “Today”, “Last 7 days”, “Last 30 days”, “Current month”, “Current year”, “Custom period”, with buttons to go back, widen or go forward. The period is remembered for each file.
 - “Trend method”: “Absolute / Asymptote”, “First 25% ↔ Last 25%” or “Moving average” (with “Smoothing”: 5 or 10).
 - “Print / PDF”: prints the page.

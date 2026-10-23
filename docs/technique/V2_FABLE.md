@@ -36,6 +36,18 @@ assignments of `assignments.js`, report ledger of `mission_core/ledger.js`) and 
 Without a trigram, the first block **asks for the trigram on the spot** (one field, one button) instead of pointing to
 the settings. The home page `index.html` (generated from the sidebar) offers it at the top of "My tasks".
 
+**21 October: merged into "My missions".** `apps/pilot/mes_missions.html` is now the pilot's entry page (first entry
+of the sidebar, `start_url` of the web app); `aujourdhui.html` only redirects there (query and hash kept) and is out of
+the menu. At levels 1 and 2 the page holds four blocks on one 1,400 × 900 screen: "My next mission"
+(`PilotToday.mount(host, 'next', { more: 7, actions: true })`: the card with "Open the folder", "Flight maps" and "Fuel"
+when the suite offers those tools, "Create the report"; then the missions of the next seven days, one line each),
+"Reports to write" (`'pending'`), "My availability" in compact mode (`DisposWeek.mount(host, { compact: true })`: one
+box per day, "Edit my week" unfolds the editor, unfolded at once for an empty week) with its own week bar, and a line of
+links (My flights; Pilot, Aircraft mastered, Simulators from level 2). The full week list comes at level 3. Links to a
+folder carry `data-key` / `data-do`: the page opens the folder in place, then runs `?do=maps | fuel | cr` (Fuel in the
+same tab when it is not a click). Empty blocks are one line ("No upcoming mission.", "No report pending.", "No
+availability entered this week."). "My week" (seven columns) is gone: the list and the availability summary cover it.
+
 ### 2.2 A guided report
 
 `apps/cr/mission_cr.html` starts with **"My missions to report"** (same list as above); the family choice, unchanged,
@@ -66,10 +78,10 @@ in the page's language (`K.t`, `K.tf`), in four languages.
 
 | File | Role |
 |---|---|
-| `shared/pilot_today.js` | next mission, reports to write, week, trigram entry (`PilotToday.mount`) |
-| `apps/pilot/aujourdhui.html` | the arrival page |
+| `shared/pilot_today.js` | next mission and the next seven days, reports to write, week, trigram entry (`PilotToday.mount`) |
+| `apps/pilot/aujourdhui.html` | redirect to `mes_missions.html` (the arrival page since 21 October) |
 | `apps/cr/mission_cr.html` | "My missions to report" block |
-| `apps/pilot/mes_missions.html` | trigram on the spot, `?do=cr` |
+| `apps/pilot/mes_missions.html` | the arrival page: next mission, reports to write, compact availability; `?do=cr \| maps \| fuel` |
 | `shared/app_framework.js` | `notify`: `once`, `minLevel`; `task`: `cancel` |
 | `shared/repository_nav.css` | fields that grow |
 | `shared/icons/repository_icons.js` | `today` icon |
@@ -346,3 +358,73 @@ follows the whole path.
 Not applied, by the user's choice: the "Aircraft" selector stays at the top of the page (the review wanted the table
 as the only way to choose), and the header's kg / lbs units stay where they are.
 
+## 14. External links: “Open in ▾” (19 October)
+
+`shared/external_links.js` (`ExternalLinks.menu(host, flight)`), used by Fuel (row of the flight plan, not the page
+header) and Flight maps (page header, through `tools/build_map_planner.py`); reusable by the report. `flight` is an
+object, or a function (possibly async) read when the menu opens: `{ dep, arr, route, type, reg, callsign, altn, fl }`;
+`route` is item 15 or the comma list of a SimBrief OFP route. Entries open in a new tab (`rel="noopener noreferrer"`);
+nothing is sent that is not already in the flight (no personal ID, no key); an entry whose data is missing is greyed
+out with its reason as a tooltip. Short menu: placed in the window, Escape, click elsewhere.
+
+Formats checked in the browser on 19 October 2026, without signing in:
+
+| Service | Address | Check |
+|---|---|---|
+| SimBrief | `https://dispatch.simbrief.com/options/custom?orig=&dest=&type=&route=&reg=&airline=&fltnum=&callsign=&altn=&fl=` | `www.simbrief.com/system/dispatch.php?…` redirects there keeping the parameters; names from the SimBrief API documentation (orig, dest and type required); prefills “Custom options” once signed in |
+| SkyVector | `https://skyvector.com/?fpl=<ADEP> <points> <ADES>` | Flight Plan panel filled (departure, destination), route drawn |
+| Navigraph Charts | `https://charts.navigraph.com/airport/<ICAO>` | address kept, “Sign in” page: **to be confirmed with a signed-in account** |
+| ChartFox | `https://chartfox.org/<ICAO>` | redirects to the VATSIM sign-in without keeping the address: **to be confirmed with a signed-in account** |
+
+Route points for SimBrief and SkyVector: speed/level groups (`N0450F350`), level changes after a point (`NTS/…`),
+departure and arrival aerodromes and leading/trailing `DCT` removed. SkyVector resolves each name on its own: no
+airway, no procedure, and an unknown name goes to a far-away namesake (`TOC` became Toccoa, USA, 3,800 NM away —
+the “SkyVector does not take the route” bug of 19 October). So SkyVector only gets names of 2 to 5 letters and ICAO
+coordinates (`4341N00122E`, accepted as a “GPS” point); airways, procedures (`FISTO5A`) and `DCT` are dropped. In a
+route list from a SimBrief OFP (“ID lat lon” entries), any other ID (`WPT`, SimBrief `4600N` idents) becomes the
+entry's ICAO coordinates and `TOC` / `TOD` are dropped; SimBrief keeps airways and procedures of an item 15 route
+and, from a route list, only the named IDs (no coordinates, no aerodromes: `orig`, `dest`, `fl` and `altn` go apart;
+`fl` falls back to the level of the route's speed/level group).
+
+SkyVector fields (checked 20 October): only an ICAO speed/level group **at the start** of `fpl` fills the Flight Plan
+speed and altitude (`fpl=N0236F270 LFRS … LFML` → 236, FL270); the group after the departure, the FAA form
+(`<TAIL> <TYPE>/<EQUIP> <TAS> <ADEP> <route> <ADES> <ALT>`) and a tail number or type in front fill nothing (and the
+latter breaks the group). No address parameter fills the aircraft or the ETD: `etd`, `tas`, `mach` exist in SkyVector's
+code only as arguments of its embedded chart, not of `?fpl=`. Re-checked on 20 October against SkyVector's own code
+(`/images/javascript/skyvector.js`) and API: the page sends `fpl` as is to `/api/init`, and the plan then returned by
+`/api/dLayer` carries `speed: 457`, `alt: FL280` for `fpl=N0457F280 LFBO TOU NTS LFRN`; its own “Link” button
+(`genlink`) builds exactly this form (speed and level glued, then departure, route, destination) and never an ETD. The
+ETD is set by the Flight Plan panel through `/api/fpl?cmd=etdz&etdz=HHMM&eddz=MM/DD`, bound to the browser's SkyVector
+session (not reachable from another site); `LFBO1430` loses the departure, `ETD1430` is ignored and a group after the
+departure is no longer read. Hence: the group is always sent when a speed is known (route group, otherwise the cruise
+TAS of the OFP or of the aircraft sheet), and the OFP departure time is copied on click for the ETD field. Aircraft and fuel
+cannot be passed either (checked against the API, 20 October): a type in front of the group breaks it (`A332
+N0457F280 …` gives FL332, speed lost), a type at the end becomes a route point, `FUEL9000` is ignored; the panel sets
+them with `/api/fpl?cmd=aircraft&acft=<id>` (an aircraft profile of the user's SkyVector account, picked by tail
+number) and `cmd=fuel`, bound to the session. Only a bookmarklet run on the SkyVector page (same origin: it can call
+`SkyVector.fpl({cmd: …})`) could fill ETD, fuel and the aircraft from values carried in the address fragment. The group is sent when the route gives a speed (OFP or
+item 15), with the flight level if known, otherwise the group's. A call sign such as
+`AFR1234` gives SimBrief `airline` and `fltnum`. In Fuel, the alternate, call sign and registration come from the last
+SimBrief OFP only when its origin and destination match the flight plan.
+
+## 15. Reading a SimBrief OFP (19 October)
+
+`shared/simbrief_ofp.js` (`window.SimbriefOfp`), loaded by Fuel and by the map studio (so Flight maps): one reading of
+the OFP JSON returned by `xml.fetcher.php`, whatever the format. With `json=1`, `navlog` is `{ fix: [ … ] }` and
+`alternate` an object; with `json=v2`, `navlog` is the list of points itself and `alternate` a list (and
+`alternate_navlog` comes before `navlog`: a depth-first search for a “navlog” key took it — the “Fuel keeps only the
+two airfields” bug of 19 October).
+
+| Function | Returns |
+|---|---|
+| `fixes(raw)` | every navlog entry (`ident`, `pos_lat`, `pos_long`, `type`, `stage`, `is_sid_star`, `via_airway`…) |
+| `routeFixes(raw)` | route points: TOC / TOD and airfields (`type: apt`) left out, positioned entries only |
+| `alternate(raw)` | the alternate's ICAO code or `''` |
+| `problem(raw)` | why the OFP gives no point-by-point route (no airfield, empty navlog, no positioned point), or `''` |
+| `summary(raw)` | “OFP of 19/10 · LFRS → LFML · 11 points · FL270 · alternate LFPG · S210 F-BHHH” (page language) |
+| `showJson(raw)` | read-only window with the JSON (`AppFramework.askText`) and a “Copy” button |
+| `render(host, raw, { error })` | the summary (or `error`, in red) and a “View the JSON” link in `host` |
+
+Fuel: `#ofpSummary` and `#fplPoints` under the flight plan (`shared/flight_vertical_profile.js`, `showOfp`,
+`showPoints`); the route list stays the “ID lat lon” form of `routeFromOfp` (§ 14). Flight maps: the route block's
+“SimBrief” button writes the same form (`ofpRouteList`) and the summary in `#routeInfo`.

@@ -831,6 +831,7 @@
       semaine: w,
       readOnly: !canEditActivations()
     });
+    if (!canEditActivations() && window.RepositoryNav?.cpco?.enabled?.()) window.OdvCore?.showReadOnly?.();
     activations = window.OdvActivationsEditor.mount(host, {
       semaine: w,
       readOnly: !canEditActivations(),
@@ -1665,7 +1666,7 @@
         // appareil déjà pris par un autre poste coché (équipier, autre mission) ou engagé ailleurs : grisé
         const taken = reg => reg !== r.registration && (busy.has(reg) || on.some(y => y.rows.some(o => o !== r && o.registration ===
           reg)));
-        return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(adOf(f) || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
+        return `<option value="">${L(['— appareil —', '— aircraft —', '— Luftfahrzeug —', '— aeronave —'])}</option>${x.planes[i].map(({ f, min, why }) => `<option value="${esc(f.registration)}" data-type="${esc(f.type || '')}"${f.registration === r.registration ? ' selected' : ''}${taken(f.registration) ? ' disabled' : ''}>${esc(f.registration)} · ${esc(f.variant || f.type)} · ${esc(adOf(f) || '?')} — ${away(min, why)}${f.operational === false ? L([' — indisponible', ' — unavailable', ' — nicht verfügbar', ' — no disponible']) : ''}${busy.has(f.registration) ? L([' — engagé', ' — engaged', ' — eingesetzt', ' — asignada']) : taken(f.registration) ? L([' — déjà affecté', ' — already assigned', ' — bereits zugewiesen', ' — ya asignada']) : ''}</option>`).join('')}`;
       };
       /** Convoyage d'un poste : trajet, heure, convoyeur (pilotes libres avant le créneau, ou le pilote : mission décalée). */
       const ferryLine = r => {
@@ -1770,6 +1771,8 @@
         foot: `<p class="ad-msg" data-status></p><button type="button" class="ghost" data-undo${dirty() ? '' : ' disabled'}>${L(['Annuler les modifications', 'Undo changes', 'Änderungen verwerfen', 'Deshacer cambios'])}</button><button type="button" class="primary" data-save data-icon="save">${L(['Enregistrer ({n})', 'Save ({n})', 'Speichern ({n})', 'Guardar ({n})'], { n: pend.length })}</button><button type="button" class="ghost" data-close>${L(['Fermer', 'Close', 'Schließen', 'Cerrar'])}</button>`
       });
       const bodyEl = dlg.querySelector('.ad-body');
+      // choix de l'appareil d'un poste : sélecteur commun (appareils déjà pris : grisés avec leur motif)
+      window.AircraftPicker?.selects(bodyEl, 'select[data-f="registration"]');
       bodyEl.scrollTop = keep;
       if (anchor?.m) {
         const tb = bodyEl.querySelector(`tbody[data-m="${CSS.escape(anchor.m)}"]`),

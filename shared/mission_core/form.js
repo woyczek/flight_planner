@@ -433,11 +433,55 @@
     const suggestible = el => (el.tagName === 'INPUT' && ['text', 'number', 'search', ''].includes(el.getAttribute('type') || '') && (el
       .dataset.path || el.dataset.append));
     let offering = null; // dernier champ servi (une réponse tardive d'un autre champ est ignorée)
+    // Immatriculation et type d'un appareil : sélecteur commun (shared/aircraft_picker.js : liste avec recherche,
+    // silhouettes, catégories) à la place de la liste du navigateur ; mêmes valeurs (suggest, filtrage croisé) et mêmes
+    // effets : un choix est une saisie (événements input puis change, d'où appareil connu, valeurs reprises, aides).
+    const PICKED = /^aircraft\.\d+\.(registration|type)$/;
+    /** Monte le sélecteur commun sur un champ immatriculation ou type (une fois par champ). */
+    function pickerFor(el, path, field) {
+      if (el._aircraftPicker) return;
+      el.removeAttribute('list');
+      const reg = path.endsWith('.registration'),
+        P = window.AircraftPicker;
+      P.attach(el, {
+        kind: 'field',
+        openOnClick: true,
+        limit: 150,
+        // rien à proposer : les champs déjà remplis (type, indicatif, catégorie) écartent les appareils connus
+        empty: () => window.RepositoryKit?.t?.(reg ? ['Aucun appareil connu ne correspond à ce qui est déjà saisi.',
+          'No known aircraft matches what is already entered.', 'Kein bekanntes Luftfahrzeug passt zum bereits Eingetragenen.',
+          'Ninguna aeronave conocida coincide con lo ya introducido.'
+        ] : ['Aucun type proposé pour ce qui est déjà saisi.', 'No type offered for what is already entered.',
+          'Kein Typ für das bereits Eingetragene vorgeschlagen.', 'Ningún tipo propuesto para lo ya introducido.'
+        ]) || '',
+        sources: () => Promise.resolve(suggest(path, field, el.value, false)).then(values => P.byCategory((values || []).map(v => ({
+          key: v.value,
+          label: v.value,
+          sub: v.label || '',
+          reg: reg ? v.value : '',
+          type: reg ? v.type || '' : v.value
+        })))),
+        onPick: it => {
+          el.value = it.key;
+          el.dispatchEvent(new Event('input', {
+            bubbles: true
+          }));
+          el.dispatchEvent(new Event('change', {
+            bubbles: true
+          }));
+        }
+      });
+    }
     /** Propose les valeurs connues pour un champ (liste de suggestions commune), à la prise de focus et à la frappe. */
     function offer(el) {
       if (!suggest) return;
       const path = el.dataset.path || el.dataset.append,
         field = fieldsByPath.get(path) || {};
+      if (el.dataset.path && PICKED.test(path) && window.AircraftPicker) return pickerFor(el, path, field);
+      // type OACI en texte libre (champ marqué aircraftType : ravitaillés AAR…) : base des types et valeurs déjà saisies
+      if (field.aircraftType && window.AircraftPicker) return window.AircraftPicker.typeField(el, {
+        extra: () => suggest(path, field, '', false)
+      });
       const list = form.querySelector('#mc-suggest');
       if (!list) return;
       const token = offering = {};

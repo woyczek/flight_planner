@@ -12,7 +12,7 @@ on every page. This document describes each component, its role and its interfac
 | Appearance (designs, icons, side bar, colours) | `shared/designs.css`, `block_icons.js/.css`, `icons/repository_icons.js`, `side_nav.js`, `appearance_page.js` | all pages; settings on the “Appearance” page |
 | Resizable columns | `shared/column_resize.js` | Planner |
 | Resizable table columns, clipped cells | `shared/table_resize.js` | Planner (RPM / power table) |
-| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button) |
+| Aircraft / type picker (drop-down list with search) | `shared/aircraft_picker.js` | Fuel (“Aircraft” button), Performance sheets (“Aircraft” selector), mission report (registration, ICAO type), My aircraft and “Add an aircraft”, Landing Performance, vertical profile of the maps (`SiaProfile.aircraftChoice`), Centre (assignment window, ODV planning, flight orders: `fromSelect`), free ICAO type fields (Fleet base, YAML tree, AAR receivers: `typeField`) |
 | Blocks (move / hide) | `shared/app_framework.js` | all pages |
 | Text translation | `shared/content_i18n.js` | CR, Planner, reporting pages |
 | Pilot profile | `shared/pilot_profile.js` | all pages (☰ menu) |
@@ -22,6 +22,8 @@ on every page. This document describes each component, its role and its interfac
 | SVG charts | `shared/mission_core/charts.js` | reporting pages |
 | Sortable table | `shared/mission_table.js` | reporting pages |
 | Editable databases | `shared/data_admin.js` (“Settings” page, `parametrage.html`) | CR |
+| Fleet map (aircraft at their current aerodrome, overlap grouping, hover, filters, selection ⇄ table) | `shared/fleet_map.js` (`FleetMap.mount`) | Report › Fleet (`apps/cr/flotte.html`) |
+| Data on GitHub (app without the launcher: settings, reads of `data/…` in the page, writes as commits) | `shared/github_data.js` (`GitHubData`), `shared/data_files.js` | every page (loaded by `shared/kit.js`); settings: My profile › Data access |
 | Aircraft type database | `AircraftDB/` | the three applications |
 | Common catalogue (types, aircraft) | `shared/aircraft_catalog.js` | the three applications |
 | Anonymised reference | `data/references/defa_reference.js` | the three applications |
@@ -239,7 +241,23 @@ flipped up or shifted left when it does not fit; the list scrolls), closed by a 
   `note`: right-hand mention (the reason of a disabled entry: “already taken”); `current`: the aircraft in use. The
   page keeps its own logic: `onPick(item, text)` receives the item as given.
 - `current()` (button), `placeholder`, `findPlaceholder`, `free` (a “free entry” row when nothing matches exactly:
-  `item.free`, `item.label` = the text), `empty()`, `footer()` (HTML under the list), `onOpen()`, `minWidth`.
+  `item.free`, `item.label` = the text), `empty()`, `footer()` (HTML under the list), `onOpen()`, `minWidth`,
+  `limit` (entries shown, 200 by default), `openOnClick` / `openOnFocus` (field), `filter: false` (sources already
+  searched and scored, kept as they are), `activeFirst: false` (no entry active by default: Enter goes to `onEnter`),
+  `hideEmpty` (closed instead of an empty message). A field opened by a click or ↓
+  shows the whole list with its current value highlighted; typing filters it.
+- The list is in the page only while open (a field rebuilt by a render leaves nothing behind); one set of document
+  listeners (click elsewhere, scroll, resize) serves every picker.
+
+`AircraftPicker.fromSelect(select, options)` shows a native `<select>` with the picker (a button after it, the
+select hidden: it keeps the value and fires `change`): options, `<optgroup>` groups and disabled options are taken
+over; an option may carry `data-type`, `data-reg`, `data-sub`, `data-note`; a disabled select disables the button.
+`AircraftPicker.selects(root, selector)` applies it to every matching select after a render (a second call only
+refreshes).
+
+`AircraftPicker.typeField(input, { extra })` helps a free ICAO type field (field mode): the catalogue's type base
+(`AircraftCatalog.typesDb`) by category, searched by code and model name, `extra()` values (already entered) first; a
+choice is an entry (`input` then `change`), free entry stays possible.
 
 Search: `AircraftPicker.match(keys, text, code)` is the suite's single scoring engine (100 exact code, 95 exact key,
 85 exact word, 72 code prefix, 68 key prefix, 55 key contains, 48 every word in the keys), also used by
@@ -646,6 +664,40 @@ the cycles and the folder inventory. Optional dependency: `SiaAero.parseAixm` (`
 - `shared/mission_registry.js`: registry and mission folder `data/missions/<letter>_<FAMILY>/<ID>/` = `mission<ID>.yaml`
   (source of truth), `summary<ID>.md` (a rendering of the YAML), `suivi.yaml`, `cartes/`, `recu/`, `versions/`; no PDF
   stored.
+- Drawing fields, written by the studio (`studioToYaml`, `saveVprof`, `storeMapPngs` in `apps/cpco/map_parser.html`) so
+  that another renderer (the V3 maps module) can redraw a map without the studio. Each `maps[]` entry gets:
+  - `profile_def`: a full copy of its display profile as kept in `siaDisplayProfiles` (`id`, `name`, `base`, `layers`,
+    `cities`, `population`, zone, aerodrome and navaid lists and modes, `corridorNm` when set), with `elements` holding
+    every key of `PROFILE_ELEMENTS`, a missing key taking the page default that `el()` reads. Written with `profile`;
+    removed when the map is off or has no profile;
+  - `resolved_bbox`: `[west, south, east, north]`, decimal degrees to 4 places, the extent actually drawn
+    (`mapGeoBbox`: view, else `bbox`, else the automatic framing by type). It is a separate key on purpose: `bbox` stays
+    an input constraint;
+  - `cycle`: the AIRAC date (`YYYY-MM-DD`) of the SIA database used; also set, with `generated_at`, on the maps whose PNG
+    files are produced.
+
+  `vertical_profile` gets `profile_def` (its profile, `vprof` by default), `cycle` and `route_points`
+  (`[{ name, lat, lon, alt_ft }]`, the route as the studio resolved it). These fields never keep a block that is
+  otherwise all defaults. The registry ignores them in `maps[]` and `vertical_profile` only (`canon`, `diffOf`): a mission
+  that gains them is not a new version, and a new version takes them over map by map (same `filename`), like `profile`,
+  `view`, `trace` and `generated_at`.
+- The airline's map profiles for the app (V3 maps, `modules/maps/SPEC.md` § 4 quinquies): `airline/map_profiles.json` of
+  the data repository, `{ schema: 1, updated_at, by, profiles: { auto, low, high, vfr, topo, cam } }`, each profile in
+  the `profile_def` format, complete or partial (the app merges it onto its own). The studio's "App profiles (V3)" box
+  (`readAppProfiles`, `appLoad`, `appSave` in `apps/cpco/map_parser.html`, hidden in Flight maps) takes a mode into the
+  studio as a profile `app-<mode>`, or writes the profile shown into a mode, after confirmation, by the `record` rule:
+  the file is read again, the mode replaced, `updated_at` and `by: "studio"` set, and the whole document written
+  (`MissionAssignments.writeData`). What is written is a **partial** profile (`appPartial`): only what differs from the
+  studio's defaults (a new profile, `newProfileBase`, layers compared one by one; elements as the page offers them), the
+  zoom thresholds filled in, and the keys the studio does not know (`hillshade`, `elements.vfrDensity`, `fixes`,
+  `awLabels`…, from the profile or else from the mode's previous profile); the app merges it onto its built-in values
+  (built-in < airline < device), so what the administrator did not touch keeps the app's value. A studio profile keeps the
+  element keys it does not know when it is saved (`readProfileFromUi`). `elements.zoom = { key: [min, max] }` (MapLibre
+  zoom, 24: no upper limit; a key without a range is always shown) is edited in "App zoom thresholds (V3)", one
+  "from … to …" line per key of the app's `ZOOM_KEYS` (26: `asFir`, `asTma`, `asCta`, `asCtr`, `asR`, `asD`, `asP`,
+  `asTsa`, `asOther`, `zoneLabels`, `awLow`, `awHigh`, `awLabels`, `navaids`, `fixes`, `vrp`, `obstacles`, `mora`,
+  `citiesBig`, `citiesMid`, `citiesSmall`, `graticule`, `aar`, `nat`, `wind`, `contours`); keys the studio does not list
+  are kept. The studio's own maps do not use it. `airline/` is in the synchronised pool (`tools/data_sync.py`).
 - `shared/mission_order.js` (order form), `apps/cpco/mission_skeleton.js` (skeleton), `shared/mission_estimate.js` +
   `mission_routing.js` (probable route, durations, transit), `mission_airspaces.js` (areas to activate),
   `mission_exercise.js` (exercise), `mission_i18n.js` (translated brief); each file header documents its rules.

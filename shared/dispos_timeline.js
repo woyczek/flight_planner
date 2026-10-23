@@ -17,8 +17,9 @@
   // Textes : anglais par défaut (DEFAULT_LABELS) ; la page traduit par labels { clé: texte } ou t(clé, défaut), y compris
   // les catégories (« cat.<id> ») et les groupes (« group.<id> ») ; dates et jours par Intl dans la langue lang.
   // API (window.DisposTimeline) : mount(hôte, { config, week, data, lang, labels, t, density, help, nav, period,
-  //   buttonClass, onChange(data), store }) → { get(), set(data), replace(data), add(plages), week(id), brush(id), slot(nom), clear(),
-  //   undo(), redo(), history(), destroy() } (événement dispos-brush en plus) ; événements sur l'hôte :
+  //   buttonClass, onChange(data), store, undoStore }) → { get(), set(data), replace(data), add(plages), week(id),
+  //   brush(id), slot(nom), clear(), undo(), redo(), history(), destroy() } (événement dispos-brush en plus) ;
+  //   événements sur l'hôte :
   //   dispos-change (detail : données), dispos-select (detail : plage { start, end, cat } ou null), dispos-week,
   //   dispos-history ; DEFAULT_CONFIG, DEFAULT_LABELS, weekId(date), weekMonday(id), addWeek(id, n), model (fonctions
   //   du modèle, pour les formats).
@@ -318,10 +319,9 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
 .dt-fg b{font-size:13px;position:absolute;left:50%;transform:translateX(-50%)}.dt-fg.narrow{justify-content:center}
 .dt-fg.sel{outline:2px solid var(--dt-accent,#1d6fd8);outline-offset:1px;z-index:2}
 .dt-h{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;display:none;background:#fff8;border:1px solid #0006;box-sizing:border-box}
-.dt-h.l{left:0}.dt-h.r{right:0}.dt-fg:hover .dt-h,.dt-fg.sel .dt-h,.dt-bg:hover .dt-h,.dt-bg.sel .dt-h{display:block}
-.dt-bg{cursor:grab}.dt-bg.sel{outline:2px solid var(--dt-accent,#1d6fd8);outline-offset:-2px;z-index:1}
+.dt-h.l{left:0}.dt-h.r{right:0}.dt-fg:hover .dt-h,.dt-fg.sel .dt-h{display:block}
 .dt-x{position:absolute;top:-1px;right:8px;display:none;border:0;background:#0008;color:#fff;font:11px/14px system-ui;padding:0 4px;cursor:pointer;z-index:2}
-.dt-fg:hover .dt-x,.dt-bg:hover .dt-x{display:block}
+.dt-fg:hover .dt-x{display:block}
 .dt-fg.live{z-index:3;box-shadow:0 0 0 2px var(--dt-accent,#1d6fd8),0 2px 6px #0006}.dt-bg.live{opacity:1;box-shadow:inset 0 0 0 2px var(--dt-accent,#1d6fd8)}
 .dt-bg .dt-lt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 11.5px/1 system-ui;color:#111;background:#fffc;padding:2px 5px;white-space:nowrap}
 .dt-hover{position:fixed;pointer-events:none;background:var(--dt-tip-bg,#111);color:var(--dt-tip-ink,#fff);font:12px/1.3 system-ui;padding:3px 7px;z-index:50;white-space:nowrap}
@@ -384,18 +384,19 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     'help.title': 'How to use',
     'help.layers': 'Two layers. The background gives the nature of an unavailability (unavailable, leave, rest, real-life activity): colour only, full row height. The first layer holds the availabilities, exercises and busy times: rectangles with a letter and their times. A minute has one state only: where a rectangle lies, the background under it does not count, but it stays in place and comes back when the rectangle moves away.',
     'help.palette': 'The palette. Click a chip to choose the brush: it only says what the next drawing will be. Background chips are on the last line.',
-    'help.draw': 'Draw. Drag on empty space or in the gap between two rows: the shape snaps to the half hour. Across several days, a selection rectangle lays the same hours on each day it crosses.',
-    'help.grab': 'Take a shape. A gesture that starts on a shape, rectangle or band, takes it whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it. Shift+drag draws over it instead, which is how to draw an availability on a day already covered by a band.',
+    'help.draw': 'Draw. Drag on empty space, on a background band or in the gap between two rows: the shape snaps to the half hour. Across several days, a selection rectangle lays the same hours on each day it crosses.',
+    'help.grab': 'Take an availability. A gesture that starts on a rectangle takes it, whatever the brush: a click selects it, a drag moves it (5 min steps; up or down: same times, another day), its edges resize it; Shift+drag draws over it instead. Background bands are not objects: around an availability they fill the rest of the day and do not move; a gesture that starts on a band draws.',
     'help.cut': 'Cut. The last shape wins: a rectangle drawn over another cuts it, and a background drawn through a rectangle cuts it too. The cut shows while you drag.',
     'help.drop': 'Drop and double-click. Drag a chip onto a shape: the shape takes that nature. Drop it on the empty part of a row or on the day name: the whole day, and a background chip then changes only the background, rectangles stay. Double-click a band: its colour becomes the background of the whole day; double-click a background chip: of the whole week.',
-    'help.fix': 'Correct. ✕ on a shape, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes.',
+    'help.fix': 'Correct. ✕ on an availability, or Delete on the selection, removes it; the arrow keys move it (← → 5 min, ↑ ↓ one day); Escape clears the selection. Ctrl+Z undoes, Ctrl+Y or Ctrl+Shift+Z redoes.',
     'help.period': 'Repeating period. The box above the grid lays one category on chosen weekdays between two dates, at the same times, across several weeks. Empty times mean the whole day; an end before the start runs into the next day.',
     'help.saved': 'What is saved. Times are in UTC, weeks are ISO weeks (Monday to Sunday). Each week is one JSON document: its ranges are the declaration, one state per minute; time with nothing is unavailable.'
   };
 
   /** Monte le composant dans host. opts : { config, week, data (schema 3), lang (dates et jours, Intl ; défaut « en »),
    *  labels ({ clé: texte }), t(clé, défaut) → texte, onChange(données), store : { read(semaine) → données schema 3 |
-   *  null, write(données) } (périodes qui débordent de la semaine affichée) }. */
+   *  null, write(données) } (périodes qui débordent de la semaine affichée), undoStore (Map gardée par la page : historique
+   *  conservé d'un montage à l'autre, au changement de langue par exemple) }. */
   function mount(host, {
     config = DEFAULT_CONFIG,
     week = weekId(Date.now()),
@@ -409,7 +410,8 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     period = true,
     buttonClass = '', // classe ajoutée aux boutons internes (pastilles, ✕) : style de boutons de la page hôte écarté
     onChange = null,
-    store = null
+    store = null,
+    undoStore = null
   } = {}) {
     css();
     const cats = new Map(config.categories.map(c => [c.id, c]));
@@ -563,12 +565,10 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
               label: r.cat,
               color: '#999'
             },
-            lv = isLive(r, 'bg'),
-            own = st.bg.find(x => x.s <= r.s && x.e >= r.e), // plage de fond dont la bande est la partie visible
-            sel = !!own && own === state.sel,
-            first = r.s >= from && r.s === own?.s,
-            last = r.e <= to && r.e === own?.e;
-          return `<div class="dt-bg${lv ? ' live' : ''}${sel ? ' sel' : ''}" role="button" aria-pressed="${sel}" aria-label="${esc(describe(r))}" data-b="${st.bg.indexOf(own)}" data-s="${r.s}" data-e="${r.e}" data-cat="${esc(r.cat)}" style="${seg(r)};background:${esc(c.color)}">${lv ? `<span class="dt-lt">${esc(`${lab(c)} ${hhmm(r.s)}–${hhmm(r.e, true)}`)}</span>` : ''}${first ? '<i class="dt-h l" data-h="l"></i>' : ''}${last ? '<i class="dt-h r" data-h="r"></i>' : ''}<button type="button" class="dt-x${bc}" data-x title="${esc(txt('delete'))}">✕</button></div>`;
+            lv = isLive(r, 'bg');
+          // bande : remplissage implicite du reste du jour autour des dispos, pas un objet (ni sélection, ni poignées,
+          // ni croix) ; un geste qui part dessus trace, comme dans le vide
+          return `<div class="dt-bg${lv ? ' live' : ''}" role="img" aria-label="${esc(describe(r))}" data-s="${r.s}" data-e="${r.e}" data-cat="${esc(r.cat)}" style="${seg(r)};background:${esc(c.color)}">${lv ? `<span class="dt-lt">${esc(`${lab(c)} ${hhmm(r.s)}–${hhmm(r.e, true)}`)}</span>` : ''}</div>`;
         }).join('');
         const fg = st.fg.filter(r => r.e > from && r.s < to).map(r => {
           const c = cats.get(r.cat) || {
@@ -595,7 +595,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             start: toIso(m0, selSent.s),
             end: toIso(m0, selSent.e),
             cat: selSent.cat,
-            layer: state.bg.includes(selSent) ? 'background' : 'foreground'
+            layer: 'foreground' // seules les dispos se sélectionnent
           }
         }));
       }
@@ -627,7 +627,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       });
     }
     // historique par semaine : couches avant chaque geste (undo), après une annulation (redo)
-    const hist = new Map(),
+    const hist = undoStore instanceof Map ? undoStore : new Map(),
       H = () => hist.get(state.week) || hist.set(state.week, {
         undo: [],
         redo: []
@@ -694,20 +694,17 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       const b = grid.querySelector(`.dt-row[data-d="${d}"]`).getBoundingClientRect();
       return d * DAY + clamp((x - b.left) / b.width, 0, 1) * DAY;
     };
-    /** Forme retrouvée après une mise à jour, dans sa couche (même catégorie qui contient la minute m). */
-    const findIn = (layer, cat, m) => state[layer].find(r => r.cat === cat && r.s <= m && r.e > m) || null;
-    /** Couches après le déplacement ou le redimensionnement d'une forme de la couche layer vers [s, e[ : une dispo
-     *  découpe les dispos qu'elle recouvre ; une plage de fond, le fond seulement (les dispos restent par-dessus). */
-    const placeIn = (layer, r, s, e) => layer === 'fg' ? applyFg({
+    /** Dispo retrouvée après une mise à jour (même catégorie qui contient la minute m). */
+    const findFg = (cat, m) => state.fg.find(r => r.cat === cat && r.s <= m && r.e > m) || null;
+    /** Couches après le déplacement ou le redimensionnement de la dispo r vers [s, e[ : elle découpe les dispos qu'elle
+     *  recouvre ; le fond reste dessous. */
+    const placeFg = (r, s, e) => applyFg({
       bg: state.bg,
       fg: state.fg.filter(x => x !== r)
-    }, s, e, r.cat) : {
-      bg: paint(state.bg.filter(x => x !== r), s, e, r.cat),
-      fg: state.fg
-    };
-    /** Couches sans la forme r (de l'une ou l'autre couche). */
+    }, s, e, r.cat);
+    /** Couches sans la dispo r (le fond qu'elle couvrait revient). */
     const without = r => ({
-      bg: state.bg.filter(x => x !== r),
+      bg: state.bg,
       fg: state.fg.filter(x => x !== r)
     });
     /** Pose une plage avec un pinceau (fond, effacement du fond ou dispo) dans les couches st. */
@@ -722,13 +719,11 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       if (e.button > 0 || e.target.closest('[data-x], .dt-day, .dt-axis')) return;
       if (!row && (!lane || e.clientX < lane.left || e.clientX > lane.right)) return;
       hover.hidden = true;
-      // règle unique, quel que soit le pinceau : un geste qui part SUR une forme (dispo ou bande de fond) la saisit
-      // (clic : sélection ; glisser : déplacement ; poignée : bord ; Maj+glisser : tracer par-dessus) ; à côté (vide,
-      // gouttière), il trace avec le pinceau, qui ne dit que QUOI tracer
+      // quel que soit le pinceau : un geste qui part SUR une dispo la saisit (clic : sélection ; glisser : déplacement ;
+      // poignée : bord ; Maj+glisser : tracer par-dessus) ; ailleurs (vide, bande de fond, gouttière), il trace avec le
+      // pinceau, qui ne dit que QUOI tracer — les bandes de fond ne sont que le remplissage du reste du jour
       const fgEl = e.target.closest('.dt-fg'),
-        bgEl = !fgEl && e.target.closest('.dt-bg'),
-        layer = fgEl ? 'fg' : 'bg',
-        r = fgEl ? state.fg[+fgEl.dataset.f] : bgEl ? state.bg[+bgEl.dataset.b] || null : null,
+        r = fgEl ? state.fg[+fgEl.dataset.f] : null,
         handle = e.target.closest('[data-h]')?.dataset.h,
         d = row ? +row.dataset.d : dayAt(e.clientY),
         m = minuteAt(d, e.clientX);
@@ -736,7 +731,6 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       if (r && handle) drag = {
         mode: 'resize',
         r,
-        layer,
         side: handle,
         d,
         press: true
@@ -744,7 +738,6 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
       else if (r) drag = {
         mode: e.shiftKey ? 'draw' : 'move', // Maj : tracer par-dessus la forme
         r,
-        layer,
         d,
         m0: m,
         x0: e.clientX,
@@ -810,9 +803,9 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             [s, s + len]
           ],
           cat: drag.r.cat,
-          layer: drag.layer
+          layer: 'fg'
         };
-        preview = placeIn(drag.layer, drag.r, s, s + len);
+        preview = placeFg(drag.r, s, s + len);
       } else if (drag.mode === 'resize') {
         const m = minuteAt(drag.d, e.clientX);
         let {
@@ -826,9 +819,9 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
             [s, en]
           ],
           cat: drag.r.cat,
-          layer: drag.layer
+          layer: 'fg'
         };
-        preview = placeIn(drag.layer, drag.r, s, en);
+        preview = placeFg(drag.r, s, en);
       }
       render();
     };
@@ -848,7 +841,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
           layer
         } = d.result;
         commit(preview);
-        state.sel = d.mode !== 'draw' && cat ? findIn(layer, cat, s) : null;
+        state.sel = d.mode !== 'draw' && cat ? findFg(cat, s) : null;
         render();
         return;
       }
@@ -902,8 +895,7 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
     grid.addEventListener('click', e => {
       const x = e.target.closest('[data-x]');
       if (!x) return;
-      const el = x.closest('.dt-fg, .dt-bg'),
-        r = el.classList.contains('dt-fg') ? state.fg[+el.dataset.f] : state.bg[+el.dataset.b];
+      const r = state.fg[+x.closest('.dt-fg').dataset.f];
       if (!r) return;
       if (state.sel === r) state.sel = null;
       hover.hidden = true;
@@ -1111,14 +1103,13 @@ padding:0 6px;overflow:hidden;white-space:nowrap;font-size:11.5px;cursor:grab;bo
         e.preventDefault();
         state.sel = null;
         commit(without(r));
-      } else if (step) { // ← → : 5 min ; ↑ ↓ : un jour, même horaire (dispo ou plage de fond)
+      } else if (step) { // ← → : 5 min ; ↑ ↓ : un jour, même horaire
         e.preventDefault();
         const len = r.e - r.s,
-          s = r.s + step,
-          layer = state.bg.includes(r) ? 'bg' : 'fg';
+          s = r.s + step;
         if (s < 0 || s + len > WEEK) return;
-        commit(placeIn(layer, r, s, s + len));
-        state.sel = findIn(layer, r.cat, s);
+        commit(placeFg(r, s, s + len));
+        state.sel = findFg(r.cat, s);
         render();
       }
     };

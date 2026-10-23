@@ -23,7 +23,7 @@ The lock hides the Centre until it has been enabled in this browser.
 - In Settings › Centre, only the “Centre access and settings” section stays visible; the others (“Users and rights”, “Availability categories”, “ODV planning”, “Report sending (web service)”) are hidden.
 - Activation is stored in this browser only: repeat it on each computer and after clearing the site data.
 
-Limit: this is a usage lock, not security. The password is written in clear in `data/config/centre.json`, shared with the data (`DEFA` by default), and shown next to the “Enable the Centre” button: this is the **standalone mode**. Group mode (signed registry, access by the administrator role) is coming ([design](../technique/COMPTES_SIGNES.md)).
+Limit: this is a usage lock, not security. The password is written in clear in `data/config/centre.json`, shared with the data (`DEFA` by default), and shown next to the “Enable the Centre” button: this is the **standalone mode**. Group mode (signed registry, access by the administrator role) is set in the “Group mode (signed registry)” section below ([design](../technique/COMPTES_SIGNES.md)).
 
 ### Enable or lock the Centre
 
@@ -125,6 +125,50 @@ This section manages the user records. There is one record per user (`data/utili
   signed-in `admin_centre`; adding a user and editing a row (role, active) are only protected
   by the Centre lock (see the [technical debt](../technique/DETTE_TECHNIQUE.md)).
 
+### Group mode (signed registry)
+
+For an airline that shares `data/` through git: roles, accounts and passwords come from the **signed user registry**
+(`data/utilisateurs/_registre.json`). Every browser refuses what is not signed by an admin: a user file changed in the
+repository (“I give myself the admin role”) no longer has any effect. Design: [signed accounts](../technique/COMPTES_SIGNES.md).
+- **State**: mode (standalone, group being set up, group active), accepted registry version, confirmed founder, admins
+  and their device fingerprints, recovery key, this device's fingerprint.
+- **“Switch to group mode”** (Centre enabled, launcher up to date: its security policy is required): you become the
+  first admin with this device's key; the existing user files go into version 1 of the registry. Type the **recovery
+  key** password twice: the file `sog-cle-secours-<fingerprint>.json` is downloaded, encrypted with that password. Keep
+  it offline (USB stick) and the password separately. Send your fingerprint to the pilots through another channel
+  (Discord, SMS, email).
+- **Group being set up**: as long as there are not two admins with a device key, the Centre stays accessible with its
+  password. Once the group is active, Centre access goes through the device key of a registry admin.
+- **Changing a role, a state or a password** (Users and rights) publishes a new version, signed with this device's
+  key: reserved for a registry admin; otherwise the message says so and nothing is written.
+- **“New recovery key”** (admin) replaces the recovery key; **“Back to standalone mode”** (admin): the registry stays in
+  the data but is no longer read.
+- **“Use the recovery key”** (section open even with the Centre locked): file, password and trigram; that trigram
+  becomes admin with this device's key. For admins who have lost their device.
+- **“Re-found the group”** (last resort, all keys lost): new registry, new recovery key; every other device will have
+  to confirm your fingerprint.
+- **Refused versions**: a version badly signed, out of the chain or older is refused; the device keeps its own, a
+  notification and this section say so.
+- On the first reading of the registry, a device shows the founder's fingerprint with “Confirm” and “Reject”: compare
+  it with the one received before confirming.
+- **Device access requests**: a pilot requests access from My profile › This device, on a device with the launcher as
+  well as on the app without launcher (phone); the request is a file signed with the key of their device
+  (`data/utilisateurs/demandes/`). The section lists trigram, device name, date and the fingerprint recalculated by your
+  page (“new user” if the trigram is not in the registry yet; “invalid request” if the signature or the fingerprint
+  does not hold). Compare the fingerprint with the one the pilot gave you through another channel, then **“Approve”**
+  (new registry version with their key, user created if needed with the user role) or **“Reject”** (request removed).
+  A request can come from anyone with access to the repository: only the fingerprint proves the device.
+- **Device keys**: each key of the registry, by user; **“Revoke”** (admin) publishes a version without it: its later
+  signatures are refused, the device will have to request again. Deactivating a user (Users and rights) revokes all
+  their keys. The last admin with a key cannot lose it, and an active group cannot drop below two admins with a key.
+- **“Activate the group”**: the card only shows once two admins have a device key (a second admin: “Centre
+  administrator” role in Users and rights, then their request approved). Until then nothing changes and nothing is
+  ignored. Once the group is active: the Centre only opens with an admin key (the password no longer counts); unsigned
+  data stay accepted for 30 days, with the “unsigned” mention, then are ignored (signed assignments: next batch).
+- App without launcher (GitHub mode): a new device follows the registry chain through the repository history (commits
+  API); requests, approvals and revocations are commits there. Switching to group mode or re-founding needs a device
+  with the launcher.
+
 ### Availability categories
 
 This section defines what the pilots can declare as availability (`data/config/disponibilites.json`, synchronised).
@@ -156,7 +200,7 @@ This section contains the Settings of the ODV planning page. They are kept in th
 | Preferred country (ATC perimeter) | “metropolitan France”; ATC sessions (trainings, exams, bookings) imported and shown for this country only, ODV planning and the Board (the country's ICAO indicators: LF except LFV for France) |
 | Week dates | “ISO week (week number of the file)”; otherwise “Date entered on the timeline” |
 | Empty cell | “Not filled in” (never counted as available); otherwise “Unavailable” |
-| FLOTTE types kept for roles | “All but red (not mastered)”; “Green only”; “All” |
+| FLOTTE types kept for roles | “All but red (NQ: owned, not qualified)”; “Green only”; “All” |
 | Missions shown per slot | 3 (from 1 to 10) |
 | Order of preference at equal score | AAR, AIRBORNE, ISR, SPECIAL, SAR, MARITIME, FIRE, AIRLIFT, HEMS, TRAINING (unknown families ignored, with a warning) |
 | Restricted code (SC, C, T, N): roles of its field only | ticked |
@@ -202,6 +246,8 @@ The side menu has a single group, “Folders and sources”: “Sources and fold
 The first run has its own tab, “First run”, described in the [user manual](MANUEL_UTILISATEUR.md#first-run); “Clean and start again…” is at the bottom of that page. See also [Installation](../INSTALL.md), § 1.
 These sections are assigned to the page by `config/repository_tree` (key `settings.sections`: `sources` and `keys` → installation; `sia` and `types` → installation,maintenance, i.e. on both pages: set-up here, update in Maintenance, same blocks). All the other maintenance sections open on the Maintenance page.
 
+In GitHub mode (app without the launcher: website, iOS app; data access set in My profile › Data access), Installation shows only the “Data access” card: data repository (link `https://github.com/<repository>`) and branch, access status (token check), last successful read, writes pending in the browser outbox (“Synchronise” button to send them), the aircraft type database read from the repository, a link to the virtual airline website and a link to My profile › Data access. Local folders, IVAO keys and SIA import are set on a computer with the launcher: the “Sources and folders”, “Keys and external services”, “Aeronautical data” and “Aircraft types” cards and the “First run” tab are not offered. The mode depends only on the data access setting, not on the device: the card is the same in a desktop browser. On the Maintenance page, this mode offers only what works without the launcher or folders: versions, aeronautical data (the database published to the data repository by a workstation with the launcher: zones, cycle, “Re-read the published base”), browser caches and storage, browser backup (downloaded archive, no backup folder) and journal; updates, references and dependencies, and aircraft types are not offered. Folders remembered by this browser from an earlier use with the launcher are ignored: the data come from the GitHub repository. When the page is served by the launcher (GitHub mode set in that same browser), Maintenance shows all its cards and their buttons, with on “Aeronautical data” and “Aircraft types” the sentence “GitHub mode active in this browser: the data read come from the repository, publications are made on this workstation (launcher).”
+
 ### Sources and folders
 
 This section is the only place to set the local folders and the addresses of the external sources.
@@ -219,6 +265,9 @@ This section is the only place to set the local folders and the addresses of the
 
 - **External sources**: the default address is shown greyed out. An entered value applies to this browser only; “↺” goes back to the default value and “Open ↗” opens the address.
 - **API keys (external services)**: link to the “Keys and external services” section, the one place for the suite keys.
+- **Websites the suite may contact**: fixed list (maps, networks, weather, SimBrief) and configuration addresses, plus the websites allowed on this computer (“Remove”); a website is added with “Allow this website…” in the block notification, confirmed in the launcher window (kept in secrets/sites.json).
+- **Read-only folders**: the application folder, X-Plane folders, the ODV workbook and folders added to the backup are authorised for reading (“authorised (read)”); writing is only requested at the moment of an action that needs it (restore, “Save to the repository” for AircraftDB). The data (`data/` and its subfolders) is authorised for writing.
+- **Opening from another website or an extension**: refused by default (a suite page opened by a link from another website, or by an extension such as Claude in Chrome, shows “Suite page opened from another website: refused”). “Allow until the launcher closes…” permits it after confirmation in the launcher window; a red “⚠ Reduced protection — restore” button then stays in the header of every page. Data, scripts and launcher settings stay closed to other websites.
 - **Virtual airline**: “Name”, “Full name”, “Short name”, “Centre (short)”, “Centre (full name)”, and the site pages (“Home page”, “Flight log”, “Fleet”, “Aircraft page”). An empty field keeps the default value. “Back to SO Group Virtual” clears all these settings.
 - **First run**: “Reopen the first run”. To start from scratch, “Clean and start again…” is at the bottom of the first run page (“Start again” section).
 
@@ -312,6 +361,8 @@ Table states:
 - X-Plane: “Custom Data” cycle;
 - downloaded files: “old” after 28 days (one AIRAC cycle) since the download or the last check without change.
 
+**Database published to the data repository**: at each rebuild, the database is also written zone by zone into the data folder, `data/sia/base/<zone>/<cycle>.json` (one zone, plain JSON: a few hundred KB up to about 5 MB for France), and the cities into `data/sia/base/cities.json`. A file is rewritten only if its content changes; older cycles of the zone are removed. The rebuild report says what was published; “Synchronise” sends it. The data folder must be authorised (Installation › Sources and folders), otherwise the report says why the database was not published. Phones and the website (GitHub mode) read these files: they have no SIA folder and no rebuild, but the same database as the workstation that published it.
+
 **MORA**: several sources.
 - The computed grid (`data/sia/mora.csv`) has priority. “Simple recalculation” takes the obstacles of the new cycle (offline); “Full calculation” redoes terrain and peaks (network, about one minute) for the theatres and missions; “Compute the zone MORA” (panel) does it over the extent of one zone, the other cells being kept.
 - If cells change: “Write mora.csv (old one archived)”, then commit the data repository.
@@ -377,7 +428,7 @@ As long as none of these operations has taken place, the journal is empty.
 
 ### fleet (known aircraft)
 
-This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Home base”, “Operational”.
+This database (`data/references/aircraft_fleet.js`) lists the aircraft offered in the reports: “Operator”, “ICAO type”, “Variant”, “Registration”, “Code”, “Number”, “Callsigns” (comma-separated), “Home base”, “Operational”. “ICAO type” offers the type base (a drop-down list with search, by code or model name); free entry is still possible.
 - **“Paste the website Fleet page…”**:
   1. open the “Virtual fleet” page of the airline's website (link in the window);
   2. press Ctrl+A then Ctrl+C, and paste into the area (Ctrl+V); you can also use “Read the clipboard” or “or saved page…”;
@@ -387,6 +438,7 @@ This database (`data/references/aircraft_fleet.js`) lists the aircraft offered i
 - **Buttons common to the repository databases**: “Save to repository” highlighted (writes the file to the Repository folder, to be committed); under “More…”, “Apply in this browser” (local changes take priority), “Download”, “Discard changes”, “Back to repository file”. The status line says where the content comes from: “State: repository file, no change in this browser”, or the local changes and their date.
 - **Automatic**: the launcher itself reads the website's public Fleet and Flight log pages (no login), once a day when a page opens, with the same rules as pasting; it writes `data/references/aircraft_fleet.js` and `defa_reference.js`, to be sent with “Synchronise”. Setting and “Update now”: under the list of aircraft in the reporting (below). Pasting and the script (`python AircraftDB/update_fleet.py Flotte.html`) remain possible.
 - **Where**: Settings › Centre › “Fleet (known aircraft)”, restricted while the Centre is locked (previously in Maintenance).
+- **Fleet map**: separate page, for everyone (Report › Fleet, see the user manual); the “Fleet map” button above the table leads to it. It shows each aircraft at its current aerodrome, with filters, hover (last flight) and selection; with the Centre enabled, its “Edit the fleet” button brings you back here.
 - **Aircraft in the reporting**: below the fleet, all the aircraft flying in the mission log (type, callsigns, operator, flights, last flight). “Personal” box, ticked by default: individual aircraft, outside the SOG fleet; unticking it adds it to the fleet (it becomes assignable), ticking it again removes it. Then “Save to repository”: the fleet and the index of individual aircraft (`data/references/aircraft_personal.js`) are written together. An aircraft on the website's Fleet page comes back into the fleet at the next update.
 - **Types and performance**: “Refresh types and performance” completes the types unknown to the database (fleet and reporting); the daily update from the website also does it, in the background, for the fleet, the log and the individual aircraft.
 - **Aircraft aerodrome (base)**: it only changes through the update from the website, or through a report issued from a mission order with a real landing aerodrome; a report outside a mission order or a landing report does not move the aircraft. An aircraft added from the reporting comes in without an aerodrome. The current aerodrome is the “Location” column of the website's Fleet page (kept with the date of its last change), unless a more recent report issued from a mission order gives an actual landing aerodrome (`missions/aircraft_positions.json`); ferries start from there (assignment, ODV planning, Board, aircraft sheet).
@@ -398,6 +450,8 @@ This database (`AircraftDB/aircraft_db.js`) contains two tables:
 - “Aliases (common name → designator)”.
 Changes are also carried over to `aircraft_overrides.json`. The buttons are those of the repository databases.
 The “Procedure” gives the commands of the refresh script, to be run from `AircraftDB`: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. The database is not published with the suite (ICAO and EUROCONTROL data): the “Aircraft types” section of Settings › Maintenance completes it on this computer, type by type, never all at once. It reads in three steps: “What it is” (the ICAO record, which gives the icon and the class 2P, 2T, 4T…, and the EUROCONTROL performance); the table of the fleet, mission and report types (silhouette, code and model, ICAO class, record ✓ or missing, key performance — ceiling, cruise, V2, Vat — with the detail as a tooltip and the EUROCONTROL link, use); then “Complete automatically (n)”, which downloads what is missing. A free code is typed under “Download other types…” (folded); “Edit the database by hand…” (Expert level) opens this database. One group per aircraft: the labels of missions and reports (“A332 A330 MRTT Phénix”, “A330 MRTT PHÉNIX”) are brought back to the ICAO code (fleet, aliases, usual names; alias chain followed, for example A4M → A400, a house code brought back to the ICAO designator); a type written in plain text in a report is recognised instead of creating a local type. A type without EUROCONTROL performance is estimated: “≈ 2,000 kg/h, 480 kt (known type)” or “(ICAO class L2J)”, the same fallback as the fuel planner (`shared/fuel_reference.js`). It needs the launcher and the network; when the pass ends, the page reloads by itself and shows the summary. The files written (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) need nothing: the pages read them; not versioned, they are completed on each computer or copied from one to another. The same pass also reads the public SimBrief list (one request, kept for a week; `--simbrief` on the command line): cruise fuel flow (kg/h), weights (empty, zero fuel, landing, maximum fuel), ceiling and speed of 224 types, stored in `aircraft_perf.js` next to the EUROCONTROL records; a value whose accuracy SimBrief does not guarantee is an estimate. Finally, Airframe DB (`--airframedb`, at most 40 records per pass, 30-day cache) adds aliases (names in use, such as H125 → AS50, and simulator names → ICAO code, never replacing an existing alias nor diverting an official designator) and the published characteristics (speeds, ceiling, climb rate, weights, range) of types without an EUROCONTROL or SimBrief record, military aircraft and helicopters included. As a last resort, a designator that neither ICAO nor EUROCONTROL knows (retired type, such as the S210 Caravelle) is looked up on Aviation Fanatic: one page per type, name, ICAO description (L2J…) and wake category, kept on this computer (source “Aviation Fanatic”).
+
+For phones and the website (GitHub mode), which have no launcher, “Publish the aircraft database to the data repository” (Expert level, under the table) copies `aircraft_db.js` and `aircraft_perf.js` into `AircraftDB/` of the data repository and removes everything else from that folder (caches, scripts, `__pycache__`), then synchronises. Before doing anything, the page shows the list of what will be copied (+) and removed (−) and asks for agreement. Both files must be plain values (checked by `tools/data_guard.py`, like the other data files). The database is never published on the public website.
 Limit: a type deleted here may come back at the next refresh, if it is part of the script's base list.
 
 ### Callsign correspondence
@@ -492,7 +546,7 @@ The git credentials are those of the system (SSH key, credential manager); the s
 
 ### Several users, until the central server
 
-- Each computer **receives** at each launch (the launcher runs a `git pull` of `data/`) and **sends** with the
+- Each computer **receives** at each launch (the launcher updates `data/` from the repository, sending nothing) and **sends** with the
   “Synchronise” button (commit, merge with the others, push).
 - Each computer that sends needs: git, the suite opened by the launcher, **write access to the data repository**
   (one account per person on the git host, or a shared account) and an SSH key or HTTPS credentials
@@ -526,7 +580,7 @@ The suite is served by a small local server, supplied with it. The data lives in
 
 - **Windows**: double-click `lancer.cmd`. **macOS / Linux**: `sh lancer.sh`. Both call `tools/launch.py`, which follows three steps:
   1. **Python**: it is looked for, and installed if needed (version 3.8 at least).
-  2. **Data**: if `data/` is present, it is updated (`git pull --ff-only`, without blocking on failure). Otherwise, a `.zip` archive dropped next to the launcher is extracted; failing that, the data repository is cloned.
+  2. **Data**: if `data/` is present, it is updated without `git pull`: the pool files changed on this computer are committed first (“Modifications du poste <TRI>”), then the remote branch is merged record by record as with the “Synchronise” button, sending nothing. A file outside the pool changed locally (for example `sia/mora.csv`) is left as it is; if the update would overwrite it, the update is put off and the console names it. The console says what was done (files committed, received, reception put off and why); never blocking. Otherwise, a `.zip` archive dropped next to the launcher is extracted; failing that, the data repository is cloned.
   3. **Server and browser**: the server starts on `http://127.0.0.1`, on the first free port from 8000, then the browser opens. If the suite is already running, only the browser opens.
 - Leave the launcher window open while you use the suite; close it (or Ctrl+C) to stop the suite.
 - Options: `--port 8010`, `--page apps/…`, `--no-browser`, `--no-data`, and `--data <dossier>` to serve another copy of the data under `/data/`, without clone or update. The `--data` option is for tests, for example of synchronisation.

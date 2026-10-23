@@ -16,11 +16,23 @@
  *     current() : appareil montré par le bouton ({ label, type, sub, title }, null : placeholder).
  *     placeholder (bouton sans appareil), findPlaceholder (champ de recherche), free (saisie libre acceptée), empty() (texte d'une liste vide), footer() (HTML sous la liste),
  *     onOpen(), onEnter(texte) (kind field : Entrée sans entrée choisie), onEscape() (kind field : Échap liste fermée,
- *     vrai si l'Échap a servi), minWidth (px, 320 par défaut).
+ *     vrai si l'Échap a servi), openOnFocus / openOnClick (kind field), limit (entrées montrées, 200 par défaut),
+ *     minWidth (px, 320 par défaut), filter (false : sources déjà cherchées et notées, gardées telles quelles),
+ *     activeFirst (false : aucune entrée active d'office, Entrée laisse la main à onEnter), hideEmpty (liste vide :
+ *     fermée plutôt qu'un message).
+ *   La liste n'est dans la page que tant qu'elle est ouverte (un champ recréé par un rendu ne laisse rien derrière lui) ;
+ *   écouteurs du document communs à tous les sélecteurs.
  * AircraftPicker.match(clés, texte, code) : note d'un texte contre des clés (moteur de recherche commun, repris par
  *   equipment_editor.js : 100 code exact … 48 tous les mots dans les noms ; 0 : rien).
  * AircraftPicker.byCategory(items, typeOf) : éléments rangés par catégorie de la suite (AircraftCatalog.classify :
  *   hélicoptères, turbopropulseurs, jets, pistons, autres), libellés traduits.
+ * AircraftPicker.fromSelect(select, options) : un <select> natif montré par le sélecteur (bouton à sa suite, select
+ *   caché qui garde la valeur et émet « change ») ; options, groupes (<optgroup>), entrées désactivées reprises ; une
+ *   option peut porter data-type, data-reg, data-sub, data-note. Select désactivé : bouton désactivé.
+ * AircraftPicker.selects(racine, sélecteur, options) : fromSelect sur chaque select de la racine (après un rendu).
+ * AircraftPicker.typeField(champ, { extra }) : champ de type OACI en texte libre aidé (mode champ) : base des types du
+ *   catalogue (AircraftCatalog.typesDb) par catégorie, recherche sur le code et le nom du modèle ; extra() : valeurs
+ *   déjà saisies, groupe en tête ; un choix est une saisie (input puis change), la saisie libre reste possible.
  */
 (() => {
   'use strict';
@@ -118,6 +130,11 @@
     choose: ['Choisir l’appareil', 'Choose the aircraft', 'Luftfahrzeug wählen', 'Elegir la aeronave']
   };
   let seq = 0;
+  // Sélecteurs ouverts : clic ailleurs, défilement et redimensionnement servis par des écouteurs communs.
+  const live = new Set();
+  document.addEventListener('pointerdown', e => [...live].forEach(api => api._outside(e)), true);
+  window.addEventListener('resize', () => live.forEach(api => api._place()));
+  window.addEventListener('scroll', e => live.forEach(api => api._scroll(e)), true);
 
   /** Monte le sélecteur sur un bouton ou un champ (voir l'en-tête du fichier). */
   function attach(host, opts = {}) {
@@ -133,6 +150,7 @@
       items = [], // éléments affichés (choisissables ou non), dans l'ordre
       act = -1,
       run = 0,
+      typed = false, // champ : liste filtrée par la saisie seulement après une frappe (ouverte au clic : tout)
       openState = false;
     pop.className = 'ap-pop';
     pop.hidden = true;
@@ -154,8 +172,6 @@
     find.setAttribute('aria-autocomplete', 'list');
     find.setAttribute('aria-expanded', 'false');
     pop.append(list, foot);
-    // dans une fenêtre modale : liste posée dans la fenêtre (sinon inerte sous la modale)
-    (host.closest('dialog') || document.body).append(pop);
 
     /** Groupes des sources de la page pour un texte (fonctions synchrones ou promesses). */
     const read = async q => {
@@ -177,6 +193,18 @@
         }).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(([it]) => it)
       })).filter(g => g.items.length);
     };
+    /** Au plus `limit` entrées montrées (groupes coupés dans l'ordre). */
+    const cut = groups => {
+      let room = opts.limit || 200;
+      return groups.map(g => {
+        const items = g.items.slice(0, Math.max(0, room));
+        room -= items.length;
+        return {
+          ...g,
+          items
+        };
+      }).filter(g => g.items.length);
+    };
     /** Rangée d'un élément. */
     const row = (it, i) => {
       const icon = it.icon ?? (window.AircraftDBIcons?.icon?.({
@@ -189,8 +217,11 @@
     /** Redessine la liste pour le texte cherché ; garde l'entrée active si elle reste. */
     const draw = async () => {
       const mine = ++run,
-        q = find.value.trim(),
-        groups = filter(await read(q), q);
+        q = field && !typed ? '' : find.value.trim(),
+        value = norm(find.value),
+        groups = cut(opts.filter === false ? await read(q) : filter(await read(q), q));
+      // champ ouvert sans frappe : sa valeur est l'entrée en cours
+      if (field && !typed && value) groups.forEach(g => g.items.forEach(it => it.current ||= norm(it.key) === value));
       if (mine !== run || !openState) return;
       items = [];
       let html = '';
@@ -213,10 +244,11 @@
         html += row(free, items.length);
         items.push(free);
       }
+      if (!html && opts.hideEmpty) return close();
       list.innerHTML = html || `<li role="presentation" class="ap-empty">${esc(q ? t(TXT.none) : opts.empty?.() || t(TXT.empty))}</li>`;
       foot.innerHTML = opts.footer?.() || '';
       const cur = items.findIndex(it => it.current && !it.disabled);
-      mark(q ? items.findIndex(it => !it.disabled) : cur >= 0 ? cur : -1, false);
+      mark(q && opts.activeFirst !== false ? items.findIndex(it => !it.disabled) : cur >= 0 ? cur : -1, false);
       place();
     };
     /** Entrée active (index), visible dans la liste. */
@@ -264,6 +296,9 @@
     const open = () => {
       if (openState) return draw();
       openState = true;
+      live.add(api);
+      // dans une fenêtre modale : liste posée dans la fenêtre (sinon inerte sous la modale)
+      (host.closest('dialog') || document.body).append(pop);
       pop.hidden = false;
       find.setAttribute('aria-expanded', 'true');
       host.setAttribute('aria-expanded', 'true');
@@ -279,8 +314,10 @@
     const close = (focusHost = false) => {
       if (!openState) return;
       openState = false;
+      live.delete(api);
       run++;
       pop.hidden = true;
+      pop.remove();
       find.setAttribute('aria-expanded', 'false');
       host.setAttribute('aria-expanded', 'false');
       if (focusHost && !field) host.focus();
@@ -305,20 +342,37 @@
         html = `<span class="ap-btn"><span class="ap-ic">${icon}</span><span class="ap-btn-tx">${esc(c?.label || opts.placeholder || t(TXT.choose))}</span><span class="ap-btn-caret">▾</span></span>`;
       if (host.innerHTML !== html) host.innerHTML = html;
       host.title = c?.title || [c?.type, c?.label].filter(Boolean).join(' · ') || t(TXT.choose);
+      if (opts.disabled) host.disabled = !!opts.disabled();
     };
 
     // ---- événements
     if (!field) host.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
+      if (opts.disabled?.()) return;
       openState ? close() : open();
     });
-    find.addEventListener('input', () => open());
-    if (field) find.addEventListener('focus', () => opts.openOnFocus && open());
+    find.addEventListener('input', () => {
+      typed = true;
+      open();
+    });
+    if (field) find.addEventListener('focus', () => {
+      if (!opts.openOnFocus) return;
+      typed = false;
+      open();
+    });
+    if (field && opts.openOnClick) host.addEventListener('click', () => {
+      if (openState) return;
+      typed = false;
+      open();
+    });
     find.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        if (!openState) return open();
+        if (!openState) {
+          typed = false;
+          return open();
+        }
         step(e.key === 'ArrowDown' ? 1 : -1);
       } else if (e.key === 'Enter') {
         if (openState && act >= 0) {
@@ -356,19 +410,23 @@
       const li = e.target.closest('.ap-item');
       if (li && +li.dataset.i !== act && !items[+li.dataset.i]?.disabled) mark(+li.dataset.i, false);
     });
-    document.addEventListener('pointerdown', e => {
-      if (openState && !pop.contains(e.target) && !host.contains(e.target)) close();
-    }, true);
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', e => {
-      if (openState && !pop.contains(e.target)) place();
-    }, true);
-    window.addEventListener('repository-language-change', () => {
+    if (!field) window.addEventListener('repository-language-change', () => {
       paint();
       if (openState) draw();
     });
     paint();
+    if (opts.disabled) host.disabled = !!opts.disabled();
     const api = {
+      /** Clic hors de la liste et de l'hôte : fermée (hôte retiré de la page : fermée aussi). */
+      _outside: e => {
+        if (!host.isConnected || (!pop.contains(e.target) && !host.contains(e.target))) close();
+      },
+      _place: () => place(),
+      /** Défilement de la page (pas de la liste) : liste replacée ; hôte retiré : fermée. */
+      _scroll: e => {
+        if (!host.isConnected) close();
+        else if (!pop.contains(e.target)) place();
+      },
       open,
       close,
       /** Relit les sources (liste ouverte) et l'appareil courant (bouton). */
@@ -382,8 +440,123 @@
     return api;
   }
 
+  /** Élément du sélecteur pour une option d'un select natif (texte, data-*). */
+  const optionItem = (select, o) => ({
+    key: o.value,
+    label: o.dataset.label || o.textContent.trim(),
+    sub: o.dataset.sub || '',
+    type: o.dataset.type || '',
+    reg: o.dataset.reg || '',
+    note: o.dataset.note || '',
+    disabled: o.disabled,
+    current: select.value === o.value && o.selected,
+    icon: !o.value ? '<span></span>' : o.value.startsWith('__') ? '<span>✎</span>' : undefined
+  });
+  /** Montre un select natif par le sélecteur commun (voir l'en-tête du fichier) ; refait seulement s'il est déjà monté. */
+  function fromSelect(select, opts = {}) {
+    if (!select) return null;
+    if (select._pickerButton?.isConnected) {
+      select._pickerButton._aircraftPicker?.refresh();
+      return select._pickerButton._aircraftPicker;
+    }
+    const btn = Object.assign(document.createElement('button'), {
+      type: 'button',
+      className: `ap-select${opts.className ? ` ${opts.className}` : ''}`
+    });
+    select.after(btn);
+    select.hidden = true;
+    select._pickerButton = btn;
+    const api = attach(btn, {
+      kind: 'button',
+      minWidth: opts.minWidth || 300,
+      disabled: () => select.disabled,
+      sources: () => {
+        const top = {
+            group: '',
+            items: []
+          },
+          groups = [top];
+        [...select.children].forEach(ch => ch.tagName === 'OPTGROUP' ? groups.push({
+          group: ch.label,
+          items: [...ch.children].map(o => optionItem(select, o))
+        }) : top.items.push(optionItem(select, ch)));
+        return groups;
+      },
+      current: () => {
+        const o = select.selectedOptions[0];
+        return o ? {
+          label: o.dataset.label || o.textContent.trim(),
+          type: o.dataset.type || '',
+          icon: !o.value ? '<span></span>' : o.value.startsWith('__') ? '<span>✎</span>' : undefined
+        } : null;
+      },
+      onPick: it => {
+        if (select.value !== it.key) {
+          select.value = it.key;
+          select.dispatchEvent(new Event('change', {
+            bubbles: true
+          }));
+        }
+        btn._aircraftPicker?.refresh();
+      },
+      ...opts.picker
+    });
+    // select désactivé ou réactivé par la page : bouton suivi
+    new MutationObserver(() => api.refresh()).observe(select, {
+      attributes: true,
+      attributeFilter: ['disabled']
+    });
+    return api;
+  }
+  /** Types de la base du catalogue (code, nom du modèle), triés par code. */
+  const typeItems = () => {
+    const db = window.AircraftCatalog?.typesDb?.() || window.AIRCRAFT_DB || {};
+    return Object.keys(db).filter(k => !k.startsWith('__') && /^[A-Z][A-Z0-9]{1,3}$/.test(k)).sort().map(code => ({
+      key: code,
+      label: code,
+      sub: db[code]?.model || '',
+      type: code
+    }));
+  };
+  /** Champ de type OACI aidé (voir l'en-tête du fichier) ; une fois par champ. */
+  function typeField(input, opts = {}) {
+    if (!input || input._aircraftPicker) return input?._aircraftPicker || null;
+    input.removeAttribute('list');
+    return attach(input, {
+      kind: 'field',
+      openOnClick: true,
+      limit: 150,
+      sources: () => Promise.resolve(opts.extra?.() || []).then(extra => {
+        const seen = [...new Set((extra || []).map(v => String(v?.value ?? v ?? '').trim().toUpperCase()).filter(Boolean))];
+        return [...(seen.length ? [{
+          group: t(['Déjà saisis', 'Already entered', 'Bereits eingetragen', 'Ya introducidos']),
+          items: seen.map(code => ({
+            key: code,
+            label: code,
+            sub: window.AircraftCatalog?.record?.(code)?.model || '',
+            type: code
+          }))
+        }] : []), ...byCategory(typeItems())];
+      }),
+      onPick: it => {
+        input.value = it.key;
+        input.dispatchEvent(new Event('input', {
+          bubbles: true
+        }));
+        input.dispatchEvent(new Event('change', {
+          bubbles: true
+        }));
+      }
+    });
+  }
+  /** fromSelect sur chaque select de la racine répondant au sélecteur CSS. */
+  const selects = (root, selector, opts) => [...(root?.querySelectorAll(selector) || [])].map(s => fromSelect(s, opts));
+
   window.AircraftPicker = {
     attach,
+    fromSelect,
+    selects,
+    typeField,
     match,
     byCategory,
     norm,

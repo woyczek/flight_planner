@@ -322,6 +322,43 @@
   // ---- document
   let shown = '', // fichier affiché (langue comprise)
     current = HOME; // document affiché (sans langue) ; HOME : accueil de l'aide
+  // ---- téléphone : sommaire replié en tête (« Sommaire ▾ »), « ↑ Sommaire » à la fin de chaque chapitre (CSS : mode
+  // mobile seulement) ; un lien suivi dans le sommaire le referme
+  const side = $('.doc-side'),
+    menuBtn = $('.doc-menu-btn');
+  const SOMMAIRE = ['Sommaire', 'Contents', 'Inhalt', 'Índice'];
+  /** Ouvre (open) ou referme le sommaire du téléphone ; libellé du bouton dans la langue de la page. */
+  function menu(open) {
+    side.classList.toggle('open', open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.textContent = `${tr(SOMMAIRE)} ${open ? '▴' : '▾'}`;
+  }
+  menu(false);
+  menuBtn.addEventListener('click', () => menu(!side.classList.contains('open')));
+  side.addEventListener('click', e => {
+    if (e.target.closest('a[href]')) menu(false);
+  });
+  window.addEventListener('repository-language-change', () => menu(side.classList.contains('open')));
+  body.addEventListener('click', e => {
+    if (!e.target.closest('[data-sommaire]')) return;
+    menu(true);
+    window.scrollTo(0, 0);
+  });
+  /** « ↑ Sommaire » avant chaque chapitre (titre de niveau 2) sauf le premier, et à la fin du texte. */
+  function chapterLinks() {
+    const h2 = [...body.querySelectorAll('h2')];
+    if (!h2.length) return;
+    const up = () => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'doc-up secondary';
+      b.dataset.sommaire = '';
+      b.textContent = `↑ ${tr(SOMMAIRE)}`;
+      return b;
+    };
+    h2.slice(1).forEach(h => h.before(up()));
+    body.append(up());
+  }
   async function show(name, hash = '') {
     if (!name || name === INDEX) return showHome();
     // un document de docs/ seulement (chemin relatif .md) : ?doc=https://… chargeait le texte d'un autre site, dont
@@ -347,6 +384,7 @@
     if (shown !== file) {
       const r = render(md, file);
       body.innerHTML = r.html;
+      chapterLinks();
       shown = file;
       current = name;
       document.title = `${tr(['Aide', 'Help', 'Hilfe', 'Ayuda'])} — ${r.headings[0]?.text || name}`;

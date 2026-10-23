@@ -190,6 +190,33 @@
   .doc-empty {
     opacity: .75
   }
+  /* téléphone (mode mobile) : le texte d'abord — sommaire (recherche, index, plan) replié derrière « Sommaire ▾ » en
+     tête, et « ↑ Sommaire » à la fin de chaque chapitre ; sur grand écran, ni l'un ni l'autre */
+  .doc-menu-btn,
+  .doc-up {
+    display: none
+  }
+  html[data-mobile="on"] .doc-menu-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    font: inherit;
+    font-weight: 650
+  }
+  html[data-mobile="on"] .doc-side:not(.open)> :not(.doc-menu-btn) {
+    display: none
+  }
+  html[data-mobile="on"] .doc-side.open>.doc-menu-btn {
+    margin-bottom: 8px
+  }
+  html[data-mobile="on"] article.doc-body .doc-up {
+    display: block;
+    min-height: 40px;
+    margin: 18px 0 6px;
+    font: inherit
+  }
 </style>
 </head><body>
 <!-- Aide : documentation de la suite (docs/*.md), affichée ici. Index documentaire : docs/README.md (colonne de gauche) ;
@@ -198,6 +225,7 @@
 <header class="mc-header"><h1>Aide</h1><p>Tutoriels, manuels et documentation de la suite</p></header>
 <main class="doc-page">
   <nav class="doc-side repo-block" data-no-deco aria-label="Documentation">
+    <button type="button" class="doc-menu-btn" aria-expanded="false" data-no-i18n></button>
     <input type="search" class="doc-search" placeholder="Rechercher dans les tutoriels et les manuels…" aria-label="Rechercher dans les tutoriels et les manuels">
     <label class="doc-dev-toggle"><input type="checkbox" class="doc-dev-search"> Inclure la documentation développeur</label>
     <ul class="doc-hits" hidden></ul>

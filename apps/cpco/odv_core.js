@@ -20,7 +20,9 @@
   //   extract(classeur, réglages, nomDuFichier) → données normalisées { semaine, lundi, pilotes, records, evenements,
   //     vols, frise, zones, flotte, anomalies… } ;
   //   plan(données, réglages) → créneaux { pilotes, atc, missions probables (règles expliquées), vols… } ;
-  //   DEFAULTS (réglages), LEGEND, FAMILIES, ROLES, roleLabel(rôle), CATEGORIES, DAYS, SLOTS, toCsv(données), recap(données, créneaux).
+  //   DEFAULTS (réglages), LEGEND, FAMILIES, ROLES, roleLabel(rôle), CATEGORIES, DAYS, SLOTS, toCsv(données), recap(données, créneaux) ;
+  //   readOnlyReason() → { text, link, href } ou null : pourquoi le Tableau / le Planning ODV ne se modifie pas ici ;
+  //   showReadOnly() : cette raison en notification, avec le lien vers le réglage, une fois par page.
 
   // ------------------------------------------------------------------ constantes
   const NS_A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
@@ -418,7 +420,8 @@
     const [h, s, l] = hexToHsl(hex);
     return hslToHex(h, s, tint < 0 ? l * (1 + tint) : l * (1 - tint) + tint);
   };
-  /** Niveau de maîtrise d'un type d'après la couleur du texte : vert (maîtrisé), orange (à qualifier), rouge (non). */
+  /** Niveau de maîtrise d'un type d'après la couleur du texte : vert (maîtrisé), orange (à qualifier), rouge (NQ :
+   *  possédé, non qualifié) — mêmes couleurs que la pastille de Mon profil › Mes appareils. */
   function levelOfColor(hex) {
     if (!hex) return null;
     const [h, s, l] = hexToHsl(hex);
@@ -1966,7 +1969,86 @@
     return lines.join('\n');
   }
 
+  // ------------------------------------------------------------------ lecture seule : la raison, avec son réglage
+  const T4 = row => window.RepositoryKit?.t ? window.RepositoryKit.t(row) : row[0];
+  /** Pourquoi la page ODV est en consultation ici, dans l'ordre où le pilote peut y remédier : Centre verrouillé dans
+   *  ce navigateur, niveau Équipage, compte connecté sans le rôle admin_centre, mode production sans connexion admin.
+   *  En mode GitHub (appli sans lanceur), le verrou du Centre et le niveau sont des réglages de ce navigateur : le
+   *  texte le rappelle. Rend { text, link, href } (lien vers le réglage), ou null si la page est modifiable. */
+  function readOnlyReason() {
+    const N = window.RepositoryNav,
+      U = window.SuiteUsers,
+      url = s => N?.settingsUrl?.(s) || '',
+      perBrowser = window.GitHubData?.on?.() ? ' ' + T4(['(Mode GitHub : ce réglage est propre à ce navigateur.)',
+        '(GitHub mode: this setting belongs to this browser.)', '(GitHub-Modus: diese Einstellung gilt nur für diesen Browser.)',
+        '(Modo GitHub: este ajuste es propio de este navegador.)'
+      ]) : '';
+    if (!N?.cpco?.enabled?.()) return {
+      text: T4([
+        'Consultation seule : le Centre est verrouillé dans ce navigateur ; le déverrouiller (mot de passe du Centre) permet de modifier le planning.',
+        'View only: the Centre is locked in this browser; unlocking it (Centre password) lets you change the schedule.',
+        'Nur Ansicht: Das Zentrum ist in diesem Browser gesperrt; entsperrt (Passwort des Zentrums) lässt sich die Planung ändern.',
+        'Solo consulta: el Centro está bloqueado en este navegador; desbloquearlo (contraseña del Centro) permite modificar la planificación.'
+      ]) + perBrowser,
+      link: T4(['Paramètres › Centre…', 'Settings › Centre…', 'Einstellungen › Zentrum…', 'Ajustes › Centro…']),
+      href: url('cpco')
+    };
+    if ((N?.levels?.get?.() || 2) < 2) return {
+      text: T4([
+        'Consultation seule : au niveau Équipage (1), le planning se consulte ; il se modifie à partir du niveau Planification (2).',
+        'View only: at the Crew level (1), the schedule is viewed; it can be changed from the Planning level (2).',
+        'Nur Ansicht: Auf der Stufe Besatzung (1) wird die Planung angesehen; ändern lässt sie sich ab der Stufe Planung (2).',
+        'Solo consulta: en el nivel Tripulación (1), la planificación se consulta; se modifica a partir del nivel Planificación (2).'
+      ]) + perBrowser,
+      link: T4(['Mon profil › Niveau d’utilisation…', 'My profile › Usage level…', 'Mein Profil › Nutzungsstufe…',
+        'Mi perfil › Nivel de uso…'
+      ]),
+      href: url('level')
+    };
+    const tri = U?.session?.()?.tri;
+    if (tri && !U.isAdmin?.()) return {
+      text: window.RepositoryKit?.tf ? window.RepositoryKit.tf([
+        'Consultation seule : le compte {t} n’a pas le rôle admin_centre ; un administrateur le donne dans Paramètres › Centre › Utilisateurs.',
+        'View only: the account {t} does not have the admin_centre role; an administrator grants it in Settings › Centre › Users.',
+        'Nur Ansicht: Das Konto {t} hat die Rolle admin_centre nicht; ein Administrator vergibt sie unter Einstellungen › Zentrum › Benutzer.',
+        'Solo consulta: la cuenta {t} no tiene el rol admin_centre; un administrador lo concede en Ajustes › Centro › Usuarios.'
+      ], {
+        t: tri
+      }) : `View only: ${tri}`,
+      link: '',
+      href: ''
+    };
+    if (U?.mode?.() === 'production' && !U?.isAdmin?.()) return {
+      text: T4(['Consultation seule : en mode production, modifier le planning demande une connexion avec le rôle admin_centre.',
+        'View only: in production mode, changing the schedule requires signing in with the admin_centre role.',
+        'Nur Ansicht: Im Produktionsmodus erfordert eine Änderung der Planung eine Anmeldung mit der Rolle admin_centre.',
+        'Solo consulta: en modo producción, modificar la planificación requiere iniciar sesión con el rol admin_centre.'
+      ]),
+      link: T4(['Se connecter…', 'Sign in…', 'Anmelden…', 'Iniciar sesión…']),
+      href: url('account')
+    };
+    return null;
+  }
+  let roShown = false;
+  /** La raison de la lecture seule en notification (lien vers le réglage), une fois par page ; rien si modifiable. */
+  function showReadOnly() {
+    const r = readOnlyReason();
+    if (!r || roShown) return;
+    roShown = true;
+    const item = window.AppFramework?.notify?.(r.text, 'info', {
+      timeout: 12000
+    });
+    if (item && r.href) {
+      const a = document.createElement('a');
+      a.href = r.href;
+      a.textContent = r.link;
+      item.querySelector('span')?.append(' ', a);
+    }
+  }
+
   window.OdvCore = {
+    readOnlyReason,
+    showReadOnly,
     openWorkbook,
     extract,
     plan,

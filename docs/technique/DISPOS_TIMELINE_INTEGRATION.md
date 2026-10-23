@@ -64,6 +64,9 @@ The component never stores anything itself. It hands the data to the page, one p
 - **Other weeks**: the repeating period box can reach weeks other than the one shown. Pass `store: { read(week),
   write(data) }`, both synchronous, working on the same storage as the load and the save. Without `store`, those weeks
   are reported as not saved.
+- **Mounting again**: to change the language, destroy the component and mount it again with the new `lang` and
+  labels. Keep one `Map` in the page and pass it as `undoStore` to both mounts: Undo still works on the person's
+  earlier gestures. Clear that `Map` when the categories or the person change.
 - **Storage choices**:
   - `localStorage`: one key per person and week, holding the JSON text. Wrap every access in try/catch: storage can be
     full or disabled.
@@ -95,7 +98,7 @@ The component never stores anything itself. It hands the data to the page, one p
 **Events**: listen on the container.
 
 - `dispos-change`: the data changed.
-- `dispos-select`: a shape was selected; detail `{ start, end, cat, layer }`, or `null`.
+- `dispos-select`: an availability (rectangle) was selected; detail `{ start, end, cat, layer }`, or `null`.
 - `dispos-week`: the person browsed to another week.
 - `dispos-history`: detail `{ undo, redo }`, the counts, to enable or grey Undo and Redo buttons. The page calls
   `api.undo()` and `api.redo()`. Ctrl+Z, Ctrl+Y and Ctrl+Shift+Z already work inside the page.

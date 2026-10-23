@@ -34,3 +34,6 @@ config/build.js
 
 # secrets locaux (clé d’API IVAO… : secrets/ivao.json), jamais versionnés
 secrets/
+
+# Site statique construit par tools/build_pages.py (appli iOS : mobile/, .github/workflows/ios.yml)
+_site/

@@ -103,6 +103,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
   };
   /** Dossier racine du dépôt (handle), autorisé en écriture ; request : le demande ou le fait choisir (contrôle : présence de repository_tree). null sans autorisation. */
   async function repo(request = true) {
+    if (window.GitHubData?.on?.()) return null; // mode GitHub : aucun dossier, les fichiers sont écrits dans le dépôt des données
     let handle = await idbGet('folder:__repo');
     if (handle) {
       let permission = await handle.queryPermission?.({
@@ -133,9 +134,18 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
     await idbSet('folder:__repo', handle);
     return handle;
   }
-  /** Écrit un fichier du dépôt (chemin relatif, dossiers créés au besoin). */
+  /** Écrit un fichier du dépôt (chemin relatif, dossiers créés au besoin). Sous data/ : par le dossier des données
+   *  (autorisé en écriture) ; ailleurs (AircraftDB/…) : écriture ponctuelle demandée sur le dossier de l'application,
+   *  ouvert en lecture seule (FileAccess.modeOf). */
   async function writeRepoFile(path, text) {
-    let dir = await repo(true);
+    // mode GitHub (appli sans lanceur) : « data/<rel> » est écrit dans le dépôt des données (un commit), jamais dans un dossier
+    if (window.GitHubData?.on?.()) return window.GitHubData.put(path.replace(/^data\//, ''), text);
+    const FA = window.FileAccess,
+      inData = path.startsWith('data/') && FA ? await FA.writable('__data', {
+        request: true
+      }) : null;
+    let dir = inData || await repo(true);
+    if (inData) path = path.slice('data/'.length);
     const parts = path.split('/'),
       name = parts.pop();
     for (const part of parts) dir = await dir.getDirectoryHandle(part, {
@@ -188,7 +198,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (col.type === 'bool') return `<input type="checkbox" ${attrs}${v ? ' checked' : ''}>`;
       if (col.type === 'select') return `<select ${attrs}>${['', ...optionsOf(col)].map(o => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}${v && !optionsOf(col).includes(v) ? `<option selected>${esc(v)}</option>` : ''}</select>`;
       const value = col.type === 'list' ? (v || []).join(', ') : v ?? '';
-      return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
+      return `<input ${col.type === 'number' ? 'type="number" step="any" ' : ''}${attrs}${col.aircraftType ? ' data-aircraft-type autocomplete="off"' : ''} value="${esc(value)}"${col.width ? ` style="min-width:${col.width}"` : ''}>`;
     };
 
     /** Redessine le tableau : lignes filtrées (texte de toutes les colonnes) et triées sur la colonne choisie. */
@@ -258,6 +268,10 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         paint();
       });
     }
+    // type OACI d'un appareil : liste des types (sélecteur commun), montée à la première prise de focus
+    host.addEventListener('focusin', event => {
+      if (event.target.matches?.('[data-aircraft-type]')) window.AircraftPicker?.typeField(event.target);
+    });
     host.addEventListener('change', event => {
       const el = event.target,
         index = el.dataset?.row;
@@ -631,7 +645,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         }, {
           key: 'type',
           label: T('Type OACI', 'ICAO type'),
-          upper: true
+          upper: true,
+          aircraftType: true // liste des types (sélecteur commun)
         }, {
           key: 'variant',
           label: T('Variante', 'Variant')
@@ -1180,8 +1195,9 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       order = Object.keys(sections);
     const SETS = [...DATASETS, ...(window.SettingsPanels?.list || [])].filter(d => !page || sections[d.id] === page)
       .sort((a, b) => page ? order.indexOf(a.id) - order.indexOf(b.id) : 0);
-    // page Centre : rubriques réservées tant que le Centre est verrouillé (seul l'accès reste)
-    const locked = d => sections[d.id] === 'centre' && d.id !== 'cpco' && !window.RepositoryNav?.cpco?.enabled?.();
+    // page Centre : rubriques réservées tant que le Centre est verrouillé (restent l'accès, et le mode groupe : confirmer
+    // la fondation du registre, utiliser la clé de secours quand plus aucun admin n'a son poste)
+    const locked = d => sections[d.id] === 'centre' && !['cpco', 'groupe'].includes(d.id) && !window.RepositoryNav?.cpco?.enabled?.();
     const wanted = new URLSearchParams(location.search).get('base');
     // rubrique d'une autre page (ancien lien, lien interne) : ouverte sur sa page
     if (page && wanted && sections[wanted] && sections[wanted] !== page && window.RepositoryNav?.settingsUrl) {
@@ -1324,6 +1340,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       if (!root.querySelector('.da-main').hidden) show();
     });
 
+    let shownSeq = 0; // numéro de l'affichage en cours (rubrique quittée : ses rappels ne touchent plus la page)
     /** Affiche la base choisie (rubrique du Centre si elle est verrouillée) : titre, présentation, mode d'emploi,
      *  puis éditeur (tableaux) ou panneau dédié. */
     function show() {
@@ -1344,28 +1361,35 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       const howto = root.querySelector('.da-howto');
       howto.hidden = !set.howto;
       howto.querySelector('div').innerHTML = set.howto || '';
-      const body = root.querySelector('.da-body');
-      body.innerHTML = '';
+      // corps neuf à chaque rubrique : une rubrique qui finit de se dessiner après un changement de rubrique (lectures
+      // lentes, mode GitHub : « Appareils et simulateurs » au bout de dix secondes) écrit dans l'ancien, hors de la page,
+      // au lieu de poser son tableau dans la rubrique suivante
+      const old = root.querySelector('.da-body'),
+        body = old.cloneNode(false),
+        seq = ++shownSeq,
+        live = f => (...a) => seq === shownSeq ? f(...a) : undefined;
+      old.replaceWith(body);
       // ni état ni commandes de la base précédente (« État : fichier du dépôt… » restait sur le journal, les boutons
       // « Enregistrer / Annuler » des aérodromes sur les fusions, qui n'ont pas de barre d'actions)
       status('');
       actions([]);
-      // rubrique de shared/settings_panels.js : sa propre interface, avec les outils de la page
+      // rubrique de shared/settings_panels.js : sa propre interface, avec les outils de la page — sans effet une fois la
+      // rubrique quittée (état, commandes et changement de rubrique de celle qui est affichée)
       if (set.render) return set.render(body, {
-        status,
-        actions,
-        changed,
+        status: live(status),
+        actions: live(actions),
+        changed: live(changed),
         /** Modifications enregistrées par la rubrique : plus de garde au départ de la page. */
-        saved: () => {
+        saved: live(() => {
           dirty = false;
-        },
-        show,
+        }),
+        show: live(show),
         /** Ouvre la rubrique id (adresse ?base=id). */
-        open: id => {
+        open: live(id => {
           current.id = id;
           history.replaceState(null, '', `?base=${id}`);
           show();
-        }
+        })
       });
       if (set.custom) return set.id === 'cpco' ? cpcoSettings(body) : set.id === 'planner' ? plannerSettings(body) : set.id === 'send' ?
         sendSettings(body) : set.id === 'defaLog' ? defaLog(body) : set.id === 'merges' ? merges(body) : ledgers(body);
@@ -1373,6 +1397,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         const w = work[set.id];
         status(w.local ? `${T('Modifications locales du', 'Local changes from')} ${new Date(w.local).toLocaleString()} (${T('prioritaires dans ce navigateur, pas encore dans le dépôt', 'active in this browser, not yet in the repository')})` : T('État : fichier du dépôt, sans modification dans ce navigateur',
           'State: repository file, no change in this browser'));
+        // flotte : la carte des appareils est une page à part, pour tous (Compte rendu › Flotte, apps/cr/flotte.html)
+        if (set.id === 'fleet') body.insertAdjacentHTML('beforeend', `<p class="row da-map-link"><a class="secondary mc-button" data-icon="map" href="${esc(new URL('apps/cr/flotte.html', window.RepositoryNav?.root || new URL('../../', location.href)).href)}">${esc(window.RepositoryKit.t(['Carte de la flotte', 'Fleet map', 'Flottenkarte', 'Mapa de la flota']))}</a><span class="small">${esc(window.RepositoryKit.t(['Compte rendu › Flotte : où sont les appareils (carte, filtres, dernier vol)', 'Report › Fleet: where the aircraft are (map, filters, last flight)', 'Bericht › Flotte: wo die Luftfahrzeuge stehen (Karte, Filter, letzter Flug)', 'Informe › Flota: dónde están las aeronaves (mapa, filtros, último vuelo)']))}</span></p>`);
         set.tables().forEach((table, i) => {
           if (table.title) body.insertAdjacentHTML('beforeend', `<h3>${esc(table.title)}</h3>`);
           const host = document.createElement('div');
@@ -1425,7 +1451,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
             w.fileStamp = stamp;
             w.local = '';
             dirty = false;
-            status(`${T('Enregistré dans le dépôt', 'Saved to repository')} : ${files.map(f => f[0]).join(', ')} — ${T('à committer', 'to be committed')}`);
+            status(`${T('Enregistré dans le dépôt', 'Saved to repository')} : ${files.map(f => f[0]).join(', ')} — ${window.GitHubData?.on?.() ? window.RepositoryKit.tf(['commité sur GitHub', 'committed on GitHub', 'auf GitHub committet', 'confirmado en GitHub'], {}) : T('à committer', 'to be committed')}`);
           }, own ? 'secondary' : 'primary'],
           [T('Appliquer dans ce navigateur', 'Apply in this browser'), async () => {
             const stamp = now();
@@ -1780,22 +1806,24 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
           'Centre access unavailable (common menu not loaded).');
         return;
       }
-      /** Ligne du mode (autonome : mot de passe ; groupe : à venir) et mot de passe affiché, posés dans les éléments
+      /** Ligne du mode (autonome : mot de passe ; groupe : registre signé) et mot de passe affiché, posés dans les éléments
        *  [data-cpco-mode] et [data-cpco-shown] du panneau (textContent : la valeur vient du dépôt partagé). */
       const centreInfo = async () => {
         const c = await access.config?.(true) || {};
         const m = body.querySelector('[data-cpco-mode]'),
           s = body.querySelector('[data-cpco-shown]');
         setText(m, c.mode === 'groupe' ?
-          tt('Mode groupe : accès au Centre par le rôle d’administrateur du registre signé.',
-            'Group mode: Centre access through the administrator role of the signed registry.',
-            'Gruppenmodus: Zugang zum Zentrum über die Administratorrolle des signierten Registers.',
-            'Modo grupo: acceso al Centro por el rol de administrador del registro firmado.') :
           tt(
-            'Mode autonome : accès au Centre par le mot de passe du {SOG} (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : à venir.',
-            'Standalone mode: Centre access through the {SOG} password (a usage lock, not a protection). Group mode (signed registry, access by role): coming.',
-            'Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der {SOG} (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): folgt.',
-            'Modo autónomo: acceso al Centro con la contraseña del {SOG} (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): próximamente.'
+            'Mode groupe : en constitution, accès au Centre par le mot de passe ; une fois le groupe actif, par la clé de poste d’un admin du registre signé (le mot de passe ne sert plus).',
+            'Group mode: while being set up, Centre access through the password; once the group is active, through the device key of an admin of the signed registry (the password no longer counts).',
+            'Gruppenmodus: im Aufbau Zugang zum Zentrum per Passwort; sobald die Gruppe aktiv ist, über den Geräteschlüssel eines Admins des signierten Registers (das Passwort zählt nicht mehr).',
+            'Modo grupo: en constitución, acceso al Centro con la contraseña; una vez activo el grupo, con la clave de equipo de un admin del registro firmado (la contraseña ya no cuenta).'
+          ) :
+          tt(
+            'Mode autonome : accès au Centre par le mot de passe du {SOG} (verrou d’usage, pas une protection). Mode groupe (registre signé, accès par le rôle) : rubrique « Mode groupe (registre signé) ».',
+            'Standalone mode: Centre access through the {SOG} password (a usage lock, not a protection). Group mode (signed registry, access by role): “Group mode (signed registry)” section.',
+            'Eigenständiger Modus: Zugang zum Zentrum mit dem Passwort der {SOG} (eine Nutzungssperre, kein Schutz). Gruppenmodus (signiertes Register, Zugang über die Rolle): Rubrik „Gruppenmodus (signiertes Register)“.',
+            'Modo autónomo: acceso al Centro con la contraseña del {SOG} (un bloqueo de uso, no una protección). Modo grupo (registro firmado, acceso por el rol): apartado «Modo grupo (registro firmado)».'
           ));
         setText(s, c.motDePasse || '');
         const i = body.querySelector('[data-cpco-new]');
@@ -1848,7 +1876,7 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
         const r = await access.setPassword(v);
         status(!r.ok ? tt('Mot de passe non enregistré', 'Password not saved', 'Passwort nicht gespeichert',
             'Contraseña no guardada') :
-          r.where === 'data' ?
+          r.where === 'folder' ? // writeData : « folder » (dossier des données) ou « local » (ce navigateur)
           tt('Mot de passe enregistré dans les données : il part au prochain « Synchroniser »',
             'Password saved in the data: it goes out at the next “Synchronise”',
             'Passwort in den Daten gespeichert: es geht beim nächsten „Synchronisieren“ hinaus',
@@ -1995,7 +2023,8 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       };
       editor.querySelector('[data-yaml="close"]').textContent = T('Fermer', 'Close');
       /** Texte du résultat d'un enregistrement de registre (fichier écrit ou navigateur seulement). */
-      const result = r => `${r.written ? `${T('fichier', 'file')} ${store.folder}/${L.FILE}` : T('navigateur (dossier « CR » non autorisé : « Dossier du registre… »)', 'browser (“CR” folder not authorised: “Ledger folder…”)')}`;
+      const GHM = !!window.GitHubData?.on?.(); // mode GitHub : le registre est écrit dans le dépôt des données, sans dossier
+      const result = r => `${r.written ? GHM ? `GitHub : cr/${L.FILE}` : `${T('fichier', 'file')} ${store.folder}/${L.FILE}` : T('navigateur (dossier « CR » non autorisé : « Dossier du registre… »)', 'browser (“CR” folder not authorised: “Ledger folder…”)')}`;
       // Éditeur YAML : registre complet (family absent) ou missions d'une famille.
       function edit(familyId) {
         const view = familyId ? L.open({
@@ -2062,14 +2091,16 @@ ${commentLines.map(line => `  // ${line}`).join('\n')}
       paint();
       actions([
         [T('Éditer le registre complet (YAML)', 'Edit the full ledger (YAML)'), () => edit(null), 'primary'],
-        [T('Dossier du registre…', 'Ledger folder…'), async () => {
-          await L.chooseFolder();
-          await L.load(true);
-          const r = await L.save();
-          status(result(r));
-          info();
-          paint();
-        }],
+        ...(GHM ? [] : [
+          [T('Dossier du registre…', 'Ledger folder…'), async () => {
+            await L.chooseFolder();
+            await L.load(true);
+            const r = await L.save();
+            status(result(r));
+            info();
+            paint();
+          }]
+        ]),
         [T('Télécharger le registre (YAML)', 'Download the ledger (YAML)'), () => L.downloadAll()],
         [T('Exporter en CSV (tableur)', 'Export CSV (spreadsheet)'), () => L.downloadAllCsv()]
       ]);

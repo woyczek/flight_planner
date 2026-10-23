@@ -7,8 +7,14 @@
   //   · tout <input type="file"> de la suite ouvre le sélecteur du système directement dans le
   //     dossier paramétré (data-picker-folder, ou dossier par défaut de la page), sinon dans le
   //     dernier dossier utilisé pour ce bouton ; les pages gardent leur code (événement change).
+  //   · MODE GITHUB (appli sans lanceur : GitHubData.on(), shared/github_data.js) : les données viennent du dépôt GitHub,
+  //     jamais d'un dossier. Point de décision unique ici : get() ne rend aucun dossier (status() : « non choisi »,
+  //     sameAsServed() : null), set() ne mémorise rien, pickFolder() refuse avec une explication, decorate() masque le
+  //     bouton de dossier. Les pages n'ont donc rien à tester : sans dossier, elles lisent et écrivent par GitHub.
   // Chargé par repository_nav.js sur toutes les pages. Sans API (Firefox…) : comportement natif.
   const L = (fr, en, de = en, es = en) => [fr, en, de, es];
+  /** Mode GitHub : aucun dossier mémorisé n'est lu, mémorisé ni proposé. */
+  const gh = () => !!window.GitHubData?.on?.();
   /** Rang (0–3) de la langue de la page dans [fr, en, de, es]. */
   /** Texte d'une ligne [fr, en, de, es] dans la langue de la page. */
   const tr = row => window.RepositoryKit.t(row, {
@@ -153,6 +159,24 @@
       'la última carpeta usada')
   };
 
+  // ---- mode d'accès par dossier (docs/technique/AUDIT_SECURITE_2026-10-07.md, lot 4b) : lecture seule pour le dossier
+  // de l'application, ceux de X-Plane, le classeur de l'ODV et les dossiers ajoutés à la sauvegarde — un script
+  // injecté ne peut réécrire ni le code de la suite ni déposer un greffon dans X-Plane ; lecture et écriture pour les
+  // données (data/ et ses sous-dossiers), demandées à part après le choix du dossier de l'application (grantData).
+  const READ_ONLY = ['__repo', '__xplane', '__xpnav', '__odv'];
+  /** Mode d'accès d'un dossier : « read » ou « readwrite ». */
+  const modeOf = key => READ_ONLY.includes(key) || String(key).startsWith('__backup_') ? 'read' : 'readwrite';
+  const GRANT = {
+    ask: L(
+      'Le dossier de l’application est ouvert en lecture seule (le code de la suite ne peut pas être modifié par une page). Autoriser maintenant l’écriture dans ses données (data/ : disponibilités, missions, comptes rendus…) ? Le navigateur va le demander.',
+      'The application folder is opened read-only (no page can modify the suite’s code). Allow writing to its data now (data/: availability, missions, reports…)? The browser will ask.',
+      'Der Anwendungsordner ist schreibgeschützt geöffnet (keine Seite kann den Code der Suite ändern). Jetzt das Schreiben in seine Daten erlauben (data/: Verfügbarkeit, Missionen, Berichte…)? Der Browser fragt nach.',
+      'La carpeta de la aplicación se abre en solo lectura (ninguna página puede modificar el código de la suite). ¿Autorizar ahora la escritura en sus datos (data/: disponibilidad, misiones, informes…)? El navegador lo pedirá.'
+    ),
+    ok: L('Autoriser l’écriture des données', 'Allow writing the data', 'Schreiben der Daten erlauben',
+      'Autorizar la escritura de los datos')
+  };
+
   // ---- dossiers mémorisés (même base que ledger.js, data_admin.js, browser_store.js)
   /** Base IndexedDB « missionCore » (magasin handles) : dossiers mémorisés, partagée avec ledger.js, data_admin.js et browser_store.js. */
   // connexion partagée par la page (RepositoryKit.idb) : plus une ouverture par lecture
@@ -164,6 +188,7 @@
   window.addEventListener('file-access-change', () => handleMemo.clear());
   /** Dossier mémorisé (handle) de la clé key (__repo, __ledger, __perf, __store…) ; null sinon. */
   async function get(key) {
+    if (gh()) return null; // mode GitHub : les données viennent du dépôt, aucun dossier
     const hit = handleMemo.get(key);
     if (hit && Date.now() - hit.at < 10e3) return hit.value;
     const value = await (async () => {
@@ -191,7 +216,7 @@
       try {
         const repo = await get('__repo');
         if (repo && await repo.queryPermission?.({
-            mode: 'readwrite'
+            mode: 'read'
           }) === 'granted' && (await deriveFromRepo(repo, {
             accepted: okMap().__repo === repo.name
           })).includes(key)) {
@@ -214,6 +239,7 @@
   async function set(key, handle, {
     accepted = false
   } = {}) {
+    if (gh()) return; // mode GitHub : aucun dossier mémorisé
     const db = await idb();
     await new Promise(res => {
       const tx = db.transaction('handles', 'readwrite');
@@ -352,19 +378,24 @@
   }
   const warned = new Set(); // une notification par dossier et par page
 
-  /** État d'un dossier mémorisé : { handle, name, permission } (permission : granted / prompt / denied / none). */
-  async function status(key) {
-    const handle = await get(key);
+  /** État d'un dossier mémorisé : { handle, name, permission, mode } (permission : granted / prompt / denied / none),
+   *  pour le mode du dossier (modeOf) sauf mode donné : le dossier de l'application est « autorisé » en lecture. */
+  async function status(key, {
+    mode
+  } = {}) {
+    const m = mode || modeOf(key),
+      handle = await get(key);
     if (!handle) return {
       key,
       name: '',
       permission: 'none',
-      handle: null
+      handle: null,
+      mode: m
     };
     let permission = 'prompt';
     try {
       permission = await handle.queryPermission({
-        mode: 'readwrite'
+        mode: m
       });
     } catch {
       /* API partielle */
@@ -373,8 +404,58 @@
       key,
       name: handle.name,
       permission,
-      handle
+      handle,
+      mode: m
     };
+  }
+  /** Dossier autorisé en écriture (handle) ; request : le demande au navigateur (geste de l'utilisateur requis). Pour
+   *  une écriture ponctuelle dans un dossier en lecture seule (modeOf) : rien n'est retenu au-delà de la session. */
+  async function writable(key, {
+    request = false
+  } = {}) {
+    const st = await status(key, {
+      mode: 'readwrite'
+    });
+    if (!st.handle) return null;
+    if (st.permission === 'granted') return st.handle;
+    if (!request) return null;
+    try {
+      return await st.handle.requestPermission({
+        mode: 'readwrite'
+      }) === 'granted' ? st.handle : null;
+    } catch {
+      return null;
+    }
+  }
+  /** Écriture des données (data/) demandée après l'accès en lecture au dossier de l'application : question dans la page
+   *  (son clic donne au navigateur le geste requis), puis demande du navigateur ; sous-dossiers de data/ déduits de
+   *  nouveau (ceux qui manquaient sont créés). true si l'écriture est autorisée. */
+  async function grantData() {
+    const data = await get('__data');
+    if (!data) return false;
+    try {
+      if (await data.queryPermission({
+          mode: 'readwrite'
+        }) !== 'granted') {
+        if (!await window.AppFramework?.ask?.(tr(GRANT.ask), {
+            ok: tr(GRANT.ok)
+          })) return false;
+        if (await data.requestPermission({
+            mode: 'readwrite'
+          }) !== 'granted') return false;
+      }
+    } catch {
+      return false;
+    }
+    await deriveFromData(data, {
+      accepted: okMap().__data === data.name
+    });
+    window.dispatchEvent(new CustomEvent('file-access-change', {
+      detail: {
+        key: '__data'
+      }
+    }));
+    return true;
   }
   // ---- v3 : dossier des données (data/) et sous-dossiers déduits
   // cr, missions, sia : toujours ceux de data/ (réglés au choix de data/) ; planner, local : seulement si l'utilisateur
@@ -402,14 +483,16 @@
         if (cur && await otherState(key, cur).catch(() => null) !== 'other') continue;
       }
       try {
-        await set(key, await dataHandle.getDirectoryHandle(sub, {
+        // existant : pris tel quel (aucune écriture nécessaire) ; absent : créé, si l'écriture est autorisée
+        const sh = await dataHandle.getDirectoryHandle(sub).catch(() => dataHandle.getDirectoryHandle(sub, {
           create: true
-        }), {
+        }));
+        await set(key, sh, {
           accepted
         });
         done.push(key);
       } catch {
-        /* lecture seule */
+        /* absent et data/ en lecture seule : déduit plus tard (grantData) */
       }
     }
     return done;
@@ -447,8 +530,8 @@
     }
   }
   /** Dossier du dépôt choisi : tout ce qui s'en déduit est réglé d'un coup — data/ (s'il contient data_tree.js) et ses
-   *  sous-dossiers (registre, missions, SIA, performances), sauvegarde locale (racine du dépôt, si elle n'est pas
-   *  déjà choisie : defa_local_store.yaml y est ignoré par git). Retourne les clés réglées. */
+   *  sous-dossiers (registre, missions, SIA, performances, sauvegarde locale data/local). Plus de sauvegarde locale à la
+   *  racine de l'application : elle est en lecture seule (modeOf). Retourne les clés réglées. */
   async function deriveFromRepo(repo, {
     accepted = false
   } = {}) {
@@ -466,16 +549,17 @@
     } catch {
       /* pas de data/ : données par exemples ou par archive, à choisir à part */
     }
-    if (!await get('__store')) {
-      await set('__store', repo);
-      done.push('__store');
-    }
     return done;
   }
+  const GH_NO_FOLDER = L('Mode GitHub : les données viennent du dépôt GitHub, aucun dossier n’est à choisir.',
+    'GitHub mode: the data come from the GitHub repository, there is no folder to choose.',
+    'GitHub-Modus: Die Daten kommen aus dem GitHub-Repository, es ist kein Ordner zu wählen.',
+    'Modo GitHub: los datos vienen del repositorio de GitHub, no hay carpeta que elegir.');
   // Choix d'un dossier : le sélecteur s'ouvre sur le dossier actuel ; contrôle du contenu attendu.
   async function pickFolder(key, {
-    mode = 'readwrite'
+    mode = modeOf(key)
   } = {}) {
+    if (gh()) throw new Error(tr(GH_NO_FOLDER));
     if (!window.showDirectoryPicker) throw new Error(window.RepositoryKit?.noFolderAccess?.() ||
       'File System Access API (Chrome / Edge)');
     const info = FOLDERS[key] || {},
@@ -503,9 +587,12 @@
     if (key === '__data') await deriveFromData(handle, {
       accepted
     });
-    if (key === '__repo') handle.derived = await deriveFromRepo(handle, {
-      accepted
-    });
+    if (key === '__repo') {
+      handle.derived = await deriveFromRepo(handle, {
+        accepted
+      });
+      if (handle.derived.includes('__data')) handle.dataWritable = await grantData();
+    }
     return handle;
   }
   // Libellé et infobulle d'un dossier : « Dossier du registre : CR ✓ ».
@@ -535,6 +622,12 @@
     withLabel = true
   } = {}) {
     if (!button) return;
+    // mode GitHub : pas de dossier à choisir, le bouton n'a pas lieu d'être
+    if (gh()) {
+      if (!button.hidden) button.hidden = true;
+      if (button.style.display !== 'none') button.style.display = 'none';
+      return;
+    }
     const refresh = async () => {
       const d = await describe(key);
       // libellé seul remplacé : l'icône éventuelle du bouton (data-icon, block_icons.js) est conservée
@@ -729,6 +822,9 @@
     get,
     set,
     status,
+    modeOf,
+    writable,
+    grantData,
     pickFolder,
     describe,
     decorate,

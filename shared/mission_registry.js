@@ -131,7 +131,7 @@
   // Paramètres › Maintenance › Caches, où personne ne pensait à aller
   let servedChecked = false; // dossiers présents lus auprès du lanceur (nettoyage possible sans dossier autorisé)
   /** Marque « fichier absent » les missions dont le dossier n'est pas servi par le lanceur, puis redessine la page. */
-  const ghostsLoad = () => /^https?:$/.test(location.protocol) ? fetch('/__setup/mission-folders', {
+  const ghostsLoad = () => /^https?:$/.test(location.protocol) && !window.GitHubData?.on?.() ? fetch('/__setup/mission-folders', {
     headers: {
       'X-SOG-Setup': '1'
     },
@@ -271,6 +271,16 @@
   /** Dossier des missions autorisé (FileAccess « __missions »). request (geste de l'utilisateur) : réautorise ou fait
    *  choisir le dossier, erreur explicite en cas d'échec ; sans request : null s'il n'est pas déjà autorisé. */
   async function missionsDir(request = false) {
+    // mode GitHub (appli sans lanceur) : aucun dossier des missions ; les missions viennent du dépôt des données
+    if (window.GitHubData?.on?.()) {
+      if (request) throw new Error(t([
+        'Mode GitHub : le dossier des missions (lecture des fichiers, rangement) demande un poste de travail avec lanceur.',
+        'GitHub mode: the missions folder (reading files, filing) needs a workstation with the launcher.',
+        'GitHub-Modus: Der Missionsordner (Dateien lesen, ablegen) erfordert einen Arbeitsplatz mit Starter.',
+        'Modo GitHub: la carpeta de misiones (leer archivos, archivar) requiere un puesto de trabajo con lanzador.'
+      ]));
+      return null;
+    }
     const FA = await waitFor('FileAccess');
     if (!FA) {
       if (request) throw new Error(t([
@@ -459,7 +469,7 @@
   // ---- noyau partagé (générateur de brief, studio) : dossier d'une mission
   //   data/missions/<lettre>_<FAMILLE>/<identifiant>/
   //     mission<ID>.yaml   source de vérité : données reçues, réglages du studio (maps[].profile / view / trace,
-  //                        vertical_profile), meta (received_at, modified_at, maps_generated_at, versions, history)
+  //                        vertical_profile ; champs de dessin maps[].profile_def / resolved_bbox / cycle), meta (received_at, modified_at, maps_generated_at, versions, history)
   //     summary<ID>.md     Markdown pour les humains
   //     cartes/            PNG générés par le studio (régénérables depuis le YAML)
   //     recu/              chaque texte reçu (collage ChatGPT, fichiers), horodaté, tel quel
@@ -475,15 +485,32 @@
   const ANNEX = /^(maps_manifest|AAR_TRACKS_REFERENCE|OSM_WORK_PROMPT|README|VALIDATION|affectations\.ya?ml$)/i;
   /** Horodatage des noms de fichiers rangés (AAAA-MM-JJTHH-MM-SS, sans « : »). */
   const stamp = () => new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-  /** Données comparables d'un YAML (sans meta ni réglages du studio), clés triées. */
-  const canon = y => JSON.stringify(y, (k, v) => ['meta', 'profile', 'view', 'trace', 'generated_at'].includes(k) ? undefined : v &&
-    typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(x => [x, v[x]])) : v);
+  // champs de dessin écrits par le studio (maps[] : profile_def, resolved_bbox, cycle ; vertical_profile : les mêmes et
+  // route_points — appli V3, module maps) : ignorés à ces deux endroits seulement, une clé de même nom ailleurs compte
+  const DRAW = ['profile_def', 'resolved_bbox', 'cycle', 'route_points'];
+  const bare = o => o && typeof o === 'object' && !Array.isArray(o) ? Object.fromEntries(Object.entries(o).filter(([k]) => !DRAW.includes(
+    k))) : o;
+  /** YAML (ou sa valeur de premier niveau key) sans les champs de dessin. */
+  const drawless = (y, key = '') => key === 'maps' ? Array.isArray(y) ? y.map(bare) : y : key === 'vertical_profile' ? bare(y) : key || !
+    y || typeof y !== 'object' ? y : {
+      ...y,
+      ...('maps' in y ? {
+        maps: drawless(y.maps, 'maps')
+      } : {}),
+      ...('vertical_profile' in y ? {
+        vertical_profile: bare(y.vertical_profile)
+      } : {})
+    };
+  /** Données comparables d'un YAML (sans meta ni réglages du studio), clés triées ; key : clé de premier niveau de y
+   *  (diffOf). */
+  const canon = (y, key) => JSON.stringify(drawless(y, key), (k, v) => ['meta', 'profile', 'view', 'trace', 'generated_at'].includes(k) ?
+    undefined : v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(x => [x, v[x]])) : v);
   /** Différences lisibles entre deux YAML : clés de premier niveau changées (nombre d'éléments pour les listes). */
   function diffOf(a, b) {
     const out = [],
       keys = [...new Set([...Object.keys(a || {}), ...Object.keys(b || {})])].filter(k => k !== 'meta');
     for (const k of keys) {
-      if (canon(a?.[k]) === canon(b?.[k])) continue;
+      if (canon(a?.[k], k) === canon(b?.[k], k)) continue;
       const n = v => Array.isArray(v) ? v.length : null;
       out.push(a?.[k] === undefined ? `+ ${k}` : b?.[k] === undefined ? `− ${k}` : n(a[k]) != null && n(b[k]) != null && n(a[k]) !== n(
         b[k]) ? `${k} (${n(a[k])} → ${n(b[k])})` : k);
@@ -641,7 +668,7 @@
       for (const mp of Array.isArray(y.maps) ? y.maps : []) {
         const o = (old.maps || []).find(x => x?.filename && x.filename === mp?.filename);
         if (o)
-          for (const k of ['profile', 'view', 'trace', 'generated_at'])
+          for (const k of ['profile', 'view', 'trace', 'generated_at', 'profile_def', 'resolved_bbox', 'cycle'])
             if (o[k] !== undefined && mp[k] === undefined) mp[k] = o[k];
       }
       if (!y.vertical_profile && old.vertical_profile) y.vertical_profile = old.vertical_profile;
@@ -1445,7 +1472,10 @@
       persist();
       render();
     };
-    fb.append(b, sb, wb, cb, ob);
+    // mode GitHub : ni choix de dossier, ni relecture ou nettoyage d'après le dossier, ni écriture de mission_registry.yaml
+    // (rien à lire ni à écrire hors du dépôt des données)
+    if (window.GitHubData?.on?.()) fb.append(ob);
+    else fb.append(b, sb, wb, cb, ob);
     // filtres
     host.querySelector('[data-rg-more]').addEventListener('toggle', e => {
       moreFilters = e.target.open;

@@ -10,8 +10,13 @@
   //   next()                      → prochaine affectation du pilote (ou null) ;
   //   pending()                   → affectations passées (21 jours) sans CR, la plus récente d'abord, 7 au plus ;
   //   week(ms?)                   → { monday, days: [{ at, list }] } : la semaine (UTC) du jour donné ;
-  //   mount(hôte, kind, { onSave }) → rend et tient à jour un bloc : 'next' | 'pending' | 'week' | 'trigram' ;
-  //   folderUrl(a), reportUrl(a)  → adresses du dossier de la mission et du CR commencé depuis le dossier (?do=cr).
+  //   upcoming(n)                 → les n affectations à venir après la prochaine, dans les sept jours ;
+  //   mount(hôte, kind, { onSave, more, actions }) → rend et tient à jour un bloc : 'next' | 'pending' | 'week' |
+  //                                 'trigram' ; 'next' : more (nombre de missions suivantes listées dessous, 0 par
+  //                                 défaut), actions (dossier, Cartes de vol, Carburant, CR ; sinon le dossier seul) ;
+  //   folderUrl(a, act), reportUrl(a) → adresses du dossier de la mission, avec un geste lancé à l'ouverture
+  //                                 (?do=maps | fuel | cr), et du CR commencé depuis le dossier (?do=cr).
+  // Les liens vers un dossier portent data-key (clé de l'affectation) et data-do : Mes missions les ouvre sur place.
   if (window.PilotToday) return;
   const K = window.RepositoryKit,
     t = K.t,
@@ -65,6 +70,14 @@
     const now = Date.now() - GRACE_MS;
     return (await all()).find(a => !when(a) || when(a) >= now) || null;
   }
+  /** Affectations à venir après la prochaine (n au plus), dans les sept jours qui viennent. */
+  async function upcoming(n = MAX_ROWS) {
+    const first = await next();
+    if (!first) return [];
+    const now = Date.now() - GRACE_MS,
+      end = Date.now() + 7 * 864e5;
+    return (await all()).filter(a => a !== first && A().key(a) !== A().key(first) && when(a) >= now && when(a) < end).slice(0, n);
+  }
   /** Affectations passées (21 jours) sans CR dans le registre ni « Pas de CR », la plus récente d'abord, 7 au plus. */
   async function pending() {
     const now = Date.now(),
@@ -98,10 +111,12 @@
       })
     };
   }
-  /** Adresse du dossier de la mission dans Mes missions (?mission=…). */
-  const folderUrl = a => `${new URL('apps/pilot/mes_missions.html', root()).href}?mission=${encodeURIComponent(a.mission)}`;
+  /** Adresse du dossier de la mission dans Mes missions (?mission=…), avec act lancé à l'ouverture (?do=…). */
+  const folderUrl = (a, act = '') => `${new URL('apps/pilot/mes_missions.html', root()).href}?mission=${encodeURIComponent(a.mission)}${act ? `&do=${act}` : ''}`;
   /** Adresse du dossier avec le CR commencé dès l'ouverture (?do=cr, Mes missions). */
-  const reportUrl = a => `${folderUrl(a)}&do=cr`;
+  const reportUrl = a => folderUrl(a, 'cr');
+  /** Lien vers le dossier (classe, geste act, texte) : data-key et data-do pour l'ouverture sur place (Mes missions). */
+  const folderLink = (a, act, cls, text, title = '') => `<a class="${cls}" href="${esc(folderUrl(a, act))}" data-key="${esc(A().key(a))}" data-do="${esc(act)}"${title ? ` title="${esc(title)}"` : ''}>${text}</a>`;
   /** Jour court dans la langue de la page, en UTC (« jeu. 8 oct. »). */
   const day = ms => new Intl.DateTimeFormat(lang(), {
     weekday: 'short',
@@ -141,7 +156,10 @@
 .pt-btn.pt-primary{background:var(--accent,#2a6df4);color:#fff;border-color:transparent}.pt-btn.pt-ghost{background:transparent;font-weight:500}
 .pt-tri{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:8px}.pt-tri label{display:grid;gap:4px;font-size:13px}
 .pt-tri input{width:6em;text-transform:uppercase;font:inherit;padding:8px 10px;border:1px solid var(--line,#8884);border-radius:calc(8px*var(--repo-round,1));background:var(--repo-veil,var(--sk-card,var(--card,#fff)));color:inherit}
-.pt-empty{opacity:.85;margin:0}`;
+.pt-empty{opacity:.85;margin:0}
+.pt-more{display:grid;gap:2px;margin-top:6px}.pt-more a{display:flex;gap:10px;flex-wrap:wrap;padding:5px 8px;text-decoration:none;color:inherit;border-radius:calc(6px*var(--repo-round,1))}
+.pt-more a:hover{background:color-mix(in srgb,var(--accent,#2a6df4) 14%,transparent)}.pt-more a b{font-weight:600}.pt-more a span{opacity:.8}
+.pt-more>small{opacity:.75;text-transform:uppercase;letter-spacing:.03em;font-size:11px}`;
     document.head.append(s);
   };
 
@@ -156,16 +174,38 @@
     'Su trigrama sirve para encontrar las misiones que el Centro le asigna.'
   ]))}</p><form class="pt-tri" data-tri><label>${esc(t(['Trigramme', 'Trigram', 'Kürzel', 'Trigrama']))}<input name="tri" maxlength="4" pattern="[A-Za-z]{2,4}" autocomplete="off" required placeholder="ABC"></label><button type="submit" class="pt-btn pt-primary">${esc(t(['Enregistrer', 'Save', 'Speichern', 'Guardar']))}</button></form>`;
 
-  /** HTML du bloc « Ma prochaine mission ». */
-  const nextHtml = async () => {
+  /** HTML du bloc « Ma prochaine mission » : la carte de la mission (dossier ; avec actions, aussi Cartes de vol,
+   *  Carburant et CR), puis jusqu'à more missions suivantes des sept jours, une ligne chacune ; une ligne sans rien. */
+  const nextHtml = async ({
+    more = 0,
+    actions = false
+  } = {}) => {
     if (!A().trigram()) return triForm();
     const a = await next();
-    if (!a) return `<p class="pt-empty">${esc(tf(['Aucune mission à venir n’est affectée à {t}.', 'No upcoming mission is assigned to {t}.',
-      'Keine anstehende Mission ist {t} zugewiesen.', 'Ninguna misión próxima está asignada a {t}.'
-    ], {
-      t: A().trigram()
-    }))}</p>`;
-    return `<div class="pt-card"><div class="pt-when">${esc(timeText(a))}</div><div class="pt-title">${esc(a.mission)} — ${esc(a.title || '')}${A().isRead(a) ? '' : `<span class="pt-new">● ${esc(t(['nouvelle', 'new', 'neu', 'nueva']))}</span>`}</div><div class="small">${esc(details(a))}${a.role === 'convoyage' ? ` · ${esc(t(['convoyage', 'ferry', 'Überführung', 'traslado']))}` : ''}</div><div class="pt-actions"><a class="pt-btn pt-primary" href="${esc(folderUrl(a))}">${esc(t(['Ouvrir le dossier', 'Open the folder', 'Mappe öffnen', 'Abrir la carpeta']))}</a></div></div>`;
+    if (!a) return `<p class="pt-empty">${esc(t(['Aucune mission à venir.', 'No upcoming mission.', 'Keine anstehende Mission.',
+      'Ninguna misión próxima.'
+    ]))}</p>`;
+    // Cartes de vol et Carburant : seulement si la page est proposée au pilote (niveau d'utilisation, modules), comme
+    // les boutons du dossier ; pas pour un convoyage
+    const shown = path => a.role !== 'convoyage' && (window.RepositoryNav?.levels?.visible?.(path) ?? true);
+    const open = folderLink(a, '', 'pt-btn pt-primary', esc(t(['Ouvrir le dossier', 'Open the folder', 'Mappe öffnen',
+        'Abrir la carpeta'
+      ]))),
+      acts = actions ? [open,
+        !shown('apps/planner/map_planner.html') ? '' : folderLink(a, 'maps', 'pt-btn', esc(t(['Cartes de vol', 'Flight maps',
+          'Flugkarten',
+          'Mapas de vuelo'
+        ]))),
+        !shown('apps/planner/flight_performance_planner.html') ? '' : folderLink(a, 'fuel', 'pt-btn', esc(t(['Carburant', 'Fuel',
+          'Kraftstoff', 'Combustible'
+        ]))),
+        folderLink(a, 'cr', 'pt-btn pt-ghost', esc(t(['Créer le CR', 'Create the report', 'Bericht anlegen', 'Crear el informe'])))
+      ].join('') : open;
+    const rest = more > 0 ? await upcoming(more) : [];
+    const list = rest.length ? `<div class="pt-more"><small>${esc(t(['Ensuite, dans les sept jours', 'Then, within seven days',
+      'Danach, in den nächsten sieben Tagen', 'Después, en los siete días'
+    ]))}</small>${rest.map(b => folderLink(b, '', '', `<b>${esc(timeText(b))}</b> ${esc(b.mission)} — ${esc(b.title || '')}${details(b) ? ` <span>${esc(details(b))}</span>` : ''}`, b.title || '')).join('')}</div>` : '';
+    return `<div class="pt-card"><div class="pt-when">${esc(timeText(a))}</div><div class="pt-title">${esc(a.mission)} — ${esc(a.title || '')}${A().isRead(a) ? '' : `<span class="pt-new">● ${esc(t(['nouvelle', 'new', 'neu', 'nueva']))}</span>`}</div><div class="small">${esc(details(a))}${a.role === 'convoyage' ? ` · ${esc(t(['convoyage', 'ferry', 'Überführung', 'traslado']))}` : ''}</div><div class="pt-actions">${acts}</div></div>${list}`;
   };
   /** HTML du bloc « Comptes rendus à écrire » ; sans trigramme : le formulaire, ou une phrase si un autre bloc de la page
    *  le demande déjà ({ trigram: false }). */
@@ -174,11 +214,10 @@
   } = {}) => {
     if (!A().trigram()) return trigram ? triForm() : `<p class="pt-empty">${esc(t(['Trigramme à saisir ci-dessus.', 'Trigram to enter above.', 'Kürzel oben eingeben.', 'Trigrama por introducir arriba.']))}</p>`;
     const list = await pending();
-    if (!list.length) return `<p class="pt-empty">${esc(t(['Rien à rendre : vos missions passées ont leur compte rendu.',
-      'Nothing to report: your past missions have their report.', 'Nichts offen: Ihre vergangenen Missionen haben ihren Bericht.',
-      'Nada pendiente: sus misiones pasadas tienen su informe.'
+    if (!list.length) return `<p class="pt-empty">${esc(t(['Aucun compte rendu en attente.', 'No report pending.', 'Kein Bericht offen.',
+      'Ningún informe pendiente.'
     ]))}</p>`;
-    return `<div class="pt-rows">${list.map(a => `<div class="pt-row"><span><b>${esc(a.mission)}</b> — ${esc(a.title || '')}<small>${esc(timeText(a))}${details(a) ? ` · ${esc(details(a))}` : ''}</small></span><a class="pt-btn pt-primary" href="${esc(reportUrl(a))}">${esc(t(['Écrire le compte rendu', 'Write the report', 'Bericht schreiben', 'Escribir el informe']))}</a><button type="button" class="pt-btn pt-ghost" data-skip="${esc(A().key(a))}" title="${esc(t(['Cette mission n’aura pas de compte rendu (mémorisé dans ce navigateur)', 'This mission will have no report (remembered in this browser)', 'Diese Mission bekommt keinen Bericht (in diesem Browser gemerkt)', 'Esta misión no tendrá informe (recordado en este navegador)']))}">${esc(t(['Pas de CR', 'No report', 'Kein Bericht', 'Sin informe']))}</button></div>`).join('')}</div>`;
+    return `<div class="pt-rows">${list.map(a => `<div class="pt-row"><span><b>${esc(a.mission)}</b> — ${esc(a.title || '')}<small>${esc(timeText(a))}${details(a) ? ` · ${esc(details(a))}` : ''}</small></span>${folderLink(a, 'cr', 'pt-btn pt-primary', esc(t(['Écrire le compte rendu', 'Write the report', 'Bericht schreiben', 'Escribir el informe'])))}<button type="button" class="pt-btn pt-ghost" data-skip="${esc(A().key(a))}" title="${esc(t(['Cette mission n’aura pas de compte rendu (mémorisé dans ce navigateur)', 'This mission will have no report (remembered in this browser)', 'Diese Mission bekommt keinen Bericht (in diesem Browser gemerkt)', 'Esta misión no tendrá informe (recordado en este navegador)']))}">${esc(t(['Pas de CR', 'No report', 'Kein Bericht', 'Sin informe']))}</button></div>`).join('')}</div>`;
   };
   /** HTML du bloc « Ma semaine » : sept jours, le jour courant marqué, une vignette par mission. */
   const weekHtml = async () => {
@@ -219,7 +258,9 @@
    *  trigramme lui-même (un autre bloc de la page s'en charge). Retour : fonction de rafraîchissement. */
   function mount(host, kind, {
     onSave,
-    trigram = true
+    trigram = true,
+    more = 0,
+    actions = false
   } = {}) {
     css();
     let seq = 0;
@@ -227,7 +268,10 @@
     const draw = async () => {
       const n = ++seq;
       if (!(await ready())) return;
-      const html = kind === 'next' ? await nextHtml() : kind === 'pending' ? await pendingHtml({
+      const html = kind === 'next' ? await nextHtml({
+          more,
+          actions
+        }) : kind === 'pending' ? await pendingHtml({
           trigram
         }) : kind === 'week' ?
         await weekHtml() : A().trigram() ?
@@ -255,7 +299,9 @@
       if (!out.includes(b.dataset.skip)) K.store.setJson(SKIP, out.concat(b.dataset.skip));
       draw();
     });
-    for (const ev of ['repository-language-change', 'pilot-profile-change', 'suite-session-change', 'suite-mode-change']) window
+    for (const ev of ['repository-language-change', 'pilot-profile-change', 'suite-session-change', 'suite-mode-change',
+        'suite-level-change'
+      ]) window
       .addEventListener(ev, () =>
         setTimeout(draw));
     window.addEventListener('storage', e => {
@@ -267,6 +313,7 @@
 
   window.PilotToday = {
     next,
+    upcoming,
     pending,
     week,
     mount,

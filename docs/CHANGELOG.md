@@ -10,6 +10,521 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ## [Unreleased]
 
+## [5.4.0] — 2026-10-23
+
+Last release of the V2 line, before the V3 Pilot application. The suite now runs without the launcher: the data
+live in a GitHub repository, the pages are published on GitHub Pages as an installable app, an iOS shell is
+ready, a mobile mode adapts the main pages to a phone, and the aeronautical database and the aircraft database
+are published to the data repository so that phones read them. The map studio writes, on every mission map, what
+it takes to redraw it elsewhere, and edits the airline's map profiles for the V3 app. The launcher updates `data/`
+at start without failing on local changes, a `data/` folder that already holds data can join the data repository,
+and the usage level is set from the header of every Settings page. Flight orders show one availability row per
+member, Fuel and Flight maps open the flight in SimBrief, SkyVector, Navigraph and ChartFox, and My missions is
+the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode on a workstation, SimBrief
+waypoints, and the rest listed below.
+
+### Added
+
+- **Settings: the usage level in the header** (`shared/repository_nav.js`, `shared/repository_nav.css`) — every Settings
+  page, Maintenance included, shows "Usage level" next to the language (1 · Crew to 4 · Expert; a change reloads the
+  page), besides My profile › Usage level (with the modules). `RepositoryNav.levels.NAMES` and `levels.hint(n, what)`:
+  a line shown only below level n ("…: at level 4 · Expert — change level"), to put next to an element marked
+  `data-min-level="n"`; used for "Publish the aircraft database" in Maintenance › Aircraft types. User manual ×4.
+
+- **Map studio: the airline's map profiles for the app (V3)** (`apps/cpco/map_parser.html`, `tools/data_sync.py`;
+  Flight maps rebuilt, the boxes hidden there) — the studio reads and writes `airline/map_profiles.json` of the data
+  repository, one display profile per mode of the app's map (Auto, Low IFR, High IFR, VFR, Topo, CAM) in the
+  `profile_def` format: "Take into the studio" makes a mode an "App — mode" profile, "Save for the app" writes into a mode,
+  after confirmation, a partial profile — what the profile shown changes from the studio's defaults and the zoom
+  thresholds filled in, the rest keeping the app's built-in values (record rule: the file is read again and written
+  whole; the other modes and the app's own settings are kept). New "App zoom thresholds (V3)": the 26 keys of the app's `elements.zoom`, each "from …
+  to …" in MapLibre zoom. A studio profile now keeps, when saved, the element keys it does not know (the app's
+  extensions: `vfrDensity`, `fixes`, `awLabels`, `zoom`). `airline/` joins the synchronised pool, so "Synchronise"
+  shares the file. Planner manual ×4, `docs/technique/FRAMEWORK.md`, `docs/technique/SYNCHRONISATION.md` § 3.
+
+- **First run: "Take data/ into this repository"** (`tools/launch.py` `POST /__setup/adopt`, `tools/data_sync.py`
+  `adopt`, `apps/settings/premier_lancement.html`) — a `data/` folder that already holds data without being a git
+  repository (examples, archive, data entered) had no way to join the data repository: saving the address was refused.
+  The "Git repository for data synchronisation" card now offers to make it a clone: the repository is cloned alongside,
+  its history moved into `data/`, the workstation's files merged by the synchronisation rules (newest record kept, the
+  other in `_conflits/`, assignments merged), one local commit "Reprise du poste", nothing pushed; replaced originals go
+  to `data_avant_<date>/`, a failure leaves `data/` as it was. Sample data is set aside and replaced by a plain clone.
+  Same address rules as `sync-remote` (another repository confirmed in the launcher's window); `GET
+  /__setup/sync-remote` gains `state` (`absent`, `plain`, `repo`). The synchronisation merge rules are shared
+  (`merge_raw`). User manual ×4, `docs/technique/SYNCHRONISATION.md` § 9; `python tools/data_sync.py --essai` covers it.
+
+- **Map studio: each mission map carries what it takes to redraw it elsewhere** (`apps/cpco/map_parser.html`,
+  `apps/planner/map_planner.html` rebuilt, `shared/mission_registry.js`) — for the V3 maps module, saving in the studio
+  writes on every `maps[]` entry of `mission<ID>.yaml` a full copy of its display profile with every element resolved
+  (`profile_def`), the extent actually drawn (`resolved_bbox`, separate from the `bbox` input) and the AIRAC date of the
+  SIA database (`cycle`, refreshed with `generated_at` when PNG files are produced); `vertical_profile` gets
+  `profile_def`, `cycle` and the resolved `route_points`. Additions only: no existing mission changes meaning, the
+  registry does not count them as a new version and carries them over to a new version. Format in
+  `docs/technique/FRAMEWORK.md`.
+
+- **Board (flight orders): one thin row per member under “Available together”** — each member's availability ranges of
+  the day, in the colour of their category, hatched when they do not make the member assignable to a flight, to see who
+  starts earlier, finishes later or covers “together”; with a single member available that day, “together” shows their
+  ranges (at least one member instead of two). Beyond seven members the rows fold from the label (open by default,
+  remembered in `odvOrdersTogether:v1`); hidden in read-only mode like “together”. An assigned mission flight (mission
+  order issued, “OM” badge) is drawn in the page ink — black by day, white at night and in dark designs — instead of its
+  callsign colour, on the timeline and in the phone list (user manual, 4 languages).
+
+- **Settings › Maintenance › Aircraft types: “Publish the aircraft database to the data repository”** (Expert level,
+  workstation with the launcher) — for phones and the website (GitHub mode): copies `AircraftDB/aircraft_db.js` and
+  `aircraft_perf.js` into `AircraftDB/` of the data repository, removes everything else from that folder (caches,
+  scripts, `__pycache__`), commits and synchronises; the page first shows the list of files copied and removed and asks
+  for agreement. Both files must be plain values: `tools/data_guard.py` now admits `window.AIRCRAFT_DB` and
+  `window.AIRCRAFT_PERF` literals. Never published on the public website (`tools/launch.py` `/__setup/aircraft-publish`).
+
+- **Route field: coordinates typed in any common way** (map studio, Flight maps, Fuel planner) — decimal degrees,
+  degrees and minutes or degrees, minutes, seconds, hemisphere letters before or after (O = west), decimal point or
+  comma, packed ICAO-like digits of any precision (“441819584N00032421849733W”), or signed decimals (“+44.18,-0.038”)
+  are rewritten in the flight plan format when leaving the field: to the minute (“4411N00002W”) when the position falls
+  exactly on it, otherwise to the second (“441048N0000217W”); a notification lists what changed. Coordinates already in
+  ICAO form and unsigned decimal “lat lon” are left as they are; “Copy ICAO” still rounds to the minute
+  (`SiaProfile.normalizeCoords`, `SiaProfile.coordHelper`, `shared/carto/vertical_profile.js`; help text and user manual,
+  4 languages).
+
+- **Aeronautical database published to the data repository, read by phones** — each rebuild on a workstation
+  (Settings › Maintenance › Aeronautical data, map studio) also writes the database zone by zone into the data folder:
+  `sia/base/<zone>/<cycle>.json` (plain JSON, a few hundred KB up to about 5 MB for France) and `sia/base/cities.json`;
+  a file is rewritten only when its content changes, older cycles of the zone are removed, and the rebuild report says
+  what was published (or why not: data folder not authorised). "Synchronise" sends them (`sia/base` added to the pool of
+  `tools/data_sync.py`). In GitHub mode the database is read from these files (conditional requests, latest cycle of
+  each published zone), joined back and kept in the browser; checked at most every 10 minutes, re-read only when a
+  file changed. Map studio, Flight maps and the ODV pages get the same database as the workstation; Settings ›
+  Maintenance › Aeronautical data shows the published zones and cycle, with "Re-read the published base". The ODV
+  orders no longer warn "aeronautical database missing" in GitHub mode while none is published
+  (`shared/sia_base.js`, `shared/github_data.js`, `docs/technique/DONNEES_ET_ACCES.md` § 2).
+
+- **Settings › Installation in GitHub mode** (app without the launcher, same on a desktop browser): the page is reduced
+  to a single “Data access” card — repository (link) and branch, access status (token check), last successful read
+  (new `GitHubData.lastRead()`), writes pending in the browser outbox with a “Synchronise” button, the aircraft type
+  database read from the repository, link to the virtual airline website and to My profile › Data access, and a
+  sentence saying that local folders, IVAO keys and SIA import are set on a computer with the launcher. The other
+  cards (Sources and folders, Keys and external services, Aeronautical data, Aircraft types) and the “First run” tab
+  are not built in that mode (`ghAccess` section and `github:false` page flag in `config/repository_tree`); outside
+  GitHub mode nothing changes. User manuals (administrator, four languages) updated.
+- Technical documentation: `docs/technique/DONNEES_ET_ACCES.md`, map of data storage and access (git data repository,
+  browser, website, launcher workstation, apps), shared versus local; linked from `APPLI_AUTONOME.md`.
+- **Stand-alone app, step 3: iOS shell** (`mobile/`: Capacitor project, Node only there and only in CI; workflow
+  `.github/workflows/ios.yml`) — the built site bundled in a native iOS app, project generated on a macOS runner,
+  unsigned simulator build published as an artifact; signed archive and TestFlight upload when the four Apple secrets
+  are set (App Store Connect API key, team). Never built yet: the first run of the workflow will tell. Reads of the
+  data no longer rely on a service worker (see step 1), so the app's WebView needs nothing more. Settings ›
+  Installation › Sources: the “Data repository” field is no longer disabled — in GitHub mode it shows the GitHub
+  repository with a link to My profile › Data access; without a git `data/` it points to the first-run card.
+- **Stand-alone app, step 2: publication on GitHub Pages, installable app** (`tools/build_pages.py`,
+  `.github/workflows/pages.yml`, `manifest.webmanifest`) — static site built from the tracked files (no `data/`), real
+  `?v=` stamps, `config/repository_tree.js` copy for the pages (Pages serves the extensionless file as binary),
+  commit footer, LFS images; home-screen icons drawn at publication; manifest (start page: Today) and home-screen tags
+  on every page; the two `AircraftDB` scripts (aircraft database and performance, never published) are now loaded through
+  `shared/data_files.js` on every page (same in launcher mode: suite root), which reads them from the private data
+  repository in GitHub mode;
+  `index.html` opened without the launcher shows a “Data access” card (My profile) instead of the first run. Checked on
+  the built site served statically: every phase-1 page reads the real data, no JavaScript error.
+- **Stand-alone app, step 1: data on GitHub** (`shared/github_data.js`, `shared/data_files.js`, `sw.js`; plan:
+  `docs/technique/APPLI_AUTONOME.md`) — My profile › Data access (repository, branch, fine-grained personal token, kept
+  in this browser only, in localStorage `githubData:v1` and excluded from backups): data is read in the page itself.
+  `window.fetch` is overridden for `data/…` addresses (GitHub contents API, conditional requests, offline copy in
+  IndexedDB `sogGithubData`); data files loaded as `<script>` are read synchronously by `shared/data_files.js` (copy in
+  localStorage, reused at once then refreshed); the folder indexes (`disponibilites/_index.json`,
+  `utilisateurs/_index.json`) are rebuilt from the repository tree when absent. It also works in a WebView without
+  service worker (iOS app); `sw.js` only keeps the site's own code for offline use.
+  Writes go through the API, one commit per file under the trigram: pool files (`MissionAssignments` write sink) and
+  the report ledger (`MissionLedger`: written with the sha it read; changed meanwhile → re-read, three-way merge,
+  written again). Without that setting nothing changes. Checked against a fake GitHub serving the
+  real data: fleet (205 aircraft), availability read and written, report ledger written, two simultaneous reports
+  merged.
+
+- **Mobile mode (prototype)** (`shared/mobile.css`, `html[data-mobile="on"]`, set in the header by
+  `config/repository_tree`; setting `repositoryMobile`: auto ≤ 760 px or a phone in landscape, on, off; `RepositoryNav.mobile`) — narrow-screen
+  layout for every page, with no maximum content width: compact one-line header, the side bar becomes a bottom
+  navigation bar (up to 6 entries; beyond, the first 5 and “More”, a panel with the other entries, Settings and Help;
+  short labels `mobileLabel`), tabs on one scrolling line, full-width blocks with a compact heading (chevron-only hide
+  button, no drag), 40 px touch targets, 16 px fields (no iOS zoom), tables scroll inside their block or turn into
+  cards (`table.m-cards`, `td[data-label]` set by the page). Mobile skins (`designs.list[id].mobile`), one chosen by
+  default on touch screens (`repositoryMobileSkin`: “mobile” by default, “mobile-swiss”, or “design” to keep the
+  user's design): “Mobile” (flat and light) and “Swiss” (Swiss design / brutalist: system grotesque, black and white,
+  square corners, a single red accent); both in day and night, following the phone (`html[data-mobile-theme]`: auto,
+  day, night; setting `repositoryMobileTheme`). Pages declared `mobile:false` (flight maps, performance sheets, Centre
+  generator / studio / registry / ODV planning, Centre / Installation / Maintenance settings) are left out of the
+  bottom bar and tabs on touch screens only (`html[data-touch]`), with a “designed for a large screen” notice; a
+  narrow computer window keeps every tab. Fleet page: filters folded behind a “Filters (n)” button, taller map, a tap
+  opens the aircraft or aerodrome sheet in a bottom panel and selects, one card per aircraft. **Mobile preview**
+  (`tools/mobile_preview.html`): a page of the suite in phone and tablet frames on a computer, with the mobile skin and
+  day / night chosen (frame named `sogMobilePreview:<skin>:<theme>`: mobile mode forced in that frame only).
+  **Appearance › On phones**: mobile mode (automatic, always, never), phone skin (Mobile, Swiss, my design), day / night
+  (follows the phone, day, night), link to the mobile preview (Expert level); mobile skins no longer listed among the
+  designs. Styles listed as technical debt. User manual (4 languages).
+  **Phase 1 pages on phones**: My flights — totals as tiles (flights, block hours, flights without a report, most flown
+  types), one card per flight (date and call sign at the top), a tap unfolds the details. Fuel — single column, the Result is brought on
+  screen after “Calculate”; blocks scrolled into view stop below the sticky header (`scroll-margin-top`). My missions —
+  a tap on a mission brings its folder on screen, the folder actions (create the report, close…) stay pinned above
+  the bottom bar while reading. Mission report — one step open at a time (the first one to complete on arrival; opening
+  a step folds the others, `shared/mission_core/core.js`), the step bar pinned at the top and marking the open step, the
+  mission header no longer pinned (too tall for a phone), “Add to ledger” floating above the bottom bar. My
+  availability — “one day” view instead of the week grid (`shared/dispos_week.js`; “Day” / “Week” toggle, kept in
+  `disposView:v1`): day bar and the seven days, swipe to the next / previous day (the neighbouring week is read past
+  the ends), hours top to bottom in a scrolling frame opened before the day's first availability, a range laid by two
+  taps (start, end) with the palette category, “Whole day”, the day's ranges listed with “✕”, “↶ Undo”. Swiss skin:
+  palette chips (`repo-plain` buttons) keep their category colours.
+  My profile › My aircraft — the Owned / Mastered checkboxes become one state dot (everywhere) cycled by a tap: not
+  owned → owned (red) → owned, novice (orange) → mastered (green); “novice” is a new optional list (`aircraft.novice`,
+  week files `appareils.neophytes`), always also in `owned`, so the Centre's readers are unchanged; every row action
+  (create the performance sheet, remove a variant, find the type / record, correct or delete) moves into a “⋯” menu;
+  on phones the table keeps only aircraft, state and “⋯” (`table.m-fit`: a table that fits, layout left to the page),
+  the hidden columns are shown in the menu. Appearance on phones — “On phones” first; under a phone skin, the computer
+  settings (design, icons, side bar, theme colours) are replaced by a note. Fuel — “Level (FL)” is the only parameter
+  outside the “Flight parameters” fold (all screens; the fold stays closed on phones); level labels of the decision
+  and climb charts thinned out to stay readable on a narrow chart. Automatic mobile mode also covers a phone in
+  landscape (touch screen under 500 px high). Mobile preview: “Orientation” (portrait, landscape, both).
+  Phone in landscape (under 500 px high) — navigation as a left rail instead of the bottom bar, header not pinned,
+  Fuel curves capped to the usable height so that each one fits with its level slider, cursor card beside the
+  decision curve. Mobile header — slides away when scrolling down, back when scrolling up (`repo-header-away`, pinned
+  headers only, never while one of its menus is open).
+  My aircraft state dot — ODV workbook colours and meaning: red NQ (owned, not qualified), orange to qualify (novice),
+  green mastered; ODV setting “All but red” relabelled “NQ: owned, not qualified”.
+  Aircraft sheet — no longer a dead end: it sits under the “Fleet” tab (tab `match`, Report › Fleet active), a fleet
+  selector (by type) with previous / next of the same type at the top; aircraft and crew sheets save each field as it
+  changes (no more “Save sheet” button far below the editable fields, which now come first). Mobile header — when it
+  slides away, its first line (title, tools) stays visible; only the CR form's header is unpinned (the rule also hit
+  the sheets, Fleet and reporting pages, whose title then scrolled away).
+  Mobile header title — up to two lines before it is cut (an aircraft sheet read “D-HA…” at 360 px); the header
+  “Synchronise” and “Save” buttons show their icon and count only (label in the tooltip).
+- **Report › Fleet: fleet map page** (`apps/cr/flotte.html`, `apps/cr/flotte.js`, `shared/fleet_map.js`) — read-only
+  page for everyone, new “Fleet” tab of the side bar “Report” button (now a tab group like “Tools”: “Report”, “Fleet”;
+  family report pages keep the button active). Every fleet aircraft at its current aerodrome
+  (`AircraftPositions.whereIs`: website location or mission-order report, else home base; coordinates from
+  `MissionAssignments.coordsOf`), on an OpenStreetMap background (MapLibre). Overview: one badge per aerodrome with the
+  aircraft count; aerodromes whose badges (or aprons) overlap on screen are merged into one badge with the total count,
+  recomputed at each zoom; zoomed in, the aircraft are lined up on an apron. Hover: count per callsign series and type
+  (and per aerodrome for a merged badge), or the aircraft short sheet with the date and time of its last flight (DEFA
+  flight log and mission log, latest wins). Selection by click (Ctrl / Shift: add or remove), Shift + drag rectangle,
+  Esc. Combined filters at the top of the map (operator, type, callsign series, aerodrome, status, position origin,
+  last-flight age, free search; kept in the browser). Table of the aircraft kept by the filters: sortable, row hover
+  highlights the position on the map, row click selects and centres. With the Centre enabled, “Edit the fleet” leads to
+  Settings › Centre › Fleet, which links back with a “Fleet map” button. Framework blocks, 4 languages. User and
+  administrator manuals (4 languages).
+- **Fuel and Flight maps: “Open in ▾”** (`shared/external_links.js`) — a short menu that opens the page's flight in
+  another service, in a new tab: “SimBrief — plan this flight” (dispatch options prefilled: departure, arrival, type,
+  route, registration, airline and flight number from the call sign, alternate, level), “SkyVector — the route”
+  (`?fpl=`), “Navigraph Charts” and “ChartFox” for the departure and arrival aerodromes. Built from the flight plan,
+  level and aircraft of the page (Fuel: alternate, call sign and registration of the last SimBrief OFP when it has the
+  same route); nothing else is sent; a greyed-out entry gives its reason. Fuel: in the flight plan row; Flight maps:
+  page header. Formats checked in `docs/technique/V2_FABLE.md` § 14 (Navigraph and ChartFox to be confirmed signed in).
+  Pilot manual (4 languages).
+
+### Changed
+
+- **User manual: new screenshot of My availability** (`docs/images/captures-manuels/utilisateur-disponibilites.png`) —
+  the timeline (one rectangle per availability with its times, background bands, palette with "Clear background",
+  folded "How to use"), instead of the former hourly grid.
+- **Performance sheets on phones (portrait)** (`apps/planner/flight_planner.js`, `apps/planner/flight_planner.css`,
+  `config/repository_tree`) — the page is offered on phones (no more `mobile:false` and "large screen" banner): short
+  title "Sheets"; the sheets table becomes a list of cards (aircraft, origin, what is missing), the map, cruise flow
+  and ceiling shown with their labels on the chosen line; the sheet's sections are folded one by one (`<details>`,
+  kept open across redraws) in a single column; touch targets of at least 40 px. Large screens unchanged.
+  `tools/mobile_preview.html` lists the phase-2 pages (Board, Help, Performance sheets). User manual (4 languages).
+- **Help on phones: the text first** (`apps/aide/aide.html`, `apps/aide/aide.js`) — in mobile mode the contents
+  (search, index, outline) are folded behind "Contents ▾" at the top (a link followed closes them) and "↑ Contents"
+  at the end of each chapter reopens them; the text of a manual now starts right below the header instead of after
+  4,000 px of menu. Large screens unchanged. User manual (4 languages).
+- **ODV Board on phones: the day's strips as a list** (`apps/cpco/odv_orders.js`, `apps/cpco/odv_orders.html`) — in
+  mobile mode the order of the day lists the strips by start time (start–end z, call sign or label, aircraft, crew,
+  mission, status); a tap opens the strip's window (read-only when the page is); "Timeline" shows the 24-hour
+  timeline and "List" goes back. The "aeronautical database missing" notice is shown from level 2 only (`minLevel`).
+  Planner manual (4 languages).
+- **ODV Board and planning: why the page is view-only** (`apps/cpco/odv_core.js` `OdvCore.readOnlyReason` /
+  `showReadOnly`, `apps/cpco/odv_orders.js`, `apps/cpco/odv_planning.js`, `shared/repository_nav.js`) — instead of
+  the generic "read-only without the Centre" notice, a floating notice gives the actual reason with a link to the
+  setting that fixes it: Centre locked in this browser (Settings › Centre), Crew level (My profile › Usage level),
+  signed-in account without the `admin_centre` role, production mode without an admin sign-in; in GitHub mode it
+  adds that the Centre lock and the level are settings of this browser. Planner manual (4 languages).
+- **My missions is the pilot's entry page; Today merged into it** (`apps/pilot/mes_missions.html`,
+  `shared/pilot_today.js`, `shared/dispos_week.js`, `apps/pilot/aujourdhui.html`, `config/repository_tree`,
+  `manifest.webmanifest`) — at levels 1 and 2 the page holds four blocks on one 1,400 × 900 screen and says first what
+  there is to do: "My next mission" (time UTC, mission, aircraft, airfield, callsign; "Open the folder", "Flight
+  maps" and "Fuel" when the suite offers those tools, "Create the report"; then the missions of the next seven
+  days, one line each, seven at most), "Reports to write" ("Write the report", "No report"), "My availability" in
+  a compact form (one box per day, "D+ 17:00–22:00"; its own week bar at every level; "Edit my week" unfolds the
+  editor in place, unfolded at once for an empty week; `DisposWeek.mount(host, { compact: true })`, the timeline
+  module untouched) and a line of links (My flights; Pilot, Aircraft mastered, Simulators from level 2). Empty blocks
+  are one line ("No upcoming mission.", "No report pending.", "No availability entered this week."). The full week
+  list (week bar, past missions) comes at level 3; the folder is unchanged, full width at levels 1 and 2. Folder links
+  open the folder in place and then run `?do=maps | fuel | cr` (the folder is opened for it). `aujourdhui.html`
+  redirects to My missions (query and hash kept) and leaves the sidebar and the phone bar; the web app starts on My
+  missions, and so does GitHub mode once enabled. User manual (4 languages): the Today and My missions chapters
+  merged; `docs/technique/V2_FABLE.md` § 2.1.
+- **SimBrief: what was read, and the route points in Fuel** (`shared/simbrief_ofp.js`,
+  `shared/flight_vertical_profile.js`, `apps/planner/flight_performance_planner.html`, `apps/cpco/map_parser.html`) —
+  a shared module reads the OFP (navlog points in `json=1` and `v2`, alternate, summary, reason when there is no
+  point-by-point route, JSON window with "Copy"). After "Fetch latest SimBrief FPL" (Fuel) and the route block's
+  "SimBrief" button (Flight maps), a line says what was read ("OFP of 19/10 · LFRS → LFML · 11 points · FL270 ·
+  alternate LFPG · S210 F-BHHH", with "View the JSON"; Fuel also shows it as a notification); an OFP without
+  navlog points says why ("empty navlog", "navlog without positioned point") instead of silently giving a route of
+  two airfields. Fuel lists the route points under the flight plan (airfields in bold, airway points dimmed, level
+  changes, position on hover), so the route can be checked without opening Flight maps.
+- **Flight maps: lighter page** (`apps/cpco/map_parser.html`, `tools/build_map_planner.py`) — MapLibre (~800 KB) is
+  loaded at the first map preview or generation (`ensureMapLibre`) instead of in the page head; the assembly map is
+  no longer rendered off screen while its block is hidden (levels 1 to 3), it is rendered when the level shows it;
+  a route edit (editor, field, SimBrief, route search) is saved and drawn once: `vprof-route-edited` is cancelable
+  (`routeEdited`) and Flight maps cancels it when it rebuilds the flight itself (one mission save and one profile
+  drawing instead of two); the live preview shows the route once (the editor's red line; the purple dashes stay on
+  generated maps); the AAR tracks file is parsed once; an alternate missing from the SIA database no longer blocks
+  the flight (warning, maps made without it). Dead code removed: `territory` / `inTerritory` / `zoneCentre`,
+  `airspaceGeoJson` / `addInteractiveAirspaces`, `zoneFamily`, `zoneFloorFt` / `zoneCeilFt`, `outputLabel`, the
+  settings / preview splitter (`setSplit`, `.splitter`).
+- **Flight maps: map and vertical profile linked** (`shared/carto/vprof_editor.js`, `apps/cpco/map_parser.html`) — a
+  shared cursor follows the route in both views (hovering over the profile marks the map, hovering over the route on
+  the map draws a line in the profile); the profile's tooltip adds the distance (NM) and the airspace under the cursor,
+  highlighted on the map; clicking a profile point without moving it centres the map on it; TOC / TOD and NM
+  graduations are set along the route on the map.
+- **Flight maps: open on the current flight, IFR route map, no ZIP** (`tools/build_map_planner.py`,
+  `apps/cpco/map_parser.html`, `shared/flight_vertical_profile.js`) — the flight shared with Fuel
+  (`flightPlanShared:v1`) now carries the route, the cruise level, the aircraft's sheet and the alternate (from the
+  last SimBrief OFP when it has the same trip); at opening, the most recent one wins over the stored mission (it was
+  replaced by the stored route before) and the route map and the vertical profile are shown at once. The route map uses
+  two new display profiles of the studio, "IFR low" and "IFR high", chosen from the cruise level (FL195): airways of
+  the band, ICAO symbology, R / D / P / TRA / CTR / TMA / CTA zones of the band within 10 NM of the route (`corridorNm`,
+  `selectedAirspaces`). New "Alternate (ICAO)" field (mission point `alternate`, passed to "Open in ▾"). No ZIP any
+  more in Flight maps: the images (maps and `profil_vertical.png`, now on by default) are shown in the "Maps" block
+  with "Download", "Print" and "Print all" (`window.SiaDeliver`, studio `deliverFiles`); the Centre's map studio keeps
+  its ZIP.
+- **Aircraft picker in the mission report, My aircraft, Landing and the vertical profile** (`shared/aircraft_picker.js`,
+  `shared/mission_core/form.js`, `assist.js`, `shared/equipment_editor.js`, Landing Performance,
+  `shared/carto/vertical_profile.js`) — the shared drop-down list with search (5.3.0, Fuel and Performance sheets)
+  now serves:
+  - mission report (16 families): the registration and ICAO type fields of each aircraft, in field mode instead of
+    the browser's datalist — same values (`suggest`, cross-filtering), same effects (a choice is an entry: `input`
+    then `change`, hence known aircraft, auto-filled values and assistants), silhouettes and categories
+    (`AircraftDBIcons` now loaded by the report pages);
+  - My aircraft (Settings › My profile) and the "Add an aircraft" window: `attachSuggest` is the picker in field mode
+    (results of `makeSearch` kept as scored, grouped by origin — fleet, this computer's base, ICAO list —, no entry
+    active by default so Enter still adds the typed text, list closed when empty); its own list and CSS are removed;
+  - Landing Performance: the "Aircraft" button ("All", then the types by category; the hidden select keeps the
+    value); the former menu, its CSS and `aircraftGroupOf` are removed;
+  - Flight maps and map studio, vertical profile: `SiaProfile.aircraftChoice` replaces the copy of
+    `fillVprofAircraft` in both pages; the choice is shown as soon as the page opens.
+  The component keeps one set of document listeners for all pickers and puts its list in the page only while open; a
+  field opened by a click shows the whole list with its value highlighted; new options `limit`, `openOnClick`,
+  `filter: false`, `activeFirst: false`, `hideEmpty` (docs/technique/FRAMEWORK.md).
+  - Centre: the aircraft of a post in the assignment window (`AssignDialog`), the ODV planning matrix and the
+    aircraft table of a flight in the flight orders, through `AircraftPicker.fromSelect` (a native `<select>` shown by
+    the picker: options, groups, disabled entries with their reason — "already taken", "unavailable" —, the hidden
+    select keeps its value and `change` events; "other (type in)…" keeps its entry window). `planeOptions`
+    (odv_orders.js), never called, is removed.
+  - free ICAO type fields: the Fleet base (Settings › Centre), an aircraft's type in the mission editor's YAML tree and
+    the AAR receivers' type, through `AircraftPicker.typeField` (the catalogue's type base by category, values
+    already entered first, free entry kept).
+
+### Fixed
+
+- **Launcher start: "cannot pull with rebase: You have unstaged changes"** (`tools/launch.py`, `tools/data_sync.py`
+  `update`) — the start-up `git pull --ff-only` stopped on any local change (and followed the user's `pull.rebase`). The
+  launcher no longer pulls: it commits the pool files changed on the workstation ("Modifications du poste <TRI>", same
+  rules as "Synchronise"), merges the remote branch record by record and pushes nothing. A file outside the pool changed
+  locally (`sia/mora.csv`) is left as it is; when the update would overwrite it, the update is put off and the console
+  names the file. Generated indexes, conflict copies and the launcher marker go to `.git/info/exclude`. The console says
+  what was done. Synchronisation steps shared with `run`. Administrator manual ×4, `INSTALL.md`,
+  `docs/technique/SYNCHRONISATION.md` § 9; `python tools/data_sync.py --essai` covers it.
+- **Maintenance on a workstation with the launcher, GitHub mode set in the same browser: the workstation's cards were
+  missing** (`shared/maintenance_page.js`) — the page preferred GitHub mode to the launcher: "Aeronautical data" only
+  offered "Re-read the published database", and building or publishing the SIA database, the MORA or the aircraft
+  database could not be done. When the launcher serves the page (one `/__setup/status` probe, in GitHub mode on a local
+  address only), Maintenance now shows all its blocks and buttons, with on "Aeronautical data" and "Aircraft types" the
+  sentence "GitHub mode active in this browser: the data read come from the repository, publications are made on this
+  workstation (launcher)". Without the launcher, the GitHub variant is unchanged. Administrator manual ×4.
+- **Launcher confirmation window: "not confirmed" without saying why** (`tools/launch.py`,
+  `apps/settings/premier_lancement.html`) — taking `data/` into a repository other than the configured one (or changing
+  the synchronisation repository) answered "refused, closed, or window impossible to open" whatever happened. The window
+  is now system-modal and announced in the launcher's console, and the page gets the actual reason: refused (with the
+  seconds left before a new try), another confirmation window already open, or no window possible on this computer. The
+  routes answer `needsConfirm`, and the page warns before the window opens (`dry` call for the take-over, "Check" for the
+  repository address). User manual ×4, `docs/technique/SYNCHRONISATION.md` § 9.
+- **First run in GitHub mode: step 1 "Folders" stayed to do, with a button that only refused**
+  (`apps/settings/premier_lancement.html`) — with My profile › Data access set, the data come from the GitHub repository
+  and there is no folder to choose: the step is now "not applicable" (–) in the rail, its badge and the checklist, the
+  next steps open, and "Finish" no longer waits for it. The application folder card and "OneDrive folder…" are hidden
+  ("or the Excel file…" stays for the ODV workbook); one sentence names the repository and, on a page served by the
+  launcher, says that GitHub mode wins and where to remove it. User manual ×4 updated.
+- **Settings: an aircraft table appeared in whatever section was open, some ten seconds later** (`shared/data_admin.js`) —
+  the sections of My profile and Settings shared one body: "Aircraft and simulators", slow to read its data, wrote its
+  table into the section shown when it finished, and could clear that section's buttons and status line. Each section
+  now gets its own body, and a section left behind no longer touches the page.
+- **GitHub mode: pages waited about ten seconds for availability and user indexes** (`shared/github_data.js`) — the
+  folder indexes (`disponibilites/_index.json`, `utilisateurs/_index.json`) were rebuilt by reading every file of the
+  folder, one request after the other, and twice per page. Each file's entry is now kept with the blob SHA the repository
+  tree gives, so only changed files are read, six at a time; readers of the same tree share one build. Kept in this
+  browser (`githubData:entries`, excluded from backups like the other `githubData:` keys, cleared with the access).
+- **Availability: Undo forgot every gesture when the language changed** (`shared/dispos_timeline.js`,
+  `shared/dispos_week.js`, `labs/dispos_timeline.html`) — the page mounts the component again to change its texts, and
+  each mount started a new history. The component takes a new `undoStore` option, a `Map` kept by the page; My
+  missions and My availability pass the same one to each mount, so Ctrl+Z and Ctrl+Y still reach the gestures made
+  before the switch. The history starts afresh when the categories or the pilot change; the example page keeps it
+  across a density change. Module spec and integration guide updated.
+- **My missions on phones: the "Day" view could not be seen** (`shared/dispos_week.js`) — in the compact availability
+  block (since the entry page), the Day / Week switch was inside the folded "Edit my week", so with a week already
+  filled in (GitHub mode, real data) the phone showed no "Day"; an empty week (preview, sample data) unfolded it. The
+  switch now sits above the summary, choosing a view unfolds the entry, and a tap on a day of the summary opens the
+  entry on that day (Day view on phones). User manual (4 languages).
+- **Fleet map and Maintenance zones map: "Access blocked" instead of the background** — both used raster tiles from
+  `tile.openstreetmap.org`, which refuses this use. They now use the vector background OpenFreeMap Positron, like the
+  map studio's defaults (`shared/fleet_map.js`, `shared/maintenance_page.js`).
+- **Performance sheets in GitHub mode: a deleted sheet came back at the next reread** — it was removed from the browser
+  only. “Delete (n)” now also removes it from `planner/flight_performance_database_merged.fpdb.json` of the data
+  repository (`sha`-checked write, retried when another pilot changed the file meanwhile); “Undo” puts back the removed
+  sheets without overwriting other changes (`apps/planner/flight_planner.js`).
+
+- **GitHub mode: two commits for each availability week or profile written** — the folder index
+  (`disponibilites/_index.json`, `utilisateurs/_index.json`) was written to the data repository with every file. It is no
+  longer written (nor sent from an old outbox entry), and it is always rebuilt from the repository tree, never read from
+  the repository, where a copy left by an earlier version would be stale. On a workstation, "Synchronise" untracks an
+  index still tracked in the repository instead of failing the merge on the launcher's rebuilt copy; the data repository
+  template ignores `**/_index.json` (`shared/assignments.js`, `shared/github_data.js`, `tools/data_sync.py`).
+
+- **GitHub mode: remembered folders are ignored** (`shared/file_access.js` and its users) — a browser that had once
+  authorised a folder (launcher workstation) kept reading it in GitHub mode and repeatedly warned “Assignments: the
+  authorised missions folder and the files served by the page differ (another copy?)”. One decision point:
+  `FileAccess.get()` returns no folder when `GitHubData.on()` (so `status()` says “not chosen”, `sameAsServed()` has
+  nothing to compare, `set()` keeps nothing, `pickFolder()` refuses with an explanation, `decorate()` hides the folder
+  button); `missionsSource()` and the other direct users are explicit too: the report ledger (`directory()`), the
+  missions registry (no folder, no “Re-read folder”), the browser backup (no backup-folder button: the archive is
+  downloaded), the SIA base block (a sentence says the base is not available in this mode), Settings › Maintenance
+  reference files (“Save to repository” commits through GitHub instead of asking for the application folder), the ODV
+  workbook (chosen by hand each time). Launcher mode is unchanged.
+- **GitHub mode: the performance sheets were empty** (`apps/planner/flight_planner.js`) — the profiles were read only
+  from the remembered performance folder. They are now read from `planner/flight_performance_database_merged.fpdb.json`
+  of the data repository when the page opens (browser copy refreshed in the background) and by “Reread”; a sheet of
+  the repository replaces the browser's one only if it is more recent, so an edit not yet saved is never overwritten.
+  “Save to the repository (n)” writes the ticked sheets back into that file (one commit, conflict-checked with the
+  file `sha`, merge redone if another pilot saved meanwhile); no folder button, status line and intro say so in four
+  languages. Deleting a sheet stays local to the browser (the repository file keeps it).
+- **GitHub mode: pages survive without `AircraftDB/` in the data repository** — the aircraft type base and
+  performance files are read from the repository root; when absent, every page that uses the base now runs on an empty
+  one and says it once per page (“Aircraft type database missing from the data repository (AircraftDB/): type names and
+  performance unavailable”, four languages, `shared/aircraft_catalog.js`); the type completion no longer calls a
+  launcher that does not exist (a “Launcher stopped” notification per type), and the on-demand loading of the types
+  performance (`shared/equipment_editor.js`) reads it from the repository instead of the code site.
+- **GitHub mode: Settings › Maintenance reduced to what works without launcher or folders** (`shared/maintenance_page.js`)
+  — kept: versions (without git, SIA folder or synchronisation rows), aeronautical data (one sentence: the base is
+  produced on a workstation with the launcher), browser caches (without the SIA base and update-check caches), disk
+  space (browser only), browser backup (downloaded archive, no folders, no “Changes since”), journal; not built: updates
+  (git), references and dependencies, aircraft types (rebuild), and the git synchronisation (`shared/sync.js`) and
+  site-download (`shared/defa_site.js`) launcher calls. Block lists are decided when built, never hidden afterwards.
+- **GitHub mode: mission files** — page code no longer asks for files that cannot exist: legacy per-family report
+  ledgers (18 API requests per fresh browser), launcher endpoints (`mission-folders`, `defa-site`, `sync`); mission map
+  images, when the repository has them, are read through the API and shown as object URLs (a `data/…` address cannot
+  load in an image tag); absent maps (excluded from git) still show “map not available” without error.
+- **ODV orders: “Cannot read properties of undefined (reading 'weekId')” on reopening** (`apps/cpco/odv_orders.js`) —
+  with the browser copies of GitHub mode the page started before the shared availability module was inserted; it now
+  waits for the `load` event.
+- Phone (Safari iOS): floating notifications no longer fill the whole screen (the popover container was stretched to the viewport height and the grid stretched every message with it); rows sized to their content, aligned at the bottom, each message capped at 40 % of the screen height.
+- **Passwords: "not saved" after setting one** — the Centre password (*Settings › Centre › Mode and access*) was
+  written to the data folder but announced "kept in this browser: authorise the data folder", because the page
+  checked for a result that writing never returns (`'data'` instead of `'folder'`, `shared/data_admin.js`). Changing
+  one's own password (*My profile › Sign-in and password*) now says "Password changed in this browser only: …" with
+  the reason when the user file could not be written to the data folder (`shared/settings_panels.js`).
+- **Aircraft sheet: "Home aerodrome" taken from the flight log instead of the Fleet page** — F-ZBMC, based at LFTW
+  on the Fleet page, showed "Home aerodrome HCMK", the reference's estimate (most frequent departure, during a
+  deployment), which also overrode the base in the common catalogue. The Fleet page's base and home aerodrome now win
+  (`shared/aircraft_catalog.js`). The sheet stores a home aerodrome only when it is typed; an old sheet that had frozen
+  the estimate gives way to the Fleet page's base (`shared/mission_core/sheets.js`).
+- **Settings › Installation and Maintenance on a narrow screen** (`shared/maintenance.css`) — below 900 px the page is a
+  single column, but each block stayed pinned to the second grid column, squeezing it beside the menu; it now sits
+  under the menu.
+- **Settings › Installation › Sources: data repository shown empty** (`shared/maintenance_page.js`) — the “Data
+  repository (private)” field only read a browser setting, while the first run saves the address as the remote of
+  `data/` (git, through the launcher). The field now shows that remote (`/__setup/sync-remote`), accepts SSH
+  addresses (`git@…`) and saves a change through the launcher, as the first run does.
+- **My profile: the personal IVAO OAuth client card was hidden below the Expert level** — it is now shown at every
+  level (the IVAO prefill it serves is available from level 1).
+
+- **“Open in ▾”: SkyVector speed and level always sent, departure time copied** (`shared/external_links.js`) — the
+  speed/level group only left with a route that carried one (`N0450F350`), so a plain route sent neither speed nor
+  level, even with the flight level set. A route without a group now takes the cruise TAS (SimBrief OFP when it
+  matches the trip, otherwise the aircraft sheet; Fuel and Flight maps) with the flight level. SkyVector has no
+  address parameter for the ETD: the OFP departure time is copied on click, to paste into its ETD field; the menu
+  entry's tooltip says what is sent.
+
+- **SimBrief OFP, json v2: the navlog read as a list** — the "Fetch latest SimBrief FPL" route kept only the airfields and the speed/level group with a json=v2 OFP, whose `navlog` is directly the list of fixes (the reader looked for a `fix` container inside each fix). Checked on a real LFRS → LFML OFP: twelve waypoints, SID and STAR included.
+- **“Open in ▾”: SkyVector speed and altitude, SimBrief route** (`shared/external_links.js`) — SkyVector gets the
+  ICAO speed/level group at the start of `fpl` (the only form it reads: speed and altitude of its Flight Plan panel;
+  no address parameter fills the aircraft or the ETD); SimBrief gets, from a SimBrief OFP route list, only the named
+  waypoints (no coordinates, no aerodromes), with the level of the route group when the flight has none.
+- **“Open in ▾”: SkyVector now takes the route** (`shared/external_links.js`) — SkyVector resolves each name on its
+  own, so pseudo-points of a SimBrief OFP route (`TOC`, `TOD`, `WPT`) were sent to far-away namesakes (Toccoa, USA)
+  and airways or procedures were ignored. SkyVector now gets names of 2 to 5 letters and ICAO coordinates
+  (`4341N00122E`) built from the OFP route positions for unnamed points; airways, procedures and `DCT` are left out.
+  SimBrief gets the same coordinates for unnamed OFP points.
+- **Last SimBrief flight plan: waypoints and alternate** (`shared/flight_vertical_profile.js`,
+  `shared/mission_core/fpl.js`, `tools/build_map_planner.py`) — Fuel: the OFP's alternate was never passed to Flight
+  maps (departure and arrival were read from the last word of the "ID lat lon" route, a longitude; the `json=v2`
+  alternate is a list). Flight maps: a new flight from Fuel brings its own alternate instead of keeping the previous
+  flight's one, which could block the rebuild ("unknown alternate") and leave the old waypoints on screen. Mission
+  report ("Filed flight plan — Last SimBrief OFP"): the waypoints follow the imported route (navlog fixes) instead of
+  keeping those of an earlier flight.
+- **Fuel: "Get latest SimBrief FPL" kept only the two airfields** (`apps/planner/flight_planner.js`) — the navlog
+  was searched depth-first through the whole OFP and an earlier block could be taken for it, so the route came back
+  as departure, speed / level group and destination only. `findNavlog` now reads the OFP's own `navlog.fix` first
+  (`json=1` and `v2`); every fix except TOC / TOD is kept, SID / STAR points included.
+- **Flight maps: "SimBrief" button takes the waypoints** (`apps/cpco/map_parser.html`, `tools/build_map_planner.py`) —
+  the route block's "SimBrief" button took only the ATC route (field 15), so the points along airways were not route
+  points of the flight; it now writes each navlog point with its position ("ID lat lon", same form as Fuel; field 15
+  kept as a fallback without positions) and, in Flight maps, fills the alternate.
+
+### Security
+
+- **Device enrolment and revocation (signed accounts L4, S2)** — My profile › "This device" shows the device
+  fingerprint and state, lets a pilot confirm the group registry (no Centre tab needed) and "Request access": a request
+  signed with the device key (proof of possession) in `data/utilisateurs/demandes/<TRI>_<kid>.json`, written through
+  the launcher's data folder or as a commit in GitHub mode. Settings › Centre › "Group mode" lists the requests with the
+  fingerprint recalculated by the admin's page ("Approve": new registry version with the key, user created if needed;
+  "Reject": request removed), the device keys ("Revoke": new version without it; deactivating a user revokes all their
+  keys) and, once two admins have a device key, "Activate the group" (`etat: actif`, `actif_depuis` starts the 30 days
+  of accepted unsigned data). The launcher lists the requests (`/__setup/data-list`, `utilisateurs/demandes` only);
+  in GitHub mode the registry history comes from the commits API (`GitHubData.history`), so a phone can join a group
+  whose registry is past version 1. 7 new tests in `tools/crypto_banc.html` (52 in all).
+- **App without launcher: immediate measures (S1)** — every page of the GitHub Pages site (and the iOS app built
+  from it) carries the content security policy as a meta tag, built by `tools/build_pages.py` from the list shared with
+  the launcher (`tools/csp_policy.py`): pages may only contact the suite, the GitHub API and the listed services.
+  Settings › My profile › Data access asks for a fine-grained token of 90 days at most, explains “Cut access” and what
+  to do with a lost phone, and warns, on a `….github.io` site, that every other Pages site of the account shares the
+  origin. “Allow this website…” only shows on a launcher page. Keychain storage in the iOS app needs a native plugin:
+  not done, noted in `APPLI_AUTONOME_SECURITE.md` § 6.
+- **Signed user registry, group mode** (signed accounts, batch L3; `shared/sog_registry.js`, Settings › Centre ›
+  "Group mode (signed registry)") — in group mode, roles, state and password hashes come from
+  `data/utilisateurs/_registre.json`, a signed envelope verified by every browser: next version signed by an admin (or
+  the recovery key) of the accepted one, unbroken `precedente` chain, no rollback (last accepted version kept in
+  IndexedDB), missing versions read from the data git history (`/__setup/registre-historique`); version 1 accepted on
+  first use after the founder's fingerprint is confirmed on the device ("Confirm" / "Reject" notification). A user file
+  that gives itself a role no longer has any effect; a role, state or password change is a new version signed with the
+  device key of a registry admin. "Switch to group mode" (Centre enabled, launcher CSP required) writes version 1 from the
+  existing user files with the current user as first admin, and downloads an encrypted recovery key; "New recovery key",
+  "Use the recovery key" (makes a trigram admin with this device's key), "Re-found the group", "Back to standalone
+  mode". While the group is being set up (fewer than two admins with a device key) the Centre stays accessible with its
+  password; once active, through a registry admin's device key. `data_sync.py` keeps the highest registry version on a
+  git conflict. 14 registry tests in `tools/crypto_banc.html`.
+- **Switch-off for navigations from another site** — to work with an extension (Claude in Chrome sends its
+  navigations as coming from another site): HTML pages only, confirmed in the launcher window, valid until the launcher
+  closes, with a red button in the header to turn it back on.
+- **Read-only folders** (audit of 7 October, batch 4b) — the application folder, the X-Plane ones, the ODV workbook
+  and the folders added to the backup are opened read-only; a trapped script can no longer rewrite the suite's code nor
+  drop a plug-in into X-Plane. Write access to the data (`data/`) is asked separately, right after choosing the
+  application folder ("Allow writing the data", then the browser prompt) and with the "Allow" button after a restart;
+  one-off writes (restore, AircraftDB) are asked only on click. Sub-folders of `data/` are taken without write access
+  if they exist; the local backup goes to `data/local`, no longer to the application root. Settings › Installation
+  shows "authorised (read)".
+- **Content security policy (CSP) sent by the launcher** (audit of 7 October, batch 4a) — pages may only contact
+  (fetch, maps, workers) the suite, a fixed list (map backgrounds, relief, Overpass, SimBrief, IVAO, VATSIM, weather,
+  airport database) and the addresses of `config/repository_tree`; scripts limited to the suite's own (inline included)
+  and pinned pdf.js / acorn; no `<object>`, no `<base>`, no form to another site. A trapped script can no longer send the
+  data elsewhere by request. Another wanted site (report web service, other repository) is added with "Allow this
+  website…" in the block notification, confirmed in the launcher window; list and "Remove" in Settings › Installation ›
+  Sources and folders. The launcher reports `csp: true` (prerequisite for the group mode of signed accounts). Images and
+  navigation stay open (documented residual leak).
+
 ## [5.3.0] — 2026-10-19
 
 The mission report is rebuilt around what a pilot does: one "Prefill ▾" menu gathers every source (a mission order,
@@ -73,11 +588,14 @@ names) lives once in the shared framework.
   availability rectangles sit on top, with square corners, the start time on the left, the type centred and the end
   time on the right. One state per minute: under a rectangle the background does not count, but it stays in place, so
   a moved or deleted rectangle gives it back.
-  - One rule for every gesture, whatever the brush: a gesture that starts on a shape (rectangle or band) takes it —
+  - One rule for every gesture, whatever the brush: a gesture that starts on an availability rectangle takes it —
     click selects, drag moves (5 min steps, to another row: same times, another day), the edges resize, Shift+drag
-    draws over it; a gesture that starts beside the shapes draws with the brush.
+    draws over it; a gesture that starts anywhere else (empty space, background band, gutter) draws with the brush.
+    Background bands are not objects: around an availability they only fill the rest of the day (00:00 to it, it to
+    24:00), so they are never selected or moved, and an availability in the middle of a day covered by a band moves
+    on its own.
   - Across several rows, a selection rectangle lays the same hours on each day it crosses, started anywhere (empty
-    space, gutter between rows). The last shape wins, and a background drawn through an availability cuts it, live.
+    space, background band, gutter between rows). The last shape wins, and a background drawn through an availability cuts it, live.
   - A palette entry dropped on a shape changes its nature; dropped on a day (empty part of the row, day name) it fills
     the whole day, and a background entry then changes only the background. Double-clicks replace the background of
     a day or of the week, never removing an availability.
@@ -409,6 +927,11 @@ names) lives once in the shared framework.
   held every value (label "Merge (nothing)"), although the other ticked profiles would be removed. The button now
   counts the removed profiles ("Merge (1 profile removed)") and stays active: the most recent is kept as is, the
   others disappear.
+
+### Livraison
+
+- Archive de livraison : `xplane-web-suite-5.3.0.zip` — SHA-256 `3f95d59310f962153496b8bcc0d6ea3282981cb43be1698a02cfb61d5934af8d` (code seul, hors dépôt : dossier `dist/`).
+- Module package: `dispos-module-5.3.0.zip` — SHA-256 `6e84695139fc0cab8940e542f8c27c3b5ca0e7a1141fd188f0dd3515fc7c80c7` (outside the repository: `dist/` folder).
 
 ## [5.2.0] — 2026-10-12
 

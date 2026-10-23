@@ -20,6 +20,7 @@ import posixpath, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
 import data_guard  # .js de data/ : servis seulement s'ils suivent le format des fichiers de données
+import csp_policy as cspmod  # politique de sécurité du contenu, commune au site sans lanceur (tools/build_pages.py)
 import aero_fetch  # données aéronautiques d'autres pays (Paramètres › Maintenance › Données aéronautiques)
 from check_binaries import POINTER as LFS_POINTER  # début d'un pointeur Git LFS (fichier non récupéré)
 import version_stamps  # empreintes ?v=… posées au moment de servir (pages, scripts, feuilles des designs)
@@ -126,6 +127,24 @@ def git_env():
     return data_sync.git_env()
 
 
+def git_auth(user, secret):
+    """Identifiants de la page le temps d'une commande git : (variables d'environnement, options -c) — assistant
+    d'identifiants éphémère, rien n'est écrit dans .git/config ni dans l'adresse. Sans les deux : ({}, [])."""
+    if not (user and secret):
+        return {}, []
+    return ({'DEFA_GIT_U': user, 'DEFA_GIT_P': secret},
+            ['-c', 'credential.helper=', '-c', 'credential.helper=!f() { echo "username=$DEFA_GIT_U"; echo "password=$DEFA_GIT_P"; }; f'])
+
+
+def remember_credentials(url, user, secret):
+    """Identifiants confiés à l'assistant d'identifiants de Git (case « Se souvenir »)."""
+    git = data_sync.git_exe()
+    if git and user and secret:
+        host = urllib.parse.urlparse(url)
+        subprocess.run([git, 'credential', 'approve'], input=f'protocol={host.scheme}\nhost={host.netloc}\nusername={user}\npassword={secret}\n\n',
+                       text=True, capture_output=True, cwd=ROOT)
+
+
 def clone(user=None, secret=None, remember=False, url=None):
     """Clone du dépôt de données ; identifiants : ceux de la page (le temps du clone), sinon ceux que Git connaît.
     Retourne (ok, journal)."""
@@ -141,12 +160,9 @@ def clone(user=None, secret=None, remember=False, url=None):
         return False, 'Adresse du dépôt de données à préciser.'
     if not data_sync.REMOTE_RE.match(url):
         return False, data_sync.REMOTE_HELP
-    env = git_env()
-    cmd = data_sync.git_cmd()
-    if user and secret:
-        # assistant d'identifiants le temps de cette commande : rien n'est écrit dans .git/config ni dans l'adresse
-        env.update(DEFA_GIT_U=user, DEFA_GIT_P=secret)
-        cmd += ['-c', 'credential.helper=', '-c', 'credential.helper=!f() { echo "username=$DEFA_GIT_U"; echo "password=$DEFA_GIT_P"; }; f']
+    extra, auth = git_auth(user, secret)
+    env = dict(git_env(), **extra)
+    cmd = data_sync.git_cmd(*auth)
     if run([git, 'lfs', 'version'], capture_output=True) == 0:
         run([git, 'lfs', 'install'], capture_output=True)
     try:
@@ -162,10 +178,8 @@ def clone(user=None, secret=None, remember=False, url=None):
             return False, 'Accès refusé : identifiant, mot de passe ou jeton incorrect, ou accès au dépôt pas encore donné.'
         return False, log or 'Échec du clone.'
     ensure_lfs(DATA, 'data', 'Données')  # données clonées : fichiers Git LFS récupérés, ou signalés
-    if remember and user and secret:
-        host = urllib.parse.urlparse(url)
-        subprocess.run([git, 'credential', 'approve'], input=f'protocol={host.scheme}\nhost={host.netloc}\nusername={user}\npassword={secret}\n\n',
-                       text=True, capture_output=True, cwd=ROOT)
+    if remember:
+        remember_credentials(url, user, secret)
     return True, 'Données récupérées.'
 
 
@@ -176,9 +190,12 @@ def ensure_data():
     git = data_sync.git_exe()
     if has_data():
         if git and os.path.isdir(os.path.join(DATA, '.git')):
-            say('  Données présentes : mise à jour (git pull)…')
-            if run(data_sync.git_cmd('-C', DATA, 'pull', '--ff-only'), timeout=180, env=git_env()) != 0:
-                say('  Mise à jour impossible pour l’instant (réseau, accès ou modifications locales) : données actuelles gardées.')
+            # mise à jour sans « git pull » (son réglage pull.rebase et une modification locale l'arrêtaient) : fiches du
+            # poste commitées d'abord, branche distante fusionnée fiche par fiche, rien d'envoyé (tools/data_sync.update)
+            say('  Données présentes : mise à jour depuis le dépôt…')
+            with SYNC_LOCK:
+                r = data_sync.update(DATA)
+            say('  ' + r['message'])
         else:
             say('  Données présentes.')
         return True
@@ -258,9 +275,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         """Raison de refuser la requête ('' : servie) — hôte, origine, chemin caché."""
         if not self._local_host():
             return 'hôte'
-        if not self._same_origin():
-            return 'autre site'
         path = self.path.split('?', 1)[0].split('#', 1)[0]
+        if not self._same_origin() and not self._relaxed_navigation(path):
+            return 'autre site'
         if path.startswith('/__setup/'):
             return ''
         rel = posixpath.normpath(urllib.parse.unquote(path))
@@ -279,6 +296,14 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                     return 'chemin'
                 break
         return ''
+
+    def _relaxed_navigation(self, path):
+        """Débrayage (RELAX, jusqu'à la fermeture du lanceur) : une page de la suite ouverte depuis un autre site ou une
+        extension (navigation de premier plan) est servie ; scripts, données, images et /__setup/ restent refusés aux
+        autres sites."""
+        return (RELAX['nav'] and self.headers.get('Sec-Fetch-Mode') == 'navigate'
+                and self.headers.get('Sec-Fetch-Dest') == 'document' and not path.startswith('/__setup/')
+                and (path.endswith('/') or path.lower().endswith('.html')))  # pages seulement, jamais un fichier de données
 
     def _deny(self, why):
         """Requête refusée : 404 pour un chemin non servi, page d'explication pour un lien venu d'un autre site, 403
@@ -350,7 +375,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         raw = getattr(self, 'path', '') or ''
         path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
-        self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + "frame-ancestors 'self'")
+        self.send_header('Content-Security-Policy', ("sandbox; " if sandbox else '') + csp_policy())
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
@@ -446,7 +471,8 @@ class Setup(http.server.SimpleHTTPRequestHandler):
                 return self._json({'error': 'refusé'}, 403)
             git = data_sync.git_exe()
             return self._json({'server': True, 'root': ROOT, 'git': bool(git), 'data': has_data(),
-                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS})
+                               'dataGit': os.path.isdir(os.path.join(DATA, '.git')), 'dataRepo': data_repo_url(), 'lfs': LFS,
+                               'csp': True, 'relaxNav': RELAX['nav']})
         if self.path.split('?')[0] == '/__setup/mission-folders':
             # dossiers de missions présents (data/missions/<famille>/<id>) : le registre repris par le navigateur au
             # premier démarrage écarte les missions dont le dossier n'existe plus (registre périmé)
@@ -461,11 +487,30 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except OSError:
                 pass
             return self._json({'folders': out})
+        if self.path.split('?')[0] == '/__setup/data-list':
+            # fichiers d'un dossier de données de la liste DATA_LISTS (demandes d'accès des postes, comptes signés) :
+            # noms seulement, le contenu se lit comme tout fichier de data/
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            return self._json(data_list(q.get('dir', [''])[0]))
+        if self.path.split('?')[0] == '/__setup/registre-historique':
+            # versions du registre signé des utilisateurs dans l'historique git des données (comptes signés : poste
+            # resté hors ligne, refondation) ; contenus seulement, rien n'est vérifié ici (les pages vérifient)
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(registry_history())
+        if self.path.split('?')[0] == '/__setup/sites':
+            # sites que les pages peuvent contacter (connect-src) : liste fixe, configuration, sites autorisés ici
+            if not self._allowed():
+                return self._json({'error': 'refusé'}, 403)
+            return self._json(sites_view())
         if self.path.split('?')[0] == '/__setup/sync-remote':
             # dépôt git de synchronisation de data/ : adresse actuelle (ou celle du clone par défaut)
             if not self._allowed():
                 return self._json({'error': 'refusé'}, 403)
-            return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url()})
+            # state : 'absent' (rien : clone), 'plain' (des fichiers sans dépôt : reprise, POST /__setup/adopt), 'repo'
+            return self._json({**data_sync.remote_info(DATA), 'default': data_repo_url(), 'state': data_sync.data_state(DATA)})
         if self.path.split('?')[0] == '/__setup/sync-status':
             # synchronisation git du pool (tools/data_sync.py) : état pour le bouton de l'en-tête ; ?fetch=1 : relu
             # sur le dépôt distant (commits à recevoir)
@@ -615,17 +660,19 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             url = str(a.get('url') or '').strip()
-            r = {'check': data_sync.check_remote(url)}
+            # needsConfirm : ni le dépôt actuel ni celui de la configuration — la page prévient avant « Enregistrer »
+            r = {'check': data_sync.check_remote(url),
+                 'needsConfirm': not any(data_sync.same_repo(url, u) for u in (data_sync.remote_info(DATA)['url'], data_repo_url()))}
             if a.get('save'):
                 saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url()])
                 if saved.get('refused'):
                     # autre dépôt : confirmé par l'utilisateur dans une fenêtre du système (ancienne et nouvelle adresse),
                     # hors du navigateur — un script de la page ne peut ni la voir ni y répondre
-                    if confirm_remote(saved.get('current') or '', url):
+                    ok, why = confirm_remote(saved.get('current') or '', url)
+                    if ok:
                         saved = data_sync.set_remote(DATA, url, allowed=[data_repo_url(), url])
                     else:
-                        saved['message'] = ('Changement de dépôt non confirmé dans la fenêtre du lanceur (refusé, fermé, '
-                                            'ou fenêtre impossible à ouvrir sur cet ordinateur) : dépôt inchangé.')
+                        saved['message'] = f'Changement de dépôt non confirmé : {why} Dépôt inchangé.'
                 r['saved'] = saved
             return self._json(r)
         if path == '/__setup/sync':
@@ -648,6 +695,15 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 a = {}
             return self._json({'started': aircraft_start(a.get('codes') or [], bool(a.get('quick'))), **AIRCRAFT, **aircraft_files()})
+        if path == '/__setup/aircraft-publish':
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            try:
+                return self._json(aircraft_publish(str(a.get('author') or '').upper(), bool(a.get('apply'))))
+            except (OSError, RuntimeError) as e:
+                return self._json({'ok': False, 'remove': [], 'copy': [], 'message': str(e)[-600:]})
         if path == '/__setup/defa-site':
             # flotte et journal DEFA depuis le site : { refresh, auto, force } (une fois par jour en auto) ou
             # { auto_enabled } (réglage de Paramètres › Maintenance)
@@ -665,6 +721,22 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 return self._json({'ok': False, 'message': 'JSON invalide'}, 400)
             return self._json(secrets_save(a))
+        if path == '/__setup/relax':
+            # débrayage de l'ouverture depuis un autre site ou une extension : activé après confirmation dans la fenêtre du
+            # lanceur, jusqu'à sa fermeture ; rétabli sans confirmation
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            return self._json(relax_set(bool(a.get('on'))))
+        if path in ('/__setup/site-allow', '/__setup/site-remove'):
+            # site ajouté à la CSP (connect-src) : confirmé dans la fenêtre du lanceur, qu'aucune page ne peut voir ni
+            # valider ; retiré : sans confirmation (la liste ne fait que rétrécir)
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            return self._json(site_allow(str(a.get('url') or '')) if path.endswith('allow') else site_remove(str(a.get('url') or '')))
         if path == '/__setup/aero-fetch':
             # données aéronautiques d'autres pays (tools/aero_fetch.py) : téléchargées dans data/sia/<source>/
             try:
@@ -691,6 +763,46 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             if ok:
                 mark_instance()
             return self._json({'ok': ok, 'message': log})
+        if path == '/__setup/adopt':
+            # data/ déjà là sans être un dépôt (exemples, archive, données saisies) devenu un clone du dépôt des données,
+            # fiches du poste reprises par les règles de la synchronisation, rien d'envoyé (tools/data_sync.adopt) ;
+            # dépôt de la configuration admis, autre dépôt : confirmé dans la fenêtre du lanceur, comme sync-remote
+            try:
+                a = json.loads(body or b'{}')
+            except ValueError:
+                a = {}
+            url = str(a.get('url') or '').strip() or data_repo_url()
+            user, secret = str(a.get('user') or '').strip(), str(a.get('secret') or '')
+            if any(c in user + secret for c in '\r\n\0'):
+                return self._json({'ok': False, 'message': 'Identifiant ou mot de passe invalide (retour à la ligne).'})
+            if not data_sync.REMOTE_RE.match(url):
+                return self._json({'ok': False, 'message': data_sync.REMOTE_HELP})
+            # needsConfirm : autre dépôt que celui de la configuration ; dry : la page le demande avant le clic, rien n'est fait
+            need = not data_sync.same_repo(url, data_repo_url())
+            if a.get('dry'):
+                return self._json({'ok': True, 'dry': True, 'needsConfirm': need, 'state': data_sync.data_state(DATA)})
+            if need:
+                ok, why = confirm_adopt(url)
+                if not ok:
+                    return self._json({'ok': False, 'needsConfirm': True, 'message': f'Reprise non confirmée : {why} data/ inchangé.'})
+            git = data_sync.git_exe()
+            if git and run([git, 'lfs', 'version'], capture_output=True) == 0:
+                run([git, 'lfs', 'install'], capture_output=True)
+            extra, auth = git_auth(user, secret)
+            with SYNC_LOCK:
+                r = data_sync.adopt(DATA, url, str(a.get('author') or 'POSTE').upper(), env=dict(git_env(), **extra),
+                                    name=str(a.get('name') or '')[:60], auth=auth)
+            if r.get('ok'):
+                say(f'  Reprise de data/ dans le dépôt {url} : ' + r.get('message', ''))
+                ensure_lfs(DATA, 'data', 'Données')
+                mark_instance()
+                if a.get('remember'):
+                    remember_credentials(url, user, secret)
+                with INDEX_LOCK:
+                    index_availability()
+                    index_users()
+            sync_status_reset()
+            return self._json({**r, 'needsConfirm': need})
         if path == '/__setup/upload':
             kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('kind', [''])[0]
             with tempfile.NamedTemporaryFile(delete=False, suffix='.upload') as f:
@@ -772,53 +884,88 @@ def tools_inventory():
 
 # ---- confirmation hors du navigateur : fenêtre Oui / Non du système, ouverte par le lanceur
 CONFIRM_LOCK = threading.Lock()
-_confirm = {'until': 0.0}  # après un « Non » : pas de nouvelle fenêtre pendant 30 s (une page piégée insisterait)
+_confirm = {'until': 0.0, 'no_at': 0.0}  # après un « Non » : pas de nouvelle fenêtre pendant 30 s (une page piégée insisterait)
+CONFIRM_PAUSE = 30
 
 
-def confirm_box(title, text):
-    """Fenêtre Oui / Non du système (« Non » par défaut), au premier plan : une page web ne peut ni la voir ni y
-    répondre. Vrai seulement sur « Oui » ; faux sur « Non », si elle est fermée, si une autre est déjà ouverte ou si
-    aucune fenêtre ne peut s'ouvrir (Linux sans zenity)."""
+def confirm_status(title, text):
+    """Fenêtre Oui / Non du système (« Non » par défaut), au premier plan et modale pour tout le système : une page web ne
+    peut ni la voir ni y répondre. Rend 'yes', 'no' (Non, fermée, sans réponse en 15 min), 'busy' (une autre fenêtre de
+    confirmation est déjà ouverte) ou 'none' (aucune fenêtre ne peut s'ouvrir : Linux sans zenity, session sans bureau)."""
     if not CONFIRM_LOCK.acquire(blocking=False):
-        return False
+        return 'busy'
     try:
+        say('  Fenêtre de confirmation ouverte sur cet ordinateur : répondez Oui ou Non. / Confirmation window open: answer Yes or No.')
         if sys.platform == 'win32':
             import ctypes
-            # MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND | MB_TOPMOST ; IDYES = 6
-            return ctypes.windll.user32.MessageBoxW(None, text, title, 0x4 | 0x30 | 0x100 | 0x10000 | 0x40000) == 6
+            # MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SYSTEMMODAL | MB_SETFOREGROUND | MB_TOPMOST ; IDYES = 6, 0 : échec
+            r = ctypes.windll.user32.MessageBoxW(None, text, title, 0x4 | 0x30 | 0x100 | 0x1000 | 0x10000 | 0x40000)
+            return 'yes' if r == 6 else 'none' if r == 0 else 'no'
         if sys.platform == 'darwin':
             r = subprocess.run(['osascript', '-e', 'on run argv', '-e',
                                 'display dialog (item 2 of argv) with title (item 1 of argv) buttons {"Non", "Oui"} '
                                 'default button "Non" with icon caution', '-e', 'end run', title, text],
                                capture_output=True, text=True, timeout=900)
-            return r.returncode == 0 and 'Oui' in r.stdout
+            return ('yes' if 'Oui' in r.stdout else 'no') if r.returncode == 0 else 'no' if '-128' in r.stderr else 'none'
         zenity = shutil.which('zenity')
         if zenity:
             r = subprocess.run([zenity, '--question', '--no-markup', '--default-cancel', '--title', title, '--text', text,
                                 '--ok-label', 'Oui', '--cancel-label', 'Non'], capture_output=True, timeout=900)
-            return r.returncode == 0
-        return False
+            return 'yes' if r.returncode == 0 else 'no' if r.returncode in (1, 5) else 'none'
+        return 'none'
+    except subprocess.TimeoutExpired:
+        return 'no'
     except (OSError, AttributeError, subprocess.SubprocessError):
-        return False
+        return 'none'
     finally:
         CONFIRM_LOCK.release()
 
 
+def confirm_box(title, text):
+    """Vrai seulement sur « Oui » (confirm_status)."""
+    return confirm_status(title, text) == 'yes'
+
+
+def confirm_ask(title, text, what):
+    """Confirmation dans la fenêtre du lanceur, avec la pause après un refus ; rend (ok, raison en clair si non)."""
+    left = _confirm['until'] - time.time()
+    if left > 0:
+        return False, (f'Refusée il y a {int(time.time() - _confirm["no_at"])} s dans la fenêtre du lanceur : nouvel essai '
+                       f'possible dans {int(left) + 1} s.')
+    st = confirm_status(title, text)
+    say(f'  {what} — ' + {'yes': 'confirmé', 'no': 'refusé', 'busy': 'autre fenêtre déjà ouverte', 'none': 'aucune fenêtre'}[st])
+    if st == 'yes':
+        return True, ''
+    if st == 'no':
+        _confirm.update(until=time.time() + CONFIRM_PAUSE, no_at=time.time())
+        return False, f'Refusée ou fermée dans la fenêtre du lanceur (nouvel essai possible dans {CONFIRM_PAUSE} s).'
+    if st == 'busy':
+        return False, 'Une autre fenêtre de confirmation est déjà ouverte sur cet ordinateur : répondez-lui d’abord, puis réessayez.'
+    return False, ('Aucune fenêtre de confirmation ne peut s’ouvrir sur cet ordinateur (Linux : installer zenity ; session sans '
+                   'bureau) : seul le dépôt de la configuration (sources.dataRepo) est admis sans confirmation.')
+
+
 def confirm_remote(old, new):
-    """Changement du dépôt de synchronisation de data/ confirmé par l'utilisateur (fenêtre du lanceur)."""
-    if time.time() < _confirm['until']:
-        return False
-    ok = confirm_box('SO Group — dépôt des données / data repository', (
+    """Changement du dépôt de synchronisation de data/ confirmé par l'utilisateur (fenêtre du lanceur) ; (ok, raison)."""
+    return confirm_ask('SO Group — dépôt des données / data repository', (
         'Changer le dépôt de synchronisation des données ?\n\n'
         f'Actuel : {old or "(aucun)"}\nNouveau : {new}\n\n'
         'Toutes les données de data/ partiront vers le nouveau dépôt au prochain « Synchroniser ». '
         'Si vous n’avez pas demandé ce changement, répondez Non.\n\n'
         'Change the data synchronisation repository? All data in data/ will be sent to the new repository at the next '
-        '“Synchronise”. If you did not ask for this change, answer No.'))
-    if not ok:
-        _confirm['until'] = time.time() + 30
-    say(f'  Dépôt de synchronisation : {new} — ' + ('confirmé' if ok else 'non confirmé'))
-    return ok
+        '“Synchronise”. If you did not ask for this change, answer No.'), f'Dépôt de synchronisation : {new}')
+
+
+def confirm_adopt(url):
+    """Reprise de data/ dans un autre dépôt que celui de la configuration, confirmée par l'utilisateur (fenêtre du
+    lanceur) ; (ok, raison)."""
+    return confirm_ask('SO Group — dépôt des données / data repository', (
+        'Faire du dossier data/ de ce poste un clone de ce dépôt ?\n\n'
+        f'Dépôt : {url}\n\n'
+        'Les fiches du poste seront gardées dans un commit local, puis partiront vers ce dépôt au prochain « Synchroniser ». '
+        'Si vous n’avez pas demandé cette reprise, répondez Non.\n\n'
+        'Make this computer’s data/ folder a clone of this repository? Its records are kept in a local commit, then sent to '
+        'this repository at the next “Synchronise”. If you did not ask for this, answer No.'), f'Reprise de data/ dans le dépôt {url}')
 
 
 _patterns = []
@@ -1032,6 +1179,44 @@ def ivao_fail(e):
     return {'error': f'IVAO : HTTP {code}' if code else f'IVAO : {e}'}
 
 
+DATA_LISTS = ('utilisateurs/demandes',)  # dossiers de data/ dont la page peut demander la liste
+
+
+def data_list(rel):
+    """{ files: [noms .json] } d'un dossier de DATA_LISTS ; { files: [] } pour un autre dossier ou un dossier absent."""
+    if rel not in DATA_LISTS:
+        return {'files': []}
+    d = os.path.join(DATA, *rel.split('/'))
+    try:
+        names = sorted(n for n in os.listdir(d) if re.fullmatch(r'[A-Z0-9]{2,5}_[0-9a-f]{16}\.json', n))
+    except OSError:
+        names = []
+    return {'files': names}
+
+
+def registry_history(limit=500):
+    """{ versions: [enveloppe…] } : versions successives de data/utilisateurs/_registre.json dans l'historique git des
+    données, de la plus ancienne à la plus récente (sans doublon) ; [] sans git ou sans historique."""
+    rel = 'utilisateurs/_registre.json'
+    if not data_sync.git_exe() or not os.path.isdir(os.path.join(DATA, '.git')):
+        return {'versions': []}
+    code, out = data_sync.git(DATA, 'log', '--format=%H', '--reverse', f'-n{limit}', '--', rel)
+    seen, versions = set(), []
+    for h in (out.split() if code == 0 else []):
+        if not re.fullmatch(r'[0-9a-f]{40}', h):
+            continue
+        c, text = data_sync.git(DATA, 'show', f'{h}:{rel}')
+        try:
+            env = json.loads(text) if c == 0 else None
+        except ValueError:
+            env = None
+        key = json.dumps(env, sort_keys=True) if isinstance(env, dict) else ''
+        if key and key not in seen:
+            seen.add(key)
+            versions.append(env)
+    return {'versions': versions}
+
+
 def secrets_test(service):
     """Appel de contrôle d'une clé de la suite (« Tester ») : IVAO, sessions du tracker de la dernière heure."""
     if service != 'ivao':
@@ -1047,6 +1232,115 @@ def secrets_test(service):
     except (OSError, ValueError) as e:
         return {'ok': False, **ivao_fail(e)}
     return {'ok': True, 'count': int((got if isinstance(got, dict) else {}).get('totalItems') or 0)}
+
+
+# ---- politique de sécurité du contenu (CSP ; docs/technique/AUDIT_SECURITE_2026-10-07.md, lot 4) : liste et forme
+# communes au site sans lanceur (tools/csp_policy.py, balise meta posée par tools/build_pages.py) ; ici en en-tête, avec
+# les sites autorisés sur ce poste (fenêtre du lanceur) et frame-ancestors.
+CSP_CONNECT = cspmod.CONNECT
+CSP_SCRIPTS = cspmod.SCRIPTS
+SITES_FILE = os.path.join(SECRETS, 'sites.json')  # sites autorisés par l'utilisateur (fenêtre du lanceur)
+_csp = {'key': None, 'value': ''}
+
+
+site_origin = cspmod.site_origin
+
+
+def config_sites():
+    """Origines des adresses de la configuration de la suite (config/repository_tree : dépôt de la suite, sources) :
+    réglées par le code, pas par la page."""
+    return cspmod.config_sites(config_text())
+
+
+def user_sites():
+    return [o for o in _read_json(SITES_FILE).get('sites') or [] if site_origin(o) == o]
+
+
+def sites_view():
+    return {'fixed': CSP_CONNECT, 'config': config_sites(), 'user': user_sites()}
+
+
+def csp_policy():
+    """Valeur de l'en-tête Content-Security-Policy (refaite quand la configuration ou les sites autorisés changent)."""
+    key = tuple(os.path.getmtime(p) if os.path.exists(p) else 0 for p in
+                (SITES_FILE, os.path.join(ROOT, 'config', 'repository_tree'), os.path.join(ROOT, 'repository_tree')))
+    if _csp['key'] != key:
+        _csp.update(key=key, value=cspmod.value([*config_sites(), *user_sites()]))
+    return _csp['value']
+
+
+# ---- débrayage : pages de la suite ouvertes depuis un autre site ou une extension (Claude in Chrome, favoris gérés par
+# une extension…), pour la session du lanceur seulement — rien n'est enregistré, la protection revient au lancement
+# suivant. Les pages affichent tant qu'il dure un bouton rouge « Protection réduite — rétablir » (app_framework.js).
+RELAX = {'nav': False}
+
+
+def relax_set(on):
+    """Active (après confirmation dans la fenêtre du lanceur) ou rétablit (sans confirmation) ; { ok, relaxNav }."""
+    if not on:
+        if RELAX['nav']:
+            say('  Ouverture depuis un autre site : protection rétablie.')
+        RELAX['nav'] = False
+        return {'ok': True, 'relaxNav': False}
+    if RELAX['nav']:
+        return {'ok': True, 'relaxNav': True}
+    if time.time() < _confirm['until']:
+        return {'ok': False, 'relaxNav': False, 'message': 'Demande refusée il y a moins de 30 s : réessayez plus tard.'}
+    ok = confirm_box('SO Group — protection réduite / reduced protection', (
+        'Autoriser l’ouverture des pages de la suite depuis un autre site ou une extension (par exemple Claude in Chrome), '
+        'jusqu’à la fermeture du lanceur ?\n\n'
+        'Un site que vous visitez pourra alors ouvrir une page de la suite avec ses propres paramètres. Les données, les '
+        'scripts et les réglages du lanceur restent fermés aux autres sites. Un bouton rouge reste affiché en haut de '
+        'chaque page pour rétablir la protection.\n\n'
+        'Allow suite pages to be opened from another website or an extension (for example Claude in Chrome) until the '
+        'launcher closes? A website you visit could then open a suite page with its own parameters. Data, scripts and '
+        'launcher settings stay closed to other websites.'))
+    say('  Ouverture depuis un autre site : ' + ('autorisée jusqu’à la fermeture du lanceur' if ok else 'non confirmée'))
+    if not ok:
+        _confirm.update(until=time.time() + 30, no_at=time.time())
+        return {'ok': False, 'relaxNav': False, 'message': 'Non confirmé dans la fenêtre du lanceur.'}
+    RELAX['nav'] = True
+    return {'ok': True, 'relaxNav': True}
+
+
+def site_allow(url):
+    """Ajoute un site à connect-src après confirmation dans la fenêtre du lanceur ; { ok, origin, message }."""
+    o = site_origin(url)
+    if not o:
+        return {'ok': False, 'message': 'Adresse refusée : https://… seulement (ou http:// de cette machine).'}
+    if o in CSP_CONNECT or o in config_sites() or o in user_sites():
+        return {'ok': True, 'origin': o, 'already': True, 'message': f'{o} : déjà autorisé.'}
+    if time.time() < _confirm['until']:
+        return {'ok': False, 'origin': o, 'message': 'Demande refusée il y a moins de 30 s : réessayez plus tard.'}
+    ok = confirm_box('SO Group — site autorisé / allowed website', (
+        f'Autoriser la suite à contacter ce site ?\n\n{o}\n\n'
+        'Les pages pourront lui envoyer des données (comptes rendus, requêtes). Si vous n’avez pas demandé cet ajout, '
+        'répondez Non.\n\n'
+        'Allow the suite to contact this website? The pages will be able to send data to it. If you did not ask for '
+        'this, answer No.'))
+    say(f'  Site autorisé : {o} — ' + ('confirmé' if ok else 'non confirmé'))
+    if not ok:
+        _confirm.update(until=time.time() + 30, no_at=time.time())
+        return {'ok': False, 'origin': o, 'message': 'Ajout non confirmé dans la fenêtre du lanceur.'}
+    cur = _read_json(SITES_FILE)
+    cur['sites'] = sorted({*user_sites(), o})
+    try:
+        _write_json(SITES_FILE, cur)
+    except OSError as e:
+        return {'ok': False, 'origin': o, 'message': str(e)}
+    return {'ok': True, 'origin': o, 'message': f'{o} : autorisé.'}
+
+
+def site_remove(url):
+    """Retire un site autorisé par l'utilisateur (sans confirmation) ; { ok, origin }."""
+    o = site_origin(url)
+    cur = _read_json(SITES_FILE)
+    cur['sites'] = [x for x in user_sites() if x != o]
+    try:
+        _write_json(SITES_FILE, cur)
+    except OSError as e:
+        return {'ok': False, 'message': str(e)}
+    return {'ok': True, 'origin': o}
 
 
 def ivao_key():
@@ -1593,6 +1887,66 @@ def aircraft_files():
     """Présence des fichiers de la base des types d'aéronefs (aircraft_db.js, aircraft_perf.js)."""
     d = os.path.join(ROOT, 'AircraftDB')
     return {'db': os.path.exists(os.path.join(d, 'aircraft_db.js')), 'perf': os.path.exists(os.path.join(d, 'aircraft_perf.js'))}
+
+
+AIRCRAFT_KEEP = ('aircraft_db.js', 'aircraft_perf.js')
+
+
+def aircraft_publish(author='', apply=False):
+    """Base des types publiée dans le dépôt des données (téléphones et site en mode GitHub ; jamais sur le site public :
+    tools/build_pages.py ne prend que les fichiers suivis du dépôt de la suite) : data/AircraftDB/ ne garde que
+    aircraft_db.js et aircraft_perf.js, copiés depuis AircraftDB/ de la suite (littéraux purs : tools/data_guard.py) ; tout
+    le reste du dossier (caches, scripts, __pycache__…) est retiré. apply faux : liste seulement ce qui serait fait (le
+    bouton la montre et demande l'accord). apply vrai : fait, commit au nom de author, puis passe de synchronisation."""
+    src, dst = os.path.join(ROOT, 'AircraftDB'), os.path.join(DATA, 'AircraftDB')
+    res = {'ok': False, 'remove': [], 'copy': [], 'message': ''}
+    if not data_sync.is_repo(DATA):
+        res['message'] = 'data/ n’est pas un dépôt git : rien à publier.'
+        return res
+    missing = [n for n in AIRCRAFT_KEEP if not os.path.isfile(os.path.join(src, n))]
+    if missing:
+        res['message'] = 'Base des types absente sur ce poste (' + ', '.join(missing) + ') : la compléter d’abord.'
+        return res
+    for n in AIRCRAFT_KEEP:
+        ok, why = data_guard.check_file(os.path.join(src, n))
+        if not ok:
+            res['message'] = f'AircraftDB/{n} refusé ({why}) : rien publié.'
+            return res
+    if os.path.isdir(dst):
+        for d, dirs, files in os.walk(dst):
+            for f in files:
+                rel = os.path.relpath(os.path.join(d, f), dst).replace(os.sep, '/')
+                if rel not in AIRCRAFT_KEEP:
+                    res['remove'].append({'path': 'AircraftDB/' + rel, 'size': os.path.getsize(os.path.join(d, f))})
+    for n in AIRCRAFT_KEEP:
+        a, b = os.path.join(src, n), os.path.join(dst, n)
+        if not os.path.isfile(b) or open(a, 'rb').read() != open(b, 'rb').read():
+            res['copy'].append({'path': 'AircraftDB/' + n, 'size': os.path.getsize(a)})
+    res['ok'] = True
+    if not apply:
+        return res
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author or ''):
+        return {**res, 'ok': False, 'message': 'Trigramme de l’auteur manquant ou invalide.'}
+    for r in res['remove']:
+        os.remove(os.path.join(DATA, *r['path'].split('/')))
+    for d, dirs, files in os.walk(dst, topdown=False):  # dossiers vidés (caches, __pycache__) retirés
+        if d != dst and not os.listdir(d):
+            os.rmdir(d)
+    os.makedirs(dst, exist_ok=True)
+    for c in res['copy']:
+        shutil.copyfile(os.path.join(src, os.path.basename(c['path'])), os.path.join(DATA, *c['path'].split('/')))
+    env = dict(data_sync.git_env(), GIT_AUTHOR_NAME=author, GIT_AUTHOR_EMAIL=f'{author.lower()}@defa.local')
+    who = ['-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local']
+    data_sync.git(DATA, 'add', '-A', '--', 'AircraftDB', check=True)
+    code, _ = data_sync.git(DATA, 'diff', '--cached', '--quiet')
+    if code:
+        data_sync.git(DATA, *who, 'commit', '-m', f'Base des types publiée ({author})', env=env, check=True)
+    with SYNC_LOCK:
+        res['sync'] = data_sync.run(DATA, author)
+    sync_status_reset()
+    res['ok'] = res['sync'].get('ok', False)
+    res['message'] = res['sync'].get('message', '')
+    return res
 
 
 def aircraft_rebuild(codes, quick=False):

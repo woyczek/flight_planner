@@ -10,6 +10,9 @@
 //     terrains de la base SIA à moins de 14 px ; clic sur la route → point inséré ; double-clic sur un point ajouté →
 //     suppression. Clic droit sur un point (carte ou coupe) : suppression, point nommé compris (départ et arrivée exceptés).
 //     Un point inséré dans une portion de voie aérienne la remplace par des tronçons directs.
+//   · double vue : curseur commun le long de la route (survol de la coupe → repère sur la carte ; survol de la route sur
+//     la carte → trait vertical dans la coupe), zone survolée dans la coupe surlignée sur la carte (nom dans l'infobulle),
+//     clic sur un point de la coupe → carte recentrée dessus ; TOC / TOD et graduations en NM posés sur la carte.
 // Altitudes écrites « /A035 » (ft / 100) ou « /F065 » (case 15), « /3500 » (liste à virgules).
 // Expose window.SiaRouteEdit = { attach({ textarea, img, onChange, aero }) → { update(data), setMapRoute(map, points),
 // light(k), destroy() }, tokensOf } (window.SiaProfileEditor : même objet, ancien nom).
@@ -30,7 +33,7 @@
   const icaoLatLon = (lat, lon) => window.SiaProfile?.icaoLatLon ? window.SiaProfile.icaoLatLon(lat, lon) : `${lat.toFixed(4)} ${lon.toFixed(4)}`;
 
   function attach({ textarea, img, onChange = () => {}, aero = () => ({}) }) {
-    let pts = [], data = null, geo = null, hover = -1, map = null, markers = [];
+    let pts = [], data = null, geo = null, hover = -1, map = null, markers = [], decor = [];
     const listeners = [];
 
     // ================================================================ texte : jetons, écriture
@@ -140,7 +143,7 @@
     }
 
     // ================================================================ coupe verticale : calque SVG sur l'image
-    let svg = null, band, guide, tip, handles;
+    let svg = null, band, guide, tip, handles, cursor;
     const X = s => geo.padL + (geo.W - geo.padL - geo.padR) * s / geo.total;
     const S = x => Math.max(0, Math.min(geo.total, (x - geo.padL) / (geo.W - geo.padL - geo.padR) * geo.total));
     const Y = ft => geo.padT + (geo.H - geo.padT - geo.padB) * (1 - (ft - geo.bottom) / (geo.top - geo.bottom));
@@ -151,9 +154,9 @@
     const altOf = m => Number.isFinite(m.alt) ? m.alt : data.plan?.alt?.[sampleAt(m.s)] ?? m.lvl?.ft ?? terrainAt(m.s);
     const toSvg = e => { const r = svg.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * geo.W, y: (e.clientY - r.top) / r.height * geo.H }; };
     const snapAt = (s, k) => { const tol = 12 * geo.W / (svg.getBoundingClientRect().width || geo.W); let best = -1, d = tol; pts.forEach((m, j) => { const e = Math.abs(X(m.s) - X(s)); if (j !== k && editable(j) && e < d) { d = e; best = j; } }); return best; };
-    const showTip = (x, y, ft, s) => {
+    const showTip = (x, y, ft, s, z = null) => {
       const agl = Math.max(0, Math.round(ft - terrainAt(s)));
-      tip.textContent = `${Math.round(ft)} ft · ${agl} ft AGL · relief ${Math.round(terrainAt(s))} ft`;
+      tip.textContent = `${Math.round(ft)} ft · ${agl} ft AGL · relief ${Math.round(terrainAt(s))} ft · ${Math.round(s / 1852)} NM${z ? ` · ${z.a.type || ''} ${z.a.name || ''}` : ''}`;
       tip.setAttribute('x', Math.min(x + 12, geo.W - 330)); tip.setAttribute('y', Math.max(y - 12, geo.padT + 14));
       tip.setAttribute('visibility', 'visible');
     };
@@ -180,7 +183,8 @@
       guide = el('line', { stroke: '#d0021b', 'stroke-width': 1, 'stroke-dasharray': '3 3', visibility: 'hidden' });
       tip = el('text', { 'font-size': 13, 'font-family': 'Arial, sans-serif', 'font-weight': 700, fill: '#17202a', stroke: '#fff', 'stroke-width': 3, 'paint-order': 'stroke', visibility: 'hidden' });
       handles = el('g');
-      svg.append(band, guide, handles, tip);
+      cursor = el('line', { stroke: '#1565c0', 'stroke-width': 1.5, visibility: 'hidden' });   // curseur commun (carte → coupe)
+      svg.append(band, guide, cursor, handles, tip);
       let drag = null;
       svg.addEventListener('pointerdown', e => {
         if (!geo) return;
@@ -195,7 +199,8 @@
         if (!drag) {
           const c = e.target.closest('circle[data-k]');
           light(c ? +c.dataset.k : -1);
-          if (!c) showTip(p.x, p.y, F(p.y), S(p.x)); else tip.setAttribute('visibility', 'hidden');
+          if (!c) { const sx = S(p.x), z = zoneAt(sx, F(p.y)); showTip(p.x, p.y, F(p.y), sx, z); along(sx); showZone(z); }
+          else { tip.setAttribute('visibility', 'hidden'); along(pts[+c.dataset.k]?.s); showZone(null); }
           return;
         }
         if (Math.hypot(p.x - drag.x0, p.y - drag.y0) > 3) drag.moved = true;
@@ -218,7 +223,8 @@
         tip.setAttribute('visibility', 'hidden');
         const toks = tokens();
         if (d.k >= 0) {
-          if (!d.moved) return;
+          // clic sans déplacement sur un point : la carte se recentre dessus
+          if (!d.moved) { const m = pts[d.k]; if (map && m && Number.isFinite(m.lat)) map.easeTo({ center: [m.lon, m.lat] }); return; }
           const i = pts[d.k].ti, inner = d.k > 0 && d.k < pts.length - 1 && movable(toks[i]);
           if (inner && d.snap >= 0 && d.snap !== d.k) {
             // fusion : le point ajouté disparaît, son altitude passe au point sur lequel il est lâché
@@ -238,7 +244,7 @@
       svg.addEventListener('dblclick', e => { const c = e.target.closest('circle[data-k]'); if (c) removePoint(+c.dataset.k); });
       // clic droit sur un point : suppression (tout point intermédiaire)
       svg.addEventListener('contextmenu', e => { const c = e.target.closest('circle[data-k]'); if (!c) return; e.preventDefault(); if (!c.dataset.awy) removePoint(+c.dataset.k, true); });
-      svg.addEventListener('pointerleave', () => { if (!drag) { light(-1); tip.setAttribute('visibility', 'hidden'); } });
+      svg.addEventListener('pointerleave', () => { if (!drag) { light(-1); tip.setAttribute('visibility', 'hidden'); along(null); showZone(null); } });
     }
     function drawHandles() {
       handles.textContent = '';
@@ -251,6 +257,54 @@
         c.append(t);
         handles.append(c);
       });
+    }
+
+    // ================================================================ double vue : curseur commun, zone, repères
+    const empty = { type: 'FeatureCollection', features: [] };
+    /** Source GeoJSON de la carte (créée au besoin). */
+    const putSrc = (id, d) => { if (!map?.getSource) return; const src = map.getSource(id); if (src) src.setData(d); else if (map.style?._loaded || map.isStyleLoaded?.()) map.addSource(id, { type: 'geojson', data: d }); };
+    /** Curseur commun à la distance s (NM) : trait dans la coupe, repère sur la carte ; null : effacé. */
+    function along(s) {
+      if (!geo || !Number.isFinite(s)) { cursor?.setAttribute('visibility', 'hidden'); putSrc('route-edit-cursor', empty); return; }
+      cursor.setAttribute('x1', X(s)); cursor.setAttribute('x2', X(s)); cursor.setAttribute('y1', geo.padT); cursor.setAttribute('y2', geo.H - geo.padB);
+      cursor.setAttribute('visibility', 'visible');
+      const q = pointAt(s);
+      putSrc('route-edit-cursor', { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [q.lon, q.lat] } });
+    }
+    /** Distance (NM) du point de la route le plus proche d'une position de la carte. */
+    const sAt = ll => { let best = 0, d = Infinity; for (const a of data?.samples || []) { const k = Math.cos(a.lat * Math.PI / 180), e = (a.lat - ll.lat) ** 2 + ((a.lon - ll.lng) * k) ** 2; if (e < d) { d = e; best = a.s; } } return best; };
+    /** Plancher et plafond (ft) d'un espace au point d'échantillon i (ASFC : relief compté). */
+    const bandAt = (a, i) => {
+      const L = window.SiaAero?.limitFt, rel = v => /SFC|GND|ASFC|AGL/i.test(String(v || '')), c = data.samples[i]?.center || 0;
+      if (!L) return [0, Infinity];
+      const lo = (rel(a.lower) ? c : 0) + (L(a.lower, false) || 0), hi = L(a.upper, true);
+      return [lo, Number.isFinite(hi) ? (rel(a.upper) ? c : 0) + hi : Infinity];
+    };
+    /** Espace traversé sous le curseur de la coupe (distance s, altitude ft) : le plus court des espaces qui le contiennent. */
+    function zoneAt(s, ft) {
+      let best = null;
+      for (const c of data?.crossed || []) {
+        const s0 = data.samples[c.i0].s, s1 = data.samples[c.i1].s;
+        if (s < s0 || s > s1) continue;
+        const [lo, hi] = bandAt(c.a, sampleAt(s));
+        if (ft >= lo && ft <= hi && (!best || s1 - s0 < best.len)) best = { a: c.a, len: s1 - s0 };
+      }
+      return best;
+    }
+    /** Espace z surligné sur la carte ; null : rien. */
+    const showZone = z => putSrc('route-edit-zone', z ? { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: (z.a.rings || []).map(r => r.map(([la, lo]) => [lo, la])) } } : empty);
+    /** TOC, TOD et graduations (NM) le long de la route sur la carte (pas de 10, 20, 50 ou 100 NM selon la longueur). */
+    function drawDecor() {
+      decor.forEach(m => m.remove());
+      decor = [];
+      if (!map || !window.maplibregl || !data?.samples?.length) return;
+      // distances de la coupe en mètres ; graduations en NM
+      const total = data.total || data.samples[data.samples.length - 1].s, nm = total / 1852, step = nm <= 60 ? 10 : nm <= 200 ? 20 : nm <= 500 ? 50 : 100;
+      const put = (s, text, cls) => { const e = document.createElement('div'); e.className = `route-edit-tag ${cls}`; e.textContent = text; const q = pointAt(s); decor.push(new maplibregl.Marker({ element: e, anchor: 'left', offset: [6, 0] }).setLngLat([q.lon, q.lat]).addTo(map)); };
+      for (let d = step; d < nm - step / 3; d += step) put(d * 1852, `${d} NM`, 'tick');
+      const plan = data.plan;
+      if (plan?.toc && Number.isFinite(plan.toc.s)) put(plan.toc.s, 'TOC', 'toc');
+      if (plan?.tod && Number.isFinite(plan.tod.s) && Math.abs(plan.tod.s - (plan.toc?.s ?? -1e9)) > total * .005) put(plan.tod.s, 'TOD', 'toc');
     }
 
     // ================================================================ carte : route, points déplaçables
@@ -287,6 +341,13 @@
           map.addLayer({ id: 'route-edit-awy', type: 'circle', source: 'route-edit-dots', filter: ['==', ['get', 'awy'], 1], paint: { 'circle-radius': 3, 'circle-color': '#fff', 'circle-stroke-color': '#d0021b', 'circle-stroke-width': 1.5 } });
           map.addLayer({ id: 'route-edit-on', type: 'circle', source: 'route-edit-dots', filter: ['==', ['get', 'k'], -1], paint: { 'circle-radius': 12, 'circle-color': 'rgba(255,196,0,.45)', 'circle-stroke-color': '#d69600', 'circle-stroke-width': 2 } });
         }
+        if (!map.getLayer('route-edit-zone-fill')) {
+          put('route-edit-zone', empty); put('route-edit-cursor', empty);
+          map.addLayer({ id: 'route-edit-zone-fill', type: 'fill', source: 'route-edit-zone', paint: { 'fill-color': '#ffc400', 'fill-opacity': .22 } }, 'route-edit-line');
+          map.addLayer({ id: 'route-edit-zone-line', type: 'line', source: 'route-edit-zone', paint: { 'line-color': '#d69600', 'line-width': 2.5 } }, 'route-edit-line');
+          map.addLayer({ id: 'route-edit-cursor', type: 'circle', source: 'route-edit-cursor', paint: { 'circle-radius': 6, 'circle-color': '#1565c0', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
+        }
+        drawDecor();
         clearMap();
         pts.forEach((p, k) => {
           if (!editable(k)) return;
@@ -329,7 +390,9 @@
         } else insertBetween(prev, next, { lat: e.lngLat.lat, lon: e.lngLat.lng }, null);
       });
       map.on('mouseenter', 'route-edit-hit', () => { map.getCanvas().style.cursor = 'copy'; });
-      map.on('mouseleave', 'route-edit-hit', () => { map.getCanvas().style.cursor = ''; });
+      map.on('mouseleave', 'route-edit-hit', () => { map.getCanvas().style.cursor = ''; along(null); });
+      // survol de la route sur la carte : curseur commun (trait vertical dans la coupe)
+      map.on('mousemove', 'route-edit-hit', e => { if (data?.samples?.length) along(sAt(e.lngLat)); });
     }
 
     buildProfile();
@@ -345,6 +408,7 @@
         paintText();
         if (map) setMapRoute(map, null);
         light(hover);
+        drawDecor();
       },
       setMapRoute,
       light,

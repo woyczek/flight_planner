@@ -46,5 +46,8 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
   on squashe le plus possible avant de pousser. **La doc d'une fonctionnalité va dans le commit de la
   fonctionnalité** (manuels, CHANGELOG et `apps/aide/docs_bundle.js` régénéré dans le même commit) : jamais
   « un commit fonctionnel + un commit de doc », jamais un commit « paquet régénéré » à part.
+- **Rôles des sessions et synchronisation** : `.claude/agents/README.md` (tableau des sessions, espaces, ports, qui
+  pousse quoi) et un fichier par rôle (`ergonomie`, `features-sog`, `bugs-sog`, `securisation`, `landing`,
+  `analyse-defa`). Une session prend le rôle de son nom ; la session ergonomie répartit, valide et intègre.
 - Chaque session travaille dans son espace et sur sa branche. La refonte v2 vit sur `feature/v2-niveaux`, les comptes
   signés sur `feature/audit-securite` : rien de ces chantiers sur develop sans l'accord de l'utilisateur.

@@ -17,7 +17,7 @@
   // API (window.MissionAssignments) : identité et index — trigram(), index({ fresh }), mine(liste?, { all }), key(a),
   //   when(a), isRead(a), markRead(a), markUnread(a), pliState(a, id), setPliState(a, id, { state, at, logged }) (plis
   //   d'exercice : ouvert, rescellé, ouverture à l'heure notée au journal), envelope() ; déclaration du pilote — LEGEND, availability(TRI),
-  //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, mastered }), saveSims(TRI, [sim…]), simulators(),
+  //   availabilityAt(décl, ms, famille), saveAvailability(TRI, grille, { toFolder }), saveAircraft(TRI, { owned, novice, mastered }), saveSims(TRI, [sim…]), simulators(),
   //   gridEditor(hôte, grille, onChange) ; outils — geo { nm, brg, icaoOf, coord }, typeOf, cruiseKt, coordsOf(OACI),
   //   ferryOf({ base, departure, type, takeoff, pilot }), fleetTypes(), qualification(décl, TRI, type), slotRange(date, h0, h1),
   //   declaredOver(décl, début, fin), busyRange(a), assignedOver(liste, TRI, début, fin), conflicts(liste, {…}) ;
@@ -150,8 +150,16 @@
   const OUTBOX = 'suiteDataOutbox:v1';
   /** Boîte d'envoi : fichiers en attente d'écriture dans le dossier des données (suiteDataOutbox:v1), par chemin. */
   const outbox = () => json(OUTBOX, {}) || {};
-  /** Dossier des données autorisé en écriture (handle) ; erreur expliquée sinon. */
+  // mode GitHub (appli sans lanceur, shared/github_data.js) : le dépôt des données tient lieu de dossier autorisé —
+  // lu par le service worker (adresses data/… servies), écrit par l'API (un commit par fichier)
+  const GH_DIR = {
+    github: true,
+    name: 'GitHub'
+  };
+  const gh = () => window.GitHubData?.on?.() ? window.GitHubData : null;
+  /** Dossier des données autorisé en écriture (handle, ou GH_DIR en mode GitHub) ; erreur expliquée sinon. */
   async function dataDir() {
+    if (gh()) return GH_DIR;
     const FA = window.FileAccess;
     const st = FA ? await FA.status('__data') : null;
     let dir = st?.handle;
@@ -174,6 +182,7 @@
   }
   /** Écrit value (JSON) dans data/<rel> du dossier autorisé ; null : supprime le fichier. */
   async function writeFile(dir, rel, value) {
+    if (dir === GH_DIR) return value === null ? gh().remove(rel) : gh().put(rel, JSON.stringify(value, null, 1));
     const parts = rel.split('/'),
       name = parts.pop();
     let d = dir;
@@ -196,6 +205,10 @@
     if (srcMemo && Date.now() - srcMemo.at < 5e3) return srcMemo.p;
     /** Lecture du dossier accordé et contrôle « même copie que la suite servie » (FileAccess.sameAsServed). */
     const p = (async () => {
+      if (gh()) return {
+        dir: GH_DIR,
+        same: true // le dépôt est ce que le service worker sert : lecture servie
+      };
       const FA = window.FileAccess,
         st = FA ? await FA.status('__data') : null;
       if (!st?.handle || st.permission !== 'granted') return {
@@ -241,6 +254,9 @@
     '__data', dir, 'accepted') : uncheckedText(dir.name);
   /** JSON de data/<rel> lu dans le dossier autorisé ; null s'il est absent ou illisible. */
   async function readFile(dir, rel) {
+    if (dir === GH_DIR) return store.read(`data/${rel}`, {
+      fresh: true
+    });
     const parts = rel.split('/'),
       name = parts.pop();
     try {
@@ -294,9 +310,20 @@
       at: Date.now()
     }).catch(() => {});
   }
+  // index des dossiers (disponibilites/_index.json, utilisateurs/_index.json) : régénérés (lanceur sur un poste, arbre
+  // du dépôt en mode GitHub : shared/github_data.js), jamais écrits dans le dépôt — une fiche écrite = un seul commit
+  const FOLDER_INDEX = /^(disponibilites|utilisateurs)\/_index\.json$/;
   /** Écrit un fichier du pool (data/<rel>) : dossier autorisé (sous le verrou du fichier), sinon boîte d'envoi de ce
-   *  navigateur. Retour : { where: 'folder' | 'local', error } ; événement « defa-data-change » dans tous les onglets. */
+   *  navigateur. Retour : { where: 'folder' | 'local', error } ; événement « defa-data-change » dans tous les onglets.
+   *  Mode GitHub : un index de dossier n'est pas écrit (relu, il est refait depuis l'arbre du dépôt). */
   async function writeData(rel, value) {
+    if (gh() && FOLDER_INDEX.test(rel)) {
+      store.changed(`data/${rel}`);
+      return {
+        where: 'folder',
+        error: null
+      };
+    }
     const box = outbox();
     box[rel] = {
       at: new Date().toISOString(),
@@ -335,7 +362,8 @@
     const dir = await dataDir(),
       done = [];
     for (const [rel, e] of Object.entries(outbox())) {
-      await store.lock(`data:${rel}`, () => writeFile(dir, rel, e.value));
+      // index de dossier laissé par une version précédente : jamais envoyé au dépôt en mode GitHub
+      if (dir !== GH_DIR || !FOLDER_INDEX.test(rel)) await store.lock(`data:${rel}`, () => writeFile(dir, rel, e.value));
       const b = outbox();
       delete b[rel];
       setJson(OUTBOX, b);
@@ -350,6 +378,11 @@
   // dossier des missions autorisé, par rapport à la suite servie : true (le même : la copie servie suffit), false
   // (autre copie : ignoré), null (contrôle impossible : sans lanceur, le dossier est lu directement)
   async function missionsSource() {
+    // mode GitHub : le dépôt des données est la seule source ; aucun dossier, donc ni comparaison ni avertissement
+    if (gh()) return {
+      handle: null,
+      same: null
+    };
     const st = await window.FileAccess?.status?.('__missions');
     if (!st?.handle || st.permission !== 'granted') return {
       handle: null,
@@ -663,6 +696,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     const ac = last?.appareils && (last.appareils.possedes?.length || last.appareils.maitrises?.length) ? {
       owned: last.appareils.possedes || [],
       mastered: last.appareils.maitrises || [],
+      novice: last.appareils.neophytes || [],
       // variantes déclarées par désignateur ({ CL2T: ['CL-415'] }, DISPOS_ET_REORGANISATION.md § 1.3)
       variants: last.appareils.variantes || null
     } : null;
@@ -766,6 +800,8 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
       aircraft: {
         owned: [...new Set(aircraft?.owned || [])].sort(),
         mastered: [...new Set(aircraft?.mastered || [])].sort(),
+        // néophyte : possédé, pas encore maîtrisé (Mon profil › Mes appareils, pastille orange)
+        novice: [...new Set(aircraft?.novice || [])].filter(c => own.has(c) && !(aircraft?.mastered || []).includes(c)).sort(),
         variants: vars
       },
       updated_at: new Date().toISOString()
@@ -1673,6 +1709,13 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   // missions autorisé (FileAccess, « __missions »), dossier de la mission d'après son entrée de registre (folder) ou
   // la règle <lettre>_<FAMILLE>/<ID>
   async function missionsDir() {
+    // mode GitHub : l'écriture des affectations par le Centre passe par un dossier des missions (poste avec lanceur)
+    if (gh()) throw new Error(t([
+      'Mode GitHub : l’écriture des affectations dans le dossier des missions demande un poste de travail avec lanceur.',
+      'GitHub mode: writing assignments to the missions folder needs a workstation with the launcher.',
+      'GitHub-Modus: Das Schreiben der Zuweisungen in den Missionsordner erfordert einen Arbeitsplatz mit Starter.',
+      'Modo GitHub: escribir las asignaciones en la carpeta de misiones requiere un puesto de trabajo con lanzador.'
+    ]));
     const FA = window.FileAccess;
     if (!FA) throw new Error(t(['Module d’accès aux dossiers absent', 'Folder access module missing']));
     /** Demande le dossier des missions à l'utilisateur ; erreur expliquée s'il refuse. */
@@ -1843,6 +1886,7 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
   }
   /** Dossier des missions autorisé, en lecture : permission déjà accordée, sinon demandée (clic récent) ; null sinon. */
   async function missionsRead() {
+    if (gh()) return null; // mode GitHub : pas de dossier des missions
     try {
       const st = await window.FileAccess?.status?.('__missions');
       if (!st?.handle) return null;
@@ -1877,11 +1921,14 @@ html[data-design="field"] .repo-assign-envelope .pa-paper{fill:#c9c2a0;stroke:#3
     }
     const url = new URL(`data/missions/${folder}/${name}`, root()).href;
     try {
+      // mode GitHub : une adresse data/… ne se charge pas dans une balise <img> (le dépôt n'est lisible que par l'API) — le
+      // fichier est lu, puis donné en URL d'objet ; absent (cartes exclues de git) : null, « carte non disponible »
       const r = await fetch(url, {
         cache: 'no-cache', // revalidé (304 si inchangé)
-        method: as === 'url' ? 'HEAD' : 'GET'
+        method: as === 'url' && !gh() ? 'HEAD' : 'GET'
       });
-      return r.ok ? (as === 'url' ? url : await r.text()) : null;
+      if (!r.ok) return null;
+      return as === 'url' ? (gh() ? URL.createObjectURL(await r.blob()) : url) : await r.text();
     } catch {
       return null;
     }

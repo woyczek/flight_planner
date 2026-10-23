@@ -6,15 +6,46 @@
 <meta name="description" content="Banc d'essai des clés de poste et des signatures (shared/sog_keys.js) : JSON canonique, empreintes, signature et vérification, enveloppes, fiches, clé de secours, non-exportabilité, mesures. Base séparée : les clés réelles du poste ne sont jamais touchées.">
 <title>Banc des signatures</title>
 <style>
-  body { font: 14px/1.45 system-ui, sans-serif; margin: 16px; color: #1b1f24; background: #fff; }
-  h1 { font-size: 20px; margin: 0 0 6px; }
-  table { border-collapse: collapse; margin-top: 6px; font-size: 13px; }
-  th, td { border: 1px solid #d5d9df; padding: 3px 8px; text-align: left; vertical-align: top; }
-  th { background: #f2f4f7; }
-  .ok { color: #1a7f37; font-weight: 600; }
-  .ko { color: #c62828; font-weight: 600; }
-  .mut { color: #5b6470; }
-  button { font: inherit; padding: 4px 12px; }
+  body {
+    font: 14px/1.45 system-ui, sans-serif;
+    margin: 16px;
+    color: #1b1f24;
+    background: #fff;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 6px;
+  }
+  table {
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  th,
+  td {
+    border: 1px solid #d5d9df;
+    padding: 3px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #f2f4f7;
+  }
+  .ok {
+    color: #1a7f37;
+    font-weight: 600;
+  }
+  .ko {
+    color: #c62828;
+    font-weight: 600;
+  }
+  .mut {
+    color: #5b6470;
+  }
+  button {
+    font: inherit;
+    padding: 4px 12px;
+  }
 </style>
 </head>
 <body>
@@ -28,6 +59,7 @@ Base IndexedDB séparée <code>sogKeysBanc</code>, effacée au début et à la f
   <tbody id="out"></tbody>
 </table>
 <script src="../shared/sog_keys.js"></script>
+<script src="../shared/sog_registry.js"></script>
 <script>
   'use strict';
   const S = window.SogKeys,
@@ -55,10 +87,10 @@ Base IndexedDB séparée <code>sogKeysBanc</code>, effacée au début et à la f
     }
   }
   /** Efface la base du banc (avant et après les essais). */
-  const wipe = () => new Promise(r => {
-    const q = indexedDB.deleteDatabase('sogKeysBanc');
+  const wipe = () => Promise.all(['sogKeysBanc', 'sogKeysBancReg'].map(name => new Promise(r => {
+    const q = indexedDB.deleteDatabase(name);
     q.onsuccess = q.onerror = q.onblocked = () => r();
-  });
+  })));
   /** Durée moyenne (ms) de n appels de fn. */
   async function time(n, fn) {
     const t0 = performance.now();
@@ -123,7 +155,8 @@ Base IndexedDB séparée <code>sogKeysBanc</code>, effacée au début et à la f
     let id1;
     await test('Paires du poste créées (ES256 + ECDH), identité publique', async () => {
       id1 = await B.identity();
-      return [id1 && id1.alg === 'ES256' && /^[0-9a-f]{64}$/.test(id1.kid) && /^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/.test(id1.court) && id1.pub && id1.ecdh,
+      return [id1 && id1.alg === 'ES256' && /^[0-9a-f]{64}$/.test(id1.kid) && /^[0-9A-F]{4}(-[0-9A-F]{4}){3}$/.test(id1.court) &&
+        id1.pub && id1.ecdh,
         `kid ${id1?.court}`
       ];
     });
@@ -276,7 +309,8 @@ Base IndexedDB séparée <code>sogKeysBanc</code>, effacée au début et à la f
     await test('Clé de secours : créée, fichier chiffré', async () => {
       rec = await S.createRecovery('secours-du-banc');
       const f = rec.fichier;
-      return [f.sog === 'cle-secours/1' && f.kid === rec.kid && f.chiffrement.iterations === 600000 && !JSON.stringify(f).includes('PRIVATE'),
+      return [f.sog === 'cle-secours/1' && f.kid === rec.kid && f.chiffrement.iterations === 600000 && !JSON.stringify(f).includes(
+          'PRIVATE'),
         `kid ${rec.court}`
       ];
     });
@@ -311,6 +345,226 @@ Base IndexedDB séparée <code>sogKeysBanc</code>, effacée au début et à la f
       } catch (e) {
         return [e.message === 'mot-de-passe-court'];
       }
+    });
+
+    // ---- registre signé (lot L3, shared/sog_registry.js) : règles pures, sans fichier ni page
+    const G = window.SogRegistry,
+      B2 = S.create({
+        db: 'sogKeysBancReg'
+      });
+    const idA = await B.identity(),
+      idB = await B2.identity(),
+      recR = await S.createRecovery('secours-du-banc');
+    const secours = await S.openRecovery(recR.fichier, 'secours-du-banc');
+    /** Entrée de clé de registre d'une identité de poste. */
+    const cle = id => ({
+      kid: id.kid,
+      alg: id.alg,
+      pub: id.pub,
+      ecdh: id.ecdh,
+      poste: 'banc'
+    });
+    /** Contenu de registre d'essai (version, admins avec clés, état). */
+    const reg = (version, extra = {}) => ({
+      type: 'registre',
+      va: 'SOG',
+      groupe: 'banc',
+      version,
+      etat: 'constitution',
+      utilisateurs: {
+        ALF: {
+          nom: 'Alpha',
+          role: 'admin_centre',
+          actif: true,
+          mot_de_passe: null,
+          cles: [cle(idA)]
+        },
+        BRV: {
+          nom: 'Bravo',
+          role: 'utilisateur',
+          actif: true,
+          mot_de_passe: null,
+          cles: [cle(idB)]
+        }
+      },
+      secours: [{
+        kid: recR.kid,
+        alg: recR.alg,
+        pub: recR.pub
+      }],
+      updated_at: '2026-10-19T10:00:00Z',
+      by: 'ALF',
+      ...extra
+    });
+    /** Enveloppe signée d'un contenu par un signataire (B.sign, B2.sign, secours.signer). */
+    const signed = async (c, signer = B.sign) => S.addSignature(S.envelope(c), signer);
+    /** Version suivante de prev (precedente chaînée), modifiée par mutate. */
+    const next = async (prev, mutate = () => {}) => {
+      const c = structuredClone(prev);
+      mutate(c);
+      return {
+        ...c,
+        version: prev.version + 1,
+        precedente: await S.digest(prev)
+      };
+    };
+    const v1 = reg(1),
+      e1 = await signed(v1);
+    await test('Registre : fondation (v1 signée par un admin qu’elle déclare) acceptée à confirmer', async () => {
+      const r = await G.check(null, e1);
+      return [r.ok && r.fondation && !r.refonte && r.kids[0] === idA.kid];
+    });
+    await test('Registre : fondation signée par un non-admin refusée', async () => {
+      const r = await G.check(null, await signed(v1, B2.sign));
+      return [!r.ok && r.raison === 'signataire', r.raison];
+    });
+    const v2 = await next(v1, c => {
+        c.utilisateurs.BRV.nom = 'Bravo bis';
+      }),
+      e2 = await signed(v2);
+    await test('Registre : version suivante signée par un admin acceptée', async () => [(await G.check(v1, e2)).ok]);
+    await test('Registre : version suivante signée par un utilisateur (non admin) refusée', async () => {
+      const r = await G.check(v1, await signed(v2, B2.sign));
+      return [!r.ok && r.raison === 'signataire', r.raison];
+    });
+    await test('Registre : utilisateur qui se donne le rôle admin dans sa version refusée', async () => {
+      const r = await G.check(v1, await signed(await next(v1, c => {
+        c.utilisateurs.BRV.role = 'admin_centre';
+      }), B2.sign));
+      return [!r.ok && r.raison === 'signataire', r.raison];
+    });
+    await test('Registre : chaîne rompue (precedente fausse) refusée', async () => {
+      const r = await G.check(v1, await signed({
+        ...v2,
+        precedente: '00'.repeat(32)
+      }));
+      return [!r.ok && r.raison === 'chaine', r.raison];
+    });
+    await test('Registre : contenu modifié après signature refusé', async () => {
+      const e = await signed(v2);
+      e.contenu = {
+        ...e.contenu,
+        by: 'BRV'
+      };
+      const r = await G.check(v1, e);
+      return [!r.ok && r.raison === 'signature', r.raison];
+    });
+    await test('Registre : pas de retour en arrière (version plus ancienne ignorée)', async () => {
+      const r = await G.check(v2, e1);
+      return [!r.ok && r.raison === 'ancienne', r.raison];
+    });
+    const v3 = await next(v2),
+      e3 = await signed(v3);
+    await test('Registre : saut de version détecté puis suivi par l’historique', async () => {
+      const r = await G.check(v1, e3),
+        a = await G.advance(v1, [e1, e2], e3);
+      return [r.raison === 'saut' && a.ok && a.contenu.version === 3, `${r.raison} → ${a.ok}`];
+    });
+    await test('Registre : historique sans la version intermédiaire → chaîne non suivie', async () => {
+      const a = await G.advance(v1, [e1], e3);
+      return [!a.ok && a.version === 2];
+    });
+    await test('Registre : version signée par la clé de secours acceptée', async () => [(await G.check(v1, await signed(v2, secours
+      .signer))).ok]);
+    await test('Registre : refondation (autre groupe, v1) signalée', async () => {
+      const r = await G.check(v2, await signed(reg(1, {
+        groupe: 'autre'
+      }), B2.sign));
+      const r2 = await G.check(v2, await signed({
+        ...reg(1, {
+          groupe: 'autre'
+        }),
+        utilisateurs: {
+          BRV: {
+            role: 'admin_centre',
+            actif: true,
+            cles: [cle(idB)]
+          }
+        }
+      }, B2.sign));
+      return [!r.ok && r2.ok && r2.refonte, `${r.raison} / ${r2.refonte}`];
+    });
+    await test('Registre : groupe actif avec un seul admin refusé ; dernier admin retiré refusé', async () => {
+      const a = G.rulesError({
+        ...v2,
+        etat: 'actif'
+      });
+      const b = G.rulesError(await next(v2, c => {
+        c.utilisateurs.ALF.role = 'utilisateur';
+      }));
+      return [a === 'deux-admins' && b === 'admin', `${a} / ${b}`];
+    });
+    await test('Registre : groupe actif avec deux admins à clé accepté', async () => {
+      const c = await next(v2, x => {
+        x.utilisateurs.BRV.role = 'admin_centre';
+        x.etat = 'actif';
+      });
+      const r = await G.check(v2, await signed(c));
+      return [r.ok && G.keyedAdmins(c).length === 2];
+    });
+
+    // ---- enrôlement des postes (lot L4 / S2) : demande signée par la clé du poste, révocation, activation
+    /** Demande d'accès signée par le poste id (signer) ; patch modifie la fiche avant signature. */
+    const demande = (id, signer, patch = {}) => S.signRecord({
+      type: 'demande',
+      groupe: 'banc',
+      trigramme: 'CHL',
+      poste: 'banc',
+      kid: id.kid,
+      alg: id.alg,
+      pub: id.pub,
+      ecdh: id.ecdh,
+      cree: '2026-10-21T10:00:00Z',
+      ...patch
+    }, signer);
+    await test('Demande d’accès : signée par la clé du poste qu’elle porte, acceptée (empreinte courte)', async () => {
+      const r = await G.checkRequest(await demande(idB, B2.sign));
+      return [r.ok && r.court === idB.court, r.court];
+    });
+    await test('Demande d’accès : modifiée après signature (trigramme) refusée', async () => {
+      const d = await demande(idB, B2.sign);
+      const r = await G.checkRequest({
+        ...d,
+        trigramme: 'ALF'
+      });
+      return [!r.ok && r.raison === 'signature', r.raison];
+    });
+    await test('Demande d’accès : clé publique d’un autre poste (empreinte ≠ kid) refusée', async () => {
+      const r = await G.checkRequest(await demande(idB, B2.sign, {
+        pub: idA.pub
+      }));
+      return [!r.ok && r.raison === 'empreinte', r.raison];
+    });
+    await test('Demande d’accès : clé d’un poste signée par un autre (sans la clé privée) refusée', async () => {
+      const r = await G.checkRequest(await demande(idB, B.sign));
+      return [!r.ok && r.raison === 'signature', r.raison];
+    });
+    await test('Demande d’accès : forme invalide (trigramme, type) refusée', async () => {
+      const a = await G.checkRequest(await demande(idB, B2.sign, {
+          trigramme: 'c h'
+        })),
+        b = await G.checkRequest({
+          type: 'autre'
+        });
+      return [a.raison === 'format' && b.raison === 'format', `${a.raison} / ${b.raison}`];
+    });
+    await test('Révocation : clé du seul admin retirée refusée ; clé d’un utilisateur retirée acceptée', async () => {
+      const a = G.rulesError(await next(v2, c => {
+        c.utilisateurs.ALF.cles = [];
+      }));
+      const b = G.rulesError(await next(v2, c => {
+        c.utilisateurs.BRV.cles = [];
+      }));
+      return [a === 'admin' && b === '', `${a} / ${b || 'ok'}`];
+    });
+    await test('Révocation : version suivante signée par la clé révoquée refusée', async () => {
+      const w = await next(v2, c => {
+        c.utilisateurs.BRV.role = 'admin_centre';
+        c.utilisateurs.ALF.cles = [];
+      });
+      const r = await G.check(w, await signed(await next(w), B.sign));
+      const r2 = await G.check(w, await signed(await next(w), B2.sign));
+      return [!r.ok && r.raison === 'signataire' && r2.ok, `${r.raison} / ${r2.ok}`];
     });
 
     await test('Mesures (500 fiches signées puis vérifiées)', async () => {

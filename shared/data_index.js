@@ -229,7 +229,8 @@
         let missions = Array.isArray(doc?.missions) ? doc.missions : [];
         // registre périmé (dossiers de missions retirés depuis) : seules les missions dont le dossier existe, d'après le
         // lanceur — sinon des dizaines de lignes aux fichiers absents ; sans lanceur, le registre tel quel
-        const present = await fetch(new URL('../__setup/mission-folders', SELF), {
+        // (mode GitHub : pas de lanceur, rien à interroger)
+        const present = window.GitHubData?.on?.() ? null : await fetch(new URL('../__setup/mission-folders', SELF), {
           headers: {
             'X-SOG-Setup': '1'
           },

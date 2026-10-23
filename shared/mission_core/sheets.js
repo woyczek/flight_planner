@@ -76,7 +76,13 @@
     callsigns: L('Indicatifs utilisés', 'Callsigns used', 'Verwendete Rufzeichen', 'Indicativos usados'),
     equipment: L('Équipements', 'Equipment', 'Ausrüstung', 'Equipamiento'),
     notes: L('Notes', 'Notes', 'Notizen', 'Notas'),
-    save: L('Enregistrer la fiche', 'Save sheet', 'Blatt speichern', 'Guardar ficha'),
+    autosave: L('Enregistré dès qu’un champ change, dans ce navigateur', 'Saved as soon as a field changes, in this browser',
+      'Gespeichert, sobald sich ein Feld ändert, in diesem Browser', 'Guardado en cuanto cambia un campo, en este navegador'),
+    pick: L('Autre appareil de la flotte', 'Another fleet aircraft', 'Anderes Luftfahrzeug der Flotte', 'Otra aeronave de la flota'),
+    prevAc: L('Appareil précédent du même type', 'Previous aircraft of the same type', 'Vorheriges Luftfahrzeug desselben Typs',
+      'Aeronave anterior del mismo tipo'),
+    nextAc: L('Appareil suivant du même type', 'Next aircraft of the same type', 'Nächstes Luftfahrzeug desselben Typs',
+      'Aeronave siguiente del mismo tipo'),
     saved: L('Fiche enregistrée dans ce navigateur', 'Sheet saved in this browser', 'Blatt im Browser gespeichert',
       'Ficha guardada en este navegador'),
     flights: L('Missions / vols', 'Missions / flights', 'Einsätze / Flüge', 'Misiones / vuelos'),
@@ -325,12 +331,18 @@
     const sheets = read(AIRCRAFT_SHEETS) || {},
       sheet = {
         status: '',
-        homeAd: known.homeAd || '',
+        homeAd: '', // saisi seulement : sinon celui du catalogue (base de la flotte), en indication
         commissioned: '',
         notes: '',
         events: [],
         ...(sheets[reg] || {})
       };
+    // ancienne fiche : le terrain proposé était enregistré avec le reste dès qu'un champ changeait, figeant l'estimation de
+    // la référence (terrain de départ le plus fréquent) à la place de la base de la flotte : écartée quand elle est
+    // exactement cette estimation et que la flotte déclare une autre base
+    const fleetBase = (window.DEFA_FLEET || []).find(f => key(f.registration) === reg)?.base || '',
+      refHome = (window.DEFA_REFERENCE?.aircraft || []).find(r => key(r.registration) === reg)?.homeAd || '';
+    if (fleetBase && sheet.homeAd && sheet.homeAd !== key(fleetBase) && sheet.homeAd === key(refHome)) sheet.homeAd = '';
     const typeInfo = window.MissionAircraft?.lookupType?.(known.type) || (window.AIRCRAFT_DB || {})[key(known.type)] || null;
     const all = (await missions()).filter(x => (x.m.aircraft || []).some(a => key(a.registration) === reg)).sort((a, b) => String(b.m
       .metadata?.date).localeCompare(String(a.m.metadata?.date)));
@@ -362,8 +374,18 @@
     const regs = [...new Set(catalog.map(a => a.registration).concat((window.MissionLedger?.store?.missions || []).flatMap(m => (m
       .aircraft || []).map(a => a.registration)).filter(Boolean)))].sort();
     const merger = mergeBox('aircraft', known.registration, regs, target => `appareil.html?reg=${encodeURIComponent(target)}`);
+    // autre appareil sans repasser par la liste : flotte rangée par type puis immatriculation ; ‹ › dans le même type
+    const fleetRegs = catalog.filter(a => a.registration).sort((a, b) => String(a.type).localeCompare(String(b.type)) || String(a
+        .registration).localeCompare(String(b.registration))),
+      sameType = fleetRegs.filter(a => key(a.type) === key(known.type)),
+      at = sameType.findIndex(a => key(a.registration) === reg),
+      near = n => at >= 0 && sameType.length > 1 ? sameType[(at + n + sameType.length) % sameType.length] : null,
+      acUrl = a => `appareil.html?reg=${encodeURIComponent(a.registration)}`;
+    const switcher = fleetRegs.length ? `<div class="sh-switch">${near(-1) ? `<a class="mc-button secondary" href="${esc(acUrl(near(-1)))}" title="${esc(tr(UI.prevAc))} : ${esc(near(-1).registration)}" aria-label="${esc(tr(UI.prevAc))}">‹</a>` : ''}
+        <select data-goto aria-label="${esc(tr(UI.pick))}" title="${esc(tr(UI.pick))}">${[...new Set(fleetRegs.map(a => a.type))].map(ty => `<optgroup label="${esc(ty || '—')}">${fleetRegs.filter(a => a.type === ty).map(a => `<option value="${esc(a.registration)}"${key(a.registration) === reg ? ' selected' : ''}>${esc(a.registration)}${a.variant ? ` — ${esc(a.variant)}` : ''}</option>`).join('')}</optgroup>`).join('')}${fleetRegs.some(a => key(a.registration) === reg) ? '' : `<option selected>${esc(known.registration)}</option>`}</select>
+        ${near(1) ? `<a class="mc-button secondary" href="${esc(acUrl(near(1)))}" title="${esc(tr(UI.nextAc))} : ${esc(near(1).registration)}" aria-label="${esc(tr(UI.nextAc))}">›</a>` : ''}</div>` : '';
     root.innerHTML = `
-      <section class="sh-head"><div class="sh-badges">
+      <section class="sh-head">${switcher}<div class="sh-badges">
           <span class="sh-status" style="--c:${STATUS_COLOR[status] || '#94a3b8'}">${esc(tr((STATUS.find(s => s[0] === status) || STATUS[0])[1]))}</span>
           <span class="sh-now">📍 ${esc(tr(UI.now))} <b>${esc(nowAt || '—')}</b></span>
           <span class="sh-home">🏠 ${esc(tr(UI.home))} <b>${esc(sheet.homeAd || known.homeAd || '—')}</b></span></div>
@@ -372,6 +394,8 @@
         <label>${esc(tr(UI.status))}<select data-sheet="status">${STATUS.map(([v, l]) => `<option value="${esc(v)}"${v === status ? ' selected' : ''}>${esc(tr(l))}</option>`).join('')}</select></label>
         <label>${esc(tr(UI.home))}<input data-sheet="homeAd" value="${esc(sheet.homeAd)}" placeholder="${esc(known.homeAd || 'LFxx')}"></label>
         <label>${esc(tr(UI.commissioned))}<input type="date" data-sheet="commissioned" value="${esc(sheet.commissioned || known.commissioned || '')}"></label>
+        <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
+        <p class="small sh-wide sh-saved" role="status">${esc(tr(UI.autosave))}</p>
         <div><span class="small">${esc(tr(UI.type))}</span><b>${esc(known.type || '—')}</b> ${esc(typeInfo?.model || '')}</div>
         <div><span class="small">${esc(tr(UI.variant))}</span><b>${esc(known.variant || '—')}</b></div>
         <div><span class="small">${esc(tr(UI.category))}</span><b>${esc(catLabel ? tr(catLabel.label) : category || '—')}</b>${typeInfo?.wtc ? ` · ${esc(tr(UI.wtc))} ${esc(typeInfo.wtc)}` : ''}</div>
@@ -379,8 +403,7 @@
         <div><span class="small">${esc(tr(UI.fleet))}</span>${known.fleetId ? (window.RepositoryNav?.vaUrl?.('aircraft', { id: known.fleetId }) ? `<a href="${esc(window.RepositoryNav.vaUrl('aircraft', { id: known.fleetId }))}" target="_blank" rel="noopener">#${esc(known.fleetId)} ↗</a>` : `#${esc(known.fleetId)}`) : '—'}</div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.callsigns))}</span><div class="sh-chips">${[...callsigns].sort((a, b) => b[1] - a[1]).map(([c, n]) => `<span class="sh-chip">${esc(c)}${n ? ` <em>${n}</em>` : ''}</span>`).join('') || '—'}</div></div>
         <div class="sh-wide"><span class="small">${esc(tr(UI.equipment))}</span><div class="sh-chips">${[...equipment].map(e => `<span class="sh-chip">${esc(e)}</span>`).join('') || '—'}</div></div>
-        <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
-      </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
+      </div>${merger.html}</section>
       <section data-icon="calendar"><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
       <section data-icon="pin"><h2>${esc(tr(UI.events))} <button type="button" class="mc-head-add" data-add-event title="${esc(tr(UI.addEvent))}">+</button></h2><div class="sh-events"></div></section>
       <section data-icon="chart"><h2>${esc(tr(UI.perf))}</h2><div class="sh-perf"></div></section>
@@ -400,10 +423,14 @@
       write(AIRCRAFT_SHEETS, all2);
       root.querySelector('.sh-saved').textContent = `${tr(UI.saved)} · ${new Date().toLocaleTimeString()}`;
     };
-    root.querySelector('[data-save]').onclick = () => {
+    // champs de l'identité enregistrés dès qu'ils changent ; statut et terrain : pastilles d'en-tête refaites
+    root.querySelectorAll('section [data-sheet]').forEach(el => el.addEventListener('change', () => {
       saveSheet();
-      mountAircraft(root, registration);
-    };
+      if (el.dataset.sheet === 'status' || el.dataset.sheet === 'homeAd') mountAircraft(root, registration);
+    }));
+    root.querySelector('[data-goto]')?.addEventListener('change', e => {
+      location.href = `appareil.html?reg=${encodeURIComponent(e.target.value)}`;
+    });
     merger.bind(root);
     // Événements de la vie de l'appareil.
     const paintEvents = () => {
@@ -537,11 +564,13 @@
         <div><span class="small">${esc(tr(UI.roles))}</span><div class="sh-chips">${[...roles].map(([r, n]) => `<span class="sh-chip">${esc(tr((V.crewRoles.find(o => o.value === r) || {}).label || r))} <em>${n}</em></span>`).join('') || '—'}</div></div>
         <label class="sh-wide">${esc(tr(UI.qualifications))}<textarea data-sheet="qualifications" rows="3">${esc(sheet.qualifications)}</textarea></label>
         <label class="sh-wide">${esc(tr(UI.notes))}<textarea data-sheet="notes" rows="2">${esc(sheet.notes)}</textarea></label>
-      </div><div class="row"><button type="button" class="primary" data-save>${esc(tr(UI.save))}</button><span class="small sh-saved"></span></div>${merger.html}</section>
+        <p class="small sh-wide sh-saved" role="status">${esc(tr(UI.autosave))}</p>
+      </div>${merger.html}</section>
       <section data-icon="calendar"><h2>${esc(tr(UI.activity))}</h2><div class="sh-activity"></div><div class="sh-chart"></div></section>
       <section data-icon="list"><h2>${esc(tr(UI.missions))}</h2><div class="sh-missions"></div><div class="sh-edges" hidden></div></section>`;
     window.AppFramework?.refresh?.(); // blocs du framework (masquer, déplacer) et icônes de blocs (block_icons.js)
-    root.querySelector('[data-save]').onclick = () => {
+    // champs enregistrés dès qu'ils changent (plus de bouton « Enregistrer la fiche »)
+    const saveCrew = () => {
       root.querySelectorAll('[data-sheet]').forEach(el => {
         sheet[el.dataset.sheet] = el.value;
       });
@@ -550,7 +579,10 @@
       s2[id] = sheet;
       write(CREW_SHEETS, s2);
       root.querySelector('.sh-saved').textContent = `${tr(UI.saved)} · ${new Date().toLocaleTimeString()}`;
+      const title = `${id}${sheet.name ? ` — ${sheet.name}` : ''} — ${tr(UI.crew)}`; // nom changé : titre à jour
+      if (h1 && h1.textContent !== title) h1.textContent = title;
     };
+    root.querySelectorAll('[data-sheet]').forEach(el => el.addEventListener('change', saveCrew));
     merger.bind(root);
     const paint = () => {
       const list = inPeriod(all),

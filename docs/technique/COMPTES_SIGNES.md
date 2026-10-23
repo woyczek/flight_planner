@@ -1,6 +1,6 @@
 # Signed accounts and data (group mode) — design
 
-Status: **design, to be reviewed** (8 October 2026). Work item “accounts and data decentralised through git, signed”.
+Status: **L0–L4 done** (19 October 2026: signed registry, group mode, recovery key, re-founding — `shared/sog_registry.js`; 21 October 2026: enrolment, approval, revocation, activation, also without launcher); L5–L6 to come. Design of 8 October 2026. Work item “accounts and data decentralised through git, signed”.
 The user's decisions are reproduced as they stand; proposed technical choices are marked *proposed*.
 
 ## 1. Goal and limits
@@ -164,8 +164,8 @@ They are applied by each browser, on each read.
    - `precedente` equal to the hash of the accepted content, except for a version jump (point 3).
 3. **Version jump** (device offline for a long time): a version n + k is accepted if it is signed by an admin
    of the accepted version **and** the `precedente` chain goes back to it. The intermediate versions are read
-   from the git history by the launcher (`git log -p` on the file); *proposed*: route `/__setup/registre-historique`,
-   which returns the contents without verifying anything. If the chain cannot be found, the version is refused and the device keeps
+   from the git history by the launcher (`git log` on the file): route `/__setup/registre-historique`, which returns
+   the contents without verifying anything. If the chain cannot be found, the version is refused and the device keeps
    the old one, with a message.
 4. **Never any rollback.** The last accepted version is kept in IndexedDB (`sogKeys`, store
    `registre`). An older or equal version coming from git is ignored.
@@ -217,9 +217,11 @@ If all the admin keys and the recovery key are lost:
    - the “Request access” (« Demander l'accès ») button writes `data/utilisateurs/demandes/<TRI>_<empreinte>.json`, with trigram, device
      name, public keys (signature and exchange), date, and a signature by the device key (proof of
      possession);
-   - the request goes out with the next “Synchronise”.
+   - the request goes out with the next “Synchronise” (launcher) or as a commit (GitHub mode, app without launcher);
+   - the same card lets the device confirm the founder's fingerprint: a pilot has no Centre tab.
 2. **Out of band**: the pilot sends their fingerprint to an admin (Discord, SMS, email).
-3. **Admin** (Settings › Centre › Users and rights › “Requests” (« Demandes »)):
+3. **Admin** (Settings › Centre › Group mode › “Device access requests” (« Demandes d'accès des postes »); list read
+   through `/__setup/data-list` with the launcher, the repository tree in GitHub mode):
    - for each request: trigram, device name, fingerprint calculated by the admin's page;
    - the admin compares it with the fingerprint received, then clicks “Approve” (« Approuver ») (new version of the registry with the key,
      signed) or “Reject” (request deleted).
@@ -228,6 +230,12 @@ If all the admin keys and the recovery key are lost:
    signatures are refused. Its earlier signatures remain valid as long as their content stays in place
    (*proposed*: an assignment signed by a revoked key remains valid, otherwise everything would have to be re-signed).
    Deactivating a user (`actif: false`) revokes all their keys.
+5. **Activation**: “Activate the group” (« Activer le groupe ») only shows once two admins have a device key; it
+   publishes `etat: "actif"` and `actif_depuis` (start of the 30 days during which unsigned data stay accepted, with the
+   “unsigned” mention). The rules refuse an active group with fewer than two admins with a key.
+6. **Without launcher**: a new device reads the registry history through the GitHub commits API
+   (`GitHubData.history`), the counterpart of `/__setup/registre-historique`. Switching to group mode and re-founding
+   still need the launcher (CSP header).
 
 ## 8. Signed assignments
 
@@ -258,8 +266,8 @@ If all the admin keys and the recovery key are lost:
 | L1 | standalone Centre: `data/config/centre.json` (`DEFA` by default, shown), end of `CPCO_HASH`, mode shown | `shared/repository_nav.js` (Centre block), `shared/data_admin.js` (“Enable the Centre” card), `apps/settings/premier_lancement.html` + `_i18n.js`, `tools/jeu_essai`, `tools/data_template`, `tools/launch.py` (`csp` in `/__setup/status`, later) |
 | L2 | device keys, fingerprint, envelope, canonical JSON, test bench | `shared/sog_keys.js` (new), `tools/crypto_banc.html` (new), `shared/browser_store.js` (exclusion) |
 | *audit batch 4* | launcher CSP, read-only handles: **prerequisite for group mode** | `tools/launch.py`, `shared/file_access.js`, pages |
-| L3 | signed registry, group mode, recovery key, re-founding | `shared/sog_registry.js` (new), `shared/users.js`, `tools/data_sync.py` (registry conflict), `tools/launch.py` (`index_users`) |
-| L4 | enrolment, approval, revocation | `shared/settings_panels.js` (Users), My profile |
+| L3 (done) | signed registry, group mode, recovery key, re-founding | `shared/sog_registry.js` (new), `shared/users.js` (roles, state and password hash from the registry in group mode; changes published as signed versions), `shared/repository_nav.js` (loading, Centre access in the active group), `shared/settings_panels.js` (“Group mode” section, Settings › Centre, open even with the Centre locked), `tools/data_sync.py` (registry conflict: highest `version`), `tools/launch.py` (`/__setup/registre-historique`), `tools/crypto_banc.html` (registry tests) |
+| L4 (done) | enrolment, approval, revocation, activation | `shared/sog_registry.js` (requests, approve, reject, revoke, activate), `shared/settings_panels.js` (My profile › “This device”, Group mode cards), `shared/github_data.js` (`history`, commits API), `tools/launch.py` (`/__setup/data-list`), `config/repository_tree`, `tools/crypto_banc.html` |
 | L5 | signed assignments | `shared/assignments.js`, `shared/assign_dialog.js` |
 | L6 | display filter for My missions | `apps/pilot/mes_missions.html` |
 

@@ -23,7 +23,7 @@ Die Sperre blendet das Zentrum aus, solange es in diesem Browser nicht aktiviert
 - Unter Einstellungen › Zentrum bleibt nur die Rubrik „Zugang zum Zentrum und Einstellungen“ sichtbar; die anderen („Benutzer und Rechte“, „Verfügbarkeitskategorien“, „ODV-Planung“, „Berichtsversand (Webdienst)“) sind ausgeblendet.
 - Die Aktivierung wird nur in diesem Browser gespeichert: Sie ist auf jedem Rechner und nach dem Löschen der Websitedaten erneut vorzunehmen.
 
-Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und neben dem Knopf „Zentrum aktivieren“ angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) folgt ([Konzept](../technique/COMPTES_SIGNES.md)).
+Grenze: Dies ist eine Nutzungssperre, keine Sicherheitsmaßnahme. Das Passwort steht im Klartext in `data/config/centre.json`, wird mit den Daten geteilt (`DEFA` voreingestellt) und neben dem Knopf „Zentrum aktivieren“ angezeigt: Das ist der **eigenständige Modus**. Der Gruppenmodus (signiertes Register, Zugang über die Administratorrolle) wird in der Rubrik „Gruppenmodus (signiertes Register)“ unten eingestellt ([Konzept](../technique/COMPTES_SIGNES.md)).
 
 ### Zentrum aktivieren oder sperren
 
@@ -125,6 +125,55 @@ Diese Rubrik verwaltet die Datenblätter der Benutzer. Es gibt ein Datenblatt pr
   `admin_centre` vorbehalten; das Hinzufügen eines Benutzers und die Änderung einer Zeile (Rolle, aktiv) sind nur durch
   die Sperre des Zentrums geschützt (siehe [technische Schuld](../technique/DETTE_TECHNIQUE.md)).
 
+### Gruppenmodus (signiertes Register)
+
+Für eine Fluggesellschaft, die `data/` über Git teilt: Rollen, Konten und Passwörter kommen aus dem **signierten
+Benutzerregister** (`data/utilisateurs/_registre.json`). Jeder Browser lehnt ab, was nicht von einem Admin signiert ist:
+Eine im Repository geänderte Benutzerdatei („ich gebe mir die Admin-Rolle“) hat keine Wirkung mehr. Entwurf:
+[signierte Konten](../technique/COMPTES_SIGNES.md).
+- **Status**: Modus (autonom, Gruppe im Aufbau, Gruppe aktiv), akzeptierte Registerversion, bestätigter Gründer,
+  Admins und Fingerabdrücke ihrer Geräte, Notfallschlüssel, Fingerabdruck dieses Geräts.
+- **„In den Gruppenmodus wechseln“** (Zentrum aktiviert, aktueller Starter: seine Sicherheitsrichtlinie ist
+  erforderlich): Sie werden der erste Admin mit dem Schlüssel dieses Geräts; die vorhandenen Benutzerdateien gehen in
+  Version 1 des Registers ein. Geben Sie das Passwort des **Notfallschlüssels** zweimal ein: Die Datei
+  `sog-cle-secours-<Fingerabdruck>.json` wird heruntergeladen, mit diesem Passwort verschlüsselt. Offline aufbewahren
+  (USB-Stick), Passwort getrennt. Senden Sie Ihren Fingerabdruck über einen anderen Kanal an die Piloten (Discord, SMS,
+  E-Mail).
+- **Gruppe im Aufbau**: Solange es keine zwei Admins mit Geräteschlüssel gibt, bleibt das Zentrum per Passwort
+  zugänglich. Sobald die Gruppe aktiv ist, geht der Zugang zum Zentrum über den Geräteschlüssel eines Admins.
+- **Rolle, Status oder Passwort ändern** (Benutzer und Rechte) veröffentlicht eine neue Version, mit dem Schlüssel
+  dieses Geräts signiert: einem Admin des Registers vorbehalten; sonst sagt es die Meldung und nichts wird geschrieben.
+- **„Neuer Notfallschlüssel“** (Admin) ersetzt den Notfallschlüssel; **„Zurück zum autonomen Modus“** (Admin): Das
+  Register bleibt in den Daten, wird aber nicht mehr gelesen.
+- **„Notfallschlüssel verwenden“** (Rubrik auch bei gesperrtem Zentrum offen): Datei, Passwort und Kürzel; dieses
+  Kürzel wird Admin mit dem Schlüssel dieses Geräts. Für Admins, die ihr Gerät verloren haben.
+- **„Gruppe neu gründen“** (letzter Ausweg, alle Schlüssel verloren): neues Register, neuer Notfallschlüssel; jedes
+  andere Gerät muss Ihren Fingerabdruck bestätigen.
+- **Abgelehnte Versionen**: Eine schlecht signierte, nicht verkettete oder ältere Version wird abgelehnt; das Gerät
+  behält seine, eine Meldung und diese Rubrik sagen es.
+- Beim ersten Lesen des Registers zeigt ein Gerät den Fingerabdruck des Gründers mit „Bestätigen“ und „Ablehnen“:
+  vor dem Bestätigen mit dem erhaltenen vergleichen.
+- **Zugangsanfragen der Geräte**: Ein Pilot beantragt den Zugang unter Mein Profil › Dieses Gerät, auf einem Gerät mit
+  Starter wie in der App ohne Starter (Telefon); die Anfrage ist eine mit dem Schlüssel seines Geräts signierte Datei
+  (`data/utilisateurs/demandes/`). Die Rubrik zeigt Kürzel, Gerätename, Datum und den von Ihrer Seite neu berechneten
+  Fingerabdruck („neuer Benutzer“, wenn das Kürzel noch nicht im Register steht; „ungültige Anfrage“, wenn Signatur
+  oder Fingerabdruck nicht stimmen). Vergleichen Sie den Fingerabdruck mit dem, den der Pilot Ihnen über einen anderen
+  Kanal gegeben hat, dann **„Genehmigen“** (neue Registerversion mit seinem Schlüssel, Benutzer bei Bedarf mit der
+  Benutzerrolle angelegt) oder **„Ablehnen“** (Anfrage entfernt). Eine Anfrage kann von jedem mit Zugang zum Repository
+  kommen: Nur der Fingerabdruck beweist das Gerät.
+- **Geräteschlüssel**: jeder Schlüssel des Registers, nach Benutzer; **„Widerrufen“** (Admin) veröffentlicht eine
+  Version ohne ihn: Seine späteren Signaturen werden abgelehnt, das Gerät muss neu beantragen. Einen Benutzer
+  deaktivieren (Benutzer und Rechte) widerruft alle seine Schlüssel. Der letzte Admin mit Schlüssel kann ihn nicht
+  verlieren, eine aktive Gruppe nicht unter zwei Admins mit Schlüssel fallen.
+- **„Gruppe aktivieren“**: Die Karte erscheint erst, wenn zwei Admins einen Geräteschlüssel haben (ein zweiter Admin:
+  Rolle „Administrator des Zentrums“ unter Benutzer und Rechte, dann seine Anfrage genehmigt). Bis dahin ändert sich nichts
+  und nichts wird ignoriert. Sobald die Gruppe aktiv ist: Das Zentrum öffnet nur noch per Admin-Schlüssel (das Passwort
+  zählt nicht mehr); unsignierte Daten bleiben 30 Tage mit dem Vermerk „unsigniert“ akzeptiert und werden danach
+  ignoriert (signierte Zuweisungen: nächstes Paket).
+- App ohne Starter (GitHub-Modus): Ein neues Gerät folgt der Registerkette über den Verlauf des Repositorys
+  (Commits-API); Anfragen, Genehmigungen und Widerrufe sind dort Commits. In den Gruppenmodus wechseln oder neu gründen
+  erfordert ein Gerät mit Starter.
+
 ### Verfügbarkeitskategorien
 
 Diese Rubrik legt fest, was die Piloten als Verfügbarkeiten angeben können (`data/config/disponibilites.json`, synchronisiert).
@@ -156,7 +205,7 @@ Diese Rubrik enthält die spezifischen Einstellungen der Seite ODV-Planung. Sie 
 | Bevorzugtes Land (ATC-Bereich) | „Frankreich (Mutterland)“; ATC-Sitzungen (Trainings, Prüfungen, Buchungen) nur für dieses Land importiert und gezeigt, ODV-Planung und Einsatztafel (ICAO-Kennungen des Landes: LF außer LFV für Frankreich) |
 | Daten der Woche | „ISO-Woche (Wochennummer der Datei)“; sonst „Auf der Zeitleiste eingetragenes Datum“ |
 | Leeres Feld | „Nicht ausgefüllt“ (nie als verfügbar gezählt); sonst „Nicht verfügbar“ |
-| Für die Rollen berücksichtigte FLOTTE-Typen | „Alle außer rot (nicht beherrscht)“; „Nur grün (beherrscht)“; „Alle“ |
+| Für die Rollen berücksichtigte FLOTTE-Typen | „Alle außer rot (NQ: besessen, nicht qualifiziert)“; „Nur grün (beherrscht)“; „Alle“ |
 | Pro Zeitfenster gezeigte Missionen | 3 (von 1 bis 10) |
 | Vorzugsreihenfolge bei gleicher Punktzahl | AAR, AIRBORNE, ISR, SPECIAL, SAR, MARITIME, FIRE, AIRLIFT, HEMS, TRAINING (unbekannte Familien werden mit einer Warnung ignoriert) |
 | Eingeschränkter Code (SC, C, T, N): nur Rollen seines Bereichs | angehakt |
@@ -202,6 +251,8 @@ Das Seitenmenü hat eine einzige Gruppe, „Ordner und Quellen“: „Quellen un
 Der Erststart hat einen eigenen Reiter, „Erststart“, beschrieben im [Benutzerhandbuch](MANUEL_UTILISATEUR.md#erststart); „Bereinigen und neu beginnen…“ steht unten auf jener Seite. Siehe auch [Installation](../INSTALL.md), § 1.
 Diese Rubriken werden der Seite durch `config/repository_tree` zugeordnet (Schlüssel `settings.sections`: `sources` und `keys` → installation; `sia` und `types` → installation,maintenance, also auf beiden Seiten: Einrichtung hier, Aktualisierung unter Wartung, dieselben Blöcke). Alle anderen Wartungsrubriken öffnen sich auf der Seite Wartung.
 
+Im GitHub-Modus (App ohne Starter: Website, iOS-App; Datenzugang unter Mein Profil › Datenzugang eingestellt) zeigt Installation nur die Karte „Datenzugang“: Daten-Repository (Link `https://github.com/<Repository>`) und Zweig, Zugangsstatus (Token-Prüfung), letzte erfolgreiche Lesung, im Postausgang des Browsers wartende Schreibvorgänge (Schaltfläche „Synchronisieren“ zum Senden), die aus dem Repository gelesene Luftfahrzeugtypen-Datenbank, ein Link zur Website der virtuellen Fluggesellschaft und ein Link zu Mein Profil › Datenzugang. Lokale Ordner, IVAO-Schlüssel und SIA-Import werden an einem Rechner mit Starter eingestellt: Die Karten „Quellen und Ordner“, „Schlüssel und externe Dienste“, „Luftfahrtdaten“ und „Luftfahrzeugtypen“ sowie der Reiter „Erststart“ werden nicht angeboten. Der Modus hängt nur von der Datenzugangs-Einstellung ab, nicht vom Gerät: Die Karte ist in einem Desktop-Browser dieselbe. Auf der Seite Wartung bietet dieser Modus nur, was ohne Starter und Ordner funktioniert: Versionen, Luftfahrtdaten (die von einem Arbeitsplatz mit Starter im Datenrepository veröffentlichte Datenbank: Zonen, Zyklus, „Veröffentlichte Basis neu lesen“), Caches und Speicher des Browsers, Sicherung des Browsers (heruntergeladenes Archiv, kein Sicherungsordner) und Protokoll; Aktualisierungen, Referenzen und Abhängigkeiten sowie Luftfahrzeugtypen werden nicht angeboten. Ordner, die dieser Browser von einer früheren Nutzung mit Starter gemerkt hat, werden ignoriert: Die Daten kommen aus dem GitHub-Repository. Wird die Seite vom Starter bereitgestellt (GitHub-Modus in demselben Browser eingestellt), zeigt Wartung alle Karten mit ihren Knöpfen, auf „Luftfahrtdaten“ und „Luftfahrzeugtypen“ mit dem Satz „GitHub-Modus in diesem Browser aktiv: Die gelesenen Daten kommen aus dem Repository, Veröffentlichungen erfolgen an diesem Arbeitsplatz (Starter).“
+
 ### Quellen und Ordner
 
 Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der externen Quellen eingestellt werden.
@@ -219,6 +270,9 @@ Diese Rubrik ist der einzige Ort, an dem die lokalen Ordner und die Adressen der
 
 - **Externe Quellen**: Die Standardadresse wird grau angezeigt. Ein eingegebener Wert gilt nur für diesen Browser; „↺“ kehrt zum Standardwert zurück, und „Öffnen ↗“ öffnet die Adresse.
 - **API-Schlüssel (externe Dienste)**: Verweis auf die Rubrik „Schlüssel und externe Dienste“, den einzigen Ort der Schlüssel der Suite.
+- **Websites, die die Suite kontaktieren darf**: feste Liste (Karten, Netzwerke, Wetter, SimBrief) und Adressen der Konfiguration, dazu die auf diesem Rechner erlaubten Websites („Entfernen“); eine Website wird über „Diese Website erlauben…“ in der Sperrmeldung hinzugefügt und im Fenster des Starters bestätigt (in secrets/sites.json gespeichert).
+- **Schreibgeschützte Ordner**: Anwendungsordner, X-Plane-Ordner, ODV-Arbeitsmappe und zur Sicherung hinzugefügte Ordner sind zum Lesen erlaubt („erlaubt (lesen)“); Schreiben wird erst bei einer Aktion verlangt, die es braucht (Wiederherstellung, „Im Repository speichern“ für AircraftDB). Die Daten (`data/` und Unterordner) sind zum Schreiben erlaubt.
+- **Öffnen von einer anderen Website oder Erweiterung**: standardmäßig abgelehnt (eine Seite der Suite, die über einen Link einer anderen Website oder eine Erweiterung wie Claude in Chrome geöffnet wird, zeigt „Suite page opened from another website: refused“). „Bis zum Schließen des Starters erlauben…“ erlaubt es nach Bestätigung im Fenster des Starters; ein roter Knopf „⚠ Schutz verringert — wiederherstellen“ bleibt dann in der Kopfzeile jeder Seite. Daten, Skripte und Einstellungen des Starters bleiben für andere Websites gesperrt.
 - **Virtuelle Fluggesellschaft**: „Name“, „Vollständiger Name“, „Kürzel“, „Zentrum (Kürzel)“, „Zentrum (voller Name)“, und die Seiten der Website („Startseite“, „Flugbuch“, „Flotte“, „Flugzeugseite“). Ein leeres Feld behält den Standardwert. „Zurück zu SO Group Virtual“ löscht alle diese Einstellungen.
 - **Erststart**: „Ersten Start erneut öffnen“. Um bei null anzufangen, steht „Bereinigen und neu beginnen…“ unten auf der Seite des Erststarts (Abschnitt „Neu beginnen“).
 
@@ -314,6 +368,8 @@ Status der Tabelle:
 - X-Plane: Zyklus von „Custom Data“;
 - heruntergeladene Dateien: „alt“ nach 28 Tagen (ein AIRAC-Zyklus) seit dem Herunterladen oder der letzten Prüfung ohne Änderung.
 
+**Im Datenrepository veröffentlichte Datenbank**: Bei jedem Neuaufbau wird die Datenbank auch Zone für Zone in den Datenordner geschrieben, `data/sia/base/<zone>/<zyklus>.json` (eine Zone, JSON im Klartext: einige hundert KB bis etwa 5 MB für Frankreich), und die Städte in `data/sia/base/cities.json`. Eine Datei wird nur neu geschrieben, wenn sich ihr Inhalt ändert; ältere Zyklen der Zone werden entfernt. Der Bericht des Neuaufbaus sagt, was veröffentlicht wurde; „Synchronisieren“ sendet es. Der Datenordner muss freigegeben sein (Installation › Quellen und Ordner), sonst sagt der Bericht, warum die Datenbank nicht veröffentlicht wurde. Telefone und die Website (GitHub-Modus) lesen diese Dateien: Sie haben weder SIA-Ordner noch Neuaufbau, aber dieselbe Datenbank wie der Arbeitsplatz, der sie veröffentlicht hat.
+
 **MORA**: mehrere Quellen.
 - Das berechnete Gitter (`data/sia/mora.csv`) hat Vorrang. „Einfache Neuberechnung“ übernimmt die Hindernisse des neuen Zyklus (offline); „Vollständige Berechnung“ berechnet Gelände und Gipfel neu (Netz, etwa eine Minute) für Einsatzräume und Missionen; „MORA der Zone berechnen“ (Feld) tut es über die Ausdehnung einer Zone, die übrigen Zellen bleiben.
 - Wenn sich Zellen ändern: „mora.csv schreiben (alte archiviert)“, dann das Daten-Repository committen.
@@ -379,7 +435,7 @@ Solange keiner dieser Vorgänge stattgefunden hat, ist das Protokoll leer.
 
 ### Flotte (bekannte Flugzeuge)
 
-Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichten angebotenen Flugzeuge: „Betreiber“, „ICAO-Muster“, „Variante“, „Kennzeichen“, „Code“, „Nummer“, „Rufzeichen“ (durch Kommas getrennt), „Heimatflugplatz“, „Einsatzbereit“.
+Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichten angebotenen Flugzeuge: „Betreiber“, „ICAO-Muster“, „Variante“, „Kennzeichen“, „Code“, „Nummer“, „Rufzeichen“ (durch Kommas getrennt), „Heimatflugplatz“, „Einsatzbereit“. „ICAO-Muster“ schlägt die Typbasis vor (Auswahlliste mit Suche, nach Code oder Modellname); freie Eingabe bleibt möglich.
 - **„Flottenseite der Website einfügen…“**:
   1. Öffnen Sie die Seite „Virtuelle Flotte“ der Website der Gesellschaft (Link im Fenster);
   2. drücken Sie Strg+A und dann Strg+C, und fügen Sie in das Feld ein (Strg+V); Sie können auch „Zwischenablage lesen“ oder „oder gespeicherte Seite…“ verwenden;
@@ -389,6 +445,7 @@ Diese Datenbank (`data/references/aircraft_fleet.js`) listet die in den Berichte
 - **Gemeinsame Schaltflächen der Repository-Datenbanken**: „Im Repository speichern“ hervorgehoben (schreibt die Datei in den Repository-Ordner, zu committen); unter „Mehr…“ „In diesem Browser anwenden“ (lokale Änderungen haben Vorrang), „Herunterladen“, „Änderungen verwerfen“, „Zurück zur Repository-Datei“. Die Statuszeile sagt, woher der Inhalt kommt: „Stand: Repository-Datei, ohne Änderung in diesem Browser“ oder die lokalen Änderungen mit Datum.
 - **Automatisch**: Der Starter liest die öffentlichen Seiten Flotte und Flugbuch der Website selbst (ohne Anmeldung), einmal am Tag beim Öffnen einer Seite, nach denselben Regeln wie beim Einfügen; er schreibt `data/references/aircraft_fleet.js` und `defa_reference.js`, die mit „Synchronisieren“ zu senden sind. Einstellung und „Jetzt aktualisieren“: unter der Liste der Luftfahrzeuge im Reporting (unten). Einfügen und Skript (`python AircraftDB/update_fleet.py Flotte.html`) bleiben möglich.
 - **Wo**: Einstellungen › Zentrum › „Flotte (bekannte Luftfahrzeuge)“, gesperrt, solange das Zentrum gesperrt ist (vorher unter Wartung).
+- **Flottenkarte**: eigene Seite, für alle (Bericht › Flotte, siehe Benutzerhandbuch); die Schaltfläche „Flottenkarte“ über der Tabelle führt dorthin. Sie zeigt jedes Luftfahrzeug auf seinem aktuellen Flugplatz, mit Filtern, Überfahren (letzter Flug) und Auswahl; bei aktiviertem Zentrum führt ihre Schaltfläche „Flotte bearbeiten“ hierher zurück.
 - **Luftfahrzeuge im Reporting**: unter der Flotte alle Luftfahrzeuge, die im Missionsjournal fliegen (Typ, Rufzeichen, Betreiber, Flüge, letzter Flug). Kästchen „Privat“, standardmäßig angehakt: einzelnes Luftfahrzeug, außerhalb der SOG-Flotte; Abhaken nimmt es in die Flotte auf (es wird zuweisbar), erneutes Anhaken nimmt es wieder heraus. Dann „Im Repository speichern“: Die Flotte und der Index der einzelnen Luftfahrzeuge (`data/references/aircraft_personal.js`) werden zusammen geschrieben. Ein Luftfahrzeug der Flotte-Seite der Website kommt bei der nächsten Aktualisierung in die Flotte zurück.
 - **Typen und Leistungen**: „Typen und Leistungen aktualisieren“ ergänzt die in der Datenbank unbekannten Typen (Flotte und Reporting); die tägliche Aktualisierung von der Website tut es ebenfalls, im Hintergrund, für die Flotte, das Flugbuch und die einzelnen Luftfahrzeuge.
 - **Flugplatz (Basis) eines Luftfahrzeugs**: Er ändert sich nur durch die Aktualisierung von der Website oder durch einen Bericht aus einem Missionsbefehl mit einem tatsächlichen Landeflugplatz; ein Bericht ohne Missionsbefehl oder ein Landing-Report verschiebt das Luftfahrzeug nicht. Ein aus dem Reporting hinzugefügtes Luftfahrzeug kommt ohne Flugplatz. Der aktuelle Flugplatz ist die Spalte „Standort“ der Flotte-Seite der Website (mit dem Datum ihrer letzten Änderung gespeichert), außer wenn ein neuerer Bericht aus einem Missionsbefehl einen tatsächlichen Landeflugplatz angibt (`missions/aircraft_positions.json`); von dort starten die Überführungen (Zuweisung, ODV-Planung, Einsatztafel, Luftfahrzeugblatt).
@@ -400,6 +457,8 @@ Diese Datenbank (`AircraftDB/aircraft_db.js`) enthält zwei Tabellen:
 - „Aliasse (Gebrauchsname → Kennung)“.
 Die Änderungen werden auch in `aircraft_overrides.json` übertragen. Die Schaltflächen sind die der Repository-Datenbanken.
 Das „Vorgehen“ nennt die Befehle des Aktualisierungsskripts, die in `AircraftDB` auszuführen sind: `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. Die Datenbank wird nicht mit der Suite veröffentlicht (Daten von ICAO und EUROCONTROL): Die Rubrik „Luftfahrzeugtypen“ unter Einstellungen › Wartung ergänzt sie auf diesem Rechner Typ für Typ, nie alles auf einmal. Sie liest sich in drei Schritten: „Worum es geht“ (der ICAO-Eintrag, der Symbol und Klasse 2P, 2T, 4T… liefert, und die EUROCONTROL-Leistungen); die Tabelle der Typen von Flotte, Missionen und Berichten (Silhouette, Code und Modell, ICAO-Klasse, Eintrag ✓ oder fehlend, Schlüsselleistungen — Gipfelhöhe, Reiseflug, V2, Vat — mit den Einzelheiten als Tooltip und dem EUROCONTROL-Link, Verwendung); dann „Automatisch ergänzen (n)“, das Fehlendes herunterlädt. Ein freier Code wird unter „Weitere Typen herunterladen…“ (zugeklappt) eingegeben; „Datenbank von Hand bearbeiten…“ (Stufe Experte) öffnet diese Datenbank. Eine Gruppe pro Luftfahrzeug: Die Bezeichnungen aus Missionen und Berichten („A332 A330 MRTT Phénix“, „A330 MRTT PHÉNIX“) werden auf den ICAO-Code zurückgeführt (Flotte, Aliasse, gebräuchliche Namen; Aliaskette verfolgt, zum Beispiel A4M → A400, ein Hauscode auf den ICAO-Bezeichner zurückgeführt); ein im Klartext in einen Bericht geschriebener Typ wird erkannt, statt einen lokalen Typ anzulegen. Ein Typ ohne EUROCONTROL-Leistungen wird geschätzt: „≈ 2 000 kg/h, 480 kt (bekannter Typ)“ oder „(ICAO-Klasse L2J)“, derselbe Ersatz wie im Kraftstoffplaner (`shared/fuel_reference.js`). Dafür sind der Starter und das Netz nötig; am Ende des Durchlaufs lädt die Seite von selbst neu und zeigt die Bilanz. Die geschriebenen Dateien (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) erfordern nichts: Die Seiten lesen sie; nicht versioniert, werden sie auf jedem Rechner ergänzt oder kopiert. Derselbe Durchlauf liest auch die öffentliche SimBrief-Liste (eine Anfrage, eine Woche gespeichert; `--simbrief` auf der Kommandozeile): Reiseverbrauch (kg/h), Massen (leer, ohne Kraftstoff, Landung, maximaler Kraftstoff), Gipfelhöhe und Geschwindigkeit von 224 Typen, in `aircraft_perf.js` neben den EUROCONTROL-Einträgen abgelegt; ein Wert, dessen Genauigkeit SimBrief nicht garantiert, ist eine Schätzung. Schließlich ergänzt Airframe DB (`--airframedb`, höchstens 40 Einträge pro Durchlauf, 30 Tage Cache) Aliasse (gebräuchliche Namen wie H125 → AS50 und Simulatornamen → ICAO-Code, ohne je einen bestehenden Alias zu ersetzen oder einen offiziellen Code umzuleiten) und die veröffentlichten Kenndaten (Geschwindigkeiten, Gipfelhöhe, Steigrate, Massen, Reichweite) der Typen ohne EUROCONTROL- oder SimBrief-Eintrag, einschließlich Militärflugzeugen und Hubschraubern. Als letzter Ausweg wird eine Kennung, die weder ICAO noch EUROCONTROL kennen (ausgemusterter Typ wie die Caravelle S210), bei Aviation Fanatic gesucht: eine Seite pro Typ, Name, ICAO-Beschreibung (L2J…) und Wirbelschleppenkategorie, auf diesem Rechner gespeichert (Quelle „Aviation Fanatic“).
+
+Für Telefone und die Website (GitHub-Modus), die keinen Starter haben, kopiert „Luftfahrzeug-Datenbank im Datenrepository veröffentlichen“ (Stufe Experte, unter der Tabelle) `aircraft_db.js` und `aircraft_perf.js` nach `AircraftDB/` des Datenrepositorys, entfernt alles andere aus diesem Ordner (Caches, Skripte, `__pycache__`) und synchronisiert dann. Bevor etwas geschieht, zeigt die Seite die Liste dessen, was kopiert (+) und entfernt (−) wird, und fragt nach Zustimmung. Beide Dateien müssen reine Werte sein (Prüfung durch `tools/data_guard.py`, wie die anderen Datendateien). Die Datenbank wird nie auf der öffentlichen Website veröffentlicht.
 Grenze: Ein hier gelöschtes Muster kann bei der nächsten Aktualisierung zurückkehren, wenn es zur Grundliste des Skripts gehört.
 
 ### Rufzeichen-Zuordnung
@@ -494,7 +553,7 @@ Die Git-Zugangsdaten sind die des Systems (SSH-Schlüssel, Anmeldeinformationsve
 
 ### Mehrere Benutzer, bis der zentrale Server kommt
 
-- Jeder Rechner **empfängt** bei jedem Start (der Starter führt ein `git pull` von `data/` aus) und **sendet** mit der Schaltfläche
+- Jeder Rechner **empfängt** bei jedem Start (der Starter aktualisiert `data/` aus dem Repository, ohne etwas zu senden) und **sendet** mit der Schaltfläche
   „Synchronisieren“ (Commit, Zusammenführung mit den anderen, Senden).
 - Jeder sendende Rechner braucht: Git, die vom Starter geöffnete Suite, ein **Schreibrecht auf das Datenrepository**
   (ein Konto pro Person beim Git-Hoster oder ein gemeinsames Konto) und einen SSH-Schlüssel oder in Git gespeicherte
@@ -528,7 +587,7 @@ Die Suite wird von einem kleinen lokalen Server bereitgestellt, der mitgeliefert
 
 - **Windows**: Doppelklicken Sie auf `lancer.cmd`. **macOS / Linux**: `sh lancer.sh`. Beide rufen `tools/launch.py` auf, das drei Schritte durchläuft:
   1. **Python**: wird gesucht und bei Bedarf installiert (mindestens Version 3.8).
-  2. **Daten**: Ist `data/` vorhanden, wird es aktualisiert (`git pull --ff-only`, ohne bei einem Fehler zu blockieren). Andernfalls wird ein neben dem Starter abgelegtes `.zip`-Archiv entpackt; fehlt auch dieses, wird das Datenrepository geklont.
+  2. **Daten**: Ist `data/` vorhanden, wird es ohne `git pull` aktualisiert: Die auf diesem Rechner geänderten Dateien des Pools werden zuerst committet („Modifications du poste <TRI>“), dann wird der entfernte Zweig wie beim Knopf „Synchronisieren“ Datensatz für Datensatz zusammengeführt, ohne etwas zu senden. Eine lokal geänderte Datei außerhalb des Pools (zum Beispiel `sia/mora.csv`) bleibt unverändert; würde die Aktualisierung sie überschreiben, wird sie verschoben und die Konsole nennt sie. Die Konsole sagt, was getan wurde (committete und empfangene Dateien, verschobener Empfang und warum); nie blockierend. Andernfalls wird ein neben dem Starter abgelegtes `.zip`-Archiv entpackt; fehlt auch dieses, wird das Datenrepository geklont.
   3. **Server und Browser**: Der Server startet auf `http://127.0.0.1`, am ersten freien Port ab 8000, dann öffnet sich der Browser. Läuft die Suite bereits, öffnet sich nur der Browser.
 - Lassen Sie das Fenster des Starters während der Nutzung offen; schließen Sie es (oder Strg+C), um die Suite zu beenden.
 - Optionen: `--port 8010`, `--page apps/…`, `--no-browser`, `--no-data`, und `--data <dossier>`, um eine andere Kopie der Daten unter `/data/` bereitzustellen, ohne Klon oder Aktualisierung. Die Option `--data` dient Tests, zum Beispiel der Synchronisierung.

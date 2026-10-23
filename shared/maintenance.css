@@ -25,6 +25,12 @@
     grid-column: 2;
     min-width: 0
   }
+  @media(max-width:900px) {
+    /* une seule colonne sous 900 px (settings_page.css) : le bloc passe sous le menu au lieu de créer une 2e colonne */
+    .mt-block {
+      grid-column: 1
+    }
+  }
   .mt-block {
     background: var(--card);
     border: 1px solid var(--line);

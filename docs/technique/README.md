@@ -7,6 +7,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 
 | Document | Pour |
 |---|---|
+| [Data and access map](DONNEES_ET_ACCES.md) | who stores what: git data repository, browser, website, launcher workstation, apps; shared versus local data |
 | [Synchronisation des données](SYNCHRONISATION.md) | architecture de la synchronisation (bouton « Synchroniser », conflits fiche par fiche, plusieurs utilisateurs) |
 | [Index des données](INDEX_DONNEES.md) | index du navigateur, réplication, expiration, conflits, étapes |
 | [Framework commun](FRAMEWORK.md) | en-tête, menu, blocs, dossiers, données locales |
@@ -24,7 +25,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Prompt du générateur de missions](PROMPT_GENERATEUR_MISSIONS.md) | prompt de génération des missions (source de `apps/cpco/mission_prompt.js`) |
 | [Prompt du profil de performances](PROMPT_PROFIL_PERFORMANCES.md) | prompt « Demander à ChatGPT » de Carburant, 4 langues et schéma de la réponse (source de `apps/planner/perf_prompt.js`) |
 | [V2 : niveaux d'utilisation](V2_NIVEAUX.md) | refonte v2 : quatre niveaux, pages et blocs rangés par niveau d'usage |
-| [V2-fable : parcours du pilote](V2_FABLE.md) | page « Aujourd'hui », compte rendu guidé, notifications qui se taisent, tâches qu'on arrête, champs qui s'agrandissent |
+| [V2-fable : parcours du pilote](V2_FABLE.md) | page d'entrée « Mes missions » (ex-« Aujourd'hui »), compte rendu guidé, notifications qui se taisent, tâches qu'on arrête, champs qui s'agrandissent |
 
 ## Projet
 
@@ -60,3 +61,5 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Audit de sécurité du 7 octobre 2026](AUDIT_SECURITE_2026-10-07.md) | évasion de données, surface locale, code étranger (« zombie »), préparation du mode client/serveur ; plan de correction par lots |
 | [Performances : synthèse](perf/SYNTHESE.md) · [rapport](perf/RAPPORT_PERF.md) · [plan](perf/PLAN_PERF_2026-10-04.md) | audit de performance avant / après, extrapolation |
 | [Performances : mesures du 8 octobre](perf/RAPPORT_2026-10-08.md) | Planning et Cartes de vol dans Chrome (onglet visible) : requêtes, DOM, tâches longues, base SIA ; trois lots de correction |
+
+- [V3_SPECIFICATION.md](V3_SPECIFICATION.md) — V3: three applications (Pilot, CPCO, SOG client), one frame, modules; specification in progress, decisions log.

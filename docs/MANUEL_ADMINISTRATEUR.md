@@ -25,7 +25,7 @@ Le verrou masque le Centre tant qu'il n'a pas été activé dans ce navigateur.
 - Dans Paramètres › Centre, seule la rubrique « Accès au Centre et réglages » reste visible ; les autres (« Utilisateurs et droits », « Catégories de disponibilité », « Planning ODV », « Envoi des comptes rendus (webservice) ») sont cachées.
 - L'activation est mémorisée dans ce navigateur seulement : à refaire sur chaque poste et après un effacement des données du site.
 
-Limite : c'est un verrou d'usage, pas une sécurité. Le mot de passe est écrit en clair dans `data/config/centre.json`, partagé avec les données (`DEFA` par défaut), et affiché à côté du bouton « Activer le Centre » : c'est le **mode autonome**. Le mode groupe (registre signé, accès par le rôle d'administrateur) est à venir ([conception](technique/COMPTES_SIGNES.md)).
+Limite : c'est un verrou d'usage, pas une sécurité. Le mot de passe est écrit en clair dans `data/config/centre.json`, partagé avec les données (`DEFA` par défaut), et affiché à côté du bouton « Activer le Centre » : c'est le **mode autonome**. Le mode groupe (registre signé, accès par le rôle d'administrateur) se règle dans la rubrique « Mode groupe (registre signé) » ci-dessous ([conception](technique/COMPTES_SIGNES.md)).
 
 ### Activer ou verrouiller le Centre
 
@@ -132,6 +132,54 @@ Cette rubrique gère les fiches des utilisateurs. Il y a une fiche par utilisate
   `admin_centre` connecté ; l'ajout d'un utilisateur et la modification d'une ligne (rôle, actif) ne sont protégés que
   par le verrou du Centre (voir la [dette technique](technique/DETTE_TECHNIQUE.md)).
 
+### Mode groupe (registre signé)
+
+Pour une compagnie qui partage `data/` par git : rôles, comptes et mots de passe viennent du **registre signé des
+utilisateurs** (`data/utilisateurs/_registre.json`). Chaque navigateur refuse ce qui n'est pas signé par un admin : une
+fiche modifiée dans le dépôt (« je me donne le rôle admin ») n'a plus d'effet. Conception :
+[comptes signés](technique/COMPTES_SIGNES.md).
+- **État** : mode (autonome, groupe en constitution, groupe actif), version acceptée du registre, fondateur confirmé,
+  admins et empreintes de leurs postes, clé de secours, empreinte de ce poste.
+- **« Passer en mode groupe »** (Centre activé, lanceur à jour : sa politique de sécurité est exigée) : vous devenez le
+  premier admin avec la clé de ce poste ; les fiches existantes entrent dans la version 1 du registre. Saisissez deux
+  fois le mot de passe de la **clé de secours** : le fichier `sog-cle-secours-<empreinte>.json` est téléchargé, chiffré
+  par ce mot de passe. Gardez-le hors ligne (clé USB) et le mot de passe à part. Envoyez votre empreinte aux pilotes par
+  un autre canal (Discord, SMS, courriel).
+- **Groupe en constitution** : tant qu'il n'y a pas deux admins avec une clé de poste, le Centre reste accessible par
+  son mot de passe. Une fois le groupe actif, l'accès au Centre passe par la clé de poste d'un admin du registre.
+- **Changer un rôle, un état ou un mot de passe** (Utilisateurs et droits) publie une nouvelle version, signée par la
+  clé de ce poste : réservé à un admin du registre ; sinon le message le dit et rien n'est écrit.
+- **« Nouvelle clé de secours »** (admin) remplace la clé de secours ; **« Revenir au mode autonome »** (admin) : le
+  registre reste dans les données mais n'est plus lu.
+- **« Utiliser la clé de secours »** (rubrique ouverte même Centre verrouillé) : fichier, mot de passe et trigramme ;
+  ce trigramme devient admin avec la clé de ce poste. Pour les admins qui ont perdu leur poste.
+- **« Refonder le groupe »** (dernier recours, toutes les clés perdues) : nouveau registre, nouvelle clé de secours ;
+  chaque autre poste devra confirmer votre empreinte.
+- **Versions refusées** : une version mal signée, hors chaîne ou plus ancienne est refusée ; le poste garde la sienne,
+  une notification et cette rubrique le disent.
+- À la première lecture du registre, un poste montre l'empreinte du fondateur avec « Confirmer » et « Refuser » :
+  comparez-la avec celle reçue avant de confirmer.
+- **Demandes d'accès des postes** : un pilote demande l'accès depuis Mon profil › Ce poste, sur un poste avec lanceur
+  comme sur l'appli sans lanceur (téléphone) ; la demande est un fichier signé par la clé de son poste
+  (`data/utilisateurs/demandes/`). La rubrique liste trigramme, nom du poste, date et l'empreinte recalculée par votre
+  page (« nouvel utilisateur » si le trigramme n'est pas encore au registre ; « demande invalide » si la signature ou
+  l'empreinte ne tient pas). Comparez l'empreinte avec celle que le pilote vous a donnée par un autre canal, puis
+  **« Approuver »** (nouvelle version du registre avec sa clé, utilisateur créé au besoin avec le rôle utilisateur) ou
+  **« Refuser »** (demande retirée). Une demande peut venir de quiconque a accès au dépôt : seule l'empreinte prouve le
+  poste.
+- **Clés des postes** : chaque clé du registre, par utilisateur ; **« Révoquer »** (admin) publie une version sans elle :
+  ses signatures suivantes sont refusées, le poste devra refaire une demande. Désactiver un utilisateur (Utilisateurs et
+  droits) révoque toutes ses clés. Le dernier admin à clé ne peut pas perdre la sienne, ni un groupe actif descendre
+  sous deux admins à clé.
+- **« Activer le groupe »** : la carte n'apparaît qu'une fois deux admins dotés d'une clé de poste (un second admin :
+  rôle « Administrateur du Centre » dans Utilisateurs et droits, puis sa demande approuvée). Jusque-là rien ne change
+  et rien n'est ignoré. Une fois le groupe actif : le Centre ne s'ouvre plus que par la clé d'un admin (le mot de passe
+  ne compte plus) ; les données non signées restent acceptées 30 jours, avec la mention « non signé », puis sont
+  ignorées (signature des affectations : lot suivant).
+- Appli sans lanceur (mode GitHub) : un nouveau poste suit la chaîne du registre par l'historique du dépôt (API des
+  commits) ; demandes, approbations et révocations y sont des commits. Passer en mode groupe ou refonder demande un
+  poste avec lanceur.
+
 ### Catégories de disponibilité
 
 Cette rubrique définit ce que les pilotes peuvent déclarer comme disponibilités (`data/config/disponibilites.json`, synchronisé).
@@ -168,7 +216,7 @@ Cette rubrique contient les réglages propres à la compagnie pour la page Plann
 | Pays préféré (périmètre ATC) | « France métropolitaine » ; sessions ATC (trainings, examens, réservations) importées et montrées pour ce pays seul, Planning ODV et le Tableau (indicatifs OACI du pays : LF hors LFV pour la France) |
 | Dates de la semaine | « Semaine ISO (n° de semaine du fichier) » ; sinon « Date saisie sur la frise » |
 | Case vide | « Non renseignée » (jamais comptée disponible) ; sinon « Indisponible » |
-| Types FLOTTE retenus pour les rôles | « Tous sauf les rouges (non maîtrisés) » ; « Verts seuls » ; « Tous » |
+| Types FLOTTE retenus pour les rôles | « Tous sauf les rouges (NQ : possédés, non qualifiés) » ; « Verts seuls » ; « Tous » |
 | Missions montrées par créneau | 3 (de 1 à 10) |
 | Ordre de préférence à score égal | AAR, AIRBORNE, ISR, SPECIAL, SAR, MARITIME, FIRE, AIRLIFT, HEMS, TRAINING (familles inconnues ignorées, avec un avertissement) |
 | Code restreint (SC, C, T, N) : rôles de son domaine seulement | coché |
@@ -219,6 +267,8 @@ Le menu latéral comporte un seul groupe, « Dossiers et sources » : « Sources
 Le premier lancement a son propre onglet, « Premier lancement », décrit dans le [manuel utilisateur](MANUEL_UTILISATEUR.md#premier-lancement) ; « Nettoyer et recommencer… » se trouve en bas de cette page-là. Voir aussi [Installation](INSTALL.md), § 1.
 Ces rubriques sont attribuées à la page par `config/repository_tree` (clé `settings.sections` : `sources` et `keys` → installation ; `sia` et `types` → installation,maintenance, c'est-à-dire sur les deux pages : la mise en place ici, la mise à jour dans Maintenance, mêmes blocs). Toutes les autres rubriques de maintenance s'ouvrent sur la page Maintenance.
 
+En mode GitHub (appli sans lanceur : site web, appli iOS ; accès aux données réglé dans Mon profil › Accès aux données), Installation se réduit à la seule carte « Accès aux données » : dépôt des données (lien `https://github.com/<dépôt>`) et branche, état de l'accès (essai du jeton), dernière lecture réussie, écritures en attente dans la boîte d'envoi du navigateur (bouton « Synchroniser » pour les envoyer), base des types d'aéronefs lue dans le dépôt, lien vers le site de la compagnie virtuelle et lien vers Mon profil › Accès aux données. Dossiers locaux, clés IVAO et import SIA se règlent sur un poste avec lanceur : les cartes « Sources et dossiers », « Clés et services externes », « Données aéronautiques » et « Types d’aéronefs » ainsi que l'onglet « Premier lancement » ne sont pas proposés. Le mode ne dépend que du réglage de l'accès, pas de l'appareil : la carte est la même sur un navigateur de bureau. Sur la page Maintenance, ce mode ne propose que ce qui marche sans lanceur ni dossier : versions, données aéronautiques (la base publiée dans le dépôt des données par un poste avec lanceur : zones, cycle, « Relire la base publiée »), caches et stockage du navigateur, sauvegarde du navigateur (archive téléchargée, sans dossier de sauvegarde) et journal ; les mises à jour, les références et dépendances et les types d'aéronefs ne sont pas proposés. Les dossiers mémorisés par ce navigateur lors d'un ancien usage avec lanceur sont ignorés : les données viennent du dépôt GitHub. Si la page est servie par le lanceur (mode GitHub réglé dans ce même navigateur), Maintenance montre toutes ses cartes et leurs boutons, avec sur « Données aéronautiques » et « Types d’aéronefs » la phrase « Mode GitHub actif dans ce navigateur : les données lues viennent du dépôt, les publications se font sur ce poste (lanceur). »
+
 ### Sources et dossiers
 
 Cette rubrique est le seul endroit où régler les dossiers locaux et les adresses des sources externes.
@@ -236,6 +286,9 @@ Cette rubrique est le seul endroit où régler les dossiers locaux et les adress
 
 - **Sources externes** : l'adresse par défaut s'affiche en grisé. Une valeur saisie ne vaut que pour ce navigateur ; « ↺ » revient à la valeur par défaut et « Ouvrir ↗ » ouvre l'adresse.
 - **Clés d'API (services externes)** : renvoi vers la rubrique « Clés et services externes », seule place des clés de la suite.
+- **Sites que la suite peut contacter** : liste fixe (cartes, réseaux, météo, SimBrief) et adresses de la configuration, plus les sites autorisés sur ce poste (« Retirer ») ; un site s'ajoute par « Autoriser ce site… » dans la notification de blocage, confirmé dans la fenêtre du lanceur (gardé dans secrets/sites.json).
+- **Dossiers en lecture seule** : dossier de l'application, dossiers de X-Plane, classeur ODV et dossiers ajoutés à la sauvegarde sont autorisés en lecture (« autorisé (lecture) ») ; l'écriture n'est demandée qu'au moment d'une action qui en a besoin (restauration, « Enregistrer dans le dépôt » pour AircraftDB). Les données (`data/` et ses sous-dossiers) sont autorisées en écriture.
+- **Ouverture depuis un autre site ou une extension** : refusée par défaut (une page de la suite ouverte par un lien d'un autre site, ou par une extension comme Claude in Chrome, affiche « Page de la suite ouverte depuis un autre site : refusée »). « Autoriser jusqu'à la fermeture du lanceur… » la permet après confirmation dans la fenêtre du lanceur ; un bouton rouge « ⚠ Protection réduite — rétablir » reste alors dans l'en-tête de chaque page. Données, scripts et réglages du lanceur restent fermés aux autres sites.
 - **Compagnie virtuelle** : « Nom », « Nom long », « Sigle », « Centre (sigle) », « Centre (nom complet) », et les pages du site (« Page d'accueil », « Log des vols », « Flotte », « Fiche d'un appareil »). Un champ vide garde la valeur par défaut. « Revenir à SO Group Virtual » efface tous ces réglages.
 - **Premier lancement** : « Rouvrir le premier lancement ». Pour repartir de zéro, « Nettoyer et recommencer… » se trouve en bas de la page du premier lancement (rubrique « Recommencer »).
 
@@ -340,6 +393,8 @@ Le bouton « Vérifier » relance les contrôles.
 - X-Plane : cycle de « Custom Data » ;
 - fichiers téléchargés : « ancien » au-delà de 28 jours (un cycle AIRAC) depuis le téléchargement ou la dernière vérification sans changement.
 
+**Base publiée dans le dépôt des données** : à chaque reconstruction, la base est aussi écrite zone par zone dans le dossier des données, `data/sia/base/<zone>/<cycle>.json` (une zone, JSON en clair : quelques centaines de Ko à environ 5 Mo pour la France), et les villes dans `data/sia/base/cities.json`. Un fichier n'est réécrit que si son contenu change ; les cycles plus anciens de la zone sont retirés. Le compte rendu de la reconstruction dit ce qui a été publié ; « Synchroniser » l'envoie. Il faut que le dossier des données soit autorisé (Installation › Sources et dossiers), sinon le compte rendu dit pourquoi la base n'est pas publiée. Les téléphones et le site (mode GitHub) lisent ces fichiers : ils n'ont ni dossier SIA ni reconstruction, mais la même base que le poste qui l'a publiée.
+
 **MORA** : plusieurs sources.
 - La grille calculée (`data/sia/mora.csv`) a la priorité. « Recalcul simple » reprend les obstacles du nouveau cycle (hors ligne) ; « Calcul complet » refait relief et sommets (réseau, environ une minute) pour les théâtres et les missions ; « Calculer la MORA de la zone » (panneau) le fait sur l'emprise d'une zone, les autres cases étant gardées.
 - Si des cases changent : « Écrire mora.csv (ancien archivé) », puis committez le dépôt de données.
@@ -410,7 +465,7 @@ Tant qu'aucune de ces opérations n'a eu lieu, le journal est vide.
 
 ### Flotte (appareils connus)
 
-Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Terrain de base », « Opérationnel ».
+Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés dans les CR : « Opérateur », « Type OACI », « Variante », « Immatriculation », « Code », « Numéro », « Indicatifs » (séparés par des virgules), « Terrain de base », « Opérationnel ». Le « Type OACI » propose la base des types (liste déroulante avec recherche, par le code ou le nom du modèle) ; une saisie libre reste possible.
 - **« Coller la page Flotte du site… »** :
   1. ouvrez la page « Flotte virtuelle » du site de la compagnie (lien dans la fenêtre) ;
   2. faites Ctrl+A puis Ctrl+C, et collez dans la zone (Ctrl+V) ; vous pouvez aussi utiliser « Lire le presse-papiers » ou « ou page enregistrée… » ;
@@ -420,6 +475,7 @@ Cette base (`data/references/aircraft_fleet.js`) liste les appareils proposés d
 - **Boutons communs aux bases du dépôt** : « Enregistrer dans le dépôt » en évidence (écrit le fichier dans le Dossier du dépôt, à committer) ; sous « Plus… », « Appliquer dans ce navigateur » (modifications locales prioritaires), « Télécharger », « Annuler les modifications », « Revenir au fichier du dépôt ». La ligne d'état dit d'où vient le contenu : « État : fichier du dépôt, sans modification dans ce navigateur », ou les modifications locales et leur date.
 - **Automatique** : le lanceur lit lui-même les pages publiques Flotte et Log des vols du site (sans connexion), une fois par jour à l'ouverture d'une page, avec les mêmes règles que le collage ; il écrit `data/references/aircraft_fleet.js` et `defa_reference.js`, à envoyer par « Synchroniser ». Réglage et « Mettre à jour maintenant » : sous la liste des appareils du reporting (ci-dessous). Le collage et le script (`python AircraftDB/update_fleet.py Flotte.html`) restent possibles.
 - **Où** : Paramètres › Centre › « Flotte (appareils connus) », réservée tant que le Centre est verrouillé (auparavant dans Maintenance).
+- **Carte de la flotte** : page à part, pour tous (Compte rendu › Flotte, voir le manuel utilisateur) ; le bouton « Carte de la flotte », au-dessus du tableau, y mène. Elle montre chaque appareil à son terrain actuel, avec filtres, survol (dernier vol) et sélection ; avec le Centre activé, son bouton « Modifier la flotte » ramène ici.
 - **Appareils du reporting** : sous la flotte, tous les appareils qui volent dans le journal des missions (type, indicatifs, exploitant, vols, dernier vol). Case « personnel », cochée par défaut : appareil individuel, hors de la flotte du SOG ; la décocher l'ajoute à la flotte (il devient affectable), la recocher l'en retire. Puis « Enregistrer dans le dépôt » : la flotte et l'index des appareils individuels (`data/references/aircraft_personal.js`) sont écrits ensemble. Un appareil de la page Flotte du site revient dans la flotte à la mise à jour suivante.
 - **Types et performances** : « Rafraîchir types et performances » complète les types inconnus de la base (flotte et reporting) ; la mise à jour quotidienne depuis le site le fait aussi, en tâche de fond, pour la flotte, le journal et les appareils individuels.
 - **Terrain (base) d'un appareil** : il ne change que par la mise à jour depuis le site, ou par un CR issu d'un ordre de mission avec un vrai terrain d'atterrissage ; un CR hors ordre de mission ou un landing report ne déplace pas l'appareil. Un appareil ajouté depuis le reporting entre sans terrain. Le terrain actuel est la colonne « Emplacement » de la page Flotte du site (gardée avec la date de son dernier changement), sauf si un CR issu d'un ordre de mission, plus récent, donne un terrain d'atterrissage réel (`missions/aircraft_positions.json`) ; les convoyages partent de là (affectation, Planning ODV, Tableau, fiche appareil).
@@ -431,6 +487,8 @@ Cette base (`AircraftDB/aircraft_db.js`) contient deux tableaux :
 - « Alias (nom courant → désignateur) ».
 Les modifications sont aussi reportées dans `aircraft_overrides.json`. Les boutons sont ceux des bases du dépôt.
 Le « Mode opératoire » donne les commandes du script de rafraîchissement, à lancer depuis `AircraftDB` : `python update_aircraft_db.py --no-network`, `--add <types>`, `--refresh-icao`. La base n'est pas publiée avec la suite (données de l'OACI et d'EUROCONTROL) : la rubrique « Types d'aéronefs » de Paramètres › Maintenance la complète sur ce poste, type par type, sans jamais tout reprendre. Elle se lit en trois temps : « Ce que c’est » (la fiche OACI, qui donne l'icône et la classe 2P, 2T, 4T…, et les performances EUROCONTROL) ; le tableau des types de la flotte, des missions et des CR (silhouette, code et modèle, classe OACI, fiche ✓ ou manquante, performances clés — plafond, croisière, V2, Vat — avec le détail en infobulle et le lien EUROCONTROL, emploi) ; puis « Compléter automatiquement (n) », qui télécharge ce qui manque. Un code libre se saisit sous « Télécharger d’autres types… » (replié) ; « Modifier la base à la main… » (niveau Expert) ouvre cette base. Un seul groupe par avion : les libellés des missions et des CR (« A332 A330 MRTT Phénix », « A330 MRTT PHÉNIX ») sont ramenés au code OACI (flotte, alias, noms d'usage ; chaîne d'alias suivie, par exemple A4M → A400, un code maison ramené au désignateur OACI) ; un type écrit en clair dans un CR est reconnu au lieu de créer un type local. Un type sans performances EUROCONTROL est estimé : « ≈ 2 000 kg/h, 480 kt (type connu) » ou « (classe OACI L2J) », même repli que le planificateur carburant (`shared/fuel_reference.js`). Il faut le lanceur et le réseau ; à la fin de la passe, la page se recharge d'elle-même et montre le bilan. Les fichiers écrits (`AircraftDB/aircraft_db.js`, `aircraft_perf.js`) n'appellent rien : les pages les lisent ; non versionnés, ils se complètent sur chaque poste ou se recopient d'un poste à l'autre. La même passe lit aussi la liste publique de SimBrief (une requête, gardée une semaine ; `--simbrief` en ligne de commande) : consommation de croisière (kg/h), masses (vide, sans carburant, atterrissage, carburant maximal), plafond et vitesse de 224 types, rangés dans `aircraft_perf.js` à côté des fiches EUROCONTROL ; une valeur dont SimBrief ne garantit pas la précision est une estimation. Enfin, Airframe DB (`--airframedb`, 40 fiches au plus par passe, cache de 30 jours) ajoute des alias (noms en usage, comme H125 → AS50, et noms des simulateurs → code OACI, sans jamais remplacer un alias existant ni détourner un désignateur officiel) et les caractéristiques publiées (vitesses, plafond, vario, masses, distance franchissable) des types sans fiche EUROCONTROL ni SimBrief, militaires et hélicoptères compris. En dernier recours, un désignateur que ni l'OACI ni EUROCONTROL ne connaissent (type retiré, comme la Caravelle S210) est cherché sur Aviation Fanatic : une page par type, nom, description OACI (L2J…) et turbulence, gardés sur ce poste (source « Aviation Fanatic »).
+
+Pour les téléphones et le site (mode GitHub), qui n'ont pas de lanceur, « Publier la base appareils dans le dépôt des données » (niveau Expert, sous le tableau) copie `aircraft_db.js` et `aircraft_perf.js` dans `AircraftDB/` du dépôt des données et retire tout le reste de ce dossier (caches, scripts, `__pycache__`), puis synchronise. Avant de rien faire, la page montre la liste de ce qui sera copié (+) et retiré (−) et demande l'accord. Les deux fichiers doivent être de simples valeurs (contrôle de `tools/data_guard.py`, comme les autres fichiers de données). La base n'est jamais publiée sur le site public.
 Limite : un type supprimé ici peut revenir au prochain rafraîchissement, s'il fait partie de la liste de base du script.
 
 ### Correspondance des indicatifs
@@ -525,7 +583,7 @@ Les identifiants git sont ceux du système (clé SSH, gestionnaire d'identifiant
 
 ### Plusieurs utilisateurs, en attendant le serveur central
 
-- Chaque poste **reçoit** à chaque lancement (le lanceur fait un `git pull` de `data/`) et **envoie** avec le bouton
+- Chaque poste **reçoit** à chaque lancement (le lanceur met `data/` à jour depuis le dépôt, sans rien envoyer) et **envoie** avec le bouton
   « Synchroniser » (commit, fusion avec les autres, envoi).
 - Il faut, par poste qui envoie : git, la suite ouverte par le lanceur, un **droit d'écriture sur le dépôt de données**
   (un compte par personne sur l'hébergeur git, ou un compte partagé) et une clé SSH ou des identifiants HTTPS
@@ -559,7 +617,7 @@ La suite est servie par un petit serveur local, fourni avec elle. Les données v
 
 - **Windows** : double-cliquez sur `lancer.cmd`. **macOS / Linux** : `sh lancer.sh`. Les deux appellent `tools/launch.py`, qui suit trois étapes :
   1. **Python** : il est cherché, et installé au besoin (version 3.8 au moins).
-  2. **Données** : si `data/` est présent, il est mis à jour (`git pull --ff-only`, sans bloquer en cas d'échec). Sinon, une archive `.zip` déposée à côté du lanceur est extraite ; à défaut, le dépôt de données est cloné.
+  2. **Données** : si `data/` est présent, il est mis à jour sans `git pull` : les fichiers du pool modifiés sur ce poste sont d'abord commités (« Modifications du poste <TRI> »), puis la branche distante est fusionnée fiche par fiche comme au bouton « Synchroniser », sans rien envoyer. Un fichier hors du pool modifié (par exemple `sia/mora.csv`) est laissé tel quel ; si la mise à jour devait l'écraser, elle est reportée et la console le nomme. La console dit ce qui a été fait (fichiers commités, reçus, réception reportée et pourquoi) ; jamais bloquant. Sinon, une archive `.zip` déposée à côté du lanceur est extraite ; à défaut, le dépôt de données est cloné.
   3. **Serveur et navigateur** : le serveur démarre sur `http://127.0.0.1`, au premier port libre à partir de 8000, puis le navigateur s'ouvre. Si la suite tourne déjà, seul le navigateur s'ouvre.
 - Laissez la fenêtre du lanceur ouverte pendant l'utilisation ; fermez-la (ou Ctrl+C) pour arrêter la suite.
 - Options : `--port 8010`, `--page apps/…`, `--no-browser`, `--no-data`, et `--data <dossier>` pour servir une autre copie des données sous `/data/`, sans clone ni mise à jour. L'option `--data` sert aux essais, par exemple de synchronisation.

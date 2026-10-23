@@ -61,6 +61,7 @@ flowchart LR
 | `missions/` (missions, assignments, follow-up, log) | `.defa_instance`: launcher marker |
 | `cr/` (reports) | display preferences (theme, language, blocks…): specific to each browser |
 | `atc/` (the week's ATC sessions) | ODV planning settings (`odvPlanning:v1`, see the technical debt) |
+| `airline/` (settings shared with the V3 app: map profiles written by the studio, airline settings and fleet) | |
 
 ## 4. Reading: signed copies
 
@@ -142,7 +143,14 @@ sequenceDiagram
 
 ## 9. Several users, pending the central server
 
-- **Receive**: at each start, the launcher runs a `git pull` of `data/`; the "Synchronise" button also receives
+- **Receive**: at each start, the launcher updates `data/` (`data_sync.update`, never `git pull`, whose `pull.rebase`
+  setting and any local change stopped it): the pool files changed on the workstation are committed ("Modifications du
+  poste <TRI>", the trigram of the last synchronisation, else POSTE), the remote branch is merged record by record as in
+  a synchronisation, nothing is pushed; a file outside the pool changed locally stays as it is, and if the merge would
+  overwrite it (computed: files changed upstream since the common base that are modified or untracked here), the merge
+  is put off and the console names it. Generated indexes, conflict copies and the launcher marker are added to
+  `.git/info/exclude` (a data repository older than `tools/data_template/.gitignore` does not ignore them). The
+  "Synchronise" button also receives
   whatever has arrived since (its counter shows it, remote repository rechecked at the configured frequency).
 - **Send**: the "Synchronise" button commits the workstation's changes, merges them with everyone else's and pushes.
 - **What each sending workstation needs**: git installed, the suite opened through the launcher, **write access
@@ -154,6 +162,31 @@ sequenceDiagram
   data yet, the address is used to fetch it). **Never blocking**: a repository that does not answer (access denied,
   not found, host unreachable) is reported, and the suite keeps working, without sharing. A branch missing from the remote
   repository is created by the first synchronisation.
+- **A `data/` folder that is not a repository yet** (examples, archive, data entered before any repository): `data/` is
+  ignored by the code repository, so a nested data repository is the normal setup. `GET /__setup/sync-remote` says which
+  case applies (`state`: `absent`, `plain`, `repo`); for `plain`, the same card offers "Take data/ into this repository",
+  `POST /__setup/adopt { url, user?, secret?, remember?, author? }` (`tools/data_sync.adopt`):
+  - the repository is cloned without checkout next to `data/`, its `.git` is moved into `data/`, and the index is set to
+    the remote branch while the workstation's files stay untouched;
+  - a file of the repository missing on the workstation is checked out; a file present on both sides and different is
+    merged by the synchronisation rules when it belongs to the pool (`merge_raw`, with no common base: the newest
+    `updated_at` wins, or, without one, the newest date between the local file and the repository's last commit; the
+    other version goes to `_conflits/`; assignments merged record by record; signed registry: highest version), and is
+    taken from the repository otherwise; the workstation's own files stay;
+  - one local commit "Reprise du poste <TRI>" of the pool files (same `.js` check as a synchronisation), **nothing is
+    pushed**: the next "Synchronise" sends it;
+  - every workstation file replaced is first copied to `data_avant_<date>/`, next to `data/`; any failure puts everything
+    back (`data/` as before, `.git` removed);
+  - sample data (`jeu_essai: true`), or a folder with no pool file: set aside whole in `data_avant_<date>/`, then a plain
+    clone (put back if the clone fails);
+  - same address rules as `sync-remote`: the configured repository is accepted, another one is confirmed in the
+    launcher's window. Try it with `python tools/data_sync.py --essai`.
+- **Confirmation window** (`confirm_status` / `confirm_ask` in `tools/launch.py`): system-modal, on top, "No" by default,
+  announced in the launcher's console. Its outcomes are told apart and sent back in plain words: refused or closed (no
+  new window for 30 s, the message says how long is left), another confirmation window already open, no window possible on
+  this computer (Linux without zenity, session without a desktop). `POST /__setup/sync-remote` and `/__setup/adopt`
+  answer `needsConfirm` when the address is neither the current nor the configured repository;
+  `POST /__setup/adopt { url, dry: true }` only answers that (and `state`), so the page warns before the window opens.
 - **Workstation without git or write access**: choose as data folder a **shared folder** (Synology,
   OneDrive…) synchronised by a workstation that has git (the Centre, for example); its writes land in that folder, and the
   equipped workstation pushes them to the repository. This is what the central server will make unnecessary: an account will be enough

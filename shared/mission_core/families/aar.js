@@ -145,6 +145,7 @@
             upper: true
           }), f('type', L('Type', 'Type', 'Muster', 'Tipo'), 'text', {
             upper: true,
+            aircraftType: true, // liste des types (sélecteur commun)
             placeholder: L('RFAL, M2K…', 'RFAL, M2K…')
           }),
           f('plannedKg', L('Prévu (kg)', 'Planned (kg)', 'Geplant (kg)', 'Previsto (kg)'), 'number'), f('offloadKg', L(

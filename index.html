@@ -112,7 +112,7 @@
     display: none
   }
 </style>
-<script src="config/repository_tree?v=0" data-no-design></script><script src="data/data_tree.js" onerror="window.DATA_TREE=false"></script>
+<script src="config/repository_tree?v=0" data-no-design></script><script src="shared/data_files.js?v=0"></script>
 </head><body><main>
 <!-- Page d'accueil (v3) : les applications sont dans apps/ ; les données dans data/ (dépôt de données). -->
 <h1>XPlane Web Suite</h1><p id="brand"></p><p id="rel"></p>
@@ -233,7 +233,20 @@
     try {
       fin = JSON.parse(done || '{}') || {};
     } catch {}
-    if (!done) show(false);
+    // sans lanceur (site GitHub Pages, appli) : pas de premier lancement — l'accès aux données GitHub (Mon profil)
+    const noLauncher = () => fetch('__setup/status', {
+      headers: {
+        'X-SOG-Setup': '1'
+      },
+      cache: 'no-store'
+    }).then(r => !r.ok, () => true);
+    const showData = () => {
+      box.hidden = false;
+      box.classList.remove('soft');
+      box.innerHTML = `<a href="apps/settings/profil.html?base=dataAccess"><b>${esc(tr(['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos']))}</b><small>${esc(tr(['Suite ouverte sans le lanceur : régler le dépôt GitHub des données et votre jeton (Mon profil), puis tout fonctionne.', 'Suite opened without the launcher: set the GitHub data repository and your token (My profile), then everything works.', 'Suite ohne Starter geöffnet: GitHub-Daten-Repository und Token einstellen (Mein Profil), dann funktioniert alles.', 'Suite abierta sin el lanzador: configure el repositorio de datos de GitHub y su token (Mi perfil), y todo funciona.']))}</small></a>`;
+    };
+    if (window.GitHubData?.on?.()) return; // données par GitHub : rien à régler ici
+    if (!done) noLauncher().then(n => n ? showData() : show(false));
     else if (st?.todo) show(false, true);
     else fetch('.defa_instance', {
       cache: 'no-store'

@@ -23,16 +23,15 @@ Was sie zeigt, hängt von Ihrer **Nutzungsstufe** ab (Mein Profil › „Nutzung
 
 | Eintrag | Was er öffnet | Stufe |
 |---|---|---|
-| „Heute“ | Nächste Mission, zu schreibende Berichte, Woche; erster Eintrag auf jeder Stufe | 1 |
-| „Meine Missionen“ | Vom Zentrum zugewiesene Missionen und Verfügbarkeit (roter Punkt: ungelesene Missionen) | 1 |
-| „Bericht“ | Eingabe eines Missionsberichts | 1 |
+| „Meine Missionen“ | Einstiegsseite: nächste Mission, zu schreibende Berichte, Verfügbarkeit; Mappen der zugewiesenen Missionen (roter Punkt: ungelesene Missionen); erster Eintrag auf jeder Stufe | 1 |
+| „Bericht“ | Eingabe eines Missionsberichts; Registerkarte „Flotte“: wo die Luftfahrzeuge stehen (Karte, Filter, letzter Flug) | 1 |
 | „Planung“ | Befehlsplanung der Woche (Einsatztafel, auf Stufe 1 oder ohne Zentrum schreibgeschützt); auf Stufe 4 gemeinsame Zeitfenster und wahrscheinliche Missionen der ODV-Seite | 1 |
 | „Missionen“ | Missionsgenerator und Register, als Registerkarten; Kartenstudio auf Stufe 4 | 3 |
 | „Werkzeuge“ | Flugkarten, Kraftstoff, Landungen, Missionsanalyse (in Mein Profil angehakte Werkzeuge, auf Stufe 4 alle) | 1 bis 4 |
 
 - Die Stufe ordnet die Oberfläche, sie gewährt keine Rechte: die Seiten des Zentrums (Missionen, ODV-Planung, Ändern der Einsatztafel) erfordern weiterhin das aktivierte Zentrum.
 - Unten in der Spalte: „Einstellungen“ (Mein Profil, Darstellung, Zentrum, Installation, Wartung, Erststart, als Registerkarten) und **„Hilfe“**. Diese beiden Einträge bleiben unten am Bildschirm fixiert: nur die obere Liste rollt, wenn es zu viele Symbole gibt (Fenster unter 460 px Höhe: die ganze Leiste rollt).
-- „Hilfe“ öffnet die Dokumentation in einem Fenster über der aktuellen Seite, direkt beim Kapitel dieser Seite. Das Fenster schließt sich mit ✕, Esc oder einem Klick daneben; erneut geöffnet, setzt es dort fort, wo Sie waren. „↗“ öffnet sie als ganze Seite (Strg-Klick auf „Hilfe“: in einem neuen Tab). Sie ersetzt den früheren Eintrag „Menü“. Sie funktioniert auch, wenn die Suite ohne Starter direkt von der Festplatte geöffnet wird: Die Dokumente sind in die Seite eingebaut.
+- „Hilfe“ öffnet die Dokumentation in einem Fenster über der aktuellen Seite, direkt beim Kapitel dieser Seite. Das Fenster schließt sich mit ✕, Esc oder einem Klick daneben; erneut geöffnet, setzt es dort fort, wo Sie waren. „↗“ öffnet sie als ganze Seite (Strg-Klick auf „Hilfe“: in einem neuen Tab). Sie ersetzt den früheren Eintrag „Menü“. Sie funktioniert auch, wenn die Suite ohne Starter direkt von der Festplatte geöffnet wird: Die Dokumente sind in die Seite eingebaut. Auf dem Telefon kommt der Text zuerst: das Inhaltsverzeichnis (Suche, Index, Gliederung des Dokuments) ist hinter „Inhalt ▾“ oben auf der Seite eingeklappt, und „↑ Inhalt“ am Ende jedes Kapitels öffnet es wieder.
 - Das Logo oben in der Spalte öffnet die Website der virtuellen Fluggesellschaft in einem neuen Tab.
 - Die Leiste ist auf einem schmalen Bildschirm (unter 760 px) und beim Drucken ausgeblendet. Man kann sie ausblenden oder immer anzeigen: Darstellung › Symbole › „Seitenleiste“.
 
@@ -99,9 +98,11 @@ Die Meldungen der Suite (Erfolg, Warnungen, Fehler) erscheinen unten in der Mitt
 - Eine sich wiederholende Erinnerung (zum Beispiel „SIA-Datenbank fehlt in diesem Browser…“ im Kartenstudio und bei den Flugkarten) erscheint nur **einmal pro Sitzung** des Browsers. Manche Meldungen sind höheren Nutzungsstufen vorbehalten: Darunter werden sie nicht angezeigt, Warnungen und Fehler bleiben aber im Protokoll der Anzeige „⚠ n“.
 - Ausgeblendete Warnungen und Fehler bleiben über die Anzeige „⚠ n“ der Kopfzeile abrufbar: „OK“ bestätigt eine Warnung, „Alle bestätigen“ bestätigt alle, „Leeren“ löscht die Liste. Dieses Protokoll geht beim Seitenwechsel verloren.
 - Eine lange Aufgabe (Lesen, Erzeugen…) zeigt einen Fortschrittsbalken im selben Stapel. Das Verlassen der Seite während der Aufgabe erfordert eine Bestätigung. Lässt sich die Aufgabe unterbrechen, trägt der Balken einen Knopf **„Abbrechen“**: Der laufende Schritt wird beendet, die folgenden werden nicht gestartet, dann meldet die Blase „Abgebrochen.“. Den Knopf gibt es für die Erzeugung und die Vorschauen der Karten (Kartenstudio und Flugkarten: Halt zwischen zwei Karten), die MORA-Berechnung (einer Zone, des vollständigen Rasters oder blockweise), den Import der MILAIP ENR 5.7 und das Einrichten der Zonen (Wartung) sowie das Lesen des Missionsordners (Register).
-- Eine angehaltene Aufgabe sagt, was nur teilweise vorliegt. Karten: Eine abgebrochene Erzeugung lädt kein ZIP herunter und legt nichts im Missionsordner ab (ein Stapel aus mehreren Missionen nennt, wie viele fertig sind); die bereits angezeigten Vorschauen bleiben. Blockweise MORA (Knopf „Anhalten (später fortsetzen)“): Die bereits berechneten Blöcke werden in `mora.csv` geschrieben (Teilraster), „Vollständige Berechnung fortsetzen…“ führt sie später fort. MORA einer Zone, MORA-Raster und MILAIP-Import: Es wird nichts geschrieben. Lesen des Missionsordners: Das Register bleibt unverändert.
+- Eine angehaltene Aufgabe sagt, was nur teilweise vorliegt. Karten: Eine abgebrochene Erzeugung lädt kein ZIP herunter (Kartenstudio des Zentrums) bzw. zeigt kein Bild (Flugkarten) und legt nichts im Missionsordner ab (ein Stapel aus mehreren Missionen nennt, wie viele fertig sind); die bereits angezeigten Vorschauen bleiben. Blockweise MORA (Knopf „Anhalten (später fortsetzen)“): Die bereits berechneten Blöcke werden in `mora.csv` geschrieben (Teilraster), „Vollständige Berechnung fortsetzen…“ führt sie später fort. MORA einer Zone, MORA-Raster und MILAIP-Import: Es wird nichts geschrieben. Lesen des Missionsordners: Das Register bleibt unverändert.
 - Fehlermeldungen sagen, was fehlgeschlagen ist und was zu tun ist, statt nur eines Codes. Beispiele: „der Server antwortet nicht — prüfen, dass die Suite über den Starter geöffnet ist (lancer.cmd / lancer.sh), ihn bei Bedarf neu starten und es erneut versuchen“; „Datei fehlt — prüfen, ob sie im erwarteten Ordner liegt (oder neu erstellen), und es erneut versuchen“; „Browserspeicher voll — Platz schaffen (Einstellungen › Wartung › Speicherplatz) und es erneut versuchen“. Weitere Fälle: Online-Dienst antwortet nicht, Serverfehler, vom Browser verweigerter Zugriff, Zeitüberschreitung; ein unerwarteter Fehler erscheint als „fehlgeschlagen“ mit dem technischen Detail in Klammern.
 - Fragen („Löschen… ?“) öffnen sich in einem kleinen Fenster mit „Bestätigen“ und „Abbrechen“.
+- „Verbindung zu … blockiert“: Die Suite kontaktiert nur die vorgesehenen Websites (Sicherheitsrichtlinie des Starters). Für eine gewünschte Website (Berichts-Webservice, anderes Repository) „Diese Website erlauben…“, dann „Ja“ im Fenster des Starters; die Liste steht unter Einstellungen › Installation › Quellen und Ordner.
+- „⚠ Schutz verringert — wiederherstellen“ (roter Knopf in der Kopfzeile): Seiten der Suite können von einer anderen Website oder Erweiterung aus geöffnet werden, eingestellt unter Einstellungen › Installation; ein Klick stellt den Schutz wieder her (er kehrt auch beim Schließen des Starters zurück).
 
 ### Anmeldung, develop- oder Produktionsmodus, Identitätsübernahme
 
@@ -129,58 +130,45 @@ Die Suite bietet mehrere Designs. Sie ändern die Form der Seiten, nicht die Inf
 - In den Material-Designs wird die Missionsmappe von „Meine Missionen“ zu einem richtigen Buch, mit seinen Animationen.
 - Die Wahl erfolgt unter Darstellung: Jedes Design wird dort als Vorschaubild gezeigt und sofort angewendet. Siehe das Kapitel [Darstellung](#darstellung).
 
-## Heute
-<!-- page: apps/pilot/aujourdhui.html -->
+## Meine Missionen
+<!-- page: apps/pilot/mes_missions.html -->
 
-Diese Seite ist der erste Eintrag der Seitenleiste, auf jeder Nutzungsstufe. Sie beantwortet drei Fragen, ohne dass Sie suchen müssen: Wie lautet meine nächste Mission, welche Berichte sind noch zu schreiben, was steht diese Woche an.
-Jeder Block bietet nur eine Aktion. Die Daten stammen aus den Zuweisungen des Zentrums (siehe „Meine Missionen“) und aus dem Berichtsregister: Nichts muss erneut eingegeben werden. Die Seite liest sich von selbst neu, wenn Sie Sprache, Kürzel oder Sitzung wechseln.
-Die Startseite bietet sie außerdem an erster Stelle von „Meine Aufgaben“ an.
+Die Einstiegsseite des Piloten: Sie sagt zuerst, was zu tun ist — die nächste Mission, die zu schreibenden Berichte, die Verfügbarkeit der Woche — und führt dann zur Mappe jeder Mission. Sie ersetzt die frühere Seite „Heute“ (deren alte Links führen hierher).
+Sie erreichen sie über den ersten Eintrag der Seitenleiste, „Meine Missionen“, über den versiegelten Umschlag der Kopfzeile oder über die Registerkarte „Meine Missionen“.
+Auf den Stufen Besatzung (1) und Planung (2) passt die Seite auf einen Bildschirm: „Meine nächste Mission“, „Zu schreibende Berichte“, „Meine Verfügbarkeit“ (zusammengefasst) und unten eine Zeile mit Links. Ab der Stufe Gestaltung (3) kommt die vollständige Liste der Woche unter den Berichten hinzu.
+Die Mappe einer Mission öffnet sich unter den Berichten: über die ganze Breite auf den Stufen 1 und 2; ab Stufe 3 neben der Liste (sie nimmt zwei Drittel der Breite ein). Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte.
+Zeile mit Links: „Meine Flüge“, dann ab der Stufe Planung (2) **Pilot**, **Beherrschte Luftfahrzeuge** und **Simulatoren**, zu Einstellungen › Mein Profil (Abschnitt „Identität und Netzwerke“ für das Kürzel; Abschnitt „Luftfahrzeuge und Simulatoren“). Der Knopf „Pilot“ zeigt das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden; auf der Stufe Besatzung (1) erscheint er nur, solange das Kürzel nicht eingestellt ist.
+Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung; das Kürzel ist dann das der Anmeldung. Die Seite liest sich selbst neu, wenn Sie Sprache, Kürzel, Sitzung oder Stufe wechseln.
+Je nach Nutzungsstufe (Mein Profil › „Nutzungsstufe“) zeigt die Missionsmappe mehr oder weniger Abschnitte (siehe „Mission“); einige Knöpfe und Links erscheinen erst ab der Stufe Planung (2) oder auf der Stufe Experte (4).
 
 ### Meine nächste Mission
 
-- Die nächste Ihnen zugewiesene Mission (anstehend oder vor weniger als sechs Stunden gestartet): Zeit in UTC, Mission und Titel, Luftfahrzeug (Typ und Kennzeichen), Flugplatz, Rufzeichen; gegebenenfalls „Überführung“ oder „Bereitschaft, bereit um …“ sowie „● neu“, solange Sie sie nicht geöffnet haben.
-- Aktion: **„Mappe öffnen“** öffnet die Mission in „Meine Missionen“.
-- Ohne eingestelltes Kürzel fragt dieser Block direkt danach: das Feld „Kürzel“ (zwei bis vier Buchstaben) und der Knopf „Speichern“. Das Kürzel wird im Pilotenprofil gespeichert und die drei Blöcke lesen sich sofort neu, ohne Umweg über Einstellungen › Mein Profil. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung: Der Block zeigt „Kein Kürzel: anmelden, um Ihre Missionen zu sehen.“
-- Ohne anstehende Mission sagt der Block es: „Keine anstehende Mission ist … zugewiesen.“.
+- Die nächste Ihnen zugewiesene Mission (bevorstehend oder vor weniger als sechs Stunden gestartet): Zeit in UTC, Mission und Titel, Luftfahrzeug (Typ und Kennzeichen), Flugplatz, Rufzeichen; gegebenenfalls „Überführung“ oder „Bereitschaft, bereit um …“, und „● neu“, solange Sie sie nicht geöffnet haben.
+- **„Mappe öffnen“** öffnet die Mappe an Ort und Stelle, im Block „Mission“. **„Flugkarten“** und **„Kraftstoff“** öffnen die Mappe und dann das Werkzeug mit dieser Mission, wie die Knöpfe der Mappe; sie werden nur angeboten, wenn das Werkzeug es ist (Stufe Experte oder Werkzeug in Mein Profil angehakt), und nicht für eine Überführung. **„Bericht anlegen“** öffnet die Mappe und beginnt den Bericht.
+- Darunter „Danach, in den nächsten sieben Tagen“: die folgenden Missionen der kommenden sieben Tage, je eine Zeile (höchstens sieben); ein Klick öffnet ihre Mappe.
+- Ohne eingestelltes Kürzel fragt dieser Block es direkt ab: das Feld „Kürzel“ (zwei bis vier Buchstaben) und der Knopf „Speichern“. Das Kürzel wird im Pilotenprofil gespeichert und die Seite liest sich sofort neu, ohne Umweg über Einstellungen › Mein Profil. Im Produktionsmodus oder während einer Identitätsübernahme zeigt der Block „Kein Kürzel: anmelden, um Ihre Missionen zu sehen.“
+- Ohne bevorstehende Mission eine einzige Zeile: „Keine anstehende Mission.“
 
 ### Zu schreibende Berichte
 
 - Die Ihnen zugewiesenen Missionen, die vor weniger als 21 Tagen gestartet sind und für die das Berichtsregister keinen Bericht enthält. Die jüngste steht oben; höchstens sieben Zeilen.
-- Ein Bericht gilt als bekannt, wenn er aus einem Einsatzbefehl stammt: Das Register (`missions.yaml`) ordnet ihn der Zuweisung über seine Befehlsreferenz zu (Mission, Pilot, Start). Ein anders begonnener Bericht, mit von Hand gewählter Familie, zählt nicht: Die Mission bleibt in der Liste.
+- Ein Bericht ist bekannt, wenn er aus einem Einsatzbefehl stammt: Das Register (`missions.yaml`) verbindet ihn über seine Befehlsreferenz (Mission, Pilot, Start) mit der Zuweisung. Ein anders begonnener Bericht, Familie von Hand gewählt, zählt nicht: Die Mission bleibt in der Liste.
 - Jede Zeile nennt die Mission, ihren Titel, die Zeit, das Luftfahrzeug und den Flugplatz, mit zwei Knöpfen.
-- **„Bericht schreiben“** öffnet die Missionsmappe in „Meine Missionen“ und beginnt den Bericht in der Familie der Mission, aus dem Einsatzbefehl vorausgefüllt (Adresse `?mission=…&do=cr`).
-- **„Kein Bericht“** nimmt die Mission aus der Liste (abgesagte, nicht geflogene Mission…). Die Wahl wird nur in diesem Browser gemerkt; das Register bleibt unberührt.
-- Ist alles berichtet, sagt der Block „Nichts offen: Ihre vergangenen Missionen haben ihren Bericht.“ Ohne Kürzel verweist er auf das Feld des ersten Blocks („Kürzel oben eingeben.“).
-
-### Meine Woche
-
-- Sieben Spalten, Montag bis Sonntag der laufenden Woche (Tage in UTC); der aktuelle Tag ist umrandet.
-- Ihre Missionen erscheinen dort als Kacheln: Zeit und Missionsnummer oder „Bereitschaft“.
-- Aktion: Ein Klick auf eine Kachel öffnet die Missionsmappe in „Meine Missionen“. Ohne Kürzel sagt der Block „Ohne Kürzel bleibt die Woche leer.“
-
-## Meine Missionen
-<!-- page: apps/pilot/mes_missions.html -->
-
-Diese Seite vereint die Missionen, die Ihnen das Zentrum zuweist, die Mappe jeder Mission, Ihre Verfügbarkeit und Ihr Kürzel.
-Sie erreichen sie über den Eintrag „Meine Missionen“ der Seitenleiste, über den versiegelten Umschlag der Kopfzeile oder über die Registerkarte „Meine Missionen“.
-Aufbau: die Liste der Missionen und die geöffnete Mappe nebeneinander (die Mappe nimmt zwei Drittel der Breite ein), „Meine Verfügbarkeit“ darunter, über die ganze Breite. Ohne geöffnete Mappe nimmt die Liste die ganze Breite ein. Auf einem schmalen Bildschirm (unter 1100 px) steht alles in einer einzigen Spalte: Missionen, Mappe, Verfügbarkeit.
-Im Produktionsmodus verlangt die Seite zuerst eine Anmeldung.
-Je nach Nutzungsstufe (Mein Profil › „Nutzungsstufe“) zeigt die Missionsmappe mehr oder weniger Abschnitte (siehe „Mission“); einige Knöpfe und Links erscheinen erst ab der Stufe Planung (2) oder auf der Stufe Experte (4).
+- **„Bericht schreiben“** öffnet die Mappe der Mission an Ort und Stelle und beginnt den Bericht in der Familie der Mission, ausgefüllt aus dem Einsatzbefehl.
+- **„Kein Bericht“** nimmt die Mission aus der Liste (abgesagte, nicht geflogene Mission…). Die Wahl wird nur in diesem Browser gespeichert; das Register bleibt unberührt.
+- Ist alles abgegeben, eine einzige Zeile: „Kein Bericht offen.“
 
 ### Meine Missionen der Woche
 
-Die Liste der Missionen, die Ihnen für die angezeigte Woche zugewiesen sind, sortiert nach Startzeit (UTC).
+Ab der Stufe Gestaltung (3): die Liste der Missionen, die Ihnen für die angezeigte Woche zugewiesen sind, sortiert nach Startzeit (UTC).
 
-- **Wochenleiste**: „‹“ vorherige Woche, Datumsfeld (springt zur Woche eines Datums), „›“ nächste Woche, „⟲“ zurück zur aktuellen Woche (sichtbar außerhalb der aktuellen Woche). Sie gilt für die Liste und die Verfügbarkeit gemeinsam: Ein Wochenwechsel hier ändert beide Blöcke.
+- **Wochenleiste**: „‹“ vorherige Woche, Datumsfeld (springt zur Woche eines Datums), „›“ nächste Woche, „⟲“ zurück zur aktuellen Woche (sichtbar außerhalb der aktuellen Woche). Sie ist mit der Leiste der Verfügbarkeit gekoppelt: Ein Wochenwechsel hier ändert beide Blöcke.
 - **Spalten**: „Start (UTC)“ (oder „Bereitschaft“ und die Uhrzeit, zu der Sie bereit sein müssen), „Mission“, „Titel“, „Luftfahrzeug“, „Flugplatz“, „Rufzeichen“.
 - Ein Punkt ● am Zeilenanfang kennzeichnet eine **neue, noch nicht geöffnete** Mission.
 - Der Vermerk „Überführung“ zeigt, dass Sie ein Luftfahrzeug für einen anderen Piloten überführen: Sie erhalten nur den Überführungsbefehl, nicht das Briefing der Mission.
 - Ein Klick auf eine Zeile öffnet die Mission im Block „Mission“.
 - Kästchen „auch vergangene Missionen anzeigen“: Standardmäßig verschwindet eine Mission einige Stunden nach ihrem Start. Die Wahl wird gespeichert.
-- Ohne eingestelltes Kürzel erscheint das Eingabefeld für das Kürzel unter der Liste (Feld „Kürzel“, Knopf „Speichern“): Nach dem Speichern werden die Liste und die Verfügbarkeit neu gelesen. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
-- Eine Adresse `?mission=…` aus „Heute“ oder aus „Neuer Bericht“ zeigt die Woche dieser Mission (vergangene Missionen bei Bedarf eingeblendet); mit `?do=cr` beginnt der Bericht gleich beim Öffnen der Mappe.
-- **Pilot**, **Beherrschte Luftfahrzeuge**, **Simulatoren**: drei Knöpfe unter der Liste, zu Einstellungen › Mein Profil (Abschnitt „Identität und Netzwerke“ für das Kürzel; Abschnitt „Luftfahrzeuge und Simulatoren“, bei der Karte der Luftfahrzeuge oder der Simulatoren). Der Knopf „Pilot“ zeigt das Kürzel, mit dem Ihre Missionen und Ihre Verfügbarkeit gefunden werden. Im Produktionsmodus oder während einer Identitätsübernahme ist es das Kürzel der Anmeldung.
-- Diese drei Knöpfe erscheinen ab der Stufe Planung (2). Auf der Stufe Besatzung (1) erscheint nur „Pilot“, solange das Kürzel nicht eingestellt ist.
+- Eine Adresse `?mission=…` (Kopfblöcke, „Neuer Bericht“, alte Links von „Heute“) öffnet die Mappe dieser Mission und zeigt ihre Woche (vergangene Missionen bei Bedarf eingeblendet); mit `?do=cr`, `?do=maps` oder `?do=fuel` folgen der Bericht, die Flugkarten oder der Kraftstoff dem Öffnen der Mappe.
 
 ### Mission
 
@@ -246,8 +234,13 @@ Der Knopf „⤢ Volle Breite“ im Blocktitel breitet die Mappe über die ganze
 
 ### Meine Verfügbarkeit
 
-Ihre Verfügbarkeit in der angezeigten Woche, in UTC, auf die Minute. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen. Es ist dieselbe Eingabe wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel); hier ist die Woche die der Wochenleiste der Liste.
-Je nach Nutzungsstufe: Die eigene Wochenleiste des Blocks, das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte; auf den anderen Stufen wechselt man die Woche über die Leiste der Liste.
+Ihre Verfügbarkeit in der angezeigten Woche, in UTC, auf die Minute. Das Zentrum nutzt sie, um Ihnen Missionen zuzuweisen.
+
+- **Wochenleiste** des Blocks, auf jeder Stufe: „‹“, Datum, „›“, „⟲“ (oft trägt man die nächste Woche ein). Auf Stufe 3 ist sie mit der Leiste der Liste gekoppelt.
+- **Zusammenfassung**: ein Feld pro Tag (Montag bis Sonntag, UTC), jeder Zeitraum mit dem Abzeichen seiner Kategorie und seinen Zeiten, zum Beispiel „D+ 17:00–22:00“; „—“ für einen Tag ohne Eintrag. Leere Woche: eine Zeile, „Keine Verfügbarkeit für diese Woche eingetragen.“ Ein Tippen (oder Klick) auf einen Tag öffnet die Eingabe an diesem Tag; auf dem Telefon in der Ansicht „Tag“. Auf dem Telefon steht der Umschalter „Tag / Woche“ über der Zusammenfassung, auch bei eingeklappter Eingabe sichtbar.
+- **„Meine Woche bearbeiten“** klappt an Ort und Stelle die unten beschriebene Eingabe auf (Palette, Raster, genauer Zeitraum, Knöpfe); ein weiterer Klick klappt sie zu. Bei leerer Woche ist sie sofort aufgeklappt, danach bleibt sie, wie Sie sie gelassen haben. Die Zusammenfassung folgt jeder Änderung.
+
+Es ist dieselbe Eingabe wie auf der Seite Meine Verfügbarkeit (nächstes Kapitel). Das alte Stundenraster und der Link „Verfügbarkeitseingabe einzeln öffnen“ erscheinen nur auf der Stufe Experte.
 
 **Palette**: Die Kategorien sind nach Gruppen geordnet, eine Zeile pro Gruppe („Verfügbar“, „SOG-Übung“, „Beschäftigt“, „Nicht verfügbar“). Jeder Farbpunkt trägt den ODV-Codebuchstaben und eine kurze Beschriftung; der Tooltip zeigt die vollständige Beschriftung. Die gewählte Kategorie wird gespeichert. Unter der Palette zeigt eine Zeile die Missionsthemen, die die gewählte Kategorie öffnet; bei einer Kategorie nach Wahl führt der Link „Meine Missionsarten…“ zu den Einstellungen in Mein Profil.
 
@@ -264,11 +257,11 @@ Standardkategorien (das Zentrum kann diese Liste ändern):
 
 - **Zwei Ebenen.** Der Hintergrund gibt die Art einer Nichtverfügbarkeit an (Gruppe „Nicht verfügbar“): nur die Farbe, über die ganze Zeilenhöhe. Die erste Ebene trägt Verfügbarkeiten, Übungen und Belegungen: Rechtecke mit ihrem Buchstaben in der Mitte, der Anfangszeit links und der Endzeit rechts (verkürzt, „8 O 12“, bei einem schmalen Rechteck). Eine Minute hat nur einen Zustand: Wo ein Rechteck liegt, zählt der Hintergrund darunter nicht, bleibt aber erhalten und kehrt zurück, wenn das Rechteck weggeht. Zeit ohne Eintrag gilt als nicht verfügbar.
 - **Die Palette.** Ein Klick auf einen Farbpunkt wählt den Pinsel: Er sagt nur, was gezeichnet wird.
-- **Zeichnen.** Im leeren Teil einer Zeile oder im Abstand zwischen zwei Zeilen ziehen: Die Form rastet auf der halben Stunde ein und zeigt ihre Zeiten während der Geste. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.
-- **Eine Form greifen.** Eine Geste, die auf einer Form (Rechteck oder Hintergrundband) beginnt, greift sie, egal welcher Pinsel: Ein Klick wählt sie aus, Ziehen verschiebt sie (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), ihre Ränder ändern die Größe. Umschalt+Ziehen zeichnet stattdessen darüber: So legt man eine Verfügbarkeit auf einen Tag, der schon von einem Band bedeckt ist.
+- **Zeichnen.** Im leeren Teil einer Zeile, auf einem Hintergrundband oder im Abstand zwischen zwei Zeilen ziehen: Die Form rastet auf der halben Stunde ein und zeigt ihre Zeiten während der Geste. Über mehrere Tage legt ein Auswahlrechteck dieselben Stunden auf jeden durchquerten Tag.
+- **Eine Verfügbarkeit greifen.** Eine Geste, die auf einem Rechteck beginnt, greift es, egal welcher Pinsel: Ein Klick wählt es aus, Ziehen verschiebt es (in 5-min-Schritten; nach oben oder unten: gleiche Zeiten, anderer Tag), seine Ränder ändern die Größe; Umschalt+Ziehen zeichnet stattdessen darüber. Hintergrundbänder sind keine Objekte: Um eine Verfügbarkeit herum füllen sie den Rest des Tages und bewegen sich nicht; eine Geste, die auf einem Band beginnt, zeichnet.
 - **Schneiden.** Die letzte Form gewinnt: Ein über ein anderes gezeichnetes Rechteck schneidet es, ein Hintergrund durch ein Rechteck ebenfalls. Der Schnitt ist während der Geste zu sehen.
 - **Ablegen, Doppelklick.** Einen Farbpunkt der Palette auf eine Form ziehen: Die Form nimmt diese Art an. Auf den leeren Teil einer Zeile oder den Tagesnamen abgelegt, bedeckt er den ganzen Tag; ein Hintergrund-Farbpunkt ändert dann nur den Hintergrund, die Rechtecke bleiben. Doppelklick auf ein Band: Seine Farbe wird Hintergrund des ganzen Tages; auf einen Hintergrund-Farbpunkt: der ganzen Woche.
-- **Korrigieren.** Das ✕ einer Form oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht eine Änderung rückgängig, Strg+Y oder Strg+Umschalt+Z stellt sie wieder her (50 Änderungen pro angezeigter Woche).
+- **Korrigieren.** Das ✕ einer Verfügbarkeit oder Entf auf der Auswahl löscht sie; die Pfeiltasten verschieben sie (← → 5 min, ↑ ↓ ein Tag); Esc hebt die Auswahl auf. Strg+Z macht eine Änderung rückgängig, Strg+Y oder Strg+Umschalt+Z stellt sie wieder her (50 Änderungen pro angezeigter Woche).
 - **Was gespeichert wird.** Jede Änderung wird sofort gespeichert (Datenordner, sonst dieser Browser): Es gibt keinen Knopf „Speichern“. Beim Überfahren zeigt ein Tooltip den Zeitraum in Worten, zum Beispiel „Mittwoch, 14. Oktober, 00:00 bis 05:30: Nicht verfügbar“.
 
 **„Genauer Zeitraum“** (zugeklappt: Ein Klick auf den Titel öffnet ihn): „Gruppe“, „Kategorie“, Kästchen der Tage, „von“ und „bis“ (UTC, auf die Minute), dann „Hinzufügen“. Der Zeitraum wird auf jeden angekreuzten Tag gelegt, nach der Regel der letzten Form. Leere Uhrzeiten = ganzer Tag; ohne Ende bis Mitternacht; ein Ende vor dem Beginn wird abgelehnt. Strg+Z macht das Hinzufügen rückgängig.
@@ -281,6 +274,8 @@ Standardkategorien (das Zentrum kann diese Liste ändern):
 Die Meldung unter dem Block zeigt, wohin die Eingabe gegangen ist: „Im Datenordner gespeichert.“ oder „In diesem Browser behalten, das Zentrum sieht es nicht: …“, wenn der Datenordner nicht freigegeben ist (siehe [Erststart](#erststart), Schritt 3).
 Ein vorhandenes altes Stundenraster wird automatisch in die Woche übernommen.
 Der Link „Verfügbarkeitseingabe einzeln öffnen“ führt zur Seite Meine Verfügbarkeit. Dieser Link erscheint nur auf der Stufe Experte.
+
+**Auf dem Telefon**: die Blöcke folgen in einer Spalte aufeinander; die Zusammenfassung der Verfügbarkeit steht in zwei Spalten. Ein Tippen auf eine Mission bringt ihre Mappe auf den Bildschirm, und ihre Aktionen („Bericht erstellen“, „Mappe schließen“…) bleiben beim Lesen über der unteren Leiste fixiert. Die Tabellen der Mappe (Routenpunkte) scrollen in ihrem Rahmen.
 
 ## Meine Flüge
 <!-- page: apps/pilot/mes_vols.html -->
@@ -319,6 +314,8 @@ Rest auf.
 Sie gelangen auch über „Meine Flüge ↗“ in Meine Missionen (neben „auch vergangene Missionen anzeigen“) und im Menü
 „Senden“ eines Berichts hierher.
 
+**Auf dem Telefon**: die Summen werden zu Kacheln (Flüge, Blockstunden, Flüge ohne Bericht, meistgeflogene Typen) und jeder Flug zu einer Karte (Datum und Rufzeichen oben); ein Tippen klappt die Details auf, mit „Bericht öffnen“ oder „Bericht schreiben“.
+
 ## Meine Verfügbarkeit
 <!-- page: apps/pilot/disponibilites.html -->
 
@@ -344,6 +341,8 @@ Tipps und Grenzen:
 
 Wie das Zentrum diese Angaben nutzt, siehe [Verfügbarkeit und Neuorganisation](../technique/DISPOS_ET_REORGANISATION.md).
 
+**Auf dem Telefon**: die Eingabe wechselt in eine Ansicht „ein Tag“ (Umschalter „Tag“ / „Woche“ unter der Wochenleiste; die gewählte Ansicht bleibt erhalten). Oben der angezeigte Tag mit „‹“ und „›“ (oder einem Wischen; über Sonntag oder Montag hinaus wird die Nachbarwoche gelesen), dann die sieben Tage der Woche (ein Punkt unter denen mit einer Verfügbarkeit). Eine Kategorie in der Palette wählen, in der Stundenspalte auf die Anfangszeit tippen, dann auf die Endzeit: der Zeitraum wird auf die halbe Stunde gesetzt, Ende eingeschlossen; „Ganzer Tag“ setzt ihn über den ganzen Tag, „Abbrechen“ verwirft einen Beginn. Die Zeiträume des Tages stehen über der Spalte: „✕“ entfernt eine ganze Verfügbarkeit oder den Hintergrund nur an diesem Tag; „↶ Rückgängig“ macht die letzte Änderung rückgängig. Die Spalte öffnet sich eine Stunde vor der ersten Verfügbarkeit des Tages (sonst um 07:00) und scrollt in ihrem Rahmen. „Genauer Zeitraum“ bleibt für die Minute da.
+
 ## Mein Profil
 <!-- page: apps/settings/profil.html -->
 
@@ -356,6 +355,8 @@ Je nach Nutzungsstufe: „Geflogene Luftfahrzeuge (Berichte)“ erscheint ab der
 ### Nutzungsstufe
 
 Was die Suite Ihnen zeigt, je nach Nutzung. Vier Karten, eine pro Stufe (Nummer und Name, was die Stufe zeigt, „Erfordert das Zentrum“ für die Stufen 2 bis 4); die gewählte Karte ist hervorgehoben, und die Zeile „Aktuelle Stufe“ nennt sie. Ein Klick genügt: die Seite wird neu geladen und die Seitenleiste folgt.
+
+Die Stufe lässt sich auch in der Kopfzeile jeder Einstellungsseite einstellen, Wartung eingeschlossen: „Nutzungsstufe“, neben der Sprache (1 · Besatzung bis 4 · Experte); eine Änderung lädt die Seite neu. Ein einer höheren Stufe vorbehaltenes Element wird an seiner Stelle durch eine Zeile „…: auf Stufe 4 · Experte — Stufe ändern“ angekündigt (zum Beispiel die Veröffentlichung der Luftfahrzeug-Datenbank unter Wartung › Luftfahrzeugtypen).
 
 | Stufe | Für | Was hinzukommt |
 |---|---|---|
@@ -374,7 +375,7 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 |---|---|
 | „Pilot“ | „Kürzel“, „VATSIM-ID (CID)“, „IVAO-ID (VID)“, „SimBrief (Benutzer oder ID)“ |
 | „Website der Fluggesellschaft“ | „Kennung“, „Passwort“ |
-| „IVAO — OAuth-Client (persönlich)“ (Stufe Experte) | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
+| „IVAO — OAuth-Client (persönlich)“ | „Client-ID“, „Client-Geheimnis“, „Bei IVAO anzugebende Weiterleitungsadresse“ (auf developers.ivao.aero einzutragen); Schaltfläche „IVAO-Client speichern“: vom Starter dieses Rechners gehalten, das Geheimnis wird nie wieder angezeigt |
 | „Sprache“ (Stufe Experte) | „Sprache der Suite“: Automatisch (Browsersprache), Français, English, Deutsch, Español |
 
 1. Füllen Sie die Felder aus.
@@ -384,6 +385,39 @@ Ihre Identität in der Suite, die alle Seiten übernehmen (☰ › Pilotenprofil
 - Die Zugangsdaten der Website der Fluggesellschaft bleiben nur in diesem Browser: Sie werden nie in eine Datei oder eine Sicherung geschrieben.
 - Die Sprache wird gewöhnlich über die Flagge „Sprache“ der Kopfzeile gewählt; die Karte „Sprache“ (Stufe Experte) gilt, sobald sie gewählt ist, ohne „Speichern“.
 - Im Produktionsmodus ist das Kürzel das des angemeldeten Benutzers und lässt sich hier nicht ändern.
+
+### Datenzugang
+
+Für die App ohne Starter (Telefon, auf GitHub Pages veröffentlichte Suite): Die Daten der Fluggesellschaft werden mit Ihrem persönlichen Token in einem GitHub-Repository (Kopie des Daten-Repositorys) gelesen und geschrieben. Auf einem Rechner mit Starter ist diese Rubrik unnötig.
+
+| Feld | Inhalt |
+|---|---|
+| „Repository (Konto/Repository)“ | das GitHub-Daten-Repository, zum Beispiel `Woyczek/flight_planner_data` |
+| „Zweig“ | standardmäßig `main` |
+| „Persönliches Token“ | feingranulares Token auf github.com › Settings › Developer settings › Fine-grained tokens: nur Zugriff auf das Daten-Repository, Berechtigung „Contents“ Lesen und Schreiben, Ablauf nach höchstens 90 Tagen; nur in diesem Browser gespeichert, nie wieder angezeigt |
+
+- „Testen“ prüft, ob das Repository lesbar ist, der Zweig existiert und das Token schreiben darf.
+- „Speichern“ prüft, schaltet dann den Zugang ein und öffnet Meine Missionen; von da an lesen alle Seiten der Suite ihre Daten aus dem Repository (auch offline aufbewahrt).
+- Jede Speicherung (Bericht, Verfügbarkeiten, Blatt) wird ein Commit unter Ihrem Kürzel. Hat jemand anderes dieselbe Datei inzwischen geändert, wird sie neu gelesen und vor dem Schreiben zusammengeführt.
+- „Zugang trennen“ löscht das Token und die Datenkopien aus diesem Browser; die Seiten kehren zu den Daten des Starters zurück.
+- Telefon verloren oder gestohlen: das Token auch auf github.com löschen (Settings › Developer settings › Fine-grained tokens); dann gilt es nirgends mehr.
+- Auf einer unter `….github.io` veröffentlichten Website erinnert die Karte daran, dass jede andere GitHub-Pages-Website desselben Kontos denselben Ursprung teilt und das Token lesen könnte: keine weitere auf diesem Konto veröffentlichen.
+
+### Dieses Gerät
+
+Schlüssel dieses Geräts (Browser dieses Computers oder Telefons) für signierte Konten, nur nötig, wenn das Zentrum der
+Fluggesellschaft im **Gruppenmodus** ist. Der Schlüssel bleibt in diesem Browser, nicht exportierbar.
+
+- Die Karte zeigt den **Fingerabdruck** dieses Geräts (`7F3A-91C2-04BE-D85E`), Ihr Kürzel und den Status: autonomer
+  Modus (nichts zu beantragen), Register zu bestätigen, nicht eingeschrieben, Anfrage offen oder „Gerät für …
+  eingeschrieben ✓“.
+- **Gruppenregister zu bestätigen**: Vergleichen Sie beim ersten Lesen den Fingerabdruck des Gründers mit dem, den der
+  Administrator Ihnen geschickt hat (Discord, SMS, E-Mail): gleich, „Bestätigen“; anders, „Ablehnen“ und ihn warnen.
+- **„Zugang beantragen“** legt eine mit dem Schlüssel dieses Geräts signierte Anfrage ab (im GitHub-Modus: ein Commit im
+  Daten-Repository). Senden Sie danach den Fingerabdruck dieses Geräts über einen anderen Kanal an einen
+  Administrator: Er vergleicht ihn vor dem Genehmigen. „Anfrage erneut senden“ legt sie noch einmal ab.
+- Browser gelöscht, anderes Gerät oder Schlüssel widerrufen: neuer Schlüssel (oder keiner mehr im Register), neue
+  Anfrage.
 
 ### Anmeldung und Passwort
 
@@ -395,6 +429,7 @@ Ihr gemeinsamer Benutzereintrag: Rolle und Passwort (als Hashwert gespeichert, n
 - Der Knopf „Abmelden“ erscheint nach der Anmeldung.
 - Ein vorläufiges Passwort wird angezeigt („vorläufiges Passwort, zu ändern“): Ändern Sie es gleich bei der ersten Anmeldung.
 - Passwort vergessen: Bitten Sie einen Administrator des Zentrums um ein Zurücksetzen.
+- **Gruppenmodus** (signiertes Register): Ihr Passwort steht im Register; ein Administrator des Zentrums ändert es für Sie. Beim ersten Öffnen nach dem Wechsel in den Gruppenmodus zeigt eine Meldung den Fingerabdruck des Gründers mit „Bestätigen“ und „Ablehnen“: vor dem Bestätigen mit dem vom Administrator gesendeten vergleichen (Discord, SMS, E-Mail).
 
 ### Missionsarten
 
@@ -420,14 +455,15 @@ Die Einstellungen werden in Ihrem Benutzereintrag gespeichert und durch die Sync
 | „Flottenvarianten“ | In der Flotte vorhandene Varianten |
 | „Luftfahrzeuge“ | Anzahl der Luftfahrzeuge im Dienst (von der Gesamtzahl) und ihre Basen |
 | „Leistungen“ | Für ein besessenes Luftfahrzeug: ein Link — die Quelle seines Blatts, der die Seite „Leistungsblätter“ auf diesem Luftfahrzeug öffnet, oder „keine“ und die Möglichkeiten, eines anzulegen, die dieselbe Seite öffnen |
-| „Besessen“ | Sie haben diesen Typ in Ihrem Simulator |
-| „Beherrscht“ | Sie fliegen ihn sicher |
+| „Status“ | Punkt: leer, nicht besessen; rot, NQ — besessen, nicht qualifiziert (Sie haben diesen Typ in Ihrem Simulator); orange, zu qualifizieren — Neuling; grün, beherrscht (Sie fliegen ihn sicher). Dieselben Farben und dieselbe Bedeutung wie im Blatt FLOTTE der ODV-Arbeitsmappe. Ein Tippen schaltet in dieser Reihenfolge weiter, dann zurück zu leer |
+| „⋯“ | Zeilenmenü: ihre Aktionen (Leistungsblatt anlegen, Variante entfernen, Typ oder Eintrag suchen, korrigieren oder löschen); auf dem Telefon auch die ausgeblendeten Spalten |
 
-- Das Ankreuzen von „Beherrscht“ kreuzt auch „Besessen“ an; das Abwählen von „Besessen“ wählt „Beherrscht“ ab.
+- Neuling und beherrscht gelten für das Zentrum als besessen; „Neuling“ wird gesondert in Ihren angegebenen Verfügbarkeiten gespeichert.
+- Auf dem Telefon behält die Tabelle nur das Luftfahrzeug, den Punkt und „⋯“: Varianten, Flottenluftfahrzeuge und Leistungen wandern ins Menü.
 - „Luftfahrzeug suchen“ über den Karten filtert beim Tippen nach Name, Variante, Kennung, Klasse und Quelle der Leistungen: Karten mit Treffer bleiben aufgeklappt, die anderen klappen zu, und „n Luftfahrzeug(e)“ nennt die Anzahl; leeres Feld: alles.
-- Varianten: Eine Kennung, die sich mehrere Modelle teilen (CL2T: CL-215T und CL-415), hat eine Zeile je angegebener Variante unter ihrem Namen („Canadair CL-415“, „Canadair CL-215T“); „ד entfernt eine Variante. Ohne angegebene Variante trägt das Luftfahrzeug den Namen des Eintrags und seiner bekannten Varianten („Canadair CL-215T / CL-415“). Das Leistungsprofil bleibt das der Kennung: „Leistungen gemeinsam für die Varianten“. Beim Hinzufügen schlägt die Liste jede Variante vor (Modell des Eintrags, Flottenvarianten, gebräuchliche Namen der Basis), oder Sie behalten Ihren eigenen Text; die Variante wird in Ihrer Angabe gespeichert.
+- Varianten: Eine Kennung, die sich mehrere Modelle teilen (CL2T: CL-215T und CL-415), hat eine Zeile je angegebener Variante unter ihrem Namen („Canadair CL-415“, „Canadair CL-215T“); „Variante entfernen“ im Menü „⋯“ entfernt eine Variante. Ohne angegebene Variante trägt das Luftfahrzeug den Namen des Eintrags und seiner bekannten Varianten („Canadair CL-215T / CL-415“). Das Leistungsprofil bleibt das der Kennung: „Leistungen gemeinsam für die Varianten“. Beim Hinzufügen schlägt die Liste jede Variante vor (Modell des Eintrags, Flottenvarianten, gebräuchliche Namen der Basis), oder Sie behalten Ihren eigenen Text; die Variante wird in Ihrer Angabe gespeichert.
 
-**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Luftfahrzeuge, die Sie besitzen, ohne dass sie zur Flotte gehören. Man fügt sie immer über einen Namen hinzu, nie über einen Pflichtcode: Geben Sie ein, was Sie kennen („CL-415“, „Canadair 415“, „PC-12“, „Caravelle“). Beim Tippen schlägt eine Liste die Typen der Flotte, der Typbasis dieses Rechners mit ihren gebräuchlichen Namen und der veröffentlichten ICAO-Liste vor, mit ihrer Herkunft; die Berechnung ist lokal, ohne Netz. Die Kennung wird für Sie gefunden: „CL-415“, „Canadair 415“ und „CL415“ ergeben CL2T, angezeigt als „Canadair CL-415“ (der Name der Variante bleibt erhalten). Ein Flottentyp wird einfach in der Karte „Meine Luftfahrzeuge“ angehakt. Kommen mehrere Typen in Frage, wird der nächstliegende ins Feld übernommen — „Hinzufügen“ zum Bestätigen, oder wählen Sie aus der Liste. Passt nichts, wird das Luftfahrzeug unter seinem Namen behalten, markiert mit „ICAO-Typ zu bestätigen“; „Typ suchen“ in seiner Zeile ordnet es später einer Kennung zu. Um ein hinzugefügtes Luftfahrzeug zu korrigieren oder zu löschen, klicken Sie auf seine Zeile: Seine Kennung oder sein Name kommt ins Feld, und „Hinzufügen“ wird zu „Ersetzen“ („Beherrscht“ wird übertragen), neben „Löschen“ und „Abbrechen“ (oder Esc). Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für eine Kennung, die ihr fehlt: Die Zeile zeigt „Typbasis wird ergänzt…“ während eines kurzen Durchlaufs, immer nur ein Durchlauf (ein während eines Durchlaufs angefragter Typ wird in die Warteschlange gestellt); das Verlassen der Seite unterbricht ihn nicht. Ein ausgemusterter Typ, den die offiziellen Quellen nicht mehr kennen, wird als letzter Ausweg bei Aviation Fanatic gesucht; ist er auch dort nicht, zeigt der Hinweis „nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)“ dies an. Diese Luftfahrzeuge gehen mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte, Spalte „Auch angegeben von“ — sie müssen nur „Besessen“ anhaken.
+**Karte „Andere Luftfahrzeuge (außerhalb der Flotte)“**: die Luftfahrzeuge, die Sie besitzen, ohne dass sie zur Flotte gehören. Man fügt sie immer über einen Namen hinzu, nie über einen Pflichtcode: Geben Sie ein, was Sie kennen („CL-415“, „Canadair 415“, „PC-12“, „Caravelle“). Beim Tippen schlägt eine Auswahlliste mit Suche (Silhouetten, ↑ ↓ Eingabe, Esc), nach Herkunft gruppiert, die Typen der Flotte, der Typbasis dieses Rechners mit ihren gebräuchlichen Namen und der veröffentlichten ICAO-Liste vor; die Berechnung ist lokal, ohne Netz. Die Kennung wird für Sie gefunden: „CL-415“, „Canadair 415“ und „CL415“ ergeben CL2T, angezeigt als „Canadair CL-415“ (der Name der Variante bleibt erhalten). Ein Flottentyp wird einfach in der Karte „Meine Luftfahrzeuge“ angehakt. Kommen mehrere Typen in Frage, wird der nächstliegende ins Feld übernommen — „Hinzufügen“ zum Bestätigen, oder wählen Sie aus der Liste. Passt nichts, wird das Luftfahrzeug unter seinem Namen behalten, markiert mit „ICAO-Typ zu bestätigen“; „Typ suchen“ in seiner Zeile ordnet es später einer Kennung zu. Um ein hinzugefügtes Luftfahrzeug zu korrigieren oder zu löschen, klicken Sie auf seine Zeile: Seine Kennung oder sein Name kommt ins Feld, und „Hinzufügen“ wird zu „Ersetzen“ (sein Status wird übertragen), neben „Löschen“ und „Abbrechen“ (oder Esc). Die Basis dieses Rechners wird vom Starter nur beim Klick auf „Hinzufügen“ ergänzt, für eine Kennung, die ihr fehlt: Die Zeile zeigt „Typbasis wird ergänzt…“ während eines kurzen Durchlaufs, immer nur ein Durchlauf (ein während eines Durchlaufs angefragter Typ wird in die Warteschlange gestellt); das Verlassen der Seite unterbricht ihn nicht. Ein ausgemusterter Typ, den die offiziellen Quellen nicht mehr kennen, wird als letzter Ausweg bei Aviation Fanatic gesucht; ist er auch dort nicht, zeigt der Hinweis „nicht gefunden (ICAO, EUROCONTROL, Aviation Fanatic)“ dies an. Diese Luftfahrzeuge gehen mit Ihren angegebenen Verfügbarkeiten mit: Das Zentrum sieht sie für die Zuweisungen, und die anderen Piloten finden sie in dieser Karte, Spalte „Auch angegeben von“ — ein Tippen auf den Punkt genügt.
 
 **Karte „Simulatoren“**: Kreuzen Sie die installierten Simulatoren und Werkzeuge an.
 
@@ -501,6 +537,28 @@ Die Strichstärke der Symbole oder gar keine Symbole. Jede Zeile zeigt eine Vors
 
 **„Seitenleiste“**: „Je nach Design“, „Immer“ oder „Nie“. Standardmäßig wird sie immer angezeigt (außer bei schmalem Bildschirm und beim Drucken). „Symbolgröße“: „Klein“, „Mittel“ (Standard) oder „Groß“. „Anzeige“ (Stufe Experte): „Symbol und Beschriftung“ (Standard), „Nur Symbol“ (schmalere Leiste, Name des Eintrags als Tooltip) oder „Nur Beschriftung“.
 
+### Auf dem Telefon
+
+Auf einem schmalen Bildschirm (Telefon, verkleinertes Fenster) wechselt die Suite in den **mobilen Modus**: Kopfzeile
+in einer Zeile, Navigationsleiste unten auf dem Bildschirm statt der Seitenleiste, Registerkarten in einer scrollbaren
+Zeile, Blöcke in voller Breite, größere Schaltflächen und Felder, Tabellen, die im Block scrollen oder als Karten
+erscheinen.
+
+- **Leiste unten**: bis zu sechs Einträge, alle mit kurzer Beschriftung (Missionen, Flüge, Bericht, Planung…); darüber
+  hinaus die ersten fünf und „Mehr“, das die übrigen Einträge, Einstellungen und Hilfe öffnet.
+- **Telefon im Querformat**: die Leiste wird zu einer Schiene links am Bildschirm (Symbol, Beschriftung darunter) und die Kopfzeile ist nicht mehr fixiert, damit die Höhe dem Inhalt bleibt; die Kurven der Kraftstoffseite passen mit ihrem Höhenregler auf den Bildschirm.
+- **Kopfzeile**: sie verschwindet beim Abwärtsscrollen und kommt beim Aufwärtsscrollen sofort zurück.
+- **Mobiler Modus**: „Automatisch (schmaler Bildschirm)“, „Immer“ oder „Nie“. Im automatischen Modus bleibt ein ins Querformat gedrehtes Telefon im mobilen Modus.
+- **Diese Seite auf dem Telefon**: „Auf dem Telefon“ steht oben. Unter einem Telefon-Skin werden Design, Symbole, Seitenleiste und Themenfarben (Einstellungen des Computers, ohne Wirkung unter diesem Skin) nicht angezeigt; Telefon-Skin „Mein Design“ holt sie zurück.
+- **Telefon-Skin**: „Mobil“ (Standard, flach und leicht), „Swiss“ (Schwarz-Weiß, eckig, roter Akzent) oder „Mein
+  Design“ (das oben gewählte Design). Wird beim nächsten Laden einer Seite auf einem Touchscreen angewendet.
+- **Tag / Nacht**: „Wie das Telefon“ (helle oder dunkle Einstellung des Telefons), „Tag“ oder „Nacht“.
+- Auf einem Touchscreen werden die für große Bildschirme gestalteten Seiten (Flugkarten,
+  Vorbereitungsseiten des Zentrums, Installationseinstellungen) aus Leiste und Registerkarten entfernt; trotzdem
+  geöffnet, zeigen sie einen Hinweis. Ein verkleinertes Computerfenster behält alle Seiten.
+- **Mobile Vorschau am Computer** (Stufe Experte): eine Seite der Suite in Telefon- und Tablet-Rahmen, mit gewähltem
+  Skin und Tag / Nacht, um die Darstellung ohne Telefon zu prüfen.
+
 ### Themenfarben
 
 Jede Seite der Suite hat ein Farbthema (Leiste, Text der Leiste, Akzent). Für jedes Thema wählen Sie eine Farbfamilie und einen Ton; daraus werden die Farben berechnet, mit einer Lesbarkeitsprüfung. Abschnitt der Stufe Experte.
@@ -539,8 +597,10 @@ Derselbe Stand steht als Plakette im Titel jedes Schritts (die Nummer wird grün
 Der Browser verlangt, jeden Ordner einmal anzugeben; danach merkt er ihn sich.
 
 - **„Anwendungsordner“**: „Anwendungsordner wählen“, dann geben Sie den Ordner an, der `lancer.cmd` und `lancer.sh` enthält. Die anderen Ordner (Daten, Register, Missionen, SIA, Leistungen, lokale Sicherung) werden daraus abgeleitet; die Meldung zeigt, wie viele eingestellt wurden.
+- Der Anwendungsordner wird **schreibgeschützt** geöffnet: Keine Seite kann den Code der Suite ändern. Gleich danach fragt die Seite „Schreiben der Daten erlauben“: klicken und die Anfrage des Browsers annehmen, damit Ihre Verfügbarkeit, Missionen und Berichte in `data/` geschrieben werden. Nach einem Neustart des Browsers fragt „Erlauben“ beides erneut.
 - Der Ordner muss der der vom Starter bereitgestellten Suite sein: gehört er zu einer anderen Kopie der Suite, bleibt der Schritt offen (✗ in der Übersicht) mit der Meldung „Suite gestartet aus …, angegebener Ordner …“; wählen Sie den richtigen Ordner neu.
 - **„ODV-Arbeitsmappe (optional)“**: „OneDrive-Ordner…“ gibt den synchronisierten Ordner an, in dem die Staffel die Arbeitsmappe ablegt (die ODV-Planung öffnet die neueste). Ohne OneDrive: „oder die Excel-Datei…“, in diesem Browser gespeichert.
+- **GitHub-Modus** (Mein Profil › Datenzugang eingestellt): Die Daten kommen aus dem GitHub-Repository, es ist kein Ordner zu wählen. Der Schritt „entfällt“ (–), die folgenden sind offen; die Karte des Anwendungsordners und „OneDrive-Ordner…“ verschwinden, „oder die Excel-Datei…“ bleibt. Auf einer vom Starter bereitgestellten Seite hat der GitHub-Modus ebenfalls Vorrang, und die Seite sagt es: Um mit den Ordnern des Rechners zu arbeiten, entfernen Sie ihn unter Mein Profil › Datenzugang.
 
 Dieser Schritt ist wichtig: Ohne freigegebenen Datenordner bleibt Ihre Verfügbarkeit im Browser und das Zentrum sieht sie nicht.
 
@@ -567,6 +627,18 @@ Drei Möglichkeiten:
   Für ein anderes Repository als das aktuelle öffnet der Starter ein Bestätigungsfenster auf dem Computer (aktuelle und neue
   Adresse, „Nein“ voreingestellt): mit „Ja“ antworten, um zu wechseln; keine Seite kann an Ihrer Stelle antworten. Nie ein Passwort oder Token in der Adresse.
   die Suite funktioniert ohne Teilen. Einzelheiten: [Synchronisierung](../technique/SYNCHRONISATION.md).
+- **„data/ in dieses Repository übernehmen“** (in derselben Karte, wenn `data/` bereits Daten enthält, ohne ein
+  Git-Repository zu sein: Beispiele, Archiv, eingegebene Daten): Der Starter klont das Repository daneben, legt seine
+  Historie in `data/` ab und übernimmt dann die Dateien des Rechners. Ein Datensatz auf beiden Seiten behält den
+  neuesten (der andere kommt nach `_conflits/`), Zuweisungen werden zusammengeführt, die Dateien der Suite kommen aus
+  dem Repository; ersetzte Originale werden nach `data_avant_<Datum>/` kopiert. Ein lokaler Commit „Reprise du poste“,
+  nichts wird vor „Synchronisieren“ gesendet. Testdaten oder ein Ordner ohne Daten des Rechners: nach
+  `data_avant_<Datum>/` beiseitegelegt, dann einfacher Klon. Ein anderes Repository als das konfigurierte wird im
+  Fenster des Starters bestätigt; schlägt etwas fehl, bleibt `data/` unverändert. Benutzername und Passwort: nur für
+  eine `https://`-Adresse, die Git noch nicht kennt.
+  Die Seite warnt, bevor sich das Bestätigungsfenster öffnet (manchmal hinter dem Browser), und sagt, wenn es nicht
+  gelingt, warum: abgelehnt (neuer Versuch nach 30 s möglich), ein anderes Fenster bereits offen, oder auf diesem Rechner
+  kann kein Fenster geöffnet werden.
 - Sind die Daten vorhanden, bietet die optionale Karte „Flugbuch“ den Knopf „Journal (.html)…“: Die gespeicherte Seite „Log des vols“ der Website der Fluggesellschaft füllt die Piloten und Luftfahrzeuge der Referenz (Eingabehilfe).
 
 ### 3 Fluggesellschaft
@@ -624,7 +696,7 @@ zugewiesen wurde (siehe unten). Vollständige Schritt-für-Schritt-Anleitung: [T
 
 ### Meine zu berichtenden Missionen
 
-Erster Block der Seite: die Ihnen zugewiesenen Missionen, die schon vergangen sind (höchstens 21 Tage) und keinen Bericht im Register haben, wie im Block „Zu schreibende Berichte“ der Seite „Heute“ (höchstens sieben Zeilen).
+Erster Block der Seite: die Ihnen zugewiesenen Missionen, die schon vergangen sind (höchstens 21 Tage) und keinen Bericht im Register haben, wie im Block „Zu schreibende Berichte“ der Seite „Meine Missionen“ (höchstens sieben Zeilen).
 
 - **„Bericht schreiben“** öffnet die Missionsmappe in „Meine Missionen“ und beginnt den Bericht in der Familie der Mission, aus dem Einsatzbefehl ausgefüllt (siehe „Zugewiesene Mission übernehmen“).
 - **„Kein Bericht“** nimmt die Mission aus der Liste (in diesem Browser gemerkt).
@@ -735,6 +807,8 @@ vier Uhrzeiten; Kraftstoff beim Abflug und bei der Landung); „Alle Felder“ u
 Flugplan, Netzwerk-Tracking) bleiben im Bericht. Ein Klick auf eine Unstimmigkeit unter den Berechnungen öffnet den
 Schritt, den Block und bei Bedarf alle seine Felder und setzt dann den Cursor in das Feld.
 
+**Auf dem Telefon**: es ist immer nur ein Schritt geöffnet — beim Aufruf der erste noch zu vervollständigende; das Öffnen eines Schritts klappt die anderen ein und bringt ihn an den oberen Bildschirmrand. Die Leiste „1 Flug · 2 Mission · 3 Ergebnis“ bleibt während der Eingabe oben fixiert und kennzeichnet den geöffneten Schritt; die Kopfzeile der Mission scrollt mit der Seite. „Ins Register aufnehmen“ schwebt über der unteren Leiste; „Senden“ und „Vorausfüllen“ bleiben in der Kopfzeile, oben auf der Seite.
+
 ### Kopfzeile und Werkzeugleiste
 
 Die Kopfzeile bleibt oben auf der Seite fixiert. Von links nach rechts:
@@ -807,7 +881,8 @@ Eine Karte pro eingesetztem Luftfahrzeug; es gibt immer mindestens eines. Das �
 
 1. Tippen Sie das Kennzeichen (`F-ZB…`): Die bekannten Luftfahrzeuge werden mit Typ, Rufzeichen, Betreiber
    und Basis vorgeschlagen. Wählen Sie eines: Typ, Kategorie, Rufzeichen, ICAO-Betreiber, Basis und Ausrüstung werden
-   ausgefüllt.
+   ausgefüllt. Ein Klick in das Feld öffnet eine Auswahlliste mit Suche (Silhouetten, nach Kategorie); Tippen filtert
+   sie (Kennzeichen, Typ, Rufzeichen, Betreiber), ↑ ↓ Eingabe, Esc. Das Feld „Typ (ICAO)“ hat dieselbe Liste.
 2. Oder gehen Sie vom Rufzeichen aus: `ctm58` in „Rufzeichen“ ergibt Serie, Nummer, vollständiges Rufzeichen
    und das „Flugplan-Rufzeichen (max. 7 Zeichen)“.
 
@@ -1011,7 +1086,8 @@ Beide Listen brauchen Ihr Kürzel (Einstellungen › Mein Profil).
 - **„Aufgegebener Flugplan (SimBrief / IVAO / VATSIM)“**: Das Fenster bietet „Letzter SimBrief-OFP“ (Ihre
   SimBrief-Kennung aus dem Pilotenprofil), „IVAO-Flugplan (laufender Flug)“ (Ihre VID), „VATSIM-Flugplan (laufend oder
   vorab)“ (Ihre CID): Luftfahrzeug, ICAO-Ausrüstung, Route, Wegpunkte, Höhen, Flugplätze, METAR / TAF, geplante Massen
-  und Kraftstoff (SimBrief).
+  und Kraftstoff (SimBrief). Die Wegpunkte folgen der Route: Füllt der Import die Route, werden sie durch die des
+  Flugplans ersetzt (Navlog des SimBrief-OFP), auch wenn das Feld schon welche enthielt.
 - **„Flugplan, Tracker-Seite oder METAR einfügen“**: Fügen Sie (Strg+V) in das Feld ein, die Auswertung erfolgt sofort;
   oder „Aus Zwischenablage einfügen“ (Chrome fragt einmal nach der Erlaubnis). Erkannte Texte: ICAO-Flugplan „(FPL-…)“,
   Seite des IVAO-Trackers (Einzelheiten eines Flugs oder Liste der Verbindungen), Seite eines StatSim-Flugs (VATSIM),
@@ -1125,6 +1201,36 @@ nennt die Kennzahlen der Familie, die in die Auswertungen übernommen werden.
 Die Familien HEMS und FIRE können ihr altes CSV-Register übernehmen: siehe
 [Auswertung einer Familie](#auswertung-einer-familie).
 
+## Flotte
+<!-- page: apps/cr/flotte.html -->
+
+Wo die Luftfahrzeuge der Flotte stehen: Registerkarte „Flotte“ der Schaltfläche „Bericht“ der Seitenleiste, neben der
+Registerkarte „Bericht“. Die Seite ist schreibgeschützt und für alle offen; ist das Zentrum in diesem Browser
+aktiviert, führt die Schaltfläche „Flotte bearbeiten“ zur bearbeitbaren Tabelle (Einstellungen › Zentrum › Flotte).
+
+- **Karte**: jedes Luftfahrzeug steht auf seinem aktuellen Flugplatz (Standort laut Website der Fluggesellschaft, oder
+  Landeflugplatz eines Berichts aus einem Einsatzbefehl, sonst seine Heimatbasis), auf einem OpenStreetMap-Hintergrund.
+  Übersicht: ein Abzeichen pro Flugplatz mit der Zahl der Luftfahrzeuge; Flugplätze, die bei diesem Zoom zu nah
+  beieinander liegen, werden zu einem einzigen Abzeichen („LFMI +2“) mit der Gesamtzahl zusammengefasst. Beim
+  Vergrößern (Schaltflächen „+“ / „−“, Strg + Mausrad, Doppelklick) stellen sich die Luftfahrzeuge eines Flugplatzes
+  einzeln auf einem Vorfeld auf; „Ganze Flotte“ richtet die Karte neu aus.
+- **Überfahren**: eines Abzeichens mit mehreren Luftfahrzeugen: ihre Zahl je Rufzeichen (Serie) und Typ; eines
+  Abzeichens mit mehreren Flugplätzen: zusätzlich die Zahl je Flugplatz; eines Luftfahrzeugs (oder eines Abzeichens mit
+  nur einem): sein Kurzblatt — Rufzeichen, Betreiber, aktueller Flugplatz und seit wann, Heimatbasis, Datum und Uhrzeit
+  des letzten Flugs (Flugbuch der Fluggesellschaft und Berichte: der neueste).
+- **Auswahl**: Klick auf ein Luftfahrzeug; Klick auf ein Abzeichen: seine Luftfahrzeuge, und Zoom darauf; Strg oder
+  Umschalt + Klick: hinzufügen oder entfernen; Umschalt + Ziehen: Rechteck; Esc oder „Auswahl aufheben“. Die Liste unter
+  der Karte führt zum Blatt jedes Luftfahrzeugs, und die ausgewählten Zeilen werden in der Tabelle hervorgehoben.
+- **Filter** (oben auf der Karte, kombiniert): Betreiber, Typ, Rufzeichen (Serie), Flugplatz, Status, Herkunft der
+  Position (Website, Einsatzbefehl, Basis), letzter Flug (weniger als 7, 30, 90 Tage, mehr als 90 Tage, kein Flug
+  bekannt) und freie Suche (Kennzeichen, Rufzeichen, Typ…). Jede Liste nennt die Zahl der Luftfahrzeuge je Wert;
+  „Filter zurücksetzen“ löscht sie. Die Auswahl bleibt in diesem Browser gespeichert.
+- **Tabelle** „Luftfahrzeuge der Flotte“: die von den Filtern behaltenen Luftfahrzeuge (Kennzeichen, Typ, Variante,
+  Rufzeichen, Betreiber, aktueller Flugplatz und Herkunft, Heimatbasis, letzter Flug, Status), nach Spalten sortierbar.
+  Überfahren einer Zeile: ihre Position wird auf der Karte hervorgehoben; Klick: das Luftfahrzeug wird ausgewählt und
+  die Karte auf seinen Flugplatz zentriert; das Kennzeichen öffnet das Luftfahrzeugblatt.
+- „n ohne bekannten Flugplatz“ (Tooltip) listet die Luftfahrzeuge ohne Flugplatz oder mit nicht auffindbarem Flugplatz.
+
 ## Luftfahrzeugblatt
 <!-- page: apps/cr/appareil.html -->
 
@@ -1143,6 +1249,8 @@ Der Titel zeigt Kennzeichen, Typ und Modell. Darunter drei Hinweise:
   Journals);
 - „🏠 Heimatflugplatz“.
 
+**Navigation**: Das Blatt liegt unter der Registerkarte „Flotte“ (Bericht › Flotte), die zur Liste und zur Karte zurückführt. Oben im Blatt öffnet die Flottenliste (nach Typ) ein anderes Luftfahrzeug; „‹“ und „›“ wechseln zum vorherigen oder nächsten Luftfahrzeug desselben Typs.
+
 Die **Zeitraum**-Leiste der Auswertungen (Voreinstellungen, Daten, ◀ − ▶) steht in der Kopfzeile: Aktivität,
 Diagramm und Tabelle folgen ihr. Ein in den Datenbanken unbekanntes Luftfahrzeug zeigt „In den Datenbanken unbekannt: das
 Blatt füllt sich mit den Berichten“.
@@ -1159,8 +1267,8 @@ Blatt füllt sich mit den Berichten“.
 | „Verwendete Rufzeichen“, „Ausrüstung“ | nein | aus den Missionen erfasst, mit ihrer Anzahl |
 | „Notizen“ | ja | freier Text |
 
-Klicken Sie auf „Blatt speichern“: Das Blatt wird **in diesem Browser** gespeichert (in der lokalen Sicherung
-enthalten). Die Identität wird über den gesamten Verlauf berechnet, unabhängig vom Zeitraum.
+Die änderbaren Felder stehen oben im Block; jedes wird gespeichert, sobald es sich ändert, **in diesem Browser** (in der lokalen Sicherung
+enthalten): Die Uhrzeit der letzten Speicherung steht unter den Notizen. Die Identität wird über den gesamten Verlauf berechnet, unabhängig vom Zeitraum.
 
 „Zusammenführen mit… / umbenennen“: Wählen Sie ein anderes Kennzeichen und dann „Zusammenführen“. Die Missionen des
 Registers mit dem alten Wert erhalten den neuen (nach Bestätigung, mit einem Vermerk in
@@ -1226,7 +1334,7 @@ in der Kopfzeile, wie beim Luftfahrzeugblatt.
 | „Qualifikationen (eine pro Zeile)“ | ja | freier Text |
 | „Notizen“ | ja | freier Text |
 
-„Blatt speichern“ speichert es in diesem Browser. „Zusammenführen mit… / umbenennen“ vereint zwei
+Jedes Feld wird in diesem Browser gespeichert, sobald es sich ändert. „Zusammenführen mit… / umbenennen“ vereint zwei
 Schreibweisen desselben Piloten (z. B. GRR → RBR): Die Missionen des Registers erhalten den neuen Wert, mit
 einem Vermerk, nach Bestätigung.
 
@@ -1431,7 +1539,17 @@ Diese Seite dient zur Vorbereitung Ihrer eigenen Flugkarten: Route, Streckenkart
 Sie steht allen Piloten offen. Zugang: Seitenleiste „Werkzeuge“, Reiter „Flugkarten“, Knopf „In den Flugkarten öffnen“ einer Mission in Meine Missionen oder Knopf „Flugkarten“ des Kraftstoffplaners.
 Sie nutzt die Engine des Kartenstudios des Zentrums, arbeitet aber in einem eigenen Bereich Ihres Browsers: Ihre Einstellungen ändern nie die Mission des Zentrums.
 Jeder Block lässt sich zuklappen („Ausblenden“ / „Anzeigen“) und verschieben (Griff ↕). Die SIA-Datenbank muss einmal in diesem Browser gelesen werden (siehe letzter Block).
-Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf zwei Blöcke: „Route“ (Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte mit „⤢ Vergrößern“) und „Karten“ mit seinem einzigen Knopf „Karten und ZIP erzeugen“. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
+Auf den Stufen 1 bis 3 (Mein Profil › „Nutzungsstufe“) beschränkt sich die Seite auf zwei Blöcke: „Route“ (Routenfeld, „Höhe“, „SimBrief“, Kontrollkarte mit „⤢ Vergrößern“) und „Karten“ mit seinem einzigen Knopf „Karten erzeugen“. Die übrigen unten beschriebenen Bedienelemente erscheinen nur auf Stufe 4 (Experte).
+
+Oben auf der Seite öffnet „Öffnen in ▾“ die Route des Blocks „Route“, ihre Flughöhe und das gewählte Flugzeug in SimBrief, SkyVector, Navigraph Charts oder ChartFox (Karten von Start- und Zielflugplatz), in einem neuen Tab; dasselbe Menü wie im Kraftstoff (siehe „Öffnen in ▾“ im Kapitel Kraftstoff).
+
+**Beim Öffnen: der laufende Flug.** Die Seite übernimmt den im Kraftstoff vorbereiteten Flug (Block „Vertikalprofil“ und Planung):
+Route, Reiseflughöhe, Blatt des Luftfahrzeugs und Ausweichflugplatz (der des letzten SimBrief-OFP, wenn er dieselbe Strecke betrifft).
+Zwischen diesem Flug und dem hier Eingegebenen gewinnt das Neueste. Sobald die SIA-Datenbank geladen ist, erscheinen die Routenkarte
+und der Vertikalschnitt sofort, ohne weiteren Klick. Die Routenkarte nimmt das Profil „IFR niedrig“ (Flug bis FL195: untere
+Luftstraßen) oder „IFR hoch“ (darüber: obere Luftstraßen, NAT-Tracks), mit ICAO-Symbolik und den Gebieten R, D, P, TRA, CTR, TMA
+und CTA der Schicht, die weniger als 10 NM an der Route vorbeiführen; Abflug, Ziel und Ausweichflugplatz sind darauf benannt. Eine
+aus Meine Missionen empfangene Mission bleibt unverändert.
 
 ### Empfang einer Mission („In den Flugkarten öffnen“)
 
@@ -1440,10 +1558,10 @@ Die Seite zeigt keinen Block „Mission“: Die Mission kommt von selbst aus Mei
 1. Öffnen Sie in Meine Missionen die Mappe der Mission.
 2. Klicken Sie auf „In den Flugkarten öffnen“. Das Ihnen zugewiesene Luftfahrzeug wird an die Spitze der Mission gesetzt.
 3. Die Seite öffnet sich mit der Route und der Flughöhe der Mission im Block „Route“ und mit allen von der Mission vorgesehenen Karten in „Zu erstellende Karten“ (dazu `profil_vertical.png`). Die Liste „Zu erstellende Karten“ ist nur auf der Stufe Experte sichtbar.
-4. Stellen Sie bei Bedarf jede Karte ein (Stufe Experte) und klicken Sie dann auf „Karten und ZIP erzeugen“: im Block „Karten“ auf den Stufen 1 bis 3, in der Fußzeile auf der Stufe Experte.
+4. Stellen Sie bei Bedarf jede Karte ein (Stufe Experte) und klicken Sie dann auf „Karten erzeugen“: im Block „Karten“ auf den Stufen 1 bis 3, in der Fußzeile auf der Stufe Experte.
 
-Die Fußzeile zeigt die Anzahl der Karten im ZIP („… Karte(n) im ZIP + Übersichtskarte“) oder „Keine Mission geladen“.
-Empfangene Mission: „Zeichnen“ und „Kraftstoff“ arbeiten mit der geladenen Mission, ohne sie zu ersetzen. Auf den Stufen 1 bis 3 erzeugt „Karten und ZIP erzeugen“ ihre Karten unverändert. Auf der Stufe Experte fragt „Karten vorbereiten“ nach einer Bestätigung, bevor sie durch einen freien Flug „Flug Abflug → Ziel“ aus der Route ersetzt wird; ohne geladene Mission werden die Karten direkt erstellt.
+Die Fußzeile zeigt die Anzahl der zu erzeugenden Karten („… Karte(n) zu erzeugen“) oder „Keine Mission geladen“.
+Empfangene Mission: „Zeichnen“ und „Kraftstoff“ arbeiten mit der geladenen Mission, ohne sie zu ersetzen. Auf den Stufen 1 bis 3 erzeugt „Karten erzeugen“ ihre Karten unverändert. Auf der Stufe Experte fragt „Karten vorbereiten“ nach einer Bestätigung, bevor sie durch einen freien Flug „Flug Abflug → Ziel“ aus der Route ersetzt wird; ohne geladene Mission werden die Karten direkt erstellt.
 
 ### Route
 
@@ -1452,29 +1570,36 @@ Dieser Block verbindet drei Ansichten: den Flugplan (Text), die Karte und den Ve
 - Routenfeld: Feld 15 des ICAO-Flugplans oder Kommaliste (zum Beispiel `LFBO N0160A055 DCT TOU UN460 NTS DCT LFRN`). Leer: Route der Mission.
 - „Höhe“: Reiseflughöhe („FL65“ oder „6500“).
 - Menü „Luftstraßen“ / „RTBA (Tiefflug)“, dann „Suchen“: berechnet eine Route zwischen den Punkten des Feldes. Das Ergebnis ersetzt das Feld.
-- „SimBrief“: übernimmt die Route des letzten OFP. Die SimBrief-Kennung wird unter Einstellungen › Mein Profil eingegeben.
+- „SimBrief“: übernimmt die Route des letzten OFP Punkt für Punkt (jeder Navlog-Punkt mit seiner Position, Punkte der
+  Luftstraßen und Verfahren eingeschlossen), seine Flughöhe und in den Flugkarten seinen Ausweichflugplatz; die Zeile unter dem Block sagt, was gelesen wurde (dieselbe Zusammenfassung wie im Kraftstoff, „JSON anzeigen“). Die SimBrief-Kennung wird unter Einstellungen › Mein Profil eingegeben.
 - „Zeichnen“: zeichnet den Vertikalschnitt. „Kraftstoff“: öffnet den Kraftstoffplaner mit dieser Route (Distanz, Flughöhe, rechtweisender Kurs, Luftfahrzeug).
 - „ICAO kopieren“: kopiert den strikten ICAO-Flugplan (nicht veröffentlichte Punkte als Koordinaten).
 - „Syntax und Verwendung“: Überblick über die akzeptierten Formen (Funkfeuer, VFR-Meldepunkte „MM-CV“, „REN300010“, Koordinaten „4330N00125E“, Höhen „/A035“, „VFR“…).
+- Anders geschriebene Koordinaten: so eingeben, wie sie vorliegen („44.18N 00.038W“, „N44,18-W00,034“, „44°19'52"N
+  00°59'59"W“, „+44.18,-0.038“, „4418N0003W“…); beim Verlassen des Feldes werden sie ins Flugplanformat umgeschrieben, auf
+  die Minute („4411N00002W“), wenn die Position genau darauf fällt, sonst auf die Sekunde („441048N0000217W“); eine
+  Benachrichtigung zeigt, was umgeschrieben wurde. „ICAO kopieren“ rundet immer auf die Minute.
 - Auf den Stufen 1 bis 3 bleiben das Routenfeld, „Höhe“, „SimBrief“ und „Syntax und Verwendung“; das Menü „Luftstraßen“ / „RTBA“, „Suchen“, „Zeichnen“, „Kraftstoff“ und „ICAO kopieren“ gehören zur Stufe Experte.
 
 Auf der Karte: Ziehen Sie einen Punkt, um ihn zu verschieben (er rastet an Funkfeuern, Meldepunkten und Flugplätzen ein), klicken Sie auf die Route, um einen Punkt einzufügen, Rechtsklick, um einen zu löschen. Im Schnitt: Klick, um einen Punkt in dieser Höhe hinzuzufügen, Ziehen, um die Höhe zu ändern, Rechtsklick zum Löschen.
 
+Karte und Schnitt gehören zusammen. Fahren Sie über den Schnitt, erscheint auf der Karte eine blaue Markierung an derselben Stelle der Route; fahren Sie auf der Karte über die Route, zeigt der Schnitt eine blaue Linie bei derselben Entfernung. Der Tooltip des Schnitts nennt Höhe, Höhe über Grund, Gelände, Entfernung vom Start (NM) und den in dieser Höhe durchflogenen Luftraum, der auf der Karte hervorgehoben wird. Ein Klick auf einen Punkt des Schnitts, ohne ihn zu verschieben, zentriert die Karte auf ihn. Die Karte zeigt außerdem TOC (Ende des Steigflugs), TOD (Beginn des Sinkflugs) und NM-Marken entlang der Route.
+
 ### Kontrollkarte und Ausschnitt (Block Route)
 
-Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anzeigeprofil. Sie wird bei jeder Einstellung neu gezeichnet. Auf den Stufen 1 bis 3 wird nur „⤢ Vergrößern“ angeboten; die übrigen Bedienelemente der Tabelle und die „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ gehören zur Stufe Experte.
+Unter dem Routenfeld zeigt eine Kontrollkarte die gewählte Karte mit ihrem Anzeigeprofil. Sie wird bei jeder Einstellung neu gezeichnet. Die Route ist dort die rote Linie des Routeneditors (verschiebbare Punkte); die violett gestrichelte Linie erscheint nur auf den erzeugten Karten. Auf den Stufen 1 bis 3 wird nur „⤢ Vergrößern“ angeboten; die übrigen Bedienelemente der Tabelle und die „Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ gehören zur Stufe Experte.
 
 | Bedienelement | Wirkung |
 |---|---|
 | „Karte“ | Angezeigte Karte (standardmäßig: die Übersichtskarte der Route). |
 | „Profil“ | Anzeigeprofil dieser Karte (dieselbe Einstellung wie in „Zu erstellende Karten“). |
-| „ZIP“ | Diese Karte ins ZIP aufnehmen oder nicht. |
+| „Erzeugen“ | Diese Karte erzeugen oder nicht. |
 | „Aktualisieren“ | Die Vorschau neu zeichnen. |
 | „Diesen Ausschnitt behalten“ | Die erzeugte Karte übernimmt genau den angezeigten Rahmen (Zoom und Verschieben mit der Maus). |
 | „Zentrieren“ / „Automatischer Ausschnitt“ | Zum gespeicherten Ausschnitt zurückkehren / ihn vergessen zugunsten eines aus der Mission berechneten Rahmens. |
 | „⧉ Fenster“ / „⤢ Vergrößern“ | Die Karte in einem eigenen Fenster öffnen / sie vergrößern (Esc zum Zurückkehren). |
 
-„Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ stellt den Vertikalschnitt ein: Unter- und Obergrenze (0 = auto), Luftfahrzeug (Profile des Kraftstoffplaners) oder Steig- und Sinkrate, Bild `profil_vertical.png` in den Ausgaben, Zeichnen der Route auf den Karten.
+„Profileinstellungen: Schnitt, Luftfahrzeug, Steigrate, Ausgaben“ stellt den Vertikalschnitt ein: Unter- und Obergrenze (0 = auto), Luftfahrzeug (Leistungsblätter, Auswahlliste mit Suche) oder Steig- und Sinkrate, Bild `profil_vertical.png` in den Ausgaben, Zeichnen der Route auf den Karten.
 
 ### Profileinstellungen: Hintergrundkarte, Lufträume, ICAO-Symbole, Elemente
 
@@ -1493,14 +1618,21 @@ Denken Sie daran, auf „Speichern“ zu klicken, um ein geändertes Profil zu b
 Dieser Block erstellt die Karten eines Flugs aus der Route, ohne Mission des Zentrums; auf den Stufen 1 bis 3 erzeugt er sie auch.
 
 1. Geben Sie Route und Flughöhe im Block „Route“ ein (mindestens ein Abflug und ein Ziel, die der SIA-Datenbank bekannt sind).
-2. Optional: „Treffpunkt (optional)“, ein Punkt oder Koordinaten „44.2, 0.6“.
-3. Kreuzen Sie die gewünschten Karten an: „Route (Übersicht, IFR)“, „Anflug“, „Treffpunkt“, „Ziel“.
-4. Klicken Sie auf „Karten und ZIP erzeugen“ (Stufen 1 bis 3): Die Karten werden erstellt und dann erzeugt, Fortschritt (mit „Abbrechen“) und Bericht erscheinen direkt darunter, und das ZIP wird heruntergeladen. Auf der Stufe Experte erstellt „Karten vorbereiten“ sie nur: Einstellungen unter „Zu erstellende Karten“, Erzeugung in der Fußzeile.
+2. Optional: „Treffpunkt (optional)“, ein Punkt oder Koordinaten „44.2, 0.6“; „Ausweichflugplatz (ICAO, optional)“,
+   aus dem Kraftstoff übernommen, wenn er dort bekannt ist; ein Ausweichflugplatz, der in der SIA-Datenbank fehlt,
+   wird gemeldet und die Karten werden ohne ihn erstellt.
+3. Kreuzen Sie die gewünschten Karten an: „Route (Übersicht, IFR)“ (Profil IFR niedrig oder hoch je nach Flughöhe, siehe
+   oben), „Anflug“, „Treffpunkt“, „Ziel“.
+4. Klicken Sie auf „Karten erzeugen“ (Stufen 1 bis 3): Die Karten werden erstellt und dann erzeugt, Fortschritt (mit
+   „Abbrechen“) und Bericht erscheinen direkt darunter. Die Bilder (jede Karte und `profil_vertical.png`) erscheinen
+   danach im Block: Ein Klick vergrößert, „Herunterladen“ speichert das Bild, „Drucken“ druckt es, „Alle drucken“ druckt
+   alle Bilder, eines pro Seite. Es gibt kein ZIP mehr. Auf der Stufe Experte erstellt „Karten vorbereiten“ sie nur:
+   Einstellungen unter „Zu erstellende Karten“, Erzeugung in der Fußzeile.
 
 Die Seite erzeugt eine Mission „Flug Abflug → Ziel“ mit den angekreuzten Karten und dem Vertikalprofil. Die Treffpunktkarte wird nur erstellt, wenn ein Treffpunkt eingegeben ist.
 Auf den Stufen 1 bis 3 hat die Seite weder Fußzeile noch Block „Vorschauen und Erzeugung“: Alles geht vom Knopf dieses Blocks aus.
 Danach aktualisiert jede Änderung der Route, der Flughöhe oder des Treffpunkts die Karten automatisch.
-Ankunft aus dem Kraftstoffplaner (Knopf „Flugkarten“): Die Karten werden von selbst erstellt, sobald die SIA-Datenbank geladen ist.
+Ankunft aus dem Kraftstoffplaner (Knopf „Flugkarten“): dasselbe Öffnen auf dem laufenden Flug, Karten von selbst erstellt, sobald die SIA-Datenbank geladen ist.
 Mögliche Fehlermeldungen: „SIA-Basis fehlt in diesem Browser“, „Route: unbekannt in der SIA-Datenbank“, „Keine Karte gewählt“.
 
 ### Zu erstellende Karten
@@ -1513,7 +1645,7 @@ Block der Stufe Experte. Die Liste „Karten der Mission“ hat eine Zeile pro K
 | Profil | Anzeigeprofil der Karte oder „Deaktiviert“. |
 | Linie | „Ohne Linie“, „Briefing: Route“, „Organisation: wahrscheinliche Route“, „Route + wahrscheinliche Route“. |
 | Empfänger | Nur bei Übungsmissionen: Briefing, Organisation, Übungsziel oder Besatzung. |
-| „ZIP“ | Abwählen, um die Karte nicht zu erzeugen. |
+| „Erzeugen“ | Abwählen, um die Karte nicht zu erzeugen. |
 | „ד | Die Karte aus der Mission löschen. |
 
 Um eine Karte hinzuzufügen: Geben Sie einen Namen ein („nouvelle_carte.png“), wählen Sie den Typ (Übersicht, Ziel, Detail, Gebiet), dann „+ Karte“. Ihr Ausschnitt ist die angezeigte Ansicht.
@@ -1524,14 +1656,15 @@ Ohne Mission und ohne erstellte Karten zeigt die Liste „Keine Karte: unten ein
 Block der Stufe Experte; auf den Stufen 1 bis 3 erscheint der Bericht der Erzeugung (erzeugte Karten, Fehlschläge und „Einzeln erneut versuchen“) unter dem Knopf des Blocks „Karten“.
 
 1. „Alle Karten anzeigen“: zeichnet eine Vorschau jeder Karte mit ihrem Profil. Die Vorschauen erzeugen keine Datei. Klick auf eine Vorschau: Vergrößerung.
-2. Jede Vorschau behält ihr Kästchen „ZIP“.
-3. „Karten und ZIP erzeugen“ (Knopf der Fußzeile): lädt ein ZIP herunter mit jeder Karte, der Übersichtskarte und `profil_vertical.png`, wenn diese Ausgabe angekreuzt ist.
+2. Jede Vorschau behält ihr Kästchen „Erzeugen“.
+3. „Karten erzeugen“ (Knopf der Fußzeile): Die Bilder jeder Karte und `profil_vertical.png` erscheinen
+   im Block „Karten“, einzeln herunterzuladen oder zu drucken (kein ZIP).
 
-Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen; sie übernimmt das Profil der Übersichtskarte der Route.
+Die „Übersichtskarte“ erscheint von selbst unter den Vorschauen (nur Vorschau); sie übernimmt das Profil der Übersichtskarte der Route.
 Formate: Menü ☰ › Kartenausgaben (PNG, bearbeitbares SVG, PNG-Breite von 400 bis 5000 px; standardmäßig 1600 px).
-Schlägt eine Karte fehl (Hintergrund nicht verfügbar, Zeitüberschreitung), enthält das ZIP `rapport_generation.txt` und die Liste bietet „Einzeln erneut versuchen“ an.
+Schlägt eine Karte fehl (Hintergrund nicht verfügbar, Zeitüberschreitung), meldet es der Bericht und bietet „Einzeln erneut versuchen“ an, das ihr Bild ersetzt.
 Lassen Sie den Tab während der Erzeugung sichtbar: Der Browser bremst Tabs im Hintergrund, und eine Karte kann fehlschlagen („Zeitüberschreitung beim Laden der Hintergrundkarte“); „Einzeln erneut versuchen“ startet sie erneut.
-Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist. Während der Vorschauen und der Erzeugung trägt der Fortschrittsbalken einen Knopf „Abbrechen“: Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung lädt kein ZIP herunter (es wäre unvollständig); die bereits angezeigten Vorschauen bleiben. Starten Sie „Karten und ZIP erzeugen“ erneut für alle Karten.
+Die Knöpfe bleiben ausgegraut, solange keine Karte zu erstellen ist. Während der Vorschauen und der Erzeugung trägt der Fortschrittsbalken einen Knopf „Abbrechen“: Die laufende Karte wird fertiggestellt, die folgenden werden nicht erstellt. Eine abgebrochene Erzeugung zeigt kein Bild an (die Bilder wären unvollständig); die bereits angezeigten Vorschauen bleiben. Starten Sie „Karten erzeugen“ erneut für alle Karten.
 
 ### SIA-Datenbank
 
@@ -1554,6 +1687,19 @@ Kopfzeile: Knopf „Flugzeug“, eine Auswahlliste mit Suche (die vorhandenen Le
 Je nach Nutzungsstufe: Auf den Stufen 1 bis 3 (Besatzung, Planung, Gestaltung) zeigt die Seite das Flugzeug, den Flugplan (und „Letzten SimBrief-FPL abrufen“), den aufklappbaren Bereich „Flugparameter“, „Berechnen“ und das Ergebnis in zwei Spalten; das Menü ☰ behält dort nur Export und Import der Einstellungen. Kurven, Felder, Instrumente und Vertikalprofil kommen auf der Stufe Experte hinzu, wo die Seite vollständig ist.
 Auf breitem Bildschirm, auf der Stufe Experte, hat die Seite drei Spalten (Eingabe und Kurven | Ergebnis und Felder | Instrumente): Ziehen Sie die Griffe zwischen den Spalten, um ihre Breite einzustellen; Doppelklick: Standardbreiten.
 
+### Öffnen in ▾ (externe Dienste)
+
+Der Knopf „Öffnen in ▾“ unter dem Flugplan öffnet den Flug der Seite in einem anderen Dienst, in einem neuen Tab:
+Start, Ziel, Route, Flughöhe und aktives Flugzeug; Ausweichflugplatz, Rufzeichen und Kennzeichen des letzten
+SimBrief-OFP, wenn er dieselbe Strecke hat. Sonst wird nichts gesendet (keine persönliche Kennung, kein Schlüssel).
+Escape oder ein Klick daneben schließt das Menü.
+- „SimBrief — diesen Flug planen“: Flugoptionen vorausgefüllt (SimBrief-Anmeldung erforderlich); ausgegraut ohne
+  Start, Ziel oder Luftfahrzeugtyp.
+- „SkyVector — die Route“: Flugplan auf der Karte gezeichnet; ausgegraut ohne Start oder Ziel.
+- „Navigraph Charts“ und „ChartFox“ — Start, Ziel: Karten des Flugplatzes (Anmeldung erforderlich; Flugplatzseite,
+  wenn die Website sie behält).
+Ein ausgegrauter Eintrag nennt seinen Grund beim Überfahren.
+
 ### Flugzeug wählen
 
 1. Klicken Sie auf die Flugzeug-Schaltfläche der Kopfzeile (anfangs „Kein Flugzeug“): Die Liste zeigt nur die Luftfahrzeuge, die ein Leistungsblatt haben, die aus „Meine Luftfahrzeuge“ zuerst, dann die anderen nach Kategorie (Symbol, Name, Typ, Quelle des Blatts, Zustand).
@@ -1564,8 +1710,8 @@ Das gewählte Blatt bleibt im Ergebnis schreibgeschützt sichtbar (aufklappbare 
 
 ### Kraftstoffplanung
 
-1. „Flugplan (Feld 15)“: Geben Sie die Route ein. Es ist derselbe Plan wie in den Flugkarten (der neueste gewinnt). Distanz, rechtweisender Kurs und Flughöhe werden daraus abgeleitet.
-2. Ergänzen oder korrigieren Sie die Felder im aufklappbaren Bereich „Flugparameter“ (auf der Stufe Experte von Anfang an aufgeklappt, sonst zugeklappt; für eine schnelle Planung genügen die Standardwerte): „Distanz (NM)“, „Flugfläche (FL)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
+1. „Flugplan (Feld 15)“: Geben Sie die Route ein. Es ist derselbe Plan wie in den Flugkarten (der neueste gewinnt). Distanz, rechtweisender Kurs und Flughöhe werden daraus abgeleitet. Unter dem Feld werden die Punkte der Route einzeln angezeigt (Flugplätze fett, Punkte der Luftstraßen abgeschwächt, Flughöhe nach dem Punkt, an dem sie wechselt; Überfahren: Position). Nach „Letzten SimBrief-FPL abrufen“ sagt eine Zeile, was gelesen wurde, zum Beispiel „OFP vom 19/10 · LFRS → LFML · 11 Punkte · FL270 · Ausweichflugplatz LFPG · S210 F-BHHH“ (auch als Benachrichtigung), mit „JSON anzeigen“ (Fenster mit dem JSON des OFP, „Kopieren“). Ein OFP ohne Route Punkt für Punkt sagt es („leeres Navlog…“): die Route wird dann auf die Flugplätze reduziert.
+2. Stellen Sie „Flugfläche (FL)“ ein, den einzigen stets angezeigten Parameter, und ergänzen oder korrigieren Sie dann die Felder im aufklappbaren Bereich „Flugparameter“ (auf der Stufe Experte am Computer von Anfang an aufgeklappt, sonst und auf dem Telefon zugeklappt; für eine schnelle Planung genügen die Standardwerte): „Distanz (NM)“, „Rechtweisender Kurs (°)“, „Rollen (min)“, „Wind aus (°)“, „Wind (kt)“, „Reserve (min)“, „Unvorhergesehenes (%)“.
 3. Optional, im selben Bereich: „Geplante Startmasse“, verglichen mit der MTOW des Typs; „ISA-Abweichung (°C)“ oder „Bodentemperatur (°C)“ mit „Platzhöhe (ft)“ oder „Temperatur auf Flughöhe (°C)“. „Reiseverbrauch (kg/h)“: aus dem Profil vorbelegt; ohne Profil sagt die Seite, welchen Wert sie verwendet und woher er kommt (zum Beispiel „≈ 4 000 kg/h, Typschätzung A400“); „Diesen Wert verwenden“ übernimmt ihn ins Feld, „Für diesen Typ speichern“ behält ihn für die nächsten Flüge. „Gewählter Steigflug“ (Detailansicht): drei Schieberegler, „IAS“, Steigrate und „Leistung (%)“ (RPM oder N1, wenn das Profil ein Motorkennfeld hat), jeweils mit einem Kästchen „fest“ davor; zwei sind fest, der dritte wird berechnet und ausgegraut; „Vollgas“ erscheint unter der Steigrate; die Zeile darunter nennt Verbrauch, TAS und Leistung in der Mitte des Steigflugs. Diesen Steigflug zählt die Kraftstoffplanung.
 4. Klicken Sie auf „Berechnen“.
 
@@ -1632,6 +1778,8 @@ Ein importiertes SimBrief-OFP füllt die Route und zeichnet das Profil von selbs
 Sie brauchen die SIA-Datenbank dieses Browsers, gelesen in den Flugkarten (Block „SIA-Datenbank“) oder unter Einstellungen › Wartung. Ohne sie werden nur Punkte in Koordinaten erkannt, ohne Lufträume.
 Das Gelände stammt aus einem Geländemodell von etwa 150 m: Die ASFC-Grenzen folgen diesem Modell, nicht dem wirklichen Boden.
 
+**Auf dem Telefon**: die Seite wird einspaltig (Kostenvoranschlag, dann Ergebnis, dann die übrigen Blöcke); nach „Berechnen“ wird das Ergebnis auf den Bildschirm gebracht. Die Kurventabelle scrollt in ihrem Rahmen.
+
 ## Leistungsblätter
 <!-- page: apps/planner/performance_sheets.html -->
 
@@ -1643,6 +1791,8 @@ Diese Seite (Seitenleiste „Werkzeuge“, ab der Stufe Gestaltung) verwaltet di
 - Unter der Tabelle vier Karten: „Blatt in Bearbeitung“ (Flugphasen und Felder des Blatts, ab der Stufe Gestaltung), „Triebwerk“ (Kennfeld, RPM-Tabelle, Interpolation), „SimBrief“ (Airframe, OFP-Kalibrierung, Nachweis, Prüfung) und „Datei“ (zuletzt importiertes JSON, eingeklappt), unten beschrieben.
 - Ein hier gespeichertes Blatt übernimmt eine in einem anderen Tab geöffnete Kraftstoff-Seite sofort (das angezeigte Blatt und ihre Planung).
 
+
+**Auf dem Telefon** (Hochformat): Die Seite bleibt in der Leiste; der Titel verkürzt sich zu „Blätter“. Die Tabelle wird zur Liste: Luftfahrzeug, Herkunft des Blatts und was ihm fehlt; ein Tippen auf eine Zeile wählt das Luftfahrzeug und zeigt zusätzlich das Kennfeld, den Reiseverbrauch und die Gipfelhöhe. Die Abschnitte des Blatts (Identität und Format, Kraftstoff und Betrieb, Piste und Ausweichflugplatz, Steigflug, Reiseflug, Sinkflug, Leistungseinstellung und Verbrauch) sind einzeln eingeklappt, in einer Spalte; Knöpfe und Felder sind mindestens 40 px hoch.
 ### Untere Leiste und Menü ☰
 
 Die untere Leiste zeigt „Blatt gespeichert — …“, „Nicht gespeicherte Änderungen — …“, „Kein Blatt für …“ (gewähltes Luftfahrzeug ohne Blatt, mit den Schaltflächen zum Anlegen) oder „Kein Blatt geöffnet.“. „Blatt speichern“ schreibt es in die lokale Datenbank; „Änderungen verwerfen“ (nur wenn es welche gibt) liest die lokale Datenbank neu und öffnet das Blatt wieder so, wie es gespeichert war. Um das Blatt zu löschen: „Löschen“ (seine Zeile angekreuzt). Die Benachrichtigungen erscheinen über der Leiste.
@@ -1661,7 +1811,7 @@ Dieser Block (ab der Stufe Gestaltung), der erste der Seite, ist die Leistungsse
 - Das Kästchen im Spaltenkopf wählt alle angezeigten Zeilen an oder ab; das Kästchen jeder Gruppe (vor „Hubschrauber (n)“…) wählt alle ihre Blätter an oder ab, auch bei eingeklappter Gruppe; die ganze Zelle eines Kästchens kreuzt es an oder ab (ein Klick neben das Kästchen ersetzt die Auswahl nicht); die Ränder der Titel lassen sich ziehen, um die Spaltenbreiten einzustellen (Doppelklick: Standardbreiten).
 - „Luftfahrzeug suchen“ vor „Sortieren nach“ filtert ebenso (Name, Variante, Kennung, Klasse, Quelle): Gruppen mit Treffer aufgeklappt, die anderen zugeklappt, „n Luftfahrzeug(e)“.
 - „Importieren…“ (untere Leiste) öffnet ein Fenster mit zwei Wegen: „Eine oder mehrere Dateien wählen…“ (`.lnmperf`, JSON, CSV, mehrere auf einmal) oder einen Text einfügen — ein JSON-Blatt, eine ChatGPT-Antwort (mit ihrem Text und ihren Codeblöcken), ein `.lnmperf` oder ein Leistungs-CSV (getrennt durch „;“, „,“ oder Tabulator) — im Feld „Oder hier ein JSON (Blatt, ChatGPT-Antwort) oder ein Leistungs-CSV einfügen“, dann „Eingefügten Text importieren“. Der eingefügte Text nimmt denselben Weg wie eine Datei; eine ChatGPT-Antwort wird zu einem Blatt „… — ChatGPT“. Ein JSON mit mehreren Einträgen (ein Array oder eine Liste „sheets“, „profiles“ …) ergibt ebenso viele Blätter: jedes wird den vorhandenen Blättern über seine Kennung, dann seinen Typ (Aliasse eingeschlossen), dann seinen Namen zugeordnet; ein unlesbarer Eintrag hält die anderen nicht auf. Am Ende eine einzige Zusammenfassung: „n Blatt/Blätter ergänzt, m zusammengeführt, k angelegt“, mit den unlesbaren Einträgen. Ein leerer oder unlesbarer Text wird im Fenster gemeldet, das offen bleibt; Esc oder „Schließen“ schließt es. Ein bereits vorhandenes Blatt wird ergänzt, zusammengeführt oder verdoppelt (siehe „Untere Leiste und Menü ☰“).
-- „Ordner…“ (Leistungsordner wählen) und „Neu lesen“ in der Ordnerzeile. Der Ordner wird von selbst neu gelesen, wenn er sich anderswo ändert (Einstellungen, anderer Tab).
+- „Ordner…“ (Leistungsordner wählen) und „Neu lesen“ in der Ordnerzeile. Der Ordner wird von selbst neu gelesen, wenn er sich anderswo ändert (Einstellungen, anderer Tab). Im GitHub-Modus (App ohne Starter) gibt es keinen Ordner: Die Blätter werden aus `planner/flight_performance_database_merged.fpdb.json` des Daten-Repositorys gelesen (beim Öffnen der Seite und mit „Neu lesen“), „Ordner…“ wird nicht angeboten und „Im Ordner speichern (n)“ wird zu „Im Repository speichern (n)“: Die angekreuzten Blätter werden in diese Datei geschrieben (ein Commit). Ein Blatt des Repositorys ersetzt das Blatt des Browsers nur, wenn es neuer ist. „Löschen (n)“ entfernt es auch aus dieser Datei (ein Commit): Es kommt beim nächsten Neulesen nicht zurück; „Rückgängig“ legt es wieder ins Repository.
 - Im Blatt des aktiven Profils übernimmt „Aus SimBrief aktualisieren“ den SimBrief-Eintrag des Typs (Reiseverbrauch, Massen, Gipfelhöhe, Geschwindigkeit) und behält Ihre Eingaben; gegenüber einem persönlichen Profil bietet es „Leere Felder ergänzen“, „Zusammenführen“ (der Eintrag zählt als Profil mit dem Datum seines Abrufs: das Neueste gewinnt Feld für Feld, leere Felder werden ergänzt), „Ersetzen“ (SimBrief-Werte statt der eigenen, der Rest bleibt) oder „Neues Profil“. Wenn sich Felder ändern, zeigt eine Vorschau sie vor der Bestätigung.
 - Die Kästchen vor den Namen wählen Profile für das Menü „Auswahl (n) ▾“ der unteren Leiste (öffnet sich nach oben; Esc oder ein Klick daneben schließt es): „Zusammenführen (n)“ (mindestens zwei Profile desselben Typs, oder nur eines, wenn SimBrief den Typ kennt: das vorab angekreuzte Kästchen „SimBrief-Eintrag des Typs einbeziehen“ fügt ihn den Quellen hinzu; Name wählbar, standardmäßig der des vollständigsten; das Neueste gewinnt Feld für Feld, die anderen füllen seine Lücken, das Motorkennfeld vereint ihre Zeilen; das Fenster zeigt zuerst die Änderungen — aktueller Wert, übernommener Wert und seine Quelle, unveränderte Felder eingeklappt, hinzugefügte oder ersetzte Kennfeldzeilen; ein Kästchen je geänderter Angabe (nicht angekreuzt: der aktuelle Wert bleibt), „Alles übernehmen“ / „Nichts übernehmen“, und die Schaltfläche nennt, was übernommen wird, „Zusammenführen (7 Felder, 1 Kennfeldzeile)“; die Zusammenführungsnotiz listet nur das Übernommene; die Benachrichtigung sagt, was aus jeder Quelle übernommen wurde, „Rückgängig“ 10 s), „Exportieren (n)“ (eine heruntergeladene Datei pro Profil: `.lnmperf`, wenn das Profil vollständig ist, sonst JSON), „Im Ordner speichern (n)“ (eine JSON-Datei pro Profil im Leistungsordner, nach dem Profil benannt) und „Löschen (n)“ (eine Bestätigung, eine einzige Meldung für alle mit 10 s lang „Rückgängig“; ein Profil aus dem Leistungsordner wird auch dort entfernt: exportierte Datenbank ohne es neu geschrieben, Datei mit einem einzigen Profil in .bak umbenannt; „Rückgängig“ stellt auch die Dateien wieder her; ist der Ordner nicht beschreibbar, kommt das Profil beim nächsten Neulesen zurück). „Ordner…“ und „Neu lesen“ übernehmen alles, was der Ordner enthält; solange ein gelöschtes Profil dort bleibt (CSV mit mehreren Profilen, Schreiben verweigert), meldet es eine Zeile „n entfernte(s) Profil(e) noch im Ordner — Wiederherstellen“.
 - „ChatGPT fragen“ (über der Tabelle und Blatt des aktiven Profils) öffnet ein Feld für das gewählte Luftfahrzeug (Auswahl der Kopfzeile oder Klick auf seine Zeile): „Prompt kopieren und ChatGPT öffnen“ (ein einziger ChatGPT-Tab, in den der Prompt eingefügt wird). Das Feld folgt dem gewählten Luftfahrzeug. Der Prompt in der Sprache der Seite bittet, alle Quellen zusammenzutragen (Handbücher, Hersteller, Behörden, Wikipedia, Simulationsforen), in kt, ft, ft/min und kg/h, geschätzte Werte markiert, Motorkennfeld inklusive; er nennt auch, was die Suite schon weiß (EUROCONTROL, SimBrief, Airframe DB, aktuelles Profil), damit ChatGPT ergänzt statt wiederholt. „Prompt anzeigen“ zeigt ihn. Die Antwort (das JSON oder ein Leistungs-CSV) unter der Schaltfläche einfügen, dann „Als neues Profil importieren“ („<Name> — ChatGPT“) oder „Mit „…“ zusammenführen“ (die Antwort trägt das heutige Datum: sie gewinnt Feld für Feld, leere Felder werden ergänzt; zuerst die Vorschau der Änderungen, Angaben zum Ankreuzen). Unbekannte Schlüssel und unlesbare oder außerhalb des Bereichs liegende Werte werden verworfen und gemeldet; geschätzte Werte erscheinen unter „Fehlende Daten“ („geschätzt: …“) und gelten nicht mehr als geschätzt, sobald Sie sie von Hand ändern (Blatt oder Motorkennfeld). Typ und Name kommen aus der Antwort (das gewählte Luftfahrzeug ist nur ein Ersatz); beschreibt die Antwort einen anderen Typ, entscheidet eine Frage: als der eine oder der andere importieren, oder beim Zusammenführen: neues Profil oder trotzdem zusammenführen. Ein CSV mit Kommas oder Semikolons wird angenommen.
@@ -1772,7 +1922,7 @@ Die Statuszeile zeigt die Datei, die Anzahl der verwendeten Messungen, das Luftf
 
 ### Kopfzeile: Luftfahrzeug, Zeitraum, Trend
 
-- „Flugzeug“: „Alle“ oder ein Typ (mit seinem Symbol).
+- „Flugzeug“: „Alle“ oder ein Typ (mit seinem Symbol); Auswahlliste mit Suche, nach Kategorie.
 - „Zeitraum“: „Alle Daten“, „Heute“, „Letzte 7 Tage“, „Letzte 30 Tage“, „Aktueller Monat“, „Aktuelles Jahr“, „Benutzerdefinierter Zeitraum“, mit Knöpfen zum Zurückgehen, Erweitern oder Vorgehen. Der Zeitraum wird für jede Datei gespeichert.
 - „Trendmethode“: „Absolut / Asymptote“, „Erste 25 % ↔ Letzte 25 %“ oder „Gleitender Mittelwert“ (mit „Glättung“: 5 oder 10).
 - „Drucken / PDF“: druckt die Seite.

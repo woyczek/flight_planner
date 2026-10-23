@@ -17,7 +17,9 @@
   // Suivi réseau en cours (propre à l'onglet) ; clef du webservice d'envoi des CR (secret, jamais dans un fichier).
   // Base (journal des vols) : rechargeable depuis son fichier, gardée hors sauvegarde ; identifiants du site de la compagnie
   // (page de premier lancement) : secrets, jamais dans un fichier.
-  const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/, /^defaCredentials:/];
+  const SKIP = [/^networkWatch:/, /^missionSendKey:/, /^defaFlightLog:/, /^defaCredentials:/,
+    /^githubData:/
+  ]; // githubData : jeton GitHub et copies de données
   const META = 'defaLocalStore:v1'; // { savedAt, hash } — non sauvegardé lui-même
   const PENDING = 'defaLocalStore:pending'; // modifications depuis la dernière sauvegarde
   // Journal des sauvegardes et restaurations (trace de chaque rechargement : origine, date de la sauvegarde relue,
@@ -131,8 +133,12 @@
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
   });
-  /** Valeur d'une clé du magasin handles ; null si absente ou si IndexedDB est indisponible. */
+  /** Mode GitHub (appli sans lanceur, shared/github_data.js) : aucun dossier mémorisé n'est lu ni proposé — la sauvegarde du
+   *  navigateur se télécharge à la main. */
+  const noFolders = () => !!window.GitHubData?.on?.();
+  /** Valeur d'une clé du magasin handles ; null si absente, si IndexedDB est indisponible ou en mode GitHub. */
   const idbGet = async key => {
+    if (noFolders()) return null;
     try {
       const db = await idb();
       return await new Promise(r => {
@@ -628,7 +634,7 @@
   box.id = 'repoLocalStore';
   box.innerHTML = '<div class="repo-sep"></div><div class="repo-group" data-store-text="title"></div>' + ['save', 'restore', 'folder',
       'download', 'file'
-    ].map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
+    ].filter(k => k !== 'folder' || !noFolders()).map(k => `<button type="button" class="repo-action" data-store="${k}" data-store-text="${k}"></button>`).join('') +
     '<div class="repo-store-status" style="padding:4px 8px;font-size:11px;opacity:.8"></div><input type="file" accept=".yaml,.yml,text/yaml" hidden>';
   const actions = nav.menu.querySelector('.repo-page-actions');
   nav.menu.insertBefore(box, actions || null);
@@ -669,6 +675,8 @@
     }
   };
   box.querySelector('[data-store="save"]').onclick = run(async () => {
+    // mode GitHub : pas de dossier de sauvegarde, la sauvegarde se télécharge
+    if (noFolders()) return download();
     if (!(await save({
         request: true
       })) && !(await idbGet('folder:__store'))) {
@@ -679,7 +687,7 @@
     }
   });
   box.querySelector('[data-store="restore"]').onclick = run(restore);
-  box.querySelector('[data-store="folder"]').onclick = run(async () => {
+  if (box.querySelector('[data-store="folder"]')) box.querySelector('[data-store="folder"]').onclick = run(async () => {
     await chooseFolder();
     await save({
       request: true
@@ -788,10 +796,10 @@
     // libellé court (« Sauvegarder (184) ») : le libellé complet et la date de la dernière sauvegarde (jusqu'à 330 px en
     // Aqua) écrasaient les contrôles des pages à en-tête chargé (Atterrissages, Studio, Cartes de vol) ; ils sont dans
     // l'infobulle
-    const label = `${row[3]} (${n})`,
-      icon = window.RepositoryIcons?.svg('save'); // taille : celle des icônes de bouton du jeu (pas de taille en ligne)
-    button.textContent = icon ? label : '💾 ' + label;
-    if (icon) button.insertAdjacentHTML('afterbegin', icon);
+    // mot dans son span (repo-backup-label) : masqué en mode mobile (shared/mobile.css), icône et compte gardés
+    const icon = window.RepositoryIcons?.svg('save'), // taille : celle des icônes de bouton du jeu (pas de taille en ligne)
+      html = `${icon || '💾 '}<span class="repo-backup-label">${String(row[3]).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])}</span> (${n})`;
+    if (button.innerHTML !== html) button.innerHTML = html;
     button.title = `${row[0]} — ${row[1].replace('{n}', n).replace('{last}', last)}`;
   }
   button.onclick = run(async () => {
@@ -802,7 +810,7 @@
       return;
     }
     const kept = await idbGet('folder:__store');
-    if (window.showDirectoryPicker && !kept) {
+    if (window.showDirectoryPicker && !kept && !noFolders()) {
       await chooseFolder();
       if (await save({
           request: true

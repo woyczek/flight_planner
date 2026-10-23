@@ -10,8 +10,10 @@
   // modifications nombreuses ou anciennes, commits à recevoir, fichiers hors du pool), rouge (alerte : data/ sans dépôt
   // git ou sans dépôt distant, fusion en cours, seuils hauts) avec les raisons en infobulle ; une alerte (ou un niveau
   // qui monte) s'affiche aussi en notification flottante, une fois par session. Jeu d'essai : rien.
+  // Mode GitHub (appli sans lanceur, shared/github_data.js) : rien ici — chaque écriture est déjà un commit dans le dépôt des
+  // données (un commit par fichier), il n'y a ni dépôt git local ni lanceur à interroger.
   // Chargé par repository_nav.js sur toutes les pages. API : window.SuiteSync = { status(fetch), run(), reasons() }.
-  if (window.SuiteSync || !/^https?:$/.test(location.protocol)) return;
+  if (window.SuiteSync || !/^https?:$/.test(location.protocol) || window.GitHubData?.on?.()) return;
   const K = window.RepositoryKit,
     t = row => K?.t ? K.t(row) : row[0],
     tf = (row, v) => K?.tf ? K.tf(row, v) : row[0];

@@ -1,0 +1,5 @@
+# Dépendances npm, projet Xcode généré (cap add ios) et images sources des icônes : tout se régénère (README.md)
+node_modules/
+ios/
+assets/
+# le site construit (../_site) est ignoré à la racine du dépôt

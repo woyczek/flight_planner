@@ -1,0 +1,867 @@
+/* Mode mobile de la suite (écran étroit, téléphone) : html[data-mobile="on"], posé dès l'en-tête par config/repository_tree
+   (réglage repositoryMobile : auto ≤ 760 px, on, off ; suivi de la largeur par shared/repository_nav.js).
+   Deux parties :
+   1. mise en page mobile, quel que soit le design : en-tête compact, barre de navigation en bas d'écran (la barre latérale
+      redisposée), onglets sur une ligne qui défile, blocs pleine largeur, tableaux qui défilent ou en cartes
+      (table.m-cards, cellules td[data-label] posées par la page), cibles tactiles de 44 px, champs en 16 px (pas de zoom
+      automatique d'iOS), pages réservées au grand écran signalées ;
+   2. skins mobiles (designs.list[id].mobile, choisis d'office sur téléphone ; réglage repositoryMobileSkin) :
+      « Mobile » (html[data-design="mobile"], plat et léger, par défaut) et « Swiss » (html[data-design="mobile-swiss"],
+      Swiss design / brutalisme) ; tous deux en jour et nuit (html[data-mobile-theme] : auto suit le système, day, night).
+   Feuille non couchée (comme designs.css) : elle passe après les règles des pages et des designs. */
+
+/* ---------------------------------------------------------------- 1. mise en page mobile */
+html[data-mobile="on"] {
+  --m-nav-h: 58px;
+  --m-gap: 10px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%
+}
+html[data-mobile="on"] body {
+  padding-bottom: calc(var(--m-nav-h) + env(safe-area-inset-bottom, 0px) + 8px)
+}
+/* en-tête : une ligne (titre, outils), sous-titre sur une ligne, sans libellé de langue */
+html[data-mobile="on"] .repo-header {
+  padding: 6px 12px !important;
+  padding-top: calc(6px + env(safe-area-inset-top, 0px)) !important
+}
+html[data-mobile="on"] .repo-header-line1,
+html[data-mobile="on"] .repo-header-tools {
+  flex-wrap: nowrap !important;
+  min-height: 40px
+}
+/* titre : deux lignes au plus avant la coupure (nom d'un appareil, d'une mission) */
+html[data-mobile="on"] .repo-header h1 {
+  font-size: 17px !important;
+  line-height: 1.2;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  overflow-wrap: anywhere
+}
+/* boutons de l'en-tête (Synchroniser, Sauvegarder) : icône et compte seuls, libellé en infobulle */
+html[data-mobile="on"] .repo-header :is(.repo-sync-label, .repo-backup-label) {
+  display: none
+}
+html[data-mobile="on"] .repo-header>p,
+html[data-mobile="on"] .repo-header .repo-header-subtitle {
+  margin: 0 !important;
+  font-size: 12px !important;
+  opacity: .8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+html[data-mobile="on"] .repo-language-label,
+html[data-mobile="on"] .repo-language-name,
+html[data-mobile="on"] .repo-header-emblem {
+  display: none !important
+}
+/* en-tête rangé en descendant dans la page, rendu en remontant (repository_nav.js : repo-header-away) */
+html[data-mobile="on"] .repo-header {
+  transition: transform .2s ease
+}
+/* rangé : lignes présentées dans l'ordre inverse (titre en bas), puis remontées de la hauteur des autres lignes :
+   seule la ligne du titre reste visible, sans changer la hauteur de l'en-tête (la page ne saute pas) */
+html[data-mobile="on"] .repo-header.repo-header-away {
+  display: flex;
+  flex-direction: column-reverse;
+  transform: translateY(calc(-1 * var(--repo-head-away, 0px)))
+}
+/* onglets : une ligne qui défile au doigt */
+html[data-mobile="on"] .repo-tabs {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  margin: 0 !important;
+  scroll-snap-type: x proximity
+}
+html[data-mobile="on"] .repo-tabs::-webkit-scrollbar {
+  display: none
+}
+html[data-mobile="on"] .repo-tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  scroll-snap-align: start;
+  min-height: 36px;
+  display: inline-flex !important;
+  align-items: center
+}
+/* pages « grand écran » : écartées sur écran tactile seulement (html[data-touch], posé par config/repository_tree) ; une
+   fenêtre d'ordinateur réduite garde tous ses onglets et toutes ses entrées */
+html[data-mobile="on"][data-touch="on"] .repo-tab-desk {
+  display: none !important
+}
+/* barre de navigation en bas d'écran : la barre latérale redisposée (entrées du haut ; Paramètres et Aide : menu ☰) */
+html[data-mobile="on"] .repo-sidenav:not(#imp) {
+  display: flex !important;
+  position: fixed;
+  inset: auto 0 0 0;
+  top: auto;
+  width: auto;
+  height: calc(var(--m-nav-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  flex-direction: row;
+  border-right: 0;
+  border-top: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent);
+  box-shadow: 0 -4px 18px rgb(0 0 0 / .18);
+  z-index: 1100
+}
+html[data-mobile="on"] .repo-sidenav-brand,
+html[data-mobile="on"] .repo-sidenav-foot,
+html[data-mobile="on"] .repo-sidenav-sep,
+html[data-mobile="on"][data-touch="on"] .repo-sidenav li.repo-sidenav-desk,
+html[data-mobile="on"] .repo-sidenav .cpco-only {
+  display: none !important
+}
+html[data-mobile="on"] .repo-sidenav>ul:first-of-type {
+  display: flex !important;
+  flex: 1;
+  flex-direction: row;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none
+}
+html[data-mobile="on"] .repo-sidenav>ul:first-of-type>li {
+  flex: 1 1 0;
+  min-width: 52px;
+  list-style: none
+}
+html[data-mobile="on"] .repo-sidenav-item:not(#imp) {
+  height: 100%;
+  min-height: 0;
+  padding: 6px 2px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 0;
+  margin: 0
+}
+html[data-mobile="on"] .repo-sidenav-item[aria-current]:not(#imp) {
+  box-shadow: inset 0 3px 0 var(--repo-accent);
+  background: color-mix(in srgb, var(--repo-bar-text) 10%, transparent)
+}
+html[data-mobile="on"] .repo-sidenav-label {
+  font-size: 10.5px !important;
+  line-height: 1.1;
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+html[data-mobile="on"] .repo-sidenav {
+  --repo-sn-ic: 22px;
+  --repo-sn-ic-sk: 26px
+}
+html[data-mobile="on"],
+html[data-mobile="on"][data-sidenav] {
+  padding-left: 0 !important
+}
+/* plus de 6 entrées : les 5 premières et « Plus » (repository_nav.js) ; volet « Plus » au-dessus de la barre */
+html[data-mobile="on"] .repo-sidenav li.repo-sidenav-over {
+  display: none !important
+}
+.repo-more-panel {
+  display: none
+}
+html[data-mobile="on"] .repo-more-panel:not([hidden]) {
+  display: grid;
+  position: fixed;
+  z-index: 1101;
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--m-nav-h) + env(safe-area-inset-bottom, 0px) + 6px);
+  min-width: 220px;
+  max-width: calc(100vw - 16px);
+  padding: 6px;
+  gap: 2px;
+  background: var(--repo-bar);
+  color: var(--repo-bar-text);
+  border: 1px solid color-mix(in srgb, var(--repo-bar-text) 20%, transparent);
+  border-radius: calc(12px * var(--repo-round, 1));
+  box-shadow: 0 8px 28px rgb(0 0 0 / .3)
+}
+html[data-mobile="on"] .repo-more-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 12px;
+  color: inherit;
+  text-decoration: none;
+  border: 0;
+  background: none;
+  font: 600 15px/1.2 system-ui, sans-serif;
+  text-align: left;
+  border-radius: calc(8px * var(--repo-round, 1))
+}
+html[data-mobile="on"] .repo-more-item:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--repo-bar-text) 12%, transparent)
+}
+html[data-mobile="on"] .repo-more-item .repo-sidenav-label {
+  font-size: 15px !important;
+  max-width: none
+}
+/* contenu : marges réduites, blocs pleine largeur, sans largeur maximale */
+html[data-mobile="on"] body>main:not(#imp) {
+  padding-left: var(--m-gap) !important;
+  padding-right: var(--m-gap) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  max-width: none !important
+}
+/* bloc amené à l'écran (lien #bloc, résultat d'un calcul) : sous l'en-tête collé */
+html[data-mobile="on"] .repo-block {
+  scroll-margin-top: 72px
+}
+html[data-mobile="on"] .repo-block:not(#imp) {
+  padding: 12px !important;
+  margin: 0 0 var(--m-gap) !important;
+  border-radius: calc(12px * var(--repo-round, 1)) !important
+}
+html[data-mobile="on"] .repo-block-heading-rich:not(#imp) {
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  padding-left: 0 !important
+}
+html[data-mobile="on"] .repo-block-icon:not(#imp) {
+  --rs: 22px;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 0 !important
+}
+html[data-mobile="on"] .repo-block-heading h2,
+html[data-mobile="on"] .repo-block-titles h2 {
+  font-size: 16px !important
+}
+html[data-mobile="on"] .repo-block-subtitle {
+  font-size: 12px !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden
+}
+html[data-mobile="on"] .repo-block-subtitle:focus,
+html[data-mobile="on"] .repo-block-subtitle:active {
+  -webkit-line-clamp: unset
+}
+/* déplacement des blocs : souris seulement ; « Masquer / Afficher » reste (repli d'un bloc), chevron seul (libellé en
+   infobulle et pour les lecteurs d'écran : aria-label posé par app_framework.js) */
+html[data-mobile="on"] .repo-drag {
+  display: none !important
+}
+html[data-mobile="on"] .repo-block-heading .repo-toggle:not(#imp) {
+  font-size: 0 !important;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 !important;
+  display: inline-grid;
+  place-items: center
+}
+html[data-mobile="on"] .repo-block-heading .repo-toggle::before {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important
+}
+/* cibles tactiles et champs (16 px : iOS ne zoome pas sur le champ) */
+html[data-mobile="on"] main :is(button, .mc-button, select, input:not([type=checkbox]):not([type=radio]):not([type=range])) {
+  min-height: 40px
+}
+html[data-mobile="on"] main :is(input, select, textarea) {
+  font-size: 16px !important
+}
+html[data-mobile="on"] main input[type=checkbox],
+html[data-mobile="on"] main input[type=radio] {
+  width: 20px;
+  height: 20px
+}
+/* tableaux : défilement horizontal dans le bloc (la page ne déborde plus) ; table.m-cards : une carte par ligne ;
+   table.m-fit : tableau qui tient dans la largeur (colonnes réduites par la page), disposition laissée à la page */
+html[data-mobile="on"] main table:not(.m-cards):not(.m-fit) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch
+}
+html[data-mobile="on"] main table.m-cards,
+html[data-mobile="on"] main table.m-cards tbody {
+  display: block;
+  width: 100%
+}
+html[data-mobile="on"] main table.m-cards thead {
+  display: none
+}
+html[data-mobile="on"] main table.m-cards tr {
+  display: block;
+  padding: 10px 12px;
+  margin: 0 0 8px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: calc(10px * var(--repo-round, 1))
+}
+/* une ligne par cellule : libellé (data-label, posé par la page dans la langue courante) puis valeur */
+html[data-mobile="on"] main table.m-cards td {
+  display: grid;
+  grid-template-columns: minmax(7.5em, 38%) 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 2px 0 !important;
+  border: 0 !important;
+  background: none !important
+}
+html[data-mobile="on"] main table.m-cards td:not([data-label]):not(.m-card-head) {
+  display: block
+}
+html[data-mobile="on"] main table.m-cards td[data-label]::before {
+  content: attr(data-label);
+  opacity: .65;
+  font-size: 12px
+}
+html[data-mobile="on"] main table.m-cards td>* {
+  min-width: 0
+}
+html[data-mobile="on"] main table.m-cards td.m-card-head {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  padding-bottom: 4px !important
+}
+/* pied de page : une ligne */
+html[data-mobile="on"] .repo-footer {
+  font-size: 11px !important;
+  padding: 8px 12px !important;
+  margin-bottom: 0 !important
+}
+/* téléphone en paysage (moins de 500 px de haut, même seuil que la détection du mode mobile, config/repository_tree) :
+   la hauteur manque — barre de navigation en rail à gauche (icône, libellé dessous), en-tête non collé ; --m-nav-h à 0 :
+   notifications, actions collées et boutons flottants descendent en bas de l'écran */
+@media (max-height: 500px) {
+  html[data-mobile="on"] {
+    --m-nav-h: 0px;
+    --m-rail: calc(64px + env(safe-area-inset-left, 0px))
+  }
+  html[data-mobile="on"],
+  html[data-mobile="on"][data-sidenav] {
+    padding-left: var(--m-rail) !important
+  }
+  html[data-mobile="on"] .repo-sidenav:not(#imp) {
+    inset: 0 auto 0 0;
+    width: var(--m-rail);
+    height: auto;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    flex-direction: column;
+    border-top: 0;
+    border-right: 1px solid color-mix(in srgb, var(--repo-bar-text) 18%, transparent);
+    box-shadow: 4px 0 18px rgb(0 0 0 / .18)
+  }
+  html[data-mobile="on"] .repo-sidenav>ul:first-of-type {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto
+  }
+  html[data-mobile="on"] .repo-sidenav>ul:first-of-type>li {
+    flex: 0 0 auto;
+    min-width: 0
+  }
+  html[data-mobile="on"] .repo-sidenav-item:not(#imp) {
+    height: 56px
+  }
+  html[data-mobile="on"] .repo-sidenav-label {
+    max-width: 60px
+  }
+  html[data-mobile="on"] .repo-sidenav-item[aria-current]:not(#imp) {
+    box-shadow: inset 3px 0 0 var(--repo-accent)
+  }
+  html[data-mobile="on"] .repo-more-panel:not([hidden]) {
+    left: calc(var(--m-rail) + 6px);
+    right: auto;
+    bottom: 8px
+  }
+  html[data-mobile="on"] .repo-header:not(#imp) {
+    position: relative
+  }
+  html[data-mobile="on"] .repo-block {
+    scroll-margin-top: 8px
+  }
+  html[data-mobile="on"] .mc-step {
+    scroll-margin-top: 56px
+  }
+}
+/* notifications : au-dessus de la barre du bas */
+html[data-mobile="on"] .repo-notify {
+  bottom: calc(var(--m-nav-h) + env(safe-area-inset-bottom, 0px) + 10px) !important
+}
+/* compte rendu (shared/mission_core, main.mc-page : le formulaire seul ; fiches, Flotte et analyses gardent leur
+   en-tête collé) : en-tête de la mission non collé (trop haut pour un téléphone) ; barre des étapes
+   collée en haut à sa place (une étape ouverte à la fois, core.js) ; « Ajouter au registre » flottant au-dessus de la barre
+   du bas */
+html[data-mobile="on"] body:has(main.mc-page) header.mc-header.repo-header:not(#imp) {
+  position: relative
+}
+html[data-mobile="on"] .mc-form>.mc-steps-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 0 12px;
+  padding: 8px 0;
+  background: var(--bg);
+  box-shadow: 0 1px 0 var(--line)
+}
+html[data-mobile="on"] .mc-form .mc-steps-nav button {
+  flex: 1 0 auto;
+  min-height: 40px
+}
+html[data-mobile="on"] .mc-form .mc-steps-nav button.on {
+  background: var(--accent);
+  color: #fff
+}
+html[data-mobile="on"] .mc-step {
+  scroll-margin-top: 64px
+}
+html[data-mobile="on"] .mc-header-tools [data-action="store"]:not(#imp) {
+  position: fixed;
+  right: var(--m-gap);
+  bottom: calc(var(--m-nav-h) + env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: 1050;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: calc(999px * var(--repo-round, 1));
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px rgb(0 0 0 / .28)
+}
+html[data-mobile="on"] .mc-page {
+  padding-bottom: 72px
+}
+/* page réservée au grand écran ouverte sur téléphone (repository_nav.js) */
+.repo-mobile-desk {
+  display: none
+}
+html[data-mobile="on"][data-touch="on"] .repo-mobile-desk {
+  display: block;
+  margin: 8px var(--m-gap) 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font: 13px/1.4 system-ui, sans-serif;
+  background: #fff4d6;
+  color: #3d2c00;
+  border-left: 4px solid #e0a400
+}
+
+/* ---------------------------------------------------------------- 2. skin « Mobile » (plat, léger ; skin mobile par défaut)
+   Nuit : réglage du système (html[data-mobile-theme="auto"]) ou choix « nuit » ; palette des pages redéfinie (surfaces
+   sombres, texte clair), accent du thème éclairci pour rester lisible. */
+html[data-design="mobile"] {
+  color-scheme: light
+}
+@media (prefers-color-scheme: dark) {
+  html[data-design="mobile"]:not([data-mobile-theme="day"]) {
+    --bg: #0f141b !important;
+    --card: #171d26 !important;
+    --card-2: #1d2430 !important;
+    --field: #11161d !important;
+    --ink: #e6edf3 !important;
+    --muted: #9aa7b6 !important;
+    --line: #2b3442 !important;
+    --soft: #ffffff0f !important;
+    --repo-page: #0f141b !important;
+    --repo-bar: #0b0f15 !important;
+    --repo-bar-text: #e6edf3 !important;
+    --repo-accent: color-mix(in srgb, var(--accent) 60%, #fff) !important;
+    --mk-btn: #232b38;
+    --mk-map: #1d2430;
+    color-scheme: dark
+  }
+}
+html[data-design="mobile"][data-mobile-theme="night"] {
+  --bg: #0f141b !important;
+  --card: #171d26 !important;
+  --card-2: #1d2430 !important;
+  --field: #11161d !important;
+  --ink: #e6edf3 !important;
+  --muted: #9aa7b6 !important;
+  --line: #2b3442 !important;
+  --soft: #ffffff0f !important;
+  --repo-page: #0f141b !important;
+  --repo-bar: #0b0f15 !important;
+  --repo-bar-text: #e6edf3 !important;
+  --repo-accent: color-mix(in srgb, var(--accent) 60%, #fff) !important;
+  --mk-btn: #232b38;
+  --mk-map: #1d2430;
+  color-scheme: dark
+}
+html[data-design="mobile"] body:not(#imp) {
+  color: var(--ink)
+}
+/* boutons secondaires et fond de la carte : couleurs du skin (jour : celles des pages ; nuit : surfaces sombres) */
+html[data-design="mobile"] body :is(button.secondary, a.secondary, .mc-button.secondary):not(.repo-header *):not(#imp) {
+  background: var(--mk-btn, #e5e7eb) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important
+}
+html[data-design="mobile"] .fm-map:not(#imp) {
+  background: var(--mk-map, #dfe7ee)
+}
+html[data-design="mobile"] :is(input, select, textarea):not(#imp) {
+  background-color: var(--field, var(--card));
+  color: var(--ink);
+  border-color: var(--line)
+}
+html[data-design="mobile"] body:not(#imp) {
+  background: color-mix(in srgb, var(--repo-page) 94%, var(--repo-bar)) !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif
+}
+html[data-design="mobile"] .repo-header:not(#imp) {
+  background: var(--repo-bar);
+  box-shadow: none
+}
+html[data-design="mobile"] .repo-block:not(#imp),
+html[data-design="mobile"] .card:not(#imp) {
+  background: var(--card, var(--repo-page));
+  background-image: none !important;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  box-shadow: 0 1px 2px rgb(0 0 0 / .06)
+}
+html[data-design="mobile"] main :is(button, .mc-button):not(#imp) {
+  background-image: none !important;
+  box-shadow: none;
+  border-radius: calc(10px * var(--repo-round, 1));
+  font-weight: 600
+}
+html[data-design="mobile"] main :is(button.primary, .primary):not(#imp) {
+  background: var(--repo-accent);
+  color: #fff;
+  border-color: transparent
+}
+html[data-design="mobile"] .repo-tab:not(#imp) {
+  background: transparent;
+  background-image: none;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 999px;
+  box-shadow: none;
+  padding: 4px 14px
+}
+html[data-design="mobile"] .repo-tab[aria-current]:not(#imp) {
+  background: var(--repo-accent);
+  border-color: var(--repo-accent);
+  color: #fff
+}
+html[data-design="mobile"] .repo-sidenav:not(#imp) {
+  background: var(--repo-bar);
+  background-image: none
+}
+
+/* ---------------------------------------------------------------- 3. skin « Swiss » : Swiss design, brutalisme
+   Grille et typographie d'abord : grotesque du système (pas de police web : l'application doit marcher hors ligne),
+   gras et serré pour les titres, petites capitales espacées pour les étiquettes ; noir et blanc, filets de 2 px, angles
+   droits, ni ombre ni dégradé ; un seul accent, le rouge, pour l'action principale et la position courante.
+   Jour / nuit : html[data-mobile-theme] = auto (réglage du système), day ou night (réglage repositoryMobileTheme) ;
+   nuit : fond noir, texte blanc atténué, rouge sombre (préserve la vision de nuit). */
+html[data-design="mobile-swiss"] {
+  --sw-bg: #ffffff;
+  --sw-ink: #000000;
+  --sw-mute: #4a4a4a;
+  --sw-rule: #000000;
+  --sw-fill: #f0f0f0;
+  --sw-red: #e30613;
+  --sw-on-red: #ffffff;
+  --sw-font: "Helvetica Neue", Helvetica, "Nimbus Sans", Arial, system-ui, sans-serif;
+  --sw-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* palette des pages (mission_core/core.css, outil sombre) et du thème de l'en-tête, reprises par le skin */
+  --bg: var(--sw-bg) !important;
+  --card: var(--sw-bg) !important;
+  --card-2: var(--sw-fill) !important;
+  --field: var(--sw-bg) !important;
+  --ink: var(--sw-ink) !important;
+  --muted: var(--sw-mute) !important;
+  --line: var(--sw-rule) !important;
+  --soft: var(--sw-fill) !important;
+  --accent: var(--sw-red) !important;
+  --repo-accent: var(--sw-red) !important;
+  --repo-bar: var(--sw-ink) !important;
+  --repo-bar-text: var(--sw-bg) !important;
+  --repo-page: var(--sw-bg) !important;
+  --repo-round: 0 !important;
+  color-scheme: light
+}
+/* nuit : réglage du système (auto) ou choix « nuit » */
+@media (prefers-color-scheme: dark) {
+  html[data-design="mobile-swiss"]:not([data-mobile-theme="day"]) {
+    --sw-bg: #000000;
+    --sw-ink: #e8e8e8;
+    --sw-mute: #9a9a9a;
+    --sw-rule: #e8e8e8;
+    --sw-fill: #161616;
+    --sw-red: #c8141e;
+    --sw-on-red: #ffffff;
+    --repo-bar: #000000 !important;
+    --repo-bar-text: #e8e8e8 !important;
+    color-scheme: dark
+  }
+}
+html[data-design="mobile-swiss"][data-mobile-theme="night"] {
+  --sw-bg: #000000;
+  --sw-ink: #e8e8e8;
+  --sw-mute: #9a9a9a;
+  --sw-rule: #e8e8e8;
+  --sw-fill: #161616;
+  --sw-red: #c8141e;
+  --sw-on-red: #ffffff;
+  --repo-bar: #000000 !important;
+  --repo-bar-text: #e8e8e8 !important;
+  color-scheme: dark
+}
+html[data-design="mobile-swiss"] body:not(#imp) {
+  background: var(--sw-bg) !important;
+  color: var(--sw-ink);
+  font-family: var(--sw-font);
+  letter-spacing: -.005em
+}
+html[data-design="mobile-swiss"] :is(h1, h2, h3, h4):not(#imp) {
+  font-family: var(--sw-font);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: inherit
+}
+/* en-tête : bandeau noir, titre gras aligné à gauche, filet blanc en pied ; nuit : filet clair sur noir */
+html[data-design="mobile-swiss"] .repo-header:not(#imp) {
+  background: var(--repo-bar);
+  color: var(--repo-bar-text);
+  box-shadow: none;
+  border-bottom: 2px solid var(--sw-rule)
+}
+html[data-design="mobile-swiss"] .repo-header h1:not(#imp) {
+  font-size: 22px !important;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  text-transform: none
+}
+html[data-design="mobile-swiss"] .repo-header>p:not(#imp) {
+  font: 600 11px/1.3 var(--sw-font) !important;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .75
+}
+html[data-design="mobile-swiss"] .repo-header :is(button, select, .repo-language-button):not(#imp) {
+  background: transparent !important;
+  background-image: none !important;
+  border: 1px solid color-mix(in srgb, currentColor 40%, transparent) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: inherit !important
+}
+/* blocs : feuille blanche, filet noir en tête (pas de cadre ni d'ombre), titre en capitales */
+html[data-design="mobile-swiss"] .repo-block:not(#imp),
+html[data-design="mobile-swiss"] .card:not(#imp) {
+  background: var(--sw-bg) !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-top: 4px solid var(--sw-rule) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 10px 0 14px !important;
+  margin: 0 0 18px !important
+}
+html[data-design="mobile-swiss"] .repo-block-heading h2:not(#imp),
+html[data-design="mobile-swiss"] .repo-block-titles h2:not(#imp) {
+  font-size: 13px !important;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em
+}
+html[data-design="mobile-swiss"] .repo-block-subtitle:not(#imp) {
+  color: var(--sw-mute);
+  border: 0
+}
+html[data-design="mobile-swiss"] .repo-block-icon:not(#imp) {
+  color: var(--sw-ink) !important;
+  background: none !important;
+  border: 0 !important
+}
+html[data-design="mobile-swiss"] .repo-block-heading .repo-toggle:not(#imp) {
+  border: 1px solid color-mix(in srgb, var(--sw-rule) 35%, transparent) !important;
+  background: var(--sw-bg) !important;
+  background-image: none !important;
+  color: var(--sw-ink) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important
+}
+/* boutons : rectangles à liseré fin, capitales ; action principale pleine en rouge */
+html[data-design="mobile-swiss"] body :is(button, .mc-button, a.secondary, a.primary):not(.repo-toggle):not(.repo-plain):not(.fm-sheet-close):not(.repo-header *):not(.repo-sidenav *):not(.repo-tabs *):not(.maplibregl-ctrl *):not(.repo-notify *):not(#imp) {
+  background: var(--sw-bg) !important;
+  background-image: none !important;
+  color: var(--sw-ink) !important;
+  border: 1px solid color-mix(in srgb, var(--sw-rule) 35%, transparent) !important;
+  /* liseré fin (à retravailler) */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: 700 13px/1.1 var(--sw-font) !important;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  text-decoration: none
+}
+html[data-design="mobile-swiss"] body :is(button.primary, a.primary, .mc-button.primary):not(.repo-header *):not(#imp) {
+  background: var(--sw-red) !important;
+  border-color: var(--sw-red) !important;
+  color: var(--sw-on-red) !important
+}
+/* compte rendu : étape ouverte en noir plein (deux #imp : passe devant la règle des boutons ci-dessus) ; « Ajouter au
+   registre » flottant en rouge plein */
+html[data-design="mobile-swiss"] .mc-form .mc-steps-nav button.on:not(#imp):not(#imp2) {
+  background: var(--sw-ink) !important;
+  border-color: var(--sw-ink) !important;
+  color: var(--sw-bg) !important
+}
+html[data-design="mobile-swiss"] .repo-header .mc-header-tools [data-action="store"]:not(#imp) {
+  background: var(--sw-red) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--sw-on-red) !important
+}
+html[data-design="mobile-swiss"] main :is(button, .mc-button):disabled:not(#imp) {
+  opacity: .35
+}
+/* champs : cadre noir de 2 px, carré */
+html[data-design="mobile-swiss"] body :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea):not(.repo-header *):not(#imp) {
+  background: var(--sw-bg) !important;
+  background-image: none !important;
+  color: var(--sw-ink) !important;
+  border: 2px solid var(--sw-rule) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-family: var(--sw-font) !important
+}
+html[data-design="mobile-swiss"] main :is(input, select, textarea):focus-visible:not(#imp) {
+  outline: 3px solid var(--sw-red) !important;
+  outline-offset: 0
+}
+html[data-design="mobile-swiss"] main :is(label, th, legend):not(#imp) {
+  font-family: var(--sw-font)
+}
+html[data-design="mobile-swiss"] main a:not(.mc-button):not(.secondary):not(.primary):not(#imp) {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px
+}
+/* onglets : segments carrés côte à côte ; courant en noir plein */
+html[data-design="mobile-swiss"] .repo-tabs:not(#imp) {
+  background: var(--sw-bg) !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-bottom: 2px solid var(--sw-rule) !important;
+  box-shadow: none !important;
+  gap: 0 !important;
+  padding: 0 !important
+}
+html[data-design="mobile-swiss"] .repo-tab:not(#imp) {
+  background: var(--sw-bg) !important;
+  background-image: none !important;
+  color: var(--sw-ink) !important;
+  border: 0 !important;
+  border-right: 2px solid var(--sw-rule) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 16px !important;
+  min-height: 44px;
+  font: 700 12px/1 var(--sw-font) !important;
+  text-transform: uppercase;
+  letter-spacing: .08em
+}
+html[data-design="mobile-swiss"] .repo-tab[aria-current]:not(#imp) {
+  background: var(--sw-ink) !important;
+  color: var(--sw-bg) !important
+}
+/* barre du bas : blanche, filet noir de 2 px ; entrée courante : trait rouge de 4 px et libellé gras */
+html[data-design="mobile-swiss"] .repo-sidenav:not(#imp) {
+  background: var(--sw-bg) !important;
+  background-image: none !important;
+  color: var(--sw-ink) !important;
+  border-top: 2px solid var(--sw-rule) !important;
+  box-shadow: none !important
+}
+html[data-design="mobile-swiss"] .repo-sidenav-item:not(#imp) {
+  color: var(--sw-ink) !important;
+  background: none !important;
+  border-right: 1px solid color-mix(in srgb, var(--sw-rule) 25%, transparent) !important
+}
+html[data-design="mobile-swiss"] .repo-sidenav-item[aria-current]:not(#imp) {
+  box-shadow: inset 0 4px 0 var(--sw-red) !important;
+  background: var(--sw-fill) !important
+}
+/* paysage : rail à gauche, filet à droite, entrée courante marquée à gauche */
+@media (max-height: 500px) {
+  html[data-design="mobile-swiss"] .repo-sidenav:not(#imp) {
+    border-top: 0 !important;
+    border-right: 2px solid var(--sw-rule) !important
+  }
+  html[data-design="mobile-swiss"] .repo-sidenav-item[aria-current]:not(#imp) {
+    box-shadow: inset 4px 0 0 var(--sw-red) !important
+  }
+}
+html[data-design="mobile-swiss"] .repo-sidenav-label:not(#imp) {
+  font: 700 10px/1.1 var(--sw-font) !important;
+  text-transform: uppercase;
+  letter-spacing: .04em
+}
+/* tableaux et cartes : filets noirs, chiffres en chasse fixe */
+html[data-design="mobile-swiss"] main table:not(#imp) {
+  border-collapse: collapse
+}
+html[data-design="mobile-swiss"] main :is(th, td):not(#imp) {
+  border-color: var(--sw-rule) !important
+}
+html[data-design="mobile-swiss"] main th:not(#imp) {
+  background: var(--sw-bg) !important;
+  font: 800 11px/1.2 var(--sw-font) !important;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border-bottom: 2px solid var(--sw-rule) !important
+}
+html[data-design="mobile-swiss"][data-mobile="on"] main table.m-cards tr:not(#imp) {
+  border: 0 !important;
+  border-top: 2px solid var(--sw-rule) !important;
+  border-radius: 0 !important;
+  padding: 10px 0 !important;
+  margin: 0 !important
+}
+html[data-design="mobile-swiss"][data-mobile="on"] main table.m-cards td[data-label]::before {
+  font: 700 10px/1.3 var(--sw-font);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .7
+}
+html[data-design="mobile-swiss"] main :is(.num, time, td.num):not(#imp) {
+  font-family: var(--sw-mono);
+  font-variant-numeric: tabular-nums
+}
+/* bandeau « grand écran » et notifications : aplats, sans arrondi */
+html[data-design="mobile-swiss"] .repo-mobile-desk:not(#imp) {
+  background: var(--sw-ink);
+  color: var(--sw-bg);
+  border: 0;
+  border-left: 8px solid var(--sw-red);
+  border-radius: 0;
+  font: 700 12px/1.4 var(--sw-font);
+  text-transform: uppercase;
+  letter-spacing: .04em
+}
+html[data-design="mobile-swiss"] .repo-notify>div:not(#imp) {
+  border-radius: 0 !important;
+  box-shadow: none !important
+}

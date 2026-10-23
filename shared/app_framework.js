@@ -415,14 +415,17 @@
   // 1 à 4 à partir duquel le message s'affiche ; en dessous, seuls err et warn vont au journal). Les zones d'état
   // marquées data-status (ex. <p id="status" data-status>) y sont relayées quand elles affichent une erreur
   // (.err, .error) ou un avertissement (.warn) : un message d'échec ne reste plus caché en bas d'un bloc.
+  /* Safari iOS étire le conteneur popover des notifications sur toute la hauteur de l'écran (feuille UA du popover) :
+     lignes de grille à leur contenu, alignées en bas, hauteur du conteneur et de chaque message bornées. */
   const notifyCss = () => {
     if (document.getElementById("repoNotifyCss")) return;
     const s = document.createElement("style");
     s.id = "repoNotifyCss";
-    s.textContent = `.repo-notify{inset:auto;margin:0;border:0;padding:0;background:none;overflow:visible;color:inherit;position:fixed;z-index:3000;left:50%;bottom:72px;transform:translateX(-50%);display:grid;gap:6px;width:min(640px,calc(100vw - 32px));pointer-events:none}
+    s.textContent = `.repo-notify{inset:auto;top:auto;margin:0;border:0;padding:0;background:none;overflow:visible;color:inherit;position:fixed;z-index:3000;left:50%;bottom:72px;transform:translateX(-50%);display:grid;grid-auto-rows:max-content;align-content:end;height:auto;max-height:calc(100vh - 120px);gap:6px;width:min(640px,calc(100vw - 32px));pointer-events:none}
+.repo-notify>div{max-height:40vh;overflow:auto}
 .repo-notify>div{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:10px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px #0004;background:#1d2733;color:#f2f5f8;border-left:5px solid #6fa8ff}
 .repo-notify>div.ok{border-left-color:#2e9d5b}.repo-notify>div.warn{border-left-color:#e0a400}.repo-notify>div.err{border-left-color:#e5484d;background:#2a1618}
-.repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}`;
+.repo-notify>div>span{flex:1;white-space:pre-line}.repo-notify button{all:unset;cursor:pointer;opacity:.75;font-size:16px;line-height:1;padding:0 2px}.repo-notify button:hover{opacity:1}.repo-notify .repo-notify-act{font-size:13px;line-height:1.4;text-decoration:underline;white-space:nowrap;opacity:.9}`;
     document.head.append(s);
   };
 
@@ -688,6 +691,144 @@
     }
     return item;
   }
+  // ---- Connexion bloquée par la politique de sécurité du lanceur (CSP, connect-src) : une notification par site et
+  // par page, avec « Autoriser ce site… » ; le lanceur demande confirmation dans sa fenêtre du système (aucune page ne
+  // peut y répondre). Sites réglés dans le navigateur (webservice des CR, autre dépôt de la suite) : inconnus du
+  // lanceur tant qu'ils ne sont pas autorisés ainsi. Les blocages dans un worker (tuiles) ne remontent pas ici.
+  const blockedSites = new Set();
+  document.addEventListener("securitypolicyviolation", e => {
+    if (!/^connect-src/.test(e.effectiveDirective || e.violatedDirective || "")) return;
+    let origin = "";
+    try {
+      origin = new URL(e.blockedURI).origin;
+    } catch {
+      return;
+    }
+    if (!origin || origin === "null" || blockedSites.has(origin)) return;
+    blockedSites.add(origin);
+    const K = window.RepositoryKit,
+      tf = (row, v) => K?.tf ? K.tf(row, v) : row[0].replace("{o}", v.o);
+    const item = notify(tf([
+      "Connexion bloquée vers {o} : ce site n’est pas dans la liste des sites que la suite peut contacter.",
+      "Connection blocked to {o}: this website is not in the list of websites the suite may contact.",
+      "Verbindung zu {o} blockiert: Diese Website steht nicht in der Liste der Websites, die die Suite kontaktieren darf.",
+      "Conexión bloqueada hacia {o}: este sitio no está en la lista de sitios que la suite puede contactar."
+    ], {
+      o: origin
+    }), "warn", {
+      timeout: 0
+    });
+    // site sans lanceur (GitHub Pages, appli iOS) : liste fixée à la publication, rien à autoriser depuis la page
+    const launcher = location.protocol === "http:" && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    if (!item || !launcher || !/^(https:|http:\/\/(localhost|127\.0\.0\.1|\[::1\]))/.test(origin)) return;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "repo-notify-act";
+    b.textContent = tf(["Autoriser ce site…", "Allow this website…", "Diese Website erlauben…", "Autorizar este sitio…"], {});
+    b.onclick = async () => {
+      b.disabled = true;
+      let r = null;
+      try {
+        r = await fetch("/__setup/site-allow", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-SOG-Setup": "1"
+          },
+          body: JSON.stringify({
+            url: origin
+          })
+        }).then(x => x.json());
+      } catch {
+        r = null;
+      }
+      item.remove();
+      notify(r?.ok ? tf(["{o} autorisé : rechargez la page pour l’utiliser.", "{o} allowed: reload the page to use it.",
+        "{o} erlaubt: Seite neu laden, um sie zu verwenden.", "{o} autorizado: recargue la página para usarlo."
+      ], {
+        o: origin
+      }) : tf(["{o} non autorisé (refusé dans la fenêtre du lanceur, ou suite ouverte sans le lanceur).",
+        "{o} not allowed (refused in the launcher window, or suite opened without the launcher).",
+        "{o} nicht erlaubt (im Fenster des Starters abgelehnt, oder Suite ohne Starter geöffnet).",
+        "{o} no autorizado (rechazado en la ventana del lanzador, o suite abierta sin el lanzador)."
+      ], {
+        o: origin
+      }), r?.ok ? "ok" : "warn");
+    };
+    item.querySelector("span")?.after(b);
+  });
+
+  // ---- Protection réduite (débrayage du lanceur : pages ouvrables depuis un autre site ou une extension, jusqu'à sa
+  // fermeture) : bouton rouge dans l'en-tête de chaque page ; un clic rétablit la protection. État lu au lanceur au
+  // chargement de la page (/__setup/status), et de nouveau quand un réglage de Paramètres l'annonce (suite-relax-change).
+  async function relaxBadge() {
+    if (!/^https?:$/.test(location.protocol)) return;
+    const st = await fetch("/__setup/status", {
+      headers: {
+        "X-SOG-Setup": "1"
+      },
+      cache: "no-store"
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    let b = document.getElementById("repoRelaxBadge");
+    if (!st?.relaxNav) return b?.remove();
+    const K = window.RepositoryKit,
+      tt = row => K?.t ? K.t(row) : row[0];
+    if (!b) {
+      if (!document.getElementById("repoRelaxCss")) document.head.insertAdjacentHTML("beforeend",
+        "<style id=\"repoRelaxCss\">#repoRelaxBadge{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:7px;background:#c62828;color:#fff;font:600 12px/1 system-ui,sans-serif;box-shadow:0 0 0 2px #fff6,0 2px 8px #0006;white-space:nowrap}#repoRelaxBadge:hover{background:#a51d1d}#repoRelaxBadge.floating{position:fixed;top:8px;right:8px;z-index:3100}</style>"
+      );
+      b = document.createElement("button");
+      b.type = "button";
+      b.id = "repoRelaxBadge";
+      b.className = "no-print";
+      b.onclick = async () => {
+        b.disabled = true;
+        const r = await fetch("/__setup/relax", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-SOG-Setup": "1"
+          },
+          body: JSON.stringify({
+            on: false
+          })
+        }).then(x => x.json()).catch(() => null);
+        b.disabled = false;
+        if (r && !r.relaxNav) {
+          b.remove();
+          notify(tt(["Protection rétablie : les pages de la suite ne s’ouvrent plus depuis un autre site ni une extension.",
+            "Protection restored: suite pages no longer open from another website or an extension.",
+            "Schutz wiederhergestellt: Seiten der Suite öffnen sich nicht mehr von einer anderen Website oder Erweiterung aus.",
+            "Protección restablecida: las páginas de la suite ya no se abren desde otro sitio ni desde una extensión."
+          ]), "ok");
+          window.dispatchEvent(new CustomEvent("suite-relax-change"));
+        }
+      };
+    }
+    const label = tt(["⚠ Protection réduite — rétablir", "⚠ Reduced protection — restore", "⚠ Schutz verringert — wiederherstellen",
+        "⚠ Protección reducida — restablecer"
+      ]),
+      tip = tt([
+        "Les pages de la suite peuvent être ouvertes depuis un autre site ou une extension, jusqu’à la fermeture du lanceur. Cliquer pour rétablir la protection.",
+        "Suite pages can be opened from another website or an extension until the launcher closes. Click to restore the protection.",
+        "Seiten der Suite können bis zum Schließen des Starters von einer anderen Website oder Erweiterung aus geöffnet werden. Klicken, um den Schutz wiederherzustellen.",
+        "Las páginas de la suite pueden abrirse desde otro sitio o una extensión hasta que se cierre el lanzador. Pulsar para restablecer la protección."
+      ]);
+    if (b.textContent !== label) b.textContent = label;
+    if (b.title !== tip) b.title = tip;
+    const host = document.querySelector(".repo-header-tools");
+    if (host && b.parentNode !== host) {
+      b.classList.remove("floating");
+      host.prepend(b);
+    } else if (!host && !b.parentNode) {
+      b.classList.add("floating");
+      document.body.append(b);
+    }
+  }
+  if (document.readyState === "complete") relaxBadge();
+  else window.addEventListener("load", () => relaxBadge());
+  window.addEventListener("suite-relax-change", () => relaxBadge());
+
   // ---- Erreurs expliquées : ce qui a échoué et quoi faire, dans la langue de la page, au lieu d'un message technique
   // seul (« Failed to fetch », « 404 », « TypeError… ») ; le détail technique reste entre parenthèses quand il aide.
   //   AppFramework.explain(err, "Lecture du registre")  →  « Lecture du registre : le serveur ne répond pas — … »

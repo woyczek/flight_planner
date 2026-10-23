@@ -89,17 +89,22 @@
   });
 
   // ---- dossiers autorisés
-  /** Dossier mémorisé (FileAccess) avec autorisation ; request : demande l'autorisation (geste de l'utilisateur requis). */
-  async function folder(key, request = false) {
+  /** Dossier mémorisé (FileAccess) avec autorisation ; request : demande l'autorisation (geste de l'utilisateur requis) ;
+   *  mode : celui du dossier par défaut (FileAccess.modeOf : lecture seule pour l'application, X-Plane, sauvegardes),
+   *  « readwrite » pour une écriture ponctuelle (restauration). */
+  async function folder(key, request = false, mode) {
     const FA = await waitFor('FileAccess');
     if (!FA) return null;
-    const st = await FA.status(key);
+    const m = mode || FA.modeOf?.(key) || 'readwrite',
+      st = await FA.status(key, {
+        mode: m
+      });
     if (!st.handle) return null;
     if (st.permission === 'granted') return st.handle;
     if (!request) return null;
     try {
       return (await st.handle.requestPermission({
-        mode: 'readwrite'
+        mode: m
       })) === 'granted' ? st.handle : null;
     } catch {
       return null;
@@ -204,6 +209,17 @@
       'Local folders (repository, ledgers, missions, SIA, X-Plane…) and external source addresses (airline, SIA, repositories): one place to set them',
       'Lokale Ordner und Adressen externer Quellen (Fluggesellschaft, SIA, Repositorys) an einem Ort',
       'Carpetas locales y direcciones de fuentes externas (aerolínea, SIA, repositorios) en un solo lugar'
+    ]
+  }, {
+    // Installation en mode GitHub (appli sans lanceur) : seule carte de la page (REPOSITORY_TREE.settings.sections.ghAccess)
+    id: 'ghAccess',
+    icon: 'database',
+    title: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
+    sub: [
+      'Dépôt GitHub des données, état de la lecture et des écritures, base des types d’aéronefs, site de la compagnie',
+      'GitHub data repository, read and write status, aircraft type database, airline website',
+      'GitHub-Daten-Repository, Status von Lesen und Schreiben, Luftfahrzeugtypen-Datenbank, Website der Fluggesellschaft',
+      'Repositorio de datos en GitHub, estado de lectura y escritura, base de tipos de aeronave, sitio de la aerolínea'
     ]
   }, {
     id: 'keys',
@@ -315,8 +331,41 @@
   const PAGE = embedded ? main.dataset.settings || '' : '',
     SECTIONS = window.REPOSITORY_TREE?.settings?.sections || {},
     ONLY = !embedded && main.dataset.blocks ? new Set(main.dataset.blocks.split(/[\s,]+/).filter(Boolean)) : null;
+  // Mode GitHub (appli sans lanceur, shared/github_data.js) : Installation se réduit à la carte « Accès aux données » (bloc
+  // ghAccess) — dossiers locaux, clés et import SIA se règlent sur un poste avec lanceur ; le choix se fait ici, à la
+  // construction de la liste des blocs de la page, et dépend du seul mode (même carte sur un navigateur de bureau)
+  const GH_ONLY = PAGE === 'installation' && !!window.GitHubData?.on?.();
+  // Page servie par le lanceur alors que le mode GitHub est réglé dans ce navigateur (127.0.0.1 : les deux coexistent) :
+  // les lectures viennent du dépôt, mais les productions du poste (base SIA, base appareils, MORA…) restent possibles —
+  // les blocs du poste sont montrés, avec une phrase. Sondé une fois, en mode GitHub sur une adresse locale seulement
+  // (jamais depuis GitHub Pages ni l'appli), de façon synchrone : la liste des blocs se construit tout de suite après.
+  const GH_SERVED = !!window.GitHubData?.on?.() && /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname) && (() => {
+    try {
+      const x = new XMLHttpRequest();
+      x.open('GET', '/__setup/status', false);
+      x.setRequestHeader('X-SOG-Setup', '1');
+      x.send();
+      return x.status === 200;
+    } catch {
+      return false;
+    }
+  })();
+  // mode GitHub sans lanceur : ce que la page ne peut pas faire (git, dossiers, base SIA à construire) disparaît
+  const GH_LITE = !!window.GitHubData?.on?.() && !GH_SERVED;
+  // Mode GitHub, page Maintenance : seuls restent les blocs qui marchent sans lanceur ni dossier — versions, données
+  // aéronautiques (une phrase : la base se produit sur un poste avec lanceur), caches et stockage du navigateur, sauvegarde du
+  // navigateur (téléchargée), journal. Absents : mises à jour (git), références et dépendances (état git), types d'aéronefs
+  // (reconstruction de la base), synchronisation. Choisi ici, à la construction de la liste des blocs.
+  const GH_MAINT = PAGE === 'maintenance' && GH_LITE;
+  const GH_KEEP = new Set(['versions', 'sia', 'caches', 'storage', 'backup', 'journal']);
+  // blocs qui produisent ou publient depuis ce poste (base SIA et MORA, base appareils)
+  const GH_PRODUCE = new Set(['sia', 'types']);
+  /** Vrai si la table des rubriques place le bloc id sur la page de Paramètres courante (quel que soit le mode). */
+  const declaredHere = id => !!PAGE && (!SECTIONS[id] || String(SECTIONS[id]).split(',').includes(PAGE));
   /** Vrai si le bloc id appartient à la page de Paramètres courante (ou à la liste data-blocks de la page autonome). */
-  const onPage = id => PAGE ? !SECTIONS[id] || String(SECTIONS[id]).split(',').includes(PAGE) : !ONLY || ONLY.has(id);
+  const onPage = id => PAGE ? GH_ONLY ? id === 'ghAccess' : id !== 'ghAccess' && declaredHere(id) && (!GH_MAINT || GH_KEEP.has(id)) :
+    ONLY ? ONLY.has(id) : id !==
+    'ghAccess';
   const hosts = {};
   for (const b of BLOCKS) {
     const s = document.createElement('section');
@@ -325,24 +374,63 @@
     s.dataset.icon = b.icon;
     s.dataset.noI18n = '';
     s.className = 'mt-block';
-    s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><div class="mt-body"></div>`;
+    s.innerHTML = `<h2></h2><p class="repo-block-subtitle mt-sub"></p><p class="mt-small mt-ghnote" hidden></p><div class="mt-body"></div>`;
     if (embedded || (ONLY && !ONLY.has(b.id)) || (b.id === 'storage' && !window.RepositoryNav?.cpco?.enabled?.())) s.hidden = true;
     main.append(s);
     hosts[b.id] = s.querySelector('.mt-body');
   }
 
+  // Sous-titres des blocs gardés en mode GitHub (Maintenance) : sans git, sans dossier ni base SIA
+  const GH_SUB = {
+    versions: ['Version de chaque élément (code, AIRAC, bases, plans de vol…) et date de sa dernière mise à jour',
+      'Version of each asset (code, AIRAC, databases, flight plans…) and date of its last update',
+      'Version jedes Elements (Code, AIRAC, Datenbanken, Flugpläne…) und Datum der letzten Aktualisierung',
+      'Versión de cada elemento (código, AIRAC, bases, planes de vuelo…) y fecha de su última actualización'
+    ],
+    sia: ['Base aéronautique : produite sur un poste de travail avec lanceur',
+      'Aeronautical database: produced on a workstation with the launcher',
+      'Luftfahrtdatenbank: wird an einem Arbeitsplatz mit Starter erzeugt',
+      'Base aeronáutica: se produce en un puesto de trabajo con lanzador'
+    ],
+    caches: [
+      'Données reconstructibles gardées par le navigateur (aérodromes, base mondiale via jsDelivr, fichiers de l’application) : état et purge',
+      'Rebuildable data kept by the browser (aerodromes, world base via jsDelivr, application files): state and purge',
+      'Wiederherstellbare Browserdaten (Flugplätze, Weltbasis über jsDelivr, Anwendungsdateien): Stand und Leeren',
+      'Datos reconstruibles guardados por el navegador (aeródromos, base mundial vía jsDelivr, archivos de la aplicación): estado y purga'
+    ],
+    storage: ['Place occupée par le navigateur',
+      'Space used by the browser',
+      'Vom Browser belegter Platz',
+      'Espacio usado por el navegador'
+    ],
+    backup: ['Bases du navigateur et toute la configuration locale, en une archive ZIP téléchargée',
+      'Browser databases and all local configuration, in one downloaded ZIP archive',
+      'Browser-Datenbanken und lokale Konfiguration in einem heruntergeladenen ZIP-Archiv',
+      'Bases del navegador y toda la configuración local, en un ZIP descargado'
+    ]
+  };
   /** Remplit titre et sous-titre de chaque bloc dans la langue courante, puis les libellés du menu latéral. */
   function titles() {
     for (const b of BLOCKS) {
       const s = document.getElementById(b.id);
       s.querySelector('h2').textContent = t(b.title);
-      s.querySelector('.mt-sub').textContent = t(b.sub);
+      s.querySelector('.mt-sub').textContent = t(GH_MAINT && GH_SUB[b.id] || b.sub);
+      // mode GitHub et lanceur : les blocs de production du poste disent d'où viennent les données et où se publie
+      const note = s.querySelector('.mt-ghnote');
+      note.hidden = !(GH_SERVED && GH_PRODUCE.has(b.id));
+      if (!note.hidden) note.textContent = t([
+        'Mode GitHub actif dans ce navigateur : les données lues viennent du dépôt, les publications se font sur ce poste (lanceur).',
+        'GitHub mode active in this browser: the data read come from the repository, publications are made on this workstation (launcher).',
+        'GitHub-Modus in diesem Browser aktiv: Die gelesenen Daten kommen aus dem Repository, Veröffentlichungen erfolgen an diesem Arbeitsplatz (Starter).',
+        'Modo GitHub activo en este navegador: los datos leídos vienen del repositorio, las publicaciones se hacen en este puesto (lanzador).'
+      ]);
     }
     navLabels();
   }
   // ---- rubrique « Maintenance » du menu latéral de Paramètres : une entrée par bloc
   const NAV = {
     updates: ['Mises à jour', 'Updates', 'Updates', 'Actualizaciones'],
+    ghAccess: ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'],
     sources: ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'],
     keys: ['Clés et services externes', 'Keys and external services', 'Schlüssel und Dienste', 'Claves y servicios'],
     versions: ['Versions et synchros', 'Versions and sync', 'Versionen', 'Versiones'],
@@ -363,8 +451,8 @@
     navHost.querySelectorAll('h3').forEach(h => {
       h.textContent = h.dataset.mtGroup === 'store' ? t(['Stockage et sauvegarde', 'Storage and backup', 'Speicher und Sicherung',
         'Almacenamiento y copia'
-      ]) : PAGE === 'installation' ? t(['Dossiers et sources', 'Folders and sources', 'Ordner und Quellen',
-        'Carpetas y fuentes'
+      ]) : GH_ONLY ? t(['Installation', 'Installation', 'Installation', 'Instalación']) : PAGE === 'installation' ? t([
+        'Dossiers et sources', 'Folders and sources', 'Ordner und Quellen', 'Carpetas y fuentes'
       ]) : t(['Maintenance', 'Maintenance', 'Wartung', 'Mantenimiento']);
     });
     navHost.querySelectorAll('[data-mt]').forEach(b => {
@@ -394,8 +482,10 @@
   /** Ouvre le bloc id : sur une autre page de Paramètres, y navigue ; sinon masque l'éditeur de base et les autres blocs,
    *  active l'entrée du menu et inscrit ?m=id dans l'adresse. */
   function showBlock(id) {
-    if (embedded && NAV[id] && !onPage(id) && window.RepositoryNav?.settingsUrl) return location.assign(window.RepositoryNav.settingsUrl(
-      id));
+    if (embedded && NAV[id] && !onPage(id)) {
+      if (declaredHere(id)) return; // bloc de cette page écarté par le mode (GitHub) : rien à ouvrir, rien à suivre
+      if (window.RepositoryNav?.settingsUrl) return location.assign(window.RepositoryNav.settingsUrl(id));
+    }
     if (!embedded || !document.getElementById(id) || cpcoLocked(id)) return;
     main.querySelector('.da-main')?.setAttribute('hidden', '');
     BLOCKS.forEach(b => {
@@ -696,7 +786,9 @@
           derived ? t(['déduit du dossier des données', 'derived from the data folder', 'aus dem Datenordner abgeleitet',
             'deducida de la carpeta de datos'
           ]) : t(['facultatif, non choisi', 'optional, not chosen', 'optional, nicht gewählt', 'opcional, no elegida'])) : st
-        .permission === 'granted' ? pill('ok', t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t([
+        .permission === 'granted' ? pill('ok', st.mode === 'read' ? t(['autorisé (lecture)', 'authorised (read)',
+          'erlaubt (lesen)', 'autorizada (lectura)'
+        ]) : t(['autorisé', 'authorised', 'erlaubt', 'autorizada'])) : pill('info', t([
           'à ré-autoriser', 'to re-authorise', 'erneut erlauben', 'a reautorizar'
         ]));
       const xp = key === '__xpnav',
@@ -753,6 +845,12 @@
       <table class="mt-table mt-wide mt-sources"><tbody>${Object.entries(src).map(([k, v]) => `<tr data-src="${esc(k)}"><td><b>${esc(t(v.label || [k]))}</b></td><td><input type="url" class="mt-url" value="${esc(local[k] || '')}" placeholder="${esc(v.url)}" spellcheck="false"></td><td class="mt-nowrap">${local[k] ? pill('info', t(['modifiée', 'changed', 'geändert', 'cambiada'])) : ''} <button type="button" class="secondary" data-reset ${local[k] ? '' : 'hidden'}>↺</button> <a class="mt-link" href="${esc(openUrl(k, nav.source(k)))}" target="_blank" rel="noopener">${esc(t(['Ouvrir', 'Open', 'Öffnen', 'Abrir']))} ↗</a></td></tr>`).join('')}</tbody></table>
       <h3>${esc(t(['Clés d’API (services externes)', 'API keys (external services)', 'API-Schlüssel (externe Dienste)', 'Claves de API (servicios externos)']))}</h3>
       <p class="mt-small">${esc(t(['Clés de la suite (IVAO…) : une seule place, avec leur état, leur test et ce qui s’en sert.', 'Suite keys (IVAO…): one place, with their state, their test and what uses them.', 'Schlüssel der Suite (IVAO…): ein Ort, mit Status, Test und Verwendung.', 'Claves de la suite (IVAO…): un solo lugar, con su estado, su prueba y qué las usa.']))} <a class="mt-link" href="${esc(window.RepositoryNav?.settingsUrl?.('keys') || '?m=keys')}">${esc(t(['Clés et services externes →', 'Keys and external services →', 'Schlüssel und externe Dienste →', 'Claves y servicios externos →']))}</a></p>
+      <h3>${esc(t(['Sites que la suite peut contacter', 'Websites the suite may contact', 'Websites, die die Suite kontaktieren darf', 'Sitios que la suite puede contactar']))}</h3>
+      <p class="mt-small">${esc(t(['Les pages ne peuvent envoyer de requêtes qu’à la suite et à ces sites (politique de sécurité du lanceur) : un script piégé ne peut pas envoyer les données ailleurs. Liste fixe (cartes, réseaux, météo, SimBrief) et adresses de la configuration ; un autre site (webservice des CR, autre dépôt) s’ajoute par le bouton « Autoriser ce site… » de la notification qui signale le blocage, confirmé dans la fenêtre du lanceur.', 'Pages may only send requests to the suite and to these websites (launcher security policy): a trapped script cannot send the data elsewhere. Fixed list (maps, networks, weather, SimBrief) and configuration addresses; another website (report web service, other repository) is added with the “Allow this website…” button of the notification that reports the block, confirmed in the launcher window.', 'Die Seiten dürfen Anfragen nur an die Suite und an diese Websites senden (Sicherheitsrichtlinie des Starters): Ein manipuliertes Skript kann die Daten nicht anderswohin senden. Feste Liste (Karten, Netzwerke, Wetter, SimBrief) und Adressen der Konfiguration; eine andere Website (Berichts-Webservice, anderes Repository) wird über die Schaltfläche „Diese Website erlauben…“ der Meldung hinzugefügt, die die Sperre anzeigt, und im Fenster des Starters bestätigt.', 'Las páginas solo pueden enviar peticiones a la suite y a estos sitios (política de seguridad del lanzador): un script trampa no puede enviar los datos a otro lugar. Lista fija (mapas, redes, meteorología, SimBrief) y direcciones de la configuración; otro sitio (servicio web de los informes, otro repositorio) se añade con el botón «Autorizar este sitio…» de la notificación que señala el bloqueo, confirmado en la ventana del lanzador.']))}</p>
+      <div id="mtSites"></div>
+      <h3>${esc(t(['Ouverture depuis un autre site ou une extension', 'Opening from another website or an extension', 'Öffnen von einer anderen Website oder Erweiterung', 'Apertura desde otro sitio o una extensión']))}</h3>
+      <p class="mt-small">${esc(t(['Par défaut, une page de la suite ouverte depuis un autre site ou une extension (Claude in Chrome…) est refusée : ce site ne peut rien y lire ni déclencher. Pour travailler avec une extension, la protection peut être réduite jusqu’à la fermeture du lanceur, après confirmation dans sa fenêtre ; un bouton rouge reste alors en haut de chaque page pour la rétablir. Données, scripts et réglages du lanceur restent fermés aux autres sites.', 'By default, a suite page opened from another website or an extension (Claude in Chrome…) is refused: that website can neither read nor trigger anything. To work with an extension, the protection can be reduced until the launcher closes, after confirmation in its window; a red button then stays at the top of every page to restore it. Data, scripts and launcher settings stay closed to other websites.', 'Standardmäßig wird eine Seite der Suite, die von einer anderen Website oder Erweiterung (Claude in Chrome…) geöffnet wird, abgelehnt. Für die Arbeit mit einer Erweiterung kann der Schutz bis zum Schließen des Starters verringert werden, nach Bestätigung in dessen Fenster; ein roter Knopf oben auf jeder Seite stellt ihn wieder her. Daten, Skripte und Einstellungen des Starters bleiben für andere Websites gesperrt.', 'Por defecto, una página de la suite abierta desde otro sitio o una extensión (Claude in Chrome…) se rechaza. Para trabajar con una extensión, la protección puede reducirse hasta que se cierre el lanzador, tras confirmarlo en su ventana; un botón rojo queda entonces arriba de cada página para restablecerla. Datos, scripts y ajustes del lanzador siguen cerrados a otros sitios.']))}</p>
+      <p class="row"><span id="mtRelaxState"></span> <button type="button" class="secondary" id="mtRelax"></button></p>
       <h3>${esc(t(['Compagnie virtuelle', 'Virtual airline', 'Virtuelle Fluggesellschaft', 'Aerolínea virtual']))}</h3>
       <p class="mt-small">${esc(t(['Nom, sigle et centre affichés dans la suite (SO Group Virtual, SOG, CPCO par défaut) et pages du site de la compagnie (adresse : « Site de la compagnie virtuelle » ci-dessus ; chemin sous ce site, ou adresse complète ; {id} : numéro de l’appareil). Vide : valeur par défaut. Vaut pour ce navigateur.', 'Name, short name and centre shown in the suite (SO Group Virtual, SOG, CPCO by default) and pages of the airline website (address: “Virtual airline website” above; path under that site, or full address; {id}: aircraft number). Empty: default value. Applies to this browser.', 'Name, Kürzel und Zentrum in der Suite (standardmäßig SO Group Virtual, DEFA, CPCO) und Seiten der Website (Adresse: oben; Pfad unter dieser Website oder vollständige Adresse; {id}: Flugzeugnummer). Leer: Standardwert. Gilt für diesen Browser.', 'Nombre, sigla y centro mostrados en la suite (SO Group Virtual, SOG, CPCO por defecto) y páginas del sitio de la aerolínea (dirección: arriba; ruta bajo ese sitio o dirección completa; {id}: número del avión). Vacío: valor por defecto. Vale para este navegador.']))}</p>
       <table class="mt-table mt-wide mt-va"><tbody>${vaRows()}</tbody></table>
@@ -776,6 +874,8 @@
       nav.setVa({});
       renderSources();
     };
+    sitesRows(host);
+    relaxRow(host);
     // « Nettoyer et recommencer… » : sur la page du premier lancement seulement (v2, une seule occurrence)
     host.querySelector('#mtSetupOpen').onclick = () => location.assign('premier_lancement.html?force');
     if (setup && !repo.handle) host.querySelector('tr[data-key="__repo"]')?.classList.add('mt-setup-row');
@@ -822,7 +922,68 @@
       }));
       xpl.append(b);
     }
-    host.querySelectorAll('tr[data-src]').forEach(tr => {
+    // dépôt des données : c'est le dépôt distant de data/ (réglé au premier lancement, gardé par git, lu et changé auprès
+    // du lanceur : /__setup/sync-remote), pas un réglage du navigateur ; adresse https ou SSH (git@…)
+    const dataTr = host.querySelector('tr[data-src="dataRepo"]');
+    if (dataTr) {
+      const input = dataTr.querySelector('input'),
+        setup = (path, body) => fetch(`/__setup/${path}`, {
+          method: body ? 'POST' : 'GET',
+          headers: {
+            'X-SOG-Setup': '1',
+            'Content-Type': 'application/json'
+          },
+          body: body ? JSON.stringify(body) : undefined,
+          cache: 'no-store'
+        }).then(r => r.ok ? r.json() : null).catch(() => null);
+      input.type = 'text';
+      dataTr.querySelector('[data-reset]')?.remove(); // pas de défaut à rétablir : l'adresse est celle de git
+      const repo = await setup('sync-remote'),
+        gh = window.GitHubData?.on?.() ? window.GitHubData.config() : null,
+        link = (href, label) => `<a class="mt-link" href="${esc(href)}">${esc(t(label))}</a>`,
+        note = dataTr.querySelector('.mt-small') || dataTr.querySelector('td').appendChild(Object.assign(document.createElement(
+          'div'), {
+          className: 'mt-small'
+        }));
+      // appli sans lanceur (données par GitHub) : le dépôt est celui de Mon profil › Accès aux données
+      if (gh) {
+        input.value = `https://github.com/${gh.repo}`;
+        input.readOnly = true;
+        note.innerHTML = `${esc(t(['Données lues et écrites sur GitHub (branche {b}) : réglé dans', 'Data read and written on GitHub (branch {b}): set in', 'Daten auf GitHub gelesen und geschrieben (Zweig {b}): eingestellt unter', 'Datos leídos y escritos en GitHub (rama {b}): configurado en'], { b: gh.branch }))} ${link(nav.settingsUrl?.('dataAccess') || '../settings/profil.html?base=dataAccess', ['Mon profil › Accès aux données →', 'My profile › Data access →', 'Mein Profil › Datenzugang →', 'Mi perfil › Acceso a los datos →'])}`;
+      } else {
+        if (repo?.url && input.value !== repo.url) input.value = repo.url;
+        input.readOnly = !repo; // sans lanceur, personne pour enregistrer
+        note.innerHTML = !repo ? `${esc(t(['Sans lanceur : rien à régler ici — pour l’appli, l’accès aux données se règle dans', 'Without the launcher: nothing to set here — for the app, data access is set in', 'Ohne Starter: hier nichts einzustellen — für die App wird der Datenzugang eingestellt unter', 'Sin lanzador: nada que ajustar aquí; para la app, el acceso a los datos se configura en']))} ${link(nav.settingsUrl?.('dataAccess') || '../settings/profil.html?base=dataAccess', ['Mon profil › Accès aux données →', 'My profile › Data access →', 'Mein Profil › Datenzugang →', 'Mi perfil › Acceso a los datos →'])}` :
+          !repo.repo ? `${esc(t(['data/ n’est pas encore un dépôt git : donner l’adresse à la carte « Dépôt de données » du', 'data/ is not a git repository yet: give the address in the “Data repository” card of the', 'data/ ist noch kein Git-Repository: Adresse in der Karte „Daten-Repository“ angeben, im', 'data/ aún no es un repositorio git: indicar la dirección en la tarjeta «Repositorio de datos» del']))} ${link('premier_lancement.html?force', ['Premier lancement →', 'First run →', 'Ersten Start →', 'Primer inicio →'])}` :
+          esc(repo.url ? t([
+            'Dépôt distant « {r} » de data/, branche {b} ; une autre adresse est enregistrée par le lanceur (vérifiée par git ls-remote).',
+            'Remote “{r}” of data/, branch {b}; another address is saved by the launcher (checked with git ls-remote).',
+            'Remote „{r}“ von data/, Zweig {b}; eine andere Adresse speichert der Starter (geprüft mit git ls-remote).',
+            'Remoto «{r}» de data/, rama {b}; otra dirección la guarda el lanzador (comprobada con git ls-remote).'
+          ], {
+            r: repo.remote,
+            b: repo.branch
+          }) : t(['data/ sans dépôt distant : rien n’est partagé tant qu’aucune adresse n’est enregistrée.',
+            'data/ has no remote: nothing is shared until an address is saved.',
+            'data/ ohne Remote: nichts wird geteilt, solange keine Adresse gespeichert ist.',
+            'data/ sin remoto: nada se comparte mientras no se guarde una dirección.'
+          ]));
+      }
+      input.onchange = async () => {
+        const url = input.value.trim();
+        if (gh || !repo || !url || url === repo.url) return;
+        const r = await setup('sync-remote', {
+          url,
+          save: true
+        });
+        window.AppFramework?.notify?.([r?.saved?.message, r?.check?.message].filter(Boolean).join(' ') || t([
+          'Adresse non enregistrée (lanceur injoignable).', 'Address not saved (launcher unreachable).',
+          'Adresse nicht gespeichert (Starter nicht erreichbar).', 'Dirección no guardada (lanzador inaccesible).'
+        ]), r?.saved?.ok ? 'ok' : 'warn');
+        renderSources();
+      };
+    }
+    host.querySelectorAll('tr[data-src]:not([data-src="dataRepo"])').forEach(tr => {
       const k = tr.dataset.src,
         input = tr.querySelector('input');
       input.onchange = () => {
@@ -842,6 +1003,109 @@
       };
     });
     window.AppFramework?.refresh?.();
+  }
+
+  // ---- débrayage de l'ouverture depuis un autre site ou une extension (lanceur : POST /__setup/relax ; état dans
+  // /__setup/status) : activé après confirmation dans la fenêtre du lanceur, jusqu'à sa fermeture
+  async function relaxRow(host) {
+    const state = host.querySelector('#mtRelaxState'),
+      btn = host.querySelector('#mtRelax');
+    if (!state || !btn) return;
+    const post = on => fetch('/__setup/relax', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SOG-Setup': '1'
+      },
+      body: JSON.stringify({
+        on
+      })
+    }).then(r => r.json()).catch(() => null);
+    const st = await fetch('/__setup/status', {
+      headers: {
+        'X-SOG-Setup': '1'
+      },
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!st) {
+      state.innerHTML = pill('info', t(['sans lanceur', 'without launcher', 'ohne Starter', 'sin lanzador']));
+      btn.hidden = true;
+      return;
+    }
+    const on = !!st.relaxNav;
+    state.innerHTML = on ? pill('warn', t(['protection réduite jusqu’à la fermeture du lanceur',
+        'reduced protection until the launcher closes', 'Schutz verringert bis zum Schließen des Starters',
+        'protección reducida hasta cerrar el lanzador'
+      ])) :
+      pill('ok', t(['protégé : refusé', 'protected: refused', 'geschützt: abgelehnt', 'protegido: rechazado']));
+    btn.textContent = on ? t(['Rétablir la protection', 'Restore the protection', 'Schutz wiederherstellen',
+        'Restablecer la protección'
+      ]) :
+      t(['Autoriser jusqu’à la fermeture du lanceur…', 'Allow until the launcher closes…', 'Bis zum Schließen des Starters erlauben…',
+        'Autorizar hasta cerrar el lanzador…'
+      ]);
+    btn.onclick = async () => {
+      btn.disabled = true;
+      if (!on) window.AppFramework?.notify?.(t(['Confirmez dans la fenêtre que le lanceur ouvre sur l’ordinateur.',
+        'Confirm in the window the launcher opens on the computer.',
+        'Im Fenster bestätigen, das der Starter auf dem Computer öffnet.',
+        'Confirme en la ventana que el lanzador abre en el equipo.'
+      ]), 'info');
+      const r = await post(!on);
+      btn.disabled = false;
+      if (!on && !r?.relaxNav) window.AppFramework?.notify?.(r?.message || t(['Non confirmé.', 'Not confirmed.', 'Nicht bestätigt.',
+        'No confirmado.'
+      ]), 'warn');
+      window.dispatchEvent(new CustomEvent('suite-relax-change'));
+      relaxRow(host);
+    };
+  }
+  window.addEventListener('suite-relax-change', () => hosts.sources && relaxRow(hosts.sources));
+
+  // ---- sites que les pages peuvent contacter (CSP connect-src du lanceur : GET /__setup/sites ; ajout par la
+  // notification de blocage et la fenêtre du lanceur, app_framework.js ; retrait ici, POST /__setup/site-remove)
+  async function sitesRows(host) {
+    const box = host.querySelector('#mtSites');
+    if (!box) return;
+    /** Appel au lanceur (en-tête X-SOG-Setup) ; réponse JSON, ou null sans lanceur. */
+    const api = (path, body) => fetch(`/__setup/${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'X-SOG-Setup': '1',
+        ...(body ? {
+          'Content-Type': 'application/json'
+        } : {})
+      },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const v = await api('sites');
+    if (!v) {
+      box.innerHTML = `<p class="mt-small">${esc(t(['Liste lue par le lanceur : suite ouverte sans lui.', 'List read from the launcher: suite opened without it.', 'Liste vom Starter gelesen: Suite ohne ihn geöffnet.', 'Lista leída del lanzador: suite abierta sin él.']))}</p>`;
+      return;
+    }
+    const user = v.user || [],
+      fixed = [...new Set([...(v.fixed || []), ...(v.config || [])])];
+    box.innerHTML = `<table class="mt-table mt-wide mt-sites"><tbody>${user.map(o => `<tr data-site="${esc(o)}"><td><b>${esc(o)}</b><br><span class="mt-small">${esc(t(['autorisé sur ce poste', 'allowed on this computer', 'auf diesem Rechner erlaubt', 'autorizado en este equipo']))}</span></td><td class="mt-nowrap"><button type="button" class="secondary" data-remove>${esc(t(['Retirer', 'Remove', 'Entfernen', 'Quitar']))}</button></td></tr>`).join('') || `<tr><td class="mt-small">${esc(t(['Aucun site ajouté sur ce poste.', 'No website added on this computer.', 'Keine Website auf diesem Rechner hinzugefügt.', 'Ningún sitio añadido en este equipo.']))}</td><td></td></tr>`}</tbody></table>
+      <details><summary class="mt-small">${esc(t(['Liste fixe et configuration ({n} sites)', 'Fixed list and configuration ({n} websites)', 'Feste Liste und Konfiguration ({n} Websites)', 'Lista fija y configuración ({n} sitios)'], {
+        n: fixed.length
+      }))}</summary><p class="mt-small">${fixed.map(esc).join(' · ')}</p></details>`;
+    box.querySelectorAll('tr[data-site] [data-remove]').forEach(b => b.onclick = async () => {
+      const o = b.closest('tr').dataset.site,
+        r = await api('site-remove', {
+          url: o
+        });
+      window.AppFramework?.notify?.(r?.ok ? t(['{o} retiré : rechargez les pages ouvertes.',
+        '{o} removed: reload the open pages.', '{o} entfernt: offene Seiten neu laden.',
+        '{o} quitado: recargue las páginas abiertas.'
+      ], {
+        o
+      }) : t(['{o} : retrait impossible.', '{o}: could not be removed.', '{o}: Entfernen nicht möglich.',
+        '{o}: no se pudo quitar.'
+      ], {
+        o
+      }), r?.ok ? 'ok' : 'warn');
+      sitesRows(host);
+    });
   }
 
   // ---- Clés et services externes (Installation) : une carte par service, la seule place des clés de la suite. Les clés
@@ -1082,7 +1346,8 @@
   /** Dessine le tableau « Versions et synchronisations » par groupe (code, SIA / AIRAC, bases de référence, données
    *  utilisateur) : version, date de synchro, état et outil de chaque élément, lus dans le navigateur et le dépôt. */
   async function renderVersions() {
-    const host = hosts.versions;
+    const host = hosts.versions,
+      GH = GH_LITE; // mode GitHub sans lanceur : ni git, ni dossier SIA, ni synchronisation (poste avec lanceur)
     const rows = [];
     const add = (group, name, version, sync, state, source) => rows.push({
       group,
@@ -1105,13 +1370,14 @@
     add(G.code, t(['Version de cache de repository_nav.js (?v=)', 'repository_nav.js cache version (?v=)']), `<code>${esc(cacheV)}</code>`, t([
       'empreinte du contenu du fichier', 'fingerprint of the file content'
     ]), '', 'tools/bump_versions.py');
-    const g = gitState || window.SuiteUpdate?.gitInfo?.();
-    add(G.code, 'git', g?.branch ? `${esc(g.branch)} <code>${esc((g.head || '').slice(0, 9))}</code>` : '—', g?.lastFetch ? `fetch ${fmtDate(g.lastFetch)}` : g?.readAt ? t(['lu le {d}', 'read {d}'], {
+    // mode GitHub : ni état git ni canal distant (pas de dépôt git local)
+    const g = GH ? null : gitState || window.SuiteUpdate?.gitInfo?.();
+    if (!GH) add(G.code, 'git', g?.branch ? `${esc(g.branch)} <code>${esc((g.head || '').slice(0, 9))}</code>` : '—', g?.lastFetch ? `fetch ${fmtDate(g.lastFetch)}` : g?.readAt ? t(['lu le {d}', 'read {d}'], {
       d: fmtDate(g.readAt)
     }) : '', g?.behind === 0 ? pill('ok', 'origin') : g?.branch ? pill('warn', t(['≠ origin', '≠ origin'])) : pill('info', t([
       'non lu', 'not read'
     ])), 'framagit asr/flight_planner');
-    const chk = window.SuiteUpdate?.last?.();
+    const chk = GH ? null : window.SuiteUpdate?.last?.();
     if (chk?.ok) add(G.code, t(['Canal distant {c}', 'Remote channel {c}'], {
         c: chk.channel
       }), `${esc(chk.remote?.version || '')} <code>${esc(chk.remote?.short || '')}</code>`, fmtDate(chk.remote?.date), chk.available ? pill('warn', t(['mise à jour disponible', 'update available'])) :
@@ -1125,15 +1391,15 @@
     add(G.sia, t(['AIRAC en vigueur', 'AIRAC in force', 'Gültiger AIRAC', 'AIRAC vigente']), `<b>${esc(eff.label)}</b> (${esc(eff.ident)})`, `${esc(fmtDate(eff.date, false))} → ${esc(fmtDate(eff.until, false))}`, '', `<a href="${esc(eff.url)}" target="_blank" rel="noopener">SIA</a>`);
     add(G.sia, t(['AIRAC suivant', 'Next AIRAC', 'Nächster AIRAC', 'AIRAC siguiente']), esc(nxt.label), esc(fmtDate(nxt.date, false)),
       '', `<a href="${esc(nxt.url)}" target="_blank" rel="noopener">SIA</a>`);
-    const info = window.SiaBase.info();
+    const info = GH ? null : window.SiaBase.info();
     const baseState = !info ? pill('info', t(['base non construite', 'no base yet'])) : info.mixed ? pill('err', t(['cycles mélangés',
       'mixed cycles'
     ])) : info.airac >= eff.date ? pill('ok', info.airac > eff.date ? t(['cycle à venir chargé', 'upcoming cycle loaded']) : t([
       'à jour', 'up to date'
     ])) : pill('warn', t(['en retard', 'out of date']));
-    add(G.sia, t(['Base du studio cartographique', 'Map studio base', 'Basis des Kartenstudios', 'Base del estudio']), info ?
+    if (!GH) add(G.sia, t(['Base du studio cartographique', 'Map studio base', 'Basis des Kartenstudios', 'Base del estudio']), info ?
       `${esc(info.airac || '?')} · ${esc(info.counts?.airspaces ?? '?')} ${esc(t(['espaces', 'airspaces']))}` : '—', info?.cachedAt ? fmtDate(info.cachedAt) : '', baseState, 'IndexedDB sia-map-parser');
-    if (siaFolderState) {
+    if (!GH && siaFolderState) {
       const lat = siaFolderState.latest;
       add(G.sia, t(['Dossier SIA XML', 'SIA XML folder', 'SIA-XML-Ordner', 'Carpeta SIA XML']), lat ? esc(lat.date) : '—', lat ?
         fmtDate(Math.max(...lat.items.map(i => i.lastModified))) : '', !lat ? pill('warn', t(['aucun XML AIRAC', 'no AIRAC XML'])) : !
@@ -1153,7 +1419,7 @@
           ])), '');
       }
     }
-    const tracks = await repoText('data/sia/miam-enr-5-7-tracks.xml');
+    const tracks = GH ? null : await repoText('data/sia/miam-enr-5-7-tracks.xml');
     if (tracks) add(G.sia, t(['Axes AAR (MILAIP ENR 5.7)', 'AAR tracks (MILAIP ENR 5.7)']), esc(/<miam:sourceEdition>([^<]+)</.exec(
       tracks.text)?.[1] || '?'), fmtDate(tracks.lastModified, false), '', 'DIRCAM');
     // bases de référence
@@ -1200,7 +1466,7 @@
       'warn', t(['jamais', 'never'])), '');
     let group = '';
     // fréquence de vérification de la synchronisation des données (réglage de ce navigateur, shared/sync.js)
-    const SS = window.SuiteSync,
+    const SS = GH ? null : window.SuiteSync,
       every = SS?.checkEvery?.() || '30m',
       lastAt = SS?.lastCheck?.() || 0;
     const syncRow = SS ? `<p class="row"><label for="mtSyncEvery">${esc(t(['Vérifier l’état de la synchronisation des données', 'Check the data synchronisation status', 'Status der Datensynchronisierung prüfen', 'Comprobar el estado de la sincronización de datos']))}</label>
@@ -1212,8 +1478,10 @@
       ${rows.map(r => (r.group !== group ? `<tr class="mt-group"><td colspan="5">${esc(group = r.group)}</td></tr>` : '') + `<tr><td>${esc(r.name)}</td><td>${r.version || '—'}</td><td>${r.sync || ''}</td><td>${r.state || ''}</td><td class="mt-small">${r.source || ''}</td></tr>`).join('')}
       </tbody></table></div>`;
     host.querySelector('#mtVerRefresh').onclick = async () => {
-      await readGitState(false);
-      await scanSiaFolder(false);
+      if (!GH) {
+        await readGitState(false);
+        await scanSiaFolder(false);
+      }
       renderVersions();
     };
     const every$ = host.querySelector('#mtSyncEvery');
@@ -1518,6 +1786,69 @@
       [t(['Atterrissage', 'Landing', 'Landung', 'Aterrizaje']), v(p.landing?.distanceM, 'm')]
     ].filter(([, x]) => x);
   }
+  /** Base des types publiée dans le dépôt des données (POST /__setup/aircraft-publish) : liste de ce qui serait retiré et
+   *  copié, accord demandé, puis publication (copie, commit, synchronisation) ; compte rendu en notification. */
+  async function publishAircraft(btn) {
+    const call = body => fetch('/__setup/aircraft-publish', {
+      method: 'POST',
+      headers: {
+        'X-SOG-Setup': '1',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store'
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const author = window.SuiteUsers?.effective?.() || window.MissionAssignments?.trigram?.() || '';
+    btn.disabled = true;
+    try {
+      const plan = await call({
+        apply: false
+      });
+      if (!plan?.ok) return void window.AppFramework?.notify?.(plan?.message || t(['Lanceur injoignable.', 'Launcher unreachable.',
+        'Starter nicht erreichbar.', 'Lanzador inaccesible.'
+      ]), 'warn');
+      if (!plan.remove.length && !plan.copy.length) return void window.AppFramework?.notify?.(t([
+        'Base appareils déjà publiée, à jour : rien à faire.',
+        'Aircraft database already published and up to date: nothing to do.',
+        'Luftfahrzeug-Datenbank bereits veröffentlicht und aktuell: nichts zu tun.',
+        'Base de aeronaves ya publicada y al día: nada que hacer.'
+      ]), 'info');
+      const mo = n => `${(n / 1048576).toFixed(1).replace('.', ',')} Mo`,
+        lines = [...plan.copy.map(x => `+ ${x.path} (${mo(x.size)})`), ...plan.remove.map(x => `− ${x.path} (${mo(x.size)})`)];
+      if (!author) return void window.AppFramework?.notify?.(t(['Trigramme inconnu : le régler dans Mon profil.',
+        'Unknown trigram: set it in My profile.', 'Unbekanntes Kürzel: unter Mein Profil einstellen.',
+        'Trigrama desconocido: configurarlo en Mi perfil.'
+      ]), 'warn');
+      if (!await window.AppFramework.ask(t([
+          'Publier la base appareils dans le dépôt des données ?\n{l}\n\nCopiés (+) et retirés du dépôt (−), puis synchronisation.',
+          'Publish the aircraft database to the data repository?\n{l}\n\nCopied (+) and removed from the repository (−), then synchronisation.',
+          'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen?\n{l}\n\nKopiert (+) und aus dem Repository entfernt (−), dann Synchronisierung.',
+          '¿Publicar la base de aeronaves en el repositorio de datos?\n{l}\n\nCopiados (+) y retirados del repositorio (−), luego sincronización.'
+        ], {
+          l: lines.join('\n')
+        }))) return;
+      const r = await call({
+        apply: true,
+        author
+      });
+      window.AppFramework?.notify?.(r?.ok ? t(['Base appareils publiée : {n} fichier(s) copié(s), {m} retiré(s) ; {s}',
+        'Aircraft database published: {n} file(s) copied, {m} removed; {s}',
+        'Luftfahrzeug-Datenbank veröffentlicht: {n} Datei(en) kopiert, {m} entfernt; {s}',
+        'Base de aeronaves publicada: {n} archivo(s) copiado(s), {m} retirado(s); {s}'
+      ], {
+        n: r.copy.length,
+        m: r.remove.length,
+        s: r.message || ''
+      }) : t(['Base appareils non publiée : {e}', 'Aircraft database not published: {e}',
+        'Luftfahrzeug-Datenbank nicht veröffentlicht: {e}',
+        'Base de aeronaves no publicada: {e}'
+      ], {
+        e: r?.message || '?'
+      }), r?.ok ? 'info' : 'warn');
+    } finally {
+      btn.disabled = false;
+    }
+  }
   /** Dessine dans el le bloc « Types d'aéronefs et performances » d'après l'état du lanceur (/__setup/aircraft-db) ;
    *  lists { fleet, fleetCount, missions, local } : types à suivre (gardés pour les redessins). Zone de codes et volet
    *  replié gardés d'un redessin à l'autre (relecture toutes les 5 s pendant une passe). */
@@ -1756,7 +2087,10 @@
       <p class="row"><button type="button" class="secondary" data-ac="one" data-icon="download"${busy ? ' disabled' : ''}>${esc(t(['Télécharger', 'Download', 'Herunterladen', 'Descargar']))}</button></p></details>
       ${editUrl ? `<p class="mt-small" data-min-level="4"><a class="mt-link" href="${esc(editUrl)}">${esc(t(['Modifier la base à la main…', 'Edit the database by hand…', 'Datenbank von Hand bearbeiten…', 'Editar la base a mano…']))}</a> ${esc(t(['(Fichiers du dépôt › Types d’aéronefs (base OACI) ; types saisis dans les CR : Données du navigateur › Types ajoutés localement)', '(Repository files › Aircraft types (ICAO base); types entered in reports: Browser data › Locally added types)', '(Dateien des Repositorys › Luftfahrzeugmuster (ICAO-Datenbank); in Berichten erfasste Typen: Browserdaten › Lokal hinzugefügte Muster)', '(Archivos del repositorio › Tipos de aeronave (base OACI); tipos introducidos en informes: Datos del navegador › Tipos añadidos localmente)']))}</p>` : ''}
       <p class="mt-small">${esc(t(['Fichiers écrits sur ce poste, lus par toutes les pages à leur prochain chargement : AircraftDB/aircraft_db.js (types) et aircraft_perf.js (performances), non versionnés (données OACI et EUROCONTROL) : à compléter sur chaque poste ou à recopier d’un poste à l’autre.', 'Files written on this computer, read by every page at its next load: AircraftDB/aircraft_db.js (types) and aircraft_perf.js (performance), not versioned (ICAO and EUROCONTROL data): complete them on each computer or copy them from one to another.', 'Auf diesem Rechner geschriebene Dateien, von allen Seiten beim nächsten Laden gelesen: AircraftDB/aircraft_db.js (Typen) und aircraft_perf.js (Leistungen), nicht versioniert (Daten von ICAO und EUROCONTROL): auf jedem Rechner ergänzen oder von Rechner zu Rechner kopieren.', 'Archivos escritos en este equipo, leídos por todas las páginas en su próxima carga: AircraftDB/aircraft_db.js (tipos) y aircraft_perf.js (rendimientos), no versionados (datos de la OACI y EUROCONTROL): completarlos en cada equipo o copiarlos de uno a otro.']))}</p>
+      ${s && (s.db || s.perf) ? window.RepositoryNav?.levels?.hint?.(4, ['Publier la base appareils dans le dépôt des données', 'Publishing the aircraft database to the data repository', 'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen', 'Publicar la base de aeronaves en el repositorio de datos']) || '' : ''}
+      ${s && (s.db || s.perf) ? `<p class="row" data-min-level="4"><button type="button" class="secondary" data-ac-publish data-icon="upload">${esc(t(['Publier la base appareils dans le dépôt des données', 'Publish the aircraft database to the data repository', 'Luftfahrzeug-Datenbank im Datenrepository veröffentlichen', 'Publicar la base de aeronaves en el repositorio de datos']))}</button> <span class="mt-small">${esc(t(['Pour les téléphones et le site (mode GitHub) : AircraftDB/aircraft_db.js et aircraft_perf.js copiés dans le dépôt des données, le reste de son dossier AircraftDB/ retiré (liste montrée avant), puis synchronisation. Jamais publiée sur le site public (données OACI et EUROCONTROL).', 'For phones and the website (GitHub mode): AircraftDB/aircraft_db.js and aircraft_perf.js copied into the data repository, the rest of its AircraftDB/ folder removed (list shown first), then synchronisation. Never published on the public website (ICAO and EUROCONTROL data).', 'Für Telefone und die Website (GitHub-Modus): AircraftDB/aircraft_db.js und aircraft_perf.js in das Datenrepository kopiert, der Rest seines Ordners AircraftDB/ entfernt (Liste vorher gezeigt), dann Synchronisierung. Nie auf der öffentlichen Website veröffentlicht (Daten von ICAO und EUROCONTROL).', 'Para los teléfonos y el sitio (modo GitHub): AircraftDB/aircraft_db.js y aircraft_perf.js copiados en el repositorio de datos, el resto de su carpeta AircraftDB/ retirado (lista mostrada antes), luego sincronización. Nunca publicada en el sitio público (datos de la OACI y EUROCONTROL).']))}</span></p>` : ''}
       ${s?.log?.length ? `<details class="mt-small"><summary>${esc(t(['Journal', 'Log', 'Protokoll', 'Registro']))}</summary><pre>${esc(s.log.slice(-12).join('\n'))}</pre></details>` : ''}</div>`;
+    el.querySelector('[data-ac-publish]')?.addEventListener('click', e => publishAircraft(e.currentTarget));
     if (keep.open) el.querySelector('.mt-ac-more').open = true;
     if (keep.code) el.querySelector('.mt-ac-code').value = keep.code;
     el.querySelectorAll('[data-ac]').forEach(b => b.onclick = async () => {
@@ -2055,7 +2389,7 @@
       }
     }))
   });
-  /** Carte du monde (MapLibre, fond OpenStreetMap) : créée une fois, reposée à chaque rendu du bloc. */
+  /** Carte du monde (MapLibre, fond vectoriel OpenFreeMap Positron) : créée une fois, reposée à chaque rendu du bloc. */
   async function aeroMapInit(Z) {
     if (aeroMapEl) return aeroMapEl;
     aeroMapEl = document.createElement('div');
@@ -2081,27 +2415,8 @@
     }
     aeroMap = new window.maplibregl.Map({
       container: aeroMapEl,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            maxzoom: 7,
-            attribution: '© OpenStreetMap contributors · Natural Earth'
-          }
-        },
-        layers: [{
-          id: 'osm',
-          type: 'raster',
-          source: 'osm',
-          paint: {
-            'raster-saturation': -0.75,
-            'raster-opacity': 0.7
-          }
-        }]
-      },
+      // fond vectoriel clair (plus de tuiles raster d'OpenStreetMap, refusées par leur serveur : « Access blocked »)
+      style: 'https://tiles.openfreemap.org/styles/positron',
       center: [-20, 40],
       zoom: 1.2,
       maxZoom: 7,
@@ -2122,7 +2437,8 @@
       aeroMap.addSource('zones', {
         type: 'geojson',
         data: aeroGeo(Z),
-        promoteId: 'zone'
+        promoteId: 'zone',
+        attribution: 'Natural Earth' // contours des zones (shared/carto/aero_zones_geo.js)
       });
       const color = ['match', ['get', 'state'], 'partial', AERO_COLOR.partial, 'complete', AERO_COLOR.complete, AERO_COLOR.data];
       aeroMap.addLayer({
@@ -3483,8 +3799,14 @@
   /** Dessine le bloc « Données aéronautiques » : carte des zones et panneau, actions à faire, tableau des sources et bloc
    *  commun de la base (SiaBase.panel), carte MORA et contrôle de cohérence ; branche leurs actions (délégation au panneau). */
   async function renderSia() {
-    const host = hosts.sia,
-      Z = await window.SiaBase.zones();
+    const host = hosts.sia;
+    // mode GitHub sans lanceur : ni dossier SIA ni zones à reconstruire ; la base publiée dans le dépôt des données (bloc
+    // commun)
+    if (GH_LITE) {
+      window.SiaBase.panel(host);
+      return;
+    }
+    const Z = await window.SiaBase.zones();
     if (!Z) {
       host.innerHTML = `<p class="err">${esc(t(['Zones de données non chargées (shared/aero_zones.js) : recharger la page ; si cela persiste, mettre la suite à jour.', 'Data zones not loaded (shared/aero_zones.js): reload the page; if it persists, update the suite.', 'Datenzonen nicht geladen (shared/aero_zones.js): Seite neu laden; falls es anhält, die Suite aktualisieren.', 'Zonas de datos no cargadas (shared/aero_zones.js): recargar la página; si persiste, actualizar la suite.']))}</p>`;
       return;
@@ -4252,7 +4574,8 @@
   const EXTRA = 'suiteBackupSources:v1';
   /** Sources de fichiers de la sauvegarde totale : dépôt de données, journaux d'atterrissage, profils de performance, puis
    *  les dossiers ajoutés par l'utilisateur (suiteBackupSources:v1, motif converti en expression régulière). */
-  const SOURCES = () => [
+  // mode GitHub : aucun dossier — la sauvegarde contient les données du navigateur et se télécharge
+  const SOURCES = () => GH_LITE ? [] : [
     // v3 : tout le dépôt de données (data/) — registres, missions, références, SIA hors XML AIRAC, performances
     {
       id: 'data',
@@ -4344,22 +4667,23 @@
         label: x.label,
         expect: x.label
       };
-    const lastFull = journal.find(e => e.kind === 'full-backup');
+    const lastFull = journal.find(e => e.kind === 'full-backup'),
+      GH = GH_LITE; // mode GitHub sans lanceur : données du navigateur seulement, archive téléchargée (aucun dossier)
     host.innerHTML = `
       <div class="mt-grid2">
         <div class="repo-card" data-icon="folder" data-subtitle="${esc(t(['Ce qui entre dans l’archive', 'What goes into the archive']))}">
           <h3>${esc(t(['Contenu', 'Content', 'Inhalt', 'Contenido']))}</h3>
           <p><label class="mt-radio"><input type="checkbox" checked disabled> <b>${esc(t(['Navigateur', 'Browser', 'Browser', 'Navegador']))}</b> — ${esc(t(['toutes les données locales et les bases IndexedDB sauvegardées (defa_local_store.yaml)', 'all local data and saved IndexedDB databases (defa_local_store.yaml)']))}</label></p>
-          <div id="mtSources"></div>
+          ${GH ? `<p class="mt-small">${esc(t(['Mode GitHub : les données de la compagnie sont dans le dépôt GitHub, qui les conserve ; l’archive ne contient que les données de ce navigateur.', 'GitHub mode: the company data are in the GitHub repository, which keeps them; the archive only holds this browser’s data.', 'GitHub-Modus: Die Daten der Gesellschaft liegen im GitHub-Repository, das sie aufbewahrt; das Archiv enthält nur die Daten dieses Browsers.', 'Modo GitHub: los datos de la compañía están en el repositorio de GitHub, que los conserva; el archivo solo contiene los datos de este navegador.']))}</p>` : `<div id="mtSources"></div>
           <p><label class="mt-radio"><input type="checkbox" id="mtHeavy" ${o.heavy ? 'checked' : ''}> ${esc(t(['inclure les fichiers lourds (cartes PNG / ZIP / PDF des missions, XML AIRAC ≈ 80 Mo)', 'include heavy files (mission PNG / ZIP / PDF maps, AIRAC XML ≈ 80 MB)']))}</label></p>
-          <p class="row"><button type="button" class="secondary" id="mtAddSource" data-icon="plus">${esc(t(['Ajouter un dossier…', 'Add a folder…', 'Ordner hinzufügen…', 'Añadir carpeta…']))}</button></p>
+          <p class="row"><button type="button" class="secondary" id="mtAddSource" data-icon="plus">${esc(t(['Ajouter un dossier…', 'Add a folder…', 'Ordner hinzufügen…', 'Añadir carpeta…']))}</button></p>`}
           <p class="mt-small">${esc(t(['Hors sauvegarde, volontairement : clef du webservice, suivi réseau en cours, base SIA analysée (reconstruite depuis les XML), autorisations de dossiers (redemandées).', 'Deliberately excluded: webservice key, live network tracking, analysed SIA base (rebuilt from XML), folder permissions (asked again).']))}</p>
         </div>
         <div class="repo-card" data-icon="save" data-subtitle="${esc(t(['Archive ZIP avec manifeste (empreintes SHA-256)', 'ZIP archive with manifest (SHA-256 hashes)']))}">
           <h3>${esc(t(['Sauvegarder', 'Back up', 'Sichern', 'Guardar']))}</h3>
           <p>${lastFull ? t(['Dernière sauvegarde totale : {d} — {n} fichiers, {s}', 'Last full backup: {d} — {n} files, {s}'], { d: esc(fmtDate(lastFull.at)), n: lastFull.files, s: fmtSize(lastFull.bytes) }) : pill('warn', t(['aucune sauvegarde totale', 'no full backup yet']))}</p>
-          <p class="row"><button type="button" class="primary" id="mtBackup" data-icon="save">${esc(t(['Créer la sauvegarde totale', 'Create full backup', 'Vollständige Sicherung erstellen', 'Crear copia total']))}</button> <button type="button" class="secondary" id="mtSince" data-icon="search">${esc(t(['Changements depuis', 'Changes since', 'Änderungen seitdem', 'Cambios desde']))}</button></p>
-          <p class="mt-small">${esc(t(['Écrite dans le dossier de sauvegarde locale (sous-dossier sauvegardes/) s’il est autorisé, sinon téléchargée.', 'Written to the local backup folder (sauvegardes/ sub-folder) when authorised, otherwise downloaded.']))}</p>
+          <p class="row"><button type="button" class="primary" id="mtBackup" data-icon="save">${esc(t(['Créer la sauvegarde totale', 'Create full backup', 'Vollständige Sicherung erstellen', 'Crear copia total']))}</button> ${GH ? '' : `<button type="button" class="secondary" id="mtSince" data-icon="search">${esc(t(['Changements depuis', 'Changes since', 'Änderungen seitdem', 'Cambios desde']))}</button>`}</p>
+          <p class="mt-small">${esc(GH ? t(['Archive ZIP téléchargée (pas de dossier de sauvegarde en mode GitHub).', 'ZIP archive downloaded (no backup folder in GitHub mode).', 'ZIP-Archiv wird heruntergeladen (im GitHub-Modus gibt es keinen Sicherungsordner).', 'Archivo ZIP descargado (sin carpeta de copia en modo GitHub).']) : t(['Écrite dans le dossier de sauvegarde locale (sous-dossier sauvegardes/) s’il est autorisé, sinon téléchargée.', 'Written to the local backup folder (sauvegardes/ sub-folder) when authorised, otherwise downloaded.']))}</p>
           <div id="mtBackupMsg">${backupMsg}</div><div id="mtSinceBox">${sinceHtml}</div>
           <h3>${esc(t(['Recharger une sauvegarde totale', 'Reload a full backup', 'Vollständige Sicherung laden', 'Recargar una copia total']))}</h3>
           <p class="row"><label class="secondary mt-file">${esc(t(['Choisir l’archive…', 'Choose the archive…', 'Archiv wählen…', 'Elegir el archivo…']))}<input type="file" id="mtRestoreZip" accept=".zip" hidden data-picker-folder="__store"></label></p>
@@ -4367,33 +4691,36 @@
         </div>
       </div>`;
     const box = host.querySelector('#mtSources');
-    for (const src of SOURCES()) {
-      const row = document.createElement('p');
-      row.className = 'row mt-source';
-      row.innerHTML = `<label class="mt-radio"><input type="checkbox" data-src="${esc(src.id)}" ${o.off.includes(src.id) ? '' : 'checked'}> ${esc(t(src.label))}</label>`;
-      row.append(folderButton(src.key, renderBackup));
-      if (src.extra) {
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'secondary';
-        del.textContent = '×';
-        del.title = t(['Retirer', 'Remove']);
-        del.onclick = () => {
-          writeJson(EXTRA, (readJson(EXTRA, []) || []).filter(x => x.id !== src.id));
-          renderBackup();
-        };
-        row.append(del);
+    if (box)
+      for (const src of SOURCES()) {
+        const row = document.createElement('p');
+        row.className = 'row mt-source';
+        row.innerHTML = `<label class="mt-radio"><input type="checkbox" data-src="${esc(src.id)}" ${o.off.includes(src.id) ? '' : 'checked'}> ${esc(t(src.label))}</label>`;
+        row.append(folderButton(src.key, renderBackup));
+        if (src.extra) {
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'secondary';
+          del.textContent = '×';
+          del.title = t(['Retirer', 'Remove']);
+          del.onclick = () => {
+            writeJson(EXTRA, (readJson(EXTRA, []) || []).filter(x => x.id !== src.id));
+            renderBackup();
+          };
+          row.append(del);
+        }
+        box.append(row);
       }
-      box.append(row);
-    }
-    box.querySelectorAll('input[data-src]').forEach(x => x.onchange = () => {
+    box?.querySelectorAll('input[data-src]').forEach(x => x.onchange = () => {
       const off = new Set(opts().off);
       x.checked ? off.delete(x.dataset.src) : off.add(x.dataset.src);
       writeJson('suiteBackupOff:v1', [...off]);
     });
-    host.querySelector('#mtAddSource').onclick = addSource;
+    const add$ = host.querySelector('#mtAddSource'),
+      since$ = host.querySelector('#mtSince');
+    if (add$) add$.onclick = addSource;
     host.querySelector('#mtBackup').onclick = fullBackup;
-    host.querySelector('#mtSince').onclick = changesSince;
+    if (since$) since$.onclick = changesSince;
     host.querySelector('#mtRestoreZip').onchange = e => {
       const f = e.target.files[0];
       e.target.value = '';
@@ -4737,7 +5064,7 @@
     const srcs = new Map(SOURCES().map(s => [s.id, s]));
     for (const i of picks) {
       try {
-        const dir = await folder(srcs.get(i.source).key, true);
+        const dir = await folder(srcs.get(i.source).key, true, 'readwrite');
         const cur = await fileAt(dir, i.path);
         if (cur) await writeAt(dir, `_avant_restauration/${stamp}/${i.path}`, await cur.arrayBuffer());
         await writeAt(dir, i.path, await p.entries.get(`${i.source}/${i.path}`).bytes());
@@ -5011,7 +5338,8 @@
         warn: msg
       } : msg;
     }
-  }];
+  }].filter(c => !GH_LITE || !['sia', 'update'].includes(c
+    .id)); // mode GitHub : ni base SIA ni contrôle des mises à jour (git)
   let cacheMsg = '';
   /** Dessine le bloc « Caches » : une ligne par cache (état, effet de la purge, bouton) et « Tout purger et recharger » ;
    *  le compte rendu survit au rechargement de la page (sessionStorage mtCacheMsg). */
@@ -5052,7 +5380,10 @@
       await done([await c.purge()], c.reload);
     });
     host.querySelector('#mtPurgeAll').onclick = async e => {
-      if (!await window.AppFramework.ask(t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?',
+      if (!await window.AppFramework.ask(GH_LITE ? t(['Purger tous les caches et recharger la page ?',
+          'Purge all caches and reload the page?', 'Alle Caches leeren und die Seite neu laden?',
+          '¿Purgar todos los cachés y recargar la página?'
+        ]) : t(['Purger tous les caches (dont la base SIA, à relire ensuite) et recharger la page ?',
           'Purge all caches (including the SIA base, to be read again afterwards) and reload the page?'
         ]))) return;
       e.target.disabled = true;
@@ -5191,6 +5522,27 @@
   /** Dessine le bloc « Espace disque » : boutons de calcul et de purge, totaux du dossier des missions et du navigateur,
    *  tableau par mission (une fois calculé, storageState) et place des données aéronautiques par zone. */
   function renderStorage() {
+    // mode GitHub sans lanceur : place occupée par le navigateur seulement (pas de dossier des missions ni SIA à mesurer)
+    if (GH_LITE) {
+      const host = hosts.storage,
+        fmt = b => window.MissionRegistryCore?.fmtBytes?.(b) || fmtSize(b);
+      host.innerHTML = `<p class="mt-small">${esc(t(['Mode GitHub : les données de la compagnie sont dans le dépôt GitHub ; seule la place occupée par ce navigateur est mesurée.', 'GitHub mode: the company data are in the GitHub repository; only the space used by this browser is measured.', 'GitHub-Modus: Die Daten der Gesellschaft liegen im GitHub-Repository; gemessen wird nur der von diesem Browser belegte Platz.', 'Modo GitHub: los datos de la compañía están en el repositorio de GitHub; solo se mide el espacio usado por este navegador.']))}</p><p data-storage-usage></p><p class="row"><a class="mt-link" href="?m=caches">${esc(t(['Caches du navigateur →', 'Browser caches →', 'Browser-Caches →', 'Cachés del navegador →']))}</a></p>`;
+      // mesure du navigateur : connue à l'arrivée de la réponse, écrite une seule fois
+      navigator.storage?.estimate?.().then(e => {
+        const el = host.querySelector('[data-storage-usage]');
+        if (!el?.isConnected) return;
+        const text = t(['Navigateur (bases locales, caches…) : {u} utilisés sur {q} disponibles.',
+          'Browser (local databases, caches…): {u} used of {q} available.',
+          'Browser (lokale Datenbanken, Caches…): {u} von {q} belegt.',
+          'Navegador (bases locales, cachés…): {u} usados de {q} disponibles.'
+        ], {
+          u: fmt(e?.usage || 0),
+          q: fmt(e?.quota || 0)
+        });
+        if (el.textContent !== text) el.textContent = text;
+      }).catch(() => {});
+      return;
+    }
     const host = hosts.storage,
       C = window.MissionRegistryCore,
       B = C?.fmtBytes || (b => `${b} o`),
@@ -5318,23 +5670,89 @@
       return null;
     }
   };
+  // ===== Accès aux données (Installation en mode GitHub, appli sans lanceur)
+  /** Dessine la carte « Accès aux données » : dépôt et branche, état de l'accès (essai du jeton), dernière lecture, écritures
+   *  en attente (bouton « Synchroniser »), base des types d'aéronefs lue dans le dépôt, site de la compagnie, lien vers
+   *  Mon profil › Accès aux données. Chaque valeur est écrite telle quelle ; seul l'état de l'accès, qui demande le réseau,
+   *  est complété à l'arrivée de la réponse (une seule écriture, si le texte change). */
+  async function renderGhAccess() {
+    const host = hosts.ghAccess,
+      G = window.GitHubData,
+      nav = window.RepositoryNav,
+      A = window.MissionAssignments,
+      c = G?.config?.();
+    if (!c) {
+      host.innerHTML = pill('info', t(['Accès aux données GitHub non réglé.', 'GitHub data access not set.',
+        'GitHub-Datenzugang nicht eingestellt.', 'Acceso a los datos de GitHub no configurado.'
+      ]));
+      return;
+    }
+    const link = (href, label, ext = false) => `<a class="mt-link" href="${esc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}>${esc(label)}</a>`,
+      row = (label, html) => `<tr><th>${esc(t(label))}</th><td>${html}</td></tr>`,
+      pending = A?.pendingData?.().length || 0,
+      read = G.lastRead?.() || '',
+      types = Object.keys(window.AIRCRAFT_DB || {}).filter(k => !k.startsWith('__')).length,
+      built = window.AIRCRAFT_DB?.__meta?.generated || '',
+      va = nav?.source?.('defa') || window.REPOSITORY_TREE?.sources?.defa?.url || '',
+      profile = nav?.settingsUrl?.('dataAccess') || '../settings/profil.html?base=dataAccess';
+    host.innerHTML = `<table class="mt-table"><tbody>
+      ${row(['Dépôt des données (privé)', 'Data repository (private)', 'Daten-Repository (privat)', 'Repositorio de datos (privado)'], link(`https://github.com/${c.repo}`, `github.com/${c.repo}`, true))}
+      ${row(['Branche', 'Branch', 'Zweig', 'Rama'], `<code>${esc(c.branch)}</code>`)}
+      ${row(['État de l’accès', 'Access status', 'Zugangsstatus', 'Estado del acceso'], `<span data-gh-state>${pill('info', t(['Vérification…', 'Checking…', 'Prüfung…', 'Comprobando…']))}</span>`)}
+      ${row(['Dernière lecture réussie', 'Last successful read', 'Letzte erfolgreiche Lesung', 'Última lectura correcta'], read ? `${esc(fmtDate(read))} <span class="mt-small">(${esc(ago(read))})</span>` : esc(t(['aucune notée dans ce navigateur', 'none noted in this browser', 'keine in diesem Browser vermerkt', 'ninguna anotada en este navegador'])))}
+      ${row(['Écritures en attente', 'Pending writes', 'Ausstehende Schreibvorgänge', 'Escrituras pendientes'], `${pending ? pill('warn', t(['{n} fichier(s) à envoyer', '{n} file(s) to send', '{n} Datei(en) zu senden', '{n} archivo(s) por enviar'], { n: pending })) : pill('ok', t(['aucune', 'none', 'keine', 'ninguna']))}${pending && A?.flushData ? ` <button type="button" class="secondary" data-gh-sync data-icon="refresh">${esc(t(['Synchroniser', 'Synchronise', 'Synchronisieren', 'Sincronizar']))}</button>` : ''}`)}
+      ${row(['Base des types d’aéronefs', 'Aircraft type database', 'Luftfahrzeugtypen-Datenbank', 'Base de tipos de aeronave'], `<code>AircraftDB/aircraft_db.js</code> — ${esc(types ? t(['{n} types, générée le {d}', '{n} types, generated {d}', '{n} Typen, erzeugt am {d}', '{n} tipos, generada el {d}'], { n: types, d: built || '—' }) : t(['lue dans le dépôt des données', 'read from the data repository', 'aus dem Daten-Repository gelesen', 'leída del repositorio de datos']))}`)}
+      ${row(['Site de la compagnie virtuelle', 'Virtual airline website', 'Website der virtuellen Fluggesellschaft', 'Sitio de la aerolínea virtual'], va ? link(va, va.replace(/^https?:\/\//, ''), true) : '—')}
+      </tbody></table>
+      <p class="mt-small">${link(profile, t(['Mon profil › Accès aux données →', 'My profile › Data access →', 'Mein Profil › Datenzugang →', 'Mi perfil › Acceso a los datos →']))}</p>
+      <p class="mt-small">${esc(t(['Dossiers locaux, clés IVAO et import SIA se règlent sur un poste avec lanceur.', 'Local folders, IVAO keys and SIA import are set on a computer with the launcher.', 'Lokale Ordner, IVAO-Schlüssel und SIA-Import werden an einem Rechner mit Starter eingestellt.', 'Las carpetas locales, las claves IVAO y la importación del SIA se ajustan en un equipo con lanzador.']))}</p>`;
+    host.querySelector('[data-gh-sync]')?.addEventListener('click', async () => {
+      try {
+        const done = await A.flushData();
+        window.AppFramework?.notify?.(t(['{n} fichier(s) envoyé(s) au dépôt des données.',
+          '{n} file(s) sent to the data repository.', '{n} Datei(en) an das Daten-Repository gesendet.',
+          '{n} archivo(s) enviado(s) al repositorio de datos.'
+        ], {
+          n: done.length
+        }), 'ok');
+      } catch (e) {
+        window.AppFramework?.notify?.(explain(e), 'warn');
+      }
+      renderGhAccess();
+    });
+    // état de l'accès : essai du réglage (dépôt lisible, branche, droit d'écriture), connu à l'arrivée de la réponse
+    const r = await G.test(c),
+      cell = host.querySelector('[data-gh-state]');
+    if (!cell?.isConnected) return;
+    const html = pill(r.ok ? r.write ? 'ok' : 'warn' : 'err', r.message);
+    if (cell.innerHTML !== html) cell.innerHTML = html;
+  }
+
   /** Rendu complet : titres, attente des modules, état git, dossier SIA et base, puis chaque bloc de la page (erreurs isolées
    *  par guard) ; ouvre ensuite le bloc demandé (?m= ou ancre), « Mises à jour » par défaut sur la page Maintenance. */
   async function renderAll() {
     titles();
-    await guard(['Chargement des modules', 'Loading the modules', 'Laden der Module', 'Carga de los módulos'], () => Promise.all([
-      waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')
-    ]));
-    await Promise.all([guard(['État git', 'Git state', 'Git-Status', 'Estado de git'], () => readGitState(false)), guard(['Dossier SIA',
-      'SIA folder', 'SIA-Ordner', 'Carpeta SIA'
-    ], () => scanSiaFolder(false))]);
-    baseSummary = await guard(['Base SIA du navigateur', 'Browser SIA database', 'SIA-Datenbank des Browsers',
-        'Base SIA del navegador'
-      ],
-      () => window.SiaBase.summary());
+    // mode GitHub (Installation) : ni état git, ni dossier SIA, ni base SIA — rien de tout cela n'existe sans lanceur
+    if (!GH_ONLY) {
+      await guard(['Chargement des modules', 'Loading the modules', 'Laden der Module', 'Carga de los módulos'], () => Promise.all(
+        GH_MAINT ? [waitFor('LocalStore')] : [waitFor('FileAccess'), waitFor('LocalStore'), waitFor('SuiteUpdate')]));
+      // mode GitHub (Maintenance) : ni état git, ni dossier SIA, ni base SIA
+      if (!GH_MAINT) {
+        await Promise.all([guard(['État git', 'Git state', 'Git-Status', 'Estado de git'], () => readGitState(false)), guard([
+          'Dossier SIA', 'SIA folder', 'SIA-Ordner', 'Carpeta SIA'
+        ], () => scanSiaFolder(false))]);
+        baseSummary = await guard(['Base SIA du navigateur', 'Browser SIA database', 'SIA-Datenbank des Browsers',
+            'Base SIA del navegador'
+          ],
+          () => window.SiaBase.summary());
+      }
+    }
     for (const [what, fn, host] of [
         [
           ['Mises à jour', 'Updates', 'Aktualisierungen', 'Actualizaciones'], renderUpdates, hosts.updates
+        ],
+        [
+          ['Accès aux données', 'Data access', 'Datenzugang', 'Acceso a los datos'], renderGhAccess, hosts.ghAccess
         ],
         [
           ['Sources et dossiers', 'Sources and folders', 'Quellen und Ordner', 'Fuentes y carpetas'], renderSources, hosts.sources
@@ -5379,9 +5797,11 @@
       inBlock = !NAV[want] && anchor && (BLOCKS.find(b => document.getElementById(b.id)?.querySelector(`#${CSS.escape(anchor)}`))?.id ||
         (/^mt-aero/.test(anchor) ? 'sia' : ''));
     if (embedded) {
-      if (NAV[want]) showBlock(want);
+      if (NAV[want] && !(declaredHere(want) && !onPage(want))) showBlock(
+        want); // bloc écarté par le mode : le premier bloc de la page s'ouvre
       else if (inBlock) showBlock(inBlock);
-      else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock('updates');
+      else if (PAGE === 'maintenance' && !new URLSearchParams(location.search).get('base')) showBlock(BLOCKS.find(b => onPage(b.id))
+        .id); // « Mises à jour » ; en mode GitHub, le premier bloc gardé
       // aucune rubrique de data_admin.js ouverte (Installation) : premier bloc de la page
       else if (main.querySelector('.da-main')?.hidden && !main.querySelector('.mt-block:not([hidden])')) {
         const first = BLOCKS.find(b => NAV[b.id] && onPage(b.id) && !cpcoLocked(b.id));
