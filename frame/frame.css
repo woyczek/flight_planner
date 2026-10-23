@@ -1,12 +1,13 @@
 /* V3 frame — mise en page de l'appli : en-tête (menu sur téléphone, nom, bouton de synchronisation, aide, réglages),
    colonne des verbes (à gauche sur écran, tiroir sur téléphone), vue du module, notes et fenêtres du cadre. Les jetons
-   (couleurs, polices, rayons, densité ; designs standard, cabinet, field, metro, swiss, cupertino ; jour / nuit) et les primitives données aux
+   (couleurs, polices, rayons, densité ; designs standard, cabinet, field, metro, swiss, cupertino, material ; jour / nuit) et les primitives données aux
    modules viennent de frame/design/ (importés ici : une page qui charge frame.css a tout). */
 @import url("design/tokens.css");
 @import url("design/primitives.css");
 @import url("design/metro.css");
 @import url("design/swiss.css");
 @import url("design/cupertino.css");
+@import url("design/material.css");
 * {
   box-sizing: border-box
 }

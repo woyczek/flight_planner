@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Design: "Material" (Material Design 3) mock-up, pending decision** (`frame/design/tokens.css`, `frame/design/material.css`,
+  `frame/design/demo_metro.html`, `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/sw.js`; design SPEC,
+  DECISIONS) — a fourth retained design in Settings › Design, built like the others (token set first, few frame rules):
+  tonal surfaces (page, cards, fields), a muted blue-violet primary checked at 4.5 : 1 as text on every surface, day and
+  night, pill buttons, 1 px outlined fields that turn 2 px on focus, underlined tabs, steps as tonal chips, a top app bar on
+  the page surface, a navigation drawer on a phone and a navigation rail on a screen (active indicator tinted with the
+  module's colour), two elevation levels only. System fonts (Roboto when installed). The demo page takes
+  `?design=material`. The other designs are unchanged; the rules left out because three other mock-ups already carry them
+  are listed as token / primitive candidates.
 - **Design: "Swiss" and "Cupertino" mock-ups, pending decision** (`frame/design/tokens.css`, `frame/design/swiss.css`,
   `frame/design/cupertino.css`, `frame/design/demo_metro.html`, `frame/app.js`, `frame/frame.css`, `frame/index.html`,
   `frame/sw.js`; design SPEC, DECISIONS) — two more designs in Settings › Design, built like Metro (token sets first,
