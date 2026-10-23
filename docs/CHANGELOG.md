@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: first screen sooner** (`modules/fuel/module.js`; DECISIONS) — Fuel shows its fields from what the device
+  has, says "Loading…" while the aircraft and sheets arrive, then completes the quote; nothing is written in
+  between.
 - **aerodb: light index of the aerodromes** (`frame/aerodb/aerodb.js`, `shared/sia_base.js`, `modules/fuel/module.js`;
   SPEC, DECISIONS) — the base's publication writes `aeroindex.json` per zone (ICAO aerodromes: code, name, position,
   elevation, runway axis; France 31 KB instead of 328 KB), read to resolve a route and for Fuel's corridor: first route

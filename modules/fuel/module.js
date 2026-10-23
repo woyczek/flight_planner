@@ -74,6 +74,10 @@ const TX = {
     'Ficha, matrícula, indicativo o tipo'
   ],
   acChange: ['Changer d’appareil', 'Change aircraft', 'Luftfahrzeug wechseln', 'Cambiar de aeronave'],
+  loadingRefs: ['Chargement des appareils et des fiches…', 'Loading aircraft and sheets…',
+    'Luftfahrzeuge und Datenblätter werden geladen…', 'Cargando aeronaves y fichas…'
+  ],
+  loadingFlight: ['Chargement du vol…', 'Loading the flight…', 'Flug wird geladen…', 'Cargando el vuelo…'],
   acNone: ['Aucun appareil : cherchez-le.', 'No aircraft: search for it.', 'Kein Luftfahrzeug: suchen.', 'Ninguna aeronave: búsquela.'],
   acNoRegistry: ['Base des aéronefs indisponible (aerodb).', 'Aircraft base unavailable (aerodb).',
     'Luftfahrzeugbasis nicht verfügbar (aerodb).',
@@ -966,6 +970,7 @@ async function storeSheet(p, source = 'edit') {
 /** Écrit le vol courant (après un temps calme) : relu juste avant, seuls les champs de fuel remplacés (et dans progress
  *  ses seules clés : progress.actual appartient au cadre), le reste gardé tel qu'il est (frame/lib/current_flight.js). */
 function saveFlight() {
+  if (S.flightPending) return; // vol courant pas encore lu : l'écrire effacerait le vrai
   clearTimeout(S.flightTimer);
   const s = S; // gardé : l'écriture part même si le module est démonté entre-temps
   s.flightTimer = setTimeout(async () => {
@@ -3077,6 +3082,19 @@ function openInLinks(C) {
 
 function refresh() {
   if (!S?.body || S.view !== 'plan') return;
+  if (S.refsPending || S.flightPending) {
+    const res = S.body.querySelector('[data-block="result"]'),
+      ac = S.body.querySelector('[data-acsel]'),
+      text = tt(S.flightPending ? TX.loadingFlight : TX.loadingRefs);
+    if (res) {
+      res.dataset.loading = '';
+      res.innerHTML = `<span class="f-muted">${esc(text)}</span>`;
+    }
+    if (ac) ac.innerHTML = `<span class="f-muted">${esc(tt(TX.loadingRefs))}</span>`;
+    S.body.inert = !!S.flightPending; // le vol pas encore lu : rien à saisir
+    return;
+  }
+  S.body.querySelector('[data-block="result"]')?.removeAttribute('data-loading');
   const C = S.C = compute(),
     {
       q,
@@ -3150,6 +3168,7 @@ function refresh() {
 // ---------------------------------------------------------------- écran Fiches
 /** Dessine la liste des fiches et les gestes d'import. */
 function renderSheets() {
+  if (S.refsPending) return void(S.body.innerHTML = `<p class="f-muted">${esc(tt(TX.loadingRefs))}</p>`); // fiches pas encore là
   const F = SH(),
     lang = S.ctx.lang();
   S.edit = null;
@@ -3609,24 +3628,17 @@ export async function mount(el, ctx) {
     stops: [],
     view: 'plan'
   };
-  // toutes les lectures du montage en même temps (en mode GitHub chacune peut être un aller-retour réseau) : les
-  // bibliothèques, le registre d'aerodb, le vol courant, les réglages du devis et ce qui est gardé sur l'appareil
-  const get = (path, quiet) => quiet ? ctx.data.get(path).catch(() => null) : ctx.data.get(path),
-    [, A, kept0, fuelSettings, ofp, wxKept, ui, aloftKept, lastAcKept] = await Promise.all([loadLibs(),
-      ctx.aerodb?.aircraft ? ctx.aerodb.aircraft().catch(() => null) : null, get(pilotPath('current_flight.json')),
-      get(pilotPath('fuel.json')), get(OFP_PATH), get(WX_PATH, true), get(UI_PATH), get(ALOFT_PATH, true), get(LAST_AC_PATH,
-        true)
-    ]);
-  S.A = A;
-  // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
-  SH()?.configure({
-    profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
-    active: () => S.edit || S.C?.sheet || null,
-    lang: () => ctx.lang(),
-    t: row => ctx.t(row),
-    tf: (row, vals) => ctx.t(row, vals)
-  });
-  await readSheets();
+  // premier dessin sans attendre le réseau (audit de poids, mesure 4) : les bibliothèques et ce que l'appareil a déjà
+  // (read sans wait : la copie gardée, ou null pour un fichier jamais lu) ; le registre d'aerodb, les fiches, et le
+  // vol courant ou les réglages jamais lus arrivent ensuite (completeMount) — en attendant « chargement… », et rien
+  // n'est écrit ni calculé
+  const rd = path => Promise.resolve().then(() => ctx.data.read(path)).then(r => r?.value ?? null).catch(() => null),
+    [, kept0, fuelSettings, ofp, wxKept, ui, aloftKept, lastAcKept] = await Promise.all([loadLibs(), rd(pilotPath(
+      'current_flight.json')), rd(pilotPath('fuel.json')), rd(OFP_PATH), rd(WX_PATH), rd(UI_PATH), rd(ALOFT_PATH), rd(
+      LAST_AC_PATH)]);
+  S.refsPending = true; // registre d'aerodb et fiches pas encore là : ni devis, ni écriture du devis
+  S.flightPending = kept0 == null; // vol courant jamais lu sur cet appareil : écran en attente, aucune écriture
+  S.settingsPending = fuelSettings == null;
   const kept = kept0 || {};
   S.flight = {
     ...emptyFlight(),
@@ -3643,14 +3655,8 @@ export async function mount(el, ctx) {
     entries: {},
     ...(fuelSettings || {})
   };
-  // vol sans appareil : le dernier choisi sur cet appareil est repris d'office (plus de première fiche par défaut)
   S.lastAc = lastAcKept?.aircraft || null;
-  const ka = S.flight.aircraft || {};
-  if (S.lastAc && !(ka.sheetId || ka.type || ka.registration)) S.flight.aircraft = {
-    ...S.lastAc
-  };
-  // un vol sans écart ISA part du dernier écart retenu (réglages du devis)
-  if (!Number.isFinite(+kept.isaDev)) S.flight.isaDev = +S.settings.isaDev || 0;
+  if (!S.flightPending) flightDefaults(kept);
   S.ofp = ofp;
   // météo : dernières valeurs gardées sur l'appareil, relues ensuite si l'appareil est en ligne
   S.wx = wxKept?.at ? {
@@ -3698,6 +3704,8 @@ export async function mount(el, ctx) {
       ...emptyFlight(),
       ...f
     };
+    if (S.flightPending) S.flightSeen = true; // arrivé avant la fin du montage : completeMount le garde
+    if (S.flightPending || S.refsPending) return; // montage pas fini : completeMount dessine et reprend ce vol
     if (keepText != null) S.flight.route = { // route en cours de frappe : la valeur du champ reste la vérité
       ...emptyFlight().route,
       ...S.flight.route,
@@ -3725,13 +3733,78 @@ export async function mount(el, ctx) {
   }, 60000);
   S.stops.push(() => clearInterval(tick));
   show(S.focusRoute || S.ui.view !== 'sheets' ? 'plan' : 'sheets');
-  if (S.focusRoute) { // « Modifier la route » de la Carte : le champ de la route prêt à la frappe, curseur au bout
+  if (!S.flightPending) flightReady();
+  completeMount(self); // pas attendu : le cadre a son écran tout de suite
+}
+/** Vol courant connu : un vol sans appareil reprend le dernier choisi sur cet appareil (plus de première fiche par
+ *  défaut), un vol sans écart ISA le dernier écart retenu (réglages du devis). */
+function flightDefaults(kept) {
+  const ka = S.flight.aircraft || {};
+  if (S.lastAc && !(ka.sheetId || ka.type || ka.registration)) S.flight.aircraft = {
+    ...S.lastAc
+  };
+  if (!Number.isFinite(+kept.isaDev)) S.flight.isaDev = +S.settings.isaDev || 0;
+}
+/** Vol courant connu et à l'écran : « Modifier la route » de la Carte (champ prêt à la frappe) ; la reprise attend le
+ *  registre d'aerodb (elle chiffre le devis). */
+function flightReady() {
+  S.body.inert = false;
+  if (S.focusRoute) {
     const ta = S.body.querySelector('[data-k="rtext"]');
     ta?.focus();
     ta?.setSelectionRange?.(ta.value.length, ta.value.length);
   }
-  if (S.flight.by && S.flight.by !== 'fuel') adoptForeignFlight(); // vol modifié ailleurs pendant l'absence de fuel
+  if (!S.refsPending) resumeFlight();
+}
+/** Vol modifié ailleurs pendant l'absence de fuel : repris (devis refait) ; sinon la route relue. */
+function resumeFlight() {
+  if (S.flight.by && S.flight.by !== 'fuel') adoptForeignFlight();
   else if (S.flight.route?.text || S.flight.route?.dep) S.flight.route.manual || resolveRoute();
+}
+/** Seconde moitié du montage, après le premier dessin : registre d'aerodb et fiches, puis le vol courant et les
+ *  réglages s'ils n'avaient jamais été lus sur cet appareil (attente du réseau) ; l'écran se complète sans bouger. */
+async function completeMount(self) {
+  const ctx = self.ctx,
+    // read avec wait : un fichier jamais lu attend le réseau (get rendrait null tout de suite sur un appareil neuf)
+    get = path => Promise.resolve().then(() => ctx.data.read(path, {
+      wait: true
+    })).then(r => r?.value ?? null).catch(() => null),
+    [A, kept1, fs1] = await Promise.all([ctx.aerodb?.aircraft ? ctx.aerodb.aircraft().catch(() => null) : null,
+      self.flightPending ? get(pilotPath('current_flight.json')) : null, self.settingsPending ? get(pilotPath('fuel.json')) :
+      null
+    ]);
+  if (gone(self)) return;
+  S.A = A;
+  // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
+  SH()?.configure({
+    profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
+    active: () => S.edit || S.C?.sheet || null,
+    lang: () => ctx.lang(),
+    t: row => ctx.t(row),
+    tf: (row, vals) => ctx.t(row, vals)
+  });
+  await readSheets();
+  if (gone(self)) return;
+  if (S.settingsPending) {
+    S.settings = {
+      ...S.settings,
+      ...(fs1 || {})
+    };
+    S.settingsPending = false;
+  }
+  const wasPending = S.flightPending;
+  if (wasPending) { // le vol ne vient que maintenant (sauf s'il est déjà arrivé par le suivi du vol courant)
+    if (!S.flightSeen) S.flight = {
+      ...emptyFlight(),
+      ...(kept1 || {})
+    };
+    flightDefaults(kept1 || {});
+    S.flightPending = false;
+  }
+  S.refsPending = false;
+  if (S.view === 'plan') renderPlan();
+  else if (!S.edit && !S.pending) keepScroll(S.body, renderSheets);
+  wasPending ? flightReady() : resumeFlight();
 }
 
 export function unmount() {

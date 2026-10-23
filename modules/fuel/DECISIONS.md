@@ -4,6 +4,27 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **23 Oct 2026 — the weather corridor reads aerodb's light index** (aerodb's ae427b934, read again here): the
+  corridor asks `aerodromes({ bbox, lite: true })`; the light index (one compact line per ICAO aerodrome: code,
+  name, position, elevation, runway axis, declination) holds everything the corridor and the aerodromes' cards use
+  (`wxAd`: elevation for the ISA proposal, runway axis for the crosswind). A base published before the index is
+  read as before. Nothing to change on fuel's side.
+- **23 Oct 2026 — weight, step 2: fuel draws before the references** (frame weight audit, measure 4): the mount
+  draws at once with what the device already has — the libraries and `ctx.data.read(path)` without `wait` (the
+  kept copy, or null for a file never read) — then `completeMount` (not awaited by the frame) brings aerodb's
+  registry, the sheets, and the current flight or the quote settings never read on this device
+  (`read(path, { wait: true })`: `get` gave null at once on a new device). Meanwhile: "Loading aircraft and
+  sheets…" in the aircraft line and the quote bar (`data-loading`), nothing computed nor written (`refresh` stops
+  there; the quote, the progress and the profile wait); if the flight itself was never read, "Loading the
+  flight…", the screen `inert` and `saveFlight` refused (an empty flight would erase the stored one); a flight
+  written elsewhere during the wait is kept and taken up at the end (`adoptForeignFlight` waits for the registry:
+  it quotes). Measured with the frame's kit (CPU ×4, Fast 3G, 375 px, real tree; same base, two passes each):
+  first GitHub pass on `#fuel`, without step 2 the screen at 5.62 / 5.53 s all at once (9 API calls, 381 KB
+  before the first sync ends); with it the fields at 3.40 / 3.33 s and the full quote at 5.56 / 5.45 s (4 calls,
+  116 KB). Traced inside: the frame calls `mount` at 3.44 s, fuel draws 59 ms later; the 2.8 s between the menu
+  (0.69 s) and the mount are the frame's, reported to it (target < 1 s). First local opening 7.4 s (the files'
+  download), offline 0.20 s. Bench: a new device (cleared profile) with a flight in the repository shows
+  "Loading the flight…" then LFRS, and the repository receives no write.
 - **23 Oct 2026 — weight, step 1: the mount's reads together** (frame weight audit, measure 1): the mount waited in
   turn for the four libraries, `aerodb.aircraft()`, the sheets then the airline's types, and seven `ctx.data.get`.
   Now the libraries (they only use each other when called), the registry and the seven reads start together

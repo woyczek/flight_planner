@@ -100,7 +100,9 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   that have a METAR, twelve at most, stopping at the first 503 (no key: "TAF unavailable without a launcher or a
   weather key", the METAR answers); the card says the source. Offline: the kept values, as before; the stations are the departure,
   the aerodromes of the route's corridor, the arrival and the alternate. **Corridor** (23 Oct 2026, replaces the
-  "intermediate aerodrome" field): aerodb `aerodromes({ bbox })` of each leg's box widened by the radius of the quote
+  "intermediate aerodrome" field): aerodb `aerodromes({ bbox, lite: true })` (aerodb's light index of
+  the aerodromes — code, name, position, elevation, runway axis — when the base was published with it, else the full
+  file) of each leg's box widened by the radius of the quote
   settings (`wxRadiusNm`, default 10 NM, 0 to 50), kept within that radius of the route (projection on the nearest leg,
   local plane), departure and arrival excluded, sorted by distance along the route; recomputed when the points or the
   radius change. A corridor aerodrome without METAR or TAF is ignored. The last answers are kept on the device (`cache/fuel/weather.json`) and shown,
