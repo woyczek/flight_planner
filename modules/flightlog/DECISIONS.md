@@ -2,6 +2,9 @@
 
 Memory of the V3 flightlog module: every choice, dated, with its reason. Chat history is never needed.
 
+- **23 Oct 2026 — `keepScroll` from the frame** (frame lot 17, `frame/lib/dom.js`): the module's copy and its own
+  focus restoring are gone; the frame's helper keeps the scroll and the field being typed, caret included
+  (frame INTEGRATION § 6). Checked on 8804: "LFRS" typed in the search, one render per key, focus and caret kept.
 - **23 Oct 2026 — renders keep the scroll** (user's bug seen in fuel): the list is redrawn at every reading of the
   reports, the site's log and the network; `render()` now keeps the scroll (`keepScroll`) and gives the focus back
   without scrolling.

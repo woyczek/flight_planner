@@ -6,6 +6,9 @@
 // CR » (passage à report par pilot/handoff.json) ; export CSV dans « Plus ». Calcul pur dans model.js.
 import * as F from './model.js';
 import * as LF from '../../frame/lib/last_flight.js';
+import {
+  keepScroll
+} from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 
 export const meta = {
   id: 'flightlog',
@@ -19,7 +22,7 @@ export const meta = {
     prefix: 'cache/flightlog/',
     policy: 'cache'
   }],
-  files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js']
+  files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js']
 };
 
 const VIEW = 'cache/flightlog/view.json',
@@ -224,31 +227,6 @@ const STYLE = `
   [data-module="flightlog"] .f-list .f-item{grid-template-columns:7em 9em 10em minmax(0,1fr) 5em minmax(0,1fr)}
 }`;
 
-/** Rend sans bouger le défilement : la position de chaque conteneur qui défile (la page comprise) est gardée et la
- *  hauteur du bloc tenue pendant le rendu, puis les positions sont remises après le rendu et à l'image suivante (un
- *  contenu recréé qui rétrécit un instant ne ramène plus la page en haut). */
-function keepScroll(box, draw) {
-  const sc = [];
-  for (let e = box?.parentElement; e; e = e.parentElement)
-    if (e.scrollHeight > e.clientHeight) sc.push([e, e.scrollTop]);
-  const doc = document.scrollingElement;
-  if (doc && !sc.some(([e]) => e === doc)) sc.push([doc, doc.scrollTop]);
-  if (box) box.style.minHeight = `${box.offsetHeight}px`;
-  try {
-    return draw();
-  } finally {
-    const put = () => {
-      for (const [e, t] of sc)
-        if (e.scrollTop !== t) e.scrollTop = t;
-    };
-    put();
-    requestAnimationFrame(() => {
-      put();
-      if (box) box.style.minHeight = '';
-      requestAnimationFrame(put);
-    });
-  }
-}
 /** Dessine la liste sans bouger le défilement (relectures des CR, du journal et du réseau). */
 function render() {
   if (!S?.body) return;
@@ -263,8 +241,7 @@ function renderBody() {
       noReport: v.noReport
     }),
     tot = F.totals(list),
-    wide = matchMedia('(min-width: 980px)').matches,
-    focus = document.activeElement?.dataset?.k;
+    wide = matchMedia('(min-width: 980px)').matches;
   S.shown = list;
   const row = f => {
     const k = F.keyOf(f),
@@ -295,13 +272,6 @@ function renderBody() {
     <div class="f-list">${list.map(row).join('') || `<p class="f-card f-muted">${esc(tt(TX.empty))}</p>`}</div>
     <details class="f-card"><summary>${esc(tt(TX.more))}</summary><div class="f-row">
       <button type="button" data-do="csv">${esc(tt(TX.csv))}</button><button type="button" data-do="refresh">${esc(tt(TX.refresh))}</button></div></details>`;
-  if (focus) {
-    const el = S.body.querySelector(`[data-k="${focus}"]`);
-    el?.focus({
-      preventScroll: true
-    });
-    if (el?.type === 'search') el.setSelectionRange(el.value.length, el.value.length);
-  }
 }
 /** Filtres : gardés sur l'appareil, liste redessinée. */
 function onInput(e) {
