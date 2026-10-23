@@ -108,7 +108,8 @@
       });
       await FD.sync();
       const db = AeroDB.create({
-          reader: data
+          reader: data,
+          lnmperf: false
         }),
         A = await db.aircraft();
       check('legacy type API kept (classify, canonical, estimate)', A.classify('A400M').category === 'turboprop' && A.canonical(
@@ -228,6 +229,58 @@
       check('fleet given to the sheets logic (ChatGPT prompt)', (await A.fleetTypes()).some(f => f.type === 'A400' && f.registrations
         .includes(
           'F-RBAA')), await A.fleetTypes());
+      // une ligne par immatriculation : fiche à soi sans consommation + flotte → une seule ligne, devis par la fiche du
+      // type (ou l'estimation), champs fusionnés avec leur origine
+      await seed.put('airline/fleet.json', {
+        schema: 1,
+        updated_at: '2026-10-23T10:00:00Z',
+        by: 'website',
+        aircraft: [{
+          operator: 'Test',
+          type: 'A400',
+          variant: 'A400M Atlas',
+          registration: 'F-RBAA',
+          callsigns: ['TEST01'],
+          base: 'LFOE'
+        }, {
+          operator: 'Test',
+          type: 'C30J',
+          variant: 'C-130J',
+          registration: 'F-RAJA',
+          callsigns: ['TEST02'],
+          base: 'LFOJ'
+        }, {
+          operator: 'Test',
+          type: 'A400',
+          variant: 'A400M Atlas',
+          registration: 'F-TEST',
+          callsigns: ['TEST03'],
+          base: 'LFOE'
+        }]
+      });
+      await FD.sync();
+      await (await db.aircraft()).sheets.put({
+        id: 'MY_FTEST',
+        name: 'Mon A400',
+        icao: 'A400',
+        registration: 'F-TEST',
+        unit: 'kg',
+        cruise: {
+          tasKt: 300
+        }
+      }, {
+        source: 'edit'
+      });
+      const C = await db.aircraft(),
+        ft = (await C.search('F-TEST', 50)).filter(r => r.registration === 'F-TEST');
+      check('one line per registration (own sheet and fleet merged)', ft.length === 1 && ft[0].ownSheetId === 'MY_FTEST' && ft[0]
+        .sources.includes('sheet') && ft[0].sources.some(x => x.startsWith('fleet')), ft);
+      check('own sheet without fuel flow: quote from the type sheet, fields merged with origin', ft[0]?.sheetId === 'A400_V2' && ft[0]
+        .sheetVia === 'type' && ft[0].callsign === 'TEST03' && ft[0].origin.callsign !== 'sheet' && ft[0].name === 'Mon A400' && ft[0]
+        .origin.name === 'sheet', ft[0]);
+      const ftR = await C.resolve('F-TEST');
+      check('resolve: own sheet kept as ownSheetId, quote sheet from the type', ftR?.ownSheetId === 'MY_FTEST' && ftR.sheetId ===
+        'A400_V2', ftR);
     } catch (e) {
       check('threw', false, e.stack || String(e));
     }

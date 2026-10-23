@@ -356,6 +356,18 @@ With the network cut, the only reads attempted were:
 - **Measured** (1280 px, France and North Atlantic views): 51 tracks (37 French and the United Kingdom's AARA), 6 NAT
   tracks; no JavaScript error.
 
+## 23 October 2026 — one line per registration, a choice always gives a quote
+
+- **Found by fuel's end-to-end pass**: "F-TEST" gave two lines (the pilot's own sheet without a fuel flow, and the
+  fleet), and the first one gave "no quote".
+- **One line per registration**: the own sheet, the fleet and the reference are one aircraft; their fields are
+  merged, the sheet first, each with its origin. Type sheets (no registration) keep their own lines.
+- **The quote sheet is chosen, the own sheet is kept**: `sheetId` points to a sheet that has a fuel flow (own, else
+  the type's, else none and the estimate); `ownSheetId` keeps the pilot's sheet for editing. A type sheet without a
+  fuel flow is no longer taken either.
+- **Tests**: `frame/aerodb/test/registry.html`, 25 checks (3 new: one line for F-TEST, quote from the A400 type sheet
+  with the fleet's callsign and the sheet's name, `resolve` with `ownSheetId`).
+
 ## Pending
 
 - Stop writing the whole format when the ergonomics session says so; aerodb's fallback goes with it.

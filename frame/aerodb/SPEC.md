@@ -169,14 +169,20 @@ All the aircraft data in one place, read from every source and written in one pl
   - Sources: `edit`, `v2`, `lnmperf`, `chatgpt`, `eurocontrol`, `simbrief`, `ofp`, `import`, `fleet`, `reference`…
   - The newest wins. The losing values are kept in `_kept: { path: [{ value, at, source }] }` (five per field).
   - Rule of V2 kept: the fleet's base stays; callsigns are united.
-- **Search**, one for everything: `search(text, n)` returns, in this order, sheets → fleet → reference → types (two
-  letters at least) → free code (two to four letters or digits). With an empty text, the sheets then the fleet.
-  - Each result: `{ kind, source, key, label, sheetId, sheetVia, type, registration, callsign, name }`.
+- **Search**, one for everything: `search(text, n)` returns, in this order, aircraft with a sheet of their own → type
+  sheets → fleet → reference → types (two letters at least) → free code (two to four letters or digits). With an empty
+  text, the sheets then the fleet.
+  - **One line per registration**: an aircraft's own sheet, its fleet entry and its reference entry make a single
+    line; its fields are merged, the sheet first (`origin: { type, callsign, name, sheet }` says where each came from;
+    `sources` lists them).
+  - Each result: `{ kind, source, key, label, sheetId, sheetVia, ownSheetId, type, registration, callsign, name }`;
+    `sheetId` is always the sheet that gives a quote (below).
   - `aircraftOf(result)` gives the current flight's `aircraft` (`{ sheetId, type, registration, callsign, name,
     source }`).
-- **An aircraft's sheet**: its own (same registration), else its type's (aliases followed by `related`), else none
-  and `estimate(type)`. `resolve(registration)` gives the aircraft, its sheet (`sheetVia`: own, type, estimate) and
-  the estimate when there is no sheet.
+- **An aircraft's sheet for a quote**: its own (same registration) when it gives a quote (a fuel flow: cruise, or a row
+  of its RPM table), else its type's that gives one (aliases followed by `related`), else none and `estimate(type)`.
+  An incomplete own sheet stays named (`ownSheetId`), so a choice always gives a quote. `resolve(registration)` gives
+  the aircraft, its sheet (`sheetVia`: own, type, estimate), `ownSheetId` and the estimate when there is no sheet.
 - **Sheets API**, `aircraft().sheets`:
   - `list()`, `get(id)`, `origins(id)` (source, date and kept values per field);
   - `put(sheet, { source })`: the changed fields are stamped and the previous values kept;

@@ -24,6 +24,9 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **aerodb: one line per registration** (`frame/aerodb/registry.js`; SPEC, DECISIONS) — the aircraft search merges an
+  aircraft's own sheet, fleet and reference entries into one line, and the chosen sheet always gives a quote: an own
+  sheet without a fuel flow is completed by its type's sheet, else the estimate.
 - **Map, lot 5e: refuelling and NAT tracks** (`frame/aerodb/aar.js`, `aerodb.aarTracks()` and `natTracks()`,
   `modules/maps/`; SPEC, DECISIONS, help ×4) — the CAM mode draws the air refuelling racetracks (France and the United
   Kingdom) with their outbound leg and name, and the day's NAT tracks with their levels; two layers of their own.

@@ -296,23 +296,30 @@
     }
 
     // ---------------------------------------------------------------- appareils, fiches, recherche
-    /** Fiche d'un appareil : la sienne (même immatriculation), sinon celle de son type (alias suivis), sinon null
-     *  (estimation du type). */
+    /** Vrai si une fiche donne un devis : un débit connu (croisière, ou une ligne de sa table RPM). */
+    const quotable = s => +s?.cruise?.fuelFlowPerHour > 0 || (s?.rpmFuelCurve || []).some(r => +r?.fuelFlowPerHour > 0);
+    /** Fiche d'un appareil pour le devis : la sienne (même immatriculation) si elle donne un devis, sinon celle de son
+     *  type (alias suivis) qui en donne un, sinon null (estimation du type) ; own : sa fiche à lui, même incomplète. */
     function sheetFor(state, e) {
       const list = [...state.sheets.values()].map(x => x.sheet),
-        mine = list.find(s => regOf(s.registration) === e.registration);
-      if (mine) return {
+        mine = list.find(s => regOf(s.registration) === e.registration) || null;
+      if (mine && quotable(mine)) return {
         sheet: mine,
-        via: 'own'
+        via: 'own',
+        own: mine
       };
-      const codes = new Set(catalog?.related?.(e.type) || [fold(e.type)]),
-        byType = list.find(s => codes.has(catalog?.canonical?.(s.icao || s.type) || fold(s.icao || s.type)));
+      const type = e.type || catalog?.canonical?.(mine?.icao || mine?.type) || mine?.icao || mine?.type || '',
+        codes = new Set(catalog?.related?.(type) || [fold(type)]),
+        byType = list.find(s => s !== mine && quotable(s) && codes.has(catalog?.canonical?.(s.icao || s.type) || fold(s.icao || s
+          .type)));
       return byType ? {
         sheet: byType,
-        via: 'type'
+        via: 'type',
+        own: mine
       } : {
         sheet: null,
-        via: 'estimate'
+        via: 'estimate',
+        own: mine
       };
     }
     /** Appareil du registre (immatriculation) avec sa fiche ; null s'il est inconnu. */
@@ -325,7 +332,8 @@
         ...e,
         sheetId: s.sheet?.id || '',
         sheetVia: s.via,
-        estimate: s.sheet ? null : catalog?.estimate?.(e.type) || null
+        ownSheetId: s.own?.id || '',
+        estimate: s.sheet ? null : catalog?.estimate?.(e.type || s.own?.icao || s.own?.type) || null
       };
     }
     /** Fiche choisie pour le vol courant : { sheetId, type, registration, callsign, name, source } (schéma de fuel). */
@@ -339,46 +347,84 @@
         source: hit.source
       };
     }
-    /** Une recherche sur toutes les sources, dans l'ordre fiches → flotte → référence → types → code libre ; texte vide :
-     *  fiches puis flotte. Chaque résultat : { kind, source, key, label, sheetId, type, registration, callsign, name }. */
+    /** Ligne d'un appareil (immatriculation) : sa fiche à lui, la flotte et la référence fusionnées champ par champ
+     *  (la fiche d'abord, origine de chaque champ dans origin) ; sheetId : la fiche qui donne le devis (la sienne, sinon
+     *  celle du type ; vide : estimation du type). */
+    function aircraftRow(st, e, own) {
+      const s = sheetFor(st, e || {
+          registration: regOf(own.registration),
+          type: ''
+        }),
+        mine = s.own || own || null,
+        pick = (k, sheetVal, other, otherSrc) => sheetVal ? [sheetVal, 'sheet'] : other ? [other, otherSrc] : ['', ''],
+        src = e?.sources?.some(x => x.startsWith('fleet')) ? 'fleet' : e ? 'reference' : 'sheet',
+        [type, tSrc] = pick('type', mine && (catalog?.canonical?.(mine.icao || mine.type) || mine.icao || mine.type), e?.type, e?.origin
+          ?.type
+          ?.source || src),
+        [callsign, cSrc] = pick('callsign', mine?.callsign, e?.callsigns?.[0], src),
+        [name, nSrc] = pick('name', mine?.name, e?.variant || e?.type, src),
+        reg = e?.registration || regOf(mine?.registration);
+      return {
+        kind: 'aircraft',
+        source: mine ? 'sheet' : src,
+        key: `reg:${reg}`,
+        label: [reg, name || type, callsign].filter(Boolean).join(' — '),
+        sheetId: s.sheet?.id || '',
+        sheetVia: s.via,
+        ownSheetId: mine?.id || '',
+        type,
+        registration: reg,
+        callsign,
+        name: name || type || reg,
+        origin: {
+          type: tSrc,
+          callsign: cSrc,
+          name: nSrc,
+          sheet: s.via
+        },
+        sources: [...new Set([...(mine ? ['sheet'] : []), ...(e?.sources || [])])]
+      };
+    }
+    /** Une recherche sur toutes les sources, une ligne par immatriculation (fiche, flotte et référence fusionnées), dans
+     *  l'ordre appareils à fiche → fiches de type → flotte → référence → types → code libre ; texte vide : fiches puis
+     *  flotte. Chaque résultat : { kind, source, key, label, sheetId, type, registration, callsign, name } (et pour un
+     *  appareil sheetVia, ownSheetId, origin). */
     async function search(text = '', n = 30) {
       const st = await load(),
         q = fold(text),
         has = (...vs) => !q || vs.some(v => fold(v).includes(q)),
-        out = [];
+        out = [],
+        withSheet = [],
+        typeSheets = [];
       for (const {
           sheet: s
         }
-        of st.sheets.values())
-        if (has(s.id, s.name, s.icao, s.type, s.registration, s.callsign)) out.push({
+        of st.sheets.values()) {
+        const reg = regOf(s.registration),
+          e = reg ? st.aircraft.get(reg) : null;
+        if (!has(s.id, s.name, s.icao, s.type, s.registration, s.callsign, e?.type, e?.variant, ...(e?.callsigns || []))) continue;
+        // fiche d'un appareil : une seule ligne avec la flotte et la référence ; fiche de type : sa ligne
+        if (reg) withSheet.push(aircraftRow(st, e, s));
+        else typeSheets.push({
           kind: 'sheet',
           source: 'sheet',
           key: `sheet:${s.id}`,
-          label: [s.name || s.id, s.icao || s.type, s.registration].filter(Boolean).join(' — '),
+          label: [s.name || s.id, s.icao || s.type].filter(Boolean).join(' — '),
           sheetId: s.id,
           type: catalog?.canonical?.(s.icao || s.type) || s.icao || s.type || '',
-          registration: regOf(s.registration),
+          registration: '',
           callsign: s.callsign || '',
           name: s.name || s.id
         });
+      }
+      out.push(...withSheet, ...typeSheets);
+      const done = new Set(withSheet.map(r => r.registration));
       for (const src of ['fleet', 'reference']) {
         for (const e of st.aircraft.values()) {
           const fromFleet = e.sources.some(x => x.startsWith('fleet'));
-          if ((src === 'fleet') !== fromFleet) continue;
+          if ((src === 'fleet') !== fromFleet || done.has(e.registration)) continue;
           if (!has(e.registration, e.type, e.variant, e.number, e.tacticalNumber, ...e.callsigns)) continue;
-          const s = sheetFor(st, e);
-          out.push({
-            kind: 'aircraft',
-            source: src,
-            key: `reg:${e.registration}`,
-            label: [e.registration, e.variant || e.type, e.callsigns[0]].filter(Boolean).join(' — '),
-            sheetId: s.sheet?.id || '',
-            sheetVia: s.via,
-            type: e.type || '',
-            registration: e.registration,
-            callsign: e.callsigns[0] || '',
-            name: e.variant || e.type || e.registration
-          });
+          out.push(aircraftRow(st, e, null));
         }
       }
       if (q.length >= 2)
