@@ -126,6 +126,17 @@
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
     back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
     host: ['Lanceur de {h}', 'Launcher on {h}', 'Starter auf {h}', 'Lanzador de {h}'],
+    who: ['Trigramme ?', 'Trigram?', 'Kürzel?', '¿Trigrama?'],
+    whoTitle: ['Indiquez votre trigramme dans Réglages : jusque-là, vos documents restent sur cet appareil et rien n’est envoyé.',
+      'Set your trigram in Settings: until then, your documents stay on this device and nothing is sent.',
+      'Geben Sie Ihr Kürzel in den Einstellungen an: bis dahin bleiben Ihre Dokumente auf diesem Gerät und nichts wird gesendet.',
+      'Indique su trigrama en Ajustes: hasta entonces, sus documentos se quedan en este dispositivo y no se envía nada.'
+    ],
+    anonAdopted: ['{n} document(s) écrit(s) sans trigramme repris sous {tri}.',
+      '{n} document(s) written without a trigram taken over under {tri}.',
+      '{n} ohne Kürzel geschriebene(s) Dokument(e) unter {tri} übernommen.',
+      '{n} documento(s) escrito(s) sin trigrama retomado(s) bajo {tri}.'
+    ],
     hostTitle: [
       'Appli servie par le lanceur du poste « {h} » sur le réseau local : ses données, son simulateur, son relais. Pas de hors ligne sur cet appareil (page en http).',
       'App served by the launcher of the computer “{h}” on the local network: its data, its simulator, its relay. No offline use on this device (page over http).',
@@ -416,6 +427,7 @@
     identity = Object.freeze({
       ...((await own.get('device/identity.json')) || {})
     });
+    paintWho();
     usages = (await own.get('device/usages.json')) || {};
     level = levelFrom((await own.get('device/level.json'))?.level);
     applyDesign(await own.get('device/design.json'));
@@ -431,6 +443,74 @@
       transport: configured,
       references: configured.kind === 'local' ? referenceSource() : null
     });
+    adoptAnon();
+  }
+  // ---------------------------------------------------------------- sans trigramme (frame/SPEC.md § 3.5)
+  // les modules écrivent alors sous pilot/ANON/, que la couche garde sur l'appareil ; la pastille « Trigramme ? » (et une
+  // notification, une fois par appareil) invite à le poser ; dès qu'il l'est, ces documents passent sous pilot/<TRI>/
+  const anonData = FD.adapter({
+    id: 'frame-identity',
+    reads: ['pilot/'],
+    writes: [{
+      prefix: 'pilot/',
+      merge: 'record'
+    }]
+  });
+  /** Pastille « Trigramme ? » (ouvre les Réglages) tant que l'identité n'en a pas ; notification la première fois. */
+  function paintWho() {
+    const b = $('fWho'),
+      show = !identity.trigram;
+    if (!b) return;
+    if (b.hidden === show) b.hidden = !show;
+    if (!show) return;
+    const text = t(T.who),
+      title = t(T.whoTitle);
+    if (b.textContent !== text) b.textContent = text;
+    if (b.title !== title) b.title = title;
+    try {
+      if (localStorage.getItem('sogFrame:trigramAsked')) return;
+      localStorage.setItem('sogFrame:trigramAsked', '1');
+    } catch {
+      return; // stockage indisponible : la pastille suffit
+    }
+    notify(title, 'info');
+  }
+  let adopting = null;
+  /** Documents de pilot/ANON/ (gardés sur l'appareil, ou venus d'un data/ d'avant la règle) repris sous pilot/<TRI>/
+   *  quand le trigramme est posé : un document absent sous le trigramme y est copié ; présent des deux côtés, le plus
+   *  récent (updated_at) l'emporte et l'autre est gardé dans les conflits ; puis le document de pilot/ANON/ est retiré. */
+  function adoptAnon() {
+    const tri = identity.trigram;
+    if (!tri || tri === 'ANON' || adopting) return adopting;
+    adopting = (async () => {
+      const P = 'pilot/ANON/',
+        paths = new Set([...((await anonData.list(P).catch(() => null)) || []), ...(await FD.cached(P).catch(() => [])).map(d => d
+          .path)]);
+      let n = 0;
+      for (const p of paths) {
+        const v = await anonData.get(p).catch(() => null);
+        if (v != null) {
+          const to = `pilot/${tri}/${p.slice(P.length)}`,
+            cur = await anonData.get(to).catch(() => null),
+            newer = String(v?.updated_at || '') > String(cur?.updated_at || ''),
+            same = cur != null && JSON.stringify(v) === JSON.stringify(cur);
+          if (!same && (cur == null || newer)) await anonData.put(to, v);
+          if (cur != null && !same) await FD.noteConflict({
+            path: to,
+            kept: newer ? v : cur,
+            lost: newer ? cur : v,
+            side: 'anon'
+          });
+          n++;
+        }
+        await anonData.remove(p);
+      }
+      if (n) notify(t(T.anonAdopted, {
+        n,
+        tri
+      }), 'ok');
+    })().catch(e => console.warn('anon', e)).finally(() => adopting = null);
+    return adopting;
   }
   // ---------------------------------------------------------------- design (frame/design/SPEC.md § 4)
   // jeux de jetons (frame/design/tokens.css) ; choix de l'appareil dans device/design.json (carte Design des réglages),
@@ -1547,6 +1627,14 @@
     };
     wide.addEventListener('change', onWidth);
     wideAuto.addEventListener('change', onWidth);
+    $('fWho').onclick = () => location.hash = '#settings';
+    // un passage qui a lu l'arbre du dépôt peut y trouver un pilot/ANON/ d'avant la règle : repris aussi
+    let anonSync = '';
+    FD.onStatus(s => {
+      if (!s.lastSync || s.lastSync === anonSync || !identity.trigram) return;
+      anonSync = s.lastSync; // une fois par passage réussi, jamais à chaque écriture
+      adoptAnon();
+    });
     $('fSync').onclick = async () => {
       if (over?.id === 'conflicts') return leaveOver();
       const s = await FD.status();

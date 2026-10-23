@@ -27,6 +27,11 @@ waypoints, and the rest listed below.
 - **Maintenance: VFR card below the Expert level** (`shared/maintenance_page.js`) — under level 4, a line says where
   the "VFR reporting points (VAC)" card is ("Expert level, menu ☰ › Level") instead of nothing; the card follows the
   page's mode (`GH_LITE`).
+- **Frame: without a trigram, nothing leaves the device** (`frame/store/frame_data.js`, `frame/app.js`,
+  `frame/index.html`, `frame/frame.css`, `tools/launch.py`; SPEC § 2 and § 3.5, DECISIONS). Documents written
+  without a trigram (`pilot/ANON/`) stay on the device, and nothing is sent or exchanged until the trigram is set. A
+  "Trigram?" button opens Settings. Once the trigram is set, those documents move under it, including a
+  `pilot/ANON/` already in `data/`, which then empties itself. The launcher refuses a batch with no author.
 - **Fuel › Sheets: the airline's types without a sheet, by category** (`modules/fuel/module.js`; SPEC, DECISIONS,
   help ×4) — as in V2, each type the airline uses (fleet, reference) without a sheet is listed "performance to fill in"
   with "Create the sheet", and the list is sorted by category (helicopters first): the company helicopters (EC45,

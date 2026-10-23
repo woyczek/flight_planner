@@ -284,8 +284,12 @@
       if (typeof w === 'object' && w.policy === 'cache' && !caches.includes(w.prefix)) caches.push(w.prefix);
     }
   }
-  /** Vrai si un chemin s'écrit en politique « cache » (préfixe déclaré ainsi). */
-  const isCache = path => caches.some(c => under(path, c));
+  // documents écrits sans trigramme (pilot/ANON/…) : gardés sur l'appareil, jamais envoyés ; le cadre les reprend sous
+  // pilot/<TRI>/ dès que le trigramme est posé (frame/SPEC.md § 2)
+  const LOCAL_ONLY = ['pilot/ANON/'];
+  const localOnly = path => LOCAL_ONLY.some(p => under(path, p));
+  /** Vrai si un chemin s'écrit en politique « cache » (préfixe déclaré ainsi, ou documents sans trigramme). */
+  const isCache = path => localOnly(path) || caches.some(c => under(path, c));
 
   // ---------------------------------------------------------------- réglage
   let cfg = {
@@ -497,7 +501,16 @@
   async function remove(path, opts = {}) {
     if (isCache(path) || (await idb('docs', 'get', path))?.policy === 'cache') {
       await idb('docs', 'delete', path);
+      // un document sans trigramme déjà présent dans le dépôt (data/ d'avant cette règle) : sa suppression part, elle
+      if (localOnly(path) && (await getMeta('remote'))?.tree?.[path]) await idb('pending', 'put', {
+        path,
+        text: null,
+        at: new Date().toISOString(),
+        author: cfg.identity.trigram || '',
+        module: opts.module || ''
+      });
       changed([path]);
+      emitStatus();
       return;
     }
     await idb('pending', 'put', {
@@ -676,6 +689,7 @@
       };
     try {
       if (!T) throw new Error('no transport');
+      await holdLocal();
       // un seul utilisateur, un seul appareil : la file devient le cache, rien n'est envoyé
       if (T.kind === 'local') {
         const pend = await idb('pending', 'getAll');
@@ -685,8 +699,10 @@
         await pullRefs(result);
         return done(result);
       }
+      // sans trigramme, rien ne part : ni lot (ses écritures attendent sur l'appareil), ni échange au nom de personne
+      const who = !!cfg.identity.trigram;
       // transport qui échange lui-même avec un dépôt distant (lanceur : passage git du poste) : avant, pour recevoir
-      if (reason !== 'write') await exchange(T, result);
+      if (reason !== 'write' && who) await exchange(T, result);
       // premier passage avec un dépôt après un usage sans échange : les copies écrites ici sont reprises
       const mode = await getMeta('mode');
       if (mode?.kind === 'local' || (!mode && !(await getMeta('remote')))) await adoptLocal(T, await T.head(), result);
@@ -696,8 +712,9 @@
         result.pulled.push(...pulled.paths);
         result.conflicts += pulled.conflicts;
         const pend = await idb('pending', 'getAll');
-        if (!pend.length) {
+        if (!pend.length || !who) {
           result.ok = true;
+          result.held = who ? 0 : pend.length;
           return done(result);
         }
         try {
@@ -710,7 +727,7 @@
           result.pushed = pend.length;
           result.ok = true;
           // puis après, pour envoyer le lot (ce qu'il a reçu en plus est tiré au passage suivant)
-          if (reason !== 'write') await exchange(T, result);
+          if (reason !== 'write' && who) await exchange(T, result);
           return done(result);
         } catch (e) {
           if (!e?.conflict) throw e; // le dépôt a bougé pendant l'envoi : tirer et repousser
@@ -721,6 +738,25 @@
       result.error = e?.offline ? 'offline' : e?.message || String(e);
       return done(result);
     }
+  }
+  /** Écritures en file sous un préfixe gardé sur l'appareil (pilot/ANON/, mises en file avant cette règle) : rangées dans
+   *  le cache de l'appareil ; une suppression reste en file (elle retire du dépôt un fichier qui y était déjà). */
+  async function holdLocal() {
+    const moved = [];
+    for (const p of await idb('pending', 'getAll')) {
+      if (!localOnly(p.path) || p.text === null) continue;
+      await idb('docs', 'put', {
+        path: p.path,
+        text: p.text,
+        base: p.text,
+        rev: '',
+        at: Date.now(),
+        policy: 'cache'
+      });
+      await idb('pending', 'delete', p.path);
+      moved.push(p.path);
+    }
+    if (moved.length) emitStatus();
   }
   /** Reprise des copies écrites sans échange (transport local) au premier passage avec un dépôt : une copie absente du
    *  dépôt devient une écriture en attente ; présente des deux côtés et différente, fusion habituelle sans base commune

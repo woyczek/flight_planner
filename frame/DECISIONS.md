@@ -644,3 +644,35 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     - The device in Chrome: pairing, launcher transport, X-Plane position, Diagnostic, as in lot 18.
   - `frame/lib/clipboard.js` (fuel, 423840c4f) is in the table of § 3.9. The frame does not load it itself, so it is
     not in the service worker's shell; modules declare it in `meta.files`.
+- **23 Oct 2026 — Lot 19, nothing leaves the device without a trigram** (seen in the user's `data/`: an untracked
+  `pilot/ANON/`, written while the identity had no trigram):
+  - **Where**: in the data layer and the frame, not in each module. Fuel, maps, report and flightlog keep writing
+    `pilot/${trigram || 'ANON'}/…`; the layer gives `pilot/ANON/` the `cache` policy, so no module changes.
+  - **Without a trigram, a pass sends nothing at all**, not only `pilot/ANON/`. A commit needs an author, so the
+    git exchange is skipped too. The launcher refuses a batch without a valid author, as asked.
+    - Rejected: sending the other prefixes anonymously. That is what wrote commits "? : …" and the ANON folder.
+  - **Old queue**: an entry under `pilot/ANON/` queued before the rule is moved into the cache at the next pass,
+    instead of leaving.
+  - **Taking over** (frame, `adoptAnon`):
+    - the moment the trigram is set, then after each successful pass (once per pass, never at every write, so the
+      GitHub transport does not read the tree each time);
+    - copy to `pilot/<TRI>/`, or the newer one wins and the other goes to the conflicts;
+    - then the ANON copy is removed, and its deletion is sent if the repository held it, so the untracked folder
+      empties itself;
+    - one notification with the count.
+  - **Invitation**: the "Trigram?" button and one notification per device. The settings' Identity card already
+    warns when "several users" is ticked.
+  - **Tests** (`t_l19`, launcher transport, 21 / 21, twice):
+    - without a trigram: the button and its notification, not twice;
+    - writes under `pilot/ANON/` stay on the device (`cache` policy, nothing in `data/pilot/ANON/`), and an old queued
+      entry is moved there;
+    - a `cr/` write is held (pending 1, not in `data/`);
+    - trigram set:
+      - the button hides and a "3 documents taken over" notification shows;
+      - the device copy, the old queue entry and a `pilot/ANON/` already in `data/` are taken over under `TST`;
+      - the newer `TST` document is kept, the other goes to the conflicts;
+      - `data/pilot/ANON/` is emptied, and the held `cr/` write is sent;
+    - launcher: an empty author, `ANON`, and a write under `pilot/ANON/` are refused; a deletion there is accepted;
+    - no JavaScript error.
+    - Regressions: `frame/store/test/` 90 / 90; the frame application bench, whose first GitHub commit no longer
+      carries `pilot/ANON/hello.json`, only `pilot/TST/hello.json`; the simulator test.

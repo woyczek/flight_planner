@@ -1746,6 +1746,9 @@ def frame_batch(a):
     author = str(a.get('author') or '').upper()
     if len(changes) > BATCH_MAX:
         return {'ok': False, 'message': f'lot trop grand : {len(changes)} changements ({BATCH_MAX} au plus)'}, 400
+    # un lot a un auteur : sans trigramme, l'appli garde ses écritures sur l'appareil (frame/SPEC.md § 2)
+    if not re.fullmatch(r'[A-Z0-9]{2,5}', author) or author == 'ANON':
+        return {'ok': False, 'message': 'trigramme de l’auteur manquant : rien n’est écrit sans lui'}, 400
     with FRAME_LOCK:
         _tree_memo['v'] = None
         head, _ = frame_tree()
@@ -1759,6 +1762,8 @@ def frame_batch(a):
             if not full or rel.startswith('.') or '/.' in rel or FRAME_SKIP.search(rel):
                 return {'ok': False, 'message': f'chemin refusé : {str(c.get("path"))[:200]}'}, 400
             text = c.get('text')
+            if text is not None and rel.startswith('pilot/ANON/'):
+                return {'ok': False, 'message': f'{rel} : document sans trigramme, gardé sur l’appareil'}, 400
             if text is not None and (not isinstance(text, str) or not rel.lower().endswith(DATA_WRITE_EXT)):
                 return {'ok': False, 'message': f'type de fichier refusé : {rel} ({", ".join(DATA_WRITE_EXT)})'}, 400
             fulls[rel] = full

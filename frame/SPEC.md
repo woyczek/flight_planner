@@ -99,6 +99,15 @@ exchange happens in batches, explicitly or periodically, through a transport the
   - Written straight into the cache, never queued, never sent.
   - Untouched by pulls, listed with the other paths, removed locally.
   - A module keeps no IndexedDB of its own: it uses this policy.
+- **Without a trigram, nothing leaves the device**:
+  - `pilot/ANON/…` (what modules write when the identity has no trigram) always takes the `cache` policy, whatever
+    the module declares.
+  - An entry queued under it before this rule is moved into the cache at the next pass.
+  - Removing such a file that the repository already holds still queues its deletion.
+  - With no trigram, a pass pulls but sends nothing: neither the batch (`result.held` gives the writes kept back)
+    nor the launcher's git exchange, since a commit needs an author. The writes wait on the device.
+  - The launcher refuses a batch without a valid author (`[A-Z0-9]{2,5}`, never `ANON`) and any write under
+    `pilot/ANON/`; a deletion there is accepted.
 
 ### 2.5 Merging a file changed on both sides
 
@@ -439,6 +448,16 @@ used alone:
   - `device/identity.json`: `trigram`, `ivao`, `vatsim`, `simbrief`.
   - The settings screen (`frame/settings/`) writes them, with `device/settings.json` for its own answers.
   - They cannot live in the shared repository: they decide how the repository is reached.
+- **No trigram yet**:
+  - A header button "Trigram?" opens Settings, with the tooltip "until then, your documents stay on this device and
+    nothing is sent". A notification says the same once per device (`localStorage` `sogFrame:trigramAsked`).
+  - Once the trigram is set (on loading the device, and after each successful pass, which may have read a
+    `pilot/ANON/` already in the repository), every document of `pilot/ANON/` moves to `pilot/<TRI>/`:
+    - absent there: copied;
+    - present on both sides: the newer `updated_at` wins and the other is kept in the conflicts (`side: 'anon'`);
+      identical: nothing;
+    - then the `pilot/ANON/` document is removed, which sends its deletion when the repository held it;
+    - a notification says how many were taken over.
 - **Transport**:
   - **On a page served by a launcher** (`__setup/status`), its `data/` is the device's storage. The transport is the
     launcher whatever the usages: reads and writes go to `data/`, one local commit per batch.
