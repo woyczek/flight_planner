@@ -24,6 +24,10 @@ the pilot's entry page. Fixes: launcher start, confirmation windows, GitHub mode
 waypoints, and the rest listed below.
 ### V3
 
+- **Settings: the right GitHub token for the repository's owner** (`frame/settings/config.js`, `join.js`,
+  `settings.js`) — the export records whether the repository belongs to a user or an organisation; a user's repository
+  gets a classic `repo` token (prefilled link, the account-wide reach said plainly), an organisation's the fine-grained
+  token; "Test" accepts both.
 - **Map: VFR points, format 2** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — a route reviewed by hand follows
   its interpreted track (with its manual vertices), a one-way route gets an arrow, the card gives the analysis status
   and notes, and each route its name, runways and conditions; no line is drawn to the aerodrome's centre any more.
