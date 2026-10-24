@@ -226,6 +226,15 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       option "Draw the flight zone's limit" (default off) on the map's threshold page (`#maps?tune=1`), saved with the
       thresholds in `airline/map_profiles.json`, passed by both modules to `weather_map.js` (`edge` option), draws a
       clean labelled line at the grid's limit.
+  13. **The drawing fits the sheet; no title over a drawing** (user, 24 Oct, 20:10, iPhone shots of the cut with its
+      x axis off screen: "les abscisses invisibles" and "Toujours la ligne « météo fl160 ». On le sait, c'est affiché
+      juste au-dessous : FL, distance, etc. Info redondante donc, qui prend de l'espace vertical"): (a) the vertical
+      profile and the weather cut are drawn **at the body's exact height**, the x axis (distances, waypoints) always
+      visible without scrolling: no readability floor above the body, the chart drops level labels and ticks before it
+      drops its axis; scrolling is for lists, not for drawings; (b) when the content is a drawing, the grip row carries
+      **no title**: the handle and the chips only (Profil · Météo, ◀ ▶ when they apply, ✕), on a compact head
+      (`.f-sheet-head-bare`, `--f-sheet-head-bare` = 28 px, frame primitive); a title stays for contents that do not
+      describe themselves (Couches, Détails, Vol, lists). Atmosphere keeps its slider row under the bare head.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
