@@ -125,6 +125,17 @@ const TX = {
     'Luftfahrtdatenbank nicht veröffentlicht: die Karte zeigt nur die Route.',
     'Base aeronáutica no publicada: el mapa solo muestra la ruta.'
   ],
+  // trois états de la base, jamais confondus : en cours de chargement, accès aux données non réglé sur cet appareil (elle n'est
+  // pas accessible d'ici), non publiée (l'accès marche, rien n'est publié : noBase)
+  loading: ['Base aéronautique en cours de chargement{z}…', 'Aeronautical database loading{z}…',
+    'Luftfahrtdatenbank wird geladen{z}…', 'Base aeronáutica cargándose{z}…'
+  ],
+  noAccess: ['Accès aux données non réglé sur cet appareil : la carte ne montre que la route.',
+    'Data access not set on this device: the map shows the route only.',
+    'Datenzugriff auf diesem Gerät nicht eingerichtet: die Karte zeigt nur die Route.',
+    'Acceso a los datos no configurado en este dispositivo: el mapa solo muestra la ruta.'
+  ],
+  toAccess: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
   noZone: ['Hors ligne, sans les données de cette zone : gardez-la dans Réglages › Données hors ligne.',
     'Offline, without this zone’s data: keep it in Settings › Offline data.',
     'Offline, ohne die Daten dieser Zone: unter Einstellungen › Offline-Daten behalten.',
@@ -557,9 +568,21 @@ async function readFlight() {
     pts = pointsOf(f);
   let altn = null;
   if (f?.route?.altn && pts.length && S.ctx.aerodb) {
-    const c = await S.ctx.aerodb.coords(f.route.altn).catch(() => null);
+    // le dégagement vient de la base : la carte ne l'attend pas (base en cours de chargement = carte vide et pas de note) ;
+    // la position trouvée est gardée, puis le vol est redessiné une fois
+    const id = f.route.altn,
+      known = S.altnPos ||= new Map();
+    if (!known.has(id)) {
+      known.set(id, null);
+      S.ctx.aerodb.coords(id).catch(() => null).then(c => {
+        if (!S || !c) return;
+        known.set(id, c);
+        applyFlight(true);
+      });
+    }
+    const c = known.get(id);
     if (c) altn = {
-      id: f.route.altn,
+      id,
       lat: c.lat,
       // même côté de la ligne de changement de date que l'arrivée (le dégagement est dessiné à la suite de la route)
       lon: nearLon(c.lon, pts[pts.length - 1].lon)
@@ -3058,12 +3081,28 @@ async function status() {
     `<p>${esc(tt(TX.noFlight))} <button type="button" class="f-btn" data-go="fuel">${esc(tt(TX.toFuel))}</button></p>`);
   if (!S) return;
   if (!S.missionError && S.route.points.length) {
-    const st = await S.ctx.aerodb?.status().catch(() => null);
+    const a = S.ctx.aerodb,
+      read = a?.status().catch(() => null); // lance la lecture de la liste publiée (attendue plus bas)
+    const was = await a?.state?.().catch(() => null);
     if (!S) return;
-    if (!st?.published || !Object.keys(st.published).length) {
-      // la ligne d'état a disparu : cette note est le seul chemin vers le réglage de la base
-      warn.push(`<p>${esc(tt(TX.noBase))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
-      noteOnce('noBase', tt(TX.noBase));
+    if (was?.state === 'loading') { // la lecture est en cours : dit tel quel, la note change à la fin de la lecture
+      S.warnHtml = [...warn, `<p class="f-muted">${esc(tt(TX.loading, { z: was.loading?.length ? ` (${was.loading.join(', ')})` : '' }))}</p>`].join('');
+      writeNotes();
+    }
+    const st = await read;
+    const now = await a?.state?.().catch(() => null);
+    if (!S) return;
+    if (now?.state === 'loading') warn.push(
+      `<p class="f-muted">${esc(tt(TX.loading, { z: now.loading?.length ? ` (${now.loading.join(', ')})` : '' }))}</p>`);
+    else if (!st?.published || !Object.keys(st.published).length) {
+      // la ligne d'état a disparu : cette note est le seul chemin vers le réglage de la base ; la cause d'abord : accès aux
+      // données non réglé ici (rien à lire), hors ligne, sinon l'accès marche et la base n'est pas publiée
+      const noAccess = now?.state === 'noaccess',
+        offline = now?.state === 'offline',
+        tx = noAccess ? TX.noAccess : offline ? TX.noZone : TX.noBase,
+        go = noAccess ? TX.toAccess : TX.toSettings;
+      warn.push(`<p>${esc(tt(tx))} <button type="button" class="f-btn" data-go="settings">${esc(tt(go))}</button></p>`);
+      if (!offline) noteOnce(noAccess ? 'noAccess' : 'noBase', tt(tx));
     } else if (S.data?.empty && navigator.onLine === false) warn.push(
       `<p>${esc(tt(TX.noZone))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
   }
@@ -4746,7 +4785,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
     if (!S) return;
     S.data = null;
     schedule();
-  }));
+  }), ctx.aerodb.on('state', () => S && status())); // lecture de la base commencée ou finie : la note change
   const ro = new ResizeObserver(() => {
     mapSize();
     schedule();

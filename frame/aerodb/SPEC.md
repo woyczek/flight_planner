@@ -135,6 +135,7 @@ the suite root) and has no listing.
 | Call | Answer |
 |---|---|
 | `status()` | `{ published: { zone: cycle } \| null, source: 'list' \| 'index' \| 'none', loaded: { zone: cycle }, missing: [zones], cycle }` (a zone read in the whole format shows "(whole)") |
+| `state()` | `{ state, asked, zones?, loading? }` without reading anything: `loading` (the list of published zones or a zone is being read; `loading`: the zones), `ready`, `noaccess` (nothing to read the base with on this device: `create({ access })` says so), `offline`, `unpublished` (the access works, nothing published), `idle` (never asked). A module words the three that mean a missing base differently: loading, access not set, not published. `on('state', fn)` follows it; `refresh()` reads the list again (access changed, network back); an empty list is also read again after 30 s, at the next question |
 | `ready(q)` | zones loaded for the area of `q` |
 | `on('change', fn)` | `fn({ zone, cycle } \| { changed } \| { aircraft })`; returns the unsubscribe function |
 | `airspaces(q)` | airspaces touching the area; `q.types` keeps some types |

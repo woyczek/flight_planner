@@ -93,7 +93,7 @@ JOURNEYS = {
         ],
         'paths': ['frame/app.js', 'frame/settings/**', 'frame/design/**', 'frame/help/**', 'frame/manifest.webmanifest',
                   'frame/sw.js', 'frame/index.html'],
-        'cases': ['A2', 'A3', 'A8', 'A9', 'A10', 'A11', 'A12', 'H1–H3'],
+        'cases': ['A2', 'A3', 'A8', 'A9', 'A10', 'A11', 'A12', 'A15', 'H1–H3'],
         'e2e': 'J5',
     },
     'P6': {

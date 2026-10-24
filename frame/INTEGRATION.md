@@ -356,6 +356,10 @@ prefix in its `meta.writes` with `policy: 'cache'`.
 - **Launcher line of the "i" pop-up**: when the transport is the launcher, the pop-up has a line "Launcher: <host> · <sync
   state>" (four languages) after the data line, a touch opens Settings; it is what shows the host on a phone, whose header no
   longer carries it. Nothing for a module to publish.
+- **Base line of the "i" pop-up** (read from `ctx.aerodb.state()`, not from a module's record): once the base has been asked for,
+  one line says its state when it is not ready: "Aeronautical database loading…" (no button), "Data access not set on this device"
+  (touch: Settings) or "Aeronautical database not published in the data repository" (touch: Settings). The line follows
+  aerodb's `state` event (a read starts or ends, the access changes); nothing is polled. It never turns the "i" amber.
 - The writer republishes the whole file when its list changes (`updated_at`); an empty `flights` when nothing is left.
 
 ## 11. Sheet primitive (`frame/lib/sheet.js`)

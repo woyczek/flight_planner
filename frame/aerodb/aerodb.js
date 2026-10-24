@@ -16,7 +16,8 @@
   // le frame, par AeroDB.fetchReader() (lanceur : fichiers servis ; mode GitHub : GitHubData).
   // API : window.AeroDB = { create({ reader, zones, now }) → service, fetchReader({ root }), airacCycles(n, date), literal,
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
-  // Service : status(), ready(q), on('change', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
+  // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
+  //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
   //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), cities(q),
   //   find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
@@ -191,16 +192,29 @@
     reader = fetchReader(),
     zones = window.AERODB_ZONES || {},
     now = () => Date.now(),
-    lnmperf: lnmAuto = true // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
+    lnmperf: lnmAuto = true, // fiches .lnmperf suivies d'elles-mêmes sur un poste au dossier réglé (les essais l'éteignent)
+    access = () =>
+    true // l'appareil a-t-il de quoi lire la base (lanceur, dépôt réglé) ? Sans cela, « non réglé » et non « non publiée »
   } = {}) {
     const loaded = new Map(), // zone → { id, cycle, split, base | data, parts, reads, idx } ; chargée une fois
       loading = new Map(), // zone → promesse de chargement
       missing = new Set(), // zones sans fichier publié (sondées en vain)
-      listeners = new Set();
-    let listedP = null, // promesse de { zones: { zone: { cycles, split: Set, whole: Set, prefixes } }, source }
+      listeners = new Set(),
+      stateFns = new Set(); // écouteurs de l'état de la base (on('state')) : lecture commencée ou finie, base rafraîchie
+    let listing = false, // la liste des zones publiées est en cours de lecture
+      asked = false, // la base a été demandée au moins une fois
+      emptyAt = 0, // quand une liste vide a été reçue (0 : en cours, ou non vide) : redemandée passé EMPTY_RETRY
+      listedP = null, // promesse de { zones: { zone: { cycles, split: Set, whole: Set, prefixes } }, source }
       majorP = null, // grandes villes du monde (format découpé)
       worldP = null, // villes du monde entier (ancien format)
       aircraftP = null;
+    const emitState = () => stateFns.forEach(fn => {
+      try {
+        fn();
+      } catch {
+        /* écouteur en échec : les autres sont appelés */
+      }
+    });
     const emit = what => listeners.forEach(fn => {
       try {
         fn(what);
@@ -219,7 +233,26 @@
 
     // ---- zones publiées : liste du lecteur (arbre du dépôt), sinon manifeste sia/base/index.json, sinon inconnues
     function published() {
-      return listedP ||= (async () => {
+      // une liste vide n'est pas une réponse sûre (réseau pas encore prêt au lancement, accès réglé depuis) : redemandée
+      // à la question suivante passé EMPTY_RETRY, jamais en boucle ni par minuteur
+      if (listedP && emptyAt && now() - emptyAt > EMPTY_RETRY) listedP = null;
+      if (listedP) return listedP;
+      asked = true;
+      emptyAt = 0;
+      listing = true;
+      const mine = listedP = listZones().then(r => {
+        if (listedP === mine && !Object.keys(r.zones || {}).length) emptyAt = now();
+        return r;
+      }).finally(() => {
+        if (listedP === mine) listing = false;
+        emitState();
+      });
+      emitState(); // après listedP : un écouteur qui questionne aussitôt trouve la lecture en cours
+      return mine;
+    }
+
+    function listZones() {
+      return (async () => {
         const out = {},
           zone = id => out[id] ||= {
             cycles: [],
@@ -261,6 +294,27 @@
           source: paths ? 'list' : 'index'
         };
       })();
+    }
+    /** La base est-elle prête, en cours de lecture, sans accès ou non publiée ? 'loading' (liste ou zone en cours de
+     *  lecture : rien n'est encore su), 'ready' (des zones publiées, lues ou gardées ici), 'noaccess' (rien pour la lire sur
+     *  cet appareil : ni lanceur ni dépôt réglé), 'offline' (rien de publié connu et pas de réseau), 'unpublished' (l'accès
+     *  marche, rien n'est publié), 'idle' (jamais demandée). Ne lit rien. */
+    async function baseState() {
+      if (listing || loading.size) return {
+        state: 'loading',
+        asked,
+        loading: [...loading.keys()]
+      };
+      if (!asked || !listedP) return {
+        state: access() ? 'idle' : 'noaccess',
+        asked
+      };
+      const n = Object.keys((await listedP).zones || {}).length;
+      return {
+        state: n ? 'ready' : !access() ? 'noaccess' : navigator.onLine === false ? 'offline' : 'unpublished',
+        asked,
+        zones: n
+      };
     }
     /** Cycle à lire parmi ceux publiés : le plus récent déjà en vigueur, sinon le plus ancien (publié d'avance). */
     const pickCycle = list => {
@@ -360,8 +414,12 @@
         // gardée) : redemandée à la prochaine question
         if (!e) missing.add(id);
         return null;
-      })().finally(() => loading.delete(id));
+      })().finally(() => {
+        loading.delete(id);
+        emitState();
+      });
       loading.set(id, p);
+      emitState();
       return p;
     }
     /** Zones qui couvrent l'emprise b (ouvertes à la demande). */
@@ -741,7 +799,22 @@
       }
     };
 
+    const EMPTY_RETRY = 30e3;
     const api = {
+      /** État de la base (sans rien lire), voir baseState : { state, asked, zones, loading }. */
+      state: baseState,
+      /** L'accès ou la source a changé (dépôt réglé, accès coupé, réseau revenu) : la liste des zones publiées est relue
+       *  à la prochaine question ; les zones déjà ouvertes restent. */
+      refresh() {
+        listedP = null;
+        listing = false;
+        emptyAt = 0;
+        missing.clear();
+        emitState();
+        emit({
+          refreshed: true
+        });
+      },
       /** État : zones publiées et leur cycle (null : inconnues), source de la liste (list, index, none), zones ouvertes et
        *  leur format, zones sans fichier, cycle le plus récent ouvert. */
       async status() {
@@ -761,9 +834,10 @@
       },
       /** Écoute des changements (zone ouverte, fichier publié changé) ; rend la fonction de désabonnement. */
       on(event, fn) {
-        if (event !== 'change') return () => {};
-        listeners.add(fn);
-        return () => listeners.delete(fn);
+        const set = event === 'change' ? listeners : event === 'state' ? stateFns : null;
+        if (!set) return () => {};
+        set.add(fn);
+        return () => set.delete(fn);
       },
       /** Espaces qui touchent l'emprise de q ; q.types : types gardés (« R », « D », « TMA »…). */
       async airspaces(q = {}) {

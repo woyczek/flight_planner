@@ -6,11 +6,14 @@ Rules covered
   * bottom bar: five entries, 44 px, translated (A4); a fixed module fills the view between header and bar (A5);
     a normal module scrolls under a sticky header (A6);
   * group popover on the active "Preparer" tab (A7); "i" pop-up and its last row (A8); "i" badge colours (A9);
-  * night tone (A10), help screen (A11), settings screen (A12), the Cupertino bar navigates (A13).
+  * night tone (A10), help screen (A11), settings screen (A12), the Cupertino bar navigates (A13);
+  * the three states of the aeronautical base: loading, access not set, not published (A15, with D5 / D5b of area D).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A15.
 """
-from lib import Fail, Skip, case, forget
+import json
+
+from lib import Fail, Skip, case, forget, norm, tx
 
 MODULES = ('fuel', 'maps', 'atmosphere', 'report', 'flightlog')
 TABS = [  # APP.tabs of frame/app.js: id, label in fr en de es, module the tab opens first
@@ -264,3 +267,98 @@ def a13(c):
         after = c.hash()
         seen.append(after)
         c.ok(after != before, f'tapping tab "{tab_id}" in cupertino left the hash at {before}', 'the hash changes to the tab\'s screen')
+
+
+FRAME = 'frame/app.js'
+MAPS_M = 'modules/maps/module.js'
+REPO = 'sog/data'
+GITHUB_SET = ("try { localStorage.setItem('githubData:frame', JSON.stringify({ repo: '%s', branch: 'main', token: 'ghp_test' })) } catch (e) {}" % REPO)
+
+
+def fake_github(context, docs):
+    """A minimal GitHub API for the repository `sog/data` serving `docs` (lib.aero_docs rows) as files of one commit; answers
+    are held until `release()` is called (a slow network at the first launch), then served. Returns (release, waiting)."""
+    import re
+    files = {path: json.dumps(val) for path, val, _ in docs}
+    sha = {p: f'{i:040x}' for i, p in enumerate(files, 1)}
+    text = {sha[p]: t for p, t in files.items()}
+    state = {'hold': True, 'waiting': []}
+
+    def serve(route):
+        u = route.request.url.split('?')[0]
+        ok = lambda body, ct='application/json': route.fulfill(status=200, content_type=ct, body=body)
+        if u.endswith('/git/ref/heads/main'):
+            return ok(json.dumps({'object': {'sha': 'c' * 40}}))
+        if '/git/commits/' in u:
+            return ok(json.dumps({'tree': {'sha': 't' * 40}}))
+        if '/git/trees/' in u:
+            return ok(json.dumps({'truncated': False, 'tree': [{'path': p, 'type': 'blob', 'sha': sha[p]} for p in files]}))
+        m = re.search(r'/git/blobs/(\w+)$', u)
+        if m and m.group(1) in text:
+            return ok(text[m.group(1)], 'text/plain')
+        return route.fulfill(status=404, content_type='application/json', body='{"message":"Not Found"}')
+
+    def handler(route):
+        if state['hold']:
+            state['waiting'].append(route)
+        else:
+            serve(route)
+
+    def release():
+        state['hold'] = False
+        for r in state.pop('waiting'):
+            serve(r)
+        state['waiting'] = []
+
+    context.route(re.compile(r'^https://api\.github\.com/repos/%s/' % REPO), handler)
+    return release, state
+
+
+def base_notes(c):
+    """Texts of the sheet notes of the map (`.mp-notes`), spaces collapsed."""
+    return [norm(t) for t in c.js("[...document.querySelectorAll('.mp-notes > *')].map(e => e.textContent)")]
+
+
+def info_row(c, k):
+    """Text of the row `k` of the "i" pop-up, or None (the pop-up is opened, then closed)."""
+    c.tap('#fInfo')
+    c.until("!!document.querySelector('.f-info-modal .f-info-row')", what='the "i" pop-up opens')
+    row = c.js("(k) => { const l = document.querySelector('.f-info-list li[data-k=\"' + k + '\"]'); return l ? l.querySelector('.f-info-txt > span').textContent : null }", k)
+    c.key('Escape')
+    return None if row is None else norm(row)
+
+
+@case('A15', 'Aerodb loading state', 'A', screens=False, designs=('standard',), night=False, langs4=True,
+      rule='P5: three distinct states of the aeronautical base (frame/settings/DECISIONS.md, 24 Oct 2026, relais cloud)')
+def a15(c):
+    from lib import aero_docs
+    pre = lambda key: norm(tx(MAPS_M, key, c.lang)).split('{z}')[0]
+    c.step('P5', 1, 'access set, base not cached, the read is slow')
+    c.context.add_init_script(GITHUB_SET)
+    release, _ = fake_github(c.context, aero_docs())
+    c.open('maps', flight=True, wait=False)           # trigram ABC + a planned flight; nothing of the base in the cache
+    c.until("[...document.querySelectorAll('.mp-notes > *')].length > 0", what='the sheet has a note while the base is read')
+    notes = base_notes(c)
+    c.ok(any(n.startswith(pre('loading')) for n in notes), f'notes {notes!r}', 'one says the base is loading')
+    c.ok(not any(n.startswith(norm(tx(MAPS_M, 'noBase', c.lang))) or n.startswith(norm(tx(MAPS_M, 'noAccess', c.lang))) for n in notes),
+         f'notes {notes!r}', 'none says "not published" or "access not set" while the read is going on')
+    c.eq(info_row(c, 'base'), norm(tx(FRAME, 'loading', c.lang, after='base: {')), 'the "i" pop-up says the same, in the language of the run', what='"i" row')
+    c.ok(norm(tx(MAPS_M, 'noBase', c.lang)) not in [norm(n) for n in c.note_log()], 'a notification already says "not published"', 'no notification before the read ends')
+    c.step('P5', 2, 'the read ends: the note is gone')
+    release()
+    c.until("![...document.querySelectorAll('.mp-notes > *')].some(e => /(non publi|not published|nicht ver|no publicada|non r.gl|not set|nicht eingerichtet|no configurado|cours de charg|loading|wird geladen|carg.ndose)/i.test(e.textContent))",
+            timeout=10000, what='the loading note is replaced by nothing (the base is there)')
+    c.eq(info_row(c, 'base'), None, 'a line for the base is still in the "i" pop-up', what='"i" row after the read')
+    c.step('P5', 3, 'the access is cut and the base not kept: it says the access is not set')
+    c.page.evaluate("localStorage.removeItem('githubData:frame')")
+    forget(c.page, [p for p, _, _ in aero_docs()], base=c.base)
+    c.context.add_init_script("try { localStorage.removeItem('githubData:frame') } catch (e) {}")
+    c.page.goto(f'{c.base}/frame/index.html#maps', wait_until='load')
+    c.ready('maps', sheet=True)
+    c.wait(1500)
+    notes = base_notes(c)
+    want = norm(tx(MAPS_M, 'noAccess', c.lang))
+    c.ok(any(n.startswith(want) for n in notes), f'notes {notes!r}', f'one says "{want}"')
+    btn = c.js("[...document.querySelectorAll('.mp-notes [data-go=\"settings\"]')].map(b => b.textContent)")
+    c.eq([norm(b) for b in btn], [norm(tx(MAPS_M, 'toAccess', c.lang))], 'the note carries one button to Settings', what='buttons')
+    c.eq(info_row(c, 'base'), norm(tx(FRAME, 'noaccess', c.lang, after='base: {')), 'the "i" pop-up says it too', what='"i" row')

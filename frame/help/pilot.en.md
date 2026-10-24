@@ -568,7 +568,7 @@ shows the remote repository of `data/` (see “A git repository for data/”).
 for the first time, for instance — has neither the aeronautical base (airspaces, airfields, beacons) nor the aircraft
 base: “Offline data” says so. Two ways in: set the access to the data repository, even without ticking an exchange (it
 then only reads the bases); or, on a workstation with the launcher, publish the bases to the repository (V2: Settings ›
-Maintenance › Aeronautical data and Aircraft types), then synchronise.
+Maintenance › Aeronautical data and Aircraft types), then synchronise. Three distinct states when the base is missing: “Aeronautical database loading…” (the read is not over: wait), “Data access not set on this device” (set the access above; an app added to the home screen has its own storage, nothing you set in Safari is there) and “Aeronautical database not published” (the access works, nothing is published in the repository).
 
 **Synchronisation.** With an exchange ticked, the “Synchronisation” card gives the last success, the pending writes and
 the network; “Synchronise now” sends and receives at once. Otherwise it runs by itself at start, every 10 minutes online

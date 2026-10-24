@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aeronautical database: loading, access not set and not published are three different messages** (`frame/aerodb/aerodb.js`, `frame/app.js`,
+  `modules/maps/module.js`, manual note in four languages, `tests/v3/` A15 / D5 / D5b; settings DECISIONS, aerodb INTEGRATION / DECISIONS, frame
+  INTEGRATION § 10) — on a phone (seen in the app added to the iOS home screen) the Map said "Aeronautical database not published" while the base
+  was still coming: an empty list read before the network was ready stayed for the page's life, and the alternate's lookup kept the whole map
+  blank. aerodb now says `loading` / `noaccess` / `unpublished` (`aerodb.state()`, `on('state')`, `refresh()`); the Map's note reads "Aeronautical
+  database loading…" (with the zones being read), "Data access not set on this device" with a Settings button, or "not published" only when the
+  access works; the "i" pop-up has one line for the same states; an empty list is read again after 30 s and when the access or the network
+  changes; the alternate no longer blocks the route. Serving the base from the public pages is noted for decision, nothing changed.
+
 - **Fuel: the flight date belongs to the shared flight** (`modules/fuel/module.js`, `frame/lib/current_flight.js`,
   `modules/maps/module.js` one condition; fuel SPEC § 9–12 / INTEGRATION § 3 / DECISIONS, maps INTEGRATION / DECISIONS, the manual in
   four languages) — the "Flight date" field (ex "Flight date (optional: TAF)") writes `current_flight.planned_at` (ISO 8601 UTC,

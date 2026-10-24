@@ -55,7 +55,7 @@ const aerodb = AeroDB.create({ reader: FrameData.adapter(AeroDB.declaration()) }
 reference zones: the listing comes from the frame's tree, only the files asked for are read, the whole world is
 identical, and a republished file gives one `change` event and a fresh read of its zone. With the **local**
 transport (single user, no exchange), the reference files come from the launcher serving the page, otherwise from the
-configured GitHub repository. On the public website with neither, aerodb answers empty.
+configured GitHub repository. On the public website with neither, aerodb answers empty. The three states of the base are told apart by `aerodb.state()` (no read): `loading` (the list of published zones or a zone is being read), `noaccess` (no launcher and no repository + token set here: the frame gives `AeroDB.create({ access })`), `unpublished` (the access works, nothing is published), plus `ready`, `offline` and `idle` (never asked). `on('state', fn)` follows them (a read starts or ends, `refresh()`), and `refresh()` makes the list be read again (the frame calls it when the access changes or the network comes back). An empty list is not kept for more than 30 s: it is read again at the next question, so an answer given before the network was ready (first launch of a home-screen app) does not stay for the page's life.
 
 Scripts, in this order: `frame/aerodb/zones.js`, `frame/aerodb/aircraft.js`, `frame/aerodb/aerodb.js`; aerodb loads
 `registry.js` and `sheets.js` itself at the first `aircraft()` (the frame's service worker keeps them).
