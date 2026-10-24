@@ -235,7 +235,9 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 
 An ES module for the frame (`meta`, `mount(el, ctx)`, `unmount()`); it loads the pure files above once, with `import()`.
 Styles are scoped to `[data-module="fuel"]` and built on the frame's tokens and classes; no global sheet. Two screens
-inside the module, switched by two buttons at the top. **The module always opens on the Plan** (24 Oct 2026): one comes
+inside the module, switched by two buttons at the top: **Quote** (fr "Devis", de "Berechnung", es "Cálculo"; the Plan
+screen below; renamed on 24 Oct 2026, it was "Préparer / Plan / Planen / Preparar", a name the frame's bottom tab now
+carries) and **Sheets**. **The module always opens on the Plan screen** (24 Oct 2026): one comes
 here to change the flight plan or the fuel quote, rarely to edit an aircraft; the Sheets screen opens only by its
 button or by the address `#fuel?view=sheets` (`ctx.query.view`), and the last screen is neither kept nor read at
 mount. Inside a mount, the two buttons switch as before.

@@ -12,7 +12,7 @@ recomputed at each change: correct the route, and the weather, the quote and the
 The result (block fuel, trip fuel, time, top of descent) stays visible at the bottom of the screen at every step, with
 where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060”, “wind typed”). On a phone this bar takes three lines: the context
 (“Block · FL060→090→110→070 · wind ARPEGE FL060”, in full when touched), the block fuel, then three tiles “Trip”,
-“Time” and “TOD” (top of descent). The screen always opens on the preparation; the sheets open with their tab. A ✓ marks a completed step.
+“Time” and “TOD” (top of descent). The screen always opens on the “Quote” tab; the sheets open with the “Sheets” tab. A ✓ marks a completed step.
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
 **1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
