@@ -259,8 +259,14 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   points; ≈ 1 150 weighted calls a day over 4 runs, from the runner only); 10° only if the user asks. No extra
   button: the grip title says what is shown ("Synoptique monde · run 12Z · +6 h"), and the flight cut returns when
   the view comes back into the grid. Format specified by the atmosphere module and inherited by the frame/weather
-  lot (§ 9.8). SIGMET and METAR (aviationweather.gov, no CORS) come only through the launcher relay, later. NOAA
-  GFS (NOMADS, GRIB2) is the quota-free alternative, not taken for now (decoding cost in pure Python).
+  lot (§ 9.8). SIGMET and METAR (aviationweather.gov, no CORS) come only through the launcher relay, later.
+
+  **Sources** (user, 24 Oct 2026, 15:50: "NOAA en background, openmeteo en one shoot par utilisateur"): the world
+  file is built from **NOAA GFS** on the runner, with no quota: through NOMADS' GrADS data server ASCII endpoint
+  (`https://nomads.ncep.noaa.gov/dods/gfs_1p00/gfs<YYYYMMDD>/gfs_1p00_<HH>z.ascii?<var>[t0:t1][lat0:15:lat1][lon0:15:lon1]`,
+  variables `prmslmsl`, `ugrd10m`, `vgrd10m`, `tcdcclm`, `tmp2m`), parsed with the standard library — no GRIB2. The
+  workflow never calls Open-Meteo. **Open-Meteo is reserved to the device**: one shot per user, the "Charger"
+  of the flight grid, counted on the device (§ 8 above).
 
   **frame/weather — the world synoptic file, as built** (atmosphere lot, 24 Oct 2026; the frame/weather lot inherits it
   unchanged): `/v3/weather/world.json` on the pages, written by `tools/build_world_weather.py` in the Pages workflow
