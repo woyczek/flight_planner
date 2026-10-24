@@ -14,8 +14,11 @@
 // opts : { ctx (data, net, t, lang), flight ({ points, levelFt } : le vol et son niveau demandé ; null : le monde seul),
 // levelFt (l'altitude pression montrée, ft ; null : la surface), time (s), layers ({ isobar, isotherm, cloud, wind,
 // tfill, jet, conv }), gridMax (lieux de la grille du vol, 48), grid (une grille déjà lue { g, locs, levels } : l'hôte qui
-// la charge lui-même, Atmosphère ; sans elle, la réserve est lue), colors (() → { bg, fg, muted, dark, cloud: [r, g, b] }),
+// la charge lui-même, Atmosphère ; sans elle, la réserve est lue), colors (() → { bg, fg, muted, border, dark, cloud: [r, g,
+// b] }), edge (true : la limite de la grille du vol tracée en trait fin — réglage de l'administrateur, non par défaut),
 // onChange (appelé quand une lecture arrive : redessiner) }.
+// Les aplats (nuages, température, courant-jet, convection) viennent du synoptique des deux côtés de la grille du vol ; les
+// lignes et les barbules, de la grille du vol fondue dans le synoptique sur son quart extérieur.
 // state : 'ok' (la grille du vol est lue), 'world-only' (seul le synoptique monde), 'missing' (rien : « Charger dans
 // Météo »). Jamais d'appel à Open-Meteo : la réserve est lue sans réseau, le synoptique sur la même origine.
 
@@ -199,6 +202,8 @@ export function halo(c, text, x, y, color, bg, align = 'center') {
   c.restore();
 }
 /** Point arrondi au pixel : les images de la grille du vol et la découpe du synoptique tombent sur les mêmes pixels. */
+/** Écart (px) entre une étiquette de ligne et la limite tracée de la grille du vol (option edge), dedans comme dehors. */
+const EDGE_GAP = 24;
 const px = q => ({
   x: Math.round(q.x),
   y: Math.round(q.y)
@@ -220,6 +225,7 @@ function tokenColors(el) {
       bg,
       fg: tok('--sog-fg'),
       muted: tok('--sog-muted'),
+      border: tok('--sog-border'),
       cloud: triplet(tok('--sog-muted')),
       dark: 0.2126 * r + 0.7152 * g + 0.0722 * b < 110
     };
@@ -236,6 +242,7 @@ export function createWeatherMap({
   gridMax = 48,
   grid: given = null,
   colors = null,
+  edge = false,
   onChange = () => {}
 } = {}) {
   const T = (k, v) => ctx.t(TX[k], v),
@@ -264,12 +271,14 @@ export function createWeatherMap({
       gridMax,
       grid: given,
       colors: colors || tokenColors(),
+      edge,
       onChange
     },
     wsteps = new Map(),
     wasked = new Set();
   let alive = true,
     box = null, // emprise de la grille du vol, connue dès le vol (avant toute prévision)
+    boxModel = null, // son modèle ({ id, name, short })
     grid = null, // { key, g, locs, levels }
     gridKey = '',
     gridState = 'missing',
@@ -295,6 +304,7 @@ export function createWeatherMap({
     if (o.grid) {
       // la grille de l'hôte (déjà lue, démonstration comprise) : rien à lire
       box = o.grid.g.bbox;
+      boxModel = o.grid.model || A.modelFor((box[1] + box[3]) / 2, A.wrapLon((box[0] + box[2]) / 2));
       if (grid?.src !== o.grid) {
         grid = {
           ...o.grid,
@@ -313,13 +323,14 @@ export function createWeatherMap({
     }
     const pts = o.flight?.points;
     if (!pts || pts.length < 2) {
-      grid = box = null;
+      grid = box = boxModel = null;
       gridKey = '';
       gridState = 'missing';
       return;
     }
     const req = gridRequest(pts, o.flight.levelFt, o.gridMax);
     box = req.g.bbox;
+    boxModel = req.model;
     const
       days = daysFor(o.time),
       key = JSON.stringify([pts.map(p => [p.lat, p.lon, p.alt_ft || 0]), o.flight.levelFt, o.gridMax, days, req.model.id]);
@@ -574,30 +585,31 @@ export function createWeatherMap({
         const r = A.refine(vals, G.nx, G.ny, f),
           out = [];
         for (const c of A.contours(r.v, r.nx, r.ny, A.thresholdsOf(vals, step))) {
-          let best = null,
-            bd = Infinity;
-          const tx = (r.nx - 1) * labelAt(c.level);
+          // places possibles de l'étiquette, de la meilleure à la moins bonne, espacées : le dessin prend la première dans la
+          // vue (et loin de la limite tracée) ; aucune sur la bande de passage au synoptique (o2.inner : sa largeur en
+          // lieux) : une ligne y change de prévision, son étiquette se lit dedans ou dehors
+          const tx = (r.nx - 1) * labelAt(c.level),
+            ranked = [],
+            spots = [];
           for (const sg of c.segs) {
             const mx = (sg[0] + sg[2]) / 2,
               my = (sg[1] + sg[3]) / 2;
-            // pas d'étiquette sur la bande de passage au synoptique (o2.inner : sa largeur en lieux) : une ligne y est en
-            // train de changer de prévision, son étiquette se lit dedans ou dehors
             if (o2.inner && Math.min(mx, r.nx - 1 - mx, my, r.ny - 1 - my) < o2.inner * f) continue;
-            const d = Math.abs(mx - tx) + Math.abs(my - (r.ny - 1) / 2) * 0.3;
-            if (d < bd) {
-              bd = d;
-              best = sg;
-            }
+            ranked.push([Math.abs(mx - tx) + Math.abs(my - (r.ny - 1) / 2) * 0.3, mx, my]);
+          }
+          ranked.sort((x, y) => x[0] - y[0]);
+          for (const [, mx, my] of ranked) {
+            if (spots.length >= 6) break;
+            if (spots.every(q => Math.hypot(q[0] - mx, q[1] - my) > 3 * f)) spots.push([mx, my]);
           }
           out.push({
             k,
             level: c.level,
             color: colorOf(c.level),
             segs: c.segs.map(sg => [latOf(sg[1]), lonOf(sg[0]), latOf(sg[3]), lonOf(sg[2])]),
-            label: best ? {
+            label: spots.length ? {
               text: labelOf(c.level),
-              lat: latOf((best[1] + best[3]) / 2),
-              lon: lonOf((best[0] + best[2]) / 2)
+              at: spots.map(([mx, my]) => [latOf(my), lonOf(mx)])
             } : null
           });
         }
@@ -657,17 +669,18 @@ export function createWeatherMap({
         tStep) % 6 + 6) % 6) / 5, lv => lv === 0 ? '#1c5cab' : lv < 0 ? '#256abf' : '#c23b3a') : [],
       pStep: F.pStep,
       hl,
-      winds: G.places.map((pl, k) => [pl, F.wind[k]]).filter(([pl, [d, kt]]) => d != null && kt != null && !(o2.thin && (pl.i + pl.j) % 2))
+      winds: G.places.map((pl, k) => [pl, F.wind[k]]).filter(([pl, [d, kt]]) => d != null && kt != null && !(o2.thin && (pl.i + pl.j) % 2)),
+      windCols: G.nx - 1
     };
   }
   /** Géométrie de la grille du vol (fondue dans le monde quand il est là). */
-  function flightGeometry(zoom) {
+  function flightGeometry(zoom, K) {
     const F = flightFields();
     if (!F) return null;
     const G = grid.g,
       st = curveSteps(F.pStep, zoom),
       wf = world ? worldFields() : null,
-      key = JSON.stringify([fF.key, o.colors().dark, st, wf?.key]);
+      key = JSON.stringify([fF.key, K.dark, st, wf?.key]);
     if (geo?.key === key) return geo;
     const B = wf ? blendWorld(F, G, wf) : F;
     geo = {
@@ -686,12 +699,12 @@ export function createWeatherMap({
     return geo;
   }
   /** Géométrie du synoptique monde (null sans publication). */
-  function worldGeometry(zoom) {
+  function worldGeometry(zoom, K) {
     const wf = worldFields();
     if (!wf) return null;
     const fl = flightFields(),
       st = curveSteps(fl ? fl.pStep : wf.F.pStep, zoom),
-      key = JSON.stringify([wf.key, o.colors().dark, st]);
+      key = JSON.stringify([wf.key, K.dark, st]);
     if (wgeo?.key === key) return wgeo;
     wgeo = {
       key,
@@ -715,11 +728,15 @@ export function createWeatherMap({
 
   // ---------------------------------------------------------------- dessin
   /** Une géométrie projetée par P : champs, courant-jet et convection, isobares, isothermes, hautes et basses pressions,
-   *  vents (L : les couches à dessiner). */
+   *  vents (L : les couches à dessiner ; L.vb : la vue [w, s, e, n] dans les longitudes de la géométrie, marge comprise —
+   *  seul ce qu'elle contient est projeté : le monde entier à chaque image coûterait cent fois la vue ; L.keep : les
+   *  places d'étiquette admises). */
   function drawGeo(c, g, P, K, L) {
     const [w, s, e, n] = g.bbox,
       a = px(P(n, w)),
-      b = px(P(s, e));
+      b = px(P(s, e)),
+      vb = L.vb,
+      inV = vb ? (la, lo) => la >= vb[1] && la <= vb[3] && lo >= vb[0] && lo <= vb[2] : () => true;
     c.imageSmoothingEnabled = true;
     c.imageSmoothingQuality = 'high';
     if (L.tfill) c.drawImage(g.tImg, a.x, a.y, b.x - a.x, b.y - a.y);
@@ -731,6 +748,7 @@ export function createWeatherMap({
         style(cv);
         c.beginPath();
         for (const sg of cv.segs) {
+          if (!inV(sg[0], sg[1]) && !inV(sg[2], sg[3])) continue;
           const p = P(sg[0], sg[1]),
             q = P(sg[2], sg[3]);
           c.moveTo(p.x, p.y);
@@ -741,8 +759,8 @@ export function createWeatherMap({
       }
       for (const cv of list)
         if (cv.label) {
-          const p = P(cv.label.lat, cv.label.lon);
-          halo(c, cv.label.text, p.x, p.y, cv.color, K.bg);
+          const p = cv.label.at.filter(([la, lo]) => inV(la, lo)).map(([la, lo]) => P(la, lo)).find(q => !L.keep || L.keep(q));
+          if (p) halo(c, cv.label.text, p.x, p.y, cv.color, K.bg);
         }
     };
     c.font = '11px system-ui, sans-serif';
@@ -759,8 +777,9 @@ export function createWeatherMap({
       // les plus marquées d'abord, puis 70 px au moins entre deux marques à l'écran (le monde dézoomé)
       const shown = [];
       for (const h of [...g.hl].sort((x, y) => Math.abs(y.v - 1013) - Math.abs(x.v - 1013))) {
+        if (!inV(h.lat, h.lon)) continue;
         const p = P(h.lat, h.lon);
-        if (shown.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 70)) continue;
+        if (L.keep && !L.keep(p) || shown.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 70)) continue;
         shown.push(p);
         c.font = 'bold 18px system-ui, sans-serif';
         halo(c, h.low ? T('low') : T('high'), p.x, p.y, h.low ? '#c23b3a' : '#1c5cab', K.bg);
@@ -772,10 +791,10 @@ export function createWeatherMap({
       // un vent tous les « stride » lieux : au moins 44 px entre deux barbules à l'écran, des deux côtés de la grille du vol
       const [p0] = g.winds[0],
         q0 = P(p0.lat, p0.lon),
-        q1 = P(p0.lat, p0.lon + (g.bbox[2] - g.bbox[0]) / Math.max(1, Math.max(...g.winds.map(([pl]) => pl.i)))),
+        q1 = P(p0.lat, p0.lon + (g.bbox[2] - g.bbox[0]) / Math.max(1, g.windCols)),
         stride = Math.max(1, Math.ceil(44 / Math.max(1, Math.hypot(q1.x - q0.x, q1.y - q0.y))));
       for (const [pl, [d, kt]] of g.winds) {
-        if (pl.i % stride || pl.j % stride) continue;
+        if (pl.i % stride || pl.j % stride || !inV(pl.lat, pl.lon)) continue;
         const p = P(pl.lat, pl.lon);
         barb(c, p.x, p.y, d, kt, 22, K.fg);
       }
@@ -805,50 +824,86 @@ export function createWeatherMap({
       P = view.project,
       out = outside(view.bounds);
     last.out = out;
-    if (out || L.jet || L.conv) loadWorld();
-    const wg = world ? worldGeometry(view.zoom) : null;
+    if (out || L.jet || L.conv || L.cloud || L.tfill) loadWorld();
+    const wg = world ? worldGeometry(view.zoom, K) : null;
     last.k = wg?.k ?? null;
-    const wcopies = copiesFor(view.bounds, -180, 180);
-    if (wg && (L.jet || L.conv))
+    // la vue dans les longitudes d'une copie du monde, marge comprise : seul ce qu'elle contient est projeté
+    const vbOf = off => {
+        const b = view.bounds;
+        if (!b) return null;
+        const m = Math.max(1.5, (b[2] - b[0]) * 0.05);
+        return [b[0] - off - m, b[1] - m, b[2] - off + m, b[3] + m];
+      },
+      wcopies = copiesFor(view.bounds, -180, 180),
+      // le bord de la grille du vol à l'écran, une fois par copie du monde, au pixel
+      rects = grid ? copiesFor(view.bounds, grid.g.bbox[0], grid.g.bbox[2]).map(off => {
+        const [w, s, e, n] = grid.g.bbox,
+          a = px(P(n, w + off)),
+          b = px(P(s, e + off));
+        return [a.x, a.y, b.x, b.y];
+      }) : [],
+      // distance d'un point au bord (positive dedans, négative dehors), pour les étiquettes quand le bord est tracé
+      depth = q => Math.max(...rects.map(([x0, y0, x1, y1]) => q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1 ? Math.min(q.x - x0, x1 -
+        q.x, q.y - y0, y1 - q.y) : -Math.hypot(Math.max(x0 - q.x, 0, q.x - x1), Math.max(y0 - q.y, 0, q.y - y1))), -Infinity),
+      edge = o.edge && rects.length,
+      // les aplats (nuages, température, courant-jet, convection) d'une seule source : le synoptique, des deux côtés de la
+      // grille du vol — deux modèles qui divergent (AROME sec, GFS humide au même niveau) y dessineraient son rectangle ;
+      // la grille ne garde les siens que sans synoptique (rien autour)
+      worldFills = !!wg;
+    if (wg && (L.jet || L.conv || L.cloud || L.tfill))
       for (const off of wcopies) drawGeo(c, wg, (la, lo) => P(la, lo + off), K, {
         jet: L.jet,
-        conv: L.conv
+        conv: L.conv,
+        cloud: L.cloud,
+        tfill: L.tfill,
+        vb: vbOf(off)
       });
     if (out && wg) {
       c.save();
-      if (grid) {
-        const [w, s, e, n] = grid.g.bbox;
+      if (rects.length) {
         c.beginPath();
         c.rect(0, 0, view.W, view.H);
-        for (const off of copiesFor(view.bounds, w, e)) {
-          const a = px(P(n, w + off)),
-            b = px(P(s, e + off));
-          c.rect(a.x, a.y, b.x - a.x, b.y - a.y);
-        }
+        for (const [x0, y0, x1, y1] of rects) c.rect(x0, y0, x1 - x0, y1 - y0);
         c.clip('evenodd');
       }
       for (const off of wcopies) drawGeo(c, wg, (la, lo) => P(la, lo + off), K, {
         ...L,
         jet: false,
-        conv: false
+        conv: false,
+        cloud: false,
+        tfill: false,
+        keep: edge ? q => depth(q) <= -EDGE_GAP : null,
+        vb: vbOf(off)
       });
       c.restore();
     }
-    const g = flightGeometry(view.zoom);
+    const g = flightGeometry(view.zoom, K);
     if (g) {
       const [w, , e] = grid.g.bbox;
       for (const off of copiesFor(view.bounds, w, e)) drawGeo(c, g, off ? (la, lo) => P(la, lo + off) : P, K, {
         ...L,
         jet: false,
-        conv: false
+        conv: false,
+        cloud: L.cloud && !worldFills,
+        tfill: L.tfill && !worldFills,
+        keep: edge ? q => depth(q) >= EDGE_GAP : null,
+        vb: vbOf(off)
       });
+    }
+    // option edge (réglage de l'administrateur) : la limite de la grille du vol en trait fin, à la couleur des bordures
+    if (edge) {
+      c.save();
+      c.strokeStyle = K.border || K.muted;
+      c.lineWidth = 1;
+      for (const [x0, y0, x1, y1] of rects) c.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, y1 - y0 - 1);
+      c.restore();
     }
   }
 
   // ---------------------------------------------------------------- ce que l'hôte lit
   const api = {
     draw,
-    /** Change des options (flight, levelFt, time, layers, gridMax, colors) ; relit la réserve si le vol ou ses jours ont
+    /** Change des options (flight, levelFt, time, layers, gridMax, colors, edge) ; relit la réserve si le vol ou ses jours ont
      *  changé ; redessin à la charge de l'hôte (ou par attach). */
     update(partial = {}) {
       if (partial.layers) partial = {
@@ -894,7 +949,20 @@ export function createWeatherMap({
           k
         } : null,
         worldReading: worldReading || world === undefined,
-        blended: !!(F && geo?.blended)
+        blended: !!(F && geo?.blended),
+        // les deux côtés de la grille du vol, pour la légende de l'hôte (option edge)
+        zones: [box && boxModel ? {
+          key: 'flight',
+          label: T('zoneFlight', {
+            model: boxModel.name
+          })
+        } : null, world ? {
+          key: 'world',
+          label: T('zoneWorld', {
+            src: world.source || world.model,
+            step: world.step
+          })
+        } : null].filter(Boolean)
       };
     },
     /** Valeurs de la grille du vol en un point (bilinéaire) : { t, p, cc, ft } ; null hors de la grille. */

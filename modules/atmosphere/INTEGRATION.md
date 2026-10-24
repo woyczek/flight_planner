@@ -15,7 +15,8 @@
 | `lib/weather_map.js` | the weather map renderer (§ 6), shared by this module and the maps module: `createWeatherMap`, `attach`, `gridRequest`, `legend()` |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
-| `test/weather_map.html` | bench of the weather map library: states, legend, values, `attach` / `detach`, no Open-Meteo call |
+| `test/weather_map.html` | bench of the weather map library: states, legend, values, no fill showing the grid's limit, `edge`, `attach` / `detach`, no Open-Meteo call |
+| `test/weather_map_perf.html` | performance page of the library (first draw, cost of a frame per layer, canvas memory, bytes read); run with the CPU slowed ×4 |
 | `ROADMAP.md` | what is done, what is next |
 
 ## 2. Mounting
@@ -155,8 +156,16 @@ wx.detach();                               // the Profil chip: the canvas and it
   `null`: the world alone); `levelFt` (the pressure altitude shown, ft; `null`: the surface); `time` (s, the map's
   hour); `layers` (`{ isobar, isotherm, cloud, wind, tfill, jet, conv }`, defaults `DEFAULT_LAYERS`); `gridMax` (places
   of the flight's grid, 48); `grid` (a grid already read, `{ g, locs, levels }`: a host that loads it itself, as this
-  module does; without it the cache is read); `colors` (`() → { bg, fg, muted, dark, cloud: [r, g, b] }`; `attach`
-  reads the `--sog-*` tokens of its container); `onChange` (a read arrived: redraw, titles).
+  module does; without it the cache is read); `colors` (`() → { bg, fg, muted, border, dark, cloud: [r, g, b] }`;
+  `attach` reads the `--sog-*` tokens of its container); `edge` (`true`: the limit of the flight's grid drawn as a
+  hairline in the border colour, contour labels kept 24 px away from it; default `false` — the administrator's setting
+  "Draw the flight zone's limit", V3_SPECIFICATION § 7.1.12, read by the host and passed here, also through `update`);
+  `onChange` (a read arrived: redraw, titles).
+- **One source per fill, no visible limit by default**: the fills (clouds, temperature, jet stream, convection) come
+  from the world synoptic on both sides of the flight's grid — two models do not agree at the same level (AROME dry,
+  GFS moist) and a fill taken from each would draw the grid's rectangle; the grid keeps its own fills only when there is
+  no synoptic. The lines and barbs come from the flight's grid blended into the synoptic over its outer quarter (same
+  level, hour within 2 h), with no contour label on that band.
 - **`state`**: `'ok'` (the flight's grid is in the cache), `'world-only'` (the world synoptic alone: nothing loaded for
   this flight, or no flight), `'missing'` (nothing yet: offer "Load in Météo").
 - **The cache is read without the network** (`cacheOnly`, with a network that always answers offline): the run kept in
@@ -165,8 +174,10 @@ wx.detach();                               // the Profil chip: the canvas and it
   one computation of places, levels and variables for whoever loads and whoever reads; `daysFor(time)` the days to
   ask.
 - **`info()`** → `{ state, reading, outside, gridBox, levels, pLabel, time, world: { run, time, h, step, source, k },
-  worldReading, blended }`: `outside` is true when the view is mostly outside the flight's grid (titles "World
-  synoptic"); `blended` when the flight's grid is drawn blended into the world (same level, same hour within 2 h).
+  worldReading, blended, zones }`: `outside` is true when the view is mostly outside the flight's grid (titles "World
+  synoptic"); `blended` when the flight's lines are drawn blended into the world (same level, same hour within 2 h);
+  `zones` the two sides of the limit for the host's legend with `edge` (`[{ key: 'flight' | 'world', label }]`, e.g.
+  "Flight area · Météo-France AROME / ARPEGE", "World · NOAA GFS 1° (NOMADS), 5° grid", four languages).
 - **`at(lat, lon)`** → `{ t, p, cc, ft }` inside the flight's grid, `null` outside; **`worldPoint(lat, lon)`** →
   `{ values, time, run, step, source }` from the world synoptic, `{ reading: true }` while the step is read, `null`
   without a publication.

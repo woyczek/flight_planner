@@ -87,6 +87,10 @@ const now = Math.floor(Date.now() / 1000),
       js: fill(la => Math.abs(la) === 30 ? 120 : 30),
       jd: fill(() => 270),
       cape: fill(la => la === 0 ? 1500 : 0),
+      // nuages par étage, loin de ceux de la démonstration : un aplat pris des deux sources dessinerait le rectangle
+      ccl: fill((la, lo) => 70 + 20 * Math.sin(lo * Math.PI / 60)),
+      ccm: fill(() => 40),
+      cch: fill(() => 10),
       ps: fill(() => 1000),
       zs: fill(() => 0)
     }
@@ -225,6 +229,67 @@ c.clearRect(0, 0, 320, 200);
 wm.draw(c, view);
 check('drawn into the host canvas', painted());
 check('surface: the flight grid blended into the world', wm.info().blended === true);
+// la limite de la grille du vol ne se voit dans aucun aplat : luminance moyenne de deux bandes de 10 px de part et d'autre
+// de chaque bord (tiers central), couche par couche
+const gb = wm.info().gridBox,
+  ga = project(gb[3], gb[0]),
+  gz = project(gb[1], gb[2]),
+  [x0, y0, x1, y1] = [ga.x, ga.y, gz.x, gz.y].map(Math.round),
+  lum = (xa, ya, xb, yb) => {
+    const d = c.getImageData(xa, ya, xb - xa, yb - ya).data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) * d[i + 3] / 255 + 244 * (1 - d[i +
+      3] / 255);
+    return sum / (d.length / 4);
+  },
+  // saut à la limite moins la pente du champ : (dedans − dehors) − (dedans plus loin − dedans), bandes de 10 px
+  edgeJump = () => {
+    const B = 10,
+      mx = [Math.round(x0 + (x1 - x0) / 3), Math.round(x1 - (x1 - x0) / 3)],
+      my = [Math.round(y0 + (y1 - y0) / 3), Math.round(y1 - (y1 - y0) / 3)],
+      jump = (o, i, i2) => Math.abs((i - o) - (i2 - i));
+    return Math.max(jump(lum(x0 - B, my[0], x0, my[1]), lum(x0, my[0], x0 + B, my[1]), lum(x0 + B, my[0], x0 + 2 * B, my[1])),
+      jump(lum(x1, my[0], x1 + B, my[1]), lum(x1 - B, my[0], x1, my[1]), lum(x1 - 2 * B, my[0], x1 - B, my[1])),
+      jump(lum(mx[0], y0 - B, mx[1], y0), lum(mx[0], y0, mx[1], y0 + B), lum(mx[0], y0 + B, mx[1], y0 + 2 * B)),
+      jump(lum(mx[0], y1, mx[1], y1 + B), lum(mx[0], y1 - B, mx[1], y1), lum(mx[0], y1 - 2 * B, mx[1], y1 - B)));
+  },
+  off = Object.fromEntries(['isobar', 'isotherm', 'cloud', 'wind', 'tfill', 'jet', 'conv'].map(l => [l, false])),
+  jumps = {};
+for (const l of ['cloud', 'tfill', 'jet', 'conv']) {
+  wm.update({
+    layers: {
+      ...off,
+      [l]: true
+    }
+  });
+  c.clearRect(0, 0, 320, 200);
+  wm.draw(c, view);
+  jumps[l] = +edgeJump().toFixed(1);
+}
+check('no fill shows the flight grid\'s limit (luminance jump at the limit, field slope removed, < 2)', Object.values(jumps).every(v => v <
+  2), JSON.stringify(jumps));
+// option edge : la limite tracée en trait fin (réglage de l'administrateur), rien sans elle
+const hairline = () => Array.from({
+  length: 12
+}, (_, i) => c.getImageData(Math.round(x0 + 3 + (x1 - x0 - 6) * i / 11), y0, 1, 1).data[3]).every(v => v === 255);
+wm.update({
+  layers: off
+});
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+const noLine = !hairline();
+wm.update({
+  edge: true
+});
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+check('edge option: the limit drawn as a hairline, not without it', noLine && hairline());
+check('legend of the two sides (edge option)', wm.info().zones.map(z => z.key).join() === 'flight,world', wm.info().zones.map(z => z.label)
+  .join(' | '));
+wm.update({
+  edge: false,
+  layers: Object.fromEntries(Object.keys(off).map(l => [l, true]))
+});
 // le fichier des niveaux de pression du monde manque (ou arrive encore) : jamais la surface du monde fondue dans le FL090
 wm.update({
   levelFt: 9000

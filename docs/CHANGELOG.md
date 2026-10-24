@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Atmosphere: the flight's grid no longer shows as a rectangle; 10× cheaper frames; an optional limit line** (`modules/atmosphere/lib/weather_map.js`,
+  `texts.js`, `test/weather_map.html`, `test/weather_map_perf.html`; atmosphere DECISIONS, INTEGRATION § 6) — at a flight level the cloud fill
+  came from AROME inside the grid (dry, clear) and from GFS outside (moist, grey): the fills (clouds, temperature, jet, convection) now come
+  from the world synoptic on both sides, the lines and barbs from the grid blended into it. Only what the view holds is projected: a frame
+  with every layer drops from 76 ms to 8 ms with the CPU slowed ×4. New `edge` option (default off, the administrator's setting to come)
+  drawing the grid's limit as a hairline, with `info().zones` naming both sides. DECISIONS records the measurements and what GFS costs against
+  Open-Meteo.
 - **Atmosphere: no rings round the flight's grid** (`modules/atmosphere/lib/weather_map.js`, `test/weather_map.html`; atmosphere
   DECISIONS, INTEGRATION § 6) — at a flight level, while the world's pressure-level file was still being read, the surface world was
   blended into the grid: a dark frame of concentric isobars and isotherms with stacked labels. The world is now blended only at the same

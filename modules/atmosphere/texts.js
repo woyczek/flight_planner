@@ -49,6 +49,10 @@ export const TX = {
     'Sinóptico mundial no publicado: no se pide nada fuera de la zona del vuelo'
   ],
   worldPoint: ['Synoptique · {p} · {at}', 'Synoptic · {p} · {at}', 'Synoptik · {p} · {at}', 'Sinóptico · {p} · {at}'],
+  zoneFlight: ['Zone du vol · {model}', 'Flight area · {model}', 'Flugbereich · {model}', 'Zona del vuelo · {model}'],
+  zoneWorld: ['Monde · {src}, maille de {step}°', 'World · {src}, {step}° grid', 'Welt · {src}, {step}°-Raster',
+    'Mundo · {src}, malla de {step}°'
+  ],
   worldPointNote: ['Hors de la zone du vol : synoptique mondial ({src}, run {run}, maille de {step}°), rien n’est demandé.',
     'Outside the flight’s area: world synoptic ({src}, run {run}, {step}° grid), nothing is asked.',
     'Außerhalb des Fluggebiets: Weltsynoptik ({src}, Lauf {run}, {step}°-Raster), nichts wird abgefragt.',

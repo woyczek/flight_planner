@@ -2,6 +2,65 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (night) — one source per fill; the limit as an option; performance; GFS against Open-Meteo
+
+- **The report** (user, iPhone, relayed: "Toujours pas.", LFRD → LFBD at FL160, 19:00Z): after the rings fix the grid's
+  rectangle was still visible — clear inside, a uniform grey outside, lines and barbs continuous. **Found by drawing
+  the layers one by one** on that view (the real AROME grid recorded from Open-Meteo, the published NOAA synoptic):
+  the **cloud** fill (and, fainter, the temperature fill). At FL160 the grid's cloud is AROME's humidity (dry: clear)
+  and the world's is GFS's (moist: grey); the blend band is a quarter of the grid, one cell on a 5 × 9 grid, so the
+  change reads as an edge. Same variable, two models that disagree: a fill taken from each draws the rectangle.
+  **Fixed at the source** (rule § 7.1.12 for fills): the four fills (clouds, temperature, jet, convection) come from the
+  world synoptic on both sides; the grid draws its own only when there is no synoptic (launcher, nothing published).
+  The lines and barbs stay the grid's, blended (their values join where the models agree, and the blend hides the
+  rest). The fine model stays in the cross-section and the slices, where it counts. Bench: luminance either side of the
+  limit, the field's slope removed, layer by layer — v3 before: cloud 25.7, temperature 52.2; now 0.2 and 0.7.
+- **The limit as an option** (user: "Pas de bord, si ça ne se justifie pas, ou alors en option avancée (dans les
+  paramétrages au même niveau que les sliders de zoom)"): `edge` in `attach` / `update` (default off) draws the
+  grid's limit as a hairline in the border colour, contour labels kept 24 px from it on both sides, and `info().zones`
+  names both sides for the host's legend ("Flight area · Météo-France AROME / ARPEGE", "World · NOAA GFS 1° (NOMADS),
+  5° grid"). The setting itself (threshold page `#maps?tune=1`, `airline/map_profiles.json`) is the maps module's lot;
+  this module will pass it once it exists.
+- **Performance** (relay's request; `test/weather_map_perf.html`, Playwright, 390 × 844 at 3×, **CPU slowed ×4**, one
+  job; the LFRD → LFBD grid, 5 × 9 places, 7 levels; the real NOAA publication; a flat Mercator background 390 × 520 at
+  zoom 6):
+  - **cost of a frame while panning**, all seven layers: **76 ms before** (every contour segment and barb of the whole
+    world projected at each frame: about 13 frames/s), **7.9 ms now** (p95 12.5 ms) at FL160 and 9.5 ms (p95 13.1) at the
+    surface, since only what the view holds is projected. Per layer alone at FL160: isobars 4.7 ms, isotherms 3.6,
+    barbs 2.3, clouds 2.0, temperature 1.9, convection 1.7, jet 1.7. Unthrottled: 1.6 ms. **The 30 frames/s target is
+    met with every layer**, no degraded mode needed. The page's own frame rate through `attach` cannot be measured
+    here: headless Chromium composites a 1170 × 1560 canvas in software (frames of about 270 ms even unthrottled, the
+    main thread idle) — a phone's GPU does not have that cost; to check on a device.
+  - **first draw after `attach`** (FL160): 3.9 s cold (the publication read from the server: 673 KB raw, about 220 KB
+    as Pages serves it gzipped), 2.4 s warm (device cache, 1.27 MB of JSON read); at the surface 3.2 s and 2.3 s
+    (162 KB, about 43 KB gzipped). Unthrottled: 1.0 s and 0.7 s. The time goes into building the world at the level
+    (2,409 columns, contours, images), once per step and level; candidates if it must shrink: a worker, or the builder
+    publishing the fields at fixed flight levels.
+  - **changing step** (+3 h): 670 KB with the `-alt` file (159 + 511 KB raw; 43 + 178 KB gzipped, measured on Pages),
+    159 KB without it (surface); 4.4 s at ×4, 1.0 s unthrottled.
+  - **memory**: the overlay canvas 1170 × 1560 (7.1 MB at 3×, the largest item); the field images 591 KB (8 images,
+    the largest 289 × 129, the world's); the publication kept on the device about 670 KB per step read.
+- **What GFS costs against Open-Meteo** (relay's question; measured where stated):
+  - **resolution**: the publication is GFS 1° from NOMADS, **sampled at 5°** (2,376 places, 25 steps: 17 MB in all,
+    measured) so a phone can read the whole world; GFS's native 0.25° would be 400 times larger and would need tiles.
+    Open-Meteo's models are fine (AROME France HD about 1.5 km, ARPEGE Europe 0.1°, ICON-D2 about 2 km), but the map
+    samples them at the flight's grid (here 5 × 9 places, about 0.7° apart) and the cross-section every 50 NM: the
+    fine model's gain on the map is the grid's spacing, not the model's.
+  - **time**: every 3 h up to +72 h against hourly (AROME to about +48 h, ARPEGE about +100 h). **Run latency**: GFS
+    06Z published at 10:13Z (4.2 h, measured from the index), and rebuilt every 6 h, so up to about 10 h old; AROME HD
+    on Open-Meteo: run 03Z available at 05:40Z (2.7 h), and still the latest at 18:26Z (measured, `meta.json`).
+  - **variables**: the publication has 11 levels (1000–200 hPa: height, temperature, humidity, wind) against 14 for the
+    grid (975, 950 and 900 hPa more), no hourly steps, no 2 m dew point, no per-level cloud cover (both sides derive it
+    from humidity anyway); it adds what Open-Meteo does not give here: tropopause height, the maximum wind (jet) and its
+    level, cloud by layer and CAPE on a world grid.
+  - **quota**: none on the device (static files on the same origin) against Open-Meteo's free 10,000 calls a day per
+    IP (a "Load" weighs about 295; the session's IP met the limit once).
+  - **building it**: a step of the Pages workflow on a GitHub runner, NOMADS' GRIB filter and a GRIB2 decoder in the
+    standard library (`tools/grib2_lite.py`), the previous publication reused when the run is the same; its duration
+    on a fresh run is not measured in this session (the workflow runs that reused it took 1–2 min in all).
+  - **on the device**: files read once per step and kept for offline use (6 h), against calls per flight and per day;
+    the world view works with no flight and no credit.
+
 ## 24 October 2026 (night) — rings round the flight's grid: the world of another level
 
 - **The report** (user, iPhone, relayed: "Screenshot : Qu'est-ce que c'est !?", LFRD → LFBD at FL160): round the
