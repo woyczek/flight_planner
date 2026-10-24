@@ -19,10 +19,12 @@ Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreiz
 der Route liegt; zoomen Sie hinein, um alles zu sehen.
 
 **Profil und Cursor.** Unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
-Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über
-das Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Karte ein. Tippen Sie auf die Route
-auf der Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem
-Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden.
+Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über das
+Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Karte ein. Tippen Sie auf die Route auf der
+Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem Abflug,
+geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden. Unter der Karte zeigt dieser
+Datenblock das Profil; die Liste der Lufträume an einem Punkt oder die Meldepunkte eines Flugplatzes öffnen sich an
+seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück.
 
 **Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
 sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
@@ -46,34 +48,39 @@ erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. „N
 beschränkt Lufträume und Flugwege auf die Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um
 anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach
 links weniger, nach rechts mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
-erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
+erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem. Auch die Größe der Karte zählt: In
+einem kleinen Rahmen (Telefon, Fenster der Doppelansicht) zeigt sie bei gleichem Zoom weniger Elemente als in einem
+großen, als wären Sie weiter weg (der Zoom wird um den Mittelwert aus Höhe und Breite des Rahmens korrigiert, 900 px
+bedeuten keine Korrektur).
 
 **Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
 Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
-und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt eine
-Karte die Lufträume unter dem Finger, einen oder mehrere: einen Höhenblock wie das
-Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
-Liste mit ihren Grenzen. Das ✕, Escape oder ein Antippen an anderer Stelle der Karte schließt sie, ein Antippen auf
-Lufträume ersetzt sie; ein Verschieben der Karte lässt sie offen. Auf dem Telefon nimmt sie den unteren Teil der Karte ein, über den Schaltflächen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
-nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Über einem Funkfeuer nennt die Blase Art, Kennung und Frequenz; stehen
-mehrere Funkfeuer am selben Ort, behält die Karte das nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS), und die
-Blase nennt die anderen („auch hier: ILS 25L BG 109.9“). Auf dem Profil nennen Finger
-oder Maus ebenso die durchflogenen Lufträume.
+und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt der
+Datenblock unter der Karte die Lufträume unter Ihrem Finger, einen oder mehrere, anstelle des Profils: ein Diagramm der
+Höhen wie das Vertikalprofil (eine nummerierte Säule je Luftraum, von der Untergrenze bis zur Obergrenze), dann die
+nummerierte Liste mit ihren Grenzen. Das ✕, Escape oder ein Tippen auf eine leere Stelle der Karte schließen ihn und das
+Profil kommt zurück, ein weiteres Tippen auf Lufträume ersetzt ihn; die Karte zu bewegen lässt ihn stehen. Die Karte
+bewegt sich nicht und ändert ihre Größe nicht. Die Hinweisblase beim Darüberfahren folgt dem Zeiger, bleibt 5 Sekunden,
+macht der nächsten Platz und schließt sich mit einem Tippen woanders oder einer Kartenbewegung. Über einer
+Funkfeuer-Anlage nennt die Blase Art, Kennung und Frequenz; wo mehrere Anlagen am selben Ort stehen, behält die Karte
+die nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS) und die Blase nennt die anderen („auch hier: ILS 25L BG
+109.9“). Auf dem Profil geben Finger oder Maus ebenso die durchflogenen Lufträume an.
 
 **Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
-Sequenzen aus seinen VAC-Karten leuchten auf (benannte grüne Kreise, Striche zwischen den Punkten). Tippen Sie ihn an:
-die Karte rückt an seine Punkte heran, wenn sie eng beieinander liegen, und seine Karte nennt die Sequenzen (mit der
-Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Sie bleibt offen, während Sie die Karte
-verschieben: das ✕ oder Escape schließt sie, ein anderer Flugplatz ersetzt sie. Das Antippen eines Meldepunkts öffnet
-ebenso die Karte seines Flugplatzes, dieser Punkt zuerst.
-Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
-aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet und sind nicht die veröffentlichte Route; maßgeblich ist
-die VAC-Karte. Wurde der Flugplatz von Hand ausgewertet, sagt es die Karte, die Routen tragen ihren Namen, ihre Pisten
-und Bedingungen, ein geprüfter Verlauf folgt der VAC-Karte (lange Striche) und ein Pfeil zeigt eine Einbahnroute. Die
-Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für Hubschrauber; die Sequenzen und Hinweise der
-VAC kommen hinzu, sobald sie importiert sind. Sie erscheinen, sobald der Administrator sie importiert hat (Einstellungen
-› Wartung).
+Abläufe aus seinen VAC-Karten leuchten auf (benannte Kreise, Striche zwischen den Punkten). Auf der Karte trägt ein
+Meldepunkt nur sein Kurzzeichen („NA“, „E“, „SE“ …), damit die Karte lesbar bleibt; der lange Name steht in der Blase
+und in der Liste. Tippen Sie den Flugplatz an: Die Karte zoomt auf seine Punkte, wenn sie gedrängt sind, und der
+Datenblock unter der Karte gibt anstelle des Profils die Liste der Punkte (Kurzzeichen, langer Name, Einschränkungen),
+die Abläufe (mit der VAC-Seite), dann die Anweisungen der VAC, seitenweise eingeklappt; er scrollt, wenn der Inhalt lang
+ist. Er bleibt offen, während Sie die Karte bewegen: das ✕ oder Escape schließen ihn und das Profil kommt zurück, ein
+anderer Flugplatz ersetzt ihn. Das Antippen eines Meldepunkts öffnet ebenso den Inhalt seines Flugplatzes, dieser Punkt
+zuerst. Im VFR-Modus werden die Punkte des Abflug- und des Ankunftsflugplatzes automatisch gezeigt. Diese Daten werden
+automatisch aus den VAC extrahiert: Sie sind mit „zu prüfen“ gekennzeichnet und nicht die veröffentlichte Route; die
+VAC-Karte hat Vorrang. Wurde der Flugplatz von Hand analysiert, sagt der Block es, die Routen tragen ihren Namen, ihre
+Bahnen und Bedingungen, eine geprüfte Spur folgt der VAC-Karte (lange Striche) und ein Pfeil kennzeichnet eine
+Einbahnroute. Die Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für Hubschrauber; die Abläufe
+und Anweisungen der VAC kommen hinzu, sobald der Administrator sie importiert hat (Einstellungen › Wartung).
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
@@ -147,4 +154,4 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 16866d3245cc -->
+<!-- fr: 8c4a1ed0d0cd -->

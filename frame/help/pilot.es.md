@@ -41,7 +41,10 @@ La preparación sigue cinco pasos, en el orden en que se prepara un vuelo:
 de otro. Todo se recalcula con cada cambio: corrija la ruta, y la meteorología, el cálculo y el viento siguen, sin botón
 que pulsar. El resultado (combustible de bloque, combustible de viaje, tiempo, inicio del descenso) sigue visible abajo
 en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS», «viento: previsión ICON FL060»,
-«viento introducido»). Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
+«viento introducido»). En un teléfono esta barra ocupa tres líneas: el contexto
+(«Bloque · FL060→090→110→070 · viento ARPEGE FL060», completo al tocarlo), el combustible de bloque y tres teselas
+«Etapa», «Tiempo» y «TOD» (inicio del descenso). La pantalla se abre siempre en la preparación; las fichas se abren
+con su pestaña. Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
 5000 ft (FL060), en pies por debajo (3500 ft).
 
 **1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
@@ -228,7 +231,9 @@ el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
 aéreos en los que entra a la altitud prevista, y la trayectoria del vuelo en violeta. Deslice el dedo por el perfil: un
 cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en el mapa para colocarlo allí. La línea
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
-espacio aéreo en el que está en ese momento.
+espacio aéreo en el que está en ese momento. Bajo el mapa, este bloque de datos muestra el perfil; la lista de los
+espacios de un punto o los puntos de notificación de un aeródromo se abren en su lugar cuando los pide, y el perfil
+vuelve al cerrarlos.
 
 **Seis modos de mapa.** El botón arriba a la izquierda del mapa muestra el modo elegido; tóquelo para ver los seis
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
@@ -252,31 +257,37 @@ vuelve a la elección de origen. «Solo alrededor de la ruta», marcada de orige
 cercanía de la ruta; desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de
 todos modos. Abajo del todo, el control «Complejidad (prueba)» muestra menos detalles hacia la izquierda, más hacia la
 derecha, en todos los zooms. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
-muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos.
+muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos. El tamaño del mapa también cuenta: en un marco
+pequeño (teléfono, panel de la vista doble) muestra menos elementos que en uno grande con el mismo zoom, como si
+estuviera más lejos (el zoom se corrige con la media del alto y del ancho del marco, 900 px sin corrección).
 
 **Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de un
 espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto →
 punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en notación
-AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, una tarjeta muestra los espacios
-bajo el dedo, uno o varios: un bloque de niveles, como el perfil vertical (una columna
-numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda abierta: la ✕ o Escape la cierran, otro toque la
-reemplaza. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
-un movimiento del mapa. Sobre una radioayuda, la burbuja da su tipo, su indicativo y su frecuencia;
-cuando varias están en el mismo lugar, el mapa guarda la más útil (VOR, TACAN o DME, luego NDB, luego ILS) y la burbuja
-nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
+AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro punto dentro de un espacio, el bloque de datos bajo el mapa muestra
+los espacios bajo el dedo, uno o varios, en lugar del perfil: un gráfico de niveles, como el perfil vertical (una
+columna numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. La cruz ✕,
+Esc o un toque en un lugar vacío del mapa lo cierran y el perfil vuelve, otro toque sobre espacios lo reemplaza; mover
+el mapa lo deja. El mapa no se mueve ni cambia de tamaño. El globo de paso del ratón sigue el puntero, dura 5 segundos,
+cede el sitio al siguiente y se cierra con un toque en otra parte o un movimiento del mapa. Sobre una radioayuda, el
+globo da su tipo, su indicativo y su frecuencia; cuando varias están en el mismo sitio, el mapa guarda la más útil (VOR,
+TACAN o DME, luego NDB, luego ILS) y el globo nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo
+o el ratón dan igualmente los espacios atravesados.
 
 **Los puntos de notificación VFR de un aeródromo.** Pase el ratón sobre un aeródromo: sus puntos de notificación y las
-secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, guiones entre los puntos). Tóquelo: el
-mapa se acerca a sus puntos si están apretados, y su tarjeta da las secuencias (con la página de la VAC) y luego las
-consignas de la VAC, plegadas página por página. Queda abierta mientras mueve el mapa: la ✕ o
-Escape la cierran, otro aeródromo la reemplaza. Tocar un punto de notificación abre igualmente la tarjeta de su
-aeródromo, con ese punto primero. En modo VFR, los puntos del
-aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
-marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha sido
-analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado
-sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Los puntos de notificación de la base siempre
-están, en negro para los aviones y en verde para los helicópteros; las secuencias y consignas de las VAC se añaden una
-vez importadas. Aparecen una vez importados por el administrador (Ajustes › Mantenimiento).
+secuencias tomadas de sus cartas VAC se iluminan (círculos con nombre, trazos entre los puntos). En el mapa, un punto de
+notificación solo lleva su código corto («NA», «E», «SE»…), para que el mapa siga siendo legible; el nombre largo está
+en el globo y en la lista. Toque el aeródromo: el mapa se acerca a sus puntos si están apretados, y el bloque de datos
+bajo el mapa, en lugar del perfil, da la lista de puntos (código, nombre largo, restricciones), las secuencias (con la
+página de la VAC) y luego las instrucciones de la VAC, plegadas página por página; se desplaza si el contenido es largo.
+Sigue abierto mientras mueve el mapa: la cruz ✕ o Esc lo cierran y el perfil vuelve, otro aeródromo lo reemplaza. Tocar
+un punto de notificación abre igualmente el contenido de su aeródromo, ese punto primero. En modo VFR, los puntos de los
+aeródromos de salida y de llegada se muestran de oficio. Estos datos se extraen automáticamente de las VAC: están
+marcados «por verificar» y no son la ruta publicada; la carta VAC prevalece. Cuando el aeródromo se ha analizado a mano,
+el bloque lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado sigue la carta VAC
+(trazos largos) y una flecha marca una ruta de sentido único. Los puntos de notificación de la base siempre están, en
+negro para los aviones y en verde para los helicópteros; las secuencias y las instrucciones de las VAC se añaden una vez
+importadas por el administrador (Ajustes › Mantenimiento).
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
 14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
@@ -346,7 +357,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 16866d3245cc -->
+<!-- fr: 8c4a1ed0d0cd -->
 
 <!-- chapter: report -->
 # Informe

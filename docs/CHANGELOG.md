@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the airspaces and the reporting points move to the data block, short codes, thresholds corrected by the frame's
+  size** (`modules/maps/module.js`, `modules/maps/render.js`; SPEC, DECISIONS, help ×4) — the map view is fixed, the map
+  then the data block: the airspaces list ("n airspaces at this point") and an aerodrome's VFR reporting points (points,
+  VAC sequences, instructions) are no longer cards over the map but open in the data block under it, replacing the
+  vertical profile while open (header line with ✕; closing brings the profile back; the block keeps the profile's height
+  rule and scrolls long content; on a phone the page scrolls to bring it into view, the map never moves). On the map a
+  reporting point shows only its short code ("NA", "E", "SE"); the long name stays in the tooltip and the list. The
+  display thresholds now compare an effective zoom: the zoom (after the Complexity slider) corrected by
+  log2(mean of the frame's height and width / 900 px), so a phone or a pane of the dual view shows fewer elements than a
+  laptop at the same map zoom (shown on the tuning page next to the real zoom); replaces the former fixed step under 600 px.
 - **Map: the airspaces card on a phone** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — "n airspaces at this
   point" no longer fills the map nor hides under the buttons: its own layer above them, the lower 45 % of the frame on
   a phone (level block beside the scrolling list, ✕ fixed), 320 px at the tap point on a screen; a tap on an empty spot
