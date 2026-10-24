@@ -879,6 +879,13 @@
   /** Points de report VFR (losange vert) et points RNAV en route (triangle bleu), identifiant à côté. */
   /** VRP d'hélicoptères : « -H- » dans l'identifiant de la base publiée (MN-H-HE). */
   const vrpRotary = id => /-H-/.test(String(id || ''));
+  /** Code court d'un point de report : celui que la carte écrit (lisibilité d'abord), jamais le nom long. L'identifiant de
+   *  la base porte le préfixe du terrain (« MN-SE » → « SE ») et « H- » pour un hélicoptère (« MN-H-HE » → « HE »). */
+  const vrpCode = id => {
+    const s = String(id || ''),
+      i = s.indexOf('-');
+    return (i > 0 ? s.slice(i + 1) : s).replace(/^H-/, '');
+  };
   /** Couleur d'un point de report VFR : voilure fixe dans la couleur du texte (--sog-fg), voilure tournante en vert. */
   const vrpColor = id => vrpRotary(id) ? VRP_HELI : (T || tokens()).fg;
   const VRP_HELI = '#2e7d32';
@@ -896,7 +903,7 @@
         e: b.e + .3
       },
       f = 8 * PT * scale * .85,
-      mark = (v, col, r, shape) => {
+      mark = (v, col, r, shape, text = v.id) => {
         if (!inBox(t, v.lat, v.lon)) return false;
         const p = toC(v.lat, v.lon);
         if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) return false;
@@ -917,14 +924,14 @@
         ctx.strokeStyle = col;
         ctx.lineWidth = 1.5 * scale;
         ctx.stroke();
-        if (lab && v.id) {
-          const w = v.id.length * f * .62;
+        if (lab && text) {
+          const w = text.length * f * .62;
           if (!pl || pl.take({
               x0: p.x + r + 2,
               y0: p.y - f * .7,
               x1: p.x + r + 4 + w,
               y1: p.y + f * .7
-            })) halo(ctx, v.id, p.x + r + 3, p.y, f, col, 'left');
+            })) halo(ctx, text, p.x + r + 3, p.y, f, col, 'left');
         }
         return true;
       };
@@ -934,7 +941,7 @@
         if (v.type === 'ICAO') mark(v, '#1f5fa8', 4 * scale, 'tri');
     if (vrp)
       for (const v of data.vrp)
-        if (mark(v, vrpColor(v.id), 4.5 * scale, 'diamond')) hits.push({
+        if (mark(v, vrpColor(v.id), 4.5 * scale, 'diamond', vrpCode(v.id))) hits.push({
           v,
           ...toC(v.lat, v.lon)
         });
@@ -1376,6 +1383,17 @@
   /** Zoom MapLibre d'une échelle en px par degré, et l'inverse. */
   const zoomOf = px => Math.log2(Math.max(1e-6, px) * 360 / 512),
     pxOfZoom = z => 512 * 2 ** z / 360;
+  /** Zoom effectif, celui qu'on compare aux seuils : le zoom (déjà décalé par le curseur de complexité) corrigé par la
+   *  taille montrée dans le cadre, la moyenne de sa hauteur et de sa largeur (px CSS). À la taille de référence
+   *  (FRAME_REF_PX, un cadre de portable) aucune correction ; un cadre deux fois plus petit compte pour un niveau de
+   *  moins (moins d'éléments), deux fois plus grand pour un niveau de plus. Une seule fonction, pour le dessin, les
+   *  libellés, la couche des VRP et la densité. */
+  const FRAME_REF_PX = 900,
+    FRAME_K = 1;
+  const effectiveZoom = (zoom, w, h, k = FRAME_K) => {
+    const mean = ((+w || 0) + (+h || 0)) / 2;
+    return mean > 0 ? zoom + Math.log2(mean / FRAME_REF_PX) * k : zoom;
+  };
   /** Clé de seuil de la famille d'un espace. */
   const zoneKey = t => {
     t = String(t || '').toUpperCase();
@@ -1497,8 +1515,10 @@
         lon: (bbox.e + bbox.w) / 2
       },
       // zoom de la vue, décalé de ¾ de niveau par cran du curseur de complexité (detail, de −2 à +2 : plus de détails à
-      // droite) ; carte de mission : tout ce que son profil montre ; vol : les seuils de zoom de chaque élément
-      zv = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + (Math.round(+detail) || 0) * .75,
+      // droite), puis corrigé par la taille du cadre (effectiveZoom) ; carte de mission : tout ce que son profil montre
+      // (ni curseur ni taille) ; vol : les seuils de zoom de chaque élément se comparent à ce zoom effectif
+      zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + (Math.round(+detail) || 0) * .75,
+      zv = mission ? zs : effectiveZoom(zs, W, H),
       tier = tierOf(pxOfZoom(zv));
     if (!mission) profile = atZoom(profile, zv);
     const shown = mission ? data : byZoom(data, profile, zv, tier),
@@ -1556,6 +1576,21 @@
     // cadres posés, pour les infobulles et les libellés ajoutés par l'écran (TOC, TOD) : cartouches des voies, libellés
     // d'espaces, libellés de la route
     return {
+      // zoom effectif comparé aux seuils et ce que la vue en garde (mesures, page d'essai : window.__maps.mod)
+      zoom: {
+        shifted: zs,
+        effective: zv,
+        tier,
+        kept: mission ? null : {
+          airspaces: shown.airspaces?.length || 0,
+          aerodromes: shown.aerodromes?.length || 0,
+          navaids: shown.navaids?.length || 0,
+          vrp: shown.vrp?.length || 0,
+          obstacles: shown.obstacles?.length || 0,
+          moraCells: shown.moraCells?.length || 0,
+          cities: shown.cities?.length || 0
+        }
+      },
       airways: ends.hits || [],
       // terrains dessinés dans le cadre, à leur place à l'écran (survol et toucher d'un terrain : points de report VFR)
       // balises dessinées et celles qui leur sont rattachées faute de place (même endroit) : infobulle
@@ -1593,6 +1628,9 @@
     awLimit,
     zoomOf,
     pxOfZoom,
+    effectiveZoom,
+    FRAME_REF_PX,
+    vrpCode,
     zoneKey,
     visibleAt,
     atZoom,

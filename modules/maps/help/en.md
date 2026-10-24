@@ -17,11 +17,12 @@ finger, spread two fingers to zoom; “Recentre” comes back to the whole route
 the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
 route; zoom in to see everything.
 
-**The profile and the cursor.** Below the map, the vertical profile cuts through the route from end to end: the
-terrain, the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the
-profile: a blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The
-line below the profile says what is under the cursor: distance from the departure, planned altitude, terrain height,
-and the airspace you are in at that point.
+**The profile and the cursor.** Below the map, the vertical profile cuts through the route from end to end: the terrain,
+the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
+blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
+the profile says what is under the cursor: distance from the departure, planned altitude, terrain height, and the
+airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
+an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed.
 
 **Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
@@ -43,30 +44,36 @@ is kept for this setting on this device. “Reset all” goes back to the origin
 by default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
 elsewhere. Close up, everything is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to
 the left, more to the right, at every zoom. Each element of the map has its zoom range: VFR reporting points appear only
-very close, CTRs close up, TMAs in a medium view, FIRs from afar.
+very close, CTRs close up, TMAs in a medium view, FIRs from afar. The size of the map counts too: in a small frame
+(phone, pane of the dual view) it shows fewer elements than a large one at the same zoom, as if you were further out
+(the zoom is corrected by the mean of the frame's height and width, 900 px meaning no correction).
 
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a small
 bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks, its
 floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
-elsewhere inside an airspace, a card shows the airspaces under your finger,
-one or several: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
-then the numbered list with their limits. The ✕, Escape or a tap elsewhere on the map close it, another tap on airspaces replaces it; moving the map leaves it. On a phone it takes the lower part of the map, above the buttons. It follows the pointer, stays 5 seconds, gives
-way to the next one, and closes with a tap elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several
-beacons share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the
-others (“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give
-the airspaces crossed in the same way.
+elsewhere inside an airspace, the data block under the map shows the airspaces under your finger, one or several, in
+place of the profile: a chart of levels, like the vertical profile (one numbered column per airspace, from its floor to
+its ceiling), then the numbered list with their limits. The ✕, Escape or a tap on an empty spot of the map close it and
+the profile comes back, another tap on airspaces replaces it; moving the map leaves it. The map neither moves nor
+changes size. The hover bubble follows the pointer, stays 5 seconds, gives way to the next one, and closes with a tap
+elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several beacons
+share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the others
+(“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give the airspaces crossed in the same way.
 
 **The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences
-taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in on its
-points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the VAC,
-folded page by page. It stays open while you move the map: the ✕ or Escape closes it,
-another airfield replaces it. Tapping a reporting point opens its airfield's card in the same way, that point first. In VFR mode, the points of the departure and arrival
-airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
-and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
-the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow
-marks a one-way route. The reporting points of the database are always there, in black for aeroplanes and in green for
-helicopters; the sequences and instructions of the VAC are added once imported. They appear once the administrator has
-imported them (Settings › Maintenance).
+taken from its VAC charts light up (named circles, dashes between the points). On the map, a reporting point carries
+only its short code (“NA”, “E”, “SE”…), so that the map stays legible; the long name is in the bubble and in the list.
+Tap the airfield: the map zooms in on its points when they are crowded, and the data block under the map, in place of
+the profile, gives the list of points (code, long name, restrictions), the sequences (with the VAC page), then the
+instructions of the VAC, folded page by page; it scrolls when the content is long. It stays open while you move the map:
+the ✕ or Escape closes it and the profile comes back, another airfield replaces it. Tapping a reporting point opens its
+airfield's content in the same way, that point first. In VFR mode, the points of the departure and arrival airfields are
+shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked” and are not
+the published route; the VAC chart prevails. When the airfield has been analysed by hand, the block says so, the routes
+carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow marks a
+one-way route. The reporting points of the database are always there, in black for aeroplanes and in green for
+helicopters; the sequences and instructions of the VAC are added once the administrator has imported them (Settings ›
+Maintenance).
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
@@ -135,4 +142,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 16866d3245cc -->
+<!-- fr: 8c4a1ed0d0cd -->

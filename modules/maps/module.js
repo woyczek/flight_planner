@@ -318,9 +318,12 @@ const TX = {
     'Jedes Element wird zwischen seinen zwei Zoomschwellen gezeichnet, je Modus eingestellt; die Karte folgt sofort. Die Marke zeigt den aktuellen Zoom. Kästchen nicht angekreuzt: nie gezeichnet, unabhängig von den Schwellen (dasselbe Kästchen wie im Bereich Ebenen, sofort auf diesem Gerät behalten).',
     'Cada elemento se dibuja entre sus dos umbrales de zoom, ajustados por modo; el mapa sigue en directo. La marca indica el zoom actual. Casilla sin marcar: nunca se dibuja, sean cuales sean los umbrales (la misma casilla que en el panel Capas, guardada enseguida en este dispositivo).'
   ],
-  tuneNow: ['Zoom courant : {z} · {s} NM par cm d\'écran', 'Current zoom: {z} · {s} NM per cm of screen',
-    'Aktueller Zoom: {z} · {s} NM pro cm Bildschirm', 'Zoom actual: {z} · {s} NM por cm de pantalla'
+  tuneNow: ['Zoom courant : {z} · effectif {e} (cadre de {m} px en moyenne) · {s} NM par cm d\'écran',
+    'Current zoom: {z} · effective {e} (frame of {m} px on average) · {s} NM per cm of screen',
+    'Aktueller Zoom: {z} · wirksam {e} (Rahmen von durchschnittlich {m} px) · {s} NM pro cm Bildschirm',
+    'Zoom actual: {z} · efectivo {e} (marco de {m} px de media) · {s} NM por cm de pantalla'
   ],
+  dataProfile: ['Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical'],
   tuneRange: ['de {a} à {b}', 'from {a} to {b}', 'von {a} bis {b}', 'de {a} a {b}'],
   tuneNoLimit: ['sans limite', 'no limit', 'ohne Grenze', 'sin límite'],
   tuneFrom: ['à partir de {a}', 'from {a}', 'ab {a}', 'desde {a}'],
@@ -755,9 +758,12 @@ function draw() {
   }
   // courbes de niveau (Topo, VFR), de près, sous la surcouche aéronautique
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w);
-  const zv = MapsRender.zoomOf(pxDeg) + (S.mission ? 0 : detailShift(W) * .75),
+  // zoom réel de la vue, décalé par le curseur de complexité, puis corrigé par la taille du cadre : c'est ce zoom effectif
+  // (zv) qu'on compare aux seuils, ici comme dans MapsRender.draw (même fonction)
+  const zReal = MapsRender.zoomOf(pxDeg),
+    zv = S.mission ? zReal : MapsRender.effectiveZoom(zReal + detailShift() * .75, W, H),
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
-  if (S.tuneEl) markTune(zv, (shown.n + shown.s) / 2);
+  if (S.tuneEl) markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
   baseNames(!!S.profile?.cities && !!S.data?.data?.cities?.length && ['citiesBig', 'citiesMid', 'citiesSmall'].some(zoomOn));
   if (!S.mission && layersNow().contours && zoomOn('contours') && window.MapsContours && navigator.onLine !== false) MapsContours.draw(
@@ -782,7 +788,7 @@ function draw() {
     marks: S.marks,
     theme: S.theme,
     level: formatLevel,
-    detail: S.mission ? 0 : detailShift(W),
+    detail: S.mission ? 0 : detailShift(),
     hideVrp: S.mission ? null : vfrVrpIds(),
     mission: S.mission ? {
       points: S.mission.points,
@@ -960,8 +966,9 @@ function fit(c, box) {
 /** Coupe dessinée (SiaProfile), marques NM en bas du cadre, puis le curseur. */
 function drawProfile() {
   if (!S?.pc) return;
-  S.profBox.hidden = !S.prof;
-  if (!S.prof) return;
+  if (S.profBox.hidden === !!S.prof) S.profBox.hidden = !S.prof;
+  dataHead();
+  if (!S.prof || S.dpanel) return; // contenu ouvert dans le bloc : le profil est redessiné à sa fermeture
   const {
     W,
     H,
@@ -1197,9 +1204,9 @@ async function startTiles() {
         if (!S) return;
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
-        closeLv(); // un toucher sur la carte ferme celle des niveaux ; sur des espaces, la suivante la remplace aussitôt
+        closeLv(); // un toucher sur la carte ferme la liste des espaces ; sur des espaces, la suivante la remplace aussitôt
         if (S.edit.on) return editTap(e.point.x, e.point.y);
-        // carte d'un point de la route ouverte : ce toucher la ferme ; celle d'un terrain, épinglée, reste
+        // carte d'un point de la route ouverte : ce toucher la ferme ; le contenu d'un terrain, épinglé, reste
         if (!S.mission && vrpTap(e.point.x, e.point.y)) return; // point de report : son terrain (point en tête)
         if (!S.mission && adAt(e.point.x, e.point.y)) return pinAd(adAt(e.point.x, e.point
           .y)); // un autre terrain la remplace
@@ -1466,7 +1473,6 @@ let touchAt = -1e9;
 const fromTouch = e => !!e?.sourceCapabilities?.firesTouchEvents || performance.now() - touchAt < 1000;
 const hideTips = () => {
   if (S?.cardEl && !S.cardEl.hidden) S.cardEl.hidden = true;
-  if (S?.cardEl?.style.maxHeight) S.cardEl.style.maxHeight = ''; // hauteur propre à la carte d'un terrain
   for (const k of ['map', 'prof']) stay(k);
   if (S?.tipEl) S.tipEl.hidden = true;
   if (S?.ptipEl) S.ptipEl.hidden = true;
@@ -2083,8 +2089,8 @@ function tipAt(x, y, lat = null, lon = null) {
   })}` : l[1] || ''] : null;
 }
 // ---------------------------------------------------------------- points de report VFR d'un terrain (VAC)
-// Survol d'un terrain (souris) : aperçu de ses points de report et de ses séquences ; toucher : épinglé, avec sa carte
-// (séquences en texte, consignes des VAC repliées par page), jusqu'à Échap ou un toucher ailleurs ; en mode VFR, départ et
+// Survol d'un terrain (souris) : aperçu de ses points de report et de ses séquences ; toucher : épinglé, avec son contenu dans le bloc de données
+// (séquences en texte, consignes des VAC repliées par page), jusqu'à ✕, Échap ou un autre terrain ; en mode VFR, départ et
 // arrivée épinglés d'office (dessin seul). Données : aerodb.vfrRoutes (sia/vfr/<OACI>.json), candidats tirés des VAC,
 // toujours en tirets et marqués « à vérifier », jamais un itinéraire publié ni un sens de parcours.
 const VFR_COL = '#00897b'; // séquences et tracés tirés des VAC (les points de report : MapsRender.vrpColor)
@@ -2185,7 +2191,7 @@ function baseVrpOf(icao) {
       rows = (own.length ? own : all.filter(v => nm(v) <= 15)).map(v => ({
         id: v.id,
         // code tel que l'écrit la VAC : « HE » pour MN-H-HE (la couleur dit l'hélicoptère)
-        code: (v.id.startsWith(pre) ? v.id.slice(pre.length) : v.id).replace(/^H-/, ''),
+        code: (v.id.startsWith(pre) ? v.id.slice(pre.length) : MapsRender.vrpCode(v.id)).replace(/^H-/, ''),
         name: v.name || '',
         lat: +v.lat,
         lon: +v.lon
@@ -2275,7 +2281,7 @@ function adHover(a, x, y) {
     c: adCounts(a.icao)
   })));
 }
-/** Terrain épinglé (toucher) : surbrillance gardée et sa carte. */
+/** Terrain épinglé (toucher) : surbrillance gardée et son contenu dans le bloc de données. */
 function pinAd(a, focus = null) {
   hideTips();
   S.vfrPin = a.icao;
@@ -2291,8 +2297,8 @@ function pinAd(a, focus = null) {
   schedule();
 }
 /** Terrain épinglé : la carte se rapproche de ses points de report s'ils sont serrés à l'écran (moins de 160 px ; c'est
- *  le geste de l'utilisateur, la caméra reste ensuite la sienne), en laissant la place de sa carte, puis la carte du
- *  terrain s'ouvre (« … » tant que la base ou la compilation sont en lecture). */
+ *  le geste de l'utilisateur, la caméra reste ensuite la sienne), et son contenu s'ouvre dans le bloc de données
+ *  (« … » tant que la base ou la compilation sont en lecture). */
 function pinView(icao) {
   const c = S.vfrCard;
   if (!c) return;
@@ -2305,49 +2311,53 @@ function pinView(icao) {
     span = Math.max(Math.max(...px.map(q => q.x)) - Math.min(...px.map(q => q.x)), Math.max(...px.map(q => q.y)) - Math.min(...px.map(q =>
       q.y)));
   if (span >= 160) return showAdCard(icao);
-  const W = S.box.clientWidth,
-    H = S.box.clientHeight,
-    side = W > 700 ? 380 : 40,
-    left = S.map.project([c.lon, c.lat]).x >= W / 2,
-    narrow = W < 600; // téléphone, volet : la carte du terrain prend le bas du cadre
-  S.map.once('moveend', () => S?.vfrPin === icao && showAdCard(icao));
+  // le contenu du terrain est dans le bloc de données, sous la carte : le cadrage prend toute la carte (sous les boutons du
+  // haut, à droite des modes et des couches)
+  showAdCard(icao);
   S.map.fitBounds([
     [Math.min(...pts.map(p => +p.lon)), Math.min(...pts.map(p => +p.lat))],
     [Math.max(...pts.map(p => +p.lon)), Math.max(...pts.map(p => +p.lat))]
   ], {
-    padding: narrow ? {
+    padding: {
       top: 56,
-      bottom: Math.round(H * .45) + 16,
-      left: 30,
-      right: 30
-    } : {
-      top: 50,
       bottom: 40,
-      left: left ? side : 40,
-      right: left ? 40 : side
+      left: 64,
+      right: 40
     },
     maxZoom: 11,
     duration: 500
   });
 }
 
-function unpinAd() {
-  if (!S.adCardEl.hidden) S.adCardEl.hidden = true;
+/** Terrain relâché (la surbrillance s'arrête) ; le bloc de données n'est pas touché. */
+function releaseAd() {
   if (!S.vfrPin) return;
   S.vfrPin = null;
   S.vfrCard = null;
   S.vfrZoomed = null;
   schedule();
 }
-/** Carte d'un terrain épinglé : ses points de report (base publiée, couleur avion ou hélicoptère), puis, si la
- *  compilation VAC est importée, l'analyse, les séquences, les points restreints, les sommets manuels et les consignes
- *  repliées par page ; sinon « séquences VAC : non importées ». */
+/** Contenu du terrain fermé (✕, Échap, un autre contenu) : le terrain est relâché et le profil vertical revient. */
+function unpinAd() {
+  endData('ad');
+  releaseAd();
+}
+/** Contenu d'un terrain épinglé, dans le bloc de données (à la place du profil vertical) : ses points de report (base
+ *  publiée, couleur avion ou hélicoptère, nom long), puis, si la compilation VAC est importée, l'analyse, les séquences,
+ *  les points restreints, les sommets manuels et les consignes repliées par page ; sinon « séquences VAC : non
+ *  importées ». */
 function showAdCard(icao) {
   const v = vfrOf(icao),
     base = baseVrpOf(icao),
     c = S.vfrCard;
   if (!c) return;
-  const head = `<button type="button" class="mp-adclose" data-adclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(tt(TX.vfrTitle, { ad: [icao, c.name].filter(Boolean).join(' ') }))}</b></div>`,
+  // en-tête : « LFBD : points de report VFR » (le nom du terrain va en infobulle de l'en-tête, il ferait tronquer le titre sur un téléphone)
+  const title = tt(TX.vfrTitle, {
+      ad: icao
+    }),
+    label = tt(TX.vfrTitle, {
+      ad: [icao, c.name].filter(Boolean).join(' ')
+    }),
     page = p => p ? ` <span class="f-muted">(${esc(tt(TX.vfrPage, { p }))})</span>` : '',
     pts = (l => c.focus ? [...l.filter(p => p.id === c.focus), ...l.filter(p => p.id !== c.focus)] : l)(reportPoints(icao)),
     heli = pts.some(p => MapsRender.vrpRotary(p.id)),
@@ -2386,26 +2396,7 @@ function showAdCard(icao) {
       body += `<p class="mp-vfr-warn">${esc(tt(TX.vfrLabel))}</p>${st ? `<p><b>${esc(tt(st, { s: tt(TX.vfrScope[A.scope] || TX.vfrScope.partial) }))}</b></p>` : ''}${A.notes?.length ? `<ul class="mp-vfr-seq">${A.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}${seqs.length ? `<div><b>${esc(tt(TX.vfrSeqCount, { r: seqs.length }))}</b>${part ? ` <span class="f-muted">${esc(tt(TX.vfrPart))}</span>` : ''}</div><ul class="mp-vfr-seq">${seqs.map(item).join('')}</ul>` : ''}${man}${v.notes?.length ? `<div><b>${esc(tt(TX.vfrNotes))}</b></div>${v.notes.map(n => `<details class="mp-vfr-note"><summary>${esc(n.title || tt(TX.vfrPage, { p: n.page }))}${page(n.page)}</summary><div>${esc(n.text)}</div></details>`).join('')}` : ''}`;
     }
   }
-  // carte du côté opposé au terrain, sous les boutons du haut du cadre (Modifier, modes et couches) : les points restent
-  // visibles, aucun bouton n'est couvert
-  const W = S.box.clientWidth,
-    q = S.map ? S.map.project([c.lon, c.lat]) : S.toC?.(c.lat, c.lon) || {
-      x: 0
-    },
-    r0 = S.box.getBoundingClientRect(),
-    right = q.x < W / 2,
-    // à droite, sous « Modifier » ; à gauche, sous les boutons des modes et des couches
-    btn = right ? S.editBtn : S.layersBtn,
-    narrow = W < 600,
-    below = narrow ? Math.round(r0.height * .55) : btn && !btn.hidden ? btn.getBoundingClientRect().bottom - r0.top : 0,
-    mh = `${Math.max(120, Math.round(r0.height - below - 14))}px`;
-  const A = S.adCardEl;
-  if (A.style.maxHeight !== mh) A.style.maxHeight = mh;
-  // étroit : en bas du cadre, sur toute sa largeur (les points sont cadrés au-dessus) ; le reste du cadre se déplace au
-  // doigt comme d'habitude
-  showTip(A, S.box, narrow ? -10 : right ? W : -10, below, head + body);
-  const top = `${Math.round(below + 6)}px`; // juste sous les boutons (ou à mi-hauteur), jamais au-dessus
-  if (A.style.top !== top) A.style.top = top;
+  openData('ad', `ad:${icao}`, title, () => body, label);
 }
 /** VRP de la base que la surbrillance dessine (terrains montrés) : la couche des VRP ne les redessine pas. */
 function vfrVrpIds() {
@@ -2488,14 +2479,14 @@ function drawVfr(ctx, toC) {
     for (const p of pts) {
       const q = toC(p.lat, p.lon),
         col = MapsRender.vrpColor(p.id),
-        name = [p.code, p.name.length > 28 ? `${p.name.slice(0, 27)}…` : p.name].filter(Boolean).join(' ');
+        name = p.code; // sur la carte, le code court seul (lisibilité) ; le nom long est dans l'infobulle et dans le bloc de données
       ctx.beginPath();
       ctx.arc(q.x, q.y, 7, 0, Math.PI * 2);
       ctx.fillStyle = MapsRender.withAlpha(col, .12);
       ctx.fill();
       ctx.strokeStyle = col;
       ctx.lineWidth = 2;
-      if (p.restrictions.length) ctx.setLineDash([3, 2]); // usage restreint : cercle tireté (la carte du terrain dit lequel)
+      if (p.restrictions.length) ctx.setLineDash([3, 2]); // usage restreint : cercle tireté (le bloc de données dit lequel)
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.strokeStyle = S.theme.bg;
@@ -2541,10 +2532,13 @@ const ZONE_COL = {
   RMZ: '#555',
   TMZ: '#555'
 };
-/** Carte des niveaux d'un point : un bloc comme le profil vertical (axe des altitudes, une colonne par espace entre son
- *  plancher et son plafond, numérotée), puis la liste numérotée en notation SIA, du plancher le plus bas au plus haut.
- *  Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas lu ici : l'étiquette dit ASFC). */
-function levelsHtml(list, narrow = false) {
+/** Contenu « n espaces sur ce point » du bloc de données : un graphique comme le profil vertical (axe des altitudes, une
+ *  colonne par espace entre son plancher et son plafond, numérotée), à gauche, puis la liste numérotée en notation SIA,
+ *  du plancher le plus bas au plus haut. Le graphique est dessiné à l'échelle 1 pour la place du bloc (bw × bh px) : 44 %
+ *  de sa largeur sur un téléphone (moins de 600 px), sinon la largeur que demandent les colonnes (400 px au plus), et
+ *  jamais plus haut que le bloc. Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas lu ici : l'étiquette
+ *  dit ASFC). */
+function levelsHtml(list, bw = 360, bh = 200) {
   const lim = window.SiaAero?.limitFt || (() => 0),
     rows = list.map(a => {
       const lo = Math.max(0, +lim(a.lower, false) || 0),
@@ -2566,10 +2560,10 @@ function levelsHtml(list, narrow = false) {
     raw = Math.max(5000, ...finite) * 1.08,
     step = nice(raw),
     top = Math.ceil(raw / step) * step,
-    // téléphone : le bloc à gauche de la liste (hauteur bornée, pas de défilement du bloc), sinon au-dessus d'elle
-    W = narrow ? 150 : 280,
-    H = narrow ? 120 : 110,
+    narrow = bw < 600,
     L = 46,
+    W = Math.round(narrow ? bw * .44 : Math.min(400, bw * .45, Math.max(240, L + 12 + rows.length * 36))),
+    H = Math.round(Math.max(110, Math.min(300, bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
     y = ft => B - (Math.min(ft, top) / top) * (B - T),
@@ -2592,60 +2586,95 @@ function levelsHtml(list, narrow = false) {
     const [a, b] = MapsRender.sia(r.a);
     return `<li><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</span></li>`;
   }).join('');
-  return `<button type="button" class="mp-adclose" data-lvclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(rows.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, { n: rows.length }))}</b></div><div class="mp-lv-body"><svg class="mp-lv" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>`;
+  return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>`;
 }
-/** Carte des niveaux : fermée (écrit seulement si elle est ouverte). Un toucher ailleurs sur la carte, ✕ et Échap la
- *  ferment ; un glisser ou la molette jamais (`hideTips` ne la touche pas). */
+/** Liste des espaces fermée (écrit seulement si elle est ouverte) : un toucher sur un endroit vide de la carte, ✕ et Échap
+ *  la ferment, le profil vertical revient ; un glisser ou la molette jamais (`hideTips` ne la touche pas). */
 function closeLv() {
-  if (S?.lvCardEl && !S.lvCardEl.hidden) S.lvCardEl.hidden = true;
+  if (S?.dpanel) endData('lv');
 }
-/** Carte des niveaux dessinée et posée : sa propre couche (au-dessus des boutons et des panneaux, comme un dialogue) ;
- *  cadre étroit (téléphone, moins de 600 px, comme la carte d'un terrain) : le bas du cadre sur toute sa largeur
- *  (45 % de la hauteur au plus, CSS `.mp-lvnarrow`), la liste défile dedans, ✕ fixe ; sinon au point touché, 320 px et
- *  60 % de la hauteur au plus, tenue dans le cadre. Reprise à chaque changement de taille du cadre. */
+/** Liste des espaces sous le point touché, dans le bloc de données. Un terrain épinglé est relâché : un seul contenu à la
+ *  fois, la surbrillance ne reste pas sans sa liste. */
 function showLv() {
-  const L = S.lvCardEl,
-    W = S.box.clientWidth,
-    H = S.box.clientHeight,
-    narrow = W < 600,
-    html = levelsHtml(S.lvList, narrow),
-    set = (k, v) => {
-      if (L.style[k] !== v) L.style[k] = v;
-    };
-  if (L.classList.contains('mp-hover')) L.classList.remove('mp-hover');
-  if (L.classList.contains('mp-lvnarrow') !== narrow) L.classList.toggle('mp-lvnarrow', narrow);
-  if (L.innerHTML !== html) L.innerHTML = html;
-  L.hidden = false;
-  if (narrow) {
-    set('left', '');
-    set('top', '');
-    return;
+  const list = S.lvList;
+  if (!list?.length) return;
+  releaseAd();
+  openData('lv', `lv:${list.map(a => a.id || a.name || '').join('|')}`, list.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, {
+    n: list.length
+  }), (w, h) => levelsHtml(list, w, h));
+}
+// ---------------------------------------------------------------- le bloc de données (sous la carte)
+// La vue est fixe : la carte, puis le bloc de données. Le bloc montre le profil vertical ; la liste des espaces d'un point
+// et le contenu d'un terrain (points de report, séquences VAC, consignes) s'y ouvrent à sa place — on n'a pas besoin du
+// profil pendant qu'on les lit — et, fermés, le profil revient. Rien ne recouvre plus la carte. Une règle de hauteur
+// (celle du profil, --mp-prof-h), le contenu long défile dans le bloc.
+/** En-tête du bloc : ce qu'il montre (profil vertical, ou le titre du contenu) et le ✕ du contenu ; écrit s'il change. */
+function dataHead() {
+  const show = !!S.dpanel || !!S.prof,
+    title = S.dpanel ? S.dtitle : tt(TX.dataProfile);
+  if (S.dheadEl.hidden === show) S.dheadEl.hidden = !show;
+  if (S.dtitleEl.textContent !== title) S.dtitleEl.textContent = title;
+  const tip = S.dpanel ? S.dlabel : '';
+  if (S.dtitleEl.title !== tip) S.dtitleEl.title = tip;
+  if (S.dcloseEl.hidden === !!S.dpanel) S.dcloseEl.hidden = !S.dpanel;
+}
+/** Ouvre ou remplace le contenu du bloc. key : l'identité du contenu (autre clé : le contenu est neuf, il défile en haut et
+ *  le bloc est amené à l'écran s'il en sortait ; même clé : il est seulement redessiné, défilement gardé) ; build(w, h)
+ *  rend le HTML pour la taille de la zone de contenu ; label : le nom complet, pour l'infobulle de l'en-tête et le lecteur
+ *  d'écran. Sur un téléphone la carte reste en haut ; la page ne défile que pour
+ *  que le bloc soit visible (`scrollIntoView`, block nearest), la caméra de la carte n'est pas touchée. */
+function openData(kind, key, title, build, label = title) {
+  const fresh = S.dkey !== key;
+  S.dpanel = kind;
+  S.dkey = key;
+  S.dtitle = title;
+  if (!S.dprofEl.hidden) S.dprofEl.hidden = true;
+  if (S.dbodyEl.hidden) S.dbodyEl.hidden = false;
+  if (S.dbodyEl.getAttribute('aria-label') !== label) S.dbodyEl.setAttribute('aria-label', label);
+  S.dlabel = label;
+  const html = build(S.dbodyEl.clientWidth || 360, S.dbodyEl.clientHeight || 200);
+  if (S.dhtml !== html) {
+    S.dhtml = html;
+    S.dbodyEl.innerHTML = html;
   }
-  const w = L.offsetWidth,
-    h = L.offsetHeight,
-    {
-      x,
-      y
-    } = S.lvTap;
-  set('left', `${Math.max(4, Math.min(W - w - 4, x + 10))}px`);
-  // au-dessus du doigt, sinon dessous ; toujours dans le cadre
-  set('top', `${Math.max(4, Math.min(H - h - 4, y - h - 10 < 4 ? y + 14 : y - h - 10))}px`);
+  dataHead();
+  if (!fresh) return;
+  S.dbodyEl.scrollTop = 0;
+  S.dataEl.scrollIntoView({
+    block: 'nearest',
+    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  });
+}
+/** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille. */
+function endData(kind = null) {
+  if (!S?.dpanel || (kind && S.dpanel !== kind)) return;
+  S.dpanel = null;
+  S.dkey = null;
+  S.dhtml = '';
+  S.dbodyEl.hidden = true;
+  S.dbodyEl.textContent = '';
+  S.dprofEl.hidden = false;
+  drawProfile();
+  dataHead();
+}
+/** Fermeture voulue (✕, Échap) : le contenu du bloc, quel qu'il soit. */
+function closeData() {
+  if (S.dpanel === 'ad' || S.vfrPin) unpinAd();
+  else endData();
 }
 /** Toucher ou clic sur la carte en (x, y) : la même infobulle qu'au survol, posée là, gardée 5 s, remplacée par la
- *  suivante ; rien dessous : l'infobulle se ferme. Plusieurs espaces superposés sous le point (ni barbule ni voie sous le
- *  doigt) : la carte des niveaux, qui reste jusqu'au toucher suivant. Vrai si quelque chose est montré. */
+ *  suivante ; rien dessous : l'infobulle se ferme. Un espace ou plus sous le point (ni barbule ni voie sous le doigt) : leur
+ *  liste dans le bloc de données, qui reste jusqu'à ✕, Échap ou un toucher sur un endroit vide. Vrai si quelque chose est
+ *  montré. */
 function mapTip(lat, lon, x, y) {
   // une barbule ou une voie sous le doigt passent avant ; un libellé d'espace, non (son espace est dans la carte)
   if (!windAt(x, y) && !MapsRender.airwaysAt(S.awHits, x, y).length) {
     const list = MapsRender.airspacesAt(S.data?.data?.airspaces || [], lat, lon);
-    // un espace ou plus sous le point : la carte des niveaux, qui reste (✕, Échap) ; un autre toucher la remplace
+    // un espace ou plus sous le point : leur liste dans le bloc de données, qui reste (✕, Échap, un toucher sur un endroit vide) ;
+    // un autre toucher sur des espaces la remplace
     if (list.length) {
       hideTips();
       S.lvList = list;
-      S.lvTap = {
-        x,
-        y
-      };
       showLv();
       return true;
     }
@@ -3267,18 +3296,21 @@ function tuneVis() {
   }
 }
 /** Zoom courant marqué sur chaque curseur, et rappelé en tête (NM par cm) ; écrit seulement s'il change. */
-function markTune(z, lat) {
+function markTune(zReal, zEff, lat, W, H) {
   S.tuneLat = lat;
-  const key = `${z.toFixed(2)}|${lat.toFixed(1)}`;
+  const key = `${zReal.toFixed(2)}|${zEff.toFixed(2)}|${lat.toFixed(1)}|${W}x${H}`;
   if (S.tuneMarked === key) return;
   S.tuneMarked = key;
-  const left = `${Math.max(0, Math.min(100, z / Z_MAX * 100)).toFixed(2)}%`;
+  // la marque est le zoom effectif : c'est lui que les seuils des curseurs comparent
+  const left = `${Math.max(0, Math.min(100, zEff / Z_MAX * 100)).toFixed(2)}%`;
   for (const m of S.tuneEl.querySelectorAll('.mp-tune-mark'))
     if (m.style.left !== left) m.style.left = left;
   const now = S.tuneEl.querySelector('[data-now]'),
     t = tt(TX.tuneNow, {
-      z: z.toFixed(2),
-      s: fmtNm(nmPerCm(z, lat))
+      z: zReal.toFixed(2),
+      e: zEff.toFixed(2),
+      m: Math.round((W + H) / 2),
+      s: fmtNm(nmPerCm(zReal, lat))
     });
   if (now && now.textContent !== t) now.textContent = t;
 }
@@ -3597,9 +3629,9 @@ function setFollow(on) {
     progressUpdate();
   }
 }
-/** Décalage des seuils en crans : le curseur de complexité, et un cran de moins dans un cadre de moins de 600 px (volet
- *  de la vue double, téléphone). */
-const detailShift = W => (layersNow().detail || 0) - (W < 600 ? 1 : 0);
+/** Décalage des seuils en crans : le curseur de complexité. La taille du cadre (volet de la vue double, téléphone) n'est
+ *  plus un cran fixe : elle corrige le zoom effectif (MapsRender.effectiveZoom). */
+const detailShift = () => layersNow().detail || 0;
 /** Cadre la carte sur le vol (seul mouvement de caméra fait par le module, marqué pour ne pas passer pour celui de
  *  l'utilisateur). */
 function fitMap(animate) {
@@ -3804,11 +3836,12 @@ const STYLE = `
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 [data-module="maps"] .mp-credit{position:absolute;right:4px;bottom:2px;font-size:10px;color:var(--sog-fg);background:var(--sog-chart-bg);opacity:.85;padding:0 4px;border-radius:var(--sog-radius-s);pointer-events:none}
-[data-module="maps"] .mp-prof{position:relative;height:clamp(200px,30vh,340px);border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:pan-y;cursor:crosshair}
+[data-module="maps"]{--mp-prof-h:clamp(200px,30vh,340px)}
+[data-module="maps"] .mp-prof{position:relative;height:var(--mp-prof-h);border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:pan-y;cursor:crosshair}
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
-[data-module="maps"] .mp-strip{min-height:1.4em;font-size:.92em;font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-strip{min-height:20px;font-size:.92em;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-status p{margin:4px 0}
-[data-module="maps"] .mp-box{container-type:inline-size}
+[data-module="maps"] .mp-box{container-type:inline-size;isolation:isolate}
 [data-module="maps"] .mp-modes{position:absolute;left:8px;top:8px;z-index:6;max-width:calc(100% - 16px)}
 [data-module="maps"] .mp-modes[hidden]{display:none}
 [data-module="maps"] .mp-mode-btn,[data-module="maps"] .mp-choice{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
@@ -3876,29 +3909,27 @@ const STYLE = `
 [data-module="maps"] .mp-editbar button:disabled{opacity:.5;cursor:default}
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 [data-module="maps"] .mp-pcard[hidden]{display:none}
-[data-module="maps"] .mp-adcard{z-index:5}
-[data-module="maps"] .mp-adclose{position:absolute;top:2px;right:2px;width:44px;height:44px;min-height:0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit}
-[data-module="maps"] .mp-adhead{padding-right:40px}
 [data-module="maps"] .mp-vfr-focus{font-weight:700;background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
 [data-module="maps"] .mp-pcard .f-btn{align-self:flex-start;margin-top:4px}
-[data-module="maps"] .mp-pcard:has(.mp-vfr-warn){width:min(92%,360px);max-height:calc(100% - 12px);overflow:auto}
 [data-module="maps"] .mp-vfr-warn{margin:0;font-size:.9em;color:#00695c;font-style:italic}
 [data-module="maps"] .mp-vfr-seq{margin:2px 0 4px;padding-left:1.2em}
-[data-module="maps"] .mp-vfr-pts{margin:2px 0 6px;padding:0;list-style:none}
-[data-module="maps"] .mp-vfr-pts li{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+[data-module="maps"] .mp-vfr-pts{margin:2px 0 6px;padding:0;list-style:none;column-width:19em;column-gap:16px}
+[data-module="maps"] .mp-vfr-pts li{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;break-inside:avoid}
 [data-module="maps"] .mp-vfr-dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none}
 [data-module="maps"] .mp-vfr-note summary{cursor:pointer}
 [data-module="maps"] .mp-vfr-note>div{white-space:pre-wrap;font-size:.85em;max-height:14em;overflow:auto;border-left:2px solid var(--sog-border);padding-left:6px}
-[data-module="maps"] .mp-lvcard{z-index:7;width:min(92%,320px);max-height:60%;overflow:hidden}
-[data-module="maps"] .mp-lvcard .mp-adhead{flex:none;display:flex;align-items:center;min-height:40px}
-[data-module="maps"] .mp-lv-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:4px;overflow:auto;overscroll-behavior:contain;touch-action:pan-y}
-[data-module="maps"] .mp-lvcard.mp-lvnarrow{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-width:none;max-height:45%}
-[data-module="maps"] .mp-lvnarrow .mp-lv-body{flex-direction:row;align-items:flex-start}
-[data-module="maps"] .mp-lvnarrow .mp-lv{flex:0 0 44%;width:44%;position:sticky;top:0}
-[data-module="maps"] .mp-lvnarrow .mp-lv-list{flex:1 1 auto;min-width:0;margin:0}
-[data-module="maps"] .mp-lv{flex:none;width:100%;height:auto;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
-[data-module="maps"] .mp-lv-list{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
-[data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline}
+/* le bloc de données : en-tête d'une ligne (ce qu'il montre, ✕ de 44 px à droite), puis le profil vertical ou le contenu ouvert
+   à sa place, à la hauteur du profil (un seul bloc de règle) ; le contenu long défile dans le bloc */
+[data-module="maps"] .mp-dhead{display:flex;align-items:center;gap:8px;min-height:30px;font-size:.92em}
+[data-module="maps"] .mp-dhead[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
+[data-module="maps"] .mp-dtitle{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="maps"] .mp-dclose{flex:none;width:44px;height:44px;min-height:0;margin:-7px 0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit}
+[data-module="maps"] .mp-dbody{box-sizing:border-box;height:calc(var(--mp-prof-h) + 20px);padding:6px 8px;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
+[data-module="maps"] .mp-dbody p{margin:2px 0}
+[data-module="maps"] .mp-lv-body{display:flex;align-items:flex-start;gap:12px}
+[data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
+[data-module="maps"] .mp-lv-list{flex:1 1 auto;min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px}
+[data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:3px}
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
@@ -3942,11 +3973,13 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
 <div class="mp-editbar"><button type="button" class="mp-follow" hidden aria-pressed="false" title="${esc(ctx.t(TX.followHelp))}">${esc(ctx.t(TX.follow))}</button><button type="button" class="mp-add" hidden aria-pressed="false" title="${esc(ctx.t(TX.addPoint))}" aria-label="${esc(ctx.t(TX.addPoint))}">+</button><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
-<div class="mp-tip mp-pcard f-card" hidden role="dialog"></div><div class="mp-tip mp-pcard mp-adcard f-card" hidden role="dialog"></div><div class="mp-tip mp-pcard mp-lvcard f-card" hidden role="dialog"></div>
+<div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
-<div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
+<div class="mp-data"><div class="mp-dhead" hidden><b class="mp-dtitle"></b><button type="button" class="mp-dclose" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
+<div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
-<div class="mp-strip" aria-live="polite"></div>
+<div class="mp-strip" aria-live="polite"></div></div>
+<div class="mp-dbody" hidden role="region" tabindex="-1"></div></div>
 <div class="mp-status" aria-live="polite"><p class="f-muted">${esc(ctx.t(TX.loading))}</p></div>`;
   Object.assign(S, {
     box: el.querySelector('.mp-box'),
@@ -3971,9 +4004,13 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     progEl: el.querySelector('.mp-progress'),
     undoBtn: el.querySelector('.mp-undo'),
     addBtn: el.querySelector('.mp-add'),
-    cardEl: el.querySelector('.mp-pcard:not(.mp-adcard)'),
-    adCardEl: el.querySelector('.mp-adcard'),
-    lvCardEl: el.querySelector('.mp-lvcard'),
+    cardEl: el.querySelector('.mp-pcard'),
+    dataEl: el.querySelector('.mp-data'),
+    dheadEl: el.querySelector('.mp-dhead'),
+    dtitleEl: el.querySelector('.mp-dtitle'),
+    dcloseEl: el.querySelector('.mp-dclose'),
+    dprofEl: el.querySelector('.mp-dprof'),
+    dbodyEl: el.querySelector('.mp-dbody'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
     ptipEl: el.querySelector('.mp-prof .mp-tip')
   });
@@ -4025,7 +4062,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     const r = S.box.getBoundingClientRect(),
       x = e.clientX - r.left,
       y = e.clientY - r.top;
-    closeLv(); // comme sur MapLibre : un toucher sur la carte ferme celle des niveaux
+    closeLv(); // comme sur MapLibre : un toucher sur la carte ferme la liste des espaces
     if (S.edit.on) return editTap(x, y);
     if (!S.mission && vrpTap(x, y)) return;
     if (!S.mission && adAt(x, y)) return pinAd(adAt(x, y));
@@ -4065,16 +4102,11 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   // Échap : le terrain épinglé est relâché
   const esc0 = e => {
     if (e.key !== 'Escape' || !S) return;
-    if (!S.lvCardEl.hidden) closeLv(); // la carte des niveaux d'abord, puis celle du terrain
-    else if (S.vfrPin) unpinAd();
+    closeData(); // le contenu du bloc de données (espaces, points de report), quel qu'il soit : le profil revient
   };
-  // ✕ de la carte des niveaux
-  S.lvCardEl.addEventListener('click', e => {
-    if (e.target.closest('[data-lvclose]')) closeLv();
-  });
-  // ✕ de la carte d'un terrain
-  S.adCardEl.addEventListener('click', e => {
-    if (e.target.closest('[data-adclose]')) unpinAd();
+  // ✕ de l'en-tête du bloc de données
+  S.dheadEl.addEventListener('click', e => {
+    if (e.target.closest('[data-dclose]')) closeData();
   });
   document.addEventListener('keydown', esc0);
   S.stops.push(() => document.removeEventListener('keydown', esc0));
@@ -4179,10 +4211,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   }));
   const ro = new ResizeObserver(() => {
     mapSize();
-    if (!S.lvCardEl.hidden && S.lvList) showLv(); // rotation, cadre redimensionné : la carte des niveaux reprend sa place
     schedule();
   });
   ro.observe(S.box);
+  // rotation, volet redimensionné : le graphique des niveaux reprend la largeur du bloc
+  const rd = new ResizeObserver(() => S.dpanel === 'lv' && showLv());
+  rd.observe(S.dbodyEl);
   // retour d'un onglet caché ou d'une page gelée : taille reprise, surcouche redessinée
   const back = () => {
     if (document.hidden || !S) return;
@@ -4199,7 +4233,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   const rp = new ResizeObserver(() => drawProfile());
   rp.observe(S.profBox);
-  S.stops.push(() => ro.disconnect(), () => rp.disconnect());
+  S.stops.push(() => ro.disconnect(), () => rp.disconnect(), () => rd.disconnect());
 }
 
 export function unmount() {

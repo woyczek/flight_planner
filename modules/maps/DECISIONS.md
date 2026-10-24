@@ -567,3 +567,88 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     `lvcard_after_1280.png` (cloud session scratchpad; the agent that wrote the code was lost with its session, the
     cloud session finished the documents and ran the bench).
 
+- **24 Oct 2026 — the data block, short codes of the reporting points, thresholds corrected by the frame's size (user's
+  three decisions of 24 Oct, to be reviewed by the ergonomics session).**
+  - **1. The view is fixed: (1) the map, (2) the data block.** User's decision: the airspaces list ("n airspaces at this
+    point") and the aerodrome's VFR reporting points (points, VAC sequences, instructions) are no longer cards over the
+    map; they open in the data block under the map, **replacing the vertical profile while open**, and closing them
+    brings the profile back. Reason given: one does not need the profile while looking at the airspaces or at the
+    reporting points. This ends the debt entries of 23 Oct ("VFR information written on the map itself", the airspaces
+    card on a phone), and replaces the 24 Oct card placement (`.mp-lvcard`, `.mp-lvnarrow`, `.mp-adcard`: code and CSS
+    removed, not hidden; `levelsHtml` and the aerodrome's HTML builder (`showAdCard`) stay as content builders).
+    - **Rules kept as decided**: the map keeps its size and position (nothing overlays it but the light hover tooltip and
+      the Edit mode's route-point card); closing = ✕, Escape, and for the airspaces content a tap on an empty spot of
+      the map (24 Oct); the aerodrome's content stays until ✕ / Escape / another aerodrome (pinned, 23 Oct); the points
+      and sequences stay highlighted on the map while the aerodrome's content is open; the existing fit of the
+      reporting points on a tap is kept; on opening, `scrollIntoView({ block: 'nearest' })` of the block (the map stays
+      on top, the camera is not touched).
+    - **One height rule**: `--mp-prof-h = clamp(200px, 30vh, 340px)`, the profile box's rule, now a variable. The content
+      area is that height plus the strip's 20 px, so the block keeps one height when a content opens (a long content
+      scrolls inside, `overscroll-behavior: contain`). Measured: 260 px of content under a 30 px header at 1280 × 800
+      (the profile block is 30 + 240 + 20), 273 px at 390 × 844 (30 vh = 253 + 20). No frame change was needed: the
+      rule is module-scoped (`[data-module="maps"]`), the dual-view pane gets it at its own width (513 px).
+    - **Header line** (30 px): "Vertical profile" / "n airspaces at this point" / "LFBD: VFR reporting points", the ✕ at
+      the right, 44 × 44 drawn over the line with negative vertical margins (the line stays 30 px). *Judgement call*: the
+      header also shows for the profile (the user listed "profile" among the three things it says) at a cost of 30 px;
+      the ✕ only shows for a content. *Judgement call*: the aerodrome's name is not in the title (the phone truncated
+      "LFBD BORDEAUX MERIGNAC : points de rep…"); title = ICAO only, the full name in the tooltip of the line and in the
+      region's `aria-label`.
+    - **One content at a time; the newer replaces.** *Judgement call*: opening the airspaces list while an aerodrome is
+      pinned **releases the aerodrome** (highlight off), so that no highlight stays without its list. Tapping an
+      aerodrome while the airspaces are open replaces them (the airspaces list is not restored).
+    - **Chart of the levels adapted to the block** (the 24 Oct narrow layout was for a 45 % card): drawn at scale 1 for the
+      measured content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px, otherwise the width the columns
+      ask for (400 px at most), at most as high as the area, sticky while the list scrolls; the lists (airspaces,
+      reporting points) flow in columns of 19 em, so that 1,250 px are used instead of one long column.
+    - **The fit of the reporting points** has the whole map now (no room reserved for a card: padding 56 / 40 / 64 / 40
+      under the buttons), and the content opens at once instead of after the 500 ms fit (it is only redrawn if its data
+      arrive later; the scroll position is kept in that case).
+    - **`.mp-box { isolation: isolate }`**: revealing the block scrolls the page, which slides the map under the frame's
+      sticky header; the map's buttons (`z-index` 6) drew over the header (z-index 5). Contained now.
+    - Not touched: `DETTE_TECHNIQUE.md` rows of 23 Oct (airspaces card, VFR information on the map) are resolved by this lot;
+      the ergonomics session keeps that file.
+  - **2. A VFR reporting point shows only its short code on the map** ("NA", "E", "SE"), never the long name
+    (legibility is a permanent objective, user). `MapsRender.vrpCode(id)` (prefix of the aerodrome and "H-" removed:
+    "BD-EA" → "EA", "MN-H-HE" → "HE") for the VRP layer, whose label was the whole identifier; `drawVfr` (highlighted
+    points) draws `p.code` only (it appended the base's name, 28 characters at most). The long name stays in the tooltip
+    (`tipAt`), in the data block's list and in the hover preview. Mission maps' VRP labels follow (same function).
+  - **3. Display thresholds depend on the frame size.** User's decision: the effective zoom compared with the
+    thresholds is corrected by the mean of the frame's height and width. `MapsRender.effectiveZoom(zoom, w, h, k)` =
+    `zoom + k · log2(((w + h) / 2) / 900)`, applied **after** the Complexity slider's shift (¾ level per step).
+    - **Reference 900 px, k = 1.** 900 px is a laptop pane (the 1280 × 800 bench frame, 1254 × 414, has a mean of 834:
+      −0.11, so the starting values tuned on a screen are practically unchanged); k = 1 because a frame twice as large
+      shows twice as many pixels per side, which is exactly one zoom level: the elements are as dense on the screen as
+      at the reference size, no other value was justified.
+    - **Replaces the fixed "one step less under 600 px"** (`detailShift(W)`): keeping both would count the small frame
+      twice. The pane of the dual view and the phone now follow the formula (−0.96 for 513 × 416, −1.17 for 364 × 437).
+    - **One function everywhere a threshold is compared**: `render.draw` (`atZoom`, `byZoom`, labels, the VRP layer),
+      the density tier (`tierOf(pxOfZoom(effective))`), `draw()` of the module (contour lines, towns' place names,
+      `zoomOn('wind')`), the tuning page. Mission maps are not concerned (they show what their profile asks). *Not
+      changed*: what needs real pixels (obstacle heights beside the symbol at 300 px/deg, the ETA labels, the
+      "everything in the view is read" switch, the overview corridor rule), which are geometry rather than tuning-page
+      thresholds; say if they should follow too.
+    - **Tuning page**, line "current zoom": "Current zoom: 6.01 · effective 4.85 (frame of 403 px on average) · 18 NM per
+      cm of screen"; the mark on each slider is the **effective** zoom (what the thresholds compare), the NM per cm come
+      from the real zoom. `render.draw()` now returns `zoom: { shifted, effective, tier, kept }`.
+    - **The starting values were not retuned**: on a phone France (map zoom 4.3) is at an effective ≈ 3.1 (was 3.55), so
+      CTR / D / names (4.75) need a map zoom of about 5.9 there (5.5 before). The tuning page is the place to adjust.
+  - **Bench** (Playwright, Chromium, MapLibre with a stub style because tiles are blocked; the maps test page and the
+    Pilot application, 390 × 844 touch and 1280 × 800 mouse; synthetic aerodromes, VRP (BD-N … BD-H-HE), navaids,
+    obstacles and a VAC compilation for LFBD; captures in the cloud session's scratchpad `maps2/`):
+    - map box and MapLibre canvas identical (size and page position) before and after a tap on airspaces and on LFBD:
+      1256 × 416 (canvas 1254 × 414) at 1280, 366 × 439 (364 × 437) at 390, 513 × 416 in the dual-view pane;
+    - airspaces: block title "4 espaces sur ce point", chart + list; closed by ✕ (44 × 44), by Escape and by a tap on an
+      empty spot (also with the camera moved in between: it stays open after a camera move); the profile is back, drawn
+      (canvas 1256 × 240); LFBD: "LFBD : points de report VFR", 11 points (list in four columns at 1280), VAC sequences
+      and instructions scrolling (content 474 px in 258 px at 1280, 676 in 271 at 390), still open after an empty tap,
+      closed by ✕ and Escape; the page scrolled by 58 px (1280) and 69 px (390) to bring the block in view, always
+      entirely on screen; no horizontal scroll, no `pageerror`;
+    - labels on the map after the pin: "NA", "E", "EA", "HE"… and none of the long names (checked on the canvas text
+      calls); VFR mode, Bordeaux at map zoom 9.5: the 11 VRP of the layer drawn as codes;
+    - effective zoom, same camera: 1280 → 5.89 for map zoom 6 (−0.11), 390 → 4.84 (−1.16); aerodromes and navaids
+      thinned (map zoom 6: 40 navaids and tier "mid" at 1280, none and tier "far" at 390; map zoom 7 at 390 equals map
+      zoom 6 at 1280); VFR, Bordeaux: at map zoom 9.5, 11 VRP drawn at 1280 (effective 9.39) and none at 390 (8.34), they
+      appear at map zoom 10.5 (9.34), the threshold being 9.25; tuning page: "Zoom courant : 6.00 · effectif 5.44 (cadre de
+      608 px en moyenne)" at 1280 (panel beside the map), "6.01 · effectif 4.85 (cadre de 403 px)" at 390.
+    - The test page needs the launcher (`FD.launcher.detect()`), so the bench ran `tools/launch.py --data <dir>` on the
+      worktree instead of `http.server`.

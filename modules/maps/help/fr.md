@@ -18,11 +18,13 @@ zoomer ; « Recentrer » revient sur toute la route. La carte reste où vous l'a
 seul « Recentrer » (ou un autre vol) la recadre. Vue de loin, la carte ne montre que ce qui est près de la route ;
 rapprochez-vous pour tout voir.
 
-**Le profil et le curseur.** Sous la carte, le profil vertical coupe la route de bout en bout : le relief, les
-espaces aériens où vous entrez à l'altitude prévue, et la trajectoire du vol en violet. Faites glisser le doigt sur le
-profil : un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la route sur la carte pour le
-placer là. La ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue,
-hauteur du relief, et l'espace aérien où vous êtes à ce moment-là.
+**Le profil et le curseur.** Sous la carte, le profil vertical coupe la route de bout en bout : le relief, les espaces
+aériens où vous entrez à l'altitude prévue, et la trajectoire du vol en violet. Faites glisser le doigt sur le profil :
+un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la route sur la carte pour le placer là. La
+ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue, hauteur du relief,
+et l'espace aérien où vous êtes à ce moment-là. Sous la carte, ce bloc de données montre le profil ; la liste des
+espaces d'un point ou les points de report d'un terrain s'y ouvrent à sa place quand vous les demandez, et le profil
+revient à leur fermeture.
 
 **Six modes de carte.** Le bouton en haut à gauche de la carte montre le mode choisi ; touchez-le pour voir les six
 modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
@@ -39,39 +41,44 @@ la distance du tronçon, sa route (« 097° »), les points de report et les obs
 sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
 **Les couches.** Le bouton aux calques, sous le réglage de la carte, ouvre la liste de ce qu'elle dessine : familles
-d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report
-VFR, obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces,
-noms des voies. Cochez ou décochez : la carte suit, et votre choix
-est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. « Autour de la route
-seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ; décochée, toute la
-carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon. Tout en bas, le curseur « Complexité (essai) » montre moins de détails vers la
-gauche, plus vers la droite, à tous les zooms. Chaque élément de la carte a sa plage de zoom : les points de report
-VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les FIR de loin.
+d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report VFR,
+obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces, noms des voies. Cochez ou décochez : la
+carte suit, et votre choix est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. «
+Autour de la route seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ;
+décochée, toute la carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon.
+Tout en bas, le curseur « Complexité (essai) » montre moins de détails vers la gauche, plus vers la droite, à tous les
+zooms. Chaque élément de la carte a sa plage de zoom : les points de report VFR n'apparaissent que tout près, les CTR de
+près, les TMA en vue moyenne, les FIR de loin. La taille de la carte compte aussi : sur un petit cadre (téléphone, volet
+de la vue double) elle montre moins d'éléments qu'un grand au même zoom, comme si vous étiez plus loin (le zoom est
+corrigé par la moyenne de la hauteur et de la largeur du cadre, 900 px sans correction).
 
-**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
-ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
-point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
-(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, une carte montre les espaces sous le doigt,
-un ou plusieurs : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
-de son plancher à son plafond), puis la liste numérotée avec leurs limites. La croix ✕, Échap ou un toucher ailleurs sur la carte la ferment, un autre toucher
-sur des espaces la remplace ; déplacer la carte la laisse. Sur téléphone, elle occupe le bas de la carte, au-dessus des boutons. Elle suit
-le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
-la carte. Sur une balise, la bulle donne son type, son indicatif et sa fréquence ; quand
-plusieurs balises sont au même endroit, la carte garde la plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle
-nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
+**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace ou
+une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point → point), sa
+distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA (« TMA 8
+AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, le bloc de données sous la carte montre les espaces sous le
+doigt, un ou plusieurs, à la place du profil : un graphique de niveaux, comme le profil vertical (une colonne numérotée
+par espace, de son plancher à son plafond), puis la liste numérotée avec leurs limites. La croix ✕, Échap ou un toucher
+sur un endroit vide de la carte le ferment et le profil revient, un autre toucher sur des espaces le remplace ; déplacer
+la carte le laisse. La carte ne bouge pas ni ne change de taille. La bulle de survol suit le pointeur, reste 5 secondes,
+laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de la carte. Sur une balise, la
+bulle donne son type, son indicatif et sa fréquence ; quand plusieurs balises sont au même endroit, la carte garde la
+plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur
+le profil, le doigt ou la souris donnent de même les espaces traversés.
 
 **Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
-tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les points). Touchez-le : la carte se rapproche
-de ses points s'ils sont serrés, et sa carte donne les séquences (avec la page de la VAC) puis les consignes de la VAC,
-repliées page par page. Elle reste ouverte pendant que vous déplacez la carte : la croix ✕ ou
-Échap la ferment, un autre terrain la remplace. Toucher un point de report ouvre de même la carte de son terrain, ce point
-en tête. En mode VFR, les points du terrain de départ et de celui
-d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
-ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été
-analysé à la main, la carte le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit
-la carte VAC (tirets longs) et une flèche marque un sens unique. Les points de report de la base sont toujours là, en noir pour les avions et en vert pour les
-hélicoptères ; les séquences et les consignes des VAC s'y ajoutent une fois importées. Elles apparaissent une
-fois importées par l'administrateur (Paramètres › Maintenance).
+tirées de ses cartes VAC s'allument (cercles nommés, tirets entre les points). Sur la carte, un point de report ne porte
+que son code court (« NA », « E », « SE »…), pour que la carte reste lisible ; le nom long est dans la bulle et dans la
+liste. Touchez le terrain : la carte se rapproche de ses points s'ils sont serrés, et le bloc de données sous la carte,
+à la place du profil, donne la liste des points (code, nom long, restrictions), les séquences (avec la page de la VAC)
+puis les consignes de la VAC, repliées page par page ; il défile si le contenu est long. Il reste ouvert pendant que
+vous déplacez la carte : la croix ✕ ou Échap le ferment et le profil revient, un autre terrain le remplace. Toucher un
+point de report ouvre de même le contenu de son terrain, ce point en tête. En mode VFR, les points du terrain de départ
+et de celui d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées «
+à vérifier », ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été analysé à la main, le bloc
+le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit la carte VAC (tirets longs) et
+une flèche marque un sens unique. Les points de report de la base sont toujours là, en noir pour les avions et en vert
+pour les hélicoptères ; les séquences et les consignes des VAC s'y ajoutent une fois importées par l'administrateur
+(Paramètres › Maintenance).
 
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
 14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Au-

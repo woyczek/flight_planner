@@ -117,21 +117,46 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - Icons from `frame/lib/icons.js` (`wand-sparkles` added, `map`, `plane`, `chevron-down`); colours: accent for the
     choice, `--sog-err` for CAM; corners from `--sog-radius` (square in cabinet and field).
   - Kept in `cache/maps/ui.json` (`preset`: auto, low, high, vfr, topo, cam); each mode has its own layers.
+- **The view is fixed: (1) the map, (2) the data block** (24 Oct 2026). The map keeps its size and its position whatever
+  is opened: nothing overlays it any more except the light hover tooltip and the route-point card of the Edit mode. Under
+  it, the **data block** (`.mp-data`) holds, one at a time:
+  - the vertical profile (default), with its strip;
+  - **the airspaces list** ("n airspaces at this point"), opened by a tap on airspaces (below);
+  - **the aerodrome's VFR reporting points** (§ 4 septies), opened by a tap on an aerodrome or a reporting point;
+  the two contents replace the profile while open (one does not need the profile while reading them), and closing them
+  brings the profile back, redrawn to its size. A new content replaces the open one; opening the airspaces list releases
+  a pinned aerodrome (its highlight would stay without its list).
+  - **A header line** of 30 px says what the block shows ("Vertical profile" / "n airspaces at this point" / "LFMN:
+    VFR reporting points", the aerodrome's name in the tooltip of the line, so that a phone does not truncate it) with the
+    ✕ at the right (44 px, drawn over the line: the line stays 30 px); the ✕ shows only for a content.
+  - **One height rule** (`--mp-prof-h`: `clamp(200px, 30vh, 340px)`, the profile's, phone and dual view alike): the
+    profile box has it, the content area has it plus the strip's 20 px (`.mp-dbody`), so the block does not change height
+    when a content opens; a long content scrolls inside it (`overscroll-behavior: contain`).
+  - **Closing**: ✕, Escape, a tap on an empty spot of the map for the airspaces list; the aerodrome's content stays until
+    ✕, Escape or another aerodrome (pinned).
+  - **Reveal**: a content opened (or replaced by another) scrolls the block into view when it was off screen,
+    `scrollIntoView({ block: 'nearest' })` of the block (smooth unless reduced motion): the map stays above, the map camera
+    is never moved by it. The one camera move left is the existing fit of an aerodrome's reporting points on a tap, which
+    now has the whole map (no room kept for a card).
+  - The levels chart is drawn at scale 1 for the content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px
+    (a phone), otherwise the width its columns ask for (400 px at most), never higher than the area; the list beside it
+    in columns of 19 em; the chart stays at the top while the list scrolls.
+  - A map in a dual-view pane or on a phone: the same block, the same rule, at the pane's width.
+  - The map box is an isolated stacking context (`isolation: isolate`), so that its buttons slide under the frame's
+    sticky header when the page scrolls to reveal the block.
 - **Tooltip** (lot 7a: one behaviour for hover, tap and click), a light `.mp-tip` (class `mp-hover`: `--sog-chart-bg`
   at 65 %, `--sog-fg`, thin border, 11.5 px, two lines at most) in the map box or the profile box:
   - what is under the pointer, in this order: a wind barb, an airway box, an airspace label (`draw()` returns their
     frames); on a tap or a click only, when no barb nor airway is under the
-    finger (an airspace label does not count), the airspaces under the point in the levels card (`levelsHtml`, from one
-    airspace on, its own element `.mp-lvcard`): the title "1 airspace at this point" or "n airspaces at this point", an SVG block like the vertical profile (altitude
-    axis SFC to the highest finite ceiling with a nice step, "UNL" above, 66,000 ft and more counted as UNL; one
-    numbered column per airspace from floor to ceiling, coloured by type as in the profile; ASFC limits counted from
-    the ground), then the numbered list in SIA notation with activity and service, lowest floor first; the card stays
-    inside the frame on its own layer above the buttons and panels (`z-index` 7): on a narrow frame (under 600 px, a
-    phone) it takes the lower part of the frame over its full width (45 % of the height at most, the level block at the
-    left of the list, the list scrolling, ✕ fixed); otherwise at the tap point, 320 px and 60 % of the height at most;
-    its ✕ (44 px), Escape or **a tap on an empty spot of the map** close it, another tap on airspaces replaces it, a
-    drag or the wheel leave it (the aerodrome's card, pinned, keeps staying); the light tooltip stays for the mouse
-    hover and for the targets that come first (barb, airway box, label);
+    finger (an airspace label does not count), the airspaces under the point **in the data block** (see "The view is
+    fixed" above; `levelsHtml`, from one airspace on): the title "1 airspace at this point" or "n airspaces at this
+    point", a chart like the vertical profile (altitude axis SFC to the highest finite ceiling with a nice step, "UNL"
+    above, 66,000 ft and more counted as UNL; one numbered column per airspace from floor to ceiling, coloured by type as
+    in the profile; ASFC limits counted from the ground), then the numbered list in SIA notation with activity and
+    service, lowest floor first; its ✕ (44 px), Escape or **a tap on an empty spot of the map** close it, another tap on
+    airspaces replaces it, a drag or the wheel leave it (the aerodrome's content, pinned, stays until ✕ / Escape / another
+    aerodrome); the light tooltip stays for the mouse hover and for the targets that come first (barb, airway box,
+    label);
   - a tap or click on one of the first three takes priority over placing the cursor on the route; on nothing, it
     closes the tooltip;
   - it follows the pointer 12 px away (never under it, kept in the box) while the pointer is on the label, stays 5 s at
@@ -354,7 +379,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   sequences: not imported" without the compilation. Leaving the aerodrome or the map ends the preview.
 - **Tap or click** (not in Edit mode, not on a mission map): the aerodrome is pinned. When its points span less than
   160 px on screen, the map fits them (aerodrome included, zoom 11 at most, room left for the card); that is the
-  user's gesture, so the camera stays theirs afterwards (Follow stops, Recentre comes back). Then its card:
+  user's gesture, so the camera stays theirs afterwards (Follow stops, Recentre comes back). Then its content (in the data block):
   - "LFMN NICE COTE D'AZUR: VFR reporting points", then "Reporting points (n)" with the legend "(black: aeroplanes;
     green: helicopters)" when both kinds are there, one line per point (coloured code, name, restrictions read in the
     VAC); without the compilation, "VAC sequences: not imported" and nothing else;
@@ -363,22 +388,25 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - the sequences in text ("LFBD – NA – NE (page 6)"), identical ones (same codes, same page) shown once, with "(some
     may be only part of a route)" when any is marked `fragment`;
   - the instructions of the VAC, one folded block per page (its title, its page).
-  The card goes to the side opposite the aerodrome, under the buttons of that side; under 600 px it takes the lower 45 %
-  of the frame and the fit leaves that room. The card has its own element (`.mp-adcard`) and stays open while the map
-  moves or is tapped elsewhere: its ✕ (44 px, top right) or Escape closes it and releases the aerodrome; another
-  aerodrome replaces it. The points and sequences stay highlighted while it is open.
+  This content is shown **in the data block** under the map (§ 4, "The view is fixed"), no longer as a card over the
+  map: the title "LFMN: VFR reporting points" in its header line, the content area scrolling, the points list in columns
+  of 19 em. It stays open while the map moves or is tapped elsewhere: its ✕ (44 px, in the header) or Escape closes it,
+  releases the aerodrome and brings the vertical profile back; another aerodrome replaces it. The points and sequences
+  stay highlighted on the map while it is open. The content builder is `showAdCard` (HTML only; placement is the
+  block's).
 - **Tap targets** (22 px, a finger): first a reporting point (the highlighted ones, whose aerodrome is known, then
   those of the VRP layer, `render.draw()` returning them as `vrps`: the aerodrome of their prefix within 30 NM, else
   the nearest within 5 NM) when it is nearer than an aerodrome: its aerodrome is pinned, the point first and in bold in
   the list; a VRP without aerodrome gives its own tooltip (code, name). Then an aerodrome. Both before the tooltips and
-  the levels card.
+  the airspaces list.
 - **VFR mode**: departure and arrival (four-letter codes) are shown anyway, drawing only.
 - **Drawing**, on top of the route (teal): a route with an interpreted geometry follows it (long dashes, its manual
   vertices as small dots), the others are short dashes between their known reporting points; never a line to the
   aerodrome's centre (an integration not digitised stays undrawn, format 2's rule); an arrow at the end of a route
-  only when an analysis made it one-way (`direction: 'forward'`). Each reporting point ringed and named (code, then the
-  base's VRP name when loaded); the aerodrome's reference point is not drawn; "VAC, to be checked" in italics under
-  the aerodrome.
+  only when an analysis made it one-way (`direction: 'forward'`). Each reporting point ringed and named with **its short code only** ("NA", "E", "SE": legibility
+  is a permanent objective; the VRP layer likewise writes `MapsRender.vrpCode(id)`, "BD-EA" → "EA", "MN-H-HE" → "HE"; the
+  long name stays in the tooltip, in the data block's list and in the hover preview); the aerodrome's reference point is
+  not drawn; "VAC, to be checked" in italics under the aerodrome.
 - **Format 2 in the card**: the analysis line ("Manual analysis of the VAC (partial)", "Automatic extraction, not
   reviewed", "Analysis out of date (the VAC changed): automatic extraction only", "VAC reviewed: no published
   sequence") and its notes; each route with its name (`key`), codes and pages, then runways, default altitude, minimum
@@ -431,16 +459,25 @@ when the report is saved), nothing otherwise:
   - `atZoom(profile, z)` cuts the elements out of their range; `byZoom(data, profile, z, tier)` keeps the data shown
     (families, beacons, VRP, obstacles, MORA, towns); from afar (`tier` far) only the large aerodromes. Mission maps are
     not concerned (their studio profile shows what it asks).
-  - The view's zoom is shifted by ¾ of a level per step of the "Complexity (trial)" slider of the Layers panel (−2 to
-    +2, per mode and device), so the whole set moves together; a map frame narrower than 600 px (pane of the dual
-    view, phone) takes one step less.
+  - **Effective zoom** (24 Oct 2026): the zoom compared with the thresholds is not the map's own. It is the view's zoom
+    shifted by ¾ of a level per step of the "Complexity (trial)" slider of the Layers panel (−2 to +2, per mode and
+    device), so the whole set moves together, **then corrected by the size shown in the frame**:
+    `effectiveZoom(zoom, w, h) = zoom + k · log2(((w + h) / 2) / 900)`, with `w` and `h` the map frame's size in CSS
+    pixels, `k = 1` (`MapsRender.effectiveZoom`, `FRAME_REF_PX = 900`). A frame whose mean side is 900 px (a laptop pane)
+    gets no correction; half as large (450 px) counts one level further out, twice as large one level closer. This
+    replaces the former fixed "one step less under 600 px". The one function serves the elements' ranges (`atZoom`,
+    `byZoom`, the VRP layer, labels), the contour lines, the towns' place-name switch and the density tier
+    (`tierOf(pxOfZoom(effective))`: far / mid / near); mission maps are not concerned. What stays in raw pixels per
+    degree is geometry that needs real room (obstacle heights beside their symbol, the ETA labels, the "everything in
+    the view is read" switch, the overview rule of the corridor), not a threshold of the tuning page. `render.draw()`
+    returns `zoom: { shifted, effective, tier, kept }` (counts of what the thresholds kept) for bench and tuning.
   - Starting values (`ZOOM_IFR`, `ZOOM_VFR`): in IFR (Auto, Low, High IFR, CAM) the route corridor already thins the
     map, so the airspaces are graded in one intermediate step: the overview shows the route, the winds, the
     aerodromes and the shapes of TMA, CTA, R and TSA / TRA (the only ones above FL195); CTR, D and airspace names from
     4.75, airways from 5, P from 5.25, other airspaces and MORA from 5.5; beacons and airway points from 5.75, segment labels from 7.75, VRP from
     9.25, obstacles from 8.5, medium towns from 6.5, small towns from 8.5, contours from 9); in VFR and Topo the
     airspaces are graded: FIR up to 7, TMA and CTA from 6, R, D and TSA from 6.5, CTR from 7, P from 7.5, others from 8,
-    names from 6. Landmarks: France on a screen ≈ 5.5, on a phone ≈ 4.3, 100 NM wide on a screen ≈ 8.5.
+    names from 6. Landmarks (the map's own zoom; the effective zoom is lower by 0.1 on that screen and by 1.2 on that phone): France on a screen ≈ 5.5, on a phone ≈ 4.3, 100 NM wide on a screen ≈ 8.5.
   - Precedence: the built-in values, then the airline's (`airline/map_profiles.json`), then the device's
     (`cache/maps/ui.json`, `layers[mode].zoom`), then the values being tuned (`#maps?tune=1`).
 - **Contour lines** (`contours.js`, `window.MapsContours`): computed in the browser from the Terrarium tiles (the
@@ -451,8 +488,10 @@ when the report is saved), nothing otherwise:
   Topo, within the `contours` range (from 9) and with the "Contour lines" layer.
 - **Tuning of the profiles (administrator)**: `#maps?tune=1`, reachable by its address only (no button, nothing in the
   user help). A panel beside the live map (on a screen of 1,000 px and more; above the map otherwise; read only on a
-  phone): the current zoom (and its NM per cm of screen), the six mode tabs, one line per key with a double slider
-  "from … to …" (zoom 0 to 18, step ¼; 18 means no upper limit) labelled in zoom and NM per cm, the current zoom
+  phone): the line "current zoom": the map's zoom, **the effective zoom beside it** with the frame's mean side in px
+  ("Current zoom: 6.01 · effective 4.85 (frame of 403 px on average) · 18 NM per cm of screen"; the mark on each slider is
+  the effective zoom, which the thresholds compare), the six mode tabs, one line per key with a double slider
+  "from … to …" (zoom 0 to 18, step ¼; 18 means no upper limit) labelled in zoom and NM per cm, the effective zoom
   marked on each slider. The map is redrawn at every move of a slider. In front of each line, a "drawn" box: the
   Layers panel's layer for that line in this mode (`LAYER_OF`: one box per airspace family — TMA / CTA / CTR share
   "TMA / CTR", R / D / P / TSA share "D / R / P" —, the three town sizes share "Towns"; airspace and airway names are
