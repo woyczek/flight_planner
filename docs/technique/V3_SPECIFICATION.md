@@ -159,6 +159,16 @@ and design agents. The four design mock-ups (§ 10.3) were made with the drawer;
 - 23 Oct 2026 — **`develop` is the V3 line.** After 5.4.0 (last V2 release) the V3 work was squashed into one commit
   per block on `develop`; `v3` is the same line (sessions keep pushing there, `develop` fast-forwards). V2 fixes go to
   `v2-maintenance` (from `master`) and are carried over to `v3`.
+- 24 Oct 2026 — **A weather cache layer is wanted** (user, after the question of the `labs/atmosphere` session): today
+  in the client, as a frame cache shared by every reader of Open-Meteo (fuel's winds aloft, the atmosphere mock-up,
+  maps later), tomorrow possibly in a relay server. **Local cache always.** To plan as a frame lot: one store
+  `cache/weather/<model>/<grid cell>/<hour>` (policy `cache`, never synchronised), one reader API behind `ctx`
+  (`ctx.weather.aloft(samples, when)`, `ctx.weather.metar(icao)`…) that answers from the cache first and calls
+  Open-Meteo through `ctx.net` only for what is missing, with the model chosen by region as fuel does
+  (`modules/fuel/winds.js` reused, not copied); **quota**: evaluate precisely how Open-Meteo counts (10,000 calls per
+  day and per IP; a request with many locations or variables may weigh more than one call), count every call on the
+  device (a visible counter in Settings › Diagnostics, per day), cap the samples per flight, and keep a safety margin;
+  the relay server, when it exists, holds the shared cache and the count for the whole airline.
 
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 
@@ -180,6 +190,8 @@ Branch `v3` (from `develop`), one commit per lot, each module in `modules/<name>
 7. Transverse: **design** (tokens, density, day/night), **aerodb** (SIA and aircraft bases published by zone and
    cycle), **help** (tutorials and manuals per module), **settings** (identity, data access, caches). *One agent
    each.*
+8. **frame/weather** — the weather cache layer (decision of 24 Oct, § 8): local cache, one reader API, quota counted
+   and shown; later a relay server. *Agent: frame.*
 
 The SOG client and CPCO applications come after, reusing the same modules; availability and assignment are
 redesigned for touch at that point.
