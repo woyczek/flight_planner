@@ -6,14 +6,13 @@ radioayudas, aerovías, altitudes mínimas. La ruta del vuelo también se modifi
 ## Cómo usarlo
 
 **El vuelo previsto.** El mapa muestra el vuelo preparado en Combustible: salida, puntos de la ruta, llegada, y el
-aeródromo alternativo en guiones grises. Bajo la barra superior, una línea lo resume: salida y llegada, alternativa, nivel, distancia,
-tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
+aeródromo alternativo en guiones grises. Su resumen (nivel, distancia, previsto o en vuelo) es el título del asa del bloque de datos bajo el mapa; el texto emergente del título da la línea entera: salida y llegada, alternativa, tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
 
 **El mapa y lo que muestra.** Alrededor de la ruta: los espacios aéreos que atraviesa o roza (zonas restringidas,
 peligrosas, prohibidas, espacios controlados), las aerovías bajas o altas según su nivel, los aeródromos y las
 radioayudas, y en cada cuadro de un grado la altitud mínima de seguridad (la cifra marrón, en miles y centenas de pies:
 «3⁵» quiere decir 3500 ft). Las pequeñas cifras violetas a lo largo de la ruta son las distancias desde la salida, en
-millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» (la diana de la barra superior) vuelve a toda la ruta. El
+millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» (la diana, arriba a la derecha del mapa) vuelve a toda la ruta. El
 mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Visto de lejos,
 el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
 
@@ -23,16 +22,15 @@ cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en e
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
 espacio aéreo en el que está en ese momento. Bajo el mapa, este bloque de datos muestra el perfil; la lista de los
 espacios de un punto o los puntos de notificación de un aeródromo se abren en su lugar cuando los pide, y el perfil
-vuelve al cerrarlos. El botón «Perfil · Meteo» de la línea superior del bloque lo sustituye por el corte
+vuelve al cerrarlos. La pastilla con forma de nube, a la derecha del asa del bloque, lo sustituye (la pastilla del perfil lo devuelve) por el corte
 meteorológico a lo largo de la ruta (viento, temperatura, nubes, engelamiento) a la altitud del vuelo; el corte sigue el mismo cursor, y un toque sobre
 él lo mueve. Solo muestra la previsión que Atmósfera ya ha cargado: sin ella, la línea «Sin previsión cargada» lleva a Meteo, en Preparar.
 
-**Una pantalla fija.** La barra superior, el mapa y el bloque de datos llenan la pantalla, y nada se desplaza salvo el
-contenido del bloque. El bloque es una hoja: arrastre su línea superior (la barrita y el título) hacia arriba para
+**Una pantalla fija.** Nada entre el encabezado y el mapa: el mapa y el bloque de datos llenan la pantalla, y nada se desplaza salvo el contenido del bloque. Los botones están sobre el mapa: a la derecha, de arriba abajo, «Editar la ruta» (el lápiz), «Recentrar», el modo de mapa, «Editar en el mapa» (las cuatro flechas) y, al final, la pantalla completa (Esc sale de ella); a la izquierda, «Capas». El bloque es una hoja: arrastre su línea superior (la barrita y el título) hacia arriba para
 ampliarlo, hacia abajo para reducirlo a esa línea, lo que deja toda la altura al mapa; un toque en la línea lo reduce o
 lo devuelve a su altura normal.
 
-**Seis modos de mapa.** El último botón de la barra superior muestra el modo elegido; tóquelo para ver los seis
+**Seis modos de mapa.** El botón del modo, a la derecha del mapa, muestra el modo elegido; tóquelo para ver los seis
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
 superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en
 VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve y, de cerca, las curvas de nivel (cada 500 ft o 100
@@ -46,7 +44,7 @@ Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel m�
 distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos. De cerca, cada obstáculo lleva su
 altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
 
-**Las capas.** El botón de capas, arriba a la izquierda del mapa, abre la lista de lo que dibuja: familias de espacios (TMA /
+**Las capas.** El botón de capas, a la izquierda del mapa, abre en el bloque de datos, en lugar del perfil, la lista de lo que dibuja (la cruz ✕ devuelve el perfil): familias de espacios (TMA /
 CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de notificación
 VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo, nombres de los espacios, nombres de las aerovías.
 Marque o desmarque: el mapa sigue, y su elección se conserva para este ajuste en este dispositivo. «Restablecer todo»
@@ -87,11 +85,9 @@ negro para los aviones y en verde para los helicópteros; las secuencias y las i
 importadas por el administrador (Ajustes › Mantenimiento).
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
-14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
-mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
+14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). En las notas del bloque de datos, bajo el perfil, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
 la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA) bajo su nombre, sin tapar nunca un aeródromo, en UTC («14:52Z»), la hora local entre paréntesis en la salida y la llegada. «Seguir» mantiene
-el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), la línea lo dice y abre los
-ajustes; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
+el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), una notificación lo dice una vez, la línea queda en las notas y su enlace abre los ajustes; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
 IVAO, VATSIM, X-Plane o Little Navmap.
 
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
@@ -107,21 +103,21 @@ giro de la ruta también se marcan en el perfil.
 el mapa como en el perfil. Vienen del cálculo de Combustible; sin él, el mapa los estima con regímenes de ascenso y de
 descenso habituales.
 
-**Los mapas de misión.** La primera lista de arriba elige lo que muestra el mapa: el vuelo previsto, o una misión de
+**Los mapas de misión.** La primera lista, a la cabeza de las capas (el botón de capas), elige lo que muestra el mapa: el vuelo previsto, o una misión de
 la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista de conjunto, objetivo, detalle…). Cada
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
-**Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de giro se rodean de un
+**Modificar la ruta en el mapa.** Toque «Editar en el mapa» (las cuatro flechas, a la derecha del mapa; la primera vez aparece una breve ayuda): los puntos de giro se rodean de un
 círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
-vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» junto a «Editar»
+vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» (en la misma columna)
 y luego el lugar deseado (o mantenga pulsado medio segundo): sobre un fijo, una radioayuda o un aeródromo se coloca
 allí, en otro lugar es un punto libre; se añade al tramo más cercano. Un toque simple no añade nada: muestra la burbuja.
 Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la llegada no se mueven aquí. En el
 perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto que abre ese tramo, en pasos de
 FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+» hacen lo mismo. «Deshacer»
 deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el cálculo; el perfil sigue.
-«Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, el lápiz de la barra superior («Editar la ruta») abre
+Volver a tocar el botón (o Esc) cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, el lápiz arriba de la columna derecha («Editar la ruta») abre
 el paso Ruta de Combustible.
 
 ## Sin conexión
@@ -138,11 +134,10 @@ la altitud mínima de seguridad de cada cuadro atravesado (en guiones marrones),
 
 ## Casos particulares
 
-**Sin vuelo.** Sin vuelo preparado, el mapa queda oculto y propone «Abrir Combustible». Los mapas de misión siguen
-accesibles desde la lista de arriba.
+**Sin vuelo.** Sin vuelo preparado, el mapa queda vacío y propone «Abrir Combustible». Los mapas de misión siguen accesibles desde la lista de las capas.
 
 **Base aeronáutica ausente.** Si la base aeronáutica todavía no ha sido publicada por un dispositivo de la aerolínea,
-el mapa solo muestra la ruta, y lo dice.
+el mapa solo muestra la ruta, y lo dice una vez (notificación, luego nota del bloque de datos).
 
 **Zona no guardada.** Sin conexión, sobre una zona nunca consultada ni guardada, el mapa no tiene nada que mostrar; el
 botón «Datos sin conexión» abre los ajustes para guardarla la próxima vez.
@@ -154,4 +149,4 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 150d28aa1aed -->
+<!-- fr: dc1f0c9c9d2f -->

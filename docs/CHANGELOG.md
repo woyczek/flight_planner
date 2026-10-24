@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maps: the screen is header · map · sheet · bar** (`modules/maps/module.js`, `lib/map_base.js`, SPEC § 4, INTEGRATION § 2 quater,
+  DECISIONS, the manual in four languages) — nothing between the frame's header and the map: the flight selector moves into the
+  Layers content, the flight summary becomes the sheet handle's title ("Profile · FL065 · 427 NM · planned flight"), the Profile ·
+  Weather toggle becomes two icon chips at the right of the handle, and the buttons (Edit the route, Recentre, map mode, Edit on the
+  map, Follow, "+", Undo; Layers on the left) are the frame's overlay buttons, the full-screen button last. Layers opens in the
+  sheet like the aerodrome contents (title "Layers · flight", ✕ back to the profile) instead of floating over the map. The status
+  lines are gone: "database not published" and "GPS or network not enabled" are a floating notification once, kept in the sheet's
+  notes, and the empty state is a card on the map area; the hints moved to the manual (the Edit mode's help is shown once per page).
+  Escape closes what the module opened (modes, sheet content, card, "+", Edit mode) without leaving the full screen. MapLibre's
+  attribution is folded on its "i" button and carries the SIA note: one credit text.
 - V3 frame: overlay right column aligns every button to the map's right edge, a wider element included (`align-items` under `wrap-reverse`).
 - **Frame: overlay layer and full screen for fixed modules, a header reduced to name · i · ⚙ on a phone, the tab group as a
   popover** (`frame/app.js`, `frame/frame.css`, `frame/design/primitives.css`, `frame/lib/icons.js`, `frame/index.html`,
