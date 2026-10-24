@@ -259,3 +259,26 @@ journeys without running. A lot's report (frame or module) quotes that line: it 
 impactent tel ou tel parcours". When a new screen or record appears in a module, its lot adds the file to the journey
 it serves, in `journeys.py`, in the same commit: a file that belongs to no journey is a question for the relay, not a
 silent gap.
+
+## P. Replaying a failure: alone, then in its scope
+
+User rule (24 Oct): "Donner une consigne et l'implémenter pour rejouer un test échoué : test unique, ou périmètre complet". The rule,
+written as given to the lots:
+
+> A failed case is replayed twice before a lot is called good. First alone, as it failed (`run.py --failed <id>`: same design, width and language), to confirm the fix on the exact failure. Then in its full scope (`run.py --failed-scope`: every area and journey the case belongs to, plus the cases chosen by the files the fix touched), to see what the fix moved around. The lot's report quotes both commands and their summary lines. A fix that passes the first and not the second is not done.
+
+What the two commands do (`tests/v3/run.py`):
+
+1. `--failed [IDS]` replays the cases that are `FAIL` or `ERROR` in the **last `report.json`** (the known failures too, marked as
+   such), **exactly in the combinations that failed** (design, width, language, tone read from the report, not the full grid);
+   `--failed B2,D5` limits it to those ids. Without a report it says so and exits 2. The new report opens with
+   `Replay of <date of the previous report> : <ids>`.
+2. `--failed-scope [BASE]` runs the **full scope** of those failures: every area (section M) and every journey (sections N and O,
+   guard cases and end-to-end case) the failed cases belong to, in the full grid, **plus** the `--changed` selection of the files the
+   fix touched (base `origin/v3`, or the BASE given). The new report opens with
+   `Scope of failures B2 D5: areas B D, journeys P1 P2, changed: <files>`. A failed journey case (`J3`) belongs to its journey, not to
+   a whole area J.
+3. A replay carries the failures it replays in `report.json` (`meta.failed`): the second command still finds them when the first one
+   passed, so the routine `--failed <id>` then `--failed-scope` works as written. A normal run replaces them.
+4. `--list` works with both and shows the selection (the combinations of `--failed`, the areas, journeys and files of
+   `--failed-scope`) without running.
