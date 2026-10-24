@@ -18,6 +18,11 @@
     color: var(--sog-fg);
     font: var(--sog-font)
   }
+
+  /* l'écran Carte est fixe : hors cadre, sa racine reçoit la hauteur de la fenêtre (moins la marge de la page) */
+  #host {
+    height: calc(100dvh - 24px)
+  }
 </style></head>
 <body>
 <section class="f-module" data-module="maps" id="host"></section>

@@ -652,3 +652,93 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
       608 px en moyenne)" at 1280 (panel beside the map), "6.01 · effectif 4.85 (cadre de 403 px)" at 390.
     - The test page needs the launcher (`FD.launcher.detect()`), so the bench ran `tools/launch.py --data <dir>` on the
       worktree instead of `http.server`.
+- **24 Oct 2026 (afternoon) — the Map screen is fixed: `meta.fixed`, one-line toolbar, the data block as a three-position
+  sheet (user: "le module carte n'est toujours pas fixe (scroll bar et artefacts en header)"; lot cut by the ergonomics
+  session on the frame's new `meta.fixed` contract, `frame/INTEGRATION.md` § 9.2; native iOS / Android shells will wrap
+  this screen).** To be reviewed by the ergonomics session.
+  - **Adopted `fixed: true`.** The root is a flex column at the frame's view height (`height: 100%; overflow: hidden;
+    isolation: isolate`). Top to bottom: toolbar, information line, [progress line and gesture-asking status messages],
+    map (`flex: 1 1 0; min-height: 0`, full width, only a hairline above and below), sheet. Measured at 390 × 844
+    (header 57, tab bar 57, view 730): toolbar 48 (44 px controls, 2 px above and below), information line 20, map 385,
+    sheet 277 (38 %); at 1280 × 800 (view 743): map 415, sheet 260 (35 %).
+  - **Toolbar** (judgement calls in italics). The flight selector (takes what is left, 380 px at most on a screen), then
+    three 44 px icon buttons: Edit the route (pencil), Recentre (target), the map mode (the current mode's icon).
+    *The mode button left the map box as the lot asked*: its row of six opens as a popover under the toolbar, over the
+    top of the map (`z-index` 8, inside the root), closed by a tap on the map, the toolbar or the sheet, by Escape or by
+    a choice; the Layers button took its place at the top left of the map. *Hidden with the map* when there is no flight
+    (Recentre and the mode button would act on nothing). *The pencil is also the Edit mode's icon family* (the map's own
+    "Edit" toggle stays a text button at the top right of the map): two "edits" with different meaning, as before (the
+    tooltip says "Edit the route" for the pencil, which opens Fuel). *Title "Carte" removed everywhere*: the tab bar names
+    the screen on a phone and the rail marks it on a screen, so the verb is already shown by the frame in both; an
+    invisible `h1` stays for the screen reader.
+  - **Information line** under the toolbar, not in the sheet's header: it describes the flight, not the block's content
+    (which the header already names), and the header must stay short for the ✕. One line of `--sog-size-xs`, ellipsed,
+    full text in `title`.
+  - **The sheet.** Three positions, tokens of the root (`--mp-head: 44`, `--mp-p1: .38` / `.35` above 760 px, `--mp-m1: 170`,
+    `--mp-p2: .7`, `--mp-m2: 260`; the script reads them, `sheetHeights()`): collapsed = the header line (44 px + the
+    hairline: 45), default, expanded. Measured, 390 × 844: sheet 45 / 277 / 511, map box 617 / 385 / 151 (MapLibre canvas
+    390 × 615 / 383 / 149, overlay canvas the same at ×2); 1280 × 800: 45 / 260 / 520, map 630 / 415 / 155 (canvas
+    1070 × 628 / 413 / 153); dual-view pane (513 × 670): sheet 45 / 234 / 469, canvas 513 × 366 at the default and 131
+    expanded. The profile (`flex: 1 1 0`, 380 px at most) is 156 px tall at the default (with the two offline notes) and 380
+    expanded; its strip is 34 px (two lines, scrolls: the Edit mode's hint is 300 characters).
+    - **The handle** is the header line itself (44 px: a 36 × 4 bar, the title, the ✕ of a content at the right, 44 × 44).
+      Pointer events on it only, `touch-action: none` there; the pointer is **captured at `pointerdown`** (a fast mouse
+      drag leaves a 44 px line in one event: the first version captured at the 6 px threshold and lost the drag). It follows
+      the pointer live, then goes to the nearest position, or the next one on a flick above 0.8 px/ms (0.5 made every
+      synthetic mouse drag a flick). *A tap collapses the sheet, or brings a collapsed or expanded one back to the default*
+      (not "next position": collapsing is what one wants most, to give the map the whole view; expanding is a drag, or End).
+      Keyboard: the handle is a button, Up / Down / Home / End. 200 ms slide, none under reduced motion.
+    - *A content opened while collapsed opens the sheet to the default, without sliding* (the chart is measured at once,
+      otherwise `levelsHtml` is drawn for a zero-high area and again at every frame of the slide). *The Layers panel opened
+      with the sheet expanded drops it to the default* (151 px of map would leave a panel of three lines).
+    - *The position is kept while the page lives* (a module-level variable), not on the device: the sheet is a viewing
+      convenience, `cache/maps/ui.json` stays for the mode and the layers.
+    - `scrollIntoView` (the previous lot's reveal of the block) is **removed**: the block is always on screen, and the call
+      was the one thing that could scroll an `overflow: hidden` page by script.
+    - The offline notes ("Base map unavailable", "Terrain unavailable") moved from under the toolbar to the sheet, under the
+      profile: they are the normal offline state and cost the map a line for ever; the messages that ask for a gesture or
+      say something is missing (no flight, no base, offline zone, mission notes) stay under the toolbar.
+    - The sheet is not there (`hidden`) when there is neither profile nor content; the map then takes the height.
+  - **The map follows the sheet.** The existing `ResizeObserver` on the map box resizes the MapLibre canvas and the overlay at
+    each step; `settle()` (120 ms after the last size change: end of the slide, rotation, pane resized) calls `mapSize()` and
+    frames the route again if the user has not moved the map. **Found on the way**: MapLibre's `resize()` fires `movestart`,
+    which the module took for a gesture of the user (`userMoved = true` after the first layout, so a "live" route leaving
+    the view was never reframed); `mapSize()` now marks its own resize (`selfMove`).
+  - **No page scroll.** `scrollHeight === innerHeight` on every design; the wheel and a touch drag on the map, the profile
+    and the sheet leave `scrollY`, the body, the root and the view at 0; the root's `scrollHeight` equals its `clientHeight`
+    (nothing overflows, also with the Layers panel open: it scrolls inside the box, 887 px of content in 547). The hover
+    tooltip, the profile tooltip and the route-point card are children of the map box or the profile box (`overflow:
+    hidden`): they cannot leave them.
+  - **Header and tab bar artefacts.** With `fixed` the header is not sticky over a scrolling page, so the previous lot's
+    cause (the page scrolled to reveal the block, the box's buttons `z-index` 6 slid under the sticky header and drew over
+    it) is gone; checked by `elementFromPoint` on 19 × 3 points of the header and of the bar, on the seven designs: always
+    the header or the bar. **`isolation: isolate` kept, moved from the map box to the root**: useless for the fixed screen
+    itself, but the dual-view pane is not fixed (the page scrolls under the sticky header there) and the toolbar's popover
+    (z 8) is outside the box.
+  - **Dual view.** `#fuel?with=maps` (pane, 1280 × 800): the pane is `sticky` with `max-height: 100vh − 86 px` and a 44 px
+    close bar; the frame gives a pane's module no height, so the root has `100dvh − 86 px − 44 px` (`min-height: 420px`):
+    root 513 × 670, no scroll in the pane, same toolbar and sheet; tap on airspaces, ✕, Escape, drag of the sheet checked
+    there. `#maps?with=fuel` (maps on the left of a pane): the frame leaves `html.f-fixed` on but its full-height rules only
+    cover an unsplit view, so the root has `100dvh − 57 px − 32 px` there; page scroll 0, root 513 × 719. **Frame: a
+    variable or a rule for these two heights would avoid copying its numbers** (`.f-pane` and `.f-view.f-split` in `frame.css`).
+  - **Tuning page** (`#maps?tune=1`). `fixed` is the module's, not the address's, so the page stays a fixed view whose root
+    scrolls by itself (`overflow: auto`): map box 52 vh again, blocks at their natural height, the thresholds panel beside
+    them from 1000 px (sticky in the root). `display: grid !important` there: the frame's rule `html.f-fixed .f-view >
+    .f-module { display: flex }` has five classes of weight. Checked at 390 and 1280: the page does not scroll, the root does.
+  - **Phone, five designs and more**: standard, cabinet, field, metro, swiss, cupertino and material all checked at 390 × 844
+    (no page scroll, nothing over the header or the bar, 44 px targets; the view is 722 to 730 px: the bar of material is 65 px,
+    metro's 59). Landscape 844 × 390 (a "screen" for the frame: rail and header leave a view of 333 px): the default sheet
+    keeps its 170 px floor, so the map is 95 px at the default and 220 collapsed — *limitation, not solved*: a side-by-side
+    layout in landscape would be the real answer (an ergonomics decision).
+  - **Not touched**: `frame/*` (everything above worked around in the module's CSS), the other modules. The frame's header
+    grows from 57 to 73 px after a visit to another screen with a back button and stays so on coming back to `#maps`
+    (the view shrinks to 714 px; the sheet's percentages follow): to tell the frame session.
+  - **Atmosphere's cross-section: awaiting atmosphere's renderer** (placeholder, nothing implemented). The sheet's entry point
+    is `openData(kind, key, title, build, label)`; `build(w, h, el)` may now return an HTML string or draw into `el` and return
+    nothing (the second form is new in this lot). The call maps will make once atmosphere exports a pure
+    `drawSection(el, { width, height, route, levelFt, profile, … })` is written in `INTEGRATION.md` § 6; no button, text or
+    import was added.
+  - **Bench**: Playwright + Chromium, the Pilot application served by the launcher (`--data` the lot-2 synthetic SIA base, tiles
+    stubbed), 390 × 844 touch (CDP touch events), 1280 × 800 mouse, the pane, the test page; screenshots in the cloud
+    session's scratchpad `maps3/` (`fixed_390_{collapsed,default,expanded}.png`, `fixed_1280.png`, `pane_1280.png`,
+    `fixed_<design>_390.png`, tuning and state pages). No `pageerror`.

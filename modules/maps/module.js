@@ -34,6 +34,9 @@ export const meta = {
   id: 'maps',
   apps: ['pilot'],
   level: 1,
+  // vue fixe (frame/INTEGRATION.md § 9.2) : ni défilement de page ni en-tête collant sur une page qui défile ; la racine du
+  // module est une colonne pleine hauteur (barre d'outils, carte, bloc de données en feuille à trois hauteurs)
+  fixed: true,
   // missions/ : lu à la demande seulement (dossiers lourds : PNG, versions, reçus), jamais tiré d'avance
   // airline/map_profiles.json : profils d'affichage des six modes, affinés par la compagnie (SPEC.md, « Profils des modes »)
   reads: ['pilot/', {
@@ -324,6 +327,14 @@ const TX = {
     'Zoom actual: {z} · efectivo {e} (marco de {m} px de media) · {s} NM por cm de pantalla'
   ],
   dataProfile: ['Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical'],
+  sheetSize: ['Hauteur du bloc de données : toucher ou glisser', 'Data block height: tap or drag',
+    'Höhe des Datenblocks: antippen oder ziehen', 'Altura del bloque de datos: tocar o arrastrar'
+  ],
+  sheetNames: [
+    ['réduit', 'collapsed', 'eingeklappt', 'reducido'],
+    ['normal', 'default', 'normal', 'normal'],
+    ['agrandi', 'expanded', 'erweitert', 'ampliado']
+  ],
   tuneRange: ['de {a} à {b}', 'from {a} to {b}', 'von {a} bis {b}', 'de {a} a {b}'],
   tuneNoLimit: ['sans limite', 'no limit', 'ohne Grenze', 'sin límite'],
   tuneFrom: ['à partir de {a}', 'from {a}', 'ab {a}', 'desde {a}'],
@@ -718,7 +729,16 @@ function mapSize() {
   const c = m.getCanvas(),
     w = S.mapEl.clientWidth,
     h = S.mapEl.clientHeight;
-  if (w && h && (c.clientWidth !== w || c.clientHeight !== h)) m.resize();
+  if (w && h && (c.clientWidth !== w || c.clientHeight !== h)) {
+    // resize() tire « movestart » : ce n'est pas un geste de l'utilisateur (sa caméra n'est « déplacée » que par lui)
+    const was = S.selfMove;
+    S.selfMove = true;
+    try {
+      m.resize();
+    } finally {
+      S.selfMove = was;
+    }
+  }
 }
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
@@ -1087,7 +1107,10 @@ function strip() {
   } else if (S.edit?.adding) text = tt(TX.addHint);
   else if (S.edit?.on) text = tt(TX.editHint);
   else if (S.prof) text = tt(TX.hint);
-  if (S.stripEl.textContent !== text) S.stripEl.textContent = text;
+  if (S.stripEl.textContent !== text) {
+    S.stripEl.textContent = text;
+    S.stripEl.title = text; // la ligne défile sur deux lignes : le texte entier en infobulle
+  }
 }
 /** Curseur commun à la distance s (mètres ; null : effacé). */
 function setCursor(s) {
@@ -2604,27 +2627,150 @@ function showLv() {
   }), (w, h) => levelsHtml(list, w, h));
 }
 // ---------------------------------------------------------------- le bloc de données (sous la carte)
-// La vue est fixe : la carte, puis le bloc de données. Le bloc montre le profil vertical ; la liste des espaces d'un point
-// et le contenu d'un terrain (points de report, séquences VAC, consignes) s'y ouvrent à sa place — on n'a pas besoin du
-// profil pendant qu'on les lit — et, fermés, le profil revient. Rien ne recouvre plus la carte. Une règle de hauteur
-// (celle du profil, --mp-prof-h), le contenu long défile dans le bloc.
-/** En-tête du bloc : ce qu'il montre (profil vertical, ou le titre du contenu) et le ✕ du contenu ; écrit s'il change. */
+// La vue est fixe (meta.fixed) : la barre d'outils, la carte, puis le bloc de données, qui est une FEUILLE de hauteur fixe
+// à trois positions (réduit : sa ligne d'en-tête seule ; normal : 38 % de la vue sur téléphone, 35 % sur écran ; agrandi :
+// 70 %), tirée par la poignée de son en-tête ; son contenu défile dedans, la page jamais. Le bloc montre le profil
+// vertical ; la liste des espaces d'un point et le contenu d'un terrain (points de report, séquences VAC, consignes) s'y
+// ouvrent à sa place — on n'a pas besoin du profil pendant qu'on les lit — et, fermés, le profil revient. Rien ne recouvre
+// plus la carte.
+/** Position de la feuille gardée d'un montage à l'autre dans la même page (0 réduit, 1 normal, 2 agrandi). */
+let sheetKeep = 1;
+/** Hauteurs en pixels des trois positions, lues dans les jetons de la racine (--mp-head, --mp-p1 / --mp-p2 : parts de la
+ *  vue, --mp-m1 / --mp-m2 : planchers) : la feuille de style en est l'unique source, le glisser s'y accroche. */
+function sheetHeights() {
+  const cs = getComputedStyle(S.el),
+    n = k => parseFloat(cs.getPropertyValue(k)) || 0,
+    H = S.el.clientHeight;
+  return [n('--mp-head') + 1, Math.max(n('--mp-p1') * H, n('--mp-m1')), Math.max(n('--mp-p2') * H, n('--mp-m2'))];
+}
+/** Met la feuille à une position (0 réduit, 1 normal, 2 agrandi). instant : sans glissement (le contenu va être mesuré). */
+function setSheet(pos, instant = false) {
+  pos = Math.max(0, Math.min(2, pos));
+  S.sheet = pos;
+  sheetKeep = pos;
+  if (instant) {
+    S.dataEl.classList.add('mp-nt');
+    requestAnimationFrame(() => S?.dataEl.classList.remove('mp-nt'));
+  }
+  S.dataEl.style.removeProperty('height');
+  if (S.el.dataset.sheet !== String(pos)) S.el.dataset.sheet = String(pos);
+  const tip = `${tt(TX.sheetSize)} (${tt(TX.sheetNames[pos])})`;
+  if (S.gripEl.title !== tip) S.gripEl.title = tip;
+  const ex = String(pos > 0);
+  if (S.gripEl.getAttribute('aria-expanded') !== ex) S.gripEl.setAttribute('aria-expanded', ex);
+  if (instant) void S.dataEl.offsetHeight; // mesure possible tout de suite (hauteur à jour)
+}
+/** Après un changement de taille de la carte (feuille, rotation, volet) : le fond MapLibre reprend la taille du cadre, et
+ *  la route reste cadrée tant que l'utilisateur n'a pas déplacé la carte ; en une fois, quand la taille s'est arrêtée. */
+function settle() {
+  clearTimeout(S.settleT);
+  S.settleT = setTimeout(() => {
+    if (!S) return;
+    mapSize();
+    if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
+    schedule();
+  }, 120);
+}
+/** La poignée : l'en-tête de la feuille. Un toucher réduit la feuille (ou la ramène de réduite ou d'agrandie à la position
+ *  normale), un glisser la tire (événements du pointeur sur l'en-tête seulement : la carte garde ses gestes), au
+ *  lâcher elle prend la position la plus proche (ou la suivante, si le geste était un coup de pouce) ; flèches du clavier. */
+function sheetGestures() {
+  const head = S.dheadEl;
+  let d = null;
+  head.addEventListener('pointerdown', e => {
+    if (e.button > 0 || e.target.closest('[data-dclose]') || S.el.classList.contains('mp-tuning')) return;
+    d = {
+      id: e.pointerId,
+      y0: e.clientY,
+      h0: S.dataEl.offsetHeight,
+      pos: S.sheet,
+      y: e.clientY,
+      t: performance.now(),
+      v: 0,
+      on: false,
+      grip: !!e.target.closest('.mp-grip')
+    };
+    head.setPointerCapture(e.pointerId); // la souris qui sort de l'en-tête (un glisser rapide) continue de lui parler
+  });
+  head.addEventListener('pointermove', e => {
+    if (!d || e.pointerId !== d.id) return;
+    if (!d.on) {
+      if (Math.abs(e.clientY - d.y0) < 6) return;
+      d.on = true;
+      S.dataEl.classList.add('mp-nt');
+    }
+    const hs = sheetHeights(),
+      now = performance.now();
+    if (now > d.t) d.v = .6 * d.v + .4 * ((e.clientY - d.y) / (now - d.t));
+    d.y = e.clientY;
+    d.t = now;
+    S.dataEl.style.height = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (e.clientY - d.y0))))}px`;
+  });
+  const end = e => {
+    if (!d || e.pointerId !== d.id) return;
+    const was = d;
+    d = null;
+    if (!was.on) {
+      // un toucher (ni glissé ni annulé) sur la poignée : réduit la feuille, ou la ramène à la position normale
+      if (e.type === 'pointerup' && was.grip) {
+        setSheet(S.sheet === 1 ? 0 : 1);
+        settle();
+      }
+      return;
+    }
+    S.dataEl.classList.remove('mp-nt');
+    const hs = sheetHeights(),
+      h = S.dataEl.offsetHeight;
+    let pos = hs.reduce((b, x, i) => Math.abs(x - h) < Math.abs(hs[b] - h) ? i : b, 0);
+    if (Math.abs(was.v) > .8 && e.type === 'pointerup') pos = was.v < 0 ? Math.min(2, was.pos + 1) : Math.max(0, was.pos - 1);
+    setSheet(pos);
+    settle();
+  };
+  head.addEventListener('pointerup', end);
+  head.addEventListener('pointercancel', end);
+  // clavier (Entrée, Espace : clic sans pointeur) ; le toucher et la souris sont traités au relâcher, plus haut
+  S.gripEl.addEventListener('click', e => {
+    if (e.detail) return;
+    setSheet(S.sheet === 1 ? 0 : 1);
+    settle();
+  });
+  S.gripEl.addEventListener('keydown', e => {
+    const k = {
+      ArrowUp: S.sheet + 1,
+      ArrowDown: S.sheet - 1,
+      Home: 0,
+      End: 2
+    } [e.key];
+    if (k == null) return;
+    e.preventDefault();
+    setSheet(k);
+    settle();
+  });
+  S.dataEl.addEventListener('transitionend', e => {
+    if (e.target === S.dataEl && e.propertyName === 'height') settle();
+  });
+}
+/** En-tête du bloc : ce qu'il montre (profil vertical, ou le titre du contenu) et le ✕ du contenu ; le bloc n'est là que
+ *  s'il a quelque chose à montrer ; écrit s'il change. */
 function dataHead() {
   const show = !!S.dpanel || !!S.prof,
     title = S.dpanel ? S.dtitle : tt(TX.dataProfile);
-  if (S.dheadEl.hidden === show) S.dheadEl.hidden = !show;
+  if (S.dataEl.hidden === show) S.dataEl.hidden = !show;
   if (S.dtitleEl.textContent !== title) S.dtitleEl.textContent = title;
   const tip = S.dpanel ? S.dlabel : '';
   if (S.dtitleEl.title !== tip) S.dtitleEl.title = tip;
   if (S.dcloseEl.hidden === !!S.dpanel) S.dcloseEl.hidden = !S.dpanel;
 }
-/** Ouvre ou remplace le contenu du bloc. key : l'identité du contenu (autre clé : le contenu est neuf, il défile en haut et
- *  le bloc est amené à l'écran s'il en sortait ; même clé : il est seulement redessiné, défilement gardé) ; build(w, h)
- *  rend le HTML pour la taille de la zone de contenu ; label : le nom complet, pour l'infobulle de l'en-tête et le lecteur
- *  d'écran. Sur un téléphone la carte reste en haut ; la page ne défile que pour
- *  que le bloc soit visible (`scrollIntoView`, block nearest), la caméra de la carte n'est pas touchée. */
+/** Ouvre ou remplace le contenu du bloc. key : l'identité du contenu (autre clé : le contenu est neuf et défile en haut ;
+ *  même clé : il est seulement redessiné, défilement gardé) ; build(w, h) rend le HTML pour la taille de la zone de
+ *  contenu (largeur et hauteur en pixels : un graphique y puise ce qu'il lui faut) et rend le HTML, OU dessine lui-même
+ *  dans la zone qu'on lui donne en troisième argument (el) et ne rend rien (coupe verticale de l'atmosphère : INTEGRATION.md
+ *  § 6) ; rappelé avec la même clé, il remplace son dessin ; label : le nom complet, pour
+ *  l'infobulle de l'en-tête et le lecteur d'écran. Un contenu neuf ouvre la feuille réduite à sa position normale ; la
+ *  carte et la page ne bougent pas. C'est aussi le point d'entrée des contenus venus d'autres modules (INTEGRATION.md § 6). */
 function openData(kind, key, title, build, label = title) {
   const fresh = S.dkey !== key;
+  if (fresh && S.sheet === 0) setSheet(1, true); // réduite, le contenu serait caché : la feuille s'ouvre, sans glissement
   S.dpanel = kind;
   S.dkey = key;
   S.dtitle = title;
@@ -2632,18 +2778,18 @@ function openData(kind, key, title, build, label = title) {
   if (S.dbodyEl.hidden) S.dbodyEl.hidden = false;
   if (S.dbodyEl.getAttribute('aria-label') !== label) S.dbodyEl.setAttribute('aria-label', label);
   S.dlabel = label;
-  const html = build(S.dbodyEl.clientWidth || 360, S.dbodyEl.clientHeight || 200);
-  if (S.dhtml !== html) {
+  if (fresh) {
+    S.dhtml = '';
+    S.dbodyEl.textContent = '';
+  }
+  const html = build(S.dbodyEl.clientWidth || 360, S.dbodyEl.clientHeight || 200, S.dbodyEl);
+  if (typeof html !== 'string') S.dhtml = null; // le constructeur a dessiné lui-même dans la zone (el) : rien d'autre à écrire
+  else if (S.dhtml !== html) {
     S.dhtml = html;
     S.dbodyEl.innerHTML = html;
   }
   dataHead();
-  if (!fresh) return;
-  S.dbodyEl.scrollTop = 0;
-  S.dataEl.scrollIntoView({
-    block: 'nearest',
-    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
-  });
+  if (fresh) S.dbodyEl.scrollTop = 0;
 }
 /** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille. */
 function endData(kind = null) {
@@ -2729,17 +2875,25 @@ async function status() {
     else if (S.data?.empty && navigator.onLine === false) out.push(
       `<p>${esc(tt(TX.noZone))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
   }
-  if (S.plain && S.route.points.length) out.push(`<p class="f-muted">${esc(tt(TX.plain))}</p>`);
-  if (S.prof && !S.prof.terrainOk) out.push(`<p class="f-muted">${esc(tt(TX.noTerrain))}</p>`);
-  const html = out.join('');
+  // pour information (fond uni, relief absent : l'état normal hors ligne) : dans la feuille, sous le profil, pour que la
+  // carte ne perde pas une ligne en permanence ; les messages qui demandent un geste ou disent un manque restent sous la barre
+  const soft = [];
+  if (S.plain && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
+  if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`);
+  const html = out.join(''),
+    notes = soft.join('');
   if (S.stEl.innerHTML !== html) S.stEl.innerHTML = html;
+  if (S.notesEl.innerHTML !== notes) S.notesEl.innerHTML = notes;
 }
 /** En-tête : départ → arrivée, dégagement, niveau, distance. */
 function header() {
   if (S.mission) {
     const m = S.mapDef,
       text = [S.mission.id, S.mission.title, m ? m.description || m.file : ''].filter(Boolean).join(' · ');
-    if (S.hdEl.textContent !== text) S.hdEl.textContent = text;
+    if (S.hdEl.textContent !== text) {
+      S.hdEl.textContent = text;
+      S.hdEl.title = text;
+    }
     return;
   }
   const f = S.route.flight,
@@ -2755,7 +2909,22 @@ function header() {
       d: Math.round(d)
     }) : '', f?.aircraft?.type || ''].filter(Boolean),
     text = parts.join(' · ');
-  if (S.hdEl.textContent !== text) S.hdEl.textContent = text;
+  if (S.hdEl.textContent !== text) {
+    S.hdEl.textContent = text;
+    S.hdEl.title = text; // la ligne est coupée sur un téléphone : le texte entier en infobulle
+  }
+}
+/** Carte montrée ou cachée (pas de vol, mission sans carte) : « Recentrer » et le bouton des modes de la barre la suivent
+ *  (les modes n'existent pas pour une carte de mission). Écrit seulement ce qui change. */
+function showBox(on) {
+  const modes = on && !S.ctx.query?.mission;
+  for (const [e, v] of [
+      [S.box, on],
+      [S.fitBtn, on],
+      [S.modesEl, modes]
+    ])
+    if (e.hidden === v) e.hidden = !v;
+  if (!modes) toggleModes(false);
 }
 /** Vol (re)lu : profil selon le niveau, emprise, marques, données, fond. */
 /** Profil d'affichage du vol selon le préréglage : IFR bas ou haut (voies, espaces de la tranche, MORA, balises), VFR
@@ -3137,7 +3306,10 @@ function toggleLayers(open = S.layersEl.hidden) {
   if (S.layersEl.hidden === !open) return;
   S.layersEl.hidden = !open;
   S.layersBtn.setAttribute('aria-expanded', String(open));
-  if (open) fillLayers();
+  if (open) {
+    fillLayers();
+    if (S.sheet === 2) setSheet(1); // feuille agrandie : le panneau n'aurait que quelques lignes de carte
+  }
 }
 /** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
 const viewOf = () => {
@@ -3173,7 +3345,6 @@ function tuneSetup(box) {
   S.tuneEl = box;
   S.tuneZoom = {};
   S.tuneRO = matchMedia('(max-width: 599px)').matches;
-  if (!S.el.classList.contains('mp-tuning')) S.el.classList.add('mp-tuning');
   box.addEventListener('input', e => {
     const r = e.target.closest('input[data-z]');
     if (!r || S.tuneRO) return;
@@ -3664,7 +3835,7 @@ async function applyFlight(live = false) {
   S.marks = MapsRender.marks(S.route.points);
   S.data = null;
   if (!live) S.cursor = null;
-  S.box.hidden = !S.route.points.length; // pas de vol : pas de carte, le message de l'état
+  showBox(!!S.route.points.length); // pas de vol : pas de carte, le message de l'état
   header();
   const inView = () => {
       const bb = S.map.getBounds();
@@ -3798,7 +3969,7 @@ async function applyMission() {
   S.marks = shown.length > 1 ? MapsRender.marks(shown) : [];
   S.data = null;
   S.cursor = null;
-  S.box.hidden = !M;
+  showBox(!!M);
   header();
   fillPick();
   status();
@@ -3827,27 +3998,38 @@ function go(mission, map) {
 }
 
 const STYLE = `
-[data-module="maps"]{display:flex;flex-direction:column;gap:8px}
-[data-module="maps"] .f-tools{margin-bottom:0}
-[data-module="maps"] .mp-sum{flex:1 1 100%;font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-picks{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%;min-width:0}
-[data-module="maps"] .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 140px;text-overflow:ellipsis}
-[data-module="maps"] .mp-box{position:relative;height:52vh;min-height:260px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-bg);touch-action:none}
+/* L'ÉCRAN EST FIXE (meta.fixed) : la racine est une colonne à la hauteur de la vue du cadre, rien n'en dépasse ni ne fait
+   défiler la page — barre d'outils d'une ligne, ligne d'information, carte (prend ce qui reste), feuille de données de
+   hauteur fixe ; ce qui est plus grand défile DANS sa zone. La racine est isolée (z-index des boutons de la carte, 3 à 8,
+   gardés sous l'en-tête et la barre du bas du cadre, dans le volet de la vue double aussi). Hors vue fixe (volet,
+   page d'essai) la hauteur est donnée plus bas. */
+[data-module="maps"]{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;isolation:isolate;--mp-head:44px;--mp-p1:.38;--mp-m1:170;--mp-p2:.7;--mp-m2:260}
+@media (min-width:761px){[data-module="maps"]{--mp-p1:.35}}
+[data-module="maps"] .mp-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+[data-module="maps"] .mp-bar{display:flex;align-items:center;gap:6px;flex:none;padding:2px 8px}
+[data-module="maps"] .mp-picks{display:flex;gap:6px;flex:1 1 0;min-width:0;max-width:380px}
+[data-module="maps"] .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 0;text-overflow:ellipsis}
+[data-module="maps"] .mp-sum{flex:none;margin:0;padding:0 8px 4px;font-size:var(--sog-size-xs);line-height:16px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="maps"] .mp-sum:empty{display:none}
+[data-module="maps"] .mp-progress,[data-module="maps"] .mp-status{flex:none;padding:0 8px 4px;font-size:var(--sog-size-xs)}
+[data-module="maps"] .mp-progress[hidden],[data-module="maps"] .mp-ib[hidden]{display:none}
+[data-module="maps"] .mp-status p:has(button){display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+[data-module="maps"] .mp-progress p,[data-module="maps"] .mp-status p{margin:0 0 2px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+[data-module="maps"] .mp-status:empty{display:none}
+[data-module="maps"] .mp-box{position:relative;flex:1 1 0;min-height:0;border:solid var(--sog-border);border-width:1px 0;overflow:hidden;background:var(--sog-bg);touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 [data-module="maps"] .mp-credit{position:absolute;right:4px;bottom:2px;font-size:10px;color:var(--sog-fg);background:var(--sog-chart-bg);opacity:.85;padding:0 4px;border-radius:var(--sog-radius-s);pointer-events:none}
-[data-module="maps"]{--mp-prof-h:clamp(200px,30vh,340px)}
-[data-module="maps"] .mp-prof{position:relative;height:var(--mp-prof-h);border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:pan-y;cursor:crosshair}
+[data-module="maps"] .mp-prof{position:relative;flex:1 1 0;min-height:0;max-height:380px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:none;cursor:crosshair}
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
-[data-module="maps"] .mp-strip{min-height:20px;font-size:.92em;font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-status p{margin:4px 0}
-[data-module="maps"] .mp-box{container-type:inline-size;isolation:isolate}
-[data-module="maps"] .mp-modes{position:absolute;left:8px;top:8px;z-index:6;max-width:calc(100% - 16px)}
+[data-module="maps"] .mp-strip{flex:none;height:34px;overflow-y:auto;font-size:var(--sog-size-xs);line-height:16px;padding:1px 0;font-variant-numeric:tabular-nums}
+[data-module="maps"] .mp-box{container-type:inline-size}
+[data-module="maps"] .mp-modes{position:relative;flex:none}
 [data-module="maps"] .mp-modes[hidden]{display:none}
-[data-module="maps"] .mp-mode-btn,[data-module="maps"] .mp-choice{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
+[data-module="maps"] .mp-mode-btn,[data-module="maps"] .mp-choice,[data-module="maps"] .mp-ib{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
 [data-module="maps"] .mp-mode-btn{color:var(--sog-accent)}
 [data-module="maps"] .mp-mode-btn[aria-expanded=true]{box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="maps"] .mp-mode-opts{display:flex;gap:4px;padding:4px;margin-top:6px;width:max-content;max-width:calc(100cqw - 16px);flex-wrap:wrap;box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
+[data-module="maps"] .mp-mode-opts{position:absolute;right:0;top:calc(100% + 4px);z-index:8;display:flex;gap:4px;padding:4px;width:max-content;max-width:calc(100cqw - 16px);flex-wrap:wrap;box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
 [data-module="maps"] .mp-mode-opts[hidden]{display:none}
 [data-module="maps"] .mp-choice{border-color:transparent;border-radius:var(--sog-radius-s)}
 [data-module="maps"] .mp-choice:hover{background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface))}
@@ -3870,8 +4052,8 @@ const STYLE = `
 [data-module="maps"] .mp-tip>div+div{margin-top:4px}
 [data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
 [data-module="maps"] .mp-tip.mp-hover>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
-[data-module="maps"] .mp-layers-btn{position:absolute;left:8px;top:calc(14px + var(--sog-touch));z-index:3;width:var(--sog-touch);height:var(--sog-touch);min-height:0;display:grid;place-items:center;padding:0}
-[data-module="maps"] .mp-layers{position:absolute;left:8px;top:calc(20px + 2 * var(--sog-touch));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 28px - 2 * var(--sog-touch));overflow:auto;display:flex;flex-direction:column;gap:0;font-size:.9em;min-width:min(220px,80%)}
+[data-module="maps"] .mp-layers-btn{position:absolute;left:8px;top:8px;z-index:3;width:var(--sog-touch);height:var(--sog-touch);min-height:0;display:grid;place-items:center;padding:0}
+[data-module="maps"] .mp-layers{position:absolute;left:8px;top:calc(14px + var(--sog-touch));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 22px - var(--sog-touch));overflow:auto;display:flex;flex-direction:column;gap:0;font-size:.9em;min-width:min(220px,80%)}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
 [data-module="maps"] .mp-layers .mp-l-main{border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
 [data-module="maps"] .mp-layers .mp-l-detail{flex-wrap:wrap;border-top:1px solid var(--sog-border);margin-top:4px;padding-top:6px}
@@ -3892,7 +4074,17 @@ const STYLE = `
 [data-module="maps"] .mp-tune-dual input:disabled::-webkit-slider-thumb{background:var(--sog-muted);box-shadow:none;cursor:default}
 [data-module="maps"] .mp-tune-dual::before{content:'';position:absolute;left:0;right:0;top:13px;height:2px;background:var(--sog-border)}
 [data-module="maps"] .mp-tune-mark{position:absolute;top:6px;width:2px;height:16px;margin-left:-1px;background:var(--sog-err)}
-@media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}}
+/* page de réglage (#maps?tune=1) : une page qui défile, mais DANS la racine fixe (la vue du cadre ne défile pas) : blocs en
+   hauteur naturelle, la carte retrouve une hauteur d'écran, le panneau de seuils à côté sur grand écran */
+[data-module="maps"].mp-tuning{overflow:auto}
+[data-module="maps"].mp-tuning>*{flex:none}
+[data-module="maps"].mp-tuning .mp-box{height:52vh;min-height:260px}
+[data-module="maps"].mp-tuning .mp-data{height:auto;transition:none}
+[data-module="maps"].mp-tuning .mp-dprof{flex:none}
+[data-module="maps"].mp-tuning .mp-prof{flex:none;height:240px}
+[data-module="maps"].mp-tuning .mp-dbody{flex:none;height:260px}
+/* !important : la règle de la vue fixe du cadre (html.f-fixed .f-view > .f-module { display: flex }) a plus de poids */
+@media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid!important;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start;align-content:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100dvh - 90px);overflow:auto}}
 [data-module="maps"] .mp-layers>*{flex-shrink:0}
 [data-module="maps"] .mp-layers [data-layers-reset]{margin-top:10px;align-self:flex-start}
 [data-module="maps"] .mp-layers[hidden],[data-module="maps"] .mp-layers-btn[hidden]{display:none}
@@ -3920,11 +4112,27 @@ const STYLE = `
 [data-module="maps"] .mp-vfr-note>div{white-space:pre-wrap;font-size:.85em;max-height:14em;overflow:auto;border-left:2px solid var(--sog-border);padding-left:6px}
 /* le bloc de données : en-tête d'une ligne (ce qu'il montre, ✕ de 44 px à droite), puis le profil vertical ou le contenu ouvert
    à sa place, à la hauteur du profil (un seul bloc de règle) ; le contenu long défile dans le bloc */
-[data-module="maps"] .mp-dhead{display:flex;align-items:center;gap:8px;min-height:30px;font-size:.92em}
-[data-module="maps"] .mp-dhead[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
+/* la feuille de données : en-tête de 44 px (la poignée : barrette, titre de ce qu'elle montre ; le ✕ d'un contenu à droite),
+   puis le profil vertical (sa bande dessous) ou le contenu ouvert à sa place, puis les notes ; hauteur fixe à trois positions
+   (data-sheet 0, 1, 2 de la racine), le contenu défile dedans */
+[data-module="maps"] .mp-data{position:relative;z-index:1;flex:none;display:flex;flex-direction:column;box-sizing:border-box;height:max(calc(var(--mp-p1) * 100%),calc(var(--mp-m1) * 1px));min-height:0;overflow:hidden;background:var(--sog-surface);border-top:1px solid var(--sog-border);border-radius:var(--sog-radius) var(--sog-radius) 0 0;box-shadow:0 -2px 8px #0000001a;transition:height .2s ease}
+[data-module="maps"][data-sheet="0"] .mp-data{height:calc(var(--mp-head) + 1px)}
+[data-module="maps"][data-sheet="2"] .mp-data{height:max(calc(var(--mp-p2) * 100%),calc(var(--mp-m2) * 1px))}
+[data-module="maps"] .mp-data.mp-nt{transition:none}
+@media (prefers-reduced-motion:reduce){[data-module="maps"] .mp-data{transition:none}}
+[data-module="maps"][data-sheet="0"] :is(.mp-dprof,.mp-dbody,.mp-notes){display:none}
+[data-module="maps"] .mp-dhead{flex:none;display:flex;align-items:stretch;height:var(--mp-head);font-size:.92em;touch-action:none;user-select:none;-webkit-user-select:none}
+[data-module="maps"] .mp-grip{position:relative;flex:1 1 0;min-width:0;min-height:0;height:100%;display:flex;align-items:center;margin:0;padding:6px 8px 0;border:0;border-radius:0;background:none;color:inherit;font:inherit;text-align:left;cursor:grab;touch-action:none}
+[data-module="maps"] .mp-grip:active{cursor:grabbing}
+[data-module="maps"] .mp-pill{position:absolute;left:50%;top:6px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:color-mix(in srgb,var(--sog-muted) 55%,transparent)}
+[data-module="maps"] .mp-dprof{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 8px}
+[data-module="maps"] .mp-notes{flex:none;padding:0 8px 6px;font-size:var(--sog-size-xs)}
+[data-module="maps"] .mp-notes p{margin:0 0 2px}
+[data-module="maps"] .mp-notes:empty{display:none}
+[data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
 [data-module="maps"] .mp-dtitle{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="maps"] .mp-dclose{flex:none;width:44px;height:44px;min-height:0;margin:-7px 0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit}
-[data-module="maps"] .mp-dbody{box-sizing:border-box;height:calc(var(--mp-prof-h) + 20px);padding:6px 8px;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
+[data-module="maps"] .mp-dclose{flex:none;width:44px;height:100%;min-height:0;margin:0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit;touch-action:manipulation}
+[data-module="maps"] .mp-dbody{box-sizing:border-box;flex:1 1 0;min-height:0;margin:0 8px 8px;padding:6px 8px;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
 [data-module="maps"] .mp-dbody p{margin:2px 0}
 [data-module="maps"] .mp-lv-body{display:flex;align-items:flex-start;gap:12px}
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
@@ -3933,7 +4141,11 @@ const STYLE = `
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
-[data-module="maps"].mp-editing .mp-prof{touch-action:none;cursor:ns-resize}
+[data-module="maps"].mp-editing .mp-prof{cursor:ns-resize}
+/* hors de la vue fixe du cadre, la racine reçoit sa hauteur d'ici : le volet de la vue double (sous l'en-tête, avec sa barre
+   de fermeture de 44 px) et, carte à gauche d'un volet, la colonne de la vue (en-tête de 57 px, marges de 16 px de la vue) */
+.f-pane>[data-module="maps"]{height:calc(100dvh - 86px - var(--sog-touch));min-height:420px}
+.f-view.f-split>[data-module="maps"]{height:calc(100dvh - 57px - 32px);min-height:420px}
 `;
 
 export async function mount(el, ctx) {
@@ -3954,17 +4166,18 @@ export async function mount(el, ctx) {
     plain: false
   };
   el.innerHTML = `<style>${STYLE}</style>
-<div class="f-tools"><h1>${esc(ctx.t(TX.title))}</h1>
-<button type="button" class="f-btn" data-go="fuel?from=maps&amp;focus=route">${esc(ctx.t(TX.edit))}</button>
-<button type="button" class="f-btn" data-fit>${esc(ctx.t(TX.fit))}</button>
-<div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
+<h1 class="mp-sr">${esc(ctx.t(TX.title))}</h1>
+<div class="mp-bar"><div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
-<div class="mp-sum f-muted" aria-live="polite"></div></div>
+<button type="button" class="mp-ib" data-go="fuel?from=maps&amp;focus=route" aria-label="${esc(ctx.t(TX.edit))}" title="${esc(ctx.t(TX.edit))}">${svg('edit', { size: 22 })}</button>
+<button type="button" class="mp-ib" data-fit aria-label="${esc(ctx.t(TX.fit))}" title="${esc(ctx.t(TX.fit))}">${svg('target', { size: 22 })}</button>
+<div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"></button>
+<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div></div></div>
+<p class="mp-sum f-muted" aria-live="polite"></p>
 <div class="mp-progress" hidden aria-live="polite"></div>
+<div class="mp-status" aria-live="polite"><p class="f-muted">${esc(ctx.t(TX.loading))}</p></div>
 ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>' : ''}
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
-<div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"></button>
-<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div></div>
 <button type="button" class="mp-layers-btn" aria-expanded="false" aria-label="${esc(ctx.t(TX.layers))}" title="${esc(ctx.t(TX.layers))}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg></button>
 <div class="mp-layers f-card" hidden role="group" aria-label="${esc(ctx.t(TX.layers))}"><b>${esc(ctx.t(TX.layers))}</b>
 ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
@@ -3975,12 +4188,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
-<div class="mp-data"><div class="mp-dhead" hidden><b class="mp-dtitle"></b><button type="button" class="mp-dclose" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
+<div class="mp-data" hidden><div class="mp-dhead"><button type="button" class="mp-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><span class="mp-pill" aria-hidden="true"></span><b class="mp-dtitle"></b></button><button type="button" class="mp-dclose" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
-<div class="mp-dbody" hidden role="region" tabindex="-1"></div></div>
-<div class="mp-status" aria-live="polite"><p class="f-muted">${esc(ctx.t(TX.loading))}</p></div>`;
+<div class="mp-dbody" hidden role="region" tabindex="-1"></div>
+<div class="mp-notes f-muted" aria-live="polite"></div></div>`;
   Object.assign(S, {
     box: el.querySelector('.mp-box'),
     mapEl: el.querySelector('.mp-map'),
@@ -3994,6 +4207,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     pickEl: el.querySelector('.mp-pick'),
     mapPickEl: el.querySelector('.mp-mappick'),
     modesEl: el.querySelector('.mp-modes'),
+    fitBtn: el.querySelector('[data-fit]'),
     modeBtn: el.querySelector('.mp-mode-btn'),
     modeOpts: el.querySelector('.mp-mode-opts'),
     layersBtn: el.querySelector('.mp-layers-btn'),
@@ -4007,12 +4221,23 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     cardEl: el.querySelector('.mp-pcard'),
     dataEl: el.querySelector('.mp-data'),
     dheadEl: el.querySelector('.mp-dhead'),
+    gripEl: el.querySelector('.mp-grip'),
+    notesEl: el.querySelector('.mp-notes'),
     dtitleEl: el.querySelector('.mp-dtitle'),
     dcloseEl: el.querySelector('.mp-dclose'),
     dprofEl: el.querySelector('.mp-dprof'),
     dbodyEl: el.querySelector('.mp-dbody'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
     ptipEl: el.querySelector('.mp-prof .mp-tip')
+  });
+  // page de réglage (#maps?tune=1) : racine qui défile d'elle-même (la vue du cadre est fixe), blocs en hauteur naturelle
+  if (ctx.query?.tune) el.classList.add('mp-tuning');
+  setSheet(sheetKeep, true);
+  sheetGestures();
+  // la grille des modes (sous la barre d'outils, sur le haut de la carte) se ferme aussi d'un toucher ailleurs que sur la
+  // carte (qui la ferme elle-même) : barre, feuille
+  el.addEventListener('pointerdown', e => {
+    if (!S.modeOpts.hidden && !e.target.closest('.mp-modes, .mp-box')) toggleModes(false);
   });
   S.pickEl.addEventListener('change', () => {
     const v = S.pickEl.value;
@@ -4212,6 +4437,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   const ro = new ResizeObserver(() => {
     mapSize();
     schedule();
+    settle(); // la feuille a bougé, l'écran a tourné : la route est recadrée une fois la taille arrêtée
   });
   ro.observe(S.box);
   // rotation, volet redimensionné : le graphique des niveaux reprend la largeur du bloc
@@ -4233,7 +4459,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   const rp = new ResizeObserver(() => drawProfile());
   rp.observe(S.profBox);
-  S.stops.push(() => ro.disconnect(), () => rp.disconnect(), () => rd.disconnect());
+  S.stops.push(() => ro.disconnect(), () => rp.disconnect(), () => rd.disconnect(), () => clearTimeout(S.settleT));
 }
 
 export function unmount() {

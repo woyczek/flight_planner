@@ -12,6 +12,21 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the screen is fixed — one-line toolbar, full-height map, the data block as a three-position sheet, no page
+  scroll** (`modules/maps/module.js`, `modules/maps/test/index.html`; SPEC § 4, INTEGRATION § 2 ter and § 6, DECISIONS,
+  help ×4) — the Map module declares the frame's `meta.fixed`: on a phone and on a screen the page no longer scrolls
+  and nothing slides under the header (the "scroll bar and artefacts in the header" of the bug report). From top to
+  bottom: a 44 px toolbar (flight selector, Edit the route, Recentre and the map mode as icon buttons; the title is gone,
+  the tab bar or the rail names the screen), the flight's information line, the map taking all the rest, and the **data
+  block as a sheet** with a drag handle and three heights: collapsed (its title line only), normal (38 % of the view on
+  a phone, 35 % on a screen) and expanded (70 %); the profile, the airspaces list and an aerodrome's reporting points
+  scroll inside it, the map resizes with it and keeps the route framed unless the user has moved it. A tap on the handle
+  collapses the sheet or brings it back; the keyboard moves it too. The airspaces and reporting-point contents open the
+  sheet when it is collapsed. The dual-view pane and the `#maps?tune=1` tuning page (which scrolls inside the root) work
+  as before. The sheet accepts a content that draws itself (`openData(kind, key, title, build(w, h, el))`), ready for the
+  atmosphere cross-section. A map resize was wrongly taken for a gesture of the user (the route was no longer reframed
+  by a live update): fixed.
+
 - **Frame: the phone's bottom tab bar, tabs as groups of modules, flight status line, fixed view** (`frame/app.js`,
   `frame/frame.css`, `frame/index.html`, `frame/lib/icons.js`, `frame/design/*`; frame SPEC § 3.1 and INTEGRATION § 9,
   design SPEC, DECISIONS, help intro ×4) — on a phone (760 px or less) the menu button and the drawer are gone: a bar

@@ -8,6 +8,7 @@ How the frame mounts the map module and what it needs from the frame, aerodb and
 ```js
 export const meta = {
   id: 'maps', apps: ['pilot'], level: 1,
+  fixed: true,                                                                // the fixed, full-height view (frame INTEGRATION § 9.2)
   reads: ['pilot/', { prefix: 'missions/', policy: 'reference' }, 'cache/maps/'],
   writes: [{ prefix: 'cache/maps/', policy: 'cache' },                        // map mode and layers, per device
     { prefix: 'pilot/', merge: 'record' }],                                   // the current flight, edited on the map
@@ -60,6 +61,27 @@ export const meta = {
   without a label); `trail` optional (the map keeps its own 30-minute trail from the successive
   positions); `trackDeg` optional (bearing from the previous position); `gsKt` optional (250 kt).
 
+## 2 ter. The fixed view (`meta.fixed`)
+
+Since 24 Oct 2026 the Map screen is a fixed view (frame/INTEGRATION.md § 9.2): the frame puts `f-fixed` on `<html>` while
+it is shown, the page does not scroll, and the module root (`section.f-module[data-module="maps"]`) is a full-height flex
+column with no padding. The module draws into it a toolbar, the information line, the map (`flex: 1 1 0; min-height: 0`)
+and the data sheet (fixed height, three positions: SPEC § 4). What the module's own style sheet adds, because the frame
+does not give it:
+
+- **The dual-view pane and the map on the left of a pane are not fixed views** (`f-fixed` is not applied to a split
+  view's pane; with the map on the left, `html.f-fixed` stays on but the frame's full-height rules are for the unsplit
+  view only). The root is given its height by two rules of the module: `.f-pane>[data-module="maps"]` =
+  `100dvh − 86 px − 44 px` (the pane's `max-height` minus its close bar), `.f-view.f-split>[data-module="maps"]` =
+  `100dvh − 57 px − 32 px` (header and the view's padding), both with `min-height: 420px`. Numbers copied from
+  `frame.css`; **ask for a frame variable** (the header height and the pane bar's) or a pane rule so that they are not
+  repeated here.
+- **The tuning page** (`#maps?tune=1`) needs a scrolling page, and `fixed` is a property of the module, not of an address:
+  the root scrolls by itself in that case (`overflow: auto`, grid from 1000 px, with `display: grid !important` because
+  the frame's `html.f-fixed .f-view > .f-module { display: flex }` has more weight).
+- The root has `isolation: isolate` (the z-indices 3 to 8 of the map's buttons stay below the frame's header and tab bar).
+- The test page `modules/maps/test/index.html` gives the host `height: calc(100dvh - 24px)`.
+
 ## 3. What it asks of aerodb
 
 `airspaces`, `aerodromes`, `navaids`, `airways`, `moraCells` and `obstacles` by `bbox`; `coords` (the alternate);
@@ -101,3 +123,39 @@ keeps the module and fuel scrolls to that step).
 - **Terrain**: 7 to 20 Terrarium tiles for a 100 to 370 NM route (zoom 9).
 - **Data**: France IFR route LFRS → LFML: France's meta, airspaces (2.8 MB), aerodromes, navaids, airways and MORA,
   plus about 100 KB of Spain and Switzerland (no airspaces): 3.64 MB, then from the frame's cache.
+
+## 6. The data sheet: what another module may show in it
+
+The sheet under the map shows one content at a time (SPEC § 4). The module's entry point is
+`openData(kind, key, title, build, label = title)`; `closeData()` / `endData(kind)` close it. A content is drawn **by
+maps**, never by another module reaching into the sheet.
+
+- `kind`: the content's family (`'lv'` airspaces, `'ad'` aerodrome, **`'weather'`** the cross-section).
+- `key`: its identity. A new key opens it fresh (scrolled to the top; a collapsed sheet opens to its default position,
+  with no slide); the same key redraws it and keeps the scroll.
+- `title`: the sheet's header line (one line, ellipsed; `label` is the full name for the tooltip and the screen reader).
+- `build(w, h, el)`: called with the pixel width and height of the content area and the area itself. It either **returns an
+  HTML string** (the existing contents; written only if it changed) **or draws into `el` and returns nothing** (SVG,
+  canvas; `el` is emptied when the key is new, and the builder replaces its own drawing when called again with the same
+  key). The content area scrolls; its height is the sheet's, so draw for `h` and let the rest scroll.
+
+**The atmosphere cross-section (awaiting atmosphere's renderer).** The atmosphere module will export a **pure renderer**
+for the vertical cross-section along the route (wind, temperature, turbulence, icing, clouds against the route's level),
+in a file maps can import (`modules/atmosphere/section.js`, to be declared in maps' `meta.files` when it exists). What maps
+will call, once it is there:
+
+```js
+import { drawSection } from '../atmosphere/section.js';          // atmosphere's file, not written yet
+// in the sheet, from a button or a tab of the sheet's header (maps' own, to be designed with the user):
+openData('weather', `wx:${flightKey}`, tt(TX.weatherSection), (w, h, el) => {
+  drawSection(el, { width: w, height: h, route: S.route.points, levelFt: S.route.levelFt, profile: S.prof, wind, now });
+});
+```
+
+What maps asks of that function: **pure** (no read of the data layer, no network, no global style sheet; it gets the route
+points, the level, the profile's cumulative distances, and the forecast as arguments), **idempotent** (`el` is replaced
+by each call), **sized by the arguments** (it draws for `width` × `height` CSS pixels and does not read the page), colours
+from the `--sog-*` tokens or from `MapsRender.tokens()`. Whether it returns an HTML string instead (then `build` returns
+it) is atmosphere's choice; the sheet takes both. The cursor shared by the profile and the map (`S.cursor`, in metres from
+the departure) can be given as `cursorM` so the cross-section follows it. Nothing of this is implemented in maps yet: no
+button, no text, no import (DECISIONS.md, 24 Oct 2026).
