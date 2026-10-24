@@ -30,11 +30,22 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   aside for this reason: one technique for both modules. Shared without touching the maps module's files (its agent is
   mid-lot): `render.js` (`MapsRender.mercator`, `drawBackground`, `tokens`), `lib/outlines.js`, MapLibre and its
   styles. Proposed to the relay: extract the maps module's base (`loadMapLibre`, `startTiles`, `styleFor`, `mapSize`,
-  plain background) and its sheet (`setSheet`, `sheetGestures`, `settle`) into shared files used by both.
+  plain background) and its sheet (`setSheet`, `sheetGestures`, `settle`) into shared files used by both. **Decided by
+  the relay** (`V3_SPECIFICATION.md`, 24 Oct): the map base goes to `modules/maps/lib/map_base.js` (a maps lot, imported
+  here like `render.js`), the sheet becomes a frame primitive (`frame/lib/sheet.js`, rules in
+  `frame/design/primitives.css`); until those two lots land, the copies stay here, isolated and marked.
 - **Rasterised profile → SVG** (`section.js`): vector lines, text and barbs; the continuous fields (cloud, temperature,
   humidity, density altitude, icing and inversion masks) are images of the 200 × 120 computing grid drawn enlarged and
   smoothed, so no steps; hatches through SVG patterns masked by those fields. On a narrow block: barbs every ~34 px
   and every other level, point names that would overlap left out, surface strips only above 260 px.
+- **Toolbar like the maps module's** (its SPEC § 4, relay): one line of 44 px controls — the map's altitude selector
+  taking what is left, then three icon buttons named in `title` / `aria-label` (plane: flight and settings; info: the
+  information; download: load) — an invisible `h1`, then an information line in `--sog-size-xs`, one line, ellipsed, the
+  full text in its `title`; the Layers button at the top left of the map, the map's hint at the top beside it (it covered
+  the base map's credits at the bottom).
+- **The cross-section offered to the maps module as `drawSection(el, { width, height, route, levelFt, profile, depTime,
+  locs, cursorM, … })`** (its INTEGRATION § 6): the model's computation moved from `module.js` into `section.js`
+  (`sectionModel`, `sectionPlaces`, `sectionVars`), which the module now uses too — one computation for both screens.
 - **Local slice at any point of the map**: the column of the tapped point's cell from the weather cache, else one place
   from Open-Meteo (≈ 10 weighted calls), at the time the flight passes nearest; a tap on the profile or a table row opens
   the slice of a reading place (no call).

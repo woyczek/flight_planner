@@ -22,8 +22,15 @@ import {
 import {
   sectionSvg,
   soundingSvg,
+  sectionModel,
+  sectionPlaces,
+  sectionVars,
+  topFtOf,
   diverging
 } from './section.js';
+import {
+  svg
+} from '../../frame/lib/icons.js';
 import {
   TX
 } from './texts.js';
@@ -112,7 +119,6 @@ const STYLE_DAY = 'https://tiles.openfreemap.org/styles/positron',
   STYLE_NIGHT = 'https://tiles.openfreemap.org/styles/dark',
   TILE_WAIT = 8000;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-const lerp = (a, b, k) => a == null || b == null ? (a ?? b) : a + (b - a) * k;
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const ICON_LAYERS =
@@ -231,23 +237,25 @@ function fieldCanvas(nx, ny, rgbaOf) {
 // (vue fixe : la carte prend ce que le bloc du bas laisse, le bloc défile dedans)
 const STYLE = `
 [data-module="atmosphere"]{--at-head:44px;--at-p1:.38;--at-m1:170;--at-p2:.7;--at-m2:260;--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);--at-inv:var(--sog-chart-2);--at-ice:var(--sog-chart-5);--at-terrain:color-mix(in srgb,var(--sog-chart-6) 55%,var(--sog-chart-bg))}
-[data-module="atmosphere"] .at-tools{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:6px 8px;flex:none}
-[data-module="atmosphere"] .at-tools button{min-width:var(--sog-touch,44px)}
+[data-module="atmosphere"] .at-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[data-module="atmosphere"] .at-tools{display:flex;align-items:center;gap:6px;padding:2px 8px;flex:none}
+[data-module="atmosphere"] .at-tools .at-alt{flex:1 1 auto;min-width:0;max-width:380px}
+[data-module="atmosphere"] .at-ib{flex:none;width:var(--sog-touch,44px);height:var(--sog-touch,44px);min-height:0;padding:0;display:grid;place-items:center}
 [data-module="atmosphere"] .at-tools [aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="atmosphere"] .at-sum{flex:1 1 160px;min-width:0;font-size:var(--sog-size-s,13px);color:var(--sog-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+[data-module="atmosphere"] .at-info{display:flex;align-items:center;gap:6px;padding:0 8px 2px;flex:none;min-width:0}
+[data-module="atmosphere"] .at-sum{flex:1 1 auto;min-width:0;font-size:var(--sog-size-xs,12px);color:var(--sog-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .at-box{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:var(--sog-chart-grid);touch-action:none;isolation:isolate;border-top:1px solid var(--sog-border);border-bottom:1px solid var(--sog-border)}
 [data-module="atmosphere"] .at-map{position:absolute;inset:0}
 [data-module="atmosphere"] canvas.at-over{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 [data-module="atmosphere"] .at-box.at-flat canvas.at-over{pointer-events:auto}
-[data-module="atmosphere"] .at-alt{position:absolute;left:8px;top:8px;z-index:4;max-width:calc(100% - 70px);background:var(--sog-surface);box-shadow:var(--sog-shadow)}
-[data-module="atmosphere"] .at-layers-btn{position:absolute;right:8px;top:8px;z-index:4;width:var(--sog-touch,44px);height:var(--sog-touch,44px);min-height:0;display:grid;place-items:center;padding:0;background:var(--sog-surface);box-shadow:var(--sog-shadow)}
-[data-module="atmosphere"] .at-layers{position:absolute;right:8px;top:calc(16px + var(--sog-touch,44px));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 28px - var(--sog-touch,44px));overflow:auto;display:flex;flex-direction:column;font-size:.9em;min-width:min(230px,80%)}
+[data-module="atmosphere"] .at-layers-btn{position:absolute;left:8px;top:8px;z-index:4;width:var(--sog-touch,44px);height:var(--sog-touch,44px);min-height:0;display:grid;place-items:center;padding:0;background:var(--sog-surface);box-shadow:var(--sog-shadow)}
+[data-module="atmosphere"] .at-layers{position:absolute;left:8px;top:calc(16px + var(--sog-touch,44px));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 28px - var(--sog-touch,44px));overflow:auto;display:flex;flex-direction:column;font-size:.9em;min-width:min(230px,80%)}
 [data-module="atmosphere"] .at-layers b{margin-top:6px}
 [data-module="atmosphere"] .at-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
 [data-module="atmosphere"] .at-layers .at-key{width:22px;flex:none;display:inline-block;height:0;border-top:2px solid currentColor}
 [data-module="atmosphere"] .at-layers .at-ramp{width:22px;height:9px;border-radius:2px;flex:none;display:inline-block}
 [data-module="atmosphere"] .at-layers[hidden]{display:none}
-[data-module="atmosphere"] .at-hint{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);z-index:3;font-size:12px;background:color-mix(in srgb,var(--sog-surface) 85%,transparent);color:var(--sog-muted);padding:2px 8px;border-radius:99px;pointer-events:none;white-space:nowrap;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis}
+[data-module="atmosphere"] .at-hint{position:absolute;left:calc(16px + var(--sog-touch,44px));right:8px;top:8px;width:fit-content;margin:0 auto;z-index:3;font-size:12px;background:color-mix(in srgb,var(--sog-surface) 85%,transparent);color:var(--sog-muted);padding:2px 8px;border-radius:99px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-module="atmosphere"] .at-maptip{position:absolute;z-index:6;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:5px 7px;font-size:12px;line-height:1.35;box-shadow:var(--sog-shadow);white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
 @media (min-width:761px){[data-module="atmosphere"]{--at-p1:.35}}
 [data-module="atmosphere"] .at-data{position:relative;z-index:1;flex:none;display:flex;flex-direction:column;box-sizing:border-box;height:max(calc(var(--at-p1) * 100%),calc(var(--at-m1) * 1px));min-height:0;overflow:hidden;background:var(--sog-surface);border-top:1px solid var(--sog-border);border-radius:var(--sog-radius) var(--sog-radius) 0 0;box-shadow:0 -2px 8px #0000001a;transition:height .2s ease;container-type:inline-size}
@@ -412,16 +420,16 @@ export async function mount(el, ctx) {
 
   // ---------------------------------------------------------------- écran
   el.innerHTML = `<style>${STYLE}</style>
+<h1 class="at-sr">${esc(T('srTitle'))}</h1>
 <div class="at-tools">
-  <button type="button" data-at="btnFlight" aria-pressed="false" title="${esc(T('flightTitle'))}">${esc(T('flight'))}</button>
-  <button type="button" data-at="btnInfo" aria-pressed="false" aria-label="${esc(T('infoTitle'))}" title="${esc(T('infoTitle'))}"><b>i</b></button>
-  <button type="button" class="primary" data-at="btnLoad">${esc(T('load'))}</button>
-  <span class="f-badge at-hidden" data-kind="warn" data-at="demoTag">${esc(T('demoShort'))}</span>
-  <span class="at-sum" data-at="sum" aria-live="polite"></span>
+  <select class="at-alt" data-at="mapLevel" aria-label="${esc(T('mapLevelAria'))}" title="${esc(T('mapLevelAria'))}"></select>
+  <button type="button" class="at-ib" data-at="btnFlight" aria-pressed="false" aria-label="${esc(T('flightTitle'))}" title="${esc(T('flightTitle'))}">${svg('plane')}</button>
+  <button type="button" class="at-ib" data-at="btnInfo" aria-pressed="false" aria-label="${esc(T('infoTitle'))}" title="${esc(T('infoTitle'))}">${svg('info')}</button>
+  <button type="button" class="primary at-ib" data-at="btnLoad" aria-label="${esc(T('load'))}" title="${esc(T('load'))}">${svg('download')}</button>
 </div>
+<div class="at-info"><span class="f-badge at-hidden" data-kind="warn" data-at="demoTag">${esc(T('demoShort'))}</span><span class="at-sum" data-at="sum" aria-live="polite"></span></div>
 <div class="at-box" data-at="box">
   <div class="at-map" data-at="map"></div><canvas class="at-over" data-at="over" aria-hidden="true"></canvas>
-  <select class="at-alt" data-at="mapLevel" aria-label="${esc(T('mapLevelAria'))}"></select>
   <button type="button" class="at-layers-btn" data-at="layersBtn" aria-expanded="false" aria-label="${esc(T('layers'))}" title="${esc(T('layers'))}">${ICON_LAYERS}</button>
   <div class="at-layers f-card" data-at="layers" hidden role="group" aria-label="${esc(T('layers'))}"></div>
   <div class="at-hint" data-at="hint">${esc(T('tapHint'))}</div>
@@ -643,115 +651,29 @@ export async function mount(el, ctx) {
 
   // ---------------------------------------------------------------- calculs
 
-  /** Altitude haute de la coupe (ft) : au-dessus du plus haut niveau prévu, en milliers ronds. */
-  const topFt = () => {
-    const hi = Math.max(S.levelFt, ...S.flight.points.map(p => p.alt_ft || 0));
-    return clamp(Math.ceil((hi + 6000) / 5000) * 5000, 10000, 40000);
-  };
-
-  /** Lecture de l'atmosphère à une distance et une altitude pression : entre les deux lieux de lecture qui l'encadrent,
-   *  chacun lu à l'heure de passage du vol. { …at(), ground, below }. */
-  function sampleAt(nm, ft) {
-    const smp = S.route.samples;
-    let i = 1;
-    while (i < smp.length - 1 && smp[i].nm < nm) i++;
-    const a = smp[i - 1],
-      b = smp[i],
-      k = clamp((nm - a.nm) / ((b.nm - a.nm) || 1), 0, 1),
-      ca = S.cols[i - 1],
-      cb = S.cols[i],
-      ground = lerp(ca.sfc.pa, cb.sfc.pa, k);
-    if (ft < ground) return {
-      ft,
-      below: true,
-      ground
-    };
-    const X = A.at(ca, Math.max(ft, ca.sfc.pa)),
-      Y = A.at(cb, Math.max(ft, cb.sfc.pa));
-    if (!X || !Y) return X || Y;
-    const out = {
-      ft,
-      ground,
-      below: false
-    };
-    for (const key of ['hPa', 'zFt', 'tC', 'tdC', 'rh', 'cc', 'isaDev', 'rho', 'daFt']) out[key] = lerp(X[key], Y[key], k);
-    if (X.dirDeg != null && Y.dirDeg != null) {
-      const vx = lerp(X.kt * Math.sin(X.dirDeg * R), Y.kt * Math.sin(Y.dirDeg * R), k),
-        vy = lerp(X.kt * Math.cos(X.dirDeg * R), Y.kt * Math.cos(Y.dirDeg * R), k);
-      out.dirDeg = (Math.atan2(vx, vy) / R + 360) % 360;
-      out.kt = Math.hypot(vx, vy);
-    }
-    return out;
-  }
+  /** Altitude haute de la coupe (ft). */
+  const topFt = () => topFtOf(S.levelFt, S.flight.points);
+  /** Modèle de la coupe (section.js : calcul pur, le même que celui offert à la Carte). */
+  let model = null;
+  const sampleAt = (nm, ft) => model.sampleAt(nm, ft);
 
   function compute() {
-    const f = S.flight,
-      locs = S.route.locs,
-      k0 = A.hourIndex(locs[0].times, S.depTime),
-      c0 = A.column(locs[0], k0),
-      cN = A.column(locs.at(-1), A.hourIndex(locs.at(-1).times, S.depTime + 3600));
-    // TOC / TOD de Carburant : valables pour le niveau du vol seulement ; à un autre niveau, ses taux et vitesses
-    const {
-      tocNm,
-      todNm,
-      ...rates
-    } = f.profile || {};
-    S.traj = A.trajectory(f.points, {
+    model = sectionModel({
+      points: S.flight.points,
       levelFt: S.levelFt,
-      profile: S.levelFt === f.levelFt ? f.profile : rates,
-      depFt: c0.sfc.pa,
-      arrFt: cN.sfc.pa,
-      cruiseKt: S.cruiseKt
+      profile: S.flight.profile,
+      profileLevelFt: S.flight.levelFt,
+      depTime: S.depTime,
+      cruiseKt: S.cruiseKt,
+      samples: S.route.samples,
+      locs: S.route.locs
     });
-    S.route.samples.forEach(s => s.t = S.depTime + S.traj.minutesAt(s.nm) * 60);
-    S.cols = S.route.samples.map((s, i) => A.column(locs[i], A.hourIndex(locs[i].times, s.t)));
-    const times = locs[0].times;
-    S.outOfRange = !times.length || S.depTime < times[0] - 3600 || S.route.samples.at(-1).t > times.at(-1) + 3600;
-    // champ de la coupe : NX × NY cellules
-    const NX = 200,
-      NY = 120,
-      top = topFt(),
-      keys = ['tC', 'tdC', 'rh', 'cc', 'isaDev', 'daFt'],
-      fld = {
-        NX,
-        NY,
-        top,
-        below: new Uint8Array(NX * NY)
-      };
-    keys.forEach(k => fld[k] = new Array(NX * NY).fill(null));
-    for (let i = 0; i < NX; i++) {
-      const nm = S.traj.total * i / (NX - 1);
-      for (let j = 0; j < NY; j++) {
-        const x = sampleAt(nm, top * j / (NY - 1)),
-          n = j * NX + i;
-        if (!x || x.below) {
-          fld.below[n] = 1;
-          continue;
-        }
-        keys.forEach(k => fld[k][n] = x[k] ?? null);
-        fld.daFt[n] = x.daFt == null ? null : x.daFt - x.ft;
-      }
-    }
-    S.field = fld;
-    // le long de la trajectoire calculée, tous les 1 NM
-    const along = [];
-    for (let nm = 0; nm <= S.traj.total; nm += 1) {
-      const ft = S.traj.computed(nm),
-        x = sampleAt(nm, ft),
-        p = A.posAt(f.points, S.traj.nmOf, nm);
-      along.push({
-        nm,
-        ft,
-        x,
-        lat: p.lat,
-        lon: p.lon,
-        phase: S.traj.phase(nm),
-        track: p.track,
-        comp: x && !x.below ? A.windComponents(x.dirDeg, x.kt, p.track) : null,
-        ice: x && !x.below ? A.icing(x) : 0
-      });
-    }
-    S.along = along;
+    S.route.samples = model.samples;
+    S.traj = model.traj;
+    S.cols = model.cols;
+    S.field = model.field;
+    S.along = model.along;
+    S.outOfRange = model.outOfRange;
     S.sel = clamp(S.sel, 0, S.route.samples.length - 1);
   }
 
@@ -1851,9 +1773,15 @@ export async function mount(el, ctx) {
 
   // ---------------------------------------------------------------- état, chargement
 
+  /** Ligne d'informations (une ligne coupée, le texte entier en infobulle). */
+  const setSum = s => {
+    setText($('sum'), s);
+    if ($('sum').title !== s) $('sum').title = s;
+  };
+
   function setStatus(s) {
     setText($f('status'), s);
-    setText($('sum'), s);
+    setSum(s);
     if (!S.traj && S.view !== 'settings') drawData();
   }
 
@@ -1865,7 +1793,7 @@ export async function mount(el, ctx) {
       ac = f.aircraft ? [f.aircraft.type, f.aircraft.registration].filter(Boolean).join(' ') : '';
     $('demoTag').classList.toggle('at-hidden', S.data !== 'demo');
     // ligne d'outils : le vol en bref (appareil, route, niveau, départ, modèle) ; le détail des appels dans « Vol » et « i »
-    setText($('sum'), [ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') : `${S.model?.name || ''}${run}`]
+    setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') : `${S.model?.name || ''}${run}`]
       .filter(Boolean).join(' · ') + (S.outOfRange ? ' ⚠' : ''));
     setText($f('status'), T('stFlight', {
         from: f.from
@@ -1931,11 +1859,11 @@ export async function mount(el, ctx) {
       const mid = f.points[Math.floor(f.points.length / 2)];
       S.model = A.modelFor(mid.lat, mid.lon);
       // un lieu tous les 50 NM, 24 au plus (comme Carburant) : l'échantillonnage tient le quota d'abord
-      const smp = A.samples(f.points),
+      const smp = sectionPlaces(f.points),
         levels = gridLevels(),
         gr = A.grid(f.points, +$f('gridMax').value),
         rLevels = routeLevels(),
-        rVars = varsOf(rLevels, A.ROUTE_LEVEL_VARS, A.ROUTE_SURFACE_VARS),
+        rVars = sectionVars(S.levelFt, f.points),
         gVars = varsOf(levels, A.GRID_LEVEL_VARS, A.GRID_SURFACE_VARS);
       setStatus(S.data === 'demo' ? T('demoComputing') : T('reading', {
         m: S.model.name

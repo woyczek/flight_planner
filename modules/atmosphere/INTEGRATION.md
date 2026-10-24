@@ -70,18 +70,32 @@ Schema 1 of `modules/fuel/INTEGRATION.md` § 3, read only: `route.points[] { id,
 `updated_at`. If the module ever writes it, it goes through `merge(stored, mine, { fields, progressKeys, by })` of
 `frame/lib/current_flight.js`, with its own fields and `by`.
 
-## 5. Renderers for other modules — `section.js`
+## 5. The cross-section for the maps module's sheet — `section.js`
 
-The profile is meant to be shown in the maps module's data block too. Pure functions, no page DOM (a detached canvas
-for the field images), no storage; colours through the frame's tokens (`--sog-*`), set as variables on the SVG root.
+Pure functions (no read of the data layer, no network, no page DOM but a detached canvas for the field images, no
+global style sheet; colours through `--sog-*`). The module itself draws through them, so both screens show the same
+computation. The contract is the one of `modules/maps/INTEGRATION.md` § 6 (`openData(kind, key, title, build)`).
 
 ```js
-import { sectionSvg, soundingSvg } from '../atmosphere/section.js';
-const { svg, geo } = sectionSvg(model, { width, height, layers, fmtLvl, cloudRgb, dark, labels: { strips } });
-// model: { field (NX, NY, top, below, tC, rh, cc, daFt), traj, samples [{ nm, t, point }], cols, points, sel }
-// geo: { x0, y0, pw, ph, xOf(nm), yOf(ft), nmOf(x), ftOf(y) } for tooltips and taps
-const s = soundingSvg(column, { width, height, top, fmtLvl, cloudRgb, lines: [{ ft, color, dash }] });
+import { drawSection, sectionPlaces, sectionVars } from '../atmosphere/section.js';
+import { weatherStore } from '../atmosphere/weather_store.js';      // until frame/weather (ctx.weather)
+const W = weatherStore({ data: ctx.data, net: ctx.net });            // maps declares cache/weather/ (policy cache)
+const places = sectionPlaces(route.points), vars = sectionVars(levelFt, route.points);
+const r = await W.forecast(places, vars, { model, cacheOnly: true }); // nothing asked: what atmosphere already read
+openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
+  drawSection(el, { width: w, height: h, route: route.points, levelFt, profile, depTime, locs: A.locations(r.locs), cursorM });
+});
 ```
 
-`model` is what `module.js` computes (`compute()`); a reader in another module would build it from the weather cache
-with `atmo.js` (`column`, `trajectory`, `at`) — to be packaged as one call when the maps module asks for it.
+- `drawSection(el, o)`: replaces `el`'s content by the SVG cross-section of `o.width` × `o.height` CSS pixels and returns
+  its geometry `{ x0, y0, pw, ph, xOf(nm), yOf(ft), nmOf(x), ftOf(y) }` (tooltips, taps); `null` (and `el` emptied)
+  without a forecast. `o`: `route` (points with `alt_ft` steps), `levelFt`, `profile` and `profileLevelFt` (Fuel's;
+  TOC / TOD valid at that level only), `depTime` (s), `cruiseKt`, `locs` (Open-Meteo-shaped locations for
+  `sectionPlaces(route)`, in that order), `layers` (`{ cloud, iso, inv, ice, wind, cu, temp, rh, da }`), `cursorM`
+  (the shared cursor, metres from the departure), `labels.strips` (five texts of the surface strips), `fmtLvl`,
+  `cloudRgb`, `dark`.
+- `sectionPlaces(points)`: the reading places (every 50 NM, 24 at most, as Fuel). `sectionVars(levelFt, points)`: the
+  hourly variables (surface, pressure levels up to the top of the cross-section). `topFtOf(levelFt, points)`.
+- `sectionModel({ points, levelFt, profile, profileLevelFt, depTime, cruiseKt, samples, locs })`: the model alone
+  (trajectory, columns at the time of passage, the 200 × 120 field, the reading every 1 NM, `sampleAt(nm, ft)`).
+- `sectionSvg(model, opts)` and `soundingSvg(column, opts)`: the SVG strings (the profile; the slice of one column).

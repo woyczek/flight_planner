@@ -31,6 +31,7 @@ export const TX = {
   load: ['Charger', 'Load', 'Laden', 'Cargar'],
 
   // vue fixe (gabarit de la Carte) : ligne d'outils, carte, bloc du bas
+  srTitle: ['Atmosphère de la route', 'Route atmosphere', 'Atmosphäre entlang der Route', 'Atmósfera de la ruta'],
   demoShort: ['Démo', 'Demo', 'Demo', 'Demo'],
   flightTitle: ['Vol et réglages', 'Flight and settings', 'Flug und Einstellungen', 'Vuelo y ajustes'],
   infoTitle: ['Informations : résumé, terrains, tableau', 'Information: summary, aerodromes, table',

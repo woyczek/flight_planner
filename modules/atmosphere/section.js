@@ -7,8 +7,13 @@
 // Les couleurs suivent les jetons du cadre (--sog-*) par des variables posées sur la racine du SVG : le rendu se lit dans
 // n'importe quel module (la Carte l'affichera dans son bloc de données).
 import * as A from './atmo.js';
+import {
+  formatLevel
+} from '../../frame/lib/route_text.js';
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a == null || b == null ? (a ?? b) : a + (b - a) * k;
+const fmtLevel = ft => ft == null ? '—' : formatLevel(Math.max(0, Math.round(ft / 100) * 100));
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const n1 = v => Math.round(v * 10) / 10;
@@ -115,6 +120,186 @@ const PATTERNS = `<pattern id="at-p-inv" width="7" height="7" patternUnits="user
   `<line x1="0" y1="0" x2="0" y2="9" stroke="#c98500" stroke-opacity=".6" stroke-width="1"/></pattern>` +
   `<pattern id="at-p-ice2" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">` +
   `<line x1="0" y1="0" x2="0" y2="5" stroke="var(--at-ice)" stroke-width="1.6"/></pattern>`;
+
+// ---------------------------------------------------------------- modèle de la coupe (calcul pur)
+
+/** Altitude haute de la coupe (ft) : au-dessus du plus haut niveau prévu, en milliers ronds. */
+export const topFtOf = (levelFt, points) => clamp(Math.ceil((Math.max(levelFt || 0, ...(points || []).map(p => p.alt_ft || 0)) + 6000) /
+    5000) * 5000, 10000,
+  40000);
+/** Lieux de lecture de la route (un tous les 50 NM, 24 au plus, comme Carburant) : à demander à la réserve météo. */
+export const sectionPlaces = points => A.samples(points);
+/** Variables horaires de la coupe : surface et niveaux de pression jusqu'au haut de la coupe. */
+export const sectionVars = (levelFt, points) => [...A.ROUTE_SURFACE_VARS, ...A.levelsUpTo(topFtOf(levelFt, points)).flatMap(l => A
+  .ROUTE_LEVEL_VARS
+  .map(v => `${v}_${l}hPa`))];
+
+/** Modèle de la coupe, sans DOM ni réseau : la trajectoire (demandée, planifiée, calculée), chaque lieu de lecture à
+ *  l'heure où le vol y passe, le champ NX × NY de la coupe et la lecture tous les 1 NM le long de la trajectoire.
+ *  { points, levelFt, profile (de Carburant), profileLevelFt (niveau du profil : TOC / TOD valables à ce niveau seulement,
+ *  sinon ses taux et vitesses), depTime (s), cruiseKt, samples (sectionPlaces), locs (lieux de la réserve, A.locations,
+ *  dans l'ordre de samples) } → { traj, samples (avec t), cols, field, along, outOfRange, sampleAt(nm, ft) }. */
+export function sectionModel({
+  points,
+  levelFt,
+  profile = null,
+  profileLevelFt = levelFt,
+  depTime,
+  cruiseKt = 200,
+  samples,
+  locs
+}) {
+  const c0 = A.column(locs[0], A.hourIndex(locs[0].times, depTime)),
+    cN = A.column(locs.at(-1), A.hourIndex(locs.at(-1).times, depTime + 3600));
+  const {
+    tocNm,
+    todNm,
+    ...rates
+  } = profile || {};
+  const traj = A.trajectory(points, {
+    levelFt,
+    profile: levelFt === profileLevelFt ? profile : rates,
+    depFt: c0.sfc.pa,
+    arrFt: cN.sfc.pa,
+    cruiseKt
+  });
+  const smp = samples.map(s => ({
+      ...s,
+      t: depTime + traj.minutesAt(s.nm) * 60
+    })),
+    cols = smp.map((s, i) => A.column(locs[i], A.hourIndex(locs[i].times, s.t))),
+    times = locs[0].times;
+  /** Lecture à une distance et une altitude pression, entre les deux lieux qui l'encadrent (chacun à son heure). */
+  function sampleAt(nm, ft) {
+    let i = 1;
+    while (i < smp.length - 1 && smp[i].nm < nm) i++;
+    const a = smp[i - 1],
+      b = smp[i],
+      k = clamp((nm - a.nm) / ((b.nm - a.nm) || 1), 0, 1),
+      ca = cols[i - 1],
+      cb = cols[i],
+      ground = lerp(ca.sfc.pa, cb.sfc.pa, k);
+    if (ft < ground) return {
+      ft,
+      below: true,
+      ground
+    };
+    const X = A.at(ca, Math.max(ft, ca.sfc.pa)),
+      Y = A.at(cb, Math.max(ft, cb.sfc.pa));
+    if (!X || !Y) return X || Y;
+    const out = {
+      ft,
+      ground,
+      below: false
+    };
+    for (const key of ['hPa', 'zFt', 'tC', 'tdC', 'rh', 'cc', 'isaDev', 'rho', 'daFt']) out[key] = lerp(X[key], Y[key], k);
+    if (X.dirDeg != null && Y.dirDeg != null) {
+      const vx = lerp(X.kt * Math.sin(X.dirDeg * R), Y.kt * Math.sin(Y.dirDeg * R), k),
+        vy = lerp(X.kt * Math.cos(X.dirDeg * R), Y.kt * Math.cos(Y.dirDeg * R), k);
+      out.dirDeg = (Math.atan2(vx, vy) / R + 360) % 360;
+      out.kt = Math.hypot(vx, vy);
+    }
+    return out;
+  }
+  // champ de la coupe : NX × NY cellules
+  const NX = 200,
+    NY = 120,
+    top = topFtOf(levelFt, points),
+    keys = ['tC', 'tdC', 'rh', 'cc', 'isaDev', 'daFt'],
+    field = {
+      NX,
+      NY,
+      top,
+      below: new Uint8Array(NX * NY)
+    };
+  keys.forEach(k => field[k] = new Array(NX * NY).fill(null));
+  for (let i = 0; i < NX; i++) {
+    const nm = traj.total * i / (NX - 1);
+    for (let j = 0; j < NY; j++) {
+      const x = sampleAt(nm, top * j / (NY - 1)),
+        n = j * NX + i;
+      if (!x || x.below) {
+        field.below[n] = 1;
+        continue;
+      }
+      keys.forEach(k => field[k][n] = x[k] ?? null);
+      field.daFt[n] = x.daFt == null ? null : x.daFt - x.ft;
+    }
+  }
+  // le long de la trajectoire calculée, tous les 1 NM
+  const along = [];
+  for (let nm = 0; nm <= traj.total; nm += 1) {
+    const ft = traj.computed(nm),
+      x = sampleAt(nm, ft),
+      p = A.posAt(points, traj.nmOf, nm);
+    along.push({
+      nm,
+      ft,
+      x,
+      lat: p.lat,
+      lon: p.lon,
+      phase: traj.phase(nm),
+      track: p.track,
+      comp: x && !x.below ? A.windComponents(x.dirDeg, x.kt, p.track) : null,
+      ice: x && !x.below ? A.icing(x) : 0
+    });
+  }
+  return {
+    traj,
+    samples: smp,
+    cols,
+    field,
+    along,
+    outOfRange: !times.length || depTime < times[0] - 3600 || smp.at(-1).t > times.at(-1) + 3600,
+    sampleAt
+  };
+}
+
+/** Coupe dessinée dans un élément, pour un autre module (la feuille de la Carte : openData(…, (w, h, el) => …)) :
+ *  idempotent (el remplacé à chaque appel), à la taille donnée, sans lecture de la page ni de la couche de données.
+ *  o : { width, height, route (points), levelFt, profile, profileLevelFt, depTime (s), cruiseKt, locs (la réserve
+ *  météo pour sectionPlaces(route) et sectionVars(levelFt, route)), layers, cursorM (curseur partagé, mètres depuis le
+ *  départ), labels { strips }, fmtLvl, cloudRgb, dark } → la géométrie (infobulles, touchers), ou null sans prévision. */
+export function drawSection(el, o) {
+  if (!o?.locs?.length || !o.route?.length) {
+    el.replaceChildren();
+    return null;
+  }
+  const M = o.model || sectionModel({
+      points: o.route,
+      levelFt: o.levelFt,
+      profile: o.profile,
+      profileLevelFt: o.profileLevelFt ?? o.levelFt,
+      depTime: o.depTime ?? Math.ceil(Date.now() / 36e5) * 3600,
+      cruiseKt: o.cruiseKt,
+      samples: sectionPlaces(o.route),
+      locs: o.locs
+    }),
+    r = sectionSvg({
+      ...M,
+      points: o.route,
+      sel: null,
+      cursorNm: o.cursorM == null ? null : o.cursorM / 1852
+    }, {
+      width: o.width,
+      height: o.height,
+      layers: o.layers || {
+        cloud: true,
+        iso: true,
+        inv: true,
+        ice: true,
+        wind: true,
+        cu: true
+      },
+      fmtLvl: o.fmtLvl || fmtLevel,
+      cloudRgb: o.cloudRgb,
+      dark: o.dark,
+      labels: o.labels,
+      id: o.id || 'at-ext'
+    });
+  el.innerHTML = r.svg;
+  return r.geo;
+}
 
 /** Coupe le long de la route.
  *  M : { field (NX, NY, top, below, tC, rh, cc, daFt), traj, samples [{ nm, t, point }], cols, points, sel (indice ou
@@ -257,6 +442,11 @@ export function sectionSvg(M, o) {
     size: 10,
     weight: 600
   }));
+  // curseur partagé (la Carte : distance depuis le départ)
+  if (M.cursorNm != null && M.cursorNm >= 0 && M.cursorNm <= M.traj.total) {
+    const x = xOf(M.cursorNm);
+    out.push(`<line x1="${n1(x)}" y1="${t}" x2="${n1(x)}" y2="${n1(t + ph)}" stroke="var(--sog-accent)" stroke-width="1.5" stroke-dasharray="3 2"/>`);
+  }
   // lieu choisi (tranche)
   if (M.sel != null && M.samples[M.sel]) {
     const x = xOf(M.samples[M.sel].nm);
