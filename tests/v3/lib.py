@@ -409,6 +409,13 @@ class Ctx(Asserts):
         self.ready(target)
 
     # -- measuring
+    def doc(self, path):
+        """The JSON document `path` as the frame's cache holds it (IndexedDB `sogFrame`, store `docs`), or None."""
+        return self.page.evaluate("""async (path) => {
+          const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+          const row = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').get(path); q.onsuccess = () => res(q.result) });
+          db.close(); return row ? JSON.parse(row.text) : null }""", path)
+
     def js(self, expr, arg=None):
         return self.page.evaluate(expr, arg) if arg is not None else self.page.evaluate(expr)
 

@@ -3921,13 +3921,16 @@ function haloText(ctx, t, x, y, col, font = '700 12px Arial,sans-serif', align =
   ctx.fillText(t, x, y);
   ctx.restore();
 }
-/** Points de la route pour le dessin, avec leur heure estimée de près (vol démarré, 300 px par degré et plus) :
+/** Points de la route pour le dessin, avec leur heure estimée de près (300 px par degré et plus) :
  *  progress.eta en liste [{ id, at }] ou en table { id: at } ; heures en UTC (frame/lib/time.js), l'heure locale entre
- *  parenthèses au départ et à l'arrivée seulement. Placée par render avec les libellés de la route. */
+ *  parenthèses au départ et à l'arrivée seulement. Vol démarré : comptées depuis started.at ; sinon depuis la date du vol
+ *  (planned_at, calculées par Carburant, absentes sans date), tant que l'arrivée n'est pas passée. Placée par render avec
+ *  les libellés de la route. */
 function withEta(route, pxDeg) {
   const f = S.route.flight,
-    eta = f?.progress?.eta;
-  if (S.mission || !inFlight(f) || !eta || pxDeg < 300) return route;
+    eta = f?.progress?.eta,
+    last = Array.isArray(eta) ? eta.at(-1)?.at : null;
+  if (S.mission || !eta || pxDeg < 300 || !inFlight(f) && !(Date.parse(last || '') > Date.now())) return route;
   const pts = f.route?.points || [],
     etaOf = (p, i) => Array.isArray(eta) ? (eta[i]?.id === p.id || !eta[i]?.id ? eta[i]?.at : eta.find(e => e.id === p.id)?.at) : eta[p.id];
   return route.map((p, i) => {

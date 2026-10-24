@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: the flight date belongs to the shared flight** (`modules/fuel/module.js`, `frame/lib/current_flight.js`,
+  `modules/maps/module.js` one condition; fuel SPEC § 9–12 / INTEGRATION § 3 / DECISIONS, maps INTEGRATION / DECISIONS, the manual in
+  four languages) — the "Flight date" field (ex "Flight date (optional: TAF)") writes `current_flight.planned_at` (ISO 8601 UTC,
+  optional, absent = now; schema number and merge rule unchanged), the one value that the quote's weather (aerodromes' TAF, winds
+  and temperatures aloft), the Map's ETA and, from its own session, Atmosphere's slider start from; `weather.when` stays as its copy
+  in local time. A date typed in the field now reads the forecasts again for the new hour (only "+30" / "Now" did). The Map draws the
+  ETA of the route points for a flight that is not started too, counted from `planned_at` (fuel writes `progress.eta` only; nothing
+  without a date or once the arrival is past). Step 4 of the plan is renamed "Result" (fr Résultat, de Ergebnis, es Resultado): "Quote" is the first tab's name only.
+  The date row no longer overflows at 390 px (known failures F4 and F5 of the suite fixed and removed from `known_failures.py`).
 - **Flights across the date line: Siberia to Alaska on the Map** (`frame/lib/geo.js` new, `frame/lib/test/geo.html`,
   `modules/maps/module.js`, `render.js`, `profile.js`, `contours.js`, `lib/map_base.js`, `modules/fuel/winds.js`; frame
   INTEGRATION § 12 and SPEC, maps SPEC § 4 octies / INTEGRATION / DECISIONS, the manual in four languages) — the helper that

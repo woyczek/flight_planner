@@ -11,7 +11,7 @@
 //     progress.actual, reste ; progress devient null s'il ne reste rien) ; schema, by et updated_at posés.
 
 export const FUEL_FIELDS = ['aircraft', 'route', 'level', 'wind', 'windSource', 'isaDev', 'profile', 'quote', 'weather', 'ofp',
-  'started'
+  'started', 'planned_at'
 ];
 export const FUEL_PROGRESS = ['at', 'plannedPos', 'eta', 'fuelRemainingKg', 'remainingNm', 'phase'];
 

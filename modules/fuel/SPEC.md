@@ -114,7 +114,7 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   local plane), departure and arrival excluded, sorted by distance along the route; recomputed when the points or the
   radius change. A corridor aerodrome without METAR or TAF is ignored. The last answers are kept on the device (`cache/fuel/weather.json`) and shown,
   with their time, when the network cannot be reached.
-- **Which message**: with a flight date (optional, device time) inside the TAF's validity, the TAF: its base group
+- **Which message**: with a flight date (optional; `current_flight.planned_at`, entered in the device's time) inside the TAF's validity, the TAF: its base group
   (last group without change, BECMG or FM covering the time) and its temporary groups (TEMPO, PROB) covering it;
   otherwise the METAR.
 - **Shown per aerodrome**: flight category (LIFR: ceiling < 500 ft or visibility < 1 SM; IFR: < 1,000 ft or < 3 SM;
@@ -138,7 +138,8 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   middle: `meteofrance_seamless` (AROME / ARPEGE) over France and its surroundings, `icon_seamless` elsewhere in
   Europe, `gfs_seamless` beyond; named in the source. The run time is read from Open-Meteo's model metadata
   (`/data/<model>/static/meta.json`, `last_run_initialisation_time`) when it answers. The hour nearest to the flight
-  date (else now) is kept. Kept on the device (`cache/fuel/aloft.json`, with the places, the hour, the run and the
+  date (else now) is kept — the flight date is `current_flight.planned_at`, the same value as the aerodromes' weather and
+  the Map's ETA read (24 Oct 2026). Kept on the device (`cache/fuel/aloft.json`, with the places, the hour, the run and the
   reading time); offline, the last one. Read with the aerodromes' weather, again when the route's points or the
   flight hour change.
 - **At a level**: a flight level is a pressure (ISA): wind (as a vector) and temperature are interpolated in
@@ -179,6 +180,9 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 - **Current flight**: `progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta [{ id, at }],
   fuelRemainingKg, remainingNm, phase }`, written when it changes — every minute during the flight, at every quote
   change — until the report or the cancellation; `progress.actual` (the real position) is written by the frame or maps and kept.
+- **Not started, dated** (24 Oct 2026): with `planned_at` set and a quote, `progress = { at, eta }` is written for the Map: the
+  same timeline counted from `planned_at` (taxi, climb, cruise by leg, descent), `null` for the position, fuel and phase;
+  nothing once the arrival is past or without a date (a flight "now" has no time to promise).
 - **Shown**: the Departure step's "Planned progress" card: the line of the moment and the points with their ETA, the
   next point highlighted.
 - Bench `test/progress.html` (14 checks).
@@ -248,11 +252,12 @@ mount. Inside a mount, the two buttons switch as before.
 
 - **Plan in five steps** (lot G, 23 Oct 2026, the pilot's own order: aerodromes, aircraft, level → route → weather →
   density altitude and quote → correct the route → start): a steps bar as in Report — **1 Flight** (departure,
-  arrival, alternate, flight date with its quick buttons "+30" and "Now", the one-line aircraft — no default sheet: a flight without
+  arrival, alternate, **flight date** (24 Oct 2026: the field "Flight date" writes `current_flight.planned_at`, the one value of
+  the flight's date, with its quick buttons "+30" and "Now"; hint: the quote's weather and the Map are read at this date), the one-line aircraft — no default sheet: a flight without
   aircraft takes the last one chosen on the device, `cache/fuel/last_aircraft.json`, shown first in the empty search
   — level), **2 Route** (the route text, the read distance, the
   folded points, "Last SimBrief OFP", "Show the map"), **3 Weather** (wind, ISA and its METAR proposal, real weather,
-  the aerodromes of the corridor), **4 Quote** (density altitude, level decision with the climb goal, "Open in",
+  the aerodromes of the corridor), **4 Result** (fr "Résultat", de "Ergebnis", es "Resultado"; it was "Quote", the name of the first tab: renamed on 24 Oct 2026; density altitude, level decision with the climb goal, "Open in",
   details, climb instructions, settings), **5 Departure** (a one-page summary: aircraft, normalised route, level and
   steps, wind and source, block fuel; "Start the flight" writes `current_flight.started = { at, by: 'fuel' }` and
   opens the Map). One step at a time when the module is narrow (phone, dual-view pane: `@container` under 900 px; the

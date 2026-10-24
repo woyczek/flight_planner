@@ -143,7 +143,7 @@ const TX = {
     ['Vol', 'Flight', 'Flug', 'Vuelo'],
     ['Route', 'Route', 'Route', 'Ruta'],
     ['Météo', 'Weather', 'Wetter', 'Meteorología'],
-    ['Devis', 'Quote', 'Kalkulation', 'Cálculo'],
+    ['Résultat', 'Result', 'Ergebnis', 'Resultado'],
     ['Départ', 'Departure', 'Abflug', 'Salida']
   ],
   stepsNav: ['Étapes de la préparation', 'Preparation steps', 'Schritte der Vorbereitung', 'Pasos de la preparación'],
@@ -299,8 +299,11 @@ const TX = {
   ],
   alt: ['Alt.', 'Alt.', 'Höhe', 'Alt.'],
   thr: ['Gaz', 'Thr.', 'Gas', 'Gases'],
-  wxDate: ['Date du vol (facultatif : TAF)', 'Flight date (optional: TAF)', 'Flugdatum (optional: TAF)',
-    'Fecha del vuelo (opcional: TAF)'
+  wxDate: ['Date du vol', 'Flight date', 'Flugdatum', 'Fecha del vuelo'],
+  wxDateHint: ['La météo du devis (TAF, vents en altitude) et la Carte sont lues à cette date ; vide : maintenant.',
+    'The quote’s weather (TAF, winds aloft) and the Map are read at this date; empty: now.',
+    'Das Wetter der Kalkulation (TAF, Höhenwinde) und die Karte werden für dieses Datum gelesen; leer: jetzt.',
+    'La meteorología del cálculo (TAF, vientos en altura) y el mapa se leen a esta fecha; vacío: ahora.'
   ],
   when30: ['Dans 30 min (30 min de plus à chaque appui)', 'In 30 min (30 min more at each press)',
     'In 30 Min. (bei jedem Tippen 30 Min. mehr)', 'Dentro de 30 min (30 min más en cada pulsación)'
@@ -957,7 +960,37 @@ const emptyFlight = () => ({
   },
   wind: null,
   isaDev: 0,
+  planned_at: null,
   ofp: null
+});
+/** Heure de l'appareil du champ datetime-local (« 2026-10-24T14:30 ») → ISO UTC (« 2026-10-24T12:30:00Z ») ; null si
+ *  vide ou illisible. */
+const whenToIso = local => {
+  const t = Date.parse(local || '');
+  return Number.isFinite(t) ? new Date(t).toISOString().slice(0, 19) + 'Z' : null;
+};
+/** ISO UTC → heure de l'appareil du champ datetime-local ; '' si absent ou illisible. */
+const isoToWhen = iso => {
+  const t = Date.parse(iso || '');
+  return Number.isFinite(t) ? new Date(t - new Date(t).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+};
+/** La date du vol n'a qu'une valeur : current_flight.planned_at (ISO UTC, null = maintenant). weather.when n'en est que
+ *  la copie en heure de l'appareil (le champ de saisie ; Atmosphère la lit encore) : elle est posée avec planned_at, à la
+ *  source (setPlanned) et à chaque lecture du vol (ici). Un vol écrit avant planned_at (weather.when seul) en reçoit un. */
+function syncPlanned(f) {
+  const iso = Number.isFinite(Date.parse(f.planned_at || '')) ? f.planned_at : whenToIso(f.weather?.when),
+    local = isoToWhen(iso);
+  f.planned_at = iso;
+  if ((f.weather?.when || '') !== local) f.weather = {
+    ...f.weather,
+    when: local
+  };
+  return f;
+}
+/** Vol courant lu (enregistrement gardé ou reçu) : les champs vides du schéma complétés, la date du vol accordée. */
+const flightOf = rec => syncPlanned({
+  ...emptyFlight(),
+  ...rec
 });
 /** Logique des fiches (lecture des formats, fusion, ChatGPT, .lnmperf) : celle d'aerodb (AeroDBSheets). */
 const SH = () => S.A?.lib || window.AeroDBSheets;
@@ -1222,9 +1255,9 @@ const STYLE = `
 [data-module="fuel"] .fu-ads{grid-template-columns:repeat(3,minmax(0,8em))} /* codes OACI : 4 lettres, pas plus large */
 [data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-end} /* niveau et date à leur largeur utile ; la date passe dessous sur un téléphone */
 [data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 8em}
-[data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em}
-[data-module="fuel"] .fu-when{display:flex;gap:4px;align-items:stretch}
-[data-module="fuel"] .fu-when input{flex:1;min-width:0}
+[data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 20em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
+[data-module="fuel"] .fu-when{display:flex;flex-wrap:wrap;gap:4px;align-items:stretch} /* champ d'abord, les deux boutons passent dessous quand la place manque */
+[data-module="fuel"] .fu-when input{flex:1 1 11em;min-width:0}
 [data-module="fuel"] .fu-when button{flex:none;min-width:44px;min-height:44px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;gap:2px}
 [data-module="fuel"] .fu-when button b{font-size:.8em}
 [data-module="fuel"] input.fu-code{text-transform:uppercase}
@@ -1322,7 +1355,7 @@ function renderPlanBody() {
   <nav class="f-steps fu-steps" aria-label="${esc(tt(TX.stepsNav))}">${TX.stepNames.map((n, i) => `<button type="button" data-step="${i}"${step === i ? ' aria-current="step"' : ''} aria-label="${i + 1} ${esc(tt(n))}"><b>${i + 1}</b><span> ${esc(tt(n))}</span></button>`).join('')}</nav>
   ${sec(0, `<div class="f-card" data-block="flight"><h2>${esc(tt(TX.stepNames[0]))}</h2>
       <div class="f-grid fu-ads">${fld('dep', TX.dep, r.dep, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('arr', TX.arr, r.arr, 'class="fu-code" maxlength="4" autocapitalize="characters"')}${fld('altn', TX.altn, r.altn, 'class="fu-code" maxlength="4" autocapitalize="characters"')}</div>
-      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(f.weather?.when || '')}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight">${fld('fl', TX.level, f.level?.ft ? Math.round(f.level.ft / 100) : '', 'inputmode="numeric"')}<label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(tt(TX.wxDate))}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(f.weather?.when || '')}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
       <div data-block="aircraft">
       <div class="f-row" data-acsel></div>
       <div class="fu-hide" data-acpanel>
@@ -1503,12 +1536,8 @@ function onPlanInput(e) {
       saveSettings();
       break;
     case 'wxdate':
-      f.weather = {
-        ...f.weather,
-        when: v
-      };
-      renderWx();
-      if (f.weather.real) applyRealWind();
+      setPlanned(whenToIso(v));
+      whenChanged();
       break;
     case 'wxreal':
       f.weather = {
@@ -2062,22 +2091,33 @@ function realProfileHtml(box) {
  *  Puis la météo des terrains (TAF si la date tombe dans sa validité) et les vents en altitude sont relus pour cette
  *  heure, après un court temps calme (plusieurs appuis, une lecture). */
 function setWhen(plus) {
-  const f = S.flight,
-    now = Date.now(),
-    set = Date.parse(f.weather?.when || ''),
+  const now = Date.now(),
+    set = Date.parse(S.flight.planned_at || ''),
     base = Number.isFinite(set) && set > now ? set : now,
     step = 5 * 60000,
-    t = plus ? Math.ceil((base + plus * 60000) / step) * step : null,
-    d = t ? new Date(t) : null,
-    local = d ? new Date(t - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+    t = plus ? Math.ceil((base + plus * 60000) / step) * step : null;
+  setPlanned(t ? new Date(t).toISOString().slice(0, 19) + 'Z' : null);
+  saveFlight();
+  whenChanged();
+}
+/** Pose la date du vol : current_flight.planned_at (ISO UTC, null = maintenant) et sa copie weather.when (heure de
+ *  l'appareil, le champ de saisie), le champ à l'écran seulement si sa valeur change. L'écriture du vol et le calcul
+ *  suivent (saveFlight, whenChanged). */
+function setPlanned(iso) {
+  const f = S.flight,
+    local = isoToWhen(iso);
+  f.planned_at = iso;
   f.weather = {
     ...f.weather,
     when: local
   };
-  const wd = S.body.querySelector('[data-k="wxdate"]');
-  if (wd) wd.value = local;
+  const wd = S.body?.querySelector('[data-k="wxdate"]');
+  if (wd && wd.value !== local) wd.value = local;
+}
+/** La date du vol a changé : la météo des terrains (TAF si la date tombe dans sa validité) et les vents en altitude sont
+ *  relus pour cette heure après un court temps calme (plusieurs appuis ou frappes, une lecture). */
+function whenChanged() {
   renderWx();
-  saveFlight();
   clearTimeout(S.whenTimer);
   const s = S;
   S.whenTimer = setTimeout(async () => {
@@ -2105,10 +2145,10 @@ async function wxRead(btn) {
     }
   }
 }
-/** Heure visée (secondes) : la date du vol saisie (heure de l'appareil), sinon aucune (METAR). */
+/** Heure visée (secondes) : la date du vol (current_flight.planned_at), sinon aucune (METAR, prévision de maintenant). La
+ *  météo des terrains (TAF) et les vents et températures en altitude du devis sont lus à cette heure. */
 const wxWhen = () => {
-  const w = S.flight.weather?.when;
-  const t = w ? Date.parse(w) : NaN;
+  const t = Date.parse(S.flight.planned_at || '');
   return Number.isFinite(t) ? Math.round(t / 1000) : null;
 };
 /** Résumés des terrains (METAR, ou TAF si la date du vol tombe dans sa validité). */
@@ -2622,7 +2662,7 @@ function routeSteps(r, distanceNm) {
   return out.length ? out : null;
 }
 // ---------------------------------------------------------------- pas de la préparation
-/** Va au pas i (0 Vol, 1 Route, 2 Météo, 3 Devis, 4 Départ) : un seul pas visible sur téléphone et dans un volet ;
+/** Va au pas i (0 Vol, 1 Route, 2 Météo, 3 Résultat, 4 Départ) : un seul pas visible sur téléphone et dans un volet ;
  *  dans un module large tous le sont (CSS @container) et la barre de pas est cachée. Pas gardé sur l'appareil. */
 function goStep(i) {
   S.step = Math.max(0, Math.min(4, i));
@@ -2674,12 +2714,7 @@ async function startFlight() {
   S.startNote = tt(TX.starting);
   if (note) note.textContent = S.startNote;
   // la planification peut dater : date du vol = maintenant, météo des terrains, vents en altitude et ISA relus, devis refait
-  f.weather = {
-    ...f.weather,
-    when: ''
-  };
-  const wd = S.body.querySelector('[data-k="wxdate"]');
-  if (wd) wd.value = '';
+  setPlanned(null);
   const online = S.ctx.net?.online?.() !== false;
   if (online) await wxFetch(false);
   if (gone(s)) return;
@@ -2760,10 +2795,36 @@ async function cancelStart() {
 /** Progression prévue du vol démarré (progress.js) à l'instant (ou à l'heure d'arrêt) : { P, st, pos, etas } ; null sans
  *  départ ou sans devis. */
 function progressCalc(C = S.C) {
+  const st = S.flight.started;
+  if (!st?.at) return null;
+  const P = progressPlan(C);
+  if (!P) return null;
+  const start = Date.parse(st.at),
+    state = PG.at(P, (Date.now() - start) / 60000),
+    pts = S.flight.route.points;
+  return {
+    P,
+    st: state,
+    pos: PG.position(pts, P.cum, state.nmFromDep),
+    etas: PG.etas(P, start)
+  };
+}
+/** Heures prévues de passage d'un vol pas démarré, comptées depuis sa date (planned_at, comme la mise en route d'un vol
+ *  démarré) : [{ i, at (ms) }] ; null sans date, sans devis, arrivée déjà passée ou vol démarré (progressCalc fait alors
+ *  foi). */
+function plannedEtas(C = S.C) {
+  const t = Date.parse(S.flight.planned_at || '');
+  if (S.flight.started?.at || !Number.isFinite(t)) return null;
+  const P = progressPlan(C),
+    etas = P ? PG.etas(P, t) : null;
+  return etas?.length && etas.at(-1).at > Date.now() ? etas : null; // un vol daté dans le passé n'a plus d'heures à montrer
+}
+/** Horaire prévu du vol (progress.js plan) d'après le devis, les vents de la route et le roulage ; null sans devis ou
+ *  sans route. */
+function progressPlan(C) {
   const f = S.flight,
-    st = f.started,
     pts = f.route?.points || [];
-  if (!st?.at || !C?.q?.hasFuel || pts.length < 2) return null;
+  if (!C?.q?.hasFuel || pts.length < 2) return null;
   // vent de chaque tronçon : moyenne vectorielle des vents prévus à ses deux bouts (prévision en altitude), sinon celui du devis
   const vec = w => [w.kt * Math.sin(w.dirDeg * Math.PI / 180), w.kt * Math.cos(w.dirDeg * Math.PI / 180)],
     legWinds = pts.slice(1).map((p, i) => {
@@ -2776,26 +2837,16 @@ function progressCalc(C = S.C) {
         dirDeg: (Math.atan2(x, y) * 180 / Math.PI + 360) % 360,
         kt: Math.hypot(x, y)
       };
-    }),
-    P = PG.plan({
-      points: pts,
-      distanceNm: +f.route.distanceNm || 0,
-      taxiMin: +S.settings.taxiMin || 0,
-      q: C.q,
-      legWinds,
-      wind: f.wind,
-      windComponent: window.FuelModel.windComponent
     });
-  if (!P) return null;
-  const start = Date.parse(st.at),
-    now = Date.now(),
-    state = PG.at(P, (now - start) / 60000);
-  return {
-    P,
-    st: state,
-    pos: PG.position(pts, P.cum, state.nmFromDep),
-    etas: PG.etas(P, start)
-  };
+  return PG.plan({
+    points: pts,
+    distanceNm: +f.route.distanceNm || 0,
+    taxiMin: +S.settings.taxiMin || 0,
+    q: C.q,
+    legWinds,
+    wind: f.wind,
+    windComponent: window.FuelModel.windComponent
+  });
 }
 /** current_flight.progress = { at, plannedPos { lat, lon, legIndex, nmFromDep }, eta: [{ id, at }], fuelRemainingKg,
  *  remainingNm, phase } ; null sans vol démarré. Écrit quand il change (chaque minute pendant le vol). force : écrit
@@ -2825,6 +2876,20 @@ function updateProgress(force = false) {
       phase: c.st.phase
     };
   }
+  // vol pas démarré mais daté (planned_at) : seules les heures de passage sont écrites (la Carte les affiche) ; la
+  // position, le carburant restant et la phase n'existent qu'en vol
+  const pe = c ? null : plannedEtas();
+  if (pe) next = {
+    at: new Date().toISOString(),
+    plannedPos: null,
+    eta: pe.map(e => ({
+      id: pts[e.i]?.id || '',
+      at: new Date(e.at).toISOString()
+    })),
+    fuelRemainingKg: null,
+    remainingNm: null,
+    phase: null
+  };
   // comparées sur les seules clés de fuel (hors at) : la position réelle écrite par le cadre (progress.actual) ne
   // déclenche aucune réécriture ; elle reste en mémoire et dans le fichier (CF.merge ne touche pas aux clés d'autrui)
   const mine = x => JSON.stringify(CF.FUEL_PROGRESS.filter(k => k !== 'at').map(k => x?.[k] ?? null));
@@ -2832,10 +2897,10 @@ function updateProgress(force = false) {
   if (!force && next && f.progress && mine(next) === mine(f.progress)) return;
   // la position prévue avance à chaque rendu (une écriture du cadre en provoque un) : écrite au plus une fois par
   // minute, sauf changement de phase, effacement ou demande expresse
-  if (!force && next && f.progress && next.phase === f.progress.phase && Date.now() - (S.progressWritten || 0) < 60000) {
+  if (!force && next && !pe && f.progress && next.phase === f.progress.phase && Date.now() - (S.progressWritten || 0) < 60000) {
     return; // f.progress reste la dernière écrite : la suivante part dès la minute passée
   }
-  S.progressWritten = next ? Date.now() : 0;
+  S.progressWritten = next && !pe ? Date.now() : 0;
   f.progress = next ? {
     ...(f.progress?.actual ? {
       actual: f.progress.actual
@@ -3669,10 +3734,7 @@ export async function mount(el, ctx) {
   S.flightPending = kept0 == null; // vol courant jamais lu sur cet appareil : écran en attente, aucune écriture
   S.settingsPending = fuelSettings == null;
   const kept = kept0 || {};
-  S.flight = {
-    ...emptyFlight(),
-    ...kept
-  };
+  S.flight = flightOf(kept);
   S.settings = {
     taxiMin: 10,
     reserveMin: 30,
@@ -3730,12 +3792,16 @@ export async function mount(el, ctx) {
       // carte) est relue sans être refaite ni réécrite
       plan = x => JSON.stringify([x?.route?.points, x?.route?.distanceNm, x?.level, x?.aircraft, x?.started?.at ?? null]),
       planChanged = plan(f) !== plan(S.flight);
-    S.flight = {
-      ...emptyFlight(),
-      ...f
-    };
+    const oldPlanned = S.flight.planned_at ?? null;
+    S.flight = flightOf(f);
     if (S.flightPending) S.flightSeen = true; // arrivé avant la fin du montage : completeMount le garde
     if (S.flightPending || S.refsPending) return; // montage pas fini : completeMount dessine et reprend ce vol
+    if ((S.flight.planned_at ?? null) !==
+      oldPlanned) { // date du vol changée ailleurs (autre appareil) : champ, météo et vents relus
+      const wd = S.body?.querySelector('[data-k="wxdate"]');
+      if (wd && wd.value !== S.flight.weather.when) wd.value = S.flight.weather.when;
+      whenChanged();
+    }
     if (keepText != null) S.flight.route = { // route en cours de frappe : la valeur du champ reste la vérité
       ...emptyFlight().route,
       ...S.flight.route,
@@ -3826,10 +3892,7 @@ async function completeMount(self) {
   }
   const wasPending = S.flightPending;
   if (wasPending) { // le vol ne vient que maintenant (sauf s'il est déjà arrivé par le suivi du vol courant)
-    if (!S.flightSeen) S.flight = {
-      ...emptyFlight(),
-      ...(kept1 || {})
-    };
+    if (!S.flightSeen) S.flight = flightOf(kept1);
     flightDefaults(kept1 || {});
     S.flightPending = false;
   }

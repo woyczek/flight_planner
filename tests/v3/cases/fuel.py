@@ -4,10 +4,11 @@ Rules covered
   * the module opens on the Plan ("Devis") view, not the Sheets view (F1);
   * the sticky result bar is compact: one context line, three one-line tiles, at most 120 px (F2);
   * the display units (kt / km/h, ft / m, NM / km / SM) change the figures and keep flight levels as FL (F3);
-  * no horizontal page scroll at 390 and 360 px (F4, KNOWN FAILURE: see cases/known_failures.py);
-  * the wording "Devis" is not both the tab and a step of the same view (F5, KNOWN FAILURE).
+  * no horizontal page scroll at 390 and 360 px (F4; the date row overflowed until 24 Oct);
+  * the wording "Devis" is not both the tab and a step of the same view (F5; step 4 is now "Résultat");
+  * the flight date is one value: the field writes `planned_at` of the current flight (F6).
 
-Cases: F1 F2 F3 F4 F5.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 from lib import Fail, Skip, case, norm, tx
@@ -80,7 +81,7 @@ def f3(c):
     c.ok('FL270' in ctx, f'context line {ctx!r}', 'the level stays a flight level (FL270) whatever the altitude unit')
 
 
-@case('F4', 'Width', 'F', tags=('fuel', 'layout'), screens=False, rule='CLAUDE.md "pages sans débordement"; KNOWN: .fu-when row overflowed to 402 px on 24 Oct')
+@case('F4', 'Width', 'F', tags=('fuel', 'layout'), screens=False, rule='CLAUDE.md "pages sans débordement"; the .fu-when row overflowed to 414 px until 24 Oct')
 def f4(c):
     for w in (390, 360):
         c.page.set_viewport_size({'width': w, 'height': c.height})
@@ -92,7 +93,7 @@ def f4(c):
         c.ok(sw <= iw, f'at {w} px: scrollWidth {sw} > innerWidth {iw}; widest: {wide}', 'no horizontal page scroll')
 
 
-@case('F5', 'Step tab wording', 'F', tags=('fuel',), screens=False, rule='journal follow-up; KNOWN: tab "Devis" and step 4 "Devis" both shown')
+@case('F5', 'Step tab wording', 'F', tags=('fuel',), screens=False, rule='journal follow-up: the tab "Devis" and step 4 must not share a name')
 def f5(c):
     c.open('fuel')
     c.wait(800)
@@ -102,3 +103,41 @@ def f5(c):
         return { tabs, steps } }""")
     both = sorted(set(labels['tabs']) & set(labels['steps']))
     c.ok(not both, f'{both} is both a tab {labels["tabs"]} and a step {labels["steps"]}', 'the tab label and the step names are different words')
+
+
+@case('F6', 'Flight date is one value', 'F', tags=('fuel', 'maps'), screens=False, langs4=True,
+      rule='fuel INTEGRATION 3 (24 Oct): the field writes current_flight.planned_at; weather.when is its copy; the Map reads the ETA from it')
+def f6(c):
+    c.open('fuel', flight=True)
+    wait_quote(c)
+    path = 'pilot/ABC/current_flight.json'
+    label = c.text(f'{FUEL} .fu-flight .f-field:last-child') or ''
+    c.ok(norm(label).startswith(norm(row(c, 'wxDate'))), f'field label {label!r}', 'the field is called "Flight date" in the language of the run')
+
+    def waited(pred, what):
+        for _ in range(40):
+            r = c.doc(path) or {}
+            if pred(r):
+                return r
+            c.wait(150)
+        raise Fail(f'{what}: planned_at {r.get("planned_at")!r}, weather {r.get("weather")!r}, eta {(r.get("progress") or {}).get("eta")!r}', 'the record follows the field')
+    c.eq((c.doc(path) or {}).get('planned_at'), None, 'a flight with no date has no planned_at', what='planned_at at start')
+    local = c.js("() => { const d = new Date(Date.now() + 36 * 3600e3); d.setSeconds(0, 0); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }")
+    want = c.js("(l) => new Date(l).toISOString().slice(0, 19) + 'Z'", local)
+    c.page.fill(f'{FUEL} [data-k="wxdate"]', local)
+    r = waited(lambda r: r.get('planned_at') == want, 'a typed date is written as ISO UTC')
+    c.eq((r.get('weather') or {}).get('when'), local, 'weather.when is the same date in the device time', what='weather.when')
+    r = waited(lambda r: (r.get('progress') or {}).get('eta'), 'a dated flight that is not started carries the ETAs the Map draws')
+    eta = r['progress']['eta']
+    c.eq(len(eta), 4, 'one ETA per route point', what='progress.eta')
+    c.eq(r['progress'].get('phase'), None, 'no phase before the start', what='progress.phase')
+    c.eq(c.js("(a) => Date.parse(a[1].at) - Date.parse(a[0].at) > 0", eta), True, 'ETAs increase along the route', what='ETA order')
+    c.eq(c.js("([t, e]) => Math.round((Date.parse(e) - Date.parse(t)) / 60000)", [want, eta[0]['at']]), 10, 'the first ETA is the date plus the taxi time (10 min)', what='minutes from planned_at to the first ETA')
+    c.tap(f'{FUEL} [data-do="when30"]')
+    r = waited(lambda r: r.get('planned_at') and r['planned_at'] > want, '"+30" adds 30 min to a future date')
+    added = c.js("([a, b]) => Math.round((Date.parse(b) - Date.parse(a)) / 60000)", [want, r['planned_at']])
+    c.ok(30 <= added <= 34 and c.js("(t) => Date.parse(t) % 300000 === 0", r['planned_at']), f'{added} min added, planned_at {r["planned_at"]}', '30 minutes more, rounded up to 5 minutes')
+    c.tap(f'{FUEL} [data-do="whennow"]')
+    r = waited(lambda r: r.get('planned_at') is None, '"Now" empties the date')
+    c.eq((r.get('weather') or {}).get('when'), '', 'weather.when is empty too', what='weather.when after Now')
+    r = waited(lambda r: not (r.get('progress') or {}).get('eta'), 'an undated flight has no ETA to promise')

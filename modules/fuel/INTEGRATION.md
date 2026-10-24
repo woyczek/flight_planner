@@ -66,7 +66,7 @@ report and maps never write nor erase it.
 
 | Writer | Fields | Keys of `progress` |
 |---|---|---|
-| fuel | `FUEL_FIELDS`: `aircraft`, `route`, `level`, `wind`, `windSource`, `isaDev`, `profile`, `quote`, `weather`, `ofp`, `started` | `FUEL_PROGRESS`: `at`, `plannedPos`, `eta`, `fuelRemainingKg`, `remainingNm`, `phase` |
+| fuel | `FUEL_FIELDS`: `aircraft`, `route`, `level`, `wind`, `windSource`, `isaDev`, `profile`, `quote`, `weather`, `ofp`, `started`, `planned_at` | `FUEL_PROGRESS`: `at`, `plannedPos`, `eta`, `fuelRemainingKg`, `remainingNm`, `phase` |
 | report (report saved) | `started` (null) | `FUEL_PROGRESS` cleared |
 | frame | — | `actual` |
 
@@ -88,6 +88,7 @@ report and maps never write nor erase it.
   "level": { "ft": 27000 },
   "wind": { "dirDeg": 270, "speedKt": 30 },
   "isaDev": 0,
+  "planned_at": "2026-10-25T09:40:00Z",
   "profile": { "climbFpm": 1230, "climbKt": 196, "descentFpm": 1500, "descentKt": 253, "tocNm": 48.2, "todNm": 56.1 },
   "ofp": { "date": "2026-10-19T13:44:06Z", "dep": "LFRS", "arr": "LFML", "altn": "LFPG", "points": 11,
            "levelFt": 27000, "aircraft": "S210 F-BHHH", "callsign": "" }
@@ -127,7 +128,18 @@ report and maps never write nor erase it.
   draws the arrows from it. Absent without a forecast for this route; rewritten whenever the route, the level or
   the flight hour changes.
 - `windSource` may also be `{ kind: 'aloft', model, levelFt, at }` when the quote's wind is the mean aloft.
-- `weather` (fuel's): `{ when (flight date, device time, optional), real (wind from the aerodromes' weather) }` (`mid`,
+- **`planned_at`** (fuel's, 24 Oct 2026, relay cloud; optional, schema number unchanged, merge rule unchanged): the
+  flight date, the planned departure date-time, **ISO 8601 UTC** (`2026-10-25T09:40:00Z`); absent or `null` = now. It is
+  the **one value** of the flight date: the "Flight date" field of fuel's step 1 writes it at every change (typed, "+30",
+  "Now" = `null`), and everything that depends on the hour follows it — the aerodromes' weather (TAF when the date falls in
+  its validity, METAR otherwise, § 10 of the SPEC), the winds and temperatures aloft of the quote (`winds.js`, the forecast
+  hour nearest to it, § 11) and, for a flight that is not started, the Map's ETA. A started flight is read from `started.at`
+  (fuel resets `planned_at` to `null` when it starts: the start redoes everything for now). **Atmosphere (its session
+  reads this): the slider's origin is `planned_at` of the current flight** — "now" when it is absent — and the slider adds
+  its 0 to +72 h to it; until it does, it reads `weather.when`, which fuel keeps equal to `planned_at` (below).
+- `weather` (fuel's): `{ when (the flight date as the device's local time, `YYYY-MM-DDThh:mm`, the value of the
+  datetime-local field: **a copy of `planned_at`**, not a second value — fuel sets both together and, when it reads a flight,
+  `planned_at` wins; a flight written before `planned_at` existed gets its `planned_at` from `when`; `''` = now), real (wind from the aerodromes' weather) }` (`mid`,
   the former intermediate aerodrome, is no longer written nor read: the corridor's aerodromes replace it); `windSource`: `{ kind: 'weather', ids: ['LFBO (TAF)', …] }` when the wind came from it, else
   null.
 - `quote` (fuel's): `{ block, trip, unit ('kg' | 'lb', the sheet's), minutes, levelFt, approx }` — the quote's block
@@ -137,7 +149,11 @@ report and maps never write nor erase it.
   remainingNm, phase ('taxi' | 'climb' | 'cruise' | 'descent' | 'arrived'), actual? }` — the planned progress of the
   started flight, written at most once a minute while it flies (at once on a phase change, a cancelled start or a
   quote change) — a frame write (the real position) no longer causes a fuel write; fuel's keys cleared once the start
-  is cancelled or the report saved.
+  is cancelled or the report saved. **Not started but dated** (`planned_at` set, the quote done, the arrival still in the
+  future): `progress = { at, eta [{ id, at }] }` only (`plannedPos`, `fuelRemainingKg`, `remainingNm` and `phase` are `null`:
+  they exist only in flight), the ETAs counted from `planned_at` as a started flight counts them from `started.at` (taxi,
+  climb, cruise by leg, descent); rewritten with every quote change, cleared when the date is cleared, the flight is started
+  (then from `started.at`) or its arrival is past. Maps draws them as it draws a started flight's.
   `actual` (the real position: phone GPS, IVAO / VATSIM network) belongs to the frame; fuel and report keep it as
   written (table above).
 - `started` (lot G): `{ at (ISO), by: 'fuel', diverted? }` — written by fuel at the start (after the weather and the
