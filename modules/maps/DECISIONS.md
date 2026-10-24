@@ -904,3 +904,56 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     (Undo disabled), Escape leaves the mode and stays in full screen, a second Escape leaves the full screen. Full screen: box
     390 × 591 from 390 × 511, canvas follows. Started flight: "flight in progress", Follow pressed, GPS notice once. No flight and
     a missing mission: the card and the Layers selector. Dual view both ways: no error.
+- **24 Oct 2026 — flights across the date line** (relay cloud; the user: "we remember that we want to fly from Siberia to Alaska,
+  through the date line"). Branch `v3-antimeridien` from `origin/v3` (b8607cc8d). Closes the "antimeridian" entry of the technical
+  debt. Model: atmosphere's `wrapLon`, `nearLon`, `unwrapLons` (commit 5f45e0b18), generalised in the frame:
+  - **`frame/lib/geo.js`** (frame INTEGRATION § 12, bench `frame/lib/test/geo.html`): the three functions, same logic as
+    `atmo.js` (the bench compares them value by value, so the weather cache cells stay the same: a reader that passes raw points
+    finds the same cells). `unwrapLons` takes `{ lat, lon }` and `[lon, lat]`, returns the same object for a point already
+    continuous (an ordinary route is unchanged, object for object). `wrapLon` is **not** given an "already in range" shortcut
+    (it would change the float noise atmosphere's cells are made of); the module uses `outLon` (the shortcut) where it hands a
+    value to a service whose cells are not shared (relief tile, MORA, written route), so an ordinary flight sends exactly what it
+    sent before.
+  - **Rule**: the route is unrolled first (`pointsOf` → `unwrapLons`, the alternate with `nearLon` to the arrival), so the
+    profile, the marks, the TOC / TOD, the cursor, the ETA, the winds barbs, the framing and the drawing all work on continuous
+    longitudes with no further change (haversine distances were already periodic; interpolations are linear in the unrolled
+    longitude). What leaves the module is wrapped (`outLon`: terrain, MORA; `commit()` writes `route.points` in [-180, 180[;
+    `llAt` for a tap; aerodb boxes by `wrapBoxes`); what comes in is compared modulo 360 (`dLon`, `nearLon`).
+  - **MapLibre with world copies**: `map_base.startTiles` gains `worldCopies` (false by default: atmosphere is unchanged; the
+    Map passes true). Measured with the bundled MapLibre 5.6: with `renderWorldCopies: false` the camera is clamped to ±180 (a
+    view of 176° to 196° is brought back to 159°–180°); with `true` the camera centre may be 190° or −174° (`fitBounds` picks the
+    wrapped one) and `getBounds` / `project` go beyond ±180. So the view is never assumed to be on the route's copy.
+  - **`wrapTo` (the projection of the view)**: a longitude goes to the world copy nearest the view's centre (`nearLon`), so a datum
+    of aerodb at −170° draws at 190°; the route (and everything inside its longitude span: its marks, TOC / TOD, barbs, cursor) is
+    shifted by one common number of turns, `360 × round((centre − middle of the route) / 360)`, so it is never torn in two when the
+    user pans half the world away. The plain background draws its own copies (`drawBackground`: offsets computed from the canvas).
+  - **Data boxes**: the view or the route box can exceed ±180; `loadData` aligns it to the route's turn (`alignBox`), then
+    `wrapBoxes` gives one box, or two when it crosses 180° (the whole world when wider than 360°), and `many(f, boxes, extra)`
+    merges; `corridorBoxes` clips each leg to the box then wraps. Without aerodb the "empty" data box covers the view (otherwise
+    the draw would reload it forever); the contour tiles are read modulo the tile count.
+  - **Taps and tooltips** compare modulo 360 (`airspacesAt` wraps its longitude, `MapsProfile.project` takes the difference
+    modulo 360, `dLon` in the flat tests); the follow mode centres on the copy where the view is (`nearLon`); the framing test of
+    a re-read flight is made on screen (`inView` through the projection), not on longitudes.
+  - **Edit mode**: `rawPoints()` is unrolled (so hit tests, undo and the inserted point agree with the drawing), `commit()` writes
+    wrapped longitudes, `coordId` writes `…N17049W` from the wrapped longitude. Checked: a point added between the date line and
+    Alaska is written at −170.82°, undo restores the three points.
+  - **Missions**: the trace is unrolled; the YAML extent and zones are taken as stored (`mission.js` still takes [-180, 180] only).
+  - **"No forecast" message** names the flight ("No forecast for UHMA → PAOM:" + the link to Weather; four languages), the
+    atmosphere session's suggestion, kept by the relay; without departure and arrival it says what it said before.
+  - **"The Weather chip is hidden"**: the symptom reported on UHMA → PAOM could not be reproduced on the Map alone (before or after,
+    with a stub of aerodb that answers; the chip is shown as soon as there is a profile or an open content). The sheet, and so the
+    chips, is hidden when the profile cannot be built (`S.prof` null): the likely cause (no coordinates for UHMA and PAOM in the
+    published base, so no points, or a profile build that fails) is aerodb's side, not the date line; if the flight has its points
+    the chip is there. To see on a real run.
+  - **Limits kept**: airspace polygons that straddle 180° are not split (the SIA base has none); the profile's airspace crossings
+    compare the unrolled samples with polygons in [-180, 180[ (right except for volumes beyond 180°); the poles.
+  - **Measured** (Chromium, 390 × 844 touch, port 8836, MapLibre on a stub style because the tiles are blocked, and the plain
+    background): UHMA → PAOM and PAOM → UHMA, both fills: route longitudes continuous (177.74, 180.1, 194.55), projected steps all
+    the same sign, both aerodromes inside the canvas, marks 50 … 400 NM increasing, title 433 NM = sum of the legs (432.7), 0.3 % above the
+    great circle (431.6), chip visible, every aerodb box inside [-180, 180] (two boxes when the view crosses 180°), no tile
+    request beyond the world; panning to −170°, 6°, 0° at zoom 0.6, 170°, 190°: the route keeps its shape on the nearest copy; edit
+    mode as above. LFRS → LFML: the route points, projected x / y, marks, bbox and aerodb boxes are identical to the base commit, plain
+    and MapLibre, at 390 and 1280 px. Smoke of the 50 pages: 0 problem.
+  - **Added at the coordinator's request (suite case D5)**: the sheet note "Aeronautical database not published: the map shows only
+    the route." carries the "Offline data" button (`data-go="settings"`, the label of the `noZone` note, four languages): the status
+    line is gone from the map, so the note is the only way left to the setting.

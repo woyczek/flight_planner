@@ -1046,3 +1046,10 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     button of maps' toolbar line until maps migrates it; `modules/*` untouched (maps and atmosphere still draw their toolbars, their
     docs still say 38 % and "sub-tabs"); the page is 402 px wide on `#fuel` at 390 because of Fuel's own `.fu-when` row (the same on
     the base commit, not the frame's).
+
+- **24 Oct 2026 — `frame/lib/geo.js`: longitudes around the date line** (maps session, relay cloud). Atmosphere had `wrapLon`,
+  `nearLon` and `unwrapLons` (commit 5f45e0b18), maps and fuel needed the same: the helper is the frame's (INTEGRATION § 12),
+  same logic as atmosphere's so that the weather cache cells are the same (the bench `frame/lib/test/geo.html` compares them).
+  `unwrapLons` takes `{ lat, lon }` and `[lon, lat]`; a point already continuous is returned as the same object. No in-range
+  shortcut in `wrapLon` (it would change the noise of atmosphere's cells). Atmosphere switches to the helper in its next lot;
+  until then its copy and this one stay identical. Users: `modules/maps` (the whole screen), `modules/fuel/winds.js`.

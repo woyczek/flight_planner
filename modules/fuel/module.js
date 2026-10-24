@@ -48,7 +48,7 @@ export const meta = {
     '../../frame/lib/metar.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
-    '../../frame/lib/time.js'
+    '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]
 };
 

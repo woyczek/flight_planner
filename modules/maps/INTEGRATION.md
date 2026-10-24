@@ -14,7 +14,8 @@ export const meta = {
     { prefix: 'cache/weather/', policy: 'cache' },                            // the shared weather cache (§ 8): read only, declared as atmosphere's doc asks
     { prefix: 'pilot/', merge: 'record' }],                                   // the current flight, edited on the map
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
-    'lib/profiles.js?v=0', 'lib/map_base.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],  // kept at installation
+    'lib/profiles.js?v=0', 'lib/map_base.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
+    '../../frame/lib/geo.js?v=0'],                                               // kept at installation
   lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',     // kept at first use
     '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/weather_store.js?v=0', '../fuel/winds.js?v=0']
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']  // called by MapLibre itself
@@ -139,6 +140,9 @@ keeps the module and fuel scrolls to that step).
   maps draws its own TOC and TOD.
 - `frame/lib/route_text.js` is imported by the module and kept at installation (`meta.files`).
 - `route.points[].wind` (fuel lot F) is drawn as barbs; absent, nothing is drawn.
+- **Longitudes**: `route.points` are read in [-180, 180[ as fuel writes them and unrolled by the module (`frame/lib/geo.js`,
+  frame INTEGRATION § 12), so a flight across the date line is one continuous route; what the module writes back (Edit mode) is
+  wrapped again. `modules/fuel/winds.js samples` does the same for the points it asks Open-Meteo about.
 
 ## 5. Costs (measured, see DECISIONS.md)
 
@@ -195,7 +199,7 @@ import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, l
 |---|---|
 | `loadMapLibre()` → `Promise<maplibregl \| null>` | script UMD and style sheet of `lib/`, once per page; `null` if the script does not load (the next call tries again) |
 | `styleFor({ dark, base })` → URL | `base`: a key of `STYLES` (the studio profile's base), else `STYLE_DAY` (positron); `dark`: `STYLE_NIGHT`, or VersaTiles' eclipse for a `vt-` base |
-| `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true, customAttribution }`: the control is folded on its "i" button once the map has loaded, a tap opens it), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch, no world copies |
+| `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true, customAttribution }`: the control is folded on its "i" button once the map has loaded, a tap opens it), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch. `worldCopies` (default `false`): MapLibre's `renderWorldCopies`; with `false` the camera is clamped to ±180° and a route across the date line cannot be framed; with `true` the centre may be 190° or −174°, and `getBounds()` / `project()` go beyond ±180, so the host brings its longitudes to the view's copy (`nearLon` of `frame/lib/geo.js`). The Map passes `true`; Atmosphere keeps its grid on the route's own turn and the default |
 | `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. Call it on every size change, at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
 | `isOwnResize(map)` → boolean | true during the `resize()` that `mapSize` runs: its `movestart` is not a user gesture (`map.on('movestart', () => { if (!isOwnResize(map)) userMoved = true })`) |
 | `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there |

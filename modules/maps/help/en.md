@@ -132,6 +132,8 @@ the minimum safe altitude of each square crossed (in brown dashes), and a line s
 
 **No flight.** Without a prepared flight, the map is empty and offers “Open Fuel”. The mission maps stay available from the layers list.
 
+**Flight across the date line.** A flight that crosses the 180° meridian (Siberia to Alaska, for instance) is drawn in one piece: the map goes on past the line, the distance marks, the profile and the weather section follow the route, which stays stored with longitudes between −180° and 180°.
+
 **No aeronautical database.** If the aeronautical database has not yet been published by a device of the airline, the
 map shows only the route, and says so once (a notification, then a note in the data block).
 

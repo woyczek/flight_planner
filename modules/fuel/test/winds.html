@@ -108,6 +108,31 @@
   check('samples end at the arrival', smp.at(-1).point, 2);
   check('samples ordered along the route', smp.every((x, i) => !i || x.nm > smp[i - 1].nm), true);
   check('route points kept', smp.filter(x => x.point >= 0).length, 3);
+  // route past the date line (UHMA 177.74 E -> PAOM 165.45 W): samples interpolated on the short arc, returned wrapped
+  const uh = [{
+      lat: 64.7349,
+      lon: 177.7415
+    }, {
+      lat: 64.5122,
+      lon: -165.4453
+    }],
+    sm2 = W.samples(uh, 50, 24),
+    arc = sm2.map(x => (x.lon + 360) % 360);
+  check('date line: samples count (433 NM, 50 NM step: 8 between + 2 ends)', sm2.length, 10);
+  check('date line: every longitude in [-180, 180[', sm2.every(x => x.lon >= -180 && x.lon < 180), true);
+  check('date line: sampled longitudes stay on the short arc (177.7 E to 194.6 E)', arc.every(l => l >= 177.74 - 1e-9 && l <= 194.56 +
+    1e-9), true);
+  check('date line: monotonic along the arc', arc.every((l, i) => !i || l > arc[i - 1]), true);
+  check('date line: ends are the requested points', [sm2[0].lon, sm2.at(-1).lon], [177.7415, -165.4453]);
+  check('date line: reversed route also on the short arc', W.samples([...uh].reverse(), 50, 24).every(x => (x.lon + 360) % 360 >= 177.74 -
+    1e-9 && (x.lon + 360) % 360 <= 194.56 + 1e-9), true);
+  check('ordinary route: longitudes unchanged', W.samples([{
+    lat: 47.1569,
+    lon: -1.6078
+  }, {
+    lat: 43.4367,
+    lon: 5.215
+  }], 50, 24).map(x => x.lon).filter((l, i, a) => i === 0 || i === a.length - 1), [-1.6078, 5.215]);
   const nmPts = [0, smp.find(x => x.point === 1).nm, smp.at(-1).nm];
   check('level before the step: the plan', W.levelAt(pts, nmPts, 8000, nmPts[1] / 2), 8000);
   check('level from the step point', W.levelAt(pts, nmPts, 8000, nmPts[1] + 1), 12000);

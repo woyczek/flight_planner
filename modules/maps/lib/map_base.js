@@ -62,13 +62,17 @@ export function loadMapLibre() {
  *  l'hôte est démonté (la carte est abandonnée), onCreate (map) dès la création (pour pouvoir la retirer, ou la mettre à la
  *  taille avant qu'elle soit chargée), onStyleLoad (map) à chaque chargement de style (le premier et chaque setStyle), onLoad
  *  (map) une fois chargée, avant que la promesse soit tenue : l'hôte y branche ses événements. Mercator est imposé à chaque
- *  style ; pas de rotation, d'inclinaison ni de copies du monde. */
+ *  style ; pas de rotation ni d'inclinaison. worldCopies (faux par défaut) : copies du monde de MapLibre — sans elles la
+ *  carte ne sort pas de [-180, 180] (la vue d'une route qui passe la ligne de changement de date est ramenée à 180°) ; avec
+ *  elles la vue peut être centrée à 190° (ou à −170° : MapLibre choisit la copie), ses bornes (getBounds) et la projection
+ *  (project) vont au-delà de ±180, et l'hôte ramène ses longitudes à la copie de la vue (frame/lib/geo.js, nearLon). */
 export async function startTiles(container, {
   style,
   bounds,
   padding,
   attributionControl = false,
   wait = TILE_WAIT,
+  worldCopies = false,
   alive = () => true,
   onCreate,
   onStyleLoad,
@@ -105,7 +109,7 @@ export async function startTiles(container, {
         dragRotate: false,
         pitchWithRotate: false,
         touchPitch: false,
-        renderWorldCopies: false
+        renderWorldCopies: worldCopies
       });
     } catch {
       return finish(null); // pas de WebGL
