@@ -957,3 +957,5 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Added at the coordinator's request (suite case D5)**: the sheet note "Aeronautical database not published: the map shows only
     the route." carries the "Offline data" button (`data-go="settings"`, the label of the `noZone` note, four languages): the status
     line is gone from the map, so the note is the only way left to the setting.
+- **24 Oct 2026 — icons and `hidden` come from the frame** (relay cloud): `localIcon` and its three SVG copies are gone; the buttons use
+  `cloud`, `undo` and `move4` of `frame/lib/icons.js`, and the `[hidden]` rule on overlay buttons is the frame's (`primitives.css`).

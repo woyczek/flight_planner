@@ -595,6 +595,9 @@ details.f-card[open]>summary {
   pointer-events: auto;
   touch-action: manipulation
 }
+.f-overlay button.f-ov-btn[hidden] {
+  display: none
+}
 .f-overlay button.f-ov-btn::after {
   content: "";
   position: absolute;

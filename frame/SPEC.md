@@ -299,7 +299,8 @@ used alone:
     itself (a conflict touches `#conflicts`); **"Position: <source>"** while a flight is started (the live position of the
     header's badge: touch toggles the device's GPS like that badge); and, last, **"Help for this screen ›"**, which opens what
     the header's ? opens (the manual at the module's chapter; a second touch closes it).
-  The badge counts the first two kinds only: the data line and the offline line are a state, not news (no badge when only
+  When the transport is the launcher, a line "Launcher: <host> · <state>" follows the data line (it opens Settings): on a phone
+  it is the only place where the host shows. The badge counts the first two kinds only: the data line and the offline line are a state, not news (no badge when only
   they apply). **On a phone the badge colour is the application's state** (the sync dot has left the header): green
   (`--sog-ok`) when a flight or a report line applies; **amber** (`--sog-warn`, `data-attn`) when attention is needed: no
   trigram, writes pending, conflicts, a synchronisation error, offline; amber wins when both apply; no dot when neither. On a

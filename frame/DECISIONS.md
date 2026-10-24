@@ -1053,3 +1053,15 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   `unwrapLons` takes `{ lat, lon }` and `[lon, lat]`; a point already continuous is returned as the same object. No in-range
   shortcut in `wrapLon` (it would change the noise of atmosphere's cells). Atmosphere switches to the helper in its next lot;
   until then its copy and this one stay identical. Users: `modules/maps` (the whole screen), `modules/fuel/winds.js`.
+
+- **24 Oct 2026 — finishing touches asked by the Map and frame lots** (relay cloud, branch `v3-cadre-icones`).
+  - **`[hidden]` on overlay buttons**: `.f-overlay button.f-ov-btn[hidden] { display: none }` in `primitives.css`; the Map's
+    workaround rule is removed (its `data-mp` attribute stays: the module's other rules hang on it). INTEGRATION § 9.3.
+  - **Three icons** in `frame/lib/icons.js`, same grid and stroke: `cloud`, `undo`, `move4` (`move` is the vertical double arrow
+    and stays, it is in use). The Map lost `localIcon` and its SVG copies and names the three icons through `ov.button({ icon })`
+    / `svg()`. Other modules: no `localIcon`; the only inline `<svg>` found in `modules/*/module.js` are Fuel's charts (data
+    drawings, not icons) and the Map's own level profile; Atmosphere draws none in `module.js`. Nothing else touched.
+  - **Launcher line of the "i" pop-up** (the lot of 24 Oct had left it "not done"): shown when the transport is `launcher`, text
+    "Launcher: {host} · {sync state}" (the state is the one of the sync button), after the data line, opens Settings; shown at
+    every width (the header's host pill still appears only for a launcher of another computer on the local network). The host
+    is the launcher's own name, else the page's host name. INTEGRATION § 9.3 / § 10, SPEC § 3.1.
