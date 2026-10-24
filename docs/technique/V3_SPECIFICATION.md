@@ -178,6 +178,19 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
      items when it makes sense, ✕ at the right; no separate title row, no segmented control row. The map's sheet
      adopts it: the title names the content (profile of the flight, airspaces at this point, LFBD reporting points,
      weather cross-section) and the Profil · Météo choice becomes two small icon chips at the right of the grip row.
+  7. **Landscape on a phone** (user, 24 Oct, 17:45, two iPhone shots: "Une passe ergo en mode paysage, actuellement
+     c'est mauvais. Comme il n'y a pas de verrouillage, il faut le traiter" — Safari does not honour the manifest's
+     portrait lock): relay decision, closing open question 1. When the window is wider than high and under 1024 px:
+     the bottom bar becomes a **vertical rail of icons at the left edge** (44 px, no labels, same five entries, same
+     popover on a second tap); the header stays (57 px); the fixed module's **sheet becomes a right column** (40 % of
+     the width, 280 px at least, full height under the header, two positions: default and expanded 60 %, the grip row
+     at its top as the title row, scrolling inside); the map takes the rest, full height; the overlay columns stay on
+     the map (left: Layers; right: the module's buttons, the full-screen button last) and never wrap into two
+     columns at that height (the frame lowers the gap to 4 px before wrapping). The **"flight date" slider** of
+     atmosphere stays horizontal, inside the column under the title (the user asked whether vertical would be better
+     "pour des raisons de place": the column gives the place; vertical stays the fallback if the column is too
+     narrow). Full screen in landscape hides the header and the rail, the column stays. Frame lot first (class
+     `html.f-land`, tokens `--f-sheet-side`, `--f-sheet-side-max`, rail rules), then maps and atmosphere take it.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
