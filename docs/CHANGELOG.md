@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Atmosphere: no rings round the flight's grid** (`modules/atmosphere/lib/weather_map.js`, `test/weather_map.html`; atmosphere
+  DECISIONS, INTEGRATION § 6) — at a flight level, while the world's pressure-level file was still being read, the surface world was
+  blended into the grid: a dark frame of concentric isobars and isotherms with stacked labels. The world is now blended only at the same
+  level and hour, no label sits on the transition band, and a grid alone fades out instead of ending in a rectangle.
 - **Map: the Complexity slider goes lower and comes first; the administrator's thresholds apply to every mode; the tuning page has a button**
   (`modules/maps/module.js`, `render.js`, `frame/settings/admin_links.js`, `settings.js`, manuals in four languages, `tests/v3/` D14 / D15 / D16;
   maps SPEC § 4 quinquies, DECISIONS) — the slider only shifts the zoom (one whole zoom level per step, −4 … +4; it was ¾ of a level from −2

@@ -165,7 +165,8 @@ wx.detach();                               // the Profil chip: the canvas and it
   one computation of places, levels and variables for whoever loads and whoever reads; `daysFor(time)` the days to
   ask.
 - **`info()`** → `{ state, reading, outside, gridBox, levels, pLabel, time, world: { run, time, h, step, source, k },
-  worldReading }`: `outside` is true when the view is mostly outside the flight's grid (titles "World synoptic").
+  worldReading, blended }`: `outside` is true when the view is mostly outside the flight's grid (titles "World
+  synoptic"); `blended` when the flight's grid is drawn blended into the world (same level, same hour within 2 h).
 - **`at(lat, lon)`** → `{ t, p, cc, ft }` inside the flight's grid, `null` outside; **`worldPoint(lat, lon)`** →
   `{ values, time, run, step, source }` from the world synoptic, `{ reading: true }` while the step is read, `null`
   without a publication.

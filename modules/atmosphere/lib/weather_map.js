@@ -438,7 +438,10 @@ export function createWeatherMap({
     return fF.F;
   }
   /** Champs du synoptique monde au niveau et à l'heure demandés : { key, k, built, G, F, X (jet, CAPE) } ; pendant la
-   *  lecture d'une échéance, les précédents (null sans publication). */
+   *  lecture d'une échéance, les précédents s'ils sont au même niveau (une autre échéance, le curseur qui avance), sinon
+   *  rien : des champs d'un autre niveau (la surface quand la carte passe au FL160 et que le fichier des niveaux de
+   *  pression arrive encore) fondus dans la grille du vol y dessineraient des centaines d'anneaux (null sans
+   *  publication). */
   function worldFields() {
     const w = world;
     if (!w) return null;
@@ -447,7 +450,7 @@ export function createWeatherMap({
       k = stepAt(w, o.time || Date.now() / 1000),
       sd = worldStep(k),
       sa = ft == null ? null : worldStep(k, true);
-    if (!sd || (ft != null && !sa)) return wfields?.built === w.built ? wfields : null;
+    if (!sd || (ft != null && !sa)) return wfields?.built === w.built && wfields.F.ft === ft ? wfields : null;
     const zFix = fl?.z ?? null,
       key = JSON.stringify([w.built, k, ft, zFix == null ? null : Math.round(zFix)]);
     if (wfields?.key === key) return wfields;
@@ -465,12 +468,18 @@ export function createWeatherMap({
     };
     return wfields;
   }
+  /** Largeur (en lieux) de la bande de passage de la grille du vol au synoptique : son quart extérieur. */
+  const bandOf = G => Math.max(1, (Math.min(G.nx, G.ny) - 1) * 0.25);
   /** La grille du vol fondue dans le synoptique monde sur son quart extérieur : à son bord, les valeurs du monde (les
    *  lignes se raccordent, aucune teinte ne change à la limite) ; au centre, le modèle fin du vol ; entre les deux, un
    *  passage progressif — les modèles divergent (Météo-France ou ICON d'un côté, GFS de l'autre), d'autant plus que
    *  l'échéance est lointaine (zone de relaxation, comme un modèle régional imbriqué dans un modèle global). */
   function blendWorld(F, G, wf) {
-    const W = wf.F,
+    const W = wf.F;
+    // deux champs du même niveau et de la même heure (à une demi-échéance près), sinon pas de fondu : il tracerait des
+    // lignes qui ne sont dans aucune des deux prévisions
+    if (W.ft !== F.ft || Math.abs((W.time ?? 0) - (F.time ?? 0)) > 2 * 3600) return F;
+    const
       WG = wf.G,
       [w0, s0, e0, n0] = WG.bbox,
       at = (arr, lat, lon) => {
@@ -486,7 +495,7 @@ export function createWeatherMap({
       uv = W.wind.map(([d, kt]) => d == null || kt == null ? [null, null] : [kt * Math.sin(d * R), kt * Math.cos(d * R)]),
       U = uv.map(x => x[0]),
       V = uv.map(x => x[1]),
-      m = Math.max(1, (Math.min(G.nx, G.ny) - 1) * 0.25),
+      m = bandOf(G),
       out = {
         ...F,
         p: [],
@@ -529,7 +538,8 @@ export function createWeatherMap({
    *  étiquette, hautes et basses pressions, vents. o2.merc : images rééchantillonnées en Mercator (une grille de 150° de
    *  latitude étirée en latitude serait fausse à l'écran) ; o2.tStep : pas des isothermes ; o2.thin : un vent sur deux ;
    *  o2.hlR / hlMin : rayon (lieux) et creux (hPa) d'une haute ou basse pression ; o2.wrap : la grille fait le tour du
-   *  monde (sa dernière colonne recopie la première : pas de bord à l'antiméridien). */
+   *  monde (sa dernière colonne recopie la première : pas de bord à l'antiméridien) ; o2.inner : largeur de la bande de
+   *  passage au synoptique (lieux), sans étiquette ; o2.fade : la même, où les aplats s'effacent (la grille seule). */
   function fieldGeometry(F, G, o2 = {}) {
     const [w, s, e, n] = G.bbox,
       f = 4,
@@ -568,7 +578,12 @@ export function createWeatherMap({
             bd = Infinity;
           const tx = (r.nx - 1) * labelAt(c.level);
           for (const sg of c.segs) {
-            const d = Math.abs((sg[0] + sg[2]) / 2 - tx) + Math.abs((sg[1] + sg[3]) / 2 - (r.ny - 1) / 2) * 0.3;
+            const mx = (sg[0] + sg[2]) / 2,
+              my = (sg[1] + sg[3]) / 2;
+            // pas d'étiquette sur la bande de passage au synoptique (o2.inner : sa largeur en lieux) : une ligne y est en
+            // train de changer de prévision, son étiquette se lit dedans ou dehors
+            if (o2.inner && Math.min(mx, r.nx - 1 - mx, my, r.ny - 1 - my) < o2.inner * f) continue;
+            const d = Math.abs(mx - tx) + Math.abs(my - (r.ny - 1) / 2) * 0.3;
             if (d < bd) {
               bd = d;
               best = sg;
@@ -588,7 +603,18 @@ export function createWeatherMap({
         }
         return out;
       },
-      shade = (vals, from, span, rgb, a0, a1) => vals?.some(Number.isFinite) ? (r => fieldCanvas(r.nx, r.ny, k => r.v[k] >= from ? [...rgb,
+      // o2.fade : la grille seule (rien à quoi la fondre) : ses aplats s'effacent sur la bande de passage au lieu de finir en
+      // rectangle
+      fade = (nx, ny, rgbaOf) => !o2.fade ? rgbaOf : k => {
+        const v = rgbaOf(k);
+        if (!v) return v;
+        const i = k % nx,
+          j = (k - i) / nx,
+          d = Math.min(i, nx - 1 - i, j, ny - 1 - j) / (o2.fade * f);
+        return d >= 1 ? v : [v[0], v[1], v[2], Math.round(v[3] * d * d * (3 - 2 * d))];
+      },
+      image = (nx, ny, rgbaOf) => fieldCanvas(nx, ny, fade(nx, ny, rgbaOf)),
+      shade = (vals, from, span, rgb, a0, a1) => vals?.some(Number.isFinite) ? (r => image(r.nx, r.ny, k => r.v[k] >= from ? [...rgb,
         Math.round(Math.min(1, (r.v[k] - from) / span) * a1 + a0)
       ] : null))(merc(A.refine(vals, G.nx, G.ny, f))) : null;
     const rt = merc(A.refine(F.t, G.nx, G.ny, f)),
@@ -620,8 +646,8 @@ export function createWeatherMap({
         }
     return {
       bbox: [w, s, e, n],
-      tImg: fieldCanvas(rt.nx, rt.ny, k => rt.v[k] == null ? null : [...diverging(rt.v[k], 40, dk), 120]),
-      cImg: fieldCanvas(rc.nx, rc.ny, k => rc.v[k] > 8 ? [...cloud, Math.round(rc.v[k] / 100 * 150)] : null),
+      tImg: image(rt.nx, rt.ny, k => rt.v[k] == null ? null : [...diverging(rt.v[k], 40, dk), 120]),
+      cImg: image(rc.nx, rc.ny, k => rc.v[k] > 8 ? [...cloud, Math.round(rc.v[k] / 100 * 150)] : null),
       // le synoptique monde seulement : courant-jet à 250 hPa (dès 60 kt), convection (CAPE dès 500 J/kg)
       jImg: shade(F.js, 60, 80, [124, 58, 237], 30, 100),
       capeImg: shade(F.cape, 500, 2000, [230, 120, 20], 30, 90),
@@ -643,15 +669,19 @@ export function createWeatherMap({
       wf = world ? worldFields() : null,
       key = JSON.stringify([fF.key, o.colors().dark, st, wf?.key]);
     if (geo?.key === key) return geo;
+    const B = wf ? blendWorld(F, G, wf) : F;
     geo = {
       key,
       ...fieldGeometry({
-        ...(wf ? blendWorld(F, G, wf) : F),
+        ...B,
         pStep: st.p
       }, G, {
         thin: G.places.length > 40,
-        tStep: st.t
-      })
+        tStep: st.t,
+        inner: B !== F ? bandOf(G) : 0,
+        fade: B === F ? bandOf(G) : 0
+      }),
+      blended: B !== F
     };
     return geo;
   }
@@ -863,7 +893,8 @@ export function createWeatherMap({
           source: world.source || world.model,
           k
         } : null,
-        worldReading: worldReading || world === undefined
+        worldReading: worldReading || world === undefined,
+        blended: !!(F && geo?.blended)
       };
     },
     /** Valeurs de la grille du vol en un point (bilinéaire) : { t, p, cc, ft } ; null hors de la grille. */

@@ -224,6 +224,18 @@ await wait(300);
 c.clearRect(0, 0, 320, 200);
 wm.draw(c, view);
 check('drawn into the host canvas', painted());
+check('surface: the flight grid blended into the world', wm.info().blended === true);
+// le fichier des niveaux de pression du monde manque (ou arrive encore) : jamais la surface du monde fondue dans le FL090
+wm.update({
+  levelFt: 9000
+});
+wm.draw(c, view);
+await wait(300);
+wm.draw(c, view);
+check('FL090 without the world levels: not blended with the surface', wm.info().blended === false && wm.state === 'ok');
+wm.update({
+  levelFt: null
+});
 const altW = createWeatherMap({
   ctx,
   time: t0 + 3600,

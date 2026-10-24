@@ -2,6 +2,22 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (night) — rings round the flight's grid: the world of another level
+
+- **The report** (user, iPhone, relayed: "Screenshot : Qu'est-ce que c'est !?", LFRD → LFBD at FL160): round the
+  flight's grid a thick dark frame of concentric blue and red dashed rings, temperature labels stacked on its sides
+  (12°, 14°, 0°, −6°), the world outside still at the surface (1008…1022 hPa). **Cause**: while the world step's
+  pressure-level file was read (520 KB, seconds on a phone), the world fields of the previous view — the surface — were
+  kept and blended into the grid at FL160: 1015 hPa against 549 hPa across the band gave hundreds of isobars (the dark
+  frame) and 14 °C against −6 °C ten isotherms. Reproduced with real Open-Meteo data and the published synoptic, the
+  pressure-level file held back. Not a divergence between the models: at the same level they join (checked, FL160 and
+  the surface).
+- **Fixed at the source**: the previous world fields are kept only at the same level (a slider move); the blend refuses
+  two fields of different levels or hours more than 2 h apart; contour labels of the flight's grid are never placed on
+  the band; and when there is nothing to blend into (the file still on its way, no publication) the grid's fills fade
+  out over the same band instead of ending in a rectangle. `info().blended` says which case is drawn. Bench: the case
+  fails on the previous code, passes now. The "whole map in GFS" fallback is not needed for this report.
+
 ## 24 October 2026 (night) — the weather map as a library
 
 - **The request** (relay, V3_SPECIFICATION § 7.1.8, after the user's "Où est passée la carte météo ?"): the map
