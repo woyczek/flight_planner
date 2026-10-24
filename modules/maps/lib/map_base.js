@@ -58,7 +58,7 @@ export function loadMapLibre() {
  *  introuvable, pas de WebGL, hôte refusé, erreur avant le chargement, délai dépassé, hôte parti) : la carte à demi
  *  construite est alors retirée, et l'appelant passe au fond uni.
  *  opts : style (URL du style, voir styleFor), bounds ([[ouest, sud], [est, nord]]), padding (px, marge du cadrage),
- *  attributionControl (false par défaut ; { compact: true } pour la mention), wait (ms, TILE_WAIT), alive () → faux si
+ *  attributionControl (false par défaut ; { compact: true, customAttribution } pour la mention, repliée au chargement), wait (ms, TILE_WAIT), alive () → faux si
  *  l'hôte est démonté (la carte est abandonnée), onCreate (map) dès la création (pour pouvoir la retirer, ou la mettre à la
  *  taille avant qu'elle soit chargée), onStyleLoad (map) à chaque chargement de style (le premier et chaque setStyle), onLoad
  *  (map) une fois chargée, avant que la promesse soit tenue : l'hôte y branche ses événements. Mercator est imposé à chaque
@@ -125,10 +125,20 @@ export async function startTiles(container, {
     map.on('error', () => finish(null));
     map.on('load', () => {
       if (!alive()) return finish(null);
+      if (attributionControl?.compact) collapseAttribution(map);
       onLoad?.(map);
       finish(map);
     });
   });
+}
+
+/** Mention des sources en contrôle compact : MapLibre la montre d'abord ouverte (tout le texte sur une bande au bas de la carte),
+ *  elle est repliée ici sur son bouton « i » ; un toucher sur le bouton la rouvre. */
+function collapseAttribution(map) {
+  const a = map.getContainer().querySelector('.maplibregl-ctrl-attrib');
+  if (!a) return;
+  a.removeAttribute('open');
+  a.classList.remove('maplibregl-compact-show');
 }
 
 // ---------------------------------------------------------------- taille du cadre

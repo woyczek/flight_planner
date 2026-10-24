@@ -841,3 +841,66 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     (Enter, Space, Up, Down, Home, End), the Profile · Weather toggle and the ✕ (a drag from them does not move the sheet; a tap
     works), content opening a collapsed sheet to default, the position kept across `#report` and back, the locked tuning page,
     touch drags with CDP: same results; no page scroll, no `pageerror`; targets 44 px.
+- **24 Oct 2026 — the Map screen becomes header · map · sheet · bar (relay session "relais cloud", on the user's words:
+  "Ce n'était pas le deal. header, carte, carte, footer. Les autres infos sont mises ailleurs", "trop d'éléments sur le header.
+  Prévoir une exemption pour certains boutons communs. Prévoir un full screen", "Maximiser l'espace alloué à la carte",
+  "J'aime la proposition de volet de la part de météo", then "le sélecteur de couche passe par dessus… c'est assez fouillis").**
+  Layout only: route, spaces, profile, weather cut, `openData`, cards are untouched. Branch `v3-maps-ecran`.
+  - **Nothing between the frame's header and the map**: `.mp-bar`, `.mp-sum`, `.mp-progress`, `.mp-status` left the column;
+    measured gap header → map: 0 px at 390 × 844 and 1280 × 800 in standard, metro, swiss, cupertino and material.
+  - **Buttons are the frame's `ctx.overlay.button()`** (frame § 9.3). Right column from the top: Edit the route (`edit`, to fuel;
+    hidden on a mission map, where it meant nothing), Recentre (`target`), map mode (opens the six modes in a small panel to its
+    left, at its height, placed when it opens because the column may wrap), Edit on the map (toggle), Follow (`plane`, started
+    flight only), "+" and Undo (Edit mode only, `hidden`); the frame's full-screen button last, none drawn by the module. Left:
+    Layers. `.mp-layers-btn`, `.mp-editbar` and their CSS are gone.
+  - **Icons**: the frame has `edit`, `target`, `map`, `plane`, `plus`, `layers`, `chart`. Missing: `cloud` (weather chip), `undo`,
+    and a four-direction `move` (the frame's is a vertical double arrow, which reads as "resize"). The module draws those three
+    in the same style (`localIcon`); nothing added to the frame.
+  - **`hidden` on an overlay button**: the frame's `.f-overlay button.f-ov-btn { display: inline-flex }` beats the browser's
+    `[hidden]`, so the module carries `.f-overlay button.f-ov-btn[data-mp][hidden] { display: none }` (each of its buttons has
+    `data-mp`). The frame should carry the rule itself.
+  - **Mode button** keeps the current mode's own icon (the six `MODES` drawings), so those rules (`.mp-ic`, `.mp-ifr`, `.mp-topo`…)
+    now apply under `.f-overlay` too.
+  - **Flight selector in the Layers content**, at its head. On a mission map the Layers button stays (named "Map to show") and the
+    content keeps only the selector: without it a mission map would have no way back (the bar used to hold the selector).
+  - **Layers is a content of the sheet** (relay's amendment, after the user's remark on Atmosphere): `toggleLayers()` calls
+    `openData('layers', …)`; the title is "Layers · <flight>", ✕ returns the profile, the button is `aria-pressed` while open.
+    The content is one DOM element kept by the module and moved into the sheet's body (`build(w, h, el)` draws into `el`), so
+    ticking a box does not rebuild the list and the keyboard focus stays. The grid is two columns on a phone, as Atmosphere's.
+    A tap on the map does not close it (changing a layer is watched on the map); an airspaces list or an aerodrome's content
+    replaces it, like any content. The old "panel opened with the sheet expanded brings it back to default" rule is gone.
+  - **The summary is the handle's title**: "Profile · FL065 · 427 NM · planned flight" (the user's example), "Weather · …" on the
+    cut, "Layers · …"; departure → arrival, alternate and aircraft type in the tooltip (the title must fit one phone line, and
+    "flight in progress" replaces "planned" as soon as `started` is written). A content opened by `openData` keeps its own title.
+  - **Profile · Weather**: the segmented row is gone; two 40 px icon chips (`chart`, a cloud) at the right of the handle, before the
+    ✕, `aria-pressed`, named "Vertical profile" / "Weather cross-section"; same visibility rule as before. `ignore: '.mp-chips'`.
+  - **Messages**: no status line. The empty state (no flight, a mission without maps, an unreadable mission) is a card in the middle
+    of the map area (the box is no longer hidden: the overlay layer needs a map to cover, and the Layers selector must stay
+    reachable). "Aeronautical database not published" and "GPS or network not enabled" are a floating notification, **once per
+    mount**, and stay in the sheet's notes with their links; "Loading the map…" is dropped (nothing says it any more, the map
+    appears). The progress line of a started flight ("12 NM late · …") is the first block of the notes, which scroll beyond two
+    lines and a half. The notes are visible only when the sheet is (it is there as soon as a profile or a content exists).
+  - **Hints leave the screen**: "Slide a finger along the profile…" is dropped (the manual says it); the Edit mode's long hint is
+    a floating notification the first time the mode is entered in a page; the "+" armed hint stays under the profile while
+    armed (it is feedback of a state, not an instruction).
+  - **Default height**: the module never wrote a 38 % value, only comments and documents did; the frame's `--f-sheet-default`
+    (30 % phone, 35 % screen) applies. SPEC numbers updated (390 × 844: sheet 45 / 219 / 511 px, map 685 / 511 / 219 px).
+  - **Escape** is taken in the capture phase of `document`: the frame's listener is registered first, so a bubble listener of
+    the module would run after it and `defaultPrevented` would be too late. One thing per press, the nearest first: modes panel,
+    sheet content (Layers, list, aerodrome, weather), route-point card, armed "+", Edit mode (new: Escape did not leave the Edit
+    mode before). Nothing to close: the key goes to the frame, which leaves the full screen. Ignored while a `.f-modal` is open or
+    the module is not visible (a frame screen over it).
+  - **Full screen**: nothing of the module's own; the existing `ResizeObserver` on the map box resizes MapLibre and the overlay.
+    The sheet stays at the user's position in full screen (the profile is half the screen's worth); it can be collapsed.
+  - **Attribution** (relay's amendment): `.mp-credit` is gone. `map_base.js` folds MapLibre's compact attribution on its "i"
+    button once the map has loaded (MapLibre starts it open) when `attributionControl.compact` is set; Atmosphere already passes
+    it, so it gains the same; maps passes `customAttribution` with the SIA note, hence one credit text, 24 × 24 px.
+  - **Manual** (four languages, fingerprint of `fr.md` updated): the toolbar, summary line, segmented button, layers button,
+    flight list, "Done" and pencil sentences now describe the buttons on the map, the handle title and the sheet's notes.
+  - **Bench** (Chromium, port 8834, no launcher: aerodb has no published base, tiles reachable): 390 × 844 touch and 1280 × 800 mouse,
+    five designs: no page error, gap 0, nothing of the module above the map, right column = module's buttons then the frame's
+    full-screen, left = Layers, title non-empty, no `.mp-seg`. Layers: opens in the sheet, selector inside, ✕, `aria-pressed`,
+    focus kept after ticking a box, Escape closes it and stays in full screen. Edit mode in full screen: "+" and Undo appear
+    (Undo disabled), Escape leaves the mode and stays in full screen, a second Escape leaves the full screen. Full screen: box
+    390 × 591 from 390 × 511, canvas follows. Started flight: "flight in progress", Follow pressed, GPS notice once. No flight and
+    a missing mission: the card and the Layers selector. Dual view both ways: no error.

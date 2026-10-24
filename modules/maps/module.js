@@ -50,7 +50,8 @@ export const meta = {
   apps: ['pilot'],
   level: 1,
   // vue fixe (frame/INTEGRATION.md § 9.2) : ni défilement de page ni en-tête collant sur une page qui défile ; la racine du
-  // module est une colonne pleine hauteur (barre d'outils, carte, bloc de données en feuille à trois hauteurs)
+  // module est une colonne pleine hauteur (carte, bloc de données en feuille à trois hauteurs ; les boutons de la carte sont la
+  // couche de superposition du cadre : rien entre l'en-tête du cadre et la carte)
   fixed: true,
   // missions/ : lu à la demande seulement (dossiers lourds : PNG, versions, reçus), jamais tiré d'avance
   // airline/map_profiles.json : profils d'affichage des six modes, affinés par la compagnie (SPEC.md, « Profils des modes »)
@@ -126,17 +127,15 @@ const TX = {
   plain: ['Fond de carte indisponible : fond uni.', 'Base map unavailable: plain background.',
     'Hintergrundkarte nicht verfügbar: einfarbiger Hintergrund.', 'Mapa de fondo no disponible: fondo liso.'
   ],
-  loading: ['Chargement de la carte…', 'Loading the map…', 'Karte wird geladen…', 'Cargando el mapa…'],
+  ttlProfile: ['Profil', 'Profile', 'Profil', 'Perfil'],
+  ttlWeather: ['Météo', 'Weather', 'Wetter', 'Meteo'],
+  stPlanned: ['vol prévu', 'planned flight', 'geplanter Flug', 'vuelo previsto'],
+  stFlying: ['vol en cours', 'flight in progress', 'Flug läuft', 'vuelo en curso'],
   summary: ['{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}', '{dep} → {arr}'],
   altn: ['dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativa {a}'],
   dist: ['{d} NM', '{d} NM', '{d} NM', '{d} NM'],
   profileLabel: ['Profil vertical de la route', 'Vertical profile of the route', 'Vertikalprofil der Route',
     'Perfil vertical de la ruta'
-  ],
-  hint: ['Glissez le doigt sur le profil, ou touchez la route sur la carte.',
-    'Slide a finger along the profile, or tap the route on the map.',
-    'Mit dem Finger über das Profil fahren oder die Route auf der Karte antippen.',
-    'Deslice el dedo por el perfil o toque la ruta en el mapa.'
   ],
   planned: ['prévu {a}', 'planned {a}', 'geplant {a}', 'previsto {a}'],
   terrain: ['relief {h}', 'terrain {h}', 'Gelände {h}', 'relieve {h}'],
@@ -337,8 +336,6 @@ const TX = {
     'Zoom actual: {z} · efectivo {e} (marco de {m} px de media) · {s} NM por cm de pantalla'
   ],
   dataProfile: ['Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical'],
-  segProfile: ['Profil', 'Profile', 'Profil', 'Perfil'],
-  segWeather: ['Météo', 'Weather', 'Wetter', 'Meteo'],
   segLabel: ['Profil ou météo', 'Profile or weather', 'Profil oder Wetter', 'Perfil o meteo'],
   wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
   wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
@@ -476,10 +473,8 @@ const TX = {
   ],
   awHigh: ['voie haute', 'upper airway', 'oberer Flugweg', 'aerovía superior'],
   awLow: ['voie basse', 'lower airway', 'unterer Flugweg', 'aerovía inferior'],
-  credit: ['© OpenFreeMap © OpenStreetMap ; SIA : base publiée, non certifiée',
-    '© OpenFreeMap © OpenStreetMap; SIA: published database, not certified',
-    '© OpenFreeMap © OpenStreetMap; SIA: veröffentlichte Datenbank, nicht zertifiziert',
-    '© OpenFreeMap © OpenStreetMap; SIA: base publicada, no certificada'
+  credit: ['SIA : base publiée, non certifiée', 'SIA: published database, not certified',
+    'SIA: veröffentlichte Datenbank, nicht zertifiziert', 'SIA: base publicada, no certificada'
   ]
 };
 
@@ -497,6 +492,13 @@ const MODES = [
   ['topo', '<span class="mp-topo" aria-hidden="true"><span></span><span></span><span></span><span></span></span>', ''],
   ['cam', `<span class="mp-ic mp-ic-cam">${svg('plane')}</span>`, ' mp-mil']
 ];
+/** Icônes du module au dessin des icônes du cadre (grille 24, trait 2, currentColor) pour ce que frame/lib/icons.js n'a pas :
+ *  un nuage (la coupe météo), une flèche qui revient (annuler) et la croix à quatre flèches (déplacer des points ; l'icône « move »
+ *  du cadre est une double flèche verticale). Le cadre n'est pas touché. */
+const localIcon = (name, body) => `<svg class="f-icon" data-i="${name}" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
+const ICON_CLOUD = localIcon('cloud', '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>');
+const ICON_MOVE = localIcon('move-all', '<path d="M12 2v20M2 12h20M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/>');
+const ICON_UNDO = localIcon('undo', '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 let S = null;
 const tt = (row, v) => S.ctx.t(row, v);
@@ -1104,8 +1106,6 @@ function strip() {
       h: altTxt(i.mora)
     }) : '', zones.length ? zones.join(', ') : tt(TX.noZoneHere)].filter(Boolean).join(' · ');
   } else if (S.edit?.adding) text = tt(TX.addHint);
-  else if (S.edit?.on) text = tt(TX.editHint);
-  else if (S.prof) text = tt(TX.hint);
   if (S.stripEl.textContent !== text) {
     S.stripEl.textContent = text;
     S.stripEl.title = text; // la ligne défile sur deux lignes : le texte entier en infobulle
@@ -1166,6 +1166,11 @@ async function startTiles() {
       [S.fit.e, S.fit.n]
     ],
     padding: 12,
+    // la mention des sources de MapLibre, repliée (« i ») : la mention du SIA s'y ajoute, un seul texte de crédit
+    attributionControl: {
+      compact: true,
+      customAttribution: tt(TX.credit)
+    },
     alive: () => !!S,
     onCreate: m => S.mapNew = m,
     onStyleLoad: map => {
@@ -1188,7 +1193,6 @@ async function startTiles() {
       map.on('click', e => {
         if (!S) return;
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
-        if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
         closeLv(); // un toucher sur la carte ferme la liste des espaces ; sur des espaces, la suivante la remplace aussitôt
         if (S.edit.on) return editTap(e.point.x, e.point.y);
         // carte d'un point de la route ouverte : ce toucher la ferme ; le contenu d'un terrain, épinglé, reste
@@ -1540,15 +1544,33 @@ function snapAt(x, y) {
   }
   return best;
 }
+/** L'aide du mode Modifier a été dite dans cette page. */
+let editHinted = false;
+/** Nom d'un bouton de la couche de superposition (infobulle et nom accessible) ; écrit seulement s'il change. */
+function setLabel(b, label) {
+  if (b.title !== label) {
+    b.title = label;
+    b.setAttribute('aria-label', label);
+  }
+}
+/** Panneau des modes fermé : un autre geste de la carte le ferme (les couches sont un contenu de la feuille : elles restent). */
+function closePanels() {
+  if (!S.modeOpts.hidden) toggleModes(false);
+}
 /** Mode Modifier ouvert ou fermé. */
 function setEdit(on) {
   S.edit.on = on;
   S.edit.drag = null;
+  closePanels();
   S.editBtn.setAttribute('aria-pressed', String(on));
-  const label = tt(on ? TX.editDone : TX.editMode);
-  if (S.editBtn.textContent !== label) S.editBtn.textContent = label;
+  setLabel(S.editBtn, tt(on ? TX.editDone : TX.editHelp));
   S.undoBtn.hidden = !on;
   S.addBtn.hidden = !on;
+  // l'aide du mode, une fois par page, en notification (plus de ligne d'indice sur l'écran)
+  if (on && !editHinted) {
+    editHinted = true;
+    S.ctx.notify?.(tt(TX.editHint), 'info');
+  }
   setAdding(false);
   if (S.el.classList.contains('mp-editing') !== on) S.el.classList.toggle('mp-editing', on);
   S.undoBtn.disabled = !S.edit.undo.length;
@@ -1937,7 +1959,7 @@ function editGestures() {
     const r = S.box.getBoundingClientRect();
     return [e.clientX - r.left, e.clientY - r.top];
   };
-  const ui = e => e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn, .mp-editbar');
+  const ui = e => e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers');
   S.box.addEventListener('pointerdown', e => {
     if (!S.edit.on || e.button > 0 || !S.toC || ui(e)) return;
     const [x, y] = pos(e),
@@ -2002,8 +2024,6 @@ function editGestures() {
   };
   S.box.addEventListener('pointerup', end, true);
   S.box.addEventListener('pointercancel', end, true);
-  S.editBtn.addEventListener('click', () => setEdit(!S.edit.on));
-  S.addBtn.addEventListener('click', () => setAdding(!S.edit.adding));
   // appui long (500 ms) hors d'un point de la route : ajout là où le doigt reste
   let longT = 0,
     longAt = null;
@@ -2035,7 +2055,6 @@ function editGestures() {
   S.box.addEventListener('contextmenu', e => {
     if (S.edit.on && !ui(e)) e.preventDefault();
   });
-  S.undoBtn.addEventListener('click', undoEdit);
   S.cardEl.addEventListener('click', e => {
     const lv = e.target.closest('[data-lvl]');
     if (lv) {
@@ -2590,12 +2609,12 @@ function showLv() {
   }), (w, h) => levelsHtml(list, w, h));
 }
 // ---------------------------------------------------------------- le bloc de données (sous la carte)
-// La vue est fixe (meta.fixed) : la barre d'outils, la carte, puis le bloc de données, qui est une FEUILLE de hauteur fixe
-// à trois positions (réduit : sa ligne d'en-tête seule ; normal : 38 % de la vue sur téléphone, 35 % sur écran ; agrandi :
-// 70 %), tirée par la poignée de son en-tête ; son contenu défile dedans, la page jamais. Le bloc montre le profil
-// vertical ; la liste des espaces d'un point et le contenu d'un terrain (points de report, séquences VAC, consignes) s'y
-// ouvrent à sa place — on n'a pas besoin du profil pendant qu'on les lit — et, fermés, le profil revient. Rien ne recouvre
-// plus la carte.
+// La vue est fixe (meta.fixed) : en-tête du cadre, la carte, puis le bloc de données, qui est une FEUILLE de hauteur fixe à
+// trois positions (réduit : sa ligne d'en-tête seule ; normal : la hauteur du cadre, --f-sheet-default, 30 % de la vue sur
+// téléphone et 35 % sur écran ; agrandi : 70 %), tirée par la poignée de son en-tête ; son contenu défile dedans, la page
+// jamais. Le bloc montre le profil vertical ; la liste des espaces d'un point, le contenu d'un terrain (points de report,
+// séquences VAC, consignes) et les couches s'y ouvrent à sa place — on n'a pas besoin du profil pendant qu'on les lit — et,
+// fermés, le profil revient. Rien ne recouvre plus la carte que les boutons de la couche du cadre.
 // ---- la feuille : à trois positions, tirée par sa poignée de l'en-tête. C'est la primitive du cadre (frame/lib/sheet.js,
 // règles dans frame/design/primitives.css, frame/INTEGRATION.md § 11) ; ce qui reste au module : les textes (labels), ce qui
 // change quand la taille s'est arrêtée (onSettle : recadrer la carte), le verrou de la page de réglage (locked) et la
@@ -2614,21 +2633,25 @@ function onSheetSettled() {
 let viewKeep = 'profile';
 /** La coupe météo se montre pour un vol à deux points au moins (pas pour une carte de mission). */
 const canWeather = () => !S.mission && S.route.points.length >= 2;
-/** En-tête du bloc : ce qu'il montre (profil vertical, coupe météo, ou le titre du contenu), la bascule Profil · Météo (le
- *  profil et la coupe se remplacent l'un l'autre ; les contenus d'un point de la carte ont leur ✕ à la place) ; le bloc
- *  n'est là que s'il a quelque chose à montrer ; écrit s'il change. */
+/** En-tête du bloc, sur le modèle de la feuille d'Atmosphère : la poignée porte un titre qui dit ce qu'on regarde et son
+ *  contexte (« Profil · FL065 · 427 NM · vol prévu » ; le titre du contenu ouvert par openData tel
+ *  quel), à droite deux puces icône (profil, coupe météo : seulement quand la coupe est possible) ou la croix d'un contenu
+ *  de la carte ; le bloc n'est là que s'il a quelque chose à montrer ; écrit s'il change. */
 function dataHead() {
   const show = !!S.dpanel || !!S.prof,
-    title = S.dpanel ? S.dtitle : tt(TX.dataProfile),
     wx = S.dpanel === 'weather',
-    seg = canWeather() && (!S.dpanel || wx),
-    close = !!S.dpanel && !wx;
+    own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre, sans le résumé du vol
+    lay = S.dpanel === 'layers', // « Couches · <vol> » : le contexte comme le profil
+    title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), S.sum].filter(Boolean).join(' · '),
+    tip = own && !lay ? S.dlabel : [lay ? S.dlabel : wx ? S.dlabel : tt(TX.dataProfile), S.sumTip].filter(Boolean).join(' · '),
+    chips = canWeather() && !own,
+    close = own;
   if (S.dataEl.hidden === show) S.dataEl.hidden = !show;
+  if (S.layersBtn.getAttribute('aria-pressed') !== String(lay)) S.layersBtn.setAttribute('aria-pressed', String(lay));
   if (S.dtitleEl.textContent !== title) S.dtitleEl.textContent = title;
-  const tip = S.dpanel ? S.dlabel : '';
   if (S.dtitleEl.title !== tip) S.dtitleEl.title = tip;
   if (S.dcloseEl.hidden === close) S.dcloseEl.hidden = !close;
-  if (S.segEl.hidden === seg) S.segEl.hidden = !seg;
+  if (S.segEl.hidden === chips) S.segEl.hidden = !chips;
   for (const b of S.segBtns) {
     const on = String((b.dataset.view === 'weather') === wx);
     if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on);
@@ -2680,6 +2703,21 @@ function endData(kind = null) {
   S.dprofEl.hidden = false;
   drawProfile();
   dataHead();
+}
+/** Échap : ferme ce qui est ouvert, du plus proche au plus lointain ; vrai si quelque chose l'a été. */
+function escapeKey() {
+  if (!S.modeOpts.hidden) {
+    toggleModes(false);
+    S.modeBtn.focus();
+  } else if (S.dpanel || S.vfrPin) {
+    const layers = S.dpanel === 'layers';
+    closeData();
+    if (layers) S.layersBtn.focus();
+  } else if (!S.cardEl.hidden) hideTips();
+  else if (S.edit.adding) setAdding(false);
+  else if (S.edit.on) setEdit(false);
+  else return false;
+  return true;
 }
 /** Fermeture voulue (✕, Échap) : le contenu du bloc, quel qu'il soit ; la coupe météo ferme sur le profil (et le choix
  *  suit). */
@@ -2871,7 +2909,7 @@ async function setPreset(v) {
   saveUi();
   const before = styleFor();
   S.profile = effectiveProfile();
-  if (!S.layersEl.hidden) fillLayers();
+  if (S.dpanel === 'layers') fillLayers();
   S.data = null;
   if (S.map && styleFor() !== before) S.map.setStyle(styleFor()); // relief posé au chargement du style
   else relief();
@@ -2881,80 +2919,108 @@ async function setPreset(v) {
 }
 
 // ---------------------------------------------------------------- écran
-/** Messages de l'état (vol, base, zone hors ligne, fond) ; écrits seulement s'ils changent. */
+/** Notification flottante dite une fois par montage (pas à chaque rafraîchissement) ; la ligne reste lisible dans les notes
+ *  de la feuille. */
+function noteOnce(k, text) {
+  if (S.noted[k]) return;
+  S.noted[k] = true;
+  S.ctx.notify?.(text, 'warn');
+}
+/** Notes de la feuille : la progression du vol, puis les manques (base, zone, profil), puis l'information (fond uni,
+ *  relief) ; écrites seulement si elles changent. */
+function writeNotes() {
+  const html = [S.progHtml, S.warnHtml, S.softHtml].filter(Boolean).join('');
+  if (S.notesEl.innerHTML !== html) S.notesEl.innerHTML = html;
+}
+/** Messages de l'état (vol, base, zone hors ligne, fond) ; écrits seulement s'ils changent. Rien sur la carte en
+ *  permanence : l'état vide (pas de vol, mission sans carte, erreur) est une carte posée sur la zone de la carte, les
+ *  manques sont dits une fois en notification et restent lisibles dans les notes de la feuille. */
 async function status() {
   if (!S) return;
-  const out = [];
-  if (S.missionError) out.push(`<p>${esc(S.missionError)}</p>`);
+  const empty = [],
+    warn = [];
+  if (S.missionError) empty.push(`<p>${esc(S.missionError)}</p>`);
   else if (S.mission) {
-    if (!S.mission.maps.length) out.push(`<p class="f-muted">${esc(tt(TX.noMaps))}</p>`);
-    if (S.profileSource && S.profileSource !== 'copy') out.push(`<p class="f-muted">${esc(tt(TX.builtin, {
+    if (!S.mission.maps.length) empty.push(`<p class="f-muted">${esc(tt(TX.noMaps))}</p>`);
+    if (S.profileSource && S.profileSource !== 'copy') warn.push(`<p class="f-muted">${esc(tt(TX.builtin, {
       p: S.profile?.name || S.profile?.id || ''
     }))}</p>`);
     const cyc = S.mapDef?.cycle,
       now = (await S.ctx.aerodb?.status().catch(() => null))?.cycle;
-    if (S.mapDef?.cycle && now && S.mapDef.cycle !== now) out.push(`<p class="f-muted">${esc(tt(TX.cycleDiff, {
+    if (S.mapDef?.cycle && now && S.mapDef.cycle !== now) warn.push(`<p class="f-muted">${esc(tt(TX.cycleDiff, {
       a: cyc,
       b: now
     }))}</p>`);
-  } else if (!S.route.points.length) out.push(
+  } else if (!S.route.points.length) empty.push(
     `<p>${esc(tt(TX.noFlight))} <button type="button" class="f-btn" data-go="fuel">${esc(tt(TX.toFuel))}</button></p>`);
+  if (!S) return;
   if (!S.missionError && S.route.points.length) {
     const st = await S.ctx.aerodb?.status().catch(() => null);
-    if (!st?.published || !Object.keys(st.published).length) out.push(`<p>${esc(tt(TX.noBase))}</p>`);
-    else if (S.data?.empty && navigator.onLine === false) out.push(
+    if (!S) return;
+    if (!st?.published || !Object.keys(st.published).length) {
+      warn.push(`<p>${esc(tt(TX.noBase))}</p>`);
+      noteOnce('noBase', tt(TX.noBase));
+    } else if (S.data?.empty && navigator.onLine === false) warn.push(
       `<p>${esc(tt(TX.noZone))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
   }
-  // pour information (fond uni, relief absent : l'état normal hors ligne) : dans la feuille, sous le profil, pour que la
-  // carte ne perde pas une ligne en permanence ; les messages qui demandent un geste ou disent un manque restent sous la barre
+  // pour information (fond uni, relief absent : l'état normal hors ligne)
   const soft = [];
   if (S.plain && S.route.points.length) soft.push(`<p>${esc(tt(TX.plain))}</p>`);
   if (S.prof && !S.prof.terrainOk) soft.push(`<p>${esc(tt(TX.noTerrain))}</p>`);
-  const html = out.join(''),
-    notes = soft.join('');
+  const html = empty.join('');
+  S.warnHtml = warn.join('');
+  S.softHtml = soft.join('');
   if (S.stEl.innerHTML !== html) S.stEl.innerHTML = html;
-  if (S.notesEl.innerHTML !== notes) S.notesEl.innerHTML = notes;
+  if (S.stEl.hidden === !!html) S.stEl.hidden = !html;
+  writeNotes();
 }
-/** En-tête : départ → arrivée, dégagement, niveau, distance. */
+/** Résumé du vol (ou de la carte de mission) : il est le titre de la poignée de la feuille quand elle montre le profil
+ *  (dataHead) ; la ligne entière en infobulle. Écrit seulement s'il change. */
 function header() {
+  let text, tip;
   if (S.mission) {
-    const m = S.mapDef,
-      text = [S.mission.id, S.mission.title, m ? m.description || m.file : ''].filter(Boolean).join(' · ');
-    if (S.hdEl.textContent !== text) {
-      S.hdEl.textContent = text;
-      S.hdEl.title = text;
-    }
-    return;
-  }
-  const f = S.route.flight,
-    r = f?.route || {},
-    lvl = S.route.levelFt ? formatLevel(S.route.levelFt) : '',
-    d = S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
-    parts = [r.dep || r.arr ? tt(TX.summary, {
-      dep: r.dep || '?',
-      arr: r.arr || '?'
-    }) : '', r.altn ? tt(TX.altn, {
+    const m = S.mapDef;
+    text = tip = [S.mission.id, S.mission.title, m ? m.description || m.file : ''].filter(Boolean).join(' · ');
+  } else {
+    const f = S.route.flight,
+      r = f?.route || {},
+      lvl = S.route.levelFt ? formatLevel(S.route.levelFt) : '',
+      d = S.route.points.length >= 2 ? MapsRender.distances(S.route.points).pop() : 0,
+      state = S.route.points.length ? tt(inFlight(f) ? TX.stFlying : TX.stPlanned) : '',
+      ends = r.dep || r.arr ? tt(TX.summary, {
+        dep: r.dep || '?',
+        arr: r.arr || '?'
+      }) : '',
+      dist = d ? tt(TX.dist, {
+        d: Math.round(d)
+      }) : '';
+    // le titre tient sur une ligne de téléphone : niveau, distance, état ; départ → arrivée, dégagement et appareil en infobulle
+    text = [lvl, dist, state].filter(Boolean).join(' · ');
+    tip = [ends, r.altn ? tt(TX.altn, {
       a: r.altn
-    }) : '', lvl, d ? tt(TX.dist, {
-      d: Math.round(d)
-    }) : '', f?.aircraft?.type || ''].filter(Boolean),
-    text = parts.join(' · ');
-  if (S.hdEl.textContent !== text) {
-    S.hdEl.textContent = text;
-    S.hdEl.title = text; // la ligne est coupée sur un téléphone : le texte entier en infobulle
+    }) : '', lvl, dist, f?.aircraft?.type || '', state].filter(Boolean).join(' · ');
   }
+  if (S.sum === text && S.sumTip === tip) return;
+  S.sum = text;
+  S.sumTip = tip;
+  dataHead();
 }
-/** Carte montrée ou cachée (pas de vol, mission sans carte) : « Recentrer » et le bouton des modes de la barre la suivent
- *  (les modes n'existent pas pour une carte de mission). Écrit seulement ce qui change. */
+/** Carte montrée ou carte vide (pas de vol, mission sans carte : l'état vide la remplace) : les boutons de la couche de
+ *  superposition qui n'ont pas de sens sans vol suivent (« Recentrer », la route, les modes, Modifier) ; les modes et
+ *  Modifier n'existent pas pour une carte de mission. Écrit seulement ce qui change. */
 function showBox(on) {
-  const modes = on && !S.ctx.query?.mission;
+  const flight = on && !S.ctx.query?.mission;
   for (const [e, v] of [
-      [S.box, on],
       [S.fitBtn, on],
-      [S.modesEl, modes]
+      [S.routeBtn, flight],
+      [S.modeBtn, flight],
+      [S.editBtn, flight]
     ])
     if (e.hidden === v) e.hidden = !v;
-  if (!modes) toggleModes(false);
+  if (!flight) {
+    closePanels();
+    if (S.edit.on) setEdit(false);
+  }
 }
 /** Vol (re)lu : profil selon le niveau, emprise, marques, données, fond. */
 /** Profil d'affichage du vol selon le préréglage : IFR bas ou haut (voies, espaces de la tranche, MORA, balises), VFR
@@ -3110,21 +3176,27 @@ function fillModes() {
       b: tt(TX.modeHelp[S.preset] || TX.modeHelp.auto)
     });
   if (S.modeBtn.innerHTML !== icon) S.modeBtn.innerHTML = icon;
-  if (S.modeBtn.title !== label) {
-    S.modeBtn.title = label;
-    S.modeBtn.setAttribute('aria-label', label);
-  }
+  setLabel(S.modeBtn, label);
   if (S.modeBtn.classList.contains('mp-mil') !== (S.preset === 'cam')) S.modeBtn.classList.toggle('mp-mil');
-  for (const b of S.modesEl.querySelectorAll('[data-mode]')) {
+  for (const b of S.modeOpts.querySelectorAll('[data-mode]')) {
     const v = String(b.dataset.mode === S.preset);
     if (b.getAttribute('aria-pressed') !== v) b.setAttribute('aria-pressed', v);
   }
 }
-/** Grille des modes ouverte ou fermée. */
+/** Choix des modes ouvert ou fermé : un petit panneau ancré à côté du bouton du mode (à sa gauche, à sa hauteur, dans la
+ *  carte) ; les couches se ferment, un seul panneau à la fois. */
 function toggleModes(open = S.modeOpts.hidden) {
   if (S.modeOpts.hidden === !open) return;
   S.modeOpts.hidden = !open;
   S.modeBtn.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  const b = S.modeBtn.getBoundingClientRect(),
+    r = S.box.getBoundingClientRect(),
+    h = S.modeOpts.offsetHeight,
+    right = Math.round(r.right - b.left + 8);
+  S.modeOpts.style.right = `${right}px`;
+  S.modeOpts.style.maxWidth = `${Math.max(120, Math.round(r.width - right - 8))}px`;
+  S.modeOpts.style.top = `${Math.round(Math.max(8, Math.min(b.top - r.top, r.height - h - 8)))}px`;
 }
 /** Relief ombré (mode Topo) : couche hillshade des tuiles Terrarium (hôte de meta.net), posée sous les libellés du fond,
  *  retirée hors du mode ; rien si le style n'est pas prêt (posée au chargement du style). */
@@ -3331,15 +3403,18 @@ function fillLayers() {
     if (c.checked !== v) c.checked = v;
   }
 }
-/** Panneau des couches ouvert ou fermé. */
-function toggleLayers(open = S.layersEl.hidden) {
-  if (S.layersEl.hidden === !open) return;
-  S.layersEl.hidden = !open;
-  S.layersBtn.setAttribute('aria-expanded', String(open));
-  if (open) {
-    fillLayers();
-    if (S.sh.pos === 'expanded') S.sh.set('default'); // feuille agrandie : le panneau n'aurait que quelques lignes de carte
-  }
+/** Couches : un contenu de la feuille (comme celui d'Atmosphère, V3 § 7.1.6), pas un panneau posé sur la carte. Le titre de
+ *  la poignée est « Couches · <vol> », la croix ramène le profil ; le bouton de la colonne de gauche est pressé tant qu'il
+ *  est ouvert. Le contenu est un élément gardé (ses cases gardent leur focus d'un affichage à l'autre) : openData le pose. */
+function toggleLayers(open = S.dpanel !== 'layers') {
+  if (!open) return endData('layers');
+  if (S.dpanel === 'layers') return;
+  releaseAd(); // un seul contenu à la fois : la surbrillance ne reste pas sans sa fiche
+  fillLayers();
+  const name = tt(S.mission ? TX.pick : TX.layers);
+  openData('layers', 'layers', name, (w, h, el) => {
+    if (S.layersEl.parentNode !== el) el.replaceChildren(S.layersEl);
+  }, name);
 }
 /** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
 const viewOf = () => {
@@ -3561,11 +3636,13 @@ function progressUpdate() {
     on = inFlight(f),
     a = on ? actualOf(f) : null,
     t0 = Date.parse(f?.started?.at || '');
+  header(); // « vol prévu » devient « vol en cours » dans le titre de la poignée
   if (S.followBtn.hidden === on) S.followBtn.hidden = !on;
   if (!on) {
     S.trail = [];
     if (S.follow) setFollow(false);
-    if (!S.progEl.hidden) S.progEl.hidden = true;
+    S.progHtml = '';
+    writeNotes();
     return;
   }
   const now = Date.now();
@@ -3576,8 +3653,9 @@ function progressUpdate() {
       all[i - 1].lon).slice(-400);
   const st = progressState(),
     html = progressHtml(st);
-  if (S.progEl.innerHTML !== html) S.progEl.innerHTML = html;
-  if (S.progEl.hidden) S.progEl.hidden = false;
+  S.progHtml = html;
+  writeNotes();
+  if (!st.actual) noteOnce('gps', tt(TX.progNoPos)); // une fois par montage ; la ligne et le lien restent dans les notes
   if (S.follow && st.actual && S.map) {
     S.selfMove = true;
     S.map.once('moveend', () => {
@@ -3662,7 +3740,7 @@ const nmTxt = v => v.toLocaleString(S.ctx.lang(), {
   minimumFractionDigits: v < 10 ? 1 : 0,
   maximumFractionDigits: v < 10 ? 1 : 0
 });
-/** Ligne d'état du vol démarré (au-dessus de la carte). */
+/** Ligne d'état du vol démarré (dans les notes de la feuille). */
 function progressHtml(st) {
   if (!st.actual) return `<p class="f-muted">${esc(tt(TX.progNoPos))} <a href="#settings">${esc(tt(TX.progSettings))}</a></p>`;
   const parts = [];
@@ -4030,65 +4108,56 @@ function go(mission, map) {
 
 const STYLE = `
 /* L'ÉCRAN EST FIXE (meta.fixed) : la racine est une colonne à la hauteur de la vue du cadre, rien n'en dépasse ni ne fait
-   défiler la page — barre d'outils d'une ligne, ligne d'information, carte (prend ce qui reste), feuille de données de
-   hauteur fixe ; ce qui est plus grand défile DANS sa zone. La racine est isolée (z-index des boutons de la carte, 3 à 8,
+   défiler la page — en-tête du cadre · carte (prend ce qui reste ; ses boutons sont dans la couche de superposition du cadre,
+   frame/INTEGRATION.md § 9.3) · feuille de données de hauteur fixe · barre du cadre ; ce qui est plus grand défile DANS sa zone. La racine est isolée (z-index des boutons de la carte, 3 à 8,
    gardés sous l'en-tête et la barre du bas du cadre, dans le volet de la vue double aussi). Hors vue fixe (volet,
    page d'essai) la hauteur est donnée plus bas. */
 [data-module="maps"]{display:flex;flex-direction:column;min-height:0;overflow:hidden;isolation:isolate}
-[data-module="maps"] .mp-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-[data-module="maps"] .mp-bar{display:flex;align-items:center;gap:6px;flex:none;padding:2px 8px}
-[data-module="maps"] .mp-picks{display:flex;gap:6px;flex:1 1 0;min-width:0;max-width:380px}
-[data-module="maps"] .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 0;text-overflow:ellipsis}
-[data-module="maps"] .mp-sum{flex:none;margin:0;padding:0 8px 4px;font-size:var(--sog-size-xs);line-height:16px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="maps"] .mp-sum:empty{display:none}
-[data-module="maps"] .mp-progress,[data-module="maps"] .mp-status{flex:none;padding:0 8px 4px;font-size:var(--sog-size-xs)}
-[data-module="maps"] .mp-progress[hidden],[data-module="maps"] .mp-ib[hidden]{display:none}
-[data-module="maps"] .mp-status p:has(button){display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-[data-module="maps"] .mp-progress p,[data-module="maps"] .mp-status p{margin:0 0 2px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-[data-module="maps"] .mp-status:empty{display:none}
+[data-module="maps"] .mp-sr{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 [data-module="maps"] .mp-box{position:relative;flex:1 1 0;min-height:0;border:solid var(--sog-border);border-width:1px 0;overflow:hidden;background:var(--sog-bg);touch-action:none}
 [data-module="maps"] .mp-map{position:absolute;inset:0}
 [data-module="maps"] canvas.mp-over{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-[data-module="maps"] .mp-credit{position:absolute;right:4px;bottom:2px;font-size:10px;color:var(--sog-fg);background:var(--sog-chart-bg);opacity:.85;padding:0 4px;border-radius:var(--sog-radius-s);pointer-events:none}
 [data-module="maps"] .mp-prof{position:relative;flex:1 1 0;min-height:0;max-height:380px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);overflow:hidden;background:var(--sog-chart-bg);touch-action:none;cursor:crosshair}
 [data-module="maps"] .mp-prof canvas{position:absolute;inset:0;width:100%;height:100%}
 [data-module="maps"] .mp-strip{flex:none;height:34px;overflow-y:auto;font-size:var(--sog-size-xs);line-height:16px;padding:1px 0;font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-box{container-type:inline-size}
-[data-module="maps"] .mp-modes{position:relative;flex:none}
-[data-module="maps"] .mp-modes[hidden]{display:none}
-[data-module="maps"] .mp-mode-btn,[data-module="maps"] .mp-choice,[data-module="maps"] .mp-ib{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
-[data-module="maps"] .mp-mode-btn{color:var(--sog-accent)}
-[data-module="maps"] .mp-mode-btn[aria-expanded=true]{box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="maps"] .mp-mode-opts{position:absolute;right:0;top:calc(100% + 4px);z-index:8;display:flex;gap:4px;padding:4px;width:max-content;max-width:calc(100cqw - 16px);flex-wrap:wrap;box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
+[data-module="maps"] .mp-choice{display:grid;place-items:center;width:var(--sog-touch);height:var(--sog-touch);min-height:0;padding:0;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;cursor:pointer}
+[data-module="maps"] .mp-mode-opts{position:absolute;right:60px;top:8px;z-index:8;display:flex;gap:4px;padding:4px;width:max-content;max-width:calc(100cqw - 16px);flex-wrap:wrap;box-sizing:border-box;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);box-shadow:0 4px 12px #0000001f}
 [data-module="maps"] .mp-mode-opts[hidden]{display:none}
 [data-module="maps"] .mp-choice{border-color:transparent;border-radius:var(--sog-radius-s)}
 [data-module="maps"] .mp-choice:hover{background:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface))}
 [data-module="maps"] .mp-choice[aria-pressed=true]{color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface));box-shadow:inset 0 0 0 1.5px var(--sog-accent),inset 0 2px 3px #0000002e}
-[data-module="maps"] .mp-ic{display:grid;place-items:center;width:24px;height:24px}
-[data-module="maps"] .mp-ic svg{width:20px;height:20px}
-[data-module="maps"] .mp-ifr{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:26px;height:20px;font-size:11px;font-weight:700;letter-spacing:.3px;line-height:1}
-[data-module="maps"] .mp-ceil{border-top:2px solid currentColor;padding-top:1px}
-[data-module="maps"] .mp-floor{border-bottom:2px solid currentColor;padding-bottom:1px}
-[data-module="maps"] .mp-topo{display:block;position:relative;box-sizing:border-box;width:29px;height:29px;overflow:hidden;transform:scale(.72)}
-[data-module="maps"] .mp-topo>span{position:absolute;box-sizing:border-box;border:1.6px solid currentColor;border-radius:46% 54% 36% 64% / 36% 62% 38% 64%;transform:rotate(-38deg)}
-[data-module="maps"] .mp-topo>span:nth-child(1){width:40px;height:53px;left:-11px;top:-8px}
-[data-module="maps"] .mp-topo>span:nth-child(2){width:30px;height:41px;left:-6px;top:0}
-[data-module="maps"] .mp-topo>span:nth-child(3){width:20px;height:29px;left:-1px;top:8px}
-[data-module="maps"] .mp-topo>span:nth-child(4){width:10px;height:16px;left:4px;top:16px}
-[data-module="maps"] .mp-mil,[data-module="maps"] .mp-mode-btn.mp-mil{color:var(--sog-err)}
-[data-module="maps"] .mp-ic-cam svg{fill:currentColor}
+:is([data-module="maps"],.f-overlay) .mp-ic{display:grid;place-items:center;width:24px;height:24px}
+:is([data-module="maps"],.f-overlay) .mp-ic svg{width:20px;height:20px}
+:is([data-module="maps"],.f-overlay) .mp-ifr{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:26px;height:20px;font-size:11px;font-weight:700;letter-spacing:.3px;line-height:1}
+:is([data-module="maps"],.f-overlay) .mp-ceil{border-top:2px solid currentColor;padding-top:1px}
+:is([data-module="maps"],.f-overlay) .mp-floor{border-bottom:2px solid currentColor;padding-bottom:1px}
+:is([data-module="maps"],.f-overlay) .mp-topo{display:block;position:relative;box-sizing:border-box;width:29px;height:29px;overflow:hidden;transform:scale(.72)}
+:is([data-module="maps"],.f-overlay) .mp-topo>span{position:absolute;box-sizing:border-box;border:1.6px solid currentColor;border-radius:46% 54% 36% 64% / 36% 62% 38% 64%;transform:rotate(-38deg)}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(1){width:40px;height:53px;left:-11px;top:-8px}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(2){width:30px;height:41px;left:-6px;top:0}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(3){width:20px;height:29px;left:-1px;top:8px}
+:is([data-module="maps"],.f-overlay) .mp-topo>span:nth-child(4){width:10px;height:16px;left:4px;top:16px}
+[data-module="maps"] .mp-mil{color:var(--sog-err)}
+:is([data-module="maps"],.f-overlay) .mp-ic-cam svg{fill:currentColor}
 [data-module="maps"] .mp-mil:hover,[data-module="maps"] .mp-choice.mp-mil[aria-pressed=true]{background:color-mix(in srgb,var(--sog-err) 12%,var(--sog-surface));color:var(--sog-err);box-shadow:inset 0 0 0 1.5px var(--sog-err),inset 0 2px 3px #0000002e}
 [data-module="maps"] .mp-tip{position:absolute;z-index:4;max-width:min(92%,340px);padding:6px 8px;margin:0;font-size:.88em;line-height:1.35;pointer-events:none;box-shadow:0 2px 8px #0003}
 [data-module="maps"] .mp-tip>div+div{margin-top:4px}
 [data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
 [data-module="maps"] .mp-tip.mp-hover>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
-[data-module="maps"] .mp-layers-btn{position:absolute;left:8px;top:8px;z-index:3;width:var(--sog-touch);height:var(--sog-touch);min-height:0;display:grid;place-items:center;padding:0}
-[data-module="maps"] .mp-layers{position:absolute;left:8px;top:calc(14px + var(--sog-touch));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 22px - var(--sog-touch));overflow:auto;display:flex;flex-direction:column;gap:0;font-size:.9em;min-width:min(220px,80%)}
+/* les couches : un contenu de la feuille (grille de cases sur deux colonnes d'un téléphone, comme celle d'Atmosphère) */
+[data-module="maps"] .mp-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
+[data-module="maps"] .mp-layers .mp-picks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px;min-width:0}
+[data-module="maps"] .mp-layers .mp-picks select{min-height:var(--sog-touch);min-width:0;width:100%;flex:1 1 150px;text-overflow:ellipsis}
+[data-module="maps"] .mp-layers .mp-picks select[hidden]{display:none}
+[data-module="maps"] .mp-layer-set{display:contents}
+[data-module="maps"] .mp-layers .mp-layer-set[hidden]{display:none}
+[data-module="maps"] .mp-layers [data-layers-reset]{grid-column:1/-1;justify-self:start;margin-top:8px}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
-[data-module="maps"] .mp-layers .mp-l-main{border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
-[data-module="maps"] .mp-layers .mp-l-detail{flex-wrap:wrap;border-top:1px solid var(--sog-border);margin-top:4px;padding-top:6px}
+[data-module="maps"] .mp-layers .mp-l-main{grid-column:1/-1;border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
+[data-module="maps"] .mp-layers .mp-l-detail{grid-column:1/-1;flex-wrap:wrap;border-top:1px solid var(--sog-border);margin-top:4px;padding-top:6px}
 [data-module="maps"] .mp-layers .mp-l-detail input{flex:1 1 100%;margin:4px 0 0}
-[data-module="maps"] .mp-layers .mp-l-help{font-size:.85em;margin-bottom:2px}
+[data-module="maps"] .mp-layers .mp-l-help{grid-column:1/-1;font-size:.85em;margin-bottom:2px}
 [data-module="maps"] .mp-tune h2{margin:0 0 4px;font-size:1.1em}
 [data-module="maps"] .mp-tune-now{font-variant-numeric:tabular-nums;margin:4px 0}
 [data-module="maps"] .mp-tune-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 10px}
@@ -4115,20 +4184,21 @@ const STYLE = `
 [data-module="maps"].mp-tuning .mp-dbody{flex:none;height:260px}
 /* la règle de la vue fixe du cadre (display: flex) est sans poids (:where, frame/INTEGRATION.md § 9.2) : pas de !important */
 @media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start;align-content:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100dvh - 90px);overflow:auto}}
-[data-module="maps"] .mp-layers>*{flex-shrink:0}
-[data-module="maps"] .mp-layers [data-layers-reset]{margin-top:10px;align-self:flex-start}
-[data-module="maps"] .mp-layers[hidden],[data-module="maps"] .mp-layers-btn[hidden]{display:none}
-[data-module="maps"] .mp-editbar{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:6px}
-[data-module="maps"] .mp-editbar[hidden],[data-module="maps"] .mp-editbar [hidden]{display:none}
-[data-module="maps"] .mp-editbar button{height:var(--sog-touch);min-height:0;padding:0 12px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);color:var(--sog-fg);font:inherit;font-weight:600;cursor:pointer}
-[data-module="maps"] .mp-editbar .mp-add{width:var(--sog-touch);padding:0;font-size:1.3em}
-[data-module="maps"] .mp-editbar .mp-add[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
-[data-module="maps"] .mp-editbar .mp-follow[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
-[data-module="maps"] .mp-progress{font-variant-numeric:tabular-nums}
-[data-module="maps"] .mp-progress b{font-weight:700}
-[data-module="maps"] .mp-progress .mp-stale{color:var(--sog-muted)}
-[data-module="maps"] .mp-editbar .mp-edit[aria-pressed=true]{background:var(--sog-accent);border-color:var(--sog-accent);color:var(--sog-surface)}
-[data-module="maps"] .mp-editbar button:disabled{opacity:.5;cursor:default}
+.f-overlay button.f-ov-btn[data-mp][hidden]{display:none}
+.f-overlay button.f-ov-btn[data-mp]:disabled{opacity:.5;cursor:default}
+.f-overlay button.f-ov-btn[data-mp=mode]{color:var(--sog-accent)}
+.f-overlay button.f-ov-btn[data-mp=mode].mp-mil{color:var(--sog-err)}
+.f-overlay button.f-ov-btn[data-mp=mode][aria-expanded=true]{box-shadow:0 0 0 1px var(--sog-accent),0 2px 8px #0000002e}
+.f-overlay button.f-ov-btn[data-mp=layers][aria-expanded=true]{border-color:var(--sog-accent)}
+/* l'état vide (pas de vol, mission sans carte, erreur) : une carte au milieu de la zone de la carte, entre les deux colonnes de boutons */
+[data-module="maps"] .mp-empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;box-sizing:border-box;width:min(320px,calc(100% - 120px));margin:0;padding:10px 12px;text-align:center}
+[data-module="maps"] .mp-empty[hidden]{display:none}
+[data-module="maps"] .mp-empty p{margin:0 0 4px}
+[data-module="maps"] .mp-empty p:last-child{margin:0}
+[data-module="maps"] .mp-empty p:has(button){display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}
+[data-module="maps"] .mp-notes p:has(button){display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+[data-module="maps"] .mp-notes b{font-weight:700}
+[data-module="maps"] .mp-notes .mp-stale{color:var(--sog-muted)}
 [data-module="maps"] .mp-pcard{pointer-events:auto;display:flex;flex-direction:column;gap:4px;min-width:140px}
 [data-module="maps"] .mp-pcard[hidden]{display:none}
 [data-module="maps"] .mp-vfr-focus{font-weight:700;background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
@@ -4145,15 +4215,14 @@ const STYLE = `
    montre ; la bascule Profil · Météo ; le ✕ d'un contenu à droite), puis le profil vertical (sa bande dessous) ou le contenu ouvert
    à sa place, puis les notes ; le contenu défile dedans */
 [data-module="maps"] .mp-dprof{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 8px}
-[data-module="maps"] .mp-notes{flex:none;padding:0 8px 6px;font-size:var(--sog-size-xs)}
+[data-module="maps"] .mp-notes{flex:none;max-height:5.5em;overflow:auto;padding:0 8px 6px;font-size:var(--sog-size-xs);font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-notes p{margin:0 0 2px}
 [data-module="maps"] .mp-notes:empty{display:none}
+[data-module="maps"] .mp-chips{flex:none;display:flex;align-items:center;gap:4px;margin-right:2px}
+[data-module="maps"] .mp-chips .mp-chip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
+[data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
+[data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
-[data-module="maps"] .mp-seg{flex:none;display:flex;align-items:stretch;margin-right:2px}
-[data-module="maps"] .mp-seg[hidden]{display:none}
-[data-module="maps"] .mp-segb{box-sizing:border-box;min-width:var(--sog-touch);height:100%;min-height:0;margin:0;padding:0 8px;border:solid transparent;border-width:5px 2px;border-radius:calc(var(--sog-radius-s) + 5px);background:none;background-clip:padding-box;color:var(--sog-muted);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 1px var(--sog-border)}
-[data-module="maps"] .mp-segb:hover{background-color:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface))}
-[data-module="maps"] .mp-segb[aria-pressed=true]{color:var(--sog-accent);background-color:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface));box-shadow:inset 0 0 0 1.5px var(--sog-accent)}
 [data-module="maps"] .mp-dbody[data-kind=weather]{overflow:hidden}
 [data-module="maps"] .mp-dbody[data-kind=weather] svg{display:block;cursor:crosshair}
 [data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
@@ -4174,6 +4243,115 @@ const STYLE = `
 .f-pane>[data-module="maps"],.f-view.f-split>[data-module="maps"]{min-height:420px}
 `;
 
+/** Couche de superposition du module (ctx.overlay : colonnes de boutons posées sur la carte par le cadre ; le bouton plein
+ *  écran y est ajouté par le cadre, en dernier). Hors du cadre (page d'essai) la couche est reconstruite dans la boîte de la
+ *  carte avec les mêmes classes. Droite : la route (vers Carburant), recentrer, mode d'affichage, modifier sur la carte, suivre
+ *  (en vol), « + » et annuler (mode Modifier) ; gauche : les couches. */
+function buildOverlay(ctx) {
+  let ov = ctx.overlay;
+  if (!ov) {
+    const layer = document.createElement('div');
+    layer.className = 'f-overlay';
+    layer.style.inset = '0';
+    layer.innerHTML = '<div class="f-ov-col f-ov-left"></div><div class="f-ov-col f-ov-right"></div>';
+    S.box.append(layer);
+    const [left, right] = layer.children;
+    ov = {
+      left,
+      right,
+      button({
+        icon,
+        label = '',
+        onClick,
+        pressed,
+        side = 'right'
+      } = {}) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'f-ov-btn';
+        b.innerHTML = svg(icon, {
+          size: 22
+        });
+        b.title = label;
+        b.setAttribute('aria-label', label);
+        if (pressed !== undefined) b.setAttribute('aria-pressed', String(!!pressed));
+        if (onClick) b.addEventListener('click', onClick);
+        (side === 'left' ? left : right).append(b);
+        return b;
+      },
+      over() {}
+    };
+  }
+  ov.over(S.box);
+  const btn = (key, o) => {
+    const b = ov.button(o);
+    b.dataset.mp = key; // pour la règle [hidden] du module (la règle du cadre sur ces boutons pèse plus que celle du navigateur)
+    return b;
+  };
+  S.routeBtn = btn('route', {
+    icon: 'edit',
+    label: ctx.t(TX.edit),
+    onClick: () => {
+      closePanels();
+      location.hash = '#fuel?from=maps&focus=route';
+    }
+  });
+  S.fitBtn = btn('fit', {
+    icon: 'target',
+    label: ctx.t(TX.fit),
+    onClick: () => {
+      closePanels();
+      S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol
+      if (S.map) fitMap(true);
+      else schedule();
+    }
+  });
+  S.modeBtn = btn('mode', {
+    icon: 'map',
+    label: ctx.t(TX.preset),
+    onClick: () => toggleModes()
+  });
+  S.modeBtn.setAttribute('aria-expanded', 'false');
+  S.modeBtn.setAttribute('aria-controls', 'mp-mode-opts');
+  S.editBtn = btn('edit', {
+    icon: 'move',
+    label: ctx.t(TX.editHelp),
+    pressed: false,
+    onClick: () => setEdit(!S.edit.on)
+  });
+  S.editBtn.innerHTML = ICON_MOVE;
+  S.followBtn = btn('follow', {
+    icon: 'plane',
+    label: ctx.t(TX.followHelp),
+    pressed: false,
+    onClick: () => {
+      closePanels();
+      setFollow(!S.follow);
+    }
+  });
+  S.addBtn = btn('add', {
+    icon: 'plus',
+    label: ctx.t(TX.addPoint),
+    pressed: false,
+    onClick: () => setAdding(!S.edit.adding)
+  });
+  S.undoBtn = btn('undo', {
+    icon: 'refresh',
+    label: ctx.t(TX.undoHelp),
+    onClick: () => undoEdit()
+  });
+  S.undoBtn.innerHTML = ICON_UNDO;
+  S.layersBtn = btn('layers', {
+    icon: 'layers',
+    side: 'left',
+    label: ctx.t(ctx.query?.mission ? TX.pick : TX.layers),
+    pressed: false,
+    onClick: () => toggleLayers()
+  });
+  for (const b of [S.followBtn, S.addBtn, S.undoBtn]) b.hidden = true; // suivre : en vol ; « + » et annuler : mode Modifier
+  S.undoBtn.disabled = true;
+}
+
 export async function mount(el, ctx) {
   performance.mark('maps:mount');
   S = {
@@ -4189,61 +4367,46 @@ export async function mount(el, ctx) {
       points: []
     },
     map: null,
-    plain: false
+    plain: false,
+    noted: {}
   };
+  // une carte de mission n'a pas de couches : le panneau ne garde que le choix de la carte
+  const layersName = ctx.query?.mission ? TX.pick : TX.layers;
   el.innerHTML = `<style>${STYLE}</style>
 <h1 class="mp-sr">${esc(ctx.t(TX.title))}</h1>
-<div class="mp-bar"><div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
-<select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
-<button type="button" class="mp-ib" data-go="fuel?from=maps&amp;focus=route" aria-label="${esc(ctx.t(TX.edit))}" title="${esc(ctx.t(TX.edit))}">${svg('edit', { size: 22 })}</button>
-<button type="button" class="mp-ib" data-fit aria-label="${esc(ctx.t(TX.fit))}" title="${esc(ctx.t(TX.fit))}">${svg('target', { size: 22 })}</button>
-<div class="mp-modes"><button type="button" class="mp-mode-btn" aria-expanded="false" aria-controls="mp-mode-opts" aria-label="${esc(ctx.t(TX.preset))}"></button>
-<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div></div></div>
-<p class="mp-sum f-muted" aria-live="polite"></p>
-<div class="mp-progress" hidden aria-live="polite"></div>
-<div class="mp-status" aria-live="polite"><p class="f-muted">${esc(ctx.t(TX.loading))}</p></div>
 ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>' : ''}
 <div class="mp-box"><div class="mp-map"></div><canvas class="mp-over" aria-hidden="true"></canvas>
-<button type="button" class="mp-layers-btn" aria-expanded="false" aria-label="${esc(ctx.t(TX.layers))}" title="${esc(ctx.t(TX.layers))}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg></button>
-<div class="mp-layers f-card" hidden role="group" aria-label="${esc(ctx.t(TX.layers))}"><b>${esc(ctx.t(TX.layers))}</b>
-${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
-<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-2" max="2" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
-<span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
-<button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div>
-<div class="mp-editbar"><button type="button" class="mp-follow" hidden aria-pressed="false" title="${esc(ctx.t(TX.followHelp))}">${esc(ctx.t(TX.follow))}</button><button type="button" class="mp-add" hidden aria-pressed="false" title="${esc(ctx.t(TX.addPoint))}" aria-label="${esc(ctx.t(TX.addPoint))}">+</button><button type="button" class="mp-undo" hidden disabled title="${esc(ctx.t(TX.undoHelp))}">${esc(ctx.t(TX.undo))}</button><button type="button" class="mp-edit" aria-pressed="false" title="${esc(ctx.t(TX.editHelp))}">${esc(ctx.t(TX.editMode))}</button></div>
+<div id="mp-mode-opts" class="mp-mode-opts" role="group" aria-label="${esc(ctx.t(TX.modes))}" hidden>${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-mode="${k}" aria-pressed="false" aria-label="${esc(modeTitle(ctx, k))}" title="${esc(modeTitle(ctx, k))}">${icon}</button>`).join('')}</div>
+<div class="mp-empty f-card" hidden aria-live="polite"></div>
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
-<div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-seg" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-segb" data-view="profile" aria-pressed="true">${esc(ctx.t(TX.segProfile))}</button><button type="button" class="mp-segb" data-view="weather" aria-pressed="false">${esc(ctx.t(TX.segWeather))}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
+</div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${ICON_CLOUD}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
-<div class="mp-dbody f-sheet-body" hidden role="region" tabindex="-1"></div>
+<div class="mp-dbody f-sheet-body" hidden role="region" tabindex="-1"><div class="mp-layers" role="group" aria-label="${esc(ctx.t(layersName))}">
+<div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
+<select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
+<div class="mp-layer-set"${ctx.query?.mission ? ' hidden' : ''}>${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
+<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-2" max="2" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
+<span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
+<button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div></div></div>
 <div class="mp-notes f-muted" aria-live="polite"></div></div>`;
   Object.assign(S, {
     box: el.querySelector('.mp-box'),
     mapEl: el.querySelector('.mp-map'),
     canvas: el.querySelector('canvas.mp-over'),
-    hdEl: el.querySelector('.mp-sum'),
-    stEl: el.querySelector('.mp-status'),
+    stEl: el.querySelector('.mp-empty'),
     profBox: el.querySelector('.mp-prof'),
     pc: el.querySelector('canvas.mp-pc'),
     pcur: el.querySelector('canvas.mp-pcur'),
     stripEl: el.querySelector('.mp-strip'),
     pickEl: el.querySelector('.mp-pick'),
     mapPickEl: el.querySelector('.mp-mappick'),
-    modesEl: el.querySelector('.mp-modes'),
-    fitBtn: el.querySelector('[data-fit]'),
-    modeBtn: el.querySelector('.mp-mode-btn'),
+    layerSet: el.querySelector('.mp-layer-set'),
     modeOpts: el.querySelector('.mp-mode-opts'),
-    layersBtn: el.querySelector('.mp-layers-btn'),
     layersEl: el.querySelector('.mp-layers'),
-    editBar: el.querySelector('.mp-editbar'),
-    editBtn: el.querySelector('.mp-edit'),
-    followBtn: el.querySelector('.mp-follow'),
-    progEl: el.querySelector('.mp-progress'),
-    undoBtn: el.querySelector('.mp-undo'),
-    addBtn: el.querySelector('.mp-add'),
     cardEl: el.querySelector('.mp-pcard'),
     dataEl: el.querySelector('.mp-data'),
     dheadEl: el.querySelector('.mp-dhead'),
@@ -4251,13 +4414,14 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     notesEl: el.querySelector('.mp-notes'),
     dtitleEl: el.querySelector('.mp-dtitle'),
     dcloseEl: el.querySelector('.mp-dclose'),
-    segEl: el.querySelector('.mp-seg'),
-    segBtns: [...el.querySelectorAll('.mp-segb')],
+    segEl: el.querySelector('.mp-chips'),
+    segBtns: [...el.querySelectorAll('.mp-chip')],
     dprofEl: el.querySelector('.mp-dprof'),
     dbodyEl: el.querySelector('.mp-dbody'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
     ptipEl: el.querySelector('.mp-prof .mp-tip')
   });
+  buildOverlay(ctx);
   // page de réglage (#maps?tune=1) : racine qui défile d'elle-même (la vue du cadre est fixe), blocs en hauteur naturelle
   if (ctx.query?.tune) el.classList.add('mp-tuning');
   el.classList.add('f-sheet'); // la racine de la feuille du cadre : jetons --f-sheet-*, data-sheet
@@ -4267,16 +4431,15 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     head: S.dheadEl,
     grip: S.gripEl,
     pos: sheetKeep,
-    ignore: '[data-dclose], .mp-seg',
+    ignore: '[data-dclose], .mp-chips',
     labels: (p, i) => `${tt(TX.sheetSize)} (${tt(TX.sheetNames[i])})`,
     locked: () => el.classList.contains('mp-tuning'),
     onChange: p => sheetKeep = p,
     onSettle: onSheetSettled
   });
-  // la grille des modes (sous la barre d'outils, sur le haut de la carte) se ferme aussi d'un toucher ailleurs que sur la
-  // carte (qui la ferme elle-même) : barre, feuille
+  // le choix des modes se ferme aussi d'un toucher ailleurs que sur la carte (qui le ferme elle-même) : la feuille
   el.addEventListener('pointerdown', e => {
-    if (!S.modeOpts.hidden && !e.target.closest('.mp-modes, .mp-box')) toggleModes(false);
+    if (!S.modeOpts.hidden && !e.target.closest('.mp-mode-opts, .mp-box')) toggleModes(false);
   });
   S.pickEl.addEventListener('change', () => {
     const v = S.pickEl.value;
@@ -4312,7 +4475,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.profBox.addEventListener('pointermove', onProf);
   // toucher sur la carte près de la route (fond uni : la boîte reçoit le toucher ; MapLibre : son « click »)
   S.box.addEventListener('pointermove', e => {
-    if (S.map || e.pointerType !== 'mouse' || e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn')) return;
+    if (S.map || e.pointerType !== 'mouse' || e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers')) return;
     const r = S.box.getBoundingClientRect();
     hoverMap(e.clientX - r.left, e.clientY - r.top);
   });
@@ -4320,9 +4483,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     if (e.pointerType === 'mouse') linger('map');
   });
   S.box.addEventListener('click', e => {
-    if (S.map || e.target.closest('.mp-modes, .mp-tip, .mp-layers, .mp-layers-btn')) return;
+    if (S.map || e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers')) return;
     if (!S.modeOpts.hidden) return toggleModes(false);
-    if (!S.layersEl.hidden) return toggleLayers(false);
     const r = S.box.getBoundingClientRect(),
       x = e.clientX - r.left,
       y = e.clientY - r.top;
@@ -4341,20 +4503,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     }
     mapTip(ll.lat, ll.lon, x, y);
   });
-  S.modeBtn.addEventListener('click', () => toggleModes());
   S.modeOpts.addEventListener('click', e => {
     const m = e.target.closest('[data-mode]')?.dataset.mode;
     if (!m) return;
     toggleModes(false);
     if (m !== S.preset) setPreset(m);
   });
-  S.modesEl.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !S.modeOpts.hidden) {
-      toggleModes(false);
-      S.modeBtn.focus();
-    }
-  });
-  S.layersBtn.addEventListener('click', () => toggleLayers());
   S.layersEl.addEventListener('change', e => {
     const c = e.target.closest('input[data-layer]'),
       k = c?.dataset.layer;
@@ -4363,10 +4517,13 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.layersEl.addEventListener('click', e => {
     if (e.target.closest('[data-layers-reset]')) setLayer(null);
   });
-  // Échap : le terrain épinglé est relâché
+  // Échap, un cran à la fois, le plus proche de la main d'abord : le choix des modes, le panneau des couches, le contenu du bloc
+  // de données (espaces, points de report, quel qu'il soit : le profil revient), la carte d'un point, le « + » armé, le mode
+  // Modifier. Quand le module a pris la touche il la retient (preventDefault) : le cadre ne quitte pas aussi le plein écran
+  // (frame/INTEGRATION.md § 9.4). En phase de capture, pour passer avant l'écouteur du cadre, posé avant le nôtre.
   const esc0 = e => {
-    if (e.key !== 'Escape' || !S) return;
-    closeData(); // le contenu du bloc de données (espaces, points de report), quel qu'il soit : le profil revient
+    if (e.key !== 'Escape' || !S || e.defaultPrevented || document.querySelector('.f-modal') || !S.el.getClientRects().length) return;
+    if (escapeKey()) e.preventDefault();
   };
   // ✕ de l'en-tête du bloc de données
   S.dheadEl.addEventListener('click', e => {
@@ -4389,22 +4546,11 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
       x = e.clientX - svg.getBoundingClientRect().left;
     if (x >= g.x0 && x <= g.x0 + g.pw) setCursor(Math.round(g.nmOf(x) * FT_NM));
   });
-  document.addEventListener('keydown', esc0);
-  S.stops.push(() => document.removeEventListener('keydown', esc0));
-  S.layersEl.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      toggleLayers(false);
-      S.layersBtn.focus();
-    }
-  });
+  document.addEventListener('keydown', esc0, true);
+  S.stops.push(() => document.removeEventListener('keydown', esc0, true));
   el.addEventListener('click', e => {
     const go = e.target.closest('[data-go]')?.dataset.go;
     if (go) location.hash = `#${go}`;
-    if (e.target.closest('[data-fit]')) {
-      S.userMoved = false; // « Recentrer » : la carte suit de nouveau le vol
-      if (S.map) fitMap(true);
-      else schedule();
-    }
   });
   await loadLibs();
   if (!S) return;
@@ -4440,7 +4586,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     await readSettings();
     S.profile = S.mission ? S.profile : effectiveProfile();
     S.data = null;
-    if (!S.layersEl.hidden) fillLayers();
+    if (S.dpanel === 'layers') fillLayers();
     schedule();
   }));
   S.preset = ui.preset || 'auto';
@@ -4448,9 +4594,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   if (!TX.presets[S.preset]) S.preset = 'auto';
   fillModes();
   // une carte de mission garde son profil : ni mode ni couches
-  S.modesEl.hidden = S.layersBtn.hidden = S.editBar.hidden = !!ctx.query?.mission;
+  S.routeBtn.hidden = S.modeBtn.hidden = S.editBtn.hidden = !!ctx.query?.mission;
   editGestures();
-  S.followBtn.addEventListener('click', () => setFollow(!S.follow));
   levelGestures();
   if (ctx.query?.mission) await applyMission();
   else {
@@ -4463,7 +4608,6 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   if (!S) return;
   if (!tiles) {
     S.plain = true;
-    S.el.querySelector('.mp-credit').hidden = true;
   }
   status();
   schedule();

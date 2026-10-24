@@ -242,15 +242,14 @@ Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt 
 ## So geht’s
 
 **Der geplante Flug.** Die Karte zeigt den in Kraftstoff vorbereiteten Flug: Abflug, Routenpunkte, Ankunft, und den
-Ausweichflugplatz grau gestrichelt. Unter der oberen Leiste fasst eine Zeile ihn zusammen: Abflug und Ankunft, Ausweichflugplatz,
-Flugfläche, Entfernung, Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
+Ausweichflugplatz grau gestrichelt. Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) ist der Titel des Griffs des Datenblocks unter der Karte; der Tooltip des Titels nennt die ganze Zeile: Abflug und Ankunft, Ausweichflugplatz, Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
 
 **Die Karte und was sie zeigt.** Rund um die Route: die Lufträume, die sie durchquert oder streift (Flugbeschränkungs-,
 Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
 Flugplätze und die Funkfeuer, und in jedem Ein-Grad-Feld die Mindestsicherheitshöhe (die braune Zahl, in Tausenden und
 Hunderten Fuß: „3⁵“ bedeutet 3 500 ft). Die kleinen violetten Zahlen entlang der Route sind die Entfernungen ab dem
 Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger zum Zoomen;
-„Zentrieren“ (das Zielsymbol der oberen Leiste) kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
+„Zentrieren“ (das Zielsymbol oben rechts auf der Karte) kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
 ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe
 der Route liegt; zoomen Sie hinein, um alles zu sehen.
 
@@ -260,16 +259,15 @@ Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Kar
 Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem Abflug,
 geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden. Unter der Karte zeigt dieser
 Datenblock das Profil; die Liste der Lufträume an einem Punkt oder die Meldepunkte eines Flugplatzes öffnen sich an
-seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Die Schaltfläche „Profil · Wetter“ in der oberen Zeile des Blocks ersetzt es durch den
+seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Der Wolkenchip rechts vom Griff des Blocks ersetzt es (der Profilchip bringt es zurück) durch den
 Wetterschnitt entlang der Route (Wind, Temperatur, Wolken, Vereisung) auf der Flughöhe; der Schnitt folgt demselben Cursor, und ein Tippen darauf
 verschiebt ihn. Er zeigt nur die Vorhersage, die Atmosphäre schon geladen hat: ohne sie führt die Zeile „Keine Vorhersage geladen“ zu Wetter unter Vorbereiten.
 
-**Ein feststehender Bildschirm.** Die obere Leiste, die Karte und der Datenblock füllen den Bildschirm, und nichts
-scrollt außer dem Inhalt des Blocks. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken und den
+**Ein feststehender Bildschirm.** Nichts zwischen Kopfzeile und Karte: die Karte und der Datenblock füllen den Bildschirm, und nichts scrollt außer dem Inhalt des Blocks. Die Schaltflächen liegen auf der Karte: rechts von oben „Route bearbeiten“ (der Stift), „Zentrieren“, der Kartenmodus, „Auf der Karte bearbeiten“ (die vier Pfeile) und zuletzt der Vollbildmodus (Esc verlässt ihn); links „Ebenen“. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken und den
 Titel) nach oben, um ihn zu vergrößern, nach unten, um ihn auf diese Zeile zu verkleinern, was der Karte die ganze Höhe
 lässt; ein Tippen auf die Zeile klappt ihn ein oder bringt ihn auf seine normale Höhe zurück.
 
-**Sechs Kartenmodi.** Die letzte Schaltfläche der oberen Leiste zeigt den gewählten Modus; tippen Sie darauf, um die
+**Sechs Kartenmodi.** Die Modus-Schaltfläche rechts auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
 sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
 (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen,
 Meldepunkten und Hindernissen. „Topo“: das Gelände und, aus der Nähe, die Höhenlinien (alle 500 ft oder 100 m je nach
@@ -283,7 +281,7 @@ ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindes
 die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse. Aus der Nähe trägt jedes Hindernis
 seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771)“).
 
-**Ebenen.** Die Ebenen-Schaltfläche oben links auf der Karte öffnet die Liste dessen, was die Karte zeichnet:
+**Ebenen.** Die Ebenen-Schaltfläche links auf der Karte öffnet im Datenblock, anstelle des Profils, die Liste dessen, was die Karte zeichnet (das ✕ bringt das Profil zurück):
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
 VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der Lufträume, Namen der
 Flugwege. Haken setzen oder entfernen: die Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät
@@ -327,10 +325,10 @@ und Anweisungen der VAC kommen hinzu, sobald der Administrator sie importiert ha
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
-Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
+Minuten). In den Notizen des Datenblocks, unter dem Profil, nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
 Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
 voraussichtliche Zeit (ETA) unter seinem Namen, nie über einem Flugplatz, in UTC („14:52Z“), die Ortszeit in Klammern bei Abflug und Ankunft. „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
-Position (GPS oder Netz nicht aktiviert) sagt die Zeile es und öffnet die Einstellungen; eine Position, die älter als 2
+Position (GPS oder Netz nicht aktiviert) sagt es eine Benachrichtigung einmal, die Zeile bleibt in den Notizen und ihr Link öffnet die Einstellungen; eine Position, die älter als 2
 Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder Little
 Navmap.
 
@@ -348,23 +346,23 @@ Die Wegpunkte der Route sind auch auf dem Profil markiert.
 (TOD), auf der Karte wie im Profil. Sie stammen aus der Berechnung in Kraftstoff; ohne sie schätzt die Karte sie mit
 üblichen Steig- und Sinkraten.
 
-**Die Missionskarten.** Die erste Liste oben wählt, was die Karte zeigt: den geplanten Flug oder eine Mission der
+**Die Missionskarten.** Die erste Liste, am Kopf der Ebenen (die Ebenen-Schaltfläche), wählt, was die Karte zeigt: den geplanten Flug oder eine Mission der
 Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten (Übersicht, Ziel, Detail…). Jede Karte
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
 
-**Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten einen
+**Die Route auf der Karte ändern.** Tippen Sie auf „Auf der Karte bearbeiten“ (die vier Pfeile, rechts auf der Karte; beim ersten Mal erscheint eine kurze Hilfe): die Wegpunkte erhalten einen
 Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
 losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Um einen Punkt hinzuzufügen,
-tippen Sie auf „+“ neben „Bearbeiten“ und dann auf die gewünschte Stelle (oder halten Sie eine halbe Sekunde gedrückt):
+tippen Sie auf „+“ (in derselben Spalte) und dann auf die gewünschte Stelle (oder halten Sie eine halbe Sekunde gedrückt):
 auf einem Fix, einem Funkfeuer oder einem Flugplatz setzt er sich dort, anderswo ist es ein freier Punkt; er wird dem
 nächstgelegenen Abschnitt hinzugefügt. Ein einfaches Tippen fügt nichts hinzu: es zeigt die Blase. Tippen Sie einen
 Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an. Abflug und Ankunft bewegen sich hier nicht.
 Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten: sie ändert sich ab dem Punkt, der diesen Abschnitt
 eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die Flughöhe des Flugs); in der Karte eines Punkts tun
 „−“ und „+“ dasselbe. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im Flug gespeichert, und
-Kraftstoff rechnet neu; das Profil folgt. „Fertig“ schließt den Modus, und die Karte lässt sich wieder mit dem Finger
-verschieben. Um die Route als Text einzugeben, öffnet der Stift der oberen Leiste („Route bearbeiten“) den Schritt Route von Kraftstoff.
+Kraftstoff rechnet neu; das Profil folgt. Erneutes Tippen auf die Schaltfläche (oder Esc) schließt den Modus, und die Karte lässt sich wieder mit dem Finger
+verschieben. Um die Route als Text einzugeben, öffnet der Stift oben in der rechten Spalte („Route bearbeiten“) den Schritt Route von Kraftstoff.
 
 ## Ohne Netz
 
@@ -381,11 +379,10 @@ stattdessen die Mindestsicherheitshöhe jedes durchquerten Felds (braun gestrich
 
 ## Sonderfälle
 
-**Kein Flug.** Ohne vorbereiteten Flug ist die Karte ausgeblendet und bietet „Kraftstoff öffnen“ an. Die
-Missionskarten bleiben über die Liste oben erreichbar.
+**Kein Flug.** Ohne vorbereiteten Flug ist die Karte leer und bietet „Kraftstoff öffnen“ an. Die Missionskarten bleiben über die Liste der Ebenen erreichbar.
 
 **Luftfahrtdatenbank fehlt.** Wurde die Luftfahrtdatenbank noch von keinem Gerät der Fluggesellschaft veröffentlicht,
-zeigt die Karte nur die Route und sagt es.
+zeigt die Karte nur die Route und sagt es einmal (Benachrichtigung, dann Notiz im Datenblock).
 
 **Gebiet nicht behalten.** Offline, über einem nie angesehenen und nicht behaltenen Gebiet, hat die Karte nichts zu
 zeigen; die Schaltfläche „Offline-Daten“ öffnet die Einstellungen, um es beim nächsten Mal zu behalten.
@@ -397,7 +394,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 150d28aa1aed -->
+<!-- fr: dc1f0c9c9d2f -->
 
 <!-- chapter: report -->
 # Bericht

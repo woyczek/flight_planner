@@ -67,8 +67,9 @@ export const meta = {
 
 Since 24 Oct 2026 the Map screen is a fixed view (frame/INTEGRATION.md § 9.2): the frame puts `f-fixed` on `<html>` while
 it is shown, the page does not scroll, and the module root (`section.f-module[data-module="maps"]`) is a full-height flex
-column with no padding. The module draws into it a toolbar, the information line, the map (`flex: 1 1 0; min-height: 0`)
-and the data sheet (fixed height, three positions: SPEC § 4). What the module's own style sheet adds, because the frame
+column with no padding. The module draws into it the map (`flex: 1 1 0; min-height: 0`) and the data sheet (fixed height,
+three positions: SPEC § 4): **nothing between the frame's header and the map** (24 Oct 2026). The map's buttons are the frame's
+overlay layer (`ctx.overlay.button()`, § 2 quater below). What the module's own style sheet adds, because the frame
 does not give it:
 
 - **The dual-view pane and the map on the left of a pane** take their height from the frame (frame/INTEGRATION.md § 9.2):
@@ -79,9 +80,31 @@ does not give it:
 - **The tuning page** (`#maps?tune=1`) needs a scrolling page, and `fixed` is a property of the module, not of an address:
   the root scrolls by itself in that case (`overflow: auto`, grid from 1000 px, with a plain `display: grid`: the frame's
   `display: flex` rule for a fixed module is weightless, `:where()`, § 9.2 of the frame's INTEGRATION).
-- The root has `isolation: isolate` (the z-indices 3 to 8 of the map's buttons stay below the frame's header and tab bar).
+- The root has `isolation: isolate` (the z-indices 3 to 8 of the map's panels stay below the frame's header and tab bar; the
+  overlay layer is a sibling of the root, above it).
 - The test page `modules/maps/test/index.html` gives the host `height: calc(100dvh - 24px)` (the root has no height of
   its own any more: in the frame it is the frame's).
+
+## 2 quater. The overlay layer (`ctx.overlay`, frame/INTEGRATION.md § 9.3) and the full screen (§ 9.4)
+
+- **Buttons** (`ov.button({ icon, label, onClick, pressed, side })`, `ov.over(box)` to name the map box): right column, from the
+  top: Edit the route (`edit`, towards fuel), Recentre (`target`), map mode (`map`, then the current mode's own icon), Edit on
+  the map (toggle; the module's four-arrow icon), Follow (`plane`, toggle, started flight only), Add a point (`plus`, toggle) and
+  Undo (the module's back-arrow icon) in the Edit mode only; the frame's full-screen button follows them. Left column: Layers
+  (`layers`, pressed while its content is open: the content is the sheet's, opened by `openData('layers', …)`, not a panel
+  over the map). Names through `ctx.t` in the four languages, written on a change only.
+- **Icons the frame does not have** (not added to `frame/lib/icons.js`): a cloud (the weather chip of the sheet), a back arrow
+  (undo) and a four-arrow cross (the frame's `move` is a vertical double arrow); the module draws them with the same grid, stroke
+  and class (`f-icon`). To say to the frame session if it wants them in its set.
+- **`hidden`**: the layer's button rule (`.f-overlay button.f-ov-btn`, `display: inline-flex`, three classes) beats the browser's
+  `[hidden]`; the module adds `.f-overlay button.f-ov-btn[data-mp][hidden] { display: none }` for its buttons (each carries
+  `data-mp`). To say to the frame session: the frame could carry the rule for every `.f-ov-btn`.
+- **Without a layer** (`ctx.overlay` null: the test page): the module builds the same two columns (`.f-overlay`) inside the map box
+  with the same classes.
+- **Escape** is taken in the capture phase on `document` (the frame's listener, registered first, would otherwise run before the
+  module's and see `defaultPrevented` too late); `preventDefault()` only when something was closed.
+- **Full screen**: the module does nothing of its own; the box's `ResizeObserver` runs `mapSize()` (MapLibre `resize()` when the
+  canvas differs) and redraws; the `resize` the frame fires on `window` reaches the same path.
 
 ## 3. What it asks of aerodb
 
@@ -146,8 +169,8 @@ maps**, never by another module reaching into the sheet.
 (maps' own classes `mp-data`, `mp-dhead`, `mp-grip`, `mp-dbody` stay beside them for the module's code). The three positions are
 the frame's tokens (`--f-sheet-head`, `-default`, `-expanded` and their floors), the drag, the flick, the keyboard, the
 ARIA and the transitions are the primitive's, and `data-sheet` on the root is `collapsed`, `default` or `expanded`. What stays
-in maps: `openData` / `endData` / `closeData` / `dataHead` (the content and the header's texts), the Profile · Weather toggle
-(`ignore: '[data-dclose], .mp-seg'`), the grip's texts (`labels`, four languages), the notes, the position kept between
+in maps: `openData` / `endData` / `closeData` / `dataHead` (the content and the header's texts: the handle's title carries the flight's
+summary), the Profile · Weather chips (`ignore: '[data-dclose], .mp-chips'`), the grip's texts (`labels`, four languages), the notes, the position kept between
 mounts (`sheetKeep`, through `onChange`), `locked` (the tuning page) and `onSettle` (`mapSize()` and the route's re-framing).
 
 **The atmosphere cross-section** is implemented (24 Oct 2026): § 8.
@@ -172,7 +195,7 @@ import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, l
 |---|---|
 | `loadMapLibre()` → `Promise<maplibregl \| null>` | script UMD and style sheet of `lib/`, once per page; `null` if the script does not load (the next call tries again) |
 | `styleFor({ dark, base })` → URL | `base`: a key of `STYLES` (the studio profile's base), else `STYLE_DAY` (positron); `dark`: `STYLE_NIGHT`, or VersaTiles' eclipse for a `vt-` base |
-| `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true }`), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch, no world copies |
+| `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true, customAttribution }`: the control is folded on its "i" button once the map has loaded, a tap opens it), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch, no world copies |
 | `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. Call it on every size change, at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
 | `isOwnResize(map)` → boolean | true during the `resize()` that `mapSize` runs: its `movestart` is not a user gesture (`map.on('movestart', () => { if (!isOwnResize(map)) userMoved = true })`) |
 | `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there |
