@@ -584,6 +584,11 @@ used alone:
 - **No storage for copies** (private browsing, quota, failure): the service worker installs anyway and lets requests
   through to the network. The application works, without offline.
 - **Manifest**: name "SOG — Pilote", start and scope `./`, standalone display, colours, SVG icon.
+- **Orientation**: locked to portrait for now (`orientation: portrait` in the manifest, `screen.orientation.lock`
+  attempted when the application runs installed; a browser page cannot be locked and the call's failure is ignored).
+  The Capacitor shell of the V3 frame, when it is built, sets `UISupportedInterfaceOrientations` to portrait on iPhone
+  (iPad keeps every orientation) and `screenOrientation="portrait"` on Android. The landscape layout is to decide
+  (`docs/technique/V3_SPECIFICATION.md` § 7.1); the lock goes when it exists.
 - **Offline start**: on the data already cached, the frame, the module and the synchronisation control are drawn with
   no error. The transport falls back as § 3.5 says. When the network comes back, the launcher is looked for again
   and the transport follows.

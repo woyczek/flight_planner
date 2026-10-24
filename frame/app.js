@@ -2102,6 +2102,14 @@
         }
       });
     });
+    // orientation verrouillée en portrait tant que la disposition en paysage n'est pas décidée (V3_SPECIFICATION.md
+    // § 7.1, 24 oct 2026) : effective en appli installée seulement (manifest « orientation », coque Capacitor) ; en page
+    // de navigateur l'appel échoue et c'est attendu
+    try {
+      if (matchMedia('(display-mode: standalone)').matches) screen.orientation?.lock?.('portrait')?.catch?.(() => {});
+    } catch {
+      /* navigateur sans verrouillage */
+    }
     navigator.serviceWorker.register(new URL('frame/sw.js', ROOT), {
       scope: new URL('frame/', ROOT).pathname
     }).then(() => navigator.serviceWorker.ready).then(async reg => reg.active?.postMessage({

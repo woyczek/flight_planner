@@ -844,3 +844,10 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - **Not done / to see**: no iOS device (the bar's safe area and the blur of `cupertino` are untested there); `atmosphere`'s
     own commit (c1ce8886 on GitHub) was not seen; `frame/lib/test` has no test of the bar (tests were Playwright scripts
     outside the repository).
+- **24 Oct 2026 — orientation locked to portrait** (user: "en attendant, on verrouille l'orientation"; done by the cloud
+  relay, `relais-cloud.md`). `orientation: portrait` in the manifest and `screen.orientation.lock('portrait')` tried
+  at start when the application runs standalone (ignored otherwise: a Safari page cannot be locked). Not done in
+  `.github/workflows/ios.yml`: that workflow still wraps the V2 site, whose landscape layouts are wanted; the plist
+  key is written in SPEC § 3.6 for the V3 shell lot. To remove when the landscape layout (map at the left, block as a
+  right column) is decided and built.
+
