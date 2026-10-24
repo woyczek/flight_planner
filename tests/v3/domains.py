@@ -1,0 +1,107 @@
+"""Adherence map (PLAN.md section M): which cases run for which changed path.
+
+A selector is an area letter (`'B'`: every case of area B) or a case id (`'A12'`).  Rules are tried in order and the
+first glob that matches a path decides for that path; the answer for a set of paths is the union of their selectors.
+A path that matches nothing runs `FALLBACK` (the smoke case and the static rules).
+
+Globs: `*` stays inside one directory level, `**` crosses directories.
+"""
+import re
+import subprocess
+
+FRAME_ALL = list('ABCDEFGHI')
+SHEET = ['B', 'C', 'D', 'E', 'I']
+HELP = ['I', 'A11']
+BASE_DEFAULT = 'origin/v3'
+
+# (glob, selectors, why) -- order matters: specific before general
+RULES = [
+    ('docs/**', ['I'], 'documents only'),
+    ('**/*.md', ['I'], 'documents only'),
+    ('frame/help/**', HELP, 'manuals of the frame'),
+    ('apps/aide/**', HELP, 'online help bundle'),
+    ('modules/*/help/**', HELP, 'manuals of a module'),
+    ('frame/lib/sheet.js', SHEET, 'sheet primitive: the two fixed modules'),
+    ('frame/design/primitives.css', SHEET, 'sheet and overlay primitives'),
+    ('frame/lib/test/**', ['C', 'I'], 'sheet bench'),
+    ('frame/app.js', FRAME_ALL, 'the frame reaches every screen'),
+    ('frame/frame.css', FRAME_ALL, 'the frame reaches every screen'),
+    ('frame/index.html', FRAME_ALL, 'the frame reaches every screen'),
+    ('frame/lib/*.js', FRAME_ALL, 'frame library'),
+    ('frame/design/**', ['A', 'H', 'I', 'B2', 'B9'], 'designs and chrome (button look)'),
+    ('frame/settings/**', ['A12', 'D5', 'I'], 'settings screen; aerodb warning on maps'),
+    ('frame/aerodb/**', ['A12', 'D5', 'I'], 'settings screen; aerodb warning on maps'),
+    ('modules/maps/lib/map_base.js', ['D', 'E', 'B', 'I'], 'shared map base: both map modules'),
+    ('modules/maps/**', ['D', 'B', 'C', 'I'], 'the map module and the primitives it uses'),
+    ('modules/atmosphere/**', ['E', 'B', 'C', 'I'], 'the atmosphere module and the primitives it uses'),
+    ('modules/fuel/**', ['F', 'I', 'A7'], 'fuel (in the Preparer group: the popover)'),
+    ('modules/flightlog/**', ['G', 'I', 'A8', 'A9'], 'flightlog (the "i" reads its pending file)'),
+    ('modules/report/**', ['G', 'I', 'A8', 'A9'], 'report (the "i" hands over to it)'),
+    ('tools/**', ['I'], 'tooling'),
+    ('tests/**', ['I'], 'tooling'),
+    ('.github/**', ['I'], 'tooling'),
+]
+FALLBACK = (['A1', 'I'], 'anything else: smoke and static rules')
+
+
+def _rx(glob):
+    out, i = '', 0
+    while i < len(glob):
+        if glob.startswith('**/', i):
+            out += '(?:.*/)?'
+            i += 3
+        elif glob.startswith('**', i):
+            out += '.*'
+            i += 2
+        elif glob[i] == '*':
+            out += '[^/]*'
+            i += 1
+        else:
+            out += re.escape(glob[i])
+            i += 1
+    return re.compile('^' + out + '$')
+
+
+_COMPILED = [(_rx(g), sel, why, g) for g, sel, why in RULES]
+
+
+def selectors_for(path):
+    """(selectors, why, glob) for one repository-relative path."""
+    p = path.replace('\\', '/').lstrip('./')
+    for rx, sel, why, g in _COMPILED:
+        if rx.match(p):
+            return sel, why, g
+    return FALLBACK[0], FALLBACK[1], '*'
+
+
+def select(paths):
+    """(set of selectors, [explanations]) for a list of paths."""
+    chosen, why = set(), []
+    for p in paths:
+        sel, w, g = selectors_for(p)
+        chosen.update(sel)
+        why.append(f'{p} -> {" ".join(sel)} ({w})')
+    return chosen, why
+
+
+def matches(case, selectors):
+    """True if the case is chosen by one of the selectors (area letter, case id)."""
+    return case.area in selectors or case.id in selectors
+
+
+def changed_paths(root, base=None):
+    """Paths changed since `base` (default origin/v3): commits `base...HEAD`, plus the working tree and untracked files."""
+    base = base or BASE_DEFAULT
+
+    def run(*a):
+        p = subprocess.run(['git', *a], cwd=root, capture_output=True, text=True)
+        return p.returncode, p.stdout.split('\n')
+    rc, committed = run('diff', '--name-only', f'{base}...HEAD')
+    if rc != 0:
+        rc, committed = run('diff', '--name-only', f'{base}..HEAD')
+    if rc != 0:
+        raise SystemExit(f'--changed: cannot diff against {base!r} (is the ref known? try --changed <base>)')
+    paths = set(committed)
+    paths.update(run('diff', '--name-only', 'HEAD')[1])
+    paths.update(run('ls-files', '--others', '--exclude-standard')[1])
+    return sorted(p for p in paths if p)
