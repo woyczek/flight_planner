@@ -140,6 +140,16 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   write › CR, data synchronised n minutes ago, pending writes); the pending report comes from a small cache record
   published by flightlog (`cache/flightlog/pending.json`); atmosphere at level 1, on the rail; fixed modules have no
   help panel nor welcome card, a help button in their toolbar only if needed (the header's "?" opens the chapter).
+- **Map screen = header · map · data block · bar, nothing else** (user, 24 Oct, 14:00, on the phone: "Ce n'était pas le
+  deal. header, carte, carte, footer. Les autres infos sont mises ailleurs."): the toolbar line (flight selector, Edit,
+  Recentre, mode) and the information line under it, the title row of the data block ("Profil vertical" with the
+  Profil · Météo toggle) and the hint line ("Glissez le doigt…") all leave the column. Where they go: the map's
+  controls as overlays on the map (right column of 44 px round buttons: Edit, Recentre, mode; Layers at the left as
+  today), the flight selector inside the Layers panel (rarely used), the flight summary (DEP → ARR · FL · NM · type)
+  as the text of the sheet's grip row (ellipsed), the Profil · Météo choice as two small icon chips at the right of that
+  same grip row, the hints to the help, the notes ("terrain unavailable") as a small line at the bottom of the sheet's
+  content. The sheet's grip row (44 px) is the only chrome between the map and the content. The same template holds
+  for atmosphere (its toolbar becomes overlays and the grip row).
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
