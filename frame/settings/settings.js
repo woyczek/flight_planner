@@ -1501,7 +1501,7 @@
       const label = esc(t(x.title)),
         out = x.href && !x.href.startsWith('#');
       const link = x.act ? `<a href="#settings" data-act="${esc(x.act)}">${label}</a>` : x.where === 'bench' && !L ? `<b>${label}</b>` :
-        `<a href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
+        `<a${x.btn ? ' class="f-btn primary"' : ''} href="${esc(out ? new URL(x.href, ROOT).href : x.href)}"${out ? ' target="_blank" rel="noopener"' : ''}>${label}</a>`;
       return `<li data-admin="${esc(x.id)}">${link}<br><span class="f-muted">${esc(t(x.text))}${x.where === 'bench' ? ` — ${esc(t(T.launcherOnly))}` : ''}</span></li>`;
     };
     return `<div class="f-card" data-card="admin"><h2>${esc(t(T.admin))}</h2><p class="f-muted">${esc(t(T.adminHint))}</p>

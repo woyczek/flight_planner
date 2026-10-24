@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the Complexity slider goes lower and comes first; the administrator's thresholds apply to every mode; the tuning page has a button**
+  (`modules/maps/module.js`, `render.js`, `frame/settings/admin_links.js`, `settings.js`, manuals in four languages, `tests/v3/` D14 / D15 / D16;
+  maps SPEC § 4 quinquies, DECISIONS) — the slider only shifts the zoom (one whole zoom level per step, −4 … +4; it was ¾ of a level from −2
+  to +2, which went down 1.5 levels only), so zoomed out on Europe on a phone its minimum leaves nothing passing a range; it is now the
+  first control of the Layers content, right under the flight selector, named "Complexity" (no more "(trial)"), with a help sentence in four
+  languages, and the map follows the finger. The thresholds of the airline's file (`airline/map_profiles.json`) were read and applied, but the
+  file held the VFR mode only (the tuning page saves the mode on screen), so Auto, IFR low / high, Topo and CAM kept the looser built-in values:
+  a mode the airline never tuned now takes the ranges of a tuned mode (its family first; an IFR mode may take VFR's, never the reverse), and
+  the tuning page says where the mode on screen gets its thresholds. Settings, "Administration" card (Full level): the link to the tuning page
+  is the button "Map threshold tuning (administrator)". The map element publishes `data-zoom-eff` and `data-kept` (what the thresholds keep)
+  for the tests.
+
 - **Aeronautical database: loading, access not set and not published are three different messages** (`frame/aerodb/aerodb.js`, `frame/app.js`,
   `modules/maps/module.js`, manual note in four languages, `tests/v3/` A15 / D5 / D5b; settings DECISIONS, aerodb INTEGRATION / DECISIONS, frame
   INTEGRATION § 10) — on a phone (seen in the app added to the iOS home screen) the Map said "Aeronautical database not published" while the base

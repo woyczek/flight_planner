@@ -965,3 +965,46 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   not started but dated (`planned_at`, the flight date, counted from it as a started flight from `started.at`; INTEGRATION § 3 of fuel):
   `withEta` no longer requires `started` and ignores the ETAs of a flight that is not started when the last one is past. Nothing else
   of the started-flight drawing changes (`plannedPos`, the actual position and the trail still need `started`).
+
+- **24 Oct 2026 — complexity slider, administrator's thresholds, access to the tuning page** (relay cloud). The administrator's principle,
+  word for word: "there is a tuning page of the high and low thresholds for each element, the complexity slider only acts as if the
+  zoom were different. That is the point of these fine-tuning sliders: the admin (me) defines what a pilot wants to see at each zoom
+  level, through this tool page. Formerly reachable in the very advanced settings."
+  - **Slider = a zoom shift, nothing else.** One step is one whole zoom level (was ¾), range −4 … +4 (was −2 … +2: only 1.5 levels
+    down). Measured on a phone zoomed out on Europe: effective zoom 2.2 (28° wide) to 3.5 (zoom 4.5), so −4 puts it at or below 0 and
+    even the ranges that start at 0 (built-in IFR TMA / CTA / R) stop passing: case D14 reads 0 airspaces kept at −4 where step 0
+    keeps the three seeded ones. `MapsRender.detailZoom(step)` (clamp and conversion) and `DETAIL_MAX` are the single place, used by
+    `draw()` and by the screen; the slider's bounds are read from them. The map follows the finger (`input`, not only `change`).
+    Kept per mode on the device as before; an older stored value is clamped.
+  - **The slider is the first control of the Layers content**, right under the flight selector ("Complexité", the "(essai)" gone, the
+    value, a help sentence ×4: acts as if the zoom were different; what each zoom shows is set by the administrator).
+  - **Diagnosis of "the PRD, TMA and CTR sliders are now too lax"** (replay in Chromium, 390 px, LFRD → LFBD FL160, the real SIA base
+    of FR / GB / DE / BE / NL / IE / ES taken from the data repository, the real `airline/map_profiles.json` served through the
+    frame's cache like `tests/v3/lib.py` seeds data, then the same without the file; counters `kept.byKey` of `draw()`):
+    - **The file is read and applied.** `readSettings()` runs before the first drawing and again on every change of the file
+      (`ctx.data.watch`), `airline/` is in `meta.reads`, a missing file is fetched on demand through the transport by the frame;
+      the ranges of `elements.zoom` are merged key by key. In VFR at effective zoom 5.0 the file draws 20 P zones where the built-in
+      table (P from 7.5) draws none, and at 6.75 it keeps no TMA / R / D where the built-in keeps 17 / 15 / 6.
+    - **The cause: the file holds one mode only.** `airline/map_profiles.json` has `profiles.vfr` and nothing else (two commits of the
+      data repository, 23 Oct 15:27 and 17:18, both `vfr` alone): "Save for the airline" on the tuning page writes the mode on screen,
+      and the page opens on the device's current mode. Auto (the default), IFR low / high, Topo and CAM had no entry and drew with the
+      built-in table, which in IFR draws FIR, TMA, CTA, R and TSA from zoom 0: in Auto the file changed nothing (identical counts with
+      and without it: 54 spaces, 26 TMA, 19 R, 9 CTA, from effective zoom 2.2 up). The administrator thought of one table of
+      thresholds ("for each element"), the code had six.
+    - **Fix: a mode never tuned follows a tuned one** (`repoZoom`): its own entry, else another mode of its family (IFR: Auto, Low,
+      High, CAM; VFR: VFR, Topo), else for an IFR mode only the VFR family (stricter values; the IFR corridor already thins the
+      map; never the reverse, which would loosen VFR, which has no corridor). Only the ranges are inherited, not the boxes. The
+      tuning page says where the mode on screen takes its thresholds from; "Save for the airline" makes them the mode's own.
+      After the fix, Auto with the file keeps no airspace at effective zoom 4.0, and P (3) from 5.0.
+    - **The SFC–UNL debt does not take part**: in the published base of FR, GB and DE no volume is SFC → UNL (the upper limit is
+      FL 999 / 660 on 36 GB D, 25 FR D, 6 FR R...: a few dozen of 5,300 airspaces, none of them TMA or CTR); the entry stays open.
+    - **Not testable here**: the real transport (GitHub on the Pages site, a first launch with an empty cache): the frame reads it
+      through `fetchOne`, tested by the frame's own cases; on a real phone, to see after a first install.
+  - **Access to the tuning page**: it already existed, `#maps?tune=1` in the Administration card of Settings (Full level, "Complet"),
+    declared in `frame/settings/admin_links.js`; the user did not find it (a link among others, only at the Full level). It is now
+    the button "Map threshold tuning (administrator)" (`btn: true`, `f-btn primary`), the sentence says what the page is for and
+    that the slider only shifts the zoom; back by the usual way. Settings: one line in its `DECISIONS.md`, the manual in four
+    languages. Case D16 walks it (level 2: no card; level 3: the button, the page, back).
+  - **Tests**: D14 (slider first, label ×4, minimum = nothing on Europe, one step = one level, kept after a reload), D15 (the file's
+    P 5..10 and D 7.75..10 respected in VFR, the built-in values without the file, IFR low following VFR), D16.
+    `lib.Ctx.open(docs=, airspaces=)` seeds more documents and airspaces.

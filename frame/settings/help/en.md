@@ -131,8 +131,8 @@ repository, set the access on a workstation with the launcher.
 ## Administration
 
 **The administration pages.** At the “Full” level (“Level” card), the “Administration” card, below “About”, gathers the
-administration and test pages, each with a sentence; at the other levels, it does not appear. In the app: the map
-threshold tuning (`#maps?tune=1`, read only on a phone), the roadmap (`#roadmap`) and the diagnostics of the “About”
+administration and test pages, each with a sentence; at the other levels, it does not appear. In the app: the
+“Map threshold tuning (administrator)” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow, the roadmap (`#roadmap`) and the diagnostics of the “About”
 card.
 
 **The benches, on a workstation.** Served by the launcher, they only open on a workstation with a launcher (elsewhere

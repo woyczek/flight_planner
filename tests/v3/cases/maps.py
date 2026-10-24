@@ -9,10 +9,13 @@ Rules covered
   * L1 the sheet content is closable and leaves the map half the view (D11); L3 the profile canvas draws one level and no
     green / orange dots (D12); L14 a drag on the map or a wheel on the sheet does not close a content (D13).
 
-Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13.  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
+Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
-from lib import MAP_JS, Fail, Skip, case, norm, tx
+import re
+import time
+
+from lib import MAP_JS, Fail, Skip, case, forget, norm, tx
 
 M = 'modules/maps/module.js'
 APP = 'frame/app.js'
@@ -339,3 +342,145 @@ def _d13(c, content):
     c.ok(c.shown('.f-sheet-close'), f'the {content} content closed after a wheel on the sheet', 'the content stays open')
     if content == 'layers':
         c.eq(c.attr(layers_btn(c), 'aria-pressed'), 'true', 'the Layers button stays pressed', what='Layers aria-pressed')
+
+
+# ------------------------------------------------------------------------------------------------------ D14, D15
+# What the map keeps after the zoom thresholds is published on the map element (`data-kept`, JSON: airspaces, byKey = airspaces
+# per threshold family, cities...; `data-zoom-eff` = the effective zoom the thresholds are compared with): a counter, not pixels.
+KEPT_JS = """() => { const m = document.querySelector('[data-module="maps"] .mp-map');
+    return m && m.dataset.kept ? { eff: +m.dataset.zoomEff, kept: JSON.parse(m.dataset.kept) } : null }"""
+EUROPE = '-12,40,16,58'                  # a phone's Europe: effective zoom about 2.2 at 390 px
+
+
+def kept(c, what, still=500, timeout=9000):
+    """The published counters once the map has settled (the same reading twice, `still` ms apart): the data comes after the
+    first drawing."""
+    last, end = None, time.time() + timeout / 1000
+    while time.time() < end:
+        c.wait(still)
+        cur = c.js(KEPT_JS)
+        if cur and cur == last:
+            return cur
+        last = cur
+    raise Fail(f'{what}: the counters never settled (last {last})', 'stable data-kept / data-zoom-eff on the map')
+
+
+@case('D14', 'Complexity slider', 'D', tags=('sheet', 'maps'), screens=False, designs=('standard', 'cupertino'), langs4=True,
+      rule='user 24 Oct: the slider first in Layers, "Complexité", acts only as a different zoom, goes low enough (SPEC § 4 quinquies)')
+def d14(c):
+    c.open('maps?view=' + EUROPE, flight=True, aero=True)
+    c.tap(layers_btn(c))
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='the Layers content shows the slider')
+    order = c.js("""() => [...document.querySelectorAll('.mp-dbody select, .mp-dbody input, .mp-dbody button')].filter(e => window.__t.shown(e) || e.type === 'range')
+        .map(e => e.tagName.toLowerCase() + (e.type ? ':' + e.type : ''))""")
+    c.eq(order[:2], ['select:select-one', 'input:range'], 'the Complexity slider comes right after the flight selector, before any checkbox', what='first controls of the Layers content')
+    label = norm(c.text('.mp-l-detail') or '')
+    c.ok(label.startswith(norm(row(c, 'detail'))), f'slider label {label!r}', f'starts with "{row(c, "detail")}"')
+    c.ok(not re.search(r'essai|trial|test|prueba', label, re.I), f'slider label {label!r}', 'no "(trial)" any more: the function is assumed')
+    c.eq(norm(c.text('#mp-detail-help') or ''), norm(row(c, 'detailHelp')), 'the help says it acts as if the zoom were different (four languages)', what='slider help')
+    lo, hi = c.js("(() => { const r = document.querySelector('input[data-layer=detail]'); return [+r.min, +r.max] })()")
+    c.ok(lo <= -3 and hi >= 3, f'slider range {lo}..{hi}', 'at least -3..+3')
+    # an empty Layers sheet leaves the map the room to be measured: close, then read the counters at each step
+    c.tap('.f-sheet-close')
+    base = kept(c, 'step 0')
+    c.ge(base['kept']['airspaces'], 3, 'at step 0, on a phone zoomed out on Europe, the three seeded airspaces (built-in IFR thresholds: from 0) are drawn', what='airspaces kept at step 0')
+
+    def at(step):
+        c.tap(layers_btn(c))
+        c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='slider shown')
+        c.js("""(d) => { const r = document.querySelector('input[data-layer=detail]'); r.value = d;
+            r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true })) }""", step)
+        c.tap('.f-sheet-close')
+        return kept(c, f'step {step}')
+    low = at(-2)
+    c.eq(round(low['eff'] - base['eff'], 1), -2.0, 'one step of the slider = one whole zoom level, nothing else changes', tol=0.1, what='effective zoom shift at step -2')
+    mn = at(lo)
+    c.eq(mn['kept']['airspaces'], 0, f'at the minimum ({lo}), zoomed out on Europe, no airspace passes its thresholds', what='airspaces kept at the minimum')
+    c.le(mn['eff'], 0, 'the minimum puts the effective zoom at or below 0 on Europe (every range starts at 0 or more)', what='effective zoom at the minimum')
+    mx = at(hi)
+    c.ge(mx['kept']['airspaces'], base['kept']['airspaces'], 'the maximum shows at least what step 0 shows', what='airspaces kept at the maximum')
+    c.eq(round(mx['eff'] - base['eff'], 1), float(hi), 'the shift is the step count in zoom levels', tol=0.1, what='effective zoom shift at the maximum')
+    # kept on the device, as before: the value is back after a reload
+    c.tap(layers_btn(c))
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='slider shown')
+    c.js("""(d) => { const r = document.querySelector('input[data-layer=detail]'); r.value = d;
+        r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true })) }""", -2)
+    c.wait(800)
+    c.page.reload(wait_until='load')
+    c.ready('maps', sheet=True)
+    c.tap(layers_btn(c))
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=detail]'))", what='slider shown after reload')
+    c.eq(c.js("document.querySelector('input[data-layer=detail]').value"), '-2', 'the slider value is kept on the device', what='slider value after a reload')
+
+
+# The two thresholds of the airline's file that D15 checks, copied from the file the administrator saved on 23 Oct (VFR: P from
+# 5 to 10, D from 7.75 to 10); the built-in VFR values are P 7.5 and D 6.5, the built-in IFR ones P 5.25 and D 4.75 (module.js
+# ZOOM_VFR, ZOOM_IFR).  A P and a D zone sit on the seeded route's middle (NEPIX).
+TUNED = {'schema': 1, 'by': 'maps', 'updated_at': '2026-10-23T15:18:05.219Z', 'profiles': {'vfr': {'elements': {'zoom': {
+    'asP': [5, 10], 'asD': [7.75, 10], 'asFir': [0, 7]}}}}}
+TEST_AS = [
+    {'type': 'P', 'name': 'P 5 TEST', 'lower': 'SFC', 'upper': 'FL 100', 'rings': [[[44.6, 2.1], [44.6, 2.7], [45.2, 2.7], [45.2, 2.1], [44.6, 2.1]]]},
+    {'type': 'D', 'name': 'D 7 TEST', 'lower': 'SFC', 'upper': 'FL 100', 'rings': [[[44.7, 2.2], [44.7, 2.6], [45.1, 2.6], [45.1, 2.2], [44.7, 2.2]]]},
+]
+# four views of 10, 3, 1.2 and 0.5 degrees of longitude: effective zoom about 3.5, 5.5, 7.1 and 8.1 on a phone
+D15_VIEWS = ('-2.6,43.4,7.4,46.4', '0.9,43.9,3.9,45.9', '1.8,44.4,3.0,45.4', '2.15,44.65,2.65,45.15')
+
+
+def present(rng, eff, margin=0.12):
+    """True / False if `eff` is clearly inside / outside rng (None: too close to a bound to say)."""
+    lo, hi = rng
+    if min(abs(eff - lo), abs(eff - hi)) < margin:
+        return None
+    return lo <= eff <= hi
+
+
+def d15_variant(c, preset, tuned, expect, label):
+    ui = ['cache/maps/ui.json', {'preset': preset, 'layers': {}}, 'cache']
+    if not tuned:
+        forget(c.page, ['airline/map_profiles.json'], c.base)       # the previous variant's file is still in this browser's cache
+    c.open('maps?view=' + D15_VIEWS[0], flight=True, docs=[ui] + ([['airline/map_profiles.json', TUNED, 'document']] if tuned else []), airspaces=TEST_AS)
+    seen = set()
+    for v in D15_VIEWS:
+        c.go('maps?view=' + v)
+        r = kept(c, f'{label} view {v}')
+        for key, rng in expect.items():
+            want = present(rng, r['eff'])
+            if want is None:
+                continue
+            got = r['kept']['byKey'].get(key, 0) > 0
+            seen.add((key, want))
+            c.eq(got, want, f'{label}: {key} {"drawn" if want else "not drawn"} at effective zoom {r["eff"]} (thresholds {rng})', what=f'{key} at effective zoom {r["eff"]}')
+    for key in expect:
+        c.ok((key, True) in seen and (key, False) in seen, f'{label}: {key} seen drawn={ (key, True) in seen}, not drawn={(key, False) in seen}', 'the views cover both sides of the thresholds (the case must not pass empty)')
+
+
+@case('D15', 'Tuned thresholds applied', 'D', tags=('maps',), screens=False, designs=('standard', 'cupertino'),
+      rule='user 24 Oct: "trop laxes" - the airline file\'s thresholds govern what each zoom shows; a mode never tuned follows the tuned one')
+def d15(c):
+    # the file served, VFR (tuned): the file's two thresholds, P 5..10 and D 7.75..10
+    d15_variant(c, 'vfr', True, {'asP': (5, 10), 'asD': (7.75, 10)}, 'VFR with the airline file')
+    # no file: the built-in VFR thresholds (P from 7.5, D from 6.5)
+    d15_variant(c, 'vfr', False, {'asP': (7.5, 24), 'asD': (6.5, 24)}, 'VFR without the file')
+    # IFR low, never tuned in the file (it holds VFR only): it takes VFR's, instead of its looser built-in ones (the cause of
+    # the 24 Oct report: Auto kept the built-in IFR thresholds, P from 5.25 and D from 4.75)
+    d15_variant(c, 'low', True, {'asP': (5, 10), 'asD': (7.75, 10)}, 'IFR low with a file that holds VFR only')
+    d15_variant(c, 'low', False, {'asP': (5.25, 24), 'asD': (4.75, 24)}, 'IFR low without the file')
+
+
+@case('D16', 'Tuning page reachable from Settings', 'D', tags=('maps', 'settings'), screens=False, designs=('standard', 'cupertino'), langs4=True,
+      rule='user 24 Oct: the thresholds page was "formerly in the very advanced settings": a button in the Administration card (Full level)')
+def d16(c):
+    link = 'frame/settings/admin_links.js'
+    # the card is the Full level's: absent at the everyday level
+    c.open('settings', docs=[['device/level.json', {'level': 2}, 'cache']])
+    c.wait(600)
+    c.eq(c.count('[data-card="admin"]'), 0, 'the Administration card is the Full level\'s', what='Administration cards at level 2')
+    c.open('settings', docs=[['device/level.json', {'level': 3}, 'cache']])
+    c.until("!!document.querySelector('[data-admin=tune] a')", what='the tuning button in the Administration card')
+    c.eq(norm(c.text('[data-admin="tune"] a') or ''), norm(tx(link, 'title', c.lang)), 'the button is named "Map threshold tuning (administrator)" in the language of the run', what='tuning button')
+    c.ok('f-btn' in (c.attr('[data-admin="tune"] a', 'class') or ''), 'the tuning link is a link', 'drawn as a button')
+    c.tap('[data-admin="tune"] a')
+    c.until("location.hash === '#maps?tune=1' && !!document.querySelector('.mp-tune .mp-tune-row')", timeout=9000, what='the tuning page opens')
+    c.ge(c.count('.mp-tune-row'), 20, 'one line per element on the tuning page', what='tuning rows')
+    c.page.go_back()
+    c.until("location.hash === '#settings'", what='the normal way back returns to Settings')

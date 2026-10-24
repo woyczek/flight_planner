@@ -1421,6 +1421,12 @@
     const mean = ((+w || 0) + (+h || 0)) / 2;
     return mean > 0 ? zoom + Math.log2(mean / FRAME_REF_PX) * k : zoom;
   };
+  /** Curseur de complexité : un cran décale le zoom effectif d'un niveau entier, de −DETAIL_MAX à +DETAIL_MAX crans (±4 : un
+   *  téléphone dézoomé sur l'Europe, zoom effectif ≈ 3, tombe sous zéro au cran −4, où plus rien ne passe un seuil). Le
+   *  curseur ne fait que cela : ce que montre chaque zoom vient des seuils de la page de réglage (#maps?tune=1). */
+  const DETAIL_ZOOM = 1,
+    DETAIL_MAX = 4;
+  const detailZoom = d => Math.max(-DETAIL_MAX, Math.min(DETAIL_MAX, Math.round(+d) || 0)) * DETAIL_ZOOM;
   /** Clé de seuil de la famille d'un espace. */
   const zoneKey = t => {
     t = String(t || '').toUpperCase();
@@ -1542,10 +1548,10 @@
         lat: (bbox.n + bbox.s) / 2,
         lon: (bbox.e + bbox.w) / 2
       },
-      // zoom de la vue, décalé de ¾ de niveau par cran du curseur de complexité (detail, de −2 à +2 : plus de détails à
-      // droite), puis corrigé par la taille du cadre (effectiveZoom) ; carte de mission : tout ce que son profil montre
-      // (ni curseur ni taille) ; vol : les seuils de zoom de chaque élément se comparent à ce zoom effectif
-      zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + (Math.round(+detail) || 0) * .75,
+      // zoom de la vue, décalé d'un niveau par cran du curseur de complexité (detail, de −4 à +4 : plus de détails à
+      // droite ; detailZoom), puis corrigé par la taille du cadre (effectiveZoom) ; carte de mission : tout ce que son
+      // profil montre (ni curseur ni taille) ; vol : les seuils de zoom de chaque élément se comparent à ce zoom effectif
+      zs = zoomOf(toC(c.lat, c.lon + 1).x - toC(c.lat, c.lon).x) + detailZoom(detail),
       zv = mission ? zs : effectiveZoom(zs, W, H),
       tier = tierOf(pxOfZoom(zv));
     if (!mission) profile = atZoom(profile, zv);
@@ -1611,6 +1617,12 @@
         tier,
         kept: mission ? null : {
           airspaces: shown.airspaces?.length || 0,
+          // par famille de seuil (asTma, asCtr, asP, asR, asD, …) : ce que les curseurs gardent, pour les mesures
+          byKey: (shown.airspaces || []).reduce((n, a) => {
+            const k = zoneKey(a.type);
+            n[k] = (n[k] || 0) + 1;
+            return n;
+          }, {}),
           aerodromes: shown.aerodromes?.length || 0,
           navaids: shown.navaids?.length || 0,
           vrp: shown.vrp?.length || 0,
@@ -1659,6 +1671,8 @@
     zoomOf,
     pxOfZoom,
     effectiveZoom,
+    detailZoom,
+    DETAIL_MAX,
     FRAME_REF_PX,
     vrpCode,
     zoneKey,
