@@ -11,6 +11,7 @@ How the frame mounts "My flights", what it reads and writes. Rules: [SPEC.md](SP
 | `modules/flightlog/model.js` | pure: rows of a report, a log entry, a network session; key, merge, filter, totals, CSV, family, report values |
 | `frame/lib/last_flight.js` | shared pure code (owner: report): IVAO / VATSIM flights of the last 7 days |
 | `frame/lib/js-yaml.min.js` | shared library (js-yaml 4.1.0, MIT; owner: flightlog): reads the V2 registry `cr/missions.yaml` |
+| `modules/flightlog/test/pending.html` | bench of `pending` (the record's flights): two without a report, one with, one too old, the limits |
 | `modules/flightlog/READING.md` | lot 1: what V2 "My flights" does |
 
 ## 2. Mounting
@@ -43,3 +44,31 @@ diverted }`, aircraft, route) and `cache/report/started.json` (`{ done: [at, …
 that used the started flight is saved; `meta.reads` gains `cache/report/`). A started flight not yet done is shown on
 top, "In progress — started at hh:mm"; its "Write the report" opens `#report?from=flightlog`, where report offers the
 started flight first (no handoff: report's own "Use" marks it done on save).
+
+## 5. What flightlog publishes for the frame
+
+`cache/flightlog/pending.json` (24 Oct 2026; policy `cache`, declared by the prefix `cache/flightlog/` of `meta.writes`:
+this device only, never synchronised). The frame's "i" button reads it to draw its "report to write" lines.
+
+```json
+{ "schema": 1, "updated_at": "2026-10-24T12:00:00Z",
+  "flights": [ { "date": "2026-10-23", "dep": "LFRS", "arr": "LFML", "registration": "F-ZBMC", "source": "website" } ] }
+```
+
+- `flights`: the flights **without a report** that the module finds (the rule of its "Write the report" action and of
+  the "Without report" filter: the best row of the flight is the website log or a network session, not a report),
+  newest first, **5 at most**, **within the last 30 days** (by the flight's date), `source` ∈ `website | ivao | vatsim`;
+  an empty array when nothing is pending. `dep`, `arr` and `registration` are empty strings when unknown (a network
+  session has no registration). The flight in progress started in fuel is not in the list (the frame has its own line
+  for it).
+- Computed by `pending` in `model.js`, the one function behind the record (and built on the same filter as the list).
+- Written through `ctx.data` at mount and each time the list is refreshed (a report saved or received, the website log
+  changed, the network read again), and **only when `flights` changes** (`updated_at` does not count). At the first
+  mount of a pilot with an IVAO / VATSIM id the write waits for the network read, so the record does not lose then regain
+  the network flights.
+- **For the frame**: navigate to `#report?from=flightlog&date=<date>&dep=<dep>&arr=<arr>`. **Report reads no query key
+  today**: `ctx.query` is not used by `modules/report/module.js`, which only reads `pilot/handoff.json` at mount (and
+  offers the started flight first). `from=flightlog`, `date`, `dep` and `arr` are ignored, so such a line opens the
+  report as it is. To start the report of that very flight, the frame (or report, by agreement of the ergonomics
+  session) writes the hand-over of SPEC § 5 (`pilot/handoff.json`, `fresh`, `values`) before navigating; flightlog does
+  not write it for a line it does not draw.

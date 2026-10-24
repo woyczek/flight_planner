@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>flightlog — pending bench</title>
+<!-- Banc de la liste des vols sans compte rendu (modules/flightlog/model.js, pending : le contenu de
+     cache/flightlog/pending.json lu par le bouton « i » du cadre). Page d'outil, hors des applications ; ouvrir depuis
+     le lanceur ou un serveur statique à la racine du dépôt. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">flightlog — pending bench</h1>
+<pre id="out">running…</pre>
+<script type="module">
+  import * as F from '../model.js';
+  const lines = [];
+  let bad = 0;
+  const same = (name, got, want) => {
+    const ok = JSON.stringify(got) === JSON.stringify(want);
+    if (!ok) bad++;
+    lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? 'ok ' : 'KO '}${name}</span>${ok ? '' : `\n   got  ${JSON.stringify(got)}\n   want ${JSON.stringify(want)}`}`);
+  };
+  const TODAY = '2026-10-24';
+  // un CR (avec compte rendu), un vol du journal du site et une session IVAO sans CR, un vol du journal vieux de 40 jours
+  const report = {
+    metadata: {
+      date: '2026-10-22',
+      missionId: 'CRM-A01-0'
+    },
+    aircraft: [{
+      callsign: 'PELICAN 41',
+      type: 'CL2T',
+      registration: 'F-ZBMG'
+    }],
+    navigation: {
+      dep: 'LFMY',
+      arr: 'LFMY'
+    },
+    family: 'FIRE'
+  };
+  const logs = [{
+    date: '2026-10-23',
+    time: '09:10',
+    callsign: 'SAMU 31',
+    registration: 'F-ZBMC',
+    type: 'EC45',
+    dep: 'LFRS',
+    arr: 'LFML',
+    durationMin: 70,
+    mission: 'EVASAN'
+  }, {
+    date: '2026-10-22', // même vol que le CR : le CR l'emporte, rien à écrire
+    time: '10:00',
+    callsign: 'PELICAN 41',
+    registration: 'F-ZBMG',
+    type: 'CL2T',
+    dep: 'LFMY',
+    arr: 'LFMY',
+    durationMin: 90,
+    mission: 'FEU'
+  }, {
+    date: '2026-09-14', // 40 jours avant : hors de la fenêtre de 30 jours
+    time: '10:00',
+    callsign: 'PELICAN 42',
+    registration: 'F-ZBMH',
+    type: 'CL2T',
+    dep: 'LFMY',
+    arr: 'LFTH',
+    durationMin: 60,
+    mission: 'FEU'
+  }];
+  const net = F.fromNetwork({
+    callsign: 'DRAGON 11',
+    dep: 'LFBO',
+    arr: 'LFMT',
+    start: '2026-10-24T08:00:00',
+    end: '2026-10-24T09:00:00'
+  }, 'IVAO');
+  const flights = F.merge([F.fromReport(report, 'cr/reports/2026/CRM-A01-0.json')], logs.map(F.fromLog), [net]);
+  same('merged list: 4 flights (CR wins over its log line)', flights.length, 4);
+  same('two flights without report, newest first, with the record\'s fields', F.pending(flights, {
+    today: TODAY
+  }), [{
+    date: '2026-10-24',
+    dep: 'LFBO',
+    arr: 'LFMT',
+    registration: '',
+    source: 'ivao'
+  }, {
+    date: '2026-10-23',
+    dep: 'LFRS',
+    arr: 'LFML',
+    registration: 'F-ZBMC',
+    source: 'website'
+  }]);
+  same('VATSIM source', F.pending([F.fromNetwork({
+    callsign: 'X1',
+    dep: 'EGLL',
+    arr: 'EHAM',
+    start: '2026-10-20T08:00:00',
+    end: null
+  }, 'VATSIM')], {
+    today: TODAY
+  }).map(p => p.source), ['vatsim']);
+  same('nothing pending: empty array', F.pending([F.fromReport(report)], {
+    today: TODAY
+  }), []);
+  same('no flight at all: empty array', F.pending([], {
+    today: TODAY
+  }), []);
+  // six vols sans CR en trois semaines : cinq au plus, les plus récents
+  const six = Array.from({
+    length: 6
+  }, (_, i) => F.fromLog({
+    date: `2026-10-${String(10 + i * 2).padStart(2, '0')}`,
+    time: '08:00',
+    callsign: `T${i}`,
+    registration: `F-T${i}`,
+    dep: 'LFRS',
+    arr: 'LFML'
+  }));
+  same('five at most, newest first', F.pending(six, {
+    today: TODAY
+  }).map(p => p.date), ['2026-10-20', '2026-10-18', '2026-10-16', '2026-10-14', '2026-10-12']);
+  same('window: 30 days (2026-09-24 kept, 2026-09-23 dropped)', F.pending([F.fromLog({
+    date: '2026-09-24',
+    callsign: 'A'
+  }), F.fromLog({
+    date: '2026-09-23',
+    callsign: 'B'
+  })], {
+    today: TODAY
+  }).map(p => p.date), ['2026-09-24']);
+  same('same rule as the "Without report" filter', F.pending(flights, {
+    today: TODAY,
+    max: 99
+  }).length, F.filter(flights, {
+    days: 30,
+    noReport: true,
+    today: TODAY
+  }).length);
+  lines.push('', bad ? `<span class="ko">${bad} failure(s)</span>` : '<span class="ok">all pass</span>');
+  document.getElementById('out').innerHTML = lines.join('\n');
+  document.title += bad ? ' — FAIL' : ' — PASS';
+</script>
+</body></html>
