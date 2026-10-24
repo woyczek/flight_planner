@@ -31,6 +31,15 @@ import {
 import {
   svg
 } from '../../frame/lib/icons.js';
+// copies isolées du module Carte, à remplacer par un import de modules/maps/lib/map_base.js et de frame/lib/sheet.js
+import {
+  STYLE_DAY,
+  STYLE_NIGHT,
+  loadMapLibre
+} from './maps_copy_base.js';
+import {
+  createSheet
+} from './maps_copy_sheet.js';
 import {
   TX
 } from './texts.js';
@@ -62,8 +71,9 @@ export const meta = {
     prefix: 'cache/atmosphere/',
     policy: 'cache'
   }],
-  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'section.js?v=0', 'texts.js?v=0', '../fuel/winds.js?v=0',
-    '../fuel/weather.js?v=0', '../maps/render.js?v=0', '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0'
+  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'section.js?v=0', 'texts.js?v=0', 'maps_copy_base.js?v=0',
+    'maps_copy_sheet.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0', '../maps/render.js?v=0',
+    '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
   // du module Carte, gardés au premier usage : MapLibre, et les contours des pays du fond uni
   lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'],
@@ -114,37 +124,14 @@ const ROUTE_TEXT = 'LFRS 47.1569 -1.6078\nLUGEN 46.5833 -1.2000/F290\nMEN 44.605
 const UI = 'cache/atmosphere/ui.json';
 /** Altitudes fixes proposées pour la carte (ft), en plus du niveau demandé et des paliers. */
 const MAP_FIXED = [5000, 10000, 18000, 24000, 30000];
-/** Fonds de la Carte (modules/maps/module.js : STYLE_URL, STYLE_NIGHT) ; attente des tuiles avant le fond uni. */
-const STYLE_DAY = 'https://tiles.openfreemap.org/styles/positron',
-  STYLE_NIGHT = 'https://tiles.openfreemap.org/styles/dark',
-  TILE_WAIT = 8000;
+/** Attente des tuiles avant le fond uni. */
+const TILE_WAIT = 8000;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const ICON_LAYERS =
   '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg>';
 
-/** MapLibre du module Carte (script UMD et sa feuille), chargé une fois ; null s'il ne charge pas. Même chargeur que
- *  modules/maps/module.js (loadMapLibre) : le seul morceau recopié de son socle de carte (DECISIONS.md). */
-let mlP = null;
-
-function loadMapLibre() {
-  return mlP ||= new Promise(ok => {
-    if (window.maplibregl) return ok(window.maplibregl);
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = new URL('../maps/lib/maplibre-gl.css?v=0', import.meta.url).href;
-    document.head.append(css);
-    const sc = document.createElement('script');
-    sc.src = new URL('../maps/lib/maplibre-gl.js?v=0', import.meta.url).href;
-    sc.onload = () => ok(window.maplibregl || null);
-    sc.onerror = () => {
-      mlP = null;
-      ok(null);
-    };
-    document.head.append(sc);
-  });
-}
 /** Noyau de dessin du module Carte (window.MapsRender : projection du fond uni, fond, jetons du design). */
 const loadRender = () => window.MapsRender ? Promise.resolve() : import(new URL('../maps/render.js?v=0', import.meta.url).href);
 /** Contours des pays du fond uni de la Carte (window.MAPS_OUTLINES), chargés au premier dessin sans tuiles. */
@@ -309,8 +296,6 @@ const STYLE = `
 `;
 
 let stop = null;
-/** Position de la feuille gardée d'un montage à l'autre dans la même page (0 réduit, 1 normal, 2 agrandi). */
-let sheetKeep = 1;
 
 export async function mount(el, ctx) {
   const {
@@ -683,7 +668,7 @@ export async function mount(el, ctx) {
 
   /** Affiche un contenu du bloc : profil (défaut), tranche locale, « i », réglages. */
   function show(view) {
-    if (S.view !== view && S.sheet === 0) setSheet(1, true);
+    if (S.view !== view && sheet?.pos === 0) setSheet(1, true);
     S.view = view;
     $('btnFlight').setAttribute('aria-pressed', String(view === 'settings'));
     $('btnInfo').setAttribute('aria-pressed', String(view === 'info'));
@@ -711,7 +696,7 @@ export async function mount(el, ctx) {
       return;
     }
     // feuille réduite : rien à dessiner (redessiné à sa réouverture, la taille n'étant plus celle du dernier dessin)
-    if (S.sheet === 0 && (v === 'profile' || v === 'slice')) return;
+    if (sheet?.pos === 0 && (v === 'profile' || v === 'slice')) return;
     if (v === 'profile') return drawProfile();
     if (v === 'slice') return drawSlice();
     if (v === 'info') return drawInfo();
@@ -1089,36 +1074,11 @@ export async function mount(el, ctx) {
   }
 
   // ---------------------------------------------------------------- feuille du bas (celle du module Carte)
-  // Hauteur fixe à trois positions (réduit : sa ligne d'en-tête seule ; normal : 38 % de la vue sur téléphone, 35 % sur
-  // écran ; agrandi : 70 %), tirée par la poignée de son en-tête ; son contenu défile dedans, la page jamais. Recopie de
-  // la feuille de modules/maps/module.js (setSheet, sheetGestures, settle : internes à ce module), mêmes jetons, mêmes
-  // gestes ; à mettre en commun avec lui (DECISIONS.md).
-  /** Hauteurs en pixels des trois positions, lues dans les jetons de la racine (--at-head, --at-p1 / --at-p2 : parts de la
-   *  vue, --at-m1 / --at-m2 : planchers). */
-  function sheetHeights() {
-    const cs = getComputedStyle(el),
-      n = k => parseFloat(cs.getPropertyValue(k)) || 0,
-      H = el.clientHeight;
-    return [n('--at-head') + 1, Math.max(n('--at-p1') * H, n('--at-m1')), Math.max(n('--at-p2') * H, n('--at-m2'))];
-  }
-  /** Met la feuille à une position (0 réduit, 1 normal, 2 agrandi). instant : sans glissement. */
-  function setSheet(pos, instant = false) {
-    pos = clamp(pos, 0, 2);
-    S.sheet = pos;
-    sheetKeep = pos;
-    const dataEl = $('data'),
-      grip = $('grip');
-    if (instant) {
-      dataEl.classList.add('at-nt');
-      requestAnimationFrame(() => dataEl.classList.remove('at-nt'));
-    }
-    dataEl.style.removeProperty('height');
-    if (el.dataset.sheet !== String(pos)) el.dataset.sheet = String(pos);
-    const tip = `${T('sheetSize')} (${T(`sheet${pos}`)})`;
-    if (grip.title !== tip) grip.title = tip;
-    const ex = String(pos > 0);
-    if (grip.getAttribute('aria-expanded') !== ex) grip.setAttribute('aria-expanded', ex);
-  }
+  // Hauteur fixe à trois positions, tirée par la poignée de son en-tête (maps_copy_sheet.js, copie de la Carte à remplacer
+  // par frame/lib/sheet.js) ; son contenu défile dedans, la page jamais. Propre au module : ce qui suit un changement de
+  // taille.
+  let sheet = null;
+  const setSheet = (pos, instant) => sheet?.set(pos, instant);
   /** Après un changement de taille (feuille, rotation) : le fond MapLibre reprend la taille du cadre, la route reste
    *  cadrée tant que l'utilisateur n'a pas déplacé la carte, le bloc est redessiné ; en une fois, quand la taille s'est
    *  arrêtée. */
@@ -1131,85 +1091,6 @@ export async function mount(el, ctx) {
       schedule();
       if ((S.view === 'profile' || S.view === 'slice') && `${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) drawData();
     }, 120);
-  }
-  /** La poignée : un toucher réduit la feuille (ou la ramène à la position normale), un glisser la tire (événements du
-   *  pointeur sur l'en-tête seulement : la carte garde ses gestes), au lâcher elle prend la position la plus proche (ou la
-   *  suivante, si le geste était un coup de pouce) ; flèches du clavier. */
-  function sheetGestures() {
-    const head = $('grip').parentNode,
-      dataEl = $('data'),
-      grip = $('grip');
-    let d = null;
-    head.addEventListener('pointerdown', e => {
-      if (e.button > 0 || e.target.closest('[data-at="dclose"],[data-at="prev"],[data-at="next"]')) return;
-      d = {
-        id: e.pointerId,
-        y0: e.clientY,
-        h0: dataEl.offsetHeight,
-        pos: S.sheet,
-        y: e.clientY,
-        t: performance.now(),
-        v: 0,
-        on: false,
-        grip: !!e.target.closest('.at-grip')
-      };
-      head.setPointerCapture(e.pointerId);
-    });
-    head.addEventListener('pointermove', e => {
-      if (!d || e.pointerId !== d.id) return;
-      if (!d.on) {
-        if (Math.abs(e.clientY - d.y0) < 6) return;
-        d.on = true;
-        dataEl.classList.add('at-nt');
-      }
-      const hs = sheetHeights(),
-        now = performance.now();
-      if (now > d.t) d.v = .6 * d.v + .4 * ((e.clientY - d.y) / (now - d.t));
-      d.y = e.clientY;
-      d.t = now;
-      dataEl.style.height = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (e.clientY - d.y0))))}px`;
-    });
-    const end = e => {
-      if (!d || e.pointerId !== d.id) return;
-      const was = d;
-      d = null;
-      if (!was.on) {
-        if (e.type === 'pointerup' && was.grip) {
-          setSheet(S.sheet === 1 ? 0 : 1);
-          settle();
-        }
-        return;
-      }
-      dataEl.classList.remove('at-nt');
-      const hs = sheetHeights(),
-        h = dataEl.offsetHeight;
-      let pos = hs.reduce((b, x, i) => Math.abs(x - h) < Math.abs(hs[b] - h) ? i : b, 0);
-      if (Math.abs(was.v) > .8 && e.type === 'pointerup') pos = was.v < 0 ? Math.min(2, was.pos + 1) : Math.max(0, was.pos - 1);
-      setSheet(pos);
-      settle();
-    };
-    head.addEventListener('pointerup', end);
-    head.addEventListener('pointercancel', end);
-    grip.addEventListener('click', e => {
-      if (e.detail) return;
-      setSheet(S.sheet === 1 ? 0 : 1);
-      settle();
-    });
-    grip.addEventListener('keydown', e => {
-      const k = {
-        ArrowUp: S.sheet + 1,
-        ArrowDown: S.sheet - 1,
-        Home: 0,
-        End: 2
-      } [e.key];
-      if (k == null) return;
-      e.preventDefault();
-      setSheet(k);
-      settle();
-    });
-    dataEl.addEventListener('transitionend', e => {
-      if (e.target === dataEl && e.propertyName === 'height') settle();
-    });
   }
 
   // ---------------------------------------------------------------- carte (technique du module Carte)
@@ -2112,8 +1993,17 @@ export async function mount(el, ctx) {
     S.map?.remove();
     S.map = null;
   };
-  setSheet(sheetKeep, true);
-  sheetGestures();
+  sheet = createSheet({
+    root: el,
+    data: $('data'),
+    head: $('grip').parentNode,
+    grip: $('grip'),
+    prefix: 'at',
+    title: pos => `${T('sheetSize')} (${T(`sheet${pos}`)})`,
+    skip: '[data-at="dclose"],[data-at="prev"],[data-at="next"]',
+    onSettle: settle
+  });
+  sheet.set(sheet.pos, true);
   show('profile');
   // à l'ouverture, seulement la réserve de l'appareil : Open-Meteo n'est lu que sur « Charger »
   load({

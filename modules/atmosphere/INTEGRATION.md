@@ -8,6 +8,7 @@
 | `texts.js` | every text, `[fr, en, de, es]`, for `ctx.t` |
 | `section.js` | pure SVG renderers of the profile and the slice (§ 5) |
 | `atmo.js` | pure computations: columns at an hour, reading at a pressure altitude, density, inversions, icing, trajectory, grid, contours; reuses `modules/fuel/winds.js` |
+| `maps_copy_base.js`, `maps_copy_sheet.js` | **copies of the maps module**, isolated so that replacing them is an import: the MapLibre loader and base styles (→ `modules/maps/lib/map_base.js`), the three-position sheet `createSheet` (→ `frame/lib/sheet.js`); relay's decision of 24 Oct 2026 |
 | `weather_store.js` | the shared weather cache (§ 3), written to move unchanged into `frame/weather` |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |

@@ -33,7 +33,10 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   plain background) and its sheet (`setSheet`, `sheetGestures`, `settle`) into shared files used by both. **Decided by
   the relay** (`V3_SPECIFICATION.md`, 24 Oct): the map base goes to `modules/maps/lib/map_base.js` (a maps lot, imported
   here like `render.js`), the sheet becomes a frame primitive (`frame/lib/sheet.js`, rules in
-  `frame/design/primitives.css`); until those two lots land, the copies stay here, isolated and marked.
+  `frame/design/primitives.css`); until those two lots land, the copies stay here, isolated and marked: two files,
+  `maps_copy_base.js` (`loadMapLibre`, `STYLE_DAY`, `STYLE_NIGHT`) and `maps_copy_sheet.js` (`createSheet({ root, data,
+  head, grip, prefix, title, skip, onSettle })`), each headed "COPIE DE MAPS, À REMPLACER PAR …"; the module keeps only
+  what is its own (`settle`: what to redo after a change of size).
 - **Rasterised profile → SVG** (`section.js`): vector lines, text and barbs; the continuous fields (cloud, temperature,
   humidity, density altitude, icing and inversion masks) are images of the 200 × 120 computing grid drawn enlarged and
   smoothed, so no steps; hatches through SVG patterns masked by those fields. On a narrow block: barbs every ~34 px
