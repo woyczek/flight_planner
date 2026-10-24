@@ -151,11 +151,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   the temperature met) drawn with the maps module's technique — MapLibre and a vector overlay redrawn with every frame
   of the movement, its plain background without tiles (`MapsRender`, countries' outlines) — and a bottom block: the
   overall profile along the route (cloud by level, isotherms, inversions, indicative icing, density altitude, wind,
-  terrain; requested, planned and computed paths) in the maps module's three-position sheet, the local slice of any point tapped on the map or the profile, the
+  terrain; requested, planned and computed paths) in the frame's three-position sheet, the local slice of any point tapped on the map or the profile, the
   summary, aerodromes (METAR / TAF) and table behind "i", the settings behind "Flight". Profile and slice in SVG
   (vector lines, smooth fields); the profile is offered to the maps module's sheet as a pure `drawSection` (section.js). The map
-  base is the maps module's (`modules/maps/lib/map_base.js`); only its three-position sheet is still a copy
-  (`maps_copy_sheet.js`, to be replaced by `frame/lib/sheet.js`). Everything through the frame (`ctx.data` for the current flight, read only; `ctx.net`
+  base is the maps module's (`modules/maps/lib/map_base.js`), the bottom sheet the frame's (`frame/lib/sheet.js`);
+  touch gestures are kept on the map alone, the buttons answer a tap at once. Everything through the frame (`ctx.data` for the current flight, read only; `ctx.net`
   for Open-Meteo, METAR and TAF, the avwx key added by the frame; `ctx.aerodb` for a route text), four languages,
   `--sog-*` tokens. **Shared weather cache** `cache/weather/<model>/<cell>/<day>.json` (cells at the model's resolution,
   0.1° floor; valid for the model run; only the missing cells, days and variables are asked; a tally waits under 600

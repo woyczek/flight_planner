@@ -2,6 +2,22 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (evening) — the frame's sheet, touch on the map alone
+
+- **`maps_copy_sheet.js` replaced by `frame/lib/sheet.js`** (relay: "tu peux faire cette migration dès maintenant",
+  `frame/INTEGRATION.md` § 11): the frame's classes on the panel, its head, handle, title, ✕ and body; the positions are
+  names (`collapsed`, `default`, `expanded`); the ◀ ▶ and ✕ buttons are left out of the handle's gestures (`ignore`);
+  the position is kept between two mounts. What stays in the module: `settled` (map size, reframing, redraw).
+- **"Le volet glissant fonctionne, mais pas les boutons"** (user, iPhone, relayed): not reproduced with touch events in
+  an emulated iPhone 13 (Chromium; WebKit is not available in the session): Layers, the map tap, ✕, the handle, the
+  profile tap and ◀ ▶ all answer, and the element under the finger is the button. No `preventDefault` on `touchstart`
+  in the frame or the module; the header is in the grid's flow (no overlap by the safe area). Suspected: the
+  `touch-action: none` set on the whole map box (buttons included) — on Safari it can swallow the tap of a control
+  inside it. Hardened: `touch-action: none` on the map canvas alone, `manipulation` on the module's controls. The
+  user's screenshot and the names of the buttons that do not answer are asked through the relay.
+- **Buttons stay in the tools row for now** (relay): they go onto the map with the frame's overlay layer; "too many
+  elements in the header" is answered there.
+
 ## 24 October 2026 (afternoon) — the shared map base
 
 - **`maps_copy_base.js` replaced by `modules/maps/lib/map_base.js`** (maps lot `316ab3aa`, relay): `startTiles`,
@@ -9,7 +25,7 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   with the copy: an error before `load` always gives up (the copy gave up only when the map was not loaded), and
   Mercator is forced at every style. `mapSize` now runs on every size change, after a settle, and on return of a hidden
   tab (`visibilitychange`, `pageshow`); `movestart` counts as the user's only when it is not the base's own resize.
-  Only the sheet is still a copy (`maps_copy_sheet.js`, until `frame/lib/sheet.js`).
+  Only the sheet was still a copy (`maps_copy_sheet.js`, until `frame/lib/sheet.js`; replaced the same evening).
 - **`drawSection` takes a precomputed `model`** (maps' request: its sheet redraws at every drag step), documented in
   INTEGRATION § 5, with what reading from the cache only implies (the run kept in `cache/weather/<model>/meta.json`).
 

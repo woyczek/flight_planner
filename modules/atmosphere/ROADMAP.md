@@ -34,19 +34,23 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 4. Screen redone on the maps module's template (fixed view, map on top, profile or local slice below, **i** and
    **Flight** in the block, the maps module's three-position sheet), the map overlay with the maps module's technique (no lag), the profile and the slice in SVG.
    Checked at 390 × 844 and 1280 × 800: no page scroll, no JavaScript error, the overlay follows a drag.
+5. Shared bases: the map's (`modules/maps/lib/map_base.js`) and the frame's sheet (`frame/lib/sheet.js`); the copies
+   removed. Touch kept on the map alone. Checked with touch events (iPhone 13 emulated in Chromium): Layers, the map
+   tap, ✕, the handle, a tap on the profile and ◀ ▶ all answer.
 
 ## Not checked yet
 
 - A real Open-Meteo load in the frame (the session's network cut Open-Meteo at times), a TAF with a real avwx key
   through `ctx.net`, the current flight synchronised from the private data repository on Pages, a route text resolved
-  by aerodb on a device with the SIA base, a phone width by eye.
+  by aerodb on a device with the SIA base, a phone width by eye, Safari on an iPhone (WebKit is not in the session).
 
 ## Next
 
 1. **Review** by the user on Pages.
-2. **Shared sheet**: the map base is shared (`modules/maps/lib/map_base.js`); the sheet is still a copy
-   (`maps_copy_sheet.js`), to replace by `frame/lib/sheet.js` when the frame lot lands. **Landscape** (later lot): map left, narrow block right, buttons as a
-   rail on the right edge — for the ergonomics session.
+2. **Buttons on the map** (relay, user: "header, carte, carte, footer. Les autres infos sont mises ailleurs"): once the
+   frame's overlay layer is given, the tools row goes onto the map (left: Layers; right: round 44 px buttons Flight,
+   i, Load, the altitude chip, the frame's full screen), the flight in brief becomes the sheet's title. **Landscape**
+   (later lot): map left, narrow block right, buttons as a rail on the right edge — for the ergonomics session.
 3. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
    `ctx.weather`, show the tally in Settings › Diagnostics; then Fuel reads its winds aloft through it
    (`cache/fuel/aloft.json` retired), so the quota is paid once.

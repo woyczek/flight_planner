@@ -8,7 +8,6 @@
 | `texts.js` | every text, `[fr, en, de, es]`, for `ctx.t` |
 | `section.js` | pure SVG renderers of the profile and the slice (§ 5) |
 | `atmo.js` | pure computations: columns at an hour, reading at a pressure altitude, density, inversions, icing, trajectory, grid, contours; reuses `modules/fuel/winds.js` |
-| `maps_copy_sheet.js` | **copy of the maps module's sheet**, isolated so that replacing it is an import: `createSheet` (→ `frame/lib/sheet.js`, relay's decision of 24 Oct 2026) |
 | `weather_store.js` | the shared weather cache (§ 3), written to move unchanged into `frame/weather` |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
@@ -31,6 +30,12 @@
   segments in lon / lat, labels, highs and lows, winds, coloured trajectory) is computed once per data set, never per
   frame. Without tiles (offline, no WebGL, host refused): the plain background (`plainView`, `drawPlain`, the countries'
   outlines). What stays in the module: the map's events once loaded, the overlay and its redraw loop.
+- **Bottom sheet: the frame's** (`frame/lib/sheet.js`, `frame/INTEGRATION.md` § 11): `f-sheet` on the module's root,
+  `f-sheet-panel` / `f-sheet-head` / `f-sheet-grip` / `f-sheet-title` / `f-sheet-close` / `f-sheet-body` on its parts;
+  `createSheet({ root, panel, head, grip, pos, ignore, labels, onChange, onSettle })`, the position kept between two
+  mounts; `onSettle` resizes the map, reframes it unless the user moved it, and redraws the block when its size changed.
+- **Touch**: `touch-action: none` on the map alone (MapLibre takes its gestures there), `manipulation` on the module's
+  buttons, selects and fields (no double-tap zoom, no delay).
 - Everything goes through `ctx`: `data` (current flight read only, its own cache files), `net` (Open-Meteo, METAR,
   TAF), `aerodb.coords` (names of a route text), `t` / `lang`, `notify`, `identity.trigram`. No `fetch`, no storage
   of its own, no key.

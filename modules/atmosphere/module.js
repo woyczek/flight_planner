@@ -43,10 +43,10 @@ import {
   plainView,
   drawPlain
 } from '../maps/lib/map_base.js';
-// copie isolée de la feuille de la Carte, à remplacer par un import de frame/lib/sheet.js
+// feuille à trois positions : primitive du cadre (frame/INTEGRATION.md § 11)
 import {
   createSheet
-} from './maps_copy_sheet.js';
+} from '../../frame/lib/sheet.js';
 import {
   TX
 } from './texts.js';
@@ -79,7 +79,7 @@ export const meta = {
     policy: 'cache'
   }],
   files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'section.js?v=0', 'texts.js?v=0', '../maps/lib/map_base.js?v=0',
-    'maps_copy_sheet.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0', '../maps/render.js?v=0',
+    '../../frame/lib/sheet.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0', '../maps/render.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
   // du module Carte, gardés au premier usage : MapLibre, et les contours des pays du fond uni
@@ -222,7 +222,7 @@ function fieldCanvas(nx, ny, rgbaOf) {
 // styles : jetons du cadre (--sog-*), classes préfixées « at- » sous [data-module="atmosphere"] ; gabarit du module Carte
 // (vue fixe : la carte prend ce que le bloc du bas laisse, le bloc défile dedans)
 const STYLE = `
-[data-module="atmosphere"]{--at-head:44px;--at-p1:.38;--at-m1:170;--at-p2:.7;--at-m2:260;--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);--at-inv:var(--sog-chart-2);--at-ice:var(--sog-chart-5);--at-terrain:color-mix(in srgb,var(--sog-chart-6) 55%,var(--sog-chart-bg))}
+[data-module="atmosphere"]{--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);--at-inv:var(--sog-chart-2);--at-ice:var(--sog-chart-5);--at-terrain:color-mix(in srgb,var(--sog-chart-6) 55%,var(--sog-chart-bg))}
 [data-module="atmosphere"] .at-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 [data-module="atmosphere"] .at-tools{display:flex;align-items:center;gap:6px;padding:2px 8px;flex:none}
 [data-module="atmosphere"] .at-tools .at-alt{flex:1 1 auto;min-width:0;max-width:380px}
@@ -230,8 +230,9 @@ const STYLE = `
 [data-module="atmosphere"] .at-tools [aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="atmosphere"] .at-info{display:flex;align-items:center;gap:6px;padding:0 8px 2px;flex:none;min-width:0}
 [data-module="atmosphere"] .at-sum{flex:1 1 auto;min-width:0;font-size:var(--sog-size-xs,12px);color:var(--sog-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-[data-module="atmosphere"] .at-box{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:var(--sog-chart-grid);touch-action:none;isolation:isolate;border-top:1px solid var(--sog-border);border-bottom:1px solid var(--sog-border)}
-[data-module="atmosphere"] .at-map{position:absolute;inset:0}
+[data-module="atmosphere"] .at-box{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:var(--sog-chart-grid);isolation:isolate;border-top:1px solid var(--sog-border);border-bottom:1px solid var(--sog-border)}
+[data-module="atmosphere"] .at-map{position:absolute;inset:0;touch-action:none}
+[data-module="atmosphere"] :is(button,select,input,label){touch-action:manipulation}
 [data-module="atmosphere"] canvas.at-over{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 [data-module="atmosphere"] .at-box.at-flat canvas.at-over{pointer-events:auto}
 [data-module="atmosphere"] .at-layers-btn{position:absolute;left:8px;top:8px;z-index:4;width:var(--sog-touch,44px);height:var(--sog-touch,44px);min-height:0;display:grid;place-items:center;padding:0;background:var(--sog-surface);box-shadow:var(--sog-shadow)}
@@ -243,22 +244,10 @@ const STYLE = `
 [data-module="atmosphere"] .at-layers[hidden]{display:none}
 [data-module="atmosphere"] .at-hint{position:absolute;left:calc(16px + var(--sog-touch,44px));right:8px;top:8px;width:fit-content;margin:0 auto;z-index:3;font-size:12px;background:color-mix(in srgb,var(--sog-surface) 85%,transparent);color:var(--sog-muted);padding:2px 8px;border-radius:99px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-module="atmosphere"] .at-maptip{position:absolute;z-index:6;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:5px 7px;font-size:12px;line-height:1.35;box-shadow:var(--sog-shadow);white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
-@media (min-width:761px){[data-module="atmosphere"]{--at-p1:.35}}
-[data-module="atmosphere"] .at-data{position:relative;z-index:1;flex:none;display:flex;flex-direction:column;box-sizing:border-box;height:max(calc(var(--at-p1) * 100%),calc(var(--at-m1) * 1px));min-height:0;overflow:hidden;background:var(--sog-surface);border-top:1px solid var(--sog-border);border-radius:var(--sog-radius) var(--sog-radius) 0 0;box-shadow:0 -2px 8px #0000001a;transition:height .2s ease;container-type:inline-size}
-[data-module="atmosphere"][data-sheet="0"] .at-data{height:calc(var(--at-head) + 1px)}
-[data-module="atmosphere"][data-sheet="2"] .at-data{height:max(calc(var(--at-p2) * 100%),calc(var(--at-m2) * 1px))}
-[data-module="atmosphere"] .at-data.at-nt{transition:none}
-@media (prefers-reduced-motion:reduce){[data-module="atmosphere"] .at-data{transition:none}}
-[data-module="atmosphere"][data-sheet="0"] .at-dbody{display:none}
-[data-module="atmosphere"] .at-dhead{flex:none;display:flex;align-items:stretch;height:var(--at-head);font-size:.92em;touch-action:none;user-select:none;-webkit-user-select:none}
-[data-module="atmosphere"] .at-grip{position:relative;flex:1 1 0;min-width:0;min-height:0;height:100%;display:flex;align-items:center;margin:0;padding:6px 8px 0;border:0;border-radius:0;background:none;color:inherit;font:inherit;text-align:left;cursor:grab;touch-action:none}
-[data-module="atmosphere"] .at-grip:active{cursor:grabbing}
-[data-module="atmosphere"] .at-pill{position:absolute;left:50%;top:6px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:color-mix(in srgb,var(--sog-muted) 55%,transparent)}
-[data-module="atmosphere"] .at-grip b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-module="atmosphere"] .at-dhead>button{flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
-[data-module="atmosphere"] .at-dhead [hidden]{display:none}
-[data-module="atmosphere"] .at-dbody{flex:1 1 0;min-height:0;overflow:auto;position:relative}
-[data-module="atmosphere"] .at-dbody.at-plot{overflow:hidden}
+[data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
+[data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
+[data-module="atmosphere"] .f-sheet-body.at-dbody{position:relative}
+[data-module="atmosphere"] .f-sheet-body.at-dbody.at-plot{overflow:hidden}
 [data-module="atmosphere"] .at-tip{position:absolute;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:6px 8px;font-size:12px;line-height:1.4;box-shadow:var(--sog-shadow);white-space:nowrap;z-index:5;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .at-tip .m,[data-module="atmosphere"] .at-maptip .m{color:var(--sog-muted)}
 [data-module="atmosphere"] .at-sd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:8px;height:100%}
@@ -295,6 +284,8 @@ const STYLE = `
 `;
 
 let stop = null;
+/** Position de la feuille gardée d'un montage à l'autre dans la même page (la primitive n'en garde pas). */
+let sheetKeep = 'default';
 
 export async function mount(el, ctx) {
   const {
@@ -419,13 +410,14 @@ export async function mount(el, ctx) {
   <div class="at-hint" data-at="hint">${esc(T('tapHint'))}</div>
   <div class="at-maptip" data-at="mapTip"></div>
 </div>
-<section class="at-data" data-at="data">
-  <div class="at-dhead"><button type="button" class="at-grip" data-at="grip" aria-expanded="true" aria-label="${esc(T('sheetSize'))}"><span class="at-pill" aria-hidden="true"></span><b data-at="dtitle"></b></button>
+<section class="f-sheet-panel" data-at="data">
+  <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><b class="f-sheet-title" data-at="dtitle"></b></button>
     <button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" hidden>◀</button>
     <button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" hidden>▶</button>
-    <button type="button" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
-  <div class="at-dbody" data-at="dbody"></div>
+    <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
+  <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
+  el.classList.add('f-sheet');
   probe.style.display = 'none';
   el.append(probe);
   // le formulaire « Vol » est construit une fois et gardé (les champs gardent leur saisie d'un affichage à l'autre)
@@ -667,7 +659,7 @@ export async function mount(el, ctx) {
 
   /** Affiche un contenu du bloc : profil (défaut), tranche locale, « i », réglages. */
   function show(view) {
-    if (S.view !== view && sheet?.pos === 0) setSheet(1, true);
+    if (S.view !== view && sheet?.pos === 'collapsed') sheet.set('default', true);
     S.view = view;
     $('btnFlight').setAttribute('aria-pressed', String(view === 'settings'));
     $('btnInfo').setAttribute('aria-pressed', String(view === 'info'));
@@ -695,7 +687,7 @@ export async function mount(el, ctx) {
       return;
     }
     // feuille réduite : rien à dessiner (redessiné à sa réouverture, la taille n'étant plus celle du dernier dessin)
-    if (sheet?.pos === 0 && (v === 'profile' || v === 'slice')) return;
+    if (sheet?.pos === 'collapsed' && (v === 'profile' || v === 'slice')) return;
     if (v === 'profile') return drawProfile();
     if (v === 'slice') return drawSlice();
     if (v === 'info') return drawInfo();
@@ -1072,24 +1064,19 @@ export async function mount(el, ctx) {
     }).join('');
   }
 
-  // ---------------------------------------------------------------- feuille du bas (celle du module Carte)
-  // Hauteur fixe à trois positions, tirée par la poignée de son en-tête (maps_copy_sheet.js, copie de la Carte à remplacer
-  // par frame/lib/sheet.js) ; son contenu défile dedans, la page jamais. Propre au module : ce qui suit un changement de
-  // taille.
+  // ---------------------------------------------------------------- feuille du bas (primitive du cadre)
+  // Hauteur fixe à trois positions, tirée par la poignée de son en-tête (frame/lib/sheet.js) ; son contenu défile dedans,
+  // la page jamais. Propre au module : la position gardée d'un montage à l'autre, et ce qui suit un changement de taille.
   let sheet = null;
-  const setSheet = (pos, instant) => sheet?.set(pos, instant);
-  /** Après un changement de taille (feuille, rotation) : le fond MapLibre reprend la taille du cadre, la route reste
-   *  cadrée tant que l'utilisateur n'a pas déplacé la carte, le bloc est redessiné ; en une fois, quand la taille s'est
-   *  arrêtée. */
-  function settle() {
-    clearTimeout(S.settleT);
-    S.settleT = setTimeout(() => {
-      if (!alive) return;
-      if (S.map) mapSize(S.map, $('box'));
-      if (S.map && !S.userMoved) fitMap();
-      schedule();
-      if ((S.view === 'profile' || S.view === 'slice') && `${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) drawData();
-    }, 120);
+  /** Après un changement de taille (feuille, rotation ; onSettle de la feuille, 120 ms après le dernier) : le fond
+   *  MapLibre reprend la taille du cadre, la route reste cadrée tant que l'utilisateur n'a pas déplacé la carte, le bloc
+   *  est redessiné s'il n'est plus à la taille de son dernier dessin. */
+  function settled() {
+    if (!alive) return;
+    if (S.map) mapSize(S.map, $('box'));
+    if (S.map && !S.userMoved) fitMap();
+    schedule();
+    if ((S.view === 'profile' || S.view === 'slice') && `${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) drawData();
   }
 
   // ---------------------------------------------------------------- carte (technique du module Carte)
@@ -1927,7 +1914,7 @@ export async function mount(el, ctx) {
   const ro = new ResizeObserver(() => {
     if (S.map) mapSize(S.map, $('box'));
     schedule();
-    if (`${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) settle();
+    if (`${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) sheet?.settle();
   });
   ro.observe(dbody);
   ro.observe($('box'));
@@ -1970,8 +1957,8 @@ export async function mount(el, ctx) {
   });
   stop = () => {
     alive = false;
+    sheet?.stop();
     cancelAnimationFrame(frame);
-    clearTimeout(S.settleT);
     ro.disconnect();
     mo.disconnect();
     mq.removeEventListener('change', repaint);
@@ -1983,15 +1970,15 @@ export async function mount(el, ctx) {
   };
   sheet = createSheet({
     root: el,
-    data: $('data'),
+    panel: $('data'),
     head: $('grip').parentNode,
     grip: $('grip'),
-    prefix: 'at',
-    title: pos => `${T('sheetSize')} (${T(`sheet${pos}`)})`,
-    skip: '[data-at="dclose"],[data-at="prev"],[data-at="next"]',
-    onSettle: settle
+    pos: sheetKeep,
+    ignore: '[data-at="dclose"],[data-at="prev"],[data-at="next"]',
+    labels: (pos, rank) => `${T('sheetSize')} (${T(`sheet${rank}`)})`,
+    onChange: pos => sheetKeep = pos,
+    onSettle: settled
   });
-  sheet.set(sheet.pos, true);
   show('profile');
   // à l'ouverture, seulement la réserve de l'appareil : Open-Meteo n'est lu que sur « Charger »
   load({
