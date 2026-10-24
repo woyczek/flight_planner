@@ -502,6 +502,8 @@ class Ctx(Asserts):
                 return o && o.getBoundingClientRect().width > 0 }""", timeout=20000)
             if sheet:
                 p.wait_for_function("() => { const s = document.querySelector('.f-sheet-panel'); return s && s.getBoundingClientRect().height > 0 }", timeout=20000)
+        if name == 'fuel':                       # mounted for good: the body is inert while the current flight is being read
+            p.wait_for_function("() => { const b = document.querySelector('[data-module=fuel] [data-body]'); return !!b && !b.inert }", timeout=20000)
         self.settle()
 
     def settle(self, quiet=350, timeout=6000):

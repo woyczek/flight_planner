@@ -1449,6 +1449,10 @@ function onPlanInput(e) {
     f = S.flight;
   if (!k) return;
   if (e.type === 'input' && e.target.tagName === 'SELECT') return;
+  // vol courant pas encore lu : l'écran est inerte (refresh), un champ changé quand même (saisie programmée, remplissage
+  // automatique) n'écrit pas dans le vol d'attente — completeMount le remplace par le vol lu, et le niveau, le départ ou
+  // l'appareil tapés là disparaîtraient en laissant un devis « 0 ft » ; le dernier état lu gagne, les champs sont redessinés
+  if (S.flightPending) return;
   const r = f.route ||= emptyFlight().route;
   switch (k) {
     case 'acsearch':
@@ -3710,12 +3714,30 @@ function download(name, text, type) {
 /** Passe d'un écran du module à l'autre (Devis, Fiches). */
 function show(view) {
   S.view = view;
+  viewInAddress(view);
   for (const b of S.el.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === view));
   view === 'sheets' ? renderSheets() : renderPlan();
 }
 
+/** Écran affiché → adresse : `?view=sheets` pour les Fiches, rien pour le Devis (les autres clés, `with`, `from`, `focus`,
+ *  restent). Pas de navigation, pas de remontage (replaceState : aucun événement), l'adresse seule change pour que le
+ *  popover du cadre marque la rangée de l'écran affiché. Rien n'est écrit si l'adresse n'est plus celle de fuel. */
+function viewInAddress(view) {
+  const [id, query = ''] = location.hash.slice(1).split('?');
+  if (id !== 'fuel') return;
+  const q = new URLSearchParams(query);
+  if (view === 'sheets') q.set('view', 'sheets');
+  else q.delete('view');
+  const rest = q.toString(),
+    hash = `#fuel${rest ? `?${rest}` : ''}`;
+  if (location.hash !== hash) history.replaceState(history.state, '', hash);
+}
+
 export async function mount(el, ctx) {
-  S = {
+  // jeton de ce montage : S lui-même. Un montage dont l'adresse a changé pendant ses lectures (unmount, ou un second
+  // mount qui a posé son propre S) ne doit plus rien écrire : S est un global du module, sans ce contrôle le show() du
+  // premier montage tournerait sur l'état du second (relais cloud, 24 oct. 2026, DECISIONS.md)
+  const self = S = {
     el,
     ctx,
     sheets: [],
@@ -3730,6 +3752,7 @@ export async function mount(el, ctx) {
     [, kept0, fuelSettings, ofp, wxKept, ui, aloftKept, lastAcKept] = await Promise.all([loadLibs(), rd(pilotPath(
       'current_flight.json')), rd(pilotPath('fuel.json')), rd(OFP_PATH), rd(WX_PATH), rd(UI_PATH), rd(ALOFT_PATH), rd(
       LAST_AC_PATH)]);
+  if (gone(self)) return; // démonté, ou remplacé par un autre montage, pendant les lectures
   S.refsPending = true; // registre d'aerodb et fiches pas encore là : ni devis, ni écriture du devis
   S.flightPending = kept0 == null; // vol courant jamais lu sur cet appareil : écran en attente, aucune écriture
   S.settingsPending = fuelSettings == null;
@@ -3769,7 +3792,6 @@ export async function mount(el, ctx) {
   S.body = el.querySelector('[data-body]');
   el.querySelector('.f-tabs').onclick = e => e.target.dataset.view && show(e.target.dataset.view);
   // fiches changées ailleurs (synchronisation, autre onglet) ; vol courant écrit par maps
-  const self = S; // ce montage : une relecture qui revient après le démontage n'écrit rien
   S.stops.push(ctx.aerodb?.on?.('change', async e => {
     if (!e?.aircraft || gone(self) || !S.body) return;
     const A = await ctx.aerodb.aircraft().catch(() => S.A);

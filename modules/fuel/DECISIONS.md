@@ -4,6 +4,32 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **24 Oct 2026 (relais cloud) — a mount that lost its address writes nothing; the view is in the address; the J1 "0 ft"**
+  (lot `v3-fuel-mount`). **Cause of the race**: `S` is a module global and `mount()` awaited its reads (libraries, seven
+  `ctx.data.read`) before touching it, then wrote `S.…` and called `show('plan')` without asking whose `S` it was. The frame
+  calls `unmount()` on any address change, even while the mount is still reading: `#fuel` then `#atmosphere` nulled the
+  first `S` (the late mount then threw on `S.refsPending`), and `#fuel` then `#fuel?view=sheets` let the first mount, when its
+  reads came back after the second's, run `show('plan')` on the second mount's `S` and `S.body` (the Quote screen drawn over a
+  Sheets address). **Fix**: the mount's token is its own state object, `const self = S = {…}` taken before the first `await`;
+  `if (gone(self)) return` after the reads (`gone = s => S !== s`, already used by `completeMount` and every later
+  continuation); `unmount()` sets `S = null`, which invalidates it. No timer, no observer. **The view in the address**:
+  `show(view)` calls `viewInAddress`, which writes `?view=sheets` (Fiches) or removes `view` (Devis) with
+  `history.replaceState` (no event, no navigation, no new mount; `with`, `from`, `focus` stay; nothing is written once the
+  address is no longer `#fuel`), so the frame's popover (`currentRow` reads the address when it opens) marks the right row.
+  At mount `?view=sheets` opens the Sheets, anything else the Quote (F1: never the Sheets by default; `focus=route` wins).
+  **J1 "Bloc · 0 ft" under load** (not a race of the quote): the module keeps the screen `inert` while the current flight of
+  a new device is being read (`flightPending`), and `completeMount` then replaces the waiting flight by the one read
+  (the last state read wins; the typed values would otherwise erase a stored flight). A finger cannot type in an inert screen,
+  but Playwright's `fill` does (it sets the value and fires `input`): J1 typed the level during that window, the level went
+  into the waiting flight, was replaced, and the quote read `levelFt = 0`. Reproduced with a delayed read of `pilot/` (F7). Two
+  changes: `onPlanInput` ignores a field edited while `flightPending` (nothing written into the waiting flight; the fields are
+  redrawn from the flight read), and the suite's `ready('fuel')` waits for the body to be no longer inert, as a pilot does.
+  Tests: F7 (both directions of the race, with a delayed read; the Quote/Sheets switch writes the address and the popover
+  marks Fiches; a quote typed after a slow read names FL270, never "0 ft"); A7 no longer waits for fuel's first screen (the
+  wait was the workaround of this race). **Not fixed, not fuel's**: the frame does not serialise navigations; two address
+  changes within one task (`#atmosphere` then `#fuel?view=sheets`) leave one `section[data-module]` per navigation in
+  `#fView` (seen: three `fuel` sections after `#fuel`, `#atmosphere`, `#fuel?view=sheets` without waiting). To tell the frame.
+
 - **23 Oct 2026 — the weather corridor reads aerodb's light index** (aerodb's ae427b934, read again here): the
   corridor asks `aerodromes({ bbox, lite: true })`; the light index (one compact line per ICAO aerodrome: code,
   name, position, elevation, runway axis, declination) holds everything the corridor and the aerodromes' cards use

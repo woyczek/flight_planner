@@ -129,9 +129,6 @@ def _tab(c, tab_id):
 @case('A7', 'Group popover', 'A', screens=False, rule='frame/INTEGRATION 9.1; V3_SPECIFICATION 7.1 rules 4 and 14')
 def a7(c):
     c.open('fuel')
-    # fuel has finished mounting before the address changes: a module changed while its own mount is still reading (fuel keeps
-    # its state in a module global) takes the first mount's view; a pilot does not touch the bar within milliseconds of the start
-    c.until("!!document.querySelector('[data-module=\"fuel\"] .fu-step')", timeout=15000, what='fuel has drawn its Quote screen')
     pop = '.f-tabpop'
     c.tap(_tab(c, 'prepare'))                       # a second tap: the tab is already the active one
     c.until("!!document.querySelector('.f-tabpop')", what='the popover opens on a second tap on Préparer')
