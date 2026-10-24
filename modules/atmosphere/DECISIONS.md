@@ -30,6 +30,12 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   gutter: it is now measured from the level labels drawn (33 px for "FL350"), in the cut and in the slice, for the map
   too. The slice's temperature labels go one in two when they would touch (the 319 px landscape column). Checked:
   390 × 664 and 390 × 844 (column at x 346, no overlap with the drawing), 844 × 390 (row above), ▶ moves on.
+- **Third refinement** (user: "Les icônes passent en horizontal quand la ligne du haut apparaît (objectif : maximiser
+  la largeur dispo)"): the ◀ ▶ column exists only with the bare head (default position, portrait); whenever the titled
+  head shows (expanded, collapsed, the landscape column), ◀ ▶ go back into the title row at its right and the drawing
+  takes the whole width (no 44 px margin, no row above it in landscape). Moved at every stop of the sheet with the
+  head. Checked: 390 × 664 default column, body 346 px; expanded in the row, body 390 px; 844 × 390 in the row, body
+  319 × 259 px.
 - **Measured** (real AROME data, LFRD → LFBD FL160, default position): 390 × 664: body 95 → 112 px, distance axis
   hidden → visible; 390 × 844: 144 → 161 px; 844 × 390 (the right column): 259 → 276 px, so the surface strips come
   back (their labels now widen the left margin instead of being cut). The slice fits its body (112 / 112 px, no

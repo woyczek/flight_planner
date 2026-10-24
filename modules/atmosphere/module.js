@@ -178,13 +178,15 @@ const STYLE = `
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
 [data-module="atmosphere"] .f-sheet-body.at-dbody{position:relative}
-/* ◀ ▶ des tranches (§ 7.1.13, gabarit des puces de la Carte) : colonne de 44 px à droite du dessin en portrait, sous la tête et la
-   ligne du curseur (30 px) ; ligne de 44 px au-dessus du dessin en paysage ; boutons de 40 px, pas de 44 px */
+/* ◀ ▶ des tranches (§ 7.1.13, gabarit des puces de la Carte) : avec la tête nue, colonne de 44 px à droite du dessin, sous la tête
+   et la ligne du curseur (30 px), boutons de 40 px, pas de 44 px ; avec la ligne de titre (agrandie, réduite, paysage), dans cette
+   ligne à droite */
 [data-module="atmosphere"] .at-chips{position:absolute;z-index:2;right:0;top:calc(var(--f-sheet-head) - 1px + 30px);width:44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
 [data-module="atmosphere"] .at-chips[hidden]{display:none}
 [data-module="atmosphere"] .f-sheet-head-bare~.at-chips{top:calc(var(--f-sheet-head-bare) + 30px)}
 html:not(.f-land) [data-module="atmosphere"] .at-chipcol>.at-dbody{margin-right:44px}
-html.f-land [data-module="atmosphere"] .at-chips{position:static;flex:none;width:auto;flex-direction:row;justify-content:flex-end;padding:0 8px;height:44px;align-items:center}
+[data-module="atmosphere"] .f-sheet-head>.at-chips{position:static;flex:none;width:auto;flex-direction:row;gap:0;padding:0;height:100%}
+[data-module="atmosphere"] .f-sheet-head>.at-chips>button{width:var(--sog-touch,44px);height:100%;border:0;border-radius:0}
 [data-module="atmosphere"] .at-chips>button{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-fg);box-shadow:none;font-size:14px;cursor:pointer;touch-action:manipulation}
 [data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
 [data-module="atmosphere"] .at-when input{flex:1 1 auto;min-width:0;margin:0;accent-color:var(--sog-accent);touch-action:manipulation}
@@ -356,7 +358,7 @@ export async function mount(el, ctx) {
 <section class="f-sheet-panel" data-at="data">
   <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="srcTag"></span><b class="f-sheet-title" data-at="dtitle"></b></button>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
-  <div class="at-when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
+  <div class="at-when" data-at="when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
   <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
@@ -666,9 +668,7 @@ export async function mount(el, ctx) {
     $('dclose').hidden = view === 'profile';
     // ◀ ▶ des tranches de la route : en colonne à droite du dessin (portrait), en ligne au-dessus (paysage), comme les puces de
     // la Carte (§ 7.1.13) ; le dessin laisse la place de la colonne
-    const nav = view === 'slice' && S.local?.kind === 'route';
-    $('chips').hidden = !nav;
-    $('data').classList.toggle('at-chipcol', nav);
+    $('chips').hidden = !(view === 'slice' && S.local?.kind === 'route');
     dbody.classList.toggle('at-plot', view === 'profile' || view === 'slice');
     drawData();
     schedule();
@@ -1604,8 +1604,14 @@ export async function mount(el, ctx) {
    *  est alors la seule chose qui dise ce qu'on regarde (règle 13 affinée). Revue à chaque arrêt de la feuille. */
   function applyBare() {
     const head = $('grip').parentNode,
+      chips = $('chips'),
       on = !!bareLabel && sheet?.pos === 'default' && !document.documentElement.classList.contains('f-land');
     head.classList.toggle('f-sheet-head-bare', on);
+    // ◀ ▶ : en colonne à droite du dessin avec la tête nue ; dans la ligne de titre, à droite, dès qu'elle est là (le dessin
+    // garde toute sa largeur)
+    if (on && chips.parentNode === head) $('when').after(chips);
+    if (!on && chips.parentNode !== head) $('dclose').before(chips);
+    $('data').classList.toggle('at-chipcol', on && !chips.hidden);
     if (on) {
       setAttr(head, 'aria-label', bareLabel);
       setAttr(head, 'role', 'group');
