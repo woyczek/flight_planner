@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame finishing touches: `hidden` on overlay buttons, three icons, launcher line in the "i" pop-up** (`frame/design/primitives.css`,
+  `frame/lib/icons.js`, `frame/app.js`, `modules/maps/module.js`; frame INTEGRATION § 9.3 / § 10 and SPEC) — a button of the overlay layer
+  with `hidden` is now really hidden by the frame, so the Map drops its own rule; `cloud`, `undo` and `move4` (four directions) join the
+  frame's icons and the Map no longer carries copies of them; when the data goes through the launcher, the "i" pop-up has a line
+  "Launcher: <computer> · <state>" (four languages) that opens Settings, the only place where a phone shows the host.
+
 - **Flights across the date line: Siberia to Alaska on the Map** (`frame/lib/geo.js` new, `frame/lib/test/geo.html`,
   `modules/maps/module.js`, `render.js`, `profile.js`, `contours.js`, `lib/map_base.js`, `modules/fuel/winds.js`; frame
   INTEGRATION § 12 and SPEC, maps SPEC § 4 octies / INTEGRATION / DECISIONS, the manual in four languages) — the helper that

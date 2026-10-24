@@ -283,6 +283,9 @@ adds the class `f-ov-btn` to it and appends it to `ov.left` or `ov.right`.
   the hit area reaches 48 px (the 2 px around it), `--sog-surface` at 92 %, a hairline, a light shadow, `aria-pressed="true"`
   tinted with the accent; the icon is 22 px. Its rules weigh three classes: the designs' button rules do not reach it.
   The layer lets map gestures through; only the buttons take touches.
+- **`hidden` is respected**: `.f-overlay button.f-ov-btn[hidden] { display: none }` (`primitives.css`) weighs more than the
+  button's `display: inline-flex`, so a module shows and hides a button with `btn.hidden = …`, no rule of its own. Icons a
+  module may need beyond the menu's: `cloud`, `undo`, `move4` (four directions; `move` is the vertical double arrow) in `frame/lib/icons.js`.
 - **Full-screen button**: the frame appends it itself to the **right** column of every fixed module (not in a pane), and
   keeps it the last one visually (`order`) and in the keyboard order (`button()` inserts before it): § 9.4. A module neither
   draws nor handles it. `ov.full` is `true` while the page is in full screen.
@@ -350,6 +353,9 @@ prefix in its `meta.writes` with `policy: 'cache'`.
   "Write the report", and the header shows "← My flights"). Without `handoff`, it opens `#flightlog`. `to: 'report'` is
   required by report (`takeHandoff`), whatever the brief of the day says.
 - The frame redraws the badge and the pop-up when the record changes (`watch` on `cache/flightlog/`).
+- **Launcher line of the "i" pop-up**: when the transport is the launcher, the pop-up has a line "Launcher: <host> · <sync
+  state>" (four languages) after the data line, a touch opens Settings; it is what shows the host on a phone, whose header no
+  longer carries it. Nothing for a module to publish.
 - The writer republishes the whole file when its list changes (`updated_at`); an empty `flights` when nothing is left.
 
 ## 11. Sheet primitive (`frame/lib/sheet.js`)

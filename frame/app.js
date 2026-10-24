@@ -215,6 +215,8 @@
         launcher: ['lanceur', 'launcher', 'Starter', 'lanzador'],
         github: ['GitHub', 'GitHub', 'GitHub', 'GitHub']
       },
+      // transport lanceur : le poste qui sert la page et l'état de l'échange (l'hôte n'est plus dans l'en-tête du téléphone)
+      launcher: ['Lanceur : {h} · {s}', 'Launcher: {h} · {s}', 'Starter: {h} · {s}', 'Lanzador: {h} · {s}'],
       offline: ['Hors ligne : travail sur la copie de l’appareil', 'Offline: working on this device’s copy',
         'Offline: Arbeit auf der Kopie dieses Geräts', 'Sin conexión: se trabaja con la copia del dispositivo'
       ],
@@ -1018,6 +1020,14 @@
       }),
       go: s.conflicts ? '#conflicts' : '#settings',
       attn: ATTENTION.has(syncState(s)[0])
+    });
+    if (s?.transport === 'launcher') items.push({
+      k: 'launcher',
+      text: t(T.info.launcher, {
+        h: launcherHere?.host || location.hostname,
+        s: syncState(s)[1]
+      }),
+      go: '#settings'
     });
     if (!net.online()) items.push({
       k: 'offline',

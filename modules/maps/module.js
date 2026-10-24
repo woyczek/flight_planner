@@ -501,13 +501,6 @@ const MODES = [
   ['topo', '<span class="mp-topo" aria-hidden="true"><span></span><span></span><span></span><span></span></span>', ''],
   ['cam', `<span class="mp-ic mp-ic-cam">${svg('plane')}</span>`, ' mp-mil']
 ];
-/** Icônes du module au dessin des icônes du cadre (grille 24, trait 2, currentColor) pour ce que frame/lib/icons.js n'a pas :
- *  un nuage (la coupe météo), une flèche qui revient (annuler) et la croix à quatre flèches (déplacer des points ; l'icône « move »
- *  du cadre est une double flèche verticale). Le cadre n'est pas touché. */
-const localIcon = (name, body) => `<svg class="f-icon" data-i="${name}" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
-const ICON_CLOUD = localIcon('cloud', '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>');
-const ICON_MOVE = localIcon('move-all', '<path d="M12 2v20M2 12h20M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/>');
-const ICON_UNDO = localIcon('undo', '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 let S = null;
 const tt = (row, v) => S.ctx.t(row, v);
@@ -4303,7 +4296,6 @@ const STYLE = `
 [data-module="maps"].mp-tuning .mp-dbody{flex:none;height:260px}
 /* la règle de la vue fixe du cadre (display: flex) est sans poids (:where, frame/INTEGRATION.md § 9.2) : pas de !important */
 @media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start;align-content:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100dvh - 90px);overflow:auto}}
-.f-overlay button.f-ov-btn[data-mp][hidden]{display:none}
 .f-overlay button.f-ov-btn[data-mp]:disabled{opacity:.5;cursor:default}
 .f-overlay button.f-ov-btn[data-mp=mode]{color:var(--sog-accent)}
 .f-overlay button.f-ov-btn[data-mp=mode].mp-mil{color:var(--sog-err)}
@@ -4404,7 +4396,7 @@ function buildOverlay(ctx) {
   ov.over(S.box);
   const btn = (key, o) => {
     const b = ov.button(o);
-    b.dataset.mp = key; // pour la règle [hidden] du module (la règle du cadre sur ces boutons pèse plus que celle du navigateur)
+    b.dataset.mp = key; // crochet des règles du module (désactivé, mode)
     return b;
   };
   S.routeBtn = btn('route', {
@@ -4433,12 +4425,11 @@ function buildOverlay(ctx) {
   S.modeBtn.setAttribute('aria-expanded', 'false');
   S.modeBtn.setAttribute('aria-controls', 'mp-mode-opts');
   S.editBtn = btn('edit', {
-    icon: 'move',
+    icon: 'move4',
     label: ctx.t(TX.editHelp),
     pressed: false,
     onClick: () => setEdit(!S.edit.on)
   });
-  S.editBtn.innerHTML = ICON_MOVE;
   S.followBtn = btn('follow', {
     icon: 'plane',
     label: ctx.t(TX.followHelp),
@@ -4455,11 +4446,10 @@ function buildOverlay(ctx) {
     onClick: () => setAdding(!S.edit.adding)
   });
   S.undoBtn = btn('undo', {
-    icon: 'refresh',
+    icon: 'undo',
     label: ctx.t(TX.undoHelp),
     onClick: () => undoEdit()
   });
-  S.undoBtn.innerHTML = ICON_UNDO;
   S.layersBtn = btn('layers', {
     icon: 'layers',
     side: 'left',
@@ -4500,7 +4490,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 </div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${ICON_CLOUD}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
