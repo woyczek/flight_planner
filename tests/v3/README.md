@@ -11,8 +11,10 @@ from the plan in [PLAN.md](PLAN.md): the frame's layout and chrome, the overlay 
 Maps, Atmosphere, Fuel, Flightlog and Report screens, the designs, and the repository rules. A case that fails names the
 **rule** that broke, the value it **measured** and the value it **expected**, not a selector.
 
-Requirements: Python 3, the Playwright Python package, Chromium at
-`/opt/pw-browsers/chromium-1194/chrome-linux/chrome` (override with the `SOG_CHROME` environment variable). Case I5 also
+Requirements: Python 3, the Playwright Python package (`pip install playwright`), and a Chromium: the runner takes
+`SOG_CHROME` if set, else the newest build under `/opt/pw-browsers` or `~/.cache/ms-playwright` (the build number changes
+with the container image), else Playwright's own (`python3 -m playwright install chromium`). A missing package or browser
+stops the run before any worker starts, with the fix printed and exit code 2. Case I5 also
 needs `jsbeautifier` and `cssbeautifier` (`pip install jsbeautifier cssbeautifier`) and is skipped, with the reason, without
 them. Nothing else, and nothing is written outside `tests/v3/` (the temporary copies of I4 are removed).
 

@@ -232,6 +232,12 @@ def main():
     ap.add_argument('--jobs', type=int, default=3, help='worker processes (default 3; 1 runs in this process)')
     ap.add_argument('--list', action='store_true', help='list the selected cases and exit')
     args = ap.parse_args()
+    problems = lib.preflight()
+    if problems:
+        for pb in problems:
+            print('PREFLIGHT', pb)
+        print('nothing ran: fix the environment above (exit 2)')
+        return 2
 
     registry = lib.load_cases()
     from cases.known_failures import KNOWN
