@@ -85,11 +85,14 @@ export const TX = {
   errFile: ['Choisissez un fichier current_flight.json.', 'Choose a current_flight.json file.',
     'Wählen Sie eine Datei current_flight.json.', 'Elija un archivo current_flight.json.'
   ],
-  errNoFlight: ['Aucun vol courant pour {tri} : préparez-le dans Carburant, ou choisissez l’exemple.',
-    'No current flight for {tri}: prepare it in Fuel, or choose the example.',
-    'Kein aktueller Flug für {tri}: in Kraftstoff vorbereiten oder das Beispiel wählen.',
-    'Ningún vuelo actual para {tri}: prepárelo en Combustible, o elija el ejemplo.'
+  noFlight: ['Aucun vol prévu : préparez-le dans Carburant.', 'No planned flight: prepare it in Fuel.',
+    'Kein geplanter Flug: bereiten Sie ihn in Kraftstoff vor.', 'Ningún vuelo previsto: prepárelo en Combustible.'
   ],
+  goFuel: ['Préparer dans Carburant', 'Prepare in Fuel', 'In Kraftstoff vorbereiten', 'Preparar en Combustible'],
+  seeExample: ['Voir l’exemple', 'See the example', 'Beispiel ansehen', 'Ver el ejemplo'],
+  tagExample: ['Exemple', 'Example', 'Beispiel', 'Ejemplo'],
+  tagText: ['Route saisie', 'Typed route', 'Eingegebene Route', 'Ruta escrita'],
+  tagFile: ['Fichier', 'File', 'Datei', 'Archivo'],
   fromCurrent: ['vol courant {tri}', 'current flight {tri}', 'aktueller Flug {tri}', 'vuelo actual {tri}'],
   fromExample: ['exemple', 'example', 'Beispiel', 'ejemplo'],
   fromText: ['texte', 'text', 'Text', 'texto'],

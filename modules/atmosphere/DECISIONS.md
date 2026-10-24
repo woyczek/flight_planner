@@ -2,6 +2,25 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (late) — always the current flight; the altitude pill without workaround
+
+- **The request** (user): "Pas de contournement, fix. Même si c'est plus long." and "Un double bouton « carte / météo »
+  sur la vue cartes, qui affiche « pas de vol chargé » et renvoie au module météo… qui a un vol chargé (!?)".
+- **Cause, found here**: with no current flight, Atmosphere fell back silently on the schema's example (C30J F-RAJA,
+  LFRS → LFML) and **kept that choice** in its UI file: once a current flight existed, Atmosphere still showed the
+  example as if it were the planned flight, while the maps module looked for the forecast of the real current flight —
+  hence "no forecast: open Weather", Weather showing "a flight". Second, smaller cause: a level changed in Flight was
+  the only one read, while the maps module reads the cross-section at the flight's own level.
+- **Fixed**: Atmosphere always opens on the current flight (the one Fuel and the maps module read); another flight
+  (example, text, file) is a try of the visit, never kept, and marked in the handle (Example, Typed route, File, Demo).
+  With no current flight nothing is drawn: the block says "No planned flight: prepare it in Fuel" with **Prepare in
+  Fuel** and **See the example** (read from the cache only, like an opening). "Load" on the current flight reads the
+  variables of the chosen level **and** of the flight's level, so the maps module's cross-section is always in the
+  shared cache after a load. Checked end to end (no flight → example → a current flight LFPO → LFLL at FL110, loaded at
+  FL090 → the maps module's Weather shows the cross-section).
+- **Altitude pill**: back to a one-line pill ("FL270 ▾", 14 px) now that the frame aligns its right column
+  (`89496a41`); the round two-line chip was a workaround of the frame's alignment.
+
 ## 24 October 2026 (evening) — the relay's review: nothing written over the map, no status in the title
 
 - **The relay's review after integration** (asked by the user: "Toi, l'ergonomie, tu vérifies"): the template header ·

@@ -12,7 +12,7 @@ the phone's whole frame; portrait only for now (the landscape layout is a later 
 - **Nothing between the header and the map** (`V3_SPECIFICATION.md` § 7.1): the controls are round 44 px buttons laid
   over the map in the frame's overlay layer (`frame/INTEGRATION.md` § 9.3). Left: **Layers**. Right: **Flight** (the
   settings in the bottom block: flight source, departure time, level, cruise speed, data, map grid, Load), **Details**
-  (list icon, not an "i": the frame's header has its own; the details in the bottom block), **Load**, the **altitude chip** (the map's level in brief — Sol / SFC, FL270, Traj.;
+  (list icon, not an "i": the frame's header has its own; the details in the bottom block), **Load**, the **altitude pill** (the map's level in brief — Sol / SFC, FL270, Traj.;
   a tap opens the system's list with the full names; hidden until the map's grid is read), then the frame's **full screen** (header and bar hidden).
 - **Map** (top, all the height the block leaves): at the altitude chosen with its chip — sea level (MSL isobars every
   2 hPa, highs and lows, 2 m isotherms, cloud, 10 m wind), the requested level, each planned step, fixed levels
@@ -41,9 +41,12 @@ the phone's whole frame; portrait only for now (the landscape layout is a later 
 
 ## 2. The flight
 
-- Default: the current flight `pilot/<trigram>/current_flight.json` (schema 1, `modules/fuel/INTEGRATION.md` § 3),
-  **read only**; read again when it changes (`watch`), the forecast then only from the device's cache.
-- Or: the example of the schema, a `current_flight.json` file, or a route text — names resolved by
+- **Always the current flight at opening**: `pilot/<trigram>/current_flight.json` (schema 1,
+  `modules/fuel/INTEGRATION.md` § 3), the one Fuel and the maps module read, **read only**; read again when it changes
+  (`watch`), the forecast then only from the device's cache. None: nothing drawn, "No planned flight" with Prepare in
+  Fuel and See the example.
+- For the visit only (never kept, marked in the handle): the example of the schema, a `current_flight.json` file, or a
+  route text — names resolved by
   `ctx.aerodb.coords`, ICAO or decimal coordinates, `/F270` after a point for a step.
 
 ## 3. The forecast and the quota

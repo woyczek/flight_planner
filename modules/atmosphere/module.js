@@ -223,9 +223,9 @@ const STYLE = `
 [data-module="atmosphere"]{--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);--at-inv:var(--sog-chart-2);--at-ice:var(--sog-chart-5);--at-terrain:color-mix(in srgb,var(--sog-chart-6) 55%,var(--sog-chart-bg))}
 [data-module="atmosphere"] .at-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 [data-module="atmosphere"] .at-box{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:var(--sog-chart-grid);isolation:isolate}
-[data-module="atmosphere"]~.f-overlay .at-lvl{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;box-sizing:border-box;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:color-mix(in srgb,var(--sog-surface) 92%,transparent);color:var(--sog-fg);box-shadow:0 2px 8px #0000002e;font-weight:700;font-size:11px;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:auto;touch-action:manipulation;cursor:pointer}
+[data-module="atmosphere"]~.f-overlay .at-lvl{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:44px;height:44px;box-sizing:border-box;padding:0 12px 0 14px;border:1px solid var(--sog-border);border-radius:min(22px,calc(var(--sog-radius) * 22));background:color-mix(in srgb,var(--sog-surface) 92%,transparent);color:var(--sog-fg);box-shadow:0 2px 8px #0000002e;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:auto;touch-action:manipulation;cursor:pointer}
 [data-module="atmosphere"]~.f-overlay .at-lvl[hidden]{display:none}
-[data-module="atmosphere"]~.f-overlay .at-lvl>span[aria-hidden]{font-size:8px;line-height:1;color:var(--sog-muted)}
+[data-module="atmosphere"]~.f-overlay .at-lvl>span[aria-hidden]{font-size:10px;color:var(--sog-muted)}
 [data-module="atmosphere"]~.f-overlay .at-lvl select{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;cursor:pointer;margin:0}
 [data-module="atmosphere"]~.f-overlay .at-lvl:focus-within{outline:2px solid var(--sog-accent);outline-offset:2px}
 [data-module="atmosphere"]~.f-overlay button.f-ov-btn.at-load{color:var(--sog-accent)}
@@ -255,6 +255,7 @@ const STYLE = `
 [data-module="atmosphere"] .at-slice-info .m{color:var(--sog-muted)}
 @container (max-width:560px){[data-module="atmosphere"] .at-sd{grid-template-columns:1fr}[data-module="atmosphere"] .at-slice-info{display:none}}
 [data-module="atmosphere"] .at-pad{padding:8px}
+[data-module="atmosphere"] .at-go{display:flex;flex-wrap:wrap;gap:8px;padding-top:0}
 [data-module="atmosphere"] .at-kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 20px;margin:0}
 [data-module="atmosphere"] .at-kv>div{display:grid;grid-template-columns:8.5em auto minmax(0,1fr);align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--sog-border);font-size:13px}
 [data-module="atmosphere"] .at-kv dt{color:var(--sog-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -406,7 +407,7 @@ export async function mount(el, ctx) {
   <div class="at-maptip" data-at="mapTip"></div>
 </div>
 <section class="f-sheet-panel" data-at="data">
-  <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="demoTag">${esc(T('demoShort'))}</span><b class="f-sheet-title" data-at="dtitle"></b></button>
+  <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="srcTag"></span><b class="f-sheet-title" data-at="dtitle"></b></button>
     <button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" hidden>◀</button>
     <button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" hidden>▶</button>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
@@ -561,9 +562,11 @@ export async function mount(el, ctx) {
       return fromRecord(JSON.parse(await f.text()), f.name);
     }
     const rec = await data.get(flightPath);
-    if (!rec) throw new Error(T('errNoFlight', {
-      tri
-    }));
+    // la démonstration hors ligne sans vol courant : l'exemple, marqué « Démo »
+    if (!rec?.route?.points?.length && S.data === 'demo') return fromRecord(EXAMPLE, T('fromExample'));
+    if (!rec?.route?.points?.length) throw Object.assign(new Error(T('noFlight')), {
+      noFlight: true
+    });
     return fromRecord(rec, T('fromCurrent', {
       tri
     }));
@@ -728,7 +731,20 @@ export async function mount(el, ctx) {
       const p = document.createElement('p');
       p.className = 'at-pad f-muted';
       p.textContent = $f('status').textContent || T('readingFlight');
-      dbody.replaceChildren(p);
+      if (S.noFlight) {
+        const go = document.createElement('div');
+        go.className = 'at-pad at-go';
+        go.innerHTML = `<a class="f-btn primary" href="#fuel">${esc(T('goFuel'))}</a><button type="button" class="f-btn" data-at="seeExample">${esc(T('seeExample'))}</button>`;
+        go.lastChild.onclick = () => {
+          $f('flightSrc').value = 'example';
+          $f('flightSrc').onchange();
+          // comme à l'ouverture : la réserve seulement, rien n'est demandé avant « Charger »
+          load({
+            cacheOnly: true
+          });
+        };
+        dbody.replaceChildren(p, go);
+      } else dbody.replaceChildren(p);
       return;
     }
     // feuille réduite : rien à dessiner (redessiné à sa réouverture, la taille n'étant plus celle du dernier dessin)
@@ -1694,8 +1710,16 @@ export async function mount(el, ctx) {
   /** Le vol en bref, connu avant la météo : appareil, route, niveau, départ, modèle et run. */
   function flightSum() {
     const f = S.flight,
-      ac = f.aircraft ? [f.aircraft.type, f.aircraft.registration].filter(Boolean).join(' ') : '';
-    $('demoTag').classList.toggle('at-hidden', S.data !== 'demo');
+      ac = f?.aircraft ? [f.aircraft.type, f.aircraft.registration].filter(Boolean).join(' ') : '';
+    // le vol montré n'est pas le vol courant (démonstration, exemple, texte, fichier) : dit dans la poignée, jamais confondu
+    const tag = S.data === 'demo' ? T('demoShort') : {
+      example: T('tagExample'),
+      text: T('tagText'),
+      file: T('tagFile')
+    } [$f('flightSrc').value] || '';
+    setText($('srcTag'), tag);
+    $('srcTag').classList.toggle('at-hidden', !tag);
+    if (!f) return setSum('');
     setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') :
       `${S.model?.name || ''}${S.run ? ` · run ${fmtHM(S.run)}` : ''}`
     ].filter(Boolean).join(' · ') + (S.outOfRange ? ' ⚠' : ''));
@@ -1772,6 +1796,7 @@ export async function mount(el, ctx) {
       const f = await readFlight();
       if (stale()) return;
       S.flight = f;
+      S.noFlight = false;
       S.userMoved = false;
       // un niveau choisi dans l'écran l'emporte sur celui du vol (comme l'heure de départ)
       S.levelFt = $f('levelSel').dataset.touched && +$f('levelSel').value || f.levelFt || +$f('levelSel').value || 10000;
@@ -1789,7 +1814,10 @@ export async function mount(el, ctx) {
         levels = gridLevels(),
         gr = A.grid(f.points, +$f('gridMax').value),
         rLevels = routeLevels(),
-        rVars = sectionVars(S.levelFt, f.points),
+        // au niveau choisi, et à celui du vol courant quand il diffère : la coupe de la Carte (au niveau du vol) est alors
+        // dans la réserve elle aussi
+        rVars = [...new Set([...sectionVars(S.levelFt, f.points), ...($f('flightSrc').value === 'current' && f.levelFt && f
+          .levelFt !== S.levelFt ? sectionVars(f.levelFt, f.points) : [])])],
         gVars = varsOf(levels, A.GRID_LEVEL_VARS, A.GRID_SURFACE_VARS);
       setStatus(S.data === 'demo' ? T('demoComputing') : T('reading', {
         m: S.model.name
@@ -1863,6 +1891,23 @@ export async function mount(el, ctx) {
       render();
     } catch (e) {
       if (stale() || e.stale) return;
+      if (e.noFlight) {
+        // aucun vol courant : rien de montré (ni coupe ni carte d'un autre vol) ; le bloc propose Carburant et l'exemple
+        Object.assign(S, {
+          flight: null,
+          traj: null,
+          route: null,
+          grid: null,
+          geo: null,
+          local: null,
+          noFlight: true
+        });
+        flightSum();
+        if (lvlChip.hidden !== true) lvlChip.hidden = true;
+        setStatus(T('noFlight'));
+        schedule();
+        return;
+      }
       console.error(e);
       setStatus(T('failed', {
         m: why(e)
@@ -1893,7 +1938,6 @@ export async function mount(el, ctx) {
 
   function saveUi() {
     const v = {
-        src: $f('flightSrc').value,
         text: $f('routeText').value,
         grid: $f('gridMax').value,
         xs: S.xsLayers,
@@ -1918,8 +1962,9 @@ export async function mount(el, ctx) {
   if (ui?.mapLevel) S.mapLevel = ui.mapLevel;
   $f('routeText').value = ui?.text || ROUTE_TEXT;
   if (ui?.grid) $f('gridMax').value = ui.grid;
-  // le vol courant d'abord quand il y en a un ; sinon le dernier choix, ou l'exemple
-  $f('flightSrc').value = rec?.route?.points?.length >= 2 ? (ui?.src || 'current') : ui?.src && ui.src !== 'current' ? ui.src : 'example';
+  // toujours le vol courant à l'ouverture (celui que lisent Carburant et la Carte) ; un autre vol (exemple, texte, fichier)
+  // est un essai de la visite, jamais gardé : gardé, il était montré comme s'il était le vol prévu
+  $f('flightSrc').value = 'current';
   const showSrc = () => {
     const v = $f('flightSrc').value;
     $f('fileBox').classList.toggle('at-hidden', v !== 'file');

@@ -50,13 +50,20 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 ## Next
 
 1. **Review** by the user on Pages.
-2. **Landscape** (later lot): map left, narrow block right, buttons as a rail on the right edge — for the ergonomics
+2. **World view without spending the quota** (user, 24 Oct 2026: "si on zoome la carte météo, on n'a pas les infos…
+   users are dumb"): today the overlay covers only the flight's grid. Proposed to the relay: a coarse global synoptic
+   file (sea-level pressure, 10 m wind, cloud, 2 m temperature, every 3 h to +24 h) built once per model run by the
+   repository's workflow and published with the pages, read by every device for no Open-Meteo call; drawn when the view
+   leaves the flight's grid. Checked from the session: Open-Meteo answers with CORS; aviationweather.gov (worldwide
+   SIGMETs in one JSON, METARs by box) answers but without CORS, so through the launcher's relay only, never on Pages;
+   satellite tiles (NASA GIBS) not reachable from the session, untested.
+3. **Landscape** (later lot): map left, narrow block right, buttons as a rail on the right edge — for the ergonomics
    session.
-3. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
+4. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
    `ctx.weather`, show the tally in Settings › Diagnostics; then Fuel reads its winds aloft through it
    (`cache/fuel/aloft.json` retired), so the quota is paid once.
-4. Help chapter in four languages once the place is decided; times of passage with the wind.
-5. Ideas not done: skew-T with parcel and CAPE, clear-air turbulence (shear), departure time as an animation, PNG
+5. Help chapter in four languages once the place is decided; times of passage with the wind.
+6. Ideas not done: skew-T with parcel and CAPE, clear-air turbulence (shear), departure time as an animation, PNG
    export of the briefing.
 
 ## Environment of a cloud session
