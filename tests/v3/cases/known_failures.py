@@ -6,6 +6,4 @@ remove it from cases/known_failures.py)`.  Any failure that is not in this table
 """
 
 KNOWN = {
-    'F4': 'journal 24 Oct: .fu-when row overflows the page at 390 (402 px)',
-    'F5': 'journal 24 Oct: tab "Devis" and step 4 "Devis" in the same view',
 }

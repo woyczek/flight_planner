@@ -539,3 +539,40 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   returns each place wrapped (`wrapLon`, except a longitude already in [-180, 180[, kept as written: no float noise on an
   ordinary route; the points keep the value written in the flight). `meta.files` lists `frame/lib/geo.js`. Bench `test/winds.html`
   gained 7 checks (count, range, short arc, monotonic, ends as requested, reverse direction, ordinary route).
+
+## 24 October 2026 — the flight date belongs to the shared flight (relay cloud; user: "prévoir un slider « date du vol »… utiliser au max les données gratuites")
+
+- **What**: the module's "Flight date" field (`wxdate`, `weather.when`, quick buttons "+30" / "Now") now writes
+  `current_flight.planned_at`, ISO 8601 UTC, optional (absent or `null` = now; schema number and merge rule unchanged:
+  `planned_at` is in `FUEL_FIELDS`, `frame/lib/current_flight.js`). **One value**: `planned_at` is the truth;
+  `weather.when` stays as its copy in the device's local time (the datetime-local field's format, and what Atmosphere reads
+  until its session reads `planned_at`), set together by `setPlanned` and brought back in line by `syncPlanned` whenever a flight is
+  read (mount, watch, completion): `planned_at` wins, a flight written before it gets its `planned_at` from `weather.when`.
+  Reading from another device changes the field, the aerodromes' weather and the winds aloft (`whenChanged`).
+- **Label**: "Date du vol / Flight date / Flugdatum / Fecha del vuelo" (the "(optional: TAF)" is gone: the date now also drives
+  the winds aloft and the Map); the field's tooltip and the manual say that the quote's weather and the Map are read at this date.
+- **Already the case, now documented**: the aerodromes' weather (TAF chosen by `WX.station(…, wxWhen())`) and the winds and
+  temperatures aloft (`aloftKey`, `aloftFetch`: the forecast hour nearest to it) read `wxWhen()`, which now reads
+  `planned_at`. Found on the way: a date **typed** in the field refreshed the display of the aerodromes only, without reading
+  the forecasts again for the new hour (only "+30" / "Now" did); both now go through `whenChanged` (700 ms of calm, then the
+  weather, the winds aloft and the quote).
+- **Start**: "Start the flight" still redoes everything for now: it sets `planned_at` to `null` (as it emptied `weather.when`).
+  A started flight is read from `started.at`.
+- **ETA of the Map for a flight that is not started** (SPEC § 12, INTEGRATION § 3): fuel writes `progress = { at, eta }` from
+  `planned_at` (the timeline counted from it as a started flight's from `started.at`: `progressPlan` shared by `progressCalc` and
+  `plannedEtas`), with `plannedPos`, `fuelRemainingKg`, `remainingNm`, `phase` at `null`; the Map (`withEta`, one condition) draws the
+  labels also when the flight is not started, if the last ETA is still in the future. **Judgement calls**: (a) the Map does not
+  compute times itself, it draws what fuel wrote (one calculation, same function as the started flight's); (b) a flight without a date
+  has no ETA (now is not a date to promise, it would drift), and so has a flight whose arrival is past — no ETA for a flight date
+  forgotten in the past, which would show yesterday's times on the map after a report; (c) the date of a finished flight is not
+  cleared by fuel (report writes `started`, not `planned_at`): it is the pilot's to clear with "Now", reported.
+- **F4 (width, known failure fixed)**: the date row overflowed at 390 px (414 measured: the label as a flex item kept its
+  `min-content`, the date input and the two buttons side by side). `min-width:0` on the field, `flex-wrap` on the row (input
+  first at `flex:1 1 11em`, the 44 px buttons below when the room is short): no element beyond `innerWidth` at 360 and 390 px in
+  the five designs (case F4 passes; it was listed in `tests/v3/cases/known_failures.py`, removed).
+- **F5 (step name, known failure fixed)**: step 4 of the plan is renamed "Résultat / Result / Ergebnis / Resultado" (what it
+  holds: the result bar, the level decision, the density altitude, "Open in", the details); "Devis" stays the first tab's
+  name only. Manual in four languages, SPEC § 9 and the comments updated. Closes the "Judgement call" of the entry above.
+- **Atmosphere**: its code is not touched; INTEGRATION § 3 carries the sentence its session reads ("the slider's origin is
+  `planned_at` of the current flight").
+- **Checked**: see the report of the lot (suite `--changed`, Playwright at 390 and 360 in the five designs, smoke).

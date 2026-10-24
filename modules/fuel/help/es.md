@@ -6,7 +6,7 @@ combustible de viaje, reserva, combustible de bloque, tiempo de vuelo e inicio d
 ## Cómo usarlo
 
 La preparación sigue cinco pasos, en el orden en que se prepara un vuelo:
-**1 Vuelo, 2 Ruta, 3 Meteorología, 4 Cálculo, 5 Salida**. En un teléfono, la barra superior muestra un paso cada vez
+**1 Vuelo, 2 Ruta, 3 Meteorología, 4 Resultado, 5 Salida**. En un teléfono, la barra superior muestra un paso cada vez
 (toque un número para ir a él, «Siguiente» al pie de cada paso); en una pantalla ancha, los cinco pasos están uno debajo
 de otro. Todo se recalcula con cada cambio: corrija la ruta, y la meteorología, el cálculo y el viento siguen, sin botón
 que pulsar. El resultado (combustible de bloque, combustible de viaje, tiempo, inicio del descenso) sigue visible abajo
@@ -18,7 +18,7 @@ con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se esc
 5000 ft (FL060), en pies por debajo (3500 ft).
 
 **1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
-lugar de la observación, la aeronave y el nivel de crucero (en FL). La aeronave cabe en una línea: la aeronave elegida,
+lugar de la observación, la aeronave y el nivel de crucero (en FL). La fecha del vuelo es un único valor, guardado en el vuelo actual: la meteorología del cálculo (TAF de los aeródromos, vientos y temperaturas en altura) se lee a esa fecha, el ETA del mapa parte de ella mientras el vuelo no ha empezado, y el deslizador de Atmósfera parte de ella; vacío significa ahora. La aeronave cabe en una línea: la aeronave elegida,
 su matrícula, su indicativo y de dónde viene. Un vuelo nuevo toma la última aeronave elegida en este
 dispositivo; sin elección, el cálculo espera. La lupa abre la búsqueda (la última elegida primero): escriba una ficha, una matrícula, un indicativo
 o un tipo. Los resultados llegan en este orden: sus fichas de rendimiento, las aeronaves de la aerolínea (su flota,
@@ -87,7 +87,7 @@ cambian la ruta o la hora, el viento en altura anterior se mantiene, marcado «p
 previsión; si no llega, el viento en superficie de los METAR toma el relevo y se indica («previsión en altura no
 disponible»).
 
-**4 Cálculo.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
+**4 Resultado.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
 El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los niveles que no se
 pueden mantener en este trayecto. Cada nivel se calcula como el cálculo, con el viento previsto a ese nivel cuando el tiempo real
 está activado: en el nivel elegido, la curva y el cálculo dan la misma cifra. En una ruta con escalones, cada punto de la curva es un vuelo a nivel constante en su nivel, sin los escalones: el rombo negro marca el cálculo real del plan (con los escalones de la ruta y el viento del plan), indicado bajo el dibujo («Plan: FL160, 856 kg, 0:54»); su distancia a la curva es el coste de los escalones. El eje del combustible sigue la unidad elegida (kg o lb). Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
@@ -175,4 +175,4 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: e1923cc95a7a -->
+<!-- fr: 82119c7ea5b3 -->

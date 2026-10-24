@@ -6,7 +6,7 @@ trip fuel, reserve, block fuel, flight time and top of descent.
 ## How to use
 
 Preparation follows five steps, in the order a flight is prepared:
-**1 Flight, 2 Route, 3 Weather, 4 Quote, 5 Departure**. On a phone, the top bar shows one step at a time (touch a number
+**1 Flight, 2 Route, 3 Weather, 4 Result, 5 Departure**. On a phone, the top bar shows one step at a time (touch a number
 to go to it, “Next” at the bottom of each step); on a wide screen, the five steps are one below the other. Everything is
 recomputed at each change: correct the route, and the weather, the quote and the wind follow, with no button to press.
 The result (block fuel, trip fuel, time, top of descent) stays visible at the bottom of the screen at every step, with
@@ -16,7 +16,7 @@ where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060�
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
 **1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
-rather than the observation, the aircraft and the cruise level (as a flight level). The aircraft fits on one line: the
+rather than the observation, the aircraft and the cruise level (as a flight level). The flight date is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Atmosphere’s slider starts from it; empty means now. The aircraft fits on one line: the
 chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
 chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
 sheet, a registration, a callsign or a type. The results come in this order: your performance sheets, the airline's
@@ -82,7 +82,7 @@ last forecast read stays. When the route or the time changes, the previous wind 
 until the new forecast arrives; if it does not come, the METARs' surface wind takes over and this is stated (“forecast
 aloft unavailable”).
 
-**4 Quote.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
+**4 Result.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
 trip. Each level is worked out like the quote, with the forecast wind at that level when the real weather is on:
 at the chosen level, the curve and the quote give the same figure. On a route with steps, every point of the curve is a flat flight at its level, without the steps: the black diamond marks the plan's real quote (with the route's steps and the plan's wind), given under the drawing (“Plan: FL160, 856 kg, 0:54”), and its gap from the curve is the cost of the steps. The fuel axis follows the chosen unit (kg or lb). Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
@@ -168,4 +168,4 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: e1923cc95a7a -->
+<!-- fr: 82119c7ea5b3 -->

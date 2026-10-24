@@ -52,7 +52,9 @@ export const meta = {
 
 - **Started flight** (lot 8), read from the current flight: `started` (drawn while not null) and fuel's `progress`
   (INTEGRATION § 3 of fuel, lot H: `at`, `plannedPos { lat, lon, legIndex, nmFromDep }`, `eta [{ id, at }]`,
-  `fuelRemainingKg`, `remainingNm`, `phase`). The actual position is the frame's, `progress.actual`, read as below until
+  `fuelRemainingKg`, `remainingNm`, `phase`). The ETA labels of the route points also show for a flight that is **not started**
+  when fuel wrote `progress.eta` from the current flight's `planned_at` (the flight date; arrival still in the future), counted from
+  `planned_at` instead of `started.at` (24 Oct 2026). The actual position is the frame's, `progress.actual`, read as below until
   the frame's SPEC fixes it:
 
 ```json

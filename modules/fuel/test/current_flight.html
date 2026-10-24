@@ -144,6 +144,34 @@
   check('started null written', CF.merge(stored, {
     started: null
   }, fuel).started, null);
+  check('planned_at written by fuel (the flight date, ISO UTC)', CF.merge(stored, {
+    planned_at: '2026-10-25T09:40:00Z'
+  }, fuel).planned_at, '2026-10-25T09:40:00Z');
+  check('planned_at null written (= now)', CF.merge({
+    ...stored,
+    planned_at: '2026-10-25T09:40:00Z'
+  }, {
+    planned_at: null
+  }, fuel).planned_at, null);
+  check('planned_at kept when mine does not carry it (another writer)', CF.merge({
+    ...stored,
+    planned_at: '2026-10-25T09:40:00Z'
+  }, {
+    level: {
+      ft: 7000
+    }
+  }, fuel).planned_at, '2026-10-25T09:40:00Z');
+  check('planned_at is not report\'s: report leaves it', CF.merge({
+    ...stored,
+    planned_at: '2026-10-25T09:40:00Z'
+  }, {
+    started: null,
+    planned_at: null
+  }, {
+    fields: ['started'],
+    progressKeys: CF.FUEL_PROGRESS,
+    by: 'report'
+  }).planned_at, '2026-10-25T09:40:00Z');
   document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
   document.title = `fuel — current flight bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
 </script>

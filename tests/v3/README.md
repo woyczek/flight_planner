@@ -227,8 +227,7 @@ def b2(c):
 
 ## Known failures (`cases/known_failures.py`)
 
-`F4` (`.fu-when` overflows the page at 390 px) and `F5` (the tab "Devis" and the step "4 Devis" in the same view) are listed
-there: they are reported `FAIL (known: ...)` and do not change the exit code. When the cause is fixed the case passes and the report
+The table is empty today (`F4` and `F5`, fixed on 24 Oct, were removed). A case listed there is reported `FAIL (known: ...)` and does not change the exit code. When the cause is fixed the case passes and the report
 says `PASS (known failure fixed: remove it from cases/known_failures.py)`; delete the line then. Any other failure is a regression
 (or a bug found), not a known one.
 

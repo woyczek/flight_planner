@@ -354,4 +354,6 @@ redesigned for touch at that point.
        la carto)")**: the slider shipped in atmosphere (0 to +72 h, in the sheet) moves the cut and the synoptic only.
        The planned departure time should live in the shared flight record (`current_flight.json`, fuel § 4) so that
        the quote's winds, the ETA on the map and the weather all follow one value: a fuel lot ("flight date" in the
-       quote, written to the record), then atmosphere reads it as its slider's origin. To confirm.
+       quote, written to the record), then atmosphere reads it as its slider's origin. Decided by the relay (24 Oct) and delivered in fuel (`current_flight.planned_at`, one value: the quote's
+       weather, the Map's ETA for a flight that is not started); atmosphere's session reads `planned_at` as its slider's origin
+       (fuel INTEGRATION § 3).

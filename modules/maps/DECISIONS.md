@@ -959,3 +959,9 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     line is gone from the map, so the note is the only way left to the setting.
 - **24 Oct 2026 — icons and `hidden` come from the frame** (relay cloud): `localIcon` and its three SVG copies are gone; the buttons use
   `cloud`, `undo` and `move4` of `frame/lib/icons.js`, and the `[hidden]` rule on overlay buttons is the frame's (`primitives.css`).
+
+- **24 Oct 2026 — ETA of a flight that is not started** (relay cloud, fuel lot "flight date"; the only change in maps, `withEta`).
+  The ETA labels of the route points were drawn only for a started flight. Fuel now also writes `progress.eta` for a flight that is
+  not started but dated (`planned_at`, the flight date, counted from it as a started flight from `started.at`; INTEGRATION § 3 of fuel):
+  `withEta` no longer requires `started` and ignores the ETAs of a flight that is not started when the last one is past. Nothing else
+  of the started-flight drawing changes (`plannedPos`, the actual position and the trail still need `started`).
