@@ -24,7 +24,39 @@ from urllib.parse import urlparse
 HERE = Path(__file__).resolve().parent          # tests/v3
 ROOT = HERE.parent.parent                       # repository root
 SHOTS = HERE / 'shots'
-CHROME = os.environ.get('SOG_CHROME', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome')
+
+
+def find_chrome():
+    """The Chromium to drive: SOG_CHROME, else the newest Playwright build under /opt/pw-browsers or ~/.cache/ms-playwright,
+    else Playwright's own default (None). The build number changes with the container image: never a constant."""
+    env = os.environ.get('SOG_CHROME')
+    if env:
+        return env
+    import glob
+    found = []
+    for root in ('/opt/pw-browsers', os.path.expanduser('~/.cache/ms-playwright')):
+        found += glob.glob(os.path.join(root, 'chromium-*', 'chrome-linux', 'chrome'))
+        found += glob.glob(os.path.join(root, 'chromium-*', 'chrome-linux*', 'chrome'))
+    found = sorted(set(f for f in found if os.access(f, os.X_OK)))
+    return found[-1] if found else None
+
+
+CHROME = find_chrome()
+
+
+def preflight():
+    """Checked once in the main process before any worker starts: a worker that dies in its initializer is recreated by
+    multiprocessing.Pool for ever, and the run never ends (seen on 24 Oct 2026). Returns a list of problems (empty = fine)."""
+    problems = []
+    try:
+        import playwright  # noqa: F401
+    except Exception:
+        problems.append('the Playwright Python package is missing: pip install playwright')
+    if CHROME is None:
+        problems.append('no Chromium found: set SOG_CHROME=<path to chrome>, or install one with: python3 -m playwright install chromium')
+    elif not os.path.exists(CHROME):
+        problems.append(f'Chromium not found at {CHROME} (SOG_CHROME)')
+    return problems
 
 DESIGNS = ('standard', 'metro', 'swiss', 'cupertino', 'material')
 LANGS = ('fr', 'en', 'de', 'es')
@@ -584,7 +616,7 @@ def worker_init(base):
     from playwright.sync_api import sync_playwright
     load_cases()
     pw = sync_playwright().start()
-    _W.update(pw=pw, base=base, browser=pw.chromium.launch(executable_path=CHROME, args=['--no-sandbox']))
+    _W.update(pw=pw, base=base, browser=pw.chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else pw.chromium.launch(args=['--no-sandbox']))
 
 
 def worker_run(job):
@@ -596,7 +628,7 @@ def worker_run(job):
             _W['browser'].close()
         except Exception:
             pass
-        _W['browser'] = _W['pw'].chromium.launch(executable_path=CHROME, args=['--no-sandbox'])
+        _W['browser'] = _W['pw'].chromium.launch(executable_path=CHROME, args=['--no-sandbox']) if CHROME else _W['pw'].chromium.launch(args=['--no-sandbox'])
         return {'id': case_id, 'width': width, 'design': design, 'lang': lang, 'tone': tone, 'status': 'ERROR',
                 'measured': f'browser crashed: {type(e).__name__}: {str(e)[:160]}', 'expected': 'no crash', 'rule': '', 'secs': 0}
 
