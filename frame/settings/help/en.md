@@ -5,6 +5,12 @@ exchanged, and what the device keeps offline. They stay on the device, never syn
 
 ## How to use
 
+**The status.** The screen opens on the “Status” block, with the same dot as the ⚙ button of the header (green: something
+new; amber: attention). One line per thing, touch it to act: the flight in progress (to the Map), the reports to write (to the
+pre-filled report), the missing trigram (to “Identity”), the aeronautical database while it is not ready (to “Data
+access”), the state of the data and the exchange in use (to “Synchronisation”, or the conflicts), the launcher, “Offline” and,
+on a phone, the position during a flight.
+
 **Your identity.** In “Identity”, type your trigram and your IVAO VID, VATSIM CID and SimBrief IDs, then “Save”. The
 tools use them to prefill; with several users, the trigram is needed.
 

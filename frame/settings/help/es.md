@@ -5,6 +5,12 @@ intercambian los datos y lo que el dispositivo guarda sin conexión. Se quedan e
 
 ## Cómo usarlo
 
+**El estado.** La pantalla se abre con el bloque «Estado», con el mismo punto que el botón ⚙ de la cabecera (verde: algo
+nuevo; naranja: atención). Una línea por cosa, toque para actuar: el vuelo en curso (al Mapa), los informes por escribir (al
+informe ya rellenado), el trigrama que falta (a «Identidad»), la base aeronáutica mientras no esté lista (a «Acceso a los
+datos»), el estado de los datos y la vía de intercambio usada (a «Sincronización», o a los conflictos), el lanzador, «Sin
+conexión» y, en un teléfono, la posición durante un vuelo.
+
 **Su identidad.** En «Identidad», escriba su trigrama y sus identificadores VID IVAO, CID VATSIM y SimBrief, luego
 «Guardar». Las herramientas los usan para prerrellenar; con varios usuarios, el trigrama es necesario.
 

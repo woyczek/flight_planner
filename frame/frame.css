@@ -712,12 +712,12 @@ p.f-back {
   display: grid;
   gap: 12px
 }
-/* bouton « i » de l'en-tête : pastille verte quand quelque chose s'applique (vol en cours, CR à écrire), dessinée dans le
-   bouton (les bords de l'en-tête rognent ce qui dépasse) */
-#fInfo {
+/* ⚙ de l'en-tête : la pastille de l'état de l'appli (V3_SPECIFICATION.md § 7.1 règle 14) ; verte quand quelque chose s'applique
+   (vol en cours, CR à écrire), dessinée dans le bouton (les bords de l'en-tête rognent ce qui dépasse) */
+#fDevice {
   position: relative
 }
-#fInfo[data-badge]::after {
+#fDevice[data-badge]::after {
   content: "";
   position: absolute;
   top: 6px;
@@ -731,7 +731,7 @@ p.f-back {
 /* téléphone : pastille orange quand une chose demande de l'attention (pas de trigramme, écritures en attente, conflits, hors
    ligne, erreur) ; elle l'emporte sur la verte (le bouton de synchronisation n'est plus dans l'en-tête) */
 @media (max-width: 760px) {
-  #fInfo[data-attn]::after {
+  #fDevice[data-attn]::after {
     content: "";
     position: absolute;
     top: 6px;
@@ -743,40 +743,22 @@ p.f-back {
     box-shadow: 0 0 0 2px var(--sog-surface)
   }
 }
-/* pop-up d'état : une feuille sous l'en-tête, à droite, sous le « i » ; une ligne de 44 px au moins par information */
-.f-modal.f-info-modal {
-  place-items: start end;
-  padding: calc(var(--f-head-h) + 8px) 8px 8px
+/* bloc « État » de tête des Réglages : une ligne de 44 px au moins par information, un chevron quand elle mène quelque part,
+   une pastille quand elle compte (verte : une nouvelle, orange : de l'attention) ; la carte garde son titre et ses bords, les
+   lignes vont d'un bord à l'autre */
+.f-card.f-status {
+  padding: 12px 0 0;
+  overflow: hidden
 }
-.f-info-modal>div {
-  width: min(420px, 100%);
-  max-height: calc(var(--f-vh) - var(--f-head-h) - 16px - var(--f-tab-space, 0px));
-  overflow: auto;
-  padding: 0;
-  gap: 0
+.f-status>h2 {
+  margin: 0 14px 8px
 }
-.f-info-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 4px 0 16px
-}
-.f-info-head h2 {
-  margin: 0;
-  font-size: 1rem
-}
-.f-info-head button {
-  width: var(--sog-touch);
-  padding: 0;
-  flex: none
-}
-.f-info-list {
+.f-status-list {
   list-style: none;
   margin: 0;
   padding: 0
 }
-.f-info-modal .f-info-row {
+.f-status .f-status-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -793,28 +775,28 @@ p.f-back {
   font: inherit;
   text-align: left
 }
-.f-info-modal button.f-info-row {
+.f-status button.f-status-row {
   cursor: pointer
 }
-.f-info-modal button.f-info-row:active {
+.f-status button.f-status-row:active {
   background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface))
 }
-.f-info-txt {
+.f-status-txt {
   flex: 1;
   min-width: 0;
   display: grid;
   gap: 2px;
   overflow-wrap: anywhere
 }
-.f-info-txt small {
+.f-status-txt small {
   color: var(--sog-muted);
   font-size: var(--sog-size-s)
 }
-.f-info-row .f-icon {
+.f-status-row .f-icon {
   flex: none;
   color: var(--sog-muted)
 }
-.f-info-dot {
+.f-status-dot {
   flex: none;
   width: 8px;
   height: 8px;
@@ -822,25 +804,28 @@ p.f-back {
   background: var(--sog-ok)
 }
 /* pas de pastille : sa place reste vide, les textes restent alignés */
-.f-info-dot[hidden] {
+.f-status-dot[hidden] {
   display: block;
   visibility: hidden
 }
-.f-info-dot[data-attn] {
+.f-status-dot[data-attn] {
   background: var(--sog-warn)
 }
-/* les lignes « Position » et « Aide de cet écran » remplacent, sur téléphone, le bouton de position et le « ? » de l'en-tête :
-   sur un écran l'en-tête les garde */
+/* la ligne « Position » remplace, sur téléphone, le bouton de position de l'en-tête : sur un écran l'en-tête le garde */
 @media (min-width: 761px) {
-  .f-info-list>li[data-phone] {
+  .f-status-list>li[data-phone] {
     display: none
   }
+}
+/* une carte amenée par une ligne d'état (« Trigramme non réglé › ») s'arrête sous l'en-tête collant */
+.f-screen [data-card] {
+  scroll-margin-top: calc(var(--f-head-h) + 8px)
 }
 /* barre du bas : seulement sur téléphone (la colonne des verbes la remplace sur un écran) */
 .f-tabbar {
   display: none
 }
-/* téléphone : une colonne, cinq onglets en bas (Préparer · Carte · CR · Vols · Réglages) à la place du tiroir.
+/* téléphone : une colonne, cinq onglets en bas (Préparer · Carte · CR · Vols · Météo) à la place du tiroir.
    --f-tab-h : hauteur de la barre sans la zone sûre ; --f-tab-space : tout ce qu'elle prend en bas de la fenêtre (filet,
    barre, zone sûre de l'appareil), pour ce qui se colle en bas par-dessus la page (barre de résultat .f-bar, notes) */
 @media (max-width: 760px) {
@@ -858,14 +843,13 @@ p.f-back {
   html.f-fixed body {
     grid-template-rows: auto minmax(0, 1fr) auto
   }
-  /* en-tête du téléphone : le nom, « i » et ⚙ (le retour en flèche seule prend la place du nom). Le bouton de synchronisation et
-     la pastille du trigramme sont la couleur du « i » et des lignes de son pop-up, la position réelle et le lanceur n'y sont
-     plus, le « ? » est la dernière ligne du pop-up (frame/SPEC.md § 3.1) */
+  /* en-tête du téléphone (règle 14) : le nom (le retour en flèche seule prend sa place), « ? » (l'aide de l'écran) et ⚙ (les
+     Réglages, avec la pastille d'état). Le bouton de synchronisation et la pastille du trigramme sont la couleur du ⚙ et des
+     lignes du bloc d'état des Réglages, la position réelle et le lanceur n'y sont plus (frame/SPEC.md § 3.1) */
   .f-head .f-sync,
   .f-head .f-who,
   .f-head .f-host,
-  .f-head .f-live,
-  .f-head #fHelp {
+  .f-head .f-live {
     display: none
   }
   .f-back span {

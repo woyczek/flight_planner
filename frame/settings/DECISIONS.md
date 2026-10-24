@@ -294,3 +294,18 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
     "access not set" with the button), D5 (no access) and D5b (access set, nothing published). Not testable here: a real iPhone.
   - **Not done.** Serving the base from the public pages: `frame/aerodb/DECISIONS.md`, two lines.
 - 24 Oct 2026 — the map threshold tuning link of the Administration card is now a button "Map threshold tuning (administrator)" (`btn: true` in `admin_links.js`, `f-btn primary`) with a sentence saying what the page is for; nothing else changes (Full level only). Asked by the maps relay lot; case D16.
+- **24 Oct 2026 — The status block opens the screen** (relais cloud, branch `v3-cadre-barre`; `V3_SPECIFICATION.md` § 7.1 rule 14, which
+  removes the header's "i" button and its pop-up; written by the V3 frame session).
+  - **What**: a first card `[data-card="status"]`, titled "Status" / "État" / "Status" / "Estado", that carries the lines of the
+    old pop-up with the same texts and the same actions; the "Help for this screen" line is gone (the header's "?" is that).
+    The screen's folded help panel moves under it.
+  - **Who draws it**: the frame. The state belongs to it (current flight, the pending reports of flightlog, the sync state,
+    aerodb's state, the launcher, the position) and is shared with the badge of the ⚙; settings would have to read all of it
+    again and keep it in step. Settings is an "over" of the frame but draws its content in one `innerHTML` and redraws it
+    by `again()`, so the card could not be prepended once by the frame. Contract: `ctx.status = { html(), bind(card) }`;
+    `html()` is the card at the value of the moment (a string, placed first), `bind(card)` hands it to the frame, which
+    rewrites it only when its content changes (signature in `data-sig`) and lets it go when it leaves the page. Documented in
+    `frame/INTEGRATION.md` § 10.2.
+  - **Rows that pointed to "Settings"** (trigram, base, data, launcher) now scroll to the card that holds the answer
+    (`card:identity`, `card:access`, `card:sync,usages`) and focus its first field: a hash that does not change does nothing.
+  - Not changed: the other cards, their order, their saving rule.

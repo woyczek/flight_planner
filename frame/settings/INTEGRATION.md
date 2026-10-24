@@ -28,6 +28,7 @@ Settings is part of the frame: its context is wider than a module's `ctx`.
 | `cutAccess()` | erases the GitHub token and setting of this device and plugs the transport again |
 | `level()` | the device's usage level (1 to 3) |
 | `modules()` | promise of `[{ id, label, level }]`, the application's modules with their `meta.level`, once read |
+| `status` | `{ html(), bind(card) }`: the "Status" block that opens the screen (rule 14), drawn and kept up to date by the frame; `html()` is the card as a string at the value of the moment, `bind(card)` is called once it is in the page (`frame/INTEGRATION.md` § 10.2) |
 
 ## 3. For modules
 

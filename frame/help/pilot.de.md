@@ -8,26 +8,26 @@ Computer, mit oder ohne Netz.
 
 ## Erster Start
 
-- **Die Verben.** Auf einem Telefon bietet die untere Leiste fünf Einträge: Vorbereiten, Karte, Bericht, Flüge,
-  Einstellungen (Vorbereiten fasst mehrere Werkzeuge zusammen: Tippen Sie den bereits gewählten Reiter noch einmal an, öffnet sich darüber
-  eine kleine Liste zum Wechseln); auf
-  einem Bildschirm ist jedes Werkzeug ein Verb der linken Spalte. Die Adresse eines Werkzeugs (`#fuel`, `#report`…)
-  genügt, um zu ihm zurückzukehren.
+- **Die Verben.** Auf einem Telefon bietet die untere Leiste fünf Einträge: Vorbereiten, Karte, Bericht, Flüge, Wetter.
+  Tippen Sie einen bereits gewählten Reiter, der mehrere Bildschirme bündelt, noch einmal an: Darüber öffnet sich eine kleine
+  Liste (Vorbereiten: Kraftstoff und Leistungsdatenblätter). Auf einem Bildschirm ist jedes Werkzeug ein Verb der linken
+  Spalte. Die Adresse eines Werkzeugs (`#fuel`, `#report`…) genügt, um zu ihm zurückzukehren. Die Einstellungen sind die
+  Schaltfläche ⚙ der Kopfzeile.
 - **Ihre Identität.** Stellen Sie unter ⚙ Einstellungen Ihr Kürzel und Ihre IVAO-, VATSIM- und SimBrief-IDs ein: Die
   Werkzeuge nutzen sie zum Vorausfüllen.
 - **Die Stufe.** Ebenfalls in den Einstellungen wählt „Stufe“, was das Menü zeigt: Einstieg, Alltag oder Vollständig.
   Ein ausgeblendetes Werkzeug bleibt über seine Adresse erreichbar.
-- **Die Hilfe.** Jedes Werkzeug hat oben einen eingeklappten Bereich „So geht’s“; die Schaltfläche ? (auf einem Telefon die
-  letzte Zeile des Blatts der Schaltfläche i, „Hilfe zu diesem Bildschirm“) öffnet dieses Handbuch beim Kapitel des
-  Werkzeugs.
-- **Die Schaltfläche i.** In der Kopfzeile, neben ⚙ (und ? auf einem Bildschirm): ein grüner Punkt, wenn etwas auf Sie
-  wartet, ein oranger (auf einem Telefon), wenn etwas Aufmerksamkeit braucht: kein Kürzel, ausstehende Schreibvorgänge,
-  Konflikte, ein Synchronisationsfehler, offline. Sie öffnet ein Statusblatt: der laufende Flug (antippen, um zur Karte zu
-  gehen), die noch zu schreibenden Berichte zu Ihren vergangenen Flügen (antippen, um den vorausgefüllten Bericht zu
-  öffnen), das fehlende Kürzel (antippen, um es einzustellen), der Zustand der Daten (letzte Synchronisation, ausstehende
-  Schreibvorgänge, genutzter Austauschweg), „Offline“, wenn kein Netz da ist, und auf einem Telefon die Quelle der Position
-  während eines Flugs und „Hilfe zu diesem Bildschirm“. Esc oder ✕ schließt es. Auf einem Telefon besteht die Kopfzeile nur
-  aus Name, Schaltfläche i und ⚙.
+- **Die Hilfe.** Jedes Werkzeug hat oben einen eingeklappten Bereich „So geht’s“; die Schaltfläche ? der Kopfzeile (auf
+  einem Telefon wie auf einem Bildschirm) öffnet dieses Handbuch beim Kapitel des Bildschirms, auf dem Sie sind.
+- **Der Status auf der Schaltfläche ⚙.** In der Kopfzeile trägt die Schaltfläche ⚙ einen Punkt: grün, wenn etwas auf Sie
+  wartet (ein gestarteter Flug, ein zu schreibender Bericht), orange (auf einem Telefon), wenn etwas Aufmerksamkeit braucht:
+  kein Kürzel, ausstehende Schreibvorgänge, Konflikte, ein Synchronisationsfehler, offline. Die Einstellungen öffnen sich mit
+  dem Block „Status“, der die Einzelheiten nennt: der laufende Flug (antippen, um zur Karte zu gehen), die noch zu
+  schreibenden Berichte zu Ihren vergangenen Flügen (antippen, um den vorausgefüllten Bericht zu öffnen), das fehlende Kürzel
+  (antippen, um es einzustellen), der Zustand der Daten (letzte Synchronisation, ausstehende Schreibvorgänge, genutzter
+  Austauschweg), die Luftfahrtdatenbank, solange sie nicht bereit ist, der Starter, „Offline“, wenn kein Netz da ist, und
+  auf einem Telefon die Quelle der Position während eines Flugs. Auf einem Telefon besteht die Kopfzeile nur aus Name,
+  Schaltfläche ? und Schaltfläche ⚙.
 - **Vollbild.** Auf der Karte (Werkzeuge mit fester Ansicht) blendet eine runde Schaltfläche am Ende der Schaltflächenspalte
   über der Karte die Kopfzeile und die untere Leiste aus, damit die Karte den ganzen Platz hat; dieselbe Schaltfläche oder Esc bringen sie zurück.
 - **Telefon im Querformat.** Seitlich gedreht, legt das Telefon die untere Leiste als Symbolleiste an den linken Rand (dieselben
@@ -640,6 +640,12 @@ Die Einstellungen dieses Geräts (⚙ oben am Bildschirm): Ihre Identität, was 
 werden und was das Gerät offline behält. Sie bleiben auf dem Gerät, nie synchronisiert.
 
 ## So geht’s
+
+**Der Status.** Der Bildschirm öffnet sich mit dem Block „Status“, mit demselben Punkt wie die Schaltfläche ⚙ der Kopfzeile
+(grün: etwas Neues; orange: Aufmerksamkeit). Eine Zeile pro Sache, zum Handeln antippen: der laufende Flug (zur Karte), die zu
+schreibenden Berichte (zum vorausgefüllten Bericht), das fehlende Kürzel (zu „Identität“), die Luftfahrtdatenbank, solange
+sie nicht bereit ist (zu „Datenzugang“), der Zustand der Daten und der genutzte Austauschweg (zu „Synchronisation“ oder zu den
+Konflikten), der Starter, „Offline“ und auf einem Telefon die Position während eines Flugs.
 
 **Ihre Identität.** Tippen Sie unter „Identität“ Ihr Kürzel und Ihre IVAO-VID, VATSIM-CID und SimBrief-ID, dann
 „Speichern“. Die Werkzeuge nutzen sie zum Vorausfüllen; mit mehreren Nutzern ist das Kürzel nötig.

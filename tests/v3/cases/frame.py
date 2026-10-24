@@ -2,10 +2,12 @@
 
 Rules covered
   * the five modules load in the five designs with no JavaScript error and no horizontal page scroll (A1);
-  * phone header: 57 px, name + "i" + gear only, controls of at least 44 px (A2); screen header keeps help and sync (A3);
-  * bottom bar: five entries, 44 px, translated (A4); a fixed module fills the view between header and bar (A5);
-    a normal module scrolls under a sticky header (A6);
-  * group popover on the active "Preparer" tab (A7); "i" pop-up and its last row (A8); "i" badge colours (A9);
+  * phone header (rule 14): 57 px, name + "?" + gear only, controls of at least 44 px, no "i" (A2); screen header keeps help
+    and sync (A3);
+  * bottom bar: five entries (Préparer, Carte, CR, Vols, Météo; Settings is the gear), 44 px, translated (A4); a fixed
+    module fills the view between header and bar (A5); a normal module scrolls under a sticky header (A6);
+  * group popover on the active "Preparer" tab: Carburant and Fiches (A7); the "Status" block at the top of Settings, its
+    lines and actions (A8); the badge colours, on the gear (A9);
   * night tone (A10), help screen (A11), settings screen (A12), the Cupertino bar navigates (A13);
   * the three states of the aeronautical base: loading, access not set, not published (A15, with D5 / D5b of area D);
   * landscape on a phone, 844 x 390: the bar becomes a 44 px rail on the left, the sheet a right column, the map takes the
@@ -23,10 +25,10 @@ TABS = [  # APP.tabs of frame/app.js: id, label in fr en de es, module the tab o
     ('maps', ('Carte', 'Map', 'Karte', 'Mapa')),
     ('report', ('CR', 'Report', 'Bericht', 'Informe')),
     ('flightlog', ('Vols', 'Flights', 'Flüge', 'Vuelos')),
-    ('settings', ('Réglages', 'Settings', 'Einstellungen', 'Ajustes')),
+    ('weather', ('Météo', 'Weather', 'Wetter', 'Meteo')),
 ]
 LANG_IX = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}
-HELP_ROW = {'fr': 'Aide de cet écran', 'en': 'Help for this screen', 'de': 'Hilfe zu diesem Bildschirm', 'es': 'Ayuda de esta pantalla'}
+STATUS_TITLE = {'fr': 'État', 'en': 'Status', 'de': 'Status', 'es': 'Estado'}
 CHAPTER_H1 = {'maps': {'fr': 'Carte', 'en': 'Map', 'de': 'Karte', 'es': 'Mapa'}}
 
 
@@ -52,17 +54,18 @@ def a1(c):
         c.ok(sw <= iw, f'#{m} scrollWidth {sw} > innerWidth {iw}', 'scrollWidth <= innerWidth (no horizontal page scroll)')
 
 
-@case('A2', 'Phone header', 'A', screens=False, rule='V3_SPECIFICATION 7.1 rule 3; frame lot of 24 Oct')
+@case('A2', 'Phone header', 'A', screens=False, rule='V3_SPECIFICATION 7.1 rule 14 (amends 3)')
 def a2(c):
     c.open('maps')
     head = c.box('.f-head')
     c.eq(head['h'], 57, 'header is --f-head-h = 57 px', tol=0.5, what='header height')
     c.eq(c.px('--f-head-h'), 57, '--f-head-h resolves to 57 px', tol=0.5, what='--f-head-h')
     shown = c.js("[...document.querySelectorAll('.f-head > *')].filter(e => window.__t.shown(e)).map(e => e.id)")
-    c.eq(sorted(shown), sorted(['fName', 'fInfo', 'fDevice']), 'exactly the name, "i" and gear are displayed', what='displayed header controls')
-    for i in ('fSync', 'fWho', 'fLive', 'fHelp', 'fHost'):
+    c.eq(sorted(shown), sorted(['fName', 'fHelp', 'fDevice']), 'exactly the name, "?" and gear are displayed', what='displayed header controls')
+    for i in ('fSync', 'fWho', 'fLive', 'fHost'):
         c.ok(not c.shown('#' + i), f'#{i} is displayed', 'not displayed on a phone')
-    for i in ('fInfo', 'fDevice'):
+    c.eq(c.count('#fInfo'), 0, 'the "i" button no longer exists (its lines are the status block of Settings)', what='#fInfo elements')
+    for i in ('fHelp', 'fDevice'):
         b = c.box('#' + i)
         c.ok(b['w'] >= 43.5 and b['h'] >= 43.5, f'#{i} is {b["w"]:.0f}x{b["h"]:.0f}', 'at least 44x44')
 
@@ -72,9 +75,10 @@ def a3(c):
     c.open('fuel')
     for i in ('fHelp', 'fSync'):
         c.ok(c.shown('#' + i), f'#{i} is not displayed at {c.width}', 'displayed on a screen')
+    c.eq(c.count('#fInfo'), 0, 'no "i" button on a screen either (rule 14)', what='#fInfo elements')
 
 
-@case('A4', 'Bottom bar', 'A', langs4=True, rule='V3_SPECIFICATION 7.1 option A; frame/INTEGRATION 9.1')
+@case('A4', 'Bottom bar', 'A', langs4=True, rule='V3_SPECIFICATION 7.1 option A, rule 14; frame/INTEGRATION 9.1')
 def a4(c):
     c.open('fuel')
     if not c.phone:
@@ -83,12 +87,13 @@ def a4(c):
         return
     c.ok(c.shown('#fTabs'), '#fTabs is not displayed at 390', 'displayed')
     tabs = c.boxes('#fTabs a')
-    c.eq(len(tabs), 5, 'five entries: Préparer, Carte, CR, Vols, Réglages', what='entries')
+    c.eq(len(tabs), 5, 'five entries: Préparer, Carte, CR, Vols, Météo', what='entries')
     for t in tabs:
         c.ok(t['h'] >= 43.5, f'entry "{t["text"]}" is {t["h"]:.1f} px high', 'at least 44 px')
     labels = [t['text'] for t in tabs]
     want = [lab[LANG_IX[c.lang]] for _, lab in TABS]
     c.eq(labels, want, 'tab labels translated in the language of the run', what=f'labels ({c.lang})')
+    c.eq(c.count('#fTabs a[data-tab="settings"]'), 0, 'Settings is not in the bar (the gear of the header opens it)', what='settings entries in the bar')
 
 
 @case('A5', 'Fixed module fills the view', 'A', screens=False, tags=('layout',),
@@ -121,24 +126,47 @@ def _tab(c, tab_id):
     return f'#fTabs a[data-tab="{tab_id}"]'
 
 
-@case('A7', 'Group popover', 'A', screens=False, rule='frame/INTEGRATION 9.1; V3_SPECIFICATION 7.1 rule 4')
+@case('A7', 'Group popover', 'A', screens=False, rule='frame/INTEGRATION 9.1; V3_SPECIFICATION 7.1 rules 4 and 14')
 def a7(c):
     c.open('fuel')
+    # fuel has finished mounting before the address changes: a module changed while its own mount is still reading (fuel keeps
+    # its state in a module global) takes the first mount's view; a pilot does not touch the bar within milliseconds of the start
+    c.until("!!document.querySelector('[data-module=\"fuel\"] .fu-step')", timeout=15000, what='fuel has drawn its Quote screen')
     pop = '.f-tabpop'
     c.tap(_tab(c, 'prepare'))                       # a second tap: the tab is already the active one
     c.until("!!document.querySelector('.f-tabpop')", what='the popover opens on a second tap on Préparer')
     rows = c.boxes('.f-tabpop-row')
-    c.eq(len(rows), 2, 'rows Carburant and Atmosphère', what='popover rows')
+    c.eq(len(rows), 2, 'rows Carburant and Fiches', what='popover rows')
     bar = c.box('#fTabs')
     for r in rows:
         c.ok(r['h'] >= 43.5, f'row "{r["text"]}" is {r["h"]:.1f} px high', 'at least 44 px')
         c.ok(r['l'] >= 0 and r['r'] <= c.width and r['t'] >= 0, f'row "{r["text"]}" box {r["l"]:.0f}..{r["r"]:.0f}', 'inside the window')
         c.ok(r['b'] <= bar['t'] + 0.5, f'row bottom {r["b"]:.0f} > bar top {bar["t"]:.0f}', 'above the bar')
-    cur = c.js("[...document.querySelectorAll('.f-tabpop-row')].filter(r => r.hasAttribute('aria-current')).map(r => r.dataset.id)")
-    c.eq(cur, ['fuel'], 'the current row (fuel) carries aria-current', what='aria-current rows')
-    c.tap('.f-tabpop-row[data-id="atmosphere"]')
-    c.until("location.hash === '#atmosphere'", what='hash becomes #atmosphere')
-    c.ok(c.count(pop) == 0, 'popover still open after choosing Atmosphère', 'closed')
+    keys = c.js("[...document.querySelectorAll('.f-tabpop-row')].map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
+    c.eq(keys, ['fuel', 'fuel:sheets'], 'the rows are the module and its Sheets view', what='row keys')
+    c.eq([norm(r['text']) for r in rows], [norm(tx('frame/app.js', 'label', c.lang, after="id: 'fuel'")),
+                                           norm(tx('frame/app.js', 'label', c.lang, after="id: 'sheets'"))], 'the rows read Carburant and Fiches in the language of the run', what='row labels')
+    cur = c.js("[...document.querySelectorAll('.f-tabpop-row')].filter(r => r.hasAttribute('aria-current')).map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
+    c.eq(cur, ['fuel'], 'the current row (fuel, the Quote screen) carries aria-current', what='aria-current rows')
+    c.tap('.f-tabpop-row[data-view="sheets"]')
+    c.until("location.hash === '#fuel?view=sheets'", what='hash becomes #fuel?view=sheets')
+    c.ok(c.count(pop) == 0, 'popover still open after choosing Fiches', 'closed')
+    c.until("(document.querySelector('[data-module=\"fuel\"] [data-view=\"sheets\"]') || document.body).getAttribute('aria-pressed') === 'true'",
+            what='fuel opens on its Sheets screen')
+    c.eq(c.count('#fBack:not([hidden])'), 0, 'a popover choice is a menu choice: no "←"', what='back buttons')
+    c.tap(_tab(c, 'prepare'))
+    c.until("!!document.querySelector('.f-tabpop')", what='the popover opens again')
+    cur = c.js("[...document.querySelectorAll('.f-tabpop-row')].filter(r => r.hasAttribute('aria-current')).map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
+    c.eq(cur, ['fuel:sheets'], 'on #fuel?view=sheets the current row is Fiches', what='aria-current rows on the Sheets view')
+    c.tap('.f-tabpop-row[data-id="fuel"]:not([data-view])')
+    c.until("location.hash === '#fuel'", what='hash goes back to #fuel')
+    # Météo is its own tab now: one row, a second tap does nothing
+    c.tap(_tab(c, 'weather'))
+    c.until("location.hash === '#atmosphere'", what='the Météo tab opens #atmosphere')
+    c.eq(c.attr(_tab(c, 'weather'), 'aria-current'), 'page', 'the Météo tab is the selected one on #atmosphere', what='Météo aria-current')
+    c.tap(_tab(c, 'weather'))
+    c.wait(300)
+    c.ok(c.count(pop) == 0, 'a popover opened on the single-entry tab Météo', 'no popover')
     # Escape closes
     c.go('fuel')
     c.tap(_tab(c, 'prepare'))
@@ -159,32 +187,50 @@ def a7(c):
     c.ok(c.count(pop) == 0, 'a popover opened on the single-module tab Carte', 'no popover')
 
 
-@case('A8', '"i" pop-up', 'A', screens=False, langs4=True, rule='frame lot: the "?" is the last line of the "i" pop-up')
+def open_status(c):
+    """Opens Settings by the gear and returns the rows of its Status block: [{k, text, go}]."""
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='the gear opens #settings')
+    c.until("!!document.querySelector('#fView > .f-screen [data-card=\"status\"] .f-status-list > li')", what='the Status block lists its rows')
+    return c.js("""[...document.querySelectorAll('[data-card="status"] .f-status-list > li')].map(li => ({ k: li.dataset.k,
+        text: (li.innerText || '').replace(/\\s+/g, ' ').trim(), go: (li.querySelector('[data-go]') || { dataset: {} }).dataset.go || '' }))""")
+
+
+@case('A8', 'Status block at the top of Settings', 'A', screens=False, langs4=True,
+      rule='V3_SPECIFICATION 7.1 rule 14: the lines of the former "i" pop-up are the first card of Settings')
 def a8(c):
-    c.open('fuel')
-    c.tap('#fInfo')
-    c.until("!!document.querySelector('.f-info-modal .f-info-row')", what='the "i" pop-up opens')
-    rows = c.boxes('.f-info-row')
-    for r in rows:
+    c.open('fuel', trigram='', pending=1)                       # no trigram (amber line) and a flight to report (green line)
+    rows = open_status(c)
+    c.eq(c.js("document.querySelector('#fView > .f-screen [data-card]').dataset.card"), 'status', 'the status block is the first card of Settings', what='first card')
+    c.eq(norm(c.text('[data-card="status"] h2') or ''), STATUS_TITLE[c.lang], 'the block is titled in the language of the run', what='block title')
+    keys = [r['k'] for r in rows]
+    for k in ('report', 'who', 'data'):
+        c.ok(k in keys, f'rows {keys}', f'a "{k}" row')
+    c.ok(keys.index('report') < keys.index('who') < keys.index('data'), f'rows {keys}', 'in the order: report, trigram, data')
+    c.ok('help' not in keys and c.count('[data-card="status"] [data-go="help"]') == 0, f'rows {keys}', 'no "Help for this screen" row (the "?" of the header is that)')
+    for r in c.boxes('[data-card="status"] .f-status-row'):
         c.ok(r['h'] >= 43.5, f'row "{r["text"][:40]}" is {r["h"]:.1f} px high', 'at least 44 px')
-    c.eq(rows[-1]['text'], HELP_ROW[c.lang], 'the last row is "Help for this screen" translated', what='last row')
+    who = next(r for r in rows if r['k'] == 'who')
+    c.eq(norm(who['text']).startswith(norm(tx(FRAME, 'who', c.lang, after='info: {'))), True, 'the trigram line is worded in the language of the run', what=f'row {who["text"]!r}')
+    # last action: the data line leads to the card that holds the answer (Usages here: no exchange, no pending write), under the header
+    c.tap('[data-card="status"] li[data-k="data"] [data-go]')
+    c.until("(() => { const r = document.querySelector('[data-card=\"usages\"]').getBoundingClientRect(); return r.top >= 0 && r.top < window.innerHeight / 2 })()", what='the data line brings the Usages card to the top of the screen')
+    c.eq(c.hash(), '#settings', 'a line that leads to a card keeps the address', what='hash')
+    c.tap('[data-card="status"] li[data-k="who"] [data-go]')
+    c.until("document.activeElement && document.activeElement.dataset && document.activeElement.dataset.f === 'trigram'", what='the trigram line puts the cursor in the trigram field')
     c.key('Escape')
-    c.ok(c.count('.f-info-modal') == 0, 'pop-up still open after Escape', 'closed')
-    c.tap('#fInfo')
-    c.until("!!document.querySelector('.f-info-modal .f-info-row')", what='the pop-up reopens')
-    c.tap('.f-info-row[data-go="help"]')
-    c.until("location.hash.startsWith('#help')", what='hash goes to #help')
-    c.eq(c.hash(), '#help?m=fuel', 'the help row opens the chapter of the screen it was opened from', what='hash')
+    c.until("location.hash === '#fuel'", what='Escape returns to #fuel')
+    c.ok(c.count('[data-card="status"]') == 0, 'the Status block is still on the page after Escape', 'gone with the screen')
 
 
-@case('A9', '"i" badge', 'A', rule='frame lot ("pastille verte et orange")')
+@case('A9', 'Gear badge', 'A', rule='V3_SPECIFICATION 7.1 rule 14: the badge of the former "i" moved to the gear')
 def a9(c):
     if not c.phone:
         c.open('fuel', trigram='ABC', pending=1)           # at 1280 no badge logic is required: the page just loads
         return
 
     def state():
-        return c.js("(() => { const b = document.getElementById('fInfo'); const probe = v => { const p = document.createElement('i');"
+        return c.js("(() => { const b = document.getElementById('fDevice'); const probe = v => { const p = document.createElement('i');"
                     " p.style.background = 'var(' + v + ')'; document.body.append(p); const col = getComputedStyle(p).backgroundColor; p.remove(); return col };"
                     " return { attn: b.hasAttribute('data-attn'), badge: b.hasAttribute('data-badge'),"
                     " dot: getComputedStyle(b, '::after').backgroundColor, warn: probe('--sog-warn'), ok: probe('--sog-ok') } })()")
@@ -214,13 +260,10 @@ def a10(c):
     c.ok(0 <= lum < 0.2, f'body background luminance {lum:.3f}', 'below 0.2 (dark)')
 
 
-@case('A11', 'Help screen', 'A', langs4=True, rule='help block: the manual of the module, in the language, closable')
+@case('A11', 'Help screen', 'A', langs4=True, rule='help block: the manual of the module, in the language, closable; rule 14: the "?" is in the phone header')
 def a11(c):
     c.open('maps')
-    c.tap('#fInfo') if c.phone else c.tap('#fHelp')
-    if c.phone:
-        c.until("!!document.querySelector('.f-info-row[data-go=\"help\"]')", what='"i" pop-up with its help row')
-        c.tap('.f-info-row[data-go="help"]')
+    c.tap('#fHelp')                                   # the same button on a phone and on a screen (rule 14)
     c.until("location.hash.startsWith('#help')", what='the help screen opens')
     c.eq(c.hash(), '#help?m=maps', 'help opened from #maps asks the maps chapter', what='hash')
     c.until("!!document.querySelector('[data-chapter=\"maps\"]')", timeout=8000, what='the maps chapter of the manual is drawn')
@@ -231,13 +274,15 @@ def a11(c):
     c.key('Escape')
     c.until("location.hash === '#maps'", what='Escape returns to #maps')
     c.open('maps')
-    c.tap('#fInfo') if c.phone else c.tap('#fHelp')
-    if c.phone:
-        c.until("!!document.querySelector('.f-info-row[data-go=\"help\"]')", what='"i" pop-up')
-        c.tap('.f-info-row[data-go="help"]')
+    c.tap('#fHelp')
     c.until("location.hash.startsWith('#help')", what='help reopens')
     c.page.go_back()                                  # the browser's back button
     c.until("location.hash === '#maps'", what='the back button returns to #maps')
+    # over Settings the "?" asks the chapter of Settings, not the one of the module underneath
+    c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='the gear opens #settings')
+    c.tap('#fHelp')
+    c.until("location.hash === '#help?m=settings'", what='"?" over Settings asks the Settings chapter')
 
 
 @case('A12', 'Settings screen', 'A', rule='settings block')
@@ -249,6 +294,7 @@ def a12(c):
     n = c.js("[...document.querySelectorAll('#fView > .f-screen input[type=text]')].filter(i => /ABC/.test(i.placeholder || '')).length")
     c.ok(n >= 1, 'no text field with the trigram placeholder (ABC)', 'a trigram field')
     c.eq(c.attr('#fDevice', 'aria-pressed'), 'true', 'the gear is pressed while the settings are open', what='gear aria-pressed')
+    c.eq(c.count('#fView > .f-screen [data-card="status"]'), 1, 'the Status block opens the screen', what='status blocks')
     c.tap('#fDevice')                                  # the control that opened the screen closes it
     c.until("location.hash === '#fuel'", what='the gear again returns to the previous module (#fuel)')
     c.tap('#fDevice')
@@ -322,11 +368,12 @@ def base_notes(c):
 
 
 def info_row(c, k):
-    """Text of the row `k` of the "i" pop-up, or None (the pop-up is opened, then closed)."""
-    c.tap('#fInfo')
-    c.until("!!document.querySelector('.f-info-modal .f-info-row')", what='the "i" pop-up opens')
-    row = c.js("(k) => { const l = document.querySelector('.f-info-list li[data-k=\"' + k + '\"]'); return l ? l.querySelector('.f-info-txt > span').textContent : null }", k)
+    """Text of the row `k` of the Status block of Settings, or None (Settings are opened by the gear, then closed)."""
+    c.tap('#fDevice')
+    c.until("!!document.querySelector('[data-card=\"status\"] .f-status-row')", what='the Status block of Settings is drawn')
+    row = c.js("(k) => { const l = document.querySelector('[data-card=\"status\"] li[data-k=\"' + k + '\"]'); return l ? l.querySelector('.f-status-txt > span').textContent : null }", k)
     c.key('Escape')
+    c.until("location.hash.startsWith('#maps')", what='Escape returns to the map')
     return None if row is None else norm(row)
 
 
@@ -344,13 +391,13 @@ def a15(c):
     c.ok(any(n.startswith(pre('loading')) for n in notes), f'notes {notes!r}', 'one says the base is loading')
     c.ok(not any(n.startswith(norm(tx(MAPS_M, 'noBase', c.lang))) or n.startswith(norm(tx(MAPS_M, 'noAccess', c.lang))) for n in notes),
          f'notes {notes!r}', 'none says "not published" or "access not set" while the read is going on')
-    c.eq(info_row(c, 'base'), norm(tx(FRAME, 'loading', c.lang, after='base: {')), 'the "i" pop-up says the same, in the language of the run', what='"i" row')
+    c.eq(info_row(c, 'base'), norm(tx(FRAME, 'loading', c.lang, after='base: {')), 'the Status block says the same, in the language of the run', what='Status row')
     c.ok(norm(tx(MAPS_M, 'noBase', c.lang)) not in [norm(n) for n in c.note_log()], 'a notification already says "not published"', 'no notification before the read ends')
     c.step('P5', 2, 'the read ends: the note is gone')
     release()
     c.until("![...document.querySelectorAll('.mp-notes > *')].some(e => /(non publi|not published|nicht ver|no publicada|non r.gl|not set|nicht eingerichtet|no configurado|cours de charg|loading|wird geladen|carg.ndose)/i.test(e.textContent))",
             timeout=10000, what='the loading note is replaced by nothing (the base is there)')
-    c.eq(info_row(c, 'base'), None, 'a line for the base is still in the "i" pop-up', what='"i" row after the read')
+    c.eq(info_row(c, 'base'), None, 'a line for the base is still in the Status block', what='Status row after the read')
     c.step('P5', 3, 'the access is cut and the base not kept: it says the access is not set')
     c.page.evaluate("localStorage.removeItem('githubData:frame')")
     forget(c.page, [p for p, _, _ in aero_docs()], base=c.base)
@@ -363,7 +410,7 @@ def a15(c):
     c.ok(any(n.startswith(want) for n in notes), f'notes {notes!r}', f'one says "{want}"')
     btn = c.js("[...document.querySelectorAll('.mp-notes [data-go=\"settings\"]')].map(b => b.textContent)")
     c.eq([norm(b) for b in btn], [norm(tx(MAPS_M, 'toAccess', c.lang))], 'the note carries one button to Settings', what='buttons')
-    c.eq(info_row(c, 'base'), norm(tx(FRAME, 'noaccess', c.lang, after='base: {')), 'the "i" pop-up says it too', what='"i" row')
+    c.eq(info_row(c, 'base'), norm(tx(FRAME, 'noaccess', c.lang, after='base: {')), 'the Status block says it too', what='Status row')
 LAND = (844, 390)           # an iPhone in landscape (CSS pixels); the frame's `html.f-land` is "wider than high and under 1024"
 PORTRAIT = (390, 844)
 
@@ -392,6 +439,10 @@ def a14(c):
         c.ok(not c.shown('#fNav'), f'#{m}: the 210 px rail #fNav is displayed in landscape', 'hidden (the bar became the rail)')
         entries = c.boxes('#fTabs a')
         c.eq(len(entries), 5, 'five entries in the rail', what=f'#{m} rail entries')
+        c.eq(c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.dataset.tab)"), ['prepare', 'maps', 'report', 'flightlog', 'weather'],
+             'the rail has the bar\'s entries, Météo last and no Settings', what=f'#{m} rail tabs')
+        c.eq(c.js("[...document.querySelectorAll('#fTabs a[aria-current=page]')].map(a => a.dataset.tab)"), ['maps' if m == 'maps' else 'weather'],
+             'the entry of the module shown is the selected one', what=f'#{m} selected rail entry')
         for e in entries:
             c.ok(e['shown'] and e['h'] >= 43.5 and e['w'] >= 43.5, f'#{m}: a rail entry is {e["w"]:.0f} x {e["h"]:.0f}', 'at least 44 x 44')
         c.ok(not any(b['shown'] for b in c.boxes('.f-tab-lbl')), f'#{m}: a rail label is displayed', 'icons only')

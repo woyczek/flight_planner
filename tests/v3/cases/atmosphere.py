@@ -114,7 +114,7 @@ def e4(c):
 
 
 @case('E5', 'One "i" only', 'E', tags=('atmosphere',), screens=False, langs4=True,
-      rule='L8: user "le double bouton i sert à quoi ?"; § 7.1 rule 14: the drawing\'s legend behind an "i" chip named "Légende"')
+      rule='L8: user "le double bouton i sert à quoi ?"; § 7.1 rule 14: the frame\'s "i" is gone, the drawing\'s legend behind an "i" chip named "Légende"')
 def e5(c):
     for target in ('atmosphere', 'atmosphere?donnees=demo'):
         c.open(target, flight=True)
@@ -123,13 +123,14 @@ def e5(c):
           const t = (e.textContent || '').trim(), l = (e.getAttribute('aria-label') || e.title || '').trim();
           return window.__t.shown(e) && (/^(i|ⓘ|ℹ)$/i.test(t) || /^(i|infos?|information)$/i.test(l) || !!e.querySelector('svg[data-i="info"]')) })
           .map(e => e.id || e.className || e.tagName)""")
-        # the frame's #fInfo (until § 7.1.10 removes it) and, over a drawing, the legend chip: no other "i", none unnamed
+        # since rule 14 the frame has no "i"; over a drawing, the legend chip is the only one allowed, and it is named
         c.eq([f for f in found if f not in ('fInfo', 'at-chip-i')], [], 'no "i" besides the frame\'s #fInfo and the legend chip', what=f'{target}: "i" buttons')
         legend = c.js("""() => [...document.querySelectorAll('[data-module="atmosphere"] .at-chip-i')].filter(e => window.__t.shown(e))
           .map(e => e.getAttribute('aria-label'))""")
         c.le(len(legend), 1, 'one legend chip at most', what=f'{target}: legend chips {legend}')
         c.eq(all(x and x.lower() not in ('i', 'info', 'infos', 'information') for x in legend), True,
              'the legend chip is named for what it shows (Légende), not "info"', what=f'{target}: legend chip names {legend}')
+        c.ok('fInfo' not in found and len(found) <= 1, f'{target}: "i" buttons {found}', 'at most one "i" on the page, and not the frame\'s (#fInfo went with rule 14; the legend chip is the one that may come)')
 
 
 @case('E6', 'Hint once', 'E', tags=('atmosphere',), screens=False, langs4=True, rule='L10: the hint was a pill written over the map')

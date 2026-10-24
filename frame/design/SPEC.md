@@ -158,7 +158,7 @@ what depends on the device stays in `@media`: the bottom tab bar (the rail on a 
 
 ## 5. Icons
 
-- `frame/lib/icons.js` holds the 53 line icons of V2 plus `menu`, `wand-sparkles` (maps: the Auto map mode) and `minimize` (full screen; `maximize` was already there): a 24 px grid, stroke 2, `currentColor`. **Filled variants** (24 Oct 2026) of the five tab icons (`fuel`, `map`, `edit`, `list`, `settings`): the same drawings and grid, shapes filled with `currentColor` (cut-outs and gaps in the shape, no second colour); `svg(name, { filled: true })`, marked `data-filled`; `hasFilled(name)`.
+- `frame/lib/icons.js` holds the 53 line icons of V2 plus `menu`, `wand-sparkles` (maps: the Auto map mode) and `minimize` (full screen; `maximize` was already there): a 24 px grid, stroke 2, `currentColor`. **Filled variants** (24 Oct 2026) of the tab icons (`fuel`, `map`, `edit`, `list`, `settings`, and `cloud` for the Météo tab, § 7.1 rule 14): the same drawings and grid, shapes filled with `currentColor` (cut-outs and gaps in the shape, no second colour); `svg(name, { filled: true })`, marked `data-filled`; `hasFilled(name)`.
 - API: `svg(name, { size, title })`, `has`, `names`. An icon is decorative unless it has a `title`.
 - The frame draws the rail verbs (`APP.modules[].icon` is an icon name), the tabs (`APP.tabs[].icon`, line and filled) and the header's buttons with them.
 - The textured V2 sets (brass…) are not carried over.

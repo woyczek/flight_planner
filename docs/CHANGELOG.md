@@ -12,6 +12,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the bar and the header by rule 14 — Météo in the bar, "?" and ⚙ in the header, the status at the top of Settings**
+  (`frame/app.js`, `frame.css`, `index.html`, `lib/icons.js`, `settings/settings.js`, help in four languages, `frame/INTEGRATION.md`
+  § 9.1 and § 10, `frame/SPEC.md` § 3, `frame/settings/SPEC.md` § 1, DECISIONS; V3_SPECIFICATION § 7.1 rule 14) — the phone's bottom bar is
+  Préparer · Carte · CR · Vols · **Météo** (the atmosphere module, `cloud` icon, in four languages); Settings leaves the bar. The
+  performance sheets stay a view of Préparer: a tab can list `views` of its module (`APP.tabs[].views`), so the second touch on Préparer
+  opens **Carburant · Fiches** (`#fuel?view=sheets`); a tab with one row (Carte, CR, Vols, Météo) still does nothing on the second
+  touch, and the landscape rail has the same five entries. The header of a phone is the name (or ←), **"?"** (the help chapter of
+  the current screen) and **⚙**; the "i" button and its pop-up are gone on a phone and on a screen. The badge moves to the ⚙ (green:
+  a flight started or a report to write; amber on a phone: trigram, pending writes, conflicts, sync error, offline, base), with the
+  same rules. Settings opens on a **"Status" block** that carries the former pop-up's lines with the same texts and actions (flight ›
+  Map, report to write › Report with its hand-over, data synchronised n min ago / pending writes / conflicts, aeronautical base,
+  launcher, offline, position), drawn and kept up to date by the frame (`ctx.status`), each line that pointed to "Settings" now
+  scrolling to the card that holds the answer. With Settings open the "?" asks the Settings chapter. Tests A2 A3 A4 A7 A8 (now the
+  Status block) A9 A11 A12 A14 A15 E5 G1 J2 J3 J5 follow.
 - **Report: uniform fields, one provenance line, a two-line action bar on a phone** (`modules/report/module.js`, `SPEC.md` § 2 bis,
   `DECISIONS.md`, help ×4 and `frame/help/pilot.*.md`, `tests/v3/cases/flightlog.py` G4, `tests/v3/PLAN.md`) — on a 390 px phone the blue source badge of each
   prefilled field was wider than its half column (it overlapped its neighbour and left the screen) and made the fields of a row
