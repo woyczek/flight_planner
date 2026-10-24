@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flightlog: the flights without a report are published for the frame's "i" button** (`modules/flightlog/module.js`,
+  `modules/flightlog/model.js`, `modules/flightlog/test/pending.html`; SPEC § 4, INTEGRATION § 5, DECISIONS) — the module
+  writes `cache/flightlog/pending.json` (`{ schema: 1, updated_at, flights: [{ date, dep, arr, registration, source }] }`,
+  cache policy, device only, never synchronised): the flights without a report that it already finds (website log, IVAO /
+  VATSIM sessions), newest first, five at most, within the last 30 days, `source` being `website`, `ivao` or `vatsim`;
+  an empty array when nothing is pending. It is written through `ctx.data` at mount and each time the list is
+  refreshed (reports saved or received, website log changed, network read), and only when the flights change. The frame
+  reads it to draw its "report to write" lines. One rule decides "without a report" (the "Without report" filter, the
+  tile and the record); no screen change.
 - **Changed — Fuel: the first tab is called "Quote"** (`modules/fuel/module.js`; SPEC § 9, INTEGRATION, DECISIONS, help ×4)
   — "Préparer / Plan / Planen / Preparar" becomes "Devis / Quote / Berechnung / Cálculo", because "Prepare" is now the name
   of the frame's bottom tab. The message "No OFP on this device" names the new tab.
