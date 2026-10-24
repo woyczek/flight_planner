@@ -92,7 +92,7 @@ sie nicht, übernimmt der Bodenwind der METAR, und das wird gesagt („Höhenvor
 **4 Kalkulation.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und die Dauer
 (gestrichelt). Der grüne Punkt markiert die sparsamste Flugfläche, das orange Quadrat die schnellste; der graue Bereich
 die Flugflächen, die auf dieser Strecke nicht zu halten sind. Jede Flugfläche wird wie die Kalkulation gerechnet, mit dem vorhergesagten Wind auf dieser
-Höhe, wenn das echte Wetter gewählt ist: auf der gewählten Flugfläche zeigen Kurve und Kalkulation dieselbe Zahl. Tippen Sie auf die Kurve, um eine Flugfläche zu wählen,
+Höhe, wenn das echte Wetter gewählt ist: auf der gewählten Flugfläche zeigen Kurve und Kalkulation dieselbe Zahl. Auf einer Strecke mit Stufen ist jeder Punkt der Kurve ein Horizontalflug auf seiner Flugfläche, ohne die Stufen: Die schwarze Raute markiert die echte Kalkulation des Plans (mit den Stufen der Strecke und dem Planwind), unter der Zeichnung angegeben („Plan: FL160, 856 kg, 0:54“); ihr Abstand zur Kurve sind die Kosten der Stufen. Die Kraftstoffachse folgt der gewählten Einheit (kg oder lb). Tippen Sie auf die Kurve, um eine Flugfläche zu wählen,
 oder nutzen Sie die beiden Schaltflächen. „Steigflug“ wählt die Art zu steigen: sparsam, bestes Steigen, schnell, mit
 der Geschwindigkeit des Datenblatts oder manuell (Sie geben Geschwindigkeit und Steigrate an).
 

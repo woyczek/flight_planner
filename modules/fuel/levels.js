@@ -7,7 +7,8 @@
   // Modèle m : FlightPerfModel.create (modules/fuel/performance_model.js), via FuelModel.perfModel.
   // API (window.FuelLevels) : GOALS, TRIP_KEYS, extendSeries, rpmRows(curve, h), rpmForFF, ffForRpm,
   //   manualSettings(m, sheet, prev), manualLaw(m, q), goalLaw(m, goal, kC, o), tripLaw(m, goal, o),
-  //   climbGuide(m, levelFt, goal, o), decisionSeries(m, flight, goal, o), levelCurves(m, flight), minDistance(m, h, law).
+  //   climbGuide(m, levelFt, goal, o), decisionSeries(m, flight, goal, o), requoteSeries(D, quoteAt, plan),
+  //   levelCurves(m, flight), minDistance(m, h, law).
   //   o = { profileIas (Badin de montée de la fiche complétée, modelSheet), manual (manualSettings), curve (table RPM) }.
   if (window.FuelLevels) return;
   /** Objectifs de montée : économe, meilleur vario, rapide, Badin de la fiche, réglage manuel. */
@@ -239,6 +240,41 @@
     };
   }
 
+  /** Courbe de décision chiffrée comme le devis (23-24 oct. 2026) : chaque niveau tenable (sous le plafond, non extrapolé)
+   *  reprend le délestage (fuel) et la durée (minutes) du devis `quoteAt(h)` (M.quote) à ce niveau. UNE SEULE BASE pour
+   *  tous les points : `quoteAt` doit rendre le vol à plat à ce niveau, le niveau du plan compris ; un point calculé
+   *  autrement que ses voisins (paliers de la route) fait un pic à ce niveau et de faux optimums. Le devis réel du plan
+   *  (paliers de la route, vent du plan) est un repère à part : plan = { h, quote } donne D.plan = { h, fuel, minutes,
+   *  stepped } (null sans devis chiffré). Le moins de carburant et le plus court sont relus de la série à plat. Les
+   *  points au-delà du plafond gardent le prolongement du modèle. Modifie et rend D. */
+  function requoteSeries(D, quoteAt, plan = null) {
+    if (!D) return D;
+    const memo = new Map(),
+      ok = x => x?.hasFuel && Number.isFinite(x.trip) && Number.isFinite(x.minutes),
+      fix = r => {
+        if (!r || !r.ok || r.extrap || r.h > D.hi) return r;
+        if (!memo.has(r.h)) memo.set(r.h, quoteAt(r.h));
+        const x = memo.get(r.h);
+        return ok(x) ? {
+          ...r,
+          fuel: x.trip,
+          minutes: x.minutes
+        } : r;
+      };
+    D.rows = D.rows.map(fix);
+    D.real = D.real.map(fix);
+    D.all = D.all.map(fix);
+    D.best = D.real.reduce((a, b) => b.fuel < a.fuel ? b : a);
+    D.fast = D.real.reduce((a, b) => b.minutes < a.minutes ? b : a);
+    D.plan = plan && ok(plan.quote) && plan.h > 0 ? {
+      h: plan.h,
+      fuel: plan.quote.trip,
+      minutes: plan.quote.minutes,
+      stepped: !!plan.quote.steps
+    } : null;
+    return D;
+  }
+
   /** Courbes de niveau de la vue détaillée (buildCache de la V2) : trajets « normal » et « éco » de 0 au plafond (+10 %),
    *  fourchette de vent, plus haut niveau tenable et sa cause, optimums (carburant, éco, temps), croisières tenables,
    *  trajet au niveau du plan. flight : { distanceNm, wc, windKnown, low, high, levelFt }. */
@@ -324,6 +360,7 @@
     tripLaw,
     climbGuide,
     decisionSeries,
+    requoteSeries,
     levelCurves,
     minDistance
   };

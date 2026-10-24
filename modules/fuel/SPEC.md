@@ -64,9 +64,16 @@ folded.
   cumulated distance (scaled to a typed distance); the level decision still varies the plan's level alone.
 - **Level decision = the quote** (23 Oct 2026): each holdable level of the decision curve (below the ceiling, not
   extrapolated) takes the trip fuel and time of `M.quote` at that level (same climb law, cruise legs and descent),
-  with the forecast wind at that level when the real weather is on (`aloftMeanAt`), else the quote's wind; at the
-  plan's level the quote itself (its wind and route steps). Least fuel and fastest are read again from these values;
-  beyond the ceiling the model's extension stays (dotted).
+  with the forecast wind at that level when the real weather is on (`aloftMeanAt`), else the quote's wind. **One basis
+  for every point** (24 Oct 2026): every level, the plan's included, is a **flat flight at that level** (`steps: null`),
+  so that no point of the curve is computed differently from its neighbours (the plan's level once took the route's
+  steps and made a spike at exactly that level, with false optimums beside it). **The plan's real quote is its own
+  marker**: at the plan's level, the quote with the route's steps and the plan's wind, drawn as a diamond on each curve
+  (smaller when the route has no steps, where it coincides with the curve) and written in the legend ("Plan: FL160,
+  856 kg, 0:54"); `FuelLevels.requoteSeries(D, quoteAt, { h, quote })` (pure) rewrites the series and gives
+  `D.plan = { h, fuel, minutes, stepped }`. Least fuel and fastest are the minima of the flat series (the "Use FLxxx"
+  buttons follow them); the result bar keeps the plan's real quote. Beyond the ceiling the model's extension stays
+  (dotted).
 - **Totals**: trip = climb + cruise + steps + descent; contingency = trip × %; block = taxi + trip + contingency +
   reserve.
 - **Time and TOD**: time = climb + cruise + steps + descent minutes; TOD = last level ÷ gradient + buffer (NM).
@@ -291,8 +298,10 @@ mount. Inside a mount, the two buttons switch as before.
      lines under it give the departure's pressure and density altitudes and the effective ceiling.
   4. **Level decision**: a drawing of the whole trip's fuel (solid) and time (dashed) by level, extrapolated beyond
      the ceiling (dotted), the levels that cannot be flown shaded, the ceiling, the least fuel (dot) and the fastest
-     (square), the plan's level (vertical line). A tap on the drawing sets the level (rounded to the series' step,
-     within the flyable levels); two buttons take the least-fuel and the fastest levels.
+     (square), the plan's level (vertical line) and the plan's real quote (diamond on each curve, with its legend
+     line). The fuel axis and its unit label are in the **displayed** fuel unit (kg or lb), not the sheet's. A tap on
+     the drawing sets the level (rounded to the series' step, within the flyable levels); two buttons take the
+     least-fuel and the fastest levels.
   5. **Result**, sticky at the bottom: block fuel (a range when the wind is unknown), trip, time, top of descent,
      approximate source and MTOW warnings. **Phone rule: compact, about 100 px at 390 px** (it was 190): a context line
      on **one line** (`white-space: nowrap`, ellipsis, the full text in `title`) — short form "Block · FL060→090→110→070 ·

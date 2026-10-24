@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fixed — Fuel: the level decision no longer spikes at the plan's level, and its fuel axis follows the displayed unit**
+  (`modules/fuel/levels.js` `requoteSeries`, `modules/fuel/module.js`, `modules/fuel/test/levels.html`; SPEC § 3 and § 9,
+  INTEGRATION, DECISIONS, help ×4, BUGS ×2) — on a route with level steps ("FL160→090→110→070"), the fuel and time curves
+  jumped at the plan's level and made false optimums, because that one point was quoted with the route's steps and its
+  neighbours as flat flights. Every level, the plan's included, is now a flat flight at that level; the plan's real quote
+  (with the steps and the plan's wind) is a diamond on both curves with its own legend line ("Plan: FL160, 856 kg, 0:54").
+  The fuel axis and its unit label are in the displayed unit (kg or lb), not the sheet's.
+
 - **Map: the screen is fixed — one-line toolbar, full-height map, the data block as a three-position sheet, no page
   scroll** (`modules/maps/module.js`, `modules/maps/test/index.html`; SPEC § 4, INTEGRATION § 2 ter and § 6, DECISIONS,
   help ×4) — the Map module declares the frame's `meta.fixed`: on a phone and on a screen the page no longer scrolls

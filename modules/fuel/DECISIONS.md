@@ -481,3 +481,42 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 - **Seen, not mine**: at 390 px in Chromium the Flight step's date row (`.fu-when`, label "Date du vol (facultatif : TAF)",
   field and the two buttons) is 24 px wider than the screen (document scroll width 414, 402 in English), before and
   after this lot; to look at on the iPhone itself, where the date control differs.
+
+## 24 October 2026 — level decision without a spike: one basis for every level (the user's bug on an iPhone)
+
+- **The user's words**: "l'artefact de pic est un bug, qui génère de faux niveaux". Route "FL160→090→110→070", plan level
+  FL160: the fuel and time curves spiked at FL160, "fastest FL155" sat right beside the spike and "least fuel FL175"
+  above it. Two rows of `docs/technique/BUGS.md` (24/10), closed here.
+- **Cause**: `requoteDecision` re-quoted every level as a flat flight at that level with the forecast wind at that level,
+  except the plan's own, quoted with the route's steps and the plan's wind (`wind: h === levelFt ? qIn.wind : …`,
+  `steps: h === levelFt ? qIn.steps : null`). A stepped route costs more than a flat flight: a spike at exactly that
+  level. Measured before the fix (fictitious TEST_TP, 300 NM, ceiling 20,000 ft so the series goes by 500 ft, wind 270/30,
+  route steps FL090 / FL110 / FL070): fuel 826 kg at FL155, **856 kg at FL160**, 823 kg at FL165; time 51.9, **54.1**,
+  51.9 min. After: 826, **825**, 823 kg; 51.9, **51.9**, 51.9 min.
+- **Decisions (relay, holding the ergonomics role)**: (1) one basis for every point of the series, the plan's level
+  included (`wind: aloftMeanAt(h) || qIn.wind`, `steps: null`): no point of the curve is computed differently from its
+  neighbours. (2) The plan's real quote (the route's steps, the plan's wind) becomes its own marker: a diamond
+  (`fu-planpt`) on each curve at the plan's level and a legend line "Plan: FL160, 856 kg, 0:54" in the four languages,
+  with a tooltip saying that the curves are a flat flight at each level; the dashed vertical "plan" line stays. Without
+  steps the diamond is drawn too (consistency), smaller (radius 4 instead of 6.5). (3) "Least fuel" and "Fastest" stay the
+  minima of the flat series, the "Use FLxxx" buttons are unchanged, the result bar keeps the plan's real quote. (4) The
+  chart's fuel axis and its unit label use the displayed fuel unit, not `sheet.unit`.
+- **How**: pure code first. `requoteDecision` left `module.js` for `FuelLevels.requoteSeries(D, quoteAt, { h, quote })`
+  (`levels.js`), which rewrites the series from `quoteAt` and returns `D.plan = { h, fuel, minutes, stepped }`; the
+  screen only draws. The axis: new `fuelUnitOf(unit)` (the displayed unit, else the sheet's; `fuelTxt` uses it too), and
+  the chart converts the series to that unit with `FuelModel.convertFuel` before choosing its round ticks, so the
+  ticks are round in the displayed unit (800 / 850 / 900 kg; 1,800 / 1,900 / 2,000 lb), not in the sheet's. The plan's
+  values are included in the axes' ranges, so a stepped plan far above the curve stays on the drawing.
+- **Judgement calls**: (a) the plan marker shows the **trip** fuel (`q.trip`, as the curve does), not the block; the block
+  stays in the result bar. (b) No "re-scale the steps around each candidate level" (the other option of the bug row): the
+  steps of a route are the pilot's own levels, scaling them per candidate level would invent routes; the flat series
+  answers "which cruise level is best for this distance", the diamond shows what the actual route costs on top. (c) At the plan's level the curve takes `aloftMeanAt(h) || qIn.wind`, like every other level; with the real weather on
+  that is the same forecast as the wind already written in the flight (`applyRealWind`, at the plan's level), so the flat
+  point and the plan's marker differ by the steps only.
+- **Checked**: benches `levels.html` (36, new: stepped route, series at FL160 = the flat quote and on the line of its
+  neighbours within 1 %, FL160 between its neighbours, marker = stepped quote, minima of the flat series, no steps →
+  marker on the curve, no quote → no marker, and a control showing that the former basis fails the same criterion) and
+  `quote.html` (58) pass. Screen (Chromium 1194, port 8814, 390 x 844 and 1280 x 800, `FrameData` seeding of TEST_TP and
+  a flight on "LFRD REN/F090 BALNI BAKUL/F110 NTS DIXAD TUPAR/F070 CGC LFBD" at FL160): no spike, two diamonds and the
+  legend line "Plan: FL160, 856 kg, 0:54", axis "kg" with 800 / 850 / 900, then "lb" with 1,800 / 1,900 / 2,000 and
+  "Plan: FL160, 1,888 lb, 0:54" when the display unit is lb; no `pageerror`, no horizontal scroll.

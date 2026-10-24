@@ -241,6 +241,12 @@ const TX = {
     'Menos combustible: {fl} ({f})'
   ],
   fastest: ['Plus rapide : {fl} ({t})', 'Fastest: {fl} ({t})', 'Am schnellsten: {fl} ({t})', 'Más rápido: {fl} ({t})'],
+  planPt: ['Plan : {fl}, {f}, {t}', 'Plan: {fl}, {f}, {t}', 'Plan: {fl}, {f}, {t}', 'Plan: {fl}, {f}, {t}'],
+  planPtHint: ['Devis réel du plan (paliers de la route, vent du plan) ; les courbes sont un vol à plat à chaque niveau.',
+    'The plan\'s real quote (route steps, the plan\'s wind); the curves are a flat flight at each level.',
+    'Echter Plan-Wert (Streckenstufen, Planwind); die Kurven zeigen einen Horizontalflug auf jeder Flugfläche.',
+    'Presupuesto real del plan (escalones de la ruta, viento del plan); las curvas son un vuelo a nivel constante en cada nivel.'
+  ],
   use: ['Prendre {fl}', 'Use {fl}', '{fl} nehmen', 'Usar {fl}'],
   gap: ['Au-dessus de {fl} : {r}.', 'Above {fl}: {r}.', 'Über {fl}: {r}.', 'Por encima de {fl}: {r}.'],
   reasons: {
@@ -720,10 +726,12 @@ function fieldLabel(path, group = false) {
 }
 
 // ---------------------------------------------------------------- unités et formats
+/** Unité de carburant affichée (réglage « Carburant »), à défaut celle de la fiche. */
+const fuelUnitOf = unit => S.settings.displayUnit || unit || 'kg';
 /** Carburant v (unité de la fiche) dans l'unité affichée, arrondi et formaté. */
 function fuelTxt(v, unit) {
   if (!Number.isFinite(v)) return '—';
-  const to = S.settings.displayUnit || unit || 'kg',
+  const to = fuelUnitOf(unit),
     x = unit && to !== unit ? window.FuelModel.convertFuel(v, unit, to) : v;
   return `${Math.round(x).toLocaleString(S.ctx.lang())} ${to}`;
 }
@@ -1077,17 +1085,21 @@ function compute() {
       steps: routeSteps(f.route, distanceNm)
     },
     q = distanceNm > 0 ? M.quote(qIn) : null,
-    D = perf && q ? requoteDecision(L.decisionSeries(perf, {
+    D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
       distanceNm,
       wc: q.windKnown ? q.wc : 0
     }, goal, o), h => M.quote({
       ...qIn,
       levelFt: h,
-      // au niveau retenu : le devis tel quel (vent, paliers de la route) ; ailleurs, vol à ce niveau avec le vent de la
-      // prévision à ce niveau quand la météo réelle le donne
-      wind: h === levelFt ? qIn.wind : aloftMeanAt(h) || qIn.wind,
-      steps: h === levelFt ? qIn.steps : null
-    })) : null,
+      // une seule base pour tous les points de la courbe, le niveau du plan compris : vol à plat à ce niveau, avec le vent
+      // de la prévision à ce niveau quand la météo réelle le donne, sans les paliers de la route (un point calculé
+      // autrement que ses voisins fait un pic) ; le devis réel du plan est le repère à part (D.plan)
+      wind: aloftMeanAt(h) || qIn.wind,
+      steps: null
+    }), {
+      h: levelFt,
+      quote: q
+    }) : null,
     G = perf && levelFt > 0 ? L.climbGuide(perf, levelFt, goal, o) : null;
   return {
     sheet,
@@ -1121,42 +1133,21 @@ function ticks(min, max, n = 5) {
   for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) out.push(v);
   return out;
 }
-/** Courbe de décision chiffrée comme le devis : chaque niveau tenable (sous le plafond, non extrapolé) reprend le
- *  délestage et la durée de M.quote à ce niveau (même vent, même loi de montée, même descente), de sorte qu'au niveau
- *  retenu la courbe et le devis disent le même chiffre ; le moins de carburant et le plus court sont relus ensuite. Les
- *  points au-delà du plafond gardent le prolongement du modèle (pointillés). */
-function requoteDecision(D, quoteAt) {
-  if (!D) return D;
-  const memo = new Map(),
-    fix = r => {
-      if (!r || !r.ok || r.extrap || r.h > D.hi) return r;
-      if (!memo.has(r.h)) memo.set(r.h, quoteAt(r.h));
-      const x = memo.get(r.h);
-      return x?.hasFuel && Number.isFinite(x.trip) && Number.isFinite(x.minutes) ? {
-        ...r,
-        fuel: x.trip,
-        minutes: x.minutes
-      } : r;
-    };
-  D.rows = D.rows.map(fix);
-  D.real = D.real.map(fix);
-  D.all = D.all.map(fix);
-  D.best = D.real.reduce((a, b) => b.fuel < a.fuel ? b : a);
-  D.fast = D.real.reduce((a, b) => b.minutes < a.minutes ? b : a);
-  return D;
-}
 /** Courbes de la décision du niveau : carburant (trait plein) et temps (tirets) du trajet entier selon le niveau, partie
  *  extrapolée au-delà du plafond en pointillés, zone non tenable grisée, plafond, moins de carburant (rond), plus rapide
- *  (carré), niveau du plan (trait vertical). */
+ *  (carré), niveau du plan (trait vertical) et devis réel du plan (losanges, avec les paliers de la route). Axe du
+ *  carburant dans l'unité affichée. */
 function decisionSvg(C, box) {
   const {
     D,
     sheet,
     levelFt
   } = C, [W, H] = svgSize(box), pl = 48, pr = 44, pt = 24, pb = 30,
+    to = fuelUnitOf(sheet.unit),
+    cf = v => sheet.unit && to !== sheet.unit ? window.FuelModel.convertFuel(v, sheet.unit, to) : v,
     rows = D.rows.filter(r => r && Number.isFinite(r.fuel) && Number.isFinite(r.minutes)),
-    fuels = rows.map(r => r.fuel),
-    mins = rows.map(r => r.minutes),
+    fuels = [...rows.map(r => cf(r.fuel)), ...(D.plan ? [cf(D.plan.fuel)] : [])],
+    mins = [...rows.map(r => r.minutes), ...(D.plan ? [D.plan.minutes] : [])],
     fMin = Math.min(...fuels) * .97,
     fMax = Math.max(...fuels) * 1.02,
     tMin = Math.min(...mins) * .97,
@@ -1171,7 +1162,7 @@ function decisionSvg(C, box) {
       on = false;
     for (const r of D.rows) {
       const ok = r && Number.isFinite(r[k]) && !!r.extrap === ext;
-      if (ok) d += `${on ? 'L' : 'M'}${x(r.h).toFixed(1)},${y(r[k]).toFixed(1)}`;
+      if (ok) d += `${on ? 'L' : 'M'}${x(r.h).toFixed(1)},${y(k === 'fuel' ? cf(r[k]) : r[k]).toFixed(1)}`;
       on = ok;
     }
     return d;
@@ -1180,18 +1171,22 @@ function decisionSvg(C, box) {
     ft = ticks(fMin, fMax, 4),
     tm = ticks(tMin, tMax, 4),
     gap = D.gap ? `<rect x="${x(D.gap.from)}" y="${pt}" width="${Math.max(0, x(Math.min(ceil, D.xmax)) - x(D.gap.from))}" height="${H - pt - pb}" class="fu-gap"/>` : '',
-    mk = (r, cls, sq) => r ? sq ? `<rect x="${x(r.h) - 5}" y="${yt(r.minutes) - 5}" width="10" height="10" class="${cls}"/>` : `<circle cx="${x(r.h)}" cy="${yf(r.fuel)}" r="5.5" class="${cls}"/>` : '';
+    mk = (r, cls, sq) => r ? sq ? `<rect x="${x(r.h) - 5}" y="${yt(r.minutes) - 5}" width="10" height="10" class="${cls}"/>` : `<circle cx="${x(r.h)}" cy="${yf(cf(r.fuel))}" r="5.5" class="${cls}"/>` : '',
+    /** Losange du devis réel du plan, sur chacune des deux courbes ; plus petit sans paliers (il coïncide avec la courbe). */
+    dia = (cx, cy, rad) => `<path d="M${cx},${cy - rad}L${cx + rad},${cy}L${cx},${cy + rad}L${cx - rad},${cy}Z" class="fu-planpt"/>`,
+    prad = D.plan && D.plan.h <= D.xmax ? D.plan.stepped ? 6.5 : 4 : 0;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(tt(TX.decision))}" class="fu-svg" data-chart="decision">
     ${gap}
     ${xt.map(v => `<line x1="${x(v)}" x2="${x(v)}" y1="${pt}" y2="${H - pb}" class="fu-grid"/><text x="${x(v)}" y="${H - pb + 16}" text-anchor="middle">${flTxt(v)}</text>`).join('')}
     ${ft.map(v => `<text x="${pl - 6}" y="${yf(v) + 4}" text-anchor="end" class="fu-fuel">${Math.round(v / (v >= 10000 ? 1000 : 1)).toLocaleString(S.ctx.lang())}${v >= 10000 ? 'k' : ''}</text>`).join('')}
     ${tm.map(v => `<text x="${W - pr + 6}" y="${yt(v) + 4}" class="fu-time">${hmm(v)}</text>`).join('')}
-    <text x="${pl - 6}" y="12" text-anchor="end" class="fu-fuel fu-unit">${esc(sheet.unit)}</text>
+    <text x="${pl - 6}" y="12" text-anchor="end" class="fu-fuel fu-unit">${esc(to)}</text>
     ${ceil < D.xmax ? `<line x1="${x(ceil)}" x2="${x(ceil)}" y1="${pt}" y2="${H - pb}" class="fu-ceil"/>` : ''}
     <path d="${path(yt, 'minutes', false)}" class="fu-line-t"/><path d="${path(yt, 'minutes', true)}" class="fu-line-t fu-ext"/>
     <path d="${path(yf, 'fuel', false)}" class="fu-line-f"/><path d="${path(yf, 'fuel', true)}" class="fu-line-f fu-ext"/>
     ${levelFt > 0 && levelFt <= D.xmax ? `<line x1="${x(levelFt)}" x2="${x(levelFt)}" y1="${pt}" y2="${H - pb}" class="fu-plan"/>` : ''}
     ${mk(D.best, 'fu-best')}${mk(D.fast, 'fu-fast', true)}
+    ${prad ? `${dia(x(D.plan.h), yf(cf(D.plan.fuel)), prad)}${dia(x(D.plan.h), yt(D.plan.minutes), prad)}` : ''}
     <rect x="${pl}" y="${pt}" width="${W - pl - pr}" height="${H - pt - pb}" fill="transparent" data-pick data-x0="${pl}" data-x1="${W - pr}" data-max="${D.xmax}" style="cursor:crosshair"/>
   </svg>`;
 }
@@ -1284,6 +1279,8 @@ const STYLE = `
 [data-module="fuel"] .fu-now{stroke:var(--sog-chart-2);stroke-width:1.5;stroke-dasharray:5 3}
 [data-module="fuel"] .fu-best{fill:var(--sog-chart-3)}
 [data-module="fuel"] .fu-fast{fill:var(--sog-chart-4)}
+[data-module="fuel"] .fu-planpt{fill:var(--sog-fg);stroke:var(--sog-surface);stroke-width:1.5}
+[data-module="fuel"] .fu-legend .fu-dia{display:inline-block;width:9px;height:9px;margin-right:7px;background:var(--sog-fg);transform:rotate(45deg) scale(.85)}
 [data-module="fuel"] .fu-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
 [data-module="fuel"] .fu-legend .f-dot{margin-right:6px}
 [data-module="fuel"] .fu-legend .fu-sq{border-radius:0}
@@ -3159,6 +3156,7 @@ function refresh() {
   else dec.innerHTML = decisionSvg(C, dec) + `<div class="fu-legend">
       <span><span class="f-dot" style="background:var(--sog-chart-3)"></span>${esc(tt(TX.leastFuel, { fl: flTxt(D.best.h), f: fuelTxt(D.best.fuel, unit) }))}</span>
       <span><span class="f-dot fu-sq" style="background:var(--sog-chart-4)"></span>${esc(tt(TX.fastest, { fl: flTxt(D.fast.h), t: hmm(D.fast.minutes) }))}</span>
+      ${D.plan ? `<span title="${esc(tt(TX.planPtHint))}"><span class="fu-dia"></span>${esc(tt(TX.planPt, { fl: flTxt(D.plan.h), f: fuelTxt(D.plan.fuel, unit), t: hmm(D.plan.minutes) }))}</span>` : ''}
     </div>
     ${D.gap ? `<p class="f-warn">${esc(tt(TX.gap, { fl: flTxt(D.gap.from), r: tt(TX.reasons[D.gap.reason] || TX.reasons.thrust) }))}</p>` : ''}
     <div class="f-row"><button type="button" data-do="level" data-ft="${D.best.h}">${esc(tt(TX.use, { fl: flTxt(D.best.h) }))}</button>${D.fast.h !== D.best.h ? `<button type="button" data-do="level" data-ft="${D.fast.h}">${esc(tt(TX.use, { fl: flTxt(D.fast.h) }))}</button>` : ''}<span class="f-muted">${esc(tt(TX.decisionHint))}</span></div>`;

@@ -85,7 +85,7 @@ aloft unavailable”).
 **4 Quote.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
 trip. Each level is worked out like the quote, with the forecast wind at that level when the real weather is on:
-at the chosen level, the curve and the quote give the same figure. Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
+at the chosen level, the curve and the quote give the same figure. On a route with steps, every point of the curve is a flat flight at its level, without the steps: the black diamond marks the plan's real quote (with the route's steps and the plan's wind), given under the drawing (“Plan: FL160, 856 kg, 0:54”), and its gap from the curve is the cost of the steps. The fuel axis follows the chosen unit (kg or lb). Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
 fast, at the sheet's airspeed, or manual (you give airspeed and rate of climb).
 
 The “Density altitude” fold shows, for the ISA deviation on the horizontal axis, the density altitude of each pressure
