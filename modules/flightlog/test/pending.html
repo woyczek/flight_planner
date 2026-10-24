@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>flightlog — pending bench</title>
-<!-- Banc de la liste des vols sans compte rendu (modules/flightlog/model.js, pending : le contenu de
+<!-- Banc de la liste des vols sans compte rendu (modules/flightlog/model.js, pending, handoffOf : le contenu de
      cache/flightlog/pending.json lu par le bouton « i » du cadre). Page d'outil, hors des applications ; ouvrir depuis
      le lanceur ou un serveur statique à la racine du dépôt. -->
 <style>
@@ -107,14 +107,40 @@
     dep: 'LFBO',
     arr: 'LFMT',
     registration: '',
-    source: 'ivao'
+    source: 'ivao',
+    handoff: {
+      family: 'HEMS',
+      values: {
+        'metadata.date': '2026-10-24',
+        'aircraft.0.callsign': 'DRAGON 11',
+        'navigation.dep': 'LFBO',
+        'navigation.arr': 'LFMT'
+      }
+    }
   }, {
     date: '2026-10-23',
     dep: 'LFRS',
     arr: 'LFML',
     registration: 'F-ZBMC',
-    source: 'website'
+    source: 'website',
+    handoff: {
+      family: 'HEMS',
+      values: {
+        'metadata.date': '2026-10-23',
+        'aircraft.0.callsign': 'SAMU 31',
+        'aircraft.0.type': 'EC45',
+        'aircraft.0.registration': 'F-ZBMC',
+        'navigation.dep': 'LFRS',
+        'navigation.arr': 'LFML',
+        'metadata.operationName': 'EVASAN'
+      }
+    }
   }]);
+  same('the record\'s handoff is what "Write the report" hands over (one function, handoffOf)', F.pending(flights, {
+    today: TODAY
+  }).map(p => p.handoff), F.pending(flights, {
+    today: TODAY
+  }).map((p, i) => F.handoffOf(flights.filter(F.lacksReport).filter(f => f.date >= '2026-09-24')[i])));
   same('VATSIM source', F.pending([F.fromNetwork({
     callsign: 'X1',
     dep: 'EGLL',
