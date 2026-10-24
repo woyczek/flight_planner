@@ -14,6 +14,10 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   Un outil caché reste joignable par son adresse.
 - **L'aide.** Chaque outil a en tête un volet replié « Comment s'en servir » ; le bouton ? ouvre ce manuel au chapitre
   de l'outil.
+- **Le bouton i.** Dans l'en-tête, à côté de ? et de ⚙ : une pastille verte quand quelque chose vous attend. Il ouvre une
+  fiche d'état : le vol en cours (touchez pour aller à la Carte), les comptes rendus à écrire pour vos vols passés
+  (touchez pour ouvrir le compte rendu prérempli), l'état des données (dernière synchronisation, écritures en attente,
+  moyen d'échange utilisé) et « Hors ligne » quand il n'y a pas de réseau. Échap ou ✕ la ferme.
 
 ## Données et synchronisation
 

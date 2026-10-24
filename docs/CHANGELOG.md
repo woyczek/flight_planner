@@ -12,6 +12,22 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the "i" status button of the header, a one-row header after any screen, heights for modules in the dual view,
+  a weaker `display` rule** (`frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/design/primitives.css`; SPEC
+  § 3.1, INTEGRATION § 9.2 and new § 10, DECISIONS) — the status line of the Prepare tab is replaced by an **"i" button**
+  of the header (the iVAC pattern, spec § 7.1): a green badge when something is news, a pop-up under the header with
+  one line each — "Flight in progress › Map" (a started flight), "Report to write for the flight of <date> <DEP>→<ARR>"
+  (read from the cache record `cache/flightlog/pending.json` that flightlog publishes; a touch hands the flight to the
+  report module through `pilot/handoff.json`, or opens My flights without a hand-over), the data state ("synchronised
+  4 min ago · 2 writes pending", the transport in use; a touch opens Settings, or the conflicts) and "Offline: working
+  on this device's copy"; four languages, Escape and ✕ close it. **Bug fixed**: after a screen with a back button
+  (report from the map, then back) the header grew from 57 to 73 px and stayed so on returning to the map — the help's
+  "←" paragraph rule (`.f-back`, 16 px of margin) also hit the header's back button; the rule is scoped to `p.f-back` and
+  the header is now exactly one row of 57 px in every state. New CSS variables `--f-head-h`, `--f-vh`, `--f-view-h`,
+  `--f-split-h`, `--f-pane-h`, and the frame sizes a fixed module itself in the dual view (the split main and the pane),
+  so a module no longer copies "100dvh − 86 px − 44 px". The frame's fixed layout of a module root is now weightless
+  (`:where()`): a module's own `display` wins without `!important`. `status: true` of `APP.tabs` is gone.
+
 - **Map: the screen is fixed — one-line toolbar, full-height map, the data block as a three-position sheet, no page
   scroll** (`modules/maps/module.js`, `modules/maps/test/index.html`; SPEC § 4, INTEGRATION § 2 ter and § 6, DECISIONS,
   help ×4) — the Map module declares the frame's `meta.fixed`: on a phone and on a screen the page no longer scrolls

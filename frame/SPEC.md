@@ -272,12 +272,23 @@ used alone:
     atmosphere), the frame draws above the module a row of sub-tabs (the primitives' `.f-tabs`, 44 px), one per
     module, labelled with its verb, the current one marked; a touch switches the module. On a phone and on a screen.
     No module knows its siblings; a module's own tabs (Fuel's Plan / Sheets) stay inside it.
-  - **Status line** (first screen: Préparer). The tab that has `status: true` shows, above its module, one line of 44 px
-    when it applies, from the current flight record the live-position service already reads
-    (`pilot/<trigram>/current_flight.json`): "Flight in progress › Map" when `started` is not null; a touch opens `#maps`.
-    A "Hide" button dismisses it for the session (kept in `sessionStorage` per departure). Nothing when nothing applies.
-    The line "Report to write for the flight of <date>" is **not drawn**: it needs the My flights module's logic
-    (reports saved, site log, network sessions), which the frame does not duplicate.
+- **The "i" button of the header** (24 Oct 2026, the user's answer in `docs/technique/V3_SPECIFICATION.md` § 7.1; it replaces
+  the status line of the Préparer tab, removed with its `status: true` flag). A 44 px button (icon `info`) before the ? and
+  ⚙ buttons, on a screen and on a phone, opens a **pop-up** under the header (`.f-info-modal`, the frame's question
+  window primitive: Escape, ✕ and a touch outside close it, 44 px lines, a chevron on a line that leads somewhere). A
+  **green badge** (`--sog-ok`) sits on the button when at least one line is "news". The lines, in this order, and nothing else:
+  - **"Flight in progress › Map"** (news) when the current flight record (`pilot/<trigram>/current_flight.json`, the one the
+    live-position service already reads) has `started` not null; touch → `#maps`;
+  - **"Report to write for the flight of <date> <DEP>→<ARR>"** (news), one line per entry of the cache record
+    `cache/flightlog/pending.json` that flightlog publishes (contract: INTEGRATION § 10; the frame only reads it, through
+    the data layer); touch → the entry's `handoff` is written to `pilot/handoff.json` for report and the frame opens
+    `#report?from=flightlog`; an entry without `handoff` opens `#flightlog`;
+  - **the data state**, always: "Data: synchronised 4 min ago · 2 writes pending" (or "on this device, nothing to
+    synchronise" with the local transport, "synchronising…", "n conflict(s) to review"), under it "Transport: this device /
+    launcher / GitHub"; touch → Settings (the synchronisation control), or `#conflicts` when there are conflicts;
+  - **"Offline: working on this device's copy"** when `ctx.net.online()` is false (not a link).
+  The badge counts the first two kinds only: the data line and the offline line are a state, not news (no badge when only
+  they apply). The pop-up follows the state while open and closes on any change of address. Four languages.
 - **Fixed, full-height view** (`meta.fixed: true`, a module's choice, for a map plus a sheet). The frame puts
   `class="f-fixed"` on `<html>`: no page scroll (`html, body { height: 100%; overflow: hidden }`, the body `100dvh`), the
   header stays at the top, the view takes the grid row between the header and the bar (phone) or the bottom of the window
@@ -285,13 +296,23 @@ used alone:
   flex-direction: column`. A fixed module gets neither the folded help panel nor the welcome card (no room; the ? button
   opens its chapter). A frame screen opened over it (Settings, help, conflicts) scrolls as a page. Without `fixed`,
   nothing changes.
+  - **Heights given to modules** (`frame/frame.css`, `:root`): `--f-head-h`, `--f-vh`, `--f-view-h`, `--f-split-h`,
+    `--f-pane-h` (INTEGRATION § 9.2). In a dual view the frame itself gives a fixed module its height: the split main
+    (`html.f-fixed .f-view.f-split > .f-module`) `--f-split-h`, the module of the pane (`.f-pane > .f-module[data-fixed]`)
+    `--f-pane-h`.
+  - **Low specificity**: the fixed layout of the module root (`display: flex` column, `height: 100%`) is under `:where()`,
+    so any rule of the module (`[data-module="x"] { display: grid }`) outweighs it with no `!important`.
 - The address `#<module>` is enough to come back to a screen. What follows a `?` is given to the module as
   `ctx.query`, an object: `#report?from=flightlog` opens report with `{ from: 'flightlog' }`.
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
 - **Header on a phone** (760 px or narrower): never wider than the window; the name, the position, launcher and trigram
-  badges, ? and ⚙ stay (no menu button any more).
+  badges, i, ? and ⚙ stay (no menu button any more).
+  - **One row, always**: the header is exactly `--f-head-h` (57 px = 6 + 44 + 6 + the 1 px rule) high, at every width and in
+    every state, in the five designs (`height: var(--f-head-h)`, no wrapping, children with no vertical margin). The "back"
+    button used to make it 73 px: it shares the class `f-back` with the help's "←" paragraph, whose 4 px + 12 px margin
+    added 16 px (DECISIONS, 24 Oct 2026); that rule is now `p.f-back`.
   - The page grid's columns are `minmax(0, 1fr)`, so content never widens the page.
   - The header hides its overflow. The back button shows its arrow only, and the position, launcher and trigram
     badges their icon only, their label staying in the tooltip.
