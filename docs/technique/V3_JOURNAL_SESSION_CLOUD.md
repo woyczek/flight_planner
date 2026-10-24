@@ -1,0 +1,50 @@
+# V3 — journal of the cloud session (for the ergonomics session to catch up)
+
+*Journal de la session cloud « mobile » (session de passage, `.claude/agents/README.md`) : chaque décision et chaque
+action depuis le dernier point d'étape de la session **Simplification interface et ergonomie**, pour qu'elle rattrape
+le retard à son réveil et conteste ce qui doit l'être. Le document est en anglais (règle du dépôt), la consigne en tête
+est en français.*
+
+## Consigne à la session ergonomie, à son réveil
+
+1. **Point d'étape de référence** : `66cc22dab` sur `v3` (Framagit, 23 octobre 2026, « V3 : feuille de route — livrés :
+   sélecteur d'appareil, points VAC et balises fusionnées, registre unique ; ajoutés : premier écran sans attendre le
+   réseau, cartes qui restent, noms de lieux du fond et ETA, heures du CR en UTC »). C'est ton dernier commit avant que
+   la session cloud ne reprenne la main sur demande de l'utilisateur.
+2. **Fais le diff des actions réalisées depuis** : pour chaque branche du tableau ci-dessous, `git fetch github <branche>`
+   puis `git diff 66cc22dab..github/<branche> --stat` et `git log 66cc22dab..github/<branche>` ; lis l'entrée du journal
+   des décisions du module concerné (`modules/<module>/DECISIONS.md`, `frame/design/DECISIONS.md`) qui date du lot.
+3. **Conteste chaque décision** listée ici (colonne « Decision ») : tu peux la **confirmer**, la **mitiger** (reformuler,
+   réduire, conditionner) ou l'**annuler** (ne pas intégrer la branche, ou l'intégrer puis revenir dessus par un commit).
+   Tu dis à l'utilisateur ce que tu as fait de chacune, avec ses mots.
+4. **Intègre** ce que tu confirmes en avance rapide sur `v3` (rebase de la branche sur `origin/v3`, `docs_bundle.js`
+   régénéré en cas de conflit, marqueurs vérifiés), puis pousse Framagit. La session cloud ne peut pas pousser sur
+   Framagit (clé en lecture seule) : ses branches sont sur GitHub (`github` remote, `Woyczek/flight_planner`).
+5. **Mets ce journal à jour** : une ligne « reviewed » par entrée, puis archive ou supprime le fichier quand tout est
+   intégré ou annulé.
+
+## Log (newest last)
+
+Every entry: date, branch on GitHub, commit, what was done, the decisions taken by the orchestrator (cloud session)
+or by the user, and the question left to the ergonomics session. "User" means a decision the user stated in chat:
+confirm it with him before cancelling.
+
+| Date | Branch (GitHub) | Commit | Action | Decision | Who | For the ergonomics session |
+|---|---|---|---|---|---|---|
+| 22 Oct | `v3-unites-carburant` | `86f87a354` | Fuel module: display units speed (kt, km/h), altitude (ft, m), distance (NM, km, SM) next to kg / lb; conversions at the screen only; FL kept as FL; bench 50/50 | Feature asked by the user ("au moins dans fuel"); placed in V3 fuel rather than V2 (develop is corrections only) | user + orchestrator | `v3` now has the same helpers (`distTxt`…): check the lot is integrated in substance and drop the branch |
+| 23 Oct | `v3-dette-carte` | `7097d0595`, `df0b7ee75` | `docs/technique/DETTE_TECHNIQUE.md`, section "V3 — map module": antimeridian; airspaces card hidden under the buttons / unclosable / 90 % of the map on a phone; SFC–UNL volumes drawn; tap on an empty spot does not close the card; VFR text over the map | Written as technical debt, as the user asked, with causes read in the code | user | The airspaces card entry is being fixed (see 24 Oct): close it when integrated |
+| 23 Oct | `v3-metro` | `7d3b90635` | Design mock-up **Metro**: token set, landmark colour per module (`--sog-module*`, `data-landmark`), frame rules behind `[data-design="metro"]`, demo page `frame/design/demo_metro.html` | User: "une maquette métro ; une fois le cadre amendé, on tranchera les jetons" | user | Seven frame amendments listed in `frame/design/DECISIONS.md` and in `V3_SPECIFICATION.md` § 10.3 (1–7): decide each |
+| 23 Oct | `v3-metro` | `57d750a8d` | `V3_SPECIFICATION.md` § 10.3: designs retained and open points | User: Swiss and Cupertino retained with Metro; `cabinet` dropped, `field` may stay; nothing skeuomorphic on a phone | user | — |
+| 23 Oct | `v3-metro` | `6ecab884a` | Design mock-ups **Swiss** and **Cupertino** (same pattern) | Orchestrator: system fonts only; Swiss night red lighter with black ink; Cupertino keeps Apple's blue although it fails 4.5:1 | orchestrator | § 10.3 points 11–13: Apple blue vs `#0066cc`; Swiss cards as a top rule vs hairline box; rules repeated across designs to promote to tokens |
+| 23 Oct | `v3-metro` | `8fecdd7aa` | § 10.3 updated: Material 3 added to the retained designs | User: "tu peux aussi lancer material design 3" | user | — |
+| 23 Oct | `v3-metro` | `c816ac81a` | Design mock-up **Material 3**: tonal surfaces, two elevation levels, pills, drawer and 88 px rail | Orchestrator: primary blue-violet `#5359c6` (the fleet blue fails contrast on card and field); base text kept at 15 px; header buttons keep a frame (no fourth copy of the frameless rule) | orchestrator | Promote the shared rules to tokens before any fifth design; choose the primary hue |
+| 24 Oct | `v3-fuel-ergo` | *(in progress)* | Fuel screen opens on the Plan, never on the Sheets at mount; sticky result bar compact on a phone: one context line (ellipsed), smaller figure under 760 px, three one-line tiles "Étape / Temps / TOD" | User: "la vue fiches ne devrait pas être active par défaut… le bloc de calculs prend trop de place… abréger (TOD)"; orchestrator chose the labels and the one-line rule | user + orchestrator | Labels (Étape / Trip; TOD in four languages) and whether the last view may still be remembered inside a session |
+| 24 Oct | `v3-maps-espaces` | *(in progress)* | Fix of the airspaces card: own layer above the buttons (z-index 7), bounded to the lower 45 % of the frame on a phone with a capped chart and a scrolling list, closed by a tap on an empty spot (✕, Escape kept; drag and wheel never close), ✕ always reachable | User: "fix le bug"; orchestrator: the "cards that stay" rule of 23 Oct is **reverted for the airspaces card only**; the aerodrome card keeps it | user + orchestrator | This reverts part of your lot "cards that stay": confirm, or keep both cards sticky and add a pin gesture instead (debt entry "tap on an empty spot", `DETTE_TECHNIQUE.md`) |
+
+## Method notes
+
+- Every lot was done by a cheaper agent (Sonnet) in the role of the module's V3 agent, on a branch cut from
+  `framagit/v3` at `66cc22dab`, reviewed by the orchestrator, pushed to GitHub only.
+- Other designs are checked pixel-identical on each design lot (Playwright, 390 and 1280 px, day and night); contrasts
+  are computed and listed in `frame/design/DECISIONS.md`.
+- No module file was touched by the design lots; no frame file by the fuel and maps lots.
