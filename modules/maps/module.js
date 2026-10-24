@@ -13,6 +13,17 @@ import {
   fmtZ,
   fmtZLocal
 } from '../../frame/lib/time.js';
+// socle de carte partagé avec Atmosphère (lib/map_base.js, INTEGRATION.md § 7) : MapLibre, styles, fond à tuiles, taille du
+// cadre, fond uni
+import {
+  startTiles as baseTiles,
+  styleFor as baseStyle,
+  mapSize as baseSize,
+  isOwnResize,
+  loadOutlines as baseOutlines,
+  plainView,
+  drawPlain
+} from './lib/map_base.js';
 
 // V3 maps — module Carte de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ; modules/maps/SPEC.md,
 // INTEGRATION.md, READING.md). La carte de route du vol prévu (pilot/<tri>/current_flight.json écrit par Carburant)
@@ -42,11 +53,16 @@ export const meta = {
   reads: ['pilot/', {
     prefix: 'missions/',
     policy: 'reference'
-  }, 'cache/maps/', 'airline/'],
+  }, 'cache/maps/', 'airline/', 'cache/weather/'],
   // mode et couches de la carte (propres à l'appareil, jamais synchronisés) ; vol courant modifié sur la carte (lot 6 :
   // enregistrement entier, règle record, comme Carburant — modules/fuel/INTEGRATION.md § 3)
+  // cache/weather/ : la réserve météo partagée d'Atmosphère (INTEGRATION.md § 8) ; la Carte n'y lit que ce qu'Atmosphère a
+  // déjà lu (cacheOnly), mais la réserve élague les jours passés et le cadre veut les deux droits déclarés
   writes: [{
     prefix: 'cache/maps/',
+    policy: 'cache'
+  }, {
+    prefix: 'cache/weather/',
     policy: 'cache'
   }, {
     prefix: 'pilot/',
@@ -59,39 +75,29 @@ export const meta = {
   // gardés à l'installation (hors ligne dès la première visite) : le noyau, les symboles
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
-    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0'
+    '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0',
+    'lib/map_base.js?v=0'
   ],
   // gardés au premier usage seulement : MapLibre (1 Mo, inutile sans tuiles) ; les contours des pays du fond uni (350 Ko,
   // inutiles avec les tuiles ; gardés d'avance quand MapLibre n'est pas en cache : outlinesAhead)
-  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0'],
+  // et la coupe météo d'Atmosphère (rendu pur, réserve, calculs ; chargés au premier « Météo » de la feuille)
+  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0', '../atmosphere/section.js?v=0',
+    '../atmosphere/atmo.js?v=0', '../atmosphere/weather_store.js?v=0', '../fuel/winds.js?v=0'
+  ],
   // hôtes publics de tuiles appelés directement par MapLibre (jamais par ctx.net) ; CSP connect-src du cadre
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']
 };
 
 const LIBS = [
-    ['SiaAero', 'lib/aero_symbols.js'],
-    ['SiaProfile', 'lib/vertical_profile.js'],
-    ['MapsRender', 'render.js'],
-    ['MapsProfile', 'profile.js'],
-    ['MapsMission', 'mission.js'],
-    ['MapsContours', 'contours.js'],
-    ['MAPS_PROFILES', 'lib/profiles.js'],
-    ['jsyaml', '../../frame/lib/js-yaml.min.js']
-  ],
-  STYLE_URL = 'https://tiles.openfreemap.org/styles/positron',
-  STYLE_NIGHT = 'https://tiles.openfreemap.org/styles/dark',
-  // fond d'un profil d'affichage du studio : styles publiés d'OpenFreeMap et de VersaTiles ; le style maison du studio
-  // (vector), OSM standard et OpenTopoMap (hôtes hors de meta.net) sont remplacés par positron
-  STYLES = {
-    'ofm-liberty': 'https://tiles.openfreemap.org/styles/liberty',
-    'ofm-bright': 'https://tiles.openfreemap.org/styles/bright',
-    'ofm-positron': 'https://tiles.openfreemap.org/styles/positron',
-    'vt-colorful': 'https://tiles.versatiles.org/assets/styles/colorful/style.json',
-    'vt-graybeard': 'https://tiles.versatiles.org/assets/styles/graybeard/style.json',
-    'vt-shadow': 'https://tiles.versatiles.org/assets/styles/shadow/style.json',
-    'vt-eclipse': 'https://tiles.versatiles.org/assets/styles/eclipse/style.json'
-  },
-  TILE_WAIT = 10e3; // fond pas prêt après ce délai : fond uni
+  ['SiaAero', 'lib/aero_symbols.js'],
+  ['SiaProfile', 'lib/vertical_profile.js'],
+  ['MapsRender', 'render.js'],
+  ['MapsProfile', 'profile.js'],
+  ['MapsMission', 'mission.js'],
+  ['MapsContours', 'contours.js'],
+  ['MAPS_PROFILES', 'lib/profiles.js'],
+  ['jsyaml', '../../frame/lib/js-yaml.min.js']
+];
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const TX = {
@@ -327,6 +333,30 @@ const TX = {
     'Zoom actual: {z} · efectivo {e} (marco de {m} px de media) · {s} NM por cm de pantalla'
   ],
   dataProfile: ['Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical'],
+  segProfile: ['Profil', 'Profile', 'Profil', 'Perfil'],
+  segWeather: ['Météo', 'Weather', 'Wetter', 'Meteo'],
+  segLabel: ['Profil ou météo', 'Profile or weather', 'Profil oder Wetter', 'Perfil o meteo'],
+  wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
+  wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
+    'Corte meteorológico a lo largo de la ruta'
+  ],
+  wxReading: ['Lecture de la prévision gardée…', 'Reading the stored forecast…', 'Gespeicherte Vorhersage wird gelesen…',
+    'Leyendo la previsión guardada…'
+  ],
+  wxNone: ['Pas de prévision chargée :', 'No forecast loaded:', 'Keine Vorhersage geladen:', 'Sin previsión cargada:'],
+  wxOpen: ['ouvrir Météo dans Préparer', 'open Weather in Prepare', 'Wetter unter Vorbereiten öffnen',
+    'abrir Meteo en Preparar'
+  ],
+  wxFail: ['Coupe météo indisponible (module non chargé hors ligne)', 'Weather cross-section unavailable (module not loaded offline)',
+    'Wetterschnitt nicht verfügbar (Modul offline nicht geladen)', 'Corte meteorológico no disponible (módulo no cargado sin conexión)'
+  ],
+  wxStrips: [
+    ['Nébul. basse', 'Low cloud', 'Tiefe Bew.', 'Nub. baja'],
+    ['moyenne', 'mid', 'mittel', 'media'],
+    ['haute', 'high', 'hoch', 'alta'],
+    ['Précip.', 'Precip.', 'Niederschl.', 'Precip.'],
+    ['Visi < 8 km', 'Vis < 8 km', 'Sicht < 8 km', 'Visib. < 8 km']
+  ],
   sheetSize: ['Hauteur du bloc de données : toucher ou glisser', 'Data block height: tap or drag',
     'Höhe des Datenblocks: antippen oder ziehen', 'Altura del bloque de datos: tocar o arrastrar'
   ],
@@ -469,8 +499,10 @@ const tt = (row, v) => S.ctx.t(row, v);
 const flightPath = () => `pilot/${S.ctx.identity?.trigram || 'ANON'}/current_flight.json`;
 
 /** Style du fond : celui du profil d'affichage, de jour ; la nuit, le style sombre (VersaTiles : eclipse). */
-const styleFor = () => S.theme?.dark ? /^vt-/.test(S.profile?.base || '') ? STYLES['vt-eclipse'] : STYLE_NIGHT : STYLES[S.profile?.base] ||
-  STYLE_URL;
+const styleFor = () => baseStyle({
+  dark: S.theme?.dark,
+  base: S.profile?.base
+});
 /** Charge le noyau (scripts du dossier du module, une fois par page). */
 async function loadLibs() {
   for (const [glob, file] of LIBS)
@@ -486,7 +518,7 @@ async function loadLibs() {
 /** Contours des pays du fond uni (lib/outlines.js, 350 Ko), chargés au premier dessin sans tuiles ; la carte est redessinée
  *  quand ils arrivent (mer seule en attendant). */
 let outlinesP = null;
-const loadOutlines = () => outlinesP ||= import(new URL('lib/outlines.js?v=0', import.meta.url).href).then(() => S && schedule(), () => {
+const loadOutlines = () => outlinesP ||= baseOutlines().then(() => S && schedule(), () => {
   outlinesP = null; // hors ligne sans copie : redemandé au dessin suivant
 });
 /** Contours gardés d'avance (service worker) seulement quand MapLibre n'est pas en cache : sans lui, le premier vol hors
@@ -501,27 +533,6 @@ async function outlinesAhead() {
     /* stockage des copies indisponible : rien à garder */
   }
 }
-/** MapLibre (script UMD et sa feuille), chargé une fois, au premier fond à tuiles ; null s'il ne charge pas. */
-let mlP = null;
-
-function loadMapLibre() {
-  return mlP ||= new Promise(ok => {
-    if (window.maplibregl) return ok(window.maplibregl);
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = new URL('lib/maplibre-gl.css?v=0', import.meta.url).href;
-    document.head.append(css);
-    const sc = document.createElement('script');
-    sc.src = new URL('lib/maplibre-gl.js?v=0', import.meta.url).href;
-    sc.onload = () => ok(window.maplibregl || null);
-    sc.onerror = () => {
-      mlP = null;
-      ok(null);
-    };
-    document.head.append(sc);
-  });
-}
-
 // ---------------------------------------------------------------- vol
 /** Points de la route (route.points, positions résolues par Carburant) et dégagement (aerodb). */
 async function readFlight() {
@@ -717,29 +728,13 @@ function view(W, H) {
       }
     };
   }
-  return MapsRender.mercator(S.fit, W, H, 12);
+  return plainView(S.fit, W, H, 12);
 }
-/** Fond MapLibre ramené à la taille du cadre s'il ne l'a plus (map.resize seulement dans ce cas). Appelé par
- *  l'observateur de taille, au chargement et au changement de style, au retour de la page (onglet caché, page gelée :
- *  les observations de taille faites pendant ce temps sont perdues) et à chaque dessin, pour qu'aucun cas oublié ne
- *  laisse une bande de fond. */
-function mapSize() {
-  const m = S?.map || S?.mapNew;
-  if (!m) return;
-  const c = m.getCanvas(),
-    w = S.mapEl.clientWidth,
-    h = S.mapEl.clientHeight;
-  if (w && h && (c.clientWidth !== w || c.clientHeight !== h)) {
-    // resize() tire « movestart » : ce n'est pas un geste de l'utilisateur (sa caméra n'est « déplacée » que par lui)
-    const was = S.selfMove;
-    S.selfMove = true;
-    try {
-      m.resize();
-    } finally {
-      S.selfMove = was;
-    }
-  }
-}
+/** Fond MapLibre ramené à la taille du cadre s'il ne l'a plus (lib/map_base.js : map.resize seulement dans ce cas, son
+ *  « movestart » reconnu par isOwnResize). Appelé par l'observateur de taille, au chargement et au changement de style, au
+ *  retour de la page (onglet caché, page gelée : les observations de taille faites pendant ce temps sont perdues) et à
+ *  chaque dessin, pour qu'aucun cas oublié ne laisse une bande de fond. */
+const mapSize = () => baseSize(S?.map || S?.mapNew, S?.mapEl);
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
@@ -755,7 +750,7 @@ function draw() {
   raw.setTransform(dpr, 0, 0, dpr, 0, 0);
   raw.clearRect(0, 0, W, H);
   if (S.plain && !window.MAPS_OUTLINES) loadOutlines(); // fond uni confirmé (pas de tuiles) : pas pendant leur chargement
-  if (!S.map) MapsRender.drawBackground(ctx, toC, W, H, window.MAPS_OUTLINES, {
+  if (!S.map) drawPlain(ctx, toC, W, H, {
     sea: t.page,
     land: t.bg,
     border: t.grid
@@ -1118,6 +1113,7 @@ function setCursor(s) {
   drawCursor();
   strip();
   schedule();
+  redrawWeather(); // la coupe météo de la feuille suit le même curseur
 }
 
 let frame = 0;
@@ -1156,55 +1152,19 @@ async function refresh(b, corridor = true) {
 }
 
 // ---------------------------------------------------------------- fond à tuiles
-/** Fond MapLibre sur l'emprise de la route ; false s'il ne vient pas (pas de réseau, pas de WebGL, hôte refusé). */
+/** Fond MapLibre sur l'emprise de la route (lib/map_base.js) ; false s'il ne vient pas (pas de réseau, pas de WebGL, hôte
+ *  refusé, délai dépassé). */
 async function startTiles() {
-  if (navigator.onLine === false) return false;
-  const ml = await loadMapLibre();
-  if (!ml || !S) return false;
-  return new Promise(ok => {
-    let map, done = false;
-    const finish = v => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      if (S?.mapNew === map) S.mapNew = null;
-      if (!v && map) try {
-        map.remove();
-      } catch {
-        /* déjà retirée */
-      }
-      ok(v);
-    };
-    const timer = setTimeout(() => finish(false), TILE_WAIT);
-    try {
-      map = S.mapNew = new ml.Map({
-        container: S.mapEl,
-        style: styleFor(),
-        bounds: [
-          [S.fit.w, S.fit.s],
-          [S.fit.e, S.fit.n]
-        ],
-        fitBoundsOptions: {
-          padding: 12
-        },
-        attributionControl: false,
-        dragRotate: false,
-        pitchWithRotate: false,
-        touchPitch: false,
-        renderWorldCopies: false
-      });
-    } catch {
-      return finish(false); // pas de WebGL
-    }
-    map.touchZoomRotate.disableRotation();
-    map.on('style.load', () => {
-      try {
-        if (map.getProjection?.()?.type !== 'mercator') map.setProjection({
-          type: 'mercator'
-        });
-      } catch {
-        /* version sans projection réglable : Mercator */
-      }
+  const map = await baseTiles(S.mapEl, {
+    style: styleFor(),
+    bounds: [
+      [S.fit.w, S.fit.s],
+      [S.fit.e, S.fit.n]
+    ],
+    padding: 12,
+    alive: () => !!S,
+    onCreate: m => S.mapNew = m,
+    onStyleLoad: map => {
       if (S?.map === map) {
         mapSize();
         relief();
@@ -1213,10 +1173,8 @@ async function startTiles() {
         S.placeOff = null;
         baseNames(S.placeWant);
       }
-    });
-    map.on('error', () => finish(false));
-    map.on('load', () => {
-      if (!S) return finish(false);
+    },
+    onLoad: map => {
       S.map = map;
       S.mapNew = null;
       mapSize(); // le cadre a pu changer de taille pendant le chargement des tuiles
@@ -1257,14 +1215,15 @@ async function startTiles() {
         hideTips();
         // tout mouvement qui n'est pas un cadrage du module (geste, molette, clavier) est celui de l'utilisateur : sa
         // caméra est gardée par tous les redessins
-        if (S && !S.selfMove) {
+        if (S && !S.selfMove && !isOwnResize(map)) {
           S.userMoved = true;
           if (S.follow) setFollow(false);
         }
       });
-      finish(true);
-    });
+    }
   });
+  if (S) S.mapNew = null;
+  return !!map;
 }
 
 // ---------------------------------------------------------------- infobulles des espaces (notation SIA)
@@ -2633,133 +2592,181 @@ function showLv() {
 // vertical ; la liste des espaces d'un point et le contenu d'un terrain (points de report, séquences VAC, consignes) s'y
 // ouvrent à sa place — on n'a pas besoin du profil pendant qu'on les lit — et, fermés, le profil revient. Rien ne recouvre
 // plus la carte.
+// ---- la feuille : à trois hauteurs, tirée par sa poignée. UN SEUL BLOC, sans autre dépendance que ses éléments et ses
+// jetons : il passera tel quel dans la primitive du cadre (frame/lib/sheet.js ; INTEGRATION.md § 6, « ce que le cadre
+// reprend »). Ce qui reste au module : les textes (label), ce qui change quand la taille s'est arrêtée (onSettle : recadrer
+// la carte), le verrou de la page de réglage (locked) et la position gardée (onChange).
 /** Position de la feuille gardée d'un montage à l'autre dans la même page (0 réduit, 1 normal, 2 agrandi). */
 let sheetKeep = 1;
-/** Hauteurs en pixels des trois positions, lues dans les jetons de la racine (--mp-head, --mp-p1 / --mp-p2 : parts de la
- *  vue, --mp-m1 / --mp-m2 : planchers) : la feuille de style en est l'unique source, le glisser s'y accroche. */
-function sheetHeights() {
-  const cs = getComputedStyle(S.el),
-    n = k => parseFloat(cs.getPropertyValue(k)) || 0,
-    H = S.el.clientHeight;
-  return [n('--mp-head') + 1, Math.max(n('--mp-p1') * H, n('--mp-m1')), Math.max(n('--mp-p2') * H, n('--mp-m2'))];
-}
-/** Met la feuille à une position (0 réduit, 1 normal, 2 agrandi). instant : sans glissement (le contenu va être mesuré). */
-function setSheet(pos, instant = false) {
-  pos = Math.max(0, Math.min(2, pos));
-  S.sheet = pos;
-  sheetKeep = pos;
-  if (instant) {
-    S.dataEl.classList.add('mp-nt');
-    requestAnimationFrame(() => S?.dataEl.classList.remove('mp-nt'));
+/** Feuille d'une racine : root (porte data-sheet et les jetons --mp-head, --mp-p1 / --mp-p2 : parts de la vue, --mp-m1 /
+ *  --mp-m2 : planchers ; la feuille de style en est l'unique source, le glisser s'y accroche), panel (la feuille, dont la
+ *  hauteur suit data-sheet), head (l'en-tête, qui reçoit le glisser), grip (le bouton de la poignée), pos (position de
+ *  départ), ignore (sélecteur de ce qui, dans l'en-tête, ne tire pas : le ✕), label (position → infobulle de la poignée), locked () → vrai si le glisser est coupé, onChange (position),
+ *  onSettle () → 120 ms après le dernier changement de taille (fin du glissement, rotation, volet redimensionné).
+ *  → { pos, set(pos, instant), settle(), gestures(), stop() }. */
+function createSheet({
+  root,
+  panel,
+  head,
+  grip,
+  pos = 1,
+  ignore = '[data-dclose]',
+  label = () => '',
+  locked = () => false,
+  onChange = () => {},
+  onSettle = () => {}
+}) {
+  let cur = pos,
+    timer = 0;
+  /** Hauteurs en pixels des trois positions, lues dans les jetons de la racine. */
+  function heights() {
+    const cs = getComputedStyle(root),
+      n = k => parseFloat(cs.getPropertyValue(k)) || 0,
+      H = root.clientHeight;
+    return [n('--mp-head') + 1, Math.max(n('--mp-p1') * H, n('--mp-m1')), Math.max(n('--mp-p2') * H, n('--mp-m2'))];
   }
-  S.dataEl.style.removeProperty('height');
-  if (S.el.dataset.sheet !== String(pos)) S.el.dataset.sheet = String(pos);
-  const tip = `${tt(TX.sheetSize)} (${tt(TX.sheetNames[pos])})`;
-  if (S.gripEl.title !== tip) S.gripEl.title = tip;
-  const ex = String(pos > 0);
-  if (S.gripEl.getAttribute('aria-expanded') !== ex) S.gripEl.setAttribute('aria-expanded', ex);
-  if (instant) void S.dataEl.offsetHeight; // mesure possible tout de suite (hauteur à jour)
-}
-/** Après un changement de taille de la carte (feuille, rotation, volet) : le fond MapLibre reprend la taille du cadre, et
- *  la route reste cadrée tant que l'utilisateur n'a pas déplacé la carte ; en une fois, quand la taille s'est arrêtée. */
-function settle() {
-  clearTimeout(S.settleT);
-  S.settleT = setTimeout(() => {
-    if (!S) return;
-    mapSize();
-    if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
-    schedule();
-  }, 120);
-}
-/** La poignée : l'en-tête de la feuille. Un toucher réduit la feuille (ou la ramène de réduite ou d'agrandie à la position
- *  normale), un glisser la tire (événements du pointeur sur l'en-tête seulement : la carte garde ses gestes), au
- *  lâcher elle prend la position la plus proche (ou la suivante, si le geste était un coup de pouce) ; flèches du clavier. */
-function sheetGestures() {
-  const head = S.dheadEl;
-  let d = null;
-  head.addEventListener('pointerdown', e => {
-    if (e.button > 0 || e.target.closest('[data-dclose]') || S.el.classList.contains('mp-tuning')) return;
-    d = {
-      id: e.pointerId,
-      y0: e.clientY,
-      h0: S.dataEl.offsetHeight,
-      pos: S.sheet,
-      y: e.clientY,
-      t: performance.now(),
-      v: 0,
-      on: false,
-      grip: !!e.target.closest('.mp-grip')
-    };
-    head.setPointerCapture(e.pointerId); // la souris qui sort de l'en-tête (un glisser rapide) continue de lui parler
-  });
-  head.addEventListener('pointermove', e => {
-    if (!d || e.pointerId !== d.id) return;
-    if (!d.on) {
-      if (Math.abs(e.clientY - d.y0) < 6) return;
-      d.on = true;
-      S.dataEl.classList.add('mp-nt');
+  /** Met la feuille à une position (0 réduit, 1 normal, 2 agrandi). instant : sans glissement (le contenu va être mesuré). */
+  function set(p, instant = false) {
+    p = Math.max(0, Math.min(2, p));
+    cur = p;
+    onChange(p);
+    if (instant) {
+      panel.classList.add('mp-nt');
+      requestAnimationFrame(() => panel.classList.remove('mp-nt'));
     }
-    const hs = sheetHeights(),
-      now = performance.now();
-    if (now > d.t) d.v = .6 * d.v + .4 * ((e.clientY - d.y) / (now - d.t));
-    d.y = e.clientY;
-    d.t = now;
-    S.dataEl.style.height = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (e.clientY - d.y0))))}px`;
-  });
-  const end = e => {
-    if (!d || e.pointerId !== d.id) return;
-    const was = d;
-    d = null;
-    if (!was.on) {
-      // un toucher (ni glissé ni annulé) sur la poignée : réduit la feuille, ou la ramène à la position normale
-      if (e.type === 'pointerup' && was.grip) {
-        setSheet(S.sheet === 1 ? 0 : 1);
-        settle();
+    panel.style.removeProperty('height');
+    if (root.dataset.sheet !== String(p)) root.dataset.sheet = String(p);
+    const tip = label(p);
+    if (grip.title !== tip) grip.title = tip;
+    const ex = String(p > 0);
+    if (grip.getAttribute('aria-expanded') !== ex) grip.setAttribute('aria-expanded', ex);
+    if (instant) void panel.offsetHeight; // mesure possible tout de suite (hauteur à jour)
+  }
+  /** Après un changement de taille de la carte (feuille, rotation, volet) : onSettle, en une fois, quand la taille s'est
+   *  arrêtée. */
+  function settle() {
+    clearTimeout(timer);
+    timer = setTimeout(onSettle, 120);
+  }
+  /** La poignée : l'en-tête de la feuille. Un toucher réduit la feuille (ou la ramène de réduite ou d'agrandie à la position
+   *  normale), un glisser la tire (événements du pointeur sur l'en-tête seulement : la carte garde ses gestes), au
+   *  lâcher elle prend la position la plus proche (ou la suivante, si le geste était un coup de pouce) ; flèches du clavier. */
+  function gestures() {
+    let d = null;
+    head.addEventListener('pointerdown', e => {
+      if (e.button > 0 || e.target.closest(ignore) || locked()) return;
+      d = {
+        id: e.pointerId,
+        y0: e.clientY,
+        h0: panel.offsetHeight,
+        pos: cur,
+        y: e.clientY,
+        t: performance.now(),
+        v: 0,
+        on: false,
+        grip: grip.contains(e.target)
+      };
+      head.setPointerCapture(e.pointerId); // la souris qui sort de l'en-tête (un glisser rapide) continue de lui parler
+    });
+    head.addEventListener('pointermove', e => {
+      if (!d || e.pointerId !== d.id) return;
+      if (!d.on) {
+        if (Math.abs(e.clientY - d.y0) < 6) return;
+        d.on = true;
+        panel.classList.add('mp-nt');
       }
-      return;
-    }
-    S.dataEl.classList.remove('mp-nt');
-    const hs = sheetHeights(),
-      h = S.dataEl.offsetHeight;
-    let pos = hs.reduce((b, x, i) => Math.abs(x - h) < Math.abs(hs[b] - h) ? i : b, 0);
-    if (Math.abs(was.v) > .8 && e.type === 'pointerup') pos = was.v < 0 ? Math.min(2, was.pos + 1) : Math.max(0, was.pos - 1);
-    setSheet(pos);
-    settle();
+      const hs = heights(),
+        now = performance.now();
+      if (now > d.t) d.v = .6 * d.v + .4 * ((e.clientY - d.y) / (now - d.t));
+      d.y = e.clientY;
+      d.t = now;
+      panel.style.height = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (e.clientY - d.y0))))}px`;
+    });
+    const end = e => {
+      if (!d || e.pointerId !== d.id) return;
+      const was = d;
+      d = null;
+      if (!was.on) {
+        // un toucher (ni glissé ni annulé) sur la poignée : réduit la feuille, ou la ramène à la position normale
+        if (e.type === 'pointerup' && was.grip) {
+          set(cur === 1 ? 0 : 1);
+          settle();
+        }
+        return;
+      }
+      panel.classList.remove('mp-nt');
+      const hs = heights(),
+        h = panel.offsetHeight;
+      let p = hs.reduce((b, x, i) => Math.abs(x - h) < Math.abs(hs[b] - h) ? i : b, 0);
+      if (Math.abs(was.v) > .8 && e.type === 'pointerup') p = was.v < 0 ? Math.min(2, was.pos + 1) : Math.max(0, was.pos - 1);
+      set(p);
+      settle();
+    };
+    head.addEventListener('pointerup', end);
+    head.addEventListener('pointercancel', end);
+    // clavier (Entrée, Espace : clic sans pointeur) ; le toucher et la souris sont traités au relâcher, plus haut
+    grip.addEventListener('click', e => {
+      if (e.detail) return;
+      set(cur === 1 ? 0 : 1);
+      settle();
+    });
+    grip.addEventListener('keydown', e => {
+      const k = {
+        ArrowUp: cur + 1,
+        ArrowDown: cur - 1,
+        Home: 0,
+        End: 2
+      } [e.key];
+      if (k == null) return;
+      e.preventDefault();
+      set(k);
+      settle();
+    });
+    panel.addEventListener('transitionend', e => {
+      if (e.target === panel && e.propertyName === 'height') settle();
+    });
+  }
+  return {
+    get pos() {
+      return cur;
+    },
+    set,
+    settle,
+    gestures,
+    stop: () => clearTimeout(timer)
   };
-  head.addEventListener('pointerup', end);
-  head.addEventListener('pointercancel', end);
-  // clavier (Entrée, Espace : clic sans pointeur) ; le toucher et la souris sont traités au relâcher, plus haut
-  S.gripEl.addEventListener('click', e => {
-    if (e.detail) return;
-    setSheet(S.sheet === 1 ? 0 : 1);
-    settle();
-  });
-  S.gripEl.addEventListener('keydown', e => {
-    const k = {
-      ArrowUp: S.sheet + 1,
-      ArrowDown: S.sheet - 1,
-      Home: 0,
-      End: 2
-    } [e.key];
-    if (k == null) return;
-    e.preventDefault();
-    setSheet(k);
-    settle();
-  });
-  S.dataEl.addEventListener('transitionend', e => {
-    if (e.target === S.dataEl && e.propertyName === 'height') settle();
-  });
 }
-/** En-tête du bloc : ce qu'il montre (profil vertical, ou le titre du contenu) et le ✕ du contenu ; le bloc n'est là que
- *  s'il a quelque chose à montrer ; écrit s'il change. */
+/** Après un changement de taille de la carte : le fond MapLibre reprend la taille du cadre, et la route reste cadrée tant
+ *  que l'utilisateur n'a pas déplacé la carte. */
+function onSheetSettled() {
+  if (!S) return;
+  mapSize();
+  if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
+  schedule();
+}
+/** Choix « Profil · Météo » mémorisé pour la vie de la page (pas sur l'appareil : une commodité de lecture). */
+let viewKeep = 'profile';
+/** La coupe météo se montre pour un vol à deux points au moins (pas pour une carte de mission). */
+const canWeather = () => !S.mission && S.route.points.length >= 2;
+/** En-tête du bloc : ce qu'il montre (profil vertical, coupe météo, ou le titre du contenu), la bascule Profil · Météo (le
+ *  profil et la coupe se remplacent l'un l'autre ; les contenus d'un point de la carte ont leur ✕ à la place) ; le bloc
+ *  n'est là que s'il a quelque chose à montrer ; écrit s'il change. */
 function dataHead() {
   const show = !!S.dpanel || !!S.prof,
-    title = S.dpanel ? S.dtitle : tt(TX.dataProfile);
+    title = S.dpanel ? S.dtitle : tt(TX.dataProfile),
+    wx = S.dpanel === 'weather',
+    seg = canWeather() && (!S.dpanel || wx),
+    close = !!S.dpanel && !wx;
   if (S.dataEl.hidden === show) S.dataEl.hidden = !show;
   if (S.dtitleEl.textContent !== title) S.dtitleEl.textContent = title;
   const tip = S.dpanel ? S.dlabel : '';
   if (S.dtitleEl.title !== tip) S.dtitleEl.title = tip;
-  if (S.dcloseEl.hidden === !!S.dpanel) S.dcloseEl.hidden = !S.dpanel;
+  if (S.dcloseEl.hidden === close) S.dcloseEl.hidden = !close;
+  if (S.segEl.hidden === seg) S.segEl.hidden = !seg;
+  for (const b of S.segBtns) {
+    const on = String((b.dataset.view === 'weather') === wx);
+    if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on);
+  }
 }
 /** Ouvre ou remplace le contenu du bloc. key : l'identité du contenu (autre clé : le contenu est neuf et défile en haut ;
  *  même clé : il est seulement redessiné, défilement gardé) ; build(w, h) rend le HTML pour la taille de la zone de
@@ -2770,12 +2777,13 @@ function dataHead() {
  *  carte et la page ne bougent pas. C'est aussi le point d'entrée des contenus venus d'autres modules (INTEGRATION.md § 6). */
 function openData(kind, key, title, build, label = title) {
   const fresh = S.dkey !== key;
-  if (fresh && S.sheet === 0) setSheet(1, true); // réduite, le contenu serait caché : la feuille s'ouvre, sans glissement
+  if (fresh && S.sh.pos === 0) S.sh.set(1, true); // réduite, le contenu serait caché : la feuille s'ouvre, sans glissement
   S.dpanel = kind;
   S.dkey = key;
   S.dtitle = title;
   if (!S.dprofEl.hidden) S.dprofEl.hidden = true;
   if (S.dbodyEl.hidden) S.dbodyEl.hidden = false;
+  if (S.dbodyEl.dataset.kind !== kind) S.dbodyEl.dataset.kind = kind; // le style de la zone suit le genre (coupe : sans défilement)
   if (S.dbodyEl.getAttribute('aria-label') !== label) S.dbodyEl.setAttribute('aria-label', label);
   S.dlabel = label;
   if (fresh) {
@@ -2791,22 +2799,177 @@ function openData(kind, key, title, build, label = title) {
   dataHead();
   if (fresh) S.dbodyEl.scrollTop = 0;
 }
-/** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille. */
+/** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille — ou la
+ *  coupe météo, si c'est elle que l'utilisateur avait choisie avant d'ouvrir ce contenu. */
 function endData(kind = null) {
   if (!S?.dpanel || (kind && S.dpanel !== kind)) return;
+  const back = S.dpanel !== 'weather' && viewKeep === 'weather' && canWeather();
   S.dpanel = null;
   S.dkey = null;
   S.dhtml = '';
+  if (back) return showWeather(); // le contenu neuf remplace celui qui part : la zone n'est pas vidée entre les deux
   S.dbodyEl.hidden = true;
   S.dbodyEl.textContent = '';
   S.dprofEl.hidden = false;
   drawProfile();
   dataHead();
 }
-/** Fermeture voulue (✕, Échap) : le contenu du bloc, quel qu'il soit. */
+/** Fermeture voulue (✕, Échap) : le contenu du bloc, quel qu'il soit ; la coupe météo ferme sur le profil (et le choix
+ *  suit). */
 function closeData() {
   if (S.dpanel === 'ad' || S.vfrPin) unpinAd();
-  else endData();
+  else {
+    if (S.dpanel === 'weather') viewKeep = 'profile';
+    endData();
+  }
+}
+
+// ---------------------------------------------------------------- la coupe météo dans la feuille
+// Rendu pur d'Atmosphère (modules/atmosphere/section.js, INTEGRATION.md § 5 de ce module) ; la Carte ne demande jamais rien
+// à Open-Meteo : elle dessine ce qu'Atmosphère a déjà lu dans la réserve météo partagée (cache/weather/). Les fichiers
+// d'Atmosphère sont chargés au premier « Météo » (meta.lazy), pas au montage.
+/** Réseau de la réserve pour la Carte : toujours « hors ligne ». La réserve demande l'heure du dernier run d'un modèle à
+ *  Open-Meteo même en cacheOnly (fichier statique) ; la Carte s'en passe et prend celle qu'Atmosphère a gardée. */
+const NO_NET = {
+  fetch: async () => new Response(null, {
+    status: 503,
+    headers: {
+      'x-sog-offline': '1'
+    }
+  })
+};
+/** Identité de la coupe : le vol montré (une nouvelle version du vol refait la coupe). */
+const wxKey = () => `wx:${S.route.updated || ''}`;
+/** Points de la route comme Atmosphère les lit dans le vol courant (route.points, alt_ft = niveau tenu à partir du point). */
+const wxPoints = f => (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p => ({
+  id: String(p.id || p.name || ''),
+  lat: +p.lat,
+  lon: +p.lon,
+  alt_ft: +p.alt_ft || 0
+}));
+/** Lit la prévision gardée pour le vol montré et prépare le dessin : { key, state: 'ok' | 'none' | 'fail', draw, o }.
+ *  none : rien (ou pas assez) en réserve pour ce vol ; fail : les fichiers d'Atmosphère n'ont pas pu être chargés. */
+async function loadWeather(key) {
+  let Sx, A, store;
+  try {
+    [Sx, A, store] = await Promise.all([import('../atmosphere/section.js'), import('../atmosphere/atmo.js'),
+      import('../atmosphere/weather_store.js')
+    ]);
+  } catch {
+    return {
+      key,
+      state: 'fail'
+    };
+  }
+  try {
+    const f = S.route.flight,
+      pts = wxPoints(f),
+      levelFt = S.route.levelFt || +f?.quote?.levelFt || 0;
+    if (pts.length < 2 || !levelFt) return {
+      key,
+      state: 'none'
+    };
+    const mid = pts[Math.floor(pts.length / 2)],
+      W = S.wxStore ||= store.weatherStore({
+        data: S.ctx.data,
+        net: NO_NET
+      }),
+      r = await W.forecast(Sx.sectionPlaces(pts), Sx.sectionVars(levelFt, pts), {
+        model: A.modelFor(mid.lat, mid.lon).id,
+        cacheOnly: true
+      });
+    if (!r) return {
+      key,
+      state: 'none'
+    };
+    const when = Date.parse(f?.weather?.when || ''),
+      o = {
+        route: pts,
+        levelFt,
+        // le profil de Carburant n'est repris que s'il est de Carburant (écrit par la carte, il est périmé : taux par défaut)
+        profile: f?.by && f.by !== 'fuel' ? null : f?.profile || null,
+        depTime: Number.isFinite(when) ? when / 1000 : Math.ceil(Date.now() / 36e5) * 3600,
+        cruiseKt: A.cruiseKtOf(f?.route?.text) || 200,
+        locs: A.locations(r.locs),
+        id: 'mp-wx',
+        labels: {
+          strips: TX.wxStrips.map(row => tt(row))
+        }
+      };
+    // le modèle (trajectoire, colonnes, champ) est calculé une fois : le dessin le reprend à chaque taille et à chaque curseur
+    o.model = Sx.sectionModel({
+      points: pts,
+      levelFt,
+      profile: o.profile,
+      profileLevelFt: levelFt,
+      depTime: o.depTime,
+      cruiseKt: o.cruiseKt,
+      samples: Sx.sectionPlaces(pts),
+      locs: o.locs
+    });
+    return {
+      key,
+      state: 'ok',
+      draw: Sx.drawSection,
+      o
+    };
+  } catch {
+    return {
+      key,
+      state: 'none'
+    };
+  }
+}
+/** Constructeur du contenu « weather » pour openData : dessine dans la zone, ou rend une ligne (lecture, rien en réserve,
+ *  indisponible). */
+const weatherBuild = key => (w, h, el) => {
+  const wx = S.wx?.key === key ? S.wx : null;
+  S.wxGeo = null;
+  if (!wx) return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxReading))}</p>`;
+  if (wx.state === 'ok') {
+    // la zone a 8 px de marge de chaque côté et 6 px en haut et en bas (.mp-dbody) : la coupe prend le dedans
+    S.wxGeo = wx.draw(el, {
+      ...wx.o,
+      width: Math.max(80, w - 16),
+      height: Math.max(80, h - 12),
+      cursorM: S.cursor,
+      dark: !!S.theme?.dark
+    });
+    if (S.wxGeo) return;
+  }
+  if (wx.state === 'fail') return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxFail))}</p>`;
+  return `<a class="mp-wxlink" href="#atmosphere">${esc(tt(TX.wxNone))}&nbsp;<span>${esc(tt(TX.wxOpen))}</span></a>`;
+};
+/** Montre la coupe météo dans la feuille (la prévision gardée est lue si elle ne l'est pas encore pour ce vol ; force : relue
+ *  même si elle manquait, Atmosphère ayant pu la charger depuis). Même clé : seulement redessinée. */
+async function showWeather(force = false) {
+  const key = wxKey(),
+    open = () => openData('weather', key, tt(TX.wxTitle), weatherBuild(key), tt(TX.wxLabel));
+  open();
+  if (S.wx?.key === key && !(force && S.wx.state !== 'ok')) return;
+  const seq = S.wxSeq = (S.wxSeq || 0) + 1,
+    st = await loadWeather(key);
+  if (!S || S.wxSeq !== seq) return;
+  S.wx = st;
+  if (S.dpanel === 'weather' && S.dkey === key) open();
+}
+/** Coupe redessinée (taille de la zone, curseur, design) sans relire la prévision. */
+function redrawWeather() {
+  if (S?.dpanel === 'weather') openData('weather', S.dkey, S.dtitle, weatherBuild(S.dkey), S.dlabel);
+}
+/** Le vol a changé, la feuille vient de naître ou revient d'un contenu : la coupe suit le choix « Profil · Météo ». */
+function syncView() {
+  if (!canWeather()) {
+    if (S.dpanel === 'weather') endData('weather');
+    return dataHead();
+  }
+  if (S.dpanel === 'weather') showWeather();
+  else if (!S.dpanel && viewKeep === 'weather' && S.sh.pos > 0) showWeather();
+  else {
+    // feuille réduite à l'arrivée : le profil s'ouvrira avec elle, le choix de la coupe n'est pas rejoué à son insu
+    if (!S.dpanel && viewKeep === 'weather') viewKeep = 'profile';
+    dataHead();
+  }
 }
 /** Toucher ou clic sur la carte en (x, y) : la même infobulle qu'au survol, posée là, gardée 5 s, remplacée par la
  *  suivante ; rien dessous : l'infobulle se ferme. Un espace ou plus sous le point (ni barbule ni voie sous le doigt) : leur
@@ -3308,7 +3471,7 @@ function toggleLayers(open = S.layersEl.hidden) {
   S.layersBtn.setAttribute('aria-expanded', String(open));
   if (open) {
     fillLayers();
-    if (S.sheet === 2) setSheet(1); // feuille agrandie : le panneau n'aurait que quelques lignes de carte
+    if (S.sh.pos === 2) S.sh.set(1); // feuille agrandie : le panneau n'aurait que quelques lignes de carte
   }
 }
 /** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
@@ -3852,6 +4015,7 @@ async function applyFlight(live = false) {
   progressUpdate();
   schedule();
   buildProfile();
+  syncView();
 }
 
 // ---------------------------------------------------------------- cartes de mission
@@ -4131,6 +4295,16 @@ const STYLE = `
 [data-module="maps"] .mp-notes:empty{display:none}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
 [data-module="maps"] .mp-dtitle{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="maps"] .mp-seg{flex:none;display:flex;align-items:stretch;margin-right:2px}
+[data-module="maps"] .mp-seg[hidden]{display:none}
+[data-module="maps"] .mp-segb{box-sizing:border-box;min-width:var(--sog-touch);height:100%;min-height:0;margin:0;padding:0 8px;border:solid transparent;border-width:5px 2px;border-radius:calc(var(--sog-radius-s) + 5px);background:none;background-clip:padding-box;color:var(--sog-muted);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 1px var(--sog-border)}
+[data-module="maps"] .mp-segb:hover{background-color:color-mix(in srgb,var(--sog-accent) 12%,var(--sog-surface))}
+[data-module="maps"] .mp-segb[aria-pressed=true]{color:var(--sog-accent);background-color:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface));box-shadow:inset 0 0 0 1.5px var(--sog-accent)}
+[data-module="maps"] .mp-dbody[data-kind=weather]{overflow:hidden}
+[data-module="maps"] .mp-dbody[data-kind=weather] svg{display:block;cursor:crosshair}
+[data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
+[data-module="maps"] .mp-wxlink{display:flex;align-items:center;min-height:var(--sog-touch);color:var(--sog-fg);text-decoration:none}
+[data-module="maps"] .mp-wxlink span{color:var(--sog-accent);text-decoration:underline}
 [data-module="maps"] .mp-dclose{flex:none;width:44px;height:100%;min-height:0;margin:0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit;touch-action:manipulation}
 [data-module="maps"] .mp-dbody{box-sizing:border-box;flex:1 1 0;min-height:0;margin:0 8px 8px;padding:6px 8px;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
 [data-module="maps"] .mp-dbody p{margin:2px 0}
@@ -4142,6 +4316,8 @@ const STYLE = `
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
 [data-module="maps"].mp-editing .mp-prof{cursor:ns-resize}
+/* TODO (prochain lot de la Carte) : le cadre fournit --f-view-h (commit 9c5a1e2d6 : --f-head-h, --f-vh, --f-split-h, --f-pane-h) ; ces
+   deux hauteurs recopiées et leur !important lui céderont la place, la variable remplaçant les nombres 86, 44 et 57 / 32 ci-dessous */
 /* hors de la vue fixe du cadre, la racine reçoit sa hauteur d'ici : le volet de la vue double (sous l'en-tête, avec sa barre
    de fermeture de 44 px) et, carte à gauche d'un volet, la colonne de la vue (en-tête de 57 px, marges de 16 px de la vue) */
 .f-pane>[data-module="maps"]{height:calc(100dvh - 86px - var(--sog-touch));min-height:420px}
@@ -4188,7 +4364,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
-<div class="mp-data" hidden><div class="mp-dhead"><button type="button" class="mp-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><span class="mp-pill" aria-hidden="true"></span><b class="mp-dtitle"></b></button><button type="button" class="mp-dclose" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
+<div class="mp-data" hidden><div class="mp-dhead"><button type="button" class="mp-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><span class="mp-pill" aria-hidden="true"></span><b class="mp-dtitle"></b></button><div class="mp-seg" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-segb" data-view="profile" aria-pressed="true">${esc(ctx.t(TX.segProfile))}</button><button type="button" class="mp-segb" data-view="weather" aria-pressed="false">${esc(ctx.t(TX.segWeather))}</button></div><button type="button" class="mp-dclose" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
@@ -4225,6 +4401,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     notesEl: el.querySelector('.mp-notes'),
     dtitleEl: el.querySelector('.mp-dtitle'),
     dcloseEl: el.querySelector('.mp-dclose'),
+    segEl: el.querySelector('.mp-seg'),
+    segBtns: [...el.querySelectorAll('.mp-segb')],
     dprofEl: el.querySelector('.mp-dprof'),
     dbodyEl: el.querySelector('.mp-dbody'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
@@ -4232,8 +4410,20 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   // page de réglage (#maps?tune=1) : racine qui défile d'elle-même (la vue du cadre est fixe), blocs en hauteur naturelle
   if (ctx.query?.tune) el.classList.add('mp-tuning');
-  setSheet(sheetKeep, true);
-  sheetGestures();
+  S.sh = createSheet({
+    root: el,
+    panel: S.dataEl,
+    head: S.dheadEl,
+    grip: S.gripEl,
+    pos: sheetKeep,
+    ignore: '[data-dclose], .mp-seg',
+    label: p => `${tt(TX.sheetSize)} (${tt(TX.sheetNames[p])})`,
+    locked: () => el.classList.contains('mp-tuning'),
+    onChange: p => sheetKeep = p,
+    onSettle: onSheetSettled
+  });
+  S.sh.set(sheetKeep, true);
+  S.sh.gestures();
   // la grille des modes (sous la barre d'outils, sur le haut de la carte) se ferme aussi d'un toucher ailleurs que sur la
   // carte (qui la ferme elle-même) : barre, feuille
   el.addEventListener('pointerdown', e => {
@@ -4333,6 +4523,23 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.dheadEl.addEventListener('click', e => {
     if (e.target.closest('[data-dclose]')) closeData();
   });
+  // bascule Profil · Météo : la feuille réduite s'ouvre à la position normale (on vient de choisir ce qu'on veut y lire)
+  S.segEl.addEventListener('click', e => {
+    const v = e.target.closest('[data-view]')?.dataset.view;
+    if (!v || (v === 'weather') === (S.dpanel === 'weather')) return;
+    if (S.sh.pos === 0) S.sh.set(1, true);
+    viewKeep = v;
+    if (v === 'weather') showWeather(true);
+    else endData('weather');
+  });
+  // un toucher sur la coupe météo place le curseur commun (la carte et le profil le suivent), comme sur le profil
+  S.dbodyEl.addEventListener('click', e => {
+    const svg = S.dpanel === 'weather' && S.wxGeo && e.target.closest('svg');
+    if (!svg) return;
+    const g = S.wxGeo,
+      x = e.clientX - svg.getBoundingClientRect().left;
+    if (x >= g.x0 && x <= g.x0 + g.pw) setCursor(Math.round(g.nmOf(x) * FT_NM));
+  });
   document.addEventListener('keydown', esc0);
   S.stops.push(() => document.removeEventListener('keydown', esc0));
   S.layersEl.addEventListener('keydown', e => {
@@ -4366,6 +4573,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     S.theme = t;
     if (night && S.map) S.map.setStyle(styleFor());
     drawProfile();
+    redrawWeather();
     schedule();
   };
   const mq = matchMedia('(prefers-color-scheme: dark)'),
@@ -4437,11 +4645,11 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   const ro = new ResizeObserver(() => {
     mapSize();
     schedule();
-    settle(); // la feuille a bougé, l'écran a tourné : la route est recadrée une fois la taille arrêtée
+    S.sh.settle(); // la feuille a bougé, l'écran a tourné : la route est recadrée une fois la taille arrêtée
   });
   ro.observe(S.box);
-  // rotation, volet redimensionné : le graphique des niveaux reprend la largeur du bloc
-  const rd = new ResizeObserver(() => S.dpanel === 'lv' && showLv());
+  // rotation, volet redimensionné, feuille tirée : le graphique des niveaux et la coupe météo reprennent la taille du bloc
+  const rd = new ResizeObserver(() => S.dpanel === 'lv' ? showLv() : redrawWeather());
   rd.observe(S.dbodyEl);
   // retour d'un onglet caché ou d'une page gelée : taille reprise, surcouche redessinée
   const back = () => {
@@ -4459,7 +4667,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   const rp = new ResizeObserver(() => drawProfile());
   rp.observe(S.profBox);
-  S.stops.push(() => ro.disconnect(), () => rp.disconnect(), () => rd.disconnect(), () => clearTimeout(S.settleT));
+  S.stops.push(() => ro.disconnect(), () => rp.disconnect(), () => rd.disconnect(), () => S.sh?.stop());
 }
 
 export function unmount() {

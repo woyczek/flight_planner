@@ -742,3 +742,74 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     stubbed), 390 × 844 touch (CDP touch events), 1280 × 800 mouse, the pane, the test page; screenshots in the cloud
     session's scratchpad `maps3/` (`fixed_390_{collapsed,default,expanded}.png`, `fixed_1280.png`, `pane_1280.png`,
     `fixed_<design>_390.png`, tuning and state pages). No `pageerror`.
+- **24 Oct 2026 (evening) — shared map base (`lib/map_base.js`), the sheet isolated for the frame, the weather cross-section in the
+  sheet (relay's lot, `V3_SPECIFICATION.md` § 7.1 "Shared code between maps and atmosphere"; the ergonomics role is held by the
+  relay).** To be reviewed by the ergonomics session.
+  - **Map base extracted** to `modules/maps/lib/map_base.js` (API: INTEGRATION § 7). Compared with atmosphere's copy, the
+    shared surface is: `loadMapLibre`, the day / night styles (and the studio's `STYLES` table), `startTiles` (creation, wait,
+    giving up, removal of the half-built map), `mapSize` with its own-resize marker, and the plain background (`loadRender`,
+    `loadOutlines`, `plainView`, `drawPlain`). *Not shared*: everything that happens once the map is loaded (events,
+    overlay, relief, place names, credits), the choice of the fallback, the draw loop, `outlinesAhead` (maps' service-worker
+    warm-up). `module.js` imports it; the two singletons of the old code (`mlP`, `outlinesP`) live in the base, so a page
+    that mounts both modules loads MapLibre once.
+    - *The own-resize marker*: `selfMove` (a flag of `S`) no longer wraps `resize()`; the base keeps a `WeakSet` of the maps
+      inside their own `resize()` and exposes `isOwnResize(map)`; maps' `movestart` handler tests it as well as its own
+      `S.selfMove` (set for `fitBounds` and `easeTo`).
+    - *Judgement calls*: the base's `startTiles` returns the map (or `null`) and takes the handlers as callbacks
+      (`onCreate`, `onStyleLoad`, `onLoad`) rather than returning a handle with events, so that the order of the old code is
+      kept (events wired before the promise is kept). An `error` before `load` always gives up, as in maps (atmosphere's copy
+      gave up only if `!map.loaded()`); Mercator is forced at each `style.load` for both modules (a no-op for the styles in use).
+      `drawPlain` passes `window.MAPS_OUTLINES` as is (atmosphere's `|| []` is not needed: `drawBackground` accepts an undefined list).
+    - *Checked*: `#maps` of the Pilot application at 390 × 844 and 1280 × 800, with the stubbed tiles and with the plain
+      background (offline), before (git archive of dfc76182d on its own launcher) and after the extraction alone: identical
+      screenshots (no difference at all, the noise between two runs of the same build being nil too); after the whole lot the
+      only difference is the new toggle (a 280 × 34 px box in the sheet's header).
+  - **The sheet isolated**, not extracted (it becomes `frame/lib/sheet.js` in the frame lot): `setSheet`, `sheetGestures`,
+    `settle` and `sheetHeights` are now one block, `createSheet({ root, panel, head, grip, pos, ignore, label, locked,
+    onChange, onSettle })`, with no reference to `S`; what was module code in `settle()` (`mapSize`, re-framing) is the
+    `onSettle` callback, the texts are the `label` callback, the tuning page's lock the `locked` callback, the position kept
+    for the page's life the `onChange` callback. Same behaviour (drag, flick, tap, keyboard, 200 ms slide, the three positions
+    measured again at 390 and 1280). What the frame takes: INTEGRATION § 6.
+  - **Weather cross-section in the sheet** (kind `weather`, INTEGRATION § 8, SPEC § 4). *Toggle*: a small segmented control
+    "Profil · Météo" in the header of the sheet (44 px buttons, `aria-pressed`, four languages), **not** a fourth toolbar
+    button (five items at most). It is shown while the profile or the cross-section is shown, hidden for a mission map and
+    for an airspaces list or an aerodrome's content (those keep their ✕). The choice is remembered for the page's life
+    (module variable), restored after an airspaces list / an aerodrome closes, and not replayed on a sheet that comes back
+    collapsed (the choice is then forgotten: a collapsed sheet must not open by itself). The toggle opens a collapsed sheet to
+    the default position. Escape on the cross-section goes back to the profile. The toggle is out of the drag zone of the
+    header (`ignore`), otherwise pointer capture swallowed its click.
+    - *Judgement calls, in the order the brief gave them*: (1) **dynamic import** of `section.js`, `atmo.js`,
+      `weather_store.js` at the first "Météo" instead of a static `import` at the top (the brief's snippet): 600 lines and the
+      whole weather store for a phone that never opens the toggle; the four files are `meta.lazy`. (2) **`cache/weather/` in both
+      `reads` and `writes`** as atmosphere's doc asks, although maps never writes (the store prunes past days when read). (3)
+      The store is built with a **network that always answers "offline"** instead of `ctx.net`: `cacheOnly: true` stops the
+      API calls but `weatherStore.forecast` still fetches the run's `meta.json` (a static file); "maps never asks
+      Open-Meteo" is taken literally, the run atmosphere kept is used. If atmosphere never kept a run, a file older than 30
+      minutes is not found (the store's blind rule) and the sheet says "No forecast loaded". (4) The **model computed once
+      and passed** (`o.model`) to `drawSection`: not documented in atmosphere's § 5 (to add), needed because the sheet redraws
+      at every step of a drag and at every cursor move. (5) **A tap on the cross-section sets the shared cursor** (not asked:
+      the brief says the cursor of the profile is passed to the renderer). Without it the cursor could only be moved from the
+      map while the cross-section is shown, the profile being hidden. (6) The route is built from the flight's `route.points`
+      as atmosphere's `fromRecord` does (`alt_ft`), not from maps' own points (`lvl`). (7) Fuel's `profile` only when it was
+      written by fuel (maps' own rule for its profile); atmosphere takes it whatever `by`. (8) The weather is looked for with the
+      flight record's level, departure time (`weather.when`), cruise speed (route text), never with what was typed in
+      atmosphere's own form: a level changed there reads other variables and may not be found. (9) The "Pas de prévision
+      chargée : ouvrir Météo dans Préparer" line is one 44 px link to `#atmosphere`; the frame's sub-tab is still called
+      "Atmosphère" (`frame/app.js`), "Météo" being the brief's word.
+    - *Kept from the lot*: the levels content (airspaces) and the aerodrome content are unchanged; no frame file, no other module
+      touched; `modules/atmosphere` untouched (its session switches to the import and documents `model`).
+  - **Frame variables (item 4, relay's note of the evening)**: the frame lot (commit 9c5a1e2d6, not in this base) now provides
+    `--f-head-h`, `--f-vh`, `--f-view-h` (equal to `--f-split-h` on `.f-view.f-split` and `--f-pane-h` on `.f-pane`) and applies
+    them to its split and pane modules. **Not depended on in this lot**: the two copied heights (`.f-pane>[data-module="maps"]`,
+    `.f-view.f-split>[data-module="maps"]`) and the `!important` of the tuning page stay, with a TODO comment in the style
+    sheet. **The next maps lot drops them for `var(--f-view-h)`.**
+  - **Bench**: Playwright + Chromium, the Pilot application served by the launcher on the synthetic SIA base of the earlier
+    lot, tiles stubbed; the forecast seeded through `FrameData` with atmosphere's own store and a fake Open-Meteo answered by
+    its demonstration (`demo.js`, as `modules/atmosphere/test/weather_store.html` does): 9 places, 1 request. Measured at 390 × 844
+    (touch) and 1280 × 800: no `pageerror`, no page scroll (`scrollHeight` = `innerHeight`), no target under 44 px; without a
+    forecast the one-line message (link 356 × 44) ; with it the SVG 356 × 168 at the default position, 356 × 401 expanded (the five
+    strips appear from 260 px), 1036 × 168 / 428 at 1280; collapsed: header only; the cursor: a tap on the route at 129 NM reads
+    129 on the profile's strip and 128.8 on the cross-section, at 75 NM 75.3, a tap on the cross-section at 245 NM puts the
+    profile's strip at 245 NM (1280: 129 / 128.9, 75 / 75.3, 254.6 / 255); seven designs (standard, cabinet, field, metro, swiss,
+    cupertino, material) and the night tone: toggle legible, pressed state visible; the dual-view pane and the test page mount
+    without error; a mission map has no toggle. Screenshots in the cloud session's scratchpad `maps4/`.

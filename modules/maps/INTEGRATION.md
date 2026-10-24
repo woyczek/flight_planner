@@ -9,12 +9,14 @@ How the frame mounts the map module and what it needs from the frame, aerodb and
 export const meta = {
   id: 'maps', apps: ['pilot'], level: 1,
   fixed: true,                                                                // the fixed, full-height view (frame INTEGRATION § 9.2)
-  reads: ['pilot/', { prefix: 'missions/', policy: 'reference' }, 'cache/maps/'],
+  reads: ['pilot/', { prefix: 'missions/', policy: 'reference' }, 'cache/maps/', 'cache/weather/'],
   writes: [{ prefix: 'cache/maps/', policy: 'cache' },                        // map mode and layers, per device
+    { prefix: 'cache/weather/', policy: 'cache' },                            // the shared weather cache (§ 8): read only, declared as atmosphere's doc asks
     { prefix: 'pilot/', merge: 'record' }],                                   // the current flight, edited on the map
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
-    'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],               // kept at installation
-  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0'],  // kept at first use
+    'lib/profiles.js?v=0', 'lib/map_base.js?v=0', '../../frame/lib/js-yaml.min.js?v=0'],  // kept at installation
+  lazy: ['lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',     // kept at first use
+    '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/weather_store.js?v=0', '../fuel/winds.js?v=0']
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org', 's3.amazonaws.com/elevation-tiles-prod']  // called by MapLibre itself
 };
 ```
@@ -139,23 +141,79 @@ maps**, never by another module reaching into the sheet.
   canvas; `el` is emptied when the key is new, and the builder replaces its own drawing when called again with the same
   key). The content area scrolls; its height is the sheet's, so draw for `h` and let the rest scroll.
 
-**The atmosphere cross-section (awaiting atmosphere's renderer).** The atmosphere module will export a **pure renderer**
-for the vertical cross-section along the route (wind, temperature, turbulence, icing, clouds against the route's level),
-in a file maps can import (`modules/atmosphere/section.js`, to be declared in maps' `meta.files` when it exists). What maps
-will call, once it is there:
+**What the frame will lift (the sheet as a frame primitive).** The sheet is one block of `module.js`, `createSheet({ root, panel,
+head, grip, pos, ignore, label, locked, onChange, onSettle })` → `{ pos, set(pos, instant), settle(), gestures(), stop() }`, with
+no dependency on the module's state: `root` carries `data-sheet` and the tokens `--mp-head`, `--mp-p1`, `--mp-m1`, `--mp-p2`,
+`--mp-m2` (the style sheet is their only source), `panel` is the sheet, `head` its draggable header, `grip` the handle button;
+`label(pos)` gives the handle's tooltip (the texts stay with the module), `locked()` cuts the drag (the tuning page),
+`onChange(pos)` keeps the position, `onSettle()` runs 120 ms after the last size change (here: the map's `mapSize()` and
+re-framing). The frame will take that function, the `.mp-data` / `.mp-dhead` / `.mp-grip` / `.mp-pill` / `.mp-nt` rules and their
+three heights (renamed to its own tokens), and the transition rules; what stays in maps: `openData` / `endData` / `closeData` /
+`dataHead` (the content and the header's texts), the Profile · Weather toggle, the notes.
+
+**The atmosphere cross-section** is implemented (24 Oct 2026): § 8.
+
+## 7. Map base for other modules — `lib/map_base.js`
+
+What the map module and the atmosphere module do the same way to have a map, and nothing more: MapLibre loaded once, the base
+styles, the tiled base (creation, waiting, giving up), the map brought to its box's size, and the plain background when tiles
+do not come. Owned by maps; an ES module with no state of its own and **no module state inside** (every function takes the map,
+the box and options and returns a handle; the only singletons are the loaded MapLibre and the loaded outlines, shared on
+purpose). Behaviour is the one that `modules/maps/module.js` had inline (checked pixel for pixel on `#maps`, 390 and 1280,
+with and without tiles).
 
 ```js
-import { drawSection } from '../atmosphere/section.js';          // atmosphere's file, not written yet
-// in the sheet, from a button or a tab of the sheet's header (maps' own, to be designed with the user):
-openData('weather', `wx:${flightKey}`, tt(TX.weatherSection), (w, h, el) => {
-  drawSection(el, { width: w, height: h, route: S.route.points, levelFt: S.route.levelFt, profile: S.prof, wind, now });
-});
+import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, loadOutlines, plainView, drawPlain,
+         STYLE_DAY, STYLE_NIGHT, STYLES, TILE_WAIT } from '../maps/lib/map_base.js';
+// declare in the module's meta: files '../maps/lib/map_base.js?v=0'; lazy '../maps/lib/maplibre-gl.js?v=0',
+// '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'; net 'tiles.openfreemap.org'
 ```
 
-What maps asks of that function: **pure** (no read of the data layer, no network, no global style sheet; it gets the route
-points, the level, the profile's cumulative distances, and the forecast as arguments), **idempotent** (`el` is replaced
-by each call), **sized by the arguments** (it draws for `width` × `height` CSS pixels and does not read the page), colours
-from the `--sog-*` tokens or from `MapsRender.tokens()`. Whether it returns an HTML string instead (then `build` returns
-it) is atmosphere's choice; the sheet takes both. The cursor shared by the profile and the map (`S.cursor`, in metres from
-the departure) can be given as `cursorM` so the cross-section follows it. Nothing of this is implemented in maps yet: no
-button, no text, no import (DECISIONS.md, 24 Oct 2026).
+| Function | Contract |
+|---|---|
+| `loadMapLibre()` → `Promise<maplibregl \| null>` | script UMD and style sheet of `lib/`, once per page; `null` if the script does not load (the next call tries again) |
+| `styleFor({ dark, base })` → URL | `base`: a key of `STYLES` (the studio profile's base), else `STYLE_DAY` (positron); `dark`: `STYLE_NIGHT`, or VersaTiles' eclipse for a `vt-` base |
+| `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true }`), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch, no world copies |
+| `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. Call it on every size change, at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
+| `isOwnResize(map)` → boolean | true during the `resize()` that `mapSize` runs: its `movestart` is not a user gesture (`map.on('movestart', () => { if (!isOwnResize(map)) userMoved = true })`) |
+| `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there |
+| `loadOutlines()` → `Promise` | loads `lib/outlines.js` (`window.MAPS_OUTLINES`, 350 KB), once; rejects (and the next call tries again) if it does not come |
+| `plainView(fit, W, H, pad = 12)` → `{ toC(lat, lon), toLL(x, y), shown }` | Mercator fitting the box `fit` (`{ w, e, s, n }`) in W × H, north up (`MapsRender.mercator`; `loadRender()` first) |
+| `drawPlain(ctx, toC, W, H, colors)` | sea, then land from the outlines (sea only until they arrive); `colors` `{ sea, land, border }`, day defaults |
+| `STYLE_DAY`, `STYLE_NIGHT`, `STYLES`, `TILE_WAIT` | the constants |
+
+What stays in each module: what the map does once loaded (events, overlay canvas), when to fall back to the plain background,
+the redraw loop, the credit line. Atmosphere's session replaces its copy of `loadMapLibre`, its `STYLE_DAY` / `STYLE_NIGHT` /
+`TILE_WAIT` constants, `loadRender`, `loadOutlines` and the body of its `startTiles` by calls: `startTiles($('map'), { style:
+styleFor({ dark: dark() }), bounds: [[b.w, b.s], [b.e, b.n]], attributionControl: { compact: true }, wait: 8000, alive: () => alive,
+onLoad: map => { … } })` (its handlers are unchanged; its own `movestart` handler should also test `!isOwnResize(map)`).
+Differences to know: errors before `load` always give up (atmosphere's copy gave up only if `!map.loaded()`); Mercator is set
+at each `style.load` (a no-op for the default style).
+
+## 8. The weather cross-section: what maps reads from atmosphere
+
+The sheet's "Weather" content (SPEC § 4) calls atmosphere's pure renderer. Nothing is written, nothing is asked of Open-Meteo.
+
+- **Files** (`meta.lazy`, loaded by a dynamic `import()` at the first "Weather"): `../atmosphere/section.js` (`drawSection`,
+  `sectionPlaces`, `sectionVars`, `sectionModel`), `../atmosphere/atmo.js` (`locations`, `modelFor`, `cruiseKtOf`),
+  `../atmosphere/weather_store.js` (`weatherStore`), and `../fuel/winds.js` (imported by `atmo.js`).
+- **`cache/weather/`** is in maps' `meta.reads` and `meta.writes` (policy `cache`), as atmosphere's INTEGRATION § 3 / § 5
+  asks: the store prunes past days when it is read. The store is built with the module's `ctx.data` and **a network that
+  always answers "offline"** (not `ctx.net`): `forecast(…, { cacheOnly: true })` still asks the model's last-run time
+  (`meta.json`, a static file) and maps does not even do that; it takes the run atmosphere kept in
+  `cache/weather/<model>/meta.json`, so a file is valid exactly when atmosphere would have found it valid.
+- **What is read**: the model `modelFor(mid.lat, mid.lon).id` of the middle route point, `sectionPlaces(points)` and
+  `sectionVars(levelFt, points)` with `points` = the flight's `route.points` as atmosphere reads them (`id`, `lat`, `lon`,
+  `alt_ft`), `levelFt` = `level.ft` (else `quote.levelFt`), two UTC days. Anything missing: `null`, and the sheet says "No forecast
+  loaded". A level or a departure time that was changed in atmosphere's own screen (not in the flight) reads other variables or
+  hours and may not be found: the flight record is the only thing maps looks at.
+- **What is drawn**: `drawSection(el, { route, levelFt, profile, depTime, cruiseKt, locs, labels, id: 'mp-wx', model, width,
+  height, cursorM, dark })`. `profile` is the flight's `profile` only when fuel wrote it (`by` absent or `fuel`; the map's
+  own edits make it stale: default rates then); `depTime` the flight's `weather.when` or the next full hour; `cruiseKt` from the
+  route text, else 200; `labels.strips` are maps' own four-language texts (the five surface strips). **`model` is passed**
+  (`sectionModel(…)` computed once per flight): the sheet is redrawn on each step of a drag and each cursor move, and the
+  model is the costly part. `drawSection` accepts it (`o.model || sectionModel(…)`) but INTEGRATION § 5 of atmosphere does not
+  document it: **atmosphere's session should add it there**. `width` and `height` are the content area's minus its padding
+  (16 and 12 px). `id` keeps the SVG definitions distinct from atmosphere's own screen (dual view).
+- **The cursor**: `cursorM` = maps' `S.cursor` (metres from the departure), and a tap on the drawn section calls the same
+  `setCursor` with `geo.nmOf(x) × 1852`, using the geometry `drawSection` returns.

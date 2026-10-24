@@ -225,7 +225,10 @@ the airspaces you enter at the planned altitude, and the flight path in purple. 
 blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
 the profile says what is under the cursor: distance from the departure, planned altitude, terrain height, and the
 airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
-an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed.
+an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed. The "Profile · Weather" button on the block's top line replaces it with the weather
+cross-section along the route (wind, temperature, cloud, icing) against the flight's level; the cross-section follows the same cursor, and a tap on
+it moves the cursor. It only shows the forecast that Atmosphere has already loaded: without one, the line "No forecast loaded" leads to
+Weather, under Prepare.
 
 **A fixed screen.** The top bar, the map and the data block fill the screen, and nothing scrolls but the block's
 content. The block is a sheet: drag its top line (the small bar and the title) up to enlarge it, down to shrink it to
