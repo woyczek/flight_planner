@@ -10,7 +10,9 @@ Preparation follows five steps, in the order a flight is prepared:
 to go to it, “Next” at the bottom of each step); on a wide screen, the five steps are one below the other. Everything is
 recomputed at each change: correct the route, and the weather, the quote and the wind follow, with no button to press.
 The result (block fuel, trip fuel, time, top of descent) stays visible at the bottom of the screen at every step, with
-where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060”, “wind typed”). A ✓ marks a completed step.
+where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060”, “wind typed”). On a phone this bar takes three lines: the context
+(“Block · FL060→090→110→070 · wind ARPEGE FL060”, in full when touched), the block fuel, then three tiles “Trip”,
+“Time” and “TOD” (top of descent). The screen always opens on the preparation; the sheets open with their tab. A ✓ marks a completed step.
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
 **1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)

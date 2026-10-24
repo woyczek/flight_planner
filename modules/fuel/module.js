@@ -263,6 +263,11 @@ const TX = {
   time: ['Temps', 'Time', 'Zeit', 'Tiempo'],
   tod: ['Début de descente', 'Top of descent', 'Sinkflugbeginn', 'Inicio de descenso'],
   todVal: ['{d} avant', '{d} before', '{d} vorher', '{d} antes'],
+  // barre de résultat compacte (téléphone) : libellés courts, le texte entier va dans l'infobulle
+  blockS: ['Bloc', 'Block', 'Block', 'Bloque'],
+  tripS: ['Étape', 'Trip', 'Reise', 'Etapa'],
+  todS: ['TOD', 'TOD', 'TOD', 'TOD'],
+  windRangeS: ['vent inconnu', 'unknown wind', 'Wind unbekannt', 'viento desconocido'],
   noFuel: ['Aucun débit connu : pas de devis.', 'No fuel flow known: no quote.', 'Kein Verbrauch bekannt: keine Berechnung.',
     'Ningún consumo conocido: sin cálculo.'
   ],
@@ -425,6 +430,10 @@ const TX = {
     weather: ['vent : {l}', 'wind: {l}', 'Wind: {l}', 'viento: {l}'],
     aloft: ['vent : prévision {m} {l}', 'wind: {m} forecast {l}', 'Wind: {m}-Vorhersage {l}', 'viento: previsión {m} {l}'],
     typed: ['vent saisi', 'wind typed', 'Wind eingegeben', 'viento introducido']
+  },
+  windByS: { // la même source, en court (ligne de contexte du résultat) ; « saisi » ne change pas
+    weather: ['vent {l}', 'wind {l}', 'Wind {l}', 'viento {l}'],
+    aloft: ['vent {m} {l}', 'wind {m} {l}', 'Wind {m} {l}', 'viento {m} {l}']
   },
   wxReading: ['Lecture…', 'Reading…', 'Wird gelesen…', 'Leyendo…'],
   diverted: [' — déroutement', ' — diverted', ' — Ausweichlandung', ' — desviado'],
@@ -1278,10 +1287,18 @@ const STYLE = `
 [data-module="fuel"] .fu-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
 [data-module="fuel"] .fu-legend .f-dot{margin-right:6px}
 [data-module="fuel"] .fu-legend .fu-sq{border-radius:0}
-[data-module="fuel"] .fu-result{display:block}
+/* barre de résultat compacte (module étroit : téléphone, volet de la vue double) : le contexte sur une ligne, le chiffre,
+   puis trois tuiles sur une rangée, libellé et valeur chacun sur une ligne. Règles du module sur .f-bar et .f-tiles
+   (primitives du cadre inchangées). */
+[data-module="fuel"] .fu-result{display:block;padding:8px 12px}
+[data-module="fuel"] .fu-result .fu-ctx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--sog-size-s)}
 [data-module="fuel"] .fu-big{font-size:var(--sog-h1);font-weight:700;line-height:1.2}
-[data-module="fuel"] .fu-result .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr));margin:6px 0 0}
-[data-module="fuel"] .fu-result .f-tiles b{font-size:var(--sog-h3)}
+@container (max-width: 759px){
+  [data-module="fuel"] .fu-big{font-size:var(--sog-h2)}
+}
+[data-module="fuel"] .fu-result .f-tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0 0}
+[data-module="fuel"] .fu-result .f-tiles>*{padding:3px 8px;font-size:var(--sog-size-xs);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="fuel"] .fu-result .f-tiles b{font-size:var(--sog-h3);overflow:hidden;text-overflow:ellipsis}
 [data-module="fuel"] .fu-links .f-item{display:block}
 [data-module="fuel"] .fu-links small{display:block}
 [data-module="fuel"] .fu-links .fu-off{opacity:.55}
@@ -1970,20 +1987,36 @@ function renderAloft(c = aloftCalc()) {
 }
 /** Source du vent du devis, en court : « vent : METAR LFRS, TAF LFML », « vent : prévision ICON FL060 », « vent saisi » ;
  *  vide sans vent. */
-function windShort() {
+function windShort(short = false) {
   const f = S.flight,
-    src = f.windSource;
-  if (src?.kind === 'weather') return tt(TX.windBy.weather, {
+    src = f.windSource,
+    by = short ? {
+      ...TX.windBy,
+      ...TX.windByS
+    } : TX.windBy;
+  if (src?.kind === 'weather') return tt(by.weather, {
     l: (src.ids || []).map(x => {
       const m = /^(\S+) \((\w+)\)$/.exec(x);
       return m ? `${m[2]} ${m[1]}` : x;
     }).join(', ')
   }) + (src.aloftFailed ? ` · ${tt(TX.aloftDown)}` : '');
-  if (src?.kind === 'aloft') return tt(TX.windBy.aloft, {
+  if (src?.kind === 'aloft') return tt(by.aloft, {
     m: src.short || src.model || '',
     l: flTxt(src.levelFt)
   }) + (src.pending ? ` · ${tt(TX.aloftPending)}` : '');
-  return Number.isFinite(+f.wind?.speedKt) ? tt(TX.windBy.typed) : '';
+  return Number.isFinite(+f.wind?.speedKt) ? tt(by.typed) : '';
+}
+/** Ligne de contexte de la barre de résultat : « Bloc · FL060→090→110→070 · vent ARPEGE FL060 » (court : une ligne sur
+ *  un téléphone) ou son texte entier « Carburant bloc · FL060 → FL090 → FL110 → FL070 · vent : prévision ARPEGE FL060 »
+ *  (infobulle). Court : les niveaux sont joints par → sans espace, « FL » n'est écrit qu'une fois en tête. */
+function resultContext(q, range, short) {
+  const lv = q.steps ? q.steps.levels.map(l => l.ft) : [q.levelFt],
+    fl = lv.map((ft, i) => {
+      const t = flTxt(ft);
+      return short && i && /^FL\d+$/.test(t) ? t.slice(2) : t;
+    }).join(short ? '→' : ' → '),
+    wind = range ? tt(short ? TX.windRangeS : TX.windRange) : windShort(short);
+  return `${tt(short ? TX.blockS : TX.block)} · ${fl}${unitOf('alt') !== 'ft' ? ` (${altTxt(q.levelFt)})` : ''}${q.approx ? ` · ${tt(TX.approx)}` : ''}${wind ? ` · ${wind}` : ''}`;
 }
 /** Profil réel au départ (premier lieu de lecture) : température par altitude pression, atmosphère type en tirets,
  *  inversions surlignées, niveau planifié ; lignes de lecture (température, écart ISA et altitude-densité au niveau,
@@ -3136,9 +3169,9 @@ function refresh() {
   else {
     const range = !q.windKnown && Number.isFinite(q.blockLow) && Number.isFinite(q.blockHigh) && Math.round(q.blockLow) !== Math.round(q
       .blockHigh);
-    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted">${esc(tt(TX.block))} · ${q.steps ? q.steps.levels.map(l => flTxt(l.ft)).join(' → ') : flTxt(q.levelFt)}${unitOf('alt') !== 'ft' ? ` (${esc(altTxt(q.levelFt))})` : ''}${q.approx ? ` · ${esc(tt(TX.approx))}` : ''}${range ? ` · ${esc(tt(TX.windRange))}` : windShort() ? ` · ${esc(windShort())}` : ''}</div>
+    res.innerHTML = `${flightState() ? `<div class="fu-flightstate">${esc(flightState())}</div>` : ''}<div class="f-muted fu-ctx" title="${esc(resultContext(q, range, false))}">${esc(resultContext(q, range, true))}</div>
       <div class="fu-big">${range ? `${esc(fuelTxt(q.blockLow, unit))} – ${esc(fuelTxt(q.blockHigh, unit))}` : esc(fuelTxt(q.block, unit))}</div>
-      <div class="f-tiles"><span class="f-muted">${esc(tt(TX.trip))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted">${esc(tt(TX.tod))}<b>${esc(tt(TX.todVal, { d: distTxt(q.todNm) }))}</b></span></div>
+      <div class="f-tiles"><span class="f-muted" title="${esc(tt(TX.trip))}">${esc(tt(TX.tripS))}<b>${esc(fuelTxt(q.trip, unit))}</b></span><span class="f-muted" title="${esc(tt(TX.time))}">${esc(tt(TX.time))}<b>${hmm(q.minutes)}</b></span><span class="f-muted" title="${esc(`${tt(TX.tod)} : ${tt(TX.todVal, { d: distTxt(q.todNm) })}`)}">${esc(tt(TX.todS))}<b>${esc(distTxt(q.todNm))}</b></span></div>
       ${q.overMtow ? `<div class="f-warn">${esc(tt(TX.overMtow))}</div>` : ''}`;
   }
   // détail du devis (replié)
@@ -3615,8 +3648,6 @@ function download(name, text, type) {
 function show(view) {
   S.view = view;
   for (const b of S.el.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === view));
-  S.ui.view = view;
-  S.ctx.data.put(UI_PATH, S.ui);
   view === 'sheets' ? renderSheets() : renderPlan();
 }
 
@@ -3664,6 +3695,7 @@ export async function mount(el, ctx) {
     cached: true
   } : null;
   S.ui = ui || {};
+  delete S.ui.view; // gardé par les versions précédentes, plus lu ni écrit : l'écran s'ouvre toujours sur le Plan
   S.aloft = aloftKept?.profiles ? {
     ...aloftKept,
     cached: true
@@ -3732,7 +3764,9 @@ export async function mount(el, ctx) {
     refresh();
   }, 60000);
   S.stops.push(() => clearInterval(tick));
-  show(S.focusRoute || S.ui.view !== 'sheets' ? 'plan' : 'sheets');
+  // toujours le Plan à l'ouverture : on vient ici pour le plan de vol ou le devis, rarement pour une fiche d'appareil ;
+  // les Fiches s'ouvrent par leur onglet ou par l'adresse #fuel?view=sheets (le dernier écran n'est plus gardé)
+  show(!S.focusRoute && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
   if (!S.flightPending) flightReady();
   completeMount(self); // pas attendu : le cadre a son écran tout de suite
 }

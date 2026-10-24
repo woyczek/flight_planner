@@ -228,7 +228,10 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
 
 An ES module for the frame (`meta`, `mount(el, ctx)`, `unmount()`); it loads the pure files above once, with `import()`.
 Styles are scoped to `[data-module="fuel"]` and built on the frame's tokens and classes; no global sheet. Two screens
-inside the module, switched by two buttons at the top, the last one kept on the device (`cache/fuel/ui.json`).
+inside the module, switched by two buttons at the top. **The module always opens on the Plan** (24 Oct 2026): one comes
+here to change the flight plan or the fuel quote, rarely to edit an aircraft; the Sheets screen opens only by its
+button or by the address `#fuel?view=sheets` (`ctx.query.view`), and the last screen is neither kept nor read at
+mount. Inside a mount, the two buttons switch as before.
 
 - **Plan in five steps** (lot G, 23 Oct 2026, the pilot's own order: aerodromes, aircraft, level → route → weather →
   density altitude and quote → correct the route → start): a steps bar as in Report — **1 Flight** (departure,
@@ -291,7 +294,16 @@ inside the module, switched by two buttons at the top, the last one kept on the 
      (square), the plan's level (vertical line). A tap on the drawing sets the level (rounded to the series' step,
      within the flyable levels); two buttons take the least-fuel and the fastest levels.
   5. **Result**, sticky at the bottom: block fuel (a range when the wind is unknown), trip, time, top of descent,
-     approximate source and MTOW warnings.
+     approximate source and MTOW warnings. **Phone rule: compact, about 100 px at 390 px** (it was 190): a context line
+     on **one line** (`white-space: nowrap`, ellipsis, the full text in `title`) — short form "Block · FL060→090→110→070 ·
+     wind ARPEGE FL060" (levels joined by → without spaces, "FL" written once, the wind source shortened, "unknown
+     wind" for a range), full form "Block fuel · FL060 → FL090 → FL110 → FL070 · wind: ARPEGE forecast FL060"; the big
+     figure at `--sog-h2` under 760 px (container query of the module, `--sog-h1` above); then **three tiles on one
+     row, label and value each on one line**: "Trip" (fr "Étape", de "Reise", es "Etapa"), "Time" and **"TOD" in the four
+     languages**, labels at `--sog-size-xs`, values at `--sog-h3`, the value of TOD without "before" ("28 NM"), the full
+     name in each tile's `title` ("Top of descent: 28 NM before"). Values go through `fuelTxt`, `distTxt`, `hmm`. The
+     quote details keep the full words. Module-scoped rules on `.f-bar` and `.f-tiles` (the frame's primitives are
+     unchanged).
   - Folded, under the result: **Open in ▾**, the V2 links (`frame/lib/external_links.js`, copied from
     `shared/external_links.js`): SimBrief dispatch prefilled (departure, arrival, type, route points, registration,
     callsign, alternate, level), SkyVector (`?fpl=` with the speed / level group, departure, points, arrival), Navigraph

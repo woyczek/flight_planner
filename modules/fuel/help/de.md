@@ -11,7 +11,10 @@ Die Vorbereitung folgt fünf Schritten, in der Reihenfolge, in der man einen Flu
 die fünf Schritte untereinander. Bei jeder Änderung wird alles neu berechnet: Korrigieren Sie die Route, und Wetter,
 Berechnung und Wind folgen, ohne dass eine Schaltfläche zu drücken ist. Das Ergebnis (Blockkraftstoff,
 Streckenkraftstoff, Zeit, Sinkflugbeginn) bleibt bei jedem Schritt unten im Bildschirm sichtbar, mit der Herkunft des
-Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingegeben“). Ein ✓ markiert einen ausgefüllten Schritt.
+Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingegeben“). Auf einem Telefon braucht diese Leiste drei Zeilen: den Kontext
+(„Block · FL060→090→110→070 · Wind ARPEGE FL060“, vollständig beim Berühren), den Blockkraftstoff, dann drei Kacheln
+„Reise“, „Zeit“ und „TOD“ (Sinkflugbeginn). Der Bildschirm öffnet sich immer mit der Planung; die Datenblätter
+öffnen sich über ihre Registerkarte. Ein ✓ markiert einen ausgefüllten Schritt.
 Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), darunter in Fuß (3500 ft).
 
 **1 Flug.** Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), das Flugdatum, wenn Sie die Vorhersage (TAF) statt der

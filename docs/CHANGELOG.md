@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: opens on the Plan, compact result bar on a phone** (`modules/fuel/module.js`; SPEC, INTEGRATION, DECISIONS,
+  help ×4) — the module always opens on the Plan (the Sheets screen by its tab or `#fuel?view=sheets`, the last screen
+  is no longer kept); the sticky result takes about half the height at 390 px (192 → 104 px): context on one line
+  ("Block · FL060→090→110→070 · wind ARPEGE FL060", full text on touch), the figure one size smaller, three one-line
+  tiles Trip / Time / TOD.
 - **Design: "Material" (Material Design 3) mock-up, pending decision** (`frame/design/tokens.css`, `frame/design/material.css`,
   `frame/design/demo_metro.html`, `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/sw.js`; design SPEC,
   DECISIONS) — a fourth retained design in Settings › Design, built like the others (token set first, few frame rules):
