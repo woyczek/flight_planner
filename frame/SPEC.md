@@ -250,10 +250,11 @@ used alone:
 - On a screen (wider than 760 px), the verbs sit in a column on the left (the **rail**): every module that has a screen,
   the current one marked. On a phone (760 px or narrower) there is **no menu button and no drawer**: a **bottom tab
   bar** replaces them (below).
-- **Bottom tab bar** (phone only, `APP.tabs`, five tabs at most, Settings included): **Préparer · Carte · CR · Vols ·
-  Réglages** (Prepare · Map · Report · Flights · Settings; Vorbereiten · Karte · Bericht · Flüge · Einstellungen;
-  Preparar · Mapa · Informe · Vuelos · Ajustes). It is the user's "option A" of 24 Oct 2026 (the flight's path, in the
-  order of a day; `docs/technique/V3_SPECIFICATION.md` § 7.1).
+- **Bottom tab bar** (phone only, `APP.tabs`, five tabs at most): **Préparer · Carte · CR · Vols · Météo** (Prepare · Map ·
+  Report · Flights · Weather; Vorbereiten · Karte · Bericht · Flüge · Wetter; Preparar · Mapa · Informe · Vuelos · Meteo).
+  It is the user's "option A" of 24 Oct 2026 (the flight's path, in the order of a day; `docs/technique/V3_SPECIFICATION.md`
+  § 7.1), whose last tab, Réglages, gave way to **Météo** by rule 14 (24 Oct, 22:15: the atmosphere screen is the richest and
+  was hidden behind a second touch). **Settings is the ⚙ of the header**, which carries the state badge.
   - **Shape.** The last row of the page grid, sticky at the bottom of the window, on `--sog-surface` with a top
     hairline. Each tab is an icon above a one-word label, at least 44 px wide and high; the bar is 56 px (`--f-tab-h`)
     plus the hairline plus the device's safe area (`padding-bottom: env(safe-area-inset-bottom)`, the viewport has
@@ -261,20 +262,22 @@ used alone:
     window must clear: the sticky result bar `.f-bar` (`bottom: var(--f-tab-space, 0px)`) and the notifications. The
     view is above the bar in the grid, so nothing hides under it.
   - **The selected tab changes form, not only colour**: its icon switches from the outline to the **filled variant**
-    (`frame/lib/icons.js`: fuel, map, edit, list, settings) on a soft rounded pill (12 to 14 % of the accent mixed into
+    (`frame/lib/icons.js`: fuel, map, edit, list, cloud, settings) on a soft rounded pill (12 to 14 % of the accent mixed into
     the surface); its label takes the link colour and a heavier weight; the others are outline icons in `--sog-muted`.
   - **A tab is a group of modules or a frame screen** (`tabs`, `frame/INTEGRATION.md` § 9). The tab stays selected
     while any module of its group is shown (`#atmosphere`, a module id that is not registered, is skipped without a
     word). Touching a tab opens the last module of its group shown in this session, otherwise the first one at the
-    device's level; the Réglages tab is the same screen as the ⚙ button. A module in no tab (`website`, `hello`)
-    selects none and stays reachable by its address and in the rail.
-  - **Group popover, no sub-tabs row** (24 Oct 2026, 14:05: "no group sub-tabs row above a fixed module"). When a tab
-    groups two or more registered modules at the device's level (Préparer: fuel and atmosphere), a **second touch on the
-    active tab** opens a small popover above that tab (`.f-tabpop`, a pointer on the tab, 44 px rows, the group's modules with
-    their icon and verb, the current one marked `aria-current`); a touch on a row switches the module (a menu choice: no
+    device's level. Over Settings (the ⚙) no tab is selected. A module in no tab (`website`, `hello`) selects none and stays
+    reachable by its address and in the rail. A tab may also list **views** of a module of its group (`views`: Préparer lists
+    the fuel module's Sheets view, `#fuel?view=sheets`): they have no tab, only a popover row.
+  - **Group popover, no sub-tabs row** (24 Oct 2026, 14:05: "no group sub-tabs row above a fixed module"; rule 14 kept the
+    principle "a second touch = more buttons" for every tab with several entries). When a tab has two or more rows (its
+    registered modules at the device's level and their views: **Préparer lists Carburant · Fiches**), a **second touch on
+    the active tab** opens a small popover above that tab (`.f-tabpop`, a pointer on the tab, 44 px rows, the group's modules
+    and views with their icon and verb, the current one marked `aria-current`); a touch on a row switches (a menu choice: no
     "←"); a touch elsewhere, Escape, a scroll, a resize or a change of address closes it; a third touch on the tab closes it
-    too. The tab carries `aria-haspopup` (and `aria-expanded` while open). On a tab with a single module (and on Réglages) the
-    second touch does nothing: it neither reloads the view nor drops what follows `?` in the address. While a frame screen is
+    too. The tab carries `aria-haspopup` (and `aria-expanded` while open). On a tab with a single row (Carte, CR, Vols, Météo)
+    the second touch does nothing: it neither reloads the view nor drops what follows `?` in the address. While a frame screen is
     open over the module, a touch on the tab is the ordinary first touch (it closes the screen). No module knows its
     siblings; a module's own tabs (Fuel's Plan / Sheets) stay inside it. On a screen the rail lists the modules as before and
     nothing else is drawn.
@@ -287,40 +290,34 @@ used alone:
     is 0; the view takes the rest of the width. The designs' bar rules apply to the rail at any width (they no longer wait for
     760 px: the bar is displayed only on a phone and in landscape). The safe areas of the device (notch, home indicator) are
     left free on every side.
-- **The "i" button of the header** (24 Oct 2026, the user's answer in `docs/technique/V3_SPECIFICATION.md` § 7.1; it replaces
-  the status line of the Préparer tab, removed with its `status: true` flag). A 44 px button (icon `info`) before the ? and
-  ⚙ buttons (on a phone, before ⚙ only: see "Header on a phone"), opens a **pop-up** under the header (`.f-info-modal`, the frame's question
-  window primitive: Escape, ✕ and a touch outside close it, 44 px lines, a chevron on a line that leads somewhere). A
-  **green badge** (`--sog-ok`) sits on the button when at least one line is "news". The lines, in this order, and nothing else:
-  - **"Flight in progress › Map"** (news) when the current flight record (`pilot/<trigram>/current_flight.json`, the one the
-    live-position service already reads) has `started` not null; touch → `#maps`;
-  - **"Report to write for the flight of <date> <DEP>→<ARR>"** (news), one line per entry of the cache record
-    `cache/flightlog/pending.json` that flightlog publishes (contract: INTEGRATION § 10; the frame only reads it, through
-    the data layer); touch → the entry's `handoff` is written to `pilot/handoff.json` for report and the frame opens
-    `#report?from=flightlog`; an entry without `handoff` opens `#flightlog`;
-  - **the data state**, always: "Data: synchronised 4 min ago · 2 writes pending" (or "on this device, nothing to
-    synchronise" with the local transport, "synchronising…", "n conflict(s) to review"), under it "Transport: this device /
-    launcher / GitHub"; touch → Settings (the synchronisation control), or `#conflicts` when there are conflicts;
-  - **"Offline: working on this device's copy"** when `ctx.net.online()` is false (not a link);
-  - **on a phone, three more lines** (the controls they replace have left the header; hidden above 760 px, where the header
-    keeps them): the **trigram line** ("Trigram not set: your documents stay on this device", touch → Settings) once the
-    identity is read and has no trigram, placed before the data line; the **error** and **conflict** cases are the data line
-    itself (a conflict touches `#conflicts`); **"Position: <source>"** while a flight is started (the live position of the
-    header's badge: touch toggles the device's GPS like that badge); and, last, **"Help for this screen ›"**, which opens what
-    the header's ? opens (the manual at the module's chapter; a second touch closes it).
-  When the transport is the launcher, a line "Launcher: <host> · <state>" follows the data line (it opens Settings): on a phone
-  it is the only place where the host shows. The badge counts the first two kinds only: the data line and the offline line are a state, not news (no badge when only
-  they apply). **On a phone the badge colour is the application's state** (the sync dot has left the header): green
-  (`--sog-ok`) when a flight or a report line applies; **amber** (`--sog-warn`, `data-attn`) when attention is needed: no
-  trigram, writes pending, conflicts, a synchronisation error, offline; amber wins when both apply; no dot when neither. On a
-  screen only the green news badge exists. The rows that need attention carry an amber dot. The pop-up follows the state while
-  open and closes on any change of address. Four languages.
+- **The status block and the badge of the ⚙** (rule 14, 24 Oct 2026, 22:15, which replaces the header's "i" button and its
+  pop-up, themselves a replacement of the Préparer status line). The state of the application is read in two places only:
+  - **The badge on the ⚙ of the header** (`#fDevice`; `data-badge`, `data-attn`): **green** (`--sog-ok`) when something is
+    new (a flight is started, a report is to write), on every width; **amber** (`--sog-warn`) when attention is needed (no
+    trigram, writes pending, conflicts, a synchronisation error, offline, the aeronautical base not ready), **phone only**
+    (a screen keeps its sync dot and its trigram pastille); amber wins when both apply; no dot when neither. The data line
+    and the offline line are a state, not news: they alone never turn it green. The button's name adds "something to see".
+  - **The "Status" card that opens the Settings screen** (`data-card="status"`, drawn by the frame, placed first by
+    `frame/settings`; `frame/INTEGRATION.md` § 10.2), 44 px lines, a chevron on a line that leads somewhere, a dot (green or
+    amber) on the lines that count. The lines, in this order, each when it applies: **"Flight in progress › Map"** (the
+    current flight record has `started` not null; touch → `#maps`); **"Report to write for the flight of <date> <DEP>→<ARR>"**,
+    one per entry of `cache/flightlog/pending.json` (contract: INTEGRATION § 10; touch → the entry's `handoff` is written to
+    `pilot/handoff.json` and `#report?from=flightlog` opens; no `handoff`: `#flightlog`); **"Trigram not set: your
+    documents stay on this device"** (touch → the Identity card); the **aeronautical base** while it loads, has no access or is
+    not published (touch → the Access card); **the data state**, always ("Data: synchronised 4 min ago · 2 writes pending",
+    "on this device, nothing to synchronise", "synchronising…", "n conflict(s) to review", the error), under it "Transport:
+    this device / launcher / GitHub" (touch → the Synchronisation card, else Usages; `#conflicts` when there are
+    conflicts); **"Launcher: <host> · <state>"** on a launcher (touch → the Access card); **"Offline: working on this
+    device's copy"** when `ctx.net.online()` is false; and, **on a phone only**, **"Position: <source>"** while a flight is
+    started (touch toggles the device's GPS like the header's badge on a screen). The "Help for this screen" line no longer
+    exists: the "?" of the header is that. The block follows the state while it is on screen. Four languages.
+  - There is **no "i" button and no pop-up** any more.
 - **Fixed, full-height view** (`meta.fixed: true`, a module's choice, for a map plus a sheet). The frame puts
   `class="f-fixed"` on `<html>`: no page scroll (`html, body { height: 100%; overflow: hidden }`, the body `100dvh`), the
   header stays at the top, the view takes the grid row between the header and the bar (phone) or the bottom of the window
   (screen), without padding; the module's root `section.f-module` is `height: 100%; min-height: 0; display: flex;
-  flex-direction: column`. A fixed module gets neither the folded help panel nor the welcome card (no room; the ? button
-  opens its chapter: on a phone, the last line of the "i" pop-up). A frame screen opened over it (Settings, help,
+  flex-direction: column`. A fixed module gets neither the folded help panel nor the welcome card (no room; the "?" of the
+  header opens its chapter, on a phone as on a screen). A frame screen opened over it (Settings, help,
   conflicts) scrolls as a page. Without `fixed`, nothing changes. **Nothing sits between the header and the module**: no
   sub-tabs row, no padding, no margin (the module's top is `--f-head-h`, measured at 57 px in `maps` and `atmosphere`, 390 and
   1280 px).
@@ -348,10 +345,12 @@ used alone:
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
-- **Header on a phone** (760 px or narrower, 24 Oct 2026): **name · "i" · ⚙ and nothing else**, never wider than the window
-  (no menu button; the "←" back button takes the name's place after a passage). The synchronisation dot, the trigram pastille,
-  the position and the launcher badges and the "?" are not drawn: their state is the colour of the "i" badge and lines of its
-  pop-up (above). Above 760 px the header keeps all of them, as before.
+- **Header on a phone** (760 px or narrower, rule 14, 24 Oct 2026): **name · "?" · ⚙ and nothing else**, never wider than
+  the window (no menu button; the "←" back button takes the name's place after a passage). "?" (`#fHelp`) opens the help
+  chapter of the current screen (the Settings chapter when Settings are open), ⚙ (`#fDevice`) the Settings screen and carries the
+  state badge. The synchronisation dot, the trigram pastille, the position and the launcher badges are not drawn: their state
+  is the colour of the ⚙ badge and the lines of the Settings status block (above). Above 760 px the header keeps all of them,
+  as before, without an "i".
   - **One row, always**: the header is exactly `--f-head-h` (57 px = 6 + 44 + 6 + the 1 px rule) high, at every width and in
     every state, in the five designs (`height: var(--f-head-h)`, no wrapping, children with no vertical margin). The "back"
     button used to make it 73 px: it shares the class `f-back` with the help's "←" paragraph, whose 4 px + 12 px margin
@@ -381,8 +380,8 @@ used alone:
     files, so they open offline.
 - **The frame's screens** (help, roadmap, settings, conflicts) opened from a module show in the module's area, over
   it. The module stays mounted, only hidden, with its pane.
-  - The rail (screen) or the bar (phone) stays in place, with the current module still marked; over Settings, the
-    Réglages tab is the selected one.
+  - The rail (screen) or the bar (phone) stays in place, with the current module still marked; over Settings, no tab of
+    the bar is selected (the ⚙ is the pressed button).
   - Their header buttons are toggles: "?" for help and roadmap, "⚙" for settings, the sync button for conflicts. Each
     is pressed while its screen is open (background tinted with the accent, accent border).
   - A second click on the same button, Escape (unless a dialog is open) or the browser's back closes the screen. The

@@ -1,9 +1,9 @@
 """Area G - flightlog and report (PLAN.md section G; frame/INTEGRATION.md section 10, modules/flightlog and modules/report).
 
 Rules covered
-  * a flight still to report, published by flightlog in `cache/flightlog/pending.json` (schema 2): the frame's "i" turns
-    green, offers a row for it, writes `pilot/handoff.json` and opens `#report?from=flightlog`, and report takes the
-    hand-over (G1);
+  * a flight still to report, published by flightlog in `cache/flightlog/pending.json` (schema 2): the gear's badge turns
+    green, the Status block at the top of Settings offers a row for it (rule 14), a tap writes `pilot/handoff.json` and opens
+    `#report?from=flightlog`, and report takes the hand-over (G1);
   * the flight log opens without error, with its filters and totals, and its empty state in four languages (G2);
   * the report has its three steps, the first one active, and 44 px controls; without data the form is empty (G3).
 
@@ -18,14 +18,14 @@ FL = 'modules/flightlog/module.js'
 def g1(c):
     c.open('fuel', pending=1)
     c.wait(1200)
-    c.eq(c.js("document.getElementById('fInfo').hasAttribute('data-badge')"), True, 'the "i" badge is green when a report is to write', what='"i" data-badge')
+    c.eq(c.js("document.getElementById('fDevice').hasAttribute('data-badge')"), True, 'the gear\'s badge is green when a report is to write', what='gear data-badge')
     c.js("""() => { window.__puts = []; const o = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v, k) {
         try { if (v && v.path) window.__puts.push({ path: v.path, text: String(v.text || '') }) } catch (e) {} return o.call(this, v, k) } }""")
-    c.tap('#fInfo')
-    c.until("!!document.querySelector('.f-info-row[data-go=\"report:0\"]')", what='the "i" pop-up has a row for the flight to report')
-    rowtext = c.text('.f-info-row[data-go="report:0"]') or ''
+    c.tap('#fDevice')
+    c.until("!!document.querySelector('[data-card=\"status\"] .f-status-row[data-go=\"report:0\"]')", what='the Status block of Settings has a row for the flight to report')
+    rowtext = c.text('.f-status-row[data-go="report:0"]') or ''
     c.ok('LFRS' in rowtext and 'LFML' in rowtext, f'row text {rowtext!r}', 'the row names the flight (LFRS, LFML)')
-    c.tap('.f-info-row[data-go="report:0"]')
+    c.tap('.f-status-row[data-go="report:0"]')
     c.until("location.hash === '#report?from=flightlog'", what='a tap on the row opens #report?from=flightlog')
     c.until("window.__puts.some(p => p.path === 'pilot/handoff.json')", what='pilot/handoff.json is written')
     import json

@@ -6,8 +6,8 @@ forecast); every such place is said in the case, and a step the suite cannot do 
 shown under the case in the report, never a silent pass.
 
   * J1 P1 Préparer un vol        phone (standard, fr) and screen: fill the quote, Carte, Météo, back on Carte;
-  * J2 P2 Voler                  phone, four languages: start the flight from fuel, "i", Carte, full screen, cancel the start;
-  * J3 P3 Rendre compte          phone: a flight without a report, "i", handoff, three steps, save, Vols shows it;
+  * J2 P2 Voler                  phone, four languages: start the flight from fuel, the gear's badge and Status block, Carte, full screen, cancel the start;
+  * J3 P3 Rendre compte          phone: a flight without a report, the Status block, handoff, three steps, save, Vols shows it;
   * J4 P4 Relire ses vols        phone: totals, "Without report" filter, search, CSV export of three rows;
   * J5 P5 Installer, synchroniser  phone and screen: no trigram, Réglages, design, offline and back;
   * J6 P6 Carte de mission       SKIP until `tests/v3/fixtures/` holds a mission.
@@ -38,25 +38,28 @@ def blur(c):
 
 
 def badge(c):
-    """('green' | 'amber' | 'off') of the "i" button: data-badge (green) wins over data-attn (amber) in the frame's wording."""
-    return c.js("""(() => { const b = document.getElementById('fInfo'); return b.hasAttribute('data-badge') ? 'green' : b.hasAttribute('data-attn') ? 'amber' : 'off' })()""")
+    """('green' | 'amber' | 'off') of the gear (#fDevice, rule 14): data-badge (green) wins over data-attn (amber) in the frame's wording."""
+    return c.js("""(() => { const b = document.getElementById('fDevice'); return b.hasAttribute('data-badge') ? 'green' : b.hasAttribute('data-attn') ? 'amber' : 'off' })()""")
 
 
 def info_rows(c):
-    """Rows of the "i" pop-up: [{k, text, go}] (the pop-up is opened and closed by the caller)."""
-    return c.js("""[...document.querySelectorAll('.f-info-list > li')].map(li => ({ k: li.dataset.k, text: (li.innerText || '').replace(/\\s+/g, ' ').trim(),
+    """Rows of the Status block that opens Settings: [{k, text, go}] (Settings opened and closed by the caller)."""
+    return c.js("""[...document.querySelectorAll('[data-card="status"] .f-status-list > li')].map(li => ({ k: li.dataset.k, text: (li.innerText || '').replace(/\\s+/g, ' ').trim(),
         go: (li.querySelector('[data-go]') || {}).dataset ? li.querySelector('[data-go]').dataset.go : '' }))""")
 
 
 def open_info(c):
-    c.tap('#fInfo')
-    c.until("!!document.querySelector('.f-info-list > li')", what='the "i" pop-up lists its rows')
+    """Opens Settings by the gear (the "i" pop-up of the first V3 bar is gone, rule 14) and lists the rows of its Status block."""
+    if c.hash() != '#settings':                      # already there (J5 stays in Réglages): the gear would close it
+        c.tap('#fDevice')
+    c.until("location.hash === '#settings'", what='the gear opens Réglages')
+    c.until("!!document.querySelector('[data-card=\"status\"] .f-status-list > li')", what='the Status block at the top of Réglages lists its rows')
     return info_rows(c)
 
 
 def close_info(c):
     c.key('Escape')
-    c.until("!document.querySelector('.f-info-list')", what='Escape closes the "i" pop-up')
+    c.until("!document.querySelector('[data-card=\"status\"]')", what='Escape closes Réglages and its Status block')
 
 
 def sheet_title(c):
@@ -167,11 +170,11 @@ def j1(c):
 @case('J2', 'P2 Voler', 'J', tags=('journey', 'P2', 'fuel', 'maps'), designs=('standard',), screens=False, langs4=True, rule='PLAN N, P2')
 def j2(c):
     P = 'P2'
-    c.step(P, 1, 'a planned flight, not started: "i" badge off')
+    c.step(P, 1, 'a planned flight, not started: gear badge off')
     c.open('fuel', flight=True, airfields=True)                       # seed_plan: the planned flight and the base that knows its route
     c.until_doc('pilot/ABC/current_flight.json', lambda d: d is not None, what='the planned flight is in the cache')
     c.wait(500)
-    c.eq(badge(c), 'off', 'a planned flight alone gives no badge', what='"i" badge')
+    c.eq(badge(c), 'off', 'a planned flight alone gives no badge', what='gear badge')
 
     c.step(P, 2, 'Préparer › Départ: "Démarrer le vol"')
     c.tap(step_btn(c, 4))
@@ -190,15 +193,15 @@ def j2(c):
     c.wait(800)
     c.eq(sum(1 for n in c.note_log() if norm(n) == nopos), 1, 'no GPS, no network: the notification is said once at the mount of Carte', what='no-position notifications after the start')
 
-    c.step(P, 4, '"i" badge green, pop-up row "Vol en cours › Carte"')
-    c.until("document.getElementById('fInfo').hasAttribute('data-badge')", timeout=8000, what='the "i" badge turns green once the flight is started')
+    c.step(P, 4, 'gear badge green, Status row "Vol en cours › Carte"')
+    c.until("document.getElementById('fDevice').hasAttribute('data-badge')", timeout=8000, what='the gear\'s badge turns green once the flight is started')
     rows = open_info(c)
     flight = next((r for r in rows if r['k'] == 'flight'), None)
-    c.ok(flight, f'pop-up rows {[r["k"] for r in rows]}', 'a row "flight" (Vol en cours › Carte)')
+    c.ok(flight, f'Status rows {[r["k"] for r in rows]}', 'a row "flight" (Vol en cours › Carte)')
     maps_label = tx(APP, 'label', c.lang, after="id: 'maps'")
-    c.eq(norm(flight['text']), norm(tx(APP, 'flight', c.lang, after='info: {').replace('{m}', maps_label)), 'the row is worded in the language of the run', what='pop-up row')
+    c.eq(norm(flight['text']), norm(tx(APP, 'flight', c.lang, after='info: {').replace('{m}', maps_label)), 'the row is worded in the language of the run', what='Status row')
     c.eq(flight['go'], '#maps', 'the row leads to Carte', what='row address')
-    c.tap('.f-info-row[data-go="#maps"]')
+    c.tap('.f-status-row[data-go="#maps"]')
     c.until("location.hash.startsWith('#maps')", what='a tap on the row opens Carte')
 
     c.step(P, 5, 'Carte: title "vol en cours", Follow shown, GPS notification once')
@@ -237,8 +240,8 @@ def j2(c):
     planned = tx(MP, 'stPlanned', c.lang)
     c.ok(norm(planned) in sheet_title(c), f'sheet title {sheet_title(c)!r}', f'contains "{planned}" again')
     c.ok(norm(flying) not in sheet_title(c), f'sheet title {sheet_title(c)!r}', f'no longer "{flying}"')
-    c.until("!document.getElementById('fInfo').hasAttribute('data-badge')", timeout=8000, what='the "i" badge goes off after the cancellation')
-    c.eq(badge(c), 'off', 'nothing to see after the cancellation', what='"i" badge')
+    c.until("!document.getElementById('fDevice').hasAttribute('data-badge')", timeout=8000, what='the gear\'s badge goes off after the cancellation')
+    c.eq(badge(c), 'off', 'nothing to see after the cancellation', what='gear badge')
 
 
 # ------------------------------------------------------------------------------------------------------ J3
@@ -262,18 +265,18 @@ def j3(c):
     c.ok(fl.get('handoff', {}).get('family') and fl['handoff'].get('values', {}).get('navigation.dep') == 'LFRS',
          f'handoff {fl.get("handoff")}', 'a handoff with a family and the values of the flight')
 
-    c.step(P, 3, '"i" badge green, row "CR à écrire"')
-    c.until("document.getElementById('fInfo').hasAttribute('data-badge')", timeout=8000, what='the "i" badge turns green when a report is to write')
+    c.step(P, 3, 'gear badge green, Status row "CR à écrire"')
+    c.until("document.getElementById('fDevice').hasAttribute('data-badge')", timeout=8000, what='the gear\'s badge turns green when a report is to write')
     rows = open_info(c)
     row = next((r for r in rows if r['k'] == 'report'), None)
-    c.ok(row, f'pop-up rows {[r["k"] for r in rows]}', 'a row "report" (CR à écrire pour le vol du …)')
+    c.ok(row, f'Status rows {[r["k"] for r in rows]}', 'a row "report" (CR à écrire pour le vol du …)')
     lead = norm(tx(APP, 'report', c.lang, after='info: {').split('{')[0])
     c.ok(norm(row['text']).startswith(lead) and 'LFRS' in row['text'] and 'LFML' in row['text'], f'row {row["text"]!r}', f'starts with "{lead}" and names LFRS and LFML')
 
     c.step(P, 4, 'tap: pilot/handoff.json written, #report opens')
     c.js("""() => { window.__puts = []; const o = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v, k) {
         try { if (v && v.path) window.__puts.push({ path: v.path, text: String(v.text || '') }) } catch (e) {} return o.call(this, v, k) } }""")
-    c.tap(f'.f-info-row[data-go="{row["go"]}"]')
+    c.tap(f'.f-status-row[data-go="{row["go"]}"]')
     c.until("location.hash === '#report?from=flightlog'", what='a tap on the row opens #report?from=flightlog')
     c.until("window.__puts.some(p => p.path === 'pilot/handoff.json')", what='pilot/handoff.json is written by the frame')
     import json
@@ -331,8 +334,8 @@ def j3(c):
     tiles = c.js("[...document.querySelectorAll('[data-module=flightlog] .f-tiles > div')].map(d => d.querySelector('b').textContent.trim())")
     c.eq(tiles[2], '0', 'no flight without a report is left', what='"sans CR" total')
     c.until_doc('cache/flightlog/pending.json', lambda d: d is not None and (d.get('flights') or []) == [], what='an empty pending list', timeout=8000)
-    c.until("!document.getElementById('fInfo').hasAttribute('data-badge')", timeout=8000, what='the "i" badge goes off once nothing is left to report')
-    c.eq(badge(c), 'off', 'nothing to see once the report is written', what='"i" badge')
+    c.until("!document.getElementById('fDevice').hasAttribute('data-badge')", timeout=8000, what='the gear\'s badge goes off once nothing is left to report')
+    c.eq(badge(c), 'off', 'nothing to see once the report is written', what='gear badge')
 
 
 # ------------------------------------------------------------------------------------------------------ J4
@@ -391,10 +394,10 @@ def j5(c):
     c.step(P, 1, 'first launch without trigram: amber badge and the trigram line')
     c.open('fuel', trigram='')
     c.wait(1200)
-    c.eq(badge(c), 'amber', 'nothing set: the "i" is amber', what='"i" badge')
+    c.eq(badge(c), 'amber', 'nothing set: the gear\'s badge is amber', what='gear badge')
     rows = open_info(c)
     who = next((r for r in rows if r['k'] == 'who'), None)
-    c.ok(who, f'pop-up rows {[r["k"] for r in rows]}', 'a row "who" (Trigramme non réglé)')
+    c.ok(who, f'Status rows {[r["k"] for r in rows]}', 'a row "who" (Trigramme non réglé)')
     c.eq(norm(who['text']).startswith(norm(tx(APP, 'who', c.lang, after='info: {'))), True, 'the line says the trigram is not set', what=f'row {who["text"]!r}')
     close_info(c)
     if not c.phone:
@@ -408,7 +411,7 @@ def j5(c):
     blur(c)
     c.tap('[data-act="identity"]')
     c.until_doc('device/identity.json', lambda d: d and d.get('trigram') == 'ABC', what='the trigram ABC is written (capitalised)', timeout=8000)
-    c.until("!document.getElementById('fInfo').hasAttribute('data-attn') && !document.getElementById('fInfo').hasAttribute('data-badge')", timeout=8000, what='the "i" badge goes off once the trigram is set')
+    c.until("!document.getElementById('fDevice').hasAttribute('data-attn') && !document.getElementById('fDevice').hasAttribute('data-badge')", timeout=8000, what='the gear\'s badge goes off once the trigram is set')
     if not c.phone:
         c.until("!window.__t.shown(document.getElementById('fWho'))", timeout=8000, what='the "Trigramme ?" pastille goes away once the trigram is set')
 
@@ -432,18 +435,18 @@ def j5(c):
     c.skip_step('Réglages has no language control (the frame reads sogFrame:lang / repositoryLanguageMode, set by the landing page): '
                 'the switch to en without reload is not walked')
 
-    c.step(P, 6, 'offline: amber and the "i" line say offline')
+    c.step(P, 6, 'offline: amber and the Status line say offline')
     c.context.set_offline(True)
-    c.until("document.getElementById('fInfo').hasAttribute('data-attn')", timeout=8000, what='the "i" badge turns amber when the device goes offline')
-    c.ok('offline' in [r['k'] for r in open_info(c)], 'no "offline" row in the pop-up', 'the pop-up says the device is offline')
+    c.until("document.getElementById('fDevice').hasAttribute('data-attn')", timeout=8000, what='the gear\'s badge turns amber when the device goes offline')
+    c.ok('offline' in [r['k'] for r in open_info(c)], 'no "offline" row in the Status block', 'the Status block says the device is offline')
     off = next(r for r in info_rows(c) if r['k'] == 'offline')
     c.eq(norm(off['text']), norm(tx(APP, 'offline', c.lang, after='info: {')), 'the line is the frame\'s offline text', what='offline row')
     close_info(c)
 
     c.step(P, 7, 'back online: it clears')
     c.context.set_offline(False)
-    c.until("!document.getElementById('fInfo').hasAttribute('data-attn')", timeout=10000, what='the amber badge clears when the device is back online')
-    c.ok('offline' not in [r['k'] for r in open_info(c)], 'the "offline" row is still there', 'the pop-up no longer says offline')
+    c.until("!document.getElementById('fDevice').hasAttribute('data-attn')", timeout=10000, what='the amber badge clears when the device is back online')
+    c.ok('offline' not in [r['k'] for r in open_info(c)], 'the "offline" row is still there', 'the Status block no longer says offline')
     close_info(c)
 
     c.step(P, 8, 'conflicts screen and help')

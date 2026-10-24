@@ -2,7 +2,7 @@
   'use strict';
   // V3 frame — squelette d'une application (frame/SPEC.md § 3, frame/INTEGRATION.md) : l'appli Pilote.
   //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran ; sur téléphone, une barre
-  //     d'onglets en bas (APP.tabs : Préparer · Carte · CR · Vols · Réglages, un onglet = un groupe de modules) ;
+  //     d'onglets en bas (APP.tabs : Préparer · Carte · CR · Vols · Météo, un onglet = un groupe de modules ; Réglages est le ⚙ de l'en-tête) ;
   //     l'adresse (#module, #module?clé=valeur : la suite après « ? » est donnée au module en ctx.query) suffit à
   //     revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien nom, même écran) ;
   //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
@@ -83,22 +83,31 @@
       label: ['Site', 'Website', 'Website', 'Sitio'],
       icon: 'globe'
     }, {
-      // module dédié (vue fixe, gabarit de la Carte) : sous-onglet de Préparer sur téléphone (APP.tabs), dans le rail sur
-      // écran ; réinclus plus tard dans Préparer et la Carte (modules/atmosphere/DECISIONS.md, 24 oct 2026)
+      // module dédié (vue fixe, gabarit de la Carte) : son onglet « Météo » de la barre du téléphone (APP.tabs, règle 14), dans
+      // le rail sur écran ; réinclus plus tard dans Préparer et la Carte (modules/atmosphere/DECISIONS.md, 24 oct 2026)
       id: 'atmosphere',
       label: ['Atmosphère', 'Atmosphere', 'Atmosphäre', 'Atmósfera'],
       icon: 'layers'
     }],
-    // barre d'onglets du téléphone (760 px et moins), cinq au plus, Réglages compris : un onglet = un groupe de modules
-    // (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe dans
-    // cette session, sinon le premier ; un id qui n'est pas inscrit plus haut est ignoré sans bruit) ou un écran du
-    // cadre (screen). Un module absent de tous les onglets (website, hello) reste joignable par son adresse et dans la
-    // colonne de gauche des grands écrans.
+    // barre d'onglets du téléphone (760 px et moins), cinq au plus (V3_SPECIFICATION.md § 7.1 règle 14) : un onglet = un groupe
+    // de modules (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe
+    // dans cette session, sinon le premier ; un id qui n'est pas inscrit plus haut est ignoré sans bruit) ou un écran du cadre
+    // (screen). views : des vues d'un module du groupe, adressées par une requête (module, query : #fuel?view=sheets) ; elles
+    // n'ont pas d'onglet, seulement une rangée du popover d'un second toucher (« Carburant · Fiches »). Un module absent de
+    // tous les onglets (website, hello) reste joignable par son adresse et dans la colonne de gauche des grands écrans.
+    // Réglages n'est plus dans la barre : le ⚙ de l'en-tête l'ouvre (il porte la pastille d'état).
     tabs: [{
       id: 'prepare',
       label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'],
       icon: 'fuel',
-      modules: ['fuel', 'atmosphere']
+      modules: ['fuel'],
+      views: [{
+        id: 'sheets',
+        module: 'fuel',
+        query: 'view=sheets',
+        label: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
+        icon: 'file'
+      }]
     }, {
       id: 'maps',
       label: ['Carte', 'Map', 'Karte', 'Mapa'],
@@ -115,10 +124,10 @@
       icon: 'list',
       modules: ['flightlog']
     }, {
-      id: 'settings',
-      label: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
-      icon: 'settings',
-      screen: 'settings'
+      id: 'weather',
+      label: ['Météo', 'Weather', 'Wetter', 'Meteo'],
+      icon: 'cloud',
+      modules: ['atmosphere']
     }]
   };
   // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le
@@ -202,9 +211,8 @@
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     tabsNav: ['Navigation principale', 'Main navigation', 'Hauptnavigation', 'Navegación principal'],
-    // bouton « i » de l'en-tête et son pop-up d'état (frame/SPEC.md § 3.1)
+    // bloc d'état en tête des Réglages et pastille du ⚙ de l'en-tête (frame/SPEC.md § 3.1)
     info: {
-      button: ['État de l’appli', 'App status', 'App-Status', 'Estado de la app'],
       news: ['à voir', 'something to see', 'Hinweise vorhanden', 'algo que ver'],
       title: ['État', 'Status', 'Status', 'Estado'],
       flight: ['Vol en cours › {m}', 'Flight in progress › {m}', 'Flug läuft › {m}', 'Vuelo en curso › {m}'],
@@ -271,8 +279,7 @@
       error: ['Données : erreur de synchronisation{e}', 'Data: synchronisation error{e}', 'Daten: Synchronisationsfehler{e}',
         'Datos: error de sincronización{e}'
       ],
-      position: ['Position : {s}', 'Position: {s}', 'Position: {s}', 'Posición: {s}'],
-      help: ['Aide de cet écran', 'Help for this screen', 'Hilfe zu diesem Bildschirm', 'Ayuda de esta pantalla']
+      position: ['Position : {s}', 'Position: {s}', 'Position: {s}', 'Posición: {s}']
     },
     // plein écran d'un module fixe (bouton de la couche de superposition : il montre « quitter » une fois en plein écran)
     full: {
@@ -641,7 +648,7 @@
     const b = $('fWho'),
       show = !identity.trigram;
     identityLoaded = true;
-    paintInfo(); // téléphone : le trigramme absent est une ligne du pop-up « i » et sa pastille orange
+    paintStatus(); // le trigramme absent est une ligne du bloc d'état et la pastille orange du ⚙
     if (!b) return;
     if (b.hidden === show) b.hidden = !show;
     if (!show) return;
@@ -945,11 +952,14 @@
     for (const o of [...overlays])
       if (!host || o.host === host || host.contains(o.host)) o.dispose();
   }
-  // ---------------------------------------------------------------- bouton « i » de l'en-tête (état de l'appli)
-  // iVAC : une pastille verte sur le « i » quand quelque chose s'applique, un pop-up qui le dit, une ligne par chose, un
-  // chevron quand elle mène quelque part. Rien d'autre que : vol en cours (› Carte), CR à écrire (enregistrement de cache
-  // publié par flightlog), état des données (dernière synchronisation, écritures en attente, échange utilisé), hors ligne.
-  // La pastille ne compte que les deux premières : la ligne des données et « hors ligne » sont un état, pas une nouvelle.
+  // ---------------------------------------------------------------- état de l'appli : bloc de tête des Réglages, pastille du ⚙
+  // (V3_SPECIFICATION.md § 7.1 règle 14, qui remplace le bouton « i » et son pop-up de la règle 3). iVAC : une pastille quand quelque
+  // chose s'applique, une ligne par chose, un chevron quand elle mène quelque part. Rien d'autre que : vol en cours (› Carte),
+  // CR à écrire (enregistrement de cache publié par flightlog), état des données (dernière synchronisation, écritures en
+  // attente, conflits, échange utilisé), trigramme absent, base aéronautique, lanceur, hors ligne, position réelle (téléphone).
+  // Les lignes sont le bloc « État » qui ouvre l'écran des Réglages (statusBlock / bindStatus, remis à frame/settings par son
+  // contexte) ; la pastille est sur le ⚙ de l'en-tête : verte pour une nouvelle (vol démarré, CR à écrire), orange pour une
+  // chose qui demande de l'attention (la ligne des données et « hors ligne » sont un état, pas une nouvelle).
   const PENDING_REPORTS = 'cache/flightlog/pending.json',
     HANDOFF = 'pilot/handoff.json';
   // lecture du cache de flightlog (jamais synchronisé) et passage à report (pilot/handoff.json, même politique « cache »
@@ -967,8 +977,9 @@
   });
   let lastFlight = null, // vol courant (liveCheck)
     lastStatus = null, // état de la synchronisation (paintSync)
-    pendingReports = [], // CR à écrire, d'après cache/flightlog/pending.json
-    infoBox = null; // pop-up ouvert : { list, close }
+    pendingReports = []; // CR à écrire, d'après cache/flightlog/pending.json
+  const statusViews = new Set(); // blocs d'état affichés (éléments) : redessinés quand l'état change, oubliés une fois retirés
+
   /** CR à écrire : les vols de l'enregistrement de flightlog, ceux qui ont une date, un départ et une arrivée (50 au plus). */
   async function readPending() {
     let rec = null;
@@ -998,7 +1009,7 @@
     }
     if (JSON.stringify(list) !== JSON.stringify(pendingReports)) {
       pendingReports = list;
-      paintInfo();
+      paintStatus();
     }
   }
   /** Date « 2026-10-23 » dans l'écriture de la langue (fr 23/10/2026). */
@@ -1015,11 +1026,12 @@
     });
     return `${s.lastSync ? t(T.info.synced, { d: ago(s.lastSync) }) : t(T.info.never)} · ${s.pending ? t(T.info.pending, { n: s.pending }) : t(T.info.noPending)}`;
   }
-  /** Lignes du pop-up : { k, text, sub, go (adresse, 'report:<i>', 'help', 'live'), news (compte pour la pastille verte),
-   *  attn (demande de l'attention : pastille orange du « i » sur un téléphone) }. Le trigramme absent, l'erreur, les
-   *  conflits, les écritures en attente et le hors ligne y sont des lignes : le bouton de synchronisation et la pastille
-   *  du trigramme ne sont plus dans l'en-tête du téléphone. */
-  function infoItems() {
+
+  /** Lignes du bloc d'état : { k, text, sub, go (adresse, 'report:<i>', 'card:<carte des Réglages>', 'live'), news (compte pour
+   *  la pastille verte), attn (demande de l'attention : pastille orange du ⚙ sur un téléphone) }. Le trigramme absent,
+   *  l'erreur, les conflits, les écritures en attente et le hors ligne y sont des lignes : le bouton de synchronisation et la
+   *  pastille du trigramme ne sont plus dans l'en-tête du téléphone. */
+  function statusItems() {
     const items = [],
       maps = APP.modules.find(m => m.id === 'maps');
     if (lastFlight?.started && maps) items.push({
@@ -1044,7 +1056,7 @@
       k: 'who',
       text: t(T.info.who),
       sub: t(T.info.whoSub),
-      go: '#settings',
+      go: 'card:identity',
       attn: true
     });
     // la base aéronautique : trois états distincts, jamais « non publiée » pendant qu'elle charge ni sans accès
@@ -1052,7 +1064,7 @@
       k: 'base',
       text: t(T.info.base[baseState]),
       sub: baseState === 'noaccess' ? t(T.info.base.sub) : '',
-      go: baseState === 'loading' ? '' : '#settings'
+      go: baseState === 'loading' ? '' : 'card:access'
     });
     const s = lastStatus;
     if (s) items.push({
@@ -1061,7 +1073,7 @@
       sub: t(T.info.transport, {
         x: t(T.info.tr[s.transport] || T.info.tr.local)
       }),
-      go: s.conflicts ? '#conflicts' : '#settings',
+      go: s.conflicts ? '#conflicts' : 'card:sync,usages',
       attn: ATTENTION.has(syncState(s)[0])
     });
     if (s?.transport === 'launcher') items.push({
@@ -1070,14 +1082,14 @@
         h: launcherHere?.host || location.hostname,
         s: syncState(s)[1]
       }),
-      go: '#settings'
+      go: 'card:access'
     });
     if (!net.online()) items.push({
       k: 'offline',
       text: t(T.info.offline),
       attn: true
     });
-    // réservées au téléphone (l'en-tête d'un écran garde sa pastille de position et son « ? ») : cachées au-dessus de 760 px
+    // réservée au téléphone (l'en-tête d'un écran garde sa pastille de position) : cachée au-dessus de 760 px
     if (live.active) items.push({
       k: 'live',
       text: t(T.info.position, {
@@ -1087,80 +1099,97 @@
       go: 'live',
       phone: true
     });
-    items.push({
-      k: 'help',
-      text: t(T.info.help),
-      go: 'help',
-      phone: true
-    });
     return items;
   }
-  const infoHtml = items => items.map(it => {
-    const inner = `<i class="f-info-dot"${it.news || it.attn ? '' : ' hidden'}${it.attn && !it.news ? ' data-attn' : ''}></i><span class="f-info-txt"><span>${esc(it.text)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
-    return `<li data-k="${esc(it.k)}"${it.phone ? ' data-phone' : ''}>${it.go ? `<button type="button" class="f-info-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-info-row">${inner}</div>`}</li>`;
+
+  const statusRows = items => items.map(it => {
+    const inner = `<i class="f-status-dot"${it.news || it.attn ? '' : ' hidden'}${it.attn && !it.news ? ' data-attn' : ''}></i><span class="f-status-txt"><span>${esc(it.text)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
+    return `<li data-k="${esc(it.k)}"${it.phone ? ' data-phone' : ''}>${it.go ? `<button type="button" class="f-status-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-status-row">${inner}</div>`}</li>`;
   }).join('');
-  /** Pastille et nom du bouton « i », et le pop-up s'il est ouvert (écrit seulement si cela change). Pastille verte : une
+  /** Signature courte d'un texte : un bloc d'état n'est réécrit que si elle change. */
+  const sig = s => {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0;
+    return String(h);
+  };
+  /** Contenu du bloc d'état : titre et lignes. */
+  const statusBody = items => `<h2>${esc(t(T.info.title))}</h2><ul class="f-status-list">${statusRows(items)}</ul>`;
+  /** Bloc d'état de tête des Réglages (carte, `data-card="status"`), à la valeur du moment ; frame/settings le pose en
+   *  première carte puis le confie à bindStatus. Sans ligne il est caché. */
+  function statusBlock() {
+    const items = statusItems(),
+      body = statusBody(items);
+    return `<div class="f-card f-status" data-card="status" data-sig="${sig(body)}"${items.length ? '' : ' hidden'}>${body}</div>`;
+  }
+  /** Rend vivant le bloc el (posé par statusBlock) : un toucher sur une ligne mène où elle dit ; il est redessiné par
+   *  paintStatus quand l'état change, jusqu'à ce qu'il quitte la page. */
+  function bindStatus(el) {
+    if (!el || statusViews.has(el)) return;
+    statusViews.add(el);
+    el.addEventListener('click', e => {
+      const row = e.target.closest('[data-go]');
+      if (row && el.contains(row)) goStatus(row.dataset.go);
+    });
+    paintStatus();
+  }
+  /** Pastille et nom du ⚙ de l'en-tête, et les blocs d'état affichés (écrit seulement si cela change). Pastille verte : une
    *  nouvelle (data-badge, partout) ; orange : une chose demande de l'attention (data-attn, téléphone seulement : sur un
    *  écran le bouton de synchronisation et la pastille du trigramme sont dans l'en-tête). */
-  function paintInfo() {
-    const b = $('fInfo');
-    if (!b) return;
-    const items = infoItems(),
-      news = items.some(it => it.news),
-      attn = items.some(it => it.attn),
-      label = news || attn ? `${t(T.info.button)} — ${t(T.info.news)}` : t(T.info.button);
-    if (b.hasAttribute('data-badge') !== news) news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
-    if (b.hasAttribute('data-attn') !== attn) attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
-    if (b.title !== label) b.title = label;
-    if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
-    if (infoBox) {
-      const html = infoHtml(items);
-      if (infoBox.html !== html) {
-        infoBox.html = html;
-        infoBox.list.innerHTML = html;
+  function paintStatus() {
+    const items = statusItems(),
+      b = $('fDevice');
+    if (b) {
+      const news = items.some(it => it.news),
+        attn = items.some(it => it.attn),
+        label = news || attn ? `${t(T.device)} — ${t(T.info.news)}` : t(T.device);
+      if (b.hasAttribute('data-badge') !== news) news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
+      if (b.hasAttribute('data-attn') !== attn) attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
+      if (b.title !== label) b.title = label;
+      if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
+    }
+    if (!statusViews.size) return;
+    const body = statusBody(items),
+      s = sig(body);
+    for (const el of [...statusViews]) {
+      if (!el.isConnected) {
+        statusViews.delete(el);
+        continue;
       }
+      if (el.dataset.sig !== s) {
+        el.innerHTML = body;
+        el.dataset.sig = s;
+      }
+      if (el.hidden !== !items.length) el.hidden = !items.length;
     }
   }
-  /** Ouvre le pop-up d'état, sous le bouton ; Échap, ✕ et un toucher à côté le ferment. */
-  async function openInfo() {
-    if (infoBox) return;
-    await modal(`<div class="f-info-head"><h2>${esc(t(T.info.title))}</h2><button type="button" data-x aria-label="${esc(t(T.close))}" title="${esc(t(T.close))}">${icon('x')}</button></div><ul class="f-info-list"></ul>`,
-      (m, close) => {
-        m.firstElementChild.setAttribute('aria-label', t(T.info.title));
-        infoBox = {
-          list: m.querySelector('.f-info-list'),
-          close,
-          html: ''
-        };
-        paintInfo();
-        m.addEventListener('click', e => {
-          const row = e.target.closest('[data-go]');
-          if (e.target === m || e.target.closest('[data-x]')) close(null);
-          else if (row) {
-            close(null);
-            goInfo(row.dataset.go);
-          }
-        });
-        m.querySelector('[data-x]').focus();
-      }, 'f-info-modal');
-    infoBox = null;
-    $('fInfo').focus({
-      preventScroll: true
-    });
-  }
-  /** Aide de l'écran affiché (bouton ? de l'en-tête d'un écran, dernière ligne du pop-up « i » sur un téléphone) : le manuel
-   *  au chapitre du module ; un second appel, avec l'aide ouverte, la referme. */
+
+  /** Aide de l'écran affiché (bouton « ? » de l'en-tête, sur un téléphone comme sur un écran) : le manuel au chapitre de
+   *  l'écran (celui du module ; celui des Réglages quand ils sont ouverts par-dessus) ; un second appel, avec l'aide ouverte,
+   *  la referme. */
   function openHelp() {
     if (over && ['help', 'roadmap'].includes(over.id)) return leaveOver();
-    const at = current?.id || (['settings', 'device'].includes(parseHash().id) ? 'settings' : '');
+    const shown = over ? over.id : parseHash().id,
+      at = ['settings', 'device'].includes(shown) ? 'settings' : current?.id || '';
     location.hash = `#help${at ? `?m=${encodeURIComponent(at)}` : ''}`;
   }
-  /** Suite d'un toucher sur une ligne : une adresse (un choix de menu : pas de « ← »), ou un CR à écrire : le vol est remis à
-   *  report par pilot/handoff.json (le format de flightlog : { to, from, source, at, fresh, family, values }), puis #report?from=
-   *  flightlog ; un enregistrement sans « handoff » (schéma 1) renvoie à Mes vols. */
-  async function goInfo(go) {
-    if (go === 'help') return openHelp();
+  /** Suite d'un toucher sur une ligne du bloc d'état : une adresse (un choix de menu : pas de « ← »), une carte des Réglages
+   *  (`card:sync,usages` : la première visible, amenée sous l'en-tête, son premier champ pris), la bascule de la position
+   *  réelle, ou un CR à écrire : le vol est remis à report par pilot/handoff.json (le format de flightlog : { to, from,
+   *  source, at, fresh, family, values }), puis #report?from=flightlog ; un enregistrement sans « handoff » (schéma 1)
+   *  renvoie à Mes vols. */
+  async function goStatus(go) {
     if (go === 'live') return void(gpsWatch !== null ? liveApi().disable() : liveApi().enable());
+    if (go.startsWith('card:')) {
+      const card = go.slice(5).split(',').map(k => $('fView').querySelector(`[data-card="${k}"]`)).find(c => c && !c.hidden);
+      card?.scrollIntoView({
+        block: 'start',
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      });
+      card?.querySelector('input:not([type=hidden]):not([disabled]), button:not([disabled])')?.focus({
+        preventScroll: true
+      });
+      return;
+    }
     let to = go;
     if (go.startsWith('report:')) {
       const f = pendingReports[+go.slice(7)],
@@ -1209,17 +1238,17 @@
       key: `${via}:${FD.github.config()?.repo || ''}`
     });
   }
-  // état de la base aéronautique pour la ligne du « i » : '' tant qu'elle n'a pas été demandée ou qu'elle est prête
+  // état de la base aéronautique pour la ligne du bloc d'état : '' tant qu'elle n'a pas été demandée ou qu'elle est prête
   let baseState = '',
     accessKey = '';
-  /** Relève l'état d'aerodb (événement 'state' ou 'change', jamais un minuteur) ; la ligne du « i » n'est redessinée que
+  /** Relève l'état d'aerodb (événement 'state' ou 'change', jamais un minuteur) ; la ligne du bloc d'état n'est redessinée que
    *  s'il change. */
   async function syncBase() {
     const s = await aerodb?.state().catch(() => null),
       next = s?.asked && ['loading', 'noaccess', 'unpublished'].includes(s.state) ? s.state : '';
     if (next === baseState) return;
     baseState = next;
-    paintInfo();
+    paintStatus();
   }
   /** « Couper l'accès » : jeton et réglage du dépôt GitHub effacés de cet appareil (copies et écritures en attente
    *  gardées), transport rebranché aussitôt. */
@@ -1248,7 +1277,7 @@
   // ---------------------------------------------------------------- bouton de synchronisation
   let lastSyncState = '';
   /** État du bouton de synchronisation et son libellé : [état, libellé]. Un seul calcul pour le bouton de l'en-tête et pour
-   *  la ligne des données du pop-up « i ». */
+   *  la ligne des données du bloc d'état. */
   function syncState(s) {
     if (s.syncing) return ['syncing', t(T.sync.syncing)];
     if (s.conflicts) return ['conflicts', t(T.sync.conflicts, {
@@ -1264,12 +1293,12 @@
       d: ago(s.lastSync)
     }) : t(T.sync.ok)];
   }
-  // états qui demandent l'attention (pastille orange du « i » sur téléphone) ; syncing, ok et local n'en demandent pas
+  // états qui demandent l'attention (pastille orange du ⚙ sur téléphone) ; syncing, ok et local n'en demandent pas
   const ATTENTION = new Set(['pending', 'offline', 'conflicts', 'error']);
   /** Écrit l'état du bouton (seulement s'il change). */
   function paintSync(s) {
     lastStatus = s;
-    paintInfo(); // le pop-up du « i » : même état
+    paintStatus(); // le bloc d'état et la pastille du ⚙ : même état
     const [state, label] = syncState(s);
     // infobulle : l'état, puis les écritures en attente (chemin, module, heure ; cinq au plus) et la dernière erreur
     const queue = (s.queue || []).slice(0, 5).map(q => `\n• ${q.deletion ? '✕ ' : ''}${q.path} — ${q.module || '?'}, ${tz('fmtZ', q.at)}`)
@@ -1456,8 +1485,34 @@
   /** Modules inscrits d'un onglet (un id inconnu est ignoré sans bruit) et, parmi eux, ceux du niveau de l'appareil. */
   const tabModules = tb => (tb.modules || []).filter(id => APP.modules.some(m => m.id === id));
   const tabVisible = tb => tabModules(tb).filter(id => (moduleLevel[id] ?? 1) <= level);
-  /** Onglet marqué : celui des réglages quand leur écran est affiché, sinon celui du module affiché ('' si aucun). */
-  const tabFor = (moduleId, screenId) => ['settings', 'device'].includes(screenId) ? 'settings' : tabOf(moduleId)?.id || '';
+  /** Onglet marqué : aucun quand les réglages sont affichés (leur bouton est le ⚙ de l'en-tête), sinon celui du module
+   *  affiché ('' si aucun). */
+  const tabFor = (moduleId, screenId) => ['settings', 'device'].includes(screenId) ? '' : tabOf(moduleId)?.id || '';
+  /** Rangées du popover d'un onglet : ses modules visibles à ce niveau, chacun suivi de ses vues (tb.views), dans l'ordre :
+   *  { module, view (id de la vue, absent pour le module), hash, label, icon }. */
+  const tabRows = tb => tabVisible(tb).flatMap(id => {
+    const m = APP.modules.find(x => x.id === id);
+    return [{
+      module: id,
+      hash: `#${id}`,
+      label: m.label,
+      icon: m.icon
+    }, ...(tb.views || []).filter(v => v.module === id).map(v => ({
+      module: id,
+      view: v.id,
+      hash: `#${id}?${v.query}`,
+      label: v.label,
+      icon: v.icon
+    }))];
+  });
+  /** Rangée affichée en ce moment : la vue dont la requête est celle de l'adresse, sinon le module (mesuré sur l'adresse :
+   *  le module qui change de vue par un bouton à lui, sans l'inscrire dans l'adresse, n'est pas suivi). */
+  function currentRow(tb, rows) {
+    const q = parseHash().query,
+      mine = rows.filter(r => r.module === current?.id),
+      view = mine.find(r => r.view && [...new URLSearchParams(r.hash.split('?')[1])].every(([k, v]) => q[k] === v));
+    return view || mine.find(r => !r.view) || null;
+  }
   /** Adresse d'un onglet : son écran, ou le dernier module du groupe montré, sinon le premier à ce niveau. */
   function tabTarget(tb) {
     if (tb.screen) return `#${tb.screen}`;
@@ -1486,16 +1541,16 @@
       if (a.getAttribute('href') !== href) a.setAttribute('href', href);
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
         'aria-current');
-      // un groupe de deux modules ou plus : son onglet choisi, touché de nouveau, ouvre la liste (popover)
-      const group = !!tb.modules && tabVisible(tb).length > 1;
+      // un groupe de deux rangées ou plus (modules, vues) : son onglet choisi, touché de nouveau, ouvre la liste (popover)
+      const group = !!tb.modules && tabRows(tb).length > 1;
       if (a.hasAttribute('aria-haspopup') !== group) group ? a.setAttribute('aria-haspopup', 'true') : a.removeAttribute('aria-haspopup');
     }
   }
   // ---------------------------------------------------------------- second toucher sur l'onglet choisi : les modules du groupe
   // pas de rangée de sous-onglets : un deuxième toucher sur l'onglet déjà choisi ouvre, au-dessus de lui, un popover qui liste
-  // les modules du groupe (verbe et icône, le courant marqué) ; un toucher en choisit un, un toucher à côté, Échap, un défilement
-  // ou un changement d'adresse le ferment. Seulement pour un groupe de deux modules ou plus au niveau de l'appareil ; sur un
-  // onglet à un seul module, le deuxième toucher ne fait rien.
+  // les modules du groupe et leurs vues (verbe et icône, le courant marqué : « Carburant · Fiches ») ; un toucher en choisit un,
+  // un toucher à côté, Échap, un défilement ou un changement d'adresse le ferment. Seulement pour un groupe de deux rangées ou
+  // plus au niveau de l'appareil ; sur un onglet qui n'en a qu'une, le deuxième toucher ne fait rien.
   let tabPop = null; // { el, tab, off }
   /** Ferme le popover du groupe (focus rendu à l'onglet si focusBack). */
   function closeTabPop(focusBack = false) {
@@ -1516,16 +1571,15 @@
   /** Ouvre (ou ferme, s'il l'est) le popover du groupe tb au-dessus de son onglet a. */
   function toggleTabPop(a, tb) {
     if (tabPop) return closeTabPop();
-    const ids = tabVisible(tb);
-    if (ids.length < 2) return;
+    const rows = tabRows(tb),
+      now = currentRow(tb, rows);
+    if (rows.length < 2) return;
     const el = document.createElement('div');
     el.className = 'f-tabpop';
     el.setAttribute('role', 'group');
     el.setAttribute('aria-label', t(tb.label));
-    el.innerHTML = ids.map(id => {
-      const m = APP.modules.find(x => x.id === id);
-      return `<button type="button" class="f-tabpop-row" data-id="${esc(id)}"${id === current?.id ? ' aria-current="page"' : ''}>${icon(m.icon)}<span>${esc(t(m.label))}</span></button>`;
-    }).join('');
+    // data-id : le module ; data-view : la vue (absent pour le module lui-même)
+    el.innerHTML = rows.map(r => `<button type="button" class="f-tabpop-row" data-id="${esc(r.module)}"${r.view ? ` data-view="${esc(r.view)}"` : ''}${r === now ? ' aria-current="page"' : ''}>${icon(r.icon)}<span>${esc(t(r.label))}</span></button>`).join('');
     el.style.visibility = 'hidden';
     document.body.append(el);
     // au-dessus de l'onglet, centré sur son icône, sans sortir de la fenêtre ; la pointe garde l'aplomb de l'onglet
@@ -1576,13 +1630,13 @@
     window.addEventListener('hashchange', () => closeTabPop(), opt);
     window.addEventListener('resize', () => closeTabPop(), opt);
     el.addEventListener('click', e => {
-      const row = e.target.closest('[data-id]');
+      const btn = e.target.closest('[data-id]'),
+        row = btn && rows.find(r => r.module === btn.dataset.id && (r.view || '') === (btn.dataset.view || ''));
       if (!row) return;
-      const id = row.dataset.id;
       closeTabPop();
-      if (id !== current?.id) {
-        viaMenu = true; // un choix de module, pas un passage : pas de « ← »
-        location.hash = `#${id}`;
+      if (row !== now) {
+        viaMenu = true; // un choix de module ou de vue, pas un passage : pas de « ← »
+        location.hash = row.hash;
       }
     }, opt);
     el.querySelector('[aria-current]')?.focus({
@@ -2051,6 +2105,12 @@
         level: moduleLevel[m.id] ?? 1
       }))),
       cutAccess,
+      // bloc « État » de tête (lignes de l'ancien pop-up « i ») : html() donne la carte à la valeur du moment, bind(carte) la
+      // rend vivante (voir statusBlock, bindStatus)
+      status: Object.freeze({
+        html: statusBlock,
+        bind: bindStatus
+      }),
       weatherKey,
       // heures de l'appli (frame/lib/time.js) : « 16:30Z », date UTC et heure Z
       time: Object.freeze({
@@ -2196,7 +2256,7 @@
     const cur = await liveData.get(flightPath).catch(() => null),
       on = flying(cur);
     lastFlight = cur;
-    paintInfo(); // le bouton « i » de l'en-tête suit le vol courant
+    paintStatus(); // la pastille du ⚙ et le bloc d'état suivent le vol courant
     // une position plus ancienne que le départ (vol précédent, laissée par un appareil qui n'a pas pu l'effacer) : remise
     // à null, la carte ne la montre jamais au nouveau départ
     const stale = on && cur?.progress?.actual?.at && String(cur.progress.actual.at) < String(cur.started.at);
@@ -2485,7 +2545,7 @@
   /** Pastille de l'en-tête pendant un vol : la source (X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
    *  bascule du GPS de l'appareil. */
   function paintLive() {
-    paintInfo(); // téléphone : la position réelle est une ligne du pop-up « i »
+    paintStatus(); // la position réelle est une ligne du bloc d'état (téléphone)
     const b = $('fLive');
     if (!b) return;
     const show = live.active;
@@ -2535,15 +2595,11 @@
     } catch (e) {
       console.warn('frame/lib/icons.js', e);
     }
-    headIcon('fInfo', 'info');
     headIcon('fHelp', 'help');
     headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
-    $('fDevice').setAttribute('aria-label', t(T.device));
-    $('fDevice').title = t(T.device);
-    $('fInfo').onclick = () => openInfo();
-    paintInfo();
+    paintStatus();
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);
     $('fHelp').onclick = openHelp;
@@ -2640,8 +2696,6 @@
     airlineData.watch('airline/', () => loadAirline(1e4));
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     window.addEventListener('hashchange', route);
-    window.addEventListener('hashchange', () => infoBox?.close(
-      null)); // retour du navigateur : le pop-up ne reste pas sur l'écran quitté
     infoData.watch('cache/flightlog/', () => readPending());
     readPending();
     window.addEventListener('online', async () => {

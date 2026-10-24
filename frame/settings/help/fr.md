@@ -5,6 +5,12 @@ sont échangées, et ce que l'appareil garde hors ligne. Ils restent sur l'appar
 
 ## Comment s'en servir
 
+**L'état.** L'écran s'ouvre sur le bloc « État », avec la même pastille que le bouton ⚙ de l'en-tête (verte : une nouvelle ;
+orange : de l'attention). Une ligne par chose, touchez-la pour agir : le vol en cours (vers la Carte), les comptes rendus à
+écrire (vers le compte rendu prérempli), le trigramme manquant (vers « Identité »), la base aéronautique tant qu'elle n'est
+pas prête (vers « Accès aux données »), l'état des données et le moyen d'échange (vers « Synchronisation », ou les conflits),
+le lanceur, « Hors ligne » et, sur un téléphone, la position pendant un vol.
+
 **Votre identité.** Dans « Identité », tapez votre trigramme et vos identifiants VID IVAO, CID VATSIM et SimBrief, puis
 « Enregistrer ». Les outils s'en servent pour préremplir ; à plusieurs, le trigramme est nécessaire.
 

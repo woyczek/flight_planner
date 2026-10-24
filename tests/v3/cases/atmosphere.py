@@ -113,7 +113,7 @@ def e4(c):
     c.le(round(dl['h'] / panel['h'], 3), 0.6, 'the summary list takes at most 60 % of the expanded sheet', what=f'summary {dl["h"]:.0f} px of a {panel["h"]:.0f} px sheet')
 
 
-@case('E5', 'One "i" only', 'E', tags=('atmosphere',), screens=False, langs4=True, rule='L8: user "le double bouton i sert à quoi ?"')
+@case('E5', 'One "i" only', 'E', tags=('atmosphere',), screens=False, langs4=True, rule='L8: user "le double bouton i sert à quoi ?"; rule 14: the frame\'s "i" is gone, the legend chip may be the one')
 def e5(c):
     for target in ('atmosphere', 'atmosphere?donnees=demo'):
         c.open(target, flight=True)
@@ -122,7 +122,7 @@ def e5(c):
           const t = (e.textContent || '').trim(), l = (e.getAttribute('aria-label') || e.title || '').trim();
           return window.__t.shown(e) && (/^(i|ⓘ|ℹ)$/i.test(t) || /^(i|infos?|information)$/i.test(l) || !!e.querySelector('svg[data-i="info"]')) })
           .map(e => e.id || e.className || e.tagName)""")
-        c.eq(found, ['fInfo'], 'the only "i" on the page is the frame\'s #fInfo', what=f'{target}: "i" buttons')
+        c.ok('fInfo' not in found and len(found) <= 1, f'{target}: "i" buttons {found}', 'at most one "i" on the page, and not the frame\'s (#fInfo went with rule 14; the legend chip is the one that may come)')
 
 
 @case('E6', 'Hint once', 'E', tags=('atmosphere',), screens=False, langs4=True, rule='L10: the hint was a pill written over the map')

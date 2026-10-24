@@ -44,7 +44,7 @@ JOURNEYS = {
         'steps': [
             'Préparer: "Démarrer le vol" (fuel § 12)',
             '`started = {at, by}`',
-            '"i" badge green, pop-up row "Vol en cours › Carte"',
+            'gear badge green, Status row "Vol en cours › Carte"',
             'Carte: title "vol en cours", Follow shown, position from GPS or none (notification once), progress block in the sheet notes',
             'full screen',
             'end: "Annuler le démarrage" or the report',
@@ -58,7 +58,7 @@ JOURNEYS = {
         'steps': [
             'Vols lists a flight without a report',
             '`pending.json` (schema 2, `handoff`)',
-            '"i" badge green, row "CR à écrire"',
+            'gear badge green, Status row "CR à écrire"',
             'tap → `pilot/handoff.json` written',
             '`#report` prefilled (family, values)',
             'three steps',
@@ -85,7 +85,7 @@ JOURNEYS = {
         'steps': [
             'first launch without trigram → amber badge',
             'Réglages: trigram, data access (GitHub mode or launcher), join the airline',
-            'sync dot (header on a screen, "i" line on a phone)',
+            'sync dot (header on a screen, Status line on a phone)',
             'offline: amber, writes pending',
             'conflicts screen',
             'design and language choice',

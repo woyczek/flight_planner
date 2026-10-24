@@ -5,7 +5,7 @@
 // (import { svg } from '../../frame/lib/icons.js').
 //
 // Variantes pleines (barre d'onglets du téléphone : l'onglet choisi change de forme, pas seulement de couleur) : fuel,
-// map, edit, list, settings, mêmes dessins et même grille, formes remplies (currentColor) avec les détails en creux.
+// map, edit, list, cloud (Météo, 24 oct 2026), settings, mêmes dessins et même grille, formes remplies (currentColor) avec les détails en creux.
 //
 // API : svg(nom, { size, title, filled }) → chaîne SVG (vide si le nom est inconnu, ou si filled est demandé sans variante
 // pleine ; décorative sauf si title est donné ; filled : la variante pleine, marquée data-filled) ; has(nom) ;
@@ -80,6 +80,7 @@ const P = {
 // variantes pleines : racine remplie et cernée de currentColor (trait 1, jointures rondes) ; ce qui doit rester un trait
 // (tuyau, socle, rayons) le dit (fill="none", trait 2)
 const F = {
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
   fuel: '<path fill-rule="evenodd" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16zM6.5 6h5v4h-5z"/><path fill="none" stroke-width="2" d="M3 21h12M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>',
   map: '<path d="M3 6 8 4.33v14L3 20z"/><path d="M10 4.33 14 5.67v14l-4-1.34z"/><path d="M16 5.67 21 4v14l-5 1.67z"/>',
   edit: '<path d="M12 8 16 12 8 20H4v-4z"/><path d="m15 5 4 4-1.5 1.5-4-4z"/>',

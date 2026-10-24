@@ -20,8 +20,10 @@
   //     dans la carte Accès d'un poste (fichier sog-config-<TRI>.json et lien #settings?config=…) ; « Importer une
   //     configuration… » (fichier), le lien, ou #settings?import=1 (carte d'accueil) : carte « Configuration reçue » en
   //     tête, « Appliquer » écrit identité, usages et accès (testé avant), puis synchronise et propose Données hors ligne.
+  //   · Bloc « État » en première carte (règle 14 de V3_SPECIFICATION.md § 7.1 : les lignes de l'ancien pop-up « i »), dessiné par
+  //     le cadre qui en a l'état (ctx.status.html()), posé ici, puis rendu vivant par le cadre (ctx.status.bind) ;
   // Contexte donné par frame/app.js : { t, notify, ask, FD, own (device/, politique cache), reload, identity(), usages(),
-  // launcher(), transport(), aerodb(), syncNow }.
+  // launcher(), transport(), aerodb(), syncNow, status { html, bind }, … }.
   const ROOT = new URL('../../', document.currentScript.src).href; // racine de la suite (routes /__setup du lanceur)
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const now = () => new Date().toISOString();
@@ -801,7 +803,9 @@
     }) : gh ? t(T.viaGithub, {
       r: gh.repo
     }) : t(T.viaNone);
-    const cards = [];
+    // bloc « État » en tête (les lignes de l'ancien pop-up « i » : vol démarré, CR à écrire, données, base, lanceur, position),
+    // dessiné par le cadre qui en a l'état, posé ici en première carte
+    const cards = [c.status?.html() || ''];
     // configuration d'un pilote : le lien #settings?config=… ou un fichier lancent l'assistant « Rejoindre la compagnie »
     // (frame/settings/join.js), que #settings?join=1 affiche à la place des cartes
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -950,9 +954,10 @@
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted">${esc(t(T.intro))}</p>${cards.join('')}
       <div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2><p><a href="#help?m=settings">${esc(t(T.aboutHelp))}</a></p><p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
       <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>${lvl === 3 ? adminCard(t, L) : ''}`;
-    if (help) view.querySelector('h1 + p')?.after(help);
+    if (help)(view.querySelector('[data-card="status"]') || view.querySelector('h1 + p'))?.after(help); // sous le bloc d'état
 
     const card = k => view.querySelector(`[data-card="${k}"]`);
+    c.status?.bind(card('status')); // vivant : redessiné par le cadre quand l'état change, ses lignes mènent où elles disent
     if (card('lnmperf')) c.aerodb().lnmperf().then(x => x.card(card('lnmperf'), {
       t,
       notify: c.notify

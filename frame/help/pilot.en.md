@@ -7,22 +7,24 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 
 ## First start
 
-- **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Report, Flights, Settings (Prepare groups
-  several tools: touch the already selected tab again and a small list opens above it to switch between them); on a screen, each tool is a verb of the left column. A tool's
-  address (`#fuel`, `#report`…) is enough to come back to it.
+- **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Report, Flights, Weather. Touch an already
+  selected tab again when it groups several screens: a small list opens above it (Prepare: Fuel and Performance sheets). On a
+  screen, each tool is a verb of the left column. A tool's address (`#fuel`, `#report`…) is enough to come back to it.
+  Settings are the ⚙ button of the header.
 - **Your identity.** In ⚙ Settings, set your trigram and your IVAO, VATSIM and SimBrief IDs: the tools use them to
   prefill.
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays
   reachable by its address.
-- **Help.** Each tool has a folded "How to use" panel at its top; the ? button (on a phone, the last line of the i button's
-  sheet, "Help for this screen") opens this manual at the tool's chapter.
-- **The i button.** In the header, next to ⚙ (and ?, on a screen): a green dot when something is waiting for you, amber (on
-  a phone) when something needs attention: no trigram, pending writes, conflicts, a synchronisation error, offline. It
-  opens a status sheet: the flight in progress (touch to go to the Map), the reports still to write for your past flights
-  (touch to open the report, pre-filled), the missing trigram (touch to set it), the state of the data (last
-  synchronisation, pending writes, the exchange in use), "Offline" when there is no network and, on a phone, the source of
-  the position during a flight and "Help for this screen". Escape or ✕ closes it. On a phone the header is reduced to the
-  name, the i button and ⚙.
+- **Help.** Each tool has a folded "How to use" panel at its top; the ? button of the header (on a phone as on a screen) opens
+  this manual at the chapter of the screen you are on.
+- **The status, on the ⚙ button.** In the header, the ⚙ button carries a dot: green when something is waiting for you (a
+  flight started, a report to write), amber (on a phone) when something needs attention: no trigram, pending writes,
+  conflicts, a synchronisation error, offline. Settings open on the "Status" block, which gives the detail: the flight in
+  progress (touch to go to the Map), the reports still to write for your past flights (touch to open the report,
+  pre-filled), the missing trigram (touch to set it), the state of the data (last synchronisation, pending writes, the
+  exchange in use), the aeronautical database while it is not ready, the launcher, "Offline" when there is no network and,
+  on a phone, the source of the position during a flight. On a phone the header is reduced to the name, the ? button and the
+  ⚙ button.
 - **Full screen.** On the map (the fixed-view tools), a round button at the bottom of the column of buttons over the map hides
   the header and the bottom bar to give the map all the room; the same button or Escape bring them back.
 - **Phone in landscape.** Turned on its side, the phone puts the bottom bar as a rail of icons at the left (the same five
@@ -547,6 +549,12 @@ The settings of this device (⚙ at the top of the screen): your identity, what 
 exchanged, and what the device keeps offline. They stay on the device, never synchronised.
 
 ## How to use
+
+**The status.** The screen opens on the “Status” block, with the same dot as the ⚙ button of the header (green: something
+new; amber: attention). One line per thing, touch it to act: the flight in progress (to the Map), the reports to write (to the
+pre-filled report), the missing trigram (to “Identity”), the aeronautical database while it is not ready (to “Data
+access”), the state of the data and the exchange in use (to “Synchronisation”, or the conflicts), the launcher, “Offline” and,
+on a phone, the position during a flight.
 
 **Your identity.** In “Identity”, type your trigram and your IVAO VID, VATSIM CID and SimBrief IDs, then “Save”. The
 tools use them to prefill; with several users, the trigram is needed.

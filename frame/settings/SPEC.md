@@ -10,12 +10,23 @@ module, because it sets the transport and the device token, which modules never 
 
 ## 1. Screen
 
-- Address `#settings` (the old `#device` shows the same screen); opened by the ⚙ button of the header.
+- Address `#settings` (the old `#device` shows the same screen); opened by the ⚙ button of the header, which is also where
+  the state badge sits (`docs/technique/V3_SPECIFICATION.md` § 7.1 rule 14: Settings left the phone's bottom bar).
+- **The screen opens on a "Status" block** (rule 14, which takes over the lines of the header's former "i" pop-up), before
+  the other cards: `[data-card="status"]`, a title and one 44 px line per thing, with the dot of the ⚙ badge (green: news;
+  amber: attention). Flight started › Map; report to write › Report with the hand-over of `pending.json`; trigram not set ›
+  the Identity card; the aeronautical base while it is not ready › the Access card; the state of the data (synchronised n min
+  ago, pending writes) › the Synchronisation card (the Usages card when that one is hidden), or `#conflicts`; launcher › the
+  Access card; offline; the position and the GPS switch (phone only). **The frame draws it** (it has the state) and gives it
+  through the context (`ctx.status = { html(), bind(card) }`): settings places `ctx.status.html()` first among the cards, then
+  calls `ctx.status.bind(card)` once the card is in the page, and the frame rewrites it when the state changes. Settings
+  neither reads that state nor draws its lines. Without `ctx.status` the block is simply absent.
 - One column of short cards, phone first: no horizontal scroll at 375 px, touch targets of the frame (44 px).
 - **Each card is saved on its own** (its own button, or at once for a checkbox); no global "Save".
 - A wrong value is said inside its card, never in a native dialog; questions use the frame's `ask`.
-- Texts are `[fr, en, de, es]` rows through the frame's `t` (French typography included).
-- Seven cards at most on screen; the diagnostics are a folded block at the bottom.
+- Texts are `[fr, en, de, es]` rows through the frame's `t` (French typography included); the status block's texts are the
+  frame's.
+- Seven cards at most on screen, not counting the status block; the diagnostics are a folded block at the bottom.
 
 ## 2. Device files (policy `cache`, never synchronised)
 

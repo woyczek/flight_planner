@@ -78,8 +78,8 @@ A **journey** is a path the pilot walks through the application, in order, acros
 | Journey | Path | End-to-end case |
 |---|---|---|
 | P1 Préparer un vol | Devis (aircraft, route, level) → quote → `current_flight.json` planned → Carte → Météo → Carte | `J1` (phone and screen) |
-| P2 Voler | "Démarrer le vol" → `started` → "i" green → Carte "vol en cours" → full screen → cancel the start | `J2` (phone, four languages) |
-| P3 Rendre compte | Vols without a report → `pending.json` → "i" → handoff → `#report` prefilled → three steps → save → Vols | `J3` |
+| P2 Voler | "Démarrer le vol" → `started` → gear badge green → Carte "vol en cours" → full screen → cancel the start | `J2` (phone, four languages) |
+| P3 Rendre compte | Vols without a report → `pending.json` → Status block (Réglages) → handoff → `#report` prefilled → three steps → save → Vols | `J3` |
 | P4 Relire ses vols | Vols: totals, filters, search, CSV export | `J4` |
 | P5 Installer et synchroniser | no trigram (amber) → Réglages → design → offline and back → conflicts, help | `J5` (phone and screen) |
 | P6 Carte de mission | a mission map from Carte › Couches | `J6` (SKIP until `tests/v3/fixtures/` holds a mission) |

@@ -267,6 +267,11 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
         gear). Performance sheets stay a view of Préparer (Devis / Fiches); the Préparer popover on a second tap
         lists Carburant · Fiches, the principle "second tap = more buttons" is kept for every tab with several
         entries. Screen rail: unchanged order, Réglages kept at the end of the rail.
+      - **Done by the frame lot** (relay cloud, branch `v3-cadre-barre`; `frame/DECISIONS.md`, 24 Oct 2026): the bar is Préparer ·
+        Carte · CR · Vols · Météo; the performance sheets are a view of the fuel module reached by `#fuel?view=sheets`, listed
+        in Préparer's popover as Carburant · Fiches (`APP.tabs[].views`); the "?" and the ⚙ are in the phone header, the "i"
+        button and its pop-up are gone (screen too); the ⚙ carries the badge; Settings opens on a "Status" block holding the
+        pop-up's lines. The screen rail never had a Réglages entry (the ⚙ opens it): unchanged.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like

@@ -1160,3 +1160,56 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     The suite's case C1 gives the bench 30 s and it already took 27 s; the new checks would have crossed it (C1 failed on the first
     run: "never reported done"), so the waits that followed an instant `set()` were cut to 80 ms and the other fixed waits shortened
     to the transition's 200 ms plus a margin: the bench takes 24 s with 177 checks (it took 27 s with 129).
+- **24 Oct 2026 — The bar and the header by rule 14** (relay cloud, branch `v3-cadre-barre`; decision
+  `V3_SPECIFICATION.md` § 7.1 rule 14, user, 24 Oct, 22:15: "il n'y a plus de bouton d'aide contextuelle en header. Tu vas le
+  remettre, et enlever les settings du footer. Pour y mettre soit les fiches de perfo, soit la météo. Tu gardes néanmoins le
+  principe de double clic sur le menu pour mettre plus de boutons"). Amends rules 3, 4 and 10.
+  - **Bar**: Préparer · Carte · CR · Vols · **Météo**. Settings leaves the bar; the user's alternative (sheets or weather)
+    is Météo, and the sheets stay where they are, a view of Préparer. `APP.tabs` loses its `settings` entry and gains a
+    `weather` tab (module `atmosphere`, icon `cloud`, label Météo / Weather / Wetter / Meteo). The `screen` key of a tab
+    stays supported by the code (nothing uses it). `tabFor` returns no tab over Settings: the pressed button is the ⚙.
+  - **Where the sheets are**: not a module. They are the second screen of the fuel module (its Quote / Sheets switch,
+    `modules/fuel/module.js`), reached by `#fuel?view=sheets` (`ctx.query.view`, written 24 Oct for exactly this). So a tab
+    gets an optional **`views`** list (`{ id, module, query, label, icon }`): a view has no tab, only a popover row after its
+    module's. Préparer's popover is **Carburant · Fiches** (a second touch, as before: "the principle of the double touch
+    stays"). The popover marks the current row **from the address**: Fuel's own Quote / Sheets switch does not write the
+    address, so after using it the mark can be one row behind. Not corrected here (a module's business: fuel could write
+    `?view=` with `history.replaceState`; to ask the fuel session if it matters). Atmosphere left the Préparer group (its own
+    tab now), so `ctx.tab` for atmosphere is `'weather'`.
+  - **Header (phone)**: name (or ←) · **?** · **⚙**; the "i" button and its pop-up are removed from `index.html`, the code and
+    the CSS (`#fInfo`, `openInfo`, `infoBox`, `.f-info-*`); on a screen too (the header there is: name, pane, "Trigramme ?",
+    sync dot, ?, ⚙). `#fHelp` is no longer hidden on a phone. **Help**: the "?" opens the chapter of the current screen as on a
+    screen; one improvement over the screen's code: with **Settings open over a module** it asks the Settings chapter (it asked
+    the module's, because the module is still `current`).
+  - **Badge on ⚙** (`#fDevice[data-badge]` green everywhere, `[data-attn]` amber on a phone only, amber wins), the same rules
+    as the "i": green = a flight started or a report to write, amber = no trigram, pending writes, conflicts, sync error,
+    offline, the base not ready. Computed by `paintStatus()` (the old `paintInfo`, same call sites). The button's name adds
+    "something to see". Removed texts: `T.info.button` and `T.info.help` (the help row is the "?").
+  - **Status block at the top of Settings**: the lines of the old pop-up, same texts and same actions (the rows are built
+    by the same function: `statusItems`, the old `infoItems`, minus the help row), in a card `data-card="status"` with the title
+    "Status" / "État" / "Status" / "Estado". **Who draws it**: Settings is an "over" of the frame but its content is drawn by
+    `frame/settings/settings.js` in one `innerHTML` and redrawn by `again()`; the state (flight, pending reports, sync, base,
+    launcher, position) belongs to the frame. So the frame draws the card (`statusBlock()`, a string at the value of the moment) and
+    gives it through the settings context (`ctx.status = { html, bind }`); settings places it first and calls `bind(card)`
+    once the card is in the page; from then the frame rewrites it when the state changes, **one write only if the content
+    changed** (a short signature in `data-sig`), and forgets it once it leaves the page (`isConnected`). No observer, no timer.
+    The settings' help panel moved under the card. A card without line is hidden.
+  - **Rows that led to "Settings" now lead to the card that holds the answer** (we are already on Settings, a hash that does not
+    change does nothing): `go: 'card:identity'` (trigram), `card:access` (base, launcher), `card:sync,usages` (data: the first
+    that is visible), scrolled under the sticky header (`scroll-margin-top` on `.f-screen [data-card]`) and its first field
+    focused. `#maps`, `#conflicts`, the report hand-over and the GPS switch are as they were.
+  - **The rail of a screen**: unchanged. The brief said "Réglages kept at the end of the rail", but the rail (`#fNav`, the
+    modules) never had a Settings entry in this tree (on a screen the ⚙ of the header opens it); nothing was added. The
+    landscape rail on a phone (`#fTabs`) has the same five entries as the bar, Météo last, and no Settings.
+  - **Icon**: `frame/lib/icons.js` (design's file) gets the filled variant of `cloud`, the tab icon needs one (the same
+    drawing, filled); `frame/design/SPEC.md` says so.
+  - **Tests**: A2 (name · ? · ⚙), A4 (five entries ×4 languages: Météo, no Réglages), A7 (Carburant · Fiches: a view row
+    opens `#fuel?view=sheets` on the Sheets screen), A8 replaced by "status block at the top of Settings" (rows, 44 px, last
+    action, Escape), A9 and the journeys (badge on ⚙; rows read in the block), A11 / A12 (the "?" opens the chapter), A14 (rail: Météo),
+    A15 and flightlog's check (the base row and the report row are read in the block), E5 (no "i" of the frame: at most one "i"
+    on a page, and not `#fInfo`; the legend chip of Atmosphere is the one that may come).
+  - **Found while testing (not fixed, not the frame's)**: changing the address of fuel while its own `mount()` is still awaiting
+    (reading libraries, the shared base) lets that first mount's `show('plan')` run on the state of the second (`S` is a module
+    global of `modules/fuel/module.js`): `#fuel` then `#fuel?view=sheets` within milliseconds, on the slower designs, ends on the
+    Quote screen. A7 now waits for fuel's first screen before the second tap. To tell the fuel session (a `mount` that checks its
+    state is still the current one after its awaits).

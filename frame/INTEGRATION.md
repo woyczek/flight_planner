@@ -161,18 +161,26 @@ it**; it reads at most `ctx.tab`.
 
 ```js
 APP.tabs = [
-  { id: 'prepare',   label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'], icon: 'fuel',
-    modules: ['fuel', 'atmosphere'] },
+  { id: 'prepare',   label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'], icon: 'fuel', modules: ['fuel'],
+    views: [{ id: 'sheets', module: 'fuel', query: 'view=sheets', label: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'], icon: 'file' }] },
   { id: 'maps',      label: ['Carte', 'Map', 'Karte', 'Mapa'],                  icon: 'map',  modules: ['maps'] },
   { id: 'report',    label: ['CR', 'Report', 'Bericht', 'Informe'],             icon: 'edit', modules: ['report'] },
   { id: 'flightlog', label: ['Vols', 'Flights', 'Flüge', 'Vuelos'],             icon: 'list', modules: ['flightlog'] },
-  { id: 'settings',  label: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'], icon: 'settings', screen: 'settings' }
+  { id: 'weather',   label: ['Météo', 'Weather', 'Wetter', 'Meteo'],            icon: 'cloud', modules: ['atmosphere'] }
 ];
 ```
 
+**Settings is not in the bar** (§ 7.1 rule 14, 24 Oct 2026, 22:15): it is the ⚙ of the header, which also carries the
+state badge (§ 10). The bar is Préparer · Carte · CR · Vols · Météo. The `screen` key (a tab that opens a frame screen)
+stays supported by the code but no tab uses it today.
+
 - **`id`**: the tab. **`label`**: one word, four languages. **`icon`**: a name of `frame/lib/icons.js` that has a filled
-  variant (`svg(name, { filled: true })`; today fuel, map, edit, list, settings).
+  variant (`svg(name, { filled: true })`; today fuel, map, edit, list, cloud, settings).
 - **`modules`** (a group) or **`screen`** (a frame screen, `settings`): a tab is one or the other.
+- **`views`** (optional, with `modules`): views of a module of the group, each `{ id, module, query, label, icon }`
+  (`query` is the address's query: `view=sheets` gives `#fuel?view=sheets`). A view has **no tab of its own**, only a row
+  in the group popover, after its module's row. This is how the performance sheets are reached from Préparer: they are a view of
+  the fuel module (its Quote / Sheets switch), not a module.
 - **A tab is a group of modules.** It stays selected while any module of its group is shown. Touched, it opens the last
   module of the group shown in this session, otherwise the first one visible at the device's level.
 - **A module id that is not registered in `APP.modules` is skipped without a word** (`atmosphere` until its module is
@@ -180,15 +188,18 @@ APP.tabs = [
   module registered or not.
 - **A module in no tab** (`website`, `hello`) selects no tab and stays reachable by its address (`#website`) and in the
   rail on a screen.
-- **Group popover (no row of sub-tabs)**: when the group has two or more modules registered at the device's level, a
-  **second touch on its active tab** opens a small popover above the tab (`.f-tabpop`; one 44 px row per module, its icon
-  and the verb of `APP.modules[].label`, the current one `aria-current="page"`). A touch on a row switches the module
-  (`#fuel`, `#atmosphere`); a touch elsewhere, Escape, a scroll, a resize or a change of address closes it. The tab has
-  `aria-haspopup` (and `aria-expanded` while open). On a tab with one module the second touch does nothing. **There is no
+- **Group popover (no row of sub-tabs)**: when the group has two or more rows (modules registered at the device's level, and
+  their `views`), a **second touch on its active tab** opens a small popover above the tab (`.f-tabpop`; one 44 px row per
+  module or view, its icon and the verb of `APP.modules[].label` or of the view, the current one `aria-current="page"`; a
+  view row carries `data-view`). Préparer thus lists **Carburant · Fiches**. A touch on a row switches (`#fuel`,
+  `#fuel?view=sheets`); a touch elsewhere, Escape, a scroll, a resize or a change of address closes it. The current row is
+  read from the address (a module that changes view by a button of its own without writing it in the address, as Fuel's
+  Quote / Sheets switch, is not followed). The tab has `aria-haspopup` (and `aria-expanded` while open). On a tab with a
+  single row (Carte, CR, Vols, Météo) the second touch does nothing. **There is no
   row of sub-tabs above a module** (it used to take 56 px and a margin above a fixed module's map, 24 Oct 2026): a module
   must not draw a row of its own to reach its siblings; its internal tabs (Fuel's Plan / Sheets) stay its own. Nothing
   about it reaches a module: `ctx.tab` is all it knows. On a screen the rail lists the modules.
-- **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel and atmosphere), `null` if none. For a
+- **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel, `'weather'` for atmosphere), `null` if none. For a
   module that wants to know its group; it never opens or changes a tab.
 - **Landscape on a phone (`html.f-land`)**: when the window is wider than high **and** under 1024 px (a phone or a small
   tablet turned; Safari does not honour the manifest's portrait lock), the frame sets `<html class="f-land">` (and
@@ -213,8 +224,8 @@ A module that is a map plus a sheet (maps) declares `fixed: true` in `meta`. The
   `overflow: auto` under it. **This rule has no weight** (`:where()`): a module that wants another layout sets its own
   `display` on its root (`[data-module="maps"] { display: grid }`) and wins with no `!important`; a module that sets
   none keeps the column;
-- no folded help panel and no welcome card above it (the ? button opens the module's chapter; on a phone the "?" is the
-  last line of the "i" pop-up, "Help for this screen ›", so a fixed module needs no help button of its own);
+- no folded help panel and no welcome card above it (the "?" of the header opens the module's chapter, on a phone as on a
+  screen, so a fixed module needs no help button of its own);
 - **nothing between the header and the module**: no sub-tabs row, no padding, no margin; the module's top is exactly
   `--f-head-h` (the module draws its own margins);
 - nothing else changes: `fixed` absent is today's page.
@@ -350,7 +361,10 @@ The frame never calls a module; it only reads **cache records** a module publish
 never synchronised), through the data layer, as it reads the current flight. A module that publishes one declares the
 prefix in its `meta.writes` with `policy: 'cache'`.
 
-### 10.1 `cache/flightlog/pending.json` (written by flightlog, read for the "i" button)
+The lines of the **status block** (§ 10.2) and the badge of the ⚙ come from these records, from the sync state and from
+`ctx.aerodb.state()`. The "i" button and its pop-up of 24 Oct 2026 (afternoon) no longer exist (rule 14).
+
+### 10.1 `cache/flightlog/pending.json` (written by flightlog, read for the status block)
 
 ```json
 { "schema": 2, "updated_at": "2026-10-24T10:00:00Z",
@@ -374,15 +388,37 @@ prefix in its `meta.writes` with `policy: 'cache'`.
   values }`, then opens `#report?from=flightlog` (report takes the hand-over at its mount, as for flightlog's own
   "Write the report", and the header shows "← My flights"). Without `handoff`, it opens `#flightlog`. `to: 'report'` is
   required by report (`takeHandoff`), whatever the brief of the day says.
-- The frame redraws the badge and the pop-up when the record changes (`watch` on `cache/flightlog/`).
-- **Launcher line of the "i" pop-up**: when the transport is the launcher, the pop-up has a line "Launcher: <host> · <sync
-  state>" (four languages) after the data line, a touch opens Settings; it is what shows the host on a phone, whose header no
-  longer carries it. Nothing for a module to publish.
-- **Base line of the "i" pop-up** (read from `ctx.aerodb.state()`, not from a module's record): once the base has been asked for,
-  one line says its state when it is not ready: "Aeronautical database loading…" (no button), "Data access not set on this device"
-  (touch: Settings) or "Aeronautical database not published in the data repository" (touch: Settings). The line follows
-  aerodb's `state` event (a read starts or ends, the access changes); nothing is polled. It never turns the "i" amber.
+- The frame redraws the badge and the status block when the record changes (`watch` on `cache/flightlog/`).
 - The writer republishes the whole file when its list changes (`updated_at`); an empty `flights` when nothing is left.
+
+### 10.2 The status block (top of Settings) and the badge of the ⚙
+
+Rule 14 of § 7.1 replaced the header's "i" button and its pop-up. The same lines are now the **"Status" card that opens
+the Settings screen**, and the badge sits on the **⚙ of the header** (`#fDevice`). The header of a phone is the name (or
+"←"), "?" (`#fHelp`: the help chapter of the current screen, the Settings chapter when Settings are open) and ⚙; on a
+screen `#fSync` and the rest stay as they were, without the "i".
+
+- **Who draws it**: the frame, which has the state (`statusBlock()` in `frame/app.js`); `frame/settings/settings.js` places
+  the card first (`ctx.status.html()`), then hands it back (`ctx.status.bind(card)`), after which the frame rewrites it
+  when the state changes (one write, only if the content changed: a short signature in `data-sig`) until the card leaves the
+  page. A module never draws it and has no part in it.
+- **Lines** (`li[data-k]`, a `button.f-status-row[data-go]` when the line leads somewhere), in this order, each only when it
+  applies: `flight` (flight started › Map, green), `report` (one per flight to report, "Report to write for the flight of
+  <date> <dep>→<arr>", green; the touch writes `pilot/handoff.json` and opens `#report?from=flightlog`, or `#flightlog`
+  without `handoff`), `who` (trigram not set, amber; leads to the Identity card), `base` (the three states of the
+  aeronautical base, see below; leads to the Access card), `data` (synchronised n min ago · pending writes, or conflicts
+  `#conflicts`, error, "on this device, nothing to synchronise"; amber for pending / offline / conflicts / error; leads to
+  the Synchronisation card, else Usages), `launcher` (launcher host · sync state; Access card), `offline` (amber), `live` (the
+  real position and the GPS switch, **phone only**: a screen keeps its header button). The "Help for this screen" line is gone:
+  the "?" of the header is that.
+- **Badge** (`#fDevice[data-badge]` green: something new, flight started or report to write, on every width;
+  `[data-attn]` amber, **phone only**: trigram, pending writes, conflicts, sync error, offline, base; amber wins). The
+  button's `title` / `aria-label` add "something to see" while either shows. The data line and "offline" are a state, not a
+  news item: they never turn the badge green. The rules are those of the old "i".
+- **Base line** (read from `ctx.aerodb.state()`, not from a module's record): once the base has been asked for, one line says
+  its state when it is not ready: "Aeronautical database loading…" (no button), "Data access not set on this device" or
+  "Aeronautical database not published in the data repository". It follows aerodb's `state` event (a read starts or ends,
+  the access changes); nothing is polled.
 
 ## 11. Sheet primitive (`frame/lib/sheet.js`)
 
