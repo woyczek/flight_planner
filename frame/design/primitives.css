@@ -411,9 +411,12 @@ details.f-card[open]>summary {
    donne le balisage (racine .f-sheet, dedans .f-sheet-panel avec .f-sheet-head puis son contenu) et peut poser les jetons
    sur sa racine ; la feuille ne sait pas ce qu'elle contient. Les jetons valent « <n>% » (part de la hauteur de la racine)
    ou « <n>px » : sheet.js les lit. Poids nul sur les jetons (:where) : une règle du module les remplace sans !important. La poignée et le ✕ sont des boutons :
-   leurs règles pèsent trois classes pour l'emporter sur celles des designs (`[data-design] :is(button, .f-btn)`). */
+   leurs règles pèsent trois classes pour l'emporter sur celles des designs (`[data-design] :is(button, .f-btn)`).
+   Poignée nue (règle 13 b de V3_SPECIFICATION § 7.1) : le module pose la classe `f-sheet-head-bare` sur `.f-sheet-head` quand le
+   contenu est un dessin ; voir plus bas. */
 :where(.f-sheet) {
   --f-sheet-head: 45px;
+  --f-sheet-head-bare: 28px;
   --f-sheet-default: 30%;
   --f-sheet-default-min: 170px;
   --f-sheet-expanded: 70%;
@@ -532,6 +535,60 @@ details.f-card[open]>summary {
   color: inherit;
   touch-action: manipulation
 }
+/* ---- poignée nue (frame/INTEGRATION.md § 11, « Bare handle ») : `.f-sheet-head-bare` posée par le module sur `.f-sheet-head` quand
+   le contenu est un dessin qui se décrit lui-même (coupe, profil). Une ligne de --f-sheet-head-bare (28 px) : la barrette de
+   préhension, pas de titre, les boutons de la ligne (puces, ◀ ▶, ✕) à droite sur la même ligne. Même glisser et même toucher que
+   la poignée normale (le primitif ne sait pas que la ligne est nue : il mesure la tête). Les boutons font 28 px de haut à l'écran
+   et une zone de toucher plus grande par ::after, centrée sur le bouton quelle que soit sa bordure (44 px de haut, au moins 32 de
+   large ; comme .f-ov-btn : le haut est rogné par le bord de la feuille, le bas mord de 8 px sur le corps) ; l'écart de 4 px entre
+   eux garde les zones côte à côte, sans recouvrement. Réduite, la feuille ne montre que cette ligne : la règle :has donne la
+   hauteur (28 px et le filet de 1 px), le primitif mesure la même chose pour le glisser. */
+.f-sheet .f-sheet-head.f-sheet-head-bare {
+  gap: 4px;
+  align-items: center;
+  height: var(--f-sheet-head-bare);
+  font-size: .85em
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-grip {
+  align-self: stretch;
+  padding: 0
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-grip::before {
+  top: 5px
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-title {
+  display: none
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare button:not(.f-sheet-grip) {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  height: 28px;
+  min-height: 0;
+  min-width: 28px;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1;
+  touch-action: manipulation
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare button:not(.f-sheet-grip)::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(100% + 6px);
+  min-width: 32px;
+  height: 44px;
+  transform: translate(-50%, -50%)
+}
+.f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-close {
+  width: 28px;
+  font-size: 1.1em
+}
+.f-sheet[data-sheet="collapsed"]>.f-sheet-panel:has(>.f-sheet-head-bare) {
+  height: calc(var(--f-sheet-head-bare) + 1px)
+}
 /* la zone qui défile dans la feuille (sous l'en-tête) : la page, elle, ne défile jamais */
 .f-sheet .f-sheet-body {
   flex: 1 1 0;
@@ -575,6 +632,10 @@ html.f-land .f-sheet .f-sheet-head .f-sheet-grip::after {
   border: solid var(--sog-muted);
   border-width: 0 0 2px 2px;
   transform: rotate(45deg)
+}
+/* poignée nue : sans titre pour la repousser, le chevron va au bout de la zone de préhension, contre les boutons */
+html.f-land .f-sheet .f-sheet-head.f-sheet-head-bare .f-sheet-grip::after {
+  margin-left: auto
 }
 html.f-land .f-sheet[data-sheet="expanded"] .f-sheet-head .f-sheet-grip::after {
   transform: rotate(-135deg)

@@ -75,6 +75,35 @@
     min-height: 0;
     background: repeating-linear-gradient(45deg, #dfe8f0 0 12px, #cfdbe6 12px 24px)
   }
+  /* poignée nue (portrait) : une racine de 360 × 360 px au-dessus du reste ; les puces, ◀ ▶ et ✕ sont ceux d'un module (leur taille est
+     celle de la ligne nue, ses boutons n'ont pas de règle de taille ici) */
+  #stageC {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 360px;
+    height: 360px;
+    z-index: 5;
+    background: var(--sog-surface)
+  }
+  #rootC {
+    height: 100%;
+    display: flex;
+    flex-direction: column
+  }
+  #rootC .map {
+    flex: 1 1 0;
+    min-height: 0;
+    background: repeating-linear-gradient(45deg, #dfe8f0 0 12px, #cfdbe6 12px 24px)
+  }
+  #headC button:not(.f-sheet-grip),
+  #headL button:not(.f-sheet-grip) {
+    border: 1px solid var(--sog-border);
+    border-radius: 6px;
+    background: var(--sog-surface);
+    color: var(--sog-fg);
+    font: inherit
+  }
   .FAIL {
     color: #b00020;
     font-weight: 700
@@ -134,6 +163,7 @@
   const near = (name, got, want, tol = 1) => check(name, Math.abs(got - want) <= tol, `obtenu ${got}, attendu ${want}`);
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const H = el => el.getBoundingClientRect().height;
+  const R = el => el.getBoundingClientRect();
 
   // ---- événements du pointeur sur l'en-tête (synthétiques : pointerId 7)
   const ptr = (el, type, y, extra = {}) => el.dispatchEvent(new PointerEvent(type, {
@@ -247,7 +277,7 @@
   a.set('default');
   await wait(20);
   check('sans instant : la hauteur est en transition (pas encore à la cible)', Math.abs(H(A.panel) - hs.default) > 1);
-  await wait(500);
+  await wait(260);
   near('sans instant : la cible est atteinte', H(A.panel), hs.default);
 
   // 4. onSettle : une fois, 120 ms après le dernier pas, avec la position
@@ -284,55 +314,55 @@
   a.set('default', true);
 
   // 6. le glisser suit le doigt, prend la position la plus proche
-  await wait(300);
+  await wait(240);
   let mid = await drag(A.grip, head, 400, -150, 10, 25);
   check('glisser : la feuille suit le doigt (plus haute à mi-course)', mid.h > hs.default+40, JSON.stringify(mid));
   check('glisser : transition coupée pendant le glisser', mid.nt);
-  await wait(500);
+  await wait(260);
   eq('glisser vers le haut de 150 px : position la plus proche = agrandie', a.pos, 'expanded');
   near('glisser : la hauteur finale est celle de la position', H(A.panel), hs.expanded);
   check('glisser : classe f-sheet-nt retirée au lâcher', !A.panel.classList.contains('f-sheet-nt'));
   mid = await drag(A.grip, head, 400, +330, 20, 40);
-  await wait(500);
+  await wait(260);
   eq('glisser vers le bas de 330 px : réduite', a.pos, 'collapsed');
   mid = await drag(A.grip, head, 400, -500, 25, 40);
   check('glisser : plafonné à la position agrandie', mid.h <= hs.expanded + 1, JSON.stringify(mid));
-  await wait(500);
+  await wait(260);
   eq('glisser très haut : agrandie (pas plus)', a.pos, 'expanded');
   a.set('default', true);
-  await wait(300);
+  await wait(80);
   await drag(A.grip, head, 400, -20, 4, 25);
-  await wait(500);
+  await wait(260);
   eq('petit glisser lent (20 px) : reste normale', a.pos, 'default');
   await drag(A.head, head, 400, -25, 6, 25);
-  await wait(500);
+  await wait(260);
   eq('glisser depuis l\'en-tête hors poignée : glisse aussi (reste normale)', a.pos, 'default');
 
   // 7. le coup de pouce (plus de 0,8 px/ms) passe à la position suivante
   a.set('default', true);
-  await wait(300);
+  await wait(80);
   await drag(A.grip, head, 400, -40, 5, 8);
-  await wait(500);
+  await wait(260);
   eq('coup de pouce vers le haut depuis normale : agrandie', a.pos, 'expanded');
   await drag(A.grip, head, 400, +40, 5, 8);
-  await wait(500);
+  await wait(260);
   eq('coup de pouce vers le bas depuis agrandie : normale', a.pos, 'default');
   await drag(A.grip, head, 400, +40, 5, 8);
-  await wait(500);
+  await wait(260);
   eq('coup de pouce vers le bas depuis normale : réduite', a.pos, 'collapsed');
   await drag(A.grip, head, 400, +40, 5, 8);
-  await wait(500);
+  await wait(260);
   eq('coup de pouce vers le bas depuis réduite : reste réduite', a.pos, 'collapsed');
 
   // 8. ignore : ni glisser ni toucher depuis la bascule ou le ✕
   a.set('default', true);
-  await wait(300);
+  await wait(80);
   const h0 = H(A.panel);
   await drag($('toggleA'), head, 400, -150, 10, 20);
-  await wait(300);
+  await wait(240);
   eq('ignore : glisser depuis la bascule ne tire pas', [a.pos, Math.round(H(A.panel))], ['default', Math.round(h0)]);
   await drag($('closeA'), head, 400, -150, 10, 20);
-  await wait(300);
+  await wait(240);
   eq('ignore : glisser depuis le ✕ ne tire pas', a.pos, 'default');
   await tap($('toggleA'));
   await tap($('closeA'));
@@ -344,13 +374,13 @@
   isLocked = true;
   await tap(A.grip);
   await drag(A.grip, head, 400, -150, 10, 20);
-  await wait(300);
+  await wait(240);
   eq('locked : ni toucher ni glisser', a.pos, 'default');
   key(A.grip, 'End');
   eq('locked : le clavier reste', a.pos, 'expanded');
   isLocked = false;
   a.set('default', true);
-  await wait(300);
+  await wait(80);
   await tap(A.grip);
   eq('locked levé : le toucher reprend', a.pos, 'collapsed');
   a.set('default', true);
@@ -400,24 +430,24 @@
   // 11. jeton remplacé sur la racine ; plancher
   a.set('default', true);
   A.root.style.setProperty('--f-sheet-default', '50%');
-  await wait(450);
+  await wait(260);
   near('jeton : --f-sheet-default posé sur la racine du module (50 %)', H(A.panel), RH * .5);
   A.root.style.setProperty('--f-sheet-default', '10%');
-  await wait(450);
+  await wait(260);
   near('jeton : plancher --f-sheet-default-min (170 px) sous 10 %', H(A.panel), 170);
   A.root.style.removeProperty('--f-sheet-default');
   A.root.style.setProperty('--f-sheet-expanded', '300px');
   A.root.style.setProperty('--f-sheet-expanded-min', '0px');
   a.set('expanded', true);
-  await wait(450);
+  await wait(260);
   near('jeton en pixels pour l\'agrandie', H(A.panel), 300);
   await drag(A.grip, head, 400, -800, 8, 20);
-  await wait(300);
+  await wait(240);
   near('glisser : le plafond suit le jeton en pixels', H(A.panel), 300);
   A.root.style.removeProperty('--f-sheet-expanded');
   A.root.style.removeProperty('--f-sheet-expanded-min');
   a.set('default', true);
-  await wait(300);
+  await wait(80);
 
   // 12. stop : plus d'écouteurs, plus de délai
   calls.settle.length = 0;
@@ -469,6 +499,147 @@
   c.stop();
   eq('POSITIONS exporté', POSITIONS, ['collapsed', 'default', 'expanded']);
 
+  // ================================================================ poignée nue (portrait) : frame/INTEGRATION.md § 11
+  // le module pose `f-sheet-head-bare` sur l'en-tête : 28 px, pas de titre, les boutons à droite, mêmes gestes
+  const stageC = document.createElement('div');
+  stageC.id = 'stageC';
+  stageC.innerHTML = `<section class="f-sheet" id="rootC"><div class="map"></div>
+    <div class="f-sheet-panel" id="panelC"><div class="f-sheet-head f-sheet-head-bare" id="headC">
+      <button type="button" class="f-sheet-grip" id="gripC"><b class="f-sheet-title" id="titleC">Titre à ne pas montrer</b></button>
+      <button type="button" id="chipP">Profil</button><button type="button" id="chipM">Météo</button>
+      <button type="button" id="prevC" aria-label="Précédent">◀</button><button type="button" id="nextC" aria-label="Suivant">▶</button>
+      <button type="button" class="f-sheet-close" id="closeC" aria-label="Fermer">✕</button></div>
+      <div class="f-sheet-body" id="bodyC"></div></div></section>`;
+  document.body.append(stageC);
+  const C = {
+    root: $('rootC'),
+    panel: $('panelC'),
+    head: $('headC'),
+    grip: $('gripC'),
+    body: $('bodyC'),
+    title: $('titleC')
+  };
+  for (let i = 0; i < 20; i++) C.body.insertAdjacentHTML('beforeend', `<p>Ligne ${i}</p>`);
+  const BTNS = ['chipP', 'chipM', 'prevC', 'nextC', 'closeC'].map($);
+  const cc = [];
+  const bare = createSheet({
+    root: C.root,
+    panel: C.panel,
+    head: C.head,
+    grip: C.grip,
+    ignore: '#chipP, #chipM, #prevC, #nextC, #closeC',
+    labels: labelsFn,
+    onChange: p => cc.push(p)
+  });
+  await wait(100);
+  const RHC = C.root.clientHeight;
+  eq('nue : jeton --f-sheet-head-bare', getComputedStyle(C.root).getPropertyValue('--f-sheet-head-bare').trim(), '28px');
+  near('nue : la ligne de poignée fait 28 px', H(C.head), 28);
+  near('nue : normale = max(30 %, 170 px) de la racine (la tête plus basse n\'y change rien)', H(C.panel), Math.max(RHC * .3, 170));
+  eq('nue : le titre n\'est pas affiché', getComputedStyle(C.title).display, 'none');
+  eq('nue : aria-label venu de labels (le titre caché ne le remplace pas)', C.grip.getAttribute('aria-label'), 'Feuille (normale)');
+  const gr = R(C.grip),
+    hd = R(C.head),
+    bs = getComputedStyle(C.grip, '::before'),
+    barL = gr.left + parseFloat(bs.left) + parseFloat(bs.marginLeft),
+    barW = parseFloat(bs.width);
+  near('nue : la barrette est centrée dans la zone de préhension', barL + barW / 2, gr.left + gr.width / 2, 1);
+  check('nue : la barrette est en haut de la ligne, dans ses 28 px', parseFloat(bs.top) <= 8 && parseFloat(bs.top) + parseFloat(bs
+      .height) <= 28,
+    `${bs.top} ${bs.height}`);
+  check('nue : la barrette ne touche aucun bouton (la zone de préhension finit avant le premier)', gr.right <= R(BTNS[0]).left + .5);
+  check('nue : la zone de préhension a toute la hauteur de la ligne', Math.abs(gr.height - 28) <= .5 && Math.abs(gr.top - hd.top) <= .5);
+  check('nue : les cinq boutons ont 28 px de haut, 28 de large au moins, dans la ligne', BTNS.every(b => {
+    const r = R(b);
+    return Math.abs(r.height - 28) <= .5 && r.width >= 27.5 && r.top >= hd.top - .5 && r.bottom <= hd.bottom + .5;
+  }), BTNS.map(b => `${Math.round(R(b).width)}×${Math.round(H(b))}`).join(' '));
+  near('nue : le dernier bouton (✕) est au bord droit de la ligne', R(BTNS[4]).right, hd.right, 1);
+  check('nue : les boutons sont à droite de la poignée, dans l\'ordre, sans se recouvrir', BTNS.every((b, i) => i === 0 ? R(b).left >= gr
+    .right - .5 : R(b).left >= R(BTNS[i - 1]).right + 3.5), BTNS.map(b => Math.round(R(b).left)).join(' '));
+  // la zone de toucher dépasse le bouton (::after) : le point sous la ligne, dans le corps, appartient encore au bouton
+  check('nue : zone de toucher (::after) de 44 px de haut et 32 de large au moins', BTNS.every(b => {
+    const af = getComputedStyle(b, '::after');
+    return parseFloat(af.height) >= 44 - .5 && parseFloat(af.width) >= 32 - .5;
+  }), BTNS.map(b => getComputedStyle(b, '::after').width + '×' + getComputedStyle(b, '::after').height).join(' '));
+  check('nue : zone de toucher agrandie (::after) : un point à 6 px sous la ligne donne le bouton', BTNS.every(b => {
+    const r = R(b);
+    return document.elementFromPoint(r.left + r.width / 2, hd.bottom + 6) === b;
+  }));
+  check('nue : cette zone s\'arrête avant 10 px sous la ligne (le corps garde le reste)', BTNS.every(b => {
+    const r = R(b);
+    return document.elementFromPoint(r.left + r.width / 2, hd.bottom + 10) !== b;
+  }));
+  check('nue : la zone voisine ne mord pas sur le bouton d\'à côté', BTNS.slice(0, -1).every((b, i) => {
+    const r = R(b);
+    return document.elementFromPoint(r.right - .5, r.top + 14) === b;
+  }));
+  // les trois positions
+  bare.set('collapsed', true);
+  await wait(60);
+  near('nue : réduite = 29 px (28 de ligne + le filet)', H(C.panel), 29);
+  check('nue : réduite, le corps n\'est pas affiché', getComputedStyle(C.body).display === 'none');
+  check('nue : réduite, la ligne et ses boutons restent entiers', Math.abs(H(C.head) - 28) <= .5 && BTNS.every(b => Math.abs(H(b) - 28) <=
+    .5));
+  bare.set('expanded', true);
+  await wait(60);
+  near('nue : agrandie = max(70 %, 260 px)', H(C.panel), Math.max(RHC * .7, 260));
+  bare.set('default', true);
+  await wait(60);
+  // les gestes
+  await tap(C.grip);
+  eq('nue : toucher la poignée : normale → réduite', bare.pos, 'collapsed');
+  await tap(C.grip);
+  eq('nue : toucher la poignée : réduite → normale', bare.pos, 'default');
+  for (const b of BTNS) await tap(b);
+  eq('nue : toucher un bouton de la ligne ne réduit pas', bare.pos, 'default');
+  await drag(BTNS[0], {
+    panel: C.panel
+  }, 300, -150, 10, 20);
+  await wait(240);
+  eq('nue : glisser depuis une puce ne tire pas', bare.pos, 'default');
+  const hBefore = H(C.panel);
+  mid = await drag(C.grip, {
+    panel: C.panel
+  }, 300, -150, 10, 25);
+  check('nue : glisser : la feuille suit le doigt (plus haute à mi-course, transition coupée)', mid.h > hBefore + 40 && mid.nt, JSON
+    .stringify(mid));
+  await wait(240);
+  eq('nue : glisser vers le haut de 150 px : agrandie', bare.pos, 'expanded');
+  mid = await drag(C.grip, {
+    panel: C.panel
+  }, 100, +700, 20, 50);
+  near('nue : glisser vers le bas : le plancher est la ligne mesurée (29 px, pas 45)', mid.h, 29, 1.5);
+  await wait(240);
+  eq('nue : glisser vers le bas : réduite', bare.pos, 'collapsed');
+  near('nue : réduite après le glisser : 29 px', H(C.panel), 29);
+  await drag(C.head, {
+    panel: C.panel
+  }, 100, -40, 5, 8);
+  await wait(240);
+  eq('nue : coup de pouce depuis l\'espace de la ligne : normale', bare.pos, 'default');
+  key(C.grip, 'End');
+  eq('nue : clavier : Fin = agrandie', bare.pos, 'expanded');
+  key(C.grip, 'Home');
+  eq('nue : clavier : Début = réduite', bare.pos, 'collapsed');
+  // la tête change en route (le module retire la classe pour un contenu qui a un titre) : les hauteurs suivent la mesure
+  C.head.classList.remove('f-sheet-head-bare');
+  await wait(240);
+  near('titre : la ligne fait de nouveau 44 px', H(C.head), 44);
+  near('titre : réduite = 45 px (la hauteur de la tête suit la classe)', H(C.panel), 45);
+  check('titre : le titre est de nouveau affiché', getComputedStyle(C.title).display !== 'none');
+  bare.set('default', true);
+  await wait(80);
+  mid = await drag(C.grip, {
+    panel: C.panel
+  }, 100, +700, 20, 50);
+  near('titre : glisser vers le bas : plancher 45 px', mid.h, 45, 1.5);
+  await wait(240);
+  C.head.classList.add('f-sheet-head-bare');
+  await wait(240);
+  near('nue de nouveau : la feuille réduite redescend à 29 px', H(C.panel), 29);
+  bare.stop();
+  stageC.remove();
+
   // ================================================================ paysage sur un téléphone : la feuille est une colonne
   // (<html class="f-land">, posé par le cadre ; ici à la main, puis « frame-orientation » comme le fait le cadre)
   const html = document.documentElement,
@@ -498,8 +669,7 @@
   };
   for (let i = 0; i < 40; i++) L.body.insertAdjacentHTML('beforeend', `<p>Ligne ${i}</p>`);
   const W = el => el.getBoundingClientRect().width,
-    RW = 800,
-    R = el => el.getBoundingClientRect();
+    RW = 800;
   /** Pointeur horizontal : appui, déplacements de dx en `steps` pas, relâchement. */
   const ptrx = (el, type, x, extra = {}) => el.dispatchEvent(new PointerEvent(type, {
     bubbles: true,
@@ -541,7 +711,7 @@
     onChange: p => lcalls.change.push(p),
     onSettle: p => lcalls.settle.push(p)
   });
-  await wait(300);
+  await wait(240);
   eq('paysage : départ normal, data-sheet default', [l.pos, L.root.dataset.sheet], ['default', 'default']);
   near('paysage : la colonne = 40 % de la largeur de la racine (--f-sheet-side)', W(L.panel), RW * .4);
   near('paysage : la colonne est aussi haute que la racine', H(L.panel), 333);
@@ -578,38 +748,38 @@
   eq('paysage : toucher : normale → agrandie', l.pos, 'expanded');
   await tapx(L.grip);
   eq('paysage : toucher : agrandie → normale', l.pos, 'default');
-  await wait(300);
+  await wait(240);
   // glisser horizontal vers la gauche : la colonne suit le doigt et prend la position la plus proche
   let m2 = await dragx(L.grip, 300, -100, 10, 25);
   check('paysage : glisser : la colonne suit le doigt (plus large à mi-course)', m2.w > RW * .4 + 20, JSON.stringify(m2));
   check('paysage : glisser : transition coupée pendant le glisser', m2.nt);
-  await wait(500);
+  await wait(240);
   eq('paysage : glisser à gauche de 100 px : agrandie', l.pos, 'expanded');
   near('paysage : largeur finale = celle de la position', W(L.panel), RW * .6);
   m2 = await dragx(L.grip, 300, +400, 20, 30);
   check('paysage : glisser : plancher à la position normale (pas de colonne plus étroite)', m2.w >= RW * .4 - 1, JSON.stringify(m2));
-  await wait(500);
+  await wait(240);
   eq('paysage : glisser à droite : normale', l.pos, 'default');
   await dragx(L.grip, 300, -600, 20, 30);
-  await wait(500);
+  await wait(240);
   eq('paysage : glisser très à gauche : agrandie (pas plus)', l.pos, 'expanded');
   near('paysage : plafond à --f-sheet-side-max', W(L.panel), RW * .6);
   await dragx(L.grip, 300, +30, 5, 25);
-  await wait(500);
+  await wait(240);
   eq('paysage : petit glisser lent : la position la plus proche (agrandie)', l.pos, 'expanded');
   l.set('default', true);
-  await wait(300);
+  await wait(80);
   await dragx(L.grip, 300, -60, 3, 8);
-  await wait(500);
+  await wait(240);
   eq('paysage : coup de pouce à gauche depuis la normale : agrandie', l.pos, 'expanded');
   await dragx(L.grip, 300, +60, 3, 8);
-  await wait(500);
+  await wait(240);
   eq('paysage : coup de pouce à droite depuis l\'agrandie : normale', l.pos, 'default');
   await dragx(L.grip, 300, +60, 3, 8);
-  await wait(500);
+  await wait(240);
   eq('paysage : coup de pouce à droite depuis la normale : reste normale (pas de réduite)', l.pos, 'default');
   await dragx($('closeL'), 300, -200, 10, 20);
-  await wait(300);
+  await wait(240);
   eq('paysage : ignore : glisser depuis le ✕ ne tire pas', l.pos, 'default');
   // clavier
   key(L.grip, 'ArrowLeft');
@@ -636,31 +806,58 @@
     'expanded' &&
     lcalls.settle.length <= 2, JSON.stringify(lcalls.settle));
   l.set('default', true);
-  await wait(300);
+  await wait(80);
   // jetons : remplacés sur la racine, plancher
   L.root.style.setProperty('--f-sheet-side', '50%');
-  await wait(450);
+  await wait(240);
   near('paysage : jeton --f-sheet-side posé sur la racine (50 %)', W(L.panel), RW * .5);
   L.root.style.setProperty('--f-sheet-side', '10%');
-  await wait(450);
+  await wait(240);
   near('paysage : plancher --f-sheet-side-min (280 px) sous 10 %', W(L.panel), 280);
   L.root.style.removeProperty('--f-sheet-side');
   L.root.style.setProperty('--f-sheet-side-max', '400px');
   l.set('expanded', true);
-  await wait(450);
+  await wait(80);
   near('paysage : jeton en pixels pour l\'agrandie', W(L.panel), 400);
   await dragx(L.grip, 300, -600, 10, 20);
-  await wait(300);
+  await wait(240);
   near('paysage : glisser : le plafond suit le jeton en pixels', W(L.panel), 400);
   L.root.style.removeProperty('--f-sheet-side-max');
   l.set('default', true);
-  await wait(300);
+  await wait(80);
   // une racine étroite : le plancher de 280 px l'emporte sur les 40 %
   stageL.style.width = '600px';
-  await wait(450);
+  await wait(240);
   near('paysage : racine de 600 px : la colonne vaut le plancher (280 px, 40 % = 240)', W(L.panel), 280);
   stageL.style.width = '800px';
-  await wait(450);
+  await wait(240);
+  // la poignée nue en colonne : la ligne reste en tête de la colonne, 28 px, sans titre, mêmes gestes
+  L.head.classList.add('f-sheet-head-bare');
+  await wait(100);
+  const hdL = R(L.head);
+  near('paysage nue : la ligne fait 28 px', H(L.head), 28);
+  near('paysage nue : elle reste en tête de la colonne', hdL.top, R(L.panel).top);
+  near('paysage nue : la colonne garde sa largeur normale', W(L.panel), RW * .4);
+  eq('paysage nue : pas de titre affiché', getComputedStyle(L.head.querySelector('.f-sheet-title')).display, 'none');
+  near('paysage nue : le ✕ fait 28 px de haut et est au bord droit de la colonne', H($('closeL')) + R($('closeL')).right - hdL.right, 28,
+    1);
+  check('paysage nue : zone de toucher (::after) du ✕ : 44 px de haut', parseFloat(getComputedStyle($('closeL'), '::after').height) >=
+    43.5);
+  await tapx(L.grip);
+  eq('paysage nue : toucher : normale → agrandie', l.pos, 'expanded');
+  await tapx(L.grip);
+  eq('paysage nue : toucher : agrandie → normale', l.pos, 'default');
+  await wait(240);
+  await dragx(L.grip, 300, -100, 10, 25);
+  await wait(240);
+  eq('paysage nue : glisser à gauche : agrandie', l.pos, 'expanded');
+  near('paysage nue : largeur de l\'agrandie', W(L.panel), RW * .6);
+  l.set('default', true);
+  await wait(80);
+  L.head.classList.remove('f-sheet-head-bare');
+  await wait(50);
+  near('paysage : la classe retirée, la ligne refait 44 px', H(L.head), 44);
+
   // la rotation : portrait → paysage → portrait, sans glissement, avec onChange
   l.set('default', true);
   orient(false);
@@ -669,7 +866,7 @@
     170));
   near('rotation : portrait : pleine largeur', W(L.panel), RW);
   l.set('collapsed', true);
-  await wait(300);
+  await wait(80);
   near('rotation : portrait : réduite (45 px)', H(L.panel), 45);
   lcalls.change.length = 0;
   orient(true);

@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the sheet's bare handle** (`frame/design/primitives.css`, `frame/lib/sheet.js`, `frame/lib/test/sheet.html`, `frame/INTEGRATION.md`
+  § 11, `frame/design/SPEC.md`, `frame/DECISIONS.md`; V3_SPECIFICATION § 7.1 rule 13 b) — a module that shows a drawing in the sheet
+  puts the class `f-sheet-head-bare` on the header (`head.classList.toggle('f-sheet-head-bare', isDrawing)`): the header becomes a
+  28 px line (`--f-sheet-head-bare`) with the grip bar, no title, and its buttons (segments, ◀ ▶, ✕) 28 px high at the right with a 44 px
+  touch zone; same drag, tap and keys, also at the top of the column in landscape. The collapsed sheet is 29 px high, and the drag stops
+  at the measured header instead of a constant. `createSheet`, `labels(pos, rank)` and the positions are unchanged; nothing uses it yet
+  (maps and atmosphere adopt it in their own lots). The bench grows from 129 to 177 checks.
 - **Atmosphere: no rings round the flight's grid** (`modules/atmosphere/lib/weather_map.js`, `test/weather_map.html`; atmosphere
   DECISIONS, INTEGRATION § 6) — at a flight level, while the world's pressure-level file was still being read, the surface world was
   blended into the grid: a dark frame of concentric isobars and isotherms with stacked labels. The world is now blended only at the same

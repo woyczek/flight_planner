@@ -9,6 +9,10 @@
 // Hauteurs : jetons --f-sheet-* lus sur la racine (feuille de style : primitives.css ; le module peut les poser sur sa
 // racine). Chaque valeur est « <n>% » (part de la hauteur de la racine) ou « <n>px » ; rien d'autre n'est lu.
 //
+// Poignée nue : quand le contenu est un dessin, le module pose la classe `f-sheet-head-bare` sur `head` (une ligne de 28 px, pas de
+// titre, les boutons à droite ; frame/INTEGRATION.md § 11). La primitive n'a rien à savoir de plus : la hauteur de la position
+// réduite et le plancher du glisser sont la hauteur mesurée de l'en-tête, pas une constante.
+//
 // Paysage sur un téléphone (<html class="f-land">, posé par le cadre : frame/INTEGRATION.md § 11) : la feuille est une colonne à
 // droite de la carte, à deux positions (normale, agrandie) ; la largeur remplace la hauteur (jetons --f-sheet-side, -side-min,
 // -side-max, parts de la largeur de la racine), le toucher de la poignée bascule entre les deux, un glisser horizontal aussi, et
@@ -80,6 +84,14 @@ export function createSheet({
     const n = parseFloat(v) || 0;
     return String(v).includes('%') ? n * h / 100 : n;
   };
+  /** La hauteur de la feuille réduite : la ligne d'en-tête telle qu'elle est (44 px, ou la poignée nue de 28 px : classe
+   *  `f-sheet-head-bare` posée par le module, frame/INTEGRATION.md § 11) et le filet du haut, mesurés ; le jeton --f-sheet-head
+   *  ne sert que si l'en-tête n'a pas de boîte (feuille cachée). */
+  const headBox = () => {
+    const hh = head.getBoundingClientRect().height;
+    return hh ? hh + (parseFloat(getComputedStyle(panel).borderTopWidth) || 0) : len(getComputedStyle(root).getPropertyValue(
+      '--f-sheet-head').trim(), 0);
+  };
   /** Hauteurs en pixels des trois positions, lues dans les jetons de la racine : l'en-tête seul, le milieu (part de la
    *  racine, avec son plancher), l'agrandie (idem). */
   function heights() {
@@ -92,7 +104,7 @@ export function createSheet({
       return [d, d, Math.max(len(t('side-max'), w), len(t('side-min'), w))];
     }
     const h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
-    return [len(t('head'), h), Math.max(len(t('default'), h), len(t('default-min'), h)), Math.max(len(t('expanded'), h), len(t(
+    return [headBox(), Math.max(len(t('default'), h), len(t('default-min'), h)), Math.max(len(t('expanded'), h), len(t(
       'expanded-min'), h))];
   }
   /** Le libellé de la poignée pour une position. */
