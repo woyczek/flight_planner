@@ -4,8 +4,9 @@ What lives here:
   * the case registry and the `@case(...)` decorator;
   * `Fail` / `Skip`, the two ways a case ends other than passing;
   * `Ctx`, what a case receives: the page, the design / width / language of the run and measuring helpers;
-  * the seeding functions (`seed_flight`, `seed_pending`, `seed_identity`), which write into the frame's IndexedDB
-    cache without any launcher;
+  * the seeding functions (`seed_flight`, `seed_pending`, `seed_identity`, `seed_flights`, `seed_plan`), which write into
+    the frame's IndexedDB cache without any launcher (the one place to fix when a cache schema changes);
+  * the journey steps (`Ctx.step`, `Ctx.skip_step`): a journey case (area J) names the step it is on, a failure says it;
   * the run loop of one (case, design, width, language, tone) combination and the worker that executes them.
 
 Standard library and Playwright only.  Nothing here knows about the report format (see run.py).
@@ -63,7 +64,7 @@ LANGS = ('fr', 'en', 'de', 'es')
 LANGS4 = ('en', 'de', 'es')
 PHONE = (390, 844)
 SCREEN = (1280, 800)
-CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo')
+CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'journeys')
 
 
 # ------------------------------------------------------------------------------------------------------ outcomes
@@ -236,6 +237,63 @@ def seed_pending(page, flights=1, base=None):
     return _seed(page, base, [['cache/flightlog/pending.json', pending_doc(flights), 'cache']])
 
 
+# ---- seeds of the journeys (PLAN.md section N) -------------------------------------------------------------------------
+def seed_plan(page, started=False, trigram='ABC', base=None):
+    """A complete flight plan: the planned flight (started or not) AND the published base that knows its aerodromes and
+    points (`aero_docs(airfields=True)`), so that fuel can read the route again by itself (typed route, "Démarrer le vol"
+    re-reading the weather and the route) instead of only finding it in the record."""
+    return _seed(page, base, flight_docs(started, trigram) + aero_docs(airfields=True))
+
+
+_REGS = ('F-ZBMA', 'F-ZBMB', 'F-ZBMC', 'F-ZBMD', 'F-ZBME')
+
+
+def flight_rows(n=3, reports=2):
+    """The `n` flights of the journeys' flight log, most recent first, one per day over the last days (UTC), each with its
+    callsign, registration, block minutes (60, 90, 120...) and `report`: the `reports` first have a report of their own, the
+    others only have a line of the website log (they lack a report)."""
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    rows = []
+    for i in range(n):
+        h, dur = 9 + i, 60 + 30 * i
+        end = (h * 60 + dur)
+        rows.append({'date': (today - datetime.timedelta(days=i + 1)).isoformat(), 'time': f'{h:02d}:00', 'durationMin': dur,
+                     'landing': f'{end // 60 % 24:02d}:{end % 60:02d}', 'callsign': f'TEST {i + 1}', 'registration': _REGS[i % len(_REGS)],
+                     'type': 'C30J', 'dep': 'LFRS', 'arr': 'LFML', 'mission': 'TRANSPORT', 'report': i < reports})
+    return rows
+
+
+def flights_docs(n=3, reports=2, trigram='ABC'):
+    """Documents of `n` flights (flight_rows): all of them in the website log (`pilot/<trigram>/site_log.json`, schema 1), and
+    the `reports` first also as reports of their own (`cr/reports/<year>/<id>.json`, `sog-report/1`): flightlog merges them
+    (the report wins), so `n - reports` flights lack a report and flightlog publishes them as pending itself."""
+    rows = flight_rows(n, reports)
+    now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    docs = [[f'pilot/{trigram}/site_log.json', {
+        'schema': 1, 'updated_at': now, 'by': 'website',
+        'entries': [{k: r[k] for k in ('date', 'time', 'durationMin', 'callsign', 'registration', 'type', 'dep', 'arr', 'mission')}
+                    | {'trigram': trigram, 'variant': ''} for r in rows]}, 'document']]
+    for i, r in enumerate(rows):
+        if not r['report']:
+            continue
+        cid = f'AIRLIFT-{r["date"][:4]}-{i + 1:03d}'
+        docs.append([f'cr/reports/{r["date"][:4]}/{cid}.json', {
+            'schema': 'sog-report/1', 'family': 'AIRLIFT', 'by': trigram, 'updated_at': now,
+            'metadata': {'date': r['date'], 'missionId': cid, 'reportedBy': trigram},
+            'aircraft': [{'callsign': r['callsign'], 'type': r['type'], 'registration': r['registration']}],
+            'navigation': {'dep': r['dep'], 'arr': r['arr']},
+            'timeline': {'takeoff': r['time'], 'landing': r['landing'], 'tz': 'Z'},
+            'statistics': {'blockMinutes': r['durationMin']}}, 'document'])
+    return docs
+
+
+def seed_flights(page, n=3, reports=2, trigram='ABC', base=None):
+    """The flight log of a pilot: `n` flights, `reports` of them with a report (see flights_docs); returns the rows
+    (flight_rows) so that a case can compute the totals it expects.  The identity is seeded with them."""
+    _seed(page, base, [['device/identity.json', {'trigram': trigram}, 'cache']] + flights_docs(n, reports, trigram))
+    return flight_rows(n, reports)
+
+
 # JavaScript (argument: a module name) returning the box of the map area of a fixed module's root: the first child that
 # grows (flex-grow > 0, at least 40 px high), else the first visible one (frame/INTEGRATION.md section 9.3, placement).
 MAP_JS = """(m) => { const root = document.querySelector('[data-module="' + m + '"]');
@@ -317,6 +375,8 @@ class Ctx(Asserts):
         self.page, self.context, self.base, self.case = page, context, base, case
         self.width, self.design, self.lang, self.tone = width, design, lang, tone
         self.phone = 0 < width <= 760
+        self.cur_step = ''                     # journey cases: the step being walked ("P3 step 4 (open #report)"), named in a failure
+        self.skipped_steps = []                # journey cases: steps that need a network or a backend the suite lacks, with the reason
         self.errors = []                       # JavaScript errors and failed code files since the page opened
         self.warnings = []                     # not failures: things worth reading in a report
         self.height = PHONE[1] if self.phone else SCREEN[1]
@@ -343,6 +403,19 @@ class Ctx(Asserts):
             return                               # data endpoints a launcher would answer: not a page error
         self.errors.append(f'missing file {r.status}: {u.path}')
 
+    # -- journeys (PLAN.md section N): a journey case walks numbered steps and says which one broke
+    def step(self, journey, n, name):
+        """Names the step about to be walked; a failure from here on is reported as "<journey> step <n> (<name>): ..."."""
+        self.cur_step = f'{journey} step {n} ({name})'
+
+    def skip_step(self, reason):
+        """The current step cannot be done in this suite (no network, no backend): it is recorded with its reason, shown in the
+        report under the case, and the case goes on; it is never a silent pass."""
+        self.skipped_steps.append(f'{self.cur_step}: {reason}')
+
+    def stepped(self, text):
+        return f'{self.cur_step}: {text}' if self.cur_step else str(text)
+
     def check_errors(self):
         if self.errors:
             raise Fail(self.errors[0] + (f' (+{len(self.errors) - 1} more)' if len(self.errors) > 1 else ''),
@@ -351,19 +424,23 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None):
+             tone=None, airfields=False, flights=0, reports=0):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
         and the frame then asks for one in a notification that covers the bottom of the screen).  `flight`: the planned flight; `started`: it
-        is under way; `pending`: that many reports still to write."""
+        is under way; `pending`: that many reports still to write; `airfields`: the published base also knows the aerodromes and
+        points of the seeded route (seed_plan); `flights` / `reports`: a flight log of that many flights, `reports` of them with
+        a report (seed_flights)."""
         docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']]
         if trigram:
             docs.append(['device/identity.json', {'trigram': trigram}, 'cache'])
         if flight:
             docs += flight_docs(started, trigram or 'ABC', steps)
-        if aero:
-            docs += aero_docs()
+        if aero or airfields:
+            docs += aero_docs(airfields=airfields)
+        if flights and trigram:
+            docs += flights_docs(flights, reports, trigram)
         if pending:
             docs.append(['cache/flightlog/pending.json', pending_doc(pending), 'cache'])
         _seed(self.page, self.base, docs)
@@ -443,6 +520,41 @@ class Ctx(Asserts):
         return self.page.evaluate("""([s, n]) => { const h = document.querySelector(s), p = document.createElement('div');
           p.style.cssText = 'position:absolute;visibility:hidden;width:var(' + n + ');height:0'; h.append(p);
           const w = p.getBoundingClientRect().width; p.remove(); return w }""", [sel, name])
+
+    def doc(self, path):
+        """The seeded or written document `path` of the frame's cache (IndexedDB `sogFrame`, what the application itself reads
+        and writes without a launcher), parsed; None when there is none."""
+        text = self.page.evaluate("""async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1);
+            r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+          const row = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').get(p); q.onsuccess = () => res(q.result); q.onerror = () => res(null) });
+          db.close(); return row && typeof row.text === 'string' ? row.text : null }""", path)
+        try:
+            return json.loads(text) if text else None
+        except ValueError:
+            return None
+
+    def doc_paths(self, prefix):
+        """Paths of the cached documents that start with `prefix`."""
+        return self.page.evaluate("""async (pre) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame', 1);
+            r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+          const rows = await new Promise(res => { const q = db.transaction('docs').objectStore('docs').getAllKeys(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
+          db.close(); return rows.filter(k => String(k).startsWith(pre)) }""", prefix)
+
+    def until_doc(self, path, test, what='', timeout=6000):
+        """Waits until `test(document)` holds for the cached document `path` (None while it does not exist); returns it.  Fail with
+        the last value read when it never does (a write the application owes: the 300 ms debounce of fuel, flightlog's publication)."""
+        end = time.time() + timeout / 1000
+        last = None
+        while True:
+            last = self.doc(path)
+            try:
+                if test(last):
+                    return last
+            except Exception:
+                pass
+            if time.time() > end:
+                raise Fail(f'{path} never became: {what or "the expected value"}; last read: {json.dumps(last, ensure_ascii=False)[:160]}', what or 'the expected document')
+            self.page.wait_for_timeout(150)
 
     def note_log(self):
         """Texts of every notification added since the page opened (a toast lives 6 s: the log keeps them)."""
@@ -567,15 +679,17 @@ def run_one(browser, base, case_id, width, design, lang, tone, timeout=15000):
     except Skip as s:
         res.update(status='SKIP', reason=s.reason)
     except Fail as f:
-        res.update(status='FAIL', measured=str(f.measured), expected=str(f.expected), rule=f.rule or case.rule)
+        res.update(status='FAIL', measured=c.stepped(f.measured), expected=str(f.expected), rule=f.rule or case.rule)
         if c.errors and not str(f.measured).startswith(c.errors[0][:20]):
             res['errors'] = c.errors[:3]
     except Exception as e:
         if c.errors:                              # a page error often explains a later timeout: say it first
-            res.update(status='FAIL', measured=c.errors[0], expected='no JavaScript error', rule=case.rule)
+            res.update(status='FAIL', measured=c.stepped(c.errors[0]), expected='no JavaScript error', rule=case.rule)
         else:
-            res.update(status='ERROR', measured=f'{type(e).__name__}: {str(e).splitlines()[0][:200]}',
+            res.update(status='ERROR', measured=c.stepped(f'{type(e).__name__}: {str(e).splitlines()[0][:200]}'),
                        expected='no exception in the test', rule='', trace=traceback.format_exc()[-800:])
+    if c.skipped_steps:
+        res['skipped_steps'] = list(c.skipped_steps)
     if res['status'] in ('FAIL', 'ERROR') or case.id == 'A1':
         name = f'{case.id}_{design}_{width}' + (f'_{lang}' if lang != 'fr' else '') + ('_night' if tone == 'night' else '') + '.png'
         shot = c.shot(name)
@@ -691,7 +805,7 @@ def norm(s):
 # A tiny published SIA base (zone `fr`, split format, frame/aerodb/SPEC.md section 2): three airspaces over the middle of the
 # seeded route (around NEPIX, 44.9N 2.4E), nothing else.  With it the map offers airspace lists and the "database not
 # published" notice goes away.
-def aero_docs(cycle='2026-10-15'):
+def aero_docs(cycle='2026-10-15', airfields=False):
     def ring(lat0, lat1, lon0, lon1):
         return [[lat0, lon0], [lat0, lon1], [lat1, lon1], [lat1, lon0], [lat0, lon0]]
     airspaces = [   # levels above FL195: the seeded flight is at FL270, so the "IFR route" display profile draws these
@@ -704,5 +818,12 @@ def aero_docs(cycle='2026-10-15'):
     def kind(k, data):
         return [f'sia/base/fr/{cycle}/{k}.json', {'schema': 2, 'zone': 'fr', 'cycle': cycle, 'kind': k, 'parserVersion': 1,
                                                   'data': data, 'updated_at': '2026-10-15T00:00:00Z'}, 'reference']
-    return [['sia/base/index.json', {'zones': {'fr': {'cycle': cycle, 'prefixes': ['LF'], 'kb': {}, 'cells': cells}}}, 'reference'],
+    docs = [['sia/base/index.json', {'zones': {'fr': {'cycle': cycle, 'prefixes': ['LF'], 'kb': {}, 'cells': cells}}}, 'reference'],
             kind('meta', {}), kind('airspaces', airspaces)]
+    if airfields:         # the four points of lib.FLIGHT and its alternate, so that a typed route resolves (journey P1)
+        pts = {p['id']: p for p in FLIGHT['route']['points']}
+        altn = {'id': 'LFMT', 'lat': 43.5762, 'lon': 3.963}
+        docs.append(kind('aerodromes', [{'icao': i, 'name': i + ' TEST', 'lat': p['lat'], 'lon': p['lon'], 'elev': 100}
+                                        for i, p in [('LFRS', pts['LFRS']), ('LFML', pts['LFML']), ('LFMT', altn)]]))
+        docs.append(kind('points', [{'id': i, 'lat': pts[i]['lat'], 'lon': pts[i]['lon'], 'type': 'RNAV'} for i in ('LUGEN', 'NEPIX')]))
+    return docs
