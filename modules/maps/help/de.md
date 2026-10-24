@@ -24,7 +24,9 @@ Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Kar
 Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem Abflug,
 geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden. Unter der Karte zeigt dieser
 Datenblock das Profil; die Liste der Lufträume an einem Punkt oder die Meldepunkte eines Flugplatzes öffnen sich an
-seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück.
+seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Die Schaltfläche „Profil · Wetter“ in der oberen Zeile des Blocks ersetzt es durch den
+Wetterschnitt entlang der Route (Wind, Temperatur, Wolken, Vereisung) auf der Flughöhe; der Schnitt folgt demselben Cursor, und ein Tippen darauf
+verschiebt ihn. Er zeigt nur die Vorhersage, die Atmosphäre schon geladen hat: ohne sie führt die Zeile „Keine Vorhersage geladen“ zu Wetter unter Vorbereiten.
 
 **Ein feststehender Bildschirm.** Die obere Leiste, die Karte und der Datenblock füllen den Bildschirm, und nichts
 scrollt außer dem Inhalt des Blocks. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken und den

@@ -140,7 +140,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - the vertical profile (default), with its strip;
   - **the airspaces list** ("n airspaces at this point"), opened by a tap on airspaces (below);
   - **the aerodrome's VFR reporting points** (§ 4 septies), opened by a tap on an aerodrome or a reporting point;
-  - (soon) the weather cross-section along the route, drawn by the atmosphere module (INTEGRATION § 6);
+  - **the weather cross-section** (kind `weather`), the profile's alternative, drawn by the atmosphere module's pure renderer
+    (`drawSection`, INTEGRATION § 8) against the flight's level, with the shared cursor;
   the contents replace the profile while open (one does not need the profile while reading them), and closing them
   brings the profile back, redrawn to its size. A new content replaces the open one; opening the airspaces list releases
   a pinned aerodrome (its highlight would stay without its list). The map keeps its size and position when a content
@@ -168,9 +169,25 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     or the content area (`.mp-dbody`, scrolls, `overscroll-behavior: contain`), then the notes (fallbacks: plain
     background, terrain unavailable — the normal offline state, kept out of the line under the toolbar so that the map
     does not lose a line for ever). The sheet is not there when there is neither profile nor content.
-  - **The header line** says what the block shows ("Vertical profile" / "n airspaces at this point" / "LFMN: VFR reporting
-    points", the aerodrome's name in the tooltip of the title); the ✕ shows only for a content.
-  - **Closing**: ✕, Escape, a tap on an empty spot of the map for the airspaces list; the aerodrome's content stays until
+  - **The "Profile · Weather" toggle** (24 Oct 2026; the toolbar stays at its five items). While the sheet shows the profile
+    or the cross-section, its header carries a small segmented control at the right (two 44 px buttons "Profil" / "Météo",
+    `aria-pressed`, four languages; hidden for a mission map, a route of fewer than two points, and while an airspaces list or
+    an aerodrome's content is open: those have their ✕). A choice is kept for the life of the page (not on the device), also
+    across an airspaces list or an aerodrome opened and closed in between, and not replayed on a sheet that comes back
+    collapsed. Choosing "Weather" on a collapsed sheet opens it to the default position. The cross-section has no ✕: the toggle
+    (or Escape) brings the profile back.
+    - **What it shows**: only the forecast that atmosphere has already read into the shared weather cache for this flight
+      (same route points, level, model and days); the map never asks Open-Meteo. The departure time is the flight's
+      `weather.when`, else the next full hour. The shared cursor (`cursorM`) is passed to the renderer: a tap on the route
+      on the map moves it on the cross-section, and a tap on the cross-section moves it on the profile and the map. It is
+      redrawn when the sheet is resized, the design or the night tone changes, the cursor moves, and the flight changes.
+    - **Without a forecast**: one 44 px line, "No forecast loaded: open Weather in Prepare" (four languages), a link to
+      `#atmosphere`; if atmosphere's files cannot be loaded (offline, never cached), one muted line says so. Atmosphere's
+      files are loaded at the first "Weather" (`meta.lazy`), not at mount.
+  - **The header line** says what the block shows ("Vertical profile" / "Weather cross-section" / "n airspaces at this point" /
+    "LFMN: VFR reporting points", the aerodrome's name in the tooltip of the title); the ✕ shows only for an airspaces list or an
+    aerodrome's content.
+  - **Closing**: ✕, Escape (on the weather cross-section: back to the profile), a tap on an empty spot of the map for the airspaces list; the aerodrome's content stays until
     ✕, Escape or another aerodrome (pinned). Nothing scrolls the page to reveal the block: it is always on screen.
   - The levels chart is drawn at scale 1 for the content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px
     (a phone), otherwise the width its columns ask for (400 px at most), never higher than the area; the list beside it

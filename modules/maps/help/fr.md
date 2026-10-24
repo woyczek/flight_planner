@@ -24,7 +24,9 @@ un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la r
 ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue, hauteur du relief,
 et l'espace aérien où vous êtes à ce moment-là. Sous la carte, ce bloc de données montre le profil ; la liste des
 espaces d'un point ou les points de report d'un terrain s'y ouvrent à sa place quand vous les demandez, et le profil
-revient à leur fermeture.
+revient à leur fermeture. Le bouton « Profil · Météo » de la ligne du haut du bloc le remplace par la coupe météo le long de la route
+(vent, température, nuages, givrage) à l'altitude du vol ; la coupe suit le même curseur, et un toucher dessus le déplace. Elle ne montre que
+la prévision qu'Atmosphère a déjà chargée : sans elle, la ligne « Pas de prévision chargée » mène à Météo, dans Préparer.
 
 **Un écran fixe.** La barre du haut, la carte et le bloc de données remplissent l'écran, et rien ne défile que le
 contenu du bloc. Le bloc est une feuille : tirez sa ligne du haut (la petite barre et le titre) vers le haut pour

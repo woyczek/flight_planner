@@ -239,7 +239,9 @@ cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en e
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
 espacio aéreo en el que está en ese momento. Bajo el mapa, este bloque de datos muestra el perfil; la lista de los
 espacios de un punto o los puntos de notificación de un aeródromo se abren en su lugar cuando los pide, y el perfil
-vuelve al cerrarlos.
+vuelve al cerrarlos. El botón «Perfil · Meteo» de la línea superior del bloque lo sustituye por el corte
+meteorológico a lo largo de la ruta (viento, temperatura, nubes, engelamiento) a la altitud del vuelo; el corte sigue el mismo cursor, y un toque sobre
+él lo mueve. Solo muestra la previsión que Atmósfera ya ha cargado: sin ella, la línea «Sin previsión cargada» lleva a Meteo, en Preparar.
 
 **Una pantalla fija.** La barra superior, el mapa y el bloque de datos llenan la pantalla, y nada se desplaza salvo el
 contenido del bloque. El bloque es una hoja: arrastre su línea superior (la barrita y el título) hacia arriba para

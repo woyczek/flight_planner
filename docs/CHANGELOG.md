@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maps: shared map base, weather cross-section in the sheet** (`modules/maps/lib/map_base.js`, `modules/maps/module.js`,
+  `modules/maps/{SPEC,INTEGRATION,DECISIONS}.md`, `modules/maps/help/*.md`) — the MapLibre loading, base styles, tiled base,
+  own-resize marker and plain background of the map move to `lib/map_base.js`, a state-free ES module that the atmosphere
+  module will import instead of its copies (INTEGRATION § 7; the Map screen is pixel-identical, with and without tiles). The
+  data sheet's three functions are one isolated block (`createSheet`) ready to become a frame primitive. The sheet's header
+  gets a small "Profile · Weather" toggle (44 px, four languages, remembered while the page lives): "Weather" draws
+  atmosphere's pure cross-section along the route against the flight's level, following the shared cursor (a tap on it moves the
+  cursor); it only shows the forecast atmosphere has already read into `cache/weather/` (maps never asks Open-Meteo), otherwise
+  one line leads to Weather in Prepare. The airspaces and aerodrome contents are unchanged.
 - **Frame: the "i" status button of the header, a one-row header after any screen, heights for modules in the dual view,
   a weaker `display` rule** (`frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/design/primitives.css`; SPEC
   § 3.1, INTEGRATION § 9.2 and new § 10, DECISIONS) — the status line of the Prepare tab is replaced by an **"i" button**
