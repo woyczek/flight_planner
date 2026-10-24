@@ -12,6 +12,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the phone's bottom tab bar, tabs as groups of modules, flight status line, fixed view** (`frame/app.js`,
+  `frame/frame.css`, `frame/index.html`, `frame/lib/icons.js`, `frame/design/*`; frame SPEC § 3.1 and INTEGRATION § 9,
+  design SPEC, DECISIONS, help intro ×4) — on a phone (760 px or less) the menu button and the drawer are gone: a bar
+  at the bottom, **Prepare · Map · Report · Flights · Settings** (Préparer · Carte · CR · Vols · Réglages, four
+  languages), an icon above a one-word label, 56 px plus the device's safe area, 44 px targets; the selected tab changes
+  form (filled icon on a soft pill, label in the accent). A tab is a group of modules (`APP.tabs`; Prepare = fuel +
+  atmosphere, a module not registered yet is skipped): it stays selected while any module of its group is shown, a
+  touch returns to the last one shown, and a row of sub-tabs above the module switches inside a group of two or more.
+  Website and the example module belong to no tab (still reachable by address; the rail of the screens lists every
+  module as before). A status line tops the Prepare tab while a flight is started ("Flight in progress › Map", one
+  touch to the map, "Hide" for the session). A module may declare `meta.fixed: true` for a view that takes the whole
+  height between the header and the bar with no page scroll (the map's lot will use it). `ctx.tab` gives a module its
+  group. The four mock-up designs (metro, swiss, cupertino, material) each style the bar in their own sheet; sticky
+  result bars and notifications sit above it.
 - **Map: the airspaces and the reporting points move to the data block, short codes, thresholds corrected by the frame's
   size** (`modules/maps/module.js`, `modules/maps/render.js`; SPEC, DECISIONS, help ×4) — the map view is fixed, the map
   then the data block: the airspaces list ("n airspaces at this point") and an aerodrome's VFR reporting points (points,

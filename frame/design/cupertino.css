@@ -114,7 +114,8 @@
   }
 
   /* ---- verbes : sur écran, un rail en liste simple (le verbe courant plein de bleu, l'icône teintée de la couleur du
-     module) ; sur téléphone, le tiroir est une liste groupée, chaque icône dans une pastille de la couleur du module */
+     module) ; sur téléphone, la barre d'onglets d'iOS : fond translucide flouté, filet fin en haut, icône pleine et libellé
+     bleus pour l'onglet choisi, gris pour les autres, pas de pastille */
   [data-design="cupertino"] .f-nav {
     background: var(--sog-bg);
     border-right-color: transparent
@@ -132,44 +133,21 @@
     color: inherit
   }
   @media (max-width: 760px) {
-    [data-design="cupertino"] .f-nav {
-      padding: var(--sog-gap)
+    [data-design="cupertino"] .f-tabbar {
+      background: color-mix(in srgb, var(--sog-surface) 94%, transparent);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-top-color: var(--sog-border)
     }
-    [data-design="cupertino"] .f-nav ul {
-      gap: 0;
-      background: var(--sog-surface);
-      border-radius: var(--sog-radius);
-      overflow: hidden
+    [data-design="cupertino"] .f-tabbar a {
+      font-size: 10px
     }
-    [data-design="cupertino"] .f-nav a {
-      min-height: 52px;
-      border-radius: 0
+    [data-design="cupertino"] .f-tabbar a[aria-current="page"] {
+      color: var(--sog-accent);
+      font-weight: 500
     }
-    [data-design="cupertino"] .f-nav a[aria-current="page"] {
-      background: transparent;
-      color: var(--sog-link);
-      font-weight: 600
-    }
-    [data-design="cupertino"] .f-nav li+li a {
-      /* filet inséré : il commence après l'icône */
-      background-image: linear-gradient(var(--sog-border), var(--sog-border));
-      background-size: calc(100% - 54px) 1px;
-      background-position: right top;
-      background-repeat: no-repeat
-    }
-    [data-design="cupertino"] .f-nav a::after {
-      display: block;
-      margin-left: auto
-    }
-    [data-design="cupertino"] .f-nav a .f-icon,
-    [data-design="cupertino"] .f-nav a[aria-current="page"] .f-icon {
-      box-sizing: border-box;
-      width: 30px;
-      height: 30px;
-      padding: 5px;
-      border-radius: 7px;
-      background: var(--sog-module);
-      color: var(--sog-module-ink)
+    [data-design="cupertino"] .f-tabbar a[aria-current="page"] .f-tab-ico {
+      background: transparent
     }
   }
 }

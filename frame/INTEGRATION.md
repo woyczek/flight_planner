@@ -27,10 +27,12 @@ export function unmount() { /* stop watchers, timers */ }
 
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
   `ask`, `askText`, `net`, `identity`.
-- Its verb in the application's menu is set in `frame/app.js` (`APP.modules`): one short verb, seven modules at most.
+- Its verb in the application's rail (and its sub-tab, § 9) is set in `frame/app.js` (`APP.modules`): one short verb, seven
+  modules at most. Its place in the phone's bottom bar is set in `APP.tabs` (§ 9); a module never writes either.
 - `meta.help` (true by default): the frame draws the folded "How to use" panel at the top of the module as soon as
   the module's chapter (`modules/<id>/help/<lang>.md`) is in the application's manual; `false` hides it. Writing the
   chapter: `frame/help/INTEGRATION.md`.
+- `meta.fixed` (`true`, absent by default): the fixed, full-height view (§ 9).
 - `meta.level` (1 to 3, 1 by default): the menu lists the module only when the device's usage level, chosen in
   Settings, is at least this one (1 discovery, 2 everyday, 3 full); a hidden module stays reachable by `#id`.
 - Texts are rows `[fr, en, de, es]` passed to `ctx.t`, French first, every text translated (tooltips, statuses and
@@ -148,3 +150,65 @@ Add the module to `APP.modules` in `frame/app.js` and open `frame/index.html` (s
 device screen (⚙), everything works on the device and nothing is sent. To try synchronisation, run
 `python frame/store/test/fake_github.py` (standard library) and point the github transport at
 `http://127.0.0.1:8790/api`, as `frame/store/test/index.html` does.
+
+## 9. Tabs (the phone's bottom bar) and the fixed view
+
+### 9.1 `APP.tabs`
+
+On a phone (760 px or narrower) the frame draws a bottom tab bar instead of a menu; on a screen the left rail lists every
+module as before. The bar is declared by the frame, in `frame/app.js`, next to `APP.modules`. **A module never writes
+it**; it reads at most `ctx.tab`.
+
+```js
+APP.tabs = [
+  { id: 'prepare',   label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'], icon: 'fuel',
+    modules: ['fuel', 'atmosphere'], status: true },
+  { id: 'maps',      label: ['Carte', 'Map', 'Karte', 'Mapa'],                  icon: 'map',  modules: ['maps'] },
+  { id: 'report',    label: ['CR', 'Report', 'Bericht', 'Informe'],             icon: 'edit', modules: ['report'] },
+  { id: 'flightlog', label: ['Vols', 'Flights', 'Flüge', 'Vuelos'],             icon: 'list', modules: ['flightlog'] },
+  { id: 'settings',  label: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'], icon: 'settings', screen: 'settings' }
+];
+```
+
+- **`id`**: the tab. **`label`**: one word, four languages. **`icon`**: a name of `frame/lib/icons.js` that has a filled
+  variant (`svg(name, { filled: true })`; today fuel, map, edit, list, settings).
+- **`modules`** (a group) or **`screen`** (a frame screen, `settings`): a tab is one or the other.
+- **A tab is a group of modules.** It stays selected while any module of its group is shown. Touched, it opens the last
+  module of the group shown in this session, otherwise the first one visible at the device's level.
+- **A module id that is not registered in `APP.modules` is skipped without a word** (`atmosphere` until its module is
+  added; a tab whose modules are all absent or hidden by the level disappears from the bar). The code works with the
+  module registered or not.
+- **A module in no tab** (`website`, `hello`) selects no tab and stays reachable by its address (`#website`) and in the
+  rail on a screen.
+- **Sub-tabs**: when the group has two or more modules registered at the device's level, the frame draws above the
+  module a row of sub-tabs (the primitives' `.f-tabs`), one per module, with the verb of `APP.modules[].label`, the
+  current one marked, 44 px high; a touch switches the module (`#fuel`, `#atmosphere`). The module does nothing for
+  it and must not draw a row of its own to reach its siblings; its internal tabs (Fuel's Plan / Sheets) stay its own.
+- **`status: true`**: the tab whose modules get the flight status line above them (SPEC § 3.1).
+- **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel and atmosphere), `null` if none. For a
+  module that wants to know its group; it never opens or changes a tab.
+
+### 9.2 `meta.fixed`: the fixed, full-height view
+
+A module that is a map plus a sheet (maps) declares `fixed: true` in `meta`. The frame then puts `class="f-fixed"` on
+`<html>` while the module is shown (and takes it off for another module or a frame screen opened over it):
+
+- the page does not scroll: `html, body { height: 100%; overflow: hidden }`, the body is `100dvh` high, a grid
+  `header / view / bar`; the header stays at the top, the view takes all the rest, between the header and the bar (phone)
+  or down to the bottom of the window (screen), **with no padding** (the module draws its own margins);
+- the module's root (`section.f-module`, the `el` of `mount`) is `height: 100%; min-height: 0; display: flex;
+  flex-direction: column`, so a map can take `flex: 1 1 0; min-height: 0` and a sheet a fixed height with
+  `overflow: auto` under it;
+- no folded help panel and no welcome card above it (the ? button opens the module's chapter);
+- nothing else changes: `fixed` absent is today's page.
+
+What the module writes (its own sheet, scoped to `[data-module="<id>"]`):
+
+```css
+[data-module="demo"] .map   { flex: 1 1 0; min-height: 0; }          /* the map takes what the sheet leaves */
+[data-module="demo"] .sheet { flex: none; height: 34%; overflow: auto; } /* the data block scrolls inside */
+```
+
+`modules/hello` is not changed (it stays the plain example); to try `fixed`, copy it to a scratch module whose `meta` has
+`fixed: true`, or intercept `modules/hello/module.js` as the frame agent's test did (`frame/DECISIONS.md`, 24 Oct 2026).
+

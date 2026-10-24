@@ -327,3 +327,23 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     `standard`, `metro`, `swiss`, `cupertino` on `#fuel` and the drawer, 390 px, day and night: identical; three captures
     differ by a 2 to 3 px patch at the toast edge, and the same happens between two runs of the unchanged previous commit
     (async loading), so each was repeated three times on both sides: the stable renderings are identical.
+
+- **24 Oct 2026 — Bottom tab bar per design** (frame lot "barre du bas", asked by the relay cloud; user's option A): the phone's
+  drawer is gone, so the four mock-ups lose their phone drawer rules and each gets a tab-bar counterpart in its own sheet, tokens
+  first. The frame's default (`frame.css`) is the `standard` look, also used by `cabinet` and `field`: `--sog-surface`, top hairline,
+  line icons in `--sog-muted`, the selected tab a filled icon on a 56 × 30 pill (`--f-tab-pill`) and its label in `--sog-link`.
+  - `metro`: flat blocks (2 px apart) on the page colour, each with a 4 px rule in the colour of its module (the tab's
+    `data-landmark` is the first module of its group), the selected block filled with it and its ink; no pill. It keeps the former
+    drawer's idea (blocks of the module colours) in one row.
+  - `swiss`: page colour, 1 px rule of the text colour on top, labels at 10 px (the capitals and spacing of the first try made
+    "Einstellungen" 90 px wide in a 71 px tab: dropped), selected = bold + filled icon + a 2 px signal-red rule under the label.
+  - `cupertino`: the iOS bar: surface at 94 % over a blur (88 % let text show through), hairline, 10 px labels, filled icon and
+    label in the system blue, no pill. The module-coloured squares of the old drawer have no counterpart (iOS tab bars have none);
+    the rail on a screen keeps its coloured icons.
+  - `material`: navigation bar of 64 px (`:root[data-design="material"] { --f-tab-h: 64px }`, so `--f-tab-space` follows), 3 dp
+    shadow, a 64 × 32 pill in the module colour at 24 % (the rail's `--mat-indicator` formula), filled icon, ink labels.
+  - Icons: `frame/lib/icons.js` gets the filled variants of fuel, map, edit, list, settings (`svg(name, { filled: true })`).
+  - Rules not needed: none of the mock-ups' phone drawer rules is kept (they had no user any more). `demo_metro.html` shows the bar
+    in its phone scenes (the burger button is gone from its header).
+  - Open point: `.f-tabbar a` takes the page's `--sog-link` for the selected label; in `metro` the label is the module's ink on
+    its block (contrast = the module palette's 5.4 : 1 to 7.4 : 1, white on the colour).

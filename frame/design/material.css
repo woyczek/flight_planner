@@ -91,10 +91,10 @@
     font-weight: 600
   }
 
-  /* ---- verbes : tiroir de navigation sur téléphone (lignes de 56 px, icône et libellé, indicateur actif en pastille pleine
-     largeur) ; rail sur écran (colonne de 88 px, icône au-dessus du libellé, indicateur actif en pastille de 56 × 32 derrière
-     l'icône). L'indicateur actif est teinté de la couleur du module (seul usage de cette couleur ; sa variante « texte », plus claire la
-     nuit, pour qu'il se voie sur le fond sombre) ; le texte garde l'encre. */
+  /* ---- verbes : barre de navigation sur téléphone (64 px, icône au-dessus du libellé, indicateur actif en pastille de
+     64 × 32 derrière l'icône) ; rail sur écran (colonne de 88 px, même indicateur de 56 × 32). L'indicateur actif est teinté
+     de la couleur du module (seul usage de cette couleur ; sa variante « texte », plus claire la nuit, pour qu'il se voie sur
+     le fond sombre) ; le texte garde l'encre. */
   [data-design="material"] .f-nav a {
     --mat-indicator: color-mix(in srgb, var(--sog-module-text) 24%, var(--sog-surface));
     font-weight: 500
@@ -112,17 +112,32 @@
     color: var(--sog-fg)
   }
   @media (max-width: 760px) {
-    [data-design="material"] .f-nav {
-      padding: 12px
+    :root[data-design="material"] {
+      --f-tab-h: 64px
     }
-    [data-design="material"] .f-nav ul {
-      gap: 0
+    [data-design="material"] .f-tabbar {
+      border-top-color: transparent;
+      box-shadow: var(--sog-shadow-up)
     }
-    [data-design="material"] .f-nav a {
-      min-height: 56px;
-      padding: 0 16px;
-      gap: 12px;
-      border-radius: 28px
+    [data-design="material"] .f-tabbar a {
+      --f-tab-pill: color-mix(in srgb, var(--sog-module-text) 24%, var(--sog-surface));
+      color: var(--sog-fg);
+      font-weight: 500
+    }
+    [data-design="material"] .f-tabbar a[aria-current="page"] {
+      color: var(--sog-fg);
+      font-weight: 600
+    }
+    [data-design="material"] .f-tab-ico {
+      width: 64px;
+      height: 32px;
+      border-radius: 16px
+    }
+    [data-design="material"] .f-tabbar .f-icon {
+      color: var(--sog-muted)
+    }
+    [data-design="material"] .f-tabbar a[aria-current="page"] .f-icon {
+      color: var(--sog-fg)
     }
   }
   @media (min-width: 761px) {

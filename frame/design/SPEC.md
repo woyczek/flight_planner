@@ -15,7 +15,7 @@ Module side: [INTEGRATION.md](INTEGRATION.md).
 | `frame/design/cupertino.css` | the rules of the `cupertino` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="cupertino"]` |
 | `frame/design/material.css` | the rules of the `material` design that tokens cannot carry (mock-up, pending decision), all behind `[data-design="material"]` |
 | `frame/design/demo_metro.html` | the mock-up page of the four designs (`?design=metro` by default, `swiss`, `cupertino`, `material`): scenes (phone and screen, day and night) of the real frame markup and primitives; the file kept its name, the link is known |
-| `frame/frame.css` | the application's chrome (header, menu, view, notes, dialogs); imports the two files above, so a page that loads `frame.css` has everything |
+| `frame/frame.css` | the application's chrome (header, rail, bottom tab bar, view, notes, dialogs); imports the two files above, so a page that loads `frame.css` has everything |
 | `frame/lib/icons.js` | the line icon set (ES module, owner: design) |
 | `labs/design_primitives.html` | every primitive in every design, day and night, side by side; the icons; the chart colours |
 
@@ -41,7 +41,7 @@ All are prefixed `--sog-`. The breakpoints are not tokens: CSS media queries can
 **Widths of a pane** (columns, grids, tables) are decided on the pane, not on the window: `.f-view` and every
 `.f-module` are containers (`container-type: inline-size`), and the primitives use container queries. `f-cols` turns to
 columns from a **900 px** wide pane. In the dual view, a module in half a screen behaves like on a narrow tablet. Only
-what depends on the device stays in `@media`: the menu drawer, the header, hiding the pane button.
+what depends on the device stays in `@media`: the bottom tab bar (the rail on a screen), the header, hiding the pane button.
 
 ## 3. Designs, day and night
 
@@ -53,11 +53,11 @@ what depends on the device stays in `@media`: the menu drawer, the header, hidin
   headings. Day: white page, grey flat cards (`#f2f2f2`), fields with a 2 px bottom rule. Night: black page. See
   [DECISIONS.md](DECISIONS.md) for the frame amendments it shows and what stays open.
   - **One landmark colour per module**: the frame sets `data-landmark` (the module's id; a frame screen takes
-    `settings`) on `<html>`, on each module's pane and on its menu link. A design reads it through `--sog-module`
+    `settings`) on `<html>`, on each module's pane, on its rail link and on its tab of the bottom bar (the tab takes the colour of the first module of its group, `settings` for Réglages). A design reads it through `--sog-module`
     (`--sog-module-ink`, `--sog-module-text`). The token exists in every design (it equals the accent); `metro` shows
     it (header band, verb blocks, primary buttons, titles, tiles), `swiss` only as the rule of the current verb, `cupertino`
-    only as the icon of each verb in the drawer (its own palette, white glyph on the colour 4.85 : 1 to 5.99 : 1), `material`
-    only as the tint of the active indicator in the drawer and the rail (the `metro` palette; its "text" variant, lighter at night). `data-module`, which modules use in their own
+    only as the icon of each verb in the rail (its own palette, white glyph on the colour 4.85 : 1 to 5.99 : 1), `material`
+    only as the tint of the active indicator in the bottom bar and the rail (the `metro` palette; its "text" variant, lighter at night). `data-module`, which modules use in their own
     selectors, is not used for this.
   - Palette (white text on the colour, day: 5.4 : 1 to 7.4 : 1): Fuel `#0067b8`, Map `#007589`, Report `#b34700`,
     My flights `#107c10`, Website `#6b3fa0`, Settings `#5d5a58`; as text at night: `#4cb0ff`, `#3cc8de`, `#ff9a4d`,
@@ -69,15 +69,14 @@ what depends on the device stays in `@media`: the menu drawer, the header, hidin
   rules instead of cards, Helvetica / Arial (system fonts only), page title large and bold (`title-size` up to 2.75rem,
   weight 700, tight tracking), section titles (`h2`, `h3`) as small spaced capitals (the capitals are a rule of
   `swiss.css`: `title-case` is one token for the three heading levels), figures tabular. The landmark colour exists
-  (the `metro` palette, as `--sog-mod-*`) but is shown only as the rule of the current verb in the menu. Night: near-black
+  (the `metro` palette, as `--sog-mod-*`) but is shown only as the rule of the current verb in the rail. Night: near-black
   (`#0a0a0a`), light grey text, the same red lightened. Frame rules and open points: [DECISIONS.md](DECISIONS.md).
 - **`cupertino`** (**mock-up, pending decision**, 23 Oct 2026): the iOS Settings look. Very light grey page (`#f2f2f7`) with
   white grouped cards of radius 10, no shadow, system blue (`#007aff` day, `#0a84ff` night, links `#0066cc` by day) for
   actions and links, hierarchy by spacing, rules and the muted grey, 44 px controls, system fonts (SF where it exists),
   page title large, 16 px text. Night: black page, `#1c1c1e` cards. Buttons are blue text or a filled blue
   rectangle (radius 10, never a full pill); tabs and steps are a segmented control; row lists are one rounded group with
-  hairlines and a chevron; the drawer is a grouped list whose icons sit in a square of the module's colour (landmark
-  colour: the icon only), the rail on a screen a plain list. Frame rules and open points: [DECISIONS.md](DECISIONS.md).
+  hairlines and a chevron; the rail on a screen is a plain list whose icons take the module's colour, the bottom bar the iOS tab bar (§ 3.1). Frame rules and open points: [DECISIONS.md](DECISIONS.md).
 - **`material`** (**mock-up, pending decision**, 23 Oct 2026): Material Design 3. Tonal surfaces: page `surface` (`#fbf8ff`),
   cards `surface-container` (`#f3f0fa`), fields `surface-container-high` (`#e9e6f1`); one muted blue-violet primary (`#5359c6`:
   as text 5.53 : 1 on the page, 5.16 on a card, 4.72 on a field; white on it 5.81; at night `#b9bdff` with ink `#1c2170`, 7.39 to
@@ -86,10 +85,25 @@ what depends on the device stays in `@media`: the menu drawer, the header, hidin
   case at weight 500, page title 1.75rem. **Two elevation levels only**: 1 dp on cards (`--sog-shadow-card`), 3 dp on the sticky
   bar, notes and dialogs (`--sog-shadow`, `--sog-shadow-up`). Outlined secondary buttons, the primary filled; fields with a
   1 px outline that becomes 2 px primary on focus; tabs with a 3 px primary indicator; steps as tonal chips; the header is a top
-  app bar on the page surface; the drawer is a Material navigation drawer (56 px rows, icon and label, rounded active
-  indicator) and the rail on a screen a navigation rail (88 px column, icon above the label, a 56 × 32 indicator); the
+  app bar on the page surface; the bottom bar is a Material navigation bar (64 px, a 64 × 32 pill behind the active icon) and the rail on a screen a navigation rail (88 px column, icon above the label, a 56 × 32 indicator); the
   landmark colour tints the active indicator only. Night: `#1c1b1f` page, `#26242b` cards, `#312f38` fields, primary lightened.
   Frame rules and open points: [DECISIONS.md](DECISIONS.md).
+- **Bottom tab bar** (phone, `frame/frame.css`; the frame draws the markup, `APP.tabs`, frame SPEC § 3.1). Markup:
+  `nav.f-tabbar > ul > li > a[data-tab][data-landmark]` holding `span.f-tab-ico` (the line icon and the filled one, the
+  stylesheet shows one) and `span.f-tab-lbl`; the selected tab has `aria-current="page"`. Default (`standard`, `cabinet`,
+  `field`): `--sog-surface`, a top hairline, 56 px (`--f-tab-h`) plus the safe area, line icons in `--sog-muted`; the
+  selected tab shows the **filled icon** on a 56 × 30 pill (`--f-tab-pill`, 14 % of the accent into the surface), its label in
+  `--sog-link` at weight 600. Each mock-up gives its own, in its own sheet (tokens first, minimal rules):
+  - `metro`: flat blocks side by side (2 px apart) on the page colour, each with a 4 px rule in its module's colour; the
+    selected block is filled with that colour, ink `--sog-module-ink`, no pill;
+  - `swiss`: the page colour, a 1 px rule of the text colour on top, labels at 10 px; the selected tab bold, filled icon, no pill,
+    and a 2 px rule in the signal red under its label;
+  - `cupertino`: the iOS tab bar: surface at 94 % over a 20 px blur, hairline on top, 10 px labels, filled icon and label in the
+    system blue for the selected tab, no pill;
+  - `material`: a navigation bar of 64 px (`--f-tab-h`), 3 dp shadow, a 64 × 32 pill tinted with the module's colour (24 %) behind the
+    filled icon, labels in the ink (weight 600 when selected).
+  The same bar's rule `.f-bar { bottom: var(--f-tab-space, 0px) }` keeps the sticky result bar above it. The bar and the status
+  line are hidden in print.
 - **Applied by attributes**: `html[data-design]`, and `html[data-tone]` = `day` | `night` (absent: automatic).
 - **Night**: when the system asks for it (`prefers-color-scheme: dark`), unless `data-tone="day"`; always with
   `data-tone="night"`. Night sets are for the screen only (`@media screen`): print keeps the day's ink.
@@ -131,9 +145,9 @@ what depends on the device stays in `@media`: the menu drawer, the header, hidin
 
 ## 5. Icons
 
-- `frame/lib/icons.js` holds the 53 line icons of V2 plus `menu` and `wand-sparkles` (maps: the Auto map mode): a 24 px grid, stroke 2, `currentColor`.
+- `frame/lib/icons.js` holds the 53 line icons of V2 plus `menu` and `wand-sparkles` (maps: the Auto map mode): a 24 px grid, stroke 2, `currentColor`. **Filled variants** (24 Oct 2026) of the five tab icons (`fuel`, `map`, `edit`, `list`, `settings`): the same drawings and grid, shapes filled with `currentColor` (cut-outs and gaps in the shape, no second colour); `svg(name, { filled: true })`, marked `data-filled`; `hasFilled(name)`.
 - API: `svg(name, { size, title })`, `has`, `names`. An icon is decorative unless it has a `title`.
-- The frame draws the menu verbs (`APP.modules[].icon` is an icon name) and the header's buttons with them.
+- The frame draws the rail verbs (`APP.modules[].icon` is an icon name), the tabs (`APP.tabs[].icon`, line and filled) and the header's buttons with them.
 - The textured V2 sets (brass…) are not carried over.
 
 ## 6. Density, print

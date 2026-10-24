@@ -783,3 +783,64 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - **Audit kit** (`audit_kit/`, outside the repository): the per-phase counter missed reads that ended during a
     pause, because `cdp.py` stores events only during a call. The map's reads (11 calls, 7.9 MB, including
     `airspaces.json`) were then counted nowhere. The counter now drains the events until the network rests.
+
+- **24 Oct 2026 — Lot: the phone's bottom tab bar, tabs as groups of modules, status line, fixed view** (asked by the relay
+  cloud, holding the ergonomics role; the user's decision "option A" of 24 Oct, `docs/technique/V3_SPECIFICATION.md` § 7.1;
+  branch `v3-cadre-barre` from `v3` 708264389):
+  - **What the relay asked, what I chose.**
+    - *The bar*: Préparer · Carte · CR · Vols · Réglages, icon above a one-word label, 44 px targets, ≥ 56 px plus the safe
+      area, `--sog-surface` and a top hairline, selected = filled icon on a soft pill: done as asked. No hamburger on a
+      phone: the button and the drawer are removed (`#fBurger`, `body.f-nav-open`, the phone rules of the four design sheets).
+    - *Sticky, not `position: fixed`*: the bar is the last row of the body grid with `position: sticky; bottom: 0`. Same look
+      (it sits at the window's bottom, over nothing), and nothing needs `padding-bottom` on the page nor on the fixed view:
+      the view is simply above it. Only what is itself stuck at the bottom clears it through `--f-tab-space`: `.f-bar` (fuel's
+      result bar: `bottom: var(--f-tab-space, 0px)` in `primitives.css`) and `.f-notes`.
+    - *Tab = group*: `APP.tabs` (frame/INTEGRATION.md § 9). The module list in a tab is by id; an id that is not in
+      `APP.modules` is skipped, so `atmosphere` works registered or not (the relay's later `APP.modules` entry needs no
+      change here). The group's tab is selected from the module **shown** (`current`), not from the address: `#atmosphere`
+      unregistered falls back to the first module as before (Fuel), Préparer selected, no error.
+    - *Réglages*: the tab is a `screen` tab; it opens `#settings`, which the frame already shows over the module (same screen
+      as ⚙, same toggle behaviour). While Settings is open the tab is the selected one; Help and Conflicts leave the module's
+      tab selected.
+    - *Rail on a screen*: unchanged (every module that has a screen, level filter, current marked). I did not mark the tab's
+      group in it (optional in the brief): the sub-tabs say it better where it matters.
+    - *Added by the relay mid-lot* — **group sub-tabs**: when a tab has two or more registered modules at the device's level,
+      the frame draws a `.f-tabs` row (one button per module, the module's verb, current marked, 44 px) just above the module,
+      phone and screen. With `atmosphere` at level 3 and the device at 2 the row is not drawn (one module only); tested with a
+      stub `atmosphere` registered at runtime. Fuel's own "Préparer / Fiches" tabs stay inside Fuel (the word "Préparer"
+      now appears twice on Fuel's page, in the bar and in Fuel's own tab: for the ergonomics session to look at).
+    - *Status line*: only the first case ("Vol en cours › Carte", `started` not null, no age limit, unlike the live position's
+      24 h: a forgotten started flight stays visible, which is what a status line is for). **The second case ("CR à écrire pour
+      le vol du <date>") is skipped**: it needs My flights' logic (reports saved, site log, network sessions); the frame must not
+      duplicate it. If wanted, flightlog should publish a small record (for instance `cache/flightlog/pending.json`) that the
+      frame can read.
+      Dismissal: kept in `sessionStorage` per departure date (`sogFrame:statusOff`), a page variable when the storage is
+      unavailable. The data comes from `liveCheck`, which already reads the current flight on every change: no new read.
+    - *Fixed view*: `meta.fixed` read with the level at start (`moduleFixed`), applied before the module loads (no jump) and
+      again from its `meta`. `<html class="f-fixed">`, `100dvh` body, view in the grid row between header and bar (no
+      `calc` of heights), no padding. Off while a frame screen is over the module (it scrolls as a page). Judgement call:
+      a fixed module gets **no folded help panel nor welcome card** (they would sit above it in a view that cannot scroll).
+      `modules/hello` is not touched (the brief forbids touching `modules/*`): the contract is documented in
+      INTEGRATION § 9.2 and was tested by intercepting `modules/hello/module.js` with a fixed version (a flex column: a
+      striped "map" and a 34 % scrolling sheet).
+    - *Designs*: each of the four mock-ups got its counterpart in its own sheet (see `frame/design/DECISIONS.md`).
+  - **Measured** (Chromium, 390 × 844, 375, 360; `env(safe-area-inset-bottom)` is 0 there, so the safe-area padding could not
+    be seen on a device: it is a rule, not a measurement):
+    - bar: **57 px** = 56 px of tabs + 1 px hairline (standard, cabinet, field, swiss, cupertino), **65 px** in `material`
+      (`--f-tab-h: 64px`), 60 px in `metro` (blocks: 2 px above, a 4 px rule inside); every tab 78 × 56 px at 390, 75 at 375,
+      72 at 360; the bar's bottom is the window's bottom;
+    - safe-area rule: `.f-tabbar { padding-bottom: env(safe-area-inset-bottom, 0px) }` (the bar's own colour continues
+      under the home indicator) and `--f-tab-space: calc(var(--f-tab-h) + 1px + env(safe-area-inset-bottom, 0px))`;
+    - labels: 11 px, 10 px at 400 px and less; the longest ("Einstellungen", "Vorbereiten") fits at 360 px in the five designs
+      (checked in four languages); status line 46 px (44 + border); sub-tabs 44 px;
+    - fixed view at 390 × 844: header 0–57, view 57–787 (730 px), bar 787–844; `scrollHeight` = 844, the wheel does not
+      move the page; at 1280 × 800: view 57–800.
+  - **Checked**: five designs (plus cabinet and field for errors), day and night, 390 × 844 and 1280 × 800: five tabs on the
+    phone, none on a screen (rail), one selected (filled icon, pill), targets ≥ 44 px, `#atmosphere` / `#website` / `#hello` /
+    `#settings`, tap sequences (Carte → Réglages → Préparer returns to Fuel), Fuel's sticky result bar above the bar after
+    scrolling to the end, no `pageerror`. **No horizontal scroll from the frame**; the page is 402–405 px wide on `#fuel` at
+    390–375 px because of Fuel's own `.fu-when` row (`modules/fuel`, the "Now / +30" button): the same on the base commit
+    (measured on a `git archive` of 708264389), not touched here.
+  - **Not done / to see**: no iOS device (the bar's safe area and the blur of `cupertino` are untested there); `atmosphere`'s
+    own commit (c1ce8886 on GitHub) was not seen; `frame/lib/test` has no test of the bar (tests were Playwright scripts
+    outside the repository).

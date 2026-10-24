@@ -45,8 +45,9 @@
     border: 2px solid var(--sog-module-ink)
   }
 
-  /* ---- verbes : sur téléphone, des aplats de la couleur de chaque module (deux par ligne, le dernier impair sur toute la
-     largeur) dans le tiroir ; sur écran, un rail : filet de la couleur du module, plein pour le verbe courant */
+  /* ---- verbes : sur écran, un rail : filet de la couleur du module, plein pour le verbe courant ; sur téléphone, la barre
+     du bas est une rangée d'aplats, chacun de la couleur de son module (filet en haut), le choisi plein, icône pleine, sans
+     pastille */
   [data-design="metro"] .f-nav {
     background: var(--sog-bg);
     border-right-color: transparent
@@ -64,35 +65,26 @@
     color: var(--sog-module-ink)
   }
   @media (max-width: 760px) {
-    [data-design="metro"] .f-nav {
-      padding: 6px
+    [data-design="metro"] .f-tabbar {
+      background: var(--sog-bg);
+      border-top-color: transparent
     }
-    [data-design="metro"] .f-nav ul {
-      grid-template-columns: 1fr 1fr;
-      gap: 6px
+    [data-design="metro"] .f-tabbar ul {
+      gap: 2px;
+      padding: 2px 2px 0
     }
-    [data-design="metro"] .f-nav li:last-child:nth-child(odd) {
-      grid-column: 1 / -1
+    [data-design="metro"] .f-tabbar a {
+      background: var(--sog-surface);
+      border-top: 4px solid var(--sog-module);
+      border-radius: 0;
+      color: var(--sog-fg)
     }
-    [data-design="metro"] .f-nav a {
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0;
-      min-height: 104px;
-      padding: 10px 12px;
-      border-left: 0;
+    [data-design="metro"] .f-tabbar a[aria-current="page"] {
       background: var(--sog-module);
-      color: var(--sog-module-ink);
-      font-size: 1.05rem
+      color: var(--sog-module-ink)
     }
-    [data-design="metro"] .f-nav a .f-icon {
-      width: 32px;
-      height: 32px
-    }
-    [data-design="metro"] .f-nav a[aria-current="page"] {
-      outline: 3px solid var(--sog-module-ink);
-      outline-offset: -6px
+    [data-design="metro"] .f-tabbar a[aria-current="page"] .f-tab-ico {
+      background: transparent
     }
   }
 

@@ -96,13 +96,21 @@
     ];
   h.dataset.tone = tone;
   const head = mod => `<header class="f-head">
-    <button type="button" class="f-burger" aria-label="menu" aria-pressed="${scene === 'home'}">${svg('menu')}</button>
     <span class="f-name">Pilote</span>
     <button type="button" class="f-sync" data-state="ok"><span class="f-dot"></span><span class="f-lbl">Synchronisé il y a 4 min</span><span class="f-lbl-short">✓</span></button>
     <button type="button" aria-label="aide">${svg('help')}</button>
     <button type="button" aria-label="réglages">${svg('settings')}</button>
   </header>`;
   const nav = cur => `<nav class="f-nav"><ul>${VERBS.map(([id, l, ic]) => `<li><a href="#" data-id="${id}" data-landmark="${id}"${id === cur ? ' aria-current="page"' : ''}>${svg(ic)}${l}</a></li>`).join('')}</ul></nav>`;
+  // barre du bas du téléphone (frame/app.js, renderTabs) : icône au trait et icône pleine, l'onglet choisi marqué
+  const TABS = [
+    ['prepare', 'Préparer', 'fuel', 'fuel'],
+    ['maps', 'Carte', 'map', 'maps'],
+    ['report', 'CR', 'edit', 'report'],
+    ['flightlog', 'Vols', 'list', 'flightlog'],
+    ['settings', 'Réglages', 'settings', 'settings']
+  ];
+  const tabbar = cur => `<nav class="f-tabbar"><ul>${TABS.map(([id, l, ic, lm]) => `<li><a href="#" data-tab="${id}" data-landmark="${lm}"${id === cur ? ' aria-current="page"' : ''}><span class="f-tab-ico">${svg(ic)}${svg(ic, { filled: true })}</span><span class="f-tab-lbl">${l}</span></a></li>`).join('')}</ul></nav>`;
   const FUEL = `<main class="f-view"><section class="f-module" data-module="fuel" data-landmark="fuel">
     <h1>Carburant et niveau</h1>
     <div class="f-tabs"><button type="button" aria-pressed="true">Plan</button><button type="button" aria-pressed="false">Fiches</button></div>
@@ -158,7 +166,7 @@
         desk: 800
       },
       SC = [
-        ['phone', 'home', 'Accueil du Pilote : le menu des verbes'],
+        ['phone', 'home', 'Accueil du Pilote : la barre du bas'],
         ['phone', 'fuel', 'Carburant'],
         ['phone', 'report', 'Compte rendu, trois pas'],
         ['desk', 'fuel', 'Carburant, écran : rail des verbes, trois colonnes'],
@@ -177,7 +185,7 @@
         de la couleur du module. Police du système : San Francisco sur Apple, sinon celle de l'appareil.`,
       material: `Material Design 3 : surfaces tonales (page, cartes et champs de trois teintes), un primaire bleu-violet,
         boutons en pastille, champs à filet fin qui passe à 2 px à la saisie, onglets à indicateur souligné, pas en puces,
-        deux niveaux d'élévation seulement, barre d'application sur la surface, tiroir de navigation sur téléphone et rail
+        deux niveaux d'élévation seulement, barre d'application sur la surface, barre de navigation sur téléphone et rail
         sur écran (indicateur actif teinté de la couleur du module). Police : Roboto si elle est installée, sinon celle du
         système.`
     };
@@ -201,14 +209,13 @@
     addEventListener('resize', fit);
   } else {
     if (scene === 'home') {
-      document.body.classList.add('f-nav-open');
-      document.body.innerHTML = head() + nav('fuel') + FUEL;
+      document.body.innerHTML = head() + nav('fuel') + FUEL + tabbar('prepare');
       h.dataset.landmark = 'fuel';
     } else if (scene === 'report') {
-      document.body.innerHTML = head() + nav('report') + REPORT;
+      document.body.innerHTML = head() + nav('report') + REPORT + tabbar('report');
       h.dataset.landmark = 'report';
     } else {
-      document.body.innerHTML = head() + nav('fuel') + FUEL;
+      document.body.innerHTML = head() + nav('fuel') + FUEL + tabbar('prepare');
       h.dataset.landmark = 'fuel';
     }
   }

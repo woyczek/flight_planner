@@ -23,7 +23,7 @@
   }
 
   /* ---- verbes : une liste, le verbe courant en gras avec le filet de la couleur de son module (seul usage de cette
-     couleur) ; sur téléphone, le tiroir est une liste de grandes lignes séparées par un filet */
+     couleur) ; sur téléphone, la barre du bas (plus bas) */
   [data-design="swiss"] .f-nav a {
     border-left: 4px solid transparent;
     border-radius: 0;
@@ -35,15 +35,30 @@
     font-weight: 700;
     border-left-color: var(--sog-module-text)
   }
+  /* barre du bas : filet fin en haut, sur la page ; l'onglet choisi en gras avec l'icône pleine et, sous son libellé, le filet
+     rouge signal ; pas de pastille ; libellés à 10 px */
   @media (max-width: 760px) {
-    [data-design="swiss"] .f-nav ul {
-      gap: 0
+    [data-design="swiss"] .f-tabbar {
+      background: var(--sog-bg);
+      border-top: 1px solid var(--sog-fg)
     }
-    [data-design="swiss"] .f-nav a {
-      min-height: 56px;
-      border-bottom: 1px solid var(--sog-border);
-      font-size: 1.2rem;
-      letter-spacing: -.01em
+    [data-design="swiss"] .f-tabbar a {
+      color: var(--sog-muted);
+      font-size: 10px
+    }
+    [data-design="swiss"] .f-tabbar a[aria-current="page"] {
+      color: var(--sog-fg);
+      font-weight: 700
+    }
+    [data-design="swiss"] .f-tabbar a[aria-current="page"] .f-tab-ico {
+      background: transparent
+    }
+    [data-design="swiss"] .f-tab-lbl {
+      padding-bottom: 2px;
+      border-bottom: 2px solid transparent
+    }
+    [data-design="swiss"] .f-tabbar a[aria-current="page"] .f-tab-lbl {
+      border-bottom-color: var(--sog-accent)
     }
   }
 

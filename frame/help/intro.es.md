@@ -5,8 +5,10 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
 
 ## Primer inicio
 
-- **Los verbos.** Cada herramienta es un verbo del menú (☰ en un teléfono, columna izquierda en una pantalla). La
-  dirección de una herramienta (`#fuel`, `#report`…) basta para volver a ella.
+- **Los verbos.** En un teléfono, la barra inferior ofrece cinco entradas: Preparar, Mapa, Informe, Vuelos, Ajustes
+  (Preparar agrupa varias herramientas: una fila de pestañas sobre la herramienta las enlaza); en una pantalla, cada
+  herramienta es un verbo de la columna izquierda. La dirección de una herramienta (`#fuel`, `#report`…) basta para
+  volver a ella.
 - **Su identidad.** En ⚙ Ajustes, configure su trigrama y sus identificadores IVAO, VATSIM y SimBrief: las herramientas
   los usan para prerrellenar.
 - **El nivel.** También en Ajustes, «Nivel» elige lo que muestra el menú: Descubrimiento, Habitual o Completo. Una

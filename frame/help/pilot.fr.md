@@ -7,8 +7,9 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
 
 ## Premier démarrage
 
-- **Les verbes.** Chaque outil est un verbe du menu (☰ sur un téléphone, colonne de gauche sur un écran). L'adresse
-  d'un outil (`#fuel`, `#report`…) suffit à y revenir.
+- **Les verbes.** Sur un téléphone, la barre du bas donne cinq entrées : Préparer, Carte, CR, Vols, Réglages (Préparer
+  groupe plusieurs outils : une rangée d'onglets au-dessus de l'outil les relie) ; sur un écran, chaque outil est un
+  verbe de la colonne de gauche. L'adresse d'un outil (`#fuel`, `#report`…) suffit à y revenir.
 - **Votre identité.** Dans ⚙ Réglages, réglez votre trigramme et vos identifiants IVAO, VATSIM et SimBrief : les
   outils s'en servent pour préremplir.
 - **Le niveau.** Toujours dans les Réglages, « Niveau » choisit ce que le menu montre : Découverte, Courant ou Complet.

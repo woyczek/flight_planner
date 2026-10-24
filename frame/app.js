@@ -1,7 +1,8 @@
 (() => {
   'use strict';
   // V3 frame — squelette d'une application (frame/SPEC.md § 3, frame/INTEGRATION.md) : l'appli Pilote.
-  //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran, tiroir sur téléphone ;
+  //   · navigation : un verbe court par module (sept au plus), colonne à gauche sur écran ; sur téléphone, une barre
+  //     d'onglets en bas (APP.tabs : Préparer · Carte · CR · Vols · Réglages, un onglet = un groupe de modules) ;
   //     l'adresse (#module, #module?clé=valeur : la suite après « ? » est donnée au module en ctx.query) suffit à
   //     revenir sur un écran ; écrans du cadre : #conflicts, #settings (#device : ancien nom, même écran) ;
   //   · chargeur : modules/<id>/module.js chargé à la demande (import()), qui exporte meta, mount(el, ctx) et
@@ -64,6 +65,38 @@
       id: 'atmosphere',
       label: ['Atmosphère', 'Atmosphere', 'Atmosphäre', 'Atmósfera'],
       icon: 'layers'
+    }],
+    // barre d'onglets du téléphone (760 px et moins), cinq au plus, Réglages compris : un onglet = un groupe de modules
+    // (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe dans
+    // cette session, sinon le premier ; un id qui n'est pas inscrit plus haut est ignoré sans bruit) ou un écran du
+    // cadre (screen). Un module absent de tous les onglets (website, hello) reste joignable par son adresse et dans la
+    // colonne de gauche des grands écrans. status : l'onglet qui porte la ligne d'état du vol (frame/SPEC.md § 3.1).
+    tabs: [{
+      id: 'prepare',
+      label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'],
+      icon: 'fuel',
+      modules: ['fuel', 'atmosphere'],
+      status: true
+    }, {
+      id: 'maps',
+      label: ['Carte', 'Map', 'Karte', 'Mapa'],
+      icon: 'map',
+      modules: ['maps']
+    }, {
+      id: 'report',
+      label: ['CR', 'Report', 'Bericht', 'Informe'],
+      icon: 'edit',
+      modules: ['report']
+    }, {
+      id: 'flightlog',
+      label: ['Vols', 'Flights', 'Flüge', 'Vuelos'],
+      icon: 'list',
+      modules: ['flightlog']
+    }, {
+      id: 'settings',
+      label: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
+      icon: 'settings',
+      screen: 'settings'
     }]
   };
   // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le
@@ -146,7 +179,11 @@
     ok: ['OK', 'OK', 'OK', 'Aceptar'],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
-    menu: ['Menu', 'Menu', 'Menü', 'Menú'],
+    tabsNav: ['Navigation principale', 'Main navigation', 'Hauptnavigation', 'Navegación principal'],
+    status: {
+      flight: ['Vol en cours › {m}', 'Flight in progress › {m}', 'Flug läuft › {m}', 'Vuelo en curso › {m}'],
+      hide: ['Masquer', 'Hide', 'Ausblenden', 'Ocultar']
+    },
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
     back: ['Revenir à {m}', 'Back to {m}', 'Zurück zu {m}', 'Volver a {m}'],
@@ -633,6 +670,85 @@
     if (m && h.dataset.landmark !== m) h.dataset.landmark = m;
     paintBar();
   }
+  /** Vue fixe (meta.fixed d'un module) : <html class="f-fixed"> donne à la vue toute la hauteur entre l'en-tête et la barre du
+   *  bas (ou le bas de la fenêtre), sans défilement de la page (frame.css) ; jamais sous un écran du cadre ouvert par-dessus
+   *  (il défile comme une page). id : le module affiché ('' : aucun). Écrit seulement si cela change. */
+  function paintFixed(id) {
+    document.documentElement.classList.toggle('f-fixed', !!id && !over && moduleFixed[id] === true);
+  }
+  // ---------------------------------------------------------------- ligne d'état du vol (onglet Préparer)
+  // une ligne de 44 px au-dessus du module de l'onglet qui la porte (APP.tabs[].status), d'après le vol courant que le service
+  // de position réelle relit déjà (lastFlight, mis à jour par liveCheck) : « Vol en cours › Carte » quand started n'est pas
+  // nul, toucher → la carte. Masquable pour la session (sessionStorage, par départ) ; rien quand rien ne s'applique. Le second cas
+  // (« CR à écrire pour le vol du … ») demande la logique de mes vols (CR enregistrés, journal du site, sessions du
+  // réseau) : le cadre ne la double pas, il n'est pas dessiné.
+  const STATUS_OFF = 'sogFrame:statusOff';
+  let lastFlight = null;
+  const statusOff = key => {
+    try {
+      return (sessionStorage.getItem(STATUS_OFF) || '').split('\n').includes(key);
+    } catch {
+      return false; // stockage indisponible : masqué pour la page seulement (voir le bouton)
+    }
+  };
+  /** Dessine, met à jour ou retire la ligne d'état en tête de la vue (seulement si elle change). */
+  function paintStatus() {
+    const view = $('fView'),
+      tb = current && !over ? tabOf(current.id) : null,
+      key = tb?.status && lastFlight?.started?.at && isModule('maps') ? `flight|${lastFlight.started.at}` : '',
+      box = view.querySelector(':scope > .f-status');
+    if (!key || statusOff(key) || hiddenStatus.has(key)) return void box?.remove();
+    const sig = `${key}|${lang()}`;
+    if (box?.dataset.sig === sig) return;
+    const maps = APP.modules.find(m => m.id === 'maps'),
+      el = box || document.createElement('div');
+    el.className = 'f-status';
+    el.dataset.sig = sig;
+    el.dataset.key = key;
+    el.setAttribute('role', 'status');
+    el.innerHTML = `<a href="#maps">${icon('plane')}<span>${esc(t(T.status.flight, { m: t(maps.label) }))}</span></a><button type="button" aria-label="${esc(t(T.status.hide))}" title="${esc(t(T.status.hide))}">${Icons?.svg('x') || '✕'}</button>`;
+    if (!box) view.prepend(el);
+  }
+  const hiddenStatus = new Set(); // masquées pour cette page (si le stockage de session est indisponible)
+  /** « Masquer » : cette ligne ne revient plus pour ce départ, jusqu'à la fin de la session. */
+  function hideStatus(key) {
+    hiddenStatus.add(key);
+    try {
+      const l = (sessionStorage.getItem(STATUS_OFF) || '').split('\n').filter(Boolean);
+      if (!l.includes(key)) sessionStorage.setItem(STATUS_OFF, [...l, key].slice(-10).join('\n'));
+    } catch {
+      /* stockage indisponible : hiddenStatus suffit pour la page */
+    }
+    paintStatus();
+  }
+  // ---------------------------------------------------------------- sous-onglets du groupe (onglet = plusieurs modules)
+  // quand l'onglet du module affiché groupe au moins deux modules inscrits au niveau de l'appareil (Préparer : fuel et
+  // atmosphere), le cadre dessine au-dessus du module une rangée de sous-onglets, un par module du groupe, de son verbe
+  // (meta du cadre : APP.modules[].label), le courant marqué ; aucun module ne connaît ses voisins. Même aspect que les
+  // onglets des primitives (.f-tabs), 44 px, téléphone et écran. Un seul module au niveau : rien.
+  /** Dessine, met à jour ou retire la rangée de sous-onglets, juste avant le module (seulement si elle change). */
+  function paintSubtabs() {
+    const view = $('fView'),
+      tb = current && !over ? tabOf(current.id) : null,
+      ids = tb ? tabVisible(tb) : [],
+      show = ids.length > 1 && ids.includes(current.id),
+      box = view.querySelector(':scope > .f-subtabs');
+    if (!show) return void box?.remove();
+    const sig = `${ids.join(',')}|${current.id}|${lang()}`;
+    if (box?.dataset.sig === sig) return;
+    const el = box || document.createElement('div');
+    el.className = 'f-tabs f-subtabs';
+    el.dataset.sig = sig;
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', t(tb.label));
+    el.innerHTML = ids.map(id => `<button type="button" data-id="${esc(id)}"${id === current.id ? ' aria-current="page"' : ''}>${esc(t(APP.modules.find(m => m.id === id).label))}</button>`).join('');
+    if (!box) view.insertBefore(el, view.querySelector(':scope > .f-module'));
+  }
+  /** Tout ce que le cadre dessine au-dessus du module : ligne d'état du vol, sous-onglets du groupe. */
+  function paintTop() {
+    paintStatus();
+    paintSubtabs();
+  }
   /** Source en lecture seule des bases de référence (SIA, appareils) quand rien n'est échangé : le lanceur qui sert la
    *  page, sinon le dépôt GitHub réglé ; null sans l'un ni l'autre (site public : ces bases n'y sont jamais publiées). */
   function referenceSource() {
@@ -786,6 +902,7 @@
   /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), posé
    *  avant lui, et carte d'accueil des tutoriels à la première ouverture ; chargée après le module, jamais avant. */
   function moduleHelp(entry, meta, el, view) {
+    if (meta.fixed === true) return; // vue fixe sans défilement : ni panneau replié ni carte d'accueil (le ? ouvre le chapitre)
     need('help').then(() => {
       if (!el.isConnected) return;
       if (meta.help !== false) SogHelp.panel(entry.id, helpCtx()).then(p => p && el.isConnected && view.insertBefore(p, el))
@@ -825,26 +942,36 @@
     };
   }
   // niveau de chaque module (meta.level, 1 par défaut), relevé au démarrage en important les points d'entrée
-  const moduleLevel = {};
+  const moduleLevel = {},
+    moduleFixed = {}; // meta.fixed de chaque module (vue pleine hauteur sans défilement de page), relevé avec le niveau
   let levelsP = null; // relevé des niveaux en cours (readLevels)
   let menuKey = '',
-    menuActive = '';
+    menuActive = '',
+    menuScreen = '';
   /** Modules du menu au niveau de l'appareil (meta.level ≤ niveau) ; un module au niveau encore inconnu est montré. */
   const visibleModules = () => APP.modules.filter(m => (moduleLevel[m.id] ?? 1) <= level);
-  /** Niveau déclaré par chaque module (meta.level), puis menu redessiné ; module illisible : niveau 1. */
+  /** Niveau (meta.level) et vue fixe (meta.fixed) déclarés par chaque module, puis menu et barre redessinés ; module
+   *  illisible : niveau 1. */
   async function readLevels() {
     await Promise.all(APP.modules.map(async m => {
       try {
-        moduleLevel[m.id] = levelFrom((await import(new URL(`modules/${m.id}/module.js`, ROOT).href)).meta?.level ?? 1);
+        const meta = (await import(new URL(`modules/${m.id}/module.js`, ROOT).href)).meta || {};
+        moduleLevel[m.id] = levelFrom(meta.level ?? 1);
+        moduleFixed[m.id] = meta.fixed === true;
       } catch {
         moduleLevel[m.id] = 1;
       }
     }));
     renderMenu();
+    paintFixed(current?.id || ''); // le module déjà affiché peut se révéler fixe maintenant
+    paintTop(); // et son groupe d'onglets compter plusieurs modules au niveau de l'appareil
   }
-  /** Menu des verbes du niveau de l'appareil (redessiné seulement quand la liste change), entrée courante marquée. */
-  function renderMenu(active = menuActive) {
+  /** Menu des verbes du niveau de l'appareil (redessiné seulement quand la liste change), entrée courante marquée ; la
+   *  barre d'onglets suit (screen : l'écran du cadre affiché, ou rien). */
+  function renderMenu(active = menuActive, screen = menuScreen) {
     menuActive = active;
+    menuScreen = screen;
+    renderTabs(tabFor(active, screen));
     const ul = $('fMenu'),
       list = visibleModules(),
       key = list.map(m => m.id).join(',');
@@ -854,6 +981,47 @@
     }
     for (const a of ul.querySelectorAll('a')) {
       const on = a.dataset.id === active;
+      if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
+        'aria-current');
+    }
+  }
+  // ---------------------------------------------------------------- barre d'onglets du téléphone (APP.tabs)
+  // un onglet = un groupe de modules ou un écran du cadre ; choisi tant qu'un module de son groupe est affiché ; le toucher
+  // ouvre le dernier module du groupe montré dans cette session, sinon le premier. Dessinée toujours, masquée par la
+  // feuille de style au-dessus de 760 px (la colonne des verbes la remplace sur un écran).
+  const lastInTab = {}; // onglet → dernier module du groupe affiché
+  let tabsKey = '';
+  /** Onglet qui groupe le module id (même non inscrit : atmosphere avant son module), sinon null. */
+  const tabOf = id => APP.tabs.find(tb => tb.modules?.includes(id)) || null;
+  /** Modules inscrits d'un onglet (un id inconnu est ignoré sans bruit) et, parmi eux, ceux du niveau de l'appareil. */
+  const tabModules = tb => (tb.modules || []).filter(id => APP.modules.some(m => m.id === id));
+  const tabVisible = tb => tabModules(tb).filter(id => (moduleLevel[id] ?? 1) <= level);
+  /** Onglet marqué : celui des réglages quand leur écran est affiché, sinon celui du module affiché ('' si aucun). */
+  const tabFor = (moduleId, screenId) => ['settings', 'device'].includes(screenId) ? 'settings' : tabOf(moduleId)?.id || '';
+  /** Adresse d'un onglet : son écran, ou le dernier module du groupe montré, sinon le premier à ce niveau. */
+  function tabTarget(tb) {
+    if (tb.screen) return `#${tb.screen}`;
+    const vis = tabVisible(tb);
+    return `#${vis.includes(lastInTab[tb.id]) ? lastInTab[tb.id] : vis[0] || ''}`;
+  }
+  /** Barre des onglets du niveau de l'appareil (redessinée seulement quand la liste ou la langue change), adresses et onglet
+   *  choisi mis à jour seulement s'ils changent. */
+  function renderTabs(active) {
+    const nav = $('fTabs'),
+      list = APP.tabs.filter(tb => tb.screen || tabVisible(tb).length),
+      key = lang() + list.map(tb => tb.id).join(',');
+    if (key !== tabsKey || !nav.children.length) {
+      tabsKey = key;
+      // data-landmark : la couleur repère du premier module du groupe (design metro) ; l'icône pleine remplace le trait
+      // sur l'onglet choisi (la feuille de style montre l'une ou l'autre : la forme change, pas seulement la couleur)
+      nav.setAttribute('aria-label', t(T.tabsNav));
+      nav.innerHTML = `<ul>${list.map(tb => `<li><a data-tab="${esc(tb.id)}" data-landmark="${esc(tb.screen ? 'settings' : tabModules(tb)[0] || tb.modules[0])}"><span class="f-tab-ico">${icon(tb.icon)}${Icons?.svg(tb.icon, { filled: true }) || ''}</span><span class="f-tab-lbl">${esc(t(tb.label))}</span></a></li>`).join('')}</ul>`;
+    }
+    for (const a of nav.querySelectorAll('a')) {
+      const tb = APP.tabs.find(x => x.id === a.dataset.tab),
+        href = tabTarget(tb),
+        on = a.dataset.tab === active;
+      if (a.getAttribute('href') !== href) a.setAttribute('href', href);
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
         'aria-current');
     }
@@ -868,8 +1036,10 @@
     if (SCREENS.includes(id) && (current || over)) return openOver(id, h);
     if (over) closeOver(false);
     paintModule(id);
-    document.body.classList.remove('f-nav-open');
-    $('fBurger').setAttribute('aria-expanded', 'false');
+    if (isModule(id)) {
+      const tb = tabOf(id);
+      if (tb) lastInTab[tb.id] = id; // le toucher de l'onglet y reviendra
+    }
     if (current?.mod?.unmount) try {
       current.mod.unmount();
     } catch (e) {
@@ -882,12 +1052,14 @@
     paintBack();
     const view = $('fView');
     view.replaceChildren();
-    renderMenu(id);
+    renderMenu(id, id);
     paintPaneButton(null);
+    if (id === 'help' || id === 'roadmap' || ROUTES[id]) paintFixed(''); // un écran du cadre défile comme une page
     if (id === 'help' || id === 'roadmap') return showDoc(id, view, h.query);
     if (ROUTES[id]) return ROUTES[id](view);
     const entry = APP.modules.find(m => m.id === id) || APP.modules[0];
     if (!entry) return renderSettings(view);
+    paintFixed(entry.id); // vue fixe connue d'avance : pas de saut de mise en page à l'arrivée du module
     try {
       const mod = await import(new URL(`modules/${entry.id}/module.js`, ROOT).href);
       const meta = mod.meta || {};
@@ -901,6 +1073,9 @@
         id: entry.id,
         mod
       };
+      moduleFixed[entry.id] = meta.fixed === true;
+      paintFixed(entry.id);
+      paintTop();
       lastScreen = {
         id: entry.id,
         hash: location.hash
@@ -912,6 +1087,7 @@
       const want = paneWanted(entry, h.query);
       if (want && want !== entry.id && current?.id === entry.id) openPane(entry, want);
     } catch (e) {
+      paintFixed('');
       view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
       notify(t(T.loadErr, {
         m: entry.id,
@@ -1053,8 +1229,6 @@
   const mountSig = () => JSON.stringify([identity, usages.devices, usages.users, level, lang(), configured?.id || '']);
   /** Ouvre (ou change) l'écran du cadre id par-dessus le module courant. */
   async function openOver(id, h) {
-    document.body.classList.remove('f-nav-open');
-    $('fBurger').setAttribute('aria-expanded', 'false');
     if (!over) over = {
       returnHash: lastScreen?.id === current?.id && lastScreen?.hash ? lastScreen.hash : `#${current?.id || ''}`,
       scroll: scrollY,
@@ -1076,7 +1250,9 @@
     }
     scr.replaceChildren();
     scr.onclick = null;
-    renderMenu(current?.id || '');
+    renderMenu(current?.id || '', id);
+    paintFixed(''); // un écran du cadre défile comme une page, même sur un module fixe (masqué, toujours monté)
+    paintTop();
     paintBack();
     paintToggles();
     paintPaneButton(null);
@@ -1098,7 +1274,9 @@
     if (!restore) return;
     paintModule(current?.id);
     if (o.sig !== mountSig()) return route(); // réglages changés : le module est remonté avec eux
-    renderMenu(current?.id || '');
+    renderMenu(current?.id || '', '');
+    paintFixed(current?.id || '');
+    paintTop();
     requestAnimationFrame(() => scrollTo(0, o.scroll));
   }
   /** Ferme l'écran du cadre (second clic sur son bouton, Échap) : retour du navigateur s'il n'y a eu qu'un écran,
@@ -1195,6 +1373,8 @@
         return liveApi();
       },
       query,
+      // l'onglet de la barre du bas qui groupe ce module (id de APP.tabs), null s'il n'en a pas
+      tab: tabOf(entry.id)?.id || null,
       // vue double : { with } le module montré à côté (ou null) ; l'événement « frame-layout » (window) suit chaque changement
       get layout() {
         return Object.freeze({
@@ -1448,6 +1628,8 @@
   async function liveCheck() {
     const cur = await liveData.get(flightPath).catch(() => null),
       on = flying(cur);
+    lastFlight = cur;
+    paintStatus(); // la ligne d'état de l'onglet Préparer suit le vol courant
     // une position plus ancienne que le départ (vol précédent, laissée par un appareil qui n'a pas pu l'effacer) : remise
     // à null, la carte ne la montre jamais au nouveau départ
     const stale = on && cur?.progress?.actual?.at && String(cur.progress.actual.at) < String(cur.started.at);
@@ -1785,18 +1967,12 @@
     } catch (e) {
       console.warn('frame/lib/icons.js', e);
     }
-    headIcon('fBurger', 'menu');
     headIcon('fHelp', 'help');
     headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
-    $('fBurger').setAttribute('aria-label', t(T.menu));
     $('fDevice').setAttribute('aria-label', t(T.device));
     $('fDevice').title = t(T.device);
-    $('fBurger').onclick = () => {
-      const open = document.body.classList.toggle('f-nav-open');
-      $('fBurger').setAttribute('aria-expanded', String(open));
-    };
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);
     $('fHelp').onclick = () => {
@@ -1820,8 +1996,24 @@
       if (o.back && history.length > 1) history.back();
       else location.hash = o.hash;
     };
-    $('fMenu').addEventListener('click', e => {
-      if (e.target.closest('a')) viaMenu = true;
+    // un verbe de la colonne, un onglet de la barre ou la ligne d'état : un choix dans le menu, pas un passage entre modules
+    // (pas de « ← » vers l'écran quitté) ; la même adresse que l'actuelle ne change rien, elle ne note donc rien
+    for (const nav of [$('fMenu'), $('fTabs')]) nav.addEventListener('click', e => {
+      const a = e.target.closest('a');
+      if (a && a.getAttribute('href') !== location.hash) viaMenu = true;
+    });
+    $('fView').addEventListener('click', e => {
+      const box = e.target.closest('.f-status');
+      if (!box) return;
+      if (e.target.closest('button')) hideStatus(box.dataset.key);
+      else if (e.target.closest('a')) viaMenu = true;
+    });
+    // sous-onglets du groupe : un choix de module comme dans le menu
+    $('fView').addEventListener('click', e => {
+      const b = e.target.closest('.f-subtabs button');
+      if (!b || b.getAttribute('aria-current') === 'page') return;
+      viaMenu = true;
+      location.hash = `#${b.dataset.id}`;
     });
     // écran devenu étroit : volet démonté (son état reste gardé) ; redevenu large : rouvert s'il l'était
     const onWidth = () => {

@@ -6,8 +6,10 @@ Computer, mit oder ohne Netz.
 
 ## Erster Start
 
-- **Die Verben.** Jedes Werkzeug ist ein Verb des Menüs (☰ auf einem Telefon, linke Spalte auf einem Bildschirm). Die
-  Adresse eines Werkzeugs (`#fuel`, `#report`…) genügt, um zu ihm zurückzukehren.
+- **Die Verben.** Auf einem Telefon bietet die untere Leiste fünf Einträge: Vorbereiten, Karte, Bericht, Flüge,
+  Einstellungen (Vorbereiten fasst mehrere Werkzeuge zusammen: eine Reiterzeile über dem Werkzeug verbindet sie); auf
+  einem Bildschirm ist jedes Werkzeug ein Verb der linken Spalte. Die Adresse eines Werkzeugs (`#fuel`, `#report`…)
+  genügt, um zu ihm zurückzukehren.
 - **Ihre Identität.** Stellen Sie unter ⚙ Einstellungen Ihr Kürzel und Ihre IVAO-, VATSIM- und SimBrief-IDs ein: Die
   Werkzeuge nutzen sie zum Vorausfüllen.
 - **Die Stufe.** Ebenfalls in den Einstellungen wählt „Stufe“, was das Menü zeigt: Einstieg, Alltag oder Vollständig.

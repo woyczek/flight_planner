@@ -1,5 +1,5 @@
-/* V3 frame — mise en page de l'appli : en-tête (menu sur téléphone, nom, bouton de synchronisation, aide, réglages),
-   colonne des verbes (à gauche sur écran, tiroir sur téléphone), vue du module, notes et fenêtres du cadre. Les jetons
+/* V3 frame — mise en page de l'appli : en-tête (nom, bouton de synchronisation, aide, réglages), colonne des verbes (à gauche
+   sur écran) ou barre d'onglets du bas (téléphone), vue du module, notes et fenêtres du cadre. Les jetons
    (couleurs, polices, rayons, densité ; designs standard, cabinet, field, metro, swiss, cupertino, material ; jour / nuit) et les primitives données aux
    modules viennent de frame/design/ (importés ici : une page qui charge frame.css a tout). */
 @import url("design/tokens.css");
@@ -27,6 +27,40 @@ body {
      toute la page au-delà de l'écran du téléphone) */
   grid-template-columns: 210px minmax(0, 1fr);
   grid-template-areas: "head head" "nav main"
+}
+/* vue fixe (meta.fixed d'un module, frame/INTEGRATION.md § 2) : <html class="f-fixed"> — la page ne défile plus ; l'en-tête
+   en haut, la vue prend tout le reste (jusqu'à la barre du bas sur téléphone, jusqu'au bas de la fenêtre sur écran) ; la
+   racine du module (section.f-module) la remplit et range ses blocs en colonne (carte, puis feuille) */
+html.f-fixed,
+html.f-fixed body {
+  height: 100%;
+  overflow: hidden
+}
+html.f-fixed body {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overscroll-behavior: none
+}
+html.f-fixed .f-nav {
+  position: static;
+  height: auto;
+  align-self: stretch
+}
+html.f-fixed .f-view:not(.f-split):not(.f-over) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden
+}
+html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column
 }
 .f-head {
   grid-area: head;
@@ -63,9 +97,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap
-}
-.f-burger {
-  display: none
 }
 .f-sync[data-state="ok"] .f-dot {
   background: var(--sog-ok)
@@ -633,11 +664,59 @@ body {
   display: grid;
   gap: 12px
 }
-/* téléphone : une colonne, verbes dans un tiroir ouvert par le bouton de menu */
+/* ligne d'état du vol, en tête de l'onglet Préparer (frame/app.js, paintStatus) : 44 px, un lien et « Masquer » */
+.f-status {
+  display: flex;
+  align-items: stretch;
+  min-height: var(--sog-touch);
+  margin: 0 0 var(--sog-gap);
+  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface));
+  border: 1px solid var(--sog-accent);
+  border-radius: var(--sog-radius)
+}
+.f-status a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  color: var(--sog-fg);
+  font-weight: 600;
+  text-decoration: none
+}
+.f-status a span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+.f-status button {
+  flex: none;
+  width: var(--sog-touch);
+  padding: 0;
+  background: transparent;
+  border-color: transparent
+}
+/* barre du bas : seulement sur téléphone (la colonne des verbes la remplace sur un écran) */
+.f-tabbar {
+  display: none
+}
+/* téléphone : une colonne, cinq onglets en bas (Préparer · Carte · CR · Vols · Réglages) à la place du tiroir.
+   --f-tab-h : hauteur de la barre sans la zone sûre ; --f-tab-space : tout ce qu'elle prend en bas de la fenêtre (filet,
+   barre, zone sûre de l'appareil), pour ce qui se colle en bas par-dessus la page (barre de résultat .f-bar, notes) */
 @media (max-width: 760px) {
+  :root {
+    --f-tab-h: 56px;
+    --f-tab-space: calc(var(--f-tab-h) + 1px + env(safe-area-inset-bottom, 0px))
+  }
   body {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "head" "main"
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: "head" "main" "tabs"
+  }
+  html.f-fixed body {
+    grid-template-rows: auto minmax(0, 1fr) auto
   }
   /* en-tête du téléphone : jamais plus large que l'écran — retour en flèche seule, pastilles réduites à leur icône
      (libellé dans l'infobulle) */
@@ -657,18 +736,8 @@ body {
     justify-content: center;
     padding: 0
   }
-  .f-burger {
-    display: inline-block
-  }
   .f-nav {
-    position: fixed;
-    inset: 57px 0 0 0;
-    z-index: 10;
-    border-right: 0;
     display: none
-  }
-  body.f-nav-open .f-nav {
-    display: block
   }
   .f-view {
     padding: 12px
@@ -685,5 +754,94 @@ body {
   }
   .f-sync .f-dot {
     margin-right: 4px
+  }
+  /* la barre : dernière ligne de la grille, collée au bas de la fenêtre (rien ne passe dessous : la vue est au-dessus) ;
+     la zone sûre de l'appareil (barre d'accueil de l'iPhone) est son bas, sur la même couleur */
+  .f-tabbar {
+    grid-area: tabs;
+    display: block;
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    background: var(--sog-surface);
+    border-top: 1px solid var(--sog-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px)
+  }
+  .f-tabbar:empty {
+    display: none
+  }
+  .f-tabbar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex
+  }
+  .f-tabbar li {
+    flex: 1 1 0;
+    min-width: 0
+  }
+  /* un onglet : l'icône au-dessus d'un libellé d'un mot ; hauteur de la barre, au moins une cible tactile */
+  .f-tabbar a {
+    --f-tab-pill: color-mix(in srgb, var(--sog-accent) 14%, var(--sog-surface));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: max(var(--f-tab-h), var(--sog-touch));
+    padding: 4px 2px;
+    color: var(--sog-muted);
+    font-size: 11px;
+    line-height: 1.2;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent
+  }
+  /* le plus long libellé (« Einstellungen ») tient dans une cinquième de 360 px */
+  @media (max-width: 400px) {
+    .f-tabbar a {
+      font-size: 10px
+    }
+  }
+  .f-tab-ico {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 30px;
+    border-radius: 15px;
+    transition: background-color .15s
+  }
+  .f-tab-ico .f-icon {
+    grid-area: 1 / 1;
+    width: 24px;
+    height: 24px
+  }
+  .f-tab-lbl {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
+  }
+  /* l'onglet choisi change de forme : l'icône pleine sur une pastille arrondie, le libellé en couleur d'accent et plus gras ;
+     les autres gardent l'icône au trait, en gris */
+  .f-tabbar .f-icon[data-filled],
+  .f-tabbar a[aria-current="page"] .f-icon:not([data-filled]) {
+    display: none
+  }
+  .f-tabbar a[aria-current="page"] .f-icon[data-filled] {
+    display: block
+  }
+  .f-tabbar a[aria-current="page"] {
+    color: var(--sog-link);
+    font-weight: 600
+  }
+  .f-tabbar a[aria-current="page"] .f-tab-ico {
+    background: var(--f-tab-pill)
+  }
+  .f-tabbar a:active .f-tab-ico {
+    background: var(--f-tab-pill)
+  }
+  /* notifications au-dessus de la barre */
+  .f-notes {
+    bottom: calc(var(--f-tab-space) + 8px)
   }
 }

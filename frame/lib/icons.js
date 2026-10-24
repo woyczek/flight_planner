@@ -4,8 +4,12 @@
 // page, aucun stockage ; le cadre s'en sert pour le menu et l'en-tête, un module l'importe s'il veut une icône
 // (import { svg } from '../../frame/lib/icons.js').
 //
-// API : svg(nom, { size, title }) → chaîne SVG (vide si le nom est inconnu ; décorative sauf si title est donné) ;
-// has(nom) ; names().
+// Variantes pleines (barre d'onglets du téléphone : l'onglet choisi change de forme, pas seulement de couleur) : fuel,
+// map, edit, list, settings, mêmes dessins et même grille, formes remplies (currentColor) avec les détails en creux.
+//
+// API : svg(nom, { size, title, filled }) → chaîne SVG (vide si le nom est inconnu, ou si filled est demandé sans variante
+// pleine ; décorative sauf si title est donné ; filled : la variante pleine, marquée data-filled) ; has(nom) ;
+// hasFilled(nom) ; names().
 const P = {
   // navigation / applications
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
@@ -69,19 +73,33 @@ const P = {
   // cadre V3
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>'
 };
+// variantes pleines : racine remplie et cernée de currentColor (trait 1, jointures rondes) ; ce qui doit rester un trait
+// (tuyau, socle, rayons) le dit (fill="none", trait 2)
+const F = {
+  fuel: '<path fill-rule="evenodd" d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16zM6.5 6h5v4h-5z"/><path fill="none" stroke-width="2" d="M3 21h12M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>',
+  map: '<path d="M3 6 8 4.33v14L3 20z"/><path d="M10 4.33 14 5.67v14l-4-1.34z"/><path d="M16 5.67 21 4v14l-5 1.67z"/>',
+  edit: '<path d="M12 8 16 12 8 20H4v-4z"/><path d="m15 5 4 4-1.5 1.5-4-4z"/>',
+  list: '<path fill="none" stroke-width="3" d="M9 6h11M9 12h11M9 18h11"/><circle cx="4" cy="6" r="1.8"/><circle cx="4" cy="12" r="1.8"/><circle cx="4" cy="18" r="1.8"/>',
+  settings: '<path fill-rule="evenodd" d="M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 4.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6z"/><path fill="none" stroke-width="2" d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>'
+};
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
-/** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné ; nom inconnu : chaîne vide. */
+/** SVG d'une icône (chaîne) ; décorative (aria-hidden) sauf si title est donné ; nom inconnu : chaîne vide. filled : la
+ *  variante pleine (data-filled), vide si l'icône n'en a pas. */
 export function svg(name, {
   size = 20,
-  title = ''
+  title = '',
+  filled = false
 } = {}) {
-  const body = P[name];
+  const body = filled ? F[name] : P[name];
   if (!body) return '';
-  const a11y = title ? `role="img" aria-label="${esc(title)}"` : 'aria-hidden="true" focusable="false"';
-  return `<svg class="f-icon" data-i="${esc(name)}" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
+  const a11y = title ? `role="img" aria-label="${esc(title)}"` : 'aria-hidden="true" focusable="false"',
+    paint = filled ? 'fill="currentColor" stroke="currentColor" stroke-width="1"' : 'fill="none" stroke="currentColor" stroke-width="2"';
+  return `<svg class="f-icon" data-i="${esc(name)}"${filled ? ' data-filled' : ''} viewBox="0 0 24 24" width="${size}" height="${size}" ${paint} stroke-linecap="round" stroke-linejoin="round" ${a11y}>${title ? `<title>${esc(title)}</title>` : ''}${body}</svg>`;
 }
 /** Vrai si l'icône existe. */
 export const has = name => Object.prototype.hasOwnProperty.call(P, name);
+/** Vrai si l'icône a une variante pleine. */
+export const hasFilled = name => Object.prototype.hasOwnProperty.call(F, name);
 /** Noms de toutes les icônes. */
 export const names = () => Object.keys(P);

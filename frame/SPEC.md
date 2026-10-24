@@ -247,14 +247,51 @@ used alone:
 ### 3.1 Navigation
 
 - An application (today: Pilot) lists its modules, one short **verb** each, seven at most.
-- On a screen, the verbs sit in a column on the left. On a phone (760 px or narrower), they sit in a drawer opened by
-  the menu button, and choosing a verb closes it.
+- On a screen (wider than 760 px), the verbs sit in a column on the left (the **rail**): every module that has a screen,
+  the current one marked. On a phone (760 px or narrower) there is **no menu button and no drawer**: a **bottom tab
+  bar** replaces them (below).
+- **Bottom tab bar** (phone only, `APP.tabs`, five tabs at most, Settings included): **Préparer · Carte · CR · Vols ·
+  Réglages** (Prepare · Map · Report · Flights · Settings; Vorbereiten · Karte · Bericht · Flüge · Einstellungen;
+  Preparar · Mapa · Informe · Vuelos · Ajustes). It is the user's "option A" of 24 Oct 2026 (the flight's path, in the
+  order of a day; `docs/technique/V3_SPECIFICATION.md` § 7.1).
+  - **Shape.** The last row of the page grid, sticky at the bottom of the window, on `--sog-surface` with a top
+    hairline. Each tab is an icon above a one-word label, at least 44 px wide and high; the bar is 56 px (`--f-tab-h`)
+    plus the hairline plus the device's safe area (`padding-bottom: env(safe-area-inset-bottom)`, the viewport has
+    `viewport-fit=cover`). `--f-tab-space` (bar + hairline + safe area) is what anything stuck at the bottom of the
+    window must clear: the sticky result bar `.f-bar` (`bottom: var(--f-tab-space, 0px)`) and the notifications. The
+    view is above the bar in the grid, so nothing hides under it.
+  - **The selected tab changes form, not only colour**: its icon switches from the outline to the **filled variant**
+    (`frame/lib/icons.js`: fuel, map, edit, list, settings) on a soft rounded pill (12 to 14 % of the accent mixed into
+    the surface); its label takes the link colour and a heavier weight; the others are outline icons in `--sog-muted`.
+  - **A tab is a group of modules or a frame screen** (`tabs`, `frame/INTEGRATION.md` § 9). The tab stays selected
+    while any module of its group is shown (`#atmosphere`, a module id that is not registered, is skipped without a
+    word). Touching a tab opens the last module of its group shown in this session, otherwise the first one at the
+    device's level; the Réglages tab is the same screen as the ⚙ button. A module in no tab (`website`, `hello`)
+    selects none and stays reachable by its address and in the rail.
+  - **Group sub-tabs.** When a tab groups two or more registered modules at the device's level (Préparer: fuel and
+    atmosphere), the frame draws above the module a row of sub-tabs (the primitives' `.f-tabs`, 44 px), one per
+    module, labelled with its verb, the current one marked; a touch switches the module. On a phone and on a screen.
+    No module knows its siblings; a module's own tabs (Fuel's Plan / Sheets) stay inside it.
+  - **Status line** (first screen: Préparer). The tab that has `status: true` shows, above its module, one line of 44 px
+    when it applies, from the current flight record the live-position service already reads
+    (`pilot/<trigram>/current_flight.json`): "Flight in progress › Map" when `started` is not null; a touch opens `#maps`.
+    A "Hide" button dismisses it for the session (kept in `sessionStorage` per departure). Nothing when nothing applies.
+    The line "Report to write for the flight of <date>" is **not drawn**: it needs the My flights module's logic
+    (reports saved, site log, network sessions), which the frame does not duplicate.
+- **Fixed, full-height view** (`meta.fixed: true`, a module's choice, for a map plus a sheet). The frame puts
+  `class="f-fixed"` on `<html>`: no page scroll (`html, body { height: 100%; overflow: hidden }`, the body `100dvh`), the
+  header stays at the top, the view takes the grid row between the header and the bar (phone) or the bottom of the window
+  (screen), without padding; the module's root `section.f-module` is `height: 100%; min-height: 0; display: flex;
+  flex-direction: column`. A fixed module gets neither the folded help panel nor the welcome card (no room; the ? button
+  opens its chapter). A frame screen opened over it (Settings, help, conflicts) scrolls as a page. Without `fixed`,
+  nothing changes.
 - The address `#<module>` is enough to come back to a screen. What follows a `?` is given to the module as
   `ctx.query`, an object: `#report?from=flightlog` opens report with `{ from: 'flightlog' }`.
 - **Usage level**: the device's level (`device/level.json`, 1 to 3, 2 by default, chosen in Settings only) filters
   the menu: a module is listed when its `meta.level` (1 by default) is at most the device's level. A hidden module
   stays reachable by its address. The frame reads each module's `meta.level` once at start.
-- **Header on a phone** (760 px or narrower): never wider than the window.
+- **Header on a phone** (760 px or narrower): never wider than the window; the name, the position, launcher and trigram
+  badges, ? and ⚙ stay (no menu button any more).
   - The page grid's columns are `minmax(0, 1fr)`, so content never widens the page.
   - The header hides its overflow. The back button shows its arrow only, and the position, launcher and trigram
     badges their icon only, their label staying in the tooltip.
@@ -282,7 +319,8 @@ used alone:
     files, so they open offline.
 - **The frame's screens** (help, roadmap, settings, conflicts) opened from a module show in the module's area, over
   it. The module stays mounted, only hidden, with its pane.
-  - The menu stays in place, sticky under the header at any scroll, with the current module still marked.
+  - The rail (screen) or the bar (phone) stays in place, with the current module still marked; over Settings, the
+    Réglages tab is the selected one.
   - Their header buttons are toggles: "?" for help and roadmap, "⚙" for settings, the sync button for conflicts. Each
     is pressed while its screen is open (background tinted with the accent, accent border).
   - A second click on the same button, Escape (unless a dialog is open) or the browser's back closes the screen. The
@@ -294,7 +332,7 @@ used alone:
   - The "←" back link is not shown: this is not a passage between modules.
   - The dual view belongs to modules only: on a frame screen the "Map" toggle is neither shown nor active, and the
     screen takes the whole area. An open Map pane comes back with the module.
-  - Choosing a module in the menu from a frame screen closes it and opens that module.
+  - Choosing a module in the rail or a tab from a frame screen closes it and opens that module.
   - A frame screen opened directly by its address, with no module behind, shows alone as before.
 - **Back to the origin module**: a module opened by a passage from another shows "← <origin module>" in the header.
   - A passage is either an explicit `?from=<module>` (`#report?from=flightlog`), or an address set by the previous
@@ -331,7 +369,8 @@ used alone:
 
 - A module is `modules/<id>/module.js`, an ES module loaded on demand with `import()` (never a synchronous script).
 - It exports:
-  - `meta`: `{ id, apps, level, reads, writes, files, lazy, net }`; `id` must match its folder;
+  - `meta`: `{ id, apps, level, reads, writes, files, lazy, net, fixed }`; `id` must match its folder; `fixed: true` asks for
+    the fixed, full-height view (§ 3.1);
     - `files` lists the other files the module imports, as paths relative to `module.js`, so that they are kept
       offline from the installation (§ 3.6);
     - `lazy` lists heavy files (a map library, about 1 MB) kept by the service worker at their first use, never
@@ -362,6 +401,7 @@ used alone:
 | `live` | the actual position during a started flight (on a device of the local network, the computer's simulator, never the device's GPS): `{ status ('off', 'waiting', 'tracking'), source ('xplane', 'lnm', 'gps', 'ivao', 'vatsim', ''), last ({ at, lat, lon, altFt, gsKt, trackDeg, source }), gps, enable(), disable() }` (below) |
 | `help` | `open(subject)` opens the module's folded "How to use" panel at that paragraph; `link(id)` gives `#help?m=<id>` (`frame/help/SPEC.md`) |
 | `airline` (event) | `frame-airline` on `window` when the airline's settings arrive (read in the background at start) or change; `ctx.airline` then gives them |
+| `tab` | the id of the bottom-bar tab (`APP.tabs`) that groups this module (`'prepare'` for fuel), `null` if it has none (§ 3.1) |
 | `layout` | the dual view: `{ with }`, the module shown beside this one (the pane for the current module, and the other way round), or `null`. The frame dispatches `frame-layout` on `window`, with `{ main, pane }`, each time the pane opens or closes (Fuel hides "Show the map" while Maps is beside it) |
 
 - **Actual position during a flight** (`ctx.live`, a frame service):

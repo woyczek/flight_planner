@@ -5,8 +5,9 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 
 ## First start
 
-- **The verbs.** Each tool is a verb of the menu (☰ on a phone, left column on a screen). A tool's address (`#fuel`,
-  `#report`…) is enough to come back to it.
+- **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Report, Flights, Settings (Prepare groups
+  several tools: a row of tabs above the tool links them); on a screen, each tool is a verb of the left column. A tool's
+  address (`#fuel`, `#report`…) is enough to come back to it.
 - **Your identity.** In ⚙ Settings, set your trigram and your IVAO, VATSIM and SimBrief IDs: the tools use them to
   prefill.
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays
