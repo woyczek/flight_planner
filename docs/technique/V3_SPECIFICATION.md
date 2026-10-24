@@ -191,6 +191,14 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
      "pour des raisons de place": the column gives the place; vertical stays the fallback if the column is too
      narrow). Full screen in landscape hides the header and the rail, the column stays. Frame lot first (class
      `html.f-land`, tokens `--f-sheet-side`, `--f-sheet-side-max`, rail rules), then maps and atmosphere take it.
+  8. **Weather on the Carte** (user, 24 Oct, 18:30, iPhone shot of the map's Météo cut: "Où est passée la carte météo ?
+     On n'a qu'une vue en profil vertical sur maps, mais on n'a plus la météo"): relay decision. The Météo chip of the
+     map's sheet does two things at once: the weather cut in the sheet (today) **and the weather layers on the map**
+     (isobars, barbs, clouds, jet at the flight's level and date, the same drawing as the Atmosphere module, from one
+     shared renderer); the Profil chip puts the map back to the route only. Atmosphere extracts its map renderer into
+     a library (`modules/atmosphere/lib/weather_map.js`, `attach(map, { flight, levelFt, time }) → { update, detach }`,
+     reading the same caches, never calling Open-Meteo by itself), the map module calls it. Atmosphere stays the
+     place for the slider, the slices and the table; on a phone it is reached by a second tap on Préparer.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
