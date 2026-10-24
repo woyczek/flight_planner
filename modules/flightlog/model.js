@@ -180,9 +180,10 @@ export function totals(list) {
   };
 }
 
-/** Vols sans compte rendu à écrire, publiés pour le bouton « i » du cadre (cache/flightlog/pending.json, schéma 1) :
+/** Vols sans compte rendu à écrire, publiés pour le bouton « i » du cadre (cache/flightlog/pending.json, schéma 2) :
  *  les vols de `flights` (fusionnés) sans CR, du plus récent au plus ancien, des `days` derniers jours (30), `max`
- *  au plus (5) ; source : website (journal du site), ivao ou vatsim. today : AAAA-MM-JJ. */
+ *  au plus (5) ; source : website (journal du site), ivao ou vatsim ; handoff : ce que « Écrire le CR » remet à
+ *  report (handoffOf), pour que le cadre le remette lui-même. today : AAAA-MM-JJ. */
 export function pending(flights, {
   today = new Date().toISOString().slice(0, 10),
   days = 30,
@@ -197,7 +198,8 @@ export function pending(flights, {
     dep: f.dep,
     arr: f.arr,
     registration: f.reg,
-    source: f.source === 'log' ? 'website' : String(f.network || f.source).toLowerCase()
+    source: f.source === 'log' ? 'website' : String(f.network || f.source).toLowerCase(),
+    handoff: handoffOf(f)
   }));
 }
 
@@ -261,3 +263,11 @@ export function reportValues(f) {
   };
   return Object.fromEntries(Object.entries(v).filter(([, x]) => x !== '' && x != null));
 }
+
+/** Ce que « Écrire le CR » d'un vol remet à report dans pilot/handoff.json, en plus de to / from / source / at / fresh :
+ *  la famille proposée et les valeurs (reportValues). Une seule fonction pour le geste du module et pour l'entrée de
+ *  cache/flightlog/pending.json, d'où le cadre peut écrire le même passage. */
+export const handoffOf = f => ({
+  family: f.family,
+  values: reportValues(f)
+});

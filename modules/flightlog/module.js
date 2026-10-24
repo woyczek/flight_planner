@@ -221,7 +221,7 @@ function publishPending() {
     if (s.pubJson === json) return;
     s.pubJson = json;
     await s.ctx.data.put(PENDING, {
-      schema: 1,
+      schema: 2,
       updated_at: new Date().toISOString().slice(0, 19) + 'Z',
       flights
     }, {
@@ -374,8 +374,7 @@ async function onClick(e) {
         source: tt(TX.title),
         at: new Date().toISOString(),
         fresh: true,
-        family: f.family,
-        values: F.reportValues(f)
+        ...F.handoffOf(f) // { family, values } : le même objet que l'entrée de pending.json
       }, {
         policy: 'cache'
       });

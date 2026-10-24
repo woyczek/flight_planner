@@ -51,8 +51,13 @@ started flight first (no handoff: report's own "Use" marks it done on save).
 this device only, never synchronised). The frame's "i" button reads it to draw its "report to write" lines.
 
 ```json
-{ "schema": 1, "updated_at": "2026-10-24T12:00:00Z",
-  "flights": [ { "date": "2026-10-23", "dep": "LFRS", "arr": "LFML", "registration": "F-ZBMC", "source": "website" } ] }
+{ "schema": 2, "updated_at": "2026-10-24T12:00:00Z",
+  "flights": [ { "date": "2026-10-23", "dep": "LFRS", "arr": "LFML", "registration": "F-ZBMC", "source": "website",
+                 "handoff": { "family": "HEMS",
+                              "values": { "metadata.date": "2026-10-23", "aircraft.0.callsign": "SAMU 31",
+                                          "aircraft.0.type": "EC45", "aircraft.0.registration": "F-ZBMC",
+                                          "navigation.dep": "LFRS", "navigation.arr": "LFML",
+                                          "metadata.operationName": "EVASAN" } } } ] }
 ```
 
 - `flights`: the flights **without a report** that the module finds (the rule of its "Write the report" action and of
@@ -66,9 +71,13 @@ this device only, never synchronised). The frame's "i" button reads it to draw i
   changed, the network read again), and **only when `flights` changes** (`updated_at` does not count). At the first
   mount of a pilot with an IVAO / VATSIM id the write waits for the network read, so the record does not lose then regain
   the network flights.
-- **For the frame**: navigate to `#report?from=flightlog&date=<date>&dep=<dep>&arr=<arr>`. **Report reads no query key
-  today**: `ctx.query` is not used by `modules/report/module.js`, which only reads `pilot/handoff.json` at mount (and
-  offers the started flight first). `from=flightlog`, `date`, `dep` and `arr` are ignored, so such a line opens the
-  report as it is. To start the report of that very flight, the frame (or report, by agreement of the ergonomics
-  session) writes the hand-over of SPEC § 5 (`pilot/handoff.json`, `fresh`, `values`) before navigating; flightlog does
-  not write it for a line it does not draw.
+- `handoff` (schema 2): exactly what the module's own "Write the report" action hands to report for that flight, built by
+  the one function `handoffOf` in `model.js` (the action spreads it, the record embeds it): `family` (the proposed
+  family) and `values` (mission paths of SPEC § 5, empty ones left out: date, call sign, type, registration, departure,
+  arrival, and the mission text of a website-log flight). The record carries no times: the action fills none.
+- **For the frame**: to write the report of a line, write `pilot/handoff.json` (policy `cache`, as flightlog does) =
+  `{ "to": "report", "from": "flightlog", "source": "<label shown on the fields>", "at": "<ISO date>", "fresh": true,
+  "family": handoff.family, "values": handoff.values }`, then navigate to `#report?from=flightlog`. Report reads no
+  query key (`ctx.query` is unused in `modules/report/module.js`); it takes `pilot/handoff.json` at its next mount,
+  starts a new report in that family with the flight's date and fills the empty fields (report INTEGRATION § 2). Nothing
+  else of the address is read, so `date`, `dep` and `arr` need not be passed.
