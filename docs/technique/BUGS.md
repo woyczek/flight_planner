@@ -9,6 +9,8 @@ English interface shows them.
 
 | Reported | Area | Bug | Status |
 |---|---|---|---|
+| 24/10 | V3 Fuel › Plan › "Level decision" chart (`modules/fuel/module.js` `requoteDecision`, `levels.js` `decisionSeries`) | A spike on the fuel and time curves at the plan's level (FL160 on a route "FL160→090→110→070"), which creates false optimums: "fastest FL155" sits right beside the spike, "least fuel FL175" above it | Cause read in the code: every level of the series is re-quoted as a **flat flight at that level** with the forecast wind at that level, except the plan's own level, re-quoted **with the route's level steps** (`steps: h === levelFt ? qIn.steps : null`): a stepped route (descents to FL090/110/070) costs more fuel and time than a flat flight, hence the spike at exactly FL160. Fix to make: the same basis for every point of the series (flat flight at each level, plan level included), and show the plan's real quote as its own marker ("plan", stepped), or re-scale the steps around each candidate level. To take by the fuel agent. |
+| 24/10 | V3 Fuel › "Level decision" chart | The fuel axis is labelled in the sheet's unit (`sheet.unit`, "lb") while the figures of the page are in the displayed unit (kg, "46 kg" in the legend) | Draw the axis in the displayed unit through `fuelTxt`/the unit helpers (lot of 22 Oct); small, with the fix above. |
 
 ## Closed
 
