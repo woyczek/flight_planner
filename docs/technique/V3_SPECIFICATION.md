@@ -172,6 +172,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
      184 px of chrome above the map (header 57, sub-tabs 44, margin 12, toolbar 48, info line 23), map 235 px (35 %).
      Rules 1–4 above give the map back about 130 px; in addition the **default sheet position goes down to 30 % on a
      phone** (floor 170 px; 35 % on a screen unchanged) so that the map keeps about 60 % of the view by default.
+  6. **Atmosphere's sheet is the reference** (user, 14:45: "J'aime la proposition de volet de la part de météo"): the
+     grip row carries a meaningful title that says what the content is and its context ("Tranche 43.49° 4.93° · à
+     4 NM de la route · 14:44Z", "Profil · chaque lieu lu à l'heure de passage · 9 lieux"), ◀ ▶ to move between
+     items when it makes sense, ✕ at the right; no separate title row, no segmented control row. The map's sheet
+     adopts it: the title names the content (profile of the flight, airspaces at this point, LFBD reporting points,
+     weather cross-section) and the Profil · Météo choice becomes two small icon chips at the right of the grip row.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
