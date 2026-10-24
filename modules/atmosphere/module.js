@@ -224,6 +224,7 @@ const STYLE = `
 [data-module="atmosphere"] .at-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 [data-module="atmosphere"] .at-box{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:var(--sog-chart-grid);isolation:isolate}
 [data-module="atmosphere"]~.f-overlay .at-lvl{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;box-sizing:border-box;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:color-mix(in srgb,var(--sog-surface) 92%,transparent);color:var(--sog-fg);box-shadow:0 2px 8px #0000002e;font-weight:700;font-size:11px;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:auto;touch-action:manipulation;cursor:pointer}
+[data-module="atmosphere"]~.f-overlay .at-lvl[hidden]{display:none}
 [data-module="atmosphere"]~.f-overlay .at-lvl>span[aria-hidden]{font-size:8px;line-height:1;color:var(--sog-muted)}
 [data-module="atmosphere"]~.f-overlay .at-lvl select{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;cursor:pointer;margin:0}
 [data-module="atmosphere"]~.f-overlay .at-lvl:focus-within{outline:2px solid var(--sog-accent);outline-offset:2px}
@@ -240,7 +241,7 @@ const STYLE = `
 [data-module="atmosphere"] .at-layers .at-key{width:22px;flex:none;display:inline-block;height:0;border-top:2px solid currentColor}
 [data-module="atmosphere"] .at-layers .at-ramp{width:22px;height:9px;border-radius:2px;flex:none;display:inline-block}
 [data-module="atmosphere"] .at-layers>p{grid-column:1/-1;margin:6px 0 0;font-size:.9em;color:var(--sog-muted)}
-[data-module="atmosphere"] .at-hint{position:absolute;left:calc(16px + var(--sog-touch,44px));right:calc(16px + var(--sog-touch,44px));top:8px;width:max-content;max-width:calc(100% - 32px - 2 * var(--sog-touch,44px));box-sizing:border-box;margin:0 auto;z-index:3;font-size:12px;background:color-mix(in srgb,var(--sog-surface) 85%,transparent);color:var(--sog-muted);padding:2px 8px;border-radius:99px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="atmosphere"] .at-layers>p.at-mapnote{margin:0 0 4px;color:var(--sog-fg)}
 [data-module="atmosphere"] .at-maptip{position:absolute;z-index:6;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:5px 7px;font-size:12px;line-height:1.35;box-shadow:var(--sog-shadow);white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
@@ -284,6 +285,8 @@ const STYLE = `
 let stop = null;
 /** Position de la feuille gardée d'un montage à l'autre dans la même page (la primitive n'en garde pas). */
 let sheetKeep = 'default';
+/** L'indice « toucher la carte » est donné une fois par page. */
+let tapNoted = false;
 
 export async function mount(el, ctx) {
   const {
@@ -400,7 +403,6 @@ export async function mount(el, ctx) {
 <h1 class="at-sr">${esc(T('srTitle'))}</h1>
 <div class="at-box" data-at="box">
   <div class="at-map" data-at="map"></div><canvas class="at-over" data-at="over" aria-hidden="true"></canvas>
-  <div class="at-hint" data-at="hint">${esc(T('tapHint'))}</div>
   <div class="at-maptip" data-at="mapTip"></div>
 </div>
 <section class="f-sheet-panel" data-at="data">
@@ -445,6 +447,7 @@ export async function mount(el, ctx) {
   lvlChip.className = 'at-lvl';
   lvlChip.title = T('mapLevelAria');
   lvlChip.innerHTML = `<span></span><span aria-hidden="true">▾</span><select aria-label="${esc(T('mapLevelAria'))}"></select>`;
+  lvlChip.hidden = true; // rien à choisir avant la grille de la carte
   const lvlText = lvlChip.firstChild,
     lvlSel = lvlChip.querySelector('select');
   ov.right.insertBefore(lvlChip, btnLoad.nextSibling);
@@ -1640,7 +1643,8 @@ export async function mount(el, ctx) {
       row = (group, k, label, k2) => `<label><input type="checkbox" data-g="${group}" data-k="${k}"${S[group][k] ? ' checked' : ''}> ${k2 || ''} ${esc(T(label))}</label>`,
       cloud = `rgba(${cloudRgb()},.7)`,
       barbKey = '<span class="at-key" style="border:0;height:auto;text-align:center">⟋</span>';
-    layersBox.innerHTML = `<div><b>${esc(T('mapTitle'))}</b>` +
+    const note = mapNote();
+    layersBox.innerHTML = (note ? `<p class="at-mapnote">${esc(T('mapTitle'))} · ${esc(note)}</p>` : '') + `<div><b>${esc(T('mapTitle'))}</b>` +
       row('mapLayers', 'isobar', 'lyIsobar', key(`color:${dark() ? '#c3c2b7' : '#3d3c39'}`)) +
       row('mapLayers', 'isotherm', 'lyIso', key('color:#c23b3a;border-top-style:dashed')) +
       row('mapLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
@@ -1682,22 +1686,34 @@ export async function mount(el, ctx) {
     baseTitle();
   };
 
+  /** État de la lecture : dans « Vol » et dans le corps du bloc tant qu'il n'y a pas de coupe (jamais dans le titre). */
   function setStatus(s) {
     setText($f('status'), s);
-    setSum(s);
     if (!S.traj && S.view !== 'settings') drawData();
+  }
+  /** Le vol en bref, connu avant la météo : appareil, route, niveau, départ, modèle et run. */
+  function flightSum() {
+    const f = S.flight,
+      ac = f.aircraft ? [f.aircraft.type, f.aircraft.registration].filter(Boolean).join(' ') : '';
+    $('demoTag').classList.toggle('at-hidden', S.data !== 'demo');
+    setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') :
+      `${S.model?.name || ''}${S.run ? ` · run ${fmtHM(S.run)}` : ''}`
+    ].filter(Boolean).join(' · ') + (S.outOfRange ? ' ⚠' : ''));
+  }
+  /** Ce que montre la carte (heure, niveau et lignes), en tête des couches ; « Charger » quand la grille manque. */
+  function mapNote() {
+    const F = S.grid && S.mapF;
+    if (!F) return S.traj ? T('mapLoad') : '';
+    return [F.time ? fmtHM(F.time) : '', F.pLabel].filter(Boolean).join(' · ');
   }
 
   function status() {
     const f = S.flight,
       r = S.route,
-      run = S.run ? ` · run ${fmtHM(S.run)}` : '',
       spentNow = Math.round((r?.weight || 0) + (S.grid?.weight || 0)),
       ac = f.aircraft ? [f.aircraft.type, f.aircraft.registration].filter(Boolean).join(' ') : '';
-    $('demoTag').classList.toggle('at-hidden', S.data !== 'demo');
-    // titre de la poignée : le vol en bref (appareil, route, niveau, départ, modèle) ; le détail des appels dans « Vol » et « i »
-    setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') : `${S.model?.name || ''}${run}`]
-      .filter(Boolean).join(' · ') + (S.outOfRange ? ' ⚠' : ''));
+    // titre de la poignée : le vol en bref ; le détail des appels dans « Vol »
+    flightSum();
     setText($f('status'), T('stFlight', {
         from: f.from
       }) + (ac ? ` · ${ac}` : '') + ` · ${f.dep} → ${f.arr}` + (f.altn ? ` (${T('altnShort', { id: f.altn })})` : '') +
@@ -1707,8 +1723,7 @@ export async function mount(el, ctx) {
           n: spentNow
         }) : T('stCached')) + ` · ${T('stDay', { n: Math.round(S.daySpent) })}` : '') +
       (S.outOfRange ? ` · ${T('outOfRange')}` : ''));
-    const F = S.grid && S.mapF;
-    setText($('hint'), F ? `${F.time ? fmtHM(F.time) : ''} · ${F.pLabel ? `${F.pLabel} · ` : ''}${T('tapHint')}` : T('tapHint'));
+    if (S.view === 'layers') layersCard();
   }
 
   function levelOptions(cur) {
@@ -1730,6 +1745,12 @@ export async function mount(el, ctx) {
     if (S.grid) {
       mapLevelOptions();
       S.mapF = mapFields();
+    }
+    if (lvlChip.hidden !== !S.grid) lvlChip.hidden = !S.grid;
+    // l'indice du toucher : une notification, une fois par page (jamais posé sur la carte)
+    if (!tapNoted) {
+      tapNoted = true;
+      ctx.notify(T('tapNote'), 'info');
     }
     status();
     drawData();
@@ -1761,6 +1782,8 @@ export async function mount(el, ctx) {
       S.depTime = depValue();
       const mid = f.points[Math.floor(f.points.length / 2)];
       S.model = A.modelFor(mid.lat, mid.lon);
+      S.run = null;
+      flightSum();
       // un lieu tous les 50 NM, 24 au plus (comme Carburant) : l'échantillonnage tient le quota d'abord
       const smp = sectionPlaces(f.points),
         levels = gridLevels(),
@@ -1775,6 +1798,7 @@ export async function mount(el, ctx) {
       // l'heure du run d'abord (fichier statique, gardé 10 min) : elle dit si la réserve a encore le dernier run
       S.run = S.data === 'demo' ? null : await W.run(S.model.id);
       if (stale()) return;
+      flightSum();
       // la grille de la carte (lourde) arrive après la route ; la coupe s'affiche sans l'attendre
       const gridP = forecast(gr.places, gVars, {
         cacheOnly,
@@ -1828,7 +1852,7 @@ export async function mount(el, ctx) {
         return;
       }
       if (stale()) return;
-      if (!grid) return setText($('hint'), T('mapLoad'));
+      if (!grid) return S.view === 'layers' && layersCard();
       S.grid = {
         g: gr,
         locs: grid.locs,

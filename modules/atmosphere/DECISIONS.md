@@ -2,6 +2,20 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (evening) — the relay's review: nothing written over the map, no status in the title
+
+- **The relay's review after integration** (asked by the user: "Toi, l'ergonomie, tu vérifies"): the template header ·
+  map · sheet · bar is right; to remove: the hint pill over the map, a status message in the handle's title, an
+  altitude chip showing only "▾" before the forecast. The MapLibre attribution is the maps lot's (`map_base.js`).
+- **The hint is a notification** (`ctx.notify`, once per page, when a profile is first drawn), never over the map;
+  what the map shows (time, level, lines) or "Load to read the grid" heads the Layers content.
+- **The title says the content and its context, never a state**: the flight in brief is computed as soon as the flight
+  is read (before any forecast: aircraft, route, level, departure, model, then the run once known); the reading's state
+  stays in the body of the block and in Flight.
+- **The altitude chip is hidden until the map's grid is read** (nothing to choose before).
+- The frame aligned its right column (`align-items: flex-start` under `wrap-reverse`, `89496a41`); the round chip is
+  kept: same size as the other buttons.
+
 ## 24 October 2026 (evening) — buttons on the map, the flight in the sheet's title
 
 - **The request** (user, relayed): "Visuellement, le volet fonctionne, mais pas les boutons. Maximiser l'espace alloué à

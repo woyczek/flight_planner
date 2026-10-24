@@ -167,7 +167,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   the temperature met) drawn with the maps module's technique — MapLibre and a vector overlay redrawn with every frame
   of the movement, its plain background without tiles (`MapsRender`, countries' outlines) — and a bottom block: the
   overall profile along the route (cloud by level, isotherms, inversions, indicative icing, density altitude, wind,
-  terrain; requested, planned and computed paths) in the frame's three-position sheet, its handle line titled with the content and the flight in brief, the local slice of any point tapped on the map or the profile, the
+  terrain; requested, planned and computed paths) in the frame's three-position sheet, its handle line titled with the content and the flight in brief (never a status), nothing written over the map (the tap hint is a notification), the local slice of any point tapped on the map or the profile, the
   summary (a compact list), aerodromes (METAR / TAF) and table behind "Details", the settings behind "Flight", the layers
   of the map and the profile in the same block. Profile and slice in SVG
   (vector lines, smooth fields); the profile is offered to the maps module's sheet as a pure `drawSection` (section.js). The map

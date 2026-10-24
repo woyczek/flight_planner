@@ -39,8 +39,10 @@ export const TX = {
     'Details: Übersicht, Flugplätze, Tabelle', 'Detalles: resumen, aeródromos, tabla'
   ],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
-  tapHint: ['toucher la carte : tranche locale', 'tap the map: local slice', 'Karte antippen: lokaler Schnitt',
-    'tocar el mapa: corte local'
+  tapNote: ['Touchez la carte pour voir l’atmosphère en ce point (tranche locale).',
+    'Tap the map to see the atmosphere at that point (local slice).',
+    'Tippen Sie auf die Karte, um die Atmosphäre an diesem Punkt zu sehen (lokaler Schnitt).',
+    'Toque el mapa para ver la atmósfera en ese punto (corte local).'
   ],
   sheetSize: ['Hauteur du bloc de données : toucher ou glisser', 'Data block height: tap or drag',
     'Höhe des Datenblocks: antippen oder ziehen', 'Altura del bloque de datos: tocar o arrastrar'

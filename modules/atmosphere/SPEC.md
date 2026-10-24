@@ -13,12 +13,13 @@ the phone's whole frame; portrait only for now (the landscape layout is a later 
   over the map in the frame's overlay layer (`frame/INTEGRATION.md` § 9.3). Left: **Layers**. Right: **Flight** (the
   settings in the bottom block: flight source, departure time, level, cruise speed, data, map grid, Load), **Details**
   (list icon, not an "i": the frame's header has its own; the details in the bottom block), **Load**, the **altitude chip** (the map's level in brief — Sol / SFC, FL270, Traj.;
-  a tap opens the system's list with the full names), then the frame's **full screen** (header and bar hidden).
+  a tap opens the system's list with the full names; hidden until the map's grid is read), then the frame's **full screen** (header and bar hidden).
 - **Map** (top, all the height the block leaves): at the altitude chosen with its chip — sea level (MSL isobars every
   2 hPa, highs and lows, 2 m isotherms, cloud, 10 m wind), the requested level, each planned step, fixed levels
   (5,000 ft … FL300), or the computed trajectory (route coloured by the temperature met, thicker in cloud, ❄ where
   icing is possible); aloft, isobars at constant true altitude. The Layers button opens, in the bottom block (the map stays in
-  view), the layers of the map and of the profile side by side, each with its key. **A tap on the map opens the local slice at that point.**
+  view), the layers of the map and of the profile side by side, each with its key. **A tap on the map opens the local slice at that point** (said once per page in a notification; nothing is
+  written over the map). What the map shows (its time, level and lines) heads the Layers content.
 - **Bottom block**: the frame's sheet (`frame/lib/sheet.js`) — three heights (collapsed to its header, default, expanded) pulled by
   its handle, its content scrolling inside. **Its handle line carries the title: the content, then its context** — the
   profile and **i** with the flight in brief (aircraft, route, level, departure time, model and run; the demonstration
