@@ -81,6 +81,29 @@ For each application: the first screen, the three things the person does most, h
 with a mouse, what happens offline, where the synchronisation state and control are. Then per module: the screens
 by size. Drafted with the user, validated before code.
 
+### 7.1 Phone target given by the user (24 October 2026, reference: the iVAC app)
+
+The user showed iVAC (VAC charts app, iOS) as the ergonomic target for the Pilot application on a phone. Keep the
+**path** in mind even when features are added: every verb at most one tap away, under the thumbs.
+
+- **No hamburger menu.** A **bottom tab bar** with **five items at most, Settings included**, near the thumbs: the
+  verbs of the application (today Fuel, Map, Report, My flights, Website: five already; Settings would make six, so
+  one verb has to go to a secondary place, or Website folds into another). The bar replaces the drawer; the rail stays
+  on a screen.
+- **The selected item changes form, not only colour**: a filled variant of the icon on a soft pill (iVAC: filled glyph
+  in a rounded grey block), a discreet change, no bright accent block.
+- **A "back to top" arrow** when the screen is scrolled, because some controls sit at the top.
+- **A small "i" badge** (green in iVAC) on a line that opens a particular pop-up (state of the data: "eAIP in force
+  01 OCT 2026", next update), instead of a sentence.
+- **Synchronisation control in Settings**, under the right thumb: an acceptable path since Settings is one tap away.
+- Filters as **chips** on one row ("All ✓ / Favourites / Recent"), a sort button at the end; lists with a 44 px row,
+  the code as a badge, a chevron or a status icon at the right.
+- Settings as **segmented controls** and toggles on one line with their label, the version and credits at the bottom.
+
+For the ergonomics session: this reshapes the frame's navigation on a phone (frame SPEC § 3.1, the drawer) and the
+design primitives (tab bar, chips, segmented control, badge, back-to-top); to decide and cut into lots with the frame
+and design agents. The four design mock-ups (§ 10.3) were made with the drawer; the tab bar supersedes it on a phone.
+
 ## 8. Decisions log
 
 - 22 Oct 2026 — V3 decided: frame + modules + three applications (Pilot, CPCO, SOG client); the application and the
