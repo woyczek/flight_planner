@@ -251,6 +251,17 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   device (a visible counter in Settings › Diagnostics, per day), cap the samples per flight, and keep a safety margin;
   the relay server, when it exists, holds the shared cache and the count for the whole airline.
 
+  **World view without credits** (relay decision, 24 Oct 2026, after the user: "si on zoom out la carte météo, on
+  n'a pas les infos… sans cramer des crédits… users are dumb"): a device never calls Open-Meteo outside the flight
+  grid, whatever the view. Outside the grid the map draws a **global synoptic file** built once per run by the
+  repository workflow (standard-library Python in `tools/`, a job in `.github/workflows`) and published with the
+  pages: MSL pressure, 10 m wind, cloud cover, 2 m temperature, every 3 h to +24 h, on a **15°** mesh (≈ 288
+  points; ≈ 1 150 weighted calls a day over 4 runs, from the runner only); 10° only if the user asks. No extra
+  button: the grip title says what is shown ("Synoptique monde · run 12Z · +6 h"), and the flight cut returns when
+  the view comes back into the grid. Format specified by the atmosphere module and inherited by the frame/weather
+  lot (§ 9.8). SIGMET and METAR (aviationweather.gov, no CORS) come only through the launcher relay, later. NOAA
+  GFS (NOMADS, GRIB2) is the quota-free alternative, not taken for now (decoding cost in pure Python).
+
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 
 Branch `v3` (from `develop`), one commit per lot, each module in `modules/<name>/` with its three documents. Order:
