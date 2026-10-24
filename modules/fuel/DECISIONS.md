@@ -520,3 +520,16 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   a flight on "LFRD REN/F090 BALNI BAKUL/F110 NTS DIXAD TUPAR/F070 CGC LFBD" at FL160): no spike, two diamonds and the
   legend line "Plan: FL160, 856 kg, 0:54", axis "kg" with 800 / 850 / 900, then "lb" with 1,800 / 1,900 / 2,000 and
   "Plan: FL160, 1,888 lb, 0:54" when the display unit is lb; no `pageerror`, no horizontal scroll.
+
+## 24 October 2026 — the first tab is called "Quote" (the user, through the relay)
+
+- **What**: the module's first tab, "Préparer / Plan / Planen / Preparar" (`TX.plan`), becomes "Devis / Quote / Berechnung /
+  Cálculo", because "Préparer" now also names the frame's bottom tab (two things with one name on the same screen). Also
+  changed: the "No OFP on this device" message (it named the tab), the comments naming "écran Préparer", the opening
+  sentence of the help in four languages (the screen opens on the "Quote" tab, the sheets on the "Sheets" tab), SPEC § 9,
+  INTEGRATION. The screen's concept keeps its name "Plan screen" in the documents (history in this log untouched).
+- **Judgement call**: step 4 of the plan is already called "Quote / Devis / Kalkulation / Cálculo" (de "Kalkulation"
+  there, "Berechnung" for the tab, as decided); a tab and a step with the same name in fr, en and es is a small
+  ambiguity (the tab holds the five steps, step 4 is one of them), reported to the ergonomics session.
+- **Checked**: tab labels read on the screen in the four languages (see the report of the lot).
+

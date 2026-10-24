@@ -18,7 +18,7 @@ How the frame mounts the fuel module and what the module reads and writes. The r
 | `modules/fuel/test/quote.html` | bench: known cases taken from the V2 page, every displayed value found again; unit conversions and round trips |
 | `modules/fuel/test/levels.html` | bench: level decision, curves and climb instructions against the V2 view's state |
 | `modules/fuel/test/sheets.html` | bench: sheets functions against the V2 functions on the same inputs (`sheets_v2.json`) |
-| `modules/fuel/module.js` | the module mounted by the frame: `meta`, `mount(el, ctx)`, `unmount()`; screens Plan and Sheets (SPEC § 9) |
+| `modules/fuel/module.js` | the module mounted by the frame: `meta`, `mount(el, ctx)`, `unmount()`; screens Plan (tab "Quote") and Sheets (SPEC § 9) |
 
 Load `performance_model.js`, then `model.js`, `levels.js`, `perf_prompt.js`. None touches the page, the network or the
 storage. The sheets logic is aerodb's (`(await ctx.aerodb.aircraft()).lib`, AeroDBSheets): aerodb configures it with
@@ -153,7 +153,7 @@ report and maps never write nor erase it.
 - Addresses: fuel opens the map with `#maps?from=fuel` (phone) or `#fuel?with=maps` (dual view, from 980 px); the
   Map's "Edit the route" comes back with `#fuel?from=maps&focus=route` (step 2, route field focused).
 - Query read by fuel: `focus=route` (above) and, since 24 Oct 2026, `view=sheets` (`#fuel?view=sheets` opens the Sheets
-  screen). Without it the module always opens on the Plan, whatever the last screen used: `cache/fuel/ui.json` no
+  screen). Without it the module always opens on the Plan screen (the first tab, "Quote"), whatever the last screen used: `cache/fuel/ui.json` no
   longer holds `view`.
 - `aircraft` (fuel's, from `aircraft().aircraftOf(hit)`): `{ sheetId, type, registration, callsign, name, source }`
   (`source`: `sheet`, `fleet`, `reference`, `type`, `free`); report takes the registration and the callsign.

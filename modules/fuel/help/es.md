@@ -13,8 +13,8 @@ que pulsar. El resultado (combustible de bloque, combustible de viaje, tiempo, i
 en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS», «viento: previsión ICON FL060»,
 «viento introducido»). En un teléfono esta barra ocupa tres líneas: el contexto
 («Bloque · FL060→090→110→070 · viento ARPEGE FL060», completo al tocarlo), el combustible de bloque y tres teselas
-«Etapa», «Tiempo» y «TOD» (inicio del descenso). La pantalla se abre siempre en la preparación; las fichas se abren
-con su pestaña. Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
+«Etapa», «Tiempo» y «TOD» (inicio del descenso). La pantalla se abre siempre en la pestaña «Cálculo»; las fichas se abren
+con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
 5000 ft (FL060), en pies por debajo (3500 ft).
 
 **1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en

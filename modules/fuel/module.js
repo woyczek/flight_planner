@@ -1,6 +1,6 @@
 // V3 fuel — module Carburant et niveau de l'appli Pilote, monté par le cadre (frame/SPEC.md § 3.2 ;
 // modules/fuel/SPEC.md, INTEGRATION.md). Deux écrans dans le module :
-//   · Préparer : cinq blocs visibles sur téléphone (appareil, route, niveau et vent, décision du niveau, résultat
+//   · Devis : cinq blocs visibles sur téléphone (appareil, route, niveau et vent, décision du niveau, résultat
 //     collant en bas), le reste replié (détail du devis, consignes de montée, réglages du devis) ;
 //   · Fiches : les fiches de performances (import CSV / JSON / .lnmperf / OFP, réponse ChatGPT collée, compléments
 //     EUROCONTROL, autre fiche du type, édition, export .lnmperf et JSON), chaque changement montré champ par champ et
@@ -66,7 +66,7 @@ const OFP_PATH = 'cache/fuel/last_ofp.json',
 
 // ---------------------------------------------------------------- textes [fr, en, de, es]
 const TX = {
-  plan: ['Préparer', 'Plan', 'Planen', 'Preparar'],
+  plan: ['Devis', 'Quote', 'Berechnung', 'Cálculo'],
   sheets: ['Fiches', 'Sheets', 'Datenblätter', 'Fichas'],
   aircraft: ['Appareil', 'Aircraft', 'Luftfahrzeug', 'Aeronave'],
   acSearch: ['Fiche, immatriculation, indicatif ou type', 'Sheet, registration, callsign or type',
@@ -603,8 +603,8 @@ const TX = {
     'Pegue una ficha (JSON, CSV de rendimiento, .lnmperf) o una respuesta de ChatGPT:'
   ],
   pasted: ['texte collé', 'pasted text', 'eingefügter Text', 'texto pegado'],
-  noOfp: ['Aucun OFP sur cet appareil : reprenez-le dans Préparer.', 'No OFP on this device: load it in Plan.',
-    'Kein OFP auf diesem Gerät: unter Planen laden.', 'Ningún OFP en este dispositivo: cárguelo en Preparar.'
+  noOfp: ['Aucun OFP sur cet appareil : reprenez-le dans l\'onglet Devis.', 'No OFP on this device: load it in the Quote tab.',
+    'Kein OFP auf diesem Gerät: im Reiter Berechnung laden.', 'Ningún OFP en este dispositivo: cárguelo en la pestaña Cálculo.'
   ],
   calibrated: ['calibrée sur le navlog', 'calibrated on the navlog', 'am Navlog kalibriert', 'calibrada con el navlog']
 };
@@ -1303,14 +1303,14 @@ const STYLE = `
 [data-module="fuel"] .fu-wx{padding:8px 0;border-bottom:1px solid var(--sog-border)}
 [data-module="fuel"] .fu-wx:last-child{border-bottom:0}`;
 
-// ---------------------------------------------------------------- écran Préparer
-/** Redessine l'écran Préparer en gardant le champ en cours de frappe et le défilement (renderPlanBody fait le dessin). */
+// ---------------------------------------------------------------- écran Devis
+/** Redessine l'écran Devis en gardant le champ en cours de frappe et le défilement (renderPlanBody fait le dessin). */
 function renderPlan() {
   // champ en cours de frappe (data-k, et data-i pour les niveaux des points) : valeur, focus et sélection rendus par
   // keepScroll du cadre (frame/lib/dom.js) — un rendu ne réécrit jamais ce que l'on tape
   keepScroll(S.body, renderPlanBody);
 }
-/** Dessine l'écran Préparer (champs une fois ; résultats redessinés par refresh). */
+/** Dessine l'écran Devis (champs une fois ; résultats redessinés par refresh). */
 function renderPlanBody() {
   const f = S.flight,
     r = f.route || {},
@@ -1409,7 +1409,7 @@ function renderPlanBody() {
     wxFetch(false);
   }
 }
-/** Champ changé dans Préparer : vol courant ou réglages mis à jour, route relue si elle change, résultats redessinés. */
+/** Champ changé dans Devis : vol courant ou réglages mis à jour, route relue si elle change, résultats redessinés. */
 function onPlanInput(e) {
   const k = e.target.dataset?.k,
     v = e.target.value,
@@ -1591,7 +1591,7 @@ function onPlanInput(e) {
   saveFlight();
   refresh();
 }
-/** Clic dans Préparer : SimBrief, niveau pris sur la courbe ou par un bouton. */
+/** Clic dans Devis : SimBrief, niveau pris sur la courbe ou par un bouton. */
 function onPlanClick(e) {
   const st = e.target.closest('[data-step]');
   if (st) return goStep(+st.dataset.step);
@@ -2901,7 +2901,7 @@ function renderSummary(C) {
 /** Vol courant écrit par un autre module (by ≠ 'fuel' : maps, route modifiée sur la carte) : ses points et son texte
  *  sont gardés tels qu'il les a écrits (ni relus ni normalisés) ; distance et route vraie redéduites des points, devis
  *  refait, profil réécrit et vol courant réécrit par fuel (by: 'fuel') — maps sait alors que TOC et TOD sont à jour.
- *  Que l'écran soit Préparer ou Fiches. */
+ *  Que l'écran soit Devis ou Fiches. */
 function adoptForeignFlight() {
   const r = S.flight.route ||= emptyFlight().route;
   routeDerived(r);
@@ -3642,7 +3642,7 @@ function download(name, text, type) {
 }
 
 // ---------------------------------------------------------------- montage
-/** Passe d'un écran du module à l'autre (Préparer, Fiches). */
+/** Passe d'un écran du module à l'autre (Devis, Fiches). */
 function show(view) {
   S.view = view;
   for (const b of S.el.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === view));

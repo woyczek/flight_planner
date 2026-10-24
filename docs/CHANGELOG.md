@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Changed — Fuel: the first tab is called "Quote"** (`modules/fuel/module.js`; SPEC § 9, INTEGRATION, DECISIONS, help ×4)
+  — "Préparer / Plan / Planen / Preparar" becomes "Devis / Quote / Berechnung / Cálculo", because "Prepare" is now the name
+  of the frame's bottom tab. The message "No OFP on this device" names the new tab.
+
 - **Fixed — Fuel: the level decision no longer spikes at the plan's level, and its fuel axis follows the displayed unit**
   (`modules/fuel/levels.js` `requoteSeries`, `modules/fuel/module.js`, `modules/fuel/test/levels.html`; SPEC § 3 and § 9,
   INTEGRATION, DECISIONS, help ×4, BUGS ×2) — on a route with level steps ("FL160→090→110→070"), the fuel and time curves
