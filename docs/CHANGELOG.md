@@ -28,6 +28,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   the designs' tab-bar rules no longer sit under `max-width: 760px` (the bar is displayed on a phone and in landscape only). New case
   A14 in the suite and a landscape part in the sheet bench (129 checks).
 
+- **V3 Map: the weather cut is no longer clipped at the bottom; the default sheet shows the drawing alone** (`modules/maps/module.js`, maps
+  DECISIONS, `tests/v3/` D4 and `seed_forecast`) — on a phone the weather cut kept its 140 px readability floor in a body that was
+  `overflow: hidden`, so the distance axis was cut (a short window, landscape before the column: a 117 px body); the body now scrolls and the cut is redrawn at the real
+  height when the sheet settles. At the default position the sheet body shows the profile or the cut alone, on the whole body height
+  (the profile has a 120 px floor); the text line under the cursor and the notes appear only when the sheet is expanded, under the drawing.
+
 - **Aeronautical database: loading, access not set and not published are three different messages** (`frame/aerodb/aerodb.js`, `frame/app.js`,
   `modules/maps/module.js`, manual note in four languages, `tests/v3/` A15 / D5 / D5b; settings DECISIONS, aerodb INTEGRATION / DECISIONS, frame
   INTEGRATION § 10) — on a phone (seen in the app added to the iOS home screen) the Map said "Aeronautical database not published" while the base

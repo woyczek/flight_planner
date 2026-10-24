@@ -101,7 +101,7 @@ def d3(c):
 
 @case('D4', 'Profile / Weather chips', 'D', tags=('sheet', 'maps'), screens=False, langs4=True, rule='maps lot point 4')
 def d4(c):
-    c.open('maps', flight=True)
+    c.open('maps', flight=True, forecast=True)
     chips = c.boxes('.mp-chip')
     c.eq(len(chips), 2, 'two icon chips', what='chips')
     info = c.js("[...document.querySelectorAll('.mp-chip')].map(b => ({ title: b.title, label: b.getAttribute('aria-label'), pressed: b.getAttribute('aria-pressed'), hidden: b.hidden }))")
@@ -121,6 +121,72 @@ def d4(c):
     before = c.js("""() => { const h = document.querySelector('.f-sheet-head'), ch = h.querySelector('.mp-chips'), x = h.querySelector('.f-sheet-close');
         return !!(ch.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING) }""")
     c.ok(before, 'the chips come after the close button in the head', 'the chips are placed before the ✕')
+    sheet_body_checks(c)
+
+
+_GEO_JS = """() => { const q = s => document.querySelector(s), r = e => { if (!e) return null; const b = e.getBoundingClientRect(); return { t: b.top, b: b.bottom, h: b.height, shown: b.height > 0 && getComputedStyle(e).display !== 'none' } };
+  const body = q('.mp-dbody'), svg = q('.mp-dbody svg');
+  return { sheet: q('[data-module="maps"]').dataset.sheet, panel: r(q('.f-sheet-panel')), dprof: r(q('.mp-dprof')), cv: r(q('.mp-pc')), strip: r(q('.mp-strip')),
+           notes: r(q('.mp-notes')), body: r(body), svg: r(svg), scroll: body ? [body.scrollHeight, body.clientHeight] : null } }"""
+
+
+def wx_reach(c, what):
+    """The weather cut in the sheet body: nothing leaves the sheet, and its bottom (the distance axis) is visible or reached by scrolling the body."""
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", what=f'{what}: the cut is drawn (the seeded forecast)')
+    c.wait(300)
+    g = c.js(_GEO_JS)
+    c.le(round(g['body']['b'] - g['panel']['b'], 1), 1, 'the body of the sheet stays inside the sheet', what=f'{what}: body bottom against sheet bottom')
+    if g['svg']['b'] > g['body']['b'] + 1:             # taller than the body: the body scrolls, and its end shows the axis
+        c.ok(g['scroll'][0] > g['scroll'][1] + 1, f'drawing {g["svg"]["h"]:.0f} px in a {g["body"]["h"]:.0f} px body without a scroll',
+             'a drawing taller than the body makes the body scroll, it is never clipped')
+        oy = c.style('.mp-dbody', 'overflowY')
+        c.ok(oy in ('auto', 'scroll'), f'overflow-y {oy} (a hidden body is scrollable by script only, not by a finger)', 'the body can be scrolled by the user')
+        c.js("() => { const b = document.querySelector('.mp-dbody'); b.scrollTop = b.scrollHeight }")
+        c.wait(150)
+        g = c.js(_GEO_JS)
+    c.le(round(g['svg']['b'] - g['body']['b'], 1), 1, 'the bottom of the cut (distance axis) is reachable', what=f'{what}: cut bottom against body bottom')
+    return g
+
+
+def sheet_body_checks(c):
+    """Maps lot of 24 Oct (relay): the weather cut keeps its readability floor and the body scrolls instead of clipping the distance axis
+    (phone portrait and landscape); at the default position the body shows the drawing alone (profile or cut), `.mp-strip` and `.mp-notes`
+    come only expanded, under the drawing."""
+    # default position, profile: the canvas fills the body, no text line, no notes
+    g = c.js(_GEO_JS)
+    c.eq(g['sheet'], 'default', 'the sheet opens at its default position', what='sheet position')
+    c.ge(round(g['cv']['h'] / g['dprof']['h'], 3), 0.9, 'at the default position the profile canvas takes at least 90 % of the body', what='profile canvas / body')
+    c.ok(not g['strip']['shown'] and not g['notes']['shown'], f'strip shown {g["strip"]["shown"]}, notes shown {g["notes"]["shown"]}',
+         'the text line and the notes are not shown at the default position')
+    # default position, weather cut: portrait, then landscape (844 x 390: the sheet is a column at the right since the frame's landscape lot)
+    c.tap('.mp-chip[data-view="weather"]')
+    g = wx_reach(c, 'portrait 390 x 844')
+    c.ok(g['scroll'][0] <= g['scroll'][1] + 1, f'body scrolls by {g["scroll"][0] - g["scroll"][1]} px', 'portrait: the cut fits the default body without scrolling')
+    c.ok(not g['strip']['shown'] and not g['notes']['shown'], f'strip shown {g["strip"]["shown"]}, notes shown {g["notes"]["shown"]}',
+         'the weather cut alone at the default position')
+    c.page.set_viewport_size({'width': 844, 'height': 390})
+    c.settle()
+    wx_reach(c, 'landscape 844 x 390')
+    g = c.js(_GEO_JS)
+    c.ge(round(g['svg']['h']), 140, 'the cut keeps the readability floor of drawSection (140 px)', what='landscape cut height')
+    # a short phone window (a small screen, the keyboard up): the default body is lower than the 140 px floor, so the body must scroll
+    c.page.set_viewport_size({'width': 390, 'height': 520})
+    c.settle()
+    g = wx_reach(c, 'short window 390 x 520')
+    c.ok(g['scroll'][0] > g['scroll'][1] + 1, f'drawing {g["svg"]["h"]:.0f} px in a {g["body"]["h"]:.0f} px body', 'short window: the cut is taller than the body, which scrolls (floor kept)')
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    c.settle()
+    # expanded: the text line and the notes come under the drawing, which keeps the whole remaining height
+    c.drag('.f-sheet-grip', -420)
+    g = wx_reach(c, 'expanded, portrait')
+    c.ok(g['scroll'][0] <= g['scroll'][1] + 1, f'body scrolls by {g["scroll"][0] - g["scroll"][1]} px', 'expanded: no scroll is needed')
+    c.ok(g['notes']['shown'] and g['notes']['t'] >= g['body']['b'] - 1, f'notes {g["notes"]}', 'expanded: the notes are shown under the drawing')
+    c.tap('.mp-chip[data-view="profile"]')
+    c.wait(400)
+    g = c.js(_GEO_JS)
+    c.eq(g['sheet'], 'expanded', 'the sheet stays expanded', what='sheet position')
+    c.ok(g['strip']['shown'] and g['strip']['t'] >= g['cv']['b'] - 2, f'strip {g["strip"]}, canvas bottom {g["cv"]["b"]:.0f}', 'expanded: the text line is shown under the profile')
+    c.ok(g['notes']['shown'] and g['notes']['t'] >= g['strip']['b'] - 1, f'notes {g["notes"]}', 'expanded: the notes are shown under the text line')
 
 
 @case('D5', 'Status as notification + note', 'D', tags=('maps',), screens=False, langs4=True, rule='maps lot point 5; settings 24 Oct 2026 (the cause is said)')

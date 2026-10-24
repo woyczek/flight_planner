@@ -965,3 +965,23 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   not started but dated (`planned_at`, the flight date, counted from it as a started flight from `started.at`; INTEGRATION § 3 of fuel):
   `withEta` no longer requires `started` and ignores the ETAs of a flight that is not started when the last one is past. Nothing else
   of the started-flight drawing changes (`plannedPos`, the actual position and the trail still need `started`).
+
+- **24 Oct 2026 — the sheet body: the weather cut scrolls instead of being clipped; the drawing alone at the default position**
+  (relay cloud; user's words on iPhone captures: "Toujours le bug en bas (pas d'échelle x)" and "sur ce profil, on ne veut que le profil.
+  Le reste apparaît quand on slide le volet bas. Si on le rétracte, c'est ok par contre.").
+  - Cause of the clipped cut: `weatherBuild` draws at the body's measured height, but `drawSection` keeps a readability floor of 140 px
+    (`Math.max(140, o.height)`); the body was `overflow: hidden` (`.mp-dbody[data-kind=weather]`), so a body lower than 140 px (+12 px of
+    padding), as in landscape 844 × 390 before the frame's landscape column (117 px) or in a short window (390 × 520), cut the bottom: distance axis and labels. Same bug as Atmosphere's (`0f199a72e`).
+    Now `overflow-x: hidden; overflow-y: auto`: the floor is kept and the body scrolls; the cut is redrawn at the real height by the
+    existing `ResizeObserver` on the body and, since this lot, by `onSettle` (with the profile).
+  - The profile is a canvas that fits its box, so it never overflowed; it now has a floor too (`.mp-prof` 120 px) and its block
+    (`.mp-dprof`) scrolls below it, instead of crushing the labels.
+  - Rule (specification § 7.1.9): at the **default position the body shows the drawing alone** (profile or cut, the whole body height);
+    `.mp-strip` (the text line under the cursor) and `.mp-notes` appear only **expanded**, under the drawing. Collapsed: the frame already
+    hides everything but the handle. Pure CSS on the root's `data-sheet` (`:not([data-sheet="expanded"], .mp-tuning)`); the tuning page
+    keeps everything. Warnings stay in the floating notifications; the notes' text stays in the DOM (tests read it).
+  - Tests: `tests/v3/lib.py` `seed_forecast` / `open(forecast=True)` write a synthetic forecast in the weather store (the Weather chip
+    then draws without network); D4 measures, in portrait, landscape (column) and a short 390 × 520 window, that the cut's bottom is visible or reachable by a user scroll
+    (computed `overflow-y` auto, since a hidden body is scrollable by script only), that nothing leaves the sheet, that the profile
+    canvas takes at least 90 % of the body at the default position, and that strip and notes come expanded, under the drawing.
+

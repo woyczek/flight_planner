@@ -204,6 +204,43 @@ def flight_docs(started=False, trigram='ABC', steps=False):
     return [['device/identity.json', {'trigram': trigram}, 'cache'], [f'pilot/{trigram}/current_flight.json', f, 'document']]
 
 
+# A synthetic forecast for the planned flight, written where the shared weather store reads it (cache/weather/<model>/<cell>/<day>.json,
+# modules/atmosphere/weather_store.js): the Weather chip of the map then draws the vertical cut without any network.  The places,
+# variables, model and cells are the ones the module itself asks for (section.js / atmo.js), the values a standard atmosphere.
+_FORECAST_JS = r"""async (route) => {
+  const [Sx, A, W] = await Promise.all([import('/modules/atmosphere/section.js'), import('/modules/atmosphere/atmo.js'),
+    import('/modules/atmosphere/weather_store.js')]);
+  const pts = route.points.map(p => ({ id: p.id, lat: p.lat, lon: p.lon, alt_ft: 0 }));
+  const mid = pts[Math.floor(pts.length / 2)], model = A.modelFor(mid.lat, mid.lon).id, size = W.cellSize(model);
+  const vars = Sx.sectionVars(route.levelFt, pts), cells = new Map();
+  for (const p of Sx.sectionPlaces(pts)) { const c = W.cellOf(p.lat, p.lon, size); cells.set(c.id, c) }
+  const day0 = Date.parse(new Date().toISOString().slice(0, 10)), docs = [];
+  const val = (v, h) => {
+    const m = /^(.*)_(\d+)hPa$/.exec(v), name = m ? m[1] : v, hm = m ? 44330 * (1 - Math.pow(+m[2] / 1013.25, 0.19029)) : 0;
+    const t = { temperature: Math.max(-56, 15 - 0.0065 * hm), relative_humidity: 60, cloud_cover: 30, geopotential_height: hm,
+      wind_speed: 15 + hm / 400, wind_direction: 260 + h, temperature_2m: 12, dew_point_2m: 8, pressure_msl: 1015, surface_pressure: 1000,
+      cloud_cover_low: 40, cloud_cover_mid: 30, cloud_cover_high: 20, freezing_level_height: 2800, cape: 50, visibility: 20000,
+      precipitation: 0, wind_speed_10m: 8, wind_direction_10m: 270 }[name];
+    return t == null ? 0 : t;
+  };
+  for (const c of cells.values()) for (let d = 0; d < 2; d++) {
+    const day = new Date(day0 + d * 864e5).toISOString().slice(0, 10), times = Array.from({ length: 24 }, (_, h) => (day0 + d * 864e5) / 1000 + h * 3600);
+    const vs = {}; for (const v of vars) vs[v] = times.map((_, h) => val(v, h));
+    docs.push([W.PREFIX + model + '/' + c.id + '/' + day + '.json', { schema: 1, model, cell: c.id, size, lat: c.lat, lon: c.lon,
+      elevation: 100, day, times, vars: vs, refused: [], run: null, at: Date.now() }, 'cache']);
+  }
+  return docs;
+}"""
+
+
+def seed_forecast(page, base=None, route=None, level_ft=27000):
+    """cache/weather/**: a synthetic forecast for the planned flight of FLIGHT (see _FORECAST_JS); returns the number of files."""
+    base = base or _W['base']
+    page.goto(base + '/frame/manifest.webmanifest')
+    docs = page.evaluate(_FORECAST_JS, {'points': (route or FLIGHT['route'])['points'], 'levelFt': level_ft})
+    return _seed(page, base, docs)
+
+
 def seed_flight(page, started=False, trigram='ABC', base=None):
     """pilot/<trigram>/current_flight.json (+ the identity that names it): the planned flight, started or not."""
     return _seed(page, base, flight_docs(started, trigram))
@@ -424,14 +461,14 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None, airfields=False, flights=0, reports=0):
+             tone=None, airfields=False, flights=0, reports=0, forecast=False):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
         and the frame then asks for one in a notification that covers the bottom of the screen).  `flight`: the planned flight; `started`: it
         is under way; `pending`: that many reports still to write; `airfields`: the published base also knows the aerodromes and
         points of the seeded route (seed_plan); `flights` / `reports`: a flight log of that many flights, `reports` of them with
-        a report (seed_flights)."""
+        a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast)."""
         docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']]
         if trigram:
             docs.append(['device/identity.json', {'trigram': trigram}, 'cache'])
@@ -444,6 +481,8 @@ class Ctx(Asserts):
         if pending:
             docs.append(['cache/flightlog/pending.json', pending_doc(pending), 'cache'])
         _seed(self.page, self.base, docs)
+        if forecast:
+            seed_forecast(self.page, self.base)
         self.page.goto(f'{self.base}/frame/index.html#{target}', wait_until='load')
         if wait:
             self.ready(target, sheet=flight)
