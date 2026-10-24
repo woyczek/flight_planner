@@ -166,8 +166,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   4. **Group switch without a row**: the Carburant · Atmosphère sub-tabs row disappears; a second tap on the active
      bottom tab opens a small popover above the bar listing the group's modules (the current one marked); on a screen
      the rail already lists them. Reachable too from the "i" pop-up? No: the popover only.
-  5. **Buttons that do not respond on the iPhone** (atmosphere's toolbar, maps' too?): to reproduce with touch events
-     and fix in the module lots (suspects: pointer capture of the sheet's grip, `touch-action`, a transparent overlay).
+  5. ~~Buttons that do not respond on the iPhone~~ — amended by the user (14:20): "Techniquement, ça fonctionne. Mais
+     ce n'est pas du tout ni ergonomique, ni utile pour un utilisateur. C'est un souci d'interface, pas de code."
+     and "Maximiser l'espace alloué à la carte." Measured on the atmosphere screen (iPhone 13 emulation, 664 px high):
+     184 px of chrome above the map (header 57, sub-tabs 44, margin 12, toolbar 48, info line 23), map 235 px (35 %).
+     Rules 1–4 above give the map back about 130 px; in addition the **default sheet position goes down to 30 % on a
+     phone** (floor 170 px; 35 % on a screen unchanged) so that the map keeps about 60 % of the view by default.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
