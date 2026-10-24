@@ -39,9 +39,25 @@ server (`python -m http.server` at the root). `?donnees=demo` starts on the offl
 | Flight | example of `modules/fuel/INTEGRATION.md` § 3, `data/pilot/<trigram>/current_flight.json` served by the launcher, a file, or a route text in coordinates | — |
 
 **Open-Meteo's free quota** is counted per IP address (600 weighted calls a minute, 10,000 a day; a call is one place
-and up to 10 variables). One load is about 17–24 route places × ~98 variables plus 48 map places × the variables of
-the levels around the offered altitudes only (`bracketLevels`): roughly 350–400 weighted calls. Answers are kept 30
-minutes in the session.
+and up to 10 variables, more variables count pro rata). One full load is about 17–24 route places × up to 98 variables
+plus 48 map places × the variables of the levels around the offered altitudes only (`bracketLevels`): roughly
+350–400 weighted calls. The page spares it:
+
+- **nothing is asked when the page opens**: it shows what the device already keeps, otherwise it states the cost and
+  waits for « Charger »;
+- **answers are kept on the device** (Cache API, cache `labs-atmosphere`; the page's memory only where the Cache API
+  is missing), per model and per set of places, **variable by variable**: a load asks only the variables still missing
+  and merges them (another requested level, step or fixed map level reads only its own levels). An entry is valid for
+  the model run it was read from (`meta.json`, a static file kept 10 minutes; at most 6 h, same UTC day), 30 minutes
+  when the run is unknown;
+- the route reads its levels **up to the top of the cross-section** only (`levelsUpTo`), the map the levels around the
+  offered altitudes;
+- two loads of the same places wait for each other instead of asking twice;
+- a **local tally** (`localStorage['labs:atmosphere:ledger']`, 24 h rolling) waits rather than exceed 600 calls a minute
+  and stops before 10,000 a day — approximate, since the real count is per IP address; not applied with a customer key;
+- the status line gives the calls spent by the load (0 when read from the device) and the device's total over 24 h.
+
+TAF answers (avwx.rest) are kept 30 minutes on the device.
 
 ## Files
 
@@ -50,7 +66,8 @@ minutes in the session.
   cumulus base, trajectory, grid, bilinear refinement, marching-squares contours. Reuses `modules/fuel/winds.js`.
 - `demo.js` — offline demonstration: an invented but plausible situation (Atlantic low and its front, south-east high
   with a low-level inversion, westerly jet, schematic relief), answered in Open-Meteo's own format.
-- `page.js`, `index.html` — the page.
+- `page.js`, `index.html` — the page; every access to its environment (data repository, network, device cache) goes
+  through one adapter, `IO`, the part a V3 module replaces with `ctx.data` / `ctx.net` (`ROADMAP.md`).
 
 ## Known limits (mock-up)
 

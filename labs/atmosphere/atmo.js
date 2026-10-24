@@ -58,18 +58,20 @@ export function bracketLevels(fts) {
   return LEVELS.filter(l => out.has(l));
 }
 
-/** Adresse d'une demande Open-Meteo pour des lieux [{ lat, lon }] : variables par niveau × niveaux, variables de surface,
- *  vent en nœuds, heures Unix, deux jours ; avec une clé, le service client (customer-api). */
+/** Adresse d'une demande Open-Meteo pour des lieux [{ lat, lon }] : variables par niveau × niveaux, variables de surface
+ *  (ou la liste vars telle quelle), vent en nœuds, heures Unix, deux jours ; avec une clé, le service client
+ *  (customer-api). */
 export function forecastUrl(places, {
   model,
   levels = LEVELS,
   levelVars = ROUTE_LEVEL_VARS,
   surfaceVars = ROUTE_SURFACE_VARS,
+  vars = null,
   key = '',
   days = 2
 } = {}) {
   const f = v => (+v).toFixed(3),
-    hourly = [...surfaceVars, ...levels.flatMap(l => levelVars.map(v => `${v}_${l}hPa`))].join(',');
+    hourly = (vars || [...surfaceVars, ...levels.flatMap(l => levelVars.map(v => `${v}_${l}hPa`))]).join(',');
   return `https://${key ? 'customer-api' : 'api'}.open-meteo.com/v1/forecast` +
     `?latitude=${places.map(p => f(p.lat)).join(',')}&longitude=${places.map(p => f(p.lon)).join(',')}` +
     `&hourly=${hourly}&wind_speed_unit=kn&timeformat=unixtime&forecast_days=${days}` +

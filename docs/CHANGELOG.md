@@ -50,7 +50,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   terrain) with the requested, planned and computed (climb / descent) paths, each place read at the time the flight
   passes it; a map at the same altitudes (isobars, isotherms, cloud, wind; constant-altitude isobars aloft); vertical
   slices; a table along the trajectory; METAR / TAF of the aerodromes. Open-Meteo pressure levels, offline
-  demonstration data (`?donnees=demo`). French only for now.
+  demonstration data (`?donnees=demo`). French only for now. Sparing with Open-Meteo's free quota: nothing is
+  asked when the page opens (only what the device already keeps is shown; « Charger » reads the forecast); answers
+  are kept on the device (Cache API) per model and places, valid for the model run they came from, and only the
+  missing variables are asked (another level does not read the others again); the route reads its levels up to the
+  top of the cross-section only; a local tally waits rather than exceed 600 calls a minute and stops before
+  10,000 a day; the status line gives the calls spent by each load; the pages' security policy (`tools/csp_policy.py`) allows
+  `customer-api.open-meteo.com` (customer key). Roadmap: `labs/atmosphere/ROADMAP.md`.
 - **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
   help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA
   is placed with the route labels, under its name, before the aerodromes.

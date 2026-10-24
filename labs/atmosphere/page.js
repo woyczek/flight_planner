@@ -354,36 +354,106 @@ async function readFlight() {
   const tri = $('tri').value.trim().toUpperCase();
   if (!/^[A-Z0-9]{2,4}$/.test(tri)) throw new Error('Indiquez votre trigramme.');
   store.set('labs:atmosphere:tri', tri);
-  let r;
+  let rec;
   try {
-    r = await fetch(new URL(`../../data/pilot/${encodeURIComponent(tri)}/current_flight.json`, location.href), {
-      cache: 'no-store'
-    });
-  } catch {
-    throw new Error('Lanceur injoignable : ouvrez cette page depuis la suite servie par le lanceur.');
+    rec = await IO.read(`pilot/${tri}/current_flight.json`);
+  } catch (e) {
+    throw new Error(e.status ? `Vol courant illisible (HTTP ${e.status}).` :
+      'Lanceur injoignable : ouvrez cette page depuis la suite servie par le lanceur.');
   }
-  if (!r.ok) throw new Error(r.status === 404 ? `Aucun vol courant pour ${tri} (data/pilot/${tri}/current_flight.json).` :
-    `Vol courant illisible (HTTP ${r.status}).`);
-  return fromRecord(await r.json(), `vol courant ${tri}`);
+  if (!rec) throw new Error(`Aucun vol courant pour ${tri} (data/pilot/${tri}/current_flight.json).`);
+  return fromRecord(rec, `vol courant ${tri}`);
 }
 
 // ---------------------------------------------------------------- données
 
-/** JSON d'une adresse, gardé 30 min dans la session (sans la clé) ; un refus d'Open-Meteo donne sa raison. */
-async function getJson(url, init) {
-  const key = 'labs:atmosphere:' + url.replace(/&apikey=[^&]*/, '');
-  try {
-    const c = JSON.parse(sessionStorage.getItem(key) || 'null');
-    if (c && Date.now() - c.at < 30 * 60e3) return c.json;
-  } catch {}
-  let r;
-  try {
-    r = await fetch(url, init);
-  } catch {
-    throw Object.assign(new Error('réseau injoignable'), {
-      offline: true
-    });
+/** Réserve de l'appareil : réponses gardées d'un chargement, d'un onglet et d'une session à l'autre (Cache API, cache
+ *  « labs-atmosphere ») ; sans Cache API (page en http hors localhost, fichier), la mémoire de la page seulement. */
+const MEM = new Map(),
+  PENDING = new Map();
+const keep = {
+  url: key => `${location.origin}/__labs-atmosphere/${encodeURIComponent(key)}`,
+  async get(key) {
+    if (MEM.has(key)) return MEM.get(key);
+    try {
+      const r = await (await caches.open('labs-atmosphere')).match(keep.url(key)),
+        v = r ? await r.json() : null;
+      if (v) MEM.set(key, v);
+      return v;
+    } catch {
+      return null;
+    }
+  },
+  async set(key, v) {
+    MEM.set(key, v);
+    try {
+      await (await caches.open('labs-atmosphere')).put(keep.url(key), new Response(JSON.stringify(v), {
+        headers: {
+          'content-type': 'application/json'
+        }
+      }));
+    } catch {}
   }
+};
+
+/** Accès de la page à son environnement, en un seul endroit, pour que l'intégration en V3 n'ait qu'eux à remplacer
+ *  (ROADMAP.md) : read(chemin du dépôt des données) → JSON, null si absent — en V3 ctx.data.read ; fetch — en V3
+ *  ctx.net.fetch (relais du lanceur, clé avwx de l'appareil ajoutée par le cadre) ; cache — en V3 la politique « cache »
+ *  de ctx.data (cache/fuel/aloft.json de fuel relu d'abord, pour ne pas payer deux fois le quota). */
+const IO = {
+  async read(path) {
+    const r = await fetch(new URL(`../../data/${path.split('/').map(encodeURIComponent).join('/')}`, location.href), {
+      cache: 'no-store'
+    });
+    if (r.status === 404) return null;
+    if (!r.ok) throw Object.assign(new Error(`HTTP ${r.status}`), {
+      status: r.status
+    });
+    return r.json();
+  },
+  fetch: (url, init) => fetch(url, init),
+  cache: keep
+};
+
+/** Décompte local des appels Open-Meteo sur cet appareil (poids : lieux × variables / 10, A.callWeight), sur 24 h
+ *  glissantes : la page attend plutôt que de dépasser 600 / min et s'arrête avant 10 000 / jour. Approché : le quota
+ *  réel est compté par adresse IP, qu'un autre appareil ou une autre page peut partager. Sans objet avec une clé. */
+const QUOTA = {
+  min: 600,
+  day: 10000
+};
+const ledger = () => {
+  try {
+    return JSON.parse(localStorage.getItem('labs:atmosphere:ledger') || '[]').filter(([t]) => Date.now() - t < 864e5);
+  } catch {
+    return [];
+  }
+};
+const spent = (ms, l = ledger()) => l.filter(([t]) => Date.now() - t < ms).reduce((s, [, w]) => s + w, 0);
+async function spend(w, stale) {
+  if (spent(864e5) + w > QUOTA.day) throw Object.assign(new Error(`décompte de cet appareil : ≈ ${Math.round(spent(864e5))} appels ` +
+    'sur 24 h, la demande suivante dépasserait 10 000'), {
+    quota: true
+  });
+  for (;;) {
+    const l = ledger().filter(([t]) => Date.now() - t < 6e4);
+    if (spent(6e4, l) + w <= QUOTA.min || w > QUOTA.min || !l.length) break;
+    if (stale()) throw Object.assign(new Error('chargement remplacé'), {
+      stale: true
+    });
+    $('status').textContent = `Quota minute d'Open-Meteo (600 / min) : reprise dans ${Math.ceil((l[0][0] + 6e4 - Date.now()) / 1e3)} s…`;
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  store.set('labs:atmosphere:ledger', JSON.stringify([...ledger(), [Date.now(), Math.round(w * 10) / 10]]));
+}
+
+/** JSON d'une adresse ; un refus d'Open-Meteo donne sa raison ; une coupure réseau : une seconde tentative. */
+async function fetchJson(url, init) {
+  let r;
+  for (let k = 0; k < 2 && !r; k++) r = await IO.fetch(url, init).catch(() => null);
+  if (!r) throw Object.assign(new Error('réseau injoignable'), {
+    offline: true
+  });
   if (!r.ok) {
     let reason = '';
     try {
@@ -393,51 +463,117 @@ async function getJson(url, init) {
       status: r.status
     });
   }
-  const json = await r.json();
-  try {
-    sessionStorage.setItem(key, JSON.stringify({
-      at: Date.now(),
-      json
-    }));
-  } catch {}
+  return r.json();
+}
+
+/** JSON d'une adresse gardé ttl ms dans la réserve (la clé n'entre pas dans le nom) ; cacheOnly : null s'il n'y est pas. */
+async function cachedJson(url, init, ttl, cacheOnly = false) {
+  const key = 'url|' + url.replace(/&apikey=[^&]*/, ''),
+    c = await IO.cache.get(key);
+  if (c && Date.now() - c.at < ttl) return c.json;
+  if (cacheOnly) return null;
+  const json = await fetchJson(url, init);
+  await IO.cache.set(key, {
+    at: Date.now(),
+    json
+  });
   return json;
 }
 
-/** Variables horaires d'une demande (pour la démonstration, qui répond aux mêmes noms). */
+/** Variables horaires d'une demande. */
 const varsOf = (levels, levelVars, surfaceVars) => [...surfaceVars, ...levels.flatMap(l => levelVars.map(v => `${v}_${l}hPa`))];
+/** Variables qu'un modèle peut refuser (nébulosité par niveau, surface hors de l'essentiel) : sur un refus, la demande
+ *  est refaite sans elles, et elles sont notées absentes pour ne plus être demandées. */
+const CORE_SURFACE = new Set(['temperature_2m', 'dew_point_2m', 'pressure_msl', 'surface_pressure', 'cloud_cover_low',
+  'cloud_cover_mid', 'cloud_cover_high'
+]);
+const optional = v => /^cloud_cover_\d+hPa$/.test(v) || !/hPa$/.test(v) && !CORE_SURFACE.has(v);
+/** Une entrée de la réserve vaut pour le run du modèle où elle a été lue (6 h au plus), 30 min si le run est inconnu ;
+ *  toujours le même jour UTC (la prévision commence à 0 h UTC du jour). */
+const fresh = (e, now) => new Date(e.at).toISOString().slice(0, 10) === new Date(now).toISOString().slice(0, 10) &&
+  (S.run && e.run ? e.run === S.run && now - e.at < 6 * 36e5 : now - e.at < 30 * 60e3);
 
-/** Prévision de lieux : Open-Meteo, ou la démonstration ; sur un refus (variable inconnue du modèle), une seconde
- *  demande sans nébulosité par niveau ni variables de surface facultatives. */
-async function forecast(places, {
-  levels,
-  levelVars,
-  surfaceVars
-}) {
-  if (S.data === 'demo') return A.locations(Demo.forecast(places, varsOf(levels, levelVars, surfaceVars)));
-  const key = store.get('labs:atmosphere:omkey') || '',
-    o = {
-      model: S.model.id,
-      levels,
-      levelVars,
-      surfaceVars,
-      key
+/** Prévision de lieux pour des variables : Open-Meteo, ou la démonstration. La réserve garde, par modèle et par lieux,
+ *  les séries déjà lues ; seules les variables manquantes sont demandées puis fusionnées (un niveau de plus ne relit
+ *  pas les autres). Deux demandes pour les mêmes lieux s'attendent. { locs, weight (appels du décompte dépensés) } ;
+ *  cacheOnly : null s'il manque une variable. */
+async function forecast(places, vars, {
+  cacheOnly = false,
+  stale = () => false
+} = {}) {
+  if (S.data === 'demo') return {
+    locs: A.locations(Demo.forecast(places, vars)),
+    weight: 0
+  };
+  const key = `om|${S.model.id}|${places.map(p => `${(+p.lat).toFixed(3)},${(+p.lon).toFixed(3)}`).join(';')}`;
+  for (let p;
+    (p = PENDING.get(key));) await p.catch(() => {});
+  const job = (async () => {
+    const now = Date.now();
+    let e = await IO.cache.get(key);
+    if (e && !fresh(e, now)) e = null;
+    const have = new Set(e ? [...e.vars, ...e.refused] : []);
+    let missing = vars.filter(v => !have.has(v)),
+      weight = 0;
+    if (!missing.length) return {
+      locs: A.locations(e.json),
+      weight
     };
+    if (cacheOnly) return null;
+    const apikey = store.get('labs:atmosphere:omkey') || '',
+      ask = async list => {
+        const w = A.callWeight(places.length, list.length);
+        if (!apikey) await spend(w, stale);
+        weight += w;
+        return [].concat(await fetchJson(A.forecastUrl(places, {
+          model: S.model.id,
+          vars: list,
+          key: apikey
+        })));
+      };
+    let json, refused = [];
+    try {
+      json = await ask(missing);
+    } catch (err) {
+      if (err.status !== 400 || !missing.some(optional)) throw err;
+      notify(`Open-Meteo refuse une variable pour ${S.model.name} (${err.message}) : nouvelle demande réduite.`);
+      refused = missing.filter(optional);
+      missing = missing.filter(v => !optional(v));
+      json = missing.length ? await ask(missing) : places.map(() => ({
+        hourly: {}
+      }));
+    }
+    if (json.length !== places.length) throw new Error('réponse incomplète d’Open-Meteo');
+    // fusion : seulement sur les mêmes heures (sinon l'entrée ancienne est laissée et toutes les variables relues)
+    if (e && String(e.json[0]?.hourly?.time?.[0]) !== String(json[0]?.hourly?.time?.[0] ?? e.json[0]?.hourly?.time?.[0])) {
+      e = null;
+      missing = vars.filter(v => !refused.includes(v));
+      json = await ask(missing);
+    }
+    const merged = e ? e.json.map((loc, i) => ({
+      ...loc,
+      hourly: {
+        ...loc.hourly,
+        ...json[i].hourly
+      }
+    })) : json;
+    await IO.cache.set(key, {
+      at: e?.at ?? now,
+      run: e ? e.run : S.run,
+      vars: [...(e?.vars || []), ...missing],
+      refused: [...(e?.refused || []), ...refused],
+      json: merged
+    });
+    return {
+      locs: A.locations(merged),
+      weight
+    };
+  })();
+  PENDING.set(key, job);
   try {
-    return A.locations(await getJson(A.forecastUrl(places, o)).catch(e => {
-      // une coupure réseau : une seconde tentative
-      if (!e.offline) throw e;
-      return getJson(A.forecastUrl(places, o));
-    }));
-  } catch (e) {
-    if (e.status !== 400) throw e;
-    notify(`Open-Meteo refuse une variable pour ${S.model.name} (${e.message}) : nouvelle demande réduite.`);
-    return A.locations(await getJson(A.forecastUrl(places, {
-      ...o,
-      levelVars: levelVars.filter(v => v !== 'cloud_cover'),
-      surfaceVars: ['temperature_2m', 'dew_point_2m', 'pressure_msl', 'surface_pressure', 'cloud_cover_low', 'cloud_cover_mid',
-        'cloud_cover_high'
-      ]
-    })));
+    return await job;
+  } finally {
+    if (PENDING.get(key) === job) PENDING.delete(key);
   }
 }
 
@@ -448,13 +584,14 @@ const RUN_OF = {
   icon_seamless: 'dwd_icon',
   gfs_seamless: 'ncep_gfs013'
 };
-/** Heure du dernier run du modèle (Open-Meteo, métadonnées) ; null sans réponse. */
+/** Heure du dernier run du modèle (Open-Meteo, métadonnées : fichier statique, hors de l'API de prévision), gardée
+ *  10 min ; null sans réponse. Elle dit si les prévisions de la réserve sont encore celles du dernier run. */
 async function modelRun(model) {
   if (S.data === 'demo') return null;
   try {
-    const j = await getJson(`https://api.open-meteo.com/data/${RUN_OF[model] || model}/static/meta.json`, {
+    const j = await cachedJson(`https://api.open-meteo.com/data/${RUN_OF[model] || model}/static/meta.json`, {
       signal: AbortSignal.timeout(8000)
-    });
+    }, 10 * 60e3);
     return j?.last_run_initialisation_time || null;
   } catch {
     return null;
@@ -463,7 +600,7 @@ async function modelRun(model) {
 
 /** METAR et TAF des terrains (départ, arrivée, dégagement) : metar.vatsim.net ; TAF par avwx.rest avec la clé de
  *  l'appareil (localStorage githubData:avwx, posée dans les Réglages de la suite ; jamais affichée). */
-async function aerodromes() {
+async function aerodromes(cacheOnly = false) {
   const f = S.flight,
     ids = [f.dep, f.arr, f.altn].filter(x => /^[A-Z]{4}$/.test(x || '')).filter((x, i, a) => a.indexOf(x) === i);
   if (!ids.length) return {
@@ -484,7 +621,7 @@ async function aerodromes() {
   let metars = [],
     note = [];
   try {
-    const r = await fetch(`https://metar.vatsim.net/metar.php?id=${ids.join(',')}`);
+    const r = await IO.fetch(`https://metar.vatsim.net/metar.php?id=${ids.join(',')}`);
     metars = decodeMetars(await r.text());
     note.push('METAR : metar.vatsim.net');
   } catch {
@@ -495,16 +632,17 @@ async function aerodromes() {
   if (key) {
     for (const id of ids) {
       try {
-        tafs[id] = fromAvwxTaf(await getJson(`https://avwx.rest/api/taf/${id}`, {
+        const j = await cachedJson(`https://avwx.rest/api/taf/${id}`, {
           headers: {
             Authorization: `BEARER ${key}`
           }
-        }));
+        }, 30 * 60e3, cacheOnly);
+        if (j) tafs[id] = fromAvwxTaf(j);
       } catch {
         break;
       }
     }
-    note.push(Object.keys(tafs).length ? 'TAF : avwx.rest' : 'TAF injoignables');
+    note.push(Object.keys(tafs).length ? 'TAF : avwx.rest' : cacheOnly ? 'TAF : « Charger » pour les lire' : 'TAF injoignables');
   } else note.push('TAF : clé avwx.rest à poser dans les Réglages de la suite');
   return {
     ids,
@@ -1629,13 +1767,16 @@ function status() {
   const f = S.flight,
     r = S.route,
     run = S.run ? ` · run ${fmtHM(S.run)}` : '',
-    w = r ? Math.round(A.callWeight(r.samples.length, r.vars) + (S.grid ? A.callWeight(S.grid.g.places.length, S.grid.vars) : 0)) : 0;
+    spentNow = Math.round((r?.weight || 0) + (S.grid?.weight || 0)),
+    day = Math.round(spent(864e5));
   $('source').textContent = S.data === 'demo' ? 'démonstration hors ligne' : `${S.model?.name || ''}${run}`;
   $('demoTag').classList.toggle('hidden', S.data !== 'demo');
   $('status').textContent = `Vol : ${f.from}${f.aircraft ? ` · ${[f.aircraft.type, f.aircraft.registration].filter(Boolean).join(' ')}` : ''} · ` +
     `${f.dep} → ${f.arr}${f.altn ? ` (dégagement ${f.altn})` : ''}` + (f.updated ? ` · écrit le ${new Date(f.updated).toLocaleString('fr-FR')}` : '') +
-    (r && S.data !== 'demo' ? ` · Open-Meteo : ${r.samples.length} lieux sur la route, ${S.grid?.g.places.length || 0} pour la carte, ≈ ${w} appels du décompte (gratuit : 600 / min)` :
-      '') + (S.outOfRange ? ' · ⚠ heure hors de la prévision : l’heure la plus proche est montrée' : '');
+    (r && S.data !== 'demo' ? ` · Open-Meteo : ${r.samples.length} lieux sur la route, ${S.grid?.g.places.length || 0} pour la carte, ` +
+      (spentNow ? `≈ ${spentNow} appels du décompte pour ce chargement` : 'lu dans la réserve de l’appareil (aucun appel)') +
+      ` · ≈ ${day} sur 24 h depuis cet appareil (gratuit : 10 000 / jour, 600 / min)` : '') +
+    (S.outOfRange ? ' · ⚠ heure hors de la prévision : l’heure la plus proche est montrée' : '');
 }
 
 function levelOptions(cur) {
@@ -1646,18 +1787,27 @@ function levelOptions(cur) {
   sel.value = cur;
 }
 
-/** Charge le vol puis la météo de la route, de la carte et des terrains. */
-async function load() {
+/** Niveaux lus sur la route (jusqu'au haut de la coupe) et sur la grille (ceux qui encadrent les altitudes offertes). */
+const routeLevels = () => A.levelsUpTo(topFt());
+const gridLevels = () => A.bracketLevels(mapAltitudes(S.flight));
+
+/** Charge le vol puis la météo de la route, de la carte et des terrains. cacheOnly (ouverture de la page) : seulement ce
+ *  que la réserve de l'appareil a déjà, sans appel à Open-Meteo ni à avwx.rest ; sinon la page attend « Charger ». */
+async function load({
+  cacheOnly = false
+} = {}) {
   // un chargement plus récent l'emporte : celui-ci s'arrête dès qu'il ne l'est plus
   const seq = load.seq = (load.seq || 0) + 1,
     stale = () => seq !== load.seq;
   try {
     S.data = $('dataSrc').value;
+    if (S.data === 'demo') cacheOnly = false;
     $('status').textContent = 'Lecture du vol…';
     const f = await readFlight();
     if (stale()) return;
     S.flight = f;
-    S.levelFt = f.levelFt || +$('levelSel').value || 10000;
+    // un niveau choisi dans la page l'emporte sur celui du vol (comme l'heure de départ)
+    S.levelFt = $('levelSel').dataset.touched && +$('levelSel').value || f.levelFt || +$('levelSel').value || 10000;
     levelOptions(S.levelFt);
     S.cruiseKt = +$('cruiseKt').value || A.cruiseKtOf(f.text) || 200;
     $('cruiseKt').value = S.cruiseKt;
@@ -1666,37 +1816,42 @@ async function load() {
     const mid = f.points[Math.floor(f.points.length / 2)];
     S.model = A.modelFor(mid.lat, mid.lon);
     const smp = A.samples(f.points, 25, 24),
-      levels = A.bracketLevels(mapAltitudes(f)),
-      gr = A.grid(f.points, +$('gridMax').value);
+      rLevels = routeLevels(),
+      levels = gridLevels(),
+      gr = A.grid(f.points, +$('gridMax').value),
+      rVars = varsOf(rLevels, A.ROUTE_LEVEL_VARS, A.ROUTE_SURFACE_VARS),
+      gVars = varsOf(levels, A.GRID_LEVEL_VARS, A.GRID_SURFACE_VARS);
     $('status').textContent = S.data === 'demo' ? 'Démonstration : calcul…' : `Open-Meteo (${S.model.name}) : route et carte…`;
+    // l'heure du run d'abord (fichier statique, gardé 10 min) : elle dit si la réserve a encore le dernier run
+    S.run = await modelRun(S.model.id);
+    if (stale()) return;
     // la grille de la carte (lourde : jusqu'à 30 s) arrive après la route ; la coupe s'affiche sans l'attendre
-    const gridP = forecast(gr.places, {
-      levels,
-      levelVars: A.GRID_LEVEL_VARS,
-      surfaceVars: A.GRID_SURFACE_VARS
+    const gridP = forecast(gr.places, gVars, {
+      cacheOnly,
+      stale
     });
     gridP.catch(() => {});
-    // l'heure du run complète la source quand elle arrive, sans retenir la coupe
-    S.run = null;
-    modelRun(S.model.id).then(run => {
-      if (stale() || !run) return;
-      S.run = run;
-      if (S.route) status();
-    });
-    const [locs, wx] = await Promise.all([
-      forecast(smp, {
-        levels: A.LEVELS,
-        levelVars: A.ROUTE_LEVEL_VARS,
-        surfaceVars: A.ROUTE_SURFACE_VARS
+    const [route, wx] = await Promise.all([
+      forecast(smp, rVars, {
+        cacheOnly,
+        stale
       }),
-      aerodromes().catch(() => null)
+      aerodromes(cacheOnly).catch(() => null)
     ]);
     if (stale()) return;
-    if (locs.length !== smp.length) throw new Error('réponse incomplète d’Open-Meteo');
+    if (!route) {
+      // ouverture de la page sans prévision en réserve : rien n'est demandé tant que l'utilisateur ne charge pas
+      $('status').textContent = `Prévision non chargée : « Charger » lit Open-Meteo (${S.model.name}, ≈ ` +
+        `${Math.round(A.callWeight(smp.length, rVars.length) + A.callWeight(gr.places.length, gVars.length))} appels du décompte ; ` +
+        `≈ ${Math.round(spent(864e5))} sur 24 h depuis cet appareil, gratuit : 10 000 / jour), ou « Démonstration hors ligne ».`;
+      return;
+    }
+    if (route.locs.length !== smp.length) throw new Error('réponse incomplète d’Open-Meteo');
     S.route = {
       samples: smp,
-      locs,
-      vars: A.ROUTE_SURFACE_VARS.length + A.LEVELS.length * A.ROUTE_LEVEL_VARS.length
+      locs: route.locs,
+      levels: rLevels,
+      weight: route.weight
     };
     S.grid = null;
     S.wx = wx;
@@ -1708,29 +1863,30 @@ async function load() {
     $('mapSub').textContent = 'carte : lecture de la grille…';
     initMap();
     if (S.map) S.map.once('load', fitMap), fitMap();
-    let glocs;
+    let grid;
     try {
-      glocs = await gridP;
+      grid = await gridP;
     } catch (e) {
-      if (!stale()) notify(`Carte : prévision de la grille injoignable (${e.message}).`, true);
+      if (!stale() && !e.stale) notify(`Carte : prévision de la grille injoignable (${e.message}).`, true);
       return;
     }
     if (stale()) return;
-    if (glocs.length !== gr.places.length) return notify('Carte : réponse incomplète d’Open-Meteo.', true);
+    if (!grid) return $('mapSub').textContent = 'carte : « Charger » pour lire la grille';
+    if (grid.locs.length !== gr.places.length) return notify('Carte : réponse incomplète d’Open-Meteo.', true);
     S.grid = {
       g: gr,
-      locs: glocs,
+      locs: grid.locs,
       levels,
-      vars: A.GRID_SURFACE_VARS.length + levels.length * A.GRID_LEVEL_VARS.length
+      weight: grid.weight
     };
     mapLevelOptions();
     status();
     render(['map']);
   } catch (e) {
-    if (stale()) return;
+    if (stale() || e.stale) return;
     console.error(e);
-    const quota = /limit exceeded/i.test(e.message) ?
-      'Quota gratuit d’Open-Meteo atteint pour cette adresse IP (10 000 appels / jour, 600 / min) : ' +
+    const quota = /limit exceeded/i.test(e.message) || e.quota ?
+      `Quota gratuit d’Open-Meteo atteint (${e.quota ? e.message : 'pour cette adresse IP'} ; 10 000 appels / jour, 600 / min) : ` +
       'réessayer plus tard, poser une clé Open-Meteo, ou choisir « Démonstration hors ligne ».' : '';
     $('status').textContent = `Échec : ${quota || e.message}`;
     notify(quota || (e.offline ? 'Prévision injoignable : vérifiez le réseau, ou choisissez « Démonstration hors ligne ».' : e.message),
@@ -1807,7 +1963,9 @@ function boot() {
     S.depTime = depValue();
     S.levelFt = +$('levelSel').value;
     S.cruiseKt = +$('cruiseKt').value || S.cruiseKt;
-    if (S.grid && !A.bracketLevels(mapAltitudes(S.flight)).every(l => S.grid.levels.includes(l))) return load();
+    // un niveau que la route ou la grille n'a pas encore : seules ses variables sont demandées (réserve de l'appareil)
+    if (!routeLevels().every(l => S.route.levels.includes(l)) || S.grid && !gridLevels().every(l => S.grid.levels.includes(l)))
+      return load();
     S.mapF = null;
     compute();
     if (S.grid) mapLevelOptions();
@@ -1818,7 +1976,10 @@ function boot() {
     $('dep').dataset.touched = '1';
     recompute();
   };
-  $('levelSel').onchange = recompute;
+  $('levelSel').onchange = () => {
+    $('levelSel').dataset.touched = '1';
+    recompute();
+  };
   $('cruiseKt').onchange = recompute;
   chips('xsLayers', S.xsLayers, {
     cloud: 'Nuages',
@@ -1870,7 +2031,10 @@ function boot() {
     w0 = w;
     render(['xs', 'slice', 'map']);
   }).observe(document.body);
-  load();
+  // à l'ouverture, seulement la réserve de l'appareil : Open-Meteo n'est lu que sur « Charger »
+  load({
+    cacheOnly: true
+  });
 }
 
 boot();
