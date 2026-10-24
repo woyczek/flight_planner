@@ -6,9 +6,10 @@ Rules covered
   * the display units (kt / km/h, ft / m, NM / km / SM) change the figures and keep flight levels as FL (F3);
   * no horizontal page scroll at 390 and 360 px (F4; the date row overflowed until 24 Oct);
   * the wording "Devis" is not both the tab and a step of the same view (F5; step 4 is now "Résultat");
-  * the flight date is one value: the field writes `planned_at` of the current flight (F6).
+  * the flight date is one value: the field writes `planned_at` of the current flight (F6);
+  * a mount whose address changed while it was still reading writes nothing, and the view follows the address (F7).
 
-Cases: F1 F2 F3 F4 F5 F6.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
 from lib import Fail, Skip, case, norm, tx
@@ -141,3 +142,92 @@ def f6(c):
     r = waited(lambda r: r.get('planned_at') is None, '"Now" empties the date')
     c.eq((r.get('weather') or {}).get('when'), '', 'weather.when is empty too', what='weather.when after Now')
     r = waited(lambda r: not (r.get('progress') or {}).get('eta'), 'an undated flight has no ETA to promise')
+
+
+# a read of the frame's cache that comes back late: only the reads of `pilot/` and `cache/` documents are delayed, by `ms`
+# (set per step, 0 = not delayed), and counted; the request is wrapped so that the module sees the slow disk of a busy phone
+SLOW_READS = """() => {
+  if (window.__slow) return;
+  const get = IDBObjectStore.prototype.get, slow = window.__slow = { ms: window.__slowMs || 0, hits: 0 };
+  IDBObjectStore.prototype.get = function (key) {
+    const q = get.call(this, key);
+    if (!slow.ms || !/^(pilot|cache)\\//.test(String(key))) return q;
+    slow.hits++;
+    const ms = slow.ms, late = { get result() { return q.result }, get error() { return q.error } };
+    q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), ms);
+    q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), ms);
+    return late;
+  };
+}"""
+
+
+def mount_race(c, first, final, want_sheets):
+    """Navigates `#first` while its mount reads slowly, then away and to `#final` without waiting; the screen that stays is
+    the one `final` asks for, in the module mounted for it."""
+    c.open('atmosphere')
+    c.js(SLOW_READS)
+    c.js("(h) => { window.__slow.ms = 900; window.__slow.hits = 0; location.hash = h }", '#' + first)
+    c.until('window.__slow.hits > 0', what=f'the mount of #{first} has started reading')
+    c.js("(h) => { window.__slow.ms = 0; location.hash = '#atmosphere'; location.hash = h }", '#' + final)
+    c.wait(2000)                                   # the first mount's reads come back (900 ms) while the second is on screen
+    c.until("!!document.querySelector('[data-module=fuel] [data-view]')", what=f'#{final} draws fuel', timeout=8000)
+    c.settle()
+    shown = c.js("""() => ({ pressed: [...document.querySelectorAll('[data-module=fuel] [data-view]')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.view),
+        quote: [...document.querySelectorAll('[data-module=fuel] .fu-step, [data-module=fuel] [data-block=result]')].filter(e => window.__t.shown(e)).length,
+        sheets: !![...document.querySelectorAll('[data-module=fuel] [data-do=import]')].some(e => window.__t.shown(e)),
+        hash: location.hash })""")
+    c.eq(shown['pressed'], ['sheets' if want_sheets else 'plan'], f'#{first} then away then #{final}: the view of the last address is the pressed one', what='pressed view')
+    c.eq(shown['sheets'], want_sheets, 'the Sheets screen is shown only on #fuel?view=sheets', what='Sheets screen shown')
+    c.eq(shown['quote'] > 0, not want_sheets, 'the Quote screen (steps, result bar) is shown only on #fuel', what='Quote elements shown')
+    c.eq(shown['hash'], '#' + final, 'the address is the last one asked', what='hash')
+
+
+@case('F7', 'Mount race', 'F', tags=('fuel',), screens=False, rule='found by A7 (frame/DECISIONS, 24 Oct): a mount still reading must not write once the address changed')
+def f7(c):
+    mount_race(c, 'fuel', 'fuel?view=sheets', True)
+    mount_race(c, 'fuel?view=sheets', 'fuel', False)
+    # the internal Quote / Sheets switch writes the address (no navigation, no new mount), so the bar's popover marks the row
+    c.open('fuel')
+    c.until("!!document.querySelector('[data-module=fuel] .fu-step')", timeout=15000, what='fuel has drawn its Quote screen')
+    c.js("() => { window.__sec = document.querySelector('#fView > [data-module=fuel]') }")
+    c.eq(c.hash(), '#fuel', 'the Quote screen is #fuel', what='hash on the Quote screen')
+    c.tap(f'{FUEL} [data-view="sheets"]')
+    c.until("location.hash === '#fuel?view=sheets'", what='the Sheets button writes ?view=sheets in the address')
+    c.ok(c.js("() => window.__sec === document.querySelector('#fView > [data-module=fuel]')"), 'the module was mounted again', 'the same section: replaceState does not navigate')
+    c.tap('#fTabs a[data-tab="prepare"]')
+    c.until("!!document.querySelector('.f-tabpop')", what='the popover opens on a second tap on Préparer')
+    cur = c.js("[...document.querySelectorAll('.f-tabpop-row')].filter(r => r.hasAttribute('aria-current')).map(r => r.dataset.id + (r.dataset.view ? ':' + r.dataset.view : ''))")
+    c.eq(cur, ['fuel:sheets'], 'after the internal switch the popover marks Fiches', what='aria-current rows')
+    c.key('Escape')
+    c.tap(f'{FUEL} [data-view="plan"]')
+    c.until("location.hash === '#fuel'", what='the Quote button removes ?view from the address')
+    c.ok(c.js("() => window.__sec === document.querySelector('#fView > [data-module=fuel]')"), 'the module was mounted again', 'the same section: replaceState does not navigate')
+    # a quote typed once the slow reads are over names its level: what is typed while the current flight is still being read
+    # is not kept (the screen is inert, completeMount replaces the waiting flight by the one read: the last state read wins)
+    c.page.add_init_script('window.__slowMs = 900')
+    c.page.add_init_script('(' + SLOW_READS + ')()')
+    c.open('fuel', airfields=True, wait=False)
+    c.until("window.__t.shown(document.querySelector('[data-module=fuel] .fu-step'))", timeout=15000, what='fuel draws its first screen')
+    c.eq(c.js("() => document.querySelector('[data-module=fuel] [data-body]').inert"), True, 'the screen is inert while the flight is read', what='inert body')
+    c.page.fill(f'{FUEL} input[data-k="fl"]', '350')         # a typed value reaches the field, not the flight
+    c.until("() => !document.querySelector('[data-module=fuel] [data-body]').inert", timeout=15000, what='the current flight is read')
+    c.settle()
+    c.eq(c.js("() => document.querySelector('[data-module=fuel] input[data-k=fl]').value"), '', 'the field is redrawn from the flight read', what='level typed while loading')
+    for k, v in (('dep', 'LFRS'), ('arr', 'LFML'), ('altn', 'LFMT'), ('fl', '270')):
+        c.page.fill(f'{FUEL} input[data-k={k}]', v)
+    c.js('document.activeElement && document.activeElement.blur && document.activeElement.blur()')
+    c.wait(700)
+    c.tap(f'{FUEL} [data-do="acopen"]')
+    c.page.fill(f'{FUEL} input[data-k="acsearch"]', 'C30J')
+    c.js('document.activeElement && document.activeElement.blur && document.activeElement.blur()')
+    c.wait(700)                                        # the list is redrawn on the blur: a tap during it would be lost
+    c.until("!!document.querySelector('[data-module=fuel] [data-pick=\"free:C30J\"]')", what='the aircraft search offers the type C30J')
+    c.tap(f'{FUEL} [data-pick="free:C30J"]')
+    c.tap(f'{FUEL} button[data-step="1"]')
+    c.page.fill(f'{FUEL} textarea[data-k="rtext"]', 'LFRS LUGEN NEPIX LFML')
+    c.js('document.activeElement && document.activeElement.blur && document.activeElement.blur()')
+    c.until("/\\d+ NM/.test((document.querySelector('[data-module=fuel] .fu-step:not([hidden])') || {}).innerText || '')", timeout=8000, what='the route resolves to a distance')
+    c.tap(f'{FUEL} button[data-step="3"]')
+    c.until("!!document.querySelector('[data-module=fuel] .fu-result .fu-ctx')", timeout=15000, what='the quote is computed')
+    line = c.text(f'{FUEL} .fu-result .fu-ctx') or ''
+    c.ok('FL270' in line and '0 ft' not in line, f'context line {line!r}', 'the quote names FL270, never "0 ft"')

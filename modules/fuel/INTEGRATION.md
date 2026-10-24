@@ -171,6 +171,9 @@ report and maps never write nor erase it.
 - Query read by fuel: `focus=route` (above) and, since 24 Oct 2026, `view=sheets` (`#fuel?view=sheets` opens the Sheets
   screen). Without it the module always opens on the Plan screen (the first tab, "Quote"), whatever the last screen used: `cache/fuel/ui.json` no
   longer holds `view`.
+- The Quote / Sheets switch of the module writes the address with `history.replaceState` (`?view=sheets` for the Sheets, no `view` for the
+  Quote; other keys kept; no navigation, no new mount), so the frame's popover marks Carburant or Fiches. A `mount()` whose address changed
+  while it was reading writes nothing (its state object is its token, `unmount()` invalidates it).
 - `aircraft` (fuel's, from `aircraft().aircraftOf(hit)`): `{ sheetId, type, registration, callsign, name, source }`
   (`source`: `sheet`, `fleet`, `reference`, `type`, `free`); report takes the registration and the callsign.
 - `wind` is null when unknown; `ofp` is null without a SimBrief flight plan (summary only: the OFP itself stays in the

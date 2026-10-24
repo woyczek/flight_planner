@@ -12,6 +12,14 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: a mount whose address changed writes nothing, and the Quote / Sheets view is in the address** (`modules/fuel/module.js`,
+  `INTEGRATION.md`, DECISIONS; tests F7, A7, J1) — changing the address while fuel was still reading (`#fuel` then `#atmosphere`, or
+  `#fuel` then `#fuel?view=sheets`) let the first mount draw over the second's state (the Quote screen under a Sheets address) or fail
+  on an emptied state; the mount now carries its own state as a token, checked after its reads, and `unmount()` invalidates it. The
+  internal Quote / Sheets switch writes `?view=sheets` / removes `view` with `history.replaceState` (no navigation), so the bar's
+  Carburant · Fiches popover marks the right row. A field edited while the current flight is still being read (screen inert) is
+  ignored instead of written into the waiting flight (the quote could read "Bloc · 0 ft"). Test suite: F7 (new), A7 no longer waits
+  for fuel's first screen, `open('fuel')` waits for the end of the mount.
 - **Frame: the bar and the header by rule 14 — Météo in the bar, "?" and ⚙ in the header, the status at the top of Settings**
   (`frame/app.js`, `frame.css`, `index.html`, `lib/icons.js`, `settings/settings.js`, help in four languages, `frame/INTEGRATION.md`
   § 9.1 and § 10, `frame/SPEC.md` § 3, `frame/settings/SPEC.md` § 1, DECISIONS; V3_SPECIFICATION § 7.1 rule 14) — the phone's bottom bar is
