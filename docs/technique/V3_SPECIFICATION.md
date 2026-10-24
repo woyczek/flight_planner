@@ -150,6 +150,24 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   same grip row, the hints to the help, the notes ("terrain unavailable") as a small line at the bottom of the sheet's
   content. The sheet's grip row (44 px) is the only chrome between the map and the content. The same template holds
   for atmosphere (its toolbar becomes overlays and the grip row).
+- **Same on atmosphere, and three more rules** (user, 24 Oct, 14:05, screenshots of the atmosphere screen on the
+  phone: "Idem ici. Le volet glissant fonctionne, mais pas les boutons, et trop d'éléments sur le header. Prévoir une
+  exemption pour certains boutons communs. Prévoir un « full screen » pour supprimer le footer et/ou le header."):
+  1. **Exempted common buttons**: the only controls allowed between the header and the data block are overlays on the
+     map, drawn in a frame-provided overlay layer with two slots: left column (Layers) and right column of round
+     44 px buttons (Edit, Recentre, mode, Load, the altitude chip of atmosphere, **Full screen**). Nothing else: no
+     toolbar line, no info line, no group sub-tabs row above a fixed module.
+  2. **Full screen** (frame): a button of the right column hides the tab bar and the header (both on a phone; on a
+     screen the header only, the rail folds), the map and the sheet take the whole viewport; a small "exit" chip
+     (44 px) at the top right, Escape, or the same button again brings them back; remembered for the page's life.
+  3. **Header slimmed on a phone**: name · "i" · ⚙ only. The sync/trigram dot becomes the "i" badge's colour (green
+     ok, amber attention) and its text a line of the pop-up; the help "?" becomes the last line of the "i" pop-up
+     ("Aide de cet écran ›"). On a screen the header keeps every button.
+  4. **Group switch without a row**: the Carburant · Atmosphère sub-tabs row disappears; a second tap on the active
+     bottom tab opens a small popover above the bar listing the group's modules (the current one marked); on a screen
+     the rail already lists them. Reachable too from the "i" pop-up? No: the popover only.
+  5. **Buttons that do not respond on the iPhone** (atmosphere's toolbar, maps' too?): to reproduce with touch events
+     and fix in the module lots (suspects: pointer capture of the sheet's grip, `touch-action`, a transparent overlay).
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
