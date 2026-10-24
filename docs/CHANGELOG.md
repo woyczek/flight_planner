@@ -234,7 +234,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   visibility; schedule every 6 h — drawn when the view leaves the grid (jet and convection layers), the handle's title
   saying what is shown, every value at a tapped point outside the grid. **Flight date slider** under the handle (0 to
   +72 h): the cross-section, the map and the world synoptic follow, nothing asked; "Load" reads every day it can
-  reach. The map goes round the world east or west, the flight on every copy. Routes across the date line
+  reach. No border between the flight's grid and the world: one computation at the map's altitude (the publication carries 11 pressure levels), jet and convection drawn everywhere, the flight's grid relaxed into the world over its outer quarter. The map goes round the world east or west, the flight on every copy. Routes across the date line
   (Siberia → Alaska) on continuous longitudes: sampling, grid, framing, cross-section and drawing follow the route.
 - **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
   help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA

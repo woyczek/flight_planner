@@ -290,7 +290,9 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   `25 4,10,16,22 * * *`, which GitHub runs from the default branch only). A **5°** grid (2,376 places), every 3 h to
   **+72 h** (25 steps). Schema 1, the same for any source: `index.json` = `{ schema, model, run, built, step, lats,
   lons, times, files, units, source }`, one `YYYY-MM-DDTHH.json` per step = `{ schema, time, vars: { name: [lat × lon,
-  from the south] } }`; variables `p t cc ws wd` (every source) and `ccl ccm cch cape frz trop js jd pr vis` (GFS).
+  from the south] } }`; variables `p t cc ws wd` (every source) and `ccl ccm cch cape frz trop js jd pr vis ps zs`
+  (GFS); a second file per step, `YYYY-MM-DDTHH-alt.json` (`altFiles`, `levels`), carries 11 pressure levels (z, t, rh,
+  ws, wd) so that the world is computed like the flight's grid at any altitude.
   The previous publication is republished while it comes from the latest run; NOMADS unreachable: its steps still
   ahead; never a failed deployment. On the device: same origin (`ctx.net`), `cache/weather/world/` (policy `cache`),
   only the steps shown are read. A launcher-served page has none until this lot gives one (relay or published host).

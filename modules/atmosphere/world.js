@@ -3,9 +3,10 @@
 // origine — jamais d'appel à Open-Meteo depuis l'appareil hors de la grille du vol, quoi que montre la carte. Gardée
 // dans la réserve de l'appareil (cache/weather/world/, policy cache) pour le hors ligne ; seules les échéances montrées
 // sont lues.
-// API : worldReader({ data, net, now }) → { index() → promesse de l'index ou null, step(index, k) → promesse de
-// l'échéance k ou null } ; valid(index), validStep(index, s), stepAt(index, t), worldGrid(index, s), worldAt(index, s,
-// lat, lon). Fonctions pures hors de worldReader (pas de DOM).
+// API : worldReader({ data, net, now }) → { index() → promesse de l'index ou null, step(index, k, alt) → promesse de
+// l'échéance k (alt : son fichier des niveaux de pression) ou null } ; valid(index), validStep(index, s), stepAt(index,
+// t), worldGrid(index, s), worldLocs(index, s, alt), worldAt(index, s, lat, lon). Fonctions pures hors de worldReader
+// (pas de DOM).
 
 /** Dossier publié : /v3/weather/world/ sur les pages (même origine que le module). */
 export const WORLD_URL = new URL('../../weather/world/', import.meta.url).href;
@@ -47,7 +48,7 @@ export function worldReader({
       },
       prune = async w => {
           if (!data.cached || !data.remove) return;
-          const keep = new Set(w.files.map(f => WORLD_DIR + f));
+          const keep = new Set([...w.files, ...(w.altFiles || [])].map(f => WORLD_DIR + f));
           for (const d of await data.cached(WORLD_DIR).catch(() => []))
             if (!d.path.endsWith('/index.json') && !keep.has(d.path)) await data.remove(d.path).catch(() => {});
         },
@@ -70,15 +71,18 @@ export function worldReader({
         };
   return {
     index: () => ip ||= readIndex().finally(() => setTimeout(() => ip = null, RETRY)),
-    step(w, k) {
-      const f = w.files[k],
+    step(w, k, alt = false) {
+      const f = alt ? w.altFiles?.[k] : w.files[k];
+      if (!f) return Promise.resolve(null);
+      const
         key = `${w.built}:${f}`;
       if (!steps.has(key)) steps.set(key, (async () => {
         const path = WORLD_DIR + f,
           mine = await data.get(path).catch(() => null);
-        if (validStep(w, mine) && mine.time === w.times[k]) return mine;
+        const ok = x => x?.time === w.times[k] && (alt ? x.schema === 1 && !!x.vars : validStep(w, x));
+        if (ok(mine)) return mine;
         const got = await getJson(WORLD_URL + f);
-        if (!validStep(w, got) || got.time !== w.times[k]) return null;
+        if (!ok(got)) return null;
         await data.put(path, got).catch(() => {});
         return got;
       })().then(s => {
@@ -143,6 +147,51 @@ export function worldGrid(w, s) {
     },
     F
   };
+}
+
+/** Les lieux d'une échéance à la forme des lieux d'Open-Meteo lus par atmo.js (locations : { lat, lon, elevFt, times, h
+ *  }), dans l'ordre de worldGrid (colonne de +180° comprise) : le module calcule le monde exactement comme la grille du
+ *  vol (A.column, A.at, A.pressureAtZ), d'où un même rendu des deux côtés. a : le fichier des niveaux de pression (null :
+ *  la surface seule). */
+export function worldLocs(w, s, a = null) {
+  const nl = w.lons.length,
+    lons = [...w.lons, w.lons[0] + 360],
+    sv = s.vars,
+    av = a?.vars || {},
+    levels = a ? w.levels || [] : [],
+    out = [];
+  for (let j = 0; j < w.lats.length; j++)
+    for (let i = 0; i < lons.length; i++) {
+      const n = j * nl + (i % nl),
+        one = v => [v?.[n] ?? null],
+        h = {
+          time: [s.time],
+          temperature_2m: one(sv.t),
+          pressure_msl: one(sv.p),
+          surface_pressure: one(sv.ps),
+          cloud_cover: one(sv.cc),
+          cloud_cover_low: one(sv.ccl),
+          cloud_cover_mid: one(sv.ccm),
+          cloud_cover_high: one(sv.cch),
+          wind_speed_10m: one(sv.ws),
+          wind_direction_10m: one(sv.wd)
+        };
+      for (const l of levels) {
+        h[`temperature_${l}hPa`] = one(av[`t${l}`]);
+        h[`relative_humidity_${l}hPa`] = one(av[`rh${l}`]);
+        h[`geopotential_height_${l}hPa`] = one(av[`z${l}`]);
+        h[`wind_speed_${l}hPa`] = one(av[`ws${l}`]);
+        h[`wind_direction_${l}hPa`] = one(av[`wd${l}`]);
+      }
+      out.push({
+        lat: w.lats[j],
+        lon: lons[i],
+        elevFt: (sv.zs?.[n] ?? 0) / 0.3048,
+        times: h.time,
+        h
+      });
+    }
+  return out;
 }
 
 /** Valeurs d'une échéance en un point (bilinéaire, longitude bouclée ; latitude bornée à la grille) : chaque variable

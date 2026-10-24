@@ -2,6 +2,28 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (evening) — no border between the flight's grid and the world
+
+- **The report** (user, iPhone, relayed: "Léger bug :", a screenshot — LFRD → LFBD at FL170, slice 7/10 TUPAR, slider
+  +20 h): a vertical purple band with a sharp edge along the map. **Cause**: the jet stream shading (250 hPa, purple)
+  exists only in the world synoptic, which was drawn outside the flight's grid only — so the shading stopped at the
+  grid's limit. Deeper: at an altitude (FL170) the flight's grid showed isobars at constant true altitude while the world
+  only knew the surface — the two sides did not even show the same thing. Then (user): "Il y a probablement une
+  divergence de prévision entre OpenMeteo et NOAA, surtout dans les horaires lointains."
+- **One computation for both sides**: the publication gains, per step, a second file of pressure levels (11 levels,
+  1000 to 200 hPa: geopotential, temperature, humidity, wind; read only when the map shows an altitude) and the surface
+  pressure and height; `worldLocs` shapes every world place like an Open-Meteo place and `fieldsOf` (the flight grid's
+  own code, `mapFields` factored out) computes both, with the flight grid's true altitude for the isobars. The steps of
+  isobars and isotherms follow the map's scale and are the same on both sides; wind barbs 44 px apart on both.
+- **Jet and convection everywhere**: drawn under the clouds and lines over the whole map, inside the grid too.
+- **The models' divergence: a relaxation zone**, as limited-area models are nested in global ones: over the outer
+  quarter of the flight's grid its values (pressure, temperature, cloud, wind as components) pass progressively into
+  the world's; at its edge they are the world's (the lines meet), at its centre the fine model's. For the map only: the
+  cross-section and the slices keep the flight's values. Images and the world's cut-out aligned on whole pixels (no
+  one-pixel line at the junction). Checked with Open-Meteo stood in by the same GFS data (no visible border at the
+  surface nor at FL180) and with a deliberate divergence (+4 hPa, +3 °C): no border, but a constant bias draws a ring of
+  isobars in the relaxation zone — the honest trace of two models that disagree.
+
 ## 24 October 2026 (late) — NOAA GFS for the world, the flight date slider
 
 - **The requests** (user): "NOAA approuvé. Idem, compilation vers le même format pour unifier l'api. Quitte à augmenter

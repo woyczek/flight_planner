@@ -12,12 +12,18 @@ compressés chacune) :
   index.json        { schema: 1, model: "gfs", run (s), built (s), step (°), lats [sud → nord], lons [ouest → est],
                       times [s], files [nom de chaque échéance], units, source }
   AAAA-MM-JJTHH.json { schema: 1, time (s), vars: { nom: [lat × lon, rangée par rangée depuis le sud] } }
+  AAAA-MM-JJTHH-alt.json  même forme, les variables des niveaux de pression ; l'index les nomme dans altFiles et
+                      donne levels
 
 Variables (même format que le fichier d'Open-Meteo d'avant, schéma 1 ; les cinq premières sont celles que tout
 lecteur trouve, les autres s'y ajoutent) : p pression au niveau de la mer (hPa), t température à 2 m (°C), cc
 nébulosité totale (%), ws / wd vent à 10 m (kt, d'où il vient en °), ccl / ccm / cch nébulosité basse, moyenne, haute
 (%), cape énergie convective (J/kg), frz altitude de l'isotherme 0 °C (ft), trop altitude de la tropopause (ft),
-js / jd vent à 250 hPa — courant-jet (kt, °), pr précipitations (mm/h), vis visibilité (m).
+js / jd vent à 250 hPa — courant-jet (kt, °), pr précipitations (mm/h), vis visibilité (m), ps pression au sol (hPa),
+zs altitude du sol (m). En altitude, un second fichier par échéance (lu seulement quand la carte montre une altitude) :
+pour chaque niveau de LEVELS, z<niveau> géopotentiel (m), t<niveau> (°C), rh<niveau> (%), ws<niveau> / wd<niveau>
+(kt, °) — les variables qu'Open-Meteo donne à la grille du vol, pour que le module calcule les deux côtés de la même façon
+(isobares à altitude vraie constante, températures, vents, nuages tirés de l'humidité) : pas de frontière visible.
 
 Le workflow tourne à chaque poussée sur develop et v3, et toutes les 6 h ; chaque déploiement remplace tout le site :
 la publication d'avant (--keep adresse du dossier) est reprise sans rien demander à NOMADS tant qu'elle vient du dernier
@@ -47,9 +53,11 @@ STEPS = 25  # 0, 3, … 72 h
 TOP = 80  # latitudes lues : -80..80 (au-delà, Mercator ne montre rien d'utile)
 FT = 3.28084
 # variables et niveaux demandés au filtre (le filtre croise les deux listes ; le surplus est ignoré)
-ASK_VARS = ['PRMSL', 'TMP', 'TCDC', 'LCDC', 'MCDC', 'HCDC', 'UGRD', 'VGRD', 'CAPE', 'HGT', 'PRATE', 'VIS']
+# niveaux de pression publiés (hPa) : ceux de la grille du vol chez Open-Meteo (modules/fuel/winds.js) sauf 975, 950 et 900, du sol au FL390
+LEVELS = [1000, 925, 850, 800, 700, 600, 500, 400, 300, 250, 200]
+ASK_VARS = ['PRMSL', 'TMP', 'TCDC', 'LCDC', 'MCDC', 'HCDC', 'UGRD', 'VGRD', 'CAPE', 'HGT', 'PRATE', 'VIS', 'PRES', 'RH']
 ASK_LEVS = ['mean_sea_level', '2_m_above_ground', '10_m_above_ground', 'entire_atmosphere', 'low_cloud_layer',
-            'middle_cloud_layer', 'high_cloud_layer', '250_mb', 'surface', '0C_isotherm', 'tropopause']
+            'middle_cloud_layer', 'high_cloud_layer', 'surface', '0C_isotherm', 'tropopause'] + [f'{lv}_mb' for lv in LEVELS]
 # champ GRIB2 (catégorie, paramètre, type de surface, valeur) → nom lu
 FIELDS = {
     (3, 1, 101, 0): 'prmsl',
@@ -67,10 +75,21 @@ FIELDS = {
     (3, 5, 7, 0): 'htrop',
     (1, 7, 1, 0): 'prate',
     (19, 0, 1, 0): 'vis',
+    (3, 0, 1, 0): 'psfc',
+    (3, 5, 1, 0): 'hsfc',
 }
+for _lv in LEVELS:
+    FIELDS.update({
+        (3, 5, 100, _lv * 100): f'z{_lv}',
+        (0, 0, 100, _lv * 100): f't{_lv}',
+        (1, 1, 100, _lv * 100): f'rh{_lv}',
+        (2, 2, 100, _lv * 100): f'u{_lv}',
+        (2, 3, 100, _lv * 100): f'v{_lv}',
+    })
 BASE = ['p', 't', 'cc', 'ws', 'wd']
 UNITS = {'p': 'hPa', 't': '°C', 'cc': '%', 'ws': 'kt', 'wd': '°', 'ccl': '%', 'ccm': '%', 'cch': '%', 'cape': 'J/kg',
-         'frz': 'ft', 'trop': 'ft', 'js': 'kt', 'jd': '°', 'pr': 'mm/h', 'vis': 'm'}
+         'frz': 'ft', 'trop': 'ft', 'js': 'kt', 'jd': '°', 'pr': 'mm/h', 'vis': 'm', 'ps': 'hPa', 'zs': 'm'}
+ALT_UNITS = {f'{k}{lv}': u for lv in LEVELS for k, u in (('z', 'm'), ('t', '°C'), ('rh', '%'), ('ws', 'kt'), ('wd', '°'))}
 KT = 1.943844
 
 
@@ -103,7 +122,23 @@ def convert(f):
         'jd': jd,
         'pr': None if g('prate') is None else round(g('prate') * 3600, 1),
         'vis': None if g('vis') is None else int(round(g('vis') / 100) * 100),
+        'ps': r(g('psfc') and g('psfc') / 100, 1),
+        'zs': None if g('hsfc') is None else int(round(max(0, g('hsfc')))),
     }
+
+
+def convert_alt(f):
+    """Valeurs des niveaux de pression en un lieu → variables du fichier d'altitude."""
+    out = {}
+    for lv in LEVELS:
+        z, t, rh = f.get(f'z{lv}'), f.get(f't{lv}'), f.get(f'rh{lv}')
+        ws, wd = wind(f.get(f'u{lv}'), f.get(f'v{lv}'))
+        out[f'z{lv}'] = None if z is None else int(round(z))
+        out[f't{lv}'] = None if t is None else round(t - 273.15, 1)
+        out[f'rh{lv}'] = None if rh is None else int(round(rh))
+        out[f'ws{lv}'] = ws
+        out[f'wd{lv}'] = wd
+    return out
 
 
 def get(url, timeout=120):
@@ -156,6 +191,7 @@ def read(step, now, run, times):
             if field and field not in grids:  # en double (instantané puis moyenne) : le premier
                 grids[field] = m
         rows = {k: [] for k in UNITS}
+        alt = {k: [] for k in ALT_UNITS}
         for la in lats:
             for lo in lons:
                 f = {}
@@ -166,12 +202,14 @@ def read(step, now, run, times):
                     f[field] = m['values'][j * m['ni'] + i] if 0 <= j < m['nj'] and 0 <= i < m['ni'] else None
                 for k, v in convert(f).items():
                     rows[k].append(v)
+                for k, v in convert_alt(f).items():
+                    alt[k].append(v)
         n = len(lats) * len(lons)
         for k in BASE:
             missing = sum(v is None for v in rows[k])
             if missing > 0.1 * n:
                 raise RuntimeError(f'+{(t - run) // 3600} h, {k} : {missing} valeurs manquantes sur {n}')
-        steps.append({'schema': 1, 'time': t, 'vars': rows})
+        steps.append(({'schema': 1, 'time': t, 'vars': rows}, {'schema': 1, 'time': t, 'vars': alt}))
         time.sleep(1)  # NOMADS : au plus quelques demandes par minute
     index = {
         'schema': 1,
@@ -183,15 +221,17 @@ def read(step, now, run, times):
         'lons': lons,
         'times': times,
         'files': [name(t) for t in times],
-        'units': UNITS,
+        'altFiles': [name(t, True) for t in times],
+        'levels': LEVELS,
+        'units': {**UNITS, **ALT_UNITS},
         'source': 'NOAA GFS 1° (NOMADS)',
     }
     return index, steps
 
 
-def name(t):
-    """Nom du fichier d'une échéance (instant de validité, UTC)."""
-    return time.strftime('%Y-%m-%dT%H.json', time.gmtime(t))
+def name(t, alt=False):
+    """Nom du fichier d'une échéance (instant de validité, UTC) ; alt : celui des niveaux de pression."""
+    return time.strftime('%Y-%m-%dT%H' + ('-alt' if alt else '') + '.json', time.gmtime(t))
 
 
 def get_json(addr, timeout=30):
@@ -211,25 +251,29 @@ def previous(base, now, keep_from):
     if not idx or idx.get('schema') != 1 or not idx.get('times') or idx['times'][-1] <= now:
         print('pas de publication précédente utilisable', file=sys.stderr)
         return None
-    keep = [(t, f) for t, f in zip(idx['times'], idx.get('files') or []) if t >= keep_from]
+    if len(idx.get('altFiles') or []) != len(idx['times']):
+        print('publication précédente sans niveaux de pression', file=sys.stderr)
+        return None
+    keep = [(t, f, fa) for t, f, fa in zip(idx['times'], idx['files'], idx['altFiles']) if t >= keep_from]
     steps = []
-    for t, f in keep:
-        s = get_json(base + f)
-        if not s or s.get('time') != t:
+    for t, f, fa in keep:
+        s, sa = get_json(base + f), get_json(base + fa)
+        if not s or s.get('time') != t or not sa or sa.get('time') != t:
             print(f'échéance {f} absente de la publication précédente', file=sys.stderr)
             return None
-        steps.append(s)
+        steps.append((s, sa))
         time.sleep(0.2)
-    idx = {**idx, 'times': [t for t, _ in keep], 'files': [f for _, f in keep]}
+    idx = {**idx, 'times': [k[0] for k in keep], 'files': [k[1] for k in keep], 'altFiles': [k[2] for k in keep]}
     return (idx, steps) if steps else None
 
 
 def write(out, index, steps):
     """Écrit l'index et les échéances dans le dossier de sortie."""
     os.makedirs(out, exist_ok=True)
-    for s in steps:
-        with open(os.path.join(out, name(s['time'])), 'w', encoding='utf-8') as f:
-            json.dump(s, f, ensure_ascii=False, separators=(',', ':'))
+    for s, sa in steps:
+        for doc, alt in ((s, False), (sa, True)):
+            with open(os.path.join(out, name(s['time'], alt)), 'w', encoding='utf-8') as f:
+                json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
     with open(os.path.join(out, 'index.json'), 'w', encoding='utf-8') as f:
         json.dump(index, f, ensure_ascii=False, separators=(',', ':'))
 

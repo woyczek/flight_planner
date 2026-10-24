@@ -103,14 +103,23 @@ Open-Meteo for anything outside its flight's grid, whatever the map shows.**
   unreachable: its steps still ahead are published again; never a failed deployment.
 - **Format** (schema 1, the same for any source, so that readers have one API): `index.json` = `{ schema, model, run
   (s), built (s), step (°), lats [south → north], lons [west → east], times [s], files [one per step], units, source }`;
-  `YYYY-MM-DDTHH.json` = `{ schema, time (s), vars: { name: [lat × lon, row by row from the south] } }`. Variables: the
+  `YYYY-MM-DDTHH.json` = `{ schema, time (s), vars: { name: [lat × lon, row by row from the south] } }`, and
+  `YYYY-MM-DDTHH-alt.json` (named in `altFiles`, levels in `levels`) the same for the pressure levels: `z<hPa>` (m),
+  `t<hPa>` (°C), `rh<hPa>` (%), `ws<hPa>` / `wd<hPa>` (kt, °), for 1000, 925, 850, 800, 700, 600, 500, 400, 300, 250 and
+  200 hPa. Variables: the
   five every source gives — `p` sea-level pressure (hPa), `t` 2 m temperature (°C), `cc` total cloud (%), `ws` / `wd`
   10 m wind (kt, from °) — and what GFS adds: `ccl` / `ccm` / `cch` low, middle, high cloud (%), `cape` (J/kg), `frz`
   0 °C isotherm (ft), `trop` tropopause (ft), `js` / `jd` 250 hPa wind — the jet stream (kt, °), `pr` precipitation
-  (mm/h), `vis` visibility (m). Values rounded, `null` where missing.
+  (mm/h), `vis` visibility (m), `ps` surface pressure (hPa), `zs` surface height (m). Values rounded, `null` where
+  missing.
 - **On the device** (`world.js`): read on the same origin through `ctx.net` (no extra host), kept in
   `cache/weather/world/` (policy `cache`): the index 6 h, each step until it is past (removed with a new index).
   Served by the launcher (no publication), no world layer until `frame/weather`.
+- **No border with the flight's grid**: both sides are computed by the same code at the same altitude (the world's
+  pressure levels, a second file per step read only when the map shows an altitude; the flight grid's true altitude
+  for the isobars), with the same steps of lines (by the map's scale) and the same spacing of barbs; over the outer
+  quarter of the flight's grid its values pass progressively into the world's (the models differ, more so far ahead),
+  for the map only.
 - **On the map**: as soon as the view goes beyond the flight's grid (or with no flight at all), the synoptic is drawn
   outside the grid at the step nearest the map's time: isobars every 4 hPa with the marked highs and lows (an extremum
   over 15° around and 2 hPa deep; 70 px apart on screen, the deepest first), isotherms every 10 °C, cloud, wind barbs
