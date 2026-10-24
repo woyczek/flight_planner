@@ -122,6 +122,18 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   the data block is a sheet of fixed height under the map, scrolling inside. A frame contract lets a module declare
   a fixed, full-height view. This matters for the native shells (iOS, then Android, Capacitor): the user holds a
   TestFlight key now.
+- **Atmosphere stays a dedicated module behind an icon for now** (user, 24 Oct, 12:30, after trying it on a phone:
+  "rien ne va en termes d'ergonomie… parfait en mode large… épouvantable en mode téléphone. On retravaille, sous la
+  forme d'un module dédié derrière une icône, on réinclura plus tard. Template : module carte"): fixed view like the
+  map (map at the top; at the bottom the global cross-section, or the local slice after a tap on the map; the table and
+  the settings behind buttons of the module's own toolbar, "i"), no page scroll. Registered at level 1: the Préparer
+  group then shows the Carburant · Météo sub-tabs drawn by the frame, which is the later re-inclusion already in place.
+- **Orientation locked to portrait for now** (user: "en attendant, on verrouille l'orientation"): manifest
+  `orientation: portrait`, `screen.orientation.lock` attempted by the frame once installed, Capacitor iOS portrait on
+  iPhone; Android later. **Landscape layout to decide** (the user's question, worded "portrait" but describing the
+  map beside the profile): proposed target, map at the left (≈ 60 %), the data block as a narrow right column
+  (global profile or local slice), a short info line under it, the buttons as a vertical rail at the right edge under
+  the thumb. A later lot of maps and atmosphere once decided.
 
 ## 8. Decisions log
 
