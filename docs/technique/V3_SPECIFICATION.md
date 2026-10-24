@@ -335,3 +335,8 @@ redesigned for touch at that point.
    13. the rules written twice or three times across metro, swiss and cupertino (header buttons without frame, `h3`
        as small muted capitals, pane `h1` size, table header, outlined buttons, card border, nav on the page colour):
        promote to tokens (`--sog-btn-border`, `--sog-card-border`…) or primitives, see `frame/design/DECISIONS.md`.
+   14. **Flight date (user, 24 Oct: "prévoir un slider « date du vol » pour ajouter x heures à la planification (et
+       la carto)")**: the slider shipped in atmosphere (0 to +72 h, in the sheet) moves the cut and the synoptic only.
+       The planned departure time should live in the shared flight record (`current_flight.json`, fuel § 4) so that
+       the quote's winds, the ETA on the map and the weather all follow one value: a fuel lot ("flight date" in the
+       quote, written to the record), then atmosphere reads it as its slider's origin. To confirm.
