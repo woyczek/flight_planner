@@ -25,6 +25,9 @@ export async function mount(el, ctx) { /* draw into el with ctx */ }
 export function unmount() { /* stop watchers, timers */ }
 ```
 
+The frame never mounts two modules in the view; a navigation that arrives during a mount cancels it: `unmount()` is called
+on a module whose `mount()` may still be awaiting, and what that `mount()` does after its awaits is not shown (the last address wins).
+
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
   `ask`, `askText`, `net`, `identity`; a fixed module (§ 9.2) also gets `overlay` (§ 9.3).
 - Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APP.modules`): one short verb, seven

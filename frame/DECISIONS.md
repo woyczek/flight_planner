@@ -1213,3 +1213,17 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     global of `modules/fuel/module.js`): `#fuel` then `#fuel?view=sheets` within milliseconds, on the slower designs, ends on the
     Quote screen. A7 now waits for fuel's first screen before the second tap. To tell the fuel session (a `mount` that checks its
     state is still the current one after its awaits).
+- **24 Oct 2026 — Relais cloud: one navigation at a time** (found by the Fuel agent, see `modules/fuel/DECISIONS.md`): two or three
+  changes of address in the same task (`#fuel`, `#atmosphere`, `#fuel?view=sheets`) left one `section[data-module]` per
+  navigation in `#fView`, and as many overlay layers and sheets.
+  - **Cause**: `route()` emptied the view, then awaited `import()` and `mount()` and appended its section in between; nothing told
+    a navigation that it had been overtaken, so every one wrote its section when its import came back (the browser fires one
+    `hashchange` per change, each reading the final address).
+  - **Rule**: a navigation counter (`navSeq`), a token taken by each `route()` once it is past the framework screens; after the
+    `import()`, after `mount()` and in the `catch`, a stale token returns without writing (no section, help panel, pane or error
+    screen). The next navigation has already called `unmount()` on the module being mounted, emptied the view and dropped the overlay
+    layers, so only the live section exists. The help and settings screens (`showDoc`, `renderSettings`) also compare the token.
+  - **Not done on purpose**: no queue, no timer, no observer; the last change of address wins. A module's `mount()` may still be
+    awaiting when its `unmount()` is called (INTEGRATION § 2 says so); Fuel already guards its own state.
+  - **Test**: A16 (three addresses in one task, then one per task, with slow cache reads): one `section[data-module]`, one overlay,
+    one sheet, no `pageerror`; it fails on the previous `app.js` (three `maps` sections).

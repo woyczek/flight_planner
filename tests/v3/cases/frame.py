@@ -13,7 +13,9 @@ Rules covered
   * landscape on a phone, 844 x 390: the bar becomes a 44 px rail on the left, the sheet a right column, the map takes the
     rest at full height, the overlay buttons stay in one column, full screen keeps the column and has no exit chip (A14).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15.
+  * one module in the view: navigations that arrive during a mount cancel it, the last address wins (A16).
+
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15 A16.
 """
 import json
 
@@ -408,6 +410,49 @@ def a15(c):
     btn = c.js("[...document.querySelectorAll('.mp-notes [data-go=\"settings\"]')].map(b => b.textContent)")
     c.eq([norm(b) for b in btn], [norm(tx(MAPS_M, 'toAccess', c.lang))], 'the note carries one button to Settings', what='buttons')
     c.eq(info_row(c, 'base'), norm(tx(FRAME, 'noaccess', c.lang, after='base: {')), 'the Status block says it too', what='Status row')
+SLOW = """() => {
+  if (window.__slow) return;
+  const get = IDBObjectStore.prototype.get, slow = window.__slow = { ms: 0 };
+  IDBObjectStore.prototype.get = function (key) {
+    const q = get.call(this, key);
+    if (!slow.ms || !/^(pilot|cache)\\//.test(String(key))) return q;
+    const ms = slow.ms, late = { get result() { return q.result }, get error() { return q.error } };
+    q.onsuccess = () => setTimeout(() => late.onsuccess && late.onsuccess({ target: late }), ms);
+    q.onerror = () => setTimeout(() => late.onerror && late.onerror({ target: late }), ms);
+    return late;
+  };
+}"""
+
+
+@case('A16', 'One module in the view', 'A', screens=False, designs=('standard',), night=False,
+      rule='frame/INTEGRATION 2: the frame never mounts two modules in the view; a navigation that arrives during a mount cancels it (frame/DECISIONS, 24 Oct 2026, relais cloud)')
+def a16(c):
+    c.open('atmosphere', flight=True)
+    c.js(SLOW)
+    # three changes of address in one task, modules not yet loaded (import) and cache reads that come back late (mount)
+    c.js("() => { window.__slow.ms = 700; location.hash = '#fuel'; location.hash = '#flightlog'; location.hash = '#maps' }")
+    c.wait(3500)                                       # the abandoned imports and mounts come back while the last is on screen
+    c.js("() => { window.__slow.ms = 0 }")
+    shown = c.js("""() => ({ view: [...document.querySelectorAll('#fView section[data-module]')].map(e => e.dataset.module),
+        all: [...document.querySelectorAll('[data-module]')].map(e => e.dataset.module), overlays: document.querySelectorAll('.f-overlay').length,
+        sheets: document.querySelectorAll('.f-sheet-panel').length, hash: location.hash })""")
+    c.eq(shown['view'], ['maps'], 'three addresses in one task: the view holds the section of the last one only', what='section[data-module] in #fView')
+    c.eq(shown['all'], ['maps'], 'no other module is anywhere in the page', what='[data-module] in the page')
+    c.eq(shown['overlays'], 1, 'one overlay layer, the one of the live section', what='.f-overlay')
+    c.eq(shown['sheets'], 1, 'one sheet, the one of the live section', what='.f-sheet-panel')
+    c.eq(shown['hash'], '#maps', 'the address is the last one asked', what='hash')
+    c.ready('maps', sheet=True)
+    c.ok(c.js(MAP_JS, 'maps') is not None, 'no map box', 'the module of the last address is mounted and its map is drawn')
+    # one address per task (each route() starts before the previous mount ended), three different modules, still reading slowly
+    c.js("""() => { window.__slow.ms = 700; const next = ['#flightlog', '#atmosphere'];
+        location.hash = '#fuel'; const go = () => { const h = next.shift(); if (h) { location.hash = h; setTimeout(go, 0) } }; setTimeout(go, 0) }""")
+    c.wait(3500)
+    c.js("() => { window.__slow.ms = 0 }")
+    c.eq(c.js("() => [...document.querySelectorAll('#fView section[data-module]')].map(e => e.dataset.module)"), ['atmosphere'], 'then one address per task: the view holds the last module only', what='section[data-module] after #fuel, #flightlog, #atmosphere')
+    c.eq(c.js("() => document.querySelectorAll('.f-overlay').length"), 1, 'one overlay layer again', what='.f-overlay')
+    c.ready('atmosphere')
+
+
 LAND = (844, 390)           # an iPhone in landscape (CSS pixels); the frame's `html.f-land` is "wider than high and under 1024"
 PORTRAIT = (390, 844)
 
