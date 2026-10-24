@@ -140,6 +140,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   write › CR, data synchronised n minutes ago, pending writes); the pending report comes from a small cache record
   published by flightlog (`cache/flightlog/pending.json`); atmosphere at level 1, on the rail; fixed modules have no
   help panel nor welcome card, a help button in their toolbar only if needed (the header's "?" opens the chapter).
+- **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
+  template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
+  `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
+  `render.js`; the three-position sheet becomes a frame primitive (`frame/lib/sheet.js`, rules in
+  `frame/design/primitives.css`) since every fixed module needs it. Two lots (maps, frame); until then the copies stay,
+  isolated and marked.
 
 ## 8. Decisions log
 
