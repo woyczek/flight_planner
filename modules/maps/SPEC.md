@@ -80,10 +80,24 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 
 ## 4. Screen (`module.js`)
 
-- **Header**: title, "Edit the route" (opens `#fuel`), "Recentre", then the summary "dep → arr · alternate · level ·
-  distance · type".
+- **The screen is fixed** (`meta.fixed: true`, frame INTEGRATION § 9.2; user, 24 Oct 2026: "le module carte n'est toujours
+  pas fixe (scroll bar et artefacts en header)"). The module root is a flex column at the height of the frame's view
+  (between the header and the tab bar on a phone, down to the window's bottom on a screen), `overflow: hidden`; nothing
+  scrolls but the content of the data block (and the Layers panel, inside the map). Top to bottom:
+  1. **The toolbar** (one line, 44 px controls with 2 px above and below): the flight selector (the `select`
+     "Planned flight", and the second one for the maps of a mission, shown only then), then three 44 px icon buttons whose
+     names are in `title` / `aria-label`: "Edit the route" (pencil, opens `#fuel?from=maps&focus=route`), "Recentre"
+     (target) and the **map mode** button (current mode's icon; it opens the row of six modes as a popover under it,
+     over the top of the map, never wider than the module). The selector takes what is left (380 px at most on a screen).
+     No visible title: the tab bar (phone) or the rail (screen) already names the screen; an invisible `h1` stays for the
+     reader.
+  2. **The information line**, one line of `--sog-size-xs`, ellipsed (the full text in its `title`): "LFRS → LFML ·
+     alternate LFMT · FL270 · 370 NM · C30J"; for a mission, "id · title · map". Under it, when they apply, the flight's
+     progress line (started flight; two lines at most) and the status messages that ask for a gesture or say something is
+     missing (no flight and "Open Fuel", no published base, offline without the zone and "Offline data", a mission's notes).
+  3. **The map**, `flex: 1 1 0; min-height: 0`, full width, with the aeronautical layer on a canvas over MapLibre;
+  4. **The data block, a sheet** (below).
 - **The map**:
-  - 60 % of the screen height (at least 280 px), with the aeronautical layer on a canvas over MapLibre;
   - pan and pinch, no rotation, no pitch, Mercator, north up;
   - redrawn on every move (one frame at a time);
   - the alternate: a grey dashed line from the arrival, a grey dot and its code.
@@ -95,19 +109,23 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Base map**: MapLibre is loaded at the first map (script and style sheet from `lib/`).
   - With no network, no WebGL, an error, or no style after 10 s, the map uses the plain background. It is fitted to
     the route and static.
-  - The status line says "Base map unavailable: plain background".
+  - The note "Base map unavailable: plain background" is written in the sheet's notes (under the profile), not under the
+    toolbar.
 - **Empty states**, written only when they change:
-  - no flight: the map is hidden, with a message and "Open Fuel";
+  - no flight: the map, the sheet, "Recentre" and the mode button are hidden, with a message and "Open Fuel" under the toolbar;
   - no published database: the route alone;
   - offline with no data for the area: a message and "Offline data" (`#settings`).
 - **Updates**:
   - the flight file is watched (`ctx.data.watch`): a new `updated_at` refits the map and reads again;
   - `aerodb.on('change')`: the data are read again;
-  - `ResizeObserver`: resize and redraw.
-- **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps; icons only
-  since lot 7a): a trigger at the top left showing the current mode's icon, the same size as the Layers button
-  (`--sog-touch`), opens a row of six icon buttons; each has its name and help as tooltip and `aria-label`, the current
-  one pressed (accent ring and inset shadow; red for CAM); the Layers button stays under the trigger.
+  - `ResizeObserver` on the map box: resize and redraw at each step, then (120 ms after the last) the route framed again
+    if the map has not been moved by the user.
+- **Map modes** (the user's validated mock-up, adapted to the `--sog-*` tokens; hidden for mission maps and when there
+  is no map; icons only since lot 7a): a trigger in the toolbar (since the fixed screen; it was at the top left of the map)
+  showing the current mode's icon, `--sog-touch` square, opens a row of six icon buttons as a popover under the toolbar
+  (`z-index` 8, inside the module root, closed by a tap on the map, on the toolbar or the sheet, by Escape or by a
+  choice); each has its name and help as tooltip and `aria-label`, the current one pressed (accent ring and inset shadow;
+  red for CAM); the Layers button is at the top left of the map.
   - Auto (wand, the flight's level: High IFR from FL195), Low IFR ("IFR" under a ceiling, `routeProfile(5000)`), High
     IFR ("IFR" over a floor, `routeProfile(30000)`), VFR (map icon, the built-in `vfr-detail` profile on the
     `ofm-liberty` base), Topo (contour lines drawn in CSS: `ofm-liberty` with a hillshade of the Terrarium tiles,
@@ -117,33 +135,54 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - Icons from `frame/lib/icons.js` (`wand-sparkles` added, `map`, `plane`, `chevron-down`); colours: accent for the
     choice, `--sog-err` for CAM; corners from `--sog-radius` (square in cabinet and field).
   - Kept in `cache/maps/ui.json` (`preset`: auto, low, high, vfr, topo, cam); each mode has its own layers.
-- **The view is fixed: (1) the map, (2) the data block** (24 Oct 2026). The map keeps its size and its position whatever
-  is opened: nothing overlays it any more except the light hover tooltip and the route-point card of the Edit mode. Under
-  it, the **data block** (`.mp-data`) holds, one at a time:
+- **The data block is a sheet of fixed height** (24 Oct 2026: the block; same day, second decision: the sheet). It sits
+  under the map and holds, one at a time:
   - the vertical profile (default), with its strip;
   - **the airspaces list** ("n airspaces at this point"), opened by a tap on airspaces (below);
   - **the aerodrome's VFR reporting points** (§ 4 septies), opened by a tap on an aerodrome or a reporting point;
-  the two contents replace the profile while open (one does not need the profile while reading them), and closing them
+  - (soon) the weather cross-section along the route, drawn by the atmosphere module (INTEGRATION § 6);
+  the contents replace the profile while open (one does not need the profile while reading them), and closing them
   brings the profile back, redrawn to its size. A new content replaces the open one; opening the airspaces list releases
-  a pinned aerodrome (its highlight would stay without its list).
-  - **A header line** of 30 px says what the block shows ("Vertical profile" / "n airspaces at this point" / "LFMN:
-    VFR reporting points", the aerodrome's name in the tooltip of the line, so that a phone does not truncate it) with the
-    ✕ at the right (44 px, drawn over the line: the line stays 30 px); the ✕ shows only for a content.
-  - **One height rule** (`--mp-prof-h`: `clamp(200px, 30vh, 340px)`, the profile's, phone and dual view alike): the
-    profile box has it, the content area has it plus the strip's 20 px (`.mp-dbody`), so the block does not change height
-    when a content opens; a long content scrolls inside it (`overscroll-behavior: contain`).
+  a pinned aerodrome (its highlight would stay without its list). The map keeps its size and position when a content
+  opens: nothing overlays it any more except the light hover tooltip and the route-point card of the Edit mode, both
+  inside the map box.
+  - **Three positions**, as parts of the module's height (the frame's view): **collapsed** (the header line only, 44 px
+    and its hairline), **default** (38 % on a phone, 35 % above 760 px; never under 170 px) and **expanded** (70 %; never
+    under 260 px). The numbers are tokens of the module root (`--mp-head`, `--mp-p1`, `--mp-m1`, `--mp-p2`, `--mp-m2`):
+    the style sheet is their only source, the script reads them. The map takes the rest: at 390 × 844 (view 730 px) the
+    sheet is 45 / 277 / 511 px and the map 617 / 385 / 151 px.
+  - **The handle** is the header line (44 px; a small bar, the title of what the block shows, and the ✕ of a content at
+    the right, 44 × 44). A drag on it (pointer events on the header only, `touch-action: none` there: the map keeps all its
+    gestures) pulls the sheet live; released, it goes to the nearest position, or to the next one in the direction of a
+    quick flick (more than 0.8 px/ms), with a 200 ms slide (none under `prefers-reduced-motion`). A tap on it collapses
+    the sheet, or brings a collapsed or expanded one back to the default; the keyboard (the handle is a button):
+    Enter / Space like a tap, Up / Down one position, Home / End the extremes. The position is kept while the page lives
+    (a return to the map finds it as left; not kept on the device).
+  - **The map follows**: the sheet's height changes the map box, its `ResizeObserver` resizes the MapLibre canvas and the
+    overlay at each step, and 120 ms after the last one (end of the slide, orientation change, pane resized) the route is
+    framed again if the user has not moved the map (`resize()` itself is not taken for a gesture of the user).
+  - **A content opened while the sheet is collapsed opens it** to the default position, without sliding (the content is
+    measured at once). The Layers panel opened with the sheet expanded brings it back to the default (the panel would
+    have three lines of map).
+  - **Inside the sheet**: header, then the profile (`flex: 1 1 0`, 380 px at most) with its strip (34 px, two lines, scrolls),
+    or the content area (`.mp-dbody`, scrolls, `overscroll-behavior: contain`), then the notes (fallbacks: plain
+    background, terrain unavailable — the normal offline state, kept out of the line under the toolbar so that the map
+    does not lose a line for ever). The sheet is not there when there is neither profile nor content.
+  - **The header line** says what the block shows ("Vertical profile" / "n airspaces at this point" / "LFMN: VFR reporting
+    points", the aerodrome's name in the tooltip of the title); the ✕ shows only for a content.
   - **Closing**: ✕, Escape, a tap on an empty spot of the map for the airspaces list; the aerodrome's content stays until
-    ✕, Escape or another aerodrome (pinned).
-  - **Reveal**: a content opened (or replaced by another) scrolls the block into view when it was off screen,
-    `scrollIntoView({ block: 'nearest' })` of the block (smooth unless reduced motion): the map stays above, the map camera
-    is never moved by it. The one camera move left is the existing fit of an aerodrome's reporting points on a tap, which
-    now has the whole map (no room kept for a card).
+    ✕, Escape or another aerodrome (pinned). Nothing scrolls the page to reveal the block: it is always on screen.
   - The levels chart is drawn at scale 1 for the content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px
     (a phone), otherwise the width its columns ask for (400 px at most), never higher than the area; the list beside it
     in columns of 19 em; the chart stays at the top while the list scrolls.
-  - A map in a dual-view pane or on a phone: the same block, the same rule, at the pane's width.
-  - The map box is an isolated stacking context (`isolation: isolate`), so that its buttons slide under the frame's
-    sticky header when the page scrolls to reveal the block.
+  - **Outside the frame's fixed view**: in the dual-view pane the root is given the pane's height
+    (`100dvh − 86 px − 44 px`, 420 px at least; the pane is `sticky`); with the map on the left of a pane, the view's
+    height; on the test page, the window's. The sheet and the toolbar are the same there.
+  - **The tuning page** (`#maps?tune=1`) is a page that scrolls: the root scrolls by itself (`overflow: auto`), the map box
+    is 52 vh again, the blocks have their natural height, the thresholds panel sits beside them from 1000 px.
+  - The root is an isolated stacking context (`isolation: isolate`): the z-indices of the map's buttons (3 to 8) never
+    compete with the frame's header or tab bar, in the pane (where the page scrolls under the sticky header) as on the
+    fixed screen.
 - **Tooltip** (lot 7a: one behaviour for hover, tap and click), a light `.mp-tip` (class `mp-hover`: `--sog-chart-bg`
   at 65 %, `--sog-fg`, thin border, 11.5 px, two lines at most) in the map box or the profile box:
   - what is under the pointer, in this order: a wind barb, an airway box, an airspace label (`draw()` returns their
@@ -173,7 +212,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
 - **Obstacles**: the studio's symbols (grouped on screen, the highest represents its group) without their label; in a
   close view (300 px per degree or more), "434 AGL (771)" beside the symbol — height above ground in feet, top
   elevation in brackets — where there is room.
-- **Layers panel** (button with a layers icon under the presets; hidden for mission maps): airspace families (TMA /
+- **Layers panel** (button with a layers icon at the top left of the map; hidden for mission maps): airspace families (TMA /
   CTR: TMA, CTR, CTA, TMZ, RMZ; D / R / P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA,
   FRA; others: every other type present), lower and upper airways, beacons, airway points (`fixes`), VRP, obstacles,
   MORA, towns, graticule, alternate, and "Around the route only".

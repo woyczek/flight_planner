@@ -209,7 +209,7 @@ terrains, balises, voies aériennes, altitudes minimales. La route du vol se mod
 ## Comment s'en servir
 
 **Le vol prévu.** La carte montre le vol préparé dans Carburant : départ, points de la route, arrivée, et le terrain
-de dégagement en tirets gris. En haut, une ligne le résume : départ et arrivée, dégagement, niveau, distance, type
+de dégagement en tirets gris. Sous la barre du haut, une ligne le résume : départ et arrivée, dégagement, niveau, distance, type
 d'appareil. Quand le vol change dans Carburant, la carte suit d'elle-même.
 
 **La carte et ce qu'elle montre.** Autour de la route : les espaces aériens qu'elle traverse ou frôle (zones
@@ -217,11 +217,11 @@ réglementées, dangereuses, interdites, espaces contrôlés), les voies aérien
 les terrains et les balises, et dans chaque carré d'un degré l'altitude minimale de sécurité (le chiffre brun, en
 milliers et centaines de pieds : « 3⁵ » veut dire 3 500 ft). Les petits chiffres violets le long de la route sont les
 distances depuis le départ, en milles nautiques. Faites glisser la carte avec un doigt, écartez deux doigts pour
-zoomer ; « Recentrer » revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
+zoomer ; « Recentrer » (la cible de la barre du haut) revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
 seul « Recentrer » (ou un autre vol) la recadre. Vue de loin, la carte ne montre que ce qui est près de la route ;
 rapprochez-vous pour tout voir.
 
-**Le profil et le curseur.** Sous la carte, le profil vertical coupe la route de bout en bout : le relief, les espaces
+**Le profil et le curseur.** Dans le bloc de données sous la carte, le profil vertical coupe la route de bout en bout : le relief, les espaces
 aériens où vous entrez à l'altitude prévue, et la trajectoire du vol en violet. Faites glisser le doigt sur le profil :
 un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la route sur la carte pour le placer là. La
 ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue, hauteur du relief,
@@ -229,7 +229,12 @@ et l'espace aérien où vous êtes à ce moment-là. Sous la carte, ce bloc de d
 espaces d'un point ou les points de report d'un terrain s'y ouvrent à sa place quand vous les demandez, et le profil
 revient à leur fermeture.
 
-**Six modes de carte.** Le bouton en haut à gauche de la carte montre le mode choisi ; touchez-le pour voir les six
+**Un écran fixe.** La barre du haut, la carte et le bloc de données remplissent l'écran, et rien ne défile que le
+contenu du bloc. Le bloc est une feuille : tirez sa ligne du haut (la petite barre et le titre) vers le haut pour
+l'agrandir, vers le bas pour la réduire à cette ligne, ce qui laisse toute la hauteur à la carte ; un toucher sur la
+ligne la réduit ou la ramène à sa hauteur normale.
+
+**Six modes de carte.** Le dernier bouton de la barre du haut montre le mode choisi ; touchez-le pour voir les six
 modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
 hautes (UN…, UM…), espaces au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR,
 points de report et obstacles. « Topo » : le relief et, de près, les courbes de niveau (tous les 500 ft ou 100 m selon votre unité, les
@@ -243,7 +248,7 @@ En vous rapprochant : les points des voies (triangles et balises), le niveau min
 la distance du tronçon, sa route (« 097° »), les points de report et les obstacles. De près, chaque obstacle porte sa hauteur au-dessus du
 sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
-**Les couches.** Le bouton aux calques, sous le réglage de la carte, ouvre la liste de ce qu'elle dessine : familles
+**Les couches.** Le bouton aux calques, en haut à gauche de la carte, ouvre la liste de ce qu'elle dessine : familles
 d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report VFR,
 obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces, noms des voies. Cochez ou décochez : la
 carte suit, et votre choix est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. «
@@ -319,7 +324,7 @@ bougent pas ici. Sur le profil, glissez un palier vers le haut ou le bas : le ni
 ouvre ce tronçon, par pas de FL10 (sur le premier tronçon, c'est le niveau du vol) ; dans la carte d'un point, « − »
 et « + » font de même. « Annuler » reprend le dernier geste. Chaque changement est enregistré aussitôt dans le vol, et
 Carburant refait le devis ; le profil suit. « Terminer » ferme le mode, et la carte se déplace de nouveau au doigt.
-Pour taper la route en texte, « Modifier la route » ouvre l'étape Route de Carburant.
+Pour taper la route en texte, le crayon de la barre du haut (« Modifier la route ») ouvre l'étape Route de Carburant.
 
 ## Sans réseau
 

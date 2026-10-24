@@ -6,25 +6,30 @@ beacons, airways, minimum altitudes. The flight's route can also be changed on t
 ## How to use
 
 **The planned flight.** The map shows the flight prepared in Fuel: departure, route points, arrival, and the alternate
-airfield in grey dashes. At the top, a line sums it up: departure and arrival, alternate, level, distance, aircraft
+airfield in grey dashes. Under the top bar, a line sums it up: departure and arrival, alternate, level, distance, aircraft
 type. When the flight changes in Fuel, the map follows by itself.
 
 **The map and what it shows.** Around the route: the airspaces it crosses or skirts (restricted, danger and prohibited
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
 one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means 3,500 ft).
 The small purple figures along the route are the distances from the departure, in nautical miles. Drag the map with one
-finger, spread two fingers to zoom; “Recentre” comes back to the whole route. The map stays where you put it, even when
+finger, spread two fingers to zoom; “Recentre” (the target in the top bar) comes back to the whole route. The map stays where you put it, even when
 the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
 route; zoom in to see everything.
 
-**The profile and the cursor.** Below the map, the vertical profile cuts through the route from end to end: the terrain,
+**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
 the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
 blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
 the profile says what is under the cursor: distance from the departure, planned altitude, terrain height, and the
 airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
 an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed.
 
-**Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
+**A fixed screen.** The top bar, the map and the data block fill the screen, and nothing scrolls but the block's
+content. The block is a sheet: drag its top line (the small bar and the title) up to enlarge it, down to shrink it to
+that line, which leaves the whole height to the map; a tap on the line collapses it or brings it back to its normal
+height.
+
+**Six map modes.** The last button of the top bar shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
 “VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
 terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit, the index contours numbered),
@@ -37,7 +42,7 @@ names. Closer: the airway points (triangles and beacons), each airway's minimum 
 distance, its track (“097°”), the reporting points and the obstacles. Close up, each obstacle carries its height above
 ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
-**Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families (TMA /
+**Layers.** The layers button, at the top left of the map, opens the list of what the map draws: airspace families (TMA /
 CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
 altitudes, towns, graticule, alternate, airspace names, airway names. Tick or untick: the map follows, and your choice
 is kept for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked
@@ -110,7 +115,7 @@ segment. A simple tap adds nothing: it shows the bubble. Tap a route point: its 
 point that opens that segment, in steps of FL10 (on the first segment, it is the flight's level); in a point's card, “−”
 and “+” do the same. “Undo” takes back the last gesture. Each change is saved in the flight at once, and Fuel redoes the
 quote; the profile follows. “Done” closes the mode, and the map moves under your finger again. To type the route as
-text, “Edit the route” opens Fuel's Route step.
+text, the pencil of the top bar (“Edit the route”) opens Fuel's Route step.
 
 ## Without network
 
@@ -142,4 +147,4 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 8c4a1ed0d0cd -->
+<!-- fr: 150d28aa1aed -->
