@@ -199,6 +199,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
      a library (`modules/atmosphere/lib/weather_map.js`, `attach(map, { flight, levelFt, time }) → { update, detach }`,
      reading the same caches, never calling Open-Meteo by itself), the map module calls it. Atmosphere stays the
      place for the slider, the slices and the table; on a phone it is reached by a second tap on Préparer.
+  9. **The sheet's default position shows the drawing only** (user, 24 Oct, 18:31, iPhone shot of the map's profile
+     squashed above a text line: "sur ce profil, on ne veut que le profil. Le reste apparaît quand on slide le volet
+     bas. Si on le rétracte, c'est ok"): in the default position the body holds the vertical profile or the weather
+     cut alone, at the body's full height (readability floor kept, the body scrolls if really too low); the text
+     strip and the notes appear only in the expanded position, under the drawing at its maximum height; the
+     head-only position is unchanged. Atmosphere keeps its slider row with the cut (a control, not a text line).
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
