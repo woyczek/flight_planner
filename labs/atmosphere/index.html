@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atmosphère de la route — maquette</title>
+<!-- Maquette autonome (labs/atmosphere/README.md) : l'atmosphère le long du vol courant — coupe verticale (nuages,
+     isothermes, inversions, givrage, altitude-densité, vent, relief) avec les trajectoires demandée, planifiée et
+     calculée ; carte aux mêmes altitudes (isobares, isothermes, nuages, vent) ; tranches verticales (sondages) ; table
+     le long de la trajectoire ; METAR / TAF des terrains. Prévisions Open-Meteo (sans clé), METAR metar.vatsim.net, TAF
+     avwx.rest avec la clé de l'appareil (Réglages de la suite). Textes en français seulement (maquette). -->
+<link rel="stylesheet" href="../../modules/maps/lib/maplibre-gl.css?v=0">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f4f7;
+    --surface: #fcfcfb;
+    --ink: #17202a;
+    --ink-2: #52514e;
+    --muted: #8a8984;
+    --line: #dcdfe4;
+    --grid: #e8eaee;
+    --accent: #2a78d6;
+    --s-computed: #2a78d6;
+    --s-planned: #eb6834;
+    --s-requested: #1baf7a;
+    --inv: #6250d6;
+    --ice: #d03b3b;
+    --terrain: #a89f91;
+    --cloud: 96, 104, 116;
+    --warn: #fab219;
+    --good: #0ca30c;
+    --crit: #d03b3b
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121211;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --muted: #8f8e86;
+      --line: #34342f;
+      --grid: #272724;
+      --accent: #3987e5;
+      --s-computed: #3987e5;
+      --s-planned: #d95926;
+      --s-requested: #199e70;
+      --inv: #9085e9;
+      --ice: #e66767;
+      --terrain: #6d665c;
+      --cloud: 200, 204, 212
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #8f8e86;
+    --line: #34342f;
+    --grid: #272724;
+    --accent: #3987e5;
+    --s-computed: #3987e5;
+    --s-planned: #d95926;
+    --s-requested: #199e70;
+    --inv: #9085e9;
+    --ice: #e66767;
+    --terrain: #6d665c;
+    --cloud: 200, 204, 212
+  }
+  * {
+    box-sizing: border-box
+  }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.45 system-ui, sans-serif
+  }
+  main {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: grid;
+    gap: 14px
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px
+  }
+  h1 {
+    font-size: 19px;
+    margin: 0
+  }
+  h2 {
+    font-size: 14px;
+    margin: 0
+  }
+  .tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 2px 7px;
+    border-radius: 99px;
+    border: 1px solid var(--line);
+    color: var(--ink-2)
+  }
+  .tag.demo {
+    border-color: var(--warn);
+    color: var(--ink)
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    min-width: 0
+  }
+  .card>.head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin-bottom: 8px
+  }
+  .card>.head .sub {
+    color: var(--ink-2);
+    font-size: 12.5px
+  }
+  .spacer {
+    flex: 1
+  }
+  form.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: end
+  }
+  label.f {
+    display: grid;
+    gap: 3px;
+    font-size: 12px;
+    color: var(--ink-2)
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit
+  }
+  input,
+  select,
+  textarea {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 5px 8px;
+    min-height: 32px
+  }
+  textarea {
+    width: min(520px, 100%);
+    min-height: 60px;
+    font: 12.5px/1.4 ui-monospace, monospace
+  }
+  button {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 5px 12px;
+    min-height: 32px;
+    cursor: pointer
+  }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff
+  }
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px
+  }
+  .status {
+    font-size: 12.5px;
+    color: var(--ink-2)
+  }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 12px
+  }
+  .kpi .k {
+    font-size: 11.5px;
+    color: var(--ink-2)
+  }
+  .kpi .v {
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums
+  }
+  .kpi .n {
+    font-size: 11.5px;
+    color: var(--muted)
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    padding: 3px 10px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--surface)
+  }
+  .chip input {
+    margin: 0;
+    min-height: 0
+  }
+  .chip[aria-pressed="true"],
+  .chip:has(input:checked) {
+    border-color: var(--accent)
+  }
+  .sw {
+    width: 18px;
+    height: 0;
+    border-top: 2px solid currentColor;
+    display: inline-block
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-top: 6px;
+    align-items: center
+  }
+  .legend .ramp {
+    width: 120px;
+    height: 9px;
+    border-radius: 2px;
+    display: inline-block;
+    vertical-align: middle
+  }
+  .plot {
+    position: relative
+  }
+  .plot canvas {
+    display: block;
+    width: 100%
+  }
+  .tip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .14);
+    white-space: nowrap;
+    z-index: 5;
+    display: none;
+    font-variant-numeric: tabular-nums
+  }
+  .tip b {
+    font-weight: 600
+  }
+  .tip .m {
+    color: var(--ink-2)
+  }
+  .row2 {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+    gap: 14px
+  }
+  @media (max-width: 980px) {
+    .row2 {
+      grid-template-columns: 1fr
+    }
+  }
+  #map {
+    height: 520px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: var(--grid)
+  }
+  #mapCanvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums
+  }
+  th,
+  td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--grid);
+    text-align: right;
+    white-space: nowrap
+  }
+  th {
+    color: var(--ink-2);
+    font-weight: 500;
+    position: sticky;
+    top: 0;
+    background: var(--surface)
+  }
+  th:first-child,
+  td:first-child {
+    text-align: left
+  }
+  tr.wp td {
+    font-weight: 600
+  }
+  tr.sel td {
+    background: color-mix(in srgb, var(--accent) 12%, transparent)
+  }
+  tbody tr {
+    cursor: pointer
+  }
+  .scroll {
+    overflow: auto;
+    max-height: 460px
+  }
+  .flag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 0 6px;
+    border-radius: 4px;
+    border: 1px solid var(--line)
+  }
+  .flag.ice2 {
+    border-color: var(--ice);
+    color: var(--ice)
+  }
+  .flag.ice1 {
+    border-color: var(--warn)
+  }
+  .flag.inv {
+    border-color: var(--inv);
+    color: var(--inv)
+  }
+  .wx {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px
+  }
+  .wx .st {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px
+  }
+  .wx .st .id {
+    font-weight: 600
+  }
+  .cat {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: #fff
+  }
+  .cat.VFR {
+    background: #0ca30c
+  }
+  .cat.MVFR {
+    background: #2a78d6
+  }
+  .cat.IFR {
+    background: #d03b3b
+  }
+  .cat.LIFR {
+    background: #a0329a
+  }
+  .raw {
+    font: 11.5px/1.4 ui-monospace, monospace;
+    color: var(--ink-2);
+    white-space: pre-wrap;
+    margin-top: 4px
+  }
+  .slice-info {
+    font-size: 12.5px;
+    display: grid;
+    gap: 3px;
+    margin-top: 6px
+  }
+  .slice-info .m {
+    color: var(--ink-2)
+  }
+  .toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--warn);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+    font-size: 13px;
+    z-index: 20
+  }
+  .toast.err {
+    border-left-color: var(--crit)
+  }
+  .hidden {
+    display: none !important
+  }
+  footer {
+    font-size: 12px;
+    color: var(--muted)
+  }
+  @media (max-width: 600px) {
+    body {
+      padding: 10px
+    }
+    #map {
+      height: 380px
+    }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Atmosphère de la route</h1>
+    <span class="tag">Maquette</span>
+    <span class="tag demo hidden" id="demoTag">Démonstration — données inventées</span>
+    <span class="spacer"></span>
+    <span class="status" id="source"></span>
+  </header>
+
+  <section class="card">
+    <form class="controls" id="form">
+      <label class="f">Vol
+        <select id="flightSrc">
+          <option value="example">Exemple : LFRS → LUGEN → LFML</option>
+          <option value="launcher">Vol courant (servi par le lanceur)</option>
+          <option value="file">Fichier current_flight.json…</option>
+          <option value="text">Texte de route (coordonnées)</option>
+        </select>
+      </label>
+      <label class="f hidden" id="triBox">Trigramme
+        <input id="tri" size="5" maxlength="4" autocomplete="off" placeholder="ABC">
+      </label>
+      <label class="f hidden" id="fileBox">Fichier
+        <input type="file" id="file" accept=".json,application/json">
+      </label>
+      <label class="f hidden" id="textBox">Route (ID lat lon, une par ligne ; F270 après un point = palier)
+        <textarea id="routeText" spellcheck="false">LFRS 47.1569 -1.6078
+LUGEN 46.5833 -1.2000/F290
+MEN 44.6050 3.1600
+LFML 43.4367 5.2150</textarea>
+      </label>
+      <label class="f">Départ (UTC)
+        <input type="datetime-local" id="dep">
+      </label>
+      <label class="f">Niveau demandé
+        <select id="levelSel"></select>
+      </label>
+      <label class="f">Croisière (kt)
+        <input type="number" id="cruiseKt" min="60" max="600" step="5" style="width:80px">
+      </label>
+      <label class="f">Données
+        <select id="dataSrc">
+          <option value="live">Prévision Open-Meteo</option>
+          <option value="demo">Démonstration hors ligne</option>
+        </select>
+      </label>
+      <label class="f">Carte : grille
+        <select id="gridMax">
+          <option value="35">6 × 6 (léger)</option>
+          <option value="48" selected>8 × 6</option>
+          <option value="96">12 × 8 (lourd)</option>
+        </select>
+      </label>
+      <label class="f">Clé Open-Meteo
+        <input type="password" id="omKey" size="12" autocomplete="off">
+      </label>
+      <button class="primary" type="submit">Charger</button>
+    </form>
+    <div class="status" id="status" style="margin-top:8px"></div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Résumé"></section>
+
+  <section class="card">
+    <div class="head">
+      <h2>Coupe le long de la route</h2>
+      <span class="sub" id="xsSub"></span>
+      <span class="spacer"></span>
+      <div class="chips" id="xsLayers"></div>
+    </div>
+    <div class="plot" id="xsPlot">
+      <canvas id="xs" height="460" aria-label="Coupe verticale de l'atmosphère le long de la route"></canvas>
+      <div class="tip" id="xsTip"></div>
+    </div>
+    <div class="legend" id="xsLegend"></div>
+  </section>
+
+  <div class="row2">
+    <section class="card">
+      <div class="head">
+        <h2>Carte</h2>
+        <label class="f" style="flex-direction:row">
+          <select id="mapLevel" aria-label="Altitude de la carte"></select>
+        </label>
+        <span class="sub" id="mapSub"></span>
+        <span class="spacer"></span>
+        <div class="chips" id="mapLayers"></div>
+      </div>
+      <div id="map"><canvas id="mapCanvas"></canvas></div>
+      <div class="legend" id="mapLegend"></div>
+    </section>
+    <section class="card">
+      <div class="head">
+        <h2>Tranche verticale</h2>
+        <span class="spacer"></span>
+        <button type="button" id="slicePrev" aria-label="Tranche précédente">◀</button>
+        <button type="button" id="sliceNext" aria-label="Tranche suivante">▶</button>
+      </div>
+      <div class="chips" id="sliceWps"></div>
+      <div class="sub" id="sliceHead" style="margin:6px 0;font-size:12.5px;color:var(--ink-2)"></div>
+      <div class="plot" id="sdPlot">
+        <canvas id="sd" height="440" aria-label="Sondage vertical de la tranche choisie"></canvas>
+        <div class="tip" id="sdTip"></div>
+      </div>
+      <div class="legend">
+        <span><span class="sw" style="color:#e34948"></span> Température</span>
+        <span><span class="sw" style="color:#008300"></span> Point de rosée</span>
+        <span><span class="sw" style="color:var(--muted);border-top-style:dashed"></span> Atmosphère type</span>
+        <span>▮ nuages · barbules : vent</span>
+      </div>
+      <div class="slice-info" id="sliceInfo"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="head">
+      <h2>Le long de la trajectoire calculée</h2>
+      <span class="sub">altitude de la trajectoire en chaque lieu de lecture ; heure de passage estimée (sans vent)</span>
+    </div>
+    <div class="scroll">
+      <table id="tbl"></table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="head">
+      <h2>Terrains</h2>
+      <span class="sub" id="wxSub"></span>
+    </div>
+    <div class="wx" id="wx"></div>
+  </section>
+
+  <footer>
+    Maquette — modèle par le milieu de la route (Météo-France AROME / ARPEGE, DWD ICON ou NOAA GFS par Open-Meteo),
+    niveaux de vol en altitude pression (atmosphère type), interpolation en logarithme de la pression ; nébulosité par
+    niveau du modèle, ou tirée de l'humidité ; givrage et base des cumulus indicatifs. Ne remplace pas un dossier météo
+    officiel.
+  </footer>
+</main>
+<div class="toast hidden" id="toast" role="status"></div>
+<script src="../../modules/maps/lib/maplibre-gl.js?v=0"></script>
+<script type="module" src="page.js?v=0"></script>
+</body>
+</html>

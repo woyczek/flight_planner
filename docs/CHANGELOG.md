@@ -45,6 +45,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Technical debt, map module** (`docs/technique/DETTE_TECHNIQUE.md`, new section) — five findings of the user on 23 October:
   the map stops at the antimeridian; the aerodrome card sometimes misplaced and impossible to close; SFC–UNL volumes
   drawn; a tap on an empty spot does not close the card; VFR text written over the map. Each with its cause and what to do.
+- **Labs: route atmosphere mock-up** (`labs/atmosphere/`, README) — a standalone page on the current flight: a
+  cross-section along the route (cloud by level, isotherms, inversions, indicative icing, density altitude, wind,
+  terrain) with the requested, planned and computed (climb / descent) paths, each place read at the time the flight
+  passes it; a map at the same altitudes (isobars, isotherms, cloud, wind; constant-altitude isobars aloft); vertical
+  slices; a table along the trajectory; METAR / TAF of the aerodromes. Open-Meteo pressure levels, offline
+  demonstration data (`?donnees=demo`). French only for now.
 - **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
   help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA
   is placed with the route labels, under its name, before the aerodromes.
