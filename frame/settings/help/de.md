@@ -143,8 +143,8 @@ auf einem Rechner mit Starter ein.
 ## Verwaltung
 
 **Die Verwaltungsseiten.** Auf der Stufe „Vollständig“ (Karte „Stufe“) sammelt die Karte „Verwaltung“ unter „Über“ die
-Verwaltungs- und Testseiten, jede mit einem Satz; auf den anderen Stufen erscheint sie nicht. In der App: die Abstimmung
-der Kartenschwellen (`#maps?tune=1`, auf einem Telefon nur lesbar), der Fahrplan (`#roadmap`) und die Diagnose der Karte
+Verwaltungs- und Testseiten, jede mit einem Satz; auf den anderen Stufen erscheint sie nicht. In der App: die Schaltfläche
+„Abstimmung der Kartenschwellen (Administrator)“ (`#maps?tune=1`, auf einem Telefon nur lesbar; sie öffnet die Abstimmungsseite: für jedes Kartenelement und jeden Modus die Zoomstufen, in denen es erscheint, für die Fluggesellschaft gespeichert, `airline/map_profiles.json`; ein Modus, den Sie nie gespeichert haben, übernimmt die Schwellen eines abgestimmten Modus, die Seite sagt es; der Regler „Komplexität“ der Karte verschiebt nur den Zoom), zurück mit dem Zurück-Pfeil, der Fahrplan (`#roadmap`) und die Diagnose der Karte
 „Über“.
 
 **Die Prüfstände, auf einem Rechner.** Vom Starter bedient, öffnen sie sich nur auf einem Rechner mit Starter (anderswo

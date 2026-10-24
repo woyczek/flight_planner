@@ -302,7 +302,7 @@ const TX = {
     awLabels: ['Noms des voies', 'Airway names', 'Namen der Flugwege', 'Nombres de las aerovías']
   },
   layersReset: ['Tout remettre', 'Reset all', 'Alles zurücksetzen', 'Restablecer todo'],
-  detail: ['Complexité (essai)', 'Complexity (trial)', 'Komplexität (Test)', 'Complejidad (prueba)'],
+  detail: ['Complexité', 'Complexity', 'Komplexität', 'Complejidad'],
   zoomNames: {
     asFir: ['FIR / UIR', 'FIR / UIR', 'FIR / UIR', 'FIR / UIR'],
     asTma: ['TMA', 'TMA', 'TMA', 'TMA'],
@@ -400,6 +400,23 @@ const TX = {
   tuneResetVis: ['Remettre les cases', 'Reset the boxes', 'Kästchen zurücksetzen', 'Restablecer las casillas'],
   tuneResetZoom: ['Remettre les curseurs', 'Reset the sliders', 'Regler zurücksetzen', 'Restablecer los cursores'],
   tuneSaveDev: ['Garder sur cet appareil', 'Keep on this device', 'Auf diesem Gerät behalten', 'Guardar en este dispositivo'],
+  // d'où viennent les seuils du mode montré : propres à la compagnie, repris d'un autre mode, ou intégrés
+  tuneSrc: {
+    own: ['Seuils du mode {m} : réglés pour la compagnie.', 'Thresholds of the {m} mode: set for the airline.',
+      'Schwellen des Modus {m}: für die Fluggesellschaft eingestellt.', 'Umbrales del modo {m}: ajustados para la aerolínea.'
+    ],
+    from: [
+      'Seuils du mode {m} : jamais réglés pour la compagnie, repris du mode {f} ; « Enregistrer pour la compagnie » en fait les siens.',
+      'Thresholds of the {m} mode: never set for the airline, taken from the {f} mode; “Save for the airline” makes them its own.',
+      'Schwellen des Modus {m}: nie für die Fluggesellschaft eingestellt, aus dem Modus {f} übernommen; „Für die Fluggesellschaft speichern“ macht sie zu eigenen.',
+      'Umbrales del modo {m}: nunca ajustados para la aerolínea, tomados del modo {f}; «Guardar para la aerolínea» los hace propios.'
+    ],
+    none: ['Seuils du mode {m} : valeurs intégrées, rien n\'est réglé pour la compagnie.',
+      'Thresholds of the {m} mode: built-in values, nothing is set for the airline.',
+      'Schwellen des Modus {m}: eingebaute Werte, für die Fluggesellschaft ist nichts eingestellt.',
+      'Umbrales del modo {m}: valores integrados, nada ajustado para la aerolínea.'
+    ]
+  },
   tuneSavedCo: ['Seuils du mode {m} enregistrés pour la compagnie.', 'Thresholds of the {m} mode saved for the airline.',
     'Schwellen des Modus {m} für die Fluggesellschaft gespeichert.', 'Umbrales del modo {m} guardados para la aerolínea.'
   ],
@@ -411,10 +428,11 @@ const TX = {
     'Auf dem Telefon nur lesbar: stellen Sie die Schwellen auf einem Bildschirm oder Tablet ein.',
     'Solo lectura en un teléfono: ajuste los umbrales en una pantalla o una tableta.'
   ],
-  detailHelp: ['Moins de détails à gauche, plus à droite : décale d\'un cran ce que chaque zoom montre.',
-    'Fewer details to the left, more to the right: shifts by one step what each zoom shows.',
-    'Weniger Details links, mehr rechts: verschiebt um eine Stufe, was jeder Zoom zeigt.',
-    'Menos detalles a la izquierda, más a la derecha: desplaza un paso lo que muestra cada zoom.'
+  detailHelp: [
+    'Agit comme si le zoom était différent : un cran = un niveau de zoom, moins de détails à gauche, plus à droite. Ce que chaque zoom montre est réglé par l\'administrateur.',
+    'Acts as if the zoom were different: one step = one zoom level, fewer details to the left, more to the right. What each zoom shows is set by the administrator.',
+    'Wirkt, als wäre der Zoom ein anderer: eine Stufe = eine Zoomstufe, links weniger Details, rechts mehr. Was jeder Zoom zeigt, legt der Administrator fest.',
+    'Actúa como si el zoom fuera otro: un paso = un nivel de zoom, menos detalles a la izquierda, más a la derecha. Lo que muestra cada zoom lo fija el administrador.'
   ],
   tipMore: ['+{n} autre(s)', '+{n} more', '+{n} weitere', '+{n} más'],
   close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
@@ -890,10 +908,10 @@ function draw() {
   }
   // courbes de niveau (Topo, VFR), de près, sous la surcouche aéronautique
   const pxDeg = W / Math.max(1e-6, shown.e - shown.w);
-  // zoom réel de la vue, décalé par le curseur de complexité, puis corrigé par la taille du cadre : c'est ce zoom effectif
-  // (zv) qu'on compare aux seuils, ici comme dans MapsRender.draw (même fonction)
+  // zoom réel de la vue, décalé par le curseur de complexité (un niveau par cran : MapsRender.detailZoom), puis corrigé par
+  // la taille du cadre : c'est ce zoom effectif (zv) qu'on compare aux seuils, ici comme dans MapsRender.draw
   const zReal = MapsRender.zoomOf(pxDeg),
-    zv = S.mission ? zReal : MapsRender.effectiveZoom(zReal + detailShift() * .75, W, H),
+    zv = S.mission ? zReal : MapsRender.effectiveZoom(zReal + MapsRender.detailZoom(detailShift()), W, H),
     zoomOn = k => MapsRender.visibleAt(S.profile, k, zv);
   if (S.tuneEl) markTune(zReal, zv, (shown.n + shown.s) / 2, W, H);
   // nos villes dessinées à ce zoom : les noms de lieux du fond s'effacent (sinon « Mérignac » en double)
@@ -928,6 +946,7 @@ function draw() {
     } : null
   }) || {};
   S.awHits = got.airways || [];
+  stat(got.zoom);
   S.zoneHits = got.zoneLabels || [];
   S.adHits = got.aerodromes || [];
   S.navHits = got.navaids || [];
@@ -966,6 +985,16 @@ function draw() {
   const want = wantBox(shown),
     corr = corridorFor(shown, W);
   if (!within(want, S.data?.box) || corr !== S.data?.corridor) refresh(want, corr);
+}
+/** Zoom effectif et éléments gardés par les seuils, posés sur la racine de la carte (mesures des essais : data-zoom-eff,
+ *  data-kept) ; écrit seulement s'ils changent. */
+function stat(z) {
+  if (!z?.kept) return;
+  const eff = z.effective.toFixed(2),
+    kept = JSON.stringify(z.kept),
+    d = S.mapEl.dataset;
+  if (d.zoomEff !== eff) d.zoomEff = eff;
+  if (d.kept !== kept) d.kept = kept;
 }
 /** TOC et TOD (losanges) et curseur commun (rond) sur la carte, aux distances de la coupe. */
 function drawPlanOnMap(ctx, toC, taken = []) {
@@ -3173,21 +3202,43 @@ function showBox(on) {
 function flightProfile() {
   return withRepo(builtinProfile());
 }
+/** Familles de modes pour les seuils de la compagnie : un mode jamais réglé reprend ceux d'un mode réglé (voir repoZoom). */
+const IFR_MODES = ['auto', 'low', 'high', 'cam'],
+  VFR_MODES = ['vfr', 'topo'];
+/** Seuils de zoom que la compagnie a réglés pour un mode (airline/map_profiles.json, profiles[mode].elements.zoom) :
+ *  { zoom, from } ; from est le mode dont ils viennent. Un mode que la page de réglage n'a jamais enregistré reprend, dans
+ *  l'ordre, ceux d'un autre mode de sa famille (IFR : Auto, IFR bas, IFR haut, CAM ; VFR : VFR, Topo), puis, pour un mode
+ *  IFR seulement (le couloir de la route y éclaircit déjà la carte), ceux de la famille VFR, plus stricte. Sans cela, un
+ *  administrateur qui n'a réglé que VFR voit Auto garder les valeurs intégrées, plus larges (24 Oct 2026). null : rien de
+ *  réglé, valeurs intégrées. */
+function repoZoom(mode) {
+  const P = S.repoProfiles,
+    own = m => P?.[m]?.elements?.zoom && typeof P[m].elements.zoom === 'object' ? P[m].elements.zoom : null,
+    fam = VFR_MODES.includes(mode) ? VFR_MODES : IFR_MODES,
+    order = [mode, ...fam.filter(m => m !== mode), ...(fam === IFR_MODES ? VFR_MODES : [])],
+    from = order.find(own);
+  return from ? {
+    zoom: own(from),
+    from
+  } : null;
+}
 /** Profil d'un mode affiné par la compagnie (airline/map_profiles.json, profiles[mode] au format profile_def du studio)
- *  posé sur le profil intégré : champs remplacés, éléments fusionnés. */
+ *  posé sur le profil intégré : champs remplacés, éléments fusionnés, seuils de zoom propres au mode ou repris (repoZoom). */
 function withRepo(B) {
-  const own = S.repoProfiles?.[S.preset];
-  if (!own || typeof own !== 'object') return B;
+  const own = S.repoProfiles?.[S.preset],
+    zoom = repoZoom(S.preset)?.zoom;
+  if ((!own || typeof own !== 'object') && !zoom) return B;
+  const O = own && typeof own === 'object' ? own : {};
   return {
     ...B,
-    ...own,
+    ...O,
     id: B.id,
     elements: {
       ...(B.elements || {}),
-      ...(own.elements || {}),
+      ...(O.elements || {}),
       zoom: {
         ...(B.elements?.zoom || {}),
-        ...(own.elements?.zoom || {})
+        ...(zoom || {})
       }
     }
   };
@@ -3537,7 +3588,13 @@ function fillLayers() {
   const L = layersNow();
   for (const c of S.layersEl.querySelectorAll('input[data-layer]')) {
     if (c.type === 'range') {
-      const v = String(Math.round(+L[c.dataset.layer] || 0));
+      // bornes : celles du rendu (MapsRender.DETAIL_MAX), posées une fois les bibliothèques chargées
+      const max = String(MapsRender.DETAIL_MAX),
+        v = String(MapsRender.detailZoom(L[c.dataset.layer]));
+      if (c.max !== max) {
+        c.max = max;
+        c.min = `-${max}`;
+      }
       if (c.value !== v) c.value = v;
       const out = S.layersEl.querySelector('[data-detail-v]'),
         t = +v > 0 ? `+${v}` : v;
@@ -3697,13 +3754,30 @@ function fillTune() {
     ro = S.tuneRO ? ' disabled' : '';
   box.innerHTML = `<h2>${esc(tt(TX.tuneTitle))}</h2><p class="f-muted">${esc(tt(TX.tuneHint))}</p>${S.tuneRO ? `<p class="f-muted"><b>${esc(tt(TX.tuneRO))}</b></p>` : ''}
 <p class="mp-tune-now" data-now></p>
+<p class="f-muted" data-src></p>
 <div class="mp-tune-tabs" role="group">${MODES.map(([k, icon, cls]) => `<button type="button" class="mp-choice${cls}" data-tune-mode="${k}" aria-pressed="${k === S.preset}" title="${esc(modeTitle(S.ctx, k))}" aria-label="${esc(modeTitle(S.ctx, k))}">${icon}</button>`).join('')}</div>
 <div class="mp-tune-rows">${ZOOM_KEYS.map(k => `<div class="mp-tune-row" data-row="${k}"><label class="mp-tune-name" title="${esc(tt(TX.tuneVis, { e: tt(TX.zoomNames[k]), l: tt(TX.layerNames[LAYER_OF[k]]) }))}"><input type="checkbox" data-vis="${LAYER_OF[k]}"${ro}> ${esc(tt(TX.zoomNames[k]))}</label><div class="mp-tune-dual"><span class="mp-tune-mark" aria-hidden="true"></span><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMin, { e: tt(TX.zoomNames[k]) }))}"${ro}><input type="range" min="0" max="${Z_MAX}" step="0.25" data-z="${k}" aria-label="${esc(tt(TX.tuneMax, { e: tt(TX.zoomNames[k]) }))}"${ro}></div><div class="mp-tune-range f-muted" data-range></div></div>`).join('')}</div>
 <div class="f-row"><button type="button" data-tune="resetVis"${ro}>${esc(tt(TX.tuneResetVis))}</button><button type="button" data-tune="reset"${ro}>${esc(tt(TX.tuneResetZoom))}</button><button type="button" data-tune="dev"${ro}>${esc(tt(TX.tuneSaveDev))}</button><button type="button" class="primary" data-tune="co"${ro}>${esc(tt(TX.tuneSaveCo))}</button></div>`;
   for (const k of ZOOM_KEYS) tuneRow(box.querySelector(`[data-row="${k}"]`), k, z[k] || [0, 24]);
   tuneVis();
+  tuneSrc();
   S.tuneMarked = null;
   schedule();
+}
+/** Ligne « d'où viennent les seuils » du mode montré ; écrite seulement si elle change. */
+function tuneSrc() {
+  const r = repoZoom(S.preset),
+    m = tt(TX.presets[S.preset]),
+    t = !r ? tt(TX.tuneSrc.none, {
+      m
+    }) : r.from === S.preset ? tt(TX.tuneSrc.own, {
+      m
+    }) : tt(TX.tuneSrc.from, {
+      m,
+      f: tt(TX.presets[r.from])
+    }),
+    out = S.tuneEl.querySelector('[data-src]');
+  if (out && out.textContent !== t) out.textContent = t;
 }
 /** Cases « visible » de la page de réglage selon les couches du mode (lignes décochées grisées) ; écrit seulement ce qui
  *  change. */
@@ -4311,9 +4385,9 @@ const STYLE = `
 [data-module="maps"] .mp-layers [data-layers-reset]{grid-column:1/-1;justify-self:start;margin-top:8px}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
 [data-module="maps"] .mp-layers .mp-l-main{grid-column:1/-1;border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
-[data-module="maps"] .mp-layers .mp-l-detail{grid-column:1/-1;flex-wrap:wrap;border-top:1px solid var(--sog-border);margin-top:4px;padding-top:6px}
+[data-module="maps"] .mp-layers .mp-l-detail{grid-column:1/-1;flex-wrap:wrap;margin-bottom:0}
 [data-module="maps"] .mp-layers .mp-l-detail input{flex:1 1 100%;margin:4px 0 0}
-[data-module="maps"] .mp-layers .mp-l-help{grid-column:1/-1;font-size:.85em;margin-bottom:2px}
+[data-module="maps"] .mp-layers .mp-l-help{grid-column:1/-1;font-size:.85em;margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid var(--sog-border)}
 [data-module="maps"] .mp-tune h2{margin:0 0 4px;font-size:1.1em}
 [data-module="maps"] .mp-tune-now{font-variant-numeric:tabular-nums;margin:4px 0}
 [data-module="maps"] .mp-tune-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 10px}
@@ -4548,9 +4622,10 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-dbody f-sheet-body" hidden role="region" tabindex="-1"><div class="mp-layers" role="group" aria-label="${esc(ctx.t(layersName))}">
 <div class="mp-picks"><select class="mp-pick" aria-label="${esc(ctx.t(TX.pick))}"></select>
 <select class="mp-mappick" hidden aria-label="${esc(ctx.t(TX.mapOf))}"></select></div>
-<div class="mp-layer-set"${ctx.query?.mission ? ' hidden' : ''}>${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
-<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-2" max="2" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
+<div class="mp-layer-set"${ctx.query?.mission ? ' hidden' : ''}>
+<label class="mp-l-detail" title="${esc(ctx.t(TX.detailHelp))}">${esc(ctx.t(TX.detail))} <span data-detail-v></span><input type="range" min="-4" max="4" step="1" data-layer="detail" aria-describedby="mp-detail-help"></label>
 <span id="mp-detail-help" class="f-muted mp-l-help">${esc(ctx.t(TX.detailHelp))}</span>
+${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><input type="checkbox" data-layer="${k}"> ${esc(ctx.t(TX.layerNames[k]))}</label>`).join('')}
 <button type="button" class="f-btn" data-layers-reset>${esc(ctx.t(TX.layersReset))}</button></div></div></div>
 <div class="mp-notes f-muted" aria-live="polite"></div></div>`;
   Object.assign(S, {
@@ -4669,10 +4744,15 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
     toggleModes(false);
     if (m !== S.preset) setPreset(m);
   });
+  // cases : au changement ; curseur de complexité : à chaque cran, la carte suit le doigt
   S.layersEl.addEventListener('change', e => {
     const c = e.target.closest('input[data-layer]'),
       k = c?.dataset.layer;
-    if (k) setLayer(k, c.type === 'range' ? Math.round(+c.value) : c.checked);
+    if (k && c.type !== 'range') setLayer(k, c.checked);
+  });
+  S.layersEl.addEventListener('input', e => {
+    const c = e.target.closest('input[type="range"][data-layer]');
+    if (c) setLayer(c.dataset.layer, MapsRender.detailZoom(c.value));
   });
   S.layersEl.addEventListener('click', e => {
     if (e.target.closest('[data-layers-reset]')) setLayer(null);
@@ -4747,6 +4827,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
     S.profile = S.mission ? S.profile : effectiveProfile();
     S.data = null;
     if (S.dpanel === 'layers') fillLayers();
+    if (S.tuneEl) tuneSrc();
     schedule();
   }));
   S.preset = ui.preset || 'auto';
@@ -4769,6 +4850,9 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
   if (!tiles) {
     S.plain = true;
   }
+  // page de réglage : construite avant la lecture du mode et du vol (onglet pressé, seuils, origine des seuils : ceux du mode
+  // et du profil, connus maintenant)
+  if (S.tuneEl) fillTune();
   status();
   schedule();
   // vue vivante : chaque écriture du vol courant (Carburant à côté) redessine carte et profil, 300 ms après la dernière

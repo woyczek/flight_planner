@@ -461,21 +461,22 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None, airfields=False, flights=0, reports=0, forecast=False):
+             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=()):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
         and the frame then asks for one in a notification that covers the bottom of the screen).  `flight`: the planned flight; `started`: it
         is under way; `pending`: that many reports still to write; `airfields`: the published base also knows the aerodromes and
         points of the seeded route (seed_plan); `flights` / `reports`: a flight log of that many flights, `reports` of them with
-        a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast)."""
-        docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']]
+        a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast);
+        `docs`: more documents [[path, value, policy], ...]; `airspaces`: more airspaces for the published base (implies `aero`)."""
+        docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']] + [list(d) for d in docs]
         if trigram:
             docs.append(['device/identity.json', {'trigram': trigram}, 'cache'])
         if flight:
             docs += flight_docs(started, trigram or 'ABC', steps)
-        if aero or airfields:
-            docs += aero_docs(airfields=airfields)
+        if aero or airfields or airspaces:
+            docs += aero_docs(airfields=airfields, airspaces_extra=airspaces)
         if flights and trigram:
             docs += flights_docs(flights, reports, trigram)
         if pending:
@@ -851,7 +852,7 @@ def norm(s):
 # A tiny published SIA base (zone `fr`, split format, frame/aerodb/SPEC.md section 2): three airspaces over the middle of the
 # seeded route (around NEPIX, 44.9N 2.4E), nothing else.  With it the map offers airspace lists and the "database not
 # published" notice goes away.
-def aero_docs(cycle='2026-10-15', airfields=False):
+def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=()):
     def ring(lat0, lat1, lon0, lon1):
         return [[lat0, lon0], [lat0, lon1], [lat1, lon1], [lat1, lon0], [lat0, lon0]]
     airspaces = [   # levels above FL195: the seeded flight is at FL270, so the "IFR route" display profile draws these
@@ -859,6 +860,7 @@ def aero_docs(cycle='2026-10-15', airfields=False):
         {'type': 'TMA', 'cls': 'D', 'name': 'TESTVILLE TMA 2', 'lower': 'FL200', 'upper': 'FL300', 'rings': [ring(44.4, 45.6, 1.6, 3.2)]},
         {'type': 'R', 'name': 'R 99 TEST', 'lower': 'SFC', 'upper': 'UNL', 'rings': [ring(44.6, 45.2, 2.0, 2.8)]},
     ]
+    airspaces = airspaces + list(airspaces_extra)      # a case's own spaces (D15: low ones, drawn by the thresholds, not the flight level)
     cells = {str(y): [[0, 4]] for y in range(43, 47)}
 
     def kind(k, data):

@@ -45,14 +45,13 @@ ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindes
 die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse. Aus der Nähe trägt jedes Hindernis
 seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771)“).
 
-**Ebenen.** Die Ebenen-Schaltfläche links auf der Karte öffnet im Datenblock, anstelle des Profils, die Liste dessen, was die Karte zeichnet (das ✕ bringt das Profil zurück):
+**Ebenen.** Die Ebenen-Schaltfläche links auf der Karte öffnet im Datenblock, anstelle des Profils, die Liste dessen, was die Karte zeichnet (das ✕ bringt das Profil zurück). Zuerst, unter der Flugauswahl, der Regler „Komplexität“: Er wirkt, als wäre der Zoom ein anderer, eine Zoomstufe pro Raststellung (−4 bis +4) — nach links weniger, nach rechts mehr Details. Was jeder Zoom zeigt, legt der Administrator fest (Einstellungen, Karte „Verwaltung“). Dann die
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
 VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der Lufträume, Namen der
 Flugwege. Haken setzen oder entfernen: die Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät
 erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt,
 beschränkt Lufträume und Flugwege auf die Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um
-anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach
-links weniger, nach rechts mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
+anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
 erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem. Auch die Größe der Karte zählt: In
 einem kleinen Rahmen (Telefon, Fenster der Doppelansicht) zeigt sie bei gleichem Zoom weniger Elemente als in einem
 großen, als wären Sie weiter weg (der Zoom wird um den Mittelwert aus Höhe und Breite des Rahmens korrigiert, 900 px

@@ -264,7 +264,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   close view (300 px per degree or more), "434 AGL (771)" beside the symbol — height above ground in feet, top
   elevation in brackets — where there is room.
 - **Layers content** (the Layers button of the left column opens it in the sheet; on a mission map it holds only
-  the selector): the flight / map selector first, then airspace families (TMA /
+  the selector): the flight / map selector first, then the **Complexity slider** (before any box: "the first thing the
+  administrator asked for"; label "Complexity", the value beside it, a help sentence in four languages: it acts as if the
+  zoom were different, what each zoom shows is set by the administrator), then airspace families (TMA /
   CTR: TMA, CTR, CTA, TMZ, RMZ; D / R / P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA,
   FRA; others: every other type present), lower and upper airways, beacons, airway points (`fixes`), VRP, obstacles,
   MORA, towns, graticule, alternate, and "Around the route only".
@@ -551,8 +553,9 @@ when the report is saved), nothing otherwise:
     (families, beacons, VRP, obstacles, MORA, towns); from afar (`tier` far) only the large aerodromes. Mission maps are
     not concerned (their studio profile shows what it asks).
   - **Effective zoom** (24 Oct 2026): the zoom compared with the thresholds is not the map's own. It is the view's zoom
-    shifted by ¾ of a level per step of the "Complexity (trial)" slider of the Layers panel (−2 to +2, per mode and
-    device), so the whole set moves together, **then corrected by the size shown in the frame**:
+    shifted by one whole level per step of the "Complexity" slider of the Layers content (−4 to +4, per mode and
+    device; 24 Oct 2026, was ¾ of a level from −2 to +2, which went down only 1.5 levels), so the whole set moves
+    together, **then corrected by the size shown in the frame**:
     `effectiveZoom(zoom, w, h) = zoom + k · log2(((w + h) / 2) / 900)`, with `w` and `h` the map frame's size in CSS
     pixels, `k = 1` (`MapsRender.effectiveZoom`, `FRAME_REF_PX = 900`). A frame whose mean side is 900 px (a laptop pane)
     gets no correction; half as large (450 px) counts one level further out, twice as large one level closer. This
@@ -561,7 +564,16 @@ when the report is saved), nothing otherwise:
     (`tierOf(pxOfZoom(effective))`: far / mid / near); mission maps are not concerned. What stays in raw pixels per
     degree is geometry that needs real room (obstacle heights beside their symbol, the ETA labels, the "everything in
     the view is read" switch, the overview rule of the corridor), not a threshold of the tuning page. `render.draw()`
-    returns `zoom: { shifted, effective, tier, kept }` (counts of what the thresholds kept) for bench and tuning.
+    returns `zoom: { shifted, effective, tier, kept }` (counts of what the thresholds kept, `kept.byKey` per family) for bench and
+    tuning; the screen also publishes the effective zoom and `kept` on the map element (`data-zoom-eff`, `data-kept`), the
+    counter the tests read.
+  - **The slider is a zoom shift and nothing else** (administrator, 24 Oct 2026: "the slider only acts as if the zoom were
+    different; what a pilot wants to see at each zoom is what I set on the tuning page"). Steps: `MapsRender.DETAIL_ZOOM = 1`
+    level per step, `DETAIL_MAX = 4` (`MapsRender.detailZoom(step)` clamps and converts, the one function for the screen and for
+    `draw()`). Measured on a phone (390 px) zoomed out on Europe the effective zoom is 2.2 to 3.5, so −4 puts it at or below 0:
+    nothing passes a range any more (a range starting at 0 included, e.g. the built-in IFR TMA / CTA / R); −1 to −3 thin the
+    map progressively, +1 to +4 bring the close-view elements in earlier (+4 shows the VRP and obstacle ranges from a regional
+    view). The step is kept per mode on the device (`cache/maps/ui.json`, `layers[mode].detail`; an older value is clamped).
   - Starting values (`ZOOM_IFR`, `ZOOM_VFR`): in IFR (Auto, Low, High IFR, CAM) the route corridor already thins the
     map, so the airspaces are graded in one intermediate step: the overview shows the route, the winds, the
     aerodromes and the shapes of TMA, CTA, R and TSA / TRA (the only ones above FL195); CTR, D and airspace names from
@@ -571,14 +583,30 @@ when the report is saved), nothing otherwise:
     names from 6. Landmarks (the map's own zoom; the effective zoom is lower by 0.1 on that screen and by 1.2 on that phone): France on a screen ≈ 5.5, on a phone ≈ 4.3, 100 NM wide on a screen ≈ 8.5.
   - Precedence: the built-in values, then the airline's (`airline/map_profiles.json`), then the device's
     (`cache/maps/ui.json`, `layers[mode].zoom`), then the values being tuned (`#maps?tune=1`).
+  - **A mode the airline never tuned follows a tuned one** (`repoZoom`, 24 Oct 2026). The airline's file holds an entry per
+    mode that the tuning page saved ("Save for the airline" writes the mode on screen only). The file of 23 Oct held `vfr`
+    alone, so Auto, Low / High IFR, Topo and CAM kept the built-in values, looser (IFR: FIR, TMA, CTA, R, TSA from 0), and the
+    administrator who had tuned "the" thresholds saw them not apply on a phone in Auto. Now the thresholds of a mode with no
+    `elements.zoom` of its own come, in this order, from another mode of its family (IFR: Auto, Low, High, CAM; VFR: VFR,
+    Topo), then, **for an IFR mode only**, from the VFR family (the stricter values; the IFR route corridor already thins the
+    map, whereas VFR has no corridor and needs them; the reverse is never done). Only the ranges are inherited: the boxes
+    (`layers`) stay per mode. The tuning page says where the mode on screen takes its thresholds from (the airline's own, taken
+    from mode X, or built-in); saving the mode makes them its own.
+  - **Measured** (24–24 Oct 2026, 390 px, LFRD → LFBD FL160, the published SIA base of FR, GB, DE, BE, NL, IE, ES from the data
+    repository, the real `airline/map_profiles.json`; counters `kept.byKey`): VFR with the file: P from 5 (20 P zones at effective
+    zoom 5.0 where the built-in 7.5 draws none), TMA / R / D absent below 6.75 / 7.5 / 7.75 (at 6.75 the built-in table keeps
+    17 TMA, 15 R, 6 D, the file none of them): the file is read and applied. Auto with or without the file: identical, 54
+    spaces (26 TMA, 19 R, 9 CTA) from effective zoom 2.2 up, the file having no `auto` entry. After the change Auto with the
+    file keeps none at 4.0 and P (3) from 5.
 - **Contour lines** (`contours.js`, `window.MapsContours`): computed in the browser from the Terrarium tiles (the
   host of the relief, nothing new): marching squares on each tile's elevation grid (a cell every 2 tile pixels),
   segments kept per tile and interval, projected at each drawing; tile zoom from the view (8 to 12, at most 16 tiles);
   in memory only (48 tiles). Interval 500 ft (or 100 m when the pilot's altitude unit is metres, `fuel.json`
   `displayAlt`), every fifth an index contour, thicker and numbered. Drawn under the aeronautical overlay, in VFR and
   Topo, within the `contours` range (from 9) and with the "Contour lines" layer.
-- **Tuning of the profiles (administrator)**: `#maps?tune=1`, reachable by its address only (no button, nothing in the
-  user help). A panel beside the live map (on a screen of 1,000 px and more; above the map otherwise; read only on a
+- **Tuning of the profiles (administrator)**: `#maps?tune=1`, reached from Settings, "Administration" card (Full level), by
+  the button "Map threshold tuning (administrator)" (`frame/settings/admin_links.js`; back by the usual way), or by its address.
+  A panel beside the live map (on a screen of 1,000 px and more; above the map otherwise; read only on a
   phone): the line "current zoom": the map's zoom, **the effective zoom beside it** with the frame's mean side in px
   ("Current zoom: 6.01 · effective 4.85 (frame of 403 px on average) · 18 NM per cm of screen"; the mark on each slider is
   the effective zoom, which the thresholds compare), the six mode tabs, one line per key with a double slider
@@ -592,7 +620,8 @@ when the report is saved), nothing otherwise:
   sliders" (the mode's starting values),
   "Keep on this device" (`cache/maps/ui.json`), "Save for the airline" (`airline/map_profiles.json`: the
   thresholds in `profiles[mode].elements.zoom`, the boxes in `profiles[mode].layers`, read as the mode's starting
-  layers before the device's choices).
+  layers before the device's choices). A line under the current zoom says where the mode on screen takes its thresholds from
+  (the airline's own, taken from another mode, or built-in).
 - **Map size**: the MapLibre canvas follows the frame. A size observer on the frame, the map's `load` and
   `style.load`, the page's return (`visibilitychange`, `pageshow`, `resume`: observations made while the tab was hidden
   or frozen are lost) and every redraw compare the canvas with its container and call `map.resize()` only when they
@@ -625,6 +654,7 @@ when the report is saved), nothing otherwise:
   - V3 extensions of `profile_def`: `elements.zoom` (above), `elements.vfrDensity`, `hillshade` (Topo relief),
     `elements.fixes`, `elements.awLabels`.
   - The device's override stays in `cache/maps/ui.json` (`layers[mode]`: the Layers panel's ticks, `detail`, `zoom`).
+  - A mode with no `elements.zoom` of its own takes the ranges of a tuned mode (§ 4 quinquies, `repoZoom`).
   - Changes of the file are followed (`ctx.data.watch`): the map takes them at once.
 
 ## 4 octies. Flights across the date line (24 Oct 2026)

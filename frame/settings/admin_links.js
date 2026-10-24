@@ -2,21 +2,22 @@
   'use strict';
   // V3 — liens d'administration (carte « Administration » des réglages, niveau Complet ; frame/settings/SPEC.md § 6) :
   // une liste déclarée, sans dépendance à aucun module. Chaque lien : { id, href (adresse de l'appli « #… », ou chemin
-  // relatif à la racine de la suite), act (action de la carte, au lieu d'une adresse), where (app : partout ; bench : un
+  // relatif à la racine de la suite), act (action de la carte, au lieu d'une adresse), btn (lien montré en bouton), where (app : partout ; bench : un
   // banc ou une démonstration, lien actif seulement sur un poste avec lanceur ; v2 : page V2 du poste, montrée seulement
   // si un lanceur sert la page), title, text } — textes en quatre langues [fr, en, de, es].
   window.SogAdminLinks = Object.freeze([{
     id: 'tune',
     href: '#maps?tune=1',
     where: 'app',
-    title: ['Réglage des seuils de la carte', 'Map threshold tuning', 'Abstimmung der Kartenschwellen',
-      'Ajuste de los umbrales del mapa'
+    btn: true,
+    title: ['Réglage des seuils de la carte (administrateur)', 'Map threshold tuning (administrator)',
+      'Abstimmung der Kartenschwellen (Administrator)', 'Ajuste de los umbrales del mapa (administrador)'
     ],
     text: [
-      'Page d’administration : les seuils de zoom des modes de carte, pour toute la compagnie ; en lecture seule sur un téléphone.',
-      'Administration page: the zoom thresholds of the map modes, for the whole airline; read only on a phone.',
-      'Verwaltungsseite: die Zoomschwellen der Kartenmodi, für die ganze Fluggesellschaft; auf einem Telefon nur lesbar.',
-      'Página de administración: los umbrales de zoom de los modos de mapa, para toda la aerolínea; solo lectura en un teléfono.'
+      'Ce que la carte montre à chaque zoom, élément par élément et mode par mode, pour toute la compagnie (le curseur « Complexité » de la carte ne fait que décaler le zoom) ; en lecture seule sur un téléphone.',
+      'What the map shows at each zoom, element by element and mode by mode, for the whole airline (the map’s “Complexity” slider only shifts the zoom); read only on a phone.',
+      'Was die Karte bei jedem Zoom zeigt, Element für Element und Modus für Modus, für die ganze Fluggesellschaft (der Regler „Komplexität“ der Karte verschiebt nur den Zoom); auf einem Telefon nur lesbar.',
+      'Lo que muestra el mapa en cada zoom, elemento por elemento y modo por modo, para toda la aerolínea (el control «Complejidad» del mapa solo desplaza el zoom); solo lectura en un teléfono.'
     ]
   }, {
     id: 'roadmap',

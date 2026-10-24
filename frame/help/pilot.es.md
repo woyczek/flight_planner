@@ -270,14 +270,13 @@ Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel m�
 distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos. De cerca, cada obstáculo lleva su
 altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
 
-**Las capas.** El botón de capas, a la izquierda del mapa, abre en el bloque de datos, en lugar del perfil, la lista de lo que dibuja (la cruz ✕ devuelve el perfil): familias de espacios (TMA /
+**Las capas.** El botón de capas, a la izquierda del mapa, abre en el bloque de datos, en lugar del perfil, la lista de lo que dibuja (la cruz ✕ devuelve el perfil). Primero, bajo la elección del vuelo, el control «Complejidad»: actúa como si el zoom fuera otro, un nivel de zoom por paso (de −4 a +4) — menos detalles hacia la izquierda, más hacia la derecha. Lo que muestra cada zoom lo fija el administrador (Ajustes, tarjeta «Administración»). Luego las familias de espacios (TMA /
 CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de notificación
 VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo, nombres de los espacios, nombres de las aerovías.
 Marque o desmarque: el mapa sigue, y su elección se conserva para este ajuste en este dispositivo. «Restablecer todo»
 vuelve a la elección de origen. «Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la
 cercanía de la ruta; desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de
-todos modos. Abajo del todo, el control «Complejidad (prueba)» muestra menos detalles hacia la izquierda, más hacia la
-derecha, en todos los zooms. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
+todos modos. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
 muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos. El tamaño del mapa también cuenta: en un marco
 pequeño (teléfono, panel de la vista doble) muestra menos elementos que en uno grande con el mismo zoom, como si
 estuviera más lejos (el zoom se corrige con la media del alto y del ancho del marco, 900 px sin corrección).
@@ -702,7 +701,7 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 
 **Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
 de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
-aplicación: el ajuste de los umbrales del mapa (`#maps?tune=1`, solo lectura en un teléfono), la hoja de ruta
+aplicación: el botón «Ajuste de los umbrales del mapa (administrador)» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso, la hoja de ruta
 (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
 **Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se

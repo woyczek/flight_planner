@@ -139,7 +139,7 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 
 **Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
 de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
-aplicación: el ajuste de los umbrales del mapa (`#maps?tune=1`, solo lectura en un teléfono), la hoja de ruta
+aplicación: el botón «Ajuste de los umbrales del mapa (administrador)» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso, la hoja de ruta
 (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
 **Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se

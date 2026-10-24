@@ -293,3 +293,4 @@ The settings agent's memory: every choice, dated, with its reason. Newest last. 
   - **Tests.** A15 "Aerodb loading state" (fake GitHub held, then released: loading note and "i" line, note gone; access cut:
     "access not set" with the button), D5 (no access) and D5b (access set, nothing published). Not testable here: a real iPhone.
   - **Not done.** Serving the base from the public pages: `frame/aerodb/DECISIONS.md`, two lines.
+- 24 Oct 2026 — the map threshold tuning link of the Administration card is now a button "Map threshold tuning (administrator)" (`btn: true` in `admin_links.js`, `f-btn primary`) with a sentence saying what the page is for; nothing else changes (Full level only). Asked by the maps relay lot; case D16.

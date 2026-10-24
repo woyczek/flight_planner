@@ -142,7 +142,7 @@ poste avec le lanceur.
 
 **Les pages d'administration.** Au niveau « Complet » (carte « Niveau »), la carte « Administration », sous « À propos
 », réunit les pages d'administration et d'essai, chacune avec une phrase ; aux autres niveaux, elle n'apparaît pas. Dans
-l'appli : le réglage des seuils de la carte (`#maps?tune=1`, en lecture seule sur un téléphone), la feuille de route
+l'appli : le bouton « Réglage des seuils de la carte (administrateur) » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour, la feuille de route
 (`#roadmap`) et le diagnostic de la carte « À propos ».
 
 **Les bancs, sur un poste.** Servis par le lanceur, ils ne s'ouvrent que sur un poste avec lanceur (ailleurs, ils sont

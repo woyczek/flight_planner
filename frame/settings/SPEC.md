@@ -189,11 +189,11 @@ Under the screen's introduction, the folded "How to use" panel of the Settings c
 
 ## 6. Administration links (`frame/settings/admin_links.js`, `window.SogAdminLinks`)
 
-- **A declared list**, depending on no module: `{ id, href | act, where, title, text }`, texts in four languages.
+- **A declared list**, depending on no module: `{ id, href | act, btn, where, title, text }`, texts in four languages (`btn`: the link is drawn as a button).
   `where`: `app` (everywhere), `bench` (a bench or demonstration page served by the launcher: a link only on a
   workstation with a launcher, otherwise named without a link; its sentence ends with "workstation with launcher
   only"), `v2` (a V2 page of the workstation: shown only when a launcher serves the page).
-- **Today**: map threshold tuning `#maps?tune=1` (read only on a phone), roadmap `#roadmap`, diagnostics (`act:
+- **Today**: the button "Map threshold tuning (administrator)" `#maps?tune=1` (read only on a phone), roadmap `#roadmap`, diagnostics (`act:
   diagOpen`: opens the folded diagnostics of the About card and scrolls to it); benches `labs/design_primitives.html`,
   `frame/aerodb/bench.html`, `frame/aerodb/offline_bench.html`, `frame/store/test/`, `modules/maps/test/render.html`;
   V2 pages `apps/settings/maintenance.html`, `apps/settings/premier_lancement.html`, `apps/cpco/map_parser.html`.
