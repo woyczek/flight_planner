@@ -2,6 +2,19 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (night) — the weather map as a library
+
+- **The request** (relay, V3_SPECIFICATION § 7.1.8, after the user's "Où est passée la carte météo ?"): the map
+  module's Météo chip also draws the weather on the map, from the same renderer as this module. **Done**: the map
+  drawing moved to `lib/weather_map.js` (`createWeatherMap` for a host that draws into its own canvas, as this module
+  does; `attach(target, opts)` with its own canvas over a MapLibre map or a flat background), and this module now draws
+  through it: one code, one picture on both screens. Contract accepted by the relay, with `legend()` added (the layer
+  rows and their four-language labels) so the map's Layers panel needs no copy of the texts.
+- **Never a call to Open-Meteo from the library**: the flight's grid is read from the cache only, with a network that
+  answers offline (no `meta.json` either); `gridRequest` is the one computation of what the grid asks, so the reader
+  finds what the loader wrote. The slider, the slices and the tooltips stay with the host (this module keeps them).
+- The "(monde)" suffix of the jet and convection layers went: since the shared computation they are drawn everywhere.
+
 ## 24 October 2026 (evening) — landscape: the cross-section scrolls; the flight date from the shared flight
 
 - **The report** (user, iPhone in landscape, full screen): "Le bug : le bas du graphe est hors écran (pourtant

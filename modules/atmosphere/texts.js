@@ -64,10 +64,8 @@ export const TX = {
   wpFrzSfc: ['au sol', 'at the surface', 'am Boden', 'en superficie'],
   wpTrop: ['Tropopause', 'Tropopause', 'Tropopause', 'Tropopausa'],
   wpJet: ['Vent à 250 hPa (jet)', '250 hPa wind (jet)', 'Wind in 250 hPa (Jet)', 'Viento a 250 hPa (chorro)'],
-  lyJet: ['Courant-jet, 250 hPa (monde)', 'Jet stream, 250 hPa (world)', 'Jetstream, 250 hPa (Welt)',
-    'Corriente en chorro, 250 hPa (mundo)'
-  ],
-  lyConv: ['Convection, CAPE (monde)', 'Convection, CAPE (world)', 'Konvektion, CAPE (Welt)', 'Convección, CAPE (mundo)'],
+  lyJet: ['Courant-jet, 250 hPa', 'Jet stream, 250 hPa', 'Jetstream, 250 hPa', 'Corriente en chorro, 250 hPa'],
+  lyConv: ['Convection, CAPE', 'Convection, CAPE', 'Konvektion, CAPE', 'Convección, CAPE'],
   wpP: ['Pression mer', 'Sea-level pressure', 'Luftdruck (Meereshöhe)', 'Presión a nivel del mar'],
   wpWind: ['Vent à 10 m', '10 m wind', 'Wind in 10 m', 'Viento a 10 m'],
   wpCloud: ['Nébulosité', 'Cloud cover', 'Bewölkung', 'Nubosidad'],

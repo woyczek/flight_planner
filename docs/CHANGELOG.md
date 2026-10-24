@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Atmosphere: the weather map is a library, ready for the Map** (`modules/atmosphere/lib/weather_map.js`, `module.js`, `texts.js`,
+  `test/weather_map.html`; atmosphere INTEGRATION § 6, DECISIONS; V3_SPECIFICATION § 7.1.8) — isobars, isotherms, clouds, barbs,
+  temperature, jet stream and convection, the flight's grid blended into the world synoptic, now drawn by one renderer: `attach(map,
+  { ctx, flight, levelFt, time, layers })` → `{ update, detach, state, legend, … }` over a MapLibre map or a flat background, or
+  `createWeatherMap` for a host drawing into its own canvas. The Atmosphere module draws through it; the Map's Météo chip will. The
+  library reads the weather cache only and the published world synoptic, never Open-Meteo; `legend()` gives the layer rows in four
+  languages. The jet and convection layers lose their "(world)" suffix (drawn everywhere since the shared computation).
 - **Landscape on a phone: a rail at the left, the sheet as a right column, a full-height map** (`frame/app.js`, `frame/index.html`,
   `frame/frame.css`, `frame/design/primitives.css` and the four designs' bar rules, `frame/lib/sheet.js`, `frame/lib/test/sheet.html`,
   `tests/v3`; frame INTEGRATION § 9.1–9.4 and § 11, SPEC, design SPEC; the help in four languages) — Safari does not honour the

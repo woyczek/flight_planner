@@ -12,8 +12,10 @@
 | `world.js` | the world synoptic (SPEC § 4): `worldReader({ data, net })` → `{ index(), step(index, k) }`, `valid`, `validStep`, `stepAt`, `worldGrid(index, step)`, `worldAt(index, step, lat, lon)`; pure but the reader |
 | `tools/build_world_weather.py` | builds `/v3/weather/world/` from NOAA GFS in the Pages workflow (`.github/workflows/pages.yml`, step "Synoptique monde") |
 | `tools/grib2_lite.py` | minimal GRIB2 reader (grid 3.0, products 4.0–4.15, packing 5.0 and 5.3, bitmap), standard library |
+| `lib/weather_map.js` | the weather map renderer (§ 6), shared by this module and the maps module: `createWeatherMap`, `attach`, `gridRequest`, `legend()` |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
+| `test/weather_map.html` | bench of the weather map library: states, legend, values, `attach` / `detach`, no Open-Meteo call |
 | `ROADMAP.md` | what is done, what is next |
 
 ## 2. Mounting
@@ -124,3 +126,52 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
 - `sectionModel({ points, levelFt, profile, profileLevelFt, depTime, cruiseKt, samples, locs })`: the model alone
   (trajectory, columns at the time of passage, the 200 × 120 field, the reading every 1 NM, `sampleAt(nm, ft)`).
 - `sectionSvg(model, opts)` and `soundingSvg(column, opts)`: the SVG strings (the profile; the slice of one column).
+
+## 6. The weather map for the maps module — `lib/weather_map.js`
+
+One renderer for both screens (V3_SPECIFICATION § 7.1.8): isobars, isotherms, clouds, wind barbs, temperature,
+jet stream and convection at the level and time asked; the flight's grid (read from `cache/weather/`, never asked to
+Open-Meteo by the library) blended into the world synoptic (`/v3/weather/world/`, same origin), one computation on
+both sides, no visible border. The slider, the slices, the tooltips and the layers panel stay with the host.
+
+```js
+import { attach } from '../atmosphere/lib/weather_map.js';
+const wx = attach(map, { ctx, flight: { points: route.points, levelFt }, levelFt, time: depTime });
+wx.state;                                  // 'ok' | 'world-only' | 'missing'
+wx.update({ levelFt: 9000, time: t, layers: { isobar: false } });   // partial: the rest is kept
+wx.legend();                               // rows for the host's Layers panel
+wx.detach();                               // the Profil chip: the canvas and its listeners go
+```
+
+- **`attach(target, opts)`** gives the renderer its own canvas (`canvas.sog-weather-map`, `position: absolute`,
+  `pointer-events: none`). `target` is a MapLibre map (the canvas goes into `map.getCanvasContainer()`, above the
+  tiles and under the host's own overlay; redrawn on `move` and `resize`, on every copy of the world) or a flat
+  background `{ container, project(lat, lon) → { x, y }, size() → { W, H }, bounds() → [w, s, e, n] | null,
+  zoom() → number, onChange(cb) → unsubscribe }`. It returns the `createWeatherMap` API plus `update` and `detach`
+  that also repaint and clean up.
+- **`createWeatherMap(opts)`** draws into the host's canvas, at its place in the host's drawing order (this module:
+  background, weather, then the route): `draw(c, { W, H, project, bounds, zoom })`.
+- **`opts`**: `ctx` (`data`, `net`, `t`, `lang`); `flight` (`{ points, levelFt }`: the route and its planned level;
+  `null`: the world alone); `levelFt` (the pressure altitude shown, ft; `null`: the surface); `time` (s, the map's
+  hour); `layers` (`{ isobar, isotherm, cloud, wind, tfill, jet, conv }`, defaults `DEFAULT_LAYERS`); `gridMax` (places
+  of the flight's grid, 48); `grid` (a grid already read, `{ g, locs, levels }`: a host that loads it itself, as this
+  module does; without it the cache is read); `colors` (`() → { bg, fg, muted, dark, cloud: [r, g, b] }`; `attach`
+  reads the `--sog-*` tokens of its container); `onChange` (a read arrived: redraw, titles).
+- **`state`**: `'ok'` (the flight's grid is in the cache), `'world-only'` (the world synoptic alone: nothing loaded for
+  this flight, or no flight), `'missing'` (nothing yet: offer "Load in Météo").
+- **The cache is read without the network** (`cacheOnly`, with a network that always answers offline): the run kept in
+  `cache/weather/<model>/meta.json` decides validity, as for the cross-section (§ 5). The grid is found when this module
+  (or Fuel) loaded the same request: **`gridRequest(points, levelFt, gridMax)`** → `{ g, levels, vars, model }` is the
+  one computation of places, levels and variables for whoever loads and whoever reads; `daysFor(time)` the days to
+  ask.
+- **`info()`** → `{ state, reading, outside, gridBox, levels, pLabel, time, world: { run, time, h, step, source, k },
+  worldReading }`: `outside` is true when the view is mostly outside the flight's grid (titles "World synoptic").
+- **`at(lat, lon)`** → `{ t, p, cc, ft }` inside the flight's grid, `null` outside; **`worldPoint(lat, lon)`** →
+  `{ values, time, run, step, source }` from the world synoptic, `{ reading: true }` while the step is read, `null`
+  without a publication.
+- **`legend()`** → `[{ key, label, labels, on, swatch: { css, ramp, barb } }]` in `MAP_LAYERS` order: `label` in the
+  current language, `labels` the four `[fr, en, de, es]`.
+- Also exported: `MAP_FIXED` (the fixed altitudes offered), `MAP_LAYERS`, `DEFAULT_LAYERS`, `copiesFor(bounds, w, e)`,
+  `inBox`, `barb`, `halo` (drawing helpers this module uses for its own route).
+- The host module declares `cache/weather/` (policy cache, `cache/weather/world/` included) as this module does; the service
+  worker leaves `/v3/weather/world/` to the network.

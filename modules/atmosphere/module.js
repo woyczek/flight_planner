@@ -50,13 +50,15 @@ import {
 import {
   TX
 } from './texts.js';
+// carte météo (grille du vol et synoptique monde) : la bibliothèque partagée avec la Carte
 import {
-  worldReader,
-  worldGrid,
-  worldLocs,
-  worldAt,
-  stepAt
-} from './world.js';
+  createWeatherMap,
+  gridRequest,
+  copiesFor,
+  inBox,
+  halo,
+  MAP_FIXED
+} from './lib/weather_map.js';
 import {
   tokenize,
   formatLevel
@@ -85,7 +87,8 @@ export const meta = {
     prefix: 'cache/atmosphere/',
     policy: 'cache'
   }],
-  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'world.js?v=0', 'section.js?v=0', 'texts.js?v=0',
+  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'world.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0',
+    'texts.js?v=0',
     '../maps/lib/map_base.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0',
     '../maps/render.js?v=0',
@@ -138,8 +141,6 @@ const EXAMPLE = {
 };
 const ROUTE_TEXT = 'LFRS 47.1569 -1.6078\nLUGEN 46.5833 -1.2000/F290\nMEN 44.6050 3.1600\nLFML 43.4367 5.2150';
 const UI = 'cache/atmosphere/ui.json';
-/** Altitudes fixes proposées pour la carte (ft), en plus du niveau demandé et des paliers. */
-const MAP_FIXED = [5000, 10000, 18000, 24000, 30000];
 /** Attente des tuiles avant le fond uni (ms). */
 const TILE_WAIT = 8000;
 /** Curseur « date du vol » : de l'heure prévue à +72 h (la dernière échéance publiée du synoptique monde). */
@@ -147,86 +148,6 @@ const SHIFT_MAX = 72;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-
-/** Barbule de vent (hémisphère nord) sur un canvas : hampe vers le lit du vent, plumes à droite ; fanion 50 kt, plume 10,
- *  demi 5. */
-function barb(c, x, y, dir, kt, len = 20, color = '#333') {
-  c.save();
-  c.strokeStyle = c.fillStyle = color;
-  c.lineWidth = 1.3;
-  if (kt == null || dir == null) return c.restore();
-  if (kt < 2.5) {
-    c.beginPath();
-    c.arc(x, y, 3, 0, 2 * Math.PI);
-    c.stroke();
-    return c.restore();
-  }
-  const a = dir * R,
-    ux = Math.sin(a),
-    uy = -Math.cos(a),
-    px = Math.sin(a + Math.PI / 2),
-    py = -Math.cos(a + Math.PI / 2),
-    ex = x + ux * len,
-    ey = y + uy * len,
-    step = 4,
-    fl = len * 0.45;
-  c.beginPath();
-  c.moveTo(x, y);
-  c.lineTo(ex, ey);
-  c.stroke();
-  let n = Math.round(kt / 5) * 5,
-    pos = 0;
-  while (n >= 50) {
-    const bx = ex - ux * pos,
-      by = ey - uy * pos;
-    c.beginPath();
-    c.moveTo(bx, by);
-    c.lineTo(bx + px * fl - ux * 2, by + py * fl - uy * 2);
-    c.lineTo(bx - ux * step * 1.4, by - uy * step * 1.4);
-    c.fill();
-    pos += step * 1.8;
-    n -= 50;
-  }
-  while (n >= 10) {
-    const bx = ex - ux * pos,
-      by = ey - uy * pos;
-    c.beginPath();
-    c.moveTo(bx, by);
-    c.lineTo(bx + px * fl + ux * 3, by + py * fl + uy * 3);
-    c.stroke();
-    pos += step;
-    n -= 10;
-  }
-  if (n >= 5) {
-    if (pos === 0) pos = step;
-    const bx = ex - ux * pos,
-      by = ey - uy * pos;
-    c.beginPath();
-    c.moveTo(bx, by);
-    c.lineTo(bx + px * fl * 0.5 + ux * 1.5, by + py * fl * 0.5 + uy * 1.5);
-    c.stroke();
-  }
-  c.restore();
-}
-
-/** Image (canvas détaché) d'une grille nx × ny rangée du bas vers le haut ; rgbaOf(k) → [r, g, b, a] ou null. Dessinée
- *  agrandie et lissée sur l'emprise de la grille. */
-function fieldCanvas(nx, ny, rgbaOf) {
-  const cv = document.createElement('canvas');
-  cv.width = nx;
-  cv.height = ny;
-  const g = cv.getContext('2d'),
-    img = g.createImageData(nx, ny);
-  for (let j = 0; j < ny; j++)
-    for (let i = 0; i < nx; i++) {
-      const v = rgbaOf(j * nx + i),
-        o = ((ny - 1 - j) * nx + i) * 4;
-      if (!v) continue;
-      img.data.set(v, o);
-    }
-  g.putImageData(img, 0, 0);
-  return cv;
-}
 
 // styles : jetons du cadre (--sog-*), classes préfixées « at- » sous [data-module="atmosphere"] ; gabarit du module Carte
 // (vue fixe : la carte prend ce que le bloc du bas laisse, le bloc défile dedans)
@@ -312,13 +233,9 @@ export async function mount(el, ctx) {
   const T = (key, v) => ctx.t(TX[key], v);
   const $ = k => el.querySelector(`[data-at="${k}"]`);
   const W = weatherStore({
-      data,
-      net
-    }),
-    readWorld = worldReader({
-      data,
-      net
-    });
+    data,
+    net
+  });
   const tri = ctx.identity?.trigram || 'ANON',
     flightPath = `pilot/${tri}/current_flight.json`;
   let alive = true;
@@ -864,7 +781,7 @@ export async function mount(el, ctx) {
       lat: s.lat,
       lon: s.lon
     };
-    S.mapF = null;
+    syncWeather();
     show('slice');
   }
 
@@ -894,7 +811,7 @@ export async function mount(el, ctx) {
       offNm: Math.sqrt(bd) * 60,
       col: null
     };
-    S.mapF = null;
+    syncWeather();
     show('slice');
     try {
       const r = await forecast([{
@@ -1292,17 +1209,14 @@ export async function mount(el, ctx) {
   function drawWorldPoint() {
     if (!S.wpoint) return show('profile');
     const P = S.wpoint,
-      w = S.world,
-      where = `${P.lat.toFixed(2)}° ${A.wrapLon(P.lon).toFixed(2)}°`;
-    if (S.world === undefined) loadWorld();
-    const k = w ? stepAt(w, worldTime()) : 0,
-      sd = w ? worldStep(k) : null,
-      x = sd ? worldAt(w, sd, P.lat, P.lon) : null,
+      where = `${P.lat.toFixed(2)}° ${A.wrapLon(P.lon).toFixed(2)}°`,
+      wp = wm.worldPoint(P.lat, P.lon),
+      x = wp?.values || null,
       deg = v => v == null ? '—' : `${v < 0 ? '−' : ''}${fmtNum(Math.abs(v))} °C`,
       pc = v => v == null ? '—' : `${fmtNum(v)} %`;
-    sheetTitle(w ? T('worldPoint', {
+    sheetTitle(x ? T('worldPoint', {
       p: where,
-      at: fmtHM(w.times[k])
+      at: fmtHM(wp.time)
     }) : where);
     const box = document.createElement('div');
     box.className = 'at-pad';
@@ -1321,8 +1235,8 @@ export async function mount(el, ctx) {
       'js' in x && [T('wpJet'), fmtWind(x.jd, x.js)]
     ].filter(Boolean) : null;
     box.innerHTML = rows ? `<dl class="at-kv">${rows.map(([k2, v]) => `<div><dt>${esc(k2)}</dt><dd>${esc(v)}</dd><dd></dd></div>`).join('')}</dl>
-      <p class="f-muted" style="margin:8px 0 0;font-size:12px">${esc(T('worldPointNote', { src: w.source || w.model, step: w.step, run: w.run ? fmtHM(w.run) : '—' }))}</p>` :
-      `<p class="f-muted">${esc(T(S.worldReading || S.world === undefined || (w && !sd) ? 'worldReading' : 'worldNone'))}</p>`;
+      <p class="f-muted" style="margin:8px 0 0;font-size:12px">${esc(T('worldPointNote', { src: wp.source, step: wp.step, run: wp.run ? fmtHM(wp.run) : '—' }))}</p>` :
+      `<p class="f-muted">${esc(T(wp?.reading ? 'worldReading' : 'worldNone'))}</p>`;
     dbody.replaceChildren(box);
   }
   /** Vue courante : projection (MapLibre, sinon Mercator du fond uni sur l'emprise du vol) et ses dimensions. */
@@ -1364,438 +1278,82 @@ export async function mount(el, ctx) {
     };
   };
 
-  /** Géométrie de la carte pour les champs choisis, calculée une fois par jeu de données (pas à chaque image) : images
-   *  des champs, courbes (segments lon / lat) et étiquettes, dépressions et anticyclones, vents, trajectoire colorée. */
-  /** Géométrie d'une grille régulière en lat / lon (celle du vol ou celle du monde), calculée une fois par jeu de données et
-   *  seulement projetée à chaque image : champs lissés en images, isobares et isothermes en segments lat / lon avec leur
-   *  étiquette, hautes et basses pressions, vents. o.merc : images rééchantillonnées en Mercator (une grille de 150° de
-   *  latitude étirée en latitude serait fausse à l'écran) ; o.tStep : pas des isothermes ; o.thin : un vent sur deux. */
-  function fieldGeometry(F, G, o = {}) {
-    const [w, s, e, n] = G.bbox,
-      f = 4,
-      dk = dark(),
-      cloud = cloudRgb(),
-      lonOf = gx => w + (e - w) * gx / ((G.nx - 1) * f),
-      latOf = gy => s + (n - s) * gy / ((G.ny - 1) * f),
-      // rangées d'une grille affinée, du sud au nord, réparties en Mercator (même nombre de rangées)
-      merc = r => {
-        if (!o.merc) return r;
-        const yOf = la => Math.log(Math.tan(Math.PI / 4 + la * R / 2)),
-          y0 = yOf(s),
-          y1 = yOf(n),
-          v = new Array(r.v.length).fill(null);
-        for (let jm = 0; jm < r.ny; jm++) {
-          const la = (2 * Math.atan(Math.exp(y0 + (y1 - y0) * jm / (r.ny - 1))) - Math.PI / 2) / R,
-            gy = (la - s) / (n - s) * (r.ny - 1),
-            j0 = Math.min(r.ny - 2, Math.floor(gy)),
-            fy = gy - j0;
-          for (let i = 0; i < r.nx; i++) {
-            const a = r.v[j0 * r.nx + i],
-              b = r.v[(j0 + 1) * r.nx + i];
-            v[jm * r.nx + i] = a == null || b == null ? (a ?? b) : a + (b - a) * fy;
-          }
-        }
-        return {
-          ...r,
-          v
-        };
-      },
-      curves = (vals, step, k, labelOf, labelAt, colorOf) => {
-        const r = A.refine(vals, G.nx, G.ny, f),
-          out = [];
-        for (const c of A.contours(r.v, r.nx, r.ny, A.thresholdsOf(vals, step))) {
-          let best = null,
-            bd = Infinity;
-          const tx = (r.nx - 1) * labelAt(c.level);
-          for (const sg of c.segs) {
-            const d = Math.abs((sg[0] + sg[2]) / 2 - tx) + Math.abs((sg[1] + sg[3]) / 2 - (r.ny - 1) / 2) * 0.3;
-            if (d < bd) {
-              bd = d;
-              best = sg;
-            }
-          }
-          out.push({
-            k,
-            level: c.level,
-            color: colorOf(c.level),
-            segs: c.segs.map(sg => [latOf(sg[1]), lonOf(sg[0]), latOf(sg[3]), lonOf(sg[2])]),
-            label: best ? {
-              text: labelOf(c.level),
-              lat: latOf((best[1] + best[3]) / 2),
-              lon: lonOf((best[0] + best[2]) / 2)
-            } : null
-          });
-        }
-        return out;
+  /** La carte météo (bibliothèque partagée avec la Carte, lib/weather_map.js ; INTEGRATION.md § 6) : la grille du vol de
+   *  l'écran (lue ici, démonstration comprise) fondue dans le synoptique monde, un seul calcul des deux côtés ; ce module
+   *  dessine par-dessus la route, la trajectoire et leurs repères. */
+  const wm = createWeatherMap({
+    ctx,
+    layers: S.mapLayers,
+    colors: () => {
+      const K = pal();
+      return {
+        bg: K.bg,
+        fg: K.fg,
+        muted: K.muted,
+        dark: K.dark,
+        cloud: cloudRgb()
       };
-    const rt = merc(A.refine(F.t, G.nx, G.ny, f)),
-      rc = merc(A.refine(F.cc, G.nx, G.ny, f)),
-      tStep = o.tStep || 2,
-      // hautes et basses pressions : extrêmum sur r lieux autour (o.hlR, 1 par défaut), et au moins o.hlMin hPa d'écart
-      // avec l'un d'eux (un champ plat n'en a pas ; à l'échelle du monde, les petits creux tropicaux non plus)
-      r = o.hlR || 1,
-      hlMin = o.hlMin || 0.5,
-      // o.wrap : la grille fait le tour du monde (sa dernière colonne recopie la première) ; les voisins se cherchent par-delà
-      // 180° comme partout ailleurs — pas de bord à l'antiméridien
-      nw = G.nx - 1,
-      hl = [];
-    if (F.ft == null)
-      for (let j = 1; j < G.ny - 1; j++)
-        for (let i = o.wrap ? 0 : 1; i < (o.wrap ? nw : G.nx - 1); i++) {
-          const v = F.p[j * G.nx + i];
-          if (v == null) continue;
-          const nb = [];
-          for (let dj = -r; dj <= r; dj++)
-            for (let di = -r; di <= r; di++) {
-              const jj = j + dj,
-                ii = o.wrap ? (((i + di) % nw) + nw) % nw : i + di;
-              if ((dj || di) && jj >= 0 && jj < G.ny && ii >= 0 && ii < G.nx && F.p[jj * G.nx + ii] != null) nb.push(F.p[jj * G.nx + ii]);
-            }
-          const isMin = nb.every(x => x >= v) && nb.some(x => x >= v + hlMin),
-            isMax = nb.every(x => x <= v) && nb.some(x => x <= v - hlMin);
-          if (isMin || isMax) hl.push({
-            ...G.places[j * G.nx + i],
-            low: isMin,
-            v
-          });
-        }
-    return {
-      bbox: [w, s, e, n],
-      tImg: fieldCanvas(rt.nx, rt.ny, k => rt.v[k] == null ? null : [...diverging(rt.v[k], 40, dk), 120]),
-      cImg: fieldCanvas(rc.nx, rc.ny, k => rc.v[k] > 8 ? [...cloud, Math.round(rc.v[k] / 100 * 150)] : null),
-      // le synoptique monde seulement : courant-jet à 250 hPa (dès 60 kt), convection (CAPE dès 500 J/kg)
-      jImg: F.js?.some(Number.isFinite) ? (r => fieldCanvas(r.nx, r.ny, k => r.v[k] >= 60 ? [124, 58, 237, Math.round(Math.min(1, (r.v[
-          k] -
-        60) / 80) * 100 + 30)] : null))(merc(A.refine(F.js, G.nx, G.ny, f))) : null,
-      capeImg: F.cape?.some(Number.isFinite) ? (r => fieldCanvas(r.nx, r.ny, k => r.v[k] >= 500 ? [230, 120, 20, Math.round(Math.min(1, (r
-        .v[k] - 500) / 2000) * 90 + 30)] : null))(merc(A.refine(F.cape, G.nx, G.ny, f))) : null,
-      isobars: F.p.some(Number.isFinite) ? curves(F.p, F.pStep, 'p', lv => `${Math.round(lv)}`, lv => 0.2 + 0.6 * (((lv / F.pStep) % 5 + 5) % 5) /
-        4,
-        () => dk ? '#c3c2b7' : '#3d3c39') : [],
-      isotherms: F.t.some(Number.isFinite) ? curves(F.t, tStep, 't', lv => `${lv < 0 ? '−' : ''}${Math.abs(lv)}°`, lv => 0.15 + 0.7 * (((lv /
-          tStep) % 6 + 6) % 6) / 5,
-        lv => lv === 0 ? '#1c5cab' : lv < 0 ? '#256abf' : '#c23b3a') : [],
-      pStep: F.pStep,
-      hl,
-      winds: G.places.map((pl, k) => [pl, F.wind[k]]).filter(([pl, [d, kt]]) => d != null && kt != null && !(o.thin && (pl.i + pl.j) % 2))
-    };
-  }
-  /** Pas des isobares et des isothermes selon l'échelle de la carte : les mêmes des deux côtés de la grille du vol (le
-   *  monde dézoomé n'est pas noyé de lignes, la grille du vol zoomée garde son détail). */
-  function curveSteps(pStep) {
-    const z = S.map?.getZoom?.() ?? 6;
-    return z >= 5 ? {
-      p: pStep,
-      t: 2
-    } : z >= 3 ? {
-      p: Math.max(pStep, 4),
-      t: 5
-    } : {
-      p: Math.max(pStep, 4),
-      t: 10
-    };
-  }
-  /** Géométrie de la grille du vol, et la trajectoire colorée. */
-  function mapGeometry() {
-    const F = S.mapF || (S.mapF = mapFields()),
-      G = S.grid.g,
-      st = curveSteps(F.pStep),
-      wf = S.world ? worldFields() : null,
-      key = JSON.stringify([S.mapLevel, F.time, F.ft, G.bbox, dark(), S.mapLayers.tfill, S.levelFt, S.traj?.total, st, wf?.key]);
-    if (S.geo?.key === key) return S.geo;
-    S.geo = {
-      key,
-      ...fieldGeometry({
-        ...(wf ? blendWorld(F, G, wf) : F),
-        pStep: st.p
-      }, G, {
-        thin: G.places.length > 40,
-        tStep: st.t
-      }),
-      traj: S.mapLevel === 'traj' ? S.along.map(a => ({
-        lat: a.lat,
-        lon: a.lon,
-        c: a.x && !a.x.below && a.x.tC != null ? `rgb(${diverging(a.x.tC, 40, dark()).join(',')})` : '#888',
-        w: (a.x?.cc ?? 0) >= 50 ? 6 : 4,
-        ice: a.ice
-      })) : null
-    };
-    return S.geo;
-  }
-  /** Dessin d'une géométrie (fieldGeometry) : champs, isobares, isothermes, hautes et basses pressions, vents ; P projette
-   *  (lat, lon) en pixels. */
-  function drawGeo(c, g, P, K, L) {
-    const [w, s, e, n] = g.bbox,
-      a = px(P(n, w)),
-      b = px(P(s, e));
-    // champs : une image lissée sur l'emprise de la grille (Mercator : un rectangle à l'écran)
-    c.imageSmoothingEnabled = true;
-    c.imageSmoothingQuality = 'high';
-    if (L.tfill) c.drawImage(g.tImg, a.x, a.y, b.x - a.x, b.y - a.y);
-    if (L.cloud) c.drawImage(g.cImg, a.x, a.y, b.x - a.x, b.y - a.y);
-    if (L.conv && g.capeImg) c.drawImage(g.capeImg, a.x, a.y, b.x - a.x, b.y - a.y);
-    if (L.jet && g.jImg) c.drawImage(g.jImg, a.x, a.y, b.x - a.x, b.y - a.y);
-    // courbes
-    const stroke = (list, style) => {
-      for (const cv2 of list) {
-        style(cv2);
-        c.beginPath();
-        for (const sg of cv2.segs) {
-          const p = P(sg[0], sg[1]),
-            q = P(sg[2], sg[3]);
-          c.moveTo(p.x, p.y);
-          c.lineTo(q.x, q.y);
-        }
-        c.stroke();
-        c.setLineDash([]);
-      }
-      for (const cv2 of list)
-        if (cv2.label) {
-          const p = P(cv2.label.lat, cv2.label.lon);
-          halo(c, cv2.label.text, p.x, p.y, cv2.color, K.bg);
-        }
-    };
-    if (L.isobar) stroke(g.isobars, cv2 => {
-      c.strokeStyle = cv2.color;
-      c.lineWidth = cv2.level % (g.pStep * 2) === 0 ? 1.6 : 0.9;
-    });
-    if (L.isotherm) stroke(g.isotherms, cv2 => {
-      c.strokeStyle = cv2.color;
-      c.lineWidth = cv2.level === 0 ? 2 : 1;
-      c.setLineDash(cv2.level === 0 ? [] : [5, 4]);
-    });
-    if (L.isobar) {
-      // les plus marquées d'abord, puis 70 px au moins entre deux marques à l'écran (le monde dézoomé)
-      const shown = [];
-      for (const h of [...g.hl].sort((x, y) => Math.abs(y.v - 1013) - Math.abs(x.v - 1013))) {
-        const p = P(h.lat, h.lon);
-        if (shown.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 70)) continue;
-        shown.push(p);
-        c.font = 'bold 18px system-ui, sans-serif';
-        halo(c, h.low ? T('low') : T('high'), p.x, p.y, h.low ? '#c23b3a' : '#1c5cab', K.bg);
-        c.font = '11px system-ui, sans-serif';
-        halo(c, `${Math.round(h.v)}`, p.x, p.y + 15, K.muted, K.bg);
-      }
+    },
+    onChange: () => {
+      if (!alive) return;
+      baseTitle();
+      if (S.view === 'wpoint') drawData();
+      if (S.view === 'layers') layersCard();
+      schedule();
     }
-    if (L.wind && g.winds.length) {
-      // un vent tous les « stride » lieux : au moins 44 px entre deux barbules à l'écran, des deux côtés de la grille du vol
-      const [p0] = g.winds[0],
-        q0 = P(p0.lat, p0.lon),
-        q1 = P(p0.lat, p0.lon + (g.bbox[2] - g.bbox[0]) / Math.max(1, Math.max(...g.winds.map(([pl]) => pl.i)))),
-        stride = Math.max(1, Math.ceil(44 / Math.max(1, Math.hypot(q1.x - q0.x, q1.y - q0.y))));
-      for (const [pl, [d, kt]] of g.winds) {
-        if (pl.i % stride || pl.j % stride) continue;
-        const p = P(pl.lat, pl.lon);
-        barb(c, p.x, p.y, d, kt, 22, K.fg);
-      }
-    }
+  });
+  /** Les options de la carte météo d'après l'écran : le vol et son niveau, la grille lue, l'altitude et l'heure de la
+   *  carte, les couches. */
+  function syncWeather() {
+    wm.update({
+      flight: S.flight ? {
+        points: S.flight.points,
+        levelFt: S.levelFt
+      } : null,
+      grid: S.grid || null,
+      levelFt: S.traj ? mapFt() : null,
+      time: worldTime(),
+      layers: S.mapLayers,
+      gridMax: +$f('gridMax').value || 48
+    });
   }
   /** Emprise de la grille du vol (lue, sinon celle qui le serait) ; null sans vol. */
   const gridBox = () => S.grid?.g.bbox || S.gridBox || null;
-  const inBox = (b, lat, lon) => {
-    const lo = A.nearLon(lon, (b[0] + b[2]) / 2); // la grille peut passer la ligne de changement de date (longitudes > 180°)
-    return lat >= b[1] && lat <= b[3] && lo >= b[0] && lo <= b[2];
+  /** Bornes de la vue [w, s, e, n] (fond MapLibre) ; null sur le fond uni (cadré sur le vol). */
+  const viewBounds = () => {
+    if (!S.map) return null;
+    const b = S.map.getBounds();
+    return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
   };
-  /** La vue et la grille du vol : 0 dedans ; 1 en partie dehors (le synoptique remplit ce qui dépasse) ; 2 surtout
-   *  dehors — la grille couvre moins de 40 % de la vue, ou son centre en sort (le titre dit alors « synoptique »). Sans
-   *  vol : 2. */
-  function outsideGrid() {
-    const b = gridBox();
-    if (!b) return 2;
-    if (!S.map) return 0; // fond uni : cadré sur le vol
-    const v = S.map.getBounds(),
-      // la copie de la grille la plus proche de la vue (après un ou plusieurs tours du monde)
-      k = 360 * Math.round(((v.getWest() + v.getEast()) / 2 - (b[0] + b[2]) / 2) / 360),
-      [w, s, e, n] = [v.getWest() - k, v.getSouth(), v.getEast() - k, v.getNorth()];
-    if (w >= b[0] && e <= b[2] && s >= b[1] && n <= b[3]) return 0;
-    const ix = Math.max(0, Math.min(e, b[2]) - Math.max(w, b[0])),
-      iy = Math.max(0, Math.min(n, b[3]) - Math.max(s, b[1])),
-      cover = ix * iy / Math.max(1e-9, (e - w) * (n - s));
-    return cover < 0.4 || !inBox(b, (s + n) / 2, (w + e) / 2) ? 2 : 1;
-  }
-  /** Décalages (multiples de 360°) qui amènent l'intervalle de longitudes [w, e] dans la vue : la carte répète le monde
-   *  vers la droite et vers la gauche ; au plus quatre copies. */
-  function copiesFor(w, e) {
-    if (!S.map) return [0];
-    const v = S.map.getBounds(),
-      out = [];
-    for (let k = Math.ceil((v.getWest() - e) / 360); k <= Math.floor((v.getEast() - w) / 360) && out.length < 4; k++) out.push(k * 360);
-    return out.length ? out : [0];
-  }
-  const worldCopies = () => copiesFor(-180, 180);
-  /** Le synoptique monde, lu une fois (réserve de l'appareil, sinon le fichier publié) ; jamais Open-Meteo. */
-  function loadWorld() {
-    S.world = null;
-    S.worldReading = true;
-    S.worldAsked = Date.now();
-    readWorld.index().then(w => {
-      if (!alive) return;
-      S.worldReading = false;
-      S.world = w;
-      S.wgeo = null;
-      baseTitle();
-      if (S.view === 'wpoint') drawData();
-      schedule();
-    }, () => {
-      S.worldReading = false;
-      baseTitle();
-    });
-  }
   /** Titre du synoptique : l'heure montrée, le run et l'échéance. */
   function worldTitle() {
-    const w = S.world;
-    if (!w) return T(S.worldReading || S.world === undefined ? 'worldReading' : 'worldNone');
-    const t = w.times[S.wgeo?.k ?? 0];
+    const i = wm.info();
+    if (!i.world) return T(i.worldReading ? 'worldReading' : 'worldNone');
     return T('worldTitle', {
-      at: fmtHM(t),
-      run: w.run ? fmtHM(w.run) : '—',
-      h: w.run ? Math.round((t - w.run) / 3600) : '—'
+      at: fmtHM(i.world.time),
+      run: i.world.run ? fmtHM(i.world.run) : '—',
+      h: i.world.h ?? '—'
     });
   }
-  /** Heure montrée par le synoptique : celle de la carte (passage du vol), sinon le départ, sinon maintenant. */
+  /** Heure montrée par la carte météo : celle de la carte (passage du vol), sinon le départ, sinon maintenant. */
   const worldTime = () => S.route ? mapTime() : S.depTime || Date.now() / 1000;
-  /** Échéance k du synoptique : prête (sinon null, demandée, puis tout est redessiné à son arrivée) ; les six dernières
-   *  lues restent en mémoire (le curseur va et vient). */
-  const wsteps = new Map(),
-    wasked = new Set();
-
-  function worldStep(k, alt = false) {
-    const w = S.world,
-      key = `${w.built}:${k}${alt ? ':alt' : ''}`;
-    if (wsteps.has(key)) return wsteps.get(key);
-    if (!wasked.has(key)) {
-      wasked.add(key);
-      readWorld.step(w, k, alt).then(sd => {
-        wasked.delete(key);
-        if (!alive || S.world !== w || !sd) return;
-        wsteps.set(key, sd);
-        if (wsteps.size > 8) wsteps.delete(wsteps.keys().next().value);
-        S.wgeo = null;
-        baseTitle();
-        if (S.view === 'wpoint') drawData();
-        schedule();
-      });
-    }
-    return null;
-  }
-  /** Champs du synoptique monde à l'altitude et à l'heure de la carte, calculés comme ceux de la grille du vol (worldLocs
-   *  puis fieldsOf, avec l'altitude vraie des isobares de la grille du vol) : { key, k, built, G, F, X (jet, CAPE) } ;
-   *  pendant la lecture d'une échéance, les précédents (null sans publication). */
-  function worldFields() {
-    const w = S.world;
-    if (!w) return null;
-    const ft = S.traj ? mapFt() : null,
-      fl = S.grid && S.traj ? S.mapF || (S.mapF = mapFields()) : null,
-      k = stepAt(w, worldTime()),
-      sd = worldStep(k),
-      sa = ft == null ? null : worldStep(k, true);
-    if (!sd || (ft != null && !sa)) return S.wfields?.built === w.built ? S.wfields : null;
-    const zFix = fl?.z ?? null,
-      key = JSON.stringify([w.built, k, ft, zFix == null ? null : Math.round(zFix)]);
-    if (S.wfields?.key === key) return S.wfields;
-    const {
-      G,
-      F: X
-    } = worldGrid(w, sd);
-    S.wfields = {
-      key,
-      k,
-      built: w.built,
-      G,
-      X,
-      F: fieldsOf(worldLocs(w, sd, sa), ft, sd.time, zFix)
+  /** Trajectoire calculée colorée par la température rencontrée, plus épaisse dans les nuages (altitude « trajectoire »). */
+  function trajGeometry() {
+    if (!(S.grid && S.mapLevel === 'traj' && S.along)) return null;
+    const dk = dark();
+    if (S.tgeo?.along === S.along && S.tgeo.dk === dk) return S.tgeo.pts;
+    S.tgeo = {
+      along: S.along,
+      dk,
+      pts: S.along.map(a => ({
+        lat: a.lat,
+        lon: a.lon,
+        c: a.x && !a.x.below && a.x.tC != null ? `rgb(${diverging(a.x.tC, 40, dk).join(',')})` : '#888',
+        w: (a.x?.cc ?? 0) >= 50 ? 6 : 4,
+        ice: a.ice
+      }))
     };
-    return S.wfields;
-  }
-  /** Géométrie du synoptique monde (null sans publication). */
-  function worldGeometry() {
-    const wf = worldFields();
-    if (!wf) return null;
-    const fl = S.grid && S.traj ? S.mapF : null,
-      st = curveSteps(fl ? fl.pStep : wf.F.pStep),
-      key = JSON.stringify([wf.key, dark(), st]);
-    if (S.wgeo?.key === key) return S.wgeo;
-    S.wgeo = {
-      key,
-      k: wf.k,
-      built: wf.built,
-      ...fieldGeometry({
-        ...wf.F,
-        pStep: st.p,
-        js: wf.X.js,
-        cape: wf.X.cape
-      }, wf.G, {
-        merc: true,
-        tStep: st.t,
-        hlR: 3,
-        hlMin: 2,
-        wrap: true
-      })
-    };
-    baseTitle(); // l'échéance montrée a changé (curseur, tranche) : le titre la suit (écrit seulement s'il change)
-    return S.wgeo;
-  }
-  /** La grille du vol fondue dans le synoptique monde sur son quart extérieur : à son bord, les valeurs du monde (les
-   *  lignes se raccordent, aucune teinte ne change à la limite) ; au centre, le modèle fin du vol ; entre les deux, un
-   *  passage progressif — les modèles divergent (Météo-France ou ICON d'un côté, GFS de l'autre), d'autant plus que
-   *  l'échéance est lointaine. Pour la carte seulement : la coupe et la tranche gardent les valeurs du vol. */
-  function blendWorld(F, G, wf) {
-    const W = wf.F,
-      WG = wf.G,
-      [w0, s0, e0, n0] = WG.bbox,
-      at = (arr, lat, lon) => {
-        const x = (A.wrapLon(lon) - w0) / (e0 - w0) * (WG.nx - 1),
-          y = clamp((lat - s0) / (n0 - s0) * (WG.ny - 1), 0, WG.ny - 1),
-          i = Math.min(WG.nx - 2, Math.floor(x)),
-          j = Math.min(WG.ny - 2, Math.floor(y)),
-          fx = x - i,
-          fy = y - j,
-          q = [arr[j * WG.nx + i], arr[j * WG.nx + i + 1], arr[(j + 1) * WG.nx + i], arr[(j + 1) * WG.nx + i + 1]];
-        return q.some(v => v == null) ? null : (q[0] * (1 - fx) + q[1] * fx) * (1 - fy) + (q[2] * (1 - fx) + q[3] * fx) * fy;
-      },
-      uv = W.wind.map(([d, kt]) => d == null || kt == null ? [null, null] : [kt * Math.sin(d * R), kt * Math.cos(d * R)]),
-      U = uv.map(x => x[0]),
-      V = uv.map(x => x[1]),
-      m = Math.max(1, (Math.min(G.nx, G.ny) - 1) * 0.25),
-      out = {
-        ...F,
-        p: [],
-        t: [],
-        cc: [],
-        wind: []
-      };
-    G.places.forEach((pl, k) => {
-      const d = Math.min(pl.i, G.nx - 1 - pl.i, pl.j, G.ny - 1 - pl.j) / m,
-        f = d >= 1 ? 1 : d * d * (3 - 2 * d), // part du vol : 0 au bord, 1 au-delà du quart extérieur
-        mix = (a, b) => a == null ? b : b == null ? a : b + (a - b) * f;
-      out.p.push(mix(F.p[k], at(W.p, pl.lat, pl.lon)));
-      out.t.push(mix(F.t[k], at(W.t, pl.lat, pl.lon)));
-      out.cc.push(mix(F.cc[k], at(W.cc, pl.lat, pl.lon)));
-      const [d0, k0] = F.wind[k],
-        u = mix(d0 == null || k0 == null ? null : k0 * Math.sin(d0 * R), at(U, pl.lat, pl.lon)),
-        v = mix(d0 == null || k0 == null ? null : k0 * Math.cos(d0 * R), at(V, pl.lat, pl.lon));
-      out.wind.push(u == null || v == null ? [null, null] : [((Math.atan2(u, v) / R) + 360) % 360, Math.hypot(u, v)]);
-    });
-    return out;
-  }
-
-  /** Point arrondi au pixel : les images de la grille du vol et la découpe du synoptique tombent sur les mêmes pixels. */
-  const px = q => ({
-    x: Math.round(q.x),
-    y: Math.round(q.y)
-  });
-  /** Halo de texte (fond du dessin) puis texte. */
-  function halo(c, text, x, y, color, bg, align = 'center') {
-    c.save();
-    c.textAlign = align;
-    c.textBaseline = 'middle';
-    c.lineWidth = 3;
-    c.lineJoin = 'round';
-    c.strokeStyle = bg;
-    c.strokeText(text, x, y);
-    c.fillStyle = color;
-    c.fillText(text, x, y);
-    c.restore();
+    return S.tgeo.pts;
   }
 
   /** Dessin de la surcouche (et du fond uni sans tuiles), à chaque image du mouvement. */
@@ -1825,46 +1383,19 @@ export async function mount(el, ctx) {
         c.fillRect(0, 0, v.W, v.H);
       }
     }
-    c.font = '11px system-ui, sans-serif';
-    const L = S.mapLayers;
-    // synoptique monde : dès que la vue sort de la grille du vol (ou sans vol), hors de la grille du vol ; jamais d'appel
-    const out = outsideGrid();
+    // la carte météo (grille du vol fondue dans le synoptique monde), puis le vol par-dessus
+    const bounds = viewBounds();
+    wm.draw(c, {
+      W: v.W,
+      H: v.H,
+      project: P,
+      bounds,
+      zoom: S.map?.getZoom?.() ?? 6
+    });
+    const out = wm.info().outside;
     if ((out === 2) !== !!S.worldShown) {
       S.worldShown = out === 2;
       baseTitle();
-    }
-    if ((out || L.jet || L.conv) && (S.world === undefined || (S.world === null && Date.now() - S.worldAsked > 10 * 60e3)))
-      loadWorld();
-    const wg = S.world ? worldGeometry() : null;
-    // courant-jet et convection : seul le monde les porte ; dessinés partout, sous les nuages et les lignes, des deux côtés
-    // de la grille du vol (aucune teinte qui s'arrête à sa limite)
-    if (wg && (L.jet || L.conv))
-      for (const off of worldCopies()) drawGeo(c, wg, (la, lo) => P(la, lo + off), K, {
-        jet: L.jet,
-        conv: L.conv
-      });
-    if (out) {
-      if (wg) {
-        c.save();
-        if (S.grid && S.traj) {
-          const [w, s, e, n] = S.grid.g.bbox;
-          c.beginPath();
-          c.rect(0, 0, v.W, v.H);
-          for (const off of copiesFor(w, e)) {
-            // aux pixels entiers, comme l'image de la grille du vol (drawGeo) : ni liseré ni recouvrement à la jonction
-            const a = px(P(n, w + off)),
-              b = px(P(s, e + off));
-            c.rect(a.x, a.y, b.x - a.x, b.y - a.y);
-          }
-          c.clip('evenodd');
-        }
-        for (const off of worldCopies()) drawGeo(c, wg, (la, lo) => P(la, lo + off), K, {
-          ...L,
-          jet: false,
-          conv: false
-        });
-        c.restore();
-      }
     }
     if (S.wpoint && S.view === 'wpoint') {
       const q = P(S.wpoint.lat, S.wpoint.lon);
@@ -1877,38 +1408,35 @@ export async function mount(el, ctx) {
     if (!S.flight) return;
     // le vol sur chaque copie du monde visible (la carte fait le tour par la droite comme par la gauche)
     const fb = fitBox(),
-      gb = gridBox() || [fb.w, fb.s, fb.e, fb.n];
-    for (const off of copiesFor(Math.min(gb[0], fb.w), Math.max(gb[2], fb.e))) drawFlight(off ? (la, lo) => P(la, lo + off) : P);
+      gb = gridBox() || [fb.w, fb.s, fb.e, fb.n],
+      traj = trajGeometry();
+    for (const off of copiesFor(bounds, Math.min(gb[0], fb.w), Math.max(gb[2], fb.e))) drawFlight(off ? (la, lo) => P(la, lo + off) : P);
 
-    /** Le vol à une projection : sa grille (champs, courbes, trajectoire), la route, les points, la tranche locale. */
+    /** Le vol à une projection : la trajectoire colorée, la route, les points, le lieu de la tranche locale. */
     function drawFlight(P) {
-      if (S.grid && S.traj) {
-        const g = mapGeometry();
-        drawGeo(c, g, P, K, L);
-        // trajectoire colorée par la température rencontrée, plus épaisse dans les nuages, ❄ au givrage
-        if (g.traj) {
-          const q = g.traj.map(t => P(t.lat, t.lon));
-          c.lineCap = 'round';
-          c.strokeStyle = K.bg;
-          c.lineWidth = 9;
+      // trajectoire colorée par la température rencontrée, plus épaisse dans les nuages, ❄ au givrage
+      if (traj) {
+        const q = traj.map(t => P(t.lat, t.lon));
+        c.lineCap = 'round';
+        c.strokeStyle = K.bg;
+        c.lineWidth = 9;
+        c.beginPath();
+        q.forEach((p, k) => k ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y));
+        c.stroke();
+        c.lineCap = 'butt';
+        for (let k = 1; k < q.length; k++) {
           c.beginPath();
-          q.forEach((p, k) => k ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y));
+          c.moveTo(q[k - 1].x, q[k - 1].y);
+          c.lineTo(q[k].x, q[k].y);
+          c.strokeStyle = traj[k].c;
+          c.lineWidth = traj[k].w;
           c.stroke();
-          c.lineCap = 'butt';
-          for (let k = 1; k < q.length; k++) {
-            c.beginPath();
-            c.moveTo(q[k - 1].x, q[k - 1].y);
-            c.lineTo(q[k].x, q[k].y);
-            c.strokeStyle = g.traj[k].c;
-            c.lineWidth = g.traj[k].w;
-            c.stroke();
-            if (g.traj[k].ice >= 1 && k % 4 === 0) halo(c, '❄', q[k].x, q[k].y - 9, g.traj[k].ice === 2 ? K.ice : '#9a6b00', K.bg);
-          }
+          if (traj[k].ice >= 1 && k % 4 === 0) halo(c, '❄', q[k].x, q[k].y - 9, traj[k].ice === 2 ? K.ice : '#9a6b00', K.bg);
         }
       }
       // route et points
       const pts = S.flight.points;
-      if (!(S.grid && S.mapLevel === 'traj')) {
+      if (!traj) {
         c.lineCap = c.lineJoin = 'round';
         c.beginPath();
         pts.forEach((p, k) => {
@@ -1943,9 +1471,6 @@ export async function mount(el, ctx) {
     }
   }
 
-  /** Altitudes de la carte d'un vol : niveau demandé, paliers, altitudes fixes sous le haut de la coupe. */
-  const mapAltitudes = f => [S.levelFt, ...f.points.map(p => p.alt_ft).filter(x => x > 0), ...MAP_FIXED.filter(ft => ft <= topFt())];
-
   /** Altitude pression de la carte selon le choix (sol : null). */
   function mapFt() {
     const v = S.mapLevel;
@@ -1959,72 +1484,13 @@ export async function mount(el, ctx) {
   /** Heure de la carte : passage du vol au lieu de la tranche locale, sinon au départ. */
   const mapTime = () => S.local?.kind === 'point' ? S.local.t : S.route.samples[S.local?.kind === 'route' ? S.local.i : 0].t;
 
-  /** Champs de la carte à l'altitude choisie, sur la grille : { t, cc, p, wind, label }. */
-  function mapFields() {
-    return fieldsOf(S.grid.locs, mapFt(), mapTime());
-  }
-  /** Champs d'une grille de lieux (à la forme d'Open-Meteo : la grille du vol, ou celle du monde par worldLocs) à une
-   *  altitude pression ft (null : la surface) et un instant t ; zFix : l'altitude vraie des isobares (celle de la grille du
-   *  vol, reprise par le monde : les isobares se raccordent). Un seul calcul pour les deux côtés de la grille du vol. */
-  function fieldsOf(locs, ft, t, zFix = null) {
-    const cols = locs.map(loc => A.column(loc, A.hourIndex(loc.times, t)));
-    if (ft == null) return {
-      cols,
-      ft,
-      t: cols.map(q => q.sfc.tC),
-      cc: cols.map(q => Math.max(q.sfc.ccL ?? 0, q.sfc.ccM ?? 0, q.sfc.ccH ?? 0)),
-      p: cols.map(q => q.sfc.mslp),
-      wind: cols.map(q => [q.sfc.dir, q.sfc.kt]),
-      pStep: 2,
-      pLabel: T('isoMsl'),
-      time: cols[0]?.time
-    };
-    const xs = cols.map(q => A.at(q, ft)),
-      zs = xs.map(x => x && !x.below ? x.zFt : null).filter(Number.isFinite),
-      z = zFix ?? (zs.length ? zs.reduce((s, v) => s + v, 0) / zs.length : null),
-      p = cols.map(q => z == null ? null : A.pressureAtZ(q, z)),
-      pv = p.filter(Number.isFinite),
-      spread = pv.length ? Math.max(...pv) - Math.min(...pv) : 0;
-    return {
-      cols,
-      ft,
-      z,
-      t: xs.map(x => x && !x.below ? x.tC : null),
-      cc: xs.map(x => x && !x.below ? x.cc : null),
-      p,
-      wind: xs.map(x => x && !x.below ? [x.dirDeg, x.kt] : [null, null]),
-      pStep: spread > 12 ? 2 : 1,
-      pLabel: z == null ? '' : T('isoAlt', {
-        z: fmtNum(Math.round(z / 50) * 50),
-        l: fmtLvl(ft),
-        s: spread > 12 ? 2 : 1
-      }),
-      time: cols[0]?.time
-    };
-  }
-
   function mapTip(lat, lon, pt, ev) {
     const box = $('mapTip');
-    if (!S.grid || !S.mapF || !box || ev?.pointerType === 'touch' || matchMedia('(hover: none)').matches) return;
-    const G = S.grid.g,
-      [w, s, e, n] = G.bbox,
-      gx = (A.nearLon(lon, (w + e) / 2) - w) / (e - w) * (G.nx - 1),
-      gy = (lat - s) / (n - s) * (G.ny - 1);
-    if (gx < 0 || gy < 0 || gx > G.nx - 1 || gy > G.ny - 1) return box.style.display = 'none';
-    const i = Math.min(G.nx - 2, Math.floor(gx)),
-      j = Math.min(G.ny - 2, Math.floor(gy)),
-      fx = gx - i,
-      fy = gy - j,
-      bil = arr => {
-        const q = [arr[j * G.nx + i], arr[j * G.nx + i + 1], arr[(j + 1) * G.nx + i], arr[(j + 1) * G.nx + i + 1]];
-        return q.some(v => v == null) ? null : q[0] * (1 - fx) * (1 - fy) + q[1] * fx * (1 - fy) + q[2] * (1 - fx) * fy + q[3] * fx * fy;
-      },
-      F = S.mapF;
-    const t = bil(F.t),
-      p = bil(F.p),
-      cc = bil(F.cc);
-    box.innerHTML = `<b>${lat.toFixed(2)}° ${A.wrapLon(lon).toFixed(2)}°</b> <span class="m">${F.ft == null ? esc(T('ground')) : fmtLvl(F.ft)}</span><br>` +
-      `${fmtT(t)} · ${esc(T('clouds'))} ${fmtNum(cc)} %${p == null ? '' : ` · ${fmtNum(p, 1)} hPa`}`;
+    if (!box || ev?.pointerType === 'touch' || matchMedia('(hover: none)').matches) return;
+    const x = wm.at(lat, lon);
+    if (!x) return box.style.display = 'none';
+    box.innerHTML = `<b>${lat.toFixed(2)}° ${A.wrapLon(lon).toFixed(2)}°</b> <span class="m">${x.ft == null ? esc(T('ground')) : fmtLvl(x.ft)}</span><br>` +
+      `${fmtT(x.t)} · ${esc(T('clouds'))} ${fmtNum(x.cc)} %${x.p == null ? '' : ` · ${fmtNum(x.p, 1)} hPa`}`;
     box.style.display = 'block';
     box.style.left = `${Math.min(pt.x + 14, $('box').clientWidth - box.offsetWidth - 4)}px`;
     box.style.top = `${Math.max(0, pt.y - 40)}px`;
@@ -2092,14 +1558,10 @@ export async function mount(el, ctx) {
       cloud = `rgba(${cloudRgb()},.7)`,
       barbKey = '<span class="at-key" style="border:0;height:auto;text-align:center">⟋</span>';
     const note = mapNote();
+    // les couches de la carte météo : la légende de la bibliothèque (la Carte étiquette son panneau de la même façon)
     layersBox.innerHTML = (note ? `<p class="at-mapnote">${esc(T('mapTitle'))} · ${esc(note)}</p>` : '') + `<div><b>${esc(T('mapTitle'))}</b>` +
-      row('mapLayers', 'isobar', 'lyIsobar', key(`color:${dark() ? '#c3c2b7' : '#3d3c39'}`)) +
-      row('mapLayers', 'isotherm', 'lyIso', key('color:#c23b3a;border-top-style:dashed')) +
-      row('mapLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
-      row('mapLayers', 'wind', 'lyWind', barbKey) +
-      row('mapLayers', 'tfill', 'lyTemp', key(ramp, true)) +
-      row('mapLayers', 'jet', 'lyJet', key('linear-gradient(90deg,rgba(124,58,237,.25),rgba(124,58,237,.75))', true)) +
-      row('mapLayers', 'conv', 'lyConv', key('linear-gradient(90deg,rgba(230,120,20,.25),rgba(230,120,20,.7))', true)) +
+      wm.legend().map(ly => `<label><input type="checkbox" data-g="mapLayers" data-k="${ly.key}"${ly.on ? ' checked' : ''}> ${ly.swatch
+        .barb ? barbKey : key(ly.swatch.css, ly.swatch.ramp)} ${esc(ly.label)}</label>`).join('') +
       `</div><div><b>${esc(T('profileTitle'))}</b>` +
       row('xsLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
       row('xsLayers', 'iso', 'lyIso', key('color:#1c5cab')) +
@@ -2187,9 +1649,9 @@ export async function mount(el, ctx) {
   }
   /** Ce que montre la carte (heure, niveau et lignes), en tête des couches ; « Charger » quand la grille manque. */
   function mapNote() {
-    const F = S.grid && S.mapF;
-    if (!F) return S.traj ? T('mapLoad') : '';
-    return [F.time ? fmtHM(F.time) : '', F.pLabel].filter(Boolean).join(' · ');
+    const i = wm.info();
+    if (i.state !== 'ok' && S.traj) return T('mapLoad');
+    return [i.time ? fmtHM(i.time) : '', i.pLabel].filter(Boolean).join(' · ');
   }
 
   function status() {
@@ -2222,16 +1684,13 @@ export async function mount(el, ctx) {
 
   /** Niveaux lus sur la route (jusqu'au haut de la coupe) et sur la grille (ceux qui encadrent les altitudes offertes). */
   const routeLevels = () => A.levelsUpTo(topFt());
-  const gridLevels = () => A.bracketLevels(mapAltitudes(S.flight));
+  const gridLevels = () => gridRequest(S.flight.points, S.levelFt, +$f('gridMax').value || 48).levels;
 
   /** Rendu de tout ce qui dépend des données : sélecteur d'altitude, bloc du bas, carte. */
   function render() {
     if (!S.traj || !alive) return;
-    S.mapF = null;
-    if (S.grid) {
-      mapLevelOptions();
-      S.mapF = mapFields();
-    }
+    if (S.grid) mapLevelOptions();
+    syncWeather();
     if (lvlChip.hidden !== !S.grid) lvlChip.hidden = !S.grid;
     // l'indice du toucher : une notification, une fois par page (jamais posé sur la carte)
     if (!tapNoted) {
@@ -2271,16 +1730,22 @@ export async function mount(el, ctx) {
       S.model = A.modelFor(mid.lat, A.wrapLon(mid.lon));
       S.run = null;
       flightSum();
+      syncWeather();
       // un lieu tous les 50 NM, 24 au plus (comme Carburant) : l'échantillonnage tient le quota d'abord
+      // la grille de la carte : la demande partagée avec la Carte (gridRequest), au niveau choisi et à celui du vol courant
+      // quand il diffère (la carte météo de la Carte, au niveau du vol, la trouve alors dans la réserve)
       const smp = sectionPlaces(f.points),
-        levels = gridLevels(),
-        gr = A.grid(f.points, +$f('gridMax').value),
+        gq = gridRequest(f.points, S.levelFt, +$f('gridMax').value || 48),
+        gq2 = $f('flightSrc').value === 'current' && f.levelFt && f.levelFt !== S.levelFt ? gridRequest(f.points, f.levelFt, +$f(
+          'gridMax').value || 48) : null,
+        levels = [...new Set([...gq.levels, ...(gq2?.levels || [])])].sort((a, b) => b - a),
+        gr = gq.g,
         rLevels = routeLevels(),
         // au niveau choisi, et à celui du vol courant quand il diffère : la coupe de la Carte (au niveau du vol) est alors
         // dans la réserve elle aussi
         rVars = [...new Set([...sectionVars(S.levelFt, f.points), ...($f('flightSrc').value === 'current' && f.levelFt && f
           .levelFt !== S.levelFt ? sectionVars(f.levelFt, f.points) : [])])],
-        gVars = varsOf(levels, A.GRID_LEVEL_VARS, A.GRID_SURFACE_VARS);
+        gVars = [...new Set([...gq.vars, ...(gq2?.vars || [])])];
       S.gridBox = gr.bbox; // emprise de la grille, connue avant la prévision : hors d'elle, rien n'est jamais demandé
       setStatus(S.data === 'demo' ? T('demoComputing') : T('reading', {
         m: S.model.name
@@ -2324,7 +1789,6 @@ export async function mount(el, ctx) {
         weight: route.weight
       };
       S.grid = null;
-      S.geo = null;
       S.wx = wx;
       S.sel = 0;
       S.local = null;
@@ -2369,6 +1833,7 @@ export async function mount(el, ctx) {
         // la carte reste utile sans vol : le synoptique monde (rien n'est demandé à Open-Meteo)
         startTiles().then(schedule);
         flightSum();
+        syncWeather();
         if (lvlChip.hidden !== true) lvlChip.hidden = true;
         setStatus(T('noFlight'));
         schedule();
@@ -2452,7 +1917,7 @@ export async function mount(el, ctx) {
   $('dclose').onclick = () => {
     S.local = null;
     S.wpoint = null;
-    S.mapF = null;
+    syncWeather();
     render();
     show('profile');
   };
@@ -2489,6 +1954,7 @@ export async function mount(el, ctx) {
         render();
       } else {
         if (S.flight) flightSum();
+        syncWeather();
         baseTitle();
         schedule();
       }
@@ -2524,8 +1990,10 @@ export async function mount(el, ctx) {
       .dataset.k).forEach(x => g[x] = false);
     layersCard();
     saveUi();
-    if (c.dataset.g === 'mapLayers') schedule();
-    else if (S.view === 'profile') drawData();
+    if (c.dataset.g === 'mapLayers') {
+      syncWeather();
+      schedule();
+    } else if (S.view === 'profile') drawData();
   };
   // tailles : la carte (MapLibre suit, la surcouche est redessinée) et le bloc du bas (coupe ou tranche à sa nouvelle
   // taille) ; design ou ton changés : fond et dessins repris (réaction à un événement : rien n'est réécrit hors du module)
@@ -2540,7 +2008,7 @@ export async function mount(el, ctx) {
   ro.observe($('box'));
   const repaint = () => {
     colors.clear();
-    S.geo = null;
+    wm.update({}); // couleurs du design relues au prochain dessin
     S.map?.setStyle(styleFor({
       dark: dark()
     }));
@@ -2577,6 +2045,7 @@ export async function mount(el, ctx) {
   });
   stop = () => {
     alive = false;
+    wm.detach();
     sheet?.stop();
     cancelAnimationFrame(frame);
     ro.disconnect();

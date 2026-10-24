@@ -42,6 +42,8 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
    (465 px in full screen).
 7. World synoptic from NOAA GFS published with the pages (5°, +72 h, 15 variables), nothing asked outside the
    flight's grid; routes across the date line; the flight date slider (0 to +72 h, nothing asked).
+8. The weather map as a library (`lib/weather_map.js`, INTEGRATION § 6): this module draws through it, the maps
+   module's Météo chip will call `attach(map, …)`; bench `test/weather_map.html` (14 checks, no Open-Meteo call).
 
 ## Not checked yet
 
