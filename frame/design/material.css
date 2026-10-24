@@ -115,30 +115,30 @@
     :root[data-design="material"] {
       --f-tab-h: 64px
     }
-    [data-design="material"] .f-tabbar {
-      border-top-color: transparent;
-      box-shadow: var(--sog-shadow-up)
-    }
-    [data-design="material"] .f-tabbar a {
-      --f-tab-pill: color-mix(in srgb, var(--sog-module-text) 24%, var(--sog-surface));
-      color: var(--sog-fg);
-      font-weight: 500
-    }
-    [data-design="material"] .f-tabbar a[aria-current="page"] {
-      color: var(--sog-fg);
-      font-weight: 600
-    }
-    [data-design="material"] .f-tab-ico {
-      width: 64px;
-      height: 32px;
-      border-radius: 16px
-    }
-    [data-design="material"] .f-tabbar .f-icon {
-      color: var(--sog-muted)
-    }
-    [data-design="material"] .f-tabbar a[aria-current="page"] .f-icon {
-      color: var(--sog-fg)
-    }
+  }
+  [data-design="material"] .f-tabbar {
+    border-top-color: transparent;
+    box-shadow: var(--sog-shadow-up)
+  }
+  [data-design="material"] .f-tabbar a {
+    --f-tab-pill: color-mix(in srgb, var(--sog-module-text) 24%, var(--sog-surface));
+    color: var(--sog-fg);
+    font-weight: 500
+  }
+  [data-design="material"] .f-tabbar a[aria-current="page"] {
+    color: var(--sog-fg);
+    font-weight: 600
+  }
+  [data-design="material"] .f-tab-ico {
+    width: 64px;
+    height: 32px;
+    border-radius: 16px
+  }
+  [data-design="material"] .f-tabbar .f-icon {
+    color: var(--sog-muted)
+  }
+  [data-design="material"] .f-tabbar a[aria-current="page"] .f-icon {
+    color: var(--sog-fg)
   }
   @media (min-width: 761px) {
     [data-design="material"] body {

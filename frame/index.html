@@ -12,6 +12,12 @@ try {
   if (/^(standard|cabinet|field|metro|swiss|cupertino|material)$/.test(d.design)) h.dataset.design = d.design;
   if (/^(day|night)$/.test(d.tone)) h.dataset.tone = d.tone
 } catch (e) {}
+// paysage sur un téléphone (même règle que landNow() de frame/app.js, qui la tient ensuite à jour) : la mise en page du rail et de la
+// colonne est juste dès le premier affichage
+try {
+  if (innerWidth > innerHeight && innerWidth < 1024 && !/^portrait/.test(screen.orientation?.type || '')) document.documentElement.classList
+    .add('f-land')
+} catch (e) {}
 // module de l'adresse : la couleur repère des designs metro, swiss, cupertino et material dès le premier affichage (frame/app.js, paintModule)
 {
   const m = /^#([a-z]+)/.exec(location.hash);
@@ -41,7 +47,7 @@ try {
 </header>
 <nav class="f-nav" id="fNav"><ul id="fMenu"></ul></nav>
 <main class="f-view" id="fView"></main>
-<!-- barre du bas du téléphone (760 px et moins) : Préparer · Carte · CR · Vols · Réglages, dessinée par frame/app.js (APP.tabs) -->
+<!-- barre du bas du téléphone (760 px et moins ; en paysage, un rail à gauche) : Préparer · Carte · CR · Vols · Réglages, dessinée par frame/app.js (APP.tabs) -->
 <nav class="f-tabbar" id="fTabs"></nav>
 <div class="f-notes" id="fNotes" aria-live="polite"></div>
 <script src="store/frame_data.js?v=0"></script>

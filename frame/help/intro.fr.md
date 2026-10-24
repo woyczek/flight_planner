@@ -23,8 +23,11 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
   « Hors ligne » quand il n'y a pas de réseau, et, sur un téléphone, la source de la position pendant un vol et « Aide de
   cet écran ». Échap ou ✕ la ferme. Sur un téléphone, l'en-tête se réduit au nom, au bouton i et à ⚙.
 - **Plein écran.** Sur la carte (outils à vue fixe), un bouton rond en bas de la colonne de boutons, sur la carte, masque
-  l'en-tête et la barre du bas pour laisser toute la place à la carte ; le bouton d'angle en haut à droite, le même bouton
-  ou Échap reviennent.
+  l'en-tête et la barre du bas pour laisser toute la place à la carte ; le même bouton ou Échap reviennent.
+- **Téléphone en paysage.** Tourné sur le côté, le téléphone range la barre du bas en un rail d'icônes à gauche (les mêmes
+  cinq entrées ; un second appui sur Préparer ouvre ses outils à droite du rail), garde l'en-tête, pose le bloc de données de la
+  carte en colonne à droite (touchez sa première ligne, ou tirez-la vers la gauche, pour l'élargir ou la rétrécir) et donne à la
+  carte toute la hauteur restante. En plein écran, la colonne reste.
 
 ## Données et synchronisation
 

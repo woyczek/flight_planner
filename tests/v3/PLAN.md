@@ -54,6 +54,7 @@ Screens and ids: the frame page is `frame/index.html#<module>`; modules on `v3`:
 | A10 | Night tone | `standard` at 390 with `tone:'night'`: `dataset.tone` (or the attribute the frame uses) is `night`, body background luminance is below 0.2 (dark), no error | design |
 | A11 | Help screen | `#help?m=maps` at 390 and 1280: the manual of the module is shown in the current language, non-empty, **×4 langs**; Escape or the back button returns to `#maps` | help block |
 | A12 | Settings screen | `#settings` at 390: opens, no error, contains the trigram field; the back control returns to the previous module | settings block |
+| A14 | Landscape on a phone | At 844×390 (touch) on `#maps` and `#atmosphere`: `html.f-land`; `#fTabs` is the rail (left 0, 44 px wide, top 57, 333 px high, five entries ≥ 44×44, no visible label, an `aria-label` each), `#fNav` hidden, header 57 px, `--f-tab-space` 0, `--f-view-h` 333; map at left 44 / top 57, 333 px high; the sheet panel is a column at the right edge, full height, 40 % of the view (≥ 280 px, 320 here), its handle line at its top, content inside it; the map takes the rest; no page scroll; the right overlay buttons share one x (no double column); no `.f-ov-exit`; a tap on the handle: 60 % (480 px), a second tap: back; full screen: header and rail hidden, root 844×390 at 0/0, the column stays, map from 0/0, Escape leaves; back to 390×844: `f-land` gone, bar at the bottom, sheet under the map | § 7.1 rule 7; frame/INTEGRATION § 9.1–9.4, § 11 |
 
 ## B. Overlay layer and full screen (`frame/INTEGRATION.md` § 9.3, § 9.4)
 
@@ -63,8 +64,8 @@ Screens and ids: the frame page is `frame/index.html#<module>`; modules on `v3`:
 | B2 | Columns | Right column `.f-ov-right`: at least one button and the frame's full-screen button `.f-ov-full` **last** (visually: lowest `top` among the right buttons; in DOM order: last child); every `.f-ov-btn` is 44×44 (±1), the right edge of each is at the layer's right minus 8 px (±1) — including after the wide-element fix; left column `.f-ov-left`: the Layers button (maps: Couches; atmosphere: Couches), 44×44 | § 9.3, fix of 24 Oct |
 | B3 | Nothing between header and map | On `#maps` and `#atmosphere` at 390: no visible element of the module (height > 0, not inside `.f-overlay`, not the sheet) whose bottom ≤ map top and top ≥ header bottom | § 7.1 rule 1, user "header, carte, carte, footer" |
 | B4 | Buttons do not cover the sheet | On `#maps` at 390: every `.f-ov-btn` bottom ≤ sheet panel top | § 9.3 sheet safety |
-| B5 | Full screen on a phone | Tap `.f-ov-full` on `#maps` at 390: `html.f-full`; header and `#fTabs` not displayed; module root is 390×844 at top 0; exit chip (44 px, top 8 / right 8, label "Quitter le plein écran" **×4 langs**) shown; a `resize` event was dispatched on `window` (listener installed before the tap); the map canvas height grew; Escape exits (`f-full` gone, header back, root top at 57) | § 9.4 |
-| B6 | Full screen on a screen | Same at 1280: header and rail hidden, root 1280×800 at left 0; chip exits | § 9.4 |
+| B5 | Full screen on a phone | Tap `.f-ov-full` on `#maps` at 390: `html.f-full`; header and `#fTabs` not displayed; module root is 390×844 at top 0; no exit chip (`.f-ov-exit` is gone); the column's button is still shown, pressed, labelled "Quitter le plein écran" **×4 langs**; a `resize` event was dispatched on `window` (listener installed before the tap); the map canvas height grew; Escape exits (`f-full` gone, header back, root top at 57) | § 9.4 |
+| B6 | Full screen on a screen | Same at 1280: header and rail hidden, root 1280×800 at left 0; the column's button exits | § 9.4 |
 | B7 | Full screen memory | In full screen on `#maps`, open `#settings` (via gear): header back; close it: `f-full` again. Then go to `#fuel`: `f-full` gone | § 9.4 memory |
 | B8 | Escape order | On `#maps` in full screen with the Layers sheet content open: first Escape closes Layers and **keeps** full screen; second Escape leaves full screen | § 9.4, maps lot point 8 |
 | B9 | Gestures pass through | `.f-overlay` has `pointer-events: none`; each `.f-ov-btn` has `pointer-events: auto` (computed styles) | § 9.3 |
@@ -74,7 +75,7 @@ Screens and ids: the frame page is `frame/index.html#<module>`; modules on `v3`:
 
 | Id | Case | Expected | Rule |
 |---|---|---|---|
-| C1 | Bench | Load `frame/lib/test/sheet.html` at 390 and 1280: the page's own assertions all pass (read its result element or console summary; the frame lot reported 76/76 both widths) | § 11 |
+| C1 | Bench | Load `frame/lib/test/sheet.html` at 390 and 1280: the page's own assertions all pass (read its result element or console summary; the bench reports 129/129 at 390, 1280 and 844×390: its last part plays the landscape column) | § 11 |
 | C2 | Default height on a phone | On `#maps` at 390: the sheet panel `.f-sheet-panel` is at its default position: height = max(30 % of the view height, 170 px) ± 2 px, where view height = 844 − 57 − bar height | user decision of 24 Oct (30 % on phone) |
 | C3 | Default height on a screen | At 1280: 35 % of the view (or the layout the module uses at that width: if the sheet is a side column at 1280, assert that instead and say so) | § 11 |
 | C4 | Three positions | Drag the grip up: the panel reaches the expanded height; drag down: the head-only height (grip visible, ≥ 44 px); the grip's `aria-expanded` follows; the map box shrinks/grows accordingly (its height + panel height = view height ± 2) | § 11 |

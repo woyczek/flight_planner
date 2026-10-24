@@ -22,8 +22,11 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
   the position during a flight and "Help for this screen". Escape or ✕ closes it. On a phone the header is reduced to the
   name, the i button and ⚙.
 - **Full screen.** On the map (the fixed-view tools), a round button at the bottom of the column of buttons over the map hides
-  the header and the bottom bar to give the map all the room; the corner button at the top right, the same button or
-  Escape bring them back.
+  the header and the bottom bar to give the map all the room; the same button or Escape bring them back.
+- **Phone in landscape.** Turned on its side, the phone puts the bottom bar as a rail of icons at the left (the same five
+  entries; a second touch on Prepare opens its tools at the right of the rail), keeps the header, lays the map's data block as a
+  column at the right (touch its first line, or drag it to the left, to widen or narrow it) and gives the map the whole height
+  that remains. In full screen the column stays.
 
 ## Data and synchronisation
 

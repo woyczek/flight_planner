@@ -2,7 +2,9 @@
 <!-- Banc de la feuille à trois positions (frame/lib/sheet.js, frame/INTEGRATION.md § 11) sur une page nue : seulement les
      jetons et les primitives du cadre (frame/design/), aucun module. Il joue des événements du pointeur et du clavier sur
      deux feuilles (une poignée <button>, une poignée <div>) et écrit « PASS » / « FAIL » par contrôle dans « Résultats » ;
-     window.__sheetBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit, rien à copier. -->
+     window.__sheetBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit, rien à copier.
+     La dernière partie rejoue la feuille en colonne du paysage sur un téléphone (844 × 390 : une racine de 800 × 333 px sous
+     <html class="f-land">, posé ici à la main ; le cadre le pose et dit « frame-orientation »). -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -55,6 +57,24 @@
     margin: 0;
     white-space: pre-wrap
   }
+  /* paysage : une racine de la taille de la vue d'un téléphone en paysage (844 × 390 moins le rail de 44 px et l'en-tête de 57 px) */
+  #stageL {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 800px;
+    height: 333px;
+    visibility: hidden;
+    pointer-events: none
+  }
+  #rootL {
+    height: 100%
+  }
+  #rootL .map {
+    flex: 1 1 0;
+    min-height: 0;
+    background: repeating-linear-gradient(45deg, #dfe8f0 0 12px, #cfdbe6 12px 24px)
+  }
   .FAIL {
     color: #b00020;
     font-weight: 700
@@ -84,6 +104,7 @@
     </div>
   </div>
 </div>
+<div id="stageL"></div>
 <pre id="log"><b>Résultats</b>
 </pre>
 <script type="module">
@@ -447,6 +468,222 @@
   eq('sans labels : aucun aria-label ajouté ou changé', B.grip.getAttribute('aria-label'), 'Bas');
   c.stop();
   eq('POSITIONS exporté', POSITIONS, ['collapsed', 'default', 'expanded']);
+
+  // ================================================================ paysage sur un téléphone : la feuille est une colonne
+  // (<html class="f-land">, posé par le cadre ; ici à la main, puis « frame-orientation » comme le fait le cadre)
+  const html = document.documentElement,
+    orient = on => {
+      html.classList.toggle('f-land', on);
+      window.dispatchEvent(new CustomEvent('frame-orientation', {
+        detail: {
+          land: on
+        }
+      }));
+    };
+  const stageL = $('stageL');
+  stageL.innerHTML = `<section class="f-sheet" id="rootL"><div class="map" id="mapL"></div>
+    <div class="f-sheet-panel" id="panelL"><div class="f-sheet-head" id="headL">
+      <button type="button" class="f-sheet-grip" id="gripL"><b class="f-sheet-title">Colonne</b></button>
+      <button type="button" class="f-sheet-close" id="closeL" aria-label="Fermer">✕</button></div>
+      <div class="f-sheet-body" id="bodyL"></div></div></section>`;
+  stageL.style.visibility = 'visible';
+  stageL.style.pointerEvents = 'auto';
+  const L = {
+    root: $('rootL'),
+    map: $('mapL'),
+    panel: $('panelL'),
+    head: $('headL'),
+    grip: $('gripL'),
+    body: $('bodyL')
+  };
+  for (let i = 0; i < 40; i++) L.body.insertAdjacentHTML('beforeend', `<p>Ligne ${i}</p>`);
+  const W = el => el.getBoundingClientRect().width,
+    RW = 800,
+    R = el => el.getBoundingClientRect();
+  /** Pointeur horizontal : appui, déplacements de dx en `steps` pas, relâchement. */
+  const ptrx = (el, type, x, extra = {}) => el.dispatchEvent(new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    pointerId: 9,
+    pointerType: 'touch',
+    button: 0,
+    clientX: x,
+    clientY: 20,
+    ...extra
+  }));
+  async function dragx(from, x0, dx, steps = 10, dt = 25) {
+    ptrx(from, 'pointerdown', x0);
+    let mid = null;
+    for (let i = 1; i <= steps; i++) {
+      await wait(dt); // d'abord l'attente : chaque pas a une durée, la vitesse du doigt est celle voulue
+      ptrx(from, 'pointermove', x0 + dx * i / steps);
+      if (i === Math.round(steps / 2)) mid = {
+        w: W(L.panel),
+        nt: L.panel.classList.contains('f-sheet-nt')
+      };
+    }
+    ptrx(from, 'pointerup', x0 + dx);
+    await wait(30);
+    return mid;
+  }
+  const lcalls = {
+    change: [],
+    settle: []
+  };
+  orient(true);
+  const l = createSheet({
+    root: L.root,
+    panel: L.panel,
+    head: L.head,
+    grip: L.grip,
+    ignore: '#closeL',
+    labels: labelsFn,
+    onChange: p => lcalls.change.push(p),
+    onSettle: p => lcalls.settle.push(p)
+  });
+  await wait(300);
+  eq('paysage : départ normal, data-sheet default', [l.pos, L.root.dataset.sheet], ['default', 'default']);
+  near('paysage : la colonne = 40 % de la largeur de la racine (--f-sheet-side)', W(L.panel), RW * .4);
+  near('paysage : la colonne est aussi haute que la racine', H(L.panel), 333);
+  near('paysage : la colonne est au bord droit de la racine', R(L.panel).right, R(L.root).right);
+  near('paysage : la carte prend le reste de la largeur', W(L.map), RW - W(L.panel));
+  near('paysage : la carte a toute la hauteur', H(L.map), 333);
+  near('paysage : la ligne de poignée est en haut de la colonne', R(L.head).top, R(L.panel).top);
+  check('paysage : le contenu défile dans la colonne, pas la page', L.body.scrollHeight > L.body.clientHeight && getComputedStyle(L.body)
+    .overflowY === 'auto' && document.documentElement.scrollHeight <= innerHeight);
+  check('paysage : pas de bordure ni d\'ombre du haut (la colonne est à droite)', getComputedStyle(L.panel).borderTopWidth === '0px' &&
+    getComputedStyle(L.panel).borderLeftWidth === '1px');
+  eq('paysage : aria-label de la position normale', L.grip.getAttribute('aria-label'), 'Feuille (normale)');
+  // deux positions : l'agrandie
+  l.set('expanded', true);
+  await wait(60);
+  near('paysage : agrandie = 60 % (--f-sheet-side-max)', W(L.panel), RW * .6);
+  near('paysage : la carte rend la place', W(L.map), RW - RW * .6);
+  // la position réduite n'existe pas : elle devient la normale
+  l.set('collapsed', true);
+  await wait(60);
+  eq('paysage : set(\'collapsed\') donne la position normale', [l.pos, L.root.dataset.sheet], ['default', 'default']);
+  near('paysage : la colonne a la largeur normale', W(L.panel), RW * .4);
+  check('paysage : le contenu reste affiché (pas de position réduite)', getComputedStyle(L.body).display !== 'none');
+  l.set(0, true);
+  eq('paysage : set(0) (rang réduit) donne aussi la normale', l.pos, 'default');
+  eq('paysage : onChange ne rend que default et expanded', [...new Set(lcalls.change)].sort(), ['default', 'expanded']);
+  // le toucher bascule entre les deux positions
+  const tapx = async el => {
+    ptrx(el, 'pointerdown', 150);
+    ptrx(el, 'pointerup', 150);
+    await wait(30);
+  };
+  await tapx(L.grip);
+  eq('paysage : toucher : normale → agrandie', l.pos, 'expanded');
+  await tapx(L.grip);
+  eq('paysage : toucher : agrandie → normale', l.pos, 'default');
+  await wait(300);
+  // glisser horizontal vers la gauche : la colonne suit le doigt et prend la position la plus proche
+  let m2 = await dragx(L.grip, 300, -100, 10, 25);
+  check('paysage : glisser : la colonne suit le doigt (plus large à mi-course)', m2.w > RW * .4 + 20, JSON.stringify(m2));
+  check('paysage : glisser : transition coupée pendant le glisser', m2.nt);
+  await wait(500);
+  eq('paysage : glisser à gauche de 100 px : agrandie', l.pos, 'expanded');
+  near('paysage : largeur finale = celle de la position', W(L.panel), RW * .6);
+  m2 = await dragx(L.grip, 300, +400, 20, 30);
+  check('paysage : glisser : plancher à la position normale (pas de colonne plus étroite)', m2.w >= RW * .4 - 1, JSON.stringify(m2));
+  await wait(500);
+  eq('paysage : glisser à droite : normale', l.pos, 'default');
+  await dragx(L.grip, 300, -600, 20, 30);
+  await wait(500);
+  eq('paysage : glisser très à gauche : agrandie (pas plus)', l.pos, 'expanded');
+  near('paysage : plafond à --f-sheet-side-max', W(L.panel), RW * .6);
+  await dragx(L.grip, 300, +30, 5, 25);
+  await wait(500);
+  eq('paysage : petit glisser lent : la position la plus proche (agrandie)', l.pos, 'expanded');
+  l.set('default', true);
+  await wait(300);
+  await dragx(L.grip, 300, -60, 3, 8);
+  await wait(500);
+  eq('paysage : coup de pouce à gauche depuis la normale : agrandie', l.pos, 'expanded');
+  await dragx(L.grip, 300, +60, 3, 8);
+  await wait(500);
+  eq('paysage : coup de pouce à droite depuis l\'agrandie : normale', l.pos, 'default');
+  await dragx(L.grip, 300, +60, 3, 8);
+  await wait(500);
+  eq('paysage : coup de pouce à droite depuis la normale : reste normale (pas de réduite)', l.pos, 'default');
+  await dragx($('closeL'), 300, -200, 10, 20);
+  await wait(300);
+  eq('paysage : ignore : glisser depuis le ✕ ne tire pas', l.pos, 'default');
+  // clavier
+  key(L.grip, 'ArrowLeft');
+  eq('paysage : clavier : Gauche = agrandir', l.pos, 'expanded');
+  key(L.grip, 'ArrowRight');
+  eq('paysage : clavier : Droite = revenir', l.pos, 'default');
+  key(L.grip, 'ArrowUp');
+  eq('paysage : clavier : Haut = agrandir', l.pos, 'expanded');
+  key(L.grip, 'ArrowDown');
+  eq('paysage : clavier : Bas = revenir', l.pos, 'default');
+  key(L.grip, 'End');
+  eq('paysage : clavier : Fin = agrandie', l.pos, 'expanded');
+  key(L.grip, 'Home');
+  eq('paysage : clavier : Début = normale (pas de réduite)', l.pos, 'default');
+  L.grip.click();
+  eq('paysage : Entrée / Espace : normale → agrandie', l.pos, 'expanded');
+  L.grip.click();
+  eq('paysage : Entrée / Espace : agrandie → normale', l.pos, 'default');
+  // onSettle après une transition de largeur
+  lcalls.settle.length = 0;
+  l.set('expanded');
+  await wait(600);
+  check('paysage : onSettle après le changement de largeur, avec la position', lcalls.settle.length >= 1 && lcalls.settle.at(-1) ===
+    'expanded' &&
+    lcalls.settle.length <= 2, JSON.stringify(lcalls.settle));
+  l.set('default', true);
+  await wait(300);
+  // jetons : remplacés sur la racine, plancher
+  L.root.style.setProperty('--f-sheet-side', '50%');
+  await wait(450);
+  near('paysage : jeton --f-sheet-side posé sur la racine (50 %)', W(L.panel), RW * .5);
+  L.root.style.setProperty('--f-sheet-side', '10%');
+  await wait(450);
+  near('paysage : plancher --f-sheet-side-min (280 px) sous 10 %', W(L.panel), 280);
+  L.root.style.removeProperty('--f-sheet-side');
+  L.root.style.setProperty('--f-sheet-side-max', '400px');
+  l.set('expanded', true);
+  await wait(450);
+  near('paysage : jeton en pixels pour l\'agrandie', W(L.panel), 400);
+  await dragx(L.grip, 300, -600, 10, 20);
+  await wait(300);
+  near('paysage : glisser : le plafond suit le jeton en pixels', W(L.panel), 400);
+  L.root.style.removeProperty('--f-sheet-side-max');
+  l.set('default', true);
+  await wait(300);
+  // une racine étroite : le plancher de 280 px l'emporte sur les 40 %
+  stageL.style.width = '600px';
+  await wait(450);
+  near('paysage : racine de 600 px : la colonne vaut le plancher (280 px, 40 % = 240)', W(L.panel), 280);
+  stageL.style.width = '800px';
+  await wait(450);
+  // la rotation : portrait → paysage → portrait, sans glissement, avec onChange
+  l.set('default', true);
+  orient(false);
+  await wait(60);
+  near('rotation : portrait : la feuille est de nouveau sous la carte (hauteur 30 %, plancher 170 px)', H(L.panel), Math.max(333 * .3,
+    170));
+  near('rotation : portrait : pleine largeur', W(L.panel), RW);
+  l.set('collapsed', true);
+  await wait(300);
+  near('rotation : portrait : réduite (45 px)', H(L.panel), 45);
+  lcalls.change.length = 0;
+  orient(true);
+  await wait(60);
+  eq('rotation : réduite en portrait → normale en colonne, onChange le dit', [l.pos, lcalls.change.at(-1)], ['default', 'default']);
+  near('rotation : la colonne a sa largeur normale', W(L.panel), RW * .4);
+  check('rotation : le contenu est affiché', getComputedStyle(L.body).display !== 'none');
+  orient(false);
+  await wait(60);
+  eq('rotation : retour au portrait : la position reste normale', [l.pos, L.root.dataset.sheet], ['default', 'default']);
+  orient(true);
+  l.stop();
+  stageL.remove();
+  html.classList.remove('f-land');
 
   const sum = document.createElement('div');
   sum.innerHTML = `<b>${nPass} réussis, ${nFail} échoués</b>`;

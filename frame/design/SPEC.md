@@ -36,7 +36,11 @@ A design sets tokens and nothing else; a module reads them and never redefines o
 | Landmark colour (mock-up, pending decision) | `module` (colour of the module on screen), `module-ink` (text on it), `module-text` (the colour as text on the page); equal to `accent`, `accent-ink`, `link` in every design but the four mock-ups (`metro`, `swiss`, `cupertino`, `material`: their `--sog-mod-<module>` palettes) |
 
 All are prefixed `--sog-`. The breakpoints are not tokens: CSS media queries cannot read custom properties. They are
-**760 px** (phone / screen) and **980 px** (dual view), both for the device (`@media`).
+**760 px** (phone / screen) and **980 px** (dual view), both for the device (`@media`). A third, **landscape on a phone**
+(window wider than high and under 1024 px), is a class the frame sets on `<html>` (`f-land`), not a media query: a script
+decides it (the screen's orientation counts too), the stylesheets read it. Its measures are frame tokens, not design tokens:
+`--f-rail-w` (44px, the rail of icons at the left), and, on `.f-sheet` with no weight, `--f-sheet-side` (40 %),
+`--f-sheet-side-min` (280px), `--f-sheet-side-max` (60 %) for the sheet turned into a column (§ 4).
 
 **Widths of a pane** (columns, grids, tables) are decided on the pane, not on the window: `.f-view` and every
 `.f-module` are containers (`container-type: inline-size`), and the primitives use container queries. `f-cols` turns to
@@ -104,6 +108,12 @@ what depends on the device stays in `@media`: the bottom tab bar (the rail on a 
     filled icon, labels in the ink (weight 600 when selected).
   The same bar's rule `.f-bar { bottom: var(--f-tab-space, 0px) }` keeps the sticky result bar above it. The bar and the status
   line are hidden in print.
+  - **Landscape on a phone** (`html.f-land`, set by the frame: window wider than high and under 1024 px; V3_SPECIFICATION § 7.1
+    rule 7): the same bar is a **rail of icons at the left edge**, `--f-rail-w` (44 px) wide, full height under the header, no
+    label (`.f-tab-lbl` hidden, the `<a>` has `aria-label` and `title`), 44 × 44 cells, the active pill 36 × 36, the line on its right
+    inside (`box-shadow: inset`), `--f-tab-space` 0. The designs' bar rules above apply to the rail unchanged at any width (they
+    are no longer inside `@media (max-width: 760px)`: the bar is displayed on a phone and in landscape only); the pill of
+    `material` becomes 36 × 36, the border-top of `swiss` and the shadow of `material` give way to the inside line.
 - **Applied by attributes**: `html[data-design]`, and `html[data-tone]` = `day` | `night` (absent: automatic).
 - **Night**: when the system asks for it (`prefers-color-scheme: dark`), unless `data-tone="day"`; always with
   `data-tone="night"`. Night sets are for the screen only (`@media screen`): print keeps the day's ink.
@@ -141,8 +151,8 @@ what depends on the device stays in `@media`: the bottom tab bar (the rail on a 
 | Dot, badge | `.f-dot`, `.f-badge`, with `data-kind` = `ok`, `warn`, `err`, `accent` | |
 | Toolbar | `.f-tools` (a title, then buttons) | |
 | Callout | `.f-callout` | accent left rule on `surface-2` |
-| Sheet | `.f-sheet` (the module's root) > `.f-sheet-panel` > `.f-sheet-head` (`.f-sheet-grip` with `.f-sheet-title`, `.f-sheet-close`) + `.f-sheet-body`, driven by `frame/lib/sheet.js` | three positions from the tokens `--f-sheet-head` (45px), `--f-sheet-default` (30 %, 35 % from 761 px; floor `-default-min` 170px), `--f-sheet-expanded` (70 %; floor `-expanded-min` 260px), set with no weight on `.f-sheet` so a module overrides them on its root; neutral: `--sog-surface`, a `--sog-border` hairline on top, `--sog-radius` top corners, a grip bar of `--sog-muted` at 55 %; header 44 px, body `overflow: auto; overscroll-behavior: contain`; collapsed shows the header only; no transition during a drag or under `prefers-reduced-motion`. Contract: frame/INTEGRATION.md § 11 |
-| Overlay layer | `.f-overlay` > `.f-ov-col.f-ov-left` / `.f-ov-right` > `button.f-ov-btn`, made by the frame (`ctx.overlay`) | round 44 px buttons (48 px hit) on `surface` at 92 % over a map; square where `--sog-radius` is 0; `aria-pressed` tinted with the accent; `.f-ov-exit` is the full-screen exit chip (`frame/INTEGRATION.md` § 9.3, § 9.4) |
+| Sheet | `.f-sheet` (the module's root) > `.f-sheet-panel` > `.f-sheet-head` (`.f-sheet-grip` with `.f-sheet-title`, `.f-sheet-close`) + `.f-sheet-body`, driven by `frame/lib/sheet.js` | three positions from the tokens `--f-sheet-head` (45px), `--f-sheet-default` (30 %, 35 % from 761 px; floor `-default-min` 170px), `--f-sheet-expanded` (70 %; floor `-expanded-min` 260px), set with no weight on `.f-sheet` so a module overrides them on its root; neutral: `--sog-surface`, a `--sog-border` hairline on top, `--sog-radius` top corners, a grip bar of `--sog-muted` at 55 %; header 44 px, body `overflow: auto; overscroll-behavior: contain`; collapsed shows the header only; no transition during a drag or under `prefers-reduced-motion`. **Landscape on a phone** (`html.f-land`): the panel is a column at the right of the map, width `max(--f-sheet-side, --f-sheet-side-min)` (40 % of the root, 280 px; `expanded`: `--f-sheet-side-max`, 60 %), full height, a hairline and a shadow on its left, `--sog-radius` on its top-left corner, a chevron at the end of the grip row; two positions, no collapsed. Contract: frame/INTEGRATION.md § 11 |
+| Overlay layer | `.f-overlay` > `.f-ov-col.f-ov-left` / `.f-ov-right` > `button.f-ov-btn`, made by the frame (`ctx.overlay`) | round 44 px buttons (48 px hit) on `surface` at 92 % over a map; square where `--sog-radius` is 0; `aria-pressed` tinted with the accent; the column gap is 8 px, 4 px in landscape on a phone (`html.f-land`); no exit chip (the full-screen button shows `minimize`; `frame/INTEGRATION.md` § 9.3, § 9.4) |
 | Group popover | `.f-tabpop` > `button.f-tabpop-row`, made by the frame | 44 px rows on `surface`, a hairline, a pointer on the tab; the current row `aria-current` (accent at 12 %) |
 | Icons | `frame/lib/icons.js` → `<svg class="f-icon">` | `currentColor`, 20 px |
 

@@ -29,8 +29,11 @@ Computer, mit oder ohne Netz.
   während eines Flugs und „Hilfe zu diesem Bildschirm“. Esc oder ✕ schließt es. Auf einem Telefon besteht die Kopfzeile nur
   aus Name, Schaltfläche i und ⚙.
 - **Vollbild.** Auf der Karte (Werkzeuge mit fester Ansicht) blendet eine runde Schaltfläche am Ende der Schaltflächenspalte
-  über der Karte die Kopfzeile und die untere Leiste aus, damit die Karte den ganzen Platz hat; die Eckschaltfläche oben
-  rechts, dieselbe Schaltfläche oder Esc bringen sie zurück.
+  über der Karte die Kopfzeile und die untere Leiste aus, damit die Karte den ganzen Platz hat; dieselbe Schaltfläche oder Esc bringen sie zurück.
+- **Telefon im Querformat.** Seitlich gedreht, legt das Telefon die untere Leiste als Symbolleiste an den linken Rand (dieselben
+  fünf Einträge; ein zweites Tippen auf Vorbereiten öffnet seine Werkzeuge rechts neben der Leiste), behält die Kopfzeile, stellt
+  den Datenblock der Karte als Spalte nach rechts (die erste Zeile antippen oder nach links ziehen, um sie zu verbreitern oder
+  zu verschmälern) und gibt der Karte die ganze verbleibende Höhe. Im Vollbild bleibt die Spalte.
 
 ## Daten und Synchronisation
 

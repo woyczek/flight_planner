@@ -5,7 +5,8 @@ Rules covered
   * the right column ends with the frame's full-screen button and every button is a 44 px square at 8 px from the edge,
     even when a wide element is put in the column (B2, the "wide element" fix of 24 Oct);
   * nothing sits between the header and the map (B3); buttons never cover the sheet (B4);
-  * full screen on a phone and on a screen, its memory across frame screens, the order of Escape (B5-B8);
+  * full screen on a phone and on a screen (no exit chip: the column's button and Escape leave it), its memory across frame
+    screens, the order of Escape (B5-B8);
   * the layer lets gestures through, only the buttons take touches (B9); panes get no full-screen button (B10).
 
 Cases: B1 B2 B3 B4 B5 B6 B7 B8 B9 B10.  Both fixed modules (maps, atmosphere) are measured with a flight seeded.
@@ -97,7 +98,7 @@ def b4(c):
 def _full_state(c):
     return c.js("""() => ({ full: document.documentElement.classList.contains('f-full'), head: window.__t.shown(document.querySelector('.f-head')),
       bar: window.__t.shown(document.getElementById('fTabs')), nav: window.__t.shown(document.getElementById('fNav')),
-      root: window.__t.box(document.querySelector('[data-module="maps"]')), chip: window.__t.box(document.querySelector('.f-ov-exit')),
+      root: window.__t.box(document.querySelector('[data-module="maps"]')), chip: document.querySelectorAll('.f-ov-exit').length,
       canvas: (() => { const e = document.querySelector('.maplibregl-canvas') || document.querySelector('canvas.mp-over'); return e ? e.clientHeight : -1 })() })""")
 
 
@@ -122,13 +123,10 @@ def _full_screen_case(c):
     c.eq(round(st['root']['h']), h, 'the module root fills the window', tol=1, what='root height')
     c.eq(round(st['root']['t']), 0, 'the module root is at the top of the window', tol=1, what='root top')
     c.eq(round(st['root']['l']), 0, 'the module root is at the left of the window', tol=1, what='root left')
-    chip = st['chip']
-    c.ok(chip and chip['shown'], 'the exit chip is not displayed', 'a visible exit chip')
-    c.eq(round(chip['w']), 44, 'the exit chip is 44 px', tol=1, what='chip width')
-    c.eq(round(chip['h']), 44, 'the exit chip is 44 px', tol=1, what='chip height')
-    c.eq(round(chip['t']), 8, 'the chip is 8 px from the top', tol=1, what='chip top')
-    c.eq(round(w - chip['r']), 8, 'the chip is 8 px from the right', tol=1, what='chip right margin')
-    c.eq(c.attr('.f-ov-exit', 'aria-label'), exit_label(c), 'the chip label is "Quitter le plein écran" in the language of the run', what='chip label')
+    c.eq(st['chip'], 0, 'there is no exit chip (the button of the column, now showing "minimize", and Escape leave full screen)', what='.f-ov-exit elements')
+    c.ok(c.shown('.f-ov-full'), 'the full-screen button of the column is not displayed in full screen', 'displayed: it is the way out')
+    c.eq(c.attr('.f-ov-full', 'aria-label'), exit_label(c), 'the button label is "Quitter le plein écran" in the language of the run', what='button label')
+    c.eq(c.attr('.f-ov-full', 'aria-pressed'), 'true', 'the button is pressed in full screen', what='aria-pressed')
     c.ge(c.js('window.__resized'), 1, 'a resize event is dispatched on window after the change', what='resize events')
     if c.phone:
         c.ge(st['canvas'], before['canvas'] + 1, 'the map canvas grows in full screen (it gives back the header and the bar)', what='canvas height')
@@ -140,11 +138,11 @@ def _full_screen_case(c):
     c.ok(after['head'], 'the header is not back after leaving full screen', 'displayed')
     if c.phone:
         c.eq(round(after['root']['t']), round(head_h), 'the module root is back under the header', tol=1, what='root top after exit')
-    # and the chip leaves it too
+    # and so does the button of the column (the way out, with Escape)
     c.tap('.f-ov-full')
     c.until("document.documentElement.classList.contains('f-full')", what='full screen again')
-    c.tap('.f-ov-exit')
-    c.until("!document.documentElement.classList.contains('f-full')", what='the exit chip leaves the full screen')
+    c.tap('.f-ov-full')
+    c.until("!document.documentElement.classList.contains('f-full')", what='the button of the column leaves the full screen')
 
 
 @case('B5', 'Full screen on a phone', 'B', tags=('overlay', 'fullscreen'), screens=False, langs4=True, rule='frame/INTEGRATION 9.4')
