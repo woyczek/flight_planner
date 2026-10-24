@@ -262,10 +262,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   lot (§ 9.8). SIGMET and METAR (aviationweather.gov, no CORS) come only through the launcher relay, later.
 
   **Sources** (user, 24 Oct 2026, 15:50: "NOAA en background, openmeteo en one shoot par utilisateur"): the world
-  file is built from **NOAA GFS** on the runner, with no quota: through NOMADS' GrADS data server ASCII endpoint
-  (`https://nomads.ncep.noaa.gov/dods/gfs_1p00/gfs<YYYYMMDD>/gfs_1p00_<HH>z.ascii?<var>[t0:t1][lat0:15:lat1][lon0:15:lon1]`,
-  variables `prmslmsl`, `ugrd10m`, `vgrd10m`, `tcdcclm`, `tmp2m`), parsed with the standard library — no GRIB2. The
-  workflow never calls Open-Meteo. **Open-Meteo is reserved to the device**: one shot per user, the "Charger"
+  file is built from **NOAA GFS** on the runner, with no quota. The GrADS / OpenDAP text endpoint first planned
+  (`…/dods/gfs_1p00/…ascii?…`) **is retired**: checked from the atmosphere session on 24 Oct 2026, NOMADS answers
+  "OpenDAP format has been retired" (NWS notice SCN 25-81). So the runner reads NOMADS' **GRIB filter**
+  (`cgi-bin/filter_gfs_1p00.pl`: chosen variables and levels, latitudes −80…80) and decodes GRIB2 with
+  `tools/grib2_lite.py` (standard library; GFS 1° uses complex packing with spatial differencing, template 5.3, ≈ 0.2 s
+  a file). The workflow never calls Open-Meteo. **Open-Meteo is reserved to the device**: one shot per user, the "Charger"
   of the flight grid, counted on the device (§ 8 above).
 
   **frame/weather — the world synoptic, as built** (atmosphere lot, 24 Oct 2026, NOAA approved by the user the same
