@@ -71,18 +71,17 @@ column with no padding. The module draws into it a toolbar, the information line
 and the data sheet (fixed height, three positions: SPEC § 4). What the module's own style sheet adds, because the frame
 does not give it:
 
-- **The dual-view pane and the map on the left of a pane are not fixed views** (`f-fixed` is not applied to a split
-  view's pane; with the map on the left, `html.f-fixed` stays on but the frame's full-height rules are for the unsplit
-  view only). The root is given its height by two rules of the module: `.f-pane>[data-module="maps"]` =
-  `100dvh − 86 px − 44 px` (the pane's `max-height` minus its close bar), `.f-view.f-split>[data-module="maps"]` =
-  `100dvh − 57 px − 32 px` (header and the view's padding), both with `min-height: 420px`. Numbers copied from
-  `frame.css`; **ask for a frame variable** (the header height and the pane bar's) or a pane rule so that they are not
-  repeated here.
+- **The dual-view pane and the map on the left of a pane** take their height from the frame (frame/INTEGRATION.md § 9.2):
+  the module declares `fixed`, so the frame gives the root `--f-split-h` in the split main and `--f-pane-h` in the pane
+  (`--f-view-h` is context-aware), and the module no longer writes any height of its own: its two copies of the numbers
+  (`100dvh − 86 px − 44 px`, `100dvh − 57 px − 32 px`) are gone with the root's `height: 100%`. What stays is the module's
+  own floor, `min-height: 420px` in both places.
 - **The tuning page** (`#maps?tune=1`) needs a scrolling page, and `fixed` is a property of the module, not of an address:
-  the root scrolls by itself in that case (`overflow: auto`, grid from 1000 px, with `display: grid !important` because
-  the frame's `html.f-fixed .f-view > .f-module { display: flex }` has more weight).
+  the root scrolls by itself in that case (`overflow: auto`, grid from 1000 px, with a plain `display: grid`: the frame's
+  `display: flex` rule for a fixed module is weightless, `:where()`, § 9.2 of the frame's INTEGRATION).
 - The root has `isolation: isolate` (the z-indices 3 to 8 of the map's buttons stay below the frame's header and tab bar).
-- The test page `modules/maps/test/index.html` gives the host `height: calc(100dvh - 24px)`.
+- The test page `modules/maps/test/index.html` gives the host `height: calc(100dvh - 24px)` (the root has no height of
+  its own any more: in the frame it is the frame's).
 
 ## 3. What it asks of aerodb
 
@@ -141,15 +140,15 @@ maps**, never by another module reaching into the sheet.
   canvas; `el` is emptied when the key is new, and the builder replaces its own drawing when called again with the same
   key). The content area scrolls; its height is the sheet's, so draw for `h` and let the rest scroll.
 
-**What the frame will lift (the sheet as a frame primitive).** The sheet is one block of `module.js`, `createSheet({ root, panel,
-head, grip, pos, ignore, label, locked, onChange, onSettle })` → `{ pos, set(pos, instant), settle(), gestures(), stop() }`, with
-no dependency on the module's state: `root` carries `data-sheet` and the tokens `--mp-head`, `--mp-p1`, `--mp-m1`, `--mp-p2`,
-`--mp-m2` (the style sheet is their only source), `panel` is the sheet, `head` its draggable header, `grip` the handle button;
-`label(pos)` gives the handle's tooltip (the texts stay with the module), `locked()` cuts the drag (the tuning page),
-`onChange(pos)` keeps the position, `onSettle()` runs 120 ms after the last size change (here: the map's `mapSize()` and
-re-framing). The frame will take that function, the `.mp-data` / `.mp-dhead` / `.mp-grip` / `.mp-pill` / `.mp-nt` rules and their
-three heights (renamed to its own tokens), and the transition rules; what stays in maps: `openData` / `endData` / `closeData` /
-`dataHead` (the content and the header's texts), the Profile · Weather toggle, the notes.
+**The sheet is the frame's** (24 Oct 2026, frame/INTEGRATION.md § 11). Maps imports `createSheet` from
+`../../frame/lib/sheet.js`; the module root carries the class `f-sheet`, the data block is the `.f-sheet-panel`, its header the
+`.f-sheet-head`, the handle button the `.f-sheet-grip`, the ✕ the `.f-sheet-close` and the scrolling area the `.f-sheet-body`
+(maps' own classes `mp-data`, `mp-dhead`, `mp-grip`, `mp-dbody` stay beside them for the module's code). The three positions are
+the frame's tokens (`--f-sheet-head`, `-default`, `-expanded` and their floors), the drag, the flick, the keyboard, the
+ARIA and the transitions are the primitive's, and `data-sheet` on the root is `collapsed`, `default` or `expanded`. What stays
+in maps: `openData` / `endData` / `closeData` / `dataHead` (the content and the header's texts), the Profile · Weather toggle
+(`ignore: '[data-dclose], .mp-seg'`), the grip's texts (`labels`, four languages), the notes, the position kept between
+mounts (`sheetKeep`, through `onChange`), `locked` (the tuning page) and `onSettle` (`mapSize()` and the route's re-framing).
 
 **The atmosphere cross-section** is implemented (24 Oct 2026): § 8.
 

@@ -13,6 +13,10 @@ import {
   fmtZ,
   fmtZLocal
 } from '../../frame/lib/time.js';
+// la feuille de données à trois positions est une primitive du cadre (frame/lib/sheet.js, frame/INTEGRATION.md § 11)
+import {
+  createSheet
+} from '../../frame/lib/sheet.js';
 // socle de carte partagé avec Atmosphère (lib/map_base.js, INTEGRATION.md § 7) : MapLibre, styles, fond à tuiles, taille du
 // cadre, fond uni
 import {
@@ -76,7 +80,7 @@ export const meta = {
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0',
-    'lib/map_base.js?v=0'
+    'lib/map_base.js?v=0', '../../frame/lib/sheet.js?v=0'
   ],
   // gardés au premier usage seulement : MapLibre (1 Mo, inutile sans tuiles) ; les contours des pays du fond uni (350 Ko,
   // inutiles avec les tuiles ; gardés d'avance quand MapLibre n'est pas en cache : outlinesAhead)
@@ -2592,150 +2596,12 @@ function showLv() {
 // vertical ; la liste des espaces d'un point et le contenu d'un terrain (points de report, séquences VAC, consignes) s'y
 // ouvrent à sa place — on n'a pas besoin du profil pendant qu'on les lit — et, fermés, le profil revient. Rien ne recouvre
 // plus la carte.
-// ---- la feuille : à trois hauteurs, tirée par sa poignée. UN SEUL BLOC, sans autre dépendance que ses éléments et ses
-// jetons : il passera tel quel dans la primitive du cadre (frame/lib/sheet.js ; INTEGRATION.md § 6, « ce que le cadre
-// reprend »). Ce qui reste au module : les textes (label), ce qui change quand la taille s'est arrêtée (onSettle : recadrer
-// la carte), le verrou de la page de réglage (locked) et la position gardée (onChange).
-/** Position de la feuille gardée d'un montage à l'autre dans la même page (0 réduit, 1 normal, 2 agrandi). */
-let sheetKeep = 1;
-/** Feuille d'une racine : root (porte data-sheet et les jetons --mp-head, --mp-p1 / --mp-p2 : parts de la vue, --mp-m1 /
- *  --mp-m2 : planchers ; la feuille de style en est l'unique source, le glisser s'y accroche), panel (la feuille, dont la
- *  hauteur suit data-sheet), head (l'en-tête, qui reçoit le glisser), grip (le bouton de la poignée), pos (position de
- *  départ), ignore (sélecteur de ce qui, dans l'en-tête, ne tire pas : le ✕), label (position → infobulle de la poignée), locked () → vrai si le glisser est coupé, onChange (position),
- *  onSettle () → 120 ms après le dernier changement de taille (fin du glissement, rotation, volet redimensionné).
- *  → { pos, set(pos, instant), settle(), gestures(), stop() }. */
-function createSheet({
-  root,
-  panel,
-  head,
-  grip,
-  pos = 1,
-  ignore = '[data-dclose]',
-  label = () => '',
-  locked = () => false,
-  onChange = () => {},
-  onSettle = () => {}
-}) {
-  let cur = pos,
-    timer = 0;
-  /** Hauteurs en pixels des trois positions, lues dans les jetons de la racine. */
-  function heights() {
-    const cs = getComputedStyle(root),
-      n = k => parseFloat(cs.getPropertyValue(k)) || 0,
-      H = root.clientHeight;
-    return [n('--mp-head') + 1, Math.max(n('--mp-p1') * H, n('--mp-m1')), Math.max(n('--mp-p2') * H, n('--mp-m2'))];
-  }
-  /** Met la feuille à une position (0 réduit, 1 normal, 2 agrandi). instant : sans glissement (le contenu va être mesuré). */
-  function set(p, instant = false) {
-    p = Math.max(0, Math.min(2, p));
-    cur = p;
-    onChange(p);
-    if (instant) {
-      panel.classList.add('mp-nt');
-      requestAnimationFrame(() => panel.classList.remove('mp-nt'));
-    }
-    panel.style.removeProperty('height');
-    if (root.dataset.sheet !== String(p)) root.dataset.sheet = String(p);
-    const tip = label(p);
-    if (grip.title !== tip) grip.title = tip;
-    const ex = String(p > 0);
-    if (grip.getAttribute('aria-expanded') !== ex) grip.setAttribute('aria-expanded', ex);
-    if (instant) void panel.offsetHeight; // mesure possible tout de suite (hauteur à jour)
-  }
-  /** Après un changement de taille de la carte (feuille, rotation, volet) : onSettle, en une fois, quand la taille s'est
-   *  arrêtée. */
-  function settle() {
-    clearTimeout(timer);
-    timer = setTimeout(onSettle, 120);
-  }
-  /** La poignée : l'en-tête de la feuille. Un toucher réduit la feuille (ou la ramène de réduite ou d'agrandie à la position
-   *  normale), un glisser la tire (événements du pointeur sur l'en-tête seulement : la carte garde ses gestes), au
-   *  lâcher elle prend la position la plus proche (ou la suivante, si le geste était un coup de pouce) ; flèches du clavier. */
-  function gestures() {
-    let d = null;
-    head.addEventListener('pointerdown', e => {
-      if (e.button > 0 || e.target.closest(ignore) || locked()) return;
-      d = {
-        id: e.pointerId,
-        y0: e.clientY,
-        h0: panel.offsetHeight,
-        pos: cur,
-        y: e.clientY,
-        t: performance.now(),
-        v: 0,
-        on: false,
-        grip: grip.contains(e.target)
-      };
-      head.setPointerCapture(e.pointerId); // la souris qui sort de l'en-tête (un glisser rapide) continue de lui parler
-    });
-    head.addEventListener('pointermove', e => {
-      if (!d || e.pointerId !== d.id) return;
-      if (!d.on) {
-        if (Math.abs(e.clientY - d.y0) < 6) return;
-        d.on = true;
-        panel.classList.add('mp-nt');
-      }
-      const hs = heights(),
-        now = performance.now();
-      if (now > d.t) d.v = .6 * d.v + .4 * ((e.clientY - d.y) / (now - d.t));
-      d.y = e.clientY;
-      d.t = now;
-      panel.style.height = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (e.clientY - d.y0))))}px`;
-    });
-    const end = e => {
-      if (!d || e.pointerId !== d.id) return;
-      const was = d;
-      d = null;
-      if (!was.on) {
-        // un toucher (ni glissé ni annulé) sur la poignée : réduit la feuille, ou la ramène à la position normale
-        if (e.type === 'pointerup' && was.grip) {
-          set(cur === 1 ? 0 : 1);
-          settle();
-        }
-        return;
-      }
-      panel.classList.remove('mp-nt');
-      const hs = heights(),
-        h = panel.offsetHeight;
-      let p = hs.reduce((b, x, i) => Math.abs(x - h) < Math.abs(hs[b] - h) ? i : b, 0);
-      if (Math.abs(was.v) > .8 && e.type === 'pointerup') p = was.v < 0 ? Math.min(2, was.pos + 1) : Math.max(0, was.pos - 1);
-      set(p);
-      settle();
-    };
-    head.addEventListener('pointerup', end);
-    head.addEventListener('pointercancel', end);
-    // clavier (Entrée, Espace : clic sans pointeur) ; le toucher et la souris sont traités au relâcher, plus haut
-    grip.addEventListener('click', e => {
-      if (e.detail) return;
-      set(cur === 1 ? 0 : 1);
-      settle();
-    });
-    grip.addEventListener('keydown', e => {
-      const k = {
-        ArrowUp: cur + 1,
-        ArrowDown: cur - 1,
-        Home: 0,
-        End: 2
-      } [e.key];
-      if (k == null) return;
-      e.preventDefault();
-      set(k);
-      settle();
-    });
-    panel.addEventListener('transitionend', e => {
-      if (e.target === panel && e.propertyName === 'height') settle();
-    });
-  }
-  return {
-    get pos() {
-      return cur;
-    },
-    set,
-    settle,
-    gestures,
-    stop: () => clearTimeout(timer)
-  };
-}
+// ---- la feuille : à trois positions, tirée par sa poignée de l'en-tête. C'est la primitive du cadre (frame/lib/sheet.js,
+// règles dans frame/design/primitives.css, frame/INTEGRATION.md § 11) ; ce qui reste au module : les textes (labels), ce qui
+// change quand la taille s'est arrêtée (onSettle : recadrer la carte), le verrou de la page de réglage (locked) et la
+// position gardée (onChange).
+/** Position de la feuille gardée d'un montage à l'autre dans la même page ('collapsed', 'default' ou 'expanded'). */
+let sheetKeep = 'default';
 /** Après un changement de taille de la carte : le fond MapLibre reprend la taille du cadre, et la route reste cadrée tant
  *  que l'utilisateur n'a pas déplacé la carte. */
 function onSheetSettled() {
@@ -2777,7 +2643,8 @@ function dataHead() {
  *  carte et la page ne bougent pas. C'est aussi le point d'entrée des contenus venus d'autres modules (INTEGRATION.md § 6). */
 function openData(kind, key, title, build, label = title) {
   const fresh = S.dkey !== key;
-  if (fresh && S.sh.pos === 0) S.sh.set(1, true); // réduite, le contenu serait caché : la feuille s'ouvre, sans glissement
+  if (fresh && S.sh.pos === 'collapsed') S.sh.set('default',
+    true); // réduite, le contenu serait caché : la feuille s'ouvre, sans glissement
   S.dpanel = kind;
   S.dkey = key;
   S.dtitle = title;
@@ -2964,7 +2831,7 @@ function syncView() {
     return dataHead();
   }
   if (S.dpanel === 'weather') showWeather();
-  else if (!S.dpanel && viewKeep === 'weather' && S.sh.pos > 0) showWeather();
+  else if (!S.dpanel && viewKeep === 'weather' && S.sh.pos !== 'collapsed') showWeather();
   else {
     // feuille réduite à l'arrivée : le profil s'ouvrira avec elle, le choix de la coupe n'est pas rejoué à son insu
     if (!S.dpanel && viewKeep === 'weather') viewKeep = 'profile';
@@ -3471,7 +3338,7 @@ function toggleLayers(open = S.layersEl.hidden) {
   S.layersBtn.setAttribute('aria-expanded', String(open));
   if (open) {
     fillLayers();
-    if (S.sh.pos === 2) S.sh.set(1); // feuille agrandie : le panneau n'aurait que quelques lignes de carte
+    if (S.sh.pos === 'expanded') S.sh.set('default'); // feuille agrandie : le panneau n'aurait que quelques lignes de carte
   }
 }
 /** Emprise donnée par l'adresse (#maps?view=ouest,sud,est,nord), sinon null. */
@@ -4167,8 +4034,7 @@ const STYLE = `
    hauteur fixe ; ce qui est plus grand défile DANS sa zone. La racine est isolée (z-index des boutons de la carte, 3 à 8,
    gardés sous l'en-tête et la barre du bas du cadre, dans le volet de la vue double aussi). Hors vue fixe (volet,
    page d'essai) la hauteur est donnée plus bas. */
-[data-module="maps"]{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;isolation:isolate;--mp-head:44px;--mp-p1:.38;--mp-m1:170;--mp-p2:.7;--mp-m2:260}
-@media (min-width:761px){[data-module="maps"]{--mp-p1:.35}}
+[data-module="maps"]{display:flex;flex-direction:column;min-height:0;overflow:hidden;isolation:isolate}
 [data-module="maps"] .mp-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 [data-module="maps"] .mp-bar{display:flex;align-items:center;gap:6px;flex:none;padding:2px 8px}
 [data-module="maps"] .mp-picks{display:flex;gap:6px;flex:1 1 0;min-width:0;max-width:380px}
@@ -4243,12 +4109,12 @@ const STYLE = `
 [data-module="maps"].mp-tuning{overflow:auto}
 [data-module="maps"].mp-tuning>*{flex:none}
 [data-module="maps"].mp-tuning .mp-box{height:52vh;min-height:260px}
-[data-module="maps"].mp-tuning .mp-data{height:auto;transition:none}
+[data-module="maps"].mp-tuning[data-sheet] .mp-data{height:auto;transition:none}
 [data-module="maps"].mp-tuning .mp-dprof{flex:none}
 [data-module="maps"].mp-tuning .mp-prof{flex:none;height:240px}
 [data-module="maps"].mp-tuning .mp-dbody{flex:none;height:260px}
-/* !important : la règle de la vue fixe du cadre (html.f-fixed .f-view > .f-module { display: flex }) a plus de poids */
-@media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid!important;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start;align-content:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100dvh - 90px);overflow:auto}}
+/* la règle de la vue fixe du cadre (display: flex) est sans poids (:where, frame/INTEGRATION.md § 9.2) : pas de !important */
+@media (min-width:1000px){[data-module="maps"].mp-tuning{display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);column-gap:16px;align-items:start;align-content:start}[data-module="maps"].mp-tuning>*{grid-column:2}[data-module="maps"].mp-tuning>.mp-tune{grid-column:1;grid-row:1 / span 40;position:sticky;top:8px;max-height:calc(100dvh - 90px);overflow:auto}}
 [data-module="maps"] .mp-layers>*{flex-shrink:0}
 [data-module="maps"] .mp-layers [data-layers-reset]{margin-top:10px;align-self:flex-start}
 [data-module="maps"] .mp-layers[hidden],[data-module="maps"] .mp-layers-btn[hidden]{display:none}
@@ -4274,27 +4140,15 @@ const STYLE = `
 [data-module="maps"] .mp-vfr-dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none}
 [data-module="maps"] .mp-vfr-note summary{cursor:pointer}
 [data-module="maps"] .mp-vfr-note>div{white-space:pre-wrap;font-size:.85em;max-height:14em;overflow:auto;border-left:2px solid var(--sog-border);padding-left:6px}
-/* le bloc de données : en-tête d'une ligne (ce qu'il montre, ✕ de 44 px à droite), puis le profil vertical ou le contenu ouvert
-   à sa place, à la hauteur du profil (un seul bloc de règle) ; le contenu long défile dans le bloc */
-/* la feuille de données : en-tête de 44 px (la poignée : barrette, titre de ce qu'elle montre ; le ✕ d'un contenu à droite),
-   puis le profil vertical (sa bande dessous) ou le contenu ouvert à sa place, puis les notes ; hauteur fixe à trois positions
-   (data-sheet 0, 1, 2 de la racine), le contenu défile dedans */
-[data-module="maps"] .mp-data{position:relative;z-index:1;flex:none;display:flex;flex-direction:column;box-sizing:border-box;height:max(calc(var(--mp-p1) * 100%),calc(var(--mp-m1) * 1px));min-height:0;overflow:hidden;background:var(--sog-surface);border-top:1px solid var(--sog-border);border-radius:var(--sog-radius) var(--sog-radius) 0 0;box-shadow:0 -2px 8px #0000001a;transition:height .2s ease}
-[data-module="maps"][data-sheet="0"] .mp-data{height:calc(var(--mp-head) + 1px)}
-[data-module="maps"][data-sheet="2"] .mp-data{height:max(calc(var(--mp-p2) * 100%),calc(var(--mp-m2) * 1px))}
-[data-module="maps"] .mp-data.mp-nt{transition:none}
-@media (prefers-reduced-motion:reduce){[data-module="maps"] .mp-data{transition:none}}
-[data-module="maps"][data-sheet="0"] :is(.mp-dprof,.mp-dbody,.mp-notes){display:none}
-[data-module="maps"] .mp-dhead{flex:none;display:flex;align-items:stretch;height:var(--mp-head);font-size:.92em;touch-action:none;user-select:none;-webkit-user-select:none}
-[data-module="maps"] .mp-grip{position:relative;flex:1 1 0;min-width:0;min-height:0;height:100%;display:flex;align-items:center;margin:0;padding:6px 8px 0;border:0;border-radius:0;background:none;color:inherit;font:inherit;text-align:left;cursor:grab;touch-action:none}
-[data-module="maps"] .mp-grip:active{cursor:grabbing}
-[data-module="maps"] .mp-pill{position:absolute;left:50%;top:6px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:color-mix(in srgb,var(--sog-muted) 55%,transparent)}
+/* la feuille de données : la primitive du cadre (frame/design/primitives.css : .f-sheet, .f-sheet-panel, .f-sheet-head, .f-sheet-grip,
+   hauteurs --f-sheet-*, glisser, positions) ; ici seulement ce qu'elle contient : en-tête de 44 px (la poignée : titre de ce qu'elle
+   montre ; la bascule Profil · Météo ; le ✕ d'un contenu à droite), puis le profil vertical (sa bande dessous) ou le contenu ouvert
+   à sa place, puis les notes ; le contenu défile dedans */
 [data-module="maps"] .mp-dprof{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 8px}
 [data-module="maps"] .mp-notes{flex:none;padding:0 8px 6px;font-size:var(--sog-size-xs)}
 [data-module="maps"] .mp-notes p{margin:0 0 2px}
 [data-module="maps"] .mp-notes:empty{display:none}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
-[data-module="maps"] .mp-dtitle{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="maps"] .mp-seg{flex:none;display:flex;align-items:stretch;margin-right:2px}
 [data-module="maps"] .mp-seg[hidden]{display:none}
 [data-module="maps"] .mp-segb{box-sizing:border-box;min-width:var(--sog-touch);height:100%;min-height:0;margin:0;padding:0 8px;border:solid transparent;border-width:5px 2px;border-radius:calc(var(--sog-radius-s) + 5px);background:none;background-clip:padding-box;color:var(--sog-muted);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation;box-shadow:inset 0 0 0 1px var(--sog-border)}
@@ -4305,8 +4159,7 @@ const STYLE = `
 [data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
 [data-module="maps"] .mp-wxlink{display:flex;align-items:center;min-height:var(--sog-touch);color:var(--sog-fg);text-decoration:none}
 [data-module="maps"] .mp-wxlink span{color:var(--sog-accent);text-decoration:underline}
-[data-module="maps"] .mp-dclose{flex:none;width:44px;height:100%;min-height:0;margin:0;padding:0;border:0;background:none;font-size:1.2em;line-height:1;cursor:pointer;color:inherit;touch-action:manipulation}
-[data-module="maps"] .mp-dbody{box-sizing:border-box;flex:1 1 0;min-height:0;margin:0 8px 8px;padding:6px 8px;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
+[data-module="maps"] .mp-dbody{box-sizing:border-box;margin:0 8px 8px;padding:6px 8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:var(--sog-surface);font-size:.92em;line-height:1.35}
 [data-module="maps"] .mp-dbody p{margin:2px 0}
 [data-module="maps"] .mp-lv-body{display:flex;align-items:flex-start;gap:12px}
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
@@ -4316,12 +4169,9 @@ const STYLE = `
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
 [data-module="maps"].mp-editing .mp-prof{cursor:ns-resize}
-/* TODO (prochain lot de la Carte) : le cadre fournit --f-view-h (commit 9c5a1e2d6 : --f-head-h, --f-vh, --f-split-h, --f-pane-h) ; ces
-   deux hauteurs recopiées et leur !important lui céderont la place, la variable remplaçant les nombres 86, 44 et 57 / 32 ci-dessous */
-/* hors de la vue fixe du cadre, la racine reçoit sa hauteur d'ici : le volet de la vue double (sous l'en-tête, avec sa barre
-   de fermeture de 44 px) et, carte à gauche d'un volet, la colonne de la vue (en-tête de 57 px, marges de 16 px de la vue) */
-.f-pane>[data-module="maps"]{height:calc(100dvh - 86px - var(--sog-touch));min-height:420px}
-.f-view.f-split>[data-module="maps"]{height:calc(100dvh - 57px - 32px);min-height:420px}
+/* hors de la vue fixe du cadre, la hauteur de la racine est celle du cadre (frame/INTEGRATION.md § 9.2) : le volet de la vue double et,
+   carte à gauche d'un volet, la colonne de la vue ; ici seulement le plancher du module */
+.f-pane>[data-module="maps"],.f-view.f-split>[data-module="maps"]{min-height:420px}
 `;
 
 export async function mount(el, ctx) {
@@ -4364,11 +4214,11 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-credit">${esc(ctx.t(TX.credit))}</div></div>
-<div class="mp-data" hidden><div class="mp-dhead"><button type="button" class="mp-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><span class="mp-pill" aria-hidden="true"></span><b class="mp-dtitle"></b></button><div class="mp-seg" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-segb" data-view="profile" aria-pressed="true">${esc(ctx.t(TX.segProfile))}</button><button type="button" class="mp-segb" data-view="weather" aria-pressed="false">${esc(ctx.t(TX.segWeather))}</button></div><button type="button" class="mp-dclose" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-seg" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-segb" data-view="profile" aria-pressed="true">${esc(ctx.t(TX.segProfile))}</button><button type="button" class="mp-segb" data-view="weather" aria-pressed="false">${esc(ctx.t(TX.segWeather))}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
-<div class="mp-dbody" hidden role="region" tabindex="-1"></div>
+<div class="mp-dbody f-sheet-body" hidden role="region" tabindex="-1"></div>
 <div class="mp-notes f-muted" aria-live="polite"></div></div>`;
   Object.assign(S, {
     box: el.querySelector('.mp-box'),
@@ -4410,6 +4260,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   // page de réglage (#maps?tune=1) : racine qui défile d'elle-même (la vue du cadre est fixe), blocs en hauteur naturelle
   if (ctx.query?.tune) el.classList.add('mp-tuning');
+  el.classList.add('f-sheet'); // la racine de la feuille du cadre : jetons --f-sheet-*, data-sheet
   S.sh = createSheet({
     root: el,
     panel: S.dataEl,
@@ -4417,13 +4268,11 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     grip: S.gripEl,
     pos: sheetKeep,
     ignore: '[data-dclose], .mp-seg',
-    label: p => `${tt(TX.sheetSize)} (${tt(TX.sheetNames[p])})`,
+    labels: (p, i) => `${tt(TX.sheetSize)} (${tt(TX.sheetNames[i])})`,
     locked: () => el.classList.contains('mp-tuning'),
     onChange: p => sheetKeep = p,
     onSettle: onSheetSettled
   });
-  S.sh.set(sheetKeep, true);
-  S.sh.gestures();
   // la grille des modes (sous la barre d'outils, sur le haut de la carte) se ferme aussi d'un toucher ailleurs que sur la
   // carte (qui la ferme elle-même) : barre, feuille
   el.addEventListener('pointerdown', e => {
@@ -4527,7 +4376,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   S.segEl.addEventListener('click', e => {
     const v = e.target.closest('[data-view]')?.dataset.view;
     if (!v || (v === 'weather') === (S.dpanel === 'weather')) return;
-    if (S.sh.pos === 0) S.sh.set(1, true);
+    if (S.sh.pos === 'collapsed') S.sh.set('default', true);
     viewKeep = v;
     if (v === 'weather') showWeather(true);
     else endData('weather');

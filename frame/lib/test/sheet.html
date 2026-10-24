@@ -1,0 +1,463 @@
+<!doctype html>
+<!-- Banc de la feuille à trois positions (frame/lib/sheet.js, frame/INTEGRATION.md § 11) sur une page nue : seulement les
+     jetons et les primitives du cadre (frame/design/), aucun module. Il joue des événements du pointeur et du clavier sur
+     deux feuilles (une poignée <button>, une poignée <div>) et écrit « PASS » / « FAIL » par contrôle dans « Résultats » ;
+     window.__sheetBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit, rien à copier. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sheet — bench</title>
+<link rel="stylesheet" href="../../design/tokens.css">
+<link rel="stylesheet" href="../../design/primitives.css">
+<style>
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden
+  }
+  /* deux racines côte à côte, chacune d'une hauteur connue (600 px) : la feuille en prend une part */
+  #stage {
+    display: flex;
+    gap: 16px;
+    padding: 8px;
+    height: 100%
+  }
+  .rt {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    border: 1px dashed var(--sog-border);
+    box-sizing: content-box
+  }
+  .rt .map {
+    flex: 1 1 0;
+    min-height: 0;
+    background: repeating-linear-gradient(45deg, #dfe8f0 0 12px, #cfdbe6 12px 24px)
+  }
+  .tools {
+    display: flex
+  }
+  #log {
+    position: fixed;
+    right: 8px;
+    bottom: 8px;
+    width: 380px;
+    max-height: 45%;
+    overflow: auto;
+    font: 12px/1.4 ui-monospace, monospace;
+    background: var(--sog-surface);
+    border: 1px solid var(--sog-border);
+    padding: 6px;
+    margin: 0;
+    white-space: pre-wrap
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="rt f-sheet" id="rootA">
+    <div class="map"></div>
+    <div class="f-sheet-panel" id="panelA">
+      <div class="f-sheet-head" id="headA">
+        <button type="button" class="f-sheet-grip" id="gripA"><b class="f-sheet-title">Feuille A</b></button>
+        <button type="button" class="tools-btn" id="toggleA" style="min-width:44px">T</button>
+        <button type="button" class="f-sheet-close" id="closeA" aria-label="Fermer">✕</button>
+      </div>
+      <div class="f-sheet-body" id="bodyA"><p>Un contenu long qui défile dans la feuille.</p></div>
+    </div>
+  </div>
+  <div class="rt f-sheet" id="rootB">
+    <div class="map"></div>
+    <div class="f-sheet-panel" id="panelB">
+      <div class="f-sheet-head" id="headB">
+        <div class="f-sheet-grip" id="gripB"><b class="f-sheet-title">Feuille B (poignée div)</b></div>
+      </div>
+      <div class="f-sheet-body" id="bodyB"><p>Seconde feuille.</p></div>
+    </div>
+  </div>
+</div>
+<pre id="log"><b>Résultats</b>
+</pre>
+<script type="module">
+  import {
+    createSheet,
+    POSITIONS
+  } from '../sheet.js';
+
+  const $ = id => document.getElementById(id),
+    log = $('log'),
+    rows = [];
+  let nPass = 0,
+    nFail = 0;
+  const check = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    ok ? nPass++ : nFail++;
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    log.append(l);
+  };
+  const eq = (name, got, want) => check(name, JSON.stringify(got) === JSON.stringify(want), `obtenu ${JSON.stringify(got)}, attendu ${JSON.stringify(want)}`);
+  const near = (name, got, want, tol = 1) => check(name, Math.abs(got - want) <= tol, `obtenu ${got}, attendu ${want}`);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const H = el => el.getBoundingClientRect().height;
+
+  // ---- événements du pointeur sur l'en-tête (synthétiques : pointerId 7)
+  const ptr = (el, type, y, extra = {}) => el.dispatchEvent(new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    pointerId: 7,
+    pointerType: 'mouse',
+    button: 0,
+    clientX: 100,
+    clientY: y,
+    ...extra
+  }));
+  /** Appui sur `from`, déplacements de dy en `steps` pas espacés de `dt` ms, relâchement ; rend la hauteur à mi-course. */
+  async function drag(from, head, y0, dy, steps = 10, dt = 25) {
+    ptr(from, 'pointerdown', y0);
+    let mid = null;
+    for (let i = 1; i <= steps; i++) {
+      ptr(from, 'pointermove', y0 + dy * i / steps);
+      await wait(dt);
+      if (i === Math.round(steps / 2)) mid = {
+        h: H(head.panel),
+        nt: head.panel.classList.contains('f-sheet-nt')
+      };
+    }
+    ptr(from, 'pointerup', y0 + dy);
+    await wait(30);
+    return mid;
+  }
+  const key = (el, k) => el.dispatchEvent(new KeyboardEvent('keydown', {
+    key: k,
+    bubbles: true,
+    cancelable: true
+  }));
+
+  // ---- feuille A : poignée <button>, ✕ et bascule ignorés
+  const calls = {
+    change: [],
+    settle: []
+  };
+  let isLocked = false;
+  const A = {
+    root: $('rootA'),
+    panel: $('panelA'),
+    head: $('headA'),
+    grip: $('gripA'),
+    body: $('bodyA')
+  };
+  for (let i = 0; i < 40; i++) A.body.insertAdjacentHTML('beforeend', `<p>Ligne ${i}</p>`);
+  const labelsFn = (p, i) => `Feuille (${['réduite', 'normale', 'agrandie'][i]})`;
+  const a = createSheet({
+    root: A.root,
+    panel: A.panel,
+    head: A.head,
+    grip: A.grip,
+    ignore: '#toggleA, #closeA',
+    labels: labelsFn,
+    locked: () => isLocked,
+    onChange: p => calls.change.push(p),
+    onSettle: p => calls.settle.push(p)
+  });
+  const head = {
+    panel: A.panel
+  };
+  const hs = {}; // hauteurs mesurées des trois positions
+
+  // 1. départ
+  const RH = A.root.clientHeight;
+  eq('départ : position', a.pos, 'default');
+  eq('départ : data-sheet', A.root.dataset.sheet, 'default');
+  eq('départ : onChange appelé une fois avec la position', calls.change, ['default']);
+  await wait(200);
+  eq('départ : pas de onSettle (rien n\'a changé pour la vue)', calls.settle, []);
+  const wide = innerWidth > 760;
+  near('départ : hauteur normale = max(part, plancher) de la racine', H(A.panel), Math.max(RH * (wide ? .35 : .38), 170));
+  eq('aria : aria-expanded vrai', A.grip.getAttribute('aria-expanded'), 'true');
+  eq('aria : aria-label venu de labels', A.grip.getAttribute('aria-label'), 'Feuille (normale)');
+  eq('aria : infobulle (title)', A.grip.title, 'Feuille (normale)');
+  eq('poignée <button> : pas de role ajouté', A.grip.getAttribute('role'), null);
+
+  // 2. les trois positions par set()
+  calls.change.length = 0;
+  a.set('collapsed', true);
+  await wait(60);
+  hs.collapsed = H(A.panel);
+  near('réduite : 45 px (--f-sheet-head)', hs.collapsed, 45);
+  near('réduite : l\'en-tête fait 44 px', H(A.head), 44);
+  eq('réduite : aria-expanded faux', A.grip.getAttribute('aria-expanded'), 'false');
+  check('réduite : le contenu (hors en-tête) n\'est pas affiché', getComputedStyle(A.body).display === 'none');
+  a.set('expanded', true);
+  await wait(60);
+  hs.expanded = H(A.panel);
+  near('agrandie : max(70 %, 260 px) de la racine', hs.expanded, Math.max(RH * .7, 260));
+  check('agrandie : le contenu défile dans la feuille, pas la page', A.body.scrollHeight > A.body.clientHeight && getComputedStyle(A.body)
+    .overflowY === 'auto' && document.documentElement.scrollHeight <= innerHeight);
+  a.set('default', true);
+  await wait(60);
+  hs.default = H(A.panel);
+  eq('onChange : à chaque pas', calls.change, ['collapsed', 'expanded', 'default']);
+  a.set(0, true);
+  eq('set(0) : un rang vaut la position', a.pos, 'collapsed');
+  a.set(7, true);
+  eq('set(7) : le rang est borné', a.pos, 'expanded');
+  a.set('default', true);
+  await wait(60);
+
+  // 3. instant coupe la transition ; sans instant elle joue
+  a.set('collapsed', true);
+  check('instant : classe f-sheet-nt posée', A.panel.classList.contains('f-sheet-nt'));
+  await wait(60);
+  check('instant : classe retirée à l\'image suivante', !A.panel.classList.contains('f-sheet-nt'));
+  a.set('default');
+  await wait(20);
+  check('sans instant : la hauteur est en transition (pas encore à la cible)', Math.abs(H(A.panel) - hs.default) > 1);
+  await wait(500);
+  near('sans instant : la cible est atteinte', H(A.panel), hs.default);
+
+  // 4. onSettle : une fois, 120 ms après le dernier pas, avec la position
+  calls.settle.length = 0;
+  a.set('collapsed', true);
+  a.set('expanded', true);
+  a.set('default', true);
+  await wait(60);
+  eq('onSettle : pas encore à 60 ms', calls.settle, []);
+  await wait(200);
+  eq('onSettle : une seule fois, avec la dernière position', calls.settle, ['default']);
+  calls.settle.length = 0;
+  a.settle();
+  a.settle();
+  await wait(250);
+  eq('settle() : relance le délai, un seul appel', calls.settle.length, 1);
+
+  // 5. le toucher réduit ou ramène, jamais n'agrandit
+  const tap = async el => {
+    ptr(el, 'pointerdown', 300);
+    ptr(el, 'pointerup', 300);
+    await wait(30);
+  };
+  await tap(A.grip);
+  eq('toucher : normale → réduite', a.pos, 'collapsed');
+  await tap(A.grip);
+  eq('toucher : réduite → normale', a.pos, 'default');
+  a.set('expanded', true);
+  await tap(A.grip);
+  eq('toucher : agrandie → normale (jamais l\'inverse)', a.pos, 'default');
+  ptr(A.head, 'pointerdown', 300);
+  ptr(A.head, 'pointerup', 300);
+  eq('toucher à côté de la poignée (en-tête nu) : rien', a.pos, 'default');
+  a.set('default', true);
+
+  // 6. le glisser suit le doigt, prend la position la plus proche
+  await wait(300);
+  let mid = await drag(A.grip, head, 400, -150, 10, 25);
+  check('glisser : la feuille suit le doigt (plus haute à mi-course)', mid.h > hs.default+40, JSON.stringify(mid));
+  check('glisser : transition coupée pendant le glisser', mid.nt);
+  await wait(500);
+  eq('glisser vers le haut de 150 px : position la plus proche = agrandie', a.pos, 'expanded');
+  near('glisser : la hauteur finale est celle de la position', H(A.panel), hs.expanded);
+  check('glisser : classe f-sheet-nt retirée au lâcher', !A.panel.classList.contains('f-sheet-nt'));
+  mid = await drag(A.grip, head, 400, +330, 20, 40);
+  await wait(500);
+  eq('glisser vers le bas de 330 px : réduite', a.pos, 'collapsed');
+  mid = await drag(A.grip, head, 400, -500, 25, 40);
+  check('glisser : plafonné à la position agrandie', mid.h <= hs.expanded + 1, JSON.stringify(mid));
+  await wait(500);
+  eq('glisser très haut : agrandie (pas plus)', a.pos, 'expanded');
+  a.set('default', true);
+  await wait(300);
+  await drag(A.grip, head, 400, -20, 4, 25);
+  await wait(500);
+  eq('petit glisser lent (20 px) : reste normale', a.pos, 'default');
+  await drag(A.head, head, 400, -25, 6, 25);
+  await wait(500);
+  eq('glisser depuis l\'en-tête hors poignée : glisse aussi (reste normale)', a.pos, 'default');
+
+  // 7. le coup de pouce (plus de 0,8 px/ms) passe à la position suivante
+  a.set('default', true);
+  await wait(300);
+  await drag(A.grip, head, 400, -40, 5, 8);
+  await wait(500);
+  eq('coup de pouce vers le haut depuis normale : agrandie', a.pos, 'expanded');
+  await drag(A.grip, head, 400, +40, 5, 8);
+  await wait(500);
+  eq('coup de pouce vers le bas depuis agrandie : normale', a.pos, 'default');
+  await drag(A.grip, head, 400, +40, 5, 8);
+  await wait(500);
+  eq('coup de pouce vers le bas depuis normale : réduite', a.pos, 'collapsed');
+  await drag(A.grip, head, 400, +40, 5, 8);
+  await wait(500);
+  eq('coup de pouce vers le bas depuis réduite : reste réduite', a.pos, 'collapsed');
+
+  // 8. ignore : ni glisser ni toucher depuis la bascule ou le ✕
+  a.set('default', true);
+  await wait(300);
+  const h0 = H(A.panel);
+  await drag($('toggleA'), head, 400, -150, 10, 20);
+  await wait(300);
+  eq('ignore : glisser depuis la bascule ne tire pas', [a.pos, Math.round(H(A.panel))], ['default', Math.round(h0)]);
+  await drag($('closeA'), head, 400, -150, 10, 20);
+  await wait(300);
+  eq('ignore : glisser depuis le ✕ ne tire pas', a.pos, 'default');
+  await tap($('toggleA'));
+  await tap($('closeA'));
+  eq('ignore : toucher la bascule ou le ✕ ne réduit pas', a.pos, 'default');
+  check('cibles de l\'en-tête : 44 px au moins', [...A.head.querySelectorAll('button')].every(b => H(b) >= 44 - .5 && b
+    .getBoundingClientRect().width >= 44 - .5));
+
+  // 9. locked refuse les gestes du pointeur, pas le clavier
+  isLocked = true;
+  await tap(A.grip);
+  await drag(A.grip, head, 400, -150, 10, 20);
+  await wait(300);
+  eq('locked : ni toucher ni glisser', a.pos, 'default');
+  key(A.grip, 'End');
+  eq('locked : le clavier reste', a.pos, 'expanded');
+  isLocked = false;
+  a.set('default', true);
+  await wait(300);
+  await tap(A.grip);
+  eq('locked levé : le toucher reprend', a.pos, 'collapsed');
+  a.set('default', true);
+
+  // 10. clavier
+  calls.change.length = 0;
+  key(A.grip, 'ArrowUp');
+  eq('clavier : Haut', a.pos, 'expanded');
+  key(A.grip, 'ArrowUp');
+  eq('clavier : Haut à la dernière position', a.pos, 'expanded');
+  key(A.grip, 'ArrowDown');
+  key(A.grip, 'ArrowDown');
+  eq('clavier : Bas, Bas', a.pos, 'collapsed');
+  key(A.grip, 'ArrowDown');
+  eq('clavier : Bas à la première position', a.pos, 'collapsed');
+  key(A.grip, 'End');
+  eq('clavier : Fin', a.pos, 'expanded');
+  key(A.grip, 'Home');
+  eq('clavier : Début', a.pos, 'collapsed');
+  A.grip.click(); // Entrée / Espace sur un bouton : clic sans pointeur (detail 0)
+  eq('clavier : Entrée / Espace (clic sans pointeur) : réduite → normale', a.pos, 'default');
+  A.grip.click();
+  eq('clavier : Entrée / Espace : normale → réduite', a.pos, 'collapsed');
+  const kd = new KeyboardEvent('keydown', {
+    key: 'x',
+    bubbles: true,
+    cancelable: true
+  });
+  A.grip.dispatchEvent(kd);
+  check('clavier : une autre touche n\'est pas retenue', !kd.defaultPrevented);
+  const arrow = new KeyboardEvent('keydown', {
+    key: 'ArrowUp',
+    bubbles: true,
+    cancelable: true
+  });
+  A.grip.dispatchEvent(arrow);
+  check('clavier : les flèches n\'agissent pas sur la page (preventDefault)', arrow.defaultPrevented);
+  check('clavier : le clic de la souris (detail 1) n\'est pas pris deux fois', (() => {
+    const p = a.pos;
+    A.grip.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      detail: 1
+    }));
+    return a.pos === p;
+  })());
+
+  // 11. jeton remplacé sur la racine ; plancher
+  a.set('default', true);
+  A.root.style.setProperty('--f-sheet-default', '50%');
+  await wait(450);
+  near('jeton : --f-sheet-default posé sur la racine du module (50 %)', H(A.panel), RH * .5);
+  A.root.style.setProperty('--f-sheet-default', '10%');
+  await wait(450);
+  near('jeton : plancher --f-sheet-default-min (170 px) sous 10 %', H(A.panel), 170);
+  A.root.style.removeProperty('--f-sheet-default');
+  A.root.style.setProperty('--f-sheet-expanded', '300px');
+  A.root.style.setProperty('--f-sheet-expanded-min', '0px');
+  a.set('expanded', true);
+  await wait(450);
+  near('jeton en pixels pour l\'agrandie', H(A.panel), 300);
+  await drag(A.grip, head, 400, -800, 8, 20);
+  await wait(300);
+  near('glisser : le plafond suit le jeton en pixels', H(A.panel), 300);
+  A.root.style.removeProperty('--f-sheet-expanded');
+  A.root.style.removeProperty('--f-sheet-expanded-min');
+  a.set('default', true);
+  await wait(300);
+
+  // 12. stop : plus d'écouteurs, plus de délai
+  calls.settle.length = 0;
+  a.set('expanded', true);
+  a.stop();
+  await wait(250);
+  eq('stop : le délai en cours est annulé', calls.settle, []);
+  key(A.grip, 'Home');
+  await tap(A.grip);
+  eq('stop : plus d\'écouteurs (clavier, toucher)', a.pos, 'expanded');
+
+  // ---- feuille B : poignée <div>, position de départ, labels en objet
+  const B = {
+    root: $('rootB'),
+    panel: $('panelB'),
+    head: $('headB'),
+    grip: $('gripB')
+  };
+  const b = createSheet({
+    root: B.root,
+    panel: B.panel,
+    head: B.head,
+    grip: B.grip,
+    pos: 'expanded',
+    labels: {
+      collapsed: 'Bas',
+      default: 'Milieu',
+      expanded: 'Haut'
+    }
+  });
+  eq('B : position de départ', [b.pos, B.root.dataset.sheet], ['expanded', 'expanded']);
+  eq('B : labels en objet', B.grip.getAttribute('aria-label'), 'Haut');
+  eq('B : poignée <div> : role="button" et tabindex', [B.grip.getAttribute('role'), B.grip.getAttribute('tabindex')], ['button', '0']);
+  key(B.grip, 'Enter');
+  eq('B : Entrée sur une poignée <div> : expanded → default', b.pos, 'default');
+  key(B.grip, ' ');
+  eq('B : Espace : default → collapsed', b.pos, 'collapsed');
+  eq('B : libellé suit la position', B.grip.getAttribute('aria-label'), 'Bas');
+  b.stop();
+  const c = createSheet({
+    root: B.root,
+    panel: B.panel,
+    head: B.head,
+    grip: B.grip,
+    pos: 'nimportequoi'
+  });
+  eq('position inconnue : retombe sur default', c.pos, 'default');
+  eq('sans labels : aucun aria-label ajouté ou changé', B.grip.getAttribute('aria-label'), 'Bas');
+  c.stop();
+  eq('POSITIONS exporté', POSITIONS, ['collapsed', 'default', 'expanded']);
+
+  const sum = document.createElement('div');
+  sum.innerHTML = `<b>${nPass} réussis, ${nFail} échoués</b>`;
+  sum.className = nFail ? 'FAIL' : 'PASS';
+  log.prepend(sum);
+  window.__sheetBench = {
+    done: true,
+    pass: nPass,
+    fail: nFail,
+    rows
+  };
+</script>
+</body>
+</html>

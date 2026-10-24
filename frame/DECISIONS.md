@@ -929,4 +929,51 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   `.github/workflows/ios.yml`: that workflow still wraps the V2 site, whose landscape layouts are wanted; the plist
   key is written in SPEC § 3.6 for the V3 shell lot. To remove when the landscape layout (map at the left, block as a
   right column) is decided and built.
-
+- **24 Oct 2026 — Lot: the three-position sheet becomes a frame primitive; maps adopts it and takes the frame's heights**
+  (asked by the cloud relay, holding the ergonomics role: `docs/technique/V3_SPECIFICATION.md` § 7.1, "Shared code between maps
+  and atmosphere"; branch `v3-cadre-feuille` from `v3` b03bd1883). One exception to "the frame touches no module", granted by
+  the relay because the two halves must land together: `modules/maps/module.js` and its documents.
+  - **What was built.** `frame/lib/sheet.js` (`createSheet`, `POSITIONS`), the `.f-sheet*` rules and `--f-sheet-*` tokens in
+    `frame/design/primitives.css`, `frame/lib/test/sheet.html` (a bench on a bare page), INTEGRATION § 11 and one sentence in
+    § 9.2, SPEC § 3.9 and the design SPEC's primitives table. The code is the best of the two copies: maps' (pointer capture,
+    live follow, nearest position, flick above 0.8 px/ms, tap, keys, `locked`, the `onChange` / `onSettle` pair and the
+    `transitionend` settle) and atmosphere's shape (`ignore`, no module state), with `AbortController` instead of
+    never-removed listeners (`stop()` now detaches everything).
+  - **Judgement calls.**
+    - *Positions are names* (`'collapsed' | 'default' | 'expanded'`, `data-sheet` too), as the relay wrote; a rank 0, 1, 2 is
+      still accepted by `set()` and `pos:` to ease a port. The CSS of a module that keyed on `data-sheet="0"` changes.
+    - *The `panel` of the options is the whole sheet* (header plus content), not "the scrolling part": it is the element
+      whose height changes, as in both copies. The scrolling part is a new class, `.f-sheet-body`; `.f-sheet-panel` stays
+      `overflow: hidden` (a header must not scroll away). The brief's "panel `overflow: auto`" is therefore on the body.
+    - *Tokens*: `--f-sheet-head` 45 px (header 44 + the hairline, the collapsed height), `-default` 38 % / 35 % from 761 px,
+      `-expanded` 70 %, plus the two floors both copies had (`-default-min` 170 px, `-expanded-min` 260 px) as tokens too.
+      Values are `<n>%` or `<n>px` and nothing else (the script parses them; no `calc()`), defined with `:where()` so a module
+      overrides them on its root with no weight fight. The heights are parts of the root's content height; `panel` must be a
+      direct child of the root (`.f-sheet > .f-sheet-panel`).
+    - *The grip bar is a `::before`* of the grip (no `<span class="…-pill">` to write) and is drawn with
+      `color-mix(in srgb, var(--sog-muted) 55%, transparent)`, **not** `--sog-border` as the brief said: maps' pill is that
+      colour and the lot's gate is a pixel-identical Map screen; `--sog-border` (≈ 1.35 : 1 on a white surface, against ≈ 2.4 : 1 for the muted bar) would be visibly
+      fainter. The hairline on top is `--sog-border`. To change the bar everywhere, change that one line.
+    - *Look kept as it was*: the upward shadow stays `0 -2px 8px #0000001a` (not `--sog-shadow-up`, which is `none` in the flat
+      designs and heavier in the others), so no design changes.
+    - *`labels` takes a function or an object*, and sets both `title` and `aria-label` of the grip (maps wrote the position
+      into `title` only; the screen reader now hears the position as well, the one visible difference).
+    - *`set()` schedules `onSettle`* (debounced with the gestures' own), except the starting placement: a caller that
+      resizes its map in `onSettle` no longer needs a `ResizeObserver` for a programmatic `set()`. Maps keeps its own
+      observer (it also covers rotation); both feed the same timer.
+    - *`locked()` refuses the pointer gestures and not the keyboard*, as maps did.
+    - *Collapsed hides every child of the panel but the header* (`display: none`), which replaces maps' rule on its three
+      blocks; it is generic, the sheet still never knows what is inside.
+    - *The grip and ✕ rules weigh three classes*: the first run showed cupertino's `[data-design="cupertino"] :is(button, .f-btn)`
+      winning over a two-class rule and turning the title blue; with the third class all seven designs are pixel-identical.
+    - *Pointer capture is in a `try`*: a synthetic event (the bench) or a finished pointer throws `InvalidPointerId`.
+    - *Not done*: the sheet is not in `labs/design_primitives.html` (the design agent's page); no print rule for it (a
+      fixed module is not printed).
+  - **Maps' side** (`modules/maps/DECISIONS.md` has the full entry): the local `createSheet` and its CSS are removed; the pane
+    and split height rules and the `!important` too (the frame applies `--f-view-h`, § 9.2); atmosphere is not touched.
+  - **Measured** (Playwright + Chromium, the launcher on the synthetic SIA base, tiles stubbed; "before" = `git archive` of
+    b03bd1883 on its own launcher): the three positions 45 / 277.4 / 511 px at 390 × 844, 45 / 260 / 520.1 px at 1280 × 800;
+    screenshots before / after **identical to the pixel at 390** (4 states), at 1280 the only differences are 88 pixels of at most
+    5 / 765 in the frame's header (above the module; not in the sheet), the dual-view pane and split main at 1280 are the same size
+    to the tenth of a pixel and differ by 1 to 2 levels on a few anti-aliased edge pixels; seven designs at 390, sheet header
+    crops identical; bench 76 / 76 at 390 and at 1280.

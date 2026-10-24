@@ -141,6 +141,7 @@ what depends on the device stays in `@media`: the bottom tab bar (the rail on a 
 | Dot, badge | `.f-dot`, `.f-badge`, with `data-kind` = `ok`, `warn`, `err`, `accent` | |
 | Toolbar | `.f-tools` (a title, then buttons) | |
 | Callout | `.f-callout` | accent left rule on `surface-2` |
+| Sheet | `.f-sheet` (the module's root) > `.f-sheet-panel` > `.f-sheet-head` (`.f-sheet-grip` with `.f-sheet-title`, `.f-sheet-close`) + `.f-sheet-body`, driven by `frame/lib/sheet.js` | three positions from the tokens `--f-sheet-head` (45px), `--f-sheet-default` (38 %, 35 % from 761 px; floor `-default-min` 170px), `--f-sheet-expanded` (70 %; floor `-expanded-min` 260px), set with no weight on `.f-sheet` so a module overrides them on its root; neutral: `--sog-surface`, a `--sog-border` hairline on top, `--sog-radius` top corners, a grip bar of `--sog-muted` at 55 %; header 44 px, body `overflow: auto; overscroll-behavior: contain`; collapsed shows the header only; no transition during a drag or under `prefers-reduced-motion`. Contract: frame/INTEGRATION.md § 11 |
 | Icons | `frame/lib/icons.js` → `<svg class="f-icon">` | `currentColor`, 20 px |
 
 ## 5. Icons

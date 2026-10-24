@@ -813,3 +813,31 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     profile's strip at 245 NM (1280: 129 / 128.9, 75 / 75.3, 254.6 / 255); seven designs (standard, cabinet, field, metro, swiss,
     cupertino, material) and the night tone: toggle legible, pressed state visible; the dual-view pane and the test page mount
     without error; a mission map has no toggle. Screenshots in the cloud session's scratchpad `maps4/`.
+- **24 Oct 2026 — the sheet becomes the frame's; maps takes the frame's heights** (by the frame agent, relay's lot, branch
+  `v3-cadre-feuille` from `v3` b03bd1883; the one exception to "the frame agent touches no module", granted by the relay
+  because the primitive and its first user must land together; frame/DECISIONS.md has the primitive's own entry).
+  - **Dropped from `module.js`**: the local `createSheet` (about 100 lines); the sheet CSS (`.mp-data` heights and transition,
+    `data-sheet` rules, `.mp-dhead`, `.mp-grip`, `.mp-pill`, `.mp-nt`, `.mp-dtitle`, `.mp-dclose`, and the scrolling part of
+    `.mp-dbody`); the root's tokens `--mp-head`, `--mp-p1`, `--mp-m1`, `--mp-p2`, `--mp-m2` and the 761 px media rule; the
+    `<span class="mp-pill">`; `gestures()` and the explicit first `set()`; the two pane / split height rules and the root's
+    `height: 100%` (the frame applies `--f-view-h`, `--f-split-h`, `--f-pane-h` to a `fixed` module, § 9.2); the tuning page's
+    `display: grid !important` (the frame's rule is weightless now). The TODO comment of the previous lot is done.
+  - **Kept**: `openData` / `endData` / `closeData` / `dataHead`; the Profile · Weather toggle (`ignore: '[data-dclose], .mp-seg'`);
+    the texts through `labels` (`(pos, rank) => "Data block height: tap or drag (collapsed)"` in four languages, as before);
+    `onSettle: onSheetSettled` (map size, re-framing); `locked` for the tuning page; the position kept through `onChange`
+    (`sheetKeep`, now a name: `'default'`); the `ResizeObserver` on the map box that settles. Added: the classes `f-sheet`
+    (root, added in `mount`), `f-sheet-panel`, `f-sheet-head`, `f-sheet-grip`, `f-sheet-title`, `f-sheet-close`, `f-sheet-body`
+    beside the module's own, `min-height: 420px` of the pane and the split main as one rule, and `[data-sheet]` in the tuning
+    selector so `height: auto` wins over the frame's position rules.
+  - **Two differences, both on purpose.** (1) `aria-label` of the grip now follows the position, like `title` did
+    ("… (collapsed)"). (2) On the tuning page with the sheet kept expanded, the block was 260 px (the old expanded rule beat
+    `height: auto` by order) and clipped its content; it is now its natural height (344 px), as in the other positions.
+  - **Verified, before (`git archive` b03bd1883, its own launcher) against after**: the three positions 45 / 277.4 / 511 px at
+    390 × 844 and 45 / 260 / 520.1 px at 1280 × 800, the map canvas following (615 / 383 / 149 and 628 / 413 / 153); screenshots
+    identical to the pixel at 390 (collapsed, default, expanded, default again), at 1280 identical in the sheet (88 pixels of at most
+    5 / 765 in the frame's header, above the module); the pane (`#fuel?with=maps`, 670 px = 800 − 86 − 44) and the split main
+    (`#maps?with=fuel`, 711 px = 800 − 57 − 32) are the same size, the rest equal but 1 to 2 levels on a few anti-aliased edge
+    pixels; the seven designs at 390 (sheet header crops) identical; taps, drags (live follow, nearest position, clamps), keys
+    (Enter, Space, Up, Down, Home, End), the Profile · Weather toggle and the ✕ (a drag from them does not move the sheet; a tap
+    works), content opening a collapsed sheet to default, the position kept across `#report` and back, the locked tuning page,
+    touch drags with CDP: same results; no page scroll, no `pageerror`; targets 44 px.
