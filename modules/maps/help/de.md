@@ -54,8 +54,8 @@ Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und O
 und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt eine
 Karte die Lufträume unter dem Finger, einen oder mehrere: einen Höhenblock wie das
 Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
-Liste mit ihren Grenzen. Sie bleibt offen: das ✕ oder Escape schließt sie, ein anderes Antippen ersetzt
-sie. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
+Liste mit ihren Grenzen. Das ✕, Escape oder ein Antippen an anderer Stelle der Karte schließt sie, ein Antippen auf
+Lufträume ersetzt sie; ein Verschieben der Karte lässt sie offen. Auf dem Telefon nimmt sie den unteren Teil der Karte ein, über den Schaltflächen. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
 nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Über einem Funkfeuer nennt die Blase Art, Kennung und Frequenz; stehen
 mehrere Funkfeuer am selben Ort, behält die Karte das nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS), und die
 Blase nennt die anderen („auch hier: ILS 25L BG 109.9“). Auf dem Profil nennen Finger

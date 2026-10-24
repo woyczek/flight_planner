@@ -544,3 +544,26 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Bench** (test page, 1280 px, view of Bordeaux, flight LFRS → LUGEN → LFBD started): "ETA 17:33Z (19:33)" under
     "LFBD", no overlap among the route labels; the 9 `place` layers of positron visible with Towns off, `none` with
     Towns on. No JavaScript error.
+- **24 Oct 2026 — the airspaces card on a phone (user's bug report; done by the cloud session as temporary stand-in,
+  decisions to be challenged by the ergonomics session, see `docs/technique/V3_JOURNAL_SESSION_CLOUD.md`).**
+  - **Bug**: the card "n airspaces at this point" filled about 90 % of the map on an iPhone (a tooltip element 92 % wide
+    whose SVG level block scaled with that width), sat under the mode grid and the edit bar (`z-index` 4 against 6), so
+    its ✕ was covered, and nothing but ✕ or Escape closed it, which a phone cannot do.
+  - **Own layer**: `.mp-lvcard{z-index:7}`, above the buttons and panels, like a dialog. The aerodrome's card
+    (`z-index` 5) is not changed: its ✕ sits at the left or right side, clear of the edit bar.
+  - **Placement**: `showLv()` replaces `showTip` for this card. Narrow frame (under 600 px, the aerodrome card's rule):
+    the lower part of the frame over its full width (`.mp-lvnarrow`: 8 px margins, 45 % of the height at most), the
+    level block drawn at 150 × 120 and kept at the left of the list (44 % of the width, sticky), the list scrolling
+    (`overscroll-behavior: contain`), ✕ fixed in the head. Otherwise at the tap point, 320 px and 60 % of the height
+    at most, kept inside the frame. Drawn again on a resize while open (rotation, pane width).
+  - **Closing**: a tap on an empty spot of the map closes it (`closeLv()` from the MapLibre and canvas click handlers),
+    ✕ and Escape still do, another airspace tap replaces it; a drag or the wheel never close it (`hideTips` does not
+    touch it). **This reverts, for this card only, the "cards that stay" rule of 23 Oct**: the aerodrome's card keeps
+    staying, since it is pinned on purpose and has a pin gesture to design (debt "tap on an empty spot").
+  - **Bench** (test page, Chromium touch 390 × 844 and mouse 1280 × 800, five airspaces under the point): card 44.8 %
+    of the frame height at 390 px, inside, `z-index` 7, ✕ 44 px and on top (`elementFromPoint`); open after a wheel
+    move and a drag; closed by Escape, by a tap on an empty spot and by ✕; replaced by a tap on two other airspaces;
+    no horizontal scroll, no JavaScript error. Captures: `lvcard_before_390.png`, `lvcard_after_390.png`,
+    `lvcard_after_1280.png` (cloud session scratchpad; the agent that wrote the code was lost with its session, the
+    cloud session finished the documents and ran the bench).
+

@@ -50,7 +50,7 @@ bubble gives the essentials in two lines — for an airway, the segment (point �
 floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
 elsewhere inside an airspace, a card shows the airspaces under your finger,
 one or several: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
-then the numbered list with their limits. It stays open: the ✕ or Escape closes it, another tap replaces it. It follows the pointer, stays 5 seconds, gives
+then the numbered list with their limits. The ✕, Escape or a tap elsewhere on the map close it, another tap on airspaces replaces it; moving the map leaves it. On a phone it takes the lower part of the map, above the buttons. It follows the pointer, stays 5 seconds, gives
 way to the next one, and closes with a tap elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several
 beacons share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the
 others (“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give

@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Map: the airspaces card on a phone** (`modules/maps/module.js`; SPEC, DECISIONS, help ×4) — "n airspaces at this
+  point" no longer fills the map nor hides under the buttons: its own layer above them, the lower 45 % of the frame on
+  a phone (level block beside the scrolling list, ✕ fixed), 320 px at the tap point on a screen; a tap on an empty spot
+  closes it (✕ and Escape too), a drag or the wheel leave it; the aerodrome's card is unchanged.
 - **Fuel: opens on the Plan, compact result bar on a phone** (`modules/fuel/module.js`; SPEC, INTEGRATION, DECISIONS,
   help ×4) — the module always opens on the Plan (the Sheets screen by its tab or `#fuel?view=sheets`, the last screen
   is no longer kept); the sticky result takes about half the height at 390 px (192 → 104 px): context on one line

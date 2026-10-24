@@ -1197,12 +1197,13 @@ async function startTiles() {
         if (!S) return;
         if (!S.modeOpts.hidden) return toggleModes(false); // grille des modes ouverte : ce toucher la ferme
         if (!S.layersEl.hidden) return toggleLayers(false); // panneau des couches ouvert : ce toucher le ferme
+        closeLv(); // un toucher sur la carte ferme celle des niveaux ; sur des espaces, la suivante la remplace aussitôt
         if (S.edit.on) return editTap(e.point.x, e.point.y);
-        // carte des niveaux ou d'un terrain ouverte, ou terrain épinglé : ce toucher les ferme
+        // carte d'un point de la route ouverte : ce toucher la ferme ; celle d'un terrain, épinglée, reste
         if (!S.mission && vrpTap(e.point.x, e.point.y)) return; // point de report : son terrain (point en tête)
         if (!S.mission && adAt(e.point.x, e.point.y)) return pinAd(adAt(e.point.x, e.point
           .y)); // un autre terrain la remplace
-        if (!S.cardEl.hidden) return hideTips(); // carte des niveaux ouverte : ce toucher la ferme (celle du terrain reste)
+        if (!S.cardEl.hidden) return hideTips();
         // une barbule, un cartouche ou un libellé (posés sur la route ou près d'elle) passent avant le curseur
         if (tipAt(e.point.x, e.point.y)) return mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
         const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
@@ -2543,7 +2544,7 @@ const ZONE_COL = {
 /** Carte des niveaux d'un point : un bloc comme le profil vertical (axe des altitudes, une colonne par espace entre son
  *  plancher et son plafond, numérotée), puis la liste numérotée en notation SIA, du plancher le plus bas au plus haut.
  *  Hauteurs ASFC comptées depuis le sol (le relief du point n'est pas lu ici : l'étiquette dit ASFC). */
-function levelsHtml(list) {
+function levelsHtml(list, narrow = false) {
   const lim = window.SiaAero?.limitFt || (() => 0),
     rows = list.map(a => {
       const lo = Math.max(0, +lim(a.lower, false) || 0),
@@ -2565,8 +2566,9 @@ function levelsHtml(list) {
     raw = Math.max(5000, ...finite) * 1.08,
     step = nice(raw),
     top = Math.ceil(raw / step) * step,
-    W = 280,
-    H = 150,
+    // téléphone : le bloc à gauche de la liste (hauteur bornée, pas de défilement du bloc), sinon au-dessus d'elle
+    W = narrow ? 150 : 280,
+    H = narrow ? 120 : 110,
     L = 46,
     T = unl ? 16 : 6,
     B = H - 6,
@@ -2590,7 +2592,44 @@ function levelsHtml(list) {
     const [a, b] = MapsRender.sia(r.a);
     return `<li><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</span></li>`;
   }).join('');
-  return `<button type="button" class="mp-adclose" data-lvclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(rows.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, { n: rows.length }))}</b></div><svg class="mp-lv" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol>`;
+  return `<button type="button" class="mp-adclose" data-lvclose aria-label="${esc(tt(TX.close))}" title="${esc(tt(TX.close))}">✕</button><div class="mp-adhead"><b>${esc(rows.length === 1 ? tt(TX.levelsTitle1) : tt(TX.levelsTitle, { n: rows.length }))}</b></div><div class="mp-lv-body"><svg class="mp-lv" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>`;
+}
+/** Carte des niveaux : fermée (écrit seulement si elle est ouverte). Un toucher ailleurs sur la carte, ✕ et Échap la
+ *  ferment ; un glisser ou la molette jamais (`hideTips` ne la touche pas). */
+function closeLv() {
+  if (S?.lvCardEl && !S.lvCardEl.hidden) S.lvCardEl.hidden = true;
+}
+/** Carte des niveaux dessinée et posée : sa propre couche (au-dessus des boutons et des panneaux, comme un dialogue) ;
+ *  cadre étroit (téléphone, moins de 600 px, comme la carte d'un terrain) : le bas du cadre sur toute sa largeur
+ *  (45 % de la hauteur au plus, CSS `.mp-lvnarrow`), la liste défile dedans, ✕ fixe ; sinon au point touché, 320 px et
+ *  60 % de la hauteur au plus, tenue dans le cadre. Reprise à chaque changement de taille du cadre. */
+function showLv() {
+  const L = S.lvCardEl,
+    W = S.box.clientWidth,
+    H = S.box.clientHeight,
+    narrow = W < 600,
+    html = levelsHtml(S.lvList, narrow),
+    set = (k, v) => {
+      if (L.style[k] !== v) L.style[k] = v;
+    };
+  if (L.classList.contains('mp-hover')) L.classList.remove('mp-hover');
+  if (L.classList.contains('mp-lvnarrow') !== narrow) L.classList.toggle('mp-lvnarrow', narrow);
+  if (L.innerHTML !== html) L.innerHTML = html;
+  L.hidden = false;
+  if (narrow) {
+    set('left', '');
+    set('top', '');
+    return;
+  }
+  const w = L.offsetWidth,
+    h = L.offsetHeight,
+    {
+      x,
+      y
+    } = S.lvTap;
+  set('left', `${Math.max(4, Math.min(W - w - 4, x + 10))}px`);
+  // au-dessus du doigt, sinon dessous ; toujours dans le cadre
+  set('top', `${Math.max(4, Math.min(H - h - 4, y - h - 10 < 4 ? y + 14 : y - h - 10))}px`);
 }
 /** Toucher ou clic sur la carte en (x, y) : la même infobulle qu'au survol, posée là, gardée 5 s, remplacée par la
  *  suivante ; rien dessous : l'infobulle se ferme. Plusieurs espaces superposés sous le point (ni barbule ni voie sous le
@@ -2602,7 +2641,12 @@ function mapTip(lat, lon, x, y) {
     // un espace ou plus sous le point : la carte des niveaux, qui reste (✕, Échap) ; un autre toucher la remplace
     if (list.length) {
       hideTips();
-      showTip(S.lvCardEl, S.box, x, y, levelsHtml(list));
+      S.lvList = list;
+      S.lvTap = {
+        x,
+        y
+      };
+      showLv();
       return true;
     }
   }
@@ -3845,8 +3889,14 @@ const STYLE = `
 [data-module="maps"] .mp-vfr-dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;flex:none}
 [data-module="maps"] .mp-vfr-note summary{cursor:pointer}
 [data-module="maps"] .mp-vfr-note>div{white-space:pre-wrap;font-size:.85em;max-height:14em;overflow:auto;border-left:2px solid var(--sog-border);padding-left:6px}
-[data-module="maps"] .mp-pcard:has(.mp-lv){width:min(92%,320px);max-height:calc(100% - 12px);overflow:auto}
-[data-module="maps"] .mp-lv{width:100%;height:auto;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
+[data-module="maps"] .mp-lvcard{z-index:7;width:min(92%,320px);max-height:60%;overflow:hidden}
+[data-module="maps"] .mp-lvcard .mp-adhead{flex:none;display:flex;align-items:center;min-height:40px}
+[data-module="maps"] .mp-lv-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:4px;overflow:auto;overscroll-behavior:contain;touch-action:pan-y}
+[data-module="maps"] .mp-lvcard.mp-lvnarrow{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-width:none;max-height:45%}
+[data-module="maps"] .mp-lvnarrow .mp-lv-body{flex-direction:row;align-items:flex-start}
+[data-module="maps"] .mp-lvnarrow .mp-lv{flex:0 0 44%;width:44%;position:sticky;top:0}
+[data-module="maps"] .mp-lvnarrow .mp-lv-list{flex:1 1 auto;min-width:0;margin:0}
+[data-module="maps"] .mp-lv{flex:none;width:100%;height:auto;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
 [data-module="maps"] .mp-lv-list{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
 [data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline}
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
@@ -3975,6 +4025,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     const r = S.box.getBoundingClientRect(),
       x = e.clientX - r.left,
       y = e.clientY - r.top;
+    closeLv(); // comme sur MapLibre : un toucher sur la carte ferme celle des niveaux
     if (S.edit.on) return editTap(x, y);
     if (!S.mission && vrpTap(x, y)) return;
     if (!S.mission && adAt(x, y)) return pinAd(adAt(x, y));
@@ -4014,12 +4065,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   // Échap : le terrain épinglé est relâché
   const esc0 = e => {
     if (e.key !== 'Escape' || !S) return;
-    if (!S.lvCardEl.hidden) S.lvCardEl.hidden = true; // la carte des niveaux d'abord, puis celle du terrain
+    if (!S.lvCardEl.hidden) closeLv(); // la carte des niveaux d'abord, puis celle du terrain
     else if (S.vfrPin) unpinAd();
   };
   // ✕ de la carte des niveaux
   S.lvCardEl.addEventListener('click', e => {
-    if (e.target.closest('[data-lvclose]')) S.lvCardEl.hidden = true;
+    if (e.target.closest('[data-lvclose]')) closeLv();
   });
   // ✕ de la carte d'un terrain
   S.adCardEl.addEventListener('click', e => {
@@ -4128,6 +4179,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   }));
   const ro = new ResizeObserver(() => {
     mapSize();
+    if (!S.lvCardEl.hidden && S.lvList) showLv(); // rotation, cadre redimensionné : la carte des niveaux reprend sa place
     schedule();
   });
   ro.observe(S.box);

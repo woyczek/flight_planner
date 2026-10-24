@@ -53,8 +53,8 @@ ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — p
 point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
 (« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, une carte montre les espaces sous le doigt,
 un ou plusieurs : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
-de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste ouverte : la croix ✕ ou Échap la ferment, un autre toucher la
-remplace. Elle suit
+de son plancher à son plafond), puis la liste numérotée avec leurs limites. La croix ✕, Échap ou un toucher ailleurs sur la carte la ferment, un autre toucher
+sur des espaces la remplace ; déplacer la carte la laisse. Sur téléphone, elle occupe le bas de la carte, au-dessus des boutons. Elle suit
 le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
 la carte. Sur une balise, la bulle donne son type, son indicatif et sa fréquence ; quand
 plusieurs balises sont au même endroit, la carte garde la plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle
