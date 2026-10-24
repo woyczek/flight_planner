@@ -238,7 +238,11 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       **Refinement (user, 24 Oct, 21:05: "toujours la ligne d'en-tête superfétatoire au niveau moyen. Utile en volet
       agrandi ou réduit et paysage")**: the bare head applies to the **default position only**; in the expanded and
       the collapsed positions, and in the landscape column, the head keeps its title (there is room, and the title is
-      then the only thing that says what the content is).
+      then the only thing that says what the content is). **Second refinement (user's proposal, 24 Oct, 21:25,
+      on the map's cut: "supprimer espace jaune et texte rayé rouge, aligner boutons verticalement à droite
+      (horizontalement en paysage)", retained)**: no empty margin at the left of the drawing; the Profil · Météo chips
+      leave the grip row and stand as a vertical column at the right of the drawing in portrait (44 px, touch zones
+      44), as a horizontal row above the drawing in the landscape column; the bare grip keeps the bar and ✕ only.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like

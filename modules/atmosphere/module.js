@@ -176,11 +176,6 @@ const STYLE = `
 [data-module="atmosphere"] .at-layers>p.at-mapnote{margin:0 0 4px;color:var(--sog-fg)}
 [data-module="atmosphere"] .at-maptip{position:absolute;z-index:6;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:5px 7px;font-size:12px;line-height:1.35;box-shadow:var(--sog-shadow);white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
-/* TEMP (§ 7.1 règle 13, primitive du cadre à venir : .f-sheet-head-bare, --f-sheet-head-bare) : poignée nue de 28 px au-dessus d'un dessin, sans titre, boutons de la ligne avec 44 px de toucher */
-[data-module="atmosphere"].f-sheet:has(.f-sheet-head-bare){--f-sheet-head:var(--f-sheet-head-bare,28px)}
-[data-module="atmosphere"] .f-sheet-head.f-sheet-head-bare .f-sheet-title{display:none}
-[data-module="atmosphere"] .f-sheet-head.f-sheet-head-bare>button:not(.f-sheet-grip){position:relative}
-[data-module="atmosphere"] .f-sheet-head.f-sheet-head-bare>button:not(.f-sheet-grip)::after{content:"";position:absolute;inset:-8px 0}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
 [data-module="atmosphere"] .f-sheet-body.at-dbody{position:relative}
 [data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
