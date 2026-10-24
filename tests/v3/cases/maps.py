@@ -105,9 +105,11 @@ def d3(c):
 @case('D4', 'Profile / Weather chips', 'D', tags=('sheet', 'maps'), screens=False, langs4=True, rule='maps lot point 4')
 def d4(c):
     c.open('maps', flight=True, forecast=True)
-    chips = c.boxes('.mp-chip')
-    c.eq(len(chips), 2, 'two icon chips', what='chips')
-    info = c.js("[...document.querySelectorAll('.mp-chip')].map(b => ({ title: b.title, label: b.getAttribute('aria-label'), pressed: b.getAttribute('aria-pressed'), hidden: b.hidden }))")
+    c.page.add_style_tag(content='#fNotes{display:none!important}')      # the "data access not set" toast covers the foot of the sheet: this case measures the sheet
+    chips = c.boxes('.mp-chip[data-view]')
+    c.eq(len(chips), 2, 'two view chips (Profile, Weather)', what='view chips')
+    c.eq(c.js("[...document.querySelectorAll('.mp-chip')].at(-1).hasAttribute('data-legend')"), True, 'the "i" legend chip is the last chip', what='last chip')
+    info = c.js("[...document.querySelectorAll('.mp-chip[data-view]')].map(b => ({ title: b.title, label: b.getAttribute('aria-label'), pressed: b.getAttribute('aria-pressed'), hidden: b.hidden }))")
     names = [row(c, 'dataProfile'), row(c, 'wxTitle')]
     c.eq(info[0]['title'], names[0], 'the Profile chip is named in the language of the run', what='Profile chip title')
     c.eq(info[0]['pressed'], 'true', 'the Profile chip is pressed by default', what='Profile chip aria-pressed')
@@ -160,25 +162,79 @@ _CHIPS_JS = """(weather) => { const r = e => { const b = e.getBoundingClientRect
   return { chips, head: r(document.querySelector('.f-sheet-head')), panel: r(document.querySelector('.f-sheet-panel')), drawing: r(drawing), ink: r(svg), inHead: !!document.querySelector('.f-sheet-head .mp-chip') } }"""
 
 
-def chips_layout(c, landscape, weather, what):
-    """V3 spec 7.1.13, second refinement: the chips are out of the grip row; a vertical column at the right of the drawing in portrait
-    (the drawing takes the width left, flush to the left edge of the body), a horizontal row above the drawing in the landscape column."""
+def chips_layout(c, bare, weather, what, n=None):
+    """V3 spec 7.1.13, 2nd and 3rd refinements: with the bare handle (default position, portrait) the chips are a vertical column at the right
+    of the drawing, the drawing taking the width left; with the title line (expanded, collapsed, landscape column) they are back in that
+    line, at the right, in a row, and the drawing takes the whole width (no column, no row above it).  Either way the drawing starts at the
+    left edge of the body."""
     g = c.js(_CHIPS_JS, weather)
     ch, d, p, h = g['chips'], g['drawing'], g['panel'], g['head']
-    c.eq(len(ch), 2, 'the two chips are shown', what=f'{what}: chips')
-    c.ok(not g['inHead'], f'{what}: chips in the head', 'the chips are not in the grip row')
-    c.ge(round(ch[0]['t'] - h['b'], 1), -1, 'the chips start under the head', what=f'{what}: chips top against head bottom')
+    n = n or (2 if weather else 3)        # Profile, Weather and the "i" legend chip; the cut has no legend yet, so no "i" on it
+    c.eq(len(ch), n, 'the chips of the drawing are shown', what=f'{what}: chips')
     c.le(round(d['l'] - p['l'], 1), 8, 'the drawing starts at the left edge of the body (8 px at most)', what=f'{what}: drawing left against sheet left')
-    if landscape:
-        c.le(abs(round(ch[0]['t'] - ch[1]['t'], 1)), 1, 'landscape column: the chips are on one row', what=f'{what}: chip tops')
-        c.ge(round(ch[1]['l'] - ch[0]['r'], 1), 0, 'landscape column: the second chip is to the right of the first', what=f'{what}: chip gap')
-        c.le(round(ch[0]['b'] - g['ink']['t'], 1), 1, 'landscape column: the row is above the drawing', what=f'{what}: chips bottom against drawing top')
-    else:
-        c.le(abs(round(ch[0]['l'] - ch[1]['l'], 1)), 1, 'portrait: the chips form a vertical column', what=f'{what}: chip lefts')
-        c.ge(round(ch[1]['t'] - ch[0]['b'], 1), 0, 'portrait: the second chip is under the first', what=f'{what}: chip gap')
-        c.ge(round(ch[0]['r'] - p['r'] + 8, 1), 0, 'portrait: the column is at the right of the sheet', what=f'{what}: chips right against sheet right')
-        c.le(round(g['ink']['r'] - ch[0]['l'], 1), 1, 'portrait: the drawing ends where the column begins', what=f'{what}: drawing right against chips left')
+    if bare:
+        c.ge(round(ch[0]['t'] - h['b'], 1), -1, 'bare handle: the chips start under the head', what=f'{what}: chips top against head bottom')
+        c.le(abs(round(ch[0]['l'] - ch[-1]['l'], 1)), 1, 'bare handle: the chips form a vertical column', what=f'{what}: chip lefts')
+        c.ge(round(ch[1]['t'] - ch[0]['b'], 1), 0, 'bare handle: the second chip is under the first', what=f'{what}: chip gap')
+        c.ge(round(ch[0]['r'] - p['r'] + 8, 1), 0, 'bare handle: the column is at the right of the sheet', what=f'{what}: chips right against sheet right')
+        c.le(round(g['ink']['r'] - ch[0]['l'], 1), 1, 'bare handle: the drawing ends where the column begins', what=f'{what}: drawing right against chips left')
         c.ge(round(g['ink']['b'] - g['ink']['t']), 80, 'the drawing keeps its height beside the column', what=f'{what}: drawing height')
+    else:
+        c.le(round(ch[0]['t'] - p['t'], 1), 8, 'title line: the chips are in the line (top of the sheet)', what=f'{what}: chips top against sheet top')
+        c.le(round(max(x['b'] for x in ch) - h['b'], 1), 1, 'title line: the chips are inside the head band', what=f'{what}: chips bottom against head bottom')
+        c.le(abs(round(ch[0]['t'] - ch[-1]['t'], 1)), 1, 'title line: the chips are on one row', what=f'{what}: chip tops')
+        c.ge(round(ch[1]['l'] - ch[0]['r'], 1), 0, 'title line: the second chip is to the right of the first', what=f'{what}: chip gap')
+        c.ge(round(ch[-1]['r'] - p['r'] + 8, 1), 0, 'title line: the chips are at the right of the line', what=f'{what}: chips right against sheet right')
+        c.ge(round(g['ink']['r'] - p['r'] + 12, 1), 0, 'title line: the drawing takes the whole width (no column at its right)', what=f'{what}: drawing right against sheet right')
+        c.ge(round(g['ink']['t'] - h['b'], 1), -1, 'title line: nothing between the head and the drawing', what=f'{what}: drawing top against head bottom')
+        c.le(round(g['ink']['t'] - h['b'], 1), 8, 'title line: no row of chips above the drawing', what=f'{what}: drawing top against head bottom')
+
+
+def legend_check(c):
+    """V3 spec 7.1.14: the "i" chip (last) shows a legend over the profile: the series actually drawn, with symbol and name in the language of
+    the run (produced by the drawing code); closed by Escape, by the chip, by a tap on it."""
+    c.eq(c.attr('.mp-chip[data-legend]', 'aria-pressed'), 'false', 'the legend is closed at first', what='legend chip aria-pressed')
+    c.ok(c.shown('.mp-chip[data-legend]'), 'the "i" chip is not shown over the profile', 'a legend chip over the profile')
+    c.eq(c.attr('.mp-chip[data-legend]', 'title'), row(c, 'legend'), 'the chip is named in the language of the run', what='legend chip title')
+    c.tap('.mp-chip[data-legend]')
+    c.until("window.__t.shown(document.querySelector('.mp-legend'))", what='the legend opens')
+    c.eq(c.attr('.mp-chip[data-legend]', 'aria-pressed'), 'true', 'the chip is pressed while the legend is open', what='legend chip aria-pressed')
+    g = c.js("""() => { const l = document.querySelector('.mp-legend'), p = document.querySelector('.mp-prof').getBoundingClientRect(), b = l.getBoundingClientRect();
+        return { n: l.querySelectorAll('li').length, first: l.querySelector('li span:last-child').textContent, sw: l.querySelectorAll('li .mp-lg-sw').length,
+                 over: b.left <= p.left + 8 && b.right >= p.right - 60 && b.top <= p.top + 4 && b.bottom >= p.bottom - 4 } }""")
+    c.ge(g['n'], 3, 'the legend lists at least 3 series (those drawn)', what=f'legend entries ({g["first"]!r}, ...)')
+    c.eq(g['sw'], g['n'], 'every entry has its symbol', what='legend symbols')
+    c.ok(g['over'], f'legend {g}', 'the legend covers the drawing')
+    c.eq(norm(g['first']), norm(row(c, 'lgPlan')), 'the first entry (the planned path) is worded in the language of the run', what='legend first entry')
+    c.key('Escape')
+    c.until("!window.__t.shown(document.querySelector('.mp-legend'))", what='Escape closes the legend')
+    c.eq(c.attr('.mp-chip[data-legend]', 'aria-pressed'), 'false', 'the chip is released after Escape', what='legend chip aria-pressed')
+    c.tap('.mp-chip[data-legend]')
+    c.until("window.__t.shown(document.querySelector('.mp-legend'))", what='the legend reopens')
+    c.page.mouse.click(*c.js("() => { const b = document.querySelector('.mp-legend').getBoundingClientRect(); return [b.left + 40, b.top + b.height / 2] }"))
+    c.until("!window.__t.shown(document.querySelector('.mp-legend'))", what='a tap on the legend closes it')
+
+
+def cut_drag(c, what):
+    """User 24 Oct ("on peut glisser sur le profil vertical pour voir les espaces, mais pas sur le même en météo"): a drag on the weather cut
+    moves the common cursor like on the profile: the map's cursor value follows the finger, and the cut draws its dashed cursor line there."""
+    b = c.js("() => { const r = document.querySelector('.mp-dbody svg').getBoundingClientRect(); return { l: r.left, w: r.width, y: r.top + r.height / 2 } }")
+    m = c.page.mouse
+    x0, x1 = b['l'] + b['w'] * 0.35, b['l'] + b['w'] * 0.8
+    m.move(x0, b['y'])
+    m.down()
+    c.wait(200)
+    first = c.attr('.mp-map', 'data-cursor-nm')
+    for i in range(1, 11):
+        m.move(x0 + (x1 - x0) * i / 10, b['y'])
+        c.wait(60)
+    c.wait(250)
+    last = c.attr('.mp-map', 'data-cursor-nm')
+    line = c.js("() => { const l = document.querySelector('.mp-dbody svg line[stroke-dasharray=\"3 2\"]'); if (!l) return null; const s = document.querySelector('.mp-dbody svg').getBoundingClientRect(); return s.left + parseFloat(l.getAttribute('x1')) }")
+    m.up()
+    c.ok(first not in (None, ''), f'{what}: cursor after the press {first!r}', 'a press on the cut places the common cursor')
+    c.ok(last not in (None, '') and float(last) > float(first or 0) + 10, f'{what}: cursor {first!r} -> {last!r} NM', 'a drag along the cut moves the common cursor along the route (the map follows)')
+    c.ok(line is not None and abs(line - x1) <= 30, f'{what}: cursor line at x {line} for a finger at {x1:.0f}', 'the cut draws its cursor line where the finger is')
 
 
 def drawing_fits(c, what, weather):
@@ -218,7 +274,8 @@ def sheet_body_checks(c):
     c.ok(norm(c.grip()).startswith(norm(tx(M, 'dataProfile', c.lang))), 'the handle of the bare head does not name the drawing', 'the handle says "Profil vertical" (title and aria-label)')
     c.eq(norm(c.attr('.f-sheet-head .f-sheet-grip', 'aria-label') or '').startswith(norm(tx(M, 'dataProfile', c.lang))), True, 'the aria-label of the handle names the drawing', what='grip aria-label')
     drawing_fits(c, 'profile portrait 390 x 844', False)
-    chips_layout(c, False, False, 'profile portrait')
+    chips_layout(c, True, False, 'profile portrait')
+    legend_check(c)
     # collapsed, nothing is drawn: the head takes its title back (the line is the only thing left to read)
     c.tap('.f-sheet-grip')
     c.until("document.querySelector('[data-module=\"maps\"]').dataset.sheet === 'collapsed'", what='a tap on the handle collapses the sheet')
@@ -234,19 +291,20 @@ def sheet_body_checks(c):
     bare_head(c, 'weather')
     c.ok(norm(c.grip()).startswith(norm(tx(M, 'wxTitle', c.lang))), 'the handle of the bare head does not name the cut', 'the handle says "Coupe météo"')
     g = drawing_fits(c, 'weather portrait 390 x 844', True)
-    chips_layout(c, False, True, 'weather portrait')
+    chips_layout(c, True, True, 'weather portrait')
+    cut_drag(c, 'weather portrait')
     c.ok(not g['strip']['shown'] and not g['notes']['shown'], f'strip shown {g["strip"]["shown"]}, notes shown {g["notes"]["shown"]}',
          'the weather cut alone at the default position')
     c.page.set_viewport_size({'width': 844, 'height': 390})
     c.settle()
     titled_head(c, 'weather landscape column')
     drawing_fits(c, 'weather landscape 844 x 390', True)
-    chips_layout(c, True, True, 'weather landscape')
+    chips_layout(c, False, True, 'weather landscape')
     c.tap('.mp-chip[data-view="profile"]')
     c.wait(500)
     titled_head(c, 'profile landscape column')
     drawing_fits(c, 'profile landscape 844 x 390', False)
-    chips_layout(c, True, False, 'profile landscape')
+    chips_layout(c, False, False, 'profile landscape')
     c.tap('.mp-chip[data-view="weather"]')
     # a short phone window (a small screen, the keyboard up): the default panel keeps its 170 px floor, so the body is 142 px: the cut fits it
     c.page.set_viewport_size({'width': 390, 'height': 520})
@@ -398,6 +456,22 @@ def tap_airspaces(c):
     raise Fail('a tap on the map under the seeded airspaces opened nothing in 15 s', 'their list opens in the sheet', 'L1 / L14')
 
 
+_LV_JS = """() => { const q = s => document.querySelector(s), fs = e => parseFloat(getComputedStyle(e).fontSize), li = [...document.querySelectorAll('.mp-lv-list li')];
+  return { body: fs(q('.mp-dbody')), list: fs(li[0]), lh: parseFloat(getComputedStyle(li[0]).lineHeight), n: li.length, rows: li.map(e => e.getBoundingClientRect().height),
+           width: q('.mp-lv-list').getBoundingClientRect().width, tail: li.map(e => { const t = e.querySelector('.mp-lv-lim'); return t ? t.getBoundingClientRect().right <= e.getBoundingClientRect().right + 1 && t.getBoundingClientRect().width > 0 : false }) } }"""
+
+
+def lv_text(c, what):
+    """User 24 Oct (landscape shot of "3 espaces sur ce point"): the list is in the size of the sheet's body text and one line per airspace
+    ("1 · TMA NANTES 4 · FL055|FL065 · D"), never a wrap by word; the levels and the class stay visible, only the name is ellipsed."""
+    g = c.js(_LV_JS)
+    c.le(abs(round(g['list'] - g['body'], 1)), 1, 'the list has the font size of the sheet body (+-1 px)', what=f'{what}: list {g["list"]:.1f} px, body {g["body"]:.1f} px')
+    c.ge(g['n'], 2, 'the seeded airspaces are listed', what=f'{what}: entries')
+    for i, h in enumerate(g['rows']):
+        c.le(round(h / g['lh'], 2), 1.2, f'entry {i + 1} is {h:.0f} px high for a {g["lh"]:.0f} px line', 'one line per airspace (at most 2 in any case)')
+    c.ok(all(g['tail']), f'levels visible per entry: {g["tail"]}', 'the levels and the class stay visible (the name is ellipsed, not them)')
+
+
 @case('D11', 'Airspaces list in the sheet', 'D', tags=('sheet', 'maps'), screens=False,
       rule='L1: the airspaces card was hidden under the map buttons, unclosable, 90 % of the map on a phone (23 Oct)')
 def d11(c):
@@ -407,6 +481,14 @@ def d11(c):
     title = c.text('.f-sheet-head .f-sheet-title') or ''
     c.ok('2' in title, f'sheet title {title!r}', 'the title counts the 2 airspaces under the point')
     c.ok(c.js("!!document.querySelector('.f-sheet-panel .mp-dbody[data-kind=\"lv\"] .mp-lv-list')"), 'no airspaces list inside the sheet panel', 'the list is the sheet\'s content')
+    lv_text(c, 'portrait 390')
+    c.page.set_viewport_size({'width': 844, 'height': 390})
+    c.settle()
+    c.wait(500)
+    lv_text(c, 'landscape column 844 x 390')
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    c.settle()
+    c.wait(500)
     close = c.box('.f-sheet-close')
     c.ok(close['l'] >= 0 and close['r'] <= c.width and close['t'] >= 0 and close['b'] <= c.height, f'✕ box {close["l"]:.0f},{close["t"]:.0f}-{close["r"]:.0f},{close["b"]:.0f}', 'inside the window')
     top = c.js("""() => { const b = document.querySelector('.f-sheet-close').getBoundingClientRect(); const e = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);

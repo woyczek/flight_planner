@@ -573,7 +573,8 @@
       ctx.fillText(a >= 10000 && a % 1000 === 0 ? `FL ${a / 100}` : `${a} ft`, padL - 6 * scale, y);
     }
     // espaces : bande plancher → plafond (plancher / plafond ASFC suivant le relief)
-    const labels = [],
+    const drawnZones = new Map(), // V3 maps : type d'espace → couleur, pour la légende (ce qui est réellement dessiné)
+      labels = [],
       taken = [],
       free = r => !taken.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0);
     for (const c of data.crossed) {
@@ -591,6 +592,7 @@
           break;
         }
       if (!seen) continue; // espace entièrement au-dessus du plafond ou au-dessous du plancher de la coupe
+      drawnZones.set(a.type, col);
       ctx.beginPath();
       for (let i = c.i0; i <= c.i1; i++) {
         const x = X(data.samples[i].s),
@@ -886,6 +888,13 @@
       total: data.total,
       skipped,
       taken: strictLabels ? taken : undefined,
+      drawn: { // V3 maps : ce que la coupe a dessiné (la légende de la feuille le lit, jamais un texte fixe)
+        plan: !!data.plan,
+        tocTod: !!(data.plan?.toc || data.plan?.tod),
+        zones: [...drawnZones],
+        marks: placed.length,
+        obstacles: data.obstacles.length
+      },
       marks: placed.length, // V3 maps : points posés sous la coupe, et leur dernière ligne tient dans le cadre (axe des distances)
       axisOk: axisBottom <= H
     };
