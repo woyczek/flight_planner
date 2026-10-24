@@ -104,6 +104,25 @@ For the ergonomics session: this reshapes the frame's navigation on a phone (fra
 design primitives (tab bar, chips, segmented control, badge, back-to-top); to decide and cut into lots with the frame
 and design agents. The four design mock-ups (§ 10.3) were made with the drawer; the tab bar supersedes it on a phone.
 
+**Decided (user, 24 Oct 2026, 11:00 — option A "the flight's path")**: the phone bar reads left to right in the
+order of a day: **Préparer · Carte · CR · Vols · Réglages**.
+- *Préparer* = fuel and level, with a **Météo** tab (the atmosphere module) and the sheets behind a tab; *Carte* =
+  the fixed map with the data block (profile, airspaces, VFR points, weather cross-section); *CR* = the report in
+  three steps, recorded on the website in the same gesture; *Vols* = my flights and the website log, "write the
+  report" for a flight without one; *Réglages* = identity, access, synchronisation, design, diagnostics, help.
+- **Website is not a verb** (a transport: the report records, flightlog reads, Settings connects); **Atmosphere is
+  not a verb** (a tab of Préparer and a content of the map's data block). Both stay reachable by their address.
+- First screen: Préparer, with a status line at the top that shortens the path when it applies ("Flight started ›
+  Map", "Report to write for yesterday's flight").
+- The frame gets the notion of a **tab = a group of modules** (Préparer = fuel + atmosphere): the bar's case stays
+  active while any module of the group is shown. On a screen the rail keeps every module that has a screen.
+- Options B (map first) and C (a "Today" hub) were presented and not retained.
+- **The map screen must be fixed** (user, same day: "le module carte n'est toujours pas fixe, scroll bar et artefacts
+  en header"): on a phone the Carte screen takes the viewport (header, map, data block, bar) with **no page scroll**;
+  the data block is a sheet of fixed height under the map, scrolling inside. A frame contract lets a module declare
+  a fixed, full-height view. This matters for the native shells (iOS, then Android, Capacitor): the user holds a
+  TestFlight key now.
+
 ## 8. Decisions log
 
 - 22 Oct 2026 — V3 decided: frame + modules + three applications (Pilot, CPCO, SOG client); the application and the
