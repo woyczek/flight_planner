@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: one navigation at a time — a change of address that arrives during a mount cancels it** (`frame/app.js`,
+  `INTEGRATION.md` § 2, DECISIONS; test A16) — two or three changes of address in the same task (`#fuel`, `#atmosphere`,
+  `#fuel?view=sheets`) left one `section[data-module]` per navigation in the view (and as many overlay layers and sheets) because
+  each `route()` appended its section after its `import()` and its `mount()` whatever had happened meanwhile. Each navigation now
+  takes a token; after each await a stale one writes nothing (no section, no help panel, no pane, no error screen), the next one has
+  already unmounted the module and emptied the view. The help and settings screens follow the same token.
 - **Fuel: a mount whose address changed writes nothing, and the Quote / Sheets view is in the address** (`modules/fuel/module.js`,
   `INTEGRATION.md`, DECISIONS; tests F7, A7, J1) — changing the address while fuel was still reading (`#fuel` then `#atmosphere`, or
   `#fuel` then `#fuel?view=sheets`) let the first mount draw over the second's state (the Quote screen under a Sheets address) or fail

@@ -1377,7 +1377,8 @@
   }
   /** Écran d'aide ou de feuille de route : ses scripts d'abord ; rien si l'adresse a changé entre-temps. */
   async function showDoc(id, box, query) {
-    const at = location.hash;
+    const tok = navSeq,
+      at = location.hash;
     try {
       await need(id);
     } catch (e) {
@@ -1386,7 +1387,7 @@
         e: e.message || e
       }), 'err');
     }
-    if (location.hash !== at || !box.isConnected) return;
+    if (tok !== navSeq || location.hash !== at || !box.isConnected) return;
     return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : SogRoadmap.screen(box, helpCtx());
   }
   /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), posé
@@ -1643,8 +1644,11 @@
       preventScroll: true
     });
   }
-  let current = null; // { id, mod }
-  /** Affiche l'écran de l'adresse (#module, #module?…, #conflicts, #settings) ; démonte le module précédent. */
+  let current = null, // { id, mod }
+    navSeq = 0; // jeton de navigation : le dernier changement d'adresse gagne
+  /** Affiche l'écran de l'adresse (#module, #module?…, #conflicts, #settings) ; démonte le module précédent. Une seule
+   *  navigation à la fois : chaque appel prend un jeton, et une reprise après un await dont le jeton n'est plus le dernier
+   *  abandonne sans rien écrire (la vue est déjà vidée par la navigation suivante, qui a démonté le module en cours de montage). */
   async function route() {
     const h = parseHash(),
       id = h.id || visibleModules()[0]?.id || 'settings';
@@ -1652,6 +1656,7 @@
     if (over && location.hash === over.returnHash) return closeOver();
     if (SCREENS.includes(id) && (current || over)) return openOver(id, h);
     if (over) closeOver(false);
+    const tok = ++navSeq;
     paintModule(id);
     if (id !== current?.id) full = false; // le plein écran ne suit pas au module suivant
     if (isModule(id)) {
@@ -1681,6 +1686,7 @@
     paintFixed(entry.id); // vue fixe connue d'avance : pas de saut de mise en page à l'arrivée du module
     try {
       const mod = await import(new URL(`modules/${entry.id}/module.js`, ROOT).href);
+      if (tok !== navSeq) return; // une autre adresse est arrivée pendant le chargement : rien n'est écrit
       const meta = mod.meta || {};
       if (meta.id && meta.id !== entry.id) throw new Error(`meta.id ${meta.id} ≠ ${entry.id}`);
       const el = document.createElement('section');
@@ -1699,12 +1705,14 @@
         hash: location.hash
       };
       await mod.mount(el, ctxFor(entry, meta, h.query, el));
+      if (tok !== navSeq) return; // la navigation suivante a démonté ce module et vidé la vue
       moduleHelp(entry, meta, el, view);
       // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
       paintPaneButton(entry);
       const want = paneWanted(entry, h.query);
       if (want && want !== entry.id && current?.id === entry.id) openPane(entry, want);
     } catch (e) {
+      if (tok !== navSeq) return console.error(e); // erreur d'un montage abandonné : la vue n'est plus la sienne
       paintFixed('');
       view.innerHTML = `<p class="f-card">${esc(t(T.loadErr, { m: entry.id, e: e.message || e }))}</p>`;
       notify(t(T.loadErr, {
@@ -2074,7 +2082,8 @@
   // ---------------------------------------------------------------- écran des réglages (frame/settings/settings.js)
   /** Réglages de l'appareil : écran du cadre (il règle transport et jeton), avec son contexte privilégié. */
   async function renderSettings(view) {
-    const at = location.hash;
+    const tok = navSeq,
+      at = location.hash;
     try {
       await need('settings');
     } catch (e) {
@@ -2083,7 +2092,7 @@
         e: e.message || e
       }), 'err');
     }
-    if (location.hash !== at || !view.isConnected) return; // écran quitté pendant le chargement
+    if (tok !== navSeq || location.hash !== at || !view.isConnected) return; // écran quitté pendant le chargement
     if (!window.SogSettings) return view.replaceChildren();
     return SogSettings.render(view, {
       t,
