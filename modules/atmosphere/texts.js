@@ -95,6 +95,7 @@ export const TX = {
   sliceHeadShort: ['Tranche {i} / {n} · {near} · {nm} NM · {at}', 'Slice {i} / {n} · {near} · {nm} NM · {at}',
     'Schnitt {i} / {n} · {near} · {nm} NM · {at}', 'Corte {i} / {n} · {near} · {nm} NM · {at}'
   ],
+  cutAria: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
   sliceHeadPoint: ['Tranche {p} · à {off} NM de la route · {at}', 'Slice {p} · {off} NM from the route · {at}',
     'Schnitt {p} · {off} NM von der Route · {at}', 'Corte {p} · a {off} NM de la ruta · {at}'
   ],

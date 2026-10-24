@@ -119,7 +119,10 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
   TOC / TOD valid at that level only), `depTime` (s), `cruiseKt`, `locs` (Open-Meteo-shaped locations for
   `sectionPlaces(route)`, in that order), `layers` (`{ cloud, iso, inv, ice, wind, cu, temp, rh, da }`), `cursorM`
   (the shared cursor, metres from the departure), `labels.strips` (five texts of the surface strips), `fmtLvl`,
-  `cloudRgb`, `dark`.
+  `cloudRgb`, `dark`, `minHeight` (a height floor, default 0: the drawing fits the height given, the distance axis and
+  the waypoint names always inside; a low chart labels one level in two under 160 px of plot, one in four under 110;
+  60 px is the least it draws). V3_SPECIFICATION § 7.1 rule 13: no title over a drawing, the drawing at the body's
+  exact height.
 - `sectionPlaces(points)`: the reading places (every 50 NM, 24 at most, as Fuel), on continuous longitudes
   (`A.unwrapLons`: a route across the date line is sampled along itself, not round the world); `sectionModel` does
   the same, so a reader passing the current flight's raw points finds the same cache cells as this module. `sectionVars(levelFt, points)`: the

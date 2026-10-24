@@ -17,6 +17,10 @@ const fmtLevel = ft => ft == null ? '—' : formatLevel(Math.max(0, Math.round(f
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const n1 = v => Math.round(v * 10) / 10;
+/** Hauteur sous laquelle un dessin ne se lit plus du tout (px) : en dessous, il est dessiné à cette hauteur. */
+const MIN_H = 60;
+/** Un niveau étiqueté sur combien, selon la hauteur du graphique (px) : l'axe des distances passe avant les niveaux. */
+const levelEvery = ph => ph < 110 ? 4 : ph < 160 ? 2 : 1;
 
 /** Variables de couleur posées sur la racine du SVG (jetons du cadre). */
 export const VARS = '--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);' +
@@ -286,6 +290,7 @@ export function drawSection(el, o) {
     }, {
       width: o.width,
       height: o.height,
+      minHeight: o.minHeight,
       layers: o.layers || {
         cloud: true,
         iso: true,
@@ -308,16 +313,19 @@ export function drawSection(el, o) {
  *  M : { field (NX, NY, top, below, tC, rh, cc, daFt), traj, samples [{ nm, t, point }], cols, points, sel (indice ou
  *  null), levelFt }.
  *  o : { width, height, layers { cloud, temp, rh, da, iso, inv, ice, wind, cu }, labels { strips: [5 libellés] },
- *  fmtLvl, cloudRgb [r, g, b], dark, strips (bandes de surface, vrai si la hauteur le permet), id (préfixe unique) }.
+ *  fmtLvl, cloudRgb [r, g, b], dark, strips (bandes de surface, vrai si la hauteur le permet), id (préfixe unique),
+ *  minHeight (plancher de hauteur, 0 par défaut : la coupe tient dans la hauteur donnée, axe des distances compris ; basse,
+ *  elle garde un niveau sur deux, puis sur quatre) }.
  *  → { svg, geo { x0, y0, pw, ph, xOf, yOf, nmOf, ftOf } }. */
 export function sectionSvg(M, o) {
   const F = M.field,
     L = o.layers,
     W = Math.max(200, o.width),
-    H = Math.max(140, o.height),
+    H = Math.max(o.minHeight || 0, MIN_H, o.height),
     strips = o.strips !== false && H >= 260,
     SH = 10,
-    l = 54,
+    // marge gauche : les niveaux, ou les libellés des bandes de surface s'ils sont plus longs (police de 9 px)
+    l = Math.max(54, strips ? Math.max(0, ...(o.labels?.strips || []).map(x => String(x).length)) * 5.4 + 8 : 0),
     r = 8,
     t = 16,
     bottom = 16 + (strips ? 5 * (SH + 2) + 6 : 0),
@@ -457,8 +465,8 @@ export function sectionSvg(M, o) {
   }
   // axes
   const stepFt = top > 25000 ? 5000 : top > 12000 ? 2000 : 1000;
-  for (let ft = 0; ft <= top; ft += stepFt) {
-    if (ph < 150 && (ft / stepFt) % 2) continue;
+  for (let ft = 0, every = levelEvery(ph); ft <= top; ft += stepFt) {
+    if ((ft / stepFt) % every) continue;
     out.push(`<text x="${l - 5}" y="${n1(yOf(ft))}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="var(--sog-muted)">${esc(ft ? o.fmtLvl(ft) : '0')}</text>`);
   }
   const nmStep = [10, 20, 25, 50, 100, 200, 500].find(s => pw / (M.traj.total / s) > 46) || 500;
@@ -509,13 +517,14 @@ export function sectionSvg(M, o) {
 export function soundingSvg(col, {
   width,
   height,
+  minHeight = 0,
   top,
   lines = [],
   fmtLvl,
   cloudRgb = [96, 104, 116]
 }) {
   const W = Math.max(200, width),
-    H = Math.max(140, height),
+    H = Math.max(minHeight, MIN_H, height),
     l = 50,
     r = 62,
     t = 8,
@@ -542,7 +551,7 @@ export function soundingSvg(col, {
   const stepFt = top > 25000 ? 5000 : top > 12000 ? 2000 : 1000;
   for (let ft = 0; ft <= top; ft += stepFt) {
     out.push(`<line x1="${l}" y1="${n1(Y(ft))}" x2="${n1(l + pw)}" y2="${n1(Y(ft))}" stroke="var(--sog-chart-grid)"/>`);
-    if (ph >= 150 || !((ft / stepFt) % 2)) out.push(`<text x="${l - 5}" y="${n1(Y(ft))}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="var(--sog-muted)">${esc(ft ? fmtLvl(ft) : '0')}</text>`);
+    if (!((ft / stepFt) % levelEvery(ph))) out.push(`<text x="${l - 5}" y="${n1(Y(ft))}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="var(--sog-muted)">${esc(ft ? fmtLvl(ft) : '0')}</text>`);
   }
   // inversions
   for (const v of A.inversions(col))

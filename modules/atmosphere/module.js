@@ -176,6 +176,11 @@ const STYLE = `
 [data-module="atmosphere"] .at-layers>p.at-mapnote{margin:0 0 4px;color:var(--sog-fg)}
 [data-module="atmosphere"] .at-maptip{position:absolute;z-index:6;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:5px 7px;font-size:12px;line-height:1.35;box-shadow:var(--sog-shadow);white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
+/* TEMP (§ 7.1 règle 13, primitive du cadre à venir : .f-sheet-head-bare, --f-sheet-head-bare) : poignée nue de 28 px au-dessus d'un dessin, sans titre, boutons de la ligne avec 44 px de toucher */
+[data-module="atmosphere"].f-sheet:has(.f-sheet-head-bare){--f-sheet-head:var(--f-sheet-head-bare,28px)}
+[data-module="atmosphere"] .f-sheet-head.f-sheet-head-bare .f-sheet-title{display:none}
+[data-module="atmosphere"] .f-sheet-head.f-sheet-head-bare>button:not(.f-sheet-grip){position:relative}
+[data-module="atmosphere"] .f-sheet-head.f-sheet-head-bare>button:not(.f-sheet-grip)::after{content:"";position:absolute;inset:-8px 0}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
 [data-module="atmosphere"] .f-sheet-body.at-dbody{position:relative}
 [data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
@@ -666,6 +671,7 @@ export async function mount(el, ctx) {
   function drawData() {
     if (!alive) return;
     const v = S.view;
+    bareHead(null);
     if (v === 'settings') {
       sheetTitle(T('flightTitle'));
       if (form.parentNode !== dbody) dbody.replaceChildren(form);
@@ -709,6 +715,7 @@ export async function mount(el, ctx) {
   /** Coupe globale le long de la route, à la taille du bloc ; un toucher ouvre la tranche du lieu de lecture le plus proche. */
   function drawProfile() {
     baseTitle();
+    bareHead(T('cutAria'));
     const r = sectionSvg({
       field: S.field,
       traj: S.traj,
@@ -867,6 +874,7 @@ export async function mount(el, ctx) {
       });
     }
     sheetTitle(head);
+    if (col) bareHead(head);
     if (!col) {
       const p = document.createElement('p');
       p.className = 'at-pad f-muted';
@@ -1578,6 +1586,18 @@ export async function mount(el, ctx) {
   // ---------------------------------------------------------------- état, chargement
 
   /** Titre de la poignée : le contenu, puis son contexte (une ligne coupée ; le texte entier et sa note en infobulle). */
+  /** Pas de titre au-dessus d'un dessin (V3_SPECIFICATION § 7.1 règle 13) : la coupe et la tranche ont une poignée nue
+   *  (barrette, puces et boutons de la ligne) ; label : ce que dit le dessin, pour les lecteurs d'écran ; null : la tête
+   *  avec son titre (Vol, Détails, Couches, textes). */
+  function bareHead(label) {
+    const head = $('grip').parentNode;
+    head.classList.toggle('f-sheet-head-bare', !!label);
+    if (label) {
+      setAttr(head, 'aria-label', label);
+      setAttr(head, 'role', 'group');
+    } else if (head.hasAttribute('aria-label')) head.removeAttribute('aria-label');
+  }
+
   function sheetTitle(s, note = '') {
     const node = $('dtitle'),
       full = note ? `${s}\n${note}` : s;

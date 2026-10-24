@@ -2,6 +2,24 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (night) — the drawing fits the sheet; no title over a drawing
+
+- **The report** (user, iPhone, relayed, rule 13 of V3_SPECIFICATION § 7.1): "c'est toujours le même souci, les
+  abscisses invisibles" and "Toujours la ligne « météo fl160 »… Info redondante donc, qui prend de l'espace vertical".
+  The cross-section kept a 140 px readability floor; in Safari's window (390 × 664 with its bars) the body was 95 px, so
+  the distance axis sat under the fold (measured: hidden).
+- **Done**: `sectionSvg`, `soundingSvg` and `drawSection` take `minHeight` (default 0; 60 px is the least they draw):
+  the drawing is made at the body's exact height and drops level labels first (one in two under 160 px of plot, one in
+  four under 110), never the distance axis nor the waypoint names. Over the cut and the slice the grip row is **bare**
+  (`.f-sheet-head-bare`, 28 px: the handle, the source badge when the flight is not the current one, ◀ ▶ ✕ with a
+  44 px touch zone; the content named for screen readers, "Coupe météo" or the slice's place); Flight, Details, Layers
+  and the texts keep their titled head. The slider row stays under the bare head. Until the frame ships the primitive,
+  a rule marked `TEMP` in `module.js`.
+- **Measured** (real AROME data, LFRD → LFBD FL160, default position): 390 × 664: body 95 → 112 px, distance axis
+  hidden → visible; 390 × 844: 144 → 161 px; 844 × 390 (the right column): 259 → 276 px, so the surface strips come
+  back (their labels now widen the left margin instead of being cut). The slice fits its body (112 / 112 px, no
+  scroll).
+
 ## 24 October 2026 (night) — one source per fill; the limit as an option; performance; GFS against Open-Meteo
 
 - **The report** (user, iPhone, relayed: "Toujours pas.", LFRD → LFBD at FL160, 19:00Z): after the rings fix the grid's
