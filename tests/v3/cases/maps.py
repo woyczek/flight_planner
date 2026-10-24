@@ -169,7 +169,7 @@ def chips_layout(c, bare, weather, what, n=None):
     left edge of the body."""
     g = c.js(_CHIPS_JS, weather)
     ch, d, p, h = g['chips'], g['drawing'], g['panel'], g['head']
-    n = n or (2 if weather else 3)        # Profile, Weather and the "i" legend chip; the cut has no legend yet, so no "i" on it
+    n = n or 3                            # Profile, Weather and the "i" legend chip (the cut's legend comes from atmosphere's sectionLegend since 24 Oct)
     c.eq(len(ch), n, 'the chips of the drawing are shown', what=f'{what}: chips')
     c.le(round(d['l'] - p['l'], 1), 8, 'the drawing starts at the left edge of the body (8 px at most)', what=f'{what}: drawing left against sheet left')
     if bare:
@@ -213,6 +213,19 @@ def legend_check(c):
     c.until("window.__t.shown(document.querySelector('.mp-legend'))", what='the legend reopens')
     c.page.mouse.click(*c.js("() => { const b = document.querySelector('.mp-legend').getBoundingClientRect(); return [b.left + 40, b.top + b.height / 2] }"))
     c.until("!window.__t.shown(document.querySelector('.mp-legend'))", what='a tap on the legend closes it')
+
+
+def cut_legend_check(c):
+    """V3 spec 7.1.14 on the weather cut: the "i" chip is shown over the cut too, and its legend lists the series atmosphere's
+    `sectionLegend()` reports for the drawn cut (symbol + label), closed by Escape."""
+    c.ok(c.shown('.mp-chip[data-legend]'), 'the "i" chip is not shown over the cut', 'a legend chip over the cut')
+    c.tap('.mp-chip[data-legend]')
+    c.until("window.__t.shown(document.querySelector('.mp-legend'))", what='the cut legend opens')
+    g = c.js("() => { const l = document.querySelector('.mp-legend'); return { n: l.querySelectorAll('li').length, sw: l.querySelectorAll('li .mp-lg-sw').length, first: (l.querySelector('li span:last-child') || {}).textContent || '' } }")
+    c.ge(g['n'], 3, 'the cut legend lists at least 3 series (from sectionLegend)', what=f'cut legend entries ({g["first"]!r}, ...)')
+    c.eq(g['sw'], g['n'], 'every cut legend entry has its symbol', what='cut legend symbols')
+    c.key('Escape')
+    c.until("!window.__t.shown(document.querySelector('.mp-legend'))", what='Escape closes the cut legend')
 
 
 def cut_drag(c, what):
@@ -293,6 +306,7 @@ def sheet_body_checks(c):
     g = drawing_fits(c, 'weather portrait 390 x 844', True)
     chips_layout(c, True, True, 'weather portrait')
     cut_drag(c, 'weather portrait')
+    cut_legend_check(c)
     c.ok(not g['strip']['shown'] and not g['notes']['shown'], f'strip shown {g["strip"]["shown"]}, notes shown {g["notes"]["shown"]}',
          'the weather cut alone at the default position')
     c.page.set_viewport_size({'width': 844, 'height': 390})
