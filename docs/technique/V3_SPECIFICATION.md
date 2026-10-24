@@ -247,6 +247,26 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       (objectif : maximiser la largeur dispo)")**: the vertical column exists only with the bare grip (default
       position); whenever the titled head row is shown (expanded, collapsed, landscape column) the chips go back
       **into that row, horizontally at its right**, and the drawing takes the full width. Same for Atmosphere's ◀ ▶.
+  14. **A legend for the drawing, the help button back, Météo in the bar** (user, 24 Oct, 22:15: "On devrait voir la
+      légende quelque part. Hover sur le panneau du bas ? Au clic ? Un I quelque part ? À toi de décider. Le chemin,
+      c'est qu'on voit un graphe le plus étendu possible, mais qu'on ne sait pas ce que sont les données
+      représentées, d'autant qu'il n'y a plus de bouton d'aide contextuelle en header. Tu vas le remettre, et enlever
+      les settings du footer. Pour y mettre soit les fiches de perfo, soit la météo. Tu gardes néanmoins le principe
+      de double clic sur le menu pour mettre plus de boutons."): relay decisions.
+      - **Legend**: an **"i" chip** in the drawing's chip set (last chip: after Profil · Météo on the map, after ◀ ▶
+        in Atmosphere; in the column with the bare grip, in the head row otherwise) toggles a **legend overlay** over
+        the drawing (translucent panel on the drawing's surface, closed by the chip, a tap on it or Escape): the
+        series actually drawn, with their symbol and name in four languages, produced by the drawing code itself
+        (`legend()` of `weather_map.js` / `section.js` for the cut, the profile's own list for the profile), never a
+        static text. No hover (a phone has none). The screen's help chapter also carries the legend.
+      - **Header on a phone**: name · **"?"** (contextual help: the chapter of the current screen, legend included)
+        · **⚙** (Réglages, carrying the badge: green news, amber attention). The "i" pop-up goes; its lines are the
+        status block at the top of Réglages (rule 10 amended: the gear and the help button stay in the header).
+      - **Bottom bar**: Préparer · Carte · CR · Vols · **Météo** (Atmosphere gets its own tab: it is the richest
+        screen and was hidden behind a second tap, "Où est passée la carte météo ?"); Réglages leaves the bar (the
+        gear). Performance sheets stay a view of Préparer (Devis / Fiches); the Préparer popover on a second tap
+        lists Carburant · Fiches, the principle "second tap = more buttons" is kept for every tab with several
+        entries. Screen rail: unchanged order, Réglages kept at the end of the rail.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
