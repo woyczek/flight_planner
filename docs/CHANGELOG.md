@@ -28,6 +28,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   touch zone; same drag, tap and keys, also at the top of the column in landscape. The collapsed sheet is 29 px high, and the drag stops
   at the measured header instead of a constant. `createSheet`, `labels(pos, rank)` and the positions are unchanged; nothing uses it yet
   (maps and atmosphere adopt it in their own lots). The bench grows from 129 to 177 checks.
+- **Atmosphere: a legend behind an "i" chip, and a help chapter** (`modules/atmosphere/section.js`, `module.js`, `texts.js`, `help/*.md`,
+  `frame/help/pilot.*.md`; atmosphere DECISIONS, INTEGRATION § 5; V3_SPECIFICATION § 7.1 rule 14) — the "i" chip, after ◀ ▶, shows over the
+  cut or the slice the series really drawn with their symbols, in four languages (`sectionLegend` in `section.js`, for the Map too); a touch
+  or Escape closes it. The pilot's manual gains the "Météo" chapter, legend included.
 - **Atmosphere: the cross-section fits the sheet, no title over it** (`modules/atmosphere/section.js`, `module.js`, `texts.js`; atmosphere
   DECISIONS, INTEGRATION § 5; V3_SPECIFICATION § 7.1 rule 13) — the cut and the slice are drawn at the sheet body's exact height (`minHeight`,
   default 0, in `drawSection` for the Map too): fewer level labels on a low chart, the distance axis always visible (on a 390 × 664 phone

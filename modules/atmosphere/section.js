@@ -10,6 +10,9 @@ import * as A from './atmo.js';
 import {
   formatLevel
 } from '../../frame/lib/route_text.js';
+import {
+  TX
+} from './texts.js';
 
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, k) => a == null || b == null ? (a ?? b) : a + (b - a) * k;
@@ -616,4 +619,64 @@ export function soundingSvg(col, {
       ftOf: y => clamp(1 - (y - t) / ph, 0, 1) * top
     }
   };
+}
+
+/** Légende du dessin (V3_SPECIFICATION § 7.1 règle 14) : les séries réellement dessinées, dans l'ordre de lecture, avec leur
+ *  symbole. o : { kind ('cut' : la coupe, 'slice' : la tranche), layers (ceux de sectionSvg), strips (bandes de surface
+ *  montrées), cloudRgb, t (texte d'une ligne [fr, en, de, es] dans la langue de l'appli ; sans elle, le français) }.
+ *  → [{ key, label, labels [fr, en, de, es], swatch (SVG de 28 × 14, couleurs des dessins) }]. Pure (pas de DOM). */
+export function sectionLegend({
+  kind = 'cut',
+  layers = {},
+  strips = false,
+  cloudRgb = [96, 104, 116],
+  t = null
+} = {}) {
+  const L = layers,
+    sw = inner => `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="14" viewBox="0 0 28 14" style="${VARS}" aria-hidden="true">${inner}</svg>`,
+    line = (color, dash = '', w = 2) => sw(`<line x1="1" y1="7" x2="27" y2="7" stroke="${color}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`),
+    box = fill => sw(`<rect x="1" y="2" width="26" height="10" rx="2" fill="${fill}"/>`),
+    ramp = (stops, id) => sw(`<defs><linearGradient id="${id}">${stops.map((c, i) => `<stop offset="${i / (stops.length - 1)}" stop-color="${c}"/>`).join('')}</linearGradient></defs><rect x="1" y="2" width="26" height="10" rx="2" fill="url(#${id})"/>`),
+    hatch = (pat, id) => sw(`<defs>${PATTERNS.replace(/at-p-/g, `${id}-`)}</defs><rect x="1" y="2" width="26" height="10" fill="url(#${id}-${pat})"/>`),
+    cloud = `rgba(${cloudRgb},.75)`,
+    rows = [],
+    add = (key, text, swatch) => rows.push({
+      key,
+      labels: TX[text],
+      label: t ? t(TX[text]) : TX[text][0],
+      swatch
+    });
+  if (kind === 'slice') {
+    add('tC', 'lgTemp', line('#e34948'));
+    add('tdC', 'lgDew', line('#008300'));
+    add('isa', 'lgIsa', line('var(--sog-muted)', '5 4', 1.2));
+    add('computed', 'lgComputed', line('var(--at-computed)'));
+    add('planned', 'lgPlanned', line('var(--at-planned)', '7 4'));
+    add('requested', 'lgRequested', line('var(--at-requested)', '2 4'));
+    add('inv', 'lgInv', hatch('inv', 'lg-sd'));
+    add('cloud', 'lgCloudCol', ramp(['transparent', cloud], 'lg-sdc'));
+    add('wind', 'lgWind', sw(`<g color="var(--sog-muted)">${barb(14, 7, 270, 65, 12)}</g>`));
+    add('terrain', 'lgTerrain', box('var(--at-terrain)'));
+    return rows;
+  }
+  add('computed', 'lgComputed', line('var(--at-computed)', '', 2.5));
+  add('planned', 'lgPlanned', line('var(--at-planned)', '7 4'));
+  add('requested', 'lgRequested', line('var(--at-requested)', '2 4'));
+  add('toc', 'lgTocTod', sw('<circle cx="14" cy="7" r="3.5" fill="var(--at-computed)"/>'));
+  if (L.cloud) add('cloud', 'lgCloud', ramp(['transparent', cloud], 'lg-c'));
+  const fill = L.da ? 'da' : L.temp ? 'temp' : L.rh ? 'rh' : null;
+  if (fill === 'temp') add('temp', 'lgTempFill', ramp([...BLUE.slice(0, 3), ...RED.slice(1)], 'lg-t'));
+  if (fill === 'da') add('da', 'lgDaFill', ramp([...BLUE.slice(0, 3), ...RED.slice(1)], 'lg-d'));
+  if (fill === 'rh') add('rh', 'lgRhFill', ramp(['rgba(42,120,214,0)', 'rgba(42,120,214,.6)'], 'lg-r'));
+  if (L.iso) add('iso', 'lgIso', sw(
+    '<line x1="1" y1="4" x2="27" y2="4" stroke="rgba(227,73,72,.8)" stroke-dasharray="4 3"/><line x1="1" y1="10" x2="27" y2="10" stroke="#1c5cab" stroke-width="2"/>'
+  ));
+  if (L.inv) add('inv', 'lgInv', hatch('inv', 'lg-i'));
+  if (L.ice) add('ice', 'lgIce', hatch('ice2', 'lg-g'));
+  if (L.wind) add('wind', 'lgWind', sw(`<g color="var(--sog-muted)">${barb(14, 7, 270, 65, 12)}</g>`));
+  if (L.cu) add('cu', 'lgCu', line('var(--sog-muted)', '1 3', 1.2));
+  add('terrain', 'lgTerrain', box('var(--at-terrain)'));
+  add('points', 'lgPoints', sw('<line x1="14" y1="1" x2="14" y2="13" stroke="var(--sog-border)" stroke-dasharray="2 3"/>'));
+  if (strips) add('strips', 'lgStrips', sw(`<rect x="1" y="1" width="26" height="3" fill="${cloud}"/><rect x="1" y="5.5" width="26" height="3" fill="rgba(42,120,214,.7)"/><rect x="1" y="10" width="26" height="3" fill="rgba(250,178,25,.8)"/>`));
+  return rows;
 }

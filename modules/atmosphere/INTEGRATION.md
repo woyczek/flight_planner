@@ -13,6 +13,7 @@
 | `tools/build_world_weather.py` | builds `/v3/weather/world/` from NOAA GFS in the Pages workflow (`.github/workflows/pages.yml`, step "Synoptique monde") |
 | `tools/grib2_lite.py` | minimal GRIB2 reader (grid 3.0, products 4.0–4.15, packing 5.0 and 5.3, bitmap), standard library |
 | `lib/weather_map.js` | the weather map renderer (§ 6), shared by this module and the maps module: `createWeatherMap`, `attach`, `gridRequest`, `legend()` |
+| `help/<lang>.md` | the "Météo" chapter of the pilot's manual, four languages (built by `frame/help/build_help.py`) |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
 | `test/weather_map.html` | bench of the weather map library: states, legend, values, no fill showing the grid's limit, `edge`, `attach` / `detach`, no Open-Meteo call |
@@ -124,6 +125,11 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
   60 px is the least it draws). V3_SPECIFICATION § 7.1 rule 13: no title over a drawing, the drawing at the body's
   exact height. The left gutter is measured from the level labels it draws (about 33 px for "FL350"; the surface strips'
   labels widen it when they are shown), so the drawing starts at the body's edge.
+- `sectionLegend({ kind, layers, strips, cloudRgb, t })` (rule 14): the legend of what the drawing really shows, in
+  reading order — `kind` `'cut'` (the cross-section, with the `layers` passed to `drawSection`) or `'slice'` (the
+  sounding), `strips` true when the surface strips are drawn (body of 260 px or more), `t` the host's translation of a
+  `[fr, en, de, es]` row (`ctx.t`). → `[{ key, label, labels, swatch }]`, `swatch` an SVG string of 28 × 14 px with the
+  drawing's own colours (the `--at-*` tokens set on it). Pure; the host shows it over the drawing behind its "i" chip.
 - `sectionPlaces(points)`: the reading places (every 50 NM, 24 at most, as Fuel), on continuous longitudes
   (`A.unwrapLons`: a route across the date line is sampled along itself, not round the world); `sectionModel` does
   the same, so a reader passing the current flight's raw points finds the same cache cells as this module. `sectionVars(levelFt, points)`: the

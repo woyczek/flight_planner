@@ -113,7 +113,8 @@ def e4(c):
     c.le(round(dl['h'] / panel['h'], 3), 0.6, 'the summary list takes at most 60 % of the expanded sheet', what=f'summary {dl["h"]:.0f} px of a {panel["h"]:.0f} px sheet')
 
 
-@case('E5', 'One "i" only', 'E', tags=('atmosphere',), screens=False, langs4=True, rule='L8: user "le double bouton i sert à quoi ?"')
+@case('E5', 'One "i" only', 'E', tags=('atmosphere',), screens=False, langs4=True,
+      rule='L8: user "le double bouton i sert à quoi ?"; § 7.1 rule 14: the drawing\'s legend behind an "i" chip named "Légende"')
 def e5(c):
     for target in ('atmosphere', 'atmosphere?donnees=demo'):
         c.open(target, flight=True)
@@ -122,7 +123,13 @@ def e5(c):
           const t = (e.textContent || '').trim(), l = (e.getAttribute('aria-label') || e.title || '').trim();
           return window.__t.shown(e) && (/^(i|ⓘ|ℹ)$/i.test(t) || /^(i|infos?|information)$/i.test(l) || !!e.querySelector('svg[data-i="info"]')) })
           .map(e => e.id || e.className || e.tagName)""")
-        c.eq(found, ['fInfo'], 'the only "i" on the page is the frame\'s #fInfo', what=f'{target}: "i" buttons')
+        # the frame's #fInfo (until § 7.1.10 removes it) and, over a drawing, the legend chip: no other "i", none unnamed
+        c.eq([f for f in found if f not in ('fInfo', 'at-chip-i')], [], 'no "i" besides the frame\'s #fInfo and the legend chip', what=f'{target}: "i" buttons')
+        legend = c.js("""() => [...document.querySelectorAll('[data-module="atmosphere"] .at-chip-i')].filter(e => window.__t.shown(e))
+          .map(e => e.getAttribute('aria-label'))""")
+        c.le(len(legend), 1, 'one legend chip at most', what=f'{target}: legend chips {legend}')
+        c.eq(all(x and x.lower() not in ('i', 'info', 'infos', 'information') for x in legend), True,
+             'the legend chip is named for what it shows (Légende), not "info"', what=f'{target}: legend chip names {legend}')
 
 
 @case('E6', 'Hint once', 'E', tags=('atmosphere',), screens=False, langs4=True, rule='L10: the hint was a pill written over the map')

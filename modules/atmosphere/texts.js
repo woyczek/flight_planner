@@ -102,6 +102,57 @@ export const TX = {
   sliceLoading: ['Lecture de la prévision à ce point…', 'Reading the forecast at this point…',
     'Vorhersage an diesem Punkt wird gelesen…', 'Leyendo la previsión en este punto…'
   ],
+  legend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
+  lgComputed: ['Trajectoire calculée (montée, croisière, descente)', 'Computed path (climb, cruise, descent)',
+    'Berechnete Bahn (Steigflug, Reiseflug, Sinkflug)', 'Trayectoria calculada (ascenso, crucero, descenso)'
+  ],
+  lgPlanned: ['Niveau planifié', 'Planned level', 'Geplante Höhe', 'Nivel previsto'],
+  lgRequested: ['Niveau demandé', 'Requested level', 'Angeforderte Höhe', 'Nivel solicitado'],
+  lgTocTod: ['Fin de montée, début de descente (TOC, TOD)', 'Top of climb, top of descent (TOC, TOD)',
+    'Steigflugende, Sinkflugbeginn (TOC, TOD)', 'Fin del ascenso, inicio del descenso (TOC, TOD)'
+  ],
+  lgTerrain: ['Relief (altitude pression du sol)', 'Terrain (ground pressure altitude)', 'Gelände (Druckhöhe des Bodens)',
+    'Relieve (altitud de presión del suelo)'
+  ],
+  lgPoints: ['Points de la route', 'Route points', 'Routenpunkte', 'Puntos de la ruta'],
+  lgCloud: ['Nuages (plus sombre : plus couvert)', 'Cloud (darker: more cover)', 'Wolken (dunkler: mehr Bedeckung)',
+    'Nubes (más oscuro: más cubierto)'
+  ],
+  lgTempFill: ['Température (fond : bleu froid, rouge chaud)', 'Temperature (background: blue cold, red warm)',
+    'Temperatur (Hintergrund: blau kalt, rot warm)', 'Temperatura (fondo: azul frío, rojo cálido)'
+  ],
+  lgDaFill: ['Altitude-densité (fond : bleu basse, rouge haute)', 'Density altitude (background: blue low, red high)',
+    'Dichtehöhe (Hintergrund: blau niedrig, rot hoch)', 'Altitud de densidad (fondo: azul baja, rojo alta)'
+  ],
+  lgRhFill: ['Humidité (fond bleu, plus foncé : plus humide)', 'Humidity (blue background, darker: wetter)',
+    'Feuchte (blauer Hintergrund, dunkler: feuchter)', 'Humedad (fondo azul, más oscuro: más húmedo)'
+  ],
+  lgIso: ['Isothermes tous les 5 °C (0 °C en bleu épais)', 'Isotherms every 5 °C (0 °C thick blue)',
+    'Isothermen alle 5 °C (0 °C dick blau)', 'Isotermas cada 5 °C (0 °C azul grueso)'
+  ],
+  lgInv: ['Inversion (la température monte avec l’altitude)', 'Inversion (temperature rising with height)',
+    'Inversion (Temperatur steigt mit der Höhe)', 'Inversión (la temperatura sube con la altura)'
+  ],
+  lgIce: ['Givrage (clair : léger, foncé : fort)', 'Icing (light hatching: light, dense: severe)',
+    'Vereisung (leicht schraffiert: leicht, dicht: stark)', 'Engelamiento (rayado claro: ligero, denso: fuerte)'
+  ],
+  lgWind: ['Vent (barbule : demi 5 kt, plume 10, fanion 50)', 'Wind (barb: half 5 kt, feather 10, pennant 50)',
+    'Wind (Fieder: halb 5 kt, voll 10, Wimpel 50)', 'Viento (barba: media 5 kt, entera 10, banderín 50)'
+  ],
+  lgCu: ['Base des cumulus (estimée)', 'Cumulus base (estimated)', 'Cumulus-Basis (geschätzt)',
+    'Base de los cúmulos (estimada)'
+  ],
+  lgTemp: ['Température', 'Temperature', 'Temperatur', 'Temperatura'],
+  lgDew: ['Point de rosée', 'Dew point', 'Taupunkt', 'Punto de rocío'],
+  lgIsa: ['Atmosphère type (ISA)', 'Standard atmosphere (ISA)', 'Normatmosphäre (ISA)', 'Atmósfera tipo (ISA)'],
+  lgCloudCol: ['Nuages (colonne à droite)', 'Cloud (column at the right)', 'Wolken (Spalte rechts)',
+    'Nubes (columna a la derecha)'
+  ],
+  lgStrips: ['Bandes du bas : nébulosité basse, moyenne, haute, précipitations, visibilité < 8 km',
+    'Bottom strips: low, mid, high cloud, precipitation, visibility < 8 km',
+    'Bänder unten: tiefe, mittlere, hohe Bewölkung, Niederschlag, Sicht < 8 km',
+    'Bandas inferiores: nubosidad baja, media, alta, precipitación, visibilidad < 8 km'
+  ],
   lgPaths: [
     'Trajectoires : calculée (trait plein), planifiée (tirets), demandée (pointillés). Tranche : température (rouge), point de rosée (vert), atmosphère type (tirets).',
     'Paths: computed (solid), planned (dashed), requested (dotted). Slice: temperature (red), dew point (green), standard atmosphere (dashed).',

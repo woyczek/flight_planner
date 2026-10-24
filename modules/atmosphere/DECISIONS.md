@@ -2,6 +2,22 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (night) — the legend behind an "i" chip; the help chapter
+
+- **The request** (user, relayed, rule 14 of V3_SPECIFICATION § 7.1: "On devrait voir la légende quelque part… on voit
+  un graphe le plus étendu possible, mais on ne sait pas ce que sont les données représentées"). **Done**: an "i" chip
+  ("Légende" ×4), last after ◀ ▶ (in the column with the bare head, in the title row otherwise), `aria-pressed`, shows
+  over the drawing a translucent panel of the series really drawn — the cross-section with its layers (and the surface
+  strips when shown), or the slice — each with its symbol drawn in the drawing's own colours; a touch on it, the chip or
+  Escape closes it. The rows come from `section.js` (`sectionLegend`), so the map's cut shows the same legend. With
+  three chips the column starts under the bare head, beside the slider row (both narrowed by 44 px), so it fits a 111 px
+  body (390 × 664). On a low body the legend scrolls inside its panel; expanded, it shows whole.
+- **The help chapter** ("Météo", four languages, `help/<lang>.md`): the flight, loading, the map, the flight date, the
+  cut and the slices, and the legend in full; built into the pilot's manual. The translations are mine; the help
+  session may review them.
+- **Not changed here** (relay's decision): Atmosphere becomes the fifth tab "Météo" of the bottom bar — a frame lot; to
+  check at its integration that the module opens from the tab.
+
 ## 24 October 2026 (night) — the drawing fits the sheet; no title over a drawing
 
 - **The report** (user, iPhone, relayed, rule 13 of V3_SPECIFICATION § 7.1): "c'est toujours le même souci, les

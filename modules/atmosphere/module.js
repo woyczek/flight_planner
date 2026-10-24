@@ -27,7 +27,8 @@ import {
   sectionPlaces,
   sectionVars,
   topFtOf,
-  diverging
+  diverging,
+  sectionLegend
 } from './section.js';
 import {
   svg
@@ -178,15 +179,22 @@ const STYLE = `
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
 [data-module="atmosphere"] .f-sheet-body.at-dbody{position:relative}
-/* ◀ ▶ des tranches (§ 7.1.13, gabarit des puces de la Carte) : avec la tête nue, colonne de 44 px à droite du dessin, sous la tête
-   et la ligne du curseur (30 px), boutons de 40 px, pas de 44 px ; avec la ligne de titre (agrandie, réduite, paysage), dans cette
-   ligne à droite */
+/* puces du dessin, ◀ ▶ des tranches et « i » (§ 7.1.13 et 14, gabarit des puces de la Carte) : avec la tête nue, colonne de 44 px à
+   droite, de la tête au bas du corps (le curseur et le dessin s'arrêtent avant elle : trois puces tiennent sur un corps bas), boutons
+   de 40 px, pas de 44 px ; avec la ligne de titre (agrandie, réduite, paysage), dans cette ligne à droite */
 [data-module="atmosphere"] .at-chips{position:absolute;z-index:2;right:0;top:calc(var(--f-sheet-head) - 1px + 30px);width:44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
 [data-module="atmosphere"] .at-chips[hidden]{display:none}
-[data-module="atmosphere"] .f-sheet-head-bare~.at-chips{top:calc(var(--f-sheet-head-bare) + 30px)}
-html:not(.f-land) [data-module="atmosphere"] .at-chipcol>.at-dbody{margin-right:44px}
+[data-module="atmosphere"] .f-sheet-head-bare~.at-chips{top:var(--f-sheet-head-bare)}
+[data-module="atmosphere"] .at-chips>button[hidden]{display:none}
+html:not(.f-land) [data-module="atmosphere"] .at-chipcol>:is(.at-dbody,.at-when){margin-right:44px}
 [data-module="atmosphere"] .f-sheet-head>.at-chips{position:static;flex:none;width:auto;flex-direction:row;gap:0;padding:0;height:100%}
 [data-module="atmosphere"] .f-sheet-head>.at-chips>button{width:var(--sog-touch,44px);height:100%;border:0;border-radius:0}
+[data-module="atmosphere"] .at-chip-i{font:italic 600 16px/1 Georgia,serif}
+[data-module="atmosphere"] .at-chips>button[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
+/* légende du dessin (règle 14) : panneau translucide sur le dessin, en haut à gauche */
+[data-module="atmosphere"] .at-legend{position:absolute;z-index:3;left:4px;top:4px;max-width:calc(100% - 8px);max-height:calc(100% - 8px);overflow:auto;box-sizing:border-box;display:grid;gap:3px;padding:6px 8px;font-size:12px;line-height:1.3;background:color-mix(in srgb,var(--sog-surface) 90%,transparent);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);box-shadow:var(--sog-shadow);cursor:pointer}
+[data-module="atmosphere"] .at-legend>div{display:flex;gap:8px;align-items:center}
+[data-module="atmosphere"] .at-legend svg{flex:none}
 [data-module="atmosphere"] .at-chips>button{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-fg);box-shadow:none;font-size:14px;cursor:pointer;touch-action:manipulation}
 [data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
 [data-module="atmosphere"] .at-when input{flex:1 1 auto;min-width:0;margin:0;accent-color:var(--sog-accent);touch-action:manipulation}
@@ -359,7 +367,7 @@ export async function mount(el, ctx) {
   <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="srcTag"></span><b class="f-sheet-title" data-at="dtitle"></b></button>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
   <div class="at-when" data-at="when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
-  <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button></div>
+  <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
   el.classList.add('f-sheet');
@@ -668,7 +676,8 @@ export async function mount(el, ctx) {
     $('dclose').hidden = view === 'profile';
     // ◀ ▶ des tranches de la route : en colonne à droite du dessin (portrait), en ligne au-dessus (paysage), comme les puces de
     // la Carte (§ 7.1.13) ; le dessin laisse la place de la colonne
-    $('chips').hidden = !(view === 'slice' && S.local?.kind === 'route');
+    $('prev').hidden = $('next').hidden = !(view === 'slice' && S.local?.kind === 'route');
+    if (view !== 'profile' && view !== 'slice') S.legend = false;
     dbody.classList.toggle('at-plot', view === 'profile' || view === 'slice');
     drawData();
     schedule();
@@ -752,6 +761,7 @@ export async function mount(el, ctx) {
       S.route.samples.forEach((s, j) => Math.abs(s.nm - nm) < Math.abs(S.route.samples[k].nm - nm) && (k = j));
       openRouteSlice(k);
     };
+    showLegend();
   }
 
   function xsTip(ev) {
@@ -917,6 +927,7 @@ export async function mount(el, ctx) {
     box.innerHTML = r.svg + '<div class="at-tip" data-at="sdTip"></div>';
     box.firstChild.onpointermove = ev => sdTip(ev, col, box);
     box.firstChild.onpointerleave = () => $('sdTip').style.display = 'none';
+    showLegend();
     // lecture
     const ft = S.traj.computed(nm),
       x = A.at(col, ft),
@@ -1611,11 +1622,43 @@ export async function mount(el, ctx) {
     // garde toute sa largeur)
     if (on && chips.parentNode === head) $('when').after(chips);
     if (!on && chips.parentNode !== head) $('dclose').before(chips);
+    chips.hidden = !bareLabel; // les puces (◀ ▶ des tranches, « i ») accompagnent un dessin
     $('data').classList.toggle('at-chipcol', on && !chips.hidden);
     if (on) {
       setAttr(head, 'aria-label', bareLabel);
       setAttr(head, 'role', 'group');
     } else if (head.hasAttribute('aria-label')) head.removeAttribute('aria-label');
+  }
+
+  /** Légende du dessin en superposition (règle 14) : les séries réellement dessinées, produites par section.js (la même pour
+   *  la Carte) ; ouverte et fermée par la puce « i », fermée aussi par un toucher sur elle ou Échap. Reposée après chaque
+   *  dessin (le corps est réécrit). */
+  function showLegend() {
+    const btn = $('legendBtn'),
+      open = !!S.legend && (S.view === 'profile' || S.view === 'slice') && !!dbody.querySelector('svg');
+    setAttr(btn, 'aria-pressed', String(open));
+    let box = dbody.querySelector('.at-legend');
+    if (!open) return box?.remove();
+    const rows = sectionLegend({
+      kind: S.view === 'slice' ? 'slice' : 'cut',
+      layers: S.xsLayers,
+      strips: S.view === 'profile' && dbody.clientHeight >= 260,
+      cloudRgb: cloudRgb(),
+      t: row => ctx.t(row)
+    });
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'at-legend';
+      box.setAttribute('role', 'note');
+      box.onclick = () => {
+        S.legend = false;
+        showLegend();
+      };
+      dbody.append(box);
+    }
+    const html = rows.map(r => `<div>${r.swatch}<span>${esc(r.label)}</span></div>`).join('');
+    if (box.innerHTML !== html) box.innerHTML = html;
+    setAttr(box, 'aria-label', T('legend'));
   }
 
   /** Titre de la poignée : le contenu, puis son contexte (une ligne coupée ; le texte entier et sa note en infobulle). */
@@ -1962,6 +2005,17 @@ export async function mount(el, ctx) {
     render();
     show('profile');
   };
+  $('legendBtn').onclick = () => {
+    S.legend = !S.legend;
+    showLegend();
+  };
+  const legendKey = ev => {
+    if (ev.key === 'Escape' && S.legend) {
+      S.legend = false;
+      showLegend();
+    }
+  };
+  document.addEventListener('keydown', legendKey);
   $('prev').onclick = () => openRouteSlice((S.local?.i ?? 0) - 1);
   $('next').onclick = () => openRouteSlice((S.local?.i ?? 0) + 1);
   // heure, niveau, vitesse : recalcul sans relire la prévision (sauf un niveau que la route ou la grille n'a pas encore :
@@ -2093,6 +2147,7 @@ export async function mount(el, ctx) {
     mo.disconnect();
     mq.removeEventListener('change', repaint);
     document.removeEventListener('visibilitychange', back);
+    document.removeEventListener('keydown', legendKey);
     window.removeEventListener('pageshow', back);
     unwatch?.();
     S.map?.remove();
@@ -2104,7 +2159,7 @@ export async function mount(el, ctx) {
     head: $('grip').parentNode,
     grip: $('grip'),
     pos: sheetKeep,
-    ignore: '[data-at="dclose"],[data-at="prev"],[data-at="next"]',
+    ignore: '[data-at="dclose"],[data-at="prev"],[data-at="next"],[data-at="legendBtn"]',
     labels: (pos, rank) => `${T('sheetSize')} (${T(`sheet${rank}`)})`,
     onChange: pos => sheetKeep = pos,
     onSettle: settled

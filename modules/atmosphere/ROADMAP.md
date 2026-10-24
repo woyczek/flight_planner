@@ -65,7 +65,7 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 4. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
    `ctx.weather`, show the tally in Settings › Diagnostics; then Fuel reads its winds aloft through it
    (`cache/fuel/aloft.json` retired), so the quota is paid once.
-5. Help chapter in four languages once the place is decided; times of passage with the wind.
+5. Times of passage with the wind. (The help chapter is written: `help/<lang>.md`, "Météo".)
 6. Ideas not done: skew-T with parcel and CAPE, clear-air turbulence (shear), departure time as an animation, PNG
    export of the briefing.
 
