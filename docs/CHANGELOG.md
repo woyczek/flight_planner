@@ -212,10 +212,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   calls a minute and stops before 10,000 a day; past days removed), written to move unchanged into the frame lot
   `frame/weather`. Nothing is asked when the screen opens; sampling as Fuel (50 NM, 24 places at most): a 370 NM flight
   costs ≈ 295 weighted calls once, then 0; a slice off the route, one place (≈ 10). **World synoptic** outside the
-  flight's grid, never a call from the device: `/v3/weather/world.json` built by `tools/build_world_weather.py` in the
-  Pages workflow (GFS, 15° grid, pressure, wind, cloud, temperature every 3 h to +24 h; Open-Meteo read once per run,
-  the published file kept otherwise or on refusal; schedule every 6 h), drawn when the view leaves the grid, the
-  handle's title saying what is shown, the values at a tapped point outside the grid. Routes across the date line
+  flight's grid, never a call from the device: `/v3/weather/world/` built from NOAA GFS by `tools/build_world_weather.py`
+  (GRIB2 read by `tools/grib2_lite.py`) in the Pages workflow — 5° grid, every 3 h to +72 h, one file per step,
+  pressure, wind, temperature, cloud and its layers, CAPE, 0 °C isotherm, tropopause, jet stream, precipitation,
+  visibility; schedule every 6 h — drawn when the view leaves the grid (jet and convection layers), the handle's title
+  saying what is shown, every value at a tapped point outside the grid. **Flight date slider** under the handle (0 to
+  +72 h): the cross-section, the map and the world synoptic follow, nothing asked; "Load" reads every day it can
+  reach. The map goes round the world east or west, the flight on every copy. Routes across the date line
   (Siberia → Alaska) on continuous longitudes: sampling, grid, framing, cross-section and drawing follow the route.
 - **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
   help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA

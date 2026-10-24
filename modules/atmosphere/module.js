@@ -86,7 +86,8 @@ export const meta = {
   }],
   files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'world.js?v=0', 'section.js?v=0', 'texts.js?v=0',
     '../maps/lib/map_base.js?v=0',
-    '../../frame/lib/sheet.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0', '../maps/render.js?v=0',
+    '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0',
+    '../maps/render.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
   // du module Carte, gardés au premier usage : MapLibre, et les contours des pays du fond uni
@@ -140,6 +141,8 @@ const UI = 'cache/atmosphere/ui.json';
 const MAP_FIXED = [5000, 10000, 18000, 24000, 30000];
 /** Attente des tuiles avant le fond uni (ms). */
 const TILE_WAIT = 8000;
+/** Curseur « date du vol » : de l'heure prévue à +72 h (la dernière échéance publiée du synoptique monde). */
+const SHIFT_MAX = 72;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -253,6 +256,10 @@ const STYLE = `
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
 [data-module="atmosphere"] .f-sheet-body.at-dbody{position:relative}
+[data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
+[data-module="atmosphere"] .at-when input{flex:1 1 auto;min-width:0;margin:0;accent-color:var(--sog-accent);touch-action:manipulation}
+[data-module="atmosphere"] .at-when output{flex:none;min-width:9.5em;text-align:right;font-variant-numeric:tabular-nums;color:var(--sog-muted)}
+[data-module="atmosphere"] .at-when output.at-out{color:var(--sog-warn,#b26a00)}
 [data-module="atmosphere"] .f-sheet-body.at-dbody.at-plot{overflow:hidden}
 [data-module="atmosphere"] .at-tip{position:absolute;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:6px 8px;font-size:12px;line-height:1.4;box-shadow:var(--sog-shadow);white-space:nowrap;z-index:5;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .at-tip .m,[data-module="atmosphere"] .at-maptip .m{color:var(--sog-muted)}
@@ -353,9 +360,12 @@ export async function mount(el, ctx) {
       isotherm: true,
       tfill: false,
       cloud: true,
-      wind: true
+      wind: true,
+      jet: true,
+      conv: true
     },
-    mapLevel: 'sfc'
+    mapLevel: 'sfc',
+    shiftH: 0 // heures ajoutées au départ prévu (curseur ; pour la visite, jamais gardé)
   };
 
   // ---------------------------------------------------------------- outils
@@ -422,6 +432,7 @@ export async function mount(el, ctx) {
     <button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" hidden>◀</button>
     <button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" hidden>▶</button>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
+  <div class="at-when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
   el.classList.add('f-sheet');
@@ -593,12 +604,14 @@ export async function mount(el, ctx) {
     cacheOnly,
     stale
   }) {
+    const days = forecastDaysFor(cacheOnly);
     if (S.data === 'demo') return {
-      locs: A.locations(Demo.forecast(places, vars)),
+      locs: A.locations(Demo.forecast(places, vars, Date.now(), days * 24)),
       weight: 0
     };
     const r = await W.forecast(places, vars, {
       model: S.model.id,
+      days,
       cacheOnly,
       stale,
       onWait: s => setStatus(T('waitQuota', {
@@ -611,6 +624,14 @@ export async function mount(el, ctx) {
     };
   }
 
+  /** Jours de prévision (UTC, depuis aujourd'hui) : en lecture de la réserve, ceux du vol à l'heure choisie ; au
+   *  chargement, tous ceux que le curseur peut atteindre (prévu + 72 h + le vol) — Open-Meteo compte les lieux et les
+   *  variables, pas les jours (jusqu'à deux semaines) : le curseur ne coûte ensuite plus rien. */
+  function forecastDaysFor(cacheOnly) {
+    const until = (cacheOnly ? S.depTime || depValue() : depValue() + SHIFT_MAX * 3600) + 10 * 3600,
+      today = Date.parse(new Date().toISOString().slice(0, 10));
+    return clamp(Math.ceil((until * 1000 - today) / 864e5), 2, 16);
+  }
   /** TAF d'un terrain : gardé 30 min sur l'appareil (cache/atmosphere/taf/) ; cacheOnly : seulement ce qui est gardé. */
   async function taf(id, cacheOnly) {
     const p = `cache/atmosphere/taf/${id}.json`,
@@ -1201,6 +1222,8 @@ export async function mount(el, ctx) {
         attributionControl: {
           compact: true
         },
+        // le monde répété : la carte fait le tour par la droite comme par la gauche (option du socle)
+        worldCopies: true,
         wait: TILE_WAIT,
         alive: () => alive,
         onLoad: map => {
@@ -1270,22 +1293,34 @@ export async function mount(el, ctx) {
       w = S.world,
       where = `${P.lat.toFixed(2)}° ${A.wrapLon(P.lon).toFixed(2)}°`;
     if (S.world === undefined) loadWorld();
-    const k = w ? S.wgeo?.k ?? stepAt(w, S.route ? mapTime() : S.depTime || Date.now() / 1000) : 0,
-      x = w ? worldAt(w, k, P.lat, P.lon) : null;
+    const k = w ? stepAt(w, worldTime()) : 0,
+      sd = w ? worldStep(k) : null,
+      x = sd ? worldAt(w, sd, P.lat, P.lon) : null,
+      deg = v => v == null ? '—' : `${v < 0 ? '−' : ''}${fmtNum(Math.abs(v))} °C`,
+      pc = v => v == null ? '—' : `${fmtNum(v)} %`;
     sheetTitle(w ? T('worldPoint', {
       p: where,
       at: fmtHM(w.times[k])
     }) : where);
     const box = document.createElement('div');
     box.className = 'at-pad';
-    box.innerHTML = x ? `<dl class="at-kv">${[
-        [T('wpP'), x.p == null ? '—' : `${fmtNum(x.p)} hPa`],
-        [T('wpWind'), fmtWind(x.dir, x.kt)],
-        [T('wpCloud'), x.cc == null ? '—' : `${fmtNum(x.cc)} %`],
-        [T('wpT'), x.t == null ? '—' : `${x.t < 0 ? '−' : ''}${fmtNum(Math.abs(x.t))} °C`]
-      ].map(([k2, v]) => `<div><dt>${esc(k2)}</dt><dd>${esc(v)}</dd><dd></dd></div>`).join('')}</dl>
-      <p class="f-muted" style="margin:8px 0 0;font-size:12px">${esc(T('worldPointNote', { run: w.run ? fmtHM(w.run) : '—' }))}</p>` :
-      `<p class="f-muted">${esc(T(S.worldReading || S.world === undefined ? 'worldReading' : 'worldNone'))}</p>`;
+    // tout ce que porte la publication (les variables absentes d'une source sont omises)
+    const rows = x ? [
+      [T('wpP'), x.p == null ? '—' : `${fmtNum(x.p)} hPa`],
+      [T('wpWind'), fmtWind(x.wd, x.ws)],
+      [T('wpT'), deg(x.t)],
+      [T('wpCloud'), pc(x.cc)],
+      'ccl' in x && [T('wpLayers'), [x.ccl, x.ccm, x.cch].map(v => v == null ? '—' : fmtNum(v)).join(' / ') + ' %'],
+      'pr' in x && [T('wpPr'), x.pr == null ? '—' : `${fmtNum(x.pr, 1)} mm/h`],
+      'vis' in x && [T('wpVis'), x.vis == null ? '—' : `${fmtNum(x.vis / 1000, 1)} km`],
+      'cape' in x && [T('wpCape'), x.cape == null ? '—' : `${fmtNum(Math.round(x.cape / 10) * 10)} J/kg`],
+      'frz' in x && [T('wpFrz'), x.frz == null ? '—' : x.frz < 100 ? T('wpFrzSfc') : `${fmtNum(Math.round(x.frz / 100) * 100)} ft`],
+      'trop' in x && [T('wpTrop'), x.trop == null ? '—' : fmtLvl(x.trop)],
+      'js' in x && [T('wpJet'), fmtWind(x.jd, x.js)]
+    ].filter(Boolean) : null;
+    box.innerHTML = rows ? `<dl class="at-kv">${rows.map(([k2, v]) => `<div><dt>${esc(k2)}</dt><dd>${esc(v)}</dd><dd></dd></div>`).join('')}</dl>
+      <p class="f-muted" style="margin:8px 0 0;font-size:12px">${esc(T('worldPointNote', { src: w.source || w.model, step: w.step, run: w.run ? fmtHM(w.run) : '—' }))}</p>` :
+      `<p class="f-muted">${esc(T(S.worldReading || S.world === undefined || (w && !sd) ? 'worldReading' : 'worldNone'))}</p>`;
     dbody.replaceChildren(box);
   }
   /** Vue courante : projection (MapLibre, sinon Mercator du fond uni sur l'emprise du vol) et ses dimensions. */
@@ -1394,16 +1429,28 @@ export async function mount(el, ctx) {
     const rt = merc(A.refine(F.t, G.nx, G.ny, f)),
       rc = merc(A.refine(F.cc, G.nx, G.ny, f)),
       tStep = o.tStep || 2,
+      // hautes et basses pressions : extrêmum sur r lieux autour (o.hlR, 1 par défaut), et au moins o.hlMin hPa d'écart
+      // avec l'un d'eux (un champ plat n'en a pas ; à l'échelle du monde, les petits creux tropicaux non plus)
+      r = o.hlR || 1,
+      hlMin = o.hlMin || 0.5,
+      // o.wrap : la grille fait le tour du monde (sa dernière colonne recopie la première) ; les voisins se cherchent par-delà
+      // 180° comme partout ailleurs — pas de bord à l'antiméridien
+      nw = G.nx - 1,
       hl = [];
     if (F.ft == null)
       for (let j = 1; j < G.ny - 1; j++)
-        for (let i = 1; i < G.nx - 1; i++) {
+        for (let i = o.wrap ? 0 : 1; i < (o.wrap ? nw : G.nx - 1); i++) {
           const v = F.p[j * G.nx + i];
           if (v == null) continue;
-          const nb = [-1, 0, 1].flatMap(dj => [-1, 0, 1].map(di => F.p[(j + dj) * G.nx + i + di])).filter(x => x != null);
-          // un extrêmum : aucun voisin de l'autre côté, et au moins un écart de 0,5 hPa (un champ plat n'en a pas)
-          const isMin = nb.every(x => x >= v) && nb.some(x => x >= v + 0.5),
-            isMax = nb.every(x => x <= v) && nb.some(x => x <= v - 0.5);
+          const nb = [];
+          for (let dj = -r; dj <= r; dj++)
+            for (let di = -r; di <= r; di++) {
+              const jj = j + dj,
+                ii = o.wrap ? (((i + di) % nw) + nw) % nw : i + di;
+              if ((dj || di) && jj >= 0 && jj < G.ny && ii >= 0 && ii < G.nx && F.p[jj * G.nx + ii] != null) nb.push(F.p[jj * G.nx + ii]);
+            }
+          const isMin = nb.every(x => x >= v) && nb.some(x => x >= v + hlMin),
+            isMax = nb.every(x => x <= v) && nb.some(x => x <= v - hlMin);
           if (isMin || isMax) hl.push({
             ...G.places[j * G.nx + i],
             low: isMin,
@@ -1414,6 +1461,12 @@ export async function mount(el, ctx) {
       bbox: [w, s, e, n],
       tImg: fieldCanvas(rt.nx, rt.ny, k => rt.v[k] == null ? null : [...diverging(rt.v[k], 40, dk), 120]),
       cImg: fieldCanvas(rc.nx, rc.ny, k => rc.v[k] > 8 ? [...cloud, Math.round(rc.v[k] / 100 * 150)] : null),
+      // le synoptique monde seulement : courant-jet à 250 hPa (dès 60 kt), convection (CAPE dès 500 J/kg)
+      jImg: F.js?.some(Number.isFinite) ? (r => fieldCanvas(r.nx, r.ny, k => r.v[k] >= 60 ? [124, 58, 237, Math.round(Math.min(1, (r.v[
+          k] -
+        60) / 80) * 100 + 30)] : null))(merc(A.refine(F.js, G.nx, G.ny, f))) : null,
+      capeImg: F.cape?.some(Number.isFinite) ? (r => fieldCanvas(r.nx, r.ny, k => r.v[k] >= 500 ? [230, 120, 20, Math.round(Math.min(1, (r
+        .v[k] - 500) / 2000) * 90 + 30)] : null))(merc(A.refine(F.cape, G.nx, G.ny, f))) : null,
       isobars: F.p.some(Number.isFinite) ? curves(F.p, F.pStep, 'p', lv => `${Math.round(lv)}`, lv => 0.2 + 0.6 * (((lv / F.pStep) % 5 + 5) % 5) /
         4,
         () => dk ? '#c3c2b7' : '#3d3c39') : [],
@@ -1457,6 +1510,8 @@ export async function mount(el, ctx) {
     c.imageSmoothingQuality = 'high';
     if (L.tfill) c.drawImage(g.tImg, a.x, a.y, b.x - a.x, b.y - a.y);
     if (L.cloud) c.drawImage(g.cImg, a.x, a.y, b.x - a.x, b.y - a.y);
+    if (L.conv && g.capeImg) c.drawImage(g.capeImg, a.x, a.y, b.x - a.x, b.y - a.y);
+    if (L.jet && g.jImg) c.drawImage(g.jImg, a.x, a.y, b.x - a.x, b.y - a.y);
     // courbes
     const stroke = (list, style) => {
       for (const cv2 of list) {
@@ -1486,14 +1541,19 @@ export async function mount(el, ctx) {
       c.lineWidth = cv2.level === 0 ? 2 : 1;
       c.setLineDash(cv2.level === 0 ? [] : [5, 4]);
     });
-    if (L.isobar)
-      for (const h of g.hl) {
+    if (L.isobar) {
+      // les plus marquées d'abord, puis 70 px au moins entre deux marques à l'écran (le monde dézoomé)
+      const shown = [];
+      for (const h of [...g.hl].sort((x, y) => Math.abs(y.v - 1013) - Math.abs(x.v - 1013))) {
         const p = P(h.lat, h.lon);
+        if (shown.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 70)) continue;
+        shown.push(p);
         c.font = 'bold 18px system-ui, sans-serif';
         halo(c, h.low ? T('low') : T('high'), p.x, p.y, h.low ? '#c23b3a' : '#1c5cab', K.bg);
         c.font = '11px system-ui, sans-serif';
         halo(c, `${Math.round(h.v)}`, p.x, p.y + 15, K.muted, K.bg);
       }
+    }
     if (L.wind && g.winds.length) {
       // un vent tous les « stride » lieux : au moins 30 px entre deux barbules à l'écran (grille du monde dézoomée)
       const [p0] = g.winds[0],
@@ -1521,27 +1581,31 @@ export async function mount(el, ctx) {
     if (!b) return 2;
     if (!S.map) return 0; // fond uni : cadré sur le vol
     const v = S.map.getBounds(),
-      [w, s, e, n] = [v.getWest(), v.getSouth(), v.getEast(), v.getNorth()];
+      // la copie de la grille la plus proche de la vue (après un ou plusieurs tours du monde)
+      k = 360 * Math.round(((v.getWest() + v.getEast()) / 2 - (b[0] + b[2]) / 2) / 360),
+      [w, s, e, n] = [v.getWest() - k, v.getSouth(), v.getEast() - k, v.getNorth()];
     if (w >= b[0] && e <= b[2] && s >= b[1] && n <= b[3]) return 0;
     const ix = Math.max(0, Math.min(e, b[2]) - Math.max(w, b[0])),
       iy = Math.max(0, Math.min(n, b[3]) - Math.max(s, b[1])),
       cover = ix * iy / Math.max(1e-9, (e - w) * (n - s));
     return cover < 0.4 || !inBox(b, (s + n) / 2, (w + e) / 2) ? 2 : 1;
   }
-  /** Décalages de longitude des copies du monde visibles (MapLibre dézoomé répète le monde). */
-  function worldCopies() {
+  /** Décalages (multiples de 360°) qui amènent l'intervalle de longitudes [w, e] dans la vue : la carte répète le monde
+   *  vers la droite et vers la gauche ; au plus quatre copies. */
+  function copiesFor(w, e) {
     if (!S.map) return [0];
     const v = S.map.getBounds(),
       out = [];
-    for (let k = Math.floor((v.getWest() + 180) / 360); k <= Math.floor((v.getEast() + 180) / 360); k++) out.push(k * 360);
-    return out.length ? out.slice(0, 3) : [0];
+    for (let k = Math.ceil((v.getWest() - e) / 360); k <= Math.floor((v.getEast() - w) / 360) && out.length < 4; k++) out.push(k * 360);
+    return out.length ? out : [0];
   }
+  const worldCopies = () => copiesFor(-180, 180);
   /** Le synoptique monde, lu une fois (réserve de l'appareil, sinon le fichier publié) ; jamais Open-Meteo. */
   function loadWorld() {
     S.world = null;
     S.worldReading = true;
     S.worldAsked = Date.now();
-    readWorld().then(w => {
+    readWorld.index().then(w => {
       if (!alive) return;
       S.worldReading = false;
       S.world = w;
@@ -1565,25 +1629,59 @@ export async function mount(el, ctx) {
       h: w.run ? Math.round((t - w.run) / 3600) : '—'
     });
   }
-  /** Géométrie du synoptique monde au pas le plus proche de l'heure de la carte (null sans fichier). */
+  /** Heure montrée par le synoptique : celle de la carte (passage du vol), sinon le départ, sinon maintenant. */
+  const worldTime = () => S.route ? mapTime() : S.depTime || Date.now() / 1000;
+  /** Échéance k du synoptique : prête (sinon null, demandée, puis tout est redessiné à son arrivée) ; les six dernières
+   *  lues restent en mémoire (le curseur va et vient). */
+  const wsteps = new Map(),
+    wasked = new Set();
+
+  function worldStep(k) {
+    const w = S.world,
+      key = `${w.built}:${k}`;
+    if (wsteps.has(key)) return wsteps.get(key);
+    if (!wasked.has(key)) {
+      wasked.add(key);
+      readWorld.step(w, k).then(sd => {
+        wasked.delete(key);
+        if (!alive || S.world !== w || !sd) return;
+        wsteps.set(key, sd);
+        if (wsteps.size > 6) wsteps.delete(wsteps.keys().next().value);
+        S.wgeo = null;
+        baseTitle();
+        if (S.view === 'wpoint') drawData();
+        schedule();
+      });
+    }
+    return null;
+  }
+  /** Géométrie du synoptique monde à l'échéance la plus proche de l'heure de la carte ; pendant la lecture d'une autre
+   *  échéance, la précédente reste montrée (null sans publication). */
   function worldGeometry() {
     const w = S.world;
     if (!w) return null;
-    const k = stepAt(w, S.route ? mapTime() : S.depTime || Date.now() / 1000),
+    const k = stepAt(w, worldTime()),
       key = JSON.stringify([w.built, k, dark()]);
     if (S.wgeo?.key === key) return S.wgeo;
+    const sd = worldStep(k);
+    if (!sd) return S.wgeo?.built === w.built ? S.wgeo : null;
     const {
       G,
       F
-    } = worldGrid(w, k);
+    } = worldGrid(w, sd);
     S.wgeo = {
       key,
       k,
+      built: w.built,
       ...fieldGeometry(F, G, {
         merc: true,
-        tStep: 5
+        tStep: 10,
+        hlR: 3,
+        hlMin: 2,
+        wrap: true
       })
     };
+    baseTitle(); // l'échéance montrée a changé (curseur, tranche) : le titre la suit (écrit seulement s'il change)
     return S.wgeo;
   }
 
@@ -1642,12 +1740,14 @@ export async function mount(el, ctx) {
       if (wg) {
         c.save();
         if (S.grid && S.traj) {
-          const [w, s, e, n] = S.grid.g.bbox,
-            a = P(n, w),
-            b = P(s, e);
+          const [w, s, e, n] = S.grid.g.bbox;
           c.beginPath();
           c.rect(0, 0, v.W, v.H);
-          c.rect(a.x, a.y, b.x - a.x, b.y - a.y);
+          for (const off of copiesFor(w, e)) {
+            const a = P(n, w + off),
+              b = P(s, e + off);
+            c.rect(a.x, a.y, b.x - a.x, b.y - a.y);
+          }
           c.clip('evenodd');
         }
         for (const off of worldCopies()) drawGeo(c, wg, (la, lo) => P(la, lo + off), K, L);
@@ -1663,63 +1763,71 @@ export async function mount(el, ctx) {
       c.stroke();
     }
     if (!S.flight) return;
-    if (S.grid && S.traj) {
-      const g = mapGeometry();
-      drawGeo(c, g, P, K, L);
-      // trajectoire colorée par la température rencontrée, plus épaisse dans les nuages, ❄ au givrage
-      if (g.traj) {
-        const q = g.traj.map(t => P(t.lat, t.lon));
-        c.lineCap = 'round';
-        c.strokeStyle = K.bg;
-        c.lineWidth = 9;
-        c.beginPath();
-        q.forEach((p, k) => k ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y));
-        c.stroke();
-        c.lineCap = 'butt';
-        for (let k = 1; k < q.length; k++) {
+    // le vol sur chaque copie du monde visible (la carte fait le tour par la droite comme par la gauche)
+    const fb = fitBox(),
+      gb = gridBox() || [fb.w, fb.s, fb.e, fb.n];
+    for (const off of copiesFor(Math.min(gb[0], fb.w), Math.max(gb[2], fb.e))) drawFlight(off ? (la, lo) => P(la, lo + off) : P);
+
+    /** Le vol à une projection : sa grille (champs, courbes, trajectoire), la route, les points, la tranche locale. */
+    function drawFlight(P) {
+      if (S.grid && S.traj) {
+        const g = mapGeometry();
+        drawGeo(c, g, P, K, L);
+        // trajectoire colorée par la température rencontrée, plus épaisse dans les nuages, ❄ au givrage
+        if (g.traj) {
+          const q = g.traj.map(t => P(t.lat, t.lon));
+          c.lineCap = 'round';
+          c.strokeStyle = K.bg;
+          c.lineWidth = 9;
           c.beginPath();
-          c.moveTo(q[k - 1].x, q[k - 1].y);
-          c.lineTo(q[k].x, q[k].y);
-          c.strokeStyle = g.traj[k].c;
-          c.lineWidth = g.traj[k].w;
+          q.forEach((p, k) => k ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y));
           c.stroke();
-          if (g.traj[k].ice >= 1 && k % 4 === 0) halo(c, '❄', q[k].x, q[k].y - 9, g.traj[k].ice === 2 ? K.ice : '#9a6b00', K.bg);
+          c.lineCap = 'butt';
+          for (let k = 1; k < q.length; k++) {
+            c.beginPath();
+            c.moveTo(q[k - 1].x, q[k - 1].y);
+            c.lineTo(q[k].x, q[k].y);
+            c.strokeStyle = g.traj[k].c;
+            c.lineWidth = g.traj[k].w;
+            c.stroke();
+            if (g.traj[k].ice >= 1 && k % 4 === 0) halo(c, '❄', q[k].x, q[k].y - 9, g.traj[k].ice === 2 ? K.ice : '#9a6b00', K.bg);
+          }
         }
       }
-    }
-    // route et points
-    const pts = S.flight.points;
-    if (!(S.grid && S.mapLevel === 'traj')) {
-      c.lineCap = c.lineJoin = 'round';
-      c.beginPath();
-      pts.forEach((p, k) => {
+      // route et points
+      const pts = S.flight.points;
+      if (!(S.grid && S.mapLevel === 'traj')) {
+        c.lineCap = c.lineJoin = 'round';
+        c.beginPath();
+        pts.forEach((p, k) => {
+          const q = P(p.lat, p.lon);
+          k ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y);
+        });
+        c.strokeStyle = K.bg;
+        c.lineWidth = 6;
+        c.stroke();
+        c.strokeStyle = K.route;
+        c.lineWidth = 3;
+        c.stroke();
+      }
+      for (const p of pts) {
         const q = P(p.lat, p.lon);
-        k ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y);
-      });
-      c.strokeStyle = K.bg;
-      c.lineWidth = 6;
-      c.stroke();
-      c.strokeStyle = K.route;
-      c.lineWidth = 3;
-      c.stroke();
-    }
-    for (const p of pts) {
-      const q = P(p.lat, p.lon);
-      c.fillStyle = K.fg;
-      c.beginPath();
-      c.arc(q.x, q.y, 3.5, 0, 2 * Math.PI);
-      c.fill();
-      c.font = 'bold 11.5px system-ui, sans-serif';
-      halo(c, p.id, q.x + 7, q.y - 8, K.fg, K.bg, 'left');
-    }
-    // lieu de la tranche locale
-    if (S.local) {
-      const q = P(S.local.lat, S.local.lon);
-      c.strokeStyle = K.accent;
-      c.lineWidth = 2.5;
-      c.beginPath();
-      c.arc(q.x, q.y, 9, 0, 2 * Math.PI);
-      c.stroke();
+        c.fillStyle = K.fg;
+        c.beginPath();
+        c.arc(q.x, q.y, 3.5, 0, 2 * Math.PI);
+        c.fill();
+        c.font = 'bold 11.5px system-ui, sans-serif';
+        halo(c, p.id, q.x + 7, q.y - 8, K.fg, K.bg, 'left');
+      }
+      // lieu de la tranche locale
+      if (S.local) {
+        const q = P(S.local.lat, S.local.lon);
+        c.strokeStyle = K.accent;
+        c.lineWidth = 2.5;
+        c.beginPath();
+        c.arc(q.x, q.y, 9, 0, 2 * Math.PI);
+        c.stroke();
+      }
     }
   }
 
@@ -1874,6 +1982,8 @@ export async function mount(el, ctx) {
       row('mapLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
       row('mapLayers', 'wind', 'lyWind', barbKey) +
       row('mapLayers', 'tfill', 'lyTemp', key(ramp, true)) +
+      row('mapLayers', 'jet', 'lyJet', key('linear-gradient(90deg,rgba(124,58,237,.25),rgba(124,58,237,.75))', true)) +
+      row('mapLayers', 'conv', 'lyConv', key('linear-gradient(90deg,rgba(230,120,20,.25),rgba(230,120,20,.7))', true)) +
       `</div><div><b>${esc(T('profileTitle'))}</b>` +
       row('xsLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
       row('xsLayers', 'iso', 'lyIso', key('color:#1c5cab')) +
@@ -1917,6 +2027,30 @@ export async function mount(el, ctx) {
     setText($f('status'), s);
     if (!S.traj && S.view !== 'settings') drawData();
   }
+  /** Heure UTC d'un instant, avec le jour quand ce n'est pas aujourd'hui. */
+  const fmtWhen = t => {
+    const d = new Date(t * 1000);
+    return d.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) ? fmtHM(t) : `${d.toLocaleDateString(lang(), {
+      weekday: 'short',
+      day: 'numeric',
+      timeZone: 'UTC'
+    })} ${fmtHM(t)}`;
+  };
+  /** Ligne du curseur : le décalage et l'heure de départ qui en résulte ; en alerte hors de la prévision lue. */
+  function whenText() {
+    const t = S.depTime || depValue() + S.shiftH * 3600,
+      out = $('whenOut'),
+      s = S.shiftH ? T('whenPlus', {
+        h: S.shiftH,
+        at: fmtWhen(t)
+      }) : T('whenPlanned', {
+        at: fmtWhen(t)
+      });
+    setText(out, s);
+    out.classList.toggle('at-out', !!(S.route && S.outOfRange));
+    const v = String(S.shiftH);
+    if ($('shift').value !== v) $('shift').value = v;
+  }
   /** Le vol en bref, connu avant la météo : appareil, route, niveau, départ, modèle et run. */
   function flightSum() {
     const f = S.flight,
@@ -1958,6 +2092,7 @@ export async function mount(el, ctx) {
         }) : T('stCached')) + ` · ${T('stDay', { n: Math.round(S.daySpent) })}` : '') +
       (S.outOfRange ? ` · ${T('outOfRange')}` : ''));
     if (S.view === 'layers') layersCard();
+    whenText();
   }
 
   function levelOptions(cur) {
@@ -2014,7 +2149,7 @@ export async function mount(el, ctx) {
       S.cruiseKt = +$f('cruiseKt').value || A.cruiseKtOf(f.text) || 200;
       $f('cruiseKt').value = S.cruiseKt;
       if (f.when && !$f('dep').dataset.touched) setDep(Date.parse(f.when) / 1000);
-      S.depTime = depValue();
+      S.depTime = depValue() + S.shiftH * 3600;
       const mid = f.points[Math.floor(f.points.length / 2)];
       S.model = A.modelFor(mid.lat, A.wrapLon(mid.lon));
       S.run = null;
@@ -2210,7 +2345,7 @@ export async function mount(el, ctx) {
   // seules ses variables sont demandées)
   const recompute = () => {
     if (!S.route) return;
-    S.depTime = depValue();
+    S.depTime = depValue() + S.shiftH * 3600;
     S.levelFt = +$f('levelSel').value;
     S.cruiseKt = +$f('cruiseKt').value || S.cruiseKt;
     if (!routeLevels().every(l => S.route.levels.includes(l)) || S.grid && !gridLevels().every(l => S.grid.levels.includes(l)))
@@ -2222,6 +2357,34 @@ export async function mount(el, ctx) {
     $f('dep').dataset.touched = '1';
     recompute();
   };
+  // curseur « date du vol » : le départ prévu + x heures ; la coupe, la carte du vol et le synoptique monde suivent,
+  // depuis ce que l'appareil garde (rien n'est demandé ; au-delà de la prévision lue, « Charger »)
+  let shiftFrame = 0;
+  $('shift').oninput = () => {
+    S.shiftH = +$('shift').value;
+    S.depTime = depValue() + S.shiftH * 3600;
+    whenText();
+    shiftFrame ||= requestAnimationFrame(() => {
+      shiftFrame = 0;
+      if (!alive) return;
+      if (S.traj) {
+        compute();
+        render();
+      } else {
+        if (S.flight) flightSum();
+        baseTitle();
+        schedule();
+      }
+      whenText();
+    });
+  };
+  // relâché au-delà des jours lus à l'ouverture : la réserve relue pour la nouvelle heure (toujours sans appel)
+  $('shift').onchange = () => {
+    if (S.route && S.outOfRange) load({
+      cacheOnly: true
+    });
+  };
+  whenText();
   $f('levelSel').onchange = () => {
     $f('levelSel').dataset.touched = '1';
     recompute();

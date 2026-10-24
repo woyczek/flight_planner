@@ -40,6 +40,8 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 6. Buttons on the map (frame overlay layer, § 9.3): no tools row nor information line any more, the flight in brief in
    the sheet's title, full screen by the frame. On a 390 × 664 phone view the map went from 235 px to 380 px high
    (465 px in full screen).
+7. World synoptic from NOAA GFS published with the pages (5°, +72 h, 15 variables), nothing asked outside the
+   flight's grid; routes across the date line; the flight date slider (0 to +72 h, nothing asked).
 
 ## Not checked yet
 
@@ -50,14 +52,12 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 ## Next
 
 1. **Review** by the user on Pages.
-2. **World synoptic — to watch on the first runs**: the workflow's log ("synoptique monde : 264 lieux", "même run",
-   or "lecture impossible : HTTP 429"). Open-Meteo's quota is per IP and GitHub's runners are shared: if the runner is
-   refused day after day, the robust ways are NOAA GFS (NOMADS, no quota, GRIB2 to decode) or an Open-Meteo key as a
-   repository secret (paid) — the user's choice. The schedule (every 6 h) runs only once `pages.yml` is on `develop`
-   (default branch); until then the file is rebuilt at each push. On the launcher, no world layer until
-   `frame/weather` (a relay or the published file's host). Satellite tiles (NASA GIBS) and radar (RainViewer):
-   reachable since the environment's update (24 Oct 2026), both answer with `Access-Control-Allow-Origin: *`; next
-   candidates for the world view (clouds seen, not modelled), each a decision (host in `meta.net` and the CSP).
+2. **World synoptic — to watch on the first runs**: the workflow's log ("synoptique monde : 2376 lieux, 25 échéances",
+   "même run : publication reprise", or "lecture impossible"). The schedule (every 6 h) runs only once `pages.yml` is on
+   `develop` (default branch); until then the publication is rebuilt at each push. On the launcher, no world layer until
+   `frame/weather` (a relay or the publication's host). Next free data, each a decision (host in `meta.net` and the
+   CSP): satellite clouds (NASA GIBS) and radar (RainViewer), both with CORS; GFS upper levels (FL100…FL390 winds and
+   temperatures) to give the world view the map's altitudes; a longer slider (GFS goes to +384 h).
 3. **Landscape** (later lot): map left, narrow block right, buttons as a rail on the right edge — for the ergonomics
    session.
 4. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as

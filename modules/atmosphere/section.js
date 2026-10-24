@@ -128,7 +128,9 @@ export const topFtOf = (levelFt, points) => clamp(Math.ceil((Math.max(levelFt ||
     5000) * 5000, 10000,
   40000);
 /** Lieux de lecture de la route (un tous les 50 NM, 24 au plus, comme Carburant) : à demander à la réserve météo. */
-export const sectionPlaces = points => A.samples(A.unwrapLons(points));
+// Carburant rend ses lieux ramenés à [-180, 180[ ; ils sont redéroulés ici, du même côté de la ligne de changement de date
+// que la route (la coupe, ses repères et la carte suivent ; la réserve ramène chaque demande à sa case)
+export const sectionPlaces = points => A.unwrapLons(A.samples(A.unwrapLons(points)));
 /** Variables horaires de la coupe : surface et niveaux de pression jusqu'au haut de la coupe. */
 export const sectionVars = (levelFt, points) => [...A.ROUTE_SURFACE_VARS, ...A.levelsUpTo(topFtOf(levelFt, points)).flatMap(l => A
   .ROUTE_LEVEL_VARS

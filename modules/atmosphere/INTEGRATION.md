@@ -9,8 +9,9 @@
 | `section.js` | pure SVG renderers of the profile and the slice (§ 5) |
 | `atmo.js` | pure computations: columns at an hour, reading at a pressure altitude, density, inversions, icing, trajectory, grid, contours; reuses `modules/fuel/winds.js` |
 | `weather_store.js` | the shared weather cache (§ 3), written to move unchanged into `frame/weather` |
-| `world.js` | the world synoptic (SPEC § 4): `worldReader({ data, net })`, `valid`, `stepAt`, `worldGrid`, `worldAt`; pure but the reader |
-| `tools/build_world_weather.py` | builds `/v3/weather/world.json` in the Pages workflow (`.github/workflows/pages.yml`, step "Synoptique monde") |
+| `world.js` | the world synoptic (SPEC § 4): `worldReader({ data, net })` → `{ index(), step(index, k) }`, `valid`, `validStep`, `stepAt`, `worldGrid(index, step)`, `worldAt(index, step, lat, lon)`; pure but the reader |
+| `tools/build_world_weather.py` | builds `/v3/weather/world/` from NOAA GFS in the Pages workflow (`.github/workflows/pages.yml`, step "Synoptique monde") |
+| `tools/grib2_lite.py` | minimal GRIB2 reader (grid 3.0, products 4.0–4.15, packing 5.0 and 5.3, bitmap), standard library |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
 | `ROADMAP.md` | what is done, what is next |

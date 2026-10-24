@@ -49,15 +49,34 @@ export const TX = {
     'Sinóptico mundial no publicado: no se pide nada fuera de la zona del vuelo'
   ],
   worldPoint: ['Synoptique · {p} · {at}', 'Synoptic · {p} · {at}', 'Synoptik · {p} · {at}', 'Sinóptico · {p} · {at}'],
-  worldPointNote: ['Hors de la zone du vol : synoptique mondial (GFS, run {run}, maille de 15°), rien n’est demandé.',
-    'Outside the flight’s area: world synoptic (GFS, run {run}, 15° grid), nothing is asked.',
-    'Außerhalb des Fluggebiets: Weltsynoptik (GFS, Lauf {run}, 15°-Raster), nichts wird abgefragt.',
-    'Fuera de la zona del vuelo: sinóptico mundial (GFS, pasada {run}, malla de 15°), no se pide nada.'
+  worldPointNote: ['Hors de la zone du vol : synoptique mondial ({src}, run {run}, maille de {step}°), rien n’est demandé.',
+    'Outside the flight’s area: world synoptic ({src}, run {run}, {step}° grid), nothing is asked.',
+    'Außerhalb des Fluggebiets: Weltsynoptik ({src}, Lauf {run}, {step}°-Raster), nichts wird abgefragt.',
+    'Fuera de la zona del vuelo: sinóptico mundial ({src}, pasada {run}, malla de {step}°), no se pide nada.'
   ],
+  wpLayers: ['Nuages bas / moyens / hauts', 'Low / middle / high cloud', 'Tiefe / mittlere / hohe Wolken',
+    'Nubes bajas / medias / altas'
+  ],
+  wpPr: ['Précipitations', 'Precipitation', 'Niederschlag', 'Precipitación'],
+  wpVis: ['Visibilité', 'Visibility', 'Sicht', 'Visibilidad'],
+  wpCape: ['Convection (CAPE)', 'Convection (CAPE)', 'Konvektion (CAPE)', 'Convección (CAPE)'],
+  wpFrz: ['Isotherme 0 °C', '0 °C isotherm', '0-°C-Grenze', 'Isoterma 0 °C'],
+  wpFrzSfc: ['au sol', 'at the surface', 'am Boden', 'en superficie'],
+  wpTrop: ['Tropopause', 'Tropopause', 'Tropopause', 'Tropopausa'],
+  wpJet: ['Vent à 250 hPa (jet)', '250 hPa wind (jet)', 'Wind in 250 hPa (Jet)', 'Viento a 250 hPa (chorro)'],
+  lyJet: ['Courant-jet, 250 hPa (monde)', 'Jet stream, 250 hPa (world)', 'Jetstream, 250 hPa (Welt)',
+    'Corriente en chorro, 250 hPa (mundo)'
+  ],
+  lyConv: ['Convection, CAPE (monde)', 'Convection, CAPE (world)', 'Konvektion, CAPE (Welt)', 'Convección, CAPE (mundo)'],
   wpP: ['Pression mer', 'Sea-level pressure', 'Luftdruck (Meereshöhe)', 'Presión a nivel del mar'],
   wpWind: ['Vent à 10 m', '10 m wind', 'Wind in 10 m', 'Viento a 10 m'],
   wpCloud: ['Nébulosité', 'Cloud cover', 'Bewölkung', 'Nubosidad'],
   wpT: ['Température à 2 m', '2 m temperature', 'Temperatur in 2 m', 'Temperatura a 2 m'],
+  whenAria: ['Date du vol : heures ajoutées au départ prévu', 'Flight date: hours added to the planned departure',
+    'Flugdatum: Stunden zum geplanten Abflug hinzu', 'Fecha del vuelo: horas añadidas a la salida prevista'
+  ],
+  whenPlanned: ['Départ prévu · {at}', 'Planned departure · {at}', 'Geplanter Abflug · {at}', 'Salida prevista · {at}'],
+  whenPlus: ['Départ +{h} h · {at}', 'Departure +{h} h · {at}', 'Abflug +{h} h · {at}', 'Salida +{h} h · {at}'],
   tapNote: ['Touchez la carte pour voir l’atmosphère en ce point (tranche locale).',
     'Tap the map to see the atmosphere at that point (local slice).',
     'Tippen Sie auf die Karte, um die Atmosphäre an diesem Punkt zu sehen (lokaler Schnitt).',

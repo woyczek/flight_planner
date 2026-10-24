@@ -2,6 +2,35 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (late) — NOAA GFS for the world, the flight date slider
+
+- **The requests** (user): "NOAA approuvé. Idem, compilation vers le même format pour unifier l'api. Quitte à augmenter
+  la granularité ou le niveau de paramètres du fichier (avec des infos non renseignées par openmeteo)"; then "prévoir un
+  slider « date du vol » pour ajouter x heures à la planification (et la carto). Utiliser au max les données gratuites."
+- **NOAA instead of Open-Meteo for the world**: NOMADS's OPeNDAP text access is retired (checked: "OpenDAP format has
+  been retired"), so the GRIB filter and a GRIB2 reader in standard-library Python (`tools/grib2_lite.py`: GFS 1° uses
+  complex packing with spatial differencing, template 5.3; checked against plausible values — Paris 1017 hPa, the
+  Icelandic low 986 hPa). No call quota: the grid goes from 15° to **5°** (2,376 places) and the variables from 5 to
+  **15** (cloud layers, CAPE, 0 °C isotherm, tropopause, 250 hPa jet, precipitation, visibility). Same schema for any
+  source; the Open-Meteo builder is gone (and with it the shared-runner quota risk).
+- **One file per step, to +72 h** (25 steps, ≈ 38 KB compressed each, 3.5 MB in all on the pages): one file for 72 h
+  would be ≈ 1 MB compressed on every phone; a device reads only the steps it shows. The previous publication is
+  downloaded again and republished while it comes from the latest run (each deployment replaces the whole site).
+- **World view decluttered** after the first look at real data: highs and lows must dominate 15° around and be 2 hPa
+  deep, then 70 px apart on screen (the deepest first); world isotherms every 10 °C; jet and convection shading light.
+- **Slider in the sheet, not over the map** (rule § 7.1: only buttons over the map): a 30 px line under the handle,
+  for every content (the details and the slices follow it too). 0 to +72 h: the last published step of the world.
+  Moving it recomputes from the device only; "Load" reads every day it can reach in the same request (Open-Meteo counts
+  places and variables, not days, up to two weeks): what the user asked, "au max les données gratuites". Kept for the
+  visit only, as the other tries (example, text, file).
+- The steps kept in memory (six) so that going back and forth reads nothing twice; the handle's title follows the step
+  actually drawn.
+- **Round the world on the map** (user: "Est-ce qu'on fait un tour avec la carte, si on décolle vers la droite ou la
+  gauche ? Spoiler : je le veux."): the shared base (`modules/maps/lib/map_base.js`) creates the map with
+  `renderWorldCopies: false`; the maps module's antimeridian lot (`77d0672d`) gave it the option `worldCopies`, used here
+  (an `onCreate` hook was the first try, before that lot). The flight, its grid, the slice markers and the
+  world synoptic are drawn on every visible copy (`copiesFor`), the grid test compares with the copy nearest the view.
+
 ## 24 October 2026 (late) — across the date line
 
 - **The request** (user): "On se souvient qu'on veut voler de Sibérie à l'Alaska en passant par la ligne de changement
@@ -13,7 +42,16 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   (Mercator). Checked with UHMA → PAOM (FL190, stubbed Open-Meteo): one continuous route and grid, the requests'
   longitudes within [−180, 180[, no error.
 - **Highs and lows need a real difference** (0.5 hPa to a neighbour): on a flat field every point was marked "L".
-- **Seen outside this module, reported to the relay**: the maps module draws UHMA → PAOM the long way round (through
+- **No seam at 180° either** (user: "Il n'y a pas de coupure franche entre Lavrentya et Nome. La Terre est ronde… ce
+  découpage est artificiel. Un avion n'a pas de frontières…"): the [−180, 180[ range is only the data sources' indexing
+  (Open-Meteo, the GFS grid, the cache cells), used at the moment of asking them; everything the pilot sees is
+  continuous. One real trace of the cut was found and removed: the world synoptic's highs and lows were not searched on
+  the 180° column — the search now wraps round the world (a low centred on the line is marked, checked at 180°, 55° N).
+  The map wraps both ways; the world grid's last column copies the first, so contours meet across the line.
+- **Then shared** (maps lot `77d0672d`): the three functions moved to `frame/lib/geo.js`, same logic; `atmo.js` now
+  re-exports them from there (no copy). Fuel's `samples` returns wrapped longitudes since: `sectionPlaces` unwraps them
+  again so that the cross-section, its markers and the map stay on the route's side of the line.
+- **Seen outside this module, reported to the relay** (both fixed by that lot): the maps module draws UHMA → PAOM the long way round (through
   Europe, distance marks wrong) and hides its Weather chip (its known debt, `DETTE_TECHNIQUE.md`); Fuel's `samples`
   (`modules/fuel/winds.js`) interpolates longitudes linearly, so its winds aloft for such a flight are read round the
   world. `unwrapLons` is the fix for both; a candidate for `frame/lib`.

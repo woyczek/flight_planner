@@ -12,6 +12,11 @@ import {
   modelFor,
   samples
 } from '../fuel/winds.js';
+import {
+  wrapLon,
+  nearLon,
+  unwrapLons
+} from '../../frame/lib/geo.js';
 
 export {
   LEVELS,
@@ -25,25 +30,12 @@ export {
 const FT = 0.3048,
   R = Math.PI / 180;
 
-/** Longitude ramenée à [-180, 180[. */
-export const wrapLon = lon => ((((+lon + 180) % 360) + 360) % 360) - 180;
-/** Longitude décalée d'un nombre de tours pour tomber à moins de 180° de ref (même côté de la ligne de changement de date). */
-export const nearLon = (lon, ref) => +lon + 360 * Math.round((ref - lon) / 360);
-/** Points d'une route aux longitudes continues (chacun à moins de 180° du précédent) : une route qui passe la ligne de
- *  changement de date (Sibérie → Alaska : 177° puis −165°) va de 177° à 195°, sans faire le tour du monde ; les
- *  interpolations, les emprises et le dessin suivent. Les demandes à Open-Meteo sont ramenées à [-180, 180[ par la
- *  réserve (cellOf). */
-export function unwrapLons(points) {
-  let prev = null;
-  return (points || []).map(p => {
-    const lon = prev == null ? +p.lon : nearLon(+p.lon, prev);
-    prev = lon;
-    return lon === +p.lon ? p : {
-      ...p,
-      lon
-    };
-  });
-}
+// longitudes autour de la ligne de changement de date : l'aide partagée du cadre (frame/lib/geo.js, même logique)
+export {
+  wrapLon,
+  nearLon,
+  unwrapLons
+};
 
 /** Variables par niveau de pression : route (coupe complète) et grille de la carte (sans nébulosité : tirée de RH). */
 export const ROUTE_LEVEL_VARS = ['temperature', 'relative_humidity', 'cloud_cover', 'geopotential_height', 'wind_speed', 'wind_direction'];

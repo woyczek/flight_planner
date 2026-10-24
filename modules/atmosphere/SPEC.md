@@ -33,6 +33,12 @@ the phone's whole frame; portrait only for now (the landscape layout is a later 
   trajectory) beside it on a wide block. ✕ goes back to the profile. **Details**: the summary as a compact list (one line per value: name, value,
   note), aerodromes (METAR, TAF), the
   table along the computed trajectory (a row opens its slice), sources.
+- **Flight date slider** (user: "prévoir un slider « date du vol » pour ajouter x heures à la planification (et la
+  carto). Utiliser au max les données gratuites."): a line under the handle, 0 to +72 h by hours, "Departure +12 h ·
+  Sun 25 03:00Z". The departure is the planned one plus those hours; the cross-section, the flight's map and the world
+  synoptic follow while it moves, from what the device keeps — nothing asked. "Load" reads at once every day the slider
+  can reach (Open-Meteo counts places and variables, not days, up to two weeks), so moving it costs nothing more; beyond
+  what was read, the line turns amber and "Load" reads the rest. Kept for the visit only.
 - Every reading place at the time the flight passes it (departure + estimated time, no wind — stated on screen); the
   map at the time of the chosen slice.
 - Rendering: the profile and the slice are SVG (vector lines, smooth fields); the map's overlay is vector, redrawn
@@ -45,11 +51,15 @@ the phone's whole frame; portrait only for now (the landscape layout is a later 
   `modules/fuel/INTEGRATION.md` § 3), the one Fuel and the maps module read, **read only**; read again when it changes
   (`watch`), the forecast then only from the device's cache. None: nothing drawn, "No planned flight" with Prepare in
   Fuel and See the example.
+- **Round the world on the map** (user: "Est-ce qu'on fait un tour avec la carte, si on décolle vers la droite ou la
+  gauche ? Spoiler : je le veux."): the map repeats the world (MapLibre's world copies, the shared base's option
+  `worldCopies`); the flight, its grid and markers, the synoptic and the taps follow on every copy, east or west,
+  as many turns as wanted.
 - **Across the date line** (user: "on veut voler de Sibérie à l'Alaska en passant par la ligne de changement de
   date"): the route's longitudes are made continuous (`unwrapLons`: UHMA 177.7° → PAOM 194.6° rather than −165.4°), so
   the sampling, the map grid, the framing, the cross-section and the drawing follow the route instead of going round
   the world; the requests to Open-Meteo are brought back to [−180, 180[ by the cache's cells; taps and tooltips compare
-  longitudes modulo 360.
+  longitudes modulo 360 (`frame/lib/geo.js`, shared with the maps module and Fuel).
 - For the visit only (never kept, marked in the handle): the example of the schema, a `current_flight.json` file, or a
   route text — names resolved by
   `ctx.aerodb.coords`, ICAO or decimal coordinates, `/F270` after a point for a step.
@@ -79,34 +89,40 @@ and up to 10 variables (more variables count pro rata).
 
 ## 4. The world synoptic — nothing asked outside the flight's grid
 
-User, 24 Oct 2026: "si on zoom out la carte météo, on n'a pas les infos… sans cramer des crédits… users are dumb";
-relay's decision (`docs/technique/V3_SPECIFICATION.md` § 8). **A device never asks Open-Meteo for anything outside its
-flight's grid, whatever the map shows.**
+User, 24 Oct 2026: "si on zoom out la carte météo, on n'a pas les infos… sans cramer des crédits… users are dumb",
+then "NOAA approuvé. Idem, compilation vers le même format pour unifier l'api. Quitte à augmenter la granularité ou le
+niveau de paramètres du fichier"; relay's decision (`docs/technique/V3_SPECIFICATION.md` § 8). **A device never asks
+Open-Meteo for anything outside its flight's grid, whatever the map shows.**
 
-- **The file**: `/v3/weather/world.json` on the pages, built by the Pages workflow (`tools/build_world_weather.py`,
-  standard-library Python): GFS (`gfs_seamless`), a **15°** grid (lat −75…75, lon −180…165: 11 × 24 = 264 places),
-  sea-level pressure, 10 m wind (kt), total cloud cover, 2 m temperature, every 3 h from the current 3-hour step to
-  +24 h (9 steps), ≈ 60 KB. Open-Meteo is read **once per GFS run** (264 weighted calls, ≈ 1,060 a day from the
-  runner only): at every other build (each push, every 6 h) the published file is taken again with no call while it
-  comes from the current run and covers 18 h more. Open-Meteo refused or unreachable (its quota is per IP and GitHub's
-  runners are shared): the published file is written again while its last step is ahead; otherwise none, and the
-  deployment never fails. NOAA GFS through NOMADS (GRIB2, no quota) is the alternative, not taken (decoding cost in
-  pure Python).
-- **Format** (schema 1): `{ schema, model, run (s), built (s), step (°), lats [south → north], lons [west → east],
-  times [s, every 3 h], vars: { p, t, cc, ws, wd: [step][lat × lon, row by row from the south] }, units, source }`;
-  values rounded (pressure and temperature 0.1, the others whole), `null` where missing (10 % at most).
+- **The publication**: `/v3/weather/world/` on the pages, built by the Pages workflow (`tools/build_world_weather.py`,
+  GRIB2 decoded by `tools/grib2_lite.py`, standard-library Python) from **NOAA GFS 1°** (NOMADS GRIB filter: no key,
+  no call quota), reduced to a **5°** grid (lat −80…80, lon −180…175: 33 × 72 = 2,376 places), **every 3 h from the
+  current 3-hour step to +72 h** (25 steps). One index and one file per step (≈ 140 KB, ≈ 38 KB compressed): a device
+  reads only the steps it shows. GFS is read once per run (≈ 70 s, 25 downloads); at every other build (each push,
+  every 6 h) the previous publication is taken again while it comes from the latest run and covers 66 h more; NOMADS
+  unreachable: its steps still ahead are published again; never a failed deployment.
+- **Format** (schema 1, the same for any source, so that readers have one API): `index.json` = `{ schema, model, run
+  (s), built (s), step (°), lats [south → north], lons [west → east], times [s], files [one per step], units, source }`;
+  `YYYY-MM-DDTHH.json` = `{ schema, time (s), vars: { name: [lat × lon, row by row from the south] } }`. Variables: the
+  five every source gives — `p` sea-level pressure (hPa), `t` 2 m temperature (°C), `cc` total cloud (%), `ws` / `wd`
+  10 m wind (kt, from °) — and what GFS adds: `ccl` / `ccm` / `cch` low, middle, high cloud (%), `cape` (J/kg), `frz`
+  0 °C isotherm (ft), `trop` tropopause (ft), `js` / `jd` 250 hPa wind — the jet stream (kt, °), `pr` precipitation
+  (mm/h), `vis` visibility (m). Values rounded, `null` where missing.
 - **On the device** (`world.js`): read on the same origin through `ctx.net` (no extra host), kept in
-  `cache/weather/world.json` (policy `cache`); the device's copy serves 6 h, then the published file is read again;
-  offline, the copy serves while its last step is ahead. Served by the launcher (no published file), no world layer.
+  `cache/weather/world/` (policy `cache`): the index 6 h, each step until it is past (removed with a new index).
+  Served by the launcher (no publication), no world layer until `frame/weather`.
 - **On the map**: as soon as the view goes beyond the flight's grid (or with no flight at all), the synoptic is drawn
-  outside the grid (isobars every 4 hPa with highs and lows, isotherms every 5 °C, cloud, wind, temperature backdrop —
-  the same layers and keys as the flight's map, Mercator-correct images, the world's copies when zoomed out); inside
-  the grid the flight's fine forecast stays. **No extra button.** When the view is mostly outside the grid (the grid
-  covers less than 40 % of it, or its centre is outside), the handle's title says what is shown: "World synoptic ·
-  18:00Z · run 12:00Z +6 h", at the step nearest the map's time; back in the grid, the profile's title returns. A tap
-  outside the grid opens the synoptic values at that point (pressure, wind, cloud, temperature) in the block — never a
-  call.
-- SIGMET and METAR of the world (aviationweather.gov, no CORS): through the launcher's relay only, later.
+  outside the grid at the step nearest the map's time: isobars every 4 hPa with the marked highs and lows (an extremum
+  over 15° around and 2 hPa deep; 70 px apart on screen, the deepest first), isotherms every 10 °C, cloud, wind barbs
+  (30 px apart on screen), temperature backdrop, and two layers of their own — **jet stream** (250 hPa wind from 60 kt,
+  purple) and **convection** (CAPE from 500 J/kg, orange); Mercator-correct images, the world's copies when zoomed out.
+  Inside the grid the flight's fine forecast stays. **No extra button.** When the view is mostly outside the grid (the
+  grid covers less than 40 % of it, or its centre is outside), the handle's title says what is shown: "World synoptic ·
+  18:00Z · run 06:00Z +12 h"; back in the grid, the profile's title returns. A tap outside the grid opens every value of
+  the step at that point (pressure, wind, temperature, cloud and its three layers, precipitation, visibility, CAPE, 0 °C
+  isotherm, tropopause, jet) — never a call.
+- SIGMET and METAR of the world (aviationweather.gov, no CORS): through the launcher's relay only, later. Satellite
+  (NASA GIBS) and radar (RainViewer) tiles answer with CORS: candidates.
 
 ## 5. Sources
 
@@ -116,7 +132,7 @@ flight's grid, whatever the map shows.**
 | Model run | `api.open-meteo.com/data/<model>/static/meta.json`, `ctx.net` | none |
 | METAR | `metar.vatsim.net`, `ctx.net` | none |
 | TAF | `avwx.rest`, `ctx.net` (kept 30 min in `cache/atmosphere/taf/`) | the device's, added by the frame |
-| World synoptic (outside the flight's grid) | `/v3/weather/world.json` of the pages (§ 4), same origin, `ctx.net` | none |
+| World synoptic (outside the flight's grid) | `/v3/weather/world/` of the pages (§ 4: NOAA GFS by the workflow), same origin, `ctx.net` | none |
 | Base map | `tiles.openfreemap.org` (MapLibre of `modules/maps/lib/`, `meta.net`) | none |
 | Model | `modelFor` of `modules/fuel/winds.js`, by the route's middle | — |
 

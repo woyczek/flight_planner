@@ -93,10 +93,10 @@ const cloud = (rh, p) => {
 
 /** Réponse au format d'Open-Meteo pour des lieux [{ lat, lon }] et une liste de variables horaires (48 heures à
  *  partir de l'heure entière en cours). Un objet pour un lieu, un tableau sinon. */
-export function forecast(places, hourlyVars, now = Date.now()) {
+export function forecast(places, hourlyVars, now = Date.now(), hours = 48) {
   const t0 = Math.floor(now / 36e5) * 3600,
     times = Array.from({
-      length: 48
+      length: hours
     }, (_, i) => t0 + i * 3600),
     want = new Set(hourlyVars);
   const out = places.map(pl => {
