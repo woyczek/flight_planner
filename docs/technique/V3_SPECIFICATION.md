@@ -220,6 +220,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       cette page outil. Anciennement accessible dans les paramètres très avancés"): what each zoom shows comes from
       the administrator's threshold page (`#maps?tune=1`, reachable again from Réglages › administration); the
       slider is the first control of the Layers content and its range is wide enough to empty an Europe-wide view.
+  12. **Flight grid vs world weather: no visible edge by default** (user, 24 Oct, 19:50, after the rings proved to be a
+      loading bug and not a model divergence: "Pas de bord, si ça ne se justifie pas, ou alors en option avancée (dans
+      les paramétrages au même niveau que les sliders de zoom)"): the corrected blend stays the rule; an administrator
+      option "Draw the flight zone's limit" (default off) on the map's threshold page (`#maps?tune=1`), saved with the
+      thresholds in `airline/map_profiles.json`, passed by both modules to `weather_map.js` (`edge` option), draws a
+      clean labelled line at the grid's limit.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
