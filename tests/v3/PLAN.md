@@ -1,0 +1,213 @@
+# V3 — non-regression test plan
+
+*Written by the relay (orchestrator) session on 24 October 2026, at `v3` = `822a80312`. The plan is the intelligence:
+it says **what must stay true** on every screen of the Pilot application, with the value expected and the rule it comes
+from. The tests are written from it by a cheaper agent, and run by a cheaper one still, with one command. A case that
+fails names the rule that broke, not a selector.*
+
+## 0. Frame of the suite
+
+- **Where**: `tests/v3/` — `run.py` (runner), `cases/<area>.py` (one file per area below), `lib.py` (shared helpers),
+  `report.md` + `report.json` (written by each run, ignored by git), `README.md` (how to run, how to read a failure).
+- **How it runs**: `python3 tests/v3/run.py [--grep <id or text>] [--designs a,b] [--widths 390,1280] [--langs fr,en]
+  [--keep-server]`. The runner starts a static server itself (`python3 -m http.server`, standard library, a free port
+  chosen at start, bound to 127.0.0.1) at the repository root, opens Chromium with Playwright (Python package already
+  installed; executable `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, `--no-sandbox`), runs every case,
+  writes the report, prints one line per case (`PASS`/`FAIL`/`SKIP` + id + title), a summary line, and exits 0 only if
+  nothing failed. It never needs the launcher, a data repository, the network, or a token: tiles and CDN are blocked in
+  the cloud and must not make a case fail (ignore `net::ERR_*` on tile hosts).
+- **Phone and screen**: a *phone* context is 390×844, `device_scale_factor: 2`, `has_touch: true`, `is_mobile` **off**
+  (an oversized layout viewport otherwise breaks taps on the Cupertino bar); a *screen* context is 1280×800, mouse.
+  Unless a case says otherwise, every case runs on the phone in the five designs `standard`, `metro`, `swiss`,
+  `cupertino`, `material` (`localStorage['sogFrame:design'] = JSON.stringify({design, tone:'day'})` as an init
+  script), in French; and once on the screen in `standard`. A case marked **×4 langs** also runs in `en`, `de`, `es`
+  (`localStorage['sogFrame:lang']`). Night tone is one extra run of area A only (`tone:'night'`).
+- **Seeding state**: the frame reads its cache from the browser (IndexedDB / localStorage) when no launcher answers.
+  The writer finds the seeding path the module agents used (look at the benches `frame/lib/test/sheet.html`, the
+  modules' `test/` folders, `docs/technique/V3_JOURNAL_SESSION_CLOUD.md`, and `frame/app.js` around
+  `flightPathOf()`, `PENDING_REPORTS`, `sogFrame:*` keys) and puts it in `lib.py` as `seed_flight(page, started=False)`,
+  `seed_pending(page, flights=1)`, `seed_identity(page, trigram='ABC')`. If a module has no seedable state without a
+  launcher, its cases that need one are `SKIP` with the reason, never `PASS`.
+- **Every case** records `pageerror` and failed console errors (other than blocked network) from page load to its
+  end: any JavaScript error fails the case on top of its own assertion (rule: "pages rechargées, sans erreur
+  JavaScript").
+- **Ids** are stable (`A1`, `B3`…) and quoted in the report; a case may have several assertions, the report lists the
+  first failed one with the measured value and the expected one.
+
+Screens and ids: the frame page is `frame/index.html#<module>`; modules on `v3`: `fuel`, `maps`, `atmosphere`,
+`report`, `flightlog`; frame screens: `#settings`, `#help?m=<module>`, `#conflicts`. Tabs (phone bar): Préparer
+(fuel + atmosphere), Carte, CR, Vols, Réglages.
+
+## A. Frame — layout and chrome (rules: `V3_SPECIFICATION.md` § 7.1, `frame/INTEGRATION.md` § 9)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| A1 | Every module loads | For each of the five modules, at 390 and 1280, in five designs: no `pageerror`, `document.documentElement.dataset.design` equals the design asked, no horizontal page scroll (`scrollWidth <= innerWidth`), the module root `[data-module=<name>]` (or the frame's view) is non-empty | smoke, § 7.1 rule 1 |
+| A2 | Phone header | At 390: the header is 57 px high (`--f-head-h`), shows exactly the name (`#fName`), the "i" (`#fInfo`) and the gear (`#fDevice`); `#fSync`, `#fWho`, `#fLive`, `#fHelp`, `#fHost` are not displayed; "i" and gear are at least 44×44 | § 7.1 rule 3, frame lot of 24 Oct |
+| A3 | Screen header | At 1280: `#fHelp` and `#fSync` are displayed (nothing changes above 760 px) | same |
+| A4 | Bottom bar | At 390: `#fTabs` is displayed, has five entries (Préparer, Carte, CR, Vols, Réglages), each at least 44 px high, labels translated **×4 langs**; at 1280 the bar is hidden and the rail `#fNav` is shown | § 7.1 option A |
+| A5 | Fixed module fills the view | For `maps` and `atmosphere` at 390: `html` has class `f-fixed`; the module root's top is exactly at the header's bottom (gap 0 px); its bottom is at the bar's top; `document.scrollingElement.scrollHeight <= innerHeight` (no page scroll) | § 9.2, user "la vue carte doit être fixe" |
+| A6 | Non-fixed module scrolls normally | For `fuel` at 390: `html` has no `f-fixed`; the page may scroll; the header stays visible after scrolling 400 px (sticky) | § 9.2 |
+| A7 | Group popover | On `#fuel` at 390: a second tap on the active tab "Préparer" opens a popover with rows Carburant and Atmosphère, each ≥ 44 px high, within the window and above the bar; the current row has `aria-current`; tapping Atmosphère goes to `#atmosphere` and closes it; Escape closes it; a tap outside closes it. On `#maps` (single-module tab) a second tap does nothing and keeps the hash and query (`#maps?x=1` stays) | frame lot, § 7.1 rule 4 |
+| A8 | "i" pop-up | At 390: tapping `#fInfo` opens a pop-up whose rows are ≥ 44 px, whose last row is "Aide de cet écran" (translated **×4 langs**); tapping it opens `#help?m=fuel` (from `#fuel`); Escape closes the pop-up | frame lot |
+| A9 | "i" badge | With nothing seeded and no trigram: the badge is amber (`data-attn`); with a seeded identity and a seeded pending flight: green (`data-badge`), amber wins when both; at 1280 no badge logic is required (just no error) | frame lot ("pastille verte et orange") |
+| A10 | Night tone | `standard` at 390 with `tone:'night'`: `dataset.tone` (or the attribute the frame uses) is `night`, body background luminance is below 0.2 (dark), no error | design |
+| A11 | Help screen | `#help?m=maps` at 390 and 1280: the manual of the module is shown in the current language, non-empty, **×4 langs**; Escape or the back button returns to `#maps` | help block |
+| A12 | Settings screen | `#settings` at 390: opens, no error, contains the trigram field; the back control returns to the previous module | settings block |
+
+## B. Overlay layer and full screen (`frame/INTEGRATION.md` § 9.3, § 9.4)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| B1 | Layer over the map | On `#maps` and `#atmosphere` at 390: `.f-overlay` exists, is visible, and its box equals the map box (the first growing child of the module root; tolerance 1 px) | § 9.3 placement |
+| B2 | Columns | Right column `.f-ov-right`: at least one button and the frame's full-screen button `.f-ov-full` **last** (visually: lowest `top` among the right buttons; in DOM order: last child); every `.f-ov-btn` is 44×44 (±1), the right edge of each is at the layer's right minus 8 px (±1) — including after the wide-element fix; left column `.f-ov-left`: the Layers button (maps: Couches; atmosphere: Couches), 44×44 | § 9.3, fix of 24 Oct |
+| B3 | Nothing between header and map | On `#maps` and `#atmosphere` at 390: no visible element of the module (height > 0, not inside `.f-overlay`, not the sheet) whose bottom ≤ map top and top ≥ header bottom | § 7.1 rule 1, user "header, carte, carte, footer" |
+| B4 | Buttons do not cover the sheet | On `#maps` at 390: every `.f-ov-btn` bottom ≤ sheet panel top | § 9.3 sheet safety |
+| B5 | Full screen on a phone | Tap `.f-ov-full` on `#maps` at 390: `html.f-full`; header and `#fTabs` not displayed; module root is 390×844 at top 0; exit chip (44 px, top 8 / right 8, label "Quitter le plein écran" **×4 langs**) shown; a `resize` event was dispatched on `window` (listener installed before the tap); the map canvas height grew; Escape exits (`f-full` gone, header back, root top at 57) | § 9.4 |
+| B6 | Full screen on a screen | Same at 1280: header and rail hidden, root 1280×800 at left 0; chip exits | § 9.4 |
+| B7 | Full screen memory | In full screen on `#maps`, open `#settings` (via gear): header back; close it: `f-full` again. Then go to `#fuel`: `f-full` gone | § 9.4 memory |
+| B8 | Escape order | On `#maps` in full screen with the Layers sheet content open: first Escape closes Layers and **keeps** full screen; second Escape leaves full screen | § 9.4, maps lot point 8 |
+| B9 | Gestures pass through | `.f-overlay` has `pointer-events: none`; each `.f-ov-btn` has `pointer-events: auto` (computed styles) | § 9.3 |
+| B10 | Panes | `#maps?with=fuel` and `#fuel?with=maps` at 1280: no error; the pane's layer (if the pane is fixed) has no `.f-ov-full` | § 9.3 last bullet |
+
+## C. Sheet primitive (`frame/INTEGRATION.md` § 11, `frame/lib/test/sheet.html`)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| C1 | Bench | Load `frame/lib/test/sheet.html` at 390 and 1280: the page's own assertions all pass (read its result element or console summary; the frame lot reported 76/76 both widths) | § 11 |
+| C2 | Default height on a phone | On `#maps` at 390: the sheet panel `.f-sheet-panel` is at its default position: height = max(30 % of the view height, 170 px) ± 2 px, where view height = 844 − 57 − bar height | user decision of 24 Oct (30 % on phone) |
+| C3 | Default height on a screen | At 1280: 35 % of the view (or the layout the module uses at that width: if the sheet is a side column at 1280, assert that instead and say so) | § 11 |
+| C4 | Three positions | Drag the grip up: the panel reaches the expanded height; drag down: the head-only height (grip visible, ≥ 44 px); the grip's `aria-expanded` follows; the map box shrinks/grows accordingly (its height + panel height = view height ± 2) | § 11 |
+| C5 | Grip row is the title | On `#maps` and `#atmosphere` at 390: `.f-sheet-head` holds a `.f-sheet-title` with non-empty text that starts with "Profil" (fr) / "Profile" (en) **×4 langs**, and contains no state wording ("non chargée", "not loaded", "chargement", "loading"); no second title row below the head before the content; no segmented control row (`.mp-seg` absent) | § 7.1.6 (user "J'aime la proposition de volet de la part de météo") |
+| C6 | Close returns to the profile | After opening a content (maps: Layers; atmosphere: Details), `.f-sheet-close` is shown; tapping it restores a title starting with "Profil"; the close button is then hidden | § 11 |
+
+## D. Maps (`modules/maps/SPEC.md`, lot of 24 Oct)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| D1 | Buttons | Right column in order: Modifier la route (`title` **×4 langs**), Cadrer, mode, Modifier (toggle, `aria-pressed`), then the frame's full screen; Follow is hidden without a started flight; "+" and Undo hidden outside Edit mode | maps lot point 2 |
+| D2 | Edit mode | Tap Modifier: `aria-pressed="true"`, "+" and Undo appear in the right column (Undo disabled), all buttons still right-aligned; a notification appeared once (the Edit help) and not again on a second toggle; Escape leaves the mode | maps lot points 2, 6, 8 |
+| D3 | Layers in the sheet | Tap Couches: the sheet title starts with "Couches" (**×4 langs**), the content holds the flight selector (`select`) first and the layer checkboxes; the Couches button is `aria-pressed="true"`; ✕ returns to the profile and the button is released | amendment of 24 Oct (user "le sélecteur de couche passe par dessus") |
+| D4 | Profile · Weather chips | In the grip row, two icon chips (≥ 36 px, `aria-pressed`, labels **×4 langs**) before ✕; the Profile one pressed by default; if the weather cut is unavailable the Weather chip may be hidden — then assert it is hidden, not absent | maps lot point 4 |
+| D5 | Status as notification + note | At mount without a launcher: exactly one notification "Base aéronautique non publiée…" (count `.f-notes` children with that text) and the same text present in `.mp-notes` with a link to the settings; reloading the module (navigate to `#fuel` then back) shows it once again, not twice in the same page life | maps lot point 5 |
+| D6 | Modes panel | Tap the mode button: a panel with six mode choices opens next to it, inside the window; choosing one sets `aria-pressed` on it and closes the panel; Escape closes it | maps lot point 2 |
+| D7 | Attribution folded | MapLibre's attribution control is compact and folded after load (its details element not open; width ≤ 40 px); exactly one credit text on the map (no `.mp-credit`) | amendment of 24 Oct |
+| D8 | Started flight | With `seed_flight(started=True)`: the title contains "vol en cours" (**×4 langs**), Follow is shown and pressed, the GPS notification fired once | maps lot point 4/5 (SKIP if seeding impossible) |
+| D9 | No flight | With no flight seeded (if the demo flight can be disabled): a centred card in the map area says there is no flight and the Layers content is still reachable | maps lot "choices" (SKIP if the demo flight cannot be disabled) |
+| D10 | Mission map | `#maps?mission=<id>` without data: no error, the Layers button is named "Carte à montrer" and route-edit buttons are hidden | maps lot (SKIP with reason if no route to a mission without data) |
+
+## E. Atmosphere (`modules/atmosphere/SPEC.md`, lots of 24 Oct)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| E1 | Buttons | Left: Couches; right: Vol, Détails, Charger, (altitude chip only once a grid is read — assert hidden without network), then full screen; labels **×4 langs** | atmosphere lots |
+| E2 | Nothing written on the map | No text element of the module over the map area (no hint pill): every visible descendant of the module root inside the map box is a canvas, the MapLibre container, or an `.f-ov-btn` | relay's review of 24 Oct |
+| E3 | Title | Sheet title "Profil · <aircraft> · <from> → <to> · FL<level> · <HH:MM>Z…" pattern: starts with Profil/Profile, contains "→" and "FL" | § 7.1.6, review |
+| E4 | Details and Flight contents | Tap Détails: the title changes, the content is a compact list (`dl` or rows: each row = name, value); ✕ returns to the profile. Tap Vol: same pattern, contains the forecast-not-loaded message in the body, not in the title | user "trop gros, pas assez synthétique"; review |
+| E5 | One "i" only | No button in the module labelled "i" / "Infos": the only "i" on the page is `#fInfo` | user "le double bouton i sert à quoi ?" |
+| E6 | Hint once | The "toucher la carte" hint appears as a notification at most once per page life, never as an element over the map | review |
+
+## F. Fuel (`modules/fuel/SPEC.md`, lot `v3-fuel-ergo`)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| F1 | Opens on the Plan | `#fuel` at 390: the "Devis" view (plan) is active at mount, not the Sheets (Fiches) view: the segmented control's first button `aria-pressed="true"` | user "la vue fiches ne devrait pas être active par défaut" |
+| F2 | Compact result bar | At 390 after a computed quote (seed or fill the form with the demo values the module offers): the sticky result bar is one context line (ellipsed, `white-space: nowrap`/overflow hidden), three one-line tiles "Étape / Temps / TOD" (**×4 langs**); its height ≤ 120 px | lot `v3-fuel-ergo` |
+| F3 | Units | The display units selector offers kt/km/h, ft/m, NM/km/SM; switching distance to km changes the distance figures' unit text in the result bar and keeps FL as FL | lot `v3-unites-carburant` |
+| F4 | Width | No horizontal page scroll at 390 and 360 (known follow-up: `.fu-when` row overflowed to 402 px on 24 Oct — the case must **fail** until it is fixed, and say so) | CLAUDE.md "pages sans débordement" |
+| F5 | Step tab wording | The tab labelled "Devis" and the step 4 "Devis" do not both appear in the same view (known wording follow-up: assert and let it fail if both present) | journal follow-up |
+
+## G. Flightlog and report (`modules/flightlog`, `modules/report`)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| G1 | Pending record | `seed_pending(1)`: `cache/flightlog/pending.json` schema 2 is read by the frame: the "i" badge is green and the pop-up has a flight row whose tap goes to `#report` with the handoff (hash or query carries it); `pilot/handoff.json` (or the frame's equivalent) is written (SKIP if no seeding) | `frame/INTEGRATION.md` § 10 |
+| G2 | Flightlog loads | `#flightlog` at 390: no error, filters and totals present, empty-state text translated **×4 langs** when nothing is seeded | module |
+| G3 | Report three steps | `#report` at 390: the three steps are shown, the first active, next/previous controls ≥ 44 px; without data the form is empty and no error | module |
+
+## H. Designs (`frame/design/*`)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| H1 | Tokens resolved | For each design at 390: `--sog-surface`, `--sog-ink`, `--sog-accent`, `--sog-radius` computed on `:root` are non-empty | design |
+| H2 | Contrast of header text | Header name colour over header background ≥ 4.5:1 in day and night for each design (compute from `getComputedStyle`) | design DECISIONS contrasts |
+| H3 | Overlay button shape | `.f-ov-btn` border-radius is ≥ 22 px in `standard`, `cupertino`, `material`, and 0 in `metro`, `swiss` | frame lot judgement call 3 (so the ergonomics session sees it) |
+| H4 | Demo pages | `frame/design/demo_metro.html` (and the swiss/cupertino/material demos if present) load without error at 390 and 1280 | design mock-ups |
+
+## I. Repository rules (static, no browser)
+
+| Id | Case | Expected | Rule |
+|---|---|---|---|
+| I1 | Neutral fingerprints | No `?v=<hash>` other than `?v=0` in `*.html`, `*.js`, `*.css` tracked files (`git grep`) | CLAUDE.md before-commit 2 |
+| I2 | No conflict markers | `git grep -l -E "^(<<<<<<<|>>>>>>>) "` is empty | CLAUDE.md 5 |
+| I3 | Four languages | Every `TX`-style table in `modules/*/module.js`, `modules/*/texts.js`, `frame/app.js` has four entries per key (a static scan of arrays of strings inside the translation objects: report keys with ≠ 4) | CLAUDE.md four languages |
+| I4 | Help bundle fresh | `python3 tools/build_docs_bundle.py` run in a temporary copy produces a byte-identical `apps/aide/docs_bundle.js`; `python3 frame/help/build_help.py` writes 0 files | CLAUDE.md doc in the same commit |
+| I5 | Format | `python3 tools/format_sources.py --check <touched js/css>` (or run it on a copy and diff): no change | CLAUDE.md 1 |
+| I6 | Module documents | Each `modules/<m>/` has `SPEC.md`, `INTEGRATION.md`, `DECISIONS.md`; `frame/` has its three | CLAUDE.md roles |
+| I7 | CHANGELOG | `docs/CHANGELOG.md` has a `## [Unreleased]` section with a `### V3` heading | CLAUDE.md 4 |
+
+## J. Known failures the suite must carry (not hide)
+
+- F4 (`.fu-when` overflow at 390) and F5 (Devis / Devis) are **expected to fail** today: the report marks them
+  `FAIL (known: journal 24 Oct)` and they do not change the exit code until the ergonomics session removes the mark
+  from `cases/known_failures.py`. Any other failure is a regression.
+
+## K. What the runner's report says
+
+`report.md`: date, `v3` commit, counts (pass / fail / known / skip), then one table per area with id, title, result,
+measured vs expected on failure, and the screenshot path (`tests/v3/shots/<id>_<design>_<width>.png`, written only on
+failure and for A1). `report.json`: the same, machine-readable. The runner agent (the cheap one) copies the summary
+and the failures into its answer, nothing else.
+
+## L. Bugs caught by a test during this session — each becomes a cheap script
+
+User rule (24 Oct): "chaque test échoué ayant intercepté un bug devient un script à passer « à pas cher » avant de dire
+qu'une feature est bonne". The list below is what the orchestrator's and the agents' tests caught since `66cc22dab`,
+with the case that now guards it. A case marked **new** is not in the tables above and is added to the area's file.
+
+| # | Bug caught (date, where) | How it was caught | Guard case |
+|---|---|---|---|
+| L1 | Airspaces card hidden under the map buttons, unclosable, 90 % of the map on a phone (23 Oct, maps) | Screenshot at 390 + box measurement | **new D11**: open an airspaces list (tap the route at a point, or the ✕-closable content): the content is in the sheet, ✕ reachable (inside the window, not covered: `elementFromPoint` at its centre is the ✕), the map keeps ≥ 50 % of the view |
+| L2 | Map module not fixed: page scroll bar and header artifacts (24 Oct, maps) | `scrollHeight > innerHeight` and a header box check | A5 |
+| L3 | Profile peak artifact: two levels drawn, green and orange dots at a step (24 Oct, atmosphere/maps profile) | User's screenshot; then a canvas pixel scan | **new D12**: on the drawn profile canvas, sample the level line: at most one filled level polyline (count distinct level y per x column in the route colour ≤ 1 outside TOC/TOD); no pixel of `--sog-ok`/`--sog-warn` colours on the canvas unless a reporting point is at that x |
+| L4 | Frame chrome ate 184 px above the map, sheet at 38 % left the map ~40 % (24 Oct, maps) | Box measurements header→map→sheet | A5, B3, C2 |
+| L5 | Maps toolbar line and the frame's full-screen chip overlapped (24 Oct, frame lot) | Screenshot at 390 | B3, B4 |
+| L6 | Overlay right column: a wide element pushed the 44 px buttons off the right edge (`wrap-reverse` inverts `align-items`) (24 Oct, atmosphere → frame) | Right-edge measurement with a 90 px element prepended | B2 (**add** the prepended 90 px element step) |
+| L7 | Layers panel posed over the map, clipped when the map is low (24 Oct, atmosphere, user's iPhone shots) | User's screenshot | D3, E4 |
+| L8 | Two "i" buttons on the atmosphere screen (24 Oct) | User | E5 |
+| L9 | Flight summary tiles too big on a phone (24 Oct, atmosphere) | User | E4 (content height ≤ 60 % of the sheet when expanded; rows ≤ 44 px) |
+| L10 | Hint pill written over the map; state message used as the sheet title (24 Oct, atmosphere) | Orchestrator's screenshot review | E2, E6, C5 |
+| L11 | MapLibre attribution unfolded, a band at the bottom of the map (24 Oct) | Screenshot | D7 |
+| L12 | Fuel opened on the Sheets view; result block took a third of the phone screen (24 Oct, fuel) | User; height measurement | F1, F2 |
+| L13 | `.fu-when` row overflows the page at 390 (402 px) (24 Oct, fuel) | `scrollWidth` check in the frame lot's sweep | F4 (known failure) |
+| L14 | Sheet drag closed on wheel/drag; airspaces card closed by a map drag (23–24 Oct) | Bench `sheet.html` + card test | C1, **new D13**: a drag on the map while a sheet content is open does not close it; a wheel on the sheet does not close it |
+| L15 | Help translation fingerprints stale after a manual change (24 Oct, help) | `build_help.py` output "n fichier(s) écrit(s)" ≠ 0 | I4 |
+| L16 | Touch emulation with `is_mobile` on broke taps on the Cupertino bar (24 Oct, test harness itself) | Sweep failures on the base commit | § 0 rule: `is_mobile` off; **new A13**: tapping each bar entry in `cupertino` navigates (hash changes) |
+| L17 | Metro and Material bar heights differ (728/722 px view instead of 730) — a test assumption, not a bug | Sweep | A5 measures against the bar's real box, never a constant |
+
+## M. Adherence: which cases run for which change
+
+User rule (24 Oct): "pas la peine de faire un test de synchro git si on a fait une modification d'affichage météo".
+The runner selects areas from the files changed, so that a module lot runs its own cases and the shared ones it can
+break, and nothing else. `tests/v3/domains.py` holds the map; `run.py --changed [<base>]` reads
+`git diff --name-only <base>...HEAD` (default base: `origin/v3`, plus the working tree) and `run.py --for <path>…`
+takes paths by hand; `--all` runs everything. The report's first line says which areas ran and which paths chose them.
+
+| Changed path (glob) | Areas run | Why |
+|---|---|---|
+| `frame/app.js`, `frame/frame.css`, `frame/index.html`, `frame/lib/*.js` (not sheet) | A B C D E F G H I | the frame reaches every screen |
+| `frame/lib/sheet.js`, `frame/design/primitives.css` | B C D E I | sheet and overlay primitives: the two fixed modules |
+| `frame/design/**` (tokens, designs, demos) | A H I + B2/B9 (button look) | designs and chrome |
+| `frame/help/**`, `apps/aide/**`, `modules/*/help/**`, `docs/**`, `*.md` | I (+ A11 when a manual changed) | documents only |
+| `modules/maps/lib/map_base.js` | D E B I | shared map base: both map modules |
+| `modules/maps/**` (other) | D B C I | the map module and the primitives it uses |
+| `modules/atmosphere/**` | E B C I | same for atmosphere |
+| `modules/fuel/**` | F I (+ A7 popover: fuel is in the Préparer group) | fuel |
+| `modules/flightlog/**`, `modules/report/**` | G I (+ A8 A9: the "i" reads flightlog's pending file) | flightlog and report |
+| `frame/settings/**`, `frame/aerodb/**` | A12 D5 I | settings screen; aerodb warning on maps |
+| `tools/**`, `tests/**`, `.github/**` | I | tooling |
+| anything else | A1 I | smoke and static |
+
+A case can also carry tags (`tags=('overlay','sheet')`) so that `--tag overlay` runs across areas. The frame lot and
+the module lots say in their reports which command they ran (`run.py --changed` from their branch) and paste the
+summary line; a lot is "good" when its selected cases pass and the known failures are the only `FAIL`s.
