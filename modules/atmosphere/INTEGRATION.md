@@ -9,6 +9,8 @@
 | `section.js` | pure SVG renderers of the profile and the slice (§ 5) |
 | `atmo.js` | pure computations: columns at an hour, reading at a pressure altitude, density, inversions, icing, trajectory, grid, contours; reuses `modules/fuel/winds.js` |
 | `weather_store.js` | the shared weather cache (§ 3), written to move unchanged into `frame/weather` |
+| `world.js` | the world synoptic (SPEC § 4): `worldReader({ data, net })`, `valid`, `stepAt`, `worldGrid`, `worldAt`; pure but the reader |
+| `tools/build_world_weather.py` | builds `/v3/weather/world.json` in the Pages workflow (`.github/workflows/pages.yml`, step "Synoptique monde") |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
 | `ROADMAP.md` | what is done, what is next |
@@ -113,7 +115,9 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
   `sectionPlaces(route)`, in that order), `layers` (`{ cloud, iso, inv, ice, wind, cu, temp, rh, da }`), `cursorM`
   (the shared cursor, metres from the departure), `labels.strips` (five texts of the surface strips), `fmtLvl`,
   `cloudRgb`, `dark`.
-- `sectionPlaces(points)`: the reading places (every 50 NM, 24 at most, as Fuel). `sectionVars(levelFt, points)`: the
+- `sectionPlaces(points)`: the reading places (every 50 NM, 24 at most, as Fuel), on continuous longitudes
+  (`A.unwrapLons`: a route across the date line is sampled along itself, not round the world); `sectionModel` does
+  the same, so a reader passing the current flight's raw points finds the same cache cells as this module. `sectionVars(levelFt, points)`: the
   hourly variables (surface, pressure levels up to the top of the cross-section). `topFtOf(levelFt, points)`.
 - `sectionModel({ points, levelFt, profile, profileLevelFt, depTime, cruiseKt, samples, locs })`: the model alone
   (trajectory, columns at the time of passage, the 200 × 120 field, the reading every 1 NM, `sampleAt(nm, ft)`).

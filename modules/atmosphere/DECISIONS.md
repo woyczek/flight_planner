@@ -2,6 +2,47 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (late) — across the date line
+
+- **The request** (user): "On se souvient qu'on veut voler de Sibérie à l'Alaska en passant par la ligne de changement
+  de date."
+- **Fixed here**: `atmo.js` gets `wrapLon`, `nearLon`, `unwrapLons`; the flight's points are unwrapped as they are read
+  (record, file, route text), and `A.grid`, `sectionPlaces`, `sectionModel` unwrap on their own (a reader with raw
+  points finds the same cells); the model is chosen on the wrapped longitude; taps, tooltips and the local slice's
+  nearest point compare longitudes modulo 360; displayed coordinates are wrapped. Map grid latitudes capped at ±80°
+  (Mercator). Checked with UHMA → PAOM (FL190, stubbed Open-Meteo): one continuous route and grid, the requests'
+  longitudes within [−180, 180[, no error.
+- **Highs and lows need a real difference** (0.5 hPa to a neighbour): on a flat field every point was marked "L".
+- **Seen outside this module, reported to the relay**: the maps module draws UHMA → PAOM the long way round (through
+  Europe, distance marks wrong) and hides its Weather chip (its known debt, `DETTE_TECHNIQUE.md`); Fuel's `samples`
+  (`modules/fuel/winds.js`) interpolates longitudes linearly, so its winds aloft for such a flight are read round the
+  world. `unwrapLons` is the fix for both; a candidate for `frame/lib`.
+
+## 24 October 2026 (late) — the world synoptic, nothing asked outside the flight's grid
+
+- **The request** (user): "si on zoom out la carte météo, on n'a pas les infos. Quelles infos minimales sont dispo sans
+  cramer des crédits pour afficher le monde entier (ce qui arrivera inévitablement, users are dumb)". **Decided by the
+  relay** (`V3_SPECIFICATION.md` § 8): a global synoptic file built by the repository's workflow and published with the
+  pages, 15° grid, no extra button, the handle's title says what is shown; carried by this module (script, job, format,
+  drawing).
+- **Built** (SPEC § 4): `tools/build_world_weather.py` (standard library), a step of `.github/workflows/pages.yml` and
+  a schedule every 6 h; 264 places (11 × 24, not the ≈ 288 estimated); Open-Meteo read once per GFS run, the published
+  file taken again otherwise (each push to develop or v3 would otherwise cost 264 calls); never a failed deployment.
+- **Checked from the session**: Open-Meteo answered "Daily API request limit exceeded" for the session's own address
+  (shared): the quota is per IP, and GitHub's runners are shared too. The script falls back on the published file; if
+  the runner is refused day after day, NOAA GFS (no quota) or a key as a repository secret — the user's choice, noted
+  in the ROADMAP. The real file could not be produced here: the module was checked with a synthetic world file of the
+  same format (the script's paths — same run, new run, refusal — with a simulated network).
+- **Device**: same-origin read (`/v3/weather/world.json` is outside what the frame's service worker keeps: no false
+  "new version"), kept 6 h in `cache/weather/world.json`. **Map**: the field images are resampled in Mercator (a 150°
+  latitude span stretched linearly would be wrong); the synoptic is clipped out of the flight's grid; the world's copies
+  are drawn when zoomed out; wind barbs thinned to 30 px on screen. **Title** only when the view is mostly outside the
+  grid (grid < 40 % of the view, or its centre outside): the fitted view's margins go beyond the grid at every
+  opening, and the profile's title must stay then. **A tap outside the grid** opens the synoptic values at that point
+  (it opened a local slice, ≈ 10 calls: against the rule). **No flight**: the map shows the world synoptic.
+- `pages.yml` must stay identical on `develop` and `v3` (its header): the relay carries it to `develop` (the schedule
+  runs from the default branch only).
+
 ## 24 October 2026 (late) — always the current flight; the altitude pill without workaround
 
 - **The request** (user): "Pas de contournement, fix. Même si c'est plus long." and "Un double bouton « carte / météo »

@@ -39,6 +39,25 @@ export const TX = {
     'Details: Übersicht, Flugplätze, Tabelle', 'Detalles: resumen, aeródromos, tabla'
   ],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
+  worldTitle: ['Synoptique monde · {at} · run {run} +{h} h', 'World synoptic · {at} · run {run} +{h} h',
+    'Weltsynoptik · {at} · Lauf {run} +{h} h', 'Sinóptico mundial · {at} · pasada {run} +{h} h'
+  ],
+  worldReading: ['Synoptique monde…', 'World synoptic…', 'Weltsynoptik…', 'Sinóptico mundial…'],
+  worldNone: ['Synoptique monde non publié : rien n’est demandé hors de la zone du vol',
+    'World synoptic not published: nothing is asked outside the flight’s area',
+    'Weltsynoptik nicht veröffentlicht: außerhalb des Fluggebiets wird nichts abgefragt',
+    'Sinóptico mundial no publicado: no se pide nada fuera de la zona del vuelo'
+  ],
+  worldPoint: ['Synoptique · {p} · {at}', 'Synoptic · {p} · {at}', 'Synoptik · {p} · {at}', 'Sinóptico · {p} · {at}'],
+  worldPointNote: ['Hors de la zone du vol : synoptique mondial (GFS, run {run}, maille de 15°), rien n’est demandé.',
+    'Outside the flight’s area: world synoptic (GFS, run {run}, 15° grid), nothing is asked.',
+    'Außerhalb des Fluggebiets: Weltsynoptik (GFS, Lauf {run}, 15°-Raster), nichts wird abgefragt.',
+    'Fuera de la zona del vuelo: sinóptico mundial (GFS, pasada {run}, malla de 15°), no se pide nada.'
+  ],
+  wpP: ['Pression mer', 'Sea-level pressure', 'Luftdruck (Meereshöhe)', 'Presión a nivel del mar'],
+  wpWind: ['Vent à 10 m', '10 m wind', 'Wind in 10 m', 'Viento a 10 m'],
+  wpCloud: ['Nébulosité', 'Cloud cover', 'Bewölkung', 'Nubosidad'],
+  wpT: ['Température à 2 m', '2 m temperature', 'Temperatur in 2 m', 'Temperatura a 2 m'],
   tapNote: ['Touchez la carte pour voir l’atmosphère en ce point (tranche locale).',
     'Tap the map to see the atmosphere at that point (local slice).',
     'Tippen Sie auf die Karte, um die Atmosphäre an diesem Punkt zu sehen (lokaler Schnitt).',

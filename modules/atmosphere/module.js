@@ -51,6 +51,12 @@ import {
   TX
 } from './texts.js';
 import {
+  worldReader,
+  worldGrid,
+  worldAt,
+  stepAt
+} from './world.js';
+import {
   tokenize,
   formatLevel
 } from '../../frame/lib/route_text.js';
@@ -78,7 +84,8 @@ export const meta = {
     prefix: 'cache/atmosphere/',
     policy: 'cache'
   }],
-  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'section.js?v=0', 'texts.js?v=0', '../maps/lib/map_base.js?v=0',
+  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'world.js?v=0', 'section.js?v=0', 'texts.js?v=0',
+    '../maps/lib/map_base.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0', '../maps/render.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
@@ -297,9 +304,13 @@ export async function mount(el, ctx) {
   const T = (key, v) => ctx.t(TX[key], v);
   const $ = k => el.querySelector(`[data-at="${k}"]`);
   const W = weatherStore({
-    data,
-    net
-  });
+      data,
+      net
+    }),
+    readWorld = worldReader({
+      data,
+      net
+    });
   const tri = ctx.identity?.trigram || 'ANON',
     flightPath = `pilot/${tri}/current_flight.json`;
   let alive = true;
@@ -494,7 +505,7 @@ export async function mount(el, ctx) {
     }));
     if (pts.length < 2) throw new Error(T('errTwoPoints'));
     return {
-      points: pts,
+      points: A.unwrapLons(pts),
       levelFt: +rec.level?.ft || +rec.quote?.levelFt || 0,
       profile: rec.profile || null,
       dep: rec.route.dep || pts[0].id,
@@ -539,7 +550,7 @@ export async function mount(el, ctx) {
     pts[0].alt_ft = 0;
     pts.at(-1).alt_ft = 0;
     return {
-      points: pts,
+      points: A.unwrapLons(pts),
       levelFt: firstAlt,
       profile: null,
       dep: pts[0].id,
@@ -720,6 +731,7 @@ export async function mount(el, ctx) {
       if (form.parentNode !== dbody) dbody.replaceChildren(form);
       return;
     }
+    if (v === 'wpoint') return drawWorldPoint();
     if (v === 'layers') {
       sheetTitle(T('layers'));
       layersCard();
@@ -841,7 +853,7 @@ export async function mount(el, ctx) {
       bd = Infinity;
     const kx = Math.cos(lat * R);
     for (const a of S.along) {
-      const d = (a.lat - lat) ** 2 + ((a.lon - lon) * kx) ** 2;
+      const d = (a.lat - lat) ** 2 + ((a.lon - A.nearLon(lon, a.lon)) * kx) ** 2;
       if (d < bd) {
         bd = d;
         best = a;
@@ -908,7 +920,7 @@ export async function mount(el, ctx) {
       nm = L.nm;
       t = L.t;
       head = T('sliceHeadPoint', {
-        p: `${L.lat.toFixed(2)}° ${L.lon.toFixed(2)}°`,
+        p: `${L.lat.toFixed(2)}° ${A.wrapLon(L.lon).toFixed(2)}°`,
         off: fmtNum(L.offNm),
         nm: fmtNum(nm),
         at: fmtHM(t)
@@ -1236,9 +1248,45 @@ export async function mount(el, ctx) {
     schedule();
     return false;
   }
-  /** Toucher de la carte : la tranche locale à ce point. */
+  /** Toucher de la carte : dans la grille du vol, la tranche locale à ce point ; hors d'elle, les valeurs du synoptique
+   *  monde (aucun appel hors de la grille du vol). */
   function mapTap(lat, lon) {
-    openPointSlice(lat, lon);
+    const b = gridBox();
+    if (!b || !inBox(b, lat, lon)) {
+      // la longitude touchée (MapLibre la donne continue) : le repère suit ; les valeurs se lisent modulo 360
+      S.wpoint = {
+        lat,
+        lon
+      };
+      show('wpoint');
+      return schedule();
+    }
+    openPointSlice(lat, A.nearLon(lon, (b[0] + b[2]) / 2));
+  }
+  /** Contenu « point hors de la zone du vol » : le synoptique monde en ce point, à l'heure de la carte. */
+  function drawWorldPoint() {
+    if (!S.wpoint) return show('profile');
+    const P = S.wpoint,
+      w = S.world,
+      where = `${P.lat.toFixed(2)}° ${A.wrapLon(P.lon).toFixed(2)}°`;
+    if (S.world === undefined) loadWorld();
+    const k = w ? S.wgeo?.k ?? stepAt(w, S.route ? mapTime() : S.depTime || Date.now() / 1000) : 0,
+      x = w ? worldAt(w, k, P.lat, P.lon) : null;
+    sheetTitle(w ? T('worldPoint', {
+      p: where,
+      at: fmtHM(w.times[k])
+    }) : where);
+    const box = document.createElement('div');
+    box.className = 'at-pad';
+    box.innerHTML = x ? `<dl class="at-kv">${[
+        [T('wpP'), x.p == null ? '—' : `${fmtNum(x.p)} hPa`],
+        [T('wpWind'), fmtWind(x.dir, x.kt)],
+        [T('wpCloud'), x.cc == null ? '—' : `${fmtNum(x.cc)} %`],
+        [T('wpT'), x.t == null ? '—' : `${x.t < 0 ? '−' : ''}${fmtNum(Math.abs(x.t))} °C`]
+      ].map(([k2, v]) => `<div><dt>${esc(k2)}</dt><dd>${esc(v)}</dd><dd></dd></div>`).join('')}</dl>
+      <p class="f-muted" style="margin:8px 0 0;font-size:12px">${esc(T('worldPointNote', { run: w.run ? fmtHM(w.run) : '—' }))}</p>` :
+      `<p class="f-muted">${esc(T(S.worldReading || S.world === undefined ? 'worldReading' : 'worldNone'))}</p>`;
+    dbody.replaceChildren(box);
   }
   /** Vue courante : projection (MapLibre, sinon Mercator du fond uni sur l'emprise du vol) et ses dimensions. */
   function view() {
@@ -1281,19 +1329,40 @@ export async function mount(el, ctx) {
 
   /** Géométrie de la carte pour les champs choisis, calculée une fois par jeu de données (pas à chaque image) : images
    *  des champs, courbes (segments lon / lat) et étiquettes, dépressions et anticyclones, vents, trajectoire colorée. */
-  function mapGeometry() {
-    const F = S.mapF || (S.mapF = mapFields()),
-      G = S.grid.g,
-      [w, s, e, n] = G.bbox,
+  /** Géométrie d'une grille régulière en lat / lon (celle du vol ou celle du monde), calculée une fois par jeu de données et
+   *  seulement projetée à chaque image : champs lissés en images, isobares et isothermes en segments lat / lon avec leur
+   *  étiquette, hautes et basses pressions, vents. o.merc : images rééchantillonnées en Mercator (une grille de 150° de
+   *  latitude étirée en latitude serait fausse à l'écran) ; o.tStep : pas des isothermes ; o.thin : un vent sur deux. */
+  function fieldGeometry(F, G, o = {}) {
+    const [w, s, e, n] = G.bbox,
       f = 4,
       dk = dark(),
-      key = JSON.stringify([S.mapLevel, F.time, F.ft, G.bbox, dk, S.mapLayers.tfill, S.levelFt, S.traj?.total]);
-    if (S.geo?.key === key) return S.geo;
-    const cloud = cloudRgb(),
-      rt = A.refine(F.t, G.nx, G.ny, f),
-      rc = A.refine(F.cc, G.nx, G.ny, f),
+      cloud = cloudRgb(),
       lonOf = gx => w + (e - w) * gx / ((G.nx - 1) * f),
       latOf = gy => s + (n - s) * gy / ((G.ny - 1) * f),
+      // rangées d'une grille affinée, du sud au nord, réparties en Mercator (même nombre de rangées)
+      merc = r => {
+        if (!o.merc) return r;
+        const yOf = la => Math.log(Math.tan(Math.PI / 4 + la * R / 2)),
+          y0 = yOf(s),
+          y1 = yOf(n),
+          v = new Array(r.v.length).fill(null);
+        for (let jm = 0; jm < r.ny; jm++) {
+          const la = (2 * Math.atan(Math.exp(y0 + (y1 - y0) * jm / (r.ny - 1))) - Math.PI / 2) / R,
+            gy = (la - s) / (n - s) * (r.ny - 1),
+            j0 = Math.min(r.ny - 2, Math.floor(gy)),
+            fy = gy - j0;
+          for (let i = 0; i < r.nx; i++) {
+            const a = r.v[j0 * r.nx + i],
+              b = r.v[(j0 + 1) * r.nx + i];
+            v[jm * r.nx + i] = a == null || b == null ? (a ?? b) : a + (b - a) * fy;
+          }
+        }
+        return {
+          ...r,
+          v
+        };
+      },
       curves = (vals, step, k, labelOf, labelAt, colorOf) => {
         const r = A.refine(vals, G.nx, G.ny, f),
           out = [];
@@ -1322,44 +1391,200 @@ export async function mount(el, ctx) {
         }
         return out;
       };
-    const hl = [];
+    const rt = merc(A.refine(F.t, G.nx, G.ny, f)),
+      rc = merc(A.refine(F.cc, G.nx, G.ny, f)),
+      tStep = o.tStep || 2,
+      hl = [];
     if (F.ft == null)
       for (let j = 1; j < G.ny - 1; j++)
         for (let i = 1; i < G.nx - 1; i++) {
           const v = F.p[j * G.nx + i];
           if (v == null) continue;
           const nb = [-1, 0, 1].flatMap(dj => [-1, 0, 1].map(di => F.p[(j + dj) * G.nx + i + di])).filter(x => x != null);
-          const isMin = nb.every(x => x >= v),
-            isMax = nb.every(x => x <= v);
+          // un extrêmum : aucun voisin de l'autre côté, et au moins un écart de 0,5 hPa (un champ plat n'en a pas)
+          const isMin = nb.every(x => x >= v) && nb.some(x => x >= v + 0.5),
+            isMax = nb.every(x => x <= v) && nb.some(x => x <= v - 0.5);
           if (isMin || isMax) hl.push({
             ...G.places[j * G.nx + i],
             low: isMin,
             v
           });
         }
-    S.geo = {
-      key,
+    return {
       bbox: [w, s, e, n],
       tImg: fieldCanvas(rt.nx, rt.ny, k => rt.v[k] == null ? null : [...diverging(rt.v[k], 40, dk), 120]),
       cImg: fieldCanvas(rc.nx, rc.ny, k => rc.v[k] > 8 ? [...cloud, Math.round(rc.v[k] / 100 * 150)] : null),
       isobars: F.p.some(Number.isFinite) ? curves(F.p, F.pStep, 'p', lv => `${Math.round(lv)}`, lv => 0.2 + 0.6 * (((lv / F.pStep) % 5 + 5) % 5) /
         4,
         () => dk ? '#c3c2b7' : '#3d3c39') : [],
-      isotherms: F.t.some(Number.isFinite) ? curves(F.t, 2, 't', lv => `${lv < 0 ? '−' : ''}${Math.abs(lv)}°`, lv => 0.15 + 0.7 * (((lv / 2) % 6 + 6) % 6) / 5,
+      isotherms: F.t.some(Number.isFinite) ? curves(F.t, tStep, 't', lv => `${lv < 0 ? '−' : ''}${Math.abs(lv)}°`, lv => 0.15 + 0.7 * (((lv /
+          tStep) % 6 + 6) % 6) / 5,
         lv => lv === 0 ? '#1c5cab' : lv < 0 ? '#256abf' : '#c23b3a') : [],
       pStep: F.pStep,
       hl,
-      winds: G.places.map((pl, k) => [pl, F.wind[k]]).filter(([pl, [d, kt]]) => d != null && kt != null && !((pl.i + pl.j) % 2 && G
-        .places.length > 40)),
+      winds: G.places.map((pl, k) => [pl, F.wind[k]]).filter(([pl, [d, kt]]) => d != null && kt != null && !(o.thin && (pl.i + pl.j) % 2))
+    };
+  }
+  /** Géométrie de la grille du vol, et la trajectoire colorée. */
+  function mapGeometry() {
+    const F = S.mapF || (S.mapF = mapFields()),
+      G = S.grid.g,
+      key = JSON.stringify([S.mapLevel, F.time, F.ft, G.bbox, dark(), S.mapLayers.tfill, S.levelFt, S.traj?.total]);
+    if (S.geo?.key === key) return S.geo;
+    S.geo = {
+      key,
+      ...fieldGeometry(F, G, {
+        thin: G.places.length > 40
+      }),
       traj: S.mapLevel === 'traj' ? S.along.map(a => ({
         lat: a.lat,
         lon: a.lon,
-        c: a.x && !a.x.below && a.x.tC != null ? `rgb(${diverging(a.x.tC, 40, dk).join(',')})` : '#888',
+        c: a.x && !a.x.below && a.x.tC != null ? `rgb(${diverging(a.x.tC, 40, dark()).join(',')})` : '#888',
         w: (a.x?.cc ?? 0) >= 50 ? 6 : 4,
         ice: a.ice
       })) : null
     };
     return S.geo;
+  }
+  /** Dessin d'une géométrie (fieldGeometry) : champs, isobares, isothermes, hautes et basses pressions, vents ; P projette
+   *  (lat, lon) en pixels. */
+  function drawGeo(c, g, P, K, L) {
+    const [w, s, e, n] = g.bbox,
+      a = P(n, w),
+      b = P(s, e);
+    // champs : une image lissée sur l'emprise de la grille (Mercator : un rectangle à l'écran)
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
+    if (L.tfill) c.drawImage(g.tImg, a.x, a.y, b.x - a.x, b.y - a.y);
+    if (L.cloud) c.drawImage(g.cImg, a.x, a.y, b.x - a.x, b.y - a.y);
+    // courbes
+    const stroke = (list, style) => {
+      for (const cv2 of list) {
+        style(cv2);
+        c.beginPath();
+        for (const sg of cv2.segs) {
+          const p = P(sg[0], sg[1]),
+            q = P(sg[2], sg[3]);
+          c.moveTo(p.x, p.y);
+          c.lineTo(q.x, q.y);
+        }
+        c.stroke();
+        c.setLineDash([]);
+      }
+      for (const cv2 of list)
+        if (cv2.label) {
+          const p = P(cv2.label.lat, cv2.label.lon);
+          halo(c, cv2.label.text, p.x, p.y, cv2.color, K.bg);
+        }
+    };
+    if (L.isobar) stroke(g.isobars, cv2 => {
+      c.strokeStyle = cv2.color;
+      c.lineWidth = cv2.level % (g.pStep * 2) === 0 ? 1.6 : 0.9;
+    });
+    if (L.isotherm) stroke(g.isotherms, cv2 => {
+      c.strokeStyle = cv2.color;
+      c.lineWidth = cv2.level === 0 ? 2 : 1;
+      c.setLineDash(cv2.level === 0 ? [] : [5, 4]);
+    });
+    if (L.isobar)
+      for (const h of g.hl) {
+        const p = P(h.lat, h.lon);
+        c.font = 'bold 18px system-ui, sans-serif';
+        halo(c, h.low ? T('low') : T('high'), p.x, p.y, h.low ? '#c23b3a' : '#1c5cab', K.bg);
+        c.font = '11px system-ui, sans-serif';
+        halo(c, `${Math.round(h.v)}`, p.x, p.y + 15, K.muted, K.bg);
+      }
+    if (L.wind && g.winds.length) {
+      // un vent tous les « stride » lieux : au moins 30 px entre deux barbules à l'écran (grille du monde dézoomée)
+      const [p0] = g.winds[0],
+        q0 = P(p0.lat, p0.lon),
+        q1 = P(p0.lat, p0.lon + (g.bbox[2] - g.bbox[0]) / Math.max(1, Math.max(...g.winds.map(([pl]) => pl.i)))),
+        stride = Math.max(1, Math.ceil(30 / Math.max(1, Math.hypot(q1.x - q0.x, q1.y - q0.y))));
+      for (const [pl, [d, kt]] of g.winds) {
+        if (pl.i % stride || pl.j % stride) continue;
+        const p = P(pl.lat, pl.lon);
+        barb(c, p.x, p.y, d, kt, 22, K.fg);
+      }
+    }
+  }
+  /** Emprise de la grille du vol (lue, sinon celle qui le serait) ; null sans vol. */
+  const gridBox = () => S.grid?.g.bbox || S.gridBox || null;
+  const inBox = (b, lat, lon) => {
+    const lo = A.nearLon(lon, (b[0] + b[2]) / 2); // la grille peut passer la ligne de changement de date (longitudes > 180°)
+    return lat >= b[1] && lat <= b[3] && lo >= b[0] && lo <= b[2];
+  };
+  /** La vue et la grille du vol : 0 dedans ; 1 en partie dehors (le synoptique remplit ce qui dépasse) ; 2 surtout
+   *  dehors — la grille couvre moins de 40 % de la vue, ou son centre en sort (le titre dit alors « synoptique »). Sans
+   *  vol : 2. */
+  function outsideGrid() {
+    const b = gridBox();
+    if (!b) return 2;
+    if (!S.map) return 0; // fond uni : cadré sur le vol
+    const v = S.map.getBounds(),
+      [w, s, e, n] = [v.getWest(), v.getSouth(), v.getEast(), v.getNorth()];
+    if (w >= b[0] && e <= b[2] && s >= b[1] && n <= b[3]) return 0;
+    const ix = Math.max(0, Math.min(e, b[2]) - Math.max(w, b[0])),
+      iy = Math.max(0, Math.min(n, b[3]) - Math.max(s, b[1])),
+      cover = ix * iy / Math.max(1e-9, (e - w) * (n - s));
+    return cover < 0.4 || !inBox(b, (s + n) / 2, (w + e) / 2) ? 2 : 1;
+  }
+  /** Décalages de longitude des copies du monde visibles (MapLibre dézoomé répète le monde). */
+  function worldCopies() {
+    if (!S.map) return [0];
+    const v = S.map.getBounds(),
+      out = [];
+    for (let k = Math.floor((v.getWest() + 180) / 360); k <= Math.floor((v.getEast() + 180) / 360); k++) out.push(k * 360);
+    return out.length ? out.slice(0, 3) : [0];
+  }
+  /** Le synoptique monde, lu une fois (réserve de l'appareil, sinon le fichier publié) ; jamais Open-Meteo. */
+  function loadWorld() {
+    S.world = null;
+    S.worldReading = true;
+    S.worldAsked = Date.now();
+    readWorld().then(w => {
+      if (!alive) return;
+      S.worldReading = false;
+      S.world = w;
+      S.wgeo = null;
+      baseTitle();
+      if (S.view === 'wpoint') drawData();
+      schedule();
+    }, () => {
+      S.worldReading = false;
+      baseTitle();
+    });
+  }
+  /** Titre du synoptique : l'heure montrée, le run et l'échéance. */
+  function worldTitle() {
+    const w = S.world;
+    if (!w) return T(S.worldReading || S.world === undefined ? 'worldReading' : 'worldNone');
+    const t = w.times[S.wgeo?.k ?? 0];
+    return T('worldTitle', {
+      at: fmtHM(t),
+      run: w.run ? fmtHM(w.run) : '—',
+      h: w.run ? Math.round((t - w.run) / 3600) : '—'
+    });
+  }
+  /** Géométrie du synoptique monde au pas le plus proche de l'heure de la carte (null sans fichier). */
+  function worldGeometry() {
+    const w = S.world;
+    if (!w) return null;
+    const k = stepAt(w, S.route ? mapTime() : S.depTime || Date.now() / 1000),
+      key = JSON.stringify([w.built, k, dark()]);
+    if (S.wgeo?.key === key) return S.wgeo;
+    const {
+      G,
+      F
+    } = worldGrid(w, k);
+    S.wgeo = {
+      key,
+      k,
+      ...fieldGeometry(F, G, {
+        merc: true,
+        tStep: 5
+      })
+    };
+    return S.wgeo;
   }
 
   /** Halo de texte (fond du dessin) puis texte. */
@@ -1403,61 +1628,44 @@ export async function mount(el, ctx) {
         c.fillRect(0, 0, v.W, v.H);
       }
     }
-    if (!S.flight) return;
     c.font = '11px system-ui, sans-serif';
     const L = S.mapLayers;
-    if (S.grid && S.traj) {
-      const g = mapGeometry(),
-        [w, s, e, n] = g.bbox,
-        a = P(n, w),
-        b = P(s, e);
-      // champs : une image lissée sur l'emprise de la grille (Mercator : un rectangle à l'écran)
-      c.imageSmoothingEnabled = true;
-      c.imageSmoothingQuality = 'high';
-      if (L.tfill) c.drawImage(g.tImg, a.x, a.y, b.x - a.x, b.y - a.y);
-      if (L.cloud) c.drawImage(g.cImg, a.x, a.y, b.x - a.x, b.y - a.y);
-      // courbes
-      const stroke = (list, style) => {
-        for (const cv2 of list) {
-          style(cv2);
+    // synoptique monde : dès que la vue sort de la grille du vol (ou sans vol), hors de la grille du vol ; jamais d'appel
+    const out = outsideGrid();
+    if ((out === 2) !== !!S.worldShown) {
+      S.worldShown = out === 2;
+      baseTitle();
+    }
+    if (out) {
+      if (S.world === undefined || (S.world === null && Date.now() - S.worldAsked > 10 * 60e3)) loadWorld();
+      const wg = worldGeometry();
+      if (wg) {
+        c.save();
+        if (S.grid && S.traj) {
+          const [w, s, e, n] = S.grid.g.bbox,
+            a = P(n, w),
+            b = P(s, e);
           c.beginPath();
-          for (const sg of cv2.segs) {
-            const p = P(sg[0], sg[1]),
-              q = P(sg[2], sg[3]);
-            c.moveTo(p.x, p.y);
-            c.lineTo(q.x, q.y);
-          }
-          c.stroke();
-          c.setLineDash([]);
+          c.rect(0, 0, v.W, v.H);
+          c.rect(a.x, a.y, b.x - a.x, b.y - a.y);
+          c.clip('evenodd');
         }
-        for (const cv2 of list)
-          if (cv2.label) {
-            const p = P(cv2.label.lat, cv2.label.lon);
-            halo(c, cv2.label.text, p.x, p.y, cv2.color, K.bg);
-          }
-      };
-      if (L.isobar) stroke(g.isobars, cv2 => {
-        c.strokeStyle = cv2.color;
-        c.lineWidth = cv2.level % (g.pStep * 2) === 0 ? 1.6 : 0.9;
-      });
-      if (L.isotherm) stroke(g.isotherms, cv2 => {
-        c.strokeStyle = cv2.color;
-        c.lineWidth = cv2.level === 0 ? 2 : 1;
-        c.setLineDash(cv2.level === 0 ? [] : [5, 4]);
-      });
-      if (L.isobar)
-        for (const h of g.hl) {
-          const p = P(h.lat, h.lon);
-          c.font = 'bold 18px system-ui, sans-serif';
-          halo(c, h.low ? T('low') : T('high'), p.x, p.y, h.low ? '#c23b3a' : '#1c5cab', K.bg);
-          c.font = '11px system-ui, sans-serif';
-          halo(c, `${Math.round(h.v)}`, p.x, p.y + 15, K.muted, K.bg);
-        }
-      if (L.wind)
-        for (const [pl, [d, kt]] of g.winds) {
-          const p = P(pl.lat, pl.lon);
-          barb(c, p.x, p.y, d, kt, 22, K.fg);
-        }
+        for (const off of worldCopies()) drawGeo(c, wg, (la, lo) => P(la, lo + off), K, L);
+        c.restore();
+      }
+    }
+    if (S.wpoint && S.view === 'wpoint') {
+      const q = P(S.wpoint.lat, S.wpoint.lon);
+      c.strokeStyle = K.accent;
+      c.lineWidth = 2.5;
+      c.beginPath();
+      c.arc(q.x, q.y, 9, 0, 2 * Math.PI);
+      c.stroke();
+    }
+    if (!S.flight) return;
+    if (S.grid && S.traj) {
+      const g = mapGeometry();
+      drawGeo(c, g, P, K, L);
       // trajectoire colorée par la température rencontrée, plus épaisse dans les nuages, ❄ au givrage
       if (g.traj) {
         const q = g.traj.map(t => P(t.lat, t.lon));
@@ -1576,7 +1784,7 @@ export async function mount(el, ctx) {
     if (!S.grid || !S.mapF || !box || ev?.pointerType === 'touch' || matchMedia('(hover: none)').matches) return;
     const G = S.grid.g,
       [w, s, e, n] = G.bbox,
-      gx = (lon - w) / (e - w) * (G.nx - 1),
+      gx = (A.nearLon(lon, (w + e) / 2) - w) / (e - w) * (G.nx - 1),
       gy = (lat - s) / (n - s) * (G.ny - 1);
     if (gx < 0 || gy < 0 || gx > G.nx - 1 || gy > G.ny - 1) return box.style.display = 'none';
     const i = Math.min(G.nx - 2, Math.floor(gx)),
@@ -1591,7 +1799,7 @@ export async function mount(el, ctx) {
     const t = bil(F.t),
       p = bil(F.p),
       cc = bil(F.cc);
-    box.innerHTML = `<b>${lat.toFixed(2)}° ${lon.toFixed(2)}°</b> <span class="m">${F.ft == null ? esc(T('ground')) : fmtLvl(F.ft)}</span><br>` +
+    box.innerHTML = `<b>${lat.toFixed(2)}° ${A.wrapLon(lon).toFixed(2)}°</b> <span class="m">${F.ft == null ? esc(T('ground')) : fmtLvl(F.ft)}</span><br>` +
       `${fmtT(t)} · ${esc(T('clouds'))} ${fmtNum(cc)} %${p == null ? '' : ` · ${fmtNum(p, 1)} hPa`}`;
     box.style.display = 'block';
     box.style.left = `${Math.min(pt.x + 14, $('box').clientWidth - box.offsetWidth - 4)}px`;
@@ -1691,6 +1899,8 @@ export async function mount(el, ctx) {
   /** Titre du profil et des informations : le contenu, puis le vol en bref (ou l'état de la lecture). */
   function baseTitle() {
     const ctxt = s => S.sum ? `${s} · ${S.sum}` : s;
+    // la carte montre le synoptique monde (vue hors de la grille du vol, ou sans vol) : le titre dit ce qu'on regarde
+    if (S.view === 'profile' && S.worldShown) return sheetTitle(worldTitle());
     if (S.view === 'profile') sheetTitle(ctxt(T('profileTitle')), S.route ? T('xsSub', {
       n: S.route.samples.length
     }) : '');
@@ -1806,7 +2016,7 @@ export async function mount(el, ctx) {
       if (f.when && !$f('dep').dataset.touched) setDep(Date.parse(f.when) / 1000);
       S.depTime = depValue();
       const mid = f.points[Math.floor(f.points.length / 2)];
-      S.model = A.modelFor(mid.lat, mid.lon);
+      S.model = A.modelFor(mid.lat, A.wrapLon(mid.lon));
       S.run = null;
       flightSum();
       // un lieu tous les 50 NM, 24 au plus (comme Carburant) : l'échantillonnage tient le quota d'abord
@@ -1819,6 +2029,7 @@ export async function mount(el, ctx) {
         rVars = [...new Set([...sectionVars(S.levelFt, f.points), ...($f('flightSrc').value === 'current' && f.levelFt && f
           .levelFt !== S.levelFt ? sectionVars(f.levelFt, f.points) : [])])],
         gVars = varsOf(levels, A.GRID_LEVEL_VARS, A.GRID_SURFACE_VARS);
+      S.gridBox = gr.bbox; // emprise de la grille, connue avant la prévision : hors d'elle, rien n'est jamais demandé
       setStatus(S.data === 'demo' ? T('demoComputing') : T('reading', {
         m: S.model.name
       }));
@@ -1900,8 +2111,11 @@ export async function mount(el, ctx) {
           grid: null,
           geo: null,
           local: null,
+          gridBox: null,
           noFlight: true
         });
+        // la carte reste utile sans vol : le synoptique monde (rien n'est demandé à Open-Meteo)
+        startTiles().then(schedule);
         flightSum();
         if (lvlChip.hidden !== true) lvlChip.hidden = true;
         setStatus(T('noFlight'));
@@ -1985,6 +2199,7 @@ export async function mount(el, ctx) {
   };
   $('dclose').onclick = () => {
     S.local = null;
+    S.wpoint = null;
     S.mapF = null;
     render();
     show('profile');

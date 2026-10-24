@@ -128,7 +128,7 @@ export const topFtOf = (levelFt, points) => clamp(Math.ceil((Math.max(levelFt ||
     5000) * 5000, 10000,
   40000);
 /** Lieux de lecture de la route (un tous les 50 NM, 24 au plus, comme Carburant) : à demander à la réserve météo. */
-export const sectionPlaces = points => A.samples(points);
+export const sectionPlaces = points => A.samples(A.unwrapLons(points));
 /** Variables horaires de la coupe : surface et niveaux de pression jusqu'au haut de la coupe. */
 export const sectionVars = (levelFt, points) => [...A.ROUTE_SURFACE_VARS, ...A.levelsUpTo(topFtOf(levelFt, points)).flatMap(l => A
   .ROUTE_LEVEL_VARS
@@ -149,6 +149,7 @@ export function sectionModel({
   samples,
   locs
 }) {
+  points = A.unwrapLons(points); // une route qui passe la ligne de changement de date (comme sectionPlaces)
   const c0 = A.column(locs[0], A.hourIndex(locs[0].times, depTime)),
     cN = A.column(locs.at(-1), A.hourIndex(locs.at(-1).times, depTime + 3600));
   const {

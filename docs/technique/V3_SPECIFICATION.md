@@ -262,6 +262,18 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   lot (§ 9.8). SIGMET and METAR (aviationweather.gov, no CORS) come only through the launcher relay, later. NOAA
   GFS (NOMADS, GRIB2) is the quota-free alternative, not taken for now (decoding cost in pure Python).
 
+  **frame/weather — the world synoptic file, as built** (atmosphere lot, 24 Oct 2026; the frame/weather lot inherits it
+  unchanged): `/v3/weather/world.json` on the pages, written by `tools/build_world_weather.py` in the Pages workflow
+  (step "Synoptique monde", `continue-on-error`; schedule `25 4,10,16,22 * * *`, which GitHub runs from the default
+  branch only). Schema 1: `{ schema, model: "gfs_seamless", run (s), built (s), step: 15, lats [-75…75], lons
+  [-180…165], times [s, every 3 h, 9 steps], vars: { p (hPa), t (°C), cc (%), ws (kt), wd (°): [step][lat × lon, row
+  by row from the south] }, units, source }`, ≈ 60 KB. Exactly **264 places** (11 × 24), so 264 weighted calls per
+  run, ≈ 1,060 a day; every other build takes the published file again with no call while it comes from the current
+  run. Refused or unreachable: the previous file is published again while its last step is ahead, never a failed
+  deployment. On the device: read on the same origin (`ctx.net`), kept in `cache/weather/world.json` (policy `cache`,
+  6 h); a launcher-served page has no world file until this lot gives one (relay or published host). Details:
+  `modules/atmosphere/SPEC.md` § 4.
+
 ## 9. Plan — first application: Pilot (from 22 October 2026)
 
 Branch `v3` (from `develop`), one commit per lot, each module in `modules/<name>/` with its three documents. Order:

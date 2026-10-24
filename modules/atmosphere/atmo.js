@@ -25,6 +25,26 @@ export {
 const FT = 0.3048,
   R = Math.PI / 180;
 
+/** Longitude ramenée à [-180, 180[. */
+export const wrapLon = lon => ((((+lon + 180) % 360) + 360) % 360) - 180;
+/** Longitude décalée d'un nombre de tours pour tomber à moins de 180° de ref (même côté de la ligne de changement de date). */
+export const nearLon = (lon, ref) => +lon + 360 * Math.round((ref - lon) / 360);
+/** Points d'une route aux longitudes continues (chacun à moins de 180° du précédent) : une route qui passe la ligne de
+ *  changement de date (Sibérie → Alaska : 177° puis −165°) va de 177° à 195°, sans faire le tour du monde ; les
+ *  interpolations, les emprises et le dessin suivent. Les demandes à Open-Meteo sont ramenées à [-180, 180[ par la
+ *  réserve (cellOf). */
+export function unwrapLons(points) {
+  let prev = null;
+  return (points || []).map(p => {
+    const lon = prev == null ? +p.lon : nearLon(+p.lon, prev);
+    prev = lon;
+    return lon === +p.lon ? p : {
+      ...p,
+      lon
+    };
+  });
+}
+
 /** Variables par niveau de pression : route (coupe complète) et grille de la carte (sans nébulosité : tirée de RH). */
 export const ROUTE_LEVEL_VARS = ['temperature', 'relative_humidity', 'cloud_cover', 'geopotential_height', 'wind_speed', 'wind_direction'];
 export const GRID_LEVEL_VARS = ['temperature', 'relative_humidity', 'geopotential_height', 'wind_speed', 'wind_direction'];
@@ -469,6 +489,7 @@ export const windComponents = (dirDeg, kt, trackDeg) => {
  *  au plus max ; { bbox: [w, s, e, n], nx, ny, places [{ lat, lon, i, j }] } (i : colonne d'ouest en est, j : ligne du
  *  sud au nord). */
 export function grid(points, max = 48) {
+  points = unwrapLons(points); // la ligne de changement de date passée : une grille d'un seul tenant
   const lats = points.map(p => +p.lat),
     lons = points.map(p => +p.lon);
   let s = Math.min(...lats),
@@ -477,8 +498,8 @@ export function grid(points, max = 48) {
     e = Math.max(...lons);
   const mLat = Math.max(1.5, (n - s) * 0.25),
     mLon = Math.max(1.5 / Math.cos((s + n) / 2 * R), (e - w) * 0.25);
-  s -= mLat;
-  n += mLat;
+  s = Math.max(-80, s - mLat); // Mercator : pas au-delà de 80°
+  n = Math.min(80, n + mLat);
   w -= mLon;
   e += mLon;
   const aspect = (e - w) * Math.cos((s + n) / 2 * R) / (n - s),

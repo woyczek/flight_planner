@@ -3,6 +3,8 @@
 data/
 
 # Caches et fichiers de travail
+# synoptique monde d'Atmosphère : écrit par le workflow des pages (tools/build_world_weather.py), jamais versionné
+weather/
 __pycache__/
 AircraftDB/aircraft_http_cache.json
 AircraftDB/icao_doc8643_cache/
