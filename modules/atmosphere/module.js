@@ -5,7 +5,8 @@
 //   · carte : la technique du module Carte, mise en commun — fond MapLibre (ses styles, sa bibliothèque), surcouche
 //     vectorielle sur un canvas redessiné à chaque image du mouvement (map.project), géométrie calculée une fois par jeu
 //     de données (champs en images lissées, isobares et isothermes en segments lon / lat, vents, route) ; sans tuiles,
-//     le fond uni de la Carte (MapsRender.mercator, MapsRender.drawBackground et ses contours des pays) ;
+//     le fond uni de la Carte ; le socle (MapLibre, styles, attente des tuiles, taille, fond uni) est celui de la Carte,
+//     modules/maps/lib/map_base.js ;
 //   · vol : pilot/<trigramme>/current_flight.json par ctx.data (schéma 1, lecture seule), l'exemple du schéma, un fichier,
 //     ou un texte de route (noms résolus par ctx.aerodb.coords) ;
 //   · prévisions : la réserve météo partagée (weather_store.js, cache/weather/<modèle>/<case>/<jour>.json), qui n'appelle
@@ -31,12 +32,18 @@ import {
 import {
   svg
 } from '../../frame/lib/icons.js';
-// copies isolées du module Carte, à remplacer par un import de modules/maps/lib/map_base.js et de frame/lib/sheet.js
+// socle de carte du module Carte, partagé (modules/maps/INTEGRATION.md § 7)
 import {
-  STYLE_DAY,
-  STYLE_NIGHT,
-  loadMapLibre
-} from './maps_copy_base.js';
+  styleFor,
+  startTiles as startMapTiles,
+  mapSize,
+  isOwnResize,
+  loadRender,
+  loadOutlines,
+  plainView,
+  drawPlain
+} from '../maps/lib/map_base.js';
+// copie isolée de la feuille de la Carte, à remplacer par un import de frame/lib/sheet.js
 import {
   createSheet
 } from './maps_copy_sheet.js';
@@ -71,7 +78,7 @@ export const meta = {
     prefix: 'cache/atmosphere/',
     policy: 'cache'
   }],
-  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'section.js?v=0', 'texts.js?v=0', 'maps_copy_base.js?v=0',
+  files: ['atmo.js?v=0', 'demo.js?v=0', 'weather_store.js?v=0', 'section.js?v=0', 'texts.js?v=0', '../maps/lib/map_base.js?v=0',
     'maps_copy_sheet.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0', '../maps/render.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../../frame/lib/icons.js?v=0'
   ],
@@ -124,21 +131,13 @@ const ROUTE_TEXT = 'LFRS 47.1569 -1.6078\nLUGEN 46.5833 -1.2000/F290\nMEN 44.605
 const UI = 'cache/atmosphere/ui.json';
 /** Altitudes fixes proposées pour la carte (ft), en plus du niveau demandé et des paliers. */
 const MAP_FIXED = [5000, 10000, 18000, 24000, 30000];
-/** Attente des tuiles avant le fond uni. */
+/** Attente des tuiles avant le fond uni (ms). */
 const TILE_WAIT = 8000;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const ICON_LAYERS =
   '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg>';
-
-/** Noyau de dessin du module Carte (window.MapsRender : projection du fond uni, fond, jetons du design). */
-const loadRender = () => window.MapsRender ? Promise.resolve() : import(new URL('../maps/render.js?v=0', import.meta.url).href);
-/** Contours des pays du fond uni de la Carte (window.MAPS_OUTLINES), chargés au premier dessin sans tuiles. */
-let outlinesP = null;
-const loadOutlines = () => outlinesP ||= import(new URL('../maps/lib/outlines.js?v=0', import.meta.url).href).catch(() => {
-  outlinesP = null;
-});
 
 /** Barbule de vent (hémisphère nord) sur un canvas : hampe vers le lit du vent, plumes à droite ; fanion 50 kt, plume 10,
  *  demi 5. */
@@ -1086,7 +1085,7 @@ export async function mount(el, ctx) {
     clearTimeout(S.settleT);
     S.settleT = setTimeout(() => {
       if (!alive) return;
-      S.map?.resize();
+      if (S.map) mapSize(S.map, $('box'));
       if (S.map && !S.userMoved) fitMap();
       schedule();
       if ((S.view === 'profile' || S.view === 'slice') && `${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) drawData();
@@ -1124,73 +1123,50 @@ export async function mount(el, ctx) {
     };
   };
 
-  /** Fond MapLibre sur l'emprise du vol ; false s'il ne vient pas (hors ligne, pas de WebGL, hôte refusé) : fond uni. */
+  /** Fond MapLibre sur l'emprise du vol (startTiles du socle de la Carte) ; false s'il ne vient pas (hors ligne, pas de
+   *  WebGL, hôte refusé, délai) : fond uni. Ce qui suit le chargement est propre au module (événements, surcouche). */
   async function startTiles() {
     if (S.map || S.mapTried) return !!S.map;
     S.mapTried = true;
     await loadRender().catch(() => {});
-    if (navigator.onLine === false) return flat();
-    const ml = await loadMapLibre();
-    if (!ml || !alive) return flat();
-    return new Promise(ok => {
-      let map, done = false;
-      const finish = v => {
-        if (done) return;
-        done = true;
-        clearTimeout(timer);
-        if (!v && map) try {
-          map.remove();
-        } catch {
-          /* déjà retirée */
+    const b = fitBox(),
+      map = await startMapTiles($('map'), {
+        style: styleFor({
+          dark: dark()
+        }),
+        bounds: [
+          [b.w, b.s],
+          [b.e, b.n]
+        ],
+        attributionControl: {
+          compact: true
+        },
+        wait: TILE_WAIT,
+        alive: () => alive,
+        onLoad: map => {
+          map.on('move', schedule);
+          map.on('moveend', schedule);
+          map.on('movestart', e => {
+            if (e.originalEvent && !isOwnResize(map)) S.userMoved = true;
+          });
+          map.on('resize', schedule);
+          map.on('click', e => mapTap(e.lngLat.lat, e.lngLat.lng));
+          map.on('mousemove', e => mapTip(e.lngLat.lat, e.lngLat.lng, e.point, e.originalEvent));
+          map.on('mouseout', () => $('mapTip').style.display = 'none');
         }
-        ok(v || flat());
-      };
-      const timer = setTimeout(() => finish(false), TILE_WAIT);
-      const b = fitBox();
-      try {
-        map = new ml.Map({
-          container: $('map'),
-          style: dark() ? STYLE_NIGHT : STYLE_DAY,
-          bounds: [
-            [b.w, b.s],
-            [b.e, b.n]
-          ],
-          attributionControl: {
-            compact: true
-          },
-          dragRotate: false,
-          pitchWithRotate: false,
-          touchPitch: false,
-          renderWorldCopies: false
-        });
-      } catch {
-        return finish(false); // pas de WebGL
-      }
-      map.touchZoomRotate.disableRotation();
-      map.on('error', () => !map.loaded() && finish(false));
-      map.on('load', () => {
-        if (!alive) return finish(false);
-        S.map = map;
-        $('box').classList.remove('at-flat');
-        map.on('move', schedule);
-        map.on('moveend', schedule);
-        map.on('movestart', e => {
-          if (e.originalEvent) S.userMoved = true;
-        });
-        map.on('resize', schedule);
-        map.on('click', e => mapTap(e.lngLat.lat, e.lngLat.lng));
-        map.on('mousemove', e => mapTip(e.lngLat.lat, e.lngLat.lng, e.point, e.originalEvent));
-        map.on('mouseout', () => $('mapTip').style.display = 'none');
-        fitMap();
-        finish(true);
-        schedule();
       });
-    });
+    if (!map || !alive) return flat();
+    S.map = map;
+    $('box').classList.remove('at-flat');
+    mapSize(map, $('box'));
+    fitMap();
+    schedule();
+    return true;
   }
   /** Fond uni de la Carte : Mercator sur l'emprise du vol, contours des pays ; un toucher sur le canvas. */
   function flat() {
     $('box').classList.add('at-flat');
-    loadOutlines().then(schedule);
+    loadOutlines().then(schedule, () => {});
     const over = $('over');
     over.onclick = ev => {
       const v = view(),
@@ -1228,7 +1204,7 @@ export async function mount(el, ctx) {
       toC: (lat, lon) => S.map.project([lon, lat])
     };
     const b = fitBox(),
-      m = window.MapsRender?.mercator?.(b, Wd, H, 12);
+      m = window.MapsRender ? plainView(b, Wd, H, 12) : null;
     return m ? {
       ...m,
       W: Wd,
@@ -1370,7 +1346,7 @@ export async function mount(el, ctx) {
       K = pal();
     if (!S.map) {
       const dk = K.dark;
-      if (window.MapsRender?.drawBackground) MapsRender.drawBackground(c, P, v.W, v.H, window.MAPS_OUTLINES || [], dk ? {
+      if (window.MapsRender) drawPlain(c, P, v.W, v.H, dk ? {
         sea: '#1d2731',
         land: '#26282b',
         border: '#4a4a46'
@@ -1949,7 +1925,7 @@ export async function mount(el, ctx) {
   // le bloc est redessiné quand sa taille n'est plus celle de son dernier dessin (un dessin pris pendant un glissement est
   // repris à la taille finale)
   const ro = new ResizeObserver(() => {
-    S.map?.resize();
+    if (S.map) mapSize(S.map, $('box'));
     schedule();
     if (`${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) settle();
   });
@@ -1958,7 +1934,9 @@ export async function mount(el, ctx) {
   const repaint = () => {
     colors.clear();
     S.geo = null;
-    S.map?.setStyle(dark() ? STYLE_NIGHT : STYLE_DAY);
+    S.map?.setStyle(styleFor({
+      dark: dark()
+    }));
     drawData();
     schedule();
     if (!$('layers').hidden) layersCard();
@@ -1970,6 +1948,14 @@ export async function mount(el, ctx) {
   });
   const mq = matchMedia('(prefers-color-scheme: dark)');
   mq.addEventListener('change', repaint);
+  // retour d'un onglet caché ou d'une page gelée : les observations de taille faites pendant ce temps sont perdues
+  const back = () => {
+    if (document.visibilityState !== 'visible' || !S.map) return;
+    mapSize(S.map, $('box'));
+    schedule();
+  };
+  document.addEventListener('visibilitychange', back);
+  window.addEventListener('pageshow', back);
   // vol courant changé (Carburant, Carte, un autre appareil) : relu, la prévision seulement depuis la réserve
   const sig = r => JSON.stringify([r?.route?.points, r?.level, r?.profile, r?.weather?.when]);
   let lastSig = sig(rec);
@@ -1989,6 +1975,8 @@ export async function mount(el, ctx) {
     ro.disconnect();
     mo.disconnect();
     mq.removeEventListener('change', repaint);
+    document.removeEventListener('visibilitychange', back);
+    window.removeEventListener('pageshow', back);
     unwatch?.();
     S.map?.remove();
     S.map = null;

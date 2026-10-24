@@ -8,7 +8,7 @@
 | `texts.js` | every text, `[fr, en, de, es]`, for `ctx.t` |
 | `section.js` | pure SVG renderers of the profile and the slice (§ 5) |
 | `atmo.js` | pure computations: columns at an hour, reading at a pressure altitude, density, inversions, icing, trajectory, grid, contours; reuses `modules/fuel/winds.js` |
-| `maps_copy_base.js`, `maps_copy_sheet.js` | **copies of the maps module**, isolated so that replacing them is an import: the MapLibre loader and base styles (→ `modules/maps/lib/map_base.js`), the three-position sheet `createSheet` (→ `frame/lib/sheet.js`); relay's decision of 24 Oct 2026 |
+| `maps_copy_sheet.js` | **copy of the maps module's sheet**, isolated so that replacing it is an import: `createSheet` (→ `frame/lib/sheet.js`, relay's decision of 24 Oct 2026) |
 | `weather_store.js` | the shared weather cache (§ 3), written to move unchanged into `frame/weather` |
 | `demo.js` | offline demonstration, answered in Open-Meteo's own format |
 | `test/weather_store.html` | bench of the weather cache (fake data layer and network) |
@@ -23,14 +23,14 @@
 - In `APP.modules` (`frame/app.js`), icon `layers`, and in the **Préparer** group of `APP.tabs` (with fuel): on a phone
   the frame draws the sub-tabs Fuel · Atmosphere; on a screen it is in the rail. `#atmosphere?donnees=demo` opens the
   demonstration; `labs/atmosphere/index.html` forwards there.
-- **Map: the maps module's technique, shared.** MapLibre of `modules/maps/lib/` and the maps module's base styles
-  (positron by day, dark at night); the weather overlay on a canvas over the map, redrawn on every frame of the map's
+- **Map: the maps module's technique and base, shared.** The base is `modules/maps/lib/map_base.js` (maps INTEGRATION
+  § 7): `startTiles` (MapLibre, the style of `styleFor({ dark })`, 8 s wait, gives up on an error before `load`),
+  `mapSize` on every size change and on return of a hidden tab, `isOwnResize` in `movestart`, `loadRender`,
+  `loadOutlines`, `plainView` and `drawPlain` for the plain background; the weather overlay on a canvas over the map, redrawn on every frame of the map's
   movement (`move` → `requestAnimationFrame`) with `map.project`; its geometry (field images, isobar and isotherm
   segments in lon / lat, labels, highs and lows, winds, coloured trajectory) is computed once per data set, never per
-  frame. Without tiles (offline, no WebGL, host refused): the maps module's plain background —
-  `MapsRender.mercator` and `MapsRender.drawBackground` (`modules/maps/render.js`) with `MAPS_OUTLINES`
-  (`modules/maps/lib/outlines.js`). The only piece copied from the maps module is its 15-line `loadMapLibre`, internal
-  to its `module.js` (DECISIONS.md).
+  frame. Without tiles (offline, no WebGL, host refused): the plain background (`plainView`, `drawPlain`, the countries'
+  outlines). What stays in the module: the map's events once loaded, the overlay and its redraw loop.
 - Everything goes through `ctx`: `data` (current flight read only, its own cache files), `net` (Open-Meteo, METAR,
   TAF), `aerodb.coords` (names of a route text), `t` / `lang`, `notify`, `identity.trigram`. No `fetch`, no storage
   of its own, no key.
@@ -88,6 +88,13 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
 });
 ```
 
+- `o.model`: a `sectionModel(…)` already computed. The maps module's sheet redraws at every step of a drag: it computes
+  the model once per flight and forecast and passes it, so a redraw is only the SVG (`route` and `cursorM` are still
+  read from `o`; the other inputs are the model's).
+- **Read from the cache only** (`cacheOnly: true`, as the maps module does): the cross-section is there when this module
+  (or Fuel, later) has read it. The model run kept in `cache/weather/<model>/meta.json` decides how long it is valid
+  (6 h for the same run); without it (never read on this device, or older than 30 min with no run known), the forecast
+  is not found and `drawSection` returns `null`.
 - `drawSection(el, o)`: replaces `el`'s content by the SVG cross-section of `o.width` × `o.height` CSS pixels and returns
   its geometry `{ x0, y0, pw, ph, xOf(nm), yOf(ft), nmOf(x), ftOf(y) }` (tooltips, taps); `null` (and `el` emptied)
   without a forecast. `o`: `route` (points with `alt_ft` steps), `levelFt`, `profile` and `profileLevelFt` (Fuel's;

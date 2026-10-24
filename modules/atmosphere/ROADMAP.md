@@ -44,8 +44,8 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 ## Next
 
 1. **Review** by the user on Pages.
-2. **Shared map base and sheet**: with the maps module's agent, one file for MapLibre, styles, size and plain background used by
-   both modules, and the sheet (`setSheet`, `sheetGestures`, `settle`): today both are copied from the maps module. **Landscape** (later lot): map left, narrow block right, buttons as a
+2. **Shared sheet**: the map base is shared (`modules/maps/lib/map_base.js`); the sheet is still a copy
+   (`maps_copy_sheet.js`), to replace by `frame/lib/sheet.js` when the frame lot lands. **Landscape** (later lot): map left, narrow block right, buttons as a
    rail on the right edge — for the ergonomics session.
 3. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
    `ctx.weather`, show the tally in Settings › Diagnostics; then Fuel reads its winds aloft through it

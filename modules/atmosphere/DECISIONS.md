@@ -2,6 +2,17 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (afternoon) — the shared map base
+
+- **`maps_copy_base.js` replaced by `modules/maps/lib/map_base.js`** (maps lot `316ab3aa`, relay): `startTiles`,
+  `styleFor`, `mapSize`, `isOwnResize`, `loadRender`, `loadOutlines`, `plainView`, `drawPlain`. Two differences accepted
+  with the copy: an error before `load` always gives up (the copy gave up only when the map was not loaded), and
+  Mercator is forced at every style. `mapSize` now runs on every size change, after a settle, and on return of a hidden
+  tab (`visibilitychange`, `pageshow`); `movestart` counts as the user's only when it is not the base's own resize.
+  Only the sheet is still a copy (`maps_copy_sheet.js`, until `frame/lib/sheet.js`).
+- **`drawSection` takes a precomputed `model`** (maps' request: its sheet redraws at every drag step), documented in
+  INTEGRATION § 5, with what reading from the cache only implies (the run kept in `cache/weather/<model>/meta.json`).
+
 ## 24 October 2026 (afternoon) — the screen redone on the maps module's template
 
 - **The request** (user): "Rien ne va en termes d'ergonomie. C'est parfait en mode large, hormis les bugs d'affichage,
