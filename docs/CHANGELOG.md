@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- V3 frame: overlay right column aligns every button to the map's right edge, a wider element included (`align-items` under `wrap-reverse`).
 - **Frame: overlay layer and full screen for fixed modules, a header reduced to name · i · ⚙ on a phone, the tab group as a
   popover** (`frame/app.js`, `frame/frame.css`, `frame/design/primitives.css`, `frame/lib/icons.js`, `frame/index.html`,
   `frame/lib/test/sheet.html`; frame SPEC § 3.1, INTEGRATION § 9.1 / 9.3 / 9.4 / 11, DECISIONS, design SPEC and DECISIONS, the

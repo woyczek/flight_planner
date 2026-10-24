@@ -570,7 +570,8 @@ details.f-card[open]>summary {
 }
 .f-ov-right {
   right: 0;
-  align-items: flex-end;
+  align-items: flex-start;
+  /* sous wrap-reverse, l'axe transversal est inversé : flex-start = bord droit de la ligne */
   flex-wrap: wrap-reverse;
   align-content: flex-start
 }
