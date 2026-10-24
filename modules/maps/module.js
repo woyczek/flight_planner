@@ -1137,6 +1137,9 @@ function drawProfile() {
     H,
     scale: W < 500 ? .78 : 1
   });
+  // le dessin tient dans le bloc (§ 7.1.13) : axe des distances et points dessinés, dits pour le test et pour qui mesure
+  S.pc.dataset.axis = S.geo.axisOk ? '1' : '0';
+  S.pc.dataset.marks = String(S.geo.marks);
   // marques NM (mêmes que sur la carte) : petits traits au bas du cadre
   const g = S.geo,
     yb = g.H - g.padB;
@@ -1162,7 +1165,7 @@ function drawProfile() {
   for (const n of S.data?.data?.navaids || []) ends.set(n.id, n);
   const own = new Set(S.route.points.map(p => p.id)),
     marks = [];
-  for (const e of ends.values()) {
+  for (const e of g.H - g.padT - g.padB < 90 ? [] : ends.values()) { // coupe basse : les points hors route cèdent la place
     if (own.has(e.id)) continue; // points de la route : déjà nommés sous le cadre
     const pr = MapsProfile.project(S.prof, e.lat, e.lon);
     if (pr.s != null && pr.offNm <= 3) marks.push({
@@ -2776,6 +2779,7 @@ function onSheetSettled() {
   mapSize();
   if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
   schedule();
+  dataHead(); // la colonne paysage (html.f-land) a pu apparaître ou partir : la ligne nue ou titrée
   drawProfile(); // la ligne de texte et les notes vont et viennent avec la position : le dessin reprend la hauteur du corps
   redrawWeather();
 }
@@ -2783,13 +2787,25 @@ function onSheetSettled() {
 let viewKeep = 'profile';
 /** La coupe météo se montre pour un vol à deux points au moins (pas pour une carte de mission). */
 const canWeather = () => !S.mission && S.route.points.length >= 2;
+/** Libellé de la poignée (infobulle et lecteur d'écran) : la hauteur de la feuille et sa position ; sur une poignée nue
+ *  (§ 7.1.13 : le titre n'est pas écrit au-dessus d'un dessin) elle dit d'abord quel dessin c'est, puis le résumé du vol
+ *  (niveau, distance, état), qui n'est plus affiché mais reste dit à qui n'a pas le dessin sous les yeux. */
+const gripLabel = p => `${S?.bare ? [S.bare, S.sum].filter(Boolean).join(' · ') + ' · ' : ''}${tt(TX.sheetSize)} (${tt(TX.sheetNames[Math.max(0, SHEET_POS.indexOf(p))])})`;
+const SHEET_POS = ['collapsed', 'default', 'expanded'];
 /** En-tête du bloc, sur le modèle de la feuille d'Atmosphère : la poignée porte un titre qui dit ce qu'on regarde et son
  *  contexte (« Profil · FL065 · 427 NM · vol prévu » ; le titre du contenu ouvert par openData tel
  *  quel), à droite deux puces icône (profil, coupe météo : seulement quand la coupe est possible) ou la croix d'un contenu
- *  de la carte ; le bloc n'est là que s'il a quelque chose à montrer ; écrit s'il change. */
+ *  de la carte ; le bloc n'est là que s'il a quelque chose à montrer ; écrit s'il change.
+ *  Quand le contenu est un dessin (profil, coupe) et que la feuille est en position PAR DÉFAUT, la ligne est NUE
+ *  (.f-sheet-head-bare : la barre de préhension et les puces seulement) : le dessin dit déjà le niveau, la distance et le vol
+ *  (§ 7.1.13) ; agrandie, repliée ou en colonne paysage (html.f-land) elle garde son titre (la place ne manque pas, et le titre
+ *  est alors ce qui dit ce qu'est le contenu). Bascule à chaque changement de position et à onSettle (rotation). */
 function dataHead() {
   const show = !!S.dpanel || !!S.prof,
     wx = S.dpanel === 'weather',
+    drawing = wx || (!S.dpanel && !!S.prof),
+    bare = drawing && sheetKeep === 'default' && !document.documentElement.classList.contains('f-land') ? tt(wx ? TX.wxTitle : TX
+      .dataProfile) : '',
     own = !!S.dpanel && !wx, // contenu ouvert par openData : son titre, sans le résumé du vol
     lay = S.dpanel === 'layers', // « Couches · <vol> » : le contexte comme le profil
     title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), S.sum].filter(Boolean).join(' · '),
@@ -2798,10 +2814,19 @@ function dataHead() {
     close = own;
   if (S.dataEl.hidden === show) S.dataEl.hidden = !show;
   if (S.layersBtn.getAttribute('aria-pressed') !== String(lay)) S.layersBtn.setAttribute('aria-pressed', String(lay));
-  if (S.dtitleEl.textContent !== title) S.dtitleEl.textContent = title;
-  if (S.dtitleEl.title !== tip) S.dtitleEl.title = tip;
+  if (S.bare !== bare) {
+    S.bare = bare;
+    S.dheadEl.classList.toggle('f-sheet-head-bare', !!bare);
+  }
+  const label = gripLabel(sheetKeep);
+  if (S.gripEl.title !== label) S.gripEl.title = label;
+  if (S.gripEl.getAttribute('aria-label') !== label) S.gripEl.setAttribute('aria-label', label);
+  if (S.dtitleEl.textContent !== (bare ? '' : title)) S.dtitleEl.textContent = bare ? '' : title;
+  if (S.dtitleEl.title !== (bare ? '' : tip)) S.dtitleEl.title = bare ? '' : tip;
   if (S.dcloseEl.hidden === close) S.dcloseEl.hidden = !close;
   if (S.segEl.hidden === chips) S.segEl.hidden = !chips;
+  if (S.dataEl.classList.contains('mp-chipcol') !== chips) S.dataEl.classList.toggle('mp-chipcol',
+    chips); // le dessin laisse la colonne des puces à sa droite
   for (const b of S.segBtns) {
     const on = String((b.dataset.view === 'weather') === wx);
     if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on);
@@ -2830,13 +2855,13 @@ function openData(kind, key, title, build, label = title) {
     S.dhtml = '';
     S.dbodyEl.textContent = '';
   }
+  dataHead(); // d'abord : la ligne nue ou normale et le bloc visible fixent la hauteur que le contenu va prendre
   const html = build(S.dbodyEl.clientWidth || 360, S.dbodyEl.clientHeight || 200, S.dbodyEl);
   if (typeof html !== 'string') S.dhtml = null; // le constructeur a dessiné lui-même dans la zone (el) : rien d'autre à écrire
   else if (S.dhtml !== html) {
     S.dhtml = html;
     S.dbodyEl.innerHTML = html;
   }
-  dataHead();
   if (fresh) S.dbodyEl.scrollTop = 0;
 }
 /** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille — ou la
@@ -2982,15 +3007,23 @@ const weatherBuild = key => (w, h, el) => {
   S.wxGeo = null;
   if (!wx) return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxReading))}</p>`;
   if (wx.state === 'ok') {
-    // la zone a 8 px de marge de chaque côté et 6 px en haut et en bas (.mp-dbody) : la coupe prend le dedans
+    // la zone de la coupe n'a ni bord ni remplissage (.mp-dbody[data-kind=weather]) : la coupe prend toute sa hauteur et sa
+    // largeur, l'axe des distances au bas du corps (§ 7.1.13) ; minHeight: 0 demande à drawSection de ne pas relever la hauteur
     S.wxGeo = wx.draw(el, {
       ...wx.o,
-      width: Math.max(80, w - 16),
-      height: Math.max(80, h - 12),
+      width: Math.max(80, w),
+      height: Math.max(40, Math.floor(h)),
+      minHeight: 0,
       cursorM: S.cursor,
       dark: !!S.theme?.dark
     });
-    if (S.wxGeo) return;
+    if (S.wxGeo) {
+      // vrai si le bas du dessin (l'axe) est dans le corps, sans qu'il faille faire défiler
+      const svg = el.querySelector('svg'),
+        ok = svg && svg.getBoundingClientRect().bottom <= el.getBoundingClientRect().bottom + 1 ? '1' : '0';
+      if (el.dataset.axis !== ok) el.dataset.axis = ok;
+      return;
+    }
   }
   if (wx.state === 'fail') return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxFail))}</p>`;
   const r = S.route.flight?.route,
@@ -4385,9 +4418,11 @@ const STYLE = `
 [data-module="maps"] .mp-layers [data-layers-reset]{grid-column:1/-1;justify-self:start;margin-top:8px}
 [data-module="maps"] .mp-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
 [data-module="maps"] .mp-layers .mp-l-main{grid-column:1/-1;border-bottom:1px solid var(--sog-border);margin-bottom:4px;padding-bottom:4px}
-[data-module="maps"] .mp-layers .mp-l-detail{grid-column:1/-1;flex-wrap:wrap;margin-bottom:0}
-[data-module="maps"] .mp-layers .mp-l-detail input{flex:1 1 100%;margin:4px 0 0}
-[data-module="maps"] .mp-layers .mp-l-help{grid-column:1/-1;font-size:.85em;margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid var(--sog-border)}
+/* Complexité : libellé, valeur et curseur sur UNE ligne de 44 px (le bloc faisait 73 px, plus 51 de phrase d'aide) ; l'aide reste
+   dans l'infobulle du libellé et pour le lecteur d'écran (.mp-l-help, hors page), sans réserver de hauteur */
+[data-module="maps"] .mp-layers .mp-l-detail{grid-column:1/-1;flex-wrap:nowrap;min-height:44px;margin:0 0 4px;padding:0 0 4px;border-bottom:1px solid var(--sog-border);box-sizing:border-box}
+[data-module="maps"] .mp-layers .mp-l-detail input{flex:1 1 auto;min-width:90px;margin:0}
+[data-module="maps"] .mp-layers .mp-l-help{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 [data-module="maps"] .mp-tune h2{margin:0 0 4px;font-size:1.1em}
 [data-module="maps"] .mp-tune-now{font-variant-numeric:tabular-nums;margin:4px 0}
 [data-module="maps"] .mp-tune-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 10px}
@@ -4443,23 +4478,30 @@ const STYLE = `
    hauteurs --f-sheet-*, glisser, positions) ; ici seulement ce qu'elle contient : en-tête de 44 px (la poignée : titre de ce qu'elle
    montre ; la bascule Profil · Météo ; le ✕ d'un contenu à droite), puis le profil vertical (sa bande dessous) ou le contenu ouvert
    à sa place, puis les notes ; le contenu défile dedans */
-[data-module="maps"] .mp-dprof{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 8px}
+[data-module="maps"] .mp-dprof{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 4px}
 [data-module="maps"] .mp-notes{flex:none;max-height:5.5em;overflow:auto;padding:0 8px 6px;font-size:var(--sog-size-xs);font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-notes p{margin:0 0 2px}
 [data-module="maps"] .mp-notes:empty{display:none}
-[data-module="maps"] .mp-chips{flex:none;display:flex;align-items:center;gap:4px;margin-right:2px}
+/* Les puces Profil · Météo ne sont plus dans la ligne de poignée (§ 7.1.13, 2e affinement) : en portrait une COLONNE de 44 px à droite
+   du dessin, posée sur le corps sous la poignée (colonne absolue : le dessin reçoit la marge droite quand elle est là, mp-chipcol),
+   en paysage (colonne de la feuille, html.f-land) une LIGNE sous la poignée titrée, au-dessus du dessin. Puces de 40 px, pas de 44 px. */
+[data-module="maps"] .mp-chips{position:absolute;z-index:2;right:0;top:calc(var(--f-sheet-head) - 1px);width:44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
+[data-module="maps"] .mp-chips[hidden]{display:none}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare+.mp-chips{top:var(--f-sheet-head-bare)}
 [data-module="maps"] .mp-chips .mp-chip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
+html:not(.f-land) [data-module="maps"] .mp-chipcol :is(.mp-dprof,.mp-dbody[data-kind=weather]){margin-right:44px}
+html.f-land [data-module="maps"] .mp-chips{position:static;flex:none;width:auto;flex-direction:row;justify-content:flex-end;padding:0 8px;height:44px;align-items:center}
 [data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
 [data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
-/* la coupe garde le plancher de lisibilité de drawSection (140 px) : plus haute que le corps (feuille basse, paysage), le corps défile en hauteur au lieu de rogner l'axe des distances */
-[data-module="maps"] .mp-dbody[data-kind=weather]{overflow-x:hidden;overflow-y:auto}
+/* la coupe est dessinée à la hauteur exacte du corps, sans bord ni remplissage (§ 7.1.13) : l'axe des distances est toujours visible ;
+   le défilement n'est qu'un filet de sécurité si drawSection relevait un jour sa hauteur */
+[data-module="maps"] .mp-dbody[data-kind=weather]{overflow-x:hidden;overflow-y:auto;margin:0 4px;padding:0;border:0}
 /* position par défaut : le corps de la feuille ne montre que le dessin (profil ou coupe), à toute sa hauteur ; la ligne de texte
    et les notes n'apparaissent qu'agrandie, sous le dessin (spécification § 7.1.9). Repliée, le cadre cache déjà tout sauf la poignée.
-   La page de réglage (mp-tuning) garde tout. Le profil garde un plancher de lisibilité (120 px) : plus bas, son bloc défile. */
+   La page de réglage (mp-tuning) garde tout. Le profil est dessiné à la hauteur exacte de son bloc (pas de plancher, § 7.1.13). */
 [data-module="maps"].f-sheet:not([data-sheet="expanded"],.mp-tuning) :is(.mp-strip,.mp-notes){display:none}
-[data-module="maps"] .mp-dprof{overflow-x:hidden;overflow-y:auto}
-[data-module="maps"] .mp-prof{min-height:120px}
+[data-module="maps"] .mp-dprof{overflow:hidden}
 [data-module="maps"] .mp-dbody[data-kind=weather] svg{display:block;cursor:crosshair}
 [data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
 [data-module="maps"] .mp-wxlink{display:flex;align-items:center;min-height:var(--sog-touch);color:var(--sog-fg);text-decoration:none}
@@ -4615,7 +4657,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 </div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
@@ -4667,9 +4709,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     grip: S.gripEl,
     pos: sheetKeep,
     ignore: '[data-dclose], .mp-chips',
-    labels: (p, i) => `${tt(TX.sheetSize)} (${tt(TX.sheetNames[i])})`,
+    labels: p => gripLabel(p),
     locked: () => el.classList.contains('mp-tuning'),
-    onChange: p => sheetKeep = p,
+    onChange: p => {
+      sheetKeep = p;
+      dataHead(); // nue sur un dessin à la position par défaut seulement
+    },
     onSettle: onSheetSettled
   });
   // le choix des modes se ferme aussi d'un toucher ailleurs que sur la carte (qui le ferme elle-même) : la feuille

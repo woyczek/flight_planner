@@ -678,6 +678,7 @@
         e: b.e + .5
       },
       seen = new Set(),
+      named = [], // tronçons à nommer, dans l'ordre des traits
       f = 8.5 * PT * scale * .8;
     ctx.save();
     ctx.lineCap = 'round';
@@ -701,7 +702,24 @@
       ctx.globalAlpha = 1;
       for (const e of [g.a, g.b])
         if (e?.id) ends.set(`${e.id}|${e.lat.toFixed(3)}|${e.lon.toFixed(3)}`, e);
-      if (!lab || len < 60 * scale) continue;
+      if (lab && len >= 60 * scale) named.push({
+        g,
+        P,
+        Q,
+        col,
+        len
+      });
+    }
+    // les noms après TOUS les traits (V3 maps, 24 Oct : « les noms des AWY au-dessus des traits, pas l'inverse ») : posés dans la
+    // boucle des traits, ils étaient barrés par les voies tracées ensuite
+    for (const {
+        g,
+        P,
+        Q,
+        col,
+        len
+      }
+      of named) {
       // cartouche couché le long du tronçon (texte toujours lisible de gauche à droite)
       const x = (P.x + Q.x) / 2,
         y = (P.y + Q.y) / 2,

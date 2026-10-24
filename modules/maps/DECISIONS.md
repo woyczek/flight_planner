@@ -1027,3 +1027,62 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
   - **Tests**: D14 (slider first, label ×4, minimum = nothing on Europe, one step = one level, kept after a reload), D15 (the file's
     P 5..10 and D 7.75..10 respected in VFR, the built-in values without the file, IFR low following VFR), D16.
     `lib.Ctx.open(docs=, airspaces=)` seeds more documents and airspaces.
+- **24 Oct 2026 — the drawing fits the sheet; no title above a drawing** (relay cloud, V3 spec § 7.1.13; the user, iPhone 390 px, twice:
+  "c'est toujours le même souci, les abscisses invisibles" and "Toujours la ligne « météo fl160 ». On le sait, c'est affiché juste
+  au-dessous… prend de l'espace vertical").
+  - **Cause of the invisible axis**: the sheet's default panel never goes under 170 px; its body was 170 − 45 (head) − 8 (margin) − 12
+    (padding) − 2 (border) = 103 px of cut for a drawing that `drawSection` never draws under 140 px: the body scrolled (rule 9 of the
+    afternoon made it scroll rather than clip, which the user rightly does not take for an answer). Fixing the scroll was the wrong
+    level: the drawing must be the size of its place.
+  - **Refinement (user, 21:05: "toujours la ligne d'en-tête superfétatoire au niveau moyen. Utile en volet agrandi ou réduit et paysage")**:
+    the bare head is for the **default position only**; expanded, collapsed and in the landscape column (`html.f-land`) the head keeps
+    its title (`dataHead`: `sheetKeep === 'default' && !html.f-land`, re-run by the sheet's `onChange` and by `onSheetSettled`). The
+    handle's label then is the plain height label. `drawSection` has the `minHeight` option now (atmosphere lot, default 0): the call
+    passes 0 explicitly.
+  - **Bare head** (b): over the profile or the cut, at the default position, the module puts `.f-sheet-head-bare` on the head (frame
+    primitive `57f1e77c6`: the module's TEMP rule is gone). Title text and
+    tooltip are emptied (written only on change). The handle keeps its meaning for the ear and the keyboard: `title` / `aria-label` =
+    "Profil vertical" / "Coupe météo" (existing four-language rows), then the flight summary no longer written (FL, NM, planned /
+    flying: still said, the tests read it there), then the height hint. **Collapsed** the head goes back to the normal 45 px line with
+    its title (nothing is drawn under it, and the frame's collapsed height is its head token), as it does expanded and in landscape. The chips are 24 px visible (40 wide) in the 28 px line with a 44 px touch zone that overflows downward (`::after`,
+    `z-index: 2` over the profile box, which is later in the DOM); the top is clipped by the panel. `dataHead` now runs **before**
+    `build` in `openData`: the head and the unhidden panel fix the height the drawing is given.
+  - **Fit** (a): the cut's body loses margin-bottom, border and padding (`data-kind=weather`) and the cut is asked for `floor(clientHeight)`
+    and the whole width, with `minHeight: 0` (`drawSection`'s `minHeight` option, default 0, came with the atmosphere lot of the same evening: its own floor is 60 px now, so a cut shorter than the body never happens at the sheet's 170 px floor, body 142 px). The profile loses its 120 px floor and its scroll. `vertical_profile.js` (maps' copy): level labels thinned
+    by height (÷2 under 160 px, ÷4 under 110 px, never closer than 13 px, grid lines with them), the route points laid out first
+    (`placed`) so that the foot shrinks from 64 to 38 px (× scale) when one row is enough and the canvas is under 200 px, geometry returns
+    `marks` and `axisOk`; `drawProfile` writes `data-axis` / `data-marks` on the canvas and skips the airways' extra points under a 90 px
+    plot. The cut writes `data-axis` on its body (svg bottom inside the body).
+  - **Measured** (390 × 844 iPhone-sized, standard design, seeded flight and forecast; body = the area under the head): profile
+    174 → 191 px (head 44 → 27), cut 152 → 191 px (box 166 → 191 px: head, margin, padding, border); landscape 844 × 390 (column, titled head since the refinement): profile 289 → 289 px (unchanged, the head is 44 px there), cut 267 → 289 px, axis visible. At the 170 px floor the profile is 142 px: ticks 0 / FL100 / FL200, both
+    rows of points, axis in the canvas; below 110 px (not reachable with the frame's tokens) the plot gets thin but the axis stays.
+  - **Not done / for others**: A notification toast (e.g. "Accès aux
+    données non réglé") covers the lower part of the sheet on a phone: the frame's notifications, not the sheet's business, but worth a
+    look on the user's captures.
+  - **Second refinement (user, 21:25, on the cut: "supprimer espace jaune et texte rayé rouge, aligner boutons verticalement à droite
+    (horizontalement en paysage)")**: the Profile · Weather chips leave the handle row. They are a direct child of the sheet panel after
+    the head (outside the drag zone), absolutely placed as a 44 px column at the right under the head (`top` = the head's height, bare 28 or
+    normal 44), the drawing's block gets `margin-right: 44px` while they are shown (`.mp-chipcol` on the panel, set by `dataHead`);
+    in the landscape column (`html.f-land`) they are a static 44 px row after the head, above the drawing. Chips of 40 px on a 44 px
+    pitch (the zones touch, never overlap). The drawing's side margins go from 8 to 4 px (profile block and cut). The "yellow space"
+    left of the FL labels is partly the cut's own label gutter (`sectionSvg`: `l = 54` px, labels right-aligned): that one is in
+    atmosphere's file, not touched. The profile's gutter (`padL`) goes from 58 to 50 × scale (the labels "FL 250" still fit). The
+    frame's bare-handle primitive (`57f1e77c6`) replaces the module's TEMP rule; the cut's chips are not in it any more, so none of
+    the primitive's button rules apply to them.
+  - **Added the same evening (relay, user)**: (1) *Layers, Complexity block*: "Réduire l'espace jaune (slider de couches des cartes)":
+    the block was 73 px (label line 17 + 8 gap + 4 margin + 44 slider, wrapped) plus the help sentence under it (51 px at 390 px,
+    `.mp-l-help`), about 120 px for one slider in the five designs (the designs do not style the label: the gap was the module's own
+    wrapping and the help line). Now label · value · slider on one nowrap row of 44 px (`.mp-l-detail`, slider `flex: 1 1 auto`,
+    `min-width: 90px`), the hairline under it; the help is visually hidden but stays in `aria-describedby` and the label's `title`
+    (the visible sentence is gone, the user asked for the space). Block 49 px in standard, metro, swiss, cupertino, material. Case D17.
+    (2) *Airway names above the strokes* ("Afficher les noms des AWY au-dessus des traits, pas l'inverse"): `drawAirways` stroked and
+    named segment by segment, so a later airway's stroke crossed an earlier name; strokes now first (`named` list), names second, in
+    the same order, same placement (`pl.take`), nothing else moves in the drawing order (zones, points, route, landmarks). Note: the
+    name is a filled cartouche in the airway's colour with the name in paper colour (not a white halo), so the stroke is not
+    interrupted by a white rectangle: the "halo under the stroke" of the user's precision has nothing to apply to here; the end
+    bearings (`deg3`, with a halo) were already drawn last. Case D18 (the recorded call order of `R.draw` on the render bench page:
+    fails on the old `render.js`, passes now).
+  - **Tests**: D4 (bare head 28 ± 2, no visible title, chip touch zone ≥ 40 px, grip label names the drawing in four languages, the
+    drawing's height = the body's, axis inside, `data-axis`, point labels drawn, in portrait, landscape column, 390 × 520, expanded;
+    collapsed gets its title back); D3 / D8 / D11 / C5 / C6 / J1 / J2 read the flight summary and the profile's name from the handle's
+    label (`lib.Ctx.grip`) instead of the title.

@@ -60,7 +60,8 @@ def close_info(c):
 
 
 def sheet_title(c):
-    return norm(c.text('.f-sheet-head .f-sheet-title') or '')
+    """Carte's flight summary: the bare head over the profile writes no title (spec 7.1.13), the handle's label says it."""
+    return norm(c.grip())
 
 
 def design_probe(c):
@@ -127,19 +128,19 @@ def j1(c):
 
     c.step(P, 6, 'Carte: route, profile, title "Profil · FL · NM · vol prévu"')
     c.go('maps')
-    c.until("!!document.querySelector('.f-sheet-head .f-sheet-title') && /FL\\d+/.test(document.querySelector('.f-sheet-head .f-sheet-title').textContent)", timeout=10000, what='the sheet title names the flight')
+    c.until("!!document.querySelector('.f-sheet-head .f-sheet-grip') && /FL\\d+/.test(document.querySelector('.f-sheet-head .f-sheet-grip').title)", timeout=10000, what='the sheet title names the flight')
     title = sheet_title(c)
     m = re.search(r'FL(\d+) · (\d+) NM', title)
     c.ok(m, f'sheet title {title!r}', 'Profil · FL<level> · <distance> NM · vol prévu')
     c.eq(int(m.group(1)), quote_fl, 'the map title carries the quote\'s level', what=f'Carte title {title!r}: FL')
     c.eq(int(m.group(2)), route_nm, 'the map title carries the quote\'s distance (±1 NM)', tol=1, what=f'Carte title {title!r}: NM')
-    c.ok(title.endswith(tx(MP, 'stPlanned', c.lang)), f'sheet title {title!r}', f'ends with "{tx(MP, "stPlanned", c.lang)}" (planned, not started)')
+    c.ok(norm(tx(MP, 'stPlanned', c.lang)) in title, f'grip label {title!r}', f'contains "{tx(MP, "stPlanned", c.lang)}" (planned, not started)')
     c.ok(c.shown('.mp-box') or c.shown('.f-overlay'), 'no map area drawn', 'the map is drawn')
 
     c.step(P, 7, 'Météo: the same flight; "Charger" is the one shot, not clicked')
     c.go('atmosphere')
     c.until("!!document.querySelector('.f-sheet-head .f-sheet-title') && /→/.test(document.querySelector('.f-sheet-head .f-sheet-title').textContent)", timeout=10000, what='the atmosphere title names the flight')
-    atitle = sheet_title(c)
+    atitle = norm(c.text('.f-sheet-head .f-sheet-title') or '')   # atmosphere keeps its written title
     c.ok('LFRS → LFML' in atitle, f'atmosphere title {atitle!r}', 'names the same flight: LFRS → LFML')
     c.ok(f'FL{quote_fl}' in atitle, f'atmosphere title {atitle!r}', f'carries the same level FL{quote_fl}')
     load = tx(AT, 'load', c.lang)
@@ -201,7 +202,7 @@ def j2(c):
     c.until("location.hash.startsWith('#maps')", what='a tap on the row opens Carte')
 
     c.step(P, 5, 'Carte: title "vol en cours", Follow shown, GPS notification once')
-    c.until("!!document.querySelector('.f-sheet-head .f-sheet-title') && /FL\\d+/.test(document.querySelector('.f-sheet-head .f-sheet-title').textContent)", timeout=10000, what='the sheet title names the flight')
+    c.until("!!document.querySelector('.f-sheet-head .f-sheet-grip') && /FL\\d+/.test(document.querySelector('.f-sheet-head .f-sheet-grip').title)", timeout=10000, what='the sheet title names the flight')
     flying = tx(MP, 'stFlying', c.lang)
     c.ok(norm(flying) in sheet_title(c), f'sheet title {sheet_title(c)!r}', f'contains "{flying}"')
     c.ok(c.shown('[data-mp="follow"]'), 'the Follow button is not displayed in a started flight', 'Follow shown')
@@ -232,7 +233,7 @@ def j2(c):
 
     c.step(P, 9, 'title back to "vol prévu", badge off')
     c.go('maps')
-    c.until("!!document.querySelector('.f-sheet-head .f-sheet-title') && /FL\\d+/.test(document.querySelector('.f-sheet-head .f-sheet-title').textContent)", timeout=10000, what='the sheet title names the flight')
+    c.until("!!document.querySelector('.f-sheet-head .f-sheet-grip') && /FL\\d+/.test(document.querySelector('.f-sheet-head .f-sheet-grip').title)", timeout=10000, what='the sheet title names the flight')
     planned = tx(MP, 'stPlanned', c.lang)
     c.ok(norm(planned) in sheet_title(c), f'sheet title {sheet_title(c)!r}', f'contains "{planned}" again')
     c.ok(norm(flying) not in sheet_title(c), f'sheet title {sheet_title(c)!r}', f'no longer "{flying}"')

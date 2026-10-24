@@ -223,7 +223,7 @@ beacons, airways, minimum altitudes. The flight's route can also be changed on t
 ## How to use
 
 **The planned flight.** The map shows the flight prepared in Fuel: departure, route points, arrival, and the alternate
-airfield in grey dashes. Its summary (level, distance, planned or in-flight) is the title of the data block's handle under the map; the title's tooltip gives the whole line: departure and arrival, alternate, aircraft type. When the flight changes in Fuel, the map follows by itself.
+airfield in grey dashes. Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
 
 **The map and what it shows.** Around the route: the airspaces it crosses or skirts (restricted, danger and prohibited
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
@@ -238,12 +238,12 @@ the airspaces you enter at the planned altitude, and the flight path in purple. 
 blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
 the profile says what is under the cursor: distance from the departure, planned altitude, terrain height, and the
 airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
-an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed. The cloud chip at the right of the block's handle replaces it (the profile chip brings it back) with the weather
+an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed. The cloud chip, in the column of two chips at the right of the drawing (above it in landscape), replaces it (the profile chip brings it back) with the weather
 cross-section along the route (wind, temperature, cloud, icing) against the flight's level; the cross-section follows the same cursor, and a tap on
 it moves the cursor. It only shows the forecast that Atmosphere has already loaded: without one, the line "No forecast loaded" leads to
-Weather, under Prepare.
+Weather, under Prepare. The profile and the cross-section are drawn to the exact height of the block, their distance axis always in view: on a low block they drop level labels, never the axis.
 
-**A fixed screen.** Nothing between the header and the map: the map and the data block fill the screen, and nothing scrolls but the block's content. The buttons sit on the map: on the right, from the top, “Edit the route” (the pencil), “Recentre”, the map mode, “Edit on the map” (the four arrows) and, last, full screen (Escape leaves it); on the left, “Layers”. The block is a sheet: drag its top line (the small bar and the title) up to enlarge it, down to shrink it to
+**A fixed screen.** Nothing between the header and the map: the map and the data block fill the screen, and nothing scrolls but the block's content. The buttons sit on the map: on the right, from the top, “Edit the route” (the pencil), “Recentre”, the map mode, “Edit on the map” (the four arrows) and, last, full screen (Escape leaves it); on the left, “Layers”. The block is a sheet: drag its top line (the small bar; at its normal height the line carries no title above a profile or a cross-section, only the two chips) up to enlarge it, down to shrink it to
 that line, which leaves the whole height to the map; a tap on the line collapses it or brings it back to its normal
 height.
 
