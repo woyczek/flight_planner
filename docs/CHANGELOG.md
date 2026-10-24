@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **V3 non-regression suite** (`tests/v3/`: `run.py`, `lib.py`, `domains.py`, `cases/*.py`, `README.md`, plan in `PLAN.md`) — one command,
+  `python3 tests/v3/run.py`, no launcher, data repository, network or token: it starts a standard-library static server on a free
+  local port, drives Chromium with Playwright and checks what must stay true on every screen of the Pilot application: the
+  frame's layout and chrome (header 57 px, five-entry bottom bar, group popover, "i" pop-up and badge), the overlay layer and full
+  screen, the sheet primitive, the Maps, Atmosphere, Fuel, Flightlog and Report screens, the five designs and the repository
+  rules (fingerprints, conflict markers, four languages, help bundle, format, module documents, CHANGELOG). Each case runs on the
+  phone in the five designs and once on a screen, four languages where it matters; it records JavaScript errors, names the rule
+  that broke with the measured and the expected value, and keeps a screenshot. The frame's cache is seeded without a launcher
+  (design, identity, a planned flight, a pending report, a tiny SIA base). `--changed`, `--for <paths>`, `--grep`, `--tag` choose
+  the cases from the files changed (the adherence map of PLAN.md section M); `cases/known_failures.py` carries the two known
+  failures (F4, F5) without hiding them. Report in `tests/v3/report.md` and `report.json` (git-ignored).
 - **Maps: the screen is header · map · sheet · bar** (`modules/maps/module.js`, `lib/map_base.js`, SPEC § 4, INTEGRATION § 2 quater,
   DECISIONS, the manual in four languages) — nothing between the frame's header and the map: the flight selector moves into the
   Layers content, the flight summary becomes the sheet handle's title ("Profile · FL065 · 427 NM · planned flight"), the Profile ·
