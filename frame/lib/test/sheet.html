@@ -186,7 +186,7 @@
   await wait(200);
   eq('départ : pas de onSettle (rien n\'a changé pour la vue)', calls.settle, []);
   const wide = innerWidth > 760;
-  near('départ : hauteur normale = max(part, plancher) de la racine', H(A.panel), Math.max(RH * (wide ? .35 : .38), 170));
+  near('départ : hauteur normale = max(part, plancher) de la racine', H(A.panel), Math.max(RH * (wide ? .35 : .30), 170));
   eq('aria : aria-expanded vrai', A.grip.getAttribute('aria-expanded'), 'true');
   eq('aria : aria-label venu de labels', A.grip.getAttribute('aria-label'), 'Feuille (normale)');
   eq('aria : infobulle (title)', A.grip.title, 'Feuille (normale)');

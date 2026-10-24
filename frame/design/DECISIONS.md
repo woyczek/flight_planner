@@ -347,3 +347,19 @@ The design agent's memory: every choice, dated, with its reason. Newest last. Pr
     in its phone scenes (the burger button is gone from its header).
   - Open point: `.f-tabbar a` takes the page's `--sog-link` for the selected label; in `metro` the label is the module's ink on
     its block (contrast = the module palette's 5.4 : 1 to 7.4 : 1, white on the colour).
+
+- **24 Oct 2026 — Overlay buttons, group popover, full-screen chip, per design** (frame lot "cadre plein", asked by the relay cloud):
+  tokens first, no rule per design. New primitives in `primitives.css` (`.f-overlay`, `.f-ov-col`, `.f-ov-btn`) and `frame.css`
+  (`.f-tabpop`, `html.f-full`), all on existing tokens (`--sog-surface`, `--sog-border`, `--sog-fg`, `--sog-accent`, `--sog-radius`,
+  `--sog-shadow`): no new token.
+  - Overlay button: 44 px, `--sog-surface` at 92 %, hairline, a fixed light shadow (`0 2px 8px #0000002e`: `--sog-shadow` is `none`
+    in four designs and a map needs the separation), radius `min(50%, --sog-radius × 22)` = round for `standard`, `cupertino`, `material`,
+    square for `cabinet`, `field`, `metro`, `swiss` (radius 0, "angles nuls"). Rules weigh three classes (the designs' `button`
+    rules weigh two): cupertino's blue text and material's pill do not reach them.
+  - Popover: surface, hairline, `--sog-radius`, `--sog-shadow`, a pointer made of a rotated square; the selected row at 12 % of the
+    accent like the "i" pop-up's pressed row. Built on `body`, not in the bar: metro, swiss, cupertino and material style `.f-tabbar a`.
+  - Exit chip: an overlay button, hidden outside `html.f-full`.
+  - Looked at in the five sheets (metro, swiss, cupertino, material, and standard / cabinet / field) at 390 px: header
+    name · i · ⚙ in each (metro's coloured band, swiss's 2 px rule, cupertino's blue glyphs, material's pill-bordered buttons),
+    popover above each bar, overlay buttons over a map-coloured box.
+  - The sheet's default height is 30 % on a phone (relay: "maximiser l'espace alloué à la carte"), the table of § 4 follows.

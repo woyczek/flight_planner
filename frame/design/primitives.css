@@ -414,7 +414,7 @@ details.f-card[open]>summary {
    leurs règles pèsent trois classes pour l'emporter sur celles des designs (`[data-design] :is(button, .f-btn)`). */
 :where(.f-sheet) {
   --f-sheet-head: 45px;
-  --f-sheet-default: 38%;
+  --f-sheet-default: 30%;
   --f-sheet-default-min: 170px;
   --f-sheet-expanded: 70%;
   --f-sheet-expanded-min: 260px
@@ -537,6 +537,98 @@ details.f-card[open]>summary {
   touch-action: pan-y
 }
 
+/* ---- couche de superposition d'un module fixe (frame/INTEGRATION.md § 9.3) : deux colonnes de boutons posées sur la zone de
+   carte du module (le cadre dessine la couche et la place en pixels, app.js ; ctx.overlay.left / .right / .button). Jamais sur
+   la feuille : la couche a la taille de la carte. Les cases sont des boutons ronds de 44 px (cible de 48 px, la zone cliquable
+   déborde de 2 px), --sog-surface à 92 %, un filet, une ombre légère ; un design qui n'arrondit rien (--sog-radius: 0) les garde
+   carrés. La couche laisse passer les gestes de la carte : seuls ses boutons les prennent. La colonne de droite passe à une
+   deuxième colonne, à sa gauche, quand la carte est trop basse pour tous ses boutons. Le bouton plein écran du cadre est
+   toujours le dernier (order). Les règles des boutons pèsent trois classes : celles des designs ne les atteignent pas. */
+.f-overlay {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  pointer-events: none
+}
+.f-overlay[hidden] {
+  display: none
+}
+.f-ov-col {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  max-height: 100%;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none
+}
+.f-ov-left {
+  left: 0;
+  align-items: flex-start
+}
+.f-ov-right {
+  right: 0;
+  align-items: flex-end;
+  flex-wrap: wrap-reverse;
+  align-content: flex-start
+}
+.f-overlay button.f-ov-btn {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--sog-border);
+  border-radius: min(50%, calc(var(--sog-radius) * 22));
+  background: color-mix(in srgb, var(--sog-surface) 92%, transparent);
+  color: var(--sog-fg);
+  box-shadow: 0 2px 8px #0000002e;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation
+}
+.f-overlay button.f-ov-btn::after {
+  content: "";
+  position: absolute;
+  inset: -2px
+}
+.f-overlay button.f-ov-btn .f-icon {
+  width: 22px;
+  height: 22px;
+  vertical-align: 0
+}
+.f-overlay button.f-ov-btn[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--sog-accent) 18%, var(--sog-surface));
+  border-color: var(--sog-accent)
+}
+.f-overlay button.f-ov-btn:active {
+  background: color-mix(in srgb, var(--sog-accent) 24%, var(--sog-surface))
+}
+.f-overlay button.f-ov-btn.f-ov-full {
+  order: 99
+}
+/* la puce de sortie : seulement en plein écran, en haut à droite de la fenêtre (la vue est alors toute la fenêtre : fixed y est
+   relatif) ; la colonne de droite passe dessous */
+.f-overlay button.f-ov-btn.f-ov-exit {
+  display: none;
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: 8px
+}
+html.f-full .f-overlay button.f-ov-btn.f-ov-exit {
+  display: inline-flex
+}
+html.f-full .f-ov-right {
+  padding-top: 60px
+}
+
 /* ---- impression (le compte rendu d'abord) : encre du jour (les jeux de nuit ne valent qu'à l'écran), une colonne,
    sans en-tête, menu, barres, boutons ni notes ; les sections repliées sont ouvertes par le cadre (beforeprint).
    !important : l'impression doit l'emporter sur toute règle d'écran, celles des modules comprises. */
@@ -554,6 +646,8 @@ details.f-card[open]>summary {
   .f-bar,
   .f-tabs,
   .f-steps,
+  .f-overlay,
+  .f-tabpop,
   .f-tools button,
   button,
   .f-btn {

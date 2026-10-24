@@ -12,6 +12,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: overlay layer and full screen for fixed modules, a header reduced to name · i · ⚙ on a phone, the tab group as a
+  popover** (`frame/app.js`, `frame/frame.css`, `frame/design/primitives.css`, `frame/lib/icons.js`, `frame/index.html`,
+  `frame/lib/test/sheet.html`; frame SPEC § 3.1, INTEGRATION § 9.1 / 9.3 / 9.4 / 11, DECISIONS, design SPEC and DECISIONS, the
+  manual's introduction in four languages) — the map screens of the user's 24 October rules ("header, map, map, footer"): a fixed
+  module now gets `ctx.overlay`, a layer laid exactly over its map with a left column and a right column of round 44 px buttons
+  (`ctx.overlay.button({ icon, label, onClick, pressed, side })`, `over(el)`), never over the sheet; the frame adds a **full
+  screen** button to every fixed module that hides the header and the bottom bar (the header and the rail on a screen), gives
+  the view the whole window (`--f-view-h` = `--f-vh`), shows a 44 px exit chip, leaves on Escape, and tells the module with a
+  `resize` event. On a phone the **header is name · "i" · ⚙** only: the synchronisation dot becomes the colour of the "i" badge
+  (green: a flight or report applies; amber: no trigram, pending writes, conflicts, error, offline) and lines of its pop-up,
+  which also gets "Position: <source>" and, last, "Help for this screen ›" (the former "?"). The row of group sub-tabs above a
+  module is gone: a **second tap on the active bottom tab** lists the group's modules in a small popover (Prepare: Fuel ·
+  Atmosphere). The sheet's default height is 30 % on a phone (the map gets the room); no margin between the header and a fixed
+  module. Modules migrate their own toolbars in their lots.
 - **Frame: the three-position sheet is a primitive; Maps adopts it and takes the frame's heights** (`frame/lib/sheet.js`,
   `frame/design/primitives.css`, `frame/lib/test/sheet.html`, `modules/maps/module.js`; frame INTEGRATION § 11 and § 9.2,
   SPEC § 3.9, design SPEC, DECISIONS, `modules/maps/{INTEGRATION,SPEC,DECISIONS}.md`) — the block under a map that sits

@@ -8,17 +8,24 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 ## First start
 
 - **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Report, Flights, Settings (Prepare groups
-  several tools: a row of tabs above the tool links them); on a screen, each tool is a verb of the left column. A tool's
+  several tools: touch the already selected tab again and a small list opens above it to switch between them); on a screen, each tool is a verb of the left column. A tool's
   address (`#fuel`, `#report`…) is enough to come back to it.
 - **Your identity.** In ⚙ Settings, set your trigram and your IVAO, VATSIM and SimBrief IDs: the tools use them to
   prefill.
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays
   reachable by its address.
-- **Help.** Each tool has a folded "How to use" panel at its top; the ? button opens this manual at the tool's chapter.
-- **The i button.** In the header, next to ? and ⚙: a green dot when something is waiting for you. It opens a status
-  sheet: the flight in progress (touch to go to the Map), the reports still to write for your past flights (touch to open
-  the report, pre-filled), the state of the data (last synchronisation, pending writes, the exchange in use) and "Offline"
-  when there is no network. Escape or ✕ closes it.
+- **Help.** Each tool has a folded "How to use" panel at its top; the ? button (on a phone, the last line of the i button's
+  sheet, "Help for this screen") opens this manual at the tool's chapter.
+- **The i button.** In the header, next to ⚙ (and ?, on a screen): a green dot when something is waiting for you, amber (on
+  a phone) when something needs attention: no trigram, pending writes, conflicts, a synchronisation error, offline. It
+  opens a status sheet: the flight in progress (touch to go to the Map), the reports still to write for your past flights
+  (touch to open the report, pre-filled), the missing trigram (touch to set it), the state of the data (last
+  synchronisation, pending writes, the exchange in use), "Offline" when there is no network and, on a phone, the source of
+  the position during a flight and "Help for this screen". Escape or ✕ closes it. On a phone the header is reduced to the
+  name, the i button and ⚙.
+- **Full screen.** On the map (the fixed-view tools), a round button at the bottom of the column of buttons over the map hides
+  the header and the bottom bar to give the map all the room; the corner button at the top right, the same button or
+  Escape bring them back.
 
 ## Data and synchronisation
 
