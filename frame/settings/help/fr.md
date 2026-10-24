@@ -27,7 +27,7 @@ carte montre le dépôt distant de `data/` (voir « Un dépôt git pour data/ »
 pour la première fois, par exemple — n'a ni base aéronautique (espaces, terrains, balises) ni base des appareils :
 « Données hors ligne » le dit. Deux portes : réglez l'accès au dépôt des données, même sans cocher d'échange (il sert
 alors seulement à lire les bases) ; ou, sur un poste avec lanceur, publiez les bases dans le dépôt (V2 : Paramètres ›
-Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez.
+Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez. Trois états distincts quand la base manque : « Base aéronautique en cours de chargement… » (la lecture n'est pas finie : patientez), « Accès aux données non réglé sur cet appareil » (réglez l'accès ci-dessus ; une appli ajoutée à l'écran d'accueil a son propre stockage, rien de ce que vous aviez réglé dans Safari n'y est) et « Base aéronautique non publiée » (l'accès marche, rien n'est publié dans le dépôt).
 
 **La synchronisation.** Avec un échange coché, la carte « Synchronisation » donne la dernière réussie, les écritures en
 attente et le réseau ; « Synchroniser maintenant » envoie et reçoit tout de suite. Sinon, elle se fait seule au

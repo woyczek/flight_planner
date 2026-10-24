@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Aeronautical database: loading, access not set and not published are three different messages** (`frame/aerodb/aerodb.js`, `frame/app.js`,
+  `modules/maps/module.js`, manual note in four languages, `tests/v3/` A15 / D5 / D5b; settings DECISIONS, aerodb INTEGRATION / DECISIONS, frame
+  INTEGRATION § 10) — on a phone (seen in the app added to the iOS home screen) the Map said "Aeronautical database not published" while the base
+  was still coming: an empty list read before the network was ready stayed for the page's life, and the alternate's lookup kept the whole map
+  blank. aerodb now says `loading` / `noaccess` / `unpublished` (`aerodb.state()`, `on('state')`, `refresh()`); the Map's note reads "Aeronautical
+  database loading…" (with the zones being read), "Data access not set on this device" with a Settings button, or "not published" only when the
+  access works; the "i" pop-up has one line for the same states; an empty list is read again after 30 s and when the access or the network
+  changes; the alternate no longer blocks the route. Serving the base from the public pages is noted for decision, nothing changed.
+
 - **Frame finishing touches: `hidden` on overlay buttons, three icons, launcher line in the "i" pop-up** (`frame/design/primitives.css`,
   `frame/lib/icons.js`, `frame/app.js`, `modules/maps/module.js`; frame INTEGRATION § 9.3 / § 10 and SPEC) — a button of the overlay layer
   with `hidden` is now really hidden by the frame, so the Map drops its own rule; `cloud`, `undo` and `move4` (four directions) join the

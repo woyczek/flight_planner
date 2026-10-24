@@ -229,6 +229,22 @@
         'Tippen, um es in den Einstellungen zu setzen',
         'Toque para definirlo en Ajustes'
       ],
+      // état de la base aéronautique (ligne ajoutée tant qu'elle charge, qu'aucun accès n'est réglé ou que rien n'est publié)
+      base: {
+        loading: ['Base aéronautique en cours de chargement…', 'Aeronautical database loading…',
+          'Luftfahrtdatenbank wird geladen…', 'Base aeronáutica cargándose…'
+        ],
+        noaccess: ['Accès aux données non réglé sur cet appareil', 'Data access not set on this device',
+          'Datenzugriff auf diesem Gerät nicht eingerichtet', 'Acceso a los datos no configurado en este dispositivo'
+        ],
+        unpublished: ['Base aéronautique non publiée dans le dépôt des données',
+          'Aeronautical database not published in the data repository',
+          'Luftfahrtdatenbank nicht im Datenrepository veröffentlicht', 'Base aeronáutica no publicada en el repositorio de datos'
+        ],
+        sub: ['Touchez pour régler l’accès dans les Réglages', 'Touch to set the access in Settings',
+          'Tippen, um den Zugriff in den Einstellungen einzurichten', 'Toque para configurar el acceso en Ajustes'
+        ]
+      },
       error: ['Données : erreur de synchronisation{e}', 'Data: synchronisation error{e}', 'Daten: Synchronisationsfehler{e}',
         'Datos: error de sincronización{e}'
       ],
@@ -578,6 +594,12 @@
       transport: configured,
       references: configured.kind === 'local' ? referenceSource() : null
     });
+    // l'accès aux données a changé (dépôt réglé ou coupé, lanceur trouvé) : la base publiée est relue à la prochaine question
+    const key = dataAccess().key;
+    if (key !== accessKey) {
+      accessKey = key;
+      aerodb?.refresh();
+    }
     adoptAnon();
   }
   // ---------------------------------------------------------------- sans trigramme (frame/SPEC.md § 3.5)
@@ -1011,6 +1033,13 @@
       go: '#settings',
       attn: true
     });
+    // la base aéronautique : trois états distincts, jamais « non publiée » pendant qu'elle charge ni sans accès
+    if (baseState) items.push({
+      k: 'base',
+      text: t(T.info.base[baseState]),
+      sub: baseState === 'noaccess' ? t(T.info.base.sub) : '',
+      go: baseState === 'loading' ? '' : '#settings'
+    });
     const s = lastStatus;
     if (s) items.push({
       k: 'data',
@@ -1154,6 +1183,29 @@
       exchange: false
     });
     return FD.github.config() ? FD.github() : null;
+  }
+  /** Accès aux données de cet appareil, tel que la couche le lit : `via` lanceur (page servie par un lanceur), github
+   *  (dépôt et jeton réglés) ou none ; `set` : l'un des deux existe. Sans accès, ni la base aéronautique ni les types
+   *  d'appareils ne sont lisibles ici (referenceSource() est null) : ce n'est pas « non publiée », c'est « non réglé ». */
+  function dataAccess() {
+    const via = launcherHere?.data ? 'launcher' : FD.github.config() ? 'github' : 'none';
+    return Object.freeze({
+      via,
+      set: via !== 'none',
+      key: `${via}:${FD.github.config()?.repo || ''}`
+    });
+  }
+  // état de la base aéronautique pour la ligne du « i » : '' tant qu'elle n'a pas été demandée ou qu'elle est prête
+  let baseState = '',
+    accessKey = '';
+  /** Relève l'état d'aerodb (événement 'state' ou 'change', jamais un minuteur) ; la ligne du « i » n'est redessinée que
+   *  s'il change. */
+  async function syncBase() {
+    const s = await aerodb?.state().catch(() => null),
+      next = s?.asked && ['loading', 'noaccess', 'unpublished'].includes(s.state) ? s.state : '';
+    if (next === baseState) return;
+    baseState = next;
+    paintInfo();
   }
   /** « Couper l'accès » : jeton et réglage du dépôt GitHub effacés de cet appareil (copies et écritures en attente
    *  gardées), transport rebranché aussitôt. */
@@ -2543,8 +2595,11 @@
     try {
       // préfixes d'aerodb (base SIA, types, registre des aéronefs : fiches, flotte, référence) donnés par aerodb lui-même
       aerodb = window.AeroDB ? AeroDB.create({
-        reader: FD.adapter(AeroDB.declaration())
+        reader: FD.adapter(AeroDB.declaration()),
+        access: () => dataAccess().set
       }) : null;
+      aerodb?.on('state', syncBase);
+      aerodb?.on('change', syncBase);
     } catch (e) {
       console.error(e);
     }
@@ -2566,6 +2621,8 @@
     readPending();
     window.addEventListener('online', async () => {
       FD.status().then(paintSync);
+      // le réseau revient : une base lue sans réponse (hors ligne, au lancement) ou vide est relue à la prochaine question
+      aerodb?.state().then(b => ['offline', 'unpublished'].includes(b.state) && aerodb.refresh()).catch(() => {});
       // démarrée sans réseau : le lanceur est recherché de nouveau, le transport suit
       if (!launcherHere && (launcherHere = await FD.launcher.detect())) loadDevice();
     });

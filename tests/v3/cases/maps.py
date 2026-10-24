@@ -4,12 +4,12 @@ Rules covered
   * the buttons over the map: order, labels in four languages, Follow and the editing buttons hidden when they must be (D1);
   * Edit mode: pressed state, the "+" and Undo buttons, a one-time hint notification, Escape (D2);
   * Layers inside the sheet, flight selector first (D3); the Profile / Weather chips (D4);
-  * the "database not published" notice, once per mount (D5); the modes panel (D6); the folded attribution (D7);
+  * the "data access not set" / "database not published" notice, once per mount (D5, D5b); the modes panel (D6); the folded attribution (D7);
   * a started flight (D8), no flight (D9), a mission map without data (D10);
   * L1 the sheet content is closable and leaves the map half the view (D11); L3 the profile canvas draws one level and no
     green / orange dots (D12); L14 a drag on the map or a wheel on the sheet does not close a content (D13).
 
-Cases: D1 D2 D3 D4 D5 D6 D7 D8 D9 D10 D11 D12 D13.  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
+Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13.  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
 from lib import MAP_JS, Fail, Skip, case, norm, tx
@@ -123,16 +123,30 @@ def d4(c):
     c.ok(before, 'the chips come after the close button in the head', 'the chips are placed before the ✕')
 
 
-@case('D5', 'Status as notification + note', 'D', tags=('maps',), screens=False, langs4=True, rule='maps lot point 5')
+@case('D5', 'Status as notification + note', 'D', tags=('maps',), screens=False, langs4=True, rule='maps lot point 5; settings 24 Oct 2026 (the cause is said)')
 def d5(c):
+    check_base_note(c, 'noAccess', 'data access not set on this device')
+
+
+@case('D5b', 'Status: access set, base not published', 'D', tags=('maps',), screens=False, langs4=True,
+      rule='"database not published" is kept for an access that works (settings 24 Oct 2026)')
+def d5b(c):
+    # a device with a GitHub access set (the test network answers nothing, so nothing is published): the old message stays
+    c.context.add_init_script("try { localStorage.setItem('githubData:frame', JSON.stringify({ repo: 'sog/data', branch: 'main', token: 'ghp_test' })) } catch (e) {}")
+    check_base_note(c, 'noBase', 'database not published')
+
+
+def check_base_note(c, key, what):
+    """D5 and D5b: at mount, exactly one notification and the same text in the sheet notes with a link to the settings;
+    leaving and coming back says it once more, not twice in the same page life."""
     c.open('maps', flight=True)
     c.wait(1500)
-    text = norm(row(c, 'noBase'))
+    text = norm(row(c, key))
     shown = [n for n in c.notes() if norm(n).startswith(text)]
     log = [n for n in c.note_log() if norm(n) == text]
-    c.eq(len(log), 1, 'exactly one notification "database not published" at mount', what='notifications with that text')
+    c.eq(len(log), 1, f'exactly one notification "{what}" at mount', what='notifications with that text')
     c.eq(len(shown), 1, 'one such notification on screen (#fNotes)', what='.f-note elements on screen')
-    note = c.js("""(t) => { const p = [...document.querySelectorAll('.mp-notes > *')].find(e => e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim().startsWith(t));
+    note = c.js("""(t) => { const p = [...document.querySelectorAll('.mp-notes > *')].find(e => e.textContent.replace(/[\\s\u00a0\u202f]+/g, ' ').trim().startsWith(t));
         return p ? { text: p.textContent, links: p.querySelectorAll('a, button, [data-go]').length } : null }""", text)
     c.ok(note is not None, 'the text is absent from .mp-notes', 'the same text stays readable in the sheet notes')
     c.go('fuel')
@@ -141,7 +155,7 @@ def d5(c):
     log = [n for n in c.note_log() if norm(n) == text]
     c.eq(len(log), 2, 'a new mount says it once more (one per mount), not twice in the same page life', what='notifications after leaving and coming back')
     # last, so that a missing link does not hide the checks above: the plan wants the note to lead to the settings
-    c.ge(note['links'], 1, 'the note carries a link or button to the settings', what='links in the "database not published" note')
+    c.ge(note['links'], 1, 'the note carries a link or button to the settings', what=f'links in the "{what}" note')
 
 
 @case('D6', 'Modes panel', 'D', tags=('overlay', 'maps'), screens=False, rule='maps lot point 2')
