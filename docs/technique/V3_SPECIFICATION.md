@@ -235,6 +235,10 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       **no title**: the handle and the chips only (Profil · Météo, ◀ ▶ when they apply, ✕), on a compact head
       (`.f-sheet-head-bare`, `--f-sheet-head-bare` = 28 px, frame primitive); a title stays for contents that do not
       describe themselves (Couches, Détails, Vol, lists). Atmosphere keeps its slider row under the bare head.
+      **Refinement (user, 24 Oct, 21:05: "toujours la ligne d'en-tête superfétatoire au niveau moyen. Utile en volet
+      agrandi ou réduit et paysage")**: the bare head applies to the **default position only**; in the expanded and
+      the collapsed positions, and in the landscape column, the head keeps its title (there is room, and the title is
+      then the only thing that says what the content is).
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
