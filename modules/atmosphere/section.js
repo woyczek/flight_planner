@@ -1,0 +1,395 @@
+// Rendus vectoriels du module Atmosphère (INTEGRATION.md § 5) : la coupe le long de la route et la tranche verticale
+// (sondage), en SVG d'une taille donnée. Fonctions pures : un modèle (calculé par module.js) et des options entrent, une
+// chaîne SVG et la géométrie (pour les infobulles) sortent ; ni DOM de la page (seulement un canevas détaché pour les
+// images de champs), ni stockage. Les champs continus
+// (nuages, température, humidité, altitude-densité, givrage, inversions) sont des images de la grille de calcul,
+// agrandies lissées (pas de marches) ; tout le reste (isothermes, trajectoires, relief, vent, axes, textes) est vectoriel.
+// Les couleurs suivent les jetons du cadre (--sog-*) par des variables posées sur la racine du SVG : le rendu se lit dans
+// n'importe quel module (la Carte l'affichera dans son bloc de données).
+import * as A from './atmo.js';
+
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const R = Math.PI / 180;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+const n1 = v => Math.round(v * 10) / 10;
+
+/** Variables de couleur posées sur la racine du SVG (jetons du cadre). */
+export const VARS = '--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);' +
+  '--at-inv:var(--sog-chart-2);--at-ice:var(--sog-chart-5);--at-terrain:color-mix(in srgb,var(--sog-chart-6) 55%,var(--sog-chart-bg))';
+
+/** Couleurs des données (indépendantes du design) : divergente bleu ↔ rouge, gris au milieu. */
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const BLUE = ['#0d366b', '#256abf', '#6da7ec', '#b7d3f6'],
+  RED = ['#f6c9c0', '#ec8a85', '#e34948', '#9e2a2a'];
+export function diverging(x, span, dark = false) {
+  const mid = dark ? '#383835' : '#f0efec',
+    stops = [...BLUE.map((c, i) => [-span + i * span / 4, c]), [0, mid], ...RED.map((c, i) => [(i + 1) * span / 4, c])];
+  x = clamp(x, -span, span);
+  for (let i = 1; i < stops.length; i++)
+    if (x <= stops[i][0]) {
+      const k = (x - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]),
+        a = hex(stops[i - 1][1]),
+        b = hex(stops[i][1]);
+      return a.map((v, j) => Math.round(v + (b[j] - v) * k));
+    }
+  return hex(stops.at(-1)[1]);
+}
+
+/** Image PNG (data:) d'une grille nx × ny, rangée du bas vers le haut ; rgbaOf(n) → [r, g, b, a 0–255] ou null. */
+export function gridImage(nx, ny, rgbaOf) {
+  // un canevas détaché (jamais posé dans la page) : OffscreenCanvas n'a pas de toDataURL synchrone
+  const cv = document.createElement('canvas');
+  cv.width = nx;
+  cv.height = ny;
+  const g = cv.getContext('2d'),
+    img = g.createImageData(nx, ny);
+  for (let j = 0; j < ny; j++)
+    for (let i = 0; i < nx; i++) {
+      const v = rgbaOf(j * nx + i),
+        o = ((ny - 1 - j) * nx + i) * 4;
+      if (!v) continue;
+      img.data[o] = v[0];
+      img.data[o + 1] = v[1];
+      img.data[o + 2] = v[2];
+      img.data[o + 3] = v[3];
+    }
+  g.putImageData(img, 0, 0);
+  return cv.toDataURL('image/png');
+}
+
+/** Barbule de vent (hémisphère nord) en SVG : hampe vers le lit du vent, plumes à droite ; fanion 50 kt, plume 10,
+ *  demi 5 ; calme : un cercle. Rend des éléments SVG (couleur : currentColor). */
+export function barb(x, y, dir, kt, len = 20) {
+  if (kt == null || dir == null) return '';
+  if (kt < 2.5) return `<circle cx="${n1(x)}" cy="${n1(y)}" r="3" fill="none" stroke="currentColor" stroke-width="1.3"/>`;
+  const a = dir * R,
+    ux = Math.sin(a),
+    uy = -Math.cos(a),
+    px = Math.sin(a + Math.PI / 2),
+    py = -Math.cos(a + Math.PI / 2),
+    ex = x + ux * len,
+    ey = y + uy * len,
+    step = 4,
+    fl = len * 0.45;
+  let d = `M${n1(x)} ${n1(y)}L${n1(ex)} ${n1(ey)}`,
+    fill = '',
+    n = Math.round(kt / 5) * 5,
+    pos = 0;
+  while (n >= 50) {
+    const bx = ex - ux * pos,
+      by = ey - uy * pos;
+    fill += `M${n1(bx)} ${n1(by)}L${n1(bx + px * fl - ux * 2)} ${n1(by + py * fl - uy * 2)}L${n1(bx - ux * step * 1.4)} ${n1(by - uy * step * 1.4)}Z`;
+    pos += step * 1.8;
+    n -= 50;
+  }
+  while (n >= 10) {
+    const bx = ex - ux * pos,
+      by = ey - uy * pos;
+    d += `M${n1(bx)} ${n1(by)}L${n1(bx + px * fl + ux * 3)} ${n1(by + py * fl + uy * 3)}`;
+    pos += step;
+    n -= 10;
+  }
+  if (n >= 5) {
+    if (pos === 0) pos = step;
+    const bx = ex - ux * pos,
+      by = ey - uy * pos;
+    d += `M${n1(bx)} ${n1(by)}L${n1(bx + px * fl * 0.5 + ux * 1.5)} ${n1(by + py * fl * 0.5 + uy * 1.5)}`;
+  }
+  return `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>` +
+    (fill ? `<path d="${fill}" fill="currentColor"/>` : '');
+}
+
+/** Texte avec un liseré de la couleur du fond (lisible sur les champs). */
+const label = (x, y, text, {
+    color = 'var(--sog-fg)',
+    anchor = 'middle',
+    size = 11,
+    weight = 400
+  } = {}) => `<text x="${n1(x)}" y="${n1(y)}" text-anchor="${anchor}" dominant-baseline="middle" font-size="${size}" font-weight="${weight}" ` +
+  `fill="${color}" stroke="var(--sog-chart-bg)" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${esc(text)}</text>`;
+
+/** Motifs hachurés (inversion, givrage possible / probable). */
+const PATTERNS = `<pattern id="at-p-inv" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">` +
+  `<line x1="0" y1="0" x2="0" y2="7" stroke="var(--at-inv)" stroke-width="1.4"/></pattern>` +
+  `<pattern id="at-p-ice1" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">` +
+  `<line x1="0" y1="0" x2="0" y2="9" stroke="#c98500" stroke-opacity=".6" stroke-width="1"/></pattern>` +
+  `<pattern id="at-p-ice2" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">` +
+  `<line x1="0" y1="0" x2="0" y2="5" stroke="var(--at-ice)" stroke-width="1.6"/></pattern>`;
+
+/** Coupe le long de la route.
+ *  M : { field (NX, NY, top, below, tC, rh, cc, daFt), traj, samples [{ nm, t, point }], cols, points, sel (indice ou
+ *  null), levelFt }.
+ *  o : { width, height, layers { cloud, temp, rh, da, iso, inv, ice, wind, cu }, labels { strips: [5 libellés] },
+ *  fmtLvl, cloudRgb [r, g, b], dark, strips (bandes de surface, vrai si la hauteur le permet), id (préfixe unique) }.
+ *  → { svg, geo { x0, y0, pw, ph, xOf, yOf, nmOf, ftOf } }. */
+export function sectionSvg(M, o) {
+  const F = M.field,
+    L = o.layers,
+    W = Math.max(200, o.width),
+    H = Math.max(140, o.height),
+    strips = o.strips !== false && H >= 260,
+    SH = 10,
+    l = 54,
+    r = 8,
+    t = 16,
+    bottom = 16 + (strips ? 5 * (SH + 2) + 6 : 0),
+    pw = W - l - r,
+    ph = H - t - bottom,
+    top = F.top,
+    xOf = nm => l + pw * nm / (M.traj.total || 1),
+    yOf = ft => t + ph * (1 - ft / top),
+    id = o.id || 'at',
+    cw = pw / (F.NX - 1),
+    ch = ph / (F.NY - 1),
+    cloud = o.cloudRgb || [96, 104, 116],
+    out = [];
+  // image d'un champ, posée sur la grille de calcul (centres des cellules aux nœuds), coupée au cadre du graphique
+  const field = (rgbaOf, attrs = '') => `<image href="${gridImage(F.NX, F.NY, n => F.below[n] ? null : rgbaOf(n))}" x="${n1(l - cw / 2)}" ` +
+    `y="${n1(t - ch / 2)}" width="${n1(pw + cw)}" height="${n1(ph + ch)}" preserveAspectRatio="none" clip-path="url(#${id}-clip)" ${attrs}/>`;
+  const mask = (name, test) => `<mask id="${id}-${name}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">` +
+    field(n => test(n) ? [255, 255, 255, 255] : null) + '</mask>';
+  out.push(`<defs>${PATTERNS.replace(/at-p-/g, `${id}-p-`)}<clipPath id="${id}-clip"><rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}"/></clipPath>`);
+  const iceOf = n => A.icing({
+    tC: F.tC[n],
+    rh: F.rh[n],
+    cc: F.cc[n]
+  });
+  const invOf = n => {
+    const up = n + F.NX;
+    return up < F.NX * F.NY && F.tC[n] != null && F.tC[up] != null && F.tC[up] - F.tC[n] > 0.02;
+  };
+  if (L.inv) out.push(mask('inv', invOf));
+  if (L.ice) out.push(mask('ice1', n => iceOf(n) === 1), mask('ice2', n => iceOf(n) === 2));
+  out.push('</defs>');
+  out.push(`<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="var(--sog-chart-bg)"/>`);
+  // fonds : température, humidité, altitude-densité (un seul à la fois)
+  const fill = L.da ? 'da' : L.temp ? 'temp' : L.rh ? 'rh' : null;
+  if (fill === 'temp') out.push(field(n => F.tC[n] == null ? null : [...diverging(F.tC[n], 40, o.dark), 190]));
+  if (fill === 'da') out.push(field(n => F.daFt[n] == null ? null : [...diverging(F.daFt[n], 4000, o.dark), 190]));
+  if (fill === 'rh') out.push(field(n => F.rh[n] == null ? null : [42, 120, 214, Math.round(clamp((F.rh[n] - 30) / 70, 0, 1) * 150)]));
+  if (L.cloud) out.push(field(n => F.cc[n] > 5 ? [...cloud, Math.round(F.cc[n] / 100 * 160)] : null));
+  if (L.inv) out.push(`<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="url(#${id}-p-inv)" mask="url(#${id}-inv)"/>`);
+  if (L.ice) out.push(`<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="url(#${id}-p-ice1)" mask="url(#${id}-ice1)"/>`,
+    `<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="url(#${id}-p-ice2)" mask="url(#${id}-ice2)"/>`);
+  // isothermes tous les 5 °C, 0 °C appuyé, étiquettes décalées par niveau
+  if (L.iso) {
+    const iso = A.contours(F.tC.map((v, n) => F.below[n] ? null : v), F.NX, F.NY, A.thresholdsOf(F.tC, 5)),
+      X = gx => l + gx * cw,
+      Y = gy => t + ph - gy * ch;
+    const labs = [];
+    for (const c of iso) {
+      const zero = c.level === 0,
+        d = c.segs.map(s => `M${n1(X(s[0]))} ${n1(Y(s[1]))}L${n1(X(s[2]))} ${n1(Y(s[3]))}`).join('');
+      out.push(`<path d="${d}" fill="none" stroke="${zero ? '#1c5cab' : c.level < 0 ? 'rgba(37,106,191,.6)' : 'rgba(227,73,72,.6)'}" ` +
+        `stroke-width="${zero ? 2 : 1}"${zero ? '' : ' stroke-dasharray="4 3"'} clip-path="url(#${id}-clip)"/>`);
+      const gx = (F.NX - 1) * (0.12 + 0.76 * (((c.level / 5) % 7 + 7) % 7) / 6);
+      let best = null,
+        bd = Infinity;
+      for (const s of c.segs) {
+        const dd = Math.abs((s[0] + s[2]) / 2 - gx);
+        if (dd < bd) {
+          bd = dd;
+          best = s;
+        }
+      }
+      if (best) labs.push(label(X((best[0] + best[2]) / 2), Y((best[1] + best[3]) / 2), `${c.level < 0 ? '−' : ''}${Math.abs(c.level)}°`, {
+        color: zero ? '#1c5cab' : 'var(--sog-muted)',
+        size: 10
+      }));
+    }
+    out.push(...labs);
+  }
+  // base des cumulus estimée
+  if (L.cu) {
+    const pts = M.samples.map((s, i) => [s, A.cumulusBaseFt(M.cols[i])]).filter(([, b]) => b != null);
+    if (pts.length > 1) out.push(`<polyline points="${pts.map(([s, b]) => `${n1(xOf(s.nm))},${n1(yOf(Math.min(b, top)))}`).join(' ')}" ` +
+      'fill="none" stroke="var(--sog-muted)" stroke-width="1.2" stroke-dasharray="1 3"/>');
+  }
+  // relief (altitude pression du sol)
+  out.push(`<path d="M${l} ${n1(t + ph)}${M.samples.map((s, i) => `L${n1(xOf(s.nm))} ${n1(yOf(clamp(M.cols[i].sfc.pa, 0, top)))}`).join('')}L${n1(l + pw)} ${n1(t + ph)}Z" ` +
+    'fill="var(--at-terrain)"/>');
+  // vent : une barbule par lieu de lecture, toutes les 3 000 ou 5 000 ft (un lieu sur deux si serré)
+  if (L.wind) {
+    // une barbule tous les ~34 px au moins, un niveau sur deux quand la coupe est basse (téléphone)
+    const every = Math.max(1, Math.ceil(34 / (pw / M.samples.length))),
+      dy = (top > 20000 ? 5000 : 3000) * (ph < 220 ? 2 : 1);
+    let g = '';
+    M.samples.forEach((s, i) => {
+      if (i % every) return;
+      for (let ft = dy; ft < top; ft += dy) {
+        const x = A.at(M.cols[i], ft);
+        if (x && !x.below && x.dirDeg != null) g += barb(xOf(s.nm), yOf(ft), x.dirDeg, x.kt, ph < 200 ? 15 : 19);
+      }
+    });
+    out.push(`<g color="var(--sog-muted)" clip-path="url(#${id}-clip)">${g}</g>`);
+  }
+  // trajectoires : demandée, planifiée, calculée
+  const line = (fn, color, dash, w) => {
+    let d = '';
+    for (let x = 0; x <= pw; x += 2) d += `${x ? 'L' : 'M'}${n1(l + x)} ${n1(yOf(fn(x / pw * M.traj.total)))}`;
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${w}"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
+  };
+  out.push(line(M.traj.requested, 'var(--at-requested)', '2 4', 2), line(M.traj.planned, 'var(--at-planned)', '7 4', 2),
+    line(M.traj.computed, 'var(--at-computed)', '', 2.5));
+  for (const [nm, lab] of [
+      [M.traj.toc, 'TOC'],
+      [M.traj.tod, 'TOD']
+    ])
+    if (nm != null) {
+      const x = xOf(nm),
+        y = yOf(M.traj.computed(nm));
+      out.push(`<circle cx="${n1(x)}" cy="${n1(y)}" r="3.5" fill="var(--at-computed)"/>`, label(x, y - 10, lab, {
+        color: 'var(--at-computed)',
+        size: 10
+      }));
+    }
+  // points de la route : un trait chacun ; les noms qui se chevaucheraient sont écartés (départ et arrivée gardés)
+  const xs = M.points.map((p, i) => xOf(M.traj.nmOf[i])),
+    named = [];
+  xs.forEach((x, i) => {
+    out.push(`<line x1="${n1(x)}" y1="${t}" x2="${n1(x)}" y2="${n1(t + ph)}" stroke="var(--sog-border)" stroke-dasharray="2 3"/>`);
+    const w = 7 * String(M.points[i].id).length + 8;
+    if (i === xs.length - 1)
+      while (named.length > 1 && x - xs[named.at(-1)] < w) named.pop();
+    if (!named.length || i === xs.length - 1 || x - xs[named.at(-1)] >= w) named.push(i);
+  });
+  for (const i of named) out.push(label(clamp(xs[i], l + 16, l + pw - 16), t - 8, M.points[i].id, {
+    size: 10,
+    weight: 600
+  }));
+  // lieu choisi (tranche)
+  if (M.sel != null && M.samples[M.sel]) {
+    const x = xOf(M.samples[M.sel].nm);
+    out.push(`<line x1="${n1(x)}" y1="${t}" x2="${n1(x)}" y2="${n1(t + ph)}" stroke="var(--sog-accent)" stroke-width="1.5"/>`);
+  }
+  // axes
+  const stepFt = top > 25000 ? 5000 : top > 12000 ? 2000 : 1000;
+  for (let ft = 0; ft <= top; ft += stepFt) {
+    if (ph < 150 && (ft / stepFt) % 2) continue;
+    out.push(`<text x="${l - 5}" y="${n1(yOf(ft))}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="var(--sog-muted)">${esc(ft ? o.fmtLvl(ft) : '0')}</text>`);
+  }
+  const nmStep = [10, 20, 25, 50, 100, 200, 500].find(s => pw / (M.traj.total / s) > 46) || 500;
+  for (let nm = 0; nm <= M.traj.total; nm += nmStep) out.push(`<text x="${n1(xOf(nm))}" y="${n1(t + ph + 4)}" text-anchor="middle" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">${nm}</text>`);
+  out.push(`<text x="${n1(l + pw)}" y="${n1(t + ph + 4)}" text-anchor="end" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">NM</text>`,
+    `<rect x="${l + 0.5}" y="${t + 0.5}" width="${n1(pw)}" height="${n1(ph)}" fill="none" stroke="var(--sog-border)"/>`);
+  // bandes de surface : nébulosité basse, moyenne, haute, précipitations, visibilité < 8 km
+  if (strips) {
+    const rows = [
+      [q => q.sfc.ccL, v => `rgba(${cloud},${n1(v / 100 * 0.85)})`],
+      [q => q.sfc.ccM, v => `rgba(${cloud},${n1(v / 100 * 0.85)})`],
+      [q => q.sfc.ccH, v => `rgba(${cloud},${n1(v / 100 * 0.85)})`],
+      [q => q.sfc.precip, v => `rgba(42,120,214,${n1(clamp(v / 4, 0, 1) * 0.9)})`],
+      [q => q.sfc.visM, v => v < 8000 ? `rgba(250,178,25,${n1(clamp((8000 - v) / 7000, 0.15, 1))})` : null]
+    ];
+    rows.forEach(([get, col], k) => {
+      const y = t + ph + 18 + k * (SH + 2);
+      out.push(`<text x="${l - 5}" y="${n1(y + SH / 2)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="var(--sog-muted)">${esc(o.labels?.strips?.[k] || '')}</text>`,
+        `<rect x="${l}" y="${n1(y)}" width="${n1(pw)}" height="${SH}" fill="var(--sog-chart-grid)"/>`);
+      M.samples.forEach((s, i) => {
+        const v = get(M.cols[i]),
+          c = v == null ? null : col(v);
+        if (!c) return;
+        const xa = i ? (xOf(M.samples[i - 1].nm) + xOf(s.nm)) / 2 : l,
+          xb = i < M.samples.length - 1 ? (xOf(s.nm) + xOf(M.samples[i + 1].nm)) / 2 : l + pw;
+        out.push(`<rect x="${n1(xa)}" y="${n1(y)}" width="${n1(xb - xa)}" height="${SH}" fill="${c}"/>`);
+      });
+    });
+  }
+  return {
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="${VARS};display:block;font-family:inherit">${out.join('')}</svg>`,
+    geo: {
+      x0: l,
+      y0: t,
+      pw,
+      ph,
+      xOf,
+      yOf,
+      nmOf: x => clamp((x - l) / pw, 0, 1) * M.traj.total,
+      ftOf: y => clamp(1 - (y - t) / ph, 0, 1) * top
+    }
+  };
+}
+
+/** Tranche verticale (sondage) d'une colonne : température, point de rosée, atmosphère type, inversions, nuages, vent,
+ *  relief, et les niveaux du vol à cet endroit (lines [{ ft, color, dash }]).
+ *  → { svg, geo { l, t, pw, ph, top, ftOf } }. */
+export function soundingSvg(col, {
+  width,
+  height,
+  top,
+  lines = [],
+  fmtLvl,
+  cloudRgb = [96, 104, 116]
+}) {
+  const W = Math.max(200, width),
+    H = Math.max(140, height),
+    l = 50,
+    r = 62,
+    t = 8,
+    b = 18,
+    pw = W - l - r,
+    ph = H - t - b,
+    prof = [];
+  for (let ft = Math.max(0, col.sfc.pa); ft <= top; ft += 200) prof.push(A.at(col, ft));
+  const temps = prof.flatMap(p => [p?.tC, p?.tdC]).filter(Number.isFinite),
+    tMin = Math.floor((Math.min(...temps, A.isaC(top)) - 4) / 10) * 10,
+    tMax = Math.ceil((Math.max(...temps, 15) + 4) / 10) * 10,
+    X = tc => l + pw * (tc - tMin) / (tMax - tMin),
+    Y = ft => t + ph * (1 - ft / top),
+    out = [];
+  out.push(`<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="var(--sog-chart-bg)"/>`);
+  const pat = `<defs><pattern id="at-sd-inv" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">` +
+    `<line x1="0" y1="0" x2="0" y2="7" stroke="var(--at-inv)" stroke-width="1.4"/></pattern></defs>`;
+  out.push(pat);
+  // grille des températures et des niveaux
+  for (let tc = tMin; tc <= tMax; tc += 10) {
+    out.push(`<line x1="${n1(X(tc))}" y1="${t}" x2="${n1(X(tc))}" y2="${n1(t + ph)}" stroke="${tc === 0 ? '#1c5cab' : 'var(--sog-chart-grid)'}" stroke-width="${tc === 0 ? 1.5 : 1}"/>`,
+      `<text x="${n1(X(tc))}" y="${n1(t + ph + 4)}" text-anchor="middle" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">${tc}°</text>`);
+  }
+  const stepFt = top > 25000 ? 5000 : top > 12000 ? 2000 : 1000;
+  for (let ft = 0; ft <= top; ft += stepFt) {
+    out.push(`<line x1="${l}" y1="${n1(Y(ft))}" x2="${n1(l + pw)}" y2="${n1(Y(ft))}" stroke="var(--sog-chart-grid)"/>`);
+    if (ph >= 150 || !((ft / stepFt) % 2)) out.push(`<text x="${l - 5}" y="${n1(Y(ft))}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="var(--sog-muted)">${esc(ft ? fmtLvl(ft) : '0')}</text>`);
+  }
+  // inversions
+  for (const v of A.inversions(col))
+    if (v.fromFt < top) out.push(`<rect x="${l}" y="${n1(Y(Math.min(top, v.toFt)))}" width="${n1(pw)}" height="${n1(Y(v.fromFt) - Y(Math.min(top, v.toFt)))}" fill="url(#at-sd-inv)"/>`);
+  // nuages (colonne à droite)
+  prof.forEach(p => {
+    if (!(p?.cc > 5)) return;
+    out.push(`<rect x="${n1(l + pw + 4)}" y="${n1(Y(p.ft + 100))}" width="18" height="${n1(Y(p.ft - 100) - Y(p.ft + 100) + 0.5)}" fill="rgba(${cloudRgb},${n1(p.cc / 100 * 0.8)})"/>`);
+  });
+  // relief
+  const g = Y(clamp(col.sfc.pa, 0, top));
+  out.push(`<rect x="${l}" y="${n1(g)}" width="${n1(pw + r)}" height="${n1(t + ph - g)}" fill="var(--at-terrain)"/>`);
+  // atmosphère type, température, point de rosée
+  out.push(`<line x1="${n1(X(A.isaC(0)))}" y1="${n1(Y(0))}" x2="${n1(X(A.isaC(top)))}" y2="${n1(Y(top))}" stroke="var(--sog-muted)" stroke-width="1.2" stroke-dasharray="5 4"/>`);
+  for (const [k, color] of [
+      ['tdC', '#008300'],
+      ['tC', '#e34948']
+    ]) {
+    const pts = prof.filter(p => p?.[k] != null).map(p => `${n1(X(p[k]))},${n1(Y(p.ft))}`);
+    if (pts.length > 1) out.push(`<polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`);
+  }
+  // niveaux du vol à cet endroit
+  for (const ln of lines)
+    if (ln.ft != null) out.push(`<line x1="${l}" y1="${n1(Y(ln.ft))}" x2="${n1(l + pw)}" y2="${n1(Y(ln.ft))}" stroke="${ln.color}" stroke-width="2"${ln.dash ? ` stroke-dasharray="${ln.dash}"` : ''}/>`);
+  // vent
+  let wb = '';
+  for (let ft = Math.ceil((col.sfc.pa + 500) / stepFt) * stepFt; ft < top; ft += stepFt * (ph < 220 ? 2 : 1)) {
+    const x = A.at(col, ft);
+    if (x && !x.below) wb += barb(l + pw + 44, Y(ft), x.dirDeg, x.kt, ph < 200 ? 14 : 17);
+  }
+  out.push(`<g color="var(--sog-muted)">${wb}</g>`, `<rect x="${l + 0.5}" y="${t + 0.5}" width="${n1(pw)}" height="${n1(ph)}" fill="none" stroke="var(--sog-border)"/>`);
+  return {
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="${VARS};display:block;font-family:inherit">${out.join('')}</svg>`,
+    geo: {
+      l,
+      t,
+      pw,
+      ph,
+      top,
+      ftOf: y => clamp(1 - (y - t) / ph, 0, 1) * top
+    }
+  };
+}

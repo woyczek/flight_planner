@@ -2,6 +2,43 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (afternoon) — the screen redone on the maps module's template
+
+- **The request** (user): "Rien ne va en termes d'ergonomie. C'est parfait en mode large, hormis les bugs d'affichage,
+  épouvantable en mode téléphone. On retravaille, sous la forme d'un module dédié (pour v3) derrière une icône et on
+  réinclura plus tard. Template : module « carte ». En haut : la vue carte. En bas, soit la vue du profil global, soit si
+  on clique sur la carte, les tranches locales. Le tableau ne peut avoir sa place que derrière un bouton du header « i ».
+  Pas de scroll sur la map, plein cadre de l'écran du téléphone." Bugs named: "carte pas synchro avec les couches,
+  profil météo vertical rasterisé".
+- **Fixed view** (`meta.fixed`, the frame's contract delivered the same day): tools row, map (flex), bottom block (40 %,
+  scrolling inside); the table and the settings are contents of the block behind **i** and **Flight** (relay: in the
+  block, not over the map). **The maps module's three-position sheet, copied** (relay: copy it rather than invent one):
+  same tokens (head 44 px; default 38 % of the view on a phone, 35 % on a screen; expanded 70 %; floors 170 / 260 px),
+  same handle and gestures (tap: collapse or bring back; drag: nearest position, a flick the next one; arrow keys), a
+  content opened while collapsed opens it, the map with no minimum height so the expanded sheet stays above the tab bar;
+  the block is redrawn once the size has settled (and only when it differs from the last drawing), nothing is drawn
+  while collapsed. Its code is internal to `modules/maps/module.js`: a copy until the shared base below.
+- **Level 1**, still in the Préparer group (relay): "behind an icon" is the Atmosphere sub-tab of Préparer on a phone
+  and its own entry in the rail on a screen — the later re-inclusion is already in place.
+- **Portrait locked** for now; nothing in the module (frame and shells: manifest `orientation`, `screen.orientation.lock`
+  once installed, Capacitor). Landscape target to submit to the ergonomics session: map on the left (~60 %), the block
+  narrow on the right, a small info line under it, buttons as a vertical rail on the right edge.
+- **Map out of sync — the maps module's technique** (user: "le module cartes utilise MapLibre et ajoute des vecteurs.
+  Utiliser la même technique (mutualiser !)"): the overlay is a canvas redrawn on every frame of the movement, as in
+  maps; the lag came from computing the refined grids and contours inside each draw. Now the geometry is computed once
+  per data set and only projected per frame. A first try with native MapLibre layers (GeoJSON, image sources) was set
+  aside for this reason: one technique for both modules. Shared without touching the maps module's files (its agent is
+  mid-lot): `render.js` (`MapsRender.mercator`, `drawBackground`, `tokens`), `lib/outlines.js`, MapLibre and its
+  styles. Proposed to the relay: extract the maps module's base (`loadMapLibre`, `startTiles`, `styleFor`, `mapSize`,
+  plain background) and its sheet (`setSheet`, `sheetGestures`, `settle`) into shared files used by both.
+- **Rasterised profile → SVG** (`section.js`): vector lines, text and barbs; the continuous fields (cloud, temperature,
+  humidity, density altitude, icing and inversion masks) are images of the 200 × 120 computing grid drawn enlarged and
+  smoothed, so no steps; hatches through SVG patterns masked by those fields. On a narrow block: barbs every ~34 px
+  and every other level, point names that would overlap left out, surface strips only above 260 px.
+- **Local slice at any point of the map**: the column of the tapped point's cell from the weather cache, else one place
+  from Open-Meteo (≈ 10 weighted calls), at the time the flight passes nearest; a tap on the profile or a table row opens
+  the slice of a reading place (no call).
+
 ## 24 October 2026 — from mock-up to module
 
 - **The request** (user): a graph of the atmosphere along the flight — clouds, inversions, density… — in slices along

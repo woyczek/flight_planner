@@ -60,8 +60,8 @@
       label: ['Site', 'Website', 'Website', 'Sitio'],
       icon: 'globe'
     }, {
-      // maquette (meta.level 3 : menu au niveau « complet » seulement, #atmosphere à tout niveau) ; sa place durable,
-      // onglet ou écran de Carte ou de Carburant, reste à trancher (modules/atmosphere/DECISIONS.md, 24 oct 2026)
+      // module dédié (vue fixe, gabarit de la Carte) : sous-onglet de Préparer sur téléphone (APP.tabs), dans le rail sur
+      // écran ; réinclus plus tard dans Préparer et la Carte (modules/atmosphere/DECISIONS.md, 24 oct 2026)
       id: 'atmosphere',
       label: ['Atmosphère', 'Atmosphere', 'Atmosphäre', 'Atmósfera'],
       icon: 'layers'

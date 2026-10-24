@@ -4,24 +4,33 @@ The V3 module **Atmosphere** of the Pilot application: the atmosphere along the 
 mock-up (`labs/atmosphere`, 24 October 2026), turned into a module the same day. Still a mock-up: level 3, its lasting
 place in the application is to be decided (DECISIONS.md).
 
-## 1. What it shows
+## 1. The screen
 
-- **Cross-section along the route** (x: NM from departure, y: pressure altitude): cloud cover by level, isotherms
-  every 5 °C with 0 °C emphasised, inversion layers, indicative icing (possible / probable), estimated cumulus base,
-  wind barbs, terrain; optional backgrounds: temperature, humidity, density altitude minus pressure altitude. Three
-  flight paths: **requested** level, **planned** levels (steps `alt_ft` from their point on), **computed** trajectory
-  (climb and descent from Fuel's `profile` — `tocNm`, `todNm`, rates — or 1,200 / 1,500 ft/min at 220 / 250 kt),
-  with TOC and TOD. Surface strips: low / mid / high cloud, precipitation, visibility under 8 km.
-- **Every reading place at the time the flight passes it**: departure time + estimated time along the computed
-  trajectory (true airspeed by phase, no wind — stated on screen).
-- **Map at the chosen altitude**: sea level (MSL isobars every 2 hPa, highs and lows, 2 m isotherms, cloud, 10 m
-  wind), the requested level, each planned step, fixed levels (5,000 ft … FL300), or the computed trajectory (route
-  coloured by the temperature met, thicker in cloud, ❄ where icing is possible). Aloft, isobars at constant true
-  altitude. The map is at the hour the flight passes the selected slice.
-- **Vertical slice** (sounding) at any reading place, with a summary (ground, cloud, inversions, 0 °C, cumulus
-  base, conditions on the trajectory).
-- **Table along the computed trajectory** and **aerodromes** (departure, arrival, alternate: METAR, TAF).
-- Offline **demonstration** data (`#atmosphere?donnees=demo`): an invented but plausible situation.
+A fixed, full-height view on the maps module's template (`meta.fixed`, `frame/INTEGRATION.md` § 9.2): no page scroll,
+the phone's whole frame; portrait only for now (the landscape layout is a later lot, `V3_SPECIFICATION.md` § 7.1).
+
+- **Tools row** (44 px targets): **Flight** (the settings in the bottom block: flight source, departure time, level,
+  cruise speed, data, map grid, Load), **i** (the information in the bottom block), **Load**, and the flight in brief
+  (aircraft, route, level, departure time, model and run).
+- **Map** (top, all the height the block leaves): at the altitude chosen in its selector — sea level (MSL isobars every
+  2 hPa, highs and lows, 2 m isotherms, cloud, 10 m wind), the requested level, each planned step, fixed levels
+  (5,000 ft … FL300), or the computed trajectory (route coloured by the temperature met, thicker in cloud, ❄ where
+  icing is possible); aloft, isobars at constant true altitude. A layers button opens the layers of the map and of the
+  profile, each with its key. **A tap on the map opens the local slice at that point.**
+- **Bottom block**: the maps module's sheet — three heights (collapsed to its header, default, expanded) pulled by
+  its handle, its content scrolling inside. By default the **overall profile** (cross-section along the route: cloud by level, isotherms every
+  5 °C with 0 °C emphasised, inversions, indicative icing, cumulus base, wind, terrain; optional backgrounds:
+  temperature, humidity, density altitude; the requested, planned and computed paths with TOC and TOD; surface strips
+  when the block is tall enough). A tap on the profile opens the slice of the nearest reading place (◀ ▶ walk along
+  the route). The **local slice** is a sounding (temperature, dew point, standard atmosphere, inversions, cloud column,
+  wind, the flight's levels there) with its reading (ground, cloud, inversions, 0 °C, cumulus base, conditions on the
+  trajectory) beside it on a wide block. ✕ goes back to the profile. **i**: summary tiles, aerodromes (METAR, TAF), the
+  table along the computed trajectory (a row opens its slice), sources.
+- Every reading place at the time the flight passes it (departure + estimated time, no wind — stated on screen); the
+  map at the time of the chosen slice.
+- Rendering: the profile and the slice are SVG (vector lines, smooth fields); the map's overlay is vector, redrawn
+  with every frame of the map's movement.
+- Offline **demonstration** data (`#atmosphere?donnees=demo`).
 
 ## 2. The flight
 

@@ -16,7 +16,7 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 
 - `modules/atmosphere/` on `v3` (GitHub); `labs/atmosphere/index.html` forwards to `frame/index.html#atmosphere`.
 - Try it: <https://woyczek.github.io/flight_planner/v3/frame/#atmosphere> (`#atmosphere?donnees=demo` for the
-  offline data). In the menu only at the "full" usage level (Settings).
+  offline data). On a phone: Préparer, sub-tab Atmosphere; on a screen: Atmosphere in the rail.
 - Rules: `CLAUDE.md`, `frame/INTEGRATION.md`, `.claude/agents/README.md`; the relay cloud session's decisions are to be
   followed (user, 24 Oct 2026) until the ergonomics session is back.
 
@@ -31,6 +31,9 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
    Chromium, Open-Meteo answered from the demonstration): opening 0 forecast request, "Load" 2 requests (≈ 295
    weighted calls), reload 0, FL390 only the missing map levels; demonstration, English, night; the old lab address
    forwards.
+4. Screen redone on the maps module's template (fixed view, map on top, profile or local slice below, **i** and
+   **Flight** in the block, the maps module's three-position sheet), the map overlay with the maps module's technique (no lag), the profile and the slice in SVG.
+   Checked at 390 × 844 and 1280 × 800: no page scroll, no JavaScript error, the overlay follows a drag.
 
 ## Not checked yet
 
@@ -41,10 +44,9 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 ## Next
 
 1. **Review** by the user on Pages.
-2. **Place in the application** (decided, `V3_SPECIFICATION.md` § 7.1): the **Météo tab of Préparer** once the frame
-   has groups of modules (then the `APP.modules` entry becomes a member of the Préparer group, without a verb), and the
-   **cross-section in the map's data block** (a lot shared with maps: the drawing of `drawXs` as a component the map can
-   mount, reading the same weather cache).
+2. **Shared map base and sheet**: with the maps module's agent, one file for MapLibre, styles, size and plain background used by
+   both modules, and the sheet (`setSheet`, `sheetGestures`, `settle`): today both are copied from the maps module. **Landscape** (later lot): map left, narrow block right, buttons as a
+   rail on the right edge — for the ergonomics session.
 3. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
    `ctx.weather`, show the tally in Settings › Diagnostics; then Fuel reads its winds aloft through it
    (`cache/fuel/aloft.json` retired), so the quota is paid once.

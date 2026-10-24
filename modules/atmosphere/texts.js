@@ -2,11 +2,6 @@
 // en français posée par le cadre). Unités et sigles (NM, ft, hPa, °C, kt, QNH, ISA, TOC, TOD, CAPE, METAR, TAF) non traduits.
 export const TX = {
   // en-tête, formulaire
-  title: ['Atmosphère de la route', 'Route atmosphere', 'Atmosphäre entlang der Route', 'Atmósfera de la ruta'],
-  mockup: ['Maquette', 'Mock-up', 'Entwurf', 'Maqueta'],
-  demoTag: ['Démonstration — données inventées', 'Demonstration — invented data', 'Vorführung — erfundene Daten',
-    'Demostración — datos inventados'
-  ],
   demoSrc: ['démonstration hors ligne', 'offline demonstration', 'Offline-Vorführung', 'demostración sin conexión'],
   flight: ['Vol', 'Flight', 'Flug', 'Vuelo'],
   srcCurrent: ['Vol courant ({tri})', 'Current flight ({tri})', 'Aktueller Flug ({tri})', 'Vuelo actual ({tri})'],
@@ -34,7 +29,40 @@ export const TX = {
   grid48: ['8 × 6', '8 × 6', '8 × 6', '8 × 6'],
   grid96: ['12 × 8 (lourd)', '12 × 8 (heavy)', '12 × 8 (schwer)', '12 × 8 (pesada)'],
   load: ['Charger', 'Load', 'Laden', 'Cargar'],
-  summary: ['Résumé', 'Summary', 'Zusammenfassung', 'Resumen'],
+
+  // vue fixe (gabarit de la Carte) : ligne d'outils, carte, bloc du bas
+  demoShort: ['Démo', 'Demo', 'Demo', 'Demo'],
+  flightTitle: ['Vol et réglages', 'Flight and settings', 'Flug und Einstellungen', 'Vuelo y ajustes'],
+  infoTitle: ['Informations : résumé, terrains, tableau', 'Information: summary, aerodromes, table',
+    'Informationen: Übersicht, Flugplätze, Tabelle', 'Información: resumen, aeródromos, tabla'
+  ],
+  layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
+  tapHint: ['toucher la carte : tranche locale', 'tap the map: local slice', 'Karte antippen: lokaler Schnitt',
+    'tocar el mapa: corte local'
+  ],
+  sheetSize: ['Hauteur du bloc de données : toucher ou glisser', 'Data block height: tap or drag',
+    'Höhe des Datenblocks: antippen oder ziehen', 'Altura del bloque de datos: tocar o arrastrar'
+  ],
+  sheet0: ['réduit', 'collapsed', 'eingeklappt', 'reducido'],
+  sheet1: ['normal', 'default', 'normal', 'normal'],
+  sheet2: ['agrandi', 'expanded', 'erweitert', 'ampliado'],
+  backProfile: ['Retour au profil global', 'Back to the overall profile', 'Zurück zum Gesamtprofil', 'Volver al perfil global'],
+  profileTitle: ['Profil', 'Profile', 'Profil', 'Perfil'],
+  sliceHeadShort: ['Tranche {i} / {n} · {near} · {nm} NM · {at}', 'Slice {i} / {n} · {near} · {nm} NM · {at}',
+    'Schnitt {i} / {n} · {near} · {nm} NM · {at}', 'Corte {i} / {n} · {near} · {nm} NM · {at}'
+  ],
+  sliceHeadPoint: ['Tranche {p} · à {off} NM de la route · {at}', 'Slice {p} · {off} NM from the route · {at}',
+    'Schnitt {p} · {off} NM von der Route · {at}', 'Corte {p} · a {off} NM de la ruta · {at}'
+  ],
+  sliceLoading: ['Lecture de la prévision à ce point…', 'Reading the forecast at this point…',
+    'Vorhersage an diesem Punkt wird gelesen…', 'Leyendo la previsión en este punto…'
+  ],
+  lgPaths: [
+    'Trajectoires : calculée (trait plein), planifiée (tirets), demandée (pointillés). Tranche : température (rouge), point de rosée (vert), atmosphère type (tirets).',
+    'Paths: computed (solid), planned (dashed), requested (dotted). Slice: temperature (red), dew point (green), standard atmosphere (dashed).',
+    'Bahnen: berechnet (durchgezogen), geplant (gestrichelt), angefordert (gepunktet). Schnitt: Temperatur (rot), Taupunkt (grün), Normatmosphäre (gestrichelt).',
+    'Trayectorias: calculada (continua), prevista (guiones), solicitada (puntos). Corte: temperatura (rojo), punto de rocío (verde), atmósfera tipo (guiones).'
+  ],
 
   // vol
   errTwoPoints: ['Ce vol n’a pas deux points positionnés au moins (route.points).',
@@ -150,12 +178,9 @@ export const TX = {
   rhShort: ['HR', 'RH', 'rF', 'HR'],
   clouds: ['nuages', 'cloud', 'Wolken', 'nubes'],
   da: ['altitude-densité', 'density altitude', 'Dichtehöhe', 'altitud de densidad'],
-  trueAlt: ['vraie', 'true', 'wahre', 'verdadera'],
   icing: ['givrage', 'icing', 'Vereisung', 'engelamiento'],
   icePossible: ['possible', 'possible', 'möglich', 'posible'],
   iceProbable: ['probable', 'probable', 'wahrscheinlich', 'probable'],
-  icePossibleL: ['givrage possible', 'icing possible', 'Vereisung möglich', 'engelamiento posible'],
-  iceProbableL: ['givrage probable', 'icing probable', 'Vereisung wahrscheinlich', 'engelamiento probable'],
   vis: ['visi', 'vis', 'Sicht', 'visib.'],
   precip: ['précip.', 'precip.', 'Niederschl.', 'precip.'],
   ground: ['sol', 'ground', 'Boden', 'suelo'],
@@ -204,12 +229,6 @@ export const TX = {
   kDaN: ['terrain {ft} ft', 'field {ft} ft', 'Platz {ft} ft', 'aeródromo {ft} ft'],
 
   // coupe
-  xsTitle: ['Coupe le long de la route', 'Cross-section along the route', 'Querschnitt entlang der Route',
-    'Corte a lo largo de la ruta'
-  ],
-  xsAria: ['Coupe verticale de l’atmosphère le long de la route', 'Vertical cross-section of the atmosphere along the route',
-    'Vertikaler Querschnitt der Atmosphäre entlang der Route', 'Corte vertical de la atmósfera a lo largo de la ruta'
-  ],
   xsSub: ['chaque lieu lu à l’heure de passage · {n} lieux · altitude pression',
     'each place read at the time of passage · {n} places · pressure altitude',
     'jeder Ort zur Überflugzeit gelesen · {n} Orte · Druckhöhe', 'cada lugar leído a la hora de paso · {n} lugares · altitud de presión'
@@ -223,19 +242,6 @@ export const TX = {
   tipBelow: ['sous le relief (sol {l})', 'below the terrain (ground {l})', 'unter dem Gelände (Boden {l})',
     'bajo el relieve (suelo {l})'
   ],
-  lgComputed: ['Trajectoire calculée', 'Computed trajectory', 'Berechnete Bahn', 'Trayectoria calculada'],
-  lgPlanned: ['Niveaux planifiés', 'Planned levels', 'Geplante Flughöhen', 'Niveles previstos'],
-  lgCloud: ['nébulosité 0 → 100 %', 'cloud cover 0 → 100 %', 'Bewölkung 0 → 100 %', 'nubosidad 0 → 100 %'],
-  lgDa: ['altitude-densité − altitude pression :', 'density altitude − pressure altitude:', 'Dichtehöhe − Druckhöhe:',
-    'altitud de densidad − altitud de presión:'
-  ],
-  lgRh: ['humidité', 'humidity', 'Feuchte', 'humedad'],
-  lgIso: ['0 °C · isothermes tous les 5 °C', '0 °C · isotherms every 5 °C', '0 °C · Isothermen alle 5 °C',
-    '0 °C · isotermas cada 5 °C'
-  ],
-  lgInv: ['inversion', 'inversion', 'Inversion', 'inversión'],
-  lgCu: ['base des cumulus (estimée)', 'cumulus base (estimated)', 'Cumulusbasis (geschätzt)', 'base de los cúmulos (estimada)'],
-  lgTerrain: ['relief', 'terrain', 'Gelände', 'relieve'],
 
   // couches (boutons)
   lyCloud: ['Nuages', 'Cloud', 'Wolken', 'Nubes'],
@@ -252,39 +258,17 @@ export const TX = {
   // carte
   mapTitle: ['Carte', 'Map', 'Karte', 'Mapa'],
   mapLevelAria: ['Altitude de la carte', 'Altitude of the map', 'Höhe der Karte', 'Altitud del mapa'],
-  mapReading: ['carte : lecture de la grille…', 'map: reading the grid…', 'Karte: Raster wird gelesen…',
-    'mapa: leyendo la cuadrícula…'
-  ],
   mapLoad: ['carte : « Charger » pour lire la grille', 'map: "Load" to read the grid', 'Karte: „Laden“ zum Lesen des Rasters',
     'mapa: «Cargar» para leer la cuadrícula'
   ],
   mapUnreachable: ['Carte : prévision de la grille injoignable ({m}).', 'Map: grid forecast unreachable ({m}).',
     'Karte: Rastervorhersage nicht erreichbar ({m}).', 'Mapa: previsión de la cuadrícula inaccesible ({m}).'
   ],
-  mapBlank: ['fond de carte injoignable : fond neutre', 'base map unreachable: plain background',
-    'Grundkarte nicht erreichbar: neutraler Hintergrund', 'fondo de mapa inaccesible: fondo neutro'
-  ],
-  mapBlankShort: ['fond de carte injoignable', 'base map unreachable', 'Grundkarte nicht erreichbar', 'fondo de mapa inaccesible'],
-  mapSub: ['{t} — passage à la tranche choisie', '{t} — passage at the chosen slice', '{t} — Überflug am gewählten Schnitt',
-    '{t} — paso por el corte elegido'
-  ],
   isoMsl: ['isobares au niveau de la mer (2 hPa)', 'isobars at sea level (2 hPa)', 'Isobaren auf Meereshöhe (2 hPa)',
     'isobaras al nivel del mar (2 hPa)'
   ],
   isoAlt: ['isobares à {z} ft d’altitude vraie, ≈ {l} ({s} hPa)', 'isobars at {z} ft true altitude, ≈ {l} ({s} hPa)',
     'Isobaren in {z} ft wahrer Höhe, ≈ {l} ({s} hPa)', 'isobaras a {z} ft de altitud verdadera, ≈ {l} ({s} hPa)'
-  ],
-  lgIso2: ['isothermes 2 °C', 'isotherms 2 °C', 'Isothermen 2 °C', 'isotermas 2 °C'],
-  lgCloudSfc: ['nébulosité (la plus forte de basse, moyenne, haute)', 'cloud cover (the highest of low, mid, high)',
-    'Bewölkung (die stärkste aus tief, mittel, hoch)', 'nubosidad (la mayor de baja, media, alta)'
-  ],
-  lgCloudAt: ['nébulosité à {l}', 'cloud cover at {l}', 'Bewölkung in {l}', 'nubosidad a {l}'],
-  lgWind10: ['barbules : vent à 10 m', 'barbs: wind at 10 m', 'Fiedern: Wind in 10 m', 'barbas: viento a 10 m'],
-  lgWindAt: ['barbules : vent à {l}', 'barbs: wind at {l}', 'Fiedern: Wind in {l}', 'barbas: viento a {l}'],
-  lgTrajMap: ['route : température rencontrée sur la trajectoire calculée, trait épais dans les nuages, ❄ givrage',
-    'route: temperature met on the computed trajectory, thick line in cloud, ❄ icing',
-    'Route: Temperatur auf der berechneten Bahn, dicke Linie in Wolken, ❄ Vereisung',
-    'ruta: temperatura encontrada en la trayectoria calculada, trazo grueso en nubes, ❄ engelamiento'
   ],
   mlSfc: ['Sol (niveau de la mer)', 'Ground (sea level)', 'Boden (Meereshöhe)', 'Suelo (nivel del mar)'],
   mlReq: ['Niveau demandé {l}', 'Requested level {l}', 'Angeforderte Flughöhe {l}', 'Nivel solicitado {l}'],
@@ -296,21 +280,8 @@ export const TX = {
   ],
 
   // tranche
-  sliceTitle: ['Tranche verticale', 'Vertical slice', 'Vertikalschnitt', 'Corte vertical'],
   slicePrev: ['Tranche précédente', 'Previous slice', 'Vorheriger Schnitt', 'Corte anterior'],
   sliceNext: ['Tranche suivante', 'Next slice', 'Nächster Schnitt', 'Corte siguiente'],
-  sdAria: ['Sondage vertical de la tranche choisie', 'Vertical sounding of the chosen slice', 'Vertikalsondierung des gewählten Schnitts',
-    'Sondeo vertical del corte elegido'
-  ],
-  sliceHead: ['Tranche {i} / {n} — {nm} NM, {near} — {at} (passage estimé {pass})',
-    'Slice {i} / {n} — {nm} NM, {near} — {at} (estimated passage {pass})',
-    'Schnitt {i} / {n} — {nm} NM, {near} — {at} (geschätzter Überflug {pass})',
-    'Corte {i} / {n} — {nm} NM, {near} — {at} (paso estimado {pass})'
-  ],
-  lgTemp: ['Température', 'Temperature', 'Temperatur', 'Temperatura'],
-  lgDew: ['Point de rosée', 'Dew point', 'Taupunkt', 'Punto de rocío'],
-  lgIsa: ['Atmosphère type', 'Standard atmosphere', 'Normatmosphäre', 'Atmósfera tipo'],
-  lgSdCloud: ['▮ nuages · barbules : vent', '▮ cloud · barbs: wind', '▮ Wolken · Fiedern: Wind', '▮ nubes · barbas: viento'],
   rGround: ['Au sol', 'At the ground', 'Am Boden', 'En el suelo'],
   rCloud: ['Nébulosité', 'Cloud cover', 'Bewölkung', 'Nubosidad'],
   rCloudV: ['basse {l} % · moyenne {m} % · haute {h} %', 'low {l} % · mid {m} % · high {h} %', 'tief {l} % · mittel {m} % · hoch {h} %',
