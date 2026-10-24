@@ -205,6 +205,21 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
      cut alone, at the body's full height (readability floor kept, the body scrolls if really too low); the text
      strip and the notes appear only in the expanded position, under the drawing at its maximum height; the
      head-only position is unchanged. Atmosphere keeps its slider row with the cut (a control, not a text line).
+  10. **No buttons in the header; the status at the top of Réglages** (user, 24 Oct, 18:45, with iVAC's Settings
+      screen as the reference: "il y a toujours duplication des paramètres par le bas et le haut… on avait dit qu'en
+      terme d'ergonomie, les messages et la synchro étaient visibles tout en haut des params, donc pas de besoin de
+      boutons dans le header"): relay decision, amending § 7.1 rule 3 and the "i" button of the afternoon answers. On
+      a phone the header carries the name (or "←") only; the **Réglages tab** carries the badge (green news, amber
+      attention) and its screen opens with a **status block** at the top: the lines of today's "i" pop-up (started
+      flight › Carte, report to write › CR, data synchronised n min ago, pending writes, base state, launcher,
+      position, help of the last screen), then the settings cards. On a screen the rail's Réglages entry does the
+      same and the header keeps the sync dot and "?". The "i" pop-up and the header gear go. Frame lot after the
+      landscape lot, with the settings block.
+  11. **The map's complexity slider is a zoom shift only** (user, same message: "le curseur complexité n'agit que
+      comme si le zoom était différent… l'admin (moi) définit ce qu'un pilote veut voir à chaque niveau de zoom, via
+      cette page outil. Anciennement accessible dans les paramètres très avancés"): what each zoom shows comes from
+      the administrator's threshold page (`#maps?tune=1`, reachable again from Réglages › administration); the
+      slider is the first control of the Layers content and its range is wide enough to empty an Europe-wide view.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
