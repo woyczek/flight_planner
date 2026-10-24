@@ -70,6 +70,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - mid: plus the airway points and the minimum level under each name ("F195");
   - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
     and obstacles.
+- **Airspaces list in the sheet** (`levelsHtml`): one line per airspace, "1 · TMA NANTES 4 · FL055|FL065 · D" (name ellipsed first, levels and class kept), at 0.95 of the body size; activation and information in the tooltip; the level graph narrows (30 % of the width) to leave the list room (case D11).
 - **Airways** (`drawAirways`; all the strokes first, then the names, so that no stroke crosses a name, 24 Oct, case D18), as en-route charts: low airways solid blue, high airways dashed purple; the name in a
   box laid along the segment (always readable left to right). The segment ends are drawn after them
   (`drawFixes`: a triangle and the id; a navaid at the same place is drawn with its own symbol instead). The boxes
@@ -211,9 +212,19 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     information (plain background, terrain unavailable: the normal offline state). Nothing of it is above the map. The
     sheet is not there when there is neither profile nor content.
   - **The "Profile · Weather" chips** (24 Oct 2026). While the sheet shows the profile or the cross-section, a **column of two icon chips at the right of the drawing**
-    (portrait, default and expanded: 44 px wide, chips of 40 px on a 44 px pitch, from the top of the body, the drawing keeps the width
-    left; **in the landscape column a horizontal row above the drawing**, under the titled head; a profile chart and a cloud, with a
-    hairline and the accent when pressed), outside the head (a direct child of the panel, placed after it),
+    **only with the bare handle** (default position, portrait: 44 px wide, chips of 40 px on a 44 px pitch, from the top of the body, the
+    drawing keeps the width left); **as soon as the title line is there (expanded, collapsed, landscape column) the chips are back in that
+    line, at the right, in a row, and the drawing takes the whole width** (user, 24 Oct: "les icônes passent en horizontal quand la ligne du
+    haut apparaît"); a profile chart and a cloud, with a hairline and the accent when pressed; the element is a direct child of the panel
+    placed after the head (outside the drag zone, the title leaves 136 px to its right).
+    **The "i" chip is the last one** (V3 spec § 7.1.14): it opens a **legend** panel over the drawing (translucent, closed by the chip, a
+    tap on it or Escape): the series actually drawn, symbol and name in four languages, produced by the drawing code (`geo.drawn` of
+    `vertical_profile.js`: planned path, TOC / TOD, relief or MORA, the airspace types crossed with their colours, route points; and what the
+    sheet adds: NM marks, airway points). The cut has no legend of its own yet (`drawSection` neither returns nor exposes one: the chip is not
+    shown over it until the module's `loadWeather` gets a `legend` from `section.js`).
+    **A drag on the weather cut moves the common cursor like on the profile** (pointer events with capture, one redraw per animation frame,
+    `geo.nmOf` of the cut; `touch-action: none` on its body): the map's point, the airspaces under it and the text line follow, the cut draws
+    its dashed cursor line; the map element carries `data-cursor-nm`. Edit mode is unchanged (profile only).
     with `aria-pressed` and their names in `title` / `aria-label` ("Vertical profile", "Weather cross-section", four languages);
     hidden for a mission map, a route of fewer than two points, and while an airspaces list or an aerodrome's content is open:
     those have their ✕. A choice is kept for the life of the page (not on the

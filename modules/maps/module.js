@@ -355,6 +355,34 @@ const TX = {
   ],
   dataProfile: ['Profil vertical', 'Vertical profile', 'Vertikalprofil', 'Perfil vertical'],
   segLabel: ['Profil ou météo', 'Profile or weather', 'Profil oder Wetter', 'Perfil o meteo'],
+  legend: ['Légende', 'Legend', 'Legende', 'Leyenda'],
+  lgPlan: ['Trajectoire prévue (niveau de croisière)', 'Planned flight path (cruise level)', 'Geplante Flugbahn (Reiseflughöhe)',
+    'Trayectoria prevista (nivel de crucero)'
+  ],
+  lgToc: ['TOC / TOD : début et fin du palier', 'TOC / TOD: start and end of the level segment',
+    'TOC / TOD: Beginn und Ende des Reiseflugs',
+    'TOC / TOD: inicio y fin del tramo en crucero'
+  ],
+  lgTerrain: ['Relief le long de la route (maximum du couloir)', 'Terrain along the route (corridor maximum)',
+    'Gelände entlang der Route (Maximum des Korridors)', 'Relieve a lo largo de la ruta (máximo del corredor)'
+  ],
+  lgMora: ['MORA : altitude minimale de sécurité des cases traversées', 'MORA: minimum safe altitude of the squares crossed',
+    'MORA: Mindestsicherheitshöhe der durchflogenen Felder', 'MORA: altitud mínima de seguridad de las casillas atravesadas'
+  ],
+  lgZone: ['espace traversé (plancher – plafond)', 'airspace crossed (floor – ceiling)',
+    'durchflogener Luftraum (Untergrenze – Obergrenze)',
+    'espacio atravesado (suelo – techo)'
+  ],
+  lgPoints: ['Points de la route : nom et distance depuis le départ', 'Route points: name and distance from departure',
+    'Routenpunkte: Name und Entfernung vom Abflug', 'Puntos de la ruta: nombre y distancia desde la salida'
+  ],
+  lgNm: ['Repères de distance (NM), comme sur la carte', 'Distance marks (NM), as on the map',
+    'Entfernungsmarken (NM), wie auf der Karte',
+    'Marcas de distancia (NM), como en el mapa'
+  ],
+  lgFixes: ['Points des voies et balises à moins de 3 NM de la route', 'Airway points and beacons within 3 NM of the route',
+    'Streckenpunkte und Funkfeuer innerhalb von 3 NM der Route', 'Puntos de aerovías y radioayudas a menos de 3 NM de la ruta'
+  ],
   wxTitle: ['Coupe météo', 'Weather cross-section', 'Wetterschnitt', 'Corte meteorológico'],
   wxLabel: ['Coupe météo le long de la route', 'Weather cross-section along the route', 'Wetterschnitt entlang der Route',
     'Corte meteorológico a lo largo de la ruta'
@@ -1177,13 +1205,15 @@ function drawProfile() {
   ctx.fillStyle = S.theme.fg;
   ctx.strokeStyle = S.theme.fg;
   ctx.font = '600 9px Arial,sans-serif';
-  let lastX = -Infinity;
+  let lastX = -Infinity,
+    nFix = 0;
   for (const m of marks) {
     const y = yb - 22,
       w = ctx.measureText(m.id).width / 2 + 2;
     // jamais sur un libellé d'espace déjà posé dans la coupe
     if (m.x - lastX < 30 || (g.taken || []).some(r => m.x - w < r.x1 && m.x + w > r.x0 && y - 14 < r.y1 && y + 3 > r.y0)) continue;
     lastX = m.x;
+    nFix++;
     ctx.beginPath();
     ctx.moveTo(m.x, y - 4);
     ctx.lineTo(m.x + 3.5, y + 2);
@@ -1193,6 +1223,8 @@ function drawProfile() {
     ctx.fillText(m.id, m.x, y - 5);
   }
   ctx.restore();
+  S.lgFixes = nFix > 0; // la légende ne dit que ce qui est dessiné
+  legendSync();
   drawCursor();
 }
 /** Curseur sur le profil (trait vertical, point sur l'altitude prévue). */
@@ -1253,6 +1285,8 @@ function strip() {
 /** Curseur commun à la distance s (mètres ; null : effacé). */
 function setCursor(s) {
   S.cursor = s;
+  const nm = s == null ? '' : String(Math.round(s / FT_NM * 10) / 10); // lu par les tests et par qui mesure : le curseur commun en NM
+  if (S.mapEl.dataset.cursorNm !== nm) S.mapEl.dataset.cursorNm = nm;
   drawCursor();
   strip();
   schedule();
@@ -2717,13 +2751,14 @@ function levelsHtml(list, bw = 360, bh = 200) {
     step = nice(raw),
     top = Math.ceil(raw / step) * step,
     narrow = bw < 600,
-    L = 46,
-    W = Math.round(narrow ? bw * .44 : Math.min(400, bw * .45, Math.max(240, L + 12 + rows.length * 36))),
+    L = narrow ? 40 : 46,
+    W = Math.round(narrow ? Math.min(bw * .3, L + 8 + rows.length * 20) : Math.min(400, bw * .45, Math.max(240, L + 12 + rows.length *
+      36))),
     H = Math.round(Math.max(110, Math.min(300, bh - 16))),
     T = unl ? 16 : 6,
     B = H - 6,
     y = ft => B - (Math.min(ft, top) / top) * (B - T),
-    colW = Math.max(10, Math.min(34, (W - L - 6) / rows.length)),
+    colW = Math.max(10, Math.min(narrow ? 22 : 34, (W - L - 6) / rows.length)),
     gap = Math.min(4, colW * .2);
   let svg = '';
   for (let v = 0; v <= top; v += step) svg +=
@@ -2739,8 +2774,14 @@ function levelsHtml(list, bw = 360, bh = 200) {
       `<text x="${(x + colW / 2).toFixed(1)}" y="${Math.min(B - 4, Math.max(T, y0 + 9)).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${r.col}" font-weight="700">${i + 1}</text>`;
   });
   const items = rows.map((r, i) => {
-    const [a, b] = MapsRender.sia(r.a);
-    return `<li><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><span><b>${esc(a)}</b>${b ? `<br><span class="f-muted">${esc(b)}</span>` : ''}</span></li>`;
+    // une ligne par espace : « 1 · TMA NANTES 4 · FL055|FL065 · D » (le nom cède à l'ellipse, les niveaux et la classe restent) ;
+    // l'activation et les informations, quand il y en a, vont dans l'infobulle
+    const x = r.a,
+      name = [x.type, x.name].filter(Boolean).join(' '),
+      lim = x.lower == null && x.upper == null ? '' : `${MapsRender.siaLimit(x.lower)}|${MapsRender.siaLimit(x.upper)}`,
+      tail = [lim, x.cls].filter(Boolean).join(' · '),
+      note = [x.act, x.info].filter(Boolean).join(' · ');
+    return `<li${note ? ` title="${esc(note)}"` : ''}><span class="mp-lv-n" style="color:${r.col}">${i + 1}</span><b class="mp-lv-name">${esc(name)}</b>${tail ? `<span class="mp-lv-lim f-muted">${esc(tail)}</span>` : ''}</li>`;
   }).join('');
   return `<div class="mp-lv-body"><svg class="mp-lv" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(tt(TX.levelsAxis))}">${svg}</svg><ol class="mp-lv-list">${items}</ol></div>`;
 }
@@ -2787,6 +2828,39 @@ function onSheetSettled() {
 let viewKeep = 'profile';
 /** La coupe météo se montre pour un vol à deux points au moins (pas pour une carte de mission). */
 const canWeather = () => !S.mission && S.route.points.length >= 2;
+/** Légende du dessin montré : la liste de ce qui est RÉELLEMENT dessiné (jamais un texte fixe), avec son symbole. Profil : ce que la coupe
+ *  a dessiné (`geo.drawn`, rendu par le code du dessin) et les repères que la feuille ajoute (marques NM, points des voies). Coupe météo :
+ *  la légende que la coupe expose (`legend` de ce que charge loadWeather, absente aujourd'hui : la puce « i » n'y est alors pas). */
+function legendRows(view) {
+  const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`;
+  if (view === 'weather') return (S.wx?.legend?.(S.wx.o) || []).map(r => Array.isArray(r) ? r : [sw('band', r.swatch?.css), esc(r.label)]);
+  const d = S.geo?.drawn;
+  if (!d) return [];
+  const rows = [];
+  if (d.plan) rows.push([sw('line', '#6a1b9a'), esc(tt(TX.lgPlan))]);
+  if (d.tocTod) rows.push([sw('diamond', '#6a1b9a'), esc(tt(TX.lgToc))]);
+  if (d.terrain) rows.push([sw('relief', '#b08a5a'), esc(tt(TX.lgTerrain))]);
+  if (d.mora) rows.push([sw('dash', '#8b2d18'), esc(tt(TX.lgMora))]);
+  for (const [type, col] of d.zones) rows.push([sw('band', col), `<b>${esc(type)}</b> ${esc(tt(TX.lgZone))}`]);
+  if (d.marks) rows.push([sw('vdash', '#17202a'), esc(tt(TX.lgPoints))]);
+  if ((S.marks || []).length) rows.push([sw('tick', '#8e24aa'), esc(tt(TX.lgNm))]);
+  if (S.lgFixes) rows.push([sw('tri', S.theme?.fg || '#17202a'), esc(tt(TX.lgFixes))]);
+  return rows;
+}
+/** Puce « i » et panneau de légende : la puce n'est là que si le dessin montré a une légende ; le panneau recouvre le dessin, se ferme par la
+ *  puce, un toucher sur lui ou Échap ; écrit seulement s'il change. */
+function legendSync() {
+  if (!S?.legendBtn) return;
+  const view = S.dpanel === 'weather' ? 'weather' : !S.dpanel && S.prof ? 'profile' : null,
+    rows = view ? legendRows(view) : [],
+    can = rows.length > 0,
+    on = !!S.legend && can,
+    html = on ? `<ul>${rows.map(([k, t]) => `<li>${k}<span>${t}</span></li>`).join('')}</ul>` : '';
+  if (S.legendBtn.hidden === can) S.legendBtn.hidden = !can;
+  if (S.legendBtn.getAttribute('aria-pressed') !== String(on)) S.legendBtn.setAttribute('aria-pressed', String(on));
+  if (S.legendEl.hidden === on) S.legendEl.hidden = !on;
+  if (S.legendEl.innerHTML !== html) S.legendEl.innerHTML = html;
+}
 /** Libellé de la poignée (infobulle et lecteur d'écran) : la hauteur de la feuille et sa position ; sur une poignée nue
  *  (§ 7.1.13 : le titre n'est pas écrit au-dessus d'un dessin) elle dit d'abord quel dessin c'est, puis le résumé du vol
  *  (niveau, distance, état), qui n'est plus affiché mais reste dit à qui n'a pas le dessin sous les yeux. */
@@ -2831,6 +2905,7 @@ function dataHead() {
     const on = String((b.dataset.view === 'weather') === wx);
     if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on);
   }
+  legendSync();
 }
 /** Ouvre ou remplace le contenu du bloc. key : l'identité du contenu (autre clé : le contenu est neuf et défile en haut ;
  *  même clé : il est seulement redessiné, défilement gardé) ; build(w, h) rend le HTML pour la taille de la zone de
@@ -2863,6 +2938,7 @@ function openData(kind, key, title, build, label = title) {
     S.dbodyEl.innerHTML = html;
   }
   if (fresh) S.dbodyEl.scrollTop = 0;
+  legendSync(); // la coupe vient d'être dessinée : sa légende
 }
 /** Contenu du bloc fermé (kind : seulement s'il est de ce genre) ; le profil vertical revient, redessiné à sa taille — ou la
  *  coupe météo, si c'est elle que l'utilisateur avait choisie avant d'ouvrir ce contenu. */
@@ -2881,7 +2957,11 @@ function endData(kind = null) {
 }
 /** Échap : ferme ce qui est ouvert, du plus proche au plus lointain ; vrai si quelque chose l'a été. */
 function escapeKey() {
-  if (!S.modeOpts.hidden) {
+  if (!S.legendEl.hidden) {
+    S.legend = false; // la légende, posée sur le dessin, est ce qu'il y a de plus proche
+    legendSync();
+    S.legendBtn.focus();
+  } else if (!S.modeOpts.hidden) {
     toggleModes(false);
     S.modeBtn.focus();
   } else if (S.dpanel || S.vfrPin) {
@@ -2991,6 +3071,7 @@ async function loadWeather(key) {
       key,
       state: 'ok',
       draw: Sx.drawSection,
+      legend: Sx.sectionLegend, // la légende de la coupe, quand Atmosphère l'expose (sinon pas de puce « i » sur la coupe)
       o
     };
   } catch {
@@ -4482,16 +4563,32 @@ const STYLE = `
 [data-module="maps"] .mp-notes{flex:none;max-height:5.5em;overflow:auto;padding:0 8px 6px;font-size:var(--sog-size-xs);font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-notes p{margin:0 0 2px}
 [data-module="maps"] .mp-notes:empty{display:none}
-/* Les puces Profil · Météo ne sont plus dans la ligne de poignée (§ 7.1.13, 2e affinement) : en portrait une COLONNE de 44 px à droite
-   du dessin, posée sur le corps sous la poignée (colonne absolue : le dessin reçoit la marge droite quand elle est là, mp-chipcol),
-   en paysage (colonne de la feuille, html.f-land) une LIGNE sous la poignée titrée, au-dessus du dessin. Puces de 40 px, pas de 44 px. */
-[data-module="maps"] .mp-chips{position:absolute;z-index:2;right:0;top:calc(var(--f-sheet-head) - 1px);width:44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
-[data-module="maps"] .mp-chips[hidden]{display:none}
-[data-module="maps"] .mp-dhead.f-sheet-head-bare+.mp-chips{top:var(--f-sheet-head-bare)}
+/* Les puces Profil · Météo (§ 7.1.13, 2e et 3e affinements) : avec la poignée NUE (position par défaut, portrait) une COLONNE de 44 px à
+   droite du dessin, sous la poignée (le dessin reçoit la marge droite, mp-chipcol) ; dès que la LIGNE DE TITRE est là (agrandie, réduite,
+   colonne paysage) elles reviennent dans cette ligne, à droite, en rangée, et le dessin prend toute la largeur. Les puces sont posées sur
+   le panneau (hors de la zone de glisser) ; la poignée leur laisse la place (marge droite du titre). Puces de 40 px, pas de 44 px. */
+[data-module="maps"] .mp-chips{position:absolute;z-index:2;right:0;top:0;height:calc(var(--f-sheet-head) - 1px);box-sizing:border-box;display:flex;flex-direction:row;align-items:center;gap:4px;padding-right:2px}
+[data-module="maps"] .mp-chips[hidden],[data-module="maps"] .mp-chips .mp-chip[hidden]{display:none}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare+.mp-chips{top:var(--f-sheet-head-bare);height:auto;width:44px;flex-direction:column;justify-content:flex-start;padding:2px 0 0}
+[data-module="maps"] .mp-chipcol .mp-dhead:not(.f-sheet-head-bare) .f-sheet-grip{padding-right:136px}
 [data-module="maps"] .mp-chips .mp-chip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
-html:not(.f-land) [data-module="maps"] .mp-chipcol :is(.mp-dprof,.mp-dbody[data-kind=weather]){margin-right:44px}
-html.f-land [data-module="maps"] .mp-chips{position:static;flex:none;width:auto;flex-direction:row;justify-content:flex-end;padding:0 8px;height:44px;align-items:center}
+[data-module="maps"] .mp-chipcol .mp-dhead.f-sheet-head-bare~:is(.mp-dprof,.mp-dbody[data-kind=weather]){margin-right:44px}
 [data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
+/* légende : un panneau translucide sur le dessin (sous la puce « i » et ses voisines), fermé par la puce, un toucher ou Échap */
+[data-module="maps"] .mp-legend{position:absolute;z-index:1;left:4px;right:4px;bottom:0;top:calc(var(--f-sheet-head) - 1px);box-sizing:border-box;overflow:auto;padding:8px 10px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:color-mix(in srgb,var(--sog-surface) 86%,transparent);font-size:var(--sog-size-xs);line-height:1.3;touch-action:pan-y}
+[data-module="maps"] .mp-legend[hidden]{display:none}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare~.mp-legend{top:var(--f-sheet-head-bare);right:48px}
+[data-module="maps"] .mp-legend ul{margin:0;padding:0;list-style:none}
+[data-module="maps"] .mp-legend li{display:flex;align-items:center;gap:8px;min-height:20px}
+[data-module="maps"] .mp-lg-sw{flex:none;position:relative;display:block;width:26px;height:12px;--c:#888}
+[data-module="maps"] .mp-lg-line::after{content:'';position:absolute;left:0;right:0;top:4px;height:3px;border-radius:2px;background:var(--c)}
+[data-module="maps"] .mp-lg-dash::after{content:'';position:absolute;left:0;right:0;top:5px;border-top:2px dashed var(--c)}
+[data-module="maps"] .mp-lg-vdash::after{content:'';position:absolute;left:12px;top:-2px;height:16px;border-left:1.5px dashed var(--c)}
+[data-module="maps"] .mp-lg-diamond::after{content:'';position:absolute;left:8px;top:1px;width:9px;height:9px;transform:rotate(45deg);background:var(--c)}
+[data-module="maps"] .mp-lg-relief{background:linear-gradient(var(--c),color-mix(in srgb,var(--c) 45%,#fff));border-top:1.5px solid #7a5a32}
+[data-module="maps"] .mp-lg-band{background:color-mix(in srgb,var(--c) 16%,transparent);border:1.2px solid var(--c);box-sizing:border-box}
+[data-module="maps"] .mp-lg-tick::after{content:'';position:absolute;left:12px;top:2px;height:8px;border-left:2px solid var(--c)}
+[data-module="maps"] .mp-lg-tri::after{content:'';position:absolute;left:8px;top:1px;border:5px solid transparent;border-bottom:9px solid var(--c);border-top:0}
 [data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
 /* la coupe est dessinée à la hauteur exacte du corps, sans bord ni remplissage (§ 7.1.13) : l'axe des distances est toujours visible ;
@@ -4503,6 +4600,7 @@ html.f-land [data-module="maps"] .mp-chips{position:static;flex:none;width:auto;
 [data-module="maps"].f-sheet:not([data-sheet="expanded"],.mp-tuning) :is(.mp-strip,.mp-notes){display:none}
 [data-module="maps"] .mp-dprof{overflow:hidden}
 [data-module="maps"] .mp-dbody[data-kind=weather] svg{display:block;cursor:crosshair}
+[data-module="maps"] .mp-dbody[data-kind=weather]{touch-action:none}
 [data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
 [data-module="maps"] .mp-wxlink{display:flex;align-items:center;min-height:var(--sog-touch);color:var(--sog-fg);text-decoration:none}
 [data-module="maps"] .mp-wxlink span{color:var(--sog-accent);text-decoration:underline}
@@ -4510,8 +4608,12 @@ html.f-land [data-module="maps"] .mp-chips{position:static;flex:none;width:auto;
 [data-module="maps"] .mp-dbody p{margin:2px 0}
 [data-module="maps"] .mp-lv-body{display:flex;align-items:flex-start;gap:12px}
 [data-module="maps"] .mp-lv{flex:none;position:sticky;top:0;font:600 9.5px Arial,sans-serif;fill:currentColor;color:var(--sog-fg)}
-[data-module="maps"] .mp-lv-list{flex:1 1 auto;min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px}
-[data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:3px}
+[data-module="maps"] .mp-lv-list{flex:1 1 auto;min-width:0;margin:0;padding:0;list-style:none;column-width:19em;column-gap:16px;font-size:.95em;line-height:1.25}
+[data-module="maps"] .mp-lv-list li{display:flex;gap:6px;align-items:baseline;break-inside:avoid;margin-bottom:2px;min-width:0;white-space:nowrap}
+[data-module="maps"] .mp-lv-name{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+[data-module="maps"] .mp-lv-lim{flex:none;font-size:.92em}
+[data-module="maps"] .mp-lv-n::after{content:" ·";font-weight:400}
+[data-module="maps"] .mp-lv-lim::before{content:"· "}
 [data-module="maps"] .mp-lv-n{font-weight:700;min-width:1.4em;text-align:right}
 [data-module="maps"] .mp-lvl{display:flex;align-items:center;gap:8px}
 [data-module="maps"] .mp-lvl .f-btn{margin:0;min-width:var(--sog-touch);font-weight:700}
@@ -4657,7 +4759,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 </div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button><button type="button" class="mp-chip" data-legend aria-pressed="false" hidden title="${esc(ctx.t(TX.legend))}" aria-label="${esc(ctx.t(TX.legend))}">${svg('info', { size: 20 })}</button></div><div class="mp-legend" role="region" hidden aria-label="${esc(ctx.t(TX.legend))}"></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
@@ -4692,7 +4794,9 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     dtitleEl: el.querySelector('.mp-dtitle'),
     dcloseEl: el.querySelector('.mp-dclose'),
     segEl: el.querySelector('.mp-chips'),
-    segBtns: [...el.querySelectorAll('.mp-chip')],
+    segBtns: [...el.querySelectorAll('.mp-chip[data-view]')],
+    legendBtn: el.querySelector('.mp-chip[data-legend]'),
+    legendEl: el.querySelector('.mp-legend'),
     dprofEl: el.querySelector('.mp-dprof'),
     dbodyEl: el.querySelector('.mp-dbody'),
     tipEl: el.querySelector('.mp-box .mp-tip:not(.mp-pcard)'),
@@ -4816,6 +4920,10 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   // bascule Profil · Météo : la feuille réduite s'ouvre à la position normale (on vient de choisir ce qu'on veut y lire)
   S.segEl.addEventListener('click', e => {
+    if (e.target.closest('[data-legend]')) {
+      S.legend = !S.legend;
+      return legendSync();
+    }
     const v = e.target.closest('[data-view]')?.dataset.view;
     if (!v || (v === 'weather') === (S.dpanel === 'weather')) return;
     if (S.sh.pos === 'collapsed') S.sh.set('default', true);
@@ -4823,6 +4931,38 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     if (v === 'weather') showWeather(true);
     else endData('weather');
   });
+  S.legendEl.addEventListener('click', () => {
+    S.legend = false; // un toucher sur la légende la ferme
+    legendSync();
+  });
+  // glisser sur la coupe météo : les mêmes gestes que sur le profil (le doigt, ou la souris au survol, déplace le curseur commun : la carte,
+  // les espaces au point et la bande de texte le suivent) ; un tour d'animation au plus (la coupe est redessinée à chaque cran) ;
+  // la conversion abscisse → NM est celle que la coupe rend (geo.nmOf), jamais recalculée ici
+  let wxRaf = 0,
+    wxX = 0;
+  const wxMove = e => {
+    if (S.dpanel !== 'weather' || !S.wxGeo || !e.target.closest('svg') && !S.dbodyEl.hasPointerCapture?.(e.pointerId)) return;
+    if (e.type === 'pointermove' && !e.buttons && e.pointerType !== 'mouse') return;
+    wxX = e.clientX;
+    if (wxRaf) return;
+    wxRaf = requestAnimationFrame(() => {
+      wxRaf = 0;
+      const svg = S?.dpanel === 'weather' && S.wxGeo && S.dbodyEl.querySelector('svg');
+      if (!svg) return;
+      const g = S.wxGeo,
+        x = Math.min(Math.max(wxX - svg.getBoundingClientRect().left, g.x0), g.x0 + g.pw);
+      setCursor(Math.round(g.nmOf(x) * FT_NM));
+    });
+  };
+  S.dbodyEl.addEventListener('pointerdown', e => {
+    if (S.dpanel === 'weather' && e.target.closest('svg')) try {
+      S.dbodyEl.setPointerCapture(e.pointerId); // le dessin est remplacé à chaque cran : le glisser reste à la zone
+    } catch {
+      /* pas de capture : le glisser suit quand même tant qu'il est sur la coupe */
+    }
+    wxMove(e);
+  });
+  S.dbodyEl.addEventListener('pointermove', wxMove);
   // un toucher sur la coupe météo place le curseur commun (la carte et le profil le suivent), comme sur le profil
   S.dbodyEl.addEventListener('click', e => {
     const svg = S.dpanel === 'weather' && S.wxGeo && e.target.closest('svg');

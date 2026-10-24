@@ -1069,6 +1069,24 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     atmosphere's file, not touched. The profile's gutter (`padL`) goes from 58 to 50 × scale (the labels "FL 250" still fit). The
     frame's bare-handle primitive (`57f1e77c6`) replaces the module's TEMP rule; the cut's chips are not in it any more, so none of
     the primitive's button rules apply to them.
+  - **Third refinement (user, 21:40: "Les icônes passent en horizontal quand la ligne du haut apparaît (objectif : maximiser la largeur
+    dispo)")** — lot `v3-maps-puces`: the column of chips exists only with the bare handle; with the title line (expanded, collapsed,
+    `html.f-land`) the same element (absolutely placed at the top right of the panel, `.mp-chips`) is a row inside the head band, the
+    grip keeps 92 px free at its right (`.mp-chipcol .mp-dhead:not(.f-sheet-head-bare) .f-sheet-grip`), and the drawing's right margin
+    is added only after a bare head. The landscape row above the drawing is gone. CSS only: the classes already switch at each position
+    change and at `onSettle`.
+  - **Legend, cut drag, airspaces list (relay, same lot `v3-maps-puces`)**: (1) *Legend* (spec § 7.1.14): third chip `data-legend`
+    (icon `info`, "Légende" ×4), overlay `.mp-legend` over the drawing (closed by chip, tap, Escape — `escapeKey` first), rows from
+    `legendRows`: the profile's `geo.drawn` (new, returned by `vertical_profile.draw`, completed by `profile.js` with relief / MORA) and the
+    sheet's own marks; the cut: `Sx.sectionLegend` if atmosphere exposes it — **it does not**, so no "i" over the cut (to ask the
+    atmosphere session: `sectionLegend(o)` → rows with their four-language labels). (2) *Drag on the cut* ("on peut glisser sur le profil
+    vertical… pas sur le même en météo"): the cut only had a tap handler; added pointer capture + rAF-throttled `setCursor` through the
+    geometry `drawSection` already returns (`nmOf`, `x0`, `pw`), body `touch-action: none`; the cursor line was already drawn by
+    `sectionSvg` from `cursorM`. (3) *Airspaces list* ("Texte trop gros : pas uniforme, perd de l'espace"): the measured font was the
+    body's 13.8 px (no inherited `.f-card` size): the list looked big next to the Layers rows (12.7 px) and, above all, each entry was
+    one string `TYPE NAME LOW|UP CLASS` that wrapped by word into 3–4 lines in a 141 px column (the 44 % wide level graph left the list
+    141 of 303 px in the landscape column). Now one nowrap line per entry (name ellipsed, levels and class kept), 0.95 em, graph at most 30 %
+    wide with 20 px columns when narrow. The VFR points, levels and aerodrome lists keep the body size (the same `.mp-dbody` rule).
   - **Added the same evening (relay, user)**: (1) *Layers, Complexity block*: "Réduire l'espace jaune (slider de couches des cartes)":
     the block was 73 px (label line 17 + 8 gap + 4 margin + 44 slider, wrapped) plus the help sentence under it (51 px at 390 px,
     `.mp-l-help`), about 120 px for one slider in the five designs (the designs do not style the label: the gap was the module's own
