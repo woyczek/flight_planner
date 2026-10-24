@@ -126,9 +126,12 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     axis SFC to the highest finite ceiling with a nice step, "UNL" above, 66,000 ft and more counted as UNL; one
     numbered column per airspace from floor to ceiling, coloured by type as in the profile; ASFC limits counted from
     the ground), then the numbered list in SIA notation with activity and service, lowest floor first; the card stays
-    inside the frame (scrolls if taller) and stays open: its ✕ (44 px) or Escape closes it, another tap on airspaces
-    replaces it, a move of the map leaves it; the light tooltip stays for the mouse hover and for the targets that come
-    first (barb, airway box, label);
+    inside the frame on its own layer above the buttons and panels (`z-index` 7): on a narrow frame (under 600 px, a
+    phone) it takes the lower part of the frame over its full width (45 % of the height at most, the level block at the
+    left of the list, the list scrolling, ✕ fixed); otherwise at the tap point, 320 px and 60 % of the height at most;
+    its ✕ (44 px), Escape or **a tap on an empty spot of the map** close it, another tap on airspaces replaces it, a
+    drag or the wheel leave it (the aerodrome's card, pinned, keeps staying); the light tooltip stays for the mouse
+    hover and for the targets that come first (barb, airway box, label);
   - a tap or click on one of the first three takes priority over placing the cursor on the route; on nothing, it
     closes the tooltip;
   - it follows the pointer 12 px away (never under it, kept in the box) while the pointer is on the label, stays 5 s at

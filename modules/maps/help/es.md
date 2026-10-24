@@ -52,8 +52,8 @@ espacio o una barba de viento: una pequeña burbuja da lo esencial en dos línea
 punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en notación
 AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, una tarjeta muestra los espacios
 bajo el dedo, uno o varios: un bloque de niveles, como el perfil vertical (una columna
-numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda abierta: la ✕ o Escape la cierran, otro toque la
-reemplaza. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
+numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. La ✕, Escape o un toque en otro lugar del mapa la cierran, otro toque sobre espacios la
+reemplaza; mover el mapa la deja abierta. En el teléfono ocupa la parte baja del mapa, por encima de los botones. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
 un movimiento del mapa. Sobre una radioayuda, la burbuja da su tipo, su indicativo y su frecuencia;
 cuando varias están en el mismo lugar, el mapa guarda la más útil (VOR, TACAN o DME, luego NDB, luego ILS) y la burbuja
 nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
