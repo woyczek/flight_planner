@@ -136,8 +136,6 @@ const TILE_WAIT = 8000;
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const R = Math.PI / 180;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-const ICON_LAYERS =
-  '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="m2 13 10 5 10-5"/><path d="m2 17.5 10 5 10-5" opacity=".55"/></svg>';
 
 /** Barbule de vent (hémisphère nord) sur un canvas : hampe vers le lit du vent, plumes à droite ; fanion 50 kt, plume 10,
  *  demi 5. */
@@ -224,25 +222,25 @@ function fieldCanvas(nx, ny, rgbaOf) {
 const STYLE = `
 [data-module="atmosphere"]{--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);--at-inv:var(--sog-chart-2);--at-ice:var(--sog-chart-5);--at-terrain:color-mix(in srgb,var(--sog-chart-6) 55%,var(--sog-chart-bg))}
 [data-module="atmosphere"] .at-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-[data-module="atmosphere"] .at-tools{display:flex;align-items:center;gap:6px;padding:2px 8px;flex:none}
-[data-module="atmosphere"] .at-tools .at-alt{flex:1 1 auto;min-width:0;max-width:380px}
-[data-module="atmosphere"] .at-ib{flex:none;width:var(--sog-touch,44px);height:var(--sog-touch,44px);min-height:0;padding:0;display:grid;place-items:center}
-[data-module="atmosphere"] .at-tools [aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="atmosphere"] .at-info{display:flex;align-items:center;gap:6px;padding:0 8px 2px;flex:none;min-width:0}
-[data-module="atmosphere"] .at-sum{flex:1 1 auto;min-width:0;font-size:var(--sog-size-xs,12px);color:var(--sog-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-[data-module="atmosphere"] .at-box{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:var(--sog-chart-grid);isolation:isolate;border-top:1px solid var(--sog-border);border-bottom:1px solid var(--sog-border)}
+[data-module="atmosphere"] .at-box{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:var(--sog-chart-grid);isolation:isolate}
+[data-module="atmosphere"]~.f-overlay .at-lvl{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;box-sizing:border-box;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:color-mix(in srgb,var(--sog-surface) 92%,transparent);color:var(--sog-fg);box-shadow:0 2px 8px #0000002e;font-weight:700;font-size:11px;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:auto;touch-action:manipulation;cursor:pointer}
+[data-module="atmosphere"]~.f-overlay .at-lvl>span[aria-hidden]{font-size:8px;line-height:1;color:var(--sog-muted)}
+[data-module="atmosphere"]~.f-overlay .at-lvl select{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;cursor:pointer;margin:0}
+[data-module="atmosphere"]~.f-overlay .at-lvl:focus-within{outline:2px solid var(--sog-accent);outline-offset:2px}
+[data-module="atmosphere"]~.f-overlay button.f-ov-btn.at-load{color:var(--sog-accent)}
+[data-module="atmosphere"] .f-sheet-grip .f-badge{flex:none;margin-right:6px}
 [data-module="atmosphere"] .at-map{position:absolute;inset:0;touch-action:none}
 [data-module="atmosphere"] :is(button,select,input,label){touch-action:manipulation}
 [data-module="atmosphere"] canvas.at-over{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 [data-module="atmosphere"] .at-box.at-flat canvas.at-over{pointer-events:auto}
-[data-module="atmosphere"] .at-layers-btn{position:absolute;left:8px;top:8px;z-index:4;width:var(--sog-touch,44px);height:var(--sog-touch,44px);min-height:0;display:grid;place-items:center;padding:0;background:var(--sog-surface);box-shadow:var(--sog-shadow)}
-[data-module="atmosphere"] .at-layers{position:absolute;left:8px;top:calc(16px + var(--sog-touch,44px));z-index:5;margin:0;padding:8px 10px;max-height:calc(100% - 28px - var(--sog-touch,44px));overflow:auto;display:flex;flex-direction:column;font-size:.9em;min-width:min(230px,80%)}
-[data-module="atmosphere"] .at-layers b{margin-top:6px}
-[data-module="atmosphere"] .at-layers label{display:flex;gap:8px;align-items:center;min-height:32px}
+[data-module="atmosphere"] .at-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
+[data-module="atmosphere"] .at-layers>div{display:flex;flex-direction:column;min-width:0}
+[data-module="atmosphere"] .at-layers b{margin:2px 0}
+[data-module="atmosphere"] .at-layers label{display:flex;gap:8px;align-items:center;min-height:36px}
 [data-module="atmosphere"] .at-layers .at-key{width:22px;flex:none;display:inline-block;height:0;border-top:2px solid currentColor}
 [data-module="atmosphere"] .at-layers .at-ramp{width:22px;height:9px;border-radius:2px;flex:none;display:inline-block}
-[data-module="atmosphere"] .at-layers[hidden]{display:none}
-[data-module="atmosphere"] .at-hint{position:absolute;left:calc(16px + var(--sog-touch,44px));right:8px;top:8px;width:fit-content;margin:0 auto;z-index:3;font-size:12px;background:color-mix(in srgb,var(--sog-surface) 85%,transparent);color:var(--sog-muted);padding:2px 8px;border-radius:99px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-module="atmosphere"] .at-layers>p{grid-column:1/-1;margin:6px 0 0;font-size:.9em;color:var(--sog-muted)}
+[data-module="atmosphere"] .at-hint{position:absolute;left:calc(16px + var(--sog-touch,44px));right:calc(16px + var(--sog-touch,44px));top:8px;width:max-content;max-width:calc(100% - 32px - 2 * var(--sog-touch,44px));box-sizing:border-box;margin:0 auto;z-index:3;font-size:12px;background:color-mix(in srgb,var(--sog-surface) 85%,transparent);color:var(--sog-muted);padding:2px 8px;border-radius:99px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-module="atmosphere"] .at-maptip{position:absolute;z-index:6;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:5px 7px;font-size:12px;line-height:1.35;box-shadow:var(--sog-shadow);white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
@@ -256,11 +254,11 @@ const STYLE = `
 [data-module="atmosphere"] .at-slice-info .m{color:var(--sog-muted)}
 @container (max-width:560px){[data-module="atmosphere"] .at-sd{grid-template-columns:1fr}[data-module="atmosphere"] .at-slice-info{display:none}}
 [data-module="atmosphere"] .at-pad{padding:8px}
-[data-module="atmosphere"] .at-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-[data-module="atmosphere"] .at-kpi{background:var(--sog-surface-2,var(--sog-surface));border:1px solid var(--sog-border);border-radius:var(--sog-radius);padding:7px 10px}
-[data-module="atmosphere"] .at-kpi .k{font-size:12px;color:var(--sog-muted)}
-[data-module="atmosphere"] .at-kpi .v{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
-[data-module="atmosphere"] .at-kpi .n{font-size:12px;color:var(--sog-muted)}
+[data-module="atmosphere"] .at-kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 20px;margin:0}
+[data-module="atmosphere"] .at-kv>div{display:grid;grid-template-columns:8.5em auto minmax(0,1fr);align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--sog-border);font-size:13px}
+[data-module="atmosphere"] .at-kv dt{color:var(--sog-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="atmosphere"] .at-kv dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+[data-module="atmosphere"] .at-kv dd+dd{font-weight:400;color:var(--sog-muted);font-size:12px;overflow:hidden;text-overflow:ellipsis}
 [data-module="atmosphere"] .at-pad h3{margin:14px 0 6px}
 [data-module="atmosphere"] .f-table tr.wp td{font-weight:600}
 [data-module="atmosphere"] .f-table tr.sel td{background:color-mix(in srgb,var(--sog-accent) 14%,transparent)}
@@ -392,34 +390,71 @@ export async function mount(el, ctx) {
   const setText = (node, s) => {
     if (node && node.textContent !== s) node.textContent = s;
   };
+  /** Écrit un attribut seulement s'il change. */
+  const setAttr = (node, k, v) => {
+    if (node.getAttribute(k) !== v) node.setAttribute(k, v);
+  };
 
   // ---------------------------------------------------------------- écran
   el.innerHTML = `<style>${STYLE}</style>
 <h1 class="at-sr">${esc(T('srTitle'))}</h1>
-<div class="at-tools">
-  <select class="at-alt" data-at="mapLevel" aria-label="${esc(T('mapLevelAria'))}" title="${esc(T('mapLevelAria'))}"></select>
-  <button type="button" class="at-ib" data-at="btnFlight" aria-pressed="false" aria-label="${esc(T('flightTitle'))}" title="${esc(T('flightTitle'))}">${svg('plane')}</button>
-  <button type="button" class="at-ib" data-at="btnInfo" aria-pressed="false" aria-label="${esc(T('infoTitle'))}" title="${esc(T('infoTitle'))}">${svg('info')}</button>
-  <button type="button" class="primary at-ib" data-at="btnLoad" aria-label="${esc(T('load'))}" title="${esc(T('load'))}">${svg('download')}</button>
-</div>
-<div class="at-info"><span class="f-badge at-hidden" data-kind="warn" data-at="demoTag">${esc(T('demoShort'))}</span><span class="at-sum" data-at="sum" aria-live="polite"></span></div>
 <div class="at-box" data-at="box">
   <div class="at-map" data-at="map"></div><canvas class="at-over" data-at="over" aria-hidden="true"></canvas>
-  <button type="button" class="at-layers-btn" data-at="layersBtn" aria-expanded="false" aria-label="${esc(T('layers'))}" title="${esc(T('layers'))}">${ICON_LAYERS}</button>
-  <div class="at-layers f-card" data-at="layers" hidden role="group" aria-label="${esc(T('layers'))}"></div>
   <div class="at-hint" data-at="hint">${esc(T('tapHint'))}</div>
   <div class="at-maptip" data-at="mapTip"></div>
 </div>
 <section class="f-sheet-panel" data-at="data">
-  <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><b class="f-sheet-title" data-at="dtitle"></b></button>
+  <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="demoTag">${esc(T('demoShort'))}</span><b class="f-sheet-title" data-at="dtitle"></b></button>
     <button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" hidden>◀</button>
     <button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" hidden>▶</button>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
   el.classList.add('f-sheet');
+  // boutons sur la carte, dans la couche du cadre (frame/INTEGRATION.md § 9.3) : Couches à gauche ; Vol, i, Charger et la
+  // puce d'altitude à droite (le plein écran y est ajouté par le cadre, en dernier)
+  const ov = ctx.overlay;
+  ov.over($('box'));
+  const btnLayers = ov.button({
+      icon: 'layers',
+      label: T('layers'),
+      pressed: false,
+      side: 'left',
+      onClick: () => show(S.view === 'layers' ? 'profile' : 'layers')
+    }),
+    btnFlight = ov.button({
+      icon: 'plane',
+      label: T('flightTitle'),
+      pressed: false,
+      onClick: () => show(S.view === 'settings' ? 'profile' : 'settings')
+    }),
+    btnInfo = ov.button({
+      icon: 'list',
+      label: T('infoTitle'),
+      pressed: false,
+      onClick: () => show(S.view === 'info' ? 'profile' : 'info')
+    }),
+    btnLoad = ov.button({
+      icon: 'download',
+      label: T('load'),
+      onClick: () => load()
+    });
+  btnLoad.classList.add('at-load');
+  // la puce d'altitude : le niveau en bref, la liste native du système par-dessus (invisible) pour choisir
+  const lvlChip = document.createElement('label');
+  lvlChip.className = 'at-lvl';
+  lvlChip.title = T('mapLevelAria');
+  lvlChip.innerHTML = `<span></span><span aria-hidden="true">▾</span><select aria-label="${esc(T('mapLevelAria'))}"></select>`;
+  const lvlText = lvlChip.firstChild,
+    lvlSel = lvlChip.querySelector('select');
+  ov.right.insertBefore(lvlChip, btnLoad.nextSibling);
   probe.style.display = 'none';
   el.append(probe);
+  // les couches de la carte et du profil : un contenu du bloc du bas (la carte reste visible), construit à son ouverture
+  const layersBox = document.createElement('div');
+  layersBox.className = 'at-layers at-pad';
+  layersBox.setAttribute('role', 'group');
+  layersBox.setAttribute('aria-label', T('layers'));
   // le formulaire « Vol » est construit une fois et gardé (les champs gardent leur saisie d'un affichage à l'autre)
   const form = document.createElement('form');
   form.className = 'f-grid at-form at-pad';
@@ -657,12 +692,13 @@ export async function mount(el, ctx) {
 
   const dbody = $('dbody');
 
-  /** Affiche un contenu du bloc : profil (défaut), tranche locale, « i », réglages. */
+  /** Affiche un contenu du bloc : profil (défaut), tranche locale, détails, réglages, couches. */
   function show(view) {
     if (S.view !== view && sheet?.pos === 'collapsed') sheet.set('default', true);
     S.view = view;
-    $('btnFlight').setAttribute('aria-pressed', String(view === 'settings'));
-    $('btnInfo').setAttribute('aria-pressed', String(view === 'info'));
+    setAttr(btnFlight, 'aria-pressed', String(view === 'settings'));
+    setAttr(btnInfo, 'aria-pressed', String(view === 'info'));
+    setAttr(btnLayers, 'aria-pressed', String(view === 'layers'));
     $('dclose').hidden = view === 'profile';
     $('prev').hidden = $('next').hidden = !(view === 'slice' && S.local?.kind === 'route');
     dbody.classList.toggle('at-plot', view === 'profile' || view === 'slice');
@@ -674,12 +710,18 @@ export async function mount(el, ctx) {
     if (!alive) return;
     const v = S.view;
     if (v === 'settings') {
-      setText($('dtitle'), T('flightTitle'));
+      sheetTitle(T('flightTitle'));
       if (form.parentNode !== dbody) dbody.replaceChildren(form);
       return;
     }
+    if (v === 'layers') {
+      sheetTitle(T('layers'));
+      layersCard();
+      if (layersBox.parentNode !== dbody) dbody.replaceChildren(layersBox);
+      return;
+    }
     if (!S.traj) {
-      setText($('dtitle'), T(v === 'info' ? 'infoTitle' : 'profileTitle'));
+      baseTitle();
       const p = document.createElement('p');
       p.className = 'at-pad f-muted';
       p.textContent = $f('status').textContent || T('readingFlight');
@@ -695,7 +737,7 @@ export async function mount(el, ctx) {
 
   /** Coupe globale le long de la route, à la taille du bloc ; un toucher ouvre la tranche du lieu de lecture le plus proche. */
   function drawProfile() {
-    setText($('dtitle'), `${T('profileTitle')} · ${T('xsSub', { n: S.route.samples.length })}`);
+    baseTitle();
     const r = sectionSvg({
       field: S.field,
       traj: S.traj,
@@ -853,7 +895,7 @@ export async function mount(el, ctx) {
         at: fmtHM(t)
       });
     }
-    setText($('dtitle'), head);
+    sheetTitle(head);
     if (!col) {
       const p = document.createElement('p');
       p.className = 'at-pad f-muted';
@@ -949,10 +991,10 @@ export async function mount(el, ctx) {
 
   /** « i » : résumé, terrains, tableau le long de la trajectoire, sources ; défile dans le bloc. */
   function drawInfo() {
-    setText($('dtitle'), T('infoTitle'));
+    baseTitle();
     const box = document.createElement('div');
     box.className = 'at-pad';
-    box.innerHTML = `<div class="at-kpis">${kpis().map(([k, v, n]) => `<div class="at-kpi"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="n">${esc(n)}</div></div>`).join('')}</div>
+    box.innerHTML = `<dl class="at-kv">${kpis().map(([k, v, n]) => `<div><dt title="${esc(k)}">${esc(k)}</dt><dd>${esc(v)}</dd><dd title="${esc(n)}">${esc(n)}</dd></div>`).join('')}</dl>
       <h3>${esc(T('wxTitle'))} <span class="f-muted" style="font-weight:400;font-size:.85em">${esc(S.wx?.note || '')}</span></h3><div class="at-wx">${aerodromeCards()}</div>
       <h3>${esc(T('tblTitle'))}</h3><p class="f-muted" style="margin:0 0 4px">${esc(T('tblSub'))}</p>
       <div class="f-scroll"><table class="f-table">${table()}</table></div>
@@ -1175,9 +1217,8 @@ export async function mount(el, ctx) {
     schedule();
     return false;
   }
-  /** Toucher de la carte : ferme la carte des couches si elle est ouverte, sinon la tranche locale à ce point. */
+  /** Toucher de la carte : la tranche locale à ce point. */
   function mapTap(lat, lon) {
-    if (!$('layers').hidden) return toggleLayers(false);
     openPointSlice(lat, lon);
   }
   /** Vue courante : projection (MapLibre, sinon Mercator du fond uni sur l'emprise du vol) et ses dimensions. */
@@ -1539,7 +1580,7 @@ export async function mount(el, ctx) {
   }
 
   function mapLevelOptions() {
-    const sel = $('mapLevel'),
+    const sel = lvlSel,
       gridTop = S.grid ? A.paFt(S.grid.levels.at(-1)) : 0,
       known = new Set(S.grid?.levels || []),
       readable = ft => A.bracketLevels([ft]).every(l => known.has(l)),
@@ -1548,10 +1589,11 @@ export async function mount(el, ctx) {
         ['req', T('mlReq', {
           l: fmtLvl(S.levelFt)
         })],
-        ...S.traj.steps.slice(1).filter(st => st.ft !== S.levelFt).map((st, k) => [`step:${k + 1}`, T('mlStep', {
+        // l'indice du palier dans steps (filtré après : un palier au niveau demandé n'est pas proposé deux fois)
+        ...S.traj.steps.map((st, k) => [`step:${k}`, T('mlStep', {
           l: fmtLvl(st.ft),
           id: st.id
-        })]),
+        }), st.ft]).slice(1).filter(o => o[2] !== S.levelFt).map(o => o.slice(0, 2)),
         ['traj', T('mlTraj')],
         ...MAP_FIXED.filter(ft => ft <= gridTop && readable(ft)).map(ft => [`alt:${ft}`, fmtLvl(ft)])
       ];
@@ -1562,6 +1604,14 @@ export async function mount(el, ctx) {
     }
     if (!opts.some(([v]) => v === S.mapLevel)) S.mapLevel = 'sfc';
     if (sel.value !== S.mapLevel) sel.value = S.mapLevel;
+    lvlShort();
+  }
+  /** Texte de la puce d'altitude : le niveau seul (le nom entier est celui de la liste). */
+  function lvlShort() {
+    const v = S.mapLevel;
+    setText(lvlText, v === 'sfc' ? T('mlSfcShort') : v === 'traj' ? T('mlTrajShort') : fmtLvl(mapFt()));
+    const full = lvlSel.selectedOptions[0]?.text || T('mapLevelAria');
+    if (lvlChip.title !== full) lvlChip.title = full;
   }
 
   function fitMap() {
@@ -1590,13 +1640,13 @@ export async function mount(el, ctx) {
       row = (group, k, label, k2) => `<label><input type="checkbox" data-g="${group}" data-k="${k}"${S[group][k] ? ' checked' : ''}> ${k2 || ''} ${esc(T(label))}</label>`,
       cloud = `rgba(${cloudRgb()},.7)`,
       barbKey = '<span class="at-key" style="border:0;height:auto;text-align:center">⟋</span>';
-    $('layers').innerHTML = `<b>${esc(T('mapTitle'))}</b>` +
+    layersBox.innerHTML = `<div><b>${esc(T('mapTitle'))}</b>` +
       row('mapLayers', 'isobar', 'lyIsobar', key(`color:${dark() ? '#c3c2b7' : '#3d3c39'}`)) +
       row('mapLayers', 'isotherm', 'lyIso', key('color:#c23b3a;border-top-style:dashed')) +
       row('mapLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
       row('mapLayers', 'wind', 'lyWind', barbKey) +
       row('mapLayers', 'tfill', 'lyTemp', key(ramp, true)) +
-      `<b>${esc(T('profileTitle'))}</b>` +
+      `</div><div><b>${esc(T('profileTitle'))}</b>` +
       row('xsLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
       row('xsLayers', 'iso', 'lyIso', key('color:#1c5cab')) +
       row('xsLayers', 'inv', 'lyInv', key('repeating-linear-gradient(45deg,var(--at-inv) 0 1.5px,transparent 1.5px 5px)', true)) +
@@ -1606,21 +1656,30 @@ export async function mount(el, ctx) {
       row('xsLayers', 'temp', 'lyTemp', key(ramp, true)) +
       row('xsLayers', 'rh', 'lyRh', key('linear-gradient(90deg,transparent,rgba(42,120,214,.6))', true)) +
       row('xsLayers', 'da', 'lyDa', key(ramp, true)) +
-      `<span class="f-muted" style="font-size:.85em;margin-top:6px">${esc(T('lgPaths'))}</span>`;
-  }
-
-  function toggleLayers(open) {
-    if (open) layersCard();
-    $('layers').hidden = !open;
-    $('layersBtn').setAttribute('aria-expanded', String(open));
+      `</div><p>${esc(T('lgPaths'))}</p>`;
   }
 
   // ---------------------------------------------------------------- état, chargement
 
-  /** Ligne d'informations (une ligne coupée, le texte entier en infobulle). */
+  /** Titre de la poignée : le contenu, puis son contexte (une ligne coupée ; le texte entier et sa note en infobulle). */
+  function sheetTitle(s, note = '') {
+    const node = $('dtitle'),
+      full = note ? `${s}\n${note}` : s;
+    setText(node, s);
+    if (node.title !== full) node.title = full;
+  }
+  /** Titre du profil et des informations : le contenu, puis le vol en bref (ou l'état de la lecture). */
+  function baseTitle() {
+    const ctxt = s => S.sum ? `${s} · ${S.sum}` : s;
+    if (S.view === 'profile') sheetTitle(ctxt(T('profileTitle')), S.route ? T('xsSub', {
+      n: S.route.samples.length
+    }) : '');
+    else if (S.view === 'info') sheetTitle(ctxt(T('infoShort')), T('infoTitle'));
+  }
+  /** Le vol en bref (appareil, route, niveau, départ, modèle), ou l'état de la lecture : contexte du titre de la poignée. */
   const setSum = s => {
-    setText($('sum'), s);
-    if ($('sum').title !== s) $('sum').title = s;
+    S.sum = s;
+    baseTitle();
   };
 
   function setStatus(s) {
@@ -1636,7 +1695,7 @@ export async function mount(el, ctx) {
       spentNow = Math.round((r?.weight || 0) + (S.grid?.weight || 0)),
       ac = f.aircraft ? [f.aircraft.type, f.aircraft.registration].filter(Boolean).join(' ') : '';
     $('demoTag').classList.toggle('at-hidden', S.data !== 'demo');
-    // ligne d'outils : le vol en bref (appareil, route, niveau, départ, modèle) ; le détail des appels dans « Vol » et « i »
+    // titre de la poignée : le vol en bref (appareil, route, niveau, départ, modèle) ; le détail des appels dans « Vol » et « i »
     setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') : `${S.model?.name || ''}${run}`]
       .filter(Boolean).join(' · ') + (S.outOfRange ? ' ⚠' : ''));
     setText($f('status'), T('stFlight', {
@@ -1855,9 +1914,6 @@ export async function mount(el, ctx) {
     show('profile');
     load();
   };
-  $('btnLoad').onclick = () => load();
-  $('btnFlight').onclick = () => show(S.view === 'settings' ? 'profile' : 'settings');
-  $('btnInfo').onclick = () => show(S.view === 'info' ? 'profile' : 'info');
   $('dclose').onclick = () => {
     S.local = null;
     S.mapF = null;
@@ -1887,14 +1943,14 @@ export async function mount(el, ctx) {
     recompute();
   };
   $f('cruiseKt').onchange = recompute;
-  $('mapLevel').onchange = () => {
-    S.mapLevel = $('mapLevel').value;
+  lvlSel.onchange = () => {
+    S.mapLevel = lvlSel.value;
+    lvlShort();
     saveUi();
     render();
   };
-  // carte des couches : ouverte / fermée par son bouton ; une case cochée redessine la carte ou la coupe
-  $('layersBtn').onclick = () => toggleLayers($('layers').hidden);
-  $('layers').onchange = ev => {
+  // couches (un contenu du bloc, ouvert par son bouton) : une case cochée redessine la carte, ou la coupe à son retour
+  layersBox.onchange = ev => {
     const c = ev.target.closest('input[data-g]');
     if (!c) return;
     const g = S[c.dataset.g];
@@ -1926,7 +1982,7 @@ export async function mount(el, ctx) {
     }));
     drawData();
     schedule();
-    if (!$('layers').hidden) layersCard();
+    if (S.view === 'layers') layersCard();
   };
   const mo = new MutationObserver(repaint);
   mo.observe(document.documentElement, {

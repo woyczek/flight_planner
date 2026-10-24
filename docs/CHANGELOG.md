@@ -160,13 +160,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Atmosphere module** (`modules/atmosphere/`: SPEC, INTEGRATION, DECISIONS, ROADMAP; `frame/app.js`; bench
   `modules/atmosphere/test/weather_store.html`) — the atmosphere along the current flight, born as the `labs/atmosphere`
   page (which now forwards to `#atmosphere`), in the Préparer group (sub-tab on a phone, rail on a screen). A fixed,
-  full-height view on the maps module's template: a tools row (Flight, i, Load, the flight in brief), the map at a
+  full-height view on the maps module's template: nothing between the header and the map, round buttons over the map in
+  the frame's overlay layer (Layers; Flight, Details, Load, an altitude chip; the frame's full screen), the map at a
   chosen altitude (isobars, isotherms, cloud, wind; constant-altitude isobars aloft; the computed trajectory coloured by
   the temperature met) drawn with the maps module's technique — MapLibre and a vector overlay redrawn with every frame
   of the movement, its plain background without tiles (`MapsRender`, countries' outlines) — and a bottom block: the
   overall profile along the route (cloud by level, isotherms, inversions, indicative icing, density altitude, wind,
-  terrain; requested, planned and computed paths) in the frame's three-position sheet, the local slice of any point tapped on the map or the profile, the
-  summary, aerodromes (METAR / TAF) and table behind "i", the settings behind "Flight". Profile and slice in SVG
+  terrain; requested, planned and computed paths) in the frame's three-position sheet, its handle line titled with the content and the flight in brief, the local slice of any point tapped on the map or the profile, the
+  summary (a compact list), aerodromes (METAR / TAF) and table behind "Details", the settings behind "Flight", the layers
+  of the map and the profile in the same block. Profile and slice in SVG
   (vector lines, smooth fields); the profile is offered to the maps module's sheet as a pure `drawSection` (section.js). The map
   base is the maps module's (`modules/maps/lib/map_base.js`), the bottom sheet the frame's (`frame/lib/sheet.js`);
   touch gestures are kept on the map alone, the buttons answer a tap at once. Everything through the frame (`ctx.data` for the current flight, read only; `ctx.net`

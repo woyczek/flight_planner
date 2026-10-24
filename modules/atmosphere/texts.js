@@ -33,9 +33,10 @@ export const TX = {
   // vue fixe (gabarit de la Carte) : ligne d'outils, carte, bloc du bas
   srTitle: ['Atmosphère de la route', 'Route atmosphere', 'Atmosphäre entlang der Route', 'Atmósfera de la ruta'],
   demoShort: ['Démo', 'Demo', 'Demo', 'Demo'],
+  infoShort: ['Détails', 'Details', 'Details', 'Detalles'],
   flightTitle: ['Vol et réglages', 'Flight and settings', 'Flug und Einstellungen', 'Vuelo y ajustes'],
-  infoTitle: ['Informations : résumé, terrains, tableau', 'Information: summary, aerodromes, table',
-    'Informationen: Übersicht, Flugplätze, Tabelle', 'Información: resumen, aeródromos, tabla'
+  infoTitle: ['Détails : résumé, terrains, tableau', 'Details: summary, aerodromes, table',
+    'Details: Übersicht, Flugplätze, Tabelle', 'Detalles: resumen, aeródromos, tabla'
   ],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
   tapHint: ['toucher la carte : tranche locale', 'tap the map: local slice', 'Karte antippen: lokaler Schnitt',
@@ -272,6 +273,8 @@ export const TX = {
     'Isobaren in {z} ft wahrer Höhe, ≈ {l} ({s} hPa)', 'isobaras a {z} ft de altitud verdadera, ≈ {l} ({s} hPa)'
   ],
   mlSfc: ['Sol (niveau de la mer)', 'Ground (sea level)', 'Boden (Meereshöhe)', 'Suelo (nivel del mar)'],
+  mlSfcShort: ['Sol', 'SFC', 'Boden', 'Suelo'],
+  mlTrajShort: ['Traj.', 'Traj.', 'Bahn', 'Tray.'],
   mlReq: ['Niveau demandé {l}', 'Requested level {l}', 'Angeforderte Flughöhe {l}', 'Nivel solicitado {l}'],
   mlStep: ['Palier planifié {l} (dès {id})', 'Planned step {l} (from {id})', 'Geplante Stufe {l} (ab {id})',
     'Escalón previsto {l} (desde {id})'

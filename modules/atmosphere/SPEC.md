@@ -9,22 +9,28 @@ place in the application is to be decided (DECISIONS.md).
 A fixed, full-height view on the maps module's template (`meta.fixed`, `frame/INTEGRATION.md` § 9.2): no page scroll,
 the phone's whole frame; portrait only for now (the landscape layout is a later lot, `V3_SPECIFICATION.md` § 7.1).
 
-- **Tools row** (44 px targets): **Flight** (the settings in the bottom block: flight source, departure time, level,
-  cruise speed, data, map grid, Load), **i** (the information in the bottom block), **Load**, and the flight in brief
-  (aircraft, route, level, departure time, model and run).
-- **Map** (top, all the height the block leaves): at the altitude chosen in its selector — sea level (MSL isobars every
+- **Nothing between the header and the map** (`V3_SPECIFICATION.md` § 7.1): the controls are round 44 px buttons laid
+  over the map in the frame's overlay layer (`frame/INTEGRATION.md` § 9.3). Left: **Layers**. Right: **Flight** (the
+  settings in the bottom block: flight source, departure time, level, cruise speed, data, map grid, Load), **Details**
+  (list icon, not an "i": the frame's header has its own; the details in the bottom block), **Load**, the **altitude chip** (the map's level in brief — Sol / SFC, FL270, Traj.;
+  a tap opens the system's list with the full names), then the frame's **full screen** (header and bar hidden).
+- **Map** (top, all the height the block leaves): at the altitude chosen with its chip — sea level (MSL isobars every
   2 hPa, highs and lows, 2 m isotherms, cloud, 10 m wind), the requested level, each planned step, fixed levels
   (5,000 ft … FL300), or the computed trajectory (route coloured by the temperature met, thicker in cloud, ❄ where
-  icing is possible); aloft, isobars at constant true altitude. A layers button opens the layers of the map and of the
-  profile, each with its key. **A tap on the map opens the local slice at that point.**
-- **Bottom block**: the maps module's sheet — three heights (collapsed to its header, default, expanded) pulled by
-  its handle, its content scrolling inside. By default the **overall profile** (cross-section along the route: cloud by level, isotherms every
+  icing is possible); aloft, isobars at constant true altitude. The Layers button opens, in the bottom block (the map stays in
+  view), the layers of the map and of the profile side by side, each with its key. **A tap on the map opens the local slice at that point.**
+- **Bottom block**: the frame's sheet (`frame/lib/sheet.js`) — three heights (collapsed to its header, default, expanded) pulled by
+  its handle, its content scrolling inside. **Its handle line carries the title: the content, then its context** — the
+  profile and **i** with the flight in brief (aircraft, route, level, departure time, model and run; the demonstration
+  marked), a slice with its place, distance and time; ◀ ▶ when they mean something, ✕ at the right (the reference sheet
+  of the suite, `V3_SPECIFICATION.md` § 7.1.6). By default the **overall profile** (cross-section along the route: cloud by level, isotherms every
   5 °C with 0 °C emphasised, inversions, indicative icing, cumulus base, wind, terrain; optional backgrounds:
   temperature, humidity, density altitude; the requested, planned and computed paths with TOC and TOD; surface strips
   when the block is tall enough). A tap on the profile opens the slice of the nearest reading place (◀ ▶ walk along
   the route). The **local slice** is a sounding (temperature, dew point, standard atmosphere, inversions, cloud column,
   wind, the flight's levels there) with its reading (ground, cloud, inversions, 0 °C, cumulus base, conditions on the
-  trajectory) beside it on a wide block. ✕ goes back to the profile. **i**: summary tiles, aerodromes (METAR, TAF), the
+  trajectory) beside it on a wide block. ✕ goes back to the profile. **Details**: the summary as a compact list (one line per value: name, value,
+  note), aerodromes (METAR, TAF), the
   table along the computed trajectory (a row opens its slice), sources.
 - Every reading place at the time the flight passes it (departure + estimated time, no wind — stated on screen); the
   map at the time of the chosen slice.

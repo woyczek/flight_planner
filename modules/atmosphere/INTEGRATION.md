@@ -34,6 +34,12 @@
   `f-sheet-panel` / `f-sheet-head` / `f-sheet-grip` / `f-sheet-title` / `f-sheet-close` / `f-sheet-body` on its parts;
   `createSheet({ root, panel, head, grip, pos, ignore, labels, onChange, onSettle })`, the position kept between two
   mounts; `onSettle` resizes the map, reframes it unless the user moved it, and redraws the block when its size changed.
+- **Buttons over the map: the frame's overlay layer** (`ctx.overlay`, `frame/INTEGRATION.md` § 9.3), laid over `.at-box`
+  (`ov.over`): `ov.button()` for Layers (`side: 'left'`), Flight, Details and Load (`aria-pressed` kept up to date for the
+  three toggles); the altitude chip is the module's own element appended to `ov.right` (a 44 px round label holding the
+  level in brief and a transparent `<select>` over it, so a tap opens the system's list). The overlay is a sibling of the
+  module's root: its rules are written `[data-module="atmosphere"] ~ .f-overlay …`. Full screen (§ 9.4) needs nothing
+  here: the map box's `ResizeObserver` resizes the map.
 - **Touch**: `touch-action: none` on the map alone (MapLibre takes its gestures there), `manipulation` on the module's
   buttons, selects and fields (no double-tap zoom, no delay).
 - Everything goes through `ctx`: `data` (current flight read only, its own cache files), `net` (Open-Meteo, METAR,

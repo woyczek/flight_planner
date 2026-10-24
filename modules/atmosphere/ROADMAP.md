@@ -37,6 +37,9 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 5. Shared bases: the map's (`modules/maps/lib/map_base.js`) and the frame's sheet (`frame/lib/sheet.js`); the copies
    removed. Touch kept on the map alone. Checked with touch events (iPhone 13 emulated in Chromium): Layers, the map
    tap, ✕, the handle, a tap on the profile and ◀ ▶ all answer.
+6. Buttons on the map (frame overlay layer, § 9.3): no tools row nor information line any more, the flight in brief in
+   the sheet's title, full screen by the frame. On a 390 × 664 phone view the map went from 235 px to 380 px high
+   (465 px in full screen).
 
 ## Not checked yet
 
@@ -47,10 +50,8 @@ through the frame's interfaces, with a weather cache shared by every reader; tes
 ## Next
 
 1. **Review** by the user on Pages.
-2. **Buttons on the map** (relay, user: "header, carte, carte, footer. Les autres infos sont mises ailleurs"): once the
-   frame's overlay layer is given, the tools row goes onto the map (left: Layers; right: round 44 px buttons Flight,
-   i, Load, the altitude chip, the frame's full screen), the flight in brief becomes the sheet's title. **Landscape**
-   (later lot): map left, narrow block right, buttons as a rail on the right edge — for the ergonomics session.
+2. **Landscape** (later lot): map left, narrow block right, buttons as a rail on the right edge — for the ergonomics
+   session.
 3. **`frame/weather`** (frame lot, `V3_SPECIFICATION.md` § 8): move `weather_store.js` there unchanged, expose it as
    `ctx.weather`, show the tally in Settings › Diagnostics; then Fuel reads its winds aloft through it
    (`cache/fuel/aloft.json` retired), so the quota is paid once.

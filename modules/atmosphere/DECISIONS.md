@@ -2,6 +2,33 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (evening) — buttons on the map, the flight in the sheet's title
+
+- **The request** (user, relayed): "Visuellement, le volet fonctionne, mais pas les boutons. Maximiser l'espace alloué à
+  la carte", then "Techniquement, ça fonctionne. Mais ce n'est pas du tout ni ergonomique, ni utile pour un
+  utilisateur. C'est un souci d'interface, pas de code. -> design, donc session maître." Measured on a 390 × 664 phone
+  view: 184 px above the map (header 57, Préparer sub-tabs 44, margin 12, tools row 48, information line 23), a map of
+  235 px. **Decided by the relay** (`V3_SPECIFICATION.md` § 7.1, rules 1–5): nothing between the header and the map;
+  the buttons in the frame's overlay layer; the sub-tabs become a pop-over of the Préparer tab (frame); the default
+  sheet at 30 % on a phone (frame token, nothing here).
+- **Applied with the frame's contract** (`frame/INTEGRATION.md` § 9.3, § 9.4): Layers on the left, Flight, i, Load and
+  the altitude chip on the right, full screen added by the frame. The tools row and the information line are gone; the
+  flight in brief is the context of the sheet's title (profile, **i**), the demonstration badge in the handle line, the
+  profile's note (time of passage, places, pressure altitude) in the title's tooltip. The map: 380 px (465 px in full
+  screen).
+- **Altitude chip as a 44 px round button** (two lines at 11 px, "FL270" over "▾"): a wider pill was aligned against
+  the column's left side by the frame's right column (`flex-wrap: wrap-reverse` swaps `flex-end`), the other buttons then
+  stood off the edge. Reported to the relay; a round chip keeps the column even whatever the frame does.
+- **User's review of the same evening** (iPhone screenshots of the version before this lot): "Le sélecteur de couche
+  (commun au volet et à la carte) passe par-dessus. Les blocs résumé du vol, trop gros, pas assez synthétiques. Le
+  double bouton « i » sert à quoi ? Toi, l'ergonomie, tu vérifies, c'est assez fouillis." What was done here:
+  **Layers** is a content of the bottom block like Flight and Details (it served both the map and the profile but sat
+  over the map, cut by a low map); **the summary** is a compact list, one line per value (name, value, note) instead of
+  tiles (≈ 30 px a line instead of ≈ 75 px a tile); **the module's "i" becomes Details** with the list icon (the frame's
+  header keeps the only "i"). The overall review ("fouillis") is the ergonomics session's: asked to the relay.
+- **Map level of a planned step** read by its index in the trajectory's steps (the list was filtered before being
+  numbered: a step at the requested level shifted the others).
+
 ## 24 October 2026 (evening) — the frame's sheet, touch on the map alone
 
 - **`maps_copy_sheet.js` replaced by `frame/lib/sheet.js`** (relay: "tu peux faire cette migration dès maintenant",
