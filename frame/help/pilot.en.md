@@ -383,12 +383,12 @@ flight on the network: “Use” fills in the aircraft, the callsign, the route 
 flight prepared in Fuel or Map is offered the same way (“Current flight”); if it was started in Fuel (“Start the
 flight”), it comes first, “Flight started at hh:mm”. The card says in one line everything that will be taken, even what
 a mission type has no box to show (distance, level). “Use” also fills in the start-up time (the departure time in Fuel)
-and the fuel at departure (the block fuel of the quote), each marked with its source. Saving the report ends the started
+and the fuel at departure (the block fuel of the quote), the whole recalled in the “Prefilled from: …” line under the card’s title. Saving the report ends the started
 flight: Fuel goes back to preparation, My flights removes “In progress”, and the flight is no longer offered.
 
 **The other sources.** Unfold “Other sources” to take your last IVAO or VATSIM flight, your SimBrief flight plan, or a
 pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or from StatSim, a METAR. Only empty fields
-are filled; next to each one, its source. If a source gives something else for fields already entered, a button offers
+are filled; the “Prefilled from: …” line under the card’s title says where they come from. If a source gives something else for fields already entered, a button offers
 to replace them.
 
 **The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
@@ -417,7 +417,7 @@ report” starts again from a blank report.
   a single flight. Start-up and shutdown match the connection and the disconnection when the track begins and ends on
   the ground; take-off and landing come from the track.
 - **Times** are UTC, marked "(Z)" on the fields; the started flight and the network fill them in UTC. An older
-  report, entered in the device's time, is shown converted with the entered time below ("entered 18:30 local"); it
+  report, entered in the device's time, is shown converted with the entered time in the line under the card's title ("Take-off entered 18:30 local"); it
   is rewritten in UTC only if you save it.
 - **SimBrief**: your last plan (identifier set in ⚙) — aircraft, route, level, speed, planned fuel, METAR and TAF.
 - **From My flights**: “Write the report” on a flight opens a new report, already filled with that flight and its date;

@@ -2,6 +2,31 @@
 
 Memory of the V3 report module: every choice, dated, with its reason. Chat history is never needed.
 
+- **24 Oct 2026 — the Report screen on a phone: uniform fields, source line, action bar** (relay session "relais cloud", on the
+  user's words, iPhone 390 px, Cupertino, night: "uniformity and font-size problem on Cupertino, but also on Swiss, across this
+  CR page (object sizes vary, badly wrapped text leaves the screen)"). Causes, measured: (1) the module put a `f-badge`
+  (`white-space: nowrap`, 175 px) in each prefilled field's label: a grid item has `min-width: auto`, so the badge pushed it out
+  of its 164 px column, over its neighbour and past the right edge; (2) the labels that got two lines made their row taller, and
+  the neighbour's `label` (a grid, stretched to the row) gave the extra to its input row: dates 56 px, others 44, then 55, 70, 93,
+  94 px cells; (3) the save bar's second button was free text that folded on three lines, its "website address not set" inside
+  it. **No design rule is the cause**: `cupertino.css` and `swiss.css` do not set `label`, `input[type=date]` or `h2`
+  sizes (measured: 16 px label and value, `h2` 16.8 px in the five designs); nothing in `frame/design/*` changed. Choices:
+  - **Source = one muted line under the card's title** (not a dot in the label): "Prefilled from: … · …" (`TX.prefilledFrom`
+    ×4, `srcLine`, `.rp-src`, `--sog-size-xs`), computed per card from the sources of its fields (and the "entered … local"
+    times of an older report, which also left the labels). A dot with a `title` says nothing on a touch screen, and the
+    provenance is the thing the pilot checks before saving. No element of the grid is wider than its field.
+  - Grid cells `min-width: 0; align-content: start`, labels one line with ellipsis (full label as `title`), `.f-grid` columns
+    `minmax(min(130px, 100%), 1fr)`: in the module's own style, scoped, not in `primitives.css` (another agent's file); the
+    same two lines belong in the primitive if the frame wants them for every module.
+  - **Save bar**: two 44 px buttons on two lines (one line from a 700 px wide pane), "Save" filled, "Save and record on the
+    website" outline, same font and weight (`font-weight: inherit`), `nowrap` + ellipsis with the full text as `title`
+    (no short label: "Enregistrer + site" would be a fifth text to keep in four languages, and the long one fits at 360 px
+    in fr, en, es; de ellipsizes, its `title` is the whole). Bar padding 4 px and gap 6 px: 105 px high, 110 px with
+    `metro`'s 6 px rule (limit 112). The unavailable reason is the button's `title`, `aria-describedby`, and one muted line under
+    the bar; bar and line are in one sticky `.rp-dock` (a plain line after a sticky bar scrolls away) with the page background.
+  - Case **G4** (`tests/v3/cases/flightlog.py`, PLAN § G): prefilled flight, 390 and 360 px, day and night, five designs, three
+    steps: no overflow, no badge in the grid, one height per card, at most two font sizes in the grids, one `h2` size, bar
+    ≤ 112 px, buttons on one line with the same font.
 - **23 Oct 2026 — the airline arriving after the mount** (frame lot 24: `ctx.airline` read in the background, event
   `frame-airline`): the module listens to it and redraws, so the save bar's "Save and record on the website" turns on
   when the airline arrives. Bench (fake GitHub, cleared profile, new repository with `airline/settings.json`): the

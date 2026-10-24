@@ -132,6 +132,7 @@ Screens and ids: the frame page is `frame/index.html#<module>`; modules on `v3`:
 | G1 | Pending record | `seed_pending(1)`: `cache/flightlog/pending.json` schema 2 is read by the frame: the "i" badge is green and the pop-up has a flight row whose tap goes to `#report` with the handoff (hash or query carries it); `pilot/handoff.json` (or the frame's equivalent) is written (SKIP if no seeding) | `frame/INTEGRATION.md` § 10 |
 | G2 | Flightlog loads | `#flightlog` at 390: no error, filters and totals present, empty-state text translated **×4 langs** when nothing is seeded | module |
 | G3 | Report three steps | `#report` at 390: the three steps are shown, the first active, next/previous controls ≥ 44 px; without data the form is empty and no error | module |
+| G4 | Report screen uniform, no overflow | `#report` with the current flight taken (`seed_flight`, "Use"), 390 and 360 px, day and night, **×4 langs**, the three steps: `scrollWidth ≤ innerWidth`, no shown element of the module past the right edge, no `f-badge` in the field grids, the fields of one card within 2 px of one height (≥ 44 px), at most two computed font sizes in the grids (label, value), one `h2` size, the save bar ≤ 112 px with its buttons on one line (≤ 48 px high) in one font size and weight, a provenance line "Prefilled from: …" exists, no `font-size` in `modules/report/module.js` outside `--sog-size-*` | `modules/report/SPEC` § 2 bis |
 
 ## H. Designs (`frame/design/*`)
 
