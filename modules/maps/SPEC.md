@@ -149,8 +149,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   inside the map box.
   - **Three positions**, as parts of the module's height (the frame's view): **collapsed** (the header line only, 44 px
     and its hairline), **default** (38 % on a phone, 35 % above 760 px; never under 170 px) and **expanded** (70 %; never
-    under 260 px). The numbers are tokens of the module root (`--mp-head`, `--mp-p1`, `--mp-m1`, `--mp-p2`, `--mp-m2`):
-    the style sheet is their only source, the script reads them. The map takes the rest: at 390 × 844 (view 730 px) the
+    under 260 px). The numbers are the frame's sheet tokens (`--f-sheet-head`, `-default`, `-default-min`, `-expanded`,
+    `-expanded-min`, frame/INTEGRATION.md § 11), read from the module root; the frame's style sheet is their only source. The map takes the rest: at 390 × 844 (view 730 px) the
     sheet is 45 / 277 / 511 px and the map 617 / 385 / 151 px.
   - **The handle** is the header line (44 px; a small bar, the title of what the block shows, and the ✕ of a content at
     the right, 44 × 44). A drag on it (pointer events on the header only, `touch-action: none` there: the map keeps all its
@@ -192,9 +192,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - The levels chart is drawn at scale 1 for the content area (`levelsHtml(list, w, h)`): 44 % of the width under 600 px
     (a phone), otherwise the width its columns ask for (400 px at most), never higher than the area; the list beside it
     in columns of 19 em; the chart stays at the top while the list scrolls.
-  - **Outside the frame's fixed view**: in the dual-view pane the root is given the pane's height
-    (`100dvh − 86 px − 44 px`, 420 px at least; the pane is `sticky`); with the map on the left of a pane, the view's
-    height; on the test page, the window's. The sheet and the toolbar are the same there.
+  - **Outside the frame's fixed view**: in the dual-view pane the root is given the pane's height by the frame
+    (`--f-pane-h`, § 9.2 of the frame's INTEGRATION; 420 px at least; the pane is `sticky`); with the map on the left of a
+    pane, the view's height (`--f-split-h`); on the test page, the window's. The sheet and the toolbar are the same there.
   - **The tuning page** (`#maps?tune=1`) is a page that scrolls: the root scrolls by itself (`overflow: auto`), the map box
     is 52 vh again, the blocks have their natural height, the thresholds panel sits beside them from 1000 px.
   - The root is an isolated stacking context (`isolation: isolate`): the z-indices of the map's buttons (3 to 8) never

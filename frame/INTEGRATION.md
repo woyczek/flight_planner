@@ -233,6 +233,9 @@ What the module writes (its own sheet, scoped to `[data-module="<id>"]`):
   can drop both. Its own `height` or `display` still wins (the rules have no weight).
 - A module that is not `fixed` gets nothing: its pane has the natural height of its content (the pane scrolls beyond
   `--f-pane-max-h`).
+- **A fixed module may import the sheet primitive** (`import { createSheet } from '../../frame/lib/sheet.js'`, § 11): the
+  three-position block under the map, with its heights from `--f-sheet-*` as parts of the module's root, so it follows
+  `--f-view-h` in the plain view, the split main and the pane with nothing of its own.
 - The header is exactly `--f-head-h` in every state, so these numbers hold after Settings, help or a module's "←".
 
 ## 10. What the frame reads from modules' caches
@@ -267,3 +270,121 @@ prefix in its `meta.writes` with `policy: 'cache'`.
   required by report (`takeHandoff`), whatever the brief of the day says.
 - The frame redraws the badge and the pop-up when the record changes (`watch` on `cache/flightlog/`).
 - The writer republishes the whole file when its list changes (`updated_at`); an empty `flights` when nothing is left.
+
+## 11. Sheet primitive (`frame/lib/sheet.js`)
+
+A fixed module (§ 9.2) that is a map plus a block under it (maps, atmosphere) gets the block from the frame: **the
+three-position sheet**. It is collapsed (its header line only), default or expanded; its header line is the handle. The
+frame owns the code (`frame/lib/sheet.js`, pure of module state, no text of its own) and the look (`frame/design/primitives.css`,
+neutral: `--sog-surface`, a hairline on top, a grip bar). The sheet **never knows what it contains**: the module draws the
+title, the toggles, the ✕ and the content, and passes the texts.
+
+```js
+import { createSheet } from '../../frame/lib/sheet.js';
+
+const sheet = createSheet({
+  root, panel, head, grip,          // the four elements (below)
+  pos: 'default',                   // 'collapsed' | 'default' | 'expanded' (a rank 0, 1, 2 is accepted too)
+  ignore: '[data-close], .my-seg',  // what, inside `head`, must not drag or tap
+  labels: (pos, i) => `${t('Height')} (${t(NAMES[i])})`,
+  locked: () => editing,            // true: the pointer gestures are refused
+  onChange: pos => keep = pos,
+  onSettle: pos => map.resize()     // 120 ms after the last change
+});
+// -> { pos, set(pos, instant), settle(), stop() }
+```
+
+### The HTML the module provides
+
+```html
+<section class="f-module f-sheet" data-module="demo">            <!-- root: the module's root, a flex column -->
+  <div class="map"></div>                                       <!-- flex: 1 1 0; min-height: 0 -->
+  <div class="f-sheet-panel">                                   <!-- panel: sized by the primitive; direct child of root -->
+    <div class="f-sheet-head">                                  <!-- head: the 44 px line, the drag handle -->
+      <button type="button" class="f-sheet-grip"><b class="f-sheet-title">Title</b></button>
+      <button type="button" class="f-sheet-close" data-close aria-label="Close">✕</button>   <!-- optional -->
+    </div>
+    <div class="f-sheet-body"> … the content … </div>           <!-- scrolls inside; the page never does -->
+  </div>
+</section>
+```
+
+- `root` carries the class `f-sheet` (the module adds it to the element it was given, `el.classList.add('f-sheet')`). The
+  primitive writes `data-sheet="collapsed|default|expanded"` on it and reads the `--f-sheet-*` tokens from it. Its height is
+  what the percentages are parts of (its content height, padding taken out): in a fixed view it is `--f-view-h` (§ 9.2),
+  so the sheet needs no height of its own in the plain view, the split main or the pane.
+- `panel` (`.f-sheet-panel`) is a **direct child** of `root` (`.f-sheet > .f-sheet-panel`): the element whose height the
+  primitive sets. It is a flex column with `overflow: hidden`; the header is its first child, whatever else follows it.
+- `head` (`.f-sheet-head`, 44 px) receives the drag (pointer events on it only, `touch-action: none` there: the map keeps all
+  its gestures). `grip` (`.f-sheet-grip`) is the handle button inside it: it takes all the width the header's other controls
+  leave, shows the grip bar (a `::before`, nothing to draw) and holds the title (`.f-sheet-title`: one line, ellipsed).
+  The grip is a `<button>`; a `<div>` works too (the primitive gives it `role="button"` and `tabindex="0"` and handles
+  Enter and Space itself).
+- `.f-sheet-close` is the 44 × 44 ✕ of a content; anything else in the header (a Profile · Weather toggle) is the module's own
+  and goes in `ignore`. Hide a control with `hidden` (`.f-sheet-head [hidden]` is `display: none`).
+- `.f-sheet-body` is the scrolling area (`flex: 1 1 0; min-height: 0; overflow: auto; overscroll-behavior: contain`). A module
+  that draws something else (a chart that sizes itself) gives it its own `overflow`; a rule of two classes or more wins.
+- **Collapsed**, every child of the panel but the header is `display: none` (neither seen nor reached by the keyboard).
+
+### Options and what the primitive does
+
+| Option | Meaning |
+| --- | --- |
+| `root`, `panel`, `head`, `grip` | the four elements above |
+| `pos` | the starting position; **the module keeps the position between two mounts** (`onChange` gives it, `pos` takes it back): the primitive keeps no state of its own |
+| `ignore` | selector of what, inside `head`, does not drag or tap (a toggle, the ✕) |
+| `labels` | the grip's text by position, `(pos, rank) => string` or `{ collapsed, default, expanded }`; it becomes the grip's `title` and `aria-label`. Without it the grip keeps its own. The texts are the caller's (four languages) |
+| `locked` | `() => true` refuses the pointer gestures (drag, tap), for instance in an Edit mode that moves things on the map; the keyboard stays |
+| `onChange(pos)` | at every step: a `set()`, the end of a drag, a tap, a key (and once at the start with `pos`) |
+| `onSettle(pos)` | 120 ms after the last change of position or size (end of the height transition, end of a drag): the map re-frames there. Not called for the starting placement |
+
+- **Gestures.** A pointer down on the header (button 0, not on an `ignore`d control, not `locked`) captures the pointer. Past
+  6 px of travel it is a drag: the panel follows the finger live (transitions cut by the class `f-sheet-nt`), between the
+  collapsed and the expanded height. Released, it snaps to the nearest position, or to the next one in the direction of a
+  **flick** (faster than 0.8 px/ms). A **tap** on the grip collapses the sheet, or brings it back to default from collapsed
+  or expanded: **a tap never expands.**
+- **Keyboard** (on the grip): Enter and Space toggle like a tap, Up / Down go one position, Home collapses, End expands.
+  The arrows do not scroll the page.
+- **ARIA**: `aria-expanded` (false only when collapsed) and `aria-label` from `labels`; `role="button"` and `tabindex` when
+  the grip is not a `<button>`. Written only when they change.
+- **`set(pos, instant)`**: moves the sheet (a name or a rank); `instant` cuts the transition for that change (the content is
+  about to be measured; the height is up to date when it returns). **`settle()`** restarts the 120 ms: call it when the
+  view's size changed by other means (a `ResizeObserver` on the map box). **`stop()`** removes the listeners and the timer
+  (call it from `unmount`). `pos` is the current position name.
+
+### The CSS it gets (`frame/design/primitives.css`)
+
+Tokens, defined on `.f-sheet` with **no weight** (`:where`): the module overrides them on its root (`[data-module="demo"] {
+--f-sheet-default: 50% }`) with no `!important`. Each value is `<n>%` (a part of the root's height) or `<n>px`; the script
+reads nothing else (no `calc()`).
+
+| Token | Default | |
+| --- | --- | --- |
+| `--f-sheet-head` | `45px` | the collapsed height: the header (44 px, `--sog-touch`) and the hairline |
+| `--f-sheet-default` | `38%` (`35%` from 761 px) | the default height |
+| `--f-sheet-default-min` | `170px` | its floor |
+| `--f-sheet-expanded` | `70%` | the expanded height |
+| `--f-sheet-expanded-min` | `260px` | its floor |
+
+- Heights: collapsed `--f-sheet-head`; default `max(--f-sheet-default, --f-sheet-default-min)`; expanded
+  `max(--f-sheet-expanded, --f-sheet-expanded-min)`; a 200 ms height transition (none under `prefers-reduced-motion`
+  nor during a drag or `instant`).
+- Look: `--sog-surface`, a 1 px `--sog-border` top line, `--sog-radius` top corners, a soft upward shadow, the grip bar
+  36 × 4 px (`--sog-muted` at 55 %), a header at 44 px with the title at `.92em`. Nothing is hard-coded to a design.
+- The grip and the ✕ are buttons: their rules weigh three classes so that the designs' button rules (`[data-design] :is(button,
+  .f-btn)`) do not reach them.
+
+### What a module still owns
+
+The content and the header's texts (title, toggles, ✕ shown or hidden), the position kept between mounts, what follows a size
+change (`onSettle`), and the lock. The first user is `modules/maps` (the data sheet: profile, weather cross-section,
+airspaces, aerodrome content, behind `openData`, `modules/maps/INTEGRATION.md` § 6).
+
+### Moving from a module's own copy
+
+`maps_copy_sheet.js` of atmosphere (a copy of maps' former block) maps one to one: `data` → `panel`; the `--<prefix>-head`,
+`-p1`, `-p2`, `-m1`, `-m2` tokens → `--f-sheet-head` (44 + 1 px), `-default` / `-default-min`, `-expanded` / `-expanded-min` (the
+frame's defaults are those numbers: delete the module's tokens); `title(pos)` (the grip's tooltip) → `labels(pos, rank)`; `skip` →
+`ignore`; `prefix` and the `<prefix>-nt` class → `f-sheet-nt` (the primitive's); `data-sheet="0|1|2"` → `"collapsed|default|expanded"`;
+the grip bar element → nothing (a `::before`); positions are names, not 0, 1, 2; the starting position is the caller's
+(`pos`, with `onChange` to keep it); the initial `set(pos, true)` and `gestures()` calls disappear (done by `createSheet`).

@@ -406,6 +406,137 @@ details.f-card[open]>summary {
   margin: 8px 0
 }
 
+/* ---- feuille à trois positions (frame/lib/sheet.js, frame/INTEGRATION.md § 11) : le bloc du bas d'une vue fixe, réduit (sa
+   ligne d'en-tête seule), normal, agrandi. Neutre : --sog-surface, un filet en haut, une barrette de poignée. Le module
+   donne le balisage (racine .f-sheet, dedans .f-sheet-panel avec .f-sheet-head puis son contenu) et peut poser les jetons
+   sur sa racine ; la feuille ne sait pas ce qu'elle contient. Les jetons valent « <n>% » (part de la hauteur de la racine)
+   ou « <n>px » : sheet.js les lit. Poids nul sur les jetons (:where) : une règle du module les remplace sans !important. La poignée et le ✕ sont des boutons :
+   leurs règles pèsent trois classes pour l'emporter sur celles des designs (`[data-design] :is(button, .f-btn)`). */
+:where(.f-sheet) {
+  --f-sheet-head: 45px;
+  --f-sheet-default: 38%;
+  --f-sheet-default-min: 170px;
+  --f-sheet-expanded: 70%;
+  --f-sheet-expanded-min: 260px
+}
+@media (min-width: 761px) {
+  :where(.f-sheet) {
+    --f-sheet-default: 35%
+  }
+}
+.f-sheet>.f-sheet-panel {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: max(var(--f-sheet-default), var(--f-sheet-default-min));
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: var(--sog-surface);
+  border-top: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius) var(--sog-radius) 0 0;
+  box-shadow: 0 -2px 8px #0000001a;
+  transition: height .2s ease
+}
+.f-sheet[data-sheet="collapsed"]>.f-sheet-panel {
+  height: var(--f-sheet-head)
+}
+.f-sheet[data-sheet="expanded"]>.f-sheet-panel {
+  height: max(var(--f-sheet-expanded), var(--f-sheet-expanded-min))
+}
+/* réduite : seule la ligne d'en-tête reste (le reste n'est ni vu ni atteint au clavier) */
+.f-sheet[data-sheet="collapsed"]>.f-sheet-panel>:not(.f-sheet-head) {
+  display: none
+}
+/* pendant un glisser, et pour un changement sans glissement : pas de transition */
+.f-sheet>.f-sheet-panel.f-sheet-nt {
+  transition: none
+}
+@media (prefers-reduced-motion: reduce) {
+  .f-sheet>.f-sheet-panel {
+    transition: none
+  }
+}
+.f-sheet .f-sheet-head {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  height: calc(var(--f-sheet-head) - 1px);
+  font-size: .92em;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none
+}
+.f-sheet .f-sheet-head [hidden] {
+  display: none
+}
+.f-sheet .f-sheet-head .f-sheet-grip {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 6px 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: grab;
+  touch-action: none
+}
+.f-sheet .f-sheet-head .f-sheet-grip:active {
+  cursor: grabbing
+}
+.f-sheet .f-sheet-head .f-sheet-grip::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 36px;
+  height: 4px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--sog-muted) 55%, transparent)
+}
+.f-sheet .f-sheet-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+.f-sheet .f-sheet-head .f-sheet-close {
+  flex: none;
+  width: var(--sog-touch);
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 1.2em;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  touch-action: manipulation
+}
+/* la zone qui défile dans la feuille (sous l'en-tête) : la page, elle, ne défile jamais */
+.f-sheet .f-sheet-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y
+}
+
 /* ---- impression (le compte rendu d'abord) : encre du jour (les jeux de nuit ne valent qu'à l'écran), une colonne,
    sans en-tête, menu, barres, boutons ni notes ; les sections repliées sont ouvertes par le cadre (beforeprint).
    !important : l'impression doit l'emporter sur toute règle d'écran, celles des modules comprises. */

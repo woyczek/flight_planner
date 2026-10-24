@@ -12,6 +12,17 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the three-position sheet is a primitive; Maps adopts it and takes the frame's heights** (`frame/lib/sheet.js`,
+  `frame/design/primitives.css`, `frame/lib/test/sheet.html`, `modules/maps/module.js`; frame INTEGRATION § 11 and § 9.2,
+  SPEC § 3.9, design SPEC, DECISIONS, `modules/maps/{INTEGRATION,SPEC,DECISIONS}.md`) — the block under a map that sits
+  collapsed, default or expanded and is pulled by its header line becomes `createSheet({ root, panel, head, grip, pos, ignore,
+  labels, locked, onChange, onSettle })`: the drag follows the finger and snaps to the nearest position (a flick above 0.8 px/ms
+  goes to the next one, a tap collapses or restores and never expands), the keyboard and the ARIA are done, and the heights are
+  the frame tokens `--f-sheet-head` / `-default` / `-expanded` (and their floors) a module may override on its root. It writes
+  no text and keeps no state. Maps drops its own copy and its CSS, and also its two copied pane / split heights and the
+  `!important` of its tuning page (the frame applies `--f-view-h`): the Map screen is pixel-identical in the three positions,
+  at 390 and 1280, in the seven designs and in the dual view. A bench on a bare page (`frame/lib/test/sheet.html`, 76 checks)
+  covers positions, snapping, flick, keyboard, `onChange` / `onSettle`. Atmosphere's copy is replaced by its own session.
 - **Maps: shared map base, weather cross-section in the sheet** (`modules/maps/lib/map_base.js`, `modules/maps/module.js`,
   `modules/maps/{SPEC,INTEGRATION,DECISIONS}.md`, `modules/maps/help/*.md`) — the MapLibre loading, base styles, tiled base,
   own-resize marker and plain background of the map move to `lib/map_base.js`, a state-free ES module that the atmosphere
