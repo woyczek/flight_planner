@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: orientation locked to portrait for now** (`frame/manifest.webmanifest`, `frame/app.js`; SPEC § 3.6,
+  DECISIONS) — effective when the application runs installed (manifest, `screen.orientation.lock`); a browser page is
+  not locked. The landscape layout of the map and atmosphere screens is to decide (specification § 7.1).
 - **Frame: the phone's bottom tab bar, tabs as groups of modules, flight status line, fixed view** (`frame/app.js`,
   `frame/frame.css`, `frame/index.html`, `frame/lib/icons.js`, `frame/design/*`; frame SPEC § 3.1 and INTEGRATION § 9,
   design SPEC, DECISIONS, help intro ×4) — on a phone (760 px or less) the menu button and the drawer are gone: a bar
