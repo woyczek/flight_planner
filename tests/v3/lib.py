@@ -549,6 +549,10 @@ class Ctx(Asserts):
     def count(self, sel):
         return self.page.evaluate('(s) => document.querySelectorAll(s).length', sel)
 
+    def grip(self):
+        """The grip's label (title): what a bare head says instead of a title (V3 spec 7.1.13)."""
+        return self.js("() => (document.querySelector('.f-sheet-head .f-sheet-grip') || {}).title || ''")
+
     def text(self, sel):
         return self.page.evaluate('(s) => { const e = document.querySelector(s); return e ? e.textContent.trim() : null }', sel)
 

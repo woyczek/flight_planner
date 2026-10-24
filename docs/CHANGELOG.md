@@ -31,6 +31,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   with every layer drops from 76 ms to 8 ms with the CPU slowed ×4. New `edge` option (default off, the administrator's setting to come)
   drawing the grid's limit as a hairline, with `info().zones` naming both sides. DECISIONS records the measurements and what GFS costs against
   Open-Meteo.
+- **Map: Layers' Complexity slider on one line; airway names above the strokes** (`modules/maps/module.js`, `render.js`, `tests/v3/` D17 / D18; maps SPEC, DECISIONS) — the slider block was 73 px plus a 51 px help sentence (about 120 px): label, value and slider are now one 44 px line in the five designs, the help stays in the tooltip and for screen readers. The airways' strokes are all drawn before their names, so a later airway no longer crosses an earlier name.
+- **Map: the profile and the weather cross-section fit the sheet, with no title above them** (`modules/maps/module.js`,
+  `lib/vertical_profile.js`, manual in four languages, `tests/v3/` D4 and the cases that read the sheet's title; maps SPEC § 4, DECISIONS;
+  V3 spec § 7.1.13) — the distance axis was still off screen on a phone (the cut had a 140 px floor in a 103 px body): both drawings are now
+  drawn at the exact height of the body, without box or padding for the cut, the profile dropping level labels (one in two under 160 px, one
+  in four under 110 px) and shrinking its foot before it would drop its axis. The Profile · Weather chips are a column at the right of the drawing (a row above it in the landscape column) and the drawing starts at the left edge of the body. Over a drawing at the default position the head is a bare handle (expanded, collapsed and in the landscape column it keeps its title; the grip bar and the
+  Profile · Weather chips, `.f-sheet-head-bare`, 28 px): the "Weather · FL160 · 370 NM" line is gone, the handle's label says "Vertical
+  profile" / "Weather cross-section" and the flight summary. At 390 × 844 the default drawing gains 17 px (profile, 174 → 191) and 39 px (cut,
+  152 → 191).
 - **Atmosphere: no rings round the flight's grid** (`modules/atmosphere/lib/weather_map.js`, `test/weather_map.html`; atmosphere
   DECISIONS, INTEGRATION § 6) — at a flight level, while the world's pressure-level file was still being read, the surface world was
   blended into the grid: a dark frame of concentric isobars and isotherms with stacked labels. The world is now blended only at the same

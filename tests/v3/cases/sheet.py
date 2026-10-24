@@ -98,8 +98,14 @@ def c4(c):
 def c5(c):
     for m in FIXED:
         c.open(m, flight=True)
-        title = c.text('.f-sheet-head .f-sheet-title') or ''
-        c.ok(title.startswith(profile_word(m, c.lang)), f'#{m} title {title!r}', f'starts with "{profile_word(m, c.lang)}"')
+        if m == 'maps':
+            # a drawing's head is bare (V3 spec 7.1.13): no title written over it, the handle says what it is
+            c.ok(not c.shown('.f-sheet-head .f-sheet-title'), f'#{m}: a title is shown over the profile', 'the bare head carries no title')
+            title = c.grip()
+            c.ok(title.startswith(tx('modules/maps/module.js', 'dataProfile', c.lang)), f'#{m} grip label {title!r}', 'starts with the name of the drawing')
+        else:
+            title = c.text('.f-sheet-head .f-sheet-title') or ''
+            c.ok(title.startswith(profile_word(m, c.lang)), f'#{m} title {title!r}', f'starts with "{profile_word(m, c.lang)}"')
         low = title.lower()
         c.ok(not any(w in low for w in STATE_WORDS), f'#{m} title {title!r}', 'no state wording (not loaded / loading) in the title')
         c.eq(c.count('.mp-seg'), 0, 'no segmented control row', what=f'#{m} .mp-seg elements')
@@ -122,5 +128,9 @@ def c6(c):
         c.until("window.__t.shown(document.querySelector('.f-sheet-close'))", what=f'#{m} content opens with a close button')
         c.tap('.f-sheet-close')
         c.until("!window.__t.shown(document.querySelector('.f-sheet-close'))", what=f'#{m} the close button hides again')
-        title = c.text('.f-sheet-head .f-sheet-title') or ''
-        c.ok(title.startswith(profile_word(m, c.lang)), f'#{m} title after closing {title!r}', f'starts with "{profile_word(m, c.lang)}"')
+        if m == 'maps':
+            title = c.grip()
+            c.ok(title.startswith(tx('modules/maps/module.js', 'dataProfile', c.lang)), f'#{m} grip label after closing {title!r}', 'the bare profile head is back')
+        else:
+            title = c.text('.f-sheet-head .f-sheet-title') or ''
+            c.ok(title.startswith(profile_word(m, c.lang)), f'#{m} title after closing {title!r}', f'starts with "{profile_word(m, c.lang)}"')

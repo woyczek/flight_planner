@@ -499,10 +499,32 @@
     reserveBottom = 0
   } = {}) {
     const f = 11 * scale,
-      padL = 58 * scale,
+      padL = (abbrev && strictLabels ? 50 : 58) * scale, // V3 maps : pas de blanc à gauche des niveaux (profil du vol : « FL 250 » tient)
       padR = 16 * scale,
-      padT = (title ? 34 : 18) * scale,
-      padB = 64 * scale;
+      padT = (title ? 34 : 18) * scale;
+    // V3 maps (règle 13 : le dessin tient dans sa hauteur) : les points et leurs distances sont posés d'abord, car ils gardent
+    // leur place (l'axe des distances ne sort jamais du cadre) ; sur une seule rangée, sous 200 px, le bas de la coupe se
+    // resserre pour rendre la hauteur au tracé
+    ctx.save();
+    ctx.font = `bold ${f}px Arial, sans-serif`;
+    const rowEnd = [-Infinity, -Infinity],
+      placed = data.marks.map(m => {
+        const x = padL + (W - padL - padR) * m.s / data.total,
+          dist = `${(m.s / NM).toFixed(m.s / NM < 10 ? 1 : 0)} NM`,
+          w = Math.max(ctx.measureText(m.name).width, ctx.measureText(dist).width) + 8 * scale,
+          tx = Math.min(W - padR - w / 2, Math.max(padL + w / 2, x)),
+          row = tx - w / 2 >= rowEnd[0] ? 0 : tx - w / 2 >= rowEnd[1] ? 1 : (rowEnd[0] <= rowEnd[1] ? 0 : 1);
+        rowEnd[row] = tx + w / 2;
+        return {
+          m,
+          x,
+          dist,
+          tx,
+          row
+        };
+      }),
+      padB = (H < 200 && !placed.some(q => q.row) ? 38 : 64) * scale;
+    ctx.restore();
     const terrainMax = Math.max(0, ...data.samples.map(q => q.terrain)),
       obsMax = Math.max(0, ...data.obstacles.map(o => o.elev || 0)),
       altMax = Math.max(0, ...data.marks.map(m => m.alt || m.lvl?.ft || 0), data.plan?.top || 0);
@@ -537,7 +559,12 @@
     ctx.lineWidth = 1;
     ctx.fillStyle = '#56626b';
     ctx.textAlign = 'right';
-    for (let a = Math.ceil(bottom / step) * step; a <= top; a += step) {
+    // V3 maps (règle 13) : sous 160 px un niveau sur deux, sous 110 px un sur quatre (et jamais deux étiquettes plus proches que
+    // 13 px) ; les traits des niveaux supprimés partent avec leur étiquette
+    const thin = Math.max(H < 110 ? 4 : H < 160 ? 2 : 1, Math.ceil(13 * scale / Math.max(1, (H - padT - padB) * step / span)));
+    let lvl = 0;
+    for (let a = Math.ceil(bottom / step) * step; a <= top; a += step, lvl++) {
+      if (lvl % thin) continue;
       const y = Y(a);
       ctx.beginPath();
       ctx.moveTo(padL, y);
@@ -737,9 +764,15 @@
     }
     // points du cheminement et distances cumulées ; noms décalés sur une seconde ligne s'ils se chevauchent
     ctx.textAlign = 'center';
-    const rowEnd = [-Infinity, -Infinity];
-    for (const m of data.marks) {
-      const x = X(m.s);
+    let axisBottom = 0;
+    for (const {
+        m,
+        x,
+        dist,
+        tx,
+        row
+      }
+      of placed) {
       ctx.strokeStyle = '#17202a';
       ctx.setLineDash([4 * scale, 3 * scale]);
       ctx.lineWidth = 1;
@@ -749,12 +782,8 @@
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.font = `bold ${f}px Arial, sans-serif`;
-      const dist = `${(m.s / NM).toFixed(m.s / NM < 10 ? 1 : 0)} NM`,
-        w = Math.max(ctx.measureText(m.name).width, ctx.measureText(dist).width) + 8 * scale;
-      const tx = Math.min(W - padR - w / 2, Math.max(padL + w / 2, x)),
-        row = tx - w / 2 >= rowEnd[0] ? 0 : tx - w / 2 >= rowEnd[1] ? 1 : (rowEnd[0] <= rowEnd[1] ? 0 : 1);
-      rowEnd[row] = tx + w / 2;
       const y = H - padB + (12 + row * 28) * scale;
+      axisBottom = Math.max(axisBottom, y + 13 * scale + f * .5);
       if (row) {
         ctx.strokeStyle = '#9aa5ad';
         ctx.beginPath();
@@ -856,7 +885,9 @@
       bottom,
       total: data.total,
       skipped,
-      taken: strictLabels ? taken : undefined
+      taken: strictLabels ? taken : undefined,
+      marks: placed.length, // V3 maps : points posés sous la coupe, et leur dernière ligne tient dans le cadre (axe des distances)
+      axisOk: axisBottom <= H
     };
     return data.geo;
   }

@@ -70,7 +70,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   - mid: plus the airway points and the minimum level under each name ("F195");
   - near: everything, plus each segment's distance (NM) above the name, the true tracks near both ends ("097°"), VRP
     and obstacles.
-- **Airways** (`drawAirways`), as en-route charts: low airways solid blue, high airways dashed purple; the name in a
+- **Airways** (`drawAirways`; all the strokes first, then the names, so that no stroke crosses a name, 24 Oct, case D18), as en-route charts: low airways solid blue, high airways dashed purple; the name in a
   box laid along the segment (always readable left to right). The segment ends are drawn after them
   (`drawFixes`: a triangle and the id; a navaid at the same place is drawn with its own symbol instead). The boxes
   drawn are returned by `draw()` as `{ airways: [{ x, y, r, g }] }` for the tooltips.
@@ -173,7 +173,16 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     `-expanded-min`, frame/INTEGRATION.md § 11), read from the module root; the frame's style sheet is their only source. The map takes the rest: at 390 × 844 (view 730 px) the
     sheet is 45 / 219 / 511 px and the map 685 / 511 / 219 px.
   - **The handle** is the header line (44 px; a small bar, the **title** of what the block shows and its context, at the
-    right the two **chips** Profile · Weather (below) or the ✕ of a content, 44 × 44), on Atmosphere's model (V3 spec § 7.1.6):
+    right the two **chips** Profile · Weather (below) or the ✕ of a content, 44 × 44), on Atmosphere's model (V3 spec § 7.1.6);
+    **over a drawing (the profile, the cross-section) and at the default position only the line is bare** (V3 spec § 7.1.13 and its 21:05 refinement, 24 Oct):
+    class `.f-sheet-head-bare` (frame primitive, `--f-sheet-head-bare` = 28 px), the grip bar and the two chips only, no
+    title (the drawing already says level, distance and flight); the handle's `title` / `aria-label` says "Vertical profile"
+    or "Weather cross-section" (four languages), then the flight summary that is no longer written, then the height hint.
+    Expanded, collapsed and in the landscape column (`html.f-land`) the head keeps its title (45 px: there is room, and the title is then
+    what says what the content is); it switches at every position change and at `onSettle` (rotation); the other contents (Layers, airspaces, levels,
+    aerodrome) keep the normal head with their title. The two chips are **not in the head row any more** (§ 7.1.13, second
+    refinement, user: "supprimer espace jaune et texte rayé rouge, aligner boutons verticalement à droite (horizontalement en paysage)"):
+    see "The Profile · Weather chips". As before:
     no separate title row, no segmented-control row. A drag on it (pointer events on the header only, `touch-action: none` there: the map keeps all its
     gestures) pulls the sheet live; released, it goes to the nearest position, or to the next one in the direction of a
     quick flick (more than 0.8 px/ms), with a 200 ms slide (none under `prefers-reduced-motion`). A tap on it collapses
@@ -185,6 +194,15 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     framed again if the user has not moved the map (`resize()` itself is not taken for a gesture of the user).
   - **A content opened while the sheet is collapsed opens it** to the default position, without sliding (the content is
     measured at once).
+  - **The drawing fits the sheet** (V3 spec § 7.1.13 a): the profile and the cross-section are drawn at the **exact height of the
+    body**, with their x axis (distances, route points) always visible and nothing to scroll; no readability floor above the body
+    (the profile's 120 px floor and the cross-section's body scroll are gone; the cross-section's own box, border and padding too:
+    the drawing takes the whole body). The profile drops level labels before its axis (one level in two under 160 px, one in four
+    under 110 px, never two closer than 13 px; their grid lines with them), shrinks its foot to one row when the points do not
+    overlap (under 200 px), and drops the airways' extra points under a 90 px plot; its canvas reports `data-axis="1"` (the last
+    row of distances is inside the canvas) and `data-marks` (route points drawn), the cross-section's body `data-axis="1"` (its
+    bottom is inside the body). At 390 × 844 the default body goes from 174 to 191 px (profile) and the cut from 152 to 191 px;
+    the sheet's 170 px floor leaves 142 px of body, which `drawSection` (140 px floor of its own, no option yet) still fits.
   - **Inside the sheet**: header, then the profile (`flex: 1 1 0`, 380 px at most) with its strip (34 px, two lines, scrolls),
     or the content area (`.mp-dbody`, scrolls, `overscroll-behavior: contain`), then the notes (two lines of
     `--sog-size-xs` at most, scrolling beyond): the **progress line** of a started flight ("12 NM late · 3.2 NM right of the
@@ -192,11 +210,13 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     database not published", "Offline, without this zone's data" and its button, a mission's notes), then what is only
     information (plain background, terrain unavailable: the normal offline state). Nothing of it is above the map. The
     sheet is not there when there is neither profile nor content.
-  - **The "Profile · Weather" chips** (24 Oct 2026). While the sheet shows the profile or the cross-section, its header carries
-    two small icon chips (40 px, a profile chart and a cloud, with a hairline and the accent when pressed) before the ✕'s place,
+  - **The "Profile · Weather" chips** (24 Oct 2026). While the sheet shows the profile or the cross-section, a **column of two icon chips at the right of the drawing**
+    (portrait, default and expanded: 44 px wide, chips of 40 px on a 44 px pitch, from the top of the body, the drawing keeps the width
+    left; **in the landscape column a horizontal row above the drawing**, under the titled head; a profile chart and a cloud, with a
+    hairline and the accent when pressed), outside the head (a direct child of the panel, placed after it),
     with `aria-pressed` and their names in `title` / `aria-label` ("Vertical profile", "Weather cross-section", four languages);
     hidden for a mission map, a route of fewer than two points, and while an airspaces list or an aerodrome's content is open:
-    those have their ✕. The chips are in the primitive's `ignore` list. A choice is kept for the life of the page (not on the
+    those have their ✕. A choice is kept for the life of the page (not on the
     device), also across an airspaces list or an aerodrome opened and closed in between, and not replayed on a sheet that comes
     back collapsed. Choosing "Weather" on a collapsed sheet opens it to the default position. The cross-section has no ✕: the
     profile chip (or Escape) brings the profile back.
@@ -208,7 +228,8 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
     - **Without a forecast**: one 44 px line, "No forecast loaded: open Weather in Prepare" (four languages), a link to
       `#atmosphere`; if atmosphere's files cannot be loaded (offline, never cached), one muted line says so. Atmosphere's
       files are loaded at the first "Weather" (`meta.lazy`), not at mount.
-  - **The title of the handle** says what the block shows and its context: "Profile · FL065 · 427 NM · planned flight" (or
+  - **The title of the handle** (collapsed sheet, and every content that is not a drawing; over a drawing see "The handle" above: no
+    title, the same words in the handle's label) says what the block shows and its context: "Profile · FL065 · 427 NM · planned flight" (or
     "flight in progress"; a mission map: "Profile · I-001A · title · map"), "Weather · FL065 · …"; the tooltip has the whole
     summary ("Vertical profile · LFRS → LFML · alternate LFMT · FL065 · 427 NM · C30J · planned flight"). A content opened by
     `openData` (airspaces list, aerodrome's points, levels: "n airspaces at this point", "LFMN: VFR reporting points", the
@@ -265,8 +286,9 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   elevation in brackets — where there is room.
 - **Layers content** (the Layers button of the left column opens it in the sheet; on a mission map it holds only
   the selector): the flight / map selector first, then the **Complexity slider** (before any box: "the first thing the
-  administrator asked for"; label "Complexity", the value beside it, a help sentence in four languages: it acts as if the
-  zoom were different, what each zoom shows is set by the administrator), then airspace families (TMA /
+  administrator asked for"; label "Complexity", the value beside it, and the slider on **one 44 px line** (block ≤ 56 px at 390 px, five designs, case D17);
+  the help sentence in four languages (it acts as if the zoom were different, what each zoom shows is set by the administrator) is
+  the label's tooltip and the slider's `aria-describedby`, out of the page (it took 51 px, and the block 73 px, 24 Oct)), then airspace families (TMA /
   CTR: TMA, CTR, CTA, TMZ, RMZ; D / R / P: R, D, P, TRA, TSA, CBA, PJE, TRVL, TRPVL, ZIT; FIR: FIR, UIR, UTA, LTA, OCA,
   FRA; others: every other type present), lower and upper airways, beacons, airway points (`fixes`), VRP, obstacles,
   MORA, towns, graticule, alternate, and "Around the route only".

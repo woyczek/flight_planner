@@ -6,7 +6,7 @@ Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt 
 ## So geht’s
 
 **Der geplante Flug.** Die Karte zeigt den in Kraftstoff vorbereiteten Flug: Abflug, Routenpunkte, Ankunft, und den
-Ausweichflugplatz grau gestrichelt. Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) ist der Titel des Griffs des Datenblocks unter der Karte; der Tooltip des Titels nennt die ganze Zeile: Abflug und Ankunft, Ausweichflugplatz, Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
+Ausweichflugplatz grau gestrichelt. Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
 
 **Die Karte und was sie zeigt.** Rund um die Route: die Lufträume, die sie durchquert oder streift (Flugbeschränkungs-,
 Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
@@ -23,12 +23,11 @@ Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Kar
 Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem Abflug,
 geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden. Unter der Karte zeigt dieser
 Datenblock das Profil; die Liste der Lufträume an einem Punkt oder die Meldepunkte eines Flugplatzes öffnen sich an
-seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Der Wolkenchip rechts vom Griff des Blocks ersetzt es (der Profilchip bringt es zurück) durch den
+seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Der Wolkenchip, in der Spalte aus zwei Chips rechts neben der Zeichnung (in Querformat darüber), ersetzt es (der Profilchip bringt es zurück) durch den
 Wetterschnitt entlang der Route (Wind, Temperatur, Wolken, Vereisung) auf der Flughöhe; der Schnitt folgt demselben Cursor, und ein Tippen darauf
-verschiebt ihn. Er zeigt nur die Vorhersage, die Atmosphäre schon geladen hat: ohne sie führt die Zeile „Keine Vorhersage geladen“ zu Wetter unter Vorbereiten.
+verschiebt ihn. Er zeigt nur die Vorhersage, die Atmosphäre schon geladen hat: ohne sie führt die Zeile „Keine Vorhersage geladen“ zu Wetter unter Vorbereiten. Profil und Schnitt werden auf die genaue Höhe des Blocks gezeichnet, ihre Entfernungsachse bleibt immer sichtbar: in einem niedrigen Block entfallen Höhenbeschriftungen, nie die Achse.
 
-**Ein feststehender Bildschirm.** Nichts zwischen Kopfzeile und Karte: die Karte und der Datenblock füllen den Bildschirm, und nichts scrollt außer dem Inhalt des Blocks. Die Schaltflächen liegen auf der Karte: rechts von oben „Route bearbeiten“ (der Stift), „Zentrieren“, der Kartenmodus, „Auf der Karte bearbeiten“ (die vier Pfeile) und zuletzt der Vollbildmodus (Esc verlässt ihn); links „Ebenen“. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken und den
-Titel) nach oben, um ihn zu vergrößern, nach unten, um ihn auf diese Zeile zu verkleinern, was der Karte die ganze Höhe
+**Ein feststehender Bildschirm.** Nichts zwischen Kopfzeile und Karte: die Karte und der Datenblock füllen den Bildschirm, und nichts scrollt außer dem Inhalt des Blocks. Die Schaltflächen liegen auf der Karte: rechts von oben „Route bearbeiten“ (der Stift), „Zentrieren“, der Kartenmodus, „Auf der Karte bearbeiten“ (die vier Pfeile) und zuletzt der Vollbildmodus (Esc verlässt ihn); links „Ebenen“. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken; in normaler Höhe trägt die Zeile über einem Profil oder Schnitt keinen Titel, nur die beiden Chips) nach oben, um ihn zu vergrößern, nach unten, um ihn auf diese Zeile zu verkleinern, was der Karte die ganze Höhe
 lässt; ein Tippen auf die Zeile klappt ihn ein oder bringt ihn auf seine normale Höhe zurück.
 
 **Sechs Kartenmodi.** Die Modus-Schaltfläche rechts auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
