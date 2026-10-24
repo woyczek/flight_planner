@@ -15,12 +15,12 @@ traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («
 Combustible («Iniciar el vuelo»), aparece primero, «Vuelo iniciado a las hh:mm». La tarjeta dice en una línea todo lo
 que se va a retomar, incluso lo que un tipo de misión no tiene casilla para mostrar (distancia, nivel). «Usar» rellena
 también la hora de puesta en marcha (la hora de salida en Combustible) y el combustible a la salida (el combustible de
-bloque del cálculo), cada uno marcado con su fuente. Guardar el informe termina el vuelo iniciado: Combustible vuelve a
+bloque del cálculo), todo recordado en la línea «Rellenado desde: …» bajo el título de la tarjeta. Guardar el informe termina el vuelo iniciado: Combustible vuelve a
 la preparación, Mis vuelos quita «En curso», y el vuelo ya no se propone.
 
 **Las otras fuentes.** Despliegue «Otras fuentes» para retomar su último vuelo IVAO o VATSIM, su plan de vuelo
 SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del tracker IVAO o de StatSim, un METAR. Solo
-se rellenan los campos vacíos; junto a cada uno, su fuente. Si una fuente da otra cosa para campos ya rellenados, un
+se rellenan los campos vacíos; la línea «Rellenado desde: …» bajo el título de la tarjeta dice de dónde vienen. Si una fuente da otra cosa para campos ya rellenados, un
 botón propone sustituirlos.
 
 **La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
@@ -49,8 +49,8 @@ modificarlo. «Nuevo informe» vuelve a empezar con un informe en blanco.
   cuenta como un solo vuelo. La puesta en marcha y la parada corresponden a la conexión y a la desconexión cuando la
   traza empieza y termina en tierra; el despegue y el aterrizaje vienen de la traza.
 - **Las horas** están en UTC, marcadas «(Z)» en los campos; el vuelo iniciado y la red las rellenan en UTC. Un
-  informe más antiguo, introducido en la hora del dispositivo, se muestra convertido con la hora introducida debajo
-  («introducido 18:30 local»); solo se reescribe en UTC si lo guarda.
+  informe más antiguo, introducido en la hora del dispositivo, se muestra convertido con la hora introducida en la línea bajo el título de la tarjeta
+  («Despegue introducido 18:30 local»); solo se reescribe en UTC si lo guarda.
 - **SimBrief**: su último plan (identificador ajustado en ⚙) — aeronave, ruta, nivel, velocidad, combustible previsto,
   METAR y TAF.
 - **Desde Mis vuelos**: «Escribir el informe» de un vuelo abre un informe nuevo, ya rellenado con ese vuelo y su fecha;

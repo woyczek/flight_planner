@@ -5,11 +5,14 @@ Rules covered
     green, offers a row for it, writes `pilot/handoff.json` and opens `#report?from=flightlog`, and report takes the
     hand-over (G1);
   * the flight log opens without error, with its filters and totals, and its empty state in four languages (G2);
-  * the report has its three steps, the first one active, and 44 px controls; without data the form is empty (G3).
+  * the report has its three steps, the first one active, and 44 px controls; without data the form is empty (G3);
+  * the report screen with a prefilled flight is uniform and never overflows on a phone (G4).
 
-Cases: G1 G2 G3.  Seeding: `lib.pending_doc()` (cache policy) through the frame's IndexedDB cache, no launcher.
+Cases: G1 G2 G3 G4.  Seeding: `lib.pending_doc()` (cache policy) through the frame's IndexedDB cache, no launcher.
 """
-from lib import Fail, Skip, case, norm, tx
+import re
+
+from lib import ROOT, Fail, Skip, case, norm, tx
 
 FL = 'modules/flightlog/module.js'
 
@@ -68,3 +71,78 @@ def g3(c):
             c.ge(round(prev['h']), 44, 'the previous control is at least 44 px high', what='previous control height')
     filled = c.js("[...document.querySelectorAll('[data-module=report] input[name^=\"aircraft.0\"], [data-module=report] input[name^=\"navigation.\"]')].filter(i => i.value && i.type !== 'hidden').map(i => i.name + '=' + i.value)")
     c.ok(not filled, f'fields filled without any data: {filled}', 'an empty form')
+
+
+# G4: what the screen of a prefilled report measures (one round trip).  Fields are the inputs and selects of the grids of the
+# visible step; a "card" is the `.f-card` that holds them; the grid's font sizes are those of its labels and its controls.
+_G4_JS = r"""() => {
+  const root = document.querySelector('[data-module=report]'), W = window.innerWidth, r2 = Math.round;
+  const vis = e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden' };
+  const steps = [...root.querySelectorAll('.rp-step')].filter(s => !s.hidden && s.offsetParent);
+  const out = { sw: document.documentElement.scrollWidth, iw: W, over: [], cards: [], sizes: [], badges: 0, h2: [], bar: null };
+  for (const e of root.querySelectorAll('*')) {
+    if (!vis(e) || e.closest('.f-scroll')) continue;
+    const r = e.getBoundingClientRect();
+    if (r.right > W + 1 || r.left < -1) out.over.push(e.tagName.toLowerCase() + '.' + (e.className || '') + ' right=' + r2(r.right));
+  }
+  const sizes = new Set();
+  for (const st of steps) {
+    for (const c of st.querySelectorAll('.f-card')) {
+      if (!vis(c)) continue;
+      const hs = [...c.querySelectorAll('.f-grid input:not([type=hidden]), .f-grid select')].filter(vis).map(i => i.getBoundingClientRect().height);
+      if (hs.length) out.cards.push({ n: hs.length, min: Math.min(...hs), max: Math.max(...hs), t: (c.querySelector('h2, summary') || {}).textContent });
+      c.querySelectorAll('.f-grid label > span, .f-grid input, .f-grid select').forEach(e => { if (vis(e)) sizes.add(getComputedStyle(e).fontSize) });
+    }
+    st.querySelectorAll('h2').forEach(h => { if (vis(h)) out.h2.push(getComputedStyle(h).fontSize) });
+    out.badges += st.querySelectorAll('.f-grid .f-badge, label .f-badge').length;
+  }
+  out.sizes = [...sizes];
+  const bar = root.querySelector('.f-bar');
+  if (bar) {
+    const bs = [...bar.querySelectorAll('button')];
+    out.bar = { h: bar.getBoundingClientRect().height, btns: bs.map(b => ({ t: b.textContent.trim(), h: b.getBoundingClientRect().height, fs: getComputedStyle(b).fontSize,
+      fw: getComputedStyle(b).fontWeight, right: b.getBoundingClientRect().right })) };
+  }
+  out.prefill = root.querySelectorAll('.rp-src').length;
+  return out;
+}"""
+
+
+@case('G4', 'Report screen uniform, no overflow', 'G', tags=('report',), langs4=True, rule='modules/report/SPEC 2; frame/design/SPEC 2 (tokens)')
+def g4(c):
+    where = lambda w, tone, step: f'{w}px {tone} step {step + 1}'
+    widths = (390, 360) if c.phone else (c.width,)
+    for w in widths:
+        for tone in ('day', 'night'):
+            c.page.set_viewport_size({'width': w, 'height': 780 if w == 360 else c.height})
+            c.open('report', flight=True, tone=tone)
+            c.until("!!document.querySelector('[data-module=report] [data-do=current]')", what='the current-flight card is offered')
+            c.tap('[data-module="report"] [data-do="current"]')
+            c.until("[...document.querySelectorAll('[data-module=report] input')].some(i => i.value === 'F-RAJA')", what='the flight prefills the form')
+            c.settle()
+            for step in (0, 1, 2) if c.phone else (0,):
+                if step:
+                    c.tap(f'[data-module="report"] .f-steps button[data-step="{step}"]')
+                    c.settle()
+                m = c.js(_G4_JS)
+                at = where(w, tone, step)
+                c.le(m['sw'], m['iw'], f'no horizontal scroll ({at})', what='scrollWidth')
+                c.ok(not m['over'], f'{at}: {m["over"][:3]}', 'no element beyond the right edge of the window', 'modules/report/SPEC 2')
+                c.ok(not m['badges'], f'{at}: {m["badges"]} source badge(s) in the field grids', 'no badge in the grid (one muted line under the title)')
+                for k in m['cards']:
+                    c.le(round(k['max'] - k['min'], 1), 2, f'the fields of a card have one height ({at}, card "{(k["t"] or "").strip()[:24]}")', what='height spread (px)')
+                    c.ge(round(k['min']), 44, f'a field is at least 44 px high ({at})', what='field height')
+                c.ok(len(m['sizes']) <= 2, f'{at}: {m["sizes"]}', 'at most two font sizes in the grids (label, value)')
+                c.ok(len(set(m['h2'])) <= 1, f'{at}: {sorted(set(m["h2"]))}', 'one size for the card titles (h2 of the frame)')
+                if m['bar']:
+                    b = m['bar']
+                    c.le(round(b['h']), 112, f'the save bar is low ({at})', what='bar height')
+                    for x in b['btns']:
+                        c.ok(x['h'] <= 48, f'{at}: "{x["t"]}" is {round(x["h"])} px high', 'one line of 44 px per button, never folded')
+                        c.ge(round(x['right']), 1, 'the button is drawn')
+                    c.ok(len({(x['fs'], x['fw']) for x in b['btns']}) == 1, f'{at}: {[(x["fs"], x["fw"]) for x in b["btns"]]}', 'both save buttons have the same font size and weight')
+            if tone == 'day' and w == widths[0]:
+                c.ok(m['prefill'] >= 1, 'no provenance line', 'a muted line "Prefilled from: ..." under a card title')
+    own = re.findall(r'font-size\s*:\s*(?!var\(--sog-size)[^;}"]+', (ROOT / 'modules/report/module.js').read_text(encoding='utf-8'))
+    c.ok(not own, f'font-size of the module: {own[:3]}', 'no font-size of its own, only --sog-size-* tokens')
+    c.check_errors()

@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Report: uniform fields, one provenance line, a two-line action bar on a phone** (`modules/report/module.js`, `SPEC.md` § 2 bis,
+  `DECISIONS.md`, help ×4 and `frame/help/pilot.*.md`, `tests/v3/cases/flightlog.py` G4, `tests/v3/PLAN.md`) — on a 390 px phone the blue source badge of each
+  prefilled field was wider than its half column (it overlapped its neighbour and left the screen) and made the fields of a row
+  different heights (a date 56 px against 44 for the others). The source is no longer an element of the grid: each card has one muted
+  line "Prefilled from: … · …" (four languages) under its title, the "entered 18:30 local" times of an older report too. Grid cells
+  never exceed their column (`min-width: 0`), labels are on one line with an ellipsis, every field is 44 px. The save bar is two
+  44 px buttons ("Save" filled, "Save and record on the website" outline, same font, never folded) in a bar of 105 px at most; when
+  the website address is not set, the reason is the button's `title` and one muted line under the bar, no longer inside the button.
+  No design file changed (the design rules were measured: not the cause). New case G4 (five designs, 390 and 360 px, day and night).
 - **Frame: the sheet's bare handle** (`frame/design/primitives.css`, `frame/lib/sheet.js`, `frame/lib/test/sheet.html`, `frame/INTEGRATION.md`
   § 11, `frame/design/SPEC.md`, `frame/DECISIONS.md`; V3_SPECIFICATION § 7.1 rule 13 b) — a module that shows a drawing in the sheet
   puts the class `f-sheet-head-bare` on the header (`head.classList.toggle('f-sheet-head-bare', isDrawing)`): the header becomes a
