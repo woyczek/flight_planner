@@ -2,6 +2,18 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (evening) — landscape: the cross-section scrolls; the flight date from the shared flight
+
+- **The report** (user, iPhone in landscape, full screen): "Le bug : le bas du graphe est hors écran (pourtant
+  screenshot full screen)." In a 844 × 390 window the sheet's body is 95 px under the handle and the slider; the
+  cross-section keeps its legibility floor (140 px: axes, levels, strips) and the body did not scroll
+  (`overflow: hidden`), so its bottom was cut. **Fixed**: the profile and the slice are drawn at the body's real height
+  (as before) with that floor, and the body scrolls when they are taller; Details and Flight already scrolled. The
+  landscape layout itself (the sheet as a right column, § 7.1.7) is a frame lot first.
+- **The flight date from the shared flight** (Fuel lot `5a6797db`): `current_flight.json` carries `planned_at`; it is
+  the slider's origin, then `weather.when`, then now; a change of it in Fuel re-reads the flight (watched). The
+  slider's line shows the flight's departure as soon as the flight is read, forecast or not.
+
 ## 24 October 2026 (evening) — no border between the flight's grid and the world
 
 - **The report** (user, iPhone, relayed: "Léger bug :", a screenshot — LFRD → LFBD at FL170, slice 7/10 TUPAR, slider

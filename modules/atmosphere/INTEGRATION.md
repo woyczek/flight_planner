@@ -81,7 +81,8 @@ await W.spent();   // weighted calls over 24 h on this device
 ## 4. The current flight
 
 Schema 1 of `modules/fuel/INTEGRATION.md` § 3, read only: `route.points[] { id, lat, lon, alt_ft }`,
-`route.dep / arr / altn / text`, `level.ft` (else `quote.levelFt`), `profile`, `weather.when`, `aircraft`,
+`route.dep / arr / altn / text`, `level.ft` (else `quote.levelFt`), `profile`, `planned_at` (the flight date written by
+Fuel: the origin of the flight date slider; else `weather.when`, else now), `aircraft`,
 `updated_at`. If the module ever writes it, it goes through `merge(stored, mine, { fields, progressKeys, by })` of
 `frame/lib/current_flight.js`, with its own fields and `by`.
 

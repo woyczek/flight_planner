@@ -35,7 +35,8 @@ the phone's whole frame; portrait only for now (the landscape layout is a later 
   table along the computed trajectory (a row opens its slice), sources.
 - **Flight date slider** (user: "prévoir un slider « date du vol » pour ajouter x heures à la planification (et la
   carto). Utiliser au max les données gratuites."): a line under the handle, 0 to +72 h by hours, "Departure +12 h ·
-  Sun 25 03:00Z". The departure is the planned one plus those hours; the cross-section, the flight's map and the world
+  Sun 25 03:00Z". The departure is the planned one — the shared flight's date (`planned_at`, Fuel's "Flight date"),
+  else `weather.when`, else now — plus those hours; the cross-section, the flight's map and the world
   synoptic follow while it moves, from what the device keeps — nothing asked. "Load" reads at once every day the slider
   can reach (Open-Meteo counts places and variables, not days, up to two weeks), so moving it costs nothing more; beyond
   what was read, the line turns amber and "Load" reads the rest. Kept for the visit only.

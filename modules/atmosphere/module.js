@@ -261,7 +261,7 @@ const STYLE = `
 [data-module="atmosphere"] .at-when input{flex:1 1 auto;min-width:0;margin:0;accent-color:var(--sog-accent);touch-action:manipulation}
 [data-module="atmosphere"] .at-when output{flex:none;min-width:9.5em;text-align:right;font-variant-numeric:tabular-nums;color:var(--sog-muted)}
 [data-module="atmosphere"] .at-when output.at-out{color:var(--sog-warn,#b26a00)}
-[data-module="atmosphere"] .f-sheet-body.at-dbody.at-plot{overflow:hidden}
+[data-module="atmosphere"] .f-sheet-body.at-dbody.at-plot{overflow-x:hidden;overflow-y:auto}
 [data-module="atmosphere"] .at-tip{position:absolute;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:6px 8px;font-size:12px;line-height:1.4;box-shadow:var(--sog-shadow);white-space:nowrap;z-index:5;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .at-tip .m,[data-module="atmosphere"] .at-maptip .m{color:var(--sog-muted)}
 [data-module="atmosphere"] .at-sd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:8px;height:100%}
@@ -524,7 +524,8 @@ export async function mount(el, ctx) {
       arr: rec.route.arr || pts.at(-1).id,
       altn: rec.route.altn || '',
       text: rec.route.text || '',
-      when: rec.weather?.when || null,
+      // la date du vol du vol partagé (Carburant, « Date du vol ») ; sinon la copie de weather.when ; sinon maintenant
+      when: rec.planned_at || rec.weather?.when || null,
       aircraft: rec.aircraft || null,
       updated: rec.updated_at || null,
       from
@@ -2178,6 +2179,7 @@ export async function mount(el, ctx) {
     } [$f('flightSrc').value] || '';
     setText($('srcTag'), tag);
     $('srcTag').classList.toggle('at-hidden', !tag);
+    whenText(); // l'heure de départ du vol lu (sa date du vol), même sans prévision
     if (!f) return setSum('');
     setSum([ac, `${f.dep} → ${f.arr}`, fmtLvl(S.levelFt), fmtHM(S.depTime), S.data === 'demo' ? T('demoSrc') :
       `${S.model?.name || ''}${S.run ? ` · run ${fmtHM(S.run)}` : ''}`
@@ -2562,7 +2564,7 @@ export async function mount(el, ctx) {
   document.addEventListener('visibilitychange', back);
   window.addEventListener('pageshow', back);
   // vol courant changé (Carburant, Carte, un autre appareil) : relu, la prévision seulement depuis la réserve
-  const sig = r => JSON.stringify([r?.route?.points, r?.level, r?.profile, r?.weather?.when]);
+  const sig = r => JSON.stringify([r?.route?.points, r?.level, r?.profile, r?.planned_at, r?.weather?.when]);
   let lastSig = sig(rec);
   const unwatch = data.watch(flightPath, async () => {
     if ($f('flightSrc').value !== 'current') return;
