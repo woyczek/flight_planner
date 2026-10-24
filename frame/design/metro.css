@@ -64,28 +64,26 @@
     background: var(--sog-module);
     color: var(--sog-module-ink)
   }
-  @media (max-width: 760px) {
-    [data-design="metro"] .f-tabbar {
-      background: var(--sog-bg);
-      border-top-color: transparent
-    }
-    [data-design="metro"] .f-tabbar ul {
-      gap: 2px;
-      padding: 2px 2px 0
-    }
-    [data-design="metro"] .f-tabbar a {
-      background: var(--sog-surface);
-      border-top: 4px solid var(--sog-module);
-      border-radius: 0;
-      color: var(--sog-fg)
-    }
-    [data-design="metro"] .f-tabbar a[aria-current="page"] {
-      background: var(--sog-module);
-      color: var(--sog-module-ink)
-    }
-    [data-design="metro"] .f-tabbar a[aria-current="page"] .f-tab-ico {
-      background: transparent
-    }
+  [data-design="metro"] .f-tabbar {
+    background: var(--sog-bg);
+    border-top-color: transparent
+  }
+  [data-design="metro"] .f-tabbar ul {
+    gap: 2px;
+    padding: 2px 2px 0
+  }
+  [data-design="metro"] .f-tabbar a {
+    background: var(--sog-surface);
+    border-top: 4px solid var(--sog-module);
+    border-radius: 0;
+    color: var(--sog-fg)
+  }
+  [data-design="metro"] .f-tabbar a[aria-current="page"] {
+    background: var(--sog-module);
+    color: var(--sog-module-ink)
+  }
+  [data-design="metro"] .f-tabbar a[aria-current="page"] .f-tab-ico {
+    background: transparent
   }
 
   /* ---- titre de page : le verbe, grand, léger, à gauche, dans la couleur du module, sans cadre ; titres de section en

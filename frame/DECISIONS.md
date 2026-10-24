@@ -1065,3 +1065,62 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     "Launcher: {host} · {sync state}" (the state is the one of the sync button), after the data line, opens Settings; shown at
     every width (the header's host pill still appears only for a launcher of another computer on the local network). The host
     is the launcher's own name, else the page's host name. INTEGRATION § 9.3 / § 10, SPEC § 3.1.
+
+- **24 Oct 2026 — Landscape on a phone** (relay cloud, branch `v3-cadre-paysage`; decision `V3_SPECIFICATION.md` § 7.1 rule 7, the
+  user's two iPhone shots at 844 × 390: the map 163 px high, the bottom sheet half of the view and cutting its content, the
+  buttons doubling up, the "flight date" slider taking a whole line; Safari does not honour the manifest's portrait lock).
+  - **Detection**: `html.f-land` when the window is wider than high, under 1024 px, **and** the screen's orientation is not
+    portrait (`screen.orientation.type` when the browser gives it). The last condition is mine: on Android Chrome an
+    on-screen keyboard shrinks the window of a small portrait phone (360 × 640 → 360 × 320) and a size-only test would flip it
+    to landscape while the user types; the screen's own orientation does not move. The class is set by an inline script of
+    `index.html` before the first paint (same expression), then kept by `frame/app.js` (`resize`, `orientationchange`), one
+    write when the value changes. `frame-orientation` (`detail: { land }`) is fired on `window` after it: the sheet primitive
+    listens (it re-places itself without a transition). No observer, no timer.
+  - **Rail**: the bar element (`#fTabs`) stays; under `f-land` it is the grid's left column (`--f-rail-w`, 44 px) and sticky
+    under the header like the 210 px rail, which is not shown. No label: `display: none` on `.f-tab-lbl` and, **at the
+    source**, `aria-label` and `title` on every `<a>` written by `renderTabs` (a hidden label would leave the link nameless).
+    The item rules of the bar and the four designs' bar rules left their `@media (max-width: 760px)` (the bar is displayed
+    only on a phone and in landscape, so the media condition decided nothing), otherwise a 844 px landscape phone got
+    neither the pill nor the design's look (it is above 760 px). The line on the rail's right is an inset shadow, not a border
+    (a border made 43 px cells). The popover opens at the right of the rail, first row facing the icon (not centred: the
+    group tab is the first one, centring would cover the header).
+  - **`--f-tab-space` = 0 and `--f-view-h`**: `html.f-land` sets both (the view loses nothing at the bottom but the device's
+    home-indicator inset); 333 px on a 390 px window. `--f-split-h` and `--f-pane-h` do not change (they exist from 980 px
+    and a pane in landscape at 980–1023 px would only lose 44 px of width).
+  - **The sheet is a column**: `html.f-land .f-sheet` is a flex row, the panel keeps `.f-sheet-panel` and gets a width
+    (`--f-sheet-side` 40 %, floor `--f-sheet-side-min` 280 px; expanded `--f-sheet-side-max` 60 %, parts of the **root's**
+    width, resolved by CSS and by `sheet.js` with the same `max()`), `height: auto` (stretched). Modules are not touched
+    (maps and atmosphere were read, not edited): their root rule `[data-module=…] { display: flex; flex-direction: column }`
+    has one class, the frame's has two classes and an element, and the frame's `flex-direction: row` wins; the map was
+    already `flex: 1 1 0; min-height: 0`, the frame adds `min-width: 0` to the root's children. Checked: both modules, five
+    designs, no error, `ResizeObserver` boxes follow, the canvas follows the map box.
+  - **Two positions**: collapsed becomes default (`norm()` in `sheet.js`, so `pos`, `set()`, Home, a sheet collapsed in portrait
+    and then turned all say `default`; onChange gets `default` / `expanded` only). Tap toggles default ⇄ expanded (portrait:
+    default ⇄ collapsed). Horizontal drag implemented (the same code on the x axis: it was cheap and a column the user cannot
+    drag feels wrong), clamped between the two widths, a flick goes to the other one. A chevron at the end of the title row
+    (CSS, no text) says which way. `transitionend` listens to `width` too. The portrait rule that hides a collapsed sheet's
+    content is behind `:where(html:not(.f-land))` (specificity unchanged).
+  - **Overlay**: nothing in `app.js` (the layer is the map's box, which is now 333 px high); `gap: 4px` under `f-land`. Measured:
+    five buttons, six (one more shown) in one column, a seventh wraps to a second column on its left (maps' Edit mode has seven:
+    left as is, it is "au-delà"; 4 px padding as well would still need 340 px).
+  - **Full screen in landscape**: the existing rules already hide the header and the rail (`.f-tabbar` under `html.f-fixed.f-full`
+    outweighs the rail's); the view gets the four safe areas. **Exit chip removed** (relay's decision of 24 Oct, journal: it is
+    redundant since the modules' toolbars left; the column's button shows `minimize`, Escape also leaves): `.f-ov-exit`, its
+    `position: fixed` rules, `html.f-full .f-ov-right { padding-top: 60px }` and the `T.full.exit` comment are gone, `T.full.exit`
+    stays (the button's label). Help (fr, en, de, es, intro and Pilot manual), INTEGRATION § 9.4, SPEC, the suite (B5, B6) say
+    so.
+  - **Safe areas** (`viewport-fit=cover` is set): under landscape the rail's column, the header's side padding, the view's right
+    margin and bottom padding (and the left, top and bottom in full screen) take `env(safe-area-inset-*)`; the right one is a
+    margin, not a padding, so the view's own padding (16 px, 12 px under 761 px) of a page that scrolls is kept. Tried with Chromium's
+    `Emulation.setSafeAreaInsetsOverride` (left 47, right 47, bottom 21): the rail is 91 px (44 + 47), the view 753 px, the
+    column 282 px; nothing overlaps. Not tried on an iPhone.
+  - **Not changed**: `screen.orientation.lock('portrait')` stays for the installed app (comment updated: Safari ignores it, hence
+    this lot). A window of a computer, 761–1023 px wide and wider than high, is in landscape mode too (the rule says width and
+    ratio only): the 210 px rail is replaced by the 44 px one; 1024 px and wider are unchanged.
+  - **Verified** (Chromium, Playwright, touch 844 × 390; the suite's case A14 for `maps` and `atmosphere` in five designs, the bench
+    `frame/lib/test/sheet.html` at 390, 1280 and 844 × 390: 129 / 129): the numbers asked: header 57, rail 44 × 333 at left 0,
+    five entries, map at 44 / 57, 333 high, column 320 px (40 % of 800), 480 px expanded, handle at the top, no double column,
+    no page scroll, full screen (0 / 0, column 390 high, no chip), Escape, hot rotation 390 → 844 → 390 (classes, boxes, canvas),
+    a collapsed sheet turned, popover at the right of the rail; portrait boxes compared with the base commit (header, view,
+    module root, map, sheet, bar, layer, `--f-*`) in maps, atmosphere, fuel, report, flightlog in two designs: **identical**,
+    except the right column in full screen, which no longer starts 60 px lower.

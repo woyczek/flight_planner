@@ -24,8 +24,11 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   teléfono, la fuente de la posición durante un vuelo y «Ayuda de esta pantalla». Esc o ✕ la cierra. En un teléfono, la
   cabecera se reduce al nombre, el botón i y ⚙.
 - **Pantalla completa.** En el mapa (las herramientas de vista fija), un botón redondo al final de la columna de botones
-  sobre el mapa oculta la cabecera y la barra inferior para dejar todo el sitio al mapa; el botón de esquina arriba a la
-  derecha, el mismo botón o Esc los devuelven.
+  sobre el mapa oculta la cabecera y la barra inferior para dejar todo el sitio al mapa; el mismo botón o Esc los devuelven.
+- **Teléfono en horizontal.** Girado de lado, el teléfono coloca la barra inferior como un carril de iconos a la izquierda (las
+  mismas cinco entradas; un segundo toque en Preparar abre sus herramientas a la derecha del carril), conserva la cabecera, pone
+  el bloque de datos del mapa como una columna a la derecha (toque su primera línea, o arrástrela hacia la izquierda, para
+  ensancharla o estrecharla) y da al mapa toda la altura que queda. En pantalla completa, la columna se queda.
 
 ## Datos y sincronización
 

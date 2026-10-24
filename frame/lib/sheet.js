@@ -8,6 +8,12 @@
 //
 // Hauteurs : jetons --f-sheet-* lus sur la racine (feuille de style : primitives.css ; le module peut les poser sur sa
 // racine). Chaque valeur est « <n>% » (part de la hauteur de la racine) ou « <n>px » ; rien d'autre n'est lu.
+//
+// Paysage sur un téléphone (<html class="f-land">, posé par le cadre : frame/INTEGRATION.md § 11) : la feuille est une colonne à
+// droite de la carte, à deux positions (normale, agrandie) ; la largeur remplace la hauteur (jetons --f-sheet-side, -side-min,
+// -side-max, parts de la largeur de la racine), le toucher de la poignée bascule entre les deux, un glisser horizontal aussi, et
+// la position « réduite » n'existe pas (elle devient « normale »). Les positions rendues à onChange et onSettle sont les mêmes
+// noms : le module n'a rien à changer.
 
 /** Les trois positions, de la plus basse à la plus haute. */
 export const POSITIONS = ['collapsed', 'default', 'expanded'];
@@ -19,8 +25,14 @@ const SETTLE_MS = 120;
 /** Distance (px) à partir de laquelle un toucher devient un glisser. */
 const SLOP = 6;
 
-/** Nom d'une position à partir d'un nom ou d'un rang (0, 1, 2) ; le rang est borné. */
-const norm = p => typeof p === 'number' ? POSITIONS[Math.max(0, Math.min(2, Math.round(p)))] : POSITIONS.includes(p) ? p : 'default';
+/** Paysage sur un téléphone : la feuille est une colonne (classe posée par le cadre sur <html>). */
+const sideways = () => document.documentElement.classList.contains('f-land');
+
+/** Nom d'une position à partir d'un nom ou d'un rang (0, 1, 2) ; le rang est borné. En colonne (paysage), pas de position réduite. */
+const norm = p => {
+  const n = typeof p === 'number' ? POSITIONS[Math.max(0, Math.min(2, Math.round(p)))] : POSITIONS.includes(p) ? p : 'default';
+  return n === 'collapsed' && sideways() ? 'default' : n;
+};
 
 /**
  * createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange, onSettle }) → { pos, set, settle, stop }
@@ -62,7 +74,8 @@ export function createSheet({
   let cur = norm(pos),
     timer = 0;
 
-  /** Longueur d'un jeton : « 38% » est une part de la hauteur h, « 170px » (ou un nombre) des pixels. */
+  /** Longueur d'un jeton : « 38% » est une part de la longueur h (hauteur de la racine ; sa largeur en paysage), « 170px » (ou un
+   *  nombre) des pixels. */
   const len = (v, h) => {
     const n = parseFloat(v) || 0;
     return String(v).includes('%') ? n * h / 100 : n;
@@ -71,8 +84,14 @@ export function createSheet({
    *  racine, avec son plancher), l'agrandie (idem). */
   function heights() {
     const cs = getComputedStyle(root),
-      t = k => cs.getPropertyValue(`--f-sheet-${k}`).trim(),
-      h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+      t = k => cs.getPropertyValue(`--f-sheet-${k}`).trim();
+    if (sideways()) {
+      // colonne : les largeurs, parts de la largeur de la racine ; réduite = normale (pas de position réduite)
+      const w = root.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0),
+        d = Math.max(len(t('side'), w), len(t('side-min'), w));
+      return [d, d, Math.max(len(t('side-max'), w), len(t('side-min'), w))];
+    }
+    const h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
     return [len(t('head'), h), Math.max(len(t('default'), h), len(t('default-min'), h)), Math.max(len(t('expanded'), h), len(t(
       'expanded-min'), h))];
   }
@@ -93,6 +112,7 @@ export function createSheet({
       requestAnimationFrame(() => panel.classList.remove('f-sheet-nt'));
     }
     panel.style.removeProperty('height');
+    panel.style.removeProperty('width');
     if (root.dataset.sheet !== p) root.dataset.sheet = p;
     const text = tip(p);
     if (text != null) {
@@ -108,8 +128,9 @@ export function createSheet({
     clearTimeout(timer);
     timer = setTimeout(() => onSettle(cur), SETTLE_MS);
   }
-  /** Toucher ou touche d'activation : réduit la feuille, ou la ramène à la position normale (jamais à l'agrandie). */
-  const toggle = () => set(cur === 'default' ? 'collapsed' : 'default');
+  /** Toucher ou touche d'activation : réduit la feuille, ou la ramène à la position normale (jamais à l'agrandie) ; en colonne
+   *  (paysage), bascule entre la normale et l'agrandie. */
+  const toggle = () => set(sideways() ? cur === 'default' ? 'expanded' : 'default' : cur === 'default' ? 'collapsed' : 'default');
 
   // la poignée est un bouton ; sinon elle en prend le rôle et la prise au clavier
   if (grip.tagName !== 'BUTTON') {
@@ -122,12 +143,15 @@ export function createSheet({
   let d = null;
   on(head, 'pointerdown', e => {
     if (e.button > 0 || (ignore && e.target.closest(ignore)) || locked()) return;
+    const side = sideways(),
+      at = side ? e.clientX : e.clientY;
     d = {
       id: e.pointerId,
-      y0: e.clientY,
-      h0: panel.offsetHeight,
+      side,
+      y0: at,
+      h0: side ? panel.offsetWidth : panel.offsetHeight,
       pos: cur,
-      y: e.clientY,
+      y: at,
       t: performance.now(),
       v: 0,
       on: false,
@@ -141,17 +165,19 @@ export function createSheet({
   });
   on(head, 'pointermove', e => {
     if (!d || e.pointerId !== d.id) return;
+    const at = d.side ? e.clientX : e.clientY;
     if (!d.on) {
-      if (Math.abs(e.clientY - d.y0) < SLOP) return;
+      if (Math.abs(at - d.y0) < SLOP) return;
       d.on = true;
       panel.classList.add('f-sheet-nt');
     }
     const hs = heights(),
       now = performance.now();
-    if (now > d.t) d.v = .6 * d.v + .4 * ((e.clientY - d.y) / (now - d.t));
-    d.y = e.clientY;
+    if (now > d.t) d.v = .6 * d.v + .4 * ((at - d.y) / (now - d.t));
+    d.y = at;
     d.t = now;
-    panel.style.height = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (e.clientY - d.y0))))}px`;
+    // la hauteur suit le doigt vers le haut ; la largeur d'une colonne (à droite de la carte), vers la gauche
+    panel.style[d.side ? 'width' : 'height'] = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (at - d.y0))))}px`;
   });
   const end = e => {
     if (!d || e.pointerId !== d.id) return;
@@ -164,11 +190,12 @@ export function createSheet({
     }
     panel.classList.remove('f-sheet-nt');
     const hs = heights(),
-      h = panel.offsetHeight;
+      h = was.side ? panel.offsetWidth : panel.offsetHeight;
     let i = hs.reduce((b, x, k) => Math.abs(x - h) < Math.abs(hs[b] - h) ? k : b, 0);
+    if (was.side && i === 0) i = 1; // la colonne n'a que deux positions : normale (rang 1) et agrandie (rang 2)
     if (Math.abs(was.v) > FLICK && e.type === 'pointerup') {
       const from = POSITIONS.indexOf(was.pos);
-      i = was.v < 0 ? Math.min(2, from + 1) : Math.max(0, from - 1);
+      i = was.v < 0 ? Math.min(2, from + 1) : Math.max(was.side ? 1 : 0, from - 1);
     }
     set(i);
   };
@@ -190,6 +217,9 @@ export function createSheet({
     const k = {
       ArrowUp: Math.min(2, i + 1),
       ArrowDown: Math.max(0, i - 1),
+      // une colonne à droite de la carte s'agrandit vers la gauche
+      ArrowLeft: sideways() ? 2 : null,
+      ArrowRight: sideways() ? 1 : null,
       Home: 0,
       End: 2
     } [e.key];
@@ -197,10 +227,13 @@ export function createSheet({
     e.preventDefault();
     set(k);
   });
-  // la transition de hauteur finie : la taille s'est arrêtée
+  // la transition de hauteur (de largeur, pour une colonne) finie : la taille s'est arrêtée
   on(panel, 'transitionend', e => {
-    if (e.target === panel && e.propertyName === 'height') settle();
+    if (e.target === panel && (e.propertyName === 'height' || e.propertyName === 'width')) settle();
   });
+  // le téléphone tourne : le cadre pose ou retire f-land puis le dit ; la feuille reprend sa position dans sa nouvelle forme
+  // (l'onglet réduit du portrait devient la colonne normale), sans glissement
+  on(window, 'frame-orientation', () => set(cur, true));
 
   // placement de départ : sans glissement et sans onSettle (rien n'a changé pour la vue)
   set(cur, true);

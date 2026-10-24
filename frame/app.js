@@ -22,6 +22,29 @@
   //   · hors ligne : service worker du cadre (frame/sw.js : le cadre et les modules gardés, nouvelle version proposée au
   //     rechargement), appels sortants des modules relayés par le lanceur s'il y en a un (ctx.net).
   const FD = window.FrameData;
+  // paysage sur un téléphone (V3_SPECIFICATION.md § 7.1 règle 7) : <html class="f-land"> quand la fenêtre est plus large que haute
+  // et de moins de 1024 px (téléphone ou petite tablette tournée) ; la barre du bas devient un rail à gauche, la feuille d'un
+  // module fixe une colonne à droite (frame.css, design/primitives.css). Posée au démarrage (la page de index.html l'a déjà
+  // posée avant le premier affichage, même règle), puis sur resize et orientationchange, en une seule écriture quand la valeur
+  // change ; « frame-orientation » (detail: { land }) le dit ensuite aux primitives du cadre (la feuille). Un clavier à l'écran
+  // qui rendrait une fenêtre de téléphone portrait plus large que haute n'y change rien : l'orientation de l'écran, quand le
+  // navigateur la donne, doit être celle d'un paysage.
+  const landNow = () => innerWidth > innerHeight && innerWidth < 1024 && !/^portrait/.test(screen.orientation?.type || '');
+
+  function paintLand() {
+    const h = document.documentElement,
+      on = landNow();
+    if (h.classList.contains('f-land') === on) return;
+    h.classList.toggle('f-land', on);
+    window.dispatchEvent(new CustomEvent('frame-orientation', {
+      detail: {
+        land: on
+      }
+    }));
+  }
+  paintLand();
+  window.addEventListener('resize', paintLand);
+  window.addEventListener('orientationchange', paintLand);
   // heures de l'appli : UTC suffixée Z (frame/lib/time.js) ; module chargé en même temps que le reste du démarrage
   let TZ = null;
   const timeP = import(new URL('lib/time.js?v=0', document.currentScript.src).href).then(m => TZ = m).catch(e => console
@@ -251,7 +274,7 @@
       position: ['Position : {s}', 'Position: {s}', 'Position: {s}', 'Posición: {s}'],
       help: ['Aide de cet écran', 'Help for this screen', 'Hilfe zu diesem Bildschirm', 'Ayuda de esta pantalla']
     },
-    // plein écran d'un module fixe (bouton de la couche de superposition, puce de sortie) et groupe d'onglets (popover)
+    // plein écran d'un module fixe (bouton de la couche de superposition : il montre « quitter » une fois en plein écran)
     full: {
       enter: ['Plein écran', 'Full screen', 'Vollbild', 'Pantalla completa'],
       exit: ['Quitter le plein écran', 'Exit full screen', 'Vollbild beenden', 'Salir de pantalla completa']
@@ -759,11 +782,11 @@
     applyFull();
   }
   // ---------------------------------------------------------------- plein écran d'un module fixe
-  // <html class="f-full"> (avec f-fixed) cache l'en-tête et, sur téléphone, la barre du bas ; sur un écran, l'en-tête et la
-  // colonne des verbes (frame.css). Demandé par le bouton que le cadre ajoute à la colonne de droite de la couche de
-  // superposition, par la puce de sortie ou par Échap ; gardé tant que la page vit (même sous un écran du cadre ouvert par-dessus,
-  // où il est sans effet), remis à zéro au changement de module. Pas l'API plein écran du navigateur (absente de Safari
-  // sur iPhone) : la page prend toute la fenêtre.
+  // <html class="f-full"> (avec f-fixed) cache l'en-tête et, sur téléphone, la barre du bas (en paysage : le rail) ; sur un écran,
+  // l'en-tête et la colonne des verbes (frame.css). Demandé par le bouton que le cadre ajoute à la colonne de droite de la couche
+  // de superposition (il montre « réduire » une fois en plein écran : pas de puce de sortie) ou par Échap ; gardé tant que la
+  // page vit (même sous un écran du cadre ouvert par-dessus, où il est sans effet), remis à zéro au changement de module. Pas
+  // l'API plein écran du navigateur (absente de Safari sur iPhone) : la page prend toute la fenêtre.
   let full = false;
   const overlays = new Set(); // couches de superposition montées (module principal, volet)
   /** Pose ou retire f-full selon la demande et la vue fixe affichée ; à chaque changement, les modules sont prévenus
@@ -790,10 +813,9 @@
   // ---------------------------------------------------------------- couche de superposition des modules fixes (INTEGRATION § 9.3)
   /** Couche d'un module fixe : .f-overlay, frère de sa racine dans la vue, posée en pixels sur sa zone de carte (l'enfant de la
    *  racine qui prend la place : flex-grow > 0, sinon le premier visible ; over(el) pour dire laquelle). Deux colonnes, gauche
-   *  et droite ; le bouton plein écran est la dernière case de la droite (withFull : pas dans un volet), la puce de sortie se
-   *  montre en haut à droite en plein écran. Les colonnes restent dans la carte : jamais sur la feuille. Observateurs : taille
-   *  (la carte change quand la feuille bouge) et enfants de la racine (la carte est ajoutée après le montage) ; la géométrie
-   *  n'est écrite que si elle change. Retourne { api (ctx.overlay), host, paintFull, dispose }. */
+   *  et droite ; le bouton plein écran est la dernière case de la droite (withFull : pas dans un volet). Les colonnes restent
+   *  dans la carte : jamais sur la feuille. Observateurs : taille (la carte change quand la feuille bouge) et enfants de la
+   *  racine (la carte est ajoutée après le montage) ; la géométrie n'est écrite que si elle change. Retourne { api (ctx.overlay), host, paintFull, dispose }. */
   function makeOverlay(root, withFull) {
     const host = root.parentElement,
       box = document.createElement('div');
@@ -827,8 +849,7 @@
       return b;
     };
     let fbtn = null;
-    let chip = null,
-      fullShown = null;
+    let fullShown = null;
     if (withFull) {
       fbtn = button({
         icon: 'maximize',
@@ -837,13 +858,6 @@
         pressed: false
       });
       fbtn.classList.add('f-ov-full');
-      chip = button({
-        icon: 'minimize',
-        label: t(T.full.exit),
-        onClick: () => setFull(false)
-      });
-      chip.classList.add('f-ov-exit');
-      box.append(chip); // hors des colonnes : en haut à droite, quel que soit le nombre de boutons
     }
     /** Zone couverte : celle que dit le module, sinon l'enfant de la racine qui grandit (la carte), sinon le premier visible. */
     const targetOf = () => {
@@ -886,7 +900,7 @@
     later();
     const o = {
       host,
-      /** Bouton plein écran et puce : icône, nom et état d'après le plein écran en cours (écrit seulement si cela change). */
+      /** Bouton plein écran : icône, nom et état d'après le plein écran en cours (écrit seulement si cela change). */
       paintFull(on) {
         if (!fbtn || fullShown === on) return;
         fullShown = on;
@@ -1462,7 +1476,8 @@
       // data-landmark : la couleur repère du premier module du groupe (design metro) ; l'icône pleine remplace le trait
       // sur l'onglet choisi (la feuille de style montre l'une ou l'autre : la forme change, pas seulement la couleur)
       nav.setAttribute('aria-label', t(T.tabsNav));
-      nav.innerHTML = `<ul>${list.map(tb => `<li><a data-tab="${esc(tb.id)}" data-landmark="${esc(tb.screen ? 'settings' : tabModules(tb)[0] || tb.modules[0])}"><span class="f-tab-ico">${icon(tb.icon)}${Icons?.svg(tb.icon, { filled: true }) || ''}</span><span class="f-tab-lbl">${esc(t(tb.label))}</span></a></li>`).join('')}</ul>`;
+      // aria-label et title : le nom de la case quand le libellé est caché (le rail du paysage n'a que des icônes)
+      nav.innerHTML = `<ul>${list.map(tb => `<li><a data-tab="${esc(tb.id)}" aria-label="${esc(t(tb.label))}" title="${esc(t(tb.label))}" data-landmark="${esc(tb.screen ? 'settings' : tabModules(tb)[0] || tb.modules[0])}"><span class="f-tab-ico">${icon(tb.icon)}${Icons?.svg(tb.icon, { filled: true }) || ''}</span><span class="f-tab-lbl">${esc(t(tb.label))}</span></a></li>`).join('')}</ul>`;
     }
     for (const a of nav.querySelectorAll('a')) {
       const tb = APP.tabs.find(x => x.id === a.dataset.tab),
@@ -1518,11 +1533,21 @@
       bar = $('fTabs').getBoundingClientRect(),
       w = el.offsetWidth,
       h = el.offsetHeight,
-      cx = r.left + r.width / 2,
-      x = Math.min(Math.max(cx - w / 2, 8), document.documentElement.clientWidth - w - 8);
-    el.style.left = `${Math.round(x)}px`;
-    el.style.top = `${Math.round(bar.top - h - 10)}px`;
-    el.style.setProperty('--f-pop-caret', `${Math.round(cx - x)}px`);
+      cx = r.left + r.width / 2;
+    if (document.documentElement.classList.contains('f-land')) {
+      // paysage : la barre est un rail à gauche ; le popover s'ouvre à sa droite, sa première ligne face à l'icône (sans sortir de
+      // la fenêtre), la pointe (--f-pop-caret : sa position verticale dans le popover) à gauche, face à l'icône
+      const cy = r.top + r.height / 2,
+        y = Math.min(Math.max(cy - 26, 8), document.documentElement.clientHeight - h - 8);
+      el.style.left = `${Math.round(bar.right + 10)}px`;
+      el.style.top = `${Math.round(y)}px`;
+      el.style.setProperty('--f-pop-caret', `${Math.round(cy - y)}px`);
+    } else {
+      const x = Math.min(Math.max(cx - w / 2, 8), document.documentElement.clientWidth - w - 8);
+      el.style.left = `${Math.round(x)}px`;
+      el.style.top = `${Math.round(bar.top - h - 10)}px`;
+      el.style.setProperty('--f-pop-caret', `${Math.round(cx - x)}px`);
+    }
     el.style.visibility = '';
     const off = new AbortController(),
       opt = {
@@ -2654,9 +2679,9 @@
         }
       });
     });
-    // orientation verrouillée en portrait tant que la disposition en paysage n'est pas décidée (V3_SPECIFICATION.md
-    // § 7.1, 24 oct 2026) : effective en appli installée seulement (manifest « orientation », coque Capacitor) ; en page
-    // de navigateur l'appel échoue et c'est attendu
+    // orientation verrouillée en portrait en appli installée (V3_SPECIFICATION.md § 7.1, 24 oct 2026) : effective seulement
+    // avec le manifeste « orientation » ou la coque Capacitor ; Safari ne l'honore pas, d'où la disposition en paysage (f-land, au
+    // début de ce fichier) ; en page de navigateur l'appel échoue et c'est attendu
     try {
       if (matchMedia('(display-mode: standalone)').matches) screen.orientation?.lock?.('portrait')?.catch?.(() => {});
     } catch {

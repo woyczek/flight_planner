@@ -278,6 +278,15 @@ used alone:
     open over the module, a touch on the tab is the ordinary first touch (it closes the screen). No module knows its
     siblings; a module's own tabs (Fuel's Plan / Sheets) stay inside it. On a screen the rail lists the modules as before and
     nothing else is drawn.
+  - **Landscape on a phone** (24 Oct 2026, 17:45, `docs/technique/V3_SPECIFICATION.md` § 7.1 rule 7, `frame/INTEGRATION.md`
+    § 9.1): `<html class="f-land">` is set by the frame when the window is wider than high and under 1024 px (one write when
+    the value changes, on `resize` and `orientationchange`; `frame-orientation` fired after; the screen's orientation must
+    not be portrait, so an on-screen keyboard does not flip a portrait phone). The bar becomes a **rail of icons at the left
+    edge** (`--f-rail-w`, 44 px, full height under the header, no label: the label is the `aria-label`; the same popover on a
+    second touch, opened at the right of the rail); the 210 px rail is not shown; the header stays at 57 px; `--f-tab-space`
+    is 0; the view takes the rest of the width. The designs' bar rules apply to the rail at any width (they no longer wait for
+    760 px: the bar is displayed only on a phone and in landscape). The safe areas of the device (notch, home indicator) are
+    left free on every side.
 - **The "i" button of the header** (24 Oct 2026, the user's answer in `docs/technique/V3_SPECIFICATION.md` § 7.1; it replaces
   the status line of the Préparer tab, removed with its `status: true` flag). A 44 px button (icon `info`) before the ? and
   ⚙ buttons (on a phone, before ⚙ only: see "Header on a phone"), opens a **pop-up** under the header (`.f-info-modal`, the frame's question
@@ -319,14 +328,15 @@ used alone:
     module's data block are buttons drawn *over the map*, in a layer the frame gives every fixed module (`ctx.overlay`): a
     left column and a right column of round 44 px buttons (`.f-ov-btn`, 48 px hit area), laid on the module's map area (the
     child of its root that grows) and never on the sheet. Where a column is too long for a low map it wraps to a second
-    column on its left.
+    column on its left. In landscape on a phone the gap between buttons is 4 px (six buttons fit a 333 px map before the column
+    wraps).
   - **Full screen** (24 Oct 2026, § 9.4): the frame appends a button to the right column of every fixed module (not in a
-    pane) that toggles `<html class="f-full">`: the header and the bar (phone), the header and the rail (screen) are
-    hidden and the view takes the whole window (`--f-view-h` = `--f-vh`, less the device's safe areas); a 44 px exit chip
-    stays at the top right; Escape and the same button leave; it is remembered while the page lives (also under a frame
-    screen opened over the module) and reset at a module change; the window gets a `resize` event after each change.
-    **Judgement call: on a screen the rail is hidden too** (not folded to icons), so the map gets all the width; the chip and
-    Escape bring everything back.
+    pane) that toggles `<html class="f-full">`: the header and the bar (phone) or the rail (landscape phone), the header and
+    the rail (screen) are hidden and the view takes the whole window (`--f-view-h` = `--f-vh`, less the device's safe
+    areas); **no exit chip** (removed 24 Oct: the column's button, which then shows "minimize", and Escape leave); it is
+    remembered while the page lives (also under a frame screen opened over the module) and reset at a module change; the
+    window gets a `resize` event after each change. **Judgement call: on a screen the rail is hidden too** (not folded to
+    icons), so the map gets all the width. In landscape on a phone the sheet's column stays and the map takes the rest.
   - **Heights given to modules** (`frame/frame.css`, `:root`): `--f-head-h`, `--f-vh`, `--f-view-h`, `--f-split-h`,
     `--f-pane-h` (INTEGRATION § 9.2). In a dual view the frame itself gives a fixed module its height: the split main
     (`html.f-fixed .f-view.f-split > .f-module`) `--f-split-h`, the module of the pane (`.f-pane > .f-module[data-fixed]`)
@@ -700,7 +710,7 @@ touch only the element they are given.
 | `frame/lib/metar.js` | fuel | fuel | the raw METAR decoder to the JSON form of aviationweather.gov, and the conversion of avwx's METAR / TAF to that form (weather without a launcher) |
 | `frame/lib/route_text.js` | fuel | fuel, maps | the route text, pure: `tokenize`, `textFromTokens` (normalised "DEP PT1 UN869 PT2/F280 … ARR"), `textFromPoints` (the text rebuilt from edited points, airways kept between two unchanged neighbouring points), `icaoCoord` |
 | `frame/lib/geo.js` | maps, atmosphere (its own copy until its next lot) | maps, fuel (`winds.js`), atmosphere | longitudes around the date line, pure: `wrapLon(lon)` ([-180, 180[), `nearLon(lon, ref)` (the copy within 180° of `ref`), `unwrapLons(points)` (a route on continuous longitudes: `{ lat, lon }` or `[lon, lat]`, the same object back for a point already continuous). A module unrolls its route first, wraps what it sends to a service or a cache, compares modulo 360. Bench `frame/lib/test/geo.html`. Contract: INTEGRATION § 12 |
-| `frame/lib/sheet.js` | frame | maps, atmosphere (any fixed module) | the three-position sheet under a map (collapsed / default / expanded): `createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange, onSettle })` → `{ pos, set(pos, instant), settle(), stop() }`. The header line is the drag handle (pointer capture, live follow, snap to the nearest position, flick above 0.8 px/ms to the next one, a tap collapses or restores and never expands), the keyboard and the ARIA of the grip are done; heights are the frame tokens `--f-sheet-*` read from the root, the look is `.f-sheet*` in `primitives.css`. It writes no text (the caller passes `labels`) and keeps no state (the caller keeps the position). Contract: INTEGRATION § 11 |
+| `frame/lib/sheet.js` | frame | maps, atmosphere (any fixed module) | the three-position sheet under a map (collapsed / default / expanded): `createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange, onSettle })` → `{ pos, set(pos, instant), settle(), stop() }`. The header line is the drag handle (pointer capture, live follow, snap to the nearest position, flick above 0.8 px/ms to the next one, a tap collapses or restores and never expands), the keyboard and the ARIA of the grip are done; heights are the frame tokens `--f-sheet-*` read from the root, the look is `.f-sheet*` in `primitives.css`. **Under `html.f-land` (landscape on a phone) the sheet is a column at the right of the map**, as high as the view, two positions (`default` 40 % of the root's width, 280 px at least; `expanded` 60 %; tokens `--f-sheet-side`, `-side-min`, `-side-max`), no collapsed position, a tap toggles the two, a horizontal drag is accepted; `onChange` / `onSettle` give the same names, `frame-orientation` makes it re-place itself. It writes no text (the caller passes `labels`) and keeps no state (the caller keeps the position). Contract: INTEGRATION § 11 |
 | `frame/lib/website.js` | website | report, website | the flight's fields for the airline website, the `#defa=` address, the line to copy, the "→ Vol" bookmark (moved from `modules/report/website_handoff.js`) |
 
 ### 3.10 Devices of the local network (`tools/lan_access.py`, `tools/launch.py`)

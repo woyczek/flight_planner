@@ -132,22 +132,20 @@
   [data-design="cupertino"] .f-nav a[aria-current="page"] .f-icon {
     color: inherit
   }
-  @media (max-width: 760px) {
-    [data-design="cupertino"] .f-tabbar {
-      background: color-mix(in srgb, var(--sog-surface) 94%, transparent);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      backdrop-filter: saturate(180%) blur(20px);
-      border-top-color: var(--sog-border)
-    }
-    [data-design="cupertino"] .f-tabbar a {
-      font-size: 10px
-    }
-    [data-design="cupertino"] .f-tabbar a[aria-current="page"] {
-      color: var(--sog-accent);
-      font-weight: 500
-    }
-    [data-design="cupertino"] .f-tabbar a[aria-current="page"] .f-tab-ico {
-      background: transparent
-    }
+  [data-design="cupertino"] .f-tabbar {
+    background: color-mix(in srgb, var(--sog-surface) 94%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-top-color: var(--sog-border)
+  }
+  [data-design="cupertino"] .f-tabbar a {
+    font-size: 10px
+  }
+  [data-design="cupertino"] .f-tabbar a[aria-current="page"] {
+    color: var(--sog-accent);
+    font-weight: 500
+  }
+  [data-design="cupertino"] .f-tabbar a[aria-current="page"] .f-tab-ico {
+    background: transparent
   }
 }

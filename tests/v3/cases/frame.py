@@ -7,13 +7,15 @@ Rules covered
     a normal module scrolls under a sticky header (A6);
   * group popover on the active "Preparer" tab (A7); "i" pop-up and its last row (A8); "i" badge colours (A9);
   * night tone (A10), help screen (A11), settings screen (A12), the Cupertino bar navigates (A13);
-  * the three states of the aeronautical base: loading, access not set, not published (A15, with D5 / D5b of area D).
+  * the three states of the aeronautical base: loading, access not set, not published (A15, with D5 / D5b of area D);
+  * landscape on a phone, 844 x 390: the bar becomes a 44 px rail on the left, the sheet a right column, the map takes the
+    rest at full height, the overlay buttons stay in one column, full screen keeps the column and has no exit chip (A14).
 
-Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A15.
+Cases: A1 A2 A3 A4 A5 A6 A7 A8 A9 A10 A11 A12 A13 A14 A15.
 """
 import json
 
-from lib import Fail, Skip, case, forget, norm, tx
+from lib import MAP_JS, Fail, Skip, case, forget, norm, tx
 
 MODULES = ('fuel', 'maps', 'atmosphere', 'report', 'flightlog')
 TABS = [  # APP.tabs of frame/app.js: id, label in fr en de es, module the tab opens first
@@ -362,3 +364,100 @@ def a15(c):
     btn = c.js("[...document.querySelectorAll('.mp-notes [data-go=\"settings\"]')].map(b => b.textContent)")
     c.eq([norm(b) for b in btn], [norm(tx(MAPS_M, 'toAccess', c.lang))], 'the note carries one button to Settings', what='buttons')
     c.eq(info_row(c, 'base'), norm(tx(FRAME, 'noaccess', c.lang, after='base: {')), 'the "i" pop-up says it too', what='"i" row')
+LAND = (844, 390)           # an iPhone in landscape (CSS pixels); the frame's `html.f-land` is "wider than high and under 1024"
+PORTRAIT = (390, 844)
+
+
+def _land_open(c, m):
+    c.page.set_viewport_size({'width': LAND[0], 'height': LAND[1]})
+    c.open(m, flight=True)
+    c.until("document.documentElement.classList.contains('f-land')", what='html gets f-land at 844 x 390')
+    c.settle()
+
+
+@case('A14', 'Landscape on a phone', 'A', screens=False, night=False, rule='V3_SPECIFICATION 7.1 rule 7; frame/INTEGRATION 9.1-9.4, 11')
+def a14(c):
+    W, H = LAND
+    head_h, rail_w = 57, 44
+    for m in ('maps', 'atmosphere'):
+        _land_open(c, m)
+        # the header stays, the bar is a rail on the left (five icons, no label, a name for each), the rail of 210 px is gone
+        head, rail = c.box('.f-head'), c.box('#fTabs')
+        c.eq(head['h'], head_h, 'the header stays at --f-head-h = 57 px', tol=0.5, what=f'#{m} header height')
+        c.ok(rail and rail['shown'], f'#{m}: #fTabs is not displayed in landscape', 'the rail is displayed')
+        c.eq(round(rail['l']), 0, 'the rail is at the left edge', tol=1, what=f'#{m} rail left')
+        c.eq(round(rail['w']), rail_w, 'the rail is --f-rail-w = 44 px wide', tol=1, what=f'#{m} rail width')
+        c.eq(round(rail['t']), head_h, 'the rail starts under the header', tol=1, what=f'#{m} rail top')
+        c.eq(round(rail['h']), H - head_h, 'the rail takes the full height under the header', tol=1, what=f'#{m} rail height')
+        c.ok(not c.shown('#fNav'), f'#{m}: the 210 px rail #fNav is displayed in landscape', 'hidden (the bar became the rail)')
+        entries = c.boxes('#fTabs a')
+        c.eq(len(entries), 5, 'five entries in the rail', what=f'#{m} rail entries')
+        for e in entries:
+            c.ok(e['shown'] and e['h'] >= 43.5 and e['w'] >= 43.5, f'#{m}: a rail entry is {e["w"]:.0f} x {e["h"]:.0f}', 'at least 44 x 44')
+        c.ok(not any(b['shown'] for b in c.boxes('.f-tab-lbl')), f'#{m}: a rail label is displayed', 'icons only')
+        names = c.js("[...document.querySelectorAll('#fTabs a')].map(a => a.getAttribute('aria-label') || '')")
+        c.ok(all(names), f'#{m}: rail entries without aria-label: {names}', 'every entry has its label as aria-label')
+        c.eq(c.px('--f-tab-space'), 0, '--f-tab-space is 0 in landscape', tol=0.5, what='--f-tab-space')
+        c.eq(c.px('--f-view-h'), H - head_h, '--f-view-h = window - header', tol=0.5, what='--f-view-h')
+        # the view is right of the rail; the sheet is a column at the right of the map, full height; the map takes the rest
+        view, root = c.box('#fView'), c.box(f'[data-module="{m}"]')
+        c.eq(round(view['l']), rail_w, 'the view starts at the right of the rail', tol=1, what=f'#{m} view left')
+        c.eq(round(view['w']), W - rail_w, 'the view is calc(100vw - 44 px) wide', tol=1, what=f'#{m} view width')
+        c.eq(round(root['h']), H - head_h, 'the module root fills the view height', tol=1, what=f'#{m} root height')
+        mp, panel, head_row = c.js(MAP_JS, m), c.box('.f-sheet-panel'), c.box('.f-sheet-head')
+        c.eq(round(mp['t']), head_h, 'the map starts under the header', tol=1, what=f'#{m} map top')
+        c.eq(round(mp['l']), rail_w, 'the map starts right of the rail', tol=1, what=f'#{m} map left')
+        c.eq(round(mp['h']), H - head_h, 'the map has the full view height (333 px)', tol=1, what=f'#{m} map height')
+        c.ge(panel['w'], 279.5, 'the column is at least --f-sheet-side-min = 280 px', what=f'#{m} column width')
+        c.eq(round(panel['w']), round((W - rail_w) * .4), 'the column is --f-sheet-side = 40 % of the view', tol=1, what=f'#{m} column width')
+        c.eq(round(panel['h']), H - head_h, 'the column is as high as the view', tol=1, what=f'#{m} column height')
+        c.eq(round(panel['t']), head_h, 'the column starts under the header', tol=1, what=f'#{m} column top')
+        c.eq(round(panel['r']), W, 'the column is at the right edge', tol=1, what=f'#{m} column right')
+        c.eq(round(mp['w']), W - rail_w - round(panel['w']), 'the map takes the width the column leaves', tol=1, what=f'#{m} map width')
+        c.eq(round(head_row['t']), round(panel['t']), 'the handle line is at the top of the column', tol=1, what=f'#{m} handle top')
+        inner = c.js("""() => { const p = document.querySelector('.f-sheet-panel'), r = p.getBoundingClientRect();
+          return [...p.children].filter(e => !e.classList.contains('f-sheet-head') && window.__t.shown(e))
+            .map(e => { const b = e.getBoundingClientRect(); return { h: b.height, bottom: b.bottom - r.bottom, oy: getComputedStyle(e).overflowY } }) }""")
+        c.ok(inner and max(e['h'] for e in inner) > 100, f'#{m}: the column content {inner}', 'a content area, as high as the column allows')
+        c.ok(all(e['bottom'] <= 1 for e in inner), f'#{m}: the column content leaves the column by {max(e["bottom"] for e in inner):.0f} px', 'content inside the column (it scrolls there)')
+        sw, iw = hscroll(c)
+        c.ok(sw <= iw, f'#{m}: horizontal page scroll {sw} > {iw}', 'none')
+        c.ok(c.js('document.scrollingElement.scrollHeight') <= H, f'#{m}: the page scrolls vertically', 'no page scroll')
+        # the overlay columns stay on the map and never double up at this height
+        ov, right = c.box('.f-overlay'), [b for b in c.boxes('.f-ov-right .f-ov-btn') if b['shown']]
+        c.ok(ov and ov['r'] <= panel['l'] + 1, f'#{m}: the layer reaches {ov["r"]:.0f}, the column starts at {panel["l"]:.0f}', 'the layer is the map, never over the column')
+        c.ok(len(right) >= 3, f'#{m}: {len(right)} buttons in the right column', 'the right column has its buttons')
+        c.eq(len({round(b['l']) for b in right}), 1, 'the right buttons share one x (one column, not two)', what=f'#{m} right column x positions')
+        c.eq(len(c.boxes('.f-ov-exit')), 0, 'there is no exit chip', what=f'#{m} .f-ov-exit elements')
+        # a tap on the handle: expanded to 60 %, and back
+        c.tap('.f-sheet-grip')
+        c.until("document.querySelector('.f-sheet').dataset.sheet === 'expanded'", what='a tap on the handle expands the column')
+        c.settle()
+        big = c.box('.f-sheet-panel')
+        c.eq(round(big['w']), round((W - rail_w) * .6), 'the expanded column is --f-sheet-side-max = 60 %', tol=1, what=f'#{m} expanded width')
+        c.eq(round(c.js(MAP_JS, m)['w']), W - rail_w - round(big['w']), 'the map shrinks to what the column leaves', tol=1, what=f'#{m} map width expanded')
+        c.tap('.f-sheet-grip')
+        c.until("document.querySelector('.f-sheet').dataset.sheet === 'default'", what='a second tap brings the column back')
+        c.settle()
+        c.eq(round(c.box('.f-sheet-panel')['w']), round(panel['w']), 'the column is back at its default width', tol=1, what=f'#{m} default width')
+        # full screen: header and rail hidden, the column stays, the map takes the rest
+        c.tap('.f-ov-full')
+        c.until("document.documentElement.classList.contains('f-full')", what='html gets f-full')
+        c.settle()
+        c.ok(not c.shown('.f-head'), f'#{m}: the header is displayed in full screen', 'hidden')
+        c.ok(not c.shown('#fTabs'), f'#{m}: the rail is displayed in full screen', 'hidden')
+        root, panel, mp = c.box(f'[data-module="{m}"]'), c.box('.f-sheet-panel'), c.js(MAP_JS, m)
+        c.eq((round(root['l']), round(root['t']), round(root['w']), round(root['h'])), (0, 0, W, H), 'the module fills the window', what=f'#{m} root in full screen')
+        c.ok(panel['shown'] and round(panel['h']) == H, f'#{m}: column {panel["w"]:.0f} x {panel["h"]:.0f}', 'the column stays, full height')
+        c.eq((round(mp['l']), round(mp['t']), round(mp['h'])), (0, 0, H), 'the map takes all the rest', what=f'#{m} map in full screen')
+        c.eq(len(c.boxes('.f-ov-exit')), 0, 'there is no exit chip in full screen', what=f'#{m} .f-ov-exit elements')
+        c.key('Escape')
+        c.until("!document.documentElement.classList.contains('f-full')", what='Escape leaves the full screen')
+    # the phone turns back: the bar is at the bottom again, the sheet under the map
+    c.page.set_viewport_size({'width': PORTRAIT[0], 'height': PORTRAIT[1]})
+    c.until("!document.documentElement.classList.contains('f-land')", what='f-land is removed in portrait')
+    c.settle()
+    bar, panel = c.box('#fTabs'), c.box('.f-sheet-panel')
+    c.eq(round(bar['b']), PORTRAIT[1], 'the bar is at the bottom of the window in portrait', tol=1, what='bar bottom')
+    c.eq(round(bar['w']), PORTRAIT[0], 'the bar spans the window in portrait', tol=1, what='bar width')
+    c.eq(round(panel['w']), PORTRAIT[0], 'the sheet is under the map, full width, in portrait', tol=1, what='sheet width')

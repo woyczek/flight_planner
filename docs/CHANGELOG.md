@@ -12,6 +12,22 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Landscape on a phone: a rail at the left, the sheet as a right column, a full-height map** (`frame/app.js`, `frame/index.html`,
+  `frame/frame.css`, `frame/design/primitives.css` and the four designs' bar rules, `frame/lib/sheet.js`, `frame/lib/test/sheet.html`,
+  `tests/v3`; frame INTEGRATION § 9.1–9.4 and § 11, SPEC, design SPEC; the help in four languages) — Safari does not honour the
+  portrait lock, so a phone turned to 844 × 390 now gets its own layout: when the window is wider than high and under 1024 px the frame
+  sets `<html class="f-land">` (once per change, on `resize` / `orientationchange`; `frame-orientation` is fired after). The bottom bar
+  becomes a **44 px rail of icons at the left edge** (full height under the header, no label but an `aria-label`, the same popover on a
+  second touch, opened at its right), the header stays at 57 px, and the view takes the rest. A fixed module's **sheet becomes a column at
+  the right of the map** (`--f-sheet-side` 40 % of the width, 280 px at least; expanded `--f-sheet-side-max` 60 %; two positions, the
+  grip row at its top, a tap or a horizontal drag switches them, the body scrolls inside) and **the map takes the rest at full height**
+  (333 px instead of 163 on an iPhone 13); the overlay buttons stay on the map in one column (4 px gap, six fit, a seventh wraps).
+  `onChange` / `onSettle` give the same position names as in portrait: Maps and Atmosphere change nothing. Full screen in landscape hides
+  the header and the rail and keeps the column. The device's safe areas (notch, home indicator) are left free. **The full-screen exit chip
+  is removed** (the column's button, which shows "minimize" in full screen, and Escape leave it), in portrait too. Portrait is unchanged;
+  the designs' tab-bar rules no longer sit under `max-width: 760px` (the bar is displayed on a phone and in landscape only). New case
+  A14 in the suite and a landscape part in the sheet bench (129 checks).
+
 - **Aeronautical database: loading, access not set and not published are three different messages** (`frame/aerodb/aerodb.js`, `frame/app.js`,
   `modules/maps/module.js`, manual note in four languages, `tests/v3/` A15 / D5 / D5b; settings DECISIONS, aerodb INTEGRATION / DECISIONS, frame
   INTEGRATION § 10) — on a phone (seen in the app added to the iOS home screen) the Map said "Aeronautical database not published" while the base

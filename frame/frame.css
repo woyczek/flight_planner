@@ -15,9 +15,12 @@
    bas sur téléphone) ; elle vaut --f-split-h dans une vue double (.f-view.f-split) et --f-pane-h dans le volet (.f-pane),
    donc « height: var(--f-view-h) » est juste partout.
    --f-split-h : le module principal d'une vue double fixe (la vue a 16 px de marge en haut et en bas).
-   --f-pane-h : le module du volet (le volet moins sa barre de fermeture de 44 px). */
+   --f-pane-h : le module du volet (le volet moins sa barre de fermeture de 44 px).
+   --f-rail-w : la largeur du rail d'icônes à gauche, en paysage sur un téléphone (html.f-land, plus bas) ; la barre du bas n'y
+   prend plus de hauteur (--f-tab-space vaut 0). */
 :root {
   --f-head-h: 57px;
+  --f-rail-w: 44px;
   --f-vh: 100vh;
   --f-view-pad: 16px;
   --f-pane-top: calc(var(--f-head-h) + 13px);
@@ -896,80 +899,83 @@ p.f-back {
   .f-tabbar:empty {
     display: none
   }
-  .f-tabbar ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex
-  }
-  .f-tabbar li {
-    flex: 1 1 0;
-    min-width: 0
-  }
-  /* un onglet : l'icône au-dessus d'un libellé d'un mot ; hauteur de la barre, au moins une cible tactile */
-  .f-tabbar a {
-    --f-tab-pill: color-mix(in srgb, var(--sog-accent) 14%, var(--sog-surface));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    min-height: max(var(--f-tab-h), var(--sog-touch));
-    padding: 4px 2px;
-    color: var(--sog-muted);
-    font-size: 11px;
-    line-height: 1.2;
-    text-decoration: none;
-    -webkit-tap-highlight-color: transparent
-  }
-  /* le plus long libellé (« Einstellungen ») tient dans une cinquième de 360 px */
-  @media (max-width: 400px) {
-    .f-tabbar a {
-      font-size: 10px
-    }
-  }
-  .f-tab-ico {
-    display: grid;
-    place-items: center;
-    width: 56px;
-    height: 30px;
-    border-radius: 15px;
-    transition: background-color .15s
-  }
-  .f-tab-ico .f-icon {
-    grid-area: 1 / 1;
-    width: 24px;
-    height: 24px
-  }
-  .f-tab-lbl {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap
-  }
-  /* l'onglet choisi change de forme : l'icône pleine sur une pastille arrondie, le libellé en couleur d'accent et plus gras ;
-     les autres gardent l'icône au trait, en gris */
-  .f-tabbar .f-icon[data-filled],
-  .f-tabbar a[aria-current="page"] .f-icon:not([data-filled]) {
-    display: none
-  }
-  .f-tabbar a[aria-current="page"] .f-icon[data-filled] {
-    display: block
-  }
-  .f-tabbar a[aria-current="page"] {
-    color: var(--sog-link);
-    font-weight: 600
-  }
-  .f-tabbar a[aria-current="page"] .f-tab-ico {
-    background: var(--f-tab-pill)
-  }
-  .f-tabbar a:active .f-tab-ico {
-    background: var(--f-tab-pill)
-  }
   /* notifications au-dessus de la barre */
   .f-notes {
     bottom: calc(var(--f-tab-space) + 8px)
   }
+}
+/* les cases de la barre : icône (au trait, ou pleine sur l'onglet choisi), libellé d'un mot. La barre n'est affichée que sur
+   téléphone (ci-dessus) et, en paysage, en rail à gauche (html.f-land, plus bas) : ces règles ne dépendent donc pas de la
+   largeur de la fenêtre */
+.f-tabbar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex
+}
+.f-tabbar li {
+  flex: 1 1 0;
+  min-width: 0
+}
+/* un onglet : l'icône au-dessus d'un libellé d'un mot ; hauteur de la barre, au moins une cible tactile */
+.f-tabbar a {
+  --f-tab-pill: color-mix(in srgb, var(--sog-accent) 14%, var(--sog-surface));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: max(var(--f-tab-h), var(--sog-touch));
+  padding: 4px 2px;
+  color: var(--sog-muted);
+  font-size: 11px;
+  line-height: 1.2;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent
+}
+/* le plus long libellé (« Einstellungen ») tient dans une cinquième de 360 px */
+@media (max-width: 400px) {
+  .f-tabbar a {
+    font-size: 10px
+  }
+}
+.f-tab-ico {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 30px;
+  border-radius: 15px;
+  transition: background-color .15s
+}
+.f-tab-ico .f-icon {
+  grid-area: 1 / 1;
+  width: 24px;
+  height: 24px
+}
+.f-tab-lbl {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap
+}
+/* l'onglet choisi change de forme : l'icône pleine sur une pastille arrondie, le libellé en couleur d'accent et plus gras ;
+   les autres gardent l'icône au trait, en gris */
+.f-tabbar .f-icon[data-filled],
+.f-tabbar a[aria-current="page"] .f-icon:not([data-filled]) {
+  display: none
+}
+.f-tabbar a[aria-current="page"] .f-icon[data-filled] {
+  display: block
+}
+.f-tabbar a[aria-current="page"] {
+  color: var(--sog-link);
+  font-weight: 600
+}
+.f-tabbar a[aria-current="page"] .f-tab-ico {
+  background: var(--f-tab-pill)
+}
+.f-tabbar a:active .f-tab-ico {
+  background: var(--f-tab-pill)
 }
 /* second toucher sur l'onglet choisi d'un groupe de modules : un popover au-dessus de la barre (frame/INTEGRATION.md § 9.1) ;
    posé par app.js (haut, gauche, --f-pop-caret) ; des lignes de 44 px, le module affiché marqué ; jamais sur un écran */
@@ -1029,6 +1035,86 @@ p.f-back {
     display: none
   }
 }
+/* ---- paysage sur un téléphone (V3_SPECIFICATION.md § 7.1 règle 7, frame/INTEGRATION.md § 9) : <html class="f-land"> est posé
+   par app.js quand la fenêtre est plus large que haute et de moins de 1024 px (téléphone ou petite tablette tournée). La barre
+   du bas devient un rail vertical d'icônes à gauche (--f-rail-w, sans libellé : le nom accessible est l'aria-label), pleine
+   hauteur sous l'en-tête, et la vue prend le reste de la largeur ; --f-tab-space vaut 0 (la hauteur de la vue n'y perd rien).
+   Hors d'un @media : ces règles valent sous 761 px (où la barre était en bas) comme au-dessus (où la colonne des verbes de 210 px
+   était affichée) ; les zones sûres de l'appareil (encoche à gauche ou à droite, barre d'accueil en bas) sont laissées libres. */
+html.f-land {
+  --f-tab-space: 0px;
+  --f-view-h: calc(var(--f-vh) - var(--f-head-h) - env(safe-area-inset-bottom, 0px))
+}
+html.f-land body,
+html.f-land.f-fixed body {
+  grid-template-columns: calc(var(--f-rail-w) + env(safe-area-inset-left, 0px)) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "head head" "tabs main"
+}
+html.f-land .f-head {
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px))
+}
+html.f-land .f-nav {
+  display: none
+}
+html.f-land .f-tabbar {
+  grid-area: tabs;
+  display: block;
+  position: sticky;
+  top: var(--f-head-h);
+  bottom: auto;
+  align-self: start;
+  z-index: 6;
+  height: calc(var(--f-vh) - var(--f-head-h));
+  overflow: hidden auto;
+  padding: 4px 0 env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  background: var(--sog-surface);
+  border-top: 0;
+  /* le filet à droite est dedans (une bordure ferait des cases de 43 px) */
+  box-shadow: inset -1px 0 0 var(--sog-border)
+}
+html.f-land .f-tabbar:empty {
+  display: none
+}
+html.f-land .f-tabbar ul {
+  flex-direction: column;
+  gap: 4px;
+  padding: 0
+}
+html.f-land .f-tabbar li {
+  flex: none
+}
+html.f-land .f-tabbar a {
+  min-height: var(--sog-touch);
+  padding: 4px 0
+}
+html.f-land .f-tab-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px
+}
+html.f-land .f-tab-lbl {
+  display: none
+}
+html.f-land .f-view {
+  margin-right: env(safe-area-inset-right, 0px)
+}
+html.f-land.f-fixed .f-view:not(.f-split):not(.f-over) {
+  padding: 0 0 env(safe-area-inset-bottom, 0px) 0
+}
+/* le popover du groupe s'ouvre à droite du rail (app.js le place : haut aligné sur l'icône, --f-pop-caret = sa pointe) ; il
+   n'est montré qu'en paysage sous 761 px et au-dessus : la règle des écrans (plus haut) le cachait */
+html.f-land .f-tabpop {
+  display: block
+}
+html.f-land .f-tabpop::after {
+  left: -6px;
+  top: var(--f-pop-caret, 50%);
+  bottom: auto;
+  margin: -5px 0 0;
+  border-width: 0 0 1px 1px
+}
 /* couche de superposition d'un module fixe (frame/INTEGRATION.md § 9.3) : posée en pixels par app.js sur la zone de carte du
    module ; la vue est son repère, hors de la grille de la vue double (une case de grille changerait son repère) */
 html.f-fixed .f-view {
@@ -1041,7 +1127,7 @@ html.f-fixed .f-view {
 }
 /* plein écran d'un module fixe (frame/INTEGRATION.md § 9.4) : <html class="f-fixed f-full"> — l'en-tête, la barre du bas et la
    colonne des verbes sont retirés (sur écran comme sur téléphone : la colonne des verbes se cache plutôt que de se réduire aux
-   icônes, la puce de sortie suffit à revenir) ; la vue prend toute la fenêtre. Les mesures données aux modules suivent :
+   icônes ; le bouton plein écran, qui montre alors « réduire », et Échap suffisent à revenir) ; la vue prend toute la fenêtre. Les mesures données aux modules suivent :
    l'en-tête et la barre pèsent 0, --f-view-h vaut --f-vh (moins les zones sûres de l'appareil, que la vue laisse libres). */
 html.f-fixed.f-full {
   --f-head-h: 0px;
@@ -1060,4 +1146,10 @@ html.f-fixed.f-full body {
 }
 html.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)
+}
+/* plein écran en paysage : l'en-tête et le rail sont retirés par les règles du plein écran ci-dessus (la grille, --f-view-h) ;
+   la feuille en colonne reste (primitives.css) et la carte prend tout le reste ; les zones sûres de l'appareil restent libres
+   des quatre côtés (l'encoche est à gauche ou à droite : le côté droit est la marge de la vue, posée plus haut) */
+html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px)
 }

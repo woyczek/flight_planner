@@ -417,7 +417,10 @@ details.f-card[open]>summary {
   --f-sheet-default: 30%;
   --f-sheet-default-min: 170px;
   --f-sheet-expanded: 70%;
-  --f-sheet-expanded-min: 260px
+  --f-sheet-expanded-min: 260px;
+  --f-sheet-side: 40%;
+  --f-sheet-side-min: 280px;
+  --f-sheet-side-max: 60%
 }
 @media (min-width: 761px) {
   :where(.f-sheet) {
@@ -447,8 +450,9 @@ details.f-card[open]>summary {
 .f-sheet[data-sheet="expanded"]>.f-sheet-panel {
   height: max(var(--f-sheet-expanded), var(--f-sheet-expanded-min))
 }
-/* réduite : seule la ligne d'en-tête reste (le reste n'est ni vu ni atteint au clavier) */
-.f-sheet[data-sheet="collapsed"]>.f-sheet-panel>:not(.f-sheet-head) {
+/* réduite : seule la ligne d'en-tête reste (le reste n'est ni vu ni atteint au clavier) ; en paysage la feuille est une colonne
+   à deux positions, sans position réduite (:where : le poids de la règle ne change pas) */
+:where(html:not(.f-land)) .f-sheet[data-sheet="collapsed"]>.f-sheet-panel>:not(.f-sheet-head) {
   display: none
 }
 /* pendant un glisser, et pour un changement sans glissement : pas de transition */
@@ -536,6 +540,53 @@ details.f-card[open]>summary {
   overscroll-behavior: contain;
   touch-action: pan-y
 }
+/* paysage sur un téléphone (html.f-land, frame.css ; frame/INTEGRATION.md § 11) : la feuille devient une colonne à droite de la
+   carte, sur toute la hauteur de la vue, à deux positions (normale : --f-sheet-side, agrandie : --f-sheet-side-max, parts de la
+   largeur de la racine, avec le plancher --f-sheet-side-min) ; sa ligne d'en-tête reste en haut, titre de la colonne et poignée
+   (un toucher bascule entre les deux positions), le corps défile dedans. La racine passe en rangée : la carte (l'enfant qui
+   grandit) prend le reste, pleine hauteur. Le module n'écrit rien : positions, onChange et onSettle sont ceux du portrait. */
+html.f-land .f-sheet {
+  display: flex;
+  flex-direction: row
+}
+html.f-land .f-sheet>* {
+  min-width: 0
+}
+html.f-land .f-sheet>.f-sheet-panel {
+  align-self: stretch;
+  width: max(var(--f-sheet-side), var(--f-sheet-side-min));
+  height: auto;
+  border-top: 0;
+  border-left: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius) 0 0 0;
+  box-shadow: -2px 0 8px #0000001a;
+  transition: width .2s ease
+}
+html.f-land .f-sheet[data-sheet="expanded"]>.f-sheet-panel {
+  width: max(var(--f-sheet-side-max), var(--f-sheet-side-min))
+}
+/* la poignée d'une colonne : un chevron au bout de la ligne de titre, vers la gauche pour agrandir, vers la droite pour revenir */
+html.f-land .f-sheet .f-sheet-head .f-sheet-grip::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 6px 0 8px;
+  border: solid var(--sog-muted);
+  border-width: 0 0 2px 2px;
+  transform: rotate(45deg)
+}
+html.f-land .f-sheet[data-sheet="expanded"] .f-sheet-head .f-sheet-grip::after {
+  transform: rotate(-135deg)
+}
+@media (prefers-reduced-motion: reduce) {
+  html.f-land .f-sheet>.f-sheet-panel {
+    transition: none
+  }
+}
+html.f-land .f-sheet>.f-sheet-panel.f-sheet-nt {
+  transition: none
+}
 
 /* ---- couche de superposition d'un module fixe (frame/INTEGRATION.md § 9.3) : deux colonnes de boutons posées sur la zone de
    carte du module (le cadre dessine la couche et la place en pixels, app.js ; ctx.overlay.left / .right / .button). Jamais sur
@@ -618,19 +669,10 @@ details.f-card[open]>summary {
 .f-overlay button.f-ov-btn.f-ov-full {
   order: 99
 }
-/* la puce de sortie : seulement en plein écran, en haut à droite de la fenêtre (la vue est alors toute la fenêtre : fixed y est
-   relatif) ; la colonne de droite passe dessous */
-.f-overlay button.f-ov-btn.f-ov-exit {
-  display: none;
-  position: fixed;
-  top: calc(8px + env(safe-area-inset-top, 0px));
-  right: 8px
-}
-html.f-full .f-overlay button.f-ov-btn.f-ov-exit {
-  display: inline-flex
-}
-html.f-full .f-ov-right {
-  padding-top: 60px
+/* paysage sur un téléphone : la carte n'a que ~333 px de haut ; l'écart entre les boutons passe de 8 à 4 px avant que la colonne
+   ne se replie (six boutons de 44 px tiennent alors dans la carte, sept se replient) */
+html.f-land .f-ov-col {
+  gap: 4px
 }
 
 /* ---- impression (le compte rendu d'abord) : encre du jour (les jeux de nuit ne valent qu'à l'écran), une colonne,

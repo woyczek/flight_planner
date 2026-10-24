@@ -190,6 +190,15 @@ APP.tabs = [
   about it reaches a module: `ctx.tab` is all it knows. On a screen the rail lists the modules.
 - **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel and atmosphere), `null` if none. For a
   module that wants to know its group; it never opens or changes a tab.
+- **Landscape on a phone (`html.f-land`)**: when the window is wider than high **and** under 1024 px (a phone or a small
+  tablet turned; Safari does not honour the manifest's portrait lock), the frame sets `<html class="f-land">` (and
+  removes it, one write when the value changes, on `resize` / `orientationchange`; `frame-orientation` is fired on
+  `window` after, `detail: { land }`). The bottom bar then becomes a **rail of icons at the left edge**: `--f-rail-w`
+  (44 px) wide, full height under the header, the same five entries, **no label** (each `<a>` carries the label as
+  `aria-label` and `title`), the same popover on a second touch, opened **to the right of the rail** (first row facing the
+  icon, the caret at the left). The header stays (57 px); `--f-tab-space` is `0` and the view takes `100vw − --f-rail-w` at
+  the right of the rail; the 210 px rail of a screen is not shown. The device's safe areas (notch at the left or right,
+  home indicator) are left free. A module does nothing for it: it never reads the class, it measures its box.
 
 ### 9.2 `meta.fixed`: the fixed, full-height view
 
@@ -244,6 +253,11 @@ What the module writes (its own sheet, scoped to `[data-module="<id>"]`):
   three-position block under the map, with its heights from `--f-sheet-*` as parts of the module's root, so it follows
   `--f-view-h` in the plain view, the split main and the pane with nothing of its own.
 - The header is exactly `--f-head-h` in every state, so these numbers hold after Settings, help or a module's "←".
+- **Landscape on a phone (`html.f-land`)**: nothing to change in a module. The window is wider than high, so `--f-view-h`
+  is `--f-vh` − `--f-head-h` (`--f-tab-space` is `0`: the bar became a left rail, § 9.1), i.e. 333 px on a 390 px high
+  window, and the view starts at `--f-rail-w`; `--f-split-h` and `--f-pane-h` are unchanged (split view and pane exist from
+  980 px only). A module that uses the sheet primitive (§ 11) gets a **row**: its map (the child that grows) at the left, the
+  sheet as a column at the right, both at the height of the view.
 
 ### 9.3 Overlay layer (`ctx.overlay`): the buttons over the map
 
@@ -294,6 +308,12 @@ adds the class `f-ov-btn` to it and appends it to `ov.left` or `ov.right`.
 What a module keeps: what the buttons do, their icons and labels in four languages, where its map element is (`over`) when
 it is not the first growing child, and what its controls become in a very low map (nothing: the frame wraps them).
 
+**Landscape on a phone (`html.f-land`)**: the layer is still exactly the map's box, which is now the whole height of the view
+(333 px on a 390 px high window) at the left of the sheet's column. The two columns stay on the map (left: Layers; right: the
+module's buttons, the full-screen button last) and **do not double up at this height**: the gap between buttons goes from 8
+to 4 px before the column wraps, so **six** 44 px buttons fit in 333 px and a seventh wraps to a second column (Edit mode of
+maps shows seven). Nothing to write in a module.
+
 **Moving a module over** (maps, atmosphere; each in its own lot): the toolbar line, the information line and the title row
 of the data block leave the column; Edit, Recentre, the mode and Load become `ov.button()`s (right), Layers goes `side: 'left'`,
 the flight selector goes inside the Layers panel, the flight summary becomes the sheet's grip text, the Profile · Weather
@@ -309,9 +329,10 @@ The full-screen button of § 9.3 toggles `<html class="f-fixed f-full">`:
 - **Heights**: `--f-head-h` and `--f-tab-space` are `0px`, so `--f-view-h` = `--f-vh` (less the device's safe areas, which
   the view leaves free: `env(safe-area-inset-top / bottom)`). A module whose root is `height: 100%` or `var(--f-view-h)` follows
   with nothing of its own.
-- **Leaving**: a 44 px **exit chip** (icon `minimize`, label "Quitter le plein écran" / "Exit full screen" / "Vollbild
-  beenden" / "Salir de pantalla completa") at the top right of the window; the full-screen button itself (now showing
-  `minimize`); Escape. The right column starts under the chip.
+- **Leaving**: the full-screen button itself (now showing `minimize`, label "Quitter le plein écran" / "Exit full screen" /
+  "Vollbild beenden" / "Salir de pantalla completa", `aria-pressed="true"`); Escape. **There is no exit chip** (removed on 24 Oct
+  2026: it duplicated the column's button since the modules' toolbars left, `frame/DECISIONS.md`); the right column
+  starts at the top of the map.
 - **Memory**: for the page's life (also while a frame screen is opened over the module, where the header comes back, and
   on closing it the module is full screen again); reset at a module change. Not the browser's Fullscreen API (absent from
   Safari on iPhone): the page itself fills the window.
@@ -319,8 +340,9 @@ The full-screen button of § 9.3 toggles `<html class="f-fixed f-full">`:
   (`detail: { on }`) and then a plain **`resize` event on `window`** (next animation frame), so a map calls `map.resize()` as
   it already does on a window resize; a `ResizeObserver` on the map box works as well. Pointer events, the sheet and the
   overlay buttons keep working; the page never scrolls.
-- On a module that has not migrated its toolbar line yet, the chip may cover the line's last button until the line leaves
-  (the maps lot).
+- **Landscape on a phone (`html.f-land`)**: full screen hides the header **and the rail**; **the sheet's column stays** (full
+  height, at the right) and the map takes everything else, from `0 / 0` (less the safe areas). Same button, same Escape, same
+  `frame-fullscreen` and `resize`.
 
 ## 10. What the frame reads from modules' caches
 
@@ -456,6 +478,9 @@ reads nothing else (no `calc()`).
 | `--f-sheet-default-min` | `170px` | its floor |
 | `--f-sheet-expanded` | `70%` | the expanded height |
 | `--f-sheet-expanded-min` | `260px` | its floor |
+| `--f-sheet-side` | `40%` | landscape on a phone (`html.f-land`): the column's default width, a part of the root's width |
+| `--f-sheet-side-min` | `280px` | its floor |
+| `--f-sheet-side-max` | `60%` | the expanded column's width (with the same floor) |
 
 - Heights: collapsed `--f-sheet-head`; default `max(--f-sheet-default, --f-sheet-default-min)`; expanded
   `max(--f-sheet-expanded, --f-sheet-expanded-min)`; a 200 ms height transition (none under `prefers-reduced-motion`
@@ -464,6 +489,32 @@ reads nothing else (no `calc()`).
   36 × 4 px (`--sog-muted` at 55 %), a header at 44 px with the title at `.92em`. Nothing is hard-coded to a design.
 - The grip and the ✕ are buttons: their rules weigh three classes so that the designs' button rules (`[data-design] :is(button,
   .f-btn)`) do not reach them.
+
+### Landscape on a phone (`html.f-land`): the sheet is a column
+
+Under `<html class="f-land">` (§ 9.1: wider than high and under 1024 px) the sheet is no longer under the map: the root
+becomes a **row**, the map (the child that grows) takes the width the sheet leaves, **full height**, and the panel is a
+**column at the right**, as high as the view, its header line (the grip) at the top as the column's title row, the body
+scrolling inside. **Two positions**: `default` (`--f-sheet-side`, 40 % of the root's width, never under
+`--f-sheet-side-min`, 280 px) and `expanded` (`--f-sheet-side-max`, 60 %); there is **no collapsed position** (a
+`set('collapsed')`, the Home key, a sheet that was collapsed in portrait when the phone turns: all give `default`). The
+module changes nothing: `onChange` and `onSettle` give the same names (`default`, `expanded`), `labels(pos, rank)` the same
+ranks, `pos` and `set()` the same. It measures its boxes as before (`ResizeObserver`, `resize`).
+
+- **Tap** on the grip toggles `default` ⇄ `expanded` (in portrait it toggles `default` ⇄ `collapsed`, never expanding); a
+  chevron at the end of the title row shows the way (to the left: widen). A **horizontal drag** is accepted (the column follows
+  the finger between the two widths, snaps to the nearest, a flick goes to the next); it is not required. Keyboard on the
+  grip: Left or Up = `expanded`, Right or Down = `default`, End = `expanded`, Home = `default`, Enter / Space toggle.
+- **Turning the phone**: the frame fires `frame-orientation` on `window` after setting or removing `f-land`; the primitive
+  listens and places the sheet again in its new form without a transition (`onChange` is called with the position it has now).
+- **Tokens** (on `.f-sheet`, `:where`, a module overrides them on its root): `--f-sheet-side: 40%`, `--f-sheet-side-min:
+  280px`, `--f-sheet-side-max: 60%` (parts of the root's width, or px, like the others). The other tokens are not read in
+  landscape. The panel gets a 1 px line at its left (no top line, a shadow to the left); the transition is on `width`.
+- **For maps and atmosphere** (read-only here, they ask for nothing): the root, the map and the panel keep their own rules; the
+  frame's `html.f-land .f-sheet` rules (a flex row, `min-width: 0` on the children, the panel's width and `height: auto`) weigh
+  more than the `[data-module]` rules of a module that sets `display: flex; flex-direction: column` on its root, so those
+  rules need no change. What a module must not do: give its map or its panel a fixed height or a `%` height of its own (use
+  `flex`), or assume the sheet is under the map (read the rect of the map and of the panel).
 
 ### What a module still owns
 

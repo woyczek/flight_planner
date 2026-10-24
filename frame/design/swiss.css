@@ -37,29 +37,27 @@
   }
   /* barre du bas : filet fin en haut, sur la page ; l'onglet choisi en gras avec l'icône pleine et, sous son libellé, le filet
      rouge signal ; pas de pastille ; libellés à 10 px */
-  @media (max-width: 760px) {
-    [data-design="swiss"] .f-tabbar {
-      background: var(--sog-bg);
-      border-top: 1px solid var(--sog-fg)
-    }
-    [data-design="swiss"] .f-tabbar a {
-      color: var(--sog-muted);
-      font-size: 10px
-    }
-    [data-design="swiss"] .f-tabbar a[aria-current="page"] {
-      color: var(--sog-fg);
-      font-weight: 700
-    }
-    [data-design="swiss"] .f-tabbar a[aria-current="page"] .f-tab-ico {
-      background: transparent
-    }
-    [data-design="swiss"] .f-tab-lbl {
-      padding-bottom: 2px;
-      border-bottom: 2px solid transparent
-    }
-    [data-design="swiss"] .f-tabbar a[aria-current="page"] .f-tab-lbl {
-      border-bottom-color: var(--sog-accent)
-    }
+  [data-design="swiss"] .f-tabbar {
+    background: var(--sog-bg);
+    border-top: 1px solid var(--sog-fg)
+  }
+  [data-design="swiss"] .f-tabbar a {
+    color: var(--sog-muted);
+    font-size: 10px
+  }
+  [data-design="swiss"] .f-tabbar a[aria-current="page"] {
+    color: var(--sog-fg);
+    font-weight: 700
+  }
+  [data-design="swiss"] .f-tabbar a[aria-current="page"] .f-tab-ico {
+    background: transparent
+  }
+  [data-design="swiss"] .f-tab-lbl {
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent
+  }
+  [data-design="swiss"] .f-tabbar a[aria-current="page"] .f-tab-lbl {
+    border-bottom-color: var(--sog-accent)
   }
 
   /* ---- titres : le titre de page grand et gras (jetons), les titres de section en petites capitales espacées */
