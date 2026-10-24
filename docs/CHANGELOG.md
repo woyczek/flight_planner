@@ -22,8 +22,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Atmosphere: the cross-section fits the sheet, no title over it** (`modules/atmosphere/section.js`, `module.js`, `texts.js`; atmosphere
   DECISIONS, INTEGRATION § 5; V3_SPECIFICATION § 7.1 rule 13) — the cut and the slice are drawn at the sheet body's exact height (`minHeight`,
   default 0, in `drawSection` for the Map too): fewer level labels on a low chart, the distance axis always visible (on a 390 × 664 phone
-  window the body was 95 px and the axis hidden; now 112 px and visible). Over a drawing the grip row is bare (28 px, ◀ ▶ ✕ kept): the
-  "Profile · …" line repeated what the chart shows.
+  window the body was 95 px and the axis hidden; now 112 px and visible). Over a drawing the grip row is bare (28 px, ◀ ▶ ✕ kept) in the
+  sheet's default position only: the "Profile · …" line repeated what the chart shows; expanded, collapsed and in landscape the title stays.
 - **Atmosphere: the flight's grid no longer shows as a rectangle; 10× cheaper frames; an optional limit line** (`modules/atmosphere/lib/weather_map.js`,
   `texts.js`, `test/weather_map.html`, `test/weather_map_perf.html`; atmosphere DECISIONS, INTEGRATION § 6) — at a flight level the cloud fill
   came from AROME inside the grid (dry, clear) and from GFS outside (moist, grey): the fills (clouds, temperature, jet, convection) now come

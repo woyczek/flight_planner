@@ -15,6 +15,13 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   44 px touch zone; the content named for screen readers, "Coupe météo" or the slice's place); Flight, Details, Layers
   and the texts keep their titled head. The slider row stays under the bare head. Until the frame ships the primitive,
   a rule marked `TEMP` in `module.js`.
+- **Refined** (user, on the version with the bare head: "toujours la ligne d'en-tête superfétatoire au niveau moyen.
+  Utile en volet agrandi ou réduit et paysage."): the head is bare **in the default position only**; expanded,
+  collapsed and in the landscape column it keeps its title (there is room, and it is then the only thing that says what
+  is shown). Reviewed at every stop of the sheet (`onSettle`). The published page did show the bare head in the
+  default position (checked on woyczek.github.io at 390 × 664, title hidden): the user's line was likely a copy still
+  in the browser's cache. Checked: 390 × 664 default bare (27 px), collapsed and expanded titled (44 px); 844 × 390
+  titled in both positions; the distance axis visible in all.
 - **Measured** (real AROME data, LFRD → LFBD FL160, default position): 390 × 664: body 95 → 112 px, distance axis
   hidden → visible; 390 × 844: 144 → 161 px; 844 × 390 (the right column): 259 → 276 px, so the surface strips come
   back (their labels now widen the left margin instead of being cut). The slice fits its body (112 / 112 px, no

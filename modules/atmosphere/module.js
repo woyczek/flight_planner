@@ -1089,6 +1089,7 @@ export async function mount(el, ctx) {
    *  est redessiné s'il n'est plus à la taille de son dernier dessin. */
   function settled() {
     if (!alive) return;
+    applyBare();
     if (S.map) mapSize(S.map, $('box'));
     if (S.map && !S.userMoved) fitMap();
     schedule();
@@ -1580,19 +1581,27 @@ export async function mount(el, ctx) {
 
   // ---------------------------------------------------------------- état, chargement
 
-  /** Titre de la poignée : le contenu, puis son contexte (une ligne coupée ; le texte entier et sa note en infobulle). */
+  let bareLabel = null;
   /** Pas de titre au-dessus d'un dessin (V3_SPECIFICATION § 7.1 règle 13) : la coupe et la tranche ont une poignée nue
    *  (barrette, puces et boutons de la ligne) ; label : ce que dit le dessin, pour les lecteurs d'écran ; null : la tête
    *  avec son titre (Vol, Détails, Couches, textes). */
   function bareHead(label) {
-    const head = $('grip').parentNode;
-    head.classList.toggle('f-sheet-head-bare', !!label);
-    if (label) {
-      setAttr(head, 'aria-label', label);
+    bareLabel = label;
+    applyBare();
+  }
+  /** La tête nue en position normale seulement : agrandie, réduite ou en colonne (paysage), il y a la place et le titre
+   *  est alors la seule chose qui dise ce qu'on regarde (règle 13 affinée). Revue à chaque arrêt de la feuille. */
+  function applyBare() {
+    const head = $('grip').parentNode,
+      on = !!bareLabel && sheet?.pos === 'default' && !document.documentElement.classList.contains('f-land');
+    head.classList.toggle('f-sheet-head-bare', on);
+    if (on) {
+      setAttr(head, 'aria-label', bareLabel);
       setAttr(head, 'role', 'group');
     } else if (head.hasAttribute('aria-label')) head.removeAttribute('aria-label');
   }
 
+  /** Titre de la poignée : le contenu, puis son contexte (une ligne coupée ; le texte entier et sa note en infobulle). */
   function sheetTitle(s, note = '') {
     const node = $('dtitle'),
       full = note ? `${s}\n${note}` : s;
