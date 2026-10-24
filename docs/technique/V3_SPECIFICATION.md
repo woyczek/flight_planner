@@ -134,6 +134,12 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   map beside the profile): proposed target, map at the left (≈ 60 %), the data block as a narrow right column
   (global profile or local slice), a short info line under it, the buttons as a vertical rail at the right edge under
   the thumb. A later lot of maps and atmosphere once decided.
+- **Answers of the user, 24 Oct (afternoon)**: fuel's first tab renamed (Devis / Quote / Berechnung / Cálculo),
+  "Préparer" being the bar's word; the **status line gives way to an "i" button of the header** (the iVAC pattern:
+  a small badge, green when something applies, opening a pop-up with the state: started flight › Carte, report to
+  write › CR, data synchronised n minutes ago, pending writes); the pending report comes from a small cache record
+  published by flightlog (`cache/flightlog/pending.json`); atmosphere at level 1, on the rail; fixed modules have no
+  help panel nor welcome card, a help button in their toolbar only if needed (the header's "?" opens the chapter).
 
 ## 8. Decisions log
 
