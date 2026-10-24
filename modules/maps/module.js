@@ -2747,6 +2747,8 @@ function onSheetSettled() {
   mapSize();
   if (S.map && S.fit && !S.userMoved && S.route.points.length) fitMap(false);
   schedule();
+  drawProfile(); // la ligne de texte et les notes vont et viennent avec la position : le dessin reprend la hauteur du corps
+  redrawWeather();
 }
 /** Choix « Profil · Météo » mémorisé pour la vie de la page (pas sur l'appareil : une commodité de lecture). */
 let viewKeep = 'profile';
@@ -4376,7 +4378,14 @@ const STYLE = `
 [data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
 [data-module="maps"] .mp-chips .mp-chip[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
 [data-module="maps"] .mp-data[hidden],[data-module="maps"] .mp-dclose[hidden],[data-module="maps"] .mp-dprof[hidden],[data-module="maps"] .mp-dbody[hidden]{display:none}
-[data-module="maps"] .mp-dbody[data-kind=weather]{overflow:hidden}
+/* la coupe garde le plancher de lisibilité de drawSection (140 px) : plus haute que le corps (feuille basse, paysage), le corps défile en hauteur au lieu de rogner l'axe des distances */
+[data-module="maps"] .mp-dbody[data-kind=weather]{overflow-x:hidden;overflow-y:auto}
+/* position par défaut : le corps de la feuille ne montre que le dessin (profil ou coupe), à toute sa hauteur ; la ligne de texte
+   et les notes n'apparaissent qu'agrandie, sous le dessin (spécification § 7.1.9). Repliée, le cadre cache déjà tout sauf la poignée.
+   La page de réglage (mp-tuning) garde tout. Le profil garde un plancher de lisibilité (120 px) : plus bas, son bloc défile. */
+[data-module="maps"].f-sheet:not([data-sheet="expanded"],.mp-tuning) :is(.mp-strip,.mp-notes){display:none}
+[data-module="maps"] .mp-dprof{overflow-x:hidden;overflow-y:auto}
+[data-module="maps"] .mp-prof{min-height:120px}
 [data-module="maps"] .mp-dbody[data-kind=weather] svg{display:block;cursor:crosshair}
 [data-module="maps"] .mp-wxmsg{margin:0;padding:6px 0}
 [data-module="maps"] .mp-wxlink{display:flex;align-items:center;min-height:var(--sog-touch);color:var(--sog-fg);text-decoration:none}
