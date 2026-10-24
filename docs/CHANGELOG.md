@@ -42,6 +42,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   touch zone; same drag, tap and keys, also at the top of the column in landscape. The collapsed sheet is 29 px high, and the drag stops
   at the measured header instead of a constant. `createSheet`, `labels(pos, rank)` and the positions are unchanged; nothing uses it yet
   (maps and atmosphere adopt it in their own lots). The bench grows from 129 to 177 checks.
+- **Atmosphere: no flicker while dragging the sheet** (`modules/atmosphere/module.js`, `lib/weather_map.js`, `test/weather_map.html`,
+  `tests/v3/cases/atmosphere.py` E7; atmosphere DECISIONS, INTEGRATION § 6) — the map and its overlay were resized, cleared and the cut
+  redrawn at every frame of a drag (a grey band, flashes). Nothing is redrawn while the finger drags; the map now lies under the sheet at
+  the module's whole size, so moving the sheet uncovers map already drawn. A world file that failed is asked again after 30 s, not at every
+  frame.
 - **Atmosphere: a legend behind an "i" chip, and a help chapter** (`modules/atmosphere/section.js`, `module.js`, `texts.js`, `help/*.md`,
   `frame/help/pilot.*.md`; atmosphere DECISIONS, INTEGRATION § 5; V3_SPECIFICATION § 7.1 rule 14) — the "i" chip, after ◀ ▶, shows over the
   cut or the slice the series really drawn with their symbols, in four languages (`sectionLegend` in `section.js`, for the Map too); a touch

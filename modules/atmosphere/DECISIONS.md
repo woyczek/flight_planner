@@ -2,6 +2,26 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 24 October 2026 (night) — two regressions: flicker while dragging the sheet; "only the frame around the flight"
+
+- **Flicker** (user: "Déplacer le volet par la poignée fait clignoter et apparaître une zone grise. Ça a fonctionné,
+  c'est maintenant fragile."). Measured during one slow drag: 29 resizes of MapLibre's canvas (blank until it renders
+  again: the grey), 27 resets of the overlay canvas (which clears it), 26 rewrites of the cut. The cut now follows the
+  body's exact height, so its size changes at every frame, and the sheet's `onSettle` (120 ms after the last change)
+  fired at each pause of the finger: `settled()` resized and re-fitted the map and redrew the cut mid-drag. **Fixed**:
+  nothing happens while the finger drags (the frame marks the panel `f-sheet-nt`), everything once at the release; and
+  the map and its overlay now have the module's whole size, under the sheet, so a move of the sheet only uncovers map
+  already drawn — MapLibre is resized with the module (window, rotation), never with the sheet. Fitting the route pads
+  the hidden part; MapLibre's controls stay above the sheet; the "outside the flight's grid" test reads the visible part
+  (`view.visible`). Case E7 of the suite: nothing redrawn during a drag (fails on the previous code: 47 events).
+- **"Est-ce que gfs s'affiche encore ? Je n'ai plus que le cadre autour du vol."** Not reproduced: on the published site
+  (run 12Z, 24 steps, the pressure-level files there), the synoptic draws outside the grid at the surface and at FL270,
+  phone and desktop sizes; no WebKit in the session. What matches the words: the world fields of the level shown are
+  missing (its pressure-level file not read on the device), so only the grid draws, its fills fading at its border.
+  Made robust: a world file that did not come is asked again after 30 s rather than at every frame; bench case "the
+  world synoptic is drawn outside the flight grid". To check on the iPhone after this lot; if it persists, the title
+  says "Synoptique monde…" (reading) or "non publié", which tells which.
+
 ## 24 October 2026 (night) — the legend behind an "i" chip; the help chapter
 
 - **The request** (user, relayed, rule 14 of V3_SPECIFICATION § 7.1: "On devrait voir la légende quelque part… on voit

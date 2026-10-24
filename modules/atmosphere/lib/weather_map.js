@@ -275,7 +275,8 @@ export function createWeatherMap({
       onChange
     },
     wsteps = new Map(),
-    wasked = new Set();
+    wasked = new Set(),
+    wfailed = new Map();
   let alive = true,
     box = null, // emprise de la grille du vol, connue dès le vol (avant toute prévision)
     boxModel = null, // son modèle ({ id, name, short })
@@ -383,10 +384,12 @@ export function createWeatherMap({
     const w = world,
       key = `${w.built}:${k}${alt ? ':alt' : ''}`;
     if (wsteps.has(key)) return wsteps.get(key);
-    if (!wasked.has(key)) {
+    // un fichier qui n'est pas venu (réseau coupé, publication en cours) est redemandé après 30 s, pas à chaque image
+    if (!wasked.has(key) && !(wfailed.get(key) > Date.now() - 30e3)) {
       wasked.add(key);
       reader.step(w, k, alt).then(sd => {
         wasked.delete(key);
+        if (!sd) wfailed.set(key, Date.now());
         if (!alive || world !== w || !sd) return;
         wsteps.set(key, sd);
         if (wsteps.size > 8) wsteps.delete(wsteps.keys().next().value);
@@ -814,7 +817,8 @@ export function createWeatherMap({
       cover = ix * iy / Math.max(1e-9, (e - w) * (n - s));
     return cover < 0.4 || !inBox(b, (s + n) / 2, (w + e) / 2) ? 2 : 1;
   }
-  /** Dessine la carte météo dans c : view = { W, H, project(lat, lon) → { x, y }, bounds [w, s, e, n] | null, zoom }.
+  /** Dessine la carte météo dans c : view = { W, H, project(lat, lon) → { x, y }, bounds [w, s, e, n] | null, zoom, visible
+   *  (la part vue quand le canevas déborde sous un panneau, pour info().outside ; sinon bounds) }.
    *  Ordre : courant-jet et convection partout (sous les nuages et les lignes, des deux côtés), le synoptique monde hors de
    *  la grille du vol, puis la grille du vol (fondue dans le monde) sur chaque copie visible du monde. */
   function draw(c, view) {
@@ -822,7 +826,7 @@ export function createWeatherMap({
     const L = o.layers,
       K = o.colors(),
       P = view.project,
-      out = outside(view.bounds);
+      out = outside(view.visible || view.bounds);
     last.out = out;
     if (out || L.jet || L.conv || L.cloud || L.tfill) loadWorld();
     const wg = world ? worldGeometry(view.zoom, K) : null;

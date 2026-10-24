@@ -268,6 +268,22 @@ for (const l of ['cloud', 'tfill', 'jet', 'conv']) {
 }
 check('no fill shows the flight grid\'s limit (luminance jump at the limit, field slope removed, < 2)', Object.values(jumps).every(v => v <
   2), JSON.stringify(jumps));
+// le synoptique se dessine hors de la grille du vol (régression « je n'ai plus que le cadre autour du vol ») : de l'encre au-delà
+// de la limite, toutes couches
+wm.update({
+  layers: Object.fromEntries(Object.keys(off).map(l => [l, true]))
+});
+c.clearRect(0, 0, 320, 200);
+wm.draw(c, view);
+const inkOut = (() => {
+  const d = c.getImageData(0, 0, 320, 200).data;
+  let n = 0;
+  for (let y = 0; y < 200; y++)
+    for (let x = 0; x < 320; x++)
+      if ((x < x0 - 2 || x > x1 + 2 || y < y0 - 2 || y > y1 + 2) && d[(y * 320 + x) * 4 + 3]) n++;
+  return n;
+})();
+check('the world synoptic is drawn outside the flight grid', inkOut > 2000, `${inkOut} px of ink outside`);
 // option edge : la limite tracée en trait fin (réglage de l'administrateur), rien sans elle
 const hairline = () => Array.from({
   length: 12

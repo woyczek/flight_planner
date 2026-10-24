@@ -4,9 +4,10 @@ Rules covered
   * the buttons over the map and their labels in four languages (E1);
   * nothing written over the map: no hint pill, no text element (E2, L10);
   * the sheet title carries the flight in brief (E3, L10); Details and Flight contents are compact and closable (E4, L7, L9);
-  * one "i" only on the page, the frame's (E5, L8); the "tap the map" hint is a notification, once per page life (E6, L10).
+  * one "i" only on the page besides the drawing's legend chip (E5, L8); the "tap the map" hint is a notification, once per page
+    life (E6, L10); nothing redraws while the sheet is dragged (E7).
 
-Cases: E1 E2 E3 E4 E5 E6.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
+Cases: E1 E2 E3 E4 E5 E6 E7.  The module is seeded with the planned flight of lib.FLIGHT; no forecast can be read without the
 network, so the cases that need data use the module's offline demonstration (`#atmosphere?donnees=demo`) and say so.
 """
 import re
@@ -146,3 +147,34 @@ def e6(c):
     over = c.js("""(t) => [...document.querySelectorAll('[data-module="atmosphere"] .at-box *')].filter(e => !e.closest('.at-map') && window.__t.shown(e)
         && (e.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(t)).length""", hint[:20])
     c.eq(over, 0, 'the hint is never an element over the map', what='elements over the map carrying the hint')
+
+
+@case('E7', 'Still during a sheet drag', 'E', tags=('sheet', 'atmosphere'), screens=False,
+      rule='user "Déplacer le volet par la poignée fait clignoter et apparaître une zone grise": nothing redraws during the drag, once at settle')
+def e7(c):
+    c.open('atmosphere?donnees=demo', flight=True)             # a drawing in the sheet and a map: the offline demonstration
+    c.until(f"!!document.querySelector('{ATM} .at-dbody svg')", timeout=10000, what='the cross-section is drawn')
+    c.settle()
+    # instruments: a resize of the map's canvas, a reset of the overlay canvas, a rewrite of the sheet's body
+    c.js(f"""() => {{
+      const r = document.querySelector('{ATM}'), ev = window.__dragEv = [], over = r.querySelector('canvas.at-over'),
+        mc = r.querySelector('.at-map canvas'), body = r.querySelector('.at-dbody');
+      for (const k of ['width', 'height']) {{
+        const d = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, k);
+        Object.defineProperty(over, k, {{ get() {{ return d.get.call(this) }}, set(v) {{ ev.push('overlay ' + k); d.set.call(this, v) }}, configurable: true }});
+      }}
+      if (mc) new ResizeObserver(() => window.__dragOn && ev.push('map canvas resized')).observe(mc);
+      new MutationObserver(() => window.__dragOn && ev.push('sheet body rewritten')).observe(body, {{ childList: true }});
+    }}""")
+    g = c.box(f'{ATM} .f-sheet-grip')
+    x, y = g['x'] + g['w'] / 2, g['y'] + 10
+    c.page.mouse.move(x, y)
+    c.page.mouse.down()
+    c.js('() => { window.__dragOn = true; window.__dragEv.length = 0 }')
+    for i in range(1, 13):                                      # a slow drag down then up, with pauses longer than onSettle
+        c.page.mouse.move(x, y + (i if i <= 6 else 12 - i) * 18)
+        c.wait(60 if i % 4 else 220)
+    during = c.js('() => window.__dragEv.slice()')
+    c.page.mouse.up()
+    c.js('() => { window.__dragOn = false }')
+    c.eq(during, [], 'nothing is redrawn while the finger drags the sheet (map, overlay, drawing)', what='events during the drag')

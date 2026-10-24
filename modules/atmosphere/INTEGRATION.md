@@ -161,7 +161,8 @@ wx.detach();                               // the Profil chip: the canvas and it
   zoom() → number, onChange(cb) → unsubscribe }`. It returns the `createWeatherMap` API plus `update` and `detach`
   that also repaint and clean up.
 - **`createWeatherMap(opts)`** draws into the host's canvas, at its place in the host's drawing order (this module:
-  background, weather, then the route): `draw(c, { W, H, project, bounds, zoom })`.
+  background, weather, then the route): `draw(c, { W, H, project, bounds, zoom, visible })` — `visible`: the part the
+  user sees when the canvas runs on under a panel (this module draws its map under the sheet), for `info().outside`.
 - **`opts`**: `ctx` (`data`, `net`, `t`, `lang`); `flight` (`{ points, levelFt }`: the route and its planned level;
   `null`: the world alone); `levelFt` (the pressure altitude shown, ft; `null`: the surface); `time` (s, the map's
   hour); `layers` (`{ isobar, isotherm, cloud, wind, tfill, jet, conv }`, defaults `DEFAULT_LAYERS`); `gridMax` (places

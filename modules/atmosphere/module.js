@@ -163,9 +163,14 @@ const STYLE = `
 [data-module="atmosphere"]~.f-overlay .at-lvl:focus-within{outline:2px solid var(--sog-accent);outline-offset:2px}
 [data-module="atmosphere"]~.f-overlay button.f-ov-btn.at-load{color:var(--sog-accent)}
 [data-module="atmosphere"] .f-sheet-grip .f-badge{flex:none;margin-right:6px}
-[data-module="atmosphere"] .at-map{position:absolute;inset:0;touch-action:none}
+/* la carte et sa surcouche ont la taille du module entier, sous la feuille : un mouvement de la feuille découvre de la carte déjà
+   dessinée, sans redimensionner MapLibre (plus de clignotement ni de zone grise au glisser) ; --at-hide-b / -r : la part cachée
+   par la feuille (en bas en portrait, à droite en paysage), où les contrôles de MapLibre ne vont pas */
+[data-module="atmosphere"] .at-map{position:absolute;left:0;top:0;width:var(--at-full-w,100%);height:var(--at-full-h,100%);touch-action:none}
+[data-module="atmosphere"] .at-map :is(.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left){bottom:var(--at-hide-b,0px)}
+[data-module="atmosphere"] .at-map .maplibregl-ctrl-bottom-right{right:var(--at-hide-r,0px)}
 [data-module="atmosphere"] :is(button,select,input,label){touch-action:manipulation}
-[data-module="atmosphere"] canvas.at-over{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+[data-module="atmosphere"] canvas.at-over{position:absolute;left:0;top:0;width:var(--at-full-w,100%);height:var(--at-full-h,100%);z-index:2;pointer-events:none}
 [data-module="atmosphere"] .at-box.at-flat canvas.at-over{pointer-events:auto}
 [data-module="atmosphere"] .at-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
 [data-module="atmosphere"] .at-layers>div{display:flex;flex-direction:column;min-width:0}
@@ -1106,13 +1111,30 @@ export async function mount(el, ctx) {
   // Hauteur fixe à trois positions, tirée par la poignée de son en-tête (frame/lib/sheet.js) ; son contenu défile dedans,
   // la page jamais. Propre au module : la position gardée d'un montage à l'autre, et ce qui suit un changement de taille.
   let sheet = null;
+  /** Un glisser de la poignée est en cours (la feuille suit le doigt : le cadre lui ôte sa transition). */
+  const dragging = () => $('data').classList.contains('f-sheet-nt');
+  /** La carte à la taille du module entier (sous la feuille) et la part que la feuille en cache : posées seulement quand elles
+   *  changent ; MapLibre ne change de taille qu'avec le module (fenêtre, rotation), jamais avec la feuille. */
+  function sizeMap() {
+    const box = $('box'),
+      st = box.style,
+      fw = Math.max(1, el.clientWidth - box.offsetLeft),
+      fh = Math.max(1, el.clientHeight - box.offsetTop),
+      set = (k, v) => st.getPropertyValue(k) !== v && st.setProperty(k, v);
+    set('--at-full-w', `${fw}px`);
+    set('--at-full-h', `${fh}px`);
+    set('--at-hide-r', `${Math.max(0, fw - box.clientWidth)}px`);
+    set('--at-hide-b', `${Math.max(0, fh - box.clientHeight)}px`);
+    if (S.map) mapSize(S.map, $('map'));
+  }
   /** Après un changement de taille (feuille, rotation ; onSettle de la feuille, 120 ms après le dernier) : le fond
    *  MapLibre reprend la taille du cadre, la route reste cadrée tant que l'utilisateur n'a pas déplacé la carte, le bloc
    *  est redessiné s'il n'est plus à la taille de son dernier dessin. */
   function settled() {
-    if (!alive) return;
+    // pendant un glisser de la poignée, rien : la feuille suit le doigt, tout est repris une fois au lâcher
+    if (!alive || dragging()) return;
     applyBare();
-    if (S.map) mapSize(S.map, $('box'));
+    sizeMap();
     if (S.map && !S.userMoved) fitMap();
     schedule();
     if ((S.view === 'profile' || S.view === 'slice') && `${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) drawData();
@@ -1152,6 +1174,7 @@ export async function mount(el, ctx) {
   /** Fond MapLibre sur l'emprise du vol (startTiles du socle de la Carte) ; false s'il ne vient pas (hors ligne, pas de
    *  WebGL, hôte refusé, délai) : fond uni. Ce qui suit le chargement est propre au module (événements, surcouche). */
   async function startTiles() {
+    sizeMap(); // MapLibre lit la taille de son conteneur à sa création : celle du module entier
     if (S.map || S.mapTried) return !!S.map;
     S.mapTried = true;
     await loadRender().catch(() => {});
@@ -1186,7 +1209,7 @@ export async function mount(el, ctx) {
     if (!map || !alive) return flat();
     S.map = map;
     $('box').classList.remove('at-flat');
-    mapSize(map, $('box'));
+    sizeMap();
     fitMap();
     schedule();
     return true;
@@ -1268,15 +1291,17 @@ export async function mount(el, ctx) {
   /** Vue courante : projection (MapLibre, sinon Mercator du fond uni sur l'emprise du vol) et ses dimensions. */
   function view() {
     const box = $('box'),
-      Wd = Math.max(1, box.clientWidth),
-      H = Math.max(1, box.clientHeight);
+      mp = $('map'),
+      Wd = Math.max(1, mp.clientWidth || box.clientWidth),
+      H = Math.max(1, mp.clientHeight || box.clientHeight);
     if (S.map) return {
       W: Wd,
       H,
       toC: (lat, lon) => S.map.project([lon, lat])
     };
     const b = fitBox(),
-      m = window.MapsRender ? plainView(b, Wd, H, 12) : null;
+      // le fond uni cadre la route dans la partie visible (au-dessus de la feuille), dessiné sur toute la surface
+      m = window.MapsRender ? plainView(b, Math.max(1, box.clientWidth), Math.max(1, box.clientHeight), 12) : null;
     return m ? {
       ...m,
       W: Wd,
@@ -1351,6 +1376,14 @@ export async function mount(el, ctx) {
     const b = S.map.getBounds();
     return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
   };
+  /** La part de la carte que la feuille ne cache pas (la carte est dessinée dessous aussi) : ce que l'on regarde. */
+  const visibleBounds = () => {
+    if (!S.map) return null;
+    const box = $('box'),
+      sw = S.map.unproject([0, box.clientHeight]),
+      ne = S.map.unproject([box.clientWidth, 0]);
+    return [sw.lng, sw.lat, ne.lng, ne.lat];
+  };
   /** Titre du synoptique : l'heure montrée, le run et l'échéance. */
   function worldTitle() {
     const i = wm.info();
@@ -1416,6 +1449,7 @@ export async function mount(el, ctx) {
       H: v.H,
       project: P,
       bounds,
+      visible: visibleBounds(),
       zoom: S.map?.getZoom?.() ?? 6
     });
     const out = wm.info().outside;
@@ -1557,6 +1591,9 @@ export async function mount(el, ctx) {
     if (lvlChip.title !== full) lvlChip.title = full;
   }
 
+  /** Part de la carte cachée par la feuille (px), en bas ('b') ou à droite ('r'). */
+  const hidden = k => parseFloat($('box').style.getPropertyValue(`--at-hide-${k}`)) || 0;
+
   function fitMap() {
     if (!S.map || !S.flight) return schedule();
     const b = fitBox();
@@ -1566,9 +1603,9 @@ export async function mount(el, ctx) {
     ], {
       padding: {
         top: 56,
-        bottom: 24,
+        bottom: 24 + hidden('b'),
         left: 24,
-        right: 56
+        right: 56 + hidden('r')
       },
       duration: 0,
       maxZoom: 8
@@ -2095,12 +2132,14 @@ export async function mount(el, ctx) {
   // le bloc est redessiné quand sa taille n'est plus celle de son dernier dessin (un dessin pris pendant un glissement est
   // repris à la taille finale)
   const ro = new ResizeObserver(() => {
-    if (S.map) mapSize(S.map, $('box'));
+    if (dragging()) return; // pendant le glisser, rien : onSettle reprend au lâcher
+    sizeMap();
     schedule();
     if (`${dbody.clientWidth}x${dbody.clientHeight}` !== S.drawn) sheet?.settle();
   });
   ro.observe(dbody);
   ro.observe($('box'));
+  ro.observe(el);
   const repaint = () => {
     colors.clear();
     wm.update({}); // couleurs du design relues au prochain dessin
@@ -2121,7 +2160,7 @@ export async function mount(el, ctx) {
   // retour d'un onglet caché ou d'une page gelée : les observations de taille faites pendant ce temps sont perdues
   const back = () => {
     if (document.visibilityState !== 'visible' || !S.map) return;
-    mapSize(S.map, $('box'));
+    sizeMap();
     schedule();
   };
   document.addEventListener('visibilitychange', back);
