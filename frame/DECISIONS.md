@@ -1124,3 +1124,39 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     a collapsed sheet turned, popover at the right of the rail; portrait boxes compared with the base commit (header, view,
     module root, map, sheet, bar, layer, `--f-*`) in maps, atmosphere, fuel, report, flightlog in two designs: **identical**,
     except the right column in full screen, which no longer starts 60 px lower.
+
+- **24 Oct 2026 — The bare handle of the sheet** (relay cloud, branch `v3-cadre-poignee`; decision `V3_SPECIFICATION.md` § 7.1
+  rule 13 b: no title above a drawing; the user's iPhone shots of the weather cut, "Toujours la ligne « météo fl160 »... info
+  redondante, qui prend de l'espace vertical").
+  - **Request = a class, not an option**: `.f-sheet-head-bare` on `.f-sheet-head`, one line of module code
+    (`head.classList.toggle('f-sheet-head-bare', isDrawing)`). Not an option of `createSheet` or `set`: the header changes with
+    the content (maps: Profile · Weather bare, Layers titled), an option would be state the primitive keeps and the module must
+    keep in step; a class is what the module already writes on its own header, and the CSS reads it. `createSheet`, `set`,
+    `labels(pos, rank)` and the positions are unchanged. Maps and atmosphere use these names.
+  - **Token** `--f-sheet-head-bare: 28px` in `primitives.css` (no weight, like the others) and in `frame/design/SPEC.md`. The
+    line is 28 px, the collapsed panel 29 (the hairline). `--f-sheet-head` (45 px) stays for the titled header.
+  - **Heights follow the real header**: the primitive's floor for the drag and the nearest-position choice was the token
+    `--f-sheet-head` read from the root; it is now the header's **measured** box plus the panel's top border
+    (`headBox()`; the token only when the header has no box). The collapsed height in CSS cannot read the DOM, so it is
+    `.f-sheet[data-sheet="collapsed"] > .f-sheet-panel:has(> .f-sheet-head-bare)`. A header that changes class while collapsed
+    animates to the new height and `transitionend` fires `onSettle`.
+  - **The grip bar is centred in the grip area** (the room the buttons leave), not on the whole line: with the segments, ◀ ▶
+    and ✕ on a 390 px phone the buttons reach about as far as the centre of the line (the bench's five buttons start at the
+    middle of 360 px), so a bar centred on the line could sit under the first of them. The cost: with only a ✕ the bar is 14 px off the line's centre. Asked for "centrée en haut"; if the line
+    must be exactly centred, the buttons have to be narrower than half the width.
+  - **Touch zones**: `::after` of 44 px high, centred, at least 32 px wide, on `button:not(.f-sheet-grip)` in the bare header
+    (weight 4 classes + element, above a design's `[data-design] :is(button, .f-btn)`), with a 4 px gap so that zones tile
+    without overlapping. Centred by `top: 50%` / `transform` and not by `inset`, so that a module's border on its buttons
+    (1 px loses 2 px of height with `inset`) does not shrink it. The upper 8 px are clipped by the panel's `overflow: hidden`
+    (the sheet's own edge): the zone is 36 px effective on top, 44 below the 28 px line, and bites 8 px on the body. 44 px
+    visible, as the overlay buttons, was not possible on a 28 px line; the user asked for 28 + zone.
+  - **Landscape**: the line stays at the top of the column; the chevron (CSS `::after` of the grip) gets `margin-left: auto`
+    so that, with no title to push it, it sits at the end of the grip area.
+  - **When** (written in INTEGRATION § 11): over a drawing, never over a list.
+  - **Bench** `frame/lib/test/sheet.html`: 129 → 177 checks, a bare sheet in portrait (28 px line, no title, five buttons of
+    28 px right-aligned and in order, bar centred in the grip and clear of the buttons, zones of 44 px, collapsed 29 px, expanded
+    and default unchanged, tap, drag, flick, keyboard, a chip does not drag, the drag floor is 29 px and 45 px again once the class
+    is removed) and in the landscape column (28 px, at the top of the column, no title, tap, drag).
+    The suite's case C1 gives the bench 30 s and it already took 27 s; the new checks would have crossed it (C1 failed on the first
+    run: "never reported done"), so the waits that followed an instant `set()` were cut to 80 ms and the other fixed waits shortened
+    to the transition's 200 ms plus a margin: the bench takes 24 s with 177 checks (it took 27 s with 129).

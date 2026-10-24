@@ -428,7 +428,7 @@ const sheet = createSheet({
   so the sheet needs no height of its own in the plain view, the split main or the pane.
 - `panel` (`.f-sheet-panel`) is a **direct child** of `root` (`.f-sheet > .f-sheet-panel`): the element whose height the
   primitive sets. It is a flex column with `overflow: hidden`; the header is its first child, whatever else follows it.
-- `head` (`.f-sheet-head`, 44 px) receives the drag (pointer events on it only, `touch-action: none` there: the map keeps all
+- `head` (`.f-sheet-head`, 44 px; 28 px with the bare handle, below) receives the drag (pointer events on it only, `touch-action: none` there: the map keeps all
   its gestures). `grip` (`.f-sheet-grip`) is the handle button inside it: it takes all the width the header's other controls
   leave, shows the grip bar (a `::before`, nothing to draw) and holds the title (`.f-sheet-title`: one line, ellipsed).
   The grip is a `<button>`; a `<div>` works too (the primitive gives it `role="button"` and `tabindex="0"` and handles
@@ -474,6 +474,7 @@ reads nothing else (no `calc()`).
 | Token | Default | |
 | --- | --- | --- |
 | `--f-sheet-head` | `45px` | the collapsed height: the header (44 px, `--sog-touch`) and the hairline |
+| `--f-sheet-head-bare` | `28px` | the bare handle's line (below); collapsed, the panel is this and the hairline (29 px) |
 | `--f-sheet-default` | `30%` (`35%` from 761 px) | the default height |
 | `--f-sheet-default-min` | `170px` | its floor |
 | `--f-sheet-expanded` | `70%` | the expanded height |
@@ -489,6 +490,43 @@ reads nothing else (no `calc()`).
   36 × 4 px (`--sog-muted` at 55 %), a header at 44 px with the title at `.92em`. Nothing is hard-coded to a design.
 - The grip and the ✕ are buttons: their rules weigh three classes so that the designs' button rules (`[data-design] :is(button,
   .f-btn)`) do not reach them.
+
+### The bare handle (`.f-sheet-head-bare`): a drawing needs no title
+
+When the sheet shows **a drawing that describes itself** (the vertical profile, the weather cut: its axes and legend say what
+it is), a title line above it only repeats and takes vertical space (V3_SPECIFICATION § 7.1 rule 13 b). The module asks for
+the **bare handle** with one class on the header, from the code that builds or changes the header:
+
+```js
+head.classList.toggle('f-sheet-head-bare', content === 'drawing');   // true for a drawing; false for a list or a form
+```
+
+No option on `createSheet` and no call to the primitive: the class is the whole request, and it can change at any time (the
+header changes with the content). What it does (`frame/design/primitives.css`):
+
+- **One line of `--f-sheet-head-bare` (28 px)** instead of 44: the grip bar at the top, **no title** (`.f-sheet-title` is
+  `display: none`; the grip's `aria-label` and tooltip still come from `labels`), and the header's buttons (the segments or
+  chips, ◀ ▶, `.f-sheet-close`) **on the same line at the right**. The grip takes the space they leave, so the bar is centred in
+  it and never touches a button.
+- **Buttons**: 28 px high on screen (`button:not(.f-sheet-grip)` inside the bare header gets `height: 28px`, `min-height: 0`,
+  `min-width: 28px`, which outweighs a design's 44 px button rule), and a **touch zone of 44 px** by an `::after` centred on
+  the button (at least 32 px wide), as `.f-ov-btn` does. The header's 4 px gap keeps neighbouring zones side by side. The top of
+  the zone is clipped by the sheet's edge; its bottom bites 8 px into the body, so keep nothing that must be tapped in the first
+  8 px of the body. A module's own button rule must not set a height (`!important` apart, the frame's wins by weight).
+- **Same gestures**: drag, tap (default ⇄ collapsed), flick, keyboard, `ignore`, `locked`; nothing changes in `createSheet`
+  nor in `labels(pos, rank)` and the positions.
+- **Heights follow the real header.** Collapsed, the panel is `--f-sheet-head-bare` + the 1 px hairline = 29 px (the CSS
+  rule `.f-sheet[data-sheet="collapsed"] > .f-sheet-panel:has(> .f-sheet-head-bare)`); the primitive **measures** the header
+  (its box plus the panel's top border) for the drag's floor and the nearest-position choice, so a drag down stops at the line
+  that is actually there, bare or not. Default and expanded heights are the panel's and do not change: the body gains the 16 px.
+- **Landscape** (`html.f-land`): the bare line stays at the **top of the column**, 28 px, no title, buttons at the right;
+  the chevron that shows the way to widen moves to the end of the grip area, next to the buttons.
+
+**When**: above a drawing (cut, profile, chart), where the drawing and its axes say what is shown. **Never above a list**
+(layers, details, flight, aerodrome contents): a list needs its title, and a title stays for any content that does not
+describe itself. A module that mixes both (maps: Profile · Weather bare, Layers titled) toggles the class when the content
+changes; if the map must re-frame, call `sheet.settle()` (the transition of a collapsed sheet is followed by `onSettle` by
+itself). Test bench: `frame/lib/test/sheet.html` (the "nue" and "paysage nue" checks).
 
 ### Landscape on a phone (`html.f-land`): the sheet is a column
 

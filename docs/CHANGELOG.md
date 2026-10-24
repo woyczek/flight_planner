@@ -12,6 +12,13 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Frame: the sheet's bare handle** (`frame/design/primitives.css`, `frame/lib/sheet.js`, `frame/lib/test/sheet.html`, `frame/INTEGRATION.md`
+  § 11, `frame/design/SPEC.md`, `frame/DECISIONS.md`; V3_SPECIFICATION § 7.1 rule 13 b) — a module that shows a drawing in the sheet
+  puts the class `f-sheet-head-bare` on the header (`head.classList.toggle('f-sheet-head-bare', isDrawing)`): the header becomes a
+  28 px line (`--f-sheet-head-bare`) with the grip bar, no title, and its buttons (segments, ◀ ▶, ✕) 28 px high at the right with a 44 px
+  touch zone; same drag, tap and keys, also at the top of the column in landscape. The collapsed sheet is 29 px high, and the drag stops
+  at the measured header instead of a constant. `createSheet`, `labels(pos, rank)` and the positions are unchanged; nothing uses it yet
+  (maps and atmosphere adopt it in their own lots). The bench grows from 129 to 177 checks.
 - **Atmosphere: the cross-section fits the sheet, no title over it** (`modules/atmosphere/section.js`, `module.js`, `texts.js`; atmosphere
   DECISIONS, INTEGRATION § 5; V3_SPECIFICATION § 7.1 rule 13) — the cut and the slice are drawn at the sheet body's exact height (`minHeight`,
   default 0, in `drawSection` for the Map too): fewer level labels on a low chart, the distance axis always visible (on a 390 × 664 phone
