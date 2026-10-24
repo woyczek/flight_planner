@@ -211,3 +211,51 @@ takes paths by hand; `--all` runs everything. The report's first line says which
 A case can also carry tags (`tags=('overlay','sheet')`) so that `--tag overlay` runs across areas. The frame lot and
 the module lots say in their reports which command they ran (`run.py --changed` from their branch) and paste the
 summary line; a lot is "good" when its selected cases pass and the known failures are the only `FAIL`s.
+
+## N. Journeys (functional scope): which change touches which path of the pilot
+
+User rule (24 Oct, 15:55): "C'est soit à toi soit à la session de tests de déterminer le périmètre fonctionnel, pour
+savoir facilement quels modifs impactent tel ou tel parcours." The relay sets it here. A **journey** is a path the
+pilot walks through the application, in order, across modules; it is what the user means by "feature". Each journey
+names its steps, the **files that carry it** (so that a change is mapped to the journeys it can break), the area cases
+that already guard its screens, and **one end-to-end case** (`J<n>`) that walks the whole path in one browser, with
+seeded state only where a real backend would be needed (website, GPS, Open-Meteo) and says so in the report.
+
+Sources: `V3_SPECIFICATION.md` § 7.1 (the bar is the order of a day: Préparer · Carte · CR · Vols · Réglages),
+`modules/fuel/SPEC.md` § 4 (`pilot/<trigram>/current_flight.json`) and § 12 (started flight), `modules/flightlog/SPEC.md`
+(`cache/flightlog/pending.json`, `pilot/handoff.json`), `modules/report/SPEC.md` § 2, 3 bis, 6, `frame/settings/SPEC.md`.
+
+| Journey | Steps (in order) | Files that carry it (globs) | Guard cases | End-to-end case |
+|---|---|---|---|---|
+| **P1 Préparer un vol** | Préparer › Devis: aircraft, departure, arrival, alternate, load → quote (block, trip, time, TOD) → level decision (Fiches / levels) → `current_flight.json` written as *planned* → Carte shows the route, the profile and the title "Profil · FL · NM · vol prévu" → Météo (atmosphere) reads the same flight, "Charger" is the user's one shot → back on Carte the Météo chip draws the cut | `modules/fuel/**`, `modules/maps/**`, `modules/atmosphere/**`, `frame/app.js` (navigation, records), `frame/lib/sheet.js`, `frame/design/primitives.css`, `frame/aerodb/**`, `frame/weather/**` | F1 F2 F3, D1 D3 D4 D7, C2 C5, E1 E3, B1–B4 | **J1**: on a phone, fill the quote with the module's demo values (or seed the inputs), read the result bar, open Carte (`#maps`) and assert the title carries the same FL and distance as the quote (±1 NM), open `#atmosphere` and assert its title names the same flight (from → to, FL); the "Charger" step is **not** clicked (one shot per user, network blocked): assert the button exists and the message "not loaded" is in the body, then return to Carte and assert the Météo chip is present (hidden or shown, no error) |
+| **P2 Voler** | Préparer: "Démarrer le vol" (fuel § 12) → `started = {at, by}` → "i" badge green, pop-up row "Vol en cours › Carte" → Carte: title "vol en cours", Follow shown, position from GPS or none (notification once), progress block in the sheet notes → full screen → end: "Annuler le démarrage" or the report | `modules/fuel/progress.js`, `modules/fuel/module.js`, `modules/maps/**`, `frame/app.js` ("i", position, `frame-fullscreen`), `frame/lib/geo.js` | A8 A9, D8, B5 B7 B8 | **J2**: seed a planned flight, start it from fuel (the button, or `seed_flight(started=True)` if the button needs the network, and say which), assert the "i" badge is green and its row leads to `#maps`, the maps title says "vol en cours" (×4 langs), Follow is shown, full screen works, then cancel the start from fuel and assert the title is back to "vol prévu" and the badge is off |
+| **P3 Rendre compte** | Vols lists a flight without a report → `pending.json` (schema 2, `handoff`) → "i" badge green, row "CR à écrire" → tap → `pilot/handoff.json` written → `#report` prefilled (family, values) → three steps → save (`sog-report/1`) → record on the website (same gesture; offline: queued, said so) → `started = null`, pending cleared, Vols shows the report | `modules/flightlog/**`, `modules/report/**`, `modules/website/**`, `frame/app.js` (§ 10 pending, handoff), `frame/settings/join.js` | G1 G2 G3, A8 A9 | **J3**: seed one flight without a report, assert the badge and the row, tap it, assert `#report` opens on step 1 with the handoff values in the form (at least from, to, date), walk the three steps with the minimum required fields, save; the website recording is **SKIPped inside the case** with the reason "no website in the suite" and the case asserts the report is in the local cache, the pending record is empty and the badge is off |
+| **P4 Relire ses vols** | Vols: list, filters (period, aircraft, without report), totals, export; the website log and the network sessions (IVAO / VATSIM) merged when the access is set | `modules/flightlog/**`, `modules/website/**` | G2 | **J4**: seed three flights (two with reports, one without), assert the totals (count, hours ±1 min) and the "Without report" filter gives one, export produces a file (download event) with three rows |
+| **P5 Installer et synchroniser** | first launch without trigram → amber badge → Réglages: trigram, data access (GitHub mode or launcher), join the airline → sync dot (header on a screen, "i" line on a phone) → offline: amber, writes pending → conflicts screen → design and language choice → help | `frame/app.js` (data layer, sync, conflicts), `frame/settings/**`, `frame/design/**`, `frame/help/**`, `frame/manifest.webmanifest`, `frame/sw.js` (if any), `frame/index.html` | A2 A3 A8 A9 A10 A11 A12, H1–H3 | **J5**: start with nothing seeded, assert the amber badge and the trigram line, open Réglages, set the trigram `ABC`, assert the badge turns off (or green if something else applies), switch the language to `en` and the design to `metro` from Réglages and assert the header and bar follow without reload, go offline (`context.set_offline(True)`), assert the amber badge and the "i" line say offline, back online, assert it clears |
+| **P6 Carte de mission** | a mission map (from the studio's YAML) opened from Carte › Couches "Carte à montrer" → route-edit buttons hidden → the trace unrolled → the sheet shows the mission's content | `modules/maps/mission.js`, `modules/maps/module.js`, `modules/maps/lib/map_base.js` | D10 | **J6**: SKIP until a mission fixture exists in `tests/v3/fixtures/` (say so); then open `#maps?mission=<id>` and assert the buttons, the selector name and no error |
+
+Rules for the journey cases:
+
+- Each `J` case runs **once on the phone in `standard`, French**, and once on the screen (`J1`, `J5`); languages
+  only where the table says ×4. They are slow by nature: never duplicated across designs.
+- A `J` case stops at the first failed step and reports **the step name** ("P3 step 4: `#report` not prefilled:
+  `from` empty, expected LFRS"), so that the reader knows where the path broke, not only that it broke.
+- Seeding goes through `lib.py` only (`seed_flight`, `seed_pending`, `seed_identity`, `seed_flights(n)`), so that a
+  change in the cache schema is fixed in one place.
+
+## O. Adherence to journeys: the runner tells which paths a change touches
+
+`tests/v3/journeys.py` holds the table above as data (`JOURNEYS = {id: {title, steps, paths, cases, e2e}}`).
+The runner, with `--changed [<base>]` or `--for <paths>`:
+
+1. maps the changed files to **areas** (§ M) as today;
+2. maps them to **journeys** by the `paths` globs, and adds each impacted journey's `J` case to the selection;
+3. prints, before the first case, one line per impacted journey: `JOURNEY P1 Préparer un vol — modules/fuel/levels.js,
+   modules/maps/module.js`, and writes the same at the top of `report.md` ("Journeys touched: …");
+4. a change that maps to no journey prints `JOURNEY none (areas only)`.
+
+`--journey P1,P3` runs those journeys' guard cases and `J` cases; `--list` shows, for a set of paths, the areas and
+journeys without running. A lot's report (frame or module) quotes that line: it is the answer to "quels modifs
+impactent tel ou tel parcours". When a new screen or record appears in a module, its lot adds the file to the journey
+it serves, in `journeys.py`, in the same commit: a file that belongs to no journey is a question for the relay, not a
+silent gap.
