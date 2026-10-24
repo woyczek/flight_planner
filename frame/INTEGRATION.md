@@ -382,7 +382,7 @@ airspaces, aerodrome content, behind `openData`, `modules/maps/INTEGRATION.md` �
 
 ### Moving from a module's own copy
 
-`maps_copy_sheet.js` of atmosphere (a copy of maps' former block) maps one to one: `data` → `panel`; the `--<prefix>-head`,
+A module's former copy of maps' sheet block (atmosphere had one until 24 Oct 2026; both now import the primitive) maps one to one: `data` → `panel`; the `--<prefix>-head`,
 `-p1`, `-p2`, `-m1`, `-m2` tokens → `--f-sheet-head` (44 + 1 px), `-default` / `-default-min`, `-expanded` / `-expanded-min` (the
 frame's defaults are those numbers: delete the module's tokens); `title(pos)` (the grip's tooltip) → `labels(pos, rank)`; `skip` →
 `ignore`; `prefix` and the `<prefix>-nt` class → `f-sheet-nt` (the primitive's); `data-sheet="0|1|2"` → `"collapsed|default|expanded"`;
