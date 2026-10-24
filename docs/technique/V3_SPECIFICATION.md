@@ -243,6 +243,10 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       (horizontalement en paysage)", retained)**: no empty margin at the left of the drawing; the Profil · Météo chips
       leave the grip row and stand as a vertical column at the right of the drawing in portrait (44 px, touch zones
       44), as a horizontal row above the drawing in the landscape column; the bare grip keeps the bar and ✕ only.
+      **Third refinement (user, 24 Oct, 22:05: "Les icônes passent en horizontal quand la ligne du haut apparaît
+      (objectif : maximiser la largeur dispo)")**: the vertical column exists only with the bare grip (default
+      position); whenever the titled head row is shown (expanded, collapsed, landscape column) the chips go back
+      **into that row, horizontally at its right**, and the drawing takes the full width. Same for Atmosphere's ◀ ▶.
 - **Shared code between maps and atmosphere** (relay, 24 Oct, after the atmosphere screen was rebuilt on the map's
   template with copies of its MapLibre base and its sheet): the map base (`loadMapLibre`, `startTiles`, `styleFor`,
   `mapSize`, plain background) goes to `modules/maps/lib/map_base.js`, owned by maps and imported by atmosphere like
