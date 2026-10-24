@@ -152,6 +152,9 @@ report and maps never write nor erase it.
   GFS) shown in "wind: ARPEGE forecast FL060".
 - Addresses: fuel opens the map with `#maps?from=fuel` (phone) or `#fuel?with=maps` (dual view, from 980 px); the
   Map's "Edit the route" comes back with `#fuel?from=maps&focus=route` (step 2, route field focused).
+- Query read by fuel: `focus=route` (above) and, since 24 Oct 2026, `view=sheets` (`#fuel?view=sheets` opens the Sheets
+  screen). Without it the module always opens on the Plan, whatever the last screen used: `cache/fuel/ui.json` no
+  longer holds `view`.
 - `aircraft` (fuel's, from `aircraft().aircraftOf(hit)`): `{ sheetId, type, registration, callsign, name, source }`
   (`source`: `sheet`, `fleet`, `reference`, `type`, `free`); report takes the registration and the callsign.
 - `wind` is null when unknown; `ofp` is null without a SimBrief flight plan (summary only: the OFP itself stays in the

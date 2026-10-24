@@ -10,7 +10,10 @@ un téléphone, la barre du haut montre un pas à la fois (touchez un numéro po
 pas) ; sur un écran large, les cinq pas sont les uns sous les autres. Tout se recalcule à chaque changement : corrigez
 la route, la météo, le devis et le vent suivent, sans bouton à presser. Le résultat (carburant bloc, délestage, temps,
 début de descente) reste visible en bas de l'écran à chaque pas, avec d'où vient le vent (« vent : METAR LFRS »,
-« vent : prévision ICON FL060 », « vent saisi »). Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
+« vent : prévision ICON FL060 », « vent saisi »). Sur un téléphone, cette barre tient en trois lignes : le contexte
+(« Bloc · FL060→090→110→070 · vent ARPEGE FL060 », en entier si on le touche), le carburant bloc, puis trois tuiles
+« Étape », « Temps » et « TOD » (début de descente). L'écran s'ouvre toujours sur la préparation ; les fiches
+s'ouvrent par leur onglet. Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
 façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).
 
 **1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt

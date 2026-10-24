@@ -11,7 +11,10 @@ La preparación sigue cinco pasos, en el orden en que se prepara un vuelo:
 de otro. Todo se recalcula con cada cambio: corrija la ruta, y la meteorología, el cálculo y el viento siguen, sin botón
 que pulsar. El resultado (combustible de bloque, combustible de viaje, tiempo, inicio del descenso) sigue visible abajo
 en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS», «viento: previsión ICON FL060»,
-«viento introducido»). Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
+«viento introducido»). En un teléfono esta barra ocupa tres líneas: el contexto
+(«Bloque · FL060→090→110→070 · viento ARPEGE FL060», completo al tocarlo), el combustible de bloque y tres teselas
+«Etapa», «Tiempo» y «TOD» (inicio del descenso). La pantalla se abre siempre en la preparación; las fichas se abren
+con su pestaña. Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
 5000 ft (FL060), en pies por debajo (3500 ft).
 
 **1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en

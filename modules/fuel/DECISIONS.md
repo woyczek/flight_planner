@@ -447,3 +447,37 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   - **In passing**: the route's delayed reading wrote the "unresolved points" line of the Plan screen even when the
     Sheets screen had replaced it (TypeError at load when the device's last screen was Sheets); now written only when
     the line exists and changes.
+
+## 24 October 2026 — opens on the Plan; compact result bar on a phone (the user's feedback on an iPhone)
+
+- **Always open on the Plan.** `show(S.focusRoute || S.ui.view !== 'sheets' ? 'plan' : 'sheets')` reopened the Sheets
+  screen when it was the last one used; the user comes to this module to change the plan or the quote, rarely to edit
+  an aircraft. Now `show(ctx.query.view === 'sheets' && !focusRoute ? 'sheets' : 'plan')`: the Sheets screen opens by
+  its tab or by `#fuel?view=sheets` (documented in INTEGRATION § 3). **Judgement call**: the last view is no longer
+  remembered at all (`show` does not write `cache/fuel/ui.json` any more, the stale `view` key of an older file is
+  dropped in memory at mount) rather than remembered and ignored: a value nobody reads is a trap. Inside a mount the
+  tabs work as before; a remount (dual view, language) goes back to the Plan.
+- **Result bar about half as high** (192 px → 104 px at 390 px, measured on a fictitious TEST_TP flight, route
+  `LFRD REN/F090 BALNI BAKUL/F110 NTS DIXAD TUPAR/F070 CGC LFBD`, wind ARPEGE FL060): context on one line (nowrap,
+  ellipsis, full text in `title`) written by `resultContext(q, range, short)` — short "Bloc · FL060→090→110→070 · vent
+  ARPEGE FL060" / full "Carburant bloc · FL060 → FL090 → FL110 → FL070 · vent : prévision ARPEGE FL060", from new `TX`
+  rows (`blockS`, `windByS`, `windRangeS`; `windShort(short)` picks the short wind texts); the figure at `--sog-h2`
+  under 760 px by a container query on the module (`@container (max-width: 759px)`); three tiles on one row, label
+  (`--sog-size-xs`) above value (`--sog-h3`), one line each, "Étape / Trip / Reise / Etapa", "Temps / Time / Zeit /
+  Tiempo", "TOD" in the four languages, TOD's value without "avant"/"before" and the full name plus the old phrase in
+  the `title`. Bar padding 8 × 12 px, tiles 3 × 8 px. The details table keeps "Délestage", "Début de descente"...
+  (`TX.trip`, `TX.tod` stay). Module-scoped CSS on `.fu-result` and `.f-tiles`; the frame's primitives untouched.
+- **Judgement calls**: "label and value on one line each" read as the label on one line and the value on another
+  (two lines per tile, none wrapping), since label and value side by side do not hold in 110 px with "1 280 kg"; the
+  compact layout applies at every width (the dual view pane is itself under 760 px), only the figure's size depends
+  on the container; the "flight started … for 1 h 12" line above the context is unchanged (it adds a line only after
+  the start); the wind range reads "vent inconnu" in the short form (the full form keeps "vent inconnu : fourchette").
+- **Checked** (Chromium 1194, port 8803, fictitious sheet seeded through `FrameData`, 390 × 844 and 1280 × 800 dual
+  view with the Map beside): bar 192 → 104 px, ellipsis at 320 px in the context line, four languages, METAR/TAF source,
+  typed wind, unknown wind (range), no `pageerror`; first open Plan, after a visit to Sheets and a reload Plan, the
+  tab opens Sheets, `#fuel?view=sheets` opens Sheets, `focus=route` unchanged; 44 px tabs and steps. Benches quote 58,
+  levels 24, route_text 20, metar 61, winds 29, progress 14, current_flight 11 pass; `sheets.html` shows 2 failures
+  (`.lnmperf` written / read back) that do not involve this change (the bench does not load `module.js`).
+- **Seen, not mine**: at 390 px in Chromium the Flight step's date row (`.fu-when`, label "Date du vol (facultatif : TAF)",
+  field and the two buttons) is 24 px wider than the screen (document scroll width 414, 402 in English), before and
+  after this lot; to look at on the iPhone itself, where the date control differs.
