@@ -13,6 +13,13 @@ import {
   fmtZ,
   fmtZLocal
 } from '../../frame/lib/time.js';
+// longitudes autour de la ligne de changement de date (frame/lib/geo.js, frame/INTEGRATION.md § 12) : la route est déroulée
+// avant tout calcul et tout dessin, les demandes sont enroulées dans [-180, 180[, les comparaisons se font modulo 360
+import {
+  wrapLon,
+  nearLon,
+  unwrapLons
+} from '../../frame/lib/geo.js';
 // la feuille de données à trois positions est une primitive du cadre (frame/lib/sheet.js, frame/INTEGRATION.md § 11)
 import {
   createSheet
@@ -81,7 +88,7 @@ export const meta = {
   files: ['render.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
     'lib/profiles.js?v=0', '../../frame/lib/js-yaml.min.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/current_flight.js?v=0', '../../frame/lib/time.js?v=0', 'contours.js?v=0',
-    'lib/map_base.js?v=0', '../../frame/lib/sheet.js?v=0'
+    'lib/map_base.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0'
   ],
   // gardés au premier usage seulement : MapLibre (1 Mo, inutile sans tuiles) ; les contours des pays du fond uni (350 Ko,
   // inutiles avec les tuiles ; gardés d'avance quand MapLibre n'est pas en cache : outlinesAhead)
@@ -345,6 +352,8 @@ const TX = {
     'Leyendo la previsión guardada…'
   ],
   wxNone: ['Pas de prévision chargée :', 'No forecast loaded:', 'Keine Vorhersage geladen:', 'Sin previsión cargada:'],
+  // le message nomme le vol (Atmosphère garde une prévision par vol : laquelle manque ?)
+  wxNoneFor: ['Pas de prévision pour {f} :', 'No forecast for {f}:', 'Keine Vorhersage für {f}:', 'Sin previsión para {f}:'],
   wxOpen: ['ouvrir Météo dans Préparer', 'open Weather in Prepare', 'Wetter unter Vorbereiten öffnen',
     'abrir Meteo en Preparar'
   ],
@@ -539,6 +548,15 @@ async function outlinesAhead() {
     /* stockage des copies indisponible : rien à garder */
   }
 }
+// ---------------------------------------------------------------- longitudes (ligne de changement de date)
+/** Longitude à envoyer à un service ou à lire dans un fichier d'aerodb : dans [-180, 180[ ; une longitude qui y est déjà est
+ *  rendue telle quelle (pas de bruit d'arrondi sur un vol ordinaire). */
+const outLon = lon => lon >= -180 && lon < 180 ? lon : wrapLon(lon);
+/** Écart de longitude a − b ramené à ]-180, 180] (deux positions de part et d'autre de la ligne de changement de date). */
+const dLon = (a, b) => {
+  const d = a - b;
+  return d - 360 * Math.round(d / 360);
+};
 // ---------------------------------------------------------------- vol
 /** Points de la route (route.points, positions résolues par Carburant) et dégagement (aerodb). */
 async function readFlight() {
@@ -550,7 +568,8 @@ async function readFlight() {
     if (c) altn = {
       id: f.route.altn,
       lat: c.lat,
-      lon: c.lon
+      // même côté de la ligne de changement de date que l'arrivée (le dégagement est dessiné à la suite de la route)
+      lon: nearLon(c.lon, pts[pts.length - 1].lon)
     };
   }
   return {
@@ -567,7 +586,8 @@ function pointsOf(f) {
     // le vol part à level.ft, un point sans alt_ft continue le précédent. Pour le profil : lvl (niveau à partir du
     // point), comme « /F240 » d'une route OFP ; paliers et TOC / TOD tronçon par tronçon
     raw = (f?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
-    pts = raw.map((p, i) => ({
+    // longitudes continues : une route Sibérie → Alaska va de 177° à 195° (frame/lib/geo.js), pas de 177° à −165°
+    pts = unwrapLons(raw.map((p, i) => ({
       id: p.id || '',
       lat: +p.lat,
       lon: +p.lon,
@@ -576,7 +596,7 @@ function pointsOf(f) {
           ft: +p.alt_ft
         }
       } : {})
-    }));
+    })));
   if (pts.some(p => p.lvl) && +f?.level?.ft > 0) pts[0].lvl = {
     ft: +f.level.ft
   };
@@ -605,45 +625,43 @@ const corridorFor = (shown, W) => S.profile?.corridorNm > 0 && W / Math.max(1e-6
 async function loadData(box, corridor = true) {
   const A = S.ctx.aerodb;
   if (!A) return {
+    // le monde entier, et la vue si elle dépasse 180° (ligne de changement de date) : jamais relu sans aerodb
     box: {
-      w: -180,
-      e: 180,
+      w: Math.min(-180, box.w),
+      e: Math.max(180, box.e),
       s: -85,
       n: 85
     },
     data: {},
     empty: true
   };
-  const q = {
-      bbox: [box.w, box.s, box.e, box.n]
-    },
+  // la vue (ou la route) peut dépasser 180° ; aerodb ne connaît que [-180, 180] : emprise coupée en deux au besoin
+  const route = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])],
+    bboxes = wrapBoxes(alignBox(box, route)),
     p0 = S.profile,
     p = corridor ? p0 : {
       ...p0,
       corridorNm: 0
     },
     E = p.elements,
-    route = [...S.route.points, ...(S.route.altn ? [S.route.altn] : [])],
     // profil à couloir : espaces et voies lus pour le couloir de la route, tronçon par tronçon (un rectangle autour
     // d'une route en diagonale touche des zones voisines : l'Espagne pour une route Nantes → Marseille)
-    boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, box) : [q.bbox],
+    boxes = +p.corridorNm > 0 ? corridorBoxes(route, +p.corridorNm + 2, alignBox(box, route)) : bboxes,
     t0 = performance.now();
   const [airspaces, aerodromes, navaids, airways, moraCells, obstacles, cities, vrp, points] = await Promise.all([
     many(A.airspaces, boxes),
-    E.aerodromes ? A.aerodromes(q) : [],
-    E.navaids ? A.navaids(q) : [],
+    E.aerodromes ? many(A.aerodromes, bboxes) : [],
+    E.navaids ? many(A.navaids, bboxes) : [],
     E.airwaysLow || E.airwaysHigh ? many(A.airways, boxes) : [],
-    E.mora ? A.moraCells(q) : [],
-    E.obstacles ? A.obstacles({
-      ...q,
+    E.mora ? many(A.moraCells, bboxes) : [],
+    E.obstacles ? many(A.obstacles, bboxes, {
       minHgt: +E.obstacleMin || 300
     }) : [],
-    p.cities || E.agglos ? A.cities({
-      ...q,
+    p.cities || E.agglos ? many(A.cities, bboxes, {
       n: 400
     }) : [],
-    E.vrpPoints ? A.vrp(q) : [],
-    E.rnavPoints ? A.points(q) : []
+    E.vrpPoints ? many(A.vrp, bboxes) : [],
+    E.rnavPoints ? many(A.points, bboxes) : []
   ].map(x => Promise.resolve(x).catch(() => [])));
   // axes de ravitaillement et tracks NAT (aerodb : zones ouvertes par les lectures ci-dessus ; zone « nat » à la demande)
   const [aar, nat] = await Promise.all([E.aarTracks && A.aarTracks ? A.aarTracks() : [], E.natTracks && A.natTracks ? A
@@ -677,23 +695,61 @@ async function loadData(box, corridor = true) {
   };
 }
 const within = (inner, outer) => outer && inner.w >= outer.w && inner.e <= outer.e && inner.s >= outer.s && inner.n <= outer.n;
-/** Emprises du couloir de la route (marge nm NM), une par tronçon, coupées à l'emprise box : [[ouest, sud, est, nord]]. */
+/** Emprise box ramenée au même tour du monde que la route (la vue de MapLibre peut être à −174° quand la route va de 177° à
+ *  195° : mêmes données, autre copie du monde). */
+function alignBox(box, route) {
+  if (!route?.length) return box;
+  const lons = route.map(p => +p.lon),
+    k = 360 * Math.round(((Math.min(...lons) + Math.max(...lons)) / 2 - (box.w + box.e) / 2) / 360);
+  return k ? {
+    ...box,
+    w: box.w + k,
+    e: box.e + k
+  } : box;
+}
+/** Emprise { w, s, e, n } aux longitudes continues (peut dépasser ±180) → emprises [ouest, sud, est, nord] dans
+ *  [-180, 180] : une seule, ou deux si elle franchit la ligne de changement de date ; le monde entier si elle est plus
+ *  large que 360°. */
+function wrapBoxes(b) {
+  if (b.w >= -180 && b.e <= 180) return [
+    [b.w, b.s, b.e, b.n]
+  ]; // le cas ordinaire : l'emprise telle quelle
+  if (b.e - b.w >= 360) return [
+    [-180, b.s, 180, b.n]
+  ];
+  const w = wrapLon(b.w),
+    e = w + (b.e - b.w);
+  return e <= 180 ? [
+    [w, b.s, e, b.n]
+  ] : [
+    [w, b.s, 180, b.n],
+    [-180, b.s, e - 360, b.n]
+  ];
+}
+/** Emprises du couloir de la route (marge nm NM), une par tronçon, coupées à l'emprise box (mêmes longitudes que la route :
+ *  alignBox) puis ramenées à [-180, 180] : [[ouest, sud, est, nord]]. */
 function corridorBoxes(route, nm, box) {
   const out = [];
   for (let i = 1; i < route.length; i++) {
     const b = MapsRender.bboxOf([route[i - 1], route[i]], nm),
-      c = [Math.max(box.w, b.w), Math.max(box.s, b.s), Math.min(box.e, b.e), Math.min(box.n, b.n)];
-    if (c[0] <= c[2] && c[1] <= c[3]) out.push(c);
+      c = box ? {
+        w: Math.max(box.w, b.w),
+        s: Math.max(box.s, b.s),
+        e: Math.min(box.e, b.e),
+        n: Math.min(box.n, b.n)
+      } : b;
+    if (c.w <= c.e && c.s <= c.n) out.push(...wrapBoxes(c));
   }
   return out;
 }
-/** Réunion sans doublons des réponses d'une requête aerodb sur plusieurs emprises. */
-async function many(f, boxes) {
+/** Réunion sans doublons des réponses d'une requête aerodb sur plusieurs emprises ; extra : les autres champs de la requête. */
+async function many(f, boxes, extra = {}) {
   const seen = new Set(),
     out = [];
   for (const bbox of boxes)
     for (const x of await f({
-        bbox
+        bbox,
+        ...extra
       }))
       if (!seen.has(x)) {
         seen.add(x);
@@ -720,12 +776,41 @@ function sizeCanvas() {
     dpr
   };
 }
-/** Vue courante : projection et emprise affichée (MapLibre, sinon Mercator du fond uni sur l'emprise de la route). */
+/** Étendue en longitude de la route déroulée (points et dégagement) : [ouest, est] ; null sans route. Gardée tant que les
+ *  points ne changent pas. */
+function routeSpan() {
+  const r = S.route;
+  if (!r?.points?.length) return null;
+  if (r.span?.of !== r.points || r.span.altn !== r.altn) {
+    const lons = [...r.points, ...(r.altn ? [r.altn] : [])].map(p => +p.lon);
+    r.span = {
+      of: r.points,
+      altn: r.altn,
+      w: Math.min(...lons),
+      e: Math.max(...lons)
+    };
+  }
+  return r.span;
+}
+/** Projection de la vue : une longitude va à la copie du monde la plus proche du centre de la vue (une donnée d'aerodb à
+ *  −170° se dessine à 190° quand la vue est centrée de ce côté de la ligne de changement de date). La route (déroulée : de
+ *  177° à 195°) garde ses longitudes ensemble : elle est décalée d'un même nombre de tours, jamais coupée en deux. raw :
+ *  la projection brute (une longitude, un x) ; c : longitude du centre de la vue. */
+function wrapTo(raw, c) {
+  const sp = routeSpan(),
+    ro = sp ? 360 * Math.round((c - (sp.w + sp.e) / 2) / 360) : 0;
+  return (lat, lon) => raw(lat, sp && lon >= sp.w && lon <= sp.e ? lon + ro : nearLon(lon, c));
+}
+/** Vue courante : projection (toC, longitudes ramenées à la copie du monde de la vue), projection brute (raw : le fond uni
+ *  dessine lui-même ses copies), emprise affichée (MapLibre : continue autour du centre, peut dépasser ±180 ; sinon
+ *  Mercator du fond uni sur l'emprise de la route). */
 function view(W, H) {
   if (S.map) {
-    const bb = S.map.getBounds();
+    const bb = S.map.getBounds(),
+      raw = (lat, lon) => S.map.project([lon, lat]);
     return {
-      toC: (lat, lon) => S.map.project([lon, lat]),
+      toC: wrapTo(raw, S.map.getCenter().lng),
+      raw,
       shown: {
         w: bb.getWest(),
         e: bb.getEast(),
@@ -734,7 +819,16 @@ function view(W, H) {
       }
     };
   }
-  return plainView(S.fit, W, H, 12);
+  const v = plainView(S.fit, W, H, 12);
+  return {
+    ...v,
+    raw: v.toC,
+    toC: wrapTo(v.toC, (S.fit.w + S.fit.e) / 2)
+  };
+}
+/** Projection courante pour un geste (toucher, survol) : celle de la vue, sans repasser par draw(). */
+function projNow() {
+  return S.map ? wrapTo((lat, lon) => S.map.project([lon, lat]), S.map.getCenter().lng) : S.toC;
 }
 /** Fond MapLibre ramené à la taille du cadre s'il ne l'a plus (lib/map_base.js : map.resize seulement dans ce cas, son
  *  « movestart » reconnu par isOwnResize). Appelé par l'observateur de taille, au chargement et au changement de style, au
@@ -751,12 +845,13 @@ function draw() {
     dpr
   } = sizeCanvas(), {
     toC,
+    raw: toRaw,
     shown
   } = view(W, H), raw = S.canvas.getContext('2d'), t = S.theme, ctx = MapsRender.themed(raw, t);
   raw.setTransform(dpr, 0, 0, dpr, 0, 0);
   raw.clearRect(0, 0, W, H);
   if (S.plain && !window.MAPS_OUTLINES) loadOutlines(); // fond uni confirmé (pas de tuiles) : pas pendant leur chargement
-  if (!S.map) drawPlain(ctx, toC, W, H, {
+  if (!S.map) drawPlain(ctx, toRaw, W, H, {
     sea: t.page,
     land: t.bg,
     border: t.grid
@@ -932,12 +1027,7 @@ async function buildProfile() {
   const key = S.route.updated;
   let airspaces = [];
   if (A) {
-    const list = await many(A.airspaces, corridorBoxes(pts, 2, {
-        w: -180,
-        e: 180,
-        s: -85,
-        n: 85
-      })).catch(() => []),
+    const list = await many(A.airspaces, corridorBoxes(pts, 2, null)).catch(() => []),
       p = S.vprofProfile || S.profile;
     airspaces = MapsRender.selectAirspaces(list, {
       ...p,
@@ -957,8 +1047,9 @@ async function buildProfile() {
     // écrit par un autre module (la carte, lot 6) : profile périmé jusqu'au devis refait par Carburant (by 'fuel')
     profile: S.route.flight?.by && S.route.flight.by !== 'fuel' ? null : S.route.flight?.profile || null,
     airspaces,
-    elevation: navigator.onLine === false ? null : S.terrain,
-    mora: A ? (lat, lon) => A.mora(lat, lon) : null
+    // les échantillons sont sur la route déroulée (jusqu'à 195°) : le relief et les MORA se lisent à la longitude enroulée
+    elevation: navigator.onLine === false ? null : (lat, lon) => S.terrain(lat, outLon(lon)),
+    mora: A ? (lat, lon) => A.mora(lat, outLon(lon)) : null
   }).catch(() => null);
   if (!S || S.route.updated !== key) return;
   S.prof = prof;
@@ -1166,6 +1257,7 @@ async function startTiles() {
       [S.fit.e, S.fit.n]
     ],
     padding: 12,
+    worldCopies: true, // une route de 177° à 195° : la vue passe la ligne de changement de date (lib/map_base.js)
     // la mention des sources de MapLibre, repliée (« i ») : la mention du SIA s'y ajoute, un seul texte de crédit
     attributionControl: {
       compact: true,
@@ -1202,7 +1294,7 @@ async function startTiles() {
         if (!S.cardEl.hidden) return hideTips();
         // une barbule, un cartouche ou un libellé (posés sur la route ou près d'elle) passent avant le curseur
         if (tipAt(e.point.x, e.point.y)) return mapTip(e.lngLat.lat, e.lngLat.lng, e.point.x, e.point.y);
-        const s = S.prof ? MapsProfile.nearest(S.prof, (lat, lon) => map.project([lon, lat]), e.point.x, e.point.y) : null;
+        const s = S.prof ? MapsProfile.nearest(S.prof, projNow(), e.point.x, e.point.y) : null;
         if (s != null) {
           hideTips();
           return setCursor(s);
@@ -1285,7 +1377,7 @@ function hoverMap(x, y) {
 const WIND_STEP_NM = 50;
 /** Vents à dessiner : [{ lat, lon, dirDeg, kt, tempC, levelFt, at }]. */
 function windPoints() {
-  const pts = (S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+  const pts = unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon))),
     ok = w => w && Number.isFinite(+w.dirDeg) && Number.isFinite(+w.kt),
     out = [];
   if (!pts.some(p => ok(p.wind))) return out;
@@ -1477,8 +1569,9 @@ const hideTips = () => {
 // refait le devis — modules/fuel/INTEGRATION.md § 3).
 const HIT = 22,
   SNAP = 20;
-/** Points de l'enregistrement (positions résolues) : la route telle qu'elle est écrite. */
-const rawPoints = () => (S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
+/** Points de l'enregistrement (positions résolues) : la route telle qu'elle est écrite, aux longitudes continues comme la
+ *  carte la dessine (commit() les réécrit dans [-180, 180[). */
+const rawPoints = () => unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)));
 /** Point de la route sous (x, y) : son rang, ou null ; movable : sans le départ ni l'arrivée. */
 function pointAt(x, y, movable = false) {
   const pts = rawPoints();
@@ -1524,11 +1617,15 @@ function llAt(x, y) {
     const p = S.map.unproject([x, y]);
     return {
       lat: Math.round(p.lat * 1e6) / 1e6,
-      lon: Math.round(p.lng * 1e6) / 1e6
+      lon: Math.round(wrapLon(p.lng) * 1e6) / 1e6 // la carte peut être centrée à 190° : la position écrite est dans [-180, 180[
     };
   }
-  const r = S.box.getBoundingClientRect();
-  return r.width ? MapsRender.mercator(S.fit, r.width, r.height, 12).toLL(x, y) : null;
+  const r = S.box.getBoundingClientRect(),
+    ll = r.width ? MapsRender.mercator(S.fit, r.width, r.height, 12).toLL(x, y) : null;
+  return ll && {
+    lat: ll.lat,
+    lon: outLon(ll.lon)
+  };
 }
 /** Point où se poser le plus proche de (x, y), à moins de SNAP px ; null sinon. */
 function snapAt(x, y) {
@@ -1580,14 +1677,14 @@ function setEdit(on) {
 }
 const NM_KM = 1.852;
 /** Identifiant OACI de coordonnées (4530N00030E) d'un point sans nom utilisable. */
-const coordId = p => icaoCoord(+p.lat, +p.lon);
+const coordId = p => icaoCoord(+p.lat, outLon(+p.lon));
 /** Geste appliqué : nouveaux points de l'enregistrement, montrés tout de suite, écrits 400 ms après le dernier geste. */
 function commit(points, levelFt = null) {
   const f = S.route.flight || {},
     pts = points.map(p => ({
       ...p,
       lat: Math.round(+p.lat * 1e6) / 1e6,
-      lon: Math.round(+p.lon * 1e6) / 1e6
+      lon: Math.round(outLon(+p.lon) * 1e6) / 1e6 // écrite dans [-180, 180[ : Carburant et Atmosphère la lisent ainsi
     })),
     dist = pts.length >= 2 ? MapsRender.distances(pts.map(p => ({
       lat: +p.lat,
@@ -1889,7 +1986,7 @@ function addAt(x, y) {
       lat: ll.lat,
       lon: ll.lon
     } : null);
-  if (a && !rawPoints().some(p => p.id === a.id && Math.abs(+p.lat - a.lat) < 1e-3 && Math.abs(+p.lon - a.lon) < 1e-3)) insertPoint(a);
+  if (a && !rawPoints().some(p => p.id === a.id && Math.abs(+p.lat - a.lat) < 1e-3 && Math.abs(dLon(+p.lon, a.lon)) < 1e-3)) insertPoint(a);
   setAdding(false);
 }
 /** Position (lat, lon) sous (x, y), pour l'infobulle. */
@@ -2131,7 +2228,7 @@ function vrpAt(x, y) {
     name: h.p.name
   };
   const v = h.v,
-    nm = (p, q) => Math.hypot(+p.lat - +q.lat, (+p.lon - +q.lon) * Math.cos(+p.lat * Math.PI / 180)) * 60,
+    nm = (p, q) => Math.hypot(+p.lat - +q.lat, dLon(+p.lon, +q.lon) * Math.cos(+p.lat * Math.PI / 180)) * 60,
     ads = [...(S.adHits || []).map(x => x.a), ...(S.data?.data?.aerodromes || [])].filter(x => /^[A-Z]{4}$/.test(x?.icao || '')),
     pre = String(v.id).split('-')[0],
     own = ads.filter(x => x.icao.slice(2) === pre && nm(x, v) <= 30).sort((p, q) => nm(p, v) - nm(q, v))[0],
@@ -2190,7 +2287,7 @@ function baseVrpOf(icao) {
   })).then(list => {
     if (!S) return;
     const pre = `${icao.slice(2)}-`,
-      nm = v => Math.hypot(+v.lat - at.lat, (+v.lon - at.lon) * Math.cos(at.lat * Math.PI / 180)) * 60,
+      nm = v => Math.hypot(+v.lat - at.lat, dLon(+v.lon, at.lon) * Math.cos(at.lat * Math.PI / 180)) * 60,
       all = (list || []).filter(v => v?.id),
       own = all.filter(v => v.id.startsWith(pre)),
       rows = (own.length ? own : all.filter(v => nm(v) <= 15)).map(v => ({
@@ -2234,7 +2331,7 @@ function reportPoints(icao) {
     v = vfrOf(icao),
     vac = reportOf(v),
     ids = new Set(base.map(b => b.id)),
-    nm = (a, b) => Math.hypot(+a.lat - +b.lat, (+a.lon - +b.lon) * Math.cos(+a.lat * Math.PI / 180)) * 60,
+    nm = (a, b) => Math.hypot(+a.lat - +b.lat, dLon(+a.lon, +b.lon) * Math.cos(+a.lat * Math.PI / 180)) * 60,
     // VRP de la base d'un point VAC : son identifiant rapproché à l'import, sinon le plus proche à 0,6 NM au plus (une
     // compilation importée avant le rapprochement des points hélicoptères, un code écrit autrement)
     twin = p => p.vrp && ids.has(p.vrp) ? p.vrp : base.map(b => [b, nm(b, p)]).filter(([, d]) => d <= .6).sort((a, b) => a[1] - b[1])[0]?.[
@@ -2309,8 +2406,14 @@ function pinView(icao) {
   if (!c) return;
   if (S.vfrZoomed === icao || baseVrpOf(icao) === undefined || vfrOf(icao) === undefined || !S.map) return showAdCard(icao);
   S.vfrZoomed = icao; // une seule fois par épinglage
-  const pts = [...reportPoints(icao), ...(vfrOf(icao)?.points || []).filter(p => p.role === 'intermediate_waypoint'), c].filter(p => Number
-    .isFinite(+p.lat) && Number.isFinite(+p.lon));
+  // un terrain près de la ligne de changement de date : points d'un seul tenant, sur la copie du monde de la vue
+  const un = unwrapLons([...reportPoints(icao), ...(vfrOf(icao)?.points || []).filter(p => p.role === 'intermediate_waypoint'), c].filter(
+      p => Number.isFinite(+p.lat) && Number.isFinite(+p.lon))),
+    ro = un.length ? 360 * Math.round((S.map.getCenter().lng - un[0].lon) / 360) : 0,
+    pts = ro ? un.map(p => ({
+      ...p,
+      lon: +p.lon + ro
+    })) : un;
   if (pts.length < 2) return showAdCard(icao);
   const px = pts.map(p => S.map.project([+p.lon, +p.lat])),
     span = Math.max(Math.max(...px.map(q => q.x)) - Math.min(...px.map(q => q.x)), Math.max(...px.map(q => q.y)) - Math.min(...px.map(q =>
@@ -2843,7 +2946,14 @@ const weatherBuild = key => (w, h, el) => {
     if (S.wxGeo) return;
   }
   if (wx.state === 'fail') return `<p class="f-muted mp-wxmsg">${esc(tt(TX.wxFail))}</p>`;
-  return `<a class="mp-wxlink" href="#atmosphere">${esc(tt(TX.wxNone))}&nbsp;<span>${esc(tt(TX.wxOpen))}</span></a>`;
+  const r = S.route.flight?.route,
+    name = r?.dep && r?.arr ? tt(TX.summary, {
+      dep: r.dep,
+      arr: r.arr
+    }) : '';
+  return `<a class="mp-wxlink" href="#atmosphere">${esc(name ? tt(TX.wxNoneFor, {
+    f: name
+  }) : tt(TX.wxNone))}&nbsp;<span>${esc(tt(TX.wxOpen))}</span></a>`;
 };
 /** Montre la coupe météo dans la feuille (la prévision gardée est lue si elle ne l'est pas encore pour ce vol ; force : relue
  *  même si elle manquait, Atmosphère ayant pu la charger depuis). Même clé : seulement redessinée. */
@@ -2958,7 +3068,8 @@ async function status() {
     const st = await S.ctx.aerodb?.status().catch(() => null);
     if (!S) return;
     if (!st?.published || !Object.keys(st.published).length) {
-      warn.push(`<p>${esc(tt(TX.noBase))}</p>`);
+      // la ligne d'état a disparu : cette note est le seul chemin vers le réglage de la base
+      warn.push(`<p>${esc(tt(TX.noBase))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
       noteOnce('noBase', tt(TX.noBase));
     } else if (S.data?.empty && navigator.onLine === false) warn.push(
       `<p>${esc(tt(TX.noZone))} <button type="button" class="f-btn" data-go="settings">${esc(tt(TX.toSettings))}</button></p>`);
@@ -3662,7 +3773,7 @@ function progressUpdate() {
       if (S) S.selfMove = false;
     });
     S.map.easeTo({
-      center: [st.actual.lon, st.actual.lat],
+      center: [nearLon(st.actual.lon, S.map.getCenter().lng), st.actual.lat], // la copie du monde où se trouve la vue
       duration: 400
     });
   }
@@ -3677,9 +3788,10 @@ function alongRoute(p) {
     const a = pts[i],
       b = pts[i + 1],
       k = Math.cos((a.lat + b.lat) / 2 * Math.PI / 180),
-      bx = (b.lon - a.lon) * k * 60,
+      bx = dLon(b.lon, a.lon) * k *
+      60, // modulo 360 : la position est lue en [-180, 180[, la route peut passer la ligne de changement de date
       by = (b.lat - a.lat) * 60,
-      px = (p.lon - a.lon) * k * 60,
+      px = dLon(p.lon, a.lon) * k * 60,
       py = (p.lat - a.lat) * 60,
       L2 = bx * bx + by * by || 1e-9,
       t = Math.max(0, Math.min(1, (px * bx + py * by) / L2)),
@@ -3946,8 +4058,15 @@ async function applyFlight(live = false) {
   showBox(!!S.route.points.length); // pas de vol : pas de carte, le message de l'état
   header();
   const inView = () => {
-      const bb = S.map.getBounds();
-      return all.every(p => p.lon >= bb.getWest() && p.lon <= bb.getEast() && p.lat >= bb.getSouth() && p.lat <= bb.getNorth());
+      const bb = S.map.getBounds(),
+        toC = projNow(),
+        r = S.box.getBoundingClientRect();
+      // à l'écran, pas en longitudes : la vue peut être sur une autre copie du monde que la route (centre à −174° pour une route
+      // de 177° à 195°) ; toC ramène chaque point à la copie de la vue
+      return all.every(p => {
+        const q = toC(p.lat, p.lon);
+        return q.x >= 0 && q.x <= r.width && q.y >= 0 && q.y <= r.height && p.lat >= bb.getSouth() && p.lat <= bb.getNorth();
+      });
     },
     // un autre vol (départ ou arrivée changés) se recadre ; le même vol relu (vue vivante, devis refait par Carburant,
     // geste sur la carte) garde la caméra dès que l'utilisateur a déplacé ou zoomé la carte
@@ -4055,7 +4174,7 @@ async function applyMission() {
   S.profile = chosen.profile;
   S.profileSource = chosen.source;
   S.vprofProfile = M?.vprof.profileDef || window.MAPS_PROFILES.find(p => p.id === 'vprof') || null;
-  const pts = M ? await missionRoute(M) : [];
+  const pts = unwrapLons(M ? await missionRoute(M) : []); // cheminement d'un seul tenant au-delà de la ligne de changement de date
   if (!S) return;
   const trace = m?.trace || (M?.vprof.onMap !== false && pts.length > 1 ? 'route' : 'none'),
     shown = trace === 'route' || trace === 'both' ? pts : [];
@@ -4069,7 +4188,7 @@ async function applyMission() {
     levelFt: M?.vprof.cruiseFt || 0,
     updated: `${q.mission}|${m?.file || ''}|${S.missionRev || ''}`
   };
-  S.fit = viewOf() || m?.extent || MapsRender.bboxOf([...pts, ...(M?.points || [])], 10) || {
+  S.fit = viewOf() || m?.extent || MapsRender.bboxOf(unwrapLons([...pts, ...(M?.points || [])]), 10) || {
     w: -5,
     s: 41,
     e: 10,

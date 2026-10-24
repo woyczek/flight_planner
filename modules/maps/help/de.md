@@ -145,6 +145,8 @@ stattdessen die Mindestsicherheitshöhe jedes durchquerten Felds (braun gestrich
 
 **Kein Flug.** Ohne vorbereiteten Flug ist die Karte leer und bietet „Kraftstoff öffnen“ an. Die Missionskarten bleiben über die Liste der Ebenen erreichbar.
 
+**Flug über die Datumsgrenze.** Ein Flug über den 180. Längengrad (zum Beispiel von Sibirien nach Alaska) wird in einem Stück gezeichnet: die Karte setzt sich jenseits der Linie fort, Entfernungsmarken, Profil und Wetterschnitt folgen der Route, die mit Längen zwischen −180° und 180° gespeichert bleibt.
+
 **Luftfahrtdatenbank fehlt.** Wurde die Luftfahrtdatenbank noch von keinem Gerät der Fluggesellschaft veröffentlicht,
 zeigt die Karte nur die Route und sagt es einmal (Benachrichtigung, dann Notiz im Datenblock).
 

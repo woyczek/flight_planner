@@ -469,3 +469,30 @@ frame's defaults are those numbers: delete the module's tokens); `title(pos)` (t
 `ignore`; `prefix` and the `<prefix>-nt` class → `f-sheet-nt` (the primitive's); `data-sheet="0|1|2"` → `"collapsed|default|expanded"`;
 the grip bar element → nothing (a `::before`); positions are names, not 0, 1, 2; the starting position is the caller's
 (`pos`, with `onChange` to keep it); the initial `set(pos, true)` and `gestures()` calls disappear (done by `createSheet`).
+
+## 12. Shared geometry (`frame/lib/geo.js`)
+
+Longitudes around the date line (the antimeridian, ±180°). A flight from Siberia to Alaska (UHMA 177.7° E → PAOM 165.4° W)
+goes from 177.7° to −165.4°; for an interpolation, a bounding box or a drawing it goes from 177.7° to 194.6°. Three pure
+functions, no state, no text:
+
+```js
+import { wrapLon, nearLon, unwrapLons } from '../../frame/lib/geo.js';
+```
+
+| Function | Does |
+| --- | --- |
+| `wrapLon(lon)` | the longitude in `[-180, 180[` (195 → −165; 180 → −180) |
+| `nearLon(lon, ref)` | the copy of `lon` (± whole turns) within 180° of `ref`: a datum at −170° drawn on a map centred on 190°, or compared with a point at 185° |
+| `unwrapLons(points)` | a route with continuous longitudes: each point takes the copy nearest the previous one. Accepts `{ lat, lon }` (other fields kept) and `[lon, lat]` pairs; a point already continuous is returned as is (same object), so an ordinary route is unchanged |
+
+The rule for a module: **unwrap the route first** (`unwrapLons`), before any distance, interpolation, bounding box or
+drawing; **wrap at the door** (`wrapLon`) every longitude it hands to a service, a cache or a store (Open-Meteo, aerodb, the
+weather store's cells, a file written for another module): none of them ever sees a value outside `[-180, 180[`; **compare
+modulo 360** (`nearLon`) a longitude that comes from elsewhere (a tap on the map, an airspace polygon, an aerodrome) with a
+route that may run past 180°. MapLibre accepts longitudes outside `[-180, 180]` (centre, bounds, `project`), with world
+copies on. Distances by the haversine formula are already periodic and need nothing. The poles are out of scope.
+
+`modules/atmosphere/atmo.js` has the same three functions (its own copy, kept identical so that the weather cache cells are the same);
+the module switches to this helper in its next lot. Bench: `frame/lib/test/geo.html`. A module that loads it from another
+folder lists it in its `meta.files` (`'../../frame/lib/geo.js?v=0'`).

@@ -208,7 +208,9 @@
       d = Infinity;
     const k = Math.cos(lat * Math.PI / 180);
     for (const q of data.samples) {
-      const e = Math.hypot(q.lat - lat, (q.lon - lon) * k);
+      const dl = q.lon -
+        lon, // modulo 360 : les échantillons sont sur la route déroulée (un point de l'autre côté de la ligne de changement de date)
+        e = Math.hypot(q.lat - lat, (dl - 360 * Math.round(dl / 360)) * k);
       if (e < d) {
         d = e;
         best = q.s;

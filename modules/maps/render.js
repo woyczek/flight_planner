@@ -7,6 +7,7 @@
   // de Mercator du fond uni). Symboles OACI et placeur de libellés : window.SiaAero (lib/aero_symbols.js, copie de la V2).
   // Aucun texte d'interface : libellés de données seulement (codes, noms, niveaux).
   // API : window.MapsRender = { routeProfile(levelFt), selectAirspaces(list, profile, route), bboxOf(points, marginNm),
+  //   nearLon(lon, ref), wrapLon(lon) (copies of frame/lib/geo.js),
   //   distances(points), marks(points, stepNm), mercator(bbox, W, H, pad), drawBackground(ctx, toC, W, H, rings, colors),
   //   draw(ctx, { toC, W, H, scale, bbox, profile, data, route, marks, mission }), tokens(), themed(ctx, tokens),
   //   contrast(c1, c2) (rapport WCAG) } ;
@@ -18,6 +19,14 @@
   const A = () => window.SiaAero,
     PT = 4 / 3,
     NM = 1852;
+
+  // ---------------------------------------------------------------- longitudes autour de la ligne de changement de date
+  // Copie de frame/lib/geo.js (render.js est un script classique, il n'importe rien ; frame/lib/test/geo.html compare les
+  // deux) : la route arrive déroulée (une route Sibérie → Alaska va de 177° à 195°), les données d'aerodb sont en
+  // [-180, 180[ ; une donnée se compare et se dessine à la copie la plus proche de la vue (nearLon), une longitude
+  // envoyée à un service ou comparée à un polygone d'aerodb est enroulée (wrapLon, rendue telle quelle si elle y est déjà).
+  const nearLon = (lon, ref) => +lon + 360 * Math.round((ref - lon) / 360),
+    wrapLon = lon => lon >= -180 && lon < 180 ? +lon : ((((+lon + 180) % 360) + 360) % 360) - 180;
 
   // ---------------------------------------------------------------- jetons du design
   /** Composantes [r, g, b] (0-255) d'une couleur « #rgb », « #rrggbb » ou « rgb(…) » ; null sinon. */
@@ -350,9 +359,10 @@
       const a = points[i - 1],
         b = points[i],
         n = Math.max(1, Math.ceil(gc(a, b) / 2));
-      for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, a.lon + (b.lon - a.lon) * k / n]);
+      // les espaces d'aerodb sont en [-180, 180[ : les échantillons (route déroulée) y sont ramenés
+      for (let k = 0; k < n; k++) out.push([a.lat + (b.lat - a.lat) * k / n, wrapLon(a.lon + (b.lon - a.lon) * k / n)]);
     }
-    if (points.length) out.push([points[points.length - 1].lat, points[points.length - 1].lon]);
+    if (points.length) out.push([points[points.length - 1].lat, wrapLon(points[points.length - 1].lon)]);
     return out;
   }
   /** Vrai si l'espace est à moins de nm NM des échantillons de la route (un échantillon dedans ou un bord proche). */
@@ -420,7 +430,13 @@
     ctx.fillText(text, x, y);
     ctx.restore();
   }
-  const inBox = (b, lat, lon) => lat >= b.s && lat <= b.n && lon >= b.w && lon <= b.e;
+  /** Le point est dans l'emprise b (qui peut dépasser 180° : vue de la ligne de changement de date) : sa longitude est
+   *  prise à la copie la plus proche du milieu de l'emprise. */
+  const inBox = (b, lat, lon) => {
+    if (!(lat >= b.s && lat <= b.n)) return false;
+    const l = lon >= b.w && lon <= b.e ? lon : nearLon(lon, (b.w + b.e) / 2);
+    return l >= b.w && l <= b.e;
+  };
   /** Fond uni (pas de tuiles) : mer, puis terres d'après les contours de pays [lon, lat]. */
   function drawBackground(ctx, toC, W, H, rings, {
     sea = '#dfe9f2',
@@ -433,16 +449,26 @@
     ctx.fillStyle = land;
     ctx.strokeStyle = border;
     ctx.lineWidth = 1;
-    for (const r of rings || []) {
-      ctx.beginPath();
-      r.forEach(([lon, lat], i) => {
-        const q = toC(lat, lon);
-        i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
-      });
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-    }
+    // copies du monde dans la vue (une vue de la ligne de changement de date : 170° à 205° montre la Sibérie et, à 360° de
+    // là, l'Alaska) ; toC est la projection brute (une longitude = un x), les contours sont en [-180, 180[
+    const x0 = toC(0, 0).x,
+      k = toC(0, 1).x - x0,
+      offs = [];
+    if (k > 0)
+      for (let c = Math.floor((-x0 / k + 180) / 360); c <= Math.floor(((W - x0) / k + 180) / 360) && offs.length < 4; c++) offs.push(c *
+        360);
+    if (!offs.length) offs.push(0);
+    for (const off of offs)
+      for (const r of rings || []) {
+        ctx.beginPath();
+        r.forEach(([lon, lat], i) => {
+          const q = toC(lat, lon + off);
+          i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
     ctx.restore();
   }
 
@@ -1118,7 +1144,8 @@
   }
 
   function geoLabel(value, lat = false) {
-    const hemi = lat ? (value < 0 ? 'S' : 'N') : (value < 0 ? 'W' : 'E'),
+    if (!lat) value = wrapLon(value); // 195° → 165° W
+    const hemi = lat ? (value < 0 ? 'S' : 'N') : value === -180 ? '' : (value < 0 ? 'W' : 'E'), // 180° : ni est ni ouest
       a = Math.abs(value);
     let d = Math.floor(a + 1e-9),
       m = Math.round((a - d) * 60);
@@ -1476,6 +1503,7 @@
   })).filter(o => o.d <= o.h.r + 4).sort((a, b) => a.d - b.d).map(o => o.h.g);
   /** Espaces de la liste qui contiennent le point (lat, lon), du plus bas au plus haut. */
   function airspacesAt(list, lat, lon) {
+    lon = wrapLon(lon); // un toucher sur la carte de l'autre côté de la ligne de changement de date : 195° → 165° W
     const inRing = r => {
       let c = false;
       for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
@@ -1616,6 +1644,8 @@
     routeProfile,
     selectAirspaces,
     bboxOf,
+    nearLon,
+    wrapLon,
     distances,
     marks,
     mercator,

@@ -533,3 +533,9 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   ambiguity (the tab holds the five steps, step 4 is one of them), reported to the ergonomics session.
 - **Checked**: tab labels read on the screen in the four languages (see the report of the lot).
 
+- **24 Oct 2026 — `winds.js samples` across the date line** (lot of the maps session, relay cloud; the only change in fuel). The
+  intermediate places were `a.lon + (p.lon − a.lon) × f` on raw longitudes: from UHMA (177.7°) to PAOM (−165.4°) they went
+  round the world and the winds aloft were read there. `samples` now unrolls the points (`unwrapLons`, `frame/lib/geo.js`) and
+  returns each place wrapped (`wrapLon`, except a longitude already in [-180, 180[, kept as written: no float noise on an
+  ordinary route; the points keep the value written in the flight). `meta.files` lists `frame/lib/geo.js`. Bench `test/winds.html`
+  gained 7 checks (count, range, short arc, monotonic, ends as requested, reverse direction, ordinary route).

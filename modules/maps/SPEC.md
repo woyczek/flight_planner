@@ -627,6 +627,27 @@ when the report is saved), nothing otherwise:
   - The device's override stays in `cache/maps/ui.json` (`layers[mode]`: the Layers panel's ticks, `detail`, `zoom`).
   - Changes of the file are followed (`ctx.data.watch`): the map takes them at once.
 
+## 4 octies. Flights across the date line (24 Oct 2026)
+
+A flight from Siberia to Alaska (UHMA 177.7° E → PAOM 165.4° W) runs from 177.7° to 194.6°, not from 177.7° to −165.4° the other
+way round the world. The helper is the frame's (`frame/lib/geo.js`: `wrapLon`, `nearLon`, `unwrapLons`; frame INTEGRATION § 12).
+
+- **The route is unrolled first.** `pointsOf` returns continuous longitudes (and `readFlight` puts the alternate on the arrival's
+  side), so the distance marks, TOC / TOD, the profile, the cursor, the ETA, the barbs and the framing need no special case: they
+  interpolate linearly in the unrolled longitude (`S.fit`, `bboxOf`, can exceed 180°). Written back, the route is in
+  [-180, 180[ (`commit`).
+- **MapLibre runs with world copies** (`startTiles({ worldCopies: true })`; atmosphere keeps `false`): the camera centre may be at
+  190° or −174°, `getBounds` and `project` go beyond ±180. The projection the whole screen uses (`wrapTo`) takes a longitude to the
+  copy nearest the view's centre; the route, and what lies in its longitude span, is shifted by one common number of turns so
+  that it is never torn. The plain background draws its own copies of the countries.
+- **Every request is wrapped, every comparison is modulo 360.** aerodb boxes are cut in two at 180° (`wrapBoxes`), the relief tile
+  and the MORA are read at `outLon(lon)`, the weather cross-section keeps asking atmosphere for the raw (wrapped) points (same
+  cache cells as atmosphere's own lookup), a tap's coordinates are wrapped before the airspace test, flat distances use `dLon`.
+- **The "no forecast" message names the flight** (`No forecast for UHMA → PAOM:` then the link to Weather; the old text when the
+  departure or the arrival is unknown).
+- **Not done**: airspace polygons that straddle 180°; a mission map whose extent or zones straddle the line (its trace is
+  unrolled); the poles (no wrap in latitude).
+
 ## 5. Invariants
 
 1. Read only: the module writes nothing (`meta.writes` is empty).
@@ -635,3 +656,5 @@ when the report is saved), nothing otherwise:
 3. No interface text in `render.js`.
 4. The plain background always works offline once seen, or when MapLibre is not cached (core and symbols are in
    `meta.files`; the outlines are in `meta.lazy`, kept ahead in that case).
+5. Longitudes: the route is unrolled before any calculation or drawing; no service, cache or file ever sees a longitude outside
+   [-180, 180[ (§ 4 octies).

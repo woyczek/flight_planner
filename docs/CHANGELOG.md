@@ -12,6 +12,18 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Flights across the date line: Siberia to Alaska on the Map** (`frame/lib/geo.js` new, `frame/lib/test/geo.html`,
+  `modules/maps/module.js`, `render.js`, `profile.js`, `contours.js`, `lib/map_base.js`, `modules/fuel/winds.js`; frame
+  INTEGRATION § 12 and SPEC, maps SPEC § 4 octies / INTEGRATION / DECISIONS, the manual in four languages) — the helper that
+  Atmosphere wrote (`wrapLon`, `nearLon`, `unwrapLons`) is now the frame's, with the same logic so that the weather cache cells
+  do not move. The Map unrolls the route before any calculation or drawing (UHMA → PAOM runs 177.7° → 194.6° instead of crossing
+  Europe): the distance marks, TOC / TOD, profile, cursor, barbs and framing follow; MapLibre runs with world copies for the Map,
+  every longitude is taken to the copy nearest the view, aerodb boxes are cut in two at 180°, relief, MORA, contour tiles and the
+  route written by the Edit mode are always in [-180, 180[, taps and distances compare modulo 360. Fuel's `winds.js samples`
+  interpolates the winds aloft on the unrolled route (they were read round the world). The "no forecast" message of the Weather
+  chip names the flight ("No forecast for UHMA → PAOM:"). An ordinary flight is unchanged (route, marks, data boxes identical to
+  the previous version). Not done: airspaces that straddle 180°, mission maps whose extent straddles the line, the poles.
+  The note "Aeronautical database not published" in the sheet now carries the "Offline data" button to the settings.
 - **V3 non-regression suite** (`tests/v3/`: `run.py`, `lib.py`, `domains.py`, `cases/*.py`, `README.md`, plan in `PLAN.md`) — one command,
   `python3 tests/v3/run.py`, no launcher, data repository, network or token: it starts a standard-library static server on a free
   local port, drives Chromium with Playwright and checks what must stay true on every screen of the Pilot application: the

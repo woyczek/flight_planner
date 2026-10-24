@@ -155,8 +155,12 @@ profiles: [ … ] }`, the V2 file and path), merged sheet by sheet (the newest w
   reading time; step 4, under the density altitude chart, the real atmosphere at departure — temperature by pressure
   altitude against ISA (dashed), inversion layers shaded and listed, the planned level marked, and at that level the
   temperature, ISA deviation and density altitude.
-- Bench `test/winds.html` (29 checks: pressure altitudes, interpolation, samples, steps, mean wind, inversions,
-  Open-Meteo answer with one or several places, model choice, URL).
+- **Across the date line** (24 Oct 2026): `samples` interpolates the longitudes of the places on the unrolled route
+  (`frame/lib/geo.js`: UHMA 177.7° E → PAOM 165.4° W goes 177.7° → 194.6°, not back round the world) and returns the places
+  wrapped in [-180, 180[ (a longitude already inside is returned as written), so Open-Meteo never sees a value outside it
+  and a route that stays on one side is unchanged.
+- Bench `test/winds.html` (36 checks: pressure altitudes, interpolation, samples, samples across the date line, steps, mean
+  wind, inversions, Open-Meteo answer with one or several places, model choice, URL).
 
 ## 12. Progress of a started flight (`modules/fuel/progress.js`, lot H)
 

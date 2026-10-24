@@ -138,6 +138,8 @@ l'altitude minimale de sécurité de chaque carré traversé (en tirets bruns), 
 
 **Pas de vol.** Sans vol préparé, la carte est vide et propose « Ouvrir Carburant ». Les cartes de mission restent accessibles par la liste des couches.
 
+**Vol qui passe la ligne de changement de date.** Un vol qui franchit le méridien 180° (de la Sibérie à l'Alaska, par exemple) se dessine d'un seul tenant : la carte se prolonge de l'autre côté de la ligne, les marques de distance, le profil et la coupe météo suivent la route, qui reste enregistrée avec des longitudes entre −180° et 180°.
+
 **Base aéronautique absente.** Si la base aéronautique n'a pas encore été publiée par un poste de la compagnie, la
 carte ne montre que la route, et le dit une fois (notification, puis note du bloc de données).
 

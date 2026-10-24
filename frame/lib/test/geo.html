@@ -1,0 +1,237 @@
+<!doctype html>
+<!-- Banc de la géométrie partagée (frame/lib/geo.js, frame/INTEGRATION.md § 12) : wrapLon, nearLon, unwrapLons aux bornes
+     de la ligne de changement de date, formes { lat, lon } et [lon, lat], aller-retour, et identité avec les fonctions
+     d'Atmosphère (modules/atmosphere/atmo.js) dont les cases du cache météo dépendent. Page nue, aucun module du cadre ;
+     window.__geoBench = { done, pass, fail, rows } pour un pilote (Playwright). Ouvrir la page suffit. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>geo — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">geo.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    wrapLon,
+    nearLon,
+    unwrapLons
+  } from '../geo.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const near = (a, b, e = 1e-9) => Math.abs(a - b) <= e;
+  const ck = (name, ok, detail = '') => {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}`;
+    out.append(l);
+  };
+
+  // wrapLon : [-180, 180[
+  ck('wrapLon 0 → 0', wrapLon(0) === 0);
+  ck('wrapLon 180 → -180 (borne haute exclue)', wrapLon(180) === -180);
+  ck('wrapLon -180 → -180', wrapLon(-180) === -180);
+  ck('wrapLon 179.9 → 179.9', near(wrapLon(179.9), 179.9));
+  ck('wrapLon -179.9 → -179.9', near(wrapLon(-179.9), -179.9));
+  ck('wrapLon 195 → -165', near(wrapLon(195), -165));
+  ck('wrapLon -195 → 165', near(wrapLon(-195), 165));
+  ck('wrapLon 359 → -1', near(wrapLon(359), -1));
+  ck('wrapLon 540 → -180', near(wrapLon(540), -180));
+  ck('wrapLon -540 → -180', near(wrapLon(-540), -180));
+  ck('wrapLon "190" (chaîne) → -170', near(wrapLon('190'), -170));
+  let allIn = true;
+  for (let x = -1000; x <= 1000; x += 7.3)
+    if (!(wrapLon(x) >= -180 && wrapLon(x) < 180)) allIn = false;
+  ck('wrapLon toujours dans [-180, 180[ (−1000 … 1000)', allIn);
+
+  // nearLon : copie la plus proche de ref
+  ck('nearLon -165 près de 177 → 195', near(nearLon(-165, 177), 195));
+  ck('nearLon 195 près de -170 → -165', near(nearLon(195, -170), -165));
+  ck('nearLon 0 près de 359 → 360', near(nearLon(0, 359), 360));
+  ck('nearLon 359 près de 0 → -1', near(nearLon(359, 0), -1));
+  ck('nearLon -179.9 près de 179.9 → 180.1', near(nearLon(-179.9, 179.9), 180.1));
+  ck('nearLon 179.9 près de -179.9 → -180.1', near(nearLon(179.9, -179.9), -180.1));
+  ck('nearLon déjà proche : inchangée (2,55 près de 0)', nearLon(2.55, 0) === 2.55);
+  ck('nearLon à moins de 180° de ref (aléatoire)', (() => {
+    for (let i = 0; i < 2000; i++) {
+      const lon = (i * 37.7) % 720 - 360,
+        ref = (i * 91.3) % 720 - 360,
+        n = nearLon(lon, ref);
+      if (Math.abs(n - ref) > 180 + 1e-9 || !near(wrapLon(n), wrapLon(lon), 1e-6)) return false;
+    }
+    return true;
+  })());
+
+  // unwrapLons
+  const sib = [{
+    id: 'UHMA',
+    lat: 64.7349,
+    lon: 177.7415
+  }, {
+    id: 'X',
+    lat: 65,
+    lon: -179.9,
+    alt_ft: 27000
+  }, {
+    id: 'PAOM',
+    lat: 64.5122,
+    lon: -165.4453
+  }];
+  const u = unwrapLons(sib);
+  ck('unwrapLons UHMA → PAOM : 177,74 ; 180,1 ; 194,55', near(u[0].lon, 177.7415) && near(u[1].lon, 180.1) && near(u[2].lon, 194.5547), JSON
+    .stringify(u.map(p => p.lon)));
+  ck('unwrapLons garde les autres champs', u[1].id === 'X' && u[1].alt_ft === 27000 && u[1].lat === 65);
+  ck('unwrapLons ne modifie pas l\'entrée', sib[1].lon === -179.9 && sib[2].lon === -165.4453);
+  ck('unwrapLons : un point continu est rendu tel quel (même objet)', u[0] === sib[0]);
+  const back = unwrapLons([...sib].reverse());
+  ck('unwrapLons PAOM → UHMA : −165,4 ; −179,9 ; −182,26', near(back[0].lon, -165.4453) && near(back[1].lon, -179.9) && near(back[2].lon, -
+    182.2585), JSON.stringify(back.map(p => p.lon)));
+  ck('unwrapLons : chaque pas à moins de 180°', u.every((p, i) => !i || Math.abs(p.lon - u[i - 1].lon) <= 180) && back.every((p, i) => !i ||
+    Math.abs(p.lon - back[i - 1].lon) <= 180));
+  ck('aller-retour : wrapLon des longitudes déroulées = les longitudes d\'origine', u.every((p, i) => near(wrapLon(p.lon), wrapLon(sib[i]
+    .lon), 1e-9)) && back.every((p, i) => near(wrapLon(p.lon), wrapLon([...sib].reverse()[i].lon), 1e-9)));
+  ck('route sans passage de la ligne : rendue à l\'identique (mêmes objets)', (() => {
+    const r = [{
+      lat: 47.1,
+      lon: -1.6
+    }, {
+      lat: 44.9,
+      lon: 2.4
+    }, {
+      lat: 43.4,
+      lon: 5.2
+    }];
+    const o = unwrapLons(r);
+    return o.every((p, i) => p === r[i]);
+  })());
+  ck('0 → 359 : 0 puis -1 (pas de tour du monde)', eq(unwrapLons([{
+    lon: 0
+  }, {
+    lon: 359
+  }]).map(p => p.lon), [0, -1]));
+  ck('trois passages : 170, -170, 170 → 170, 190, 170', eq(unwrapLons([{
+    lon: 170
+  }, {
+    lon: -170
+  }, {
+    lon: 170
+  }]).map(p => p.lon), [170, 190, 170]));
+  ck('un tour complet par petits pas : 170 … -170 … 0', (() => {
+    const w = unwrapLons([170, -170, -90, -10, 70, 150, -130].map(lon => ({
+      lon
+    }))).map(p => p.lon);
+    return eq(w, [170, 190, 270, 350, 430, 510, 590]);
+  })());
+  ck('paires [lon, lat] : -165 après 177 → 195, lat gardée', (() => {
+    const g = [
+      [177.7, 64.7],
+      [-165.4, 64.5]
+    ];
+    const o = unwrapLons(g);
+    return o[0] === g[0] && near(o[1][0], 194.6) && o[1][1] === 64.5 && g[1][0] === -165.4;
+  })());
+  ck('paires avec une troisième valeur (altitude) gardée', (() => {
+    const o = unwrapLons([
+      [179, 1, 300],
+      [-179, 2, 400]
+    ]);
+    return o[1].length === 3 && o[1][0] === 181 && o[1][2] === 400;
+  })());
+  ck('entrée vide, nulle ou sans longitude', eq(unwrapLons([]), []) && eq(unwrapLons(null), []) && (() => {
+    const o = unwrapLons([{
+      lon: 170
+    }, {
+      lat: 1
+    }, {
+      lon: -170
+    }]);
+    return o[1].lon === undefined && o[2].lon === 190;
+  })());
+  ck('longitudes en chaînes : "-170" après 170 → 190', unwrapLons([{
+    lon: '170'
+  }, {
+    lon: '-170'
+  }])[1].lon === 190);
+
+  // identité avec Atmosphère (cases du cache météo)
+  try {
+    const A = await import('../../../modules/atmosphere/atmo.js?v=0');
+    let same = true,
+      bad = '';
+    for (let x = -725; x <= 725; x += 1.37) {
+      if (A.wrapLon(x) !== wrapLon(x) || A.nearLon(x, 177.7) !== nearLon(x, 177.7) || A.nearLon(x, -165.4) !== nearLon(x, -165.4)) {
+        same = false;
+        bad = String(x);
+        break;
+      }
+    }
+    ck('identique à atmo.js (wrapLon, nearLon, −725 … 725)', same, bad);
+    const pts = [{
+      lat: 1,
+      lon: 177.7
+    }, {
+      lat: 2,
+      lon: -179.9
+    }, {
+      lat: 3,
+      lon: -165.4
+    }, {
+      lat: 4,
+      lon: 5
+    }];
+    ck('identique à atmo.js (unwrapLons)', eq(A.unwrapLons(pts), unwrapLons(pts)));
+  } catch (e) {
+    ck('identité avec atmo.js (module non chargé)', false, String(e));
+  }
+
+  // la copie de render.js (script classique, il n'importe rien) : mêmes valeurs
+  try {
+    await import('../../../modules/maps/render.js?v=0');
+    const R = window.MapsRender;
+    let same = true,
+      bad = '';
+    for (let x = -725; x <= 725; x += 1.37) {
+      if (R.nearLon(x, 177.7) !== nearLon(x, 177.7) || R.nearLon(x, -165.4) !== nearLon(x, -165.4) || (x >= -180 && x < 180 ? R.wrapLon(
+          x) !== x : R.wrapLon(x) !== wrapLon(x))) {
+        same = false;
+        bad = String(x);
+        break;
+      }
+    }
+    ck('copie de modules/maps/render.js identique (nearLon ; wrapLon, sauf une longitude déjà dans [-180, 180[ rendue telle quelle)', same,
+      bad);
+  } catch (e) {
+    ck('copie de render.js (non chargée)', false, String(e));
+  }
+
+  window.__geoBench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__geoBench.pass} PASS · ${window.__geoBench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

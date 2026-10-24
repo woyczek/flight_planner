@@ -173,7 +173,10 @@
     ctx.lineCap = 'round';
     for (let ty = a[1]; ty <= b[1]; ty++)
       for (let tx = a[0]; tx <= b[0]; tx++) {
-        const e = load(z, tx, ty);
+        // la vue peut dépasser 180° (ligne de changement de date) : l'indice de tuile se lit modulo le nombre de tuiles du tour
+        const nt = 2 ** z,
+          txw = ((tx % nt) + nt) % nt,
+          e = load(z, txw, ty);
         if (!e.h) {
           if (!e.failed && !e.waiting) {
             e.waiting = true;
@@ -184,7 +187,7 @@
           }
           continue;
         }
-        const s = segments(e, z, tx, ty, I.step);
+        const s = segments(e, z, txw, ty, I.step);
         for (const major of [false, true]) {
           ctx.globalAlpha = major ? .75 : .45;
           ctx.lineWidth = (major ? 1.1 : .6) * scale;
