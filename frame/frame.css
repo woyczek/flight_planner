@@ -161,9 +161,6 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
 .f-sync .f-dot {
   margin-right: 8px
 }
-.f-lbl-short {
-  display: none
-}
 @keyframes f-pulse {
   to {
     opacity: .3
@@ -728,6 +725,21 @@ p.f-back {
   background: var(--sog-ok);
   box-shadow: 0 0 0 2px var(--sog-surface)
 }
+/* téléphone : pastille orange quand une chose demande de l'attention (pas de trigramme, écritures en attente, conflits, hors
+   ligne, erreur) ; elle l'emporte sur la verte (le bouton de synchronisation n'est plus dans l'en-tête) */
+@media (max-width: 760px) {
+  #fInfo[data-attn]::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sog-warn);
+    box-shadow: 0 0 0 2px var(--sog-surface)
+  }
+}
 /* pop-up d'état : une feuille sous l'en-tête, à droite, sous le « i » ; une ligne de 44 px au moins par information */
 .f-modal.f-info-modal {
   place-items: start end;
@@ -811,6 +823,16 @@ p.f-back {
   display: block;
   visibility: hidden
 }
+.f-info-dot[data-attn] {
+  background: var(--sog-warn)
+}
+/* les lignes « Position » et « Aide de cet écran » remplacent, sur téléphone, le bouton de position et le « ? » de l'en-tête :
+   sur un écran l'en-tête les garde */
+@media (min-width: 761px) {
+  .f-info-list>li[data-phone] {
+    display: none
+  }
+}
 /* barre du bas : seulement sur téléphone (la colonne des verbes la remplace sur un écran) */
 .f-tabbar {
   display: none
@@ -833,18 +855,20 @@ p.f-back {
   html.f-fixed body {
     grid-template-rows: auto minmax(0, 1fr) auto
   }
-  /* en-tête du téléphone : jamais plus large que l'écran — retour en flèche seule, pastilles réduites à leur icône
-     (libellé dans l'infobulle) */
-  .f-back span,
-  .f-live span,
-  .f-host span,
-  .f-who span {
+  /* en-tête du téléphone : le nom, « i » et ⚙ (le retour en flèche seule prend la place du nom). Le bouton de synchronisation et
+     la pastille du trigramme sont la couleur du « i » et des lignes de son pop-up, la position réelle et le lanceur n'y sont
+     plus, le « ? » est la dernière ligne du pop-up (frame/SPEC.md § 3.1) */
+  .f-head .f-sync,
+  .f-head .f-who,
+  .f-head .f-host,
+  .f-head .f-live,
+  .f-head #fHelp {
     display: none
   }
-  .f-back,
-  .f-live,
-  .f-host,
-  .f-who {
+  .f-back span {
+    display: none
+  }
+  .f-back {
     flex: 0 1 var(--sog-touch);
     /* une cible tactile, qui ne rétrécit que si l'en-tête est encombré */
     min-width: 0;
@@ -856,19 +880,6 @@ p.f-back {
   }
   .f-view {
     padding: 12px
-  }
-  .f-sync .f-lbl-long {
-    display: none
-  }
-  /* bouton de synchronisation : la pastille et un état court (✓, 3, ⟳, ✕) ; le détail dans l'infobulle */
-  .f-sync .f-lbl {
-    display: none
-  }
-  .f-sync .f-lbl-short {
-    display: inline
-  }
-  .f-sync .f-dot {
-    margin-right: 4px
   }
   /* la barre : dernière ligne de la grille, collée au bas de la fenêtre (rien ne passe dessous : la vue est au-dessus) ;
      la zone sûre de l'appareil (barre d'accueil de l'iPhone) est son bas, sur la même couleur */
@@ -959,4 +970,94 @@ p.f-back {
   .f-notes {
     bottom: calc(var(--f-tab-space) + 8px)
   }
+}
+/* second toucher sur l'onglet choisi d'un groupe de modules : un popover au-dessus de la barre (frame/INTEGRATION.md § 9.1) ;
+   posé par app.js (haut, gauche, --f-pop-caret) ; des lignes de 44 px, le module affiché marqué ; jamais sur un écran */
+.f-tabpop {
+  position: fixed;
+  z-index: 7;
+  min-width: 200px;
+  max-width: calc(100vw - 16px);
+  padding: 4px 0;
+  background: var(--sog-surface);
+  color: var(--sog-fg);
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  box-shadow: var(--sog-shadow)
+}
+/* la pointe, sur l'onglet */
+.f-tabpop::after {
+  content: "";
+  position: absolute;
+  left: var(--f-pop-caret, 50%);
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: var(--sog-surface);
+  border: solid var(--sog-border);
+  border-width: 0 1px 1px 0;
+  transform: rotate(45deg)
+}
+/* trois classes : les règles des designs sur les boutons (`[data-design] :is(button, .f-btn)`) ne les atteignent pas */
+.f-tabpop button.f-tabpop-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--sog-touch);
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--sog-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer
+}
+.f-tabpop button.f-tabpop-row[aria-current] {
+  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface));
+  font-weight: 600
+}
+.f-tabpop button.f-tabpop-row:active {
+  background: color-mix(in srgb, var(--sog-accent) 18%, var(--sog-surface))
+}
+@media (min-width: 761px) {
+  .f-tabpop {
+    display: none
+  }
+}
+/* couche de superposition d'un module fixe (frame/INTEGRATION.md § 9.3) : posée en pixels par app.js sur la zone de carte du
+   module ; la vue est son repère, hors de la grille de la vue double (une case de grille changerait son repère) */
+html.f-fixed .f-view {
+  position: relative
+}
+.f-view>.f-overlay,
+.f-pane>.f-overlay {
+  grid-column: auto;
+  grid-row: auto
+}
+/* plein écran d'un module fixe (frame/INTEGRATION.md § 9.4) : <html class="f-fixed f-full"> — l'en-tête, la barre du bas et la
+   colonne des verbes sont retirés (sur écran comme sur téléphone : la colonne des verbes se cache plutôt que de se réduire aux
+   icônes, la puce de sortie suffit à revenir) ; la vue prend toute la fenêtre. Les mesures données aux modules suivent :
+   l'en-tête et la barre pèsent 0, --f-view-h vaut --f-vh (moins les zones sûres de l'appareil, que la vue laisse libres). */
+html.f-fixed.f-full {
+  --f-head-h: 0px;
+  --f-tab-space: 0px;
+  --f-view-h: calc(var(--f-vh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+}
+html.f-fixed.f-full .f-head,
+html.f-fixed.f-full .f-nav,
+html.f-fixed.f-full .f-tabbar {
+  display: none
+}
+html.f-fixed.f-full body {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "main"
+}
+html.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)
 }

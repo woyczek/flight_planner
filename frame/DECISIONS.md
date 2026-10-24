@@ -977,3 +977,72 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
     5 / 765 in the frame's header (above the module; not in the sheet), the dual-view pane and split main at 1280 are the same size
     to the tenth of a pixel and differ by 1 to 2 levels on a few anti-aliased edge pixels; seven designs at 390, sheet header
     crops identical; bench 76 / 76 at 390 and at 1280.
+- **24 Oct 2026 — Lot: overlay layer and full screen for fixed modules, header slimmed on a phone, group switch by popover**
+  (asked by the cloud relay, holding the ergonomics role; branch `v3-cadre-plein` from `v3` eea37db50; the user's words of
+  24 Oct, 14:00 and 14:05, `docs/technique/V3_SPECIFICATION.md` § 7.1: "Ce n'était pas le deal. header, carte, carte, footer.
+  Les autres infos sont mises ailleurs." / "trop d'éléments sur le header. Prévoir une exemption pour certains boutons communs.
+  Prévoir un « full screen » pour supprimer le footer et/ou le header." / "maximiser l'espace alloué à la carte").
+  - **1. Overlay layer** (`ctx.overlay`, INTEGRATION § 9.3). Chosen between the two shapes of the brief: the frame creates
+    the layer before `mount` and hands the two column elements (`left`, `right`) plus a `button()` helper; the module may say
+    which element is its map (`over(el)`). *Why a sibling of the module's root, not a child*: maps and atmosphere write
+    `el.innerHTML`, which would wipe a layer put in the root; the layer therefore sits in the view (`.f-view`, or the pane
+    `aside`) and is laid in pixels over the map element (a `ResizeObserver` on the root and the map, a `MutationObserver` on
+    the root's children only to find a map added after `mount`; both justified in the code, geometry written only when it
+    changes). *Why pixels, not CSS*: the map's height moves with the sheet, and the root's layout belongs to the module;
+    covering exactly the map makes "never over the sheet" true by construction. Default map element = the root's first child
+    that grows (maps' toolbar line is first today, its map `.mp-box` has `flex: 1 1 0`); `over(el)` for any other layout.
+    The right column wraps to a second column on its left when the map is too low (`flex-wrap: wrap-reverse`), so no button
+    can reach the sheet. `.f-ov-btn`: 44 px visible, 48 px hit (a `::after` of 2 px), `--sog-surface` at 92 %, hairline, light
+    shadow; **the radius is `min(50%, --sog-radius × 22)`: round in every design but `cabinet`, `field`, `metro` and `swiss`,
+    whose radius is 0 and keep square buttons** (the user said "round"; the angle-free designs are mock-ups to be decided, one
+    line to change). Three-class rules, as the sheet's, so the designs' button rules do not reach them. A pane gets the layer
+    without the full-screen button.
+  - **2. Full screen** (INTEGRATION § 9.4). `html.f-full` (only with `f-fixed`): header, bar (phone), rail (screen) hidden; the
+    variables `--f-head-h` and `--f-tab-space` fall to 0 so every height follows (`--f-view-h` = `--f-vh` less the safe areas).
+    **Judgement call: on a screen the rail is hidden, not folded to icons** (the brief left the choice): all the width to the map,
+    the chip and Escape bring it back; a folded rail would need a rule per design (the Material rail is 88 px with labels).
+    Remembered for the page's life, also under a frame screen opened over the module (the header comes back there, as
+    `f-fixed` does; closing it returns to full screen), reset at a module change. The exit chip is `position: fixed` at the
+    top right of the window (the view is then the whole window; fixed is relative to the view, which is a container) so it
+    stays at the corner even while maps still draws its own toolbar line above its map; the right column starts under it.
+    Escape order: group popover, frame screen, full screen (never with a question window open or when a module has
+    prevented the key). `frame-fullscreen` (`detail.on`) then `resize` on `window` after each change. No Fullscreen API.
+    Icon `minimize` added to `icons.js`.
+  - **3. Header on a phone**: name · "i" · ⚙ (and "←" in place of the name after a passage). `.f-sync`, `.f-who`, `.f-host`,
+    `.f-live` and `#fHelp` are `display: none` up to 760 px (the old phone rules that shrank them, and the `.f-lbl-short` span
+    and its code, are deleted: nothing showed them any more). The "i" badge: green `data-badge` = news, amber `data-attn` =
+    attention (no trigram once the identity is read, pending writes, conflicts, a synchronisation error, offline), amber wins,
+    **amber only on a phone** (on a screen the header keeps its sync button, the badge stays green-or-nothing as before).
+    `syncState()` is the one place that classifies the state (button and data line). New lines of the pop-up: the trigram
+    line (tap → Settings; before the data line), an error text in the data line (an error was a red dot only), "Position :
+    <source>" (live active; **a tap toggles the device's GPS like the badge it replaces**, since the badge's button is gone),
+    and "Aide de cet écran ›" last (the "?" handler is now `openHelp()`, a toggle). These last two are `data-phone`: hidden on
+    a screen. Rows that need attention have an amber dot. **Not done**: the launcher badge ("Lanceur de <poste>") has no line
+    (the data line already names the transport "launcher"; the host name stays in the header on a screen only).
+  - **4. Group switch without a row.** `paintSubtabs` / `paintTop` and the `.f-subtabs` click handler are removed. A second tap
+    on the active tab opens `.f-tabpop` (a `position: fixed` element on `body`, not inside the bar, so the bar's `a` rules
+    of the five designs do not hit its rows; 44 px `button` rows, three-class rules). Closing: a touch elsewhere (pointerdown,
+    capture; the tab itself toggles through its click), Escape (focus back to the tab), scroll (capture, from outside the
+    popover), resize, hash change. The click on the active tab is `preventDefault`ed (a single-module tab "does nothing" and no
+    longer drops `?with=` from the address) except while a frame screen is open over the module. `aria-haspopup` on the tabs of a
+    group of two or more. Updated: INTEGRATION § 9.1, SPEC § 3.1.
+  - **5. Sheet default 30 %** (relay's addition, "maximiser l'espace alloué à la carte"): `--f-sheet-default` is 30 % up to
+    760 px (floor 170 px), 35 % from 761 px; INTEGRATION § 11 and the design SPEC table follow; the bench's assertion changed
+    from 38 % to 30 % (76 / 76 at 390 and 1280). `modules/maps` and `modules/atmosphere` documents still say 38 % (not touched).
+  - **6. No margin under the header**: with the sub-tabs row gone (it had a 12 px bottom margin), the module's top equals
+    `--f-head-h` (57 px): measured on `maps` and `atmosphere`, at 390 and 1280 px, the view and the module have 0 padding and 0
+    margin.
+  - **Measured** (Playwright + Chromium, touch emulation at 390 × 844 and 1280 × 800, seven designs set through
+    `device/design.json`): header children exactly `fName`, `fInfo`, `fDevice` (44 px buttons, 57 px high); badge colours (computed
+    colour of `::after` = `--sog-ok` for a seeded flight, `--sog-warn` without a trigram or offline, none with a trigram and no
+    flight); pop-up lines, "Aide de cet écran" last, rows at least 44 px; popover rows 44 px above the bar and inside the window,
+    switching, closing by outside touch / Escape / scroll / third touch, nothing on `maps`; on `#maps` the layer = the map box, its
+    right column above the sheet, the full-screen button 44 × 44; full screen at 390: header and bar `display: none`, view 844 px
+    at top 0, chip 44 px at 8 / 8, `resize` heard, no page scroll, Escape and chip and button exit, reset at a module change,
+    kept across Settings; at 1280: header and rail hidden, view 1280 × 800; a stub fixed module (intercepted `modules/hello`):
+    5 buttons + full, 52 px pitch, `pressed`, clicks reach the module, map gestures pass through, wrap to extra columns on a
+    120 px map, four languages.
+  - **Not done / to see**: no iOS device (safe areas, the Cupertino blur under the popover); the exit chip covers the last
+    button of maps' toolbar line until maps migrates it; `modules/*` untouched (maps and atmosphere still draw their toolbars, their
+    docs still say 38 % and "sub-tabs"); the page is 402 px wide on `#fuel` at 390 because of Fuel's own `.fu-when` row (the same on
+    the base commit, not the frame's).

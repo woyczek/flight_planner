@@ -26,8 +26,8 @@ export function unmount() { /* stop watchers, timers */ }
 ```
 
 - The frame loads it on demand and gives it `ctx` (frame/SPEC.md § 3.2): `data`, `aerodb`, `t`, `lang`, `notify`,
-  `ask`, `askText`, `net`, `identity`.
-- Its verb in the application's rail (and its sub-tab, § 9) is set in `frame/app.js` (`APP.modules`): one short verb, seven
+  `ask`, `askText`, `net`, `identity`; a fixed module (§ 9.2) also gets `overlay` (§ 9.3).
+- Its verb in the application's rail (and in its group's popover, § 9.1) is set in `frame/app.js` (`APP.modules`): one short verb, seven
   modules at most. Its place in the phone's bottom bar is set in `APP.tabs` (§ 9); a module never writes either.
 - `meta.help` (true by default): the frame draws the folded "How to use" panel at the top of the module as soon as
   the module's chapter (`modules/<id>/help/<lang>.md`) is in the application's manual; `false` hides it. Writing the
@@ -180,10 +180,14 @@ APP.tabs = [
   module registered or not.
 - **A module in no tab** (`website`, `hello`) selects no tab and stays reachable by its address (`#website`) and in the
   rail on a screen.
-- **Sub-tabs**: when the group has two or more modules registered at the device's level, the frame draws above the
-  module a row of sub-tabs (the primitives' `.f-tabs`), one per module, with the verb of `APP.modules[].label`, the
-  current one marked, 44 px high; a touch switches the module (`#fuel`, `#atmosphere`). The module does nothing for
-  it and must not draw a row of its own to reach its siblings; its internal tabs (Fuel's Plan / Sheets) stay its own.
+- **Group popover (no row of sub-tabs)**: when the group has two or more modules registered at the device's level, a
+  **second touch on its active tab** opens a small popover above the tab (`.f-tabpop`; one 44 px row per module, its icon
+  and the verb of `APP.modules[].label`, the current one `aria-current="page"`). A touch on a row switches the module
+  (`#fuel`, `#atmosphere`); a touch elsewhere, Escape, a scroll, a resize or a change of address closes it. The tab has
+  `aria-haspopup` (and `aria-expanded` while open). On a tab with one module the second touch does nothing. **There is no
+  row of sub-tabs above a module** (it used to take 56 px and a margin above a fixed module's map, 24 Oct 2026): a module
+  must not draw a row of its own to reach its siblings; its internal tabs (Fuel's Plan / Sheets) stay its own. Nothing
+  about it reaches a module: `ctx.tab` is all it knows. On a screen the rail lists the modules.
 - **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel and atmosphere), `null` if none. For a
   module that wants to know its group; it never opens or changes a tab.
 
@@ -200,7 +204,10 @@ A module that is a map plus a sheet (maps) declares `fixed: true` in `meta`. The
   `overflow: auto` under it. **This rule has no weight** (`:where()`): a module that wants another layout sets its own
   `display` on its root (`[data-module="maps"] { display: grid }`) and wins with no `!important`; a module that sets
   none keeps the column;
-- no folded help panel and no welcome card above it (the ? button opens the module's chapter);
+- no folded help panel and no welcome card above it (the ? button opens the module's chapter; on a phone the "?" is the
+  last line of the "i" pop-up, "Help for this screen ›", so a fixed module needs no help button of its own);
+- **nothing between the header and the module**: no sub-tabs row, no padding, no margin; the module's top is exactly
+  `--f-head-h` (the module draws its own margins);
 - nothing else changes: `fixed` absent is today's page.
 
 What the module writes (its own sheet, scoped to `[data-module="<id>"]`):
@@ -237,6 +244,80 @@ What the module writes (its own sheet, scoped to `[data-module="<id>"]`):
   three-position block under the map, with its heights from `--f-sheet-*` as parts of the module's root, so it follows
   `--f-view-h` in the plain view, the split main and the pane with nothing of its own.
 - The header is exactly `--f-head-h` in every state, so these numbers hold after Settings, help or a module's "←".
+
+### 9.3 Overlay layer (`ctx.overlay`): the buttons over the map
+
+The only controls allowed between the header and the data block of a fixed module are **buttons laid over its map**
+(user, 24 Oct 2026, 14:00 and 14:05; `docs/technique/V3_SPECIFICATION.md` § 7.1). No toolbar line, no info line, no
+row of tabs above the map. The frame gives every fixed module a layer for them; the module puts its buttons in it and
+draws nothing of its own for placement.
+
+```js
+// in mount(el, ctx) of a module with meta.fixed
+const ov = ctx.overlay;                       // null for a module that is not fixed
+ov.button({ icon: 'edit',   label: ctx.t(TX.edit),    onClick: toggleEdit, pressed: false });    // right column (default)
+ov.button({ icon: 'target', label: ctx.t(TX.recentre), onClick: recentre });
+ov.button({ icon: 'layers', label: ctx.t(TX.layers),  onClick: openLayers, side: 'left' });       // left column
+ov.right.append(myOwnElement);                // anything else: a chip, a select (give it .f-ov-btn to get the look)
+ov.over(mapEl);                               // optional: the element to cover (see below)
+```
+
+**What the module provides**: for each control, an `icon` (a name of `frame/lib/icons.js`) and a `label` (four languages,
+through `ctx.t`): the label becomes the button's `title` **and** `aria-label` (icon only, no visible text), `onClick`,
+and `pressed` when it is a toggle (written as `aria-pressed`; the module keeps it up to date with
+`btn.setAttribute('aria-pressed', …)` and swaps the icon with `btn.innerHTML = svg(name)` or text with
+`btn.title` / `aria-label`). `button()` returns the `<button class="f-ov-btn">`. A module that already draws its own button
+adds the class `f-ov-btn` to it and appends it to `ov.left` or `ov.right`.
+
+**What the frame does**:
+
+- `ctx.overlay` = `{ left, right, button(opts), over(el), refresh(), full }`: `left` and `right` are the two column elements
+  (flex columns, 8 px gaps, 8 px from the edges). The layer (`.f-overlay`) is a sibling of the module's root in the view,
+  not a child: a module that rewrites `el.innerHTML` never wipes it. It is removed with the module.
+- **Placement**: the layer is laid, in pixels, exactly over the module's map area: by default the first child of its root
+  that grows (`flex-grow > 0`, at least 40 px high), otherwise the first visible one; `ov.over(el)` names the element
+  instead. It follows that element's size (the sheet moving, the window resizing, the full screen) and the root's children
+  (a map added after `mount`); it is hidden while no element qualifies. **The layer is the map's size, so a column never
+  overlaps the sheet**; if the right column is taller than a low map it wraps to a second column on its left.
+- **`.f-ov-btn`** (`frame/design/primitives.css`): 44 px visible round button (a square in a design with `--sog-radius: 0`),
+  the hit area reaches 48 px (the 2 px around it), `--sog-surface` at 92 %, a hairline, a light shadow, `aria-pressed="true"`
+  tinted with the accent; the icon is 22 px. Its rules weigh three classes: the designs' button rules do not reach it.
+  The layer lets map gestures through; only the buttons take touches.
+- **Full-screen button**: the frame appends it itself to the **right** column of every fixed module (not in a pane), and
+  keeps it the last one visually (`order`) and in the keyboard order (`button()` inserts before it): § 9.4. A module neither
+  draws nor handles it. `ov.full` is `true` while the page is in full screen.
+- A module in a **pane** gets the layer too (a pane is a fixed module in a smaller place), without the full-screen button.
+
+What a module keeps: what the buttons do, their icons and labels in four languages, where its map element is (`over`) when
+it is not the first growing child, and what its controls become in a very low map (nothing: the frame wraps them).
+
+**Moving a module over** (maps, atmosphere; each in its own lot): the toolbar line, the information line and the title row
+of the data block leave the column; Edit, Recentre, the mode and Load become `ov.button()`s (right), Layers goes `side: 'left'`,
+the flight selector goes inside the Layers panel, the flight summary becomes the sheet's grip text, the Profile · Weather
+choice two small icon chips at the right of the grip row (V3_SPECIFICATION § 7.1). A module that still draws a toolbar line
+keeps working: the layer then covers its map and the frame's button sits at the right of the map.
+
+### 9.4 Full screen (`html.f-full`)
+
+The full-screen button of § 9.3 toggles `<html class="f-fixed f-full">`:
+
+- **Phone**: the header and the bottom bar are hidden; the view takes the whole window. **Screen**: the header is hidden and
+  **so is the rail** (judgement call: not folded to icons, so the map takes all the width); the view takes the whole window.
+- **Heights**: `--f-head-h` and `--f-tab-space` are `0px`, so `--f-view-h` = `--f-vh` (less the device's safe areas, which
+  the view leaves free: `env(safe-area-inset-top / bottom)`). A module whose root is `height: 100%` or `var(--f-view-h)` follows
+  with nothing of its own.
+- **Leaving**: a 44 px **exit chip** (icon `minimize`, label "Quitter le plein écran" / "Exit full screen" / "Vollbild
+  beenden" / "Salir de pantalla completa") at the top right of the window; the full-screen button itself (now showing
+  `minimize`); Escape. The right column starts under the chip.
+- **Memory**: for the page's life (also while a frame screen is opened over the module, where the header comes back, and
+  on closing it the module is full screen again); reset at a module change. Not the browser's Fullscreen API (absent from
+  Safari on iPhone): the page itself fills the window.
+- **What a module must do**: nothing but follow the size. After every change the frame fires `frame-fullscreen`
+  (`detail: { on }`) and then a plain **`resize` event on `window`** (next animation frame), so a map calls `map.resize()` as
+  it already does on a window resize; a `ResizeObserver` on the map box works as well. Pointer events, the sheet and the
+  overlay buttons keep working; the page never scrolls.
+- On a module that has not migrated its toolbar line yet, the chip may cover the line's last button until the line leaves
+  (the maps lot).
 
 ## 10. What the frame reads from modules' caches
 
@@ -361,7 +442,7 @@ reads nothing else (no `calc()`).
 | Token | Default | |
 | --- | --- | --- |
 | `--f-sheet-head` | `45px` | the collapsed height: the header (44 px, `--sog-touch`) and the hairline |
-| `--f-sheet-default` | `38%` (`35%` from 761 px) | the default height |
+| `--f-sheet-default` | `30%` (`35%` from 761 px) | the default height |
 | `--f-sheet-default-min` | `170px` | its floor |
 | `--f-sheet-expanded` | `70%` | the expanded height |
 | `--f-sheet-expanded-min` | `260px` | its floor |

@@ -217,7 +217,26 @@
       },
       offline: ['Hors ligne : travail sur la copie de l’appareil', 'Offline: working on this device’s copy',
         'Offline: Arbeit auf der Kopie dieses Geräts', 'Sin conexión: se trabaja con la copia del dispositivo'
-      ]
+      ],
+      // téléphone : le trigramme, l'erreur de synchronisation, la position réelle et l'aide, qui ne sont plus dans l'en-tête
+      who: ['Trigramme non réglé : vos documents restent sur cet appareil', 'Trigram not set: your documents stay on this device',
+        'Kürzel nicht eingestellt: Ihre Dokumente bleiben auf diesem Gerät',
+        'Trigrama no definido: sus documentos se quedan en este dispositivo'
+      ],
+      whoSub: ['Touchez pour le régler dans les Réglages', 'Touch to set it in Settings',
+        'Tippen, um es in den Einstellungen zu setzen',
+        'Toque para definirlo en Ajustes'
+      ],
+      error: ['Données : erreur de synchronisation{e}', 'Data: synchronisation error{e}', 'Daten: Synchronisationsfehler{e}',
+        'Datos: error de sincronización{e}'
+      ],
+      position: ['Position : {s}', 'Position: {s}', 'Position: {s}', 'Posición: {s}'],
+      help: ['Aide de cet écran', 'Help for this screen', 'Hilfe zu diesem Bildschirm', 'Ayuda de esta pantalla']
+    },
+    // plein écran d'un module fixe (bouton de la couche de superposition, puce de sortie) et groupe d'onglets (popover)
+    full: {
+      enter: ['Plein écran', 'Full screen', 'Vollbild', 'Pantalla completa'],
+      exit: ['Quitter le plein écran', 'Exit full screen', 'Vollbild beenden', 'Salir de pantalla completa']
     },
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
@@ -485,6 +504,7 @@
     }]
   });
   let identity = Object.freeze({}),
+    identityLoaded = false, // l'identité a été lue une fois (sans cela, « pas de trigramme » serait une fausse alerte au démarrage)
     usages = {},
     level = 2, // niveau d'usage de l'appareil (1 à 3)
     airline = Object.freeze({});
@@ -573,6 +593,8 @@
   function paintWho() {
     const b = $('fWho'),
       show = !identity.trigram;
+    identityLoaded = true;
+    paintInfo(); // téléphone : le trigramme absent est une ligne du pop-up « i » et sa pastille orange
     if (!b) return;
     if (b.hidden === show) b.hidden = !show;
     if (!show) return;
@@ -710,6 +732,180 @@
    *  (il défile comme une page). id : le module affiché ('' : aucun). Écrit seulement si cela change. */
   function paintFixed(id) {
     document.documentElement.classList.toggle('f-fixed', !!id && !over && moduleFixed[id] === true);
+    applyFull();
+  }
+  // ---------------------------------------------------------------- plein écran d'un module fixe
+  // <html class="f-full"> (avec f-fixed) cache l'en-tête et, sur téléphone, la barre du bas ; sur un écran, l'en-tête et la
+  // colonne des verbes (frame.css). Demandé par le bouton que le cadre ajoute à la colonne de droite de la couche de
+  // superposition, par la puce de sortie ou par Échap ; gardé tant que la page vit (même sous un écran du cadre ouvert par-dessus,
+  // où il est sans effet), remis à zéro au changement de module. Pas l'API plein écran du navigateur (absente de Safari
+  // sur iPhone) : la page prend toute la fenêtre.
+  let full = false;
+  const overlays = new Set(); // couches de superposition montées (module principal, volet)
+  /** Pose ou retire f-full selon la demande et la vue fixe affichée ; à chaque changement, les modules sont prévenus
+   *  (événement « frame-fullscreen », puis « resize » sur window : la carte se redimensionne). */
+  function applyFull() {
+    const h = document.documentElement,
+      on = full && h.classList.contains('f-fixed');
+    if (h.classList.contains('f-full') !== on) {
+      h.classList.toggle('f-full', on);
+      closeTabPop();
+      window.dispatchEvent(new CustomEvent('frame-fullscreen', {
+        detail: {
+          on
+        }
+      }));
+      requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+    }
+    for (const o of overlays) o.paintFull(on);
+  }
+  const setFull = on => {
+    full = !!on;
+    applyFull();
+  };
+  // ---------------------------------------------------------------- couche de superposition des modules fixes (INTEGRATION § 9.3)
+  /** Couche d'un module fixe : .f-overlay, frère de sa racine dans la vue, posée en pixels sur sa zone de carte (l'enfant de la
+   *  racine qui prend la place : flex-grow > 0, sinon le premier visible ; over(el) pour dire laquelle). Deux colonnes, gauche
+   *  et droite ; le bouton plein écran est la dernière case de la droite (withFull : pas dans un volet), la puce de sortie se
+   *  montre en haut à droite en plein écran. Les colonnes restent dans la carte : jamais sur la feuille. Observateurs : taille
+   *  (la carte change quand la feuille bouge) et enfants de la racine (la carte est ajoutée après le montage) ; la géométrie
+   *  n'est écrite que si elle change. Retourne { api (ctx.overlay), host, paintFull, dispose }. */
+  function makeOverlay(root, withFull) {
+    const host = root.parentElement,
+      box = document.createElement('div');
+    box.className = 'f-overlay';
+    box.hidden = true;
+    box.innerHTML = '<div class="f-ov-col f-ov-left"></div><div class="f-ov-col f-ov-right"></div>';
+    const [left, right] = box.children;
+    let explicit = null,
+      watched = null,
+      dirty = true, // la zone couverte est à rechercher (enfants de la racine changés, over(), refresh())
+      geom = '',
+      raf = 0;
+    const button = ({
+      icon: name,
+      label = '',
+      onClick,
+      pressed,
+      side = 'right'
+    } = {}) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'f-ov-btn';
+      b.innerHTML = icon(name);
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      if (pressed !== undefined) b.setAttribute('aria-pressed', String(!!pressed));
+      if (onClick) b.addEventListener('click', onClick);
+      // le bouton plein écran reste le dernier de la colonne de droite, dans l'ordre du clavier comme à l'écran
+      if (side !== 'left' && fbtn) right.insertBefore(b, fbtn);
+      else(side === 'left' ? left : right).append(b);
+      return b;
+    };
+    let fbtn = null;
+    let chip = null,
+      fullShown = null;
+    if (withFull) {
+      fbtn = button({
+        icon: 'maximize',
+        label: t(T.full.enter),
+        onClick: () => setFull(!full),
+        pressed: false
+      });
+      fbtn.classList.add('f-ov-full');
+      chip = button({
+        icon: 'minimize',
+        label: t(T.full.exit),
+        onClick: () => setFull(false)
+      });
+      chip.classList.add('f-ov-exit');
+      box.append(chip); // hors des colonnes : en haut à droite, quel que soit le nombre de boutons
+    }
+    /** Zone couverte : celle que dit le module, sinon l'enfant de la racine qui grandit (la carte), sinon le premier visible. */
+    const targetOf = () => {
+      if (explicit?.isConnected) return explicit;
+      const kids = [...root.children].filter(c => c.offsetHeight >= 40 && getComputedStyle(c).position !== 'absolute');
+      return kids.find(c => getComputedStyle(c).flexGrow > 0) || kids[0] || null;
+    };
+    const place = () => {
+      raf = 0;
+      if (!box.isConnected) return;
+      const tg = !dirty && watched?.isConnected && watched.offsetHeight >= 40 ? watched : targetOf();
+      dirty = false;
+      if (tg !== watched) {
+        if (watched) ro.unobserve(watched);
+        watched = tg;
+        if (tg) ro.observe(tg);
+      }
+      if (box.hidden !== !tg) box.hidden = !tg;
+      if (!tg) return;
+      const h = host.getBoundingClientRect(),
+        r = tg.getBoundingClientRect(),
+        g = [r.top - h.top - host.clientTop, r.left - h.left - host.clientLeft, r.width, r.height].map(v => Math.round(v * 10) / 10)
+        .join(' ');
+      if (g === geom) return;
+      geom = g;
+      const [top, lft, w, ht] = g.split(' ');
+      box.style.cssText = `top:${top}px;left:${lft}px;width:${w}px;height:${ht}px`;
+    };
+    const later = () => raf ||= requestAnimationFrame(place);
+    const ro = new ResizeObserver(later),
+      mo = new MutationObserver(() => {
+        dirty = true;
+        later();
+      });
+    ro.observe(root);
+    mo.observe(root, {
+      childList: true
+    });
+    host.append(box);
+    later();
+    const o = {
+      host,
+      /** Bouton plein écran et puce : icône, nom et état d'après le plein écran en cours (écrit seulement si cela change). */
+      paintFull(on) {
+        if (!fbtn || fullShown === on) return;
+        fullShown = on;
+        fbtn.innerHTML = icon(on ? 'minimize' : 'maximize');
+        const label = t(on ? T.full.exit : T.full.enter);
+        fbtn.title = label;
+        fbtn.setAttribute('aria-label', label);
+        fbtn.setAttribute('aria-pressed', String(on));
+      },
+      dispose() {
+        ro.disconnect();
+        mo.disconnect();
+        if (raf) cancelAnimationFrame(raf);
+        box.remove();
+        overlays.delete(o);
+      },
+      /** Ce que le module reçoit (ctx.overlay). */
+      api: Object.freeze({
+        left,
+        right,
+        button,
+        over: el => {
+          explicit = el || null;
+          dirty = true;
+          later();
+        },
+        refresh: () => {
+          dirty = true;
+          later();
+        },
+        get full() {
+          return document.documentElement.classList.contains('f-full');
+        }
+      })
+    };
+    overlays.add(o);
+    o.paintFull(document.documentElement.classList.contains('f-full'));
+    return o;
+  }
+  /** Retire les couches de superposition posées dans host (tout si host est omis) : démontage d'un module ou du volet. */
+  function dropOverlays(host) {
+    for (const o of [...overlays])
+      if (!host || o.host === host || host.contains(o.host)) o.dispose();
   }
   // ---------------------------------------------------------------- bouton « i » de l'en-tête (état de l'appli)
   // iVAC : une pastille verte sur le « i » quand quelque chose s'applique, un pop-up qui le dit, une ligne par chose, un
@@ -776,9 +972,15 @@
     });
     if (s.syncing) return t(T.info.syncing);
     if (s.transport === 'local' || s.transport === 'none') return t(T.info.localOnly);
+    if (s.lastError && s.online && s.lastError !== 'offline') return t(T.info.error, {
+      e: ` — ${errText(s.lastError)}`
+    });
     return `${s.lastSync ? t(T.info.synced, { d: ago(s.lastSync) }) : t(T.info.never)} · ${s.pending ? t(T.info.pending, { n: s.pending }) : t(T.info.noPending)}`;
   }
-  /** Lignes du pop-up : { k, text, sub, go (adresse ou 'report:<i>'), news (compte pour la pastille) }. */
+  /** Lignes du pop-up : { k, text, sub, go (adresse, 'report:<i>', 'help', 'live'), news (compte pour la pastille verte),
+   *  attn (demande de l'attention : pastille orange du « i » sur un téléphone) }. Le trigramme absent, l'erreur, les
+   *  conflits, les écritures en attente et le hors ligne y sont des lignes : le bouton de synchronisation et la pastille
+   *  du trigramme ne sont plus dans l'en-tête du téléphone. */
   function infoItems() {
     const items = [],
       maps = APP.modules.find(m => m.id === 'maps');
@@ -800,6 +1002,13 @@
       go: `report:${i}`,
       news: true
     }));
+    if (identityLoaded && !identity.trigram) items.push({
+      k: 'who',
+      text: t(T.info.who),
+      sub: t(T.info.whoSub),
+      go: '#settings',
+      attn: true
+    });
     const s = lastStatus;
     if (s) items.push({
       k: 'data',
@@ -807,26 +1016,48 @@
       sub: t(T.info.transport, {
         x: t(T.info.tr[s.transport] || T.info.tr.local)
       }),
-      go: s.conflicts ? '#conflicts' : '#settings'
+      go: s.conflicts ? '#conflicts' : '#settings',
+      attn: ATTENTION.has(syncState(s)[0])
     });
     if (!net.online()) items.push({
       k: 'offline',
-      text: t(T.info.offline)
+      text: t(T.info.offline),
+      attn: true
+    });
+    // réservées au téléphone (l'en-tête d'un écran garde sa pastille de position et son « ? ») : cachées au-dessus de 760 px
+    if (live.active) items.push({
+      k: 'live',
+      text: t(T.info.position, {
+        s: live.source ? LIVE_NAMES[live.source] || live.source.toUpperCase() : '—'
+      }),
+      sub: t(gpsWatch !== null ? T.live.gpsOff : T.live.gpsOn),
+      go: 'live',
+      phone: true
+    });
+    items.push({
+      k: 'help',
+      text: t(T.info.help),
+      go: 'help',
+      phone: true
     });
     return items;
   }
   const infoHtml = items => items.map(it => {
-    const inner = `<i class="f-info-dot"${it.news ? '' : ' hidden'}></i><span class="f-info-txt"><span>${esc(it.text)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
-    return `<li>${it.go ? `<button type="button" class="f-info-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-info-row">${inner}</div>`}</li>`;
+    const inner = `<i class="f-info-dot"${it.news || it.attn ? '' : ' hidden'}${it.attn && !it.news ? ' data-attn' : ''}></i><span class="f-info-txt"><span>${esc(it.text)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
+    return `<li data-k="${esc(it.k)}"${it.phone ? ' data-phone' : ''}>${it.go ? `<button type="button" class="f-info-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-info-row">${inner}</div>`}</li>`;
   }).join('');
-  /** Pastille et nom du bouton « i », et le pop-up s'il est ouvert (écrit seulement si cela change). */
+  /** Pastille et nom du bouton « i », et le pop-up s'il est ouvert (écrit seulement si cela change). Pastille verte : une
+   *  nouvelle (data-badge, partout) ; orange : une chose demande de l'attention (data-attn, téléphone seulement : sur un
+   *  écran le bouton de synchronisation et la pastille du trigramme sont dans l'en-tête). */
   function paintInfo() {
     const b = $('fInfo');
     if (!b) return;
     const items = infoItems(),
       news = items.some(it => it.news),
-      label = news ? `${t(T.info.button)} — ${t(T.info.news)}` : t(T.info.button);
+      attn = items.some(it => it.attn),
+      label = news || attn ? `${t(T.info.button)} — ${t(T.info.news)}` : t(T.info.button);
     if (b.hasAttribute('data-badge') !== news) news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
+    if (b.hasAttribute('data-attn') !== attn) attn ? b.setAttribute('data-attn', '') : b.removeAttribute('data-attn');
     if (b.title !== label) b.title = label;
     if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
     if (infoBox) {
@@ -864,10 +1095,19 @@
       preventScroll: true
     });
   }
+  /** Aide de l'écran affiché (bouton ? de l'en-tête d'un écran, dernière ligne du pop-up « i » sur un téléphone) : le manuel
+   *  au chapitre du module ; un second appel, avec l'aide ouverte, la referme. */
+  function openHelp() {
+    if (over && ['help', 'roadmap'].includes(over.id)) return leaveOver();
+    const at = current?.id || (['settings', 'device'].includes(parseHash().id) ? 'settings' : '');
+    location.hash = `#help${at ? `?m=${encodeURIComponent(at)}` : ''}`;
+  }
   /** Suite d'un toucher sur une ligne : une adresse (un choix de menu : pas de « ← »), ou un CR à écrire : le vol est remis à
    *  report par pilot/handoff.json (le format de flightlog : { to, from, source, at, fresh, family, values }), puis #report?from=
    *  flightlog ; un enregistrement sans « handoff » (schéma 1) renvoie à Mes vols. */
   async function goInfo(go) {
+    if (go === 'help') return openHelp();
+    if (go === 'live') return void(gpsWatch !== null ? liveApi().disable() : liveApi().enable());
     let to = go;
     if (go.startsWith('report:')) {
       const f = pendingReports[+go.slice(7)],
@@ -896,33 +1136,6 @@
     if (location.hash === to) return go.startsWith('report:') ? route() : undefined;
     if (isModule(to.slice(1).split('?')[0]) && !to.includes('from=')) viaMenu = true;
     location.hash = to;
-  }
-  // ---------------------------------------------------------------- sous-onglets du groupe (onglet = plusieurs modules)
-  // quand l'onglet du module affiché groupe au moins deux modules inscrits au niveau de l'appareil (Préparer : fuel et
-  // atmosphere), le cadre dessine au-dessus du module une rangée de sous-onglets, un par module du groupe, de son verbe
-  // (meta du cadre : APP.modules[].label), le courant marqué ; aucun module ne connaît ses voisins. Même aspect que les
-  // onglets des primitives (.f-tabs), 44 px, téléphone et écran. Un seul module au niveau : rien.
-  /** Dessine, met à jour ou retire la rangée de sous-onglets, juste avant le module (seulement si elle change). */
-  function paintSubtabs() {
-    const view = $('fView'),
-      tb = current && !over ? tabOf(current.id) : null,
-      ids = tb ? tabVisible(tb) : [],
-      show = ids.length > 1 && ids.includes(current.id),
-      box = view.querySelector(':scope > .f-subtabs');
-    if (!show) return void box?.remove();
-    const sig = `${ids.join(',')}|${current.id}|${lang()}`;
-    if (box?.dataset.sig === sig) return;
-    const el = box || document.createElement('div');
-    el.className = 'f-tabs f-subtabs';
-    el.dataset.sig = sig;
-    el.setAttribute('role', 'group');
-    el.setAttribute('aria-label', t(tb.label));
-    el.innerHTML = ids.map(id => `<button type="button" data-id="${esc(id)}"${id === current.id ? ' aria-current="page"' : ''}>${esc(t(APP.modules.find(m => m.id === id).label))}</button>`).join('');
-    if (!box) view.insertBefore(el, view.querySelector(':scope > .f-module'));
-  }
-  /** Tout ce que le cadre dessine au-dessus du module : les sous-onglets du groupe. */
-  function paintTop() {
-    paintSubtabs();
   }
   /** Source en lecture seule des bases de référence (SIA, appareils) quand rien n'est échangé : le lanceur qui sert la
    *  page, sinon le dépôt GitHub réglé ; null sans l'un ni l'autre (site public : ces bases n'y sont jamais publiées). */
@@ -958,24 +1171,30 @@
 
   // ---------------------------------------------------------------- bouton de synchronisation
   let lastSyncState = '';
+  /** État du bouton de synchronisation et son libellé : [état, libellé]. Un seul calcul pour le bouton de l'en-tête et pour
+   *  la ligne des données du pop-up « i ». */
+  function syncState(s) {
+    if (s.syncing) return ['syncing', t(T.sync.syncing)];
+    if (s.conflicts) return ['conflicts', t(T.sync.conflicts, {
+      n: s.conflicts
+    })];
+    if (s.transport === 'local' && !s.pending) return ['local', t(T.sync.local)];
+    if (!s.online || s.lastError === 'offline') return ['offline', s.pending ? `${t(T.sync.offline)} · ${t(T.sync.pending, { n: s.pending })}` : t(T.sync.offline)];
+    if (s.lastError) return ['error', t(T.sync.error)];
+    if (s.pending) return ['pending', t(T.sync.pending, {
+      n: s.pending
+    })];
+    return ['ok', s.lastSync ? t(T.sync.ago, {
+      d: ago(s.lastSync)
+    }) : t(T.sync.ok)];
+  }
+  // états qui demandent l'attention (pastille orange du « i » sur téléphone) ; syncing, ok et local n'en demandent pas
+  const ATTENTION = new Set(['pending', 'offline', 'conflicts', 'error']);
   /** Écrit l'état du bouton (seulement s'il change). */
   function paintSync(s) {
     lastStatus = s;
     paintInfo(); // le pop-up du « i » : même état
-    let state, label;
-    if (s.syncing)[state, label] = ['syncing', t(T.sync.syncing)];
-    else if (s.conflicts)[state, label] = ['conflicts', t(T.sync.conflicts, {
-      n: s.conflicts
-    })];
-    else if (s.transport === 'local' && !s.pending)[state, label] = ['local', t(T.sync.local)];
-    else if (!s.online || s.lastError === 'offline')[state, label] = ['offline', s.pending ? `${t(T.sync.offline)} · ${t(T.sync.pending, { n: s.pending })}` : t(T.sync.offline)];
-    else if (s.lastError)[state, label] = ['error', t(T.sync.error)];
-    else if (s.pending)[state, label] = ['pending', t(T.sync.pending, {
-      n: s.pending
-    })];
-    else [state, label] = ['ok', s.lastSync ? t(T.sync.ago, {
-      d: ago(s.lastSync)
-    }) : t(T.sync.ok)];
+    const [state, label] = syncState(s);
     // infobulle : l'état, puis les écritures en attente (chemin, module, heure ; cinq au plus) et la dernière erreur
     const queue = (s.queue || []).slice(0, 5).map(q => `\n• ${q.deletion ? '✕ ' : ''}${q.path} — ${q.module || '?'}, ${tz('fmtZ', q.at)}`)
       .join('') + ((s.queue || []).length > 5 ? '\n…' : '');
@@ -985,17 +1204,7 @@
       n: s.pending,
       e: s.lastError ? ` — ${errText(s.lastError)}` : ''
     }) + queue;
-    // état court pour un écran étroit (le libellé entier reste dans l'infobulle et le nom accessible du bouton)
-    const short = {
-      ok: '✓',
-      pending: String(s.pending),
-      syncing: '⟳',
-      offline: '✕',
-      error: '✕',
-      conflicts: `! ${s.conflicts}`,
-      local: ''
-    } [state];
-    const key = JSON.stringify([state, label, title, short]);
+    const key = JSON.stringify([state, label, title]);
     if (key === lastSyncState) return;
     lastSyncState = key;
     const b = $('fSync');
@@ -1003,7 +1212,6 @@
     b.title = title;
     b.setAttribute('aria-label', label);
     b.querySelector('.f-lbl').textContent = label;
-    b.querySelector('.f-lbl-short').textContent = short;
   }
   /** Synchronise maintenant et dit le résultat (reçus, envoyés, conflits, hors ligne, erreur). */
   async function syncNow(quiet = false) {
@@ -1141,7 +1349,6 @@
     }));
     renderMenu();
     paintFixed(current?.id || ''); // le module déjà affiché peut se révéler fixe maintenant
-    paintTop(); // et son groupe d'onglets compter plusieurs modules au niveau de l'appareil
   }
   /** Menu des verbes du niveau de l'appareil (redessiné seulement quand la liste change), entrée courante marquée ; la
    *  barre d'onglets suit (screen : l'écran du cadre affiché, ou rien). */
@@ -1189,6 +1396,7 @@
       key = lang() + list.map(tb => tb.id).join(',');
     if (key !== tabsKey || !nav.children.length) {
       tabsKey = key;
+      closeTabPop();
       // data-landmark : la couleur repère du premier module du groupe (design metro) ; l'icône pleine remplace le trait
       // sur l'onglet choisi (la feuille de style montre l'une ou l'autre : la forme change, pas seulement la couleur)
       nav.setAttribute('aria-label', t(T.tabsNav));
@@ -1201,7 +1409,98 @@
       if (a.getAttribute('href') !== href) a.setAttribute('href', href);
       if ((a.getAttribute('aria-current') === 'page') !== on) on ? a.setAttribute('aria-current', 'page') : a.removeAttribute(
         'aria-current');
+      // un groupe de deux modules ou plus : son onglet choisi, touché de nouveau, ouvre la liste (popover)
+      const group = !!tb.modules && tabVisible(tb).length > 1;
+      if (a.hasAttribute('aria-haspopup') !== group) group ? a.setAttribute('aria-haspopup', 'true') : a.removeAttribute('aria-haspopup');
     }
+  }
+  // ---------------------------------------------------------------- second toucher sur l'onglet choisi : les modules du groupe
+  // pas de rangée de sous-onglets : un deuxième toucher sur l'onglet déjà choisi ouvre, au-dessus de lui, un popover qui liste
+  // les modules du groupe (verbe et icône, le courant marqué) ; un toucher en choisit un, un toucher à côté, Échap, un défilement
+  // ou un changement d'adresse le ferment. Seulement pour un groupe de deux modules ou plus au niveau de l'appareil ; sur un
+  // onglet à un seul module, le deuxième toucher ne fait rien.
+  let tabPop = null; // { el, tab, off }
+  /** Ferme le popover du groupe (focus rendu à l'onglet si focusBack). */
+  function closeTabPop(focusBack = false) {
+    if (!tabPop) return;
+    const {
+      el,
+      tab,
+      off
+    } = tabPop;
+    tabPop = null;
+    off.abort();
+    el.remove();
+    tab.removeAttribute('aria-expanded');
+    if (focusBack) tab.focus({
+      preventScroll: true
+    });
+  }
+  /** Ouvre (ou ferme, s'il l'est) le popover du groupe tb au-dessus de son onglet a. */
+  function toggleTabPop(a, tb) {
+    if (tabPop) return closeTabPop();
+    const ids = tabVisible(tb);
+    if (ids.length < 2) return;
+    const el = document.createElement('div');
+    el.className = 'f-tabpop';
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', t(tb.label));
+    el.innerHTML = ids.map(id => {
+      const m = APP.modules.find(x => x.id === id);
+      return `<button type="button" class="f-tabpop-row" data-id="${esc(id)}"${id === current?.id ? ' aria-current="page"' : ''}>${icon(m.icon)}<span>${esc(t(m.label))}</span></button>`;
+    }).join('');
+    el.style.visibility = 'hidden';
+    document.body.append(el);
+    // au-dessus de l'onglet, centré sur son icône, sans sortir de la fenêtre ; la pointe garde l'aplomb de l'onglet
+    const r = (a.querySelector('.f-tab-ico') || a).getBoundingClientRect(),
+      bar = $('fTabs').getBoundingClientRect(),
+      w = el.offsetWidth,
+      h = el.offsetHeight,
+      cx = r.left + r.width / 2,
+      x = Math.min(Math.max(cx - w / 2, 8), document.documentElement.clientWidth - w - 8);
+    el.style.left = `${Math.round(x)}px`;
+    el.style.top = `${Math.round(bar.top - h - 10)}px`;
+    el.style.setProperty('--f-pop-caret', `${Math.round(cx - x)}px`);
+    el.style.visibility = '';
+    const off = new AbortController(),
+      opt = {
+        signal: off.signal
+      };
+    tabPop = {
+      el,
+      tab: a,
+      off
+    };
+    a.setAttribute('aria-expanded', 'true');
+    // un toucher ailleurs (l'onglet lui-même bascule par son propre clic), un défilement, un changement d'adresse ou de taille
+    document.addEventListener('pointerdown', e => {
+      if (!el.contains(e.target) && !a.contains(e.target)) closeTabPop();
+    }, {
+      ...opt,
+      capture: true
+    });
+    window.addEventListener('scroll', e => {
+      if (!(e.target instanceof Node && el.contains(e.target))) closeTabPop();
+    }, {
+      ...opt,
+      capture: true,
+      passive: true
+    });
+    window.addEventListener('hashchange', () => closeTabPop(), opt);
+    window.addEventListener('resize', () => closeTabPop(), opt);
+    el.addEventListener('click', e => {
+      const row = e.target.closest('[data-id]');
+      if (!row) return;
+      const id = row.dataset.id;
+      closeTabPop();
+      if (id !== current?.id) {
+        viaMenu = true; // un choix de module, pas un passage : pas de « ← »
+        location.hash = `#${id}`;
+      }
+    }, opt);
+    el.querySelector('[aria-current]')?.focus({
+      preventScroll: true
+    });
   }
   let current = null; // { id, mod }
   /** Affiche l'écran de l'adresse (#module, #module?…, #conflicts, #settings) ; démonte le module précédent. */
@@ -1213,6 +1512,7 @@
     if (SCREENS.includes(id) && (current || over)) return openOver(id, h);
     if (over) closeOver(false);
     paintModule(id);
+    if (id !== current?.id) full = false; // le plein écran ne suit pas au module suivant
     if (isModule(id)) {
       const tb = tabOf(id);
       if (tb) lastInTab[tb.id] = id; // le toucher de l'onglet y reviendra
@@ -1228,6 +1528,7 @@
     origin = originOf(id, h.query);
     paintBack();
     const view = $('fView');
+    dropOverlays();
     view.replaceChildren();
     renderMenu(id, id);
     paintPaneButton(null);
@@ -1252,12 +1553,11 @@
       };
       moduleFixed[entry.id] = meta.fixed === true;
       paintFixed(entry.id);
-      paintTop();
       lastScreen = {
         id: entry.id,
         hash: location.hash
       };
-      await mod.mount(el, ctxFor(entry, meta, h.query));
+      await mod.mount(el, ctxFor(entry, meta, h.query, el));
       moduleHelp(entry, meta, el, view);
       // vue double : volet demandé par l'adresse (#fuel?with=maps) ou gardé pour ce module (device/layout.json)
       paintPaneButton(entry);
@@ -1293,6 +1593,7 @@
     } catch (e) {
       console.error(e);
     }
+    dropOverlays(pane.el);
     pane.el.remove();
     pane = null;
     $('fView').classList.remove('f-split');
@@ -1347,7 +1648,7 @@
       if (mod.meta?.fixed === true) sec.dataset.fixed = ''; // module de vue fixe : le cadre lui donne la hauteur du volet (--f-pane-h)
       await mod.mount(sec, ctxFor(p, mod.meta || {}, Object.freeze({
         pane: '1'
-      })));
+      }), sec, true));
     } catch (e) {
       notify(t(T.loadErr, {
         m: p.id,
@@ -1430,7 +1731,6 @@
     scr.onclick = null;
     renderMenu(current?.id || '', id);
     paintFixed(''); // un écran du cadre défile comme une page, même sur un module fixe (masqué, toujours monté)
-    paintTop();
     paintBack();
     paintToggles();
     paintPaneButton(null);
@@ -1454,7 +1754,6 @@
     if (o.sig !== mountSig()) return route(); // réglages changés : le module est remonté avec eux
     renderMenu(current?.id || '', '');
     paintFixed(current?.id || '');
-    paintTop();
     requestAnimationFrame(() => scrollTo(0, o.scroll));
   }
   /** Ferme l'écran du cadre (second clic sur son bouton, Échap) : retour du navigateur s'il n'y a eu qu'un écran,
@@ -1526,7 +1825,7 @@
 
   /** Contexte d'un module : son adaptateur de données (ses préfixes déclarés), aerodb, textes, notifications, questions,
    *  appels sortants, identité et compagnie en lecture seule, suite de l'adresse (query). */
-  function ctxFor(entry, meta, query = Object.freeze({})) {
+  function ctxFor(entry, meta, query = Object.freeze({}), root = null, inPane = false) {
     return {
       app: APP.id,
       data: FD.adapter({
@@ -1553,6 +1852,9 @@
       query,
       // l'onglet de la barre du bas qui groupe ce module (id de APP.tabs), null s'il n'en a pas
       tab: tabOf(entry.id)?.id || null,
+      // module fixe seulement : la couche de superposition de sa carte (colonnes gauche et droite, boutons ronds ; le bouton
+      // plein écran est ajouté par le cadre à la colonne de droite, sauf dans un volet) ; null sinon (INTEGRATION § 9.3)
+      overlay: meta.fixed === true && root ? makeOverlay(root, !inPane).api : null,
       // vue double : { with } le module montré à côté (ou null) ; l'événement « frame-layout » (window) suit chaque changement
       get layout() {
         return Object.freeze({
@@ -2096,6 +2398,7 @@
   /** Pastille de l'en-tête pendant un vol : la source (X-Plane, Little Navmap, GPS, IVAO, VATSIM, — en attente) ;
    *  bascule du GPS de l'appareil. */
   function paintLive() {
+    paintInfo(); // téléphone : la position réelle est une ligne du pop-up « i »
     const b = $('fLive');
     if (!b) return;
     const show = live.active;
@@ -2156,17 +2459,18 @@
     paintInfo();
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);
-    $('fHelp').onclick = () => {
-      if (over && ['help', 'roadmap'].includes(over.id)) return leaveOver();
-      const at = current?.id || (['settings', 'device'].includes(parseHash().id) ? 'settings' : '');
-      location.hash = `#help${at ? `?m=${encodeURIComponent(at)}` : ''}`;
-    };
+    $('fHelp').onclick = openHelp;
     $('fDevice').onclick = () => {
       if (over && ['settings', 'device'].includes(over.id)) return leaveOver();
       location.hash = '#settings';
     };
+    // Échap, dans l'ordre : le popover du groupe, l'écran du cadre ouvert par-dessus, le plein écran (sauf une fenêtre de
+    // question ouverte, ou un module qui a déjà pris la touche)
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && over && !document.querySelector('.f-modal')) leaveOver();
+      if (e.key !== 'Escape' || document.querySelector('.f-modal')) return;
+      if (tabPop) closeTabPop(true);
+      else if (over) leaveOver();
+      else if (full && !e.defaultPrevented) setFull(false);
     });
     $('fPane').onclick = () => togglePane();
     $('fLive').onclick = () => gpsWatch !== null ? liveApi().disable() : liveApi().enable();
@@ -2179,16 +2483,18 @@
     };
     // un verbe de la colonne ou un onglet de la barre : un choix dans le menu, pas un passage entre modules
     // (pas de « ← » vers l'écran quitté) ; la même adresse que l'actuelle ne change rien, elle ne note donc rien
+    // (second toucher sur l'onglet choisi : le popover du groupe, ou rien ; il remplace la navigation, qui perdrait la suite
+    // de l'adresse)
+    $('fTabs').addEventListener('click', e => {
+      const a = e.target.closest('a'),
+        tb = a && APP.tabs.find(x => x.id === a.dataset.tab);
+      if (!tb || a.getAttribute('aria-current') !== 'page' || over) return;
+      e.preventDefault();
+      if (tb.modules) toggleTabPop(a, tb);
+    });
     for (const nav of [$('fMenu'), $('fTabs')]) nav.addEventListener('click', e => {
       const a = e.target.closest('a');
-      if (a && a.getAttribute('href') !== location.hash) viaMenu = true;
-    });
-    // sous-onglets du groupe : un choix de module comme dans le menu
-    $('fView').addEventListener('click', e => {
-      const b = e.target.closest('.f-subtabs button');
-      if (!b || b.getAttribute('aria-current') === 'page') return;
-      viaMenu = true;
-      location.hash = `#${b.dataset.id}`;
+      if (a && !e.defaultPrevented && a.getAttribute('href') !== location.hash) viaMenu = true;
     });
     // écran devenu étroit : volet démonté (son état reste gardé) ; redevenu large : rouvert s'il l'était
     const onWidth = () => {
