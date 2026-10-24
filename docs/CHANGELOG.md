@@ -24,6 +24,8 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   default 0, in `drawSection` for the Map too): fewer level labels on a low chart, the distance axis always visible (on a 390 × 664 phone
   window the body was 95 px and the axis hidden; now 112 px and visible). Over a drawing the grip row is bare (28 px, ◀ ▶ ✕ kept) in the
   sheet's default position only: the "Profile · …" line repeated what the chart shows; expanded, collapsed and in landscape the title stays.
+  The slices' ◀ ▶ stand in a 44 px column at the right of the drawing (a row above it in landscape), as the map's chips; the cut's and the
+  slice's left gutter is measured from their level labels (54 → 33 px), for the map too.
 - **Atmosphere: the flight's grid no longer shows as a rectangle; 10× cheaper frames; an optional limit line** (`modules/atmosphere/lib/weather_map.js`,
   `texts.js`, `test/weather_map.html`, `test/weather_map_perf.html`; atmosphere DECISIONS, INTEGRATION § 6) — at a flight level the cloud fill
   came from AROME inside the grid (dry, clear) and from GFS outside (moist, grey): the fills (clouds, temperature, jet, convection) now come

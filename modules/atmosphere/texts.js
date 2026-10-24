@@ -330,6 +330,7 @@ export const TX = {
   ],
 
   // tranche
+  sliceNav: ['Tranches de la route', 'Route slices', 'Routenschnitte', 'Cortes de la ruta'],
   slicePrev: ['Tranche précédente', 'Previous slice', 'Vorheriger Schnitt', 'Corte anterior'],
   sliceNext: ['Tranche suivante', 'Next slice', 'Nächster Schnitt', 'Corte siguiente'],
   rGround: ['Au sol', 'At the ground', 'Am Boden', 'En el suelo'],

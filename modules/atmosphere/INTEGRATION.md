@@ -122,7 +122,8 @@ openData('weather', `wx:${flightKey}`, title, (w, h, el) => {
   `cloudRgb`, `dark`, `minHeight` (a height floor, default 0: the drawing fits the height given, the distance axis and
   the waypoint names always inside; a low chart labels one level in two under 160 px of plot, one in four under 110;
   60 px is the least it draws). V3_SPECIFICATION § 7.1 rule 13: no title over a drawing, the drawing at the body's
-  exact height.
+  exact height. The left gutter is measured from the level labels it draws (about 33 px for "FL350"; the surface strips'
+  labels widen it when they are shown), so the drawing starts at the body's edge.
 - `sectionPlaces(points)`: the reading places (every 50 NM, 24 at most, as Fuel), on continuous longitudes
   (`A.unwrapLons`: a route across the date line is sampled along itself, not round the world); `sectionModel` does
   the same, so a reader passing the current flight's raw points finds the same cache cells as this module. `sectionVars(levelFt, points)`: the

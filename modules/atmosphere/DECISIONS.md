@@ -22,6 +22,14 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
   default position (checked on woyczek.github.io at 390 × 664, title hidden): the user's line was likely a copy still
   in the browser's cache. Checked: 390 × 664 default bare (27 px), collapsed and expanded titled (44 px); 844 × 390
   titled in both positions; the distance axis visible in all.
+- **Second refinement** (user, on the maps module's cut: "supprimer espace jaune et texte rayé rouge, aligner boutons
+  verticalement à droite (horizontalement en paysage)"; the same template for both sheets, relay): the slices' ◀ ▶
+  leave the grip row for a 44 px column at the right of the drawing in portrait (40 px round buttons 4 px apart, aligned
+  at the top, the drawing narrowed by 44 px), a 44 px row above the drawing in the landscape column; ✕ stays in the grip
+  row, as on the map ("the bare grip keeps the bar and ✕ only"). The "yellow space" was the cut's fixed 54 px left
+  gutter: it is now measured from the level labels drawn (33 px for "FL350"), in the cut and in the slice, for the map
+  too. The slice's temperature labels go one in two when they would touch (the 319 px landscape column). Checked:
+  390 × 664 and 390 × 844 (column at x 346, no overlap with the drawing), 844 × 390 (row above), ▶ moves on.
 - **Measured** (real AROME data, LFRD → LFBD FL160, default position): 390 × 664: body 95 → 112 px, distance axis
   hidden → visible; 390 × 844: 144 → 161 px; 844 × 390 (the right column): 259 → 276 px, so the surface strips come
   back (their labels now widen the left margin instead of being cut). The slice fits its body (112 / 112 px, no

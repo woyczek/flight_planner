@@ -21,6 +21,21 @@ const n1 = v => Math.round(v * 10) / 10;
 const MIN_H = 60;
 /** Un niveau étiqueté sur combien, selon la hauteur du graphique (px) : l'axe des distances passe avant les niveaux. */
 const levelEvery = ph => ph < 110 ? 4 : ph < 160 ? 2 : 1;
+/** Pas des niveaux étiquetés (ft) selon le haut du graphique. */
+const levelStep = top => top > 25000 ? 5000 : top > 12000 ? 2000 : 1000;
+let measure = null;
+/** Largeur d'un texte (px) à une taille de police : mesurée quand la page le permet, estimée sinon. */
+const textW = (s, size) => {
+  try {
+    measure ||= document.createElement('canvas').getContext('2d');
+    measure.font = `${size}px system-ui, -apple-system, sans-serif`;
+    return measure.measureText(String(s)).width;
+  } catch {
+    return String(s).length * size * 0.58;
+  }
+};
+/** Gouttière gauche (px) d'un graphique : juste ce que demandent ses étiquettes (alignées à droite, 5 px avant l'axe). */
+const gutter = (texts, size = 10) => Math.ceil(Math.max(0, ...texts.map(x => textW(x, size)))) + 7;
 
 /** Variables de couleur posées sur la racine du SVG (jetons du cadre). */
 export const VARS = '--at-computed:var(--sog-chart-1);--at-planned:var(--sog-chart-4);--at-requested:var(--sog-chart-3);' +
@@ -324,8 +339,11 @@ export function sectionSvg(M, o) {
     H = Math.max(o.minHeight || 0, MIN_H, o.height),
     strips = o.strips !== false && H >= 260,
     SH = 10,
-    // marge gauche : les niveaux, ou les libellés des bandes de surface s'ils sont plus longs (police de 9 px)
-    l = Math.max(54, strips ? Math.max(0, ...(o.labels?.strips || []).map(x => String(x).length)) * 5.4 + 8 : 0),
+    // gouttière gauche au strict nécessaire : les étiquettes de niveau, ou les libellés des bandes de surface s'ils sont plus
+    // longs (police de 9 px)
+    l = Math.max(gutter(Array.from({
+      length: Math.floor(F.top / levelStep(F.top)) + 1
+    }, (_, k) => k ? o.fmtLvl(k * levelStep(F.top)) : '0')), strips ? gutter(o.labels?.strips || [], 9) : 0),
     r = 8,
     t = 16,
     bottom = 16 + (strips ? 5 * (SH + 2) + 6 : 0),
@@ -464,7 +482,7 @@ export function sectionSvg(M, o) {
     out.push(`<line x1="${n1(x)}" y1="${t}" x2="${n1(x)}" y2="${n1(t + ph)}" stroke="var(--sog-accent)" stroke-width="1.5"/>`);
   }
   // axes
-  const stepFt = top > 25000 ? 5000 : top > 12000 ? 2000 : 1000;
+  const stepFt = levelStep(top);
   for (let ft = 0, every = levelEvery(ph); ft <= top; ft += stepFt) {
     if ((ft / stepFt) % every) continue;
     out.push(`<text x="${l - 5}" y="${n1(yOf(ft))}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="var(--sog-muted)">${esc(ft ? o.fmtLvl(ft) : '0')}</text>`);
@@ -525,7 +543,9 @@ export function soundingSvg(col, {
 }) {
   const W = Math.max(200, width),
     H = Math.max(minHeight, MIN_H, height),
-    l = 50,
+    l = gutter(Array.from({
+      length: Math.floor(top / levelStep(top)) + 1
+    }, (_, k) => k ? fmtLvl(k * levelStep(top)) : '0')),
     r = 62,
     t = 8,
     b = 18,
@@ -544,11 +564,13 @@ export function soundingSvg(col, {
     `<line x1="0" y1="0" x2="0" y2="7" stroke="var(--at-inv)" stroke-width="1.4"/></pattern></defs>`;
   out.push(pat);
   // grille des températures et des niveaux
+  // une étiquette tous les 10 °C, ou 20 °C quand elles se toucheraient (moins de 30 px d'écart : colonne étroite)
+  const tLab = pw / ((tMax - tMin) / 10) >= 30 ? 10 : 20;
   for (let tc = tMin; tc <= tMax; tc += 10) {
-    out.push(`<line x1="${n1(X(tc))}" y1="${t}" x2="${n1(X(tc))}" y2="${n1(t + ph)}" stroke="${tc === 0 ? '#1c5cab' : 'var(--sog-chart-grid)'}" stroke-width="${tc === 0 ? 1.5 : 1}"/>`,
-      `<text x="${n1(X(tc))}" y="${n1(t + ph + 4)}" text-anchor="middle" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">${tc}°</text>`);
+    out.push(`<line x1="${n1(X(tc))}" y1="${t}" x2="${n1(X(tc))}" y2="${n1(t + ph)}" stroke="${tc === 0 ? '#1c5cab' : 'var(--sog-chart-grid)'}" stroke-width="${tc === 0 ? 1.5 : 1}"/>`);
+    if (!(tc % tLab)) out.push(`<text x="${n1(X(tc))}" y="${n1(t + ph + 4)}" text-anchor="middle" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">${tc}°</text>`);
   }
-  const stepFt = top > 25000 ? 5000 : top > 12000 ? 2000 : 1000;
+  const stepFt = levelStep(top);
   for (let ft = 0; ft <= top; ft += stepFt) {
     out.push(`<line x1="${l}" y1="${n1(Y(ft))}" x2="${n1(l + pw)}" y2="${n1(Y(ft))}" stroke="var(--sog-chart-grid)"/>`);
     if (!((ft / stepFt) % levelEvery(ph))) out.push(`<text x="${l - 5}" y="${n1(Y(ft))}" text-anchor="end" dominant-baseline="middle" font-size="10" fill="var(--sog-muted)">${esc(ft ? fmtLvl(ft) : '0')}</text>`);
