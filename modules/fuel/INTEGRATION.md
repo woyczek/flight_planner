@@ -184,6 +184,7 @@ const M = window.FuelModel,
 const L = window.FuelLevels,
   o = { profileIas: +M.modelSheet(sheet, source, apd).climb.iasKt || 0, manual: L.manualSettings(perf, sheet), curve: sheet.rpmFuelCurve },
   goal = L.goalNow(chosenGoal, o.profileIas),
-  decision = L.decisionSeries(perf, { distanceNm, wc: q.wc }, goal, o),
+  // every level of the series is a flat flight (quoteAt(h): M.quote with steps: null); the plan's real quote is D.plan
+  decision = L.requoteSeries(L.decisionSeries(perf, { distanceNm, wc: q.wc }, goal, o), quoteAt, { h: levelFt, quote: q }),
   climb = L.climbGuide(perf, levelFt, goal, o);
 ```

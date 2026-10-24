@@ -85,7 +85,7 @@ prend le relais et c'est dit (« prévision en altitude indisponible »).
 **4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
 qu'on ne peut pas tenir sur ce trajet. Chaque niveau est chiffré comme le devis, avec le vent prévu à ce niveau quand
-la météo réelle est retenue : au niveau choisi, la courbe et le devis disent le même chiffre. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
+la météo réelle est retenue : au niveau choisi, la courbe et le devis disent le même chiffre. Sur une route à paliers, tous les points de la courbe sont un vol à plat à leur niveau, sans paliers : le losange noir marque le devis réel du plan (avec les paliers de la route et le vent du plan), détaillé sous le dessin (« Plan : FL160, 856 kg, 0:54 »), et l'écart avec la courbe est le coût des paliers. L'axe du carburant suit l'unité choisie (kg ou lb). Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
 meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
 
 Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une

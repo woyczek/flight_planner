@@ -185,6 +185,96 @@
       .climb.minutes, V2.climb.fuel
     ]);
     g.rows.forEach((x, i) => check(`climb row ${x.h} ft (IAS, ROC, FF, t, f)`, [x.h, r(x.ias, 2), r(x.roc, 1), r(x.ff, 2), r(x.t), r(x.f)], V2.climb.rows[i]));
+    // décision du niveau sur une route à paliers (24 oct. 2026, bug du pic au niveau du plan) : tous les points de la série
+    // sont un vol à plat à leur niveau, le niveau du plan compris ; le devis réel du plan (paliers) est un repère à part
+    {
+      const steps = [{
+          nm: 80,
+          ft: 9000
+        }, {
+          nm: 160,
+          ft: 11000
+        }, {
+          nm: 230,
+          ft: 7000
+        }],
+        qIn = {
+          sheet,
+          source,
+          perf: m,
+          distanceNm: 300,
+          levelFt: 16000,
+          trackDeg: 90,
+          wind: {
+            dirDeg: 270,
+            speedKt: 30
+          },
+          taxiMin: 10,
+          reserveMin: 30,
+          contingencyPct: 5
+        },
+        flatAt = h => M.quote({
+          ...qIn,
+          levelFt: h,
+          steps: null
+        }),
+        qStep = M.quote({
+          ...qIn,
+          steps
+        }),
+        qFlat = flatAt(16000),
+        series = (plan) => L.requoteSeries(L.decisionSeries(m, {
+          distanceNm: 300,
+          wc: qStep.wc
+        }, goal, {
+          profileIas,
+          manual
+        }), flatAt, plan),
+        Ds = series({
+          h: 16000,
+          quote: qStep
+        }),
+        at = h => Ds.rows.find(x => x?.h === h),
+        lo = at(16000 - Ds.step),
+        mid = at(16000),
+        hi = at(16000 + Ds.step),
+        tol = k => Math.abs(mid[k] - (lo[k] + hi[k]) / 2) <= .01 * mid[k],
+        between = k => mid[k] >= Math.min(lo[k], hi[k]) * .99 && mid[k] <= Math.max(lo[k], hi[k]) * 1.01;
+      lines.push('<b>stepped route, plan FL160 (FL160 → 090 → 110 → 070), series on one basis</b>');
+      check('the stepped quote costs more than a flat flight at FL160 (the old spike)', qStep.trip > qFlat.trip * 1.01 && qStep.minutes >
+        qFlat.minutes, true);
+      check('series at FL160 = the flat quote (fuel, minutes)', [r(mid.fuel), r(mid.minutes)], [r(qFlat.trip), r(qFlat.minutes)]);
+      check('series at FL160 differs from the stepped quote', mid.fuel !== qStep.trip, true);
+      check('no spike: fuel at FL160 on the line of its neighbours (1 %)', tol('fuel'), true);
+      check('no spike: minutes at FL160 on the line of its neighbours (1 %)', tol('minutes'), true);
+      check('no spike: FL160 between its neighbours (fuel, minutes)', [between('fuel'), between('minutes')], [true, true]);
+      check('every point of the series is the flat quote at its level', Ds.real.every(x => x.fuel === flatAt(x.h).trip && x.minutes ===
+        flatAt(x.h).minutes), true);
+      check('plan marker carries the stepped quote (level, fuel, minutes, stepped)', [Ds.plan.h, Ds.plan.fuel, Ds.plan.minutes, Ds.plan
+        .stepped
+      ], [16000, qStep.trip, qStep.minutes, true]);
+      check('least fuel and fastest are the minima of the flat series', [Ds.best.fuel === Math.min(...Ds.real.map(x => x.fuel)), Ds.fast
+        .minutes === Math.min(...Ds.real.map(x => x.minutes))
+      ], [true, true]);
+      // témoin : sur l'ancienne base (devis à paliers au seul niveau du plan) le même critère détecte le pic
+      const oldD = L.requoteSeries(L.decisionSeries(m, {
+          distanceNm: 300,
+          wc: qStep.wc
+        }, goal, {
+          profileIas,
+          manual
+        }), h => h === 16000 ? qStep : flatAt(h), null),
+        oldMid = oldD.rows.find(x => x?.h === 16000);
+      check('control: the former basis (steps at the plan level only) shows the spike', Math.abs(oldMid.fuel - (lo.fuel + hi.fuel) / 2) >
+        .01 * oldMid.fuel, true);
+      const flatPlan = series({
+        h: 16000,
+        quote: qFlat
+      });
+      check('route without steps: the marker coincides with the curve', [flatPlan.plan.stepped, flatPlan.plan.fuel === flatPlan.rows.find(
+        x => x?.h === 16000).fuel], [false, true]);
+      check('no plan quote: no marker', series(null).plan, null);
+    }
     lines.unshift(`<b class="${fail ? 'ko' : 'ok'}">${pass} passed, ${fail} failed</b>`);
     document.getElementById('out').innerHTML = lines.join('\n');
     document.title = `fuel — levels bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
