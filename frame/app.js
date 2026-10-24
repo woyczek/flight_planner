@@ -70,13 +70,12 @@
     // (modules : l'onglet reste choisi tant que l'un d'eux est affiché ; le toucher ouvre le dernier montré du groupe dans
     // cette session, sinon le premier ; un id qui n'est pas inscrit plus haut est ignoré sans bruit) ou un écran du
     // cadre (screen). Un module absent de tous les onglets (website, hello) reste joignable par son adresse et dans la
-    // colonne de gauche des grands écrans. status : l'onglet qui porte la ligne d'état du vol (frame/SPEC.md § 3.1).
+    // colonne de gauche des grands écrans.
     tabs: [{
       id: 'prepare',
       label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'],
       icon: 'fuel',
-      modules: ['fuel', 'atmosphere'],
-      status: true
+      modules: ['fuel', 'atmosphere']
     }, {
       id: 'maps',
       label: ['Carte', 'Map', 'Karte', 'Mapa'],
@@ -180,9 +179,45 @@
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     tabsNav: ['Navigation principale', 'Main navigation', 'Hauptnavigation', 'Navegación principal'],
-    status: {
+    // bouton « i » de l'en-tête et son pop-up d'état (frame/SPEC.md § 3.1)
+    info: {
+      button: ['État de l’appli', 'App status', 'App-Status', 'Estado de la app'],
+      news: ['à voir', 'something to see', 'Hinweise vorhanden', 'algo que ver'],
+      title: ['État', 'Status', 'Status', 'Estado'],
       flight: ['Vol en cours › {m}', 'Flight in progress › {m}', 'Flug läuft › {m}', 'Vuelo en curso › {m}'],
-      hide: ['Masquer', 'Hide', 'Ausblenden', 'Ocultar']
+      report: ['CR à écrire pour le vol du {date} {dep}→{arr}', 'Report to write for the flight of {date} {dep}→{arr}',
+        'Bericht zu schreiben für den Flug vom {date} {dep}→{arr}', 'Informe por escribir del vuelo del {date} {dep}→{arr}'
+      ],
+      synced: ['Données : synchronisées il y a {d}', 'Data: synchronised {d} ago', 'Daten: vor {d} synchronisiert',
+        'Datos: sincronizados hace {d}'
+      ],
+      never: ['Données : jamais synchronisées', 'Data: never synchronised', 'Daten: nie synchronisiert',
+        'Datos: nunca sincronizados'
+      ],
+      syncing: ['Données : synchronisation en cours…', 'Data: synchronising…', 'Daten: Synchronisation läuft…',
+        'Datos: sincronizando…'
+      ],
+      conflicts: ['Données : {n} conflit(s) à examiner', 'Data: {n} conflict(s) to review', 'Daten: {n} Konflikt(e) zu prüfen',
+        'Datos: {n} conflicto(s) por revisar'
+      ],
+      localOnly: ['Données : sur cet appareil, rien à synchroniser', 'Data: on this device, nothing to synchronise',
+        'Daten: auf diesem Gerät, nichts zu synchronisieren', 'Datos: en este dispositivo, nada que sincronizar'
+      ],
+      pending: ['{n} écriture(s) en attente', '{n} write(s) pending', '{n} Schreibvorgang/-vorgänge ausstehend',
+        '{n} escritura(s) pendiente(s)'
+      ],
+      noPending: ['aucune écriture en attente', 'no writes pending', 'keine Schreibvorgänge ausstehend',
+        'ninguna escritura pendiente'
+      ],
+      transport: ['Échange : {x}', 'Transport: {x}', 'Übertragung: {x}', 'Transporte: {x}'],
+      tr: {
+        local: ['cet appareil', 'this device', 'dieses Gerät', 'este dispositivo'],
+        launcher: ['lanceur', 'launcher', 'Starter', 'lanzador'],
+        github: ['GitHub', 'GitHub', 'GitHub', 'GitHub']
+      },
+      offline: ['Hors ligne : travail sur la copie de l’appareil', 'Offline: working on this device’s copy',
+        'Offline: Arbeit auf der Kopie dieses Geräts', 'Sin conexión: se trabaja con la copia del dispositivo'
+      ]
     },
     device: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
     help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
@@ -248,7 +283,7 @@
   /** Durée lisible depuis une date ISO (« 4 min », « 2 h », « 3 j »). */
   const ago = iso => {
     const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1e3);
-    return s < 60 ? `${Math.round(s)} s` : s < 3600 ? `${Math.round(s / 60)} min` : s < 86400 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} j`;
+    return s < 60 ? `${Math.round(s)} s` : s < 3600 ? `${Math.round(s / 60)} min` : s < 86400 ? `${Math.round(s / 3600)} h` : `${Math.round(s / 86400)} ${t(['j', 'd', 'T', 'd'])}`;
   };
 
   // ---------------------------------------------------------------- notifications et questions (jamais de dialogue natif)
@@ -268,10 +303,10 @@
     if (!o.action) setTimeout(() => n.remove(), kind === 'err' ? 12e3 : 6e3);
   }
   /** Fenêtre de question du cadre : html du contenu, boutons ; promesse résolue par onDone(valeur) ; Échap : annuler. */
-  function modal(html, onReady) {
+  function modal(html, onReady, cls = '') {
     return new Promise(res => {
       const m = document.createElement('div');
-      m.className = 'f-modal';
+      m.className = cls ? `f-modal ${cls}` : 'f-modal';
       m.innerHTML = `<div role="dialog" aria-modal="true">${html}</div>`;
       const close = v => {
         m.remove();
@@ -676,50 +711,191 @@
   function paintFixed(id) {
     document.documentElement.classList.toggle('f-fixed', !!id && !over && moduleFixed[id] === true);
   }
-  // ---------------------------------------------------------------- ligne d'état du vol (onglet Préparer)
-  // une ligne de 44 px au-dessus du module de l'onglet qui la porte (APP.tabs[].status), d'après le vol courant que le service
-  // de position réelle relit déjà (lastFlight, mis à jour par liveCheck) : « Vol en cours › Carte » quand started n'est pas
-  // nul, toucher → la carte. Masquable pour la session (sessionStorage, par départ) ; rien quand rien ne s'applique. Le second cas
-  // (« CR à écrire pour le vol du … ») demande la logique de mes vols (CR enregistrés, journal du site, sessions du
-  // réseau) : le cadre ne la double pas, il n'est pas dessiné.
-  const STATUS_OFF = 'sogFrame:statusOff';
-  let lastFlight = null;
-  const statusOff = key => {
+  // ---------------------------------------------------------------- bouton « i » de l'en-tête (état de l'appli)
+  // iVAC : une pastille verte sur le « i » quand quelque chose s'applique, un pop-up qui le dit, une ligne par chose, un
+  // chevron quand elle mène quelque part. Rien d'autre que : vol en cours (› Carte), CR à écrire (enregistrement de cache
+  // publié par flightlog), état des données (dernière synchronisation, écritures en attente, échange utilisé), hors ligne.
+  // La pastille ne compte que les deux premières : la ligne des données et « hors ligne » sont un état, pas une nouvelle.
+  const PENDING_REPORTS = 'cache/flightlog/pending.json',
+    HANDOFF = 'pilot/handoff.json';
+  // lecture du cache de flightlog (jamais synchronisé) et passage à report (pilot/handoff.json, même politique « cache »
+  // que l'écriture de flightlog) ; le cadre n'écrit rien d'autre
+  const infoData = FD.adapter({
+    id: 'frame-info',
+    reads: [{
+      prefix: 'cache/flightlog/',
+      policy: 'cache'
+    }],
+    writes: [{
+      prefix: HANDOFF,
+      policy: 'cache'
+    }]
+  });
+  let lastFlight = null, // vol courant (liveCheck)
+    lastStatus = null, // état de la synchronisation (paintSync)
+    pendingReports = [], // CR à écrire, d'après cache/flightlog/pending.json
+    infoBox = null; // pop-up ouvert : { list, close }
+  /** CR à écrire : les vols de l'enregistrement de flightlog, ceux qui ont une date, un départ et une arrivée (50 au plus). */
+  async function readPending() {
+    let rec = null;
     try {
-      return (sessionStorage.getItem(STATUS_OFF) || '').split('\n').includes(key);
+      // sans réseau ni lecture à vide : seulement si le fichier est sur l'appareil
+      if ((await infoData.cached('cache/flightlog/')).some(d => d.path === PENDING_REPORTS)) rec = await infoData.get(PENDING_REPORTS);
     } catch {
-      return false; // stockage indisponible : masqué pour la page seulement (voir le bouton)
+      /* enregistrement illisible : aucune ligne */
     }
-  };
-  /** Dessine, met à jour ou retire la ligne d'état en tête de la vue (seulement si elle change). */
-  function paintStatus() {
-    const view = $('fView'),
-      tb = current && !over ? tabOf(current.id) : null,
-      key = tb?.status && lastFlight?.started?.at && isModule('maps') ? `flight|${lastFlight.started.at}` : '',
-      box = view.querySelector(':scope > .f-status');
-    if (!key || statusOff(key) || hiddenStatus.has(key)) return void box?.remove();
-    const sig = `${key}|${lang()}`;
-    if (box?.dataset.sig === sig) return;
-    const maps = APP.modules.find(m => m.id === 'maps'),
-      el = box || document.createElement('div');
-    el.className = 'f-status';
-    el.dataset.sig = sig;
-    el.dataset.key = key;
-    el.setAttribute('role', 'status');
-    el.innerHTML = `<a href="#maps">${icon('plane')}<span>${esc(t(T.status.flight, { m: t(maps.label) }))}</span></a><button type="button" aria-label="${esc(t(T.status.hide))}" title="${esc(t(T.status.hide))}">${Icons?.svg('x') || '✕'}</button>`;
-    if (!box) view.prepend(el);
+    const list = [];
+    for (const f of Array.isArray(rec?.flights) ? rec.flights : []) {
+      const date = str(f?.date),
+        dep = str(f?.dep).toUpperCase().slice(0, 8),
+        arr = str(f?.arr).toUpperCase().slice(0, 8);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !dep || !arr) continue;
+      list.push({
+        date,
+        dep,
+        arr,
+        // schéma 2 : handoff { family, values } (ce que flightlog remettrait à report) ; absent (schéma 1) : null
+        handoff: f.handoff?.values && typeof f.handoff.values === 'object' && !Array.isArray(f.handoff.values) ? {
+          family: str(f.handoff.family),
+          values: f.handoff.values
+        } : null
+      });
+      if (list.length >= 50) break;
+    }
+    if (JSON.stringify(list) !== JSON.stringify(pendingReports)) {
+      pendingReports = list;
+      paintInfo();
+    }
   }
-  const hiddenStatus = new Set(); // masquées pour cette page (si le stockage de session est indisponible)
-  /** « Masquer » : cette ligne ne revient plus pour ce départ, jusqu'à la fin de la session. */
-  function hideStatus(key) {
-    hiddenStatus.add(key);
-    try {
-      const l = (sessionStorage.getItem(STATUS_OFF) || '').split('\n').filter(Boolean);
-      if (!l.includes(key)) sessionStorage.setItem(STATUS_OFF, [...l, key].slice(-10).join('\n'));
-    } catch {
-      /* stockage indisponible : hiddenStatus suffit pour la page */
+  /** Date « 2026-10-23 » dans l'écriture de la langue (fr 23/10/2026). */
+  const infoDate = d => (tz('fmtDateZ', `${d}T00:00:00Z`) || d).split(' ')[0];
+  /** Texte de la ligne des données : dernière synchronisation et écritures en attente, ou ce qui l'empêche. */
+  function dataLine(s) {
+    if (s.conflicts) return t(T.info.conflicts, {
+      n: s.conflicts
+    });
+    if (s.syncing) return t(T.info.syncing);
+    if (s.transport === 'local' || s.transport === 'none') return t(T.info.localOnly);
+    return `${s.lastSync ? t(T.info.synced, { d: ago(s.lastSync) }) : t(T.info.never)} · ${s.pending ? t(T.info.pending, { n: s.pending }) : t(T.info.noPending)}`;
+  }
+  /** Lignes du pop-up : { k, text, sub, go (adresse ou 'report:<i>'), news (compte pour la pastille) }. */
+  function infoItems() {
+    const items = [],
+      maps = APP.modules.find(m => m.id === 'maps');
+    if (lastFlight?.started && maps) items.push({
+      k: 'flight',
+      text: t(T.info.flight, {
+        m: t(maps.label)
+      }),
+      go: '#maps',
+      news: true
+    });
+    pendingReports.forEach((f, i) => items.push({
+      k: 'report',
+      text: t(T.info.report, {
+        date: infoDate(f.date),
+        dep: f.dep,
+        arr: f.arr
+      }),
+      go: `report:${i}`,
+      news: true
+    }));
+    const s = lastStatus;
+    if (s) items.push({
+      k: 'data',
+      text: dataLine(s),
+      sub: t(T.info.transport, {
+        x: t(T.info.tr[s.transport] || T.info.tr.local)
+      }),
+      go: s.conflicts ? '#conflicts' : '#settings'
+    });
+    if (!net.online()) items.push({
+      k: 'offline',
+      text: t(T.info.offline)
+    });
+    return items;
+  }
+  const infoHtml = items => items.map(it => {
+    const inner = `<i class="f-info-dot"${it.news ? '' : ' hidden'}></i><span class="f-info-txt"><span>${esc(it.text)}</span>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.go ? icon('chevron-right') : ''}`;
+    return `<li>${it.go ? `<button type="button" class="f-info-row" data-go="${esc(it.go)}">${inner}</button>` : `<div class="f-info-row">${inner}</div>`}</li>`;
+  }).join('');
+  /** Pastille et nom du bouton « i », et le pop-up s'il est ouvert (écrit seulement si cela change). */
+  function paintInfo() {
+    const b = $('fInfo');
+    if (!b) return;
+    const items = infoItems(),
+      news = items.some(it => it.news),
+      label = news ? `${t(T.info.button)} — ${t(T.info.news)}` : t(T.info.button);
+    if (b.hasAttribute('data-badge') !== news) news ? b.setAttribute('data-badge', '') : b.removeAttribute('data-badge');
+    if (b.title !== label) b.title = label;
+    if (b.getAttribute('aria-label') !== label) b.setAttribute('aria-label', label);
+    if (infoBox) {
+      const html = infoHtml(items);
+      if (infoBox.html !== html) {
+        infoBox.html = html;
+        infoBox.list.innerHTML = html;
+      }
     }
-    paintStatus();
+  }
+  /** Ouvre le pop-up d'état, sous le bouton ; Échap, ✕ et un toucher à côté le ferment. */
+  async function openInfo() {
+    if (infoBox) return;
+    await modal(`<div class="f-info-head"><h2>${esc(t(T.info.title))}</h2><button type="button" data-x aria-label="${esc(t(T.close))}" title="${esc(t(T.close))}">${icon('x')}</button></div><ul class="f-info-list"></ul>`,
+      (m, close) => {
+        m.firstElementChild.setAttribute('aria-label', t(T.info.title));
+        infoBox = {
+          list: m.querySelector('.f-info-list'),
+          close,
+          html: ''
+        };
+        paintInfo();
+        m.addEventListener('click', e => {
+          const row = e.target.closest('[data-go]');
+          if (e.target === m || e.target.closest('[data-x]')) close(null);
+          else if (row) {
+            close(null);
+            goInfo(row.dataset.go);
+          }
+        });
+        m.querySelector('[data-x]').focus();
+      }, 'f-info-modal');
+    infoBox = null;
+    $('fInfo').focus({
+      preventScroll: true
+    });
+  }
+  /** Suite d'un toucher sur une ligne : une adresse (un choix de menu : pas de « ← »), ou un CR à écrire : le vol est remis à
+   *  report par pilot/handoff.json (le format de flightlog : { to, from, source, at, fresh, family, values }), puis #report?from=
+   *  flightlog ; un enregistrement sans « handoff » (schéma 1) renvoie à Mes vols. */
+  async function goInfo(go) {
+    let to = go;
+    if (go.startsWith('report:')) {
+      const f = pendingReports[+go.slice(7)],
+        flightlog = APP.modules.find(m => m.id === 'flightlog');
+      if (!f) return;
+      if (f.handoff && isModule('report')) {
+        try {
+          await infoData.put(HANDOFF, {
+            to: 'report',
+            from: 'flightlog',
+            source: flightlog ? t(flightlog.label) : 'flightlog',
+            at: new Date().toISOString(),
+            fresh: true,
+            family: f.handoff.family,
+            values: f.handoff.values
+          }, {
+            policy: 'cache'
+          });
+        } catch (e) {
+          return notify(String(e.message || e), 'err');
+        }
+        to = '#report?from=flightlog';
+      } else to = '#flightlog';
+    }
+    // même adresse : rien ne change, sauf pour un CR (report reprend le passage à son montage, donc il est monté de nouveau)
+    if (location.hash === to) return go.startsWith('report:') ? route() : undefined;
+    if (isModule(to.slice(1).split('?')[0]) && !to.includes('from=')) viaMenu = true;
+    location.hash = to;
   }
   // ---------------------------------------------------------------- sous-onglets du groupe (onglet = plusieurs modules)
   // quand l'onglet du module affiché groupe au moins deux modules inscrits au niveau de l'appareil (Préparer : fuel et
@@ -744,9 +920,8 @@
     el.innerHTML = ids.map(id => `<button type="button" data-id="${esc(id)}"${id === current.id ? ' aria-current="page"' : ''}>${esc(t(APP.modules.find(m => m.id === id).label))}</button>`).join('');
     if (!box) view.insertBefore(el, view.querySelector(':scope > .f-module'));
   }
-  /** Tout ce que le cadre dessine au-dessus du module : ligne d'état du vol, sous-onglets du groupe. */
+  /** Tout ce que le cadre dessine au-dessus du module : les sous-onglets du groupe. */
   function paintTop() {
-    paintStatus();
     paintSubtabs();
   }
   /** Source en lecture seule des bases de référence (SIA, appareils) quand rien n'est échangé : le lanceur qui sert la
@@ -785,6 +960,8 @@
   let lastSyncState = '';
   /** Écrit l'état du bouton (seulement s'il change). */
   function paintSync(s) {
+    lastStatus = s;
+    paintInfo(); // le pop-up du « i » : même état
     let state, label;
     if (s.syncing)[state, label] = ['syncing', t(T.sync.syncing)];
     else if (s.conflicts)[state, label] = ['conflicts', t(T.sync.conflicts, {
@@ -1167,6 +1344,7 @@
       const mod = await import(new URL(`modules/${p.id}/module.js`, ROOT).href);
       if (pane?.el !== el) return; // fermé entre-temps
       pane.mod = mod;
+      if (mod.meta?.fixed === true) sec.dataset.fixed = ''; // module de vue fixe : le cadre lui donne la hauteur du volet (--f-pane-h)
       await mod.mount(sec, ctxFor(p, mod.meta || {}, Object.freeze({
         pane: '1'
       })));
@@ -1629,7 +1807,7 @@
     const cur = await liveData.get(flightPath).catch(() => null),
       on = flying(cur);
     lastFlight = cur;
-    paintStatus(); // la ligne d'état de l'onglet Préparer suit le vol courant
+    paintInfo(); // le bouton « i » de l'en-tête suit le vol courant
     // une position plus ancienne que le départ (vol précédent, laissée par un appareil qui n'a pas pu l'effacer) : remise
     // à null, la carte ne la montre jamais au nouveau départ
     const stale = on && cur?.progress?.actual?.at && String(cur.progress.actual.at) < String(cur.started.at);
@@ -1967,12 +2145,15 @@
     } catch (e) {
       console.warn('frame/lib/icons.js', e);
     }
+    headIcon('fInfo', 'info');
     headIcon('fHelp', 'help');
     headIcon('fDevice', 'settings');
     document.title = `${t(APP.name)} — SOG`;
     $('fName').textContent = t(APP.name);
     $('fDevice').setAttribute('aria-label', t(T.device));
     $('fDevice').title = t(T.device);
+    $('fInfo').onclick = () => openInfo();
+    paintInfo();
     $('fHelp').setAttribute('aria-label', t(T.help));
     $('fHelp').title = t(T.help);
     $('fHelp').onclick = () => {
@@ -1996,17 +2177,11 @@
       if (o.back && history.length > 1) history.back();
       else location.hash = o.hash;
     };
-    // un verbe de la colonne, un onglet de la barre ou la ligne d'état : un choix dans le menu, pas un passage entre modules
+    // un verbe de la colonne ou un onglet de la barre : un choix dans le menu, pas un passage entre modules
     // (pas de « ← » vers l'écran quitté) ; la même adresse que l'actuelle ne change rien, elle ne note donc rien
     for (const nav of [$('fMenu'), $('fTabs')]) nav.addEventListener('click', e => {
       const a = e.target.closest('a');
       if (a && a.getAttribute('href') !== location.hash) viaMenu = true;
-    });
-    $('fView').addEventListener('click', e => {
-      const box = e.target.closest('.f-status');
-      if (!box) return;
-      if (e.target.closest('button')) hideStatus(box.dataset.key);
-      else if (e.target.closest('a')) viaMenu = true;
     });
     // sous-onglets du groupe : un choix de module comme dans le menu
     $('fView').addEventListener('click', e => {
@@ -2069,6 +2244,10 @@
     airlineData.watch('airline/', () => loadAirline(1e4));
     setInterval(() => FD.status().then(paintSync), 30e3); // « il y a 4 min » vieillit
     window.addEventListener('hashchange', route);
+    window.addEventListener('hashchange', () => infoBox?.close(
+      null)); // retour du navigateur : le pop-up ne reste pas sur l'écran quitté
+    infoData.watch('cache/flightlog/', () => readPending());
+    readPending();
     window.addEventListener('online', async () => {
       FD.status().then(paintSync);
       // démarrée sans réseau : le lanceur est recherché de nouveau, le transport suit

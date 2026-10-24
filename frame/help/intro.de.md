@@ -16,6 +16,10 @@ Computer, mit oder ohne Netz.
   Ein ausgeblendetes Werkzeug bleibt über seine Adresse erreichbar.
 - **Die Hilfe.** Jedes Werkzeug hat oben einen eingeklappten Bereich „So geht’s“; die Schaltfläche ? öffnet dieses
   Handbuch beim Kapitel des Werkzeugs.
+- **Die Schaltfläche i.** In der Kopfzeile, neben ? und ⚙: ein grüner Punkt, wenn etwas auf Sie wartet. Sie öffnet ein
+  Statusblatt: der laufende Flug (antippen, um zur Karte zu gehen), die noch zu schreibenden Berichte zu Ihren vergangenen
+  Flügen (antippen, um den vorausgefüllten Bericht zu öffnen), der Zustand der Daten (letzte Synchronisation, ausstehende
+  Schreibvorgänge, genutzter Austauschweg) und „Offline“, wenn kein Netz da ist. Esc oder ✕ schließt es.
 
 ## Daten und Synchronisation
 

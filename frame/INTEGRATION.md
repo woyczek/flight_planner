@@ -162,7 +162,7 @@ it**; it reads at most `ctx.tab`.
 ```js
 APP.tabs = [
   { id: 'prepare',   label: ['Préparer', 'Prepare', 'Vorbereiten', 'Preparar'], icon: 'fuel',
-    modules: ['fuel', 'atmosphere'], status: true },
+    modules: ['fuel', 'atmosphere'] },
   { id: 'maps',      label: ['Carte', 'Map', 'Karte', 'Mapa'],                  icon: 'map',  modules: ['maps'] },
   { id: 'report',    label: ['CR', 'Report', 'Bericht', 'Informe'],             icon: 'edit', modules: ['report'] },
   { id: 'flightlog', label: ['Vols', 'Flights', 'Flüge', 'Vuelos'],             icon: 'list', modules: ['flightlog'] },
@@ -184,7 +184,6 @@ APP.tabs = [
   module a row of sub-tabs (the primitives' `.f-tabs`), one per module, with the verb of `APP.modules[].label`, the
   current one marked, 44 px high; a touch switches the module (`#fuel`, `#atmosphere`). The module does nothing for
   it and must not draw a row of its own to reach its siblings; its internal tabs (Fuel's Plan / Sheets) stay its own.
-- **`status: true`**: the tab whose modules get the flight status line above them (SPEC § 3.1).
 - **`ctx.tab`**: the id of the tab that groups the module (`'prepare'` for fuel and atmosphere), `null` if none. For a
   module that wants to know its group; it never opens or changes a tab.
 
@@ -198,7 +197,9 @@ A module that is a map plus a sheet (maps) declares `fixed: true` in `meta`. The
   or down to the bottom of the window (screen), **with no padding** (the module draws its own margins);
 - the module's root (`section.f-module`, the `el` of `mount`) is `height: 100%; min-height: 0; display: flex;
   flex-direction: column`, so a map can take `flex: 1 1 0; min-height: 0` and a sheet a fixed height with
-  `overflow: auto` under it;
+  `overflow: auto` under it. **This rule has no weight** (`:where()`): a module that wants another layout sets its own
+  `display` on its root (`[data-module="maps"] { display: grid }`) and wins with no `!important`; a module that sets
+  none keeps the column;
 - no folded help panel and no welcome card above it (the ? button opens the module's chapter);
 - nothing else changes: `fixed` absent is today's page.
 
@@ -212,3 +213,57 @@ What the module writes (its own sheet, scoped to `[data-module="<id>"]`):
 `modules/hello` is not changed (it stays the plain example); to try `fixed`, copy it to a scratch module whose `meta` has
 `fixed: true`, or intercept `modules/hello/module.js` as the frame agent's test did (`frame/DECISIONS.md`, 24 Oct 2026).
 
+**Heights the frame gives** (CSS variables of `:root` in `frame/frame.css`; a module never copies their numbers):
+
+| Variable | What it is | Value |
+| --- | --- | --- |
+| `--f-head-h` | the header, one row at every width and state | `57px` |
+| `--f-vh` | the window's height | `100dvh` (`100vh` where `dvh` is unknown) |
+| `--f-view-h` | the height a fixed module may fill | `--f-vh` − `--f-head-h` (− `--f-tab-space`, the bar, on a phone) |
+| `--f-split-h` | the main module of a dual view (`#maps?with=fuel`) | `--f-vh` − `--f-head-h` − 2 × 16 px (the view's margins) |
+| `--f-pane-h` | the module in the pane (`#fuel?with=maps`) | the pane (`--f-vh` − `--f-head-h` − 29 px) − its 44 px close bar |
+
+`--f-view-h` is **context-aware**: on `.f-view.f-split` it equals `--f-split-h`, inside `.f-pane` it equals `--f-pane-h`.
+`height: var(--f-view-h)` is therefore right in the plain fixed view, in the split main and in the pane.
+
+- **The frame already applies them to a module that declares `meta.fixed`**: in the split main (`html.f-fixed .f-view.f-split >
+  .f-module`) the root is `--f-split-h` high; in the pane the frame marks the module's root `data-fixed` and
+  `.f-pane > .f-module[data-fixed]` makes it `--f-pane-h` high (a flex column, like the plain fixed view). So the pane
+  and split cases need no height of the module's own: a module that copied `100dvh − 86 px − 44 px` or `100dvh − 57 px − 32 px`
+  can drop both. Its own `height` or `display` still wins (the rules have no weight).
+- A module that is not `fixed` gets nothing: its pane has the natural height of its content (the pane scrolls beyond
+  `--f-pane-max-h`).
+- The header is exactly `--f-head-h` in every state, so these numbers hold after Settings, help or a module's "←".
+
+## 10. What the frame reads from modules' caches
+
+The frame never calls a module; it only reads **cache records** a module publishes (policy `cache`: this device only,
+never synchronised), through the data layer, as it reads the current flight. A module that publishes one declares the
+prefix in its `meta.writes` with `policy: 'cache'`.
+
+### 10.1 `cache/flightlog/pending.json` (written by flightlog, read for the "i" button)
+
+```json
+{ "schema": 2, "updated_at": "2026-10-24T10:00:00Z",
+  "flights": [ {
+    "date": "2026-10-23", "dep": "LFRS", "arr": "LFML", "registration": "F-ZBMC", "source": "website",
+    "handoff": { "family": "AIRBORNE",
+      "values": { "metadata.date": "2026-10-23", "aircraft.0.callsign": "…", "aircraft.0.type": "…",
+        "aircraft.0.registration": "F-ZBMC", "navigation.dep": "LFRS", "navigation.arr": "LFML" } } } ] }
+```
+
+- One entry per flight **a report is still to be written for** (flightlog's own logic: reports saved, website log, network
+  sessions; the frame does not duplicate it). `source`: `website`, `ivao` or `vatsim`. Absent file, no `flights` or an empty
+  list: no line, no badge.
+- Required per entry: `date` (`YYYY-MM-DD`, UTC), `dep`, `arr`. `registration` and `source` are informative. Entries
+  without a valid date, `dep` or `arr` are ignored; at most 50 are read.
+- **`handoff`** (schema 2) is what flightlog would hand to report for that flight: `{ family, values }` (`values`: mission
+  paths as in `modules/flightlog/SPEC.md` § 5). A schema 1 entry has none.
+- **What a touch on the line does.** With a `handoff`, the frame writes `pilot/handoff.json` (policy `cache`, the same
+  record and policy as flightlog's own hand-over) through its data adapter:
+  `{ to: 'report', from: 'flightlog', source: <"My flights" in the device's language>, at: <ISO now>, fresh: true, family,
+  values }`, then opens `#report?from=flightlog` (report takes the hand-over at its mount, as for flightlog's own
+  "Write the report", and the header shows "← My flights"). Without `handoff`, it opens `#flightlog`. `to: 'report'` is
+  required by report (`takeHandoff`), whatever the brief of the day says.
+- The frame redraws the badge and the pop-up when the record changes (`watch` on `cache/flightlog/`).
+- The writer republishes the whole file when its list changes (`updated_at`); an empty `flights` when nothing is left.

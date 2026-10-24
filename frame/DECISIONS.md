@@ -844,6 +844,85 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - **Not done / to see**: no iOS device (the bar's safe area and the blur of `cupertino` are untested there); `atmosphere`'s
     own commit (c1ce8886 on GitHub) was not seen; `frame/lib/test` has no test of the bar (tests were Playwright scripts
     outside the repository).
+- **24 Oct 2026 — Lot: the "i" status button of the header, a one-row header, heights for modules in the dual view, a weaker
+  `display` rule** (asked by the cloud relay, holding the ergonomics role, from the user's decisions of 24 Oct; branch
+  `v3-cadre-info` from `v3` 58a43041d; `docs/technique/V3_SPECIFICATION.md` § 7.1, "Answers of the user, 24 Oct (afternoon)").
+  - **1. The status line becomes the "i" button.**
+    - Removed: the status line of the Préparer tab, `status: true` of `APP.tabs`, `paintStatus` / `hideStatus`, the
+      `sessionStorage` key `sogFrame:statusOff`, the `.f-status` rules (also in the print list of `primitives.css`).
+    - Added: `#fInfo` (icon `info`, already in `icons.js`), before ? and ⚙; a badge drawn by `#fInfo[data-badge]::after` (a
+      `--sog-ok` dot inside the button, so the header's `overflow: hidden` cannot clip it; no extra DOM that `headIcon`
+      would wipe); a pop-up that is the frame's question window (`modal()`, now with a class parameter) placed under the
+      header on the right (`.f-info-modal`), not a new primitive: Escape and the document-level key handling are the
+      existing ones, ✕ and a touch outside close it, a change of address closes it, and it follows the state while open.
+    - **Judgement calls.** The badge counts "Vol en cours" and "CR à écrire" only; the data line and the offline line are
+      always / often there and are a state, not news, so "no badge when only the data line applies" extends to the offline
+      line. The data line is always listed (the pop-up is where the synchronisation state lives on a phone, where the header
+      shows only a dot and a figure); with the local transport it says "on this device, nothing to synchronise" instead of
+      "synchronised n min ago". Its touch goes to Settings (the synchronisation control), or `#conflicts` when there are
+      conflicts. A started flight needs only `started` not null, as the user wrote (the old line also required `started.at`);
+      no 24 h limit, as before. The "Flight in progress" line is listed only if the maps module is registered.
+    - `ago()` now says the day unit in the language (j / d / T / d): it said "3 j" in English too (also in the header's
+      sync label).
+    - **The pending record** `cache/flightlog/pending.json` is read through a frame adapter (`frame-info`) that declares
+      `reads: cache/flightlog/` (policy cache) and `writes: pilot/handoff.json` (policy cache, the same record and policy as
+      flightlog's own hand-over): `data.cached()` first, `get` only if the file is on the device, because a `get` of an
+      absent file would send a remote transport looking for it in the tree. `watch('cache/flightlog/')` redraws.
+      Contract: INTEGRATION § 10.1. **Schema 2** (the relay's messages of the day, flightlog commit 1f52c19a9): each entry
+      has `handoff: { family, values }`; a touch writes `pilot/handoff.json` = `{ to: 'report', from: 'flightlog', source:
+      "Mes vols" in the device's language, at, fresh: true, family, values }` then opens `#report?from=flightlog`. **`to:
+      'report'` is mine to add: the relay's first message said `{ fresh, values }` only, but report's `takeHandoff` ignores a
+      record without it.** An entry without `handoff` (schema 1) opens `#flightlog`. The query carries only `from=flightlog`
+      (the earlier brief's `date`, `dep`, `arr` in the address are dropped on the relay's later word: report ignores
+      `ctx.query` and reads the hand-over).
+    - A touch on a CR line that is already at the same address calls `route()` again (report takes the hand-over at its
+      mount); other lines do nothing in that case. An address chosen in the pop-up is a menu choice (no "←" to the screen left),
+      except `#report?from=flightlog` (an explicit passage: "← Mes vols").
+  - **2. The header height bug (57 → 73 px).**
+    - **Cause**: the header's back button is `#fBack.f-back`, and `frame.css` also had a generic rule `.f-back { margin: 4px 0
+      var(--sog-gap) }` meant for the "←" paragraph (`<p class="f-back">`) of help and join pages. The 4 + 12 px of margin made
+      the button 44 + 16 = 60 px in a row that sized itself to its tallest child: header 6 + 60 + 6 + 1 = 73 px. It showed
+      every time the back button was shown: `#report` after the map, `#report?from=maps`, and also `#maps` itself when it
+      is reached with a back button (`#maps?from=report`, or a passage from another module), which is the maps lot's "stays so
+      on returning to `#maps`". Settings and help have no back button (they open over the module) and kept 57 px; a plain visit
+      of `#maps`, the browser's back and the "←" of the header (it hides the button on arrival) give 57 px again.
+    - **Fix, in depth**: (a) the help rule is scoped to `p.f-back`; (b) `.f-head > * { margin-top: 0; margin-bottom: 0 }`; (c) the
+      header is `height: var(--f-head-h)` (57 px) with `flex-wrap: nowrap` and `overflow: hidden`: a row can no longer grow, whatever
+      is put in it. `--f-head-h` replaces the 57, 70 and 86 of the rail and pane rules.
+    - **Measured** (Playwright, 390 × 844 touch and 1280 × 800, a `git archive` of `v3` 58a43041d against this tree): **before**
+      73 px at `#report` and `#report?from=maps` (back button shown), 57 px at `#maps`, at Settings and after "←" or the
+      browser's back; **after** 57 px in all of these, and at 360 px, in the seven designs, also after help opened and closed.
+  - **3. Heights for modules in the dual view.** `:root` gets `--f-head-h`, `--f-vh` (dvh), `--f-view-h` (context-aware: the
+    plain fixed view; `.f-view.f-split` sets it to `--f-split-h`; `.f-pane` to `--f-pane-h`), `--f-split-h`, `--f-pane-h`
+    (INTEGRATION § 9.2 gives the table). **The frame also applies them**: `html.f-fixed .f-view.f-split > .f-module` gets
+    `--f-split-h`, and the pane's module gets `data-fixed` (set by `openPane` from `meta.fixed` after the import, before
+    `mount`) and `.f-pane > .f-module[data-fixed]` is `--f-pane-h` high, a flex column. So maps can drop both of its copies
+    (`100dvh − 86 px − 44 px`, `100dvh − 57 px − 32 px`) in its next lot. The pane keeps its `max-height` (now a variable,
+    `--f-pane-max-h`) and its 44 px close bar. A module that is not `fixed` is untouched. Judgement call: I did not change the
+    pane's vh to dvh for the sake of it, it comes with `--f-vh` (same on a screen).
+  - **4. The `display` rule.** `html.f-fixed .f-view:not(.f-split):not(.f-over) > .f-module` (five classes, which forced
+    `!important` on the maps tuning page) is now wrapped in `:where()`: no weight, the same layout for a module that sets no
+    `display`. The two new rules (split main, pane module) are weightless too. Checked: `[data-module="maps"] { display: grid }`
+    wins without `!important`; without it the root is still a flex column.
+  - **Designs.** No sheet needed a change: the header is 57 px and the "i" button fits in all seven (the `.f-head button`
+    rules of metro, swiss, cupertino and material give it the same look as ? and ⚙); the pop-up's rows are overridden at
+    `.f-info-modal .f-info-row` (two classes) so the flat-button borders of metro and swiss do not hit them.
+  - **Checked** (Playwright + Chromium, 390 × 844 touch, 360 and 1280 × 800, seven designs set through `device/design.json`;
+    scripts outside the repository): the "i" button 44 × 44 and inside the window at 360 px (back button shown, page 360 px
+    wide); no badge with nothing, badge with a seeded started flight (written through `FrameData`) and with a seeded
+    `pending.json` of two flights; the pop-up's lines in the four languages; rows of 44 px or more (57 / 58 px for two lines),
+    ✕ 44 px, the sheet inside the window; Escape and ✕ close it; touches: flight → `#maps`, CR with a `handoff` → `#report?from=flightlog`
+    (report took the hand-over, the record was consumed, "← Mes vols" shown, header 57 px), CR without → `#flightlog`, data →
+    `#settings`; the offline line when the browser goes offline; header 57 px in all the cases above; pane module 670 px =
+    800 − 86 − 44 and pane 714 px, split main 711 px = 800 − 57 − 32, no page scroll, in standard, metro, swiss, cupertino and
+    material; phone fixed view 730 px (844 − 57 − 57); weightless `display` rule; no `pageerror`. `tools/format_sources.py` run;
+    syntax trees (acorn) and CSS rules (the browser) before / after identical for the four formatted files.
+  - **Not done**: no real flightlog record (the lot of flightlog is parallel: the seeded record follows the contract given by the
+    relay); no iOS device (the pop-up under the notch and the badge ring on the blurred cupertino header are untested there);
+    the "i" pop-up is a centred-right sheet, not an anchored popover with an arrow (a veil covers the page). `modules/*` untouched:
+    maps still carries its copies of the two heights and its `!important`, to drop in its next lot.
+  - **Docs**: SPEC § 3.1 (button, one-row rule, heights, weightless rule), INTEGRATION § 9.1 / 9.2 / new § 10, help intro ×4
+    (a bullet on the "i" button; `pilot.*.md` regenerated), CHANGELOG, `docs_bundle.js`.
 - **24 Oct 2026 — orientation locked to portrait** (user: "en attendant, on verrouille l'orientation"; done by the cloud
   relay, `relais-cloud.md`). `orientation: portrait` in the manifest and `screen.orientation.lock('portrait')` tried
   at start when the application runs standalone (ignored otherwise: a Safari page cannot be locked). Not done in

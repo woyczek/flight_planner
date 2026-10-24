@@ -8,6 +8,29 @@
 @import url("design/swiss.css");
 @import url("design/cupertino.css");
 @import url("design/material.css");
+/* Mesures du cadre, données aux modules (frame/INTEGRATION.md § 9.2) : un module ne recopie jamais ces nombres.
+   --f-head-h : l'en-tête, une seule ligne (6 + 44 + 6 + filet de 1 px), à tout état et toute largeur.
+   --f-vh : la hauteur de la fenêtre (dvh quand le navigateur le sait : la barre d'adresse d'un téléphone n'y compte pas).
+   --f-view-h : la hauteur dont dispose un module de vue fixe (html.f-fixed) : la fenêtre moins l'en-tête (et la barre du
+   bas sur téléphone) ; elle vaut --f-split-h dans une vue double (.f-view.f-split) et --f-pane-h dans le volet (.f-pane),
+   donc « height: var(--f-view-h) » est juste partout.
+   --f-split-h : le module principal d'une vue double fixe (la vue a 16 px de marge en haut et en bas).
+   --f-pane-h : le module du volet (le volet moins sa barre de fermeture de 44 px). */
+:root {
+  --f-head-h: 57px;
+  --f-vh: 100vh;
+  --f-view-pad: 16px;
+  --f-pane-top: calc(var(--f-head-h) + 13px);
+  --f-pane-max-h: calc(var(--f-vh) - var(--f-head-h) - 29px);
+  --f-view-h: calc(var(--f-vh) - var(--f-head-h));
+  --f-split-h: calc(var(--f-vh) - var(--f-head-h) - 2 * var(--f-view-pad));
+  --f-pane-h: calc(var(--f-pane-max-h) - var(--sog-touch))
+}
+@supports (height: 100dvh) {
+  :root {
+    --f-vh: 100dvh
+  }
+}
 * {
   box-sizing: border-box
 }
@@ -55,9 +78,20 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   padding: 0;
   overflow: hidden
 }
-html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
+/* :where() : aucun poids. Le module qui pose son propre display (grille, bloc) l'emporte sans !important ; celui qui n'en pose
+   pas garde la colonne de la vue fixe */
+:where(html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module) {
   flex: 1 1 0;
   height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column
+}
+/* vue double : le module principal fixe a la hauteur de la vue moins ses marges ; le module fixe du volet, celle du volet
+   moins sa barre (data-fixed est posé par le cadre d'après meta.fixed) */
+:where(html.f-fixed .f-view.f-split:not(.f-over)>.f-module),
+:where(.f-pane>.f-module[data-fixed]) {
+  height: var(--f-view-h);
   min-height: 0;
   display: flex;
   flex-direction: column
@@ -72,9 +106,17 @@ html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
   gap: 8px;
   padding: 6px 12px;
   min-width: 0;
+  /* une seule ligne de --f-head-h : jamais plus haut, quel que soit l'état (retour, pastilles, écran du cadre) ; ses enfants
+     n'ont pas de marge verticale (la règle « p.f-back » de l'aide ne les atteint plus, et rien ne les y remettrait) */
+  height: var(--f-head-h);
+  flex-wrap: nowrap;
   overflow: hidden;
   background: var(--sog-surface);
   border-bottom: 1px solid var(--sog-border)
+}
+.f-head>* {
+  margin-top: 0;
+  margin-bottom: 0
 }
 .f-head .f-name {
   font-weight: 700;
@@ -127,16 +169,16 @@ html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
     opacity: .3
   }
 }
-/* colonne des verbes collée sous l'en-tête (57 px) : elle reste à l'écran quand la page défile (aide, réglages) */
+/* colonne des verbes collée sous l'en-tête (--f-head-h) : elle reste à l'écran quand la page défile (aide, réglages) */
 .f-nav {
   grid-area: nav;
   padding: 10px 8px;
   border-right: 1px solid var(--sog-border);
   background: var(--sog-surface);
   position: sticky;
-  top: 57px;
+  top: var(--f-head-h);
   align-self: start;
-  height: calc(100vh - 57px);
+  height: calc(var(--f-vh) - var(--f-head-h));
   overflow: auto
 }
 /* écran du cadre par-dessus un module : le module (et son volet) masqué, pas démonté ; l'écran prend toute la zone, vue
@@ -284,10 +326,14 @@ html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
   grid-column: 2;
   grid-row: 1 / span 20;
   position: sticky;
-  top: 70px;
-  max-height: calc(100vh - 86px);
+  top: var(--f-pane-top);
+  max-height: var(--f-pane-max-h);
   overflow: auto;
-  min-width: 0
+  min-width: 0;
+  --f-view-h: var(--f-pane-h)
+}
+.f-view.f-split {
+  --f-view-h: var(--f-split-h)
 }
 @media (max-width: 979px) {
   .f-pane,
@@ -429,7 +475,9 @@ html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
 .f-toc li.f-toc2 a {
   padding-left: 16px
 }
-.f-back {
+/* lien « ← » en tête d'un chapitre d'aide (p.f-back) : pas le bouton de retour de l'en-tête (.f-head .f-back), qui partage la
+   classe et à qui cette marge de 16 px donnait 73 px de haut */
+p.f-back {
   margin: 4px 0 var(--sog-gap)
 }
 @container (max-width: 760px) {
@@ -664,39 +712,104 @@ html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
   display: grid;
   gap: 12px
 }
-/* ligne d'état du vol, en tête de l'onglet Préparer (frame/app.js, paintStatus) : 44 px, un lien et « Masquer » */
-.f-status {
-  display: flex;
-  align-items: stretch;
-  min-height: var(--sog-touch);
-  margin: 0 0 var(--sog-gap);
-  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface));
-  border: 1px solid var(--sog-accent);
-  border-radius: var(--sog-radius)
+/* bouton « i » de l'en-tête : pastille verte quand quelque chose s'applique (vol en cours, CR à écrire), dessinée dans le
+   bouton (les bords de l'en-tête rognent ce qui dépasse) */
+#fInfo {
+  position: relative
 }
-.f-status a {
+#fInfo[data-badge]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sog-ok);
+  box-shadow: 0 0 0 2px var(--sog-surface)
+}
+/* pop-up d'état : une feuille sous l'en-tête, à droite, sous le « i » ; une ligne de 44 px au moins par information */
+.f-modal.f-info-modal {
+  place-items: start end;
+  padding: calc(var(--f-head-h) + 8px) 8px 8px
+}
+.f-info-modal>div {
+  width: min(420px, 100%);
+  max-height: calc(var(--f-vh) - var(--f-head-h) - 16px - var(--f-tab-space, 0px));
+  overflow: auto;
+  padding: 0;
+  gap: 0
+}
+.f-info-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  flex: 1;
-  min-width: 0;
-  padding: 0 12px;
-  color: var(--sog-fg);
-  font-weight: 600;
-  text-decoration: none
+  padding: 0 4px 0 16px
 }
-.f-status a span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap
+.f-info-head h2 {
+  margin: 0;
+  font-size: 1rem
 }
-.f-status button {
-  flex: none;
+.f-info-head button {
   width: var(--sog-touch);
   padding: 0;
+  flex: none
+}
+.f-info-list {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+.f-info-modal .f-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--sog-touch);
+  padding: 6px 12px 6px 16px;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--sog-border);
+  border-radius: 0;
   background: transparent;
-  border-color: transparent
+  box-shadow: none;
+  color: var(--sog-fg);
+  font: inherit;
+  text-align: left
+}
+.f-info-modal button.f-info-row {
+  cursor: pointer
+}
+.f-info-modal button.f-info-row:active {
+  background: color-mix(in srgb, var(--sog-accent) 12%, var(--sog-surface))
+}
+.f-info-txt {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere
+}
+.f-info-txt small {
+  color: var(--sog-muted);
+  font-size: var(--sog-size-s)
+}
+.f-info-row .f-icon {
+  flex: none;
+  color: var(--sog-muted)
+}
+.f-info-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sog-ok)
+}
+/* pas de pastille : sa place reste vide, les textes restent alignés */
+.f-info-dot[hidden] {
+  display: block;
+  visibility: hidden
 }
 /* barre du bas : seulement sur téléphone (la colonne des verbes la remplace sur un écran) */
 .f-tabbar {
@@ -708,7 +821,9 @@ html.f-fixed .f-view:not(.f-split):not(.f-over)>.f-module {
 @media (max-width: 760px) {
   :root {
     --f-tab-h: 56px;
-    --f-tab-space: calc(var(--f-tab-h) + 1px + env(safe-area-inset-bottom, 0px))
+    --f-tab-space: calc(var(--f-tab-h) + 1px + env(safe-area-inset-bottom, 0px));
+    /* la vue fixe s'arrête à la barre du bas */
+    --f-view-h: calc(var(--f-vh) - var(--f-head-h) - var(--f-tab-space))
   }
   body {
     grid-template-columns: minmax(0, 1fr);

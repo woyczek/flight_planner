@@ -15,6 +15,10 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
   herramienta oculta sigue accesible por su dirección.
 - **La ayuda.** Cada herramienta tiene arriba un panel plegado «Cómo usarlo»; el botón ? abre este manual en el
   capítulo de la herramienta.
+- **El botón i.** En la cabecera, junto a ? y ⚙: un punto verde cuando algo le espera. Abre una hoja de estado: el vuelo en
+  curso (toque para ir al Mapa), los informes por escribir de sus vuelos pasados (toque para abrir el informe ya
+  rellenado), el estado de los datos (última sincronización, escrituras pendientes, vía de intercambio usada) y «Sin
+  conexión» cuando no hay red. Esc o ✕ la cierra.
 
 ## Datos y sincronización
 

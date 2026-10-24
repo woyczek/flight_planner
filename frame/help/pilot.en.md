@@ -15,6 +15,10 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays
   reachable by its address.
 - **Help.** Each tool has a folded "How to use" panel at its top; the ? button opens this manual at the tool's chapter.
+- **The i button.** In the header, next to ? and ⚙: a green dot when something is waiting for you. It opens a status
+  sheet: the flight in progress (touch to go to the Map), the reports still to write for your past flights (touch to open
+  the report, pre-filled), the state of the data (last synchronisation, pending writes, the exchange in use) and "Offline"
+  when there is no network. Escape or ✕ closes it.
 
 ## Data and synchronisation
 
