@@ -58,6 +58,12 @@
       id: 'website',
       label: ['Site', 'Website', 'Website', 'Sitio'],
       icon: 'globe'
+    }, {
+      // maquette (meta.level 3 : menu au niveau « complet » seulement, #atmosphere à tout niveau) ; sa place durable,
+      // onglet ou écran de Carte ou de Carburant, reste à trancher (modules/atmosphere/DECISIONS.md, 24 oct 2026)
+      id: 'atmosphere',
+      label: ['Atmosphère', 'Atmosphere', 'Atmosphäre', 'Atmósfera'],
+      icon: 'layers'
     }]
   };
   // module d'exemple pour les développeurs (modules/hello/, frame/INTEGRATION.md) : absent de l'appli ; il rejoint le

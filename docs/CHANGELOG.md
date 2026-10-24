@@ -55,18 +55,20 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 - **Technical debt, map module** (`docs/technique/DETTE_TECHNIQUE.md`, new section) — five findings of the user on 23 October:
   the map stops at the antimeridian; the aerodrome card sometimes misplaced and impossible to close; SFC–UNL volumes
   drawn; a tap on an empty spot does not close the card; VFR text written over the map. Each with its cause and what to do.
-- **Labs: route atmosphere mock-up** (`labs/atmosphere/`, README) — a standalone page on the current flight: a
-  cross-section along the route (cloud by level, isotherms, inversions, indicative icing, density altitude, wind,
-  terrain) with the requested, planned and computed (climb / descent) paths, each place read at the time the flight
-  passes it; a map at the same altitudes (isobars, isotherms, cloud, wind; constant-altitude isobars aloft); vertical
-  slices; a table along the trajectory; METAR / TAF of the aerodromes. Open-Meteo pressure levels, offline
-  demonstration data (`?donnees=demo`). French only for now. Sparing with Open-Meteo's free quota: nothing is
-  asked when the page opens (only what the device already keeps is shown; « Charger » reads the forecast); answers
-  are kept on the device (Cache API) per model and places, valid for the model run they came from, and only the
-  missing variables are asked (another level does not read the others again); the route reads its levels up to the
-  top of the cross-section only; a local tally waits rather than exceed 600 calls a minute and stops before
-  10,000 a day; the status line gives the calls spent by each load; the pages' security policy (`tools/csp_policy.py`) allows
-  `customer-api.open-meteo.com` (customer key). Roadmap: `labs/atmosphere/ROADMAP.md`.
+- **Atmosphere module (mock-up, level 3)** (`modules/atmosphere/`: SPEC, INTEGRATION, DECISIONS, ROADMAP;
+  `frame/app.js`; bench `modules/atmosphere/test/weather_store.html`) — the atmosphere along the current flight, born
+  as the `labs/atmosphere` page (which now forwards to `#atmosphere`): a cross-section along the route (cloud by level,
+  isotherms, inversions, indicative icing, density altitude, wind, terrain) with the requested, planned and computed
+  (climb / descent) paths, each place read at the time the flight passes it; a map at the same altitudes (isobars,
+  isotherms, cloud, wind; constant-altitude isobars aloft); vertical slices; a table along the trajectory; METAR / TAF
+  of the aerodromes; offline demonstration (`#atmosphere?donnees=demo`). Everything through the frame (`ctx.data`
+  for the current flight, read only; `ctx.net` for Open-Meteo, METAR and TAF, the avwx key added by the frame;
+  `ctx.aerodb` for the names of a route text), four languages, `--sog-*` tokens. **Shared weather cache**
+  `cache/weather/<model>/<cell>/<day>.json` (cells at the model's resolution, 0.1° floor; valid for the model run;
+  only the missing cells, days and variables are asked; a tally waits under 600 calls a minute and stops before
+  10,000 a day; past days removed), written to move unchanged into the frame lot `frame/weather`. Nothing is asked
+  when the screen opens; sampling as Fuel (50 NM, 24 places at most): a 370 NM flight costs ≈ 295 weighted calls once,
+  then 0. In the menu at the "full" usage level only; its lasting place (a tab of Map or Fuel) is to be decided.
 - **Map: no town named twice, ETA never over an airfield** (`modules/maps/module.js`, `render.js`; SPEC, DECISIONS,
   help ×4) — the base map's own place names are hidden while our towns are drawn (shown again otherwise); a point's ETA
   is placed with the route labels, under its name, before the aerodromes.

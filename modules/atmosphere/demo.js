@@ -6,7 +6,7 @@
 
 import {
   LEVELS
-} from '../../modules/fuel/winds.js';
+} from '../fuel/winds.js';
 
 const R = Math.PI / 180,
   G = 9.80665,

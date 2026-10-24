@@ -11,7 +11,7 @@ import {
   isaC,
   modelFor,
   samples
-} from '../../modules/fuel/winds.js';
+} from '../fuel/winds.js';
 
 export {
   LEVELS,
