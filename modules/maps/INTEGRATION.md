@@ -176,7 +176,7 @@ maps**, never by another module reaching into the sheet.
 the frame's tokens (`--f-sheet-head`, `-default`, `-expanded` and their floors), the drag, the flick, the keyboard, the
 ARIA and the transitions are the primitive's, and `data-sheet` on the root is `collapsed`, `default` or `expanded`. What stays
 in maps: `openData` / `endData` / `closeData` / `dataHead` (the content and the header's texts: the handle's title carries the flight's
-summary), the Profile · Weather chips (`ignore: '[data-dclose], .mp-chips'`), the grip's texts (`labels`, four languages), the notes, the position kept between
+summary), the Profile · Weather · "i" chips (inside the head line, always three, one without content `disabled`; `ignore: '[data-dclose], .mp-chips'`), the grip's texts (`labels`, four languages), the notes, the position kept between
 mounts (`sheetKeep`, through `onChange`), `locked` (the tuning page) and `onSettle` (`mapSize()` and the route's re-framing).
 
 **The atmosphere cross-section** is implemented (24 Oct 2026): § 8.
@@ -204,11 +204,18 @@ import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, l
 | `startTiles(container, opts)` → `Promise<map \| null>` | the tiled map in `container`, once loaded; `null` when offline, MapLibre missing, no WebGL, an `error` before `load`, `wait` ms elapsed (default `TILE_WAIT` 10 s) or `alive()` false; the half-built map is removed. `opts`: `style`, `bounds` (`[[w, s], [e, n]]`), `padding` (px, optional), `attributionControl` (`false`, or `{ compact: true, customAttribution }`: the control is folded on its "i" button once the map has loaded, a tap opens it), `wait`, `alive()`, `onCreate(map)`, `onStyleLoad(map)` (every `style.load`: the first style and each `setStyle`), `onLoad(map)` (before the promise is kept: wire the events there). Mercator is forced at every style; no rotation, no pitch. `worldCopies` (default `false`): MapLibre's `renderWorldCopies`; with `false` the camera is clamped to ±180° and a route across the date line cannot be framed; with `true` the centre may be 190° or −174°, and `getBounds()` / `project()` go beyond ±180, so the host brings its longitudes to the view's copy (`nearLon` of `frame/lib/geo.js`). The Map passes `true`; Atmosphere keeps its grid on the route's own turn and the default |
 | `mapSize(map, box)` → boolean | `map.resize()` only if the canvas is not the box's size; true when it resized. Call it on every size change, at load and style change, on return of a hidden tab (`visibilitychange`, `pageshow`) and at each draw |
 | `isOwnResize(map)` → boolean | true during the `resize()` that `mapSize` runs: its `movestart` is not a user gesture (`map.on('movestart', () => { if (!isOwnResize(map)) userMoved = true })`) |
+| `setBottomInset(map, px)` → boolean | the map's bottom controls (attribution, scale, any other in `bottom-left` / `bottom-right`) move up by `px`: the part of the map's box that a sheet covers (the sheet's top against the box's bottom; 0 when the map sits above the sheet or beside it). Sets `--mb-inset-b` on the map's container, written only when the value changes (true then); the camera is not touched (frame the route with a bottom `padding`). Call it at every size change and at each `onSettle` of the sheet, and from a `ResizeObserver` on the sheet if the map can sit under it (V3 spec § 7.1 rule 17). Atmosphere: its `--at-hide-b` rule (an oversized map) can give way to one call with the same value |
 | `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there |
 | `loadOutlines()` → `Promise` | loads `lib/outlines.js` (`window.MAPS_OUTLINES`, 350 KB), once; rejects (and the next call tries again) if it does not come |
 | `plainView(fit, W, H, pad = 12)` → `{ toC(lat, lon), toLL(x, y), shown }` | Mercator fitting the box `fit` (`{ w, e, s, n }`) in W × H, north up (`MapsRender.mercator`; `loadRender()` first) |
 | `drawPlain(ctx, toC, W, H, colors)` | sea, then land from the outlines (sea only until they arrive); `colors` `{ sea, land, border }`, day defaults |
 | `STYLE_DAY`, `STYLE_NIGHT`, `STYLES`, `TILE_WAIT` | the constants |
+
+**The page's CSS on MapLibre** (25 Oct 2026): `loadMapLibre()` also adds one `<style data-map-base>` (once per page). The frame's global
+`summary` rule (44 px, chevron, flex: for folded sections) stretched MapLibre's attribution button, a 24 px `summary`, so its "i" icon was
+drawn twice (the second one under the sheet) and the chevron appeared as a bar; the style resets that button (24 px, no repeat, no
+`::before`) and moves the bottom controls by `--mb-inset-b` (`setBottomInset`). Both modules get it by loading MapLibre through
+`map_base`; nothing to add to their own CSS.
 
 What stays in each module: what the map does once loaded (events, overlay canvas), when to fall back to the plain background,
 the redraw loop, the credit line. Atmosphere's session replaces its copy of `loadMapLibre`, its `STYLE_DAY` / `STYLE_NIGHT` /

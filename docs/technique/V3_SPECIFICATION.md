@@ -257,6 +257,8 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       at its right (28 px chips, 44 px touch zones; the frame's bare head supports buttons), the drawing takes the full
       width and the full height under the row; **their number never changes** (user: "ils doivent rester 3, pas faire
       d'aller-retour entre 2 et 3"): a chip that has nothing to show is disabled, not removed.
+      **Done** (maps lot `v3-maps-puces2`, 25 Oct): the three chips are inside the head line (frame's bare-head buttons: 28 px, 44 px
+      touch zones), always three, disabled (`disabled`, `aria-disabled`, muted) when empty; `modules/maps/DECISIONS.md`.
   14. **A legend for the drawing, the help button back, Météo in the bar** (user, 24 Oct, 22:15: "On devrait voir la
       légende quelque part. Hover sur le panneau du bas ? Au clic ? Un I quelque part ? À toi de décider. Le chemin,
       c'est qu'on voit un graphe le plus étendu possible, mais qu'on ne sait pas ce que sont les données
@@ -285,6 +287,9 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
   17. **Map chrome under the sheet** (user, 25 Oct: "le double i, invisible. Masqué par le volet"): the map's own
       controls (MapLibre attribution, scale, any other "i") sit **above the sheet**, never under it: `map_base` offsets
       them by the sheet's height (the offset follows the sheet's position); one attribution control only.
+      **Done** (maps lot `v3-maps-puces2`, 25 Oct): the second "i" was the attribution button stretched by the frame's global `summary`
+      rule (44 px, its icon repeated, the chevron as a black bar): `map_base` resets it (24 px) and exports `setBottomInset(map, px)`,
+      which Maps calls with the part of the map the sheet covers (`modules/maps/INTEGRATION.md` § 7); test D19.
   18. **Administration behind one button** (user: "tous les settings admin vont sur un bouton, comme celui des
       réglages de seuils"): Réglages › Administration is one card with one button per administrator page (map
       thresholds, flight-zone edge, future ones), nothing of the administrator's on the ordinary cards.

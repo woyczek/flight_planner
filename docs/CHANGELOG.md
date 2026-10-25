@@ -12,6 +12,15 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Maps: three chips that stay three, in the bare line; the map's controls above the sheet, one "i"** (`modules/maps/module.js`,
+  `lib/map_base.js`, help ×4, `INTEGRATION.md` § 7, DECISIONS; V3_SPECIFICATION § 7.1 rule 13 fourth refinement and rule 17; tests D4,
+  D19) — the Profile · Weather · "i" chips are always three (a chip with nothing to show — the "i" without a legend, Weather on a
+  mission map — is `disabled`, muted, not removed: no more 3 → 2 → 3 while the cut loads) and stand in the head line itself, at its right
+  (28 px chips with the primitive's 44 px touch zones on the bare handle, 40 px on the title line): the vertical column is gone and the
+  drawing takes the whole width and height under the line. The "double i" under the sheet was MapLibre's attribution button stretched
+  to 44 px by the frame's global `summary` rule (its icon repeated, a chevron drawn as a black bar): `map_base` resets it and exports
+  `setBottomInset(map, px)`, which moves the bottom controls above the part of the map a sheet covers (Maps calls it at every size
+  change and settle; Atmosphere can use it).
 - **Frame: one navigation at a time — a change of address that arrives during a mount cancels it** (`frame/app.js`,
   `INTEGRATION.md` § 2, DECISIONS; test A16) — two or three changes of address in the same task (`#fuel`, `#atmosphere`,
   `#fuel?view=sheets`) left one `section[data-module]` per navigation in the view (and as many overlay layers and sheets) because

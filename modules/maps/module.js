@@ -30,6 +30,7 @@ import {
   startTiles as baseTiles,
   styleFor as baseStyle,
   mapSize as baseSize,
+  setBottomInset,
   isOwnResize,
   loadOutlines as baseOutlines,
   plainView,
@@ -896,7 +897,24 @@ function projNow() {
  *  « movestart » reconnu par isOwnResize). Appelé par l'observateur de taille, au chargement et au changement de style, au
  *  retour de la page (onglet caché, page gelée : les observations de taille faites pendant ce temps sont perdues) et à
  *  chaque dessin, pour qu'aucun cas oublié ne laisse une bande de fond. */
-const mapSize = () => baseSize(S?.map || S?.mapNew, S?.mapEl);
+const mapSize = () => {
+  const map = S?.map || S?.mapNew,
+    r = baseSize(map, S?.mapEl);
+  if (map) setBottomInset(map, sheetOverlap()); // règle 17 : les contrôles du bas de la carte restent au-dessus de la feuille
+  return r;
+};
+/** Part du bas du cadre de la carte que la feuille recouvre (px) : le sommet de la feuille contre le bas du cadre, si elle
+ *  s'étend sur toute sa largeur (portrait) ; 0 quand la carte est au-dessus d'elle (la taille de la carte est celle de ce qui
+ *  reste) ou à côté (colonne paysage : la carte est une colonne, la feuille une autre). */
+function sheetOverlap() {
+  const p = S?.dataEl,
+    m = S?.mapEl;
+  if (!p || !m || p.hidden) return 0;
+  const a = p.getBoundingClientRect(),
+    b = m.getBoundingClientRect();
+  if (!(a.width && b.width) || a.left > b.left + 1 || a.right < b.right - 1) return 0;
+  return Math.min(b.height, Math.max(0, b.bottom - a.top));
+}
 /** Redessine la surcouche (et le fond uni sans tuiles) ; données relues si la vue sort de celles chargées. */
 function draw() {
   if (!S?.canvas || !S.fit || !S.route.points.length) return;
@@ -2847,8 +2865,15 @@ function legendRows(view) {
   if (S.lgFixes) rows.push([sw('tri', S.theme?.fg || '#17202a'), esc(tt(TX.lgFixes))]);
   return rows;
 }
-/** Puce « i » et panneau de légende : la puce n'est là que si le dessin montré a une légende ; le panneau recouvre le dessin, se ferme par la
- *  puce, un toucher sur lui ou Échap ; écrit seulement s'il change. */
+/** Puce désactivée (`disabled` et `aria-disabled`, aspect atténué) ou active : une puce sans contenu n'est jamais retirée, le nombre
+ *  de puces ne change pas (§ 7.1.13, 4e affinement) ; écrit seulement si l'état change. */
+function chipOff(b, off) {
+  if (b.disabled !== off) b.disabled = off;
+  const v = String(off);
+  if (b.getAttribute('aria-disabled') !== v) b.setAttribute('aria-disabled', v);
+}
+/** Puce « i » et panneau de légende : la puce est toujours là, désactivée tant que le dessin montré n'a pas de légende ; le panneau
+ *  recouvre le dessin, se ferme par la puce, un toucher sur lui ou Échap ; écrit seulement s'il change. */
 function legendSync() {
   if (!S?.legendBtn) return;
   const view = S.dpanel === 'weather' ? 'weather' : !S.dpanel && S.prof ? 'profile' : null,
@@ -2856,7 +2881,7 @@ function legendSync() {
     can = rows.length > 0,
     on = !!S.legend && can,
     html = on ? `<ul>${rows.map(([k, t]) => `<li>${k}<span>${t}</span></li>`).join('')}</ul>` : '';
-  if (S.legendBtn.hidden === can) S.legendBtn.hidden = !can;
+  chipOff(S.legendBtn, !can);
   if (S.legendBtn.getAttribute('aria-pressed') !== String(on)) S.legendBtn.setAttribute('aria-pressed', String(on));
   if (S.legendEl.hidden === on) S.legendEl.hidden = !on;
   if (S.legendEl.innerHTML !== html) S.legendEl.innerHTML = html;
@@ -2868,8 +2893,10 @@ const gripLabel = p => `${S?.bare ? [S.bare, S.sum].filter(Boolean).join(' · ')
 const SHEET_POS = ['collapsed', 'default', 'expanded'];
 /** En-tête du bloc, sur le modèle de la feuille d'Atmosphère : la poignée porte un titre qui dit ce qu'on regarde et son
  *  contexte (« Profil · FL065 · 427 NM · vol prévu » ; le titre du contenu ouvert par openData tel
- *  quel), à droite deux puces icône (profil, coupe météo : seulement quand la coupe est possible) ou la croix d'un contenu
- *  de la carte ; le bloc n'est là que s'il a quelque chose à montrer ; écrit s'il change.
+ *  quel), à droite trois puces icône (profil, coupe météo, légende « i » : toujours les trois devant un dessin, une puce sans
+ *  contenu est désactivée) ou la croix d'un contenu de la carte ; le bloc n'est là que s'il a quelque chose à montrer ; écrit
+ *  s'il change. Les puces sont DANS la ligne d'en-tête (nue : puces de 28 px, zones de toucher de 44 px par la primitive ; titrée :
+ *  puces de 40 px), jamais en colonne : le dessin prend toute la largeur.
  *  Quand le contenu est un dessin (profil, coupe) et que la feuille est en position PAR DÉFAUT, la ligne est NUE
  *  (.f-sheet-head-bare : la barre de préhension et les puces seulement) : le dessin dit déjà le niveau, la distance et le vol
  *  (§ 7.1.13) ; agrandie, repliée ou en colonne paysage (html.f-land) elle garde son titre (la place ne manque pas, et le titre
@@ -2884,7 +2911,7 @@ function dataHead() {
     lay = S.dpanel === 'layers', // « Couches · <vol> » : le contexte comme le profil
     title = own && !lay ? S.dtitle : [lay ? S.dtitle : tt(wx ? TX.ttlWeather : TX.ttlProfile), S.sum].filter(Boolean).join(' · '),
     tip = own && !lay ? S.dlabel : [lay ? S.dlabel : wx ? S.dlabel : tt(TX.dataProfile), S.sumTip].filter(Boolean).join(' · '),
-    chips = canWeather() && !own,
+    chips = !own, // un dessin : les trois puces, toujours (la coupe ou la légende sans objet : puce désactivée, jamais retirée)
     close = own;
   if (S.dataEl.hidden === show) S.dataEl.hidden = !show;
   if (S.layersBtn.getAttribute('aria-pressed') !== String(lay)) S.layersBtn.setAttribute('aria-pressed', String(lay));
@@ -2899,11 +2926,10 @@ function dataHead() {
   if (S.dtitleEl.title !== (bare ? '' : tip)) S.dtitleEl.title = bare ? '' : tip;
   if (S.dcloseEl.hidden === close) S.dcloseEl.hidden = !close;
   if (S.segEl.hidden === chips) S.segEl.hidden = !chips;
-  if (S.dataEl.classList.contains('mp-chipcol') !== chips) S.dataEl.classList.toggle('mp-chipcol',
-    chips); // le dessin laisse la colonne des puces à sa droite
   for (const b of S.segBtns) {
     const on = String((b.dataset.view === 'weather') === wx);
     if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on);
+    chipOff(b, b.dataset.view === 'weather' ? !canWeather() : !S.prof); // la coupe : un vol à deux points ; le profil : une route
   }
   legendSync();
 }
@@ -4563,21 +4589,22 @@ const STYLE = `
 [data-module="maps"] .mp-notes{flex:none;max-height:5.5em;overflow:auto;padding:0 8px 6px;font-size:var(--sog-size-xs);font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-notes p{margin:0 0 2px}
 [data-module="maps"] .mp-notes:empty{display:none}
-/* Les puces Profil · Météo (§ 7.1.13, 2e et 3e affinements) : avec la poignée NUE (position par défaut, portrait) une COLONNE de 44 px à
-   droite du dessin, sous la poignée (le dessin reçoit la marge droite, mp-chipcol) ; dès que la LIGNE DE TITRE est là (agrandie, réduite,
-   colonne paysage) elles reviennent dans cette ligne, à droite, en rangée, et le dessin prend toute la largeur. Les puces sont posées sur
-   le panneau (hors de la zone de glisser) ; la poignée leur laisse la place (marge droite du titre). Puces de 40 px, pas de 44 px. */
-[data-module="maps"] .mp-chips{position:absolute;z-index:2;right:0;top:0;height:calc(var(--f-sheet-head) - 1px);box-sizing:border-box;display:flex;flex-direction:row;align-items:center;gap:4px;padding-right:2px}
+/* Les puces Profil · Météo · « i » (§ 7.1.13, 4e affinement) : toujours trois, DANS la ligne d'en-tête, à droite (plus de colonne à droite du
+   dessin, qui prend toute la largeur et toute la hauteur sous la ligne). Poignée nue (position par défaut) : puces de 28 px (la hauteur et
+   la zone de toucher de 44 px sont celles de la primitive du cadre, frame/INTEGRATION.md § 11) ; ligne de titre (agrandie, réduite, colonne
+   paysage) : puces de 40 px. Une puce sans contenu est désactivée (atténuée), jamais retirée. Les puces sont posées au-dessus du corps
+   (z-index) : la zone de toucher de la primitive mord de 8 px sur lui, que le dessin positionné recouvrirait sinon. */
+[data-module="maps"] .mp-chips{position:relative;z-index:2;flex:none;display:flex;flex-direction:row;align-items:center;gap:4px;padding-right:4px}
 [data-module="maps"] .mp-chips[hidden],[data-module="maps"] .mp-chips .mp-chip[hidden]{display:none}
-[data-module="maps"] .mp-dhead.f-sheet-head-bare+.mp-chips{top:var(--f-sheet-head-bare);height:auto;width:44px;flex-direction:column;justify-content:flex-start;padding:2px 0 0}
-[data-module="maps"] .mp-chipcol .mp-dhead:not(.f-sheet-head-bare) .f-sheet-grip{padding-right:136px}
 [data-module="maps"] .mp-chips .mp-chip{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-muted);box-shadow:none;cursor:pointer;touch-action:manipulation}
-[data-module="maps"] .mp-chipcol .mp-dhead.f-sheet-head-bare~:is(.mp-dprof,.mp-dbody[data-kind=weather]){margin-right:44px}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip{width:28px}
 [data-module="maps"] .mp-chips .mp-chip .f-icon{width:20px;height:20px}
-/* légende : un panneau translucide sur le dessin (sous la puce « i » et ses voisines), fermé par la puce, un toucher ou Échap */
+[data-module="maps"] .mp-dhead.f-sheet-head-bare .mp-chips .mp-chip .f-icon{width:18px;height:18px}
+[data-module="maps"] .mp-chips .mp-chip:disabled{opacity:.38;cursor:default}
+/* légende : un panneau translucide sur le dessin (sous la ligne d'en-tête et ses puces), fermé par la puce, un toucher ou Échap */
 [data-module="maps"] .mp-legend{position:absolute;z-index:1;left:4px;right:4px;bottom:0;top:calc(var(--f-sheet-head) - 1px);box-sizing:border-box;overflow:auto;padding:8px 10px;border:1px solid var(--sog-border);border-radius:var(--sog-radius);background:color-mix(in srgb,var(--sog-surface) 86%,transparent);font-size:var(--sog-size-xs);line-height:1.3;touch-action:pan-y}
 [data-module="maps"] .mp-legend[hidden]{display:none}
-[data-module="maps"] .mp-dhead.f-sheet-head-bare~.mp-legend{top:var(--f-sheet-head-bare);right:48px}
+[data-module="maps"] .mp-dhead.f-sheet-head-bare~.mp-legend{top:var(--f-sheet-head-bare)}
 [data-module="maps"] .mp-legend ul{margin:0;padding:0;list-style:none}
 [data-module="maps"] .mp-legend li{display:flex;align-items:center;gap:8px;min-height:20px}
 [data-module="maps"] .mp-lg-sw{flex:none;position:relative;display:block;width:26px;height:12px;--c:#888}
@@ -4759,7 +4786,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 </div>
-<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-chips" role="group" hidden aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button><button type="button" class="mp-chip" data-legend aria-pressed="false" hidden title="${esc(ctx.t(TX.legend))}" aria-label="${esc(ctx.t(TX.legend))}">${svg('info', { size: 20 })}</button></div><div class="mp-legend" role="region" hidden aria-label="${esc(ctx.t(TX.legend))}"></div>
+<div class="mp-data f-sheet-panel" hidden><div class="mp-dhead f-sheet-head"><button type="button" class="mp-grip f-sheet-grip" aria-expanded="true" aria-label="${esc(ctx.t(TX.sheetSize))}"><b class="mp-dtitle f-sheet-title"></b></button><div class="mp-chips" role="group" aria-label="${esc(ctx.t(TX.segLabel))}"><button type="button" class="mp-chip" data-view="profile" aria-pressed="true" title="${esc(ctx.t(TX.dataProfile))}" aria-label="${esc(ctx.t(TX.dataProfile))}">${svg('chart', { size: 20 })}</button><button type="button" class="mp-chip" data-view="weather" aria-pressed="false" title="${esc(ctx.t(TX.wxTitle))}" aria-label="${esc(ctx.t(TX.wxTitle))}">${svg('cloud', { size: 20 })}</button><button type="button" class="mp-chip" data-legend aria-pressed="false" disabled aria-disabled="true" title="${esc(ctx.t(TX.legend))}" aria-label="${esc(ctx.t(TX.legend))}">${svg('info', { size: 20 })}</button></div><button type="button" class="mp-dclose f-sheet-close" data-dclose hidden aria-label="${esc(ctx.t(TX.close))}" title="${esc(ctx.t(TX.close))}">✕</button></div><div class="mp-legend" role="region" hidden aria-label="${esc(ctx.t(TX.legend))}"></div>
 <div class="mp-dprof"><div class="mp-prof" hidden role="img" aria-label="${esc(ctx.t(TX.profileLabel))}"><canvas class="mp-pc"></canvas><canvas class="mp-pcur"></canvas>
 <div class="mp-tip f-card" hidden role="tooltip"></div></div>
 <div class="mp-strip" aria-live="polite"></div></div>
@@ -4921,6 +4948,8 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   // bascule Profil · Météo : la feuille réduite s'ouvre à la position normale (on vient de choisir ce qu'on veut y lire)
   S.segEl.addEventListener('click', e => {
     if (e.target.closest('[data-legend]')) {
+      if (S.legendBtn.disabled) return;
+      if (!S.legend && S.sh.pos === 'collapsed') S.sh.set('default', true); // la légende se lit sur le dessin : la feuille s'ouvre
       S.legend = !S.legend;
       return legendSync();
     }
@@ -5070,6 +5099,12 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
     S.sh.settle(); // la feuille a bougé, l'écran a tourné : la route est recadrée une fois la taille arrêtée
   });
   ro.observe(S.box);
+  // la feuille peut recouvrir le bas de la carte sans que le cadre de la carte change de taille : les contrôles suivent sa hauteur
+  const rs = new ResizeObserver(() => {
+    const map = S?.map || S?.mapNew;
+    if (map) setBottomInset(map, sheetOverlap());
+  });
+  rs.observe(S.dataEl);
   // rotation, volet redimensionné, feuille tirée : le graphique des niveaux et la coupe météo reprennent la taille du bloc
   const rd = new ResizeObserver(() => S.dpanel === 'lv' ? showLv() : redrawWeather());
   rd.observe(S.dbodyEl);
@@ -5089,7 +5124,7 @@ ${LAYER_KEYS.map(k => `<label${k === 'corridor' ? ' class="mp-l-main"' : ''}><in
   });
   const rp = new ResizeObserver(() => drawProfile());
   rp.observe(S.profBox);
-  S.stops.push(() => ro.disconnect(), () => rp.disconnect(), () => rd.disconnect(), () => S.sh?.stop());
+  S.stops.push(() => ro.disconnect(), () => rs.disconnect(), () => rp.disconnect(), () => rd.disconnect(), () => S.sh?.stop());
 }
 
 export function unmount() {

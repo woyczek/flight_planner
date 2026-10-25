@@ -6,8 +6,8 @@
 // globale de module, aucune lecture de la page, aucune écriture hors du cadre qu'on lui donne. Seuls les chargements
 // (script, feuille, contours) vont chercher des fichiers du dossier lib/, et le noyau de dessin du module Carte
 // (window.MapsRender, render.js) sert au fond uni.
-//   import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, loadRender, loadOutlines, plainView, drawPlain }
-//     from '../maps/lib/map_base.js';
+//   import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, setBottomInset, loadRender, loadOutlines, plainView,
+//     drawPlain } from '../maps/lib/map_base.js';
 
 /** Fond de jour, fond de nuit, styles publiés que choisit un profil d'affichage du studio (OpenFreeMap, VersaTiles) ; le
  *  style maison du studio, OSM standard et OpenTopoMap (hôtes hors de meta.net) sont remplacés par le fond de jour. */
@@ -33,11 +33,31 @@ export const styleFor = ({
 } = {}) => dark ? /^vt-/.test(base) ? STYLES['vt-eclipse'] : STYLE_NIGHT : STYLES[base] || STYLE_DAY;
 
 // ---------------------------------------------------------------- MapLibre
+/** Ce que la page change à la feuille de MapLibre, une fois (règles de poids supérieur, posées après elle).
+ *  1. La mention des sources : le cadre donne à tout `summary` une hauteur de 44 px, un chevron et un alignement en ligne
+ *     (frame/design/primitives.css) ; le bouton « i » de MapLibre est un `summary` de 24 px dont l'image de fond se répétait
+ *     alors sous elle (le « double i », dont le second passait sous la feuille) et dont le chevron dessinait une barre noire
+ *     à son côté : hauteur remise à 24 px, image sans répétition, pas de chevron.
+ *  2. Les contrôles du bas (mention, échelle, tout autre) se décalent de --mb-inset-b, que setBottomInset() pose sur le cadre
+ *     de la carte : la part du cadre que la feuille recouvre (règle 17 de V3_SPECIFICATION § 7.1). Sans valeur : 0. */
+const CHROME_CSS = `.maplibregl-map .maplibregl-ctrl-attrib summary.maplibregl-ctrl-attrib-button{min-height:0;height:24px;gap:0;background-repeat:no-repeat}
+.maplibregl-map .maplibregl-ctrl-attrib summary.maplibregl-ctrl-attrib-button::before{content:none}
+.maplibregl-map .maplibregl-ctrl-bottom-left,.maplibregl-map .maplibregl-ctrl-bottom-right{bottom:var(--mb-inset-b,0px)}`;
+
+function chromeCss() {
+  if (document.querySelector('style[data-map-base]')) return;
+  const st = document.createElement('style');
+  st.dataset.mapBase = '';
+  st.textContent = CHROME_CSS;
+  document.head.append(st);
+}
+
 /** MapLibre (script UMD et sa feuille), chargé une fois par page, au premier fond à tuiles ; null s'il ne charge pas (la
  *  demande suivante réessaie). */
 let mlP = null;
 export function loadMapLibre() {
   return mlP ||= new Promise(ok => {
+    chromeCss();
     if (window.maplibregl) return ok(window.maplibregl);
     const css = document.createElement('link');
     css.rel = 'stylesheet';
@@ -168,6 +188,21 @@ export function mapSize(map, box) {
   } finally {
     if (!was) own.delete(map);
   }
+  return true;
+}
+
+// ---------------------------------------------------------------- contrôles au-dessus de la feuille
+/** Contrôles du bas de la carte (mention des sources, échelle, tout autre) décalés de `px` pixels vers le haut : la part du
+ *  cadre que la feuille recouvre, pour qu'aucun ne passe dessous (règle 17 de V3_SPECIFICATION § 7.1). À appeler avec la
+ *  hauteur réelle recouverte (sommet de la feuille contre le bas du cadre) à chaque arrêt de la feuille (onSettle) et à
+ *  chaque changement de taille ; 0 quand la feuille ne recouvre rien (carte au-dessus d'elle, colonne paysage). Écrit
+ *  seulement si la valeur change ; ne touche pas à la caméra (le cadrage de la route reste l'affaire de l'hôte :
+ *  fitBounds avec une marge basse). Rend vrai si la valeur a changé. */
+export function setBottomInset(map, px) {
+  const box = map?.getContainer?.(),
+    v = `${Math.max(0, Math.round(+px || 0))}px`;
+  if (!box || box.style.getPropertyValue('--mb-inset-b') === v) return false;
+  box.style.setProperty('--mb-inset-b', v);
   return true;
 }
 

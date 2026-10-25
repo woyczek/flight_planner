@@ -1104,3 +1104,36 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     drawing's height = the body's, axis inside, `data-axis`, point labels drawn, in portrait, landscape column, 390 × 520, expanded;
     collapsed gets its title back); D3 / D8 / D11 / C5 / C6 / J1 / J2 read the flight summary and the profile's name from the handle's
     label (`lib.Ctx.grip`) instead of the title.
+- **25 Oct 2026 — the chips in the bare line, always three; the map's controls above the sheet** (relay cloud, branch
+  `v3-maps-puces2`; V3 spec § 7.1 rule 13 fourth refinement and rule 17; the user, iPhone 390 px: "Un bug fonctionnel : les 3 boutons du
+  volet météo sur le module cartes. Ils doivent rester 3, pas faire d'aller-retour entre 2 et 3", "Le i sur la ligne de titre est bien plus
+  lisible que le bouton i, il permet de gagner de la place", "Le double i, invisible. Masqué par le volet").
+  - **Fixed number.** The three chips (Profile, Weather, "i") are always there when the sheet shows a drawing; one with nothing to show is
+    `disabled` + `aria-disabled="true"` and muted (opacity .38), never hidden or removed (`chipOff`, written only on a change): "i" while the
+    drawing has no legend (cut loading, no kept forecast, atmosphere without `sectionLegend`), Weather when `canWeather()` is false (a mission
+    map: one more chip than before, disabled), Profile when there is no profile. Before: the "i" chip was `hidden` without a legend (3 → 2 → 3
+    while the cut loaded) and the whole group was hidden on a mission map.
+  - **In the line, no column.** `.mp-chips` moved INTO `.f-sheet-head` (between the grip and ✕): with the bare handle the frame's rules apply
+    to them as to any button of the bare head (28 px high, touch zone of 44 px by `::after`, 4 px gap), the module only sets the width (28 px)
+    and the icon (18 px); with the title line they are 40 px chips as before. The drawing takes the full width and the full height under the
+    line. Gone: the absolute column, `.mp-chipcol`, the drawing's `margin-right: 44px`, the grip's `padding-right`, the legend's `right: 48px`.
+    The chips are `position: relative; z-index: 2`: the primitive's touch zone bites 8 px into the body, which the positioned profile block
+    covered (measured: 28 px of zone instead of 36). Collapsed, the chips are now visible in the title line (rule 13, third refinement says
+    so; the old outside-the-head element was hidden by the primitive's collapsed rule); a tap on Weather or on "i" opens the sheet first.
+  - **The second "i" (rule 17).** Not a second control: MapLibre's attribution button is a `summary` of 24 px, and the frame's global rule
+    `summary { display: flex; min-height: var(--sog-touch); ... }` (primitives.css, for folded sections) stretched it to 44 px, so its
+    background image (the "i", repeating) was drawn twice, the second 24 px lower, under the sheet's edge; the frame's chevron
+    (`summary::before`) was the black bar left of the first. `map_base.js` now injects one `<style data-map-base>` (first call of
+    `loadMapLibre`, so Maps and Atmosphere both get it): button back to 24 px, `no-repeat`, no `::before`. Measured on 390 px: 24 × 24.
+  - **Controls above the sheet.** `map_base.setBottomInset(map, px)` sets `--mb-inset-b` on the map's container (written only when it
+    changes) and the same style sheet moves `.maplibregl-ctrl-bottom-left/right` up by it. Maps calls it from its `mapSize()` (every size
+    change, at load and at each `onSettle`) and from a `ResizeObserver` on the sheet, with `sheetOverlap()`: the part of the map's frame
+    under the panel when the panel spans the map's width (0 for the portrait layout where the map sits above the sheet, and for the landscape
+    column). The camera is not touched (no `setPadding`: it would shift the route's centre; the route is framed by the module itself). In
+    this tree the map still ends where the sheet begins, so the inset is 0 today; D19 stretches the map 110 px under the sheet to prove the
+    mechanism. Atmosphere keeps its own `--at-hide-b` (it draws oversized) and may call `setBottomInset` instead: INTEGRATION § 7.
+  - **Tests**: D4 (three chips always, in the head line, 28 px / 40 px, drawing full width; "i" disabled with `sectionLegend` removed from the
+    served `section.js` (the frame's service worker is unregistered first, it answers module files out of reach of page routes) and without a kept
+    forecast), D19 new (every visible MapLibre control above the sheet's top in default, expanded and collapsed with the map stretched under the
+    sheet, outside the column in landscape; one attribution; 24 px button, no chevron). D7 (attribution folded) is flaky on the base too
+    (`open=True` about one run in three on Atmosphere, timing of MapLibre's compact mode against the 500 ms wait): not touched here.

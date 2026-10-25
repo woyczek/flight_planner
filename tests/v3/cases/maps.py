@@ -6,16 +6,17 @@ Rules covered
   * Layers inside the sheet, flight selector first (D3); the Profile / Weather chips (D4);
   * the "data access not set" / "database not published" notice, once per mount (D5, D5b); the modes panel (D6); the folded attribution (D7);
   * a started flight (D8), no flight (D9), a mission map without data (D10);
+  * the map's own controls stay above the sheet, one attribution, one "i" icon (D19);
   * L1 the sheet content is closable and leaves the map half the view (D11); L3 the profile canvas draws one level and no
     green / orange dots (D12); L14 a drag on the map or a wheel on the sheet does not close a content (D13).
 
-Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
+Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
 import re
 import time
 
-from lib import FLIGHT, MAP_JS, Fail, Skip, case, forget, norm, tx
+from lib import FLIGHT, MAP_JS, ROOT, Fail, Skip, case, forget, norm, tx
 
 M = 'modules/maps/module.js'
 APP = 'frame/app.js'
@@ -109,26 +110,72 @@ def d4(c):
     chips = c.boxes('.mp-chip[data-view]')
     c.eq(len(chips), 2, 'two view chips (Profile, Weather)', what='view chips')
     c.eq(c.js("[...document.querySelectorAll('.mp-chip')].at(-1).hasAttribute('data-legend')"), True, 'the "i" legend chip is the last chip', what='last chip')
+    fixed_chips(c, 'profile with a forecast', legend=True)
     info = c.js("[...document.querySelectorAll('.mp-chip[data-view]')].map(b => ({ title: b.title, label: b.getAttribute('aria-label'), pressed: b.getAttribute('aria-pressed'), hidden: b.hidden }))")
     names = [row(c, 'dataProfile'), row(c, 'wxTitle')]
     c.eq(info[0]['title'], names[0], 'the Profile chip is named in the language of the run', what='Profile chip title')
     c.eq(info[0]['pressed'], 'true', 'the Profile chip is pressed by default', what='Profile chip aria-pressed')
     c.ok(info[1]['pressed'] in ('true', 'false'), f'Weather chip aria-pressed {info[1]["pressed"]!r}', 'a toggle (aria-pressed)')
-    if info[1]['hidden']:
-        c.ok(not chips[1]['shown'], 'the Weather chip is hidden by attribute but displayed', 'hidden, not absent')   # cut unavailable: hidden, not absent
-    else:
-        c.eq(info[1]['title'], names[1], 'the Weather chip is named in the language of the run', what='Weather chip title')
+    c.eq(info[1]['title'], names[1], 'the Weather chip is named in the language of the run', what='Weather chip title')
     for i, ch in enumerate(chips):
-        if info[i]['hidden']:
-            continue
-        c.ge(round(ch['w']), 36, 'icon chips are at least 36 px', what=f'chip {i} width')
-    # the chips left the head row (V3 spec 7.1.13, second refinement): 40 px chips on a 44 px pitch, so touch zones of 44 px side by side
-    hit = c.js("""() => [...document.querySelectorAll('.mp-chip')].filter(b => !b.hidden).map(b => { const r = b.getBoundingClientRect(), x = r.left + r.width / 2; let lo = null, hi = null;
+        c.ge(round(ch['w']), 28, 'icon chips of the bare line are at least 28 px', what=f'chip {i} width')
+    # the chips are in the bare line (V3 spec 7.1.13, fourth refinement): 28 px chips, the primitive's touch zone of 44 px (its top is clipped by the sheet's edge)
+    hit = c.js("""() => [...document.querySelectorAll('.mp-chip')].map(b => { const r = b.getBoundingClientRect(), x = r.left + r.width / 2; let lo = null, hi = null;
         for (let y = Math.max(0, r.top - 30); y < r.bottom + 40; y++) { const e = document.elementFromPoint(x, y); if (e && e.closest('.mp-chip') === b) { if (lo === null) lo = y; hi = y } }
         return hi === null ? 0 : hi - lo + 1 })""")
     for i, h in enumerate(hit):
-        c.ge(h, 40, f'chip {i}: touch zone {h} px high', 'a touch zone of about 44 px (40 px chips, 4 px apart)')
+        c.ge(h, 34, f'chip {i}: touch zone {h} px high', 'a touch zone of the primitive: 44 px centred on a 28 px chip, its top clipped by the sheet (36 px)')
     sheet_body_checks(c)
+    fixed_chips_without_legend(c)
+    fixed_chips_no_forecast(c)
+
+
+def fixed_chips(c, what, legend, weather=True):
+    """V3 spec 7.1.13, fourth refinement (user 25 Oct: "ils doivent rester 3, pas faire d'aller-retour entre 2 et 3"): the three chips (Profile,
+    Weather, "i") are always there, shown, in this order; one with nothing to show is `disabled` + `aria-disabled`, never removed or hidden."""
+    g = c.js("""() => [...document.querySelectorAll('.f-sheet-head .mp-chip')].map(b => ({ kind: b.dataset.view || 'legend', hidden: b.hidden, shown: window.__t.shown(b),
+        disabled: b.disabled, aria: b.getAttribute('aria-disabled') }))""")
+    c.eq([x['kind'] for x in g], ['profile', 'weather', 'legend'], 'three chips, always, in the head line, in this order', what=f'{what}: chips')
+    c.ok(all(x['shown'] and not x['hidden'] for x in g), f'{what}: {g}', 'no chip is hidden: a chip without content is disabled, never removed')
+    c.eq([x['disabled'] for x in g], [False, not weather, not legend], 'only the chips without content are disabled', what=f'{what}: disabled chips')
+    c.eq([x['aria'] for x in g], ['false', str(not weather).lower(), str(not legend).lower()], 'aria-disabled follows disabled', what=f'{what}: aria-disabled')
+
+
+def fixed_chips_without_legend(c):
+    """The cut's "i" has nothing to show when atmosphere's `sectionLegend` is not there: the chip stays (three chips), disabled; the Profile one
+    keeps its legend, so the count is three on both views.  The module file of atmosphere is served without its `sectionLegend` export."""
+    src = (ROOT / 'modules/atmosphere/section.js').read_text(encoding='utf-8')
+    gone = src.replace('export function sectionLegend(', 'export function sectionLegendGone(')
+    c.ok(gone != src, 'the export sectionLegend of modules/atmosphere/section.js', 'is found (the test removes it to simulate a build without a legend)')
+    # the frame's service worker answers the module files itself, out of reach of the page's routes: removed, and not registered again on this page
+    c.page.evaluate("""async () => { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+        for (const k of await caches.keys()) await caches.delete(k) }""")
+    c.page.goto('about:blank')
+    c.page.add_init_script("try { Object.defineProperty(navigator, 'serviceWorker', { value: undefined }) } catch (e) {}")
+    c.page.route(re.compile(r'/modules/atmosphere/section\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=gone))
+    c.open('maps', flight=True, forecast=True)
+    c.page.add_style_tag(content='#fNotes{display:none!important}')
+    fixed_chips(c, 'profile, cut without legend', legend=True)
+    c.tap('.mp-chip[data-view="weather"]')
+    c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", what='the cut is drawn')
+    c.wait(300)
+    fixed_chips(c, 'cut without legend (Sx.sectionLegend absent)', legend=False)
+    c.ok(c.shown('.mp-chip[data-legend]'), 'the "i" chip is not shown', 'the disabled "i" stays in the line')
+    o = c.js("() => +getComputedStyle(document.querySelector('.mp-chip[data-legend]')).opacity")
+    c.ok(o < 0.8, f'disabled chip opacity {o}', 'a disabled chip looks muted')
+    c.page.unroute(re.compile(r'/modules/atmosphere/section\.js'))
+
+
+def fixed_chips_no_forecast(c):
+    """A mission map has no cut to show: still three chips, the Weather one disabled.  Without a seeded mission the sheet is not there: the
+    case checks the flight without a forecast (cut: "no forecast kept", Weather chip enabled, "i" disabled on the cut's message)."""
+    forget(c.page, c.doc_paths('cache/weather/'), c.base)         # the forecast seeded above is still in this browser's cache
+    c.open('maps', flight=True)
+    c.page.add_style_tag(content='#fNotes{display:none!important}')
+    fixed_chips(c, 'profile, no forecast', legend=True)
+    c.tap('.mp-chip[data-view="weather"]')
+    c.wait(600)
+    fixed_chips(c, 'cut, no forecast kept', legend=False)
 
 
 _GEO_JS = """() => { const q = s => document.querySelector(s), r = e => { if (!e) return null; const b = e.getBoundingClientRect(); return { t: b.top, b: b.bottom, h: b.height, shown: b.height > 0 && getComputedStyle(e).display !== 'none' } };
@@ -163,31 +210,31 @@ _CHIPS_JS = """(weather) => { const r = e => { const b = e.getBoundingClientRect
 
 
 def chips_layout(c, bare, weather, what, n=None):
-    """V3 spec 7.1.13, 2nd and 3rd refinements: with the bare handle (default position, portrait) the chips are a vertical column at the right
-    of the drawing, the drawing taking the width left; with the title line (expanded, collapsed, landscape column) they are back in that
-    line, at the right, in a row, and the drawing takes the whole width (no column, no row above it).  Either way the drawing starts at the
-    left edge of the body."""
+    """V3 spec 7.1.13, fourth refinement (25 Oct): the three chips are IN the head line, at its right, on one row, whatever the position (no column at the
+    right of the drawing, no row above it): with the bare handle (default position, portrait) the line is 28 px and the chips 28 px high (touch zones
+    of 44 px by the primitive); with the title line (expanded, collapsed, landscape column) the line is 44 px and the chips 40 px.  Either way the
+    drawing takes the whole width, starts at the left edge of the body and right under the line."""
     g = c.js(_CHIPS_JS, weather)
     ch, d, p, h = g['chips'], g['drawing'], g['panel'], g['head']
-    n = n or 3                            # Profile, Weather and the "i" legend chip (the cut's legend comes from atmosphere's sectionLegend since 24 Oct)
-    c.eq(len(ch), n, 'the chips of the drawing are shown', what=f'{what}: chips')
+    n = n or 3                            # Profile, Weather and the "i" legend chip: three, always
+    c.eq(len(ch), n, 'the three chips of the drawing are shown', what=f'{what}: chips')
+    c.ok(g['inHead'], f'{what}: chips inside the head {g["inHead"]}', 'the chips are in the head line (no column, no row of their own)')
     c.le(round(d['l'] - p['l'], 1), 8, 'the drawing starts at the left edge of the body (8 px at most)', what=f'{what}: drawing left against sheet left')
+    c.le(round(ch[0]['t'] - p['t'], 1), 8, 'the chips are in the line (top of the sheet)', what=f'{what}: chips top against sheet top')
+    c.le(round(max(x['b'] for x in ch) - h['b'], 1), 2, 'the chips are inside the head band', what=f'{what}: chips bottom against head bottom')
+    c.le(abs(round(ch[0]['t'] - ch[-1]['t'], 1)), 1, 'the chips are on one row', what=f'{what}: chip tops')
+    c.ge(round(ch[1]['l'] - ch[0]['r'], 1), 0, 'the second chip is to the right of the first', what=f'{what}: chip gap')
+    c.ge(round(ch[-1]['r'] - p['r'] + 8, 1), 0, 'the chips are at the right of the line', what=f'{what}: chips right against sheet right')
+    c.ge(round(g['ink']['r'] - p['r'] + 12, 1), 0, 'the drawing takes the whole width (no column at its right)', what=f'{what}: drawing right against sheet right')
+    c.ge(round(g['ink']['t'] - h['b'], 1), -1, 'nothing between the head and the drawing', what=f'{what}: drawing top against head bottom')
+    c.le(round(g['ink']['t'] - h['b'], 1), 8, 'no row of chips above the drawing', what=f'{what}: drawing top against head bottom')
+    hh = round(ch[0]['b'] - ch[0]['t'])
     if bare:
-        c.ge(round(ch[0]['t'] - h['b'], 1), -1, 'bare handle: the chips start under the head', what=f'{what}: chips top against head bottom')
-        c.le(abs(round(ch[0]['l'] - ch[-1]['l'], 1)), 1, 'bare handle: the chips form a vertical column', what=f'{what}: chip lefts')
-        c.ge(round(ch[1]['t'] - ch[0]['b'], 1), 0, 'bare handle: the second chip is under the first', what=f'{what}: chip gap')
-        c.ge(round(ch[0]['r'] - p['r'] + 8, 1), 0, 'bare handle: the column is at the right of the sheet', what=f'{what}: chips right against sheet right')
-        c.le(round(g['ink']['r'] - ch[0]['l'], 1), 1, 'bare handle: the drawing ends where the column begins', what=f'{what}: drawing right against chips left')
-        c.ge(round(g['ink']['b'] - g['ink']['t']), 80, 'the drawing keeps its height beside the column', what=f'{what}: drawing height')
+        c.le(abs(hh - 28), 1, 'bare handle: the chips are 28 px high (the primitive sets it)', what=f'{what}: chip height')
+        c.le(round(h['b'] - h['t']), 29, 'bare handle: the line is 28 px (one line, the chips in it)', what=f'{what}: head height')
+        c.ge(round(g['ink']['b'] - g['ink']['t']), 100, 'the drawing keeps its height under the line', what=f'{what}: drawing height')
     else:
-        c.le(round(ch[0]['t'] - p['t'], 1), 8, 'title line: the chips are in the line (top of the sheet)', what=f'{what}: chips top against sheet top')
-        c.le(round(max(x['b'] for x in ch) - h['b'], 1), 1, 'title line: the chips are inside the head band', what=f'{what}: chips bottom against head bottom')
-        c.le(abs(round(ch[0]['t'] - ch[-1]['t'], 1)), 1, 'title line: the chips are on one row', what=f'{what}: chip tops')
-        c.ge(round(ch[1]['l'] - ch[0]['r'], 1), 0, 'title line: the second chip is to the right of the first', what=f'{what}: chip gap')
-        c.ge(round(ch[-1]['r'] - p['r'] + 8, 1), 0, 'title line: the chips are at the right of the line', what=f'{what}: chips right against sheet right')
-        c.ge(round(g['ink']['r'] - p['r'] + 12, 1), 0, 'title line: the drawing takes the whole width (no column at its right)', what=f'{what}: drawing right against sheet right')
-        c.ge(round(g['ink']['t'] - h['b'], 1), -1, 'title line: nothing between the head and the drawing', what=f'{what}: drawing top against head bottom')
-        c.le(round(g['ink']['t'] - h['b'], 1), 8, 'title line: no row of chips above the drawing', what=f'{what}: drawing top against head bottom')
+        c.le(abs(hh - 40), 1, 'title line: the chips are 40 px high', what=f'{what}: chip height')
 
 
 def legend_check(c):
@@ -780,3 +827,68 @@ def d18(c):
     c.ge(len(r['names']), 2, 'at least two airway names are written', what=f'airway names {r["names"]}')
     c.ok(r['lastStroke'] < r['firstName'], f'last airway stroke at call {r["lastStroke"]}, first airway name at call {r["firstName"]}',
          'every airway stroke is drawn before any airway name: no stroke crosses a name')
+
+
+# ------------------------------------------------------------------------------------------------------ D19
+_CHROME_JS = """() => { const panel = document.querySelector('.f-sheet-panel').getBoundingClientRect(), box = document.querySelector('.mp-map').getBoundingClientRect();
+  const ctrls = [...document.querySelectorAll('[data-module="maps"] .maplibregl-ctrl')].filter(e => window.__t.shown(e)).map(e => { const r = e.getBoundingClientRect();
+    return { cls: e.className, l: r.left, r: r.right, t: r.top, b: r.bottom } });
+  const sm = document.querySelector('[data-module="maps"] .maplibregl-ctrl-attrib summary');
+  return { panel: { l: panel.left, r: panel.right, t: panel.top, b: panel.bottom }, box: { t: box.top, b: box.bottom, h: box.height }, ctrls,
+           attribs: document.querySelectorAll('[data-module="maps"] .maplibregl-ctrl-attrib').length, sheet: document.querySelector('[data-module="maps"]').dataset.sheet,
+           summary: sm ? { h: sm.getBoundingClientRect().height, before: getComputedStyle(sm, '::before').content, repeat: getComputedStyle(sm).backgroundRepeat } : null } }"""
+
+
+def chrome_check(c, what, side=False):
+    """Rule 17: every visible MapLibre control ends above the sheet (portrait: its bottom is above the sheet's top; landscape column: it does not
+    touch the column); one attribution control and one "i" icon (the frame's `summary` rule must not stretch MapLibre's 24 px button: the icon was
+    repeated under itself)."""
+    g = c.js(_CHROME_JS)
+    c.ge(len(g['ctrls']), 1, 'the map shows its controls (the attribution at least)', what=f'{what}: visible MapLibre controls')
+    p = g['panel']
+    for k in g['ctrls']:
+        if side:
+            ok = k['r'] <= p['l'] + 1 or k['b'] <= p['t'] + 1
+            c.ok(ok, f'{what}: control {k["cls"]!r} at {k["l"]:.0f}-{k["r"]:.0f} x {k["t"]:.0f}-{k["b"]:.0f}, sheet column from x {p["l"]:.0f}', 'a control does not touch the sheet')
+        else:
+            c.le(round(k['b'] - p['t'], 1), 1, 'the bottom of a MapLibre control is above the top of the sheet', what=f'{what}: control {k["cls"]!r} bottom against sheet top')
+    c.eq(g['attribs'], 1, 'one attribution control', what=f'{what}: attribution controls')
+    s = g['summary']
+    c.ok(s is not None and s['h'] <= 26, f'{what}: attribution button {s}', 'MapLibre\'s "i" button is 24 px high: one icon, not repeated under itself')
+    c.ok(s is not None and s['before'] in ('none', 'normal'), f'{what}: attribution button ::before {s and s["before"]!r}', 'no chevron of the frame\'s `summary` on the "i"')
+
+
+@case('D19', 'Map chrome above the sheet', 'D', tags=('sheet', 'maps'), screens=False, designs=('standard', 'metro', 'cupertino'),
+      rule='V3 spec 7.1 rule 17 (user 25 Oct: "le double i, invisible. Masque par le volet"); map_base.setBottomInset')
+def d19(c):
+    c.open('maps', flight=True, forecast=True)
+    c.page.add_style_tag(content='#fNotes{display:none!important}')
+    try:
+        c.page.wait_for_function("!!document.querySelector('[data-module=\"maps\"] .maplibregl-ctrl-attrib')", timeout=10000)
+    except Exception:
+        raise Skip('MapLibre did not start with the empty style: no control to measure') from None
+    c.wait(500)
+    chrome_check(c, 'default position')
+    # the map keeps the module's size under the sheet (the sheet covers the foot of the map): the controls follow the sheet, whatever its position
+    c.page.add_style_tag(content='[data-module="maps"] .mp-box{margin-bottom:-110px}')
+    c.settle()
+    c.wait(500)
+    g = c.js(_CHROME_JS)
+    c.ge(round(g['box']['b'] - g['panel']['t']), 100, 'the map reaches under the sheet in this check', what='map foot under the sheet (px)')
+    chrome_check(c, 'default position, map under the sheet')
+    c.drag('.f-sheet-grip', -420)
+    c.wait(600)
+    c.eq(c.js(_CHROME_JS)['sheet'], 'expanded', 'the sheet is expanded', what='sheet position')
+    chrome_check(c, 'expanded, map under the sheet')
+    c.tap('.f-sheet-grip')
+    c.until("document.querySelector('[data-module=\"maps\"]').dataset.sheet === 'default'", what='a tap on the handle brings the sheet back to the default position')
+    c.tap('.f-sheet-grip')
+    c.until("document.querySelector('[data-module=\"maps\"]').dataset.sheet === 'collapsed'", what='a second tap collapses the sheet')
+    c.wait(600)
+    chrome_check(c, 'collapsed, map under the sheet')
+    c.tap('.f-sheet-grip')
+    c.until("document.querySelector('[data-module=\"maps\"]').dataset.sheet === 'default'", what='back to the default position')
+    c.page.set_viewport_size({'width': 844, 'height': 390})
+    c.settle()
+    c.wait(600)
+    chrome_check(c, 'landscape column', side=True)
