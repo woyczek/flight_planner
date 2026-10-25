@@ -15,6 +15,7 @@ import argparse
 import json
 import re
 import sys
+import time
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -338,6 +339,11 @@ def pdf_names(icao, page_html):
     return sorted(set(re.findall(rf'Cartes/{icao}/([^"\'<>]+?\.pdf)', page_html)))
 
 
+def icao_list(menu_html):
+    """Codes OACI des terrains du menu de l'eAIP (liens FR-AD-2.<OACI>-fr-FR.html), dans l'ordre alphabétique."""
+    return sorted(set(re.findall(r'FR-AD-2\.([A-Z]{4})-fr-FR\.html', menu_html)))
+
+
 def base_resolver(base_dir):
     """Position d'un point en route (REF ENR 4.x) d'après les fichiers de la base SIA d'un dossier (navaids.json, points.json) ;
     None sans dossier."""
@@ -356,7 +362,9 @@ def base_resolver(base_dir):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('icao', nargs='+')
+    ap.add_argument('icao', nargs='*', help='codes OACI ; vide avec --all')
+    ap.add_argument('--all', action='store_true', help='tous les terrains du menu de l\'eAIP (une page de 0,7 Mo chacun)')
+    ap.add_argument('--delay', type=float, default=0.0, help='pause entre deux terrains, en secondes')
     ap.add_argument('--eaip', required=True, help='adresse du dossier AIRAC de l\'eAIP (…/FRANCE/AIRAC-AAAA-MM-JJ)')
     ap.add_argument('--out', default='data/proc')
     ap.add_argument('--cache', default=None, help='dossier des PDF téléchargés (gardés, pour ne pas recharger)')
@@ -370,9 +378,19 @@ def main(argv=None):
     cache = Path(a.cache or '.proc_cache') / cycle
     cache.mkdir(parents=True, exist_ok=True)
     resolve, docs = base_resolver(a.base_dir), {}
-    for icao in (i.upper() for i in a.icao):
+    codes = [i.upper() for i in a.icao]
+    if a.all:
+        codes = icao_list(fetch(f'{a.eaip}/html/eAIP/FR-menu-fr-FR.html').decode('utf-8', 'replace'))
+    if not codes:
+        raise SystemExit('aucun terrain: donner des codes OACI ou --all')
+    for n, icao in enumerate(codes):
+        if n and a.delay:
+            time.sleep(a.delay)
         page = fetch(f'{a.eaip}/html/eAIP/FR-AD-2.{icao}-fr-FR.html').decode('utf-8', 'replace')
         files = pdf_names(icao, page)
+        if not any(CODE_PAGE.match(f) for f in files):      # rien à lire (cartes seules) : pas de fichier
+            print(f'{icao}: aucune table de codage', file=sys.stderr)
+            continue
 
         def rows_of(name, icao=icao):
             p = cache / name

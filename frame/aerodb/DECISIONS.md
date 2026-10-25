@@ -615,5 +615,17 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   lot 1 were right; one defect found and fixed: `sid_trans` / `star_trans` are `{}` when there is none (they became the text
   "{}"). Bench: 18 checks including the real SID LUGE4N (SUBAK, BOBRI) and STAR LERG1R (LATAM, ARDEG, OSGOX, RIKSI); fixture
   trimmed to the fields read. The SID of this OFP lists only two fixes: SimBrief gives the named fixes, not the runway legs.
+- **Whole France**: `--all` lists the 141 aerodromes of the eAIP menu (`icao_list`); an aerodrome without `…CODE` pages writes no file.
 - **VAC address**: `…/media/dvd/eAIP_01_OCT_2026/Atlas-VAC/PDF_AIPparSSection/VAC/AD/AD-2.<ICAO>.pdf` answers 200 (PDF) for LFBD and
   LFAV and 404 for an unknown code; the builder asks with HEAD and keeps `charts.vac` only if found.
+
+## 25 October 2026 — step 3, EUROCONTROL: assessment and request, no converter yet
+
+- **Hosts**: `ext.eurocontrol.int` (AIXM Confluence) answers 403 Cloudflare to the cloud container whatever the headers; `www.eurocontrol.int`
+  and `www.ead.eurocontrol.int` answer. The pages of the data sets were therefore not read; their content is known from search extracts only.
+- **Found**: the EAD Agreement route carries charges and third-party royalties (page read in full): not suited. The AIXM Confluence
+  data sets (Procedures, AIXM 5.1.1, snapshot / baseline, checksums, REST) may be open; terms and scope unknown.
+- **Decided**: no converter is written without a real AIXM 5.1.1 sample (no simulated input). `frame/aerodb/EUROCONTROL_REQUEST.md`
+  carries the assessment, the planned element mapping and the draft request for the owner to adapt and send; no account was created.
+- **Publishing**: the command for the eAIP procedures is in `INTEGRATION.md`; it is run by the owner (the relay's rule: the session does not
+  publish to the data repository).

@@ -12,6 +12,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: whole-France run of the eAIP builder, EUROCONTROL assessment — step 3** (`tools/proc_eaip.py`, `tests/v3/cases/aerodb.py` K3,
+  `frame/aerodb/EUROCONTROL_REQUEST.md`, INTEGRATION, DECISIONS) — `--all` reads the 141 aerodromes of the eAIP menu (`--delay` between
+  two); the publication command is documented. The EUROCONTROL instrument-procedure data sets are assessed (the EAD Agreement route
+  has charges and third-party royalties; the AIXM Confluence sets may be open, terms unknown) and a request is drafted for the owner;
+  no converter without a real AIXM 5.1.1 sample.
 - **aerodb: procedures from the eAIP coding tables — step 2** (`tools/proc_eaip.py`, `frame/aerodb/aerodb.js`,
   `test/procedures.html`, `test/fixtures/eaip/`, `tests/v3/cases/aerodb.py` K2 K3; aerodb SPEC § 5 quinquies, INTEGRATION,
   DECISIONS) — a workstation builder (standard library + optional `pypdf`) reads the SIA eAIP pages "AD 2 <ICAO> DATA … CODE"

@@ -147,6 +147,13 @@ L.on(s => …); await L.sync();       // state; a pass now
   flight (`route.procedures`); Maps draws that, ignoring a procedure whose aerodrome is no longer the route's departure or
   arrival. `aerodb.procedureIndex()` says which aerodromes have some. A published point without position is placed by
   `procedures()` from the SIA base; a point still without `lat` is skipped by the drawing.
+- **Publishing the procedures of the eAIP** (workstation, by the owner of the data repository, once per AIRAC cycle):
+  `pip install pypdf`, then, from a clone of the suite, `python tools/proc_eaip.py --all --delay 0.3 --eaip
+  https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_<DD>_<MON>_<YYYY>/FRANCE/AIRAC-<YYYY-MM-DD> --out <clone of the data
+  repository>/proc [--base-dir <clone>/sia/base/fr/<cycle>]`, read the `warnings` in each `<ICAO>.json`, then commit and push the
+  data repository (the frame synchronises it like the SIA base). `--all` takes the 141 aerodromes of the eAIP menu (about 0.7 MB of
+  page each, then the few PDF pages of each; aerodromes without coding tables are skipped); the old cycle folders can stay (the
+  reader takes the latest one in force). The tool downloads from the SIA only and writes nothing outside `--out` and `--cache`.
 - **Charts for the frame's PDF reader**: `procedures(icao)` is not needed; read the aerodrome file of the cycle through the
   reader (`proc/<cycle>/<ICAO>.json`, key `charts`) — the address of a chart is `charts.base + items[].path`, the VAC chart
   `charts.vac` (SPEC § 5 quinquies). A call `aerodb.charts(icao)` can wrap it when the reader exists.
