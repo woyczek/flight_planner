@@ -479,3 +479,8 @@ The memory of the V3 atmosphere module: every choice, dated, with its reason. Ne
 - **Past days removed** once a day (`prune`): without it the cache grows by ~15 KB per cell and day for ever.
 - **Help chapter not written yet** (`meta.help: false`): the module is still a mock-up; the chapter comes with its
   lasting place.
+
+- **25 Oct 2026 (relay cloud, at integration of the settings lot `v3-settings-admin`)** — the Administration card writes the flight-zone
+  limit as `edge.show` (an object, extensible) in `airline/map_profiles.json` (`frame/settings/INTEGRATION.md` § 4); the module read
+  `edge === false` only. `readEdge` now reads both forms: `d?.edge !== false && d?.edge?.show !== false` (absent means shown, rule 15).
+  Atmosphere session informed; the boolean form may be dropped when nothing writes it any more.

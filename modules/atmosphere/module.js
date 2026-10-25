@@ -2171,13 +2171,14 @@ export async function mount(el, ctx) {
   };
   document.addEventListener('visibilitychange', back);
   window.addEventListener('pageshow', back);
-  // limite de la zone du vol sur la carte météo : tracée par défaut (règle 15), masquée si l'administrateur l'a choisi (clé
-  // edge de airline/map_profiles.json, la page de réglage de la Carte)
+  // limite de la zone du vol sur la carte météo : tracée par défaut (règle 15), masquée si l'administrateur l'a choisi
+  // (clé edge.show de airline/map_profiles.json, écrite par la carte Administration des Réglages : frame/settings/INTEGRATION § 4 ;
+  // la forme ancienne `edge: false` est encore lue)
   const PROFILES = 'airline/map_profiles.json',
     readEdge = async () => {
       const d = await data.get(PROFILES).catch(() => null);
       wm.update({
-        edge: d?.edge !== false
+        edge: d?.edge !== false && d?.edge?.show !== false
       });
       schedule();
       if (S.view === 'layers') layersCard();

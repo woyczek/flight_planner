@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- Atmosphere: the flight-zone limit follows the `edge.show` key written by the Administration card (the former boolean `edge` is still read).
 - **Settings: the keys survive a Safari relaunch, and the administration is one button per page** (`frame/store/transport_github.js`,
   `frame/store/frame_data.js`, `frame/app.js` data layer, `frame/settings/**`, `frame/frame.css`, help in four languages; tests A12,
   A19; rule 18 and § 10.16 of `V3_SPECIFICATION.md`) — the GitHub token and the avwx key were in `localStorage` while the identity
