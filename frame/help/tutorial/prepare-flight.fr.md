@@ -41,9 +41,9 @@ catégorie, le vent sur sa piste, le plafond et la visibilité. « Lire la mét�
 **Le vent réel.** Cochez « Météo réelle : vent le long de la route » : les champs du vent prennent le vent prévu à
 votre niveau.
 
-**La température.** « Utiliser ISA … » prend la température du jour au terrain de départ. Puis « Suivant · Devis ».
+**La température.** « Utiliser ISA … » prend la température du jour au terrain de départ. Puis « Suivant · Résultat ».
 
-## 4. Devis
+## 4. Résultat
 
 ![La décision du niveau : carburant et temps pour chaque niveau](img/prepare-flight-4.fr.png)
 
@@ -68,4 +68,4 @@ l'atterrissage, suivez [Écrire un compte rendu](#help?t=write-report).
 **Pour aller plus loin.** Comment marche chaque pas : les chapitres [Carburant](#help?m=fuel) et [Carte](#help?m=maps)
 du manuel.
 
-<!-- en: 404988292570 -->
+<!-- en: 6caddb172ed2 -->

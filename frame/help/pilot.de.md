@@ -8,14 +8,32 @@ Computer, mit oder ohne Netz.
 
 ## Erster Start
 
-- **Die Verben.** Jedes Werkzeug ist ein Verb des Menüs (☰ auf einem Telefon, linke Spalte auf einem Bildschirm). Die
-  Adresse eines Werkzeugs (`#fuel`, `#report`…) genügt, um zu ihm zurückzukehren.
+- **Die Verben.** Auf einem Telefon bietet die untere Leiste fünf Einträge: Vorbereiten, Karte, Bericht, Flüge, Wetter.
+  Tippen Sie einen bereits gewählten Reiter, der mehrere Bildschirme bündelt, noch einmal an: Darüber öffnet sich eine kleine
+  Liste (Vorbereiten: Kraftstoff und Leistungsdatenblätter). Auf einem Bildschirm ist jedes Werkzeug ein Verb der linken
+  Spalte. Die Adresse eines Werkzeugs (`#fuel`, `#report`…) genügt, um zu ihm zurückzukehren. Die Einstellungen sind die
+  Schaltfläche ⚙ der Kopfzeile.
 - **Ihre Identität.** Stellen Sie unter ⚙ Einstellungen Ihr Kürzel und Ihre IVAO-, VATSIM- und SimBrief-IDs ein: Die
   Werkzeuge nutzen sie zum Vorausfüllen.
 - **Die Stufe.** Ebenfalls in den Einstellungen wählt „Stufe“, was das Menü zeigt: Einstieg, Alltag oder Vollständig.
   Ein ausgeblendetes Werkzeug bleibt über seine Adresse erreichbar.
-- **Die Hilfe.** Jedes Werkzeug hat oben einen eingeklappten Bereich „So geht’s“; die Schaltfläche ? öffnet dieses
-  Handbuch beim Kapitel des Werkzeugs.
+- **Die Hilfe.** Jedes Werkzeug hat oben einen eingeklappten Bereich „So geht’s“; die Schaltfläche ? der Kopfzeile (auf
+  einem Telefon wie auf einem Bildschirm) öffnet dieses Handbuch beim Kapitel des Bildschirms, auf dem Sie sind.
+- **Der Status auf der Schaltfläche ⚙.** In der Kopfzeile trägt die Schaltfläche ⚙ einen Punkt: grün, wenn etwas auf Sie
+  wartet (ein gestarteter Flug, ein zu schreibender Bericht), orange (auf einem Telefon), wenn etwas Aufmerksamkeit braucht:
+  kein Kürzel, ausstehende Schreibvorgänge, Konflikte, ein Synchronisationsfehler, offline. Die Einstellungen öffnen sich mit
+  dem Block „Status“, der die Einzelheiten nennt: der laufende Flug (antippen, um zur Karte zu gehen), die noch zu
+  schreibenden Berichte zu Ihren vergangenen Flügen (antippen, um den vorausgefüllten Bericht zu öffnen), das fehlende Kürzel
+  (antippen, um es einzustellen), der Zustand der Daten (letzte Synchronisation, ausstehende Schreibvorgänge, genutzter
+  Austauschweg), die Luftfahrtdatenbank, solange sie nicht bereit ist, der Starter, „Offline“, wenn kein Netz da ist, und
+  auf einem Telefon die Quelle der Position während eines Flugs. Auf einem Telefon besteht die Kopfzeile nur aus Name,
+  Schaltfläche ? und Schaltfläche ⚙.
+- **Vollbild.** Auf der Karte (Werkzeuge mit fester Ansicht) blendet eine runde Schaltfläche am Ende der Schaltflächenspalte
+  über der Karte die Kopfzeile und die untere Leiste aus, damit die Karte den ganzen Platz hat; dieselbe Schaltfläche oder Esc bringen sie zurück.
+- **Telefon im Querformat.** Seitlich gedreht, legt das Telefon die untere Leiste als Symbolleiste an den linken Rand (dieselben
+  fünf Einträge; ein zweites Tippen auf Vorbereiten öffnet seine Werkzeuge rechts neben der Leiste), behält die Kopfzeile, stellt
+  den Datenblock der Karte als Spalte nach rechts (die erste Zeile antippen oder nach links ziehen, um sie zu verbreitern oder
+  zu verschmälern) und gibt der Karte die ganze verbleibende Höhe. Im Vollbild bleibt die Spalte.
 
 ## Daten und Synchronisation
 
@@ -37,16 +55,19 @@ die Berechnung steht — Rollen, Streckenkraftstoff, Reserve, Blockkraftstoff, F
 ## So geht’s
 
 Die Vorbereitung folgt fünf Schritten, in der Reihenfolge, in der man einen Flug vorbereitet:
-**1 Flug, 2 Route, 3 Wetter, 4 Kalkulation, 5 Abflug**. Auf einem Telefon zeigt die obere Leiste jeweils einen Schritt
+**1 Flug, 2 Route, 3 Wetter, 4 Ergebnis, 5 Abflug**. Auf einem Telefon zeigt die obere Leiste jeweils einen Schritt
 (tippen Sie auf eine Nummer, um dorthin zu gehen, „Weiter“ unten in jedem Schritt); auf einem breiten Bildschirm stehen
 die fünf Schritte untereinander. Bei jeder Änderung wird alles neu berechnet: Korrigieren Sie die Route, und Wetter,
 Berechnung und Wind folgen, ohne dass eine Schaltfläche zu drücken ist. Das Ergebnis (Blockkraftstoff,
 Streckenkraftstoff, Zeit, Sinkflugbeginn) bleibt bei jedem Schritt unten im Bildschirm sichtbar, mit der Herkunft des
-Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingegeben“). Ein ✓ markiert einen ausgefüllten Schritt.
+Winds („Wind: METAR LFRS“, „Wind: ICON-Vorhersage FL060“, „Wind eingegeben“). Auf einem Telefon braucht diese Leiste drei Zeilen: den Kontext
+(„Block · FL060→090→110→070 · Wind ARPEGE FL060“, vollständig beim Berühren), den Blockkraftstoff, dann drei Kacheln
+„Reise“, „Zeit“ und „TOD“ (Sinkflugbeginn). Der Bildschirm öffnet sich immer mit dem Reiter „Berechnung“; die Datenblätter
+öffnen sich über den Reiter „Datenblätter“. Ein ✓ markiert einen ausgefüllten Schritt.
 Flugflächen werden überall gleich geschrieben: als FL ab 5000 ft (FL060), darunter in Fuß (3500 ft).
 
 **1 Flug.** Abflug, Ankunft und Ausweichflugplatz (ICAO-Codes), das Flugdatum, wenn Sie die Vorhersage (TAF) statt der
-Beobachtung wollen, das Luftfahrzeug und die Reiseflugfläche (FL). Das Luftfahrzeug passt auf eine Zeile: das gewählte
+Beobachtung wollen, das Luftfahrzeug und die Reiseflugfläche (FL). Das Flugdatum ist ein einziger Wert, im aktuellen Flug gespeichert: Das Wetter der Kalkulation (TAF der Flugplätze, Höhenwinde und -temperaturen) wird für dieses Datum gelesen, die ETA der Karte geht davon aus, solange der Flug nicht gestartet ist, und der Schieberegler der Atmosphäre geht von ihm aus; leer heißt jetzt. Das Luftfahrzeug passt auf eine Zeile: das gewählte
 Luftfahrzeug, sein Kennzeichen, sein Rufzeichen und woher es stammt. Ein neuer Flug übernimmt das zuletzt auf diesem Gerät
 gewählte Luftfahrzeug; ohne Wahl wartet die Kalkulation. Die Lupe öffnet die Suche (das zuletzt gewählte zuerst): Tippen Sie ein
 Datenblatt, ein Kennzeichen, ein Rufzeichen oder einen Typ. Die Ergebnisse kommen in dieser Reihenfolge: Ihre
@@ -117,10 +138,10 @@ gehen an die Karte, die sie als Pfeile zeichnet. Ohne Netz bleibt die zuletzt ge
 oder Uhrzeit, bleibt der bisherige Höhenwind, markiert mit „Vorhersage wird geladen…“, bis zur neuen Vorhersage; kommt
 sie nicht, übernimmt der Bodenwind der METAR, und das wird gesagt („Höhenvorhersage nicht verfügbar“).
 
-**4 Kalkulation.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und die Dauer
+**4 Ergebnis.** Die Zeichnung zeigt für jede Flugfläche den Streckenkraftstoff (durchgezogene Linie) und die Dauer
 (gestrichelt). Der grüne Punkt markiert die sparsamste Flugfläche, das orange Quadrat die schnellste; der graue Bereich
 die Flugflächen, die auf dieser Strecke nicht zu halten sind. Jede Flugfläche wird wie die Kalkulation gerechnet, mit dem vorhergesagten Wind auf dieser
-Höhe, wenn das echte Wetter gewählt ist: auf der gewählten Flugfläche zeigen Kurve und Kalkulation dieselbe Zahl. Tippen Sie auf die Kurve, um eine Flugfläche zu wählen,
+Höhe, wenn das echte Wetter gewählt ist: auf der gewählten Flugfläche zeigen Kurve und Kalkulation dieselbe Zahl. Auf einer Strecke mit Stufen ist jeder Punkt der Kurve ein Horizontalflug auf seiner Flugfläche, ohne die Stufen: Die schwarze Raute markiert die echte Kalkulation des Plans (mit den Stufen der Strecke und dem Planwind), unter der Zeichnung angegeben („Plan: FL160, 856 kg, 0:54“); ihr Abstand zur Kurve sind die Kosten der Stufen. Die Kraftstoffachse folgt der gewählten Einheit (kg oder lb). Tippen Sie auf die Kurve, um eine Flugfläche zu wählen,
 oder nutzen Sie die beiden Schaltflächen. „Steigflug“ wählt die Art zu steigen: sparsam, bestes Steigen, schnell, mit
 der Geschwindigkeit des Datenblatts oder manuell (Sie geben Geschwindigkeit und Steigrate an).
 
@@ -213,7 +234,7 @@ Datenblättern ändert sich nichts.
   Schlüssel sagt es die Karte, und das METAR antwortet stattdessen. Die Wetterkarte sagt, woher die Meldungen stammen.
   Ganz ohne Netz zeigt sie das zuletzt gespeicherte Wetter mit seiner Uhrzeit.
 
-<!-- fr: e1923cc95a7a -->
+<!-- fr: 82119c7ea5b3 -->
 
 <!-- chapter: maps -->
 # Karte
@@ -224,25 +245,31 @@ Flugplätze, Funkfeuer, Luftstraßen, Mindesthöhen. Die Route des Flugs lässt 
 ## So geht’s
 
 **Der geplante Flug.** Die Karte zeigt den in Kraftstoff vorbereiteten Flug: Abflug, Routenpunkte, Ankunft, und den
-Ausweichflugplatz grau gestrichelt. Oben fasst eine Zeile ihn zusammen: Abflug und Ankunft, Ausweichflugplatz,
-Flugfläche, Entfernung, Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
+Ausweichflugplatz grau gestrichelt. Seine Zusammenfassung (Flugfläche, Entfernung, geplant oder im Flug) steht nicht über der Zeichnung (die Zeichnung zeigt sie): der Tooltip des Griffs des Datenblocks unter der Karte nennt sie, mit Abflug und Ankunft, Ausweichflugplatz und Luftfahrzeugtyp. Ändert sich der Flug in Kraftstoff, folgt die Karte von selbst.
 
 **Die Karte und was sie zeigt.** Rund um die Route: die Lufträume, die sie durchquert oder streift (Flugbeschränkungs-,
 Gefahren- und Sperrgebiete, kontrollierte Lufträume), die unteren oder oberen Luftstraßen je nach Ihrer Flugfläche, die
 Flugplätze und die Funkfeuer, und in jedem Ein-Grad-Feld die Mindestsicherheitshöhe (die braune Zahl, in Tausenden und
 Hunderten Fuß: „3⁵“ bedeutet 3 500 ft). Die kleinen violetten Zahlen entlang der Route sind die Entfernungen ab dem
 Abflug, in nautischen Meilen. Verschieben Sie die Karte mit einem Finger, spreizen Sie zwei Finger zum Zoomen;
-„Zentrieren“ kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
+„Zentrieren“ (das Zielsymbol oben rechts auf der Karte) kehrt zur ganzen Route zurück. Die Karte bleibt, wo Sie sie hingelegt haben, auch wenn sich die Route
 ändert: nur „Zentrieren“ (oder ein anderer Flug) richtet sie neu aus. Von weitem gesehen zeigt die Karte nur, was nahe
 der Route liegt; zoomen Sie hinein, um alles zu sehen.
 
-**Profil und Cursor.** Unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
-Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über
-das Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Karte ein. Tippen Sie auf die Route
-auf der Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem
-Abflug, geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden.
+**Profil und Cursor.** Im Datenblock unter der Karte schneidet das Vertikalprofil die Route von Anfang bis Ende: das Gelände, die
+Lufträume, in die Sie auf der geplanten Höhe einfliegen, und die Flugbahn in Violett. Fahren Sie mit dem Finger über das
+Profil: Ein blauer Cursor folgt ihm, und derselbe Cursor stellt sich auf der Karte ein. Tippen Sie auf die Route auf der
+Karte, um ihn dorthin zu setzen. Die Zeile unter dem Profil sagt, was unter dem Cursor liegt: Entfernung ab dem Abflug,
+geplante Höhe, Geländehöhe und der Luftraum, in dem Sie sich an dieser Stelle befinden. Unter der Karte zeigt dieser
+Datenblock das Profil; die Liste der Lufträume an einem Punkt oder die Meldepunkte eines Flugplatzes öffnen sich an
+seiner Stelle, wenn Sie sie verlangen, und das Profil kommt beim Schließen zurück. Der Wolkenchip, im Chip-Paar (eine Spalte rechts neben der Zeichnung, oder rechts in der Titelzeile bei vergrößertem Block und im Querformat), ersetzt es (der Profilchip bringt es zurück) durch den
+Wetterschnitt entlang der Route (Wind, Temperatur, Wolken, Vereisung) auf der Flughöhe; der Schnitt folgt demselben Cursor, und ein Tippen darauf
+verschiebt ihn. Er zeigt nur die Vorhersage, die Atmosphäre schon geladen hat: ohne sie führt die Zeile „Keine Vorhersage geladen“ zu Wetter unter Vorbereiten. Der letzte Chip „i“ öffnet über dem Profil seine Legende (was jede Linie, Fläche und Marke ist); ein Wischen über den Wetterschnitt bewegt den Cursor wie beim Profil. Profil und Schnitt werden auf die genaue Höhe des Blocks gezeichnet, ihre Entfernungsachse bleibt immer sichtbar: in einem niedrigen Block entfallen Höhenbeschriftungen, nie die Achse.
 
-**Sechs Kartenmodi.** Die Schaltfläche oben links auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
+**Ein feststehender Bildschirm.** Nichts zwischen Kopfzeile und Karte: die Karte und der Datenblock füllen den Bildschirm, und nichts scrollt außer dem Inhalt des Blocks. Die Schaltflächen liegen auf der Karte: rechts von oben „Route bearbeiten“ (der Stift), „Zentrieren“, der Kartenmodus, „Auf der Karte bearbeiten“ (die vier Pfeile) und zuletzt der Vollbildmodus (Esc verlässt ihn); links „Ebenen“. Der Block ist ein Blatt: Ziehen Sie seine obere Zeile (den kleinen Balken; in normaler Höhe trägt die Zeile über einem Profil oder Schnitt keinen Titel, nur die beiden Chips) nach oben, um ihn zu vergrößern, nach unten, um ihn auf diese Zeile zu verkleinern, was der Karte die ganze Höhe
+lässt; ein Tippen auf die Zeile klappt ihn ein oder bringt ihn auf seine normale Höhe zurück.
+
+**Sechs Kartenmodi.** Die Modus-Schaltfläche rechts auf der Karte zeigt den gewählten Modus; tippen Sie darauf, um die
 sechs Modi zu sehen. „IFR unten“: untere Flugwege, Lufträume, Mindesthöhen und Funkfeuer. „IFR oben“: obere Flugwege
 (UN…, UM…), Lufträume über FL195. „VFR“: topografischer Hintergrund mit Städten, den für VFR wichtigen Lufträumen,
 Meldepunkten und Hindernissen. „Topo“: das Gelände und, aus der Nähe, die Höhenlinien (alle 500 ft oder 100 m je nach
@@ -256,49 +283,53 @@ ihre Namen. Näher: die Punkte der Flugwege (Dreiecke und Funkfeuer), die Mindes
 die Länge des Abschnitts, sein Kurs („097°“), die Meldepunkte und die Hindernisse. Aus der Nähe trägt jedes Hindernis
 seine Höhe über Grund und die Höhe seiner Spitze in Klammern („434 AGL (771)“).
 
-**Ebenen.** Die Ebenen-Schaltfläche unter der Karteneinstellung öffnet die Liste dessen, was die Karte zeichnet:
+**Ebenen.** Die Ebenen-Schaltfläche links auf der Karte öffnet im Datenblock, anstelle des Profils, die Liste dessen, was die Karte zeichnet (das ✕ bringt das Profil zurück). Zuerst, unter der Flugauswahl, der Regler „Komplexität“: Er wirkt, als wäre der Zoom ein anderer, eine Zoomstufe pro Raststellung (−4 bis +4) — nach links weniger, nach rechts mehr Details. Was jeder Zoom zeigt, legt der Administrator fest (Einstellungen, Karte „Verwaltung“). Dann die
 Luftraumfamilien (TMA / CTR, D / R / P, FIR, andere), untere und obere Flugwege, Funkfeuer, Flugwegpunkte,
 VFR-Meldepunkte, Hindernisse, Mindesthöhen, Städte, Gradnetz, Ausweichflugplatz, Namen der Lufträume, Namen der
 Flugwege. Haken setzen oder entfernen: die Karte folgt, und Ihre Wahl bleibt für diese Einstellung auf diesem Gerät
 erhalten. „Alles zurücksetzen“ kehrt zur ursprünglichen Wahl zurück. „Nur entlang der Route“, in IFR vorgewählt,
 beschränkt Lufträume und Flugwege auf die Umgebung der Route; ohne Haken wird die ganze sichtbare Karte gezeichnet, um
-anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Ganz unten zeigt der Regler „Komplexität (Test)“ nach
-links weniger, nach rechts mehr Details, in jedem Zoom. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
-erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem.
+anderswo zu schauen. Aus der Nähe wird ohnehin alles gezeichnet. Jedes Element der Karte hat seinen Zoombereich: VFR-Meldepunkte
+erscheinen erst ganz nah, CTR aus der Nähe, TMA in mittlerer Ansicht, FIR von weitem. Auch die Größe der Karte zählt: In
+einem kleinen Rahmen (Telefon, Fenster der Doppelansicht) zeigt sie bei gleichem Zoom weniger Elemente als in einem
+großen, als wären Sie weiter weg (der Zoom wird um den Mittelwert aus Höhe und Breite des Rahmens korrigiert, 900 px
+bedeuten keine Korrektur).
 
 **Antippen oder darüberfahren für mehr.** Tippen, klicken oder fahren Sie über den Namen eines Flugwegs, die
 Beschriftung eines Luftraums oder eine Windfieder: eine kleine Blase nennt das Wesentliche in zwei Zeilen — für einen
 Flugweg den Abschnitt (Punkt → Punkt), seine Länge, seine Kurse, Unter- und Obergrenze; für einen Luftraum seinen Namen
-und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt eine
-Karte die Lufträume unter dem Finger, einen oder mehrere: einen Höhenblock wie das
-Vertikalprofil (eine nummerierte Säule je Luftraum, von seiner Unter- bis zu seiner Obergrenze), dann die nummerierte
-Liste mit ihren Grenzen. Sie bleibt offen: das ✕ oder Escape schließt sie, ein anderes Antippen ersetzt
-sie. Sie folgt dem Zeiger, bleibt 5 Sekunden, macht der
-nächsten Platz und schließt sich durch Antippen anderswo oder ein Verschieben der Karte. Über einem Funkfeuer nennt die Blase Art, Kennung und Frequenz; stehen
-mehrere Funkfeuer am selben Ort, behält die Karte das nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS), und die
-Blase nennt die anderen („auch hier: ILS 25L BG 109.9“). Auf dem Profil nennen Finger
-oder Maus ebenso die durchflogenen Lufträume.
+und seine Grenzen in AIP-Schreibweise („TMA 8 AQUITAINE 2000|FL145 D“). Anderswo in einem Luftraum angetippt, zeigt der
+Datenblock unter der Karte die Lufträume unter Ihrem Finger, einen oder mehrere, anstelle des Profils: ein Diagramm der
+Höhen wie das Vertikalprofil (eine nummerierte Säule je Luftraum, von der Untergrenze bis zur Obergrenze), dann die
+nummerierte Liste mit ihren Grenzen. Das ✕, Escape oder ein Tippen auf eine leere Stelle der Karte schließen ihn und das
+Profil kommt zurück, ein weiteres Tippen auf Lufträume ersetzt ihn; die Karte zu bewegen lässt ihn stehen. Die Karte
+bewegt sich nicht und ändert ihre Größe nicht. Die Hinweisblase beim Darüberfahren folgt dem Zeiger, bleibt 5 Sekunden,
+macht der nächsten Platz und schließt sich mit einem Tippen woanders oder einer Kartenbewegung. Über einer
+Funkfeuer-Anlage nennt die Blase Art, Kennung und Frequenz; wo mehrere Anlagen am selben Ort stehen, behält die Karte
+die nützlichste (VOR, TACAN oder DME, dann NDB, dann ILS) und die Blase nennt die anderen („auch hier: ILS 25L BG
+109.9“). Auf dem Profil geben Finger oder Maus ebenso die durchflogenen Lufträume an.
 
 **Die VFR-Meldepunkte eines Flugplatzes.** Fahren Sie mit der Maus über einen Flugplatz: seine Meldepunkte und die
-Sequenzen aus seinen VAC-Karten leuchten auf (benannte grüne Kreise, Striche zwischen den Punkten). Tippen Sie ihn an:
-die Karte rückt an seine Punkte heran, wenn sie eng beieinander liegen, und seine Karte nennt die Sequenzen (mit der
-Seite der VAC), dann die Hinweise der VAC, Seite für Seite eingeklappt. Sie bleibt offen, während Sie die Karte
-verschieben: das ✕ oder Escape schließt sie, ein anderer Flugplatz ersetzt sie. Das Antippen eines Meldepunkts öffnet
-ebenso die Karte seines Flugplatzes, dieser Punkt zuerst.
-Im VFR-Modus werden die Punkte des Abflug- und des Zielflugplatzes von selbst gezeigt. Diese Daten werden automatisch
-aus den VAC entnommen: sie sind als „zu prüfen“ gekennzeichnet und sind nicht die veröffentlichte Route; maßgeblich ist
-die VAC-Karte. Wurde der Flugplatz von Hand ausgewertet, sagt es die Karte, die Routen tragen ihren Namen, ihre Pisten
-und Bedingungen, ein geprüfter Verlauf folgt der VAC-Karte (lange Striche) und ein Pfeil zeigt eine Einbahnroute. Die
-Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für Hubschrauber; die Sequenzen und Hinweise der
-VAC kommen hinzu, sobald sie importiert sind. Sie erscheinen, sobald der Administrator sie importiert hat (Einstellungen
-› Wartung).
+Abläufe aus seinen VAC-Karten leuchten auf (benannte Kreise, Striche zwischen den Punkten). Auf der Karte trägt ein
+Meldepunkt nur sein Kurzzeichen („NA“, „E“, „SE“ …), damit die Karte lesbar bleibt; der lange Name steht in der Blase
+und in der Liste. Tippen Sie den Flugplatz an: Die Karte zoomt auf seine Punkte, wenn sie gedrängt sind, und der
+Datenblock unter der Karte gibt anstelle des Profils die Liste der Punkte (Kurzzeichen, langer Name, Einschränkungen),
+die Abläufe (mit der VAC-Seite), dann die Anweisungen der VAC, seitenweise eingeklappt; er scrollt, wenn der Inhalt lang
+ist. Er bleibt offen, während Sie die Karte bewegen: das ✕ oder Escape schließen ihn und das Profil kommt zurück, ein
+anderer Flugplatz ersetzt ihn. Das Antippen eines Meldepunkts öffnet ebenso den Inhalt seines Flugplatzes, dieser Punkt
+zuerst. Im VFR-Modus werden die Punkte des Abflug- und des Ankunftsflugplatzes automatisch gezeigt. Diese Daten werden
+automatisch aus den VAC extrahiert: Sie sind mit „zu prüfen“ gekennzeichnet und nicht die veröffentlichte Route; die
+VAC-Karte hat Vorrang. Wurde der Flugplatz von Hand analysiert, sagt der Block es, die Routen tragen ihren Namen, ihre
+Bahnen und Bedingungen, eine geprüfte Spur folgt der VAC-Karte (lange Striche) und ein Pfeil kennzeichnet eine
+Einbahnroute. Die Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für Hubschrauber; die Abläufe
+und Anweisungen der VAC kommen hinzu, sobald der Administrator sie importiert hat (Einstellungen › Wartung).
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30
-Minuten). Über der Karte nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
+Minuten). In den Notizen des Datenblocks, unter dem Profil, nennt eine Zeile die Abweichung: voraus oder verspätet (Minuten und NM), wie viele NM neben der
 Route, und Ihre Höhe gegenüber der geplanten; das Profil zeigt beide Höhen. Aus der Nähe trägt jeder Punkt seine
 voraussichtliche Zeit (ETA) unter seinem Namen, nie über einem Flugplatz, in UTC („14:52Z“), die Ortszeit in Klammern bei Abflug und Ankunft. „Folgen“ hält die Karte auf Ihrer Position; ein Verschieben der Karte beendet es. Ohne
-Position (GPS oder Netz nicht aktiviert) sagt die Zeile es und öffnet die Einstellungen; eine Position, die älter als 2
+Position (GPS oder Netz nicht aktiviert) sagt es eine Benachrichtigung einmal, die Zeile bleibt in den Notizen und ihr Link öffnet die Einstellungen; eine Position, die älter als 2
 Minuten ist, erscheint grau. Die Zeile endet mit der Quelle der Position: GPS, Netz, IVAO, VATSIM, X-Plane oder Little
 Navmap.
 
@@ -316,23 +347,23 @@ Die Wegpunkte der Route sind auch auf dem Profil markiert.
 (TOD), auf der Karte wie im Profil. Sie stammen aus der Berechnung in Kraftstoff; ohne sie schätzt die Karte sie mit
 üblichen Steig- und Sinkraten.
 
-**Die Missionskarten.** Die erste Liste oben wählt, was die Karte zeigt: den geplanten Flug oder eine Mission der
+**Die Missionskarten.** Die erste Liste, am Kopf der Ebenen (die Ebenen-Schaltfläche), wählt, was die Karte zeigt: den geplanten Flug oder eine Mission der
 Fluggesellschaft. Für eine Mission wählt eine zweite Liste unter ihren Karten (Übersicht, Ziel, Detail…). Jede Karte
 wird wie im Studio neu gezeichnet: gleicher Rahmen, gleiches Anzeigeprofil, mit den Punkten der Mission, ihren
 schraffierten Gebieten und ihrer Route. Das Vertikalprofil zeigt dann das der Mission.
 
-**Die Route auf der Karte ändern.** Tippen Sie oben rechts auf der Karte auf „Bearbeiten“: die Wegpunkte erhalten einen
+**Die Route auf der Karte ändern.** Tippen Sie auf „Auf der Karte bearbeiten“ (die vier Pfeile, rechts auf der Karte; beim ersten Mal erscheint eine kurze Hilfe): die Wegpunkte erhalten einen
 Kreis. Ziehen Sie einen Punkt auf einen Fix, ein Funkfeuer oder einen Flugplatz: er setzt sich dort (anderswo
 losgelassen, wird er ein freier Punkt, nach seinen Koordinaten benannt, etwa 4530N00030E). Um einen Punkt hinzuzufügen,
-tippen Sie auf „+“ neben „Bearbeiten“ und dann auf die gewünschte Stelle (oder halten Sie eine halbe Sekunde gedrückt):
+tippen Sie auf „+“ (in derselben Spalte) und dann auf die gewünschte Stelle (oder halten Sie eine halbe Sekunde gedrückt):
 auf einem Fix, einem Funkfeuer oder einem Flugplatz setzt er sich dort, anderswo ist es ein freier Punkt; er wird dem
 nächstgelegenen Abschnitt hinzugefügt. Ein einfaches Tippen fügt nichts hinzu: es zeigt die Blase. Tippen Sie einen
 Routenpunkt an: seine Karte nennt seine Flughöhe und bietet „Entfernen“ an. Abflug und Ankunft bewegen sich hier nicht.
 Auf dem Profil ziehen Sie eine Flughöhe nach oben oder unten: sie ändert sich ab dem Punkt, der diesen Abschnitt
 eröffnet, in Schritten von FL10 (auf dem ersten Abschnitt ist es die Flughöhe des Flugs); in der Karte eines Punkts tun
 „−“ und „+“ dasselbe. „Rückgängig“ nimmt die letzte Geste zurück. Jede Änderung wird sofort im Flug gespeichert, und
-Kraftstoff rechnet neu; das Profil folgt. „Fertig“ schließt den Modus, und die Karte lässt sich wieder mit dem Finger
-verschieben. Um die Route als Text einzugeben, öffnet „Route bearbeiten“ den Schritt Route von Kraftstoff.
+Kraftstoff rechnet neu; das Profil folgt. Erneutes Tippen auf die Schaltfläche (oder Esc) schließt den Modus, und die Karte lässt sich wieder mit dem Finger
+verschieben. Um die Route als Text einzugeben, öffnet der Stift oben in der rechten Spalte („Route bearbeiten“) den Schritt Route von Kraftstoff.
 
 ## Ohne Netz
 
@@ -349,11 +380,12 @@ stattdessen die Mindestsicherheitshöhe jedes durchquerten Felds (braun gestrich
 
 ## Sonderfälle
 
-**Kein Flug.** Ohne vorbereiteten Flug ist die Karte ausgeblendet und bietet „Kraftstoff öffnen“ an. Die
-Missionskarten bleiben über die Liste oben erreichbar.
+**Kein Flug.** Ohne vorbereiteten Flug ist die Karte leer und bietet „Kraftstoff öffnen“ an. Die Missionskarten bleiben über die Liste der Ebenen erreichbar.
+
+**Flug über die Datumsgrenze.** Ein Flug über den 180. Längengrad (zum Beispiel von Sibirien nach Alaska) wird in einem Stück gezeichnet: die Karte setzt sich jenseits der Linie fort, Entfernungsmarken, Profil und Wetterschnitt folgen der Route, die mit Längen zwischen −180° und 180° gespeichert bleibt.
 
 **Luftfahrtdatenbank fehlt.** Wurde die Luftfahrtdatenbank noch von keinem Gerät der Fluggesellschaft veröffentlicht,
-zeigt die Karte nur die Route und sagt es.
+zeigt die Karte nur die Route und sagt es einmal (Benachrichtigung, dann Notiz im Datenblock).
 
 **Gebiet nicht behalten.** Offline, über einem nie angesehenen und nicht behaltenen Gebiet, hat die Karte nichts zu
 zeigen; die Schaltfläche „Offline-Daten“ öffnet die Einstellungen, um es beim nächsten Mal zu behalten.
@@ -365,7 +397,7 @@ Datenbank aus einem anderen Zyklus, sagt es eine Zeile: Die Lufträume können s
 das übliche Profil des Kartentyps (detailliert für ein Ziel oder ein Detail, sonst vereinfacht) und weist darauf hin.
 Es genügt, die Mission im Studio zu öffnen und zu speichern, damit sie danach ihr eigenes behält.
 
-<!-- fr: 16866d3245cc -->
+<!-- fr: dc1f0c9c9d2f -->
 
 <!-- chapter: report -->
 # Bericht
@@ -386,12 +418,12 @@ aus. Der in Kraftstoff oder Karte vorbereitete Flug wird auf die gleiche Weise v
 er in Kraftstoff gestartet („Flug starten“), steht er an erster Stelle, „Flug gestartet um hh:mm“. Die Karte nennt in
 einer Zeile alles, was übernommen wird, auch das, wofür eine Einsatzart kein Feld hat (Entfernung, Flugfläche).
 „Übernehmen“ füllt auch die Anlasszeit (die Abflugzeit in Kraftstoff) und den Kraftstoff beim Start (den Blockkraftstoff
-der Kalkulation) aus, jeweils mit ihrer Quelle gekennzeichnet. Das Speichern des Berichts beendet den gestarteten Flug:
+der Kalkulation) aus, alles in der Zeile „Vorausgefüllt aus: …“ unter dem Kartentitel festgehalten. Das Speichern des Berichts beendet den gestarteten Flug:
 Kraftstoff kehrt zur Vorbereitung zurück, Meine Flüge entfernt „Laufend“, und der Flug wird nicht mehr vorgeschlagen.
 
 **Die anderen Quellen.** Klappen Sie „Andere Quellen“ auf, um Ihren letzten IVAO- oder VATSIM-Flug, Ihren
 SimBrief-Flugplan oder einen eingefügten Text zu übernehmen: einen ICAO-Flugplan, die Seite eines Flugs aus dem
-IVAO-Tracker oder von StatSim, ein METAR. Nur leere Felder werden ausgefüllt; neben jedem steht seine Quelle. Liefert
+IVAO-Tracker oder von StatSim, ein METAR. Nur leere Felder werden ausgefüllt; die Zeile „Vorausgefüllt aus: …“ unter dem Kartentitel nennt ihre Herkunft. Liefert
 eine Quelle etwas anderes für bereits ausgefüllte Felder, bietet eine Schaltfläche an, sie zu ersetzen.
 
 **Der Einsatz.** Im zweiten Schritt: die Familie (vorgeschlagen nach Ihrem letzten Bericht), die Serie, die Kennung des
@@ -420,7 +452,7 @@ wieder zu öffnen und zu ändern. „Neuer Bericht“ beginnt mit einem leeren B
   Flug zählt als ein einziger Flug. Anlassen und Abstellen entsprechen Verbindung und Trennung, wenn die Spur am Boden
   beginnt und endet; Start und Landung stammen aus der Spur.
 - **Die Zeiten** sind UTC, mit „(Z)“ an den Feldern; der gestartete Flug und das Netz füllen sie in UTC. Ein älterer
-  Bericht, in der Uhrzeit des Geräts eingegeben, wird umgerechnet gezeigt, darunter die eingegebene Zeit („lokal
+  Bericht, in der Uhrzeit des Geräts eingegeben, wird umgerechnet gezeigt, dazu in der Zeile unter dem Kartentitel die eingegebene Zeit („Start lokal
   eingegeben 18:30“); er wird nur in UTC neu geschrieben, wenn Sie ihn speichern.
 - **SimBrief**: Ihr letzter Plan (Kennung in ⚙ eingestellt) — Luftfahrzeug, Route, Flugfläche, Geschwindigkeit,
   geplanter Kraftstoff, METAR und TAF.
@@ -555,6 +587,52 @@ Bericht „Speichern und auf der Website eintragen“ frei.
 
 <!-- fr: cfdf162727aa -->
 
+<!-- chapter: atmosphere -->
+# Wetter
+
+Die Atmosphäre entlang des in Kraftstoff vorbereiteten Flugs: eine Wetterkarte in der gewählten Höhe, der senkrechte
+Schnitt der Route, der Schnitt eines Punkts, zur Abflugzeit oder später.
+
+## So geht's
+
+**Der Flug.** Wetter zeigt immer den in Kraftstoff vorbereiteten Flug (Route, Höhe, Flugdatum). Ohne geplanten Flug
+sagt die Seite es und führt zu Kraftstoff; „Beispiel ansehen" zeigt einen Vorführflug, im Griff als solcher markiert.
+
+**Die Vorhersage laden.** Die Ladeschaltfläche (der Pfeil nach unten, rechts auf der Karte) liest die Vorhersage entlang
+der Route und um sie herum. Beim Öffnen wird nichts abgefragt: die Seite zeigt, was das Gerät schon gespeichert hat.
+Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlichte Weltsynoptik, ohne etwas abzufragen.
+
+**Die Wetterkarte.** Isobaren, Isothermen, Wolken, Wind, Jetstream und Konvektion in der mit dem Höhenchip gewählten
+Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
+wählt, was gezeichnet wird. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
+
+**Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
+Schnitt und Punktschnitte folgen.
+
+**Der Schnitt und die Punktschnitte.** Unter der Karte zeigt der Schnitt die Route von Anfang bis Ende, vom Boden bis
+über die Flughöhe. Tippen Sie darauf, um den Schnitt des nächsten Punkts zu öffnen (das senkrechte Profil der
+Atmosphäre dort); ◀ und ▶ wechseln zum Nachbarschnitt, ✕ kehrt zum Schnitt zurück. Die Zeichnung passt immer in den
+Block, ihre Entfernungsachse sichtbar; vergrößern Sie den Block für mehr Einzelheiten.
+
+**Die Legende.** Der Chip „i" rechts der Zeichnung (in der Titelzeile, wenn sie angezeigt wird) zeigt die Legende des
+Gezeichneten; ein Tippen auf die Legende, den Chip oder Escape schließt sie.
+
+- Schnitt: berechnete Bahn (durchgezogen: Steigflug, Reiseflug, Sinkflug), geplante Höhe (gestrichelt), angeforderte
+  Höhe (gepunktet), Steigflugende und Sinkflugbeginn (TOC, TOD), Wolken (grau, dunkler: mehr Bedeckung), Isothermen
+  alle 5 °C (0 °C dick blau), Inversionen und Vereisung (Schraffur), Wind (Fiedern: halb 5 kt, voll 10, Wimpel 50),
+  geschätzte Cumulus-Basis (grau gepunktet), Gelände, Routenpunkte (senkrechte Linien); bei einem hohen Block die
+  Bänder unten: tiefe, mittlere, hohe Bewölkung, Niederschlag, Sicht unter 8 km.
+- Punktschnitt: Temperatur (rot), Taupunkt (grün), Normatmosphäre (gestrichelt), die drei Höhen des Flugs an diesem
+  Ort, Inversionen, Wolken (Spalte rechts), Wind, Gelände.
+
+## Gut zu wissen
+
+- Die Vorhersage kommt von Open-Meteo (Météo-France AROME und ARPEGE über Frankreich, ICON in Europa, GFS anderswo);
+  die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
+- Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
+
+<!-- fr: 4bb0b6cd3ef2 -->
+
 <!-- chapter: settings -->
 # Einstellungen
 
@@ -562,6 +640,12 @@ Die Einstellungen dieses Geräts (⚙ oben am Bildschirm): Ihre Identität, was 
 werden und was das Gerät offline behält. Sie bleiben auf dem Gerät, nie synchronisiert.
 
 ## So geht’s
+
+**Der Status.** Der Bildschirm öffnet sich mit dem Block „Status“, mit demselben Punkt wie die Schaltfläche ⚙ der Kopfzeile
+(grün: etwas Neues; orange: Aufmerksamkeit). Eine Zeile pro Sache, zum Handeln antippen: der laufende Flug (zur Karte), die zu
+schreibenden Berichte (zum vorausgefüllten Bericht), das fehlende Kürzel (zu „Identität“), die Luftfahrtdatenbank, solange
+sie nicht bereit ist (zu „Datenzugang“), der Zustand der Daten und der genutzte Austauschweg (zu „Synchronisation“ oder zu den
+Konflikten), der Starter, „Offline“ und auf einem Telefon die Position während eines Flugs.
 
 **Ihre Identität.** Tippen Sie unter „Identität“ Ihr Kürzel und Ihre IVAO-VID, VATSIM-CID und SimBrief-ID, dann
 „Speichern“. Die Werkzeuge nutzen sie zum Vorausfüllen; mit mehreren Nutzern ist das Kürzel nötig.
@@ -586,7 +670,7 @@ für data/“).
 zum ersten Mal auf einem Telefon geöffnet — hat weder die Luftfahrtdatenbasis (Lufträume, Flugplätze, Funkfeuer) noch
 die Flugzeugbasis: „Offline-Daten“ sagt es. Zwei Wege: Stellen Sie den Zugang zum Datenrepository ein, auch ohne
 Austausch anzukreuzen (er liest dann nur die Basen); oder veröffentlichen Sie auf einem Rechner mit Starter die Basen im
-Repository (V2: Einstellungen › Wartung › Luftfahrtdaten und Luftfahrzeugtypen), dann synchronisieren.
+Repository (V2: Einstellungen › Wartung › Luftfahrtdaten und Luftfahrzeugtypen), dann synchronisieren. Drei getrennte Zustände, wenn die Basis fehlt: „Luftfahrtdatenbank wird geladen…“ (das Lesen ist nicht beendet: warten), „Datenzugriff auf diesem Gerät nicht eingerichtet“ (Zugang oben einrichten; eine zum Home-Bildschirm hinzugefügte App hat ihren eigenen Speicher, nichts aus Safari ist dort) und „Luftfahrtdatenbank nicht veröffentlicht“ (der Zugang funktioniert, im Repository ist nichts veröffentlicht).
 
 **Die Synchronisation.** Mit angekreuztem Austausch zeigt die Karte „Synchronisation“ den letzten Erfolg, die
 ausstehenden Änderungen und das Netz; „Jetzt synchronisieren“ sendet und empfängt sofort. Sonst läuft sie von selbst
@@ -701,8 +785,8 @@ auf einem Rechner mit Starter ein.
 ## Verwaltung
 
 **Die Verwaltungsseiten.** Auf der Stufe „Vollständig“ (Karte „Stufe“) sammelt die Karte „Verwaltung“ unter „Über“ die
-Verwaltungs- und Testseiten, jede mit einem Satz; auf den anderen Stufen erscheint sie nicht. In der App: die Abstimmung
-der Kartenschwellen (`#maps?tune=1`, auf einem Telefon nur lesbar), der Fahrplan (`#roadmap`) und die Diagnose der Karte
+Verwaltungs- und Testseiten, jede mit einem Satz; auf den anderen Stufen erscheint sie nicht. In der App: die Schaltfläche
+„Abstimmung der Kartenschwellen (Administrator)“ (`#maps?tune=1`, auf einem Telefon nur lesbar; sie öffnet die Abstimmungsseite: für jedes Kartenelement und jeden Modus die Zoomstufen, in denen es erscheint, für die Fluggesellschaft gespeichert, `airline/map_profiles.json`; ein Modus, den Sie nie gespeichert haben, übernimmt die Schwellen eines abgestimmten Modus, die Seite sagt es; der Regler „Komplexität“ der Karte verschiebt nur den Zoom), zurück mit dem Zurück-Pfeil, der Fahrplan (`#roadmap`) und die Diagnose der Karte
 „Über“.
 
 **Die Prüfstände, auf einem Rechner.** Vom Starter bedient, öffnen sie sich nur auf einem Rechner mit Starter (anderswo

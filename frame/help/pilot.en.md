@@ -7,13 +7,30 @@ hand-off to the airline website. It works on a phone as on a computer, with or w
 
 ## First start
 
-- **The verbs.** Each tool is a verb of the menu (☰ on a phone, left column on a screen). A tool's address (`#fuel`,
-  `#report`…) is enough to come back to it.
+- **The verbs.** On a phone, the bottom bar gives five entries: Prepare, Map, Report, Flights, Weather. Touch an already
+  selected tab again when it groups several screens: a small list opens above it (Prepare: Fuel and Performance sheets). On a
+  screen, each tool is a verb of the left column. A tool's address (`#fuel`, `#report`…) is enough to come back to it.
+  Settings are the ⚙ button of the header.
 - **Your identity.** In ⚙ Settings, set your trigram and your IVAO, VATSIM and SimBrief IDs: the tools use them to
   prefill.
 - **The level.** Also in Settings, "Level" chooses what the menu shows: Discovery, Everyday or Full. A hidden tool stays
   reachable by its address.
-- **Help.** Each tool has a folded "How to use" panel at its top; the ? button opens this manual at the tool's chapter.
+- **Help.** Each tool has a folded "How to use" panel at its top; the ? button of the header (on a phone as on a screen) opens
+  this manual at the chapter of the screen you are on.
+- **The status, on the ⚙ button.** In the header, the ⚙ button carries a dot: green when something is waiting for you (a
+  flight started, a report to write), amber (on a phone) when something needs attention: no trigram, pending writes,
+  conflicts, a synchronisation error, offline. Settings open on the "Status" block, which gives the detail: the flight in
+  progress (touch to go to the Map), the reports still to write for your past flights (touch to open the report,
+  pre-filled), the missing trigram (touch to set it), the state of the data (last synchronisation, pending writes, the
+  exchange in use), the aeronautical database while it is not ready, the launcher, "Offline" when there is no network and,
+  on a phone, the source of the position during a flight. On a phone the header is reduced to the name, the ? button and the
+  ⚙ button.
+- **Full screen.** On the map (the fixed-view tools), a round button at the bottom of the column of buttons over the map hides
+  the header and the bottom bar to give the map all the room; the same button or Escape bring them back.
+- **Phone in landscape.** Turned on its side, the phone puts the bottom bar as a rail of icons at the left (the same five
+  entries; a second touch on Prepare opens its tools at the right of the rail), keeps the header, lays the map's data block as a
+  column at the right (touch its first line, or drag it to the left, to widen or narrow it) and gives the map the whole height
+  that remains. In full screen the column stays.
 
 ## Data and synchronisation
 
@@ -35,15 +52,17 @@ trip fuel, reserve, block fuel, flight time and top of descent.
 ## How to use
 
 Preparation follows five steps, in the order a flight is prepared:
-**1 Flight, 2 Route, 3 Weather, 4 Quote, 5 Departure**. On a phone, the top bar shows one step at a time (touch a number
+**1 Flight, 2 Route, 3 Weather, 4 Result, 5 Departure**. On a phone, the top bar shows one step at a time (touch a number
 to go to it, “Next” at the bottom of each step); on a wide screen, the five steps are one below the other. Everything is
 recomputed at each change: correct the route, and the weather, the quote and the wind follow, with no button to press.
 The result (block fuel, trip fuel, time, top of descent) stays visible at the bottom of the screen at every step, with
-where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060”, “wind typed”). A ✓ marks a completed step.
+where the wind comes from (“wind: METAR LFRS”, “wind: ICON forecast FL060”, “wind typed”). On a phone this bar takes three lines: the context
+(“Block · FL060→090→110→070 · wind ARPEGE FL060”, in full when touched), the block fuel, then three tiles “Trip”,
+“Time” and “TOD” (top of descent). The screen always opens on the “Quote” tab; the sheets open with the “Sheets” tab. A ✓ marks a completed step.
 Levels are written the same way everywhere: as FL from 5,000 ft up (FL060), in feet below (3,500 ft).
 
 **1 Flight.** The departure, the arrival and the alternate (ICAO codes), the flight date if you want the forecast (TAF)
-rather than the observation, the aircraft and the cruise level (as a flight level). The aircraft fits on one line: the
+rather than the observation, the aircraft and the cruise level (as a flight level). The flight date is a single value, kept in the current flight: the quote’s weather (the aerodromes’ TAF, winds and temperatures aloft) is read at that date, the Map’s ETA starts from it while the flight has not started, and Atmosphere’s slider starts from it; empty means now. The aircraft fits on one line: the
 chosen aircraft, its registration, its callsign and where it comes from. A new flight takes the last aircraft chosen on this device; with none
 chosen, the quote waits. The magnifying glass opens the search (the last chosen first): type a
 sheet, a registration, a callsign or a type. The results come in this order: your performance sheets, the airline's
@@ -109,10 +128,10 @@ last forecast read stays. When the route or the time changes, the previous wind 
 until the new forecast arrives; if it does not come, the METARs' surface wind takes over and this is stated (“forecast
 aloft unavailable”).
 
-**4 Quote.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
+**4 Result.** The drawing shows, for each level, the trip fuel (solid line) and its duration (dashes). The green dot
 marks the most economical level, the orange square the fastest; the grey area, the levels that cannot be held on this
 trip. Each level is worked out like the quote, with the forecast wind at that level when the real weather is on:
-at the chosen level, the curve and the quote give the same figure. Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
+at the chosen level, the curve and the quote give the same figure. On a route with steps, every point of the curve is a flat flight at its level, without the steps: the black diamond marks the plan's real quote (with the route's steps and the plan's wind), given under the drawing (“Plan: FL160, 856 kg, 0:54”), and its gap from the curve is the cost of the steps. The fuel axis follows the chosen unit (kg or lb). Touch the curve to choose a level, or use the two buttons. “Climb” chooses how to climb: economical, best rate,
 fast, at the sheet's airspeed, or manual (you give airspeed and rate of climb).
 
 The “Density altitude” fold shows, for the ISA deviation on the horizontal axis, the density altitude of each pressure
@@ -195,7 +214,7 @@ flight levels, and nothing changes in the sheets.
   instead. The weather card says where the messages come from. With no network at all, it shows the last weather kept,
   with its time.
 
-<!-- fr: e1923cc95a7a -->
+<!-- fr: 82119c7ea5b3 -->
 
 <!-- chapter: maps -->
 # Map
@@ -206,24 +225,31 @@ beacons, airways, minimum altitudes. The flight's route can also be changed on t
 ## How to use
 
 **The planned flight.** The map shows the flight prepared in Fuel: departure, route points, arrival, and the alternate
-airfield in grey dashes. At the top, a line sums it up: departure and arrival, alternate, level, distance, aircraft
-type. When the flight changes in Fuel, the map follows by itself.
+airfield in grey dashes. Its summary (level, distance, planned or in-flight) is not written over the drawing (the drawing shows it): the tooltip of the data block's handle under the map gives it, with departure and arrival, alternate and aircraft type. When the flight changes in Fuel, the map follows by itself.
 
 **The map and what it shows.** Around the route: the airspaces it crosses or skirts (restricted, danger and prohibited
 areas, controlled airspace), the low or high airways depending on your level, the airfields and the beacons, and in each
 one-degree square the minimum safe altitude (the brown figure, in thousands and hundreds of feet: “3⁵” means 3,500 ft).
 The small purple figures along the route are the distances from the departure, in nautical miles. Drag the map with one
-finger, spread two fingers to zoom; “Recentre” comes back to the whole route. The map stays where you put it, even when
+finger, spread two fingers to zoom; “Recentre” (the target, at the top right of the map) comes back to the whole route. The map stays where you put it, even when
 the route changes: only “Recentre” (or another flight) reframes it. Seen from afar, the map only shows what is near the
 route; zoom in to see everything.
 
-**The profile and the cursor.** Below the map, the vertical profile cuts through the route from end to end: the
-terrain, the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the
-profile: a blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The
-line below the profile says what is under the cursor: distance from the departure, planned altitude, terrain height,
-and the airspace you are in at that point.
+**The profile and the cursor.** In the data block under the map, the vertical profile cuts through the route from end to end: the terrain,
+the airspaces you enter at the planned altitude, and the flight path in purple. Slide your finger along the profile: a
+blue cursor follows it, and the same cursor moves on the map. Tap the route on the map to put it there. The line below
+the profile says what is under the cursor: distance from the departure, planned altitude, terrain height, and the
+airspace you are in at that point. Under the map, this data block shows the profile; the list of airspaces at a point or
+an airfield's reporting points open in its place when you ask for them, and the profile comes back when they are closed. The cloud chip, in the pair of chips (a column at the right of the drawing, or in the title line at the right when the block is enlarged or in landscape), replaces it (the profile chip brings it back) with the weather
+cross-section along the route (wind, temperature, cloud, icing) against the flight's level; the cross-section follows the same cursor, and a tap on
+it moves the cursor. It only shows the forecast that Atmosphere has already loaded: without one, the line "No forecast loaded" leads to
+Weather, under Prepare. The last chip, “i”, opens the legend of the profile over it (what each line, band and mark is); dragging a finger on the cross-section moves the cursor like on the profile. The profile and the cross-section are drawn to the exact height of the block, their distance axis always in view: on a low block they drop level labels, never the axis.
 
-**Six map modes.** The button at the top left of the map shows the chosen mode; tap it to see the six modes. “Low IFR”:
+**A fixed screen.** Nothing between the header and the map: the map and the data block fill the screen, and nothing scrolls but the block's content. The buttons sit on the map: on the right, from the top, “Edit the route” (the pencil), “Recentre”, the map mode, “Edit on the map” (the four arrows) and, last, full screen (Escape leaves it); on the left, “Layers”. The block is a sheet: drag its top line (the small bar; at its normal height the line carries no title above a profile or a cross-section, only the two chips) up to enlarge it, down to shrink it to
+that line, which leaves the whole height to the map; a tap on the line collapses it or brings it back to its normal
+height.
+
+**Six map modes.** The mode button, at the right of the map, shows the chosen mode; tap it to see the six modes. “Low IFR”:
 low airways, airspaces, minimum altitudes and beacons. “High IFR”: upper airways (UN…, UM…), airspaces above FL195.
 “VFR”: topographic background with towns, the airspaces that matter in VFR, reporting points and obstacles. “Topo”: the
 terrain and, close up, the contour lines (every 500 ft or 100 m depending on your unit, the index contours numbered),
@@ -236,44 +262,47 @@ names. Closer: the airway points (triangles and beacons), each airway's minimum 
 distance, its track (“097°”), the reporting points and the obstacles. Close up, each obstacle carries its height above
 ground, and the elevation of its top in brackets (“434 AGL (771)”).
 
-**Layers.** The layers button, under the map setting, opens the list of what the map draws: airspace families (TMA /
+**Layers.** The layers button, at the left of the map, opens in the data block, in place of the profile, the list of what the map draws (the ✕ brings the profile back). First, under the flight selector, the “Complexity” slider: it acts as if the zoom were different, one zoom level per step (−4 to +4) — fewer details to the left, more to the right. What each zoom shows is set by the administrator (Settings, “Administration” card). Then the airspace families (TMA /
 CTR, D / R / P, FIR, others), lower and upper airways, beacons, airway points, VFR reporting points, obstacles, minimum
 altitudes, towns, graticule, alternate, airspace names, airway names. Tick or untick: the map follows, and your choice
 is kept for this setting on this device. “Reset all” goes back to the original choice. “Around the route only”, ticked
 by default in IFR, keeps airspaces and airways near the route; unticked, the whole visible map is drawn, to look
-elsewhere. Close up, everything is drawn anyway. At the bottom, the “Complexity (trial)” slider shows fewer details to
-the left, more to the right, at every zoom. Each element of the map has its zoom range: VFR reporting points appear only
-very close, CTRs close up, TMAs in a medium view, FIRs from afar.
+elsewhere. Close up, everything is drawn anyway. Each element of the map has its zoom range: VFR reporting points appear only
+very close, CTRs close up, TMAs in a medium view, FIRs from afar. The size of the map counts too: in a small frame
+(phone, pane of the dual view) it shows fewer elements than a large one at the same zoom, as if you were further out
+(the zoom is corrected by the mean of the frame's height and width, 900 px meaning no correction).
 
 **Tap or hover to learn more.** Tap, click or hover over an airway's name, an airspace's label or a wind barb: a small
 bubble gives the essentials in two lines — for an airway, the segment (point → point), its distance, its tracks, its
 floor and ceiling; for an airspace, its name and its limits in AIP notation (“TMA 8 AQUITAINE 2000|FL145 D”). Tapped
-elsewhere inside an airspace, a card shows the airspaces under your finger,
-one or several: a block of levels, like the vertical profile (one numbered column per airspace, from its floor to its ceiling),
-then the numbered list with their limits. It stays open: the ✕ or Escape closes it, another tap replaces it. It follows the pointer, stays 5 seconds, gives
-way to the next one, and closes with a tap elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several
-beacons share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the
-others (“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give
-the airspaces crossed in the same way.
+elsewhere inside an airspace, the data block under the map shows the airspaces under your finger, one or several, in
+place of the profile: a chart of levels, like the vertical profile (one numbered column per airspace, from its floor to
+its ceiling), then the numbered list with their limits. The ✕, Escape or a tap on an empty spot of the map close it and
+the profile comes back, another tap on airspaces replaces it; moving the map leaves it. The map neither moves nor
+changes size. The hover bubble follows the pointer, stays 5 seconds, gives way to the next one, and closes with a tap
+elsewhere or a move of the map. Over a beacon, the bubble gives its type, ident and frequency; where several beacons
+share a place, the map keeps the most useful one (VOR, TACAN or DME, then NDB, then ILS) and the bubble names the others
+(“also here: ILS 25L BG 109.9”). On the profile, your finger or the mouse give the airspaces crossed in the same way.
 
 **The VFR reporting points of an airfield.** Move the mouse over an airfield: its reporting points and the sequences
-taken from its VAC charts light up (named green circles, dashes between the points). Tap it: the map zooms in on its
-points when they are crowded, and its card gives the sequences (with the VAC page), then the instructions of the VAC,
-folded page by page. It stays open while you move the map: the ✕ or Escape closes it,
-another airfield replaces it. Tapping a reporting point opens its airfield's card in the same way, that point first. In VFR mode, the points of the departure and arrival
-airfields are shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked”
-and are not the published route; the VAC chart prevails. When the airfield has been analysed by hand, the card says so,
-the routes carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow
-marks a one-way route. The reporting points of the database are always there, in black for aeroplanes and in green for
-helicopters; the sequences and instructions of the VAC are added once imported. They appear once the administrator has
-imported them (Settings › Maintenance).
+taken from its VAC charts light up (named circles, dashes between the points). On the map, a reporting point carries
+only its short code (“NA”, “E”, “SE”…), so that the map stays legible; the long name is in the bubble and in the list.
+Tap the airfield: the map zooms in on its points when they are crowded, and the data block under the map, in place of
+the profile, gives the list of points (code, long name, restrictions), the sequences (with the VAC page), then the
+instructions of the VAC, folded page by page; it scrolls when the content is long. It stays open while you move the map:
+the ✕ or Escape closes it and the profile comes back, another airfield replaces it. Tapping a reporting point opens its
+airfield's content in the same way, that point first. In VFR mode, the points of the departure and arrival airfields are
+shown automatically. These data are extracted automatically from the VAC: they are marked “to be checked” and are not
+the published route; the VAC chart prevails. When the airfield has been analysed by hand, the block says so, the routes
+carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow marks a
+one-way route. The reporting points of the database are always there, in black for aeroplanes and in green for
+helicopters; the sequences and instructions of the VAC are added once the administrator has imported them (Settings ›
+Maintenance).
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
-and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). Above the map,
-a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
+and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). In the data block's notes, under the profile, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the
 planned one; the profile shows both altitudes. Close up, each point carries its estimated time (ETA) under its name, never over an airfield, in UTC (“14:52Z”), the local time in brackets at departure and arrival. “Follow” keeps the
-map on your position; moving the map stops it. Without a position (GPS or network not enabled), the line says so and
-opens the settings; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
+map on your position; moving the map stops it. Without a position (GPS or network not enabled), a notification says so once, the line stays in the notes and its link opens the settings; a position older than 2 minutes is greyed. The line ends with the position's source: GPS, network,
 IVAO, VATSIM, X-Plane or Little Navmap.
 
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
@@ -289,21 +318,21 @@ the profile.
 the profile. They come from the Fuel calculation; without it, the map estimates them with common rates of climb and
 descent.
 
-**Mission maps.** The first list at the top chooses what the map shows: the planned flight, or a mission of the
+**Mission maps.** The first list, at the head of the layers (the layers button), chooses what the map shows: the planned flight, or a mission of the
 airline. For a mission, a second list chooses among its maps (overview, target, detail…). Each map is redrawn as in
 the studio: same frame, same display profile, with the mission's points, its hatched areas and its route. The vertical
 profile then shows the mission's.
 
-**Editing the route on the map.** Tap “Edit” at the top right of the map: the waypoints get a circle. Drag a point onto
+**Editing the route on the map.** Tap “Edit on the map” (the four arrows, at the right of the map; a short help appears the first time you enter the mode): the waypoints get a circle. Drag a point onto
 a fix, a beacon or an airfield: it settles there (dropped elsewhere, it becomes a free point named by its coordinates,
-such as 4530N00030E). To add a point, tap “+” beside “Edit”, then tap the place you want (or keep pressing for half a
+such as 4530N00030E). To add a point, tap “+” (in the same column), then tap the place you want (or keep pressing for half a
 second): on a fix, a beacon or an airfield it settles there, elsewhere it is a free point; it is added to the nearest
 segment. A simple tap adds nothing: it shows the bubble. Tap a route point: its card gives its level and offers
 “Remove”. Departure and arrival do not move here. On the profile, drag a level up or down: the level changes from the
 point that opens that segment, in steps of FL10 (on the first segment, it is the flight's level); in a point's card, “−”
 and “+” do the same. “Undo” takes back the last gesture. Each change is saved in the flight at once, and Fuel redoes the
-quote; the profile follows. “Done” closes the mode, and the map moves under your finger again. To type the route as
-text, “Edit the route” opens Fuel's Route step.
+quote; the profile follows. Tapping the button again (or Escape) closes the mode, and the map moves under your finger again. To type the route as
+text, the pencil at the top of the right column (“Edit the route”) opens Fuel's Route step.
 
 ## Without network
 
@@ -319,11 +348,12 @@ the minimum safe altitude of each square crossed (in brown dashes), and a line s
 
 ## Special cases
 
-**No flight.** Without a prepared flight, the map is hidden and offers “Open Fuel”. The mission maps stay available
-from the list at the top.
+**No flight.** Without a prepared flight, the map is empty and offers “Open Fuel”. The mission maps stay available from the layers list.
+
+**Flight across the date line.** A flight that crosses the 180° meridian (Siberia to Alaska, for instance) is drawn in one piece: the map goes on past the line, the distance marks, the profile and the weather section follow the route, which stays stored with longitudes between −180° and 180°.
 
 **No aeronautical database.** If the aeronautical database has not yet been published by a device of the airline, the
-map shows only the route, and says so.
+map shows only the route, and says so once (a notification, then a note in the data block).
 
 **Area not kept.** Offline, over an area never viewed nor kept, the map has nothing to show; the “Offline data” button
 opens the settings to keep it next time.
@@ -335,7 +365,7 @@ another cycle, a line says so: the airspaces may have changed since.
 profile for the type of map (detailed for a target or a detail, simplified otherwise) and says so. Opening the mission
 in the studio and saving it is enough for it to keep its own from then on.
 
-<!-- fr: 16866d3245cc -->
+<!-- fr: dc1f0c9c9d2f -->
 
 <!-- chapter: report -->
 # Report
@@ -355,12 +385,12 @@ flight on the network: “Use” fills in the aircraft, the callsign, the route 
 flight prepared in Fuel or Map is offered the same way (“Current flight”); if it was started in Fuel (“Start the
 flight”), it comes first, “Flight started at hh:mm”. The card says in one line everything that will be taken, even what
 a mission type has no box to show (distance, level). “Use” also fills in the start-up time (the departure time in Fuel)
-and the fuel at departure (the block fuel of the quote), each marked with its source. Saving the report ends the started
+and the fuel at departure (the block fuel of the quote), the whole recalled in the “Prefilled from: …” line under the card’s title. Saving the report ends the started
 flight: Fuel goes back to preparation, My flights removes “In progress”, and the flight is no longer offered.
 
 **The other sources.** Unfold “Other sources” to take your last IVAO or VATSIM flight, your SimBrief flight plan, or a
 pasted text: an ICAO flight plan, the page of a flight from the IVAO tracker or from StatSim, a METAR. Only empty fields
-are filled; next to each one, its source. If a source gives something else for fields already entered, a button offers
+are filled; the “Prefilled from: …” line under the card’s title says where they come from. If a source gives something else for fields already entered, a button offers
 to replace them.
 
 **The mission.** At the second step: the family (suggested from your last report), the series, the mission identifier
@@ -389,7 +419,7 @@ report” starts again from a blank report.
   a single flight. Start-up and shutdown match the connection and the disconnection when the track begins and ends on
   the ground; take-off and landing come from the track.
 - **Times** are UTC, marked "(Z)" on the fields; the started flight and the network fill them in UTC. An older
-  report, entered in the device's time, is shown converted with the entered time below ("entered 18:30 local"); it
+  report, entered in the device's time, is shown converted with the entered time in the line under the card's title ("Take-off entered 18:30 local"); it
   is rewritten in UTC only if you save it.
 - **SimBrief**: your last plan (identifier set in ⚙) — aircraft, route, level, speed, planned fuel, METAR and TAF.
 - **From My flights**: “Write the report” on a flight opens a new report, already filled with that flight and its date;
@@ -512,6 +542,52 @@ shared by the whole airline; it is what turns on “Save and record on the websi
 
 <!-- fr: cfdf162727aa -->
 
+<!-- chapter: atmosphere -->
+# Weather
+
+The atmosphere along the flight prepared in Fuel: a weather map at the chosen level, the vertical cross-section of the
+route, the slice of a point, at the departure time or later.
+
+## How to use it
+
+**The flight.** Weather always shows the flight prepared in Fuel (route, level, flight date). With no planned flight, the
+page says so and leads to Fuel; "See the example" shows a demonstration flight, marked as such in the grip.
+
+**Loading the forecast.** The load button (the downward arrow, at the right of the map) reads the forecast along the
+route and around it. Nothing is asked at opening: the page shows what the device has already kept. Outside the flight's
+area, the map shows the world synoptic published with the application, asking for nothing.
+
+**The weather map.** Isobars, isotherms, cloud, wind, jet stream and convection, at the level chosen with the level chip
+("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) chooses what is
+drawn. Touch a point of the map to open its slice.
+
+**The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
+the cross-section and the slices follow.
+
+**The cross-section and the slices.** Under the map, the cross-section shows the route from end to end, from the ground
+to above the flight level. Touch it to open the slice of the nearest point (the vertical profile of the atmosphere
+there); ◀ and ▶ move to the next slice, ✕ goes back to the cross-section. The drawing always fits the block, its distance
+axis visible; expand the block for more detail.
+
+**The legend.** The "i" chip, at the right of the drawing (in the title row when it shows), shows the legend of what is
+drawn; a touch on the legend, the chip or Escape closes it.
+
+- Cross-section: computed path (solid: climb, cruise, descent), planned level (dashed), requested level (dotted), top of
+  climb and top of descent (TOC, TOD), cloud (grey, darker: more cover), isotherms every 5 °C (0 °C thick blue),
+  inversions and icing (hatching), wind (barbs: half 5 kt, feather 10, pennant 50), estimated cumulus base (grey
+  dotted), terrain, route points (vertical lines); on a tall block, the bottom strips: low, mid, high cloud,
+  precipitation, visibility under 8 km.
+- Slice: temperature (red), dew point (green), standard atmosphere (dashed), the flight's three levels at that point,
+  inversions, cloud (column at the right), wind, terrain.
+
+## Good to know
+
+- The forecast comes from Open-Meteo (Météo-France AROME and ARPEGE over France, ICON in Europe, GFS elsewhere); the
+  world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
+- What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
+
+<!-- fr: 4bb0b6cd3ef2 -->
+
 <!-- chapter: settings -->
 # Settings
 
@@ -519,6 +595,12 @@ The settings of this device (⚙ at the top of the screen): your identity, what 
 exchanged, and what the device keeps offline. They stay on the device, never synchronised.
 
 ## How to use
+
+**The status.** The screen opens on the “Status” block, with the same dot as the ⚙ button of the header (green: something
+new; amber: attention). One line per thing, touch it to act: the flight in progress (to the Map), the reports to write (to the
+pre-filled report), the missing trigram (to “Identity”), the aeronautical database while it is not ready (to “Data
+access”), the state of the data and the exchange in use (to “Synchronisation”, or the conflicts), the launcher, “Offline” and,
+on a phone, the position during a flight.
 
 **Your identity.** In “Identity”, type your trigram and your IVAO VID, VATSIM CID and SimBrief IDs, then “Save”. The
 tools use them to prefill; with several users, the trigram is needed.
@@ -542,7 +624,7 @@ shows the remote repository of `data/` (see “A git repository for data/”).
 for the first time, for instance — has neither the aeronautical base (airspaces, airfields, beacons) nor the aircraft
 base: “Offline data” says so. Two ways in: set the access to the data repository, even without ticking an exchange (it
 then only reads the bases); or, on a workstation with the launcher, publish the bases to the repository (V2: Settings ›
-Maintenance › Aeronautical data and Aircraft types), then synchronise.
+Maintenance › Aeronautical data and Aircraft types), then synchronise. Three distinct states when the base is missing: “Aeronautical database loading…” (the read is not over: wait), “Data access not set on this device” (set the access above; an app added to the home screen has its own storage, nothing you set in Safari is there) and “Aeronautical database not published” (the access works, nothing is published in the repository).
 
 **Synchronisation.** With an exchange ticked, the “Synchronisation” card gives the last success, the pending writes and
 the network; “Synchronise now” sends and receives at once. Otherwise it runs by itself at start, every 10 minutes online
@@ -646,8 +728,8 @@ repository, set the access on a workstation with the launcher.
 ## Administration
 
 **The administration pages.** At the “Full” level (“Level” card), the “Administration” card, below “About”, gathers the
-administration and test pages, each with a sentence; at the other levels, it does not appear. In the app: the map
-threshold tuning (`#maps?tune=1`, read only on a phone), the roadmap (`#roadmap`) and the diagnostics of the “About”
+administration and test pages, each with a sentence; at the other levels, it does not appear. In the app: the
+“Map threshold tuning (administrator)” button (`#maps?tune=1`, read only on a phone; it opens the tuning page: for each map element and each mode, the zooms where it appears, saved for the airline, `airline/map_profiles.json`; a mode you never saved takes the thresholds of a tuned mode, and the page says so; the map's “Complexity” slider only shifts the zoom), back by the back arrow, the roadmap (`#roadmap`) and the diagnostics of the “About”
 card.
 
 **The benches, on a workstation.** Served by the launcher, they only open on a workstation with a launcher (elsewhere

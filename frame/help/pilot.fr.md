@@ -7,14 +7,30 @@ mes vols, passage au site de la compagnie. Elle marche sur un téléphone comme 
 
 ## Premier démarrage
 
-- **Les verbes.** Chaque outil est un verbe du menu (☰ sur un téléphone, colonne de gauche sur un écran). L'adresse
-  d'un outil (`#fuel`, `#report`…) suffit à y revenir.
+- **Les verbes.** Sur un téléphone, la barre du bas donne cinq entrées : Préparer, Carte, CR, Vols, Météo. Touchez de
+  nouveau un onglet déjà choisi quand il groupe plusieurs écrans : une petite liste s'ouvre au-dessus de lui (Préparer :
+  Carburant et Fiches de performances). Sur un écran, chaque outil est un verbe de la colonne de gauche. L'adresse d'un outil
+  (`#fuel`, `#report`…) suffit à y revenir. Les Réglages sont le bouton ⚙ de l'en-tête.
 - **Votre identité.** Dans ⚙ Réglages, réglez votre trigramme et vos identifiants IVAO, VATSIM et SimBrief : les
   outils s'en servent pour préremplir.
 - **Le niveau.** Toujours dans les Réglages, « Niveau » choisit ce que le menu montre : Découverte, Courant ou Complet.
   Un outil caché reste joignable par son adresse.
-- **L'aide.** Chaque outil a en tête un volet replié « Comment s'en servir » ; le bouton ? ouvre ce manuel au chapitre
-  de l'outil.
+- **L'aide.** Chaque outil a en tête un volet replié « Comment s'en servir » ; le bouton ? de l'en-tête (sur un téléphone
+  comme sur un écran) ouvre ce manuel au chapitre de l'écran où vous êtes.
+- **L'état, sur le bouton ⚙.** Dans l'en-tête, le bouton ⚙ porte une pastille : verte quand quelque chose vous attend (un
+  vol démarré, un compte rendu à écrire), orange (sur un téléphone) quand il faut y prêter attention : pas de trigramme,
+  écritures en attente, conflits, erreur de synchronisation, hors ligne. Les Réglages s'ouvrent sur le bloc « État », qui dit
+  le détail : le vol en cours (touchez pour aller à la Carte), les comptes rendus à écrire pour vos vols passés (touchez pour
+  ouvrir le compte rendu prérempli), le trigramme manquant (touchez pour le régler), l'état des données (dernière
+  synchronisation, écritures en attente, moyen d'échange utilisé), la base aéronautique tant qu'elle n'est pas prête, le
+  lanceur, « Hors ligne » quand il n'y a pas de réseau, et, sur un téléphone, la source de la position pendant un vol. Sur
+  un téléphone, l'en-tête se réduit au nom, au bouton ? et au bouton ⚙.
+- **Plein écran.** Sur la carte (outils à vue fixe), un bouton rond en bas de la colonne de boutons, sur la carte, masque
+  l'en-tête et la barre du bas pour laisser toute la place à la carte ; le même bouton ou Échap reviennent.
+- **Téléphone en paysage.** Tourné sur le côté, le téléphone range la barre du bas en un rail d'icônes à gauche (les mêmes
+  cinq entrées ; un second appui sur Préparer ouvre ses outils à droite du rail), garde l'en-tête, pose le bloc de données de la
+  carte en colonne à droite (touchez sa première ligne, ou tirez-la vers la gauche, pour l'élargir ou la rétrécir) et donne à la
+  carte toute la hauteur restante. En plein écran, la colonne reste.
 
 ## Données et synchronisation
 
@@ -35,16 +51,19 @@ délestage, réserve, carburant bloc, temps de vol et début de descente.
 
 ## Comment s'en servir
 
-La préparation suit cinq pas, dans l'ordre où on prépare un vol : **1 Vol, 2 Route, 3 Météo, 4 Devis, 5 Départ**. Sur
+La préparation suit cinq pas, dans l'ordre où on prépare un vol : **1 Vol, 2 Route, 3 Météo, 4 Résultat, 5 Départ**. Sur
 un téléphone, la barre du haut montre un pas à la fois (touchez un numéro pour y aller, « Suivant » en bas de chaque
 pas) ; sur un écran large, les cinq pas sont les uns sous les autres. Tout se recalcule à chaque changement : corrigez
 la route, la météo, le devis et le vent suivent, sans bouton à presser. Le résultat (carburant bloc, délestage, temps,
 début de descente) reste visible en bas de l'écran à chaque pas, avec d'où vient le vent (« vent : METAR LFRS »,
-« vent : prévision ICON FL060 », « vent saisi »). Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
+« vent : prévision ICON FL060 », « vent saisi »). Sur un téléphone, cette barre tient en trois lignes : le contexte
+(« Bloc · FL060→090→110→070 · vent ARPEGE FL060 », en entier si on le touche), le carburant bloc, puis trois tuiles
+« Étape », « Temps » et « TOD » (début de descente). L'écran s'ouvre toujours sur l'onglet « Devis » ; les fiches
+s'ouvrent par l'onglet « Fiches ». Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
 façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).
 
 **1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt
-que l'observation, l'appareil et le niveau de croisière (en FL). L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. Un nouveau vol reprend le dernier
+que l'observation, l'appareil et le niveau de croisière (en FL). La date du vol est une seule valeur, gardée dans le vol courant : la météo du devis (TAF des terrains, vents et températures en altitude) est lue à cette date, l'ETA de la Carte en part tant que le vol n'est pas démarré, et le curseur d'Atmosphère part d'elle ; vide, c'est maintenant. L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. Un nouveau vol reprend le dernier
 appareil choisi sur cet appareil ; sans choix, le devis attend. La loupe ouvre la recherche (le dernier choisi en tête) : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
 cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
 les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
@@ -109,10 +128,10 @@ flèches. Hors réseau, la dernière prévision lue reste. Quand la route ou l'h
 reste, marqué « prévision en cours… », jusqu'à la nouvelle prévision ; si elle ne vient pas, le vent au sol des METAR
 prend le relais et c'est dit (« prévision en altitude indisponible »).
 
-**4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
+**4 Résultat.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
 qu'on ne peut pas tenir sur ce trajet. Chaque niveau est chiffré comme le devis, avec le vent prévu à ce niveau quand
-la météo réelle est retenue : au niveau choisi, la courbe et le devis disent le même chiffre. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
+la météo réelle est retenue : au niveau choisi, la courbe et le devis disent le même chiffre. Sur une route à paliers, tous les points de la courbe sont un vol à plat à leur niveau, sans paliers : le losange noir marque le devis réel du plan (avec les paliers de la route et le vent du plan), détaillé sous le dessin (« Plan : FL160, 856 kg, 0:54 »), et l'écart avec la courbe est le coût des paliers. L'axe du carburant suit l'unité choisie (kg ou lb). Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
 meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
 
 Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une
@@ -205,25 +224,32 @@ terrains, balises, voies aériennes, altitudes minimales. La route du vol se mod
 ## Comment s'en servir
 
 **Le vol prévu.** La carte montre le vol préparé dans Carburant : départ, points de la route, arrivée, et le terrain
-de dégagement en tirets gris. En haut, une ligne le résume : départ et arrivée, dégagement, niveau, distance, type
-d'appareil. Quand le vol change dans Carburant, la carte suit d'elle-même.
+de dégagement en tirets gris. Son résumé (niveau, distance, vol prévu ou en cours) n'est pas écrit au-dessus du dessin (le dessin le montre) : l'infobulle de la poignée du bloc de données sous la carte le donne, avec départ et arrivée, dégagement et type d'appareil. Quand le vol change dans Carburant, la carte suit d'elle-même.
 
 **La carte et ce qu'elle montre.** Autour de la route : les espaces aériens qu'elle traverse ou frôle (zones
 réglementées, dangereuses, interdites, espaces contrôlés), les voies aériennes basses ou hautes selon votre niveau,
 les terrains et les balises, et dans chaque carré d'un degré l'altitude minimale de sécurité (le chiffre brun, en
 milliers et centaines de pieds : « 3⁵ » veut dire 3 500 ft). Les petits chiffres violets le long de la route sont les
 distances depuis le départ, en milles nautiques. Faites glisser la carte avec un doigt, écartez deux doigts pour
-zoomer ; « Recentrer » revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
+zoomer ; « Recentrer » (la cible, en haut à droite de la carte) revient sur toute la route. La carte reste où vous l'avez mise, même quand la route change :
 seul « Recentrer » (ou un autre vol) la recadre. Vue de loin, la carte ne montre que ce qui est près de la route ;
 rapprochez-vous pour tout voir.
 
-**Le profil et le curseur.** Sous la carte, le profil vertical coupe la route de bout en bout : le relief, les
-espaces aériens où vous entrez à l'altitude prévue, et la trajectoire du vol en violet. Faites glisser le doigt sur le
-profil : un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la route sur la carte pour le
-placer là. La ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue,
-hauteur du relief, et l'espace aérien où vous êtes à ce moment-là.
+**Le profil et le curseur.** Dans le bloc de données sous la carte, le profil vertical coupe la route de bout en bout : le relief, les espaces
+aériens où vous entrez à l'altitude prévue, et la trajectoire du vol en violet. Faites glisser le doigt sur le profil :
+un curseur bleu le suit, et le même curseur se place sur la carte. Touchez la route sur la carte pour le placer là. La
+ligne sous le profil dit ce qu'il y a sous le curseur : distance depuis le départ, altitude prévue, hauteur du relief,
+et l'espace aérien où vous êtes à ce moment-là. Sous la carte, ce bloc de données montre le profil ; la liste des
+espaces d'un point ou les points de report d'un terrain s'y ouvrent à sa place quand vous les demandez, et le profil
+revient à leur fermeture. La pastille en forme de nuage, dans la paire de pastilles (une colonne à droite du dessin, ou dans la ligne de titre à droite quand le bloc est agrandi ou en paysage), le remplace (la pastille du profil le ramène) par la coupe météo le long de la route
+(vent, température, nuages, givrage) à l'altitude du vol ; la coupe suit le même curseur, et un toucher dessus le déplace. Elle ne montre que
+la prévision qu'Atmosphère a déjà chargée : sans elle, la ligne « Pas de prévision chargée » mène à Météo, dans Préparer. La dernière pastille, « i », ouvre par-dessus le profil sa légende (ce que sont chaque trait, bande et repère) ; glisser le doigt sur la coupe déplace le curseur comme sur le profil. Le profil et la coupe sont dessinés à la hauteur exacte du bloc, leur axe des distances toujours visible : sur un bloc bas ils suppriment des étiquettes de niveaux, jamais l'axe.
 
-**Six modes de carte.** Le bouton en haut à gauche de la carte montre le mode choisi ; touchez-le pour voir les six
+**Un écran fixe.** Rien entre l'en-tête et la carte : la carte et le bloc de données remplissent l'écran, et rien ne défile que le contenu du bloc. Les boutons sont posés sur la carte : à droite, de haut en bas, « Modifier la route » (le crayon), « Recentrer », le mode de carte, « Modifier sur la carte » (les quatre flèches) et, en dernier, le plein écran (Échap en sort) ; à gauche, « Couches ». Le bloc est une feuille : tirez sa ligne du haut (la petite barre ; à sa hauteur normale la ligne ne porte pas de titre au-dessus d'un profil ou d'une coupe, seulement les deux pastilles) vers le haut pour
+l'agrandir, vers le bas pour la réduire à cette ligne, ce qui laisse toute la hauteur à la carte ; un toucher sur la
+ligne la réduit ou la ramène à sa hauteur normale.
+
+**Six modes de carte.** Le bouton du mode, à droite de la carte, montre le mode choisi ; touchez-le pour voir les six
 modes. « IFR bas » : voies aériennes basses, espaces aériens, altitudes minimales et balises. « IFR haut » : voies
 hautes (UN…, UM…), espaces au-dessus du FL195. « VFR » : fond topographique avec les villes, espaces utiles en VFR,
 points de report et obstacles. « Topo » : le relief et, de près, les courbes de niveau (tous les 500 ft ou 100 m selon votre unité, les
@@ -237,47 +263,50 @@ En vous rapprochant : les points des voies (triangles et balises), le niveau min
 la distance du tronçon, sa route (« 097° »), les points de report et les obstacles. De près, chaque obstacle porte sa hauteur au-dessus du
 sol, et l'altitude de son sommet entre parenthèses (« 434 AGL (771) »).
 
-**Les couches.** Le bouton aux calques, sous le réglage de la carte, ouvre la liste de ce qu'elle dessine : familles
-d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report
-VFR, obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces,
-noms des voies. Cochez ou décochez : la carte suit, et votre choix
-est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. « Autour de la route
-seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ; décochée, toute la
-carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon. Tout en bas, le curseur « Complexité (essai) » montre moins de détails vers la
-gauche, plus vers la droite, à tous les zooms. Chaque élément de la carte a sa plage de zoom : les points de report
-VFR n'apparaissent que tout près, les CTR de près, les TMA en vue moyenne, les FIR de loin.
+**Les couches.** Le bouton aux calques, à gauche de la carte, ouvre dans le bloc de données, à la place du profil, la liste de ce qu'elle dessine (la croix ✕ ramène le profil). En premier, sous le choix du vol, le curseur « Complexité » : il agit comme si le zoom était différent, d'un niveau de zoom par cran (de −4 à +4) — moins de détails vers la gauche, plus vers la droite. Ce que chaque zoom montre est réglé par l'administrateur (Réglages, carte « Administration »). Puis les familles
+d'espaces (TMA / CTR, D / R / P, FIR, autres), voies basses et hautes, balises, points des voies, points de report VFR,
+obstacles, altitudes minimales, villes, canevas, dégagement, noms des espaces, noms des voies. Cochez ou décochez : la
+carte suit, et votre choix est gardé pour ce réglage sur cet appareil. « Tout remettre » revient au choix d'origine. «
+Autour de la route seulement », cochée d'origine en IFR, limite les espaces et les voies au voisinage de la route ;
+décochée, toute la carte visible est dessinée, pour regarder ailleurs. Vue de près, tout est dessiné de toute façon.
+Chaque élément de la carte a sa plage de zoom : les points de report VFR n'apparaissent que tout près, les CTR de
+près, les TMA en vue moyenne, les FIR de loin. La taille de la carte compte aussi : sur un petit cadre (téléphone, volet
+de la vue double) elle montre moins d'éléments qu'un grand au même zoom, comme si vous étiez plus loin (le zoom est
+corrigé par la moyenne de la hauteur et de la largeur du cadre, 900 px sans correction).
 
-**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace
-ou une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point →
-point), sa distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA
-(« TMA 8 AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, une carte montre les espaces sous le doigt,
-un ou plusieurs : un bloc de niveaux, comme le profil vertical (une colonne numérotée par espace,
-de son plancher à son plafond), puis la liste numérotée avec leurs limites. Elle reste ouverte : la croix ✕ ou Échap la ferment, un autre toucher la
-remplace. Elle suit
-le pointeur, reste 5 secondes, laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de
-la carte. Sur une balise, la bulle donne son type, son indicatif et sa fréquence ; quand
-plusieurs balises sont au même endroit, la carte garde la plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle
-nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur le profil, le doigt ou la souris donnent de même les espaces traversés.
+**Toucher ou survoler pour en savoir plus.** Touchez, cliquez ou survolez le nom d'une voie, le libellé d'un espace ou
+une barbule de vent : une petite bulle donne l'essentiel en deux lignes — pour une voie, le tronçon (point → point), sa
+distance, ses routes, son plancher et son plafond ; pour un espace, son nom et ses limites en notation SIA (« TMA 8
+AQUITAINE 2000|FL145 D »). Touché ailleurs dans un espace, le bloc de données sous la carte montre les espaces sous le
+doigt, un ou plusieurs, à la place du profil : un graphique de niveaux, comme le profil vertical (une colonne numérotée
+par espace, de son plancher à son plafond), puis la liste numérotée avec leurs limites. La croix ✕, Échap ou un toucher
+sur un endroit vide de la carte le ferment et le profil revient, un autre toucher sur des espaces le remplace ; déplacer
+la carte le laisse. La carte ne bouge pas ni ne change de taille. La bulle de survol suit le pointeur, reste 5 secondes,
+laisse la place à la suivante, et se ferme par un toucher ailleurs ou un déplacement de la carte. Sur une balise, la
+bulle donne son type, son indicatif et sa fréquence ; quand plusieurs balises sont au même endroit, la carte garde la
+plus utile (VOR, TACAN ou DME, puis NDB, puis ILS) et la bulle nomme les autres (« aussi ici : ILS 25L BG 109.9 »). Sur
+le profil, le doigt ou la souris donnent de même les espaces traversés.
 
 **Les points de report VFR d'un terrain.** Passez la souris sur un terrain : ses points de report et les séquences
-tirées de ses cartes VAC s'allument (cercles verts nommés, tirets entre les points). Touchez-le : la carte se rapproche
-de ses points s'ils sont serrés, et sa carte donne les séquences (avec la page de la VAC) puis les consignes de la VAC,
-repliées page par page. Elle reste ouverte pendant que vous déplacez la carte : la croix ✕ ou
-Échap la ferment, un autre terrain la remplace. Toucher un point de report ouvre de même la carte de son terrain, ce point
-en tête. En mode VFR, les points du terrain de départ et de celui
-d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées « à vérifier »,
-ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été
-analysé à la main, la carte le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit
-la carte VAC (tirets longs) et une flèche marque un sens unique. Les points de report de la base sont toujours là, en noir pour les avions et en vert pour les
-hélicoptères ; les séquences et les consignes des VAC s'y ajoutent une fois importées. Elles apparaissent une
-fois importées par l'administrateur (Paramètres › Maintenance).
+tirées de ses cartes VAC s'allument (cercles nommés, tirets entre les points). Sur la carte, un point de report ne porte
+que son code court (« NA », « E », « SE »…), pour que la carte reste lisible ; le nom long est dans la bulle et dans la
+liste. Touchez le terrain : la carte se rapproche de ses points s'ils sont serrés, et le bloc de données sous la carte,
+à la place du profil, donne la liste des points (code, nom long, restrictions), les séquences (avec la page de la VAC)
+puis les consignes de la VAC, repliées page par page ; il défile si le contenu est long. Il reste ouvert pendant que
+vous déplacez la carte : la croix ✕ ou Échap le ferment et le profil revient, un autre terrain le remplace. Toucher un
+point de report ouvre de même le contenu de son terrain, ce point en tête. En mode VFR, les points du terrain de départ
+et de celui d'arrivée sont montrés d'office. Ces données sont extraites automatiquement des VAC : elles sont marquées «
+à vérifier », ne sont pas l'itinéraire publié ; la carte VAC fait foi. Quand le terrain a été analysé à la main, le bloc
+le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit la carte VAC (tirets longs) et
+une flèche marque un sens unique. Les points de report de la base sont toujours là, en noir pour les avions et en vert
+pour les hélicoptères ; les séquences et les consignes des VAC s'y ajoutent une fois importées par l'administrateur
+(Paramètres › Maintenance).
 
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
-14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Au-
-dessus de la carte, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
+14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Dans les notes du bloc de données, sous le profil, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et
 votre altitude contre celle prévue ; le profil montre les deux altitudes. De près, chaque point porte son heure
 estimée (ETA) sous son nom, sans jamais couvrir un terrain, en UTC (« 14:52Z »), l'heure locale entre parenthèses au départ et à l'arrivée. « Suivre » garde la carte sur votre position ; un déplacement de la carte l'arrête. Sans position (GPS
-ou réseau non activés), la ligne le dit et ouvre les réglages ; une position de plus de 2 minutes est grisée.
+ou réseau non activés), une notification le dit une fois, la ligne reste dans les notes et son lien ouvre les réglages ; une position de plus de 2 minutes est grisée.
 La ligne finit par la source de la position : GPS, réseau, IVAO, VATSIM, X-Plane ou Little Navmap.
 
 **Les vents en altitude.** Quand Carburant a la prévision du vent au niveau du vol, la carte la montre en barbules
@@ -294,21 +323,21 @@ de la route sont aussi repérés sur le profil.
 sur la carte comme sur le profil. Ils viennent du calcul de Carburant ; sans lui, la carte les estime avec des taux
 de montée et de descente courants.
 
-**Les cartes de mission.** La première liste en haut choisit ce que montre la carte : le vol prévu, ou une mission
+**Les cartes de mission.** La première liste, en tête des couches (le bouton aux calques), choisit ce que montre la carte : le vol prévu, ou une mission
 de la compagnie. Pour une mission, une seconde liste choisit parmi ses cartes (vue d'ensemble, cible, détail…).
 Chaque carte est redessinée comme dans le studio : même cadre, même réglage d'affichage, avec les points de la
 mission, ses zones hachurées et son cheminement. Le profil vertical montre alors celui de la mission.
 
-**Modifier la route sur la carte.** Touchez « Modifier » en haut à droite de la carte : les points tournants
+**Modifier la route sur la carte.** Touchez « Modifier sur la carte » (les quatre flèches, à droite de la carte ; une aide s'affiche à la première entrée dans le mode) : les points tournants
 s'entourent d'un cercle. Faites glisser un point jusqu'à un fixe, une balise ou un terrain : il s'y pose (lâché
-ailleurs, il devient un point libre, nommé par ses coordonnées, comme 4530N00030E). Pour ajouter un point, touchez « + » à côté de « Modifier », puis touchez
+ailleurs, il devient un point libre, nommé par ses coordonnées, comme 4530N00030E). Pour ajouter un point, touchez « + » (dans la même colonne), puis touchez
 l'endroit voulu (ou restez appuyé une demi-seconde) : sur un fixe, une balise ou un terrain il s'y pose, ailleurs c'est
 un point libre ; il s'ajoute au tronçon le plus proche. Un simple toucher n'ajoute rien : il montre l'infobulle. Touchez un point de la route : sa carte donne son niveau et propose « Retirer ». Le départ et l'arrivée ne
 bougent pas ici. Sur le profil, glissez un palier vers le haut ou le bas : le niveau change à partir du point qui
 ouvre ce tronçon, par pas de FL10 (sur le premier tronçon, c'est le niveau du vol) ; dans la carte d'un point, « − »
 et « + » font de même. « Annuler » reprend le dernier geste. Chaque changement est enregistré aussitôt dans le vol, et
-Carburant refait le devis ; le profil suit. « Terminer » ferme le mode, et la carte se déplace de nouveau au doigt.
-Pour taper la route en texte, « Modifier la route » ouvre l'étape Route de Carburant.
+Carburant refait le devis ; le profil suit. Retoucher le bouton (ou Échap) ferme le mode, et la carte se déplace de nouveau au doigt.
+Pour taper la route en texte, le crayon en haut de la colonne de droite (« Modifier la route ») ouvre l'étape Route de Carburant.
 
 ## Sans réseau
 
@@ -324,11 +353,12 @@ l'altitude minimale de sécurité de chaque carré traversé (en tirets bruns), 
 
 ## Cas particuliers
 
-**Pas de vol.** Sans vol préparé, la carte est cachée et propose « Ouvrir Carburant ». Les cartes de mission restent
-accessibles par la liste du haut.
+**Pas de vol.** Sans vol préparé, la carte est vide et propose « Ouvrir Carburant ». Les cartes de mission restent accessibles par la liste des couches.
+
+**Vol qui passe la ligne de changement de date.** Un vol qui franchit le méridien 180° (de la Sibérie à l'Alaska, par exemple) se dessine d'un seul tenant : la carte se prolonge de l'autre côté de la ligne, les marques de distance, le profil et la coupe météo suivent la route, qui reste enregistrée avec des longitudes entre −180° et 180°.
 
 **Base aéronautique absente.** Si la base aéronautique n'a pas encore été publiée par un poste de la compagnie, la
-carte ne montre que la route, et le dit.
+carte ne montre que la route, et le dit une fois (notification, puis note du bloc de données).
 
 **Zone non gardée.** Hors ligne, au-dessus d'une zone jamais consultée ni gardée, la carte n'a rien à montrer ; le
 bouton « Données hors ligne » ouvre les réglages pour la garder la prochaine fois.
@@ -359,12 +389,12 @@ de la trace. Le vol préparé dans Carburant ou Carte est proposé de la même f
 démarré dans Carburant (« Démarrer le vol »), il vient en premier, « Vol démarré à hh:mm ». La carte dit en une ligne
 tout ce qui sera repris, même ce qu'un type de mission n'a pas de case pour montrer (distance, niveau). « Utiliser »
 remplit aussi l'heure de mise en route (l'heure du départ dans Carburant) et le carburant au départ (le carburant
-bloc du devis), chacun marqué de sa source. Enregistrer le compte rendu termine le vol démarré : Carburant revient en
+bloc du devis), le tout rappelé dans la ligne « Prérempli depuis : … » sous le titre de la carte. Enregistrer le compte rendu termine le vol démarré : Carburant revient en
 préparation, Mes vols retire « en cours », et le vol n'est plus proposé.
 
 **Les autres sources.** Dépliez « Autres sources » pour reprendre votre dernier vol IVAO ou VATSIM, votre plan de vol
 SimBrief, ou un texte collé : un plan de vol OACI, la page d'un vol du tracker IVAO ou de StatSim, un METAR. Seuls les
-champs vides sont remplis ; à côté de chacun, sa source. Si une source donne autre chose pour des champs déjà saisis,
+champs vides sont remplis ; la ligne « Prérempli depuis : … » sous le titre de la carte dit d'où ils viennent. Si une source donne autre chose pour des champs déjà saisis,
 un bouton propose de les remplacer.
 
 **La mission.** Au deuxième pas : la famille (proposée d'après votre dernier compte rendu), la série, l'identifiant de
@@ -394,7 +424,7 @@ modifier. « Nouveau CR » repart d'un compte rendu vierge.
   commence et finit au sol ; le décollage et l'atterrissage viennent de la trace.
 - **Les heures** sont en UTC, notées « (Z) » sur les champs ; la reprise du vol démarré et celles du réseau les
   remplissent en UTC. Un compte rendu plus ancien, saisi à l'heure de l'appareil, est montré converti avec l'heure
-  saisie dessous (« saisi 18:30 locale ») ; il n'est réécrit en UTC que si vous l'enregistrez.
+  saisie dans la ligne sous le titre de la carte (« Décollage saisi 18:30 locale ») ; il n'est réécrit en UTC que si vous l'enregistrez.
 - **SimBrief** : votre dernier plan (identifiant réglé dans ⚙) — appareil, route, niveau, vitesse, carburant prévu,
   METAR et TAF.
 - **Depuis Mes vols** : « Écrire le CR » d'un vol ouvre un compte rendu neuf, déjà rempli avec ce vol et sa date ;
@@ -516,6 +546,50 @@ dans le compte rendu.
 - **Adresse non réglée** : les liens vers les pages et l'inscription du vol attendent la carte Compagnie.
 - **Hors ligne** : le collage marche toujours ; ce qui est enregistré part à la prochaine synchronisation.
 
+<!-- chapter: atmosphere -->
+# Météo
+
+L'atmosphère le long du vol préparé dans Carburant : une carte météo au niveau choisi, la coupe verticale de la route,
+la tranche d'un point, à l'heure du départ ou plus tard.
+
+## Comment s'en servir
+
+**Le vol.** Météo montre toujours le vol préparé dans Carburant (route, niveau, date du vol). Sans vol prévu, la page le
+dit et mène à Carburant ; « Voir l'exemple » montre un vol de démonstration, marqué comme tel dans la poignée.
+
+**Charger la prévision.** Le bouton de chargement (la flèche vers le bas, à droite de la carte) lit la prévision le long
+de la route et autour d'elle. Rien n'est demandé à l'ouverture : la page montre ce que l'appareil a déjà gardé. Hors de la
+zone du vol, la carte montre le synoptique mondial publié avec l'application, sans rien demander.
+
+**La carte météo.** Isobares, isothermes, nuages, vent, courant-jet et convection, au niveau choisi par la pastille du
+niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). Le bouton des couches (en haut à gauche)
+choisit ce qui est dessiné. Touchez un point de la carte pour ouvrir sa tranche.
+
+**La date du vol.** Le curseur sous la poignée avance l'heure de 0 à 72 heures à partir du départ prévu : la carte, la
+coupe et les tranches suivent.
+
+**La coupe et les tranches.** Sous la carte, la coupe montre la route de bout en bout, du sol au-dessus du niveau du vol.
+Touchez-la pour ouvrir la tranche du point le plus proche (le profil vertical de l'atmosphère à cet endroit) ; ◀ et ▶
+passent à la tranche voisine, ✕ revient à la coupe. Le dessin tient toujours dans le bloc, son axe des distances visible ;
+agrandissez le bloc pour plus de détails.
+
+**La légende.** La pastille « i », à droite du dessin (dans la ligne de titre quand elle est affichée), montre la légende
+de ce qui est dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
+
+- Coupe : trajectoire calculée (trait plein : montée, croisière, descente), niveau planifié (tirets), niveau demandé
+  (pointillés), fin de montée et début de descente (TOC, TOD), nuages (gris, plus sombre : plus couvert), isothermes
+  tous les 5 °C (0 °C en bleu épais), inversions et givrage (hachures), vent (barbules : demi 5 kt, plume 10, fanion
+  50), base des cumulus estimée (pointillés gris), relief, points de la route (traits verticaux) ; sur un bloc haut, les
+  bandes du bas : nébulosité basse, moyenne, haute, précipitations, visibilité inférieure à 8 km.
+- Tranche : température (rouge), point de rosée (vert), atmosphère type (tirets), les trois niveaux du vol à cet
+  endroit, inversions, nuages (colonne à droite), vent, relief.
+
+## Bon à savoir
+
+- La prévision vient d'Open-Meteo (Météo-France AROME et ARPEGE sur la France, ICON en Europe, GFS ailleurs) ; le
+  synoptique mondial vient de GFS (NOAA), toutes les 3 heures jusqu'à 72 heures.
+- Ce qui est chargé reste sur l'appareil et sert hors ligne ; la Carte en reprend la coupe météo.
+
 <!-- chapter: settings -->
 # Réglages
 
@@ -523,6 +597,12 @@ Les réglages de cet appareil (⚙ en haut de l'écran) : votre identité, ce qu
 sont échangées, et ce que l'appareil garde hors ligne. Ils restent sur l'appareil, jamais synchronisés.
 
 ## Comment s'en servir
+
+**L'état.** L'écran s'ouvre sur le bloc « État », avec la même pastille que le bouton ⚙ de l'en-tête (verte : une nouvelle ;
+orange : de l'attention). Une ligne par chose, touchez-la pour agir : le vol en cours (vers la Carte), les comptes rendus à
+écrire (vers le compte rendu prérempli), le trigramme manquant (vers « Identité »), la base aéronautique tant qu'elle n'est
+pas prête (vers « Accès aux données »), l'état des données et le moyen d'échange (vers « Synchronisation », ou les conflits),
+le lanceur, « Hors ligne » et, sur un téléphone, la position pendant un vol.
 
 **Votre identité.** Dans « Identité », tapez votre trigramme et vos identifiants VID IVAO, CID VATSIM et SimBrief, puis
 « Enregistrer ». Les outils s'en servent pour préremplir ; à plusieurs, le trigramme est nécessaire.
@@ -546,7 +626,7 @@ carte montre le dépôt distant de `data/` (voir « Un dépôt git pour data/ »
 pour la première fois, par exemple — n'a ni base aéronautique (espaces, terrains, balises) ni base des appareils :
 « Données hors ligne » le dit. Deux portes : réglez l'accès au dépôt des données, même sans cocher d'échange (il sert
 alors seulement à lire les bases) ; ou, sur un poste avec lanceur, publiez les bases dans le dépôt (V2 : Paramètres ›
-Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez.
+Maintenance › Données aéronautiques et Types d'aéronefs), puis synchronisez. Trois états distincts quand la base manque : « Base aéronautique en cours de chargement… » (la lecture n'est pas finie : patientez), « Accès aux données non réglé sur cet appareil » (réglez l'accès ci-dessus ; une appli ajoutée à l'écran d'accueil a son propre stockage, rien de ce que vous aviez réglé dans Safari n'y est) et « Base aéronautique non publiée » (l'accès marche, rien n'est publié dans le dépôt).
 
 **La synchronisation.** Avec un échange coché, la carte « Synchronisation » donne la dernière réussie, les écritures en
 attente et le réseau ; « Synchroniser maintenant » envoie et reçoit tout de suite. Sinon, elle se fait seule au
@@ -661,7 +741,7 @@ poste avec le lanceur.
 
 **Les pages d'administration.** Au niveau « Complet » (carte « Niveau »), la carte « Administration », sous « À propos
 », réunit les pages d'administration et d'essai, chacune avec une phrase ; aux autres niveaux, elle n'apparaît pas. Dans
-l'appli : le réglage des seuils de la carte (`#maps?tune=1`, en lecture seule sur un téléphone), la feuille de route
+l'appli : le bouton « Réglage des seuils de la carte (administrateur) » (`#maps?tune=1`, en lecture seule sur un téléphone ; il ouvre la page de réglage : pour chaque élément de la carte et chaque mode, les zooms où il apparaît, enregistrés pour la compagnie, `airline/map_profiles.json` ; un mode que vous n'avez jamais enregistré reprend les seuils d'un mode réglé, la page le dit ; le curseur « Complexité » de la carte ne fait que décaler le zoom), retour par la flèche de retour, la feuille de route
 (`#roadmap`) et le diagnostic de la carte « À propos ».
 
 **Les bancs, sur un poste.** Servis par le lanceur, ils ne s'ouvrent que sur un poste avec lanceur (ailleurs, ils sont

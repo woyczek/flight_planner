@@ -7,14 +7,30 @@ vuelos, paso al sitio de la aerolínea. Funciona en un teléfono como en un orde
 
 ## Primer inicio
 
-- **Los verbos.** Cada herramienta es un verbo del menú (☰ en un teléfono, columna izquierda en una pantalla). La
-  dirección de una herramienta (`#fuel`, `#report`…) basta para volver a ella.
+- **Los verbos.** En un teléfono, la barra inferior ofrece cinco entradas: Preparar, Mapa, Informe, Vuelos, Meteo. Toque
+  de nuevo una pestaña ya elegida cuando agrupa varias pantallas: se abre encima una pequeña lista (Preparar: Combustible y
+  Fichas de rendimiento). En una pantalla, cada herramienta es un verbo de la columna izquierda. La dirección de una
+  herramienta (`#fuel`, `#report`…) basta para volver a ella. Los Ajustes son el botón ⚙ de la cabecera.
 - **Su identidad.** En ⚙ Ajustes, configure su trigrama y sus identificadores IVAO, VATSIM y SimBrief: las herramientas
   los usan para prerrellenar.
 - **El nivel.** También en Ajustes, «Nivel» elige lo que muestra el menú: Descubrimiento, Habitual o Completo. Una
   herramienta oculta sigue accesible por su dirección.
-- **La ayuda.** Cada herramienta tiene arriba un panel plegado «Cómo usarlo»; el botón ? abre este manual en el
-  capítulo de la herramienta.
+- **La ayuda.** Cada herramienta tiene arriba un panel plegado «Cómo usarlo»; el botón ? de la cabecera (en un teléfono
+  como en una pantalla) abre este manual en el capítulo de la pantalla en la que está.
+- **El estado, en el botón ⚙.** En la cabecera, el botón ⚙ lleva un punto: verde cuando algo le espera (un vuelo
+  iniciado, un informe por escribir), naranja (en un teléfono) cuando algo requiere atención: sin trigrama, escrituras
+  pendientes, conflictos, un error de sincronización, sin conexión. Los Ajustes se abren con el bloque «Estado», que da el
+  detalle: el vuelo en curso (toque para ir al Mapa), los informes por escribir de sus vuelos pasados (toque para abrir el
+  informe ya rellenado), el trigrama que falta (toque para definirlo), el estado de los datos (última sincronización,
+  escrituras pendientes, vía de intercambio usada), la base aeronáutica mientras no esté lista, el lanzador, «Sin conexión»
+  cuando no hay red y, en un teléfono, la fuente de la posición durante un vuelo. En un teléfono, la cabecera se reduce al
+  nombre, el botón ? y el botón ⚙.
+- **Pantalla completa.** En el mapa (las herramientas de vista fija), un botón redondo al final de la columna de botones
+  sobre el mapa oculta la cabecera y la barra inferior para dejar todo el sitio al mapa; el mismo botón o Esc los devuelven.
+- **Teléfono en horizontal.** Girado de lado, el teléfono coloca la barra inferior como un carril de iconos a la izquierda (las
+  mismas cinco entradas; un segundo toque en Preparar abre sus herramientas a la derecha del carril), conserva la cabecera, pone
+  el bloque de datos del mapa como una columna a la derecha (toque su primera línea, o arrástrela hacia la izquierda, para
+  ensancharla o estrecharla) y da al mapa toda la altura que queda. En pantalla completa, la columna se queda.
 
 ## Datos y sincronización
 
@@ -36,16 +52,19 @@ combustible de viaje, reserva, combustible de bloque, tiempo de vuelo e inicio d
 ## Cómo usarlo
 
 La preparación sigue cinco pasos, en el orden en que se prepara un vuelo:
-**1 Vuelo, 2 Ruta, 3 Meteorología, 4 Cálculo, 5 Salida**. En un teléfono, la barra superior muestra un paso cada vez
+**1 Vuelo, 2 Ruta, 3 Meteorología, 4 Resultado, 5 Salida**. En un teléfono, la barra superior muestra un paso cada vez
 (toque un número para ir a él, «Siguiente» al pie de cada paso); en una pantalla ancha, los cinco pasos están uno debajo
 de otro. Todo se recalcula con cada cambio: corrija la ruta, y la meteorología, el cálculo y el viento siguen, sin botón
 que pulsar. El resultado (combustible de bloque, combustible de viaje, tiempo, inicio del descenso) sigue visible abajo
 en la pantalla en cada paso, con la procedencia del viento («viento: METAR LFRS», «viento: previsión ICON FL060»,
-«viento introducido»). Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
+«viento introducido»). En un teléfono esta barra ocupa tres líneas: el contexto
+(«Bloque · FL060→090→110→070 · viento ARPEGE FL060», completo al tocarlo), el combustible de bloque y tres teselas
+«Etapa», «Tiempo» y «TOD» (inicio del descenso). La pantalla se abre siempre en la pestaña «Cálculo»; las fichas se abren
+con la pestaña «Fichas». Una ✓ marca un paso completado. Los niveles se escriben igual en todas partes: en FL a partir de
 5000 ft (FL060), en pies por debajo (3500 ft).
 
 **1 Vuelo.** La salida, la llegada y la alternativa (códigos OACI), la fecha del vuelo si quiere la previsión (TAF) en
-lugar de la observación, la aeronave y el nivel de crucero (en FL). La aeronave cabe en una línea: la aeronave elegida,
+lugar de la observación, la aeronave y el nivel de crucero (en FL). La fecha del vuelo es un único valor, guardado en el vuelo actual: la meteorología del cálculo (TAF de los aeródromos, vientos y temperaturas en altura) se lee a esa fecha, el ETA del mapa parte de ella mientras el vuelo no ha empezado, y el deslizador de Atmósfera parte de ella; vacío significa ahora. La aeronave cabe en una línea: la aeronave elegida,
 su matrícula, su indicativo y de dónde viene. Un vuelo nuevo toma la última aeronave elegida en este
 dispositivo; sin elección, el cálculo espera. La lupa abre la búsqueda (la última elegida primero): escriba una ficha, una matrícula, un indicativo
 o un tipo. Los resultados llegan en este orden: sus fichas de rendimiento, las aeronaves de la aerolínea (su flota,
@@ -114,10 +133,10 @@ cambian la ruta o la hora, el viento en altura anterior se mantiene, marcado «p
 previsión; si no llega, el viento en superficie de los METAR toma el relevo y se indica («previsión en altura no
 disponible»).
 
-**4 Cálculo.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
+**4 Resultado.** El dibujo muestra, para cada nivel, el combustible del trayecto (línea continua) y su duración (guiones).
 El punto verde marca el nivel más económico, el cuadrado naranja el más rápido; la zona gris, los niveles que no se
 pueden mantener en este trayecto. Cada nivel se calcula como el cálculo, con el viento previsto a ese nivel cuando el tiempo real
-está activado: en el nivel elegido, la curva y el cálculo dan la misma cifra. Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
+está activado: en el nivel elegido, la curva y el cálculo dan la misma cifra. En una ruta con escalones, cada punto de la curva es un vuelo a nivel constante en su nivel, sin los escalones: el rombo negro marca el cálculo real del plan (con los escalones de la ruta y el viento del plan), indicado bajo el dibujo («Plan: FL160, 856 kg, 0:54»); su distancia a la curva es el coste de los escalones. El eje del combustible sigue la unidad elegida (kg o lb). Toque la curva para elegir un nivel, o use los dos botones. «Ascenso» elige la forma
 de subir: económico, mejor régimen, rápido, a la velocidad de la ficha, o manual (usted da velocidad y régimen de
 ascenso).
 
@@ -202,7 +221,7 @@ altitudes y las distancias en pantalla; los niveles siguen siendo niveles de vue
   tarjeta lo dice y responde el METAR en su lugar. La tarjeta meteorológica indica de dónde vienen los mensajes. Sin red
   alguna, muestra la última meteorología guardada, con su hora.
 
-<!-- fr: e1923cc95a7a -->
+<!-- fr: 82119c7ea5b3 -->
 
 <!-- chapter: maps -->
 # Mapa
@@ -213,24 +232,31 @@ radioayudas, aerovías, altitudes mínimas. La ruta del vuelo también se modifi
 ## Cómo usarlo
 
 **El vuelo previsto.** El mapa muestra el vuelo preparado en Combustible: salida, puntos de la ruta, llegada, y el
-aeródromo alternativo en guiones grises. Arriba, una línea lo resume: salida y llegada, alternativa, nivel, distancia,
-tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
+aeródromo alternativo en guiones grises. Su resumen (nivel, distancia, previsto o en vuelo) no se escribe sobre el dibujo (el dibujo lo muestra): el texto emergente del asa del bloque de datos bajo el mapa lo da, con salida y llegada, alternativa y tipo de aeronave. Cuando el vuelo cambia en Combustible, el mapa lo sigue por sí solo.
 
 **El mapa y lo que muestra.** Alrededor de la ruta: los espacios aéreos que atraviesa o roza (zonas restringidas,
 peligrosas, prohibidas, espacios controlados), las aerovías bajas o altas según su nivel, los aeródromos y las
 radioayudas, y en cada cuadro de un grado la altitud mínima de seguridad (la cifra marrón, en miles y centenas de pies:
 «3⁵» quiere decir 3500 ft). Las pequeñas cifras violetas a lo largo de la ruta son las distancias desde la salida, en
-millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» vuelve a toda la ruta. El
+millas náuticas. Deslice el mapa con un dedo, separe dos dedos para hacer zoom; «Recentrar» (la diana, arriba a la derecha del mapa) vuelve a toda la ruta. El
 mapa se queda donde usted lo puso, aunque la ruta cambie: solo «Recentrar» (u otro vuelo) lo reencuadra. Visto de lejos,
 el mapa solo muestra lo que está cerca de la ruta; acérquese para verlo todo.
 
-**El perfil y el cursor.** Bajo el mapa, el perfil vertical corta la ruta de punta a punta: el relieve, los espacios
+**El perfil y el cursor.** En el bloque de datos bajo el mapa, el perfil vertical corta la ruta de punta a punta: el relieve, los espacios
 aéreos en los que entra a la altitud prevista, y la trayectoria del vuelo en violeta. Deslice el dedo por el perfil: un
 cursor azul lo sigue, y el mismo cursor se coloca en el mapa. Toque la ruta en el mapa para colocarlo allí. La línea
 bajo el perfil dice lo que hay bajo el cursor: distancia desde la salida, altitud prevista, altura del relieve, y el
-espacio aéreo en el que está en ese momento.
+espacio aéreo en el que está en ese momento. Bajo el mapa, este bloque de datos muestra el perfil; la lista de los
+espacios de un punto o los puntos de notificación de un aeródromo se abren en su lugar cuando los pide, y el perfil
+vuelve al cerrarlos. La pastilla con forma de nube, en el par de pastillas (una columna a la derecha del dibujo, o en la línea de título a la derecha con el bloque ampliado o en horizontal), lo sustituye (la pastilla del perfil lo devuelve) por el corte
+meteorológico a lo largo de la ruta (viento, temperatura, nubes, engelamiento) a la altitud del vuelo; el corte sigue el mismo cursor, y un toque sobre
+él lo mueve. Solo muestra la previsión que Atmósfera ya ha cargado: sin ella, la línea «Sin previsión cargada» lleva a Meteo, en Preparar. La última pastilla, «i», abre sobre el perfil su leyenda (qué es cada trazo, banda y marca); arrastrar el dedo sobre el corte mueve el cursor como en el perfil. El perfil y el corte se dibujan a la altura exacta del bloque, con su eje de distancias siempre a la vista: en un bloque bajo quitan etiquetas de niveles, nunca el eje.
 
-**Seis modos de mapa.** El botón arriba a la izquierda del mapa muestra el modo elegido; tóquelo para ver los seis
+**Una pantalla fija.** Nada entre el encabezado y el mapa: el mapa y el bloque de datos llenan la pantalla, y nada se desplaza salvo el contenido del bloque. Los botones están sobre el mapa: a la derecha, de arriba abajo, «Editar la ruta» (el lápiz), «Recentrar», el modo de mapa, «Editar en el mapa» (las cuatro flechas) y, al final, la pantalla completa (Esc sale de ella); a la izquierda, «Capas». El bloque es una hoja: arrastre su línea superior (la barrita; a su altura normal la línea no lleva título sobre un perfil o un corte, solo las dos pastillas) hacia arriba para
+ampliarlo, hacia abajo para reducirlo a esa línea, lo que deja toda la altura al mapa; un toque en la línea lo reduce o
+lo devuelve a su altura normal.
+
+**Seis modos de mapa.** El botón del modo, a la derecha del mapa, muestra el modo elegido; tóquelo para ver los seis
 modos. «IFR bajo»: aerovías inferiores, espacios aéreos, altitudes mínimas y radioayudas. «IFR alto»: aerovías
 superiores (UN…, UM…), espacios por encima del FL195. «VFR»: fondo topográfico con las ciudades, los espacios útiles en
 VFR, los puntos de notificación y los obstáculos. «Topo»: el relieve y, de cerca, las curvas de nivel (cada 500 ft o 100
@@ -244,46 +270,49 @@ Más cerca: los puntos de las aerovías (triángulos y radioayudas), el nivel m�
 distancia del tramo, su rumbo («097°»), los puntos de notificación y los obstáculos. De cerca, cada obstáculo lleva su
 altura sobre el suelo, y la altitud de su cima entre paréntesis («434 AGL (771)»).
 
-**Las capas.** El botón de capas, bajo el ajuste del mapa, abre la lista de lo que dibuja: familias de espacios (TMA /
+**Las capas.** El botón de capas, a la izquierda del mapa, abre en el bloque de datos, en lugar del perfil, la lista de lo que dibuja (la cruz ✕ devuelve el perfil). Primero, bajo la elección del vuelo, el control «Complejidad»: actúa como si el zoom fuera otro, un nivel de zoom por paso (de −4 a +4) — menos detalles hacia la izquierda, más hacia la derecha. Lo que muestra cada zoom lo fija el administrador (Ajustes, tarjeta «Administración»). Luego las familias de espacios (TMA /
 CTR, D / R / P, FIR, otros), aerovías inferiores y superiores, radioayudas, puntos de aerovía, puntos de notificación
 VFR, obstáculos, altitudes mínimas, ciudades, retícula, alternativo, nombres de los espacios, nombres de las aerovías.
 Marque o desmarque: el mapa sigue, y su elección se conserva para este ajuste en este dispositivo. «Restablecer todo»
 vuelve a la elección de origen. «Solo alrededor de la ruta», marcada de origen en IFR, limita espacios y aerovías a la
 cercanía de la ruta; desmarcada, se dibuja todo el mapa visible, para mirar en otra parte. De cerca, todo se dibuja de
-todos modos. Abajo del todo, el control «Complejidad (prueba)» muestra menos detalles hacia la izquierda, más hacia la
-derecha, en todos los zooms. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
-muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos.
+todos modos. Cada elemento del mapa tiene su rango de zoom: los puntos de notificación VFR solo aparecen
+muy cerca, los CTR de cerca, las TMA en vista media, las FIR de lejos. El tamaño del mapa también cuenta: en un marco
+pequeño (teléfono, panel de la vista doble) muestra menos elementos que en uno grande con el mismo zoom, como si
+estuviera más lejos (el zoom se corrige con la media del alto y del ancho del marco, 900 px sin corrección).
 
 **Toque o pase por encima para saber más.** Toque, haga clic o pase sobre el nombre de una aerovía, la etiqueta de un
 espacio o una barba de viento: una pequeña burbuja da lo esencial en dos líneas — para una aerovía, el tramo (punto →
 punto), su distancia, sus rumbos, su límite inferior y superior; para un espacio, su nombre y sus límites en notación
-AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro lugar dentro de un espacio, una tarjeta muestra los espacios
-bajo el dedo, uno o varios: un bloque de niveles, como el perfil vertical (una columna
-numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. Queda abierta: la ✕ o Escape la cierran, otro toque la
-reemplaza. Sigue al puntero, queda 5 segundos, deja paso a la siguiente y se cierra con un toque en otro lugar o
-un movimiento del mapa. Sobre una radioayuda, la burbuja da su tipo, su indicativo y su frecuencia;
-cuando varias están en el mismo lugar, el mapa guarda la más útil (VOR, TACAN o DME, luego NDB, luego ILS) y la burbuja
-nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo o el ratón dan igualmente los espacios atravesados.
+AIP («TMA 8 AQUITAINE 2000|FL145 D»). Tocado en otro punto dentro de un espacio, el bloque de datos bajo el mapa muestra
+los espacios bajo el dedo, uno o varios, en lugar del perfil: un gráfico de niveles, como el perfil vertical (una
+columna numerada por espacio, de su límite inferior al superior), y luego la lista numerada con sus límites. La cruz ✕,
+Esc o un toque en un lugar vacío del mapa lo cierran y el perfil vuelve, otro toque sobre espacios lo reemplaza; mover
+el mapa lo deja. El mapa no se mueve ni cambia de tamaño. El globo de paso del ratón sigue el puntero, dura 5 segundos,
+cede el sitio al siguiente y se cierra con un toque en otra parte o un movimiento del mapa. Sobre una radioayuda, el
+globo da su tipo, su indicativo y su frecuencia; cuando varias están en el mismo sitio, el mapa guarda la más útil (VOR,
+TACAN o DME, luego NDB, luego ILS) y el globo nombra las demás («también aquí: ILS 25L BG 109.9»). En el perfil, el dedo
+o el ratón dan igualmente los espacios atravesados.
 
 **Los puntos de notificación VFR de un aeródromo.** Pase el ratón sobre un aeródromo: sus puntos de notificación y las
-secuencias tomadas de sus cartas VAC se iluminan (círculos verdes con nombre, guiones entre los puntos). Tóquelo: el
-mapa se acerca a sus puntos si están apretados, y su tarjeta da las secuencias (con la página de la VAC) y luego las
-consignas de la VAC, plegadas página por página. Queda abierta mientras mueve el mapa: la ✕ o
-Escape la cierran, otro aeródromo la reemplaza. Tocar un punto de notificación abre igualmente la tarjeta de su
-aeródromo, con ese punto primero. En modo VFR, los puntos del
-aeródromo de salida y del de llegada se muestran de entrada. Estos datos se extraen automáticamente de las VAC: están
-marcados «a verificar», no son el itinerario publicado; la carta VAC es la que vale. Cuando el aeródromo ha sido
-analizado a mano, la tarjeta lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado
-sigue la carta VAC (guiones largos) y una flecha marca un sentido único. Los puntos de notificación de la base siempre
-están, en negro para los aviones y en verde para los helicópteros; las secuencias y consignas de las VAC se añaden una
-vez importadas. Aparecen una vez importados por el administrador (Ajustes › Mantenimiento).
+secuencias tomadas de sus cartas VAC se iluminan (círculos con nombre, trazos entre los puntos). En el mapa, un punto de
+notificación solo lleva su código corto («NA», «E», «SE»…), para que el mapa siga siendo legible; el nombre largo está
+en el globo y en la lista. Toque el aeródromo: el mapa se acerca a sus puntos si están apretados, y el bloque de datos
+bajo el mapa, en lugar del perfil, da la lista de puntos (código, nombre largo, restricciones), las secuencias (con la
+página de la VAC) y luego las instrucciones de la VAC, plegadas página por página; se desplaza si el contenido es largo.
+Sigue abierto mientras mueve el mapa: la cruz ✕ o Esc lo cierran y el perfil vuelve, otro aeródromo lo reemplaza. Tocar
+un punto de notificación abre igualmente el contenido de su aeródromo, ese punto primero. En modo VFR, los puntos de los
+aeródromos de salida y de llegada se muestran de oficio. Estos datos se extraen automáticamente de las VAC: están
+marcados «por verificar» y no son la ruta publicada; la carta VAC prevalece. Cuando el aeródromo se ha analizado a mano,
+el bloque lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado sigue la carta VAC
+(trazos largos) y una flecha marca una ruta de sentido único. Los puntos de notificación de la base siempre están, en
+negro para los aviones y en verde para los helicópteros; las secuencias y las instrucciones de las VAC se añaden una vez
+importadas por el administrador (Ajustes › Mantenimiento).
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
-14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). Encima del
-mapa, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
+14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). En las notas del bloque de datos, bajo el perfil, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a
 la prevista; el perfil muestra las dos altitudes. De cerca, cada punto lleva su hora estimada (ETA) bajo su nombre, sin tapar nunca un aeródromo, en UTC («14:52Z»), la hora local entre paréntesis en la salida y la llegada. «Seguir» mantiene
-el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), la línea lo dice y abre los
-ajustes; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
+el mapa en su posición; mover el mapa lo detiene. Sin posición (GPS o red no activados), una notificación lo dice una vez, la línea queda en las notas y su enlace abre los ajustes; una posición de más de 2 minutos aparece en gris. La línea termina con la fuente de la posición: GPS, red,
 IVAO, VATSIM, X-Plane o Little Navmap.
 
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
@@ -299,21 +328,21 @@ giro de la ruta también se marcan en el perfil.
 el mapa como en el perfil. Vienen del cálculo de Combustible; sin él, el mapa los estima con regímenes de ascenso y de
 descenso habituales.
 
-**Los mapas de misión.** La primera lista de arriba elige lo que muestra el mapa: el vuelo previsto, o una misión de
+**Los mapas de misión.** La primera lista, a la cabeza de las capas (el botón de capas), elige lo que muestra el mapa: el vuelo previsto, o una misión de
 la aerolínea. Para una misión, una segunda lista elige entre sus mapas (vista de conjunto, objetivo, detalle…). Cada
 mapa se redibuja como en el estudio: mismo marco, mismo perfil de visualización, con los puntos de la misión, sus zonas
 rayadas y su recorrido. El perfil vertical muestra entonces el de la misión.
 
-**Modificar la ruta en el mapa.** Toque «Editar» arriba a la derecha del mapa: los puntos de giro se rodean de un
+**Modificar la ruta en el mapa.** Toque «Editar en el mapa» (las cuatro flechas, a la derecha del mapa; la primera vez aparece una breve ayuda): los puntos de giro se rodean de un
 círculo. Arrastre un punto sobre un fijo, una radioayuda o un aeródromo: se coloca allí (soltado en otro lugar, se
-vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» junto a «Editar»
+vuelve un punto libre, nombrado por sus coordenadas, como 4530N00030E). Para añadir un punto, toque «+» (en la misma columna)
 y luego el lugar deseado (o mantenga pulsado medio segundo): sobre un fijo, una radioayuda o un aeródromo se coloca
 allí, en otro lugar es un punto libre; se añade al tramo más cercano. Un toque simple no añade nada: muestra la burbuja.
 Toque un punto de la ruta: su tarjeta da su nivel y propone «Quitar». La salida y la llegada no se mueven aquí. En el
 perfil, arrastre un nivel hacia arriba o hacia abajo: el nivel cambia desde el punto que abre ese tramo, en pasos de
 FL10 (en el primer tramo, es el nivel del vuelo); en la tarjeta de un punto, «−» y «+» hacen lo mismo. «Deshacer»
 deshace el último gesto. Cada cambio se guarda enseguida en el vuelo, y Combustible rehace el cálculo; el perfil sigue.
-«Terminar» cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, «Editar la ruta» abre
+Volver a tocar el botón (o Esc) cierra el modo, y el mapa vuelve a moverse con el dedo. Para escribir la ruta en texto, el lápiz arriba de la columna derecha («Editar la ruta») abre
 el paso Ruta de Combustible.
 
 ## Sin conexión
@@ -330,11 +359,12 @@ la altitud mínima de seguridad de cada cuadro atravesado (en guiones marrones),
 
 ## Casos particulares
 
-**Sin vuelo.** Sin vuelo preparado, el mapa queda oculto y propone «Abrir Combustible». Los mapas de misión siguen
-accesibles desde la lista de arriba.
+**Sin vuelo.** Sin vuelo preparado, el mapa queda vacío y propone «Abrir Combustible». Los mapas de misión siguen accesibles desde la lista de las capas.
+
+**Vuelo que cruza la línea de cambio de fecha.** Un vuelo que cruza el meridiano 180° (de Siberia a Alaska, por ejemplo) se dibuja de una sola pieza: el mapa continúa al otro lado de la línea, las marcas de distancia, el perfil y el corte meteorológico siguen la ruta, que sigue guardada con longitudes entre −180° y 180°.
 
 **Base aeronáutica ausente.** Si la base aeronáutica todavía no ha sido publicada por un dispositivo de la aerolínea,
-el mapa solo muestra la ruta, y lo dice.
+el mapa solo muestra la ruta, y lo dice una vez (notificación, luego nota del bloque de datos).
 
 **Zona no guardada.** Sin conexión, sobre una zona nunca consultada ni guardada, el mapa no tiene nada que mostrar; el
 botón «Datos sin conexión» abre los ajustes para guardarla la próxima vez.
@@ -346,7 +376,7 @@ ciclo, una línea lo dice: los espacios aéreos pueden haber cambiado desde ento
 entonces el perfil habitual del tipo de mapa (detallado para un objetivo o un detalle, simplificado si no) y lo indica.
 Basta con abrir la misión en el estudio y guardarla para que conserve después el suyo.
 
-<!-- fr: 16866d3245cc -->
+<!-- fr: dc1f0c9c9d2f -->
 
 <!-- chapter: report -->
 # Informe
@@ -366,12 +396,12 @@ traza. El vuelo preparado en Combustible o Mapa se propone de la misma forma («
 Combustible («Iniciar el vuelo»), aparece primero, «Vuelo iniciado a las hh:mm». La tarjeta dice en una línea todo lo
 que se va a retomar, incluso lo que un tipo de misión no tiene casilla para mostrar (distancia, nivel). «Usar» rellena
 también la hora de puesta en marcha (la hora de salida en Combustible) y el combustible a la salida (el combustible de
-bloque del cálculo), cada uno marcado con su fuente. Guardar el informe termina el vuelo iniciado: Combustible vuelve a
+bloque del cálculo), todo recordado en la línea «Rellenado desde: …» bajo el título de la tarjeta. Guardar el informe termina el vuelo iniciado: Combustible vuelve a
 la preparación, Mis vuelos quita «En curso», y el vuelo ya no se propone.
 
 **Las otras fuentes.** Despliegue «Otras fuentes» para retomar su último vuelo IVAO o VATSIM, su plan de vuelo
 SimBrief, o un texto pegado: un plan de vuelo OACI, la página de un vuelo del tracker IVAO o de StatSim, un METAR. Solo
-se rellenan los campos vacíos; junto a cada uno, su fuente. Si una fuente da otra cosa para campos ya rellenados, un
+se rellenan los campos vacíos; la línea «Rellenado desde: …» bajo el título de la tarjeta dice de dónde vienen. Si una fuente da otra cosa para campos ya rellenados, un
 botón propone sustituirlos.
 
 **La misión.** En el segundo paso: la familia (propuesta según su último informe), la serie, el identificador de la
@@ -400,8 +430,8 @@ modificarlo. «Nuevo informe» vuelve a empezar con un informe en blanco.
   cuenta como un solo vuelo. La puesta en marcha y la parada corresponden a la conexión y a la desconexión cuando la
   traza empieza y termina en tierra; el despegue y el aterrizaje vienen de la traza.
 - **Las horas** están en UTC, marcadas «(Z)» en los campos; el vuelo iniciado y la red las rellenan en UTC. Un
-  informe más antiguo, introducido en la hora del dispositivo, se muestra convertido con la hora introducida debajo
-  («introducido 18:30 local»); solo se reescribe en UTC si lo guarda.
+  informe más antiguo, introducido en la hora del dispositivo, se muestra convertido con la hora introducida en la línea bajo el título de la tarjeta
+  («Despegue introducido 18:30 local»); solo se reescribe en UTC si lo guarda.
 - **SimBrief**: su último plan (identificador ajustado en ⚙) — aeronave, ruta, nivel, velocidad, combustible previsto,
   METAR y TAF.
 - **Desde Mis vuelos**: «Escribir el informe» de un vuelo abre un informe nuevo, ya rellenado con ese vuelo y su fecha;
@@ -529,6 +559,53 @@ informe.
 
 <!-- fr: cfdf162727aa -->
 
+<!-- chapter: atmosphere -->
+# Meteo
+
+La atmósfera a lo largo del vuelo preparado en Combustible: un mapa meteorológico al nivel elegido, el corte vertical de
+la ruta, el corte de un punto, a la hora de salida o más tarde.
+
+## Cómo usarlo
+
+**El vuelo.** Meteo muestra siempre el vuelo preparado en Combustible (ruta, nivel, fecha del vuelo). Sin vuelo previsto,
+la página lo dice y lleva a Combustible; «Ver el ejemplo» muestra un vuelo de demostración, marcado como tal en el
+asa.
+
+**Cargar la previsión.** El botón de carga (la flecha hacia abajo, a la derecha del mapa) lee la previsión a lo largo de
+la ruta y alrededor de ella. No se pide nada al abrir: la página muestra lo que el aparato ya ha guardado. Fuera de la
+zona del vuelo, el mapa muestra el sinóptico mundial publicado con la aplicación, sin pedir nada.
+
+**El mapa meteorológico.** Isobaras, isotermas, nubes, viento, corriente en chorro y convección, al nivel elegido con la
+pastilla del nivel («Suelo», el nivel solicitado, la trayectoria calculada o una altitud fija). El botón de capas (arriba
+a la izquierda) elige lo que se dibuja. Toque un punto del mapa para abrir su corte.
+
+**La fecha del vuelo.** El cursor bajo el asa adelanta la hora de 0 a 72 horas desde la salida prevista: el mapa, el
+corte y los cortes de punto siguen.
+
+**El corte y los cortes de punto.** Bajo el mapa, el corte muestra la ruta de un extremo a otro, del suelo hasta por
+encima del nivel del vuelo. Tóquelo para abrir el corte del punto más cercano (el perfil vertical de la atmósfera allí);
+◀ y ▶ pasan al corte vecino, ✕ vuelve al corte de la ruta. El dibujo cabe siempre en el bloque, con su eje de distancias
+visible; amplíe el bloque para ver más detalle.
+
+**La leyenda.** La pastilla «i», a la derecha del dibujo (en la línea del título cuando se muestra), muestra la leyenda
+de lo dibujado; un toque en la leyenda, en la pastilla o Escape la cierra.
+
+- Corte: trayectoria calculada (continua: ascenso, crucero, descenso), nivel previsto (guiones), nivel solicitado
+  (puntos), fin del ascenso e inicio del descenso (TOC, TOD), nubes (gris, más oscuro: más cubierto), isotermas cada
+  5 °C (0 °C azul grueso), inversiones y engelamiento (rayado), viento (barbas: media 5 kt, entera 10, banderín 50),
+  base estimada de los cúmulos (puntos grises), relieve, puntos de la ruta (líneas verticales); en un bloque alto, las
+  bandas inferiores: nubosidad baja, media, alta, precipitación, visibilidad inferior a 8 km.
+- Corte de punto: temperatura (rojo), punto de rocío (verde), atmósfera tipo (guiones), los tres niveles del vuelo en
+  ese lugar, inversiones, nubes (columna a la derecha), viento, relieve.
+
+## Conviene saber
+
+- La previsión viene de Open-Meteo (Météo-France AROME y ARPEGE sobre Francia, ICON en Europa, GFS en otros lugares);
+  el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
+- Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
+
+<!-- fr: 4bb0b6cd3ef2 -->
+
 <!-- chapter: settings -->
 # Ajustes
 
@@ -536,6 +613,12 @@ Los ajustes de este dispositivo (⚙ arriba en la pantalla): su identidad, lo qu
 intercambian los datos y lo que el dispositivo guarda sin conexión. Se quedan en el dispositivo, nunca se sincronizan.
 
 ## Cómo usarlo
+
+**El estado.** La pantalla se abre con el bloque «Estado», con el mismo punto que el botón ⚙ de la cabecera (verde: algo
+nuevo; naranja: atención). Una línea por cosa, toque para actuar: el vuelo en curso (al Mapa), los informes por escribir (al
+informe ya rellenado), el trigrama que falta (a «Identidad»), la base aeronáutica mientras no esté lista (a «Acceso a los
+datos»), el estado de los datos y la vía de intercambio usada (a «Sincronización», o a los conflictos), el lanzador, «Sin
+conexión» y, en un teléfono, la posición durante un vuelo.
 
 **Su identidad.** En «Identidad», escriba su trigrama y sus identificadores VID IVAO, CID VATSIM y SimBrief, luego
 «Guardar». Las herramientas los usan para prerrellenar; con varios usuarios, el trigrama es necesario.
@@ -559,7 +642,7 @@ hay token: la tarjeta muestra el repositorio remoto de `data/` (vea «Un reposit
 teléfono por primera vez, por ejemplo — no tiene ni la base aeronáutica (espacios, aeródromos, radioayudas) ni la base
 de aeronaves: «Datos sin conexión» lo dice. Dos vías: configure el acceso al repositorio de datos, incluso sin marcar
 intercambio (entonces solo sirve para leer las bases); o, en un puesto con lanzador, publique las bases en el
-repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave), luego sincronice.
+repositorio (V2: Ajustes › Mantenimiento › Datos aeronáuticos y Tipos de aeronave), luego sincronice. Tres estados distintos cuando falta la base: «Base aeronáutica cargándose…» (la lectura no ha terminado: espere), «Acceso a los datos no configurado en este dispositivo» (configure el acceso arriba; una aplicación añadida a la pantalla de inicio tiene su propio almacenamiento, nada de lo de Safari está allí) y «Base aeronáutica no publicada» (el acceso funciona, nada está publicado en el repositorio).
 
 **La sincronización.** Con un intercambio marcado, la tarjeta «Sincronización» da la última correcta, las escrituras
 pendientes y la red; «Sincronizar ahora» envía y recibe en el acto. Si no, se hace sola al inicio, cada 10 minutos en
@@ -671,7 +754,7 @@ framagit o GitLab, configure el acceso en un puesto con el lanzador.
 
 **Las páginas de administración.** En el nivel «Completo» (tarjeta «Nivel»), la tarjeta «Administración», bajo «Acerca
 de», reúne las páginas de administración y de prueba, cada una con una frase; en los demás niveles no aparece. En la
-aplicación: el ajuste de los umbrales del mapa (`#maps?tune=1`, solo lectura en un teléfono), la hoja de ruta
+aplicación: el botón «Ajuste de los umbrales del mapa (administrador)» (`#maps?tune=1`, solo lectura en un teléfono; abre la página de ajuste: para cada elemento del mapa y cada modo, los zooms en que aparece, guardados para la aerolínea, `airline/map_profiles.json`; un modo que nunca guardó toma los umbrales de un modo ajustado, la página lo dice; el control «Complejidad» del mapa solo desplaza el zoom), vuelta con la flecha de retroceso, la hoja de ruta
 (`#roadmap`) y el diagnóstico de la tarjeta «Acerca de».
 
 **Los bancos, en un puesto.** Servidos por el lanzador, solo se abren en un puesto con lanzador (en otros sitios se
