@@ -5,16 +5,19 @@ délestage, réserve, carburant bloc, temps de vol et début de descente.
 
 ## Comment s'en servir
 
-La préparation suit cinq pas, dans l'ordre où on prépare un vol : **1 Vol, 2 Route, 3 Météo, 4 Devis, 5 Départ**. Sur
+La préparation suit cinq pas, dans l'ordre où on prépare un vol : **1 Vol, 2 Route, 3 Météo, 4 Résultat, 5 Départ**. Sur
 un téléphone, la barre du haut montre un pas à la fois (touchez un numéro pour y aller, « Suivant » en bas de chaque
 pas) ; sur un écran large, les cinq pas sont les uns sous les autres. Tout se recalcule à chaque changement : corrigez
 la route, la météo, le devis et le vent suivent, sans bouton à presser. Le résultat (carburant bloc, délestage, temps,
 début de descente) reste visible en bas de l'écran à chaque pas, avec d'où vient le vent (« vent : METAR LFRS »,
-« vent : prévision ICON FL060 », « vent saisi »). Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
+« vent : prévision ICON FL060 », « vent saisi »). Sur un téléphone, cette barre tient en trois lignes : le contexte
+(« Bloc · FL060→090→110→070 · vent ARPEGE FL060 », en entier si on le touche), le carburant bloc, puis trois tuiles
+« Étape », « Temps » et « TOD » (début de descente). L'écran s'ouvre toujours sur l'onglet « Devis » ; les fiches
+s'ouvrent par l'onglet « Fiches ». Un ✓ marque un pas rempli. Les niveaux s'écrivent partout de la même
 façon : en FL à partir de 5 000 ft (FL060), en pieds en dessous (3 500 ft).
 
 **1 Vol.** Le départ, l'arrivée et le dégagement (codes OACI), la date du vol si vous voulez la prévision (TAF) plutôt
-que l'observation, l'appareil et le niveau de croisière (en FL). L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. Un nouveau vol reprend le dernier
+que l'observation, l'appareil et le niveau de croisière (en FL). La date du vol est une seule valeur, gardée dans le vol courant : la météo du devis (TAF des terrains, vents et températures en altitude) est lue à cette date, l'ETA de la Carte en part tant que le vol n'est pas démarré, et le curseur d'Atmosphère part d'elle ; vide, c'est maintenant. L'appareil tient sur une ligne : l'appareil retenu, son immatriculation, son indicatif et d'où il vient. Un nouveau vol reprend le dernier
 appareil choisi sur cet appareil ; sans choix, le devis attend. La loupe ouvre la recherche (le dernier choisi en tête) : tapez une fiche, une immatriculation, un indicatif ou un type. Les résultats viennent dans
 cet ordre : vos fiches de performances, les appareils de la compagnie (sa flotte, puis ceux connus par son journal),
 les types publiés, et en dernier le code tapé tel quel. Un appareil de la compagnie prend sa propre fiche s'il en a une,
@@ -79,10 +82,10 @@ flèches. Hors réseau, la dernière prévision lue reste. Quand la route ou l'h
 reste, marqué « prévision en cours… », jusqu'à la nouvelle prévision ; si elle ne vient pas, le vent au sol des METAR
 prend le relais et c'est dit (« prévision en altitude indisponible »).
 
-**4 Devis.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
+**4 Résultat.** Le dessin montre, pour chaque niveau, le carburant du trajet (trait plein) et sa durée
 (tirets). Le rond vert marque le niveau le plus économe, le carré orange le plus rapide ; la zone grisée, les niveaux
 qu'on ne peut pas tenir sur ce trajet. Chaque niveau est chiffré comme le devis, avec le vent prévu à ce niveau quand
-la météo réelle est retenue : au niveau choisi, la courbe et le devis disent le même chiffre. Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
+la météo réelle est retenue : au niveau choisi, la courbe et le devis disent le même chiffre. Sur une route à paliers, tous les points de la courbe sont un vol à plat à leur niveau, sans paliers : le losange noir marque le devis réel du plan (avec les paliers de la route et le vent du plan), détaillé sous le dessin (« Plan : FL160, 856 kg, 0:54 »), et l'écart avec la courbe est le coût des paliers. L'axe du carburant suit l'unité choisie (kg ou lb). Touchez la courbe pour choisir un niveau, ou utilisez les deux boutons. « Montée » choisit la façon de monter : économique,
 meilleur vario, rapide, au badin de la fiche, ou manuelle (vous donnez badin et vario).
 
 Le pli « Altitude-densité » montre, pour l'écart ISA en abscisse, l'altitude-densité de chaque altitude pression (une

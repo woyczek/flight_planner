@@ -4,6 +4,32 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **24 Oct 2026 (relais cloud) — a mount that lost its address writes nothing; the view is in the address; the J1 "0 ft"**
+  (lot `v3-fuel-mount`). **Cause of the race**: `S` is a module global and `mount()` awaited its reads (libraries, seven
+  `ctx.data.read`) before touching it, then wrote `S.…` and called `show('plan')` without asking whose `S` it was. The frame
+  calls `unmount()` on any address change, even while the mount is still reading: `#fuel` then `#atmosphere` nulled the
+  first `S` (the late mount then threw on `S.refsPending`), and `#fuel` then `#fuel?view=sheets` let the first mount, when its
+  reads came back after the second's, run `show('plan')` on the second mount's `S` and `S.body` (the Quote screen drawn over a
+  Sheets address). **Fix**: the mount's token is its own state object, `const self = S = {…}` taken before the first `await`;
+  `if (gone(self)) return` after the reads (`gone = s => S !== s`, already used by `completeMount` and every later
+  continuation); `unmount()` sets `S = null`, which invalidates it. No timer, no observer. **The view in the address**:
+  `show(view)` calls `viewInAddress`, which writes `?view=sheets` (Fiches) or removes `view` (Devis) with
+  `history.replaceState` (no event, no navigation, no new mount; `with`, `from`, `focus` stay; nothing is written once the
+  address is no longer `#fuel`), so the frame's popover (`currentRow` reads the address when it opens) marks the right row.
+  At mount `?view=sheets` opens the Sheets, anything else the Quote (F1: never the Sheets by default; `focus=route` wins).
+  **J1 "Bloc · 0 ft" under load** (not a race of the quote): the module keeps the screen `inert` while the current flight of
+  a new device is being read (`flightPending`), and `completeMount` then replaces the waiting flight by the one read
+  (the last state read wins; the typed values would otherwise erase a stored flight). A finger cannot type in an inert screen,
+  but Playwright's `fill` does (it sets the value and fires `input`): J1 typed the level during that window, the level went
+  into the waiting flight, was replaced, and the quote read `levelFt = 0`. Reproduced with a delayed read of `pilot/` (F7). Two
+  changes: `onPlanInput` ignores a field edited while `flightPending` (nothing written into the waiting flight; the fields are
+  redrawn from the flight read), and the suite's `ready('fuel')` waits for the body to be no longer inert, as a pilot does.
+  Tests: F7 (both directions of the race, with a delayed read; the Quote/Sheets switch writes the address and the popover
+  marks Fiches; a quote typed after a slow read names FL270, never "0 ft"); A7 no longer waits for fuel's first screen (the
+  wait was the workaround of this race). **Not fixed, not fuel's**: the frame does not serialise navigations; two address
+  changes within one task (`#atmosphere` then `#fuel?view=sheets`) leave one `section[data-module]` per navigation in
+  `#fView` (seen: three `fuel` sections after `#fuel`, `#atmosphere`, `#fuel?view=sheets` without waiting). To tell the frame.
+
 - **23 Oct 2026 — the weather corridor reads aerodb's light index** (aerodb's ae427b934, read again here): the
   corridor asks `aerodromes({ bbox, lite: true })`; the light index (one compact line per ICAO aerodrome: code,
   name, position, elevation, runway axis, declination) holds everything the corridor and the aerodromes' cards use
@@ -447,3 +473,132 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
   - **In passing**: the route's delayed reading wrote the "unresolved points" line of the Plan screen even when the
     Sheets screen had replaced it (TypeError at load when the device's last screen was Sheets); now written only when
     the line exists and changes.
+
+## 24 October 2026 — opens on the Plan; compact result bar on a phone (the user's feedback on an iPhone)
+
+- **Always open on the Plan.** `show(S.focusRoute || S.ui.view !== 'sheets' ? 'plan' : 'sheets')` reopened the Sheets
+  screen when it was the last one used; the user comes to this module to change the plan or the quote, rarely to edit
+  an aircraft. Now `show(ctx.query.view === 'sheets' && !focusRoute ? 'sheets' : 'plan')`: the Sheets screen opens by
+  its tab or by `#fuel?view=sheets` (documented in INTEGRATION § 3). **Judgement call**: the last view is no longer
+  remembered at all (`show` does not write `cache/fuel/ui.json` any more, the stale `view` key of an older file is
+  dropped in memory at mount) rather than remembered and ignored: a value nobody reads is a trap. Inside a mount the
+  tabs work as before; a remount (dual view, language) goes back to the Plan.
+- **Result bar about half as high** (192 px → 104 px at 390 px, measured on a fictitious TEST_TP flight, route
+  `LFRD REN/F090 BALNI BAKUL/F110 NTS DIXAD TUPAR/F070 CGC LFBD`, wind ARPEGE FL060): context on one line (nowrap,
+  ellipsis, full text in `title`) written by `resultContext(q, range, short)` — short "Bloc · FL060→090→110→070 · vent
+  ARPEGE FL060" / full "Carburant bloc · FL060 → FL090 → FL110 → FL070 · vent : prévision ARPEGE FL060", from new `TX`
+  rows (`blockS`, `windByS`, `windRangeS`; `windShort(short)` picks the short wind texts); the figure at `--sog-h2`
+  under 760 px by a container query on the module (`@container (max-width: 759px)`); three tiles on one row, label
+  (`--sog-size-xs`) above value (`--sog-h3`), one line each, "Étape / Trip / Reise / Etapa", "Temps / Time / Zeit /
+  Tiempo", "TOD" in the four languages, TOD's value without "avant"/"before" and the full name plus the old phrase in
+  the `title`. Bar padding 8 × 12 px, tiles 3 × 8 px. The details table keeps "Délestage", "Début de descente"...
+  (`TX.trip`, `TX.tod` stay). Module-scoped CSS on `.fu-result` and `.f-tiles`; the frame's primitives untouched.
+- **Judgement calls**: "label and value on one line each" read as the label on one line and the value on another
+  (two lines per tile, none wrapping), since label and value side by side do not hold in 110 px with "1 280 kg"; the
+  compact layout applies at every width (the dual view pane is itself under 760 px), only the figure's size depends
+  on the container; the "flight started … for 1 h 12" line above the context is unchanged (it adds a line only after
+  the start); the wind range reads "vent inconnu" in the short form (the full form keeps "vent inconnu : fourchette").
+- **Checked** (Chromium 1194, port 8803, fictitious sheet seeded through `FrameData`, 390 × 844 and 1280 × 800 dual
+  view with the Map beside): bar 192 → 104 px, ellipsis at 320 px in the context line, four languages, METAR/TAF source,
+  typed wind, unknown wind (range), no `pageerror`; first open Plan, after a visit to Sheets and a reload Plan, the
+  tab opens Sheets, `#fuel?view=sheets` opens Sheets, `focus=route` unchanged; 44 px tabs and steps. Benches quote 58,
+  levels 24, route_text 20, metar 61, winds 29, progress 14, current_flight 11 pass; `sheets.html` shows 2 failures
+  (`.lnmperf` written / read back) that do not involve this change (the bench does not load `module.js`).
+- **Seen, not mine**: at 390 px in Chromium the Flight step's date row (`.fu-when`, label "Date du vol (facultatif : TAF)",
+  field and the two buttons) is 24 px wider than the screen (document scroll width 414, 402 in English), before and
+  after this lot; to look at on the iPhone itself, where the date control differs.
+
+## 24 October 2026 — level decision without a spike: one basis for every level (the user's bug on an iPhone)
+
+- **The user's words**: "l'artefact de pic est un bug, qui génère de faux niveaux". Route "FL160→090→110→070", plan level
+  FL160: the fuel and time curves spiked at FL160, "fastest FL155" sat right beside the spike and "least fuel FL175"
+  above it. Two rows of `docs/technique/BUGS.md` (24/10), closed here.
+- **Cause**: `requoteDecision` re-quoted every level as a flat flight at that level with the forecast wind at that level,
+  except the plan's own, quoted with the route's steps and the plan's wind (`wind: h === levelFt ? qIn.wind : …`,
+  `steps: h === levelFt ? qIn.steps : null`). A stepped route costs more than a flat flight: a spike at exactly that
+  level. Measured before the fix (fictitious TEST_TP, 300 NM, ceiling 20,000 ft so the series goes by 500 ft, wind 270/30,
+  route steps FL090 / FL110 / FL070): fuel 826 kg at FL155, **856 kg at FL160**, 823 kg at FL165; time 51.9, **54.1**,
+  51.9 min. After: 826, **825**, 823 kg; 51.9, **51.9**, 51.9 min.
+- **Decisions (relay, holding the ergonomics role)**: (1) one basis for every point of the series, the plan's level
+  included (`wind: aloftMeanAt(h) || qIn.wind`, `steps: null`): no point of the curve is computed differently from its
+  neighbours. (2) The plan's real quote (the route's steps, the plan's wind) becomes its own marker: a diamond
+  (`fu-planpt`) on each curve at the plan's level and a legend line "Plan: FL160, 856 kg, 0:54" in the four languages,
+  with a tooltip saying that the curves are a flat flight at each level; the dashed vertical "plan" line stays. Without
+  steps the diamond is drawn too (consistency), smaller (radius 4 instead of 6.5). (3) "Least fuel" and "Fastest" stay the
+  minima of the flat series, the "Use FLxxx" buttons are unchanged, the result bar keeps the plan's real quote. (4) The
+  chart's fuel axis and its unit label use the displayed fuel unit, not `sheet.unit`.
+- **How**: pure code first. `requoteDecision` left `module.js` for `FuelLevels.requoteSeries(D, quoteAt, { h, quote })`
+  (`levels.js`), which rewrites the series from `quoteAt` and returns `D.plan = { h, fuel, minutes, stepped }`; the
+  screen only draws. The axis: new `fuelUnitOf(unit)` (the displayed unit, else the sheet's; `fuelTxt` uses it too), and
+  the chart converts the series to that unit with `FuelModel.convertFuel` before choosing its round ticks, so the
+  ticks are round in the displayed unit (800 / 850 / 900 kg; 1,800 / 1,900 / 2,000 lb), not in the sheet's. The plan's
+  values are included in the axes' ranges, so a stepped plan far above the curve stays on the drawing.
+- **Judgement calls**: (a) the plan marker shows the **trip** fuel (`q.trip`, as the curve does), not the block; the block
+  stays in the result bar. (b) No "re-scale the steps around each candidate level" (the other option of the bug row): the
+  steps of a route are the pilot's own levels, scaling them per candidate level would invent routes; the flat series
+  answers "which cruise level is best for this distance", the diamond shows what the actual route costs on top. (c) At the plan's level the curve takes `aloftMeanAt(h) || qIn.wind`, like every other level; with the real weather on
+  that is the same forecast as the wind already written in the flight (`applyRealWind`, at the plan's level), so the flat
+  point and the plan's marker differ by the steps only.
+- **Checked**: benches `levels.html` (36, new: stepped route, series at FL160 = the flat quote and on the line of its
+  neighbours within 1 %, FL160 between its neighbours, marker = stepped quote, minima of the flat series, no steps →
+  marker on the curve, no quote → no marker, and a control showing that the former basis fails the same criterion) and
+  `quote.html` (58) pass. Screen (Chromium 1194, port 8814, 390 x 844 and 1280 x 800, `FrameData` seeding of TEST_TP and
+  a flight on "LFRD REN/F090 BALNI BAKUL/F110 NTS DIXAD TUPAR/F070 CGC LFBD" at FL160): no spike, two diamonds and the
+  legend line "Plan: FL160, 856 kg, 0:54", axis "kg" with 800 / 850 / 900, then "lb" with 1,800 / 1,900 / 2,000 and
+  "Plan: FL160, 1,888 lb, 0:54" when the display unit is lb; no `pageerror`, no horizontal scroll.
+
+## 24 October 2026 — the first tab is called "Quote" (the user, through the relay)
+
+- **What**: the module's first tab, "Préparer / Plan / Planen / Preparar" (`TX.plan`), becomes "Devis / Quote / Berechnung /
+  Cálculo", because "Préparer" now also names the frame's bottom tab (two things with one name on the same screen). Also
+  changed: the "No OFP on this device" message (it named the tab), the comments naming "écran Préparer", the opening
+  sentence of the help in four languages (the screen opens on the "Quote" tab, the sheets on the "Sheets" tab), SPEC § 9,
+  INTEGRATION. The screen's concept keeps its name "Plan screen" in the documents (history in this log untouched).
+- **Judgement call**: step 4 of the plan is already called "Quote / Devis / Kalkulation / Cálculo" (de "Kalkulation"
+  there, "Berechnung" for the tab, as decided); a tab and a step with the same name in fr, en and es is a small
+  ambiguity (the tab holds the five steps, step 4 is one of them), reported to the ergonomics session.
+- **Checked**: tab labels read on the screen in the four languages (see the report of the lot).
+
+- **24 Oct 2026 — `winds.js samples` across the date line** (lot of the maps session, relay cloud; the only change in fuel). The
+  intermediate places were `a.lon + (p.lon − a.lon) × f` on raw longitudes: from UHMA (177.7°) to PAOM (−165.4°) they went
+  round the world and the winds aloft were read there. `samples` now unrolls the points (`unwrapLons`, `frame/lib/geo.js`) and
+  returns each place wrapped (`wrapLon`, except a longitude already in [-180, 180[, kept as written: no float noise on an
+  ordinary route; the points keep the value written in the flight). `meta.files` lists `frame/lib/geo.js`. Bench `test/winds.html`
+  gained 7 checks (count, range, short arc, monotonic, ends as requested, reverse direction, ordinary route).
+
+## 24 October 2026 — the flight date belongs to the shared flight (relay cloud; user: "prévoir un slider « date du vol »… utiliser au max les données gratuites")
+
+- **What**: the module's "Flight date" field (`wxdate`, `weather.when`, quick buttons "+30" / "Now") now writes
+  `current_flight.planned_at`, ISO 8601 UTC, optional (absent or `null` = now; schema number and merge rule unchanged:
+  `planned_at` is in `FUEL_FIELDS`, `frame/lib/current_flight.js`). **One value**: `planned_at` is the truth;
+  `weather.when` stays as its copy in the device's local time (the datetime-local field's format, and what Atmosphere reads
+  until its session reads `planned_at`), set together by `setPlanned` and brought back in line by `syncPlanned` whenever a flight is
+  read (mount, watch, completion): `planned_at` wins, a flight written before it gets its `planned_at` from `weather.when`.
+  Reading from another device changes the field, the aerodromes' weather and the winds aloft (`whenChanged`).
+- **Label**: "Date du vol / Flight date / Flugdatum / Fecha del vuelo" (the "(optional: TAF)" is gone: the date now also drives
+  the winds aloft and the Map); the field's tooltip and the manual say that the quote's weather and the Map are read at this date.
+- **Already the case, now documented**: the aerodromes' weather (TAF chosen by `WX.station(…, wxWhen())`) and the winds and
+  temperatures aloft (`aloftKey`, `aloftFetch`: the forecast hour nearest to it) read `wxWhen()`, which now reads
+  `planned_at`. Found on the way: a date **typed** in the field refreshed the display of the aerodromes only, without reading
+  the forecasts again for the new hour (only "+30" / "Now" did); both now go through `whenChanged` (700 ms of calm, then the
+  weather, the winds aloft and the quote).
+- **Start**: "Start the flight" still redoes everything for now: it sets `planned_at` to `null` (as it emptied `weather.when`).
+  A started flight is read from `started.at`.
+- **ETA of the Map for a flight that is not started** (SPEC § 12, INTEGRATION § 3): fuel writes `progress = { at, eta }` from
+  `planned_at` (the timeline counted from it as a started flight's from `started.at`: `progressPlan` shared by `progressCalc` and
+  `plannedEtas`), with `plannedPos`, `fuelRemainingKg`, `remainingNm`, `phase` at `null`; the Map (`withEta`, one condition) draws the
+  labels also when the flight is not started, if the last ETA is still in the future. **Judgement calls**: (a) the Map does not
+  compute times itself, it draws what fuel wrote (one calculation, same function as the started flight's); (b) a flight without a date
+  has no ETA (now is not a date to promise, it would drift), and so has a flight whose arrival is past — no ETA for a flight date
+  forgotten in the past, which would show yesterday's times on the map after a report; (c) the date of a finished flight is not
+  cleared by fuel (report writes `started`, not `planned_at`): it is the pilot's to clear with "Now", reported.
+- **F4 (width, known failure fixed)**: the date row overflowed at 390 px (414 measured: the label as a flex item kept its
+  `min-content`, the date input and the two buttons side by side). `min-width:0` on the field, `flex-wrap` on the row (input
+  first at `flex:1 1 11em`, the 44 px buttons below when the room is short): no element beyond `innerWidth` at 360 and 390 px in
+  the five designs (case F4 passes; it was listed in `tests/v3/cases/known_failures.py`, removed).
+- **F5 (step name, known failure fixed)**: step 4 of the plan is renamed "Résultat / Result / Ergebnis / Resultado" (what it
+  holds: the result bar, the level decision, the density altitude, "Open in", the details); "Devis" stays the first tab's
+  name only. Manual in four languages, SPEC § 9 and the comments updated. Closes the "Judgement call" of the entry above.
+- **Atmosphere**: its code is not touched; INTEGRATION § 3 carries the sentence its session reads ("the slider's origin is
+  `planned_at` of the current flight").
+- **Checked**: see the report of the lot (suite `--changed`, Playwright at 390 and 360 in the five designs, smoke).

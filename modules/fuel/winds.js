@@ -4,6 +4,11 @@
 // long de la route pondéré par la longueur des tronçons, et profil de l'atmosphère au départ (température par
 // niveau, inversions, altitude-densité). Ni page, ni stockage, ni réseau : module.js appelle et garde.
 
+import {
+  wrapLon,
+  unwrapLons
+} from '../../frame/lib/geo.js';
+
 /** Niveaux de pression demandés (hPa), du sol vers le haut. */
 export const LEVELS = [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500, 400, 300, 250, 200];
 
@@ -114,11 +119,16 @@ const gc = (a, b) => {
 };
 
 /** Lieux de lecture le long de la route : chaque point, plus des points intermédiaires tous les stepNm environ ;
- *  au plus max lieux (le pas grandit). [{ lat, lon, nm (depuis le départ), point (indice du point de route ou -1) }]. */
+ *  au plus max lieux (le pas grandit). [{ lat, lon, nm (depuis le départ), point (indice du point de route ou -1) }].
+ *  Les longitudes sont interpolées sur la route déroulée (frame/lib/geo.js : une route qui passe la ligne de changement de
+ *  date, 177° puis −165°, va de 177° à 195° : sans cela, les lieux intermédiaires feraient le tour du monde) ; les lieux
+ *  rendus sont enroulés dans [-180, 180[ (une longitude déjà dans cet intervalle est rendue telle quelle). */
 export function samples(points, stepNm = 50, max = 24) {
-  const pts = (points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon));
+  const raw = (points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)),
+    pts = unwrapLons(raw);
   if (!pts.length) return [];
-  const total = pts.slice(1).reduce((s, p, i) => s + gc(pts[i], p), 0);
+  const wrap = lon => lon >= -180 && lon < 180 ? lon : wrapLon(lon),
+    total = pts.slice(1).reduce((s, p, i) => s + gc(pts[i], p), 0);
   let step = Math.max(stepNm, total / Math.max(1, max - pts.length));
   const out = [];
   let cum = 0;
@@ -131,7 +141,7 @@ export function samples(points, stepNm = 50, max = 24) {
         const f = k / (n + 1);
         out.push({
           lat: a.lat + (p.lat - a.lat) * f,
-          lon: a.lon + (p.lon - a.lon) * f,
+          lon: wrap(+a.lon + (+p.lon - +a.lon) * f),
           nm: cum + len * f,
           point: -1
         });
@@ -140,7 +150,7 @@ export function samples(points, stepNm = 50, max = 24) {
     }
     out.push({
       lat: +p.lat,
-      lon: +p.lon,
+      lon: wrap(+raw[i].lon), // le point tel qu'il est écrit (sans le bruit d'un aller-retour par la route déroulée)
       nm: cum,
       point: i
     });
