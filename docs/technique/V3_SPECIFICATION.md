@@ -311,6 +311,16 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       **Done** (relay cloud, lot `v3-feuille-v2`, 25 Oct): the flicker was the Map's (MapLibre's own resize observer and four module
       observers redrawing at every frame of a drag, not the primitive's); primitive rewritten with the same contract, one resize after the
       release, D7's root cause fixed, D20 added; `frame/DECISIONS.md` and `modules/maps/DECISIONS.md` hold the measurements.
+  20. **Zoom on the vertical drawings** (user, 25 Oct, 14:30: "Trouver le moyen de zoomer (pour être précis) le profil
+      vertical"; the relay's reading, an ergonomics intent): the profile and the weather cut accept a **window on the distance
+      axis**. On a phone: a pinch zooms around its centre, a two-finger drag pans, a double tap comes back to the whole flight;
+      one finger stays the reading cursor (airspaces, weather point). On a screen: wheel with Ctrl zooms, drag pans, double
+      click resets. The vertical axis refits to what is visible (that is where the precision comes from), axis labels, NM
+      marks and point labels follow, the cursor keeps working in the window. The window is a reading convenience, kept for
+      the life of the page only, never stored; a small "whole flight" affordance appears in the legend row while zoomed
+      (rule 13: no new chip). The gesture is the same on both drawings: the window helper is written once (`modules/maps/lib`,
+      next to `map_base`) and the cut receives the window through `drawSection` (Atmosphere session's contract); the lot
+      starts with the profile and asks Atmosphere for the cut's option in `modules/maps/INTEGRATION.md`.
       - **Done** (relay cloud, branch `v3-feuille-v2`, 25 Oct; `frame/DECISIONS.md` has the diagnosis and the numbers): the flicker was the
         Carte's, not the primitive's (48 of 50 `map.resize()` of a drag came from MapLibre's own `ResizeObserver`, four observers of the module
         redrew the overlay, the profile and the cut at every frame). `frame/lib/sheet.js` is written again with the same API, HTML, classes and
