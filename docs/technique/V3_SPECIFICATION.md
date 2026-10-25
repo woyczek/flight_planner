@@ -321,6 +321,15 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       (rule 13: no new chip). The gesture is the same on both drawings: the window helper is written once (`modules/maps/lib`,
       next to `map_base`) and the cut receives the window through `drawSection` (Atmosphere session's contract); the lot
       starts with the profile and asks Atmosphere for the cut's option in `modules/maps/INTEGRATION.md`.
+  21. **No surface-to-ceiling airspace in the vertical views** (user, 25 Oct, 00:35, after two iPhone shots of "n espaces sur
+      ce point" where a R zone "800 ASFC|1800 ASFC" and ten CTL sectors without published limits were drawn SFC → UNL:
+      "La règle, pour simplifier l'affichage, c'est « pas d'espace de la surface au plafond ». Ne pas afficher les SIV, FIR,
+      dans le profil vertical."): the vertical profile and the "n espaces sur ce point" list never show an airspace that spans
+      from the surface to the ceiling (SFC / GND to UNL, or limits that cannot be read and would amount to it); SIV, FIR, UIR
+      and control sectors without published limits are left out of both whatever their limits; the map keeps its own
+      per-type thresholds. ASFC / AGL heights are read as heights above the ground, never as "unknown"; an unreadable limit
+      is never turned into UNL. One filter function for the profile and the list; the sheet's count is the count after
+      filtering. Lot `v3-maps-asfc`.
       - **Done for the profile** (relay cloud, lot `v3-profil-zoom`, 25 Oct): `modules/maps/lib/axis_window.js` (the gesture, written once), a `window`
         option of `MapsProfile.draw` (the vertical axis refits to the window, the distance marks take a round step, `xOf` / `sOf` read the
         window so the cursor and the airspace reading are unchanged), the "Whole flight" text button in the legend row (no chip), the window
