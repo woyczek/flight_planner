@@ -106,3 +106,54 @@ def k3(c):
          ['LFAV', 'LFBD'], 'airfields of the eAIP menu, once each, sorted', what='icao_list')
     idx = P.index_of({'LFBD': doc}, '2026-10-01')
     c.eq((idx['aerodromes']['LFBD']['SID'], idx['aerodromes']['LFBD']['STAR'], idx['aerodromes']['LFBD']['APP']), (4, 6, 4), 'counts per kind', what='index')
+
+
+# ------------------------------------------------------------------------------------------------ FAA CIFP (static)
+@case('K4', 'FAA CIFP reader', 'K', static=True, rule='aerodb DECISIONS 25 Oct 2026 (step 4): ARINC 424-18 records read as SID / STAR / approaches')
+def k4(c):
+    import importlib
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    tools = str(c.root / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    C = importlib.import_module('proc_cifp')
+    fx = c.root / 'frame/aerodb/test/fixtures/cifp/KSEA_subset.arinc'
+    c.eq((C.airac_date('2610').isoformat(), C.airac_date('2601').isoformat()), ('2026-10-01', '2026-01-22'), 'AIRAC cycle to its effective date', what='airac_date')
+    lat, lon = C.latlon('N47260734W122183462')
+    c.ok(abs(lat - 47.435372) < 1e-5 and abs(lon + 122.309617) < 1e-5, f'{lat}, {lon}', "47°26'07.34\" N 122°18'34.62\" W")
+    c.eq((C.altitude('04000'), C.altitude('FL180'), C.altitude('     ')), (4000, 18000, None), 'altitudes', what='altitude')
+    docs, cycle = C.parse(l.rstrip('\r\n') for l in open(fx, encoding='latin-1'))
+    c.eq(cycle, '2610', 'cycle read from the HDR01 record', what='cycle')
+    procs = {p['id']: p for p in docs['KSEA']['procedures']}
+    for want in ('KSEA.SID.BANGR9.RW16C', 'KSEA.SID.BANGR9.RWALL.ARRIE', 'KSEA.STAR.HAWKZ8.RW16B', 'KSEA.STAR.HAWKZ8.RWALL.BTG', 'KSEA.APP.I16C.RW16C',
+                 'KSEA.APP.I16C.RW16C.GRIFY'):
+        c.ok(want in procs, f'{sorted(procs)}', f'{want} among the procedures')
+    sid = procs['KSEA.SID.BANGR9.RW16C']
+    c.eq([p['id'] for p in sid['points']], ['OTLIE', 'RENBE', 'RICHR', 'TOMRE', 'BANGR'], 'runway transition then common route; the VA leg (no fix) left out', what='BANGR9 16C')
+    c.ok(all(p['lat'] is not None for p in sid['points']), f"{sid['points']}", 'every fix placed from the terminal waypoint records')
+    c.eq((sid['points'][0]['leg'], sid['points'][1]['alt'], sid['status'], sid['source']['kind']), ('DF', {'type': 'min', 'ft': 3000}, 'official', 'cifp'),
+         'DF then TF, at or above 3000 ft', what='BANGR9 16C legs')
+    c.eq(procs['KSEA.STAR.HAWKZ8.RW16B']['runways'], ['16L', '16R'], 'runway "B" (both) is the two parallel runways', what='HAWKZ8')
+    app = procs['KSEA.APP.I16C.RW16C']
+    c.eq((app['type'], app['runways']), ('ILS', ['16C']), 'ILS approach to 16C', what='I16C')
+    rw = next(p for p in app['points'] if p['id'] == 'RW16C')
+    c.eq((rw['alt'], rw['vpa'], rw['lat'] is not None), ({'type': 'at', 'ft': 484}, -3.0, True), 'threshold at 484 ft, -3 degrees, placed', what='RW16C')
+    after = app['points'][[p['id'] for p in app['points']].index('RW16C') + 1:]
+    c.ok(after and all(p.get('phase') == 'missed' for p in after) and not any(p.get('phase') for p in app['points'][:app['points'].index(rw) + 1]),
+         f"{[(p['id'], p.get('phase')) for p in app['points']]}", 'the legs after the missed-approach point are "missed", none before')
+    tr = procs['KSEA.APP.I16C.RW16C.GRIFY']
+    c.eq(([p['id'] for p in tr['points']][:3], tr['points'][0].get('kt'), [p['id'] for p in tr['points']].count('MGNUM')), (['GRIFY', 'MGNUM', 'ANVIL'], 210, 1),
+         'transition joined to the final approach, the shared fix once, speed 210 kt at the IAF', what='GRIFY transition')
+    c.ok(any('sans point' in w for w in docs['KSEA']['warnings']), f"{docs['KSEA']['warnings']}", 'legs without a fix are counted, not silently dropped')
+    with tempfile.TemporaryDirectory() as td:
+        out = Path(td) / 'proc'
+        (out / '2026-10-01').mkdir(parents=True)
+        (out / '2026-10-01' / 'index.json').write_text(json.dumps({'schema': 1, 'cycle': '2026-10-01', 'aerodromes': {'LFBD': {'SID': 1}}}))
+        C.main([str(fx), '--out', str(out)])
+        doc = json.loads((out / '2026-10-01' / 'KSEA.json').read_text(encoding='utf-8'))
+        idx = json.loads((out / '2026-10-01' / 'index.json').read_text(encoding='utf-8'))
+        c.ok(doc['cycle'] == '2026-10-01' and 'tel quel' in doc['notice'], f"{doc.get('notice')}", 'the file carries the FAA warranty notice')
+        c.eq((sorted(idx['aerodromes']), idx['aerodromes']['KSEA']['SID']), (['KSEA', 'LFBD'], 8), 'the cycle index keeps (BANGR9: six runway records and two enroute transitions) the other sources and adds KSEA', what='index')

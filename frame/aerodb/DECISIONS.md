@@ -629,3 +629,23 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
   carries the assessment, the planned element mapping and the draft request for the owner to adapt and send; no account was created.
 - **Publishing**: the command for the eAIP procedures is in `INTEGRATION.md`; it is run by the owner (the relay's rule: the session does not
   publish to the data repository).
+## 25 October 2026 — step 4, FAA CIFP (`tools/proc_cifp.py`)
+
+- **Source read**: `https://aeronav.faa.gov/Upload_313-d/cifp/CIFP_261001.zip` (cycle 2610, effective 1 October 2026): `FAACIFP18` (ARINC 424-18,
+  396,924 records of 132 characters), the readme, the disclaimer, `IN_CIFP.txt`. The server answers 200 to a HEAD request for any file name
+  (empty), so existence is checked by downloading. The next cycle (2611, effective 29 October 2026) is announced in the readme dated 7 October.
+- **Terms** (disclaimer and readme, read in full): the CIFP is a product of the FAA, "not copyrighted under Title 17 U.S.C."; the FAA asks
+  product developers to include the warranty disclaimer (10 U.S.C. 456; "as is") and, as a recipient, to notify its customers and the FAA of
+  any error found. The builder writes the notice in each file and `LICENSE.md` (FAA row) records the condition.
+- **Offsets verified on the real file** (0-based, not from memory): airport 6:10, subsection 12, identifier 13:19, route type 19, transition
+  20:25, sequence 26:29, fix 29:34, region 34:36, section 36:38, continuation 38, description 39:43 (fly-over at 40, missed-approach point at 42),
+  turn 43, RNP 44:47, path terminator 47:49, course 70:74 and length 74:78 in tenths, altitude description 82, altitude 1 84:89 and 2 89:94
+  (one blank between the code and the digits), speed limit 99:102, vertical angle 102:106. The altitude codes other than blank, `+`, `-`, `B`
+  are left out rather than guessed.
+- **Choices**: records are compact (no indentation) because there are 275,000 points; the shared fix of a transition and the final approach
+  appears once; a SID's or a STAR's transitions are separate records holding only their own legs, so that a flight's SID name plus its transition
+  can be joined by a module without duplicating the common route 40 times; `official` status (the data is the FAA's, unchanged), the conversion
+  limits being in `warnings`.
+- **Measured**: see SPEC § 5 quinquies. KSEA check (SeaTac): runway 16C threshold at 47.4638, -122.3110, 484 ft, -3.00 degrees.
+- **Not done**: the rest of the world (open AIP data sets: ENAIRE, DFS, NATS…) is the next inventory; X-Plane / Navigraph stay the local fallback and
+  are not read by anything yet.

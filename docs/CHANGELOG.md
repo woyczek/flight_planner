@@ -12,6 +12,12 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: FAA CIFP procedures (United States) — step 4** (`tools/proc_cifp.py`, `tests/v3/cases/aerodb.py` K4, `test/fixtures/cifp/`, `LICENSE.md`;
+  aerodb SPEC § 5 quinquies, INTEGRATION, DECISIONS) — an ARINC 424-18 reader (standard library only) turns the FAA's `CIFP_AAMMJJ.zip` into
+  `proc/<cycle>/<ICAO>.json` at the common schema, status "official": SID and STAR with their runway and enroute transitions, approaches with their
+  transitions, final and missed approach, altitude constraints, speeds, RNP, vertical angles, positions from the same file. Measured on cycle 2610:
+  3,070 aerodromes, 51,497 procedures, 274,703 points, 5 seconds. The FAA warranty notice travels with the files; legs without a fix (climb or
+  heading to an altitude) are counted, not drawn.
 - Tests: I5 (format) skips when the touched sources are all generated files instead of checking the whole tree; `apps/pilot/aujourdhui.html` formatted.
 - **aerodb: whole-France run of the eAIP builder, EUROCONTROL assessment — step 3** (`tools/proc_eaip.py`, `tests/v3/cases/aerodb.py` K3,
   `frame/aerodb/EUROCONTROL_REQUEST.md`, INTEGRATION, DECISIONS) — `--all` reads the 141 aerodromes of the eAIP menu (`--delay` between

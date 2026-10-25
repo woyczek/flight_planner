@@ -380,7 +380,28 @@ both ways.
   transition. Not coded in the eAIP, so absent: conventional SID / STAR / IAC (ILS, VOR), legs without a fix (CA, VA…), holds
   of the STAR pages (HLDG). A row that cannot be read is reported in `warnings`, never guessed (a missing magnetic course stays
   empty).
-- **Test**: `frame/aerodb/test/procedures.html` (18 checks), cases K1 (API), K2 (tables read from `test/fixtures/eaip/*.rows.txt`,
+- **FAA CIFP builder** (`tools/proc_cifp.py`, workstation, standard library only): `python tools/proc_cifp.py CIFP_AAMMJJ.zip --out
+  data/proc [--icao KSEA …]` reads `FAACIFP18` (ARINC 424-18, fixed 132-column records; offsets checked on the 2610 cycle) and writes one
+  `proc/<cycle>/<ICAO>.json` per aerodrome (3,070 aerodromes, United States, Alaska and Pacific territories) and merges
+  `proc/<cycle>/index.json` (other sources' entries are kept; a file of another source is never overwritten). The AIRAC "2610" of the
+  header is converted to the effective date (`2026-10-01`). Status `official`, `source.kind: 'cifp'`, `source.ref: 'FAACIFP18'`, file key
+  `notice` (the FAA warranty text, to show wherever these procedures are shown).
+  - **Mapping**: SID (`PD`, route types 1 4 T = runway transitions, 2 5 = common route, 3 6 V = enroute transitions) → a record per runway
+    transition (its legs, then the common route's) and a record per enroute transition (its own legs, `runways: []`); STAR (`PE`, 1 4 =
+    enroute transitions, 2 5 = common, 3 6 = runway transitions) mirrored (common route, then the runway transition); a runway "RW16B"
+    is the two parallel runways (`["16L","16R"]`, id `…RW16B`); approach (`PF`) → the final approach and missed approach under the
+    approach identifier (`name`, e.g. `I16C`) with `type` (`ILS`, `LOC`, `RNAV`, `RNP`, `VOR`, `NDB`…, from the route type letter) and a
+    record per transition (route type `A`, named by its initial fix) joined to the final approach, the shared fix once. A leg after the
+    missed-approach point (description code `M`) has `phase: 'missed'`. Altitude description blank / `+` / `-` / `B` → `at` / `min` /
+    `max` / `between`; the other codes (glide-slope and transition altitudes) are not taken. Speed limit → `kt`, RNP → `rnp` (NM),
+    vertical angle → `vpa`, turn direction, fly-over, magnetic course and length as for the eAIP.
+  - **Positions** come from the same file: terminal waypoints and runways (`PC`, `PG`, `PN`, `PA`, by aerodrome), en-route waypoints
+    (`EA`, by region) and navaids (`D`, `DB`). **Left out**: legs without a fix (heading or climb to an altitude: `VA`, `VI`, `CA`…, counted
+    in `warnings`), continuation records (level of service), SID / STAR / approaches of aerodromes not in the file.
+  - Measured on 2610 (9 MB zip, 53 MB file, 4.5 s): 3,070 aerodromes, 51,497 procedures (9,672 SID, 9,475 STAR, 32,350 approaches
+    with their transitions), 274,703 points of which 1 without a position, no duplicate id, 47 MB of JSON (largest aerodrome, KDEN,
+    434 KB).
+- **Test**: `frame/aerodb/test/procedures.html` (18 checks), cases K4 (FAA CIFP reader, fixture `test/fixtures/cifp/KSEA_subset.arinc`: the real records of KSEA BANGR9, HAWKZ8 and I16C with the positions they use), K1 (API), K2 (tables read from `test/fixtures/eaip/*.rows.txt`,
   lines of text kept from the SIA's pages) and K3 (aerodrome file) of `tests/v3/`.
 
 ## 6. Invariants

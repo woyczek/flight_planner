@@ -154,6 +154,11 @@ L.on(s => …); await L.sync();       // state; a pass now
   data repository (the frame synchronises it like the SIA base). `--all` takes the 141 aerodromes of the eAIP menu (about 0.7 MB of
   page each, then the few PDF pages of each; aerodromes without coding tables are skipped); the old cycle folders can stay (the
   reader takes the latest one in force). The tool downloads from the SIA only and writes nothing outside `--out` and `--cache`.
+- **Publishing the FAA procedures** (workstation, by the owner, once per cycle, 28 days): download `CIFP_AAMMJJ.zip` from
+  `https://aeronav.faa.gov/Upload_313-d/cifp/` (the file of the cycle in force; its readme gives the dates), then `python
+  tools/proc_cifp.py CIFP_AAMMJJ.zip --out <clone of the data repository>/proc` (5 seconds, 47 MB, one file per aerodrome), commit and push the
+  data repository. Wherever a module shows procedures with `status: 'official'` and `source.kind: 'cifp'`, it shows the file's `notice`
+  (as is, no warranty, not for navigation) and the source "FAA".
 - **Charts for the frame's PDF reader**: `procedures(icao)` is not needed; read the aerodrome file of the cycle through the
   reader (`proc/<cycle>/<ICAO>.json`, key `charts`) — the address of a chart is `charts.base + items[].path`, the VAC chart
   `charts.vac` (SPEC § 5 quinquies). A call `aerodb.charts(icao)` can wrap it when the reader exists.
