@@ -79,7 +79,7 @@ export const meta = {
   // vue fixe plein cadre (frame/INTEGRATION.md § 9.2) : carte en haut, bloc de données en bas, pas de défilement de page
   fixed: true,
   help: false,
-  reads: ['pilot/', 'cache/weather/', 'cache/atmosphere/'],
+  reads: ['pilot/', 'cache/weather/', 'cache/atmosphere/', 'airline/map_profiles.json'],
   // réserve météo partagée (politique « cache », jamais synchronisée) ; réglages de l'écran et TAF gardés sur l'appareil
   writes: [{
     prefix: 'cache/weather/',
@@ -180,27 +180,26 @@ const STYLE = `
 [data-module="atmosphere"] .at-layers .at-ramp{width:22px;height:9px;border-radius:2px;flex:none;display:inline-block}
 [data-module="atmosphere"] .at-layers>p{grid-column:1/-1;margin:6px 0 0;font-size:.9em;color:var(--sog-muted)}
 [data-module="atmosphere"] .at-layers>p.at-mapnote{margin:0 0 4px;color:var(--sog-fg)}
+[data-module="atmosphere"] .at-layers p.at-zone{display:flex;gap:8px;align-items:center;margin:4px 0 0;font-size:.9em;color:var(--sog-muted)}
+[data-module="atmosphere"] .at-layers p.at-zone .at-key{box-sizing:border-box}
 [data-module="atmosphere"] .at-maptip{position:absolute;z-index:6;pointer-events:none;background:var(--sog-chart-bg);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);padding:5px 7px;font-size:12px;line-height:1.35;box-shadow:var(--sog-shadow);white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
 [data-module="atmosphere"] .f-sheet-panel{container-type:inline-size}
 [data-module="atmosphere"] .f-sheet-head>button:not(.f-sheet-grip):not(.f-sheet-close){flex:none;min-height:0;height:100%;min-width:var(--sog-touch,44px);padding:0 8px;border:0;border-radius:0;background:none}
 [data-module="atmosphere"] .f-sheet-body.at-dbody{position:relative}
-/* puces du dessin, ◀ ▶ des tranches et « i » (§ 7.1.13 et 14, gabarit des puces de la Carte) : avec la tête nue, colonne de 44 px à
-   droite, de la tête au bas du corps (le curseur et le dessin s'arrêtent avant elle : trois puces tiennent sur un corps bas), boutons
-   de 40 px, pas de 44 px ; avec la ligne de titre (agrandie, réduite, paysage), dans cette ligne à droite */
-[data-module="atmosphere"] .at-chips{position:absolute;z-index:2;right:0;top:calc(var(--f-sheet-head) - 1px + 30px);width:44px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
+/* puces du dessin, ◀ ▶ des tranches et « i » (§ 7.1.13, 4e affinement, et 14) : toujours dans la ligne de la poignée, à droite,
+   avant ✕ ; nue, la primitive du cadre leur donne 28 px et une zone de toucher de 44 ; leur nombre ne change pas (une puce sans
+   objet est désactivée, pas retirée) */
+[data-module="atmosphere"] .at-chips{flex:none;display:flex;align-items:center;gap:4px;height:100%}
 [data-module="atmosphere"] .at-chips[hidden]{display:none}
-[data-module="atmosphere"] .f-sheet-head-bare~.at-chips{top:var(--f-sheet-head-bare)}
-[data-module="atmosphere"] .at-chips>button[hidden]{display:none}
-html:not(.f-land) [data-module="atmosphere"] .at-chipcol>:is(.at-dbody,.at-when){margin-right:44px}
-[data-module="atmosphere"] .f-sheet-head>.at-chips{position:static;flex:none;width:auto;flex-direction:row;gap:0;padding:0;height:100%}
-[data-module="atmosphere"] .f-sheet-head>.at-chips>button{width:var(--sog-touch,44px);height:100%;border:0;border-radius:0}
+[data-module="atmosphere"] .f-sheet-head:not(.f-sheet-head-bare)>.at-chips{gap:0}
+[data-module="atmosphere"] .f-sheet-head:not(.f-sheet-head-bare)>.at-chips>button{width:var(--sog-touch,44px);height:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;color:inherit;box-shadow:none}
+[data-module="atmosphere"] .at-chips>button:disabled{opacity:.35;cursor:default}
 [data-module="atmosphere"] .at-chip-i{font:italic 600 16px/1 Georgia,serif}
-[data-module="atmosphere"] .at-chips>button[aria-pressed=true]{color:var(--sog-accent);border-color:var(--sog-accent);background:color-mix(in srgb,var(--sog-accent) 16%,var(--sog-surface))}
+[data-module="atmosphere"] .at-chips>button[aria-pressed=true]{color:var(--sog-accent)}
 /* légende du dessin (règle 14) : panneau translucide sur le dessin, en haut à gauche */
 [data-module="atmosphere"] .at-legend{position:absolute;z-index:3;left:4px;top:4px;max-width:calc(100% - 8px);max-height:calc(100% - 8px);overflow:auto;box-sizing:border-box;display:grid;gap:3px;padding:6px 8px;font-size:12px;line-height:1.3;background:color-mix(in srgb,var(--sog-surface) 90%,transparent);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s,6px);box-shadow:var(--sog-shadow);cursor:pointer}
 [data-module="atmosphere"] .at-legend>div{display:flex;gap:8px;align-items:center}
 [data-module="atmosphere"] .at-legend svg{flex:none}
-[data-module="atmosphere"] .at-chips>button{box-sizing:border-box;display:grid;place-items:center;width:40px;height:40px;min-height:0;margin:0;padding:0;border:1px solid var(--sog-border);border-radius:min(50%,calc(var(--sog-radius) * 22));background:none;color:var(--sog-fg);box-shadow:none;font-size:14px;cursor:pointer;touch-action:manipulation}
 [data-module="atmosphere"] .at-when{flex:none;display:flex;align-items:center;gap:10px;height:30px;padding:0 12px;font-size:12px}
 [data-module="atmosphere"] .at-when input{flex:1 1 auto;min-width:0;margin:0;accent-color:var(--sog-accent);touch-action:manipulation}
 [data-module="atmosphere"] .at-when output{flex:none;min-width:9.5em;text-align:right;font-variant-numeric:tabular-nums;color:var(--sog-muted)}
@@ -370,9 +369,9 @@ export async function mount(el, ctx) {
 </div>
 <section class="f-sheet-panel" data-at="data">
   <div class="f-sheet-head"><button type="button" class="f-sheet-grip" data-at="grip"><span class="f-badge at-hidden" data-kind="warn" data-at="srcTag"></span><b class="f-sheet-title" data-at="dtitle"></b></button>
+    <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
     <button type="button" class="f-sheet-close" data-at="dclose" aria-label="${esc(T('backProfile'))}" title="${esc(T('backProfile'))}" hidden>✕</button></div>
   <div class="at-when" data-at="when"><input type="range" min="0" max="${SHIFT_MAX}" step="1" value="0" data-at="shift" aria-label="${esc(T('whenAria'))}"><output data-at="whenOut"></output></div>
-  <div class="at-chips" role="group" data-at="chips" aria-label="${esc(T('sliceNav'))}" hidden><button type="button" data-at="prev" aria-label="${esc(T('slicePrev'))}" title="${esc(T('slicePrev'))}">◀</button><button type="button" data-at="next" aria-label="${esc(T('sliceNext'))}" title="${esc(T('sliceNext'))}">▶</button><button type="button" class="at-chip-i" data-at="legendBtn" aria-pressed="false" aria-label="${esc(T('legend'))}" title="${esc(T('legend'))}">i</button></div>
   <div class="f-sheet-body at-dbody" data-at="dbody"></div>
 </section>`;
   el.classList.add('f-sheet');
@@ -681,7 +680,9 @@ export async function mount(el, ctx) {
     $('dclose').hidden = view === 'profile';
     // ◀ ▶ des tranches de la route : en colonne à droite du dessin (portrait), en ligne au-dessus (paysage), comme les puces de
     // la Carte (§ 7.1.13) ; le dessin laisse la place de la colonne
-    $('prev').hidden = $('next').hidden = !(view === 'slice' && S.local?.kind === 'route');
+    // les puces d'un dessin, toujours trois : ◀ ▶ actives sur une tranche de la route seulement
+    $('chips').hidden = !(view === 'profile' || view === 'slice');
+    $('prev').disabled = $('next').disabled = !(view === 'slice' && S.local?.kind === 'route');
     if (view !== 'profile' && view !== 'slice') S.legend = false;
     dbody.classList.toggle('at-plot', view === 'profile' || view === 'slice');
     drawData();
@@ -1322,6 +1323,7 @@ export async function mount(el, ctx) {
       bg: tok('--sog-chart-bg'),
       fg: tok('--sog-fg'),
       muted: tok('--sog-muted'),
+      border: tok('--sog-border'),
       accent: tok('--sog-accent'),
       route: tok('--at-computed'),
       ice: tok('--at-ice'),
@@ -1625,6 +1627,9 @@ export async function mount(el, ctx) {
     layersBox.innerHTML = (note ? `<p class="at-mapnote">${esc(T('mapTitle'))} · ${esc(note)}</p>` : '') + `<div><b>${esc(T('mapTitle'))}</b>` +
       wm.legend().map(ly => `<label><input type="checkbox" data-g="mapLayers" data-k="${ly.key}"${ly.on ? ' checked' : ''}> ${ly.swatch
         .barb ? barbKey : key(ly.swatch.css, ly.swatch.ramp)} ${esc(ly.label)}</label>`).join('') +
+      // les deux côtés de la limite tracée : le modèle et la maille de la zone du vol, ceux du synoptique autour
+      (wm.edge ? wm.info().zones.map(z => `<p class="at-zone">${key(z.key === 'flight' ? 'border:1px solid var(--sog-fg);height:8px' :
+        'border:1px dashed var(--sog-muted);height:8px')} ${esc(z.label)}</p>`).join('') : '') +
       `</div><div><b>${esc(T('profileTitle'))}</b>` +
       row('xsLayers', 'cloud', 'lyCloud', key(`linear-gradient(90deg,transparent,${cloud})`, true)) +
       row('xsLayers', 'iso', 'lyIso', key('color:#1c5cab')) +
@@ -1655,12 +1660,8 @@ export async function mount(el, ctx) {
       chips = $('chips'),
       on = !!bareLabel && sheet?.pos === 'default' && !document.documentElement.classList.contains('f-land');
     head.classList.toggle('f-sheet-head-bare', on);
-    // ◀ ▶ : en colonne à droite du dessin avec la tête nue ; dans la ligne de titre, à droite, dès qu'elle est là (le dessin
-    // garde toute sa largeur)
-    if (on && chips.parentNode === head) $('when').after(chips);
-    if (!on && chips.parentNode !== head) $('dclose').before(chips);
-    chips.hidden = !bareLabel; // les puces (◀ ▶ des tranches, « i ») accompagnent un dessin
-    $('data').classList.toggle('at-chipcol', on && !chips.hidden);
+    // « i » : active quand un dessin est là (la légende de ce qui est dessiné)
+    chips.querySelector('[data-at="legendBtn"]').disabled = !bareLabel;
     if (on) {
       setAttr(head, 'aria-label', bareLabel);
       setAttr(head, 'role', 'group');
@@ -2165,6 +2166,19 @@ export async function mount(el, ctx) {
   };
   document.addEventListener('visibilitychange', back);
   window.addEventListener('pageshow', back);
+  // limite de la zone du vol sur la carte météo : tracée par défaut (règle 15), masquée si l'administrateur l'a choisi (clé
+  // edge de airline/map_profiles.json, la page de réglage de la Carte)
+  const PROFILES = 'airline/map_profiles.json',
+    readEdge = async () => {
+      const d = await data.get(PROFILES).catch(() => null);
+      wm.update({
+        edge: d?.edge !== false
+      });
+      schedule();
+      if (S.view === 'layers') layersCard();
+    };
+  readEdge();
+  const unwatchEdge = data.watch(PROFILES, readEdge);
   // vol courant changé (Carburant, Carte, un autre appareil) : relu, la prévision seulement depuis la réserve
   const sig = r => JSON.stringify([r?.route?.points, r?.level, r?.profile, r?.planned_at, r?.weather?.when]);
   let lastSig = sig(rec);
@@ -2189,6 +2203,7 @@ export async function mount(el, ctx) {
     document.removeEventListener('keydown', legendKey);
     window.removeEventListener('pageshow', back);
     unwatch?.();
+    unwatchEdge?.();
     S.map?.remove();
     S.map = null;
   };

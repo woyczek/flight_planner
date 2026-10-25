@@ -561,6 +561,11 @@ area, the map shows the world synoptic published with the application, asking fo
 ("SFC", the requested level, the computed path or a fixed altitude). The layers button (top left) chooses what is
 drawn. Touch a point of the map to open its slice.
 
+**The flight area and the world.** A thin line surrounds the flight area: inside, the fine forecast loaded for the flight
+(Météo-France AROME 1.3 km and ARPEGE 0.1° over France, ICON in Europe); outside, the world synoptic (NOAA GFS,
+published on a 5° grid). The two models do not say quite the same thing: a jump of the lines where they cross the line
+is normal. The layers panel names both models and their grid.
+
 **The flight date.** The slider under the grip moves the time from 0 to 72 hours after the planned departure: the map,
 the cross-section and the slices follow.
 
@@ -569,8 +574,8 @@ to above the flight level. Touch it to open the slice of the nearest point (the 
 there); ◀ and ▶ move to the next slice, ✕ goes back to the cross-section. The drawing always fits the block, its distance
 axis visible; expand the block for more detail.
 
-**The legend.** The "i" chip, at the right of the drawing (in the title row when it shows), shows the legend of what is
-drawn; a touch on the legend, the chip or Escape closes it.
+**The legend.** The "i" chip, in the grip row at the right (after ◀ and ▶), shows the legend of what is drawn; a touch on
+the legend, the chip or Escape closes it.
 
 - Cross-section: computed path (solid: climb, cruise, descent), planned level (dashed), requested level (dotted), top of
   climb and top of descent (TOC, TOD), cloud (grey, darker: more cover), isotherms every 5 °C (0 °C thick blue),
@@ -586,7 +591,7 @@ drawn; a touch on the legend, the chip or Escape closes it.
   world synoptic comes from GFS (NOAA), every 3 hours up to 72 hours.
 - What is loaded stays on the device and works offline; the Map reuses its weather cross-section.
 
-<!-- fr: 4bb0b6cd3ef2 -->
+<!-- fr: 10a7d47c1ccc -->
 
 <!-- chapter: settings -->
 # Settings

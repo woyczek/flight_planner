@@ -229,6 +229,11 @@ c.clearRect(0, 0, 320, 200);
 wm.draw(c, view);
 check('drawn into the host canvas', painted());
 check('surface: the flight grid blended into the world', wm.info().blended === true);
+check('the flight zone\'s limit is drawn by default (rule 15)', wm.edge === true);
+// les mesures de continuité se font sans le trait de la limite (il est, lui, voulu)
+wm.update({
+  edge: false
+});
 // la limite de la grille du vol ne se voit dans aucun aplat : luminance moyenne de deux bandes de 10 px de part et d'autre
 // de chaque bord (tiers central), couche par couche
 const gb = wm.info().gridBox,

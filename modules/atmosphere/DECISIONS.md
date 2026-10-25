@@ -2,6 +2,24 @@
 
 The memory of the V3 atmosphere module: every choice, dated, with its reason. Never rely on chat history.
 
+## 25 October 2026 — the flight zone's edge by default; the chips in the grip row, always three
+
+- **The edge** (user, rule 15 amended: "il y a un saut entre météo et gfs (normal). Donc je tranche : on affiche le cadre
+  (filet fin) avec un mot dans l'aide contextuelle et/ou la légende pour indiquer la différence de modèle entre AROME et
+  GFS. Et la précision du modèle."): `edge` is on by default in the library; this module reads the administrator's key
+  `edge` in `airline/map_profiles.json` (watched; `false` hides the line). The Layers panel names both sides with the
+  model and its grid ("Zone du vol · Météo-France AROME 1,3 km · ARPEGE 0,1°", "Monde · NOAA GFS 1° (NOMADS), maille
+  de 5°" — the world's grid is the published one, read from the index), and the help chapter gains a paragraph on the
+  line and the jump across it. The line takes the design's border colour.
+- **The chips** (user, rule 13, fourth refinement: "le i sur la ligne de titre est bien plus lisible que le bouton i, il
+  permet de gagner de la place" and "ils doivent rester 3, pas faire d'aller-retour entre 2 et 3"): no more column;
+  ◀ ▶ « i » always sit in the grip row at its right, before ✕ (the frame's bare head gives them 28 px and a 44 px touch
+  zone); the drawing takes the full width; the three are always there over a drawing, ◀ ▶ disabled off a route slice,
+  « i » disabled without a drawing. Checked: 390 × 664 bare row, chips at 28 px, body 390 × 111; 844 × 390 titled row,
+  chips at 44 px.
+- **The map's controls above the sheet** (rule 17): the module already offsets MapLibre's bottom controls by the hidden
+  part at each settle (`--at-hide-b`); it will call the maps module's `map_base` function once named.
+
 ## 24 October 2026 (night) — two regressions: flicker while dragging the sheet; "only the frame around the flight"
 
 - **Flicker** (user: "Déplacer le volet par la poignée fait clignoter et apparaître une zone grise. Ça a fonctionné,

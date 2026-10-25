@@ -56,6 +56,11 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
   touch zone; same drag, tap and keys, also at the top of the column in landscape. The collapsed sheet is 29 px high, and the drag stops
   at the measured header instead of a constant. `createSheet`, `labels(pos, rank)` and the positions are unchanged; nothing uses it yet
   (maps and atmosphere adopt it in their own lots). The bench grows from 129 to 177 checks.
+- **Atmosphere: the flight zone's edge shown by default, the chips in the grip row** (`modules/atmosphere/lib/weather_map.js`, `module.js`,
+  `texts.js`, `help/*.md`, `test/weather_map.html`; atmosphere DECISIONS, INTEGRATION § 6; V3_SPECIFICATION § 7.1 rules 13 and 15) — a thin
+  line marks where the flight's fine forecast meets the world synoptic (the two models do not join); the Layers panel and the help name both
+  models and their grid (AROME 1.3 km · ARPEGE 0.1°, GFS 5°); the administrator can hide it (`edge: false` in `airline/map_profiles.json`).
+  ◀ ▶ and the legend "i" always sit in the grip row (three, disabled when they have nothing to do), the drawing at full width.
 - **Atmosphere: no flicker while dragging the sheet** (`modules/atmosphere/module.js`, `lib/weather_map.js`, `test/weather_map.html`,
   `tests/v3/cases/atmosphere.py` E7; atmosphere DECISIONS, INTEGRATION § 6) — the map and its overlay were resized, cleared and the cut
   redrawn at every frame of a drag (a grey band, flashes). Nothing is redrawn while the finger drags; the map now lies under the sheet at

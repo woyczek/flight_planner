@@ -17,6 +17,11 @@ zona del vuelo, el mapa muestra el sinóptico mundial publicado con la aplicaci�
 pastilla del nivel («Suelo», el nivel solicitado, la trayectoria calculada o una altitud fija). El botón de capas (arriba
 a la izquierda) elige lo que se dibuja. Toque un punto del mapa para abrir su corte.
 
+**La zona del vuelo y el mundo.** Una línea fina rodea la zona del vuelo: dentro, la previsión fina cargada para el vuelo
+(Météo-France AROME 1,3 km y ARPEGE 0,1° sobre Francia, ICON en Europa); fuera, el sinóptico mundial (GFS de la NOAA,
+publicado con una malla de 5°). Los dos modelos no dicen exactamente lo mismo: un salto de las líneas al cruzar la línea
+es normal. El panel de capas nombra los dos modelos y su malla.
+
 **La fecha del vuelo.** El cursor bajo el asa adelanta la hora de 0 a 72 horas desde la salida prevista: el mapa, el
 corte y los cortes de punto siguen.
 
@@ -25,8 +30,8 @@ encima del nivel del vuelo. Tóquelo para abrir el corte del punto más cercano 
 ◀ y ▶ pasan al corte vecino, ✕ vuelve al corte de la ruta. El dibujo cabe siempre en el bloque, con su eje de distancias
 visible; amplíe el bloque para ver más detalle.
 
-**La leyenda.** La pastilla «i», a la derecha del dibujo (en la línea del título cuando se muestra), muestra la leyenda
-de lo dibujado; un toque en la leyenda, en la pastilla o Escape la cierra.
+**La leyenda.** La pastilla «i», en la línea del asa a la derecha (después de ◀ y ▶), muestra la leyenda de lo dibujado;
+un toque en la leyenda, en la pastilla o Escape la cierra.
 
 - Corte: trayectoria calculada (continua: ascenso, crucero, descenso), nivel previsto (guiones), nivel solicitado
   (puntos), fin del ascenso e inicio del descenso (TOC, TOD), nubes (gris, más oscuro: más cubierto), isotermas cada
@@ -42,4 +47,4 @@ de lo dibujado; un toque en la leyenda, en la pastilla o Escape la cierra.
   el sinóptico mundial viene de GFS (NOAA), cada 3 horas hasta 72 horas.
 - Lo cargado se queda en el aparato y sirve sin conexión; el Mapa reutiliza su corte meteorológico.
 
-<!-- fr: 4bb0b6cd3ef2 -->
+<!-- fr: 10a7d47c1ccc -->

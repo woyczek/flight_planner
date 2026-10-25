@@ -16,6 +16,11 @@ zone du vol, la carte montre le synoptique mondial publié avec l'application, s
 niveau (« Sol », le niveau demandé, la trajectoire calculée ou une altitude fixe). Le bouton des couches (en haut à gauche)
 choisit ce qui est dessiné. Touchez un point de la carte pour ouvrir sa tranche.
 
+**La zone du vol et le monde.** Un trait fin entoure la zone du vol : dedans, la prévision fine chargée pour le vol
+(Météo-France AROME 1,3 km et ARPEGE 0,1° sur la France, ICON en Europe) ; dehors, le synoptique mondial (GFS de la
+NOAA, publié avec une maille de 5°). Les deux modèles ne disent pas tout à fait la même chose : un saut des lignes au
+passage du trait est normal. Le panneau des couches nomme les deux modèles et leur maille.
+
 **La date du vol.** Le curseur sous la poignée avance l'heure de 0 à 72 heures à partir du départ prévu : la carte, la
 coupe et les tranches suivent.
 
@@ -24,8 +29,8 @@ Touchez-la pour ouvrir la tranche du point le plus proche (le profil vertical de
 passent à la tranche voisine, ✕ revient à la coupe. Le dessin tient toujours dans le bloc, son axe des distances visible ;
 agrandissez le bloc pour plus de détails.
 
-**La légende.** La pastille « i », à droite du dessin (dans la ligne de titre quand elle est affichée), montre la légende
-de ce qui est dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
+**La légende.** La pastille « i », dans la ligne de la poignée à droite (après ◀ et ▶), montre la légende de ce qui est
+dessiné ; un toucher sur la légende, la pastille ou Échap la ferme.
 
 - Coupe : trajectoire calculée (trait plein : montée, croisière, descente), niveau planifié (tirets), niveau demandé
   (pointillés), fin de montée et début de descente (TOC, TOD), nuages (gris, plus sombre : plus couvert), isothermes

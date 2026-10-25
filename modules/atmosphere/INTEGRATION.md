@@ -168,11 +168,12 @@ wx.detach();                               // the Profil chip: the canvas and it
   hour); `layers` (`{ isobar, isotherm, cloud, wind, tfill, jet, conv }`, defaults `DEFAULT_LAYERS`); `gridMax` (places
   of the flight's grid, 48); `grid` (a grid already read, `{ g, locs, levels }`: a host that loads it itself, as this
   module does; without it the cache is read); `colors` (`() → { bg, fg, muted, border, dark, cloud: [r, g, b] }`;
-  `attach` reads the `--sog-*` tokens of its container); `edge` (`true`: the limit of the flight's grid drawn as a
-  hairline in the border colour, contour labels kept 24 px away from it; default `false` — the administrator's setting
-  "Draw the flight zone's limit", V3_SPECIFICATION § 7.1.12, read by the host and passed here, also through `update`);
+  `attach` reads the `--sog-*` tokens of its container); `edge` (the limit of the flight's grid drawn as a hairline in
+  the border colour, contour labels kept 24 px away from it; **default `true`** since rule 15 of V3_SPECIFICATION § 7.1:
+  the two models do not join and the map says so; the administrator may hide it, key `edge: false` in
+  `airline/map_profiles.json`, read by the host and passed here, also through `update`; `wm.edge` gives the value);
   `onChange` (a read arrived: redraw, titles).
-- **One source per fill, no visible limit by default**: the fills (clouds, temperature, jet stream, convection) come
+- **One source per fill**: the fills (clouds, temperature, jet stream, convection) come
   from the world synoptic on both sides of the flight's grid — two models do not agree at the same level (AROME dry,
   GFS moist) and a fill taken from each would draw the grid's rectangle; the grid keeps its own fills only when there is
   no synoptic. The lines and barbs come from the flight's grid blended into the synoptic over its outer quarter (same

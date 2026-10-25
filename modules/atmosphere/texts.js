@@ -49,6 +49,13 @@ export const TX = {
     'Sinóptico mundial no publicado: no se pide nada fuera de la zona del vuelo'
   ],
   worldPoint: ['Synoptique · {p} · {at}', 'Synoptic · {p} · {at}', 'Synoptik · {p} · {at}', 'Sinóptico · {p} · {at}'],
+  resMeteofrance: ['Météo-France AROME 1,3 km · ARPEGE 0,1°', 'Météo-France AROME 1.3 km · ARPEGE 0.1°',
+    'Météo-France AROME 1,3 km · ARPEGE 0,1°', 'Météo-France AROME 1,3 km · ARPEGE 0,1°'
+  ],
+  resIcon: ['DWD ICON-D2 2 km · ICON-EU 7 km', 'DWD ICON-D2 2 km · ICON-EU 7 km', 'DWD ICON-D2 2 km · ICON-EU 7 km',
+    'DWD ICON-D2 2 km · ICON-EU 7 km'
+  ],
+  resGfs: ['NOAA GFS 0,25°', 'NOAA GFS 0.25°', 'NOAA GFS 0,25°', 'NOAA GFS 0,25°'],
   zoneFlight: ['Zone du vol · {model}', 'Flight area · {model}', 'Flugbereich · {model}', 'Zona del vuelo · {model}'],
   zoneWorld: ['Monde · {src}, maille de {step}°', 'World · {src}, {step}° grid', 'Welt · {src}, {step}°-Raster',
     'Mundo · {src}, malla de {step}°'

@@ -16,6 +16,11 @@ Außerhalb des Fluggebiets zeigt die Karte die mit der Anwendung veröffentlicht
 Höhe („Boden", die angeforderte Höhe, die berechnete Bahn oder eine feste Höhe). Die Ebenen-Schaltfläche (oben links)
 wählt, was gezeichnet wird. Tippen Sie auf einen Punkt der Karte, um seinen Schnitt zu öffnen.
 
+**Das Fluggebiet und die Welt.** Eine dünne Linie umgibt das Fluggebiet: innen die für den Flug geladene feine Vorhersage
+(Météo-France AROME 1,3 km und ARPEGE 0,1° über Frankreich, ICON in Europa); außen die Weltsynoptik (NOAA GFS, mit
+einem 5°-Raster veröffentlicht). Die beiden Modelle sagen nicht ganz dasselbe: ein Sprung der Linien an der Grenzlinie
+ist normal. Das Ebenen-Feld nennt beide Modelle und ihr Raster.
+
 **Das Flugdatum.** Der Regler unter dem Griff verschiebt die Zeit von 0 bis 72 Stunden nach dem geplanten Abflug: Karte,
 Schnitt und Punktschnitte folgen.
 
@@ -24,8 +29,8 @@ Schnitt und Punktschnitte folgen.
 Atmosphäre dort); ◀ und ▶ wechseln zum Nachbarschnitt, ✕ kehrt zum Schnitt zurück. Die Zeichnung passt immer in den
 Block, ihre Entfernungsachse sichtbar; vergrößern Sie den Block für mehr Einzelheiten.
 
-**Die Legende.** Der Chip „i" rechts der Zeichnung (in der Titelzeile, wenn sie angezeigt wird) zeigt die Legende des
-Gezeichneten; ein Tippen auf die Legende, den Chip oder Escape schließt sie.
+**Die Legende.** Der Chip „i" in der Griffzeile rechts (nach ◀ und ▶) zeigt die Legende des Gezeichneten; ein Tippen auf
+die Legende, den Chip oder Escape schließt sie.
 
 - Schnitt: berechnete Bahn (durchgezogen: Steigflug, Reiseflug, Sinkflug), geplante Höhe (gestrichelt), angeforderte
   Höhe (gepunktet), Steigflugende und Sinkflugbeginn (TOC, TOD), Wolken (grau, dunkler: mehr Bedeckung), Isothermen
@@ -41,4 +46,4 @@ Gezeichneten; ein Tippen auf die Legende, den Chip oder Escape schließt sie.
   die Weltsynoptik kommt von GFS (NOAA), alle 3 Stunden bis 72 Stunden.
 - Das Geladene bleibt auf dem Gerät und dient offline; die Karte übernimmt seinen Wetterschnitt.
 
-<!-- fr: 4bb0b6cd3ef2 -->
+<!-- fr: 10a7d47c1ccc -->

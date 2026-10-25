@@ -15,7 +15,8 @@
 // levelFt (l'altitude pression montrée, ft ; null : la surface), time (s), layers ({ isobar, isotherm, cloud, wind,
 // tfill, jet, conv }), gridMax (lieux de la grille du vol, 48), grid (une grille déjà lue { g, locs, levels } : l'hôte qui
 // la charge lui-même, Atmosphère ; sans elle, la réserve est lue), colors (() → { bg, fg, muted, border, dark, cloud: [r, g,
-// b] }), edge (true : la limite de la grille du vol tracée en trait fin — réglage de l'administrateur, non par défaut),
+// b] }), edge (la limite de la grille du vol tracée en trait fin, avec info().zones pour la légende : vrai par défaut, la
+// règle 15 de V3_SPECIFICATION § 7.1 ; l'administrateur peut la masquer, clé edge de airline/map_profiles.json),
 // onChange (appelé quand une lecture arrive : redessiner) }.
 // Les aplats (nuages, température, courant-jet, convection) viennent du synoptique des deux côtés de la grille du vol ; les
 // lignes et les barbules, de la grille du vol fondue dans le synoptique sur son quart extérieur.
@@ -202,6 +203,12 @@ export function halo(c, text, x, y, color, bg, align = 'center') {
   c.restore();
 }
 /** Point arrondi au pixel : les images de la grille du vol et la découpe du synoptique tombent sur les mêmes pixels. */
+/** Modèle de la grille du vol et sa maille (le libellé de la légende de la limite), par modèle d'Open-Meteo. */
+const RES = {
+  meteofrance_seamless: 'resMeteofrance',
+  icon_seamless: 'resIcon',
+  gfs_seamless: 'resGfs'
+};
 /** Écart (px) entre une étiquette de ligne et la limite tracée de la grille du vol (option edge), dedans comme dehors. */
 const EDGE_GAP = 24;
 const px = q => ({
@@ -242,7 +249,7 @@ export function createWeatherMap({
   gridMax = 48,
   grid: given = null,
   colors = null,
-  edge = false,
+  edge = true,
   onChange = () => {}
 } = {}) {
   const T = (k, v) => ctx.t(TX[k], v),
@@ -907,6 +914,10 @@ export function createWeatherMap({
   // ---------------------------------------------------------------- ce que l'hôte lit
   const api = {
     draw,
+    /** La limite de la zone du vol est-elle tracée (option edge). */
+    get edge() {
+      return !!o.edge;
+    },
     /** Change des options (flight, levelFt, time, layers, gridMax, colors, edge) ; relit la réserve si le vol ou ses jours ont
      *  changé ; redessin à la charge de l'hôte (ou par attach). */
     update(partial = {}) {
@@ -958,7 +969,7 @@ export function createWeatherMap({
         zones: [box && boxModel ? {
           key: 'flight',
           label: T('zoneFlight', {
-            model: boxModel.name
+            model: RES[boxModel.id] ? T(RES[boxModel.id]) : boxModel.name
           })
         } : null, world ? {
           key: 'world',
@@ -1131,6 +1142,9 @@ export function attach(target, opts = {}) {
     ...wm,
     get state() {
       return wm.state;
+    },
+    get edge() {
+      return wm.edge;
     },
     update(partial) {
       wm.update(partial);
