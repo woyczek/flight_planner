@@ -308,6 +308,9 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       résultat doit être le même qu'aujourd'hui fonctionnellement"): a clean rewrite of `frame/lib/sheet.js` and of the
       map's sheet code from rules 6–10 and § 11 of `frame/INTEGRATION.md`, same API, same tests and bench as the gate,
       after a diagnosis that says whether the flicker is the primitive's or the module's.
+      **Done** (relay cloud, lot `v3-feuille-v2`, 25 Oct): the flicker was the Map's (MapLibre's own resize observer and four module
+      observers redrawing at every frame of a drag, not the primitive's); primitive rewritten with the same contract, one resize after the
+      release, D7's root cause fixed, D20 added; `frame/DECISIONS.md` and `modules/maps/DECISIONS.md` hold the measurements.
       - **Done** (relay cloud, branch `v3-feuille-v2`, 25 Oct; `frame/DECISIONS.md` has the diagnosis and the numbers): the flicker was the
         Carte's, not the primitive's (48 of 50 `map.resize()` of a drag came from MapLibre's own `ResizeObserver`, four observers of the module
         redrew the overlay, the profile and the cut at every frame). `frame/lib/sheet.js` is written again with the same API, HTML, classes and
