@@ -932,6 +932,41 @@
   };
   /** Couleur d'un point de report VFR : voilure fixe dans la couleur du texte (--sog-fg), voilure tournante en vert. */
   const vrpColor = id => vrpRotary(id) ? VRP_HELI : (T || tokens()).fg;
+  /** Clé d'un code de point de report : sans casse ni espaces (« na », « N A » = « NA »). */
+  const vrpNorm = c => String(c || '').toUpperCase().replace(/\s+/g, '');
+  /** Un point de report par code et par lieu. Le SIA publie chaque VRP deux fois dans le XML : « QT-N » avec sa description
+   *  (« Relais hertzien 2 NM Sud Steenvoorde ») et « N » nu, dont le nom est le code, au même endroit (25 octobre 2026,
+   *  « Bug LFQN. Points de report VFR doublonnés »). Deux entrées de même code à 0,5 NM au plus sont le même point, si l'une
+   *  des deux au moins est nue (ou si elles ont le même identifiant : deux zones qui se recouvrent) ; deux identifiants
+   *  préfixés différents (deux terrains) restent deux points. On garde la description la plus riche (celle qui n'est pas
+   *  égale au code), puis l'identifiant préfixé (il porte « -H- » des hélicoptères), puis le premier lu ; sa position est
+   *  celle de l'entrée gardée. L'ordre de lecture est conservé. */
+  function dedupeVrp(list, tolNm = .5) {
+    const kept = [],
+      by = new Map(),
+      nm = (a, b) => Math.hypot(+a.lat - +b.lat, ((+a.lon - +b.lon + 540) % 360 - 180) * Math.cos(+a.lat * Math.PI / 180)) * 60,
+      bare = v => !String(v.id).includes('-'),
+      rich = v => !!v.name && vrpNorm(v.name) !== vrpNorm(vrpCode(v.id)),
+      rank = v => (rich(v) ? 2 : 0) + (bare(v) ? 0 : 1);
+    for (const v of list || []) {
+      if (!v) continue;
+      const k = vrpNorm(vrpCode(v.id)),
+        row = by.get(k) || by.set(k, []).get(k),
+        i = row.findIndex(q => nm(q.v, v) <= tolNm && (q.v.id === v.id || bare(q.v) || bare(v)));
+      if (i < 0) {
+        const q = {
+          v,
+          at: kept.length
+        };
+        row.push(q);
+        kept.push(v);
+      } else if (rank(v) > rank(row[i].v)) {
+        row[i].v = v;
+        kept[row[i].at] = v;
+      }
+    }
+    return kept;
+  }
   const VRP_HELI = '#2e7d32';
 
   function drawVrp(ctx, data, toC, W, H, scale, b, pl, profile) {
@@ -1693,6 +1728,8 @@
     DETAIL_MAX,
     FRAME_REF_PX,
     vrpCode,
+    vrpNorm,
+    dedupeVrp,
     zoneKey,
     visibleAt,
     atZoom,

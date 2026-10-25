@@ -333,7 +333,9 @@ automatisch aus den VAC extrahiert: Sie sind mit „zu prüfen“ gekennzeichnet
 VAC-Karte hat Vorrang. Wurde der Flugplatz von Hand analysiert, sagt der Block es, die Routen tragen ihren Namen, ihre
 Bahnen und Bedingungen, eine geprüfte Spur folgt der VAC-Karte (lange Striche) und ein Pfeil kennzeichnet eine
 Einbahnroute. Die Meldepunkte der Datenbank sind immer da, schwarz für Flugzeuge und grün für Hubschrauber; die Abläufe
-und Anweisungen der VAC kommen hinzu, sobald der Administrator sie importiert hat (Einstellungen › Wartung).
+und Anweisungen der VAC kommen hinzu, sobald der Administrator sie importiert hat (Einstellungen › Wartung). Ein Meldepunkt ist eine einzige Zeile in der Liste und eine einzige Beschriftung auf der Karte, auch wenn Datenbank und
+VAC-Karte ihn beide nennen: die Zeile behält die Beschreibung und die veröffentlichte Position der Datenbank und sagt „VAC-Position 1,2 NM entfernt“,
+wenn die VAC-Karte ihn mehr als eine halbe Meile davon setzt.
 
 **Im Flug.** Sobald der Flug in Kraftstoff gestartet ist, zeigt die Karte, wo Sie sein sollten (hohles Flugzeug,
 „geplant 14:32Z“), und wo Sie sind (volles Flugzeug, nach Ihrem Kurs gedreht, mit der gepunkteten Spur der letzten 30

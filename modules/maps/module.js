@@ -488,6 +488,7 @@ const TX = {
   ],
   vfrHover: ['{c} : toucher pour les voir', '{c}: tap to see them', '{c}: zum Ansehen antippen', '{c}: toque para verlos'],
   navAlso: ['aussi ici : {l}', 'also here: {l}', 'auch hier: {l}', 'también aquí: {l}'],
+  vfrVacOff: ['position VAC à {n} NM', 'VAC position {n} NM away', 'VAC-Position {n} NM entfernt', 'posición VAC a {n} NM'],
   vfrVacCode: ['code VAC : {c}', 'VAC code: {c}', 'VAC-Code: {c}', 'código VAC: {c}'],
   vfrPoints: ['Points de report ({n})', 'Reporting points ({n})', 'Meldepunkte ({n})', 'Puntos de notificación ({n})'],
   vfrBaseCount: ['{n} points de report', '{n} reporting points', '{n} Meldepunkte', '{n} puntos de notificación'],
@@ -734,7 +735,8 @@ async function loadData(box, corridor = true) {
     p.cities || E.agglos ? many(A.cities, bboxes, {
       n: 400
     }) : [],
-    E.vrpPoints ? many(A.vrp, bboxes) : [],
+    E.vrpPoints ? Promise.resolve(many(A.vrp, bboxes)).then(l => MapsRender.dedupeVrp(l)) :
+  [], // un point par code et par lieu (la base SIA le publie deux fois)
     E.rnavPoints ? many(A.points, bboxes) : []
   ].map(x => Promise.resolve(x).catch(() => [])));
   // axes de ravitaillement et tracks NAT (aerodb : zones ouvertes par les lectures ci-dessus ; zone « nat » à la demande)
@@ -2529,7 +2531,7 @@ function baseVrpOf(icao) {
     if (!S) return;
     const pre = `${icao.slice(2)}-`,
       nm = v => Math.hypot(+v.lat - at.lat, dLon(+v.lon, at.lon) * Math.cos(at.lat * Math.PI / 180)) * 60,
-      all = (list || []).filter(v => v?.id),
+      all = MapsRender.dedupeVrp((list || []).filter(v => v?.id)),
       own = all.filter(v => v.id.startsWith(pre)),
       rows = (own.length ? own : all.filter(v => nm(v) <= 15)).map(v => ({
         id: v.id,
@@ -2565,36 +2567,71 @@ const seqsOf = v => [...new Map((v?.routes || []).map(r => [`${r.key || ''}|${r.
 const pagesOf = r => Array.isArray(r.pages) ? r.pages : r.page ? [r.page] : [];
 /** Points de report de la compilation (sans le point de référence du terrain ni les sommets de tracé de l'analyse). */
 const reportOf = v => (v?.points || []).filter(p => !p.role || p.role === 'reporting_point');
-/** Points de report d'un terrain à montrer : ceux de la base, puis ceux des VAC qui n'y sont pas ; chacun avec ses
- *  restrictions lues dans les VAC. [{ id, code, name, lat, lon, restrictions }] */
+/** Points de report d'un terrain à montrer, une ligne par code (sans casse ni espaces) : ceux de la base, puis ceux des
+ *  VAC qui n'y sont pas ; chacun avec ses restrictions lues dans les VAC. [{ id, code, name, lat, lon, restrictions,
+ *  vacNm }]. « Bug LFQN. Points de report VFR doublonnés » (25 octobre 2026) : la base SIA publiait chaque point deux fois
+ *  (« QT-N » décrit, « N » nu : dedupeVrp, à la lecture de la base) et rien ne rapprochait un point des VAC dont le code
+ *  est le même mais la position un peu différente.
+ *  Ordre de préférence quand une source double l'autre : la description la plus riche (celle qui n'est pas égale au code :
+ *  la base ; les VAC n'en ont pas), la position de la base SIA (publiée) sur celle des VAC (lue sur une carte, à vérifier),
+ *  l'identifiant préfixé de la base (couleur avion / hélicoptère). Si la position des VAC en diffère de plus de 0,5 NM,
+ *  la ligne le dit (vacNm), sans seconde ligne ni seconde étiquette sur la carte. */
 function reportPoints(icao) {
   const base = baseVrpOf(icao) || [],
-    v = vfrOf(icao),
-    vac = reportOf(v),
+    vac = reportOf(vfrOf(icao)),
     ids = new Set(base.map(b => b.id)),
     nm = (a, b) => Math.hypot(+a.lat - +b.lat, dLon(+a.lon, +b.lon) * Math.cos(+a.lat * Math.PI / 180)) * 60,
-    // VRP de la base d'un point VAC : son identifiant rapproché à l'import, sinon le plus proche à 0,6 NM au plus (une
-    // compilation importée avant le rapprochement des points hélicoptères, un code écrit autrement)
-    twin = p => p.vrp && ids.has(p.vrp) ? p.vrp : base.map(b => [b, nm(b, p)]).filter(([, d]) => d <= .6).sort((a, b) => a[1] - b[1])[0]?.[
-      0
-    ]
-    .id,
-    byId = new Map();
+    key = MapsRender.vrpNorm,
+    // points des VAC d'un même code : une fois (le fichier peut porter la table des points et les étiquettes de la carte),
+    // les restrictions réunies, le point rapproché de la base (vrp) de préférence
+    byCode = new Map();
   for (const p of vac) {
-    const id = twin(p);
-    if (id && !byId.has(id)) byId.set(id, p);
+    const k = key(p.code),
+      q = byCode.get(k);
+    if (!q) byCode.set(k, {
+      ...p,
+      restrictions: [...(p.restrictions || [])]
+    });
+    else {
+      for (const r of p.restrictions || [])
+        if (!q.restrictions.includes(r)) q.restrictions.push(r);
+      if (!q.vrp && p.vrp) q.vrp = p.vrp;
+    }
   }
-  return [...base.map(b => ({
-    ...b,
-    vacCode: byId.get(b.id)?.code || '',
-    restrictions: byId.get(b.id)?.restrictions || []
-  })), ...vac.filter(p => !twin(p)).map(p => ({
+  // VRP de la base d'un point VAC : son identifiant rapproché à l'import ; sinon celui de même code, le plus proche, à 5 NM
+  // au plus (la VAC et la base placent le point à quelques centaines de mètres l'un de l'autre, et le préfixe de la base
+  // n'est pas toujours celui du terrain : LFQN → « QT-N ») ; sinon le plus proche à 0,6 NM au plus, un code écrit autrement
+  // (une compilation importée avant le rapprochement des points hélicoptères)
+  const near = (p, f, max) => base.filter(f).map(b => [b, nm(b, p)]).filter(([, d]) => d <= max).sort((a, b) => a[1] - b[1])[0]?.[0],
+    twin = p => (p.vrp && ids.has(p.vrp) ? base.find(b => b.id === p.vrp) : null) || near(p, b => key(b.code) === key(p.code), 5) || near(p,
+      () => true,
+      .6),
+    byId = new Map(),
+    extra = [];
+  for (const p of byCode.values()) {
+    const t = twin(p);
+    if (t && !byId.has(t.id)) byId.set(t.id, p);
+    else if (!t) extra.push(p);
+  }
+  return [...base.map(b => {
+    const p = byId.get(b.id),
+      d = p ? nm(b, p) : 0;
+    return {
+      ...b,
+      // un nom égal au code n'est pas une description
+      name: key(b.name) === key(b.code) ? '' : b.name,
+      vacCode: p?.code || '',
+      restrictions: p?.restrictions || [],
+      vacNm: d > .5 ? Math.round(d * 10) / 10 : 0
+    };
+  }), ...extra.map(p => ({
     id: p.vrp || `${icao.slice(2)}-${p.code}`,
     code: p.code,
     name: '',
     lat: +p.lat,
     lon: +p.lon,
-    restrictions: p.restrictions || []
+    restrictions: p.restrictions,
+    vacNm: 0
   }))];
 }
 /** Ligne d'état d'un terrain : ses points de report, et les séquences VAC (ou « non importées »). */
@@ -2714,7 +2751,7 @@ function showAdCard(icao) {
   let body = '';
   if (base === undefined || v === undefined) body = '<p class="f-muted">…</p>';
   else {
-    body = pts.length ? `<div><b>${esc(tt(TX.vfrPoints, { n: pts.length }))}</b>${heli ? ` <span class="f-muted">${esc(tt(TX.vfrLegend))}</span>` : ''}</div><ul class="mp-vfr-pts">${pts.map(p => `<li${p.id === c.focus ? ' class="mp-vfr-focus"' : ''}>${dot(p)}<b style="color:${MapsRender.vrpColor(p.id)}">${esc(p.code)}</b> ${esc(p.name)}${p.restrictions.length ? ` <span class="mp-vfr-warn">(${esc(p.restrictions.join(' ; '))})</span>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
+    body = pts.length ? `<div><b>${esc(tt(TX.vfrPoints, { n: pts.length }))}</b>${heli ? ` <span class="f-muted">${esc(tt(TX.vfrLegend))}</span>` : ''}</div><ul class="mp-vfr-pts">${pts.map(p => `<li${p.id === c.focus ? ' class="mp-vfr-focus"' : ''}>${dot(p)}<b style="color:${MapsRender.vrpColor(p.id)}">${esc(p.code)}</b> ${esc(p.name)}${p.vacNm ? ` <span class="f-muted">(${esc(tt(TX.vfrVacOff, { n: nmTxt(p.vacNm) }))})</span>` : ''}${p.restrictions.length ? ` <span class="mp-vfr-warn">(${esc(p.restrictions.join(' ; '))})</span>` : ''}</li>`).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.vfrNone))}</p>`;
     if (!v) body += `<p class="f-muted">${esc(tt(TX.vfrNoVac))}</p>`;
     else {
       const pages = ps => ps.length > 1 ? ` <span class="f-muted">(${esc(tt(TX.vfrPages, { p: ps.join(', ') }))})</span>` : page(ps[0]),

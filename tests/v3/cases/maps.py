@@ -11,9 +11,10 @@ Rules covered
   * L1 the sheet content is closable and leaves the map half the view (D11); L3 the profile canvas draws one level and no
     green / orange dots (D12); L14 a drag on the map or a wheel on the sheet does not close a content (D13).
 
-Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 D21-D24 (the profile window) D25 D25b (one window for the cut) (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
+Cases: D1 D2 D3 D4 D5 D5b D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17 D18 D19 D20 D21-D24 (the profile window) D25 D25b (one window for the cut) D27 (one line per VFR reporting point) (the complexity slider, the airline's thresholds, the tuning page's access: 24 Oct).  Seeding: the planned flight of lib.FLIGHT (a started one for D8);
 MapLibre runs on an empty style answered by the runner, so the attribution control exists without any network.
 """
+import os
 import re
 import time
 
@@ -1470,3 +1471,66 @@ def d25b(c):
     end = cut_state(c)
     c.eq([round(end['from'], 1), round(end['to'], 1)], [round(st['from'], 1), round(st['to'], 1)], 'the window is the same after the drag', what='cut window after the drag')
     c.ok(end['whole'], 'the "Whole flight" button is gone after the drag', 'still shown')
+
+
+# ------------------------------------------------------------------------------------------------------ D27
+# LFQN (Saint-Omer Wizernes), as the real published base and the real VAC extraction have it: the SIA XML lists each VRP twice, "QT-N" with its
+# description and "N" bare with the code for name, at the same place (the bare one 5 decimals, the other 6); the aerodrome's own prefix "QN" is
+# not the VRPs' (they carry LFQT's "QT"), so the card takes the VRPs within 15 NM.  The VAC file of the aerodrome has the code twice ("NA", "na":
+# the table of the points and the label of the chart), W 1.2 NM from the base's, and a point X the base does not have.
+LFQN = {'icao': 'LFQN', 'name': 'SAINT-OMER WIZERNES', 'lat': 50.7289, 'lon': 2.2386, 'elev': 66, 'hardLen': 1100, 'public': True}
+LFQN_VRP = [('QT-N', 'Relais hertzien 2 NM Sud Steenvoorde', 50.775278, 2.563889), ('QT-NA', 'Château de La Motte-au-Bois', 50.683333, 2.570833),
+            ('QT-W', "Silos à l'Est d'Aires-sur-la-Lys", 50.646111, 2.408056), ('QT-WA', 'Intersection RD 916 et rivière Lys', 50.626389, 2.551111)]
+LFQN_BASE = [{'id': i, 'name': n, 'lat': la, 'lon': lo} for i, n, la, lo in LFQN_VRP] + [
+    {'id': i.split('-')[1], 'name': i.split('-')[1], 'lat': round(la, 5), 'lon': round(lo, 5)} for i, n, la, lo in LFQN_VRP]
+LFQN_VAC = {'schema': 2, 'ad': 'LFQN', 'status': 'candidate', 'label': 'Extrait des VAC, à vérifier', 'analysis': None,
+            'source': {'file': 'test.json', 'sha256': '0', 'cycle': '2026-10-15'}, 'generatedAt': '2026-10-25T00:00:00Z', 'notes': [], 'routes': [],
+            'points': [{'code': 'AD', 'vrp': None, 'lat': 50.7289, 'lon': 2.2386, 'role': 'aerodrome_reference_point', 'origin': 'published',
+                        'page': 1, 'text': '', 'restrictions': []}] + [
+                {'code': k, 'vrp': None, 'lat': la, 'lon': lo, 'role': 'reporting_point', 'origin': 'published', 'page': 1, 'text': '', 'restrictions': rs}
+                for k, la, lo, rs in [('N', 50.775278, 2.563889, []), ('NA', 50.683333, 2.570833, []), ('na', 50.683333, 2.570833, []),
+                                      ('W', 50.666111, 2.408056, []), ('WA', 50.626389, 2.551111, ['ATC instruction only']), ('X', 50.7, 2.4, [])]]}
+# the overlay's text and the map's instance, seen from the page: the labels of the last overlay frame, the MapLibre map
+_D27_HOOK = """(() => {
+  window.__ft = { cur: [], last: [] };
+  const P = CanvasRenderingContext2D.prototype, cl = P.clearRect, ft = P.fillText, over = c => c.canvas && c.canvas.classList.contains('mp-over');
+  P.clearRect = function (...a) { if (over(this)) { window.__ft.last = window.__ft.cur; window.__ft.cur = [] } return cl.apply(this, a) };
+  P.fillText = function (t, ...a) { if (over(this)) window.__ft.cur.push(String(t)); return ft.call(this, t, ...a) };
+  let ml; Object.defineProperty(window, 'maplibregl', { configurable: true, get() { return ml },
+    set(v) { ml = v; if (v && v.Map && !v.Map.__cap) { const o = v.Map.prototype.project; v.Map.__cap = 1;
+      v.Map.prototype.project = function (...a) { window.__mlMap = this; return o.apply(this, a) } } } });
+})()"""
+
+
+@case('D27', 'One line per VFR reporting point', 'D', tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='user 25 Oct: "Bug LFQN. Points de report VFR doublonnés": a point is one line and one label, whatever the sources that name it (the SIA base lists it twice, the VAC file once or twice)')
+def d27(c):
+    c.page.add_init_script(_D27_HOOK)
+    c.open('maps?view=1.9,50.5,2.9,51.0', flight=True, airfields=True, aero_extra={'aerodromes': [LFQN], 'vrp': LFQN_BASE, 'cells': {'49': [[1, 4]], '50': [[1, 4]], '51': [[1, 4]]}},
+           docs=[['sia/vfr/LFQN.json', LFQN_VAC, 'reference'], ['cache/maps/ui.json', {'preset': 'vfr', 'layers': {}}, 'cache']])
+    c.until("() => !!window.__mlMap", timeout=20000, what='the map instance is seen')
+    c.settle()
+    c.wait(1500)
+    xy = c.js("""() => { const m = window.__mlMap, p = m.project([2.2386, 50.7289]), r = m.getCanvas().getBoundingClientRect(); return [r.left + p.x, r.top + p.y] }""")
+    c.page.mouse.click(xy[0], xy[1])
+    c.until("() => !!document.querySelector('.mp-vfr-pts')", timeout=10000, what='the aerodrome card lists its points')
+    c.settle()
+    c.wait(800)
+    rows = c.js("() => [...document.querySelectorAll('.mp-vfr-pts li')].map(l => ({ code: l.querySelector('b').textContent, text: l.textContent.trim() }))")
+    codes = [r['code'] for r in rows]
+    c.eq(codes, ['N', 'NA', 'W', 'WA', 'X'], 'one line per code (ten lines before: the base twice, the VAC file twice, W at both places)', what='codes listed')
+    c.eq(norm(c.text('.mp-dbody b')), norm(row(c, 'vfrPoints').replace('{n}', '5')), 'the count is the number of lines', what='card heading')
+    byc = {r['code']: r['text'] for r in rows}
+    for code, name in (('N', LFQN_VRP[0][1]), ('NA', LFQN_VRP[1][1]), ('W', LFQN_VRP[2][1]), ('WA', LFQN_VRP[3][1])):
+        c.ok(name in byc[code], f'{code}: {byc[code]!r}', f'the row keeps the description "{name}" (not the code twice)')
+    c.ok(not re.search(r'\b(N|NA|W|WA|X)\s+\1\b', ' | '.join(byc.values())), ' | '.join(byc.values()), 'no row repeats its own code as its description')
+    far = row(c, 'vfrVacOff').replace('{n}', '1.2' if c.lang == 'en' else '1,2')  # the number in the language of the run
+    c.ok(far in byc['W'], f'W: {byc["W"]!r}', f'W says in one mention that the VAC puts it elsewhere: "{far}"')
+    c.eq([k for k, t in byc.items() if far in t], ['W'], 'only W is more than 0.5 NM from its VAC position', what='rows with the VAC position mention')
+    c.ok('ATC instruction only' in byc['WA'], f'WA: {byc["WA"]!r}', 'the VAC restriction of WA is kept on the one line')
+    if os.environ.get('D27_SHOT'): c.page.screenshot(path=os.environ['D27_SHOT'])
+    # the chart: one label per point in the last frame the overlay drew
+    c.wait(300)
+    last = c.js('() => window.__ft.cur')
+    c.eq({k: last.count(k) for k in ('N', 'NA', 'W', 'WA', 'X')}, {'N': 1, 'NA': 1, 'W': 1, 'WA': 1, 'X': 1}, 'one label per point on the chart (the base twice, the highlight and the layer both drew them before)',
+         what=f'labels in the last overlay frame {last}')

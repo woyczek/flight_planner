@@ -463,7 +463,7 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=()):
+             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=(), aero_extra=None):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
@@ -472,14 +472,15 @@ class Ctx(Asserts):
         points of the seeded route (seed_plan); `flights` / `reports`: a flight log of that many flights, `reports` of them with
         a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast);
         `docs`: more documents [[path, value, policy], ...]; `airspaces`: more airspaces for the published base (implies `aero`);
-        `airways`: airway segments for the published base (implies `aero`; `synthetic_airways()`)."""
+        `airways`: airway segments for the published base (implies `aero`; `synthetic_airways()`); `aero_extra`: more of the published base
+        (implies `aero`; see aero_docs, D27's LFQN)."""
         docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']] + [list(d) for d in docs]
         if trigram:
             docs.append(['device/identity.json', {'trigram': trigram}, 'cache'])
         if flight:
             docs += flight_docs(started, trigram or 'ABC', steps)
-        if aero or airfields or airspaces or airways:
-            docs += aero_docs(airfields=airfields, airspaces_extra=airspaces, airways=airways)
+        if aero or airfields or airspaces or airways or aero_extra:
+            docs += aero_docs(airfields=airfields, airspaces_extra=airspaces, airways=airways, extra=aero_extra)
         if flights and trigram:
             docs += flights_docs(flights, reports, trigram)
         if pending:
@@ -925,7 +926,9 @@ def synthetic_airways():
             + [seg('UL9', 'TSA10', 'TSA12', 6500, 19500), seg('UL9', 'TSA12', 'TSA11', 6500, 19500)])
 
 
-def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=()):
+def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(), extra=None):
+    """`extra`: { kind: rows } more rows for the aerodromes / vrp kinds of the base (they come after the route's own), and `cells`: more cells of the index { 'lat': [[lon0, lon1]] }."""
+    extra = extra or {}
     def ring(lat0, lat1, lon0, lon1):
         return [[lat0, lon0], [lat0, lon1], [lat1, lon1], [lat1, lon0], [lat0, lon0]]
     airspaces = [   # levels above FL195: the seeded flight is at FL270, so the "IFR route" display profile draws these
@@ -935,6 +938,7 @@ def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(
     ]
     airspaces = airspaces + list(airspaces_extra)      # a case's own spaces (D15: low ones, drawn by the thresholds, not the flight level)
     cells = {str(y): [[-2, 6]] if airways else [[0, 4]] for y in range(43, 50 if airways else 47)}
+    cells.update(extra.get('cells') or {})
 
     def kind(k, data):
         return [f'sia/base/fr/{cycle}/{k}.json', {'schema': 2, 'zone': 'fr', 'cycle': cycle, 'kind': k, 'parserVersion': 1,
@@ -949,4 +953,7 @@ def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=(
         docs.append(kind('aerodromes', [{'icao': i, 'name': i + ' TEST', 'lat': p['lat'], 'lon': p['lon'], 'elev': 100}
                                         for i, p in [('LFRS', pts['LFRS']), ('LFML', pts['LFML']), ('LFMT', altn)]]))
         docs.append(kind('points', [{'id': i, 'lat': pts[i]['lat'], 'lon': pts[i]['lon'], 'type': 'RNAV'} for i in ('LUGEN', 'NEPIX')]))
+    for k in ('aerodromes', 'vrp'):   # a case's own aerodromes and VRPs, beside those of the route
+        if extra.get(k):
+            docs = [d for d in docs if d[0] != f'sia/base/fr/{cycle}/{k}.json'] + [kind(k, (extra.get(k) or []) + ([x for d in docs if d[0] == f'sia/base/fr/{cycle}/{k}.json' for x in d[1]['data']]))]
     return docs

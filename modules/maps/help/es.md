@@ -83,7 +83,9 @@ marcados «por verificar» y no son la ruta publicada; la carta VAC prevalece. C
 el bloque lo dice, las rutas llevan su nombre, sus pistas y sus condiciones, un trazado revisado sigue la carta VAC
 (trazos largos) y una flecha marca una ruta de sentido único. Los puntos de notificación de la base siempre están, en
 negro para los aviones y en verde para los helicópteros; las secuencias y las instrucciones de las VAC se añaden una vez
-importadas por el administrador (Ajustes › Mantenimiento).
+importadas por el administrador (Ajustes › Mantenimiento). Un punto de notificación es una sola línea en la lista y una sola etiqueta en el mapa, aunque la base y la carta VAC
+lo nombren a la vez: la línea conserva la descripción y la posición publicada de la base, y dice «posición VAC a 1,2 NM» cuando la carta VAC
+lo sitúa a más de media milla de allí.
 
 **En vuelo.** Una vez iniciado el vuelo en Combustible, el mapa muestra dónde debería estar (avión hueco, «previsto
 14:32Z») y dónde está (avión lleno, orientado a su rumbo, con la traza punteada de los últimos 30 minutos). En las notas del bloque de datos, bajo el perfil, una línea da la diferencia: adelantado o retrasado (minutos y NM), a cuántas NM de la ruta, y su altitud frente a

@@ -80,7 +80,9 @@ the published route; the VAC chart prevails. When the airfield has been analysed
 carry their name, runways and conditions, a reviewed track follows the VAC chart (long dashes) and an arrow marks a
 one-way route. The reporting points of the database are always there, in black for aeroplanes and in green for
 helicopters; the sequences and instructions of the VAC are added once the administrator has imported them (Settings ›
-Maintenance).
+Maintenance). A reporting point is one line in the list and one label on the map, even when the database and the VAC chart both name
+it: the line keeps the database's description and published position, and says “VAC position 1.2 NM away” when the VAC chart puts it more than half
+a mile from there.
 
 **In flight.** Once the flight is started in Fuel, the map shows where you should be (hollow aircraft, “planned 14:32Z”)
 and where you are (filled aircraft, turned to your track, with the trail of the last 30 minutes dotted). In the data block's notes, under the profile, a line gives the difference: ahead or late (minutes and NM), how many NM off the route, and your altitude against the

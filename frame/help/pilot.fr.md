@@ -311,7 +311,9 @@ et de celui d'arrivée sont montrés d'office. Ces données sont extraites autom
 le dit, les routes portent leur nom, leurs pistes et leurs conditions, un tracé relu suit la carte VAC (tirets longs) et
 une flèche marque un sens unique. Les points de report de la base sont toujours là, en noir pour les avions et en vert
 pour les hélicoptères ; les séquences et les consignes des VAC s'y ajoutent une fois importées par l'administrateur
-(Paramètres › Maintenance).
+(Paramètres › Maintenance). Un point de report est une seule ligne dans la liste et une seule étiquette sur la carte, même si la base et la
+carte VAC le nomment toutes deux : la ligne garde la description de la base et sa position publiée, et dit « position VAC à 1,2 NM » quand la
+carte VAC le place à plus d'un demi-mille de là.
 
 **En vol.** Une fois le vol démarré dans Carburant, la carte montre où vous devriez être (avion creux, « prévu
 14:32Z ») et où vous êtes (avion plein, orienté à votre route, avec la trace des 30 dernières minutes en pointillé). Dans les notes du bloc de données, sous le profil, une ligne dit l'écart : en avance ou en retard (minutes et NM), à combien de NM de la route, et

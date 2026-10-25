@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The Map: one line per VFR reporting point** (`modules/maps/render.js` `dedupeVrp`, `modules/maps/module.js` `reportPoints` and the layer's read,
+  manual of the Map x4, `tests/v3` D27 and its `aero_extra` seed, DECISIONS) — user 25 Oct: "Bug LFQN. Points de report VFR doublonnés". LFQN's card
+  listed each of its four points twice ("N Relais hertzien 2 NM Sud Steenvoorde", then "N N") and the map wrote each label twice. Cause: the published
+  SIA base lists every VRP twice, `QT-N` with its description and `N` bare with the code for name, at the same place (554 of the 674 bare ones of the
+  France file have such a twin), and nothing merged them; a VAC point of the same code but a slightly different position was a third line. Now a point
+  is one line and one label: the base's twins are merged when the base is read (same code, 0.5 NM at most, one of them bare: the described one and its
+  prefixed identifier win), the VAC file is merged by code (case and spaces ignored) and joins the base's point of the same code within 5 NM; the line
+  keeps the base's description and published position, and says "VAC position 1,2 NM away" (x4) when the chart puts it more than 0.5 NM off. Nothing to
+  re-publish: the files are read the same way, only better. D27 (red on the previous code: ten lines).
+
 - **Zoom the vertical profile** (`modules/maps/lib/axis_window.js` new, `modules/maps/profile.js`, `modules/maps/lib/vertical_profile.js`,
   `modules/maps/module.js`, manual of the Map x4, `tests/v3` D21-D24, SPEC § 4 bis, `INTEGRATION.md` § 8 and § 10, DECISIONS; V3_SPECIFICATION
   § 7.1 rule 20) — user 25 Oct, 14:30: "Trouver le moyen de zoomer (pour être précis) le profil vertical". The profile accepts a window on the
