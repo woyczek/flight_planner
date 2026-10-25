@@ -670,3 +670,13 @@ Serving `sia/base/` like the world synoptic (no token) would make the base reada
 - **Done**: every coordinate of the fixture (fixes, departure, arrival) rounded to 2 decimals (about 1 km); `params.time_generated` removed (the
   reader then dates a record from the moment it reads the OFP, which no test checks); nothing else changed (identifiers, SID / STAR names, runways,
   flags, altitudes of the plan, `params.airac`). The bench's checks on the real OFP read identifiers, order and cycle only.
+
+## 25 October 2026 — DFS licence: request ready to send (`DFS_LICENCE_REQUEST.md`)
+
+- **Word of the user** (relayed): « Dfs : procédure. » read by the relay as: follow the licence procedure, the owner sends the request drafted in
+  `AIP_OPEN_DATA_INVENTORY.md`. If that reading is wrong, the owner corrects it in the session.
+- **Address found**: `data@dfs.de`, the contact on every page of DFS's *REST-API aip.dfs.de/datasets* documentation (edition 10 January 2023).
+  The legal notice names no address; `www.dfs.de` is refused to the container.
+- **Done**: final text in English and German with the fields to fill, the four uses asked for (download per cycle, automatic conversion, storage
+  only in the private repository, a one-procedure sample in the public repository only if allowed) and the plan on receipt of the licence,
+  including the REST sequence (metadata, amendment 0, file name, sha512). Nothing downloaded, converted or stored.

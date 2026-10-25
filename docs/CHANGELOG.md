@@ -12,6 +12,9 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: DFS licence request ready to send** (`frame/aerodb/DFS_LICENCE_REQUEST.md`, DECISIONS) — recipient, English and German text for the non-commercial
+  flight-simulation use of the "ED Procedure" AIXM 5.1 data set, and the steps on receipt of a licence (REST download, converter on the real file,
+  source `dfs`, status "official"). Nothing is downloaded or converted before the licence.
 - **The sheet is rewritten: nothing blinks and no grey zone when the handle is dragged** (`frame/lib/sheet.js`, `frame/design/primitives.css`,
   `frame/lib/test/sheet.html`, `modules/maps/module.js`, `modules/maps/lib/map_base.js`, `tests/v3` D7 hardened, D20 new, `INTEGRATION.md`
   § 11, SPEC, DECISIONS of the frame and of the map; V3_SPECIFICATION § 7.1 rule 19) — measured first: the blink came from the map, not from the
