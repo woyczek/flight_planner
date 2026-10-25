@@ -226,6 +226,11 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       option "Draw the flight zone's limit" (default off) on the map's threshold page (`#maps?tune=1`), saved with the
       thresholds in `airline/map_profiles.json`, passed by both modules to `weather_map.js` (`edge` option), draws a
       clean labelled line at the grid's limit.
+      **Amended (user, 25 Oct, 08:55: "il y a un saut entre météo et gfs (normal). Donc je tranche : on affiche le
+      cadre (filet fin) avec un mot dans l'aide contextuelle et/ou la légende pour indiquer la différence de modèle
+      entre AROME et GFS. Et la précision du modèle")**: the thin line is **drawn by default**; the legend and the help
+      chapter carry one line each: "zone du vol · AROME 1,3 km" / "monde · GFS 0,25°" (the models and their mesh,
+      from the data, four languages). Hiding it is an administrator option.
   13. **The drawing fits the sheet; no title over a drawing** (user, 24 Oct, 20:10, iPhone shots of the cut with its
       x axis off screen: "les abscisses invisibles" and "Toujours la ligne « météo fl160 ». On le sait, c'est affiché
       juste au-dessous : FL, distance, etc. Info redondante donc, qui prend de l'espace vertical"): (a) the vertical
@@ -247,6 +252,11 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
       (objectif : maximiser la largeur dispo)")**: the vertical column exists only with the bare grip (default
       position); whenever the titled head row is shown (expanded, collapsed, landscape column) the chips go back
       **into that row, horizontally at its right**, and the drawing takes the full width. Same for Atmosphere's ◀ ▶.
+      **Fourth refinement (user, 25 Oct: "le i sur la ligne de titre est bien plus lisible que le bouton i, il permet
+      de gagner de la place")**: no more vertical column: with the bare grip the chips sit **in the bare row itself**,
+      at its right (28 px chips, 44 px touch zones; the frame's bare head supports buttons), the drawing takes the full
+      width and the full height under the row; **their number never changes** (user: "ils doivent rester 3, pas faire
+      d'aller-retour entre 2 et 3"): a chip that has nothing to show is disabled, not removed.
   14. **A legend for the drawing, the help button back, Météo in the bar** (user, 24 Oct, 22:15: "On devrait voir la
       légende quelque part. Hover sur le panneau du bas ? Au clic ? Un I quelque part ? À toi de décider. Le chemin,
       c'est qu'on voit un graphe le plus étendu possible, mais qu'on ne sait pas ce que sont les données
@@ -267,6 +277,22 @@ order of a day: **Préparer · Carte · CR · Vols · Réglages**.
         gear). Performance sheets stay a view of Préparer (Devis / Fiches); the Préparer popover on a second tap
         lists Carburant · Fiches, the principle "second tap = more buttons" is kept for every tab with several
         entries. Screen rail: unchanged order, Réglages kept at the end of the rail.
+  16. **Non-fixed modules on a phone (Carburant, CR, Vols)** (user's proposal, 25 Oct, 08:51, retained): the
+      **header carries the module's title** ("Carburant et niveau") in place of the application's name, so the page
+      loses its big title row; the **"Comment s'en servir" card keeps a ✕**: once dismissed it stays hidden on the
+      device (it is redundant with the "?" of the header); the contextual help **opens at the paragraph of the current
+      screen or step** and highlights it briefly.
+  17. **Map chrome under the sheet** (user, 25 Oct: "le double i, invisible. Masqué par le volet"): the map's own
+      controls (MapLibre attribution, scale, any other "i") sit **above the sheet**, never under it: `map_base` offsets
+      them by the sheet's height (the offset follows the sheet's position); one attribution control only.
+  18. **Administration behind one button** (user: "tous les settings admin vont sur un bouton, comme celui des
+      réglages de seuils"): Réglages › Administration is one card with one button per administrator page (map
+      thresholds, flight-zone edge, future ones), nothing of the administrator's on the ordinary cards.
+  19. **The sheet is rewritten from the fixed rules** (user: "il lui arrive de clignoter. C'est le signe qu'il faut
+      totalement le reprendre, à partir des specs maintenant fixées. On repart d'une feuille vierge dès que prêt. Le
+      résultat doit être le même qu'aujourd'hui fonctionnellement"): a clean rewrite of `frame/lib/sheet.js` and of the
+      map's sheet code from rules 6–10 and § 11 of `frame/INTEGRATION.md`, same API, same tests and bench as the gate,
+      after a diagnosis that says whether the flicker is the primitive's or the module's.
       - **Done by the frame lot** (relay cloud, branch `v3-cadre-barre`; `frame/DECISIONS.md`, 24 Oct 2026): the bar is Préparer ·
         Carte · CR · Vols · Météo; the performance sheets are a view of the fuel module reached by `#fuel?view=sheets`, listed
         in Préparer's popover as Carburant · Fiches (`APP.tabs[].views`); the "?" and the ⚙ are in the phone header, the "i"
@@ -440,3 +466,13 @@ redesigned for touch at that point.
        quote, written to the record), then atmosphere reads it as its slider's origin. Decided by the relay (24 Oct) and delivered in fuel (`current_flight.planned_at`, one value: the quote's
        weather, the Map's ETA for a flight that is not started); atmosphere's session reads `planned_at` as its slider's origin
        (fuel INTEGRATION § 3).
+   15. **Routes, airways and procedures** (user, 25 Oct: "trouver un moyen (regarder dans la V2) de récupérer les
+       routes. Idéalement, un bouton « auto » à la saisie, pour inscrire les AWY (vérifier plafond/plancher). Mais
+       surtout, comment ajouter les traces des STAR/SID/APPR"): an exploration of what V2 (studio, planner, SIA base)
+       already holds (airway segments with floors and ceilings, procedure traces) precedes the lot: an "auto" button in
+       the route field that writes the airways between two points at the planned level, and the SID / STAR / approach
+       traces on the map when the base publishes them.
+   16. **Settings lost after a Safari relaunch** (user, 25 Oct: "les settings ont tous sauté cette nuit sur les clefs
+       avwx et github. A priori relance de Safari. En revanche, RBR et IVAO sont restés"): to diagnose from the code
+       (where each setting is stored: the keys and token may live in a store that Safari clears) and decide with the
+       user whether the keys persist like the identity.
