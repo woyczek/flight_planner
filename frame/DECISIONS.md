@@ -783,3 +783,447 @@ The frame agent's memory: every choice, dated, with its reason. Newest last. Pro
   - **Audit kit** (`audit_kit/`, outside the repository): the per-phase counter missed reads that ended during a
     pause, because `cdp.py` stores events only during a call. The map's reads (11 calls, 7.9 MB, including
     `airspaces.json`) were then counted nowhere. The counter now drains the events until the network rests.
+
+- **24 Oct 2026 — Lot: the phone's bottom tab bar, tabs as groups of modules, status line, fixed view** (asked by the relay
+  cloud, holding the ergonomics role; the user's decision "option A" of 24 Oct, `docs/technique/V3_SPECIFICATION.md` § 7.1;
+  branch `v3-cadre-barre` from `v3` 708264389):
+  - **What the relay asked, what I chose.**
+    - *The bar*: Préparer · Carte · CR · Vols · Réglages, icon above a one-word label, 44 px targets, ≥ 56 px plus the safe
+      area, `--sog-surface` and a top hairline, selected = filled icon on a soft pill: done as asked. No hamburger on a
+      phone: the button and the drawer are removed (`#fBurger`, `body.f-nav-open`, the phone rules of the four design sheets).
+    - *Sticky, not `position: fixed`*: the bar is the last row of the body grid with `position: sticky; bottom: 0`. Same look
+      (it sits at the window's bottom, over nothing), and nothing needs `padding-bottom` on the page nor on the fixed view:
+      the view is simply above it. Only what is itself stuck at the bottom clears it through `--f-tab-space`: `.f-bar` (fuel's
+      result bar: `bottom: var(--f-tab-space, 0px)` in `primitives.css`) and `.f-notes`.
+    - *Tab = group*: `APP.tabs` (frame/INTEGRATION.md § 9). The module list in a tab is by id; an id that is not in
+      `APP.modules` is skipped, so `atmosphere` works registered or not (the relay's later `APP.modules` entry needs no
+      change here). The group's tab is selected from the module **shown** (`current`), not from the address: `#atmosphere`
+      unregistered falls back to the first module as before (Fuel), Préparer selected, no error.
+    - *Réglages*: the tab is a `screen` tab; it opens `#settings`, which the frame already shows over the module (same screen
+      as ⚙, same toggle behaviour). While Settings is open the tab is the selected one; Help and Conflicts leave the module's
+      tab selected.
+    - *Rail on a screen*: unchanged (every module that has a screen, level filter, current marked). I did not mark the tab's
+      group in it (optional in the brief): the sub-tabs say it better where it matters.
+    - *Added by the relay mid-lot* — **group sub-tabs**: when a tab has two or more registered modules at the device's level,
+      the frame draws a `.f-tabs` row (one button per module, the module's verb, current marked, 44 px) just above the module,
+      phone and screen. With `atmosphere` at level 3 and the device at 2 the row is not drawn (one module only); tested with a
+      stub `atmosphere` registered at runtime. Fuel's own "Préparer / Fiches" tabs stay inside Fuel (the word "Préparer"
+      now appears twice on Fuel's page, in the bar and in Fuel's own tab: for the ergonomics session to look at).
+    - *Status line*: only the first case ("Vol en cours › Carte", `started` not null, no age limit, unlike the live position's
+      24 h: a forgotten started flight stays visible, which is what a status line is for). **The second case ("CR à écrire pour
+      le vol du <date>") is skipped**: it needs My flights' logic (reports saved, site log, network sessions); the frame must not
+      duplicate it. If wanted, flightlog should publish a small record (for instance `cache/flightlog/pending.json`) that the
+      frame can read.
+      Dismissal: kept in `sessionStorage` per departure date (`sogFrame:statusOff`), a page variable when the storage is
+      unavailable. The data comes from `liveCheck`, which already reads the current flight on every change: no new read.
+    - *Fixed view*: `meta.fixed` read with the level at start (`moduleFixed`), applied before the module loads (no jump) and
+      again from its `meta`. `<html class="f-fixed">`, `100dvh` body, view in the grid row between header and bar (no
+      `calc` of heights), no padding. Off while a frame screen is over the module (it scrolls as a page). Judgement call:
+      a fixed module gets **no folded help panel nor welcome card** (they would sit above it in a view that cannot scroll).
+      `modules/hello` is not touched (the brief forbids touching `modules/*`): the contract is documented in
+      INTEGRATION § 9.2 and was tested by intercepting `modules/hello/module.js` with a fixed version (a flex column: a
+      striped "map" and a 34 % scrolling sheet).
+    - *Designs*: each of the four mock-ups got its counterpart in its own sheet (see `frame/design/DECISIONS.md`).
+  - **Measured** (Chromium, 390 × 844, 375, 360; `env(safe-area-inset-bottom)` is 0 there, so the safe-area padding could not
+    be seen on a device: it is a rule, not a measurement):
+    - bar: **57 px** = 56 px of tabs + 1 px hairline (standard, cabinet, field, swiss, cupertino), **65 px** in `material`
+      (`--f-tab-h: 64px`), 60 px in `metro` (blocks: 2 px above, a 4 px rule inside); every tab 78 × 56 px at 390, 75 at 375,
+      72 at 360; the bar's bottom is the window's bottom;
+    - safe-area rule: `.f-tabbar { padding-bottom: env(safe-area-inset-bottom, 0px) }` (the bar's own colour continues
+      under the home indicator) and `--f-tab-space: calc(var(--f-tab-h) + 1px + env(safe-area-inset-bottom, 0px))`;
+    - labels: 11 px, 10 px at 400 px and less; the longest ("Einstellungen", "Vorbereiten") fits at 360 px in the five designs
+      (checked in four languages); status line 46 px (44 + border); sub-tabs 44 px;
+    - fixed view at 390 × 844: header 0–57, view 57–787 (730 px), bar 787–844; `scrollHeight` = 844, the wheel does not
+      move the page; at 1280 × 800: view 57–800.
+  - **Checked**: five designs (plus cabinet and field for errors), day and night, 390 × 844 and 1280 × 800: five tabs on the
+    phone, none on a screen (rail), one selected (filled icon, pill), targets ≥ 44 px, `#atmosphere` / `#website` / `#hello` /
+    `#settings`, tap sequences (Carte → Réglages → Préparer returns to Fuel), Fuel's sticky result bar above the bar after
+    scrolling to the end, no `pageerror`. **No horizontal scroll from the frame**; the page is 402–405 px wide on `#fuel` at
+    390–375 px because of Fuel's own `.fu-when` row (`modules/fuel`, the "Now / +30" button): the same on the base commit
+    (measured on a `git archive` of 708264389), not touched here.
+  - **Not done / to see**: no iOS device (the bar's safe area and the blur of `cupertino` are untested there); `atmosphere`'s
+    own commit (c1ce8886 on GitHub) was not seen; `frame/lib/test` has no test of the bar (tests were Playwright scripts
+    outside the repository).
+- **24 Oct 2026 — Lot: the "i" status button of the header, a one-row header, heights for modules in the dual view, a weaker
+  `display` rule** (asked by the cloud relay, holding the ergonomics role, from the user's decisions of 24 Oct; branch
+  `v3-cadre-info` from `v3` 58a43041d; `docs/technique/V3_SPECIFICATION.md` § 7.1, "Answers of the user, 24 Oct (afternoon)").
+  - **1. The status line becomes the "i" button.**
+    - Removed: the status line of the Préparer tab, `status: true` of `APP.tabs`, `paintStatus` / `hideStatus`, the
+      `sessionStorage` key `sogFrame:statusOff`, the `.f-status` rules (also in the print list of `primitives.css`).
+    - Added: `#fInfo` (icon `info`, already in `icons.js`), before ? and ⚙; a badge drawn by `#fInfo[data-badge]::after` (a
+      `--sog-ok` dot inside the button, so the header's `overflow: hidden` cannot clip it; no extra DOM that `headIcon`
+      would wipe); a pop-up that is the frame's question window (`modal()`, now with a class parameter) placed under the
+      header on the right (`.f-info-modal`), not a new primitive: Escape and the document-level key handling are the
+      existing ones, ✕ and a touch outside close it, a change of address closes it, and it follows the state while open.
+    - **Judgement calls.** The badge counts "Vol en cours" and "CR à écrire" only; the data line and the offline line are
+      always / often there and are a state, not news, so "no badge when only the data line applies" extends to the offline
+      line. The data line is always listed (the pop-up is where the synchronisation state lives on a phone, where the header
+      shows only a dot and a figure); with the local transport it says "on this device, nothing to synchronise" instead of
+      "synchronised n min ago". Its touch goes to Settings (the synchronisation control), or `#conflicts` when there are
+      conflicts. A started flight needs only `started` not null, as the user wrote (the old line also required `started.at`);
+      no 24 h limit, as before. The "Flight in progress" line is listed only if the maps module is registered.
+    - `ago()` now says the day unit in the language (j / d / T / d): it said "3 j" in English too (also in the header's
+      sync label).
+    - **The pending record** `cache/flightlog/pending.json` is read through a frame adapter (`frame-info`) that declares
+      `reads: cache/flightlog/` (policy cache) and `writes: pilot/handoff.json` (policy cache, the same record and policy as
+      flightlog's own hand-over): `data.cached()` first, `get` only if the file is on the device, because a `get` of an
+      absent file would send a remote transport looking for it in the tree. `watch('cache/flightlog/')` redraws.
+      Contract: INTEGRATION § 10.1. **Schema 2** (the relay's messages of the day, flightlog commit 1f52c19a9): each entry
+      has `handoff: { family, values }`; a touch writes `pilot/handoff.json` = `{ to: 'report', from: 'flightlog', source:
+      "Mes vols" in the device's language, at, fresh: true, family, values }` then opens `#report?from=flightlog`. **`to:
+      'report'` is mine to add: the relay's first message said `{ fresh, values }` only, but report's `takeHandoff` ignores a
+      record without it.** An entry without `handoff` (schema 1) opens `#flightlog`. The query carries only `from=flightlog`
+      (the earlier brief's `date`, `dep`, `arr` in the address are dropped on the relay's later word: report ignores
+      `ctx.query` and reads the hand-over).
+    - A touch on a CR line that is already at the same address calls `route()` again (report takes the hand-over at its
+      mount); other lines do nothing in that case. An address chosen in the pop-up is a menu choice (no "←" to the screen left),
+      except `#report?from=flightlog` (an explicit passage: "← Mes vols").
+  - **2. The header height bug (57 → 73 px).**
+    - **Cause**: the header's back button is `#fBack.f-back`, and `frame.css` also had a generic rule `.f-back { margin: 4px 0
+      var(--sog-gap) }` meant for the "←" paragraph (`<p class="f-back">`) of help and join pages. The 4 + 12 px of margin made
+      the button 44 + 16 = 60 px in a row that sized itself to its tallest child: header 6 + 60 + 6 + 1 = 73 px. It showed
+      every time the back button was shown: `#report` after the map, `#report?from=maps`, and also `#maps` itself when it
+      is reached with a back button (`#maps?from=report`, or a passage from another module), which is the maps lot's "stays so
+      on returning to `#maps`". Settings and help have no back button (they open over the module) and kept 57 px; a plain visit
+      of `#maps`, the browser's back and the "←" of the header (it hides the button on arrival) give 57 px again.
+    - **Fix, in depth**: (a) the help rule is scoped to `p.f-back`; (b) `.f-head > * { margin-top: 0; margin-bottom: 0 }`; (c) the
+      header is `height: var(--f-head-h)` (57 px) with `flex-wrap: nowrap` and `overflow: hidden`: a row can no longer grow, whatever
+      is put in it. `--f-head-h` replaces the 57, 70 and 86 of the rail and pane rules.
+    - **Measured** (Playwright, 390 × 844 touch and 1280 × 800, a `git archive` of `v3` 58a43041d against this tree): **before**
+      73 px at `#report` and `#report?from=maps` (back button shown), 57 px at `#maps`, at Settings and after "←" or the
+      browser's back; **after** 57 px in all of these, and at 360 px, in the seven designs, also after help opened and closed.
+  - **3. Heights for modules in the dual view.** `:root` gets `--f-head-h`, `--f-vh` (dvh), `--f-view-h` (context-aware: the
+    plain fixed view; `.f-view.f-split` sets it to `--f-split-h`; `.f-pane` to `--f-pane-h`), `--f-split-h`, `--f-pane-h`
+    (INTEGRATION § 9.2 gives the table). **The frame also applies them**: `html.f-fixed .f-view.f-split > .f-module` gets
+    `--f-split-h`, and the pane's module gets `data-fixed` (set by `openPane` from `meta.fixed` after the import, before
+    `mount`) and `.f-pane > .f-module[data-fixed]` is `--f-pane-h` high, a flex column. So maps can drop both of its copies
+    (`100dvh − 86 px − 44 px`, `100dvh − 57 px − 32 px`) in its next lot. The pane keeps its `max-height` (now a variable,
+    `--f-pane-max-h`) and its 44 px close bar. A module that is not `fixed` is untouched. Judgement call: I did not change the
+    pane's vh to dvh for the sake of it, it comes with `--f-vh` (same on a screen).
+  - **4. The `display` rule.** `html.f-fixed .f-view:not(.f-split):not(.f-over) > .f-module` (five classes, which forced
+    `!important` on the maps tuning page) is now wrapped in `:where()`: no weight, the same layout for a module that sets no
+    `display`. The two new rules (split main, pane module) are weightless too. Checked: `[data-module="maps"] { display: grid }`
+    wins without `!important`; without it the root is still a flex column.
+  - **Designs.** No sheet needed a change: the header is 57 px and the "i" button fits in all seven (the `.f-head button`
+    rules of metro, swiss, cupertino and material give it the same look as ? and ⚙); the pop-up's rows are overridden at
+    `.f-info-modal .f-info-row` (two classes) so the flat-button borders of metro and swiss do not hit them.
+  - **Checked** (Playwright + Chromium, 390 × 844 touch, 360 and 1280 × 800, seven designs set through `device/design.json`;
+    scripts outside the repository): the "i" button 44 × 44 and inside the window at 360 px (back button shown, page 360 px
+    wide); no badge with nothing, badge with a seeded started flight (written through `FrameData`) and with a seeded
+    `pending.json` of two flights; the pop-up's lines in the four languages; rows of 44 px or more (57 / 58 px for two lines),
+    ✕ 44 px, the sheet inside the window; Escape and ✕ close it; touches: flight → `#maps`, CR with a `handoff` → `#report?from=flightlog`
+    (report took the hand-over, the record was consumed, "← Mes vols" shown, header 57 px), CR without → `#flightlog`, data →
+    `#settings`; the offline line when the browser goes offline; header 57 px in all the cases above; pane module 670 px =
+    800 − 86 − 44 and pane 714 px, split main 711 px = 800 − 57 − 32, no page scroll, in standard, metro, swiss, cupertino and
+    material; phone fixed view 730 px (844 − 57 − 57); weightless `display` rule; no `pageerror`. `tools/format_sources.py` run;
+    syntax trees (acorn) and CSS rules (the browser) before / after identical for the four formatted files.
+  - **Not done**: no real flightlog record (the lot of flightlog is parallel: the seeded record follows the contract given by the
+    relay); no iOS device (the pop-up under the notch and the badge ring on the blurred cupertino header are untested there);
+    the "i" pop-up is a centred-right sheet, not an anchored popover with an arrow (a veil covers the page). `modules/*` untouched:
+    maps still carries its copies of the two heights and its `!important`, to drop in its next lot.
+  - **Docs**: SPEC § 3.1 (button, one-row rule, heights, weightless rule), INTEGRATION § 9.1 / 9.2 / new § 10, help intro ×4
+    (a bullet on the "i" button; `pilot.*.md` regenerated), CHANGELOG, `docs_bundle.js`.
+- **24 Oct 2026 — orientation locked to portrait** (user: "en attendant, on verrouille l'orientation"; done by the cloud
+  relay, `relais-cloud.md`). `orientation: portrait` in the manifest and `screen.orientation.lock('portrait')` tried
+  at start when the application runs standalone (ignored otherwise: a Safari page cannot be locked). Not done in
+  `.github/workflows/ios.yml`: that workflow still wraps the V2 site, whose landscape layouts are wanted; the plist
+  key is written in SPEC § 3.6 for the V3 shell lot. To remove when the landscape layout (map at the left, block as a
+  right column) is decided and built.
+- **24 Oct 2026 — Lot: the three-position sheet becomes a frame primitive; maps adopts it and takes the frame's heights**
+  (asked by the cloud relay, holding the ergonomics role: `docs/technique/V3_SPECIFICATION.md` § 7.1, "Shared code between maps
+  and atmosphere"; branch `v3-cadre-feuille` from `v3` b03bd1883). One exception to "the frame touches no module", granted by
+  the relay because the two halves must land together: `modules/maps/module.js` and its documents.
+  - **What was built.** `frame/lib/sheet.js` (`createSheet`, `POSITIONS`), the `.f-sheet*` rules and `--f-sheet-*` tokens in
+    `frame/design/primitives.css`, `frame/lib/test/sheet.html` (a bench on a bare page), INTEGRATION § 11 and one sentence in
+    § 9.2, SPEC § 3.9 and the design SPEC's primitives table. The code is the best of the two copies: maps' (pointer capture,
+    live follow, nearest position, flick above 0.8 px/ms, tap, keys, `locked`, the `onChange` / `onSettle` pair and the
+    `transitionend` settle) and atmosphere's shape (`ignore`, no module state), with `AbortController` instead of
+    never-removed listeners (`stop()` now detaches everything).
+  - **Judgement calls.**
+    - *Positions are names* (`'collapsed' | 'default' | 'expanded'`, `data-sheet` too), as the relay wrote; a rank 0, 1, 2 is
+      still accepted by `set()` and `pos:` to ease a port. The CSS of a module that keyed on `data-sheet="0"` changes.
+    - *The `panel` of the options is the whole sheet* (header plus content), not "the scrolling part": it is the element
+      whose height changes, as in both copies. The scrolling part is a new class, `.f-sheet-body`; `.f-sheet-panel` stays
+      `overflow: hidden` (a header must not scroll away). The brief's "panel `overflow: auto`" is therefore on the body.
+    - *Tokens*: `--f-sheet-head` 45 px (header 44 + the hairline, the collapsed height), `-default` 38 % / 35 % from 761 px,
+      `-expanded` 70 %, plus the two floors both copies had (`-default-min` 170 px, `-expanded-min` 260 px) as tokens too.
+      Values are `<n>%` or `<n>px` and nothing else (the script parses them; no `calc()`), defined with `:where()` so a module
+      overrides them on its root with no weight fight. The heights are parts of the root's content height; `panel` must be a
+      direct child of the root (`.f-sheet > .f-sheet-panel`).
+    - *The grip bar is a `::before`* of the grip (no `<span class="…-pill">` to write) and is drawn with
+      `color-mix(in srgb, var(--sog-muted) 55%, transparent)`, **not** `--sog-border` as the brief said: maps' pill is that
+      colour and the lot's gate is a pixel-identical Map screen; `--sog-border` (≈ 1.35 : 1 on a white surface, against ≈ 2.4 : 1 for the muted bar) would be visibly
+      fainter. The hairline on top is `--sog-border`. To change the bar everywhere, change that one line.
+    - *Look kept as it was*: the upward shadow stays `0 -2px 8px #0000001a` (not `--sog-shadow-up`, which is `none` in the flat
+      designs and heavier in the others), so no design changes.
+    - *`labels` takes a function or an object*, and sets both `title` and `aria-label` of the grip (maps wrote the position
+      into `title` only; the screen reader now hears the position as well, the one visible difference).
+    - *`set()` schedules `onSettle`* (debounced with the gestures' own), except the starting placement: a caller that
+      resizes its map in `onSettle` no longer needs a `ResizeObserver` for a programmatic `set()`. Maps keeps its own
+      observer (it also covers rotation); both feed the same timer.
+    - *`locked()` refuses the pointer gestures and not the keyboard*, as maps did.
+    - *Collapsed hides every child of the panel but the header* (`display: none`), which replaces maps' rule on its three
+      blocks; it is generic, the sheet still never knows what is inside.
+    - *The grip and ✕ rules weigh three classes*: the first run showed cupertino's `[data-design="cupertino"] :is(button, .f-btn)`
+      winning over a two-class rule and turning the title blue; with the third class all seven designs are pixel-identical.
+    - *Pointer capture is in a `try`*: a synthetic event (the bench) or a finished pointer throws `InvalidPointerId`.
+    - *Not done*: the sheet is not in `labs/design_primitives.html` (the design agent's page); no print rule for it (a
+      fixed module is not printed).
+  - **Maps' side** (`modules/maps/DECISIONS.md` has the full entry): the local `createSheet` and its CSS are removed; the pane
+    and split height rules and the `!important` too (the frame applies `--f-view-h`, § 9.2); atmosphere is not touched.
+  - **Measured** (Playwright + Chromium, the launcher on the synthetic SIA base, tiles stubbed; "before" = `git archive` of
+    b03bd1883 on its own launcher): the three positions 45 / 277.4 / 511 px at 390 × 844, 45 / 260 / 520.1 px at 1280 × 800;
+    screenshots before / after **identical to the pixel at 390** (4 states), at 1280 the only differences are 88 pixels of at most
+    5 / 765 in the frame's header (above the module; not in the sheet), the dual-view pane and split main at 1280 are the same size
+    to the tenth of a pixel and differ by 1 to 2 levels on a few anti-aliased edge pixels; seven designs at 390, sheet header
+    crops identical; bench 76 / 76 at 390 and at 1280.
+- **24 Oct 2026 — Lot: overlay layer and full screen for fixed modules, header slimmed on a phone, group switch by popover**
+  (asked by the cloud relay, holding the ergonomics role; branch `v3-cadre-plein` from `v3` eea37db50; the user's words of
+  24 Oct, 14:00 and 14:05, `docs/technique/V3_SPECIFICATION.md` § 7.1: "Ce n'était pas le deal. header, carte, carte, footer.
+  Les autres infos sont mises ailleurs." / "trop d'éléments sur le header. Prévoir une exemption pour certains boutons communs.
+  Prévoir un « full screen » pour supprimer le footer et/ou le header." / "maximiser l'espace alloué à la carte").
+  - **1. Overlay layer** (`ctx.overlay`, INTEGRATION § 9.3). Chosen between the two shapes of the brief: the frame creates
+    the layer before `mount` and hands the two column elements (`left`, `right`) plus a `button()` helper; the module may say
+    which element is its map (`over(el)`). *Why a sibling of the module's root, not a child*: maps and atmosphere write
+    `el.innerHTML`, which would wipe a layer put in the root; the layer therefore sits in the view (`.f-view`, or the pane
+    `aside`) and is laid in pixels over the map element (a `ResizeObserver` on the root and the map, a `MutationObserver` on
+    the root's children only to find a map added after `mount`; both justified in the code, geometry written only when it
+    changes). *Why pixels, not CSS*: the map's height moves with the sheet, and the root's layout belongs to the module;
+    covering exactly the map makes "never over the sheet" true by construction. Default map element = the root's first child
+    that grows (maps' toolbar line is first today, its map `.mp-box` has `flex: 1 1 0`); `over(el)` for any other layout.
+    The right column wraps to a second column on its left when the map is too low (`flex-wrap: wrap-reverse`), so no button
+    can reach the sheet. `.f-ov-btn`: 44 px visible, 48 px hit (a `::after` of 2 px), `--sog-surface` at 92 %, hairline, light
+    shadow; **the radius is `min(50%, --sog-radius × 22)`: round in every design but `cabinet`, `field`, `metro` and `swiss`,
+    whose radius is 0 and keep square buttons** (the user said "round"; the angle-free designs are mock-ups to be decided, one
+    line to change). Three-class rules, as the sheet's, so the designs' button rules do not reach them. A pane gets the layer
+    without the full-screen button.
+  - **2. Full screen** (INTEGRATION § 9.4). `html.f-full` (only with `f-fixed`): header, bar (phone), rail (screen) hidden; the
+    variables `--f-head-h` and `--f-tab-space` fall to 0 so every height follows (`--f-view-h` = `--f-vh` less the safe areas).
+    **Judgement call: on a screen the rail is hidden, not folded to icons** (the brief left the choice): all the width to the map,
+    the chip and Escape bring it back; a folded rail would need a rule per design (the Material rail is 88 px with labels).
+    Remembered for the page's life, also under a frame screen opened over the module (the header comes back there, as
+    `f-fixed` does; closing it returns to full screen), reset at a module change. The exit chip is `position: fixed` at the
+    top right of the window (the view is then the whole window; fixed is relative to the view, which is a container) so it
+    stays at the corner even while maps still draws its own toolbar line above its map; the right column starts under it.
+    Escape order: group popover, frame screen, full screen (never with a question window open or when a module has
+    prevented the key). `frame-fullscreen` (`detail.on`) then `resize` on `window` after each change. No Fullscreen API.
+    Icon `minimize` added to `icons.js`.
+  - **3. Header on a phone**: name · "i" · ⚙ (and "←" in place of the name after a passage). `.f-sync`, `.f-who`, `.f-host`,
+    `.f-live` and `#fHelp` are `display: none` up to 760 px (the old phone rules that shrank them, and the `.f-lbl-short` span
+    and its code, are deleted: nothing showed them any more). The "i" badge: green `data-badge` = news, amber `data-attn` =
+    attention (no trigram once the identity is read, pending writes, conflicts, a synchronisation error, offline), amber wins,
+    **amber only on a phone** (on a screen the header keeps its sync button, the badge stays green-or-nothing as before).
+    `syncState()` is the one place that classifies the state (button and data line). New lines of the pop-up: the trigram
+    line (tap → Settings; before the data line), an error text in the data line (an error was a red dot only), "Position :
+    <source>" (live active; **a tap toggles the device's GPS like the badge it replaces**, since the badge's button is gone),
+    and "Aide de cet écran ›" last (the "?" handler is now `openHelp()`, a toggle). These last two are `data-phone`: hidden on
+    a screen. Rows that need attention have an amber dot. **Not done**: the launcher badge ("Lanceur de <poste>") has no line
+    (the data line already names the transport "launcher"; the host name stays in the header on a screen only).
+  - **4. Group switch without a row.** `paintSubtabs` / `paintTop` and the `.f-subtabs` click handler are removed. A second tap
+    on the active tab opens `.f-tabpop` (a `position: fixed` element on `body`, not inside the bar, so the bar's `a` rules
+    of the five designs do not hit its rows; 44 px `button` rows, three-class rules). Closing: a touch elsewhere (pointerdown,
+    capture; the tab itself toggles through its click), Escape (focus back to the tab), scroll (capture, from outside the
+    popover), resize, hash change. The click on the active tab is `preventDefault`ed (a single-module tab "does nothing" and no
+    longer drops `?with=` from the address) except while a frame screen is open over the module. `aria-haspopup` on the tabs of a
+    group of two or more. Updated: INTEGRATION § 9.1, SPEC § 3.1.
+  - **5. Sheet default 30 %** (relay's addition, "maximiser l'espace alloué à la carte"): `--f-sheet-default` is 30 % up to
+    760 px (floor 170 px), 35 % from 761 px; INTEGRATION § 11 and the design SPEC table follow; the bench's assertion changed
+    from 38 % to 30 % (76 / 76 at 390 and 1280). `modules/maps` and `modules/atmosphere` documents still say 38 % (not touched).
+  - **6. No margin under the header**: with the sub-tabs row gone (it had a 12 px bottom margin), the module's top equals
+    `--f-head-h` (57 px): measured on `maps` and `atmosphere`, at 390 and 1280 px, the view and the module have 0 padding and 0
+    margin.
+  - **Measured** (Playwright + Chromium, touch emulation at 390 × 844 and 1280 × 800, seven designs set through
+    `device/design.json`): header children exactly `fName`, `fInfo`, `fDevice` (44 px buttons, 57 px high); badge colours (computed
+    colour of `::after` = `--sog-ok` for a seeded flight, `--sog-warn` without a trigram or offline, none with a trigram and no
+    flight); pop-up lines, "Aide de cet écran" last, rows at least 44 px; popover rows 44 px above the bar and inside the window,
+    switching, closing by outside touch / Escape / scroll / third touch, nothing on `maps`; on `#maps` the layer = the map box, its
+    right column above the sheet, the full-screen button 44 × 44; full screen at 390: header and bar `display: none`, view 844 px
+    at top 0, chip 44 px at 8 / 8, `resize` heard, no page scroll, Escape and chip and button exit, reset at a module change,
+    kept across Settings; at 1280: header and rail hidden, view 1280 × 800; a stub fixed module (intercepted `modules/hello`):
+    5 buttons + full, 52 px pitch, `pressed`, clicks reach the module, map gestures pass through, wrap to extra columns on a
+    120 px map, four languages.
+  - **Not done / to see**: no iOS device (safe areas, the Cupertino blur under the popover); the exit chip covers the last
+    button of maps' toolbar line until maps migrates it; `modules/*` untouched (maps and atmosphere still draw their toolbars, their
+    docs still say 38 % and "sub-tabs"); the page is 402 px wide on `#fuel` at 390 because of Fuel's own `.fu-when` row (the same on
+    the base commit, not the frame's).
+
+- **24 Oct 2026 — `frame/lib/geo.js`: longitudes around the date line** (maps session, relay cloud). Atmosphere had `wrapLon`,
+  `nearLon` and `unwrapLons` (commit 5f45e0b18), maps and fuel needed the same: the helper is the frame's (INTEGRATION § 12),
+  same logic as atmosphere's so that the weather cache cells are the same (the bench `frame/lib/test/geo.html` compares them).
+  `unwrapLons` takes `{ lat, lon }` and `[lon, lat]`; a point already continuous is returned as the same object. No in-range
+  shortcut in `wrapLon` (it would change the noise of atmosphere's cells). Atmosphere switches to the helper in its next lot;
+  until then its copy and this one stay identical. Users: `modules/maps` (the whole screen), `modules/fuel/winds.js`.
+
+- **24 Oct 2026 — finishing touches asked by the Map and frame lots** (relay cloud, branch `v3-cadre-icones`).
+  - **`[hidden]` on overlay buttons**: `.f-overlay button.f-ov-btn[hidden] { display: none }` in `primitives.css`; the Map's
+    workaround rule is removed (its `data-mp` attribute stays: the module's other rules hang on it). INTEGRATION § 9.3.
+  - **Three icons** in `frame/lib/icons.js`, same grid and stroke: `cloud`, `undo`, `move4` (`move` is the vertical double arrow
+    and stays, it is in use). The Map lost `localIcon` and its SVG copies and names the three icons through `ov.button({ icon })`
+    / `svg()`. Other modules: no `localIcon`; the only inline `<svg>` found in `modules/*/module.js` are Fuel's charts (data
+    drawings, not icons) and the Map's own level profile; Atmosphere draws none in `module.js`. Nothing else touched.
+  - **Launcher line of the "i" pop-up** (the lot of 24 Oct had left it "not done"): shown when the transport is `launcher`, text
+    "Launcher: {host} · {sync state}" (the state is the one of the sync button), after the data line, opens Settings; shown at
+    every width (the header's host pill still appears only for a launcher of another computer on the local network). The host
+    is the launcher's own name, else the page's host name. INTEGRATION § 9.3 / § 10, SPEC § 3.1.
+
+- **24 Oct 2026 — Landscape on a phone** (relay cloud, branch `v3-cadre-paysage`; decision `V3_SPECIFICATION.md` § 7.1 rule 7, the
+  user's two iPhone shots at 844 × 390: the map 163 px high, the bottom sheet half of the view and cutting its content, the
+  buttons doubling up, the "flight date" slider taking a whole line; Safari does not honour the manifest's portrait lock).
+  - **Detection**: `html.f-land` when the window is wider than high, under 1024 px, **and** the screen's orientation is not
+    portrait (`screen.orientation.type` when the browser gives it). The last condition is mine: on Android Chrome an
+    on-screen keyboard shrinks the window of a small portrait phone (360 × 640 → 360 × 320) and a size-only test would flip it
+    to landscape while the user types; the screen's own orientation does not move. The class is set by an inline script of
+    `index.html` before the first paint (same expression), then kept by `frame/app.js` (`resize`, `orientationchange`), one
+    write when the value changes. `frame-orientation` (`detail: { land }`) is fired on `window` after it: the sheet primitive
+    listens (it re-places itself without a transition). No observer, no timer.
+  - **Rail**: the bar element (`#fTabs`) stays; under `f-land` it is the grid's left column (`--f-rail-w`, 44 px) and sticky
+    under the header like the 210 px rail, which is not shown. No label: `display: none` on `.f-tab-lbl` and, **at the
+    source**, `aria-label` and `title` on every `<a>` written by `renderTabs` (a hidden label would leave the link nameless).
+    The item rules of the bar and the four designs' bar rules left their `@media (max-width: 760px)` (the bar is displayed
+    only on a phone and in landscape, so the media condition decided nothing), otherwise a 844 px landscape phone got
+    neither the pill nor the design's look (it is above 760 px). The line on the rail's right is an inset shadow, not a border
+    (a border made 43 px cells). The popover opens at the right of the rail, first row facing the icon (not centred: the
+    group tab is the first one, centring would cover the header).
+  - **`--f-tab-space` = 0 and `--f-view-h`**: `html.f-land` sets both (the view loses nothing at the bottom but the device's
+    home-indicator inset); 333 px on a 390 px window. `--f-split-h` and `--f-pane-h` do not change (they exist from 980 px
+    and a pane in landscape at 980–1023 px would only lose 44 px of width).
+  - **The sheet is a column**: `html.f-land .f-sheet` is a flex row, the panel keeps `.f-sheet-panel` and gets a width
+    (`--f-sheet-side` 40 %, floor `--f-sheet-side-min` 280 px; expanded `--f-sheet-side-max` 60 %, parts of the **root's**
+    width, resolved by CSS and by `sheet.js` with the same `max()`), `height: auto` (stretched). Modules are not touched
+    (maps and atmosphere were read, not edited): their root rule `[data-module=…] { display: flex; flex-direction: column }`
+    has one class, the frame's has two classes and an element, and the frame's `flex-direction: row` wins; the map was
+    already `flex: 1 1 0; min-height: 0`, the frame adds `min-width: 0` to the root's children. Checked: both modules, five
+    designs, no error, `ResizeObserver` boxes follow, the canvas follows the map box.
+  - **Two positions**: collapsed becomes default (`norm()` in `sheet.js`, so `pos`, `set()`, Home, a sheet collapsed in portrait
+    and then turned all say `default`; onChange gets `default` / `expanded` only). Tap toggles default ⇄ expanded (portrait:
+    default ⇄ collapsed). Horizontal drag implemented (the same code on the x axis: it was cheap and a column the user cannot
+    drag feels wrong), clamped between the two widths, a flick goes to the other one. A chevron at the end of the title row
+    (CSS, no text) says which way. `transitionend` listens to `width` too. The portrait rule that hides a collapsed sheet's
+    content is behind `:where(html:not(.f-land))` (specificity unchanged).
+  - **Overlay**: nothing in `app.js` (the layer is the map's box, which is now 333 px high); `gap: 4px` under `f-land`. Measured:
+    five buttons, six (one more shown) in one column, a seventh wraps to a second column on its left (maps' Edit mode has seven:
+    left as is, it is "au-delà"; 4 px padding as well would still need 340 px).
+  - **Full screen in landscape**: the existing rules already hide the header and the rail (`.f-tabbar` under `html.f-fixed.f-full`
+    outweighs the rail's); the view gets the four safe areas. **Exit chip removed** (relay's decision of 24 Oct, journal: it is
+    redundant since the modules' toolbars left; the column's button shows `minimize`, Escape also leaves): `.f-ov-exit`, its
+    `position: fixed` rules, `html.f-full .f-ov-right { padding-top: 60px }` and the `T.full.exit` comment are gone, `T.full.exit`
+    stays (the button's label). Help (fr, en, de, es, intro and Pilot manual), INTEGRATION § 9.4, SPEC, the suite (B5, B6) say
+    so.
+  - **Safe areas** (`viewport-fit=cover` is set): under landscape the rail's column, the header's side padding, the view's right
+    margin and bottom padding (and the left, top and bottom in full screen) take `env(safe-area-inset-*)`; the right one is a
+    margin, not a padding, so the view's own padding (16 px, 12 px under 761 px) of a page that scrolls is kept. Tried with Chromium's
+    `Emulation.setSafeAreaInsetsOverride` (left 47, right 47, bottom 21): the rail is 91 px (44 + 47), the view 753 px, the
+    column 282 px; nothing overlaps. Not tried on an iPhone.
+  - **Not changed**: `screen.orientation.lock('portrait')` stays for the installed app (comment updated: Safari ignores it, hence
+    this lot). A window of a computer, 761–1023 px wide and wider than high, is in landscape mode too (the rule says width and
+    ratio only): the 210 px rail is replaced by the 44 px one; 1024 px and wider are unchanged.
+  - **Verified** (Chromium, Playwright, touch 844 × 390; the suite's case A14 for `maps` and `atmosphere` in five designs, the bench
+    `frame/lib/test/sheet.html` at 390, 1280 and 844 × 390: 129 / 129): the numbers asked: header 57, rail 44 × 333 at left 0,
+    five entries, map at 44 / 57, 333 high, column 320 px (40 % of 800), 480 px expanded, handle at the top, no double column,
+    no page scroll, full screen (0 / 0, column 390 high, no chip), Escape, hot rotation 390 → 844 → 390 (classes, boxes, canvas),
+    a collapsed sheet turned, popover at the right of the rail; portrait boxes compared with the base commit (header, view,
+    module root, map, sheet, bar, layer, `--f-*`) in maps, atmosphere, fuel, report, flightlog in two designs: **identical**,
+    except the right column in full screen, which no longer starts 60 px lower.
+
+- **24 Oct 2026 — The bare handle of the sheet** (relay cloud, branch `v3-cadre-poignee`; decision `V3_SPECIFICATION.md` § 7.1
+  rule 13 b: no title above a drawing; the user's iPhone shots of the weather cut, "Toujours la ligne « météo fl160 »... info
+  redondante, qui prend de l'espace vertical").
+  - **Request = a class, not an option**: `.f-sheet-head-bare` on `.f-sheet-head`, one line of module code
+    (`head.classList.toggle('f-sheet-head-bare', isDrawing)`). Not an option of `createSheet` or `set`: the header changes with
+    the content (maps: Profile · Weather bare, Layers titled), an option would be state the primitive keeps and the module must
+    keep in step; a class is what the module already writes on its own header, and the CSS reads it. `createSheet`, `set`,
+    `labels(pos, rank)` and the positions are unchanged. Maps and atmosphere use these names.
+  - **Token** `--f-sheet-head-bare: 28px` in `primitives.css` (no weight, like the others) and in `frame/design/SPEC.md`. The
+    line is 28 px, the collapsed panel 29 (the hairline). `--f-sheet-head` (45 px) stays for the titled header.
+  - **Heights follow the real header**: the primitive's floor for the drag and the nearest-position choice was the token
+    `--f-sheet-head` read from the root; it is now the header's **measured** box plus the panel's top border
+    (`headBox()`; the token only when the header has no box). The collapsed height in CSS cannot read the DOM, so it is
+    `.f-sheet[data-sheet="collapsed"] > .f-sheet-panel:has(> .f-sheet-head-bare)`. A header that changes class while collapsed
+    animates to the new height and `transitionend` fires `onSettle`.
+  - **The grip bar is centred in the grip area** (the room the buttons leave), not on the whole line: with the segments, ◀ ▶
+    and ✕ on a 390 px phone the buttons reach about as far as the centre of the line (the bench's five buttons start at the
+    middle of 360 px), so a bar centred on the line could sit under the first of them. The cost: with only a ✕ the bar is 14 px off the line's centre. Asked for "centrée en haut"; if the line
+    must be exactly centred, the buttons have to be narrower than half the width.
+  - **Touch zones**: `::after` of 44 px high, centred, at least 32 px wide, on `button:not(.f-sheet-grip)` in the bare header
+    (weight 4 classes + element, above a design's `[data-design] :is(button, .f-btn)`), with a 4 px gap so that zones tile
+    without overlapping. Centred by `top: 50%` / `transform` and not by `inset`, so that a module's border on its buttons
+    (1 px loses 2 px of height with `inset`) does not shrink it. The upper 8 px are clipped by the panel's `overflow: hidden`
+    (the sheet's own edge): the zone is 36 px effective on top, 44 below the 28 px line, and bites 8 px on the body. 44 px
+    visible, as the overlay buttons, was not possible on a 28 px line; the user asked for 28 + zone.
+  - **Landscape**: the line stays at the top of the column; the chevron (CSS `::after` of the grip) gets `margin-left: auto`
+    so that, with no title to push it, it sits at the end of the grip area.
+  - **When** (written in INTEGRATION § 11): over a drawing, never over a list.
+  - **Bench** `frame/lib/test/sheet.html`: 129 → 177 checks, a bare sheet in portrait (28 px line, no title, five buttons of
+    28 px right-aligned and in order, bar centred in the grip and clear of the buttons, zones of 44 px, collapsed 29 px, expanded
+    and default unchanged, tap, drag, flick, keyboard, a chip does not drag, the drag floor is 29 px and 45 px again once the class
+    is removed) and in the landscape column (28 px, at the top of the column, no title, tap, drag).
+    The suite's case C1 gives the bench 30 s and it already took 27 s; the new checks would have crossed it (C1 failed on the first
+    run: "never reported done"), so the waits that followed an instant `set()` were cut to 80 ms and the other fixed waits shortened
+    to the transition's 200 ms plus a margin: the bench takes 24 s with 177 checks (it took 27 s with 129).
+- **24 Oct 2026 — The bar and the header by rule 14** (relay cloud, branch `v3-cadre-barre`; decision
+  `V3_SPECIFICATION.md` § 7.1 rule 14, user, 24 Oct, 22:15: "il n'y a plus de bouton d'aide contextuelle en header. Tu vas le
+  remettre, et enlever les settings du footer. Pour y mettre soit les fiches de perfo, soit la météo. Tu gardes néanmoins le
+  principe de double clic sur le menu pour mettre plus de boutons"). Amends rules 3, 4 and 10.
+  - **Bar**: Préparer · Carte · CR · Vols · **Météo**. Settings leaves the bar; the user's alternative (sheets or weather)
+    is Météo, and the sheets stay where they are, a view of Préparer. `APP.tabs` loses its `settings` entry and gains a
+    `weather` tab (module `atmosphere`, icon `cloud`, label Météo / Weather / Wetter / Meteo). The `screen` key of a tab
+    stays supported by the code (nothing uses it). `tabFor` returns no tab over Settings: the pressed button is the ⚙.
+  - **Where the sheets are**: not a module. They are the second screen of the fuel module (its Quote / Sheets switch,
+    `modules/fuel/module.js`), reached by `#fuel?view=sheets` (`ctx.query.view`, written 24 Oct for exactly this). So a tab
+    gets an optional **`views`** list (`{ id, module, query, label, icon }`): a view has no tab, only a popover row after its
+    module's. Préparer's popover is **Carburant · Fiches** (a second touch, as before: "the principle of the double touch
+    stays"). The popover marks the current row **from the address**: Fuel's own Quote / Sheets switch does not write the
+    address, so after using it the mark can be one row behind. Not corrected here (a module's business: fuel could write
+    `?view=` with `history.replaceState`; to ask the fuel session if it matters). Atmosphere left the Préparer group (its own
+    tab now), so `ctx.tab` for atmosphere is `'weather'`.
+  - **Header (phone)**: name (or ←) · **?** · **⚙**; the "i" button and its pop-up are removed from `index.html`, the code and
+    the CSS (`#fInfo`, `openInfo`, `infoBox`, `.f-info-*`); on a screen too (the header there is: name, pane, "Trigramme ?",
+    sync dot, ?, ⚙). `#fHelp` is no longer hidden on a phone. **Help**: the "?" opens the chapter of the current screen as on a
+    screen; one improvement over the screen's code: with **Settings open over a module** it asks the Settings chapter (it asked
+    the module's, because the module is still `current`).
+  - **Badge on ⚙** (`#fDevice[data-badge]` green everywhere, `[data-attn]` amber on a phone only, amber wins), the same rules
+    as the "i": green = a flight started or a report to write, amber = no trigram, pending writes, conflicts, sync error,
+    offline, the base not ready. Computed by `paintStatus()` (the old `paintInfo`, same call sites). The button's name adds
+    "something to see". Removed texts: `T.info.button` and `T.info.help` (the help row is the "?").
+  - **Status block at the top of Settings**: the lines of the old pop-up, same texts and same actions (the rows are built
+    by the same function: `statusItems`, the old `infoItems`, minus the help row), in a card `data-card="status"` with the title
+    "Status" / "État" / "Status" / "Estado". **Who draws it**: Settings is an "over" of the frame but its content is drawn by
+    `frame/settings/settings.js` in one `innerHTML` and redrawn by `again()`; the state (flight, pending reports, sync, base,
+    launcher, position) belongs to the frame. So the frame draws the card (`statusBlock()`, a string at the value of the moment) and
+    gives it through the settings context (`ctx.status = { html, bind }`); settings places it first and calls `bind(card)`
+    once the card is in the page; from then the frame rewrites it when the state changes, **one write only if the content
+    changed** (a short signature in `data-sig`), and forgets it once it leaves the page (`isConnected`). No observer, no timer.
+    The settings' help panel moved under the card. A card without line is hidden.
+  - **Rows that led to "Settings" now lead to the card that holds the answer** (we are already on Settings, a hash that does not
+    change does nothing): `go: 'card:identity'` (trigram), `card:access` (base, launcher), `card:sync,usages` (data: the first
+    that is visible), scrolled under the sticky header (`scroll-margin-top` on `.f-screen [data-card]`) and its first field
+    focused. `#maps`, `#conflicts`, the report hand-over and the GPS switch are as they were.
+  - **The rail of a screen**: unchanged. The brief said "Réglages kept at the end of the rail", but the rail (`#fNav`, the
+    modules) never had a Settings entry in this tree (on a screen the ⚙ of the header opens it); nothing was added. The
+    landscape rail on a phone (`#fTabs`) has the same five entries as the bar, Météo last, and no Settings.
+  - **Icon**: `frame/lib/icons.js` (design's file) gets the filled variant of `cloud`, the tab icon needs one (the same
+    drawing, filled); `frame/design/SPEC.md` says so.
+  - **Tests**: A2 (name · ? · ⚙), A4 (five entries ×4 languages: Météo, no Réglages), A7 (Carburant · Fiches: a view row
+    opens `#fuel?view=sheets` on the Sheets screen), A8 replaced by "status block at the top of Settings" (rows, 44 px, last
+    action, Escape), A9 and the journeys (badge on ⚙; rows read in the block), A11 / A12 (the "?" opens the chapter), A14 (rail: Météo),
+    A15 and flightlog's check (the base row and the report row are read in the block), E5 (no "i" of the frame: at most one "i"
+    on a page, and not `#fInfo`; the legend chip of Atmosphere is the one that may come).
+  - **Found while testing (not fixed, not the frame's)**: changing the address of fuel while its own `mount()` is still awaiting
+    (reading libraries, the shared base) lets that first mount's `show('plan')` run on the state of the second (`S` is a module
+    global of `modules/fuel/module.js`): `#fuel` then `#fuel?view=sheets` within milliseconds, on the slower designs, ends on the
+    Quote screen. A7 now waits for fuel's first screen before the second tap. To tell the fuel session (a `mount` that checks its
+    state is still the current one after its awaits).
+- **24 Oct 2026 — Relais cloud: one navigation at a time** (found by the Fuel agent, see `modules/fuel/DECISIONS.md`): two or three
+  changes of address in the same task (`#fuel`, `#atmosphere`, `#fuel?view=sheets`) left one `section[data-module]` per
+  navigation in `#fView`, and as many overlay layers and sheets.
+  - **Cause**: `route()` emptied the view, then awaited `import()` and `mount()` and appended its section in between; nothing told
+    a navigation that it had been overtaken, so every one wrote its section when its import came back (the browser fires one
+    `hashchange` per change, each reading the final address).
+  - **Rule**: a navigation counter (`navSeq`), a token taken by each `route()` once it is past the framework screens; after the
+    `import()`, after `mount()` and in the `catch`, a stale token returns without writing (no section, help panel, pane or error
+    screen). The next navigation has already called `unmount()` on the module being mounted, emptied the view and dropped the overlay
+    layers, so only the live section exists. The help and settings screens (`showDoc`, `renderSettings`) also compare the token.
+  - **Not done on purpose**: no queue, no timer, no observer; the last change of address wins. A module's `mount()` may still be
+    awaiting when its `unmount()` is called (INTEGRATION § 2 says so); Fuel already guards its own state.
+  - **Test**: A16 (three addresses in one task, then one per task, with slow cache reads): one `section[data-module]`, one overlay,
+    one sheet, no `pageerror`; it fails on the previous `app.js` (three `maps` sections).

@@ -1,0 +1,265 @@
+// Feuille à trois positions, primitive du cadre (frame/INTEGRATION.md § 11, règles dans frame/design/primitives.css).
+//
+// Une feuille de hauteur fixe au bas d'une vue fixe (carte, coupe, …) : réduite (sa ligne d'en-tête seule), normale,
+// agrandie. Son en-tête est la poignée : un glisser la tire, un coup de pouce la fait passer à la position suivante, un
+// toucher la réduit ou la ramène à la normale (jamais à l'agrandie), le clavier la règle. La feuille ne sait pas ce
+// qu'elle contient et n'écrit aucun texte : les libellés viennent de l'appelant (labels). Aucun état de module : la
+// position gardée d'un montage à l'autre est l'affaire de l'appelant (il la repasse en `pos`, onChange la lui donne).
+//
+// Hauteurs : jetons --f-sheet-* lus sur la racine (feuille de style : primitives.css ; le module peut les poser sur sa
+// racine). Chaque valeur est « <n>% » (part de la hauteur de la racine) ou « <n>px » ; rien d'autre n'est lu.
+//
+// Poignée nue : quand le contenu est un dessin, le module pose la classe `f-sheet-head-bare` sur `head` (une ligne de 28 px, pas de
+// titre, les boutons à droite ; frame/INTEGRATION.md § 11). La primitive n'a rien à savoir de plus : la hauteur de la position
+// réduite et le plancher du glisser sont la hauteur mesurée de l'en-tête, pas une constante.
+//
+// Paysage sur un téléphone (<html class="f-land">, posé par le cadre : frame/INTEGRATION.md § 11) : la feuille est une colonne à
+// droite de la carte, à deux positions (normale, agrandie) ; la largeur remplace la hauteur (jetons --f-sheet-side, -side-min,
+// -side-max, parts de la largeur de la racine), le toucher de la poignée bascule entre les deux, un glisser horizontal aussi, et
+// la position « réduite » n'existe pas (elle devient « normale »). Les positions rendues à onChange et onSettle sont les mêmes
+// noms : le module n'a rien à changer.
+
+/** Les trois positions, de la plus basse à la plus haute. */
+export const POSITIONS = ['collapsed', 'default', 'expanded'];
+
+/** Au-delà de cette vitesse (px par ms) un glisser lâché est un coup de pouce : position suivante, pas la plus proche. */
+const FLICK = .8;
+/** Délai (ms) entre le dernier changement et onSettle. */
+const SETTLE_MS = 120;
+/** Distance (px) à partir de laquelle un toucher devient un glisser. */
+const SLOP = 6;
+
+/** Paysage sur un téléphone : la feuille est une colonne (classe posée par le cadre sur <html>). */
+const sideways = () => document.documentElement.classList.contains('f-land');
+
+/** Nom d'une position à partir d'un nom ou d'un rang (0, 1, 2) ; le rang est borné. En colonne (paysage), pas de position réduite. */
+const norm = p => {
+  const n = typeof p === 'number' ? POSITIONS[Math.max(0, Math.min(2, Math.round(p)))] : POSITIONS.includes(p) ? p : 'default';
+  return n === 'collapsed' && sideways() ? 'default' : n;
+};
+
+/**
+ * createSheet({ root, panel, head, grip, pos, ignore, labels, locked, onChange, onSettle }) → { pos, set, settle, stop }
+ *
+ * - root : l'élément qui porte `data-sheet` (la position) et les jetons --f-sheet-* ; la hauteur des positions est une
+ *   part de la sienne (hauteur de contenu), et panel en est un enfant direct (`.f-sheet > .f-sheet-panel`)
+ * - panel : la feuille elle-même, dont la hauteur suit `data-sheet` (feuille de style) ou le doigt (style en ligne)
+ * - head : la ligne d'en-tête, qui reçoit le glisser (événements du pointeur sur elle seule : la carte garde les siens)
+ * - grip : le bouton de la poignée, dans head (un <button> ; sinon il reçoit role="button" et tabindex)
+ * - pos : position de départ, 'collapsed' | 'default' | 'expanded' (par défaut 'default')
+ * - ignore : sélecteur de ce qui, dans head, ne tire pas (la bascule, le ✕)
+ * - labels : le libellé de la poignée selon la position, `(pos, rang) => texte` ou `{ collapsed, default, expanded }` ;
+ *   il devient l'infobulle et l'aria-label de la poignée ; sans labels, elle garde les siens
+ * - locked : () => vrai quand les gestes du pointeur sont refusés (glisser, toucher) ; le clavier reste
+ * - onChange : (pos) à chaque changement de position, y compris au lâcher d'un glisser
+ * - onSettle : (pos) 120 ms après le dernier changement de position ou de taille de la feuille (fin du glissement, fin de
+ *   la transition) : la carte reprend sa taille et se recadre
+ *
+ * pos : la position courante. set(pos, instant) : met la feuille à une position (nom ou rang), instant coupe la
+ * transition ; settle() : relance le délai de onSettle (à appeler quand la taille de la vue a changé autrement) ;
+ * stop() : retire les écouteurs et le délai.
+ */
+export function createSheet({
+  root,
+  panel,
+  head,
+  grip,
+  pos = 'default',
+  ignore = '',
+  labels = null,
+  locked = () => false,
+  onChange = () => {},
+  onSettle = () => {}
+}) {
+  const ac = new AbortController(),
+    on = (el, type, fn) => el.addEventListener(type, fn, {
+      signal: ac.signal
+    });
+  let cur = norm(pos),
+    timer = 0;
+
+  /** Longueur d'un jeton : « 38% » est une part de la longueur h (hauteur de la racine ; sa largeur en paysage), « 170px » (ou un
+   *  nombre) des pixels. */
+  const len = (v, h) => {
+    const n = parseFloat(v) || 0;
+    return String(v).includes('%') ? n * h / 100 : n;
+  };
+  /** La hauteur de la feuille réduite : la ligne d'en-tête telle qu'elle est (44 px, ou la poignée nue de 28 px : classe
+   *  `f-sheet-head-bare` posée par le module, frame/INTEGRATION.md § 11) et le filet du haut, mesurés ; le jeton --f-sheet-head
+   *  ne sert que si l'en-tête n'a pas de boîte (feuille cachée). */
+  const headBox = () => {
+    const hh = head.getBoundingClientRect().height;
+    return hh ? hh + (parseFloat(getComputedStyle(panel).borderTopWidth) || 0) : len(getComputedStyle(root).getPropertyValue(
+      '--f-sheet-head').trim(), 0);
+  };
+  /** Hauteurs en pixels des trois positions, lues dans les jetons de la racine : l'en-tête seul, le milieu (part de la
+   *  racine, avec son plancher), l'agrandie (idem). */
+  function heights() {
+    const cs = getComputedStyle(root),
+      t = k => cs.getPropertyValue(`--f-sheet-${k}`).trim();
+    if (sideways()) {
+      // colonne : les largeurs, parts de la largeur de la racine ; réduite = normale (pas de position réduite)
+      const w = root.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0),
+        d = Math.max(len(t('side'), w), len(t('side-min'), w));
+      return [d, d, Math.max(len(t('side-max'), w), len(t('side-min'), w))];
+    }
+    const h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+    return [headBox(), Math.max(len(t('default'), h), len(t('default-min'), h)), Math.max(len(t('expanded'), h), len(t(
+      'expanded-min'), h))];
+  }
+  /** Le libellé de la poignée pour une position. */
+  const tip = p => typeof labels === 'function' ? labels(p, POSITIONS.indexOf(p)) : labels?.[p];
+  /** Écrit un attribut seulement s'il change. */
+  const attr = (el, k, v) => {
+    if (el.getAttribute(k) !== v) el.setAttribute(k, v);
+  };
+
+  /** Met la feuille à une position (nom ou rang). instant : sans glissement (le contenu va être mesuré). */
+  function set(p, instant = false) {
+    p = norm(p);
+    cur = p;
+    onChange(p);
+    if (instant) {
+      panel.classList.add('f-sheet-nt');
+      requestAnimationFrame(() => panel.classList.remove('f-sheet-nt'));
+    }
+    panel.style.removeProperty('height');
+    panel.style.removeProperty('width');
+    if (root.dataset.sheet !== p) root.dataset.sheet = p;
+    const text = tip(p);
+    if (text != null) {
+      if (grip.title !== text) grip.title = text;
+      attr(grip, 'aria-label', text);
+    }
+    attr(grip, 'aria-expanded', String(p !== 'collapsed'));
+    if (instant) void panel.offsetHeight; // mesure possible tout de suite (hauteur à jour)
+    settle();
+  }
+  /** Après un changement de position ou de taille : onSettle, en une fois, quand la taille s'est arrêtée. */
+  function settle() {
+    clearTimeout(timer);
+    timer = setTimeout(() => onSettle(cur), SETTLE_MS);
+  }
+  /** Toucher ou touche d'activation : réduit la feuille, ou la ramène à la position normale (jamais à l'agrandie) ; en colonne
+   *  (paysage), bascule entre la normale et l'agrandie. */
+  const toggle = () => set(sideways() ? cur === 'default' ? 'expanded' : 'default' : cur === 'default' ? 'collapsed' : 'default');
+
+  // la poignée est un bouton ; sinon elle en prend le rôle et la prise au clavier
+  if (grip.tagName !== 'BUTTON') {
+    attr(grip, 'role', 'button');
+    attr(grip, 'tabindex', '0');
+  }
+
+  // ---- le glisser : événements du pointeur sur l'en-tête, capturés dès l'appui (une souris qui sort de l'en-tête dans un
+  // glisser rapide continue de lui parler)
+  let d = null;
+  on(head, 'pointerdown', e => {
+    if (e.button > 0 || (ignore && e.target.closest(ignore)) || locked()) return;
+    const side = sideways(),
+      at = side ? e.clientX : e.clientY;
+    d = {
+      id: e.pointerId,
+      side,
+      y0: at,
+      h0: side ? panel.offsetWidth : panel.offsetHeight,
+      pos: cur,
+      y: at,
+      t: performance.now(),
+      v: 0,
+      on: false,
+      grip: grip.contains(e.target)
+    };
+    try {
+      head.setPointerCapture(e.pointerId);
+    } catch {
+      /* pointeur déjà fini ou événement synthétique (banc) : le glisser suit alors les événements de l'en-tête seuls */
+    }
+  });
+  on(head, 'pointermove', e => {
+    if (!d || e.pointerId !== d.id) return;
+    const at = d.side ? e.clientX : e.clientY;
+    if (!d.on) {
+      if (Math.abs(at - d.y0) < SLOP) return;
+      d.on = true;
+      panel.classList.add('f-sheet-nt');
+    }
+    const hs = heights(),
+      now = performance.now();
+    if (now > d.t) d.v = .6 * d.v + .4 * ((at - d.y) / (now - d.t));
+    d.y = at;
+    d.t = now;
+    // la hauteur suit le doigt vers le haut ; la largeur d'une colonne (à droite de la carte), vers la gauche
+    panel.style[d.side ? 'width' : 'height'] = `${Math.round(Math.max(hs[0], Math.min(hs[2], d.h0 - (at - d.y0))))}px`;
+  });
+  const end = e => {
+    if (!d || e.pointerId !== d.id) return;
+    const was = d;
+    d = null;
+    if (!was.on) {
+      // un toucher (ni glissé ni annulé) sur la poignée : réduit la feuille, ou la ramène à la position normale
+      if (e.type === 'pointerup' && was.grip) toggle();
+      return;
+    }
+    panel.classList.remove('f-sheet-nt');
+    const hs = heights(),
+      h = was.side ? panel.offsetWidth : panel.offsetHeight;
+    let i = hs.reduce((b, x, k) => Math.abs(x - h) < Math.abs(hs[b] - h) ? k : b, 0);
+    if (was.side && i === 0) i = 1; // la colonne n'a que deux positions : normale (rang 1) et agrandie (rang 2)
+    if (Math.abs(was.v) > FLICK && e.type === 'pointerup') {
+      const from = POSITIONS.indexOf(was.pos);
+      i = was.v < 0 ? Math.min(2, from + 1) : Math.max(was.side ? 1 : 0, from - 1);
+    }
+    set(i);
+  };
+  on(head, 'pointerup', end);
+  on(head, 'pointercancel', end);
+
+  // ---- le clavier : Entrée, Espace (un bouton les rend en clic sans pointeur : le toucher et la souris sont traités
+  // plus haut, au relâcher), flèches, début, fin
+  on(grip, 'click', e => {
+    if (e.detail) return;
+    toggle();
+  });
+  on(grip, 'keydown', e => {
+    const i = POSITIONS.indexOf(cur);
+    if ((e.key === 'Enter' || e.key === ' ') && grip.tagName !== 'BUTTON') {
+      e.preventDefault();
+      return toggle();
+    }
+    const k = {
+      ArrowUp: Math.min(2, i + 1),
+      ArrowDown: Math.max(0, i - 1),
+      // une colonne à droite de la carte s'agrandit vers la gauche
+      ArrowLeft: sideways() ? 2 : null,
+      ArrowRight: sideways() ? 1 : null,
+      Home: 0,
+      End: 2
+    } [e.key];
+    if (k == null) return;
+    e.preventDefault();
+    set(k);
+  });
+  // la transition de hauteur (de largeur, pour une colonne) finie : la taille s'est arrêtée
+  on(panel, 'transitionend', e => {
+    if (e.target === panel && (e.propertyName === 'height' || e.propertyName === 'width')) settle();
+  });
+  // le téléphone tourne : le cadre pose ou retire f-land puis le dit ; la feuille reprend sa position dans sa nouvelle forme
+  // (l'onglet réduit du portrait devient la colonne normale), sans glissement
+  on(window, 'frame-orientation', () => set(cur, true));
+
+  // placement de départ : sans glissement et sans onSettle (rien n'a changé pour la vue)
+  set(cur, true);
+  clearTimeout(timer);
+
+  return {
+    get pos() {
+      return cur;
+    },
+    set,
+    settle,
+    stop() {
+      ac.abort();
+      clearTimeout(timer);
+    }
+  };
+}
