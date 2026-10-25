@@ -252,3 +252,24 @@ The sheet's "Weather" content (SPEC § 4) calls atmosphere's pure renderer. Noth
   (16 and 12 px). `id` keeps the SVG definitions distinct from atmosphere's own screen (dual view).
 - **The cursor**: `cursorM` = maps' `S.cursor` (metres from the departure), and a tap on the drawn section calls the same
   `setCursor` with `geo.nmOf(x) × 1852`, using the geometry `drawSection` returns.
+
+## 9. Routing over the airways — `lib/routing.js` (25 Oct 2026, created by the fuel lot "auto")
+
+What fuel calls (its "Auto" button). An ES module with no state of its own, no page, no network; `import * as RG from
+'../maps/lib/routing.js'` (declare it in the module's `meta.files`). It imports `frame/lib/route_text.js`.
+
+| Function | Contract |
+|---|---|
+| `route(aerodb, a, b, { altFt, reachNm, detourPct, minNm, padPct })` → `Promise<{ points, text, nm, dct, routes } \| null>` | the path from `a` to `b` (`{ id, lat, lon }`) over the airways open at `altFt` (default 6,500 ft); `points`: `a`, the airway's nodes, `b` — `{ id, lat, lon, via }`, `via`: the airway that reaches the point (`'DCT'` for a direct entry or exit, `''` for `a`), `awy: true` on the nodes the text does not write; `text`: `LFRS DCT TSA01 UT460 TSA05 DCT LFML` (consecutive points of one airway grouped "A AIRWAY B"); `nm`: the path's length; `dct`: it contains a direct part; `routes`: the airways, in order. `null` when no airway serves: leg of 40 NM or less, far from every airway, no path open at that level, detour over 40 % |
+| `expand(aerodb, chain, { altFt, altOf(i), skip(i), … })` → `Promise<{ points, legs, nm, routes }>` | the same for a chain of points, one `aerodb.airways({ bbox })` call for the whole chain; `altOf(i)`: level of leg `i` (`chain[i]` → `chain[i + 1]`); `skip(i)`: keep leg `i` direct; `legs[i]`: `{ status: 'routed' \| 'short' \| 'far' \| 'none' \| 'detour' \| 'skipped', routes, nm, points }`; `points`: the chain with the nodes inserted |
+| `leg(segments, a, b, altFt, opts)` → `{ points, routes, nm, why }`, `airwayGraph(segments)`, `shortest(graph, a, b, altFt, reachNm)` | the pure parts (V2's), on an array of segments `{ route, a, b, lower, upper (ft), nm }` |
+| `tokensOf(points, { dct })`, `textOf(points, { dct })` | `route_text.js` tokens (`{ pt }` / `{ keep }`) and normalised text of points carrying `via`; `dct: false` writes no DCT (the form fuel stores) |
+| `RoutingError` (`code: 'base'`, `state`) | thrown when aerodb has nothing to read (`state()` noaccess, offline or unpublished and no segment read): the base is missing, which is not "no airway" |
+| `DEFAULTS`, `nm(a, b)` | `{ reachNm: 60, detourPct: 40, minNm: 40, padPct: 15, ifrMinFt: 6500 }`; great-circle distance in NM |
+
+Rules (V2's, `shared/mission_routing.js`): an edge is open when floor − 100 ≤ level ≤ ceiling + 100 ft; both directions are
+open; the entry and the exit go direct to the 8 nearest nodes (those with an open edge) within `reachNm`. Changes: one node per
+identifier within 2 NM; a composite designator (`G54-R66`) is read as the airway one was following; the corridor is the chain's
+box widened by `reachNm` plus `padPct` % of the direct distance. **Limits**: no one-way airways (the base does not carry
+`Circulation`), no fine level restriction (odd / even levels, conditional routes), no SID / STAR, no crossing of the date line.
+Bench: `modules/maps/test/routing.html`.

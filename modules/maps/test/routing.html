@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>maps — routing bench</title>
+<!-- Banc du routage sur les voies aériennes (modules/maps/lib/routing.js) : chemin trouvé, plancher et plafond des voies
+     respectés (à 100 ft près, comme la V2), détour de plus de 40 % rejeté, tronçon court laissé direct, texte regroupé
+     « A VOIE B », points d'une voie non écrits (awy), voies composées (G54-R66) ramenées à une seule, couloir demandé à aerodb,
+     base absente dite par RoutingError, aucune voie → null. Les segments sont synthétiques (les mêmes que
+     tests/v3/lib.py synthetic_airways) ; un aerodb factice les rend par emprise. Page d'outil, hors des applications. -->
+<style>
+  :root {
+    color-scheme: light
+  }
+  body {
+    margin: 0;
+    padding: 12px;
+    background: #f4f6f8;
+    color: #17202a;
+    font: 13px/1.4 system-ui, sans-serif
+  }
+  pre {
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid #0002;
+    padding: 8px;
+    font-size: 12px
+  }
+  .ok {
+    color: #1b7a3a
+  }
+  .ko {
+    color: #b3261e;
+    font-weight: 600
+  }
+</style></head>
+<body>
+<h1 style="font-size:16px;margin:0 0 8px">maps — routing bench</h1>
+<pre id="out">running…</pre>
+<script type="module">
+  import * as R from '../lib/routing.js';
+  const lines = [];
+  let pass = 0,
+    fail = 0;
+  /** Compare une valeur (JSON) à l'attendue. */
+  const check = (label, got, want) => {
+    const g = JSON.stringify(got),
+      w = JSON.stringify(want),
+      ok = g === w;
+    ok ? pass++ : fail++;
+    lines.push(`<span class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'}</span> ${label}: ${g}${ok ? '' : ` (expected ${w})`}`);
+  };
+  const FIX = {
+    TSA01: [46.785, -0.926],
+    TSA02: [46.041, 0.439],
+    TSA03: [45.8, 1.804], // courbe vers le nord : UZ99 est plus court que UT460 entre TSA02 et TSA04
+    TSA04: [44.553, 3.168],
+    TSA05: [43.809, 4.533],
+    TSA10: [46.9, -1.3],
+    TSA12: [49.0, 1.0],
+    TSA11: [43.6, 4.9]
+  };
+  const seg = (route, a, b, lower, upper) => ({
+    route,
+    a: {
+      id: a,
+      lat: FIX[a][0],
+      lon: FIX[a][1]
+    },
+    b: {
+      id: b,
+      lat: FIX[b][0],
+      lon: FIX[b][1]
+    },
+    lower,
+    upper
+  });
+  const SEGS = [
+    ...[
+      ['TSA01', 'TSA02'],
+      ['TSA02', 'TSA03'],
+      ['TSA03', 'TSA04'],
+      ['TSA04', 'TSA05']
+    ].map(([a, b]) => seg('UT460', a, b, 19500, 46000)),
+    seg('UZ99', 'TSA02', 'TSA04', 33000, 46000), // raccourci ouvert à partir de FL330
+    seg('UL9', 'TSA10', 'TSA12', 6500, 19500), seg('UL9', 'TSA12', 'TSA11', 6500, 19500) // détour de plus de 40 %
+  ];
+  /** aerodb factice : les segments dont l'emprise touche celle demandée ; garde la dernière emprise et le nombre d'appels. */
+  const fakeDb = (segs, state = 'ready') => {
+    const db = {
+      calls: [],
+      state: () => ({
+        state
+      }),
+      airways: async ({
+        bbox: [w, s, e, n]
+      }) => {
+        db.calls.push([w, s, e, n]);
+        return segs.filter(g => Math.max(g.a.lon, g.b.lon) >= w && Math.min(g.a.lon, g.b.lon) <= e && Math.max(g.a.lat, g.b.lat) >=
+          s && Math.min(g.a.lat, g.b.lat) <= n);
+      }
+    };
+    return db;
+  };
+  const LFRS = {
+      id: 'LFRS',
+      lat: 47.1569,
+      lon: -1.6078
+    },
+    LFML = {
+      id: 'LFML',
+      lat: 43.4367,
+      lon: 5.215
+    };
+  const db = fakeDb(SEGS);
+  const r27 = await R.route(db, LFRS, LFML, {
+    altFt: 27000
+  });
+  lines.push('<b>path found (FL270)</b>');
+  check('text', r27.text, 'LFRS DCT TSA01 UT460 TSA05 DCT LFML');
+  check('the routes used', r27.routes, ['UT460']);
+  check('direct portions told', r27.dct, true);
+  check('points: the two ends, five nodes (three not written), in order', r27.points.map(p => p.id + (p.awy ? '*' : '')), ['LFRS', 'TSA01',
+    'TSA02*', 'TSA03*', 'TSA04*', 'TSA05', 'LFML'
+  ]);
+  check('via of each point', r27.points.map(p => p.via || ''), ['', 'DCT', 'UT460', 'UT460', 'UT460', 'UT460', 'DCT']);
+  check('length close to the line (366 NM) and below the 40 % limit', r27.nm > 366 && r27.nm < 366 * 1.4, true);
+  check('text without DCT (what the route field keeps)', R.textOf(r27.points, {
+    dct: false
+  }), 'LFRS TSA01 UT460 TSA05 LFML');
+  check('the first point is the departure as given', [r27.points[0].lat, r27.points[0].lon], [LFRS.lat, LFRS.lon]);
+  lines.push('<b>floor and ceiling (100 ft tolerance, as in V2)</b>');
+  check('FL270: UZ99 (floor FL330) is not used', (await R.route(db, LFRS, LFML, {
+    altFt: 27000
+  })).routes, ['UT460']);
+  const r35 = await R.route(db, LFRS, LFML, {
+    altFt: 35000
+  });
+  check('FL350: the shortcut UZ99 serves', r35.text, 'LFRS DCT TSA01 UT460 TSA02 UZ99 TSA04 UT460 TSA05 DCT LFML');
+  check('FL350 is shorter than FL270', r35.nm < r27.nm, true);
+  check('32 900 ft (floor − 100): UZ99 serves', (await R.route(db, LFRS, LFML, {
+    altFt: 32900
+  })).routes, ['UT460', 'UZ99']);
+  check('32 800 ft: it does not', (await R.route(db, LFRS, LFML, {
+    altFt: 32800
+  })).routes, ['UT460']);
+  check('46 100 ft (ceiling + 100): still open', (await R.route(db, LFRS, LFML, {
+    altFt: 46100
+  })) !== null, true);
+  check('46 200 ft: no airway', await R.route(db, LFRS, LFML, {
+    altFt: 46200
+  }), null);
+  check('19 400 ft (UT460 floor − 100): open', (await R.route(db, LFRS, LFML, {
+    altFt: 19400
+  })) !== null, true);
+  check('19 300 ft: nothing useful (UL9 is a detour)', await R.route(db, LFRS, LFML, {
+    altFt: 19300
+  }), null);
+  lines.push('<b>detour, short leg, no airway</b>');
+  const ex10 = await R.expand(db, [LFRS, LFML], {
+    altFt: 10000
+  });
+  check('FL100: only UL9 is open, a detour of more than 40 %', ex10.legs.map(l => l.status), ['detour']);
+  check('  the chain is returned unchanged', ex10.points.map(p => p.id), ['LFRS', 'LFML']);
+  const near = {
+    id: 'NEAR',
+    lat: 46.8,
+    lon: -1.2
+  };
+  check('a leg of 40 NM or less stays direct', (await R.expand(db, [LFRS, near], {
+    altFt: 27000
+  })).legs.map(l => l.status), ['short']);
+  const d0 = fakeDb(SEGS);
+  await R.expand(d0, [LFRS, near], {
+    altFt: 27000
+  });
+  check('  and asks aerodb nothing', d0.calls.length, 0);
+  check('no segment at all: null', await R.route(fakeDb([]), LFRS, LFML, {
+    altFt: 27000
+  }), null);
+  check('far from any airway (the Atlantic): status far', (await R.expand(db, [{
+    id: 'ATL',
+    lat: 40,
+    lon: -30
+  }, {
+    id: 'ATM',
+    lat: 41,
+    lon: -20
+  }], {
+    altFt: 27000
+  })).legs.map(l => l.status), ['far']);
+  lines.push('<b>the base is missing</b>');
+  for (const st of ['noaccess', 'offline', 'unpublished']) {
+    let err = null;
+    try {
+      await R.route(fakeDb([], st), LFRS, LFML, {
+        altFt: 27000
+      });
+    } catch (e) {
+      err = e;
+    }
+    check(`state ${st}: RoutingError, code base`, [err instanceof R.RoutingError, err?.code, err?.state], [true, 'base', st]);
+  }
+  check('state ready and no airway: null, not an error', await R.route(fakeDb([], 'ready'), LFRS, LFML, {
+    altFt: 27000
+  }), null);
+  lines.push('<b>the corridor asked of aerodb</b>');
+  const d2 = fakeDb(SEGS);
+  await R.route(d2, LFRS, LFML, {
+    altFt: 27000
+  });
+  const [w, s, e, n] = d2.calls[0];
+  check('one call, west of the departure by at least 60 NM', [d2.calls.length, w < LFRS.lon - 1, e > LFML.lon + 1], [1, true, true]);
+  check('  south of the arrival and north of the departure by at least 60 NM', [s < LFML.lat - 1, n > LFRS.lat + 1], [true, true]);
+  lines.push('<b>levels per leg, skipped legs, several legs</b>');
+  const mid = {
+    id: 'MID',
+    lat: 45.0,
+    lon: 2.5
+  };
+  const d3 = fakeDb(SEGS),
+    x3 = await R.expand(d3, [LFRS, mid, LFML], {
+      altFt: 27000,
+      skip: i => i === 1
+    });
+  check('a skipped leg stays direct', x3.legs.map(l => l.status), ['routed', 'skipped']);
+  check('  one call for the whole chain', d3.calls.length, 1);
+  const x4 = await R.expand(fakeDb(SEGS), [LFRS, mid, LFML], {
+    altOf: i => [27000, 10000][i]
+  });
+  check('a level per leg (altOf): FL270 then FL100 (no low airway near MID)', x4.legs.map(l => l.status), ['routed', 'none']);
+  check('  the total counts the routed legs only', x4.nm === x4.legs[0].nm, true);
+  lines.push('<b>nodes</b>');
+  // le même identifiant à 0,0005° près (arrondis différents de deux segments) est un seul nœud ; loin de là, un autre
+  const g = R.airwayGraph([{
+    route: 'A1',
+    a: {
+      id: 'P1',
+      lat: 47.2299999,
+      lon: 2.8024999
+    },
+    b: {
+      id: 'P2',
+      lat: 47.5,
+      lon: 3
+    },
+    lower: 0,
+    upper: 99999
+  }, {
+    route: 'A1',
+    a: {
+      id: 'P1',
+      lat: 47.23,
+      lon: 2.8025001
+    },
+    b: {
+      id: 'P3',
+      lat: 47,
+      lon: 2.5
+    }
+  }, {
+    route: 'B2',
+    a: {
+      id: 'BNE',
+      lat: 50.6,
+      lon: 1.9
+    },
+    b: {
+      id: 'BNF',
+      lat: 50.7,
+      lon: 2
+    }
+  }, {
+    route: 'B2',
+    a: {
+      id: 'BNE',
+      lat: 13.7,
+      lon: -61
+    },
+    b: {
+      id: 'BNG',
+      lat: 13.8,
+      lon: -61
+    }
+  }]);
+  check('P1 once (two roundings), BNE twice (France, Saint Lucia)', [g.nodes.filter(x => x.id === 'P1').length, g.nodes.filter(x => x.id ===
+    'BNE').length], [1, 2]);
+  check('P1 joins both airways in the graph', g.nodes.find(x => x.id === 'P1').out.length, 2);
+  check('a segment with no ceiling or floor is open everywhere', g.nodes.find(x => x.id === 'P3').out.map(o => [o.lo, o.hi]), [
+    [0, 99999]
+  ]);
+  lines.push('<b>composite airways (G54-R66) and grouping</b>');
+  const cp = (route, a, b) => ({
+    route,
+    a: {
+      id: a,
+      lat: 45,
+      lon: +a.slice(1) / 10
+    },
+    b: {
+      id: b,
+      lat: 45,
+      lon: +b.slice(1) / 10
+    },
+    lower: 0,
+    upper: 99999
+  });
+  const comp = R.leg([cp('R66', 'P10', 'P20'), cp('G54-R66', 'P20', 'P30'), cp('G54', 'P30', 'P40'), cp('G54-R66', 'P40', 'P50'), cp('R66',
+    'P50', 'P60')], {
+    id: 'AAA',
+    lat: 45,
+    lon: .9
+  }, {
+    id: 'BBB',
+    lat: 45,
+    lon: 6.2
+  }, 10000, {
+    reachNm: 10
+  });
+  check('R66, G54-R66, G54, G54-R66, R66 reads R66 … G54 … R66', R.textOf(comp.points, {
+    dct: false
+  }), 'AAA P10 R66 P30 G54 P50 R66 P60 BBB');
+  check('  two airways named, not five', comp.routes, ['R66', 'G54']);
+  const onNode = R.leg(SEGS, {
+    id: 'TSA01',
+    lat: 46.785,
+    lon: -0.926
+  }, {
+    id: 'TSA05',
+    lat: 43.809,
+    lon: 4.533
+  }, 27000);
+  check('departure and arrival on the airway: no DCT at all', R.textOf(onNode.points), 'TSA01 UT460 TSA05');
+  check('  and the arrival comes by the airway', onNode.points.at(-1).via, 'UT460');
+  check('an id that cannot be written in a route becomes a position', R.leg([{
+    route: 'A1',
+    a: {
+      id: 'X',
+      lat: 45,
+      lon: 1
+    },
+    b: {
+      id: 'LONGNAME9',
+      lat: 45,
+      lon: 4
+    },
+    lower: 0,
+    upper: 99999
+  }], {
+    id: 'AAA',
+    lat: 45,
+    lon: .8
+  }, {
+    id: 'BBB',
+    lat: 45,
+    lon: 4.2
+  }, 10000).points.map(p => p.id), ['AAA', '4500N00100E', '4500N00400E', 'BBB']);
+  document.getElementById('out').innerHTML = `${pass} passed, ${fail} failed\n` + lines.join('\n');
+  document.title = `maps — routing bench: ${fail ? 'FAIL' : 'OK'} (${pass}/${pass + fail})`;
+  window.__bench = {
+    pass,
+    fail,
+    rows: lines.filter(l => l.includes('class="ko"')),
+    done: true
+  };
+</script>
+</body></html>

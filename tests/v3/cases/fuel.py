@@ -7,12 +7,13 @@ Rules covered
   * no horizontal page scroll at 390 and 360 px (F4; the date row overflowed until 24 Oct);
   * the wording "Devis" is not both the tab and a step of the same view (F5; step 4 is now "Résultat");
   * the flight date is one value: the field writes `planned_at` of the current flight (F6);
-  * a mount whose address changed while it was still reading writes nothing, and the view follows the address (F7).
+  * a mount whose address changed while it was still reading writes nothing, and the view follows the address (F7);
+  * the "Auto" button writes the airways between the route's points at the planned level (F8).
 
-Cases: F1 F2 F3 F4 F5 F6 F7.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
+Cases: F1 F2 F3 F4 F5 F6 F7 F8 F9.  A quote needs a flight: the planned flight of lib.FLIGHT (type C30J, 366 NM) is seeded, so fuel
 computes an estimated quote with no sheet and no network.
 """
-from lib import Fail, Skip, case, norm, tx
+from lib import Fail, Skip, case, norm, synthetic_airways, tx
 
 F = 'modules/fuel/module.js'
 FUEL = '[data-module="fuel"]'
@@ -231,3 +232,67 @@ def f7(c):
     c.until("!!document.querySelector('[data-module=fuel] .fu-result .fu-ctx')", timeout=15000, what='the quote is computed')
     line = c.text(f'{FUEL} .fu-result .fu-ctx') or ''
     c.ok('FL270' in line and '0 ft' not in line, f'context line {line!r}', 'the quote names FL270, never "0 ft"')
+
+
+@case('F8', 'Auto airways', 'F', tags=('fuel', 'maps'), screens=False, langs4=True,
+      rule='user 25 Oct ("Oui pour auto"): a button next to the route writes the airways between its points, open at the planned level')
+def f8(c):
+    c.open('fuel', flight=True, airfields=True, airways=synthetic_airways())
+    wait_quote(c)
+    c.tap(f'{FUEL} .fu-steps button[data-step="1"]')
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.until(f"window.__t.shown(document.querySelector('{FUEL} [data-do=rauto]'))", what='the Route step shows the Auto button')
+    btn = c.box(f'{FUEL} [data-do="rauto"]')
+    c.ge(round(btn['h']), 44, 'the Auto button is a 44 px target', what='Auto button height')
+    c.ge(round(btn['w']), 44, 'and 44 px wide', what='Auto button width')
+    field = c.box(rt)
+    c.ok(abs((btn['t'] + btn['b']) / 2 - (field['t'] + field['b']) / 2) < field['h'], f'button at {btn["t"]}..{btn["b"]}, field at {field["t"]}..{field["b"]}',
+         'the button is in the line of the route field')
+    c.eq(c.attr(f'{FUEL} [data-do="rauto"]', 'title'), row(c, 'rautoHint'), 'the title says what the button writes, in the language of the run', what='Auto title')
+    # a bare route: departure and arrival, 366 NM; the three airways of the base are UT460 (FL195 - FL460), UZ99 (from FL330), UL9 (low, a detour)
+    c.page.fill(rt, 'LFRS LFML')
+    c.page.locator(rt).blur()
+    c.until(f"/\\(2\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the bare route resolves to two points')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.until(f"document.querySelector('{FUEL} [data-k=rtext]').value.includes('UT460')", timeout=6000, what='the route text carries an airway')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS TSA01 UT460 TSA05 LFML', 'FL270: the upper airway between its two ends, its middle points not written (UZ99 is open from FL330 only)', what='route text')
+    c.wait(900)                              # the re-reading of the route (500 ms) and the write of the flight (300 ms)
+    f = c.until_doc('pilot/ABC/current_flight.json', lambda d: len((d.get('route') or {}).get('points') or []) == 7, 'seven points: both ends, five nodes of the airway')['route']
+    c.eq([p['id'] for p in f['points']], ['LFRS', 'TSA01', 'TSA02', 'TSA03', 'TSA04', 'TSA05', 'LFML'], 'the points of the airway are written, middle ones included', what='route.points')
+    c.eq([p.get('via') for p in f['points']], [None, None, 'UT460', 'UT460', 'UT460', 'UT460', None], 'the points reached by the airway carry its name', what='route.points via')
+    c.eq(f['text'], 'LFRS TSA01 UT460 TSA05 LFML', 'the stored text is the same', what='route.text')
+    c.ge(f['distanceNm'], 368, 'the distance follows the airway (the straight line LFRS - LFML is 364 NM)', what='route distance')
+    unres = c.text(f'{FUEL} [data-unres]') or ''
+    c.eq(unres, '', 'the ends of the airway, unknown to aerodb, are not "unknown points"', what='unknown points line')
+    note = [norm(n) for n in c.note_log()]
+    want = norm(row(c, 'autoOne')).split('{d}')[0]
+    c.ok(any(n.startswith(want) and n.endswith('NM') for n in note), f'notifications {note}', f'a notification "{want}… NM"')
+    c.until_doc('pilot/ABC/current_flight.json', lambda d: (d.get('quote') or {}).get('distanceNm') in (None, f['distanceNm']) and bool(d.get('quote')), 'the quote is computed on the new distance')
+    # a second tap has nothing to add: the legs left are the airway's entry and exit, short
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    c.wait(700)
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS TSA01 UT460 TSA05 LFML', 'a second tap leaves the text as it is', what='route text after a second tap')
+    c.ok(norm(row(c, 'autoNoLeg')) in [norm(n) for n in c.note_log()], f'notifications {[norm(n) for n in c.note_log()]}', 'and says there is nothing to fill in')
+    # FL100: the only airway open is the low one, a detour of more than 40 %
+    c.tap(f'{FUEL} .fu-steps button[data-step="0"]')
+    c.page.fill(f'{FUEL} .fu-flight [data-k="fl"]', '100')
+    c.tap(f'{FUEL} .fu-steps button[data-step="1"]')
+    c.page.fill(rt, 'LFRS LFML')
+    c.page.locator(rt).blur()
+    c.until(f"/\\(2\\)/.test(document.querySelector('{FUEL} [data-ptsn]').textContent)", timeout=6000, what='the bare route resolves again')
+    c.tap(f'{FUEL} [data-do="rauto"]')
+    none = norm(row(c, 'autoNone')).replace('{a}', 'LFRS').replace('{b}', 'LFML').replace('{more}', '')
+    c.until("(n) => (window.__notes || []).some(x => x.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === n)", none, timeout=6000, what=f'the notification "{none}"')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"), 'LFRS LFML', 'no airway serves FL100: the text is unchanged', what='route text at FL100')
+
+
+@case('F9', 'Routing bench', 'F', tags=('fuel', 'maps'), designs=('standard',), screens=False, rule='modules/maps/lib/routing.js: the bench passes (41 checks)')
+def f9(c):
+    c.page.goto(f'{c.base}/modules/maps/test/routing.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/maps/test/routing.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] > 0, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+

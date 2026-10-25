@@ -1137,3 +1137,17 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     forecast), D19 new (every visible MapLibre control above the sheet's top in default, expanded and collapsed with the map stretched under the
     sheet, outside the column in landscape; one attribution; 24 px button, no chevron). D7 (attribution folded) is flaky on the base too
     (`open=True` about one run in three on Atmosphere, timing of MapLibre's compact mode against the 500 ms wait): not touched here.
+
+- **25 Oct 2026 (relais cloud) — `lib/routing.js`: path finding over the airways, a library created by the fuel lot "auto"**
+  (the user: "Oui pour auto"). A new file, `modules/maps/lib/routing.js`, in maps' property but written by the fuel session at the
+  relay's request (`module.js` and `lib/map_base.js` untouched, another agent works on them). It ports V2's `shared/mission_routing.js`
+  (`airwayGraph`, `shortest`, `leg`, `expand`) to `AeroDB.airways({ bbox })` and adds `route`, `tokensOf` and `textOf` (the grouping
+  "A VOIE B", reusing `route_text.js`' `textFromTokens`, not a second writer). Contract: INTEGRATION § 9. Kept from V2: an edge is open
+  when floor − 100 ≤ level ≤ ceiling + 100 ft, both directions, direct entry and exit to the 8 nearest nodes within 60 NM, no detour
+  over 40 %, no leg of 40 NM or less. Changed: one node per identifier within 2 NM (V2's 0.001° rounding split fixes), composite
+  designators read as one airway, binary heap, the corridor (the chain's box widened by 60 NM plus 15 % of the direct distance, one
+  `airways` call per chain, aerodb assembles the zones). No network: the base is the one aerodb has cached; when it is missing
+  (`state()` noaccess / offline / unpublished and nothing read) the library throws `RoutingError` (`code: 'base'`) instead of answering
+  "no airway". Not done (base side): one-way airways (`Circulation` is read by no parser), level code, RNP. Maps does not use it
+  yet (its profile follows a *named* airway with `alongAirway`); an "auto" on the map is a later choice. Bench:
+  `modules/maps/test/routing.html`; case F8 of fuel.

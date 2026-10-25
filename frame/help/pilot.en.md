@@ -84,6 +84,15 @@ written the ICAO way (“4530N00030E”). The next line gives the distance and t
 route, the SimBrief OFP). If the route does not resolve, “Type them by hand” opens the two fields. With your SimBrief ID
 set (⚙), “Last SimBrief OFP” takes the route, the level, the mean wind and the aircraft of your last plan in one go.
 
+The “Auto” button next to the “Route” field writes the airways between the points: for each pair of named points that
+follow each other with no airway between them, it looks for the shortest path over the published base's airways, open at the
+planned level (each leg's floor and ceiling, within 100 ft; with no planned level, 6,500 ft, and a notification says so),
+with a direct entry and exit within 60 NM and no detour of more than 40 %. The text becomes “LFRS TSA01 UT460 TSA05 LFML”;
+the airway's middle points, which the text does not write, are kept in the points (distance, map and profile follow them).
+A notification gives the result (“3 airways written, 254 NM”) or “no useful airway between X and Y”. Limits: airways are
+taken in both directions (the base does not carry one-way yet), with no fine level restriction nor SID / STAR; check the
+route.
+
 The “Points” fold lists the recognised points, from departure to arrival. The arrows move a point up or down the list,
 the cross removes it; the field at the bottom adds one before the arrival: an identifier (beacon, fix, airfield) or
 “NAME latitude longitude”. Each intermediate point has an optional level field, in FL: it is the level held from that

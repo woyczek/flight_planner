@@ -294,6 +294,18 @@ mount. Inside a mount, the two buttons switch as before.
      departure or the arrival (an OFP repeats its level at every point). "Last SimBrief OFP": through `ctx.net`, the SimBrief identifier
      of the identity (never typed here), the OFP kept on the device only, its route, level, average wind, ISA
      deviation and aircraft taken into the current flight.
+     **"Auto" button** (25 Oct 2026, next to the route field, 44 px, in the field's row): for each pair of consecutive named
+     points with nothing between them in the text (no airway, no procedure), the shortest path over the published base's
+     airways (`AeroDB.airways`, V2's rules ported in `modules/maps/lib/routing.js`: a leg open at the level when floor − 100 ≤
+     level ≤ ceiling + 100 ft, direct entry and exit within 60 NM, no detour over 40 %, no leg of 40 NM or less) at the
+     planned level (the flight's, else the quote's, else 6,500 ft, said in a notification; a point's own level holds from that
+     point on). It writes `route.text` ("LFRS TSA01 UT460 TSA05 LFML": the airway's middle points are not written) and
+     `route.points` (every node, the middle ones with `awy: true`, the points reached by an airway with `via`), reads the route
+     again (`resolveRoute`) and redoes the quote; a notification gives "n airways written, d NM" or "no useful airway between X
+     and Y" (four languages), "no base" when aerodb has nothing to read. An airway's ends that aerodb does not know take the
+     position of the segment (they are in `route.points`, which the reading takes as a fallback): no "unknown points".
+     **Limits** (source: V2's `mission_routing.js`): both directions assumed open (the base carries no one-way), no fine level
+     restriction, no SID / STAR, no crossing of the date line; written once, never recomputed by a later change of level.
   3. **Level and wind**: level (FL), climb goal (§ 7), wind direction and speed (speed only or nothing: range), ISA
      deviation; IAS and rate for the manual goal. Once the weather is read, a line proposes the ISA deviation of the
      departure METAR: temperature − (15 − 1.98 × aerodrome elevation in thousands of ft), the elevation from aerodb

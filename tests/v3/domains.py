@@ -32,6 +32,8 @@ RULES = [
     ('frame/settings/**', ['A8', 'A12', 'D5', 'I'], 'settings screen and its Status block; aerodb warning on maps'),
     ('frame/aerodb/**', ['A12', 'D5', 'I'], 'settings screen; aerodb warning on maps'),
     ('modules/maps/lib/map_base.js', ['D', 'E', 'B', 'I'], 'shared map base: both map modules'),
+    ('modules/maps/lib/routing.js', ['F', 'I'], 'airway path finding: fuel\'s Auto button (maps does not use it yet)'),
+    ('modules/maps/test/routing.html', ['F'], 'routing bench'),
     ('modules/maps/**', ['D', 'B', 'C', 'I'], 'the map module and the primitives it uses'),
     ('modules/atmosphere/**', ['E', 'B', 'C', 'I'], 'the atmosphere module and the primitives it uses'),
     ('modules/fuel/**', ['F', 'I', 'A7'], 'fuel (in the Preparer group: the popover)'),

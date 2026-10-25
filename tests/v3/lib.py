@@ -461,7 +461,7 @@ class Ctx(Asserts):
 
     # -- navigation and seeding
     def open(self, target='fuel', flight=False, started=False, trigram='ABC', pending=0, wait=True, steps=False, aero=False,
-             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=()):
+             tone=None, airfields=False, flights=0, reports=0, forecast=False, docs=(), airspaces=(), airways=()):
         """Seeds the cache, then loads `frame/index.html#<target>` and waits for the screen.  `target` is the part after
         '#', e.g. 'maps', 'help?m=maps', 'settings'.  Always seeded: the design and tone of the run (device/design.json,
         which the frame applies over the localStorage mirror; `tone` overrides the run's) and a trigram (`trigram=''`: none,
@@ -469,14 +469,15 @@ class Ctx(Asserts):
         is under way; `pending`: that many reports still to write; `airfields`: the published base also knows the aerodromes and
         points of the seeded route (seed_plan); `flights` / `reports`: a flight log of that many flights, `reports` of them with
         a report (seed_flights); `forecast`: a synthetic forecast of the seeded flight in the weather store (seed_forecast);
-        `docs`: more documents [[path, value, policy], ...]; `airspaces`: more airspaces for the published base (implies `aero`)."""
+        `docs`: more documents [[path, value, policy], ...]; `airspaces`: more airspaces for the published base (implies `aero`);
+        `airways`: airway segments for the published base (implies `aero`; `synthetic_airways()`)."""
         docs = [['device/design.json', {'design': self.design, 'tone': tone or self.tone}, 'cache']] + [list(d) for d in docs]
         if trigram:
             docs.append(['device/identity.json', {'trigram': trigram}, 'cache'])
         if flight:
             docs += flight_docs(started, trigram or 'ABC', steps)
-        if aero or airfields or airspaces:
-            docs += aero_docs(airfields=airfields, airspaces_extra=airspaces)
+        if aero or airfields or airspaces or airways:
+            docs += aero_docs(airfields=airfields, airspaces_extra=airspaces, airways=airways)
         if flights and trigram:
             docs += flights_docs(flights, reports, trigram)
         if pending:
@@ -858,7 +859,30 @@ def norm(s):
 # A tiny published SIA base (zone `fr`, split format, frame/aerodb/SPEC.md section 2): three airspaces over the middle of the
 # seeded route (around NEPIX, 44.9N 2.4E), nothing else.  With it the map offers airspace lists and the "database not
 # published" notice goes away.
-def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=()):
+def synthetic_airways():
+    """A few synthetic airway segments (frame/aerodb/SPEC.md section 2: { route, a, b, lower, upper (ft), nm }) along the seeded
+    flight LFRS -> LFML: the upper airway UT460 (FL195-FL460) through TSA01..TSA05 (TSA03 bent 30 NM to the north), whose ends are
+    not known to aerodb (airway ends the published points do not list); UZ99, a shorter way TSA02 -> TSA04 open from FL330 only
+    (a floor too high for the seeded FL270); UL9, a low airway (6 500-19 500 ft) far to the north, a detour of more than 40 % between two fixes TSA10 and
+    TSA11 on the line's ends, that no level makes shorter than the line."""
+    import math
+
+    def gc(a, b):
+        r = math.pi / 180
+        h = math.sin((b[0] - a[0]) * r / 2) ** 2 + math.cos(a[0] * r) * math.cos(b[0] * r) * math.sin((b[1] - a[1]) * r / 2) ** 2
+        return round(2 * 3440.065 * math.asin(math.sqrt(h)), 1)
+    fix = {'TSA01': (46.785, -0.926), 'TSA02': (46.041, 0.439), 'TSA03': (45.8, 1.804), 'TSA04': (44.553, 3.168),
+           'TSA05': (43.809, 4.533), 'TSA10': (46.9, -1.3), 'TSA12': (49.0, 1.0), 'TSA11': (43.6, 4.9)}
+
+    def seg(route, a, b, lower, upper):
+        return {'route': route, 'a': {'id': a, 'lat': fix[a][0], 'lon': fix[a][1]}, 'b': {'id': b, 'lat': fix[b][0], 'lon': fix[b][1]},
+                'lower': lower, 'upper': upper, 'nm': gc(fix[a], fix[b])}
+    return ([seg('UT460', a, b, 19500, 46000) for a, b in [('TSA01', 'TSA02'), ('TSA02', 'TSA03'), ('TSA03', 'TSA04'), ('TSA04', 'TSA05')]]
+            + [seg('UZ99', 'TSA02', 'TSA04', 33000, 46000)]
+            + [seg('UL9', 'TSA10', 'TSA12', 6500, 19500), seg('UL9', 'TSA12', 'TSA11', 6500, 19500)])
+
+
+def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=(), airways=()):
     def ring(lat0, lat1, lon0, lon1):
         return [[lat0, lon0], [lat0, lon1], [lat1, lon1], [lat1, lon0], [lat0, lon0]]
     airspaces = [   # levels above FL195: the seeded flight is at FL270, so the "IFR route" display profile draws these
@@ -867,13 +891,15 @@ def aero_docs(cycle='2026-10-15', airfields=False, airspaces_extra=()):
         {'type': 'R', 'name': 'R 99 TEST', 'lower': 'SFC', 'upper': 'UNL', 'rings': [ring(44.6, 45.2, 2.0, 2.8)]},
     ]
     airspaces = airspaces + list(airspaces_extra)      # a case's own spaces (D15: low ones, drawn by the thresholds, not the flight level)
-    cells = {str(y): [[0, 4]] for y in range(43, 47)}
+    cells = {str(y): [[-2, 6]] if airways else [[0, 4]] for y in range(43, 50 if airways else 47)}
 
     def kind(k, data):
         return [f'sia/base/fr/{cycle}/{k}.json', {'schema': 2, 'zone': 'fr', 'cycle': cycle, 'kind': k, 'parserVersion': 1,
                                                   'data': data, 'updated_at': '2026-10-15T00:00:00Z'}, 'reference']
     docs = [['sia/base/index.json', {'zones': {'fr': {'cycle': cycle, 'prefixes': ['LF'], 'kb': {}, 'cells': cells}}}, 'reference'],
             kind('meta', {}), kind('airspaces', airspaces)]
+    if airways:           # a case's own airway segments (F8: synthetic_airways())
+        docs.append(kind('airways', list(airways)))
     if airfields:         # the four points of lib.FLIGHT and its alternate, so that a typed route resolves (journey P1)
         pts = {p['id']: p for p in FLIGHT['route']['points']}
         altn = {'id': 'LFMT', 'lat': 43.5762, 'lon': 3.963}

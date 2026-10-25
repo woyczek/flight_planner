@@ -112,6 +112,15 @@ report and maps never write nor erase it.
   ICAO coordinates for a point without a usable name. Any module that rewrites the text from points (maps, lot 6a)
   uses the same function, so the airways survive a change made on either side. A module that only reads `points`
   can ignore `text`. Fuel writes the record 300 ms after the last change.
+- `route.points[].via` and `awy` (25 Oct 2026, the "Auto" button): `via` is the airway that reaches the point (`"UN460"`:
+  the point is read after that airway in `route.text`); `awy: true` marks the nodes of an airway between two points that the
+  text does not write (`LFRS TSA01 UT460 TSA05 LFML` has points `LFRS`, `TSA01`, `TSA02*`, `TSA03*`, `TSA04*`, `TSA05`, `LFML`).
+  Both are optional and ignorable: the points are the route (distance, line on the map, profile); `text` stays the
+  readable form. A module that rewrites the text from the points (`textFromPoints`) writes every point, `awy` ones included,
+  and drops the airway name (it only keeps a word between two points that were neighbours in the old text); it must keep the
+  points it does not understand. Fuel's reading of the text takes the `awy` points back when the text still holds the same
+  airway between the same two points. The airway's path is computed by `modules/maps/lib/routing.js` (maps INTEGRATION § 9);
+  fuel's `meta.files` lists it.
 - **A flight written by another module** (`by` ≠ `fuel`: maps, lot 6, the route changed on the map; contract of
   23 Oct 2026): fuel, when it sees such a record (watch while mounted, or at its next mount), keeps the route as
   written — `points` and `text` are neither read again nor normalised —, derives `distanceNm` and `trackDeg` from the

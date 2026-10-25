@@ -14,6 +14,7 @@ import * as MT from '../../frame/lib/metar.js';
 import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
+import * as RG from '../maps/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque de maps)
 import * as CF from '../../frame/lib/current_flight.js';
 import {
   svg
@@ -46,7 +47,7 @@ export const meta = {
   // gardés hors ligne dès la première visite (service worker du cadre)
   files: ['performance_model.js', 'model.js', 'levels.js', 'perf_prompt.js', 'weather.js', 'winds.js', 'progress.js',
     '../../frame/lib/metar.js',
-    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js',
+    '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../maps/lib/routing.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js'
   ]
@@ -138,6 +139,27 @@ const TX = {
     'Entfernung und Kurs: die Route lässt sich noch nicht auflösen.', 'Distancia y rumbo: la ruta aún no se resuelve.'
   ],
   rmanual: ['Saisir à la main', 'Type them by hand', 'Von Hand eingeben', 'Introducir a mano'],
+  rauto: ['Auto', 'Auto', 'Auto', 'Auto'],
+  rautoHint: ['Inscrire les voies aériennes entre les points au niveau prévu',
+    'Write the airways between the points at the planned level',
+    'Luftstraßen zwischen den Punkten auf der geplanten Flugfläche eintragen',
+    'Inscribir las aerovías entre los puntos al nivel previsto'
+  ],
+  autoOne: ['1 voie inscrite, {d}', '1 airway written, {d}', '1 Luftstraße eingetragen, {d}', '1 aerovía inscrita, {d}'],
+  autoMany: ['{n} voies inscrites, {d}', '{n} airways written, {d}', '{n} Luftstraßen eingetragen, {d}', '{n} aerovías inscritas, {d}'],
+  autoNone: ['Aucune voie utile entre {a} et {b}{more}', 'No useful airway between {a} and {b}{more}',
+    'Keine nutzbare Luftstraße zwischen {a} und {b}{more}', 'Ninguna aerovía útil entre {a} y {b}{more}'
+  ],
+  autoNoLeg: ['Aucun tronçon sans voie à compléter.', 'No leg without an airway to fill in.',
+    'Kein Abschnitt ohne Luftstraße zu ergänzen.',
+    'Ningún tramo sin aerovía por completar.'
+  ],
+  autoNoBase: ['Base aéronautique indisponible : voies non lues.', 'Aeronautical base unavailable: airways not read.',
+    'Luftfahrtdatenbank nicht verfügbar: Luftstraßen nicht gelesen.', 'Base aeronáutica no disponible: aerovías sin leer.'
+  ],
+  autoNoLevel: ['Pas de niveau prévu : voies cherchées à {l}.', 'No planned level: airways looked up at {l}.',
+    'Keine geplante Flugfläche: Luftstraßen auf {l} gesucht.', 'Sin nivel previsto: aerovías buscadas a {l}.'
+  ],
   ptsN: ['Points ({n})', 'Points ({n})', 'Punkte ({n})', 'Puntos ({n})'],
   stepNames: [
     ['Vol', 'Flight', 'Flug', 'Vuelo'],
@@ -849,15 +871,26 @@ function bearing(a, b) {
  *  (4436N00612E, 44N006E) et « NOM lat lon » lus comme points ; un identifiant cherché dans aerodb, sinon dans known
  *  (points déjà connus du vol : un point posé à la main garde sa position), sinon signalé inconnu. Départ et arrivée
  *  ajoutés aux extrémités s'ils manquent. Les niveaux ne restent que là où ils changent, jamais au départ ni à
- *  l'arrivée. Sortie : { points, unresolved, tokens } — tokens : la suite lue ({ pt: point } | { keep: mot }) pour
- *  réécrire le texte normalisé (routeText). */
-async function routePoints(text, dep, arr, known = new Map()) {
+ *  l'arrivée. Un point écrit après une voie aérienne (« NEPIX UN460 LUGEN ») porte via: « UN460 » ; les points de la
+ *  voie entre les deux, que le texte n'écrit pas, sont repris de chain (les points déjà gardés du vol : awy: true, via:
+ *  la voie) quand ils y reliaient les mêmes deux points — c'est ce que le bouton « Auto » laisse dans route.points.
+ *  Sortie : { points, unresolved, tokens } — tokens : la suite lue ({ pt: point } | { keep: mot }) pour réécrire le texte
+ *  normalisé (routeText). */
+async function routePoints(text, dep, arr, known = new Map(), chain = []) {
   const ctx = S.ctx,
     points = [],
     unresolved = [],
     tokens = [];
-  /** Position d'un identifiant : aerodb, sinon un point déjà connu du vol ; null sinon. */
+  let via = ''; // voie aérienne lue depuis le dernier point : le point suivant y arrive par elle
+  /** Position d'un identifiant : un point arrivé par une voie garde la position de son segment (aerodb ne connaît pas
+   *  toujours les extrémités des voies, ni le bon point si le nom existe ailleurs) ; sinon aerodb, puis un point déjà
+   *  connu du vol ; null sinon. */
   const find = async id => {
+    const kv = known.get(id);
+    if (kv?.via && Number.isFinite(+kv.lat) && Number.isFinite(+kv.lon)) return {
+      lat: +kv.lat,
+      lon: +kv.lon
+    };
     const c = ctx.aerodb ? await ctx.aerodb.coords(id).catch(() => null) : null;
     if (c && Number.isFinite(+c.lat)) return {
       lat: +c.lat,
@@ -879,6 +912,19 @@ async function routePoints(text, dep, arr, known = new Map()) {
         alt_ft: alt
       } : {})
     };
+    if (via && points.length) {
+      p.via = via;
+      // points de la voie entre le précédent et celui-ci, s'ils étaient déjà gardés
+      const prev = points.at(-1),
+        i = chain.findIndex(q => q && q.id === prev.id && !q.awy);
+      let j = i + 1;
+      while (i >= 0 && chain[j]?.awy && chain[j].via === via) j++;
+      if (i >= 0 && j > i + 1 && chain[j]?.id === id && chain[j].via === via)
+        for (const q of chain.slice(i + 1, j)) points.push({
+          ...q
+        });
+    }
+    via = '';
     points.push(p);
     tokens.push({
       pt: p
@@ -894,13 +940,17 @@ async function routePoints(text, dep, arr, known = new Map()) {
       if (c) add(t.id, c, t.alt_ft);
       else {
         if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte
+        if (AIRWAY_WORD.test(t.id)) via = t.id;
         tokens.push({
           keep: t.id
         });
       }
-    } else tokens.push({
-      keep: t.id
-    });
+    } else {
+      if (AIRWAY_WORD.test(t.id)) via = t.id; // voie composée (G54-R66)
+      tokens.push({
+        keep: t.id
+      });
+    }
   }
   if (dep && points[0]?.id !== dep) {
     const c = await find(dep);
@@ -935,6 +985,8 @@ async function routePoints(text, dep, arr, known = new Map()) {
     tokens
   };
 }
+/** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
+const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
 /** Texte normalisé de la route : « DEP PT1 UN460 PT2/F280 … ARR » — points par leur identifiant (niveau en /Fnnn là
  *  où il change), voies, procédures et mots inconnus gardés à leur place, une seule ligne (frame/lib/route_text.js). */
 const routeText = RT.textFromTokens;
@@ -1296,6 +1348,9 @@ const STYLE = `
   [data-module="fuel"] .fu-steps,[data-module="fuel"] .fu-next{display:none}
   [data-module="fuel"] .fu-step[hidden]{display:block}
 }
+[data-module="fuel"] .fu-rrow{display:flex;gap:8px;align-items:flex-end} /* champ de la route + « Auto » : le champ prend la place restante */
+[data-module="fuel"] .fu-rrow>.f-field{flex:1 1 0;min-width:0}
+[data-module="fuel"] .fu-rrow>button{flex:none;min-width:56px;min-height:44px;margin-bottom:2px}
 [data-module="fuel"] .fu-rinfo{flex-wrap:wrap;gap:4px 12px;margin:4px 0}
 [data-module="fuel"] .fu-linkbtn{min-height:44px;padding:0 4px;border:0;background:none;color:var(--sog-link);text-decoration:underline;font:inherit;cursor:pointer}
 [data-module="fuel"] .fu-pt{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
@@ -1366,7 +1421,7 @@ function renderPlanBody() {
       </div>
     </div>`)}
   ${sec(1, `<div class="f-card" data-block="route"><h2>${esc(tt(TX.route))}</h2>
-      <label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label>
+      <div class="fu-rrow"><label class="f-field">${esc(tt(TX.routeText))}<textarea data-k="rtext" rows="3" autocapitalize="characters" spellcheck="false">${esc(r.text || '')}</textarea></label><button type="button" data-do="rauto" title="${esc(tt(TX.rautoHint))}" aria-label="${esc(tt(TX.rautoHint))}">${esc(tt(TX.rauto))}</button></div>
       <p class="f-warn" data-unres></p>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
       <div class="f-grid fu-g3 fu-hide" data-rmanual>${fld('dist', TX.distance, distField(r.distanceNm), 'inputmode="decimal"', { u: distLabel() })}${fld('trk', TX.track, r.trackDeg != null ? Math.round(r.trackDeg) : '', 'inputmode="numeric"')}</div>
@@ -1633,6 +1688,7 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="cancelstart"]')) return cancelStart();
   const iu = e.target.closest('[data-do="isause"]');
   if (iu) return useIsa(iu.dataset.v != null ? +iu.dataset.v : undefined);
+  if (e.target.closest('[data-do="rauto"]')) return autoAirways();
   if (e.target.closest('[data-do="rmanual"]')) {
     S.rmanualOpen = true;
     renderRinfo();
@@ -2999,7 +3055,7 @@ function resolveRoute(normalize = true) {
         points,
         unresolved,
         tokens
-      } = await routePoints(r.text, r.dep, r.arr, known);
+      } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     r.points = points;
     if (S.aloft) aloftApply();
@@ -3020,6 +3076,121 @@ function resolveRoute(normalize = true) {
     saveFlight();
     refresh();
   }, 500);
+}
+/** Bouton « Auto » : inscrit les voies aériennes entre les points nommés consécutifs qui n'en ont pas, au niveau prévu
+ *  (celui du vol, sinon celui du devis, sinon 6 500 ft comme la V2 — dit dans une notification). Le routage est celui de
+ *  la bibliothèque de maps (modules/maps/lib/routing.js : plus court chemin sur les segments de la base publiée, tronçons
+ *  ouverts au niveau, détour limité à 40 %, pas de sens unique ni de restriction fine). Écrit route.text (« PT1 UN460 PT2 »)
+ *  et route.points (les points de la voie y compris ceux que le texte n'écrit pas : distance et carte suivent la voie), puis
+ *  relit la route (resolveRoute) et refait le devis. Un point d'extrémité de voie qu'aerodb ne connaît pas garde la
+ *  position du segment : il est dans route.points, que la relecture prend en secours. */
+async function autoAirways() {
+  const s = S,
+    f = S.flight,
+    r = f.route;
+  if (S.flightPending || !r || S.autoBusy) return;
+  S.autoBusy = true;
+  const btn = S.body?.querySelector('[data-do="rauto"]');
+  if (btn) btn.disabled = true;
+  try {
+    const seq = S.routeSeq,
+      known = new Map((r.points || []).filter(p => p?.id && Number.isFinite(+p.lat)).map(p => [p.id, p])),
+      {
+        points,
+        tokens
+      } = await routePoints(r.text, r.dep, r.arr, known, r.points || []);
+    if (gone(s) || seq !== S.routeSeq) return;
+    // points écrits, dans l'ordre ; adj[i] : le point i+1 suit le point i dans le texte sans rien entre eux (ni voie, ni
+    // procédure) ; entry[i] : une voie part du point i ; exit[i] : le point i est arrivé par une voie
+    const idx = tokens.map((t, i) => t.pt ? i : -1).filter(i => i >= 0),
+      chain = idx.map(i => tokens[i].pt),
+      adj = idx.map((t, i) => idx[i + 1] === t + 1),
+      entry = idx.map(i => !!tokens[i + 1]?.keep && AIRWAY_WORD.test(tokens[i + 1].keep)),
+      free = i => !(chain[i].via || entry[i]);
+    if (chain.length < 2 || !adj.some(Boolean)) return S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    const planned = +f.level?.ft || +S.C?.q?.levelFt || 0,
+      base = planned || RG.DEFAULTS.ifrMinFt,
+      at = [];
+    let cur = base;
+    chain.forEach((p, i) => { // niveau tenu au départ de chaque tronçon (un point peut en changer)
+      if (i && p.alt_ft) cur = p.alt_ft;
+      at.push(cur);
+    });
+    let res;
+    try {
+      res = await RG.expand(S.ctx.aerodb, chain, {
+        altOf: i => at[i],
+        skip: i => !adj[i]
+      });
+    } catch (e) {
+      if (gone(s)) return;
+      if (e?.code === 'base') return S.ctx.notify(tt(TX.autoNoBase), 'warn');
+      throw e;
+    }
+    if (gone(s) || seq !== S.routeSeq) return;
+    if (!planned) S.ctx.notify(tt(TX.autoNoLevel, {
+      l: flTxt(base)
+    }), 'warn');
+    // un tronçon sans voie compte comme un échec s'il ne touche pas une voie déjà écrite (l'entrée ou la sortie directe
+    // d'une voie, que le routage a choisie, ne se retente pas sans bruit)
+    const failed = res.legs.map((l, i) => ['none', 'far', 'detour'].includes(l.status) && free(i) && free(i + 1) ? i : -1).filter(i =>
+        i >= 0),
+      noway = () => {
+        const [i] = failed;
+        S.ctx.notify(tt(TX.autoNone, {
+          a: chain[i].id,
+          b: chain[i + 1].id,
+          more: failed.length > 1 ? ` (+${failed.length - 1})` : ''
+        }), 'warn');
+      };
+    const done = res.legs.map((l, i) => l.status === 'routed' ? i : -1).filter(i => i >= 0);
+    if (!done.length) return failed.length ? noway() : S.ctx.notify(tt(TX.autoNoLeg), 'warn');
+    // texte et points réécrits : les tronçons routés reçoivent les jetons et les points de leur voie avant leur point d'arrivée
+    const dest = new Map(done.map(i => [chain[i + 1], res.legs[i]])),
+      newTokens = [],
+      newPoints = [],
+      leave = pt => { // une arrivée « DCT » ne s'écrit pas : le texte normalisé n'a pas de DCT
+        if (pt.via === 'DCT') delete pt.via;
+        return pt;
+      };
+    for (const t of tokens) {
+      const l = t.pt && dest.get(t.pt);
+      if (l) newTokens.push(...RG.tokensOf(l.points, {
+        dct: false
+      }).slice(1, -1));
+      newTokens.push(t);
+    }
+    for (const p of points) {
+      const l = dest.get(p);
+      if (l) {
+        newPoints.push(...l.points.slice(1, -1).map(leave));
+        const exit = l.points.at(-1).via;
+        if (exit && exit !== 'DCT') p.via = exit;
+        else delete p.via;
+      }
+      newPoints.push(p);
+    }
+    r.points = newPoints;
+    r.text = routeText(newTokens);
+    r.from = 'route';
+    const ta = S.body?.querySelector('[data-k="rtext"]');
+    if (ta && ta.value !== r.text) ta.value = r.text;
+    routeDerived(r);
+    renderPts();
+    saveFlight();
+    refresh();
+    resolveRoute(); // relecture (position des extrémités de voie prise dans route.points), distance, météo, devis
+    const names = new Set(done.flatMap(i => res.legs[i].routes));
+    S.ctx.notify(tt(names.size === 1 ? TX.autoOne : TX.autoMany, {
+      n: names.size,
+      d: distTxt(Math.round(res.nm))
+    }), 'ok');
+    if (failed.length) noway();
+  } finally {
+    if (!gone(s)) S.autoBusy = false;
+    const b = s.body?.querySelector('[data-do="rauto"]');
+    if (b) b.disabled = false;
+  }
 }
 /** Dernier OFP SimBrief (identifiant de l'identité) par ctx.net : gardé sur l'appareil (cache), route, niveau, vent et
  *  appareil repris dans le vol courant. */

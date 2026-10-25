@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel: an "Auto" button writes the airways between the route's points** (`modules/fuel/module.js`, new library
+  `modules/maps/lib/routing.js`, SPEC § 9, INTEGRATION, DECISIONS, manual ×4; bench `modules/maps/test/routing.html`, case F8) —
+  next to the route field (44 px, same row at 360 and 390 px): for each pair of named points with no airway between them, V2's
+  path finding (`shared/mission_routing.js`, ported to the published base's `AeroDB.airways`) looks for the shortest path over
+  the airways open at the planned level (floor − 100 ≤ level ≤ ceiling + 100 ft; 6,500 ft and a notification without a level),
+  direct entry and exit within 60 NM, no detour over 40 %. The text becomes `LFRS TSA01 UT460 TSA05 LFML`, the airway's middle
+  points are kept in `route.points` (distance, map and profile follow the airway), the quote is redone and a notification says
+  "n airways written, d NM" or "no useful airway between X and Y" (four languages). An airway end aerodb does not know no
+  longer ends as an "unknown point". Limits: no one-way airways, no fine level restriction, no SID / STAR (V2's). Change from
+  V2: a fix whose two segments round differently is one node (V2 split 21 fixes of the France base).
 - **Maps: three chips that stay three, in the bare line; the map's controls above the sheet, one "i"** (`modules/maps/module.js`,
   `lib/map_base.js`, help ×4, `INTEGRATION.md` § 7, DECISIONS; V3_SPECIFICATION § 7.1 rule 13 fourth refinement and rule 17; tests D4,
   D19) — the Profile · Weather · "i" chips are always three (a chip with nothing to show — the "i" without a legend, Weather on a

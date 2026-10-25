@@ -34,9 +34,9 @@ JOURNEYS = {
             'Météo (atmosphere) reads the same flight, "Charger" is the user\'s one shot',
             'back on Carte the Météo chip draws the cut',
         ],
-        'paths': ['modules/fuel/**', 'modules/maps/**', 'modules/atmosphere/**', 'frame/app.js', 'frame/lib/sheet.js',
+        'paths': ['modules/fuel/**', 'modules/maps/**', 'modules/maps/lib/routing.js', 'modules/atmosphere/**', 'frame/app.js', 'frame/lib/sheet.js',
                   'frame/design/primitives.css', 'frame/aerodb/**', 'frame/weather/**'],
-        'cases': ['F1', 'F2', 'F3', 'D1', 'D3', 'D4', 'D7', 'C2', 'C5', 'E1', 'E3', 'B1–B4'],
+        'cases': ['F1', 'F2', 'F3', 'F8', 'D1', 'D3', 'D4', 'D7', 'C2', 'C5', 'E1', 'E3', 'B1–B4'],
         'e2e': 'J1',
     },
     'P2': {

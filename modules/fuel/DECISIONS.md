@@ -4,6 +4,34 @@ The memory of the V3 fuel module: every choice, dated, with its reason. Never re
 
 ## 22 October 2026 — reading (lot 1) and lot 2a
 
+- **25 Oct 2026 (relais cloud) — the "Auto" button writes the airways** (lot `v3-route-auto`; the user: "Oui pour auto"; state of
+  play: `docs/technique/V3_ROUTES_PROCEDURES_ETAT.md` § 1). **Where the code lives**: the path finding is V2's
+  (`shared/mission_routing.js`: `airwayGraph`, `shortest`, `leg`, `expand`) ported to the published base's segments
+  (`AeroDB.airways({ bbox })`) in a new library **`modules/maps/lib/routing.js`** (maps' property, created by this lot; maps'
+  own files untouched). This supersedes "airway expansion belongs to maps" (22 Oct, route resolution kept small) for the
+  *writing* of airways: the typed airway is still not expanded when reading a route; the button is the only place that
+  computes a path. **Judgement calls**: (a) the button writes the airways **once**, into `route.text` and `route.points`;
+  nothing recomputes them later (a changed level or aircraft does not move the route: pressing Auto again only fills the
+  legs that still have no airway); (b) the airway's middle points are kept **in `route.points`** (`awy: true`, `via`: the
+  airway) but not in the text (`PT1 UN460 PT2`): the distance, the map's line and the profile follow the airway, the text stays
+  readable, and a reload keeps them (`routePoints` takes the chain back from the flight's own points when the text still holds
+  the same airway between the same two points; the position of a point reached by an airway is its segment's, since aerodb does
+  not know every RNAV end: no "unknown points"); (c) the level is the flight's (`level.ft`), else the quote's, else 6 500 ft
+  (V2's `ifrMinFt`), said in a notification; a point's own level (`alt_ft`) is used from that point on; (d) a leg of 40 NM or
+  less stays direct and is not an error; a leg that touches an airway already written (its entry or exit) is retried but its
+  failure is silent, so a second tap says "nothing to fill in" instead of complaining about the router's own DCT legs; (e) DCT
+  is not written (the normalised text has none); (f) no one-way airways, no fine level restriction, no SID / STAR (the base does
+  not carry them: a later republication). **Changes from V2**: nodes are one per identifier within 2 NM (V2 rounded
+  coordinates to 0.001°, which split a fix in two when its segments rounded differently: 21 fixes of the 1,498 nodes of the
+  published France base, some of them on upper airways); a composite designator (`G54-R66`, a segment shared
+  by two airways) is read as the airway one was following (`R66 … G54`, not five airways); the search uses a binary heap. **Real
+  data** (published France base, cycle 2026-10-01, 3,517 segments): LFRS → LFML at 6 500 ft gives `LFRS DCT BOBRI R66 ABSIE G54
+  POI R66 SINPO B25 LESPI A3 MTL A6 MTG DCT LFML`, 426.7 NM (364 NM direct, +17 %); at FL270 and FL350 **no path** (nor
+  for LFPG → LFMN or LFBO → LFPO above FL195, while LFRS → LFPG finds `UN741 ANG UL976 TSU` at FL270): the snapshot's upper airways
+  are in regional pieces (the direct legs of the free route airspace are not airways), so the button says "no useful airway
+  between LFRS and LFML" rather than invent a direct leg. **Layout**: the route field and the button share one
+  row (`.fu-rrow`), the button 44 px; no overflow at 360 and 390 px (F4). **Tests**: bench `modules/maps/test/routing.html`
+  (41 checks), case F8 (synthetic segments in the published base: `lib.synthetic_airways`, `aero_docs(airways=…)`).
 - **24 Oct 2026 (relais cloud) — a mount that lost its address writes nothing; the view is in the address; the J1 "0 ft"**
   (lot `v3-fuel-mount`). **Cause of the race**: `S` is a module global and `mount()` awaited its reads (libraries, seven
   `ctx.data.read`) before touching it, then wrote `S.…` and called `show('plan')` without asking whose `S` it was. The frame
