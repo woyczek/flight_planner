@@ -12,6 +12,16 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **The weather cut's legend has its symbols** (`modules/maps/module.js`, `tests/v3` D4, `modules/maps/INTEGRATION.md` § 8, DECISIONS) — user 25 Oct
+  (iPhone, route LFRS to LFML, Weather chip then "i": "Bug : cf screenshot (légende)"): the six rows of the legend each had an empty grey box.
+  Cause: the Map read the cut's legend rows as if their `swatch` were `{ css }` and drew a "band" box from it, while atmosphere's
+  `sectionLegend` returns a drawn SVG (28 x 14) per row; the box never got a colour (`--c` empty), whatever the series. The Map now puts the
+  SVG of each row in its box as it is (path as a line, planned level dashed, requested level dotted, TOC / TOD a disc, relief a box, route
+  points a vertical dash), its labels in the app's language, and asks for the series the cut really draws: the cut and the legend share one
+  list of layers, so clouds, isotherms, inversion, icing, wind (and the surface strips when the cut is high enough) are named too. D4 checks
+  that every symbol of the cut's and of the profile's legend is painted, in the series' own colour (the one the cut paints), with the shape
+  the cut draws.
+
 - **aerodb: DFS licence request ready to send** (`frame/aerodb/DFS_LICENCE_REQUEST.md`, DECISIONS) — recipient, English and German text for the non-commercial
   flight-simulation use of the "ED Procedure" AIXM 5.1 data set, and the steps on receipt of a licence (REST download, converter on the real file,
   source `dfs`, status "official"). Nothing is downloaded or converted before the licence.

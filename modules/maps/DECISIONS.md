@@ -1187,3 +1187,20 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     monotone with the finger (±1.5 px), and when the frame is taller than the map the strip is of the map's colour (pixels read from a
     screenshot: `lib.png_rgb`, standard library); after the release at most one `map.resize()` and one resize of the overlay, and the canvas
     fills the frame. Verified red on the previous code (69 resizes) and on a frame painted `--sog-bg` (grey strip).
+- **25 Oct 2026 — the cut's legend had empty boxes** (user, iPhone 390 px, route LFRS to LFML, Weather chip then "i": "Bug : cf screenshot
+  (légende)"; relay, lot `v3-maps-legende`).
+  - **Cause**: `legendRows('weather')` read each row of `sectionLegend` as `r.swatch?.css` and drew a `band` box from it. The real contract
+    (INTEGRATION § 8, "The legend of the cut") is a drawn SVG in `swatch`: `css` does not exist, `--c` stayed empty and `.mp-lg-band` fell
+    back on the text colour border, with nothing inside, on all six rows. The legend was also called with `S.wx.o` (no `kind`, no
+    `layers`: only the six series that never depend on a layer) while the cut was drawn with all its layers, and without `t` (French only).
+  - **Fix on the Map's side** (atmosphere untouched): the SVG is put in the box as it is (no kind of ours: nothing to map, no colour copied;
+    `.mp-lg-svg`), the call is `sectionLegend({ kind: 'cut', layers: WX_LAYERS, strips, cloudRgb, t })` with the layers the cut is drawn with
+    (`WX_LAYERS`, passed to `drawSection` too) and `strips` = the cut is at least 260 px high (sectionSvg's rule). The profile's legend (our
+    own kinds) was checked: its boxes were right.
+  - **Test (D4)**: with the cut shown and the legend open, every symbol is painted (computed colour, not transparent), is the SVG of
+    atmosphere, paints each `--at-*` token as the cut's own lines do (a monochrome design such as `swiss` is not "grey" by mistake), has the
+    shape the cut draws (plain line / `7 4` / `2 4` dashes found in the cut, disc, box, vertical line); in `standard` no symbol is grey or in
+    the text colour; the same painted check on the profile's legend. Verified red on the previous code.
+  - **To tell atmosphere** (not blocking): expose `strips` and the layers used in the `geo` of `sectionSvg`; the Map recomputes the 260 px rule.
+  - **Seen, not changed**: with the sheet at its default position the cut's legend has nine rows and scrolls inside its overlay (terrain and
+    route points are below the fold); expanded, it is whole.

@@ -2907,12 +2907,35 @@ function onSheetSettled() {
 let viewKeep = 'profile';
 /** La coupe météo se montre pour un vol à deux points au moins (pas pour une carte de mission). */
 const canWeather = () => !S.mission && S.route.points.length >= 2;
+/** Les séries que la coupe météo de la Carte dessine : les mêmes pour `drawSection` (o.layers) et pour la légende (`sectionLegend`),
+ *  pour que la légende ne dise jamais autre chose que le dessin (sans `layers`, `drawSection` prend ce même jeu par défaut). */
+const WX_LAYERS = {
+  cloud: true,
+  iso: true,
+  inv: true,
+  ice: true,
+  wind: true,
+  cu: true
+};
 /** Légende du dessin montré : la liste de ce qui est RÉELLEMENT dessiné (jamais un texte fixe), avec son symbole. Profil : ce que la coupe
  *  a dessiné (`geo.drawn`, rendu par le code du dessin) et les repères que la feuille ajoute (marques NM, points des voies). Coupe météo :
- *  la légende que la coupe expose (`legend` de ce que charge loadWeather, absente aujourd'hui : la puce « i » n'y est alors pas). */
+ *  la légende que la coupe expose (`legend` de ce que charge loadWeather) ; son contrat (modules/maps/INTEGRATION.md § 8) :
+ *  `sectionLegend({ kind, layers, strips, cloudRgb, t })` rend [{ key, labels, label, swatch }] où `swatch` est un SVG de 28 × 14 déjà
+ *  dessiné (traits, tirets, disque, rampes, hachures, couleurs en variables --at-* posées sur le SVG lui-même) : la case le reprend
+ *  tel quel, la Carte n'en recopie ni la couleur ni la forme. */
 function legendRows(view) {
   const sw = (k, c = '') => `<i class="mp-lg-sw mp-lg-${k}" style="--c:${c}"></i>`;
-  if (view === 'weather') return (S.wx?.legend?.(S.wx.o) || []).map(r => Array.isArray(r) ? r : [sw('band', r.swatch?.css), esc(r.label)]);
+  if (view === 'weather') {
+    const wx = S.wx;
+    if (wx?.state !== 'ok' || !wx.legend) return [];
+    return wx.legend({
+      kind: 'cut',
+      layers: WX_LAYERS,
+      strips: !!S.wxStrips,
+      cloudRgb: wx.o.cloudRgb,
+      t: row => tt(row)
+    }).map(r => [`<i class="mp-lg-sw mp-lg-svg" data-key="${esc(r.key)}">${r.swatch}</i>`, esc(r.label)]);
+  }
   const d = S.geo?.drawn;
   if (!d) return [];
   const rows = [];
@@ -3177,8 +3200,11 @@ const weatherBuild = key => (w, h, el) => {
   if (wx.state === 'ok') {
     // la zone de la coupe n'a ni bord ni remplissage (.mp-dbody[data-kind=weather]) : la coupe prend toute sa hauteur et sa
     // largeur, l'axe des distances au bas du corps (§ 7.1.13) ; minHeight: 0 demande à drawSection de ne pas relever la hauteur
+    // les bandes de surface sous la coupe : drawSection les montre dès 260 px de hauteur (sectionSvg) ; la légende suit
+    S.wxStrips = Math.floor(h) >= 260;
     S.wxGeo = wx.draw(el, {
       ...wx.o,
+      layers: WX_LAYERS,
       width: Math.max(80, w),
       height: Math.max(40, Math.floor(h)),
       minHeight: 0,
@@ -4669,6 +4695,8 @@ const STYLE = `
 [data-module="maps"] .mp-legend ul{margin:0;padding:0;list-style:none}
 [data-module="maps"] .mp-legend li{display:flex;align-items:center;gap:8px;min-height:20px}
 [data-module="maps"] .mp-lg-sw{flex:none;position:relative;display:block;width:26px;height:12px;--c:#888}
+[data-module="maps"] .mp-lg-svg{width:28px;height:14px}
+[data-module="maps"] .mp-lg-svg svg{display:block}
 [data-module="maps"] .mp-lg-line::after{content:'';position:absolute;left:0;right:0;top:4px;height:3px;border-radius:2px;background:var(--c)}
 [data-module="maps"] .mp-lg-dash::after{content:'';position:absolute;left:0;right:0;top:5px;border-top:2px dashed var(--c)}
 [data-module="maps"] .mp-lg-vdash::after{content:'';position:absolute;left:12px;top:-2px;height:16px;border-left:1.5px dashed var(--c)}

@@ -238,6 +238,67 @@ def chips_layout(c, bare, weather, what, n=None):
         c.le(abs(hh - 40), 1, 'title line: the chips are 40 px high', what=f'{what}: chip height')
 
 
+_SWATCH_JS = """() => {
+  // computed colours come as rgb()/rgba() or, for a colour-mix(), as color(srgb r g b / a) with channels in 0..1
+  const rgba = v => { const m = /(rgba?|color\\(srgb)\\(?\\s*([^)]+)\\)/.exec(v || ''); if (!m) return null; const k = m[1] === 'rgba' || m[1] === 'rgb' ? 1 : 255;
+    const a = m[2].split(/[ ,\\/]+/).filter(Boolean).map(Number); return { r: a[0] * k, g: a[1] * k, b: a[2] * k, a: a.length > 3 ? a[3] : 1 } };
+  const paints = (el, pseudo) => { const cs = getComputedStyle(el, pseudo || null), out = [];
+    if (pseudo && (cs.content === 'none' || cs.content === 'normal')) return out;
+    const bg = rgba(cs.backgroundColor); if (bg && bg.a > 0) out.push(bg);
+    for (const side of ['Top', 'Left']) if (parseFloat(cs['border' + side + 'Width']) > 0 && cs['border' + side + 'Style'] !== 'none') { const c = rgba(cs['border' + side + 'Color']); if (c && c.a > 0) out.push(c) }
+    for (const m of (cs.backgroundImage || '').matchAll(/(?:rgba?|color\\(srgb)\\(?[^)]+\\)/g)) { const c = rgba(m[0]); if (c && c.a > 0) out.push(c) }
+    return out };
+  return [...document.querySelectorAll('.mp-legend li')].map(li => {
+    const sw = li.querySelector('.mp-lg-sw'), svg = sw.querySelector('svg'), label = (li.querySelector('span') || {}).textContent || '';
+    let cols = [], shapes = [], dashes = [], pairs = [], vertical = false;
+    if (svg) {
+      for (const e of svg.querySelectorAll('line, rect, circle, path')) {
+        const cs = getComputedStyle(e), tag = e.tagName.toLowerCase();
+        if (e.closest('defs')) continue;
+        shapes.push(tag);
+        const st = rgba(cs.stroke), fl = rgba(cs.fill);
+        if (cs.stroke !== 'none' && st && st.a > 0) cols.push(st);
+        if (cs.fill !== 'none' && fl && fl.a > 0) cols.push(fl);
+        else if (/^url\\(/.test(cs.fill)) cols.push({ r: 0, g: 0, b: 1, a: 1, url: true });
+        for (const [att, prop] of [['stroke', 'stroke'], ['fill', 'fill']]) { const v = e.getAttribute(att);   // a series colour (--at-*): the cut draws it with the same token
+          const d = v && v.startsWith('var(--at-') ? document.querySelector('.mp-dbody svg [' + att + '="' + v + '"]') : null;
+          if (d) pairs.push({ att: v, sw: getComputedStyle(e)[prop], drawn: getComputedStyle(d)[prop] }) }
+        if (e.getAttribute('stroke-dasharray')) dashes.push(e.getAttribute('stroke-dasharray'));
+        if (tag === 'line' && e.getAttribute('x1') === e.getAttribute('x2')) vertical = true;
+      }
+    } else cols = paints(sw).concat(paints(sw, '::after'));
+    // a box whose `--c` is empty falls back on the text colour (the bug's grey-black border): that is not a colour of the series
+    const ink = rgba(getComputedStyle(li).color);
+    for (const x of cols) x.ink = !!ink && Math.abs(x.r - ink.r) < 2 && Math.abs(x.g - ink.g) < 2 && Math.abs(x.b - ink.b) < 2;
+    const size = sw.getBoundingClientRect();
+    return { pairs, key: sw.dataset.key || [...sw.classList].find(k => k.startsWith('mp-lg-') && k !== 'mp-lg-sw').slice(6), svg: !!svg, label, cols, shapes, dashes, vertical, w: Math.round(size.width), h: Math.round(size.height) };
+  });
+}"""
+# series that are grey by design (muted / border tokens, a dark ink): only "painted, not transparent" is required of them
+_GREY_BY_DESIGN = ('points', 'wind', 'cu', 'isa', 'vdash', 'tri')
+# the relief of the cut is a design token (--sog-chart-6 mixed with the chart background): beige in `standard`, grey in `metro` or `swiss`;
+# it must be a colour of its own (not the text colour) but may be unsaturated
+_UNSATURATED_OK = ('terrain',)
+
+
+def swatches_painted(c, what, strict=True):
+    """User 25 Oct ("Bug : cf screenshot (légende)", the cut's legend on an iPhone: six rows, every colour box empty): in the open legend every
+    symbol is PAINTED: at least one computed colour, not transparent and, except for the series that are muted by design, not grey (the box
+    fallback #888 of an empty `--c` is what the bug looked like); and a symbol has the size of a symbol.  Returns the rows."""
+    rows = c.js(_SWATCH_JS)
+    c.ge(len(rows), 1, 'the legend has rows to check', what=f'{what}: legend rows')
+    for r in rows:
+        tag = f'{what}: row {r["key"]!r} ({r["label"][:30]!r})'
+        c.ge(len(r['cols']), 1, 'the symbol is painted (a computed colour that is not transparent)', what=f'{tag}: painted colours')
+        if strict and r['key'] not in _GREY_BY_DESIGN:
+            col = [x for x in r['cols'] if not x['ink'] and (x.get('url') or r['key'] in _UNSATURATED_OK or max(x['r'], x['g'], x['b']) - min(x['r'], x['g'], x['b']) >= 16)]
+            c.ge(len(col), 1, 'the symbol has a colour of its own (not grey, not the text colour)', what=f'{tag}: colours {[(x["r"], x["g"], x["b"]) for x in r["cols"]]}')
+        c.ge(r['w'], 20, 'the symbol is a symbol (wide enough)', what=f'{tag}: width')
+        c.ge(r['h'], 10, 'the symbol is a symbol (high enough)', what=f'{tag}: height')
+        c.ok(bool(r['label'].strip()), f'{tag}: empty label', 'every row has a label')
+    return rows
+
+
 def legend_check(c):
     """V3 spec 7.1.14: the "i" chip (last) shows a legend over the profile: the series actually drawn, with symbol and name in the language of
     the run (produced by the drawing code); closed by Escape, by the chip, by a tap on it."""
@@ -254,6 +315,9 @@ def legend_check(c):
     c.eq(g['sw'], g['n'], 'every entry has its symbol', what='legend symbols')
     c.ok(g['over'], f'legend {g}', 'the legend covers the drawing')
     c.eq(norm(g['first']), norm(row(c, 'lgPlan')), 'the first entry (the planned path) is worded in the language of the run', what='legend first entry')
+    pr = swatches_painted(c, 'profile legend')
+    kinds = {r['key'] for r in pr}
+    c.ok({'line', 'diamond'} <= kinds, f'kinds {sorted(kinds)}', 'the profile legend draws the path as a line and TOC / TOD as a diamond')
     c.key('Escape')
     c.until("!window.__t.shown(document.querySelector('.mp-legend'))", what='Escape closes the legend')
     c.eq(c.attr('.mp-chip[data-legend]', 'aria-pressed'), 'false', 'the chip is released after Escape', what='legend chip aria-pressed')
@@ -272,8 +336,36 @@ def cut_legend_check(c):
     g = c.js("() => { const l = document.querySelector('.mp-legend'); return { n: l.querySelectorAll('li').length, sw: l.querySelectorAll('li .mp-lg-sw').length, first: (l.querySelector('li span:last-child') || {}).textContent || '' } }")
     c.ge(g['n'], 3, 'the cut legend lists at least 3 series (from sectionLegend)', what=f'cut legend entries ({g["first"]!r}, ...)')
     c.eq(g['sw'], g['n'], 'every cut legend entry has its symbol', what='cut legend symbols')
+    cut_legend_symbols(c)
     c.key('Escape')
     c.until("!window.__t.shown(document.querySelector('.mp-legend'))", what='Escape closes the cut legend')
+
+
+def cut_legend_symbols(c):
+    """The cut's legend (rows of `sectionLegend`, whose `swatch` is a drawn SVG of 28 x 14): each symbol is painted, with the shape the cut
+    draws for that series: the computed path a plain line, the planned one dashed '7 4', the requested one dotted '2 4' (the very dashes of the
+    cut's own lines), TOC / TOD a disc, the terrain a box, the route points a vertical line; the legend names every series the cut draws."""
+    # the colour of a series is the cut's own token (a design may be monochrome: `swiss` draws the computed path black): the check is that
+    # the symbol paints what the cut paints, and that in `standard`, whose chart colours differ, no symbol is grey or in the text colour
+    rows = swatches_painted(c, 'cut legend', strict=c.design == 'standard')
+    for r in rows:
+        for pr in r['pairs']:
+            c.eq(pr['sw'], pr['drawn'], f'the symbol paints {pr["att"]} as the cut does', what=f'cut legend: row {r["key"]!r}: computed paint of {pr["att"]}')
+    c.ge(sum(len(r['pairs']) for r in rows), 4, 'the symbols are compared with the cut\'s own paints (computed, planned, requested, TOC / TOD, relief)', what='cut legend: compared paints')
+    by = {r['key']: r for r in rows}
+    drawn = set(c.js("() => [...document.querySelectorAll('.mp-dbody svg [stroke-dasharray]')].map(e => e.getAttribute('stroke-dasharray'))"))
+    c.ok(all(r['svg'] for r in rows), f'symbols {[(r["key"], r["svg"]) for r in rows]}', 'every cut symbol is the SVG that atmosphere draws (not a Maps box)')
+    c.ok({'computed', 'planned', 'requested', 'toc', 'terrain', 'points'} <= set(by), f'keys {sorted(by)}', 'the cut legend names the path, the levels, TOC / TOD, the relief and the route points')
+    if {'computed', 'planned', 'requested', 'toc', 'terrain', 'points'} <= set(by):
+        c.eq((by['computed']['shapes'], by['computed']['dashes']), (['line'], []), 'the computed path is a plain line', what='computed symbol')
+        c.eq(by['planned']['shapes'], ['line'], 'the planned level is a line', what='planned symbol')
+        c.eq(by['requested']['shapes'], ['line'], 'the requested level is a line', what='requested symbol')
+        for k in ('planned', 'requested'):
+            c.ok(by[k]['dashes'] and by[k]['dashes'][0] in drawn, f'{k} dash {by[k]["dashes"]}, dashes of the cut {sorted(drawn)}', f'the {k} symbol has the dash of the line the cut draws')
+        c.ok(by['planned']['dashes'] != by['requested']['dashes'], f'{by["planned"]["dashes"]} / {by["requested"]["dashes"]}', 'planned and requested are told apart by their dash')
+        c.eq(by['toc']['shapes'], ['circle'], 'TOC / TOD is a disc', what='toc symbol')
+        c.eq(by['terrain']['shapes'], ['rect'], 'the relief is a box', what='terrain symbol')
+        c.eq((by['points']['shapes'], by['points']['vertical']), (['line'], True), 'the route points are a vertical line', what='points symbol')
 
 
 def cut_drag(c, what):

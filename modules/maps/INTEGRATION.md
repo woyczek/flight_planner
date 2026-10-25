@@ -261,6 +261,18 @@ The sheet's "Weather" content (SPEC § 4) calls atmosphere's pure renderer. Noth
   model is the costly part. `drawSection` accepts it (`o.model || sectionModel(…)`) but INTEGRATION § 5 of atmosphere does not
   document it: **atmosphere's session should add it there**. `width` and `height` are the content area's minus its padding
   (16 and 12 px). `id` keeps the SVG definitions distinct from atmosphere's own screen (dual view).
+- **The legend of the cut** (the "i" chip, V3_SPECIFICATION § 7.1 rule 14). Contract read in `modules/atmosphere/section.js`:
+  `sectionLegend({ kind: 'cut' | 'slice', layers, strips, cloudRgb, t })` is pure and returns `[{ key, labels [fr, en, de, es], label,
+  swatch }]` in reading order; **`swatch` is a string: a complete SVG of 28 x 14** (`<svg … style="--at-computed:…" aria-hidden>`), already
+  drawn with the cut's own tokens (`var(--at-computed|planned|requested|terrain)`, `--sog-muted`, `--sog-border`, `--sog-chart-*`: the
+  variables are set on the SVG itself) and its own gradients / hatches; it is not `{ css }` and has no `kind`. `key` is `computed`, `planned`,
+  `requested`, `toc`, `cloud`, `temp|da|rh`, `iso`, `inv`, `ice`, `wind`, `cu`, `terrain`, `points`, `strips`. `layers` and `strips` must be
+  the ones passed to the drawing, `t` takes a four-language row (the Map passes `row => ctx.t(row)`; without it the labels are French).
+  The Map therefore (1) draws the cut with an explicit `layers` (`WX_LAYERS`: the set `drawSection` takes by default) and asks the legend
+  for the same ones, `strips` being what `sectionSvg` decides (a drawing at least 260 px high: the Map computes it from the height it
+  passes), (2) puts each row's SVG as it is in its box (`.mp-lg-svg`, `data-key` = the row's key) and the label beside it. **Asked of
+  atmosphere, nothing changed there**: if `sectionSvg` exposed `strips` (and the layers it used) in the `geo` it returns, the Map would
+  read them instead of recomputing the 260 px rule.
 - **The cursor**: `cursorM` = maps' `S.cursor` (metres from the departure), and a tap on the drawn section calls the same
   `setCursor` with `geo.nmOf(x) × 1852`, using the geometry `drawSection` returns.
 
