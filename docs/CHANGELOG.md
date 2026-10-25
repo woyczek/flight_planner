@@ -12,6 +12,10 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **aerodb: inventory of the open AIP data sets for the rest of the world — step 4, second half** (`frame/aerodb/AIP_OPEN_DATA_INVENTORY.md`) —
+  the DFS (Germany) publishes an AIXM 5.1 "SID STAR and IAP" data set with its legs through a public REST API, but its terms forbid storing,
+  converting or redistributing it without a licence; ENAIRE's sets do not list procedures; no lead for the UK, Canada, Australia and New Zealand.
+  A licence request to DFS is drafted for the owner. Nothing was downloaded into the repository.
 - **aerodb: FAA CIFP procedures (United States) — step 4** (`tools/proc_cifp.py`, `tests/v3/cases/aerodb.py` K4, `test/fixtures/cifp/`, `LICENSE.md`;
   aerodb SPEC § 5 quinquies, INTEGRATION, DECISIONS) — an ARINC 424-18 reader (standard library only) turns the FAA's `CIFP_AAMMJJ.zip` into
   `proc/<cycle>/<ICAO>.json` at the common schema, status "official": SID and STAR with their runway and enroute transitions, approaches with their
