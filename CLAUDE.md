@@ -31,7 +31,10 @@ Lues par toutes les sessions qui travaillent sur ce dépôt. Elles priment sur l
   l'appliquer telle quelle, refuser en argumentant, reformuler ou proposer autre chose, et demander confirmation
   quand le choix engage l'ensemble des pages. Elle dit toujours ce qu'elle a fait du mot de l'utilisateur.
 - Avertissements en notifications flottantes (`AppFramework.notify`).
-- Python du lanceur et des outils : **bibliothèque standard** seulement.
+- Python du lanceur et des outils : **bibliothèque standard** seulement. Seule exception (décision de l'utilisateur du
+  25 octobre 2026, « Pypdf sur le poste ») : `pypdf`, dépendance **optionnelle déclarée** des constructeurs de poste qui
+  lisent des PDF (tables de codage de l'eAIP, cartes VAC), avec un message clair quand elle manque ; jamais le lanceur,
+  jamais la page.
 - Avant chaque commit :
   1. `python tools/format_sources.py <fichiers touchés>`, puis contrôle par `tools/verify_format.html`
      (arbres syntaxiques identiques) ;

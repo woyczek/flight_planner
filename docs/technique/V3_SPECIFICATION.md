@@ -495,3 +495,12 @@ redesigned for touch at that point.
        and Safari kept the second while clearing the first (nothing in the code erases anything); decision of the relay —
        the keys persist like the identity, in `device/keys.json`, never synchronised nor in a backup; test A19; written up in
        `frame/settings/DECISIONS.md`.
+   17. **Procedures through aerodb; pypdf on the workstation; a PDF reader in the application** (user, 25 Oct: "On est
+       d'accord que c'est via aerodb que tu récupères les data ? Donc on parle de consolidation uniquement. Step 1 :
+       simbrief. Step 2 : zip. Step 3 en // eurocontrol. Step 4 : us et reste du monde."; then, on the PDF extraction of
+       the eAIP coding tables: "Pypdf sur le poste. 1 lecteur pdf, à prévoir pour l'appli (liens vers cartes VAC)"):
+       SID / STAR / approach data enter the suite only through aerodb (one schema, one API, a published base per cycle);
+       the eAIP "DATA … CODE" tables are read on the workstation with **pypdf, a declared optional dependency of the
+       builder tools** (the only exception to "standard library only"; never the launcher, never the page); the
+       application gets a **PDF reader of its own** for the links to the VAC charts (and the eAIP pages) — a frame
+       primitive or an aerodb view, to specify. Lot in progress: session `v3-aerodb-proc`.
